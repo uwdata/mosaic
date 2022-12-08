@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Scatter Plot Matrix</title>
+    <script src="../dist/vgplot.js"></script>
+    <link href="styles.css" rel="stylesheet">
+  </head>
+  <body>
+    <h1>Scatter Plot Matrix</h1>
+<script>
+const {
+  mc, plot, hconcat, vconcat, from, dot, frame,
+  domainX, domainY, domainColor, intervalXY,
+  width, height, axisX, axisY,
+  labelX, labelAnchorX, labelY, labelAnchorY,
+  marginTop, marginBottom, marginLeft, marginRight,
+  Signal, Fixed
+} = vgplot;
+
+// TODO: get from DB
+const columns = ['bill_length', 'bill_depth', 'flipper_length', 'body_mass'];
+const table = 'penguins';
+const brush = new Signal('brush');
+
+function scatter(x, y, row, col) {
+  return plot(
+    frame({ stroke: '#ccc' }),
+    dot(
+      from(table, { filterBy: brush }),
+      { x, y, fill: 'species', r: 2 }
+    ),
+    intervalXY({ as: brush }),
+    domainX(Fixed), domainY(Fixed), domainColor(Fixed),
+    marginTop(5), marginRight(5),
+    ...(col !== 0
+      ? [axisY(null), width(140), marginLeft(10)]
+      : [width(180), marginLeft(50), labelY(columns[row]), labelAnchorY('center')]
+    ),
+    ...(row !== 3
+      ? [axisX(null), height(140), marginBottom(10)]
+      : [height(165), marginBottom(35), labelX(columns[col]), labelAnchorX('center')]
+    )
+  )
+}
+
+document.body.appendChild(
+  vconcat(columns.slice().reverse().map((y, row) => {
+    return hconcat(columns.map((x, col) => scatter(x, y, row, col)))
+  }))
+);
+</script>
+  </body>
+</html>

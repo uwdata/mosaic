@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Cross-Filter</title>
+    <script src="../dist/vgplot.js"></script>
+    <style>
+      body { font-family: system-ui, sans-serif; }
+      h1 { font-size: 16px; }
+    </style>
+  </head>
+  <body>
+    <h1>Cross-Filter</h1>
+<script>
+const {
+  mc, plot, vconcat, from, binX, count, rectY,
+  width, height, domainX, intervalX, Signal, Fixed
+} = vgplot;
+
+const table = 'data2';
+const brush = new Signal('brush');
+
+document.body.appendChild(
+  vconcat(
+    plot(
+      rectY(
+        from(table, { filterBy: brush }),
+        { ...binX('u'), y: count(), fill: 'steelblue', inset: 0.5 }
+      ),
+      intervalX({ as: brush }),
+      domainX(Fixed),
+      width(600),
+      height(200)
+    ),
+    plot(
+      rectY(
+        from(table, { filterBy: brush }),
+        { ...binX('v'), y: count(), fill: 'steelblue', inset: 0.5 }
+      ),
+      intervalX({ as: brush }),
+      domainX(Fixed),
+      width(600),
+      height(200)
+    )
+
+  )
+);
+</script>
+  </body>
+</html>

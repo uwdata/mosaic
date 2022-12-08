@@ -1,2 +1,3 @@
 # mosaic
-Scalable and extensible linked data views
+
+Scalable and extensible linked data views.

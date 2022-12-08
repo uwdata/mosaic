@@ -1,0 +1,25 @@
+export const BIGINT = 'BIGINT'; // INT8, LONG
+export const BOOLEAN = 'BOOLEAN'; // BOOL, LOGICAL
+export const BLOB = 'BLOB'; // BYTEA, BINARY, VARBINARY
+export const DATE = 'DATE';
+export const DOUBLE = 'DOUBLE'; // FLOAT8, NUMERIC, DECIMAL
+export const DECIMAL = 'DECIMAL'; // (s, p)
+export const HUGEINT = 'HUGEINT';
+export const INTEGER = 'INTEGER'; // INT4, INT, SIGNED
+export const INTERVAL = 'INTERVAL';
+export const REAL = 'REAL'; // FLOAT4, FLOAT
+export const SMALLINT = 'SMALLINT'; // INT2, SHORT
+export const TIME = 'TIME';
+export const TIMESTAMP = 'TIMESTAMP'; // DATETIME
+export const TIMESTAMPTZ = 'TIMESTAMP WITH TIME ZONE'; // TIMESTAMPTZ
+export const TINYINT = 'TINYINT'; // INT1
+export const UBIGINT = 'UBIGINT';
+export const UINTEGER = 'UINTEGER';
+export const USMALLINT = 'USMALLINT';
+export const UTINYINT = 'UTINYINT';
+export const UUID = 'UUID';
+export const VARCHAR = 'VARCHAR'; // CHAR, BPCHAR, TEXT, STRING
+
+export const LIST = 'LIST';
+export const STRUCT = 'STRUCT';
+export const MAP = 'MAP';

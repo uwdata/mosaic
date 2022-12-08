@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Density</title>
+    <script src="../dist/vgplot.js"></script>
+    <style>
+      body { font-family: system-ui, sans-serif; }
+      h1 { font-size: 16px; }
+    </style>
+  </head>
+  <body>
+    <h1>Density</h1>
+    Bandwidth (&sigma;): <input id="slider" type="range" min="0.001" max="0.5" value="0.02" step="0.001"></input>
+<script>
+const {
+  mc, plot, vconcat, from, axisY, domainX, densityY, intervalX,
+  marginLeft, width, height, Signal
+} = vgplot;
+
+const table = 'data2';
+const bandwidth = new Signal('bw', 0.02);
+const brush = new Signal('brush');
+
+document
+  .querySelector('#slider')
+  .addEventListener('input', evt => {
+    bandwidth.update(+evt.target.value);
+  });
+
+document.body.appendChild(
+  vconcat(
+    plot(
+      densityY(
+        from(table, { filterBy: brush }),
+        { x: 'u', bandwidth, fill: '#ccc' }
+      ),
+      axisY(null),
+      domainX([0, 1]),
+      intervalX({ as: brush }),
+      width(600), marginLeft(10),
+      height(200)
+    ),
+    plot(
+      densityY(
+        from(table, { filterBy: brush }),
+        { x: 'v', bandwidth, fill: '#ccc' }
+      ),
+      axisY(null),
+      domainX([0, 1]),
+      intervalX({ as: brush }),
+      width(600), marginLeft(10),
+      height(200)
+    )
+  )
+);
+</script>
+  </body>
+</html>

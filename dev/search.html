@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Search</title>
+    <script src="../dist/vgplot.js"></script>
+    <style>
+      body { font-family: system-ui, sans-serif; }
+      h1 { font-size: 16px; }
+      label { margin-right: 0.5em; }
+      .concat-horizontal {
+        display: flex;
+        flex-direction: row;
+        flex-wrap: nowrap;
+        justify-content: flex-start;
+        align-items: flex-start;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Search</h1>
+<script>
+const {
+  mc, plot, vconcat, hconcat, from, search, dot, rectX, rectY,
+  binX, binY, count, intervalX, intervalY,
+  marginBottom, marginTop, marginLeft, marginRight,
+  axisX, axisY, domainX, domainY, domainXY, width, height,
+  Fixed, Signal
+} = vgplot;
+
+const table = 'athletes';
+const query = new Signal('query');
+
+document.body.appendChild(
+  vconcat(
+    plot(
+      rectY(
+        from(table),
+        { ...binX('weight'), y: count(), fill: 'sex', order: 'sex', inset: 0.5 }
+      ),
+      intervalX({ as: query }),
+      domainX(Fixed), axisX(null), axisY(null),
+      marginBottom(0), marginTop(0), height(40)
+    ),
+    hconcat(
+      plot(
+        dot(
+          from(table, { filterBy: query }),
+          { x: 'weight', y: 'height', fill: 'sex', r: 2, opacity: 0.5 }
+        ),
+        domainXY(Fixed)
+      ),
+      plot(
+        rectX(
+          from(table),
+          { x: count(), ...binY('height'), fill: 'sex', order: 'sex', inset: 0.5 }
+        ),
+        intervalY({ as: query }),
+        domainY(Fixed), axisX(null), axisY(null),
+        marginLeft(0), marginRight(0), width(40)
+      )
+    ),
+    search({ table, label: 'Name', type: 'contains', field: 'name', as: query })
+  )
+);
+
+</script>
+  </body>
+</html>
