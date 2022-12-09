@@ -39,6 +39,15 @@ export class Mark {
     return this.channels.find(c => c.channel === channel);
   }
 
+  channelField(...channels) {
+    const list = channels.flat();
+    for (const channel of list) {
+      const field = this.channel(channel)?.field;
+      if (field) return field;
+    }
+    return null;
+  }
+
   update() {
     this.plot.update();
     return this;

@@ -2,13 +2,13 @@ import { brush, select } from 'd3';
 import { closeTo } from './close-to.js';
 
 export class Interval2DSelection {
-  constructor(mark, signal, selection = null) {
+  constructor(mark, signal, xfield, yfield) {
     this.mark = mark;
     this.signal = signal;
     this.selection = selection;
 
-    this.xfield = (mark.channel('x') || mark.channel('x1')).field;
-    this.yfield = (mark.channel('y') || mark.channel('y1')).field;
+    this.xfield = xfield || mark.channelField('x', 'x1', 'x2');
+    this.yfield = yfield || mark.channelField('y', 'y1', 'y2');
     this.brush = brush();
 
     this.brush.on('brush end', ({ selection }) => {
