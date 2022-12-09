@@ -5,7 +5,6 @@ export class Interval2DSelection {
   constructor(mark, signal, xfield, yfield) {
     this.mark = mark;
     this.signal = signal;
-    this.selection = selection;
 
     this.xfield = xfield || mark.channelField('x', 'x1', 'x2');
     this.yfield = yfield || mark.channelField('y', 'y1', 'y2');
