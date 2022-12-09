@@ -29,13 +29,6 @@ export class Interval2DSelection {
             { field: this.yfield, type: 'range', value: yrange }
           ]
         });
-        // console.log(JSON.stringify({
-        //   type: 'and',
-        //   value: [
-        //     { field: this.xfield, type: 'range', value: xrange },
-        //     { field: this.yfield, type: 'range', value: yrange }
-        //   ]
-        // }));
       }
     });
   }
