@@ -1,4 +1,5 @@
 import duckdb from 'duckdb';
+import { loadJSON } from './load-json.js';
 
 export class DuckDB {
   constructor(path = ':memory:') {
@@ -17,6 +18,17 @@ export class DuckDB {
         }
       });
     });
+  }
+
+  async add(tableName, data, schema) {
+    await loadJSON(this, tableName, data, schema);
+    return this;
+  }
+
+  // TODO: options
+  async csv(tableName, fileName, options) {
+    return this.exec(`CREATE TABLE ${tableName} AS SELECT *
+      FROM read_csv_auto('${fileName}', SAMPLE_SIZE=-1);`);
   }
 
   prepare(sql) {
@@ -52,9 +64,11 @@ export class DuckDBStatement {
   constructor(statement) {
     this.statement = statement;
   }
+
   finalize() {
     this.statement.finalize();
   }
+
   query(params) {
     return new Promise((resolve, reject) => {
       this.statement.all(...params, (err, result) => {
@@ -65,5 +79,21 @@ export class DuckDBStatement {
         }
       });
     });
+  }
+
+  exec(params) {
+    return new Promise((resolve, reject) => {
+      this.statement.run(...params, (err) => {
+        if (err) {
+          reject(err);
+        } else {
+          resolve(this);
+        }
+      });
+    });
+  }
+
+  run(params) {
+    this.statement.run(...params);
   }
 }

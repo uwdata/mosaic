@@ -38,28 +38,11 @@ const db = new DuckDB();
 const ds = new JSONDataService(db);
 
 await Promise.all([
-  db.exec(`
-    CREATE TABLE athletes AS
-    SELECT *
-    FROM read_csv_auto('data/athletes.csv', SAMPLE_SIZE=-1);
-  `),
-  db.exec(`
-    CREATE TABLE penguins AS
-    SELECT *
-    FROM read_csv_auto('data/penguins.csv', SAMPLE_SIZE=-1);
-  `),
-  db.exec(`
-    CREATE TABLE data1 (x VARCHAR, y INTEGER);
-    INSERT INTO data1 VALUES ${data1.map(d => `('${d.x}', ${d.y})`).join(',')};
-  `),
-  db.exec(`
-    CREATE TABLE data2 (u DOUBLE, v DOUBLE);
-    INSERT INTO data2 VALUES ${data2.map(d => `(${d.u}, ${d.v})`).join(',')};
-  `),
-  db.exec(`
-    CREATE TABLE data3 (t DOUBLE, v DOUBLE);
-    INSERT INTO data3 VALUES ${data3.map(d => `(${d.t}, ${d.v})`).join(',')};
-  `)
+  db.csv('athletes', 'data/athletes.csv'),
+  db.csv('penguins', 'data/penguins.csv'),
+  db.add('data1', data1, { x: 'VARCHAR', y: 'INTEGER' }),
+  db.add('data2', data2, { u: 'DOUBLE', v: 'DOUBLE' }),
+  db.add('data3', data3, { t: 'DOUBLE', v: 'DOUBLE' })
 ]);
 
 console.log('SETUP', Date.now() - t0);

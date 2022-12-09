@@ -1,8 +1,6 @@
 import assert from 'node:assert';
-import { DuckDB } from '../../src/index.js';
+import { db } from '../db.js';
 import { binInterp } from '../../src/query/bin-interp.js';
-
-const db = new DuckDB();
 
 function compare(actual, expected) {
   for (let i = 0, n = actual.length; i < n; ++i) {

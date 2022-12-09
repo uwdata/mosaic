@@ -1,8 +1,6 @@
 import assert from 'node:assert';
-import { DuckDB } from '../../src/index.js';
+import { db } from '../db.js';
 import { linearRegression } from '../../src/query/linear-regression.js';
-
-const db = new DuckDB();
 
 describe('linearRegression', () => {
   before(async () => {

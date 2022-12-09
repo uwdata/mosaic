@@ -1,8 +1,6 @@
 import assert from 'node:assert';
-import { DuckDB } from '../../src/index.js';
+import { db } from '../db.js';
 import { impute } from '../../src/query/impute.js';
-
-const db = new DuckDB();
 
 describe('impute', () => {
   before(async () => {
