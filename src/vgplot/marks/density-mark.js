@@ -1,5 +1,5 @@
 import { Mark } from '../mark.js';
-import { dericheConfig, dericheConv1d, grid1d } from './deriche.js';
+import { dericheConfig, dericheConv1d, grid1d } from '../util/deriche.js';
 
 export class DensityMark extends Mark {
   constructor(type, source, encodings) {
@@ -69,50 +69,10 @@ export class DensityMark extends Mark {
       }
     ];
 
-    // const { channels, plot, source, _stats } = this;
-    // const dir = 'x'; // TODO
-
-    // if (Array.isArray(this.source)) {
-    //   return null;
-    // }
-
-    // const select = {};
-    // for (const c of channels) {
-    //   if (Object.hasOwn(c, 'value') || Object.hasOwn(c, 'signal')) {
-    //     // do nothing
-    //   } else if (_stats && c.transform) {
-    //     select[c.channel] = transforms[c.transform](c, _stats);
-    //   } else {
-    //     select[c.channel] = c;
-    //   }
-    // }
-
-    // const field = select[dir].field;
-    // const weight = select.weight ? 'weight' : 1;
-
-    // let { min, max } = _stats.find(s => s.field === field);
-    // const domX = plot.getAttribute('domainX');
-    // if (domX) [min, max] = domX;
-    // this.extent = [min, max];
-
-    // const q = {
-    //   from: [source.table],
-    //   select: select,
-    //   transform: [
-    //     {
-    //       type: 'binInterp',
-    //       field: dir,
-    //       weight,
-    //       bins: this.bins,
-    //       range: this.extent
-    //     }
-    //   ]
-    // };
-
     return q;
   }
 
-  toSpec() {
+  plotSpecs() {
     const { type, _data, channels } = this;
     const options = { y: 'y' };
     for (const c of channels) {
@@ -120,6 +80,6 @@ export class DensityMark extends Mark {
         ? c.value
         : c.channel;
     }
-    return { type, data: _data, options };
+    return [{ type, data: _data, options }];
   }
 }

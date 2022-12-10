@@ -49,7 +49,7 @@ export class Mark {
   }
 
   update() {
-    this.plot.update();
+    this.plot.update(this);
     return this;
   }
 
@@ -82,6 +82,7 @@ export class Mark {
 
   query() {
     const { plot, channels, source, type, _stats } = this;
+    plot.pending(this);
 
     if (source == null || Array.isArray(source)) {
       return null;
@@ -128,7 +129,7 @@ export class Mark {
     return q;
   }
 
-  toSpec() {
+  plotSpecs() {
     const { type, _data, channels } = this;
     const options = {};
     for (const c of channels) {
@@ -136,6 +137,6 @@ export class Mark {
         ? c.value
         : c.channel;
     }
-    return { type, data: _data, options };
+    return [{ type, data: _data, options }];
   }
 }

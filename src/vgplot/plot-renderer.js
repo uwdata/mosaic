@@ -97,12 +97,12 @@ export function plotRenderer(plot) {
 
   // populate marks
   for (const mark of marks) {
-    const { type, data, options } = mark.toSpec();
-    if (type === 'frame') {
-      spec.marks.push(Plot[type](options));
-    } else {
-      console.log('ADDING MARK', type, data, options);
-      spec.marks.push(Plot[type](data, options));
+    for (const { type, data, options } of mark.plotSpecs()) {
+      if (type === 'frame') {
+        spec.marks.push(Plot[type](options));
+      } else {
+        spec.marks.push(Plot[type](data, options));
+      }
     }
   }
 

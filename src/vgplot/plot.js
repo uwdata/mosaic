@@ -15,6 +15,7 @@ export class Plot {
     this.marks = [];
     this.element = element || document.createElement('div');
     this.element.value = this;
+    this.queue = new Set;
   }
 
   margins() {
@@ -31,9 +32,15 @@ export class Plot {
     return this.getAttribute('width') - left - right;
   }
 
-  update() {
-    // TODO request render
-    this.render();
+  pending(mark) {
+    this.queue.add(mark);
+  }
+
+  update(mark) {
+    this.queue.delete(mark);
+    if (this.queue.size === 0) {
+      this.render();
+    }
     return this;
   }
 
