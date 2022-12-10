@@ -101,6 +101,7 @@ export function plotRenderer(plot) {
     if (type === 'frame') {
       spec.marks.push(Plot[type](options));
     } else {
+      console.log('ADDING MARK', type, data, options);
       spec.marks.push(Plot[type](data, options));
     }
   }

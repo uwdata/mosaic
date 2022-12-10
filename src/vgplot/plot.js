@@ -32,6 +32,7 @@ export class Plot {
   }
 
   update() {
+    // TODO request render
     this.render();
     return this;
   }

@@ -1,5 +1,6 @@
 import { Mark } from '../mark.js';
 import { DensityMark } from '../marks/density-mark.js';
+import { RegressionMark } from '../marks/regression-mark.js';
 
 export function mark(type, data, channels) {
   if (arguments.length === 2) {
@@ -36,5 +37,11 @@ export const frame = (...args) => mark('frame', ...args);
 export function densityY(data, channels) {
   return plot => {
     plot.addMark(new DensityMark('areaY', data, channels));
+  };
+}
+
+export function regressionY(data, channels) {
+  return plot => {
+    plot.addMark(new RegressionMark(data, channels));
   };
 }

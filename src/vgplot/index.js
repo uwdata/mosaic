@@ -72,7 +72,8 @@ export {
   ruleX,
   ruleY,
   frame,
-  densityY
+  densityY,
+  regressionY
 } from './directives/marks.js';
 
 export {

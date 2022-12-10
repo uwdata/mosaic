@@ -9,18 +9,8 @@ export function linearRegression(input, x, y, groupby) {
   REGR_SXX(${y}, ${x}) AS ssx,
   REGR_AVGX(${y}, ${x}) AS xm,
   MIN(${x}) FILTER (${y} IS NOT NULL) AS x0,
-  MAX(${x}) FILTER (${y} IS NOT NULL) AS x1
+  MAX(${x}) FILTER (${y} IS NOT NULL) AS x1${(groupby ? `,
+  ${groupby}` : '')}
 FROM ${input}` + (groupby ? `
 GROUP BY ${groupby}` : '');
 }
-
-/*
-https://github.com/observablehq/plot/blob/main/src/marks/linearRegression.js
-https://github.com/observablehq/plot/blob/main/src/stats.js
-const t = qt(p, I.length - 2);
-return (x, k) => {
-  const Y = f(x); // m * x + b
-  const s = se * Math.sqrt(1 / n + (x - ux) ** 2 / ssx);
-  return Y + k * t * s;
-};
-*/
