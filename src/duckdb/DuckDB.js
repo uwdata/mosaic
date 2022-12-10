@@ -1,11 +1,17 @@
 import duckdb from 'duckdb';
 import { loadJSON } from './load-json.js';
+import { mergeBuffers } from './merge-buffers.js';
+
+const CONFIG = [
+  `PRAGMA temp_directory='./duckdb.tmp'`,
+  `LOAD arrow`
+];
 
 export class DuckDB {
   constructor(path = ':memory:') {
     this.db = new duckdb.Database(path);
     this.con = this.db.connect();
-    this.exec(`PRAGMA temp_directory='./duckdb.tmp'`);
+    this.exec(CONFIG.join(';\n'));
   }
 
   close() {
@@ -58,6 +64,23 @@ export class DuckDB {
       });
     });
   }
+
+  arrowBuffer(sql) {
+    return new Promise((resolve, reject) => {
+      this.con.arrowIPCAll(sql, (err, result) => {
+        if (err) {
+          reject(err);
+        } else {
+          result.pop(); // the last buffer in the result is 0x0
+          resolve(mergeBuffers(result));
+        }
+      });
+    });
+  }
+
+  arrowStream(sql) {
+    return this.con.arrowIPCStream(sql);
+  }
 }
 
 export class DuckDBStatement {
@@ -69,16 +92,8 @@ export class DuckDBStatement {
     this.statement.finalize();
   }
 
-  query(params) {
-    return new Promise((resolve, reject) => {
-      this.statement.all(...params, (err, result) => {
-        if (err) {
-          reject(err);
-        } else {
-          resolve(result);
-        }
-      });
-    });
+  run(params) {
+    this.statement.run(...params);
   }
 
   exec(params) {
@@ -93,7 +108,32 @@ export class DuckDBStatement {
     });
   }
 
-  run(params) {
-    this.statement.run(...params);
+  query(params) {
+    return new Promise((resolve, reject) => {
+      this.statement.all(...params, (err, result) => {
+        if (err) {
+          reject(err);
+        } else {
+          resolve(result);
+        }
+      });
+    });
+  }
+
+  arrowBuffer(params) {
+    return new Promise((resolve, reject) => {
+      this.con.arrowIPCAll(...params, (err, result) => {
+        if (err) {
+          reject(err);
+        } else {
+          result.pop(); // the last buffer in the result is 0x0
+          resolve(mergeBuffers(result));
+        }
+      });
+    });
+  }
+
+  arrowStream(params) {
+    return this.statement.arrowIPCStream(...params);
   }
 }
