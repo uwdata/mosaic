@@ -5,7 +5,8 @@ import {
   startsWith,
   endsWith,
   contains,
-  regexp
+  regexp,
+  isNotNull
 } from '../query/index.js';
 import * as transforms from './transforms/index.js';
 
@@ -28,23 +29,30 @@ function jsonToSQL(q) {
   const dims = [];
   let group = false;
 
+  // TODO: support more than conjunction
+  if (q.where) {
+    const predicate = and(q.where);
+    if (predicate.length) {
+      sql.where(predicate);
+    }
+  }
+
   for (const [key, c] of Object.entries(q.select)) {
+    const { aggregate, transform, field, value } = c;
     const f = ref(key);
-    if (Object.hasOwn(c, 'aggregate')) {
+    if (aggregate) {
       group = true;
-      const arg = (c.distinct ? 'DISTINCT ' : '') + (c.field || '');
+      const arg = (c.distinct ? 'DISTINCT ' : '') + (field || '');
       const filter = c.filter ? ` FILTER (${c.filter})` : '';
-      select[key] = `${c.aggregate}(${arg})${filter}`;
-    } else if (Object.hasOwn(c, 'transform')) {
-      if (c.transform === 'bin') {
-        dims.push(f);
-        select[key] = _bin(c.field, c.min, c.max, c.options);
-      }
-    } else if (Object.hasOwn(c, 'field')) {
+      select[key] = `${aggregate}(${arg})${filter}`;
+    } else if (transform) {
       dims.push(f);
-      const arg = (c.distinct ? 'DISTINCT ' : '') + (c.field || '');
+      transforms[transform](q, sql, select, key, c);
+    } else if (field) {
+      dims.push(f);
+      const arg = (c.distinct ? 'DISTINCT ' : '') + (field || '');
       select[key] = arg;
-    } else if (Object.hasOwn(c, 'value')) {
+    } else if (value !== undefined) {
       // skip, nothing to do
     } else {
       throw new Error(`Unrecognized channel entry: ${JSON.stringify(c)}`);
@@ -60,14 +68,6 @@ function jsonToSQL(q) {
     sql.orderby(q.order.map(o => ref(o.field) + (o.desc ? ' DESC' : '')));
   }
 
-  // TODO: support more than conjunction
-  if (q.where) {
-    const predicate = and(q.where);
-    if (predicate.length) {
-      sql.where(predicate);
-    }
-  }
-
   let query = sql.toString();
   (q.transform || []).forEach(spec => {
     const tx = transforms[spec.type];
@@ -81,14 +81,6 @@ function jsonToSQL(q) {
   return query;
 }
 
-export function _bin(field, min, max, { steps = 20, offset = 0 } = {}) {
-  const delta = `(${field} - ${min})`;
-  const span = `(${max} - ${min})`;
-  steps = `${steps}::DOUBLE`;
-  const off = offset ? '1 + ' : '';
-  return `${min} + (${span} / ${steps}) * (${off}FLOOR(${steps} * ${delta} / ${span}))`;
-}
-
 function and(clauses) {
   return clauses
     .map(c => clause(c)).filter(x => x)
@@ -100,6 +92,8 @@ function clause(c) {
   switch (c.type) {
     case 'and':
       return and(c.value); // TODO: parens?
+    case 'notnull':
+      return isNotNull(ref(c.field));
     case 'range':
       return isInRange(ref(c.field), c.value);
     case 'prefix':

@@ -14,6 +14,7 @@ export class Plot {
     this.selections = [];
     this.marks = [];
     this.element = element || document.createElement('div');
+    this.element.setAttribute('class', 'plot');
     this.element.value = this;
     this.queue = new Set;
   }
@@ -30,6 +31,11 @@ export class Plot {
   innerWidth() {
     const { left, right } = this.margins();
     return this.getAttribute('width') - left - right;
+  }
+
+  innerHeight() {
+    const { top, bottom } = this.margins();
+    return this.getAttribute('height') - top - bottom;
   }
 
   pending(mark) {

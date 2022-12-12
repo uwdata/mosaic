@@ -3,8 +3,8 @@ import { Mark } from '../mark.js';
 import { qt } from '../util/stats.js';
 
 export class RegressionMark extends Mark {
-  constructor(source, encodings) {
-    const { ci = 0.95, precision = 4, ...channels } = encodings;
+  constructor(source, options) {
+    const { ci = 0.95, precision = 4, ...channels } = options;
     super('line', source, channels);
     this.ci = ci;
     this.precision = precision;

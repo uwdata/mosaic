@@ -10,7 +10,7 @@
 <script>
 const {
   mc, plot, vconcat, hconcat, from, search, dot, rectX, rectY,
-  binX, binY, count, intervalX, intervalY,
+  bin, count, intervalX, intervalY,
   marginBottom, marginTop, marginLeft, marginRight,
   axisX, axisY, domainX, domainY, domainXY, width, height,
   Fixed, Signal
@@ -24,7 +24,7 @@ document.body.appendChild(
     plot(
       rectY(
         from(table),
-        { ...binX('weight'), y: count(), fill: 'sex', order: 'sex', inset: 0.5 }
+        { x: bin('weight'), y: count(), fill: 'sex', order: 'sex', inset: 0.5 }
       ),
       intervalX({ as: query }),
       domainX(Fixed), axisX(null), axisY(null),
@@ -41,7 +41,7 @@ document.body.appendChild(
       plot(
         rectX(
           from(table),
-          { x: count(), ...binY('height'), fill: 'sex', order: 'sex', inset: 0.5 }
+          { x: count(), y: bin('height'), fill: 'sex', order: 'sex', inset: 0.5 }
         ),
         intervalY({ as: query }),
         domainY(Fixed), axisX(null), axisY(null),

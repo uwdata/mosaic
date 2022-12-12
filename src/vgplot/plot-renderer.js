@@ -9,6 +9,8 @@ const ATTRIBUTE_MAP = new Map([
   ['marginBottom', 'marginBottom'],
   ['marginLeft', 'marginLeft'],
   ['marginRight', 'marginRight'],
+  ['scaleX', 'x.type'],
+  ['scaleY', 'y.type'],
   ['domainX', 'x.domain'],
   ['domainY', 'y.domain'],
   ['axisX', 'x.axis'],
@@ -98,7 +100,7 @@ export function plotRenderer(plot) {
   // populate marks
   for (const mark of marks) {
     for (const { type, data, options } of mark.plotSpecs()) {
-      if (type === 'frame') {
+      if (type === 'frame' || type === 'hexgrid') {
         spec.marks.push(Plot[type](options));
       } else {
         spec.marks.push(Plot[type](data, options));

@@ -3,25 +3,22 @@ export function from(table, options) {
 }
 
 export function bin(field, options = { steps: 20 }) {
-  return { transform: 'bin', field, options };
-}
-
-export function binX(field, options = { steps: 20 }) {
-  return {
-    x1: { transform: 'bin', field, options },
-    x2: { transform: 'bin', field, options: { ...options, offset: 1 } }
-  };
-}
-
-export function binY(field, options = { steps: 20 }) {
-  return {
-    y1: { transform: 'bin', field, options },
-    y2: { transform: 'bin', field, options: { ...options, offset: 1 } }
-  };
+  return channel => ({
+    [`${channel}1`]: { transform: 'bin', field, options },
+    [`${channel}2`]: { transform: 'bin', field, options: { ...options, offset: 1 } }
+  });
 }
 
 export function count() {
   return { aggregate: 'count' };
+}
+
+export function sum(field) {
+  return { aggregate: 'sum', field };
+}
+
+export function avg(field) {
+  return { aggregate: 'avg', field };
 }
 
 export function min(field) {

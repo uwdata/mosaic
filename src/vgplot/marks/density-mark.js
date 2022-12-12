@@ -1,21 +1,20 @@
+import { isSignal } from '../../mosaic/Signal.js';
 import { Mark } from '../mark.js';
 import { dericheConfig, dericheConv1d, grid1d } from '../util/deriche.js';
 
 export class DensityMark extends Mark {
-  constructor(type, source, encodings) {
-    super(type, source, { ...encodings });
-    this.bins = 1024;
-    this.bandwidth = 0.1;
+  constructor(type, source, options) {
+    const { bins = 1024, bandwidth = 0.1, ...channels } = options;
+    super(type, source, channels);
+    this.bins = bins;
+    this.bandwidth = bandwidth;
 
-    const bw = this.channel('bandwidth');
-    if (bw) {
-      this.bandwidth = bw.signal ? bw.signal.value : bw.value;
-      if (bw.signal) {
-        bw.signal.addListener(value => {
-          this.bandwidth = value;
-          if (this.grid) this.convolve().update();
-        });
-      }
+    if (isSignal(bandwidth)) {
+      bandwidth.addListener(value => {
+        this.bandwidth = value;
+        if (this.grid) this.convolve().update();
+      });
+      this.bandwidth = bandwidth.value;
     }
     // TODO: nrd estimate from stats? (requires quantiles and stdev)
     // TODO: perform binning in JS if _data is set

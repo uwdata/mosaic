@@ -9,7 +9,7 @@
     <h1>Cross-Filter</h1>
 <script>
 const {
-  mc, plot, vconcat, from, binX, count, rectY,
+  mc, plot, vconcat, from, bin, count, rectY,
   width, height, domainX, intervalX, Signal, Fixed
 } = vgplot;
 
@@ -21,7 +21,7 @@ document.body.appendChild(
     plot(
       rectY(
         from(table, { filterBy: brush }),
-        { ...binX('u'), y: count(), fill: 'steelblue', inset: 0.5 }
+        { x: bin('u'), y: count(), fill: 'steelblue', inset: 0.5 }
       ),
       intervalX({ as: brush }),
       domainX(Fixed),
@@ -31,7 +31,7 @@ document.body.appendChild(
     plot(
       rectY(
         from(table, { filterBy: brush }),
-        { ...binX('v'), y: count(), fill: 'steelblue', inset: 0.5 }
+        { x: bin('v'), y: count(), fill: 'steelblue', inset: 0.5 }
       ),
       intervalX({ as: brush }),
       domainX(Fixed),

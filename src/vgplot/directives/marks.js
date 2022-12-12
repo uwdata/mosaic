@@ -1,5 +1,6 @@
 import { Mark } from '../mark.js';
 import { DensityMark } from '../marks/density-mark.js';
+import { HexbinMark } from '../marks/hexbin-mark.js';
 import { RegressionMark } from '../marks/regression-mark.js';
 
 export function mark(type, data, channels) {
@@ -39,6 +40,14 @@ export function densityY(data, channels) {
     plot.addMark(new DensityMark('areaY', data, channels));
   };
 }
+
+export function hexbin(data, channels) {
+  return plot => {
+    plot.addMark(new HexbinMark(data, channels));
+  };
+}
+
+export const hexgrid = (...args) => mark('hexgrid', ...args);
 
 export function regressionY(data, channels) {
   return plot => {

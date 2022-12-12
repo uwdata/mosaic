@@ -15,10 +15,15 @@ export class Mark {
     }
 
     const channels = this.channels = [];
-    for (const channel in encodings) {
-      const entry = encodings[channel];
+
+    const process = (channel, entry) => {
       const type = typeof entry;
-      if (type === 'string') {
+      if (type === 'function') {
+        const enc = entry(channel);
+        for (const key in enc) {
+          process(key, enc[key]);
+        }
+      } else if (type === 'string') {
         if (isConstantChannel(channel) || isColorChannel(channel) && isColor(entry)) {
           // interpret color names as constants, not fields
           channels.push({ channel, value: entry });
@@ -32,6 +37,10 @@ export class Mark {
       } else {
         channels.push({ channel, value: entry });
       }
+    };
+
+    for (const channel in encodings) {
+      process(channel, encodings[channel]);
     }
   }
 
@@ -82,11 +91,12 @@ export class Mark {
 
   query() {
     const { plot, channels, source, type, _stats } = this;
-    plot.pending(this);
 
     if (source == null || Array.isArray(source)) {
       return null;
     }
+
+    plot.pending(this);
 
     const select = {};
     let order = null;

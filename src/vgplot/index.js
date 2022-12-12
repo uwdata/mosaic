@@ -48,10 +48,10 @@ export {
 
 export {
   from,
+  avg,
   bin,
-  binX,
-  binY,
-  count
+  count,
+  sum
 } from './directives/data.js';
 
 export {
@@ -73,6 +73,8 @@ export {
   ruleY,
   frame,
   densityY,
+  hexbin,
+  hexgrid,
   regressionY
 } from './directives/marks.js';
 

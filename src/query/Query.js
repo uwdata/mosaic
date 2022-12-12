@@ -95,6 +95,8 @@ function toAsList(obj, delim = ', ') {
     const val = obj[key];
     if (val === key) {
       list.push(val);
+    } else if (val instanceof Query) {
+      list.push(`(${val.toSQL()}) AS "${key}"`);
     } else {
       list.push(`${val} AS "${key}"`);
     }

@@ -1,4 +1,3 @@
-// sqrt((1 - r2) * regr_syy(${y}, ${x}) / n) AS se,
 export function linearRegression(input, x, y, groupby) {
   return `SELECT
   REGR_INTERCEPT(${y}, ${x}) AS intercept,

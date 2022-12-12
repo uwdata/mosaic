@@ -28,8 +28,8 @@ describe('linearRegression', () => {
   it('computes linear regression over groups', async () => {
     const result = await db.query(linearRegression('data', 'x', 'y', 'c'));
     assert.deepStrictEqual(result, [
-      { intercept: 1, slope: 1, n: 5, r2: 0.9999999999999996, ssy: 40, ssx: 40, xm: 4, x0: 0, x1: 8 },
-      { intercept: 1, slope: 1, n: 5, r2: 0.9999999999999996, ssy: 40, ssx: 40, xm: 5, x0: 1, x1: 9 }
+      { c: 0, intercept: 1, slope: 1, n: 5, r2: 0.9999999999999996, ssy: 40, ssx: 40, xm: 4, x0: 0, x1: 8 },
+      { c: 1, intercept: 1, slope: 1, n: 5, r2: 0.9999999999999996, ssy: 40, ssx: 40, xm: 5, x0: 1, x1: 9 }
     ]);
   });
 });

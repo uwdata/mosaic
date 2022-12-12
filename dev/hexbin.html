@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Hexbin</title>
+    <script src="../dist/vgplot.js"></script>
+    <link href="styles.css" rel="stylesheet">
+  </head>
+  <body>
+    <h1>Hexbin</h1>
+<script>
+const {
+  mc, plot, vconcat, hconcat, from, hexbin, hexgrid, schemeColor,
+  avg, bin, count, rectY, rectX,
+  marginLeft, marginRight, marginBottom, marginTop, axisX, axisY,
+  domainX, domainY, intervalX, intervalY, width, height, Signal, Fixed
+} = vgplot;
+
+const table = 'athletes';
+const x = 'weight';
+const y = 'height';
+const color = 'steelblue';
+const query = new Signal('query');
+
+document.body.appendChild(
+  vconcat(
+    plot(
+      rectY(
+        from(table),
+        { x: bin(x), y: count(), fill: color, inset: 0.5 }
+      ),
+      intervalX({ as: query }),
+      marginLeft(0), marginRight(0), marginTop(0), marginBottom(0),
+      domainX(Fixed), axisX(null), axisY(null),
+      width(700), height(40)
+    ),
+    hconcat(
+      plot(
+        hexbin(from(table, { filterBy: query }), { x, y, fill: count() }),
+        hexgrid(),
+        schemeColor('ylgnbu'),
+        marginLeft(0), marginRight(0), marginTop(0), marginBottom(0),
+        axisX(null), axisY(null),
+        width(700), height(500)
+      ),
+      plot(
+        rectX(
+          from(table),
+          { x: count(), y: bin(y), fill: color, inset: 0.5 }
+        ),
+        intervalY({ as: query }),
+        marginLeft(0), marginRight(0), marginTop(0), marginBottom(0),
+        domainY(Fixed), axisX(null), axisY(null),
+        width(40), height(500)
+      )
+    )
+  )
+);
+</script>
+  </body>
+</html>
