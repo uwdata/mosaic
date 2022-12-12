@@ -1,4 +1,5 @@
 import duckdb from 'duckdb';
+import { readFile } from 'node:fs/promises';
 import { loadJSON } from './load-json.js';
 import { mergeBuffers } from './merge-buffers.js';
 
@@ -35,6 +36,14 @@ export class DuckDB {
   async csv(tableName, fileName, options) {
     return this.exec(`CREATE TABLE ${tableName} AS SELECT *
       FROM read_csv_auto('${fileName}', SAMPLE_SIZE=-1);`);
+  }
+
+  async ipc(tableName, fileName) {
+    const bufName = `__ipc__${tableName}`;
+    const arrowData = await readFile(fileName);
+    this.con.register_buffer(bufName, [arrowData], true);
+    await this.exec(`CREATE TABLE ${tableName} AS SELECT * FROM ${bufName}`);
+    this.con.unregister_buffer(bufName);
   }
 
   prepare(sql) {

@@ -13,7 +13,7 @@ const {
   width, height, domainX, intervalX, Signal, Fixed
 } = vgplot;
 
-const table = 'data2';
+const table = 'flights';
 const brush = new Signal('brush');
 
 document.body.appendChild(
@@ -21,7 +21,7 @@ document.body.appendChild(
     plot(
       rectY(
         from(table, { filterBy: brush }),
-        { x: bin('u'), y: count(), fill: 'steelblue', inset: 0.5 }
+        { x: bin('delay'), y: count(), fill: 'steelblue', inset: 0.5 }
       ),
       intervalX({ as: brush }),
       domainX(Fixed),
@@ -31,7 +31,7 @@ document.body.appendChild(
     plot(
       rectY(
         from(table, { filterBy: brush }),
-        { x: bin('v'), y: count(), fill: 'steelblue', inset: 0.5 }
+        { x: bin('distance'), y: count(), fill: 'steelblue', inset: 0.5 }
       ),
       intervalX({ as: brush }),
       domainX(Fixed),

@@ -53,7 +53,7 @@ export class DensityMark extends Mark {
 
     let { min, max } = _stats.find(s => s.field === field);
     const domX = plot.getAttribute('domainX');
-    if (domX) {
+    if (Array.isArray(domX)) {
       [min, max] = domX;
     }
     this.extent = [min, max];

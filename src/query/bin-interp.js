@@ -1,7 +1,7 @@
 import { list } from './list.js';
 
 export function binInterp(input, x, lo, hi, n, weight) {
-  const p = `(${x} - ${lo}) * ${(n - 1) / (hi - lo)}`;
+  const p = `(${x} - ${lo}) * ${(n - 1) / (hi - lo)}::DOUBLE`;
   const w = weight && weight !== 1 ? `* ${weight}` : '';
   return `WITH
   bins AS (
