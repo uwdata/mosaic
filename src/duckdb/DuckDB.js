@@ -46,11 +46,11 @@ export class DuckDB {
       FROM read_csv_auto('${fileName}', ${opt});`);
   }
 
-  async ipc(tableName, fileName) {
+  async ipc(tableName, buffer) {
     const bufName = `__ipc__${tableName}`;
-    const arrowData = await readFile(fileName);
-    this.con.register_buffer(bufName, [arrowData], true, (error) => {
-      if (error) console.error(error);
+    const arrowData = ArrayBuffer.isView(buffer) ? buffer : await readFile(buffer);
+    this.con.register_buffer(bufName, [arrowData], true, err => {
+      if (err) console.error(err);
     });
     await this.exec(`CREATE TABLE ${tableName} AS SELECT * FROM ${bufName}`);
     this.con.unregister_buffer(bufName);

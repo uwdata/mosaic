@@ -31,4 +31,12 @@ describe('DuckDB', () => {
     });
   });
 
+  describe('ipc', () => {
+    it('loads an arrow ipc buffer', async () => {
+      await db.ipc('arrow', await db.arrowBuffer('SELECT * FROM penguins'));
+      const res = await db.query('SELECT count() AS count FROM arrow');
+      assert.strictEqual(res[0]?.count, 344);
+      await db.exec(`DROP TABLE arrow;`);
+    });
+  });
 });
