@@ -26,4 +26,4 @@ for await (const chunk of stream) {
 }
 
 // finish
-output.end();
+output.end(new Uint8Array(4));

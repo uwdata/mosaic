@@ -14,7 +14,7 @@ describe('DuckDB', () => {
   describe('arrowBuffer', () => {
     it('returns arrow ipc buffers', async () => {
       const buf = await db.arrowBuffer('SELECT * FROM penguins');
-      assert.strictEqual(buf.length, 22144);
+      assert.strictEqual(buf.length, 22148);
     });
   });
 
@@ -26,6 +26,7 @@ describe('DuckDB', () => {
       for await (const chunk of stream) {
         chunks.push(chunk);
       }
+      chunks.push(new Uint8Array(4)); // terminator
       assert.deepStrictEqual(mergeBuffers(chunks), ipcbuf);
     });
   });

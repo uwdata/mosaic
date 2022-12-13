@@ -49,7 +49,9 @@ export class DuckDB {
   async ipc(tableName, fileName) {
     const bufName = `__ipc__${tableName}`;
     const arrowData = await readFile(fileName);
-    this.con.register_buffer(bufName, [arrowData], true);
+    this.con.register_buffer(bufName, [arrowData], true, (error) => {
+      if (error) console.error(error);
+    });
     await this.exec(`CREATE TABLE ${tableName} AS SELECT * FROM ${bufName}`);
     this.con.unregister_buffer(bufName);
   }
@@ -88,7 +90,6 @@ export class DuckDB {
         if (err) {
           reject(err);
         } else {
-          result.pop(); // the last buffer in the result is 0x0
           resolve(mergeBuffers(result));
         }
       });
@@ -143,7 +144,6 @@ export class DuckDBStatement {
         if (err) {
           reject(err);
         } else {
-          result.pop(); // the last buffer in the result is 0x0
           resolve(mergeBuffers(result));
         }
       });
