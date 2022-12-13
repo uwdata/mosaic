@@ -32,10 +32,18 @@ export class DuckDB {
     return this;
   }
 
-  // TODO: options
-  async csv(tableName, fileName, options) {
+  async csv(tableName, fileName, options = {}) {
+    const opt = Object.entries({ sample_size: -1, ...options })
+      .map(([key, value]) => {
+        const t = typeof value;
+        const v = t === 'boolean' ? String(value).toUpperCase()
+          : t === 'string' ? `'${value}'`
+          : value;
+        return `${key.toUpperCase()}=${v}`;
+      })
+      .join(', ');
     return this.exec(`CREATE TABLE ${tableName} AS SELECT *
-      FROM read_csv_auto('${fileName}', SAMPLE_SIZE=-1);`);
+      FROM read_csv_auto('${fileName}', ${opt});`);
   }
 
   async ipc(tableName, fileName) {
