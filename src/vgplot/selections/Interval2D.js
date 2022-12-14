@@ -11,8 +11,8 @@ export class Interval2DSelection {
     this.brush = brush();
 
     this.brush.on('brush end', ({ selection }) => {
-      let xrange = null;
-      let yrange = null;
+      let xrange = undefined;
+      let yrange = undefined;
       if (selection) {
         const [a, b] = selection;
         xrange = [a[0], b[0]].map(this.xscale.invert).sort((a, b) => a - b);

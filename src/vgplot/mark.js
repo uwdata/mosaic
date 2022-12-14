@@ -122,7 +122,9 @@ export class Mark {
       q.order = order;
     }
 
-    if (type.startsWith('area') || type.startsWith('line')) {
+    // TODO: move to subclasses?
+    const { transform = true } = (source.options || {});
+    if (transform && (type.startsWith('area') || type.startsWith('line'))) {
       const field = select.x.field;
       const { min, max } = _stats.find(s => s.field === field);
       q.transform = [

@@ -11,7 +11,7 @@ export class Interval1DSelection {
     this.brush = channel === 'y' ? brushY() : brushX();
 
     this.brush.on('brush end', ({ selection }) => {
-      let range = null;
+      let range = undefined;
       if (selection) {
         range = selection.map(this.scale.invert).sort((a, b) => a - b);
       }

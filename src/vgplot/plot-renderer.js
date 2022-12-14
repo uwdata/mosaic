@@ -26,6 +26,7 @@ const ATTRIBUTE_MAP = new Map([
   ['labelY', 'y.label'],
   ['labelAnchorX', 'x.labelAnchor'],
   ['labelAnchorY', 'y.labelAnchor'],
+  ['scaleColor', 'color.type'],
   ['domainColor', 'color.domain'],
   ['rangeColor', 'color.range'],
   ['schemeColor', 'color.scheme'],
@@ -92,7 +93,7 @@ export function plotRenderer(plot) {
     const value = attributes[key];
     if (typeof value === 'symbol') {
       symbols.push(key);
-    } else {
+    } else if (value !== undefined) {
       setProperty(spec, specKey.split('.'), value);
     }
   }

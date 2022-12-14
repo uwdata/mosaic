@@ -7,11 +7,9 @@ function setAttribute(plot, name, value) {
       const v = Array.isArray(value)
         ? value[0].value
         : (value?.value || value);
-      // value.source ? value.value : value;
 
       plot.setAttribute(name, v);
-      // TODO: request redraw
-      // plot.update();
+      plot.update();
     });
   } else {
     plot.setAttribute(name, value);
@@ -77,6 +75,14 @@ export function gridY(value) {
   return attribute('gridY', value);
 }
 
+export function scaleX(value) {
+  return attribute('scaleX', value);
+}
+
+export function scaleY(value) {
+  return attribute('scaleY', value);
+}
+
 export function domainX(value) {
   return attribute('domainX', value);
 }
@@ -105,22 +111,6 @@ export function zeroY(value) {
   return attribute('zeroY', value);
 }
 
-export function domainColor(value) {
-  return attribute('domainColor', value);
-}
-
-export function rangeColor(value) {
-  return attribute('rangeColor', value);
-}
-
-export function schemeColor(value) {
-  return attribute('schemeColor', value);
-}
-
-export function interpolateColor(value) {
-  return attribute('interpolateColor', value);
-}
-
 export function labelX(value) {
   return attribute('labelX', value);
 }
@@ -135,4 +125,24 @@ export function labelAnchorX(value) {
 
 export function labelAnchorY(value) {
   return attribute('labelAnchorY', value);
+}
+
+export function scaleColor(value) {
+  return attribute('scaleColor', value);
+}
+
+export function domainColor(value) {
+  return attribute('domainColor', value);
+}
+
+export function rangeColor(value) {
+  return attribute('rangeColor', value);
+}
+
+export function schemeColor(value) {
+  return attribute('schemeColor', value);
+}
+
+export function interpolateColor(value) {
+  return attribute('interpolateColor', value);
 }
