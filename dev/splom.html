@@ -11,7 +11,7 @@
 const {
   mc, plot, hconcat, vconcat, from, dot, frame,
   domainX, domainY, domainColor, intervalXY,
-  width, height, axisX, axisY,
+  width, height, axisX, axisY, ticksX, ticksY,
   labelX, labelAnchorX, labelY, labelAnchorY,
   marginTop, marginBottom, marginLeft, marginRight,
   Signal, Fixed
@@ -23,30 +23,31 @@ const table = 'penguins';
 const brush = new Signal('brush');
 
 function scatter(x, y, row, col) {
+  const s = 135;
   return plot(
     frame({ stroke: '#ccc' }),
     dot(
       from(table, { filterBy: brush }),
       { x, y, fill: 'species', r: 2 }
     ),
-    intervalXY({ as: brush }),
+    intervalXY({ as: brush }), ticksX(3), ticksY(4),
     domainX(Fixed), domainY(Fixed), domainColor(Fixed),
     marginTop(5), marginRight(5),
     ...(col !== 0
-      ? [axisY(null), width(140), marginLeft(10)]
-      : [width(180), marginLeft(50), labelY(columns[row]), labelAnchorY('center')]
+      ? [axisY(null), width(s+10+5), marginLeft(10)]
+      : [width(s+50+5), marginLeft(50), labelY(columns[row]), labelAnchorY('center')]
     ),
     ...(row !== 3
-      ? [axisX(null), height(140), marginBottom(10)]
-      : [height(165), marginBottom(35), labelX(columns[col]), labelAnchorX('center')]
+      ? [axisX(null), height(s+10+5), marginBottom(10)]
+      : [height(s+35+5), marginBottom(35), labelX(columns[col]), labelAnchorX('center')]
     )
   )
 }
 
 document.body.appendChild(
-  vconcat(columns.slice().reverse().map((y, row) => {
-    return hconcat(columns.map((x, col) => scatter(x, y, row, col)))
-  }))
+  vconcat(columns.slice().reverse().map((y, j) =>
+    hconcat(columns.map((x, i) => scatter(x, y, j, i)))
+  ))
 );
 </script>
   </body>
