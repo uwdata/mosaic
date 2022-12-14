@@ -14,15 +14,14 @@ const {
   marginLeft, width, height, Signal, Fixed
 } = vgplot;
 
-const table = 'flights';
-const bandwidth = new Signal('bw', 10);
-const brush = new Signal('brush');
+const slider = document.querySelector('#slider');
+slider.addEventListener('input', evt => {
+  bandwidth.update(+evt.target.value);
+});
 
-document
-  .querySelector('#slider')
-  .addEventListener('input', evt => {
-    bandwidth.update(+evt.target.value);
-  });
+const table = 'flights';
+const bandwidth = new Signal('bw', +slider.value);
+const brush = new Signal('brush');
 
 document.body.appendChild(
   vconcat(
