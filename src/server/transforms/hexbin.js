@@ -15,10 +15,10 @@ export default function(q, sql, select, key, spec) {
   const [y1, y2] = domainY;
   const xspan = x2 - x1;
   const yspan = y2 - y1;
-  const xx = `(${width} * (${x} - ${x1}) / ${xspan})`;
-  const yy = `(${height} - ${height} * (${y} - ${y1}) / ${yspan})`;
+  const xx = `${width} * (${x} - ${x1}) / ${xspan}`;
+  const yy = `${height} * (${y2} - ${y}) / ${yspan}`;
 
-  // TODO add aggregates and dims
+  // TODO add groupby dims
   const subsel = {
     py: `(${yy} - ${oy}) / ${dy}`,
     pj: `ROUND(py)::INTEGER`,
