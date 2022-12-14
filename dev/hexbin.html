@@ -11,14 +11,17 @@
 const {
   mc, plot, vconcat, hconcat, from, hexbin, hexgrid, schemeColor,
   avg, bin, count, rectY, rectX,
-  marginLeft, marginRight, marginBottom, marginTop, axisX, axisY,
-  domainX, domainY, intervalX, intervalY, width, height, Signal, Fixed
+  marginLeft, marginRight, marginBottom, marginTop,
+  axisX, axisY, labelX, labelY, labelAnchorX, labelAnchorY,
+  domainX, domainY, intervalX, intervalY, width, height, Signal, Fixed,
+  scaleColor
 } = vgplot;
 
-const table = 'athletes';
-const x = 'weight';
-const y = 'height';
+const table = 'flights';
+const x = 'time';
+const y = 'delay';
 const color = 'steelblue';
+const binWidth = 10;
 const query = new Signal('query');
 
 document.body.appendChild(
@@ -29,18 +32,22 @@ document.body.appendChild(
         { x: bin(x), y: count(), fill: color, inset: 0.5 }
       ),
       intervalX({ as: query }),
-      marginLeft(0), marginRight(0), marginTop(0), marginBottom(0),
-      domainX(Fixed), axisX(null), axisY(null),
-      width(700), height(40)
+      marginLeft(5), marginRight(5), marginTop(30), marginBottom(0),
+      domainX(Fixed), axisX('top'), axisY(null),
+      labelX('hour'), labelAnchorX('center'),
+      width(710), height(70)
     ),
     hconcat(
       plot(
-        hexbin(from(table, { filterBy: query }), { x, y, fill: count() }),
-        hexgrid(),
+        hexbin(
+          from(table, { filterBy: query }),
+          { x, y, fill: count(), binWidth }
+        ),
+        hexgrid({ binWidth }),
         schemeColor('ylgnbu'),
-        marginLeft(0), marginRight(0), marginTop(0), marginBottom(0),
-        axisX(null), axisY(null),
-        width(700), height(500)
+        marginLeft(5), marginRight(0), marginTop(0), marginBottom(5),
+        axisX(null), axisY(null), scaleColor('log'),
+        width(705), height(505)
       ),
       plot(
         rectX(
@@ -48,9 +55,10 @@ document.body.appendChild(
           { x: count(), y: bin(y), fill: color, inset: 0.5 }
         ),
         intervalY({ as: query }),
-        marginLeft(0), marginRight(0), marginTop(0), marginBottom(0),
-        domainY(Fixed), axisX(null), axisY(null),
-        width(40), height(500)
+        marginLeft(0), marginRight(40), marginTop(0), marginBottom(5),
+        domainY(Fixed), axisX(null), axisY('right'),
+        labelY('delay'), labelAnchorY('center'),
+        width(80), height(505)
       )
     )
   )

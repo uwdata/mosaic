@@ -25,18 +25,26 @@ document.body.appendChild(
         { x: 't', y: 'v', fill: 'steelblue' }
       ),
       intervalX({ as: brush }),
-      width(600),
+      width(800),
       height(200)
     ),
     plot(
       areaY(
         from(table, { filterBy: brush }),
-        // from(table),
         { x: 't', y: 'v', fill: 'steelblue', clip: true }
       ),
-      // domainX(brush), // TODO: fix this case to work again
       domainY(Fixed),
-      width(600),
+      width(800),
+      height(200)
+    ),
+    plot(
+      areaY(
+        from(table),
+        { x: 't', y: 'v', fill: 'steelblue', clip: true }
+      ),
+      domainX(brush),
+      domainY(Fixed),
+      width(800),
       height(200)
     )
   )
