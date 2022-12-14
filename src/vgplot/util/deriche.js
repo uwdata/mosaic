@@ -5,9 +5,8 @@
 
 export function grid1d(n, values) {
   const grid = new Float64Array(n);
-  for (let i = 0; i < values.length; ++i) {
-    const { index, weight } = values[i];
-    grid[index] = weight;
+  for (const row of values) {
+    grid[row.index] = row.weight;
   }
   return grid;
 }

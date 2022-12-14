@@ -19,5 +19,5 @@ export function m4(input, x, y, xb, lb, ub, width) {
   UNNEST(${yl}) AS ${y}
 FROM ${input}
 GROUP BY (${bin(xb, lb, ub, width)})
-ORDER BY ${x};`
+ORDER BY ${x}`
 }

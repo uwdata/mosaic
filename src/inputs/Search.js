@@ -54,11 +54,11 @@ export class Search {
     const list = document.createElement('datalist');
     const id = `${this.id}_list`;
     list.setAttribute('id', id);
-    data.forEach(d => {
+    for (const d of data) {
       const opt = document.createElement('option');
       opt.setAttribute('value', d.list);
       list.append(opt);
-    });
+    }
     if (this.datalist) this.datalist.remove();
     this.element.appendChild(this.datalist = list);
     this.searchbox.setAttribute('list', id);

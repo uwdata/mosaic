@@ -12,11 +12,11 @@ export class RegressionMark extends Mark {
 
   data(data) {
     // regression line
-    this._line = data.flatMap(m => linePoints(m));
+    this._line = Array.from(data).flatMap(m => linePoints(m));
 
     // regression ci area
     const { ci, precision } = this;
-    this._area = ci ? data.flatMap(m => areaPoints(ci, precision, m)) : null;
+    this._area = ci ? Array.from(data).flatMap(m => areaPoints(ci, precision, m)) : null;
 
     return this;
   }

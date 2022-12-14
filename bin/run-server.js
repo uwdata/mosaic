@@ -1,5 +1,5 @@
 #! /usr/bin/env node
-import { DuckDB, JSONDataService, launchServer } from '../src/index.js';
+import { DuckDB, DataService, launchServer } from '../src/index.js';
 
 const db = new DuckDB();
 
@@ -10,4 +10,4 @@ await Promise.all([
   db.ipc('walk', 'data/random-walk.arrow')
 ]);
 
-launchServer(new JSONDataService(db));
+launchServer(new DataService(db));

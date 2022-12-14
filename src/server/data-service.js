@@ -10,17 +10,46 @@ import {
 } from '../query/index.js';
 import * as transforms from './transforms/index.js';
 
-export class JSONDataService {
-  constructor(sqlDatabase) {
-    this.sqlDatabase = sqlDatabase;
+export class DataService {
+  constructor(db) {
+    this.db = db;
+    this.running = false;
+    this.queue = [];
   }
 
-  async query(jsonQuery) {
-    const sql = jsonToSQL(jsonQuery);
-    console.log('JSON', JSON.stringify(jsonQuery, 0, 2));
-    console.log('SQL', sql);
-    return this.sqlDatabase.query(sql);
+  lock() {
+    if (this.running) {
+      return new Promise((resolve) => this.queue.push(resolve));
+    } else {
+      this.running = true;
+    }
   }
+
+  unlock() {
+    this.running = this.queue.length > 0;
+    if (this.running) {
+      this.queue.shift()();
+    }
+  }
+
+  query(jsonQuery) {
+    return this.db.query(sqlQuery(jsonQuery));
+  }
+
+  arrowBuffer(jsonQuery) {
+    return this.db.arrowBuffer(sqlQuery(jsonQuery));
+  }
+
+  arrowStream(jsonQuery) {
+    return this.db.arrowStream(sqlQuery(jsonQuery));
+  }
+}
+
+function sqlQuery(jsonQuery) {
+  console.log('JSON', JSON.stringify(jsonQuery, 0, 2));
+  const sql = jsonToSQL(jsonQuery);
+  console.log('SQL', sql);
+  return sql;
 }
 
 function jsonToSQL(q) {
@@ -45,6 +74,9 @@ function jsonToSQL(q) {
       const arg = (c.distinct ? 'DISTINCT ' : '') + (field || '');
       const filter = c.filter ? ` FILTER (${c.filter})` : '';
       select[key] = `${aggregate}(${arg})${filter}`;
+      if (aggregate === 'count') {
+        select[key] += '::DOUBLE';
+      }
     } else if (transform) {
       dims.push(f);
       transforms[transform](q, sql, select, key, c);

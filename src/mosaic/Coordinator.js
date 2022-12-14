@@ -1,3 +1,4 @@
+import { tableFromIPC } from 'apache-arrow';
 import { FilterGroup } from './FilterGroup.js';
 
 export class Coordinator {
@@ -10,7 +11,7 @@ export class Coordinator {
 
   async query(query) {
     const t0 = Date.now();
-    const response = await fetch(this.uri, {
+    const pending = fetch(this.uri, {
       method: 'POST',
       mode: 'cors',
       cache: 'no-cache',
@@ -18,9 +19,10 @@ export class Coordinator {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(query)
     });
-    const json = await response.json();
-    console.log(`Query time: ${Date.now()-t0} (${json.length || 1})`);
-    return json;
+    // const table = await (await pending).json();
+    const table = await tableFromIPC(pending);
+    console.log(`Query time: ${Date.now()-t0}`);
+    return table;
   }
 
   async stats(table, field) {
@@ -42,8 +44,10 @@ export class Coordinator {
       }
     });
 
-    return (statsCache[key] = q
-      .then(result => ({ table, field, ...result[0] })));
+    return (statsCache[key] = q.then(result => {
+      const stats = Array.from(result)[0];
+      return { table, field, ...stats };
+    }));
   }
 
   async connect(client) {

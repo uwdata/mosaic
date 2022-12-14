@@ -36,15 +36,15 @@ export default function(q, sql, select, key, spec) {
   END`
   };
 
-  for (const [key, c] of Object.entries(q.select)) {
+  for (const c of Object.values(q.select)) {
     const { aggregate, field } = c;
     if (aggregate && field) {
       subsel[field] = field;
     }
   }
 
-  select.x = `(${key}[1] + 0.5 * (${key}[2] & 1)) * ${dx} + ${ox}`;
-  select.y = `${key}[2] * ${dy} + ${oy}`;
+  select.x = `((${key}[1] + 0.5 * (${key}[2] & 1)) * ${dx} + ${ox})::DOUBLE`;
+  select.y = `(${key}[2] * ${dy} + ${oy})::DOUBLE`;
   sql.from({
     hex: from(q.from).select(subsel).where(
       isNotNull(x),

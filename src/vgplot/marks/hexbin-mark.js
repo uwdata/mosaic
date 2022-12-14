@@ -9,12 +9,6 @@ export class HexbinMark extends Mark {
 
   data(data) {
     this._data = data;
-    // const dx = this.binWidth;
-    // const dy = dx * (1.5 / Math.sqrt(3));
-    // data.forEach(d => {
-    //   d.x = (d.hx + (d.hy & 1) / 2) * dx + 0.5;
-    //   d.y = d.hy * dy;
-    // });
     this.plot.setAttribute('scaleX', 'identity');
     this.plot.setAttribute('scaleY', 'identity');
     return this;

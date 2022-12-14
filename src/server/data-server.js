@@ -1,5 +1,11 @@
 import http from 'node:http';
 
+function handleError(res, code, message) {
+  console.error(message);
+  res.writeHead(code);
+  res.end();
+}
+
 export function launchServer(dataService, {
   port = 3000
 } = {}) {
@@ -18,29 +24,51 @@ export function launchServer(dataService, {
     }
 
     if (req.method !== 'POST') {
-      res.end(JSON.stringify({ error: true }));
+      handleError(res, 400, `Unsupported HTTP method: ${req.method}`);
       return;
     }
-
-    const onError = err => {
-      console.error(err);
-      res.end(JSON.stringify({ error: true }));
-    };
 
     const chunks = [];
     req.on('data', chunk => chunks.push(chunk));
     req.on('end', async () => {
+      const t0 = Date.now();
+      let query;
+
+      // parse incoming query
       try {
-        const query = JSON.parse(Buffer.concat(chunks));
-        const t0 = Date.now();
-        const result = await dataService.query(query);
-        console.log('QUERY', Date.now() - t0);
-        res.end(JSON.stringify(result));
+        query = JSON.parse(Buffer.concat(chunks));
       } catch (err) {
-        onError(err);
+        handleError(res, 400, err);
+        return;
       }
+
+      // service request
+      try {
+        await dataService.lock();
+
+        // ARROW BUFFER
+        // const result = await dataService.arrowBuffer(query);
+        // res.end(result);
+
+        // ARROW STREAM
+        const result = await dataService.arrowStream(query);
+        for await (const chunk of result) {
+          res.write(chunk);
+        }
+        res.end();
+
+        // JSON
+        // const result = await dataService.query(query);
+        // res.end(JSON.stringify(result));
+      } catch (err) {
+        handleError(res, 500, err);
+      } finally {
+        dataService.unlock();
+      }
+
+      console.log('REQUEST', Date.now() - t0);
     });
-    req.on('error', onError);
+    req.on('error', () => handleError(res, 500, err));
   });
 
   app.listen(port);
