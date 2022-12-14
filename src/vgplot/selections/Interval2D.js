@@ -25,8 +25,8 @@ export class Interval2DSelection {
           source: this.mark,
           type: 'and',
           value: [
-            { field: this.xfield, type: 'range', value: xrange },
-            { field: this.yfield, type: 'range', value: yrange }
+            { channel: 'x', field: this.xfield, type: 'range', value: xrange },
+            { channel: 'y', field: this.yfield, type: 'range', value: yrange }
           ]
         });
       }

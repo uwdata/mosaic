@@ -140,7 +140,6 @@ export function plotRenderer(plot) {
 
   // initialize interactive selections
   for (const sel of plot.selections) {
-    // console.log('INIT SELECTION', svg);
     sel.init(svg);
   }
 

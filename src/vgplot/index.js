@@ -92,6 +92,7 @@ export {
 } from './directives/plots.js';
 
 export {
+  highlight,
   intervalX,
   intervalY,
   intervalXY

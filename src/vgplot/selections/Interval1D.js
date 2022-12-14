@@ -20,6 +20,7 @@ export class Interval1DSelection {
         this.signal.resolve({
           source: this.mark,
           field: this.field,
+          channel,
           type: 'range',
           value: range
         });

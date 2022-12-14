@@ -68,7 +68,7 @@ export class Mark {
   }
 
   data(data) {
-    this._data = data;
+    this._data = Array.from(data);
     return this;
   }
 
