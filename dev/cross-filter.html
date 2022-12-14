@@ -31,6 +31,16 @@ document.body.appendChild(
     plot(
       rectY(
         from(table, { filterBy: brush }),
+        { x: bin('time'), y: count(), fill: 'steelblue', inset: 0.5 }
+      ),
+      intervalX({ as: brush }),
+      domainX(Fixed),
+      width(600),
+      height(200)
+    ),
+    plot(
+      rectY(
+        from(table, { filterBy: brush }),
         { x: bin('distance'), y: count(), fill: 'steelblue', inset: 0.5 }
       ),
       intervalX({ as: brush }),

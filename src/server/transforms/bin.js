@@ -1,8 +1,7 @@
 export default function(q, sql, select, key, spec) {
-  const { field, min, max, options: { steps = 20, offset = 0 } = {} } = spec;
+  const { field, options: { min, max, steps, offset = 0 } } = spec;
   const delta = `(${field} - ${min})`;
-  const span = `(${max} - ${min})`;
-  const step = `${steps}::DOUBLE`;
+  const alpha = `${(max - min) / steps}::DOUBLE`;
   const off = offset ? '1 + ' : '';
-  select[key] = `${min} + (${span} / ${step}) * (${off}FLOOR(${step} * ${delta} / ${span}))`;
+  select[key] = `${min} + ${alpha} * (${off}FLOOR(${delta} / ${alpha}))`;
 }
