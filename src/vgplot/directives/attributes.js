@@ -111,6 +111,14 @@ export function zeroY(value) {
   return attribute('zeroY', value);
 }
 
+export function ticksX(value) {
+  return attribute('ticksX', value);
+}
+
+export function ticksY(value) {
+  return attribute('ticksY', value);
+}
+
 export function labelX(value) {
   return attribute('labelX', value);
 }

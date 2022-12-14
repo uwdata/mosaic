@@ -38,6 +38,8 @@ export {
   niceY,
   zeroX,
   zeroY,
+  ticksX,
+  ticksY,
   labelX,
   labelY,
   labelAnchorX,

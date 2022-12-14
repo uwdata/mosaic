@@ -22,6 +22,8 @@ const ATTRIBUTE_MAP = new Map([
   ['niceY', 'y.nice'],
   ['zeroX', 'x.zero'],
   ['zeroY', 'y.zero'],
+  ['ticksX', 'x.ticks'],
+  ['ticksY', 'y.ticks'],
   ['labelX', 'x.label'],
   ['labelY', 'y.label'],
   ['labelAnchorX', 'x.labelAnchor'],
