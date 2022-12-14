@@ -23,9 +23,10 @@ export class Highlight {
     const test = makePredicate(this.signal.value);
     const opacity = this.opacity;
 
-    const { children } = svg.querySelector('g[aria-label="dot"]');
-    for (let i = 0; i < children.length; ++i) {
-      const node = children[i];
+    const i = this.mark.plot.marks.indexOf(this.mark) || 0;
+    const nodes = svg.querySelectorAll(`g[aria-description="mark-${i}"] > *`);
+    for (let i = 0; i < nodes.length; ++i) {
+      const node = nodes[i];
       node.setAttribute('opacity', test(node.__data__) ? 1.0 : opacity);
     }
   }

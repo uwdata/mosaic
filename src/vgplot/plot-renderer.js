@@ -101,12 +101,14 @@ export function plotRenderer(plot) {
   }
 
   // populate marks
+  let i = -1;
   for (const mark of marks) {
+    ++i;
     for (const { type, data, options } of mark.plotSpecs()) {
       if (type === 'frame' || type === 'hexgrid') {
-        spec.marks.push(Plot[type](options));
+        spec.marks.push(Plot[type]({ ...options, ariaDescription: `mark-${i}` }));
       } else {
-        spec.marks.push(Plot[type](data, options));
+        spec.marks.push(Plot[type](data, { ...options, ariaDescription: `mark-${i}` }));
       }
     }
   }
