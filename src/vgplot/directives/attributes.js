@@ -75,6 +75,14 @@ export function gridY(value) {
   return attribute('gridY', value);
 }
 
+export function lineX(value) {
+  return attribute('lineX', value);
+}
+
+export function lineY(value) {
+  return attribute('lineY', value);
+}
+
 export function scaleX(value) {
   return attribute('scaleX', value);
 }
@@ -127,6 +135,22 @@ export function tickFormatY(value) {
   return attribute('tickFormatY', value);
 }
 
+export function tickRotateX(value) {
+  return attribute('tickRotateX', value);
+}
+
+export function tickRotateY(value) {
+  return attribute('tickRotateY', value);
+}
+
+export function tickSizeX(value) {
+  return attribute('tickSizeX', value);
+}
+
+export function tickSizeY(value) {
+  return attribute('tickSizeY', value);
+}
+
 export function labelX(value) {
   return attribute('labelX', value);
 }
@@ -141,6 +165,14 @@ export function labelAnchorX(value) {
 
 export function labelAnchorY(value) {
   return attribute('labelAnchorY', value);
+}
+
+export function labelOffsetX(value) {
+  return attribute('labelOffsetX', value);
+}
+
+export function labelOffsetY(value) {
+  return attribute('labelOffsetY', value);
 }
 
 export function scaleColor(value) {
