@@ -114,9 +114,13 @@ function jsonToSQL(q) {
 }
 
 function and(clauses) {
-  return clauses
-    .map(c => clause(c)).filter(x => x)
-    .join(' AND ');
+  const c = clauses.map(c => clause(c)).filter(x => x);
+  return c.length > 1 ? `(${c.join(' AND ')})` : c[0] || '';
+}
+
+function or(clauses) {
+  const c = clauses.map(c => clause(c)).filter(x => x);
+  return c.length > 1 ? `(${c.join(' OR ')})` : c[0] || '';
 }
 
 function clause(c) {
@@ -124,6 +128,8 @@ function clause(c) {
   switch (c.type) {
     case 'and':
       return and(c.value); // TODO: parens?
+    case 'or':
+      return or(c.value);
     case 'equals':
       return `${ref(c.field)} = ${format(c.value)}`;
     case 'notnull':
@@ -139,7 +145,7 @@ function clause(c) {
     case 'regexp':
       return regexp(ref(c.field), format(c.value));
     default:
-      throw new Error(`Unsupported clause: ${JSON.stringify(clause).slice(0, 50)}`);
+      throw new Error(`Unsupported clause: ${JSON.stringify(c).slice(0, 50)}`);
   }
 }
 
