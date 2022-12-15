@@ -22,7 +22,7 @@ const columns = ['bill_length', 'bill_depth', 'flipper_length', 'body_mass'];
 const table = 'penguins';
 const brush = new Signal('brush');
 
-function scatter(x, y, row, col) {
+function scatter(x, y, row, col, n) {
   const s = 135;
   return plot(
     frame({ stroke: '#ccc' }),
@@ -39,7 +39,7 @@ function scatter(x, y, row, col) {
       ? [axisY(null), width(s+10+5), marginLeft(10)]
       : [width(s+50+5), marginLeft(50), labelY(columns[row]), labelAnchorY('center')]
     ),
-    ...(row !== 3
+    ...(row !== (n - 1)
       ? [axisX(null), height(s+10+5), marginBottom(10)]
       : [height(s+35+5), marginBottom(35), labelX(columns[col]), labelAnchorX('center')]
     )
@@ -48,7 +48,7 @@ function scatter(x, y, row, col) {
 
 document.body.appendChild(
   vconcat(columns.slice().reverse().map((y, j) =>
-    hconcat(columns.map((x, i) => scatter(x, y, j, i)))
+    hconcat(columns.map((x, i) => scatter(x, y, j, i, columns.length)))
   ))
 );
 </script>
