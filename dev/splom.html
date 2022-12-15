@@ -10,7 +10,7 @@
 <script>
 const {
   mc, plot, hconcat, vconcat, from, dot, frame,
-  domainX, domainY, domainColor, intervalXY,
+  domainX, domainY, domainColor, intervalXY, highlight,
   width, height, axisX, axisY, ticksX, ticksY,
   labelX, labelAnchorX, labelY, labelAnchorY,
   marginTop, marginBottom, marginLeft, marginRight,
@@ -27,10 +27,12 @@ function scatter(x, y, row, col) {
   return plot(
     frame({ stroke: '#ccc' }),
     dot(
-      from(table, { filterBy: brush }),
+      from(table),
       { x, y, fill: 'species', r: 2 }
     ),
-    intervalXY({ as: brush }), ticksX(3), ticksY(4),
+    intervalXY({ as: brush }),
+    highlight(brush, { opacity: 0.1 }),
+    ticksX(3), ticksY(4),
     domainX(Fixed), domainY(Fixed), domainColor(Fixed),
     marginTop(5), marginRight(5),
     ...(col !== 0

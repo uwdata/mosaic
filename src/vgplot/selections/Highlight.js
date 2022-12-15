@@ -1,33 +1,47 @@
 export class Highlight {
-  constructor(mark, signal, opacity) {
+  constructor(mark, signal, channels = { opacity: 0.1 }) {
     this.mark = mark;
     this.signal = signal;
-    this.opacity = opacity;
-
+    this.channels = Object.entries(channels);
     this.pending = false;
     this.signal.addListener(() => {
       if (!this.pending) {
         this.pending = true;
-        requestAnimationFrame(() => {
-          this.init(this.svg);
-        });
+        requestAnimationFrame(() => this.update());
       }
     });
   }
 
   init(svg) {
     this.svg = svg;
-    this.pending = false;
-    if (!svg) return;
+    const values = this.values = [];
+    const nodes = this.nodes
+      = svg.querySelectorAll(`[data-index="${this.mark.index}"] > *`);
 
-    const test = makePredicate(this.signal.value);
-    const opacity = this.opacity;
-
-    const i = this.mark.plot.marks.indexOf(this.mark) || 0;
-    const nodes = svg.querySelectorAll(`g[aria-description="mark-${i}"] > *`);
+    const { channels } = this;
     for (let i = 0; i < nodes.length; ++i) {
       const node = nodes[i];
-      node.setAttribute('opacity', test(node.__data__) ? 1.0 : opacity);
+      values.push(channels.map(c => node.getAttribute(c[0])));
+    }
+
+    this.update();
+  }
+
+  update() {
+    this.pending = false;
+    const { svg, nodes, channels, signal, values } = this;
+    if (!svg) return;
+
+    const test = makePredicate(signal.value);
+    for (let i = 0; i < nodes.length; ++i) {
+      const node = nodes[i];
+      const base = values[i];
+      const t = test(node.__data__);
+      // TODO: handle inherited values / remove attributes
+      for (let j = 0; j < channels.length; ++j) {
+        const c = channels[j];
+        node.setAttribute(c[0], t ? base[j] : c[1]);
+      }
     }
   }
 }

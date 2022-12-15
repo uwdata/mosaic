@@ -48,7 +48,9 @@ export {
   domainColor,
   rangeColor,
   schemeColor,
-  interpolateColor
+  interpolateColor,
+  domainR,
+  rangeR
 } from './directives/attributes.js';
 
 export {
@@ -95,5 +97,9 @@ export {
   highlight,
   intervalX,
   intervalY,
-  intervalXY
+  intervalXY,
+  select,
+  selectX,
+  selectY,
+  selectColor
 } from './directives/selections';

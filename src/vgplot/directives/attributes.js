@@ -154,3 +154,11 @@ export function schemeColor(value) {
 export function interpolateColor(value) {
   return attribute('interpolateColor', value);
 }
+
+export function domainR(value) {
+  return attribute('domainR', value);
+}
+
+export function rangeR(value) {
+  return attribute('rangeR', value);
+}

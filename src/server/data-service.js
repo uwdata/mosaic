@@ -124,19 +124,44 @@ function clause(c) {
   switch (c.type) {
     case 'and':
       return and(c.value); // TODO: parens?
+    case 'equals':
+      return `${ref(c.field)} = ${format(c.value)}`;
     case 'notnull':
       return isNotNull(ref(c.field));
     case 'range':
-      return isInRange(ref(c.field), c.value);
+      return isInRange(ref(c.field), formatRange(c.value));
     case 'prefix':
-      return startsWith(ref(c.field), c.value);
+      return startsWith(ref(c.field), format(c.value));
     case 'suffix':
-      return endsWith(ref(c.field), c.value);
+      return endsWith(ref(c.field), format(c.value));
     case 'contains':
-      return contains(ref(c.field), c.value);
+      return contains(ref(c.field), format(c.value));
     case 'regexp':
-      return regexp(ref(c.field), c.value);
+      return regexp(ref(c.field), format(c.value));
     default:
       throw new Error(`Unsupported clause: ${JSON.stringify(clause).slice(0, 50)}`);
   }
+}
+
+function format(value) {
+  let d;
+  switch (typeof value) {
+    case 'string':
+      if (value.endsWith('Z') && !Number.isNaN(+(d = new Date(value)))) {
+        // TODO: date vs. timestamp
+        return `MAKE_DATE(${d.getFullYear()}, ${d.getMonth()+1}, ${d.getDate()})`;
+      } else {
+        return `'${value}'`;
+      }
+    case 'boolean':
+      return value ? 'TRUE' : 'FALSE';
+    case 'object':
+      throw new Error('Unsupported value type'); // TODO
+    default:
+      return value;
+  }
+}
+
+function formatRange(range) {
+  return range.map(format);
 }

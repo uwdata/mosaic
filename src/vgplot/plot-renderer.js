@@ -32,7 +32,9 @@ const ATTRIBUTE_MAP = new Map([
   ['domainColor', 'color.domain'],
   ['rangeColor', 'color.range'],
   ['schemeColor', 'color.scheme'],
-  ['interpolateColor', 'color.interpolate']
+  ['interpolateColor', 'color.interpolate'],
+  ['domainR', 'r.domain'],
+  ['rangeR', 'r.range']
 ]);
 
 function setProperty(object, path, value) {
@@ -101,20 +103,30 @@ export function plotRenderer(plot) {
   }
 
   // populate marks
-  let i = -1;
+  const indices = [];
   for (const mark of marks) {
-    ++i;
     for (const { type, data, options } of mark.plotSpecs()) {
       if (type === 'frame' || type === 'hexgrid') {
-        spec.marks.push(Plot[type]({ ...options, ariaDescription: `mark-${i}` }));
+        spec.marks.push(Plot[type](options));
       } else {
-        spec.marks.push(Plot[type](data, { ...options, ariaDescription: `mark-${i}` }));
+        spec.marks.push(Plot[type](data, options));
       }
+      indices.push(mark.index);
     }
   }
 
   // render plot
   const svg = Plot.plot(spec);
+
+  // annotate svg with mark indices
+  let index = -1;
+  for (const child of svg.children) {
+    const skip = child.nodeName === 'style' ||
+      (child.getAttribute('aria-label') || '').endsWith('-axis');
+    if (!skip) {
+      child.setAttribute('data-index', indices[++index]);
+    }
+  }
 
   // set fixed entries
   symbols.forEach(key => {
@@ -122,15 +134,10 @@ export function plotRenderer(plot) {
     if (value === Fixed) {
       let scale;
       switch (key) {
-        case 'domainY':
-          scale = 'y';
-          break;
-        case 'domainX':
-          scale = 'x';
-          break;
-        case 'domainColor':
-          scale = 'color';
-          break;
+        case 'domainY': scale = 'y'; break;
+        case 'domainX': scale = 'x'; break;
+        case 'domainColor': scale = 'color'; break;
+        case 'domainR': scale = 'r'; break;
         default:
           throw new Error(`Unsupported fixed attribute: ${key}`);
       }

@@ -64,6 +64,7 @@ export class Plot {
 
   addMark(mark) {
     mark.plot = this;
+    mark.index = this.marks.length;
     this.marks.push(mark);
   }
 

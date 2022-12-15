@@ -27,23 +27,23 @@ export function desc(field) {
 
 export function isInRange(field, extent) {
   const [min, max] = extent;
-  return `${min} <= ${field} AND ${field} <= ${max}`;
+  return `${field} BETWEEN ${min} AND ${max}`;
 }
 
 export function startsWith(field, text) {
-  return `prefix(${field}, '${text}')`;
+  return `prefix(${field}, ${text})`;
 }
 
 export function endsWith(field, text) {
-  return `suffix(${field}, '${text}')`;
+  return `suffix(${field}, ${text})`;
 }
 
 export function contains(field, text) {
-  return `contains(${field}, '${text}')`;
+  return `contains(${field}, ${text})`;
 }
 
 export function regexp(field, regexp) {
-  return `regexp_matches(${field}, '${regexp}')`;
+  return `regexp_matches(${field}, ${regexp})`;
 }
 
 export function isNull(field) {
