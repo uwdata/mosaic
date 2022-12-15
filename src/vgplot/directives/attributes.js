@@ -119,6 +119,14 @@ export function ticksY(value) {
   return attribute('ticksY', value);
 }
 
+export function tickFormatX(value) {
+  return attribute('tickFormatX', value);
+}
+
+export function tickFormatY(value) {
+  return attribute('tickFormatY', value);
+}
+
 export function labelX(value) {
   return attribute('labelX', value);
 }

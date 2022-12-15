@@ -40,6 +40,8 @@ export {
   zeroY,
   ticksX,
   ticksY,
+  tickFormatX,
+  tickFormatY,
   labelX,
   labelY,
   labelAnchorX,

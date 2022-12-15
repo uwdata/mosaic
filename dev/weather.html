@@ -12,7 +12,7 @@ const {
   mc, plot, vconcat, from, dot, barX,
   bin, count, intervalX, highlight, selectY,
   domainXY, domainX, domainY, domainColor, rangeColor, domainR, rangeR,
-  labelY,
+  tickFormatX, labelY,
   width, Fixed, Signal
 } = vgplot;
 
@@ -35,7 +35,7 @@ document.body.appendChild(
       ),
       intervalX({ as: range }),
       highlight(range, { fill: '#eee' }),
-      domainXY(Fixed),
+      domainXY(Fixed), tickFormatX('%b'),
       rangeR([2, 10]), domainR(Fixed),
       width(800),
       ...colors
