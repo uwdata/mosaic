@@ -19,6 +19,9 @@ export class Table {
     this.element = document.createElement('div');
     this.element.setAttribute('id', this.id);
     this.element.value = this;
+    if (this.options.width) {
+      this.element.style.maxWidth = `${this.options.width}px`;
+    }
     this.element.style.maxHeight = `${this.options.height || 500}px`;
     this.element.style.overflow = 'auto';
 
