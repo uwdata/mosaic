@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Athletes</title>
+    <script src="../dist/vgplot.js"></script>
+    <link href="styles.css" rel="stylesheet">
+  </head>
+  <body>
+    <h1>Athletes</h1>
+<script>
+const {
+  mc, vconcat, hconcat, menu, search, table, plot, from,
+  dot, regressionY, domainXY, domainColor, Signal, Fixed
+} = vgplot;
+
+const query = new Signal('query');
+const tbl = 'athletes';
+
+document.body.appendChild(
+  vconcat(
+    hconcat(
+      menu({ label: 'Sport', table: tbl, field: 'sport', as: query }),
+      menu({ label: 'Sex', table: tbl, field: 'sex', as: query }),
+      search({ label: 'Name', table: tbl, field: 'name', type: 'contains', as: query })
+    ),
+    plot(
+      dot(
+        from(tbl, { filterBy: query }),
+        { x: 'weight', y: 'height', fill: 'sex', r: 2, opacity: 0.5 }
+      ),
+      regressionY(
+        from(tbl, { filterBy: query }),
+        { x: 'weight', y: 'height', stroke: 'sex' }
+      ),
+      domainXY(Fixed),
+      domainColor(Fixed)
+    ),
+    table({ table: tbl, height: 300, filterBy: query })
+  )
+);
+</script>
+  </body>
+</html>

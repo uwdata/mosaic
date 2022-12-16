@@ -99,7 +99,9 @@ export {
   plot,
   hconcat,
   vconcat,
+  menu,
   search,
+  table,
   mc
 } from './directives/plots.js';
 

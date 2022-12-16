@@ -7,6 +7,7 @@ export class Query {
     this._groupby = [];
     this._orderby = [];
     this._limit = null;
+    this._offset = null;
     this._on = []; // TODO support joins
   }
 
@@ -20,6 +21,7 @@ export class Query {
     q._groupby = this._groupby;
     q._orderby = this._orderby;
     q._limit = this._limit;
+    q._offset = this._offset;
     return q;
   }
 
@@ -64,15 +66,24 @@ export class Query {
     return this;
   }
 
+  offset(value) {
+    this._offset = +value;
+    return this;
+  }
+
   toSQL() {
-    const { _with, _select, _from, _where, _groupby, _orderby, _limit } = this;
+    const {
+      _with, _select, _from, _where,
+      _groupby, _orderby, _limit, _offset
+    } = this;
     return (_with ? 'WITH' + cteList(_with) + '\n' : '') +
       'SELECT\n  ' + toAsList(_select, ',\n  ') +
       '\nFROM ' + toAsList(_from) +
       (_where.length ? '\nWHERE\n  ' + toList(_where, ' AND\n  ') : '') +
       (_groupby.length ? '\nGROUP BY ' + toList(_groupby) : '') +
       (_orderby.length ? '\nORDER BY ' + toList(_orderby) : '') +
-      (_limit != null ? '\nLIMIT ' + (+_limit) : '');
+      (_limit != null ? '\nLIMIT ' + (+_limit) : '') +
+      (_offset ? '\nOFFSET ' + _offset : '');
   }
 
   toString() {

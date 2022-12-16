@@ -26,6 +26,14 @@ export class FilterGroup {
     return this;
   }
 
+  query(client, query) {
+    const where = buildFilter(this.selections, client);
+    if (where.length) {
+      Object.assign(query, { where });
+    }
+    return query;
+  }
+
   async update() {
     const { mc, resolve, selections, clients } = this;
     let queries = [];
@@ -68,6 +76,7 @@ export class FilterGroup {
 function buildFilter(selections, client) {
   const q = [];
   selections.forEach(sel => {
+    if (sel == null) return;
     for (const entry of sel) {
       const { source, field, type, value } = entry;
       if (source !== client) {

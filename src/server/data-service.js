@@ -32,6 +32,10 @@ export class DataService {
     }
   }
 
+  pragma(command) {
+    return this.db.query(`PRAGMA ${command}`);
+  }
+
   query(jsonQuery) {
     return this.db.query(sqlQuery(jsonQuery));
   }
@@ -98,6 +102,14 @@ function jsonToSQL(q) {
 
   if (q.order) {
     sql.orderby(q.order.map(o => ref(o.field) + (o.desc ? ' DESC' : '')));
+  }
+
+  if (q.limit) {
+    sql.limit(q.limit);
+  }
+
+  if (q.offset) {
+    sql.offset(q.offset);
   }
 
   let query = sql.toString();

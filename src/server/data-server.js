@@ -42,24 +42,27 @@ export function launchServer(dataService, {
         return;
       }
 
-      // service request
+      // execute query
       try {
         await dataService.lock();
 
-        // ARROW BUFFER
-        // const result = await dataService.arrowBuffer(query);
-        // res.end(result);
-
-        // ARROW STREAM
-        const result = await dataService.arrowStream(query);
-        for await (const chunk of result) {
-          res.write(chunk);
+        if (query.pragma) {
+          const result = await dataService.pragma(query.pragma);
+          res.end(JSON.stringify(result));
+        } else {
+          if (query.format === 'json') {
+            // JSON
+            const result = await dataService.query(query);
+            res.end(JSON.stringify(result));
+          } else {
+            // ARROW STREAM
+            const chunks = await dataService.arrowStream(query);
+            for await (const chunk of chunks) {
+              res.write(chunk);
+            }
+            res.end();
+          }
         }
-        res.end();
-
-        // JSON
-        // const result = await dataService.query(query);
-        // res.end(JSON.stringify(result));
       } catch (err) {
         handleError(res, 500, err);
       } finally {

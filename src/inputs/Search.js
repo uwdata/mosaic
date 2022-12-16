@@ -13,6 +13,7 @@ export class Search {
     this.signal = options.as;
 
     this.element = document.createElement('div');
+    this.element.setAttribute('class', 'input');
     this.element.value = this;
 
     if (this.options.label) {
@@ -86,9 +87,5 @@ export class Search {
         list: { field: fields[0], distinct: true }
       }
     } : null;
-  }
-
-  addSelection(sel) {
-    this.selections.push(sel);
   }
 }

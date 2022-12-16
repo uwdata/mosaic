@@ -1,4 +1,7 @@
+import { Menu } from '../../inputs/Menu.js';
 import { Search } from '../../inputs/Search.js';
+import { Table } from '../../inputs/Table.js';
+
 import { Coordinator } from '../../mosaic/Coordinator.js';
 import { Concat } from '../concat.js';
 import { Plot } from '../plot.js';
@@ -11,10 +14,22 @@ import { Plot } from '../plot.js';
 // TODO move this elsewhere...
 export const mc = new Coordinator();
 
+export function menu(options) {
+  const input = new Menu(options);
+  mc.connect(input);
+  return input.element;
+}
+
 export function search(options) {
   const s = new Search(options);
   mc.connect(s);
   return s.element;
+}
+
+export function table(options) {
+  const t = new Table(options);
+  mc.connect(t);
+  return t.element;
 }
 
 export function plot(...directives) {
