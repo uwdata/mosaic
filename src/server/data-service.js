@@ -97,7 +97,7 @@ function jsonToSQL(q) {
   }
 
   if (q.order) {
-    sql.orderby(q.order.map(o => ref(o.field) + (o.desc ? ' DESC' : '')));
+    sql.orderby(q.order.map(o => ref(o.field) + (o.desc ? ' DESC NULLS LAST' : '')));
   }
 
   if (q.limit) {

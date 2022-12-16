@@ -19,6 +19,7 @@ label { margin-right: 0.5em; }
 }
 
 table {
+  position: relative;
   table-layout: fixed;
   border-collapse: separate;
   border-spacing: 0;
@@ -34,9 +35,9 @@ table {
 }
 
 thead tr th {
-  position: 'sticky';
+  position: sticky;
   top: 0;
-  background: '#fff';
+  background: #fff;
   cursor: ns-resize;
   border-bottom: solid 1px #ccc;
 }

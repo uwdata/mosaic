@@ -106,21 +106,21 @@ export class Coordinator {
       group.filter(client).where(filter);
     }
 
+    // query handler
+    const handle = async q => {
+      q = group ? group.query(client, q) : q;
+      const data = await this.query(q);
+      client.data(data).update();
+    };
+
     // register request handler, if defined
     if (client.request) {
-      client.request.addListener(async q => {
-        q = group ? group.query(client, q) : q;
-        const data = await this.query(q);
-        client.data(data, true).update();
-      });
+      client.request.addListener(handle);
     }
 
     // TODO analyze / consolidate queries?
     const q = client.query?.();
-    if (q) {
-      const data = await this.query(q);
-      client.data(data).update();
-    }
+    if (q) handle(q);
   }
 
   async resolveFields(list) {

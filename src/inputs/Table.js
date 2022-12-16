@@ -12,6 +12,10 @@ export class Table {
     this.pending = false;
     this.id = `table-${++_id}`;
 
+    this.sortHeader = null;
+    this.sortField = null;
+    this.sortDesc = false;
+
     this.element = document.createElement('div');
     this.element.setAttribute('id', this.id);
     this.element.value = this;
@@ -35,7 +39,6 @@ export class Table {
     });
 
     this.table = document.createElement('table');
-    this.table.style.position = 'relative';
     this.element.appendChild(this.table);
 
     this.head = document.createElement('thead');
@@ -69,7 +72,9 @@ export class Table {
     const tr = document.createElement('tr');
     for (const { field } of data) {
       const th = document.createElement('th');
-      th.innerText = field;
+      th.addEventListener('click', evt => this.sort(evt, field));
+      th.appendChild(document.createElement('span'));
+      th.appendChild(document.createTextNode(field));
       tr.appendChild(th);
     }
     thead.appendChild(tr);
@@ -83,8 +88,8 @@ export class Table {
     return this;
   }
 
-  data(data, fromRequest) {
-    if (!fromRequest) {
+  data(data) {
+    if (!this.pending) {
       // data not from an internal request, so reset table
       this.loaded = false;
       this.body.innerHTML = '';
@@ -127,16 +132,42 @@ export class Table {
   }
 
   queryInternal() {
-    const { limit, offset, options, _stats } = this;
+    const { limit, offset, options, _stats, sortField, sortDesc } = this;
     const { table } = options;
-    const fields = _stats.map(s => s.field);
+    if (!table) return null;
 
-    return table ? {
+    const fields = _stats.map(s => s.field);
+    return {
       from: [table],
       select: fields.reduce((o, field) => (o[field] = { field }, o), {}),
+      order: sortField ? [{ field: sortField, desc: sortDesc }] : undefined,
       offset,
       limit
-    } : null;
+    };
+  }
+
+  sort(event, field) {
+    if (field === this.sortField) {
+      this.sortDesc = !this.sortDesc;
+    } else {
+      this.sortField = field;
+      this.sortDesc = false;
+    }
+
+    const th = event.currentTarget;
+    const currentHeader = this.sortHeader;
+    if (currentHeader === th && event.metaKey) {
+      currentHeader.firstChild.textContent = '';
+      this.sortHeader = null;
+      this.sortField = null;
+    } else {
+      if (currentHeader) currentHeader.firstChild.textContent = '';
+      this.sortHeader = th;
+      th.firstChild.textContent = this.sortDesc ? "▾"  : "▴";
+    }
+
+    // issue query for sorted data
+    this.request.update(this.query());
   }
 }
 
