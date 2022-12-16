@@ -18,6 +18,7 @@ export class FilterGroup {
       this.selections.set(selection, null); // default: no filter
       const callback = throttle(value => {
         this.selections.set(selection, value);
+        this.latest = value?.[value.length-1]?.source;
         return this.update();
       });
       selection.addListener(callback);
@@ -42,6 +43,7 @@ export class FilterGroup {
       }
     } else if (resolve === 'crosssect') {
       clients.forEach(client => {
+        if (client === this.latest) return;
         const where = buildFilter(selections, client);
         if (where.length) {
           queries.push([
