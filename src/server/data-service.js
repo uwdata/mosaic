@@ -32,10 +32,6 @@ export class DataService {
     }
   }
 
-  pragma(command) {
-    return this.db.query(`PRAGMA ${command}`);
-  }
-
   query(jsonQuery) {
     return this.db.query(sqlQuery(jsonQuery));
   }
@@ -51,7 +47,7 @@ export class DataService {
 
 function sqlQuery(jsonQuery) {
   console.log('JSON', JSON.stringify(jsonQuery, 0, 2));
-  const sql = jsonToSQL(jsonQuery);
+  const sql = jsonQuery.sql || jsonToSQL(jsonQuery);
   console.log('SQL', sql);
   return sql;
 }

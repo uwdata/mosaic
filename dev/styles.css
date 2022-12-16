@@ -37,7 +37,12 @@ thead tr th {
   position: 'sticky';
   top: 0;
   background: '#fff';
+  cursor: ns-resize;
   border-bottom: solid 1px #ccc;
+}
+
+tbody tr:hover {
+  background: #eef;
 }
 
 th {

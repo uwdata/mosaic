@@ -1,4 +1,5 @@
 import { tableFromIPC } from 'apache-arrow';
+import { jsType } from './util/js-type.js';
 import { FilterGroup } from './FilterGroup.js';
 import * as Format from './formats.js';
 
@@ -6,7 +7,10 @@ export class Coordinator {
   constructor(uri = 'http://localhost:3000/') {
     this.clients = [];
     this.uri = uri;
-    this.cache = {};
+    this.cache = {
+      tables: Object.create(null),
+      stats: Object.create(null)
+    };
     this.filterGroups = new Map;
   }
 
@@ -30,12 +34,31 @@ export class Coordinator {
     return table;
   }
 
+  async tableInfo(table) {
+    const cache = this.cache.tables;
+    if (cache[table]) {
+      return cache[table];
+    }
+
+    const q = this.query({
+      format: Format.JSON,
+      sql: `PRAGMA table_info('${table}')`
+    });
+
+    return (cache[table] = q.then(result => {
+      const columns = Object.create(null);
+      for (const entry of result) {
+        columns[entry.name] = Object.assign(entry, { jstype: jsType(entry.type) });
+      }
+      return columns;
+    }));
+  }
+
   async stats(table, field) {
-    const { cache } = this;
-    const statsCache = cache.stats || (cache.stats = {});
+    const cache = this.cache.stats;
     const key = `${table}::${field}`;
-    if (statsCache[key]) {
-      return statsCache[key];
+    if (cache[key]) {
+      return cache[key];
     }
 
     const q = this.query({
@@ -49,9 +72,11 @@ export class Coordinator {
       }
     });
 
-    return (statsCache[key] = q.then(result => {
+    const info = await this.tableInfo(table);
+
+    return (cache[key] = q.then(result => {
       const stats = Array.from(result)[0];
-      return { table, field, ...stats };
+      return { table, field, type: info[field].jstype, ...stats };
     }));
   }
 
@@ -101,11 +126,8 @@ export class Coordinator {
   async resolveFields(list) {
     if (list.length === 1 && list[0].field === '*') {
       const table = list[0].table;
-      const cols = await this.query({
-        format: Format.JSON,
-        pragma: `table_info('${table}')`
-      });
-      return cols.map(c => ({ table, field: c.name }));
+      const info = await this.tableInfo(table);
+      return Object.keys(info).map(field => ({ table, field }));
     } else {
       return list;
     }

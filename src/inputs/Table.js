@@ -1,16 +1,19 @@
 import { Signal } from '../mosaic/Signal.js';
+import { formatDate, formatLocaleAuto, formatLocaleNumber } from './util/format.js';
+
+let _id = -1;
 
 export class Table {
   constructor(options = {}) {
     this.options = { ...options };
     this.offset = 0;
-    this.limit = 500;
-    this.nrows = -1;
-    this.rows = 0;
+    this.limit = +this.options.rowBatch || 100;
     this.request = new Signal('query');
     this.pending = false;
+    this.id = `table-${++_id}`;
 
     this.element = document.createElement('div');
+    this.element.setAttribute('id', this.id);
     this.element.value = this;
     this.element.style.maxHeight = `${this.options.height || 500}px`;
     this.element.style.overflow = 'auto';
@@ -40,6 +43,9 @@ export class Table {
 
     this.body = document.createElement('tbody');
     this.table.appendChild(this.body);
+
+    this.style = document.createElement('style');
+    this.element.appendChild(this.style);
   }
 
   filter() {
@@ -68,6 +74,12 @@ export class Table {
     }
     thead.appendChild(tr);
 
+    // get column formatters
+    this.formats = formatof(this.options.format, data);
+
+    // get column alignment style
+    this.style.innerText = tableCSS(this.id, alignof({}, data));
+
     return this;
   }
 
@@ -83,15 +95,18 @@ export class Table {
 
   update() {
     const fields = this._stats;
-    const body = this.body;
+    const { body, formats } = this;
+    const nf = fields.length;
 
     let count = 0;
     for (const row of this._data) {
       ++count;
       const tr = document.createElement('tr');
-      for (const field of fields) {
+      for (let i = 0; i < nf; ++i) {
+        const name = fields[i].field;
+        const value = row[name];
         const td = document.createElement('td');
-        td.innerText = row[field.field];
+        td.innerText = value == null ? '' : formats[i](value);
         tr.appendChild(td);
       }
       body.appendChild(tr);
@@ -102,9 +117,7 @@ export class Table {
       this.loaded = true;
     }
 
-    // throttle load-on-scroll requests
-    setTimeout(() => this.pending = false, 100);
-
+    this.pending = false;
     return this;
   }
 
@@ -125,4 +138,40 @@ export class Table {
       limit
     } : null;
   }
+}
+
+function formatof(base = {}, stats, locale) {
+  return stats.map(({ field, type }) => {
+    if (field in base) {
+      return base[column];
+    } else {
+      switch (type) {
+        case 'number': return formatLocaleNumber(locale);
+        case 'date': return formatDate;
+        default: return formatLocaleAuto(locale);
+      }
+    }
+  });
+}
+
+function alignof(base = {}, stats) {
+  return stats.map(({ field, type }) => {
+    if (field in base) {
+      return base[column];
+    } else if (type === 'number') {
+      return 'right';
+    } else {
+      return 'left';
+    }
+  });
+}
+
+function tableCSS(id, align) {
+  const styles = [];
+  align.forEach((a, i) => {
+    if (a !== 'left') {
+      styles.push(`#${id} tr>:nth-child(${i+1}) {text-align:${a}}`);
+    }
+  });
+  return styles.join(' ');
 }

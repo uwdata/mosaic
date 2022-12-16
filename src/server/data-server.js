@@ -46,22 +46,15 @@ export function launchServer(dataService, {
       try {
         await dataService.lock();
 
-        if (query.pragma) {
-          const result = await dataService.pragma(query.pragma);
+        if (query.format === 'json') { // JSON
+          const result = await dataService.query(query);
           res.end(JSON.stringify(result));
-        } else {
-          if (query.format === 'json') {
-            // JSON
-            const result = await dataService.query(query);
-            res.end(JSON.stringify(result));
-          } else {
-            // ARROW STREAM
-            const chunks = await dataService.arrowStream(query);
-            for await (const chunk of chunks) {
-              res.write(chunk);
-            }
-            res.end();
+        } else { // ARROW
+          const chunks = await dataService.arrowStream(query);
+          for await (const chunk of chunks) {
+            res.write(chunk);
           }
+          res.end();
         }
       } catch (err) {
         handleError(res, 500, err);
