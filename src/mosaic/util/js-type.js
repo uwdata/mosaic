@@ -12,6 +12,7 @@ export function jsType(type) {
     case Type.USMALLINT:
     case Type.UTINYINT: // integers
     case Type.DOUBLE:
+    case Type.FLOAT:
     case Type.REAL:
     case Type.DECIMAL:
       return 'number';
