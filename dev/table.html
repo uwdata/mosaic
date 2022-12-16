@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Table</title>
+    <script src="../dist/vgplot.js"></script>
+    <link href="styles.css" rel="stylesheet">
+  </head>
+  <body>
+    <h1>Table</h1>
+<script>
+const { mc, table } = vgplot;
+
+const tbl = 'flights';
+
+document.body.appendChild(
+  table({ table: tbl, height: 500 })
+);
+</script>
+  </body>
+</html>
