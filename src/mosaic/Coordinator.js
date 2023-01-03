@@ -16,6 +16,13 @@ export class Coordinator {
     this.filterGroups = new Map;
   }
 
+  client(client) {
+    if (arguments.length > 0) {
+      this.request = client;
+    }
+    return this.request;
+  }
+
   async exec(sql) {
     try {
       await this.request({ type: 'exec', sql });
@@ -30,7 +37,7 @@ export class Coordinator {
     const { type = Format.Arrow } = options;
     const response = await this.request({ type, sql: String(query) });
     const table = await (type === Format.Arrow
-      ? tableFromIPC(response)
+      ? (response.getChild ? response : tableFromIPC(response))
       : response.json());
 
     console.log(`Query time: ${Date.now()-t0}`);

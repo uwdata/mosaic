@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>DuckDB WASM</title>
+    <script src="../dist/vgplot.js"></script>
+    <link href="styles.css" rel="stylesheet">
+  </head>
+  <body>
+    <h1>DuckDB WASM</h1>
+    <h2>Cross-Filter</h2>
+    <div id="crossfilter"></div>
+    <h2>SPLOM</h2>
+    <div id="splom"></div>
+<script type="module">
+const {
+  mc, wasmClient, Selection, Fixed,
+  plot, hconcat, vconcat, from, dot, rectY, frame, bin, count,
+  domainX, domainY, domainColor, intervalX, intervalXY, highlight,
+  axisX, axisY, ticksX, ticksY,
+  labelX, labelAnchorX, labelY, labelAnchorY,
+  width, height, marginTop, marginBottom, marginLeft, marginRight
+} = vgplot;
+
+// set database client
+const { db, con, client } = await wasmClient();
+mc.client(client);
+
+// ingest penguins data
+const csv = await (await fetch('../data/penguins.csv')).text();
+await db.registerFileText('penguins.csv', csv);
+await con.insertCSVFromPath('penguins.csv', { name: 'penguins', schema: 'main' });
+
+// ingest flights data
+const buffer = new Uint8Array(await (await fetch('../data/flights-200k.arrow')).arrayBuffer());
+await con.insertArrowFromIPCStream(buffer, { name: 'flights', schema: 'main' });
+
+crossFilter(document.querySelector('#crossfilter'));
+splom(document.querySelector('#splom'));
+
+function crossFilter(el) {
+  const table = 'flights';
+  const brush = new Selection();
+
+  el.appendChild(
+    vconcat(
+      plot(
+        rectY(
+          from(table, { filterBy: brush }),
+          { x: bin('delay'), y: count(), fill: 'steelblue', inset: 0.5 }
+        ),
+        intervalX({ as: brush }),
+        domainX(Fixed),
+        width(600),
+        height(200)
+      ),
+      plot(
+        rectY(
+          from(table, { filterBy: brush }),
+          { x: bin('time'), y: count(), fill: 'steelblue', inset: 0.5 }
+        ),
+        intervalX({ as: brush }),
+        domainX(Fixed),
+        width(600),
+        height(200)
+      ),
+      plot(
+        rectY(
+          from(table, { filterBy: brush }),
+          { x: bin('distance'), y: count(), fill: 'steelblue', inset: 0.5 }
+        ),
+        intervalX({ as: brush }),
+        domainX(Fixed),
+        width(600),
+        height(200)
+      )
+    )
+  );
+}
+
+function splom(el) {
+  const table = 'penguins';
+  const columns = ['bill_length', 'bill_depth', 'flipper_length', 'body_mass'];
+  const brush = new Selection({ cross: false });
+
+  function scatter(x, y, row, col, n) {
+    const s = 135;
+    return plot(
+      frame({ stroke: '#ccc' }),
+      dot(from(table), { x, y, fill: 'species', r: 2 }),
+      intervalXY({ as: brush }),
+      highlight(brush, { opacity: 0.1 }),
+      ticksX(3), ticksY(4),
+      domainX(Fixed), domainY(Fixed), domainColor(Fixed),
+      marginTop(5), marginRight(5),
+      ...(col !== 0
+        ? [axisY(null), width(s+10+5), marginLeft(10)]
+        : [width(s+50+5), marginLeft(50), labelAnchorY('center')]
+      ),
+      ...(row !== (n - 1)
+        ? [axisX(null), height(s+10+5), marginBottom(10)]
+        : [height(s+35+5), marginBottom(35), labelAnchorX('center')]
+      )
+    )
+  }
+
+  el.appendChild(
+    vconcat(columns.slice().reverse().map((y, j) =>
+      hconcat(columns.map((x, i) => scatter(x, y, j, i, columns.length)))
+    ))
+  );
+}
+</script>
+  </body>
+</html>

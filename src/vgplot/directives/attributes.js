@@ -35,6 +35,16 @@ export function margin(value) {
   return attribute('margin', value);
 }
 
+export function margins(object) {
+  const { top, bottom, left, right } = object;
+  const attr = {};
+  if (top !== undefined) attr.marginTop = top;
+  if (bottom !== undefined) attr.marginBottom = bottom;
+  if (left !== undefined) attr.marginLeft = left;
+  if (right !== undefined) attr.marginRight = right;
+  return attributes(attr);
+}
+
 export function marginTop(value) {
   return attribute('marginTop', value);
 }

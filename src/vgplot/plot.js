@@ -59,7 +59,11 @@ export class Plot {
   }
 
   setAttribute(name, value) {
-    this.attributes[name] = value;
+    if (value === undefined) {
+      delete this.attributes[name];
+    } else {
+      this.attributes[name] = value;
+    }
   }
 
   addMark(mark) {

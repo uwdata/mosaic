@@ -25,6 +25,7 @@
     "prepublishOnly": "npm run test && npm run lint && npm run build"
   },
   "dependencies": {
+    "@duckdb/duckdb-wasm": "^1.20.0",
     "@observablehq/plot": "^0.6.1",
     "apache-arrow": "^10.0.1",
     "d3": "^7.8.0",

@@ -24,6 +24,7 @@ export {
   width,
   height,
   margin,
+  margins,
   marginTop,
   marginBottom,
   marginLeft,
@@ -114,6 +115,17 @@ export {
 } from './directives/marks.js';
 
 export {
+  highlight,
+  intervalX,
+  intervalY,
+  intervalXY,
+  select,
+  selectX,
+  selectY,
+  selectColor
+} from './directives/selections';
+
+export {
   plot,
   hconcat,
   vconcat,
@@ -124,12 +136,5 @@ export {
 } from './directives/plots.js';
 
 export {
-  highlight,
-  intervalX,
-  intervalY,
-  intervalXY,
-  select,
-  selectX,
-  selectY,
-  selectColor
-} from './directives/selections';
+  wasmClient
+} from '../duckdb-wasm/wasm.js';
