@@ -1,3 +1,8 @@
+import {
+  Query, column, regexp_matches, contains, prefix, suffix, literal
+} from '../sql/index.js';
+
+const FUNCTIONS = { contains, prefix, suffix, regexp: regexp_matches };
 let _id = 0;
 
 export class Search {
@@ -10,7 +15,7 @@ export class Search {
     if (options.field) {
       this.options.fields = [options.field];
     }
-    this.signal = options.as;
+    this.selection = options.as;
 
     this.element = document.createElement('div');
     this.element.setAttribute('class', 'input');
@@ -29,14 +34,16 @@ export class Search {
     this.searchbox.setAttribute('placeholder', 'Query');
     this.element.appendChild(this.searchbox);
 
-    if (this.signal) {
+    if (this.selection) {
       this.searchbox.addEventListener('input', () => {
-        const query = this.searchbox.value;
-        this.signal.resolve({
+        const value = this.searchbox.value || null;
+        const { field, type } = this.options;
+        // TODO: support multi-field queries
+        this.selection.update({
           source: this,
-          field: this.options.fields[0],
-          type: this.options.type || 'prefix',
-          value: query
+          field,
+          value,
+          predicate: value ? FUNCTIONS[type](field, literal(value)) : null
         });
       });
     }
@@ -72,20 +79,17 @@ export class Search {
 
   fields() {
     const { table, fields } = this.options;
-    if (table) {
-      return fields.map(field => ({ table, field }));
-    } else {
-      return null;
-    }
+    return table
+      ? fields.map(field => column(table, field))
+      : null;
   }
 
   query() {
     const { table, fields } = this.options;
-    return table ? {
-      from: [table],
-      select: {
-        list: { field: fields[0], distinct: true }
-      }
-    } : null;
+    if (!table) return null;
+    return Query
+      .from(table)
+      .select({ list: fields[0] })
+      .distinct();
   }
 }

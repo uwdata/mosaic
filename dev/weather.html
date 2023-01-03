@@ -13,12 +13,12 @@ const {
   bin, count, intervalX, highlight, selectY,
   domainXY, domainX, domainY, domainColor, rangeColor, domainR, rangeR,
   tickFormatX, labelY,
-  width, Fixed, Signal
+  width, Fixed, Selection
 } = vgplot;
 
 const table = 'weather';
-const range = new Signal('range');
-const click = new Signal('click');
+const range = new Selection({ cross: false });
+const click = new Selection();
 
 const weather = ['sun', 'fog', 'drizzle', 'rain', 'snow'];
 const colors = [

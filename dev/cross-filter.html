@@ -10,11 +10,11 @@
 <script>
 const {
   mc, plot, vconcat, from, bin, count, rectY,
-  width, height, domainX, intervalX, Signal, Fixed
+  width, height, domainX, intervalX, Selection, Fixed
 } = vgplot;
 
 const table = 'flights';
-const brush = new Signal('brush');
+const brush = new Selection();
 
 document.body.appendChild(
   vconcat(

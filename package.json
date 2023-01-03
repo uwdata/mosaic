@@ -25,22 +25,22 @@
     "prepublishOnly": "npm run test && npm run lint && npm run build"
   },
   "dependencies": {
-    "@observablehq/plot": "^0.6.0",
+    "@observablehq/plot": "^0.6.1",
     "apache-arrow": "^10.0.1",
-    "d3": "^7.7.0",
+    "d3": "^7.8.0",
     "duckdb": "~0.6.1",
-    "isoformat": "^0.2.1"
+    "isoformat": "^0.2.1",
+    "ws": "^8.11.0"
   },
   "devDependencies": {
-    "@rollup/plugin-commonjs": "^23.0.4",
+    "@rollup/plugin-commonjs": "^24.0.0",
     "@rollup/plugin-node-resolve": "^15.0.1",
     "@rollup/plugin-terser": "~0.1.0",
     "@web/dev-server": "^0.1.35",
-    "eslint": "^8.29.0",
-    "jsdom": "^20.0.3",
-    "mocha": "^10.1.0",
+    "eslint": "^8.31.0",
+    "mocha": "^10.2.0",
     "rimraf": "^3.0.2",
-    "rollup": "^3.7.0",
+    "rollup": "^3.9.0",
     "rollup-plugin-bundle-size": "^1.0.3"
   }
 }

@@ -12,8 +12,8 @@ const {
   mc, plot, vconcat, hconcat, from, hexbin, hexgrid, schemeColor,
   avg, bin, count, rectY, rectX,
   marginLeft, marginRight, marginBottom, marginTop,
-  axisX, axisY, labelX, labelY, labelAnchorX, labelAnchorY,
-  domainX, domainY, intervalX, intervalY, width, height, Signal, Fixed,
+  axisX, axisY, labelAnchorX, labelAnchorY,
+  domainX, domainY, intervalX, intervalY, width, height, Selection, Fixed,
   scaleColor
 } = vgplot;
 
@@ -22,7 +22,7 @@ const x = 'time';
 const y = 'delay';
 const color = 'steelblue';
 const binWidth = 10;
-const query = new Signal('query');
+const query = new Selection();
 
 document.body.appendChild(
   vconcat(
@@ -33,8 +33,7 @@ document.body.appendChild(
       ),
       intervalX({ as: query }),
       marginLeft(5), marginRight(5), marginTop(30), marginBottom(0),
-      domainX(Fixed), axisX('top'), axisY(null),
-      labelX('hour'), labelAnchorX('center'),
+      domainX(Fixed), axisX('top'), axisY(null), labelAnchorX('center'),
       width(710), height(70)
     ),
     hconcat(
@@ -55,9 +54,8 @@ document.body.appendChild(
           { x: count(), y: bin(y), fill: color, inset: 0.5 }
         ),
         intervalY({ as: query }),
-        marginLeft(0), marginRight(40), marginTop(0), marginBottom(5),
-        domainY(Fixed), axisX(null), axisY('right'),
-        labelY('delay'), labelAnchorY('center'),
+        marginLeft(0), marginRight(40), marginTop(4), marginBottom(5),
+        domainY([-60, 180]), axisX(null), axisY('right'), labelAnchorY('center'),
         width(80), height(505)
       )
     )

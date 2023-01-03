@@ -13,6 +13,8 @@ const ATTRIBUTE_MAP = new Map([
   ['scaleY', 'y.type'],
   ['domainX', 'x.domain'],
   ['domainY', 'y.domain'],
+  ['domainFX', 'fx.domain'],
+  ['domainFY', 'fy.domain'],
   ['axisX', 'x.axis'],
   ['axisY', 'y.axis'],
   ['grid', 'grid'],
@@ -43,6 +45,7 @@ const ATTRIBUTE_MAP = new Map([
   ['rangeColor', 'color.range'],
   ['schemeColor', 'color.scheme'],
   ['interpolateColor', 'color.interpolate'],
+  ['zeroColor', 'color.zero'],
   ['domainR', 'r.domain'],
   ['rangeR', 'r.range']
 ]);
@@ -92,7 +95,7 @@ function setProperty(object, path, value) {
 //    opacity, title, href, ariaLabel
 //  RECTS: inset(...), rx, ry (rounded corners)
 //    frameAnchor
-export function plotRenderer(plot) {
+export async function plotRenderer(plot) {
   const spec = { marks: [] };
   const symbols = [];
 
@@ -125,10 +128,14 @@ export function plotRenderer(plot) {
     }
   }
 
+  // infer labels
+  inferLabels(spec, plot);
+
   // render plot
   const svg = Plot.plot(spec);
 
   // annotate svg with mark indices
+  // TODO: work with faceted data (aria-label: facet)
   let index = -1;
   for (const child of svg.children) {
     const skip = child.nodeName === 'style' ||
@@ -144,14 +151,19 @@ export function plotRenderer(plot) {
     if (value === Fixed) {
       let scale;
       switch (key) {
-        case 'domainY': scale = 'y'; break;
         case 'domainX': scale = 'x'; break;
+        case 'domainY': scale = 'y'; break;
+        case 'domainFX': scale = 'fx'; break;
+        case 'domainFY': scale = 'fy'; break;
         case 'domainColor': scale = 'color'; break;
         case 'domainR': scale = 'r'; break;
         default:
           throw new Error(`Unsupported fixed attribute: ${key}`);
       }
-      plot.setAttribute(key, svg.scale(scale).domain);
+      const domain = svg.scale(scale)?.domain;
+      if (domain) {
+        plot.setAttribute(key, domain);
+      }
     } else {
       throw new Error(`Unrecognized symbol: ${value}`);
     }
@@ -159,8 +171,60 @@ export function plotRenderer(plot) {
 
   // initialize interactive selections
   for (const sel of plot.selections) {
-    sel.init(svg);
+    await sel.init(svg);
   }
 
   return svg;
+}
+
+function inferLabels(spec, plot) {
+  const { marks } = plot;
+  inferLabel('x', spec, marks, ['x', 'x1', 'x2']);
+  inferLabel('y', spec, marks, ['y', 'y1', 'y2']);
+  inferLabel('fx', spec, marks);
+  inferLabel('fy', spec, marks);
+}
+
+function inferLabel(key, spec, marks, channels = [key]) {
+  const scale = spec[key] || {};
+  if (scale.axis === null || scale.label !== undefined) return; // nothing to do
+
+  const fields = marks
+    .map(mark => mark.channelField(channels))
+    .map((field, i) => field ? { field, stats: marks[i]._stats } : null)
+    .filter(x => x);
+  if (fields.length === 0) return; // no columns found
+
+  // check for consistent columns / labels
+  let candCol;
+  let candLabel;
+  let type;
+  for (let i = 0; i < fields.length; ++i) {
+    const { field: { column, label }, stats } = fields[i];
+    if (column === undefined && label === undefined) continue;
+    if (candCol === undefined && candLabel === undefined) {
+      candCol = column;
+      candLabel = label;
+      type = stats.find?.(s => s.column === column)?.type || 'number';
+    } else if (candLabel !== label) {
+      candLabel = undefined;
+    } else if (candCol !== column && candLabel !== label) return;
+  }
+  let candidate = candLabel || candCol;
+  if (candidate === undefined) return;
+
+  // adjust candidate label formatting
+  if ((type === 'number' || type === 'date') && (key === 'x' || key === 'y')) {
+    if (type === 'date' && /^(date|time|year)$/i.test(candidate)) return;
+    if (scale.percent) candidate = `${candidate} (%)`;
+    const order = (key === 'x' ? 1 : -1) * (scale.reverse ? -1 : 1);
+    if (key === 'x' || scale.labelAnchor === 'center') {
+      candidate = (key === "x") === order < 0 ? `← ${candidate}` : `${candidate} →`;
+    } else {
+      candidate = `${order < 0 ? "↑ " : "↓ "}${candidate}`;
+    }
+  }
+
+  // add label to spec
+  spec[key] = { ...scale, label: candidate };
 }

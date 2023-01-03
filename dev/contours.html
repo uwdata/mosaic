@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Contours</title>
+    <script src="../dist/vgplot.js"></script>
+    <link href="styles.css" rel="stylesheet">
+  </head>
+  <body>
+    <h1>Contours</h1>
+    Bandwidth (&sigma;): <input id="bw" type="range" min="1" max="100" value="40" step="1"></input>
+    Thresholds: <input id="tz" type="range" min="2" max="20" value="10" step="1"></input>
+<script>
+const {
+  Signal, mc, plot, from, count, dot, contour, heatmap,
+  axisX, axisY, labelAnchorX, labelAnchorY,
+  marginTop, marginBottom, marginLeft, marginRight, width, height
+} = vgplot;
+
+const bw = document.querySelector('#bw');
+bw.addEventListener('input', () => bandwidth.update(+bw.value));
+const bandwidth = new Signal('bw', +bw.value);
+
+const tz = document.querySelector('#tz');
+tz.addEventListener('input', () => thresholds.update(+tz.value));
+const thresholds = new Signal('tz', +tz.value);
+
+const table = 'penguins';
+const x = 'bill_length';
+const y = 'bill_depth';
+
+document.body.appendChild(
+  plot(
+    heatmap(from(table), { x, y, fill: 'species', bandwidth }),
+    contour(from(table), { x, y, stroke: 'species', bandwidth, thresholds }),
+    dot(from(table), { x, y, fill: 'black', r: 1 }),
+    axisX('bottom'), labelAnchorX('center'),
+    axisY('right'), labelAnchorY('center'),
+    marginTop(5), marginBottom(30), marginLeft(5), marginRight(40),
+    width(700), height(480)
+  )
+);
+</script>
+  </body>
+</html>

@@ -1,7 +1,29 @@
-export function bin(spec, stats) {
-  const { field, options } = spec;
-  let { min, max } = stats.find(s => s.field === spec.field);
-  let { steps = 25, minstep = 0, nice = true, offset = 0 } = options;
+import { expr } from '../../sql/index.js';
+
+export default function(column, options) {
+  return {
+    column,
+
+    get columns() {
+      return [column];
+    },
+
+    transform(stats) {
+      const { min, max } = stats.find(s => s.column === column);
+      const b = bins(min, max, options);
+      const delta = `(${column} - ${b.min})`;
+      const alpha = `${(b.max - b.min) / b.steps}::DOUBLE`;
+      const off = options.offset ? '1 + ' : '';
+      return expr(
+        `${min} + ${alpha} * (${off}FLOOR(${delta} / ${alpha}))`,
+        [column]
+      );
+    }
+  }
+}
+
+export function bins(min, max, options) {
+  let { steps = 25, minstep = 0, nice = true } = options;
 
   if (nice !== false) {
     // use span to determine step size
@@ -34,9 +56,5 @@ export function bin(spec, stats) {
     steps = Math.round((max - min) / step);
   }
 
-  return {
-    transform: 'bin',
-    field,
-    options: { min, max, steps, offset }
-  };
+  return { min, max, steps };
 }

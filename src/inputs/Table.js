@@ -1,4 +1,5 @@
 import { Signal } from '../mosaic/Signal.js';
+import { Query, column, desc } from '../sql/index.js';
 import { formatDate, formatLocaleAuto, formatLocaleNumber } from './util/format.js';
 
 let _id = -1;
@@ -13,7 +14,7 @@ export class Table {
     this.id = `table-${++_id}`;
 
     this.sortHeader = null;
-    this.sortField = null;
+    this.sortColumn = null;
     this.sortDesc = false;
 
     this.element = document.createElement('div');
@@ -61,7 +62,7 @@ export class Table {
   fields() {
     const { table, fields = ['*'] } = this.options;
     if (table) {
-      return fields.map(field => ({ table, field }));
+      return fields.map(field => column(table, field));
     } else {
       return null;
     }
@@ -73,11 +74,11 @@ export class Table {
     const thead = this.head;
     thead.innerHTML = '';
     const tr = document.createElement('tr');
-    for (const { field } of data) {
+    for (const { column } of data) {
       const th = document.createElement('th');
-      th.addEventListener('click', evt => this.sort(evt, field));
+      th.addEventListener('click', evt => this.sort(evt, column));
       th.appendChild(document.createElement('span'));
-      th.appendChild(document.createTextNode(field));
+      th.appendChild(document.createTextNode(column));
       tr.appendChild(th);
     }
     thead.appendChild(tr);
@@ -93,7 +94,7 @@ export class Table {
 
   data(data) {
     if (!this.pending) {
-      // data not from an internal request, so reset table
+      // data is not from an internal request, so reset table
       this.loaded = false;
       this.body.innerHTML = '';
     }
@@ -102,17 +103,15 @@ export class Table {
   }
 
   update() {
-    const fields = this._stats;
-    const { body, formats } = this;
-    const nf = fields.length;
+    const { body, formats, _data, _stats: stats, limit } = this;
+    const nf = stats.length;
 
     let count = 0;
-    for (const row of this._data) {
+    for (const row of _data) {
       ++count;
       const tr = document.createElement('tr');
       for (let i = 0; i < nf; ++i) {
-        const name = fields[i].field;
-        const value = row[name];
+        const value = row[stats[i].column];
         const td = document.createElement('td');
         td.innerText = value == null ? '' : formats[i](value);
         tr.appendChild(td);
@@ -120,7 +119,7 @@ export class Table {
       body.appendChild(tr);
     }
 
-    if (count < this.limit) {
+    if (count < limit) {
       // data table has been fully loaded
       this.loaded = true;
     }
@@ -129,31 +128,29 @@ export class Table {
     return this;
   }
 
-  query() {
+  query(filter) {
     this.offset = 0;
-    return this.queryInternal();
+    return this.queryInternal(filter);
   }
 
-  queryInternal() {
-    const { limit, offset, options, _stats, sortField, sortDesc } = this;
+  queryInternal(filter = []) {
+    const { limit, offset, options, _stats, sortColumn, sortDesc } = this;
     const { table } = options;
     if (!table) return null;
 
-    const fields = _stats.map(s => s.field);
-    return {
-      from: [table],
-      select: fields.reduce((o, field) => (o[field] = { field }, o), {}),
-      order: sortField ? [{ field: sortField, desc: sortDesc }] : undefined,
-      offset,
-      limit
-    };
+    return Query.from(table)
+      .select(_stats.map(s => s.column))
+      .where(filter)
+      .orderby(sortColumn ? (sortDesc ? desc(sortColumn) : sortColumn) : [])
+      .limit(limit)
+      .offset(offset);
   }
 
-  sort(event, field) {
-    if (field === this.sortField) {
+  sort(event, column) {
+    if (column === this.sortColumn) {
       this.sortDesc = !this.sortDesc;
     } else {
-      this.sortField = field;
+      this.sortColumn = column;
       this.sortDesc = false;
     }
 
@@ -162,7 +159,7 @@ export class Table {
     if (currentHeader === th && event.metaKey) {
       currentHeader.firstChild.textContent = '';
       this.sortHeader = null;
-      this.sortField = null;
+      this.sortColumn = null;
     } else {
       if (currentHeader) currentHeader.firstChild.textContent = '';
       this.sortHeader = th;
@@ -175,8 +172,8 @@ export class Table {
 }
 
 function formatof(base = {}, stats, locale) {
-  return stats.map(({ field, type }) => {
-    if (field in base) {
+  return stats.map(({ column, type }) => {
+    if (column in base) {
       return base[column];
     } else {
       switch (type) {
@@ -189,8 +186,8 @@ function formatof(base = {}, stats, locale) {
 }
 
 function alignof(base = {}, stats) {
-  return stats.map(({ field, type }) => {
-    if (field in base) {
+  return stats.map(({ column, type }) => {
+    if (column in base) {
       return base[column];
     } else if (type === 'number') {
       return 'right';

@@ -50,8 +50,8 @@ export class Plot {
     return this;
   }
 
-  render() {
-    this.element.replaceChildren(plotRenderer(this));
+  async render() {
+    this.element.replaceChildren(await plotRenderer(this));
   }
 
   getAttribute(name) {

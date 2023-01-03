@@ -1,13 +1,14 @@
 import { brush, select } from 'd3';
+import { and, isBetween } from '../../sql/index.js';
 import { closeTo } from './close-to.js';
 
 export class Interval2DSelection {
-  constructor(mark, signal, xfield, yfield) {
+  constructor(mark, selection, xfield, yfield) {
     this.mark = mark;
-    this.signal = signal;
+    this.selection = selection;
 
-    this.xfield = xfield || mark.channelField('x', 'x1', 'x2');
-    this.yfield = yfield || mark.channelField('y', 'y1', 'y2');
+    this.xfield = xfield || mark.channelField('x', 'x1', 'x2').column;
+    this.yfield = yfield || mark.channelField('y', 'y1', 'y2').column;
     this.brush = brush();
 
     this.brush.on('brush end', ({ selection }) => {
@@ -21,13 +22,16 @@ export class Interval2DSelection {
       if (!closeTo(xrange, this.xsel) || !closeTo(yrange, this.ysel)) {
         this.xsel = xrange;
         this.ysel = yrange;
-        this.signal.resolve({
+        const value = xrange && yrange ? [xrange, yrange] : null;
+        this.selection.update({
           source: this.mark,
-          type: 'and',
-          value: [
-            { channel: 'x', field: this.xfield, type: 'range', value: xrange },
-            { channel: 'y', field: this.yfield, type: 'range', value: yrange }
-          ]
+          channels: ['x', 'y'],
+          fields: [this.xfield, this.yfield],
+          value,
+          predicate: value ? and(
+            isBetween(this.xfield, xrange),
+            isBetween(this.yfield, yrange)
+          ) : null
         });
       }
     });

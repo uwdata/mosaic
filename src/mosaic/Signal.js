@@ -20,7 +20,7 @@ export class Signal {
   update(value) {
     if (this._value !== value) {
       this._value = value;
-      this.emit(value);
+      this.emit(this.value);
     }
     return this;
   }

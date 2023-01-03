@@ -35,7 +35,10 @@ export function table(options) {
 export function plot(...directives) {
   const p = new Plot();
   directives.flat().forEach(dir => dir(p));
-  p.marks.forEach(mark => mc.connect(mark));
+  p.marks.forEach(mark => {
+    mc.connect(mark);
+    mark.mc = mc;
+  });
   return p.element;
 }
 

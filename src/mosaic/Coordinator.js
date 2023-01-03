@@ -1,12 +1,14 @@
 import { tableFromIPC } from 'apache-arrow';
+import { Query, count, max, min, isNull } from '../sql/index.js';
 import { jsType } from './util/js-type.js';
 import { FilterGroup } from './FilterGroup.js';
+import { socket } from './clients/socket.js';
 import * as Format from './formats.js';
 
 export class Coordinator {
-  constructor(uri = 'http://localhost:3000/') {
+  constructor(client = socket()) {
+    this.request = client;
     this.clients = [];
-    this.uri = uri;
     this.cache = {
       tables: Object.create(null),
       stats: Object.create(null)
@@ -14,21 +16,22 @@ export class Coordinator {
     this.filterGroups = new Map;
   }
 
-  async query(query) {
-    const t0 = Date.now();
-    const pending = fetch(this.uri, {
-      method: 'POST',
-      mode: 'cors',
-      cache: 'no-cache',
-      credentials: 'omit',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(query)
-    });
+  async exec(sql) {
+    try {
+      await this.request({ type: 'exec', sql });
+    } catch (err) {
+      console.error(err);
+    }
+  }
 
-    const { format = Format.Arrow } = query;
-    const table = await (format === Format.Arrow
-      ? tableFromIPC(pending)
-      : (await pending).json());
+  async query(query, options = {}) {
+    const t0 = Date.now();
+
+    const { type = Format.Arrow } = options;
+    const response = await this.request({ type, sql: String(query) });
+    const table = await (type === Format.Arrow
+      ? tableFromIPC(response)
+      : response.json());
 
     console.log(`Query time: ${Date.now()-t0}`);
     return table;
@@ -40,43 +43,46 @@ export class Coordinator {
       return cache[table];
     }
 
-    const q = this.query({
-      format: Format.JSON,
-      sql: `PRAGMA table_info('${table}')`
-    });
+    const q = this.query(
+      `PRAGMA table_info('${table}')`,
+      { type: Format.JSON }
+    );
 
     return (cache[table] = q.then(result => {
       const columns = Object.create(null);
       for (const entry of result) {
-        columns[entry.name] = Object.assign(entry, { jstype: jsType(entry.type) });
+        columns[entry.name] = { ...entry, jstype: jsType(entry.type) };
       }
       return columns;
     }));
   }
 
-  async stats(table, field) {
+  async stats(table, column) {
     const cache = this.cache.stats;
-    const key = `${table}::${field}`;
+    const key = `${table}::${column}`;
     if (cache[key]) {
       return cache[key];
     }
 
-    const q = this.query({
-      from: [table],
-      select: {
-        rows: { aggregate: 'count' },
-        nulls: { aggregate: 'count', filter: `${field} IS NULL` },
-        values: { aggregate: 'count', distinct: true, field },
-        min: { aggregate: 'min', field },
-        max: { aggregate: 'max', field }
-      }
-    });
-
     const info = await this.tableInfo(table);
+    const colInfo = info[column];
+
+    // column does not exist
+    if (colInfo == null) return;
+
+    const q = this.query(
+      Query.from(table).select({
+        rows: count(),
+        nulls: count().where(isNull(column)),
+        values: count(column).distinct(),
+        min: min(column),
+        max: max(column)
+      })
+    );
 
     return (cache[key] = q.then(result => {
-      const stats = Array.from(result)[0];
-      return { table, field, type: info[field].jstype, ...stats };
+      const stats = result[Symbol.iterator]().next().value;
+      return { table, column, type: colInfo.jstype, ...stats };
     }));
   }
 
@@ -88,11 +94,11 @@ export class Coordinator {
     this.clients.push(client);
 
     // retrieve field statistics
-    const fields = await this.resolveFields(client.fields());
+    const fields = await this.resolveColumns(client.fields());
     const stats = await Promise.all(
-      fields.map(f => this.stats(f.table, f.field))
+      fields.map(f => this.stats(f.table, f.column))
     );
-    client.stats(stats);
+    client.stats(stats.filter(x => x));
 
     // connect filters
     const filter = client.filter?.();
@@ -100,17 +106,19 @@ export class Coordinator {
     if (filter) {
       const groups = this.filterGroups;
       if (!groups.has(filter)) {
-        groups.set(filter, new FilterGroup(this));
+        groups.set(filter, new FilterGroup(this, filter));
       }
-      group = groups.get(filter);
-      group.filter(client).where(filter);
+      group = groups.get(filter).filter(client);
     }
 
     // query handler
     const handle = async q => {
-      q = group ? group.query(client, q) : q;
-      const data = await this.query(q);
-      client.data(data).update();
+      q = group ? group.query(client) : q;
+      try {
+        client.data(await this.query(q)).update();
+      } catch (err) {
+        console.error(err);
+      }
     };
 
     // register request handler, if defined
@@ -119,15 +127,15 @@ export class Coordinator {
     }
 
     // TODO analyze / consolidate queries?
-    const q = client.query?.();
+    const q = client.query();
     if (q) handle(q);
   }
 
-  async resolveFields(list) {
-    if (list.length === 1 && list[0].field === '*') {
+  async resolveColumns(list) {
+    if (list.length === 1 && list[0].column === '*') {
       const table = list[0].table;
       const info = await this.tableInfo(table);
-      return Object.keys(info).map(field => ({ table, field }));
+      return Object.keys(info).map(column => ({ table, column }));
     } else {
       return list;
     }

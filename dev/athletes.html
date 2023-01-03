@@ -10,10 +10,10 @@
 <script>
 const {
   mc, vconcat, hconcat, menu, search, table, plot, from,
-  dot, regressionY, domainXY, domainColor, Signal, Fixed
+  dot, regressionY, domainXY, domainColor, Selection, Fixed
 } = vgplot;
 
-const query = new Signal('query');
+const query = new Selection();
 const tbl = 'athletes';
 
 document.body.appendChild(

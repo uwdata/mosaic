@@ -1,8 +1,10 @@
+import { Query, column, eq, literal } from '../sql/index.js';
+
 export class Menu {
   constructor(options = {}) {
     this.options = { ...options };
     this.field = options.field;
-    this.signal = options.as;
+    this.selection = options.as;
 
     this.element = document.createElement('div');
     this.element.setAttribute('class', 'input');
@@ -20,14 +22,14 @@ export class Menu {
     opt.innerText = 'All';
     this.select.appendChild(opt);
 
-    if (this.signal) {
+    if (this.selection) {
       this.select.addEventListener('input', () => {
-        const value = this.select.value;
-        this.signal.resolve({
+        const value = this.select.value || null;
+        this.selection.update({
           source: this,
           field: this.field,
-          type: 'equals',
-          value: value || null
+          value,
+          predicate: value ? eq(this.field, literal(value)) : null
         });
       });
     }
@@ -58,15 +60,16 @@ export class Menu {
 
   fields() {
     const { table, field } = this.options;
-    return table ? [{ table, field }] : null;
+    return table ? [ column(table, field) ] : null;
   }
 
   query() {
     const { table, field } = this.options;
-    return table ? {
-      from: [table],
-      select: { value: { field, distinct: true } },
-      order: [{ field }]
-    } : null;
+    if (!table) return null;
+    return Query
+      .from(table)
+      .select({ value: field })
+      .distinct()
+      .orderby(field)
   }
 }

@@ -11,11 +11,11 @@
 const {
   mc, plot, vconcat, from, areaY,
   width, height, domainX, domainY, intervalX,
-  Signal, Fixed
+  Selection, Fixed
 } = vgplot;
 
 const table = 'walk';
-const brush = new Signal('brush');
+const brush = new Selection();
 
 document.body.appendChild(
   vconcat(

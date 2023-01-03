@@ -1,5 +1,5 @@
 #! /usr/bin/env node
-import { DuckDB } from '../src/index.js';
+import { DuckDB } from '../src/duckdb/index.js';
 import { createWriteStream } from 'fs';
 
 const db = new DuckDB();

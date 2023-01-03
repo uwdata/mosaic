@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Density 2D</title>
+    <script src="../dist/vgplot.js"></script>
+    <link href="styles.css" rel="stylesheet">
+  </head>
+  <body>
+    <h1>Density 2D</h1>
+    Bandwidth (&sigma;): <input id="bw" type="range" min="1" max="100" value="20" step="1"></input>
+    Thresholds: <input id="tz" type="range" min="2" max="20" value="10" step="1"></input>
+<script>
+const {
+  mc, plot, from, count, density2D, contour, heatmap, schemeColor,
+  axisX, axisY, marginLeft, marginRight, width, height,
+  Signal
+} = vgplot;
+
+const bw = document.querySelector('#bw');
+bw.addEventListener('input', () => bandwidth.update(+bw.value));
+const bandwidth = new Signal('bw', +bw.value);
+
+const tz = document.querySelector('#tz');
+tz.addEventListener('input', () => thresholds.update(+tz.value));
+const thresholds = new Signal('tz', +tz.value);
+
+const table = 'flights';
+const x = 'time';
+const y = 'delay';
+
+document.body.appendChild(
+  plot(
+    schemeColor('blues'),
+    heatmap(from(table), { x, y, fill: 'density', bandwidth }),
+    contour(from(table), { x, y, stroke: 'density', bandwidth, thresholds }),
+    axisX('top'), axisY('right'), marginLeft(5), marginRight(50),
+    width(700), height(500)
+  )
+);
+</script>
+  </body>
+</html>

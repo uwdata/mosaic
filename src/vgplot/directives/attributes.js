@@ -3,12 +3,7 @@ import { isSignal } from '../../mosaic/Signal.js';
 function setAttribute(plot, name, value) {
   if (isSignal(value)) {
     value.addListener(value => {
-      // TODO? futher interpret signal value
-      const v = Array.isArray(value)
-        ? value[0].value
-        : (value?.value || value);
-
-      plot.setAttribute(name, v);
+      plot.setAttribute(name, value);
       plot.update();
     });
   } else {
@@ -101,6 +96,14 @@ export function domainY(value) {
 
 export function domainXY(value) {
   return attributes({ domainX: value, domainY: value });
+}
+
+export function domainFX(value) {
+  return attribute('domainFX', value);
+}
+
+export function domainFY(value) {
+  return attribute('domainFY', value);
 }
 
 export function niceX(value) {

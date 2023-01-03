@@ -1,11 +1,13 @@
 import { throttle } from './util/throttle.js';
 
 export class FilterGroup {
-  constructor(mc, clients = []) {
+  constructor(mc, selection, clients = []) {
     this.mc = mc;
+    this.selection = selection;
     this.clients = new Set(clients);
-    this.selections = new Map;
-    this.resolve = 'crosssect'; //'intersect';
+
+    const callback = throttle(() => this.update());
+    selection.addListener(callback);
   }
 
   filter(client) {
@@ -13,78 +15,19 @@ export class FilterGroup {
     return this;
   }
 
-  where(selection) {
-    if (!this.selections.has(selection)) {
-      this.selections.set(selection, null); // default: no filter
-      const callback = throttle(value => {
-        this.selections.set(selection, value);
-        this.latest = value?.[value.length-1]?.source;
-        return this.update();
-      });
-      selection.addListener(callback);
-    }
-    return this;
-  }
-
-  query(client, query) {
-    const where = buildFilter(this.selections, client);
-    if (where.length) {
-      Object.assign(query, { where });
-    }
-    return query;
+  query(client) {
+    return client.query(this.selection.predicate(client));
   }
 
   async update() {
-    const { mc, resolve, selections, clients } = this;
-    let queries = [];
-
-    if (resolve === 'intersect') {
-      // OPT: filter table once, then reuse for clients?
-      const where = buildFilter(selections);
-      if (where.length) {
-        clients.forEach(client => {
-          queries.push([
-            client,
-            Object.assign(client.query(), { where })
-          ]);
-        });
+    const { mc, selection, clients } = this;
+    await Promise.all(Array.from(clients).map(async client => {
+      const where = selection.predicate(client);
+      if (where != null) {
+        client.data(await mc.query(client.query(where))).update();
       }
-    } else if (resolve === 'crosssect') {
-      clients.forEach(client => {
-        if (client === this.latest) return;
-        const where = buildFilter(selections, client);
-        if (where.length) {
-          queries.push([
-            client,
-            Object.assign(client.query(), { where })
-          ]);
-        }
-      });
-    } else if (resolve === 'union') {
-      // TODO
-      return;
-    }
-
-    await Promise.all(
-      queries.map(async ([client, query]) => {
-        client.data(await mc.query(query)).update();
-      })
-    );
+    }));
   }
-}
-
-function buildFilter(selections, client) {
-  const q = [];
-  selections.forEach(sel => {
-    if (sel == null) return;
-    for (const entry of sel) {
-      const { source, field, type, value } = entry;
-      if (source !== client) {
-        q.push({ field, type, value });
-      }
-    }
-  });
-  return q;
 }
 
 // FALCON

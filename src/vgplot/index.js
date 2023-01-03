@@ -1,4 +1,8 @@
 export {
+  Selection
+} from '../mosaic/Selection.js';
+
+export {
   Signal
 } from '../mosaic/Signal.js';
 
@@ -8,7 +12,7 @@ export {
 
 export {
   Mark
-} from './mark.js';
+} from './marks/Mark.js';
 
 export {
   Fixed
@@ -36,6 +40,8 @@ export {
   domainX,
   domainY,
   domainXY,
+  domainFX,
+  domainFY,
   niceX,
   niceY,
   zeroX,
@@ -65,11 +71,19 @@ export {
 
 export {
   from,
-  avg,
   bin,
-  count,
-  sum
 } from './directives/data.js';
+
+export {
+  avg,
+  count,
+  max,
+  median,
+  min,
+  mode,
+  quantile,
+  sum
+} from '../sql/index.js';
 
 export {
   mark,
@@ -89,7 +103,11 @@ export {
   ruleX,
   ruleY,
   frame,
+  tickX,
+  tickY,
   densityY,
+  heatmap,
+  contour,
   hexbin,
   hexgrid,
   regressionY

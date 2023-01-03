@@ -1,5 +1,5 @@
 #! /usr/bin/env node
-import { DuckDB, DataService, launchServer } from '../src/index.js';
+import { DuckDB, dataServer } from '../src/duckdb/index.js';
 
 const db = new DuckDB();
 
@@ -17,4 +17,4 @@ db.exec(`
   SELECT *, make_date(2012, month(date), day(date)) AS doy FROM seattle
 `);
 
-launchServer(new DataService(db));
+dataServer(db, { rest: true, socket: true });

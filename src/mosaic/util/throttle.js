@@ -1,5 +1,5 @@
 export function throttle(callback) {
-  let curr = null;
+  let curr;
   let next;
 
   function invoke(event) {

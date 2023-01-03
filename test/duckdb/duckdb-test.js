@@ -14,7 +14,7 @@ describe('DuckDB', () => {
   describe('arrowBuffer', () => {
     it('returns arrow ipc buffers', async () => {
       const buf = await db.arrowBuffer('SELECT * FROM penguins');
-      assert.strictEqual(buf.length, 22148);
+      assert.strictEqual(buf.length, 19316);
     });
   });
 
@@ -35,7 +35,7 @@ describe('DuckDB', () => {
     it('loads an arrow ipc buffer', async () => {
       await db.ipc('arrow', await db.arrowBuffer('SELECT * FROM penguins'));
       const res = await db.query('SELECT count() AS count FROM arrow');
-      assert.strictEqual(res[0]?.count, 344);
+      assert.strictEqual(res[0]?.count, 342);
       await db.exec(`DROP TABLE arrow;`);
     });
   });

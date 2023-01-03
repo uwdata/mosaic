@@ -1,7 +1,9 @@
+import { and, or, eq, literal } from '../../sql/index.js';
+
 export class PointSelection {
-  constructor(mark, signal, channels) {
+  constructor(mark, selection, channels) {
     this.mark = mark;
-    this.signal = signal;
+    this.selection = selection;
     this.state = new Map;
     this.channels = channels.map(c => {
       const q = c === 'color' ? ['fill', 'stroke']
@@ -10,20 +12,23 @@ export class PointSelection {
         : [c];
       for (let i = 0; i < q.length; ++i) {
         const f = mark.channelField(q[i]);
-        if (f) return [q[i], f];
+        if (f) return [q[i], f.column];
       }
       throw new Error(`Missing channel: ${c}`);
     });
   }
 
   init(svg) {
-    const { mark, channels, signal, state } = this;
+    const { mark, channels, selection, state } = this;
     const groups = Array.from(svg.querySelectorAll(`[data-index="${mark.index}"]`));
     const data = mark._data;
 
     svg.addEventListener('click', evt => {
       const target = evt.target;
-      const s = { source: mark };
+      const s = {
+        source: mark,
+        predicate: null
+      };
 
       if (groups.includes(target.parentNode)) {
         const index = target.__data__;
@@ -47,27 +52,23 @@ export class PointSelection {
         // generate query clauses
         const clauses = [];
         for (const vals of state.values()) {
-          const value = channels.map(([channel, field], i) => {
-            return { channel, field, type: 'equals', value: vals[i] };
+          const pred = channels.map(([channel, field], i) => {
+            return eq(field, literal(vals[i]));
+            // { channel, field, type: 'equals', value: vals[i] };
           });
-          if (value.length > 1) {
-            clauses.push({ type: 'and', value });
+          if (pred.length > 1) {
+            clauses.push(and(pred));
           } else {
-            clauses.push(value[0]);
+            clauses.push(pred[0]);
           }
         }
 
-        if (clauses.length > 1) {
-          s.type = 'or';
-          s.value = clauses;
-        } else {
-          Object.assign(s, clauses[0]);
-        }
+        s.predicate = clauses.length > 1 ? or(clauses) : clauses[0];
       } else {
         state.clear();
       }
 
-      signal.resolve(s);
+      selection.update(s);
     });
   }
 }
