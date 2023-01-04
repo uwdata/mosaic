@@ -1,4 +1,4 @@
-import { brush, select } from 'd3';
+import { brush, select, min, max } from 'd3';
 import { and, isBetween } from '../../sql/index.js';
 import { closeTo } from './close-to.js';
 
@@ -12,51 +12,51 @@ export class Interval2DSelection {
     this.brush = brush();
 
     this.brush.on('brush end', ({ selection }) => {
-      let xrange = undefined;
-      let yrange = undefined;
+      const { value, xfield, yfield } = this;
+
+      let xr = undefined;
+      let yr = undefined;
       if (selection) {
         const [a, b] = selection;
-        xrange = [a[0], b[0]].map(this.xscale.invert).sort((a, b) => a - b);
-        yrange = [a[1], b[1]].map(this.yscale.invert).sort((a, b) => a - b);
+        xr = [a[0], b[0]].map(this.xscale.invert).sort((a, b) => a - b);
+        yr = [a[1], b[1]].map(this.yscale.invert).sort((a, b) => a - b);
       }
-      if (!closeTo(xrange, this.xsel) || !closeTo(yrange, this.ysel)) {
-        this.xsel = xrange;
-        this.ysel = yrange;
-        const value = xrange && yrange ? [xrange, yrange] : null;
+
+      if (!closeTo(xr, value?.[0]) || !closeTo(yr, value?.[1])) {
+        this.value = selection ? [xr, yr] : null;
+        this.g.call(this.brush.move, selection);
         this.selection.update({
           source: this.mark,
           channels: ['x', 'y'],
-          fields: [this.xfield, this.yfield],
+          fields: [xfield, yfield],
           value,
-          predicate: value ? and(
-            isBetween(this.xfield, xrange),
-            isBetween(this.yfield, yrange)
-          ) : null
+          predicate: selection
+            ? and(isBetween(xfield, xr), isBetween(yfield, yr))
+            : null
         });
       }
     });
   }
 
   init(svg) {
-    const { brush, mark } = this;
-    const { left, top, bottom, right } = mark.plot.margins();
-    const width = +svg.getAttribute('width');
-    const height = +svg.getAttribute('height');
+    const { brush } = this;
+    const xscale = this.xscale = svg.scale('x');
+    const yscale = this.yscale = svg.scale('y');
+    const rx = xscale.range;
+    const ry = yscale.range;
+    brush.extent([[min(rx), min(ry)], [max(rx), max(ry)]]);
 
-    this.xscale = svg.scale('x');
-    this.yscale = svg.scale('y');
-    brush.extent([[left, top], [width - right, height - bottom]]);
-
-    const g = select(svg)
+    const facets = select(svg).selectAll('g[aria-label="facet"]');
+    const root = facets.size() ? facets : select(svg);
+    this.g = root
       .append('g')
-      .attr('class', 'interval-xy')
+      .attr('class', `interval-xy`)
       .call(brush);
 
-    if (this.xsel && this.ysel) {
-      g.call(brush.move, [
-        this.xsel.map(this.xscale.apply),
-        this.ysel.map(this.yscale.apply)
-      ]);
+    if (this.value) {
+      const [x1, x2] = this.value[0].map(xscale.apply);
+      const [y1, y2] = this.value[1].map(yscale.apply);
+      this.g.call(brush.move, [[x1, y1], [x2, y2]]);
     }
   }
 }
