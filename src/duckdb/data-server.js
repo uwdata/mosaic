@@ -69,7 +69,7 @@ function queryHandler(db) {
     try {
       query = JSON.parse(data);
     } catch (err) {
-      res.error(err);
+      res.error(err, 400);
       return;
     }
 
@@ -97,7 +97,7 @@ function queryHandler(db) {
           res.json(await db.query(sql));
       }
     } catch (err) {
-      res.error(err);
+      res.error(err, 500);
     } finally {
       res.unlock?.();
     }

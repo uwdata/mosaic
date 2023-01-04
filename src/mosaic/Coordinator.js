@@ -1,31 +1,37 @@
-import { tableFromIPC } from 'apache-arrow';
 import { Query, count, max, min, isNull } from '../sql/index.js';
 import { jsType } from './util/js-type.js';
 import { FilterGroup } from './FilterGroup.js';
-import { socket } from './clients/socket.js';
-import * as Format from './formats.js';
+import { socketClient } from './clients/socket.js';
 
 export class Coordinator {
-  constructor(client = socket()) {
-    this.request = client;
-    this.clients = [];
+  constructor(db = socketClient()) {
+    this.databaseClient(db);
+    this.clear();
     this.cache = {
       tables: Object.create(null),
-      stats: Object.create(null)
+      stats: Object.create(null),
+      clear() {
+        this.tables = Object.create(null);
+        this.stats = Object.create(null);
+      }
     };
+  }
+
+  clear() {
+    this.clients = [];
     this.filterGroups = new Map;
   }
 
-  client(client) {
+  databaseClient(db) {
     if (arguments.length > 0) {
-      this.request = client;
+      this.db = db;
     }
-    return this.request;
+    return this.db;
   }
 
   async exec(sql) {
     try {
-      await this.request({ type: 'exec', sql });
+      await this.db.query({ type: 'exec', sql });
     } catch (err) {
       console.error(err);
     }
@@ -33,13 +39,8 @@ export class Coordinator {
 
   async query(query, options = {}) {
     const t0 = Date.now();
-
-    const { type = Format.Arrow } = options;
-    const response = await this.request({ type, sql: String(query) });
-    const table = await (type === Format.Arrow
-      ? (response.getChild ? response : tableFromIPC(response))
-      : response.json());
-
+    const { type = 'arrow' } = options;
+    const table = await this.db.query({ type, sql: String(query) });
     console.log(`Query time: ${Date.now()-t0}`);
     return table;
   }
@@ -52,7 +53,7 @@ export class Coordinator {
 
     const q = this.query(
       `PRAGMA table_info('${table}')`,
-      { type: Format.JSON }
+      { type: 'json' }
     );
 
     return (cache[table] = q.then(result => {

@@ -4,6 +4,10 @@ body {
 
 h1, h2 { font-size: 16px; }
 
+header {
+  margin-bottom: 0.5em;
+}
+
 label { margin-right: 0.5em; }
 
 .concat-horizontal {

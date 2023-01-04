@@ -7,16 +7,12 @@ export async function wasmClient(options) {
   return {
     db,
     con,
-    client: async query => {
-      try {
-        const { type, sql } = query;
-        const result = await con.query(sql);
-        return type === 'json'
-          ? { json: () => Array.from(result) }
-          : result;
-      } catch (err) {
-        console.error(err);
-      }
+    query: async query => {
+      const { type, sql } = query;
+      const result = await con.query(sql);
+      return type === 'exec' ? undefined
+        : type === 'arrow' ? result
+        : Array.from(result);
     }
   };
 }

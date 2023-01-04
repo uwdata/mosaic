@@ -1,15 +1,18 @@
-export function socket(uri = 'ws://localhost:3000/') {
-  let ws;
+import { tableFromIPC } from 'apache-arrow';
+
+export function socketClient(uri = 'ws://localhost:3000/') {
+  const queue = [];
   let connected = false;
   let request = null;
-  const queue = [];
+  let ws;
 
   const events = {
-    open: () => {
+    open() {
       connected = true;
       next();
     },
-    close: () => {
+
+    close() {
       connected = false;
       request = null;
       ws = null;
@@ -17,7 +20,8 @@ export function socket(uri = 'ws://localhost:3000/') {
         queue.shift().reject('Socket closed');
       }
     },
-    error: event => {
+
+    error(event) {
       if (request) {
         const { reject } = request;
         request = null;
@@ -27,24 +31,25 @@ export function socket(uri = 'ws://localhost:3000/') {
         console.error('WebSocket error: ', event);
       }
     },
-    message: ({ data }) => {
+
+    message({ data }) {
       if (request) {
-        const { resolve, reject } = request;
+        const { query, resolve, reject } = request;
 
         // clear state, start next request
         request = null;
         next();
 
         // process result
-        if (data?.arrayBuffer) {
-          resolve(data.arrayBuffer());
-        } else {
+        if (typeof data === 'string') {
           const json = JSON.parse(data);
-          if (json.error) {
-            reject(json.error);
-          } else {
-            resolve({ json: () => json });
-          }
+          json.error ? reject(json.error) : resolve(json);
+        } else if (query.type === 'exec') {
+          resolve();
+        } else if (query.type === 'arrow') {
+          resolve(tableFromIPC(data.arrayBuffer()));
+        } else {
+          throw new Error(`Unexpected socket data: ${data}`);
         }
       } else {
         console.log('WebSocket message: ', data);
@@ -61,18 +66,25 @@ export function socket(uri = 'ws://localhost:3000/') {
 
   function enqueue(query, resolve, reject) {
     if (ws == null) init();
-    queue.push({ body: JSON.stringify(query), resolve, reject });
+    queue.push({ query, resolve, reject });
     if (connected && !request) next();
   }
 
   function next() {
     if (queue.length) {
       request = queue.shift();
-      ws.send(request.body);
+      ws.send(JSON.stringify(request.query));
     }
   }
 
-  return query => new Promise(
-    (resolve, reject) => enqueue(query, resolve, reject)
-  );
+  return {
+    get connected() {
+      return connected;
+    },
+    query(query) {
+      return new Promise(
+        (resolve, reject) => enqueue(query, resolve, reject)
+      );
+    }
+  };
 }

@@ -136,5 +136,13 @@ export {
 } from './directives/plots.js';
 
 export {
+  socketClient
+} from '../mosaic/clients/socket.js';
+
+export {
+  restClient
+} from '../mosaic/clients/rest.js';
+
+export {
   wasmClient
-} from '../duckdb-wasm/wasm.js';
+} from '../mosaic/clients/wasm.js';

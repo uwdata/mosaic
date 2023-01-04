@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Examples</title>
+  <script src="../../dist/vgplot.js"></script>
+  <link href="../styles.css" rel="stylesheet">
+</head>
+<body>
+  <header style="margin-bottom: 1em;">
+    <strong style="margin-right: 0.5em;">Examples</strong>
+
+    <span style="margin-right: 0.5em;">
+      Example:
+      <select id="examples">
+        <option value="none"></option>
+        <option value="athletes">Athletes</option>
+        <option value="contours">Contours</option>
+        <option value="cross-filter">Cross-Filter</option>
+        <option value="density">Density</option>
+        <option value="density2d">Density 2D</option>
+        <option value="facet">Facet</option>
+        <option value="hexbin">Hexbin</option>
+        <option value="overview-detail">Overview + Detail</option>
+        <option value="regression">Regression</option>
+        <option value="splom">SPLOM</option>
+        <option value="table">Table</option>
+        <option value="weather">Seattle Weather</option>
+      </select>
+    </span>
+
+    <span style="margin-right: 0.5em;"></span>
+      Client:
+      <select id="clients">
+        <option value="socket" selected>Socket</option>
+        <option value="rest">REST</option>
+        <option value="wasm">WASM</option>
+      </select>
+    </span>
+  </header>
+  <div id="view"></div>
+<script type="module">
+  import { setDatabaseClient } from '../database-client.js';
+  const { mc, socketClient, restClient, wasmClient } = vgplot;
+  const view = document.querySelector('#view');
+
+  const clientMenu = document.querySelector('#clients');
+  clientMenu.addEventListener('change', () => {
+    setDatabaseClient(clientMenu.value)
+  });
+  await setDatabaseClient(clientMenu.value);
+
+  const exampleMenu = document.querySelector('#examples');
+  exampleMenu.addEventListener('change', () => {
+    load(exampleMenu.value)
+  });
+  load(exampleMenu.value);
+
+  async function load(name) {
+    view.innerHTML = '';
+    mc.clear();
+    if (name !== 'none') (await import(`./${name}.js`)).default(view);
+  }
+</script>
+</body>
+</html>
