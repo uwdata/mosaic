@@ -1,4 +1,4 @@
-import { brushX, brushY, select } from 'd3';
+import { brushX, brushY, select, min, max } from 'd3';
 import { isBetween } from '../../sql/index.js';
 import { closeTo } from './close-to.js';
 
@@ -17,6 +17,7 @@ export class Interval1DSelection {
       }
       if (!closeTo(range, this.value)) {
         this.value = range;
+        this.g.call(this.brush.move, selection);
         this.selection.update({
           source: this.mark,
           channels: [this.channel],
@@ -29,21 +30,19 @@ export class Interval1DSelection {
   }
 
   init(svg) {
-    const { brush, channel, mark } = this;
-    const { left, top, bottom, right } = mark.plot.margins();
-    const width = +svg.getAttribute('width');
-    const height = +svg.getAttribute('height');
-
+    const { brush, channel } = this;
     this.scale = svg.scale(channel);
-    brush.extent([[left, top], [width - right, height - bottom]]);
 
-    const g = select(svg)
+    const rx = svg.scale('x').range;
+    const ry = svg.scale('y').range;
+    brush.extent([[min(rx), min(ry)], [max(rx), max(ry)]]);
+
+    const facets = select(svg).selectAll('g[aria-label="facet"]');
+    const root = facets.size() ? facets : select(svg);
+    this.g = root
       .append('g')
       .attr('class', `interval-${channel}`)
-      .call(brush);
-
-    if (this.value) {
-      g.call(brush.move, this.value.map(this.scale.apply));
-    }
+      .call(brush)
+      .call(brush.move, this.value?.map(this.scale.apply));
   }
 }
