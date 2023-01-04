@@ -135,15 +135,7 @@ export async function plotRenderer(plot) {
   const svg = Plot.plot(spec);
 
   // annotate svg with mark indices
-  // TODO: work with faceted data (aria-label: facet)
-  let index = -1;
-  for (const child of svg.children) {
-    const skip = child.nodeName === 'style' ||
-      (child.getAttribute('aria-label') || '').endsWith('-axis');
-    if (!skip) {
-      child.setAttribute('data-index', indices[++index]);
-    }
-  }
+  annotatePlot(svg, indices);
 
   // set fixed entries
   symbols.forEach(key => {
@@ -227,4 +219,27 @@ function inferLabel(key, spec, marks, channels = [key]) {
 
   // add label to spec
   spec[key] = { ...scale, label: candidate };
+}
+
+function annotatePlot(svg, indices) {
+  // TODO: work with faceted data (aria-label: facet)
+  const facets = svg.querySelectorAll('g[aria-label="facet"]');
+  if (facets.length) {
+    for (const facet of facets) {
+      annotateMarks(facet, indices);
+    }
+  } else {
+    annotateMarks(svg, indices);
+  }
+}
+
+function annotateMarks(svg, indices) {
+  let index = -1;
+  for (const child of svg.children) {
+    const skip = child.nodeName === 'style' ||
+      (child.getAttribute('aria-label') || '').endsWith('-axis');
+    if (!skip) {
+      child.setAttribute('data-index', indices[++index]);
+    }
+  }
 }
