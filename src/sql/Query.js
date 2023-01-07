@@ -262,7 +262,7 @@ export class Query {
     // SAMPLE
     if (sample) {
       const { rows, perc, method, seed } = sample;
-      const size = sample.rows ? `${sample.rows} ROWS` : `${sample.perc} PERCENT`;
+      const size = rows ? `${rows} ROWS` : `${perc} PERCENT`;
       const how = method ? ` (${method}${seed != null ? `, ${seed}` : ''})` : '';
       sql.push(`USING SAMPLE ${size}${how}`);
     }
