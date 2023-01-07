@@ -17,7 +17,7 @@
         </select>
       </span>
     </header>
-    <textarea style="width: 98%; height: 170px;" id="sql"></textarea>
+    <textarea style="width: 98%; height: 140px;" id="sql"></textarea>
     <br/>
     <button id="submit">Query</button>
     <br/>
@@ -37,10 +37,9 @@ const output = document.querySelector('#result');
 const tableName = 'query_result';
 
 submit.addEventListener('click', async () => {
-  await mc.exec(`
-    DROP VIEW IF EXISTS ${tableName};
-    CREATE VIEW ${tableName} AS ${input.value}
-  `);
+  await mc.exec(
+    `DROP TABLE IF EXISTS ${tableName}; CREATE TABLE ${tableName} AS ${input.value}`
+  );
   mc.cache.clear();
   result.replaceChildren(table({ table: tableName, height: 500 }));
 });
