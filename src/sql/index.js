@@ -82,6 +82,10 @@ export {
 } from './aggregate.js';
 
 export {
+  epoch_ms
+} from './datetime.js';
+
+export {
   unnest
 } from './list.js';
 

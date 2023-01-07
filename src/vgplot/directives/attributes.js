@@ -71,6 +71,14 @@ export function axisY(value) {
   return attribute('axisY', value);
 }
 
+export function axisLineX(value) {
+  return attribute('axisLineX', value);
+}
+
+export function axisLineY(value) {
+  return attribute('axisLineY', value);
+}
+
 export function grid(value) {
   return attribute('grid', value);
 }
@@ -81,14 +89,6 @@ export function gridX(value) {
 
 export function gridY(value) {
   return attribute('gridY', value);
-}
-
-export function lineX(value) {
-  return attribute('lineX', value);
-}
-
-export function lineY(value) {
-  return attribute('lineY', value);
 }
 
 export function scaleX(value) {

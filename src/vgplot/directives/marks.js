@@ -33,6 +33,10 @@ export const bar = (...args) => mark('bar', ...args);
 export const barX = (...args) => mark('barX', ...args);
 export const barY = (...args) => mark('barY', ...args);
 
+export const line = (...args) => mark('line', ...args);
+export const lineX = (...args) => mark('lineX', ...args);
+export const lineY = (...args) => mark('lineY', ...args);
+
 export const rectX = (...args) => mark('rectX', ...args);
 export const rectY = (...args) => mark('rectY', ...args);
 

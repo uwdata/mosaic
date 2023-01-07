@@ -19,6 +19,10 @@ export class Ref {
   }
 }
 
+export function isColumnRefFor(ref, name) {
+  return ref instanceof Ref && ref.column === name;
+}
+
 export function asColumn(value) {
   return typeof value === 'string' ? column(value) : value;
 }

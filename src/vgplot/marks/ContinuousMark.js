@@ -1,4 +1,4 @@
-import { Query, argmax, argmin, expr, max, min, unnest } from '../../sql/index.js';
+import { Query, argmax, argmin, expr, max, min, epoch_ms } from '../../sql/index.js';
 import { Mark } from './Mark.js';
 
 export class ContinuousMark extends Mark {
@@ -14,15 +14,17 @@ export class ContinuousMark extends Mark {
 
     if (transform) {
       // TODO: handle stacked data
-      const val = dim === 'x' ? 'y' : 'x';
       const { column } = this.channelField(dim);
-      const { rows, min, max } = stats.find(s => s.column === column);
+      const { rows, type, min, max } = stats.find(s => s.column === column);
       const size = dim === 'x' ? plot.innerWidth() : plot.innerHeight();
 
       const [ lo, hi ] = filter[0]?.value || [min, max];
       const scale = (hi - lo) / (max - min);
       if (rows * scale > size * 4) {
-        return m4(q, dim, val, lo, hi, size);
+        const dd = type === 'date' ? epoch_ms(dim) : dim;
+        const val = dim === 'x' ? 'y' : 'x';
+        const cols = q.select().map(c => c.as).filter(c => c !== 'x' && c !== 'y');
+        return m4(q, dd, dim, val, lo, hi, size, cols);
       }
     }
 
@@ -30,15 +32,20 @@ export class ContinuousMark extends Mark {
   }
 }
 
-// TODO: pass through other dimensions / groupby values
-// TODO: convert x bins for date time values
-function m4(input, x, y, lo, hi, width) {
-  return Query.from(input)
-    .select({
-      [x]: unnest([min(x), max(x), argmin(x, y), argmax(x, y)]),
-      [y]: unnest([argmin(y, x), argmax(y, x), min(y), max(y)])
-    })
-    .distinct()
-    .groupby(expr(`FLOOR(${width / (hi - lo)}::DOUBLE * (${x} - ${lo}::DOUBLE))`))
-    .orderby(x);
+function m4(input, bx, x, y, lo, hi, width, cols = []) {
+  const bins = expr(`FLOOR(${width / (hi - lo)}::DOUBLE * (${bx} - ${lo}::DOUBLE))`);
+
+  const q = (cols) => Query
+    .from(input)
+    .select(Object.fromEntries(cols))
+    .groupby(bins);
+
+  return Query
+    .union(
+      q([[x, min(x)], [y, argmin(y, x)], ...cols.map(c => [c, argmin(c, x)])]),
+      q([[x, max(x)], [y, argmax(y, x)], ...cols.map(c => [c, argmax(c, x)])]),
+      q([[x, argmin(x, y)], [y, min(y)], ...cols.map(c => [c, argmin(c, y)])]),
+      q([[x, argmax(x, y)], [y, max(y)], ...cols.map(c => [c, argmax(c, y)])])
+    )
+    .orderby(cols, x);
 }

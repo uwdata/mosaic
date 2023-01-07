@@ -1,4 +1,4 @@
-import { asColumn, asRelation, Ref } from './ref.js';
+import { asColumn, asRelation, isColumnRefFor, Ref } from './ref.js';
 
 export class Query {
 
@@ -244,7 +244,7 @@ export class Query {
 
     // SELECT
     const sels = select.map(
-      ({ as, expr }) => as === expr.column && !expr.table
+      ({ as, expr }) => isColumnRefFor(expr, as) && !expr.table
         ? `${expr}`
         : `${expr} AS "${as}"`
     );
@@ -307,142 +307,65 @@ export class SetOperation {
   constructor(op, queries) {
     this.op = op;
     this.queries = queries;
+    this.query = { orderby: [] };
+  }
+
+  orderby(...expr) {
+    const { query } = this;
+    if (expr.length === 0) {
+      return query.orderby;
+    } else {
+      query.orderby = query.orderby.concat(
+        expr.flat().filter(x => x).map(asColumn)
+      );
+      return this;
+    }
+  }
+
+  limit(value) {
+    const { query } = this;
+    if (arguments.length === 0) {
+      return query.limit;
+    } else {
+      query.limit = Number.isFinite(value) ? value : undefined;
+      return this;
+    }
+  }
+
+  offset(value) {
+    const { query } = this;
+    if (arguments.length === 0) {
+      return query.offset;
+    } else {
+      query.offset = Number.isFinite(value) ? value : undefined;
+      return this;
+    }
   }
 
   toString() {
-    const { op, queries } = this;
-    return queries.join(` ${op} `);
+    const { op, queries, query: { orderby, limit, offset } } = this;
+
+    const sql = [ queries.join(` ${op} `) ];
+
+    // ORDER BY
+    if (orderby.length) {
+      sql.push(`ORDER BY ${orderby.join(', ')}`);
+    }
+
+    // LIMIT
+    if (Number.isFinite(limit)) {
+      sql.push(`LIMIT ${limit}`);
+    }
+
+    // OFFSET
+    if (Number.isFinite(offset)) {
+      sql.push(`OFFSET ${offset}`);
+    }
+
+    return sql.join(' ');
   }
 }
 
 function unquote(s) {
   return s[0] === '"' && s[s.length-1] === '"' ? s.slice(1, -1) : s;
 }
-
-// function jsonToSQL(q) {
-//   const sql = from(q.from);
-//   const select = {};
-//   const dims = [];
-//   let group = false;
-
-//   // TODO: support more than conjunction
-//   if (q.where) {
-//     const predicate = and(q.where);
-//     if (predicate.length) {
-//       sql.where(predicate);
-//     }
-//   }
-
-//   for (const [key, c] of Object.entries(q.select)) {
-//     const { aggregate, transform, field, value } = c;
-//     const f = ref(key);
-//     if (aggregate) {
-//       group = true;
-//       const arg = (c.distinct ? 'DISTINCT ' : '') + (field || '');
-//       const filter = c.filter ? ` FILTER (${c.filter})` : '';
-//       select[key] = `${aggregate}(${arg})${filter}`;
-//       if (aggregate === 'count') {
-//         select[key] += '::DOUBLE';
-//       }
-//     } else if (transform) {
-//       dims.push(f);
-//       transforms[transform](q, sql, select, key, c);
-//     } else if (field) {
-//       dims.push(f);
-//       const arg = (c.distinct ? 'DISTINCT ' : '') + (field || '');
-//       select[key] = arg;
-//     } else if (value !== undefined) {
-//       // skip, nothing to do
-//     } else {
-//       throw new Error(`Unrecognized channel entry: ${JSON.stringify(c)}`);
-//     }
-//   }
-//   sql.select(select);
-
-//   if (group) {
-//     sql.groupby(dims);
-//   }
-
-//   if (q.order) {
-//     sql.orderby(q.order.map(o => ref(o.field) + (o.desc ? ' DESC NULLS LAST' : '')));
-//   }
-
-//   if (q.limit) {
-//     sql.limit(q.limit);
-//   }
-
-//   if (q.offset) {
-//     sql.offset(q.offset);
-//   }
-
-//   let query = sql.toString();
-//   (q.transform || []).forEach(spec => {
-//     const tx = transforms[spec.type];
-//     if (tx) {
-//       query = tx(spec, query, q);
-//     } else {
-//       console.error(`Unrecognized transform: ${spec.type}`);
-//     }
-//   });
-
-//   return query;
-// }
-
-// function and(clauses) {
-//   const c = clauses.map(c => clause(c)).filter(x => x);
-//   return c.length > 1 ? `(${c.join(' AND ')})` : c[0] || '';
-// }
-
-// function or(clauses) {
-//   const c = clauses.map(c => clause(c)).filter(x => x);
-//   return c.length > 1 ? `(${c.join(' OR ')})` : c[0] || '';
-// }
-
-// function clause(c) {
-//   if (c.value == null) return null;
-//   switch (c.type) {
-//     case 'and':
-//       return and(c.value); // TODO: parens?
-//     case 'or':
-//       return or(c.value);
-//     case 'equals':
-//       return `${ref(c.field)} = ${format(c.value)}`;
-//     case 'notnull':
-//       return isNotNull(ref(c.field));
-//     case 'range':
-//       return isInRange(ref(c.field), formatRange(c.value));
-//     case 'prefix':
-//       return startsWith(ref(c.field), format(c.value));
-//     case 'suffix':
-//       return endsWith(ref(c.field), format(c.value));
-//     case 'contains':
-//       return contains(ref(c.field), format(c.value));
-//     case 'regexp':
-//       return regexp(ref(c.field), format(c.value));
-//     default:
-//       throw new Error(`Unsupported clause: ${JSON.stringify(c).slice(0, 50)}`);
-//   }
-// }
-
-// function format(value) {
-//   let d;
-//   switch (typeof value) {
-//     case 'string':
-//       if (value.endsWith('Z') && !Number.isNaN(+(d = new Date(value)))) {
-//         // TODO: date vs. timestamp
-//         return `MAKE_DATE(${d.getFullYear()}, ${d.getMonth()+1}, ${d.getDate()})`;
-//       } else {
-//         return `'${value}'`;
-//       }
-//     case 'boolean':
-//       return value ? 'TRUE' : 'FALSE';
-//     case 'object':
-//       throw new Error('Unsupported value type'); // TODO
-//     default:
-//       return value;
-//   }
-// }
-
-// function formatRange(range) {
-//   return range.map(format);
-// }
