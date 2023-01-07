@@ -6,6 +6,9 @@ function setAttribute(plot, name, value) {
       plot.setAttribute(name, value);
       plot.update();
     });
+    if (value.value !== undefined) {
+      plot.setAttribute(name, value.value);
+    }
   } else {
     plot.setAttribute(name, value);
   }
