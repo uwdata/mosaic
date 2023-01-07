@@ -30,6 +30,8 @@ export class ContinuousMark extends Mark {
   }
 }
 
+// TODO: pass through other dimensions / groupby values
+// TODO: convert x bins for date time values
 function m4(input, x, y, lo, hi, width) {
   return Query.from(input)
     .select({
@@ -37,6 +39,6 @@ function m4(input, x, y, lo, hi, width) {
       [y]: unnest([argmin(y, x), argmax(y, x), min(y), max(y)])
     })
     .distinct()
-    .groupby(expr(`FLOOR(${width / (hi - lo)}::DOUBLE * (${x} - ${lo}))`))
+    .groupby(expr(`FLOOR(${width / (hi - lo)}::DOUBLE * (${x} - ${lo}::DOUBLE))`))
     .orderby(x);
 }
