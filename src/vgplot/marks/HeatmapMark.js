@@ -1,6 +1,6 @@
 import { scale } from '@observablehq/plot';
 import { isColor } from './util/is-color.js';
-import { createCanvas, opacityMap, heatmap, palette } from './util/heatmap.js';
+import { createCanvas, heatmap, opacityMap, palette } from './util/heatmap.js';
 import { Density2DMark } from './Density2DMark.js';
 
 export class HeatmapMark extends Density2DMark {
@@ -12,30 +12,23 @@ export class HeatmapMark extends Density2DMark {
     super.convolve();
     const { bins, kde, groupby } = this;
     const [ w, h ] = bins;
-    const canvas = this.canvas || (this.canvas = createCanvas(w, h));
 
-    // compute kde grid extents
-    let lo = 0;
-    let hi = 0;
-    kde.forEach(grid => {
-      const n = grid.length;
-      for (let i = 0; i < n; ++i) {
-        const v = grid[i];
-        if (v < lo) lo = v;
-        if (v > hi) hi = v;
-      }
-    });
-    const clamp = [lo, hi];
+    // raster data
+    const { canvas, ctx, img } = imageData(this, w, h);
 
-    // gather color domain if needed
+    // scale function to map densities to [0, 1]
+    const s = imageScale(this);
+
+    // gather color domain as needed
     const idx = groupby.indexOf('fill');
     const domain = idx < 0 ? [] : kde.map(({ key }) => key[idx]);
 
     // generate heatmap images
     this.src = kde.map(grid => {
-      const scheme = createScheme(this, domain, grid.key?.[idx]);
-      const src = heatmap({ grid, w, h, canvas, clamp, scheme }).toDataURL();
-      return { src };
+      const palette = imagePalette(this, domain, grid.key?.[idx]);
+      heatmap(grid, img.data, w, h, s, palette);
+      ctx.putImageData(img, 0, 0);
+      return { src: canvas.toDataURL() };
     });
 
     return this;
@@ -54,31 +47,63 @@ export class HeatmapMark extends Density2DMark {
   }
 }
 
-function createScheme(mark, domain, value) {
-  const { densityFill, groupby, plot } = mark;
+function imageData(mark, w, h) {
+  if (!mark.image) {
+    const canvas = createCanvas(w, h);
+    const ctx = canvas.getContext('2d', { willReadFrequently: true });
+    const img = ctx.getImageData(0, 0, w, h);
+    mark.image = { canvas, ctx, img };
+  }
+  return mark.image;
+}
+
+function imageScale(mark) {
+  const { densityFill, kde, plot } = mark;
+  let domain = densityFill && plot.getAttribute('domainColor');
+
+  // compute kde grid extents if no explicit domain
+  if (!domain) {
+    let lo = 0, hi = 0;
+    kde.forEach(grid => {
+      const n = grid.length;
+      for (let i = 0; i < n; ++i) {
+        const v = grid[i];
+        if (v < lo) lo = v;
+        if (v > hi) hi = v;
+      }
+    });
+    domain = [lo, hi];
+  }
+
+  const type = plot.getAttribute('scaleColor');
+  return scale({ x: { type, domain, range: [0, 1] } }).apply;
+}
+
+function imagePalette(mark, domain, value, steps = 512) {
+  const { densityFill, plot } = mark;
   const scheme = plot.getAttribute('schemeColor');
-  const fill = mark.channels.find(c => c.channel === 'fill');
-  let interp;
+  let color;
 
   if (densityFill) {
-    // fill is based on computed densities
     if (scheme) {
       try {
-        interp = scale({color: { scheme, domain: [0, 1] }}).interpolate;
+        return palette(
+          steps,
+          scale({color: { scheme, domain: [0, 1] }}).interpolate
+        );
       } catch (err) {
         console.warn(err);
       }
-    } else {
-      interp = opacityMap();
     }
   } else if (domain.length) {
     // fill is based on data values
-    const color = scale({color: { scheme: (scheme || 'tableau10'), domain }});
-    interp = opacityMap(color.apply(value));
-  } else if (isColor(fill?.value)) {
+    const s = scheme || 'tableau10';
+    color = scale({ color: { scheme: s, domain } }).apply(value);
+  } else {
     // fill color is a constant
-    interp = opacityMap(fill.value);
+    const fill = mark.channels.find(c => c.channel === 'fill');
+    color = isColor(fill?.value) ? fill.value : undefined;
   }
 
-  return palette(512, interp);
+  return palette(steps, opacityMap(color));
 }

@@ -24,14 +24,16 @@ export class ContourMark extends Density2DMark {
   contours() {
     const { bins, kde, thresholds, extentX, extentY, groupby } = this;
 
-    if (this.densityFill || this.densityStroke) {
-      this.plot.setAttribute('zeroColor', true);
-    }
-
     let tz = thresholds;
     if (!Array.isArray(tz)) {
       const scale = max(kde.map(k => max(k)));
       tz = Array.from({length: tz - 1}, (_, i) => (scale * (i + 1)) / tz);
+    }
+
+    if (this.densityFill || this.densityStroke) {
+      if (this.plot.getAttribute('scaleColor') !== 'log') {
+        this.plot.setAttribute('zeroColor', true);
+      }
     }
 
     // transform contours into data space coordinates
