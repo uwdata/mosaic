@@ -28,7 +28,7 @@ export class ContinuousMark extends Mark {
       }
     }
 
-    return q;
+    return q.orderby(dim);
   }
 }
 
