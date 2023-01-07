@@ -46,6 +46,11 @@ export class DuckDB {
       FROM read_csv_auto('${fileName}', ${opt});`);
   }
 
+  async parquet(tableName, fileName) {
+    return this.exec(`CREATE TABLE ${tableName} AS SELECT *
+      FROM read_parquet('${fileName}');`);
+  }
+
   async ipc(tableName, buffer) {
     const bufName = `__ipc__${tableName}`;
     const arrowData = ArrayBuffer.isView(buffer) ? buffer : await readFile(buffer);
