@@ -1,9 +1,5 @@
-import { expr } from './ref.js';
+import { transform } from './ref.js';
 
-export function epoch_ms(d) {
-  const cols = typeof d === 'string' ? [d] : (d.columns || []);
-  return expr(
-    `(1000 * (epoch(${d}) - second(${d})) + millisecond(${d}))::DOUBLE`,
-    cols
-  );
-}
+export const epoch_ms = transform(
+  d => `(1000 * (epoch(${d}) - second(${d})) + millisecond(${d}))::DOUBLE`
+);

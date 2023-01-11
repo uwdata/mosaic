@@ -58,7 +58,14 @@ export function desc(expr) {
 export function expr(sql, columns) {
   return {
     expr: sql,
-    toString: () => sql,
+    toString: () => `${sql}`,
     get columns() { return columns || []; }
   };
+}
+
+export function transform(func) {
+  return value => expr(
+    func(value),
+    asColumn(value).columns
+  )
 }

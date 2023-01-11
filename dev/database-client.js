@@ -1,5 +1,7 @@
 const { mc, socketClient, restClient, wasmClient } = vgplot;
 
+let wasm;
+
 export async function setDatabaseClient(type, options) {
   let client;
   switch (type) {
@@ -10,11 +12,12 @@ export async function setDatabaseClient(type, options) {
       client = restClient(options);
       break;
     case 'wasm':
-      client = await initWasmClient(options);
+      client = (wasm || (wasm = await initWasmClient(options)));
       break;
     default:
       throw new Error(`Unrecognized client type: ${type}`);
   }
+  console.log('DATABASE CLIENT', type);
   mc.databaseClient(client);
 }
 
@@ -41,12 +44,6 @@ async function initWasmClient(options) {
     ipc('flights', `${dir}/flights-200k.arrow`),
     ipc('walk', `${dir}/random-walk.arrow`)
   ]);
-
-  // TODO: accomplish via transforms
-  await con.query(`
-    CREATE TABLE weather AS
-    SELECT *, make_date(2012, month(date), day(date)) AS doy FROM seattle
-  `);
 
   return client;
 }

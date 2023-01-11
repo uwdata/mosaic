@@ -1,7 +1,7 @@
 export default function(el) {
   const {
     plot, vconcat, from, dot, barX,
-    count, intervalX, highlight, selectY,
+    count, dateMonthDay, intervalX, highlight, selectY,
     domainXY, domainX, domainY, domainColor, rangeColor, domainR, rangeR,
     tickFormatX, labelY,
     width, Fixed, Selection
@@ -22,7 +22,7 @@ export default function(el) {
       plot(
         dot(
           from(table, { filterBy: click }),
-          { x: 'doy', y: 'temp_max', fill: 'weather', r: 'precipitation', order: 'precipitation', opacity: 0.7 }
+          { x: dateMonthDay('date'), y: 'temp_max', fill: 'weather', r: 'precipitation', opacity: 0.7 }
         ),
         intervalX({ as: range }),
         highlight(range, { fill: '#eee' }),

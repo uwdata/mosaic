@@ -1,11 +1,13 @@
 export {
+  Ref,
   asColumn,
   asRelation,
   all,
   column,
   desc,
   expr,
-  relation
+  relation,
+  transform
 } from './ref.js';
 
 export {
@@ -90,5 +92,6 @@ export {
 } from './list.js';
 
 export {
-  Query
+  Query,
+  isQuery
 } from './Query.js';
