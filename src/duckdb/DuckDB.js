@@ -5,7 +5,8 @@ import { mergeBuffers } from './merge-buffers.js';
 
 const CONFIG = [
   `PRAGMA temp_directory='./duckdb.tmp'`,
-  `LOAD arrow`
+  `INSTALL arrow`, `LOAD arrow`,
+  `INSTALL httpfs`, `LOAD httpfs`
 ];
 
 export class DuckDB {
