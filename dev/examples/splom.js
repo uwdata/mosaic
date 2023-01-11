@@ -10,7 +10,7 @@ export default function(el) {
 
   const columns = ['bill_length', 'bill_depth', 'flipper_length', 'body_mass'];
   const table = 'penguins';
-  const brush = new Selection({ cross: false });
+  const brush = new Selection({ union: true });
 
   function scatter(x, y, row, col, n) {
     const s = 135;
