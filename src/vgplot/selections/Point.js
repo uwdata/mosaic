@@ -12,7 +12,7 @@ export class PointSelection {
         : [c];
       for (let i = 0; i < q.length; ++i) {
         const f = mark.channelField(q[i]);
-        if (f) return [q[i], f.column];
+        if (f) return [q[i], f];
       }
       throw new Error(`Missing channel: ${c}`);
     });
@@ -26,7 +26,8 @@ export class PointSelection {
     svg.addEventListener('click', evt => {
       const target = evt.target;
       const s = {
-        source: mark,
+        schema: { type: 'point' },
+        client: mark,
         predicate: null
       };
 
@@ -52,10 +53,7 @@ export class PointSelection {
         // generate query clauses
         const clauses = [];
         for (const vals of state.values()) {
-          const pred = channels.map(([channel, field], i) => {
-            return eq(field, literal(vals[i]));
-            // { channel, field, type: 'equals', value: vals[i] };
-          });
+          const pred = channels.map(([, col], i) => eq(col, literal(vals[i])));
           if (pred.length > 1) {
             clauses.push(and(pred));
           } else {

@@ -25,13 +25,6 @@ export class Signal {
     return this;
   }
 
-  resolve(clause) {
-    const clauses = (this._value || [])
-      .filter(entry => entry.source !== clause.source);
-    clauses.push(clause);
-    this.update(clauses);
-  }
-
   addListener(callback) {
     if (this._listeners.indexOf(callback) < 0) {
       this._listeners.push(callback);

@@ -76,8 +76,16 @@ export {
 } from './directives/data.js';
 
 export {
+  dateDay,
+  dateMonth,
+  dateMonthDay
+} from './transforms/datetime.js';
+
+export {
+  Query,
   avg,
   count,
+  expr,
   max,
   median,
   min,

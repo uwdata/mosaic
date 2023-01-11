@@ -7,7 +7,8 @@ export class Interval1DSelection {
     this.mark = mark;
     this.channel = channel;
     this.selection = selection;
-    this.field = field || mark.channelField(channel, channel+'1', channel+'2').column;
+    this.field = field || mark.channelField(channel, channel+'1', channel+'2');
+    this.field = this.field?.column || this.field;
     this.brush = channel === 'y' ? brushY() : brushX();
 
     this.brush.on('brush end', ({ selection }) => {
@@ -19,9 +20,8 @@ export class Interval1DSelection {
         this.value = range;
         this.g.call(this.brush.move, selection);
         this.selection.update({
-          source: this.mark,
-          channels: [this.channel],
-          fields: [this.field],
+          schema: { type: 'interval', scales: [this.scale] },
+          client: this.mark,
           value: range,
           predicate: range ? isBetween(this.field, range) : null
         });

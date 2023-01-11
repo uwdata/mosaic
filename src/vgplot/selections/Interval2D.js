@@ -7,8 +7,8 @@ export class Interval2DSelection {
     this.mark = mark;
     this.selection = selection;
 
-    this.xfield = xfield || mark.channelField('x', 'x1', 'x2').column;
-    this.yfield = yfield || mark.channelField('y', 'y1', 'y2').column;
+    this.xfield = xfield || mark.channelField('x', 'x1', 'x2');
+    this.yfield = yfield || mark.channelField('y', 'y1', 'y2');
     this.brush = brush();
 
     this.brush.on('brush end', ({ selection }) => {
@@ -26,9 +26,8 @@ export class Interval2DSelection {
         this.value = selection ? [xr, yr] : null;
         this.g.call(this.brush.move, selection);
         this.selection.update({
-          source: this.mark,
-          channels: ['x', 'y'],
-          fields: [xfield, yfield],
+          schema: { type: 'interval', scales: [this.xscale, this.yscale] },
+          client: this.mark,
           value,
           predicate: selection
             ? and(isBetween(xfield, xr), isBetween(yfield, yr))

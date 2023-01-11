@@ -8,40 +8,44 @@ export function isSelection(x) {
 export class Selection extends Signal {
   constructor({ union = false, cross = !union } = {}) {
     super(null, []);
-    this._predicate = null;
-    this._latest = null;
-    this._union = union;
-    this._all = !cross;
+    this.active = null;
+    this.union = union;
+    this.cross = cross;
+  }
+
+  clone() {
+    const s = new Selection();
+    s.active = this.active;
+    s.union = this.union;
+    s.cross = this.cross;
+    s._value = this._value;
+    return s;
   }
 
   get value() {
-    const { selection } = this;
-    return selection[selection.length - 1]?.value;
+    const { clauses } = this;
+    return clauses[clauses.length - 1]?.value;
   }
 
-  get selection() {
+  get clauses() {
     return super.value;
   }
 
   update(clause) {
-    const { source, predicate } = clause;
-    this._latest = source;
-    this._predicate = null;
-    const clauses = this.selection.filter(s => s.source !== source);
+    const { client, predicate } = clause;
+    this.active = clause;
+    const clauses = this.clauses.filter(s => s.client !== client);
     if (predicate) clauses.push(clause);
-    super.update(clauses);
+    return super.update(clauses);
   }
 
-  source() {
-    const { selection } = this;
-    return selection.length === 1 ? selection[0].source : null;
-  }
-
-  predicate(source) {
-    const { selection, _all, _union, _latest } = this;
-    if (!_all && source === _latest) return undefined;
-    const sels = _all ? selection : selection.filter(s => s.source !== source);
-    const list = sels.map(s => s.predicate);
-    return _union ? or(list) : list;
+  predicate(client) {
+    const { active, clauses, cross, union } = this;
+    if (cross && client === active?.client) return undefined;
+    const list = (cross
+      ? clauses.filter(s => s.client !== client)
+      : clauses
+    ).map(s => s.predicate);
+    return union && list.length > 1 ? or(list) : list;
   }
 }

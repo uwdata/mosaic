@@ -1,25 +1,28 @@
-import { expr } from '../../sql/index.js';
+import { Ref, expr } from '../../sql/index.js';
+
+class BinTransform extends Ref {
+  constructor(column, options) {
+    super(undefined, column);
+    this.options = options;
+  }
+
+  transform(stats) {
+    const { column, options } = this;
+    const { min, max } = stats.find(s => s.column === column);
+    const b = bins(min, max, options);
+    const delta = `(${column} - ${b.min})`;
+    const alpha = `${(b.max - b.min) / b.steps}::DOUBLE`;
+    const off = options.offset ? '1 + ' : '';
+    const e = expr(
+      `${min} + ${alpha} * (${off}FLOOR(${delta} / ${alpha}))`,
+      [column]
+    );
+    return e;
+  }
+}
 
 export default function(column, options) {
-  return {
-    column,
-
-    get columns() {
-      return [column];
-    },
-
-    transform(stats) {
-      const { min, max } = stats.find(s => s.column === column);
-      const b = bins(min, max, options);
-      const delta = `(${column} - ${b.min})`;
-      const alpha = `${(b.max - b.min) / b.steps}::DOUBLE`;
-      const off = options.offset ? '1 + ' : '';
-      return expr(
-        `${min} + ${alpha} * (${off}FLOOR(${delta} / ${alpha}))`,
-        [column]
-      );
-    }
-  }
+  return new BinTransform(column, options);
 }
 
 export function bins(min, max, options) {
