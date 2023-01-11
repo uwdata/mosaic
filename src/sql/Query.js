@@ -83,8 +83,8 @@ export class Query {
           list.push({ as: e, expr: asColumn(e) });
         } else if (e instanceof Ref) {
           list.push({ as: e.column, expr: e });
-        } else if (e.as && e.expr) {
-          list.push(e);
+        } else if (Array.isArray(e)) {
+          list.push({ as: e[0], expr: e[1] });
         } else {
           for (const as in e) {
             list.push({ as: unquote(as), expr: asColumn(e[as]) });
@@ -119,13 +119,13 @@ export class Query {
           list.push({ as: e, from: asRelation(e) });
         } else if (e instanceof Ref) {
           list.push({ as: e.table, from: e });
-        } else if (e instanceof Query || e instanceof SetOperation) {
-          list.push({ from: e })
-        } else if (e.as && e.from) {
-          list.push(e);
+        } else if (isQuery(e) || Object.hasOwn(e, 'toString')) {
+          list.push({ from: e });
+        } else if (Array.isArray(e)) {
+          list.push({ as: e[0], from: e[1] });
         } else {
           for (const as in e) {
-            list.push({ as, from: asRelation(e[as]) });
+            list.push({ as: unquote(as), from: asRelation(e[as]) });
           }
         }
       });
@@ -228,6 +228,10 @@ export class Query {
     }
   }
 
+  get subqueries() {
+    return this.query.from.map(({ from }) => from).filter(f => isQuery(f));
+  }
+
   toString() {
     const {
       select, distinct, from, sample, where, groupby,
@@ -252,9 +256,7 @@ export class Query {
 
     // FROM
     const rels = from.map(({ as, from }) => {
-      const rel = from instanceof Query || from instanceof SetOperation
-        ? `(${from})`
-        : `${from}`;
+      const rel = isQuery(from) ? `(${from})` : `${from}`;
       return !as || as === from.table ? rel : `${rel} AS "${as}"`;
     });
     sql.push(`FROM ${rels.join(', ')}`);
@@ -306,7 +308,7 @@ export class Query {
 export class SetOperation {
   constructor(op, queries) {
     this.op = op;
-    this.queries = queries;
+    this.subqueries = queries;
     this.query = { orderby: [] };
   }
 
@@ -343,9 +345,9 @@ export class SetOperation {
   }
 
   toString() {
-    const { op, queries, query: { orderby, limit, offset } } = this;
+    const { op, subqueries, query: { orderby, limit, offset } } = this;
 
-    const sql = [ queries.join(` ${op} `) ];
+    const sql = [ subqueries.join(` ${op} `) ];
 
     // ORDER BY
     if (orderby.length) {
@@ -366,6 +368,14 @@ export class SetOperation {
   }
 }
 
+export function isQuery(value) {
+  return value instanceof Query || value instanceof SetOperation;
+}
+
 function unquote(s) {
-  return s[0] === '"' && s[s.length-1] === '"' ? s.slice(1, -1) : s;
+  return isDoubleQuoted(s) ? s.slice(1, -1) : s;
+}
+
+function isDoubleQuoted(s) {
+  return s[0] === '"' && s[s.length-1] === '"';
 }
