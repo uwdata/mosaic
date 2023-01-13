@@ -18,7 +18,8 @@ export class Coordinator {
   }
 
   clear() {
-    this.clients = [];
+    this.clients?.forEach((_, client) => this.disconnect(client));
+    this.clients = new Map;
     this.filterGroups = new Map;
   }
 
@@ -95,11 +96,12 @@ export class Coordinator {
   }
 
   async connect(client) {
-    if (this.clients.find(x => x.client === client)) {
+    const { clients, filterGroups } = this;
+
+    if (clients.has(client)) {
       throw new Error('Client already connected.');
-      // or no-op?
     }
-    this.clients.push(client);
+    clients.set(client, null); // mark as connected
 
     // retrieve field statistics
     const fields = await this.resolveColumns(client.fields());
@@ -112,15 +114,14 @@ export class Coordinator {
     const filter = client.filter?.();
     let group;
     if (filter) {
-      const groups = this.filterGroups;
-      if (!groups.has(filter)) {
-        groups.set(filter, new FilterGroup(this, filter));
+      if (!filterGroups.has(filter)) {
+        filterGroups.set(filter, new FilterGroup(this, filter));
       }
-      group = groups.get(filter).filter(client);
+      group = filterGroups.get(filter).add(client);
     }
 
     // query handler
-    const handle = async q => {
+    const handler = async q => {
       q = group ? group.query(client) : q;
       try {
         client.data(await this.query(q)).update();
@@ -128,15 +129,23 @@ export class Coordinator {
         console.error(err);
       }
     };
+    clients.set(client, handler);
 
     // register request handler, if defined
-    if (client.request) {
-      client.request.addListener(handle);
-    }
+    client.request?.addListener(handler);
 
     // TODO analyze / consolidate queries?
     const q = client.query();
-    if (q) handle(q);
+    if (q) handler(q);
+  }
+
+  disconnect(client) {
+    const { clients, filterGroups } = this;
+    if (!clients.has(client)) return;
+    const handler = clients.get(client);
+    clients.delete(client);
+    filterGroups.get(client.filter?.())?.remove(client);
+    client.request?.removeListener(handler);
   }
 
   async resolveColumns(list) {

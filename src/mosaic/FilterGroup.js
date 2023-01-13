@@ -12,8 +12,15 @@ export class FilterGroup {
     selection.addListener(callback);
   }
 
-  filter(client) {
-    this.clients.add(client);
+  add(client) {
+    (this.clients = new Set(this.clients)).add(client);
+    return this;
+  }
+
+  remove(client) {
+    if (this.clients.has(client)) {
+      (this.clients = new Set(this.clients)).delete(client);
+    }
     return this;
   }
 
