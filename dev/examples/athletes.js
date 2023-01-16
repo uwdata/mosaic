@@ -1,6 +1,6 @@
 export default function(el) {
   const {
-    mc, vconcat, hconcat, menu, search, table, plot, from,
+    vconcat, hconcat, menu, search, table, plot, from,
     dot, regressionY, domainXY, domainColor, Selection, Fixed
   } = vgplot;
 

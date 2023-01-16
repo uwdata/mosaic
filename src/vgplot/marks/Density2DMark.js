@@ -17,7 +17,7 @@ export class Density2DMark extends Mark {
     this.bandwidth = bandwidth;
 
     if (isSignal(bandwidth)) {
-      bandwidth.addListener(value => {
+      bandwidth.addListener('value', value => {
         this.bandwidth = value;
         if (this.grids) this.convolve().update();
       });

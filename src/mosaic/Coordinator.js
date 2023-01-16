@@ -83,7 +83,7 @@ export class Coordinator {
     clients.set(client, handler);
 
     // register request handler, if defined
-    client.request?.addListener(handler);
+    client.request?.addListener('value', handler);
 
     // TODO analyze / consolidate queries?
     handler();

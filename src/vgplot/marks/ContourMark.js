@@ -9,7 +9,7 @@ export class ContourMark extends Density2DMark {
     this.thresholds = thresholds;
 
     if (isSignal(thresholds)) {
-      thresholds.addListener(value => {
+      thresholds.addListener('value', value => {
         this.thresholds = value;
         if (this.grids) this.contours().update();
       });

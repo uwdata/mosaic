@@ -8,7 +8,7 @@ export class Highlight {
     this.mark = mark;
     this.selection = selection;
     this.channels = Object.entries(channels);
-    this.selection.addListener(throttle(() => this.update()));
+    this.selection.addListener('value', throttle(() => this.update()));
   }
 
   init(svg) {

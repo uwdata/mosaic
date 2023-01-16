@@ -11,11 +11,11 @@ export default function(el) {
 
   const bw = el.querySelector('#bw');
   bw.addEventListener('input', () => bandwidth.update(+bw.value));
-  const bandwidth = new Signal('bw', +bw.value);
+  const bandwidth = new Signal(+bw.value);
 
   const tz = el.querySelector('#tz');
   tz.addEventListener('input', () => thresholds.update(+tz.value));
-  const thresholds = new Signal('tz', +tz.value);
+  const thresholds = new Signal(+tz.value);
 
   const table = 'flights';
   const x = 'time';

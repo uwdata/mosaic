@@ -9,7 +9,7 @@ export class FilterGroup {
     this.indexer = new DataTileIndexer(mc, selection);
 
     const callback = throttle(() => this.update());
-    selection.addListener(callback);
+    selection.addListener('value', callback);
   }
 
   add(client) {

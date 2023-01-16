@@ -8,11 +8,11 @@ export default function(el = document.body) {
 
   const bw = el.querySelector('#bw');
   bw.addEventListener('input', () => bandwidth.update(+bw.value));
-  const bandwidth = new vg.Signal('bw', +bw.value);
+  const bandwidth = new vg.Signal(+bw.value);
 
   const tz = el.querySelector('#tz');
   tz.addEventListener('input', () => thresholds.update(+tz.value));
-  const thresholds = new vg.Signal('tz', +tz.value);
+  const thresholds = new vg.Signal(+tz.value);
 
   const table = 'penguins';
   const x = 'bill_length';

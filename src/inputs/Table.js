@@ -21,7 +21,7 @@ export class Table extends MosaicClient {
     this.format = format;
     this.offset = 0;
     this.limit = +rowBatch;
-    this.request = new Signal('query');
+    this.request = new Signal();
     this.pending = false;
 
     this.sortHeader = null;

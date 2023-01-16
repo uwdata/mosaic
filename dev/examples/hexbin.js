@@ -24,7 +24,7 @@ export default function(el) {
   const color = 'steelblue';
   const binWidth = 10;
   const query = new Selection();
-  const scale = new Signal('scale', menu.value);
+  const scale = new Signal(menu.value);
 
   el.appendChild(
     vconcat(

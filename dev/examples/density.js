@@ -12,7 +12,7 @@ export default function(el) {
   bw.addEventListener('input', () => bandwidth.update(+bw.value));
 
   const table = 'flights';
-  const bandwidth = new Signal('bw', +bw.value);
+  const bandwidth = new Signal(+bw.value);
   const brush = new Selection();
 
   el.appendChild(

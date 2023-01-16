@@ -7,7 +7,7 @@ export function isSelection(x) {
 
 export class Selection extends Signal {
   constructor({ union = false, cross = !union } = {}) {
-    super(null, []);
+    super([]);
     this.active = null;
     this.union = union;
     this.cross = cross;

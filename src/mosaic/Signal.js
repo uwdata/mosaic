@@ -3,14 +3,9 @@ export function isSignal(x) {
 }
 
 export class Signal {
-  constructor(name, value) {
-    this._name = name;
+  constructor(value) {
     this._value = value;
-    this._listeners = [];
-  }
-
-  get name() {
-    return this._name;
+    this._listeners = new Map;
   }
 
   get value() {
@@ -20,22 +15,27 @@ export class Signal {
   update(value) {
     if (this._value !== value) {
       this._value = value;
-      this.emit(this.value);
+      this.emit('value', this.value);
     }
     return this;
   }
 
-  addListener(callback) {
-    if (this._listeners.indexOf(callback) < 0) {
-      this._listeners.push(callback);
+  addListener(type, callback) {
+    let list = this._listeners.get(type) || [];
+    if (list.indexOf(callback) < 0) {
+      list = list.concat(callback);
+    }
+    this._listeners.set(type, list);
+  }
+
+  removeListener(type, callback) {
+    const list = this._listeners.get(type);
+    if (list?.length) {
+      this._listeners.set(type, list.filter(x => x !== callback));
     }
   }
 
-  removeListener(callback) {
-    this._listeners = this._listeners.filter(x => x !== callback);
-  }
-
-  emit(event) {
-    this._listeners.forEach(l => l(event));
+  emit(type, event) {
+    this._listeners.get(type)?.forEach(l => l(event));
   }
 }
