@@ -1,3 +1,4 @@
+import { MosaicClient } from '../mosaic/index.js';
 import {
   Query, column, regexp_matches, contains, prefix, suffix, literal
 } from '../sql/index.js';
@@ -5,27 +6,31 @@ import {
 const FUNCTIONS = { contains, prefix, suffix, regexp: regexp_matches };
 let _id = 0;
 
-export class Search {
-  constructor(options = {}) {
+export class Search extends MosaicClient {
+  constructor({
+    filterBy,
+    table,
+    column,
+    label,
+    type,
+    as
+  } = {}) {
+    super(filterBy);
     this.id = 'search_' + (++_id);
-    this.options = { ...options };
-    if (options.field && options.fields) {
-      throw new Error(`Search field and fields options are mutually exclusive.`);
-    }
-    if (options.field) {
-      this.options.fields = [options.field];
-    }
-    this.selection = options.as;
+    this.type = type;
+    this.table = table;
+    this.column = column;
+    this.selection = as;
 
     this.element = document.createElement('div');
     this.element.setAttribute('class', 'input');
     this.element.value = this;
 
-    if (this.options.label) {
-      const label = document.createElement('label');
-      label.setAttribute('for', this.id);
-      label.innerText = this.options.label;
-      this.element.appendChild(label);
+    if (label) {
+      const lab = document.createElement('label');
+      lab.setAttribute('for', this.id);
+      lab.innerText = label;
+      this.element.appendChild(lab);
     }
 
     this.searchbox = document.createElement('input');
@@ -37,28 +42,30 @@ export class Search {
     if (this.selection) {
       this.searchbox.addEventListener('input', () => {
         const value = this.searchbox.value || null;
-        const { field, type } = this.options;
-        // TODO: support multi-field queries
+        const { column, type } = this;
         this.selection.update({
-          source: this,
-          field,
+          client: this,
           value,
-          predicate: value ? FUNCTIONS[type](field, literal(value)) : null
+          predicate: value ? FUNCTIONS[type](column, literal(value)) : null
         });
       });
     }
   }
 
-  update() {
-    return this;
+  fields() {
+    return [ column(this.table, this.column) ];
   }
 
-  stats(data) {
-    this._stats = data;
-    return this;
+  query(filter = []) {
+    const { table, column } = this;
+    return Query
+      .from(table)
+      .select({ list: column })
+      .distinct()
+      .where(filter);
   }
 
-  data(data) {
+  queryResult(data) {
     const list = document.createElement('datalist');
     const id = `${this.id}_list`;
     list.setAttribute('id', id);
@@ -71,25 +78,5 @@ export class Search {
     this.element.appendChild(this.datalist = list);
     this.searchbox.setAttribute('list', id);
     return this;
-  }
-
-  filter() {
-    return this.options.filterBy;
-  }
-
-  fields() {
-    const { table, fields } = this.options;
-    return table
-      ? fields.map(field => column(table, field))
-      : null;
-  }
-
-  query() {
-    const { table, fields } = this.options;
-    if (!table) return null;
-    return Query
-      .from(table)
-      .select({ list: fields[0] })
-      .distinct();
   }
 }

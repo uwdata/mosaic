@@ -8,7 +8,7 @@ export class ContinuousMark extends Mark {
   }
 
   query(filter = []) {
-    const { plot, dim, source, _stats: stats } = this;
+    const { plot, dim, source, stats } = this;
     const { transform = true } = source.options || {};
     const q = super.query(filter);
 

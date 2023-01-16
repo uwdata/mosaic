@@ -1,17 +1,28 @@
-import { Signal } from '../mosaic/Signal.js';
+import { MosaicClient, Signal } from '../mosaic/index.js';
 import { Query, column, desc } from '../sql/index.js';
 import { formatDate, formatLocaleAuto, formatLocaleNumber } from './util/format.js';
 
 let _id = -1;
 
-export class Table {
-  constructor(options = {}) {
-    this.options = { ...options };
+export class Table extends MosaicClient {
+  constructor({
+    filterBy,
+    table,
+    columns = ['*'],
+    format,
+    rowBatch = 100,
+    width,
+    height = 500
+  } = {}) {
+    super(filterBy);
+    this.id = `table-${++_id}`;
+    this.table = table;
+    this.columns = columns;
+    this.format = format;
     this.offset = 0;
-    this.limit = +this.options.rowBatch || 100;
+    this.limit = +rowBatch;
     this.request = new Signal('query');
     this.pending = false;
-    this.id = `table-${++_id}`;
 
     this.sortHeader = null;
     this.sortColumn = null;
@@ -20,10 +31,10 @@ export class Table {
     this.element = document.createElement('div');
     this.element.setAttribute('id', this.id);
     this.element.value = this;
-    if (this.options.width) {
-      this.element.style.maxWidth = `${this.options.width}px`;
+    if (width) {
+      this.element.style.maxWidth = `${width}px`;
     }
-    this.element.style.maxHeight = `${this.options.height || 500}px`;
+    this.element.style.maxHeight = `${height}px`;
     this.element.style.overflow = 'auto';
 
     let prevScrollTop = -1;
@@ -42,39 +53,31 @@ export class Table {
       }
     });
 
-    this.table = document.createElement('table');
-    this.element.appendChild(this.table);
+    this.tbl = document.createElement('table');
+    this.element.appendChild(this.tbl);
 
     this.head = document.createElement('thead');
-    this.table.appendChild(this.head);
+    this.tbl.appendChild(this.head);
 
     this.body = document.createElement('tbody');
-    this.table.appendChild(this.body);
+    this.tbl.appendChild(this.body);
 
     this.style = document.createElement('style');
     this.element.appendChild(this.style);
   }
 
-  filter() {
-    return this.options.filterBy;
-  }
-
   fields() {
-    const { table, fields = ['*'] } = this.options;
-    if (table) {
-      return fields.map(field => column(table, field));
-    } else {
-      return null;
-    }
+    const { table, columns } = this;
+    return columns.map(name => column(table, name));
   }
 
-  stats(data) {
-    this._stats = data;
+  fieldStats(stats) {
+    this.stats = stats;
 
     const thead = this.head;
     thead.innerHTML = '';
     const tr = document.createElement('tr');
-    for (const { column } of data) {
+    for (const { column } of stats) {
       const th = document.createElement('th');
       th.addEventListener('click', evt => this.sort(evt, column));
       th.appendChild(document.createElement('span'));
@@ -84,30 +87,45 @@ export class Table {
     thead.appendChild(tr);
 
     // get column formatters
-    this.formats = formatof(this.options.format, data);
+    this.formats = formatof(this.format, stats);
 
     // get column alignment style
-    this.style.innerText = tableCSS(this.id, alignof({}, data));
+    this.style.innerText = tableCSS(this.id, alignof({}, stats));
 
     return this;
   }
 
-  data(data) {
+  query(filter) {
+    this.offset = 0;
+    return this.queryInternal(filter);
+  }
+
+  queryInternal(filter = []) {
+    const { limit, offset, stats, sortColumn, sortDesc, table } = this;
+    return Query.from(table)
+      .select(stats.map(s => s.column))
+      .where(filter)
+      .orderby(sortColumn ? (sortDesc ? desc(sortColumn) : sortColumn) : [])
+      .limit(limit)
+      .offset(offset);
+  }
+
+  queryResult(data) {
     if (!this.pending) {
       // data is not from an internal request, so reset table
       this.loaded = false;
       this.body.innerHTML = '';
     }
-    this._data = data;
+    this.data = data;
     return this;
   }
 
   update() {
-    const { body, formats, _data, _stats: stats, limit } = this;
+    const { body, formats, data, stats, limit } = this;
     const nf = stats.length;
 
     let count = 0;
-    for (const row of _data) {
+    for (const row of data) {
       ++count;
       const tr = document.createElement('tr');
       for (let i = 0; i < nf; ++i) {
@@ -126,24 +144,6 @@ export class Table {
 
     this.pending = false;
     return this;
-  }
-
-  query(filter) {
-    this.offset = 0;
-    return this.queryInternal(filter);
-  }
-
-  queryInternal(filter = []) {
-    const { limit, offset, options, _stats, sortColumn, sortDesc } = this;
-    const { table } = options;
-    if (!table) return null;
-
-    return Query.from(table)
-      .select(_stats.map(s => s.column))
-      .where(filter)
-      .orderby(sortColumn ? (sortDesc ? desc(sortColumn) : sortColumn) : [])
-      .limit(limit)
-      .offset(offset);
   }
 
   sort(event, column) {

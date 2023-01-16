@@ -183,7 +183,7 @@ function inferLabel(key, spec, marks, channels = [key]) {
 
   const fields = marks
     .map(mark => mark.channelField(channels))
-    .map((field, i) => field ? { field, stats: marks[i]._stats } : null)
+    .map((field, i) => field ? { field, stats: marks[i].stats } : null)
     .filter(x => x);
   if (fields.length === 0) return; // no columns found
 

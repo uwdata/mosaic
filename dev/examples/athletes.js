@@ -10,9 +10,9 @@ export default function(el) {
   el.appendChild(
     vconcat(
       hconcat(
-        menu({ label: 'Sport', table: tbl, field: 'sport', as: query }),
-        menu({ label: 'Sex', table: tbl, field: 'sex', as: query }),
-        search({ label: 'Name', table: tbl, field: 'name', type: 'contains', as: query })
+        menu({ label: 'Sport', table: tbl, column: 'sport', as: query }),
+        menu({ label: 'Sex', table: tbl, column: 'sex', as: query }),
+        search({ label: 'Name', table: tbl, column: 'name', type: 'contains', as: query })
       ),
       plot(
         dot(

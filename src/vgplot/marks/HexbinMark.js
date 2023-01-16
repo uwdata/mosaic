@@ -9,19 +9,12 @@ export class HexbinMark extends Mark {
     this.binWidth = binWidth;
   }
 
-  data(data) {
-    this._data = data;
-    return this;
-  }
-
   query(filter = []) {
     const { plot, binWidth, channels, source } = this;
 
     if (source == null || Array.isArray(source)) {
       return null;
     }
-
-    plot.pending(this);
 
     const width = plot.innerWidth();
     const height = plot.innerHeight();

@@ -1,18 +1,26 @@
+import { MosaicClient } from '../mosaic/index.js';
 import { Query, column, eq, literal } from '../sql/index.js';
 
-export class Menu {
-  constructor(options = {}) {
-    this.options = { ...options };
-    this.field = options.field;
-    this.selection = options.as;
+export class Menu extends MosaicClient {
+  constructor({
+    filterBy,
+    table,
+    column,
+    label = field,
+    as
+  } = {}) {
+    super(filterBy);
+    this.table = table;
+    this.column = column;
+    this.selection = as;
 
     this.element = document.createElement('div');
     this.element.setAttribute('class', 'input');
     this.element.value = this;
 
-    const label = document.createElement('label');
-    label.innerText = this.options.label || this.field;
-    this.element.appendChild(label);
+    const lab = document.createElement('label');
+    lab.innerText = label || column;
+    this.element.appendChild(lab);
 
     this.select = document.createElement('select');
     this.element.appendChild(this.select);
@@ -26,25 +34,29 @@ export class Menu {
       this.select.addEventListener('input', () => {
         const value = this.select.value || null;
         this.selection.update({
-          source: this,
-          field: this.field,
+          client: this,
           value,
-          predicate: value ? eq(this.field, literal(value)) : null
+          predicate: value ? eq(column, literal(value)) : null
         });
       });
     }
   }
 
-  update() {
-    return this;
+  fields() {
+    return [ column(this.table, this.column) ];
   }
 
-  stats(data) {
-    this._stats = data;
-    return this;
+  query(filter = []) {
+    const { table, column } = this;
+    return Query
+      .from(table)
+      .select({ value: column })
+      .distinct()
+      .where(filter)
+      .orderby(column)
   }
 
-  data(data) {
+  queryResult(data) {
     for (const { value } of data) {
       const opt = document.createElement('option');
       opt.setAttribute('value', value);
@@ -52,24 +64,5 @@ export class Menu {
       this.select.appendChild(opt);
     }
     return this;
-  }
-
-  filter() {
-    return this.options.filterBy;
-  }
-
-  fields() {
-    const { table, field } = this.options;
-    return table ? [ column(table, field) ] : null;
-  }
-
-  query() {
-    const { table, field } = this.options;
-    if (!table) return null;
-    return Query
-      .from(table)
-      .select({ value: field })
-      .distinct()
-      .orderby(field)
   }
 }

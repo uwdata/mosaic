@@ -77,24 +77,27 @@ export class DataTileIndexer {
   }
 
   async update() {
-    const { mc, clients, selection, activeView, indices } = this;
-    const { active } = selection;
-    const where = activeView.predicate(active.predicate);
-
-    // TODO allow views to update independently?
+    const { clients, selection, activeView } = this;
+    const where = activeView.predicate(selection.active.predicate);
     return Promise.all(
-      Array.from(clients).map(async client => {
-        const index = indices.get(client);
-        if (index) {
-          const { table, dims, aggr } = index;
-          const q = Query
-            .select(dims, aggr)
-            .from(table)
-            .groupby(dims)
-            .where(where);
-          client.data(await mc.query(q)).update();
-        }
-      })
+      Array.from(clients).map(client => this.updateClient(client, where))
+    );
+  }
+
+  async updateClient(client, where) {
+    const index = this.indices.get(client);
+    if (!index) return;
+
+    if (!where) {
+      where = this.activeView.predicate(this.selection.active.predicate);
+    }
+
+    const { table, dims, aggr } = index;
+    return this.mc.updateClient(client, Query
+      .select(dims, aggr)
+      .from(table)
+      .groupby(dims)
+      .where(where)
     );
   }
 }

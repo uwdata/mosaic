@@ -1,4 +1,4 @@
-import { isSignal } from '../../mosaic/Signal.js';
+import { isSignal } from '../../mosaic/index.js';
 import { Query, and, gt, sum, expr, isBetween } from '../../sql/index.js';
 import { dericheConfig, dericheConv2d, grid2d } from './util/deriche.js';
 import { extentX, extentY } from './util/extent.js';
@@ -25,30 +25,8 @@ export class Density2DMark extends Mark {
     }
   }
 
-  data(data) {
-    const [nx, ny] = this.bins;
-    this.grids = grid2d(nx, ny, data, this.groupby);
-    return this.convolve();
-  }
-
-  convolve() {
-    const { bandwidth, bins, grids, plot } = this;
-    const w = plot.innerWidth();
-    const h = plot.innerHeight();
-    const [nx, ny] = bins;
-    const neg = grids.some(({ grid }) => grid.some(v => v < 0));
-    const configX = dericheConfig(bandwidth * (nx - 1) / w, neg);
-    const configY = dericheConfig(bandwidth * (ny - 1) / h, neg);
-    this.kde = this.grids.map(({ key, grid }) => {
-      const k = dericheConv2d(configX, configY, grid, bins);
-      return (k.key = key, k);
-    });
-    return this;
-  }
-
   query(filter = []) {
-    const { plot, channels, source, _stats: stats } = this;
-    plot.pending(this);
+    const { plot, channels, source, stats } = this;
 
     const q = Query.from(source.table).where(filter);
     const groupby = this.groupby = [];
@@ -70,6 +48,27 @@ export class Density2DMark extends Mark {
     const [y0, y1] = this.extentY = extentY(this);
     const [nx, ny] = this.bins = [plot.innerWidth() >> 1, plot.innerHeight() >> 1];
     return binLinear2d(q, 'x', 'y', w, x0, x1, y0, y1, nx, ny, groupby);
+  }
+
+  queryResult(data) {
+    const [nx, ny] = this.bins;
+    this.grids = grid2d(nx, ny, data, this.groupby);
+    return this.convolve();
+  }
+
+  convolve() {
+    const { bandwidth, bins, grids, plot } = this;
+    const w = plot.innerWidth();
+    const h = plot.innerHeight();
+    const [nx, ny] = bins;
+    const neg = grids.some(({ grid }) => grid.some(v => v < 0));
+    const configX = dericheConfig(bandwidth * (nx - 1) / w, neg);
+    const configY = dericheConfig(bandwidth * (ny - 1) / h, neg);
+    this.kde = this.grids.map(({ key, grid }) => {
+      const k = dericheConv2d(configX, configY, grid, bins);
+      return (k.key = key, k);
+    });
+    return this;
   }
 
   plotSpecs() {
@@ -124,7 +123,7 @@ function binLinear2d(input, x, y, weight, x0, x1, y0, y1, xn, yn, groupby = []) 
 // code snippets for plotting density bins directly
 // const deltaX = (extentX[1] - extentX[0]) / (nx - 1);
 // const deltaY = (extentY[1] - extentY[0]) / (ny - 1);
-// this._data = points(kde, bins, extentX[0], extentY[0], deltaX, deltaY);
+// this.data = points(kde, bins, extentX[0], extentY[0], deltaX, deltaY);
 
 // function points(kde, bins, x0, y0, deltaX, deltaY) {
 //   const scale = 1 / (deltaX * deltaY);

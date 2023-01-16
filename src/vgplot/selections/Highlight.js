@@ -52,7 +52,7 @@ function predicateFunction(mark, selection) {
     return () => true;
   }
 
-  const q = mark.query(mark.filter()?.predicate(mark)).$select({ __: and(pred) });
+  const q = mark.query(mark.filterBy?.predicate(mark)).$select({ __: and(pred) });
   const sql = q.toString();
   const memo = queryCache.get(selection);
   if (memo?.key === sql) {

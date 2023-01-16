@@ -1,17 +1,18 @@
-import { isSignal } from '../../mosaic/Signal.js';
+import { MosaicClient, isSignal } from '../../mosaic/index.js';
 import { Query, column } from '../../sql/index.js';
 import { isColor } from './util/is-color.js';
 
 const isColorChannel = channel => channel === 'stroke' || channel === 'fill';
 const isConstantChannel = channel => channel === 'order';
 
-export class Mark {
+export class Mark extends MosaicClient {
   constructor(type, source, encodings) {
+    super(source?.options?.filterBy);
     this.type = type;
 
     this.source = source;
     if (Array.isArray(this.source)) {
-      this._data = this.source;
+      this.data = this.source;
     }
 
     const channels = this.channels = [];
@@ -57,25 +58,6 @@ export class Mark {
     return null;
   }
 
-  update() {
-    this.plot.update(this);
-    return this;
-  }
-
-  stats(data) {
-    this._stats = data;
-    return this;
-  }
-
-  data(data) {
-    this._data = Array.from(data);
-    return this;
-  }
-
-  filter() {
-    return this.source?.options?.filterBy;
-  }
-
   fields() {
     const { source, channels } = this;
     if (source == null) return [];
@@ -87,14 +69,17 @@ export class Mark {
     return Array.from(columns, col => column(table, col));
   }
 
+  fieldStats(data) {
+    this.stats = data;
+    return this;
+  }
+
   query(filter = []) {
-    const { plot, channels, source, _stats: stats } = this;
+    const { channels, source, stats } = this;
 
     if (source == null || Array.isArray(source)) {
       return null;
     }
-
-    plot.pending(this);
 
     const q = Query.from(source.table);
     const dims = [];
@@ -125,12 +110,27 @@ export class Mark {
     return q.where(filter);
   }
 
+  queryPending() {
+    this.plot.pending(this);
+    return this;
+  }
+
+  queryResult(data) {
+    this.data = Array.from(data);
+    return this;
+  }
+
+  update() {
+    this.plot.update(this);
+    return this;
+  }
+
   plotSpecs() {
-    const { type, _data, channels } = this;
+    const { type, data, channels } = this;
     const options = {};
     for (const c of channels) {
       options[c.channel] = Object.hasOwn(c, 'value') ? c.value : c.channel;
     }
-    return [{ type, data: _data, options }];
+    return [{ type, data, options }];
   }
 }

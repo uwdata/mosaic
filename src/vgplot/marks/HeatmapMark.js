@@ -24,7 +24,7 @@ export class HeatmapMark extends Density2DMark {
     const domain = idx < 0 ? [] : kde.map(({ key }) => key[idx]);
 
     // generate heatmap images
-    this.src = kde.map(grid => {
+    this.data = kde.map(grid => {
       const palette = imagePalette(this, domain, grid.key?.[idx]);
       heatmap(grid, img.data, w, h, s, palette);
       ctx.putImageData(img, 0, 0);
@@ -35,7 +35,7 @@ export class HeatmapMark extends Density2DMark {
   }
 
   plotSpecs() {
-    const { type, plot, src } = this;
+    const { type, plot, data } = this;
     const options = {
       src: 'src',
       width: plot.innerWidth(),
@@ -43,7 +43,7 @@ export class HeatmapMark extends Density2DMark {
       preserveAspectRatio: 'none',
       frameAnchor: 'middle'
     };
-    return [{ type, data: src, options }];
+    return [{ type, data, options }];
   }
 }
 

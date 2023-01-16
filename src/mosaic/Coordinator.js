@@ -38,6 +38,23 @@ export class Coordinator {
     return table;
   }
 
+  async updateClient(client, query) {
+    let result;
+    try {
+      client.queryPending();
+      result = await this.query(query);
+    } catch (err) {
+      console.error(err);
+      client.queryError(err);
+      return;
+    }
+    try {
+      client.queryResult(result).update();
+    } catch (err) {
+      console.error(err);
+    }
+  }
+
   async connect(client) {
     const { catalog, clients, filterGroups } = this;
 
@@ -47,26 +64,21 @@ export class Coordinator {
     clients.set(client, null); // mark as connected
 
     // retrieve field statistics
-    client.stats(await catalog.queryFields(client.fields()));
+    client.fieldStats(await catalog.queryFields(client.fields()));
 
     // connect filters
-    const filter = client.filter?.();
-    let group;
+    const filter = client.filterBy;
     if (filter) {
       if (!filterGroups.has(filter)) {
         filterGroups.set(filter, new FilterGroup(this, filter));
       }
-      group = filterGroups.get(filter).add(client);
+      filterGroups.get(filter).add(client);
     }
 
     // query handler
-    const handler = async q => {
-      q = group ? group.query(client) : q;
-      try {
-        client.data(await this.query(q)).update();
-      } catch (err) {
-        console.error(err);
-      }
+    const handler = async () => {
+      const q = client.query(filter?.predicate(client));
+      if (q) this.updateClient(client, q);
     };
     clients.set(client, handler);
 
@@ -74,8 +86,7 @@ export class Coordinator {
     client.request?.addListener(handler);
 
     // TODO analyze / consolidate queries?
-    const q = client.query();
-    if (q) handler(q);
+    handler();
   }
 
   disconnect(client) {
@@ -83,7 +94,7 @@ export class Coordinator {
     if (!clients.has(client)) return;
     const handler = clients.get(client);
     clients.delete(client);
-    filterGroups.get(client.filter?.())?.remove(client);
+    filterGroups.get(client.filterBy)?.remove(client);
     client.request?.removeListener(handler);
   }
 }

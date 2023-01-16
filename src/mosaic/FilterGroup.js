@@ -24,10 +24,6 @@ export class FilterGroup {
     return this;
   }
 
-  query(client) {
-    return client.query(this.selection.predicate(client));
-  }
-
   async update() {
     const { mc, indexer, clients, selection } = this;
     return indexer?.index(clients)
@@ -37,10 +33,10 @@ export class FilterGroup {
 }
 
 function defaultUpdate(mc, clients, selection) {
-  return Promise.all(Array.from(clients).map(async client => {
+  return Promise.all(Array.from(clients).map(client => {
     const where = selection.predicate(client);
     if (where != null) {
-      client.data(await mc.query(client.query(where))).update();
+      return mc.updateClient(client, client.query(where));
     }
   }));
 }

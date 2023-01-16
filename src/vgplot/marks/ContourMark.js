@@ -1,5 +1,5 @@
 import { contours, max } from 'd3';
-import { isSignal } from '../../mosaic/Signal.js';
+import { isSignal } from '../../mosaic/index.js';
 import { Density2DMark } from './Density2DMark.js';
 
 export class ContourMark extends Density2DMark {
@@ -48,7 +48,7 @@ export class ContourMark extends Density2DMark {
     const contour = contours().size(bins);
 
     // generate contours
-    this._data = kde.flatMap(k => tz.map(t => {
+    this.data = kde.flatMap(k => tz.map(t => {
       const c = transform(contour.contour(k, t), x, y);
       groupby.forEach((name, i) => c[name] = k.key[i]);
       c.density = t;
@@ -59,14 +59,14 @@ export class ContourMark extends Density2DMark {
   }
 
   plotSpecs() {
-    const { type, channels, densityFill, densityStroke, _data } = this;
+    const { type, channels, densityFill, densityStroke, data } = this;
     const options = {};
     for (const c of channels) {
       options[c.channel] = Object.hasOwn(c, 'value') ? c.value : c.channel;
     }
     if (densityFill) options.fill = 'density';
     if (densityStroke) options.stroke = 'density';
-    return [{ type, data: _data, options }];
+    return [{ type, data, options }];
   }
 }
 

@@ -21,7 +21,7 @@ export class PointSelection {
   init(svg) {
     const { mark, channels, selection, state } = this;
     const groups = Array.from(svg.querySelectorAll(`[data-index="${mark.index}"]`));
-    const data = mark._data;
+    const { data } = mark;
 
     svg.addEventListener('click', evt => {
       const target = evt.target;

@@ -1,4 +1,4 @@
-import { isSignal } from '../../mosaic/Signal.js';
+import { isSignal } from '../../mosaic/index.js';
 import { Query, gt, sum, expr, isBetween } from '../../sql/index.js';
 import { dericheConfig, dericheConv1d, grid1d } from './util/deriche.js';
 import { Mark } from './Mark.js';
@@ -18,10 +18,26 @@ export class DensityMark extends Mark {
       this.bandwidth = bandwidth.value;
     }
     // TODO: nrd estimate from stats? (requires quantiles and stdev)
-    // TODO: perform binning in JS if _data is set
+    // TODO: perform binning in JS if data is set
   }
 
-  data(data) {
+  query(filter = []) {
+    const { bins, plot, stats } = this;
+    const dir = 'x'; // TODO
+    const { column } = this.channelField(dir);
+    const weight = this.channelField('weight') ? 'weight' : 1;
+
+    let { min, max } = stats.find(s => s.column === column);
+    const domX = plot.getAttribute('domainX');
+    if (Array.isArray(domX)) {
+      [min, max] = domX;
+    }
+    this.extent = [min, max];
+
+    return binLinear1d(super.query(filter), 'x', min, max, bins, weight);
+  }
+
+  queryResult(data) {
     this.grid = grid1d(this.bins, data);
     return this.convolve();
   }
@@ -34,7 +50,7 @@ export class DensityMark extends Mark {
     const config = dericheConfig(bandwidth * scale, neg);
     const result = dericheConv1d(config, grid, bins);
 
-    const points = this._data = [];
+    const points = this.data = [];
     for (let i = 0; i < bins; ++i) {
       points.push({
         x: lo + i * delta,
@@ -45,29 +61,13 @@ export class DensityMark extends Mark {
     return this;
   }
 
-  query(filter = []) {
-    const { bins, plot, _stats } = this;
-    const dir = 'x'; // TODO
-    const { column } = this.channelField(dir);
-    const weight = this.channelField('weight') ? 'weight' : 1;
-
-    let { min, max } = _stats.find(s => s.column === column);
-    const domX = plot.getAttribute('domainX');
-    if (Array.isArray(domX)) {
-      [min, max] = domX;
-    }
-    this.extent = [min, max];
-
-    return binLinear1d(super.query(filter), 'x', min, max, bins, weight);
-  }
-
   plotSpecs() {
-    const { type, _data, channels } = this;
+    const { type, data, channels } = this;
     const options = { y: 'y' };
     for (const c of channels) {
       options[c.channel] = Object.hasOwn(c, 'value') ? c.value : c.channel;
     }
-    return [{ type, data: _data, options }];
+    return [{ type, data, options }];
   }
 }
 

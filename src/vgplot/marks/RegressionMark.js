@@ -15,18 +15,6 @@ export class RegressionMark extends Mark {
     this.precision = precision;
   }
 
-  data(data) {
-    // regression line
-    this._line = Array.from(data).flatMap(m => linePoints(m));
-
-    // regression ci area
-    const { ci, precision, plot } = this;
-    const w = plot.innerWidth();
-    this._area = ci ? Array.from(data).flatMap(m => areaPoints(ci, precision, m, w)) : null;
-
-    return this;
-  }
-
   query(filter = []) {
     const x = 'x';
     const y = 'y';
@@ -49,8 +37,22 @@ export class RegressionMark extends Mark {
       .groupby(groupby);
   }
 
+  queryResult(data) {
+    data = Array.from(data);
+
+    // regression line
+    this.lineData = data.flatMap(m => linePoints(m));
+
+    // regression ci area
+    const { ci, precision, plot } = this;
+    const w = plot.innerWidth();
+    this.areaData = ci ? data.flatMap(m => areaPoints(ci, precision, m, w)) : null;
+
+    return this;
+  }
+
   plotSpecs() {
-    const { _line, _area, channels, ci } = this;
+    const { lineData, areaData, channels, ci } = this;
     const lopt = { x: 'x', y: 'y' };
     const aopt = { x: 'x', y1: 'y1', y2: 'y2', fillOpacity: 0.1 };
 
@@ -73,8 +75,8 @@ export class RegressionMark extends Mark {
     }
 
     return [
-      ...(ci ? [{ type: 'areaY', data: _area, options: aopt }] : []),
-      { type: 'line', data: _line, options: lopt }
+      ...(ci ? [{ type: 'areaY', data: areaData, options: aopt }] : []),
+      { type: 'line', data: lineData, options: lopt }
     ]
   }
 }
