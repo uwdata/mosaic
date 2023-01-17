@@ -10,23 +10,28 @@ export class Interval1DSelection {
     this.field = field || mark.channelField(channel, channel+'1', channel+'2');
     this.field = this.field?.column || this.field;
     this.brush = channel === 'y' ? brushY() : brushX();
+    this.brush.on('brush end', ({ selection }) => this.update(selection));
+  }
 
-    this.brush.on('brush end', ({ selection }) => {
-      let range = undefined;
-      if (selection) {
-        range = selection.map(this.scale.invert).sort((a, b) => a - b);
-      }
-      if (!closeTo(range, this.value)) {
-        this.value = range;
-        this.g.call(this.brush.move, selection);
-        this.selection.update({
-          schema: { type: 'interval', scales: [this.scale] },
-          client: this.mark,
-          value: range,
-          predicate: range ? isBetween(this.field, range) : null
-        });
-      }
-    });
+  update(selection) {
+    let range = undefined;
+    if (selection) {
+      range = selection.map(this.scale.invert).sort((a, b) => a - b);
+    }
+    if (!closeTo(range, this.value)) {
+      this.value = range;
+      this.g.call(this.brush.move, selection);
+      this.selection.update(this.clause(range));
+    }
+  }
+
+  clause(value) {
+    return {
+      schema: { type: 'interval', scales: [this.scale] },
+      client: this.mark,
+      value,
+      predicate: value ? isBetween(this.field, value) : null
+    };
   }
 
   init(svg) {
@@ -44,5 +49,9 @@ export class Interval1DSelection {
       .attr('class', `interval-${channel}`)
       .call(brush)
       .call(brush.move, this.value?.map(this.scale.apply));
+
+    svg.addEventListener('mouseenter', () => {
+      this.selection.activate(this.clause([0, 1]));
+    });
   }
 }

@@ -18,6 +18,26 @@ export class PointSelection {
     });
   }
 
+  clause(value) {
+    let predicate = null;
+
+    if (value) {
+      const { channels } = this;
+      const clauses = value.map(vals => {
+        const list = vals.map((v, i) => eq(channels[i][1], literal(v)));
+        return list.length > 1 ? and(list) : list[0];
+      });
+      predicate = clauses.length > 1 ? or(clauses) : clauses[0];
+    }
+
+    return {
+      schema: { type: 'point' },
+      client: this.mark,
+      value,
+      predicate
+    };
+  }
+
   init(svg) {
     const { mark, channels, selection, state } = this;
     const groups = Array.from(svg.querySelectorAll(`[data-index="${mark.index}"]`));
@@ -25,48 +45,36 @@ export class PointSelection {
 
     svg.addEventListener('click', evt => {
       const target = evt.target;
-      const s = {
-        schema: { type: 'point' },
-        client: mark,
-        predicate: null
-      };
+      let value = null;
 
       if (groups.includes(target.parentNode)) {
         const index = target.__data__;
-        const d = data[index];
-
-        const values = channels.map(([channel]) => d[channel]);
-        const key = '[' + values.join() + ']';
+        const datum = data[index];
+        const vals = channels.map(([channel]) => datum[channel]);
+        const key = '[' + vals.join() + ']';
 
         // update selection state
         if (evt.shiftKey) {
           if (state.has(key)) {
             state.delete(key);
           } else {
-            state.set(key, values);
+            state.set(key, vals);
           }
         } else {
           state.clear();
-          state.set(key, values);
+          state.set(key, vals);
         }
 
-        // generate query clauses
-        const clauses = [];
-        for (const vals of state.values()) {
-          const pred = channels.map(([, col], i) => eq(col, literal(vals[i])));
-          if (pred.length > 1) {
-            clauses.push(and(pred));
-          } else {
-            clauses.push(pred[0]);
-          }
-        }
-
-        s.predicate = clauses.length > 1 ? or(clauses) : clauses[0];
+        value = Array.from(state.values());
       } else {
         state.clear();
       }
 
-      selection.update(s);
+      selection.update(this.clause(value));
+    });
+
+    svg.addEventListener('mouseenter', () => {
+      this.selection.activate(this.clause([this.channels.map(() => 0)]));
     });
   }
 }

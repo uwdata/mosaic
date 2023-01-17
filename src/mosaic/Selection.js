@@ -31,6 +31,11 @@ export class Selection extends Signal {
     return super.value;
   }
 
+  activate(clause) {
+    this.active = clause;
+    this.emit('active', this.active);
+  }
+
   update(clause) {
     const { client, predicate } = clause;
     this.active = clause;

@@ -8,8 +8,8 @@ export class FilterGroup {
     this.clients = new Set(clients);
     this.indexer = new DataTileIndexer(mc, selection);
 
-    const callback = throttle(() => this.update());
-    selection.addListener('value', callback);
+    selection.addListener('value', throttle(() => this.update()));
+    selection.addListener('active', () => this.indexer.index(this.clients));
   }
 
   add(client) {
