@@ -40,7 +40,7 @@ async function initWasmClient(options) {
   await Promise.all([
     csv('athletes', `${dir}/athletes.csv`),
     csv('penguins', `${dir}/penguins.csv`),
-    csv('seattle', `${dir}/seattle-weather.csv`),
+    csv('weather', `${dir}/seattle-weather.csv`),
     ipc('flights', `${dir}/flights-200k.arrow`),
     ipc('walk', `${dir}/random-walk.arrow`)
   ]);
