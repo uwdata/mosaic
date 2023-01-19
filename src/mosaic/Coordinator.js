@@ -31,10 +31,10 @@ export class Coordinator {
   }
 
   async query(query, options = {}) {
-    const t0 = Date.now();
+    const t0 = performance.now();
     const { type = 'arrow' } = options;
     const table = await this.db.query({ type, sql: String(query) });
-    console.log(`Query time: ${Date.now()-t0}`);
+    console.log(`Query time: ${Math.round(performance.now()-t0)}`);
     return table;
   }
 

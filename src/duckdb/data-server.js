@@ -62,7 +62,7 @@ function createSocketServer(server, handleQuery) {
 
 function queryHandler(db) {
   return async (res, data) => {
-    const t0 = Date.now();
+    const t0 = performance.now();
 
     // parse incoming query
     let query;
@@ -102,7 +102,7 @@ function queryHandler(db) {
       res.unlock?.();
     }
 
-    console.log('REQUEST', Date.now() - t0);
+    console.log('REQUEST', Math.round(performance.now() - t0));
   };
 }
 
