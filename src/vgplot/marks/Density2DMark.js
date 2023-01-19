@@ -6,7 +6,7 @@ import { Mark } from './Mark.js';
 
 export class Density2DMark extends Mark {
   constructor(type, source, options) {
-    const { bandwidth = 20, ...channels } = options;
+    const { bandwidth = 20, scaleFactor = 2, ...channels } = options;
     const densityFill = channels.fill === 'density';
     const densityStroke = channels.stroke === 'density';
     if (densityFill) delete channels.fill;
@@ -15,6 +15,7 @@ export class Density2DMark extends Mark {
     this.densityFill = densityFill;
     this.densityStroke = densityStroke;
     this.bandwidth = bandwidth;
+    this.scaleFactor = scaleFactor;
 
     if (isSignal(bandwidth)) {
       bandwidth.addListener('value', value => {
@@ -22,6 +23,14 @@ export class Density2DMark extends Mark {
         if (this.grids) this.convolve().update();
       });
       this.bandwidth = bandwidth.value;
+    }
+
+    if (isSignal(scaleFactor)) {
+      scaleFactor.addListener('value', value => {
+        this.scaleFactor = value;
+        if (this.grids) this.convolve().update();
+      });
+      this.scaleFactor = scaleFactor.value;
     }
   }
 
@@ -44,10 +53,13 @@ export class Density2DMark extends Mark {
       }
     }
 
+    const k = Math.floor(Math.log2(this.scaleFactor) || 0);
     const [x0, x1] = this.extentX = extentX(this);
     const [y0, y1] = this.extentY = extentY(this);
-    const [nx, ny] = this.bins = [plot.innerWidth() >> 1, plot.innerHeight() >> 1];
-    return binLinear2d(q, 'x', 'y', w, x0, x1, y0, y1, nx, ny, groupby);
+    const [nx, ny] = this.bins = [plot.innerWidth() >> k, plot.innerHeight() >> k];
+    const rx = !!plot.getAttribute('reverseX');
+    const ry = !!plot.getAttribute('reverseY');
+    return binLinear2d(q, 'x', 'y', w, x0, x1, y0, y1, nx, ny, rx, ry, groupby);
   }
 
   queryResult(data) {
@@ -58,16 +70,23 @@ export class Density2DMark extends Mark {
 
   convolve() {
     const { bandwidth, bins, grids, plot } = this;
-    const w = plot.innerWidth();
-    const h = plot.innerHeight();
-    const [nx, ny] = bins;
-    const neg = grids.some(({ grid }) => grid.some(v => v < 0));
-    const configX = dericheConfig(bandwidth * (nx - 1) / w, neg);
-    const configY = dericheConfig(bandwidth * (ny - 1) / h, neg);
-    this.kde = this.grids.map(({ key, grid }) => {
-      const k = dericheConv2d(configX, configY, grid, bins);
-      return (k.key = key, k);
-    });
+
+    if (bandwidth <= 0) {
+      this.kde = this.grids.map(({ key, grid }) => {
+        return (grid.key = key, grid);
+      });
+    } else {
+      const w = plot.innerWidth();
+      const h = plot.innerHeight();
+      const [nx, ny] = bins;
+      const neg = grids.some(({ grid }) => grid.some(v => v < 0));
+      const configX = dericheConfig(bandwidth * (nx - 1) / w, neg);
+      const configY = dericheConfig(bandwidth * (ny - 1) / h, neg);
+      this.kde = this.grids.map(({ key, grid }) => {
+        const k = dericheConv2d(configX, configY, grid, bins);
+        return (k.key = key, k);
+      });
+    }
     return this;
   }
 
@@ -76,10 +95,14 @@ export class Density2DMark extends Mark {
   }
 }
 
-function binLinear2d(input, x, y, weight, x0, x1, y0, y1, xn, yn, groupby = []) {
+function binLinear2d(input, x, y, weight, x0, x1, y0, y1, xn, yn, rx, ry, groupby = []) {
   const w = weight && weight !== 1 ? `* ${weight}` : '';
-  const xp = expr(`(${x} - ${x0}) * ${(xn - 1) / (x1 - x0)}::DOUBLE`);
-  const yp = expr(`(${y} - ${y0}) * ${(yn - 1) / (y1 - y0)}::DOUBLE`);
+  const xp = rx
+    ? expr(`(${x1} - ${x}) * ${(xn - 1) / (x1 - x0)}::DOUBLE`)
+    : expr(`(${x} - ${x0}) * ${(xn - 1) / (x1 - x0)}::DOUBLE`);
+  const yp = ry
+    ? expr(`(${y1} - ${y}) * ${(yn - 1) / (y1 - y0)}::DOUBLE`)
+    : expr(`(${y} - ${y0}) * ${(yn - 1) / (y1 - y0)}::DOUBLE`);
 
   const q = (i, w) => Query
     .select({ xp, yp, i, w }, groupby)
