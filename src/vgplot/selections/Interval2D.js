@@ -2,6 +2,8 @@ import { brush, select, min, max } from 'd3';
 import { and, isBetween } from '../../sql/index.js';
 import { closeTo } from './close-to.js';
 
+const asc = (a, b) => a - b;
+
 export class Interval2DSelection {
   constructor(mark, selection, xfield, yfield) {
     this.mark = mark;
@@ -19,8 +21,8 @@ export class Interval2DSelection {
     let yr = undefined;
     if (selection) {
       const [a, b] = selection;
-      xr = [a[0], b[0]].map(this.xscale.invert).sort((a, b) => a - b);
-      yr = [a[1], b[1]].map(this.yscale.invert).sort((a, b) => a - b);
+      xr = [a[0], b[0]].map(this.xscale.invert).sort(asc);
+      yr = [a[1], b[1]].map(this.yscale.invert).sort(asc);
     }
 
     if (!closeTo(xr, value?.[0]) || !closeTo(yr, value?.[1])) {
@@ -60,8 +62,8 @@ export class Interval2DSelection {
       .call(brush);
 
     if (this.value) {
-      const [x1, x2] = this.value[0].map(xscale.apply);
-      const [y1, y2] = this.value[1].map(yscale.apply);
+      const [x1, x2] = this.value[0].map(xscale.apply).sort(asc);
+      const [y1, y2] = this.value[1].map(yscale.apply).sort(asc);
       this.g.call(brush.move, [[x1, y1], [x2, y2]]);
     }
 
