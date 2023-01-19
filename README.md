@@ -23,6 +23,6 @@ To build and develop Mosaic locally:
 
 To run the interactive examples:
 
-- Run `node run server` to launch a data server with default files loaded.
+- Run `npm run server` to launch a data server with default files loaded.
 - Run `npx wds` to launch a local web server.
 - Browse to `http://localhost:8000/dev/` to view examples.
