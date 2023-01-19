@@ -20,7 +20,7 @@ export class Mark extends MosaicClient {
     const process = (channel, entry) => {
       const type = typeof entry;
       if (type === 'function') {
-        const enc = entry(channel);
+        const enc = entry(channel, this.type);
         for (const key in enc) {
           process(key, enc[key]);
         }

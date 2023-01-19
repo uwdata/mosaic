@@ -47,6 +47,8 @@ export {
   niceY,
   zeroX,
   zeroY,
+  reverseX,
+  reverseY,
   ticksX,
   ticksY,
   tickFormatX,

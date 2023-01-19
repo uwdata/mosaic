@@ -135,6 +135,14 @@ export function zeroY(value) {
   return attribute('zeroY', value);
 }
 
+export function reverseX(value) {
+  return attribute('reverseX', value);
+}
+
+export function reverseY(value) {
+  return attribute('reverseY', value);
+}
+
 export function ticksX(value) {
   return attribute('ticksX', value);
 }
