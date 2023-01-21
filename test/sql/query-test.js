@@ -402,6 +402,17 @@ describe('Query', () => {
     );
   });
 
+  it('selects over windows', () => {
+    assert.strictEqual(
+      Query
+        .select({ lead: expr(`lead("foo") OVER "win"`) })
+        .from('data')
+        .window({ win: expr(`ORDER BY "foo" ASC`) })
+        .toString(),
+      'SELECT lead("foo") OVER "win" AS "lead" FROM "data" WINDOW "win" AS (ORDER BY "foo" ASC)'
+    );
+  });
+
   it('selects from subqueries', () => {
     assert.strictEqual(
       Query

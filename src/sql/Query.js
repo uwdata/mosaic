@@ -38,6 +38,8 @@ export class Query {
       where: [],
       groupby: [],
       having: [],
+      window: [],
+      qualify: [],
       orderby: []
     };
   }
@@ -196,6 +198,38 @@ export class Query {
     }
   }
 
+  window(...expr) {
+    const { query } = this;
+    if (expr.length === 0) {
+      return query.window;
+    } else {
+      const list = [];
+      expr.flat().forEach(e => {
+        if (e == null) {
+          // do nothing
+        } else {
+          for (const as in e) {
+            list.push({ as: unquote(as), expr: e[as] });
+          }
+        }
+      });
+      query.window = query.window.concat(list);
+      return this;
+    }
+  }
+
+  qualify(...expr) {
+    const { query } = this;
+    if (expr.length === 0) {
+      return query.qualify;
+    } else {
+      query.qualify = query.qualify.concat(
+        expr.flat().filter(x => x)
+      );
+      return this;
+    }
+  }
+
   orderby(...expr) {
     const { query } = this;
     if (expr.length === 0) {
@@ -235,7 +269,7 @@ export class Query {
   toString() {
     const {
       select, distinct, from, sample, where, groupby,
-      having, orderby, limit, offset, with: cte
+      having, window, qualify, orderby, limit, offset, with: cte
     } = this.query;
 
     const sql = [];
@@ -284,6 +318,18 @@ export class Query {
     if (having.length) {
       const clauses = having.map(String).filter(x => x).join(' AND ');
       if (clauses) sql.push(`HAVING ${clauses}`);
+    }
+
+    // WINDOW
+    if (window.length) {
+      const windows = window.map(({ as, expr }) => `"${as}" AS (${expr})`);
+      sql.push(`WINDOW ${windows.join(', ')}`);
+    }
+
+    // QUALIFY
+    if (qualify.length) {
+      const clauses = qualify.map(String).filter(x => x).join(' AND ');
+      if (clauses) sql.push(`QUALIFY ${clauses}`);
     }
 
     // ORDER BY
