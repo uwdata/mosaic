@@ -1,31 +1,29 @@
 import { scaleLinear } from 'd3';
+import { Fixed, Transient } from '../../symbols.js';
 
-export function extentX(mark) {
-  const { plot, stats } = mark;
-  const domain = plot.getAttribute('domainX');
+export function plotExtent(mark, channel, name) {
+  const { plot, stats, filterBy } = mark;
+  const domain = plot.getAttribute(name);
 
-  if (Array.isArray(domain)) {
+  if (Array.isArray(domain) && !domain[Transient]) {
     return domain;
   } else {
-    const { column } = mark.channelField('x');
+    const { column } = mark.channelField(channel);
     const { min, max } = stats.find(s => s.column === column);
-    const xdom = scaleLinear().domain([ min, max ]).nice().domain();
-    plot.setAttribute('domainX', xdom);
-    return xdom;
+    const filter = filterBy?.predicate(mark) || [];
+    // TODO: more robust range extraction (check against column)
+    const dom = filter[filter.length-1]?.value?.slice() ||
+      scaleLinear().domain([ min, max ]).nice().domain();
+    if (domain !== Fixed) dom[Transient] = true;
+    plot.setAttribute(name, dom);
+    return dom;
   }
 }
 
-export function extentY(mark) {
-  const { plot, stats } = mark;
-  const domain = plot.getAttribute('domainY');
+export function extentX(mark) {
+  return plotExtent(mark, 'x', 'domainX');
+}
 
-  if (Array.isArray(domain)) {
-    return domain;
-  } else {
-    const { column } = mark.channelField('y');
-    const { min, max } = stats.find(s => s.column === column);
-    const ydom = scaleLinear().domain([ min, max ]).nice().domain();
-    plot.setAttribute('domainY', ydom);
-    return ydom;
-  }
+export function extentY(mark) {
+  return plotExtent(mark, 'y', 'domainY');
 }

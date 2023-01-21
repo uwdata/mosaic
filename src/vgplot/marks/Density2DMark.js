@@ -1,5 +1,6 @@
 import { isSignal } from '../../mosaic/index.js';
 import { Query, and, gt, sum, expr, isBetween } from '../../sql/index.js';
+import { Transient } from '../symbols.js';
 import { dericheConfig, dericheConv2d, grid2d } from './util/deriche.js';
 import { extentX, extentY } from './util/extent.js';
 import { Mark } from './Mark.js';
@@ -32,6 +33,12 @@ export class Density2DMark extends Mark {
       });
       this.scaleFactor = scaleFactor.value;
     }
+  }
+
+  get filterIndexable() {
+    const xdom = this.plot.getAttribute('domainX');
+    const ydom = this.plot.getAttribute('domainY');
+    return xdom && ydom && !xdom[Transient] && !ydom[Transient];
   }
 
   query(filter = []) {

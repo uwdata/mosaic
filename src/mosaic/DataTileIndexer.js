@@ -185,7 +185,9 @@ async function createIndex(mc, table, query) {
 function getIndexColumns(client) {
   const q = client.query();
   const from = getBaseTable(q);
-  if (!from || !q.groupby) return { from: NaN }; // early exit
+  if (!from || !q.groupby || !client.filterIndexable) {
+    return { from: NaN }; // early exit
+  }
   const g = new Set(q.groupby().map(c => c.column));
 
   let aggr = [];

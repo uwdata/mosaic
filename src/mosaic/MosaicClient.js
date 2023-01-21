@@ -7,6 +7,10 @@ export class MosaicClient {
     return this._filterBy;
   }
 
+  get filterIndexable() {
+    return true;
+  }
+
   fields() {
     return null;
   }
