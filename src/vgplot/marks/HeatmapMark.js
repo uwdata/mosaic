@@ -72,7 +72,7 @@ function imageScale(mark) {
         if (v > hi) hi = v;
       }
     });
-    domain = [lo, hi];
+    domain = (lo === 0 && hi === 0) ? [0, 1] : [lo, hi];
   }
 
   const type = plot.getAttribute('scaleColor');
