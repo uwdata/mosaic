@@ -49,7 +49,8 @@ export class Table extends MosaicClient {
       if (scrollHeight - scrollTop < 2 * clientHeight) {
         this.pending = true;
         this.offset += this.limit;
-        this.request.update(this.queryInternal());
+        const query = this.queryInternal(this.filterBy?.predicate(this));
+        this.request.update(query);
       }
     });
 
@@ -167,7 +168,8 @@ export class Table extends MosaicClient {
     }
 
     // issue query for sorted data
-    this.request.update(this.query());
+    const query = this.query(this.filterBy?.predicate(this));
+    this.request.update(query);
   }
 }
 
