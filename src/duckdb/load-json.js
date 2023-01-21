@@ -4,7 +4,7 @@ export async function loadJSON(db, name, data, schema) {
 
   // create table
   const defs = cols.map(name => `${name} ${schema[name]}`).join(', ');
-  await db.exec(`CREATE TABLE ${name} (${defs});`);
+  await db.exec(`CREATE TABLE ${name} (${defs})`);
 
   // generate insert query content
   const tuples = data.map(d => '(' + cols
@@ -16,17 +16,5 @@ export async function loadJSON(db, name, data, schema) {
   );
 
   // populate table
-  return db.exec(`INSERT INTO ${name} VALUES ${tuples.join(', ')};`);
-
-  // TOO SLOW FOR NOW...
-  // // create prepared insert statement
-  // const blanks = cols.map(() => '?').join(', ');
-  // const stmt = db.prepare(`INSERT INTO ${name} VALUES (${blanks});`);
-
-  // // populate table
-  // for (const row of data) {
-  //   stmt.run(cols.map(name => row[name]));
-  // }
-
-  // stmt.finalize();
+  return db.exec(`INSERT INTO ${name} VALUES ${tuples.join(', ')}`);
 }
