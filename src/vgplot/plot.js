@@ -44,13 +44,15 @@ export class Plot {
 
   update(mark) {
     this.queue.delete(mark);
-    if (this.queue.size === 0) {
-      this.render();
+    if (this.queue.size === 0 && !this.pendingRender) {
+      this.pendingRender = true;
+      requestAnimationFrame(() => this.render());
     }
     return this;
   }
 
   async render() {
+    this.pendingRender = false;
     this.element.replaceChildren(await plotRenderer(this));
   }
 
@@ -64,15 +66,18 @@ export class Plot {
     } else {
       this.attributes[name] = value;
     }
+    return this;
   }
 
   addMark(mark) {
     mark.plot = this;
     mark.index = this.marks.length;
     this.marks.push(mark);
+    return this;
   }
 
   addSelection(sel) {
     this.selections.push(sel);
+    return this;
   }
 }
