@@ -135,13 +135,21 @@ export {
   select,
   selectX,
   selectY,
-  selectColor
+  selectColor,
+  pan,
+  panX,
+  panY,
+  panZoom,
+  panZoomX,
+  panZoomY
 } from './directives/selections';
 
 export {
   plot,
   hconcat,
   vconcat,
+  hspace,
+  vspace,
   menu,
   search,
   table,

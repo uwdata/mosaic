@@ -2,6 +2,7 @@ import { Highlight } from '../selections/Highlight.js';
 import { PointSelection } from '../selections/Point.js';
 import { Interval1DSelection } from '../selections/Interval1D.js';
 import { Interval2DSelection } from '../selections/Interval2D.js';
+import { PanZoomSelection } from '../selections/PanZoom.js';
 
 function point(signal, channels) {
   return plot => {
@@ -57,4 +58,35 @@ export function highlight(signal, channels) {
     const mark = plot.marks[plot.marks.length - 1];
     plot.addSelection(new Highlight(mark, signal, channels));
   };
+}
+
+function zoom(options) {
+  return plot => {
+    const mark = plot.marks[plot.marks.length - 1];
+    plot.addSelection(new PanZoomSelection(mark, options));
+  };
+}
+
+export function pan(options = {}) {
+  return zoom({ ...options, zoom: false });
+}
+
+export function panX(options = {}) {
+  return zoom({ ...options, zoom: false, pany: false });
+}
+
+export function panY(options = {}) {
+  return zoom({ ...options, zoom: false, panx: false });
+}
+
+export function panZoom(options = {}) {
+  return zoom(options);
+}
+
+export function panZoomX(options = {}) {
+  return zoom({ ...options, pany: false });
+}
+
+export function panZoomY(options = {}) {
+  return zoom({ ...options, panx: false });
 }
