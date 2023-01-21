@@ -51,7 +51,6 @@ export class Catalog {
       Query.from(table).select({
         rows: count(),
         nulls: count().where(isNull(column)),
-        values: count(column).distinct(),
         min: min(column),
         max: max(column)
       })
