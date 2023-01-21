@@ -5,7 +5,7 @@ export default function(el) {
   } = vgplot;
 
   el.innerHTML = `
-  Bandwidth (&sigma;): <input id="bw" type="range" min="1" max="100" value="20" step="1"></input>
+  Bandwidth (&sigma;): <input id="bw" type="range" min="0" max="100" value="20" step="1"></input>
   Thresholds: <input id="tz" type="range" min="2" max="20" value="10" step="1"></input>
   `;
 
