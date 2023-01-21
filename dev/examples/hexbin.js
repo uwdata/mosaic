@@ -4,7 +4,7 @@ export default function(el) {
     bin, count, rectY, rectX, scaleColor,
     marginLeft, marginRight, marginBottom, marginTop,
     axisX, axisY, labelAnchorX, labelAnchorY,
-    domainX, domainY, intervalX, intervalY, width, height,
+    domainX, domainY, domainXY, intervalX, intervalY, width, height,
     Selection, Signal, Fixed
   } = vgplot;
 
@@ -47,7 +47,7 @@ export default function(el) {
           hexgrid({ binWidth }),
           schemeColor('ylgnbu'), scaleColor(scale),
           marginLeft(5), marginRight(0), marginTop(0), marginBottom(5),
-          axisX(null), axisY(null),
+          axisX(null), axisY(null), domainXY(Fixed),
           width(705), height(505)
         ),
         plot(
