@@ -120,6 +120,7 @@ export {
   tickX,
   tickY,
   densityY,
+  denseLine,
   heatmap,
   contour,
   hexbin,

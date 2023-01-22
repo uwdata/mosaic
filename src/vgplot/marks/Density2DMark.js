@@ -1,7 +1,7 @@
 import { isSignal } from '../../mosaic/index.js';
 import { Query, and, gt, sum, expr, isBetween } from '../../sql/index.js';
 import { Transient } from '../symbols.js';
-import { dericheConfig, dericheConv2d, grid2d } from './util/deriche.js';
+import { dericheConfig, dericheConv2d, grid2d } from './util/density.js';
 import { extentX, extentY } from './util/extent.js';
 import { Mark } from './Mark.js';
 
@@ -60,10 +60,12 @@ export class Density2DMark extends Mark {
       }
     }
 
-    const k = Math.floor(Math.log2(this.scaleFactor) || 0);
-    const [x0, x1] = this.extentX = extentX(this);
-    const [y0, y1] = this.extentY = extentY(this);
-    const [nx, ny] = this.bins = [plot.innerWidth() >> k, plot.innerHeight() >> k];
+    const [x0, x1] = extentX(this, filter);
+    const [y0, y1] = extentY(this, filter);
+    const [nx, ny] = this.bins = [
+      Math.round(plot.innerWidth() / this.scaleFactor),
+      Math.round(plot.innerHeight() / this.scaleFactor)
+    ];
     const rx = !!plot.getAttribute('reverseX');
     const ry = !!plot.getAttribute('reverseY');
     return binLinear2d(q, 'x', 'y', w, x0, x1, y0, y1, nx, ny, rx, ry, groupby);

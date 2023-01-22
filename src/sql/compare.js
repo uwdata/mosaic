@@ -15,6 +15,10 @@ export class Compare1 {
     return extractColumns(this.a);
   }
 
+  visit(callback) {
+    callback(this.op, this);
+  }
+
   toString() {
     const { op, a } = this;
     return `(${toSQL(a)} ${op})`;
@@ -37,6 +41,10 @@ export class Compare2 {
 
   get columns() {
     return extractColumns(this.a, this.b);
+  }
+
+  visit(callback) {
+    callback(this.op, this);
   }
 
   toString() {
@@ -68,6 +76,10 @@ export class Range {
     return extractColumns(this.expr, this.value);
   }
 
+  visit(callback) {
+    callback(this.op, this);
+  }
+
   toString() {
     const { op, expr, value } = this;
     if (!value) return '';
@@ -90,6 +102,11 @@ export class CompareN {
 
   get columns() {
     return extractColumns(this.value);
+  }
+
+  visit(callback) {
+    callback(this.op, this);
+    this.value?.forEach(v => v.visit(callback));
   }
 
   toString() {

@@ -1,4 +1,5 @@
 import { Query, argmax, argmin, expr, max, min, epoch_ms } from '../../sql/index.js';
+import { filteredExtent } from './util/extent.js';
 import { Mark } from './Mark.js';
 
 export class ContinuousMark extends Mark {
@@ -18,7 +19,7 @@ export class ContinuousMark extends Mark {
       const { rows, type, min, max } = stats.find(s => s.column === column);
       const size = dim === 'x' ? plot.innerWidth() : plot.innerHeight();
 
-      const [ lo, hi ] = filter[0]?.value || [min, max];
+      const [lo, hi] = filteredExtent(filter, column) || [min, max];
       const scale = (hi - lo) / (max - min);
       if (rows * scale > size * 4) {
         const dd = type === 'date' ? epoch_ms(dim) : dim;

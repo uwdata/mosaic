@@ -1,9 +1,11 @@
 import { isSignal } from '../../mosaic/index.js';
 import { Query, gt, sum, expr, isBetween } from '../../sql/index.js';
-import { dericheConfig, dericheConv1d, grid1d } from './util/deriche.js';
+import { Transient } from '../symbols.js';
+import { dericheConfig, dericheConv1d, grid1d } from './util/density.js';
+import { extentX, extentY } from './util/extent.js';
 import { Mark } from './Mark.js';
 
-export class DensityMark extends Mark {
+export class Density1DMark extends Mark {
   constructor(type, source, options) {
     const { bins = 1024, bandwidth = 0.1, ...channels } = options;
     super(type, source, channels);
@@ -18,23 +20,21 @@ export class DensityMark extends Mark {
       this.bandwidth = bandwidth.value;
     }
     // TODO: nrd estimate from stats? (requires quantiles and stdev)
-    // TODO: perform binning in JS if data is set
+    // TODO: perform binning in JS if data is set?
+  }
+
+  get filterIndexable() {
+    const name = 'domainX'; // TODO: support transpose
+    const dom = this.plot.getAttribute(name);
+    return dom && !dom[Transient];
   }
 
   query(filter = []) {
-    const { bins, plot, stats } = this;
-    const dir = 'x'; // TODO
-    const { column } = this.channelField(dir);
+    const dir = 'x'; // TODO: support transpose
+    this.extent = (dir === 'x' ? extentX : extentY)(this, filter);
+    const [lo, hi] = this.extent;
     const weight = this.channelField('weight') ? 'weight' : 1;
-
-    let { min, max } = stats.find(s => s.column === column);
-    const domX = plot.getAttribute('domainX');
-    if (Array.isArray(domX)) {
-      [min, max] = domX;
-    }
-    this.extent = [min, max];
-
-    return binLinear1d(super.query(filter), 'x', min, max, bins, weight);
+    return binLinear1d(super.query(filter), 'x', lo, hi, this.bins, weight);
   }
 
   queryResult(data) {
@@ -73,15 +73,15 @@ export class DensityMark extends Mark {
 
 function binLinear1d(input, x, lo, hi, n, weight) {
   const w = weight && weight !== 1 ? `* ${weight}` : '';
-  const p = expr(`(${x} - ${lo}) * ${(n - 1) / (hi - lo)}::DOUBLE`);
+  const p = expr(`(${x} - ${lo}::DOUBLE) * ${(n - 1) / (hi - lo)}::DOUBLE`);
 
   const u = Query
-    .select({ p, i: expr('FLOOR(p)'), w: expr(`(i + 1 - p)${w}`) })
+    .select({ p, i: expr('FLOOR(p)::INTEGER'), w: expr(`(i + 1 - p)${w}`) })
     .from(input)
     .where(isBetween(x, [lo, hi]));
 
   const v = Query
-    .select({ p, i: expr('FLOOR(p) + 1'), w: expr(`(p - FLOOR(p))${w}`) })
+    .select({ p, i: expr('FLOOR(p)::INTEGER + 1'), w: expr(`(p - FLOOR(p))${w}`) })
     .from(input)
     .where(isBetween(x, [lo, hi]));
 

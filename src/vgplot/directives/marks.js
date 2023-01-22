@@ -1,6 +1,7 @@
 import { Mark } from '../marks/Mark.js';
 import { ContinuousMark } from '../marks/ContinuousMark.js';
-import { DensityMark } from '../marks/DensityMark.js';
+import { Density1DMark } from '../marks/Density1DMark.js';
+import { DenseLineMark } from '../marks/DenseLineMark.js';
 import { ContourMark } from '../marks/ContourMark.js';
 import { HeatmapMark } from '../marks/HeatmapMark.js';
 import { HexbinMark } from '../marks/HexbinMark.js';
@@ -56,12 +57,13 @@ export const frame = (...args) => mark('frame', ...args);
 
 export function densityMark(type, data, channels) {
   return plot => {
-    plot.addMark(new DensityMark(type, data, channels));
+    plot.addMark(new Density1DMark(type, data, channels));
   };
 }
 export const densityX = (...args) => densityMark('areaX', ...args);
 export const densityY = (...args) => densityMark('areaY', ...args);
 
+export const denseLine = (...args) => typedMark(DenseLineMark, ...args);
 export const contour = (...args) => typedMark(ContourMark, ...args);
 export const heatmap = (...args) => typedMark(HeatmapMark, ...args);
 export const hexbin = (...args) => typedMark(HexbinMark, ...args);

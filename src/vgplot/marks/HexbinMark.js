@@ -1,4 +1,5 @@
 import { Query, expr, isNotNull } from '../../sql/index.js';
+import { Transient } from '../symbols.js';
 import { extentX, extentY } from './util/extent.js';
 import { Mark } from './Mark.js';
 
@@ -7,6 +8,12 @@ export class HexbinMark extends Mark {
     const { binWidth = 20, ...channels } = options;
     super('hexagon', source, { r: binWidth / 2, clip: true, ...channels });
     this.binWidth = binWidth;
+  }
+
+  get filterIndexable() {
+    const xdom = this.plot.getAttribute('domainX');
+    const ydom = this.plot.getAttribute('domainY');
+    return xdom && ydom && !xdom[Transient] && !ydom[Transient];
   }
 
   query(filter = []) {
@@ -18,19 +25,19 @@ export class HexbinMark extends Mark {
 
     const width = plot.innerWidth();
     const height = plot.innerHeight();
-    const [x1, x2] = extentX(this);
-    const [y1, y2] = extentY(this);
+    const [x1, x2] = extentX(this, filter);
+    const [y1, y2] = extentY(this, filter);
     const ox = 0.5;
     const oy = 0;
     const dx = binWidth;
     const dy = dx * (1.5 / Math.sqrt(3));
-    const xr = width / (x2 - x1);
-    const yr = height / (y2 - y1);
+    const xr = `${width / (x2 - x1)}::DOUBLE`;
+    const yr = `${height / (y2 - y1)}::DOUBLE`;
 
     const q = Query
       .select({
-        x: expr(`${x1} + ((x - 0.5 + 0.5 * (y & 1)) * ${dx} + ${ox})::DOUBLE / ${xr}`),
-        y: expr(`${y2} - (y * ${dy} + ${oy})::DOUBLE / ${yr}`)
+        x: expr(`${x1}::DOUBLE + ((x - 0.5 + 0.5 * (y & 1)) * ${dx} + ${ox})::DOUBLE / ${xr}`),
+        y: expr(`${y2}::DOUBLE - (y * ${dy} + ${oy})::DOUBLE / ${yr}`)
       })
       .groupby('x', 'y');
 
@@ -51,8 +58,8 @@ export class HexbinMark extends Mark {
       }
     }
 
-    const xx = `${xr}::DOUBLE * (${x} - ${x1})`;
-    const yy = `${yr}::DOUBLE * (${y2} - ${y})`;
+    const xx = `${xr} * (${x} - ${x1}::DOUBLE)`;
+    const yy = `${yr} * (${y2}::DOUBLE - ${y})`;
 
     // TODO add groupby dims
     const hex = Query

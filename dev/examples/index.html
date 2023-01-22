@@ -16,10 +16,11 @@
         <option value="athletes">Athletes</option>
         <option value="contours">Contours</option>
         <option value="cross-filter">Cross-Filter</option>
-        <option value="density">Density</option>
+        <option value="density1d">Density 1D</option>
         <option value="density2d">Density 2D</option>
         <option value="facet">Facet</option>
         <option value="hexbin">Hexbin</option>
+        <option value="line-density">Line Density</option>
         <option value="overview-detail">Overview + Detail</option>
         <option value="pan-zoom">Pan + Zoom</option>
         <option value="regression">Regression</option>
@@ -60,6 +61,10 @@
   async function load(name) {
     view.innerHTML = '';
     mc.clear();
+    if (name === 'none' && location.search) {
+      // get example name from query string
+      name = location.search.slice(1);
+    }
     if (name !== 'none') (await import(`./${name}.js`)).default(view);
   }
 </script>

@@ -22,7 +22,7 @@ export class ContourMark extends Density2DMark {
   }
 
   contours() {
-    const { bins, kde, thresholds, extentX, extentY, groupby } = this;
+    const { bins, kde, thresholds, groupby, plot } = this;
 
     let tz = thresholds;
     if (!Array.isArray(tz)) {
@@ -39,8 +39,8 @@ export class ContourMark extends Density2DMark {
     // transform contours into data space coordinates
     // so we play nice with scale domains & axes
     const [nx, ny] = bins;
-    const [x0, x1] = extentX;
-    const [y0, y1] = extentY;
+    const [x0, x1] = plot.getAttribute('domainX');
+    const [y0, y1] = plot.getAttribute('domainY');
     const sx = (x1 - x0) / nx;
     const sy = (y1 - y0) / ny;
     const x = v => x0 + v * sx;
