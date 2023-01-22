@@ -289,11 +289,13 @@ export class Query {
     sql.push(`SELECT${distinct ? ' DISTINCT' : ''} ${sels.join(', ')}`);
 
     // FROM
-    const rels = from.map(({ as, from }) => {
-      const rel = isQuery(from) ? `(${from})` : `${from}`;
-      return !as || as === from.table ? rel : `${rel} AS "${as}"`;
-    });
-    sql.push(`FROM ${rels.join(', ')}`);
+    if (from.length) {
+      const rels = from.map(({ as, from }) => {
+        const rel = isQuery(from) ? `(${from})` : `${from}`;
+        return !as || as === from.table ? rel : `${rel} AS "${as}"`;
+      });
+      sql.push(`FROM ${rels.join(', ')}`);
+    }
 
     // SAMPLE
     if (sample) {
