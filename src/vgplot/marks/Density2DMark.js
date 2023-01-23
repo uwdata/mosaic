@@ -1,4 +1,4 @@
-import { isSignal } from '../../mosaic/index.js';
+import { isSignal, Signal } from '../../mosaic/index.js';
 import { Query, and, gt, sum, expr, isBetween } from '../../sql/index.js';
 import { Transient } from '../symbols.js';
 import { dericheConfig, dericheConv2d, grid2d } from './util/density.js';
@@ -17,6 +17,7 @@ export class Density2DMark extends Mark {
     this.densityStroke = densityStroke;
     this.bandwidth = bandwidth;
     this.scaleFactor = scaleFactor;
+    this.request = new Signal();
 
     if (isSignal(bandwidth)) {
       bandwidth.addListener('value', value => {
@@ -29,7 +30,7 @@ export class Density2DMark extends Mark {
     if (isSignal(scaleFactor)) {
       scaleFactor.addListener('value', value => {
         this.scaleFactor = value;
-        if (this.grids) this.convolve().update();
+        this.request.update(undefined, { force: true });
       });
       this.scaleFactor = scaleFactor.value;
     }

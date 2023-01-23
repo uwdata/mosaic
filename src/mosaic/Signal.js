@@ -12,11 +12,10 @@ export class Signal {
     return this._value;
   }
 
-  update(value) {
-    if (this._value !== value) {
-      this._value = value;
-      this.emit('value', this.value);
-    }
+  update(value, { force } = {}) {
+    const changed = this._value !== value;
+    if (changed) this._value = value;
+    if (changed || force) this.emit('value', this.value);
     return this;
   }
 

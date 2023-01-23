@@ -48,11 +48,11 @@ export class HeatmapMark extends Density2DMark {
 }
 
 function imageData(mark, w, h) {
-  if (!mark.image) {
+  if (!mark.image || mark.image.w !== w || mark.image.h !== h) {
     const canvas = createCanvas(w, h);
     const ctx = canvas.getContext('2d', { willReadFrequently: true });
     const img = ctx.getImageData(0, 0, w, h);
-    mark.image = { canvas, ctx, img };
+    mark.image = { canvas, ctx, img, w, h };
   }
   return mark.image;
 }
