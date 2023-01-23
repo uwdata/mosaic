@@ -1,4 +1,4 @@
-import { Query, count, sum, expr } from '../../sql/index.js';
+import { Query, count, sum, expr, isNull } from '../../sql/index.js';
 import { extentX, extentY } from './util/extent.js';
 import { HeatmapMark } from './HeatmapMark.js';
 
@@ -28,8 +28,8 @@ export class DenseLineMark extends HeatmapMark {
       }
     }
 
-    const [x0, x1] = extentX(this);
-    const [y0, y1] = extentY(this);
+    const [x0, x1] = extentX(this, filter);
+    const [y0, y1] = extentY(this, filter);
     const [nx, ny] = this.bins = [
       Math.round(plot.innerWidth() / this.scaleFactor),
       Math.round(plot.innerHeight() / this.scaleFactor)
@@ -55,66 +55,61 @@ function lineDensity(
   const yb = expr(`FLOOR(${yy} * ${(yn - 1) / (y1 - y0)}::DOUBLE)::INTEGER`);
 
   // select x, y points binned to the grid
-  const q = Query.from(input).select({ x: xb, y: yb }, groups);
+  const q = Query.from(input).select(groups, { x: xb, y: yb });
 
   // select line segment end point pairs
   const pairPart = groups.length ? `PARTITION BY ${groups.join(', ')} ` : '';
-  const pairs = Query.from(q)
+  const pairs = Query
+    .from(q)
     .select(groups, {
       x0: 'x',
       y0: 'y',
-      x1: expr(`lead(x) OVER sw`), // lead('x').over('sw')
-      y1: expr(`lead(y) OVER sw`)  // lead('y').over('sw')
+      dx: expr(`(lead(x) OVER sw - x)`),
+      dy: expr(`(lead(y) OVER sw - y)`)
     })
     .window({ sw: expr(`${pairPart}ORDER BY x ASC`) });
 
-  // rasterize line segments (Bresenham's algorithm)
-  const lines = Query.from(pairs)
-    .select({
-      x: expr(`UNNEST(CASE WHEN x1 IS NULL THEN
-  [x0]
-WHEN ABS(y1 - y0) < ABS(x1 - x0) THEN
-  RANGE(x0, x1)
-ELSE
-  CASE WHEN y0 > y1 THEN
-    LIST_TRANSFORM(
-      RANGE(y0 - y1),
-      i -> x1 + ((i + 1) * 2 * (x0 - x1) - (y0 - y1)) / (2 * (y0 - y1))
-    )
-  ELSE
-    LIST_TRANSFORM(
-      range(y1 - y0),
-      i -> x0 + ((i + 1) * 2 * (x1 - x0) - (y1 - y0)) / (2 * (y1 - y0))
-    )
-  END
-END)`),
-      y: expr(`UNNEST(CASE WHEN y1 IS NULL THEN
-  [y0]
-WHEN ABS(y1 - y0) < ABS(x1 - x0) THEN
-    LIST_TRANSFORM(
-      RANGE(x1 - x0),
-      i -> y0 + ((i + 1) * 2 * (y1 - y0) - (x1 - x0)) / (2 * (x1 - x0))
-    )
-ELSE
-  CASE WHEN y0 > y1 THEN
-    RANGE(y1, y0)
-  ELSE
-    RANGE(y0, y1)
-  END
-END)`)
-    }, groups);
+  // indices to join against for rasterization
+  // generate the maximum number of indices needed
+  const num = Query
+    .select({ x: expr(`GREATEST(MAX(ABS(dx)), MAX(ABS(dy)))`) })
+    .from('pairs');
+  const indices = Query.select({ i: expr(`UNNEST(range((${num})))::INTEGER`) });
+
+  // rasterize line segments
+  const raster = Query.unionAll(
+    Query
+      .select(groups, {
+        x: expr(`x0 + i`),
+        y: expr(`y0 + ROUND(i * dy / dx::FLOAT)::INTEGER`)
+      })
+      .from('pairs', 'indices')
+      .where(expr(`ABS(dy) <= ABS(dx) AND i < ABS(dx)`)),
+    Query
+      .select(groups, {
+        x: expr(`x0 + ROUND(SIGN(dy) * i * dx / dy::FLOAT)::INTEGER`),
+        y: expr(`y0 + SIGN(dy) * i`)
+      })
+      .from('pairs', 'indices')
+      .where(expr(`ABS(dy) > ABS(dx) AND i < ABS(dy)`)),
+    Query
+      .select(groups, { x: 'x0', y: 'y0' })
+      .from('pairs')
+      .where(isNull('dx'))
+  );
 
   // normalize columns for each series
-  let points = lines;
-  if (normalize) {
-    const pointPart = ['x'].concat(groups).join(', ');
-    points = Query.from(lines)
-      .select('x', 'y', groups)
-      .select({ w: expr(`1.0 / COUNT(*) OVER (PARTITION BY ${pointPart})`)});
-  }
+  const pointPart = ['x'].concat(groups).join(', ');
+  const points = Query
+    .from('raster')
+    .select(groups, 'x', 'y', {
+      w: expr(`1.0 / COUNT(*) OVER (PARTITION BY ${pointPart})`)
+    });
 
   // sum normalized, rasterized series into output grids
-  return Query.from(points)
+  return Query
+    .with({ pairs, indices, raster, points })
+    .from(normalize ? 'points' : 'raster')
     .select(groupby, {
       index: expr(`x + y * ${xn}::INTEGER`),
       weight: normalize ? sum('w') : count()
