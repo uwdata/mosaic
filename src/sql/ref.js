@@ -55,17 +55,19 @@ export function desc(expr) {
   };
 }
 
-export function expr(sql, columns) {
+export function expr(sql, columns, label) {
   return {
     expr: sql,
+    label,
     toString: () => `${sql}`,
     get columns() { return columns || []; }
   };
 }
 
-export function transform(func) {
+export function transform(func, label) {
   return value => expr(
     func(value),
-    asColumn(value).columns
+    asColumn(value).columns,
+    label
   )
 }
