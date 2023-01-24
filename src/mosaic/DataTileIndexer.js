@@ -1,5 +1,6 @@
 import { Query, expr, and, isBetween, asColumn, epoch_ms } from '../sql/index.js';
 import { fnv_hash } from './util/hash.js';
+import { skipClient } from './util/skip-client.js';
 
 const identity = x => x;
 
@@ -29,7 +30,7 @@ export class DataTileIndexer {
     this.activeView = null;
   }
 
-  index(clients) {
+  index(clients, active) {
     if (this.clients !== clients) {
       // test client views for compatibility
       const cols = Array.from(clients).map(getIndexColumns);
@@ -41,9 +42,9 @@ export class DataTileIndexer {
     }
     if (!this.enabled) return false; // client views are not indexable
 
-    const { active } = this.selection;
+    active = active || this.selection.active;
     if (!active.client) return false; // nothing to work with
-    if (this.activeView?.client === active.client) return true; // we're good!
+    if (skipClient(active.client, this.activeView)) return true; // we're good!
     const activeView = this.activeView = getActiveView(active);
     if (!activeView) return false; // active selection clause not compatible
 
@@ -55,7 +56,7 @@ export class DataTileIndexer {
     // generate data tile indices
     const indices = this.indices = new Map;
     for (const client of clients) {
-      if (sel.cross && client === active.client) continue;
+      if (sel.cross && skipClient(client, active)) continue;
       const index = getIndexColumns(client);
 
       // build index construction query
@@ -82,18 +83,18 @@ export class DataTileIndexer {
 
   async update() {
     const { clients, selection, activeView } = this;
-    const where = activeView.predicate(selection.active.predicate);
+    const filter = activeView.predicate(selection.active.predicate);
     return Promise.all(
-      Array.from(clients).map(client => this.updateClient(client, where))
+      Array.from(clients).map(client => this.updateClient(client, filter))
     );
   }
 
-  async updateClient(client, where) {
+  async updateClient(client, filter) {
     const index = this.indices.get(client);
     if (!index) return;
 
-    if (!where) {
-      where = this.activeView.predicate(this.selection.active.predicate);
+    if (!filter) {
+      filter = this.activeView.predicate(this.selection.active.predicate);
     }
 
     const { table, dims, aggr } = index;
@@ -101,7 +102,7 @@ export class DataTileIndexer {
       .select(dims, aggr)
       .from(table)
       .groupby(dims)
-      .where(where)
+      .where(filter)
     );
   }
 }

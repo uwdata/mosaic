@@ -1,5 +1,6 @@
 import { or } from '../sql/index.js';
 import { Signal } from './Signal.js';
+import { skipClient } from './util/skip-client.js';
 
 export function isSelection(x) {
   return x instanceof Selection;
@@ -23,6 +24,7 @@ export class Selection extends Signal {
   }
 
   get value() {
+    // return value of most recently added clause
     const { clauses } = this;
     return clauses[clauses.length - 1]?.value;
   }
@@ -32,8 +34,7 @@ export class Selection extends Signal {
   }
 
   activate(clause) {
-    this.active = clause;
-    this.emit('active', this.active);
+    this.emit('activate', clause);
   }
 
   update(clause) {
@@ -46,11 +47,18 @@ export class Selection extends Signal {
 
   predicate(client) {
     const { active, clauses, cross, union } = this;
-    if (cross && client === active?.client) return undefined;
+
+    // do nothing if cross-filtering and client is currently active
+    if (cross && skipClient(client, active)) return undefined;
+
+    // remove client-specific predicates if cross-filtering
     const list = (cross
-      ? clauses.filter(s => s.client !== client)
+      ? clauses.filter(clause => !skipClient(client, clause))
       : clauses
     ).map(s => s.predicate);
+
+    // return appropriate conjunction or disjunction
+    // an array of predicates is implicitly conjunctive
     return union && list.length > 1 ? or(list) : list;
   }
 }

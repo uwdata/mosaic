@@ -82,12 +82,12 @@ export class PanZoomSelection {
 
     if (panx) {
       element.addEventListener('mouseenter', () => {
-        xsel.activate(this.clause([0, 1]));
+        xsel.activate(this.clause(this.xscale.domain, this.xfield, this.xscale));
       });
     }
     if (pany) {
       element.addEventListener('mouseenter', () => {
-        ysel.activate(this.clause([0, 1]));
+        ysel.activate(this.clause(this.yscale.domain, this.yfield, this.yscale));
       });
     }
   }

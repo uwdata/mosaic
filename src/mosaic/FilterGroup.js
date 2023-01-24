@@ -9,7 +9,9 @@ export class FilterGroup {
     this.indexer = new DataTileIndexer(mc, selection);
 
     selection.addListener('value', throttle(() => this.update()));
-    selection.addListener('active', () => this.indexer?.index(this.clients));
+    selection.addListener('activate', clause => {
+      this.indexer?.index(this.clients, clause);
+    });
   }
 
   reset() {
@@ -38,9 +40,9 @@ export class FilterGroup {
 
 function defaultUpdate(mc, clients, selection) {
   return Promise.all(Array.from(clients).map(client => {
-    const where = selection.predicate(client);
-    if (where != null) {
-      return mc.updateClient(client, client.query(where));
+    const filter = selection.predicate(client);
+    if (filter != null) {
+      return mc.updateClient(client, client.query(filter));
     }
   }));
 }

@@ -14,14 +14,14 @@ export class Interval1DSelection {
     this.brush.on('brush end', ({ selection }) => this.update(selection));
   }
 
-  update(selection) {
+  update(extent) {
     let range = undefined;
-    if (selection) {
-      range = selection.map(this.scale.invert).sort((a, b) => a - b);
+    if (extent) {
+      range = extent.map(this.scale.invert).sort((a, b) => a - b);
     }
     if (!closeTo(range, this.value)) {
       this.value = range;
-      this.g.call(this.brush.move, selection);
+      this.g.call(this.brush.move, extent);
       this.selection.update(this.clause(range));
     }
   }
@@ -53,7 +53,7 @@ export class Interval1DSelection {
       .call(brush.move, this.value?.map(this.scale.apply));
 
     svg.addEventListener('mouseenter', () => {
-      this.selection.activate(this.clause([0, 1]));
+      this.selection.activate(this.clause(this.value || [0, 1]));
     });
   }
 }

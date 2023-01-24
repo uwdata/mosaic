@@ -16,19 +16,19 @@ export class Interval2DSelection {
     this.brush.on('brush end', ({ selection }) => this.update(selection));
   }
 
-  update(selection) {
+  update(extent) {
     const { value } = this;
     let xr = undefined;
     let yr = undefined;
-    if (selection) {
-      const [a, b] = selection;
+    if (extent) {
+      const [a, b] = extent;
       xr = [a[0], b[0]].map(this.xscale.invert).sort(asc);
       yr = [a[1], b[1]].map(this.yscale.invert).sort(asc);
     }
 
     if (!closeTo(xr, value?.[0]) || !closeTo(yr, value?.[1])) {
-      this.value = selection ? [xr, yr] : null;
-      this.g.call(this.brush.move, selection);
+      this.value = extent ? [xr, yr] : null;
+      this.g.call(this.brush.move, extent);
       this.selection.update(this.clause(this.value));
     }
   }
@@ -70,7 +70,7 @@ export class Interval2DSelection {
     }
 
     svg.addEventListener('mouseenter', () => {
-      this.selection.activate(this.clause([[0, 1], [0, 1]]));
+      this.selection.activate(this.clause(this.value || [[0, 1], [0, 1]]));
     });
   }
 }
