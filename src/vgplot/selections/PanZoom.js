@@ -1,4 +1,4 @@
-import { select, zoom } from 'd3';
+import { select, zoom, ZoomTransform } from 'd3';
 import { Selection } from '../../mosaic/index.js';
 import { isBetween } from '../../sql/index.js';
 
@@ -24,7 +24,6 @@ export class PanZoomSelection {
     this.pany = this.ysel && pany;
 
     const { plot } = mark;
-
     if (panx) {
       this.xsel.addListener('value', v => {
         plot.setAttribute('domainX', v).update();
@@ -58,12 +57,10 @@ export class PanZoomSelection {
   }
 
   init(svg) {
-    if (this.initialized) return;
-    this.initialized = true;
+    this.svg = svg;
+    if (this.initialized) return; else this.initialized = true;
 
-    const { panx, pany, mark, xsel, ysel } = this;
-    const { plot } = mark;
-    const { element } = plot;
+    const { panx, pany, mark: { plot: { element } }, xsel, ysel } = this;
 
     this.xscale = svg.scale('x');
     this.yscale = svg.scale('y');
@@ -76,26 +73,36 @@ export class PanZoomSelection {
       .extent([[rx[0], ry[0]], [rx[1], ry[1]]])
       .scaleExtent(this.zoom)
       .translateExtent([[tx[0], ty[0]], [tx[1], ty[1]]])
+      .on('start', () => {
+        this.xscale = this.svg.scale('x');
+        this.yscale = this.svg.scale('y');
+      })
+      .on('end', () => element.__zoom = new ZoomTransform(1, 0, 0))
       .on('zoom', ({ transform }) => this.update(transform));
 
     select(element).call(z);
 
-    if (panx) {
+    if (panx || pany) {
+      let enter = false;
       element.addEventListener('mouseenter', () => {
-        xsel.activate(this.clause(this.xscale.domain, this.xfield, this.xscale));
+        if (enter) return; else enter = true;
+        if (panx) {
+          const { xscale, xfield } = this;
+          xsel.activate(this.clause(xscale.domain, xfield, xscale));
+        }
+        if (pany) {
+          const { yscale, yfield } = this;
+          ysel.activate(this.clause(yscale.domain, yfield, yscale));
+        }
       });
-    }
-    if (pany) {
-      element.addEventListener('mouseenter', () => {
-        ysel.activate(this.clause(this.yscale.domain, this.yfield, this.yscale));
-      });
+      element.addEventListener('mouseleave', () => enter = false);
     }
   }
 }
 
-function extent(v, defaultTrue, defaultFalse) {
-  return v
-    ? (Array.isArray(zoom) ? zoom : defaultTrue)
+function extent(ext, defaultTrue, defaultFalse) {
+  return ext
+    ? (Array.isArray(ext) ? ext : defaultTrue)
     : defaultFalse;
 }
 
