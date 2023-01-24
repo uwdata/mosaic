@@ -1,6 +1,7 @@
 import { brushX, brushY, select, min, max } from 'd3';
 import { isBetween } from '../../sql/index.js';
-import { closeTo } from './close-to.js';
+import { closeTo } from './util/close-to.js';
+import { patchScreenCTM } from './util/patchScreenCTM.js';
 
 export class Interval1DSelection {
   constructor(mark, channel, selection, field) {
@@ -47,6 +48,7 @@ export class Interval1DSelection {
     this.g = root
       .append('g')
       .attr('class', `interval-${channel}`)
+      .each(patchScreenCTM)
       .call(brush)
       .call(brush.move, this.value?.map(this.scale.apply));
 

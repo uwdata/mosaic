@@ -1,6 +1,7 @@
 import { brush, select, min, max } from 'd3';
 import { and, isBetween } from '../../sql/index.js';
-import { closeTo } from './close-to.js';
+import { closeTo } from './util/close-to.js';
+import { patchScreenCTM } from './util/patchScreenCTM.js';
 
 const asc = (a, b) => a - b;
 
@@ -59,6 +60,7 @@ export class Interval2DSelection {
     this.g = root
       .append('g')
       .attr('class', `interval-xy`)
+      .each(patchScreenCTM)
       .call(brush);
 
     if (this.value) {
