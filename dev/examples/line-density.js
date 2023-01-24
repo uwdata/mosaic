@@ -1,7 +1,7 @@
 export default async function(el) {
   const {
     mc, Selection, Signal, vconcat, plot, from, denseLine,
-    schemeColor, labelY, domainY, intervalX, width, height, Fixed
+    schemeColor, labelY, intervalXY, width, height
   } = vgplot;
 
   el.innerHTML = `
@@ -39,7 +39,7 @@ export default async function(el) {
           from(table, { filterBy: brush }),
           { x, y, z, fill: 'density', bandwidth, scaleFactor }
         ),
-        schemeColor('viridis'), domainY(Fixed),
+        schemeColor('viridis'),
         labelY('Value (normalized lines)'),
         width(800), height(300)
       ),
@@ -50,7 +50,7 @@ export default async function(el) {
         ),
         schemeColor('viridis'),
         labelY('Value (unnormalized lines)'),
-        width(800), height(300), intervalX({ as: brush })
+        width(800), height(300), intervalXY({ as: brush })
       )
     )
   );

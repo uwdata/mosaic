@@ -1,4 +1,4 @@
-import { Query, count, sum, expr, isNull } from '../../sql/index.js';
+import { Query, and, count, sum, expr, isNull, isBetween } from '../../sql/index.js';
 import { extentX, extentY } from './util/extent.js';
 import { HeatmapMark } from './HeatmapMark.js';
 
@@ -11,8 +11,10 @@ export class DenseLineMark extends HeatmapMark {
 
   query(filter = []) {
     const { plot, channels, normalize, source, stats } = this;
+    const [x0, x1] = extentX(this, filter);
+    const [y0, y1] = extentY(this, filter);
 
-    const q = Query.from(source.table).where(filter);
+    const q = Query.from(source.table).where(stripXY(this, filter));
     const groupby = this.groupby = [];
     const z = [];
     for (const c of channels) {
@@ -28,8 +30,6 @@ export class DenseLineMark extends HeatmapMark {
       }
     }
 
-    const [x0, x1] = extentX(this, filter);
-    const [y0, y1] = extentY(this, filter);
     const [nx, ny] = this.bins = [
       Math.round(plot.innerWidth() / this.scaleFactor),
       Math.round(plot.innerHeight() / this.scaleFactor)
@@ -38,6 +38,32 @@ export class DenseLineMark extends HeatmapMark {
     const ry = !!plot.getAttribute('reverseY');
     return lineDensity(q, 'x', 'y', z, x0, x1, y0, y1, nx, ny, rx, ry, groupby, normalize);
   }
+}
+
+// strip x, y fields from filter predicate
+// to prevent improper clipping of line segments
+// TODO: improve, perhaps with supporting query utilities
+function stripXY(mark, filter) {
+  if (Array.isArray(filter) && !filter.length) return filter;
+
+  const xc = mark.channelField('x').column;
+  const yc = mark.channelField('y').column;
+  const test = p => p.op !== 'BETWEEN'
+    || p.expr.column !== xc && p.expr.column !== yc;
+  const filterAnd = p => {
+    if (p.op === 'AND') {
+      p.value = p.value.filter(c => test(c));
+    }
+  };
+
+  if (Array.isArray(filter)) {
+    filter = filter.filter(p => test(p));
+    filter.forEach(p => filterAnd(p));
+  } else if (filter.op === 'AND') {
+    filterAnd(filter);
+  }
+
+  return filter;
 }
 
 function lineDensity(
@@ -67,7 +93,13 @@ function lineDensity(
       dx: expr(`(lead(x) OVER sw - x)`),
       dy: expr(`(lead(y) OVER sw - y)`)
     })
-    .window({ sw: expr(`${pairPart}ORDER BY x ASC`) });
+    .window({ sw: expr(`${pairPart}ORDER BY x ASC`) })
+    .qualify(and(
+      expr(`(x0 < ${xn} OR x0 + dx < ${xn})`),
+      expr(`(y0 < ${yn} OR y0 + dy < ${yn})`),
+      expr(`(x0 > 0 OR x0 + dx > 0)`),
+      expr(`(y0 > 0 OR y0 + dy > 0)`)
+    ));
 
   // indices to join against for rasterization
   // generate the maximum number of indices needed
@@ -98,18 +130,21 @@ function lineDensity(
       .where(isNull('dx'))
   );
 
-  // normalize columns for each series
+  // filter raster, normalize columns for each series
   const pointPart = ['x'].concat(groups).join(', ');
   const points = Query
     .from('raster')
-    .select(groups, 'x', 'y', {
-      w: expr(`1.0 / COUNT(*) OVER (PARTITION BY ${pointPart})`)
-    });
+    .select(groups, 'x', 'y',
+      normalize
+        ? { w: expr(`1.0 / COUNT(*) OVER (PARTITION BY ${pointPart})`) }
+        : null
+    )
+    .where(and(isBetween('x', [0, xn]), isBetween('y', [0, yn])));
 
   // sum normalized, rasterized series into output grids
   return Query
     .with({ pairs, indices, raster, points })
-    .from(normalize ? 'points' : 'raster')
+    .from('points')
     .select(groupby, {
       index: expr(`x + y * ${xn}::INTEGER`),
       weight: normalize ? sum('w') : count()
