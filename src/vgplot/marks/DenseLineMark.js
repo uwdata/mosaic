@@ -50,20 +50,13 @@ function stripXY(mark, filter) {
   const yc = mark.channelField('y').column;
   const test = p => p.op !== 'BETWEEN'
     || p.expr.column !== xc && p.expr.column !== yc;
-  const filterAnd = p => {
-    if (p.op === 'AND') {
-      p.value = p.value.filter(c => test(c));
-    }
-  };
+  const filterAnd = p => p.op === 'AND'
+    ? and(p.value.filter(c => test(c)))
+    : p;
 
-  if (Array.isArray(filter)) {
-    filter = filter.filter(p => test(p));
-    filter.forEach(p => filterAnd(p));
-  } else if (filter.op === 'AND') {
-    filterAnd(filter);
-  }
-
-  return filter;
+  return Array.isArray(filter)
+    ? filter.filter(p => test(p)).map(p => filterAnd(p))
+    : filterAnd(filter);
 }
 
 function lineDensity(
