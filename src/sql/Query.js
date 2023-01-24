@@ -56,14 +56,19 @@ export class Query {
       return query.with;
     } else {
       const list = [];
+      const add = (as, q) => {
+        const query = q.clone();
+        query.cteFor = this;
+        list.push({ as, query });
+      };
       expr.flat().forEach(e => {
         if (e == null) {
           // do nothing
         } else if (e.as && e.query) {
-          list.push(e);
+          add(e.as, e.query);
         } else {
           for (const as in e) {
-            list.push({ as, query: e[as] });
+            add(as, e[as]);
           }
         }
       });
@@ -124,7 +129,7 @@ export class Query {
         } else if (isQuery(e) || Object.hasOwn(e, 'toString')) {
           list.push({ from: e });
         } else if (Array.isArray(e)) {
-          list.push({ as: e[0], from: e[1] });
+          list.push({ as: unquote(e[0]), from: asRelation(e[1]) });
         } else {
           for (const as in e) {
             list.push({ as: unquote(as), from: asRelation(e[as]) });
@@ -263,7 +268,19 @@ export class Query {
   }
 
   get subqueries() {
-    return this.query.from.map(({ from }) => from).filter(f => isQuery(f));
+    const { query, cteFor } = this;
+    const ctes = (cteFor?.query || query).with;
+    const cte = ctes?.reduce((o, {as, query}) => (o[as] = query, o), {});
+    const q = [];
+    query.from.forEach(({ from }) => {
+      if (isQuery(from)) {
+        q.push(from);
+      } else if (cte[from.table]) {
+        const sub = cte[from.table];
+        q.push(sub);
+      }
+    });
+    return q;
   }
 
   toString() {
@@ -356,8 +373,14 @@ export class Query {
 export class SetOperation {
   constructor(op, queries) {
     this.op = op;
-    this.subqueries = queries;
+    this.queries = queries.map(q => q.clone());
     this.query = { orderby: [] };
+  }
+
+  clone() {
+    const q = new SetOperation(this.op, this.queries);
+    q.query = { ...this.query };
+    return q;
   }
 
   orderby(...expr) {
@@ -392,10 +415,16 @@ export class SetOperation {
     }
   }
 
-  toString() {
-    const { op, subqueries, query: { orderby, limit, offset } } = this;
+  get subqueries() {
+    const { queries, cteFor } = this;
+    if (cteFor) queries.forEach(q => q.cteFor = cteFor);
+    return queries;
+  }
 
-    const sql = [ subqueries.join(` ${op} `) ];
+  toString() {
+    const { op, queries, query: { orderby, limit, offset } } = this;
+
+    const sql = [ queries.join(` ${op} `) ];
 
     // ORDER BY
     if (orderby.length) {

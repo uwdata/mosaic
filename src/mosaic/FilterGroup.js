@@ -12,6 +12,10 @@ export class FilterGroup {
     selection.addListener('active', () => this.indexer?.index(this.clients));
   }
 
+  reset() {
+    this.indexer?.reset();
+  }
+
   add(client) {
     (this.clients = new Set(this.clients)).add(client);
     return this;

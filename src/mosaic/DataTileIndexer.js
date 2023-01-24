@@ -19,6 +19,10 @@ export class DataTileIndexer {
   constructor(mc, selection) {
     this.mc = mc;
     this.selection = selection;
+    this.reset();
+  }
+
+  reset() {
     this.enabled = false;
     this.clients = null;
     this.indices = null;
@@ -230,7 +234,7 @@ function getBaseTable(query) {
   // select query
   if (query.select) {
     const from = query.from();
-    if (from.length > 1) return NaN;
+    if (!from.length) return undefined;
     if (subq.length === 0) return from[0].from.table;
   }
 
@@ -238,12 +242,21 @@ function getBaseTable(query) {
   let base = getBaseTable(subq[0]);
   for (let i = 1; i < subq.length; ++i) {
     const from = getBaseTable(subq[i]);
+    if (from === undefined) continue;
     if (from !== base) return NaN;
   }
   return base;
 }
 
 function subqueryPushdown(query, cols) {
-  if (query.select) query.select(cols);
-  query.subqueries.forEach(q => subqueryPushdown(q, cols));
+  const memo = new Set;
+  const pushdown = q => {
+    if (memo.has(q)) return;
+    memo.add(q);
+    if (q.select && q.from().length) {
+      q.select(cols);
+    }
+    q.subqueries.forEach(pushdown);
+  };
+  pushdown(query);
 }

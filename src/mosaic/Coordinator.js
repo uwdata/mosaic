@@ -78,6 +78,7 @@ export class Coordinator {
     // query handler
     const handler = async (query) => {
       const q = query || client.query(filter?.predicate(client));
+      filterGroups.get(filter)?.reset();
       if (q) this.updateClient(client, q);
     };
     clients.set(client, handler);
