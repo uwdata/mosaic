@@ -2,7 +2,7 @@ import { Query, argmax, argmin, expr, max, min, epoch_ms } from '../../sql/index
 import { filteredExtent } from './util/extent.js';
 import { Mark } from './Mark.js';
 
-export class ContinuousMark extends Mark {
+export class ConnectedMark extends Mark {
   constructor(type, source, encodings) {
     super(type, source, encodings);
     this.dim = type.endsWith('X') ? 'y' : 'x';
@@ -36,9 +36,9 @@ export class ContinuousMark extends Mark {
 function m4(input, bx, x, y, lo, hi, width, cols = []) {
   const bins = expr(`FLOOR(${width / (hi - lo)}::DOUBLE * (${bx} - ${lo}::DOUBLE))`);
 
-  const q = (cols) => Query
+  const q = (sel) => Query
     .from(input)
-    .select(Object.fromEntries(cols))
+    .select(Object.fromEntries(sel))
     .groupby(bins);
 
   return Query

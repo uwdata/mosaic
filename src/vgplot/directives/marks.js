@@ -1,5 +1,5 @@
 import { Mark } from '../marks/Mark.js';
-import { ContinuousMark } from '../marks/ContinuousMark.js';
+import { ConnectedMark } from '../marks/ConnectedMark';
 import { Density1DMark } from '../marks/Density1DMark.js';
 import { DenseLineMark } from '../marks/DenseLineMark.js';
 import { ContourMark } from '../marks/ContourMark.js';
@@ -13,7 +13,7 @@ export function mark(type, data, channels) {
     data = null;
   }
   const MarkClass = type.startsWith('area') || type.startsWith('line')
-    ? ContinuousMark
+    ? ConnectedMark
     : Mark;
   return plot => {
     plot.addMark(new MarkClass(type, data, channels));
