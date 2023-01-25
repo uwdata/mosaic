@@ -39,7 +39,7 @@ export default async function(el) {
   function update() {
     const table = 'faa';
     const cols = ['delay', 'time', 'distance'];
-    const brush = new Selection();
+    const brush = Selection.crossfilter();
     el.querySelector('#view').replaceChildren(
       vconcat(
         cols.map(col => {

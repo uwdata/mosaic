@@ -7,10 +7,10 @@ export default function(el = document.body) {
   const y = 'bill_depth';
   const z = 'flipper_length';
 
-  const ws = new vg.Selection();
-  const xs = new vg.Selection();
-  const ys = new vg.Selection();
-  const zs = new vg.Selection();
+  const ws = vg.Selection.intersect();
+  const xs = vg.Selection.intersect();
+  const ys = vg.Selection.intersect();
+  const zs = vg.Selection.intersect();
 
   el.appendChild(
     vg.hconcat(

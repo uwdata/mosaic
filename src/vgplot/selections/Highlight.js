@@ -4,7 +4,10 @@ import { and } from '../../sql/index.js';
 const queryCache = new Map;
 
 export class Highlight {
-  constructor(mark, selection, channels = { opacity: 0.1 }) {
+  constructor(mark, {
+    selection,
+    channels = { opacity: 0.1 }
+  }) {
     this.mark = mark;
     this.selection = selection;
     this.channels = Object.entries(channels);

@@ -1,10 +1,14 @@
 import { and, or, eq, literal } from '../../sql/index.js';
 
 export class PointSelection {
-  constructor(mark, selection, channels) {
+  constructor(mark, {
+    selection,
+    channels
+  }) {
     this.mark = mark;
     this.selection = selection;
     this.state = new Map;
+    this.clients = new Set().add(mark);
     this.channels = channels.map(c => {
       const q = c === 'color' ? ['fill', 'stroke']
         : c === 'x' ? ['x', 'x1', 'x2']
@@ -19,10 +23,10 @@ export class PointSelection {
   }
 
   clause(value) {
+    const { channels, clients } = this;
     let predicate = null;
 
     if (value) {
-      const { channels } = this;
       const clauses = value.map(vals => {
         const list = vals.map((v, i) => eq(channels[i][1], literal(v)));
         return list.length > 1 ? and(list) : list[0];
@@ -31,8 +35,9 @@ export class PointSelection {
     }
 
     return {
+      source: this,
       schema: { type: 'point' },
-      client: this.mark,
+      clients,
       value,
       predicate
     };

@@ -4,10 +4,16 @@ import { closeTo } from './util/close-to.js';
 import { patchScreenCTM } from './util/patchScreenCTM.js';
 
 export class Interval1DSelection {
-  constructor(mark, channel, selection, field) {
+  constructor(mark, {
+    channel,
+    selection,
+    field,
+    peers = true
+  }) {
     this.mark = mark;
     this.channel = channel;
     this.selection = selection;
+    this.peers = peers;
     this.field = field || mark.channelField(channel, channel+'1', channel+'2');
     this.field = this.field?.column || this.field;
     this.brush = channel === 'y' ? brushY() : brushX();
@@ -28,8 +34,9 @@ export class Interval1DSelection {
 
   clause(value) {
     return {
+      source: this,
       schema: { type: 'interval', scales: [this.scale] },
-      client: this.mark,
+      clients: this.peers ? this.mark.plot.markSet : new Set().add(this.mark),
       value,
       predicate: value ? isBetween(this.field, value) : null
     };

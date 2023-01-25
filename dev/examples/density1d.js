@@ -13,7 +13,7 @@ export default function(el) {
 
   const table = 'flights';
   const bandwidth = new Signal(+bw.value);
-  const brush = new Selection();
+  const brush = Selection.crossfilter();
 
   el.appendChild(
     vconcat(

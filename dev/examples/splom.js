@@ -10,7 +10,7 @@ export default function(el) {
 
   const columns = ['bill_length', 'bill_depth', 'flipper_length', 'body_mass'];
   const table = 'penguins';
-  const brush = new Selection({ union: true });
+  const brush = Selection.union();
 
   function scatter(x, y, row, col, n) {
     const s = 135;
@@ -18,7 +18,7 @@ export default function(el) {
       frame({ stroke: '#ccc' }),
       dot(from(table), { x, y, fill: 'species', r: 2 }),
       intervalXY({ as: brush }),
-      highlight(brush, { opacity: 0.1 }),
+      highlight({ by: brush, opacity: 0.1 }),
       ticksX(3), ticksY(4),
       domainX(Fixed), domainY(Fixed), domainColor(Fixed),
       marginTop(5), marginRight(5),

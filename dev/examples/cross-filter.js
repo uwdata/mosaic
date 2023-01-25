@@ -5,7 +5,7 @@ export default function(el) {
   } = vgplot;
 
   const table = 'flights';
-  const brush = new Selection();
+  const brush = Selection.crossfilter();
 
   el.appendChild(
     vconcat(

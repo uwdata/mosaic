@@ -6,10 +6,15 @@ import { patchScreenCTM } from './util/patchScreenCTM.js';
 const asc = (a, b) => a - b;
 
 export class Interval2DSelection {
-  constructor(mark, selection, xfield, yfield) {
+  constructor(mark, {
+    selection,
+    xfield,
+    yfield,
+    peers = true
+  }) {
     this.mark = mark;
     this.selection = selection;
-
+    this.peers = peers;
     this.xfield = xfield || mark.channelField('x', 'x1', 'x2');
     this.yfield = yfield || mark.channelField('y', 'y1', 'y2');
     this.brush = brush();
@@ -35,8 +40,9 @@ export class Interval2DSelection {
 
   clause(value) {
     return {
+      source: this,
       schema: { type: 'interval', scales: [this.xscale, this.yscale] },
-      client: this.mark,
+      clients: this.peers ? this.mark.plot.markSet : new Set().add(this.mark),
       value,
       predicate: value
         ? and(

@@ -4,67 +4,47 @@ import { Interval1DSelection } from '../selections/Interval1D.js';
 import { Interval2DSelection } from '../selections/Interval2D.js';
 import { PanZoomSelection } from '../selections/PanZoom.js';
 
-function point(signal, channels) {
+function selection(SelectionClass, options) {
   return plot => {
     const mark = plot.marks[plot.marks.length - 1];
-    plot.addSelection(new PointSelection(mark, signal, channels));
+    plot.addSelection(new SelectionClass(mark, options));
   };
 }
 
-export function select({ as, channels }) {
-  return point(as, channels);
+export function highlight({ by, ...rest }) {
+  return selection(Highlight, { selection: by, channels: rest });
+}
+
+export function select({ as, ...rest }) {
+  return selection(PointSelection, { ...rest, selection: as });
 }
 
 export function selectX({ as }) {
-  return point(as, ['x']);
+  return select({ as, channels: ['x'] });
 }
 
 export function selectY({ as }) {
-  return point(as, ['y']);
+  return select({ as, channels: ['y'] });
 }
 
 export function selectColor({ as }) {
-  return point(as, ['color']);
+  return select({ as, channels: ['color'] });
 }
 
-function interval1d(channel, signal, field) {
-  return plot => {
-    const mark = plot.marks[plot.marks.length - 1];
-    plot.addSelection(new Interval1DSelection(mark, channel, signal, field));
-  };
+export function intervalX({ as, ...rest }) {
+  return selection(Interval1DSelection, { ...rest, selection: as, channel: 'x' });
 }
 
-function interval2d(signal, xfield, yfield) {
-  return plot => {
-    const mark = plot.marks[plot.marks.length - 1];
-    plot.addSelection(new Interval2DSelection(mark, signal, xfield, yfield));
-  };
+export function intervalY({ as, ...rest }) {
+  return selection(Interval1DSelection, { ...rest, selection: as, channel: 'y' });
 }
 
-export function intervalX({ as, field }) {
-  return interval1d('x', as, field);
-}
-
-export function intervalY({ as, field }) {
-  return interval1d('y', as, field);
-}
-
-export function intervalXY({ as, xfield, yfield }) {
-  return interval2d(as, xfield, yfield);
-}
-
-export function highlight(signal, channels) {
-  return plot => {
-    const mark = plot.marks[plot.marks.length - 1];
-    plot.addSelection(new Highlight(mark, signal, channels));
-  };
+export function intervalXY({ as, ...rest }) {
+  return selection(Interval2DSelection, { ...rest, selection: as });
 }
 
 function zoom(options) {
-  return plot => {
-    const mark = plot.marks[plot.marks.length - 1];
-    plot.addSelection(new PanZoomSelection(mark, options));
-  };
+  return selection(PanZoomSelection, options);
 }
 
 export function pan(options = {}) {

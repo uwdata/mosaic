@@ -30,7 +30,7 @@ export default async function(el) {
   const y = 'v';
   const z = 's';
 
-  const brush = new Selection();
+  const brush = Selection.intersect();
 
   el.appendChild(
     vconcat(

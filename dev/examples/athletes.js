@@ -4,7 +4,7 @@ export default function(el) {
     dot, regressionY, domainXY, domainColor, Selection, Fixed
   } = vgplot;
 
-  const query = new Selection();
+  const query = Selection.intersect();
   const tbl = 'athletes';
 
   el.appendChild(

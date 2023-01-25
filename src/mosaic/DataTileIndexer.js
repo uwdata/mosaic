@@ -43,15 +43,16 @@ export class DataTileIndexer {
     if (!this.enabled) return false; // client views are not indexable
 
     active = active || this.selection.active;
-    if (!active.client) return false; // nothing to work with
-    if (skipClient(active.client, this.activeView)) return true; // we're good!
+    const { source } = active;
+    if (!source) return false; // nothing to work with
+    if (source === this.activeView?.source) return true; // we're good!
     const activeView = this.activeView = getActiveView(active);
     if (!activeView) return false; // active selection clause not compatible
 
     console.warn('DATA TILE INDEX CONSTRUCTION');
 
     // create a selection with the active client removed
-    const sel = this.selection.clone().update({ client: active.client });
+    const sel = this.selection.clone().update({ source });
 
     // generate data tile indices
     const indices = this.indices = new Map;
@@ -108,7 +109,7 @@ export class DataTileIndexer {
 }
 
 function getActiveView(clause) {
-  const { client, schema } = clause;
+  const { source, schema } = clause;
   let columns = clause.predicate?.columns;
   if (!schema || !columns) return null;
   const { type, scales } = schema;
@@ -136,7 +137,7 @@ function getActiveView(clause) {
     return null; // unsupported type
   }
 
-  return { client, columns, predicate };
+  return { source, columns, predicate };
 }
 
 function binInterval(scale) {

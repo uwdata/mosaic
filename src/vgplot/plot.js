@@ -13,6 +13,7 @@ export class Plot {
     this.attributes = { ...DEFAULT_ATTRIBUTES };
     this.selections = [];
     this.marks = [];
+    this.markset = null;
     this.element = element || document.createElement('div');
     this.element.setAttribute('class', 'plot');
     this.element.value = this;
@@ -73,7 +74,12 @@ export class Plot {
     mark.plot = this;
     mark.index = this.marks.length;
     this.marks.push(mark);
+    this.markset = null;
     return this;
+  }
+
+  get markSet() {
+    return this.markset || (this.markset = new Set(this.marks));
   }
 
   addSelection(sel) {

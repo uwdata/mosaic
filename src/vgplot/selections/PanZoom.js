@@ -49,8 +49,9 @@ export class PanZoomSelection {
 
   clause(value, field, scale) {
     return {
+      source: this,
       schema: { type: 'interval', scales: [scale] },
-      client: this.mark,
+      clients: this.mark.plot.markSet,
       value,
       predicate: value ? isBetween(field, value) : null
     };

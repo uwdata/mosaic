@@ -8,8 +8,8 @@ export default function(el) {
   } = vgplot;
 
   const table = 'weather';
-  const range = new Selection({ cross: false });
-  const click = new Selection();
+  const range = Selection.intersect();
+  const click = Selection.intersect();
 
   const weather = ['sun', 'fog', 'drizzle', 'rain', 'snow'];
   const colors = [
@@ -25,7 +25,7 @@ export default function(el) {
           { x: dateMonthDay('date'), y: 'temp_max', fill: 'weather', r: 'precipitation', opacity: 0.7 }
         ),
         intervalX({ as: range }),
-        highlight(range, { fill: '#eee' }),
+        highlight({ by: range, fill: '#eee' }),
         domainXY(Fixed), tickFormatX('%b'),
         rangeR([2, 10]), domainR(Fixed),
         width(800),

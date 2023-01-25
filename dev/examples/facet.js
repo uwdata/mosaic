@@ -5,7 +5,7 @@ export default function(el) {
   } = vgplot;
 
   const data = 'athletes';
-  const brush = new Selection({ cross: false });
+  const brush = Selection.intersect();
 
   el.appendChild(
     plot(

@@ -7,11 +7,24 @@ export function isSelection(x) {
 }
 
 export class Selection extends Signal {
-  constructor({ union = false, cross = !union } = {}) {
+
+  static intersect() {
+    return new Selection();
+  }
+
+  static crossfilter() {
+    return new Selection({ cross: true });
+  }
+
+  static union() {
+    return new Selection({ union: true });
+  }
+
+  constructor({ union, cross } = {}) {
     super([]);
     this.active = null;
-    this.union = union;
-    this.cross = cross;
+    this.union = !!union;
+    this.cross = !!cross;
   }
 
   clone() {
@@ -38,9 +51,9 @@ export class Selection extends Signal {
   }
 
   update(clause) {
-    const { client, predicate } = clause;
+    const { source, predicate } = clause;
     this.active = clause;
-    const clauses = this.clauses.filter(s => s.client !== client);
+    const clauses = this.clauses.filter(c => source !== c.source);
     if (predicate) clauses.push(clause);
     return super.update(clauses);
   }

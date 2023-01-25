@@ -23,7 +23,7 @@ export default function(el) {
   const y = 'delay';
   const color = 'steelblue';
   const binWidth = 10;
-  const query = new Selection();
+  const query = Selection.crossfilter();
   const scale = new Signal(menu.value);
 
   el.appendChild(

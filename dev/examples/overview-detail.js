@@ -6,7 +6,7 @@ export default function(el) {
   } = vgplot;
 
   const table = 'walk';
-  const brush = new Selection();
+  const brush = Selection.intersect();
 
   el.appendChild(
     vconcat(
