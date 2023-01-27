@@ -1,0 +1,19 @@
+params:
+  query: { type: intersect }
+plot:
+- mark: dot
+  data: { from: athletes }
+  x: weight
+  y: height
+  fill: sex
+  r: 2
+  opacity: 0.5
+- mark: regressionY
+  data: { from: athletes, filterBy: $query }
+  x: weight
+  y: height
+  stroke: sex
+- select: intervalXY
+  as: $query
+domainXY: Fixed
+domainColor: Fixed

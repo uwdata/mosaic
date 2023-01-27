@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Examples</title>
+  <script src="../../dist/vgplot.js"></script>
+  <link href="../styles.css" rel="stylesheet">
+</head>
+<body>
+  <header style="margin-bottom: 1em;">
+    <strong style="margin-right: 0.5em;">Examples</strong>
+
+    <span style="margin-right: 0.5em;">
+      Spec:
+      <select id="examples">
+        <option value="none"></option>
+        <option value="athletes">Athletes</option>
+        <option value="cross-filter">Cross-Filter</option>
+        <option value="density1d">Density 1D</option>
+        <option value="facets">Facets</option>
+        <option value="line-density">Line Density</option>
+        <option value="regression">Regression</option>
+      </select>
+    </span>
+
+    <span style="margin-right: 0.5em;"></span>
+      Client:
+      <select id="clients">
+        <option value="socket" selected>Socket</option>
+        <option value="rest">REST</option>
+        <option value="wasm">WASM</option>
+      </select>
+    </span>
+  </header>
+  <div id="view"></div>
+<script type="module">
+  import yaml from 'https://cdn.jsdelivr.net/npm/yaml@2.2.1/+esm';
+  import { setDatabaseClient } from '../database-client.js';
+  const { mc, parseJSON, socketClient, restClient, wasmClient } = vgplot;
+  const view = document.querySelector('#view');
+
+  const clientMenu = document.querySelector('#clients');
+  clientMenu.addEventListener('change', () => {
+    setDatabaseClient(clientMenu.value)
+  });
+  await setDatabaseClient(clientMenu.value);
+
+  const exampleMenu = document.querySelector('#examples');
+  exampleMenu.addEventListener('change', () => {
+    load(exampleMenu.value)
+  });
+  load(exampleMenu.value);
+
+  async function load(name) {
+    view.innerHTML = '';
+    mc.clear();
+    if (name === 'none' && location.search) {
+      // get example name from query string
+      name = location.search.slice(1);
+    }
+    if (name !== 'none') {
+      const spec = yaml.parse(
+        await fetch(`./${name}.yaml`).then(res => res.text())
+      );
+      view.replaceChildren(parseJSON(spec));
+    }
+  }
+</script>
+</body>
+</html>

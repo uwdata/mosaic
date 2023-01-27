@@ -1,0 +1,39 @@
+params:
+  brush: { type: crossfilter }
+vconcat:
+- plot:
+  - mark: rectY
+    data: { from: flights, filterBy: $brush }
+    x: { bin: delay }
+    y: { count: }
+    fill: steelblue
+    inset: 0.5
+  - select: intervalX
+    as: $brush
+  domainX: Fixed
+  width: 600
+  height: 200
+- plot:
+  - mark: rectY
+    data: { from: flights, filterBy: $brush }
+    x: { bin: time }
+    y: { count: }
+    fill: steelblue
+    inset: 0.5
+  - select: intervalX
+    as: $brush
+  domainX: Fixed
+  width: 600
+  height: 200
+- plot:
+  - mark: rectY
+    data: { from: flights, filterBy: $brush }
+    x: { bin: distance }
+    y: { count: }
+    fill: steelblue
+    inset: 0.5
+  - select: intervalX
+    as: $brush
+  domainX: Fixed
+  width: 600
+  height: 200
