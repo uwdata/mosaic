@@ -1,18 +1,6 @@
-import { Menu } from '../../inputs/Menu.js';
-import { Search } from '../../inputs/Search.js';
-import { Table } from '../../inputs/Table.js';
-
-import { Coordinator } from '../../mosaic/Coordinator.js';
 import { Concat } from '../concat.js';
 import { Plot } from '../plot.js';
-
-// TODOs?
-// Make directives return a partial Plot object, then merge?
-// Allow directives in concat methods, pass down to subplots
-// Don't update plot right away, schedule it instead?
-
-// TODO move this elsewhere...
-export const mc = new Coordinator();
+import { mc } from './coordinator.js';
 
 export function menu(options) {
   const input = new Menu(options);
@@ -43,17 +31,15 @@ export function plot(...directives) {
 }
 
 export function vconcat(...plots) {
-  // TODO handle directives, too
   return new Concat(
-    plots.flat().map(el => el.value),
+    plots.flat(),
     { type: 'vertical' }
   ).element;
 }
 
 export function hconcat(...plots) {
-  // TODO handle directives, too
   return new Concat(
-    plots.flat().map(el => el.value),
+    plots.flat(),
     { type: 'horizontal' }
   ).element;
 }

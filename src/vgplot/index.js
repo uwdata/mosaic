@@ -1,22 +1,38 @@
 export {
-  Selection
-} from '../mosaic/Selection.js';
-
-export {
+  Coordinator,
+  MosaicClient,
+  Selection,
   Signal
-} from '../mosaic/Signal.js';
+} from '../mosaic/index.js';
 
 export {
-  Plot
-} from './plot.js';
+  restClient
+} from '../mosaic/clients/rest.js';
 
 export {
-  Mark
-} from './marks/Mark.js';
+  socketClient
+} from '../mosaic/clients/socket.js';
 
 export {
-  Fixed
-} from './symbols.js';
+  wasmClient
+} from '../mosaic/clients/wasm.js';
+
+export {
+  Query,
+  avg,
+  count,
+  expr,
+  max,
+  median,
+  min,
+  mode,
+  quantile,
+  sum
+} from '../sql/index.js';
+
+export {
+  mc
+} from './directives/coordinator.js';
 
 export {
   attribute,
@@ -73,31 +89,17 @@ export {
 } from './directives/attributes.js';
 
 export {
-  from,
-  bin,
+  from
 } from './directives/data.js';
 
 export {
+  bin,
   dateDay,
   dateMonth,
   dateMonthDay
-} from './transforms/datetime.js';
+} from './transforms/index.js';
 
 export {
-  Query,
-  avg,
-  count,
-  expr,
-  max,
-  median,
-  min,
-  mode,
-  quantile,
-  sum
-} from '../sql/index.js';
-
-export {
-  mark,
   area,
   areaX,
   areaY,
@@ -150,21 +152,24 @@ export {
   hconcat,
   vconcat,
   hspace,
-  vspace,
-  menu,
-  search,
-  table,
-  mc
+  vspace
 } from './directives/plots.js';
 
 export {
-  socketClient
-} from '../mosaic/clients/socket.js';
+  menu,
+  search,
+  slider,
+  table
+} from './directives/inputs.js';
 
 export {
-  restClient
-} from '../mosaic/clients/rest.js';
+  Fixed
+} from './symbols.js';
 
 export {
-  wasmClient
-} from '../mosaic/clients/wasm.js';
+  Plot
+} from './plot.js';
+
+export {
+  Mark
+} from './marks/Mark.js';

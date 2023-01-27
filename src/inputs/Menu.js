@@ -1,16 +1,21 @@
-import { MosaicClient } from '../mosaic/index.js';
-import { Query, column, eq, literal } from '../sql/index.js';
+import { isSelection, isSignal, MosaicClient } from '../mosaic/index.js';
+import { Query, column as columnRef, eq, literal } from '../sql/index.js';
+
+const isObject = v => {
+  return v && typeof v === 'object' && !Array.isArray(v);
+};
 
 export class Menu extends MosaicClient {
   constructor({
     filterBy,
-    table,
+    from,
     column,
-    label = field,
+    label = column,
+    options,
     as
   } = {}) {
     super(filterBy);
-    this.table = table;
+    this.from = from;
     this.column = column;
     this.selection = as;
 
@@ -25,31 +30,49 @@ export class Menu extends MosaicClient {
     this.select = document.createElement('select');
     this.element.appendChild(this.select);
 
-    const opt = document.createElement('option');
-    opt.setAttribute('value', '');
-    opt.innerText = 'All';
-    this.select.appendChild(opt);
+    if (options) {
+      this.data = options.map(value => isObject(value) ? value : { value });
+      this.update();
+    }
 
     if (this.selection) {
       this.select.addEventListener('input', () => {
-        const value = this.select.value || null;
-        this.selection.update({
-          client: this,
-          value,
-          predicate: value ? eq(column, literal(value)) : null
-        });
+        this.publish(this.select.value || null);
       });
+      if (!isSelection(this.selection)) {
+        this.selection.addListener('value', value => {
+          if (value !== this.select.value) {
+            this.select.value = value;
+          }
+        });
+      }
+    }
+  }
+
+  publish(value) {
+    const { selection, column } = this;
+    if (isSelection(selection)) {
+      selection.update({
+        source: this,
+        schema: { type: 'point' },
+        value,
+        predicate: value ? eq(column, literal(value)) : null
+      });
+    } else if (isSignal(selection)) {
+      selection.update(value);
     }
   }
 
   fields() {
-    return [ column(this.table, this.column) ];
+    const { from, column } = this;
+    return from ? [ columnRef(from, column) ] : null;
   }
 
   query(filter = []) {
-    const { table, column } = this;
+    const { from, column } = this;
+    if (!from) return null;
     return Query
-      .from(table)
+      .from(from)
       .select({ value: column })
       .distinct()
       .where(filter)
@@ -57,11 +80,21 @@ export class Menu extends MosaicClient {
   }
 
   queryResult(data) {
-    for (const { value } of data) {
+    this.data = [{ value: '', label: 'All' }, ...data];
+    return this;
+  }
+
+  update() {
+    const { data, select } = this;
+    select.replaceChildren();
+    for (const { value, label = value } of data) {
       const opt = document.createElement('option');
       opt.setAttribute('value', value);
-      opt.innerText = value; // TODO: format labels
+      opt.innerText = label; // TODO: label formatting?
       this.select.appendChild(opt);
+    }
+    if (this.selection) {
+      this.select.value = this.selection?.value || '';
     }
     return this;
   }

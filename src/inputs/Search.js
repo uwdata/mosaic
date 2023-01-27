@@ -1,6 +1,6 @@
-import { MosaicClient } from '../mosaic/index.js';
+import { isSelection, isSignal, MosaicClient } from '../mosaic/index.js';
 import {
-  Query, column, regexp_matches, contains, prefix, suffix, literal
+  Query, column as columnRef, regexp_matches, contains, prefix, suffix, literal
 } from '../sql/index.js';
 
 const FUNCTIONS = { contains, prefix, suffix, regexp: regexp_matches };
@@ -9,7 +9,7 @@ let _id = 0;
 export class Search extends MosaicClient {
   constructor({
     filterBy,
-    table,
+    from,
     column,
     label,
     type,
@@ -18,7 +18,7 @@ export class Search extends MosaicClient {
     super(filterBy);
     this.id = 'search_' + (++_id);
     this.type = type;
-    this.table = table;
+    this.from = from;
     this.column = column;
     this.selection = as;
 
@@ -41,35 +41,57 @@ export class Search extends MosaicClient {
 
     if (this.selection) {
       this.searchbox.addEventListener('input', () => {
-        const value = this.searchbox.value || null;
-        const { column, type } = this;
-        this.selection.update({
-          client: this,
-          value,
-          predicate: value ? FUNCTIONS[type](column, literal(value)) : null
-        });
+        this.publish(this.searchbox.value || null);
       });
+      if (!isSelection(this.selection)) {
+        this.selection.addListener('value', value => {
+          if (value !== this.searchbox.value) {
+            this.searchbox.value = value;
+          }
+        });
+      }
+    }
+  }
+
+  publish(value) {
+    const { selection, column, type } = this;
+    if (isSelection(selection)) {
+      selection.update({
+        source: this,
+        schema: { type },
+        value,
+        predicate: value ? FUNCTIONS[type](column, literal(value)) : null
+      });
+    } else if (isSignal(selection)) {
+      selection.update(value);
     }
   }
 
   fields() {
-    return [ column(this.table, this.column) ];
+    const { from, column } = this;
+    return from ? [ columnRef(from, column) ] : null;
   }
 
   query(filter = []) {
-    const { table, column } = this;
+    const { from, column } = this;
+    if (!from) return null;
     return Query
-      .from(table)
+      .from(from)
       .select({ list: column })
       .distinct()
       .where(filter);
   }
 
   queryResult(data) {
+    this.data = data;
+    return this;
+  }
+
+  update() {
     const list = document.createElement('datalist');
     const id = `${this.id}_list`;
     list.setAttribute('id', id);
-    for (const d of data) {
+    for (const d of this.data) {
       const opt = document.createElement('option');
       opt.setAttribute('value', d.list);
       list.append(opt);

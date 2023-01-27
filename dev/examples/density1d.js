@@ -1,22 +1,17 @@
 export default function(el) {
-  el.innerHTML = `
-  Bandwidth (&sigma;): <input id="bw" type="range" min="0.1" max="100" value="10" step="0.1"></input>
-  `;
-
   const {
     plot, vconcat, from, axisY, domainX, densityY, intervalX,
-    marginLeft, width, height, Signal, Selection, Fixed
+    marginLeft, width, height, Signal, Selection, Fixed, slider
   } = vgplot;
 
-  const bw = el.querySelector('#bw');
-  bw.addEventListener('input', () => bandwidth.update(+bw.value));
-
   const table = 'flights';
-  const bandwidth = new Signal(+bw.value);
+  const bandwidth = new Signal();
   const brush = Selection.crossfilter();
 
   el.appendChild(
     vconcat(
+      slider({ label: 'Bandwidth (σ)', as: bandwidth,
+        min: 0.1, max: 100, value: 10, step: 0.1 }),
       plot(
         densityY(
           from(table, { filterBy: brush }),

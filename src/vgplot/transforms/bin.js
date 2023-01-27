@@ -1,5 +1,30 @@
 import { Ref, expr } from '../../sql/index.js';
 
+const EXTENT = [
+  'rectY-x', 'rectX-y', 'rect-x', 'rect-y'
+];
+
+function hasExtent(channel, type) {
+  return EXTENT.includes(`${type}-${channel}`);
+}
+
+export function bin(field, options = { steps: 25 }) {
+  return (channel, type) => {
+    return hasExtent(channel, type)
+      ? {
+          [`${channel}1`]: binTransform(field, options),
+          [`${channel}2`]: binTransform(field, { ...options, offset: 1 })
+        }
+      : {
+          [channel]: binTransform(field, options)
+        };
+  };
+}
+
+function binTransform(column, options) {
+  return new BinTransform(column, options);
+}
+
 class BinTransform extends Ref {
   constructor(column, options) {
     super(undefined, column);
@@ -19,10 +44,6 @@ class BinTransform extends Ref {
     );
     return e;
   }
-}
-
-export default function(column, options) {
-  return new BinTransform(column, options);
 }
 
 export function bins(min, max, options) {

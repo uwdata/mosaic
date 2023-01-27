@@ -1,18 +1,37 @@
 export default async function(el) {
   const {
-    Query, mc, expr, plot, vconcat, from, bin, avg, count, max, min, rectY,
-    width, height, marginLeft, domainX, intervalX, Selection, Fixed
+    Query, Selection, Signal, Fixed, mc, expr, plot, vconcat, menu,
+    from, bin, avg, count, max, min, rectY,
+    width, height, marginLeft, domainX, intervalX,
   } = vgplot;
 
-  el.innerHTML = `
-    Aggregate: <select id="aggr">
-      <option value="count" selected>COUNT(*)</option>
-      <option value="avg">AVG(delay)</option>
-      <option value="min">MIN(delay)</option>
-      <option value="max">MAX(delay)</option>
-    </select>
-    <div id="view"><br/>Loading 10M flights data...</div>
-  `;
+  const aggr = new Signal('count');
+  const view = document.createElement('div');
+  view.innerHTML = '<br/>Loading 10M Flights data...';
+  el.appendChild(
+    vconcat(
+      menu({
+        label: 'Aggregate',
+        as: aggr,
+        options: [
+          { value: 'count', label: 'COUNT(*)' },
+          { value: 'avg', label: 'AVG(delay)' },
+          { value: 'min', label: 'MIN(delay)' },
+          { value: 'max', label: 'MAX(delay)' }
+        ]
+      }),
+      view
+    )
+  );
+  aggr.addListener('value', value => {
+    switch (value) {
+      case 'count': y = count(); return update();
+      case 'avg': y = avg('delay'); return update();
+      case 'min': y = min('delay'); return update();
+      case 'max': y = max('delay'); return update();
+    }
+  });
+  let y = count();
 
   // Load 10M flights data from the web, as needed
   const q = Query
@@ -24,23 +43,11 @@ export default async function(el) {
     .from(expr(`'https://vega.github.io/falcon/flights-10m.becad501.parquet'`));
   await mc.exec(`CREATE TABLE IF NOT EXISTS faa AS ${q}`);
 
-  // Choose which aggregation function to use
-  const menu = document.querySelector('#aggr');
-  menu.addEventListener('input', () => {
-    switch (menu.value) {
-      case 'count': y = count(); return update();
-      case 'avg': y = avg('delay'); return update();
-      case 'min': y = min('delay'); return update();
-      case 'max': y = max('delay'); return update();
-    }
-  });
-  let y = count();
-
   function update() {
     const table = 'faa';
     const cols = ['delay', 'time', 'distance'];
     const brush = Selection.crossfilter();
-    el.querySelector('#view').replaceChildren(
+    view.replaceChildren(
       vconcat(
         cols.map(col => {
           return plot(

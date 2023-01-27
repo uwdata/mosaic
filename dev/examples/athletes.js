@@ -1,22 +1,21 @@
 export default function(el) {
   const {
-    vconcat, hconcat, menu, search, table, plot, from,
-    dot, regressionY, domainXY, domainColor, Selection, Fixed
+    Selection, Fixed, vconcat, hconcat, plot, menu, search, table,
+    dot, regressionY, from, domainXY, domainColor
   } = vgplot;
-
   const query = Selection.intersect();
   const tbl = 'athletes';
 
   el.appendChild(
     vconcat(
       hconcat(
-        menu({ label: 'Sport', table: tbl, column: 'sport', as: query }),
-        menu({ label: 'Sex', table: tbl, column: 'sex', as: query }),
-        search({ label: 'Name', table: tbl, column: 'name', type: 'contains', as: query })
+        menu({ label: 'Sport', from: tbl, column: 'sport', as: query }),
+        menu({ label: 'Sex', from: tbl, column: 'sex', as: query }),
+        search({ label: 'Name', from: tbl, column: 'name', type: 'contains', as: query })
       ),
       plot(
         dot(
-          from(tbl, { filterBy: query }),
+         from(tbl, { filterBy: query }),
           { x: 'weight', y: 'height', fill: 'sex', r: 2, opacity: 0.5 }
         ),
         regressionY(
@@ -26,7 +25,7 @@ export default function(el) {
         domainXY(Fixed),
         domainColor(Fixed)
       ),
-      table({ table: tbl, width: 640, height: 300, filterBy: query })
+      table({ from: tbl, width: 640, height: 300, filterBy: query })
     )
   );
 }

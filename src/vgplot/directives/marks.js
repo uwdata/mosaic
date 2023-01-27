@@ -7,7 +7,7 @@ import { HeatmapMark } from '../marks/HeatmapMark.js';
 import { HexbinMark } from '../marks/HexbinMark.js';
 import { RegressionMark } from '../marks/RegressionMark.js';
 
-export function mark(type, data, channels) {
+function mark(type, data, channels) {
   if (arguments.length === 2) {
     channels = data;
     data = null;
@@ -15,12 +15,17 @@ export function mark(type, data, channels) {
   const MarkClass = type.startsWith('area') || type.startsWith('line')
     ? ConnectedMark
     : Mark;
+
+  return explicitType(MarkClass, type, data, channels);
+}
+
+function explicitType(MarkClass, type, data, channels) {
   return plot => {
     plot.addMark(new MarkClass(type, data, channels));
   };
 }
 
-export function typedMark(MarkClass, data, channels) {
+function implicitType(MarkClass, data, channels) {
   return plot => {
     plot.addMark(new MarkClass(data, channels));
   };
@@ -55,22 +60,13 @@ export const tickY = (...args) => mark('tickY', ...args);
 
 export const frame = (...args) => mark('frame', ...args);
 
-export function densityMark(type, data, channels) {
-  return plot => {
-    plot.addMark(new Density1DMark(type, data, channels));
-  };
-}
-export const densityX = (...args) => densityMark('areaX', ...args);
-export const densityY = (...args) => densityMark('areaY', ...args);
+export const densityX = (...args) => explicitType(Density1DMark, 'areaX', ...args);
+export const densityY = (...args) => explicitType(Density1DMark, 'areaY', ...args);
 
-export const denseLine = (...args) => typedMark(DenseLineMark, ...args);
-export const contour = (...args) => typedMark(ContourMark, ...args);
-export const heatmap = (...args) => typedMark(HeatmapMark, ...args);
-export const hexbin = (...args) => typedMark(HexbinMark, ...args);
+export const denseLine = (...args) => implicitType(DenseLineMark, ...args);
+export const contour = (...args) => implicitType(ContourMark, ...args);
+export const heatmap = (...args) => implicitType(HeatmapMark, ...args);
+export const hexbin = (...args) => implicitType(HexbinMark, ...args);
 export const hexgrid = (...args) => mark('hexgrid', ...args);
 
-export function regressionY(data, channels) {
-  return plot => {
-    plot.addMark(new RegressionMark(data, channels));
-  };
-}
+export const regressionY = (...args) => implicitType(RegressionMark, ...args);

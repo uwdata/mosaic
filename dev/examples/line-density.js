@@ -1,24 +1,8 @@
 export default async function(el) {
   const {
-    mc, Selection, Signal, vconcat, plot, from, denseLine,
-    schemeColor, labelY, intervalXY, width, height
+    mc, Selection, Signal, vconcat, hconcat, plot, menu, slider, from,
+    denseLine, schemeColor, labelY, intervalXY, width, height
   } = vgplot;
-
-  el.innerHTML = `
-  Bandwidth (&sigma;): <input id="bw" type="range" min="0" max="10" value="0" step="0.1"></input>
-  Scale Factor: <select id="sf">
-    <option value="0.5">0.5</option>
-    <option value="1" selected>1.0</option>
-    <option value="2">2.0</option>
-  </select>`;
-
-  const bw = el.querySelector('#bw');
-  bw.addEventListener('input', () => bandwidth.update(+bw.value));
-  const bandwidth = new Signal(+bw.value);
-
-  const sf = el.querySelector('#sf');
-  sf.addEventListener('input', () => scaleFactor.update(+sf.value));
-  const scaleFactor = new Signal(+sf.value);
 
   await mc.exec(`
     CREATE TABLE IF NOT EXISTS sinusoids AS
@@ -29,11 +13,16 @@ export default async function(el) {
   const x = 't';
   const y = 'v';
   const z = 's';
-
+  const bandwidth = new Signal(0);
+  const scaleFactor = new Signal(1);
   const brush = Selection.intersect();
 
   el.appendChild(
     vconcat(
+      hconcat(
+        slider({ label: 'Bandwidth (σ)', as: bandwidth, min: 0, max: 10, step: 0.1 }),
+        menu({ label: 'Scale Factor', as: scaleFactor, options: [0.5, 1, 2] })
+      ),
       plot(
         denseLine(
           from(table, { filterBy: brush }),

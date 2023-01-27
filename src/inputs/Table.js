@@ -7,7 +7,7 @@ let _id = -1;
 export class Table extends MosaicClient {
   constructor({
     filterBy,
-    table,
+    from,
     columns = ['*'],
     format,
     rowBatch = 100,
@@ -16,7 +16,7 @@ export class Table extends MosaicClient {
   } = {}) {
     super(filterBy);
     this.id = `table-${++_id}`;
-    this.table = table;
+    this.from = from;
     this.columns = columns;
     this.format = format;
     this.offset = 0;
@@ -68,8 +68,8 @@ export class Table extends MosaicClient {
   }
 
   fields() {
-    const { table, columns } = this;
-    return columns.map(name => column(table, name));
+    const { from, columns } = this;
+    return columns.map(name => column(from, name));
   }
 
   fieldStats(stats) {
@@ -102,8 +102,8 @@ export class Table extends MosaicClient {
   }
 
   queryInternal(filter = []) {
-    const { limit, offset, stats, sortColumn, sortDesc, table } = this;
-    return Query.from(table)
+    const { from, limit, offset, stats, sortColumn, sortDesc } = this;
+    return Query.from(from)
       .select(stats.map(s => s.column))
       .where(filter)
       .orderby(sortColumn ? (sortDesc ? desc(sortColumn) : sortColumn) : [])
@@ -115,7 +115,7 @@ export class Table extends MosaicClient {
     if (!this.pending) {
       // data is not from an internal request, so reset table
       this.loaded = false;
-      this.body.innerHTML = '';
+      this.body.replaceChildren();
     }
     this.data = data;
     return this;

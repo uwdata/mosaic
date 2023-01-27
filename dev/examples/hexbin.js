@@ -1,6 +1,6 @@
 export default function(el) {
   const {
-    plot, vconcat, hconcat, from, hexbin, hexgrid, schemeColor,
+    plot, vconcat, hconcat, hspace, menu, from, hexbin, hexgrid, schemeColor,
     bin, count, rectY, rectX, scaleColor,
     marginLeft, marginRight, marginBottom, marginTop,
     axisX, axisY, labelAnchorX, labelAnchorY,
@@ -8,35 +8,32 @@ export default function(el) {
     Selection, Signal, Fixed
   } = vgplot;
 
-  el.innerHTML = `
-    Color Scale: <select id="scale">
-      <option value="log" selected>Log</option>
-      <option value="linear">Linear</option>
-      <option value="sqrt">Square Root</option>
-    </select>
-  `;
-  const menu = document.querySelector('#scale');
-  menu.addEventListener('input', () => scale.update(menu.value));
-
   const table = 'flights';
   const x = 'time';
   const y = 'delay';
   const color = 'steelblue';
   const binWidth = 10;
   const query = Selection.crossfilter();
-  const scale = new Signal(menu.value);
+  const scale = new Signal('log');
 
   el.appendChild(
     vconcat(
-      plot(
-        rectY(
-          from(table),
-          { x: bin(x), y: count(), fill: color, inset: 0.5 }
+      menu({
+        label: 'Color Scale', as: scale,
+        options: ['log', 'linear', 'sqrt']
+      }),
+      hconcat(
+        plot(
+          rectY(
+            from(table),
+            { x: bin(x), y: count(), fill: color, inset: 0.5 }
+          ),
+          intervalX({ as: query }),
+          marginLeft(5), marginRight(5), marginTop(30), marginBottom(0),
+          domainX(Fixed), axisX('top'), axisY(null), labelAnchorX('center'),
+          width(710), height(70)
         ),
-        intervalX({ as: query }),
-        marginLeft(5), marginRight(5), marginTop(30), marginBottom(0),
-        domainX(Fixed), axisX('top'), axisY(null), labelAnchorX('center'),
-        width(710), height(70)
+        hspace(80)
       ),
       hconcat(
         plot(

@@ -64,7 +64,10 @@ export class Coordinator {
     clients.set(client, null); // mark as connected
 
     // retrieve field statistics
-    client.fieldStats(await catalog.queryFields(client.fields()));
+    const fields = client.fields();
+    if (fields?.length) {
+      client.fieldStats(await catalog.queryFields(fields));
+    }
 
     // connect filters
     const filter = client.filterBy;

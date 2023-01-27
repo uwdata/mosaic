@@ -1,5 +1,5 @@
 export default function(el) {
   el.appendChild(
-    vgplot.table({ table: 'flights', height: 500 })
+    vgplot.table({ from: 'flights', height: 500 })
   );
 }

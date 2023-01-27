@@ -22,6 +22,10 @@ label { margin-right: 0.5em; }
   margin-right: 1em;
 }
 
+.input > * {
+  vertical-align: middle;
+}
+
 table {
   position: relative;
   table-layout: fixed;
