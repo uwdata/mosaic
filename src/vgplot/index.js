@@ -167,6 +167,10 @@ export {
 } from './symbols.js';
 
 export {
+  parseJSON
+} from './parse-json.js';
+
+export {
   Plot
 } from './plot.js';
 
