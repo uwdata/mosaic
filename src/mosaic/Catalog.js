@@ -35,31 +35,31 @@ export class Catalog {
   }
 
   async fieldInfo(table, column) {
-    const cache = this.fields;
-    const key = `${table}::${column}`;
-    if (cache[key]) {
-      return cache[key];
-    }
-
     const info = await this.tableInfo(table);
     const colInfo = info[column];
 
     // column does not exist
     if (colInfo == null) return;
 
-    const q = this.mc.query(
+    const cache = this.fields;
+    const key = `${table}.${column}`;
+    if (cache[key]) {
+      return cache[key];
+    }
+
+    const promise = this.mc.query(
       Query.from(table).select({
         rows: count(),
         nulls: count().where(isNull(column)),
         min: min(column),
         max: max(column)
       })
-    );
-
-    return (cache[key] = q.then(result => {
-      const stats = result[Symbol.iterator]().next().value;
+    ).then(result => {
+      const [ stats ] = Array.from(result);
       return { table, column, type: colInfo.jstype, ...stats };
-    }));
+    });
+
+    return (cache[key] = promise);
   }
 
   async queryFields(fields) {
