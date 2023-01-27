@@ -14,19 +14,19 @@ export default async function(el) {
   const y = 'v';
   const z = 's';
   const bandwidth = new Signal(0);
-  const scaleFactor = new Signal(1);
+  const binScale = new Signal(1);
   const brush = Selection.intersect();
 
   el.appendChild(
     vconcat(
       hconcat(
         slider({ label: 'Bandwidth (σ)', as: bandwidth, min: 0, max: 10, step: 0.1 }),
-        menu({ label: 'Scale Factor', as: scaleFactor, options: [0.5, 1, 2] })
+        menu({ label: 'Bin Scale', as: binScale, options: [0.5, 1, 2] })
       ),
       plot(
         denseLine(
           from(table, { filterBy: brush }),
-          { x, y, z, fill: 'density', bandwidth, scaleFactor }
+          { x, y, z, fill: 'density', bandwidth, binScale }
         ),
         schemeColor('viridis'),
         labelY('Value (normalized lines)'),
@@ -35,7 +35,7 @@ export default async function(el) {
       plot(
         denseLine(
           from(table),
-          { x, y, z, fill: 'density', bandwidth, scaleFactor, normalize: false }
+          { x, y, z, fill: 'density', bandwidth, binScale, normalize: false }
         ),
         schemeColor('viridis'),
         labelY('Value (unnormalized lines)'),

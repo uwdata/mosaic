@@ -3,7 +3,7 @@ data:
 params:
   brush: { type: intersect }
   bw: { value: 0 }
-  sf: { value: 1 }
+  bs: { value: 1 }
 vconcat:
 - hconcat:
   - input: slider
@@ -13,8 +13,8 @@ vconcat:
     max: 10
     step: 0.1
   - input: menu
-    label: Scale Factor
-    as: $sf
+    label: Bin Scale
+    as: $bs
     options:
       - { value: 0.5 }
       - { value: 1 }
@@ -27,7 +27,7 @@ vconcat:
     z: s
     fill: density
     bandwidth: $bw
-    scaleFactor: $sf
+    binScale: $bs
   schemeColor: viridis
   labelY: Value (normalized lines)
   width: 800
@@ -41,7 +41,7 @@ vconcat:
     fill: density
     normalize: false
     bandwidth: $bw
-    scaleFactor: $sf
+    binScale: $bs
   - select: intervalXY
     as: $brush
   schemeColor: viridis

@@ -31,8 +31,8 @@ export class DenseLineMark extends HeatmapMark {
     }
 
     const [nx, ny] = this.bins = [
-      Math.round(plot.innerWidth() / this.scaleFactor),
-      Math.round(plot.innerHeight() / this.scaleFactor)
+      Math.round(plot.innerWidth() * this.binScale),
+      Math.round(plot.innerHeight() * this.binScale)
     ];
     const rx = !!plot.getAttribute('reverseX');
     const ry = !!plot.getAttribute('reverseY');
