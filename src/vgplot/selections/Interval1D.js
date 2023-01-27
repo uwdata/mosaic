@@ -17,10 +17,10 @@ export class Interval1DSelection {
     this.field = field || mark.channelField(channel, channel+'1', channel+'2');
     this.field = this.field?.column || this.field;
     this.brush = channel === 'y' ? brushY() : brushX();
-    this.brush.on('brush end', ({ selection }) => this.update(selection));
+    this.brush.on('brush end', ({ selection }) => this.publish(selection));
   }
 
-  update(extent) {
+  publish(extent) {
     let range = undefined;
     if (extent) {
       range = extent.map(this.scale.invert).sort((a, b) => a - b);

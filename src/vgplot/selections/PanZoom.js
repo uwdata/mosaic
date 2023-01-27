@@ -36,7 +36,7 @@ export class PanZoomSelection {
     }
   }
 
-  update(transform) {
+  publish(transform) {
     if (this.panx) {
       const xdom = rescaleX(transform, this.xscale);
       this.xsel.update(this.clause(xdom, this.xfield, this.xscale));
@@ -79,7 +79,7 @@ export class PanZoomSelection {
         this.yscale = this.svg.scale('y');
       })
       .on('end', () => element.__zoom = new ZoomTransform(1, 0, 0))
-      .on('zoom', ({ transform }) => this.update(transform));
+      .on('zoom', ({ transform }) => this.publish(transform));
 
     select(element).call(z);
 

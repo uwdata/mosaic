@@ -18,10 +18,10 @@ export class Interval2DSelection {
     this.xfield = xfield || mark.channelField('x', 'x1', 'x2');
     this.yfield = yfield || mark.channelField('y', 'y1', 'y2');
     this.brush = brush();
-    this.brush.on('brush end', ({ selection }) => this.update(selection));
+    this.brush.on('brush end', ({ selection }) => this.publish(selection));
   }
 
-  update(extent) {
+  publish(extent) {
     const { value } = this;
     let xr = undefined;
     let yr = undefined;
