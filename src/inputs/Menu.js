@@ -40,7 +40,7 @@ export class Menu extends MosaicClient {
         this.publish(this.select.value || null);
       });
       if (!isSelection(this.selection)) {
-        this.selection.addListener('value', value => {
+        this.selection.addEventListener('value', value => {
           if (value !== this.select.value) {
             this.select.value = value;
           }

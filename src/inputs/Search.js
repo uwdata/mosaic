@@ -44,7 +44,7 @@ export class Search extends MosaicClient {
         this.publish(this.searchbox.value || null);
       });
       if (!isSelection(this.selection)) {
-        this.selection.addListener('value', value => {
+        this.selection.addEventListener('value', value => {
           if (value !== this.searchbox.value) {
             this.searchbox.value = value;
           }

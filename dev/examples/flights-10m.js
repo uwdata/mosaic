@@ -23,7 +23,7 @@ export default async function(el) {
       view
     )
   );
-  aggr.addListener('value', value => {
+  aggr.addEventListener('value', value => {
     switch (value) {
       case 'count': y = count(); return update();
       case 'avg': y = avg('delay'); return update();

@@ -13,7 +13,7 @@ export class Density1DMark extends Mark {
     this.bandwidth = bandwidth;
 
     if (isSignal(bandwidth)) {
-      bandwidth.addListener('value', value => {
+      bandwidth.addEventListener('value', value => {
         this.bandwidth = value;
         if (this.grid) this.convolve().update();
       });

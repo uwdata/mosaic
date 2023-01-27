@@ -19,7 +19,7 @@ export class Signal {
     return this;
   }
 
-  addListener(type, callback) {
+  addEventListener(type, callback) {
     let list = this._listeners.get(type) || [];
     if (list.indexOf(callback) < 0) {
       list = list.concat(callback);
@@ -27,7 +27,7 @@ export class Signal {
     this._listeners.set(type, list);
   }
 
-  removeListener(type, callback) {
+  removeEventListener(type, callback) {
     const list = this._listeners.get(type);
     if (list?.length) {
       this._listeners.set(type, list.filter(x => x !== callback));

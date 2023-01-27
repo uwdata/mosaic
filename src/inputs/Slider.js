@@ -45,7 +45,7 @@ export class Slider {
         this.publish(+this.slider.value);
       });
       if (!isSelection(this.selection)) {
-        this.selection.addListener('value', value => {
+        this.selection.addEventListener('value', value => {
           if (value !== +this.slider.value) {
             this.slider.value = value;
           }

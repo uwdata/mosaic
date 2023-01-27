@@ -25,12 +25,12 @@ export class PanZoomSelection {
 
     const { plot } = mark;
     if (panx) {
-      this.xsel.addListener('value', v => {
+      this.xsel.addEventListener('value', v => {
         plot.setAttribute('domainX', v).update();
       });
     }
     if (pany) {
-      this.ysel.addListener('value', v => {
+      this.ysel.addEventListener('value', v => {
         plot.setAttribute('domainY', v).update();
       });
     }

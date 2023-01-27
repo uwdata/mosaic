@@ -2,7 +2,7 @@ import { isSignal } from '../../mosaic/Signal.js';
 
 function setAttribute(plot, name, value) {
   if (isSignal(value)) {
-    value.addListener('value', value => {
+    value.addEventListener('value', value => {
       plot.setAttribute(name, value);
       plot.update();
     });

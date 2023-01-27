@@ -20,7 +20,7 @@ export class Density2DMark extends Mark {
     this.request = new Signal();
 
     if (isSignal(bandwidth)) {
-      bandwidth.addListener('value', value => {
+      bandwidth.addEventListener('value', value => {
         this.bandwidth = value;
         if (this.grids) this.convolve().update();
       });
@@ -28,7 +28,7 @@ export class Density2DMark extends Mark {
     }
 
     if (isSignal(scaleFactor)) {
-      scaleFactor.addListener('value', value => {
+      scaleFactor.addEventListener('value', value => {
         this.scaleFactor = value;
         this.request.update(undefined, { force: true });
       });

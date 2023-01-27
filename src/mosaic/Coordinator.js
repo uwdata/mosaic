@@ -87,7 +87,7 @@ export class Coordinator {
     clients.set(client, handler);
 
     // register request handler, if defined
-    client.request?.addListener('value', handler);
+    client.request?.addEventListener('value', handler);
 
     // TODO analyze / consolidate queries?
     handler();
@@ -99,6 +99,6 @@ export class Coordinator {
     const handler = clients.get(client);
     clients.delete(client);
     filterGroups.get(client.filterBy)?.remove(client);
-    client.request?.removeListener(handler);
+    client.request?.removeEventListener(handler);
   }
 }
