@@ -43,7 +43,8 @@
   <div id="view"></div>
 <script type="module">
   import { setDatabaseClient } from '../database-client.js';
-  const { mc, socketClient, restClient, wasmClient } = vgplot;
+  const { coordinator, socketClient, restClient, wasmClient } = vgplot;
+  const mc = self.mc = coordinator();
   const view = document.querySelector('#view');
 
   const clientMenu = document.querySelector('#clients');

@@ -1,6 +1,6 @@
 export default async function(el) {
   const {
-    Query, mc, expr, plot, hconcat, vconcat, hspace,
+    Query, coordinator, expr, plot, hconcat, vconcat, hspace,
     from, bin, count, heatmap, rectY,
     domainX, domainXY, scaleY, gridY, reverseY, scaleColor, schemeColor,
     width, height, marginLeft,
@@ -12,7 +12,7 @@ export default async function(el) {
     .select('*')
     .from(expr(`'data/gaia.parquet'`))
     .where(expr(`parallax >= -5 AND parallax <= 10`));
-  await mc.exec(`CREATE TABLE IF NOT EXISTS gaia AS ${q}`);
+  await coordinator().exec(`CREATE TABLE IF NOT EXISTS gaia AS ${q}`);
 
   const table = 'gaia';
   const brush = Selection.crossfilter();

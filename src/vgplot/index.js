@@ -2,7 +2,8 @@ export {
   Coordinator,
   MosaicClient,
   Selection,
-  Signal
+  Signal,
+  coordinator
 } from '../mosaic/index.js';
 
 export {
@@ -29,10 +30,6 @@ export {
   quantile,
   sum
 } from '../sql/index.js';
-
-export {
-  mc
-} from './directives/coordinator.js';
 
 export {
   attribute,

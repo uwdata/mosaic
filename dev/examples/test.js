@@ -1,6 +1,6 @@
 // export default async function(el) {
 //   const {
-//     mc, plot, vconcat, from, rectY, barX,
+//     plot, vconcat, from, rectY, barX,
 //     count, intervalX, selectY,
 //     domainX, domainY, domainColor, rangeColor,
 //     labelY, expr,
@@ -51,10 +51,10 @@
 // // M4 LINES
 // export default async function(el) {
 //   const {
-//     mc, plot, vconcat, from, lineY, intervalX, domainY, width, height, Selection, Fixed
+//     coordinator, plot, vconcat, from, lineY, intervalX, domainY, width, height, Selection, Fixed
 //   } = vgplot;
 
-//   await mc.exec(`
+//   await coordinator().exec(`
 //     CREATE TABLE IF NOT EXISTS walk2 AS
 //     SELECT t, v, 'A' as g FROM walk UNION ALL SELECT t, v/2 AS v, 'B' as g FROM walk
 //   `);

@@ -1,7 +1,5 @@
-import { throttle } from '../../mosaic/util/throttle.js';
+import { coordinator, throttle } from '../../mosaic/index.js';
 import { and } from '../../sql/index.js';
-
-const queryCache = new Map;
 
 export class Highlight {
   constructor(mark, {
@@ -39,7 +37,7 @@ export class Highlight {
       const node = nodes[i];
       const base = values[i];
       const t = test(node.__data__);
-      // TODO: handle inherited values / remove attributes
+      // TODO? handle inherited values / remove attributes
       for (let j = 0; j < channels.length; ++j) {
         const [attr, value] = channels[j];
         node.setAttribute(attr, t ? base[j] : value);
@@ -48,24 +46,18 @@ export class Highlight {
   }
 }
 
-function predicateFunction(mark, selection) {
+async function predicateFunction(mark, selection) {
   const pred = selection?.predicate(mark);
 
   if (!pred || pred.length === 0) {
     return () => true;
   }
 
-  const q = mark.query(mark.filterBy?.predicate(mark)).$select({ __: and(pred) });
-  const sql = q.toString();
-  const memo = queryCache.get(selection);
-  if (memo?.key === sql) {
-    return memo.value;
-  } else {
-    const promise = mark.mc.query(sql).then(data => {
-      const v = data.getChild?.('__');
-      return v ? (i => v.get(i)) : (i => data[i].sel);
-    });
-    queryCache.set(selection, { key: sql, value: promise });
-    return promise;
-  }
+  const q = mark
+    .query(mark.filterBy?.predicate(mark))
+    .$select({ __: and(pred) });
+
+  const data = await coordinator().query(q);
+  const v = data.getChild?.('__');
+  return v ? (i => v.get(i)) : (i => data[i].sel);
 }

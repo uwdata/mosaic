@@ -35,7 +35,7 @@
 <script type="module">
   import yaml from 'https://cdn.jsdelivr.net/npm/yaml@2.2.1/+esm';
   import { setDatabaseClient } from '../database-client.js';
-  const { mc, parseJSON, socketClient, restClient, wasmClient } = vgplot;
+  const { coordinator, parseJSON, socketClient, restClient, wasmClient } = vgplot;
   const view = document.querySelector('#view');
 
   const clientMenu = document.querySelector('#clients');
@@ -52,7 +52,7 @@
 
   async function load(name) {
     view.innerHTML = '';
-    mc.clear();
+    coordinator().clear();
     if (name === 'none' && location.search) {
       // get example name from query string
       name = location.search.slice(1);

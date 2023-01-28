@@ -1,4 +1,4 @@
-const { mc, socketClient, restClient, wasmClient } = vgplot;
+const { coordinator, socketClient, restClient, wasmClient } = vgplot;
 
 let wasm;
 
@@ -18,7 +18,7 @@ export async function setDatabaseClient(type, options) {
       throw new Error(`Unrecognized client type: ${type}`);
   }
   console.log('DATABASE CLIENT', type);
-  mc.databaseClient(client);
+  coordinator().databaseClient(client);
 }
 
 async function initWasmClient(options) {

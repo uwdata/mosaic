@@ -1,18 +1,33 @@
+import { socketClient } from './clients/socket.js';
 import { Catalog } from './Catalog.js';
 import { FilterGroup } from './FilterGroup.js';
-import { socketClient } from './clients/socket.js';
+import { QueryCache } from './QueryCache.js';
+
+let _instance;
+
+export function coordinator(instance) {
+  if (instance) {
+    _instance = instance;
+  } else if (_instance == null) {
+    _instance = new Coordinator();
+  }
+  return _instance;
+}
 
 export class Coordinator {
   constructor(db = socketClient()) {
+    this.cache = new QueryCache();
     this.catalog = new Catalog(this);
     this.databaseClient(db);
     this.clear();
   }
 
-  clear() {
+  clear({ cache = true, catalog = false } = {}) {
     this.clients?.forEach((_, client) => this.disconnect(client));
     this.clients = new Map;
     this.filterGroups = new Map;
+    if (cache) this.cache.clear();
+    if (catalog) this.catalog.clear();
   }
 
   databaseClient(db) {
@@ -30,12 +45,15 @@ export class Coordinator {
     }
   }
 
-  async query(query, options = {}) {
-    const t0 = performance.now();
-    const { type = 'arrow' } = options;
-    const table = await this.db.query({ type, sql: String(query) });
-    console.log(`Query time: ${Math.round(performance.now()-t0)}`);
-    return table;
+  async query(query, { type = 'arrow', cache = true } = {}) {
+    const sql = String(query);
+    const cached = this.cache.get(sql);
+    if (cached) {
+      return cached;
+    } else {
+      const request = this.db.query({ type, sql });
+      return cache ? this.cache.set(sql, request) : request;
+    }
   }
 
   async updateClient(client, query) {

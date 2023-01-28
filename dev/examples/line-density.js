@@ -1,10 +1,10 @@
 export default async function(el) {
   const {
-    mc, Selection, Signal, vconcat, hconcat, plot, menu, slider, from,
+    coordinator, Selection, Signal, vconcat, hconcat, plot, menu, slider, from,
     denseLine, schemeColor, labelY, intervalXY, width, height
   } = vgplot;
 
-  await mc.exec(`
+  await coordinator().exec(`
     CREATE TABLE IF NOT EXISTS sinusoids AS
     (SELECT * FROM 'data/sinusoids.parquet')
   `);

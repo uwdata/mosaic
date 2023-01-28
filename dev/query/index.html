@@ -30,17 +30,17 @@ menu.addEventListener('change', () => {
   setDatabaseClient(menu.value)
 });
 
-const { mc, table } = vgplot;
+const { coordinator, table } = vgplot;
 const input = document.querySelector('#sql');
 const submit = document.querySelector('#submit');
 const output = document.querySelector('#result');
 const tableName = 'query_result';
 
 submit.addEventListener('click', async () => {
-  await mc.exec(
+  await coordinator().exec(
     `DROP TABLE IF EXISTS ${tableName}; CREATE TABLE ${tableName} AS ${input.value}`
   );
-  mc.cache.clear();
+  coordinator.clear({ catalog: true });
   result.replaceChildren(table({ table: tableName, height: 500 }));
 });
 </script>

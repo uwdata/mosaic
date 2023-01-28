@@ -53,7 +53,7 @@ export class Catalog {
         nulls: count().where(isNull(column)),
         min: min(column),
         max: max(column)
-      })
+      }, { cache: false })
     ).then(result => {
       const [ stats ] = Array.from(result);
       return { table, column, type: colInfo.jstype, ...stats };
