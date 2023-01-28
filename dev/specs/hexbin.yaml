@@ -1,0 +1,57 @@
+vconcat:
+- input: menu
+  label: Color Scale
+  as: $scale
+  options: [log, linear, sqrt]
+- hconcat:
+  - plot:
+    - mark: rectY
+      data: { from: flights }
+      x: { bin: time }
+      y: { count: }
+      fill: steelblue
+      inset: 0.5
+    - select: intervalX
+      as: $query
+    margins: { left: 5, right: 5, top: 30, bottom: 0 }
+    domainX: Fixed
+    axisX: top
+    axisY: null
+    labelAnchorX: center
+    width: 710
+    height: 70
+  - hspace: 80
+- hconcat:
+  - plot:
+    - mark: hexbin
+      data: { from: flights, filterBy: $query }
+      x: time
+      y: delay
+      fill: { count: }
+      binWidth: 10
+    - mark: hexgrid
+      binWidth: 10
+    schemeColor: ylgnbu
+    scaleColor: $scale
+    margins: { left: 5, right: 0, top: 0, bottom: 5 }
+    axisX: null
+    axisY: null
+    domainXY: Fixed
+    width: 705
+    height: 505
+  - plot:
+    - mark: rectX
+      data: { from: flights }
+      x: { count: }
+      y: { bin: delay }
+      fill: steelblue
+      inset: 0.5
+    - select: intervalY
+      as: $query
+    margins: { left: 0, right: 50, top: 4, bottom: 5 }
+    domainY: [-60, 180]
+    axisX: null
+    axisY: right
+    labelAnchorY: center
+    width: 80
+    height: 505

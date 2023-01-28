@@ -1,0 +1,64 @@
+# const table = 'penguins';
+# const w = 'body_mass';
+# const x = 'bill_length';
+# const y = 'bill_depth';
+# const z = 'flipper_length';
+hconcat:
+- vconcat:
+  - plot:
+    - mark: frame
+    - mark: dot
+      data: { from: penguins }
+      x: bill_length
+      y: bill_depth
+      fill: species
+      r: 2
+      clip: true
+    - select: panZoom
+      x: $xs
+      y: $ys
+    width: 400
+    height: 300
+  - plot:
+    - mark: frame
+    - mark: dot
+      data: { from: penguins }
+      x: bill_length
+      y: flipper_length
+      fill: species
+      r: 2
+      clip: true
+    - select: panZoom
+      x: $xs
+      y: $zs
+    width: 400
+    height: 300
+- vconcat:
+  - plot:
+    - mark: frame
+    - mark: dot
+      data: { from: penguins }
+      x: body_mass
+      y: bill_depth
+      fill: species
+      r: 2
+      clip: true
+    - select: panZoom
+      x: $ws
+      y: $ys
+    width: 400
+    height: 300
+  - plot:
+    - mark: frame
+    - mark: dot
+      data: { from: penguins }
+      x: body_mass
+      y: flipper_length
+      fill: species
+      r: 2
+      clip: true
+    - select: panZoom
+      x: $ws
+      y: $zs
+    width: 400
+    height: 300

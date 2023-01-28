@@ -1,5 +1,5 @@
 data:
-  athletes: { type: table }
+  athletes: { format: table }
 params:
   brush: { type: crossfilter }
 hconcat:

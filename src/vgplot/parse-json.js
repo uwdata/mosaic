@@ -1,5 +1,5 @@
-import { Signal, Selection } from '../mosaic/index.js';
-import { avg, count, expr, max, median, min, mode, quantile, sum } from '../sql/index.js';
+import { Signal, Selection, coordinator } from '../mosaic/index.js';
+import { Query, avg, count, expr, max, median, min, mode, quantile, sum } from '../sql/index.js';
 import { bin, dateMonth, dateMonthDay, dateDay } from './transforms/index.js'
 
 import { from } from './directives/data.js';
@@ -15,6 +15,12 @@ export const DefaultParams = new Map([
   ['crossfilter', () => Selection.crossfilter()],
   ['union', () => Selection.union()],
   ['value', v => new Signal(v)]
+]);
+
+export const DefaultFormats = new Map([
+  ['table', parseTable],
+  ['parquet', parseParquet],
+  ['csv', parseCSV]
 ]);
 
 export const DefaultParsers = new Map([
@@ -55,6 +61,7 @@ export class JSONParseContext {
   constructor({
     parsers = DefaultParsers,
     params = DefaultParams,
+    formats = DefaultFormats,
     transforms = DefaultTransforms,
     selections = DefaultSelections,
     attributes = DefaultAttributes,
@@ -63,6 +70,7 @@ export class JSONParseContext {
   } = {}) {
     this.specParsers = parsers;
     this.paramParsers = params;
+    this.formats = formats;
     this.transforms = transforms;
     this.selections = selections;
     this.attributes = attributes;
@@ -106,11 +114,15 @@ export class JSONParseContext {
     }
   }
 
-  parse(input) {
+  async parse(input) {
     const { namespace } = this;
-    const { data, params, ...spec } = input;
+    const { data = {}, params, ...spec } = input;
 
-    // TODO: parse data definitions
+    // parse data definitions
+    const queries = Object.keys(data)
+      .map(name => parseData(name, data[name], this))
+      .map(q => q ? coordinator().exec(q) : null);
+    await Promise.allSettled(queries);
 
     // parse param (signal/selection) definitions
     for (const name in params) {
@@ -119,6 +131,70 @@ export class JSONParseContext {
 
     return parseSpec(spec, this);
   }
+
+  createFrom(name, from, select, where) {
+    const query = Query.select(select).from(from).where(where);
+    return this.create(name, query);
+  }
+
+  create(name, query) {
+    return `CREATE TEMP TABLE IF NOT EXISTS "${name}" AS ${query}`;
+  }
+}
+
+function parseData(name, spec, ctx) {
+  if (isString(spec)) spec = { format: 'table', query: spec };
+  const format = inferFormat(spec);
+  const parse = ctx.formats.get(format);
+  if (parse) {
+    return parse(name, spec, ctx);
+  } else {
+    error(`Unrecognized data format.`, spec);
+  }
+}
+
+function inferFormat(spec) {
+  return spec.format
+    || fileExtension(spec.file)
+    || 'table';
+}
+
+function fileExtension(file) {
+  const idx = file?.lastIndexOf('.');
+  return idx > 0 ? file.slice(idx + 1) : null;
+}
+
+function parseTable(name, spec, ctx) {
+  if (spec.query) {
+    return ctx.create(name, spec.query);
+  }
+}
+
+function parseParquet(name, spec, ctx) {
+  const { file, select = '*' } = spec;
+  return ctx.createFrom(
+    name,
+    expr(`read_parquet('${file}')`),
+    select
+  );
+}
+
+function parseCSV(name, spec, ctx) {
+  const { file, format, select = '*', ...options } = spec;
+  const opt = Object.entries({ sample_size: -1, ...options })
+    .map(([key, value]) => {
+      const t = typeof value;
+      const v = t === 'boolean' ? String(value).toUpperCase()
+        : t === 'string' ? `'${value}'`
+        : value;
+      return `${key.toUpperCase()}=${v}`;
+    })
+    .join(', ');
+  return ctx.createFrom(
+    name,
+    expr(`read_csv_auto('${file}', ${opt})`),
+    select
+  );
 }
 
 function parseParam(param, ctx) {
@@ -259,7 +335,7 @@ function isArray(value) {
 }
 
 function isObject(value) {
-  return value !== null && typeof value === 'object';
+  return value !== null && typeof value === 'object' && !isArray(value);
 }
 
 function isNumber(value) {

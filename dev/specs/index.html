@@ -17,8 +17,12 @@
         <option value="cross-filter">Cross-Filter</option>
         <option value="density1d">Density 1D</option>
         <option value="facets">Facets</option>
+        <option value="flights-10m">Flights 10M</option>
+        <option value="hexbin">Hexbin</option>
         <option value="line-density">Line Density</option>
+        <option value="pan-zoom">Pan + Zoom</option>
         <option value="regression">Regression</option>
+        <option value="weather">Seattle Weather</option>
       </select>
     </span>
 
@@ -61,7 +65,11 @@
       const spec = yaml.parse(
         await fetch(`./${name}.yaml`).then(res => res.text())
       );
-      view.replaceChildren(parseJSON(spec));
+      try {
+        view.replaceChildren(await parseJSON(spec));
+      } catch (err) {
+        console.error(err, err.data);
+      }
     }
   }
 </script>
