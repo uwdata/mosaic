@@ -17,10 +17,10 @@ vconcat:
     fill: '#eee'
   domainXY: Fixed
   tickFormatX: '%b'
-  rangeR: [2, 10]
-  domainR: Fixed
   domainColor: $domain
   rangeColor: $colors
+  domainR: Fixed
+  rangeR: [2, 10]
   width: 800
 - plot:
   - mark: barX
