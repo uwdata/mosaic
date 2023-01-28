@@ -12,6 +12,7 @@ export class Menu extends MosaicClient {
     column,
     label = column,
     options,
+    value,
     as
   } = {}) {
     super(filterBy);
@@ -28,12 +29,14 @@ export class Menu extends MosaicClient {
     this.element.appendChild(lab);
 
     this.select = document.createElement('select');
-    this.element.appendChild(this.select);
-
     if (options) {
       this.data = options.map(value => isObject(value) ? value : { value });
       this.update();
     }
+    value = value ?? this.selection?.value ?? this.data?.[0]?.value;
+    this.select.value = value;
+    if (this.selection?.value === undefined) this.publish(value);
+    this.element.appendChild(this.select);
 
     if (this.selection) {
       this.select.addEventListener('input', () => {
