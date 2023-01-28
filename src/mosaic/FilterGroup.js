@@ -8,10 +8,20 @@ export class FilterGroup {
     this.clients = new Set(clients);
     this.indexer = new DataTileIndexer(mc, selection);
 
-    selection.addEventListener('value', throttle(() => this.update()));
-    selection.addEventListener('activate', clause => {
-      this.indexer?.index(this.clients, clause);
-    });
+    const { value, activate } = this.handlers = {
+      value: throttle(() => this.update()),
+      activate: clause => {
+        this.indexer?.index(this.clients, clause);
+      }
+    };
+    selection.addEventListener('value', value);
+    selection.addEventListener('activate', activate);
+  }
+
+  finalize() {
+    const { value, activate } = this.handlers;
+    this.selection.removeEventListener('value', value);
+    this.selection.removeEventListener('activate', activate);
   }
 
   reset() {

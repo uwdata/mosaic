@@ -22,10 +22,13 @@ export class Coordinator {
     this.clear();
   }
 
-  clear({ cache = true, catalog = false } = {}) {
-    this.clients?.forEach((_, client) => this.disconnect(client));
-    this.clients = new Map;
-    this.filterGroups = new Map;
+  clear({ clients = true, cache = true, catalog = false } = {}) {
+    if (clients) {
+      this.clients?.forEach((_, client) => this.disconnect(client));
+      this.filterGroups?.forEach(group => group.finalize());
+      this.clients = new Map;
+      this.filterGroups = new Map;
+    }
     if (cache) this.cache.clear();
     if (catalog) this.catalog.clear();
   }
