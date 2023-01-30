@@ -7,7 +7,6 @@ export class PointSelection {
   }) {
     this.mark = mark;
     this.selection = selection;
-    this.state = new Map;
     this.clients = new Set().add(mark);
     this.channels = channels.map(c => {
       const q = c === 'color' ? ['fill', 'stroke']
@@ -43,38 +42,33 @@ export class PointSelection {
     };
   }
 
-  init(svg) {
-    const { mark, channels, selection, state } = this;
-    const groups = Array.from(svg.querySelectorAll(`[data-index="${mark.index}"]`));
+  init(svg, selector, accessor) {
+    const { mark, channels, selection } = this;
     const { data } = mark;
+    accessor = accessor || (target => {
+      const datum = data[target.__data__];
+      return channels.map(([channel]) => datum[channel]);
+    });
+
+    selector = selector || `[data-index="${mark.index}"]`;
+    const groups = new Set(svg.querySelectorAll(selector));
 
     svg.addEventListener('click', evt => {
       const target = evt.target;
       let value = null;
 
-      if (groups.includes(target.parentNode)) {
-        const index = target.__data__;
-        const datum = data[index];
-        const vals = channels.map(([channel]) => datum[channel]);
-        const key = '[' + vals.join() + ']';
-
-        // update selection state
-        if (evt.shiftKey) {
-          if (state.has(key)) {
-            state.delete(key);
-          } else {
-            state.set(key, vals);
-          }
+      if (isSelectionTarget(groups, target)) {
+        const state = selection.single ? selection.value : this.value;
+        const point = accessor(target);
+        if (evt.shiftKey && state?.length) {
+          value = state.filter(s => neq(s, point));
+          if (value.length === state.length) value.push(point);
         } else {
-          state.clear();
-          state.set(key, vals);
+          value = [point];
         }
-
-        value = Array.from(state.values());
-      } else {
-        state.clear();
       }
 
+      this.value = value;
       selection.update(this.clause(value));
     });
 
@@ -82,4 +76,19 @@ export class PointSelection {
       this.selection.activate(this.clause([this.channels.map(() => 0)]));
     });
   }
+}
+
+function isSelectionTarget(groups, node) {
+  return groups.has(node)
+    || groups.has(node.parentNode)
+    || groups.has(node.parentNode?.parentNode);
+}
+
+function neq(a, b) {
+  const n = a.length;
+  if (b.length !== n) return true;
+  for (let i = 0; i < n; ++i) {
+    if (a[i] !== b[i]) return true;
+  }
+  return false;
 }
