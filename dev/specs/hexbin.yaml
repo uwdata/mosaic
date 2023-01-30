@@ -1,8 +1,12 @@
 vconcat:
-- input: menu
-  label: Color Scale
-  as: $scale
-  options: [log, linear, sqrt]
+- hconcat:
+  - input: menu
+    label: Color Scale
+    as: $scale
+    options: [log, linear, sqrt]
+  - hspace: 10
+  - legend: color
+    for: hexbins
 - hconcat:
   - plot:
     - mark: rectY
@@ -31,6 +35,7 @@ vconcat:
       binWidth: 10
     - mark: hexgrid
       binWidth: 10
+    name: hexbins
     schemeColor: ylgnbu
     scaleColor: $scale
     margins: { left: 5, right: 0, top: 0, bottom: 5 }

@@ -1,7 +1,7 @@
 export default function(el) {
   const {
     plot, vconcat, hconcat, hspace, menu, from, hexbin, hexgrid, schemeColor,
-    bin, count, rectY, rectX, scaleColor,
+    bin, count, rectY, rectX, scaleColor, legendColor,
     marginLeft, marginRight, marginBottom, marginTop,
     axisX, axisY, labelAnchorX, labelAnchorY,
     domainX, domainY, domainXY, intervalX, intervalY, width, height,
@@ -16,12 +16,28 @@ export default function(el) {
   const query = Selection.crossfilter();
   const scale = new Signal('log');
 
+  const hexbins = plot(
+    hexbin(
+      from(table, { filterBy: query }),
+      { x, y, fill: count(), binWidth }
+    ),
+    hexgrid({ binWidth }),
+    schemeColor('ylgnbu'), scaleColor(scale),
+    marginLeft(5), marginRight(0), marginTop(0), marginBottom(5),
+    axisX(null), axisY(null), domainXY(Fixed),
+    width(705), height(505)
+  );
+
   el.appendChild(
     vconcat(
-      menu({
-        label: 'Color Scale', as: scale,
-        options: ['log', 'linear', 'sqrt']
-      }),
+      hconcat(
+        menu({
+          label: 'Color Scale', as: scale,
+          options: ['log', 'linear', 'sqrt']
+        }),
+        hspace(10),
+        legendColor({ for: hexbins })
+      ),
       hconcat(
         plot(
           rectY(
@@ -36,17 +52,7 @@ export default function(el) {
         hspace(80)
       ),
       hconcat(
-        plot(
-          hexbin(
-            from(table, { filterBy: query }),
-            { x, y, fill: count(), binWidth }
-          ),
-          hexgrid({ binWidth }),
-          schemeColor('ylgnbu'), scaleColor(scale),
-          marginLeft(5), marginRight(0), marginTop(0), marginBottom(5),
-          axisX(null), axisY(null), domainXY(Fixed),
-          width(705), height(505)
-        ),
+        hexbins,
         plot(
           rectX(
             from(table),

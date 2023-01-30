@@ -1,32 +1,41 @@
 import { PointSelection } from './selections/Point.js';
 
 export class Legend {
-  constructor(plot, channel, options) {
+  constructor(channel, options) {
     const { as, ...rest } = options;
-    this.mark = findMark(plot, channel);
     this.channel = channel;
-    this.options = rest;
+    this.options = { label: null, ...rest };
     this.selection = as;
 
-    if (this.selection && this.mark) {
-      this.handler = new PointSelection(this.mark, {
-        selection: this.selection,
-        channels: [channel]
-      });
+    this.element = document.createElement('div');
+    this.element.setAttribute('class', 'legend');
+    this.element.value = this;
+  }
+
+  setPlot(plot) {
+    const { channel, selection } = this;
+    const mark = this.mark = findMark(plot, channel);
+    if (this.selection && mark) {
+      this.handler = new PointSelection(mark, { selection, channels: [channel] });
       this.selection.addEventListener('value', () => this.update());
     }
   }
 
   init(svg) {
     const { channel, options, handler } = this;
-    this.legend = svg.legend(channel, options);
+    const scale = svg.scale(channel);
+    const opt = scale.type === 'ordinal'
+      ? options
+      : { marginTop: 1, tickSize: 2, height: 28, ...options };
+    this.legend = svg.legend(channel, opt);
 
     if (handler) {
       handler.init(this.legend, ':scope > div', el => [el.__data__]);
       this.update();
     }
 
-    return this.legend;
+    this.element.replaceChildren(this.legend);
+    return this.element;
   }
 
   update() {

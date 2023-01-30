@@ -56,7 +56,11 @@ export class Plot {
   async render() {
     this.pendingRender = false;
     const svg = await plotRenderer(this);
-    this.element.replaceChildren(svg, ...this.legends.map(l => l.init(svg)));
+    const legends = this.legends.flatMap(({ legend, include }) => {
+      const el = legend.init(svg);
+      return include ? el : [];
+    });
+    this.element.replaceChildren(svg, ...legends);
   }
 
   getAttribute(name) {
@@ -84,8 +88,9 @@ export class Plot {
     return this.markset || (this.markset = new Set(this.marks));
   }
 
-  addLegend(legend) {
-    this.legends.push(legend);
+  addLegend(legend, include = true) {
+    legend.setPlot(this);
+    this.legends.push({ legend, include });
   }
 
   addSelection(sel) {

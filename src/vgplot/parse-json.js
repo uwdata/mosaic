@@ -11,7 +11,7 @@ import * as selections from './directives/selections.js';
 import * as attributes from './directives/attributes.js';
 import { Fixed } from './symbols';
 
-export const DefaultParams = new Map([
+export const DefaultParamParsers = new Map([
   ['intersect', () => Selection.intersect()],
   ['crossfilter', () => Selection.crossfilter()],
   ['union', () => Selection.union()],
@@ -19,19 +19,20 @@ export const DefaultParams = new Map([
   ['value', v => new Signal(v)]
 ]);
 
-export const DefaultFormats = new Map([
-  ['table', parseTable],
-  ['parquet', parseParquet],
-  ['csv', parseCSV]
-]);
-
-export const DefaultParsers = new Map([
+export const DefaultSpecParsers = new Map([
   ['plot', { type: isArray, parse: parsePlot }],
+  ['legend', { type: isString, parse: parseOuterLegend }],
   ['hconcat', { type: isArray, parse: parseHConcat }],
   ['vconcat', { type: isArray, parse: parseVConcat }],
   ['hspace', { type: isNumber, parse: parseHSpace }],
   ['vspace', { type: isNumber, parse: parseVSpace }],
   ['input', { type: isString, parse: parseInput }]
+]);
+
+export const DefaultFormats = new Map([
+  ['table', parseTable],
+  ['parquet', parseParquet],
+  ['csv', parseCSV]
 ]);
 
 export const DefaultTransforms = new Map([
@@ -55,7 +56,6 @@ export const DefaultLegends = new Map(Object.entries(legends));
 export const DefaultAttributes = new Map(Object.entries(attributes));
 export const DefaultSelections = new Map(Object.entries(selections));
 
-
 export function parseJSON(spec, options) {
   spec = isString(spec) ? JSON.parse(spec) : spec;
   return new JSONParseContext(options).parse(spec);
@@ -63,38 +63,45 @@ export function parseJSON(spec, options) {
 
 export class JSONParseContext {
   constructor({
-    parsers = DefaultParsers,
-    params = DefaultParams,
+    specParsers = DefaultSpecParsers,
+    paramParsers = DefaultParamParsers,
     formats = DefaultFormats,
     transforms = DefaultTransforms,
     selections = DefaultSelections,
     attributes = DefaultAttributes,
     legends = DefaultLegends,
     inputs = DefaultInputs,
-    namespace
+    params = [],
+    plots = []
   } = {}) {
-    this.specParsers = parsers;
-    this.paramParsers = params;
+    this.specParsers = specParsers;
+    this.paramParsers = paramParsers;
     this.formats = formats;
     this.transforms = transforms;
     this.selections = selections;
     this.attributes = attributes;
     this.legends = legends;
     this.inputs = inputs;
-    this.namespace = namespace ? new Map(namespace) : new Map;
+    this.params = new Map(params);
+    this.plots = new Map(plots);
+    this.postQueue = [];
+  }
+
+  after(fn) {
+    this.postQueue.push(fn);
   }
 
   maybeParam(value, ctr = () => new Signal()) {
-    const { namespace } = this;
+    const { params } = this;
     const name = paramRef(value);
 
     if (name) {
-      if (!namespace.has(name)) {
+      if (!params.has(name)) {
         const p = ctr();
-        namespace.set(name, p);
+        params.set(name, p);
         return p;
       } else {
-        return namespace.get(name);
+        return params.get(name);
       }
     }
     return value;
@@ -121,7 +128,6 @@ export class JSONParseContext {
   }
 
   async parse(input) {
-    const { namespace } = this;
     const { data = {}, params, ...spec } = input;
 
     // parse data definitions
@@ -132,10 +138,14 @@ export class JSONParseContext {
 
     // parse param (signal/selection) definitions
     for (const name in params) {
-      namespace.set(name, parseParam(params[name], this));
+      this.params.set(name, parseParam(params[name], this));
     }
 
-    return parseSpec(spec, this);
+    const result = parseSpec(spec, this);
+    this.postQueue.forEach(fn => fn());
+    this.postQueue = [];
+
+    return result;
   }
 
   createFrom(name, from, select, where) {
@@ -256,14 +266,21 @@ function parseHConcat(spec, ctx) {
 }
 
 function parsePlot(spec, ctx) {
-  const { plot, ...attributes } = spec;
-
+  const { plot, name, ...attributes } = spec;
   const attrs = Object.keys(attributes)
     .map(key => parseAttribute(spec, key, ctx));
-
   const entries = plot.map(e => parseEntry(e, ctx));
+  const el = plots.plot(attrs, entries);
+  if (name) ctx.plots.set(name, el.value);
+  return el;
+}
 
-  return plots.plot(attrs, entries);
+function parseOuterLegend(spec, ctx) {
+  const legend = parseInnerLegend(spec, ctx);
+  ctx.after(() => {
+    ctx.plots.get(spec.for).addLegend(legend.value, false);
+  });
+  return legend;
 }
 
 function parseAttribute(spec, name, ctx) {
@@ -278,7 +295,7 @@ function parseAttribute(spec, name, ctx) {
 
 function parseEntry(spec, ctx) {
   return isString(spec.mark) ? parseMark(spec, ctx)
-    : isString(spec.legend) ? parseLegend(spec, ctx)
+    : isString(spec.legend) ? parseInnerLegend(spec, ctx)
     : isString(spec.select) ? parseSelection(spec, ctx)
     : error(`Invalid plot entry.`, spec);
 }
@@ -312,7 +329,7 @@ function parseMarkOption(spec, ctx) {
   return ctx.maybeTransform(spec) || ctx.maybeParam(spec);
 }
 
-function parseLegend(spec, ctx) {
+function parseInnerLegend(spec, ctx) {
   const { legend, ...options } = spec;
   const key = `legend${legend[0].toUpperCase()}${legend.slice(1)}`;
   const fn = ctx.legends.get(key);
