@@ -21,7 +21,7 @@ export const DefaultParamParsers = new Map([
 
 export const DefaultSpecParsers = new Map([
   ['plot', { type: isArray, parse: parsePlot }],
-  ['legend', { type: isString, parse: parseOuterLegend }],
+  ['legend', { type: isString, parse: parseLegend }],
   ['hconcat', { type: isArray, parse: parseHConcat }],
   ['vconcat', { type: isArray, parse: parseVConcat }],
   ['hspace', { type: isNumber, parse: parseHSpace }],
@@ -71,8 +71,7 @@ export class JSONParseContext {
     attributes = DefaultAttributes,
     legends = DefaultLegends,
     inputs = DefaultInputs,
-    params = [],
-    plots = []
+    params = []
   } = {}) {
     this.specParsers = specParsers;
     this.paramParsers = paramParsers;
@@ -83,7 +82,6 @@ export class JSONParseContext {
     this.legends = legends;
     this.inputs = inputs;
     this.params = new Map(params);
-    this.plots = new Map(plots);
     this.postQueue = [];
   }
 
@@ -266,21 +264,24 @@ function parseHConcat(spec, ctx) {
 }
 
 function parsePlot(spec, ctx) {
-  const { plot, name, ...attributes } = spec;
+  const { plot, ...attributes } = spec;
   const attrs = Object.keys(attributes)
     .map(key => parseAttribute(spec, key, ctx));
   const entries = plot.map(e => parseEntry(e, ctx));
-  const el = plots.plot(attrs, entries);
-  if (name) ctx.plots.set(name, el.value);
-  return el;
+  return plots.plot(attrs, entries);
 }
 
-function parseOuterLegend(spec, ctx) {
-  const legend = parseInnerLegend(spec, ctx);
-  ctx.after(() => {
-    ctx.plots.get(spec.for).addLegend(legend.value, false);
-  });
-  return legend;
+function parseLegend(spec, ctx) {
+  const { legend, ...options } = spec;
+  const key = `legend${legend[0].toUpperCase()}${legend.slice(1)}`;
+  const fn = ctx.legends.get(key);
+  if (!isFunction(fn)) {
+    error(`Unrecognized legend type: ${legend}`, spec);
+  }
+  for (const key in options) {
+    options[key] = ctx.maybeSelection(options[key]);
+  }
+  return fn(options);
 }
 
 function parseAttribute(spec, name, ctx) {
@@ -295,7 +296,7 @@ function parseAttribute(spec, name, ctx) {
 
 function parseEntry(spec, ctx) {
   return isString(spec.mark) ? parseMark(spec, ctx)
-    : isString(spec.legend) ? parseInnerLegend(spec, ctx)
+    : isString(spec.legend) ? parseLegend(spec, ctx)
     : isString(spec.select) ? parseSelection(spec, ctx)
     : error(`Invalid plot entry.`, spec);
 }
@@ -327,19 +328,6 @@ function parseMarkData(spec, ctx) {
 
 function parseMarkOption(spec, ctx) {
   return ctx.maybeTransform(spec) || ctx.maybeParam(spec);
-}
-
-function parseInnerLegend(spec, ctx) {
-  const { legend, ...options } = spec;
-  const key = `legend${legend[0].toUpperCase()}${legend.slice(1)}`;
-  const fn = ctx.legends.get(key);
-  if (!isFunction(fn)) {
-    error(`Unrecognized legend type: ${legend}`, spec);
-  }
-  for (const key in options) {
-    options[key] = ctx.maybeSelection(options[key]);
-  }
-  return fn(options);
 }
 
 function parseSelection(spec, ctx) {

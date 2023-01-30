@@ -32,6 +32,11 @@ export {
 } from '../sql/index.js';
 
 export {
+  namedPlots
+} from './directives/named-plots.js';
+
+export {
+  name,
   attribute,
   attributes,
   width,

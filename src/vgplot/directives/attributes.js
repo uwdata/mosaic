@@ -1,4 +1,9 @@
-import { isSignal } from '../../mosaic/Signal.js';
+import { isSignal } from '../../mosaic/index.js';
+import { namedPlots } from './named-plots.js';
+
+export function name(name) {
+  return plot => namedPlots.set(name, plot);
+}
 
 function setAttribute(plot, name, value) {
   if (isSignal(value)) {
