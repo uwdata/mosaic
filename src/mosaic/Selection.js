@@ -20,11 +20,16 @@ export class Selection extends Signal {
     return new Selection({ union: true });
   }
 
-  constructor({ union, cross } = {}) {
+  static single() {
+    return new Selection({ single: true });
+  }
+
+  constructor({ union, cross, single } = {}) {
     super([]);
     this.active = null;
     this.union = !!union;
     this.cross = !!cross;
+    this.single = !!single;
   }
 
   clone() {
@@ -53,7 +58,7 @@ export class Selection extends Signal {
   update(clause) {
     const { source, predicate } = clause;
     this.active = clause;
-    const clauses = this.clauses.filter(c => source !== c.source);
+    const clauses = this.single ? [] : this.clauses.filter(c => source !== c.source);
     if (predicate) clauses.push(clause);
     return super.update(clauses);
   }
