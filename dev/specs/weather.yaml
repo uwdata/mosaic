@@ -1,27 +1,32 @@
 params:
+  click: { select: single }
   domain: [sun, fog, drizzle, rain, snow]
   colors: ['#e7ba52', '#a7a7a7', '#aec7e8', '#1f77b4', '#9467bd']
 vconcat:
-- plot:
-  - mark: dot
-    data: { from: weather, filterBy: $click }
-    x: { dateMonthDay: date }
-    y: temp_max
-    fill: weather
-    r: precipitation
-    opacity: 0.7
-  - select: intervalX
-    as: $range
-  - select: highlight
-    by: $range
-    fill: '#eee'
-  domainXY: Fixed
-  tickFormatX: '%b'
-  domainColor: $domain
-  rangeColor: $colors
-  domainR: Fixed
-  rangeR: [2, 10]
-  width: 800
+- hconcat:
+  - plot:
+    - mark: dot
+      data: { from: weather, filterBy: $click }
+      x: { dateMonthDay: date }
+      y: temp_max
+      fill: weather
+      r: precipitation
+      opacity: 0.7
+    - select: intervalX
+      as: $range
+    - select: highlight
+      by: $range
+      fill: '#eee'
+    - legend: color
+      as: $click
+      columns: 1
+    domainXY: Fixed
+    tickFormatX: '%b'
+    domainColor: $domain
+    rangeColor: $colors
+    domainR: Fixed
+    rangeR: [2, 10]
+    width: 800
 - plot:
   - mark: barX
     data: { from: weather }
@@ -35,6 +40,8 @@ vconcat:
     fill: weather
   - select: selectY
     as: $click
+  - select: highlight
+    by: $click
   domainX: Fixed
   domainY: $domain
   labelY: null

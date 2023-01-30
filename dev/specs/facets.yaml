@@ -1,7 +1,7 @@
 data:
   athletes: { format: table }
 params:
-  brush: { type: crossfilter }
+  brush: { select: crossfilter }
 hconcat:
 - vconcat:
   - plot:

@@ -1,5 +1,5 @@
 params:
-  brush: { type: crossfilter }
+  brush: { select: crossfilter }
   bandwidth: 10
 vconcat:
 - input: slider

@@ -3,13 +3,13 @@ export default function(el) {
     plot, vconcat, from, dot, barX,
     count, dateMonthDay, intervalX, highlight, selectY,
     domainXY, domainX, domainY, domainColor, rangeColor, domainR, rangeR,
-    tickFormatX, labelY,
+    tickFormatX, labelY, legendColor,
     width, Fixed, Selection
   } = vgplot;
 
   const table = 'weather';
   const range = Selection.intersect();
-  const click = Selection.intersect();
+  const click = Selection.single();
 
   const weather = ['sun', 'fog', 'drizzle', 'rain', 'snow'];
   const colors = [
@@ -29,6 +29,7 @@ export default function(el) {
         domainXY(Fixed), tickFormatX('%b'),
         rangeR([2, 10]), domainR(Fixed),
         width(800),
+        legendColor({ as: click, columns: 1 }),
         ...colors
       ),
       plot(
@@ -38,6 +39,7 @@ export default function(el) {
           { x: count(), y: 'weather', fill: 'weather' }
         ),
         selectY({ as: click }),
+        highlight({ by: click }),
         domainX(Fixed),
         domainY(weather), labelY(null),
         width(800),

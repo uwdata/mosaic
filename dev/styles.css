@@ -18,6 +18,10 @@ label { margin-right: 0.5em; }
   align-items: flex-start;
 }
 
+.plot {
+  display: flex;
+}
+
 .input {
   margin-right: 1em;
 }

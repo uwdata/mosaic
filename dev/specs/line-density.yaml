@@ -1,7 +1,7 @@
 data:
   sinusoids: { file: data/sinusoids.parquet }
 params:
-  brush: { type: intersect }
+  brush: { select: intersect }
   bw: { value: 0 }
   bs: { value: 1 }
 vconcat:
