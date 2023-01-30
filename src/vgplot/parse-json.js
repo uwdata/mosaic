@@ -6,6 +6,7 @@ import { from } from './directives/data.js';
 import * as plots from './directives/plots.js';
 import * as marks from './directives/marks.js';
 import * as inputs from './directives/inputs.js';
+import * as legends from './directives/legends.js';
 import * as selections from './directives/selections.js';
 import * as attributes from './directives/attributes.js';
 import { Fixed } from './symbols';
@@ -14,6 +15,7 @@ export const DefaultParams = new Map([
   ['intersect', () => Selection.intersect()],
   ['crossfilter', () => Selection.crossfilter()],
   ['union', () => Selection.union()],
+  ['single', () => Selection.single()],
   ['value', v => new Signal(v)]
 ]);
 
@@ -49,8 +51,10 @@ export const DefaultTransforms = new Map([
 ]);
 
 export const DefaultInputs = new Map(Object.entries(inputs));
+export const DefaultLegends = new Map(Object.entries(legends));
 export const DefaultAttributes = new Map(Object.entries(attributes));
 export const DefaultSelections = new Map(Object.entries(selections));
+
 
 export function parseJSON(spec, options) {
   spec = isString(spec) ? JSON.parse(spec) : spec;
@@ -65,6 +69,7 @@ export class JSONParseContext {
     transforms = DefaultTransforms,
     selections = DefaultSelections,
     attributes = DefaultAttributes,
+    legends = DefaultLegends,
     inputs = DefaultInputs,
     namespace
   } = {}) {
@@ -74,6 +79,7 @@ export class JSONParseContext {
     this.transforms = transforms;
     this.selections = selections;
     this.attributes = attributes;
+    this.legends = legends;
     this.inputs = inputs;
     this.namespace = namespace ? new Map(namespace) : new Map;
   }
@@ -199,10 +205,10 @@ function parseCSV(name, spec, ctx) {
 
 function parseParam(param, ctx) {
   param = isObject(param) ? param : { value: param };
-  const { type = 'value', value } = param;
-  const parser = ctx.paramParsers.get(type);
+  const { select = 'value', value } = param;
+  const parser = ctx.paramParsers.get(select);
   if (!parser) {
-    error(`Unrecognized param type: ${type}`, param);
+    error(`Unrecognized param type: ${select}`, param);
   }
   return parser(value);
 }
@@ -272,6 +278,7 @@ function parseAttribute(spec, name, ctx) {
 
 function parseEntry(spec, ctx) {
   return isString(spec.mark) ? parseMark(spec, ctx)
+    : isString(spec.legend) ? parseLegend(spec, ctx)
     : isString(spec.select) ? parseSelection(spec, ctx)
     : error(`Invalid plot entry.`, spec);
 }
@@ -303,6 +310,19 @@ function parseMarkData(spec, ctx) {
 
 function parseMarkOption(spec, ctx) {
   return ctx.maybeTransform(spec) || ctx.maybeParam(spec);
+}
+
+function parseLegend(spec, ctx) {
+  const { legend, ...options } = spec;
+  const key = `legend${legend[0].toUpperCase()}${legend.slice(1)}`;
+  const fn = ctx.legends.get(key);
+  if (!isFunction(fn)) {
+    error(`Unrecognized legend type: ${legend}`, spec);
+  }
+  for (const key in options) {
+    options[key] = ctx.maybeSelection(options[key]);
+  }
+  return fn(options);
 }
 
 function parseSelection(spec, ctx) {

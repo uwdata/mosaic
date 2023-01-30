@@ -128,6 +128,11 @@ export {
 } from './directives/marks.js';
 
 export {
+  legendColor,
+  legendOpacity
+} from './directives/legends.js';
+
+export {
   highlight,
   intervalX,
   intervalY,

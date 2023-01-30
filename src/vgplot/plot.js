@@ -12,6 +12,7 @@ export class Plot {
   constructor(element) {
     this.attributes = { ...DEFAULT_ATTRIBUTES };
     this.selections = [];
+    this.legends = [];
     this.marks = [];
     this.markset = null;
     this.element = element || document.createElement('div');
@@ -54,7 +55,8 @@ export class Plot {
 
   async render() {
     this.pendingRender = false;
-    this.element.replaceChildren(await plotRenderer(this));
+    const svg = await plotRenderer(this);
+    this.element.replaceChildren(svg, ...this.legends.map(l => l.init(svg)));
   }
 
   getAttribute(name) {
@@ -80,6 +82,10 @@ export class Plot {
 
   get markSet() {
     return this.markset || (this.markset = new Set(this.marks));
+  }
+
+  addLegend(legend) {
+    this.legends.push(legend);
   }
 
   addSelection(sel) {
