@@ -11,8 +11,8 @@ function selection(SelectionClass, options) {
   };
 }
 
-export function highlight({ by, ...rest }) {
-  return selection(Highlight, { selection: by, channels: rest });
+export function highlight({ by, ...channels }) {
+  return selection(Highlight, { selection: by, channels });
 }
 
 export function select({ as, ...rest }) {

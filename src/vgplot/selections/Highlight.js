@@ -4,11 +4,12 @@ import { and } from '../../sql/index.js';
 export class Highlight {
   constructor(mark, {
     selection,
-    channels = { opacity: 0.1 }
+    channels = {}
   }) {
     this.mark = mark;
     this.selection = selection;
-    this.channels = Object.entries(channels);
+    const c = Object.entries(channels);
+    this.channels = c.length ? c : [['opacity', 0.2]];
     this.selection.addEventListener('value', throttle(() => this.update()));
   }
 
@@ -53,11 +54,11 @@ async function predicateFunction(mark, selection) {
     return () => true;
   }
 
-  const q = mark
-    .query(mark.filterBy?.predicate(mark))
-    .$select({ __: and(pred) });
+  const s = { __: and(pred) };
+  const q = mark.query(mark.filterBy?.predicate(mark));
+  const p = q.groupby().length ? q.select(s) : q.$select(s);
 
-  const data = await coordinator().query(q);
+  const data = await coordinator().query(p);
   const v = data.getChild?.('__');
-  return v ? (i => v.get(i)) : (i => data[i].sel);
+  return v ? (i => v.get(i)) : (i => data[i].__);
 }
