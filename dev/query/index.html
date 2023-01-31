@@ -9,36 +9,62 @@
       <strong>Query Console</strong>
       <span style="margin-right: 0.5em;"></span>
         Client:
-        <select id="clients">
+        <select id="client">
           <option value="socket" selected>Socket</option>
           <option value="rest">REST</option>
           <option value="wasm">WASM</option>
         </select>
       </span>
+      <span style="margin-right: 0.5em;"></span>
+        Mode:
+        <select id="mode">
+          <option value="query" selected>Query</option>
+          <option value="exec">Exec</option>
+        </select>
+      </span>
     </header>
-    <textarea style="width: 98%; height: 140px;" id="sql"></textarea>
+    <textarea style="width: 98%; height: 140px;" id="input"></textarea>
     <br/>
     <button id="submit">Query</button>
     <br/>
     <div id="output"></div>
 <script type="module">
   import { setDatabaseClient, coordinator, table } from '../setup.js';
-
-  const input = document.querySelector('#sql');
-  const submit = document.querySelector('#submit');
-  const output = document.querySelector('#output');
-  const menu = document.querySelector('#clients');
-  menu.addEventListener('change', () => setDatabaseClient(menu.value));
-
   const tableName = 'query_result';
 
+  const input = document.querySelector('#input');
+  const output = document.querySelector('#output');
+  const submit = document.querySelector('#submit');
+  const exec = document.querySelector('#exec');
+  const menu = document.querySelector('#client');
+  const mode = document.querySelector('#mode');
+
+  function disable() {
+    input.setAttribute('disabled', true);
+    submit.setAttribute('disabled', true);
+  }
+
+  function enable() {
+    input.removeAttribute('disabled');
+    submit.removeAttribute('disabled');
+  }
+
+  menu.addEventListener('change', () => setDatabaseClient(menu.value));
+
   submit.addEventListener('click', async () => {
-    await coordinator().exec(
-      `DROP TABLE IF EXISTS ${tableName};
-       CREATE TEMP TABLE ${tableName} AS ${input.value}`
-    );
-    coordinator().clear({ catalog: true });
-    output.replaceChildren(table({ from: tableName, height: 500 }));
+    disable();
+    if (mode.value === 'exec') {
+      await coordinator().exec(`${input.value}`);
+      output.replaceChildren();
+    } else {
+      await coordinator().exec(
+        `DROP TABLE IF EXISTS ${tableName};
+        CREATE TEMP TABLE ${tableName} AS ${input.value}`
+      );
+      coordinator().clear({ catalog: true });
+      output.replaceChildren(table({ from: tableName, height: 500 }));
+    }
+    enable();
   });
 </script>
   </body>

@@ -1,0 +1,75 @@
+data:
+  gaia:
+    file: 'https://uwdata.github.io/mosaic-datasets/data/gaia-first-10.parquet'
+params:
+  brush: { select: crossfilter }
+  bandwidth: 0
+  scaleFactor: 0.5
+  scaleType: sqrt
+hconcat:
+- vconcat:
+  - plot:
+    - mark: heatmap
+      data: { from: gaia, filterBy: $brush }
+      x: ra
+      y: dec
+      fill: density
+      bandwidth: $bandwidth
+      scaleFactor: $scaleFactor
+    - select: intervalXY
+      as: $brush
+    domainXY: Fixed
+    scaleColor: $scaleType
+    schemeColor: plasma
+    width: 600
+    height: 400
+    marginLeft: 65
+  - hconcat:
+    - plot:
+      - mark: rectY
+        data: { from: gaia, filterBy: $brush }
+        x: { bin: phot_g_mean_mag }
+        y: { count: }
+        fill: steelblue
+        inset: 0.5
+      - select: intervalX
+        as: $brush
+      domainX: Fixed
+      scaleY: $scaleType
+      gridY: true
+      width: 300
+      height: 200
+      marginLeft: 65
+    - plot:
+      - mark: rectY
+        data: { from: gaia, filterBy: $brush }
+        x: { bin: parallax }
+        y: { count: }
+        fill: steelblue
+        inset: 0.5
+      - select: intervalX
+        as: $brush
+      domainX: Fixed
+      scaleY: $scaleType
+      gridY: true
+      width: 300
+      height: 200
+      marginLeft: 65
+- hspace: 30
+- plot:
+  - mark: heatmap
+    data: { from: gaia, filterBy: $brush }
+    x: bp_rp
+    y: phot_g_mean_mag
+    fill: density
+    bandwidth: $bandwidth
+    scaleFactor: $scaleFactor
+  - select: intervalXY
+    as: $brush
+  domainXY: Fixed
+  scaleColor: $scaleType
+  schemeColor: plasma
+  reverseY: true
+  width: 400
+  height: 600
+  marginLeft: 25
