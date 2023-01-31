@@ -7,7 +7,7 @@ export default async function(el) {
   } = vg;
 
   await coordinator().exec(`
-    CREATE TABLE IF NOT EXISTS sinusoids AS
+    CREATE TEMP TABLE IF NOT EXISTS sinusoids AS
     (SELECT * FROM 'data/sinusoids.parquet')
   `);
 
