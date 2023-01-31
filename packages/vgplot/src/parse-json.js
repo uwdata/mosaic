@@ -194,6 +194,7 @@ function parseParquet(name, spec, ctx) {
 }
 
 function parseCSV(name, spec, ctx) {
+  // eslint-disable-next-line no-unused-vars
   const { file, format, select = '*', ...options } = spec;
   const opt = Object.entries({ sample_size: -1, ...options })
     .map(([key, value]) => {

@@ -49,7 +49,7 @@ export class DataTileIndexer {
     const activeView = this.activeView = getActiveView(active);
     if (!activeView) return false; // active selection clause not compatible
 
-    // console.warn('DATA TILE INDEX CONSTRUCTION');
+    console.warn('DATA TILE INDEX CONSTRUCTION');
 
     // create a selection with the active client removed
     const sel = this.selection.clone().update({ source });
@@ -154,7 +154,8 @@ function binInterval(scale) {
       sql = c => `LN(${asColumn(c)})`;
       break;
     case 'symlog':
-      lift = x => Math.sign(x) * Math.log1p(Math.abs(x / c));
+      // TODO: support log constants other than 1?
+      lift = x => Math.sign(x) * Math.log1p(Math.abs(x));
       sql = c => (c = asColumn(c), `SIGN(${c}) * LN(1 + ABS(${c}))`);
       break;
     case 'sqrt':

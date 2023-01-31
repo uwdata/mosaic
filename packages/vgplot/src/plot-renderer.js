@@ -202,7 +202,9 @@ function inferLabel(key, spec, marks, channels = [key]) {
       type = stats.find?.(s => s.column === column)?.type || 'number';
     } else if (candLabel !== label) {
       candLabel = undefined;
-    } else if (candCol !== column && candLabel !== label) return;
+    } else if (candCol !== column) {
+      candCol = undefined;
+    }
   }
   let candidate = candLabel || candCol;
   if (candidate === undefined) return;

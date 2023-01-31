@@ -25,7 +25,7 @@ export class QueryCache {
     const now = performance.now();
 
     const receive = promise.then(result => {
-      // console.log(`Query: ${Math.round(performance.now() - now)}`);
+      console.log(`Query: ${Math.round(performance.now() - now)}`);
       return result;
     });
 

@@ -39,12 +39,13 @@ function createHTTPServer(handleQuery, rest) {
       case 'GET':
         handleQuery(res, url.parse(req.url, true).query);
         break;
-      case 'POST':
+      case 'POST': {
         const chunks = [];
         req.on('error', err => res.error(err, 500));
         req.on('data', chunk => chunks.push(chunk));
         req.on('end', () => handleQuery(res, Buffer.concat(chunks)));
         break;
+      }
       default:
         res.error(`Unsupported HTTP method: ${req.method}`, 400);
     }
@@ -119,7 +120,8 @@ function httpResponse(res) {
         : (locked = true);
     },
     unlock() {
-      if (locked = (queue.length > 0)) {
+      locked = queue.length > 0;
+      if (locked) {
         // resolve the next promise in the queue
         queue.shift()();
       }
