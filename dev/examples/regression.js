@@ -1,5 +1,7 @@
+import * as vg from '../setup.js';
+
 export default function(el) {
-  const { plot, from, dot, regressionY } = vgplot;
+  const { plot, from, dot, regressionY } = vg;
 
   const table = 'athletes';
 

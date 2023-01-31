@@ -1,3 +1,5 @@
+import * as vg from '../setup.js';
+
 export default function(el) {
   const {
     plot, vconcat, from, dot, barX,
@@ -5,7 +7,7 @@ export default function(el) {
     domainXY, domainX, domainY, domainColor, rangeColor, domainR, rangeR,
     tickFormatX, labelY, legendColor,
     width, Fixed, Selection
-  } = vgplot;
+  } = vg;
 
   const table = 'weather';
   const range = Selection.intersect();

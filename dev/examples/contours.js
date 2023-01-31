@@ -1,5 +1,6 @@
+import * as vg from '../setup.js';
+
 export default function(el = document.body) {
-  const vg = vgplot;
   const bandwidth = new vg.Signal(40);
   const thresholds = new vg.Signal(10);
   const table = 'penguins';

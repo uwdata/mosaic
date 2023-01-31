@@ -4,7 +4,7 @@ Mosaic is an extensible architecture for linking data visualizations, tables, in
 
 The key idea is to have interface components "publish" their data needs as declarative queries that can be managed, optimized, and cross-filtered by a coordinator that proxies access to a database such as [DuckDB](https://duckdb.org/).
 
-This repository contains a set of related projects:
+This repository contains a set of related packages:
 
 - `duckdb`: A Node.js + DuckDB data server that supports transfer of [Apache Arrow](https://arrow.apache.org/) and JSON data over either Web Sockets or HTTP.
 - `sql`: An API for convenient construction and analysis of SQL queries. Query objects then coerce to SQL query strings.
@@ -16,13 +16,12 @@ This repository contains a set of related projects:
 
 To build and develop Mosaic locally:
 
-- Clone [https://github.com/uwdata/mosaic](https://github.com/uwdata/mosaic).
-- Run `npm i` to install dependencies.
-- Run `npm test` to run the test suite.
-- Run `npm run build` to build a client-side bundle.
+1. Clone [https://github.com/uwdata/mosaic](https://github.com/uwdata/mosaic).
+2. Run `npm i` to install dependencies.
+3. Run `npm test` to run the test suite.
+4. Run `npm run build` to build client-side bundles.
 
 To run the interactive examples:
 
-- Run `npm run server` to launch a data server with default files loaded.
-- Run `npx wds` to launch a local web server.
-- Browse to `http://localhost:8000/dev/` to view examples.
+1. Run `npm run server` to launch a data server with default files loaded.
+2. Run `npm run dev` to launch a local web server and view examples.

@@ -1,8 +1,10 @@
+import * as vg from '../setup.js';
+
 export default function(el) {
   const {
     plot, vconcat, from, avg, bin, count, rectY, ruleX, expr, dot,
     width, height, domainX, intervalX, Selection, Fixed
-  } = vgplot;
+  } = vg;
 
   // el.appendChild(
   //   vconcat(

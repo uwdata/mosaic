@@ -1,3 +1,5 @@
+import * as vg from '../setup.js';
+
 // export default async function(el) {
 //   const {
 //     plot, vconcat, from, rectY, barX,
@@ -5,7 +7,7 @@
 //     domainX, domainY, domainColor, rangeColor,
 //     labelY, expr,
 //     width, Fixed, Selection
-//   } = vgplot;
+//   } = vg;
 
 //   const table = 'weather';
 //   const sel = Selection.crossfilter();
@@ -52,7 +54,7 @@
 // export default async function(el) {
 //   const {
 //     coordinator, plot, vconcat, from, lineY, intervalX, domainY, width, height, Selection, Fixed
-//   } = vgplot;
+//   } = vg;
 
 //   await coordinator().exec(`
 //     CREATE TABLE IF NOT EXISTS walk2 AS
@@ -93,7 +95,7 @@ export default function(el) {
     from, rectY, barX, tickX, frame, avg, quantile, bin, count,
     intervalX, domainX, domainXY, domainFX, domainColor,
     marginLeft, width, height
-  } = vgplot;
+  } = vg;
 
   const table = 'athletes';
   const brush = Selection.crossfilter();

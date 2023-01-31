@@ -1,3 +1,5 @@
+import * as vg from '../setup.js';
+
 export default async function(el) {
   const {
     Query, coordinator, expr, plot, hconcat, vconcat, hspace,
@@ -5,7 +7,7 @@ export default async function(el) {
     domainX, domainXY, scaleY, gridY, reverseY, scaleColor, schemeColor,
     width, height, marginLeft,
     intervalX, intervalXY, Selection, Fixed
-  } = vgplot;
+  } = vg;
 
   // Load data as needed
   const q = Query

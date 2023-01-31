@@ -1,11 +1,8 @@
+import { mplot, watchRender, startInit, brushes1d, run } from './benchmark-utils.js';
 import {
-  mplot, watchRender, startInit, brushes1d, run
-} from './benchmark-utils.js';
-
-const {
   Query, Selection, Fixed, coordinator, namedPlots, vconcat, from, name,
   bin, count, expr, rectY, width, height, domainX, intervalX
-} = vgplot;
+} from '../setup.js';
 
 export default async function(el) {
   // Load 10M flights data from the web, as needed

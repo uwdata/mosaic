@@ -2,7 +2,6 @@
 <html>
 <head>
   <title>Benchmarks</title>
-  <script src="../../dist/vgplot.js"></script>
   <link href="../styles.css" rel="stylesheet">
 </head>
 <body>
@@ -32,8 +31,8 @@
   </header>
   <div id="view"></div>
 <script type="module">
-  import { setDatabaseClient } from '../database-client.js';
-  import { stop } from './benchmark-utils.js';
+  import { reset, setDatabaseClient } from '../setup.js';
+  import { stop, startClient, measureClient } from './benchmark-utils.js';
 
   const host = 'localhost';
   const port = 3000;
@@ -43,32 +42,31 @@
     wasm: undefined
   };
 
-  performance.mark('page-load');
-
-  const { coordinator, socketClient, restClient, wasmClient, namedPlots } = vgplot;
-  const view = document.querySelector('#view');
-
-  const clientMenu = document.querySelector('#clients');
-  clientMenu.addEventListener('change', () => {
-    setDatabaseClient(clientMenu.value, clientOptions[clientMenu.value])
-  });
-  await setDatabaseClient(clientMenu.value, clientOptions[clientMenu.value]);
-
-  const benchmarkMenu = document.querySelector('#benchmark');
-  const runButton = document.querySelector('#run');
-  const stopButton = document.querySelector('#stop');
-  runButton.addEventListener('click', () => load(benchmarkMenu.value));
-  stopButton.addEventListener('click', () => stop());
+  async function client(value) {
+    startClient();
+    await setDatabaseClient(value, clientOptions[value]);
+    measureClient();
+  }
 
   async function load(name) {
-    view.innerHTML = '';
-    coordinator().clear();
-    namedPlots.clear();
+    view.replaceChildren();
+    reset();
     if (name !== 'none') {
       const benchmarks = (await import(`./${name}.js`)).default;
       benchmarks(view);
     }
   }
+
+  const view = document.querySelector('#view');
+  const clientMenu = document.querySelector('#clients');
+  const benchmarkMenu = document.querySelector('#benchmark');
+  const runButton = document.querySelector('#run');
+  const stopButton = document.querySelector('#stop');
+
+  clientMenu.addEventListener('change', () => client(clientMenu.value));
+  runButton.addEventListener('click', () => load(benchmarkMenu.value));
+  stopButton.addEventListener('click', () => stop());
+  await client(clientMenu.value);
 </script>
 </body>
 </html>

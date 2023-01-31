@@ -1,8 +1,10 @@
+import * as vg from '../setup.js';
+
 export default function(el) {
   const {
     plot, vconcat, from, bin, count, rectY,
     width, height, domainX, intervalX, Selection, Fixed
-  } = vgplot;
+  } = vg;
 
   const table = 'flights';
   const brush = Selection.crossfilter();

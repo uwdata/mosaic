@@ -1,11 +1,8 @@
+import { mplot, watchRender, startInit, brushes1d, run } from './benchmark-utils.js';
 import {
-  mplot, watchRender, startInit, brushes1d, run
-} from './benchmark-utils.js';
-
-const {
   namedPlots, vconcat, from, name, bin, count, rectY,
   width, height, domainX, intervalX, Selection, Fixed
-} = vgplot;
+} from '../setup.js';
 
 export default function(el) {
   watchRender(3, () => {

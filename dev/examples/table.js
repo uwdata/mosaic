@@ -1,5 +1,7 @@
+import * as vg from '../setup.js';
+
 export default function(el) {
   el.appendChild(
-    vgplot.table({ from: 'flights', height: 500 })
+    vg.table({ from: 'flights', height: 500 })
   );
 }

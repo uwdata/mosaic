@@ -1,9 +1,11 @@
+import * as vg from '../setup.js';
+
 export default function(el) {
   const {
     plot, vconcat, from, areaY,
     width, height, domainX, domainY, intervalX,
     Selection, Fixed
-  } = vgplot;
+  } = vg;
 
   const table = 'walk';
   const brush = Selection.intersect();

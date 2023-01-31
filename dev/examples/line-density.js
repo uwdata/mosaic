@@ -1,8 +1,10 @@
+import * as vg from '../setup.js';
+
 export default async function(el) {
   const {
     coordinator, Selection, Signal, vconcat, hconcat, plot, menu, slider, from,
     denseLine, schemeColor, labelY, intervalXY, width, height
-  } = vgplot;
+  } = vg;
 
   await coordinator().exec(`
     CREATE TABLE IF NOT EXISTS sinusoids AS

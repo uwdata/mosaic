@@ -1,8 +1,11 @@
+import * as vg from '../setup.js';
+
 export default function(el) {
   const {
     Selection, Fixed, vconcat, hconcat, plot, menu, search, table,
     dot, regressionY, from, domainXY, domainColor
-  } = vgplot;
+  } = vg;
+
   const query = Selection.intersect();
   const tbl = 'athletes';
 

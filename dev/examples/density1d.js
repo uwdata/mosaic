@@ -1,8 +1,10 @@
+import * as vg from '../setup.js';
+
 export default function(el) {
   const {
     plot, vconcat, from, axisY, domainX, densityY, intervalX,
     marginLeft, width, height, Signal, Selection, Fixed, slider
-  } = vgplot;
+  } = vg;
 
   const table = 'flights';
   const bandwidth = new Signal();

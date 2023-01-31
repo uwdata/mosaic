@@ -1,3 +1,5 @@
+import * as vg from '../setup.js';
+
 export default function(el) {
   const {
     plot, hconcat, vconcat, from, dot, frame,
@@ -6,7 +8,7 @@ export default function(el) {
     labelAnchorX, labelAnchorY,
     marginTop, marginBottom, marginLeft, marginRight,
     Selection, Fixed
-  } = vgplot;
+  } = vg;
 
   const columns = ['bill_length', 'bill_depth', 'flipper_length', 'body_mass'];
   const table = 'penguins';
