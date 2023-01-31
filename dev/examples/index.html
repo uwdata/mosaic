@@ -43,8 +43,7 @@
   <div id="view"></div>
 <script type="module">
   import { setDatabaseClient } from '../database-client.js';
-  const { coordinator, socketClient, restClient, wasmClient } = vgplot;
-  const mc = self.mc = coordinator();
+  const { coordinator, socketClient, restClient, wasmClient, namedPlots } = vgplot;
   const view = document.querySelector('#view');
 
   const clientMenu = document.querySelector('#clients');
@@ -61,7 +60,8 @@
 
   async function load(name) {
     view.innerHTML = '';
-    mc.clear();
+    coordinator().clear();
+    namedPlots.clear();
     if (name === 'none' && location.search) {
       // get example name from query string
       name = location.search.slice(1);

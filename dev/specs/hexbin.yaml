@@ -26,7 +26,8 @@ vconcat:
     height: 70
   - hspace: 80
 - hconcat:
-  - plot:
+  - name: hexbins
+    plot:
     - mark: hexbin
       data: { from: flights, filterBy: $query }
       x: time
@@ -35,7 +36,6 @@ vconcat:
       binWidth: 10
     - mark: hexgrid
       binWidth: 10
-    name: hexbins
     schemeColor: ylgnbu
     scaleColor: $scale
     margins: { left: 5, right: 0, top: 0, bottom: 5 }
