@@ -43,7 +43,7 @@ export default async function(el) {
       time: 'DEP_TIME'
     })
     .from(expr(`'https://uwdata.github.io/mosaic-datasets/data/flights-10m.parquet'`));
-  await coordinator().exec(`CREATE TABLE IF NOT EXISTS faa AS ${q}`);
+  await coordinator().exec(`CREATE TEMP TABLE IF NOT EXISTS faa AS ${q}`);
 
   function update() {
     const table = 'faa';

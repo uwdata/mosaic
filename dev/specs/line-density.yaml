@@ -1,5 +1,6 @@
 data:
-  sinusoids: { file: data/sinusoids.parquet }
+  sinusoids:
+    file: https://uwdata.github.io/mosaic-datasets/data/sinusoids.parquet
 params:
   brush: { select: intersect }
   bw: { value: 0 }
