@@ -18,7 +18,8 @@ export class RegressionMark extends Mark {
   query(filter = []) {
     const x = 'x';
     const y = 'y';
-    const groupby = this.channelField('stroke') ? ['stroke'] : [];
+    const groupby = ['stroke', 'z', 'fx', 'fy']
+      .flatMap(c => this.channelField(c) ? c : []);
 
     return Query
       .from(super.query(filter))
@@ -60,16 +61,21 @@ export class RegressionMark extends Mark {
       switch (c.channel) {
         case 'x':
         case 'y':
+        case 'fill':
           break;
         case 'stroke':
-          lopt.stroke = Object.hasOwn(c, 'value') ? c.value : c.channel;
+          lopt.stroke = Object.hasOwn(c, 'value') ? c.value : 'stroke';
           aopt.fill = Object.hasOwn(c, 'value') ? c.value : 'fill';
+          break;
+        case 'strokeOpacity':
+          lopt.strokeOpacity = Object.hasOwn(c, 'value') ? c.value : c.channel;
           break;
         case 'fillOpacity':
           aopt.fillOpacity = Object.hasOwn(c, 'value') ? c.value : c.channel;
           break;
         default:
-          options[c.channel] = Object.hasOwn(c, 'value') ? c.value : c.channel;
+          lopt[c.channel] = Object.hasOwn(c, 'value') ? c.value : c.channel;
+          aopt[c.channel] = lopt[c.channel];
           break;
       }
     }
