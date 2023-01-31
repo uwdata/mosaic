@@ -1,49 +1,33 @@
 {
+  "private": true,
   "name": "mosaic",
-  "version": "0.0.1",
-  "description": "Scalable and extensible linked data views",
-  "keywords": [
-    "data",
-    "visualization",
-    "query",
-    "database",
-    "duckdb"
-  ],
+  "description": "Scalable and extensible linked data views.",
   "license": "BSD-3-Clause",
   "author": "Jeffrey Heer (http://idl.cs.washington.edu)",
   "type": "module",
-  "main": "src/index.js",
   "repository": {
     "type": "git",
     "url": "https://github.com/uwdata/mosaic.git"
   },
   "scripts": {
-    "prebuild": "rimraf dist && mkdir dist",
-    "build": "rollup -c",
-    "lint": "eslint src test --ext .js",
-    "test": "mocha 'test/**/*-test.js'",
+    "build": "lerna run build",
+    "lint": "lerna run lint",
+    "test": "lerna run test",
     "server": "node bin/run-server.js",
-    "prepublishOnly": "npm run test && npm run lint && npm run build"
-  },
-  "dependencies": {
-    "@duckdb/duckdb-wasm": "^1.20.0",
-    "@observablehq/plot": "^0.6.2",
-    "apache-arrow": "^10.0.1",
-    "d3": "^7.8.2",
-    "duckdb": "~0.6.1",
-    "isoformat": "^0.2.1",
-    "ws": "^8.12.0"
+    "vgplot": "cd packages/vgplot && npm run build",
+    "dev": "npm run vgplot && wds --open dev/",
+    "release": "npm run test && npm run lint && lerna publish"
   },
   "devDependencies": {
-    "@rollup/plugin-commonjs": "^24.0.1",
-    "@rollup/plugin-node-resolve": "^15.0.1",
-    "@rollup/plugin-terser": "~0.4.0",
     "@web/dev-server": "^0.1.35",
-    "eslint": "^8.32.0",
+    "esbuild": "^0.17.5",
+    "eslint": "^8.33.0",
+    "lerna": "^6.4.1",
     "mocha": "^10.2.0",
     "rimraf": "^4.1.2",
-    "rollup": "^3.10.1",
-    "rollup-plugin-bundle-size": "^1.0.3",
     "yaml": "^2.2.1"
-  }
+  },
+  "workspaces": [
+    "packages/*"
+  ]
 }

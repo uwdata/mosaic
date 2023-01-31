@@ -1,3 +1,5 @@
+import * as vg from '../setup.js';
+
 export default function(el) {
   const {
     plot, vconcat, hconcat, hspace, menu, hexbin, hexgrid, from, name,
@@ -6,7 +8,7 @@ export default function(el) {
     axisX, axisY, labelAnchorX, labelAnchorY,
     domainX, domainY, domainXY, intervalX, intervalY, width, height,
     Selection, Signal, Fixed
-  } = vgplot;
+  } = vg;
 
   const table = 'flights';
   const x = 'time';

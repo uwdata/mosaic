@@ -1,0 +1,27 @@
+{
+  "name": "@mosaic/inputs",
+  "version": "0.0.1",
+  "description": "Mosaic input components.",
+  "keywords": ["inputs", "mosaic"],
+  "license": "BSD-3-Clause",
+  "author": "Jeffrey Heer (http://idl.cs.washington.edu)",
+  "type": "module",
+  "main": "src/index.js",
+  "module": "src/index.js",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/uwdata/mosaic.git"
+  },
+  "scripts": {
+    "prebuild": "rimraf dist && mkdir dist",
+    "build": "node ../../esbuild.js mosaic-inputs",
+    "lint": "eslint src test --ext .js",
+    "test": "mocha 'test/**/*-test.js'",
+    "prepublishOnly": "npm run test && npm run lint && npm run build"
+  },
+  "dependencies": {
+    "@mosaic/core": "^0.0.1",
+    "@mosaic/sql": "^0.0.1",
+    "isoformat": "^0.2.1"
+  }
+}

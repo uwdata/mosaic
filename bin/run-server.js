@@ -1,5 +1,5 @@
 #! /usr/bin/env node
-import { DuckDB, dataServer } from '../src/duckdb/index.js';
+import { DuckDB, dataServer } from '@mosaic/duckdb';
 
 const db = new DuckDB();
 

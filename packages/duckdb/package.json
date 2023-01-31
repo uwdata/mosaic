@@ -1,0 +1,24 @@
+{
+  "name": "@mosaic/duckdb",
+  "version": "0.0.1",
+  "description": "A Node-based DuckDB data server.",
+  "keywords": ["duckdb", "server", "node", "arrow", "mosaic"],
+  "license": "BSD-3-Clause",
+  "author": "Jeffrey Heer (http://idl.cs.washington.edu)",
+  "type": "module",
+  "main": "src/index.js",
+  "module": "src/index.js",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/uwdata/mosaic.git"
+  },
+  "scripts": {
+    "lint": "eslint src test --ext .js",
+    "test": "mocha 'test/**/*-test.js'",
+    "prepublishOnly": "npm run test && npm run lint"
+  },
+  "dependencies": {
+    "duckdb": "~0.6.1",
+    "ws": "^8.12.0"
+  }
+}

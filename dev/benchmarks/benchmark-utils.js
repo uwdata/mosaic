@@ -1,7 +1,7 @@
-const { plot } = vgplot;
+import { plot } from '../../packages/vgplot/dist/vgplot.js';
 
-let abort;
-let results;
+let abort = false;
+let results = [];
 let renderCount;
 let renderDone;
 
@@ -36,23 +36,37 @@ export async function run(tasks) {
   for (const task of tasks) {
     if (!abort) await task();
   }
-  console.log('INIT', stats(results.filter(x => x.type === 'init')));
-  console.log('UPDATE', stats(results.filter(x => x.type === 'update')));
-  return (self.results = results);
+
+  const data = results;
+  results = [];
+  abort = false;
+
+  console.log('CLIENT', stats(data.filter(x => x.type === 'client')).max);
+  console.log('INIT', stats(data.filter(x => x.type === 'init')).max);
+  console.log('UPDATE', stats(data.filter(x => x.type === 'update')));
+  return (self.results = data);
 }
 
 export function stop() {
   abort = true;
 }
 
+export function startClient() {
+  performance.mark('benchmark-client');
+}
+
 export function startInit() {
-  abort = false;
-  results = [];
   performance.mark('benchmark-init');
 }
 
 export function startUpdate() {
   performance.mark('benchmark-update');
+}
+
+export function measureClient(props = {}) {
+  performance.mark('benchmark-client-loaded');
+  const p = performance.measure('client-time', 'benchmark-client', 'benchmark-client-loaded');
+  results.push({ type: 'client', time: p.duration, ...props });
 }
 
 export function measureInit(props = {}) {

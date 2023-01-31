@@ -2,12 +2,11 @@
 <html>
   <head>
     <title>SQL Query Console</title>
-    <script src="../../dist/vgplot.js"></script>
     <link href="../styles.css" rel="stylesheet">
   </head>
   <body>
     <header>
-      <strong>SQL Query Console</strong>
+      <strong>Query Console</strong>
       <span style="margin-right: 0.5em;"></span>
         Client:
         <select id="clients">
@@ -21,28 +20,26 @@
     <br/>
     <button id="submit">Query</button>
     <br/>
-    <div id="result"></div>
+    <div id="output"></div>
 <script type="module">
-import { setDatabaseClient } from '../database-client.js';
+  import { setDatabaseClient, coordinator, table } from '../setup.js';
 
-const menu = document.querySelector('#clients');
-menu.addEventListener('change', () => {
-  setDatabaseClient(menu.value)
-});
+  const input = document.querySelector('#sql');
+  const submit = document.querySelector('#submit');
+  const output = document.querySelector('#output');
+  const menu = document.querySelector('#clients');
+  menu.addEventListener('change', () => setDatabaseClient(menu.value));
 
-const { coordinator, table } = vgplot;
-const input = document.querySelector('#sql');
-const submit = document.querySelector('#submit');
-const output = document.querySelector('#result');
-const tableName = 'query_result';
+  const tableName = 'query_result';
 
-submit.addEventListener('click', async () => {
-  await coordinator().exec(
-    `DROP TABLE IF EXISTS ${tableName}; CREATE TABLE ${tableName} AS ${input.value}`
-  );
-  coordinator.clear({ catalog: true });
-  result.replaceChildren(table({ table: tableName, height: 500 }));
-});
+  submit.addEventListener('click', async () => {
+    await coordinator().exec(
+      `DROP TABLE IF EXISTS ${tableName};
+       CREATE TEMP TABLE ${tableName} AS ${input.value}`
+    );
+    coordinator().clear({ catalog: true });
+    output.replaceChildren(table({ from: tableName, height: 500 }));
+  });
 </script>
   </body>
 </html>

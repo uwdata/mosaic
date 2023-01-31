@@ -1,0 +1,20 @@
+{
+  "root": true,
+  "extends": ["eslint:recommended"],
+  "parserOptions": {
+    "ecmaVersion": 2022,
+    "sourceType": "module"
+  },
+  "env": {
+    "browser": true,
+    "mocha": true,
+    "node": true,
+    "es6": true
+  },
+  "rules": {
+    "no-unexpected-multiline": "off"
+  },
+  "globals": {
+    "globalThis": false
+  }
+}

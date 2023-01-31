@@ -1,14 +1,11 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Examples</title>
-  <script src="../../dist/vgplot.js"></script>
+  <title>Example Specs</title>
   <link href="../styles.css" rel="stylesheet">
 </head>
 <body>
   <header style="margin-bottom: 1em;">
-    <strong style="margin-right: 0.5em;">Examples</strong>
-
     <span style="margin-right: 0.5em;">
       Spec:
       <select id="examples">
@@ -37,30 +34,21 @@
   </header>
   <div id="view"></div>
 <script type="module">
-  import yaml from 'https://cdn.jsdelivr.net/npm/yaml@2.2.1/+esm';
-  import { setDatabaseClient } from '../database-client.js';
-  const {
-    coordinator, socketClient, restClient, wasmClient,
-    parseJSON, namedPlots
-  } = vgplot;
+  import yaml from '../../node_modules/yaml/browser/index.js';
+  import { parseJSON, reset, setDatabaseClient } from '../setup.js';
+
   const view = document.querySelector('#view');
-
   const clientMenu = document.querySelector('#clients');
-  clientMenu.addEventListener('change', () => {
-    setDatabaseClient(clientMenu.value)
-  });
-  await setDatabaseClient(clientMenu.value);
-
   const exampleMenu = document.querySelector('#examples');
-  exampleMenu.addEventListener('change', () => {
-    load(exampleMenu.value)
-  });
+  clientMenu.addEventListener('change', () => setDatabaseClient(clientMenu.value));
+  exampleMenu.addEventListener('change', () => load(exampleMenu.value));
+
+  await setDatabaseClient(clientMenu.value);
   load(exampleMenu.value);
 
   async function load(name) {
-    view.innerHTML = '';
-    coordinator().clear();
-    namedPlots.clear();
+    view.replaceChildren();
+    reset();
     if (name === 'none' && location.search) {
       // get example name from query string
       name = location.search.slice(1);

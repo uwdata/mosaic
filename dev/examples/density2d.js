@@ -1,9 +1,11 @@
+import * as vg from '../setup.js';
+
 export default function(el) {
   const {
     Signal, slider, vconcat, hconcat, plot, from,
     contour, heatmap, scaleColor, schemeColor,
     axisX, axisY, marginLeft, marginRight, width, height,
-  } = vgplot;
+  } = vg;
 
   const bandwidth = new Signal(20);
   const thresholds = new Signal(10);

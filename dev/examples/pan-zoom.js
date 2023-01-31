@@ -1,6 +1,6 @@
-export default function(el = document.body) {
-  const vg = vgplot;
+import * as vg from '../setup.js';
 
+export default function(el = document.body) {
   const table = 'penguins';
   const w = 'body_mass';
   const x = 'bill_length';

@@ -1,8 +1,10 @@
+import * as vg from '../setup.js';
+
 export default function(el) {
   const {
     Selection, Fixed, plot, from, barX, tickX, frame, avg, quantile,
     intervalX, domainXY, domainFX, domainColor, marginLeft
-  } = vgplot;
+  } = vg;
 
   const data = 'athletes';
   const brush = Selection.intersect();
