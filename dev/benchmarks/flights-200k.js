@@ -1,4 +1,6 @@
-import { mplot, watchRender, startInit, brushes1d, run } from './benchmark-utils.js';
+import {
+  mplot, watchRender, startInit, growInterval1D, run
+} from './benchmark-utils.js';
 import {
   namedPlots, vconcat, from, name, bin, count, rectY,
   width, height, domainX, intervalX, Selection, Fixed
@@ -8,7 +10,7 @@ export default function(el) {
   watchRender(3, () => {
     const tasks = ['delay', 'time', 'distance']
       .map(x => namedPlots.get(x))
-      .flatMap(plot => brushes1d(plot.selections[0], 2));
+      .flatMap(plot => growInterval1D(plot.selections[0], 2));
     run(tasks);
   });
   startInit();

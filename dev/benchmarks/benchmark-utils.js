@@ -79,12 +79,32 @@ export function measureUpdate(props = {}) {
   results.push({ type: 'update', time: p.duration, ...props });
 }
 
-export function brushes1d(interval, renderCount) {
-  const updater = (range, props) => () => new Promise(resolve => {
+function updateInterval(interval, renderCount) {
+  return (range, props) => () => new Promise(resolve => {
     watchRender(renderCount, () => { resolve(measureUpdate(props)); });
     startUpdate();
     interval.publish(range);
   });
+}
+
+export function growInterval1D(interval, renderCount) {
+  const updater = updateInterval(interval, renderCount);
+  const tasks = [];
+  const { range } = interval.scale;
+  const [lo, hi] = range;
+  const extent = Math.floor(hi - lo);
+  for (let index = 0; index < extent; ++index) {
+    tasks.push(updater([lo, lo + index], { index }));
+  }
+  for (let index = 0; index < extent; ++index) {
+    tasks.push(updater([lo, hi - index], { index: extent - index }));
+  }
+  tasks.push(updater(null, { index: -1 })); // clear
+  return tasks;
+}
+
+export function slideInterval1D(interval, renderCount) {
+  const updater = updateInterval(interval, renderCount);
   const tasks = [];
   const { range } = interval.scale;
   const [lo, hi] = range;
