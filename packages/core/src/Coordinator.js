@@ -18,8 +18,18 @@ export class Coordinator {
   constructor(db = socketClient()) {
     this.cache = new QueryCache();
     this.catalog = new Catalog(this);
+    this.indexes = true;
     this.databaseClient(db);
     this.clear();
+  }
+
+  configure({ cache = true, indexes = true }) {
+    this.cache = cache ? new QueryCache() : {
+      get: () => undefined,
+      set: (key, result) => result,
+      clear: () => {}
+    };
+    this.indexes = indexes;
   }
 
   clear({ clients = true, cache = true, catalog = false } = {}) {
@@ -77,7 +87,7 @@ export class Coordinator {
   }
 
   async connect(client) {
-    const { catalog, clients, filterGroups } = this;
+    const { catalog, clients, filterGroups, indexes } = this;
 
     if (clients.has(client)) {
       throw new Error('Client already connected.');
@@ -93,10 +103,12 @@ export class Coordinator {
     // connect filters
     const filter = client.filterBy;
     if (filter) {
-      if (!filterGroups.has(filter)) {
-        filterGroups.set(filter, new FilterGroup(this, filter));
+      if (filterGroups.has(filter)) {
+        filterGroups.get(filter).add(client);
+      } else {
+        const group = new FilterGroup(this, filter, indexes);
+        filterGroups.set(filter, group.add(client));
       }
-      filterGroups.get(filter).add(client);
     }
 
     // query handler
