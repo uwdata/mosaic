@@ -2,11 +2,11 @@ import { DataTileIndexer } from './DataTileIndexer.js';
 import { throttle } from './util/throttle.js';
 
 export class FilterGroup {
-  constructor(mc, selection, clients = []) {
+  constructor(mc, selection, index = true) {
     this.mc = mc;
     this.selection = selection;
-    this.clients = new Set(clients);
-    this.indexer = new DataTileIndexer(mc, selection);
+    this.clients = new Set();
+    this.indexer = index ? new DataTileIndexer(mc, selection) : null;
 
     const { value, activate } = this.handlers = {
       value: throttle(() => this.update()),
