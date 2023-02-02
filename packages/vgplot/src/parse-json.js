@@ -1,4 +1,4 @@
-import { Signal, Selection, coordinator } from '@mosaic/core';
+import { Signal, Selection, coordinator, sqlFrom } from '@mosaic/core';
 import { Query, avg, count, expr, max, median, min, mode, quantile, sum } from '@mosaic/sql';
 import { bin, dateMonth, dateMonthDay, dateDay } from './transforms/index.js'
 
@@ -31,9 +31,10 @@ export const DefaultSpecParsers = new Map([
 ]);
 
 export const DefaultFormats = new Map([
-  ['table', parseTable],
-  ['parquet', parseParquet],
-  ['csv', parseCSV]
+  ['table', parseTableData],
+  ['parquet', parseParquetData],
+  ['csv', parseCSVData],
+  ['json', parseJSONData]
 ]);
 
 export const DefaultTransforms = new Map([
@@ -130,10 +131,12 @@ export class JSONParseContext {
     const { data = {}, defaults = {}, params, ...spec } = input;
 
     // parse data definitions
-    const queries = Object.keys(data)
-      .map(name => parseData(name, data[name], this))
-      .map(q => q ? coordinator().exec(q) : null);
-    await Promise.allSettled(queries);
+    await Promise.allSettled(
+      Object.keys(data).map(async name => {
+        const q = await parseData(name, data[name], this);
+        return q ? coordinator().exec(q) : null;
+      })
+    );
 
     // parse default attributes
     this.defaults = Object.keys(defaults)
@@ -163,6 +166,7 @@ export class JSONParseContext {
 }
 
 function parseData(name, spec, ctx) {
+  if (isArray(spec)) spec = { format: 'json', data: spec };
   if (isString(spec)) spec = { format: 'table', query: spec };
   const format = inferFormat(spec);
   const parse = ctx.formats.get(format);
@@ -184,13 +188,13 @@ function fileExtension(file) {
   return idx > 0 ? file.slice(idx + 1) : null;
 }
 
-function parseTable(name, spec, ctx) {
+function parseTableData(name, spec, ctx) {
   if (spec.query) {
     return ctx.create(name, spec.query);
   }
 }
 
-function parseParquet(name, spec, ctx) {
+function parseParquetData(name, spec, ctx) {
   const { file, select = '*' } = spec;
   return ctx.createFrom(
     name,
@@ -199,7 +203,7 @@ function parseParquet(name, spec, ctx) {
   );
 }
 
-function parseCSV(name, spec, ctx) {
+function parseCSVData(name, spec, ctx) {
   // eslint-disable-next-line no-unused-vars
   const { file, format, select = '*', ...options } = spec;
   const opt = Object.entries({ sample_size: -1, ...options })
@@ -216,6 +220,13 @@ function parseCSV(name, spec, ctx) {
     expr(`read_csv_auto('${file}', ${opt})`),
     select
   );
+}
+
+async function parseJSONData(name, spec, ctx) {
+  // eslint-disable-next-line no-unused-vars
+  const { data, file, select = '*' } = spec;
+  const json = data || await fetch(file).then(r => r.json());
+  return ctx.createFrom(name, expr(sqlFrom(json)), select);
 }
 
 function parseParam(param, ctx) {
