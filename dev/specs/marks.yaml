@@ -1,12 +1,14 @@
 data:
-  dd: (SELECT 'A' as u, 0 as i, 2 as v) UNION ALL
-      (SELECT 'B' as u, 1 as i, 8 as v) UNION ALL
-      (SELECT 'C' as u, 2 as i, 3 as v) UNION ALL
-      (SELECT 'D' as u, 3 as i, 7 as v) UNION ALL
-      (SELECT 'E' as u, 4 as i, 5 as v) UNION ALL
-      (SELECT 'F' as u, 5 as i, 4 as v) UNION ALL
-      (SELECT 'G' as u, 6 as i, 6 as v) UNION ALL
-      (SELECT 'H' as u, 7 as i, 1 as v)
+  dd: [
+    { i: 0, u: A, v: 2 },
+    { i: 1, u: B, v: 8 },
+    { i: 2, u: C, v: 3 },
+    { i: 3, u: D, v: 7 },
+    { i: 4, u: E, v: 5 },
+    { i: 5, u: F, v: 4 },
+    { i: 6, u: G, v: 6 },
+    { i: 7, u: H, v: 1 }
+  ]
 defaults:
   axisX: null
   axisY: null
