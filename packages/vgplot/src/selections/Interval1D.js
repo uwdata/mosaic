@@ -2,13 +2,15 @@ import { brushX, brushY, select, min, max } from 'd3';
 import { isBetween } from '@mosaic/sql';
 import { closeTo } from './util/close-to.js';
 import { patchScreenCTM } from './util/patchScreenCTM.js';
+import { sanitizeStyles } from './util/sanitize-styles.js';
 
 export class Interval1DSelection {
   constructor(mark, {
     channel,
     selection,
     field,
-    peers = true
+    peers = true,
+    brush: style
   }) {
     this.mark = mark;
     this.channel = channel;
@@ -16,6 +18,7 @@ export class Interval1DSelection {
     this.peers = peers;
     this.field = field || mark.channelField(channel, channel+'1', channel+'2');
     this.field = this.field?.column || this.field;
+    this.style = style && sanitizeStyles(style);
     this.brush = channel === 'y' ? brushY() : brushX();
     this.brush.on('brush end', ({ selection }) => this.publish(selection));
   }
@@ -43,7 +46,7 @@ export class Interval1DSelection {
   }
 
   init(svg) {
-    const { brush, channel } = this;
+    const { brush, channel, style } = this;
     this.scale = svg.scale(channel);
 
     const rx = svg.scale('x').range;
@@ -58,6 +61,13 @@ export class Interval1DSelection {
       .each(patchScreenCTM)
       .call(brush)
       .call(brush.move, this.value?.map(this.scale.apply));
+
+    if (style) {
+      const brushes = this.g.selectAll('rect.selection');
+      for (const name in style) {
+        brushes.attr(name, style[name]);
+      }
+    }
 
     svg.addEventListener('mouseenter', () => {
       this.selection.activate(this.clause(this.value || [0, 1]));

@@ -1,5 +1,6 @@
 import { coordinator, throttle } from '@mosaic/core';
 import { and } from '@mosaic/sql';
+import { sanitizeStyles } from './util/sanitize-styles.js';
 
 export class Highlight {
   constructor(mark, {
@@ -8,7 +9,7 @@ export class Highlight {
   }) {
     this.mark = mark;
     this.selection = selection;
-    const c = Object.entries(channels);
+    const c = Object.entries(sanitizeStyles(channels));
     this.channels = c.length ? c : [['opacity', 0.2]];
     this.selection.addEventListener('value', throttle(() => this.update()));
   }

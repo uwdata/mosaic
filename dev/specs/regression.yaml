@@ -13,5 +13,6 @@ plot:
   stroke: sex
 - select: intervalXY
   as: $query
+  brush: { fillOpacity: 0, stroke: black }
 domainXY: Fixed
 domainColor: Fixed

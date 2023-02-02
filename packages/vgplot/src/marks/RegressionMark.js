@@ -83,7 +83,7 @@ export class RegressionMark extends Mark {
     return [
       ...(ci ? [{ type: 'areaY', data: areaData, options: aopt }] : []),
       { type: 'line', data: lineData, options: lopt }
-    ]
+    ];
   }
 }
 

@@ -2,6 +2,7 @@ import { brush, select, min, max } from 'd3';
 import { and, isBetween } from '@mosaic/sql';
 import { closeTo } from './util/close-to.js';
 import { patchScreenCTM } from './util/patchScreenCTM.js';
+import { sanitizeStyles } from './util/sanitize-styles.js';
 
 const asc = (a, b) => a - b;
 
@@ -10,13 +11,15 @@ export class Interval2DSelection {
     selection,
     xfield,
     yfield,
-    peers = true
+    peers = true,
+    brush: style
   }) {
     this.mark = mark;
     this.selection = selection;
     this.peers = peers;
     this.xfield = xfield || mark.channelField('x', 'x1', 'x2');
     this.yfield = yfield || mark.channelField('y', 'y1', 'y2');
+    this.style = style && sanitizeStyles(style);
     this.brush = brush();
     this.brush.on('brush end', ({ selection }) => this.publish(selection));
   }
@@ -54,7 +57,7 @@ export class Interval2DSelection {
   }
 
   init(svg) {
-    const { brush } = this;
+    const { brush, style } = this;
     const xscale = this.xscale = svg.scale('x');
     const yscale = this.yscale = svg.scale('y');
     const rx = xscale.range;
@@ -68,6 +71,13 @@ export class Interval2DSelection {
       .attr('class', `interval-xy`)
       .each(patchScreenCTM)
       .call(brush);
+
+    if (style) {
+      const brushes = this.g.selectAll('rect.selection');
+      for (const name in style) {
+        brushes.attr(name, style[name]);
+      }
+    }
 
     if (this.value) {
       const [x1, x2] = this.value[0].map(xscale.apply).sort(asc);
