@@ -52,6 +52,10 @@ export const dotY = (...args) => mark('dotY', ...args);
 export const circle = (...args) => mark('circle', ...args);
 export const hexagon = (...args) => mark('hexagon', ...args);
 
+export const text = (...args) => mark('text', ...args);
+export const textX = (...args) => mark('textX', ...args);
+export const textY = (...args) => mark('textY', ...args);
+
 export const ruleX = (...args) => mark('ruleX', ...args);
 export const ruleY = (...args) => mark('ruleY', ...args);
 
