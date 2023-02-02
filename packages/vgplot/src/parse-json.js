@@ -21,6 +21,7 @@ export const DefaultParamParsers = new Map([
 
 export const DefaultSpecParsers = new Map([
   ['plot', { type: isArray, parse: parsePlot }],
+  ['mark', { type: isString, parse: parseNakedMark }],
   ['legend', { type: isString, parse: parseLegend }],
   ['hconcat', { type: isArray, parse: parseHConcat }],
   ['vconcat', { type: isArray, parse: parseVConcat }],
@@ -276,6 +277,10 @@ function parsePlot(spec, ctx) {
   );
   const entries = plot.map(e => parseEntry(e, ctx));
   return plots.plot(attrs, entries);
+}
+
+function parseNakedMark(spec, ctx) {
+  return parsePlot({ plot: [spec] }, ctx);
 }
 
 function parseLegend(spec, ctx) {
