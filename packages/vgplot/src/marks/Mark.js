@@ -2,10 +2,24 @@ import { MosaicClient, isSignal } from '@mosaic/core';
 import { Query, column } from '@mosaic/sql';
 import { isColor } from './util/is-color.js';
 
-const nonChannels = new Set(['order', 'curve', 'tension', 'marker']);
+const constantOptions = new Set([
+  'order',
+  'curve',
+  'tension',
+  'marker',
+  'textAnchor',
+  'lineAnchor',
+  'lineHeight',
+  'monospace',
+  'fontFamily',
+  'fontStyle',
+  'fontVariant',
+  'fontWeight',
+  'frameAnchor'
+]);
 
 const isColorChannel = channel => channel === 'stroke' || channel === 'fill';
-const isConstantChannel = channel => nonChannels.has(channel);
+const isConstantOption = channel => constantOptions.has(channel);
 
 export class Mark extends MosaicClient {
   constructor(type, source, encodings) {
@@ -27,8 +41,8 @@ export class Mark extends MosaicClient {
           process(key, enc[key]);
         }
       } else if (type === 'string') {
-        if (isConstantChannel(channel) || isColorChannel(channel) && isColor(entry)) {
-          // interpret color names as constants, not fields
+        if (isConstantOption(channel) || isColorChannel(channel) && isColor(entry)) {
+          // interpret color names and other constants as values, not fields
           channels.push({ channel, value: entry });
         } else {
           channels.push({ channel, field: column(entry) });
@@ -62,7 +76,7 @@ export class Mark extends MosaicClient {
 
   fields() {
     const { source, channels } = this;
-    if (source == null) return [];
+    if (source == null || Array.isArray(source)) return [];
     const { table } = source;
     const columns = new Set;
     for (const { field } of channels) {
