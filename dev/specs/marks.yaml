@@ -13,92 +13,32 @@ defaults:
   margins: { left: 5, top: 5, right: 5, bottom: 5 }
   width: 160
   height: 100
+  domainY: [0, 9]
 vconcat:
 - hconcat:
-  - plot:
-    - mark: barY
-      data: { from: dd }
-      x: u
-      y: v
-      fill: steelblue
-  - plot:
-    - mark: lineY
-      data: { from: dd }
-      x: u
-      y: v
-      stroke: steelblue
-      curve: monotone-x
-      marker: circle
-  - plot:
-    - mark: text
-      data: { from: dd }
-      x: u
-      y: v
-      text: u
-      fill: steelblue
-  - plot:
-    - mark: tickY
-      data: { from: dd }
-      x: u
-      y: v
-      stroke: steelblue
-  - plot:
-    - mark: areaY
-      data: { from: dd }
-      x: u
-      y: v
-      fill: steelblue
+  - { mark: barY, data: { from: dd }, x: u, y: v, fill: steelblue }
+  - { mark: lineY, data: { from: dd }, x: u, y: v, stroke: steelblue, curve: monotone-x, marker: circle }
+  - { mark: text, data: { from: dd }, x: u, y: v, text: u, fill: steelblue }
+  - { mark: tickY, data: { from: dd }, x: u, y: v, stroke: steelblue }
+  - { mark: areaY, data: { from: dd }, x: u, y: v, fill: steelblue }
 - hconcat:
   - plot:
-    - mark: dot
-      data: { from: dd }
-      x: i
-      y: v
-      fill: black
-      r: 1.5
-    - mark: regressionY
-      data: { from: dd }
-      x: i
-      y: v
-      stroke: steelblue
+    - { mark: dot, data: { from: dd }, x: i, y: v, fill: black, r: 1.5 }
+    - { mark: regressionY, data: { from: dd }, x: i, y: v, stroke: steelblue }
     domainX: [-0.5, 7.5]
   - plot:
-    - mark: hexgrid
-    - mark: hexbin
-      data: { from: dd }
-      x: i
-      y: v
-      fill: { count: }
+    - { mark: hexgrid }
+    - { mark: hexbin, data: { from: dd }, x: i, y: v, fill: { count: } }
     schemeColor: blues
     domainX: [-1, 8]
-    domainY: [0, 9]
   - plot:
-    - mark: contour
-      data: { from: dd }
-      x: i
-      y: v
-      stroke: steelblue
-      bandwidth: 15
+    - { mark: contour, data: { from: dd }, x: i, y: v, stroke: steelblue, bandwidth: 15 }
     domainX: [-1, 8]
-    domainY: [0, 9]
   - plot:
-    - mark: heatmap
-      data: { from: dd }
-      x: i
-      y: v
-      fill: density
-      bandwidth: 14
+    - { mark: heatmap, data: { from: dd }, x: i, y: v, fill: density, bandwidth: 15 }
     schemeColor: blues
     domainX: [-1, 8]
-    domainY: [0, 9]
   - plot:
-    - mark: denseLine
-      data: { from: dd }
-      x: i
-      y: v
-      fill: density
-      bandwidth: 2
-      binScale: 1
+    - { mark: denseLine, data: { from: dd }, x: i, y: v, fill: density, bandwidth: 2, binScale: 1 }
     schemeColor: blues
     domainX: [-1, 8]
-    domainY: [0, 9]
