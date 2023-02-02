@@ -23,20 +23,26 @@ export class HexbinMark extends Mark {
       return null;
     }
 
-    const width = plot.innerWidth();
-    const height = plot.innerHeight();
+    // get x / y extents, may update plot domainX / domainY
     const [x1, x2] = extentX(this, filter);
     const [y1, y2] = extentY(this, filter);
-    const ox = 0.5;
-    const oy = 0;
+
+    // Adjust screen-space coordinates by top/left
+    // margins as this is what Observable Plot does.
+    // TODO use zero margins when faceted?
+    const ox = 0.5 - plot.getAttribute('marginLeft');
+    const oy = 0 - plot.getAttribute('marginTop');
     const dx = binWidth;
     const dy = dx * (1.5 / Math.sqrt(3));
-    const xr = `${width / (x2 - x1)}::DOUBLE`;
-    const yr = `${height / (y2 - y1)}::DOUBLE`;
+    const xr = `${plot.innerWidth() / (x2 - x1)}::DOUBLE`;
+    const yr = `${plot.innerHeight() / (y2 - y1)}::DOUBLE`;
 
+    // Top-level query; we add a hex binning subquery below
+    // Maps binned screen space coordinates back to data
+    // values to ensure we get correct data-driven scales
     const q = Query
       .select({
-        x: expr(`${x1}::DOUBLE + ((x - 0.5 + 0.5 * (y & 1)) * ${dx} + ${ox})::DOUBLE / ${xr}`),
+        x: expr(`${x1}::DOUBLE + ((x + 0.5 * (y & 1)) * ${dx} + ${ox})::DOUBLE / ${xr}`),
         y: expr(`${y2}::DOUBLE - (y * ${dy} + ${oy})::DOUBLE / ${yr}`)
       })
       .groupby('x', 'y');
@@ -58,9 +64,11 @@ export class HexbinMark extends Mark {
       }
     }
 
+    // Map x/y channels to screen space
     const xx = `${xr} * (${x} - ${x1}::DOUBLE)`;
     const yy = `${yr} * (${y2}::DOUBLE - ${y})`;
 
+    // Perform hex binning of x/y coordinates
     // TODO add groupby dims
     const hex = Query
       .select({
