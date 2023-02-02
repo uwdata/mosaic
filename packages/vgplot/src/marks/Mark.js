@@ -2,8 +2,10 @@ import { MosaicClient, isSignal } from '@mosaic/core';
 import { Query, column } from '@mosaic/sql';
 import { isColor } from './util/is-color.js';
 
+const nonChannels = new Set(['order', 'curve', 'tension', 'marker']);
+
 const isColorChannel = channel => channel === 'stroke' || channel === 'fill';
-const isConstantChannel = channel => channel === 'order';
+const isConstantChannel = channel => nonChannels.has(channel);
 
 export class Mark extends MosaicClient {
   constructor(type, source, encodings) {
