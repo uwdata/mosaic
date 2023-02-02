@@ -8,6 +8,8 @@
   "type": "module",
   "main": "src/index.js",
   "module": "src/index.js",
+  "jsdelivr": "dist/mosaic-sql.min.js",
+  "unpkg": "dist/mosaic-sql.min.js",
   "repository": {
     "type": "git",
     "url": "https://github.com/uwdata/mosaic.git"
