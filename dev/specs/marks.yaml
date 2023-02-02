@@ -1,0 +1,104 @@
+data:
+  dd: (SELECT 'A' as u, 0 as i, 2 as v) UNION ALL
+      (SELECT 'B' as u, 1 as i, 8 as v) UNION ALL
+      (SELECT 'C' as u, 2 as i, 3 as v) UNION ALL
+      (SELECT 'D' as u, 3 as i, 7 as v) UNION ALL
+      (SELECT 'E' as u, 4 as i, 5 as v) UNION ALL
+      (SELECT 'F' as u, 5 as i, 4 as v) UNION ALL
+      (SELECT 'G' as u, 6 as i, 6 as v) UNION ALL
+      (SELECT 'H' as u, 7 as i, 1 as v)
+defaults:
+  axisX: null
+  axisY: null
+  margins: { left: 5, top: 5, right: 5, bottom: 5 }
+  width: 160
+  height: 100
+vconcat:
+- hconcat:
+  - plot:
+    - mark: barY
+      data: { from: dd }
+      x: u
+      y: v
+      fill: steelblue
+  - plot:
+    - mark: lineY
+      data: { from: dd }
+      x: u
+      y: v
+      stroke: steelblue
+      curve: monotone-x
+      marker: circle
+  - plot:
+    - mark: text
+      data: { from: dd }
+      x: u
+      y: v
+      text: u
+      fill: steelblue
+  - plot:
+    - mark: tickY
+      data: { from: dd }
+      x: u
+      y: v
+      stroke: steelblue
+  - plot:
+    - mark: areaY
+      data: { from: dd }
+      x: u
+      y: v
+      fill: steelblue
+- hconcat:
+  - plot:
+    - mark: dot
+      data: { from: dd }
+      x: i
+      y: v
+      fill: black
+      r: 1.5
+    - mark: regressionY
+      data: { from: dd }
+      x: i
+      y: v
+      stroke: steelblue
+    domainX: [-0.5, 7.5]
+  - plot:
+    - mark: hexgrid
+    - mark: hexbin
+      data: { from: dd }
+      x: i
+      y: v
+      fill: { count: }
+    schemeColor: blues
+    domainX: [-1, 8]
+    domainY: [0, 9]
+  - plot:
+    - mark: contour
+      data: { from: dd }
+      x: i
+      y: v
+      stroke: steelblue
+      bandwidth: 15
+    domainX: [-1, 8]
+    domainY: [0, 9]
+  - plot:
+    - mark: heatmap
+      data: { from: dd }
+      x: i
+      y: v
+      fill: density
+      bandwidth: 14
+    schemeColor: blues
+    domainX: [-1, 8]
+    domainY: [0, 9]
+  - plot:
+    - mark: denseLine
+      data: { from: dd }
+      x: i
+      y: v
+      fill: density
+      bandwidth: 2
+      binScale: 1
+    schemeColor: blues
+    domainX: [-1, 8]
+    domainY: [0, 9]
