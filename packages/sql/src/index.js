@@ -11,6 +11,11 @@ export {
 } from './ref.js';
 
 export {
+  toSQL,
+  literalToSQL
+} from './to-sql.js';
+
+export {
   literal
 } from './literal.js';
 
