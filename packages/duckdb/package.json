@@ -2,7 +2,13 @@
   "name": "@mosaic/duckdb",
   "version": "0.0.1",
   "description": "A Node-based DuckDB data server.",
-  "keywords": ["duckdb", "server", "node", "arrow", "mosaic"],
+  "keywords": [
+    "duckdb",
+    "server",
+    "node",
+    "arrow",
+    "mosaic"
+  ],
   "license": "BSD-3-Clause",
   "author": "Jeffrey Heer (http://idl.cs.washington.edu)",
   "type": "module",

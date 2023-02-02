@@ -2,7 +2,13 @@
   "name": "@mosaic/core",
   "version": "0.0.1",
   "description": "Scalable and extensible linked data views.",
-  "keywords": ["mosaic", "query", "duckdb", "data", "interface"],
+  "keywords": [
+    "mosaic",
+    "query",
+    "duckdb",
+    "data",
+    "interface"
+  ],
   "license": "BSD-3-Clause",
   "author": "Jeffrey Heer (http://idl.cs.washington.edu)",
   "type": "module",

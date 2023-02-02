@@ -2,7 +2,10 @@
   "name": "@mosaic/inputs",
   "version": "0.0.1",
   "description": "Mosaic input components.",
-  "keywords": ["inputs", "mosaic"],
+  "keywords": [
+    "inputs",
+    "mosaic"
+  ],
   "license": "BSD-3-Clause",
   "author": "Jeffrey Heer (http://idl.cs.washington.edu)",
   "type": "module",
