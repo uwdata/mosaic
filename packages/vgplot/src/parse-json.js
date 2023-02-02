@@ -325,7 +325,8 @@ function parseMark(spec, ctx) {
 }
 
 function parseMarkData(spec, ctx) {
-  if (!spec) return null;
+  if (!spec) return null; // no data, likely a decoration mark
+  if (isArray(spec)) return spec; // data provided directly
   const { from: table, ...options } = spec;
   for (const key in options) {
     options[key] = ctx.maybeSelection(options[key]);
