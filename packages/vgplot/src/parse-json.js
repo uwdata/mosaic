@@ -126,13 +126,17 @@ export class JSONParseContext {
   }
 
   async parse(input) {
-    const { data = {}, params, ...spec } = input;
+    const { data = {}, defaults = {}, params, ...spec } = input;
 
     // parse data definitions
     const queries = Object.keys(data)
       .map(name => parseData(name, data[name], this))
       .map(q => q ? coordinator().exec(q) : null);
     await Promise.allSettled(queries);
+
+    // parse default attributes
+    this.defaults = Object.keys(defaults)
+      .map(key => parseAttribute(defaults, key, this));
 
     // parse param (signal/selection) definitions
     for (const name in params) {
@@ -142,6 +146,7 @@ export class JSONParseContext {
     const result = parseSpec(spec, this);
     this.postQueue.forEach(fn => fn());
     this.postQueue = [];
+    this.defaults = {};
 
     return result;
   }
@@ -266,8 +271,9 @@ function parseHConcat(spec, ctx) {
 
 function parsePlot(spec, ctx) {
   const { plot, ...attributes } = spec;
-  const attrs = Object.keys(attributes)
-    .map(key => parseAttribute(spec, key, ctx));
+  const attrs = ctx.defaults.concat(
+    Object.keys(attributes).map(key => parseAttribute(spec, key, ctx))
+  );
   const entries = plot.map(e => parseEntry(e, ctx));
   return plots.plot(attrs, entries);
 }
