@@ -35,14 +35,19 @@ export const area = (...args) => mark('area', ...args);
 export const areaX = (...args) => mark('areaX', ...args);
 export const areaY = (...args) => mark('areaY', ...args);
 
-export const bar = (...args) => mark('bar', ...args);
-export const barX = (...args) => mark('barX', ...args);
-export const barY = (...args) => mark('barY', ...args);
-
 export const line = (...args) => mark('line', ...args);
 export const lineX = (...args) => mark('lineX', ...args);
 export const lineY = (...args) => mark('lineY', ...args);
 
+export const bar = (...args) => mark('bar', ...args);
+export const barX = (...args) => mark('barX', ...args);
+export const barY = (...args) => mark('barY', ...args);
+
+export const cell = (...args) => mark('cell', ...args);
+export const cellX = (...args) => mark('cellX', ...args);
+export const cellY = (...args) => mark('cellY', ...args);
+
+export const rect = (...args) => mark('rect', ...args);
 export const rectX = (...args) => mark('rectX', ...args);
 export const rectY = (...args) => mark('rectY', ...args);
 
