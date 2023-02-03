@@ -1,6 +1,6 @@
 import { select, zoom, ZoomTransform } from 'd3';
-import { Selection } from '@mosaic/core';
-import { isBetween } from '@mosaic/sql';
+import { Selection } from '@uwdata/mosaic-core';
+import { isBetween } from '@uwdata/mosaic-sql';
 
 const asc = (a, b) => a - b;
 

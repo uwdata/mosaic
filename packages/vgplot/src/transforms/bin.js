@@ -1,4 +1,4 @@
-import { Ref, expr } from '@mosaic/sql';
+import { Ref, expr } from '@uwdata/mosaic-sql';
 
 const EXTENT = [
   'rectY-x', 'rectX-y', 'rect-x', 'rect-y'

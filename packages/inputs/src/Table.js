@@ -1,5 +1,5 @@
-import { MosaicClient, Signal } from '@mosaic/core';
-import { Query, column, desc } from '@mosaic/sql';
+import { MosaicClient, Signal } from '@uwdata/mosaic-core';
+import { Query, column, desc } from '@uwdata/mosaic-sql';
 import { formatDate, formatLocaleAuto, formatLocaleNumber } from './util/format.js';
 
 let _id = -1;

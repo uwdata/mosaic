@@ -1,4 +1,4 @@
-import { Query, count, max, min, isNull } from '@mosaic/sql';
+import { Query, count, max, min, isNull } from '@uwdata/mosaic-sql';
 import { jsType } from './util/js-type.js';
 
 const object = () => Object.create(null);

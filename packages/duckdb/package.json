@@ -1,5 +1,5 @@
 {
-  "name": "@mosaic/duckdb",
+  "name": "@uwdata/mosaic-duckdb",
   "version": "0.0.1",
   "description": "A Node-based DuckDB data server.",
   "keywords": [

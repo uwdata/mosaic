@@ -1,4 +1,4 @@
-import { transform } from '@mosaic/sql';
+import { transform } from '@uwdata/mosaic-sql';
 
 export const dateMonth = transform(
   v => `make_date(2012, month(${v}), 1)`,

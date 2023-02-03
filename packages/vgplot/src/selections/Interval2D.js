@@ -1,5 +1,5 @@
 import { brush, select, min, max } from 'd3';
-import { and, isBetween } from '@mosaic/sql';
+import { and, isBetween } from '@uwdata/mosaic-sql';
 import { closeTo } from './util/close-to.js';
 import { patchScreenCTM } from './util/patchScreenCTM.js';
 import { sanitizeStyles } from './util/sanitize-styles.js';

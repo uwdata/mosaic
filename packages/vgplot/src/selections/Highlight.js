@@ -1,5 +1,5 @@
-import { coordinator, throttle } from '@mosaic/core';
-import { and } from '@mosaic/sql';
+import { coordinator, throttle } from '@uwdata/mosaic-core';
+import { and } from '@uwdata/mosaic-sql';
 import { sanitizeStyles } from './util/sanitize-styles.js';
 
 export class Highlight {

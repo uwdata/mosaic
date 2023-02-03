@@ -1,5 +1,5 @@
-import { MosaicClient, isSignal } from '@mosaic/core';
-import { Query, column } from '@mosaic/sql';
+import { MosaicClient, isSignal } from '@uwdata/mosaic-core';
+import { Query, column } from '@uwdata/mosaic-sql';
 import { isColor } from './util/is-color.js';
 
 const constantOptions = new Set([

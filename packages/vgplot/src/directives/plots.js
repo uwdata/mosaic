@@ -1,4 +1,4 @@
-import { coordinator } from '@mosaic/core';
+import { coordinator } from '@uwdata/mosaic-core';
 import { Concat } from '../concat.js';
 import { Plot } from '../plot.js';
 

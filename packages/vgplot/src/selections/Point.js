@@ -1,4 +1,4 @@
-import { and, or, eq, literal } from '@mosaic/sql';
+import { and, or, eq, literal } from '@uwdata/mosaic-sql';
 
 export class PointSelection {
   constructor(mark, {

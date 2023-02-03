@@ -3,7 +3,7 @@ import {
   Query, max, min, isNotNull,
   regrIntercept, regrSlope, regrCount,
   regrR2, regrSYY, regrSXX, regrAvgX
-} from '@mosaic/sql';
+} from '@uwdata/mosaic-sql';
 import { qt } from './util/stats.js';
 import { Mark } from './Mark.js';
 

@@ -1,5 +1,5 @@
 #! /usr/bin/env node
-import { DuckDB, dataServer } from '@mosaic/duckdb';
+import { DuckDB, dataServer } from '@uwdata/mosaic-duckdb';
 
 const db = new DuckDB();
 

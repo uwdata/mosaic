@@ -1,5 +1,5 @@
-import { isSelection, isSignal, MosaicClient } from '@mosaic/core';
-import { Query, column as columnRef, eq, literal } from '@mosaic/sql';
+import { isSelection, isSignal, MosaicClient } from '@uwdata/mosaic-core';
+import { Query, column as columnRef, eq, literal } from '@uwdata/mosaic-sql';
 
 const isObject = v => {
   return v && typeof v === 'object' && !Array.isArray(v);

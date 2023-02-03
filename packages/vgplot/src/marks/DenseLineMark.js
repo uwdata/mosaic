@@ -1,4 +1,4 @@
-import { Query, and, count, sum, expr, isNull, isBetween } from '@mosaic/sql';
+import { Query, and, count, sum, expr, isNull, isBetween } from '@uwdata/mosaic-sql';
 import { extentX, extentY } from './util/extent.js';
 import { HeatmapMark } from './HeatmapMark.js';
 

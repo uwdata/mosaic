@@ -1,5 +1,5 @@
-import { isSelection, isSignal } from '@mosaic/core';
-import { eq, literal } from '@mosaic/sql';
+import { isSelection, isSignal } from '@uwdata/mosaic-core';
+import { eq, literal } from '@uwdata/mosaic-sql';
 
 let _id = 0;
 

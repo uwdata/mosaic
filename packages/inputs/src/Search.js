@@ -1,7 +1,7 @@
-import { isSelection, isSignal, MosaicClient } from '@mosaic/core';
+import { isSelection, isSignal, MosaicClient } from '@uwdata/mosaic-core';
 import {
   Query, column as columnRef, regexp_matches, contains, prefix, suffix, literal
-} from '@mosaic/sql';
+} from '@uwdata/mosaic-sql';
 
 const FUNCTIONS = { contains, prefix, suffix, regexp: regexp_matches };
 let _id = 0;

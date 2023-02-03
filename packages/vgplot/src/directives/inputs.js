@@ -1,5 +1,5 @@
-import { coordinator } from '@mosaic/core';
-import { Menu, Search, Slider, Table } from '@mosaic/inputs';
+import { coordinator } from '@uwdata/mosaic-core';
+import { Menu, Search, Slider, Table } from '@uwdata/mosaic-inputs';
 
 function input(InputClass, options) {
   const input = new InputClass(options);

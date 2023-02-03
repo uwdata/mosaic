@@ -1,5 +1,5 @@
-import { Signal, Selection, coordinator, sqlFrom } from '@mosaic/core';
-import { Query, avg, count, expr, max, median, min, mode, quantile, sum } from '@mosaic/sql';
+import { Signal, Selection, coordinator, sqlFrom } from '@uwdata/mosaic-core';
+import { Query, avg, count, expr, max, median, min, mode, quantile, sum } from '@uwdata/mosaic-sql';
 import { bin, dateMonth, dateMonthDay, dateDay } from './transforms/index.js'
 
 import { from } from './directives/data.js';

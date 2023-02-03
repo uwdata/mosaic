@@ -7,7 +7,7 @@ export {
   restClient,
   socketClient,
   wasmClient
-} from '@mosaic/core';
+} from '@uwdata/mosaic-core';
 
 export {
   Query,
@@ -20,7 +20,7 @@ export {
   mode,
   quantile,
   sum
-} from '@mosaic/sql';
+} from '@uwdata/mosaic-sql';
 
 export {
   bin,

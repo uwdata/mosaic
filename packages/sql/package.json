@@ -1,5 +1,5 @@
 {
-  "name": "@mosaic/sql",
+  "name": "@uwdata/mosaic-sql",
   "version": "0.0.1",
   "description": "SQL query construction and analysis.",
   "keywords": [

@@ -1,4 +1,4 @@
-import { isSignal } from '@mosaic/core';
+import { isSignal } from '@uwdata/mosaic-core';
 import { namedPlots } from './named-plots.js';
 
 export function name(name) {

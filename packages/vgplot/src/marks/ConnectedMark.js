@@ -1,4 +1,4 @@
-import { Query, argmax, argmin, expr, max, min, epoch_ms } from '@mosaic/sql';
+import { Query, argmax, argmin, expr, max, min, epoch_ms } from '@uwdata/mosaic-sql';
 import { filteredExtent } from './util/extent.js';
 import { Mark } from './Mark.js';
 

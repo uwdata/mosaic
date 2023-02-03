@@ -1,4 +1,4 @@
-import { or } from '@mosaic/sql';
+import { or } from '@uwdata/mosaic-sql';
 import { Signal } from './Signal.js';
 import { skipClient } from './util/skip-client.js';
 

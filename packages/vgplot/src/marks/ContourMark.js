@@ -1,5 +1,5 @@
 import { contours, max } from 'd3';
-import { isSignal } from '@mosaic/core';
+import { isSignal } from '@uwdata/mosaic-core';
 import { Density2DMark } from './Density2DMark.js';
 
 export class ContourMark extends Density2DMark {

@@ -1,4 +1,4 @@
-import { Query, expr, and, isBetween, asColumn, epoch_ms } from '@mosaic/sql';
+import { Query, expr, and, isBetween, asColumn, epoch_ms } from '@uwdata/mosaic-sql';
 import { fnv_hash } from './util/hash.js';
 import { skipClient } from './util/skip-client.js';
 

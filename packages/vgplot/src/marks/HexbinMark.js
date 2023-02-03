@@ -1,4 +1,4 @@
-import { Query, expr, isNotNull } from '@mosaic/sql';
+import { Query, expr, isNotNull } from '@uwdata/mosaic-sql';
 import { Transient } from '../symbols.js';
 import { extentX, extentY } from './util/extent.js';
 import { Mark } from './Mark.js';

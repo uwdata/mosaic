@@ -1,5 +1,5 @@
-import { isSignal, Signal } from '@mosaic/core';
-import { Query, and, gt, sum, expr, isBetween } from '@mosaic/sql';
+import { isSignal, Signal } from '@uwdata/mosaic-core';
+import { Query, and, gt, sum, expr, isBetween } from '@uwdata/mosaic-sql';
 import { Transient } from '../symbols.js';
 import { dericheConfig, dericheConv2d, grid2d } from './util/density.js';
 import { extentX, extentY } from './util/extent.js';
