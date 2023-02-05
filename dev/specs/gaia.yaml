@@ -19,6 +19,8 @@ hconcat:
     - select: intervalXY
       as: $brush
     domainXY: Fixed
+    niceX: false
+    niceY: false
     scaleColor: $scaleType
     schemeColor: plasma
     width: 600
