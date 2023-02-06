@@ -195,23 +195,21 @@ function inferLabel(key, spec, marks, channels = [key]) {
   const scale = spec[key] || {};
   if (scale.axis === null || scale.label !== undefined) return; // nothing to do
 
-  const fields = marks
-    .map(mark => mark.channelField(channels))
-    .map((field, i) => field ? { field, stats: marks[i].stats } : null)
-    .filter(x => x);
-  if (fields.length === 0) return; // no columns found
+  const fields = marks.map(mark => mark.channelField(channels));
+  if (fields.every(x => x == null)) return; // no columns found
 
   // check for consistent columns / labels
   let candCol;
   let candLabel;
   let type;
   for (let i = 0; i < fields.length; ++i) {
-    const { field: { column, label }, stats } = fields[i];
-    if (column === undefined && label === undefined) continue;
-    if (candCol === undefined && candLabel === undefined) {
+    const { column, label } = fields[i] || {};
+    if (column === undefined && label === undefined) {
+      continue;
+    } else if (candCol === undefined && candLabel === undefined) {
       candCol = column;
       candLabel = label;
-      type = stats?.find(s => s.column === column)?.type || 'number';
+      type = getType(marks[i].data, channels) || 'number';
     } else if (candLabel !== label) {
       candLabel = undefined;
     } else if (candCol !== column) {
@@ -223,13 +221,12 @@ function inferLabel(key, spec, marks, channels = [key]) {
 
   // adjust candidate label formatting
   if ((type === 'number' || type === 'date') && (key === 'x' || key === 'y')) {
-    if (type === 'date' && /^(date|time|year)$/i.test(candidate)) return;
     if (scale.percent) candidate = `${candidate} (%)`;
     const order = (key === 'x' ? 1 : -1) * (scale.reverse ? -1 : 1);
     if (key === 'x' || scale.labelAnchor === 'center') {
-      candidate = (key === "x") === order < 0 ? `← ${candidate}` : `${candidate} →`;
+      candidate = (key === 'x') === order < 0 ? `← ${candidate}` : `${candidate} →`;
     } else {
-      candidate = `${order < 0 ? "↑ " : "↓ "}${candidate}`;
+      candidate = `${order < 0 ? '↑ ' : '↓ '}${candidate}`;
     }
   }
 
@@ -238,7 +235,6 @@ function inferLabel(key, spec, marks, channels = [key]) {
 }
 
 function annotatePlot(svg, indices) {
-  // TODO: work with faceted data (aria-label: facet)
   const facets = svg.querySelectorAll('g[aria-label="facet"]');
   if (facets.length) {
     for (const facet of facets) {
@@ -256,6 +252,17 @@ function annotateMarks(svg, indices) {
       (child.getAttribute('aria-label') || '').endsWith('-axis');
     if (!skip) {
       child.setAttribute('data-index', indices[++index]);
+    }
+  }
+}
+
+function getType(data, channels) {
+  for (const row of data) {
+    for (let j = 0; j < channels.length; ++j) {
+      const v = row[channels[j]];
+      if (v != null) {
+        return v instanceof Date ? 'date' : typeof v;
+      }
     }
   }
 }

@@ -67,8 +67,7 @@ export class Table extends MosaicClient {
   }
 
   fields() {
-    const { from, columns } = this;
-    return columns.map(name => column(from, name));
+    return this.columns.map(name => column(this.from, name));
   }
 
   fieldStats(stats) {

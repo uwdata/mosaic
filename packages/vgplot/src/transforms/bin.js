@@ -29,11 +29,12 @@ class BinTransform extends Ref {
   constructor(column, options) {
     super(undefined, column);
     this.options = options;
+    this.stats = ['min', 'max'];
   }
 
   transform(stats) {
     const { column, options } = this;
-    const { min, max } = stats.find(s => s.column === column);
+    const { min, max } = stats[column];
     const b = bins(min, max, options);
     const delta = `(${column} - ${b.min})`;
     const alpha = `${(b.max - b.min) / b.steps}::DOUBLE`;

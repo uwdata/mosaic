@@ -1,5 +1,5 @@
 import { isSelection, isSignal, MosaicClient } from '@uwdata/mosaic-core';
-import { Query, column as columnRef, eq, literal } from '@uwdata/mosaic-sql';
+import { Query, eq, literal } from '@uwdata/mosaic-sql';
 
 const isObject = v => {
   return v && typeof v === 'object' && !Array.isArray(v);
@@ -76,11 +76,6 @@ export class Menu extends MosaicClient {
     } else if (isSignal(selection)) {
       selection.update(value);
     }
-  }
-
-  fields() {
-    const { from, column } = this;
-    return from ? [ columnRef(from, column) ] : null;
   }
 
   query(filter = []) {

@@ -1,5 +1,5 @@
-import { Query, count, max, min, isNull } from '@uwdata/mosaic-sql';
 import { jsType } from './util/js-type.js';
+import { summarize } from './util/summarize.js';
 
 const object = () => Object.create(null);
 
@@ -11,7 +11,6 @@ export class Catalog {
 
   clear() {
     this.tables = object();
-    this.fields = object();
   }
 
   async tableInfo(table) {
@@ -27,57 +26,44 @@ export class Catalog {
 
     return (cache[table] = q.then(result => {
       const columns = object();
-      for (const entry of result) {
-        columns[entry.name] = { ...entry, jstype: jsType(entry.type) };
+      for (const { name, notnull, type, pk } of result) {
+        columns[name] = {
+          table,
+          column: name,
+          sqlType: type,
+          type: jsType(type),
+          notnull,
+          pk
+        };
       }
       return columns;
     }));
   }
 
-  async fieldInfo(table, column) {
-    const info = await this.tableInfo(table);
-    const colInfo = info[column];
+  async fieldInfo({ table, column, stats }) {
+    const tableInfo = await this.tableInfo(table);
+    const colInfo = tableInfo[column];
 
     // column does not exist
     if (colInfo == null) return;
 
-    const cache = this.fields;
-    const key = `${table}.${column}`;
-    if (cache[key]) {
-      return cache[key];
-    }
+    // no need for summary statistics
+    if (!stats?.length) return colInfo;
 
-    const promise = this.mc.query(
-      Query.from(table).select({
-        rows: count(),
-        nulls: count().where(isNull(column)),
-        min: min(column),
-        max: max(column)
-      }),
-      { cache: false }
-    ).then(result => {
-      const [ stats ] = Array.from(result);
-      return { table, column, type: colInfo.jstype, ...stats };
-    });
-
-    return (cache[key] = promise);
+    const result = await this.mc.query(summarize(colInfo, stats));
+    const info = { ...colInfo, ...(Array.from(result)[0]) };
+    return info;
   }
 
   async queryFields(fields) {
     const list = await resolveFields(this, fields);
-    const data = await Promise.all(
-      list.map(f => this.fieldInfo(f.table, f.column))
-    )
+    const data = await Promise.all(list.map(f => this.fieldInfo(f)));
     return data.filter(x => x);
   }
 }
 
 async function resolveFields(catalog, list) {
-  if (list.length === 1 && list[0].column === '*') {
-    const table = list[0].table;
-    const info = await catalog.tableInfo(table);
-    return Object.keys(info).map(column => ({ table, column }));
-  } else {
-    return list;
-  }
+  return list.length === 1 && list[0].column === '*'
+    ? Object.values(await catalog.tableInfo(list[0].table))
+    : list;
 }
