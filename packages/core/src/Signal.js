@@ -13,7 +13,7 @@ export class Signal {
   }
 
   update(value, { force } = {}) {
-    const changed = this._value !== value;
+    const changed = distinct(this._value, value);
     if (changed) this._value = value;
     if (changed || force) this.emit('value', this.value);
     return this;
@@ -37,4 +37,8 @@ export class Signal {
   emit(type, event) {
     this._listeners.get(type)?.forEach(l => l(event));
   }
+}
+
+function distinct(a, b) {
+  return a instanceof Date ? +a !== +b : a !== b;
 }
