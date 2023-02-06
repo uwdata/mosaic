@@ -1,4 +1,4 @@
-import { MosaicClient, isSignal } from '@uwdata/mosaic-core';
+import { MosaicClient } from '@uwdata/mosaic-core';
 import { Query, column } from '@uwdata/mosaic-sql';
 import { isColor } from './util/is-color.js';
 
