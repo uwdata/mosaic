@@ -12,7 +12,7 @@ export default async function(el) {
   // Load data as needed
   const q = Query
     .select('*')
-    .from(expr(`'data/gaia.parquet'`))
+    .from(expr(`'https://uwdata.github.io/mosaic-datasets/data/gaia-first-10.parquet'`))
     .where(expr(`parallax >= -5 AND parallax <= 10`));
   await coordinator().exec(`CREATE TABLE IF NOT EXISTS gaia AS ${q}`);
 
