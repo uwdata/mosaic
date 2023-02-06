@@ -30,7 +30,8 @@ export default async function(el) {
             from(table, { filterBy: brush }),
             { x: 'ra', y: 'dec', fill: 'density', bandwidth, scaleFactor }
           ),
-          intervalXY({ as: brush }), niceX(false), niceY(false),
+          intervalXY({ as: brush }),
+          domainXY(Fixed), niceX(false), niceY(false),
           scaleColor('sqrt'), schemeColor('plasma'),
           width(600), height(400), marginLeft(65)
         ),
