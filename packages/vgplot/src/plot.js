@@ -1,3 +1,4 @@
+import { throttle } from '@uwdata/mosaic-core';
 import { plotRenderer } from './plot-renderer.js';
 
 const DEFAULT_ATTRIBUTES = {
@@ -19,6 +20,7 @@ export class Plot {
     this.element.setAttribute('class', 'plot');
     this.element.value = this;
     this.queue = new Set;
+    this.params = new Map;
   }
 
   margins() {
@@ -76,9 +78,24 @@ export class Plot {
     return this;
   }
 
+  addParams(mark, paramSet) {
+    const { params } = this;
+    for (const param of paramSet) {
+      if (params.has(param)) {
+        params.get(param).push(mark);
+      } else {
+        params.set(param, [mark]);
+        param.addEventListener('value', throttle(() => {
+          return Promise.allSettled(
+            params.get(param).map(mark => mark.requestQuery())
+          );
+        }));
+      }
+    }
+  }
+
   addMark(mark) {
-    mark.plot = this;
-    mark.index = this.marks.length;
+    mark.setPlot(this, this.marks.length);
     this.marks.push(mark);
     this.markset = null;
     return this;

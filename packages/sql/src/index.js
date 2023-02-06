@@ -4,11 +4,19 @@ export {
   asRelation,
   all,
   column,
+  relation
+} from './ref.js';
+
+export {
+  transform,
   desc,
   expr,
-  relation,
-  transform
-} from './ref.js';
+  exprParams
+} from './expression.js';
+
+export {
+  sql
+} from './sql-tag.js';
 
 export {
   toSQL,

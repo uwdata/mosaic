@@ -30,7 +30,7 @@ export class Density2DMark extends Mark {
     if (isSignal(binScale)) {
       binScale.addEventListener('value', value => {
         this.binScale = value;
-        this.request.update(undefined, { force: true });
+        this.requestUpdate();
       });
       this.binScale = binScale.value;
     }

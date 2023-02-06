@@ -11,15 +11,23 @@ export {
 
 export {
   Query,
+  argmax,
+  argmin,
   avg,
   count,
   expr,
+  mad,
   max,
   median,
   min,
   mode,
   quantile,
-  sum
+  stddev,
+  sum,
+  sql,
+  column,
+  eq,
+  literal
 } from '@uwdata/mosaic-sql';
 
 export {
@@ -45,6 +53,8 @@ export {
   axisY,
   axisLineX,
   axisLineY,
+  insetX,
+  insetY,
   grid,
   gridX,
   gridY,
@@ -81,7 +91,17 @@ export {
   schemeColor,
   interpolateColor,
   domainR,
-  rangeR
+  rangeR,
+  labelFX,
+  labelFY,
+  reverseFX,
+  reverseFY,
+  marginTopFacet,
+  marginRightFacet,
+  marginBottomFacet,
+  marginLeftFacet,
+  gridFacet,
+  labelFacet
 } from './directives/attributes.js';
 
 export {
@@ -135,6 +155,8 @@ export {
   intervalX,
   intervalY,
   intervalXY,
+  nearestX,
+  nearestY,
   select,
   selectX,
   selectY,

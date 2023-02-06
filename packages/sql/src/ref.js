@@ -44,30 +44,3 @@ export function column(table, column) {
 export function all(table) {
   return new Ref(table, '*');
 }
-
-export function desc(expr) {
-  expr = asColumn(expr);
-  return {
-    expr,
-    desc: true,
-    toString: () => `${expr} DESC NULLS LAST`,
-    get columns() { return expr.columns?.() || []; }
-  };
-}
-
-export function expr(sql, columns, label) {
-  return {
-    expr: sql,
-    label,
-    toString: () => `${sql}`,
-    get columns() { return columns || []; }
-  };
-}
-
-export function transform(func, label) {
-  return value => expr(
-    func(value),
-    asColumn(value).columns,
-    label
-  )
-}
