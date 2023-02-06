@@ -3,6 +3,7 @@ import { PointSelection } from '../selections/Point.js';
 import { Interval1DSelection } from '../selections/Interval1D.js';
 import { Interval2DSelection } from '../selections/Interval2D.js';
 import { PanZoomSelection } from '../selections/PanZoom.js';
+import { NearestSelection } from '../selections/Nearest.js';
 
 function selection(SelectionClass, options) {
   return plot => {
@@ -29,6 +30,14 @@ export function selectY({ as }) {
 
 export function selectColor({ as }) {
   return select({ as, channels: ['color'] });
+}
+
+export function nearestX({ as, ...rest }) {
+  return selection(NearestSelection, { ...rest, selection: as, channel: 'x' });
+}
+
+export function nearestY({ as, ...rest }) {
+  return selection(NearestSelection, { ...rest, selection: as, channel: 'y' });
 }
 
 export function intervalX({ as, ...rest }) {
