@@ -21,7 +21,6 @@ export class Table extends MosaicClient {
     this.format = format;
     this.offset = 0;
     this.limit = +rowBatch;
-    this.request = new Signal();
     this.pending = false;
 
     this.sortHeader = null;
@@ -50,7 +49,7 @@ export class Table extends MosaicClient {
         this.pending = true;
         this.offset += this.limit;
         const query = this.queryInternal(this.filterBy?.predicate(this));
-        this.request.update(query);
+        this.requestQuery(query);
       }
     });
 
@@ -169,7 +168,7 @@ export class Table extends MosaicClient {
 
     // issue query for sorted data
     const query = this.query(this.filterBy?.predicate(this));
-    this.request.update(query);
+    this.requestQuery(query);
   }
 }
 

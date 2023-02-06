@@ -17,11 +17,13 @@ const ATTRIBUTE_MAP = new Map([
   ['domainFY', 'fy.domain'],
   ['axisX', 'x.axis'],
   ['axisY', 'y.axis'],
+  ['axisLineX', 'x.line'],
+  ['axisLineY', 'y.line'],
+  ['insetX', 'x.inset'],
+  ['insetY', 'y.inset'],
   ['grid', 'grid'],
   ['gridX', 'x.grid'],
   ['gridY', 'y.grid'],
-  ['lineX', 'x.line'],
-  ['lineY', 'y.line'],
   ['niceX', 'x.nice'],
   ['niceY', 'y.nice'],
   ['zeroX', 'x.zero'],
@@ -49,7 +51,17 @@ const ATTRIBUTE_MAP = new Map([
   ['interpolateColor', 'color.interpolate'],
   ['zeroColor', 'color.zero'],
   ['domainR', 'r.domain'],
-  ['rangeR', 'r.range']
+  ['rangeR', 'r.range'],
+  ['labelFX', 'fx.label'],
+  ['labelFY', 'fy.label'],
+  ['reverseFX', 'fx.reverse'],
+  ['reverseFY', 'fy.reverse'],
+  ['marginTopFacet', 'facet.marginTop'],
+  ['marginRightFacet', 'facet.marginRight'],
+  ['marginBottomFacet', 'facet.marginBottom'],
+  ['marginLeftFacet', 'facet.marginLeft'],
+  ['gridFacet', 'facet.grid'],
+  ['labelFacet', 'facet.label'],
 ]);
 
 function setProperty(object, path, value) {
@@ -199,7 +211,7 @@ function inferLabel(key, spec, marks, channels = [key]) {
     if (candCol === undefined && candLabel === undefined) {
       candCol = column;
       candLabel = label;
-      type = stats.find?.(s => s.column === column)?.type || 'number';
+      type = stats?.find(s => s.column === column)?.type || 'number';
     } else if (candLabel !== label) {
       candLabel = undefined;
     } else if (candCol !== column) {

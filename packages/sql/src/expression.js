@@ -1,0 +1,68 @@
+import { asColumn } from './ref.js';
+import { literalToSQL } from './to-sql.js';
+
+export const isParam = e => typeof e?.addEventListener === 'function';
+
+export function isExpression(e) {
+  return e instanceof SQLExpression;
+}
+
+export class SQLExpression {
+  constructor(sql, columns, label) {
+    this.expr = sql;
+    this.label = label;
+    this.columns = columns || [];
+  }
+
+  toString() {
+    return `${this.expr}`;
+  }
+}
+
+export class ParameterizedSQLExpression extends SQLExpression{
+  constructor(parts, columns, label) {
+    const paramSet = new Set;
+    for (const part of parts) {
+      if (isParam(part)) paramSet.add(part);
+    }
+    paramSet.forEach(param => {
+      param.addEventListener('value', () => this.update());
+    });
+    super(parts, columns, label);
+  }
+
+  toString() {
+    return this.expr
+      .map(p => isParam(p) ? literalToSQL(p.value) : p)
+      .join('');
+  }
+
+  addEventListener(type, callback) {
+    const map = this.map || (this.map = new Map());
+    const set = map.get(type) || (map.set(type, new Set), map.get(type));
+    set.add(callback);
+  }
+
+  update() {
+    this.map?.get('value')?.forEach(callback => callback(this));
+  }
+}
+
+export function exprParams(parts, columns, label) {
+  return new ParameterizedSQLExpression(parts, columns, label);
+}
+
+export function expr(sql, columns, label) {
+  return new SQLExpression(sql, columns, label);
+}
+
+export function desc(e) {
+  return Object.assign(
+    expr(`${asColumn(e)} DESC NULLS LAST`, e?.columns, e?.label),
+    { desc: true }
+  );
+}
+
+export function transform(func, label) {
+  return value => expr(func(value), asColumn(value).columns, label);
+}

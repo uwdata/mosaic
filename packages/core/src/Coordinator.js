@@ -34,9 +34,9 @@ export class Coordinator {
 
   clear({ clients = true, cache = true, catalog = false } = {}) {
     if (clients) {
-      this.clients?.forEach((_, client) => this.disconnect(client));
+      this.clients?.forEach(client => this.disconnect(client));
       this.filterGroups?.forEach(group => group.finalize());
-      this.clients = new Map;
+      this.clients = new Set;
       this.filterGroups = new Map;
     }
     if (cache) this.cache.clear();
@@ -86,13 +86,20 @@ export class Coordinator {
     }
   }
 
+  async requestQuery(client, query) {
+    this.filterGroups.get(client.filterBy)?.reset();
+    return query
+      ? this.updateClient(client, query)
+      : client.update();
+  }
+
   async connect(client) {
     const { catalog, clients, filterGroups, indexes } = this;
 
     if (clients.has(client)) {
       throw new Error('Client already connected.');
     }
-    clients.set(client, null); // mark as connected
+    clients.add(client); // mark as connected
 
     // retrieve field statistics
     const fields = client.fields();
@@ -111,27 +118,13 @@ export class Coordinator {
       }
     }
 
-    // query handler
-    const handler = async (query) => {
-      const q = query || client.query(filter?.predicate(client));
-      filterGroups.get(filter)?.reset();
-      if (q) this.updateClient(client, q);
-    };
-    clients.set(client, handler);
-
-    // register request handler, if defined
-    client.request?.addEventListener('value', handler);
-
-    // TODO analyze / consolidate queries?
-    handler();
+    client.requestQuery();
   }
 
   disconnect(client) {
     const { clients, filterGroups } = this;
     if (!clients.has(client)) return;
-    const handler = clients.get(client);
     clients.delete(client);
     filterGroups.get(client.filterBy)?.remove(client);
-    client.request?.removeEventListener(handler);
   }
 }

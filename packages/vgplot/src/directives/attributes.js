@@ -84,6 +84,14 @@ export function axisLineY(value) {
   return attribute('axisLineY', value);
 }
 
+export function insetX(value) {
+  return attribute('insetX', value);
+}
+
+export function insetY(value) {
+  return attribute('insetY', value);
+}
+
 export function grid(value) {
   return attribute('grid', value);
 }
@@ -230,4 +238,44 @@ export function domainR(value) {
 
 export function rangeR(value) {
   return attribute('rangeR', value);
+}
+
+export function labelFX(value) {
+  return attribute('labelFX', value);
+}
+
+export function labelFY(value) {
+  return attribute('labelFX', value);
+}
+
+export function reverseFX(value) {
+  return attribute('reverseFX', value);
+}
+
+export function reverseFY(value) {
+  return attribute('reverseFY', value);
+}
+
+export function marginTopFacet(value) {
+  return attribute('marginTopFacet', value);
+}
+
+export function marginRightFacet(value) {
+  return attribute('marginRightFacet', value);
+}
+
+export function marginBottomFacet(value) {
+  return attribute('marginBottomFacet', value);
+}
+
+export function marginLeftFacet(value) {
+  return attribute('marginLeftFacet', value);
+}
+
+export function gridFacet(value) {
+  return attribute('gridFacet', value);
+}
+
+export function labelFacet(value) {
+  return attribute('labelFacet', value);
 }

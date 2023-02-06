@@ -15,9 +15,19 @@ const constantOptions = new Set([
   'fontStyle',
   'fontVariant',
   'fontWeight',
-  'frameAnchor'
+  'frameAnchor',
+  'strokeLinejoin',
+  'strokeLinecap',
+  'strokeMiterlimit',
+  'strokeDasharray',
+  'strokeDashoffset',
+  'mixBlendMode',
+  'shapeRendering',
+  'paintOrder',
+  'pointerEvents'
 ]);
 
+const isParam = obj => typeof obj?.addEventListener === 'function';
 const isColorChannel = channel => channel === 'stroke' || channel === 'fill';
 const isConstantOption = channel => constantOptions.has(channel);
 
@@ -32,6 +42,7 @@ export class Mark extends MosaicClient {
     }
 
     const channels = this.channels = [];
+    const params = this.params = new Set;
 
     const process = (channel, entry) => {
       const type = typeof entry;
@@ -47,8 +58,18 @@ export class Mark extends MosaicClient {
         } else {
           channels.push({ channel, field: column(entry) });
         }
-      } else if (isSignal(entry)) {
-        channels.push({ channel, signal: entry });
+      } else if (isParam(entry)) {
+        if (entry.columns) {
+          channels.push({ channel, field: entry });
+          params.add(entry);
+        } else {
+          const c = { channel, value: entry.value };
+          channels.push(c);
+          entry.addEventListener('value', value => {
+            c.value = value;
+            this.update();
+          });
+        }
       } else if (type === 'object') {
         channels.push({ channel, field: entry });
       } else {
@@ -59,6 +80,13 @@ export class Mark extends MosaicClient {
     for (const channel in encodings) {
       process(channel, encodings[channel]);
     }
+  }
+
+  setPlot(plot, index) {
+    this.plot = plot;
+    this.index = index;
+    plot.addParams(this, this.params);
+    if (this.source?.table) this.queryPending();
   }
 
   channel(channel) {
@@ -80,6 +108,7 @@ export class Mark extends MosaicClient {
     const { table } = source;
     const columns = new Set;
     for (const { field } of channels) {
+      // TODO use field columns, not column
       if (field?.column) columns.add(field.column);
     }
     return Array.from(columns, col => column(table, col));
@@ -97,7 +126,7 @@ export class Mark extends MosaicClient {
       return null;
     }
 
-    const q = Query.from(source.table);
+    const q = Query.from({ source: source.table });
     const dims = [];
     let aggr = false;
 
