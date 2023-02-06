@@ -4,7 +4,7 @@ export default async function(el) {
   const {
     Query, coordinator, expr, plot, hconcat, vconcat, hspace,
     from, bin, count, heatmap, rectY,
-    domainX, domainXY, scaleY, gridY, reverseY, scaleColor, schemeColor,
+    domainX, domainXY, niceX, niceY, scaleY, gridY, reverseY, scaleColor, schemeColor,
     width, height, marginLeft,
     intervalX, intervalXY, Selection, Fixed
   } = vg;
@@ -30,7 +30,8 @@ export default async function(el) {
             from(table, { filterBy: brush }),
             { x: 'ra', y: 'dec', fill: 'density', bandwidth, scaleFactor }
           ),
-          intervalXY({ as: brush }), domainXY(Fixed),
+          intervalXY({ as: brush }),
+          domainXY(Fixed), niceX(false), niceY(false),
           scaleColor('sqrt'), schemeColor('plasma'),
           width(600), height(400), marginLeft(65)
         ),
