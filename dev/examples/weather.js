@@ -38,7 +38,7 @@ export default function(el) {
         barX(from(table), { x: count(), y: 'weather', fill: '#f5f5f5' }),
         barX(
           from(table, { filterBy: range }),
-          { x: count(), y: 'weather', fill: 'weather' }
+          { x: count(), y: 'weather', fill: 'weather', order: 'weather' }
         ),
         selectY({ as: click }),
         highlight({ by: click }),
