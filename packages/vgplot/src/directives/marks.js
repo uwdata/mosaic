@@ -7,10 +7,12 @@ import { HeatmapMark } from '../marks/HeatmapMark.js';
 import { HexbinMark } from '../marks/HexbinMark.js';
 import { RegressionMark } from '../marks/RegressionMark.js';
 
+const decorators = new Set(['frame', 'hexgrid', 'graticule', 'sphere']);
+
 function mark(type, data, channels) {
   if (arguments.length === 2) {
     channels = data;
-    data = null;
+    data = decorators.has(type) ? null : [{}];
   }
   const MarkClass = type.startsWith('area') || type.startsWith('line')
     ? ConnectedMark
