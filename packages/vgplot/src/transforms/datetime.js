@@ -1,16 +1,16 @@
 import { transform } from '@uwdata/mosaic-sql';
 
 export const dateMonth = transform(
-  v => `make_date(2012, month(${v}), 1)`,
+  v => `MAKE_DATE(2012, MONTH(${v}), 1)`,
   'month'
 );
 
 export const dateMonthDay = transform(
-  v => `make_date(2012, month(${v}), day(${v}))`,
+  v => `MAKE_DATE(2012, MONTH(${v}), DAY(${v}))`,
   'date'
 );
 
 export const dateDay = transform(
-  v => `make_date(2012, 1, day(${v}))`,
+  v => `MAKE_DATE(2012, 1, DAY(${v}))`,
   'date'
 );
