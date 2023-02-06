@@ -4,8 +4,11 @@ import { Mark } from './Mark.js';
 
 export class ConnectedMark extends Mark {
   constructor(type, source, encodings) {
-    super(type, source, encodings);
-    this.dim = type.endsWith('X') ? 'y' : 'x';
+    const dim = type.endsWith('X') ? 'y' : 'x';
+    const req = { [dim]: ['count', 'min', 'max'] };
+
+    super(type, source, encodings, req);
+    this.dim = dim;
   }
 
   query(filter = []) {
@@ -16,12 +19,12 @@ export class ConnectedMark extends Mark {
     if (optimize) {
       // TODO: handle stacked data
       const { column } = this.channelField(dim);
-      const { rows, type, min, max } = stats.find(s => s.column === column);
+      const { count, max, min, type } = stats[column];
       const size = dim === 'x' ? plot.innerWidth() : plot.innerHeight();
 
       const [lo, hi] = filteredExtent(filter, column) || [min, max];
       const scale = (hi - lo) / (max - min);
-      if (rows * scale > size * 4) {
+      if (count * scale > size * 4) {
         const dd = type === 'date' ? epoch_ms(dim) : dim;
         const val = dim === 'x' ? 'y' : 'x';
         const cols = q.select().map(c => c.as).filter(c => c !== 'x' && c !== 'y');

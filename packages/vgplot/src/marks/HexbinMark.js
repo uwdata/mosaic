@@ -1,12 +1,12 @@
 import { Query, expr, isNotNull } from '@uwdata/mosaic-sql';
 import { Transient } from '../symbols.js';
-import { extentX, extentY } from './util/extent.js';
+import { extentX, extentY, xyext } from './util/extent.js';
 import { Mark } from './Mark.js';
 
 export class HexbinMark extends Mark {
   constructor(source, options) {
-    const { binWidth = 20, ...channels } = options;
-    super('hexagon', source, { r: binWidth / 2, clip: true, ...channels });
+    const { type = 'hexagon', binWidth = 20, ...channels } = options;
+    super(type, source, { r: binWidth / 2, clip: true, ...channels }, xyext);
     this.binWidth = binWidth;
   }
 
@@ -17,11 +17,8 @@ export class HexbinMark extends Mark {
   }
 
   query(filter = []) {
+    if (this.hasOwnData()) return null;
     const { plot, binWidth, channels, source } = this;
-
-    if (source == null || Array.isArray(source)) {
-      return null;
-    }
 
     // get x / y extents, may update plot domainX / domainY
     const [x1, x2] = extentX(this, filter);

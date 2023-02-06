@@ -1,6 +1,10 @@
 import { scaleLinear } from 'd3';
 import { Fixed, Transient } from '../../symbols.js';
 
+export const xext = { x: ['min', 'max'] };
+export const yext = { y: ['min', 'max'] };
+export const xyext = { ...xext, ...yext };
+
 export function plotExtent(mark, filter, channel, domainAttr, niceAttr) {
   const { plot, stats } = mark;
   const domain = plot.getAttribute(domainAttr);
@@ -10,7 +14,7 @@ export function plotExtent(mark, filter, channel, domainAttr, niceAttr) {
     return domain;
   } else {
     const { column } = mark.channelField(channel);
-    const { min, max } = stats.find(s => s.column === column);
+    const { min, max } = stats[column];
     const dom = filteredExtent(filter, column) || (nice
       ? scaleLinear().domain([min, max]).nice().domain()
       : [min, max]);

@@ -2,13 +2,16 @@ import { isSignal } from '@uwdata/mosaic-core';
 import { Query, gt, sum, expr, isBetween } from '@uwdata/mosaic-sql';
 import { Transient } from '../symbols.js';
 import { dericheConfig, dericheConv1d, grid1d } from './util/density.js';
-import { extentX, extentY } from './util/extent.js';
+import { extentX, extentY, xext, yext } from './util/extent.js';
 import { Mark } from './Mark.js';
 
 export class Density1DMark extends Mark {
   constructor(type, source, options) {
     const { bins = 1024, bandwidth = 0.1, ...channels } = options;
-    super(type, source, channels);
+    const dim = type.endsWith('X') ? 'y' : 'x';
+
+    super(type, source, channels, dim === 'x' ? xext : yext);
+    this.dim = dim;
     this.bins = bins;
     this.bandwidth = bandwidth;
 
@@ -30,8 +33,7 @@ export class Density1DMark extends Mark {
   }
 
   query(filter = []) {
-    const dir = 'x'; // TODO: support transpose
-    this.extent = (dir === 'x' ? extentX : extentY)(this, filter);
+    this.extent = (this.dim === 'x' ? extentX : extentY)(this, filter);
     const [lo, hi] = this.extent;
     const weight = this.channelField('weight') ? 'weight' : 1;
     return binLinear1d(super.query(filter), 'x', lo, hi, this.bins, weight);

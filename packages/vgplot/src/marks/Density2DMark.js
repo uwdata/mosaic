@@ -1,8 +1,8 @@
-import { isSignal, Signal } from '@uwdata/mosaic-core';
+import { isSignal } from '@uwdata/mosaic-core';
 import { Query, and, gt, sum, expr, isBetween } from '@uwdata/mosaic-sql';
 import { Transient } from '../symbols.js';
 import { dericheConfig, dericheConv2d, grid2d } from './util/density.js';
-import { extentX, extentY } from './util/extent.js';
+import { extentX, extentY, xyext } from './util/extent.js';
 import { Mark } from './Mark.js';
 
 export class Density2DMark extends Mark {
@@ -12,12 +12,12 @@ export class Density2DMark extends Mark {
     const densityStroke = channels.stroke === 'density';
     if (densityFill) delete channels.fill;
     if (densityStroke) delete channels.stroke;
-    super(type, source, channels);
+
+    super(type, source, channels, xyext);
     this.densityFill = densityFill;
     this.densityStroke = densityStroke;
     this.bandwidth = bandwidth;
     this.binScale = binScale;
-    this.request = new Signal();
 
     if (isSignal(bandwidth)) {
       bandwidth.addEventListener('value', value => {

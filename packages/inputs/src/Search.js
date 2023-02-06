@@ -1,6 +1,6 @@
 import { isSelection, isSignal, MosaicClient } from '@uwdata/mosaic-core';
 import {
-  Query, column as columnRef, regexp_matches, contains, prefix, suffix, literal
+  Query, regexp_matches, contains, prefix, suffix, literal
 } from '@uwdata/mosaic-sql';
 
 const FUNCTIONS = { contains, prefix, suffix, regexp: regexp_matches };
@@ -65,11 +65,6 @@ export class Search extends MosaicClient {
     } else if (isSignal(selection)) {
       selection.update(value);
     }
-  }
-
-  fields() {
-    const { from, column } = this;
-    return from ? [ columnRef(from, column) ] : null;
   }
 
   query(filter = []) {

@@ -32,9 +32,10 @@ const isColorChannel = channel => channel === 'stroke' || channel === 'fill';
 const isConstantOption = channel => constantOptions.has(channel);
 
 export class Mark extends MosaicClient {
-  constructor(type, source, encodings) {
+  constructor(type, source, encodings, reqs = {}) {
     super(source?.options?.filterBy);
     this.type = type;
+    this.reqs = reqs;
 
     this.source = source;
     if (Array.isArray(this.source)) {
@@ -89,6 +90,10 @@ export class Mark extends MosaicClient {
     if (this.source?.table) this.queryPending();
   }
 
+  hasOwnData() {
+    return this.source == null || Array.isArray(this.source);
+  }
+
   channel(channel) {
     return this.channels.find(c => c.channel === channel);
   }
@@ -103,41 +108,47 @@ export class Mark extends MosaicClient {
   }
 
   fields() {
-    const { source, channels } = this;
-    if (source == null || Array.isArray(source)) return [];
-    const { table } = source;
-    const columns = new Set;
-    for (const { field } of channels) {
-      // TODO use field columns, not column
-      if (field?.column) columns.add(field.column);
+    if (this.hasOwnData()) return null;
+    const { source: { table }, channels, reqs } = this;
+
+    const fields = new Map;
+    for (const { channel, field } of channels) {
+      const column = field?.column;
+      if (!column) {
+        continue; // no column to lookup
+      } else if (field.stats?.length || reqs[channel]) {
+        if (!fields.has(column)) fields.set(column, new Set);
+        const entry = fields.get(column);
+        reqs[channel]?.forEach(s => entry.add(s));
+        field.stats?.forEach(s => entry.add(s));
+      }
     }
-    return Array.from(columns, col => column(table, col));
+    return Array.from(fields, ([column, stats]) => {
+      return { table, column, stats: Array.from(stats) };
+    });
   }
 
   fieldStats(data) {
-    this.stats = data;
+    this.stats = data.reduce(
+      (o, d) => (o[d.column] = d, o),
+      Object.create(null)
+    );
     return this;
   }
 
   query(filter = []) {
-    const { channels, source, stats } = this;
+    if (this.hasOwnData()) return null;
 
-    if (source == null || Array.isArray(source)) {
-      return null;
-    }
-
-    const q = Query.from({ source: source.table });
+    const { channels, source: { table }, stats } = this;
+    const q = Query.from({ source: table });
     const dims = [];
     let aggr = false;
 
     for (const c of channels) {
       if (c.channel === 'order') {
         q.orderby(c.value);
-      } else if (Object.hasOwn(c, 'field')) {
+      } else if (c.field) {
         const { channel, field } = c;
-        if (field.column && !stats.find(s => s.column === field.column)) {
-          continue; // skip non-existent columns
-        }
         const expr = field.transform?.(stats) || field;
         if (expr.aggregate) {
           aggr = true;
