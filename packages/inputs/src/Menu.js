@@ -11,6 +11,7 @@ export class Menu extends MosaicClient {
     from,
     column,
     label = column,
+    format = x => x, // TODO
     options,
     value,
     as
@@ -19,6 +20,7 @@ export class Menu extends MosaicClient {
     this.from = from;
     this.column = column;
     this.selection = as;
+    this.format = format;
 
     this.element = document.createElement('div');
     this.element.setAttribute('class', 'input');
@@ -40,15 +42,25 @@ export class Menu extends MosaicClient {
 
     if (this.selection) {
       this.select.addEventListener('input', () => {
-        this.publish(this.select.value || null);
+        this.publish(this.selectedValue() || null);
       });
       if (!isSelection(this.selection)) {
         this.selection.addEventListener('value', value => {
           if (value !== this.select.value) {
-            this.select.value = value;
+            this.selectedValue(value);
           }
         });
       }
+    }
+  }
+
+  selectedValue(value) {
+    if (arguments.length === 0) {
+      const index = this.select.selectedIndex;
+      return this.data[index].value;
+    } else {
+      // TODO make more robust
+      this.select.value = String(value);
     }
   }
 
@@ -88,12 +100,12 @@ export class Menu extends MosaicClient {
   }
 
   update() {
-    const { data, select } = this;
+    const { data, format, select } = this;
     select.replaceChildren();
-    for (const { value, label = value } of data) {
+    for (const { value, label } of data) {
       const opt = document.createElement('option');
       opt.setAttribute('value', value);
-      opt.innerText = label; // TODO: label formatting?
+      opt.innerText = label ?? format(value);
       this.select.appendChild(opt);
     }
     if (this.selection) {
