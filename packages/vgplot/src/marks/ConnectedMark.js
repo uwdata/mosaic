@@ -10,10 +10,10 @@ export class ConnectedMark extends Mark {
 
   query(filter = []) {
     const { plot, dim, source, stats } = this;
-    const { transform = true } = source.options || {};
+    const { optimize = true } = source.options || {};
     const q = super.query(filter);
 
-    if (transform) {
+    if (optimize) {
       // TODO: handle stacked data
       const { column } = this.channelField(dim);
       const { rows, type, min, max } = stats.find(s => s.column === column);
@@ -34,19 +34,19 @@ export class ConnectedMark extends Mark {
 }
 
 function m4(input, bx, x, y, lo, hi, width, cols = []) {
-  const bins = expr(`FLOOR(${width / (hi - lo)}::DOUBLE * (${bx} - ${lo}::DOUBLE))`);
+  const bins = expr(`FLOOR(${width / (hi - lo)}::DOUBLE * (${bx} - ${+lo}::DOUBLE))`);
 
   const q = (sel) => Query
     .from(input)
-    .select(Object.fromEntries(sel))
-    .groupby(bins);
+    .select(sel)
+    .groupby(bins, cols);
 
   return Query
     .union(
-      q([[x, min(x)], [y, argmin(y, x)], ...cols.map(c => [c, argmin(c, x)])]),
-      q([[x, max(x)], [y, argmax(y, x)], ...cols.map(c => [c, argmax(c, x)])]),
-      q([[x, argmin(x, y)], [y, min(y)], ...cols.map(c => [c, argmin(c, y)])]),
-      q([[x, argmax(x, y)], [y, max(y)], ...cols.map(c => [c, argmax(c, y)])])
+      q([{ [x]: min(x), [y]: argmin(y, x) }, ...cols]),
+      q([{ [x]: max(x), [y]: argmax(y, x) }, ...cols]),
+      q([{ [x]: argmin(x, y), [y]: min(y) }, ...cols]),
+      q([{ [x]: argmax(x, y), [y]: max(y) }, ...cols])
     )
     .orderby(cols, x);
 }
