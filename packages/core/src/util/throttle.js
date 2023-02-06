@@ -5,7 +5,7 @@ export function throttle(callback) {
   function invoke(event) {
     curr = callback(event).then(() => {
       if (next) {
-        const value = next;
+        const { value } = next;
         next = null;
         invoke(value);
       } else {
@@ -15,7 +15,7 @@ export function throttle(callback) {
   }
 
   function enqueue(event) {
-    next = event;
+    next = { event };
   }
 
   return event => curr ? enqueue(event) : invoke(event);
