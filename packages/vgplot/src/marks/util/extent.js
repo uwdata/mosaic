@@ -1,10 +1,10 @@
 import { scaleLinear } from 'd3';
 import { Fixed, Transient } from '../../symbols.js';
 
-export function plotExtent(mark, filter, channel, name) {
+export function plotExtent(mark, filter, channel, domainAttr, niceAttr) {
   const { plot, stats } = mark;
-  const domain = plot.getAttribute(name);
-  const nice = plot.getAttribute(`nice${channel.toUpperCase()}`) ?? true;
+  const domain = plot.getAttribute(domainAttr);
+  const nice = plot.getAttribute(niceAttr) ?? true;
 
   if (Array.isArray(domain) && !domain[Transient]) {
     return domain;
@@ -14,17 +14,17 @@ export function plotExtent(mark, filter, channel, name) {
     const dom = filteredExtent(filter, column) ||
       scaleLinear().domain([ min, max ]).nice(nice).domain();
     if (domain !== Fixed) dom[Transient] = true;
-    plot.setAttribute(name, dom);
+    plot.setAttribute(domainAttr, dom);
     return dom;
   }
 }
 
 export function extentX(mark, filter) {
-  return plotExtent(mark, filter, 'x', 'domainX');
+  return plotExtent(mark, filter, 'x', 'domainX', 'niceX');
 }
 
 export function extentY(mark, filter) {
-  return plotExtent(mark, filter, 'y', 'domainY');
+  return plotExtent(mark, filter, 'y', 'domainY', 'niceY');
 }
 
 export function filteredExtent(filter, column) {
