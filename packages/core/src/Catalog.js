@@ -22,7 +22,7 @@ export class Catalog {
 
     const q = this.mc.query(
       `PRAGMA table_info('${table}')`,
-      { type: 'json' }
+      { type: 'json', cache: false }
     );
 
     return (cache[table] = q.then(result => {
@@ -53,7 +53,8 @@ export class Catalog {
         nulls: count().where(isNull(column)),
         min: min(column),
         max: max(column)
-      }, { cache: false })
+      }),
+      { cache: false }
     ).then(result => {
       const [ stats ] = Array.from(result);
       return { table, column, type: colInfo.jstype, ...stats };
