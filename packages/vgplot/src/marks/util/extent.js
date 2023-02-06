@@ -40,7 +40,7 @@ export function filteredExtent(filter, column) {
   };
 
   if (Array.isArray(filter)) {
-    filter.forEach(p => p.visit(visitor));
+    filter.forEach(p => p.visit?.(visitor));
   } else if (filter.visit) {
     filter.visit(visitor);
   }
