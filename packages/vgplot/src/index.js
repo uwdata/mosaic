@@ -75,6 +75,7 @@ export {
   ticksY,
   tickFormatX,
   tickFormatY,
+  tickFormatColor,
   tickRotateX,
   tickRotateY,
   tickSizeX,

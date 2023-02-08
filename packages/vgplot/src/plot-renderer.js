@@ -34,6 +34,7 @@ const ATTRIBUTE_MAP = new Map([
   ['ticksY', 'y.ticks'],
   ['tickFormatX', 'x.tickFormat'],
   ['tickFormatY', 'y.tickFormat'],
+  ['tickFormatColor', 'color.tickFormat'],
   ['tickRotateX', 'x.tickRotate'],
   ['tickRotateY', 'y.tickRotate'],
   ['tickSizeX', 'x.tickSize'],
