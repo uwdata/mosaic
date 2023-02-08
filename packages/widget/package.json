@@ -1,0 +1,23 @@
+{
+  "name": "mosaic-widget",
+  "version": "0.0.1",
+  "private": true,
+  "license": "BSD-3-Clause",
+  "author": "Dominik Moritz (https://www.domoritz.de)",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/uwdata/mosaic.git"
+  },
+  "dependencies": {
+    "apache-arrow": "^11.0.0",
+    "@uwdata/vgplot": "^0.1.0"
+  },
+  "devDependencies": {
+    "anywidget": "^0.1.0",
+    "vite": "^4.1.1"
+  },
+  "scripts": {
+    "build": "vite build",
+    "dev": "vite"
+  }
+}

@@ -1,0 +1,50 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "mosaic-widget"
+description = "A Jupyter widget for mosaic"
+dynamic = ["version"]
+readme = "README.md"
+requires-python = ">=3.8"
+dependencies = [
+  "anywidget",
+  "duckdb",
+  "pyarrow"
+]
+
+[project.urls]
+homepage = "https://github.com/uwdata/mosaic"
+
+[tool.hatch.build]
+artifacts = [
+  "mosaic_widget/static/"
+]
+
+[project.optional-dependencies]
+dev = [
+  "jupyterlab",
+  "pandas",
+  "pyyaml",
+  "black[jupyter]",
+  "ruff",
+]
+
+[tool.hatch.envs.default]
+python = "3.10"
+features = ["dev"]
+
+[tool.hatch.envs.default.scripts]
+style = [
+  "ruff {args:.}",
+  "black --check --diff {args:.}"
+]
+fmt = [
+  "black {args:.}",
+  "ruff --fix {args:.}"
+]
+
+[tool.hatch.version]
+path = "package.json"
+pattern = "\"version\": \"(?P<version>.+?)\""
