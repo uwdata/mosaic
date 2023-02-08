@@ -1,7 +1,7 @@
 import { asColumn } from './ref.js';
 import { literalToSQL } from './to-sql.js';
 
-export const isParam = e => typeof e?.addEventListener === 'function';
+export const isParamLike = e => typeof e?.addEventListener === 'function';
 
 export function isExpression(e) {
   return e instanceof SQLExpression;
@@ -23,7 +23,7 @@ export class ParameterizedSQLExpression extends SQLExpression{
   constructor(parts, columns, label) {
     const paramSet = new Set;
     for (const part of parts) {
-      if (isParam(part)) paramSet.add(part);
+      if (isParamLike(part)) paramSet.add(part);
     }
     paramSet.forEach(param => {
       param.addEventListener('value', () => this.update());
@@ -33,7 +33,7 @@ export class ParameterizedSQLExpression extends SQLExpression{
 
   toString() {
     return this.expr
-      .map(p => isParam(p) ? literalToSQL(p.value) : p)
+      .map(p => isParamLike(p) ? literalToSQL(p.value) : p)
       .join('');
   }
 

@@ -1,4 +1,4 @@
-import { isSignal } from '@uwdata/mosaic-core';
+import { isParam } from '@uwdata/mosaic-core';
 import { Query, and, gt, sum, expr, isBetween } from '@uwdata/mosaic-sql';
 import { Transient } from '../symbols.js';
 import { dericheConfig, dericheConv2d, grid2d } from './util/density.js';
@@ -19,7 +19,7 @@ export class Density2DMark extends Mark {
     this.bandwidth = bandwidth;
     this.binScale = binScale;
 
-    if (isSignal(bandwidth)) {
+    if (isParam(bandwidth)) {
       bandwidth.addEventListener('value', value => {
         this.bandwidth = value;
         if (this.grids) this.convolve().update();
@@ -27,7 +27,7 @@ export class Density2DMark extends Mark {
       this.bandwidth = bandwidth.value;
     }
 
-    if (isSignal(binScale)) {
+    if (isParam(binScale)) {
       binScale.addEventListener('value', value => {
         this.binScale = value;
         this.requestUpdate();

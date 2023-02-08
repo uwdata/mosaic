@@ -1,4 +1,4 @@
-import { isSelection, isSignal, MosaicClient } from '@uwdata/mosaic-core';
+import { MosaicClient, isParam, isSelection } from '@uwdata/mosaic-core';
 import { Query, eq, literal } from '@uwdata/mosaic-sql';
 
 const isObject = v => {
@@ -73,7 +73,7 @@ export class Menu extends MosaicClient {
         value,
         predicate: value ? eq(column, literal(value)) : null
       });
-    } else if (isSignal(selection)) {
+    } else if (isParam(selection)) {
       selection.update(value);
     }
   }

@@ -1,4 +1,4 @@
-import { expr, exprParams, isParam } from './expression.js';
+import { expr, exprParams, isParamLike } from './expression.js';
 
 /**
  * Tag function for SQL expression strings. Interpolated values
@@ -11,7 +11,7 @@ export function sql(strings, ...exprs) {
   const n = exprs.length;
   for (let i = 0, k = 0; i < n;) {
     const e = exprs[i];
-    if (isParam(e)) {
+    if (isParamLike(e)) {
       spans[++k] = e;
     } else {
       if (Array.isArray(e.columns)) {
@@ -20,7 +20,7 @@ export function sql(strings, ...exprs) {
       spans[k] += String(e);
     }
     const s = strings[++i];
-    if (isParam(spans[k])) {
+    if (isParamLike(spans[k])) {
       spans[++k] = s;
     } else {
       spans[k] += s;

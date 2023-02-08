@@ -1,4 +1,4 @@
-import { isSelection, isSignal, MosaicClient } from '@uwdata/mosaic-core';
+import { MosaicClient, isParam, isSelection } from '@uwdata/mosaic-core';
 import {
   Query, regexp_matches, contains, prefix, suffix, literal
 } from '@uwdata/mosaic-sql';
@@ -62,7 +62,7 @@ export class Search extends MosaicClient {
         value,
         predicate: value ? FUNCTIONS[type](column, literal(value)) : null
       });
-    } else if (isSignal(selection)) {
+    } else if (isParam(selection)) {
       selection.update(value);
     }
   }

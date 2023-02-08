@@ -1,8 +1,8 @@
-export function isSignal(x) {
-  return x instanceof Signal;
+export function isParam(x) {
+  return x instanceof Param;
 }
 
-export class Signal {
+export class Param {
   constructor(value) {
     this._value = value;
     this._listeners = new Map;

@@ -1,8 +1,8 @@
 export {
   Coordinator,
   MosaicClient,
+  Param,
   Selection,
-  Signal,
   coordinator,
   restClient,
   socketClient,

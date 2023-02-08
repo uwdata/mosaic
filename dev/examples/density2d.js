@@ -2,13 +2,13 @@ import * as vg from '../setup.js';
 
 export default function(el) {
   const {
-    Signal, slider, vconcat, hconcat, plot, from,
+    Param, slider, vconcat, hconcat, plot, from,
     contour, heatmap, scaleColor, schemeColor,
     axisX, axisY, marginLeft, marginRight, width, height,
   } = vg;
 
-  const bandwidth = new Signal(20);
-  const thresholds = new Signal(10);
+  const bandwidth = new Param(20);
+  const thresholds = new Param(10);
   const table = 'flights';
   const x = 'time';
   const y = 'delay';

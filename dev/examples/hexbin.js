@@ -7,7 +7,7 @@ export default function(el) {
     marginLeft, marginRight, marginBottom, marginTop,
     axisX, axisY, labelAnchorX, labelAnchorY,
     domainX, domainY, domainXY, intervalX, intervalY, width, height,
-    Selection, Signal, Fixed
+    Selection, Param, Fixed
   } = vg;
 
   const table = 'flights';
@@ -16,7 +16,7 @@ export default function(el) {
   const color = 'steelblue';
   const binWidth = 10;
   const query = Selection.crossfilter();
-  const scale = new Signal('log');
+  const scale = new Param('log');
 
   el.appendChild(
     vconcat(

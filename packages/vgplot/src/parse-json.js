@@ -1,4 +1,4 @@
-import { Signal, Selection, coordinator, sqlFrom } from '@uwdata/mosaic-core';
+import { Param, Selection, coordinator, sqlFrom } from '@uwdata/mosaic-core';
 import { Query, avg, count, expr, max, median, min, mode, quantile, sum } from '@uwdata/mosaic-sql';
 import { bin, dateMonth, dateMonthDay, dateDay } from './transforms/index.js'
 
@@ -16,7 +16,7 @@ export const DefaultParamParsers = new Map([
   ['crossfilter', () => Selection.crossfilter()],
   ['union', () => Selection.union()],
   ['single', () => Selection.single()],
-  ['value', v => new Signal(v)]
+  ['value', v => new Param(v)]
 ]);
 
 export const DefaultSpecParsers = new Map([
@@ -91,7 +91,7 @@ export class JSONParseContext {
     this.postQueue.push(fn);
   }
 
-  maybeParam(value, ctr = () => new Signal()) {
+  maybeParam(value, ctr = () => new Param()) {
     const { params } = this;
     const name = paramRef(value);
 
@@ -142,7 +142,7 @@ export class JSONParseContext {
     this.defaults = Object.keys(defaults)
       .map(key => parseAttribute(defaults, key, this));
 
-    // parse param (signal/selection) definitions
+    // parse param/selection definitions
     for (const name in params) {
       this.params.set(name, parseParam(params[name], this));
     }
