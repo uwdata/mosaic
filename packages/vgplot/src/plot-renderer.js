@@ -250,7 +250,7 @@ function annotateMarks(svg, indices) {
   let index = -1;
   for (const child of svg.children) {
     const skip = child.nodeName === 'style' ||
-      (child.getAttribute('aria-label') || '').endsWith('-axis');
+      (child.getAttribute('aria-label') || '').includes('-axis');
     if (!skip) {
       child.setAttribute('data-index', indices[++index]);
     }
