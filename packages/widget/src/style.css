@@ -1,0 +1,73 @@
+.mosaic-widget .concat-horizontal {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: nowrap;
+    justify-content: flex-start;
+    align-items: flex-start;
+}
+
+.mosaic-widget .plot {
+    display: flex;
+}
+
+.mosaic-widget .input {
+    margin-right: 1em;
+}
+
+.mosaic-widget .input > * {
+    vertical-align: middle;
+}
+
+.mosaic-widget table {
+    position: relative;
+    table-layout: fixed;
+    border-collapse: separate;
+    border-spacing: 0;
+    font-variant-numeric: tabular-nums;
+    box-sizing: border-box;
+    max-width: initial;
+    min-height: 33px;
+    margin: 0;
+    width: 100%;
+
+    font-size: 13px;
+    line-height: 15.6px;
+}
+
+.mosaic-widget thead tr th {
+    position: sticky;
+    top: 0;
+    background: #fff;
+    cursor: ns-resize;
+    border-bottom: solid 1px #ccc;
+}
+
+.mosaic-widget tbody tr:hover {
+    background: #eef;
+}
+
+.mosaic-widget th {
+    color: #111;
+    text-align: left;
+    vertical-align: bottom;
+}
+
+.mosaic-widget td, th {
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    overflow: hidden;
+    padding: 3px 6.5px 3px 0;
+}
+
+.mosaic-widget tbody tr:first-child td {
+    padding-top: 4px;
+}
+
+.mosaic-widget td, tr:not(:last-child) th {
+    border-bottom: solid 1px #eee;
+}
+
+.mosaic-widget td {
+    color: #444;
+    vertical-align: top;
+}
