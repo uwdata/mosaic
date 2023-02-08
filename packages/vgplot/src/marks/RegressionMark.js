@@ -42,7 +42,7 @@ export class RegressionMark extends Mark {
     data = Array.from(data);
 
     // regression line
-    this.lineData = data.flatMap(m => linePoints(m));
+    this.data = data.flatMap(m => linePoints(m));
 
     // regression ci area
     const { ci, precision, plot } = this;
@@ -53,7 +53,7 @@ export class RegressionMark extends Mark {
   }
 
   plotSpecs() {
-    const { lineData, areaData, channels, ci } = this;
+    const { data, areaData, channels, ci } = this;
     const lopt = { x: 'x', y: 'y' };
     const aopt = { x: 'x', y1: 'y1', y2: 'y2', fillOpacity: 0.1 };
 
@@ -82,7 +82,7 @@ export class RegressionMark extends Mark {
 
     return [
       ...(ci ? [{ type: 'areaY', data: areaData, options: aopt }] : []),
-      { type: 'line', data: lineData, options: lopt }
+      { type: 'line', data, options: lopt }
     ];
   }
 }
