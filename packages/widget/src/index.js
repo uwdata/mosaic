@@ -1,10 +1,6 @@
-import * as arrow from "https://cdn.jsdelivr.net/npm/apache-arrow@11.0.0/+esm";
-import {
-  coordinator,
-  parseJSON,
-  Coordinator,
-} from "https://cdn.jsdelivr.net/npm/@uwdata/vgplot@0.0.1/+esm";
-import './style.css';
+import * as arrow from "apache-arrow";
+import { coordinator, parseJSON, Coordinator } from "@uwdata/vgplot";
+import "./style.css";
 
 let queryCounter = 0;
 
