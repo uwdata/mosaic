@@ -59,6 +59,6 @@ class MosaicWidget(anywidget.AnyWidget):
                 self.send({"type": "json", "queryId": queryId, "result": json})
         except Exception as e:
             logger.error(e)
-            self.send(json.dumps({"error": str(e), "queryId": queryId}))
+            self.send({"error": str(e), "queryId": queryId})
 
         logger.info(f"DONE. Took { round((time.time() - start) * 1_000) } ms")
