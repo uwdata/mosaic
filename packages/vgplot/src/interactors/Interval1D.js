@@ -4,7 +4,7 @@ import { closeTo } from './util/close-to.js';
 import { patchScreenCTM } from './util/patchScreenCTM.js';
 import { sanitizeStyles } from './util/sanitize-styles.js';
 
-export class Interval1DSelection {
+export class Interval1D {
   constructor(mark, {
     channel,
     selection,

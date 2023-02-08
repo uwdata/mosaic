@@ -176,9 +176,9 @@ export async function plotRenderer(plot) {
     }
   });
 
-  // initialize interactive selections
-  for (const sel of plot.selections) {
-    await sel.init(svg);
+  // initialize interactors
+  for (const interactor of plot.interactors) {
+    await interactor.init(svg);
   }
 
   return svg;

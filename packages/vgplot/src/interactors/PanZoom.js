@@ -4,7 +4,7 @@ import { isBetween } from '@uwdata/mosaic-sql';
 
 const asc = (a, b) => a - b;
 
-export class PanZoomSelection {
+export class PanZoom {
   constructor(mark, {
     x = new Selection(),
     y = new Selection(),

@@ -6,7 +6,7 @@ import { sanitizeStyles } from './util/sanitize-styles.js';
 
 const asc = (a, b) => a - b;
 
-export class Interval2DSelection {
+export class Interval2D {
   constructor(mark, {
     selection,
     xfield,

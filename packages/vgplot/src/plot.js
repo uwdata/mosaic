@@ -12,7 +12,7 @@ const DEFAULT_ATTRIBUTES = {
 export class Plot {
   constructor(element) {
     this.attributes = { ...DEFAULT_ATTRIBUTES };
-    this.selections = [];
+    this.interactors = [];
     this.legends = [];
     this.marks = [];
     this.markset = null;
@@ -105,13 +105,13 @@ export class Plot {
     return this.markset || (this.markset = new Set(this.marks));
   }
 
+  addInteractor(sel) {
+    this.interactors.push(sel);
+    return this;
+  }
+
   addLegend(legend, include = true) {
     legend.setPlot(this);
     this.legends.push({ legend, include });
-  }
-
-  addSelection(sel) {
-    this.selections.push(sel);
-    return this;
   }
 }

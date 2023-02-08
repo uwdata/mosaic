@@ -1,5 +1,5 @@
 import assert from 'node:assert';
-import { closeTo } from '../src/selections/util/close-to.js';
+import { closeTo } from '../src/interactors/util/close-to.js';
 
 describe('closeTo', () => {
   it('tests if two ranges are nearly identical', async () => {

@@ -39,7 +39,7 @@ vconcat:
     y: weather
     fill: weather
     order: weather
-  - select: selectY
+  - select: toggleY
     as: $click
   - select: highlight
     by: $click

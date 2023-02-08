@@ -158,17 +158,17 @@ export {
   intervalXY,
   nearestX,
   nearestY,
-  select,
-  selectX,
-  selectY,
-  selectColor,
+  toggle,
+  toggleX,
+  toggleY,
+  toggleColor,
   pan,
   panX,
   panY,
   panZoom,
   panZoomX,
   panZoomY
-} from './directives/selections';
+} from './directives/interactors';
 
 export {
   legendColor,

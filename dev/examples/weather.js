@@ -3,7 +3,7 @@ import * as vg from '../setup.js';
 export default function(el) {
   const {
     plot, vconcat, from, dot, barX,
-    count, dateMonthDay, intervalX, highlight, selectY,
+    count, dateMonthDay, intervalX, highlight, toggleY,
     domainXY, domainX, domainY, domainColor, rangeColor, domainR, rangeR,
     tickFormatX, labelY, legendColor,
     width, Fixed, Selection
@@ -40,7 +40,7 @@ export default function(el) {
           from(table, { filterBy: range }),
           { x: count(), y: 'weather', fill: 'weather', order: 'weather' }
         ),
-        selectY({ as: click }),
+        toggleY({ as: click }),
         highlight({ by: click }),
         domainX(Fixed),
         domainY(weather), labelY(null),

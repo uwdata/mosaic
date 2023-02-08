@@ -7,8 +7,8 @@ import * as plots from './directives/plots.js';
 import * as marks from './directives/marks.js';
 import * as inputs from './directives/inputs.js';
 import * as legends from './directives/legends.js';
-import * as selections from './directives/selections.js';
 import * as attributes from './directives/attributes.js';
+import * as interactors from './directives/interactors.js';
 import { Fixed } from './symbols';
 
 export const DefaultParamParsers = new Map([
@@ -56,7 +56,7 @@ export const DefaultTransforms = new Map([
 export const DefaultInputs = new Map(Object.entries(inputs));
 export const DefaultLegends = new Map(Object.entries(legends));
 export const DefaultAttributes = new Map(Object.entries(attributes));
-export const DefaultSelections = new Map(Object.entries(selections));
+export const DefaultInteractors = new Map(Object.entries(interactors));
 
 export function parseJSON(spec, options) {
   spec = isString(spec) ? JSON.parse(spec) : spec;
@@ -69,8 +69,8 @@ export class JSONParseContext {
     paramParsers = DefaultParamParsers,
     formats = DefaultFormats,
     transforms = DefaultTransforms,
-    selections = DefaultSelections,
     attributes = DefaultAttributes,
+    interactors = DefaultInteractors,
     legends = DefaultLegends,
     inputs = DefaultInputs,
     params = []
@@ -79,8 +79,8 @@ export class JSONParseContext {
     this.paramParsers = paramParsers;
     this.formats = formats;
     this.transforms = transforms;
-    this.selections = selections;
     this.attributes = attributes;
+    this.interactors = interactors;
     this.legends = legends;
     this.inputs = inputs;
     this.params = new Map(params);
@@ -320,7 +320,7 @@ function parseAttribute(spec, name, ctx) {
 function parseEntry(spec, ctx) {
   return isString(spec.mark) ? parseMark(spec, ctx)
     : isString(spec.legend) ? parseLegend(spec, ctx)
-    : isString(spec.select) ? parseSelection(spec, ctx)
+    : isString(spec.select) ? parseInteractor(spec, ctx)
     : error(`Invalid plot entry.`, spec);
 }
 
@@ -354,11 +354,11 @@ function parseMarkOption(spec, ctx) {
   return ctx.maybeTransform(spec) || ctx.maybeParam(spec);
 }
 
-function parseSelection(spec, ctx) {
+function parseInteractor(spec, ctx) {
   const { select, ...options } = spec;
-  const fn = ctx.selections.get(select);
+  const fn = ctx.interactors.get(select);
   if (!isFunction(fn)) {
-    error(`Unrecognized selection type: ${select}`, spec);
+    error(`Unrecognized interactor type: ${select}`, spec);
   }
   for (const key in options) {
     options[key] = ctx.maybeSelection(options[key]);
