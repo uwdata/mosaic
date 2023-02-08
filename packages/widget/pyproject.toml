@@ -26,6 +26,7 @@ artifacts = [
 dev = [
   "jupyter[lab]",
   "pandas",
+  "pyyaml",
   "black[jupyter]",
   "ruff",
 ]
