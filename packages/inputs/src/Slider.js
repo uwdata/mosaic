@@ -1,21 +1,28 @@
-import { isParam, isSelection } from '@uwdata/mosaic-core';
-import { eq, literal } from '@uwdata/mosaic-sql';
+import { MosaicClient, isParam, isSelection } from '@uwdata/mosaic-core';
+import { Query, eq, literal, max, min } from '@uwdata/mosaic-sql';
 
 let _id = 0;
 
-export class Slider {
+export class Slider extends MosaicClient {
   constructor({
+    filterBy,
     as,
     min,
     max,
     step,
+    from,
     column,
     label = column,
     value = as?.value
   } = {}) {
+    super(filterBy);
     this.id = 'slider_' + (++_id);
+    this.from = from;
     this.column = column || 'value';
     this.selection = as;
+    this.min = min;
+    this.max = max;
+    this.step = step;
 
     this.element = document.createElement('div');
     this.element.setAttribute('class', 'input');
@@ -52,6 +59,23 @@ export class Slider {
         });
       }
     }
+  }
+
+  query(filter = []) {
+    const { from, column } = this;
+    if (!from || (this.min != null && this.max != null)) return null;
+    return Query
+      .select({ min: min(column), max: max(column) })
+      .from(from)
+      .where(filter);
+  }
+
+  queryResult(data) {
+    const { min, max } = Array.from(data)[0];
+    if (this.min == null) this.slider.setAttribute('min', min);
+    if (this.max == null) this.slider.setAttribute('max', max);
+    if (this.step == null) this.slider.setAttribute('step', (max - min) / 500);
+    return this;
   }
 
   publish(value) {

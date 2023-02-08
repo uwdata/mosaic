@@ -9,5 +9,5 @@ function input(InputClass, options) {
 
 export const menu = options => input(Menu, options);
 export const search = options => input(Search, options);
-export const slider = options => new Slider(options).element;
+export const slider = options => input(Slider, options);
 export const table = options => input(Table, options);
