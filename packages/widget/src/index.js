@@ -5,11 +5,9 @@ import './style.css';
 let queryCounter = 0;
 
 export async function render(view) {
-  const spec = view.model.get('spec');
-
-  console.log('Initialize client with spec:', spec);
-
   view.el.classList.add('mosaic-widget');
+
+  const getSpec = () => view.model.get('spec');
 
   const openQueries = {};
 
@@ -25,6 +23,14 @@ export async function render(view) {
       return new Promise((resolve, reject) => send(query, resolve, reject));
     },
   };
+
+  async function updateSpec() {
+    const spec = getSpec();
+    console.log('Setting spec:', spec);
+    view.el.replaceChildren(await parseJSON(spec));
+  }
+
+  view.model.on("change:spec", () => updateSpec());
 
   view.model.on('msg:custom', (msg, buffers) => {
     console.group(`query ${msg.queryId}`);
@@ -56,5 +62,5 @@ export async function render(view) {
   });
 
   coordinator().databaseClient(client);
-  view.el.replaceChildren(await parseJSON(spec));
+  updateSpec();
 }

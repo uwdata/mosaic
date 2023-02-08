@@ -29,7 +29,7 @@ class MosaicWidget(anywidget.AnyWidget):
     spec = traitlets.Dict({}).tag(sync=True)
     conn = None
 
-    def __init__(self, spec: dict, con=duckdb.connect(), *args, **kwargs):
+    def __init__(self, spec: dict = {}, con=duckdb.connect(), *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.spec = spec
         self.con = con
