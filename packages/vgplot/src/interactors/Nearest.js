@@ -2,7 +2,7 @@ import { isSelection } from '@uwdata/mosaic-core';
 import { eq, literal } from '@uwdata/mosaic-sql';
 import { select, pointer } from 'd3';
 
-export class NearestSelection {
+export class Nearest {
   constructor(mark, {
     selection,
     channel,

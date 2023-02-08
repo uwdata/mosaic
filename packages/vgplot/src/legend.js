@@ -1,4 +1,4 @@
-import { PointSelection } from './selections/Point.js';
+import { Toggle } from './interactors/Toggle.js';
 
 export class Legend {
   constructor(channel, options) {
@@ -16,7 +16,7 @@ export class Legend {
     const { channel, selection } = this;
     const mark = this.mark = findMark(plot, channel);
     if (this.selection && mark) {
-      this.handler = new PointSelection(mark, { selection, channels: [channel] });
+      this.handler = new Toggle(mark, { selection, channels: [channel] });
       this.selection.addEventListener('value', () => this.update());
     }
   }

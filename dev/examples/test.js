@@ -3,7 +3,7 @@ import * as vg from '../setup.js';
 // export default async function(el) {
 //   const {
 //     plot, vconcat, from, rectY, barX,
-//     count, intervalX, selectY,
+//     count, intervalX, toggleY,
 //     domainX, domainY, domainColor, rangeColor,
 //     labelY, expr,
 //     width, Fixed, Selection
@@ -40,7 +40,7 @@ import * as vg from '../setup.js';
 //           from(table, { filterBy: sel }),
 //           { x: count(), y: 'weather', fill: 'weather' }
 //         ),
-//         selectY({ as: sel }),
+//         toggleY({ as: sel }),
 //         domainX(Fixed),
 //         domainY(weather), labelY(null),
 //         width(800),

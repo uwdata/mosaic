@@ -1,6 +1,6 @@
 import { and, or, eq, literal } from '@uwdata/mosaic-sql';
 
-export class PointSelection {
+export class Toggle {
   constructor(mark, {
     selection,
     channels
@@ -57,7 +57,7 @@ export class PointSelection {
       const target = evt.target;
       let value = null;
 
-      if (isSelectionTarget(groups, target)) {
+      if (isTargetElement(groups, target)) {
         const state = selection.single ? selection.value : this.value;
         const point = accessor(target);
         if (evt.shiftKey && state?.length) {
@@ -78,7 +78,7 @@ export class PointSelection {
   }
 }
 
-function isSelectionTarget(groups, node) {
+function isTargetElement(groups, node) {
   return groups.has(node)
     || groups.has(node.parentNode)
     || groups.has(node.parentNode?.parentNode);

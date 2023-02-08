@@ -11,9 +11,7 @@ hconcat:
     - mark: frame
     - { mark: dot, data: { from: penguins },
         x: bill_length, y: flipper_length, fill: species, r: 2, clip: true }
-    - select: panZoom
-      x: $xs
-      y: $zs
+    - { select: panZoom, x: $xs, y: $zs }
     width: 400
     height: 300
 - vconcat:
