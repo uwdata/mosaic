@@ -20,7 +20,7 @@
   },
   "devDependencies": {
     "@web/dev-server": "^0.1.35",
-    "esbuild": "^0.17.5",
+    "esbuild": "^0.17.6",
     "eslint": "^8.33.0",
     "lerna": "^6.4.1",
     "mocha": "^10.2.0",
