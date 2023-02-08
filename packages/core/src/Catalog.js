@@ -20,20 +20,19 @@ export class Catalog {
     }
 
     const q = this.mc.query(
-      `PRAGMA table_info('${table}')`,
+      `DESCRIBE "${table}"`,
       { type: 'json', cache: false }
     );
 
     return (cache[table] = q.then(result => {
       const columns = object();
-      for (const { name, notnull, type, pk } of result) {
-        columns[name] = {
+      for (const entry of result) {
+        columns[entry.column_name] = {
           table,
-          column: name,
-          sqlType: type,
-          type: jsType(type),
-          notnull,
-          pk
+          column: entry.column_name,
+          sqlType: entry.column_type,
+          type: jsType(entry.column_type),
+          nullable: entry.null === 'YES'
         };
       }
       return columns;
