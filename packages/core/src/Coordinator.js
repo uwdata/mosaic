@@ -1,7 +1,8 @@
 import { socketClient } from './clients/socket.js';
 import { Catalog } from './Catalog.js';
 import { FilterGroup } from './FilterGroup.js';
-import { QueryCache } from './QueryCache.js';
+import { QueryCache, voidCache } from './QueryCache.js';
+import { voidLogger } from './util/void-logger.js';
 
 let _instance;
 
@@ -15,20 +16,22 @@ export function coordinator(instance) {
 }
 
 export class Coordinator {
-  constructor(db = socketClient()) {
-    this.cache = new QueryCache();
+  constructor(db = socketClient(), options = {}) {
     this.catalog = new Catalog(this);
-    this.indexes = true;
+    this.logger(options.logger || console);
+    this.configure(options);
     this.databaseClient(db);
     this.clear();
   }
 
+  logger(logger) {
+    return arguments.length
+      ? (this.logger = logger || voidLogger())
+      : this.logger;
+  }
+
   configure({ cache = true, indexes = true }) {
-    this.cache = cache ? new QueryCache() : {
-      get: () => undefined,
-      set: (key, result) => result,
-      clear: () => {}
-    };
+    this.cache = cache ? new QueryCache() : voidCache();
     this.indexes = indexes;
   }
 
@@ -54,18 +57,22 @@ export class Coordinator {
     try {
       await this.db.query({ type: 'exec', sql });
     } catch (err) {
-      console.error(err);
+      this.logger.error(err);
     }
   }
 
-  async query(query, { type = 'arrow', cache = true } = {}) {
+  query(query, { type = 'arrow', cache = true } = {}) {
     const sql = String(query);
+    const t0 = performance.now();
     const cached = this.cache.get(sql);
     if (cached) {
+      this.logger.debug('Cache');
       return cached;
     } else {
       const request = this.db.query({ type, sql });
-      return cache ? this.cache.set(sql, request) : request;
+      const result = cache ? this.cache.set(sql, request) : request;
+      result.then(() => this.logger.debug(`Query: ${performance.now() - t0}`));
+      return result;
     }
   }
 
@@ -75,14 +82,14 @@ export class Coordinator {
       client.queryPending();
       result = await this.query(query);
     } catch (err) {
-      console.error(err);
+      this.logger.error(err);
       client.queryError(err);
       return;
     }
     try {
       client.queryResult(result).update();
     } catch (err) {
-      console.error(err);
+      this.logger.error(err);
     }
   }
 

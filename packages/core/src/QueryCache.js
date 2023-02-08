@@ -1,3 +1,13 @@
+const requestIdle = typeof requestIdleCallback !== 'undefined'
+  ? requestIdleCallback
+  : setTimeout;
+
+export const voidCache = () => ({
+  get: () => undefined,
+  set: (key, result) => result,
+  clear: () => {}
+});
+
 export class QueryCache {
   constructor({
     max = 1000, // max entries
@@ -22,19 +32,9 @@ export class QueryCache {
 
   set(key, promise) {
     const { cache, max } = this;
-    const now = performance.now();
-
-    const receive = promise.then(result => {
-      console.log(`Query: ${Math.round(performance.now() - now)}`);
-      return result;
-    });
-
-    cache.set(key, { last: now, promise });
-    if (cache.size > max) {
-      setTimeout(() => this.evict());
-    }
-
-    return receive;
+    cache.set(key, { last: performance.now(), promise });
+    if (cache.size > max) requestIdle(() => this.evict());
+    return promise;
   }
 
   evict() {
