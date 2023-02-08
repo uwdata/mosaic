@@ -55,6 +55,6 @@ export async function render(view) {
     console.groupEnd("query");
   });
 
-  coordinator(new Coordinator(client));
+  coordinator().databaseClient(client);
   view.el.replaceChildren(await parseJSON(spec));
 }

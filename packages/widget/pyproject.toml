@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "mosaic-widget"
-description = "A Juptyter widget for mosaic"
+description = "A Jupyter widget for mosaic"
 dynamic = ["version"]
 readme = "README.md"
 requires-python = ">=3.8"
@@ -24,7 +24,7 @@ artifacts = [
 
 [project.optional-dependencies]
 dev = [
-  "jupyter[lab]",
+  "jupyterlab",
   "pandas",
   "pyyaml",
   "black[jupyter]",
