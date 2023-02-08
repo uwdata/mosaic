@@ -36,15 +36,15 @@ export class NearestSelection {
     const facets = select(svg).selectAll('g[aria-label="facet"]');
     const root = facets.size() ? facets : select(svg);
     const scale = svg.scale(channel);
-    const signal = !isSelection(selection);
+    const param = !isSelection(selection);
 
     root.on('mousemove', function(evt) {
       const [x, y] = pointer(evt, this);
       const z = findNearest(data, channel, scale.invert(channel === 'x' ? x : y));
-      selection.update(signal ? z : that.clause(z));
+      selection.update(param ? z : that.clause(z));
     });
 
-    if (signal) return;
+    if (param) return;
     svg.addEventListener('mouseenter', () => {
       this.selection.activate(this.clause(0));
     });

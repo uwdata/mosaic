@@ -2,12 +2,12 @@ import * as vg from '../setup.js';
 
 export default async function(el) {
   const {
-    coordinator, Signal, plot, from, lineY, ruleX, text, textX, nearestX,
+    coordinator, Param, plot, from, lineY, ruleX, text, textX, nearestX,
     scaleY, domainY, gridY, tickFormatY, labelY, labelX,
     width, height, marginRight, sql, argmax, max, column, Query
   } = vg;
 
-  const point = new Signal(new Date(Date.UTC(2013, 4, 13)));
+  const point = new Param(new Date(Date.UTC(2013, 4, 13)));
   const table = 'stocks';
   const label = 'labels';
   const d = column('Date');

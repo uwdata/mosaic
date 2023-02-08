@@ -1,4 +1,4 @@
-import { isSignal } from '@uwdata/mosaic-core';
+import { isParam } from '@uwdata/mosaic-core';
 import { Query, gt, sum, expr, isBetween } from '@uwdata/mosaic-sql';
 import { Transient } from '../symbols.js';
 import { dericheConfig, dericheConv1d, grid1d } from './util/density.js';
@@ -15,7 +15,7 @@ export class Density1DMark extends Mark {
     this.bins = bins;
     this.bandwidth = bandwidth;
 
-    if (isSignal(bandwidth)) {
+    if (isParam(bandwidth)) {
       bandwidth.addEventListener('value', value => {
         this.bandwidth = value;
         if (this.grid) this.convolve().update();

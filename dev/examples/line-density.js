@@ -2,7 +2,7 @@ import * as vg from '../setup.js';
 
 export default async function(el) {
   const {
-    coordinator, Selection, Signal, vconcat, hconcat, plot, menu, slider, from,
+    coordinator, Selection, Param, vconcat, hconcat, plot, menu, slider, from,
     denseLine, schemeColor, labelY, intervalXY, width, height
   } = vg;
 
@@ -15,8 +15,8 @@ export default async function(el) {
   const x = 't';
   const y = 'v';
   const z = 's';
-  const bandwidth = new Signal(0);
-  const binScale = new Signal(1);
+  const bandwidth = new Param(0);
+  const binScale = new Param(1);
   const brush = Selection.intersect();
 
   el.appendChild(

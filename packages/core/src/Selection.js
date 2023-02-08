@@ -1,12 +1,12 @@
 import { or } from '@uwdata/mosaic-sql';
-import { Signal } from './Signal.js';
+import { Param } from './Param.js';
 import { skipClient } from './util/skip-client.js';
 
 export function isSelection(x) {
   return x instanceof Selection;
 }
 
-export class Selection extends Signal {
+export class Selection extends Param {
 
   static intersect() {
     return new Selection();

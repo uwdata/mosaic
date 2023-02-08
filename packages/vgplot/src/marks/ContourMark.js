@@ -1,5 +1,5 @@
 import { contours, max } from 'd3';
-import { isSignal } from '@uwdata/mosaic-core';
+import { isParam } from '@uwdata/mosaic-core';
 import { Density2DMark } from './Density2DMark.js';
 
 export class ContourMark extends Density2DMark {
@@ -8,7 +8,7 @@ export class ContourMark extends Density2DMark {
     super('geo', source, channels);
     this.thresholds = thresholds;
 
-    if (isSignal(thresholds)) {
+    if (isParam(thresholds)) {
       thresholds.addEventListener('value', value => {
         this.thresholds = value;
         if (this.grids) this.contours().update();

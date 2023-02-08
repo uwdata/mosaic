@@ -2,12 +2,12 @@ import * as vg from '../setup.js';
 
 export default function(el) {
   const {
-    Signal, plot, vconcat, slider, from, areaY,
+    Param, plot, vconcat, slider, from, areaY,
     width, height, sql, column
   } = vg;
 
   const table = 'walk';
-  const point = new Signal(0);
+  const point = new Param(0);
 
   el.appendChild(
     vconcat(

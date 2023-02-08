@@ -2,12 +2,12 @@ import * as vg from '../setup.js';
 
 export default async function(el) {
   const {
-    coordinator, Query, Selection, Signal, Fixed, expr,
+    coordinator, Query, Selection, Param, Fixed, expr,
     plot, vconcat, menu, from, bin, avg, count, max, min, rectY,
     width, height, marginLeft, domainX, intervalX,
   } = vg;
 
-  const aggr = new Signal('count');
+  const aggr = new Param('count');
   const view = document.createElement('div');
   view.innerHTML = '<br/>Loading 10M Flights data...';
   el.appendChild(

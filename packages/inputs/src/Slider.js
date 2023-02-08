@@ -1,4 +1,4 @@
-import { isSelection, isSignal } from '@uwdata/mosaic-core';
+import { isParam, isSelection } from '@uwdata/mosaic-core';
 import { eq, literal } from '@uwdata/mosaic-sql';
 
 let _id = 0;
@@ -63,7 +63,7 @@ export class Slider {
         value,
         predicate: eq(column, literal(value))
       });
-    } else if (isSignal(this.selection)) {
+    } else if (isParam(this.selection)) {
       selection.update(value);
     }
   }

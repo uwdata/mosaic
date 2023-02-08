@@ -27,7 +27,7 @@ const constantOptions = new Set([
   'pointerEvents'
 ]);
 
-const isParam = obj => typeof obj?.addEventListener === 'function';
+const isParamLike = obj => typeof obj?.addEventListener === 'function';
 const isColorChannel = channel => channel === 'stroke' || channel === 'fill';
 const isConstantOption = channel => constantOptions.has(channel);
 
@@ -59,7 +59,7 @@ export class Mark extends MosaicClient {
         } else {
           channels.push({ channel, field: column(entry) });
         }
-      } else if (isParam(entry)) {
+      } else if (isParamLike(entry)) {
         if (entry.columns) {
           channels.push({ channel, field: entry });
           params.add(entry);

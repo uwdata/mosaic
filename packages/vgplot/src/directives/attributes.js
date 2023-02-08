@@ -1,4 +1,4 @@
-import { isSignal } from '@uwdata/mosaic-core';
+import { isParam } from '@uwdata/mosaic-core';
 import { namedPlots } from './named-plots.js';
 
 export function name(name) {
@@ -6,7 +6,7 @@ export function name(name) {
 }
 
 function setAttribute(plot, name, value) {
-  if (isSignal(value)) {
+  if (isParam(value)) {
     value.addEventListener('value', value => {
       plot.setAttribute(name, value);
       plot.update();

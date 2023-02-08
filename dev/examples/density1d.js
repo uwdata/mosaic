@@ -3,11 +3,11 @@ import * as vg from '../setup.js';
 export default function(el) {
   const {
     plot, vconcat, from, axisY, domainX, densityY, intervalX,
-    marginLeft, width, height, Signal, Selection, Fixed, slider
+    marginLeft, width, height, Param, Selection, Fixed, slider
   } = vg;
 
   const table = 'flights';
-  const bandwidth = new Signal();
+  const bandwidth = new Param();
   const brush = Selection.crossfilter();
 
   el.appendChild(
