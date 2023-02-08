@@ -7,7 +7,7 @@ let queryCounter = 0;
 export async function render(view) {
   const spec = view.model.get("spec");
 
-  console.log("Init client with spec:", spec);
+  console.log("Initialize client with spec:", spec);
 
   view.el.classList.add("mosaic-widget");
 
