@@ -29,10 +29,20 @@ class MosaicWidget(anywidget.AnyWidget):
     spec = traitlets.Dict({}).tag(sync=True)
     conn = None
 
-    def __init__(self, spec: dict = {}, con=duckdb.connect(), *args, **kwargs):
+    def __init__(self, spec: dict = {}, con=duckdb.connect(), data = {}, *args, **kwargs):
+        """Create a Mosaic widget.
+
+        Args:
+            spec (dict, optional): The initial Mosaic specification. Defaults to {}.
+            con (connection, optional): A DuckDB connection. Defaults to duckdb.connect().
+            data (dict, optional):Pandas DataFrames to add to DuckDB.
+                The keys are used as the names of the tables. Defaults to {}.
+        """
         super().__init__(*args, **kwargs)
         self.spec = spec
         self.con = con
+        for name, df in data.items():
+            self.con.register(name, df)
         self.on_msg(self._handle_custom_msg)
 
     def _handle_custom_msg(self, data: dict, buffers: list):
