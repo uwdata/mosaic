@@ -19,7 +19,7 @@ export function plotExtent(mark, filter, channel, domainAttr, niceAttr) {
       ? scaleLinear().domain([min, max]).nice().domain()
       : [min, max]);
     if (domain !== Fixed) dom[Transient] = true;
-    plot.setAttribute(domainAttr, dom);
+    plot.setAttribute(domainAttr, dom, { silent: true });
     return dom;
   }
 }
