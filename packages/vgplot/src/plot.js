@@ -70,21 +70,24 @@ export class Plot {
     return this.attributes[name];
   }
 
-  setAttribute(name, value) {
+  setAttribute(name, value, options) {
     if (distinct(this.attributes[name], value)) {
       if (value === undefined) {
         delete this.attributes[name];
       } else {
         this.attributes[name] = value;
       }
-      this.listeners?.get(name)?.forEach(cb => cb(name, value));
+      if (!options?.silent) {
+        this.listeners?.get(name)?.forEach(cb => cb(name, value));
+      }
+      return true;
     }
-    return this;
+    return false;
   }
 
   addAttributeListener(name, callback) {
     const map = this.listeners || (this.listeners = new Map);
-    if (!map.has(name)) map.set(name, new Set)
+    if (!map.has(name)) map.set(name, new Set);
     map.get(name).add(callback);
     return this;
   }
