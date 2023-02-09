@@ -13,7 +13,7 @@ export class MosaicClient {
    */
   constructor(filterSelection) {
     this._filterBy = filterSelection;
-    this._requestUpdate = throttle(() => this.requestQuery());
+    this._requestUpdate = throttle(() => this.requestQuery(), true);
   }
 
   /**

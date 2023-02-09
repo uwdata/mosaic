@@ -1,3 +1,5 @@
+import { distinct } from './util/distinct.js';
+
 export function isParam(x) {
   return x instanceof Param;
 }
@@ -41,8 +43,4 @@ export class Param {
   emit(type, event) {
     this._listeners.get(type)?.forEach(l => l(event));
   }
-}
-
-function distinct(a, b) {
-  return a instanceof Date ? +a !== +b : a !== b;
 }

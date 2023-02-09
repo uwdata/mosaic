@@ -1,6 +1,9 @@
-export function throttle(callback) {
+const NIL = {};
+
+export function throttle(callback, debounce = false) {
   let curr;
   let next;
+  let pending = NIL;
 
   function invoke(event) {
     curr = callback(event).then(() => {
@@ -18,5 +21,20 @@ export function throttle(callback) {
     next = { event };
   }
 
-  return event => curr ? enqueue(event) : invoke(event);
+  function process(event) {
+    curr ? enqueue(event) : invoke(event);
+  }
+
+  function delay(event) {
+    if (pending !== event) {
+      requestAnimationFrame(() => {
+        const e = pending;
+        pending = NIL;
+        process(e);
+      });
+    }
+    pending = event;
+  }
+
+  return debounce ? delay : process;
 }
