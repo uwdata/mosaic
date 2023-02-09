@@ -66,11 +66,11 @@ function lineDensity(
   const groups = groupby.concat(z);
 
   // bin x values
-  const xx = rx ? `(${x1} - ${x})` : `(${x} - ${x0})`;
+  const xx = rx ? `(${x1} - ${x}::DOUBLE)` : `(${x}::DOUBLE - ${x0})`;
   const xb = expr(`FLOOR(${xx} * ${(xn - 1) / (x1 - x0)}::DOUBLE)::INTEGER`);
 
   // bin y values
-  const yy = ry ? `(${y1} - ${y})` : `(${y} - ${y0})`;
+  const yy = ry ? `(${y1} - ${y}::DOUBLE)` : `(${y}::DOUBLE - ${y0})`;
   const yb = expr(`FLOOR(${yy} * ${(yn - 1) / (y1 - y0)}::DOUBLE)::INTEGER`);
 
   // select x, y points binned to the grid
