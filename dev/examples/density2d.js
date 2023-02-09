@@ -4,10 +4,11 @@ export default function(el) {
   const {
     Param, slider, vconcat, hconcat, plot, from,
     contour, raster, scaleColor, schemeColor,
-    axisX, axisY, marginLeft, marginRight, width, height,
+    axisX, axisY, labelAnchorX, labelAnchorY, zeroX,
+    marginLeft, marginRight, width, height,
   } = vg;
 
-  const bandwidth = Param.value(20);
+  const bandwidth = Param.value(7);
   const thresholds = Param.value(10);
   const table = 'flights';
   const x = 'time';
@@ -23,8 +24,9 @@ export default function(el) {
         scaleColor('symlog'), schemeColor('ylgnbu'),
         raster(from(table), { x, y, fill: 'density', bandwidth }),
         contour(from(table), { x, y, stroke: 'white', strokeOpacity: 0.5, bandwidth, thresholds }),
-        axisX('top'), axisY('right'), marginLeft(5), marginRight(50),
-        width(700), height(500)
+        axisX('top'), labelAnchorX('center'), zeroX(true),
+        axisY('right'), labelAnchorY('center'),
+        width(700), height(500), marginLeft(5), marginRight(40)
       )
     )
   );
