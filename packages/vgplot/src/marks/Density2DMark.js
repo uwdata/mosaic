@@ -36,6 +36,13 @@ export class Density2DMark extends Mark {
     }
   }
 
+  setPlot(plot, index) {
+    const update = () => this.requestUpdate();
+    plot.addAttributeListener('domainX', update);
+    plot.addAttributeListener('domainY', update);
+    return super.setPlot(plot, index);
+  }
+
   get filterIndexable() {
     const xdom = this.plot.getAttribute('domainX');
     const ydom = this.plot.getAttribute('domainY');
@@ -108,11 +115,11 @@ export class Density2DMark extends Mark {
 function binLinear2d(input, x, y, weight, x0, x1, y0, y1, xn, yn, rx, ry, groupby = []) {
   const w = weight && weight !== 1 ? `* ${weight}` : '';
   const xp = rx
-    ? expr(`(${x1} - ${x}) * ${(xn - 1) / (x1 - x0)}::DOUBLE`)
-    : expr(`(${x} - ${x0}) * ${(xn - 1) / (x1 - x0)}::DOUBLE`);
+    ? expr(`(${x1} - ${x}::DOUBLE) * ${(xn - 1) / (x1 - x0)}::DOUBLE`)
+    : expr(`(${x}::DOUBLE - ${x0}) * ${(xn - 1) / (x1 - x0)}::DOUBLE`);
   const yp = ry
-    ? expr(`(${y1} - ${y}) * ${(yn - 1) / (y1 - y0)}::DOUBLE`)
-    : expr(`(${y} - ${y0}) * ${(yn - 1) / (y1 - y0)}::DOUBLE`);
+    ? expr(`(${y1} - ${y}::DOUBLE) * ${(yn - 1) / (y1 - y0)}::DOUBLE`)
+    : expr(`(${y}::DOUBLE - ${y0}) * ${(yn - 1) / (y1 - y0)}::DOUBLE`);
 
   const q = (i, w) => Query
     .select({ xp, yp, i, w }, groupby)

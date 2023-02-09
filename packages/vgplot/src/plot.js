@@ -1,4 +1,4 @@
-import { throttle } from '@uwdata/mosaic-core';
+import { distinct, throttle } from '@uwdata/mosaic-core';
 import { plotRenderer } from './plot-renderer.js';
 
 const DEFAULT_ATTRIBUTES = {
@@ -12,6 +12,7 @@ const DEFAULT_ATTRIBUTES = {
 export class Plot {
   constructor(element) {
     this.attributes = { ...DEFAULT_ATTRIBUTES };
+    this.listeners = null;
     this.interactors = [];
     this.legends = [];
     this.marks = [];
@@ -70,12 +71,26 @@ export class Plot {
   }
 
   setAttribute(name, value) {
-    if (value === undefined) {
-      delete this.attributes[name];
-    } else {
-      this.attributes[name] = value;
+    if (distinct(this.attributes[name], value)) {
+      if (value === undefined) {
+        delete this.attributes[name];
+      } else {
+        this.attributes[name] = value;
+      }
+      this.listeners?.get(name)?.forEach(cb => cb(name, value));
     }
     return this;
+  }
+
+  addAttributeListener(name, callback) {
+    const map = this.listeners || (this.listeners = new Map);
+    if (!map.has(name)) map.set(name, new Set)
+    map.get(name).add(callback);
+    return this;
+  }
+
+  removeAttributeListener(name, callback) {
+    return this.listeners?.get(name)?.delete(callback);
   }
 
   addParams(mark, paramSet) {
