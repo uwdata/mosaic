@@ -15,8 +15,8 @@ export default async function(el) {
   const x = 't';
   const y = 'v';
   const z = 's';
-  const bandwidth = new Param(0);
-  const binScale = new Param(1);
+  const bandwidth = Param.value(0);
+  const binScale = Param.value(1);
   const brush = Selection.intersect();
 
   el.appendChild(

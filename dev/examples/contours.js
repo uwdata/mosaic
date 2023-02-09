@@ -1,8 +1,8 @@
 import * as vg from '../setup.js';
 
 export default function(el = document.body) {
-  const bandwidth = new vg.Param(40);
-  const thresholds = new vg.Param(10);
+  const bandwidth = vg.Param.value(40);
+  const thresholds = vg.Param.value(10);
   const table = 'penguins';
   const x = 'bill_length';
   const y = 'bill_depth';

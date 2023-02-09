@@ -7,7 +7,7 @@ export default async function(el) {
     width, height, marginLeft, domainX, intervalX,
   } = vg;
 
-  const aggr = new Param('count');
+  const aggr = Param.value('count');
   const view = document.createElement('div');
   view.innerHTML = '<br/>Loading 10M Flights data...';
   el.appendChild(

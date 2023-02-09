@@ -7,8 +7,8 @@ export default function(el) {
     axisX, axisY, marginLeft, marginRight, width, height,
   } = vg;
 
-  const bandwidth = new Param(20);
-  const thresholds = new Param(10);
+  const bandwidth = Param.value(20);
+  const thresholds = Param.value(10);
   const table = 'flights';
   const x = 'time';
   const y = 'delay';

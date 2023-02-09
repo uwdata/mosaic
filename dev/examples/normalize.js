@@ -7,7 +7,7 @@ export default async function(el) {
     width, height, marginRight, sql, argmax, max, column, Query
   } = vg;
 
-  const point = new Param(new Date(Date.UTC(2013, 4, 13)));
+  const point = Param.value(new Date(Date.UTC(2013, 4, 13)));
   const table = 'stocks';
   const label = 'labels';
   const d = column('Date');

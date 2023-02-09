@@ -7,7 +7,7 @@ export default function(el) {
   } = vg;
 
   const table = 'flights';
-  const bandwidth = new Param();
+  const bandwidth = Param.value();
   const brush = Selection.crossfilter();
 
   el.appendChild(

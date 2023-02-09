@@ -16,7 +16,7 @@ export default function(el) {
   const color = 'steelblue';
   const binWidth = 10;
   const query = Selection.crossfilter();
-  const scale = new Param('log');
+  const scale = Param.value('log');
 
   el.appendChild(
     vconcat(

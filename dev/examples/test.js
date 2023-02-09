@@ -58,9 +58,9 @@ export default async function(el) {
 //     domainX, height
 //   } = vg;
 
-//   const dl = new Param(0);
-//   const ti = new Param(0);
-//   const di = new Param(0);
+//   const dl = Param.value(0);
+//   const ti = Param.value(0);
+//   const di = Param.value(0);
 
 //   el.appendChild(
 //     vconcat(

@@ -7,7 +7,7 @@ export default function(el) {
   } = vg;
 
   const table = 'walk';
-  const point = new Param(0);
+  const point = Param.value(0);
 
   el.appendChild(
     vconcat(

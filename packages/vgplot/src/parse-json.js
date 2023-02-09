@@ -16,7 +16,7 @@ export const DefaultParamParsers = new Map([
   ['crossfilter', () => Selection.crossfilter()],
   ['union', () => Selection.union()],
   ['single', () => Selection.single()],
-  ['value', v => new Param(v)]
+  ['value', v => Param.value(v)]
 ]);
 
 export const DefaultSpecParsers = new Map([
@@ -91,7 +91,7 @@ export class JSONParseContext {
     this.postQueue.push(fn);
   }
 
-  maybeParam(value, ctr = () => new Param()) {
+  maybeParam(value, ctr = () => Param.value()) {
     const { params } = this;
     const name = paramRef(value);
 
