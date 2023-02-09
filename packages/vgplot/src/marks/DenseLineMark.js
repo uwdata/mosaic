@@ -31,8 +31,8 @@ export class DenseLineMark extends RasterMark {
     }
 
     const [nx, ny] = this.bins = [
-      Math.round(plot.innerWidth() * this.binScale),
-      Math.round(plot.innerHeight() * this.binScale)
+      Math.round(plot.innerWidth() / this.binWidth),
+      Math.round(plot.innerHeight() / this.binWidth)
     ];
     const rx = !!plot.getAttribute('reverseX');
     const ry = !!plot.getAttribute('reverseY');

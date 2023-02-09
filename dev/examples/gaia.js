@@ -19,7 +19,7 @@ export default async function(el) {
   const table = 'gaia';
   const brush = Selection.crossfilter();
   const bandwidth = 0;
-  const scaleFactor = 2;
+  const binWidth = 2;
   const histScale = 'sqrt';
 
   el.appendChild(
@@ -28,7 +28,7 @@ export default async function(el) {
         plot(
           raster(
             from(table, { filterBy: brush }),
-            { x: 'ra', y: 'dec', fill: 'density', bandwidth, scaleFactor }
+            { x: 'ra', y: 'dec', fill: 'density', bandwidth, binWidth }
           ),
           intervalXY({ as: brush }),
           domainXY(Fixed), niceX(false), niceY(false),
@@ -60,7 +60,7 @@ export default async function(el) {
       plot(
         raster(
           from(table, { filterBy: brush }),
-          { x: 'bp_rp', y: 'phot_g_mean_mag', fill: 'density', bandwidth, scaleFactor }
+          { x: 'bp_rp', y: 'phot_g_mean_mag', fill: 'density', bandwidth, binWidth }
         ),
         scaleColor('sqrt'), schemeColor('plasma'), reverseY(true),
         intervalXY({ as: brush }), domainXY(Fixed),

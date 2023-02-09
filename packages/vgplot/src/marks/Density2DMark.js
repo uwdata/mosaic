@@ -7,7 +7,7 @@ import { Mark } from './Mark.js';
 
 export class Density2DMark extends Mark {
   constructor(type, source, options) {
-    const { bandwidth = 20, binScale = 0.5, ...channels } = options;
+    const { bandwidth = 20, binWidth = 2, ...channels } = options;
     const densityFill = channels.fill === 'density';
     const densityStroke = channels.stroke === 'density';
     if (densityFill) delete channels.fill;
@@ -17,7 +17,7 @@ export class Density2DMark extends Mark {
     this.densityFill = densityFill;
     this.densityStroke = densityStroke;
     this.bandwidth = bandwidth;
-    this.binScale = binScale;
+    this.binWidth = binWidth;
 
     if (isParam(bandwidth)) {
       bandwidth.addEventListener('value', value => {
@@ -27,12 +27,12 @@ export class Density2DMark extends Mark {
       this.bandwidth = bandwidth.value;
     }
 
-    if (isParam(binScale)) {
-      binScale.addEventListener('value', value => {
-        this.binScale = value;
+    if (isParam(binWidth)) {
+      binWidth.addEventListener('value', value => {
+        this.binWidth = value;
         this.requestUpdate();
       });
-      this.binScale = binScale.value;
+      this.binWidth = binWidth.value;
     }
   }
 
@@ -64,8 +64,8 @@ export class Density2DMark extends Mark {
     const [x0, x1] = extentX(this, filter);
     const [y0, y1] = extentY(this, filter);
     const [nx, ny] = this.bins = [
-      Math.round(plot.innerWidth() * this.binScale),
-      Math.round(plot.innerHeight() * this.binScale)
+      Math.round(plot.innerWidth() / this.binWidth),
+      Math.round(plot.innerHeight() / this.binWidth)
     ];
     const rx = !!plot.getAttribute('reverseX');
     const ry = !!plot.getAttribute('reverseY');

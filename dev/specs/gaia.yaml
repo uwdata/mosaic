@@ -4,7 +4,7 @@ data:
 params:
   brush: { select: crossfilter }
   bandwidth: 0
-  scaleFactor: 0.5
+  binWidth: 2
   scaleType: sqrt
 hconcat:
 - vconcat:
@@ -15,7 +15,7 @@ hconcat:
       y: dec
       fill: density
       bandwidth: $bandwidth
-      scaleFactor: $scaleFactor
+      binWidth: $binWidth
     - select: intervalXY
       as: $brush
     domainXY: Fixed
@@ -65,7 +65,7 @@ hconcat:
     y: phot_g_mean_mag
     fill: density
     bandwidth: $bandwidth
-    scaleFactor: $scaleFactor
+    binWidth: $binWidth
   - select: intervalXY
     as: $brush
   domainXY: Fixed

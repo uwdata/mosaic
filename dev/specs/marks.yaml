@@ -41,6 +41,6 @@ vconcat:
     schemeColor: blues
     domainX: [-1, 8]
   - plot:
-    - { mark: denseLine, data: { from: dd }, x: i, y: v, fill: density, bandwidth: 2, binScale: 1 }
+    - { mark: denseLine, data: { from: dd }, x: i, y: v, fill: density, bandwidth: 2, binWidth: 1 }
     schemeColor: blues
     domainX: [-1, 8]
