@@ -29,8 +29,8 @@ export class HexbinMark extends Mark {
     // TODO use zero margins when faceted?
     const ox = 0.5 - plot.getAttribute('marginLeft');
     const oy = 0 - plot.getAttribute('marginTop');
-    const dx = binWidth;
-    const dy = dx * (1.5 / Math.sqrt(3));
+    const dx = `${binWidth}::DOUBLE`;
+    const dy = `${binWidth * (1.5 / Math.sqrt(3))}::DOUBLE`;
     const xr = `${plot.innerWidth() / (x2 - x1)}::DOUBLE`;
     const yr = `${plot.innerHeight() / (y2 - y1)}::DOUBLE`;
 
