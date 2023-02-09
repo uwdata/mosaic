@@ -4,8 +4,8 @@ import { summarize } from './util/summarize.js';
 const object = () => Object.create(null);
 
 export class Catalog {
-  constructor(mc) {
-    this.mc = mc;
+  constructor(coordinator) {
+    this.mc = coordinator;
     this.clear();
   }
 
