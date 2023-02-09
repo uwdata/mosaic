@@ -25,13 +25,13 @@ export class PanZoom {
 
     const { plot } = mark;
     if (panx) {
-      this.xsel.addEventListener('value', v => {
-        plot.setAttribute('domainX', v).update();
+      this.xsel.addEventListener('value', value => {
+        if (plot.setAttribute('domainX', value)) plot.update();
       });
     }
     if (pany) {
-      this.ysel.addEventListener('value', v => {
-        plot.setAttribute('domainY', v).update();
+      this.ysel.addEventListener('value', value => {
+        if (plot.setAttribute('domainY', value)) plot.update();
       });
     }
   }
