@@ -8,7 +8,7 @@ export const xyext = { ...xext, ...yext };
 export function plotExtent(mark, filter, channel, domainAttr, niceAttr) {
   const { plot, stats } = mark;
   const domain = plot.getAttribute(domainAttr);
-  const nice = plot.getAttribute(niceAttr) ?? true;
+  const nice = plot.getAttribute(niceAttr);
 
   if (Array.isArray(domain) && !domain[Transient]) {
     return domain;
