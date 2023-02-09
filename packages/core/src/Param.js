@@ -8,6 +8,10 @@ export class Param {
     this._listeners = new Map;
   }
 
+  static value(value) {
+    return new Param(value);
+  }
+
   get value() {
     return this._value;
   }
