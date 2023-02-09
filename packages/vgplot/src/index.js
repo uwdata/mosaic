@@ -144,7 +144,7 @@ export {
   textY,
   densityY,
   denseLine,
-  heatmap,
+  raster,
   contour,
   hexbin,
   hexgrid,

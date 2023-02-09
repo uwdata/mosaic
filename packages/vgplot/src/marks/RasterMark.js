@@ -1,9 +1,9 @@
 import { scale } from '@observablehq/plot';
 import { isColor } from './util/is-color.js';
-import { createCanvas, heatmap, opacityMap, palette } from './util/heatmap.js';
+import { createCanvas, raster, opacityMap, palette } from './util/raster.js';
 import { Density2DMark } from './Density2DMark.js';
 
-export class HeatmapMark extends Density2DMark {
+export class RasterMark extends Density2DMark {
   constructor(source, options) {
     super('image', source, options);
   }
@@ -23,10 +23,10 @@ export class HeatmapMark extends Density2DMark {
     const idx = groupby.indexOf('fill');
     const domain = idx < 0 ? [] : kde.map(({ key }) => key[idx]);
 
-    // generate heatmap images
+    // generate raster images
     this.data = kde.map(grid => {
       const palette = imagePalette(this, domain, grid.key?.[idx]);
-      heatmap(grid, img.data, w, h, s, palette);
+      raster(grid, img.data, w, h, s, palette);
       ctx.putImageData(img, 0, 0);
       return { src: canvas.toDataURL() };
     });

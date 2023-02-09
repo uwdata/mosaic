@@ -3,7 +3,7 @@ import * as vg from '../setup.js';
 export default function(el) {
   const {
     Param, slider, vconcat, hconcat, plot, from,
-    contour, heatmap, scaleColor, schemeColor,
+    contour, raster, scaleColor, schemeColor,
     axisX, axisY, marginLeft, marginRight, width, height,
   } = vg;
 
@@ -21,7 +21,7 @@ export default function(el) {
       ),
       plot(
         scaleColor('symlog'), schemeColor('ylgnbu'),
-        heatmap(from(table), { x, y, fill: 'density', bandwidth }),
+        raster(from(table), { x, y, fill: 'density', bandwidth }),
         contour(from(table), { x, y, stroke: 'white', strokeOpacity: 0.5, bandwidth, thresholds }),
         axisX('top'), axisY('right'), marginLeft(5), marginRight(50),
         width(700), height(500)

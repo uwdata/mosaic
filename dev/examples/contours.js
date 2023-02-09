@@ -14,7 +14,7 @@ export default function(el = document.body) {
         vg.slider({ label: 'Thresholds', as: thresholds, min: 2, max: 20 })
       ),
       vg.plot(
-        vg.heatmap(vg.from(table), { x, y, fill: 'species', bandwidth }),
+        vg.raster(vg.from(table), { x, y, fill: 'species', bandwidth }),
         vg.contour(vg.from(table), { x, y, stroke: 'species', bandwidth, thresholds }),
         vg.dot(vg.from(table), { x, y, fill: 'black', r: 1 }),
         vg.axisX('bottom'), vg.labelAnchorX('center'),

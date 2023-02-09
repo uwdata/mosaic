@@ -3,7 +3,7 @@ import * as vg from '../setup.js';
 export default async function(el) {
   const {
     Query, coordinator, expr, plot, hconcat, vconcat, hspace,
-    from, bin, count, heatmap, rectY,
+    from, bin, count, raster, rectY,
     domainX, domainXY, niceX, niceY, scaleY, gridY, reverseY, scaleColor, schemeColor,
     width, height, marginLeft,
     intervalX, intervalXY, Selection, Fixed
@@ -26,7 +26,7 @@ export default async function(el) {
     hconcat(
       vconcat(
         plot(
-          heatmap(
+          raster(
             from(table, { filterBy: brush }),
             { x: 'ra', y: 'dec', fill: 'density', bandwidth, scaleFactor }
           ),
@@ -58,7 +58,7 @@ export default async function(el) {
       ),
       hspace(30),
       plot(
-        heatmap(
+        raster(
           from(table, { filterBy: brush }),
           { x: 'bp_rp', y: 'phot_g_mean_mag', fill: 'density', bandwidth, scaleFactor }
         ),

@@ -1,6 +1,6 @@
 import { rgb } from 'd3';
 
-export function heatmap(grid, data, w, h, scale, scheme) {
+export function raster(grid, data, w, h, scale, scheme) {
   const n = (scheme.length >> 2) - 1;
   for (let j = 0, k = 0; j < h; ++j) {
     for (let i = 0, row = (h - j - 1) * w; i < w; ++i, k += 4) {

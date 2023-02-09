@@ -1,8 +1,8 @@
 import { Query, and, count, sum, expr, isNull, isBetween } from '@uwdata/mosaic-sql';
 import { extentX, extentY } from './util/extent.js';
-import { HeatmapMark } from './HeatmapMark.js';
+import { RasterMark } from './RasterMark.js';
 
-export class DenseLineMark extends HeatmapMark {
+export class DenseLineMark extends RasterMark {
   constructor(source, options) {
     const { normalize = true, ...rest } = options;
     super(source, { bandwidth: 0, ...rest });

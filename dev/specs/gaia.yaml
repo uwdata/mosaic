@@ -9,7 +9,7 @@ params:
 hconcat:
 - vconcat:
   - plot:
-    - mark: heatmap
+    - mark: raster
       data: { from: gaia, filterBy: $brush }
       x: ra
       y: dec
@@ -59,7 +59,7 @@ hconcat:
       marginLeft: 65
 - hspace: 30
 - plot:
-  - mark: heatmap
+  - mark: raster
     data: { from: gaia, filterBy: $brush }
     x: bp_rp
     y: phot_g_mean_mag

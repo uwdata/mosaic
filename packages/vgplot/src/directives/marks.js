@@ -3,8 +3,8 @@ import { ConnectedMark } from '../marks/ConnectedMark';
 import { Density1DMark } from '../marks/Density1DMark.js';
 import { DenseLineMark } from '../marks/DenseLineMark.js';
 import { ContourMark } from '../marks/ContourMark.js';
-import { HeatmapMark } from '../marks/HeatmapMark.js';
 import { HexbinMark } from '../marks/HexbinMark.js';
+import { RasterMark } from '../marks/RasterMark.js';
 import { RegressionMark } from '../marks/RegressionMark.js';
 
 const decorators = new Set(['frame', 'hexgrid', 'graticule', 'sphere']);
@@ -76,7 +76,7 @@ export const densityY = (...args) => explicitType(Density1DMark, 'areaY', ...arg
 
 export const denseLine = (...args) => implicitType(DenseLineMark, ...args);
 export const contour = (...args) => implicitType(ContourMark, ...args);
-export const heatmap = (...args) => implicitType(HeatmapMark, ...args);
+export const raster = (...args) => implicitType(RasterMark, ...args);
 export const hexbin = (...args) => implicitType(HexbinMark, ...args);
 export const hexgrid = (...args) => mark('hexgrid', ...args);
 
