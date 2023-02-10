@@ -27,7 +27,7 @@ export class Param {
 
   addEventListener(type, callback) {
     let list = this._listeners.get(type) || [];
-    if (list.indexOf(callback) < 0) {
+    if (!list.includes(callback)) {
       list = list.concat(callback);
     }
     this._listeners.set(type, list);
