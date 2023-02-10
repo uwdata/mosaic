@@ -251,8 +251,10 @@ function annotatePlot(svg, indices) {
 function annotateMarks(svg, indices) {
   let index = -1;
   for (const child of svg.children) {
-    const skip = child.nodeName === 'style' ||
-      (child.getAttribute('aria-label') || '').includes('-axis');
+    const aria = child.getAttribute('aria-label') || '';
+    const skip = child.nodeName === 'style'
+      || aria.includes('-axis')
+      || aria.includes('-grid');
     if (!skip) {
       child.setAttribute('data-index', indices[++index]);
     }
