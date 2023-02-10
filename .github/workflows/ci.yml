@@ -1,0 +1,51 @@
+name: Test
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  node:
+    name: Test on Node
+
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Setup Node
+        uses: actions/setup-node@v3
+
+      - name: Install Node dependencies
+        run: npm ci
+
+      - run: npm run lint
+      - run: npm run build
+      - run: npm run test
+
+  python:
+    name: Test on Python
+
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Setup Python
+        uses: actions/setup-python@v4
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install hatch
+
+      - run: hatch run build
+      - run: hatch run ruff .
+      - run: hatch run black . --check

@@ -29,12 +29,13 @@ class MosaicWidget(anywidget.AnyWidget):
     spec = traitlets.Dict({}).tag(sync=True)
     conn = None
 
-    def __init__(self, spec: dict = {}, con=duckdb.connect(), data = {}, *args, **kwargs):
+    def __init__(self, spec: dict = {}, con=duckdb.connect(), data={}, *args, **kwargs):
         """Create a Mosaic widget.
 
         Args:
             spec (dict, optional): The initial Mosaic specification. Defaults to {}.
-            con (connection, optional): A DuckDB connection. Defaults to duckdb.connect().
+            con (connection, optional): A DuckDB connection.
+                Defaults to duckdb.connect().
             data (dict, optional):Pandas DataFrames to add to DuckDB.
                 The keys are used as the names of the tables. Defaults to {}.
         """
@@ -59,7 +60,9 @@ class MosaicWidget(anywidget.AnyWidget):
                     writer.write(result)
                 buf = sink.getvalue()
 
-                self.send({"type": "arrow", "queryId": queryId}, buffers=[buf.to_pybytes()])
+                self.send(
+                    {"type": "arrow", "queryId": queryId}, buffers=[buf.to_pybytes()]
+                )
             elif data["type"] == "exec":
                 self.con.execute(data["sql"]).fetchall()
                 self.send({"type": "exec", "queryId": queryId})
