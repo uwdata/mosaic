@@ -26,8 +26,8 @@ export class Coordinator {
 
   logger(logger) {
     return arguments.length
-      ? (this.logger = logger || voidLogger())
-      : this.logger;
+      ? (this._logger = logger || voidLogger())
+      : this._logger;
   }
 
   configure({ cache = true, indexes = true }) {
@@ -57,7 +57,7 @@ export class Coordinator {
     try {
       await this.db.query({ type: 'exec', sql });
     } catch (err) {
-      this.logger.error(err);
+      this._logger.error(err);
     }
   }
 
@@ -66,12 +66,12 @@ export class Coordinator {
     const t0 = performance.now();
     const cached = this.cache.get(sql);
     if (cached) {
-      this.logger.debug('Cache');
+      this._logger.debug('Cache');
       return cached;
     } else {
       const request = this.db.query({ type, sql });
       const result = cache ? this.cache.set(sql, request) : request;
-      result.then(() => this.logger.debug(`Query: ${performance.now() - t0}`));
+      result.then(() => this._logger.debug(`Query: ${performance.now() - t0}`));
       return result;
     }
   }
@@ -82,14 +82,14 @@ export class Coordinator {
       client.queryPending();
       result = await this.query(query);
     } catch (err) {
-      this.logger.error(err);
+      this._logger.error(err);
       client.queryError(err);
       return;
     }
     try {
       client.queryResult(result).update();
     } catch (err) {
-      this.logger.error(err);
+      this._logger.error(err);
     }
   }
 
