@@ -1,8 +1,8 @@
 import {
   coordinator, socketClient, restClient, wasmClient, namedPlots
-} from '../../packages/vgplot/dist/vgplot.js';
+} from '@uwdata/vgplot';
 
-export * from  '../../packages/vgplot/dist/vgplot.js';
+export * from  '@uwdata/vgplot';
 
 export function reset() {
   coordinator().clear();
