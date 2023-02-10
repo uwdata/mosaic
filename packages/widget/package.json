@@ -8,16 +8,15 @@
     "type": "git",
     "url": "https://github.com/uwdata/mosaic.git"
   },
+  "scripts": {
+    "build": "vite build",
+    "dev": "vite"
+  },
   "dependencies": {
     "apache-arrow": "^11.0.0",
     "@uwdata/vgplot": "^0.0.1"
   },
   "devDependencies": {
-    "anywidget": "^0.1.0",
-    "vite": "^4.1.1"
-  },
-  "scripts": {
-    "build": "vite build",
-    "dev": "vite"
+    "anywidget": "^0.1.0"
   }
 }

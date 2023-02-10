@@ -9,5 +9,5 @@ export default defineConfig({
 			formats: ['es'],
 		},
 	},
-    plugin: [anywidget()],
+  plugin: [anywidget()],
 });

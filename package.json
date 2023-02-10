@@ -19,8 +19,8 @@
     "release": "npm run test && npm run lint && lerna publish"
   },
   "devDependencies": {
-    "esbuild": "^0.17.6",
-    "eslint": "^8.33.0",
+    "esbuild": "^0.17.7",
+    "eslint": "^8.34.0",
     "lerna": "^6.4.1",
     "mocha": "^10.2.0",
     "rimraf": "^4.1.2",

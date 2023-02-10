@@ -30,7 +30,7 @@ export async function render(view) {
     view.el.replaceChildren(await parseJSON(spec));
   }
 
-  view.model.on("change:spec", () => updateSpec());
+  view.model.on('change:spec', () => updateSpec());
 
   view.model.on('msg:custom', (msg, buffers) => {
     console.group(`query ${msg.queryId}`);
