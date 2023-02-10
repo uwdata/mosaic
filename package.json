@@ -15,17 +15,17 @@
     "test": "lerna run test",
     "server": "node bin/run-server.js",
     "vgplot": "cd packages/vgplot && npm run build",
-    "dev": "npm run vgplot && wds --open dev/",
+    "dev": "vite",
     "release": "npm run test && npm run lint && lerna publish"
   },
   "devDependencies": {
-    "@web/dev-server": "^0.1.35",
     "esbuild": "^0.17.6",
     "eslint": "^8.33.0",
     "lerna": "^6.4.1",
     "mocha": "^10.2.0",
     "rimraf": "^4.1.2",
     "timezone-mock": "^1.3.6",
+    "vite": "^4.1.1",
     "yaml": "^2.2.1"
   },
   "workspaces": [
