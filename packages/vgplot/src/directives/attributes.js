@@ -172,6 +172,14 @@ export function tickFormatY(value) {
   return attribute('tickFormatY', value);
 }
 
+export function tickFormatFX(value) {
+  return attribute('tickFormatFX', value);
+}
+
+export function tickFormatFY(value) {
+  return attribute('tickFormatFY', value);
+}
+
 export function tickFormatColor(value) {
   return attribute('tickFormatColor', value);
 }
