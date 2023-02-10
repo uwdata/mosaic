@@ -14,7 +14,6 @@
     "lint": "lerna run lint",
     "test": "lerna run test",
     "server": "node bin/run-server.js",
-    "vgplot": "cd packages/vgplot && npm run build",
     "dev": "vite",
     "release": "npm run test && npm run lint && lerna publish"
   },
