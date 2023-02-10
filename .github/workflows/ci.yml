@@ -52,6 +52,9 @@ jobs:
           python -m pip install --upgrade pip
           pip install hatch
 
-      - run: hatch run build
-      - run: hatch run ruff .
-      - run: hatch run black . --check
+      - run: |
+          cd packages/widget
+          hatch build
+          hatch shell
+          ruff .
+          black . --check
