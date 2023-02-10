@@ -24,6 +24,10 @@ export class Interval2D {
     this.brush.on('brush end', ({ selection }) => this.publish(selection));
   }
 
+  activate() {
+    this.selection.activate(this.clause(this.value || [[0, 1], [0, 1]]));
+  }
+
   publish(extent) {
     const { value } = this;
     let xr = undefined;
@@ -85,8 +89,6 @@ export class Interval2D {
       this.g.call(brush.move, [[x1, y1], [x2, y2]]);
     }
 
-    svg.addEventListener('mouseenter', () => {
-      this.selection.activate(this.clause(this.value || [[0, 1], [0, 1]]));
-    });
+    svg.addEventListener('mouseenter', () => this.activate());
   }
 }

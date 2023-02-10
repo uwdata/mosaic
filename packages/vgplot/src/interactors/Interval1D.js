@@ -23,6 +23,10 @@ export class Interval1D {
     this.brush.on('brush end', ({ selection }) => this.publish(selection));
   }
 
+  activate() {
+    this.selection.activate(this.clause(this.value || [0, 1]));
+  }
+
   publish(extent) {
     let range = undefined;
     if (extent) {
@@ -69,8 +73,6 @@ export class Interval1D {
       }
     }
 
-    svg.addEventListener('mouseenter', () => {
-      this.selection.activate(this.clause(this.value || [0, 1]));
-    });
+    svg.addEventListener('mouseenter', () => this.activate());
   }
 }
