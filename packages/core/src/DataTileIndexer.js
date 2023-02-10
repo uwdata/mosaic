@@ -49,13 +49,14 @@ export class DataTileIndexer {
     const activeView = this.activeView = getActiveView(active);
     if (!activeView) return false; // active selection clause not compatible
 
-    console.warn('DATA TILE INDEX CONSTRUCTION');
+    this.mc.logger().warn('DATA TILE INDEX CONSTRUCTION');
 
     // create a selection with the active client removed
     const sel = this.selection.clone().update({ source });
 
     // generate data tile indices
     const indices = this.indices = new Map;
+    const promises = [];
     for (const client of clients) {
       if (sel.cross && skipClient(client, active)) continue;
       const index = getIndexColumns(client);
@@ -76,10 +77,10 @@ export class DataTileIndexer {
       const id = (fnv_hash(sql) >>> 0).toString(16);
       const table = `tile_index_${id}`;
       indices.set(client, { table, ...index });
-      createIndex(this.mc, table, sql);
+      promises.push(createIndex(this.mc, table, sql));
     }
 
-    return true;
+    return promises;
   }
 
   async update() {
@@ -185,7 +186,7 @@ async function createIndex(mc, table, query) {
   try {
     await mc.exec(`CREATE TEMP TABLE IF NOT EXISTS ${table} AS ${query}`);
   } catch (err) {
-    console.error(err);
+    mc.logger().error(err);
   }
 }
 
