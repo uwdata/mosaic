@@ -50,11 +50,12 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install hatch
+          pip install pipx
 
-      - run: |
+      - name: Build and lint
+        run: |
           cd packages/widget
-          hatch build
-          hatch shell
-          ruff .
-          black . --check
+          pipx run hatch build
+
+          pipx run hatch run ruff .
+          pipx run hatch run black . --check
