@@ -37,7 +37,7 @@ export class Density2DMark extends Mark {
   }
 
   setPlot(plot, index) {
-    const update = () => this.requestUpdate();
+    const update = () => { if (this.stats) this.requestUpdate(); };
     plot.addAttributeListener('domainX', update);
     plot.addAttributeListener('domainY', update);
     return super.setPlot(plot, index);
