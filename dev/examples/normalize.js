@@ -25,7 +25,7 @@ export default async function(el) {
   await coordinator().exec(`
     DROP TABLE IF EXISTS stocks;
     DROP TABLE IF EXISTS labels;
-    CREATE TEMP TABLE stocks AS SELECT * FROM 'http://localhost:8000/data/stocks.csv';
+    CREATE TEMP TABLE stocks AS SELECT * FROM '${location.origin}/data/stocks.csv';
     CREATE TEMP TABLE labels AS ${q};
   `);
 
