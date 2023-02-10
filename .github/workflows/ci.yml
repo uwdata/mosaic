@@ -20,8 +20,11 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
-      - name: Setup Node
+      - name: Setup node
         uses: actions/setup-node@v3
+        with:
+          node-version: "18.x"
+          cache: "npm"
 
       - name: Install Node dependencies
         run: npm ci
@@ -38,8 +41,11 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
-      - name: Setup Python
-        uses: actions/setup-python@v4
+      - uses: actions/setup-python@v4
+        with:
+          python-version: "3.x"
+          cache: "pip"
+          cache-dependency-path: "**/pyproject.toml"
 
       - name: Install dependencies
         run: |
