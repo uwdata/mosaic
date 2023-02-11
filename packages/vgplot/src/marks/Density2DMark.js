@@ -1,5 +1,5 @@
 import { isParam } from '@uwdata/mosaic-core';
-import { Query, and, gt, sum, expr, isBetween } from '@uwdata/mosaic-sql';
+import { Query, and, count, gt, sum, expr, isBetween } from '@uwdata/mosaic-sql';
 import { Transient } from '../symbols.js';
 import { dericheConfig, dericheConv2d, grid2d } from './util/density.js';
 import { extentX, extentY, xyext } from './util/extent.js';
@@ -7,7 +7,7 @@ import { Mark } from './Mark.js';
 
 export class Density2DMark extends Mark {
   constructor(type, source, options) {
-    const { bandwidth = 20, binWidth = 2, ...channels } = options;
+    const { bandwidth = 20, binType = 'linear', binWidth = 2, ...channels } = options;
     const densityFill = channels.fill === 'density';
     const densityStroke = channels.stroke === 'density';
     if (densityFill) delete channels.fill;
@@ -18,6 +18,7 @@ export class Density2DMark extends Mark {
     this.densityStroke = densityStroke;
     this.bandwidth = bandwidth;
     this.binWidth = binWidth;
+    this.binType = binType;
 
     if (isParam(bandwidth)) {
       bandwidth.addEventListener('value', value => {
@@ -50,7 +51,7 @@ export class Density2DMark extends Mark {
   }
 
   query(filter = []) {
-    const { plot, channels, source, stats } = this;
+    const { plot, binType, channels, source, stats } = this;
 
     const q = Query.from(source.table).where(filter);
     const groupby = this.groupby = [];
@@ -76,7 +77,9 @@ export class Density2DMark extends Mark {
     ];
     const rx = !!plot.getAttribute('reverseX');
     const ry = !!plot.getAttribute('reverseY');
-    return binLinear2d(q, 'x', 'y', w, x0, x1, y0, y1, nx, ny, rx, ry, groupby);
+    return binType === 'linear'
+      ? binLinear2d(q, 'x', 'y', w, x0, x1, y0, y1, nx, ny, rx, ry, groupby)
+      : bin2d(q, 'x', 'y', w, x0, x1, y0, y1, nx, ny, rx, ry, groupby);
   }
 
   queryResult(data) {
@@ -110,6 +113,28 @@ export class Density2DMark extends Mark {
   plotSpecs() {
     throw new Error('Unimplemented. Use a Density2D mark subclass.');
   }
+}
+
+function bin2d(input, x, y, weight, x0, x1, y0, y1, xn, yn, rx, ry, groupby = []) {
+  const w = weight && weight !== 1 ? `${weight}` : null;
+  const xp = rx
+    ? expr(`(${x1} - ${x}::DOUBLE) * ${(xn - 1) / (x1 - x0)}::DOUBLE`)
+    : expr(`(${x}::DOUBLE - ${x0}) * ${(xn - 1) / (x1 - x0)}::DOUBLE`);
+  const yp = ry
+    ? expr(`(${y1} - ${y}::DOUBLE) * ${(yn - 1) / (y1 - y0)}::DOUBLE`)
+    : expr(`(${y}::DOUBLE - ${y0}) * ${(yn - 1) / (y1 - y0)}::DOUBLE`);
+
+  return Query
+    .select({
+      index: expr(`FLOOR(${xp}) + FLOOR(${yp}) * ${xn}`),
+      weight: w ? sum(w) : count(),
+    }, groupby)
+    .from(input)
+    .groupby('index', groupby)
+    .where(and(
+      isBetween(x, [x0, x1]),
+      isBetween(y, [y0, y1])
+    ));
 }
 
 function binLinear2d(input, x, y, weight, x0, x1, y0, y1, xn, yn, rx, ry, groupby = []) {
