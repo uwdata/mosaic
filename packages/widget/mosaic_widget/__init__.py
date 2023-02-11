@@ -47,14 +47,15 @@ class MosaicWidget(anywidget.AnyWidget):
         self.on_msg(self._handle_custom_msg)
 
     def _handle_custom_msg(self, data: dict, buffers: list):
-        logger.info(f"{data=}, {buffers=}")
+        logger.debug(f"{data=}, {buffers=}")
         start = time.time()
 
         queryId = data["queryId"]
+        sql = data["sql"]
 
         try:
             if data["type"] == "arrow":
-                result = self.con.execute(data["sql"]).arrow()
+                result = self.con.execute(sql).arrow()
                 sink = pa.BufferOutputStream()
                 with pa.ipc.new_stream(sink, result.schema) as writer:
                     writer.write(result)
@@ -64,14 +65,18 @@ class MosaicWidget(anywidget.AnyWidget):
                     {"type": "arrow", "queryId": queryId}, buffers=[buf.to_pybytes()]
                 )
             elif data["type"] == "exec":
-                self.con.execute(data["sql"]).fetchall()
+                self.con.execute(sql).fetchall()
                 self.send({"type": "exec", "queryId": queryId})
             else:
-                result = self.con.execute(data["sql"]).df()
+                result = self.con.execute(sql).df()
                 json = result.to_dict(orient="records")
                 self.send({"type": "json", "queryId": queryId, "result": json})
         except Exception as e:
             logger.error(e)
             self.send({"error": str(e), "queryId": queryId})
 
-        logger.info(f"DONE. Took { round((time.time() - start) * 1_000) } ms")
+        total = round((time.time() - start) * 1_000)
+        if total > 5000:
+            logger.warning(f"DONE. Slow query { queryId } took { total } ms.\n{ sql }")
+        else:
+            logger.info(f"DONE. Query { queryId } took { total } ms.\n{ sql }")
