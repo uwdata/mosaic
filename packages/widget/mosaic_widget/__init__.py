@@ -50,9 +50,9 @@ class MosaicWidget(anywidget.AnyWidget):
         logger.info(f"{data=}, {buffers=}")
         start = time.time()
 
-        try:
-            queryId = data["queryId"]
+        queryId = data["queryId"]
 
+        try:
             if data["type"] == "arrow":
                 result = self.con.execute(data["sql"]).arrow()
                 sink = pa.BufferOutputStream()
