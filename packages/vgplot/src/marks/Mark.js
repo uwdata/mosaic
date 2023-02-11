@@ -183,9 +183,12 @@ export class Mark extends MosaicClient {
 
   plotSpecs() {
     const { type, data, channels } = this;
+    const ownData = this.hasOwnData();
     const options = {};
     for (const c of channels) {
-      options[c.channel] = Object.hasOwn(c, 'value') ? c.value : c.channel;
+      options[c.channel] = Object.hasOwn(c, 'value') ? c.value
+        : ownData ? c.field.column
+        : c.channel;
     }
     return [{ type, data, options }];
   }
