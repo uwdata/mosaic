@@ -147,7 +147,7 @@ export class Query {
     return this.from(...expr);
   }
 
-  sample(value) {
+  sample(value, method) {
     const { query } = this;
     if (arguments.length === 0) {
       return query.sample;
@@ -155,8 +155,8 @@ export class Query {
       let spec = value;
       if (typeof value === 'number') {
         spec = value > 0 && value < 1
-            ? { perc: 100 * value }
-            : { rows: Math.round(value) };
+            ? { perc: 100 * value, method }
+            : { rows: Math.round(value, method) };
       }
       query.sample = spec;
       return this;
@@ -315,18 +315,18 @@ export class Query {
       sql.push(`FROM ${rels.join(', ')}`);
     }
 
+    // WHERE
+    if (where.length) {
+      const clauses = where.map(String).filter(x => x).join(' AND ');
+      if (clauses) sql.push(`WHERE ${clauses}`);
+    }
+
     // SAMPLE
     if (sample) {
       const { rows, perc, method, seed } = sample;
       const size = rows ? `${rows} ROWS` : `${perc} PERCENT`;
       const how = method ? ` (${method}${seed != null ? `, ${seed}` : ''})` : '';
       sql.push(`USING SAMPLE ${size}${how}`);
-    }
-
-    // WHERE
-    if (where.length) {
-      const clauses = where.map(String).filter(x => x).join(' AND ');
-      if (clauses) sql.push(`WHERE ${clauses}`);
     }
 
     // GROUP BY
