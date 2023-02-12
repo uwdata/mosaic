@@ -1,6 +1,21 @@
 data:
-  gaia:
-    file: 'https://uwdata.github.io/mosaic-datasets/data/gaia-first-10.parquet'
+  gaia: |
+    -- compute x and y with natural earth projection
+    WITH tmp AS (
+      SELECT
+        radians((-l + 540) % 360 - 180) AS lambda,
+        radians(b) AS phi,
+        asin(sqrt(3)/2 * sin(phi)) AS t,
+        t^2 AS t2,
+        t2^3 AS t6,
+        *
+      FROM 'https://uwdata.github.io/mosaic-datasets/data/gaia-5m.parquet'
+    )
+    SELECT
+      (1.340264 * lambda * cos(t)) / (sqrt(3)/2 * (1.340264 + (-0.081106 * 3 * t2) + (t6 * (0.000893 * 7 + 0.003796 * 9 * t2)))) AS x,
+      t * (1.340264 + (-0.081106 * t2) + (t6 * (0.000893 + 0.003796 * t2))) AS y,
+      * EXCLUDE('t', 't2', 't6')
+    FROM tmp
 params:
   brush: { select: crossfilter }
   bandwidth: 0
@@ -11,8 +26,8 @@ hconcat:
   - plot:
     - mark: raster
       data: { from: gaia, filterBy: $brush }
-      x: ra
-      y: dec
+      x: x
+      y: y
       fill: density
       bandwidth: $bandwidth
       binWidth: $binWidth
