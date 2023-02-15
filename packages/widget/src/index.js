@@ -41,21 +41,26 @@ export async function render(view) {
 
     console.log('resolving query', query.query.sql);
 
-    switch (msg.type) {
-      case 'arrow': {
-        const table = arrow.tableFromIPC(buffers[0].buffer);
-        console.log('table', table);
-        query.resolve(table);
-        break;
-      }
-      case 'json': {
-        console.log('json', msg.result);
-        query.resolve(msg.result);
-        break;
-      }
-      default: {
-        query.resolve({});
-        break;
+    if (msg.error) {
+      query.reject(msg.error);
+      console.error(msg.error);
+    } else {
+      switch (msg.type) {
+        case 'arrow': {
+          const table = arrow.tableFromIPC(buffers[0].buffer);
+          console.log('table', table);
+          query.resolve(table);
+          break;
+        }
+        case 'json': {
+          console.log('json', msg.result);
+          query.resolve(msg.result);
+          break;
+        }
+        default: {
+          query.resolve({});
+          break;
+        }
       }
     }
     console.groupEnd('query');
