@@ -10,7 +10,7 @@ readme = "README.md"
 requires-python = ">=3.8"
 dependencies = [
   "anywidget",
-  "duckdb",
+  "duckdb==0.6.1",
   "pyarrow"
 ]
 
