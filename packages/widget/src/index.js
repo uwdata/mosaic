@@ -4,17 +4,18 @@ import './style.css';
 
 let queryCounter = 0;
 
+/** @param view {import("@jupyter-widgets/base").DOMWidgetView} */
 export async function render(view) {
   view.el.classList.add('mosaic-widget');
 
   const getSpec = () => view.model.get('spec');
 
-  const openQueries = {};
+  const openQueries = new Map();
 
   function send(query, resolve, reject) {
     const queryId = queryCounter++;
 
-    openQueries[queryId] = { query, resolve, reject };
+    openQueries.set(queryId, { query, resolve, reject });
     view.model.send({ ...query, queryId });
   }
 
@@ -36,8 +37,8 @@ export async function render(view) {
     console.group(`query ${msg.queryId}`);
     console.log('received message', msg, buffers);
 
-    const query = openQueries[msg.queryId];
-    delete openQueries[msg.queryId];
+    const query = openQueries.get(msg.queryId);
+    openQueries.delete(msg.queryId);
 
     console.log('resolving query', query.query.sql);
 
