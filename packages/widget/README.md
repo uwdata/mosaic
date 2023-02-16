@@ -8,6 +8,8 @@ Use `mosaic_widget.MosaicWidget` to create a widget. The constructor takes two a
 
 The PyPI package is at https://pypi.org/project/mosaic-widget/.
 
+The widget also works in [Google Colab](https://colab.research.google.com/drive/1Txy6L_of8_lJFImKEkhUCqZX70yKpYnv#scrollTo=leuzblN47K-T&line=1&uniqifier=1).
+
 ## Developer Setup
 
 We use [hatch](https://hatch.pypa.io/latest/) to manage our development setup.
