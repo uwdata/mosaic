@@ -4,6 +4,7 @@ import './style.css';
 
 let queryCounter = 0;
 
+/** @param view {import("@jupyter-widgets/base").DOMWidgetView} */
 export async function render(view) {
   view.el.classList.add('mosaic-widget');
 
