@@ -12,10 +12,11 @@ data:
       FROM 'https://uwdata.github.io/mosaic-datasets/data/gaia-5m.parquet'
     )
     SELECT
-      (1.340264 * lambda * cos(t)) / (sqrt(3)/2 * (1.340264 + (-0.081106 * 3 * t2) + (t6 * (0.000893 * 7 + 0.003796 * 9 * t2)))) AS x,
-      t * (1.340264 + (-0.081106 * t2) + (t6 * (0.000893 + 0.003796 * t2))) AS y,
+      (1.340264 * lambda * cos(t)) / (sqrt(3)/2 * (1.340264 + (-0.081106 * 3 * t2) + (t6 * (0.000893 * 7 + 0.003796 * 9 * t2)))) AS u,
+      t * (1.340264 + (-0.081106 * t2) + (t6 * (0.000893 + 0.003796 * t2))) AS v,
       * EXCLUDE('t', 't2', 't6')
     FROM tmp
+    WHERE parallax BETWEEN -5 AND 20
 params:
   brush: { select: crossfilter }
   bandwidth: 0
@@ -26,21 +27,22 @@ hconcat:
   - plot:
     - mark: raster
       data: { from: gaia, filterBy: $brush }
-      x: x
-      y: y
+      x: u
+      y: v
       fill: density
       bandwidth: $bandwidth
       binWidth: $binWidth
+      binType: normal
     - select: intervalXY
       as: $brush
     domainXY: Fixed
-    niceX: false
-    niceY: false
     scaleColor: $scaleType
-    schemeColor: plasma
-    width: 600
+    schemeColor: viridis
+    width: 700
     height: 400
-    marginLeft: 65
+    marginLeft: 25
+    marginTop: 20
+    marginRight: 1
   - hconcat:
     - plot:
       - mark: rectY
@@ -54,7 +56,7 @@ hconcat:
       domainX: Fixed
       scaleY: $scaleType
       gridY: true
-      width: 300
+      width: 350
       height: 200
       marginLeft: 65
     - plot:
@@ -69,7 +71,7 @@ hconcat:
       domainX: Fixed
       scaleY: $scaleType
       gridY: true
-      width: 300
+      width: 350
       height: 200
       marginLeft: 65
 - hspace: 30
@@ -81,12 +83,15 @@ hconcat:
     fill: density
     bandwidth: $bandwidth
     binWidth: $binWidth
+    binType: normal
   - select: intervalXY
     as: $brush
   domainXY: Fixed
   scaleColor: $scaleType
-  schemeColor: plasma
+  schemeColor: viridis
   reverseY: true
   width: 400
   height: 600
   marginLeft: 25
+  marginTop: 20
+  marginRight: 1
