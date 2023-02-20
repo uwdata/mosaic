@@ -1,3 +1,13 @@
+import { coordinator } from '@uwdata/mosaic-core';
+import { Plot } from '../plot.js';
+
+export function plot(...directives) {
+  const p = new Plot();
+  directives.flat().forEach(dir => dir(p));
+  p.marks.forEach(mark => coordinator().connect(mark));
+  return p.element;
+}
+
 export class NamedPlots extends Map {
   request(name, callback) {
     if (this.has(name)) {

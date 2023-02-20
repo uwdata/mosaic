@@ -108,10 +108,6 @@ export {
 } from './directives/attributes.js';
 
 export {
-  namedPlots
-} from './directives/named-plots.js';
-
-export {
   from
 } from './directives/data.js';
 
@@ -178,12 +174,16 @@ export {
 } from './directives/legends.js';
 
 export {
+  namedPlots,
   plot,
+} from './directives/plot.js';
+
+export {
   hconcat,
   vconcat,
   hspace,
   vspace
-} from './directives/plots.js';
+} from './directives/layout.js';
 
 export {
   menu,

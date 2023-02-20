@@ -1,5 +1,5 @@
 import { isParam } from '@uwdata/mosaic-core';
-import { namedPlots } from './named-plots.js';
+import { namedPlots } from './plot.js';
 
 export function name(name) {
   return plot => namedPlots.set(name, plot);

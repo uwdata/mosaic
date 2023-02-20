@@ -19,6 +19,7 @@ export class Plot {
     this.markset = null;
     this.element = element || document.createElement('div');
     this.element.setAttribute('class', 'plot');
+    this.element.style.display = 'flex';
     this.element.value = this;
     this.queue = new Set;
     this.params = new Map;
