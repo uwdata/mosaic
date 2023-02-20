@@ -1,5 +1,5 @@
 import { Legend } from '../legend.js';
-import { namedPlots } from './named-plots.js';
+import { namedPlots } from './plot.js';
 
 function legend(channel, options = {}) {
   if (options.for) {

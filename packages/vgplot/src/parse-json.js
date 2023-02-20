@@ -3,9 +3,10 @@ import { Query, avg, count, expr, max, median, min, mode, quantile, sum } from '
 import { bin, dateMonth, dateMonthDay, dateDay } from './transforms/index.js'
 
 import { from } from './directives/data.js';
-import * as plots from './directives/plots.js';
+import * as plots from './directives/plot.js';
 import * as marks from './directives/marks.js';
 import * as inputs from './directives/inputs.js';
+import * as layout from './directives/layout.js';
 import * as legends from './directives/legends.js';
 import * as attributes from './directives/attributes.js';
 import * as interactors from './directives/interactors.js';
@@ -254,11 +255,11 @@ function parseSpec(spec, ctx) {
 }
 
 function parseHSpace(spec) {
-  return plots.hspace(+spec.hspace);
+  return layout.hspace(+spec.hspace);
 }
 
 function parseVSpace(spec) {
-  return plots.vspace(+spec.vspace);
+  return layout.vspace(+spec.vspace);
 }
 
 function parseInput(spec, ctx) {
@@ -274,11 +275,11 @@ function parseInput(spec, ctx) {
 }
 
 function parseVConcat(spec, ctx) {
-  return plots.vconcat(spec.vconcat.map(s => parseSpec(s, ctx)));
+  return layout.vconcat(spec.vconcat.map(s => parseSpec(s, ctx)));
 }
 
 function parseHConcat(spec, ctx) {
-  return plots.hconcat(spec.hconcat.map(s => parseSpec(s, ctx)));
+  return layout.hconcat(spec.hconcat.map(s => parseSpec(s, ctx)));
 }
 
 function parsePlot(spec, ctx) {

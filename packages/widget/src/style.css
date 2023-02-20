@@ -1,15 +1,3 @@
-.mosaic-widget .concat-horizontal {
-    display: flex;
-    flex-direction: row;
-    flex-wrap: nowrap;
-    justify-content: flex-start;
-    align-items: flex-start;
-}
-
-.mosaic-widget .plot {
-    display: flex;
-}
-
 .mosaic-widget .input {
     margin-right: 1em;
 }
