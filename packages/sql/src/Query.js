@@ -84,7 +84,7 @@ export class Query {
       return query.select;
     } else {
       const list = [];
-      expr.flat().forEach(e => {
+      for (const e of expr.flat()) {
         if (e == null) {
           // do nothing
         } else if (typeof e === 'string') {
@@ -98,7 +98,7 @@ export class Query {
             list.push({ as: unquote(as), expr: asColumn(e[as]) });
           }
         }
-      });
+      }
       query.select = query.select.concat(list);
       return this;
     }

@@ -11,7 +11,7 @@ export class Ref {
   toString() {
     const { table, column } = this;
     if (column) {
-      const col = column === '*' ? column : `"${column}"`;
+      const col = column.startsWith('*') ? column : `"${column}"`;
       return (table ? `"${table}".` : '') + col;
     } else {
       return `"${table}"`;

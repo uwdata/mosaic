@@ -11,9 +11,22 @@ export default async function(el) {
 
   // Load data as needed
   const q = Query
-    .select('*')
-    .from(expr(`'https://uwdata.github.io/mosaic-datasets/data/gaia-first-10.parquet'`))
+    .with({
+      tmp: Query.select({
+        lambda: expr(`radians((-l + 540) % 360 - 180)`),
+        phi: expr(`radians(b)`),
+        t: expr(`asin(sqrt(3)/2 * sin(phi))`),
+        t2: expr(`t^2`),
+        t6: expr(`t2^3`)
+      }, '*')
+      .from(expr(`'https://uwdata.github.io/mosaic-datasets/data/gaia-5m.parquet'`))
+    }).select({
+      u: expr(`(1.340264 * lambda * cos(t)) / (sqrt(3)/2 * (1.340264 + (-0.081106 * 3 * t2) + (t6 * (0.000893 * 7 + 0.003796 * 9 * t2))))`),
+      v: expr(`t * (1.340264 + (-0.081106 * t2) + (t6 * (0.000893 + 0.003796 * t2)))`)
+    }, '* EXCLUDE(\'t\', \'t2\', \'t6\')')
+    .from('tmp')
     .where(expr(`parallax >= -5 AND parallax <= 10`));
+
   await coordinator().exec(`CREATE TABLE IF NOT EXISTS gaia AS ${q}`);
 
   const table = 'gaia';
@@ -28,7 +41,7 @@ export default async function(el) {
         plot(
           raster(
             from(table, { filterBy: brush }),
-            { x: 'ra', y: 'dec', fill: 'density', bandwidth, binWidth }
+            { x: 'u', y: 'v', fill: 'density', bandwidth, binWidth }
           ),
           intervalXY({ as: brush }),
           domainXY(Fixed), niceX(false), niceY(false),
