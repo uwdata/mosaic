@@ -1,12 +1,12 @@
 import { Param, Selection, coordinator, sqlFrom } from '@uwdata/mosaic-core';
 import { Query, avg, count, expr, max, median, min, mode, quantile, sum } from '@uwdata/mosaic-sql';
 import { bin, dateMonth, dateMonthDay, dateDay } from './transforms/index.js'
+import { hconcat, vconcat, hspace, vspace } from './layout/index.js';
 
 import { from } from './directives/data.js';
 import * as plots from './directives/plot.js';
 import * as marks from './directives/marks.js';
 import * as inputs from './directives/inputs.js';
-import * as layout from './directives/layout.js';
 import * as legends from './directives/legends.js';
 import * as attributes from './directives/attributes.js';
 import * as interactors from './directives/interactors.js';
@@ -255,11 +255,11 @@ function parseSpec(spec, ctx) {
 }
 
 function parseHSpace(spec) {
-  return layout.hspace(+spec.hspace);
+  return hspace(+spec.hspace);
 }
 
 function parseVSpace(spec) {
-  return layout.vspace(+spec.vspace);
+  return vspace(+spec.vspace);
 }
 
 function parseInput(spec, ctx) {
@@ -275,11 +275,11 @@ function parseInput(spec, ctx) {
 }
 
 function parseVConcat(spec, ctx) {
-  return layout.vconcat(spec.vconcat.map(s => parseSpec(s, ctx)));
+  return vconcat(spec.vconcat.map(s => parseSpec(s, ctx)));
 }
 
 function parseHConcat(spec, ctx) {
-  return layout.hconcat(spec.hconcat.map(s => parseSpec(s, ctx)));
+  return hconcat(spec.hconcat.map(s => parseSpec(s, ctx)));
 }
 
 function parsePlot(spec, ctx) {
