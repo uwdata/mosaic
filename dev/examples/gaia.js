@@ -4,8 +4,8 @@ export default async function(el) {
   const {
     Query, coordinator, expr, plot, hconcat, vconcat, hspace,
     from, bin, count, raster, rectY,
-    domainX, domainXY, niceX, niceY, scaleY, gridY, reverseY, scaleColor, schemeColor,
-    width, height, marginLeft,
+    domainX, domainXY, scaleY, gridY, reverseY, scaleColor, schemeColor,
+    width, height, marginLeft, marginTop, marginRight,
     intervalX, intervalXY, Selection, Fixed
   } = vg;
 
@@ -44,9 +44,9 @@ export default async function(el) {
             { x: 'u', y: 'v', fill: 'density', bandwidth, binWidth }
           ),
           intervalXY({ as: brush }),
-          domainXY(Fixed), niceX(false), niceY(false),
-          scaleColor('sqrt'), schemeColor('plasma'),
-          width(600), height(400), marginLeft(65)
+          domainXY(Fixed),
+          scaleColor('sqrt'), schemeColor('viridis'),
+          width(700), height(400), marginLeft(25), marginTop(20), marginRight(1)
         ),
         hconcat(
           plot(
@@ -56,7 +56,7 @@ export default async function(el) {
             ),
             scaleY(histScale), gridY(true),
             intervalX({ as: brush }), domainX(Fixed),
-            width(300), height(200), marginLeft(65)
+            width(350), height(200), marginLeft(65)
           ),
           plot(
             rectY(
@@ -65,7 +65,7 @@ export default async function(el) {
             ),
             scaleY(histScale), gridY(true),
             intervalX({ as: brush }), domainX(Fixed),
-            width(300), height(200), marginLeft(65)
+            width(350), height(200), marginLeft(65)
           )
         )
       ),
@@ -75,9 +75,9 @@ export default async function(el) {
           from(table, { filterBy: brush }),
           { x: 'bp_rp', y: 'phot_g_mean_mag', fill: 'density', bandwidth, binWidth }
         ),
-        scaleColor('sqrt'), schemeColor('plasma'), reverseY(true),
+        scaleColor('sqrt'), schemeColor('viridis'), reverseY(true),
         intervalXY({ as: brush }), domainXY(Fixed),
-        width(400), height(600), marginLeft(25)
+        width(400), height(600), marginLeft(25), marginTop(20), marginRight(1)
       )
     )
   );
