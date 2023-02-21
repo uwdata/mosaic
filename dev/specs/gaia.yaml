@@ -1,6 +1,6 @@
 data:
   gaia: |
-    -- compute x and y with natural earth projection
+    -- compute u and v with natural earth projection
     WITH tmp AS (
       SELECT
         radians((-l + 540) % 360 - 180) AS lambda,
