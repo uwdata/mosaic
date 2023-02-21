@@ -180,10 +180,13 @@ export {
 
 export {
   hconcat,
-  vconcat,
+  vconcat
+} from './layout/concat.js';
+
+export {
   hspace,
   vspace
-} from './directives/layout.js';
+} from './layout/space.js';
 
 export {
   menu,
