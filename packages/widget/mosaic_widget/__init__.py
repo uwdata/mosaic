@@ -36,7 +36,7 @@ class MosaicWidget(anywidget.AnyWidget):
             spec (dict, optional): The initial Mosaic specification. Defaults to {}.
             con (connection, optional): A DuckDB connection.
                 Defaults to duckdb.connect().
-            data (dict, optional):Pandas DataFrames to add to DuckDB.
+            data (dict, optional): Pandas DataFrames to add to DuckDB.
                 The keys are used as the names of the tables. Defaults to {}.
         """
         super().__init__(*args, **kwargs)
