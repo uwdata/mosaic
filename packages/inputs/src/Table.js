@@ -9,16 +9,21 @@ export class Table extends MosaicClient {
     filterBy,
     from,
     columns = ['*'],
+    align = {},
     format,
-    rowBatch = 100,
     width,
-    height = 500
+    maxWidth,
+    height = 500,
+    rowBatch = 100,
   } = {}) {
     super(filterBy);
     this.id = `table-${++_id}`;
     this.from = from;
     this.columns = columns;
     this.format = format;
+    this.align = align;
+    this.widths = typeof width === 'object' ? width : {};
+
     this.offset = 0;
     this.limit = +rowBatch;
     this.pending = false;
@@ -30,9 +35,8 @@ export class Table extends MosaicClient {
     this.element = document.createElement('div');
     this.element.setAttribute('id', this.id);
     this.element.value = this;
-    if (width) {
-      this.element.style.maxWidth = `${width}px`;
-    }
+    if (typeof width === 'number') this.element.style.width = `${width}px`;
+    if (maxWidth) this.element.style.maxWidth = `${maxWidth}px`;
     this.element.style.maxHeight = `${height}px`;
     this.element.style.overflow = 'auto';
 
@@ -89,7 +93,11 @@ export class Table extends MosaicClient {
     this.formats = formatof(this.format, stats);
 
     // get column alignment style
-    this.style.innerText = tableCSS(this.id, alignof({}, stats));
+    this.style.innerText = tableCSS(
+      this.id,
+      alignof(this.align, stats),
+      widthof(this.widths, stats)
+    );
 
     return this;
   }
@@ -197,11 +205,18 @@ function alignof(base = {}, stats) {
   });
 }
 
-function tableCSS(id, align) {
+function widthof(base = {}, stats) {
+  return stats.map(({ column }) => base[column]);
+}
+
+function tableCSS(id, aligns, widths) {
   const styles = [];
-  align.forEach((a, i) => {
-    if (a !== 'left') {
-      styles.push(`#${id} tr>:nth-child(${i+1}) {text-align:${a}}`);
+  aligns.forEach((a, i) => {
+    const w = +widths[i];
+    if (a !== 'left' || w) {
+      const align = a !== 'left' ? `text-align:${a};` : '';
+      const width = w ? `width:${w}px;max-width:${w}px;` : '';
+      styles.push(`#${id} tr>:nth-child(${i+1}) {${align}${width}}`);
     }
   });
   return styles.join(' ');
