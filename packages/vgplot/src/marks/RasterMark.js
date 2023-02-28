@@ -8,8 +8,17 @@ export class RasterMark extends Density2DMark {
     super('image', source, options);
   }
 
+  setPlot(plot, index) {
+    const update = () => { if (this.stats) this.rasterize(); };
+    plot.addAttributeListener('schemeColor', update);
+    super.setPlot(plot, index);
+  }
+
   convolve() {
-    super.convolve();
+    return super.convolve().rasterize();
+  }
+
+  rasterize() {
     const { bins, kde, groupby } = this;
     const [ w, h ] = bins;
 
@@ -79,7 +88,7 @@ function imageScale(mark) {
   return scale({ x: { type, domain, range: [0, 1] } }).apply;
 }
 
-function imagePalette(mark, domain, value, steps = 512) {
+function imagePalette(mark, domain, value, steps = 1024) {
   const { densityFill, plot } = mark;
   const scheme = plot.getAttribute('schemeColor');
   let color;
