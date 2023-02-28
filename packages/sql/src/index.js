@@ -11,7 +11,9 @@ export {
   transform,
   desc,
   expr,
-  exprParams
+  exprParams,
+  isExpression,
+  isParamLike
 } from './expression.js';
 
 export {

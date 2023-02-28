@@ -1,10 +1,14 @@
 import { Param, Selection, coordinator, sqlFrom } from '@uwdata/mosaic-core';
-import { Query, avg, count, expr, max, median, min, mode, quantile, sum } from '@uwdata/mosaic-sql';
+import {
+  Query, avg, count, max, median, min, mode, quantile, sum,
+  expr, exprParams, isParamLike
+} from '@uwdata/mosaic-sql';
 import { bin, dateMonth, dateMonthDay, dateDay } from './transforms/index.js'
 import { hconcat, vconcat, hspace, vspace } from './layout/index.js';
+import { parse as isoparse } from 'isoformat';
 
 import { from } from './directives/data.js';
-import * as plots from './directives/plot.js';
+import { plot as _plot } from './directives/plot.js';
 import * as marks from './directives/marks.js';
 import * as inputs from './directives/inputs.js';
 import * as legends from './directives/legends.js';
@@ -17,7 +21,7 @@ export const DefaultParamParsers = new Map([
   ['crossfilter', () => Selection.crossfilter()],
   ['union', () => Selection.union()],
   ['single', () => Selection.single()],
-  ['value', v => Param.value(v)]
+  ['value', p => Param.value(isoparse(p.date, p.value))]
 ]);
 
 export const DefaultSpecParsers = new Map([
@@ -115,7 +119,7 @@ export class JSONParseContext {
   maybeTransform(value) {
     if (isObject(value)) {
       if (value.expr) {
-        return expr(value.expr, [], value.label);
+        return parseExpression(value, this);
       } else {
         const { transforms } = this;
         const [ key ] = Object.keys(value);
@@ -237,7 +241,7 @@ function parseParam(param, ctx) {
   if (!parser) {
     error(`Unrecognized param type: ${select}`, param);
   }
-  return parser(value);
+  return parser(param);
 }
 
 function parseSpec(spec, ctx) {
@@ -288,7 +292,7 @@ function parsePlot(spec, ctx) {
     Object.keys(attributes).map(key => parseAttribute(spec, key, ctx))
   );
   const entries = plot.map(e => parseEntry(e, ctx));
-  return plots.plot(attrs, entries);
+  return _plot(attrs, entries);
 }
 
 function parseNakedMark(spec, ctx) {
@@ -365,6 +369,27 @@ function parseInteractor(spec, ctx) {
     options[key] = ctx.maybeSelection(options[key]);
   }
   return fn(options);
+}
+
+function parseExpression(spec, ctx) {
+  const { expr, label } = spec;
+  const tokens = expr.split(/(\\'|\\"|"(?:\\"|[^"])*"|'(?:\\'|[^'])*'|\$\w+)/g);
+  const spans = [''];
+
+  for (let i = 0, k = 0; i < tokens.length; ++i) {
+    const tok = tokens[i];
+    if (tok.startsWith('$')) {
+      spans[++k] = ctx.maybeParam(tok);
+    } else if (isParamLike(spans[k])) {
+      spans[++k] = tok;
+    } else {
+      spans[k] += tok;
+    }
+  }
+
+  return spans.length > 1
+    ? exprParams(spans, [], label)
+    : expr(spans[0], [], label);
 }
 
 // -----
