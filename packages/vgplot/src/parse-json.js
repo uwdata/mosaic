@@ -236,7 +236,7 @@ async function parseJSONData(name, spec, ctx) {
 
 function parseParam(param, ctx) {
   param = isObject(param) ? param : { value: param };
-  const { select = 'value', value } = param;
+  const { select = 'value' } = param;
   const parser = ctx.paramParsers.get(select);
   if (!parser) {
     error(`Unrecognized param type: ${select}`, param);
