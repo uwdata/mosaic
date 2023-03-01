@@ -1,6 +1,7 @@
 import { brush, select, min, max } from 'd3';
 import { and, isBetween } from '@uwdata/mosaic-sql';
 import { closeTo } from './util/close-to.js';
+import { invert } from './util/invert.js';
 import { patchScreenCTM } from './util/patchScreenCTM.js';
 import { sanitizeStyles } from './util/sanitize-styles.js';
 
@@ -11,10 +12,12 @@ export class Interval2D {
     selection,
     xfield,
     yfield,
+    resolution = 1,
     peers = true,
     brush: style
   }) {
     this.mark = mark;
+    this.resolution = resolution || 1;
     this.selection = selection;
     this.peers = peers;
     this.xfield = xfield || mark.channelField('x', 'x1', 'x2');
@@ -29,13 +32,13 @@ export class Interval2D {
   }
 
   publish(extent) {
-    const { value } = this;
+    const { value, resolution, xscale, yscale } = this;
     let xr = undefined;
     let yr = undefined;
     if (extent) {
       const [a, b] = extent;
-      xr = [a[0], b[0]].map(this.xscale.invert).sort(asc);
-      yr = [a[1], b[1]].map(this.yscale.invert).sort(asc);
+      xr = [a[0], b[0]].map(v => invert(v, xscale, resolution)).sort(asc);
+      yr = [a[1], b[1]].map(v => invert(v, yscale, resolution)).sort(asc);
     }
 
     if (!closeTo(xr, value?.[0]) || !closeTo(yr, value?.[1])) {
@@ -46,16 +49,14 @@ export class Interval2D {
   }
 
   clause(value) {
+    const { mark, resolution, xfield, yfield, xscale, yscale } = this;
     return {
       source: this,
-      schema: { type: 'interval', scales: [this.xscale, this.yscale] },
-      clients: this.peers ? this.mark.plot.markSet : new Set().add(this.mark),
+      schema: { type: 'interval', resolution, scales: [xscale, yscale] },
+      clients: this.peers ? mark.plot.markSet : new Set().add(mark),
       value,
       predicate: value
-        ? and(
-            isBetween(this.xfield, value[0]),
-            isBetween(this.yfield, value[1])
-          )
+        ? and(isBetween(xfield, value[0]), isBetween(yfield, value[1]))
         : null
     };
   }
