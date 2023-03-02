@@ -15,7 +15,7 @@ export async function render(view) {
   function send(query, resolve, reject) {
     const queryId = queryCounter++;
 
-    openQueries.set(queryId, { query, resolve, reject });
+    openQueries.set(queryId, { query, startTime: performance.now(), resolve, reject });
     view.model.send({ ...query, queryId });
   }
 
@@ -40,7 +40,7 @@ export async function render(view) {
     const query = openQueries.get(msg.queryId);
     openQueries.delete(msg.queryId);
 
-    console.log('resolving query', query.query.sql);
+    console.log(query.query.sql, Math.round(performance.now() - query.startTime));
 
     if (msg.error) {
       query.reject(msg.error);

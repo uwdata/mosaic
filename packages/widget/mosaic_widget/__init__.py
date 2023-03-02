@@ -55,7 +55,7 @@ class MosaicWidget(anywidget.AnyWidget):
 
         try:
             if data["type"] == "arrow":
-                result = self.con.execute(sql).arrow()
+                result = self.con.query(sql).arrow()
                 sink = pa.BufferOutputStream()
                 with pa.ipc.new_stream(sink, result.schema) as writer:
                     writer.write(result)
@@ -65,10 +65,10 @@ class MosaicWidget(anywidget.AnyWidget):
                     {"type": "arrow", "queryId": queryId}, buffers=[buf.to_pybytes()]
                 )
             elif data["type"] == "exec":
-                self.con.execute(sql).fetchall()
+                self.con.execute(sql)
                 self.send({"type": "exec", "queryId": queryId})
             else:
-                result = self.con.execute(sql).df()
+                result = self.con.query(sql).df()
                 json = result.to_dict(orient="records")
                 self.send({"type": "json", "queryId": queryId, "result": json})
         except Exception as e:
