@@ -1,3 +1,3 @@
-export function invert(value, scale, resolution = 1) {
-  return scale.invert(resolution * Math.floor(value / resolution));
+export function invert(value, scale, pixelSize = 1) {
+  return scale.invert(pixelSize * Math.floor(value / pixelSize));
 }

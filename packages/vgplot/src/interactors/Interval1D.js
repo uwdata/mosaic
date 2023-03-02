@@ -10,13 +10,13 @@ export class Interval1D {
     channel,
     selection,
     field,
-    resolution = 1,
+    pixelSize = 1,
     peers = true,
     brush: style
   }) {
     this.mark = mark;
     this.channel = channel;
-    this.resolution = resolution || 1;
+    this.pixelSize = pixelSize || 1;
     this.selection = selection;
     this.peers = peers;
     this.field = field || mark.channelField(channel, channel+'1', channel+'2');
@@ -34,7 +34,7 @@ export class Interval1D {
     let range = undefined;
     if (extent) {
       range = extent
-        .map(v => invert(v, this.scale, this.resolution))
+        .map(v => invert(v, this.scale, this.pixelSize))
         .sort((a, b) => a - b);
     }
     if (!closeTo(range, this.value)) {
@@ -45,10 +45,10 @@ export class Interval1D {
   }
 
   clause(value) {
-    const { mark, resolution, field, scale } = this;
+    const { mark, pixelSize, field, scale } = this;
     return {
       source: this,
-      schema: { type: 'interval', resolution, scales: [scale] },
+      schema: { type: 'interval', pixelSize, scales: [scale] },
       clients: this.peers ? mark.plot.markSet : new Set().add(mark),
       value,
       predicate: value ? isBetween(field, value) : null
