@@ -35,7 +35,7 @@ export default async function(el) {
   const binWidth = 2;
   const binType = 'normal';
   const histScale = 'sqrt';
-  const resolution = 2;
+  const pixelSize = 2;
 
   el.appendChild(
     hconcat(
@@ -45,7 +45,7 @@ export default async function(el) {
             from(table, { filterBy: brush }),
             { x: 'u', y: 'v', fill: 'density', bandwidth, binType, binWidth }
           ),
-          intervalXY({ as: brush, resolution }),
+          intervalXY({ as: brush, pixelSize }),
           domainXY(Fixed),
           scaleColor('sqrt'), schemeColor('viridis'),
           width(700), height(400), marginLeft(25), marginTop(20), marginRight(1)
@@ -78,7 +78,7 @@ export default async function(el) {
           { x: 'bp_rp', y: 'phot_g_mean_mag', fill: 'density', bandwidth, binType, binWidth }
         ),
         scaleColor('sqrt'), schemeColor('viridis'), reverseY(true),
-        intervalXY({ as: brush, resolution }), domainXY(Fixed),
+        intervalXY({ as: brush, pixelSize }), domainXY(Fixed),
         width(400), height(600), marginLeft(25), marginTop(20), marginRight(1)
       )
     )

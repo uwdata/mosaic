@@ -12,12 +12,12 @@ export class Interval2D {
     selection,
     xfield,
     yfield,
-    resolution = 1,
+    pixelSize = 1,
     peers = true,
     brush: style
   }) {
     this.mark = mark;
-    this.resolution = resolution || 1;
+    this.pixelSize = pixelSize || 1;
     this.selection = selection;
     this.peers = peers;
     this.xfield = xfield || mark.channelField('x', 'x1', 'x2');
@@ -32,13 +32,13 @@ export class Interval2D {
   }
 
   publish(extent) {
-    const { value, resolution, xscale, yscale } = this;
+    const { value, pixelSize, xscale, yscale } = this;
     let xr = undefined;
     let yr = undefined;
     if (extent) {
       const [a, b] = extent;
-      xr = [a[0], b[0]].map(v => invert(v, xscale, resolution)).sort(asc);
-      yr = [a[1], b[1]].map(v => invert(v, yscale, resolution)).sort(asc);
+      xr = [a[0], b[0]].map(v => invert(v, xscale, pixelSize)).sort(asc);
+      yr = [a[1], b[1]].map(v => invert(v, yscale, pixelSize)).sort(asc);
     }
 
     if (!closeTo(xr, value?.[0]) || !closeTo(yr, value?.[1])) {
@@ -49,10 +49,10 @@ export class Interval2D {
   }
 
   clause(value) {
-    const { mark, resolution, xfield, yfield, xscale, yscale } = this;
+    const { mark, pixelSize, xfield, yfield, xscale, yscale } = this;
     return {
       source: this,
-      schema: { type: 'interval', resolution, scales: [xscale, yscale] },
+      schema: { type: 'interval', pixelSize, scales: [xscale, yscale] },
       clients: this.peers ? mark.plot.markSet : new Set().add(mark),
       value,
       predicate: value
