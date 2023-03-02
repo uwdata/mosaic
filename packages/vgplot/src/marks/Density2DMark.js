@@ -126,7 +126,7 @@ function bin2d(input, x, y, weight, x0, x1, y0, y1, xn, yn, rx, ry, groupby = []
 
   return Query
     .select({
-      index: expr(`FLOOR(${xp}) + FLOOR(${yp}) * ${xn}`),
+      index: expr(`FLOOR(${xp})::INTEGER + FLOOR(${yp})::INTEGER * ${xn}`),
       weight: w ? sum(w) : count(),
     }, groupby)
     .from(input)
@@ -156,26 +156,26 @@ function binLinear2d(input, x, y, weight, x0, x1, y0, y1, xn, yn, rx, ry, groupb
 
   // grid[xu + yu * xn] += (xv - xp) * (yv - yp) * wi;
   const a = q(
-    expr(`FLOOR(xp) + FLOOR(yp) * ${xn}`),
-    expr(`(FLOOR(xp) + 1 - xp) * (FLOOR(yp) + 1 - yp)${w}`)
+    expr(`FLOOR(xp)::INTEGER + FLOOR(yp)::INTEGER * ${xn}`),
+    expr(`(FLOOR(xp)::INTEGER + 1 - xp) * (FLOOR(yp)::INTEGER + 1 - yp)${w}`)
   );
 
   // grid[xu + yv * xn] += (xv - xp) * (yp - yu) * wi;
   const b = q(
-    expr(`FLOOR(xp) + (FLOOR(yp) + 1) * ${xn}`),
-    expr(`(FLOOR(xp) + 1 - xp) * (yp - FLOOR(yp))${w}`)
+    expr(`FLOOR(xp)::INTEGER + (FLOOR(yp)::INTEGER + 1) * ${xn}`),
+    expr(`(FLOOR(xp)::INTEGER + 1 - xp) * (yp - FLOOR(yp)::INTEGER)${w}`)
   );
 
   // grid[xv + yu * xn] += (xp - xu) * (yv - yp) * wi;
   const c = q(
-    expr(`FLOOR(xp) + 1 + FLOOR(yp) * ${xn}`),
-    expr(`(xp - FLOOR(xp)) * (FLOOR(yp) + 1 - yp)${w}`)
+    expr(`FLOOR(xp)::INTEGER + 1 + FLOOR(yp)::INTEGER * ${xn}`),
+    expr(`(xp - FLOOR(xp)::INTEGER) * (FLOOR(yp)::INTEGER + 1 - yp)${w}`)
   );
 
   // grid[xv + yv * xn] += (xp - xu) * (yp - yu) * wi;
   const d = q(
-    expr(`FLOOR(xp) + 1 + (FLOOR(yp) + 1) * ${xn}`),
-    expr(`(xp - FLOOR(xp)) * (yp - FLOOR(yp))${w}`)
+    expr(`FLOOR(xp)::INTEGER + 1 + (FLOOR(yp)::INTEGER + 1) * ${xn}`),
+    expr(`(xp - FLOOR(xp)::INTEGER) * (yp - FLOOR(yp)::INTEGER)${w}`)
   );
 
   return Query

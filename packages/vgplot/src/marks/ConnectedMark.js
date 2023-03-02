@@ -37,7 +37,7 @@ export class ConnectedMark extends Mark {
 }
 
 function m4(input, bx, x, y, lo, hi, width, cols = []) {
-  const bins = expr(`FLOOR(${width / (hi - lo)}::DOUBLE * (${bx} - ${+lo}::DOUBLE))`);
+  const bins = expr(`FLOOR(${width / (hi - lo)}::DOUBLE * (${bx} - ${+lo}::DOUBLE))::INTEGER`);
 
   const q = (sel) => Query
     .from(input)

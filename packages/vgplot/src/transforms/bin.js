@@ -40,7 +40,7 @@ class BinTransform extends Ref {
     const alpha = `${(b.max - b.min) / b.steps}::DOUBLE`;
     const off = options.offset ? '1 + ' : '';
     const e = expr(
-      `${min} + ${alpha} * (${off}FLOOR(${delta} / ${alpha}))`,
+      `${min} + ${alpha} * (${off}FLOOR(${delta} / ${alpha})::INTEGER)`,
       [column]
     );
     return e;
