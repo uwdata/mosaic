@@ -24,7 +24,7 @@
     "prepublishOnly": "npm run test && npm run lint"
   },
   "dependencies": {
-    "duckdb": "~0.6.1",
+    "duckdb": "~0.7.1",
     "ws": "^8.12.1"
   }
 }
