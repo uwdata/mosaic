@@ -34,6 +34,7 @@ hconcat:
       binWidth: $binWidth
       binType: normal
     - select: intervalXY
+      pixelSize: 2
       as: $brush
       activateOn: mousedown
     domainXY: Fixed
@@ -88,6 +89,7 @@ hconcat:
     binWidth: $binWidth
     binType: normal
   - select: intervalXY
+    pixelSize: 2
     as: $brush
     activateOn: mousedown
   domainXY: Fixed

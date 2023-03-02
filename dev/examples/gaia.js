@@ -33,7 +33,9 @@ export default async function(el) {
   const brush = Selection.crossfilter();
   const bandwidth = 0;
   const binWidth = 2;
+  const binType = 'normal';
   const histScale = 'sqrt';
+  const pixelSize = 2;
 
   el.appendChild(
     hconcat(
@@ -41,9 +43,9 @@ export default async function(el) {
         plot(
           raster(
             from(table, { filterBy: brush }),
-            { x: 'u', y: 'v', fill: 'density', bandwidth, binWidth }
+            { x: 'u', y: 'v', fill: 'density', bandwidth, binType, binWidth }
           ),
-          intervalXY({ as: brush, activateOn: 'mousedown' }),
+          intervalXY({ as: brush, pixelSize, activateOn: 'mousedown' }),
           domainXY(Fixed),
           scaleColor('sqrt'), schemeColor('viridis'),
           width(700), height(400), marginLeft(25), marginTop(20), marginRight(1)
@@ -73,10 +75,10 @@ export default async function(el) {
       plot(
         raster(
           from(table, { filterBy: brush }),
-          { x: 'bp_rp', y: 'phot_g_mean_mag', fill: 'density', bandwidth, binWidth }
+          { x: 'bp_rp', y: 'phot_g_mean_mag', fill: 'density', bandwidth, binType, binWidth }
         ),
         scaleColor('sqrt'), schemeColor('viridis'), reverseY(true),
-        intervalXY({ as: brush, activateOn: 'mousedown' }), domainXY(Fixed),
+        intervalXY({ as: brush, pixelSize, activateOn: 'mousedown' }), domainXY(Fixed),
         width(400), height(600), marginLeft(25), marginTop(20), marginRight(1)
       )
     )
