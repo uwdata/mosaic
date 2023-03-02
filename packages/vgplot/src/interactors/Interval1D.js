@@ -1,6 +1,7 @@
 import { brushX, brushY, select, min, max } from 'd3';
 import { isBetween } from '@uwdata/mosaic-sql';
 import { closeTo } from './util/close-to.js';
+import { invert } from './util/invert.js';
 import { patchScreenCTM } from './util/patchScreenCTM.js';
 import { sanitizeStyles } from './util/sanitize-styles.js';
 
@@ -9,11 +10,13 @@ export class Interval1D {
     channel,
     selection,
     field,
+    pixelSize = 1,
     peers = true,
     brush: style
   }) {
     this.mark = mark;
     this.channel = channel;
+    this.pixelSize = pixelSize || 1;
     this.selection = selection;
     this.peers = peers;
     this.field = field || mark.channelField(channel, channel+'1', channel+'2');
@@ -30,7 +33,9 @@ export class Interval1D {
   publish(extent) {
     let range = undefined;
     if (extent) {
-      range = extent.map(this.scale.invert).sort((a, b) => a - b);
+      range = extent
+        .map(v => invert(v, this.scale, this.pixelSize))
+        .sort((a, b) => a - b);
     }
     if (!closeTo(range, this.value)) {
       this.value = range;
@@ -40,12 +45,13 @@ export class Interval1D {
   }
 
   clause(value) {
+    const { mark, pixelSize, field, scale } = this;
     return {
       source: this,
-      schema: { type: 'interval', scales: [this.scale] },
-      clients: this.peers ? this.mark.plot.markSet : new Set().add(this.mark),
+      schema: { type: 'interval', pixelSize, scales: [scale] },
+      clients: this.peers ? mark.plot.markSet : new Set().add(mark),
       value,
-      predicate: value ? isBetween(this.field, value) : null
+      predicate: value ? isBetween(field, value) : null
     };
   }
 

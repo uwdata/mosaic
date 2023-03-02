@@ -34,6 +34,7 @@ hconcat:
       binWidth: $binWidth
       binType: normal
     - select: intervalXY
+      pixelSize: 2
       as: $brush
     domainXY: Fixed
     scaleColor: $scaleType
@@ -85,6 +86,7 @@ hconcat:
     binWidth: $binWidth
     binType: normal
   - select: intervalXY
+    pixelSize: 2
     as: $brush
   domainXY: Fixed
   scaleColor: $scaleType

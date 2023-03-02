@@ -113,11 +113,11 @@ function getActiveView(clause) {
   const { source, schema } = clause;
   let columns = clause.predicate?.columns;
   if (!schema || !columns) return null;
-  const { type, scales } = schema;
+  const { type, scales, pixelSize = 1 } = schema;
   let predicate;
 
   if (type === 'interval' && scales) {
-    const bins = scales.map(s => binInterval(s));
+    const bins = scales.map(s => binInterval(s, pixelSize));
     if (bins.some(b => b == null)) return null; // unsupported scale type
 
     if (bins.length === 1) {
@@ -141,7 +141,7 @@ function getActiveView(clause) {
   return { source, columns, predicate };
 }
 
-function binInterval(scale) {
+function binInterval(scale, pixelSize) {
   const { type, domain, range } = scale;
   let lift, sql;
 
@@ -169,15 +169,16 @@ function binInterval(scale) {
       sql = c => c instanceof Date ? +c : epoch_ms(asColumn(c));
       break;
   }
-  return lift ? binFunction(domain, range, lift, sql) : null;
+  return lift ? binFunction(domain, range, pixelSize, lift, sql) : null;
 }
 
-function binFunction(domain, range, lift, sql) {
+function binFunction(domain, range, pixelSize, lift, sql) {
   const lo = lift(Math.min(domain[0], domain[1]));
   const hi = lift(Math.max(domain[0], domain[1]));
-  const a = Math.abs(lift(range[1]) - lift(range[0])) / (hi - lo);
+  const a = (Math.abs(lift(range[1]) - lift(range[0])) / (hi - lo)) / pixelSize;
+  const s = pixelSize === 1 ? '' : `${pixelSize}::INTEGER * `;
   return value => expr(
-    `FLOOR(${a}::DOUBLE * (${sql(value)} - ${lo}::DOUBLE))::INTEGER`,
+    `${s}FLOOR(${a}::DOUBLE * (${sql(value)} - ${lo}::DOUBLE))::INTEGER`,
     asColumn(value).columns
   );
 }
