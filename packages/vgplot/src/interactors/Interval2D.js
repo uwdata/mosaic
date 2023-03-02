@@ -12,7 +12,8 @@ export class Interval2D {
     xfield,
     yfield,
     peers = true,
-    brush: style
+    brush: style,
+    activateOn = 'mouseenter'
   }) {
     this.mark = mark;
     this.selection = selection;
@@ -22,6 +23,7 @@ export class Interval2D {
     this.style = style && sanitizeStyles(style);
     this.brush = brush();
     this.brush.on('brush end', ({ selection }) => this.publish(selection));
+    this.activateOn = activateOn;
   }
 
   activate() {
@@ -89,6 +91,6 @@ export class Interval2D {
       this.g.call(brush.move, [[x1, y1], [x2, y2]]);
     }
 
-    svg.addEventListener('mouseenter', () => this.activate());
+    svg.addEventListener(this.activateOn, () => this.activate());
   }
 }

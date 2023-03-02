@@ -10,7 +10,8 @@ export class Interval1D {
     selection,
     field,
     peers = true,
-    brush: style
+    brush: style,
+    activateOn = 'mouseenter'
   }) {
     this.mark = mark;
     this.channel = channel;
@@ -21,6 +22,7 @@ export class Interval1D {
     this.style = style && sanitizeStyles(style);
     this.brush = channel === 'y' ? brushY() : brushX();
     this.brush.on('brush end', ({ selection }) => this.publish(selection));
+    this.activateOn = activateOn;
   }
 
   activate() {
@@ -73,6 +75,6 @@ export class Interval1D {
       }
     }
 
-    svg.addEventListener('mouseenter', () => this.activate());
+    svg.addEventListener(this.activateOn, () => this.activate());
   }
 }
