@@ -177,7 +177,7 @@ function binFunction(domain, range, lift, sql) {
   const hi = lift(Math.max(domain[0], domain[1]));
   const a = Math.abs(lift(range[1]) - lift(range[0])) / (hi - lo);
   return value => expr(
-    `FLOOR(${a}::DOUBLE * (${sql(value)} - ${lo}::DOUBLE))`,
+    `FLOOR(${a}::DOUBLE * (${sql(value)} - ${lo}::DOUBLE))::INTEGER`,
     asColumn(value).columns
   );
 }

@@ -83,7 +83,7 @@ function binLinear1d(input, x, lo, hi, n, weight) {
     .where(isBetween(x, [lo, hi]));
 
   const v = Query
-    .select({ p, i: expr('FLOOR(p)::INTEGER + 1'), w: expr(`(p - FLOOR(p))${w}`) })
+    .select({ p, i: expr('FLOOR(p)::INTEGER + 1'), w: expr(`(p - FLOOR(p)::INTEGER)${w}`) })
     .from(input)
     .where(isBetween(x, [lo, hi]));
 
