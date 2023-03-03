@@ -154,29 +154,8 @@ export async function plotRenderer(plot) {
   // annotate svg with mark indices
   annotatePlot(svg, indices);
 
-  // set fixed entries
-  symbols.forEach(key => {
-    const value = attributes[key];
-    if (value === Fixed) {
-      let scale;
-      switch (key) {
-        case 'domainX': scale = 'x'; break;
-        case 'domainY': scale = 'y'; break;
-        case 'domainFX': scale = 'fx'; break;
-        case 'domainFY': scale = 'fy'; break;
-        case 'domainColor': scale = 'color'; break;
-        case 'domainR': scale = 'r'; break;
-        default:
-          throw new Error(`Unsupported fixed attribute: ${key}`);
-      }
-      const domain = svg.scale(scale)?.domain;
-      if (domain) {
-        plot.setAttribute(key, domain);
-      }
-    } else {
-      throw new Error(`Unrecognized symbol: ${value}`);
-    }
-  });
+  // set symbol-valued attributes, such as fixed domains
+  setSymbolAttributes(plot, svg, attributes, symbols);
 
   // initialize interactors
   for (const interactor of plot.interactors) {
@@ -184,6 +163,26 @@ export async function plotRenderer(plot) {
   }
 
   return svg;
+}
+
+function setSymbolAttributes(plot, svg, attributes, symbols) {
+  symbols.forEach(key => {
+    const value = attributes[key];
+    if (value === Fixed) {
+      if (!key.startsWith('domain')) {
+        throw new Error(`Unsupported fixed attribute: ${key}`);
+      }
+      const type = key.slice('domain'.length);
+      const scale = svg.scale(type.toLowerCase());
+      if (scale?.domain) {
+        plot.setAttribute(key, attributes[`reverse${type}`]
+          ? scale.domain.slice().reverse()
+          : scale.domain);
+      }
+    } else {
+      throw new Error(`Unrecognized symbol: ${value}`);
+    }
+  });
 }
 
 function inferLabels(spec, plot) {
