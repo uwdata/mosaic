@@ -28,8 +28,9 @@ export class Interval2D {
     this.brush.on('brush end', ({ selection }) => this.publish(selection));
   }
 
-  clear() {
-    this.brush.reset(this.g);
+  reset() {
+    this.value = undefined;
+    if (this.g) this.brush.reset(this.g);
   }
 
   activate() {
@@ -47,7 +48,7 @@ export class Interval2D {
     }
 
     if (!closeTo(xr, value?.[0]) || !closeTo(yr, value?.[1])) {
-      this.value = extent ? [xr, yr] : null;
+      this.value = extent ? [xr, yr] : undefined;
       this.g.call(this.brush.move, extent);
       this.selection.update(this.clause(this.value));
     }

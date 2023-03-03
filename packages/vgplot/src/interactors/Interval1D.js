@@ -27,8 +27,9 @@ export class Interval1D {
     this.brush.on('brush end', ({ selection }) => this.publish(selection));
   }
 
-  clear() {
-    this.brush.reset(this.g);
+  reset() {
+    this.value = undefined;
+    if (this.g) this.brush.reset(this.g);
   }
 
   activate() {
