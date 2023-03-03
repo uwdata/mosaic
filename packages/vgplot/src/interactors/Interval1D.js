@@ -1,5 +1,6 @@
-import { brushX, brushY, select, min, max } from 'd3';
+import { select, min, max } from 'd3';
 import { isBetween } from '@uwdata/mosaic-sql';
+import { brushX, brushY } from './util/brush.js';
 import { closeTo } from './util/close-to.js';
 import { invert } from './util/invert.js';
 import { patchScreenCTM } from './util/patchScreenCTM.js';
@@ -24,6 +25,11 @@ export class Interval1D {
     this.style = style && sanitizeStyles(style);
     this.brush = channel === 'y' ? brushY() : brushX();
     this.brush.on('brush end', ({ selection }) => this.publish(selection));
+  }
+
+  reset() {
+    this.value = undefined;
+    if (this.g) this.brush.reset(this.g);
   }
 
   activate() {

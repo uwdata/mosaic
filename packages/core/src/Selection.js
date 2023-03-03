@@ -58,7 +58,9 @@ export class Selection extends Param {
   update(clause) {
     const { source, predicate } = clause;
     this.active = clause;
-    const clauses = this.single ? [] : this.clauses.filter(c => source !== c.source);
+    const filtered = this.clauses.filter(c => source !== c.source);
+    const clauses = this.single ? [] : filtered;
+    if (this.single) filtered.forEach(c => c.source?.reset?.());
     if (predicate) clauses.push(clause);
     return super.update(clauses);
   }

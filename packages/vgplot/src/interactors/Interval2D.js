@@ -1,5 +1,6 @@
-import { brush, select, min, max } from 'd3';
+import { select, min, max } from 'd3';
 import { and, isBetween } from '@uwdata/mosaic-sql';
+import { brush } from './util/brush.js';
 import { closeTo } from './util/close-to.js';
 import { invert } from './util/invert.js';
 import { patchScreenCTM } from './util/patchScreenCTM.js';
@@ -27,6 +28,11 @@ export class Interval2D {
     this.brush.on('brush end', ({ selection }) => this.publish(selection));
   }
 
+  reset() {
+    this.value = undefined;
+    if (this.g) this.brush.reset(this.g);
+  }
+
   activate() {
     this.selection.activate(this.clause(this.value || [[0, 1], [0, 1]]));
   }
@@ -42,7 +48,7 @@ export class Interval2D {
     }
 
     if (!closeTo(xr, value?.[0]) || !closeTo(yr, value?.[1])) {
-      this.value = extent ? [xr, yr] : null;
+      this.value = extent ? [xr, yr] : undefined;
       this.g.call(this.brush.move, extent);
       this.selection.update(this.clause(this.value));
     }

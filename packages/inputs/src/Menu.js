@@ -64,6 +64,10 @@ export class Menu extends MosaicClient {
     }
   }
 
+  reset() {
+    this.select.selectedIndex = this.from ? 0 : -1;
+  }
+
   publish(value) {
     const { selection, column } = this;
     if (isSelection(selection)) {

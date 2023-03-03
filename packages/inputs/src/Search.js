@@ -53,6 +53,10 @@ export class Search extends MosaicClient {
     }
   }
 
+  reset() {
+    this.searchbox.value = '';
+  }
+
   publish(value) {
     const { selection, column, type } = this;
     if (isSelection(selection)) {
