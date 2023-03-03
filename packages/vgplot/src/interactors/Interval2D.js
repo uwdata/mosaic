@@ -1,5 +1,6 @@
-import { brush, select, min, max } from 'd3';
+import { select, min, max } from 'd3';
 import { and, isBetween } from '@uwdata/mosaic-sql';
+import { brush } from './util/brush.js';
 import { closeTo } from './util/close-to.js';
 import { invert } from './util/invert.js';
 import { patchScreenCTM } from './util/patchScreenCTM.js';
@@ -25,6 +26,10 @@ export class Interval2D {
     this.style = style && sanitizeStyles(style);
     this.brush = brush();
     this.brush.on('brush end', ({ selection }) => this.publish(selection));
+  }
+
+  clear() {
+    this.brush.reset(this.g);
   }
 
   activate() {

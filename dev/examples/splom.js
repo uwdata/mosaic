@@ -12,7 +12,7 @@ export default function(el) {
 
   const columns = ['bill_length', 'bill_depth', 'flipper_length', 'body_mass'];
   const table = 'penguins';
-  const brush = Selection.union();
+  const brush = Selection.single();
 
   function scatter(x, y, row, col, n) {
     const s = 135;
