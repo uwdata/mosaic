@@ -37,8 +37,8 @@
     </span>
 
     <span style="margin-right: 0.5em;"></span>
-      Client:
-      <select id="clients">
+      Connectors:
+      <select id="connectors">
         <option value="socket" selected>Socket</option>
         <option value="rest">REST</option>
         <option value="wasm">WASM</option>
@@ -47,16 +47,16 @@
   </header>
   <div id="view"></div>
 <script type="module">
-  import { reset, setDatabaseClient } from '../setup.js';
+  import { reset, setDatabaseConnector } from '../setup.js';
 
   const view = document.querySelector('#view');
-  const clientMenu = document.querySelector('#clients');
+  const connectorMenu = document.querySelector('#connectors');
   const exampleMenu = document.querySelector('#examples');
 
-  clientMenu.addEventListener('change', () => setDatabaseClient(clientMenu.value));
+  connectorMenu.addEventListener('change', () => setDatabaseConnector(connectorMenu.value));
   exampleMenu.addEventListener('change', () => load(exampleMenu.value));
 
-  await setDatabaseClient(clientMenu.value);
+  await setDatabaseConnector(connectorMenu.value);
   load(exampleMenu.value);
 
   async function load(name) {

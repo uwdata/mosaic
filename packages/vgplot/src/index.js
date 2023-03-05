@@ -4,9 +4,9 @@ export {
   Param,
   Selection,
   coordinator,
-  restClient,
-  socketClient,
-  wasmClient
+  restConnector,
+  socketConnector,
+  wasmConnector
 } from '@uwdata/mosaic-core';
 
 export {

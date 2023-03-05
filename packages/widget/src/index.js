@@ -19,7 +19,7 @@ export async function render(view) {
     view.model.send({ ...query, queryId });
   }
 
-  const client = {
+  const connector = {
     query(query) {
       return new Promise((resolve, reject) => send(query, resolve, reject));
     },
@@ -67,6 +67,6 @@ export async function render(view) {
     console.groupEnd('query');
   });
 
-  coordinator().databaseClient(client);
+  coordinator().databaseConnector(connector);
   updateSpec();
 }

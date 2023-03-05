@@ -1,5 +1,5 @@
 import {
-  coordinator, socketClient, restClient, wasmClient, namedPlots
+  coordinator, socketConnector, restConnector, wasmConnector, namedPlots
 } from '@uwdata/vgplot';
 
 export * from  '@uwdata/vgplot';
@@ -11,28 +11,28 @@ export function reset() {
 
 let wasm;
 
-export async function setDatabaseClient(type, options) {
-  let client;
+export async function setDatabaseConnector(type, options) {
+  let connector;
   switch (type) {
     case 'socket':
-      client = socketClient(options);
+      connector = socketConnector(options);
       break;
     case 'rest':
-      client = restClient(options);
+      connector = restConnector(options);
       break;
     case 'wasm':
-      client = (wasm || (wasm = await initWasmClient(options)));
+      connector = (wasm || (wasm = await initWasmConnector(options)));
       break;
     default:
-      throw new Error(`Unrecognized client type: ${type}`);
+      throw new Error(`Unrecognized connector type: ${type}`);
   }
-  console.log('DATABASE CLIENT', type);
-  coordinator().databaseClient(client);
+  console.log('DATABASE Connector', type);
+  coordinator().databaseConnector(connector);
 }
 
-async function initWasmClient(options) {
-  const client = await wasmClient(options);
-  const { db, con } = client;
+async function initWasmConnector(options) {
+  const connector = await wasmConnector(options);
+  const { db, con } = connector;
 
   async function csv(name, file) {
     const csv = await (await fetch(file)).text();
@@ -54,5 +54,5 @@ async function initWasmClient(options) {
     ipc('walk', `${dir}/random-walk.arrow`)
   ]);
 
-  return client;
+  return connector;
 }

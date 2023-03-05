@@ -1,6 +1,6 @@
 import { tableFromIPC } from 'apache-arrow';
 
-export function socketClient(uri = 'ws://localhost:3000/') {
+export function socketConnector(uri = 'ws://localhost:3000/') {
   const queue = [];
   let connected = false;
   let request = null;
