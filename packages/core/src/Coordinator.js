@@ -1,4 +1,4 @@
-import { socketClient } from './clients/socket.js';
+import { socketConnector } from './connectors/socket.js';
 import { Catalog } from './Catalog.js';
 import { FilterGroup } from './FilterGroup.js';
 import { QueryCache, voidCache } from './QueryCache.js';
@@ -16,11 +16,11 @@ export function coordinator(instance) {
 }
 
 export class Coordinator {
-  constructor(db = socketClient(), options = {}) {
+  constructor(db = socketConnector(), options = {}) {
     this.catalog = new Catalog(this);
     this.logger(options.logger || console);
     this.configure(options);
-    this.databaseClient(db);
+    this.databaseConnector(db);
     this.clear();
   }
 
@@ -46,7 +46,7 @@ export class Coordinator {
     if (catalog) this.catalog.clear();
   }
 
-  databaseClient(db) {
+  databaseConnector(db) {
     if (arguments.length > 0) {
       this.db = db;
     }

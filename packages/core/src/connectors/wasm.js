@@ -1,6 +1,6 @@
 import * as duckdb from '@duckdb/duckdb-wasm';
 
-export async function wasmClient(options) {
+export async function wasmConnector(options) {
   const db = await initDatabase(options);
   const con = await db.connect();
 

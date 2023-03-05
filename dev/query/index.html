@@ -8,8 +8,8 @@
     <header>
       <strong>Query Console</strong>
       <span style="margin-right: 0.5em;"></span>
-        Client:
-        <select id="client">
+        Connector:
+        <select id="connector">
           <option value="socket" selected>Socket</option>
           <option value="rest">REST</option>
           <option value="wasm">WASM</option>
@@ -29,14 +29,14 @@
     <br/>
     <div id="output"></div>
 <script type="module">
-  import { setDatabaseClient, coordinator, table } from '../setup.js';
+  import { setDatabaseConnector, coordinator, table } from '../setup.js';
   const tableName = 'query_result';
 
   const input = document.querySelector('#input');
   const output = document.querySelector('#output');
   const submit = document.querySelector('#submit');
   const exec = document.querySelector('#exec');
-  const menu = document.querySelector('#client');
+  const menu = document.querySelector('#connector');
   const mode = document.querySelector('#mode');
 
   function disable() {
@@ -49,7 +49,7 @@
     submit.removeAttribute('disabled');
   }
 
-  menu.addEventListener('change', () => setDatabaseClient(menu.value));
+  menu.addEventListener('change', () => setDatabaseConnector(menu.value));
 
   submit.addEventListener('click', async () => {
     disable();
