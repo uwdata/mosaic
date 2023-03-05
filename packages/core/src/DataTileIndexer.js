@@ -200,8 +200,8 @@ function getIndexColumns(client) {
   if (!from || !q.groupby) return NO_INDEX;
   const g = new Set(q.groupby().map(c => c.column));
 
-  let aggr = [];
-  let dims = [];
+  const aggr = [];
+  const dims = [];
   let count;
 
   for (const { as, expr: { aggregate } } of q.select()) {
@@ -245,7 +245,7 @@ function getBaseTable(query) {
   }
 
   // handle set operations / subqueries
-  let base = getBaseTable(subq[0]);
+  const base = getBaseTable(subq[0]);
   for (let i = 1; i < subq.length; ++i) {
     const from = getBaseTable(subq[i]);
     if (from === undefined) continue;
