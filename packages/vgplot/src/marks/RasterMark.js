@@ -74,9 +74,7 @@ function imageScale(mark) {
   if (!domain) {
     let lo = 0, hi = 0;
     kde.forEach(grid => {
-      const n = grid.length;
-      for (let i = 0; i < n; ++i) {
-        const v = grid[i];
+      for (const v of grid) {
         if (v < lo) lo = v;
         if (v > hi) hi = v;
       }
