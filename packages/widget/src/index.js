@@ -43,7 +43,15 @@ export async function render(view) {
     const selections = new Set([...c.clients].flatMap(c => c.filterBy).filter(s => s))
     for (const s of selections) {
       s.addEventListener('value', () => {
-        const s = [...selections].map(s => s.clauses.map(c => ({predicate: c.predicate})));
+        const s = [...selections].map(
+          s => s.clauses.map(
+            c => ({
+              predicate: c.predicate,
+              value: c.value,
+              sql: String(c.predicate)
+            })
+          )
+        );
         view.model.set('selections', s);
         view.model.save_changes();
       });
