@@ -1,5 +1,5 @@
+import { coordinator, namedPlots, parseJSON } from '@uwdata/vgplot';
 import * as arrow from 'apache-arrow';
-import { coordinator, parseJSON } from '@uwdata/vgplot';
 import './style.css';
 
 let queryCounter = 0;
@@ -9,6 +9,8 @@ export async function render(view) {
   view.el.classList.add('mosaic-widget');
 
   const getSpec = () => view.model.get('spec');
+
+  const logger = coordinator().logger();
 
   const openQueries = new Map();
 
@@ -25,36 +27,61 @@ export async function render(view) {
     },
   };
 
+  function reset() {
+    coordinator().clear();
+    namedPlots.clear();
+  }
+
   async function updateSpec() {
     const spec = getSpec();
-    console.log('Setting spec:', spec);
+    reset();
+    logger.log('Setting spec:', spec);
     view.el.replaceChildren(await parseJSON(spec));
+
+    // Update the selections traitlet
+    const c = coordinator();
+    const selections = new Set([...c.clients].flatMap(c => c.filterBy).filter(s => s))
+    for (const s of selections) {
+      s.addEventListener('value', () => {
+        const s = [...selections].map(
+          s => s.clauses.map(
+            c => ({
+              predicate: c.predicate,
+              value: c.value,
+              sql: String(c.predicate)
+            })
+          )
+        );
+        view.model.set('selections', s);
+        view.model.save_changes();
+      });
+    }
   }
 
   view.model.on('change:spec', () => updateSpec());
 
   view.model.on('msg:custom', (msg, buffers) => {
-    console.group(`query ${msg.queryId}`);
-    console.log('received message', msg, buffers);
+    logger.group(`query ${msg.queryId}`);
+    logger.log('received message', msg, buffers);
 
     const query = openQueries.get(msg.queryId);
     openQueries.delete(msg.queryId);
 
-    console.log(query.query.sql, Math.round(performance.now() - query.startTime));
+    logger.log(query.query.sql, Math.round(performance.now() - query.startTime));
 
     if (msg.error) {
       query.reject(msg.error);
-      console.error(msg.error);
+      logger.error(msg.error);
     } else {
       switch (msg.type) {
         case 'arrow': {
           const table = arrow.tableFromIPC(buffers[0].buffer);
-          console.log('table', table);
+          logger.log('table', table);
           query.resolve(table);
           break;
         }
         case 'json': {
-          console.log('json', msg.result);
+          logger.log('json', msg.result);
           query.resolve(msg.result);
           break;
         }
@@ -64,7 +91,7 @@ export async function render(view) {
         }
       }
     }
-    console.groupEnd('query');
+    logger.groupEnd('query');
   });
 
   coordinator().databaseConnector(connector);

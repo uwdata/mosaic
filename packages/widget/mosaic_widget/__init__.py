@@ -26,8 +26,11 @@ class MosaicWidget(anywidget.AnyWidget):
     _esm = ESM
     _css = CSS
 
+    # The Mosaic specification
     spec = traitlets.Dict({}).tag(sync=True)
-    conn = None
+
+    # The current selections
+    selections = traitlets.List([]).tag(sync=True)
 
     def __init__(self, spec: dict = {}, con=duckdb.connect(), data={}, *args, **kwargs):
         """Create a Mosaic widget.
