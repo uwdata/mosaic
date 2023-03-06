@@ -1,6 +1,7 @@
 data:
-  sinusoids:
-    file: https://uwdata.github.io/mosaic-datasets/data/sinusoids.parquet
+  stocks_after_2006: SELECT Symbol, Close, epoch(Date)::INT AS Date
+        FROM 'https://uwdata.github.io/mosaic-datasets/data/stocks_after_2006.csv'
+        WHERE CLOSE < 100
 params:
   brush: { select: intersect }
   bandwidth: { value: 0 }
@@ -22,24 +23,25 @@ vconcat:
       - { value: 2 }
 - plot:
   - mark: denseLine
-    data: { from: sinusoids, filterBy: $brush }
-    x: t
-    y: v
-    z: s
+    data: { from: stocks_after_2006, filterBy: $brush }
+    x: Date
+    y: Close
+    z: Symbol
     fill: density
     bandwidth: $bandwidth
     binWidth: $binWidth
   schemeColor: viridis
+  scaleColor: sqrt
   labelY: Value (normalized lines)
   niceY: true
   width: 800
   height: 300
 - plot:
   - mark: denseLine
-    data: { from: sinusoids }
-    x: t
-    y: v
-    z: s
+    data: { from: stocks_after_2006 }
+    x: Date
+    y: Close
+    z: Symbol
     fill: density
     normalize: false
     bandwidth: $bandwidth
@@ -47,6 +49,7 @@ vconcat:
   - select: intervalXY
     as: $brush
   schemeColor: viridis
+  scaleColor: sqrt
   labelY: Value (unnormalized lines)
   niceY: true
   width: 800
