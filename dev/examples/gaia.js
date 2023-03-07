@@ -45,7 +45,7 @@ export default async function(el) {
             from(table, { filterBy: brush }),
             { x: 'u', y: 'v', fill: 'density', bandwidth, binType, binWidth }
           ),
-          intervalXY({ as: brush, pixelSize }),
+          intervalXY({ as: brush, pixelSize, activateOn: 'mousedown' }),
           domainXY(Fixed),
           scaleColor('sqrt'), schemeColor('viridis'),
           width(700), height(400), marginLeft(25), marginTop(20), marginRight(1)
@@ -57,7 +57,7 @@ export default async function(el) {
               { x: bin('phot_g_mean_mag'), y: count(), fill: 'steelblue', inset: 0.5 }
             ),
             scaleY(histScale), gridY(true),
-            intervalX({ as: brush }), domainX(Fixed),
+            intervalX({ as: brush, activateOn: 'mousedown' }), domainX(Fixed),
             width(350), height(200), marginLeft(65)
           ),
           plot(
@@ -66,7 +66,7 @@ export default async function(el) {
               { x: bin('parallax'), y: count(), fill: 'steelblue', inset: 0.5 }
             ),
             scaleY(histScale), gridY(true),
-            intervalX({ as: brush }), domainX(Fixed),
+            intervalX({ as: brush, activateOn: 'mousedown' }), domainX(Fixed),
             width(350), height(200), marginLeft(65)
           )
         )
@@ -78,7 +78,7 @@ export default async function(el) {
           { x: 'bp_rp', y: 'phot_g_mean_mag', fill: 'density', bandwidth, binType, binWidth }
         ),
         scaleColor('sqrt'), schemeColor('viridis'), reverseY(true),
-        intervalXY({ as: brush, pixelSize }), domainXY(Fixed),
+        intervalXY({ as: brush, pixelSize, activateOn: 'mousedown' }), domainXY(Fixed),
         width(400), height(600), marginLeft(25), marginTop(20), marginRight(1)
       )
     )

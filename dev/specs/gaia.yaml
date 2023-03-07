@@ -36,6 +36,7 @@ hconcat:
     - select: intervalXY
       pixelSize: 2
       as: $brush
+      activateOn: mousedown
     domainXY: Fixed
     scaleColor: $scaleType
     schemeColor: viridis
@@ -54,6 +55,7 @@ hconcat:
         inset: 0.5
       - select: intervalX
         as: $brush
+        activateOn: mousedown
       domainX: Fixed
       scaleY: $scaleType
       gridY: true
@@ -69,6 +71,7 @@ hconcat:
         inset: 0.5
       - select: intervalX
         as: $brush
+        activateOn: mousedown
       domainX: Fixed
       scaleY: $scaleType
       gridY: true
@@ -88,6 +91,7 @@ hconcat:
   - select: intervalXY
     pixelSize: 2
     as: $brush
+    activateOn: mousedown
   domainXY: Fixed
   scaleColor: $scaleType
   schemeColor: viridis
