@@ -1,9 +1,11 @@
 import { isParam } from '@uwdata/mosaic-core';
 import { Query, gt, sum, expr, isBetween } from '@uwdata/mosaic-sql';
 import { Transient } from '../symbols.js';
+import { binField } from './util/bin-field.js';
 import { dericheConfig, dericheConv1d, grid1d } from './util/density.js';
 import { extentX, extentY, xext, yext } from './util/extent.js';
 import { Mark } from './Mark.js';
+
 
 export class Density1DMark extends Mark {
   constructor(type, source, options) {
@@ -36,7 +38,8 @@ export class Density1DMark extends Mark {
     this.extent = (this.dim === 'x' ? extentX : extentY)(this, filter);
     const [lo, hi] = this.extent;
     const weight = this.channelField('weight') ? 'weight' : 1;
-    return binLinear1d(super.query(filter), 'x', lo, hi, this.bins, weight);
+    const x = binField(this, this.dim);
+    return binLinear1d(super.query(filter), x, +lo, +hi, this.bins, weight);
   }
 
   queryResult(data) {
@@ -45,17 +48,19 @@ export class Density1DMark extends Mark {
   }
 
   convolve() {
-    const { bins, bandwidth, grid, extent: [lo, hi] } = this;
+    const { bins, bandwidth, dim, grid, plot, extent: [lo, hi] } = this;
     const neg = grid.some(v => v < 0);
     const delta = (hi - lo) / (bins - 1);
     const scale = 1 / delta;
-    const config = dericheConfig(bandwidth * scale, neg);
+    const size = dim === 'x' ? plot.innerWidth() : plot.innerHeight();
+    const config = dericheConfig(bandwidth * (bins - 1) / size, neg);
     const result = dericheConv1d(config, grid, bins);
 
     const points = this.data = [];
+    const x0 = +lo;
     for (let i = 0; i < bins; ++i) {
       points.push({
-        x: lo + i * delta,
+        x: x0 + i * delta,
         y: result[i] * scale
       });
     }

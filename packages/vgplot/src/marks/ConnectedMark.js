@@ -1,4 +1,5 @@
-import { Query, argmax, argmin, expr, max, min, epoch_ms } from '@uwdata/mosaic-sql';
+import { Query, argmax, argmin, expr, max, min } from '@uwdata/mosaic-sql';
+import { binField } from './util/bin-field.js';
 import { filteredExtent } from './util/extent.js';
 import { Mark } from './Mark.js';
 
@@ -19,13 +20,13 @@ export class ConnectedMark extends Mark {
     if (optimize) {
       // TODO: handle stacked data
       const { column } = this.channelField(dim);
-      const { count, max, min, type } = stats[column];
+      const { count, max, min } = stats[column];
       const size = dim === 'x' ? plot.innerWidth() : plot.innerHeight();
 
       const [lo, hi] = filteredExtent(filter, column) || [min, max];
       const scale = (hi - lo) / (max - min);
       if (count * scale > size * 4) {
-        const dd = type === 'date' ? epoch_ms(dim) : dim;
+        const dd = binField(this, dim);
         const val = dim === 'x' ? 'y' : 'x';
         const cols = q.select().map(c => c.as).filter(c => c !== 'x' && c !== 'y');
         return m4(q, dd, dim, val, lo, hi, size, cols);

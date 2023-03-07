@@ -1,6 +1,7 @@
 import { isParam } from '@uwdata/mosaic-core';
 import { Query, and, count, gt, sum, expr, isBetween } from '@uwdata/mosaic-sql';
 import { Transient } from '../symbols.js';
+import { binField } from './util/bin-field.js';
 import { dericheConfig, dericheConv2d, grid2d } from './util/density.js';
 import { extentX, extentY, xyext } from './util/extent.js';
 import { Mark } from './Mark.js';
@@ -77,9 +78,11 @@ export class Density2DMark extends Mark {
     ];
     const rx = !!plot.getAttribute('reverseX');
     const ry = !!plot.getAttribute('reverseY');
+    const x = binField(this, 'x');
+    const y = binField(this, 'y');
     return binType === 'linear'
-      ? binLinear2d(q, 'x', 'y', w, x0, x1, y0, y1, nx, ny, rx, ry, groupby)
-      : bin2d(q, 'x', 'y', w, x0, x1, y0, y1, nx, ny, rx, ry, groupby);
+      ? binLinear2d(q, x, y, w, +x0, +x1, +y0, +y1, nx, ny, rx, ry, groupby)
+      : bin2d(q, x, y, w, +x0, +x1, +y0, +y1, nx, ny, rx, ry, groupby);
   }
 
   queryResult(data) {

@@ -43,8 +43,10 @@ export class ContourMark extends Density2DMark {
     const [y0, y1] = plot.getAttribute('domainY');
     const sx = (x1 - x0) / nx;
     const sy = (y1 - y0) / ny;
-    const x = v => x0 + v * sx;
-    const y = v => y0 + v * sy;
+    const xo = +x0;
+    const yo = +y0;
+    const x = v => xo + v * sx;
+    const y = v => yo + v * sy;
     const contour = contours().size(bins);
 
     // generate contours
