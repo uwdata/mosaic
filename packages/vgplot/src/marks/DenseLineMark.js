@@ -1,4 +1,4 @@
-import { Query, and, count, sum, expr, isNull, isBetween, epoch_ms } from '@uwdata/mosaic-sql';
+import { Query, and, count, sum, expr, isNull, isBetween } from '@uwdata/mosaic-sql';
 import { binField } from './util/bin-field.js';
 import { extentX, extentY } from './util/extent.js';
 import { RasterMark } from './RasterMark.js';

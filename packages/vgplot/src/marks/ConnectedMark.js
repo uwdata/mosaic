@@ -20,7 +20,7 @@ export class ConnectedMark extends Mark {
     if (optimize) {
       // TODO: handle stacked data
       const { column } = this.channelField(dim);
-      const { count, max, min, type } = stats[column];
+      const { count, max, min } = stats[column];
       const size = dim === 'x' ? plot.innerWidth() : plot.innerHeight();
 
       const [lo, hi] = filteredExtent(filter, column) || [min, max];
