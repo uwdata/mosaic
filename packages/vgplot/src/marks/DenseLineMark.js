@@ -1,4 +1,5 @@
-import { Query, and, count, sum, expr, isNull, isBetween } from '@uwdata/mosaic-sql';
+import { Query, and, count, sum, expr, isNull, isBetween, epoch_ms } from '@uwdata/mosaic-sql';
+import { binField } from './util/bin-field.js';
 import { extentX, extentY } from './util/extent.js';
 import { RasterMark } from './RasterMark.js';
 
@@ -36,7 +37,9 @@ export class DenseLineMark extends RasterMark {
     ];
     const rx = !!plot.getAttribute('reverseX');
     const ry = !!plot.getAttribute('reverseY');
-    return lineDensity(q, 'x', 'y', z, x0, x1, y0, y1, nx, ny, rx, ry, groupby, normalize);
+    const x = binField(this, 'x');
+    const y = binField(this, 'y');
+    return lineDensity(q, x, y, z, +x0, +x1, +y0, +y1, nx, ny, rx, ry, groupby, normalize);
   }
 }
 

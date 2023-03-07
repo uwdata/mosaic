@@ -1,11 +1,13 @@
 data:
-  stocks_after_2006: SELECT Symbol, Close, epoch(Date)::INT AS Date
-        FROM 'https://uwdata.github.io/mosaic-datasets/data/stocks_after_2006.csv'
-        WHERE CLOSE < 100
+  stocks_after_2006: SELECT Symbol, Close, Date
+    FROM read_csv_auto('https://uwdata.github.io/mosaic-datasets/data/stocks_after_2006.csv', SAMPLE_SIZE=-1)
+    WHERE CLOSE < 100
 params:
   brush: { select: intersect }
-  bandwidth: { value: 0 }
-  binWidth: { value: 1 }
+  bandwidth: 0
+  binWidth: 1
+  schemeColor: pubugn
+  scaleColor: sqrt
 vconcat:
 - hconcat:
   - input: slider
@@ -15,12 +17,9 @@ vconcat:
     max: 10
     step: 0.1
   - input: menu
-    label: Bin Scale
+    label: Bin Width
     as: $binWidth
-    options:
-      - { value: 0.5 }
-      - { value: 1 }
-      - { value: 2 }
+    options: [0.5, 1, 2]
 - plot:
   - mark: denseLine
     data: { from: stocks_after_2006, filterBy: $brush }
@@ -30,12 +29,13 @@ vconcat:
     fill: density
     bandwidth: $bandwidth
     binWidth: $binWidth
-  schemeColor: viridis
-  scaleColor: sqrt
-  labelY: Value (normalized lines)
+  schemeColor: $schemeColor
+  scaleColor: $scaleColor
+  labelY: Close (Normalized) ↑
   niceY: true
+  margins: { left: 30, top: 20, right: 0 }
   width: 800
-  height: 300
+  height: 240
 - plot:
   - mark: denseLine
     data: { from: stocks_after_2006 }
@@ -48,9 +48,10 @@ vconcat:
     binWidth: $binWidth
   - select: intervalXY
     as: $brush
-  schemeColor: viridis
-  scaleColor: sqrt
-  labelY: Value (unnormalized lines)
+  schemeColor: $schemeColor
+  scaleColor: $scaleColor
+  labelY: Close (Unnormalized) ↑
   niceY: true
+  margins: { left: 30, top: 20, right: 0 }
   width: 800
-  height: 300
+  height: 240
