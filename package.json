@@ -10,9 +10,9 @@
     "url": "https://github.com/uwdata/mosaic.git"
   },
   "scripts": {
-    "build": "turbo run build",
-    "lint": "turbo run lint",
-    "test": "turbo run test",
+    "build": "lerna run build",
+    "lint": "lerna run lint",
+    "test": "lerna run test",
     "server": "nodemon bin/run-server.js",
     "dev": "vite",
     "release": "npm run test && npm run lint && lerna publish"
