@@ -29,7 +29,6 @@ function createHTTPServer(handleQuery, rest, gzip) {
       return;
     }
 
-    resp.setHeader('Content-Type', 'application/json');
     resp.setHeader('Access-Control-Allow-Origin', '*');
     resp.setHeader('Access-Control-Request-Method', '*');
     resp.setHeader('Access-Control-Allow-Methods', 'OPTIONS, POST, GET');
