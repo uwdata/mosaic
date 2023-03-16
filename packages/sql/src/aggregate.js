@@ -45,7 +45,7 @@ export class Aggregate {
     const arg = args.length === 0 ? '*' : args.map(toSQL).join(', ');
     const distinct = isDistinct ? 'DISTINCT ' : '';
     const where = filter ? ` FILTER (WHERE ${toSQL(filter)})` : '';
-    const cast = this.cast ? `::${this.cast}` : aggregate === 'COUNT' ? '::INTEGER' : '';
+    const cast = this.cast ? `::${this.cast}` : '';
     return where && cast
       ? `(${aggregate}(${distinct}${arg})${where})${cast}`
       : `${aggregate}(${distinct}${arg})${where}${cast}`;
@@ -56,7 +56,7 @@ function agg(op, cast) {
   return (...args) => new Aggregate(op, args, cast);
 }
 
-export const count = agg('COUNT');
+export const count = agg('COUNT', 'INTEGER');
 export const avg = agg('AVG');
 export const mean = agg('AVG');
 export const mad = agg('MAD');
