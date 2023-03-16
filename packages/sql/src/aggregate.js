@@ -2,9 +2,10 @@ import { asColumn, Ref } from './ref.js';
 import { toSQL } from './to-sql.js';
 
 export class Aggregate {
-  constructor(op, args) {
+  constructor(op, args, cast) {
     this.aggregate = op;
     this.args = (args || []).map(asColumn);
+    this.cast = cast;
   }
 
   rewrite(columnMap) {
@@ -44,15 +45,15 @@ export class Aggregate {
     const arg = args.length === 0 ? '*' : args.map(toSQL).join(', ');
     const distinct = isDistinct ? 'DISTINCT ' : '';
     const where = filter ? ` FILTER (WHERE ${toSQL(filter)})` : '';
-    const cast = aggregate === 'COUNT' ? '::INTEGER' : '';
+    const cast = this.cast ? `::${this.cast}` : aggregate === 'COUNT' ? '::INTEGER' : '';
     return where && cast
       ? `(${aggregate}(${distinct}${arg})${where})${cast}`
       : `${aggregate}(${distinct}${arg})${where}${cast}`;
   }
 }
 
-function agg(op) {
-  return (...args) => new Aggregate(op, args);
+function agg(op, cast) {
+  return (...args) => new Aggregate(op, args, cast);
 }
 
 export const count = agg('COUNT');
@@ -60,7 +61,9 @@ export const avg = agg('AVG');
 export const mean = agg('AVG');
 export const mad = agg('MAD');
 export const max = agg('MAX');
+export const maxInt = agg('MAX', 'INTEGER');
 export const min = agg('MIN');
+export const minInt = agg('MIN', 'INTEGER');
 export const sum = agg('SUM');
 export const product = agg('PRODUCT');
 export const median = agg('MEDIAN');

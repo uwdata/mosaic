@@ -1,5 +1,4 @@
 import assert from 'node:assert';
-import { mergeBuffers } from '../src/merge-buffers.js';
 import { db } from './db.js';
 
 describe('DuckDB', () => {
@@ -14,20 +13,7 @@ describe('DuckDB', () => {
   describe('arrowBuffer', () => {
     it('returns arrow ipc buffers', async () => {
       const buf = await db.arrowBuffer('SELECT * FROM penguins');
-      assert.strictEqual(buf.length, 19316);
-    });
-  });
-
-  describe('arrowStream', () => {
-    it('returns arrow ipc stream', async () => {
-      const ipcbuf = await db.arrowBuffer('SELECT * FROM penguins');
-      const stream = await db.arrowStream('SELECT * FROM penguins');
-      const chunks = [];
-      for await (const chunk of stream) {
-        chunks.push(chunk);
-      }
-      chunks.push(new Uint8Array(4)); // terminator
-      assert.deepStrictEqual(mergeBuffers(chunks), ipcbuf);
+      assert.strictEqual(buf.length, 22052);
     });
   });
 

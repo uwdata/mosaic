@@ -8,7 +8,7 @@ const db = new DuckDB();
 await db.csv('data', process.argv[2]);
 
 // get output stream of arrow bytes
-const stream = await db.arrowStream('SELECT * FROM data');
+const stream = await db.arrowBuffer('SELECT * FROM data');
 
  // determine the output stream
 const output = process.argv[3]

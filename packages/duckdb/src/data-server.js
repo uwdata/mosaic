@@ -89,7 +89,7 @@ function queryHandler(db) {
       switch (type) {
         case 'arrow':
           // Apache Arrow response format
-          await res.stream(await db.arrowStream(sql));
+          res.binary(await db.arrowBuffer(sql));
           break;
         case 'exec':
           // Execute query with no return value
@@ -138,6 +138,10 @@ function httpResponse(res, gzip) {
         res
       ]);
     },
+    binary(data) {
+      res.write(data);
+      res.end();
+    },
     json(data) {
       res.setHeader('Content-Type', 'application/json');
       res.end(JSON.stringify(data));
@@ -156,16 +160,11 @@ function httpResponse(res, gzip) {
 
 function socketResponse(ws) {
   const STRING = { binary: false, fin: true };
-  const FRAGMENT = { binary: true, fin: false };
-  const DONE = { binary: true, fin: true };
-  const NULL = new Uint8Array(0);
+  const BINARY = { binary: true, fin: true };
 
   return {
-    async stream(iter) {
-      for await (const chunk of iter) {
-        ws.send(chunk, FRAGMENT);
-      }
-      ws.send(NULL, DONE);
+    binary(data) {
+      ws.send(data, BINARY);
     },
     json(data) {
       ws.send(JSON.stringify(data), STRING);

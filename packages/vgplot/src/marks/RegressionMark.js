@@ -1,6 +1,6 @@
 import { range } from 'd3';
 import {
-  Query, max, min, isNotNull,
+  Query, maxInt, minInt, isNotNull,
   regrIntercept, regrSlope, regrCount,
   regrR2, regrSYY, regrSXX, regrAvgX
 } from '@uwdata/mosaic-sql';
@@ -35,8 +35,8 @@ export class RegressionMark extends Mark {
         ssy: regrSYY(y, x),
         ssx: regrSXX(y, x),
         xm: regrAvgX(y, x),
-        x0: min(x).where(isNotNull(y)),
-        x1: max(x).where(isNotNull(y))
+        x0: minInt(x).where(isNotNull(y)),
+        x1: maxInt(x).where(isNotNull(y))
       })
       .select(groupby)
       .groupby(groupby);
