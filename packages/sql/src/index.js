@@ -74,10 +74,8 @@ export {
   mean,
   mad,
   max,
-  maxInt,
   median,
   min,
-  minInt,
   mode,
   last,
   product,
@@ -112,3 +110,7 @@ export {
   Query,
   isQuery
 } from './Query.js';
+
+export {
+  cast
+} from './cast.js';
