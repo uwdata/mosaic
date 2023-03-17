@@ -53,7 +53,7 @@ function agg(op) {
   return (...args) => new Aggregate(op, args);
 }
 
-export const count = cast(agg('COUNT'), 'INTEGER');
+export const count = () => cast(agg('COUNT')(), 'INTEGER', false);
 export const avg = agg('AVG');
 export const mean = agg('AVG');
 export const mad = agg('MAD');
