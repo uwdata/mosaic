@@ -64,9 +64,7 @@ class MosaicWidget(anywidget.AnyWidget):
                     writer.write(result)
                 buf = sink.getvalue()
 
-                self.send(
-                    {"type": "arrow", "uuid": uuid}, buffers=[buf.to_pybytes()]
-                )
+                self.send({"type": "arrow", "uuid": uuid}, buffers=[buf.to_pybytes()])
             elif data["type"] == "exec":
                 self.con.execute(sql)
                 self.send({"type": "exec", "uuid": uuid})
