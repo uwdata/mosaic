@@ -2,9 +2,13 @@ import { coordinator, namedPlots, parseJSON } from '@uwdata/vgplot';
 import * as arrow from 'apache-arrow';
 import './style.css';
 
-let queryCounter = 0;
+/**
+ * @typedef Model
+ * @prop {Record<any, unknown>} spec - the current specification
+ * @prop {Array} selections - the current selections
+ */
 
-/** @param view {import("@jupyter-widgets/base").DOMWidgetView} */
+/** @type {import("anywidget/types").Render<Model>} */
 export async function render(view) {
   view.el.classList.add('mosaic-widget');
 
@@ -12,13 +16,19 @@ export async function render(view) {
 
   const logger = coordinator().logger();
 
+  /** @type Map<string, {query: Record<any, unknown>, startTime: number, resolve: (value: any) => void, reject: (reason?: any) => void}> */
   const openQueries = new Map();
 
+  /**
+   * @param {Record<any, unknown>} query - the query to send
+   * @param {(value: any) => void} resolve - the promise resolve callback
+   * @param {(reason?: any) => void} reject - the promise reject callback
+   */
   function send(query, resolve, reject) {
-    const queryId = queryCounter++;
+    const uuid = globalThis.crypto.randomUUID();
 
-    openQueries.set(queryId, { query, startTime: performance.now(), resolve, reject });
-    view.model.send({ ...query, queryId });
+    openQueries.set(uuid, { query, startTime: performance.now(), resolve, reject });
+    view.model.send({ ...query, uuid }, {});
   }
 
   const connector = {
@@ -61,11 +71,11 @@ export async function render(view) {
   view.model.on('change:spec', () => updateSpec());
 
   view.model.on('msg:custom', (msg, buffers) => {
-    logger.group(`query ${msg.queryId}`);
+    logger.group(`query ${msg.uuid}`);
     logger.log('received message', msg, buffers);
 
-    const query = openQueries.get(msg.queryId);
-    openQueries.delete(msg.queryId);
+    const query = openQueries.get(msg.uuid);
+    openQueries.delete(msg.uuid);
 
     logger.log(query.query.sql, Math.round(performance.now() - query.startTime));
 
@@ -96,4 +106,9 @@ export async function render(view) {
 
   coordinator().databaseConnector(connector);
   updateSpec();
+
+  return () => {
+    // cleanup
+    reset();
+  };
 }

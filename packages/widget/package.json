@@ -10,7 +10,8 @@
   },
   "scripts": {
     "build": "vite build",
-    "dev": "vite"
+    "dev": "vite",
+    "test": "tsc"
   },
   "dependencies": {
     "@uwdata/vgplot": "^0.1.0",
