@@ -1,0 +1,9 @@
+{
+    "compilerOptions": {
+        "module": "nodenext",
+        "checkJs": true,
+        "noEmit": true,
+        "skipLibCheck": true
+    },
+    "include": ["src/**/*"],
+}

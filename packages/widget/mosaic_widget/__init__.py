@@ -53,7 +53,7 @@ class MosaicWidget(anywidget.AnyWidget):
         logger.debug(f"{data=}, {buffers=}")
         start = time.time()
 
-        queryId = data["queryId"]
+        uuid = data["uuid"]
         sql = data["sql"]
 
         try:
@@ -65,21 +65,21 @@ class MosaicWidget(anywidget.AnyWidget):
                 buf = sink.getvalue()
 
                 self.send(
-                    {"type": "arrow", "queryId": queryId}, buffers=[buf.to_pybytes()]
+                    {"type": "arrow", "uuid": uuid}, buffers=[buf.to_pybytes()]
                 )
             elif data["type"] == "exec":
                 self.con.execute(sql)
-                self.send({"type": "exec", "queryId": queryId})
+                self.send({"type": "exec", "uuid": uuid})
             else:
                 result = self.con.query(sql).df()
                 json = result.to_dict(orient="records")
-                self.send({"type": "json", "queryId": queryId, "result": json})
+                self.send({"type": "json", "uuid": uuid, "result": json})
         except Exception as e:
             logger.error(e)
-            self.send({"error": str(e), "queryId": queryId})
+            self.send({"error": str(e), "uuid": uuid})
 
         total = round((time.time() - start) * 1_000)
         if total > 5000:
-            logger.warning(f"DONE. Slow query { queryId } took { total } ms.\n{ sql }")
+            logger.warning(f"DONE. Slow query { uuid } took { total } ms.\n{ sql }")
         else:
-            logger.info(f"DONE. Query { queryId } took { total } ms.\n{ sql }")
+            logger.info(f"DONE. Query { uuid } took { total } ms.\n{ sql }")
