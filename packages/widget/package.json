@@ -17,7 +17,7 @@
     "apache-arrow": "^11.0.0"
   },
   "devDependencies": {
-    "anywidget": "^0.1.2",
+    "anywidget": "^0.2.0",
     "@jupyter-widgets/base": "^4.1.2"
   }
 }
