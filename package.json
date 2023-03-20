@@ -13,7 +13,7 @@
     "build": "lerna run build",
     "lint": "lerna run lint",
     "test": "lerna run test",
-    "server": "node bin/run-server.js",
+    "server": "nodemon bin/run-server.js",
     "dev": "vite",
     "release": "npm run test && npm run lint && lerna publish"
   },
@@ -22,6 +22,7 @@
     "eslint": "^8.35.0",
     "lerna": "^6.5.1",
     "mocha": "^10.2.0",
+    "nodemon": "^2.0.21",
     "rimraf": "^4.1.3",
     "timezone-mock": "^1.3.6",
     "vite": "^4.1.4",

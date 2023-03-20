@@ -1,14 +1,18 @@
 import http from 'node:http';
 import url from 'node:url';
+import zlib from 'node:zlib';
+import stream from 'node:stream';
+import {pipeline} from 'node:stream/promises';
 import { WebSocketServer } from 'ws';
 
 export function dataServer(db, {
   rest = true,
   socket = true,
+  gzip = true,
   port = 3000
 } = {}) {
   const handleQuery = queryHandler(db);
-  const app = createHTTPServer(handleQuery, rest);
+  const app = createHTTPServer(handleQuery, rest, gzip);
   if (socket) createSocketServer(app, handleQuery);
 
   app.listen(port);
@@ -17,15 +21,14 @@ export function dataServer(db, {
   if (socket) console.log(`  ws://localhost:${port}/`);
 }
 
-function createHTTPServer(handleQuery, rest) {
+function createHTTPServer(handleQuery, rest, gzip) {
   return http.createServer((req, resp) => {
-    const res = httpResponse(resp);
+    const res = httpResponse(resp, gzip);
     if (!rest) {
       res.done();
       return;
     }
 
-    resp.setHeader('Content-Type', 'application/json');
     resp.setHeader('Access-Control-Allow-Origin', '*');
     resp.setHeader('Access-Control-Request-Method', '*');
     resp.setHeader('Access-Control-Allow-Methods', 'OPTIONS, POST, GET');
@@ -110,7 +113,7 @@ function queryHandler(db) {
 let locked = false;
 const queue = [];
 
-function httpResponse(res) {
+function httpResponse(res, gzip) {
   return {
     lock() {
       // if locked, add a promise to the queue
@@ -127,12 +130,16 @@ function httpResponse(res) {
       }
     },
     async stream(iter) {
-      for await (const chunk of iter) {
-        res.write(chunk);
-      }
-      res.end();
+      res.setHeader('Content-Type', 'application/octet-stream');
+      if (gzip) res.setHeader('Content-Encoding', 'gzip');
+      await pipeline([
+        stream.Readable.from(iter),
+        ...gzip ? [zlib.createGzip()] : [],
+        res
+      ]);
     },
     json(data) {
+      res.setHeader('Content-Type', 'application/json');
       res.end(JSON.stringify(data));
     },
     done() {
