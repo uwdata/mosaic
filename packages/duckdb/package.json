@@ -24,6 +24,7 @@
     "prepublishOnly": "npm run test && npm run lint"
   },
   "dependencies": {
+    "@mapbox/node-pre-gyp": "^1.0.10",
     "duckdb": "~0.6.1",
     "ws": "^8.12.1"
   }
