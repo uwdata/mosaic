@@ -28,7 +28,7 @@ export async function render(view) {
     const uuid = globalThis.crypto.randomUUID();
 
     openQueries.set(uuid, { query, startTime: performance.now(), resolve, reject });
-    view.model.send({ ...query, uuid }, {});
+    view.model.send({ ...query, uuid });
   }
 
   const connector = {
