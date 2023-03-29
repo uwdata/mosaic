@@ -44,7 +44,7 @@ export class Legend {
     const curr = value ? new Set(value.map(v => v[0])) : null;
     const nodes = this.legend.querySelectorAll(':scope > div');
     for (const node of nodes) {
-      const selected = curr?.has(node.__data__);
+      const selected = curr ? curr.has(node.__data__) : true;
       node.style.opacity = selected ? 1 : 0.2;
     }
   }
