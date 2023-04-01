@@ -19,6 +19,6 @@
   },
   "devDependencies": {
     "anywidget": "^0.2.0",
-    "@jupyter-widgets/base": "^4.1.2"
+    "@jupyter-widgets/base": "^6.0.4"
   }
 }
