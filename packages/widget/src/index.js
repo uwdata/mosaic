@@ -77,7 +77,7 @@ export async function render(view) {
     const query = openQueries.get(msg.uuid);
     openQueries.delete(msg.uuid);
 
-    logger.log(query.query.sql, Math.round(performance.now() - query.startTime));
+    logger.log(query.query.sql, (performance.now() - query.startTime).toFixed(1));
 
     if (msg.error) {
       query.reject(msg.error);

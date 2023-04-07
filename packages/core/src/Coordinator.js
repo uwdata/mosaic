@@ -71,7 +71,7 @@ export class Coordinator {
     } else {
       const request = this.db.query({ type, sql });
       const result = cache ? this.cache.set(sql, request) : request;
-      result.then(() => this._logger.debug(`Query: ${performance.now() - t0}`));
+      result.then(() => this._logger.debug(`Query: ${(performance.now() - t0).toFixed(1)}`));
       return result;
     }
   }
