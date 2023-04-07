@@ -106,7 +106,7 @@ function queryHandler(db) {
       res.unlock?.();
     }
 
-    console.log('REQUEST', Math.round(performance.now() - t0));
+    console.log('REQUEST', (performance.now() - t0).toFixed(1));
   };
 }
 
