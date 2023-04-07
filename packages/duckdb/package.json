@@ -24,7 +24,10 @@
     "prepublishOnly": "npm run test && npm run lint"
   },
   "dependencies": {
+    "@koa/cors": "^4.0.0",
     "duckdb": "~0.6.1",
-    "ws": "^8.12.1"
+    "koa": "^2.14.1",
+    "koa-bodyparser": "^4.4.0",
+    "koa-compress": "^5.1.0"
   }
 }

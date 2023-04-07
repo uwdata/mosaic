@@ -1,7 +1,7 @@
-import { socketConnector } from './connectors/socket.js';
 import { Catalog } from './Catalog.js';
 import { FilterGroup } from './FilterGroup.js';
 import { QueryCache, voidCache } from './QueryCache.js';
+import { restConnector } from './connectors/rest.js';
 import { voidLogger } from './util/void-logger.js';
 
 let _instance;
@@ -16,7 +16,7 @@ export function coordinator(instance) {
 }
 
 export class Coordinator {
-  constructor(db = socketConnector(), options = {}) {
+  constructor(db = restConnector(), options = {}) {
     this.catalog = new Catalog(this);
     this.logger(options.logger || console);
     this.configure(options);

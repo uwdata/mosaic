@@ -1,6 +1,6 @@
 import { tableFromIPC } from 'apache-arrow';
 
-export function restConnector(uri = 'http://localhost:3000/') {
+export function restConnector(uri = 'https://localhost:443/') {
   return {
     async query(query) {
       const req = fetch(uri, {

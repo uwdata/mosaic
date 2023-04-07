@@ -11,4 +11,4 @@ await Promise.all([
   db.ipc('walk', 'data/random-walk.arrow')
 ]);
 
-dataServer(db, { rest: true, socket: true });
+dataServer(db);

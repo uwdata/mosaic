@@ -5,7 +5,6 @@ export {
   Selection,
   coordinator,
   restConnector,
-  socketConnector,
   wasmConnector
 } from '@uwdata/mosaic-core';
 

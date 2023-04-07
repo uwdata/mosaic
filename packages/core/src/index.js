@@ -6,5 +6,4 @@ export { distinct } from './util/distinct.js';
 export { sqlFrom } from './util/sql-from.js';
 export { throttle } from './util/throttle.js';
 export { restConnector } from './connectors/rest.js';
-export { socketConnector } from './connectors/socket.js';
 export { wasmConnector } from './connectors/wasm.js';

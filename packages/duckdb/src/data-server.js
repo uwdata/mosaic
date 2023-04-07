@@ -1,181 +1,154 @@
-import http from 'node:http';
-import url from 'node:url';
-import zlib from 'node:zlib';
-import stream from 'node:stream';
-import {pipeline} from 'node:stream/promises';
-import { WebSocketServer } from 'ws';
+import cors from "@koa/cors";
+import Koa from "koa";
+import bodyParser from "koa-bodyparser";
+import compress from "koa-compress";
+import fs from "node:fs";
+import http2 from "node:http2";
+import path from "node:path";
+import url from "node:url";
 
-export function dataServer(db, {
-  rest = true,
-  socket = true,
-  gzip = true,
-  port = 3000
-} = {}) {
-  const handleQuery = queryHandler(db);
-  const app = createHTTPServer(handleQuery, rest, gzip);
-  if (socket) createSocketServer(app, handleQuery);
+const __dirname = url.fileURLToPath(new URL(".", import.meta.url));
 
-  app.listen(port);
-  console.log(`Data server running on port ${port}`);
-  if (rest) console.log(`  http://localhost:${port}/`);
-  if (socket) console.log(`  ws://localhost:${port}/`);
-}
+export function dataServer(
+  db,
+  {
+    compression = true,
+    port = 443,
+    responseTime = true,
+    options = {
+      key: fs.readFileSync(path.resolve(__dirname, "../localhost-key.pem")),
+      cert: fs.readFileSync(path.resolve(__dirname, "../localhost.pem")),
+    },
+  } = {}
+) {
+  const app = new Koa();
 
-function createHTTPServer(handleQuery, rest, gzip) {
-  return http.createServer((req, resp) => {
-    const res = httpResponse(resp, gzip);
-    if (!rest) {
-      res.done();
-      return;
+  // locks
+
+  let locked = false;
+  const queue = [];
+
+  function lock() {
+    // if locked, add a promise to the queue
+    // otherwise, grab the lock and proceed
+    return locked
+      ? new Promise((resolve) => queue.push(resolve))
+      : (locked = true);
+  }
+
+  function unlock() {
+    locked = queue.length > 0;
+    if (locked) {
+      // resolve the next promise in the queue
+      queue.shift()();
     }
+  }
 
-    resp.setHeader('Access-Control-Allow-Origin', '*');
-    resp.setHeader('Access-Control-Request-Method', '*');
-    resp.setHeader('Access-Control-Allow-Methods', 'OPTIONS, POST, GET');
-    resp.setHeader('Access-Control-Allow-Headers', '*');
-    resp.setHeader('Access-Control-Max-Age', 2592000);
+  // cors support
 
-    switch (req.method) {
-      case 'OPTIONS':
-        res.done();
-        break;
-      case 'GET':
-        handleQuery(res, url.parse(req.url, true).query);
-        break;
-      case 'POST': {
-        const chunks = [];
-        req.on('error', err => res.error(err, 500));
-        req.on('data', chunk => chunks.push(chunk));
-        req.on('end', () => handleQuery(res, Buffer.concat(chunks)));
-        break;
-      }
-      default:
-        res.error(`Unsupported HTTP method: ${req.method}`, 400);
-    }
-  });
-}
+  app.use(
+    cors({
+      allowMethods: ["OPTIONS", "POST", "GET"],
+    })
+  );
 
-function createSocketServer(server, handleQuery) {
-  const wss = new WebSocketServer({ server });
+  // body parser
 
-  wss.on('connection', socket => {
-    const res = socketResponse(socket);
-    socket.on('message', data => handleQuery(res, data));
-  });
-}
+  app.use(bodyParser());
 
-function queryHandler(db) {
-  return async (res, data) => {
-    const t0 = performance.now();
+  // compression
 
-    // parse incoming query
-    let query;
+  if (compression) {
+    app.use(compress());
+  }
+
+  if (responseTime) {
+    // logger
+
+    app.use(async (ctx, next) => {
+      await next();
+      const rt = ctx.response.get("X-Response-Time");
+      console.log(`${ctx.method} ${ctx.url} - ${rt}`);
+    });
+
+    // x-response-time
+
+    app.use(async (ctx, next) => {
+      const start = performance.now();
+      await next();
+      const ms = (performance.now() - start).toFixed(1);
+      ctx.set("X-Response-Time", `${ms}ms`);
+    });
+  }
+
+  // error handler
+
+  app.use(async (ctx, next) => {
     try {
-      query = JSON.parse(data);
+      await next();
     } catch (err) {
-      res.error(err, 400);
-      return;
+      console.error(err);
+      err.status = err.statusCode || err.status || 500;
+      ctx.body = err.message;
+
+      ctx.app.emit("error", err, ctx);
     }
+  });
+
+  // response
+
+  /**
+   * @param {Koa.ParameterizedContext<Koa.DefaultState} ctx the koa context
+   * @param {{sql: string, type: string}} query the mosaic query
+   */
+  async function handleRequest(ctx, query) {
+    const { sql, type } = query;
+    console.log("QUERY", sql);
+
+    // request the lock to serialize requests
+    // we do this to avoid DuckDB + Arrow errors
+    await lock();
 
     try {
-      const { sql, type } = query;
-      console.log('QUERY', sql);
-
-      // request the lock to serialize requests
-      // we do this to avoid DuckDB + Arrow errors
-      await res.lock?.();
-
-      // process query and return result
       switch (type) {
-        case 'arrow':
+        case "arrow": {
           // Apache Arrow response format
-          await res.stream(await db.arrowStream(sql));
+          const data = await db.arrowBuffer(sql);
+          ctx.body = Buffer.from(data);
           break;
-        case 'exec':
+        }
+        case "exec":
           // Execute query with no return value
           await db.exec(sql);
-          res.done();
+          ctx.status = 204;
           break;
         default:
           // JSON response format
-          res.json(await db.query(sql));
+          ctx.body = await db.query(sql);
+          break;
       }
-    } catch (err) {
-      res.error(err, 500);
     } finally {
-      res.unlock?.();
-    }
-
-    console.log('REQUEST', Math.round(performance.now() - t0));
-  };
-}
-
-let locked = false;
-const queue = [];
-
-function httpResponse(res, gzip) {
-  return {
-    lock() {
-      // if locked, add a promise to the queue
-      // otherwise, grab the lock and proceed
-      return locked
-        ? new Promise(resolve => queue.push(resolve))
-        : (locked = true);
-    },
-    unlock() {
-      locked = queue.length > 0;
-      if (locked) {
-        // resolve the next promise in the queue
-        queue.shift()();
-      }
-    },
-    async stream(iter) {
-      res.setHeader('Content-Type', 'application/octet-stream');
-      if (gzip) res.setHeader('Content-Encoding', 'gzip');
-      await pipeline([
-        stream.Readable.from(iter),
-        ...gzip ? [zlib.createGzip()] : [],
-        res
-      ]);
-    },
-    json(data) {
-      res.setHeader('Content-Type', 'application/json');
-      res.end(JSON.stringify(data));
-    },
-    done() {
-      res.writeHead(200);
-      res.end();
-    },
-    error(err, code) {
-      console.error(err);
-      res.writeHead(code);
-      res.end();
+      unlock();
     }
   }
-}
 
-function socketResponse(ws) {
-  const STRING = { binary: false, fin: true };
-  const FRAGMENT = { binary: true, fin: false };
-  const DONE = { binary: true, fin: true };
-  const NULL = new Uint8Array(0);
-
-  return {
-    async stream(iter) {
-      for await (const chunk of iter) {
-        ws.send(chunk, FRAGMENT);
+  app.use(async (ctx) => {
+    switch (ctx.request.method) {
+      case "OPTIONS":
+        ctx.status = 204;
+        break;
+      case "GET":
+        await handleRequest(ctx, ctx.request.query);
+        break;
+      case "POST": {
+        await handleRequest(ctx, ctx.request.body);
+        break;
       }
-      ws.send(NULL, DONE);
-    },
-    json(data) {
-      ws.send(JSON.stringify(data), STRING);
-    },
-    done() {
-      this.json({});
-    },
-    error(err) {
-      console.error(err);
-      this.json({ error: String(err) });
     }
-  };
+  });
+
+  const server = http2.createSecureServer(options, app.callback());
+  server.listen(port);
+
+  console.log(`Server running at https://localhost:${port}`)
 }
