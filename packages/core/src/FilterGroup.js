@@ -1,5 +1,4 @@
 import { DataTileIndexer } from './DataTileIndexer.js';
-import { throttle } from './util/throttle.js';
 
 export class FilterGroup {
   constructor(coordinator, selection, index = true) {
@@ -9,10 +8,8 @@ export class FilterGroup {
     this.indexer = index ? new DataTileIndexer(this.mc, selection) : null;
 
     const { value, activate } = this.handlers = {
-      value: throttle(() => this.update()),
-      activate: clause => {
-        this.indexer?.index(this.clients, clause);
-      }
+      value: () => this.update(),
+      activate: clause => this.indexer?.index(this.clients, clause)
     };
     selection.addEventListener('value', value);
     selection.addEventListener('activate', activate);
@@ -40,7 +37,7 @@ export class FilterGroup {
     return this;
   }
 
-  async update() {
+  update() {
     const { mc, indexer, clients, selection } = this;
     return indexer?.index(clients)
       ? indexer.update()

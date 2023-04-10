@@ -1,6 +1,5 @@
 import { Query, expr, and, isBetween, asColumn, epoch_ms } from '@uwdata/mosaic-sql';
 import { fnv_hash } from './util/hash.js';
-import { skipClient } from './util/skip-client.js';
 
 const identity = x => x;
 
@@ -51,14 +50,14 @@ export class DataTileIndexer {
 
     this.mc.logger().warn('DATA TILE INDEX CONSTRUCTION');
 
-    // create a selection with the active client removed
-    const sel = this.selection.clone().update({ source });
+    // create a selection with the active source removed
+    const sel = this.selection.remove(source);
 
     // generate data tile indices
     const indices = this.indices = new Map;
     const promises = [];
     for (const client of clients) {
-      if (sel.cross && skipClient(client, active)) continue;
+      if (sel.skip(client, active)) continue;
       const index = getIndexColumns(client);
 
       // build index construction query
@@ -80,7 +79,7 @@ export class DataTileIndexer {
       promises.push(createIndex(this.mc, table, sql));
     }
 
-    return promises;
+    return Promise.allSettled(promises);
   }
 
   async update() {

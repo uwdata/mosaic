@@ -1,13 +1,14 @@
+import { AsyncDispatch } from './util/AsyncDispatch.js';
 import { distinct } from './util/distinct.js';
 
 export function isParam(x) {
   return x instanceof Param;
 }
 
-export class Param {
+export class Param extends AsyncDispatch {
   constructor(value) {
+    super();
     this._value = value;
-    this._listeners = new Map;
   }
 
   static value(value) {
@@ -19,28 +20,22 @@ export class Param {
   }
 
   update(value, { force } = {}) {
-    const changed = distinct(this._value, value);
-    if (changed) this._value = value;
-    if (changed || force) this.emit('value', this.value);
+    const pending = this._pending.get('value');
+    const shouldEmit = distinct(this._value, value) || force;
+    if (pending) {
+      // update is progress, replace next value
+      pending.next = !shouldEmit ? null : { value };
+    } else if (shouldEmit) {
+      // nothing pending, emit value update
+      this.emit('value', value);
+    }
     return this;
   }
 
-  addEventListener(type, callback) {
-    let list = this._listeners.get(type) || [];
-    if (!list.includes(callback)) {
-      list = list.concat(callback);
+  willEmit(type, value) {
+    if (type === 'value') {
+      this._value = value;
     }
-    this._listeners.set(type, list);
-  }
-
-  removeEventListener(type, callback) {
-    const list = this._listeners.get(type);
-    if (list?.length) {
-      this._listeners.set(type, list.filter(x => x !== callback));
-    }
-  }
-
-  emit(type, event) {
-    this._listeners.get(type)?.forEach(l => l(event));
+    return value;
   }
 }

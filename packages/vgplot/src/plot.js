@@ -23,6 +23,7 @@ export class Plot {
     this.element.value = this;
     this.queue = new Set;
     this.params = new Map;
+    this.promise = new Promise((resolve) => { this.resolve = resolve; });
   }
 
   margins() {
@@ -54,7 +55,7 @@ export class Plot {
       this.pendingRender = true;
       requestAnimationFrame(() => this.render());
     }
-    return this;
+    return this.promise;
   }
 
   async render() {
@@ -65,6 +66,10 @@ export class Plot {
       return include ? el : [];
     });
     this.element.replaceChildren(svg, ...legends);
+    this.promise = new Promise((resolve) => {
+      this.resolve();
+      this.resolve = resolve;
+    });
   }
 
   getAttribute(name) {

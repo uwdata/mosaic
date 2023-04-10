@@ -68,7 +68,7 @@ export class Mark extends MosaicClient {
           channels.push(c);
           entry.addEventListener('value', value => {
             c.value = value;
-            this.update();
+            return this.update();
           });
         }
       } else if (type === 'object') {
@@ -177,8 +177,7 @@ export class Mark extends MosaicClient {
   }
 
   update() {
-    this.plot.update(this);
-    return this;
+    return this.plot.update(this);
   }
 
   plotSpecs() {
