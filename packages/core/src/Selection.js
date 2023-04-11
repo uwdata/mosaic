@@ -1,5 +1,6 @@
 import { or } from '@uwdata/mosaic-sql';
 import { Param } from './Param.js';
+import { updateDispatchQueue } from './util/AsyncDispatch.js';
 
 export function isSelection(x) {
   return x instanceof Selection;
@@ -126,27 +127,12 @@ export class SelectionResolver {
   }
 
   queue(value, chain) {
-    const tail = { value };
-    const source = last(value)?.source;
-    if (this.cross && chain) {
-      const head = { next: chain };
-      let curr = head;
-      while (curr.next) {
-        const src = last(curr.next.value)?.source;
-        if (source === src) {
-          curr.next = curr.next.next;
-        } else {
-          curr = curr.next;
-        }
-      }
-      curr.next = tail;
-      return head.next;
-    } else {
-      return tail;
-    }
+    if (!this.cross) return { value };
+    const source = value.active?.source;
+    return updateDispatchQueue(
+      chain,
+      value,
+      entry => entry.active?.source !== source
+    );
   }
-}
-
-function last(array) {
-  return array[array.length - 1];
 }

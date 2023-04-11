@@ -58,3 +58,22 @@ export class AsyncDispatch {
     }
   }
 }
+
+export function updateDispatchQueue(list, value, keep) {
+  const tail = { value };
+  if (list) {
+    const head = { next: list };
+    let curr = head;
+    while (curr.next) {
+      if (keep(curr.next.value)) {
+        curr = curr.next;
+      } else {
+        curr.next = curr.next.next;
+      }
+    }
+    curr.next = tail;
+    return head.next;
+  } else {
+    return tail;
+  }
+}
