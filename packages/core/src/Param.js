@@ -20,14 +20,11 @@ export class Param extends AsyncDispatch {
   }
 
   update(value, { force } = {}) {
-    const pending = this._pending.get('value');
     const shouldEmit = distinct(this._value, value) || force;
-    if (pending) {
-      // update is progress, replace next value
-      pending.next = !shouldEmit ? null : { value };
-    } else if (shouldEmit) {
-      // nothing pending, emit value update
+    if (shouldEmit) {
       this.emit('value', value);
+    } else {
+      this.cancel('value');
     }
     return this;
   }

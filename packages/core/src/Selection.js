@@ -25,30 +25,30 @@ export class Selection extends Param {
 
   constructor(resolver = new SelectionResolver()) {
     super([]);
+    this._resolved = this._value;
     this._resolver = resolver;
   }
 
   clone() {
     const s = new Selection(this._resolver);
-    s._value = this._value;
+    s._value = s._resolved = this._value;
     return s;
   }
 
   remove(source) {
     const s = this.clone();
-    s._value = (this._resolved || this._value).filter(c => c.source !== source);
+    s._value = s._resolved = this._resolved.filter(c => c.source !== source);
+    s._value.active = { source };
     return s;
   }
 
-  get value() {
-    // return value of most recently added clause
-    // TODO: walk back to find first entry with a predicate?
-    return this.active?.value;
+  get active() {
+    return this.clauses.active;
   }
 
-  get active() {
-    const { clauses } = this;
-    return clauses[clauses.length - 1];
+  get value() {
+    // return value of the active clause
+    return this.active?.value;
   }
 
   get clauses() {
@@ -60,7 +60,8 @@ export class Selection extends Param {
   }
 
   update(clause) {
-    this._resolved = this._resolver.resolve(this.clauses, clause);
+    this._resolved = this._resolver.resolve(this._resolved, clause);
+    this._resolved.active = clause;
     return super.update(this._resolved);
   }
 
@@ -72,12 +73,19 @@ export class Selection extends Param {
     return value;
   }
 
+  queueEmit(type, value, chain) {
+    return type === 'value'
+      ? this._resolver.queue(value, chain)
+      : super.queueEmit(type, value, chain);
+  }
+
   skip(client, clause) {
     return this._resolver.skip(client, clause);
   }
 
   predicate(client) {
-    return this._resolver.predicate(this.clauses, client);
+    const { clauses } = this;
+    return this._resolver.predicate(clauses, clauses.active, client);
   }
 }
 
@@ -89,11 +97,11 @@ export class SelectionResolver {
   }
 
   resolve(clauseList, clause) {
-    const { source } = clause;
+    const { source, predicate } = clause;
     const filtered = clauseList.filter(c => source !== c.source);
     const clauses = this.single ? [] : filtered;
     if (this.single) filtered.forEach(c => c.source?.reset?.());
-    clauses.push(clause);
+    if (predicate) clauses.push(clause);
     return clauses;
   }
 
@@ -101,20 +109,44 @@ export class SelectionResolver {
     return this.cross && clause?.clients?.has(client);
   }
 
-  predicate(clauseList, client) {
+  predicate(clauseList, active, client) {
     const { union } = this;
-    const active = clauseList[clauseList.length - 1];
 
     // do nothing if cross-filtering and client is currently active
     if (this.skip(client, active)) return undefined;
 
     // remove client-specific predicates if cross-filtering
     const predicates = clauseList
-      .filter(clause => clause.predicate && !this.skip(client, clause))
+      .filter(clause => !this.skip(client, clause))
       .map(clause => clause.predicate);
 
     // return appropriate conjunction or disjunction
     // an array of predicates is implicitly conjunctive
     return union && predicates.length > 1 ? or(predicates) : predicates;
   }
+
+  queue(value, chain) {
+    const tail = { value };
+    const source = last(value)?.source;
+    if (this.cross && chain) {
+      const head = { next: chain };
+      let curr = head;
+      while (curr.next) {
+        const src = last(curr.next.value)?.source;
+        if (source === src) {
+          curr.next = curr.next.next;
+        } else {
+          curr = curr.next;
+        }
+      }
+      curr.next = tail;
+      return head.next;
+    } else {
+      return tail;
+    }
+  }
+}
+
+function last(array) {
+  return array[array.length - 1];
 }
