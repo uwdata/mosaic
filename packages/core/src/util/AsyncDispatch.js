@@ -1,20 +1,24 @@
 export class AsyncDispatch {
   constructor() {
     this._callbacks = new Map;
-    this._pending = new Map;
   }
 
   addEventListener(type, callback) {
-    const list = this._callbacks.get(type) || [];
-    if (!list.includes(callback)) {
-      this._callbacks.set(type, list.concat(callback));
+    if (!this._callbacks.has(type)) {
+      this._callbacks.set(type, {
+        callbacks: new Set,
+        pending: null,
+        queue: new DispatchQueue()
+      });
     }
+    const entry = this._callbacks.get(type);
+    entry.callbacks.add(callback);
   }
 
   removeEventListener(type, callback) {
-    const list = this._callbacks.get(type);
-    if (list?.length) {
-      this._callbacks.set(type, list.filter(x => x !== callback));
+    const entry = this._callbacks.get(type);
+    if (entry) {
+      entry.callbacks.delete(callback);
     }
   }
 
@@ -23,57 +27,72 @@ export class AsyncDispatch {
     return value;
   }
 
+  emitQueueFilter() {
+    // removes all pending items
+    return null;
+  }
+
   cancel(type) {
-    const pending = this._pending.get(type);
-    if (pending) {
-      pending.next = null;
-    }
+    const entry = this._callbacks.get(type);
+    entry?.queue.clear();
   }
 
-  queueEmit(type, value) {
-    return { value };
-  }
-
-  emit(type, value, chain) {
-    const pending = this._pending.get(type);
-    if (pending) {
-      const { next } = pending;
-      pending.next = this.queueEmit(type, value, next);
+  emit(type, value) {
+    const entry = this._callbacks.get(type) || {};
+    if (entry.pending) {
+      entry.queue.enqueue(value, this.emitQueueFilter(type, value));
     } else {
       const event = this.willEmit(type, value);
-      const list = this._callbacks.get(type);
-      if (list) {
+      const { callbacks, queue } = entry;
+      if (callbacks?.size) {
         const promise = Promise
-          .allSettled(list.map(callback => callback(event)))
+          .allSettled(Array.from(callbacks, callback => callback(event)))
           .then(() => {
-            this._pending.delete(type);
-            const { next } = promise;
-            if (next) {
-              this.emit(type, next.value, next.next);
+            entry.pending = null;
+            if (!queue.isEmpty()) {
+              this.emit(type, queue.dequeue());
             }
           });
-        promise.next = chain;
-        this._pending.set(type, promise);
+        entry.pending = promise;
       }
     }
   }
 }
 
-export function updateDispatchQueue(list, value, keep) {
-  const tail = { value };
-  if (list) {
-    const head = { next: list };
-    let curr = head;
-    while (curr.next) {
-      if (keep(curr.next.value)) {
-        curr = curr.next;
-      } else {
-        curr.next = curr.next.next;
+export class DispatchQueue {
+  constructor() {
+    this.clear();
+  }
+
+  clear() {
+    this.next = null;
+  }
+
+  isEmpty() {
+    return !this.next;
+  }
+
+  enqueue(value, filter) {
+    const tail = { value };
+    if (filter && this.next) {
+      let curr = this;
+      while (curr.next) {
+        if (filter(curr.next.value)) {
+          curr = curr.next;
+        } else {
+          curr.next = curr.next.next;
+        }
       }
+      curr.next = tail;
+    } else {
+      this.next = tail;
     }
-    curr.next = tail;
-    return head.next;
-  } else {
-    return tail;
+    return this;
+  }
+
+  dequeue() {
+    const { next } = this;
+    this.next = next?.next;
+    return next?.value;
   }
 }

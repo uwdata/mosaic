@@ -1,6 +1,5 @@
 import { or } from '@uwdata/mosaic-sql';
 import { Param } from './Param.js';
-import { updateDispatchQueue } from './util/AsyncDispatch.js';
 
 export function isSelection(x) {
   return x instanceof Selection;
@@ -74,10 +73,10 @@ export class Selection extends Param {
     return value;
   }
 
-  queueEmit(type, value, chain) {
+  emitQueueFilter(type, value) {
     return type === 'value'
-      ? this._resolver.queue(value, chain)
-      : super.queueEmit(type, value, chain);
+      ? this._resolver.queueFilter(value)
+      : null;
   }
 
   skip(client, clause) {
@@ -126,13 +125,10 @@ export class SelectionResolver {
     return union && predicates.length > 1 ? or(predicates) : predicates;
   }
 
-  queue(value, chain) {
-    if (!this.cross) return { value };
-    const source = value.active?.source;
-    return updateDispatchQueue(
-      chain,
-      value,
-      entry => entry.active?.source !== source
-    );
+  queueFilter(value) {
+    if (this.cross) {
+      const source = value.active?.source;
+      return clauses => clauses.active?.source !== source;
+    }
   }
 }
