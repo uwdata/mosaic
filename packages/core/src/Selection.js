@@ -25,7 +25,7 @@ export class Selection extends Param {
    * @returns {Selection} The new Selection instance.
    */
   static intersect({ cross = false } = {}) {
-    return new Selection({ cross });
+    return new Selection(new SelectionResolver({ cross }));
   }
 
   /**
