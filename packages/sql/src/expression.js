@@ -19,7 +19,7 @@ export class SQLExpression {
   }
 }
 
-export class ParameterizedSQLExpression extends SQLExpression{
+export class ParameterizedSQLExpression extends SQLExpression {
   constructor(parts, columns, label) {
     const paramSet = new Set;
     for (const part of parts) {
@@ -44,7 +44,12 @@ export class ParameterizedSQLExpression extends SQLExpression{
   }
 
   update() {
-    this.map?.get('value')?.forEach(callback => callback(this));
+    const set = this.map?.get('value');
+    if (set?.size) {
+      return Promise.allSettled(
+        Array.from(set).map(callback => callback(this))
+      );
+    }
   }
 }
 

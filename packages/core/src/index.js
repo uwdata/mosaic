@@ -4,6 +4,7 @@ export { Selection, isSelection } from './Selection.js';
 export { Param, isParam } from './Param.js';
 export { distinct } from './util/distinct.js';
 export { sqlFrom } from './util/sql-from.js';
+export { synchronizer } from './util/synchronizer.js';
 export { throttle } from './util/throttle.js';
 export { restConnector } from './connectors/rest.js';
 export { socketConnector } from './connectors/socket.js';

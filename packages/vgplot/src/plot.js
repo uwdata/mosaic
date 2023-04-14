@@ -1,4 +1,4 @@
-import { distinct, throttle } from '@uwdata/mosaic-core';
+import { distinct, synchronizer } from '@uwdata/mosaic-core';
 import { plotRenderer } from './plot-renderer.js';
 
 const DEFAULT_ATTRIBUTES = {
@@ -21,8 +21,8 @@ export class Plot {
     this.element.setAttribute('class', 'plot');
     this.element.style.display = 'flex';
     this.element.value = this;
-    this.queue = new Set;
     this.params = new Map;
+    this.synch = synchronizer();
   }
 
   margins() {
@@ -45,16 +45,15 @@ export class Plot {
   }
 
   pending(mark) {
-    this.queue.add(mark);
+    this.synch.pending(mark);
   }
 
   update(mark) {
-    this.queue.delete(mark);
-    if (this.queue.size === 0 && !this.pendingRender) {
+    if (this.synch.ready(mark) && !this.pendingRender) {
       this.pendingRender = true;
       requestAnimationFrame(() => this.render());
     }
-    return this;
+    return this.synch.promise;
   }
 
   async render() {
@@ -65,6 +64,7 @@ export class Plot {
       return include ? el : [];
     });
     this.element.replaceChildren(svg, ...legends);
+    this.synch.resolve();
   }
 
   getAttribute(name) {
@@ -104,11 +104,11 @@ export class Plot {
         params.get(param).push(mark);
       } else {
         params.set(param, [mark]);
-        param.addEventListener('value', throttle(() => {
+        param.addEventListener('value', () => {
           return Promise.allSettled(
             params.get(param).map(mark => mark.requestQuery())
           );
-        }));
+        });
       }
     }
   }

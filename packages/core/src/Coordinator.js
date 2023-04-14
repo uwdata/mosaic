@@ -87,7 +87,7 @@ export class Coordinator {
       return;
     }
     try {
-      client.queryResult(result).update();
+      return client.queryResult(result).update();
     } catch (err) {
       this._logger.error(err);
     }
