@@ -244,6 +244,10 @@ export function interpolateColor(value) {
   return attribute('interpolateColor', value);
 }
 
+export function scaleR(value) {
+  return attribute('scaleR', value);
+}
+
 export function domainR(value) {
   return attribute('domainR', value);
 }
