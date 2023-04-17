@@ -101,6 +101,15 @@ export class DuckDB {
   arrowStream(sql) {
     return this.con.arrowIPCStream(sql);
   }
+
+  async arrow(sql) {
+    const chunks = [];
+    const iter = await this.arrowStream(sql);
+    for await (const chunk of iter) {
+      chunks.push(chunk);
+    }
+    return mergeBuffers(chunks);
+  }
 }
 
 export class DuckDBStatement {

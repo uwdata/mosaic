@@ -2,7 +2,7 @@ import http from 'node:http';
 import url from 'node:url';
 import zlib from 'node:zlib';
 import stream from 'node:stream';
-import {pipeline} from 'node:stream/promises';
+import { pipeline } from 'node:stream/promises';
 import { WebSocketServer } from 'ws';
 
 export function dataServer(db, {
@@ -89,7 +89,7 @@ function queryHandler(db) {
       switch (type) {
         case 'arrow':
           // Apache Arrow response format
-          await res.stream(await db.arrowStream(sql));
+          res.binary(await db.arrow(sql));
           break;
         case 'exec':
           // Execute query with no return value
@@ -138,6 +138,9 @@ function httpResponse(res, gzip) {
         res
       ]);
     },
+    binary(data) {
+      return this.stream([data]);
+    },
     json(data) {
       res.setHeader('Content-Type', 'application/json');
       res.end(JSON.stringify(data));
@@ -166,6 +169,9 @@ function socketResponse(ws) {
         ws.send(chunk, FRAGMENT);
       }
       ws.send(NULL, DONE);
+    },
+    binary(data) {
+      ws.send(data, DONE);
     },
     json(data) {
       ws.send(JSON.stringify(data), STRING);
