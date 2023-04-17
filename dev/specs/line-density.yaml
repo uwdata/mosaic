@@ -20,6 +20,7 @@ vconcat:
     label: Bin Width
     as: $binWidth
     options: [0.5, 1, 2]
+- vspace: 10
 - plot:
   - mark: denseLine
     data: { from: stocks_after_2006, filterBy: $brush }
