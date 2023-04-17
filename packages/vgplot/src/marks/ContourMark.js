@@ -1,20 +1,14 @@
 import { contours, max } from 'd3';
-import { isParam } from '@uwdata/mosaic-core';
-import { Binned2DMark } from './Binned2DMark.js';
+import { handleParam } from './util/handle-param.js';
+import { Grid2DMark } from './Grid2DMark.js';
 
-export class ContourMark extends Binned2DMark {
+export class ContourMark extends Grid2DMark {
   constructor(source, options) {
     const { thresholds = 10, ...channels } = options;
     super('geo', source, channels);
-    this.thresholds = thresholds;
-
-    if (isParam(thresholds)) {
-      thresholds.addEventListener('value', value => {
-        this.thresholds = value;
-        if (this.grids) this.contours().update();
-      });
-      this.thresholds = thresholds.value;
-    }
+    handleParam(this, 'thresholds', thresholds, () => {
+      return this.grids ? this.contours().update() : null
+    });
   }
 
   convolve() {

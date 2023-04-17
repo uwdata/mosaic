@@ -1,19 +1,18 @@
 import { Query, and, count, sum, expr, isNull, isBetween } from '@uwdata/mosaic-sql';
 import { binField } from './util/bin-field.js';
 import { extentX, extentY } from './util/extent.js';
+import { handleParam } from './util/handle-param.js';
 import { RasterMark } from './RasterMark.js';
 
 export class DenseLineMark extends RasterMark {
   constructor(source, options) {
     const { normalize = true, ...rest } = options;
     super(source, { bandwidth: 0, ...rest });
-    this.normalize = normalize;
+    handleParam(this, 'normalize', normalize);
   }
 
   query(filter = []) {
     const { plot, channels, normalize, source, stats } = this;
-    const [x0, x1] = extentX(this, filter);
-    const [y0, y1] = extentY(this, filter);
 
     const q = Query.from(source.table).where(stripXY(this, filter));
     const groupby = this.groupby = [];
@@ -31,15 +30,17 @@ export class DenseLineMark extends RasterMark {
       }
     }
 
-    const [nx, ny] = this.bins = [
-      Math.round(plot.innerWidth() / this.binWidth),
-      Math.round(plot.innerHeight() / this.binWidth)
-    ];
+    const [x0, x1] = extentX(this, filter);
+    const [y0, y1] = extentY(this, filter);
+    const [nx, ny] = this.bins = this.binDimensions(this);
+    const bx = binField(this, 'x');
+    const by = binField(this, 'y');
     const rx = !!plot.getAttribute('reverseX');
     const ry = !!plot.getAttribute('reverseY');
-    const x = binField(this, 'x');
-    const y = binField(this, 'y');
-    return lineDensity(q, x, y, z, +x0, +x1, +y0, +y1, nx, ny, rx, ry, groupby, normalize);
+    const x = bin1d(bx, x0, x1, nx, rx, this.binPad);
+    const y = bin1d(by, y0, y1, ny, ry, this.binPad);
+
+    return lineDensity(q, x, y, z, nx, ny, groupby, normalize);
   }
 }
 
@@ -62,22 +63,20 @@ function stripXY(mark, filter) {
     : filterAnd(filter);
 }
 
+function bin1d(x, x0, x1, n, reverse = false, pad = 1) {
+  const a = reverse ? `(${x1} - ${x}::DOUBLE)` : `(${x}::DOUBLE - ${x0})`;
+  const b = `${(n - pad) / (x1 - x0)}::DOUBLE`;
+  return expr(`FLOOR(${a} * ${b})::INTEGER`);
+}
+
 function lineDensity(
-  input, x, y, z, x0, x1, y0, y1, xn, yn, rx, ry,
+  input, x, y, z, xn, yn,
   groupby = [], normalize = true
 ) {
   const groups = groupby.concat(z);
 
-  // bin x values
-  const xx = rx ? `(${x1} - ${x}::DOUBLE)` : `(${x}::DOUBLE - ${x0})`;
-  const xb = expr(`FLOOR(${xx} * ${(xn - 1) / (x1 - x0)}::DOUBLE)::INTEGER`);
-
-  // bin y values
-  const yy = ry ? `(${y1} - ${y}::DOUBLE)` : `(${y}::DOUBLE - ${y0})`;
-  const yb = expr(`FLOOR(${yy} * ${(yn - 1) / (y1 - y0)}::DOUBLE)::INTEGER`);
-
   // select x, y points binned to the grid
-  const q = Query.from(input).select(groups, { x: xb, y: yb });
+  const q = Query.from(input).select(groups, { x, y });
 
   // select line segment end point pairs
   const pairPart = groups.length ? `PARTITION BY ${groups.join(', ')} ` : '';

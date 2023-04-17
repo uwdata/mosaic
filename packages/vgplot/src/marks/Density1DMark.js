@@ -1,11 +1,10 @@
-import { isParam } from '@uwdata/mosaic-core';
 import { Query, gt, sum, expr, isBetween } from '@uwdata/mosaic-sql';
 import { Transient } from '../symbols.js';
 import { binField } from './util/bin-field.js';
 import { dericheConfig, dericheConv1d, grid1d } from './util/density.js';
 import { extentX, extentY, xext, yext } from './util/extent.js';
+import { handleParam } from './util/handle-param.js';
 import { Mark } from './Mark.js';
-
 
 export class Density1DMark extends Mark {
   constructor(type, source, options) {
@@ -14,18 +13,11 @@ export class Density1DMark extends Mark {
 
     super(type, source, channels, dim === 'x' ? xext : yext);
     this.dim = dim;
-    this.bins = bins;
-    this.bandwidth = bandwidth;
 
-    if (isParam(bandwidth)) {
-      bandwidth.addEventListener('value', value => {
-        this.bandwidth = value;
-        if (this.grid) this.convolve().update();
-      });
-      this.bandwidth = bandwidth.value;
-    }
-    // TODO: nrd estimate from stats? (requires quantiles and stdev)
-    // TODO: perform binning in JS if data is set?
+    handleParam(this, 'bins', bins);
+    handleParam(this, 'bandwidth', bandwidth, () => {
+      return this.grid ? this.convolve().update() : null
+    });
   }
 
   get filterIndexable() {

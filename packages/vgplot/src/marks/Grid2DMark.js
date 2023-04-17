@@ -1,14 +1,20 @@
-import { isParam } from '@uwdata/mosaic-core';
 import { Query, and, count, gt, lt, lte, sum, expr } from '@uwdata/mosaic-sql';
 import { Transient } from '../symbols.js';
 import { binField } from './util/bin-field.js';
 import { dericheConfig, dericheConv2d, grid2d } from './util/density.js';
 import { extentX, extentY, xyext } from './util/extent.js';
+import { handleParam } from './util/handle-param.js';
 import { Mark } from './Mark.js';
 
-export class Binned2DMark extends Mark {
+export class Grid2DMark extends Mark {
   constructor(type, source, options) {
-    const { bandwidth = 20, binType = 'linear', binWidth = 2, ...channels } = options;
+    const {
+      bandwidth = 20,
+      binType = 'linear',
+      binWidth = 2,
+      binPad = 1,
+      ...channels
+    } = options;
     const densityFill = channels.fill === 'density';
     const densityStroke = channels.stroke === 'density';
     if (densityFill) delete channels.fill;
@@ -17,25 +23,13 @@ export class Binned2DMark extends Mark {
     super(type, source, channels, xyext);
     this.densityFill = densityFill;
     this.densityStroke = densityStroke;
-    this.bandwidth = bandwidth;
-    this.binWidth = binWidth;
-    this.binType = binType;
 
-    if (isParam(bandwidth)) {
-      bandwidth.addEventListener('value', value => {
-        this.bandwidth = value;
-        if (this.grids) this.convolve().update();
-      });
-      this.bandwidth = bandwidth.value;
-    }
-
-    if (isParam(binWidth)) {
-      binWidth.addEventListener('value', value => {
-        this.binWidth = value;
-        this.requestUpdate();
-      });
-      this.binWidth = binWidth.value;
-    }
+    handleParam(this, 'bandwidth', bandwidth, () => {
+      return this.grids ? this.convolve().update() : null;
+    });
+    handleParam(this, 'binWidth', binWidth);
+    handleParam(this, 'binType', binType);
+    handleParam(this, 'binPad', binPad);
   }
 
   setPlot(plot, index) {
@@ -80,19 +74,29 @@ export class Binned2DMark extends Mark {
       }
     }
 
-    const [x0, x1] = extentX(this, filter);
-    const [y0, y1] = extentY(this, filter);
-    const [nx, ny] = this.bins = [
-      Math.round(plot.innerWidth() / this.binWidth),
-      Math.round(plot.innerHeight() / this.binWidth)
-    ];
+    const [x0, x1] = this.extentX = extentX(this, filter);
+    const [y0, y1] = this.extentY = extentY(this, filter);
+    const [nx, ny] = this.bins = this.binDimensions(this);
+
+    const bx = binField(this, 'x');
+    const by = binField(this, 'y');
     const rx = !!plot.getAttribute('reverseX');
     const ry = !!plot.getAttribute('reverseY');
-    const x = binField(this, 'x');
-    const y = binField(this, 'y');
+    const x = bin1d(bx, x0, x1, nx, rx, this.binPad);
+    const y = bin1d(by, y0, y1, ny, ry, this.binPad);
+    const bounds = and(lte(x0, bx), lt(bx, x1), lte(y0, by), lt(by, y1));
+
     return binType === 'linear'
-      ? binLinear2d(q, x, y, agg, +x0, +x1, +y0, +y1, nx, ny, rx, ry, groupby)
-      : bin2d(q, x, y, agg, +x0, +x1, +y0, +y1, nx, ny, rx, ry, groupby);
+      ? binLinear2d(q, x, y, agg, nx, bounds, groupby)
+      : bin2d(q, x, y, agg, nx, bounds, groupby);
+  }
+
+  binDimensions() {
+    const { plot, binWidth } = this;
+    return [
+      Math.round(plot.innerWidth() / binWidth),
+      Math.round(plot.innerHeight() / binWidth)
+    ];
   }
 
   queryResult(data) {
@@ -124,19 +128,17 @@ export class Binned2DMark extends Mark {
   }
 
   plotSpecs() {
-    throw new Error('Unimplemented. Use a Binned2D mark subclass.');
+    throw new Error('Unimplemented. Use a Grid2D mark subclass.');
   }
 }
 
-function bin1d(x, x0, x1, xn, reverse) {
+export function bin1d(x, x0, x1, n, reverse = false, pad = 1) {
   return reverse
-    ? expr(`(${x1} - ${x}::DOUBLE) * ${(xn) / (x1 - x0)}::DOUBLE`)
-    : expr(`(${x}::DOUBLE - ${x0}) * ${(xn) / (x1 - x0)}::DOUBLE`);
+    ? expr(`(${x1} - ${x}::DOUBLE) * ${(n - pad) / (x1 - x0)}::DOUBLE`)
+    : expr(`(${x}::DOUBLE - ${x0}) * ${(n - pad) / (x1 - x0)}::DOUBLE`);
 }
 
-function bin2d(input, x, y, value, x0, x1, y0, y1, xn, yn, rx, ry, groupby = []) {
-  const xp = bin1d(x, x0, x1, xn, rx);
-  const yp = bin1d(y, y0, y1, yn, ry);
+function bin2d(input, xp, yp, value, xn, filter, groupby = []) {
   return Query
     .select({
       index: expr(`FLOOR(${xp})::INTEGER + FLOOR(${yp})::INTEGER * ${xn}`),
@@ -144,24 +146,16 @@ function bin2d(input, x, y, value, x0, x1, y0, y1, xn, yn, rx, ry, groupby = [])
     }, groupby)
     .from(input)
     .groupby('index', groupby)
-    .where(and(
-      lte(x0, x), lt(x, x1),
-      lte(y0, y), lt(y, y1)
-    ));
+    .where(filter);
 }
 
-function binLinear2d(input, x, y, value, x0, x1, y0, y1, xn, yn, rx, ry, groupby = []) {
+function binLinear2d(input, xp, yp, value, xn, filter, groupby = []) {
   const w = value.column ? `* ${value.column}` : '';
-  const xp = bin1d(x, x0, x1, xn, rx);
-  const yp = bin1d(y, y0, y1, yn, ry);
 
   const q = (i, w) => Query
     .select({ xp, yp, i, w }, groupby)
     .from(input)
-    .where(and(
-      lte(x0, x), lt(x, x1),
-      lte(y0, y), lt(y, y1)
-    ));
+    .where(filter);
 
   // grid[xu + yu * xn] += (xv - xp) * (yv - yp) * wi;
   const a = q(
@@ -193,24 +187,3 @@ function binLinear2d(input, x, y, value, x0, x1, y0, y1, xn, yn, rx, ry, groupby
     .groupby('index', groupby)
     .having(gt('value', 0));
 }
-
-// code snippets for plotting density bins directly
-// const deltaX = (extentX[1] - extentX[0]) / (nx - 1);
-// const deltaY = (extentY[1] - extentY[0]) / (ny - 1);
-// this.data = points(kde, bins, extentX[0], extentY[0], deltaX, deltaY);
-
-// function points(kde, bins, x0, y0, deltaX, deltaY) {
-//   const scale = 1 / (deltaX * deltaY);
-//   const [bx, by] = bins;
-//   const data = [];
-//   for (let k = 0, j = 0; j < by; ++j) {
-//     for (let i = 0; i < bx; ++i, ++k) {
-//       data.push({
-//         x: x0 + i * deltaX,
-//         y: y0 + j * deltaY,
-//         density: kde[k] * scale
-//       });
-//     }
-//   }
-//   return data;
-// }
