@@ -7,6 +7,11 @@ export class Aggregate {
     this.args = (args || []).map(asColumn);
   }
 
+  rewrite(args) {
+    const next = args.concat(this.args.slice(args.length));
+    return new Aggregate(this.aggregate, next);
+  }
+
   get label() {
     return this.aggregate.toLowerCase()
       + (this.args.length ? ` ${this.columns.join(', ')}` : '');
