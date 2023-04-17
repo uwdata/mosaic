@@ -6,7 +6,7 @@
 export function grid1d(n, values) {
   const grid = new Float64Array(n);
   for (const row of values) {
-    grid[row.index] = row.weight;
+    grid[row.index] = row.value;
   }
   return grid;
 }
@@ -18,13 +18,13 @@ export function grid2d(m, n, values, groupby = []) {
       const key = groupby.map(col => row[col]);
       const { grid } = grids[key]
         || (grids[key] = { key, grid: new Float64Array(m * n) });
-      grid[row.index] = row.weight;
+      grid[row.index] = row.value;
     }
     return Object.values(grids);
   } else {
     const grid = new Float64Array(m * n);
     for (const row of values) {
-      grid[row.index] = row.weight;
+      grid[row.index] = row.value;
     }
     return [{ grid }];
   }

@@ -143,7 +143,7 @@ function lineDensity(
     .from('points')
     .select(groupby, {
       index: expr(`x + y * ${xn}::INTEGER`),
-      weight: normalize ? sum('w') : count()
+      value: normalize ? sum('w') : count()
     })
     .groupby('index', groupby);
 }

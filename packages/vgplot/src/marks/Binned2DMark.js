@@ -1,12 +1,12 @@
 import { isParam } from '@uwdata/mosaic-core';
-import { Query, and, count, gt, sum, expr, isBetween } from '@uwdata/mosaic-sql';
+import { Query, and, count, gt, lt, lte, sum, expr } from '@uwdata/mosaic-sql';
 import { Transient } from '../symbols.js';
 import { binField } from './util/bin-field.js';
 import { dericheConfig, dericheConv2d, grid2d } from './util/density.js';
 import { extentX, extentY, xyext } from './util/extent.js';
 import { Mark } from './Mark.js';
 
-export class Density2DMark extends Mark {
+export class Binned2DMark extends Mark {
   constructor(type, source, options) {
     const { bandwidth = 20, binType = 'linear', binWidth = 2, ...channels } = options;
     const densityFill = channels.fill === 'density';
@@ -56,16 +56,26 @@ export class Density2DMark extends Mark {
 
     const q = Query.from(source.table).where(filter);
     const groupby = this.groupby = [];
-    let w = 1;
+    let agg = count();
     for (const c of channels) {
       if (Object.hasOwn(c, 'field')) {
         const { channel, field } = c;
-        const expr = field.transform?.(stats) || field;
-        q.select({ [channel]: expr });
-        if (channel === 'weight') {
-          w = channel;
-        } else if (channel !== 'x' && channel !== 'y') {
-          groupby.push(channel);
+        const exp = field.transform?.(stats) || field;
+        if (exp.aggregate) {
+          const keys = exp.columns.map((column, i) => {
+            const key = `${channel}${i || ''}`;
+            q.select({ [key]: column });
+            return key;
+          });
+          agg = exp.rewrite(keys);
+          this.densityFill = true;
+        } else {
+          q.select({ [channel]: exp });
+          if (channel === 'weight') {
+            agg = sum(channel);
+          } else if (channel !== 'x' && channel !== 'y') {
+            groupby.push(channel);
+          }
         }
       }
     }
@@ -81,8 +91,8 @@ export class Density2DMark extends Mark {
     const x = binField(this, 'x');
     const y = binField(this, 'y');
     return binType === 'linear'
-      ? binLinear2d(q, x, y, w, +x0, +x1, +y0, +y1, nx, ny, rx, ry, groupby)
-      : bin2d(q, x, y, w, +x0, +x1, +y0, +y1, nx, ny, rx, ry, groupby);
+      ? binLinear2d(q, x, y, agg, +x0, +x1, +y0, +y1, nx, ny, rx, ry, groupby)
+      : bin2d(q, x, y, agg, +x0, +x1, +y0, +y1, nx, ny, rx, ry, groupby);
   }
 
   queryResult(data) {
@@ -114,47 +124,43 @@ export class Density2DMark extends Mark {
   }
 
   plotSpecs() {
-    throw new Error('Unimplemented. Use a Density2D mark subclass.');
+    throw new Error('Unimplemented. Use a Binned2D mark subclass.');
   }
 }
 
-function bin2d(input, x, y, weight, x0, x1, y0, y1, xn, yn, rx, ry, groupby = []) {
-  const w = weight && weight !== 1 ? `${weight}` : null;
-  const xp = rx
-    ? expr(`(${x1} - ${x}::DOUBLE) * ${(xn - 1) / (x1 - x0)}::DOUBLE`)
-    : expr(`(${x}::DOUBLE - ${x0}) * ${(xn - 1) / (x1 - x0)}::DOUBLE`);
-  const yp = ry
-    ? expr(`(${y1} - ${y}::DOUBLE) * ${(yn - 1) / (y1 - y0)}::DOUBLE`)
-    : expr(`(${y}::DOUBLE - ${y0}) * ${(yn - 1) / (y1 - y0)}::DOUBLE`);
+function bin1d(x, x0, x1, xn, reverse) {
+  return reverse
+    ? expr(`(${x1} - ${x}::DOUBLE) * ${(xn) / (x1 - x0)}::DOUBLE`)
+    : expr(`(${x}::DOUBLE - ${x0}) * ${(xn) / (x1 - x0)}::DOUBLE`);
+}
 
+function bin2d(input, x, y, value, x0, x1, y0, y1, xn, yn, rx, ry, groupby = []) {
+  const xp = bin1d(x, x0, x1, xn, rx);
+  const yp = bin1d(y, y0, y1, yn, ry);
   return Query
     .select({
       index: expr(`FLOOR(${xp})::INTEGER + FLOOR(${yp})::INTEGER * ${xn}`),
-      weight: w ? sum(w) : count(),
+      value
     }, groupby)
     .from(input)
     .groupby('index', groupby)
     .where(and(
-      isBetween(x, [x0, x1]),
-      isBetween(y, [y0, y1])
+      lte(x0, x), lt(x, x1),
+      lte(y0, y), lt(y, y1)
     ));
 }
 
-function binLinear2d(input, x, y, weight, x0, x1, y0, y1, xn, yn, rx, ry, groupby = []) {
-  const w = weight && weight !== 1 ? `* ${weight}` : '';
-  const xp = rx
-    ? expr(`(${x1} - ${x}::DOUBLE) * ${(xn - 1) / (x1 - x0)}::DOUBLE`)
-    : expr(`(${x}::DOUBLE - ${x0}) * ${(xn - 1) / (x1 - x0)}::DOUBLE`);
-  const yp = ry
-    ? expr(`(${y1} - ${y}::DOUBLE) * ${(yn - 1) / (y1 - y0)}::DOUBLE`)
-    : expr(`(${y}::DOUBLE - ${y0}) * ${(yn - 1) / (y1 - y0)}::DOUBLE`);
+function binLinear2d(input, x, y, value, x0, x1, y0, y1, xn, yn, rx, ry, groupby = []) {
+  const w = value.column ? `* ${value.column}` : '';
+  const xp = bin1d(x, x0, x1, xn, rx);
+  const yp = bin1d(y, y0, y1, yn, ry);
 
   const q = (i, w) => Query
     .select({ xp, yp, i, w }, groupby)
     .from(input)
     .where(and(
-      isBetween(x, [x0, x1]),
-      isBetween(y, [y0, y1])
+      lte(x0, x), lt(x, x1),
+      lte(y0, y), lt(y, y1)
     ));
 
   // grid[xu + yu * xn] += (xv - xp) * (yv - yp) * wi;
@@ -183,9 +189,9 @@ function binLinear2d(input, x, y, weight, x0, x1, y0, y1, xn, yn, rx, ry, groupb
 
   return Query
     .from(Query.unionAll(a, b, c, d))
-    .select({ index: 'i', weight: sum('w') }, groupby)
+    .select({ index: 'i', value: sum('w') }, groupby)
     .groupby('index', groupby)
-    .having(gt('weight', 0));
+    .having(gt('value', 0));
 }
 
 // code snippets for plotting density bins directly

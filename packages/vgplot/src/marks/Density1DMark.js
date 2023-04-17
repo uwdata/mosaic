@@ -37,9 +37,9 @@ export class Density1DMark extends Mark {
   query(filter = []) {
     this.extent = (this.dim === 'x' ? extentX : extentY)(this, filter);
     const [lo, hi] = this.extent;
-    const weight = this.channelField('weight') ? 'weight' : 1;
+    const value = this.channelField('weight') ? 'weight' : null;
     const x = binField(this, this.dim);
-    return binLinear1d(super.query(filter), x, +lo, +hi, this.bins, weight);
+    return binLinear1d(super.query(filter), x, +lo, +hi, this.bins, value);
   }
 
   queryResult(data) {
@@ -78,8 +78,8 @@ export class Density1DMark extends Mark {
   }
 }
 
-function binLinear1d(input, x, lo, hi, n, weight) {
-  const w = weight && weight !== 1 ? `* ${weight}` : '';
+function binLinear1d(input, x, lo, hi, n, value) {
+  const w = value ? `* ${value}` : '';
   const p = expr(`(${x} - ${lo}::DOUBLE) * ${(n - 1) / (hi - lo)}::DOUBLE`);
 
   const u = Query
@@ -94,7 +94,7 @@ function binLinear1d(input, x, lo, hi, n, weight) {
 
   return Query
     .from(Query.unionAll(u, v))
-    .select({ index: 'i', weight: sum('w') })
+    .select({ index: 'i', value: sum('w') })
     .groupby('index')
-    .having(gt('weight', 0));
+    .having(gt('value', 0));
 }

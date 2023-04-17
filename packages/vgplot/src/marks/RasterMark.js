@@ -1,9 +1,9 @@
 import { scale } from '@observablehq/plot';
 import { isColor } from './util/is-color.js';
 import { createCanvas, raster, opacityMap, palette } from './util/raster.js';
-import { Density2DMark } from './Density2DMark.js';
+import { Binned2DMark } from './Binned2DMark.js';
 
-export class RasterMark extends Density2DMark {
+export class RasterMark extends Binned2DMark {
   constructor(source, options) {
     super('image', source, options);
   }

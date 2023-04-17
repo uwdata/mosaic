@@ -1,8 +1,8 @@
 import { contours, max } from 'd3';
 import { isParam } from '@uwdata/mosaic-core';
-import { Density2DMark } from './Density2DMark.js';
+import { Binned2DMark } from './Binned2DMark.js';
 
-export class ContourMark extends Density2DMark {
+export class ContourMark extends Binned2DMark {
   constructor(source, options) {
     const { thresholds = 10, ...channels } = options;
     super('geo', source, channels);
