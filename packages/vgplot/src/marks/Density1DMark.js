@@ -1,11 +1,10 @@
-import { isParam } from '@uwdata/mosaic-core';
 import { Query, gt, sum, expr, isBetween } from '@uwdata/mosaic-sql';
 import { Transient } from '../symbols.js';
 import { binField } from './util/bin-field.js';
 import { dericheConfig, dericheConv1d, grid1d } from './util/density.js';
 import { extentX, extentY, xext, yext } from './util/extent.js';
+import { handleParam } from './util/handle-param.js';
 import { Mark } from './Mark.js';
-
 
 export class Density1DMark extends Mark {
   constructor(type, source, options) {
@@ -14,18 +13,11 @@ export class Density1DMark extends Mark {
 
     super(type, source, channels, dim === 'x' ? xext : yext);
     this.dim = dim;
-    this.bins = bins;
-    this.bandwidth = bandwidth;
 
-    if (isParam(bandwidth)) {
-      bandwidth.addEventListener('value', value => {
-        this.bandwidth = value;
-        if (this.grid) this.convolve().update();
-      });
-      this.bandwidth = bandwidth.value;
-    }
-    // TODO: nrd estimate from stats? (requires quantiles and stdev)
-    // TODO: perform binning in JS if data is set?
+    handleParam(this, 'bins', bins);
+    handleParam(this, 'bandwidth', bandwidth, () => {
+      return this.grid ? this.convolve().update() : null
+    });
   }
 
   get filterIndexable() {
@@ -37,9 +29,9 @@ export class Density1DMark extends Mark {
   query(filter = []) {
     this.extent = (this.dim === 'x' ? extentX : extentY)(this, filter);
     const [lo, hi] = this.extent;
-    const weight = this.channelField('weight') ? 'weight' : 1;
+    const value = this.channelField('weight') ? 'weight' : null;
     const x = binField(this, this.dim);
-    return binLinear1d(super.query(filter), x, +lo, +hi, this.bins, weight);
+    return binLinear1d(super.query(filter), x, +lo, +hi, this.bins, value);
   }
 
   queryResult(data) {
@@ -78,8 +70,8 @@ export class Density1DMark extends Mark {
   }
 }
 
-function binLinear1d(input, x, lo, hi, n, weight) {
-  const w = weight && weight !== 1 ? `* ${weight}` : '';
+function binLinear1d(input, x, lo, hi, n, value) {
+  const w = value ? `* ${value}` : '';
   const p = expr(`(${x} - ${lo}::DOUBLE) * ${(n - 1) / (hi - lo)}::DOUBLE`);
 
   const u = Query
@@ -94,7 +86,7 @@ function binLinear1d(input, x, lo, hi, n, weight) {
 
   return Query
     .from(Query.unionAll(u, v))
-    .select({ index: 'i', weight: sum('w') })
+    .select({ index: 'i', value: sum('w') })
     .groupby('index')
-    .having(gt('weight', 0));
+    .having(gt('value', 0));
 }

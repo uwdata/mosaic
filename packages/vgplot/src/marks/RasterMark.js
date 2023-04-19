@@ -1,9 +1,9 @@
 import { scale } from '@observablehq/plot';
 import { isColor } from './util/is-color.js';
 import { createCanvas, raster, opacityMap, palette } from './util/raster.js';
-import { Density2DMark } from './Density2DMark.js';
+import { Grid2DMark } from './Grid2DMark.js';
 
-export class RasterMark extends Density2DMark {
+export class RasterMark extends Grid2DMark {
   constructor(source, options) {
     super('image', source, options);
   }
@@ -67,8 +67,8 @@ function imageData(mark, w, h) {
 }
 
 function imageScale(mark) {
-  const { densityFill, kde, plot } = mark;
-  let domain = densityFill && plot.getAttribute('domainColor');
+  const { densityMap, kde, plot } = mark;
+  let domain = densityMap.fill && plot.getAttribute('domainColor');
 
   // compute kde grid extents if no explicit domain
   if (!domain) {
@@ -87,11 +87,11 @@ function imageScale(mark) {
 }
 
 function imagePalette(mark, domain, value, steps = 1024) {
-  const { densityFill, plot } = mark;
+  const { densityMap, plot } = mark;
   const scheme = plot.getAttribute('schemeColor');
   let color;
 
-  if (densityFill) {
+  if (densityMap.fill) {
     if (scheme) {
       try {
         return palette(

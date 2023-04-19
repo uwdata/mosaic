@@ -1,10 +1,19 @@
-import { asColumn } from './ref.js';
+import { asColumn, Ref } from './ref.js';
 import { toSQL } from './to-sql.js';
 
 export class Aggregate {
   constructor(op, args) {
     this.aggregate = op;
     this.args = (args || []).map(asColumn);
+  }
+
+  rewrite(columnMap) {
+    const args = this.args.map(arg => {
+      return arg instanceof Ref && columnMap.has(arg.column)
+        ? columnMap.get(arg.column)
+        : arg;
+    });
+    return new Aggregate(this.aggregate, args);
   }
 
   get label() {

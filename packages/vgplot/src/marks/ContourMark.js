@@ -1,20 +1,14 @@
 import { contours, max } from 'd3';
-import { isParam } from '@uwdata/mosaic-core';
-import { Density2DMark } from './Density2DMark.js';
+import { handleParam } from './util/handle-param.js';
+import { Grid2DMark } from './Grid2DMark.js';
 
-export class ContourMark extends Density2DMark {
+export class ContourMark extends Grid2DMark {
   constructor(source, options) {
     const { thresholds = 10, ...channels } = options;
     super('geo', source, channels);
-    this.thresholds = thresholds;
-
-    if (isParam(thresholds)) {
-      thresholds.addEventListener('value', value => {
-        this.thresholds = value;
-        if (this.grids) this.contours().update();
-      });
-      this.thresholds = thresholds.value;
-    }
+    handleParam(this, 'thresholds', thresholds, () => {
+      return this.grids ? this.contours().update() : null
+    });
   }
 
   convolve() {
@@ -22,7 +16,7 @@ export class ContourMark extends Density2DMark {
   }
 
   contours() {
-    const { bins, kde, thresholds, groupby, plot } = this;
+    const { bins, densityMap, kde, thresholds, groupby, plot } = this;
 
     let tz = thresholds;
     if (!Array.isArray(tz)) {
@@ -30,7 +24,7 @@ export class ContourMark extends Density2DMark {
       tz = Array.from({length: tz - 1}, (_, i) => (scale * (i + 1)) / tz);
     }
 
-    if (this.densityFill || this.densityStroke) {
+    if (densityMap.fill || densityMap.stroke) {
       if (this.plot.getAttribute('scaleColor') !== 'log') {
         this.plot.setAttribute('zeroColor', true);
       }
@@ -61,13 +55,13 @@ export class ContourMark extends Density2DMark {
   }
 
   plotSpecs() {
-    const { type, channels, densityFill, densityStroke, data } = this;
+    const { type, channels, densityMap, data } = this;
     const options = {};
     for (const c of channels) {
       options[c.channel] = Object.hasOwn(c, 'value') ? c.value : c.channel;
     }
-    if (densityFill) options.fill = 'density';
-    if (densityStroke) options.stroke = 'density';
+    if (densityMap.fill) options.fill = 'density';
+    if (densityMap.stroke) options.stroke = 'density';
     return [{ type, data, options }];
   }
 }

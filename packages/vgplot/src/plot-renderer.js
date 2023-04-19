@@ -53,6 +53,7 @@ const ATTRIBUTE_MAP = new Map([
   ['schemeColor', 'color.scheme'],
   ['interpolateColor', 'color.interpolate'],
   ['zeroColor', 'color.zero'],
+  ['scaleR', 'r.scale'],
   ['domainR', 'r.domain'],
   ['rangeR', 'r.range'],
   ['labelFX', 'fx.label'],

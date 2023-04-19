@@ -6,13 +6,17 @@ import {
 } from '@uwdata/mosaic-sql';
 import { qt } from './util/stats.js';
 import { Mark } from './Mark.js';
+import { handleParam } from './util/handle-param.js';
 
 export class RegressionMark extends Mark {
   constructor(source, options) {
     const { ci = 0.95, precision = 4, ...channels } = options;
     super('line', source, channels);
-    this.ci = ci;
-    this.precision = precision;
+    const update = () => {
+      return this.data ? this.confidenceBand().update() : null
+    };
+    handleParam(this, 'ci', ci, update);
+    handleParam(this, 'precision', precision, update);
   }
 
   query(filter = []) {
@@ -44,11 +48,15 @@ export class RegressionMark extends Mark {
     // regression line
     this.data = data.flatMap(m => linePoints(m));
 
+    // prepare confidence band
+    return this.confidenceBand();
+  }
+
+  confidenceBand() {
     // regression ci area
-    const { ci, precision, plot } = this;
+    const { ci, data, precision, plot } = this;
     const w = plot.innerWidth();
     this.areaData = ci ? data.flatMap(m => areaPoints(ci, precision, m, w)) : null;
-
     return this;
   }
 
