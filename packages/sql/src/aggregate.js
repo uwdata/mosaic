@@ -1,4 +1,4 @@
-import { asColumn } from './ref.js';
+import { asColumn, Ref } from './ref.js';
 import { toSQL } from './to-sql.js';
 
 export class Aggregate {
@@ -7,9 +7,13 @@ export class Aggregate {
     this.args = (args || []).map(asColumn);
   }
 
-  rewrite(args) {
-    const next = args.concat(this.args.slice(args.length));
-    return new Aggregate(this.aggregate, next);
+  rewrite(columnMap) {
+    const args = this.args.map(arg => {
+      return arg instanceof Ref && columnMap.has(arg.column)
+        ? columnMap.get(arg.column)
+        : arg;
+    });
+    return new Aggregate(this.aggregate, args);
   }
 
   get label() {

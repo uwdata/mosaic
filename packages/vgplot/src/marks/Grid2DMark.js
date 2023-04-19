@@ -52,12 +52,13 @@ export class Grid2DMark extends Mark {
         const { channel, field } = c;
         const exp = field.transform?.(stats) || field;
         if (exp.aggregate) {
-          const keys = exp.columns.map((column, i) => {
+          const columnMap = new Map;
+          exp.columns.forEach((column, i) => {
             const key = `${channel}${i || ''}`;
             q.select({ [key]: column });
-            return key;
+            columnMap.set(column, key);
           });
-          agg = exp.rewrite(keys);
+          agg = exp.rewrite(columnMap);
           densityMap[channel] = true;
         } else {
           q.select({ [channel]: exp });
