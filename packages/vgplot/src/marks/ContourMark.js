@@ -16,7 +16,7 @@ export class ContourMark extends Grid2DMark {
   }
 
   contours() {
-    const { bins, kde, thresholds, groupby, plot } = this;
+    const { bins, densityMap, kde, thresholds, groupby, plot } = this;
 
     let tz = thresholds;
     if (!Array.isArray(tz)) {
@@ -24,7 +24,7 @@ export class ContourMark extends Grid2DMark {
       tz = Array.from({length: tz - 1}, (_, i) => (scale * (i + 1)) / tz);
     }
 
-    if (this.densityFill || this.densityStroke) {
+    if (densityMap.fill || densityMap.stroke) {
       if (this.plot.getAttribute('scaleColor') !== 'log') {
         this.plot.setAttribute('zeroColor', true);
       }
@@ -55,13 +55,13 @@ export class ContourMark extends Grid2DMark {
   }
 
   plotSpecs() {
-    const { type, channels, densityFill, densityStroke, data } = this;
+    const { type, channels, densityMap, data } = this;
     const options = {};
     for (const c of channels) {
       options[c.channel] = Object.hasOwn(c, 'value') ? c.value : c.channel;
     }
-    if (densityFill) options.fill = 'density';
-    if (densityStroke) options.stroke = 'density';
+    if (densityMap.fill) options.fill = 'density';
+    if (densityMap.stroke) options.stroke = 'density';
     return [{ type, data, options }];
   }
 }

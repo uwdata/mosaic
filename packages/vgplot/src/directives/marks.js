@@ -1,6 +1,7 @@
 import { Mark } from '../marks/Mark.js';
 import { ConnectedMark } from '../marks/ConnectedMark';
 import { Density1DMark } from '../marks/Density1DMark.js';
+import { Density2DMark } from '../marks/Density2DMark.js';
 import { DenseLineMark } from '../marks/DenseLineMark.js';
 import { ContourMark } from '../marks/ContourMark.js';
 import { HexbinMark } from '../marks/HexbinMark.js';
@@ -74,6 +75,7 @@ export const frame = (...args) => mark('frame', ...args);
 export const densityX = (...args) => explicitType(Density1DMark, 'areaX', ...args);
 export const densityY = (...args) => explicitType(Density1DMark, 'areaY', ...args);
 
+export const density = (...args) => implicitType(Density2DMark, ...args);
 export const denseLine = (...args) => implicitType(DenseLineMark, ...args);
 export const contour = (...args) => implicitType(ContourMark, ...args);
 export const raster = (...args) => implicitType(RasterMark, ...args);

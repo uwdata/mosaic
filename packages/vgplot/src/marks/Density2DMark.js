@@ -2,8 +2,9 @@ import { Grid2DMark } from './Grid2DMark.js';
 import { handleParam } from './util/handle-param.js';
 
 export class Density2DMark extends Grid2DMark {
-  constructor(type, source, options) {
-    const { binsX, binsY, ...channels } = options;
+  constructor(source, options) {
+    const { type = 'dot', binsX, binsY, ...channels } = options;
+    channels.binPad = channels.binPad ?? 0;
     super(type, source, channels);
     handleParam(this, 'binsX', binsX);
     handleParam(this, 'binsY', binsY);
@@ -11,11 +12,14 @@ export class Density2DMark extends Grid2DMark {
 
   convolve() {
     super.convolve();
-    const { bins, extentX, extentY } = this;
+    const { bins, binPad, extentX, extentY } = this;
     const [nx, ny] = bins;
-    const deltaX = (extentX[1] - extentX[0]) / (nx - 1);
-    const deltaY = (extentY[1] - extentY[0]) / (ny - 1);
-    this.data = points(this.kde, bins, extentX[0], extentY[0], deltaX, deltaY);
+    const [x0, x1] = extentX;
+    const [y0, y1] = extentY;
+    const deltaX = (x1 - x0) / (nx - binPad);
+    const deltaY = (y1 - y0) / (ny - binPad);
+    const offset = binPad ? 0 : 0.5;
+    this.data = points(this.kde, bins, x0, y0, deltaX, deltaY, offset);
     return this;
   }
 
@@ -28,27 +32,30 @@ export class Density2DMark extends Grid2DMark {
   }
 
   plotSpecs() {
-    const { type, channels, densityFill, densityStroke, data } = this;
+    const { type, channels, densityMap, data } = this;
     const options = {};
     for (const c of channels) {
       options[c.channel] = Object.hasOwn(c, 'value') ? c.value : c.channel;
     }
-    if (densityFill) options.fill = 'density';
-    if (densityStroke) options.stroke = 'density';
+    for (const channel in densityMap) {
+      if (densityMap[channel]) {
+        options[channel] = 'density';
+      }
+    }
     return [{ type, data, options }];
   }
 }
 
-function points(kde, bins, x0, y0, deltaX, deltaY) {
+function points(kde, bins, x0, y0, deltaX, deltaY, offset) {
   const scale = 1 / (deltaX * deltaY);
-  const [bx, by] = bins;
+  const [nx, ny] = bins;
   const data = [];
   for (const grid of kde) {
-    for (let k = 0, j = 0; j < by; ++j) {
-      for (let i = 0; i < bx; ++i, ++k) {
+    for (let k = 0, j = 0; j < ny; ++j) {
+      for (let i = 0; i < nx; ++i, ++k) {
         data.push({
-          x: x0 + i * deltaX,
-          y: y0 + j * deltaY,
+          x: x0 + (i + offset) * deltaX,
+          y: y0 + (j + offset) * deltaY,
           density: grid[k] * scale
         });
       }

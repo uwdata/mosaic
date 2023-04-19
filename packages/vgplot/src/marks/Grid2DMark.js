@@ -1,4 +1,4 @@
-import { Query, and, count, gt, lt, lte, sum, expr } from '@uwdata/mosaic-sql';
+import { Query, and, count, gt, lt, lte, sum, expr, isBetween } from '@uwdata/mosaic-sql';
 import { Transient } from '../symbols.js';
 import { binField } from './util/bin-field.js';
 import { dericheConfig, dericheConv2d, grid2d } from './util/density.js';
@@ -15,14 +15,10 @@ export class Grid2DMark extends Mark {
       binPad = 1,
       ...channels
     } = options;
-    const densityFill = channels.fill === 'density';
-    const densityStroke = channels.stroke === 'density';
-    if (densityFill) delete channels.fill;
-    if (densityStroke) delete channels.stroke;
 
+    const densityMap = createDensityMap(channels);
     super(type, source, channels, xyext);
-    this.densityFill = densityFill;
-    this.densityStroke = densityStroke;
+    this.densityMap = densityMap;
 
     handleParam(this, 'bandwidth', bandwidth, () => {
       return this.grids ? this.convolve().update() : null;
@@ -46,7 +42,7 @@ export class Grid2DMark extends Mark {
   }
 
   query(filter = []) {
-    const { plot, binType, channels, source, stats } = this;
+    const { plot, binType, binPad, channels, densityMap, source, stats } = this;
 
     const q = Query.from(source.table).where(filter);
     const groupby = this.groupby = [];
@@ -62,7 +58,7 @@ export class Grid2DMark extends Mark {
             return key;
           });
           agg = exp.rewrite(keys);
-          this.densityFill = true;
+          densityMap[channel] = true;
         } else {
           q.select({ [channel]: exp });
           if (channel === 'weight') {
@@ -84,7 +80,12 @@ export class Grid2DMark extends Mark {
     const ry = !!plot.getAttribute('reverseY');
     const x = bin1d(bx, x0, x1, nx, rx, this.binPad);
     const y = bin1d(by, y0, y1, ny, ry, this.binPad);
-    const bounds = and(lte(x0, bx), lt(bx, x1), lte(y0, by), lt(by, y1));
+
+    // with padded bins, include the entire domain extent
+    // if the bins are flush, exclude the extent max
+    const bounds = binPad
+      ? and(isBetween(bx, [x0, x1]), isBetween(by, [y0, y1]))
+      : and(lte(x0, bx), lt(bx, x1), lte(y0, by), lt(by, y1));
 
     return binType === 'linear'
       ? binLinear2d(q, x, y, agg, nx, bounds, groupby)
@@ -132,10 +133,23 @@ export class Grid2DMark extends Mark {
   }
 }
 
-export function bin1d(x, x0, x1, n, reverse = false, pad = 1) {
+function createDensityMap(channels) {
+  const densityMap = {};
+  for (const key in channels) {
+    if (channels[key] === 'density') {
+      delete channels[key];
+      densityMap[key] = true;
+    }
+  }
+  return densityMap;
+}
+
+function bin1d(x, x0, x1, n, reverse, pad) {
+  const d = (n - pad) / (x1 - x0);
+  const f = d !== 1 ? ` * ${d}::DOUBLE` : '';
   return reverse
-    ? expr(`(${x1} - ${x}::DOUBLE) * ${(n - pad) / (x1 - x0)}::DOUBLE`)
-    : expr(`(${x}::DOUBLE - ${x0}) * ${(n - pad) / (x1 - x0)}::DOUBLE`);
+    ? expr(`(${x1} - ${x}::DOUBLE)${f}`)
+    : expr(`(${x}::DOUBLE - ${x0})${f}`);
 }
 
 function bin2d(input, xp, yp, value, xn, filter, groupby = []) {
