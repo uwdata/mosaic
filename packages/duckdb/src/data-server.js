@@ -1,8 +1,5 @@
 import http from 'node:http';
 import url from 'node:url';
-import zlib from 'node:zlib';
-import stream from 'node:stream';
-import {pipeline} from 'node:stream/promises';
 import { WebSocketServer } from 'ws';
 
 export function dataServer(db, {
@@ -113,7 +110,7 @@ function queryHandler(db) {
 let locked = false;
 const queue = [];
 
-function httpResponse(res, gzip) {
+function httpResponse(res) {
   return {
     lock() {
       // if locked, add a promise to the queue
@@ -128,15 +125,6 @@ function httpResponse(res, gzip) {
         // resolve the next promise in the queue
         queue.shift()();
       }
-    },
-    async stream(iter) {
-      res.setHeader('Content-Type', 'application/octet-stream');
-      if (gzip) res.setHeader('Content-Encoding', 'gzip');
-      await pipeline([
-        stream.Readable.from(iter),
-        ...gzip ? [zlib.createGzip()] : [],
-        res
-      ]);
     },
     binary(data) {
       res.write(data);
