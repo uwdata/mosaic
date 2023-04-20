@@ -21,7 +21,7 @@ export class Catalog {
 
     const q = this.mc.query(
       `DESCRIBE "${table}"`,
-      { type: 'json', cache: false }
+      { type: 'json', cacheClient: false }
     );
 
     return (cache[table] = q.then(result => {
@@ -49,7 +49,10 @@ export class Catalog {
     // no need for summary statistics
     if (!stats?.length) return colInfo;
 
-    const result = await this.mc.query(summarize(colInfo, stats));
+    const result = await this.mc.query(
+      summarize(colInfo, stats),
+      { cacheServer: true }
+    );
     const info = { ...colInfo, ...(Array.from(result)[0]) };
     return info;
   }

@@ -61,7 +61,7 @@ export class Coordinator {
     }
   }
 
-  query(query, { type = 'arrow', cache = true } = {}) {
+  query(query, { type = 'arrow', cacheClient = true, cacheServer = false } = {}) {
     const sql = String(query);
     const t0 = performance.now();
     const cached = this.cache.get(sql);
@@ -69,8 +69,8 @@ export class Coordinator {
       this._logger.debug('Cache');
       return cached;
     } else {
-      const request = this.db.query({ type, sql });
-      const result = cache ? this.cache.set(sql, request) : request;
+      const request = this.db.query({ type, sql, cache: cacheServer });
+      const result = cacheClient ? this.cache.set(sql, request) : request;
       result.then(() => this._logger.debug(`Query: ${(performance.now() - t0).toFixed(1)}`));
       return result;
     }
