@@ -1,5 +1,6 @@
 import { asColumn, Ref } from './ref.js';
 import { toSQL } from './to-sql.js';
+import { cast } from './cast.js';
 
 export class Aggregate {
   constructor(op, args) {
@@ -44,10 +45,7 @@ export class Aggregate {
     const arg = args.length === 0 ? '*' : args.map(toSQL).join(', ');
     const distinct = isDistinct ? 'DISTINCT ' : '';
     const where = filter ? ` FILTER (WHERE ${toSQL(filter)})` : '';
-    const cast = aggregate === 'COUNT' ? '::INTEGER' : '';
-    return where && cast
-      ? `(${aggregate}(${distinct}${arg})${where})${cast}`
-      : `${aggregate}(${distinct}${arg})${where}${cast}`;
+    return `${aggregate}(${distinct}${arg})${where}`;
   }
 }
 
@@ -55,7 +53,7 @@ function agg(op) {
   return (...args) => new Aggregate(op, args);
 }
 
-export const count = agg('COUNT');
+export const count = () => cast(agg('COUNT')(), 'INTEGER', false);
 export const avg = agg('AVG');
 export const mean = agg('AVG');
 export const mad = agg('MAD');

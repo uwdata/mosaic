@@ -97,10 +97,6 @@ export class DuckDB {
       });
     });
   }
-
-  arrowStream(sql) {
-    return this.con.arrowIPCStream(sql);
-  }
 }
 
 export class DuckDBStatement {
@@ -150,9 +146,5 @@ export class DuckDBStatement {
         }
       });
     });
-  }
-
-  arrowStream(params) {
-    return this.statement.arrowIPCStream(...params);
   }
 }

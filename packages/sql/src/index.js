@@ -110,3 +110,7 @@ export {
   Query,
   isQuery
 } from './Query.js';
+
+export {
+  cast
+} from './cast.js';

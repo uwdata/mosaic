@@ -1,8 +1,5 @@
 import http from 'node:http';
 import url from 'node:url';
-import zlib from 'node:zlib';
-import stream from 'node:stream';
-import {pipeline} from 'node:stream/promises';
 import { WebSocketServer } from 'ws';
 
 export function dataServer(db, {
@@ -89,7 +86,7 @@ function queryHandler(db) {
       switch (type) {
         case 'arrow':
           // Apache Arrow response format
-          await res.stream(await db.arrowStream(sql));
+          res.binary(await db.arrowBuffer(sql));
           break;
         case 'exec':
           // Execute query with no return value
@@ -113,7 +110,7 @@ function queryHandler(db) {
 let locked = false;
 const queue = [];
 
-function httpResponse(res, gzip) {
+function httpResponse(res) {
   return {
     lock() {
       // if locked, add a promise to the queue
@@ -129,14 +126,9 @@ function httpResponse(res, gzip) {
         queue.shift()();
       }
     },
-    async stream(iter) {
-      res.setHeader('Content-Type', 'application/octet-stream');
-      if (gzip) res.setHeader('Content-Encoding', 'gzip');
-      await pipeline([
-        stream.Readable.from(iter),
-        ...gzip ? [zlib.createGzip()] : [],
-        res
-      ]);
+    binary(data) {
+      res.write(data);
+      res.end();
     },
     json(data) {
       res.setHeader('Content-Type', 'application/json');
@@ -156,16 +148,11 @@ function httpResponse(res, gzip) {
 
 function socketResponse(ws) {
   const STRING = { binary: false, fin: true };
-  const FRAGMENT = { binary: true, fin: false };
-  const DONE = { binary: true, fin: true };
-  const NULL = new Uint8Array(0);
+  const BINARY = { binary: true, fin: true };
 
   return {
-    async stream(iter) {
-      for await (const chunk of iter) {
-        ws.send(chunk, FRAGMENT);
-      }
-      ws.send(NULL, DONE);
+    binary(data) {
+      ws.send(data, BINARY);
     },
     json(data) {
       ws.send(JSON.stringify(data), STRING);
