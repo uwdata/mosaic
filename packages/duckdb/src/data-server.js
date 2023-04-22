@@ -75,7 +75,7 @@ function queryHandler(db) {
     }
 
     try {
-      const { sql, type } = query;
+      const { sql, type, ...options } = query;
       console.log('QUERY', sql);
 
       // request the lock to serialize requests
@@ -86,7 +86,7 @@ function queryHandler(db) {
       switch (type) {
         case 'arrow':
           // Apache Arrow response format
-          res.binary(await db.arrowBuffer(sql));
+          res.binary(await db.arrow(sql, options));
           break;
         case 'exec':
           // Execute query with no return value

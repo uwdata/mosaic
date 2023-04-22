@@ -1,9 +1,13 @@
 import duckdb from 'duckdb';
 import { readFile } from 'node:fs/promises';
 import { mergeBuffers } from './merge-buffers.js';
+import { QueryCache, cacheKey } from './QueryCache.js';
+
+const TEMP_DIR = './duckdb.tmp';
+const CACHE_DIR = './duckdb.cache';
 
 const CONFIG = [
-  `PRAGMA temp_directory='./duckdb.tmp'`,
+  `PRAGMA temp_directory='${TEMP_DIR}'`,
   `INSTALL arrow`,
   `INSTALL httpfs`,
   `LOAD arrow`,
@@ -14,6 +18,7 @@ export class DuckDB {
   constructor(path = ':memory:') {
     this.db = new duckdb.Database(path);
     this.con = this.db.connect();
+    this.cache = new QueryCache(`${CACHE_DIR}`);
     this.exec(CONFIG.join(';\n'));
   }
 
@@ -84,6 +89,24 @@ export class DuckDB {
         }
       });
     });
+  }
+
+  async arrow(sql, { cache = false } = {}) {
+    const key = cacheKey(sql);
+    const cached = this.cache.get(key);
+
+    if (cached) {
+      console.log('CACHE HIT');
+      return cached;
+    }
+
+    const data = await this.arrowBuffer(sql);
+
+    if (cache) {
+      this.cache.set(key, data);
+    }
+
+    return data;
   }
 
   arrowBuffer(sql) {
