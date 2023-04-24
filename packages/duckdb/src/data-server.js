@@ -1,6 +1,9 @@
 import http from 'node:http';
 import url from 'node:url';
 import { WebSocketServer } from 'ws';
+import { QueryCache, cacheKey } from './QueryCache.js';
+
+const CACHE_DIR = '.cache';
 
 export function dataServer(db, {
   rest = true,
@@ -8,7 +11,8 @@ export function dataServer(db, {
   gzip = true,
   port = 3000
 } = {}) {
-  const handleQuery = queryHandler(db);
+  const cache = new QueryCache(`${CACHE_DIR}`);
+  const handleQuery = queryHandler(db, cache);
   const app = createHTTPServer(handleQuery, rest, gzip);
   if (socket) createSocketServer(app, handleQuery);
 
@@ -61,7 +65,7 @@ function createSocketServer(server, handleQuery) {
   });
 }
 
-function queryHandler(db) {
+function queryHandler(db, queryCache) {
   return async (res, data) => {
     const t0 = performance.now();
 
@@ -75,19 +79,34 @@ function queryHandler(db) {
     }
 
     try {
-      const { sql, type, ...options } = query;
-      console.log('QUERY', sql);
-
       // request the lock to serialize requests
       // we do this to avoid DuckDB + Arrow errors
-      await res.lock?.();
+      if (res.lock) {
+        await res.lock();
+      }
+
+      const { sql, type, cache } = query;
+      console.log('QUERY', sql);
 
       // process query and return result
       switch (type) {
-        case 'arrow':
+        case 'arrow': {
           // Apache Arrow response format
-          res.binary(await db.arrow(sql, options));
+          const key = cacheKey(sql);
+          let result = queryCache.get(key);
+
+          if (result) {
+            console.log('CACHE HIT');
+          } else {
+            result = await db.arrowBuffer(sql);
+            if (cache) {
+              queryCache.set(key, result);
+            }
+          }
+
+          res.binary(result);
           break;
+        }
         case 'exec':
           // Execute query with no return value
           await db.exec(sql);
