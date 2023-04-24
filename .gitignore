@@ -1,4 +1,7 @@
 .DS_Store
+.cache
+.duckdb
+.ipynb_checkpoints
 node_modules
 packages/*/dist
-.ipynb_checkpoints
+

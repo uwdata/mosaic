@@ -49,7 +49,10 @@ export class Catalog {
     // no need for summary statistics
     if (!stats?.length) return colInfo;
 
-    const result = await this.mc.query(summarize(colInfo, stats));
+    const result = await this.mc.query(
+      summarize(colInfo, stats),
+      { persist: true }
+    );
     const info = { ...colInfo, ...(Array.from(result)[0]) };
     return info;
   }

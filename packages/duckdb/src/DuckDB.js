@@ -2,8 +2,10 @@ import duckdb from 'duckdb';
 import { readFile } from 'node:fs/promises';
 import { mergeBuffers } from './merge-buffers.js';
 
+const TEMP_DIR = '.duckdb';
+
 const CONFIG = [
-  `PRAGMA temp_directory='./duckdb.tmp'`,
+  `PRAGMA temp_directory='${TEMP_DIR}'`,
   `INSTALL arrow`,
   `INSTALL httpfs`,
   `LOAD arrow`,
