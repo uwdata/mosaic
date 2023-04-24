@@ -1,4 +1,4 @@
-import { asColumn, Ref } from './ref.js';
+import { asColumn } from './ref.js';
 import { toSQL } from './to-sql.js';
 import { cast } from './cast.js';
 
@@ -6,15 +6,6 @@ export class Aggregate {
   constructor(op, args) {
     this.aggregate = op;
     this.args = (args || []).map(asColumn);
-  }
-
-  rewrite(columnMap) {
-    const args = this.args.map(arg => {
-      return arg instanceof Ref && columnMap.has(arg.column)
-        ? columnMap.get(arg.column)
-        : arg;
-    });
-    return new Aggregate(this.aggregate, args);
   }
 
   get label() {
@@ -53,7 +44,8 @@ function agg(op) {
   return (...args) => new Aggregate(op, args);
 }
 
-export const count = () => cast(agg('COUNT')(), 'INTEGER', false);
+const _count = agg('COUNT');
+export const count = () => cast(_count(), 'INTEGER');
 export const avg = agg('AVG');
 export const mean = agg('AVG');
 export const mad = agg('MAD');

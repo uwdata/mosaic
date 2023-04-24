@@ -26,7 +26,7 @@ export class ConnectedMark extends Mark {
       const [lo, hi] = filteredExtent(filter, column) || [min, max];
       const scale = (hi - lo) / (max - min);
       if (count * scale > size * 4) {
-        const dd = binField(this, dim);
+        const dd = binField(this, dim, dim);
         const val = dim === 'x' ? 'y' : 'x';
         const cols = q.select().map(c => c.as).filter(c => c !== 'x' && c !== 'y');
         return m4(q, dd, dim, val, lo, hi, size, cols);

@@ -1,15 +1,21 @@
 import { asColumn } from './ref.js';
 
 export class Cast {
-  constructor(expr, type, parens, columns) {
-    this.expr = expr;
+  constructor(expr, type) {
+    this.expr = asColumn(expr);
     this.type = type;
-    this.parens = parens;
-    this.columns = columns || [];
   }
 
   get label() {
-    return `cast(${this.expr.label} as ${this.type})`;
+    return this.expr.label;
+  }
+
+  get column() {
+    return this.expr.column;
+  }
+
+  get columns() {
+    return this.expr.columns || [];
   }
 
   get aggregate() {
@@ -17,12 +23,10 @@ export class Cast {
   }
 
   toString() {
-    return this.parens
-      ? `(${this.expr})::${this.type}`
-      : `${this.expr}::${this.type}`;
+    return `CAST(${this.expr} AS ${this.type})`;
   }
 }
 
-export function cast(expr, type, parens = true) {
-  return new Cast(expr, type, parens, asColumn(expr).columns);
+export function cast(expr, type) {
+  return new Cast(expr, type);
 }
