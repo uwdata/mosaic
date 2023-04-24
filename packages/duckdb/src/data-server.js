@@ -1,19 +1,19 @@
 import http from 'node:http';
 import url from 'node:url';
 import { WebSocketServer } from 'ws';
-import { QueryCache, cacheKey } from './QueryCache.js';
+import { Cache, cacheKey } from './Cache.js';
 
 const CACHE_DIR = '.cache';
 
 export function dataServer(db, {
+  cache = true,
   rest = true,
   socket = true,
-  gzip = true,
   port = 3000
 } = {}) {
-  const cache = new QueryCache(`${CACHE_DIR}`);
-  const handleQuery = queryHandler(db, cache);
-  const app = createHTTPServer(handleQuery, rest, gzip);
+  const queryCache = cache ? new Cache({ dir: CACHE_DIR }) : null;
+  const handleQuery = queryHandler(db, queryCache);
+  const app = createHTTPServer(handleQuery, rest);
   if (socket) createSocketServer(app, handleQuery);
 
   app.listen(port);
@@ -22,9 +22,9 @@ export function dataServer(db, {
   if (socket) console.log(`  ws://localhost:${port}/`);
 }
 
-function createHTTPServer(handleQuery, rest, gzip) {
+function createHTTPServer(handleQuery, rest) {
   return http.createServer((req, resp) => {
-    const res = httpResponse(resp, gzip);
+    const res = httpResponse(resp);
     if (!rest) {
       res.done();
       return;
@@ -81,11 +81,9 @@ function queryHandler(db, queryCache) {
     try {
       // request the lock to serialize requests
       // we do this to avoid DuckDB + Arrow errors
-      if (res.lock) {
-        await res.lock();
-      }
+      if (res.lock) await res.lock();
 
-      const { sql, type, cache } = query;
+      const { sql, type, persist } = query;
       console.log('QUERY', sql);
 
       // process query and return result
@@ -93,18 +91,18 @@ function queryHandler(db, queryCache) {
         case 'arrow': {
           // Apache Arrow response format
           const key = cacheKey(sql);
-          let result = queryCache.get(key);
+          let result = queryCache?.get(key);
 
           if (result) {
             console.log('CACHE HIT');
           } else {
             result = await db.arrowBuffer(sql);
-            if (cache) {
-              queryCache.set(key, result);
+            if (persist) {
+              queryCache?.set(key, result, { persist });
             }
           }
 
-          res.binary(result);
+          res.arrow(result);
           break;
         }
         case 'exec':
@@ -145,9 +143,9 @@ function httpResponse(res) {
         queue.shift()();
       }
     },
-    binary(data) {
-      res.write(data);
-      res.end();
+    arrow(data) {
+      res.setHeader('Content-Type', 'application/vnd.apache.arrow.stream');
+      res.end(data);
     },
     json(data) {
       res.setHeader('Content-Type', 'application/json');
@@ -170,7 +168,7 @@ function socketResponse(ws) {
   const BINARY = { binary: true, fin: true };
 
   return {
-    binary(data) {
+    arrow(data) {
       ws.send(data, BINARY);
     },
     json(data) {
