@@ -1,4 +1,4 @@
-import { Query, and, count, gt, lt, lte, sum, expr, isBetween } from '@uwdata/mosaic-sql';
+import { Query, count, gt, lt, lte, sum, expr, isBetween } from '@uwdata/mosaic-sql';
 import { Transient } from '../symbols.js';
 import { binField } from './util/bin-field.js';
 import { dericheConfig, dericheConv2d, grid2d } from './util/density.js';
@@ -43,38 +43,9 @@ export class Grid2DMark extends Mark {
 
   query(filter = []) {
     const { plot, binType, binPad, channels, densityMap, source, stats } = this;
-
-    const q = Query.from(source.table).where(filter);
-    const groupby = this.groupby = [];
-    let agg = count();
-    for (const c of channels) {
-      if (Object.hasOwn(c, 'field')) {
-        const { channel, field } = c;
-        const exp = field.transform?.(stats) || field;
-        if (exp.aggregate) {
-          const columnMap = new Map;
-          exp.columns.forEach((column, i) => {
-            const key = `${channel}${i || ''}`;
-            q.select({ [key]: column });
-            columnMap.set(column, key);
-          });
-          agg = exp.rewrite(columnMap);
-          densityMap[channel] = true;
-        } else {
-          q.select({ [channel]: exp });
-          if (channel === 'weight') {
-            agg = sum(channel);
-          } else if (channel !== 'x' && channel !== 'y') {
-            groupby.push(channel);
-          }
-        }
-      }
-    }
-
     const [x0, x1] = this.extentX = extentX(this, filter);
     const [y0, y1] = this.extentY = extentY(this, filter);
     const [nx, ny] = this.bins = this.binDimensions(this);
-
     const bx = binField(this, 'x');
     const by = binField(this, 'y');
     const rx = !!plot.getAttribute('reverseX');
@@ -85,12 +56,34 @@ export class Grid2DMark extends Mark {
     // with padded bins, include the entire domain extent
     // if the bins are flush, exclude the extent max
     const bounds = binPad
-      ? and(isBetween(bx, [x0, x1]), isBetween(by, [y0, y1]))
-      : and(lte(x0, bx), lt(bx, x1), lte(y0, by), lt(by, y1));
+      ? [isBetween(bx, [x0, x1]), isBetween(by, [y0, y1])]
+      : [lte(x0, bx), lt(bx, x1), lte(y0, by), lt(by, y1)];
+
+    const q = Query
+      .from(source.table)
+      .where(filter.concat(bounds));
+
+    const groupby = this.groupby = [];
+    let agg = count();
+    for (const c of channels) {
+      if (Object.hasOwn(c, 'field')) {
+        const { channel, field } = c;
+        const exp = field.transform?.(stats) || field;
+        if (exp.aggregate) {
+          agg = exp;
+          densityMap[channel] = true;
+        } else if (channel === 'weight') {
+          agg = sum(exp);
+        } else if (channel !== 'x' && channel !== 'y') {
+          q.select({ [channel]: exp });
+          groupby.push(channel);
+        }
+      }
+    }
 
     return binType === 'linear'
-      ? binLinear2d(q, x, y, agg, nx, bounds, groupby)
-      : bin2d(q, x, y, agg, nx, bounds, groupby);
+      ? binLinear2d(q, x, y, agg, nx, groupby)
+      : bin2d(q, x, y, agg, nx, groupby);
   }
 
   binDimensions() {
@@ -153,45 +146,39 @@ function bin1d(x, x0, x1, n, reverse, pad) {
     : expr(`(${x}::DOUBLE - ${x0})${f}`);
 }
 
-function bin2d(input, xp, yp, value, xn, filter, groupby = []) {
-  return Query
+function bin2d(q, xp, yp, value, xn, groupby) {
+  return q
     .select({
       index: expr(`FLOOR(${xp})::INTEGER + FLOOR(${yp})::INTEGER * ${xn}`),
       value
-    }, groupby)
-    .from(input)
-    .groupby('index', groupby)
-    .where(filter);
+    })
+    .groupby('index', groupby);
 }
 
-function binLinear2d(input, xp, yp, value, xn, filter, groupby = []) {
+function binLinear2d(q, xp, yp, value, xn, groupby) {
   const w = value.column ? `* ${value.column}` : '';
-
-  const q = (i, w) => Query
-    .select({ xp, yp, i, w }, groupby)
-    .from(input)
-    .where(filter);
+  const subq = (i, w) => q.clone().select({ xp, yp, i, w });
 
   // grid[xu + yu * xn] += (xv - xp) * (yv - yp) * wi;
-  const a = q(
+  const a = subq(
     expr(`FLOOR(xp)::INTEGER + FLOOR(yp)::INTEGER * ${xn}`),
     expr(`(FLOOR(xp)::INTEGER + 1 - xp) * (FLOOR(yp)::INTEGER + 1 - yp)${w}`)
   );
 
   // grid[xu + yv * xn] += (xv - xp) * (yp - yu) * wi;
-  const b = q(
+  const b = subq(
     expr(`FLOOR(xp)::INTEGER + (FLOOR(yp)::INTEGER + 1) * ${xn}`),
     expr(`(FLOOR(xp)::INTEGER + 1 - xp) * (yp - FLOOR(yp)::INTEGER)${w}`)
   );
 
   // grid[xv + yu * xn] += (xp - xu) * (yv - yp) * wi;
-  const c = q(
+  const c = subq(
     expr(`FLOOR(xp)::INTEGER + 1 + FLOOR(yp)::INTEGER * ${xn}`),
     expr(`(xp - FLOOR(xp)::INTEGER) * (FLOOR(yp)::INTEGER + 1 - yp)${w}`)
   );
 
   // grid[xv + yv * xn] += (xp - xu) * (yp - yu) * wi;
-  const d = q(
+  const d = subq(
     expr(`FLOOR(xp)::INTEGER + 1 + (FLOOR(yp)::INTEGER + 1) * ${xn}`),
     expr(`(xp - FLOOR(xp)::INTEGER) * (yp - FLOOR(yp)::INTEGER)${w}`)
   );

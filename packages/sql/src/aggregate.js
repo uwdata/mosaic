@@ -8,15 +8,6 @@ export class Aggregate {
     this.args = (args || []).map(asColumn);
   }
 
-  rewrite(columnMap) {
-    const args = this.args.map(arg => {
-      return arg instanceof Ref && columnMap.has(arg.column)
-        ? columnMap.get(arg.column)
-        : arg;
-    });
-    return new Aggregate(this.aggregate, args);
-  }
-
   get label() {
     return this.aggregate.toLowerCase()
       + (this.args.length ? ` ${this.columns.join(', ')}` : '');
@@ -53,7 +44,8 @@ function agg(op) {
   return (...args) => new Aggregate(op, args);
 }
 
-export const count = () => cast(agg('COUNT')(), 'INTEGER', false);
+const _count = agg('COUNT');
+export const count = () => cast(_count(), 'INTEGER');
 export const avg = agg('AVG');
 export const mean = agg('AVG');
 export const mad = agg('MAD');

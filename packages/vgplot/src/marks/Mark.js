@@ -136,7 +136,7 @@ export class Mark extends MosaicClient {
     return this;
   }
 
-  query(filter = []) {
+  query(filter = [], skip = []) {
     if (this.hasOwnData()) return null;
 
     const { channels, source: { table }, stats } = this;
@@ -145,10 +145,12 @@ export class Mark extends MosaicClient {
     let aggr = false;
 
     for (const c of channels) {
-      if (c.channel === 'order') {
+      const { channel, field } = c;
+      if (skip.includes(channel)) continue;
+
+      if (channel === 'order') {
         q.orderby(c.value);
       } else if (c.field) {
-        const { channel, field } = c;
         const expr = field.transform?.(stats) || field;
         if (expr.aggregate) {
           aggr = true;
