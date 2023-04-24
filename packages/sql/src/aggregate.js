@@ -1,4 +1,4 @@
-import { asColumn, Ref } from './ref.js';
+import { asColumn } from './ref.js';
 import { toSQL } from './to-sql.js';
 import { cast } from './cast.js';
 
