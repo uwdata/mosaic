@@ -142,6 +142,7 @@ export {
   textX,
   textY,
   density,
+  densityX,
   densityY,
   denseLine,
   raster,
