@@ -131,7 +131,7 @@ function queryHandler(db, queryCache) {
           break;
         case 'load':
           // Load a named bundle of precomputed resources
-          loadBundle(db, queryCache, path.resolve(CACHE_DIR, query.name));
+          await loadBundle(db, queryCache, path.resolve(CACHE_DIR, query.name));
           res.done();
           break;
         default:
