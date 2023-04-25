@@ -1,7 +1,9 @@
 import http from 'node:http';
+import path from 'node:path';
 import url from 'node:url';
 import { WebSocketServer } from 'ws';
 import { Cache, cacheKey } from './Cache.js';
+import { createBundle, loadBundle } from './load/bundle.js';
 
 const CACHE_DIR = '.cache';
 
@@ -66,6 +68,26 @@ function createSocketServer(server, handleQuery) {
 }
 
 function queryHandler(db, queryCache) {
+
+  // retrieve query result
+  async function retrieve(query, get) {
+    const { sql, type, persist } = query;
+    const key = cacheKey(sql, type);
+    let result = queryCache?.get(key);
+
+    if (result) {
+      console.log('CACHE HIT');
+    } else {
+      result = await get(sql);
+      if (persist) {
+        queryCache?.set(key, result, { persist });
+      }
+    }
+
+    return result;
+  }
+
+  // query request handler
   return async (res, data) => {
     const t0 = performance.now();
 
@@ -83,36 +105,40 @@ function queryHandler(db, queryCache) {
       // we do this to avoid DuckDB + Arrow errors
       if (res.lock) await res.lock();
 
-      const { sql, type, persist } = query;
-      console.log('QUERY', sql);
+      const { sql, type } = query;
+      console.log(`QUERY (${type})`, sql);
 
       // process query and return result
       switch (type) {
-        case 'arrow': {
+        case 'arrow':
           // Apache Arrow response format
-          const key = cacheKey(sql);
-          let result = queryCache?.get(key);
-
-          if (result) {
-            console.log('CACHE HIT');
-          } else {
-            result = await db.arrowBuffer(sql);
-            if (persist) {
-              queryCache?.set(key, result, { persist });
-            }
-          }
-
-          res.arrow(result);
+          res.arrow(
+            await retrieve(query, sql => db.arrowBuffer(sql))
+          );
           break;
-        }
         case 'exec':
           // Execute query with no return value
           await db.exec(sql);
           res.done();
           break;
+        case 'bundle':
+          // Create a named bundle of precomputed resources
+          await createBundle(
+            db, queryCache, query.queries,
+            path.resolve(CACHE_DIR, query.name)
+          );
+          res.done();
+          break;
+        case 'load':
+          // Load a named bundle of precomputed resources
+          loadBundle(db, queryCache, path.resolve(CACHE_DIR, query.name));
+          res.done();
+          break;
         default:
           // JSON response format
-          res.json(await db.query(sql));
+          res.json(
+            await retrieve(query, sql => db.query(sql))
+          );
       }
     } catch (err) {
       res.error(err, 500);

@@ -22,6 +22,7 @@ export class Coordinator {
     this.configure(options);
     this.databaseConnector(db);
     this.clear();
+    this._recorders = [];
   }
 
   logger(logger) {
@@ -55,6 +56,7 @@ export class Coordinator {
 
   async exec(sql) {
     try {
+      updateRecorders(this._recorders, sql);
       await this.db.query({ type: 'exec', sql });
     } catch (err) {
       this._logger.error(err);
@@ -67,6 +69,7 @@ export class Coordinator {
     persist = false
   } = {}) {
     const sql = String(query);
+    updateRecorders(this._recorders, sql);
     const t0 = performance.now();
     const cached = this.cache.get(sql);
     if (cached) {
@@ -77,6 +80,22 @@ export class Coordinator {
       const result = cache ? this.cache.set(sql, request) : request;
       result.then(() => this._logger.debug(`Query: ${(performance.now() - t0).toFixed(1)}`));
       return result;
+    }
+  }
+
+  async createBundle(name, queries) {
+    try {
+      await this.db.query({ type: 'bundle', name, queries });
+    } catch (err) {
+      this._logger.error(err);
+    }
+  }
+
+  async loadBundle(name) {
+    try {
+      await this.db.query({ type: 'load', name });
+    } catch (err) {
+      this._logger.error(err);
     }
   }
 
@@ -137,5 +156,27 @@ export class Coordinator {
     if (!clients.has(client)) return;
     clients.delete(client);
     filterGroups.get(client.filterBy)?.remove(client);
+  }
+
+  record() {
+    let state = [];
+    const mc = this;
+    const recorder = {
+      add(query) { state.push(query); },
+      reset() { state = []; },
+      snapshot() { return state.slice(); },
+      stop() {
+        mc._recorders = mc._recorders.filter(x => x !== this);
+        return state;
+      }
+    };
+    this._recorders.push(recorder);
+    return recorder;
+  }
+}
+
+function updateRecorders(recorders, sql) {
+  if (recorders.length && sql) {
+    recorders.forEach(rec => rec.add(sql));
   }
 }

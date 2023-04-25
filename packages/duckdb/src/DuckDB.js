@@ -1,5 +1,4 @@
 import duckdb from 'duckdb';
-import { readFile } from 'node:fs/promises';
 import { mergeBuffers } from './merge-buffers.js';
 
 const TEMP_DIR = '.duckdb';
@@ -29,35 +28,6 @@ export class DuckDB {
         }
       });
     });
-  }
-
-  async csv(tableName, fileName, options = {}) {
-    const opt = Object.entries({ sample_size: -1, ...options })
-      .map(([key, value]) => {
-        const t = typeof value;
-        const v = t === 'boolean' ? String(value).toUpperCase()
-          : t === 'string' ? `'${value}'`
-          : value;
-        return `${key.toUpperCase()}=${v}`;
-      })
-      .join(', ');
-    return this.exec(`CREATE TABLE ${tableName} AS SELECT *
-      FROM read_csv_auto('${fileName}', ${opt});`);
-  }
-
-  async parquet(tableName, fileName) {
-    return this.exec(`CREATE TABLE ${tableName} AS SELECT *
-      FROM read_parquet('${fileName}');`);
-  }
-
-  async ipc(tableName, buffer) {
-    const bufName = `__ipc__${tableName}`;
-    const arrowData = ArrayBuffer.isView(buffer) ? buffer : await readFile(buffer);
-    this.con.register_buffer(bufName, [arrowData], true, err => {
-      if (err) console.error(err);
-    });
-    await this.exec(`CREATE TABLE ${tableName} AS SELECT * FROM ${bufName}`);
-    this.con.unregister_buffer(bufName);
   }
 
   prepare(sql) {
