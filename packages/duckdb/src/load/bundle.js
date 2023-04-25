@@ -27,7 +27,8 @@ export async function createBundle(db, cache, queries, dir) {
 
   await fs.mkdir(dir, { recursive: true });
 
-  for (const query of queries) {
+  const querySet = new Set(queries);
+  for (const query of querySet) {
     const sql = typeof query === 'string' ? query : query.sql;
     if (query.alias) {
       const table = query.alias;
