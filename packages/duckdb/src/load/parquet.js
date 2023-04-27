@@ -1,4 +1,5 @@
-export function loadParquet(db, tableName, fileName, temp = false) {
-  const table = `${temp ? 'TEMP ' : ''}TABLE ${tableName}`;
-  return db.exec(`CREATE ${table} AS SELECT * FROM read_parquet('${fileName}')`);
+import { createTable } from './create-table.js';
+
+export function loadParquet(db, tableName, fileName, options) {
+  return createTable(db, tableName, `SELECT * FROM read_parquet('${fileName}')`, options);
 }

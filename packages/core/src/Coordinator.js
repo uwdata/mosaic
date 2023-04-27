@@ -85,7 +85,7 @@ export class Coordinator {
 
   async createBundle(name, queries) {
     try {
-      await this.db.query({ type: 'bundle', name, queries });
+      await this.db.query({ type: 'create-bundle', name, queries });
     } catch (err) {
       this._logger.error(err);
     }
@@ -93,7 +93,7 @@ export class Coordinator {
 
   async loadBundle(name) {
     try {
-      await this.db.query({ type: 'load', name });
+      await this.db.query({ type: 'load-bundle', name });
     } catch (err) {
       this._logger.error(err);
     }

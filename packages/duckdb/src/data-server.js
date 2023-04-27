@@ -105,23 +105,25 @@ function queryHandler(db, queryCache) {
       // we do this to avoid DuckDB + Arrow errors
       if (res.lock) await res.lock();
 
-      const { sql, type } = query;
-      console.log(`QUERY (${type})`, sql);
+      const { sql, type = 'json' } = query;
+      console.log(`> ${type.toUpperCase()}${sql ? ' ' + sql : ''}`);
 
       // process query and return result
       switch (type) {
-        case 'arrow':
-          // Apache Arrow response format
-          res.arrow(
-            await retrieve(query, sql => db.arrowBuffer(sql))
-          );
-          break;
         case 'exec':
           // Execute query with no return value
           await db.exec(sql);
           res.done();
           break;
-        case 'bundle':
+        case 'arrow':
+          // Apache Arrow response format
+          res.arrow(await retrieve(query, sql => db.arrowBuffer(sql)));
+          break;
+        case 'json':
+          // JSON response format
+          res.json(await retrieve(query, sql => db.query(sql)));
+          break;
+        case 'create-bundle':
           // Create a named bundle of precomputed resources
           await createBundle(
             db, queryCache, query.queries,
@@ -129,16 +131,13 @@ function queryHandler(db, queryCache) {
           );
           res.done();
           break;
-        case 'load':
+        case 'load-bundle':
           // Load a named bundle of precomputed resources
           await loadBundle(db, queryCache, path.resolve(CACHE_DIR, query.name));
           res.done();
           break;
         default:
-          // JSON response format
-          res.json(
-            await retrieve(query, sql => db.query(sql))
-          );
+          res.error(`Unrecognized command: ${type}`, 400);
       }
     } catch (err) {
       res.error(err, 500);

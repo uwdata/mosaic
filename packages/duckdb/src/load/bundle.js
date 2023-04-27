@@ -70,6 +70,6 @@ export async function loadBundle(db, cache, dir) {
 
   // load precomputed temp tables into the database
   for (const table of manifest.tables) {
-    await loadParquet(db, table, path.resolve(dir, `${table}.parquet`), true);
+    await loadParquet(db, table, path.resolve(dir, `${table}.parquet`), { temp: true });
   }
 }
