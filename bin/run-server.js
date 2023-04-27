@@ -1,14 +1,14 @@
 #! /usr/bin/env node
-import { DuckDB, dataServer } from '@uwdata/mosaic-duckdb';
+import { DuckDB, dataServer, loadArrow, loadCSV } from '@uwdata/mosaic-duckdb';
 
 const db = new DuckDB();
 
 await Promise.all([
-  db.csv('athletes', 'data/athletes.csv'),
-  db.csv('penguins', 'data/penguins.csv'),
-  db.csv('weather', 'data/seattle-weather.csv'),
-  db.ipc('flights', 'data/flights-200k.arrow'),
-  db.ipc('walk', 'data/random-walk.arrow')
+  loadCSV(db, 'athletes', 'data/athletes.csv'),
+  loadCSV(db, 'penguins', 'data/penguins.csv'),
+  loadCSV(db, 'weather', 'data/seattle-weather.csv'),
+  loadArrow(db, 'flights', 'data/flights-200k.arrow'),
+  loadArrow(db, 'walk', 'data/random-walk.arrow')
 ]);
 
 dataServer(db, { rest: true, socket: true });

@@ -5,8 +5,8 @@ import path from 'node:path';
 const DEFAULT_CACHE_DIR = '.cache';
 const DEFAULT_TTL = 1000 * 60 * 60 * 24 * 7; // 7 days
 
-export function cacheKey(hashable) {
-  return createHash('sha256').update(hashable).digest('hex');
+export function cacheKey(hashable, type) {
+  return createHash('sha256').update(hashable).digest('hex') + '.' + type;
 }
 
 class CacheEntry {
@@ -40,7 +40,7 @@ export class Cache {
   delete(key) {
     const deleted = this.cache.delete(key);
     if (deleted) {
-      fs.rm(filename(key), { force: true });
+      fs.rm(path.resolve(this.dir, key), { force: true });
     }
     return deleted;
   }
@@ -89,10 +89,6 @@ export class Cache {
   }
 }
 
-function filename(key) {
-  return `${key}.arrows`;
-}
-
 async function readEntries(dir, cache) {
   let files;
   try {
@@ -101,7 +97,7 @@ async function readEntries(dir, cache) {
     return; // dir does not exist, nothing to do
   }
   await Promise.allSettled(files.map(async file => {
-    const m = file.match(/(.*)\.arrows/);
+    const m = file.match(/.*\.(arrow|json)/);
     const key = m?.[1] || null;
     if (key) {
       const data = await fs.readFile(path.resolve(dir, file));
@@ -112,6 +108,6 @@ async function readEntries(dir, cache) {
 
 function writeEntry(dir, key, entry) {
   return fs.mkdir(dir, { recursive: true }).then(
-    () => fs.writeFile(path.resolve(dir, filename(key)), entry.data)
+    () => fs.writeFile(path.resolve(dir, key), entry.data)
   );
 }
