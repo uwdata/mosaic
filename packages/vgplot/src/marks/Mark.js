@@ -23,6 +23,7 @@ const constantOptions = new Set([
   'strokeDashoffset',
   'mixBlendMode',
   'shapeRendering',
+  'imageRendering',
   'paintOrder',
   'pointerEvents'
 ]);

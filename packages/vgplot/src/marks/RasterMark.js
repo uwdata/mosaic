@@ -50,6 +50,7 @@ export class RasterMark extends Grid2DMark {
       width: plot.innerWidth(),
       height: plot.innerHeight(),
       preserveAspectRatio: 'none',
+      imageRendering: this.channel('imageRendering')?.value,
       frameAnchor: 'middle'
     };
     return [{ type, data, options }];
