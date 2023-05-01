@@ -13,7 +13,8 @@ export class Slider extends MosaicClient {
     from,
     column,
     label = column,
-    value = as?.value
+    value = as?.value,
+    width
   } = {}) {
     super(filterBy);
     this.id = 'slider_' + (++_id);
@@ -38,6 +39,7 @@ export class Slider extends MosaicClient {
     this.slider = document.createElement('input');
     this.slider.setAttribute('id', this.id);
     this.slider.setAttribute('type', 'range');
+    if (width != null) this.slider.style.width = `${+width}px`;
     if (min != null) this.slider.setAttribute('min', min);
     if (max != null) this.slider.setAttribute('max', max);
     if (step != null) this.slider.setAttribute('step', step);
