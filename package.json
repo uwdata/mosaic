@@ -18,16 +18,16 @@
     "release": "npm run test && npm run lint && lerna publish"
   },
   "devDependencies": {
-    "esbuild": "^0.17.17",
-    "eslint": "^8.38.0",
+    "esbuild": "^0.17.18",
+    "eslint": "^8.39.0",
     "lerna": "^6.6.1",
     "mocha": "^10.2.0",
     "nodemon": "^2.0.22",
     "rimraf": "^5.0.0",
     "timezone-mock": "^1.3.6",
     "typescript": "^5.0.4",
-    "vite": "^4.3.0",
-    "yaml": "^2.2.1"
+    "vite": "^4.3.3",
+    "yaml": "^2.2.2"
   },
   "workspaces": [
     "packages/*"
