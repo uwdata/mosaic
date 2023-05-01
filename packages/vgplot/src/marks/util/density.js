@@ -3,33 +3,6 @@
 // https://www.ipol.im/pub/art/2013/87/gaussian_20131215.tgz
 // http://dev.ipol.im/~getreuer/code/doc/gaussian_20131215_doc/gaussian__conv__deriche_8c.html
 
-export function grid1d(n, values) {
-  const grid = new Float64Array(n);
-  for (const row of values) {
-    grid[row.index] = row.value;
-  }
-  return grid;
-}
-
-export function grid2d(m, n, values, groupby = []) {
-  if (groupby.length) {
-    const grids = {};
-    for (const row of values) {
-      const key = groupby.map(col => row[col]);
-      const { grid } = grids[key]
-        || (grids[key] = { key, grid: new Float64Array(m * n) });
-      grid[row.index] = row.value;
-    }
-    return Object.values(grids);
-  } else {
-    const grid = new Float64Array(m * n);
-    for (const row of values) {
-      grid[row.index] = row.value;
-    }
-    return [{ grid }];
-  }
-}
-
 export function dericheConfig(sigma, negative = false) {
   // compute causal filter coefficients
   const a = new Float64Array(5);
