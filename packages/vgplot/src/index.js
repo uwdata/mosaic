@@ -146,6 +146,7 @@ export {
   densityY,
   denseLine,
   raster,
+  rasterTile,
   contour,
   hexbin,
   hexgrid,
