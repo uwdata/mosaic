@@ -1,8 +1,9 @@
 import { Query, count, gt, lt, lte, sum, expr, isBetween } from '@uwdata/mosaic-sql';
 import { Transient } from '../symbols.js';
 import { binField } from './util/bin-field.js';
-import { dericheConfig, dericheConv2d, grid2d } from './util/density.js';
+import { dericheConfig, dericheConv2d } from './util/density.js';
 import { extentX, extentY, xyext } from './util/extent.js';
+import { grid2d } from './util/grid.js';
 import { handleParam } from './util/handle-param.js';
 import { Mark } from './Mark.js';
 
