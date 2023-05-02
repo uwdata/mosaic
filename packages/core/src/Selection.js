@@ -92,7 +92,7 @@ export class Selection extends Param {
    */
   remove(source) {
     const s = this.clone();
-    s._value = s._resolved = this._resolved.filter(c => c.source !== source);
+    s._value = s._resolved = s._resolver.resolve(this._resolved, { source });
     s._value.active = { source };
     return s;
   }
@@ -136,7 +136,7 @@ export class Selection extends Param {
   update(clause) {
     // we maintain an up-to-date list of all resolved clauses
     // this ensures consistent clause state across unemitted event values
-    this._resolved = this._resolver.resolve(this._resolved, clause);
+    this._resolved = this._resolver.resolve(this._resolved, clause, true);
     this._resolved.active = clause;
     return super.update(this._resolved);
   }
@@ -219,11 +219,11 @@ export class SelectionResolver {
    * @param {*} clause A new selection clause to add.
    * @returns {*[]} An updated array of selection clauses.
    */
-  resolve(clauseList, clause) {
+  resolve(clauseList, clause, reset = false) {
     const { source, predicate } = clause;
     const filtered = clauseList.filter(c => source !== c.source);
     const clauses = this.single ? [] : filtered;
-    if (this.single) filtered.forEach(c => c.source?.reset?.());
+    if (this.single && reset) filtered.forEach(c => c.source?.reset?.());
     if (predicate) clauses.push(clause);
     return clauses;
   }
