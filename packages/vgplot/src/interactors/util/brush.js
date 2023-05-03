@@ -3,17 +3,32 @@ import {
 } from 'd3';
 
 function wrap(brush) {
-  const addEventListener = brush.on;
-  brush._enabled = true;
-  brush.reset = group => {
-    brush._enabled = false;
-    brush.clear(group);
-    brush._enabled = true;
+  const brushOn = brush.on;
+  let enabled = true;
+
+  function silence(callback) {
+    enabled = false;
+    callback();
+    enabled = true;
+  }
+
+  brush.reset = (...args) => {
+    silence(() => brush.clear(...args));
   };
-  brush.on = (type, callback) => {
-    const f = (...args) => brush._enabled && callback(...args);
-    return addEventListener(type, f);
+
+  brush.moveSilent = (...args) => {
+    silence(() => brush.move(...args));
   };
+
+  brush.on = (...args) => {
+    if (args.length > 1 && args[1]) {
+      // wrap callback to respect enabled flag
+      const callback = args[1];
+      args[1] = (...event) => enabled && callback(...event);
+    }
+    return brushOn(...args);
+  };
+
   return brush;
 }
 
