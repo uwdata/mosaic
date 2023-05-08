@@ -78,7 +78,7 @@ export function QueryManager({
 
     cancel(requests) {
       const set = new Set(requests);
-      this.queue.remove(({ result }) => set.has(result));
+      queue.remove(({ result }) => set.has(result));
     },
 
     record() {
