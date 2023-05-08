@@ -34,14 +34,9 @@ export class RasterTileMark extends Grid2DMark {
     return null;
   }
 
-  async tileData(xrange, yrange) {
-    return coordinator().query(this.tileQuery(xrange, yrange));
-  }
-
-  tileQuery(xrange, yrange) {
+  tileQuery(extent) {
     const { plot, binType, binPad, channels, densityMap, source, stats } = this;
-    const [x0, x1] = xrange;
-    const [y0, y1] = yrange;
+    const [[x0, x1], [y0, y1]] = extent;
     const [nx, ny] = this.bins;
     const bx = binField(this, 'x');
     const by = binField(this, 'y');
@@ -84,78 +79,66 @@ export class RasterTileMark extends Grid2DMark {
   }
 
   async requestTiles() {
-    const t0 = performance.now();
-    const { binPad, tileX, tileY } = this;
+    // get coordinator, cancel prior prefetch queries
+    const mc = coordinator();
+    if (this.prefetch) mc.cancel(this.prefetch);
+
+    // get view extent info
+    const { binPad, tileX, tileY, origin: [tx, ty] } = this;
     const [m, n] = this.bins = this.binDimensions(this);
     const [x0, x1] = extentX(this, this._filter);
     const [y0, y1] = extentY(this, this._filter);
-
-    const { origin: [tx, ty] } = this;
-
-    // compute overlap with tiles
-    // generate list of extent queries
     const xspan = x1 - x0;
     const yspan = y1 - y0;
-
     const xx = Math.floor((x0 - tx) * (m - binPad) / xspan);
     const yy = Math.floor((y0 - ty) * (n - binPad) / yspan);
 
+    const tileExtent = (i, j) => [
+      [tx + i * xspan, tx + (i + 1) * xspan],
+      [ty + j * yspan, ty + (j + 1) * yspan]
+    ];
+
+    // get tile coords that overlap current view extent
     const i0 = Math.floor((x0 - tx) / xspan);
     const i1 = tileX ? tileFloor((x1 - tx) / xspan) : i0;
     const j0 = Math.floor((y0 - ty) / yspan);
     const j1 = tileY ? tileFloor((y1 - ty) / yspan) : j0;
 
+    // query for currently needed data tiles
     const coords = [];
     for (let i = i0; i <= i1; ++i) {
       for (let j = j0; j <= j1; ++j) {
         coords.push([i, j]);
       }
     }
+    const queries = coords.map(
+      ([i, j]) => mc.query(this.tileQuery(tileExtent(i, j)))
+    );
 
-    // TODO? progressive display of tiles
-    const tiles = [];
-    for (const coord of coords) {
-      const [i, j] = coord;
-      const xr = [tx + i * xspan, tx + (i + 1) * xspan];
-      const yr = [ty + j * yspan, ty + (j + 1) * yspan];
-      const data = await this.tileData(xr, yr);
-      tiles.push({ coord, data });
-    }
-
-    // prefetch tiles
-    // TODO: add prefetching support to coordinator
-    // - ensure prefetch queries have lower priority
-    const prefetch = [];
+    // prefetch tiles along periphery of current tiles
+    const prefetchCoords = [];
     if (tileX) {
       for (let j = j0; j <= j1; ++j) {
-        prefetch.push([i1 + 1, j]);
-        prefetch.push([i0 - 1, j]);
+        prefetchCoords.push([i1 + 1, j]);
+        prefetchCoords.push([i0 - 1, j]);
       }
     }
     if (tileY) {
       const x0 = tileX ? i0 - 1 : i0;
       const x1 = tileX ? i1 + 1 : i1;
       for (let i = x0; i <= x1; ++i) {
-        prefetch.push([i, j1 + 1]);
-        prefetch.push([i, j0 - 1]);
+        prefetchCoords.push([i, j1 + 1]);
+        prefetchCoords.push([i, j0 - 1]);
       }
     }
-    const prequeries = prefetch.map(coord => {
-      const [i, j] = coord;
-      const xr = [tx + i * xspan, tx + (i + 1) * xspan];
-      const yr = [ty + j * yspan, ty + (j + 1) * yspan];
-      return this.tileQuery(xr, yr);
-    });
-    setTimeout(() => {
-      prequeries.forEach(q => coordinator().query(q));
-    }, 50);
+    this.prefetch = prefetchCoords.map(
+      ([i, j]) => mc.prefetch(this.tileQuery(tileExtent(i, j)))
+    );
 
-    const t1 = performance.now();
-    this.grids = [{grid: processTiles(m, n, xx, yy, tiles)}];
-    const t2 = performance.now();
+    // wait for tile queries to complete, then update
+    const tiles = await Promise.all(queries);
+    this.grids = [{ grid: processTiles(m, n, xx, yy, coords, tiles) }];
     this.convolve().update();
-    const tn = performance.now();
-    console.error('TIMES', Math.round(t1 - t0), Math.round(t2 - t1), Math.round(tn - t2));
   }
 
   convolve() {
@@ -201,14 +184,14 @@ export class RasterTileMark extends Grid2DMark {
   }
 }
 
-function processTiles(m, n, x, y, tiles) {
+function processTiles(m, n, x, y, coords, tiles) {
   const grid = new Float64Array(m * n);
-  for (const tile of tiles) {
-    const { coord: [i, j], data } = tile;
+  tiles.forEach((data, index) => {
+    const [i, j] = coords[index];
     const tx = i * m - x;
     const ty = j * n - y;
     copy(m, n, grid, data, tx, ty);
-  }
+  });
   return grid;
 }
 
