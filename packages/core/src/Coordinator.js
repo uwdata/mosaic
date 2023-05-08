@@ -51,10 +51,7 @@ export class Coordinator {
   }
 
   databaseConnector(db) {
-    if (arguments.length > 0) {
-      this.manager.connector(db);
-    }
-    return this.manager.connector();
+    return this.manager.connector(db);
   }
 
   cancel(requests) {
