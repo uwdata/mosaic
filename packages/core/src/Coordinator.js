@@ -1,7 +1,7 @@
 import { socketConnector } from './connectors/socket.js';
 import { Catalog } from './Catalog.js';
 import { FilterGroup } from './FilterGroup.js';
-import { QueryCache, voidCache } from './QueryCache.js';
+import { QueryManager, Priority } from './QueryManager.js';
 import { voidLogger } from './util/void-logger.js';
 
 let _instance;
@@ -18,6 +18,7 @@ export function coordinator(instance) {
 export class Coordinator {
   constructor(db = socketConnector(), options = {}) {
     this.catalog = new Catalog(this);
+    this.manager = options.manager || QueryManager();
     this.logger(options.logger || console);
     this.configure(options);
     this.databaseConnector(db);
@@ -26,13 +27,15 @@ export class Coordinator {
   }
 
   logger(logger) {
-    return arguments.length
-      ? (this._logger = logger || voidLogger())
-      : this._logger;
+    if (arguments.length) {
+      this._logger = logger || voidLogger();
+      this.manager.logger(this._logger);
+    }
+    return this._logger;
   }
 
   configure({ cache = true, indexes = true }) {
-    this.cache = cache ? new QueryCache() : voidCache();
+    this.manager.cache(cache);
     this.indexes = indexes;
   }
 
@@ -43,76 +46,56 @@ export class Coordinator {
       this.clients = new Set;
       this.filterGroups = new Map;
     }
-    if (cache) this.cache.clear();
+    if (cache) this.manager.cache().clear();
     if (catalog) this.catalog.clear();
   }
 
   databaseConnector(db) {
     if (arguments.length > 0) {
-      this.db = db;
+      this.manager.connector(db);
     }
-    return this.db;
+    return this.manager.connector();
   }
 
-  async exec(sql) {
-    try {
-      updateRecorders(this._recorders, sql);
-      await this.db.query({ type: 'exec', sql });
-    } catch (err) {
-      this._logger.error(err);
-    }
+  cancel(requests) {
+    this.manager.cancel(requests);
+  }
+
+  exec(query, { priority = Priority.Normal } = {}) {
+    return this.manager.request({ type: 'exec', query }, priority);
   }
 
   query(query, {
     type = 'arrow',
     cache = true,
-    persist = false
+    priority = Priority.Normal,
+    ...options
   } = {}) {
-    const sql = String(query);
-    updateRecorders(this._recorders, sql);
-    const t0 = performance.now();
-    const cached = this.cache.get(sql);
-    if (cached) {
-      this._logger.debug('Cache');
-      return cached;
-    } else {
-      const request = this.db.query({ type, sql, persist });
-      const result = cache ? this.cache.set(sql, request) : request;
-      result.then(() => this._logger.debug(`Query: ${(performance.now() - t0).toFixed(1)}`));
-      return result;
-    }
+    return this.manager.request({ type, query, cache, options }, priority);
   }
 
-  async createBundle(name, queries) {
-    try {
-      await this.db.query({ type: 'create-bundle', name, queries });
-    } catch (err) {
-      this._logger.error(err);
-    }
+  createBundle(name, queries, priority = Priority.Low) {
+    return this.manager.request({ type: 'create-bundle', name, queries }, priority);
   }
 
-  async loadBundle(name) {
-    try {
-      await this.db.query({ type: 'load-bundle', name });
-    } catch (err) {
-      this._logger.error(err);
-    }
+  loadBundle(name, priority = Priority.High) {
+    return this.manager.request({ type: 'load-bundle', name }, priority);
   }
 
   async updateClient(client, query) {
-    let result;
     try {
       client.queryPending();
-      result = await this.query(query);
-    } catch (err) {
-      this._logger.error(err);
-      client.queryError(err);
-      return;
-    }
-    try {
-      return client.queryResult(result).update();
-    } catch (err) {
-      this._logger.error(err);
+      let result;
+      try {
+        result = await this.query(query);
+      } catch (queryError) {
+        client.queryError(queryError);
+        this._logger.error(queryError);
+        return;
+      }
+      client.queryResult(result).update();
+    } catch (clientError) {
+      this._logger.error(clientError);
     }
   }
 
@@ -156,27 +139,5 @@ export class Coordinator {
     if (!clients.has(client)) return;
     clients.delete(client);
     filterGroups.get(client.filterBy)?.remove(client);
-  }
-
-  record() {
-    let state = [];
-    const mc = this;
-    const recorder = {
-      add(query) { state.push(query); },
-      reset() { state = []; },
-      snapshot() { return state.slice(); },
-      stop() {
-        mc._recorders = mc._recorders.filter(x => x !== this);
-        return state;
-      }
-    };
-    this._recorders.push(recorder);
-    return recorder;
-  }
-}
-
-function updateRecorders(recorders, sql) {
-  if (recorders.length && sql) {
-    recorders.forEach(rec => rec.add(sql));
   }
 }
