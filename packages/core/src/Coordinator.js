@@ -71,6 +71,10 @@ export class Coordinator {
     return this.manager.request({ type, query, cache, options }, priority);
   }
 
+  prefetch(query, options = {}) {
+    return this.query(query, { ...options, cache: true, priority: Priority.Low });
+  }
+
   createBundle(name, queries, priority = Priority.Low) {
     return this.manager.request({ type: 'create-bundle', name, queries }, priority);
   }
