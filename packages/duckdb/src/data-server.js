@@ -101,10 +101,6 @@ function queryHandler(db, queryCache) {
     }
 
     try {
-      // request the lock to serialize requests
-      // we do this to avoid DuckDB + Arrow errors
-      if (res.lock) await res.lock();
-
       const { sql, type = 'json' } = query;
       console.log(`> ${type.toUpperCase()}${sql ? ' ' + sql : ''}`);
 
@@ -141,33 +137,14 @@ function queryHandler(db, queryCache) {
       }
     } catch (err) {
       res.error(err, 500);
-    } finally {
-      res.unlock?.();
     }
 
     console.log('REQUEST', (performance.now() - t0).toFixed(1));
   };
 }
 
-let locked = false;
-const queue = [];
-
 function httpResponse(res) {
   return {
-    lock() {
-      // if locked, add a promise to the queue
-      // otherwise, grab the lock and proceed
-      return locked
-        ? new Promise(resolve => queue.push(resolve))
-        : (locked = true);
-    },
-    unlock() {
-      locked = queue.length > 0;
-      if (locked) {
-        // resolve the next promise in the queue
-        queue.shift()();
-      }
-    },
     arrow(data) {
       res.setHeader('Content-Type', 'application/vnd.apache.arrow.stream');
       res.end(data);

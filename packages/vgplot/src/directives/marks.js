@@ -6,6 +6,7 @@ import { DenseLineMark } from '../marks/DenseLineMark.js';
 import { ContourMark } from '../marks/ContourMark.js';
 import { HexbinMark } from '../marks/HexbinMark.js';
 import { RasterMark } from '../marks/RasterMark.js';
+import { RasterTileMark } from '../marks/RasterTileMark.js';
 import { RegressionMark } from '../marks/RegressionMark.js';
 
 const decorators = new Set(['frame', 'hexgrid', 'graticule', 'sphere']);
@@ -79,6 +80,8 @@ export const density = (...args) => implicitType(Density2DMark, ...args);
 export const denseLine = (...args) => implicitType(DenseLineMark, ...args);
 export const contour = (...args) => implicitType(ContourMark, ...args);
 export const raster = (...args) => implicitType(RasterMark, ...args);
+export const rasterTile = (...args) => implicitType(RasterTileMark, ...args);
+
 export const hexbin = (...args) => implicitType(HexbinMark, ...args);
 export const hexgrid = (...args) => mark('hexgrid', ...args);
 

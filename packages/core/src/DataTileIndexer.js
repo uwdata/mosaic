@@ -29,22 +29,31 @@ export class DataTileIndexer {
     this.activeView = null;
   }
 
+  clear() {
+    if (this.indices) {
+      this.mc.cancel(Array.from(this.indices.values(), index => index.result));
+      this.indices = null;
+    }
+  }
+
   index(clients, active) {
     if (this.clients !== clients) {
       // test client views for compatibility
-      const cols = Array.from(clients).map(getIndexColumns);
+      const cols = Array.from(clients, getIndexColumns);
       const from = cols[0]?.from;
       this.enabled = cols.every(c => c && c.from === from);
       this.clients = clients;
-      this.indices = null;
       this.activeView = null;
+      this.clear();
     }
     if (!this.enabled) return false; // client views are not indexable
 
     active = active || this.selection.active;
     const { source } = active;
+    if (source && source === this.activeView?.source) return true; // we're good!
+
+    this.clear();
     if (!source) return false; // nothing to work with
-    if (source === this.activeView?.source) return true; // we're good!
     const activeView = this.activeView = getActiveView(active);
     if (!activeView) return false; // active selection clause not compatible
 
@@ -55,7 +64,6 @@ export class DataTileIndexer {
 
     // generate data tile indices
     const indices = this.indices = new Map;
-    const promises = [];
     for (const client of clients) {
       if (sel.skip(client, active)) continue;
       const index = getIndexColumns(client);
@@ -75,11 +83,9 @@ export class DataTileIndexer {
       const sql = query.toString();
       const id = (fnv_hash(sql) >>> 0).toString(16);
       const table = `tile_index_${id}`;
-      indices.set(client, { table, ...index });
-      promises.push(createIndex(this.mc, table, sql));
+      const result = createIndex(this.mc, table, sql);
+      indices.set(client, { table, result, ...index });
     }
-
-    return Promise.allSettled(promises);
   }
 
   async update() {
@@ -99,12 +105,12 @@ export class DataTileIndexer {
     }
 
     const { table, dims, aggr } = index;
-    return this.mc.updateClient(client, Query
+    const query = Query
       .select(dims, aggr)
       .from(table)
       .groupby(dims)
-      .where(filter)
-    );
+      .where(filter);
+    return this.mc.updateClient(client, query);
   }
 }
 
@@ -182,12 +188,8 @@ function binFunction(domain, range, pixelSize, lift, sql) {
   );
 }
 
-async function createIndex(mc, table, query) {
-  try {
-    await mc.exec(`CREATE TEMP TABLE IF NOT EXISTS ${table} AS ${query}`);
-  } catch (err) {
-    mc.logger().error(err);
-  }
+function createIndex(mc, table, query) {
+  return mc.exec(`CREATE TEMP TABLE IF NOT EXISTS ${table} AS ${query}`);
 }
 
 const NO_INDEX = { from: NaN };
