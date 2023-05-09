@@ -83,24 +83,15 @@ export class Coordinator {
     return this.manager.request({ type: 'load-bundle', name }, priority);
   }
 
-  async updateClient(client, query) {
-    try {
-      client.queryPending();
-      let result;
-      try {
-        result = await this.query(query);
-      } catch (queryError) {
-        client.queryError(queryError);
-        this._logger.error(queryError);
-        return;
-      }
-      client.queryResult(result).update();
-    } catch (clientError) {
-      this._logger.error(clientError);
-    }
+  updateClient(client, query, priority = Priority.Normal) {
+    client.queryPending();
+    return this.query(query, { priority }).then(
+      data => client.queryResult(data).update(),
+      err => { client.queryError(err); this._logger.error(err); }
+    );
   }
 
-  async requestQuery(client, query) {
+  requestQuery(client, query) {
     this.filterGroups.get(client.filterBy)?.reset();
     return query
       ? this.updateClient(client, query)

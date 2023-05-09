@@ -45,7 +45,7 @@ export function QueryManager() {
       logger.debug(`Request: ${(performance.now() - t0).toFixed(1)}`);
       result.fulfill(data);
     } catch (err) {
-      result.error(err);
+      result.reject(err);
     }
   }
 
@@ -65,7 +65,7 @@ export function QueryManager() {
     },
 
     request(request, priority = Priority.Normal) {
-      const result = observer();
+      const result = queryResult();
       queue.insert({ request, result }, priority);
       next();
       return result;
@@ -99,11 +99,11 @@ export function QueryManager() {
   };
 }
 
-function observer() {
+function queryResult() {
   let resolve;
   let reject;
   const p = new Promise((r, e) => { resolve = r; reject = e; });
-  p.fulfill = value => resolve(value);
-  p.error = err => reject(err);
+  p.fulfill = value => (resolve(value), p);
+  p.reject = err => (reject(err), p);
   return p;
 }
