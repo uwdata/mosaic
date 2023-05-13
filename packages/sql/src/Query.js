@@ -1,4 +1,4 @@
-import { isExpression } from './expression.js';
+import { isSQLExpression } from './expression.js';
 import { asColumn, asRelation, isColumnRefFor, Ref } from './ref.js';
 
 export class Query {
@@ -127,7 +127,7 @@ export class Query {
           list.push({ as: e, from: asRelation(e) });
         } else if (e instanceof Ref) {
           list.push({ as: e.table, from: e });
-        } else if (isQuery(e) || isExpression(e)) {
+        } else if (isQuery(e) || isSQLExpression(e)) {
           list.push({ from: e });
         } else if (Array.isArray(e)) {
           list.push({ as: unquote(e[0]), from: asRelation(e[1]) });

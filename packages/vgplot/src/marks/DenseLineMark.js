@@ -1,4 +1,4 @@
-import { Query, and, count, sum, expr, isNull, isBetween } from '@uwdata/mosaic-sql';
+import { Query, and, count, isNull, isBetween, sql, sum } from '@uwdata/mosaic-sql';
 import { binField, bin1d } from './util/bin-field.js';
 import { extentX, extentY } from './util/extent.js';
 import { handleParam } from './util/handle-param.js';
@@ -56,9 +56,9 @@ function stripXY(mark, filter) {
   const xc = mark.channelField('x').column;
   const yc = mark.channelField('y').column;
   const test = p => p.op !== 'BETWEEN'
-    || p.expr.column !== xc && p.expr.column !== yc;
+    || p.field.column !== xc && p.field.column !== yc;
   const filterAnd = p => p.op === 'AND'
-    ? and(p.value.filter(c => test(c)))
+    ? and(p.children.filter(c => test(c)))
     : p;
 
   return Array.isArray(filter)
@@ -72,8 +72,8 @@ function lineDensity(
 ) {
   // select x, y points binned to the grid
   q.select({
-    x: expr(`FLOOR(${x})::INTEGER`),
-    y: expr(`FLOOR(${y})::INTEGER`)
+    x: sql`FLOOR(${x})::INTEGER`,
+    y: sql`FLOOR(${y})::INTEGER`
   });
 
   // select line segment end point pairs
@@ -84,40 +84,40 @@ function lineDensity(
     .select(groups, {
       x0: 'x',
       y0: 'y',
-      dx: expr(`(lead(x) OVER sw - x)`),
-      dy: expr(`(lead(y) OVER sw - y)`)
+      dx: sql`(lead(x) OVER sw - x)`,
+      dy: sql`(lead(y) OVER sw - y)`
     })
-    .window({ sw: expr(`${pairPart}ORDER BY x ASC`) })
+    .window({ sw: sql`${pairPart}ORDER BY x ASC` })
     .qualify(and(
-      expr(`(x0 < ${xn} OR x0 + dx < ${xn})`),
-      expr(`(y0 < ${yn} OR y0 + dy < ${yn})`),
-      expr(`(x0 > 0 OR x0 + dx > 0)`),
-      expr(`(y0 > 0 OR y0 + dy > 0)`)
+      sql`(x0 < ${xn} OR x0 + dx < ${xn})`,
+      sql`(y0 < ${yn} OR y0 + dy < ${yn})`,
+      sql`(x0 > 0 OR x0 + dx > 0)`,
+      sql`(y0 > 0 OR y0 + dy > 0)`
     ));
 
   // indices to join against for rasterization
   // generate the maximum number of indices needed
   const num = Query
-    .select({ x: expr(`GREATEST(MAX(ABS(dx)), MAX(ABS(dy)))`) })
+    .select({ x: sql`GREATEST(MAX(ABS(dx)), MAX(ABS(dy)))` })
     .from('pairs');
-  const indices = Query.select({ i: expr(`UNNEST(range((${num})))::INTEGER`) });
+  const indices = Query.select({ i: sql`UNNEST(range((${num})))::INTEGER` });
 
   // rasterize line segments
   const raster = Query.unionAll(
     Query
       .select(groups, {
-        x: expr(`x0 + i`),
-        y: expr(`y0 + ROUND(i * dy / dx::FLOAT)::INTEGER`)
+        x: sql`x0 + i`,
+        y: sql`y0 + ROUND(i * dy / dx::FLOAT)::INTEGER`
       })
       .from('pairs', 'indices')
-      .where(expr(`ABS(dy) <= ABS(dx) AND i < ABS(dx)`)),
+      .where(sql`ABS(dy) <= ABS(dx) AND i < ABS(dx)`),
     Query
       .select(groups, {
-        x: expr(`x0 + ROUND(SIGN(dy) * i * dx / dy::FLOAT)::INTEGER`),
-        y: expr(`y0 + SIGN(dy) * i`)
+        x: sql`x0 + ROUND(SIGN(dy) * i * dx / dy::FLOAT)::INTEGER`,
+        y: sql`y0 + SIGN(dy) * i`
       })
       .from('pairs', 'indices')
-      .where(expr(`ABS(dy) > ABS(dx) AND i < ABS(dy)`)),
+      .where(sql`ABS(dy) > ABS(dx) AND i < ABS(dy)`),
     Query
       .select(groups, { x: 'x0', y: 'y0' })
       .from('pairs')
@@ -130,7 +130,7 @@ function lineDensity(
     .from('raster')
     .select(groups, 'x', 'y',
       normalize
-        ? { w: expr(`1.0 / COUNT(*) OVER (PARTITION BY ${pointPart})`) }
+        ? { w: sql`1.0 / COUNT(*) OVER (PARTITION BY ${pointPart})` }
         : null
     )
     .where(and(isBetween('x', [0, xn]), isBetween('y', [0, yn])));
@@ -140,7 +140,7 @@ function lineDensity(
     .with({ pairs, indices, raster, points })
     .from('points')
     .select(groupby, {
-      index: expr(`x + y * ${xn}::INTEGER`),
+      index: sql`x + y * ${xn}::INTEGER`,
       value: normalize ? sum('w') : count()
     })
     .groupby('index', groupby);

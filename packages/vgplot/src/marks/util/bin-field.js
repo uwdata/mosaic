@@ -1,4 +1,4 @@
-import { epoch_ms, expr } from '@uwdata/mosaic-sql';
+import { epoch_ms, sql } from '@uwdata/mosaic-sql';
 
 export function binField(mark, channel, expr) {
   if (!mark.stats) return field;
@@ -12,6 +12,6 @@ export function bin1d(x, x0, x1, n, reverse = false, pad = 1) {
   const d = (n - pad) / (x1 - x0);
   const f = d !== 1 ? ` * ${d}::DOUBLE` : '';
   return reverse
-    ? expr(`(${x1} - ${x}::DOUBLE)${f}`)
-    : expr(`(${x}::DOUBLE - ${x0})${f}`);
+    ? sql`(${+x1} - ${x}::DOUBLE)${f}`
+    : sql`(${x}::DOUBLE - ${+x0})${f}`;
 }

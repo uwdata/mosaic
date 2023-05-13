@@ -15,7 +15,6 @@ export {
   argmin,
   avg,
   count,
-  expr,
   mad,
   max,
   median,
@@ -27,7 +26,8 @@ export {
   sql,
   column,
   eq,
-  literal
+  literal,
+  isBetween
 } from '@uwdata/mosaic-sql';
 
 export {

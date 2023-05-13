@@ -2,7 +2,7 @@ import * as vg from '../setup.js';
 
 export default async function(el) {
   const {
-    Query, coordinator, expr, plot, hconcat, vconcat, hspace,
+    Query, coordinator, sql, isBetween, plot, hconcat, vconcat, hspace,
     from, bin, count, raster, rectY,
     domainX, domainXY, scaleY, gridY, reverseY, scaleColor, schemeColor,
     width, height, marginLeft, marginTop, marginRight,
@@ -13,19 +13,19 @@ export default async function(el) {
   const q = Query
     .with({
       tmp: Query.select({
-        lambda: expr(`radians((-l + 540) % 360 - 180)`),
-        phi: expr(`radians(b)`),
-        t: expr(`asin(sqrt(3)/2 * sin(phi))`),
-        t2: expr(`t^2`),
-        t6: expr(`t2^3`)
+        lambda: sql`radians((-l + 540) % 360 - 180)`,
+        phi: sql`radians(b)`,
+        t: sql`asin(sqrt(3)/2 * sin(phi))`,
+        t2: sql`t^2`,
+        t6: sql`t2^3`
       }, '*')
-      .from(expr(`'https://uwdata.github.io/mosaic-datasets/data/gaia-5m.parquet'`))
+      .from(sql`'https://uwdata.github.io/mosaic-datasets/data/gaia-5m.parquet'`)
     }).select({
-      u: expr(`(1.340264 * lambda * cos(t)) / (sqrt(3)/2 * (1.340264 + (-0.081106 * 3 * t2) + (t6 * (0.000893 * 7 + 0.003796 * 9 * t2))))`),
-      v: expr(`t * (1.340264 + (-0.081106 * t2) + (t6 * (0.000893 + 0.003796 * t2)))`)
+      u: sql`(1.340264 * lambda * cos(t)) / (sqrt(3)/2 * (1.340264 + (-0.081106 * 3 * t2) + (t6 * (0.000893 * 7 + 0.003796 * 9 * t2))))`,
+      v: sql`t * (1.340264 + (-0.081106 * t2) + (t6 * (0.000893 + 0.003796 * t2)))`
     }, '* EXCLUDE(\'t\', \'t2\', \'t6\')')
     .from('tmp')
-    .where(expr(`parallax >= -5 AND parallax <= 10`));
+    .where(isBetween('parallax', [-5, 10]));
 
   await coordinator().exec(`CREATE TABLE IF NOT EXISTS gaia AS ${q}`);
 

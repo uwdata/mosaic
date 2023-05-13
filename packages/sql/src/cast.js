@@ -1,32 +1,13 @@
+import { sql } from './expression.js';
 import { asColumn } from './ref.js';
 
-export class Cast {
-  constructor(expr, type) {
-    this.expr = asColumn(expr);
-    this.type = type;
-  }
-
-  get label() {
-    return this.expr.label;
-  }
-
-  get column() {
-    return this.expr.column;
-  }
-
-  get columns() {
-    return this.expr.columns || [];
-  }
-
-  get aggregate() {
-    return this.expr.aggregate;
-  }
-
-  toString() {
-    return `CAST(${this.expr} AS ${this.type})`;
-  }
-}
-
 export function cast(expr, type) {
-  return new Cast(expr, type);
+  const e = asColumn(expr);
+  return sql`CAST(${e} AS ${type})`.annotate(
+    e.label != null ? { label: e.label } : null,
+    e.aggregate != null ? { aggregate: e.aggregate } : null
+  );
 }
+
+export const castDouble = expr => cast(expr, 'DOUBLE');
+export const castInteger = expr => cast(expr, 'INTEGER');

@@ -1,18 +1,18 @@
 import assert from 'node:assert';
 import {
-  column, desc, expr, gt, lt, max, min, relation, Query
+  column, desc, gt, lt, max, min, relation, sql, Query
 } from '../src/index.js';
 
 describe('Query', () => {
   it('selects column name strings', () => {
-    const sql = 'SELECT "foo", "bar", "baz" FROM "data"';
+    const query = 'SELECT "foo", "bar", "baz" FROM "data"';
 
     assert.strictEqual(
       Query
         .select('foo', 'bar', 'baz')
         .from('data')
         .toString(),
-      sql
+      query
     );
 
     assert.strictEqual(
@@ -20,7 +20,7 @@ describe('Query', () => {
         .select('foo', 'bar', 'baz')
         .from(relation('data'))
         .toString(),
-      sql
+      query
     );
 
     assert.strictEqual(
@@ -28,7 +28,7 @@ describe('Query', () => {
         .select(['foo', 'bar', 'baz'])
         .from('data')
         .toString(),
-      sql
+      query
     );
 
     assert.strictEqual(
@@ -36,7 +36,7 @@ describe('Query', () => {
         .select({ foo: 'foo', bar: 'bar', baz: 'baz' })
         .from('data')
         .toString(),
-      sql
+      query
     );
 
     assert.strictEqual(
@@ -46,7 +46,7 @@ describe('Query', () => {
         .select('baz')
         .from('data')
         .toString(),
-      sql
+      query
     );
   });
 
@@ -134,7 +134,7 @@ describe('Query', () => {
     const bar = column('bar');
     const baz = column('baz');
 
-    const sql = [
+    const query = [
       'SELECT MIN("foo") AS "min", MAX("foo") AS "max", "bar", "baz"',
       'FROM "data"',
       'GROUP BY "bar", "baz"'
@@ -146,7 +146,7 @@ describe('Query', () => {
         .from('data')
         .groupby('bar', 'baz')
         .toString(),
-      sql
+      query
     );
 
     assert.strictEqual(
@@ -155,7 +155,7 @@ describe('Query', () => {
         .from('data')
         .groupby(bar, baz)
         .toString(),
-      sql
+      query
     );
 
     assert.strictEqual(
@@ -164,7 +164,7 @@ describe('Query', () => {
         .from('data')
         .groupby([bar, baz])
         .toString(),
-      sql
+      query
     );
 
     assert.strictEqual(
@@ -174,7 +174,7 @@ describe('Query', () => {
         .groupby(bar)
         .groupby(baz)
         .toString(),
-      sql
+      query
     );
   });
 
@@ -182,7 +182,7 @@ describe('Query', () => {
     const foo = column('foo');
     const bar = column('bar');
 
-    const sql = [
+    const query = [
       'SELECT MIN("foo") AS "min", "bar"',
       'FROM "data"',
       'GROUP BY "bar"',
@@ -196,7 +196,7 @@ describe('Query', () => {
         .groupby(bar)
         .having(gt('min', 50), lt('min', 100))
         .toString(),
-      sql
+      query
     );
 
     assert.strictEqual(
@@ -206,7 +206,7 @@ describe('Query', () => {
         .groupby(bar)
         .having([gt('min', 50), lt('min', 100)])
         .toString(),
-      sql
+      query
     );
 
     assert.strictEqual(
@@ -217,7 +217,7 @@ describe('Query', () => {
         .having(gt('min', 50))
         .having(lt('min', 100))
         .toString(),
-      sql
+      query
     );
 
     assert.strictEqual(
@@ -225,9 +225,9 @@ describe('Query', () => {
         .select({ min: min(foo), bar })
         .from('data')
         .groupby(bar)
-        .having(expr('("min" > 50) AND ("min" < 100)'))
+        .having(sql`("min" > 50) AND ("min" < 100)`)
         .toString(),
-      sql
+      query
     );
   });
 
@@ -235,7 +235,7 @@ describe('Query', () => {
     const foo = column('foo');
     const bar = column('bar');
 
-    const sql = [
+    const query = [
       'SELECT "foo"',
       'FROM "data"',
       'WHERE ("bar" > 50) AND ("bar" < 100)'
@@ -247,7 +247,7 @@ describe('Query', () => {
         .from('data')
         .where(gt(bar, 50), lt(bar, 100))
         .toString(),
-      sql
+      query
     );
 
     assert.strictEqual(
@@ -256,7 +256,7 @@ describe('Query', () => {
         .from('data')
         .where([gt(bar, 50), lt(bar, 100)])
         .toString(),
-      sql
+      query
     );
 
     assert.strictEqual(
@@ -266,16 +266,16 @@ describe('Query', () => {
         .where(gt(bar, 50))
         .where(lt(bar, 100))
         .toString(),
-      sql
+      query
     );
 
     assert.strictEqual(
       Query
         .select(foo)
         .from('data')
-        .where(expr('("bar" > 50) AND ("bar" < 100)'))
+        .where(sql`("bar" > 50) AND ("bar" < 100)`)
         .toString(),
-      sql
+      query
     );
   });
 
@@ -283,7 +283,7 @@ describe('Query', () => {
     const bar = column('bar');
     const baz = column('baz');
 
-    const sql = [
+    const query = [
       'SELECT *',
       'FROM "data"',
       'ORDER BY "bar", "baz" DESC NULLS LAST'
@@ -295,7 +295,7 @@ describe('Query', () => {
         .from('data')
         .orderby(bar, desc(baz))
         .toString(),
-      sql
+      query
     );
 
     assert.strictEqual(
@@ -304,7 +304,7 @@ describe('Query', () => {
         .from('data')
         .orderby([bar, desc(baz)])
         .toString(),
-      sql
+      query
     );
 
     assert.strictEqual(
@@ -314,16 +314,16 @@ describe('Query', () => {
         .orderby(bar)
         .orderby(desc(baz))
         .toString(),
-      sql
+      query
     );
 
     assert.strictEqual(
       Query
         .select('*')
         .from('data')
-        .orderby(expr('"bar", "baz" DESC NULLS LAST'))
+        .orderby(sql`"bar", "baz" DESC NULLS LAST`)
         .toString(),
-      sql
+      query
     );
   });
 
@@ -384,7 +384,7 @@ describe('Query', () => {
   });
 
   it('selects from multiple relations', () => {
-    const sql = [
+    const query = [
       'SELECT "a"."foo" AS "foo", "b"."bar" AS "bar"',
       'FROM "data1" AS "a", "data2" AS "b"'
     ].join(' ');
@@ -397,16 +397,16 @@ describe('Query', () => {
         })
         .from({ a: 'data1', b: 'data2' })
         .toString(),
-      sql
+      query
     );
   });
 
   it('selects over windows', () => {
     assert.strictEqual(
       Query
-        .select({ lead: expr(`lead("foo") OVER "win"`) })
+        .select({ lead: sql`lead("foo") OVER "win"` })
         .from('data')
-        .window({ win: expr(`ORDER BY "foo" ASC`) })
+        .window({ win: sql`ORDER BY "foo" ASC` })
         .toString(),
       'SELECT lead("foo") OVER "win" AS "lead" FROM "data" WINDOW "win" AS (ORDER BY "foo" ASC)'
     );
