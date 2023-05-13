@@ -8,22 +8,14 @@ export {
 } from './ref.js';
 
 export {
-  transform,
-  desc,
-  expr,
-  exprParams,
-  isExpression,
-  isParamLike
+  isSQLExpression,
+  isParamLike,
+  sql
 } from './expression.js';
 
 export {
-  sql
-} from './sql-tag.js';
-
-export {
-  toSQL,
-  literalToSQL
-} from './to-sql.js';
+  desc
+} from './desc.js';
 
 export {
   literal
@@ -33,34 +25,22 @@ export {
   and,
   or,
   not,
-  isNull,
-  isNotNull,
   eq,
   neq,
   lt,
   gt,
   lte,
   gte,
+  isBetween,
+  isNotBetween,
   isDistinct,
   isNotDistinct,
-  isBetween,
-  isNotBetween
-} from './compare.js';
+  isNull,
+  isNotNull
+} from './operators.js';
 
 export {
-  regexp_matches,
-  contains,
-  prefix,
-  suffix,
-  lower,
-  upper,
-  length,
-  isNaN,
-  isFinite,
-  isInfinite
-} from './function-call.js'
-
-export {
+  agg,
   argmax,
   argmin,
   arrayAgg,
@@ -96,15 +76,30 @@ export {
   sum,
   variance,
   varPop
-} from './aggregate.js';
+} from './aggregates.js';
+
+export {
+  cast,
+  castDouble,
+  castInteger
+} from './cast.js';
 
 export {
   epoch_ms
 } from './datetime.js';
 
 export {
-  unnest
-} from './list.js';
+  regexp_matches,
+  contains,
+  prefix,
+  suffix,
+  lower,
+  upper,
+  length,
+  isNaN,
+  isFinite,
+  isInfinite
+} from './functions.js';
 
 export {
   Query,
@@ -112,5 +107,6 @@ export {
 } from './Query.js';
 
 export {
-  cast
-} from './cast.js';
+  toSQL,
+  literalToSQL
+} from './to-sql.js';

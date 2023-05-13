@@ -38,10 +38,10 @@ export function filteredExtent(filter, column) {
   let lo;
   let hi;
   const visitor = (type, clause) => {
-    if (type === 'BETWEEN' && clause.expr.column === column) {
-      const { value } = clause;
-      if (value && (lo == null || value[0] < lo)) lo = value[0];
-      if (value && (hi == null || value[1] > hi)) hi = value[1];
+    if (type === 'BETWEEN' && clause.field.column === column) {
+      const { range } = clause;
+      if (range && (lo == null || range[0] < lo)) lo = range[0];
+      if (range && (hi == null || range[1] > hi)) hi = range[1];
     }
   };
 

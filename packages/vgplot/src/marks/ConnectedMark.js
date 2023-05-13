@@ -1,4 +1,4 @@
-import { Query, argmax, argmin, expr, max, min } from '@uwdata/mosaic-sql';
+import { Query, argmax, argmin, max, min, sql } from '@uwdata/mosaic-sql';
 import { binField } from './util/bin-field.js';
 import { filteredExtent } from './util/extent.js';
 import { Mark } from './Mark.js';
@@ -38,7 +38,7 @@ export class ConnectedMark extends Mark {
 }
 
 function m4(input, bx, x, y, lo, hi, width, cols = []) {
-  const bins = expr(`FLOOR(${width / (hi - lo)}::DOUBLE * (${bx} - ${+lo}::DOUBLE))::INTEGER`);
+  const bins = sql`FLOOR(${width / (hi - lo)}::DOUBLE * (${bx} - ${+lo}::DOUBLE))::INTEGER`;
 
   const q = (sel) => Query
     .from(input)

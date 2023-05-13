@@ -1,4 +1,4 @@
-import { Query, gt, sum, expr, isBetween } from '@uwdata/mosaic-sql';
+import { Query, gt, isBetween, sql, sum } from '@uwdata/mosaic-sql';
 import { Transient } from '../symbols.js';
 import { binField, bin1d } from './util/bin-field.js';
 import { dericheConfig, dericheConv1d } from './util/density.js';
@@ -84,14 +84,14 @@ function binLinear1d(q, p, value) {
 
   const u = q.clone().select({
     p,
-    i: expr('FLOOR(p)::INTEGER'),
-    w: expr(`(FLOOR(p) + 1 - p)${w}`)
+    i: sql`FLOOR(p)::INTEGER`,
+    w: sql`(FLOOR(p) + 1 - p)${w}`
   });
 
   const v = q.clone().select({
     p,
-    i: expr('FLOOR(p)::INTEGER + 1'),
-    w: expr(`(p - FLOOR(p))${w}`)
+    i: sql`FLOOR(p)::INTEGER + 1`,
+    w: sql`(p - FLOOR(p))${w}`
   });
 
   return Query

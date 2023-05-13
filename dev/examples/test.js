@@ -6,7 +6,7 @@ export default async function(el) {
     plot, vconcat, from, rectY, barX,
     count, intervalX, toggleY,
     domainX, domainY, domainColor, rangeColor,
-    labelY, expr,
+    labelY, sql, column,
     width, Fixed, Selection
   } = vg;
 
@@ -19,14 +19,16 @@ export default async function(el) {
     rangeColor(['#e7ba52', '#a7a7a7', '#aec7e8', '#1f77b4', '#9467bd'])
   ];
 
+  const date = column('date');
+
   el.appendChild(
     vconcat(
       plot(
         rectY(
           from(table, { filterBy: sel }),
           {
-            x1: expr('MONTH(date)::INTEGER', ['date']),
-            x2: expr('(1 + MONTH(date))::INTEGER', ['date']),
+            x1: sql`MONTH(${date})::INTEGER`,
+            x2: sql`(1 + MONTH(${date}))::INTEGER`,
             y: count(), fill: 'weather', order: 'weather'
           }
         ),

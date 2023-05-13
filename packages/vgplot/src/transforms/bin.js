@@ -1,4 +1,4 @@
-import { Ref, expr } from '@uwdata/mosaic-sql';
+import { Ref, asColumn, sql } from '@uwdata/mosaic-sql';
 
 const EXTENT = [
   'rectY-x', 'rectX-y', 'rect-x', 'rect-y'
@@ -36,14 +36,11 @@ class BinTransform extends Ref {
     const { column, options } = this;
     const { min, max } = stats[column];
     const b = bins(min, max, options);
-    const delta = `(${column} - ${b.min})`;
+    const col = asColumn(column);
+    const base = b.min === 0 ? col : sql`(${col} - ${b.min})`;
     const alpha = `${(b.max - b.min) / b.steps}::DOUBLE`;
     const off = options.offset ? '1 + ' : '';
-    const e = expr(
-      `${min} + ${alpha} * (${off}FLOOR(${delta} / ${alpha})::INTEGER)`,
-      [column]
-    );
-    return e;
+    return sql`${min} + ${alpha} * (${off}FLOOR(${base} / ${alpha})::INTEGER)`;
   }
 }
 

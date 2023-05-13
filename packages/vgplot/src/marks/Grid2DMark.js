@@ -1,4 +1,4 @@
-import { Query, count, gt, lt, lte, sum, expr, isBetween } from '@uwdata/mosaic-sql';
+import { Query, count, gt, isBetween, lt, lte, sql, sum } from '@uwdata/mosaic-sql';
 import { Transient } from '../symbols.js';
 import { binField } from './util/bin-field.js';
 import { dericheConfig, dericheConv2d } from './util/density.js';
@@ -143,14 +143,14 @@ function bin1d(x, x0, x1, n, reverse, pad) {
   const d = (n - pad) / (x1 - x0);
   const f = d !== 1 ? ` * ${d}::DOUBLE` : '';
   return reverse
-    ? expr(`(${x1} - ${x}::DOUBLE)${f}`)
-    : expr(`(${x}::DOUBLE - ${x0})${f}`);
+    ? sql`(${x1} - ${x}::DOUBLE)${f}`
+    : sql`(${x}::DOUBLE - ${x0})${f}`;
 }
 
 function bin2d(q, xp, yp, value, xn, groupby) {
   return q
     .select({
-      index: expr(`FLOOR(${xp})::INTEGER + FLOOR(${yp})::INTEGER * ${xn}`),
+      index: sql`FLOOR(${xp})::INTEGER + FLOOR(${yp})::INTEGER * ${xn}`,
       value
     })
     .groupby('index', groupby);
@@ -162,26 +162,26 @@ function binLinear2d(q, xp, yp, value, xn, groupby) {
 
   // grid[xu + yu * xn] += (xv - xp) * (yv - yp) * wi;
   const a = subq(
-    expr(`FLOOR(xp)::INTEGER + FLOOR(yp)::INTEGER * ${xn}`),
-    expr(`(FLOOR(xp)::INTEGER + 1 - xp) * (FLOOR(yp)::INTEGER + 1 - yp)${w}`)
+    sql`FLOOR(xp)::INTEGER + FLOOR(yp)::INTEGER * ${xn}`,
+    sql`(FLOOR(xp)::INTEGER + 1 - xp) * (FLOOR(yp)::INTEGER + 1 - yp)${w}`
   );
 
   // grid[xu + yv * xn] += (xv - xp) * (yp - yu) * wi;
   const b = subq(
-    expr(`FLOOR(xp)::INTEGER + (FLOOR(yp)::INTEGER + 1) * ${xn}`),
-    expr(`(FLOOR(xp)::INTEGER + 1 - xp) * (yp - FLOOR(yp)::INTEGER)${w}`)
+    sql`FLOOR(xp)::INTEGER + (FLOOR(yp)::INTEGER + 1) * ${xn}`,
+    sql`(FLOOR(xp)::INTEGER + 1 - xp) * (yp - FLOOR(yp)::INTEGER)${w}`
   );
 
   // grid[xv + yu * xn] += (xp - xu) * (yv - yp) * wi;
   const c = subq(
-    expr(`FLOOR(xp)::INTEGER + 1 + FLOOR(yp)::INTEGER * ${xn}`),
-    expr(`(xp - FLOOR(xp)::INTEGER) * (FLOOR(yp)::INTEGER + 1 - yp)${w}`)
+    sql`FLOOR(xp)::INTEGER + 1 + FLOOR(yp)::INTEGER * ${xn}`,
+    sql`(xp - FLOOR(xp)::INTEGER) * (FLOOR(yp)::INTEGER + 1 - yp)${w}`
   );
 
   // grid[xv + yv * xn] += (xp - xu) * (yp - yu) * wi;
   const d = subq(
-    expr(`FLOOR(xp)::INTEGER + 1 + (FLOOR(yp)::INTEGER + 1) * ${xn}`),
-    expr(`(xp - FLOOR(xp)::INTEGER) * (yp - FLOOR(yp)::INTEGER)${w}`)
+    sql`FLOOR(xp)::INTEGER + 1 + (FLOOR(yp)::INTEGER + 1) * ${xn}`,
+    sql`(xp - FLOOR(xp)::INTEGER) * (yp - FLOOR(yp)::INTEGER)${w}`
   );
 
   return Query

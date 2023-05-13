@@ -2,7 +2,7 @@ import * as vg from '../setup.js';
 
 export default async function(el) {
   const {
-    coordinator, Query, Selection, Param, Fixed, expr,
+    coordinator, Query, Selection, Param, Fixed, sql,
     plot, vconcat, menu, from, bin, avg, count, max, min, rectY,
     width, height, marginLeft, domainX, intervalX,
   } = vg;
@@ -38,11 +38,11 @@ export default async function(el) {
   // Load 10M flights data from the web, as needed
   const q = Query
     .select({
-      delay: expr('GREATEST(-60, LEAST(ARR_DELAY, 180))::DOUBLE'),
+      delay: sql`GREATEST(-60, LEAST(ARR_DELAY, 180))::DOUBLE`,
       distance: 'DISTANCE',
       time: 'DEP_TIME'
     })
-    .from(expr(`'https://uwdata.github.io/mosaic-datasets/data/flights-10m.parquet'`));
+    .from(sql`'https://uwdata.github.io/mosaic-datasets/data/flights-10m.parquet'`);
   await coordinator().exec(`CREATE TEMP TABLE IF NOT EXISTS faa AS ${q}`);
 
   function update() {

@@ -1,7 +1,6 @@
 import { Param, Selection, coordinator, sqlFrom } from '@uwdata/mosaic-core';
 import {
-  Query, avg, count, max, median, min, mode, quantile, sum,
-  expr, exprParams, isParamLike
+  Query, avg, count, max, median, min, mode, quantile, sum, sql
 } from '@uwdata/mosaic-sql';
 import { bin, dateMonth, dateMonthDay, dateDay } from './transforms/index.js'
 import { hconcat, vconcat, hspace, vspace } from './layout/index.js';
@@ -203,7 +202,7 @@ function parseParquetData(name, spec, ctx) {
   const { file, select = '*' } = spec;
   return ctx.createFrom(
     name,
-    expr(`read_parquet('${file}')`),
+    sql`read_parquet('${file}')`,
     select
   );
 }
@@ -222,7 +221,7 @@ function parseCSVData(name, spec, ctx) {
     .join(', ');
   return ctx.createFrom(
     name,
-    expr(`read_csv_auto('${file}', ${opt})`),
+    sql`read_csv_auto('${file}', ${opt})`,
     select
   );
 }
@@ -231,7 +230,7 @@ async function parseJSONData(name, spec, ctx) {
   // eslint-disable-next-line no-unused-vars
   const { data, file, select = '*' } = spec;
   const json = data || await fetch(file).then(r => r.json());
-  return ctx.createFrom(name, expr(sqlFrom(json)), select);
+  return ctx.createFrom(name, sql`${sqlFrom(json)}`, select);
 }
 
 function parseParam(param, ctx) {
@@ -375,21 +374,19 @@ function parseExpression(spec, ctx) {
   const { expr, label } = spec;
   const tokens = expr.split(/(\\'|\\"|"(?:\\"|[^"])*"|'(?:\\'|[^'])*'|\$\w+)/g);
   const spans = [''];
+  const exprs = [];
 
   for (let i = 0, k = 0; i < tokens.length; ++i) {
     const tok = tokens[i];
     if (tok.startsWith('$')) {
-      spans[++k] = ctx.maybeParam(tok);
-    } else if (isParamLike(spans[k])) {
-      spans[++k] = tok;
+      exprs[k] = ctx.maybeParam(tok);
+      spans[++k] = '';
     } else {
       spans[k] += tok;
     }
   }
 
-  return spans.length > 1
-    ? exprParams(spans, [], label)
-    : expr(spans[0], [], label);
+  return sql(spans, ...exprs).annotate({ label });
 }
 
 // -----

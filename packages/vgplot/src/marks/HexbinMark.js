@@ -1,4 +1,4 @@
-import { Query, expr, isNotNull } from '@uwdata/mosaic-sql';
+import { Query, isNotNull, sql } from '@uwdata/mosaic-sql';
 import { Transient } from '../symbols.js';
 import { extentX, extentY, xyext } from './util/extent.js';
 import { Mark } from './Mark.js';
@@ -39,8 +39,8 @@ export class HexbinMark extends Mark {
     // values to ensure we get correct data-driven scales
     const q = Query
       .select({
-        x: expr(`${x1}::DOUBLE + ((x + 0.5 * (y & 1)) * ${dx} + ${ox})::DOUBLE / ${xr}`),
-        y: expr(`${y2}::DOUBLE - (y * ${dy} + ${oy})::DOUBLE / ${yr}`)
+        x: sql`${x1}::DOUBLE + ((x + 0.5 * (y & 1)) * ${dx} + ${ox})::DOUBLE / ${xr}`,
+        y: sql`${y2}::DOUBLE - (y * ${dy} + ${oy})::DOUBLE / ${yr}`
       })
       .groupby('x', 'y');
 
@@ -69,13 +69,13 @@ export class HexbinMark extends Mark {
     // TODO add groupby dims
     const hex = Query
       .select({
-        py: expr(`(${yy} - ${oy}) / ${dy}`),
-        pj: expr(`ROUND(py)::INTEGER`),
-        px: expr(`(${xx} - ${ox}) / ${dx} - 0.5 * (pj & 1)`),
-        pi: expr(`ROUND(px)::INTEGER`),
-        tt: expr(`ABS(py-pj) * 3 > 1 AND (px-pi)**2 + (py-pj)**2 > (px - pi - 0.5 * CASE WHEN px < pi THEN -1 ELSE 1 END)**2 + (py - pj - CASE WHEN py < pj THEN -1 ELSE 1 END)**2`),
-        x: expr(`CASE WHEN tt THEN (pi + (CASE WHEN px < pi THEN -0.5 ELSE 0.5 END) + (CASE WHEN pj & 1 <> 0 THEN 0.5 ELSE -0.5 END))::INTEGER ELSE pi END`),
-        y: expr(`CASE WHEN tt THEN (pj + CASE WHEN py < pj THEN -1 ELSE 1 END)::INTEGER ELSE pj END`)
+        py: sql`(${yy} - ${oy}) / ${dy}`,
+        pj: sql`ROUND(py)::INTEGER`,
+        px: sql`(${xx} - ${ox}) / ${dx} - 0.5 * (pj & 1)`,
+        pi: sql`ROUND(px)::INTEGER`,
+        tt: sql`ABS(py-pj) * 3 > 1 AND (px-pi)**2 + (py-pj)**2 > (px - pi - 0.5 * CASE WHEN px < pi THEN -1 ELSE 1 END)**2 + (py - pj - CASE WHEN py < pj THEN -1 ELSE 1 END)**2`,
+        x: sql`CASE WHEN tt THEN (pi + (CASE WHEN px < pi THEN -0.5 ELSE 0.5 END) + (CASE WHEN pj & 1 <> 0 THEN 0.5 ELSE -0.5 END))::INTEGER ELSE pi END`,
+        y: sql`CASE WHEN tt THEN (pj + CASE WHEN py < pj THEN -1 ELSE 1 END)::INTEGER ELSE pj END`
       })
       .select(Array.from(aggr))
       .from(source.table)

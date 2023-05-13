@@ -1,4 +1,4 @@
-import { Query, expr, and, isBetween, asColumn, epoch_ms } from '@uwdata/mosaic-sql';
+import { Query, and, asColumn, epoch_ms, isBetween, sql } from '@uwdata/mosaic-sql';
 import { fnv_hash } from './util/hash.js';
 
 const identity = x => x;
@@ -126,14 +126,14 @@ function getActiveView(clause) {
     if (bins.some(b => b == null)) return null; // unsupported scale type
 
     if (bins.length === 1) {
-      predicate = p => p ? isBetween('active0', p.value.map(bins[0])) : [];
-      columns = { active0: bins[0](clause.predicate.expr) };
+      predicate = p => p ? isBetween('active0', p.range.map(bins[0])) : [];
+      columns = { active0: bins[0](clause.predicate.field) };
     } else {
       predicate = p => p
-        ? and(p.value.map(({ value }, i) => isBetween(`active${i}`, value.map(bins[i]))))
+        ? and(p.children.map(({ range }, i) => isBetween(`active${i}`, range.map(bins[i]))))
         : [];
       columns = Object.fromEntries(
-        clause.predicate.value.map((p, i) => [`active${i}`, bins[i](p.expr)])
+        clause.predicate.children.map((p, i) => [`active${i}`, bins[i](p.field)])
       );
     }
   } else if (type === 'point') {
@@ -148,44 +148,41 @@ function getActiveView(clause) {
 
 function binInterval(scale, pixelSize) {
   const { type, domain, range } = scale;
-  let lift, sql;
+  let lift, toSql;
 
   switch (type) {
     case 'linear':
       lift = identity;
-      sql = asColumn;
+      toSql = asColumn;
       break;
     case 'log':
       lift = Math.log;
-      sql = c => `LN(${asColumn(c)})`;
+      toSql = c => sql`LN(${asColumn(c)})`;
       break;
     case 'symlog':
       // TODO: support log constants other than 1?
       lift = x => Math.sign(x) * Math.log1p(Math.abs(x));
-      sql = c => (c = asColumn(c), `SIGN(${c}) * LN(1 + ABS(${c}))`);
+      toSql = c => (c = asColumn(c), sql`SIGN(${c}) * LN(1 + ABS(${c}))`);
       break;
     case 'sqrt':
       lift = Math.sqrt;
-      sql = c => `SQRT(${asColumn(c)})`;
+      toSql = c => sql`SQRT(${asColumn(c)})`;
       break;
     case 'utc':
     case 'time':
       lift = x => +x;
-      sql = c => c instanceof Date ? +c : epoch_ms(asColumn(c));
+      toSql = c => c instanceof Date ? +c : epoch_ms(asColumn(c));
       break;
   }
-  return lift ? binFunction(domain, range, pixelSize, lift, sql) : null;
+  return lift ? binFunction(domain, range, pixelSize, lift, toSql) : null;
 }
 
-function binFunction(domain, range, pixelSize, lift, sql) {
+function binFunction(domain, range, pixelSize, lift, toSql) {
   const lo = lift(Math.min(domain[0], domain[1]));
   const hi = lift(Math.max(domain[0], domain[1]));
   const a = (Math.abs(lift(range[1]) - lift(range[0])) / (hi - lo)) / pixelSize;
   const s = pixelSize === 1 ? '' : `${pixelSize}::INTEGER * `;
-  return value => expr(
-    `${s}FLOOR(${a}::DOUBLE * (${sql(value)} - ${lo}::DOUBLE))::INTEGER`,
-    asColumn(value).columns
-  );
+  return value => sql`${s}FLOOR(${a}::DOUBLE * (${toSql(value)} - ${lo}::DOUBLE))::INTEGER`;
 }
 
 function createIndex(mc, table, query) {
@@ -209,17 +206,17 @@ function getIndexColumns(client) {
     switch (aggregate?.toUpperCase()) {
       case 'COUNT':
       case 'SUM':
-        aggr.push({ [as]: expr(`SUM("${as}")::DOUBLE`) });
+        aggr.push({ [as]: sql`SUM("${as}")::DOUBLE` });
         break;
       case 'AVG':
         count = '_count_';
-        aggr.push({ [as]: expr(`(SUM("${as}" * ${count}) / SUM(${count}))::DOUBLE`) });
+        aggr.push({ [as]: sql`(SUM("${as}" * ${count}) / SUM(${count}))::DOUBLE` });
         break;
       case 'MAX':
-        aggr.push({ [as]: expr(`MAX("${as}")`) });
+        aggr.push({ [as]: sql`MAX("${as}")` });
         break;
       case 'MIN':
-        aggr.push({ [as]: expr(`MIN("${as}")`) });
+        aggr.push({ [as]: sql`MIN("${as}")` });
         break;
       default:
         if (g.has(as)) dims.push(as);
@@ -230,7 +227,7 @@ function getIndexColumns(client) {
   return {
     aggr,
     dims,
-    count: count ? { [count]: expr('COUNT(*)') } : {},
+    count: count ? { [count]: sql`COUNT(*)` } : {},
     from
   };
 }
