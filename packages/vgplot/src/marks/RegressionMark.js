@@ -1,6 +1,6 @@
 import { range } from 'd3';
 import {
-  Query, max, min, cast, isNotNull,
+  Query, max, min, castDouble, isNotNull,
   regrIntercept, regrSlope, regrCount,
   regrR2, regrSYY, regrSXX, regrAvgX
 } from '@uwdata/mosaic-sql';
@@ -13,7 +13,7 @@ export class RegressionMark extends Mark {
     const { ci = 0.95, precision = 4, ...channels } = options;
     super('line', source, channels);
     const update = () => {
-      return this.data ? this.confidenceBand().update() : null
+      return this.modelFit ? this.confidenceBand().update() : null
     };
     handleParam(this, 'ci', ci, update);
     handleParam(this, 'precision', precision, update);
@@ -35,33 +35,33 @@ export class RegressionMark extends Mark {
         ssy: regrSYY(y, x),
         ssx: regrSXX(y, x),
         xm: regrAvgX(y, x),
-        x0: cast(min(x).where(isNotNull(y)), 'DOUBLE'),
-        x1: cast(max(x).where(isNotNull(y)), 'DOUBLE')
+        x0: castDouble(min(x).where(isNotNull(y))),
+        x1: castDouble(max(x).where(isNotNull(y)))
       })
       .select(groupby)
       .groupby(groupby);
   }
 
   queryResult(data) {
-    data = Array.from(data);
+    this.modelFit = Array.from(data);
 
     // regression line
-    this.data = data.flatMap(m => linePoints(m));
+    this.lineData = this.modelFit.flatMap(m => linePoints(m));
 
     // prepare confidence band
     return this.confidenceBand();
   }
 
-  confidenceBand() {
+  confidenceBand(models) {
     // regression ci area
-    const { ci, data, precision, plot } = this;
+    const { ci, modelFit, precision, plot } = this;
     const w = plot.innerWidth();
-    this.areaData = ci ? data.flatMap(m => areaPoints(ci, precision, m, w)) : null;
+    this.areaData = ci ? modelFit.flatMap(m => areaPoints(ci, precision, m, w)) : null;
     return this;
   }
 
   plotSpecs() {
-    const { data, areaData, channels, ci } = this;
+    const { lineData, areaData, channels, ci } = this;
     const lopt = { x: 'x', y: 'y' };
     const aopt = { x: 'x', y1: 'y1', y2: 'y2', fillOpacity: 0.1 };
 
@@ -90,7 +90,7 @@ export class RegressionMark extends Mark {
 
     return [
       ...(ci ? [{ type: 'areaY', data: areaData, options: aopt }] : []),
-      { type: 'line', data, options: lopt }
+      { type: 'line', data: lineData, options: lopt }
     ];
   }
 }
