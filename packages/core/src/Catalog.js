@@ -54,6 +54,15 @@ export class Catalog {
       { persist: true }
     );
     const info = { ...colInfo, ...(Array.from(result)[0]) };
+
+    // coerce bigint to number
+    for (const key in info) {
+      const value = info[key];
+      if (typeof value === 'bigint') {
+        info[key] = Number(value);
+      }
+    }
+
     return info;
   }
 
