@@ -52,7 +52,7 @@ export class RegressionMark extends Mark {
     return this.confidenceBand();
   }
 
-  confidenceBand(models) {
+  confidenceBand() {
     // regression ci area
     const { ci, modelFit, precision, plot } = this;
     const w = plot.innerWidth();

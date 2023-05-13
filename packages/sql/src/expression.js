@@ -1,4 +1,3 @@
-import { Ref } from './ref.js';
 import { literalToSQL } from './to-sql.js';
 
 /**

@@ -1,6 +1,6 @@
 import assert from 'node:assert';
 import { stubParam } from './stub-param.js';
-import { column, desc, isSQLExpression, isParamLike, sql } from '../src/index.js';
+import { column, isSQLExpression, isParamLike, sql } from '../src/index.js';
 
 describe('sql template tag', () => {
   it('creates basic SQL expressions', () => {

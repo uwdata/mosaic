@@ -43,7 +43,7 @@ function rangeOp(op, a, range, exclusive) {
     : exclusive ? sql`${prefix}(${range[0]} <= ${a} AND ${a} < ${range[1]})`
     : sql`(${a} ${op} ${range[0]} AND ${range[1]})`;
   return expr.annotate({ op, visit, field: a, range });
-};
+}
 
 export const isBetween = (a, range, exclusive) => rangeOp('BETWEEN', a, range, exclusive);
 export const isNotBetween = (a, range, exclusive) => rangeOp('NOT BETWEEN', a, range, exclusive);
