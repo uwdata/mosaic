@@ -1,0 +1,27 @@
+plot:
+- mark: gridMarkY
+  strokeDasharray: [0.75, 2] # dashed
+  strokeOpacity: 1 # opaque
+- mark: axisMarkY
+  anchor: left
+  tickSize: 0  # don't draw ticks
+  dx: 38  # offset right
+  dy: -4  # offset up
+  lineAnchor: bottom  # draw labels above grid lines
+- mark: axisMarkY
+  anchor: right
+  tickSize: 0
+  tickPadding: 5
+  label: y-axis
+  labelAnchor: center
+- mark: axisMarkX
+  label: x-axis
+  labelAnchor: center
+- mark: gridMarkX
+- mark: ruleY
+  data: [0]
+domainX: [0, 100]
+domainY: [0, 100]
+insetLeftX: 36
+marginLeft: 0
+marginRight: 35

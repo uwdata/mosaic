@@ -1,0 +1,32 @@
+vconcat:
+- hconcat:
+  - name: stroked
+    plot:
+    - mark: dot
+      data: { from: penguins }
+      x: body_mass
+      y: flipper_length
+      stroke: species
+      symbol: species
+    grid: true
+    labelX: Body mass (g) →
+    labelY: ↑ Flipper length (mm)
+  - legend: symbol
+    for: stroked
+    columns: 1
+- vspace: 20
+- hconcat:
+  - name: filled
+    plot:
+    - mark: dot
+      data: { from: penguins }
+      x: body_mass
+      y: flipper_length
+      fill: species
+      symbol: species
+    grid: true
+    labelX: Body mass (g) →
+    labelY: ↑ Flipper length (mm)
+  - legend: symbol
+    for: filled
+    columns: 1

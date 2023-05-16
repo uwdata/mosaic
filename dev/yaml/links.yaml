@@ -1,0 +1,41 @@
+data:
+  metros: { file: data/metros.csv }
+params:
+  bend: true
+vconcat:
+- hconcat:
+  - legend: color
+    for: arrows
+    label: Change in inequality from 1980 to 2015
+  - hspace: 15
+  - input: menu
+    label: Bend Arrows?
+    options: [true, false]
+    as: $bend
+- name: arrows
+  plot:
+  - mark: arrow
+    data: { from: metros }
+    x1: POP_1980
+    y1: R90_10_1980
+    x2: POP_2015
+    y2: R90_10_2015
+    bend: $bend
+    stroke: { expr: R90_10_2015 - R90_10_1980 }
+  - mark: text
+    data: { from: metros }
+    x: POP_2015
+    y: R90_10_2015
+    filter: highlight
+    text: nyt_display
+    fill: currentColor
+    stroke: white
+    dy: -6
+  grid: true
+  inset: 10
+  scaleX: log
+  labelX: Population →
+  labelY: ↑ Inequality
+  ticksY: 4
+  schemeColor: BuRd
+  tickFormatColor: +f
