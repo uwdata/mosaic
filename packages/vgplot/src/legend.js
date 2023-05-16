@@ -14,7 +14,7 @@ export class Legend {
 
   setPlot(plot) {
     const { channel, selection } = this;
-    const mark = this.mark = findMark(plot, channel);
+    const mark = findMark(plot, channel);
     if (this.selection && mark) {
       this.handler = new Toggle(mark, { selection, channels: [channel] });
       this.selection.addEventListener('value', () => this.update());
@@ -41,7 +41,7 @@ export class Legend {
   update() {
     if (!this.legend) return;
     const { value } = this.selection;
-    const curr = value ? new Set(value.map(v => v[0])) : null;
+    const curr = value && value.length ? new Set(value.map(v => v[0])) : null;
     const nodes = this.legend.querySelectorAll(':scope > div');
     for (const node of nodes) {
       const selected = curr ? curr.has(node.__data__) : true;
