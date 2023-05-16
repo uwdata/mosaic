@@ -1,36 +1,12 @@
 import { MosaicClient } from '@uwdata/mosaic-core';
-import { Query, column } from '@uwdata/mosaic-sql';
+import { Query, column, isParamLike } from '@uwdata/mosaic-sql';
 import { isColor } from './util/is-color.js';
+import { isConstantOption } from './util/is-constant-option.js';
+import { isSymbol } from './util/is-symbol.js';
+import { Transform } from '../symbols.js';
 
-const constantOptions = new Set([
-  'order',
-  'curve',
-  'tension',
-  'marker',
-  'textAnchor',
-  'lineAnchor',
-  'lineHeight',
-  'monospace',
-  'fontFamily',
-  'fontStyle',
-  'fontVariant',
-  'fontWeight',
-  'frameAnchor',
-  'strokeLinejoin',
-  'strokeLinecap',
-  'strokeMiterlimit',
-  'strokeDasharray',
-  'strokeDashoffset',
-  'mixBlendMode',
-  'shapeRendering',
-  'imageRendering',
-  'paintOrder',
-  'pointerEvents'
-]);
-
-const isParamLike = obj => typeof obj?.addEventListener === 'function';
 const isColorChannel = channel => channel === 'stroke' || channel === 'fill';
-const isConstantOption = channel => constantOptions.has(channel);
+const isSymbolChannel = channel => channel === 'symbol';
 
 export class Mark extends MosaicClient {
   constructor(type, source, encodings, reqs = {}) {
@@ -48,20 +24,24 @@ export class Mark extends MosaicClient {
 
     const process = (channel, entry) => {
       const type = typeof entry;
-      if (type === 'function') {
+      if (type === 'function' && entry[Transform]) {
         const enc = entry(channel, this.type);
         for (const key in enc) {
           process(key, enc[key]);
         }
       } else if (type === 'string') {
-        if (isConstantOption(channel) || isColorChannel(channel) && isColor(entry)) {
-          // interpret color names and other constants as values, not fields
+        if (
+          isConstantOption(channel) ||
+          isColorChannel(channel) && isColor(entry) ||
+          isSymbolChannel(channel) && isSymbol(entry)
+        ) {
+          // interpret constants and color/symbol names as values, not fields
           channels.push({ channel, value: entry });
         } else {
           channels.push({ channel, field: column(entry) });
         }
       } else if (isParamLike(entry)) {
-        if (entry.columns) {
+        if (Array.isArray(entry.columns)) {
           channels.push({ channel, field: entry });
           params.add(entry);
         } else {
@@ -72,9 +52,9 @@ export class Mark extends MosaicClient {
             return this.update();
           });
         }
-      } else if (type === 'object') {
+      } else if (type === 'object' && !Array.isArray(entry) && entry != null) {
         channels.push({ channel, field: entry });
-      } else {
+      } else if (entry !== undefined) {
         channels.push({ channel, value: entry });
       }
     };

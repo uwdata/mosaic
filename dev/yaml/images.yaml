@@ -1,0 +1,29 @@
+data:
+  presidents: { file: data/us-president-favorability.csv }
+params:
+  sign: 1
+vconcat:
+- plot:
+  - mark: ruleY
+    data: [0]
+  - mark: image
+    data: { from: presidents }
+    x: "First Inauguration Date"
+    y:
+      expr: '"Very Favorable %" + "Somewhat Favorable %" + $sign * ("Very Unfavorable %" + "Somewhat Unfavorable %")'
+    src: "Portrait URL"
+    r: 20
+    preserveAspectRatio: "xMidYMin slice"
+    title: "Name"
+  insetX: 20
+  labelX: First inauguration date →
+  insetTopY: 4
+  gridY: true
+  labelY: ↑ Opinion (%)
+  tickFormatY: +f
+- input: menu
+  label: Opinion Metric
+  options:
+    - { label: "Any Opinion", value: 1 }
+    - { label: "Net Favorability", value: -1 }
+  as: $sign
