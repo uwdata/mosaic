@@ -31,6 +31,10 @@ export function attributes(values) {
   };
 }
 
+export function style(value) {
+  return attribute('style', value);
+}
+
 export function width(value) {
   return attribute('width', value);
 }
@@ -68,6 +72,14 @@ export function marginRight(value) {
   return attribute('marginRight', value);
 }
 
+export function inset(value) {
+  return attribute('inset', value);
+}
+
+export function aspectRatio(value) {
+  return attribute('aspectRatio', value);
+}
+
 export function axisX(value) {
   return attribute('axisX', value);
 }
@@ -90,6 +102,30 @@ export function insetX(value) {
 
 export function insetY(value) {
   return attribute('insetY', value);
+}
+
+export function insetLeftX(value) {
+  return attribute('insetLeftX', value);
+}
+
+export function insetRightX(value) {
+  return attribute('insetRightX', value);
+}
+
+export function insetTopY(value) {
+  return attribute('insetTopY', value);
+}
+
+export function insetBottomY(value) {
+  return attribute('insetBottomY', value);
+}
+
+export function roundX(value) {
+  return attribute('roundX', value);
+}
+
+export function roundY(value) {
+  return attribute('roundY', value);
 }
 
 export function grid(value) {
@@ -244,6 +280,34 @@ export function interpolateColor(value) {
   return attribute('interpolateColor', value);
 }
 
+export function zeroColor(value) {
+  return attribute('zeroColor', value);
+}
+
+export function labelColor(value) {
+  return attribute('labelColor', value);
+}
+
+export function scaleOpacity(value) {
+  return attribute('scaleOpacity', value);
+}
+
+export function domainOpacity(value) {
+  return attribute('domainOpacity', value);
+}
+
+export function rangeOpacity(value) {
+  return attribute('rangeOpacity', value);
+}
+
+export function zeroOpacity(value) {
+  return attribute('zeroOpacity', value);
+}
+
+export function labelOpacity(value) {
+  return attribute('labelOpacity', value);
+}
+
 export function scaleR(value) {
   return attribute('scaleR', value);
 }
@@ -254,6 +318,26 @@ export function domainR(value) {
 
 export function rangeR(value) {
   return attribute('rangeR', value);
+}
+
+export function zeroR(value) {
+  return attribute('zeroR', value);
+}
+
+export function scaleLength(value) {
+  return attribute('scaleLength', value);
+}
+
+export function domainLength(value) {
+  return attribute('domainLength', value);
+}
+
+export function rangeLength(value) {
+  return attribute('rangeLength', value);
+}
+
+export function zeroLength(value) {
+  return attribute('zeroLength', value);
 }
 
 export function labelFX(value) {
@@ -294,4 +378,48 @@ export function gridFacet(value) {
 
 export function labelFacet(value) {
   return attribute('labelFacet', value);
+}
+
+export function projectionType(value) {
+  return attribute('projectionType', value);
+}
+
+export function projectionParallels(value) {
+  return attribute('projectionParallels', value);
+}
+
+export function projectionPrecision(value) {
+  return attribute('projectionPrecision', value);
+}
+
+export function projectionRotate(value) {
+  return attribute('projectionRotate', value);
+}
+
+export function projectionDomain(value) {
+  return attribute('projectionDomain', value);
+}
+
+export function projectionInset(value) {
+  return attribute('projectionInset', value);
+}
+
+export function projectionInsetLeft(value) {
+  return attribute('projectionInsetLeft', value);
+}
+
+export function projectionInsetRight(value) {
+  return attribute('projectionInsetRight', value);
+}
+
+export function projectionInsetTop(value) {
+  return attribute('projectionInsetTop', value);
+}
+
+export function projectionInsetBottom(value) {
+  return attribute('projectionInsetBottom', value);
+}
+
+export function projectionClip(value) {
+  return attribute('projectionClip', value);
 }

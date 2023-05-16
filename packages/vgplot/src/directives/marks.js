@@ -9,7 +9,13 @@ import { RasterMark } from '../marks/RasterMark.js';
 import { RasterTileMark } from '../marks/RasterTileMark.js';
 import { RegressionMark } from '../marks/RegressionMark.js';
 
-const decorators = new Set(['frame', 'hexgrid', 'graticule', 'sphere']);
+const decorators = new Set([
+  'frame',
+  'axisX', 'axisY', 'axisFx', 'axisFy',
+  'gridX', 'gridY', 'gridFx', 'gridFy',
+  'hexgrid',
+  'graticule', 'sphere'
+]);
 
 function mark(type, data, channels) {
   if (arguments.length === 2) {
@@ -71,7 +77,10 @@ export const ruleY = (...args) => mark('ruleY', ...args);
 export const tickX = (...args) => mark('tickX', ...args);
 export const tickY = (...args) => mark('tickY', ...args);
 
-export const frame = (...args) => mark('frame', ...args);
+export const vector = (...args) => mark('vector', ...args);
+export const spike = (...args) => mark('spike', ...args);
+
+export const image = (...args) => mark('image', ...args);
 
 export const densityX = (...args) => explicitType(Density1DMark, 'areaX', ...args);
 export const densityY = (...args) => explicitType(Density1DMark, 'areaY', ...args);
@@ -86,3 +95,28 @@ export const hexbin = (...args) => implicitType(HexbinMark, ...args);
 export const hexgrid = (...args) => mark('hexgrid', ...args);
 
 export const regressionY = (...args) => implicitType(RegressionMark, ...args);
+
+export const voronoi = (...args) => mark('voronoi', ...args);
+export const voronoiMesh = (...args) => mark('voronoiMesh', ...args);
+export const delaunayLink = (...args) => mark('delaunayLink', ...args);
+export const delaunayMesh = (...args) => mark('delaunayMesh', ...args);
+export const hull = (...args) => mark('hull', ...args);
+
+export const arrow = (...args) => mark('arrow', ...args);
+export const link = (...args) => mark('link', ...args);
+
+export const frame = (...args) => mark('frame', ...args);
+
+export const axisMarkX = (...args) => mark('axisX', ...args);
+export const axisMarkY = (...args) => mark('axisY', ...args);
+export const axisMarkFX = (...args) => mark('axisFx', ...args);
+export const axisMarkFY = (...args) => mark('axisFy', ...args);
+
+export const gridMarkX = (...args) => mark('gridX', ...args);
+export const gridMarkY = (...args) => mark('gridY', ...args);
+export const gridMarkFX = (...args) => mark('gridFx', ...args);
+export const gridMarkFY = (...args) => mark('gridFy', ...args);
+
+export const geo = (...args) => mark('geo', ...args);
+export const sphere = (...args) => mark('sphere', ...args);
+export const graticule = (...args) => mark('graticule', ...args);

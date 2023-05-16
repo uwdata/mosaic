@@ -2,6 +2,7 @@ import { Param, Selection, coordinator, sqlFrom } from '@uwdata/mosaic-core';
 import {
   Query, avg, count, max, median, min, mode, quantile, sum, sql
 } from '@uwdata/mosaic-sql';
+import { feature, mesh } from 'topojson-client';
 import { bin, dateMonth, dateMonthDay, dateDay } from './transforms/index.js'
 import { hconcat, vconcat, hspace, vspace } from './layout/index.js';
 import { parse as isoparse } from 'isoformat';
@@ -20,7 +21,9 @@ export const DefaultParamParsers = new Map([
   ['crossfilter', () => Selection.crossfilter()],
   ['union', () => Selection.union()],
   ['single', () => Selection.single()],
-  ['value', p => Param.value(isoparse(p.date, p.value))]
+  ['value', ({ date, value }, ctx) => Array.isArray(value)
+    ? Param.array(value.map(v => ctx.maybeParam(v)))
+    : Param.value(isoparse(date, value))]
 ]);
 
 export const DefaultSpecParsers = new Map([
@@ -38,7 +41,9 @@ export const DefaultFormats = new Map([
   ['table', parseTableData],
   ['parquet', parseParquetData],
   ['csv', parseCSVData],
-  ['json', parseJSONData]
+  ['json', parseJSONData],
+  ['geojson', parseGeoJSONData],
+  ['topojson', parseTopoJSONData]
 ]);
 
 export const DefaultTransforms = new Map([
@@ -77,7 +82,8 @@ export class JSONParseContext {
     interactors = DefaultInteractors,
     legends = DefaultLegends,
     inputs = DefaultInputs,
-    params = []
+    params = [],
+    datasets = []
   } = {}) {
     this.specParsers = specParsers;
     this.paramParsers = paramParsers;
@@ -88,6 +94,7 @@ export class JSONParseContext {
     this.legends = legends;
     this.inputs = inputs;
     this.params = new Map(params);
+    this.datasets = new Map(datasets);
     this.postQueue = [];
   }
 
@@ -138,7 +145,9 @@ export class JSONParseContext {
     await Promise.allSettled(
       Object.keys(data).map(async name => {
         const q = await parseData(name, data[name], this);
-        return q ? coordinator().exec(q) : null;
+        return !q ? null
+          : q.data ? this.datasets.set(name, q.data)
+          : coordinator().exec(q);
       })
     );
 
@@ -226,11 +235,37 @@ function parseCSVData(name, spec, ctx) {
   );
 }
 
+async function retrieveJSONData(spec) {
+  const { data, file } = spec;
+  return data || await fetch(file).then(r => r.json());
+}
+
 async function parseJSONData(name, spec, ctx) {
-  // eslint-disable-next-line no-unused-vars
-  const { data, file, select = '*' } = spec;
-  const json = data || await fetch(file).then(r => r.json());
+  const { select = '*' } = spec;
+  const json = await retrieveJSONData(spec);
   return ctx.createFrom(name, sql`${sqlFrom(json)}`, select);
+}
+
+async function parseGeoJSONData(name, spec) {
+  return { data: await retrieveJSONData(spec) };
+}
+
+async function parseTopoJSONData(name, spec) {
+  const json = await retrieveJSONData(spec);
+  let data;
+
+  if (spec.feature) {
+    data = feature(json, json.objects[spec.feature]);
+  } else {
+    const object = spec.mesh ? json.objects(spec.mesh) : undefined;
+    const filter = ({
+      interior: (a, b) => a !== b,
+      exterior: (a, b) => a === b
+    })[spec.filter];
+    data = mesh(json, object, filter);
+  }
+
+  return { data: data && data.features || [data] };
 }
 
 function parseParam(param, ctx) {
@@ -240,7 +275,7 @@ function parseParam(param, ctx) {
   if (!parser) {
     error(`Unrecognized param type: ${select}`, param);
   }
-  return parser(param);
+  return parser(param, ctx);
 }
 
 function parseSpec(spec, ctx) {
@@ -348,10 +383,16 @@ function parseMarkData(spec, ctx) {
   if (!spec) return null; // no data, likely a decoration mark
   if (isArray(spec)) return spec; // data provided directly
   const { from: table, ...options } = spec;
-  for (const key in options) {
-    options[key] = ctx.maybeSelection(options[key]);
+  if (ctx.datasets.has(table)) {
+    // client-managed data, simply pass through
+    return ctx.datasets.get(table);
+  } else {
+    // source-managed data, create from descriptor
+    for (const key in options) {
+      options[key] = ctx.maybeSelection(options[key]);
+    }
+    return from(table, options);
   }
-  return from(table, options);
 }
 
 function parseMarkOption(spec, ctx) {

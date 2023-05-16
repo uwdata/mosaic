@@ -2,6 +2,7 @@ import * as Plot from '@observablehq/plot';
 import { Fixed } from './symbols.js';
 
 const ATTRIBUTE_MAP = new Map([
+  ['style', 'style'],
   ['width', 'width'],
   ['height', 'height'],
   ['margin', 'margin'],
@@ -9,6 +10,8 @@ const ATTRIBUTE_MAP = new Map([
   ['marginBottom', 'marginBottom'],
   ['marginLeft', 'marginLeft'],
   ['marginRight', 'marginRight'],
+  ['inset', 'inset'],
+  ['aspectRatio', 'aspectRatio'],
   ['scaleX', 'x.type'],
   ['scaleY', 'y.type'],
   ['domainX', 'x.domain'],
@@ -21,6 +24,12 @@ const ATTRIBUTE_MAP = new Map([
   ['axisLineY', 'y.line'],
   ['insetX', 'x.inset'],
   ['insetY', 'y.inset'],
+  ['insetLeftX', 'x.insetLeft'],
+  ['insetRightX', 'x.insetRight'],
+  ['insetTopY', 'y.insetTop'],
+  ['insetBottomY', 'y.insetBottom'],
+  ['roundX', 'x.round'],
+  ['roundY', 'y.round'],
   ['grid', 'grid'],
   ['gridX', 'x.grid'],
   ['gridY', 'y.grid'],
@@ -53,9 +62,20 @@ const ATTRIBUTE_MAP = new Map([
   ['schemeColor', 'color.scheme'],
   ['interpolateColor', 'color.interpolate'],
   ['zeroColor', 'color.zero'],
+  ['labelColor', 'color.label'],
+  ['scaleOpacity', 'opacity.type'],
+  ['domainOpacity', 'opacity.domain'],
+  ['rangeOpacity', 'opacity.range'],
+  ['zeroOpacity', 'opacity.zero'],
+  ['labelOpacity', 'opacity.label'],
   ['scaleR', 'r.scale'],
   ['domainR', 'r.domain'],
   ['rangeR', 'r.range'],
+  ['zeroR', 'r.zero'],
+  ['scaleLength', 'length.type'],
+  ['domainLength', 'length.domain'],
+  ['rangeLength', 'length.range'],
+  ['zeroLength', 'length.zero'],
   ['labelFX', 'fx.label'],
   ['labelFY', 'fy.label'],
   ['reverseFX', 'fx.reverse'],
@@ -66,7 +86,25 @@ const ATTRIBUTE_MAP = new Map([
   ['marginLeftFacet', 'facet.marginLeft'],
   ['gridFacet', 'facet.grid'],
   ['labelFacet', 'facet.label'],
+  ['projectionType', 'projection.type'],
+  ['projectionParallels', 'projection.parallels'],
+  ['projectionPrecision', 'projection.precision'],
+  ['projectionRotate', 'projection.rotate'],
+  ['projectionDomain', 'projection.domain'],
+  ['projectionInset', 'projection.inset'],
+  ['projectionInsetLeft', 'projection.insetLeft'],
+  ['projectionInsetRight', 'projection.insetRight'],
+  ['projectionInsetTop', 'projection.insetTop'],
+  ['projectionInsetBottom', 'projection.insetBottom'],
+  ['projectionClip', 'projection.clip']
 ]);
+
+const OPTIONS_ONLY_MARKS = new Set([
+  'frame',
+  'hexgrid',
+  'sphere',
+  'graticule'
+])
 
 function setProperty(object, path, value) {
   for (let i = 0; i < path.length; ++i) {
@@ -81,38 +119,6 @@ function setProperty(object, path, value) {
 
 // construct Plot output
 // see https://github.com/observablehq/plot
-// TOP-LEVEL
-//  width, height, margin(top/right/bottom/left)
-//  caption, style, className, document
-// SCALES
-//  KEYS: x, y, r, color, opacity, length (vectors), symbol (dots)
-//  FIELDS: type, domain, range, unknown, reverse, interval, transform
-//  QUANT: clamp, nice, zero, percent
-//  XY: inset, round, inset(top/bottom/left/right)
-//  ORDINAL: padding, align, padding(inner/outer)
-//  AXIS: ...
-//  COLOR: ..., scheme, interpolate
-//  SORT: (manual or use a mark.sort option)
-//  FACET: data, x, y, margin(...), grid, label
-//   MARK: auto, include, exclude, null
-// MARKS
-//  TYPES
-//    areaX/Y: x1, y1, x2, y2, z
-//    barX/Y: x, y, x1, y1, x2, y2
-//    rectX/Y: x, y, x1, y1, x2, y2
-//    dot, circle, hexagon: x, y, r, rotate, symbol, frameAnchor
-//    lineX/Y: x, y, z
-//    ruleX/Y
-//  STYLES: fill, fillOpacity, stroke, strokeWidth
-//    strokeOpacity, strokeLinejoin, strokeLinecap, strokeMiterlimit
-//    strokeDasharray, strokeDashoffset
-//    opacity, mixBlendMode, shapeRendering, paintOrder
-//    dx, dy
-//    target, ariaDescription, ariaHidden, pointerEvents, clip
-//  CHANNELS: fill, fillOpacity, stroke, strokeOpacity, strokeWidth
-//    opacity, title, href, ariaLabel
-//  RECTS: inset(...), rx, ry (rounded corners)
-//    frameAnchor
 export async function plotRenderer(plot) {
   const spec = { marks: [] };
   const symbols = [];
@@ -137,7 +143,7 @@ export async function plotRenderer(plot) {
   const indices = [];
   for (const mark of marks) {
     for (const { type, data, options } of mark.plotSpecs()) {
-      if (type === 'frame' || type === 'hexgrid') {
+      if (OPTIONS_ONLY_MARKS.has(type)) {
         spec.marks.push(Plot[type](options));
       } else {
         spec.marks.push(Plot[type](data, options));

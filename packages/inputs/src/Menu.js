@@ -36,13 +36,12 @@ export class Menu extends MosaicClient {
       this.update();
     }
     value = value ?? this.selection?.value ?? this.data?.[0]?.value;
-    this.select.value = value;
     if (this.selection?.value === undefined) this.publish(value);
     this.element.appendChild(this.select);
 
     if (this.selection) {
       this.select.addEventListener('input', () => {
-        this.publish(this.selectedValue() || null);
+        this.publish(this.selectedValue() ?? null);
       });
       if (!isSelection(this.selection)) {
         this.selection.addEventListener('value', value => {
@@ -59,8 +58,12 @@ export class Menu extends MosaicClient {
       const index = this.select.selectedIndex;
       return this.data[index].value;
     } else {
-      // TODO make more robust
-      this.select.value = String(value);
+      const index = this.data?.findIndex(opt => opt.value === value);
+      if (index >= 0) {
+        this.select.selectedIndex = index;
+      } else {
+        this.select.value = String(value);
+      }
     }
   }
 
@@ -108,7 +111,7 @@ export class Menu extends MosaicClient {
       this.select.appendChild(opt);
     }
     if (this.selection) {
-      this.select.value = this.selection?.value || '';
+      this.selectedValue(this.selection?.value ?? '');
     }
     return this;
   }

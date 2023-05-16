@@ -1,4 +1,5 @@
 import { Ref, asColumn, sql } from '@uwdata/mosaic-sql';
+import { Transform } from '../symbols.js';
 
 const EXTENT = [
   'rectY-x', 'rectX-y', 'rect-x', 'rect-y'
@@ -9,7 +10,7 @@ function hasExtent(channel, type) {
 }
 
 export function bin(field, options = { steps: 25 }) {
-  return (channel, type) => {
+  const fn = (channel, type) => {
     return hasExtent(channel, type)
       ? {
           [`${channel}1`]: binTransform(field, options),
@@ -19,6 +20,8 @@ export function bin(field, options = { steps: 25 }) {
           [channel]: binTransform(field, options)
         };
   };
+  fn[Transform] = true;
+  return fn;
 }
 
 function binTransform(column, options) {

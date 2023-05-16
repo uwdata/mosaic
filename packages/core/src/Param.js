@@ -35,6 +35,23 @@ export class Param extends AsyncDispatch {
   }
 
   /**
+   * Create a new Param instance over an array of initial values,
+   * which may contain nested Params.
+   * @param {*} values The initial values of the Param.
+   * @returns {Param} The new Param instance.
+   */
+  static array(values) {
+    if (values.some(v => isParam(v))) {
+      const p = new Param();
+      const update = () => p.update(values.map(v => isParam(v) ? v.value : v));
+      update();
+      values.forEach(v => isParam(v) ? v.addEventListener('value', update) : 0);
+      return p;
+    }
+    return new Param(values);
+  }
+
+  /**
    * The current value of the Param.
    */
   get value() {

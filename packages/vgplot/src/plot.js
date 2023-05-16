@@ -3,9 +3,9 @@ import { plotRenderer } from './plot-renderer.js';
 
 const DEFAULT_ATTRIBUTES = {
   width: 640,
-  marginLeft: 50,
+  marginLeft: 40,
   marginRight: 20,
-  marginTop: 30,
+  marginTop: 20,
   marginBottom: 30
 };
 
