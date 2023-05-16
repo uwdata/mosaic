@@ -17,7 +17,9 @@ export class Legend {
     const mark = this.mark = findMark(plot, channel);
     if (this.selection && mark) {
       this.handler = new Toggle(mark, { selection, channels: [channel] });
-      this.selection.addEventListener('value', () => this.update());
+      // No need to listen as the legend is re-initialized upon plot render
+      // But we may need this later if/when we support incremental plot updates
+      // this.selection.addEventListener('value', () => this.update());
     }
   }
 
@@ -41,7 +43,7 @@ export class Legend {
   update() {
     if (!this.legend) return;
     const { value } = this.selection;
-    const curr = value ? new Set(value.map(v => v[0])) : null;
+    const curr = value && value.length ? new Set(value.map(v => v[0])) : null;
     const nodes = this.legend.querySelectorAll(':scope > div');
     for (const node of nodes) {
       const selected = curr ? curr.has(node.__data__) : true;
