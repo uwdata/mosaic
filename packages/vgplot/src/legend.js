@@ -14,12 +14,10 @@ export class Legend {
 
   setPlot(plot) {
     const { channel, selection } = this;
-    const mark = this.mark = findMark(plot, channel);
+    const mark = findMark(plot, channel);
     if (this.selection && mark) {
       this.handler = new Toggle(mark, { selection, channels: [channel] });
-      // No need to listen as the legend is re-initialized upon plot render
-      // But we may need this later if/when we support incremental plot updates
-      // this.selection.addEventListener('value', () => this.update());
+      this.selection.addEventListener('value', () => this.update());
     }
   }
 
