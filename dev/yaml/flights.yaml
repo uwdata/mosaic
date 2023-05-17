@@ -10,7 +10,7 @@ vconcat:
     inset: 0.5
   - select: intervalX
     as: $brush
-  domainX: Fixed
+  xDomain: Fixed
   width: 600
   height: 200
 - plot:
@@ -22,7 +22,7 @@ vconcat:
     inset: 0.5
   - select: intervalX
     as: $brush
-  domainX: Fixed
+  xDomain: Fixed
   width: 600
   height: 200
 - plot:
@@ -34,6 +34,6 @@ vconcat:
     inset: 0.5
   - select: intervalX
     as: $brush
-  domainX: Fixed
+  xDomain: Fixed
   width: 600
   height: 200

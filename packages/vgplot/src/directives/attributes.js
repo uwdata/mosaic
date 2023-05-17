@@ -31,22 +31,6 @@ export function attributes(values) {
   };
 }
 
-export function style(value) {
-  return attribute('style', value);
-}
-
-export function width(value) {
-  return attribute('width', value);
-}
-
-export function height(value) {
-  return attribute('height', value);
-}
-
-export function margin(value) {
-  return attribute('margin', value);
-}
-
 export function margins(object) {
   const { top, bottom, left, right } = object;
   const attr = {};
@@ -57,369 +41,212 @@ export function margins(object) {
   return attributes(attr);
 }
 
-export function marginTop(value) {
-  return attribute('marginTop', value);
-}
-
-export function marginBottom(value) {
-  return attribute('marginBottom', value);
-}
-export function marginLeft(value) {
-  return attribute('marginLeft', value);
-}
-
-export function marginRight(value) {
-  return attribute('marginRight', value);
-}
-
-export function inset(value) {
-  return attribute('inset', value);
-}
-
-export function aspectRatio(value) {
-  return attribute('aspectRatio', value);
-}
-
-export function axisX(value) {
-  return attribute('axisX', value);
-}
-
-export function axisY(value) {
-  return attribute('axisY', value);
-}
-
-export function axisLineX(value) {
-  return attribute('axisLineX', value);
-}
-
-export function axisLineY(value) {
-  return attribute('axisLineY', value);
-}
-
-export function insetX(value) {
-  return attribute('insetX', value);
-}
-
-export function insetY(value) {
-  return attribute('insetY', value);
-}
-
-export function insetLeftX(value) {
-  return attribute('insetLeftX', value);
-}
-
-export function insetRightX(value) {
-  return attribute('insetRightX', value);
-}
-
-export function insetTopY(value) {
-  return attribute('insetTopY', value);
-}
-
-export function insetBottomY(value) {
-  return attribute('insetBottomY', value);
-}
-
-export function roundX(value) {
-  return attribute('roundX', value);
-}
-
-export function roundY(value) {
-  return attribute('roundY', value);
-}
-
-export function grid(value) {
-  return attribute('grid', value);
-}
-
-export function gridX(value) {
-  return attribute('gridX', value);
-}
-
-export function gridY(value) {
-  return attribute('gridY', value);
-}
-
-export function scaleX(value) {
-  return attribute('scaleX', value);
-}
-
-export function scaleY(value) {
-  return attribute('scaleY', value);
-}
-
-export function domainX(value) {
-  return attribute('domainX', value);
-}
-
-export function domainY(value) {
-  return attribute('domainY', value);
-}
-
-export function domainXY(value) {
-  return attributes({ domainX: value, domainY: value });
-}
-
-export function domainFX(value) {
-  return attribute('domainFX', value);
-}
-
-export function domainFY(value) {
-  return attribute('domainFY', value);
-}
-
-export function niceX(value) {
-  return attribute('niceX', value);
-}
-
-export function niceY(value) {
-  return attribute('niceY', value);
-}
-
-export function zeroX(value) {
-  return attribute('zeroX', value);
-}
-
-export function zeroY(value) {
-  return attribute('zeroY', value);
-}
-
-export function reverseX(value) {
-  return attribute('reverseX', value);
-}
-
-export function reverseY(value) {
-  return attribute('reverseY', value);
-}
-
-export function ticksX(value) {
-  return attribute('ticksX', value);
-}
-
-export function ticksY(value) {
-  return attribute('ticksY', value);
-}
-
-export function tickFormatX(value) {
-  return attribute('tickFormatX', value);
-}
-
-export function tickFormatY(value) {
-  return attribute('tickFormatY', value);
-}
-
-export function tickFormatFX(value) {
-  return attribute('tickFormatFX', value);
-}
-
-export function tickFormatFY(value) {
-  return attribute('tickFormatFY', value);
-}
-
-export function tickFormatColor(value) {
-  return attribute('tickFormatColor', value);
-}
-
-export function tickRotateX(value) {
-  return attribute('tickRotateX', value);
-}
-
-export function tickRotateY(value) {
-  return attribute('tickRotateY', value);
-}
-
-export function tickSizeX(value) {
-  return attribute('tickSizeX', value);
-}
-
-export function tickSizeY(value) {
-  return attribute('tickSizeY', value);
-}
-
-export function labelX(value) {
-  return attribute('labelX', value);
-}
-
-export function labelY(value) {
-  return attribute('labelY', value);
-}
-
-export function labelAnchorX(value) {
-  return attribute('labelAnchorX', value);
-}
-
-export function labelAnchorY(value) {
-  return attribute('labelAnchorY', value);
-}
-
-export function labelOffsetX(value) {
-  return attribute('labelOffsetX', value);
-}
-
-export function labelOffsetY(value) {
-  return attribute('labelOffsetY', value);
-}
-
-export function scaleColor(value) {
-  return attribute('scaleColor', value);
-}
-
-export function domainColor(value) {
-  return attribute('domainColor', value);
-}
-
-export function rangeColor(value) {
-  return attribute('rangeColor', value);
-}
-
-export function schemeColor(value) {
-  return attribute('schemeColor', value);
-}
-
-export function interpolateColor(value) {
-  return attribute('interpolateColor', value);
-}
-
-export function zeroColor(value) {
-  return attribute('zeroColor', value);
-}
-
-export function labelColor(value) {
-  return attribute('labelColor', value);
-}
-
-export function scaleOpacity(value) {
-  return attribute('scaleOpacity', value);
-}
-
-export function domainOpacity(value) {
-  return attribute('domainOpacity', value);
-}
-
-export function rangeOpacity(value) {
-  return attribute('rangeOpacity', value);
-}
-
-export function zeroOpacity(value) {
-  return attribute('zeroOpacity', value);
-}
-
-export function labelOpacity(value) {
-  return attribute('labelOpacity', value);
-}
-
-export function scaleR(value) {
-  return attribute('scaleR', value);
-}
-
-export function domainR(value) {
-  return attribute('domainR', value);
-}
-
-export function rangeR(value) {
-  return attribute('rangeR', value);
-}
-
-export function zeroR(value) {
-  return attribute('zeroR', value);
-}
-
-export function scaleLength(value) {
-  return attribute('scaleLength', value);
-}
-
-export function domainLength(value) {
-  return attribute('domainLength', value);
-}
-
-export function rangeLength(value) {
-  return attribute('rangeLength', value);
-}
-
-export function zeroLength(value) {
-  return attribute('zeroLength', value);
-}
-
-export function labelFX(value) {
-  return attribute('labelFX', value);
-}
-
-export function labelFY(value) {
-  return attribute('labelFX', value);
-}
-
-export function reverseFX(value) {
-  return attribute('reverseFX', value);
-}
-
-export function reverseFY(value) {
-  return attribute('reverseFY', value);
-}
-
-export function marginTopFacet(value) {
-  return attribute('marginTopFacet', value);
-}
-
-export function marginRightFacet(value) {
-  return attribute('marginRightFacet', value);
-}
-
-export function marginBottomFacet(value) {
-  return attribute('marginBottomFacet', value);
-}
-
-export function marginLeftFacet(value) {
-  return attribute('marginLeftFacet', value);
-}
-
-export function gridFacet(value) {
-  return attribute('gridFacet', value);
-}
-
-export function labelFacet(value) {
-  return attribute('labelFacet', value);
-}
-
-export function projectionType(value) {
-  return attribute('projectionType', value);
-}
-
-export function projectionParallels(value) {
-  return attribute('projectionParallels', value);
-}
-
-export function projectionPrecision(value) {
-  return attribute('projectionPrecision', value);
-}
-
-export function projectionRotate(value) {
-  return attribute('projectionRotate', value);
-}
-
-export function projectionDomain(value) {
-  return attribute('projectionDomain', value);
-}
-
-export function projectionInset(value) {
-  return attribute('projectionInset', value);
-}
-
-export function projectionInsetLeft(value) {
-  return attribute('projectionInsetLeft', value);
-}
-
-export function projectionInsetRight(value) {
-  return attribute('projectionInsetRight', value);
-}
-
-export function projectionInsetTop(value) {
-  return attribute('projectionInsetTop', value);
-}
-
-export function projectionInsetBottom(value) {
-  return attribute('projectionInsetBottom', value);
-}
-
-export function projectionClip(value) {
-  return attribute('projectionClip', value);
-}
+export function xyDomain(value) {
+  return attributes({ xDomain: value, yDomain: value });
+}
+
+const attrf = name => value => attribute(name, value);
+
+// plot-level attributes
+export const style = attrf('style');
+export const width = attrf('width');
+export const height = attrf('height');
+export const margin = attrf('margin');
+export const marginLeft = attrf('marginLeft');
+export const marginRight = attrf('marginRight');
+export const marginTop = attrf('marginTop');
+export const marginBottom = attrf('marginBottom');
+export const align = attrf('align');
+export const aspectRatio = attrf('aspectRatio');
+export const axis = attrf('axis');
+export const inset = attrf('inset');
+export const grid = attrf('grid');
+export const label = attrf('label');
+export const padding = attrf('padding');
+export const round = attrf('round');
+
+// x scale attributes
+export const xScale = attrf('xScale');
+export const xDomain = attrf('xDomain');
+export const xRange = attrf('xRange');
+export const xNice = attrf('xNice');
+export const xInset = attrf('xInset');
+export const xInsetLeft = attrf('xInsetLeft');
+export const xInsetRight = attrf('xInsetRight');
+export const xClamp = attrf('xClamp');
+export const xRound = attrf('xRound');
+export const xAlign = attrf('xAlign');
+export const xPadding = attrf('xPadding');
+export const xPaddingInner = attrf('xPaddingInner');
+export const xPaddingOuter = attrf('xPaddingOuter');
+export const xAxis = attrf('xAxis');
+export const xTicks = attrf('xTicks');
+export const xTickSize = attrf('xTickSize');
+export const xTickSpacing = attrf('xTickSpacing');
+export const xTickPadding = attrf('xTickPadding');
+export const xTickFormat = attrf('xTickFormat');
+export const xTickRotate = attrf('xTickRotate');
+export const xGrid = attrf('xGrid');
+export const xLine = attrf('xLine');
+export const xLabel = attrf('xLabel');
+export const xLabelAnchor = attrf('xLabelAnchor');
+export const xLabelOffset = attrf('xLabelOffset');
+export const xFontVariant = attrf('xFontVariant');
+export const xAriaLabel = attrf('xAriaLabel');
+export const xAriaDescription = attrf('xAriaDescription');
+export const xReverse = attrf('xReverse');
+export const xZero = attrf('xZero');
+
+// y scale attributes
+export const yScale = attrf('yScale');
+export const yDomain = attrf('yDomain');
+export const yRange = attrf('yRange');
+export const yNice = attrf('yNice');
+export const yInset = attrf('yInset');
+export const yInsetTop = attrf('yInsetTop');
+export const yInsetBottom = attrf('yInsetBottom');
+export const yClamp = attrf('yClamp');
+export const yRound = attrf('yRound');
+export const yAlign = attrf('yAlign');
+export const yPadding = attrf('yPadding');
+export const yPaddingInner = attrf('yPaddingInner');
+export const yPaddingOuter = attrf('yPaddingOuter');
+export const yAxis = attrf('yAxis');
+export const yTicks = attrf('yTicks');
+export const yTickSize = attrf('yTickSize');
+export const yTickSpacing = attrf('yTickSpacing');
+export const yTickPadding = attrf('yTickPadding');
+export const yTickFormat = attrf('yTickFormat');
+export const yTickRotate = attrf('yTickRotate');
+export const yGrid = attrf('yGrid');
+export const yLine = attrf('yLine');
+export const yLabel = attrf('yLabel');
+export const yLabelAnchor = attrf('yLabelAnchor');
+export const yLabelOffset = attrf('yLabelOffset');
+export const yFontVariant = attrf('yFontVariant');
+export const yAriaLabel = attrf('yAriaLabel');
+export const yAriaDescription = attrf('yAriaDescription');
+export const yReverse = attrf('yReverse');
+export const yZero = attrf('yZero');
+
+// facet attributes
+export const facetMargin = attrf('facetMargin');
+export const facetMarginTop = attrf('facetMarginTop');
+export const facetMarginBottom = attrf('facetMarginBottom');
+export const facetMarginLeft = attrf('facetMarginLeft');
+export const facetMarginRight = attrf('facetMarginRight');
+export const facetGrid = attrf('facetGrid');
+export const facetLabel = attrf('facetLabel');
+
+// fx scale attributes
+export const fxDomain = attrf('fxDomain');
+export const fxRange = attrf('fxRange');
+export const fxNice = attrf('fxNice');
+export const fxInset = attrf('fxInset');
+export const fxInsetLeft = attrf('fxInsetLeft');
+export const fxInsetRight = attrf('fxInsetRight');
+export const fxRound = attrf('fxRound');
+export const fxAlign = attrf('fxAlign');
+export const fxPadding = attrf('fxPadding');
+export const fxPaddingInner = attrf('fxPaddingInner');
+export const fxPaddingOuter = attrf('fxPaddingOuter');
+export const fxAxis = attrf('fxAxis');
+export const fxTicks = attrf('fxTicks');
+export const fxTickSize = attrf('fxTickSize');
+export const fxTickSpacing = attrf('fxTickSpacing');
+export const fxTickPadding = attrf('fxTickPadding');
+export const fxTickFormat = attrf('fxTickFormat');
+export const fxTickRotate = attrf('fxTickRotate');
+export const fxGrid = attrf('fxGrid');
+export const fxLine = attrf('fxLine');
+export const fxLabel = attrf('fxLabel');
+export const fxLabelAnchor = attrf('fxLabelAnchor');
+export const fxLabelOffset = attrf('fxLabelOffset');
+export const fxFontVariant = attrf('fxFontVariant');
+export const fxAriaLabel = attrf('fxAriaLabel');
+export const fxAriaDescription = attrf('fxAriaDescription');
+export const fxReverse = attrf('fxReverse');
+
+// fy scale attributes
+export const fyDomain = attrf('fyDomain');
+export const fyRange = attrf('fyRange');
+export const fyNice = attrf('fyNice');
+export const fyInset = attrf('fyInset');
+export const fyInsetTop = attrf('fyInsetTop');
+export const fyInsetBottom = attrf('fyInsetBottom');
+export const fyRound = attrf('fyRound');
+export const fyAlign = attrf('fyAlign');
+export const fyPadding = attrf('fyPadding');
+export const fyPaddingInner = attrf('fyPaddingInner');
+export const fyPaddingOuter = attrf('fyPaddingOuter');
+export const fyAxis = attrf('fyAxis');
+export const fyTicks = attrf('fyTicks');
+export const fyTickSize = attrf('fyTickSize');
+export const fyTickSpacing = attrf('fyTickSpacing');
+export const fyTickPadding = attrf('fyTickPadding');
+export const fyTickFormat = attrf('fyTickFormat');
+export const fyTickRotate = attrf('fyTickRotate');
+export const fyGrid = attrf('fyGrid');
+export const fyLine = attrf('fyLine');
+export const fyLabel = attrf('fyLabel');
+export const fyLabelAnchor = attrf('fyLabelAnchor');
+export const fyLabelOffset = attrf('fyLabelOffset');
+export const fyFontVariant = attrf('fyFontVariant');
+export const fyAriaLabel = attrf('fyAriaLabel');
+export const fyAriaDescription = attrf('fyAriaDescription');
+export const fyReverse = attrf('fyReverse');
+
+// color scale attributes
+export const colorScale = attrf('colorScale');
+export const colorDomain = attrf('colorDomain');
+export const colorRange = attrf('colorRange');
+export const colorClamp = attrf('colorClamp');
+export const colorNice = attrf('colorNice');
+export const colorScheme = attrf('colorScheme');
+export const colorInterpolate = attrf('colorInterpolate');
+export const colorPivot = attrf('colorPivot');
+export const colorSymmetric = attrf('colorSymmetric');
+export const colorLabel = attrf('colorLabel');
+export const colorReverse = attrf('colorReverse');
+export const colorZero = attrf('colorZero');
+export const colorTickFormat = attrf('colorTickFormat');
+
+// opacity scale attributes
+export const opacityScale = attrf('opacityScale');
+export const opacityDomain = attrf('opacityDomain');
+export const opacityRange = attrf('opacityRange');
+export const opacityClamp = attrf('opacityClamp');
+export const opacityNice = attrf('opacityNice');
+export const opacityLabel = attrf('opacityLabel');
+export const opacityReverse = attrf('opacityReverse');
+export const opacityZero = attrf('opacityZero');
+export const opacityTickFormat = attrf('opacityTickFormat');
+
+// r scale attributes
+export const rScale = attrf('rScale');
+export const rDomain = attrf('rDomain');
+export const rRange = attrf('rRange');
+export const rClamp = attrf('rClamp');
+export const rNice = attrf('rNice');
+export const rZero = attrf('rZero');
+
+// length scale attributes
+export const lengthScale = attrf('lengthScale');
+export const lengthDomain = attrf('lengthDomain');
+export const lengthRange = attrf('lengthRange');
+export const lengthClamp = attrf('lengthClamp');
+export const lengthNice = attrf('lengthNice');
+export const lengthZero = attrf('lengthZero');
+
+// projection attributes
+export const projectionType = attrf('projectionType');
+export const projectionParallels = attrf('projectionParallels');
+export const projectionPrecision = attrf('projectionPrecision');
+export const projectionRotate = attrf('projectionRotate');
+export const projectionDomain = attrf('projectionDomain');
+export const projectionInset = attrf('projectionInset');
+export const projectionInsetLeft = attrf('projectionInsetLeft');
+export const projectionInsetRight = attrf('projectionInsetRight');
+export const projectionInsetTop = attrf('projectionInsetTop');
+export const projectionInsetBottom = attrf('projectionInsetBottom');
+export const projectionClip = attrf('projectionClip');

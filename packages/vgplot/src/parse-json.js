@@ -335,7 +335,7 @@ function parseNakedMark(spec, ctx) {
 
 function parseLegend(spec, ctx) {
   const { legend, ...options } = spec;
-  const key = `legend${legend[0].toUpperCase()}${legend.slice(1)}`;
+  const key = `${legend}Legend`;
   const fn = ctx.legends.get(key);
   if (!isFunction(fn)) {
     error(`Unrecognized legend type: ${legend}`, spec);

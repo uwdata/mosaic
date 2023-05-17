@@ -107,15 +107,15 @@ export const link = (...args) => mark('link', ...args);
 
 export const frame = (...args) => mark('frame', ...args);
 
-export const axisMarkX = (...args) => mark('axisX', ...args);
-export const axisMarkY = (...args) => mark('axisY', ...args);
-export const axisMarkFX = (...args) => mark('axisFx', ...args);
-export const axisMarkFY = (...args) => mark('axisFy', ...args);
+export const axisX = (...args) => mark('axisX', ...args);
+export const axisY = (...args) => mark('axisY', ...args);
+export const axisFx = (...args) => mark('axisFx', ...args);
+export const axisFy = (...args) => mark('axisFy', ...args);
 
-export const gridMarkX = (...args) => mark('gridX', ...args);
-export const gridMarkY = (...args) => mark('gridY', ...args);
-export const gridMarkFX = (...args) => mark('gridFx', ...args);
-export const gridMarkFY = (...args) => mark('gridFy', ...args);
+export const gridX = (...args) => mark('gridX', ...args);
+export const gridY = (...args) => mark('gridY', ...args);
+export const gridFx = (...args) => mark('gridFx', ...args);
+export const gridFy = (...args) => mark('gridFy', ...args);
 
 export const geo = (...args) => mark('geo', ...args);
 export const sphere = (...args) => mark('sphere', ...args);

@@ -14,5 +14,5 @@ plot:
 - select: intervalXY
   as: $query
   brush: { fillOpacity: 0, stroke: black }
-domainXY: Fixed
-domainColor: Fixed
+xyDomain: Fixed
+colorDomain: Fixed

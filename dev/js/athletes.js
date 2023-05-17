@@ -4,7 +4,7 @@ export default function(el) {
   const {
     Selection, Fixed, vconcat, hconcat, plot, menu, search, table,
     dot, regressionY, tickX, barX, frame,
-    from, avg, quantile, domainXY, domainFX, domainColor,
+    from, avg, quantile, xyDomain, fxDomain, colorDomain,
     intervalX, intervalXY,
     width, height, marginLeft, marginTop, marginRight, hspace, vspace
   } = vg;
@@ -31,8 +31,8 @@ export default function(el) {
             { x: 'weight', y: 'height', stroke: 'sex' }
           ),
           intervalXY({ as: query, brush: { fillOpacity: 0, stroke: 'black' }}),
-          domainXY(Fixed),
-          domainColor(Fixed),
+          xyDomain(Fixed),
+          colorDomain(Fixed),
           marginLeft(35), marginTop(20), marginRight(1),
           width(570), height(350)
         ),
@@ -58,7 +58,7 @@ export default function(el) {
         ),
         intervalX({ as: query }),
         frame({ stroke: '#ccc' }),
-        domainXY(Fixed), domainFX(Fixed), domainColor(Fixed),
+        xyDomain(Fixed), fxDomain(Fixed), colorDomain(Fixed),
         marginLeft(100)
       )
     )

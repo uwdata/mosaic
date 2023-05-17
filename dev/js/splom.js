@@ -3,9 +3,9 @@ import * as vg from '../setup.js';
 export default function(el) {
   const {
     plot, hconcat, vconcat, from, dot, frame,
-    domainX, domainY, domainColor, intervalXY, highlight,
-    width, height, axisX, axisY, ticksX, ticksY,
-    labelAnchorX, labelAnchorY,
+    xDomain, yDomain, colorDomain, intervalXY, highlight,
+    width, height, xAxis, yAxis, xTicks, yTicks,
+    xLabelAnchor, yLabelAnchor,
     marginTop, marginBottom, marginLeft, marginRight,
     Selection, Fixed
   } = vg;
@@ -21,16 +21,16 @@ export default function(el) {
       dot(from(table), { x, y, fill: 'species', r: 2 }),
       intervalXY({ as: brush }),
       highlight({ by: brush, opacity: 0.1 }),
-      ticksX(3), ticksY(4),
-      domainX(Fixed), domainY(Fixed), domainColor(Fixed),
+      xTicks(3), yTicks(4),
+      xDomain(Fixed), yDomain(Fixed), colorDomain(Fixed),
       marginTop(5), marginRight(5),
       ...(col !== 0
-        ? [axisY(null), width(s+10+5), marginLeft(10)]
-        : [width(s+50+5), marginLeft(50), labelAnchorY('center')]
+        ? [yAxis(null), width(s+10+5), marginLeft(10)]
+        : [width(s+50+5), marginLeft(50), yLabelAnchor('center')]
       ),
       ...(row !== (n - 1)
-        ? [axisX(null), height(s+10+5), marginBottom(10)]
-        : [height(s+35+5), marginBottom(35), labelAnchorX('center')]
+        ? [xAxis(null), height(s+10+5), marginBottom(10)]
+        : [height(s+35+5), marginBottom(35), xLabelAnchor('center')]
       )
     )
   }

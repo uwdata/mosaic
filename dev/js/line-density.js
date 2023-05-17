@@ -3,7 +3,7 @@ import * as vg from '../setup.js';
 export default async function(el) {
   const {
     coordinator, Selection, Param, vconcat, hconcat, plot, menu, slider, from,
-    denseLine, schemeColor, labelY, niceY, intervalXY, width, height
+    denseLine, colorScheme, yLabel, yNice, intervalXY, width, height
   } = vg;
 
   await coordinator().exec(`
@@ -30,8 +30,8 @@ export default async function(el) {
           from(table, { filterBy: brush }),
           { x, y, z, fill: 'density', bandwidth, binWidth }
         ),
-        schemeColor('viridis'),
-        labelY('Value (normalized lines)'), niceY(true),
+        colorScheme('viridis'),
+        yLabel('Value (normalized lines)'), yNice(true),
         width(800), height(300)
       ),
       plot(
@@ -39,9 +39,10 @@ export default async function(el) {
           from(table),
           { x, y, z, fill: 'density', bandwidth, binWidth, normalize: false }
         ),
-        schemeColor('viridis'),
-        labelY('Value (unnormalized lines)'), niceY(true),
-        width(800), height(300), intervalXY({ as: brush })
+        intervalXY({ as: brush }),
+        colorScheme('viridis'),
+        yLabel('Value (unnormalized lines)'), yNice(true),
+        width(800), height(300)
       )
     )
   );

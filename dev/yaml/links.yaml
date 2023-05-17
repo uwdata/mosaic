@@ -33,9 +33,9 @@ vconcat:
     dy: -6
   grid: true
   inset: 10
-  scaleX: log
-  labelX: Population →
-  labelY: ↑ Inequality
-  ticksY: 4
-  schemeColor: BuRd
-  tickFormatColor: +f
+  xScale: log
+  xLabel: Population →
+  yLabel: ↑ Inequality
+  yTicks: 4
+  colorScheme: BuRd
+  colorTickFormat: +f

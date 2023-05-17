@@ -25,16 +25,16 @@ export class ContourMark extends Grid2DMark {
     }
 
     if (densityMap.fill || densityMap.stroke) {
-      if (this.plot.getAttribute('scaleColor') !== 'log') {
-        this.plot.setAttribute('zeroColor', true);
+      if (this.plot.getAttribute('colorScale') !== 'log') {
+        this.plot.setAttribute('colorZero', true);
       }
     }
 
     // transform contours into data space coordinates
     // so we play nice with scale domains & axes
     const [nx, ny] = bins;
-    const [x0, x1] = plot.getAttribute('domainX');
-    const [y0, y1] = plot.getAttribute('domainY');
+    const [x0, x1] = plot.getAttribute('xDomain');
+    const [y0, y1] = plot.getAttribute('yDomain');
     const sx = (x1 - x0) / nx;
     const sy = (y1 - y0) / ny;
     const xo = +x0;

@@ -19,9 +19,9 @@ export default function(el = document.body) {
           binsX: bins, binsY: bins, bandwidth
         }),
         vg.dot(vg.from(table), { x, y, fill: 'black', r: 1 }),
-        vg.scaleR('sqrt'), vg.rangeR([0, 16]),
-        vg.axisX('bottom'), vg.labelAnchorX('center'),
-        vg.axisY('right'), vg.labelAnchorY('center'),
+        vg.rScale('sqrt'), vg.rRange([0, 16]),
+        vg.xAxis('bottom'), vg.xLabelAnchor('center'),
+        vg.yAxis('right'), vg.yLabelAnchor('center'),
         vg.margins({ top: 5, bottom: 30, left: 5, right: 50 }),
         vg.width(700),
         vg.height(480)

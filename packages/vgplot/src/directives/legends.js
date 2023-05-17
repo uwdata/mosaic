@@ -18,6 +18,6 @@ function legend(channel, options = {}) {
   }
 }
 
-export const legendColor = options => legend('color', options);
-export const legendOpacity = options => legend('opacity', options);
-export const legendSymbol = options => legend('symbol', options);
+export const colorLegend = options => legend('color', options);
+export const opacityLegend = options => legend('opacity', options);
+export const symbolLegend = options => legend('symbol', options);

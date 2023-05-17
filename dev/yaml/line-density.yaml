@@ -30,10 +30,10 @@ vconcat:
     fill: density
     bandwidth: $bandwidth
     binWidth: $binWidth
-  schemeColor: $schemeColor
-  scaleColor: $scaleColor
-  labelY: Close (Normalized) ↑
-  niceY: true
+  colorScheme: $schemeColor
+  colorScale: $scaleColor
+  yLabel: Close (Normalized) ↑
+  yNice: true
   margins: { left: 30, top: 20, right: 0 }
   width: 800
   height: 240
@@ -49,10 +49,10 @@ vconcat:
     binWidth: $binWidth
   - select: intervalXY
     as: $brush
-  schemeColor: $schemeColor
-  scaleColor: $scaleColor
-  labelY: Close (Unnormalized) ↑
-  niceY: true
+  colorScheme: $schemeColor
+  colorScale: $scaleColor
+  yLabel: Close (Unnormalized) ↑
+  yNice: true
   margins: { left: 30, top: 20, right: 0 }
   width: 800
   height: 240

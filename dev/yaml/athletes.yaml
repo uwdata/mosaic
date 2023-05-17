@@ -29,8 +29,8 @@ vconcat:
     x: weight
     y: height
     stroke: sex
-  domainXY: Fixed
-  domainColor: Fixed
+  xyDomain: Fixed
+  colorDomain: Fixed
 - input: table
   from: athletes
   width: 640

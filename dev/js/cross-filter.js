@@ -3,7 +3,7 @@ import * as vg from '../setup.js';
 export default function(el) {
   const {
     plot, vconcat, from, bin, count, rectY,
-    width, height, domainX, intervalX, Selection, Fixed
+    width, height, xDomain, intervalX, Selection, Fixed
   } = vg;
 
   const table = 'flights';
@@ -17,7 +17,7 @@ export default function(el) {
           { x: bin('delay'), y: count(), fill: 'steelblue', inset: 0.5 }
         ),
         intervalX({ as: brush }),
-        domainX(Fixed),
+        xDomain(Fixed),
         width(600),
         height(200)
       ),
@@ -27,7 +27,7 @@ export default function(el) {
           { x: bin('time'), y: count(), fill: 'steelblue', inset: 0.5 }
         ),
         intervalX({ as: brush }),
-        domainX(Fixed),
+        xDomain(Fixed),
         width(600),
         height(200)
       ),
@@ -37,7 +37,7 @@ export default function(el) {
           { x: bin('distance'), y: count(), fill: 'steelblue', inset: 0.5 }
         ),
         intervalX({ as: brush }),
-        domainX(Fixed),
+        xDomain(Fixed),
         width(600),
         height(200)
       )

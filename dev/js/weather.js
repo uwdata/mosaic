@@ -4,8 +4,8 @@ export default function(el) {
   const {
     plot, vconcat, from, dot, barX,
     count, dateMonthDay, intervalX, highlight, toggleY,
-    domainXY, domainX, domainY, domainColor, rangeColor, domainR, rangeR,
-    tickFormatX, labelY, legendColor,
+    xyDomain, xDomain, yDomain, colorDomain, colorRange, rDomain, rRange,
+    xTickFormat, yLabel, colorLegend,
     width, Fixed, Selection
   } = vg;
 
@@ -15,8 +15,8 @@ export default function(el) {
 
   const weather = ['sun', 'fog', 'drizzle', 'rain', 'snow'];
   const colors = [
-    domainColor(weather),
-    rangeColor(['#e7ba52', '#a7a7a7', '#aec7e8', '#1f77b4', '#9467bd'])
+    colorDomain(weather),
+    colorRange(['#e7ba52', '#a7a7a7', '#aec7e8', '#1f77b4', '#9467bd'])
   ];
 
   el.appendChild(
@@ -28,10 +28,10 @@ export default function(el) {
         ),
         intervalX({ as: range }),
         highlight({ by: range, fill: '#eee' }),
-        domainXY(Fixed), tickFormatX('%b'),
-        rangeR([2, 10]), domainR(Fixed),
+        xyDomain(Fixed), xTickFormat('%b'),
+        rRange([2, 10]), rDomain(Fixed),
         width(800),
-        legendColor({ as: click, columns: 1 }),
+        colorLegend({ as: click, columns: 1 }),
         ...colors
       ),
       plot(
@@ -42,8 +42,8 @@ export default function(el) {
         ),
         toggleY({ as: click }),
         highlight({ by: click }),
-        domainX(Fixed),
-        domainY(weather), labelY(null),
+        xDomain(Fixed),
+        yDomain(weather), yLabel(null),
         width(800),
         ...colors
       )

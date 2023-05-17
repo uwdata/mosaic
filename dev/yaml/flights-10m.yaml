@@ -16,7 +16,7 @@ vconcat:
     inset: 0.5
   - select: intervalX
     as: $brush
-  domainX: Fixed
+  xDomain: Fixed
   marginLeft: 75
   width: 600
   height: 200
@@ -29,7 +29,7 @@ vconcat:
     inset: 0.5
   - select: intervalX
     as: $brush
-  domainX: Fixed
+  xDomain: Fixed
   marginLeft: 75
   width: 600
   height: 200
@@ -42,7 +42,7 @@ vconcat:
     inset: 0.5
   - select: intervalX
     as: $brush
-  domainX: Fixed
+  xDomain: Fixed
   marginLeft: 75
   width: 600
   height: 200

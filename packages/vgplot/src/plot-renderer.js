@@ -1,110 +1,13 @@
 import * as Plot from '@observablehq/plot';
+import { attributeMap } from './plot-attributes.js';
 import { Fixed } from './symbols.js';
-
-const ATTRIBUTE_MAP = new Map([
-  ['style', 'style'],
-  ['width', 'width'],
-  ['height', 'height'],
-  ['margin', 'margin'],
-  ['marginTop', 'marginTop'],
-  ['marginBottom', 'marginBottom'],
-  ['marginLeft', 'marginLeft'],
-  ['marginRight', 'marginRight'],
-  ['inset', 'inset'],
-  ['aspectRatio', 'aspectRatio'],
-  ['scaleX', 'x.type'],
-  ['scaleY', 'y.type'],
-  ['domainX', 'x.domain'],
-  ['domainY', 'y.domain'],
-  ['domainFX', 'fx.domain'],
-  ['domainFY', 'fy.domain'],
-  ['axisX', 'x.axis'],
-  ['axisY', 'y.axis'],
-  ['axisLineX', 'x.line'],
-  ['axisLineY', 'y.line'],
-  ['insetX', 'x.inset'],
-  ['insetY', 'y.inset'],
-  ['insetLeftX', 'x.insetLeft'],
-  ['insetRightX', 'x.insetRight'],
-  ['insetTopY', 'y.insetTop'],
-  ['insetBottomY', 'y.insetBottom'],
-  ['roundX', 'x.round'],
-  ['roundY', 'y.round'],
-  ['grid', 'grid'],
-  ['gridX', 'x.grid'],
-  ['gridY', 'y.grid'],
-  ['niceX', 'x.nice'],
-  ['niceY', 'y.nice'],
-  ['zeroX', 'x.zero'],
-  ['zeroY', 'y.zero'],
-  ['reverseX', 'x.reverse'],
-  ['reverseY', 'y.reverse'],
-  ['ticksX', 'x.ticks'],
-  ['ticksY', 'y.ticks'],
-  ['tickFormatX', 'x.tickFormat'],
-  ['tickFormatY', 'y.tickFormat'],
-  ['tickFormatFX', 'fx.tickFormat'],
-  ['tickFormatFY', 'fy.tickFormat'],
-  ['tickFormatColor', 'color.tickFormat'],
-  ['tickRotateX', 'x.tickRotate'],
-  ['tickRotateY', 'y.tickRotate'],
-  ['tickSizeX', 'x.tickSize'],
-  ['tickSizeY', 'y.tickSize'],
-  ['labelX', 'x.label'],
-  ['labelY', 'y.label'],
-  ['labelAnchorX', 'x.labelAnchor'],
-  ['labelAnchorY', 'y.labelAnchor'],
-  ['labelOffsetX', 'x.labelOffset'],
-  ['labelOffsetY', 'y.labelOffset'],
-  ['scaleColor', 'color.type'],
-  ['domainColor', 'color.domain'],
-  ['rangeColor', 'color.range'],
-  ['schemeColor', 'color.scheme'],
-  ['interpolateColor', 'color.interpolate'],
-  ['zeroColor', 'color.zero'],
-  ['labelColor', 'color.label'],
-  ['scaleOpacity', 'opacity.type'],
-  ['domainOpacity', 'opacity.domain'],
-  ['rangeOpacity', 'opacity.range'],
-  ['zeroOpacity', 'opacity.zero'],
-  ['labelOpacity', 'opacity.label'],
-  ['scaleR', 'r.scale'],
-  ['domainR', 'r.domain'],
-  ['rangeR', 'r.range'],
-  ['zeroR', 'r.zero'],
-  ['scaleLength', 'length.type'],
-  ['domainLength', 'length.domain'],
-  ['rangeLength', 'length.range'],
-  ['zeroLength', 'length.zero'],
-  ['labelFX', 'fx.label'],
-  ['labelFY', 'fy.label'],
-  ['reverseFX', 'fx.reverse'],
-  ['reverseFY', 'fy.reverse'],
-  ['marginTopFacet', 'facet.marginTop'],
-  ['marginRightFacet', 'facet.marginRight'],
-  ['marginBottomFacet', 'facet.marginBottom'],
-  ['marginLeftFacet', 'facet.marginLeft'],
-  ['gridFacet', 'facet.grid'],
-  ['labelFacet', 'facet.label'],
-  ['projectionType', 'projection.type'],
-  ['projectionParallels', 'projection.parallels'],
-  ['projectionPrecision', 'projection.precision'],
-  ['projectionRotate', 'projection.rotate'],
-  ['projectionDomain', 'projection.domain'],
-  ['projectionInset', 'projection.inset'],
-  ['projectionInsetLeft', 'projection.insetLeft'],
-  ['projectionInsetRight', 'projection.insetRight'],
-  ['projectionInsetTop', 'projection.insetTop'],
-  ['projectionInsetBottom', 'projection.insetBottom'],
-  ['projectionClip', 'projection.clip']
-]);
 
 const OPTIONS_ONLY_MARKS = new Set([
   'frame',
   'hexgrid',
   'sphere',
   'graticule'
-])
+]);
 
 function setProperty(object, path, value) {
   for (let i = 0; i < path.length; ++i) {
@@ -127,7 +30,7 @@ export async function plotRenderer(plot) {
 
   // populate top-level and scale properties
   for (const key in attributes) {
-    const specKey = ATTRIBUTE_MAP.get(key);
+    const specKey = attributeMap.get(key);
     if (specKey == null) {
       throw new Error(`Unrecognized plot attribute: ${key}`);
     }
@@ -176,13 +79,13 @@ function setSymbolAttributes(plot, svg, attributes, symbols) {
   symbols.forEach(key => {
     const value = attributes[key];
     if (value === Fixed) {
-      if (!key.startsWith('domain')) {
+      if (!key.endsWith('Domain')) {
         throw new Error(`Unsupported fixed attribute: ${key}`);
       }
-      const type = key.slice('domain'.length);
-      const scale = svg.scale(type.toLowerCase());
+      const type = key.slice(0, -'Domain'.length);
+      const scale = svg.scale(type);
       if (scale?.domain) {
-        plot.setAttribute(key, attributes[`reverse${type}`]
+        plot.setAttribute(key, attributes[`${type}Reverse`]
           ? scale.domain.slice().reverse()
           : scale.domain);
       }

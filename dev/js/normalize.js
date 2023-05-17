@@ -3,7 +3,7 @@ import * as vg from '../setup.js';
 export default async function(el) {
   const {
     coordinator, Param, plot, from, lineY, ruleX, text, textX, nearestX,
-    scaleY, domainY, gridY, tickFormatY, labelY, labelX,
+    yScale, yDomain, yGrid, yTickFormat, yLabel, xLabel,
     width, height, marginRight, sql, argmax, max, column, Query
   } = vg;
 
@@ -36,8 +36,8 @@ export default async function(el) {
       text(from(label), { x, y, dx: 2, text: s, fill: s, textAnchor: 'start' }),
       lineY(from(table), { x, y, stroke: s }),
       nearestX({ as: point }),
-      scaleY('log'), domainY([0.2, 6]), gridY(true),
-      labelX(null), labelY(null), tickFormatY('%'),
+      yScale('log'), yDomain([0.2, 6]), yGrid(true),
+      xLabel(null), yLabel(null), yTickFormat('%'),
       width(650), height(400), marginRight(35)
     )
   );
