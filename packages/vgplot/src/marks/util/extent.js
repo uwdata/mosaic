@@ -25,11 +25,11 @@ export function plotExtent(mark, filter, channel, domainAttr, niceAttr) {
 }
 
 export function extentX(mark, filter) {
-  return plotExtent(mark, filter, 'x', 'domainX', 'niceX');
+  return plotExtent(mark, filter, 'x', 'xDomain', 'xNice');
 }
 
 export function extentY(mark, filter) {
-  return plotExtent(mark, filter, 'y', 'domainY', 'niceY');
+  return plotExtent(mark, filter, 'y', 'yDomain', 'yNice');
 }
 
 export function filteredExtent(filter, column) {

@@ -15,12 +15,12 @@ vconcat:
     r: 20
     preserveAspectRatio: "xMidYMin slice"
     title: "Name"
-  insetX: 20
-  labelX: First inauguration date →
-  insetTopY: 4
-  gridY: true
-  labelY: ↑ Opinion (%)
-  tickFormatY: +f
+  xInset: 20
+  xLabel: First inauguration date →
+  yInsetTop: 4
+  yGrid: true
+  yLabel: ↑ Opinion (%)
+  yTickFormat: +f
 - input: menu
   label: Opinion Metric
   options:

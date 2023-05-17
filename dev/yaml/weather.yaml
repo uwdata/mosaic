@@ -20,12 +20,12 @@ vconcat:
     - legend: color
       as: $click
       columns: 1
-    domainXY: Fixed
-    tickFormatX: '%b'
-    domainColor: $domain
-    rangeColor: $colors
-    domainR: Fixed
-    rangeR: [2, 10]
+    xyDomain: Fixed
+    xTickFormat: '%b'
+    colorDomain: $domain
+    colorRange: $colors
+    rDomain: Fixed
+    rRange: [2, 10]
     width: 800
 - plot:
   - mark: barX
@@ -43,9 +43,9 @@ vconcat:
     as: $click
   - select: highlight
     by: $click
-  domainX: Fixed
-  domainY: $domain
-  labelY: null
-  domainColor: $domain
-  rangeColor: $colors
+  xDomain: Fixed
+  yDomain: $domain
+  yLabel: null
+  colorDomain: $domain
+  colorRange: $colors
   width: 800

@@ -9,8 +9,8 @@ vconcat:
       stroke: species
       symbol: species
     grid: true
-    labelX: Body mass (g) →
-    labelY: ↑ Flipper length (mm)
+    xLabel: Body mass (g) →
+    yLabel: ↑ Flipper length (mm)
   - legend: symbol
     for: stroked
     columns: 1
@@ -25,8 +25,8 @@ vconcat:
       fill: species
       symbol: species
     grid: true
-    labelX: Body mass (g) →
-    labelY: ↑ Flipper length (mm)
+    xLabel: Body mass (g) →
+    yLabel: ↑ Flipper length (mm)
   - legend: symbol
     for: filled
     columns: 1

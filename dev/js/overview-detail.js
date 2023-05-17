@@ -2,8 +2,8 @@ import * as vg from '../setup.js';
 
 export default function(el) {
   const {
-    plot, vconcat, from, areaY,
-    width, height, domainX, domainY, intervalX,
+    plot, vconcat, from, areaY, intervalX,
+    width, height, xDomain, yDomain,
     Selection, Fixed
   } = vg;
 
@@ -26,7 +26,7 @@ export default function(el) {
           from(table, { filterBy: brush }),
           { x: 't', y: 'v', fill: 'steelblue', clip: true }
         ),
-        domainY(Fixed),
+        yDomain(Fixed),
         width(800),
         height(200)
       ),
@@ -35,8 +35,8 @@ export default function(el) {
           from(table),
           { x: 't', y: 'v', fill: 'steelblue', clip: true }
         ),
-        domainX(brush),
-        domainY(Fixed),
+        xDomain(brush),
+        yDomain(Fixed),
         width(800),
         height(200)
       )

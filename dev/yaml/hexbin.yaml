@@ -18,10 +18,10 @@ vconcat:
     - select: intervalX
       as: $query
     margins: { left: 5, right: 5, top: 30, bottom: 0 }
-    domainX: Fixed
-    axisX: top
-    axisY: null
-    labelAnchorX: center
+    xDomain: Fixed
+    xAxis: top
+    yAxis: null
+    xLabelAnchor: center
     width: 710
     height: 70
   - hspace: 80
@@ -36,12 +36,12 @@ vconcat:
       binWidth: 10
     - mark: hexgrid
       binWidth: 10
-    schemeColor: ylgnbu
-    scaleColor: $scale
+    colorScheme: ylgnbu
+    colorScale: $scale
     margins: { left: 5, right: 0, top: 0, bottom: 5 }
-    axisX: null
-    axisY: null
-    domainXY: Fixed
+    xAxis: null
+    yAxis: null
+    xyDomain: Fixed
     width: 705
     height: 505
   - plot:
@@ -54,9 +54,9 @@ vconcat:
     - select: intervalY
       as: $query
     margins: { left: 0, right: 50, top: 4, bottom: 5 }
-    domainY: [-60, 180]
-    axisX: null
-    axisY: right
-    labelAnchorY: center
+    yDomain: [-60, 180]
+    xAxis: null
+    yAxis: right
+    yLabelAnchor: center
     width: 80
     height: 505

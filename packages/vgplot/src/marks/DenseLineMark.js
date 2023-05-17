@@ -18,8 +18,8 @@ export class DenseLineMark extends RasterMark {
     const [nx, ny] = this.bins = this.binDimensions(this);
     const bx = binField(this, 'x');
     const by = binField(this, 'y');
-    const rx = !!plot.getAttribute('reverseX');
-    const ry = !!plot.getAttribute('reverseY');
+    const rx = !!plot.getAttribute('xReverse');
+    const ry = !!plot.getAttribute('yReverse');
     const x = bin1d(bx, x0, x1, nx, rx, this.binPad);
     const y = bin1d(by, y0, y1, ny, ry, this.binPad);
 

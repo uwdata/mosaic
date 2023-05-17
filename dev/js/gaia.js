@@ -4,7 +4,7 @@ export default async function(el) {
   const {
     Query, coordinator, sql, isBetween, plot, hconcat, vconcat, hspace,
     from, bin, count, raster, rectY,
-    domainX, domainXY, scaleY, gridY, reverseY, scaleColor, schemeColor,
+    xDomain, xyDomain, yScale, yGrid, yReverse, colorScale, colorScheme,
     width, height, marginLeft, marginTop, marginRight,
     intervalX, intervalXY, Selection, Fixed
   } = vg;
@@ -46,8 +46,8 @@ export default async function(el) {
             { x: 'u', y: 'v', fill: 'density', bandwidth, binType, binWidth }
           ),
           intervalXY({ as: brush, pixelSize }),
-          domainXY(Fixed),
-          scaleColor('sqrt'), schemeColor('viridis'),
+          xyDomain(Fixed),
+          colorScale('sqrt'), colorScheme('viridis'),
           width(700), height(400), marginLeft(25), marginTop(20), marginRight(1)
         ),
         hconcat(
@@ -56,8 +56,8 @@ export default async function(el) {
               from(table, { filterBy: brush }),
               { x: bin('phot_g_mean_mag'), y: count(), fill: 'steelblue', inset: 0.5 }
             ),
-            scaleY(histScale), gridY(true),
-            intervalX({ as: brush }), domainX(Fixed),
+            intervalX({ as: brush }),
+            xDomain(Fixed), yScale(histScale), yGrid(true),
             width(350), height(200), marginLeft(65)
           ),
           plot(
@@ -65,8 +65,8 @@ export default async function(el) {
               from(table, { filterBy: brush }),
               { x: bin('parallax'), y: count(), fill: 'steelblue', inset: 0.5 }
             ),
-            scaleY(histScale), gridY(true),
-            intervalX({ as: brush }), domainX(Fixed),
+            intervalX({ as: brush }),
+            xDomain(Fixed), yScale(histScale), yGrid(true),
             width(350), height(200), marginLeft(65)
           )
         )
@@ -77,8 +77,9 @@ export default async function(el) {
           from(table, { filterBy: brush }),
           { x: 'bp_rp', y: 'phot_g_mean_mag', fill: 'density', bandwidth, binType, binWidth }
         ),
-        scaleColor('sqrt'), schemeColor('viridis'), reverseY(true),
-        intervalXY({ as: brush, pixelSize }), domainXY(Fixed),
+        intervalXY({ as: brush, pixelSize }),
+        xyDomain(Fixed), yReverse(true),
+        colorScale('sqrt'), colorScheme('viridis'),
         width(400), height(600), marginLeft(25), marginTop(20), marginRight(1)
       )
     )

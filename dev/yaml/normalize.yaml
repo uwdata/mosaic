@@ -28,12 +28,12 @@ plot:
   stroke: Symbol
 - select: nearestX
   as: $point
-scaleY: log
-domainY: [0.2, 6]
-gridY: true
-labelX: null
-labelY: null
-tickFormatY: '%'
+yScale: log
+yDomain: [0.2, 6]
+yGrid: true
+xLabel: null
+yLabel: null
+yTickFormat: '%'
 width: 650
 height: 400
 marginRight: 35

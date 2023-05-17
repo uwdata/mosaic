@@ -2,7 +2,7 @@ import * as vg from '../setup.js';
 
 export default function(el) {
   const {
-    plot, vconcat, from, axisY, domainX, densityY, intervalX,
+    plot, vconcat, from, yAxis, xDomain, densityY, intervalX,
     marginLeft, width, height, Param, Selection, Fixed, slider
   } = vg;
 
@@ -19,9 +19,9 @@ export default function(el) {
           from(table, { filterBy: brush }),
           { x: 'delay', bandwidth, fill: '#ccc' }
         ),
-        axisY(null),
-        domainX(Fixed),
         intervalX({ as: brush }),
+        yAxis(null),
+        xDomain(Fixed),
         width(600), marginLeft(10),
         height(200)
       ),
@@ -30,9 +30,9 @@ export default function(el) {
           from(table, { filterBy: brush }),
           { x: 'distance', bandwidth, fill: '#ccc' }
         ),
-        axisY(null),
-        domainX(Fixed),
         intervalX({ as: brush }),
+        yAxis(null),
+        xDomain(Fixed),
         width(600), marginLeft(10),
         height(200)
       )

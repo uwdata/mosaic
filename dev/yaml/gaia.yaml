@@ -36,9 +36,9 @@ hconcat:
     - select: intervalXY
       pixelSize: 2
       as: $brush
-    domainXY: Fixed
-    scaleColor: $scaleType
-    schemeColor: viridis
+    xyDomain: Fixed
+    colorScale: $scaleType
+    colorScheme: viridis
     width: 700
     height: 400
     marginLeft: 25
@@ -54,9 +54,9 @@ hconcat:
         inset: 0.5
       - select: intervalX
         as: $brush
-      domainX: Fixed
-      scaleY: $scaleType
-      gridY: true
+      xDomain: Fixed
+      yScale: $scaleType
+      yGrid: true
       width: 350
       height: 200
       marginLeft: 65
@@ -69,9 +69,9 @@ hconcat:
         inset: 0.5
       - select: intervalX
         as: $brush
-      domainX: Fixed
-      scaleY: $scaleType
-      gridY: true
+      xDomain: Fixed
+      yScale: $scaleType
+      yGrid: true
       width: 350
       height: 200
       marginLeft: 65
@@ -88,10 +88,10 @@ hconcat:
   - select: intervalXY
     pixelSize: 2
     as: $brush
-  domainXY: Fixed
-  scaleColor: $scaleType
-  schemeColor: viridis
-  reverseY: true
+  xyDomain: Fixed
+  colorScale: $scaleType
+  colorScheme: viridis
+  yReverse: true
   width: 400
   height: 600
   marginLeft: 25

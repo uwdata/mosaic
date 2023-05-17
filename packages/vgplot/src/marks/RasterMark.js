@@ -69,7 +69,7 @@ function imageData(mark, w, h) {
 
 function imageScale(mark) {
   const { densityMap, kde, plot } = mark;
-  let domain = densityMap.fill && plot.getAttribute('domainColor');
+  let domain = densityMap.fill && plot.getAttribute('colorDomain');
 
   // compute kde grid extents if no explicit domain
   if (!domain) {
@@ -83,13 +83,13 @@ function imageScale(mark) {
     domain = (lo === 0 && hi === 0) ? [0, 1] : [lo, hi];
   }
 
-  const type = plot.getAttribute('scaleColor');
+  const type = plot.getAttribute('colorScale');
   return scale({ x: { type, domain, range: [0, 1] } }).apply;
 }
 
 function imagePalette(mark, domain, value, steps = 1024) {
   const { densityMap, plot } = mark;
-  const scheme = plot.getAttribute('schemeColor');
+  const scheme = plot.getAttribute('colorScheme');
   let color;
 
   if (densityMap.fill) {

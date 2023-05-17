@@ -16,8 +16,8 @@ vconcat:
     bandwidth: $bandwidth
   - select: intervalX
     as: $brush
-  axisY: null
-  domainX: Fixed
+  yAxis: null
+  xDomain: Fixed
   width: 600
   marginLeft: 10
   height: 200
@@ -29,8 +29,8 @@ vconcat:
     bandwidth: $bandwidth
   - select: intervalX
     as: $brush
-  axisY: null
-  domainX: Fixed
+  yAxis: null
+  xDomain: Fixed
   width: 600
   marginLeft: 10
   height: 200

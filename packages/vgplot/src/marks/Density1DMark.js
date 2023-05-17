@@ -22,7 +22,7 @@ export class Density1DMark extends Mark {
   }
 
   get filterIndexable() {
-    const name = this.dim === 'x' ? 'domainX' : 'domainY';
+    const name = this.dim === 'x' ? 'xDomain' : 'yDomain';
     const dom = this.plot.getAttribute(name);
     return dom && !dom[Transient];
   }

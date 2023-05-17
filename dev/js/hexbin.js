@@ -3,10 +3,10 @@ import * as vg from '../setup.js';
 export default function(el) {
   const {
     plot, vconcat, hconcat, hspace, menu, hexbin, hexgrid, from, name,
-    bin, count, rectY, rectX, scaleColor, schemeColor, legendColor,
+    bin, count, rectY, rectX, colorScale, colorScheme, colorLegend,
     marginLeft, marginRight, marginBottom, marginTop,
-    axisX, axisY, labelAnchorX, labelAnchorY,
-    domainX, domainY, domainXY, intervalX, intervalY, width, height,
+    xAxis, yAxis, xLabelAnchor, yLabelAnchor,
+    xDomain, yDomain, xyDomain, intervalX, intervalY, width, height,
     Selection, Param, Fixed
   } = vg;
 
@@ -26,7 +26,7 @@ export default function(el) {
           options: ['log', 'linear', 'sqrt']
         }),
         hspace(10),
-        legendColor({ for: 'hexbins' })
+        colorLegend({ for: 'hexbins' })
       ),
       hconcat(
         plot(
@@ -36,7 +36,7 @@ export default function(el) {
           ),
           intervalX({ as: query }),
           marginLeft(5), marginRight(5), marginTop(30), marginBottom(0),
-          domainX(Fixed), axisX('top'), axisY(null), labelAnchorX('center'),
+          xDomain(Fixed), xAxis('top'), yAxis(null), xLabelAnchor('center'),
           width(710), height(70)
         ),
         hspace(80)
@@ -48,9 +48,9 @@ export default function(el) {
             { x, y, fill: count(), binWidth }
           ),
           hexgrid({ binWidth }),
-          schemeColor('ylgnbu'), scaleColor(scale),
+          colorScheme('ylgnbu'), colorScale(scale),
           marginLeft(5), marginRight(0), marginTop(0), marginBottom(5),
-          axisX(null), axisY(null), domainXY(Fixed),
+          xAxis(null), yAxis(null), xyDomain(Fixed),
           width(705), height(505),
           name('hexbins')
         ),
@@ -61,7 +61,7 @@ export default function(el) {
           ),
           intervalY({ as: query }),
           marginLeft(0), marginRight(40), marginTop(4), marginBottom(5),
-          domainY([-60, 180]), axisX(null), axisY('right'), labelAnchorY('center'),
+          yDomain([-60, 180]), xAxis(null), yAxis('right'), yLabelAnchor('center'),
           width(80), height(505)
         )
       )

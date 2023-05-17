@@ -10,12 +10,12 @@ data:
     { i: 7, u: H, v: 1 }
   ]
 defaults:
-  axisX: null
-  axisY: null
+  xAxis: null
+  yAxis: null
   margins: { left: 5, top: 5, right: 5, bottom: 5 }
   width: 160
   height: 100
-  domainY: [0, 9]
+  yDomain: [0, 9]
 vconcat:
 - hconcat:
   - { mark: barY, data: { from: dd }, x: u, y: v, fill: steelblue }
@@ -27,20 +27,20 @@ vconcat:
   - plot:
     - { mark: dot, data: { from: dd }, x: i, y: v, fill: black, r: 1.5 }
     - { mark: regressionY, data: { from: dd }, x: i, y: v, stroke: steelblue }
-    domainX: [-0.5, 7.5]
+    xDomain: [-0.5, 7.5]
   - plot:
     - { mark: hexgrid }
     - { mark: hexbin, data: { from: dd }, x: i, y: v, fill: { count: } }
-    schemeColor: blues
-    domainX: [-1, 8]
+    colorScheme: blues
+    xDomain: [-1, 8]
   - plot:
     - { mark: contour, data: { from: dd }, x: i, y: v, stroke: steelblue, bandwidth: 15 }
-    domainX: [-1, 8]
+    xDomain: [-1, 8]
   - plot:
     - { mark: raster, data: { from: dd }, x: i, y: v, fill: density, bandwidth: 15 }
-    schemeColor: blues
-    domainX: [-1, 8]
+    colorScheme: blues
+    xDomain: [-1, 8]
   - plot:
     - { mark: denseLine, data: { from: dd }, x: i, y: v, fill: density, bandwidth: 2, binWidth: 1 }
-    schemeColor: blues
-    domainX: [-1, 8]
+    colorScheme: blues
+    xDomain: [-1, 8]

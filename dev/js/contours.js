@@ -17,8 +17,8 @@ export default function(el = document.body) {
         vg.raster(vg.from(table), { x, y, fill: 'species', bandwidth }),
         vg.contour(vg.from(table), { x, y, stroke: 'species', bandwidth, thresholds }),
         vg.dot(vg.from(table), { x, y, fill: 'black', r: 1 }),
-        vg.axisX('bottom'), vg.labelAnchorX('center'),
-        vg.axisY('right'), vg.labelAnchorY('center'),
+        vg.xAxis('bottom'), vg.xLabelAnchor('center'),
+        vg.yAxis('right'), vg.yLabelAnchor('center'),
         vg.margins({ top: 5, bottom: 30, left: 5, right: 50 }),
         vg.width(700),
         vg.height(480)

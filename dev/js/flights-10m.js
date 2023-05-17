@@ -4,7 +4,7 @@ export default async function(el) {
   const {
     coordinator, Query, Selection, Param, Fixed, sql,
     plot, vconcat, menu, from, bin, avg, count, max, min, rectY,
-    width, height, marginLeft, domainX, intervalX,
+    width, height, marginLeft, xDomain, intervalX,
   } = vg;
 
   const aggr = Param.value('count');
@@ -58,7 +58,7 @@ export default async function(el) {
               { x: bin(col), y, fill: 'steelblue', inset: 0.5 }
             ),
             intervalX({ as: brush }),
-            domainX(Fixed),
+            xDomain(Fixed),
             width(600), marginLeft(75),
             height(200)
           );

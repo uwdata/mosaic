@@ -15,8 +15,8 @@ vconcat:
     rotate: { expr: "degrees(atan2(u, v))" }
     length: { expr: $length * sqrt(u * u + v * v) }
     stroke: { expr: sqrt(u * u + v * v) }
-  scaleLength: identity
-  zeroColor: true
+  lengthScale: identity
+  colorZero: true
   inset: 10
   aspectRatio: 1
 - input: slider

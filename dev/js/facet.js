@@ -3,7 +3,7 @@ import * as vg from '../setup.js';
 export default function(el) {
   const {
     Selection, Fixed, plot, from, barX, tickX, frame, avg, quantile,
-    intervalX, domainXY, domainFX, domainColor, marginLeft
+    intervalX, xyDomain, fxDomain, colorDomain, marginLeft
   } = vg;
 
   const data = 'athletes';
@@ -26,7 +26,7 @@ export default function(el) {
       ),
       intervalX({ as: brush }),
       frame({ stroke: '#ccc' }),
-      domainXY(Fixed), domainFX(Fixed), domainColor(Fixed),
+      xyDomain(Fixed), fxDomain(Fixed), colorDomain(Fixed),
       marginLeft(100)
     )
   );
