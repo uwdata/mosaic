@@ -57,8 +57,8 @@ describe('Aggregate functions', () => {
   });
   it('support filter', () => {
     const foo = column('foo');
-    const expr = sum(foo).where(sql`${foo} > 5`);
-    assert.strictEqual(String(expr), 'SUM("foo") FILTER (WHERE "foo" > 5)');
+    const expr = avg(foo).where(sql`${foo} > 5`);
+    assert.strictEqual(String(expr), 'AVG("foo") FILTER (WHERE "foo" > 5)');
   });
   it('include ARG_MAX', () => {
     assert.strictEqual(String(argmax('foo', 'bar')), 'ARG_MAX("foo", "bar")');
@@ -155,7 +155,7 @@ describe('Aggregate functions', () => {
     assert.strictEqual(String(stringAgg('foo')), 'STRING_AGG("foo")');
   });
   it('include SUM', () => {
-    assert.strictEqual(String(sum('foo')), 'SUM("foo")');
+    assert.strictEqual(String(sum('foo')), 'SUM("foo")::DOUBLE');
   });
   it('include VARIANCE', () => {
     assert.strictEqual(String(variance('foo')), 'VARIANCE("foo")');

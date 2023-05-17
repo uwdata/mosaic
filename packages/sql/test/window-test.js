@@ -14,62 +14,62 @@ describe('Window functions', () => {
     assert.deepStrictEqual(expr.columns, ['foo']);
   });
   it('support window name', () => {
-    const expr = rank().over('win');
-    assert.strictEqual(expr.window, 'RANK');
+    const expr = cume_dist().over('win');
+    assert.strictEqual(expr.window, 'CUME_DIST');
     assert.strictEqual(expr.name, 'win');
-    assert.strictEqual(String(expr), 'RANK() OVER "win"');
+    assert.strictEqual(String(expr), 'CUME_DIST() OVER "win"');
   });
   it('support partition by', () => {
-    const expr = rank().partitionby('foo', 'bar');
-    assert.strictEqual(String(expr), 'RANK() OVER (PARTITION BY "foo", "bar")');
+    const expr = cume_dist().partitionby('foo', 'bar');
+    assert.strictEqual(String(expr), 'CUME_DIST() OVER (PARTITION BY "foo", "bar")');
   });
   it('support order by', () => {
-    const expr = rank().orderby('a', desc('b'));
-    assert.strictEqual(String(expr), 'RANK() OVER (ORDER BY "a", "b" DESC NULLS LAST)');
+    const expr = cume_dist().orderby('a', desc('b'));
+    assert.strictEqual(String(expr), 'CUME_DIST() OVER (ORDER BY "a", "b" DESC NULLS LAST)');
   });
   it('support rows frame', () => {
     assert.strictEqual(
-      String(first_value('foo').rows(0, null)),
+      String(first_value('foo').rows([0, null])),
       'FIRST_VALUE("foo") OVER (ROWS BETWEEN CURRENT ROW AND UNBOUNDED FOLLOWING)'
     );
     assert.strictEqual(
-      String(first_value('foo').rows(null, null)),
+      String(first_value('foo').rows([null, null])),
       'FIRST_VALUE("foo") OVER (ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING)'
     );
     assert.strictEqual(
-      String(first_value('foo').rows(0, 2)),
+      String(first_value('foo').rows([0, 2])),
       'FIRST_VALUE("foo") OVER (ROWS BETWEEN CURRENT ROW AND 2 FOLLOWING)'
     );
     assert.strictEqual(
-      String(first_value('foo').rows(2, 0)),
+      String(first_value('foo').rows([2, 0])),
       'FIRST_VALUE("foo") OVER (ROWS BETWEEN 2 PRECEDING AND CURRENT ROW)'
     );
   });
   it('support range frame', () => {
     assert.strictEqual(
-      String(first_value('foo').range(0, null)),
+      String(first_value('foo').range([0, null])),
       'FIRST_VALUE("foo") OVER (RANGE BETWEEN CURRENT ROW AND UNBOUNDED FOLLOWING)'
     );
     assert.strictEqual(
-      String(first_value('foo').range(null, null)),
+      String(first_value('foo').range([null, null])),
       'FIRST_VALUE("foo") OVER (RANGE BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING)'
     );
     assert.strictEqual(
-      String(first_value('foo').range(0, 2)),
+      String(first_value('foo').range([0, 2])),
       'FIRST_VALUE("foo") OVER (RANGE BETWEEN CURRENT ROW AND 2 FOLLOWING)'
     );
     assert.strictEqual(
-      String(first_value('foo').range(2, 0)),
+      String(first_value('foo').range([2, 0])),
       'FIRST_VALUE("foo") OVER (RANGE BETWEEN 2 PRECEDING AND CURRENT ROW)'
     );
   });
   it('support window name, partition by, order by, and frame', () => {
-    const expr = rank()
+    const expr = cume_dist()
       .over('base')
       .partitionby('foo', 'bar')
       .orderby('a', desc('b'))
-      .rows(0, +Infinity);
-    assert.strictEqual(String(expr), 'RANK() OVER ('
+      .rows([0, +Infinity]);
+    assert.strictEqual(String(expr), 'CUME_DIST() OVER ('
       + '"base" '
       + 'PARTITION BY "foo", "bar" '
       + 'ORDER BY "a", "b" DESC NULLS LAST '
@@ -80,10 +80,10 @@ describe('Window functions', () => {
     const col = stubParam(column('bar'));
     assert.ok(isParamLike(col));
 
-    const expr = rank(col);
+    const expr = cume_dist(col);
     assert.ok(isSQLExpression(expr));
     assert.ok(isParamLike(expr));
-    assert.strictEqual(String(expr), 'RANK("bar") OVER ()');
+    assert.strictEqual(String(expr), 'CUME_DIST("bar") OVER ()');
     assert.strictEqual(expr.column, 'bar');
     assert.deepStrictEqual(expr.columns, ['bar']);
 
@@ -92,18 +92,18 @@ describe('Window functions', () => {
       assert.strictEqual(String(expr), `${value}`);
     });
     col.update(column('baz'));
-    assert.strictEqual(String(expr), 'RANK("baz") OVER ()');
+    assert.strictEqual(String(expr), 'CUME_DIST("baz") OVER ()');
     assert.strictEqual(expr.column, 'baz');
     assert.deepStrictEqual(expr.columns, ['baz']);
   });
   it('include ROW_NUMBER', () => {
-    assert.strictEqual(String(row_number()), 'ROW_NUMBER() OVER ()');
+    assert.strictEqual(String(row_number()), '(ROW_NUMBER() OVER ())::INTEGER');
   });
   it('include RANK', () => {
-    assert.strictEqual(String(rank()), 'RANK() OVER ()');
+    assert.strictEqual(String(rank()), '(RANK() OVER ())::INTEGER');
   });
   it('include DENSE_RANK', () => {
-    assert.strictEqual(String(dense_rank()), 'DENSE_RANK() OVER ()');
+    assert.strictEqual(String(dense_rank()), '(DENSE_RANK() OVER ())::INTEGER');
   });
   it('include PERCENT_RANK', () => {
     assert.strictEqual(String(percent_rank()), 'PERCENT_RANK() OVER ()');

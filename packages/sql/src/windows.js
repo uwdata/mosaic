@@ -1,4 +1,4 @@
-import { SQLExpression, sql } from './expression.js';
+import { SQLExpression, isParamLike, sql } from './expression.js';
 import { functionCall } from './functions.js';
 import { asColumn } from './ref.js';
 import { repeat } from './repeat.js';
@@ -20,8 +20,16 @@ export class WindowFunction extends SQLExpression {
       const s2 = (group || order) && frame ? ' ' : '';
       expr = sql`${func} OVER (${name ? `"${name}" ` : ''}${group}${s1}${order}${s2}${frame})`;
     }
+    if (type) {
+      expr = sql`(${expr})::${type}`;
+    }
     const { _expr, _deps } = expr;
     super(_expr, _deps, { window: op, func, type, name, group, order, frame });
+  }
+
+  get label() {
+    const { func } = this;
+    return func.label ?? func.toString();
   }
 
   over(name) {
@@ -49,27 +57,37 @@ export class WindowFunction extends SQLExpression {
     return new WindowFunction(op, func, type, name, group, order, frame);
   }
 
-  rows(prev, next) {
-    const frame = windowFrame('ROWS', prev, next);
+  rows(expr) {
+    const frame = windowFrame('ROWS', expr);
     const { window: op, func, type, name, group, order } = this;
     return new WindowFunction(op, func, type, name, group, order, frame);
   }
 
-  range(prev, next) {
-    const frame = windowFrame('RANGE', prev, next);
+  range(expr) {
+    const frame = windowFrame('RANGE', expr);
     const { window: op, func, type, name, group, order } = this;
     return new WindowFunction(op, func, type, name, group, order, frame);
   }
 }
 
-function windowFrame(type, prev, next) {
+function windowFrame(type, frame) {
+  if (isParamLike(frame)) {
+    const expr = sql`${frame}`;
+    expr.toString = () => `${type} ${frameToSQL(frame.value)}`;
+    return expr;
+  }
+  return `${type} ${frameToSQL(frame)}`;
+}
+
+function frameToSQL(frame) {
+  const [prev, next] = frame;
   const a = prev === 0 ? 'CURRENT ROW'
-    : Number.isFinite(prev) ? `${prev} PRECEDING`
+    : Number.isFinite(prev) ? `${Math.abs(prev)} PRECEDING`
     : 'UNBOUNDED PRECEDING';
   const b = next === 0 ? 'CURRENT ROW'
-    : Number.isFinite(next) ? `${next} FOLLOWING`
+    : Number.isFinite(next) ? `${Math.abs(next)} FOLLOWING`
     : 'UNBOUNDED FOLLOWING';
-  return `${type} BETWEEN ${a} AND ${b}`;
+  return `BETWEEN ${a} AND ${b}`;
 }
 
 export function winf(op, type) {

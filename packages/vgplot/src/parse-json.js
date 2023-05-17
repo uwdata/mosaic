@@ -1,6 +1,8 @@
 import { Param, Selection, coordinator, sqlFrom } from '@uwdata/mosaic-core';
 import {
-  Query, avg, count, max, median, min, mode, quantile, sum, sql
+  Query, sql, avg, count, max, median, min, mode, quantile, sum,
+  row_number, rank, dense_rank, percent_rank, cume_dist, ntile,
+  lag, lead, first_value, last_value, nth_value
 } from '@uwdata/mosaic-sql';
 import { feature, mesh } from 'topojson-client';
 import { bin, dateMonth, dateMonthDay, dateDay } from './transforms/index.js'
@@ -59,7 +61,18 @@ export const DefaultTransforms = new Map([
   ['min', min],
   ['mode', mode],
   ['quantile', quantile],
-  ['sum', sum]
+  ['sum', sum],
+  ['row_number', row_number],
+  ['rank', rank],
+  ['dense_rank', dense_rank],
+  ['percent_rank', percent_rank],
+  ['cume_dist', cume_dist],
+  ['ntile', ntile],
+  ['lag', lag],
+  ['lead', lead],
+  ['first_value', first_value],
+  ['last_value', last_value],
+  ['nth_value', nth_value]
 ]);
 
 export const DefaultInputs = new Map(Object.entries(inputs));
@@ -124,17 +137,9 @@ export class JSONParseContext {
 
   maybeTransform(value) {
     if (isObject(value)) {
-      if (value.expr) {
-        return parseExpression(value, this);
-      } else {
-        const { transforms } = this;
-        const [ key ] = Object.keys(value);
-        const fn = transforms.get(key);
-        if (fn) {
-          const args = key === 'count' ? [] : [value[key]].flat();
-          return fn(...args);
-        }
-      }
+      return value.expr
+        ? parseExpression(value, this)
+        : parseTransform(value, this);
     }
   }
 
@@ -430,6 +435,39 @@ function parseExpression(spec, ctx) {
   return sql(spans, ...exprs).annotate({ label });
 }
 
+function parseTransform(spec, ctx) {
+  const { transforms } = ctx;
+  let name;
+  for (const key in spec) {
+    if (transforms.has(key)) {
+      name = key;
+    }
+  }
+  if (!name) {
+    return; // return undefined to signal no transform
+  }
+
+  const func = transforms.get(name);
+  const args = name === 'count' || name == null ? [] : toArray(spec[name]);
+  let expr = func(args);
+  if (spec.distinct) expr = expr.distinct();
+  if (spec.order) {
+    const p = toArray(spec.order).map(v => ctx.maybeParam(v));
+    expr = expr.orderby(p);
+  }
+  if (spec.partition) {
+    const p = toArray(spec.partition).map(v => ctx.maybeParam(v));
+    expr = expr.partitionby(p);
+  }
+  if (spec.rows) {
+    expr = expr.rows(ctx.maybeParam(spec.rows));
+  } else if (spec.range) {
+    expr = expr.range(ctx.maybeParam(spec.range));
+  }
+
+  return expr;
+}
+
 // -----
 
 function paramRef(value) {
@@ -441,6 +479,10 @@ function paramRef(value) {
 
 function paramStr(value) {
   return value?.[0] === '$' ? value.slice(1) : null;
+}
+
+function toArray(value) {
+  return [value].flat();
 }
 
 function isArray(value) {
