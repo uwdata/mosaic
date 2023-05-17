@@ -2,21 +2,24 @@ import { sql } from './expression.js';
 import { asColumn } from './ref.js';
 import { repeat } from './repeat.js';
 
-function func(op) {
+export function functionCall(op, type) {
   return (...values) => {
     const args = values.map(asColumn);
-    const strings = [`${op}(`, ...repeat(args.length - 1, ', '), ')'];
-    return sql(strings, ...args).annotate({ func: op, args });
+    const cast = type ? `::${type}` : '';
+    const expr = args.length
+      ? sql([`${op}(`, ...repeat(args.length - 1, ', '), `)${cast}`], ...args)
+      : sql`${op}()${cast}`;
+    return expr.annotate({ func: op, args });
   }
 }
 
-export const regexp_matches = func('REGEXP_MATCHES');
-export const contains = func('CONTAINS');
-export const prefix = func('PREFIX');
-export const suffix = func('SUFFIX');
-export const lower = func('LOWER');
-export const upper = func('UPPER');
-export const length = func('LENGTH');
-export const isNaN = func('ISNAN');
-export const isFinite = func('ISFINITE');
-export const isInfinite = func('ISINF');
+export const regexp_matches = functionCall('REGEXP_MATCHES');
+export const contains = functionCall('CONTAINS');
+export const prefix = functionCall('PREFIX');
+export const suffix = functionCall('SUFFIX');
+export const lower = functionCall('LOWER');
+export const upper = functionCall('UPPER');
+export const length = functionCall('LENGTH');
+export const isNaN = functionCall('ISNAN');
+export const isFinite = functionCall('ISFINITE');
+export const isInfinite = functionCall('ISINF');

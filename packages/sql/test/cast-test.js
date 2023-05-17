@@ -11,7 +11,7 @@ describe('cast', () => {
     assert.strictEqual(expr.aggregate, 'SUM');
     assert.strictEqual(expr.column, 'bar');
     assert.deepStrictEqual(expr.columns, ['bar']);
-    assert.strictEqual(expr.label, 'sum bar');
+    assert.strictEqual(expr.label, 'sum(bar)');
   });
   it('performs double casts', () => {
     assert.strictEqual(String(castDouble('foo')), 'CAST("foo" AS DOUBLE)');
@@ -22,7 +22,7 @@ describe('cast', () => {
     assert.strictEqual(expr.aggregate, 'SUM');
     assert.strictEqual(expr.column, 'bar');
     assert.deepStrictEqual(expr.columns, ['bar']);
-    assert.strictEqual(expr.label, 'sum bar');
+    assert.strictEqual(expr.label, 'sum(bar)');
   });
   it('performs integer casts', () => {
     assert.strictEqual(String(castInteger('foo')), 'CAST("foo" AS INTEGER)');
@@ -33,6 +33,6 @@ describe('cast', () => {
     assert.strictEqual(expr.aggregate, 'SUM');
     assert.strictEqual(expr.column, 'bar');
     assert.deepStrictEqual(expr.columns, ['bar']);
-    assert.strictEqual(expr.label, 'sum bar');
+    assert.strictEqual(expr.label, 'sum(bar)');
   });
 });

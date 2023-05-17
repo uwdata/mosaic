@@ -2,11 +2,17 @@ import { sql } from './expression.js';
 import { asColumn } from './ref.js';
 
 export function cast(expr, type) {
-  const e = asColumn(expr);
-  return sql`CAST(${e} AS ${type})`.annotate(
-    e.label != null ? { label: e.label } : null,
-    e.aggregate != null ? { aggregate: e.aggregate } : null
-  );
+  const arg = asColumn(expr);
+  const e = sql`CAST(${arg} AS ${type})`;
+  Object.defineProperty(e, 'label', {
+    enumerable: true,
+    get() { return expr.label; }
+  });
+  Object.defineProperty(e, 'aggregate', {
+    enumerable: true,
+    get() { return expr.aggregate || false; }
+  });
+  return e;
 }
 
 export const castDouble = expr => cast(expr, 'DOUBLE');

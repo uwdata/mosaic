@@ -102,6 +102,20 @@ export {
 } from './functions.js';
 
 export {
+  row_number,
+  rank,
+  dense_rank,
+  percent_rank,
+  cume_dist,
+  ntile,
+  lag,
+  lead,
+  first_value,
+  last_value,
+  nth_value
+} from './windows.js';
+
+export {
   Query,
   isQuery
 } from './Query.js';
