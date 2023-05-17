@@ -2,22 +2,16 @@ import { sql } from './expression.js';
 import { asColumn } from './ref.js';
 import { repeat } from './repeat.js';
 
-export function functionCall(op, type, annotations) {
+export function functionCall(op, type) {
   return (...values) => {
     const args = values.map(asColumn);
-    let expr;
-    if (args.length) {
-      const strings = [`${op}(`, ...repeat(args.length - 1, ', '), ')'];
-      expr = sql(strings, ...args);
-    } else {
-      expr = sql`${op}()`;
-    }
-
-    return (type ? cast(expr, type) : expr)
-      .annotate({ ...annotations, func: op, args });
+    const cast = type ? `::${type}` : '';
+    const expr = args.length
+      ? sql([`${op}(`, ...repeat(args.length - 1, ', '), `)${cast}`], ...args)
+      : sql`${op}()${cast}`;
+    return expr.annotate({ func: op, args });
   }
 }
-
 
 export const regexp_matches = functionCall('REGEXP_MATCHES');
 export const contains = functionCall('CONTAINS');
