@@ -76,11 +76,13 @@ export class Coordinator {
   }
 
   createBundle(name, queries, priority = Priority.Low) {
-    return this.manager.request({ type: 'create-bundle', name, queries }, priority);
+    const options = { name, queries };
+    return this.manager.request({ type: 'create-bundle', options }, priority);
   }
 
   loadBundle(name, priority = Priority.High) {
-    return this.manager.request({ type: 'load-bundle', name }, priority);
+    const options = { name };
+    return this.manager.request({ type: 'load-bundle', options }, priority);
   }
 
   updateClient(client, query, priority = Priority.Normal) {
