@@ -1,6 +1,7 @@
+import { SQLExpression, parseSQL, sql } from './expression.js';
 import { asColumn } from './ref.js';
-import { toSQL } from './to-sql.js';
-import { SQLExpression, parseSQL } from './expression.js';
+import { repeat } from './repeat.js';
+import { literalToSQL } from './to-sql.js';
 
 /**
  * Tag function for SQL aggregate expressions. Interpolated values
@@ -8,31 +9,7 @@ import { SQLExpression, parseSQL } from './expression.js';
  * references), or parameterized values.
  */
 export function agg(strings, ...exprs) {
-  const { spans, cols } = parseSQL(strings, exprs);
-  return new AggregateExpression(spans, cols);
-}
-
-/**
- * Base class for aggregate expressions.
- * Most callers should use the `agg` template tag or a dedicated
- * aggregate function rather than instantiate this class.
- */
-export class AggregateExpression extends SQLExpression {
-  constructor(parts, columns, props) {
-    super(parts, columns, props);
-    this.aggregate = true;
-  }
-
-  where(expr) {
-    this.filter = expr;
-    return this;
-  }
-
-  toString() {
-    const { filter } = this;
-    const where = filter ? ` FILTER (WHERE ${toSQL(filter)})` : '';
-    return `${super.toString()}${where}`;
-  }
+  return sql(strings, ...exprs).annotate({ aggregate: true });
 }
 
 /**
@@ -40,33 +17,47 @@ export class AggregateExpression extends SQLExpression {
  * Most callers should use a dedicated aggregate function
  * rather than instantiate this class.
  */
-export class AggregateFunction extends AggregateExpression {
-  constructor(op, args, type) {
+export class AggregateFunction extends SQLExpression {
+  constructor(op, args, type, isDistinct, filter) {
     args = (args || []).map(asColumn);
-    const columns = Array.from(new Set(
-      args.flatMap(a => Array.isArray(a.columns) ? a.columns : [])
-    ));
-    const label = op.toLowerCase()
-      + (args.length ? ` ${columns.join(', ')}` : '');
-    super([], columns, { label });
-    this.aggregate = op;
-    this.args = args;
-    this.type = type;
+    const close = `)${type ? `::${type}` : ''}`;
+    let strings = [`${op}(${isDistinct ? 'DISTINCT ' :''}`];
+    let exprs = [];
+    if (args.length) {
+      strings = strings.concat([
+        ...repeat(args.length - 1, ', '),
+        `${close}${filter ? ' FILTER (WHERE ' : ''}`,
+        ...(filter ? [')'] : [])
+      ]);
+      exprs = [...args, ...(filter ? [filter] : [])];
+    } else {
+      strings[0] += '*' + close;
+    }
+    const { spans, cols } = parseSQL(strings, exprs);
+    super(spans, cols, { aggregate: op, args, type, isDistinct, filter });
+  }
+
+  get label() {
+    const { aggregate: op, args, isDistinct } = this;
+    const dist = isDistinct ? 'DISTINCT' + (args.length ? ' ' : '') : '';
+    const tail = args.length ? `(${dist}${args.map(unquoted).join(', ')})` : '';
+    return `${op.toLowerCase()}${tail}`;
   }
 
   distinct() {
-    this.isDistinct = true;
-    return this;
+    const { aggregate: op, args, type, filter } = this;
+    return new AggregateFunction(op, args, type, true, filter);
   }
 
-  toString() {
-    const { aggregate, args, isDistinct, filter, type } = this;
-    const arg = args.length === 0 ? '*' : args.map(toSQL).join(', ');
-    const distinct = isDistinct ? 'DISTINCT ' : '';
-    const cast = type ? `::${type}` : '';
-    const where = filter ? ` FILTER (WHERE ${toSQL(filter)})` : '';
-    return `${aggregate}(${distinct}${arg})${cast}${where}`;
+  where(filter) {
+    const { aggregate: op, args, type, isDistinct } = this;
+    return new AggregateFunction(op, args, type, isDistinct, filter);
   }
+}
+
+function unquoted(value) {
+  const s = literalToSQL(value);
+  return s && s.startsWith('"') && s.endsWith('"') ? s.slice(1, -1) : s
 }
 
 function aggf(op, type) {
