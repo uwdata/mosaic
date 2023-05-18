@@ -1,0 +1,27 @@
+data:
+  cases: { file: data/berlin-covid.csv }
+params:
+  frame: [-6, 0]
+vconcat:
+- plot:
+  - mark: barY
+    data: { from: cases }
+    x: day
+    y: cases
+    fill: steelblue
+  - mark: lineY
+    data: { from: cases }
+    x: day
+    y: { avg: cases, order: day, rows: $frame }
+    curve: monotone-x
+    stroke: black
+  width: 1200
+  height: 300
+- input: menu
+  label: Window Frame
+  as: $frame
+  options:
+  - { label: '7-day moving average, with prior 6 days: [-6, 0]', value: [-6, 0] }
+  - { label: '7-day moving average, centered at current day: [-3, 3]', value: [-3, 3] }
+  - { label: 'Moving average, with all prior days [-∞, 0]', value: [null, 0] }
+  - { label: 'Global average [-∞, +∞]', value: [null, null] }
