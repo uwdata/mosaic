@@ -1,4 +1,4 @@
-import { Ref, asColumn, sql } from '@uwdata/mosaic-sql';
+import { asColumn } from '@uwdata/mosaic-sql';
 import { Transform } from '../symbols.js';
 
 const EXTENT = [
@@ -10,41 +10,36 @@ function hasExtent(channel, type) {
 }
 
 export function bin(field, options = { steps: 25 }) {
-  const fn = (channel, type) => {
-    return hasExtent(channel, type)
+  const fn = (mark, channel) => {
+    return hasExtent(channel, mark.type)
       ? {
-          [`${channel}1`]: binTransform(field, options),
-          [`${channel}2`]: binTransform(field, { ...options, offset: 1 })
+          [`${channel}1`]: binField(mark, field, options),
+          [`${channel}2`]: binField(mark, field, { ...options, offset: 1 })
         }
       : {
-          [channel]: binTransform(field, options)
+          [channel]: binField(mark, field, options)
         };
   };
   fn[Transform] = true;
   return fn;
 }
 
-function binTransform(column, options) {
-  return new BinTransform(column, options);
-}
-
-class BinTransform extends Ref {
-  constructor(column, options) {
-    super(undefined, column);
-    this.options = options;
-    this.stats = ['min', 'max'];
-  }
-
-  transform(stats) {
-    const { column, options } = this;
-    const { min, max } = stats[column];
-    const b = bins(min, max, options);
-    const col = asColumn(column);
-    const base = b.min === 0 ? col : sql`(${col} - ${b.min})`;
-    const alpha = `${(b.max - b.min) / b.steps}::DOUBLE`;
-    const off = options.offset ? '1 + ' : '';
-    return sql`${min} + ${alpha} * (${off}FLOOR(${base} / ${alpha})::INTEGER)`;
-  }
+function binField(mark, column, options) {
+  return {
+    column,
+    label: column,
+    get stats() { return ['min', 'max']; },
+    get columns() { return [column]; },
+    toString() {
+      const { min, max } = mark.stats[column];
+      const b = bins(min, max, options);
+      const col = asColumn(column);
+      const base = b.min === 0 ? col : `(${col} - ${b.min})`;
+      const alpha = `${(b.max - b.min) / b.steps}::DOUBLE`;
+      const off = options.offset ? `${options.offset} + ` : '';
+      return `${min} + ${alpha} * (${off}FLOOR(${base} / ${alpha})::INTEGER)`;
+    }
+  };
 }
 
 export function bins(min, max, options) {

@@ -35,7 +35,7 @@ export class RasterTileMark extends Grid2DMark {
   }
 
   tileQuery(extent) {
-    const { plot, binType, binPad, channels, densityMap, source, stats } = this;
+    const { plot, binType, binPad, channels, densityMap, source } = this;
     const [[x0, x1], [y0, y1]] = extent;
     const [nx, ny] = this.bins;
     const bx = binField(this, 'x');
@@ -60,14 +60,13 @@ export class RasterTileMark extends Grid2DMark {
     for (const c of channels) {
       if (Object.hasOwn(c, 'field')) {
         const { channel, field } = c;
-        const exp = field.transform?.(stats) || field;
-        if (exp.aggregate) {
-          agg = exp;
+        if (field.aggregate) {
+          agg = field;
           densityMap[channel] = true;
         } else if (channel === 'weight') {
-          agg = sum(exp);
+          agg = sum(field);
         } else if (channel !== 'x' && channel !== 'y') {
-          q.select({ [channel]: exp });
+          q.select({ [channel]: field });
           groupby.push(channel);
         }
       }

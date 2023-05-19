@@ -12,7 +12,7 @@ export class DenseLineMark extends RasterMark {
   }
 
   query(filter = []) {
-    const { plot, channels, normalize, source, stats } = this;
+    const { plot, channels, normalize, source } = this;
     const [x0, x1] = extentX(this, filter);
     const [y0, y1] = extentY(this, filter);
     const [nx, ny] = this.bins = this.binDimensions(this);
@@ -32,12 +32,11 @@ export class DenseLineMark extends RasterMark {
     for (const c of channels) {
       if (Object.hasOwn(c, 'field')) {
         const { channel, field } = c;
-        const expr = field.transform?.(stats) || field;
         if (channel === 'z') {
-          q.select({ [channel]: expr });
+          q.select({ [channel]: field });
           z.push('z');
         } else if (channel !== 'x' && channel !== 'y') {
-          q.select({ [channel]: expr });
+          q.select({ [channel]: field });
           groupby.push(channel);
         }
       }

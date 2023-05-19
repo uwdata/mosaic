@@ -43,7 +43,7 @@ export class Grid2DMark extends Mark {
   }
 
   query(filter = []) {
-    const { plot, binType, binPad, channels, densityMap, source, stats } = this;
+    const { plot, binType, binPad, channels, densityMap, source } = this;
     const [x0, x1] = this.extentX = extentX(this, filter);
     const [y0, y1] = this.extentY = extentY(this, filter);
     const [nx, ny] = this.bins = this.binDimensions(this);
@@ -69,14 +69,13 @@ export class Grid2DMark extends Mark {
     for (const c of channels) {
       if (Object.hasOwn(c, 'field')) {
         const { channel, field } = c;
-        const exp = field.transform?.(stats) || field;
-        if (exp.aggregate) {
-          agg = exp;
+        if (field.aggregate) {
+          agg = field;
           densityMap[channel] = true;
         } else if (channel === 'weight') {
-          agg = sum(exp);
+          agg = sum(field);
         } else if (channel !== 'x' && channel !== 'y') {
-          q.select({ [channel]: exp });
+          q.select({ [channel]: field });
           groupby.push(channel);
         }
       }

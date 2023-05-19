@@ -25,7 +25,7 @@ export class Mark extends MosaicClient {
     const process = (channel, entry) => {
       const type = typeof entry;
       if (type === 'function' && entry[Transform]) {
-        const enc = entry(channel, this.type);
+        const enc = entry(this, channel);
         for (const key in enc) {
           process(key, enc[key]);
         }
@@ -117,36 +117,10 @@ export class Mark extends MosaicClient {
     return this;
   }
 
-  query(filter = [], skip = []) {
+  query(filter = []) {
     if (this.hasOwnData()) return null;
-
-    const { channels, source: { table }, stats } = this;
-    const q = Query.from({ source: table });
-    const dims = [];
-    let aggr = false;
-
-    for (const c of channels) {
-      const { channel, field } = c;
-      if (skip.includes(channel)) continue;
-
-      if (channel === 'order') {
-        q.orderby(c.value);
-      } else if (c.field) {
-        const expr = field.transform?.(stats) || field;
-        if (expr.aggregate) {
-          aggr = true;
-        } else {
-          dims.push(channel);
-        }
-        q.select({ [channel]: expr });
-      }
-    }
-
-    if (aggr) {
-      q.groupby(dims);
-    }
-
-    return q.where(filter);
+    const { channels, source: { table } } = this;
+    return markQuery(channels, table).where(filter);
   }
 
   queryPending() {
@@ -174,4 +148,32 @@ export class Mark extends MosaicClient {
     }
     return [{ type, data, options }];
   }
+}
+
+export function markQuery(channels, table, skip = []) {
+  const q = Query.from({ source: table });
+  const dims = [];
+  let aggr = false;
+
+  for (const c of channels) {
+    const { channel, field } = c;
+    if (skip.includes(channel)) continue;
+
+    if (channel === 'order') {
+      q.orderby(c.value);
+    } else if (field) {
+      if (field.aggregate) {
+        aggr = true;
+      } else {
+        dims.push(channel);
+      }
+      q.select({ [channel]: field });
+    }
+  }
+
+  if (aggr) {
+    q.groupby(dims);
+  }
+
+  return q;
 }
