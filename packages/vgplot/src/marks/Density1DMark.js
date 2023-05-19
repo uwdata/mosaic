@@ -5,7 +5,7 @@ import { dericheConfig, dericheConv1d } from './util/density.js';
 import { extentX, extentY, xext, yext } from './util/extent.js';
 import { grid1d } from './util/grid.js';
 import { handleParam } from './util/handle-param.js';
-import { Mark } from './Mark.js';
+import { Mark, markQuery } from './Mark.js';
 
 export class Density1DMark extends Mark {
   constructor(type, source, options) {
@@ -28,11 +28,13 @@ export class Density1DMark extends Mark {
   }
 
   query(filter = []) {
-    const { bins, dim } = this;
+    if (this.hasOwnData()) throw new Error('Density1DMark requires a data source');
+    const { bins, channels, dim, source: { table } } = this;
     const [lo, hi] = this.extent = (dim === 'x' ? extentX : extentY)(this, filter);
     const bx = binField(this, dim);
     return binLinear1d(
-      super.query(filter.concat(isBetween(bx, [lo, hi])), [dim]),
+      markQuery(channels, table, [dim])
+        .where(filter.concat(isBetween(bx, [lo, hi]))),
       bin1d(bx, lo, hi, bins),
       this.channelField('weight') ? 'weight' : null
     );

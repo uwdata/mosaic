@@ -117,35 +117,10 @@ export class Mark extends MosaicClient {
     return this;
   }
 
-  query(filter = [], skip = []) {
+  query(filter = []) {
     if (this.hasOwnData()) return null;
-
     const { channels, source: { table } } = this;
-    const q = Query.from({ source: table });
-    const dims = [];
-    let aggr = false;
-
-    for (const c of channels) {
-      const { channel, field } = c;
-      if (skip.includes(channel)) continue;
-
-      if (channel === 'order') {
-        q.orderby(c.value);
-      } else if (field) {
-        if (field.aggregate) {
-          aggr = true;
-        } else {
-          dims.push(channel);
-        }
-        q.select({ [channel]: field });
-      }
-    }
-
-    if (aggr) {
-      q.groupby(dims);
-    }
-
-    return q.where(filter);
+    return markQuery(channels, table).where(filter);
   }
 
   queryPending() {
@@ -173,4 +148,32 @@ export class Mark extends MosaicClient {
     }
     return [{ type, data, options }];
   }
+}
+
+export function markQuery(channels, table, skip = []) {
+  const q = Query.from({ source: table });
+  const dims = [];
+  let aggr = false;
+
+  for (const c of channels) {
+    const { channel, field } = c;
+    if (skip.includes(channel)) continue;
+
+    if (channel === 'order') {
+      q.orderby(c.value);
+    } else if (field) {
+      if (field.aggregate) {
+        aggr = true;
+      } else {
+        dims.push(channel);
+      }
+      q.select({ [channel]: field });
+    }
+  }
+
+  if (aggr) {
+    q.groupby(dims);
+  }
+
+  return q;
 }
