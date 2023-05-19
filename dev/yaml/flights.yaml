@@ -11,6 +11,7 @@ vconcat:
   - select: intervalX
     as: $brush
   xDomain: Fixed
+  yTickFormat: s
   width: 600
   height: 200
 - plot:
@@ -23,6 +24,7 @@ vconcat:
   - select: intervalX
     as: $brush
   xDomain: Fixed
+  yTickFormat: s
   width: 600
   height: 200
 - plot:
@@ -35,5 +37,6 @@ vconcat:
   - select: intervalX
     as: $brush
   xDomain: Fixed
+  yTickFormat: s
   width: 600
   height: 200
