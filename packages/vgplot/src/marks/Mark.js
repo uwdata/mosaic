@@ -25,7 +25,7 @@ export class Mark extends MosaicClient {
     const process = (channel, entry) => {
       const type = typeof entry;
       if (type === 'function' && entry[Transform]) {
-        const enc = entry(channel, this.type);
+        const enc = entry(this, channel);
         for (const key in enc) {
           process(key, enc[key]);
         }
@@ -120,7 +120,7 @@ export class Mark extends MosaicClient {
   query(filter = [], skip = []) {
     if (this.hasOwnData()) return null;
 
-    const { channels, source: { table }, stats } = this;
+    const { channels, source: { table } } = this;
     const q = Query.from({ source: table });
     const dims = [];
     let aggr = false;
@@ -131,14 +131,13 @@ export class Mark extends MosaicClient {
 
       if (channel === 'order') {
         q.orderby(c.value);
-      } else if (c.field) {
-        const expr = field.transform?.(stats) || field;
-        if (expr.aggregate) {
+      } else if (field) {
+        if (field.aggregate) {
           aggr = true;
         } else {
           dims.push(channel);
         }
-        q.select({ [channel]: expr });
+        q.select({ [channel]: field });
       }
     }
 
