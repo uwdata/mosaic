@@ -449,7 +449,7 @@ function parseTransform(spec, ctx) {
 
   const func = transforms.get(name);
   const args = name === 'count' || name == null ? [] : toArray(spec[name]);
-  let expr = func(args);
+  let expr = func(...args);
   if (spec.distinct) expr = expr.distinct();
   if (spec.order) {
     const p = toArray(spec.order).map(v => ctx.maybeParam(v));
