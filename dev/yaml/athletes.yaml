@@ -22,12 +22,12 @@ hconcat:
   - vspace: 10
   - plot:
     - mark: dot
-      data: { from: athletes }
+      data: { from: athletes, filterBy: $query }
       x: weight
       y: height
       fill: sex
       r: 2
-      opacity: 0.05
+      opacity: 0.1
     - mark: regressionY
       data: { from: athletes, filterBy: $query }
       x: weight

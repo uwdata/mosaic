@@ -51,22 +51,32 @@
         <option value="wasm">WASM</option>
       </select>
     </span>
+
+    <span style="margin-right: 0.5em;"></span>
+      Source:
+      <select id="source">
+        <option value="yaml" selected>YAML</option>
+        <option value="esm">JavaScript (ESM)</option>
+      </select>
+    </span>
   </header>
   <div id="view"></div>
 <script type="module">
   import yaml from '../../node_modules/yaml/browser/index.js';
-  import { parseJSON, reset, setDatabaseConnector } from '../setup.js';
+  import { parseJSON, specToModule, reset, setDatabaseConnector } from '../setup.js';
 
   const view = document.querySelector('#view');
   const connectorMenu = document.querySelector('#connectors');
   const exampleMenu = document.querySelector('#examples');
+  const sourceMenu = document.querySelector('#source');
   connectorMenu.addEventListener('change', () => setDatabaseConnector(connectorMenu.value));
-  exampleMenu.addEventListener('change', () => load(exampleMenu.value));
+  exampleMenu.addEventListener('change', () => load(exampleMenu.value, sourceMenu.value));
+  sourceMenu.addEventListener('change', () => load(exampleMenu.value, sourceMenu.value));
 
   await setDatabaseConnector(connectorMenu.value);
-  load(exampleMenu.value);
+  load(exampleMenu.value, sourceMenu.value)
 
-  async function load(name) {
+  async function load(name, source) {
     view.replaceChildren();
     reset();
     if (name === 'none' && location.search) {
@@ -78,11 +88,23 @@
         await fetch(`./${name}.yaml`).then(res => res.text())
       );
       try {
-        view.replaceChildren(await parseJSON(spec));
+        const child = source === 'esm'
+          ? await loadModuleView(spec)
+          : await parseJSON(spec);
+        view.replaceChildren(child);
       } catch (err) {
         console.error(err, err.data);
       }
     }
+  }
+
+  async function loadModuleView(spec) {
+    const base = new URL('../setup.js', window.location.href).toString();
+    const imports = new Map([[base, '* as vg']]);
+    const code = await specToModule(spec, { imports });
+    const blob = new Blob([code], { type: 'text/javascript' });
+    const url = URL.createObjectURL(blob);
+    return (await import(url)).default;
   }
 </script>
 </body>
