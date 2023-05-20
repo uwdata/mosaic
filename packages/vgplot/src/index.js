@@ -15,6 +15,9 @@ export {
   argmin,
   avg,
   count,
+  dateDay,
+  dateMonth,
+  dateMonthDay,
   mad,
   max,
   median,
@@ -270,7 +273,7 @@ export {
   panZoom,
   panZoomX,
   panZoomY
-} from './directives/interactors';
+} from './directives/interactors.js';
 
 export {
   colorLegend,
@@ -306,7 +309,11 @@ export {
 
 export {
   parseJSON
-} from './parse-json.js';
+} from './spec/parse-json.js';
+
+export {
+  specToModule
+} from './spec/to-module.js';
 
 export {
   Plot

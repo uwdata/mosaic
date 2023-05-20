@@ -6,18 +6,23 @@ import {
   dateMonth, dateMonthDay, dateDay
 } from '@uwdata/mosaic-sql';
 import { feature, mesh } from 'topojson-client';
-import { bin } from './transforms/index.js'
-import { hconcat, vconcat, hspace, vspace } from './layout/index.js';
+import { bin } from '../transforms/index.js'
+import { hconcat, vconcat, hspace, vspace } from '../layout/index.js';
 import { parse as isoparse } from 'isoformat';
 
-import { from } from './directives/data.js';
-import { plot as _plot } from './directives/plot.js';
-import * as marks from './directives/marks.js';
-import * as inputs from './directives/inputs.js';
-import * as legends from './directives/legends.js';
-import * as attributes from './directives/attributes.js';
-import * as interactors from './directives/interactors.js';
-import { Fixed } from './symbols.js';
+import { from } from '../directives/data.js';
+import { plot as _plot } from '../directives/plot.js';
+import * as marks from '../directives/marks.js';
+import * as inputs from '../directives/inputs.js';
+import * as legends from '../directives/legends.js';
+import * as attributes from '../directives/attributes.js';
+import * as interactors from '../directives/interactors.js';
+import { Fixed } from '../symbols.js';
+
+import {
+  error, paramRef, toArray,
+  isArray, isObject, isNumber, isString, isFunction
+} from './util.js';
 
 export const DefaultParamParsers = new Map([
   ['intersect', () => Selection.intersect()],
@@ -76,6 +81,7 @@ export const DefaultTransforms = new Map([
   ['nth_value', nth_value]
 ]);
 
+export const DefaultMarks = new Map(Object.entries(marks));
 export const DefaultInputs = new Map(Object.entries(inputs));
 export const DefaultLegends = new Map(Object.entries(legends));
 export const DefaultAttributes = new Map(Object.entries(attributes));
@@ -96,6 +102,7 @@ export class JSONParseContext {
     interactors = DefaultInteractors,
     legends = DefaultLegends,
     inputs = DefaultInputs,
+    marks = DefaultMarks,
     params = [],
     datasets = []
   } = {}) {
@@ -107,6 +114,7 @@ export class JSONParseContext {
     this.interactors = interactors;
     this.legends = legends;
     this.inputs = inputs;
+    this.marks = marks;
     this.params = new Map(params);
     this.datasets = new Map(datasets);
     this.postQueue = [];
@@ -263,7 +271,7 @@ async function parseTopoJSONData(name, spec) {
   if (spec.feature) {
     data = feature(json, json.objects[spec.feature]);
   } else {
-    const object = spec.mesh ? json.objects(spec.mesh) : undefined;
+    const object = spec.mesh ? json.objects[spec.mesh] : undefined;
     const filter = ({
       interior: (a, b) => a !== b,
       exterior: (a, b) => a === b
@@ -371,8 +379,7 @@ function parseEntry(spec, ctx) {
 
 function parseMark(spec, ctx) {
   const { mark, data, ...options } = spec;
-
-  const fn = marks[mark];
+  const fn = ctx.marks.get(mark);
   if (!isFunction(fn)) {
     error(`Unrecognized mark type: ${mark}`, spec);
   }
@@ -467,45 +474,4 @@ function parseTransform(spec, ctx) {
   }
 
   return expr;
-}
-
-// -----
-
-function paramRef(value) {
-  const type = typeof value;
-  return type === 'object' ? value?.param
-    : type === 'string' ? paramStr(value)
-    : null;
-}
-
-function paramStr(value) {
-  return value?.[0] === '$' ? value.slice(1) : null;
-}
-
-function toArray(value) {
-  return [value].flat();
-}
-
-function isArray(value) {
-  return Array.isArray(value);
-}
-
-function isObject(value) {
-  return value !== null && typeof value === 'object' && !isArray(value);
-}
-
-function isNumber(value) {
-  return typeof value === 'number';
-}
-
-function isString(value) {
-  return typeof value === 'string';
-}
-
-function isFunction(value) {
-  return typeof value === 'function';
-}
-
-function error(message, data) {
-  throw Object.assign(Error(message), { data });
 }
