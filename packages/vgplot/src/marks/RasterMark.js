@@ -29,7 +29,7 @@ export class RasterMark extends Grid2DMark {
     const s = imageScale(this);
 
     // gather color domain as needed
-    const idx = groupby.indexOf('fill');
+    const idx = groupby.indexOf(this.channelField('fill').as);
     const domain = idx < 0 ? [] : kde.map(({ key }) => key[idx]);
 
     // generate raster images
@@ -109,7 +109,7 @@ function imagePalette(mark, domain, value, steps = 1024) {
     color = scale({ color: { scheme: s, domain } }).apply(value);
   } else {
     // fill color is a constant
-    const fill = mark.channels.find(c => c.channel === 'fill');
+    const fill = mark.channelField('fill');
     color = isColor(fill?.value) ? fill.value : undefined;
   }
 
