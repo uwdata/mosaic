@@ -85,7 +85,10 @@ export {
 } from './cast.js';
 
 export {
-  epoch_ms
+  epoch_ms,
+  dateMonth,
+  dateMonthDay,
+  dateDay
 } from './datetime.js';
 
 export {

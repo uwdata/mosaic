@@ -2,10 +2,11 @@ import { Param, Selection, coordinator, sqlFrom } from '@uwdata/mosaic-core';
 import {
   Query, sql, avg, count, max, median, min, mode, quantile, sum,
   row_number, rank, dense_rank, percent_rank, cume_dist, ntile,
-  lag, lead, first_value, last_value, nth_value
+  lag, lead, first_value, last_value, nth_value,
+  dateMonth, dateMonthDay, dateDay
 } from '@uwdata/mosaic-sql';
 import { feature, mesh } from 'topojson-client';
-import { bin, dateMonth, dateMonthDay, dateDay } from './transforms/index.js'
+import { bin } from './transforms/index.js'
 import { hconcat, vconcat, hspace, vspace } from './layout/index.js';
 import { parse as isoparse } from 'isoformat';
 
