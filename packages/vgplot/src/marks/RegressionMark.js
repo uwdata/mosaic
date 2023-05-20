@@ -5,7 +5,7 @@ import {
   regrSYY, regrSXX, regrAvgX
 } from '@uwdata/mosaic-sql';
 import { qt } from './util/stats.js';
-import { Mark } from './Mark.js';
+import { Mark, channelOption } from './Mark.js';
 import { handleParam } from './util/handle-param.js';
 
 export class RegressionMark extends Mark {
@@ -72,18 +72,16 @@ export class RegressionMark extends Mark {
         case 'fill':
           break;
         case 'stroke':
-          lopt.stroke = Object.hasOwn(c, 'value') ? c.value : c.as;
-          aopt.fill = Object.hasOwn(c, 'value') ? c.value : c.as;
+          lopt.stroke = aopt.fill = channelOption(c);
           break;
         case 'strokeOpacity':
-          lopt.strokeOpacity = Object.hasOwn(c, 'value') ? c.value : c.as;
+          lopt.strokeOpacity = channelOption(c);
           break;
         case 'fillOpacity':
-          aopt.fillOpacity = Object.hasOwn(c, 'value') ? c.value : c.as;
+          aopt.fillOpacity = channelOption(c);
           break;
         default:
-          lopt[c.channel] = Object.hasOwn(c, 'value') ? c.value : c.as;
-          aopt[c.channel] = lopt[c.channel];
+          lopt[c.channel] = aopt[c.channel] = channelOption(c);
           break;
       }
     }

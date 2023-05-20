@@ -5,7 +5,7 @@ import { dericheConfig, dericheConv1d } from './util/density.js';
 import { extentX, extentY, xext, yext } from './util/extent.js';
 import { grid1d } from './util/grid.js';
 import { handleParam } from './util/handle-param.js';
-import { Mark, markQuery } from './Mark.js';
+import { Mark, channelOption, markQuery } from './Mark.js';
 
 export class Density1DMark extends Mark {
   constructor(type, source, options) {
@@ -57,7 +57,7 @@ export class Density1DMark extends Mark {
     // map smoothed grid values to sample data points
     const points = this.data = [];
     const v = dim === 'x' ? 'y' : 'x';
-    const b = dim === 'x' ? 'x' : 'y';
+    const b = this.channelField(dim).as;
     const b0 = +lo;
     const delta = (hi - b0) / (bins - 1);
     const scale = 1 / delta;
@@ -75,7 +75,7 @@ export class Density1DMark extends Mark {
     const { type, data, channels, dim } = this;
     const options = dim === 'x' ? { y: 'y' } : { x: 'x' };
     for (const c of channels) {
-      options[c.channel] = Object.hasOwn(c, 'value') ? c.value : c.channel;
+      options[c.channel] = channelOption(c);
     }
     return [{ type, data, options }];
   }

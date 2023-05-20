@@ -147,11 +147,18 @@ export class Mark extends MosaicClient {
     const { type, data, channels } = this;
     const options = {};
     for (const c of channels) {
-      options[c.channel] = Object.hasOwn(c, 'value') ? c.value
-        : (c.as || c.channel);
+      options[c.channel] = channelOption(c)
     }
     return [{ type, data, options }];
   }
+}
+
+export function channelOption(c) {
+  // use a scale override for color channels to sidestep
+  // https://github.com/observablehq/plot/issues/1593
+  return Object.hasOwn(c, 'value') ? c.value
+    : isColorChannel(c.channel) ? { value: c.as, scale: 'color' }
+    : c.as;
 }
 
 export function markQuery(channels, table, skip = []) {

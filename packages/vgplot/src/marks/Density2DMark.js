@@ -1,5 +1,6 @@
-import { Grid2DMark } from './Grid2DMark.js';
 import { handleParam } from './util/handle-param.js';
+import { Grid2DMark } from './Grid2DMark.js';
+import { channelOption } from './Mark.js';
 
 export class Density2DMark extends Grid2DMark {
   constructor(source, options) {
@@ -35,7 +36,10 @@ export class Density2DMark extends Grid2DMark {
     const { type, channels, densityMap, data } = this;
     const options = {};
     for (const c of channels) {
-      options[c.channel] = Object.hasOwn(c, 'value') ? c.value : c.channel;
+      const { channel } = c;
+      options[channel] = (channel === 'x' || channel === 'y')
+        ? channel // use generated x/y data fields
+        : channelOption(c);
     }
     for (const channel in densityMap) {
       if (densityMap[channel]) {
