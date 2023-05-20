@@ -53,9 +53,6 @@ class CodegenContext extends JSONParseContext {
     const dataCode = await Promise.all(
       Object.keys(data).flatMap(async name => {
         const q = await parseData(name, data[name], this);
-        if (q.data) {
-
-        }
         return !q ? []
           : q.data ? `const ${name} = ${q.data};`
           : `await vg.coordinator().exec(\`${q}\`);`;
@@ -298,7 +295,7 @@ function fetchJSON(spec) {
     : `await fetch("${file}")\n  .then(r => r.json())`;
 }
 
-function parseGeoJSONData(name, spec) {
+function parseGeoJSONData(name, spec, ctx) {
   ctx.datasets.set(name, name);
   return { data: fetchJSON(spec) };
 }
