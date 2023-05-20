@@ -155,7 +155,7 @@ export class RasterTileMark extends Grid2DMark {
     const s = imageScale(this);
 
     // gather color domain as needed
-    const idx = groupby.indexOf(this.channelField('fill').as);
+    const idx = groupby.indexOf(this.channelField('fill')?.as);
     const domain = idx < 0 ? [] : kde.map(({ key }) => key[idx]);
 
     // generate raster images
