@@ -107,7 +107,7 @@ function inferLabel(key, spec, marks, channels = [key]) {
   const scale = spec[key] || {};
   if (scale.axis === null || scale.label !== undefined) return; // nothing to do
 
-  const fields = marks.map(mark => mark.channelField(channels));
+  const fields = marks.map(mark => mark.channelField(channels)?.field);
   if (fields.every(x => x == null)) return; // no columns found
 
   // check for consistent columns / labels

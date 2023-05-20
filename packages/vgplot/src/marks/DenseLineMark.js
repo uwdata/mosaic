@@ -52,8 +52,8 @@ export class DenseLineMark extends RasterMark {
 function stripXY(mark, filter) {
   if (Array.isArray(filter) && !filter.length) return filter;
 
-  const xc = mark.channelField('x').column;
-  const yc = mark.channelField('y').column;
+  const xc = mark.channelField('x').field.column;
+  const yc = mark.channelField('y').field.column;
   const test = p => p.op !== 'BETWEEN'
     || p.field.column !== xc && p.field.column !== yc;
   const filterAnd = p => p.op === 'AND'

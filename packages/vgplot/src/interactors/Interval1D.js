@@ -2,6 +2,7 @@ import { select, min, max } from 'd3';
 import { isBetween } from '@uwdata/mosaic-sql';
 import { brushX, brushY } from './util/brush.js';
 import { closeTo } from './util/close-to.js';
+import { getField } from './util/get-field.js';
 import { invert } from './util/invert.js';
 import { patchScreenCTM } from './util/patchScreenCTM.js';
 import { sanitizeStyles } from './util/sanitize-styles.js';
@@ -20,8 +21,7 @@ export class Interval1D {
     this.pixelSize = pixelSize || 1;
     this.selection = selection;
     this.peers = peers;
-    this.field = field || mark.channelField(channel, channel+'1', channel+'2');
-    this.field = this.field?.column || this.field;
+    this.field = field || getField(mark, [channel, channel+'1', channel+'2']);
     this.style = style && sanitizeStyles(style);
     this.brush = channel === 'y' ? brushY() : brushX();
     this.brush.on('brush end', ({ selection }) => this.publish(selection));

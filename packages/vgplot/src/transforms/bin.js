@@ -30,6 +30,7 @@ function binField(mark, column, options) {
     label: column,
     get stats() { return ['min', 'max']; },
     get columns() { return [column]; },
+    get basis() { return column; },
     toString() {
       const { min, max } = mark.stats[column];
       const b = bins(min, max, options);

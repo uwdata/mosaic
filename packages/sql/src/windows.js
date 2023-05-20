@@ -27,6 +27,10 @@ export class WindowFunction extends SQLExpression {
     super(_expr, _deps, { window: op, func, type, name, group, order, frame });
   }
 
+  get basis() {
+    return this.column;
+  }
+
   get label() {
     const { func } = this;
     return func.label ?? func.toString();
