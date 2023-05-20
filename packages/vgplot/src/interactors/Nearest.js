@@ -1,7 +1,7 @@
 import { isSelection } from '@uwdata/mosaic-core';
 import { eq, literal } from '@uwdata/mosaic-sql';
 import { select, pointer } from 'd3';
-import { getField } from './util/get-field';
+import { getField } from './util/get-field.js';
 
 export class Nearest {
   constructor(mark, {

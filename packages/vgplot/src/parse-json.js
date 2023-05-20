@@ -17,7 +17,7 @@ import * as inputs from './directives/inputs.js';
 import * as legends from './directives/legends.js';
 import * as attributes from './directives/attributes.js';
 import * as interactors from './directives/interactors.js';
-import { Fixed } from './symbols';
+import { Fixed } from './symbols.js';
 
 export const DefaultParamParsers = new Map([
   ['intersect', () => Selection.intersect()],

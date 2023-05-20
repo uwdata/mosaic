@@ -1,5 +1,5 @@
 import { Mark } from '../marks/Mark.js';
-import { ConnectedMark } from '../marks/ConnectedMark';
+import { ConnectedMark } from '../marks/ConnectedMark.js';
 import { Density1DMark } from '../marks/Density1DMark.js';
 import { Density2DMark } from '../marks/Density2DMark.js';
 import { DenseLineMark } from '../marks/DenseLineMark.js';

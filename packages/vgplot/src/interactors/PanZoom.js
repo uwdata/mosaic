@@ -1,7 +1,7 @@
 import { select, zoom, ZoomTransform } from 'd3';
 import { Selection } from '@uwdata/mosaic-core';
 import { isBetween } from '@uwdata/mosaic-sql';
-import { getField } from './util/get-field';
+import { getField } from './util/get-field.js';
 
 const asc = (a, b) => a - b;
 
