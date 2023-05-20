@@ -96,6 +96,7 @@ export class RegressionMark extends Mark {
 }
 
 function linePoints(model) {
+  // eslint-disable-next-line no-unused-vars
   const { x0, x1, xm, intercept, slope, n, ssx, ssy, ...rest } = model;
   return [
     { x: x0, y: intercept + x0 * slope, ...rest },
