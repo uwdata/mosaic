@@ -26,6 +26,10 @@ export class AggregateFunction extends SQLExpression {
     super(spans, cols, { aggregate: op, args, type, isDistinct, filter });
   }
 
+  get basis() {
+    return this.column;
+  }
+
   get label() {
     const { aggregate: op, args, isDistinct } = this;
     const dist = isDistinct ? 'DISTINCT' + (args.length ? ' ' : '') : '';

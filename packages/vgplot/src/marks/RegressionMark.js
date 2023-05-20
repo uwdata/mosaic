@@ -2,10 +2,10 @@ import { range } from 'd3';
 import {
   Query, max, min, castDouble, isNotNull,
   regrIntercept, regrSlope, regrCount,
-  regrR2, regrSYY, regrSXX, regrAvgX
+  regrSYY, regrSXX, regrAvgX
 } from '@uwdata/mosaic-sql';
 import { qt } from './util/stats.js';
-import { Mark } from './Mark.js';
+import { Mark, channelOption } from './Mark.js';
 import { handleParam } from './util/handle-param.js';
 
 export class RegressionMark extends Mark {
@@ -20,10 +20,11 @@ export class RegressionMark extends Mark {
   }
 
   query(filter = []) {
-    const x = 'x';
-    const y = 'y';
-    const groupby = ['stroke', 'z', 'fx', 'fy']
-      .flatMap(c => this.channelField(c) ? c : []);
+    const x = this.channelField('x').as;
+    const y = this.channelField('y').as;
+    const groupby = Array.from(new Set(
+      ['stroke', 'z', 'fx', 'fy'].flatMap(c => this.channelField(c)?.as || [])
+    ));
 
     return Query
       .from(super.query(filter))
@@ -31,7 +32,6 @@ export class RegressionMark extends Mark {
         intercept: regrIntercept(y, x),
         slope: regrSlope(y, x),
         n: regrCount(y, x),
-        r2: regrR2(y, x),
         ssy: regrSYY(y, x),
         ssx: regrSXX(y, x),
         xm: regrAvgX(y, x),
@@ -72,18 +72,16 @@ export class RegressionMark extends Mark {
         case 'fill':
           break;
         case 'stroke':
-          lopt.stroke = Object.hasOwn(c, 'value') ? c.value : 'stroke';
-          aopt.fill = Object.hasOwn(c, 'value') ? c.value : 'fill';
+          lopt.stroke = aopt.fill = channelOption(c);
           break;
         case 'strokeOpacity':
-          lopt.strokeOpacity = Object.hasOwn(c, 'value') ? c.value : c.channel;
+          lopt.strokeOpacity = channelOption(c);
           break;
         case 'fillOpacity':
-          aopt.fillOpacity = Object.hasOwn(c, 'value') ? c.value : c.channel;
+          aopt.fillOpacity = channelOption(c);
           break;
         default:
-          lopt[c.channel] = Object.hasOwn(c, 'value') ? c.value : c.channel;
-          aopt[c.channel] = lopt[c.channel];
+          lopt[c.channel] = aopt[c.channel] = channelOption(c);
           break;
       }
     }
@@ -96,18 +94,16 @@ export class RegressionMark extends Mark {
 }
 
 function linePoints(model) {
-  const { x0, x1, intercept, slope, stroke } = model;
+  // eslint-disable-next-line no-unused-vars
+  const { x0, x1, xm, intercept, slope, n, ssx, ssy, ...rest } = model;
   return [
-    { x: x0, y: intercept + x0 * slope, stroke },
-    { x: x1, y: intercept + x1 * slope, stroke }
+    { x: x0, y: intercept + x0 * slope, ...rest },
+    { x: x1, y: intercept + x1 * slope, ...rest }
   ];
 }
 
 function areaPoints(ci, precision, model, width) {
-  const {
-    x0, x1, xm, intercept, slope, n, ssx, ssy,
-    stroke: fill
-  } = model;
+  const { x0, x1, xm, intercept, slope, n, ssx, ssy, ...rest } = model;
   const pp = precision * (x1 - x0) / width;
   const t_sy = qt((1 - ci) / 2, n - 2) * Math.sqrt(ssy / (n - 2));
   return range(x0, x1 - pp / 2, pp)
@@ -115,6 +111,6 @@ function areaPoints(ci, precision, model, width) {
     .map(x => {
       const y = intercept + x * slope;
       const ye = t_sy * Math.sqrt(1 / n + (x - xm) ** 2 / ssx);
-      return { x, y1: y - ye, y2: y + ye, fill };
+      return { x, y1: y - ye, y2: y + ye, ...rest };
     });
 }

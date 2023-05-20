@@ -1,6 +1,7 @@
 import { isSelection } from '@uwdata/mosaic-core';
 import { eq, literal } from '@uwdata/mosaic-sql';
 import { select, pointer } from 'd3';
+import { getField } from './util/get-field';
 
 export class Nearest {
   constructor(mark, {
@@ -12,8 +13,7 @@ export class Nearest {
     this.selection = selection;
     this.clients = new Set().add(mark);
     this.channel = channel;
-    this.field = field || mark.channelField(channel);
-    this.field = this.field?.column || this.field;
+    this.field = field || getField(mark, [channel]);
   }
 
   clause(value) {
@@ -32,6 +32,7 @@ export class Nearest {
     const that = this;
     const { mark, channel, selection } = this;
     const { data } = mark;
+    const key = mark.channelField(channel).as;
 
     const facets = select(svg).selectAll('g[aria-label="facet"]');
     const root = facets.size() ? facets : select(svg);
@@ -40,7 +41,7 @@ export class Nearest {
 
     root.on('mousemove', function(evt) {
       const [x, y] = pointer(evt, this);
-      const z = findNearest(data, channel, scale.invert(channel === 'x' ? x : y));
+      const z = findNearest(data, key, scale.invert(channel === 'x' ? x : y));
       selection.update(param ? z : that.clause(z));
     });
 

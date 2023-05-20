@@ -13,7 +13,8 @@ export function plotExtent(mark, filter, channel, domainAttr, niceAttr) {
   if (Array.isArray(domain) && !domain[Transient]) {
     return domain;
   } else {
-    const { column } = mark.channelField(channel);
+    const { field } = mark.channelField(channel);
+    const { column } = field;
     const { min, max } = stats[column];
     const dom = filteredExtent(filter, column) || (nice
       ? scaleLinear().domain([min, max]).nice().domain()

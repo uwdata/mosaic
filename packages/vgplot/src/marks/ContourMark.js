@@ -1,6 +1,7 @@
 import { contours, max } from 'd3';
 import { handleParam } from './util/handle-param.js';
 import { Grid2DMark } from './Grid2DMark.js';
+import { channelOption } from './Mark.js';
 
 export class ContourMark extends Grid2DMark {
   constructor(source, options) {
@@ -58,7 +59,10 @@ export class ContourMark extends Grid2DMark {
     const { type, channels, densityMap, data } = this;
     const options = {};
     for (const c of channels) {
-      options[c.channel] = Object.hasOwn(c, 'value') ? c.value : c.channel;
+      const { channel } = c;
+      if (channel !== 'x' && channel !== 'y') {
+        options[channel] = channelOption(c);
+      }
     }
     if (densityMap.fill) options.fill = 'density';
     if (densityMap.stroke) options.stroke = 'density';

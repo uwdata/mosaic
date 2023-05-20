@@ -34,36 +34,38 @@ export class HexbinMark extends Mark {
     const xr = `${plot.innerWidth() / (x2 - x1)}::DOUBLE`;
     const yr = `${plot.innerHeight() / (y2 - y1)}::DOUBLE`;
 
-    // Top-level query; we add a hex binning subquery below
-    // Maps binned screen space coordinates back to data
-    // values to ensure we get correct data-driven scales
-    const q = Query
-      .select({
-        x: sql`${x1}::DOUBLE + ((x + 0.5 * (y & 1)) * ${dx} + ${ox})::DOUBLE / ${xr}`,
-        y: sql`${y2}::DOUBLE - (y * ${dy} + ${oy})::DOUBLE / ${yr}`
-      })
-      .groupby('x', 'y');
-
+    // Extract channel information, update top-level query
+    // and extract dependent columns for aggregates
     let x, y;
     const aggr = new Set;
+    const cols = {};
     for (const c of channels) {
       if (c.channel === 'order') {
         q.orderby(c.value); // TODO revisit once groupby is added
       } else if (c.channel === 'x') {
-        x = c.field;
+        x = c;
       } else if (c.channel === 'y') {
-        y = c.field;
+        y = c;
       } else if (Object.hasOwn(c, 'field')) {
-        q.select({ [c.channel]: c.field });
+        cols[c.as] = c.field;
         if (c.field.aggregate) {
           c.field.columns.forEach(col => aggr.add(col));
         }
       }
     }
 
+    // Top-level query; we add a hex binning subquery below
+    // Maps binned screen space coordinates back to data
+    // values to ensure we get correct data-driven scales
+    const q = Query.select({
+      [x.as]: sql`${x1}::DOUBLE + ((x + 0.5 * (y & 1)) * ${dx} + ${ox})::DOUBLE / ${xr}`,
+      [y.as]: sql`${y2}::DOUBLE - (y * ${dy} + ${oy})::DOUBLE / ${yr}`,
+      ...cols
+    }).groupby('x', 'y');
+
     // Map x/y channels to screen space
-    const xx = `${xr} * (${x} - ${x1}::DOUBLE)`;
-    const yy = `${yr} * (${y2}::DOUBLE - ${y})`;
+    const xx = `${xr} * (${x.field} - ${x1}::DOUBLE)`;
+    const yy = `${yr} * (${y2}::DOUBLE - ${y.field})`;
 
     // Perform hex binning of x/y coordinates
     // TODO add groupby dims
@@ -79,7 +81,7 @@ export class HexbinMark extends Mark {
       })
       .select(Array.from(aggr))
       .from(source.table)
-      .where(isNotNull(x), isNotNull(y), filter)
+      .where(isNotNull(x.field), isNotNull(y.field), filter)
 
     return q.from(hex);
   }

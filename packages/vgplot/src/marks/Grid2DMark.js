@@ -68,15 +68,15 @@ export class Grid2DMark extends Mark {
     let agg = count();
     for (const c of channels) {
       if (Object.hasOwn(c, 'field')) {
-        const { channel, field } = c;
+        const { as, channel, field } = c;
         if (field.aggregate) {
           agg = field;
           densityMap[channel] = true;
         } else if (channel === 'weight') {
           agg = sum(field);
         } else if (channel !== 'x' && channel !== 'y') {
-          q.select({ [channel]: field });
-          groupby.push(channel);
+          q.select({ [as]: field });
+          groupby.push(as);
         }
       }
     }

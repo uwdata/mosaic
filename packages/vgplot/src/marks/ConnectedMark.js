@@ -15,25 +15,26 @@ export class ConnectedMark extends Mark {
   query(filter = []) {
     const { plot, dim, source, stats } = this;
     const { optimize = true } = source.options || {};
+    const { field, as } = this.channelField(dim);
     const q = super.query(filter);
 
     if (optimize) {
       // TODO: handle stacked data
-      const { column } = this.channelField(dim);
+      const { column } = field;
       const { count, max, min } = stats[column];
       const size = dim === 'x' ? plot.innerWidth() : plot.innerHeight();
 
       const [lo, hi] = filteredExtent(filter, column) || [min, max];
       const scale = (hi - lo) / (max - min);
       if (count * scale > size * 4) {
-        const dd = binField(this, dim, dim);
-        const val = dim === 'x' ? 'y' : 'x';
-        const cols = q.select().map(c => c.as).filter(c => c !== 'x' && c !== 'y');
-        return m4(q, dd, dim, val, lo, hi, size, cols);
+        const dd = binField(this, dim, as);
+        const val = this.channelField(dim === 'x' ? 'y' : 'x').as;
+        const cols = q.select().map(c => c.as).filter(c => c !== as && c !== val);
+        return m4(q, dd, as, val, lo, hi, size, cols);
       }
     }
 
-    return q.orderby(dim);
+    return q.orderby(as);
   }
 }
 

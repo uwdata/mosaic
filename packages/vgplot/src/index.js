@@ -31,10 +31,7 @@ export {
 } from '@uwdata/mosaic-sql';
 
 export {
-  bin,
-  dateDay,
-  dateMonth,
-  dateMonthDay
+  bin
 } from './transforms/index.js';
 
 export {

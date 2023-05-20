@@ -2,6 +2,7 @@ import { select, min, max } from 'd3';
 import { and, isBetween } from '@uwdata/mosaic-sql';
 import { brush } from './util/brush.js';
 import { closeTo } from './util/close-to.js';
+import { getField } from './util/get-field.js';
 import { invert } from './util/invert.js';
 import { patchScreenCTM } from './util/patchScreenCTM.js';
 import { sanitizeStyles } from './util/sanitize-styles.js';
@@ -21,8 +22,8 @@ export class Interval2D {
     this.pixelSize = pixelSize || 1;
     this.selection = selection;
     this.peers = peers;
-    this.xfield = xfield || mark.channelField('x', 'x1', 'x2');
-    this.yfield = yfield || mark.channelField('y', 'y1', 'y2');
+    this.xfield = xfield || getField(mark, ['x', 'x1', 'x2']);
+    this.yfield = yfield || getField(mark, ['y', 'y1', 'y2']);
     this.style = style && sanitizeStyles(style);
     this.brush = brush();
     this.brush.on('brush end', ({ selection }) => this.publish(selection));

@@ -1,0 +1,20 @@
+vconcat:
+- plot:
+  - mark: areaY
+    data: { from: walk }
+    x: t
+    y: v
+    fill: steelblue
+  - select: intervalX
+    as: $brush
+  width: 800
+  height: 200
+- plot:
+  - mark: areaY
+    data: { from: walk, filterBy: $brush }
+    x: t
+    y: v
+    fill: steelblue
+  yDomain: Fixed
+  width: 800
+  height: 200

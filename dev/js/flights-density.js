@@ -4,7 +4,7 @@ export default function(el) {
   const {
     Param, slider, vconcat, hconcat, plot, from,
     contour, raster, colorScale, colorScheme,
-    axisX, axisY, xLabelAnchor, yLabelAnchor, xZero,
+    xAxis, yAxis, xLabelAnchor, yLabelAnchor, xZero,
     marginLeft, marginRight, width, height,
   } = vg;
 
@@ -24,8 +24,8 @@ export default function(el) {
         colorScale('symlog'), colorScheme('ylgnbu'),
         raster(from(table), { x, y, fill: 'density', bandwidth }),
         contour(from(table), { x, y, stroke: 'white', strokeOpacity: 0.5, bandwidth, thresholds }),
-        axisX('top'), xLabelAnchor('center'), xZero(true),
-        axisY('right'), yLabelAnchor('center'),
+        xAxis('top'), xLabelAnchor('center'), xZero(true),
+        yAxis('right'), yLabelAnchor('center'),
         width(700), height(500), marginLeft(5), marginRight(40)
       )
     )

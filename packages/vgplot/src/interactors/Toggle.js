@@ -15,7 +15,10 @@ export class Toggle {
         : [c];
       for (let i = 0; i < q.length; ++i) {
         const f = mark.channelField(q[i]);
-        if (f) return [q[i], f];
+        if (f) return {
+          field: f.field?.basis || f.field,
+          as: f.as
+        };
       }
       throw new Error(`Missing channel: ${c}`);
     });
@@ -27,7 +30,7 @@ export class Toggle {
 
     if (value) {
       const clauses = value.map(vals => {
-        const list = vals.map((v, i) => eq(channels[i][1], literal(v)));
+        const list = vals.map((v, i) => eq(channels[i].field, literal(v)));
         return list.length > 1 ? and(list) : list[0];
       });
       predicate = clauses.length > 1 ? or(clauses) : clauses[0];
@@ -47,7 +50,7 @@ export class Toggle {
     const { data } = mark;
     accessor = accessor || (target => {
       const datum = data[target.__data__];
-      return channels.map(([channel]) => datum[channel]);
+      return channels.map(c => datum[c.as]);
     });
 
     selector = selector || `[data-index="${mark.index}"]`;

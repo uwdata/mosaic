@@ -1,5 +1,5 @@
 import { MosaicClient } from '@uwdata/mosaic-core';
-import { Query, column, isParamLike } from '@uwdata/mosaic-sql';
+import { Query, Ref, column, isParamLike } from '@uwdata/mosaic-sql';
 import { isColor } from './util/is-color.js';
 import { isConstantOption } from './util/is-constant-option.js';
 import { isSymbol } from './util/is-symbol.js';
@@ -7,6 +7,12 @@ import { Transform } from '../symbols.js';
 
 const isColorChannel = channel => channel === 'stroke' || channel === 'fill';
 const isSymbolChannel = channel => channel === 'symbol';
+const fieldEntry = (channel, field) => ({
+  channel,
+  field,
+  as: field instanceof Ref ? field.column : channel
+});
+const valueEntry = (channel, value) => ({ channel, value });
 
 export class Mark extends MosaicClient {
   constructor(type, source, encodings, reqs = {}) {
@@ -36,16 +42,16 @@ export class Mark extends MosaicClient {
           isSymbolChannel(channel) && isSymbol(entry)
         ) {
           // interpret constants and color/symbol names as values, not fields
-          channels.push({ channel, value: entry });
+          channels.push(valueEntry(channel, entry));
         } else {
-          channels.push({ channel, field: column(entry) });
+          channels.push(fieldEntry(channel, column(entry)));
         }
       } else if (isParamLike(entry)) {
         if (Array.isArray(entry.columns)) {
-          channels.push({ channel, field: entry });
+          channels.push(fieldEntry(channel, entry));
           params.add(entry);
         } else {
-          const c = { channel, value: entry.value };
+          const c = valueEntry(channel, entry.value);
           channels.push(c);
           entry.addEventListener('value', value => {
             c.value = value;
@@ -53,9 +59,9 @@ export class Mark extends MosaicClient {
           });
         }
       } else if (type === 'object' && !Array.isArray(entry) && entry != null) {
-        channels.push({ channel, field: entry });
+        channels.push(fieldEntry(channel, entry));
       } else if (entry !== undefined) {
-        channels.push({ channel, value: entry });
+        channels.push(valueEntry(channel, entry));
       }
     };
 
@@ -82,8 +88,8 @@ export class Mark extends MosaicClient {
   channelField(...channels) {
     const list = channels.flat();
     for (const channel of list) {
-      const field = this.channel(channel)?.field;
-      if (field) return field;
+      const c = this.channel(channel);
+      if (c?.field) return c;
     }
     return null;
   }
@@ -139,24 +145,29 @@ export class Mark extends MosaicClient {
 
   plotSpecs() {
     const { type, data, channels } = this;
-    const ownData = this.hasOwnData();
     const options = {};
     for (const c of channels) {
-      options[c.channel] = Object.hasOwn(c, 'value') ? c.value
-        : ownData ? c.field.column
-        : c.channel;
+      options[c.channel] = channelOption(c)
     }
     return [{ type, data, options }];
   }
 }
 
+export function channelOption(c) {
+  // use a scale override for color channels to sidestep
+  // https://github.com/observablehq/plot/issues/1593
+  return Object.hasOwn(c, 'value') ? c.value
+    : isColorChannel(c.channel) ? { value: c.as, scale: 'color' }
+    : c.as;
+}
+
 export function markQuery(channels, table, skip = []) {
   const q = Query.from({ source: table });
-  const dims = [];
+  const dims = new Set;
   let aggr = false;
 
   for (const c of channels) {
-    const { channel, field } = c;
+    const { channel, field, as } = c;
     if (skip.includes(channel)) continue;
 
     if (channel === 'order') {
@@ -165,14 +176,15 @@ export function markQuery(channels, table, skip = []) {
       if (field.aggregate) {
         aggr = true;
       } else {
-        dims.push(channel);
+        if (dims.has(as)) continue;
+        dims.add(as);
       }
-      q.select({ [channel]: field });
+      q.select({ [as]: field });
     }
   }
 
   if (aggr) {
-    q.groupby(dims);
+    q.groupby(Array.from(dims));
   }
 
   return q;
