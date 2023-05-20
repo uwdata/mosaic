@@ -50,7 +50,6 @@ export class Toggle {
     const { data } = mark;
     accessor = accessor || (target => {
       const datum = data[target.__data__];
-      console.log(channels, datum);
       return channels.map(c => datum[c.as]);
     });
 
