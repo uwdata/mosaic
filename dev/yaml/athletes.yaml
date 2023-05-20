@@ -1,38 +1,86 @@
-vconcat:
-- hconcat:
-  - input: menu
-    label: Sport
-    as: $query
+data:
+  athletes: { file: data/athletes.csv }
+hconcat:
+- vconcat:
+  - hconcat:
+    - input: menu
+      label: Sport
+      as: $query
+      from: athletes
+      column: sport
+    - input: menu
+      label: Sex
+      as: $query
+      from: athletes
+      column: sex
+    - input: search
+      label: Name
+      as: $query
+      from: athletes
+      column: name
+      type: contains
+  - vspace: 10
+  - plot:
+    - mark: dot
+      data: { from: athletes }
+      x: weight
+      y: height
+      fill: sex
+      r: 2
+      opacity: 0.05
+    - mark: regressionY
+      data: { from: athletes, filterBy: $query }
+      x: weight
+      y: height
+      stroke: sex
+    - select: intervalXY
+      as: $query
+      brush: { fillOpacity: 0, stroke: black }
+    xyDomain: Fixed
+    colorDomain: Fixed
+    margins: { left: 35, top: 20, right: 1 }
+    width: 570
+    height: 350
+  - vspace: 5
+  - input: table
     from: athletes
-    column: sport
-  - input: menu
-    label: Sex
-    as: $query
-    from: athletes
-    column: sex
-  - input: search
-    label: Name
-    as: $query
-    from: athletes
-    column: name
-    type: contains
-- plot:
-  - mark: dot
-    data: { from: athletes, filterBy: $query }
-    x: weight
-    y: height
-    fill: sex
-    r: 2
-    opacity: 0.5
-  - mark: regressionY
-    data: { from: athletes, filterBy: $query }
-    x: weight
-    y: height
-    stroke: sex
-  xyDomain: Fixed
-  colorDomain: Fixed
-- input: table
-  from: athletes
-  width: 640
-  height: 300
-  filterBy: $query
+    maxWidth: 570
+    height: 250
+    filterBy: $query
+    columns: [name, nationality, sex, height, weight, sport]
+    width: { name: 180, nationality: 100, sex: 50, height: 50, weight: 50, sport: 100 }
+- hspace: 5
+- vconcat:
+  - vspace: 10
+  - plot:
+    - mark: tickX
+      data: { from: athletes }
+      x: weight
+      y: sport
+      fx: sex
+      strokeWidth: 0.5
+      stroke: '#ccc'
+    - mark: barX
+      data: { from: athletes, filterBy: $query }
+      x1: { quantile: [weight, 0.25] }
+      x2: { quantile: [weight, 0.75] }
+      y: sport
+      fx: sex
+      fill: sex
+      fillOpacity: 0.7
+    - mark: tickX
+      data: { from: athletes, filterBy: $query }
+      x: { avg: weight }
+      y: sport
+      fx: sex
+      strokeWidth: 1.5
+      stroke: black
+    - mark: frame
+      stroke: '#ccc'
+    - select: intervalX
+      as: $query
+    xyDomain: Fixed
+    fxDomain: Fixed
+    colorDomain: Fixed
+    marginLeft: 100
+    width: 500
