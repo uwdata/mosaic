@@ -1,5 +1,8 @@
 import { sqlFrom } from '@uwdata/mosaic-core';
 import { sql } from '@uwdata/mosaic-sql';
+import {
+  parseData, parseCSVData, parseParquetData, parseTableData
+} from './parse-data.js';
 import { JSONParseContext } from './parse-json.js';
 import {
   error, paramRef, toArray,
@@ -223,63 +226,6 @@ function parseParam(param, ctx) {
   } else {
     return `vg.Selection.${select}()`;
   }
-}
-
-function parseData(name, spec, ctx) {
-  if (isArray(spec)) spec = { format: 'json', data: spec };
-  if (isString(spec)) spec = { format: 'table', query: spec };
-  const format = inferFormat(spec);
-  const parse = ctx.formats.get(format);
-  if (parse) {
-    return parse(name, spec, ctx);
-  } else {
-    error(`Unrecognized data format.`, spec);
-  }
-}
-
-function inferFormat(spec) {
-  return spec.format
-    || fileExtension(spec.file)
-    || 'table';
-}
-
-function fileExtension(file) {
-  const idx = file?.lastIndexOf('.');
-  return idx > 0 ? file.slice(idx + 1) : null;
-}
-
-function parseTableData(name, spec, ctx) {
-  if (spec.query) {
-    return ctx.create(name, spec.query);
-  }
-}
-
-function parseParquetData(name, spec, ctx) {
-  const { file, select = '*' } = spec;
-  return ctx.createFrom(
-    name,
-    sql`read_parquet('${file}')`,
-    select
-  );
-}
-
-function parseCSVData(name, spec, ctx) {
-  // eslint-disable-next-line no-unused-vars
-  const { file, format, select = '*', ...options } = spec;
-  const opt = Object.entries({ sample_size: -1, ...options })
-    .map(([key, value]) => {
-      const t = typeof value;
-      const v = t === 'boolean' ? String(value).toUpperCase()
-        : t === 'string' ? `'${value}'`
-        : value;
-      return `${key.toUpperCase()}=${v}`;
-    })
-    .join(', ');
-  return ctx.createFrom(
-    name,
-    sql`read_csv_auto('${file}', ${opt})`,
-    select
-  );
 }
 
 async function parseJSONData(name, spec, ctx) {

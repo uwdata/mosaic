@@ -20,6 +20,9 @@ import * as interactors from '../directives/interactors.js';
 import { Fixed } from '../symbols.js';
 
 import {
+  parseData, parseCSVData, parseParquetData, parseTableData
+} from './parse-data.js';
+import {
   error, paramRef, toArray,
   isArray, isObject, isNumber, isString, isFunction
 } from './util.js';
@@ -104,7 +107,8 @@ export class JSONParseContext {
     inputs = DefaultInputs,
     marks = DefaultMarks,
     params = [],
-    datasets = []
+    datasets = [],
+    filePrefix = null
   } = {}) {
     this.specParsers = specParsers;
     this.paramParsers = paramParsers;
@@ -117,6 +121,7 @@ export class JSONParseContext {
     this.marks = marks;
     this.params = new Map(params);
     this.datasets = new Map(datasets);
+    this.filePrefix = filePrefix;
     this.postQueue = [];
   }
 
@@ -192,66 +197,9 @@ export class JSONParseContext {
   }
 }
 
-function parseData(name, spec, ctx) {
-  if (isArray(spec)) spec = { format: 'json', data: spec };
-  if (isString(spec)) spec = { format: 'table', query: spec };
-  const format = inferFormat(spec);
-  const parse = ctx.formats.get(format);
-  if (parse) {
-    return parse(name, spec, ctx);
-  } else {
-    error(`Unrecognized data format.`, spec);
-  }
-}
-
-function inferFormat(spec) {
-  return spec.format
-    || fileExtension(spec.file)
-    || 'table';
-}
-
-function fileExtension(file) {
-  const idx = file?.lastIndexOf('.');
-  return idx > 0 ? file.slice(idx + 1) : null;
-}
-
-function parseTableData(name, spec, ctx) {
-  if (spec.query) {
-    return ctx.create(name, spec.query);
-  }
-}
-
-function parseParquetData(name, spec, ctx) {
-  const { file, select = '*' } = spec;
-  return ctx.createFrom(
-    name,
-    sql`read_parquet('${file}')`,
-    select
-  );
-}
-
-function parseCSVData(name, spec, ctx) {
-  // eslint-disable-next-line no-unused-vars
-  const { file, format, select = '*', ...options } = spec;
-  const opt = Object.entries({ sample_size: -1, ...options })
-    .map(([key, value]) => {
-      const t = typeof value;
-      const v = t === 'boolean' ? String(value).toUpperCase()
-        : t === 'string' ? `'${value}'`
-        : value;
-      return `${key.toUpperCase()}=${v}`;
-    })
-    .join(', ');
-  return ctx.createFrom(
-    name,
-    sql`read_csv_auto('${file}', ${opt})`,
-    select
-  );
-}
-
 async function retrieveJSONData(spec) {
-  const { data, file } = spec;
-  return data || await fetch(file).then(r => r.json());
+  const file = resolveDataFile(spec);
+  return spec.data || await fetch(file).then(r => r.json());
 }
 
 async function parseJSONData(name, spec, ctx) {
