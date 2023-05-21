@@ -7,11 +7,13 @@
     @media print {
       header { display: none; }
     }
+    header { margin-bottom: 1em; }
+    header > span { margin-right: 1em; }
   </style>
 </head>
 <body>
-  <header style="margin-bottom: 1em;">
-    <span style="margin-right: 0.5em;">
+  <header>
+    <span>
       Spec:
       <select id="examples">
         <option value="none"></option>
@@ -43,7 +45,7 @@
       </select>
     </span>
 
-    <span style="margin-right: 0.5em;"></span>
+    <span>
       Connector:
       <select id="connectors">
         <option value="socket" selected>Socket</option>
@@ -52,7 +54,7 @@
       </select>
     </span>
 
-    <span style="margin-right: 0.5em;"></span>
+    <span>
       Source:
       <select id="source">
         <option value="yaml" selected>YAML</option>
@@ -69,12 +71,18 @@
   const connectorMenu = document.querySelector('#connectors');
   const exampleMenu = document.querySelector('#examples');
   const sourceMenu = document.querySelector('#source');
-  connectorMenu.addEventListener('change', () => setDatabaseConnector(connectorMenu.value));
-  exampleMenu.addEventListener('change', () => load(exampleMenu.value, sourceMenu.value));
-  sourceMenu.addEventListener('change', () => load(exampleMenu.value, sourceMenu.value));
-
+  connectorMenu.addEventListener('change', () => {
+    setDatabaseConnector(connectorMenu.value);
+    reload();
+  });
+  exampleMenu.addEventListener('change', reload);
+  sourceMenu.addEventListener('change', reload);
   await setDatabaseConnector(connectorMenu.value);
-  load(exampleMenu.value, sourceMenu.value)
+  reload();
+
+  function reload() {
+    load(exampleMenu.value, sourceMenu.value);
+  }
 
   async function load(name, source) {
     view.replaceChildren();
@@ -87,10 +95,13 @@
       const spec = yaml.parse(
         await fetch(`./${name}.yaml`).then(res => res.text())
       );
+      const options = connectorMenu.value === 'wasm'
+        ? { filePrefix: location.origin + '/' }
+        : {};
       try {
         const child = source === 'esm'
-          ? await loadModuleView(spec)
-          : await parseJSON(spec);
+          ? await loadModuleView(spec, options)
+          : await parseJSON(spec, options);
         view.replaceChildren(child);
       } catch (err) {
         console.error(err, err.data);
@@ -98,10 +109,10 @@
     }
   }
 
-  async function loadModuleView(spec) {
+  async function loadModuleView(spec, options) {
     const base = new URL('../setup.js', window.location.href).toString();
     const imports = new Map([[base, '* as vg']]);
-    const code = await specToModule(spec, { imports });
+    const code = await specToModule(spec, { ...options, imports });
     const blob = new Blob([code], { type: 'text/javascript' });
     const url = URL.createObjectURL(blob);
     return (await import(url)).default;
