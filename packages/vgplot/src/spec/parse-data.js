@@ -1,5 +1,5 @@
 import { sql } from '@uwdata/mosaic-sql';
-import { isArray, isString } from './util.js';
+import { error, isArray, isString } from './util.js';
 
 export function parseData(name, spec, ctx) {
   spec = resolveDataSpec(spec, ctx);
@@ -33,8 +33,8 @@ function fileExtension(file) {
 }
 
 function resolveFile({ file }, ctx) {
-  return file && ctx.filePrefix
-    ? `${ctx.filePrefix}${file}`
+  return file && ctx.baseURL
+    ? new URL(file, ctx.baseURL).toString()
     : file;
 }
 

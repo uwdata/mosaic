@@ -108,7 +108,7 @@ export class JSONParseContext {
     marks = DefaultMarks,
     params = [],
     datasets = [],
-    filePrefix = null
+    baseURL = null
   } = {}) {
     this.specParsers = specParsers;
     this.paramParsers = paramParsers;
@@ -121,7 +121,7 @@ export class JSONParseContext {
     this.marks = marks;
     this.params = new Map(params);
     this.datasets = new Map(datasets);
-    this.filePrefix = filePrefix;
+    this.baseURL = baseURL;
     this.postQueue = [];
   }
 
@@ -198,8 +198,8 @@ export class JSONParseContext {
 }
 
 async function retrieveJSONData(spec) {
-  const file = resolveDataFile(spec);
-  return spec.data || await fetch(file).then(r => r.json());
+  const { data, file } = spec;
+  return data || await fetch(file).then(r => r.json());
 }
 
 async function parseJSONData(name, spec, ctx) {

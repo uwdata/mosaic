@@ -96,7 +96,7 @@
         await fetch(`./${name}.yaml`).then(res => res.text())
       );
       const options = connectorMenu.value === 'wasm'
-        ? { filePrefix: location.origin + '/' }
+        ? { baseURL: location.origin + '/' }
         : {};
       try {
         const child = source === 'esm'
@@ -110,8 +110,8 @@
   }
 
   async function loadModuleView(spec, options) {
-    const base = new URL('../setup.js', window.location.href).toString();
-    const imports = new Map([[base, '* as vg']]);
+    const vgplot = new URL('../setup.js', window.location.href).toString();
+    const imports = new Map([[vgplot, '* as vg']]);
     const code = await specToModule(spec, { ...options, imports });
     const blob = new Blob([code], { type: 'text/javascript' });
     const url = URL.createObjectURL(blob);
