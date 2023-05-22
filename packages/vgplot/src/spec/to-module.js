@@ -79,7 +79,7 @@ class CodegenContext extends JSONParseContext {
 
     // parse param/selection definitions
     for (const name in params) {
-      this.params.set(name, parseParam(params[name], this));
+      this.params.set(`$${name}`, parseParam(params[name], this));
     }
 
     const specCode = [
@@ -89,7 +89,7 @@ class CodegenContext extends JSONParseContext {
 
     const paramCode = [];
     for (const [key, value] of this.params) {
-      paramCode.push(`const ${key} = ${value};`)
+      paramCode.push(`const ${key} = ${value};`);
     }
 
     const importsCode = [];
@@ -129,10 +129,11 @@ class CodegenContext extends JSONParseContext {
     const { params } = this;
     const name = paramRef(value);
     if (name) {
-      if (!params.has(name)) {
-        params.set(name, ctr);
+      const $name = `$${name}`;
+      if (!params.has($name)) {
+        params.set($name, ctr);
       }
-      return name;
+      return $name;
     }
     return JSON.stringify(value);
   }
@@ -343,7 +344,7 @@ function parseLegend(spec, ctx) {
   for (const key in options) {
     opt.push(`${key}: ${ctx.maybeSelection(options[key])}`);
   }
-  return `${ctx.tab()}vg.${type}({${opt.join(', ')}})`;
+  return `${ctx.tab()}vg.${type}({ ${opt.join(', ')} })`;
 }
 
 function parseAttribute(spec, name, ctx) {
