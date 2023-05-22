@@ -5,7 +5,8 @@ import { WebSocketServer } from 'ws';
 import { Cache, cacheKey } from './Cache.js';
 import { createBundle, loadBundle } from './load/bundle.js';
 
-const CACHE_DIR = '.cache';
+const CACHE_DIR = '.mosaic/cache';
+const BUNDLE_DIR = '.mosaic/bundle';
 
 export function dataServer(db, {
   cache = true,
@@ -123,13 +124,13 @@ function queryHandler(db, queryCache) {
           // Create a named bundle of precomputed resources
           await createBundle(
             db, queryCache, query.queries,
-            path.resolve(CACHE_DIR, query.name)
+            path.resolve(BUNDLE_DIR, query.name)
           );
           res.done();
           break;
         case 'load-bundle':
           // Load a named bundle of precomputed resources
-          await loadBundle(db, queryCache, path.resolve(CACHE_DIR, query.name));
+          await loadBundle(db, queryCache, path.resolve(BUNDLE_DIR, query.name));
           res.done();
           break;
         default:

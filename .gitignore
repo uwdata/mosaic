@@ -1,5 +1,5 @@
 .DS_Store
-.cache
+.mosaic
 .duckdb
 .ipynb_checkpoints
 node_modules
