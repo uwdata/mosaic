@@ -1,4 +1,4 @@
-import { literalToSQL } from '@uwdata/mosaic-sql';
+import { literalToSQL } from '../to-sql.js';
 
 export function sqlFrom(data, {
   columns = Object.keys(data?.[0] || {})

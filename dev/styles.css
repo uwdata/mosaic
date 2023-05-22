@@ -5,8 +5,12 @@ body {
 h1, h2 { font-size: 16px; }
 
 header {
-  margin-bottom: 0.5em;
+  margin-bottom: 1em;
 }
+
+@media print { header { display: none; } }
+
+header > span { margin-right: 1em; }
 
 label { margin-right: 0.5em; }
 

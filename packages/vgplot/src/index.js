@@ -4,33 +4,23 @@ export {
   Param,
   Selection,
   coordinator,
-  restConnector,
-  socketConnector,
-  wasmConnector
+  restConnector, socketConnector, wasmConnector
 } from '@uwdata/mosaic-core';
 
 export {
-  Query,
-  argmax,
-  argmin,
-  avg,
-  count,
-  dateDay,
-  dateMonth,
-  dateMonthDay,
-  mad,
-  max,
-  median,
-  min,
-  mode,
-  quantile,
-  stddev,
-  sum,
-  sql,
-  column,
-  eq,
-  literal,
-  isBetween
+  Query, agg, sql, column, literal,
+  cast, castDouble, castInteger,
+  argmax, argmin, arrayAgg, avg, count, corr, covarPop, entropy,
+  kurtosis, mad, max, median, min, mode, last, product, quantile,
+  skewness, stddev, stddevPop, stringAgg, sum, variance, varPop,
+  row_number, rank, dense_rank, percent_rank, cume_dist,
+  ntile, lag, lead, first_value, last_value, nth_value,
+  dateDay, dateMonth, dateMonthDay,
+  and, or, not, eq, neq, gt, gte, lt, lte,
+  isBetween, isNotBetween,
+  isDistinct, isNotDistinct,
+  isNull, isNotNull,
+  create, loadCSV, loadJSON, loadParquet
 } from '@uwdata/mosaic-sql';
 
 export {

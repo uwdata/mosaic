@@ -1,0 +1,5 @@
+data:
+  flights: { file: data/flights-200k.parquet }
+input: table
+from: flights
+height: 500

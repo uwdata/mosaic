@@ -1,3 +1,5 @@
+data:
+  penguins: { file: data/penguins.csv }
 params:
   mesh: 0
   hull: 0

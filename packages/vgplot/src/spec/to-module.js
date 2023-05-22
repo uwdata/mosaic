@@ -1,7 +1,5 @@
-import { sqlFrom } from '@uwdata/mosaic-core';
-import { sql } from '@uwdata/mosaic-sql';
 import {
-  parseData, parseCSVData, parseParquetData, parseTableData
+  parseData, parseCSVData, parseJSONData, parseParquetData, parseTableData
 } from './parse-data.js';
 import { JSONParseContext } from './parse-json.js';
 import {
@@ -36,11 +34,15 @@ export function specToModule(spec, options) {
   return new CodegenContext(options).generate(spec);
 }
 
+function maybeNewline(entry) {
+  return entry?.length ? [''] : [];
+}
+
 class CodegenContext extends JSONParseContext {
   constructor(options) {
     super({
       specParsers: SpecParsers,
-      formats: DataFormats,
+      daatFormats: DataFormats,
       ...options
     });
     this.imports = options?.imports || new Map([
@@ -50,7 +52,7 @@ class CodegenContext extends JSONParseContext {
   }
 
   async generate(input) {
-    const { data = {}, defaults = {}, params, ...spec } = input;
+    const { data = {}, plotDefaults = {}, params, ...spec } = input;
 
     // parse data definitions
     const dataCode = await Promise.all(
@@ -63,11 +65,11 @@ class CodegenContext extends JSONParseContext {
     );
 
     // parse default attributes
-    const defaultList = Object.keys(defaults)
-      .map(key => parseAttribute(defaults, key, this));
+    const defaultList = Object.keys(plotDefaults)
+      .map(key => parseAttribute(plotDefaults, key, this));
     let defaultCode = [];
     if (defaultList.length) {
-      this.defaults = 'defaultAttributes';
+      this.plotDefaults = 'defaultAttributes';
       defaultCode = [
         'const defaultAttributes = [',
         defaultList.map(d => '  ' + d).join(',\n'),
@@ -101,9 +103,13 @@ class CodegenContext extends JSONParseContext {
 
     return [
       ...importsCode,
+      ...maybeNewline(importsCode),
       ...dataCode,
+      ...maybeNewline(dataCode),
       ...paramCode,
+      ...maybeNewline(paramCode),
       ...defaultCode,
+      ...maybeNewline(defaultCode),
       ...specCode
     ].join('\n');
   }
@@ -228,12 +234,6 @@ function parseParam(param, ctx) {
   }
 }
 
-async function parseJSONData(name, spec, ctx) {
-  const { data, file, select = '*' } = spec;
-  const json = data || await fetch(file).then(r => r.json());
-  return ctx.createFrom(name, sql`${sqlFrom(json)}`, select);
-}
-
 function fetchJSON(spec) {
   const { data, file } = spec;
   return data
@@ -319,7 +319,7 @@ function parsePlot(spec, ctx) {
 
   ctx.indent();
   const attrs = [
-    ...(ctx.defaults ? [`${ctx.tab()}...defaultAttributes`] : []),
+    ...(ctx.plotDefaults ? [`${ctx.tab()}...defaultAttributes`] : []),
     ...Object.keys(attributes).map(key => parseAttribute(spec, key, ctx))
   ];
   const entries = plot.map(e => parseEntry(e, ctx));

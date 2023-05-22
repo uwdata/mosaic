@@ -1,3 +1,5 @@
+data:
+  flights: { file: data/flights-200k.parquet }
 params:
   brush: { select: crossfilter }
   bandwidth: 10

@@ -1,3 +1,5 @@
+data:
+  weather: { file: data/seattle-weather.csv }
 params:
   click: { select: single }
   domain: [sun, fog, drizzle, rain, snow]

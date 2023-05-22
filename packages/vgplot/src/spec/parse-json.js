@@ -1,6 +1,6 @@
-import { Param, Selection, coordinator, sqlFrom } from '@uwdata/mosaic-core';
+import { Param, Selection, coordinator } from '@uwdata/mosaic-core';
 import {
-  Query, sql, avg, count, max, median, min, mode, quantile, sum,
+  sql, avg, count, max, median, min, mode, quantile, sum,
   row_number, rank, dense_rank, percent_rank, cume_dist, ntile,
   lag, lead, first_value, last_value, nth_value,
   dateMonth, dateMonthDay, dateDay
@@ -20,7 +20,7 @@ import * as interactors from '../directives/interactors.js';
 import { Fixed } from '../symbols.js';
 
 import {
-  parseData, parseCSVData, parseParquetData, parseTableData
+  parseData, parseCSVData, parseJSONData, parseParquetData, parseTableData
 } from './parse-data.js';
 import {
   error, paramRef, toArray,
@@ -48,7 +48,7 @@ export const DefaultSpecParsers = new Map([
   ['input', { type: isString, parse: parseInput }]
 ]);
 
-export const DefaultFormats = new Map([
+export const DefaultDataFormats = new Map([
   ['table', parseTableData],
   ['parquet', parseParquetData],
   ['csv', parseCSVData],
@@ -99,7 +99,7 @@ export class JSONParseContext {
   constructor({
     specParsers = DefaultSpecParsers,
     paramParsers = DefaultParamParsers,
-    formats = DefaultFormats,
+    dataFormats = DefaultDataFormats,
     transforms = DefaultTransforms,
     attributes = DefaultAttributes,
     interactors = DefaultInteractors,
@@ -112,7 +112,7 @@ export class JSONParseContext {
   } = {}) {
     this.specParsers = specParsers;
     this.paramParsers = paramParsers;
-    this.formats = formats;
+    this.dataFormats = dataFormats;
     this.transforms = transforms;
     this.attributes = attributes;
     this.interactors = interactors;
@@ -158,7 +158,7 @@ export class JSONParseContext {
   }
 
   async parse(input) {
-    const { data = {}, defaults = {}, params, ...spec } = input;
+    const { data = {}, plotDefaults = {}, params, ...spec } = input;
 
     // parse data definitions
     await Promise.allSettled(
@@ -171,8 +171,8 @@ export class JSONParseContext {
     );
 
     // parse default attributes
-    this.defaults = Object.keys(defaults)
-      .map(key => parseAttribute(defaults, key, this));
+    this.plotDefaults = Object.keys(plotDefaults)
+      .map(key => parseAttribute(plotDefaults, key, this));
 
     // parse param/selection definitions
     for (const name in params) {
@@ -182,30 +182,15 @@ export class JSONParseContext {
     const result = parseSpec(spec, this);
     this.postQueue.forEach(fn => fn());
     this.postQueue = [];
-    this.defaults = {};
+    this.plotDefaults = {};
 
     return result;
-  }
-
-  createFrom(name, from, select, where) {
-    const query = Query.select(select).from(from).where(where);
-    return this.create(name, query);
-  }
-
-  create(name, query) {
-    return `CREATE TEMP TABLE IF NOT EXISTS "${name}" AS ${query}`;
   }
 }
 
 async function retrieveJSONData(spec) {
   const { data, file } = spec;
   return data || await fetch(file).then(r => r.json());
-}
-
-async function parseJSONData(name, spec, ctx) {
-  const { select = '*' } = spec;
-  const json = await retrieveJSONData(spec);
-  return ctx.createFrom(name, sql`${sqlFrom(json)}`, select);
 }
 
 async function parseGeoJSONData(name, spec) {
@@ -284,7 +269,7 @@ function parseHConcat(spec, ctx) {
 
 function parsePlot(spec, ctx) {
   const { plot, ...attributes } = spec;
-  const attrs = ctx.defaults.concat(
+  const attrs = ctx.plotDefaults.concat(
     Object.keys(attributes).map(key => parseAttribute(spec, key, ctx))
   );
   const entries = plot.map(e => parseEntry(e, ctx));

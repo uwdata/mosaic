@@ -21,38 +21,11 @@ export async function setDatabaseConnector(type, options) {
       connector = restConnector(options);
       break;
     case 'wasm':
-      connector = (wasm || (wasm = await initWasmConnector(options)));
+      connector = (wasm || (wasm = await wasmConnector(options)));
       break;
     default:
       throw new Error(`Unrecognized connector type: ${type}`);
   }
-  console.log('DATABASE Connector', type);
+  console.log('Database Connector', type);
   coordinator().databaseConnector(connector);
-}
-
-async function initWasmConnector(options) {
-  const connector = await wasmConnector(options);
-  const { db, con } = connector;
-
-  async function csv(name, file) {
-    const csv = await (await fetch(file)).text();
-    await db.registerFileText(`${name}.csv`, csv);
-    await con.insertCSVFromPath(`${name}.csv`, { name, schema: 'main' });
-  }
-
-  async function ipc(name, file) {
-    const buffer = await (await fetch(file)).arrayBuffer();
-    await con.insertArrowFromIPCStream(new Uint8Array(buffer), { name, schema: 'main' });
-  }
-
-  const dir = '../../data';
-  await Promise.all([
-    csv('athletes', `${dir}/athletes.csv`),
-    csv('penguins', `${dir}/penguins.csv`),
-    csv('weather', `${dir}/seattle-weather.csv`),
-    ipc('flights', `${dir}/flights-200k.arrow`),
-    ipc('walk', `${dir}/random-walk.arrow`)
-  ]);
-
-  return connector;
 }

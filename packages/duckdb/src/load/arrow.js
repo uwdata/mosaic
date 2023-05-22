@@ -1,14 +1,14 @@
 import { readFile } from 'node:fs/promises';
-import { createTable } from './create-table.js';
 
-export async function loadArrow(db, tableName, buffer, options = {}) {
-  const { select = ['*'], ...tableOptions } = options;
-  const bufName = `__ipc__${tableName}`;
+export async function loadArrow(db, tableName, buffer) {
   const arrowData = ArrayBuffer.isView(buffer) ? buffer : await readFile(buffer);
-  db.con.register_buffer(bufName, [arrowData], true, err => {
-    if (err) console.error(err);
+  return new Promise((resolve, reject) => {
+    db.con.register_buffer(tableName, [arrowData], true, err => {
+      if (err) {
+        console.error(err);
+        reject(err);
+      }
+      resolve();
+    });
   });
-  const query = `SELECT ${select.join(', ')} FROM ${bufName}`;
-  await createTable(db, tableName, query, tableOptions);
-  db.con.unregister_buffer(bufName);
 }
