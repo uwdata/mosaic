@@ -74,13 +74,13 @@ export class Table extends MosaicClient {
     return this.columns.map(name => column(this.from, name));
   }
 
-  fieldStats(stats) {
-    this.stats = stats;
+  fieldInfo(info) {
+    this.schema = info;
 
     const thead = this.head;
     thead.innerHTML = '';
     const tr = document.createElement('tr');
-    for (const { column } of stats) {
+    for (const { column } of info) {
       const th = document.createElement('th');
       th.addEventListener('click', evt => this.sort(evt, column));
       th.appendChild(document.createElement('span'));
@@ -90,13 +90,13 @@ export class Table extends MosaicClient {
     thead.appendChild(tr);
 
     // get column formatters
-    this.formats = formatof(this.format, stats);
+    this.formats = formatof(this.format, info);
 
     // get column alignment style
     this.style.innerText = tableCSS(
       this.id,
-      alignof(this.align, stats),
-      widthof(this.widths, stats)
+      alignof(this.align, info),
+      widthof(this.widths, info)
     );
 
     return this;
@@ -108,9 +108,9 @@ export class Table extends MosaicClient {
   }
 
   queryInternal(filter = []) {
-    const { from, limit, offset, stats, sortColumn, sortDesc } = this;
+    const { from, limit, offset, schema, sortColumn, sortDesc } = this;
     return Query.from(from)
-      .select(stats.map(s => s.column))
+      .select(schema.map(s => s.column))
       .where(filter)
       .orderby(sortColumn ? (sortDesc ? desc(sortColumn) : sortColumn) : [])
       .limit(limit)
@@ -128,15 +128,15 @@ export class Table extends MosaicClient {
   }
 
   update() {
-    const { body, formats, data, stats, limit } = this;
-    const nf = stats.length;
+    const { body, formats, data, schema, limit } = this;
+    const nf = schema.length;
 
     let count = 0;
     for (const row of data) {
       ++count;
       const tr = document.createElement('tr');
       for (let i = 0; i < nf; ++i) {
-        const value = row[stats[i].column];
+        const value = row[schema[i].column];
         const td = document.createElement('td');
         td.innerText = value == null ? '' : formats[i](value);
         tr.appendChild(td);
@@ -179,8 +179,8 @@ export class Table extends MosaicClient {
   }
 }
 
-function formatof(base = {}, stats, locale) {
-  return stats.map(({ column, type }) => {
+function formatof(base = {}, schema, locale) {
+  return schema.map(({ column, type }) => {
     if (column in base) {
       return base[column];
     } else {
@@ -193,8 +193,8 @@ function formatof(base = {}, stats, locale) {
   });
 }
 
-function alignof(base = {}, stats) {
-  return stats.map(({ column, type }) => {
+function alignof(base = {}, schema) {
+  return schema.map(({ column, type }) => {
     if (column in base) {
       return base[column];
     } else if (type === 'number') {
@@ -205,8 +205,8 @@ function alignof(base = {}, stats) {
   });
 }
 
-function widthof(base = {}, stats) {
-  return stats.map(({ column }) => base[column]);
+function widthof(base = {}, schema) {
+  return schema.map(({ column }) => base[column]);
 }
 
 function tableCSS(id, aligns, widths) {

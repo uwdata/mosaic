@@ -115,7 +115,7 @@ export class Coordinator {
     // retrieve field statistics
     const fields = client.fields();
     if (fields?.length) {
-      client.fieldStats(await catalog.queryFields(fields));
+      client.fieldInfo(await catalog.queryFields(fields));
     }
 
     // connect filters

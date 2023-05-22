@@ -115,8 +115,8 @@ export class Mark extends MosaicClient {
     });
   }
 
-  fieldStats(data) {
-    this.stats = data.reduce(
+  fieldInfo(info) {
+    this.stats = info.reduce(
       (o, d) => (o[d.column] = d, o),
       Object.create(null)
     );
