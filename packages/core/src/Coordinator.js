@@ -54,6 +54,8 @@ export class Coordinator {
     return this.manager.connector(db);
   }
 
+  // -- Query Management ----
+
   cancel(requests) {
     this.manager.cancel(requests);
   }
@@ -84,6 +86,8 @@ export class Coordinator {
     const options = { name };
     return this.manager.request({ type: 'load-bundle', options }, priority);
   }
+
+  // -- Client Management ----
 
   updateClient(client, query, priority = Priority.Normal) {
     client.queryPending();

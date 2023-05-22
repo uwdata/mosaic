@@ -9,7 +9,7 @@ data:
     { i: 6, u: G, v: 6 },
     { i: 7, u: H, v: 1 }
   ]
-defaults:
+plotDefaults:
   xAxis: null
   yAxis: null
   margins: { left: 5, top: 5, right: 5, bottom: 5 }

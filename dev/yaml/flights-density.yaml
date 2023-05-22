@@ -1,3 +1,5 @@
+data:
+  flights: { file: data/flights-200k.parquet }
 params:
   bandwidth: 7
   thresholds: 10
@@ -35,6 +37,7 @@ vconcat:
   xZero: true
   yAxis: right
   yLabelAnchor: center
+  marginTop: 30
   marginLeft: 5
   marginRight: 40
   width: 700

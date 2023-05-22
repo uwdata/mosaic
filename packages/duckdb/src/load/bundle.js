@@ -1,7 +1,6 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { cacheKey } from '../Cache.js';
-import { loadParquet } from './parquet.js';
 
 async function retrieve(db, cache, sql, type) {
   const key = cacheKey(sql, type);
@@ -70,6 +69,7 @@ export async function loadBundle(db, cache, dir) {
 
   // load precomputed temp tables into the database
   for (const table of manifest.tables) {
-    await loadParquet(db, table, path.resolve(dir, `${table}.parquet`), { temp: true });
+    const file = path.resolve(dir, `${table}.parquet`);
+    await db.exec(`CREATE TEMP TABLE IF NOT EXISTS ${table} AS SELECT * FROM '${file}'`);
   }
 }

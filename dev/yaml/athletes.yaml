@@ -75,10 +75,10 @@ hconcat:
       fx: sex
       strokeWidth: 1.5
       stroke: black
-    - mark: frame
-      stroke: '#ccc'
     - select: intervalX
       as: $query
+    - mark: frame
+      stroke: '#ccc'
     xyDomain: Fixed
     fxDomain: Fixed
     colorDomain: Fixed

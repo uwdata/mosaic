@@ -1,6 +1,6 @@
-import { Param, Selection, coordinator, sqlFrom } from '@uwdata/mosaic-core';
+import { Param, Selection, coordinator } from '@uwdata/mosaic-core';
 import {
-  Query, sql, avg, count, max, median, min, mode, quantile, sum,
+  sql, avg, count, max, median, min, mode, quantile, sum,
   row_number, rank, dense_rank, percent_rank, cume_dist, ntile,
   lag, lead, first_value, last_value, nth_value,
   dateMonth, dateMonthDay, dateDay
@@ -19,6 +19,9 @@ import * as attributes from '../directives/attributes.js';
 import * as interactors from '../directives/interactors.js';
 import { Fixed } from '../symbols.js';
 
+import {
+  parseData, parseCSVData, parseJSONData, parseParquetData, parseTableData
+} from './parse-data.js';
 import {
   error, paramRef, toArray,
   isArray, isObject, isNumber, isString, isFunction
@@ -45,7 +48,7 @@ export const DefaultSpecParsers = new Map([
   ['input', { type: isString, parse: parseInput }]
 ]);
 
-export const DefaultFormats = new Map([
+export const DefaultDataFormats = new Map([
   ['table', parseTableData],
   ['parquet', parseParquetData],
   ['csv', parseCSVData],
@@ -96,7 +99,7 @@ export class JSONParseContext {
   constructor({
     specParsers = DefaultSpecParsers,
     paramParsers = DefaultParamParsers,
-    formats = DefaultFormats,
+    dataFormats = DefaultDataFormats,
     transforms = DefaultTransforms,
     attributes = DefaultAttributes,
     interactors = DefaultInteractors,
@@ -104,11 +107,12 @@ export class JSONParseContext {
     inputs = DefaultInputs,
     marks = DefaultMarks,
     params = [],
-    datasets = []
+    datasets = [],
+    baseURL = null
   } = {}) {
     this.specParsers = specParsers;
     this.paramParsers = paramParsers;
-    this.formats = formats;
+    this.dataFormats = dataFormats;
     this.transforms = transforms;
     this.attributes = attributes;
     this.interactors = interactors;
@@ -117,6 +121,7 @@ export class JSONParseContext {
     this.marks = marks;
     this.params = new Map(params);
     this.datasets = new Map(datasets);
+    this.baseURL = baseURL;
     this.postQueue = [];
   }
 
@@ -153,7 +158,7 @@ export class JSONParseContext {
   }
 
   async parse(input) {
-    const { data = {}, defaults = {}, params, ...spec } = input;
+    const { data = {}, plotDefaults = {}, params, ...spec } = input;
 
     // parse data definitions
     await Promise.allSettled(
@@ -166,8 +171,8 @@ export class JSONParseContext {
     );
 
     // parse default attributes
-    this.defaults = Object.keys(defaults)
-      .map(key => parseAttribute(defaults, key, this));
+    this.plotDefaults = Object.keys(plotDefaults)
+      .map(key => parseAttribute(plotDefaults, key, this));
 
     // parse param/selection definitions
     for (const name in params) {
@@ -177,87 +182,15 @@ export class JSONParseContext {
     const result = parseSpec(spec, this);
     this.postQueue.forEach(fn => fn());
     this.postQueue = [];
-    this.defaults = {};
+    this.plotDefaults = {};
 
     return result;
   }
-
-  createFrom(name, from, select, where) {
-    const query = Query.select(select).from(from).where(where);
-    return this.create(name, query);
-  }
-
-  create(name, query) {
-    return `CREATE TEMP TABLE IF NOT EXISTS "${name}" AS ${query}`;
-  }
-}
-
-function parseData(name, spec, ctx) {
-  if (isArray(spec)) spec = { format: 'json', data: spec };
-  if (isString(spec)) spec = { format: 'table', query: spec };
-  const format = inferFormat(spec);
-  const parse = ctx.formats.get(format);
-  if (parse) {
-    return parse(name, spec, ctx);
-  } else {
-    error(`Unrecognized data format.`, spec);
-  }
-}
-
-function inferFormat(spec) {
-  return spec.format
-    || fileExtension(spec.file)
-    || 'table';
-}
-
-function fileExtension(file) {
-  const idx = file?.lastIndexOf('.');
-  return idx > 0 ? file.slice(idx + 1) : null;
-}
-
-function parseTableData(name, spec, ctx) {
-  if (spec.query) {
-    return ctx.create(name, spec.query);
-  }
-}
-
-function parseParquetData(name, spec, ctx) {
-  const { file, select = '*' } = spec;
-  return ctx.createFrom(
-    name,
-    sql`read_parquet('${file}')`,
-    select
-  );
-}
-
-function parseCSVData(name, spec, ctx) {
-  // eslint-disable-next-line no-unused-vars
-  const { file, format, select = '*', ...options } = spec;
-  const opt = Object.entries({ sample_size: -1, ...options })
-    .map(([key, value]) => {
-      const t = typeof value;
-      const v = t === 'boolean' ? String(value).toUpperCase()
-        : t === 'string' ? `'${value}'`
-        : value;
-      return `${key.toUpperCase()}=${v}`;
-    })
-    .join(', ');
-  return ctx.createFrom(
-    name,
-    sql`read_csv_auto('${file}', ${opt})`,
-    select
-  );
 }
 
 async function retrieveJSONData(spec) {
   const { data, file } = spec;
   return data || await fetch(file).then(r => r.json());
-}
-
-async function parseJSONData(name, spec, ctx) {
-  const { select = '*' } = spec;
-  const json = await retrieveJSONData(spec);
-  return ctx.createFrom(name, sql`${sqlFrom(json)}`, select);
 }
 
 async function parseGeoJSONData(name, spec) {
@@ -336,7 +269,7 @@ function parseHConcat(spec, ctx) {
 
 function parsePlot(spec, ctx) {
   const { plot, ...attributes } = spec;
-  const attrs = ctx.defaults.concat(
+  const attrs = ctx.plotDefaults.concat(
     Object.keys(attributes).map(key => parseAttribute(spec, key, ctx))
   );
   const entries = plot.map(e => parseEntry(e, ctx));

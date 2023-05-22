@@ -1,5 +1,6 @@
-import { sqlFrom } from '@uwdata/mosaic-core';
-import { sql } from '@uwdata/mosaic-sql';
+import {
+  parseData, parseCSVData, parseJSONData, parseParquetData, parseTableData
+} from './parse-data.js';
 import { JSONParseContext } from './parse-json.js';
 import {
   error, paramRef, toArray,
@@ -33,11 +34,15 @@ export function specToModule(spec, options) {
   return new CodegenContext(options).generate(spec);
 }
 
+function maybeNewline(entry) {
+  return entry?.length ? [''] : [];
+}
+
 class CodegenContext extends JSONParseContext {
   constructor(options) {
     super({
       specParsers: SpecParsers,
-      formats: DataFormats,
+      daatFormats: DataFormats,
       ...options
     });
     this.imports = options?.imports || new Map([
@@ -47,7 +52,7 @@ class CodegenContext extends JSONParseContext {
   }
 
   async generate(input) {
-    const { data = {}, defaults = {}, params, ...spec } = input;
+    const { data = {}, plotDefaults = {}, params, ...spec } = input;
 
     // parse data definitions
     const dataCode = await Promise.all(
@@ -60,11 +65,11 @@ class CodegenContext extends JSONParseContext {
     );
 
     // parse default attributes
-    const defaultList = Object.keys(defaults)
-      .map(key => parseAttribute(defaults, key, this));
+    const defaultList = Object.keys(plotDefaults)
+      .map(key => parseAttribute(plotDefaults, key, this));
     let defaultCode = [];
     if (defaultList.length) {
-      this.defaults = 'defaultAttributes';
+      this.plotDefaults = 'defaultAttributes';
       defaultCode = [
         'const defaultAttributes = [',
         defaultList.map(d => '  ' + d).join(',\n'),
@@ -74,7 +79,7 @@ class CodegenContext extends JSONParseContext {
 
     // parse param/selection definitions
     for (const name in params) {
-      this.params.set(name, parseParam(params[name], this));
+      this.params.set(`$${name}`, parseParam(params[name], this));
     }
 
     const specCode = [
@@ -84,7 +89,7 @@ class CodegenContext extends JSONParseContext {
 
     const paramCode = [];
     for (const [key, value] of this.params) {
-      paramCode.push(`const ${key} = ${value};`)
+      paramCode.push(`const ${key} = ${value};`);
     }
 
     const importsCode = [];
@@ -98,9 +103,13 @@ class CodegenContext extends JSONParseContext {
 
     return [
       ...importsCode,
+      ...maybeNewline(importsCode),
       ...dataCode,
+      ...maybeNewline(dataCode),
       ...paramCode,
+      ...maybeNewline(paramCode),
       ...defaultCode,
+      ...maybeNewline(defaultCode),
       ...specCode
     ].join('\n');
   }
@@ -120,10 +129,11 @@ class CodegenContext extends JSONParseContext {
     const { params } = this;
     const name = paramRef(value);
     if (name) {
-      if (!params.has(name)) {
-        params.set(name, ctr);
+      const $name = `$${name}`;
+      if (!params.has($name)) {
+        params.set($name, ctr);
       }
-      return name;
+      return $name;
     }
     return JSON.stringify(value);
   }
@@ -225,69 +235,6 @@ function parseParam(param, ctx) {
   }
 }
 
-function parseData(name, spec, ctx) {
-  if (isArray(spec)) spec = { format: 'json', data: spec };
-  if (isString(spec)) spec = { format: 'table', query: spec };
-  const format = inferFormat(spec);
-  const parse = ctx.formats.get(format);
-  if (parse) {
-    return parse(name, spec, ctx);
-  } else {
-    error(`Unrecognized data format.`, spec);
-  }
-}
-
-function inferFormat(spec) {
-  return spec.format
-    || fileExtension(spec.file)
-    || 'table';
-}
-
-function fileExtension(file) {
-  const idx = file?.lastIndexOf('.');
-  return idx > 0 ? file.slice(idx + 1) : null;
-}
-
-function parseTableData(name, spec, ctx) {
-  if (spec.query) {
-    return ctx.create(name, spec.query);
-  }
-}
-
-function parseParquetData(name, spec, ctx) {
-  const { file, select = '*' } = spec;
-  return ctx.createFrom(
-    name,
-    sql`read_parquet('${file}')`,
-    select
-  );
-}
-
-function parseCSVData(name, spec, ctx) {
-  // eslint-disable-next-line no-unused-vars
-  const { file, format, select = '*', ...options } = spec;
-  const opt = Object.entries({ sample_size: -1, ...options })
-    .map(([key, value]) => {
-      const t = typeof value;
-      const v = t === 'boolean' ? String(value).toUpperCase()
-        : t === 'string' ? `'${value}'`
-        : value;
-      return `${key.toUpperCase()}=${v}`;
-    })
-    .join(', ');
-  return ctx.createFrom(
-    name,
-    sql`read_csv_auto('${file}', ${opt})`,
-    select
-  );
-}
-
-async function parseJSONData(name, spec, ctx) {
-  const { data, file, select = '*' } = spec;
-  const json = data || await fetch(file).then(r => r.json());
-  return ctx.createFrom(name, sql`${sqlFrom(json)}`, select);
-}
-
 function fetchJSON(spec) {
   const { data, file } = spec;
   return data
@@ -373,7 +320,7 @@ function parsePlot(spec, ctx) {
 
   ctx.indent();
   const attrs = [
-    ...(ctx.defaults ? [`${ctx.tab()}...defaultAttributes`] : []),
+    ...(ctx.plotDefaults ? [`${ctx.tab()}...defaultAttributes`] : []),
     ...Object.keys(attributes).map(key => parseAttribute(spec, key, ctx))
   ];
   const entries = plot.map(e => parseEntry(e, ctx));
@@ -397,7 +344,7 @@ function parseLegend(spec, ctx) {
   for (const key in options) {
     opt.push(`${key}: ${ctx.maybeSelection(options[key])}`);
   }
-  return `${ctx.tab()}vg.${type}({${opt.join(', ')}})`;
+  return `${ctx.tab()}vg.${type}({ ${opt.join(', ')} })`;
 }
 
 function parseAttribute(spec, name, ctx) {
