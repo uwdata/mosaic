@@ -3,7 +3,6 @@ import { Catalog } from './Catalog.js';
 import { FilterGroup } from './FilterGroup.js';
 import { QueryManager, Priority } from './QueryManager.js';
 import { voidLogger } from './util/void-logger.js';
-import { create, loadCSV } from '@uwdata/mosaic-sql';
 
 let _instance;
 
