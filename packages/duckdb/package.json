@@ -20,6 +20,7 @@
   },
   "scripts": {
     "lint": "eslint src test --ext .js",
+    "server": "node bin/run-server.js",
     "test": "mocha 'test/**/*-test.js'",
     "prepublishOnly": "npm run test && npm run lint"
   },

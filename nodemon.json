@@ -1,7 +1,5 @@
 {
-  "verbose": true,
   "watch": [
-    "bin/run-server.js",
     "packages/duckdb/**"
   ]
 }
