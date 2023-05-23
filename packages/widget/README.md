@@ -37,13 +37,13 @@ The widget has a `spec` traitlet that can be used to set the Mosaic specificatio
 
 We use [hatch](https://hatch.pypa.io/latest/) to manage our development setup.
 
-To active the environment, run `hatch shell`.
+To activate the environment, run `hatch shell`.
 
 This should install the widget in development mode so you can start Jupyter.
 
 You can start Jupyter with `jupyter lab --notebook-dir=../../dev/notebooks`. If you cannot import the widget module, make sure that your Jupyter uses the right environment. You can add your environment to Jupyter by running `python -m ipykernel install --user --name=mosaic` and then select `mosaic` in the Jupyter environment dropdown.
 
-Run `npm run build` to build the widget JavaScript code. If you want to live edit the widget code, run `npm run dev` in a separate terminal and change `_DEV = False` to `_DEV = False` inside `mosaic_widget/__init__.py`.
+Run `npm run build` to build the widget JavaScript code. If you want to live edit the widget code, run `npm run dev` in a separate terminal and change `_DEV = False` to `_DEV = True` inside `mosaic_widget/__init__.py`.
 
 ## Publishing
 
