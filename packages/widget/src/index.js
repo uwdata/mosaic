@@ -56,7 +56,6 @@ export async function render(view) {
         const s = [...selections].map(
           s => s.clauses.map(
             c => ({
-              predicate: c.predicate,
               value: c.value,
               sql: String(c.predicate)
             })
