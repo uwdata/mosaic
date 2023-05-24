@@ -66,14 +66,15 @@
   const connectorMenu = document.querySelector('#connectors');
   const exampleMenu = document.querySelector('#examples');
   const sourceMenu = document.querySelector('#source');
-  connectorMenu.addEventListener('change', () => {
-    setDatabaseConnector(connectorMenu.value);
-    reload();
-  });
+  connectorMenu.addEventListener('change', setConnector);
   exampleMenu.addEventListener('change', reload);
   sourceMenu.addEventListener('change', reload);
-  await setDatabaseConnector(connectorMenu.value);
-  reload();
+  setConnector();
+
+  async function setConnector() {
+    await setDatabaseConnector(connectorMenu.value);
+    reload();
+  }
 
   function reload() {
     load(exampleMenu.value, sourceMenu.value);
