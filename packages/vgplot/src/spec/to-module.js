@@ -50,7 +50,8 @@ class CodegenContext extends JSONParseContext {
   }
 
   async generate(input) {
-    const { data = {}, plotDefaults = {}, params, ...spec } = input;
+    // eslint-disable-next-line no-unused-vars
+    const { meta, data = {}, plotDefaults = {}, params, ...spec } = input;
 
     // parse data definitions
     const dataCode = await Promise.all(
