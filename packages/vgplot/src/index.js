@@ -274,6 +274,7 @@ export {
 export {
   namedPlots,
   plot,
+  reset
 } from './directives/plot.js';
 
 export {

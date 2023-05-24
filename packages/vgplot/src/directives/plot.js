@@ -32,3 +32,8 @@ export class NamedPlots extends Map {
 }
 
 export const namedPlots = new NamedPlots();
+
+export function reset() {
+  namedPlots.clear();
+  coordinator().clear();
+}
