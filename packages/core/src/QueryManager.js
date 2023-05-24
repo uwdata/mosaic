@@ -76,6 +76,13 @@ export function QueryManager() {
       queue.remove(({ result }) => set.has(result));
     },
 
+    clear() {
+      queue.remove(({ result }) => {
+        result.reject('Cleared');
+        return true;
+      });
+    },
+
     record() {
       let state = [];
       const recorder = {

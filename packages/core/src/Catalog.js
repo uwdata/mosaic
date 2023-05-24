@@ -13,30 +13,16 @@ export class Catalog {
     this.tables = object();
   }
 
-  async tableInfo(table) {
+  tableInfo(table) {
     const cache = this.tables;
     if (cache[table]) {
       return cache[table];
     }
 
-    const q = this.mc.query(
-      `DESCRIBE "${table}"`,
-      { type: 'json', cache: false }
-    );
+    const infoPromise = getTableInfo(this.mc, table)
+      .catch(err => { cache[table] = null; throw err; });
 
-    return (cache[table] = q.then(result => {
-      const columns = object();
-      for (const entry of result) {
-        columns[entry.column_name] = {
-          table,
-          column: entry.column_name,
-          sqlType: entry.column_type,
-          type: jsType(entry.column_type),
-          nullable: entry.null === 'YES'
-        };
-      }
-      return columns;
-    }));
+    return (cache[table] = infoPromise);
   }
 
   async fieldInfo({ table, column, stats }) {
@@ -71,6 +57,26 @@ export class Catalog {
     const data = await Promise.all(list.map(f => this.fieldInfo(f)));
     return data.filter(x => x);
   }
+}
+
+async function getTableInfo(mc, table) {
+  const result = await mc.query(
+    `DESCRIBE "${table}"`,
+    { type: 'json', cache: false }
+  );
+
+  const columns = object();
+  for (const entry of result) {
+    columns[entry.column_name] = {
+      table,
+      column: entry.column_name,
+      sqlType: entry.column_type,
+      type: jsType(entry.column_type),
+      nullable: entry.null === 'YES'
+    };
+  }
+
+  return columns;
 }
 
 async function resolveFields(catalog, list) {

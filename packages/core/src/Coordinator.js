@@ -40,6 +40,7 @@ export class Coordinator {
   }
 
   clear({ clients = true, cache = true, catalog = false } = {}) {
+    this.manager.clear();
     if (clients) {
       this.clients?.forEach(client => this.disconnect(client));
       this.filterGroups?.forEach(group => group.finalize());
