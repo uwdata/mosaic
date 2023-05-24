@@ -1,13 +1,8 @@
 import {
-  coordinator, socketConnector, restConnector, wasmConnector, namedPlots
+  coordinator, socketConnector, restConnector, wasmConnector
 } from '@uwdata/vgplot';
 
 export * from  '@uwdata/vgplot';
-
-export function reset() {
-  coordinator().clear();
-  namedPlots.clear();
-}
 
 let wasm;
 
