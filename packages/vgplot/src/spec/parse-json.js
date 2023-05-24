@@ -20,7 +20,8 @@ import * as interactors from '../directives/interactors.js';
 import { Fixed } from '../symbols.js';
 
 import {
-  parseData, parseCSVData, parseJSONData, parseParquetData, parseTableData
+  parseData, parseCSVData, parseJSONData,
+  parseParquetData, parseTableData
 } from './parse-data.js';
 import {
   error, paramRef, toArray,
@@ -49,12 +50,12 @@ export const DefaultSpecParsers = new Map([
 ]);
 
 export const DefaultDataFormats = new Map([
-  ['table', parseTableData],
-  ['parquet', parseParquetData],
   ['csv', parseCSVData],
   ['json', parseJSONData],
   ['geojson', parseGeoJSONData],
-  ['topojson', parseTopoJSONData]
+  ['topojson', parseTopoJSONData],
+  ['parquet', parseParquetData],
+  ['table', parseTableData]
 ]);
 
 export const DefaultTransforms = new Map([

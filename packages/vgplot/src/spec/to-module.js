@@ -1,5 +1,6 @@
 import {
-  parseData, parseCSVData, parseJSONData, parseParquetData, parseTableData
+  parseData, parseCSVData, parseJSONData,
+  parseParquetData, parseTableData
 } from './parse-data.js';
 import { JSONParseContext } from './parse-json.js';
 import {

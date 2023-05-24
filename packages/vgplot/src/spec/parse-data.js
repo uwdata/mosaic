@@ -41,19 +41,23 @@ function resolveFile({ file }, ctx) {
 }
 
 export function parseTableData(name, spec) {
-  if (spec.query) {
-    return create(name, spec.query, { temp: true });
+  // eslint-disable-next-line no-unused-vars
+  const { query, type, ...options } = spec;
+  if (query) {
+    return create(name, query, { temp: true, ...options });
   }
 }
 
 export function parseParquetData(name, spec) {
-  return loadParquet(name, spec.file);
+  // eslint-disable-next-line no-unused-vars
+  const { file, type, ...options } = spec;
+  return loadParquet(name, file, { temp: true, ...options });
 }
 
 export function parseCSVData(name, spec) {
   // eslint-disable-next-line no-unused-vars
   const { file, type, ...options } = spec;
-  return loadCSV(name, file, options);
+  return loadCSV(name, file, { temp: true, ...options });
 }
 
 export function parseJSONData(name, spec) {
@@ -63,6 +67,6 @@ export function parseJSONData(name, spec) {
     const { select = '*' } = spec;
     return create(name, `SELECT ${select} FROM ${sqlFrom(data)}`, { temp: true });
   } else {
-    return loadJSON(name, file, options);
+    return loadJSON(name, file, { temp: true, ...options });
   }
 }

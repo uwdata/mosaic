@@ -129,7 +129,5 @@ export {
 } from './to-sql.js';
 
 export { create } from './load/create.js';
-export { loadCSV } from './load/csv.js';
-export { loadJSON } from './load/json.js';
-export { loadParquet } from './load/parquet.js';
+export { loadCSV, loadJSON, loadParquet } from './load/load.js';
 export { sqlFrom } from './load/sql-from.js';

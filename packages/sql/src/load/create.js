@@ -1,6 +1,9 @@
 export function create(name, query, options = {}) {
-  const { temp, replace, type = 'TABLE' } = options;
-  const create = `CREATE${replace ? ' OR REPLACE' : ''}`;
-  const spec = `${temp ? 'TEMP ' : ''}${type}${replace ? '' : ' IF NOT EXISTS'}`;
-  return `${create} ${spec} ${name} AS ${query}`;
+  const { view, temp, replace } = options;
+  return 'CREATE'
+    + (replace ? ' OR REPLACE ' : ' ')
+    + (temp ? 'TEMP ' : '')
+    + (view ? 'VIEW' : 'TABLE')
+    + (replace ? ' ' : ' IF NOT EXISTS ')
+    + name + ' AS ' + query;
 }
