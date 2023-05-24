@@ -1,5 +1,8 @@
-export function create(name, query, options = {}) {
-  const { view, temp, replace } = options;
+export function create(name, query, {
+  replace = false,
+  temp = true,
+  view = false
+} = {}) {
   return 'CREATE'
     + (replace ? ' OR REPLACE ' : ' ')
     + (temp ? 'TEMP ' : '')

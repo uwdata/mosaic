@@ -1,5 +1,5 @@
 import {
-  create, loadCSV, loadJSON, loadParquet, sqlFrom
+  create, loadCSV, loadJSON, loadObjects, loadParquet
 } from '@uwdata/mosaic-sql';
 import { error, isArray, isString } from './util.js';
 
@@ -44,29 +44,26 @@ export function parseTableData(name, spec) {
   // eslint-disable-next-line no-unused-vars
   const { query, type, ...options } = spec;
   if (query) {
-    return create(name, query, { temp: true, ...options });
+    return create(name, query, options);
   }
 }
 
 export function parseParquetData(name, spec) {
   // eslint-disable-next-line no-unused-vars
   const { file, type, ...options } = spec;
-  return loadParquet(name, file, { temp: true, ...options });
+  return loadParquet(name, file, options);
 }
 
 export function parseCSVData(name, spec) {
   // eslint-disable-next-line no-unused-vars
   const { file, type, ...options } = spec;
-  return loadCSV(name, file, { temp: true, ...options });
+  return loadCSV(name, file, options);
 }
 
 export function parseJSONData(name, spec) {
   // eslint-disable-next-line no-unused-vars
   const { data, file, type, ...options } = spec;
-  if (data) {
-    const { select = '*' } = spec;
-    return create(name, `SELECT ${select} FROM ${sqlFrom(data)}`, { temp: true });
-  } else {
-    return loadJSON(name, file, { temp: true, ...options });
-  }
+  return data
+    ? loadObjects(name, data, options)
+    : loadJSON(name, file, options);
 }

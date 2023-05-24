@@ -20,7 +20,7 @@ export {
   isBetween, isNotBetween,
   isDistinct, isNotDistinct,
   isNull, isNotNull,
-  create, loadCSV, loadJSON, loadParquet
+  loadCSV, loadJSON, loadObjects, loadParquet
 } from '@uwdata/mosaic-sql';
 
 export {

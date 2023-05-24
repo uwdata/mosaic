@@ -1,4 +1,5 @@
 import { create } from './create.js';
+import { sqlFrom } from './sql-from.js';
 
 export function load(method, tableName, fileName, options = {}, defaults = {}) {
   const { select = ['*'], view, temp, replace, ...file } = options;
@@ -18,6 +19,15 @@ export function loadJSON(tableName, fileName, options) {
 
 export function loadParquet(tableName, fileName, options) {
   return load('read_parquet', tableName, fileName, options);
+}
+
+export function loadObjects(tableName, data, options = {}) {
+  const { select = ['*'], ...opt } = options;
+  const values = sqlFrom(data);
+  const query = select.length === 1 && select[0] === '*'
+    ? values
+    : `SELECT ${select} FROM ${values}`;
+  return create(tableName, query, opt);
 }
 
 function parameters(options) {

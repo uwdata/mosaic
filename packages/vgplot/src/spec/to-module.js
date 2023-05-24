@@ -1,7 +1,4 @@
-import {
-  parseData, parseCSVData, parseJSONData,
-  parseParquetData, parseTableData
-} from './parse-data.js';
+import { parseData, parseTableData } from './parse-data.js';
 import { JSONParseContext } from './parse-json.js';
 import {
   error, paramRef, toArray,
@@ -61,7 +58,7 @@ class CodegenContext extends JSONParseContext {
         const q = parseData(name, data[name], this);
         return !q ? []
           : q.data ? `const ${name} = ${q.data};`
-          : `await vg.coordinator().exec(\`${q}\`);`;
+          : `await vg.coordinator().exec(\n  ${q}\n);`;
       })
     );
 
@@ -232,6 +229,40 @@ function parseParam(param, ctx) {
       : `vg.Param.value(${JSON.stringify(value)})`;
   } else {
     return `vg.Selection.${select}()`;
+  }
+}
+
+function dataOptions(options) {
+  const opt = [];
+  for (const key in options) {
+    opt.push(`${key}: ${JSON.stringify(options[key])}`);
+  }
+  return opt.length ? `, { ${opt.join(', ')} }` : '';
+}
+
+function parseParquetData(name, spec) {
+  // eslint-disable-next-line no-unused-vars
+  const { file, type, ...options } = spec;
+  return `vg.loadParquet("${name}", "${file}"${dataOptions(options)})`;
+}
+
+function parseCSVData(name, spec) {
+  // eslint-disable-next-line no-unused-vars
+  const { file, type, ...options } = spec;
+  return `vg.loadCSV("${name}", "${file}"${dataOptions(options)})`;
+}
+
+function parseJSONData(name, spec) {
+  // eslint-disable-next-line no-unused-vars
+  const { data, file, type, ...options } = spec;
+  const opt = dataOptions(options);
+  if (data) {
+    const d = '[\n    '
+      + data.map(d => JSON.stringify(d)).join(',\n    ')
+      + '\n  ]';
+    return `vg.loadObjects("${name}", ${d}${opt})`;
+  } else {
+    return `vg.loadCSV("${name}", "${file}"${opt})`;
   }
 }
 

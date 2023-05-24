@@ -129,5 +129,9 @@ export {
 } from './to-sql.js';
 
 export { create } from './load/create.js';
-export { loadCSV, loadJSON, loadParquet } from './load/load.js';
-export { sqlFrom } from './load/sql-from.js';
+export {
+  loadCSV,
+  loadJSON,
+  loadObjects,
+  loadParquet
+} from './load/load.js';
