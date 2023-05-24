@@ -21,12 +21,12 @@ const SpecParsers = new Map([
 ]);
 
 const DataFormats = new Map([
-  ['table', parseTableData],
-  ['parquet', parseParquetData],
   ['csv', parseCSVData],
   ['json', parseJSONData],
   ['geojson', parseGeoJSONData],
-  ['topojson', parseTopoJSONData]
+  ['topojson', parseTopoJSONData],
+  ['parquet', parseParquetData],
+  ['table', parseTableData]
 ]);
 
 export function specToModule(spec, options) {
@@ -42,7 +42,7 @@ class CodegenContext extends JSONParseContext {
   constructor(options) {
     super({
       specParsers: SpecParsers,
-      daatFormats: DataFormats,
+      dataFormats: DataFormats,
       ...options
     });
     this.imports = options?.imports || new Map([
@@ -56,8 +56,8 @@ class CodegenContext extends JSONParseContext {
 
     // parse data definitions
     const dataCode = await Promise.all(
-      Object.keys(data).flatMap(async name => {
-        const q = await parseData(name, data[name], this);
+      Object.keys(data).flatMap(name => {
+        const q = parseData(name, data[name], this);
         return !q ? []
           : q.data ? `const ${name} = ${q.data};`
           : `await vg.coordinator().exec(\`${q}\`);`;
@@ -83,8 +83,7 @@ class CodegenContext extends JSONParseContext {
     }
 
     const specCode = [
-      `const view = ${parseSpec(spec, this)};`,
-      `export default view;`
+      `export default ${parseSpec(spec, this)};`
     ];
 
     const paramCode = [];
