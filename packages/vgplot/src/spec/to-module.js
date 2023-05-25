@@ -2,7 +2,7 @@ import { parseData, parseTableData } from './parse-data.js';
 import { JSONParseContext } from './parse-json.js';
 import {
   error, paramRef, toArray,
-  isArray, isNumber, isObject, isString, isFunction
+  isArray, isNumberOrString, isObject, isString, isFunction
 } from './util.js';
 
 const TOPOJSON = 'https://cdn.jsdelivr.net/npm/topojson@3.0.2/+esm';
@@ -13,8 +13,8 @@ const SpecParsers = new Map([
   ['legend', { type: isString, parse: parseLegend }],
   ['hconcat', { type: isArray, parse: parseHConcat }],
   ['vconcat', { type: isArray, parse: parseVConcat }],
-  ['hspace', { type: isNumber, parse: parseHSpace }],
-  ['vspace', { type: isNumber, parse: parseVSpace }],
+  ['hspace', { type: isNumberOrString, parse: parseHSpace }],
+  ['vspace', { type: isNumberOrString, parse: parseVSpace }],
   ['input', { type: isString, parse: parseInput }]
 ]);
 

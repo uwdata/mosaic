@@ -25,7 +25,7 @@ import {
 } from './parse-data.js';
 import {
   error, paramRef, toArray,
-  isArray, isObject, isNumber, isString, isFunction
+  isArray, isObject, isNumberOrString, isString, isFunction
 } from './util.js';
 
 export const DefaultParamParsers = new Map([
@@ -44,8 +44,8 @@ export const DefaultSpecParsers = new Map([
   ['legend', { type: isString, parse: parseLegend }],
   ['hconcat', { type: isArray, parse: parseHConcat }],
   ['vconcat', { type: isArray, parse: parseVConcat }],
-  ['hspace', { type: isNumber, parse: parseHSpace }],
-  ['vspace', { type: isNumber, parse: parseVSpace }],
+  ['hspace', { type: isNumberOrString, parse: parseHSpace }],
+  ['vspace', { type: isNumberOrString, parse: parseVSpace }],
   ['input', { type: isString, parse: parseInput }]
 ]);
 
@@ -242,11 +242,11 @@ function parseSpec(spec, ctx) {
 }
 
 function parseHSpace(spec) {
-  return hspace(+spec.hspace);
+  return hspace(spec.hspace);
 }
 
 function parseVSpace(spec) {
-  return vspace(+spec.vspace);
+  return vspace(spec.vspace);
 }
 
 function parseInput(spec, ctx) {
