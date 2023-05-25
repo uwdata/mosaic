@@ -1,0 +1,65 @@
+meta:
+  title: Line Density
+  description: |
+    The `denseLine` mark shows the densities of line series, here for a collection of stock prices.
+    The top plot normalizes by arc length to remove the vertical artifacts visible in the unnormalized plot below.
+    Select a region in the lower plot to zoom the upper plot.
+    The bandwidth slider smooths the data, while the bin width menu adjusts the raster resolution.
+data:
+  stocks_after_2006: SELECT Symbol, Close, Date
+    FROM read_csv_auto('https://uwdata.github.io/mosaic-datasets/data/stocks_after_2006.csv', SAMPLE_SIZE=-1)
+    WHERE CLOSE < 100
+params:
+  brush: { select: intersect }
+  bandwidth: 0
+  binWidth: 1
+  schemeColor: pubugn
+  scaleColor: sqrt
+vconcat:
+- hconcat:
+  - input: slider
+    label: Bandwidth (σ)
+    as: $bandwidth
+    min: 0
+    max: 10
+    step: 0.1
+  - input: menu
+    label: Bin Width
+    as: $binWidth
+    options: [0.5, 1, 2]
+- vspace: 10
+- plot:
+  - mark: denseLine
+    data: { from: stocks_after_2006, filterBy: $brush }
+    x: Date
+    y: Close
+    z: Symbol
+    fill: density
+    bandwidth: $bandwidth
+    binWidth: $binWidth
+  colorScheme: $schemeColor
+  colorScale: $scaleColor
+  yLabel: Close (Normalized) ↑
+  yNice: true
+  margins: { left: 30, top: 20, right: 0 }
+  width: 680
+  height: 240
+- plot:
+  - mark: denseLine
+    data: { from: stocks_after_2006 }
+    x: Date
+    y: Close
+    z: Symbol
+    fill: density
+    normalize: false
+    bandwidth: $bandwidth
+    binWidth: $binWidth
+  - select: intervalXY
+    as: $brush
+  colorScheme: $schemeColor
+  colorScale: $scaleColor
+  yLabel: Close (Unnormalized) ↑
+  yNice: true
+  margins: { left: 30, top: 20, right: 0 }
+  width: 680
+  height: 240

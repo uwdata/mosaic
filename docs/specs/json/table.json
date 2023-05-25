@@ -1,0 +1,14 @@
+{
+  "meta": {
+    "title": "Sortable Table",
+    "description": "A sortable, \"infinite scroll\" `table` view over a backing database table.\nClick column headers to sort, or command-click to reset the order.\nData is queried as needed as the table is sorted or scrolled.\n"
+  },
+  "data": {
+    "flights": {
+      "file": "data/flights-200k.parquet"
+    }
+  },
+  "input": "table",
+  "from": "flights",
+  "height": 500
+}

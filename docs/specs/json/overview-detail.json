@@ -1,0 +1,49 @@
+{
+  "meta": {
+    "title": "Overview + Detail",
+    "description": "Select the top \"overview\" series to zoom the \"focus\" view below.\nAn `intervalX` interactor updates a selection that filters the focus view.\nThe `line` and `area` marks can apply\n[M4](https://observablehq.com/@uwdata/m4-scalable-time-series-visualization)\noptimization to reduce the number of data points returned:\nrather than draw all points, a dramatically smaller subset can still\nfaithfully represent these area charts.\n"
+  },
+  "data": {
+    "walk": {
+      "file": "data/random-walk.parquet"
+    }
+  },
+  "vconcat": [
+    {
+      "plot": [
+        {
+          "mark": "areaY",
+          "data": {
+            "from": "walk"
+          },
+          "x": "t",
+          "y": "v",
+          "fill": "steelblue"
+        },
+        {
+          "select": "intervalX",
+          "as": "$brush"
+        }
+      ],
+      "width": 680,
+      "height": 200
+    },
+    {
+      "plot": [
+        {
+          "mark": "areaY",
+          "data": {
+            "from": "walk",
+            "filterBy": "$brush"
+          },
+          "x": "t",
+          "y": "v",
+          "fill": "steelblue"
+        }
+      ],
+      "yDomain": "Fixed",
+      "width": 680,
+      "height": 200
+    }
+  ]
+}

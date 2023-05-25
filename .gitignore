@@ -2,6 +2,7 @@
 .mosaic
 .duckdb
 .ipynb_checkpoints
+docs/.vitepress/cache
 node_modules
 packages/*/dist
 
