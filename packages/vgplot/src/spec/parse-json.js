@@ -163,14 +163,15 @@ export class JSONParseContext {
     const { meta, data = {}, plotDefaults = {}, params, ...spec } = input;
 
     // parse data definitions
-    await Promise.allSettled(
-      Object.keys(data).map(async name => {
-        const q = await parseData(name, data[name], this);
-        return !q ? null
-          : q.data ? this.datasets.set(name, q.data)
-          : coordinator().exec(q);
-      })
-    );
+    // perform sequentially, as later datasets may be derived
+    for (const name in data) {
+      const q = await parseData(name, data[name], this);
+      if (q?.data) {
+        this.datasets.set(name, q.data);
+      } else if (q) {
+        await coordinator().exec(q);
+      }
+    }
 
     // parse default attributes
     this.plotDefaults = Object.keys(plotDefaults)
