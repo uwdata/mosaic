@@ -2,10 +2,11 @@ import { create } from './create.js';
 import { sqlFrom } from './sql-from.js';
 
 export function load(method, tableName, fileName, options = {}, defaults = {}) {
-  const { select = ['*'], view, temp, replace, ...file } = options;
+  const { select = ['*'], where, view, temp, replace, ...file } = options;
   const params = parameters({ ...defaults, ...file });
   const read = `${method}('${fileName}'${params ? ', ' + params : ''})`;
-  const query = `SELECT ${select.join(', ')} FROM ${read}`;
+  const filter = where ? ` WHERE ${where}` : '';
+  const query = `SELECT ${select.join(', ')} FROM ${read}${filter}`;
   return create(tableName, query, { view, temp, replace });
 }
 
