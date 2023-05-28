@@ -1,0 +1,18 @@
+{
+  "data": {
+    "aapl": {
+      "file": "data/stocks.csv",
+      "where": "Symbol = 'AAPL'"
+    }
+  },
+  "plot": [
+    {
+      "mark": "line",
+      "data": {
+        "from": "aapl"
+      },
+      "x": "Date",
+      "y": "Close"
+    }
+  ]
+}

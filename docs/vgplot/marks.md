@@ -1,5 +1,4 @@
 <script setup>
-  import Example from '../components/Example.vue';
   import { reset } from '@uwdata/vgplot';
   reset();
 </script>
@@ -39,6 +38,14 @@ Basic marks follow a straightforward query construction process:
 
 The `area` and `line` marks connect consecutive sample points.
 Connected marks are treated similarly to basic marks, with one notable addition: the queries for spatially oriented marks (`areaY`, `lineX`) can apply [M4 optimization](https://observablehq.com/@uwdata/m4-scalable-time-series-visualization). The query construction method uses plot width and data min/max information to determine the pixel resolution of the mark range. When the data points outnumber available pixels, M4 performs perceptually faithful pixel-aware binning of the series, limiting the number of drawn points. This optimization offers dramatic data reductions for both single and multiple series.
+
+<Example spec="/specs/yaml/area.yaml" />
+
+::: code-group
+<<< @/specs/esm/area.js [JavaScript]
+<<< @/specs/yaml/area.yaml [YAML]
+<<< @/specs/json/area.json [JSON]
+:::
 
 Separately, vgplot includes a `regression` mark for linear regression fits. Regression calculations and associated statistics are performed in-database in a single aggregate query. The mark then draws the regression line and optional confidence interval area.
 

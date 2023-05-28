@@ -1,5 +1,4 @@
 <script setup>
-  import Example from '../components/Example.vue';
   import { reset } from '@uwdata/vgplot';
   reset();
 </script>

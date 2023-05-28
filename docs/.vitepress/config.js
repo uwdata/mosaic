@@ -38,8 +38,10 @@ export default defineConfig({
       '/': [
         {
           text: 'Introduction',
+          collapsed: false,
           items: [
-            { text: 'What is Mosaic?', link: '/about/' },
+            { text: 'What is Mosaic?', link: '/what-is-mosaic/' },
+            { text: 'Why Mosaic?', link: '/why-mosaic/' },
             { text: 'Get Started', link: '/get-started/' }
           ]
         },
