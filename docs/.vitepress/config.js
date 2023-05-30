@@ -8,8 +8,8 @@ export default defineConfig({
   themeConfig: {
     // https://vitepress.dev/reference/default-theme-config
     logo: {
-      light: '/assets/mosaic.svg',
-      dark: '/assets/mosaic-dark.svg',
+      light: '/mosaic.svg',
+      dark: '/mosaic-dark.svg',
       alt: 'Mosaic'
     },
     siteTitle: false,

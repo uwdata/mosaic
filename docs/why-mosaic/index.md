@@ -16,7 +16,7 @@ However, these tools were not designed to handle millions of data points.
 Mosaic provides greater scalability by pushing data-heavy computation to a backing [DuckDB](/duckdb/) database.
 Mosaic improves performance further by caching results and, when possible, performing automatic query optimization.
 
-![Data loading and static plot rendering performance.](/assets/benchmarks-static.png)
+![Data loading and static plot rendering performance.](/benchmarks-static.png)
 
 The figure above shows render times for static plots over increasing dataset sizes.
 Mosaic provides faster results, often by one or more orders of magnitude.

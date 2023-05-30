@@ -8,7 +8,7 @@ hero:
   tagline: |
     Mosaic is an extensible framework for linking databases and interactive views.
   image:
-    src: /assets/contour.svg
+    src: /contour.svg
     alt: Mosaic visualizing the 1.8B Gaia star catalog
   actions:
     - theme: brand
