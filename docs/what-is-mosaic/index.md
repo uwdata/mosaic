@@ -64,7 +64,7 @@ The Mosaic project consists of a suite of packages:
   Includes support for aggregate functions, window functions, and arbitrary expressions with dynamic parameters. Query objects then coerce to SQL query strings.
 - [`mosaic-duckdb`](/duckdb/):
   A Promise-based Node.js API to DuckDB, along with a data server that supports transfer of Apache Arrow and JSON data over either Web Sockets or HTTP.
-- [`mosaic-inputs`](/inputs/): Standalone data-driven components such as input menus, text search boxes, and sortable, load-on-scroll data tables.
+- [`mosaic-inputs`](/vgplot/inputs.html): Standalone data-driven components such as input menus, text search boxes, and sortable, load-on-scroll data tables.
 - [`vgplot`](/vgplot/): A **v**isualization **g**rammar in which marks (plot layers) are individual Mosaic clients.
   Marks can push data processing (binning, filtering, aggregation, regression, ...) to the database and apply mark-specific optimizations (such as [M4 for line/area charts](https://observablehq.com/@uwdata/m4-scalable-time-series-visualization)).
   vgplot provides a JavaScript DSL and a declarative YAML/JSON specification format, that combines marks, interactors, input widgets, and dashboard layout.

@@ -1,7 +1,3 @@
-<script setup>
-import Example from '../components/Example.vue'
-</script>
-
 # Examples
 
 Example Mosaic-powered visualizations created with [vgplot](/vgplot/).
