@@ -45,7 +45,7 @@ export class Interval1D {
     }
     if (!closeTo(range, this.value)) {
       this.value = range;
-      this.g.call(this.brush.move, extent);
+      this.g.call(this.brush.moveSilent, extent);
       this.selection.update(this.clause(range));
     }
   }
@@ -76,7 +76,7 @@ export class Interval1D {
       .attr('class', `interval-${channel}`)
       .each(patchScreenCTM)
       .call(brush)
-      .call(brush.move, this.value?.map(this.scale.apply));
+      .call(brush.moveSilent, this.value?.map(this.scale.apply));
 
     if (style) {
       const brushes = this.g.selectAll('rect.selection');

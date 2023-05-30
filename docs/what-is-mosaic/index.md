@@ -67,7 +67,7 @@ The Mosaic project consists of a suite of packages:
 - [`mosaic-inputs`](/vgplot/inputs.html): Standalone data-driven components such as input menus, text search boxes, and sortable, load-on-scroll data tables.
 - [`vgplot`](/vgplot/): A **v**isualization **g**rammar in which marks (plot layers) are individual Mosaic clients.
   Marks can push data processing (binning, filtering, aggregation, regression, ...) to the database and apply mark-specific optimizations (such as [M4 for line/area charts](https://observablehq.com/@uwdata/m4-scalable-time-series-visualization)).
-  vgplot provides a JavaScript DSL and a declarative YAML/JSON specification format, that combines marks, interactors, input widgets, and dashboard layout.
+  vgplot provides both a JavaScript DSL and a declarative YAML/JSON format that combine marks, interactors, input widgets, and dashboard layout.
   Once data and parameters are marshalled, [Observable Plot](https://observablehq.com/plot) is used to render [SVG](https://developer.mozilla.org/en-US/docs/Web/SVG) output.
 - [`widget`](/jupyter/):
   A Jupyter widget for Mosaic that renders vgplot specifications in Jupyter notebook cells, with data processing by DuckDB in the Python kernel.

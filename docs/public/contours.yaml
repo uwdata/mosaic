@@ -1,0 +1,32 @@
+data:
+  penguins: { file: data/penguins.csv }
+params:
+  bandwidth: 50
+  thresholds: 10
+plot:
+- mark: raster
+  data: { from: penguins }
+  x: bill_length
+  y: bill_depth
+  fill: species
+  bandwidth: $bandwidth
+- mark: contour
+  data: { from: penguins }
+  x: bill_length
+  y: bill_depth
+  stroke: species
+  bandwidth: $bandwidth
+  thresholds: $thresholds
+- mark: dot
+  data: { from: penguins }
+  x: bill_length
+  y: bill_depth
+  fill: black
+  r: 1
+xDomain: [31.7, 55.5]
+yDomain: [12.2, 21.8]
+xAxis: null
+yAxis: null
+margins: { left: 0, top: 0, right: 0, bottom: 0 }
+width: 680
+height: 680

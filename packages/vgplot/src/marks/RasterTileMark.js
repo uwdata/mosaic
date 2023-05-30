@@ -258,8 +258,13 @@ function imagePalette(mark, domain, value, steps = 1024) {
     }
   } else if (domain.length) {
     // fill is based on data values
-    const s = scheme || 'tableau10';
-    color = scale({ color: { scheme: s, domain } }).apply(value);
+    const range = plot.getAttribute('colorRange');
+    const spec = {
+      domain,
+      range,
+      scheme: scheme || (range ? undefined : 'tableau10')
+    };
+    color = scale({ color: spec }).apply(value);
   } else {
     // fill color is a constant
     const fill = mark.channelField('fill');

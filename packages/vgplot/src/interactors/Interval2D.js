@@ -50,7 +50,7 @@ export class Interval2D {
 
     if (!closeTo(xr, value?.[0]) || !closeTo(yr, value?.[1])) {
       this.value = extent ? [xr, yr] : undefined;
-      this.g.call(this.brush.move, extent);
+      this.g.call(this.brush.moveSilent, extent);
       this.selection.update(this.clause(this.value));
     }
   }
@@ -94,7 +94,7 @@ export class Interval2D {
     if (this.value) {
       const [x1, x2] = this.value[0].map(xscale.apply).sort(asc);
       const [y1, y2] = this.value[1].map(yscale.apply).sort(asc);
-      this.g.call(brush.move, [[x1, y1], [x2, y2]]);
+      this.g.call(brush.moveSilent, [[x1, y1], [x2, y2]]);
     }
 
     svg.addEventListener('mouseenter', () => this.activate());
