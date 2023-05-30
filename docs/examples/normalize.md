@@ -11,7 +11,6 @@ return on a given day.
 A `nearestX` interactor selects the nearest date, and parameterized
 expressions reactively update in response.
 
-
 <Example spec="/specs/yaml/normalize.yaml" />
 
 ## Specification

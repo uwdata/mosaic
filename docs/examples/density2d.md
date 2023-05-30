@@ -8,7 +8,6 @@
 A 2D `density` plot in which circle size indicates the point density.
 To change the amount of smoothing, use the slider to set the kernel bandwidth.
 
-
 <Example spec="/specs/yaml/density2d.yaml" />
 
 ## Specification

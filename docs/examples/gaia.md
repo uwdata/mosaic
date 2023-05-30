@@ -11,7 +11,6 @@ A `raster` sky map reveals our Milky Way galaxy. Select high parallax stars in t
 [Hertzsprung-Russel diagram](https://en.wikipedia.org/wiki/Hertzsprung%E2%80%93Russell_diagram)
 in the plot of stellar color vs. magnitude on the right.
 
-
 <Example spec="/specs/yaml/gaia.yaml" />
 
 ## Specification

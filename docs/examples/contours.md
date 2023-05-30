@@ -10,7 +10,6 @@ data points in a scatter plot of penguin measurments.
 Setting the `fill` color to `"species"` subdivides
 the data into three sets of densities.
 
-
 <Example spec="/specs/yaml/contours.yaml" />
 
 ## Specification

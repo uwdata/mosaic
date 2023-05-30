@@ -10,7 +10,6 @@ A subset of supported mark types.
 - Row 1: `barY`, `lineY`, `text`, `tickY`, `areaY`
 - Row 2: `regressionY`, `hexbin`, `contour`, `raster`, `denseLine`
 
-
 <Example spec="/specs/yaml/mark-types.yaml" />
 
 ## Specification

@@ -8,7 +8,6 @@
 Density `raster` and `contour` lines for 200,000+ flights by departure hour and arrival delay.
 The sliders adjust the smoothing (bandwidth) and number of contour thresholds.
 
-
 <Example spec="/specs/yaml/flights-density.yaml" />
 
 ## Specification

@@ -13,7 +13,6 @@ optimization to reduce the number of data points returned:
 rather than draw all points, a dramatically smaller subset can still
 faithfully represent these area charts.
 
-
 <Example spec="/specs/yaml/overview-detail.yaml" />
 
 ## Specification

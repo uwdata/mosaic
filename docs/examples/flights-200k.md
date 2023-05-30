@@ -10,7 +10,6 @@ Select a histogram region to cross-filter the charts.
 Each plot uses an `intervalX` interactor to populate a shared Selection
 with `crossfilter` resolution.
 
-
 <Example spec="/specs/yaml/flights-200k.yaml" />
 
 ## Specification

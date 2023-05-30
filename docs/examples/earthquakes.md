@@ -8,7 +8,6 @@
 A rotatable globe of earthquake activity.
 To show land masses, this example loads a TopoJSON file directly in the browser, bypassing the database.
 
-
 <Example spec="/specs/yaml/earthquakes.yaml" />
 
 **Credit**: Adapted from an [Observable Plot example](https://observablehq.com/@observablehq/plot-earthquake-globe).

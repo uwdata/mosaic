@@ -9,7 +9,6 @@ Density plots (`densityY` mark) for over 200,000 flights, created using kernel d
 Binning is performned in-database, subsequent smoothing in-browser.
 To change the amount of smoothing, use the slider to set the kernel bandwidth.
 
-
 <Example spec="/specs/yaml/density1d.yaml" />
 
 ## Specification

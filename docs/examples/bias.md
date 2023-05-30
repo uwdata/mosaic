@@ -8,7 +8,6 @@
 Dynamically adjust queried values by adding a Param value.
 The expression is re-computed in the database upon updates.
 
-
 <Example spec="/specs/yaml/bias.yaml" />
 
 ## Specification

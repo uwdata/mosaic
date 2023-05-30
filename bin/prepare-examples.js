@@ -61,7 +61,7 @@ function examplePage(spec, { title = spec, description, credit } = {}) {
 </script>
 
 # ${title}
-${description ? `\n${description}\n` : ''}
+${description ? `\n${description.trim()}\n` : ''}
 <Example spec="/specs/yaml/${spec}.yaml" />
 ${credit ? `\n**Credit**: ${credit}\n` : ''}
 ## Specification

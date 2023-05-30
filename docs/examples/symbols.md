@@ -7,7 +7,6 @@
 
 Two scatter plots with `dot` marks: one with stroked symbols, the other filled.
 
-
 <Example spec="/specs/yaml/symbols.yaml" />
 
 ## Specification
