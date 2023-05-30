@@ -1,0 +1,33 @@
+meta:
+  title: Axes & Gridlines
+  description: |
+    Customized axis and gridline marks can be used in addition to standard
+    scale attributes such as `xAxis`, `yGrid`, etc. Just add data!
+plot:
+- mark: gridY
+  strokeDasharray: [0.75, 2] # dashed
+  strokeOpacity: 1 # opaque
+- mark: axisY
+  anchor: left
+  tickSize: 0  # don't draw ticks
+  dx: 38  # offset right
+  dy: -4  # offset up
+  lineAnchor: bottom  # draw labels above grid lines
+- mark: axisY
+  anchor: right
+  tickSize: 0
+  tickPadding: 5
+  label: y-axis
+  labelAnchor: center
+- mark: axisX
+  label: x-axis
+  labelAnchor: center
+- mark: gridX
+- mark: ruleY
+  data: [0]
+xDomain: [0, 100]
+yDomain: [0, 100]
+xInsetLeft: 36
+marginLeft: 0
+marginRight: 35
+width: 680

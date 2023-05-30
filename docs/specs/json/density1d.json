@@ -1,0 +1,73 @@
+{
+  "meta": {
+    "title": "Density 1D",
+    "description": "Density plots (`densityY` mark) for over 200,000 flights, created using kernel density estimation.\nBinning is performned in-database, subsequent smoothing in-browser.\nTo change the amount of smoothing, use the slider to set the kernel bandwidth.\n"
+  },
+  "data": {
+    "flights": {
+      "file": "data/flights-200k.parquet"
+    }
+  },
+  "params": {
+    "brush": {
+      "select": "crossfilter"
+    },
+    "bandwidth": 10
+  },
+  "vconcat": [
+    {
+      "input": "slider",
+      "label": "Bandwidth (σ)",
+      "as": "$bandwidth",
+      "min": 0.1,
+      "max": 100,
+      "step": 0.1
+    },
+    {
+      "plot": [
+        {
+          "mark": "densityY",
+          "data": {
+            "from": "flights",
+            "filterBy": "$brush"
+          },
+          "x": "delay",
+          "fill": "#ccc",
+          "bandwidth": "$bandwidth"
+        },
+        {
+          "select": "intervalX",
+          "as": "$brush"
+        }
+      ],
+      "yAxis": null,
+      "xDomain": "Fixed",
+      "width": 600,
+      "marginLeft": 10,
+      "height": 200
+    },
+    {
+      "plot": [
+        {
+          "mark": "densityY",
+          "data": {
+            "from": "flights",
+            "filterBy": "$brush"
+          },
+          "x": "distance",
+          "fill": "#ccc",
+          "bandwidth": "$bandwidth"
+        },
+        {
+          "select": "intervalX",
+          "as": "$brush"
+        }
+      ],
+      "yAxis": null,
+      "xDomain": "Fixed",
+      "width": 600,
+      "marginLeft": 10,
+      "height": 200
+    }
+  ]
+}

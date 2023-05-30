@@ -1,0 +1,99 @@
+{
+  "meta": {
+    "title": "Cross-Filter Flights (200k)",
+    "description": "Histograms showing arrival delay, departure time, and distance flown for over 200,000 flights.\nSelect a histogram region to cross-filter the charts.\nEach plot uses an `intervalX` interactor to populate a shared Selection\nwith `crossfilter` resolution.\n"
+  },
+  "data": {
+    "flights": {
+      "file": "data/flights-200k.parquet"
+    }
+  },
+  "params": {
+    "brush": {
+      "select": "crossfilter"
+    }
+  },
+  "vconcat": [
+    {
+      "plot": [
+        {
+          "mark": "rectY",
+          "data": {
+            "from": "flights",
+            "filterBy": "$brush"
+          },
+          "x": {
+            "bin": "delay"
+          },
+          "y": {
+            "count": null
+          },
+          "fill": "steelblue",
+          "inset": 0.5
+        },
+        {
+          "select": "intervalX",
+          "as": "$brush"
+        }
+      ],
+      "xDomain": "Fixed",
+      "yTickFormat": "s",
+      "width": 600,
+      "height": 200
+    },
+    {
+      "plot": [
+        {
+          "mark": "rectY",
+          "data": {
+            "from": "flights",
+            "filterBy": "$brush"
+          },
+          "x": {
+            "bin": "time"
+          },
+          "y": {
+            "count": null
+          },
+          "fill": "steelblue",
+          "inset": 0.5
+        },
+        {
+          "select": "intervalX",
+          "as": "$brush"
+        }
+      ],
+      "xDomain": "Fixed",
+      "yTickFormat": "s",
+      "width": 600,
+      "height": 200
+    },
+    {
+      "plot": [
+        {
+          "mark": "rectY",
+          "data": {
+            "from": "flights",
+            "filterBy": "$brush"
+          },
+          "x": {
+            "bin": "distance"
+          },
+          "y": {
+            "count": null
+          },
+          "fill": "steelblue",
+          "inset": 0.5
+        },
+        {
+          "select": "intervalX",
+          "as": "$brush"
+        }
+      ],
+      "xDomain": "Fixed",
+      "yTickFormat": "s",
+      "width": 600,
+      "height": 200
+    }
+  ]
+}

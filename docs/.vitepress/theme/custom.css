@@ -1,0 +1,15 @@
+:root {
+  --vp-c-brand-lighter: #e34e65;
+  --vp-c-brand-light: #d5446d;
+  --vp-c-brand: #c43c75;
+  --vp-c-brand-dark: #912b81;
+  --vp-c-brand-darker: #701f81;
+}
+
+[data-v-55e263fd] .logo {
+  height: 36px;
+}
+
+.VPFooter a {
+  text-decoration: underline dotted;
+}
