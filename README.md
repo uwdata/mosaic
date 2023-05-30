@@ -2,7 +2,7 @@
 
 Mosaic is an extensible architecture for linking data visualizations, tables, input widgets, and other data-driven components, leveraging a backing database for scalable processing of both static and interactive views. With Mosaic, you can visualize and explore millions and even billions of data points at interactive rates.
 
-The key idea is to have interface components "publish" their data needs as declarative queries that can be managed, optimized, and cross-filtered by a coordinator that proxies access to a database such as [DuckDB](https://duckdb.org/).
+The key idea is to have interface components "publish" their data needs as declarative queries that can be managed, optimized, and cross-filtered by a coordinator that proxies access to a database such as [DuckDB](https://duckdb.org/). Learn more about Mosaic in the [documentation](https://uwdata.github.io/mosaic/).
 
 This repository contains a set of related packages:
 
