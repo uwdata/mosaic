@@ -19,6 +19,10 @@ export default defineConfig({
       copyright: 'Released under the BSD License. Copyright © 2023-Present UW Interactive Data Lab.'
     },
 
+    search: {
+      provider: "local"
+    },
+
     nav: [
       { text: 'Home', link: '/' },
       {
