@@ -15,7 +15,7 @@ the data into three sets of densities.
 ## Specification
 
 ::: code-group
-<<< @/specs/esm/contours.js [JavaScript]
-<<< @/specs/yaml/contours.yaml [YAML]
-<<< @/specs/json/contours.json [JSON]
+<<< @/public/specs/esm/contours.js [JavaScript]
+<<< @/public/specs/yaml/contours.yaml [YAML]
+<<< @/public/specs/json/contours.json [JSON]
 :::

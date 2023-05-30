@@ -14,7 +14,7 @@ Data is queried as needed as the table is sorted or scrolled.
 ## Specification
 
 ::: code-group
-<<< @/specs/esm/table.js [JavaScript]
-<<< @/specs/yaml/table.yaml [YAML]
-<<< @/specs/json/table.json [JSON]
+<<< @/public/specs/esm/table.js [JavaScript]
+<<< @/public/specs/yaml/table.yaml [YAML]
+<<< @/public/specs/json/table.json [JSON]
 :::

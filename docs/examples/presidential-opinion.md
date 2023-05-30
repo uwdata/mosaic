@@ -16,7 +16,7 @@ The dropdown menu toggles the opinion metric shown.
 ## Specification
 
 ::: code-group
-<<< @/specs/esm/presidential-opinion.js [JavaScript]
-<<< @/specs/yaml/presidential-opinion.yaml [YAML]
-<<< @/specs/json/presidential-opinion.json [JSON]
+<<< @/public/specs/esm/presidential-opinion.js [JavaScript]
+<<< @/public/specs/yaml/presidential-opinion.yaml [YAML]
+<<< @/public/specs/json/presidential-opinion.json [JSON]
 :::

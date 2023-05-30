@@ -15,7 +15,7 @@ Expressions for `rotate`, `length`, and `stroke` values are evaluated in the dat
 ## Specification
 
 ::: code-group
-<<< @/specs/esm/wind-map.js [JavaScript]
-<<< @/specs/yaml/wind-map.yaml [YAML]
-<<< @/specs/json/wind-map.json [JSON]
+<<< @/public/specs/esm/wind-map.js [JavaScript]
+<<< @/public/specs/yaml/wind-map.yaml [YAML]
+<<< @/public/specs/json/wind-map.json [JSON]
 :::

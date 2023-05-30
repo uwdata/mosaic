@@ -15,7 +15,7 @@ Select a region to view regression results for a data subset.
 ## Specification
 
 ::: code-group
-<<< @/specs/esm/linear-regression.js [JavaScript]
-<<< @/specs/yaml/linear-regression.yaml [YAML]
-<<< @/specs/json/linear-regression.json [JSON]
+<<< @/public/specs/esm/linear-regression.js [JavaScript]
+<<< @/public/specs/yaml/linear-regression.yaml [YAML]
+<<< @/public/specs/json/linear-regression.json [JSON]
 :::

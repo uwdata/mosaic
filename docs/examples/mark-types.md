@@ -15,7 +15,7 @@ A subset of supported mark types.
 ## Specification
 
 ::: code-group
-<<< @/specs/esm/mark-types.js [JavaScript]
-<<< @/specs/yaml/mark-types.yaml [YAML]
-<<< @/specs/json/mark-types.json [JSON]
+<<< @/public/specs/esm/mark-types.js [JavaScript]
+<<< @/public/specs/yaml/mark-types.yaml [YAML]
+<<< @/public/specs/json/mark-types.json [JSON]
 :::

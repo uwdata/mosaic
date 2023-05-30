@@ -15,7 +15,7 @@ The bandwidth slider smooths the data, while the bin width menu adjusts the rast
 ## Specification
 
 ::: code-group
-<<< @/specs/esm/line-density.js [JavaScript]
-<<< @/specs/yaml/line-density.yaml [YAML]
-<<< @/specs/json/line-density.json [JSON]
+<<< @/public/specs/esm/line-density.js [JavaScript]
+<<< @/public/specs/yaml/line-density.yaml [YAML]
+<<< @/public/specs/json/line-density.json [JSON]
 :::

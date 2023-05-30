@@ -18,7 +18,7 @@ faithfully represent these area charts.
 ## Specification
 
 ::: code-group
-<<< @/specs/esm/overview-detail.js [JavaScript]
-<<< @/specs/yaml/overview-detail.yaml [YAML]
-<<< @/specs/json/overview-detail.json [JSON]
+<<< @/public/specs/esm/overview-detail.js [JavaScript]
+<<< @/public/specs/yaml/overview-detail.yaml [YAML]
+<<< @/public/specs/json/overview-detail.json [JSON]
 :::

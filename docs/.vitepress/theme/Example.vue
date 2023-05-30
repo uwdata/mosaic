@@ -10,8 +10,10 @@ export default {
         // update if current connector is not a WASM connector
         mc.databaseConnector(await wasmConnector());
       }
-      const spec = yaml.parse(await fetch(this.spec).then(r => r.text()));
-      const view = await parseJSON(spec, { baseURL: location.origin + '/' });
+      const base = location.origin + import.meta.env.BASE_URL;
+      const url = base.slice(0, -1) + this.spec;
+      const spec = yaml.parse(await fetch(url).then(r => r.text()));
+      const view = await parseJSON(spec, { baseURL: base });
       this.$refs.view.replaceChildren(view);
     } catch (err) {
       this.$refs.view.innerHTML = '<em>Loading Failed</em> 😭';

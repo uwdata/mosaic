@@ -16,7 +16,7 @@ Reveal triangulations or convex hulls using the dropdowns.
 ## Specification
 
 ::: code-group
-<<< @/specs/esm/voronoi.js [JavaScript]
-<<< @/specs/yaml/voronoi.yaml [YAML]
-<<< @/specs/json/voronoi.json [JSON]
+<<< @/public/specs/esm/voronoi.js [JavaScript]
+<<< @/public/specs/yaml/voronoi.yaml [YAML]
+<<< @/public/specs/json/voronoi.json [JSON]
 :::

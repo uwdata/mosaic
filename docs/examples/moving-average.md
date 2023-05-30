@@ -16,7 +16,7 @@ We can smooth the raw counts using a moving average over various choices of wind
 ## Specification
 
 ::: code-group
-<<< @/specs/esm/moving-average.js [JavaScript]
-<<< @/specs/yaml/moving-average.yaml [YAML]
-<<< @/specs/json/moving-average.json [JSON]
+<<< @/public/specs/esm/moving-average.js [JavaScript]
+<<< @/public/specs/yaml/moving-average.yaml [YAML]
+<<< @/public/specs/json/moving-average.json [JSON]
 :::

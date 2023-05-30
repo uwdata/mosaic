@@ -12,7 +12,7 @@ Two scatter plots with `dot` marks: one with stroked symbols, the other filled.
 ## Specification
 
 ::: code-group
-<<< @/specs/esm/symbols.js [JavaScript]
-<<< @/specs/yaml/symbols.yaml [YAML]
-<<< @/specs/json/symbols.json [JSON]
+<<< @/public/specs/esm/symbols.js [JavaScript]
+<<< @/public/specs/yaml/symbols.yaml [YAML]
+<<< @/public/specs/json/symbols.json [JSON]
 :::

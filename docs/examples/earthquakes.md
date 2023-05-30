@@ -15,7 +15,7 @@ To show land masses, this example loads a TopoJSON file directly in the browser,
 ## Specification
 
 ::: code-group
-<<< @/specs/esm/earthquakes.js [JavaScript]
-<<< @/specs/yaml/earthquakes.yaml [YAML]
-<<< @/specs/json/earthquakes.json [JSON]
+<<< @/public/specs/esm/earthquakes.js [JavaScript]
+<<< @/public/specs/yaml/earthquakes.yaml [YAML]
+<<< @/public/specs/json/earthquakes.json [JSON]
 :::

@@ -13,7 +13,7 @@ scale attributes such as `xAxis`, `yGrid`, etc. Just add data!
 ## Specification
 
 ::: code-group
-<<< @/specs/esm/axes.js [JavaScript]
-<<< @/specs/yaml/axes.yaml [YAML]
-<<< @/specs/json/axes.json [JSON]
+<<< @/public/specs/esm/axes.js [JavaScript]
+<<< @/public/specs/yaml/axes.yaml [YAML]
+<<< @/public/specs/json/axes.json [JSON]
 :::

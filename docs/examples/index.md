@@ -13,7 +13,7 @@ Here is a chart visualizing the range of historical average minimum and maximum 
 [vgplot](/vgplot/) visualizations can be specified using a JavaScript API, or in a standalone YAML or JSON file. Each example includes code for all of these specification formats:
 
 ::: code-group
-<<< @/specs/esm/seattle-temp.js [JavaScript]
-<<< @/specs/yaml/seattle-temp.yaml [YAML]
-<<< @/specs/json/seattle-temp.json [JSON]
+<<< @/public/specs/esm/seattle-temp.js [JavaScript]
+<<< @/public/specs/yaml/seattle-temp.yaml [YAML]
+<<< @/public/specs/json/seattle-temp.json [JSON]
 :::

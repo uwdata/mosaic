@@ -13,7 +13,7 @@ The expression is re-computed in the database upon updates.
 ## Specification
 
 ::: code-group
-<<< @/specs/esm/bias.js [JavaScript]
-<<< @/specs/yaml/bias.yaml [YAML]
-<<< @/specs/json/bias.json [JSON]
+<<< @/public/specs/esm/bias.js [JavaScript]
+<<< @/public/specs/yaml/bias.yaml [YAML]
+<<< @/public/specs/json/bias.json [JSON]
 :::

@@ -14,7 +14,7 @@ Select a region to highlight corresponding points across all plots.
 ## Specification
 
 ::: code-group
-<<< @/specs/esm/splom.js [JavaScript]
-<<< @/specs/yaml/splom.yaml [YAML]
-<<< @/specs/json/splom.json [JSON]
+<<< @/public/specs/esm/splom.js [JavaScript]
+<<< @/public/specs/yaml/splom.yaml [YAML]
+<<< @/public/specs/json/splom.json [JSON]
 :::

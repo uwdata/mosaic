@@ -16,7 +16,7 @@ in the plot of stellar color vs. magnitude on the right.
 ## Specification
 
 ::: code-group
-<<< @/specs/esm/gaia.js [JavaScript]
-<<< @/specs/yaml/gaia.yaml [YAML]
-<<< @/specs/json/gaia.json [JSON]
+<<< @/public/specs/esm/gaia.js [JavaScript]
+<<< @/public/specs/yaml/gaia.yaml [YAML]
+<<< @/public/specs/json/gaia.json [JSON]
 :::

@@ -14,7 +14,7 @@ automatically-generated indexes enable efficient cross-filtered selections.
 ## Specification
 
 ::: code-group
-<<< @/specs/esm/flights-10m.js [JavaScript]
-<<< @/specs/yaml/flights-10m.yaml [YAML]
-<<< @/specs/json/flights-10m.json [JSON]
+<<< @/public/specs/esm/flights-10m.js [JavaScript]
+<<< @/public/specs/yaml/flights-10m.yaml [YAML]
+<<< @/public/specs/json/flights-10m.json [JSON]
 :::

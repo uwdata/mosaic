@@ -15,7 +15,7 @@ with `crossfilter` resolution.
 ## Specification
 
 ::: code-group
-<<< @/specs/esm/flights-200k.js [JavaScript]
-<<< @/specs/yaml/flights-200k.yaml [YAML]
-<<< @/specs/json/flights-200k.json [JSON]
+<<< @/public/specs/esm/flights-200k.js [JavaScript]
+<<< @/public/specs/yaml/flights-200k.yaml [YAML]
+<<< @/public/specs/json/flights-200k.json [JSON]
 :::

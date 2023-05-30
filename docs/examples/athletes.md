@@ -13,7 +13,7 @@ The input menus and searchbox filter the display and are automatically populated
 ## Specification
 
 ::: code-group
-<<< @/specs/esm/athletes.js [JavaScript]
-<<< @/specs/yaml/athletes.yaml [YAML]
-<<< @/specs/json/athletes.json [JSON]
+<<< @/public/specs/esm/athletes.js [JavaScript]
+<<< @/public/specs/yaml/athletes.yaml [YAML]
+<<< @/public/specs/json/athletes.json [JSON]
 :::

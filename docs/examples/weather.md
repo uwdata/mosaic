@@ -15,7 +15,7 @@ By dragging on the scatter plot, you can see the proportion of days in that rang
 ## Specification
 
 ::: code-group
-<<< @/specs/esm/weather.js [JavaScript]
-<<< @/specs/yaml/weather.yaml [YAML]
-<<< @/specs/json/weather.json [JSON]
+<<< @/public/specs/esm/weather.js [JavaScript]
+<<< @/public/specs/yaml/weather.yaml [YAML]
+<<< @/public/specs/json/weather.json [JSON]
 :::

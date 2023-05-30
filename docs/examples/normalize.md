@@ -16,7 +16,7 @@ expressions reactively update in response.
 ## Specification
 
 ::: code-group
-<<< @/specs/esm/normalize.js [JavaScript]
-<<< @/specs/yaml/normalize.yaml [YAML]
-<<< @/specs/json/normalize.json [JSON]
+<<< @/public/specs/esm/normalize.js [JavaScript]
+<<< @/public/specs/yaml/normalize.yaml [YAML]
+<<< @/public/specs/json/normalize.json [JSON]
 :::

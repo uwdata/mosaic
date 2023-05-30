@@ -13,7 +13,7 @@ Select regions in the marginal histograms to filter the density display.
 ## Specification
 
 ::: code-group
-<<< @/specs/esm/flights-hexbin.js [JavaScript]
-<<< @/specs/yaml/flights-hexbin.yaml [YAML]
-<<< @/specs/json/flights-hexbin.json [JSON]
+<<< @/public/specs/esm/flights-hexbin.js [JavaScript]
+<<< @/public/specs/yaml/flights-hexbin.yaml [YAML]
+<<< @/public/specs/json/flights-hexbin.json [JSON]
 :::

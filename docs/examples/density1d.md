@@ -14,7 +14,7 @@ To change the amount of smoothing, use the slider to set the kernel bandwidth.
 ## Specification
 
 ::: code-group
-<<< @/specs/esm/density1d.js [JavaScript]
-<<< @/specs/yaml/density1d.yaml [YAML]
-<<< @/specs/json/density1d.json [JSON]
+<<< @/public/specs/esm/density1d.js [JavaScript]
+<<< @/public/specs/yaml/density1d.yaml [YAML]
+<<< @/public/specs/json/density1d.json [JSON]
 :::

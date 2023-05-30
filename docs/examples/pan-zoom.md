@@ -13,7 +13,7 @@ Linked panning and zooming across plots: drag to pan, scroll to zoom.
 ## Specification
 
 ::: code-group
-<<< @/specs/esm/pan-zoom.js [JavaScript]
-<<< @/specs/yaml/pan-zoom.yaml [YAML]
-<<< @/specs/json/pan-zoom.json [JSON]
+<<< @/public/specs/esm/pan-zoom.js [JavaScript]
+<<< @/public/specs/yaml/pan-zoom.yaml [YAML]
+<<< @/public/specs/json/pan-zoom.json [JSON]
 :::

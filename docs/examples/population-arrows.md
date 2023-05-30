@@ -15,7 +15,7 @@ Color encodes variation.
 ## Specification
 
 ::: code-group
-<<< @/specs/esm/population-arrows.js [JavaScript]
-<<< @/specs/yaml/population-arrows.yaml [YAML]
-<<< @/specs/json/population-arrows.json [JSON]
+<<< @/public/specs/esm/population-arrows.js [JavaScript]
+<<< @/public/specs/yaml/population-arrows.yaml [YAML]
+<<< @/public/specs/json/population-arrows.json [JSON]
 :::

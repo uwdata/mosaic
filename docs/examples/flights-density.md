@@ -13,7 +13,7 @@ The sliders adjust the smoothing (bandwidth) and number of contour thresholds.
 ## Specification
 
 ::: code-group
-<<< @/specs/esm/flights-density.js [JavaScript]
-<<< @/specs/yaml/flights-density.yaml [YAML]
-<<< @/specs/json/flights-density.json [JSON]
+<<< @/public/specs/esm/flights-density.js [JavaScript]
+<<< @/public/specs/yaml/flights-density.yaml [YAML]
+<<< @/public/specs/json/flights-density.json [JSON]
 :::

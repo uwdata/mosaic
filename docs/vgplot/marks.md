@@ -42,9 +42,9 @@ Connected marks are treated similarly to basic marks, with one notable addition:
 <Example spec="/specs/yaml/area.yaml" />
 
 ::: code-group
-<<< @/specs/esm/area.js [JavaScript]
-<<< @/specs/yaml/area.yaml [YAML]
-<<< @/specs/json/area.json [JSON]
+<<< @/public/specs/esm/area.js [JavaScript]
+<<< @/public/specs/yaml/area.yaml [YAML]
+<<< @/public/specs/json/area.json [JSON]
 :::
 
 Separately, vgplot includes a `regression` mark for linear regression fits. Regression calculations and associated statistics are performed in-database in a single aggregate query. The mark then draws the regression line and optional confidence interval area.

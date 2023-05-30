@@ -12,7 +12,7 @@ Historical monthly average temperatures in Seattle, WA.
 ## Specification
 
 ::: code-group
-<<< @/specs/esm/seattle-temp.js [JavaScript]
-<<< @/specs/yaml/seattle-temp.yaml [YAML]
-<<< @/specs/json/seattle-temp.json [JSON]
+<<< @/public/specs/esm/seattle-temp.js [JavaScript]
+<<< @/public/specs/yaml/seattle-temp.yaml [YAML]
+<<< @/public/specs/json/seattle-temp.json [JSON]
 :::

@@ -5,9 +5,9 @@ import { specToModule } from '@uwdata/vgplot';
 import { parse } from 'yaml';
 
 const baseDir = 'docs';
-const yamlDir = join(baseDir, 'specs', 'yaml');
-const jsonDir = join(baseDir, 'specs', 'json');
-const esmDir = join(baseDir, 'specs', 'esm');
+const yamlDir = join(baseDir, 'public', 'specs', 'yaml');
+const jsonDir = join(baseDir, 'public', 'specs', 'json');
+const esmDir = join(baseDir, 'public', 'specs', 'esm');
 const exampleDir = join(baseDir, 'examples');
 
 const files = await Promise.allSettled((await readdir(yamlDir))
@@ -67,9 +67,9 @@ ${credit ? `\n**Credit**: ${credit}\n` : ''}
 ## Specification
 
 ::: code-group
-<<< @/specs/esm/${spec}.js [JavaScript]
-<<< @/specs/yaml/${spec}.yaml [YAML]
-<<< @/specs/json/${spec}.json [JSON]
+<<< @/public/specs/esm/${spec}.js [JavaScript]
+<<< @/public/specs/yaml/${spec}.yaml [YAML]
+<<< @/public/specs/json/${spec}.json [JSON]
 :::
 `;
 }
