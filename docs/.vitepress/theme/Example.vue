@@ -38,13 +38,16 @@ export default {
 .mosaic-example .legend svg {
   background: none !important;
   line-height: initial;
+  user-select: none;
 }
 
 .mosaic-example .plot-d6a7b5 {
   background: none !important;
 }
 
-.mosaic-example label { margin-right: 0.5em; }
+.mosaic-example label {
+  margin-right: 0.5em;
+}
 
 .mosaic-example .input {
   margin-right: 1em;
