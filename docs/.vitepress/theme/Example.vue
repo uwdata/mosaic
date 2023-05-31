@@ -17,7 +17,8 @@ export default {
       const view = await parseJSON(spec, { baseURL: base });
       this.$refs.view.replaceChildren(view);
     } catch (err) {
-      this.$refs.view.innerHTML = '<em>Loading Failed</em> 😭';
+      this.$refs.view.innerHTML = `<em>Example failed to load.</em> 😭<br/>
+      <em>Try using Chrome if you're on a different browser.</em>`;
       console.error(err);
     }
   },
@@ -38,13 +39,16 @@ export default {
 .mosaic-example .legend svg {
   background: none !important;
   line-height: initial;
+  user-select: none;
 }
 
 .mosaic-example .plot-d6a7b5 {
   background: none !important;
 }
 
-.mosaic-example label { margin-right: 0.5em; }
+.mosaic-example label {
+  margin-right: 0.5em;
+}
 
 .mosaic-example .input {
   margin-right: 1em;

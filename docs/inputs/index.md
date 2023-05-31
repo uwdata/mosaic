@@ -1,7 +1,20 @@
+<script setup>
+  import { reset } from '@uwdata/vgplot';
+  reset();
+</script>
+
 # Mosaic Inputs
 
 Inspired by [Observable inputs](https://observablehq.com/@observablehq/inputs), the Mosaic `inputs` pacakage includes a set of input widgets and a table viewer.
-Each input is a Mosaic client that uses Params and Selections for linked interactions.
+Each input widget is a Mosaic client that uses Params and Selections for linked interactions.
+
+This example dashboard of Olympic Athlete statistics uses `menu` and `search` inputs to filter the display, including the scrollable and sortable `table` below.
+The contents of the menus and the autocomplete options for the search box are populated from the backing database.
+Each of these widgets then populate a shared selection.
+
+<Example spec="/specs/yaml/athletes.yaml"/>
+
+## Slider, Menu, and Search
 
 The `slider`, `menu`, and `search` inputs support dual modes of operation: they can be manually configured or they can be backed by a database table.
 If a backing table and column are specified, the `slider` queries for the minimum and maximum column values to parameterize the slider.
@@ -11,6 +24,8 @@ All input widgets can write updates to a provided Param or Selection.
 Param values are updated to match the input value.
 Selections are provided a predicate clause. This linking can be bidirectional: an input component will also subscribe to a Param and track its value updates.
 Two-way linking is also supported for Selections using _single_ resolution, where there is no ambiguity regarding the value.
+
+## Table
 
 The `table` component provides a sortable, scrollable table grid view.
 If a set of backing columns is provided, the table first requests metadata for those columns.
