@@ -25,9 +25,9 @@ widget
 
 The widget constructor take three arguments which are all optional.
 
-* `spec`, A Mosaic specification as a dictionary. This argument is optional and can be set later via the `spec` traitlet.
-* `con`, A DuckDB connection. If `None`, the widget will create a connection to an in-memory database.
-* `data`, A dictionary of DataFrames that should be added to the database connection. The keys of the dictionary are the table names.
+* `spec`, a Mosaic specification as a dictionary. This argument is optional and can be set later via the `spec` traitlet.
+* `con`, a DuckDB connection. If `None`, the widget will create a connection to an in-memory database.
+* `data`, a dictionary of DataFrames that should be added to the database connection. The keys of the dictionary are the table names.
 
 The widget has a `spec` traitlet that can be used to set the Mosaic specification. The widget will automatically update when the specification changes. The widget also has a `selections` traitlet, which updates automatically with selections in the widget.
 
