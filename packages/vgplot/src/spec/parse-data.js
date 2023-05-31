@@ -5,6 +5,7 @@ import { error, isArray, isString } from './util.js';
 
 export function parseData(name, spec, ctx) {
   spec = resolveDataSpec(spec, ctx);
+  console.log('RESOLVE SPEC', spec.file, ctx.baseURL);
   const parse = ctx.dataFormats.get(spec.type);
   if (parse) {
     return parse(name, spec, ctx);
