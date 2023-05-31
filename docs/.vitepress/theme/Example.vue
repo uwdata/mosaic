@@ -16,7 +16,8 @@ export default {
       const view = await parseJSON(spec, { baseURL: base });
       this.$refs.view.replaceChildren(view);
     } catch (err) {
-      this.$refs.view.innerHTML = '<em>Loading Failed</em> 😭';
+      this.$refs.view.innerHTML = `<em>Example failed to load.</em> 😭<br/>
+      <em>Try using Chrome if you're on a different browser.</em>`;
       console.error(err);
     }
   },
