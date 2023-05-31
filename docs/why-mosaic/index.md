@@ -43,7 +43,7 @@ Critically, any component that implements the Mosaic _client_ interface can both
 
 ## Mosaic is extensible
 
-Currently Mosaic includes a library of [input widgets](/vgplot/inputs.html) and [vgplot](/vgplot/), a prototype grammar of graphics.
+Currently Mosaic includes a library of [input widgets](/inputs/) and [vgplot](/vgplot/), a prototype grammar of graphics.
 Both provide components implemented as one or more Mosaic clients.
 Mosaic can readily be extended with new clients, or, as in the case of vgplot, entire component libraries.
 Possible future additions include network visualization tools, WebGL/WebGPU enabled clients for more scalable rendering, and more!

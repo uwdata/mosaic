@@ -109,7 +109,7 @@ Line density estimation is pushed to the database using a SQL query with multipl
 
 ## Interactors
 
-In addition to _marks_ and _attributes_, `plot` specifications may include _interactors_ to imbue plots with interactive behavior. Most interactors listen to input events from rendered plot SVG elements to update bound [Selections](selections). Interactors take facets into account to properly handle input events across subplots.
+In addition to _marks_ and _attributes_, `plot` specifications may include _interactors_ to imbue plots with interactive behavior. Most interactors listen to input events from rendered plot SVG elements to update bound [Selections](/core/#selections). Interactors take facets into account to properly handle input events across subplots.
 
 The `toggle` interactor selects individual points (e.g., by click or shift-click) and generates a selection clause over specified fields of those points. Directives such as `toggleColor`, `toggleX`, and `toggleY` simplify specification of which channel fields are included in the resulting predicates.
 
