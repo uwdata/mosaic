@@ -4,7 +4,7 @@ import { feature } from "https://cdn.jsdelivr.net/npm/topojson@3.0.2/+esm";
 await vg.coordinator().exec(
   vg.loadCSV("earthquakes", "data/earthquakes.csv")
 );
-const land = await fetch("/data/countries-110m.json")
+const land = await fetch("data/countries-110m.json")
   .then(r => r.json())
   .then(json => feature(json, json.objects['land']).features);
 

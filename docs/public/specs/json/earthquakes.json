@@ -10,7 +10,7 @@
     },
     "land": {
       "type": "topojson",
-      "file": "/data/countries-110m.json",
+      "file": "data/countries-110m.json",
       "feature": "land"
     }
   },

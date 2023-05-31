@@ -8,7 +8,7 @@ data:
   earthquakes: { file: data/earthquakes.csv }
   land:
     type: topojson
-    file: /data/countries-110m.json
+    file: data/countries-110m.json
     feature: land
 params:
   longitude: -180
