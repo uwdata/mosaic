@@ -11,7 +11,6 @@ export default {
         mc.databaseConnector(await wasmConnector());
       }
       const base = location.origin + import.meta.env.BASE_URL;
-      console.log('BASE URL', base);
       const url = base.slice(0, -1) + this.spec;
       const spec = yaml.parse(await fetch(url).then(r => r.text()));
       const view = await parseJSON(spec, { baseURL: base });

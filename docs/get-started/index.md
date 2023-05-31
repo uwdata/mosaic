@@ -2,7 +2,7 @@
 
 ## Use in JavaScript
 
-Include the desired Mosaic libraries in your project dependencies and import them as part of your application. To access the central coordinator, use the `coordinator()` method, which is exported by  [Mosaic core](/core/) and also re-exported by [Mosaic vgplot](/vgplot/).
+Include the desired Mosaic libraries in your project dependencies and import them as part of your application. To access the central coordinator, use the `coordinator()` method, which is exported by [Mosaic core](/core/) and also re-exported by [Mosaic vgplot](/vgplot/).
 
 The snippet below imports vgplot, configures the coordinator to use DuckDB-WASM as the backing database, and creates a plot with a single `areaY` mark to produce a time-series chart for the database table `"stocks"`.
 
