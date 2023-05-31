@@ -31,8 +31,9 @@ export default defineConfig({
           { text: 'Mosaic Core', link: '/core/' },
           { text: 'Mosaic DuckDB', link: '/duckdb/' },
           { text: 'Mosaic SQL', link: '/sql/' },
-          { text: 'Jupyter Widget', link: '/jupyter/' },
-          { text: 'vgplot', link: '/vgplot/' }
+          { text: 'Mosaic Inputs', link: '/inputs/' },
+          { text: 'Mosaic vgplot', link: '/vgplot/' },
+          { text: 'Jupyter Widget', link: '/jupyter/' }
         ]
       },
       { text: 'Examples', link: '/examples/' }
@@ -56,23 +57,9 @@ export default defineConfig({
             { text: 'Mosaic Core', link: '/core/' },
             { text: 'Mosaic DuckDB', link: '/duckdb/' },
             { text: 'Mosaic SQL', link: '/sql/' },
+            { text: 'Mosaic Inputs', link: '/inputs/' },
+            { text: 'Mosaic vgplot', link: '/vgplot/' },
             { text: 'Jupyter Widget', link: '/jupyter/' }
-          ]
-        },
-        {
-          text: 'vgplot',
-          collapsed: false,
-          items: [
-            { text: 'Overview', link: '/vgplot/' },
-            { text: 'Plots', link: '/vgplot/plots' },
-            { text: 'Attributes', link: '/vgplot/attributes' },
-            { text: 'Marks', link: '/vgplot/marks' },
-            { text: 'Params', link: '/vgplot/params' },
-            { text: 'Selections', link: '/vgplot/selections' },
-            { text: 'Interactors', link: '/vgplot/interactors' },
-            { text: 'Legends', link: '/vgplot/legends' },
-            { text: 'Inputs', link: '/vgplot/inputs' },
-            { text: 'Layout', link: '/vgplot/layout' }
           ]
         },
         { text: 'Examples', link: '/examples/' }
@@ -93,6 +80,7 @@ export default defineConfig({
                 { text: 'Population Arrows', link: '/examples/population-arrows' },
                 { text: 'Presidential Opinion', link: '/examples/presidential-opinion' },
                 { text: 'Voronoi Diagram', link: '/examples/voronoi' },
+                { text: 'Seattle Temperatures', link: '/examples/seattle-temp' },
                 { text: 'Sortable Table', link: '/examples/table' },
                 { text: 'Earthquakes', link: '/examples/earthquakes' }
               ]

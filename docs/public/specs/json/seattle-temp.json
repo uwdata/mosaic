@@ -1,7 +1,7 @@
 {
   "meta": {
-    "title": "Seattle Average Temperature",
-    "description": "Historical monthly average temperatures in Seattle, WA."
+    "title": "Seattle Temperatures",
+    "description": "Historical monthly temperatures in Seattle, WA.\nThe gray range shows the minimum and maximum recorded temperatures.\nThe blue range shows the average lows and highs.\n"
   },
   "data": {
     "weather": {
@@ -18,13 +18,31 @@
         "dateMonth": "date"
       },
       "y1": {
+        "max": "temp_max"
+      },
+      "y2": {
+        "min": "temp_min"
+      },
+      "fill": "#ccc",
+      "fillOpacity": 0.25,
+      "curve": "monotone-x"
+    },
+    {
+      "mark": "areaY",
+      "data": {
+        "from": "weather"
+      },
+      "x": {
+        "dateMonth": "date"
+      },
+      "y1": {
         "avg": "temp_max"
       },
       "y2": {
         "avg": "temp_min"
       },
       "fill": "steelblue",
-      "fillOpacity": 0.5,
+      "fillOpacity": 0.75,
       "curve": "monotone-x"
     },
     {
@@ -40,8 +58,7 @@
     }
   ],
   "xTickFormat": "%b",
-  "yZero": true,
-  "yLabel": "Average Temperature Range (°C)",
+  "yLabel": "Temperature Range (°C)",
   "width": 680,
   "height": 300
 }

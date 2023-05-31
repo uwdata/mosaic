@@ -1,19 +1,20 @@
 # Examples
 
-Example Mosaic-powered visualizations created with [vgplot](/vgplot/).
+Mosaic-powered visualizations created with [vgplot](/vgplot/).
+These visualizations can be specified using a JavaScript API, or in a standalone YAML or JSON file. Each example includes code for all three specification formats.
 
-These examples use DuckDB-WASM as the backing database, running in-browser.
-For greater scalability, consider using a local [DuckDB data server](/duckdb/) or viewing examples in [Jupyter](/jupyter/).
-We recommend viewing examples in Chrome for better WebAssembly and image rendering performance.
+For example, here is a line chart of historical Apple stock prices:
 
-Here is a chart visualizing the range of historical average minimum and maximum daily temperatures in Seattle, WA:
-
-<Example spec="/specs/yaml/seattle-temp.yaml" />
-
-[vgplot](/vgplot/) visualizations can be specified using a JavaScript API, or in a standalone YAML or JSON file. Each example includes code for all of these specification formats:
+<Example spec="/specs/yaml/line.yaml" />
 
 ::: code-group
-<<< @/public/specs/esm/seattle-temp.js [JavaScript]
-<<< @/public/specs/yaml/seattle-temp.yaml [YAML]
-<<< @/public/specs/json/seattle-temp.json [JSON]
+<<< @/public/specs/esm/line.js [JavaScript]
+<<< @/public/specs/yaml/line.yaml [YAML]
+<<< @/public/specs/json/line.json [JSON]
+:::
+
+::: tip
+These examples use DuckDB-WASM running in the browser.
+We recommend viewing examples in Chrome for better reliability and performance.
+For greater scalability, consider using a local [DuckDB data server](/duckdb/) or viewing examples in [Jupyter](/jupyter/).
 :::

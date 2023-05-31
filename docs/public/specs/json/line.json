@@ -14,5 +14,7 @@
       "x": "Date",
       "y": "Close"
     }
-  ]
+  ],
+  "width": 680,
+  "height": 200
 }
