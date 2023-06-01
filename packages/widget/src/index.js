@@ -1,4 +1,4 @@
-import { coordinator, namedPlots, parseJSON } from '@uwdata/vgplot';
+import { coordinator, namedPlots, parseSpec } from '@uwdata/vgplot';
 import * as arrow from 'apache-arrow';
 import './style.css';
 
@@ -46,7 +46,7 @@ export async function render(view) {
     const spec = getSpec();
     reset();
     logger.log('Setting spec:', spec);
-    view.el.replaceChildren(await parseJSON(spec));
+    view.el.replaceChildren(await parseSpec(spec));
 
     // Update the selections traitlet
     const c = coordinator();
