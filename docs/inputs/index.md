@@ -20,6 +20,18 @@ The `slider`, `menu`, and `search` inputs support dual modes of operation: they 
 If a backing table and column are specified, the `slider` queries for the minimum and maximum column values to parameterize the slider.
 The `menu` and `search` components instead query for distinct column values, and use those to populate the menu or autocomplete options, respectively.
 
+This snippet shows how the menus and search box are defined in the example above:
+
+``` js
+import { hconcat, menu, search, Selection } from "@uwdata/vgplot";
+const query = Selection.intersect();
+hconcat(
+  menu({ label: "Sport", as: query, from: "athletes", column: "sport" }),
+  menu({ label: "Sex", as: query, from: "athletes", column: "sex" }),
+  search({ label: "Name", as: query, from: "athletes", column: "name", type: "contains" })
+)
+```
+
 All input widgets can write updates to a provided Param or Selection.
 Param values are updated to match the input value.
 Selections are provided a predicate clause. This linking can be bidirectional: an input component will also subscribe to a Param and track its value updates.
@@ -28,9 +40,24 @@ Two-way linking is also supported for Selections using _single_ resolution, wher
 ## Table
 
 The `table` component provides a sortable, scrollable table grid view.
-If a set of backing columns is provided, the table first requests metadata for those columns.
-If a backing table is provided without explicit columns, the component will instead request _all_ table columns.
-The returned metadata is used to populate the table header and guide formatting and alignment by column type.
+If backing columns are specified, the table first requests metadata for those columns.
+If no explicit columns are listed, the component will instead request _all_ backing table columns.
+The returned metadata is used to populate the table header and guide formatting and alignment.
+
+This snippet shows how the table is defined in the example above.
+In this case, explicit column names and column pixel widths are provided.
+
+``` js
+import { table } from "@uwdata/vgplot";
+table({
+  from: "athletes",
+  filterBy: query,
+  columns: [ "name", "nationality", "sex", "height", "weight" ,"sport" ],
+  width: { "name": 180, "nationality": 100, "sex": 50, "height": 50, "weight": 50, "sport": 100 },
+  height: 250
+})
+```
+
 To avoid overwhelming the browser, the table query method requests rows in batches using SQL `LIMIT` and `OFFSET` clauses.
 As a user scrolls the table view, the component requests the next data batch with the proper offset.
 
@@ -39,4 +66,5 @@ When sort criteria change, the current data is dropped and a request is made to 
 As a user scrolls, these sort criteria persist.
 
 If provided, a `filterBy` Selection is used to filter table content.
-Tables can also be used for input: a user may select rows to update a Selection with a predicate selecting rows by either primary key or value equality.
+
+<!-- Tables can also be used for input: a user may select rows to update a Selection with a predicate selecting rows by either primary key or value equality. -->

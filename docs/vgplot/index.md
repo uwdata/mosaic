@@ -1,3 +1,7 @@
+---
+title: Mosaic vgplot
+---
+
 <script setup>
   import { reset } from '@uwdata/vgplot';
   reset();
@@ -28,7 +32,7 @@ Plots are rendered to SVG output by marshalling a specification and passing it t
 
 ::: code-group
 ``` js [JavaScript]
-import { plot, line, from, width, height } from '@uwdata/vgplot';
+import { plot, line, from, width, height } from "@uwdata/vgplot";
 plot(
   line(from("aapl"), { x: "Date", y: "Close" }),
   width(680),
@@ -48,7 +52,7 @@ height: 200
 
 The stock chart above consists of three directives:
 
-1. A `lineY` mark to visualize data from a backing data table named `"aapl"`.
+1. A `line` mark to visualize data from a backing data table named `"aapl"`.
 2. A `width` attribute to set the chart width in pixels.
 3. A `height` attribute to set the chart height in pixels.
 
@@ -61,12 +65,12 @@ Fixed domains enable stable configurations without requiring a hard-wired domain
 
 ## Marks
 
-Marks are graphical primitives, often with accompanying data transforms, that serve as chart layers.
+_Marks_ are graphical primitives, often with accompanying data transforms, that serve as chart layers.
 In vgplot, each mark is a Mosaic client that produces queries for needed data.
 Marks accept a data source definition and a set of supported options, including encoding *channels* (such as `x`, `y`, `fill`, and `stroke`) that can encode data *fields*.
 
 A data field may be a column reference or query expression, including dynamic _Param_ values.
-Common expressions include aggregates (`count`, `sum`, `avg`, `median`, etc.), window functions (e.g., rolling averages), date functions, and a `bin` transform.
+Common expressions include aggregates (`count`, `sum`, `avg`, `median`, etc.), window functions (e.g., [moving averages](/examples/moving-average)), date functions, and a `bin` transform.
 Most field expressions&mdash;including aggregate, window, and date functions&mdash;are specified using [Mosaic SQL](/sql/) builder methods.
 
 Marks support dual modes of operation: if an explicit array of data values is provided instead of a backing table reference, vgplot will visualize that data without issuing any queries to the database. This functionality is particularly useful for adding manual annotations, such as custom rules or text labels.
@@ -92,43 +96,43 @@ Basic marks follow a straightforward query construction process:
 The `area` and `line` marks connect consecutive sample points.
 Connected marks are treated similarly to basic marks, with one notable addition: the queries for spatially oriented marks (`areaY`, `lineX`) can apply [M4 optimization](https://observablehq.com/@uwdata/m4-scalable-time-series-visualization). The query construction method uses plot width and data min/max information to determine the pixel resolution of the mark range. When the data points outnumber available pixels, M4 performs perceptually faithful pixel-aware binning of the series, limiting the number of drawn points. This optimization offers dramatic data reductions for both single and multiple series.
 
-Separately, vgplot includes a `regression` mark for linear regression fits. Regression calculations and associated statistics are performed in-database in a single aggregate query. The mark then draws the regression line and optional confidence interval area.
+Separately, vgplot includes a `regressionY` mark for linear regression fits. Regression calculations and associated statistics are performed in-database in a single aggregate query. The mark then draws the regression line and optional confidence interval area.
 
 ### Density Marks
 
 The `densityY` mark performs 1D kernel density estimation (KDE).
-The `density` mark defaults to areas, but supports a `type` option to instead use lines, points, or other basic marks.
-By default the generated query performs _linear binning_, an alternative to standard binning that proportionally distributes the weight of a point between adjacent bins to provide greater accuracy for density estimation. The query uses subqueries for the "left" and "right" bins, then aggregates the results. The query result is a 1D grid of binned values which are then smoothed. As smoothing is performed in the browser, interactive bandwidth updates are processed immediately.
+The `densityY` mark defaults to areas, but supports a `type` option to instead use lines, points, or other basic marks.
+The generated query performs _linear binning_, an alternative to standard binning that proportionally distributes the weight of a point between adjacent bins to provide greater accuracy for density estimation. The query uses subqueries for the "left" and "right" bins, then aggregates the results. The query result is a 1D grid of binned values which are then smoothed. As smoothing is performed in the browser, interactive bandwidth updates are processed immediately.
 
 The `density2D`, `contour`, and `raster` marks compute densities over a 2D domain using either linear (default) or standard binning. Smoothing again is performed in browser; setting the `bandwidth` option to zero disables smoothing. The `contour` mark then performs contour generation, whereas the `raster` mark generates a colored bitmap. Dynamic changes of bandwidth, contour thresholds, and color scales are handled immediately in browser.
 
 The `hexbin` mark pushes hexagonal binning and aggregation to the database. Color and size channels may be mapped to `count` or other aggregates. Hexagon plotting symbols can be replaced by other basic marks (such as `text`) via the `type` option.
 
 The `denseLine` mark creates a density map of line segments, rather than points.
-Line density estimation is pushed to the database using a SQL query with multiple common table expressions (CTEs). First a window query is performed to bin and group line segment end points. Next, we perform line rasterization in database by joining against a set of pixel index positions. To ensure that steep lines are not over-represented, we approximate arc-length normalization for each segment by normalizing by the number of filled raster cells on a per-column basis. Finally we aggregate the resulting weights for all series to produce the line densities.
+Line density estimation is pushed to the database. To ensure that steep lines are not over-represented, we approximate arc-length normalization for each segment by normalizing by the number of filled raster cells on a per-column basis. We then aggregate the resulting weights for all series to produce the line densities.
 
 ## Interactors
 
-In addition to _marks_ and _attributes_, `plot` specifications may include _interactors_ to imbue plots with interactive behavior. Most interactors listen to input events from rendered plot SVG elements to update bound [Selections](/core/#selections). Interactors take facets into account to properly handle input events across subplots.
+_Interactors_ imbue plots with interactive behavior. Most interactors listen to input events from rendered plot SVG elements to update bound [Selections](/core/#selections). Interactors take facets into account to properly handle input events across subplots.
 
 The `toggle` interactor selects individual points (e.g., by click or shift-click) and generates a selection clause over specified fields of those points. Directives such as `toggleColor`, `toggleX`, and `toggleY` simplify specification of which channel fields are included in the resulting predicates.
 
-The `nearestX` and `nearestY` interactors select the nearest value along the `x` and/or `y` channel.
+The `nearestX` and `nearestY` interactors select the nearest value along the `x` or `y` encoding channel.
 
 The `intervalX` and `intervalY` interactors create 1D interval brushes.
 The `intervalXY` interactor creates a 2D brush.
 Interval interactors accept a `pixelSize` parameter that sets the brush resolution: values may snap to a grid whose bins are larger than screen pixels and this can be leveraged to optimize query latency.
 
-The `panZoom` interactor produces interval selections over corresponding `x` or `y` scale domains.
+The `panZoom` interactor produces interval selections over corresponding `x` or `y` scale domains. Setting these selections to a plot's `xDomain` and/or `yDomain` attributes will cause the plot to pan and zoom in response.
 
 The `highlight` interactor updates the rendered state of a visualization in response to a Selection.
 Non-selected points are set to translucent, neutral gray, or other specified visual properties.
 Selected points maintain normal encodings.
-We perform highlighting by querying for a selection bit vector and then modifying the rendered SVG.
+We perform highlighting by querying the database for a selection bit vector and then modifying the rendered SVG.
 
 ## Legends
 
-Legends can be added to `plot` specifications or created as standalone elements.
+_Legends_ can be added to `plot` specifications or included as standalone elements.
 
 The `name` directive gives a `plot` a unique name.
 A standalone legend can reference a named plot (`colorLegend({ for: 'name' })`) to avoid respecifying scale domains and ranges.
