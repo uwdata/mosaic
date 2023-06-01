@@ -1,6 +1,6 @@
 <script>
 import yaml from 'yaml';
-import { coordinator, parseJSON, wasmConnector } from '@uwdata/vgplot';
+import { coordinator, parseSpec, wasmConnector } from '@uwdata/vgplot';
 
 export default {
   async mounted() {
@@ -13,7 +13,7 @@ export default {
       const base = location.origin + import.meta.env.BASE_URL;
       const url = base.slice(0, -1) + this.spec;
       const spec = yaml.parse(await fetch(url).then(r => r.text()));
-      const view = await parseJSON(spec, { baseURL: base });
+      const view = await parseSpec(spec, { baseURL: base });
       this.$refs.view.replaceChildren(view);
     } catch (err) {
       this.$refs.view.innerHTML = `<em>Example failed to load.</em> 😭<br/>

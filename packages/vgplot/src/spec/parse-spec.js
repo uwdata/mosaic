@@ -91,12 +91,12 @@ export const DefaultLegends = new Map(Object.entries(legends));
 export const DefaultAttributes = new Map(Object.entries(attributes));
 export const DefaultInteractors = new Map(Object.entries(interactors));
 
-export function parseJSON(spec, options) {
+export function parseSpec(spec, options) {
   spec = isString(spec) ? JSON.parse(spec) : spec;
-  return new JSONParseContext(options).parse(spec);
+  return new ParseContext(options).parse(spec);
 }
 
-export class JSONParseContext {
+export class ParseContext {
   constructor({
     specParsers = DefaultSpecParsers,
     paramParsers = DefaultParamParsers,
@@ -182,7 +182,7 @@ export class JSONParseContext {
       this.params.set(name, parseParam(params[name], this));
     }
 
-    const result = parseSpec(spec, this);
+    const result = parseComponent(spec, this);
     this.postQueue.forEach(fn => fn());
     this.postQueue = [];
     this.plotDefaults = {};
@@ -228,7 +228,7 @@ function parseParam(param, ctx) {
   return parser(param, ctx);
 }
 
-function parseSpec(spec, ctx) {
+function parseComponent(spec, ctx) {
   for (const [key, { type, parse }] of ctx.specParsers) {
     const value = spec[key];
     if (value != null) {
@@ -263,11 +263,11 @@ function parseInput(spec, ctx) {
 }
 
 function parseVConcat(spec, ctx) {
-  return vconcat(spec.vconcat.map(s => parseSpec(s, ctx)));
+  return vconcat(spec.vconcat.map(s => parseComponent(s, ctx)));
 }
 
 function parseHConcat(spec, ctx) {
-  return hconcat(spec.hconcat.map(s => parseSpec(s, ctx)));
+  return hconcat(spec.hconcat.map(s => parseComponent(s, ctx)));
 }
 
 function parsePlot(spec, ctx) {

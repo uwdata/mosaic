@@ -299,8 +299,9 @@ export {
 } from './symbols.js';
 
 export {
-  parseJSON
-} from './spec/parse-json.js';
+  parseSpec,
+  ParseContext
+} from './spec/parse-spec.js';
 
 export {
   specToModule
