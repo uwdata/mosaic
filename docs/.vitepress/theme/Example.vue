@@ -1,4 +1,5 @@
 <script>
+import { withBase } from 'vitepress'
 import yaml from 'yaml';
 import { coordinator, parseSpec, wasmConnector } from '@uwdata/vgplot';
 
@@ -10,10 +11,8 @@ export default {
         // update if current connector is not a WASM connector
         mc.databaseConnector(await wasmConnector());
       }
-      const base = location.origin + import.meta.env.BASE_URL;
-      const url = base.slice(0, -1) + this.spec;
-      const spec = yaml.parse(await fetch(url).then(r => r.text()));
-      const view = await parseSpec(spec, { baseURL: base });
+      const spec = yaml.parse(await fetch(withBase(this.spec)).then(r => r.text()));
+      const view = await parseSpec(spec, { baseURL: location.origin + import.meta.env.BASE_URL });
       this.$refs.view.replaceChildren(view);
     } catch (err) {
       this.$refs.view.innerHTML = `<em>Example failed to load.</em> 😭<br/>
