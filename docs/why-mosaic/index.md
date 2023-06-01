@@ -4,29 +4,29 @@
 </script>
 
 <style>
-.plot-d6a7b5 {
+.plot-why {
   margin-top: 2em;
 }
-.plot-d6a7b5 text,
-.plot-d6a7b5 tspan {
+.plot-why text,
+.plot-why tspan {
   white-space: pre;
 }
-.plot-d6a7b5-swatches {
+.plot-why-swatches {
   font-family: system-ui, sans-serif;
   font-size: 10px;
   margin-bottom: 0.5em;
 }
-.plot-d6a7b5-swatch > svg {
+.plot-why-swatch > svg {
   margin-right: 0.5em;
   overflow: visible;
 }
-.plot-d6a7b5-swatches-wrap {
+.plot-why-swatches-wrap {
   display: flex;
   align-items: center;
   min-height: 33px;
   flex-wrap: wrap;
 }
-.plot-d6a7b5-swatches-wrap .plot-d6a7b5-swatch {
+.plot-why-swatches-wrap .plot-why-swatch {
   display: inline-flex;
   align-items: center;
   margin-right: 1em;
@@ -51,7 +51,7 @@ Mosaic provides faster results, often by one or more orders of magnitude.
 DuckDB-WASM in the browser fares well, though is limited (compared to a DuckDB server) by WebAssembly's lack of parallel processing.
 [VegaFusion](https://vegafusion.io/) performs server-side optimization for _bars_ and _2D histograms_, but otherwise provided results identical to Vega-Lite.
 
-<svg xmlns="http://www.w3.org/2000/svg" class="plot-d6a7b5" fill="currentColor" font-family="system-ui, sans-serif" font-size="10" text-anchor="middle" viewBox="0 0 800 115">
+<svg xmlns="http://www.w3.org/2000/svg" class="plot-why" fill="currentColor" font-family="system-ui, sans-serif" font-size="10" text-anchor="middle" viewBox="0 0 800 115">
   <g aria-label="facet" transform="translate(2,0)">
     <g aria-label="fx-axis tick label" transform="translate(0,-9)"><text transform="translate(97.5,1)">bar</text></g>
     <g aria-label="y-grid" stroke="currentColor" stroke-opacity="0.1"><line x1="40" x2="155" y1="78.81569997924379" y2="78.81569997924379"></line><line x1="40" x2="155" y1="58.27189999308126" y2="58.27189999308126"></line><line x1="40" x2="155" y1="37.72810000691874" y2="37.72810000691874"></line><line x1="40" x2="155" y1="17.184300020756197" y2="17.184300020756197"></line></g>
@@ -127,14 +127,14 @@ DuckDB-WASM in the browser fares well, though is limited (compared to a DuckDB s
     <rect aria-label="frame" fill="none" stroke="currentColor" x="40" y="1" width="115" height="94"></rect>
   </g>
 </svg>
-<div style="display: flex; flex-flow: row nowrap; justify-content: flex-start; align-items: flex-start;"><span style="display: inline-block; width: 35px;"></span><div class="legend"><div class="plot-d6a7b5-swatches plot-d6a7b5-swatches-wrap"><span class="plot-d6a7b5-swatch"><svg width="15" height="15" fill="#e15759"><rect width="100%" height="100%"></rect></svg>Vega(-Lite)</span><span class="plot-d6a7b5-swatch"><svg width="15" height="15" fill="#ff9da6"><rect width="100%" height="100%"></rect></svg>VegaFusion</span><span class="plot-d6a7b5-swatch"><svg width="15" height="15" fill="#f28e2c"><rect width="100%" height="100%"></rect></svg>Observable Plot</span><span class="plot-d6a7b5-swatch"><svg width="15" height="15" fill="#4e79a7"><rect width="100%" height="100%"></rect></svg>Mosaic WASM</span><span class="plot-d6a7b5-swatch"><svg width="15" height="15" fill="#76b7b2"><rect width="100%" height="100%"></rect></svg>Mosaic Socket</span></div></div></div>
+<div style="display: flex; flex-flow: row nowrap; justify-content: flex-start; align-items: flex-start;"><span style="display: inline-block; width: 35px;"></span><div class="legend"><div class="plot-why-swatches plot-why-swatches-wrap"><span class="plot-why-swatch"><svg width="15" height="15" fill="#e15759"><rect width="100%" height="100%"></rect></svg>Vega(-Lite)</span><span class="plot-why-swatch"><svg width="15" height="15" fill="#ff9da6"><rect width="100%" height="100%"></rect></svg>VegaFusion</span><span class="plot-why-swatch"><svg width="15" height="15" fill="#f28e2c"><rect width="100%" height="100%"></rect></svg>Observable Plot</span><span class="plot-why-swatch"><svg width="15" height="15" fill="#4e79a7"><rect width="100%" height="100%"></rect></svg>Mosaic WASM</span><span class="plot-why-swatch"><svg width="15" height="15" fill="#76b7b2"><rect width="100%" height="100%"></rect></svg>Mosaic Socket</span></div></div></div>
 
 When it comes to interaction, Mosaic really shines!
 For many forms of aggregated data, the coordinator will automatically pre-aggregate data into smaller "data cube" indexes to support real-time interaction with billion+ element databases.
 The figure below shows benchmark results for index-optimized interactive updates.
 Even with billions of rows, Mosaic with a server-side DuckDB instance maintains interactive response rates.
 
-<svg xmlns="http://www.w3.org/2000/svg" class="plot-d6a7b5" fill="currentColor" font-family="system-ui, sans-serif" font-size="10" text-anchor="middle" width="420" height="115" viewBox="0 0 420 115">
+<svg xmlns="http://www.w3.org/2000/svg" class="plot-why" fill="currentColor" font-family="system-ui, sans-serif" font-size="10" text-anchor="middle" width="420" height="115" viewBox="0 0 420 115">
   <g aria-label="facet" transform="translate(1,0)">
     <g aria-label="y-grid" stroke="currentColor" stroke-opacity="0.1"><line x1="40" x2="157" y1="78.40572092494686" y2="78.40572092494686"></line><line x1="40" x2="157" y1="56.5" y2="56.5"></line><line x1="40" x2="157" y1="34.59427907505314" y2="34.59427907505314"></line></g>
     <g aria-label="y-axis tick" fill="none" stroke="currentColor"><path transform="translate(40,78.40572092494686)" d="M0,0L-6,0"></path><path transform="translate(40,56.5)" d="M0,0L-6,0"></path><path transform="translate(40,34.59427907505314)" d="M0,0L-6,0"></path></g>
@@ -172,7 +172,7 @@ Even with billions of rows, Mosaic with a server-side DuckDB instance maintains 
   </g>
   <g aria-label="fx-axis label" transform="translate(0,-15)"><text y="0.71em" transform="translate(229.5,18)">Interactive Updates</text></g>
 </svg>
-<div style="display: flex; flex-flow: row nowrap; justify-content: flex-start; align-items: flex-start;"><span style="display: inline-block; width: 40px;"></span><div class="legend"><div class="plot-d6a7b5-swatches plot-d6a7b5-swatches-wrap"><span class="plot-d6a7b5-swatch"><svg width="15" height="15" fill="#ff9da6"><rect width="100%" height="100%"></rect></svg>VegaFusion</span><span class="plot-d6a7b5-swatch"><svg width="15" height="15" fill="#4e79a7"><rect width="100%" height="100%"></rect></svg>Mosaic WASM</span><span class="plot-d6a7b5-swatch"><svg width="15" height="15" fill="#76b7b2"><rect width="100%" height="100%"></rect></svg>Mosaic Local</span><span class="plot-d6a7b5-swatch"><svg width="15" height="15" fill="#59a14f"><rect width="100%" height="100%"></rect></svg>Mosaic Remote</span></div></div></div>
+<div style="display: flex; flex-flow: row nowrap; justify-content: flex-start; align-items: flex-start;"><span style="display: inline-block; width: 40px;"></span><div class="legend"><div class="plot-why-swatches plot-why-swatches-wrap"><span class="plot-why-swatch"><svg width="15" height="15" fill="#ff9da6"><rect width="100%" height="100%"></rect></svg>VegaFusion</span><span class="plot-why-swatch"><svg width="15" height="15" fill="#4e79a7"><rect width="100%" height="100%"></rect></svg>Mosaic WASM</span><span class="plot-why-swatch"><svg width="15" height="15" fill="#76b7b2"><rect width="100%" height="100%"></rect></svg>Mosaic Local</span><span class="plot-why-swatch"><svg width="15" height="15" fill="#59a14f"><rect width="100%" height="100%"></rect></svg>Mosaic Remote</span></div></div></div>
 
 If not already present, Mosaic will create data cube index tables when the mouse cursor enters a view.
 For very large data sets with longer data cube construction times, precomputation and server-side caching are supported.
