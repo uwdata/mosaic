@@ -60,7 +60,7 @@
   <div id="view"></div>
 <script type="module">
   import yaml from '../node_modules/yaml/browser/index.js';
-  import { parseJSON, specToModule, reset, setDatabaseConnector } from './setup.js';
+  import { parseSpec, specToModule, reset, setDatabaseConnector } from './setup.js';
 
   const view = document.querySelector('#view');
   const connectorMenu = document.querySelector('#connectors');
@@ -97,7 +97,7 @@
       try {
         const child = source === 'esm'
           ? await loadModuleView(spec, options)
-          : await parseJSON(spec, options);
+          : await parseSpec(spec, options);
         view.replaceChildren(child);
       } catch (err) {
         console.error(err, err.data);

@@ -1,5 +1,5 @@
 import { parseData, parseTableData } from './parse-data.js';
-import { JSONParseContext } from './parse-json.js';
+import { ParseContext } from './parse-spec.js';
 import {
   error, paramRef, toArray,
   isArray, isNumberOrString, isObject, isString, isFunction
@@ -36,7 +36,7 @@ function maybeNewline(entry) {
   return entry?.length ? [''] : [];
 }
 
-class CodegenContext extends JSONParseContext {
+class CodegenContext extends ParseContext {
   constructor(options) {
     super({
       specParsers: SpecParsers,
