@@ -5,14 +5,16 @@
 
 # Mosaic Inputs
 
-Inspired by [Observable inputs](https://observablehq.com/@observablehq/inputs), the Mosaic `inputs` pacakage includes a set of input widgets and a table viewer.
-Each input widget is a Mosaic client that uses Params and Selections for linked interactions.
+Inspired by [Observable Inputs](https://observablehq.com/@observablehq/inputs), the Mosaic `inputs` pacakage includes a set of input widgets and a table viewer.
+Each input widget is a Mosaic client that uses params or selections for linked interactions.
 
-This example dashboard of Olympic Athlete statistics uses `menu` and `search` inputs to filter the display, including the scrollable and sortable `table` below.
+This example dashboard of Olympic athlete statistics uses `menu` and `search` inputs to filter the display, including the scrollable and sortable `table` below.
 The contents of the menus and the autocomplete options for the search box are populated from the backing database.
 Each of these widgets then populate a shared selection.
 
 <Example spec="/specs/yaml/athletes.yaml"/>
+
+_Scroll the table to load more data on demand.<br/>Click a column header to sort, or command-click to clear sort criteria._
 
 ## Slider, Menu, and Search
 
@@ -20,7 +22,7 @@ The `slider`, `menu`, and `search` inputs support dual modes of operation: they 
 If a backing table and column are specified, the `slider` queries for the minimum and maximum column values to parameterize the slider.
 The `menu` and `search` components instead query for distinct column values, and use those to populate the menu or autocomplete options, respectively.
 
-This snippet shows how the menus and search box are defined in the example above:
+This snippet defines the menus and search box in the example above:
 
 ``` js
 import { hconcat, menu, search, Selection } from "@uwdata/vgplot";
@@ -32,10 +34,10 @@ hconcat(
 )
 ```
 
-All input widgets can write updates to a provided Param or Selection.
+All input widgets can write updates to a provided param or selection.
 Param values are updated to match the input value.
-Selections are provided a predicate clause. This linking can be bidirectional: an input component will also subscribe to a Param and track its value updates.
-Two-way linking is also supported for Selections using _single_ resolution, where there is no ambiguity regarding the value.
+Selections are provided a predicate clause. This linking can be bidirectional: an input component will also subscribe to a param and track its value updates.
+Two-way linking is also supported for selections using _single_ resolution, where there is no ambiguity regarding the value.
 
 ## Table
 

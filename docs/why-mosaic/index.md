@@ -14,7 +14,6 @@
 .plot-why-swatches {
   font-family: system-ui, sans-serif;
   font-size: 10px;
-  margin-bottom: 0.5em;
 }
 .plot-why-swatch > svg {
   margin-right: 0.5em;
@@ -156,7 +155,7 @@ Even with billions of rows, Mosaic with a server-side DuckDB instance maintains 
     <g aria-label="line" clip-path="url(#iplot-clip-3)"><clipPath id="iplot-clip-3"><rect x="40" y="18" width="117" height="77"></rect></clipPath><g fill="none" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"><path stroke="#59a14f" d="M55.101,67.673C65.308,67.419,75.515,67.165,85.722,66.99C95.936,66.815,106.149,66.624,116.363,66.624C126.575,66.624,136.788,66.652,147,66.68"></path><path stroke="#76b7b2" d="M55.101,74.236C65.308,74.11,75.515,73.984,85.722,73.875C95.936,73.766,106.149,73.778,116.363,73.584C126.575,73.39,136.788,71.464,147,69.538"></path><path stroke="#4e79a7" d="M55.101,73.758L85.722,69.538"></path></g></g>
     <g aria-label="rule"><line x1="55.100731257508556" x2="55.100731257508556" y1="68.71288258786255" y2="66.96120334776107" stroke="#59a14f"></line><line x1="55.100731257508556" x2="55.100731257508556" y1="78.03259335602648" y2="73.52695606090117" stroke="#76b7b2"></line><line x1="55.100731257508556" x2="55.100731257508556" y1="79.95185024083251" y2="73.41369836781861" stroke="#4e79a7"></line><line x1="147" x2="147" y1="67.10513247298357" y2="63.26708262037291" stroke="#59a14f"></line><line x1="147" x2="147" y1="74.11439780817021" y2="64.61804990085113" stroke="#76b7b2"></line><line x1="116.36278829408977" x2="116.36278829408977" y1="67.07617192351277" y2="65.07551945923669" stroke="#59a14f"></line><line x1="116.36278829408977" x2="116.36278829408977" y1="73.99397172984575" y2="73.3017731491241" stroke="#76b7b2"></line><line x1="85.72223263812266" x2="85.72223263812266" y1="67.70366527252584" y2="66.43330986441231" stroke="#59a14f"></line><line x1="85.72223263812266" x2="85.72223263812266" y1="75.00297303071935" y2="73.47015867934753" stroke="#76b7b2"></line><line x1="85.72223263812266" x2="85.72223263812266" y1="79.51436932495386" y2="67.10513247298357" stroke="#4e79a7"></line></g>
     <g aria-label="dot" clip-path="url(#iplot-clip-4)"><clipPath id="iplot-clip-4"><rect x="40" y="18" width="117" height="77"></rect></clipPath><g><circle cx="55.100731257508556" cy="67.67282721260779" r="2" fill="#59a14f"></circle><circle cx="55.100731257508556" cy="74.23636786165723" r="2" fill="#76b7b2"></circle><circle cx="55.100731257508556" cy="73.75759848088016" r="2" fill="#4e79a7"></circle><circle cx="147" cy="66.67971731728503" r="2" fill="#59a14f"></circle><circle cx="147" cy="69.53754650821959" r="2" fill="#76b7b2"></circle><circle cx="116.36278829408977" cy="66.62440592016425" r="2" fill="#59a14f"></circle><circle cx="116.36278829408977" cy="73.58409457843375" r="2" fill="#76b7b2"></circle><circle cx="85.72223263812266" cy="66.98981549911065" r="2" fill="#59a14f"></circle><circle cx="85.72223263812266" cy="73.87505099925242" r="2" fill="#76b7b2"></circle><circle cx="85.72223263812266" cy="69.53754651101019" r="2" fill="#4e79a7"></circle></g></g>
-    <g aria-label="text" transform="translate(0,5)"><text y="0.71em" transform="translate(98.5,18)">gaia (binned)</text></g>
+    <g aria-label="text" transform="translate(0,5)"><text y="0.71em" transform="translate(98.5,18)">gaia (bins)</text></g>
     <rect aria-label="frame" fill="none" stroke="currentColor" x="40" y="18" width="117" height="77"></rect>
   </g>
   <g aria-label="facet" transform="translate(261,0)">
@@ -183,7 +182,7 @@ Other tasks, like changing a color encoding or adjusting a smoothing parameter, 
 
 Mosaic provides an open, "middle-tier" architecture that manages data access and linked selections between clients.
 With a shared architecture, a visualization framework can readily interoperate with other libraries, including input components and other visualization tools.
-We demonstrate this through the design of [_vgplot_](/vgplot/), a Mosaic-based grammar of interactive graphics that combines concepts from existing visualization tools.
+We demonstrate this through the design of [vgplot](/vgplot/), a Mosaic-based grammar of interactive graphics that combines concepts from existing visualization tools.
 
 To link across views, Mosaic provides a generalized _selection_ abstraction inspired by [Vega-Lite](https://vega.github.io/vega-lite/).
 Compared to Vega-Lite, Mosaic selections are decoupled from input event handling and support more complex resolution strategies &mdash; with computation offloaded to a backing scalable database.
@@ -192,9 +191,11 @@ Importantly, Mosaic selections are first-class entities, and not internal to a s
 Any component that implements the Mosaic _client_ interface can both issue queries and be automatically filtered by a provided _selection_.
 Mosaic inputs and vgplot plots can freely interact, as can any other visualization (such as custom D3 plots) that follows the Mosaic client interface.
 
+Though written in JavaScript and deployable over the Web, Mosaic was designed to work well in data science environments such as Jupyter notebooks, too. A DuckDB server can run in a host environment such as a Python kernel and communicate with a Web-based output cell interface. See the [Mosaic Jupyter Widget](/jupyter/) for more.
+
 ## Mosaic is extensible
 
-Mosaic can readily be extended with new clients, or, as in the case of [_vgplot_](/vgplot/), entire component libraries.
+Mosaic can readily be extended with new clients, or, as in the case of [vgplot](/vgplot/), entire component libraries.
 Possible future additions include network visualization tools, WebGL/WebGPU enabled clients for more scalable rendering, and more!
 
 As sketched in the code below, data-consuming elements (plot layers, widgets, etc) can be realized as Mosaic clients that provide queries and accept resulting data.
@@ -237,3 +238,5 @@ export class CustomClient extends MosaicClient {
 
 If you are interested in creating your own Mosaic clients, see the [Mosaic GitHub repository](https://github.com/uwdata/mosaic).
 For concrete examples, start with the source code of [Mosaic inputs](https://github.com/uwdata/mosaic/tree/main/packages/inputs/src).
+
+Mosaic can also be extended with additional database connectors, and &ndash; though not for the faint of heart! &ndash; even the central coordinator can be replaced to experiment with alternative query management and optimization schemes.

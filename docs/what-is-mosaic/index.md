@@ -48,7 +48,7 @@ Next let's visualize over 200,000 flight records. The first histogram shows flig
 
 <Example spec="/specs/yaml/crossfilter.yaml" />
 
-When the selection changes we need to filter the data and recount the number of records in each bin. The Mosaic coordinator analyzes these queries and automatically optimizes updates by building indices of pre-aggregated data in the database, binned at the level of input pixels for the currently active view.
+When the selection changes we need to filter the data and recount the number of records in each bin. The Mosaic coordinator analyzes these queries and automatically optimizes updates by building indexes of pre-aggregated data ("data cubes") in the database, binned at the level of input pixels for the currently active view.
 
 While 200,000 points will stress many web-based visualization tools, Mosaic doesn't break a sweat. Now go ahead and try this with [10 million records](/examples/flights-10m)!
 
@@ -79,3 +79,7 @@ We are interested in unifying advances in scalable visualization methods with la
 This is an exciting area with a number of open challenges!
 
 If you're interested in contributing, please see our [GitHub repository](https://github.com/uwdata/mosaic).
+
+## Acknowledgments
+
+Mosaic builds on ideas and code from a number of open source efforts, including [DuckDB](https://duckdb.org/), [Apache Arrow](https://arrow.apache.org/), [anywidget](https://anywidget.dev/), [Falcon](https://github.com/vega/falcon), [Vega-Lite](https://vega.github.io/vega-lite/), and [Observable Plot](https://observablehq.com/plot/). Thanks!

@@ -6,40 +6,42 @@ const { isDark } = useData();
 
 # Mosaic Core
 
-The Mosaic `core` API includes a central _Coordinator_ as well as _Params_ and _Selections_ for linking values or query predicates (respectively) across Mosaic _Clients_. The Coordinator can send queries over the network to a backing server (`socket` and `rest` clients) or to an in-browser DuckDB-WASM instance (`wasm` client).
+The Mosaic `core` API includes a central _coordinator_ as well as _params_ and _selections_ for linking values or query predicates (respectively) across Mosaic _clients_. The coordinator can send queries over the network to a backing server (`socket` and `rest` clients) or to an in-browser DuckDB-WASM instance (`wasm` client).
 
 <img v-if="isDark" src="/architecture-dark.png"/>
 <img v-else src="/architecture.png"/>
 
-The figure above illustrates a prototypical Mosaic setup.
-The Coordinator collects queries from clients, issues them to DuckDB, and returns the results to clients.
+The figure above illustrates a typical Mosaic setup.
+The coordinator collects queries from clients, issues them to DuckDB, and returns the results to clients.
 User interactions with a client can populate selections with filter clauses.
-Upon selection updates, the Coordinator determines filter queries and updates clients with the filtered data.
+Upon selection updates, the coordinator determines filter queries and updates clients with the filtered data.
 
 ## Clients
 
-Mosaic _Clients_ are responsible for publishing their data needs and performing data processing tasks&mdash;such as rendering a visualization&mdash;once data is provided by the Coordinator. Clients typically take the form of Web (HTML/SVG) elements, but are not required to. Additionally, a Web element might consist of multiple clients, such as multiple marks (chart layers) in [vgplot](/vgplot/).
+Mosaic _clients_ are responsible for publishing their data needs and performing data processing tasks&mdash;such as rendering a visualization&mdash;once data is provided by the coordinator. Clients typically take the form of Web (HTML/SVG) elements, but are not required to. A Web element may even consist of multiple clients, such as multiple marks (chart layers) in [vgplot](/vgplot/).
 
-Upon registration, the Coordinator calls the client `fields()` method to request a list of fields, consisting of table and column names as well as optional requested statistics. If a client does not require any field information, it can provide an empty list. The Coordinator queries the Data Source for requested metadata (e.g., column type) and summary statistics, and returns them via the client `fieldInfo()` method.
+Upon registration, the coordinator calls the client `fields()` method to request a list of fields, consisting of table and column names as well as optional requested statistics. If a client does not require any field information, it can provide an empty list. The Coordinator queries the data source for requested metadata (e.g., column type) and summary statistics, and returns them via the client `fieldInfo()` method.
 
-Next, the Coordinator calls the client `query()` method. The return value may be a SQL query string or a structured object that produces a query upon string coercion. Mosaic includes a [query builder API](/sql/) that simplifies the construction of complex queries while enabling query analysis without need of a parser. The `query` method takes a single argument: an optional `filter` predicate (akin to a SQL `WHERE` clause) indicating a data subset. The client is responsible for incorporating the filter criteria into the returned query. Before the Coordinator submits a query for execution, it calls `queryPending()` to inform the client. Once query execution completes, the Coordinator returns data via the client `queryResult()` method or reports an error via `queryError()`.
+Next, the coordinator calls the client `query()` method. The return value may be a SQL query string or a structured object that produces a query upon string coercion. Mosaic includes a [query builder API](/sql/) that simplifies the construction of complex queries while enabling query analysis without need of a parser. The `query` method takes a single argument: an optional `filter` predicate (akin to a SQL `WHERE` clause) indicating a data subset. The client is responsible for incorporating the filter criteria into the returned query.
 
-Clients can also request queries in response to internal events. The client `requestQuery(query)` method passes a specific query to the Coordinator with a guarantee that it will be evaluated.
+Before the coordinator submits a query for execution, it calls `queryPending()` to inform the client. Once query execution completes, the coordinator returns data via the client `queryResult()` method or reports an error via `queryError()`.
+
+Clients can also request queries in response to internal events. The client `requestQuery()` method passes a query to the coordinator with a guarantee that it will be evaluated.
 The client `requestUpdate()` method instead makes throttled requests for a standard `query()`; multiple calls to `requestUpdate()` may result in only one query (the most recent) being serviced.
-Finally, clients may expose a `filterBy` Selection property. The predicates provided by `filterBy` are passed as an argument to the client `query()` method by the Coordinator.
+Finally, clients may expose a `filterBy` Selection property. The predicates provided by `filterBy` are passed as an argument to the client `query()` method by the coordinator.
 
 ## Coordinator
 
-The _Coordinator_ is responsible for managing client data needs. Clients are registered via the Coordinator `connect(client)` method, and similarly removed using `disconnect()`. Upon registration, the event lifecycle begins.
-In addition to the `fields` and `query` calls described above, the Coordinator checks if a client exposes a `filterBy` property, and if so, adds the client to a _filter group_: a set of clients that share the same `filterBy` Selection.
-Upon changes to this selection (e.g., due to interactions such as brushing or zooming), the Coordinator collects updated queries for all corresponding clients, queries the Data Source, and updates clients in turn.
+The _coordinator_ is responsible for managing client data needs. Clients are registered via the coordinator `connect(client)` method, and similarly removed using `disconnect()`. Upon registration, the event lifecycle begins.
+In addition to the `fields` and `query` calls described above, the coordinator checks if a client exposes a `filterBy` property, and if so, adds the client to a _filter group_: a set of clients that share the same `filterBy` selection.
+Upon changes to this selection (e.g., due to interactions such as brushing or zooming), the coordinator collects updated queries for all corresponding clients, queries the data source, and updates clients in turn.
 The Coordinator additionally performs optimizations including caching and data cube indexing.
 
 ## Data Source
 
-The Coordinator submits queries to a _Data Source_ for evaluation, using an extensible set of database connectors.
-Mosaic uses [DuckDB](/duckdb/) as its backing database and provides connectors for communicating with a DuckDB server via Web Sockets or HTTP calls, with DuckDB-WASM in the browser, or through [Jupyter widgets](/jupyter/) to DuckDB in Python.
-For data transfer, Mosaic defaults to the binary Apache Arrow format, which enables efficient serialization of query results with no subsequent parsing overhead.
+The coordinator submits queries to a _data source_ using an extensible set of database connectors.
+Mosaic uses [DuckDB](/duckdb/) as a backing database and provides connectors for communicating with a DuckDB server via Web Sockets or HTTP calls, with DuckDB-WASM in the browser, or through [Jupyter widgets](/jupyter/) to DuckDB in Python.
+To transfer data, Mosaic uses [Apache Arrow](https://arrow.apache.org/) for efficient serialization of query results with no subsequent parsing overhead.
 While the socket and HTTP connectors also support JSON, this is more costly to serialize, results in larger payloads, and must be parsed on the client side.
 
 ## Params
@@ -73,7 +75,7 @@ hconcat(
 
 ## Selections
 
-A _Selection_ is a specialized Param that manages one or more _predicates_: Boolean-valued query expressions.
+A _selection_ is a specialized param that manages one or more _predicates_: Boolean-valued query expressions.
 Selections expose a `predicate(client)` function that takes a client as input and returns a resolved predicate for filtering the client's data.
 
 Interaction components update selections by providing a _clause_, an object consisting of the _source_ component providing the clause, a set of _clients_ associated with the clause, a query _predicate_ (e.g, the range predicate `column BETWEEN 0 AND 1`), a corresponding _value_ (e.g., the range array `[0,1]`), and an optional _schema_ providing clause metadata.
@@ -107,8 +109,8 @@ Selection.crossfilter()
 Selection.single({ cross: true })
 ```
 
-Selections override the Param `value` property to return the active clause _value_, making Selections compatible where standard Params are expected.
-Like Params, Selections support `value` event listeners, corresponding to value changes.
+Selections override the `Param.value` property to return the active clause _value_, making selections compatible where standard params are expected.
+Like params, selections support `value` event listeners, corresponding to value changes.
 
 Selections additionally support `activate` events, which provide a clause indicative of likely future updates.
 For example, a brush interactor may trigger an activation event when the cursor enters a brushable region, providing an example clause prior to any actual updates.

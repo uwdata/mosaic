@@ -14,7 +14,10 @@ For example, here is a line chart of historical Apple stock prices:
 :::
 
 ::: tip
-These examples use DuckDB-WASM running in the browser.
-We recommend viewing examples in Chrome for better reliability and performance.
+These examples use DuckDB-WASM running in the browser via WebAssembly.
+We recommend viewing examples in Chrome (or Chromium) for better reliability and performance.
+:::
+
+::: info
 For greater scalability, consider using a local [DuckDB data server](/duckdb/) or viewing examples in [Jupyter](/jupyter/).
 :::

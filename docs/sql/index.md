@@ -15,19 +15,19 @@ import { Query } from "@uwdata/mosaic-sql";
 Query.from("table").select({ a: "foo", b: "bar" })
 ```
 
-The `Query` class supports a rich set of SQL features, including subqueries (pass other queries as `from()` arguments) and [common table expressions](https://duckdb.org/docs/sql/query_syntax/with.html) (via the `with()` method). Here is a run down of the provided methods:
+The `Query` class supports a rich set of SQL features, including subqueries (by passing queries as arguments to `from()`) and [common table expressions](https://duckdb.org/docs/sql/query_syntax/with.html) (via the `with()` method). Here is a run down of the available methods:
 
 ``` js
 Query
   .with(/* a map of named common table expression queries */)
   .select(/* column names or name -> expression maps */)
-  .distinct(/* distinct values only */)
-  .from(/* source tables or subqueries */)
-  .sample(/* number of rows or % */)
+  .distinct(/* boolean to denote distinct values only */)
+  .from(/* source table names or subqueries */)
+  .sample(/* number of rows or % to sample */)
   .where(/* filter criteria */)
   .groupby(/* columns or expressions to group by */)
   .having(/* post-aggregation filter criteria */)
-  .window(/* window definitions */)
+  .window(/* named window definitions */)
   .qualify(/* post-window filter criteria */)
   .orderby(/* columns or expressions to sort by */)
   .limit(/* max number of rows */)
@@ -40,22 +40,24 @@ The `sql` template literal builds individual SQL expressions.
 
 ``` js
 import { Query, sql } from "@uwdata/mosaic-sql";
-Query.select({ logFoo: sql`log(foo + 1)` }).from('myTable');
+Query
+  .select({ logFoo: sql`log(foo + 1)` })
+  .from("myTable");
 ```
 
-Interpolated values may include column references, nested expressions, or Params.
+Interpolated values may include column references, nested expressions, or params.
 The resulting expression will keep track of referenced columns.
-Expressions that contain a [Param](/core/#params) will listen for updates and act like Params of their own, including support for `value` event listeners.
+Expressions that contain a [`Param`](/core/#params) will listen for updates and act like params of their own, including support for `value` event listeners:
 
 ``` js
 import { Param } from "@uwdata/core";
 import { column, sql } from "@uwdata/mosaic-sql";
 
-const col = column('foo');
+const col = column("foo");
 const param = Param.value(Math.PI);
 const expr = sql`${col} * ${param}`;
 
-expr.addEventListener('value', v => console.log('Update!', v));
+expr.addEventListener("value", v => console.log("Update!", v));
 param.update(Math.E); // --> expr will invoke value listeners
 ```
 
@@ -64,8 +66,8 @@ This annotation can guide query construction and analysis.
 
 ``` js
 import { Query, agg, column } from "@uwdata/mosaic-sql";
-const foo = column('foo');
-const bar = column('bar');
+const foo = column("foo");
+const bar = column("bar");
 Query
   .from("myTable")
   .select({ hi: agg`GREATEST(MAX(${foo}), MAX(${bar}))` });
@@ -93,7 +95,7 @@ Query
 
 ## Aggregate Functions
 
-Functions for [DuckDB-supported aggregates](https://duckdb.org/docs/sql/aggregates.html). Examples include `min`, `max`, `count`, `sum`, `avg`, `stddev`, `median`, `quantile`, `argmax`, and `argmin`.
+DuckDB-supported [aggregate functions](https://duckdb.org/docs/sql/aggregates.html), including `min`, `max`, `count`, `sum`, `avg`, `stddev`, `median`, `quantile`, `argmax`, and `argmin`.
 
 ``` js
 import { Query, max, min, quantile } from "@uwdata/mosaic-sql";
@@ -110,14 +112,13 @@ Query.select({
 
 ## Window Functions
 
-General purpose [window functions](https://duckdb.org/docs/sql/window_functions):
-`row_number`, `rank`, `cume_dist`, `lag`, `lead`, _etc_.
-Aggregate functions become window operations (moving averages, etc.) if you specify the parameters `orderby`, `partitionby`, or the window frame `rows` or `range`.
+General purpose [window functions](https://duckdb.org/docs/sql/window_functions) include `row_number`, `rank`, `cume_dist`, `lag`, `lead`, _etc_.
+Aggregate functions become window operations (such as cumulative sums or moving averages) if you define the parameters `orderby`, `partitionby`, or the window frame specifiers `rows` or `range`.
 
 ``` js
 import { Query, row_number, avg } from "@uwdata/mosaic-sql";
 
-// 7-day moving average (previous and next 3 days),
+// 7-day moving average (previous and next 3 days)
 // and corresponding ordered row numbers
 Query.select({
   avg: avg("foo").orderby("date").rows([3, 3]),
@@ -132,10 +133,17 @@ Data loading helpers generate query strings for loading data from external CSV, 
 ``` js
 import { loadCSV, loadParquet } from "@uwdata/mosaic-sql";
 
-// loads file.csv into the table "table1" with default options
+// Loads file.csv into the table "table1" with default options:
+// CREATE TEMP TABLE IF NOT EXISTS table1 AS
+//   SELECT *
+//   FROM read_csv('file.csv', auto_detect=true, sample_size=-1)
 const q1 = loadCSV("table1", "file.csv");
 
-// load named columns from a parquet file, filtered upon load
+// Load named columns from a parquet file, filtered upon load:
+// CREATE TEMP TABLE IF NOT EXISTS table2 AS
+//   SELECT foo, bar, value
+//   FROM read_parquet('file.parquet')
+//   WHERE value > 1
 const q2 = loadParquet("table2", "file.parquet", {
   select: [ "foo", "bar", "value" ],
   where: "value > 1"
@@ -146,9 +154,14 @@ Meanwhile, the `loadObjects` method takes an array of JavaScript objects and gen
 
 ``` js
 import { loadObjects } from "@uwdata/mosaic-sql";
+
+// CREATE TEMP TABLE IF NOT EXISTS table3 AS
+//   (SELECT 1 AS "foo", 2 AS "bar") UNION ALL
+//   (SELECT 3 AS "foo", 4 AS "bar") UNION ALL ...
 const q = loadObjects("table3", [
- { foo: 1, bar: 2 },
- { foo: 3, bar: 4 },
- ...
+  { foo: 1, bar: 2 },
+  { foo: 3, bar: 4 },
+  ...
 ]);
 ```
+

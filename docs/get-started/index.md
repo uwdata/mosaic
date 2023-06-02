@@ -1,15 +1,20 @@
 # Get Started
 
+Mosaic can be imported for use in JavaScript projects, leveraged within Jupyter notebooks, or deployed alongside a standalone DuckDB server.
+
 ## Use in JavaScript
 
-Include the desired Mosaic libraries in your project dependencies and import them as part of your application. To access the central coordinator, use the `coordinator()` method, which is exported by [Mosaic core](/core/) and also re-exported by [Mosaic vgplot](/vgplot/).
+Include the desired Mosaic libraries in your project dependencies and import them as part of your application.
+For a working standalone example, take a look at the [Cross-Filter Flights 10M notebook](https://observablehq.com/@uwdata/mosaic-cross-filter-flights-10m) on Observable.
 
-The snippet below imports vgplot, configures the coordinator to use DuckDB-WASM as the backing database, and creates a plot with a single `areaY` mark to produce a time-series chart for the database table `"stocks"`.
+The snippet below imports vgplot, configures the coordinator to use DuckDB-WASM, and creates a plot with a single `areaY` mark to produce a time-series chart for the database table `"stocks"`.
+To access the central coordinator, use the `coordinator()` method, which is exported by [Mosaic core](/core/) and also re-exported by [Mosaic vgplot](/vgplot/).
 
 ``` js
 import * as vg from "@uwdata/vgplot";
 
 // configure the coordinator to use DuckDB-WASM
+// creates a new database instance running in-browser
 const wasm = await vg.wasmConnector();
 vg.coordinator().databaseConnector(wasm);
 
@@ -18,17 +23,16 @@ vg.coordinator().databaseConnector(wasm);
 vg.coordinator().exec(vg.loadCSV("stocks", "stock-data.csv"));
 
 // create an area chart, returned as an HTML element
-// you might subsequently add this to your webpage
+// you can subsequently add this to your webpage
 const chart = vg.plot(
   vg.areaY(vg.from("stocks"), { x: "Date", y: "Price" })
 );
 ```
 
-For a working standalone example, take a look at the [Cross-Filter Flights 10M notebook](https://observablehq.com/@uwdata/mosaic-cross-filter-flights-10m) on Observable.
-
 ## Use in Python + Jupyter
 
 To create scalable visualizations within Jupyter notebooks, you can use [Mosaic vgplot](/vgplot/) specifications in either YAML or JSON format. See the [Jupyter widget](/jupyter/) docs for more.
+In the future we hope to also support a Python API, not unlike [Vega Altair](https://altair-viz.github.io/).
 
 ## Run and develop locally
 

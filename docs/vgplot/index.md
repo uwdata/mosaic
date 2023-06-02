@@ -18,13 +18,16 @@ Like Vega-Lite, vgplot supports rich interactions and declarative specification 
 However, because vgplot is based on Mosaic, it easily interoperates with other Mosaic clients, such as [Mosaic Inputs](/inputs/).
 Internally, vgplot uses Observable Plot to render SVG output.
 
+This page provides an overview of vgplot.
+Skip to the [examples](/examples/) to deep-dive right away.
+
 ## Plots
 
 A `plot` produces a single visualization as a Web element.
 A `plot` is defined as a list of directives defining plot [attributes](#attributes), [marks](#marks), [interactors](#interactors), or [legends](#legends).
 
 Similar to other grammars, a `plot` consists of _marks_&mdash;graphical primitives such as bars, areas, and lines&mdash;which serve as chart layers.
-We use the semantics of Observable Plot, such that each `plot` has a dedicated set of encodings with named _scale_ mappings such as `x`, `y`, `color`, `opacity`, etc.
+We use the semantics of Observable Plot, such that each `plot` has a dedicated set of encoding _channels_ with named _scale_ mappings such as `x`, `y`, `color`, `opacity`, etc.
 Plots support faceting of the `x` and `y` dimensions, producing associated `fx` and `fy` scales.
 Plots are rendered to SVG output by marshalling a specification and passing it to Observable Plot.
 
@@ -58,7 +61,7 @@ The stock chart above consists of three directives:
 
 ## Attributes
 
-_Attributes_ are plot-level settings such as `width`, `height`, margins, and scale options (e.g., `xDomain`, `colorRange`, `yTickFormat`). Attributes may be [Param](/core/#params)-valued, in which case a plot updates upon Param changes.
+_Attributes_ are plot-level settings such as `width`, `height`, margins, and scale options (e.g., `xDomain`, `colorRange`, `yTickFormat`). Attributes may be [`Param`](/core/#params)-valued, in which case a plot updates upon param changes.
 
 vgplot includes a special `Fixed` scale domain setting (e.g., `xDomain(Fixed)`), which instructs a plot to first calculate a scale domain in a data-driven manner, but then keep that domain fixed across subsequent updates.
 Fixed domains enable stable configurations without requiring a hard-wired domain to be known in advance, preventing disorienting scale domain "jumps" that hamper comparison across filter interactions.
@@ -69,11 +72,11 @@ _Marks_ are graphical primitives, often with accompanying data transforms, that 
 In vgplot, each mark is a Mosaic client that produces queries for needed data.
 Marks accept a data source definition and a set of supported options, including encoding *channels* (such as `x`, `y`, `fill`, and `stroke`) that can encode data *fields*.
 
-A data field may be a column reference or query expression, including dynamic _Param_ values.
-Common expressions include aggregates (`count`, `sum`, `avg`, `median`, etc.), window functions (e.g., [moving averages](/examples/moving-average)), date functions, and a `bin` transform.
+A data field may be a column reference or query expression, including dynamic param values.
+Common expressions include aggregates (`count`, `sum`, `avg`, `median`, _etc._), window functions (such as [moving averages](/examples/moving-average)), date functions, and a `bin` transform.
 Most field expressions&mdash;including aggregate, window, and date functions&mdash;are specified using [Mosaic SQL](/sql/) builder methods.
 
-Marks support dual modes of operation: if an explicit array of data values is provided instead of a backing table reference, vgplot will visualize that data without issuing any queries to the database. This functionality is particularly useful for adding manual annotations, such as custom rules or text labels.
+Marks support dual modes of operation: if an explicit array of data values is provided instead of a backing `from(tableName)` reference, vgplot will visualize that data without issuing any queries to the database. This functionality is particularly useful for adding manual annotations, such as custom rules or text labels.
 
 ::: warning
 Interactive filtering is not supported if you bypass the database and pass data directly to a mark.
@@ -82,7 +85,7 @@ Interactive filtering is not supported if you bypass the database and pass data 
 ### Basic Marks
 
 Basic marks, such as `dot`, `bar`, `rect`, `cell`, `text`, `tick`, and `rule`, mirror their namesakes in [Observable Plot](https://observablehq.com/plot/).
-Variants such as `barX` and `rectY` indicate spatial orientation and explicit data type assumptions. For example, `barY` indicates vertical bars&mdash;continuous `y` over an ordinal `x` domain&mdash;whereas `rectY` indicates a continuous `x` domain.
+Variants such as `barX` and `rectY` indicate spatial orientation and data type assumptions. `barY` indicates vertical bars&mdash;continuous `y` over an ordinal `x` domain&mdash;whereas `rectY` indicates a continuous `x` domain.
 
 Basic marks follow a straightforward query construction process:
 
@@ -104,7 +107,7 @@ The `densityY` mark performs 1D kernel density estimation (KDE).
 The `densityY` mark defaults to areas, but supports a `type` option to instead use lines, points, or other basic marks.
 The generated query performs _linear binning_, an alternative to standard binning that proportionally distributes the weight of a point between adjacent bins to provide greater accuracy for density estimation. The query uses subqueries for the "left" and "right" bins, then aggregates the results. The query result is a 1D grid of binned values which are then smoothed. As smoothing is performed in the browser, interactive bandwidth updates are processed immediately.
 
-The `density2D`, `contour`, and `raster` marks compute densities over a 2D domain using either linear (default) or standard binning. Smoothing again is performed in browser; setting the `bandwidth` option to zero disables smoothing. The `contour` mark then performs contour generation, whereas the `raster` mark generates a colored bitmap. Dynamic changes of bandwidth, contour thresholds, and color scales are handled immediately in browser.
+The `density`, `contour`, and `raster` marks compute densities over a 2D domain using either linear (default) or standard binning. Smoothing again is performed in browser; setting the `bandwidth` option to zero disables smoothing. The `contour` mark then performs contour generation, whereas the `raster` mark generates a colored bitmap. Dynamic changes of bandwidth, contour thresholds, and color scales are handled immediately in browser.
 
 The `hexbin` mark pushes hexagonal binning and aggregation to the database. Color and size channels may be mapped to `count` or other aggregates. Hexagon plotting symbols can be replaced by other basic marks (such as `text`) via the `type` option.
 
@@ -113,7 +116,7 @@ Line density estimation is pushed to the database. To ensure that steep lines ar
 
 ## Interactors
 
-_Interactors_ imbue plots with interactive behavior. Most interactors listen to input events from rendered plot SVG elements to update bound [Selections](/core/#selections). Interactors take facets into account to properly handle input events across subplots.
+_Interactors_ imbue plots with interactive behavior. Most interactors listen to input events from rendered plot SVG elements to update bound [_selections_](/core/#selections). Interactors take facets into account to properly handle input events across subplots.
 
 The `toggle` interactor selects individual points (e.g., by click or shift-click) and generates a selection clause over specified fields of those points. Directives such as `toggleColor`, `toggleX`, and `toggleY` simplify specification of which channel fields are included in the resulting predicates.
 
