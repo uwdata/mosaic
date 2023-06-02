@@ -20,7 +20,8 @@ vconcat:
   - mark: densityY
     data: { from: flights, filterBy: $brush }
     x: delay
-    fill: '#ccc'
+    fill: '#888'
+    fillOpacity: 0.5
     bandwidth: $bandwidth
   - select: intervalX
     as: $brush
@@ -33,7 +34,8 @@ vconcat:
   - mark: densityY
     data: { from: flights, filterBy: $brush }
     x: distance
-    fill: '#ccc'
+    fill: '#888'
+    fillOpacity: 0.5
     bandwidth: $bandwidth
   - select: intervalX
     as: $brush

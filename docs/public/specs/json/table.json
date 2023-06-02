@@ -10,5 +10,5 @@
   },
   "input": "table",
   "from": "flights",
-  "height": 500
+  "height": 300
 }

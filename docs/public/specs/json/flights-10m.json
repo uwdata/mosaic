@@ -48,7 +48,7 @@
             "filterBy": "$brush"
           },
           "x": {
-            "bin": "distance"
+            "bin": "time"
           },
           "y": {
             "count": null
@@ -75,7 +75,7 @@
             "filterBy": "$brush"
           },
           "x": {
-            "bin": "time"
+            "bin": "distance"
           },
           "y": {
             "count": null

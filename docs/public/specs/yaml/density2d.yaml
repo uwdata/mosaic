@@ -6,8 +6,8 @@ meta:
 data:
   penguins: { file: data/penguins.csv }
 params:
-  bandwidth: 40
-  bins: 10
+  bandwidth: 20
+  bins: 20
 vconcat:
 - hconcat:
   - input: slider
@@ -26,7 +26,8 @@ vconcat:
     x: bill_length
     y: bill_depth
     r: density
-    fill: "#ddd"
+    fill: "#888"
+    fillOpacity: 0.5
     binsX: $bins
     binsY: $bins
     bandwidth: $bandwidth
@@ -34,7 +35,7 @@ vconcat:
     data: { from: penguins }
     x: bill_length
     y: bill_depth
-    fill: black
+    fill: currentColor
     r: 1
   rRange: [0, 16]
   xAxis: bottom

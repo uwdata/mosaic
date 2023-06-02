@@ -12,7 +12,7 @@ export default vg.vconcat(
   vg.plot(
     vg.densityY(
       vg.from("flights", { filterBy: $brush }),
-      { x: "delay", fill: "#ccc", bandwidth: $bandwidth }
+      { x: "delay", fill: "#888", fillOpacity: 0.5, bandwidth: $bandwidth }
     ),
     vg.intervalX({ as: $brush }),
     vg.yAxis(null),
@@ -24,7 +24,7 @@ export default vg.vconcat(
   vg.plot(
     vg.densityY(
       vg.from("flights", { filterBy: $brush }),
-      { x: "distance", fill: "#ccc", bandwidth: $bandwidth }
+      { x: "distance", fill: "#888", fillOpacity: 0.5, bandwidth: $bandwidth }
     ),
     vg.intervalX({ as: $brush }),
     vg.yAxis(null),

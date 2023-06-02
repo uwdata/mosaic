@@ -4,8 +4,8 @@ await vg.coordinator().exec(
   vg.loadCSV("penguins", "data/penguins.csv")
 );
 
-const $bandwidth = vg.Param.value(40);
-const $bins = vg.Param.value(10);
+const $bandwidth = vg.Param.value(20);
+const $bins = vg.Param.value(20);
 
 export default vg.vconcat(
   vg.hconcat(
@@ -15,11 +15,11 @@ export default vg.vconcat(
   vg.plot(
     vg.density(
       vg.from("penguins"),
-      { x: "bill_length", y: "bill_depth", r: "density", fill: "#ddd", binsX: $bins, binsY: $bins, bandwidth: $bandwidth }
+      { x: "bill_length", y: "bill_depth", r: "density", fill: "#888", fillOpacity: 0.5, binsX: $bins, binsY: $bins, bandwidth: $bandwidth }
     ),
     vg.dot(
       vg.from("penguins"),
-      { x: "bill_length", y: "bill_depth", fill: "black", r: 1 }
+      { x: "bill_length", y: "bill_depth", fill: "currentColor", r: 1 }
     ),
     vg.rRange([0,16]),
     vg.xAxis("bottom"),

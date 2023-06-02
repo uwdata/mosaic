@@ -4,7 +4,7 @@ await vg.coordinator().exec(
   vg.loadCSV("stocks", "data/stocks.csv")
 );
 await vg.coordinator().exec(
-  CREATE TEMP TABLE IF NOT EXISTS labels AS SELECT MAX(Date) as Date, ARGMAX(Close, Date) AS Close, Symbol FROM stocks GROUP BY Symbol
+  `CREATE TEMP TABLE IF NOT EXISTS labels AS SELECT MAX(Date) as Date, ARGMAX(Close, Date) AS Close, Symbol FROM stocks GROUP BY Symbol`
 );
 
 const $point = vg.Param.value(new Date("2013-05-13"));

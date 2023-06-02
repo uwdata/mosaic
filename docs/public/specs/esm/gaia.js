@@ -1,7 +1,7 @@
 import * as vg from "@uwdata/vgplot";
 
 await vg.coordinator().exec(
-  CREATE TEMP TABLE IF NOT EXISTS gaia AS -- compute u and v with natural earth projection
+  `CREATE TEMP TABLE IF NOT EXISTS gaia AS -- compute u and v with natural earth projection
 WITH prep AS (
   SELECT
     radians((-l + 540) % 360 - 180) AS lambda,
@@ -18,7 +18,7 @@ SELECT
   * EXCLUDE('t', 't2', 't6')
 FROM prep
 WHERE parallax BETWEEN -5 AND 20
-
+`
 );
 
 const $brush = vg.Selection.crossfilter();

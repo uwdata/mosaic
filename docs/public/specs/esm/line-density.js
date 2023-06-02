@@ -1,7 +1,7 @@
 import * as vg from "@uwdata/vgplot";
 
 await vg.coordinator().exec(
-  CREATE TEMP TABLE IF NOT EXISTS stocks_after_2006 AS SELECT Symbol, Close, Date FROM read_csv_auto('https://uwdata.github.io/mosaic-datasets/data/stocks_after_2006.csv', SAMPLE_SIZE=-1) WHERE CLOSE < 100
+  `CREATE TEMP TABLE IF NOT EXISTS stocks_after_2006 AS SELECT Symbol, Close, Date FROM read_csv_auto('https://uwdata.github.io/mosaic-datasets/data/stocks_after_2006.csv', SAMPLE_SIZE=-1) WHERE CLOSE < 100`
 );
 
 const $brush = vg.Selection.intersect();

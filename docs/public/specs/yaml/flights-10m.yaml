@@ -29,7 +29,7 @@ vconcat:
 - plot:
   - mark: rectY
     data: { from: flights10m, filterBy: $brush }
-    x: { bin: distance }
+    x: { bin: time }
     y: { count: }
     fill: steelblue
     inset: 0.5
@@ -42,7 +42,7 @@ vconcat:
 - plot:
   - mark: rectY
     data: { from: flights10m, filterBy: $brush }
-    x: { bin: time }
+    x: { bin: distance }
     y: { count: }
     fill: steelblue
     inset: 0.5
