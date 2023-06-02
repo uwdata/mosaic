@@ -62,7 +62,8 @@ export default defineConfig({
             { text: 'Jupyter Widget', link: '/jupyter/' }
           ]
         },
-        { text: 'Examples', link: '/examples/' }
+        { text: 'Examples', link: '/examples/' },
+        { text: 'API Reference', link: '/api/' }
       ],
 
       '/examples/': [
@@ -122,6 +123,92 @@ export default defineConfig({
                 { text: 'Line Density', link: '/examples/line-density' }
               ]
             }
+          ]
+        }
+      ],
+
+      '/api/': [
+        {
+          text: 'API Reference',
+          items: [
+            {
+              text: 'Mosaic Core',
+              collapsed: true,
+              items: [
+                { text: 'Coordinator', link: '/api/core/coordinator' },
+                { text: 'Client', link: '/api/core/client' },
+                { text: 'Param', link: '/api/core/param' },
+                { text: 'Selection', link: '/api/core/selection' },
+                { text: 'Connectors', link: '/api/core/connectors' }
+              ]
+            },
+            {
+              text: 'Mosaic DuckDB',
+              collapsed: true,
+              items: [
+                { text: 'DuckDB', link: '/api/duckdb/duckdb' },
+                { text: 'dataServer', link: '/api/duckdb/dataServer' }
+              ]
+            },
+            {
+              text: 'Mosaic SQL',
+              collapsed: true,
+              items: [
+                { text: 'Query', link: '/api/sql/query' },
+                { text: 'Expressions', link: '/api/sql/expressions' },
+                { text: 'Operators', link: '/api/sql/operators' },
+                { text: 'Date Functions', link: '/api/sql/date-functions' },
+                { text: 'Aggregate Functions', link: '/api/sql/aggregate-functions' },
+                { text: 'Window Functions', link: '/api/sql/window-functions' },
+                { text: 'Data Loading', link: '/api/sql/data-loading' }
+              ]
+            },
+            {
+              text: 'Mosaic Inputs',
+              collapsed: true,
+              items: [
+                { text: 'Menu', link: '/api/inputs/menu' },
+                { text: 'Search', link: '/api/inputs/search' },
+                { text: 'Slider', link: '/api/inputs/slider' },
+                { text: 'Table', link: '/api/inputs/table' }
+              ]
+            },
+            {
+              text: 'Mosaic vgplot',
+              collapsed: true,
+              items: [
+                { text: 'Plot', link: '/api/vgplot/plot' },
+                { text: 'Attributes', link: '/api/vgplot/attributes' },
+                {
+                  text: 'Marks',
+                  collapsed: true,
+                  items: [
+                    { text: 'Area', link: '/api/vgplot/marks/area' },
+                    { text: 'Arrow', link: '/api/vgplot/marks/arrow' },
+                    { text: 'Axis', link: '/api/vgplot/marks/axis' },
+                    { text: 'Bar', link: '/api/vgplot/marks/bar' },
+                    { text: 'Cell', link: '/api/vgplot/marks/cell' },
+                    { text: 'Contour', link: '/api/vgplot/marks/contour' },
+                    { text: 'Density (1D)', link: '/api/vgplot/marks/density-1d' },
+                    { text: 'Density (2D)', link: '/api/vgplot/marks/density-2d' },
+                    { text: 'Dot', link: '/api/vgplot/marks/dot' },
+                    { text: 'Dense Line', link: '/api/vgplot/marks/dense-line' },
+                    { text: 'Grid', link: '/api/vgplot/marks/grid' },
+                    { text: 'Hexbin', link: '/api/vgplot/marks/hexbin' },
+                    { text: 'Hexgrid', link: '/api/vgplot/marks/hexgrid' },
+                    { text: 'Image', link: '/api/vgplot/marks/image' },
+                    { text: 'Line', link: '/api/vgplot/marks/line' },
+                    { text: 'Raster', link: '/api/vgplot/marks/raster' },
+                    { text: 'Regression', link: '/api/vgplot/marks/regression' },
+                    { text: 'Tick', link: '/api/vgplot/marks/tick' },
+                    { text: 'Vector', link: '/api/vgplot/marks/vector' }
+                  ]
+                },
+                { text: 'Interactors', link: '/api/vgplot/interactors' },
+                { text: 'Legends', link: '/api/vgplot/legends' },
+                { text: 'Layout', link: '/api/vgplot/layout' }
+              ]
+            },
           ]
         }
       ]
