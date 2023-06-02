@@ -3,13 +3,27 @@ import { withBase } from 'vitepress'
 import yaml from 'yaml';
 import { coordinator, parseSpec, wasmConnector } from '@uwdata/vgplot';
 
-// initialize coordinator
-coordinator().databaseConnector(await wasmConnector());
-coordinator().logger(null);
+let ready;
+
+function init() {
+  if (!ready) {
+    ready = new Promise(async (resolve, reject) => {
+      try {
+        coordinator().logger(null);
+        coordinator().databaseConnector(await wasmConnector());
+        resolve(true);
+      } catch (err) {
+        reject(err);
+      }
+    });
+  }
+  return ready;
+}
 
 export default {
   async mounted() {
     try {
+      await init();
       const spec = yaml.parse(await fetch(withBase(this.spec)).then(r => r.text()));
       const view = await parseSpec(spec, { baseURL: location.origin + import.meta.env.BASE_URL });
       this.$refs.view.replaceChildren(view);
