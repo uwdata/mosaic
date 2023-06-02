@@ -7,14 +7,9 @@ let ready;
 
 function init() {
   if (!ready) {
-    ready = new Promise(async (resolve, reject) => {
-      try {
-        coordinator().logger(null);
-        coordinator().databaseConnector(await wasmConnector());
-        resolve(true);
-      } catch (err) {
-        reject(err);
-      }
+    ready = wasmConnector().then(wasm => {
+      coordinator().logger(null);
+      coordinator().databaseConnector(wasm);
     });
   }
   return ready;
