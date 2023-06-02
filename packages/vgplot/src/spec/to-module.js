@@ -1,4 +1,5 @@
-import { parseData, parseTableData } from './parse-data.js';
+import { create } from '@uwdata/mosaic-sql';
+import { parseData } from './parse-data.js';
 import { ParseContext } from './parse-spec.js';
 import {
   error, paramRef, toArray,
@@ -239,6 +240,14 @@ function dataOptions(options) {
     opt.push(`${key}: ${JSON.stringify(options[key])}`);
   }
   return opt.length ? `, { ${opt.join(', ')} }` : '';
+}
+
+function parseTableData(name, spec) {
+  // eslint-disable-next-line no-unused-vars
+  const { query, type, ...options } = spec;
+  if (query) {
+    return `\`${create(name, query, options)}\``;
+  }
 }
 
 function parseParquetData(name, spec) {
