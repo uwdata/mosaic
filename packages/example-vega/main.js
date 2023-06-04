@@ -129,7 +129,7 @@ class FilteredVegaClient extends MosaicClient {
   }
 
   queryResult(data) {
-    this.view.data(this.dataset, Array.from(data)).resize().run();
+    this.view.data(this.dataset, Array.from(data)).run();
     return this;
   }
 }
