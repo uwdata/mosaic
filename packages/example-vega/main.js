@@ -1,20 +1,18 @@
-import embed from "vega-embed";
 import {
   MosaicClient,
-  wasmConnector,
-  coordinator,
   Selection,
+  coordinator,
+  wasmConnector,
 } from "@uwdata/mosaic-core";
 import {
-  loadCSV,
   Query,
+  dateMonth,
   isBetween,
   literal,
-  dateMonth,
-  mean,
-  relation,
-  column,
+  loadCSV,
+  mean
 } from "@uwdata/mosaic-sql";
+import embed from "vega-embed";
 
 const spec = {
   $schema: "https://vega.github.io/schema/vega-lite/v5.json",
@@ -102,11 +100,11 @@ class SelectionVegaClient extends MosaicClient {
   }
 
   query(filter = []) {
-    return Query.from(relation(this.table))
-      .select({
-        date: dateMonth("date"),
-        precipitation: mean("precipitation"),
-      })
+    return Query.select({
+      date: dateMonth("date"),
+      precipitation: mean("precipitation"),
+    })
+      .from(this.table)
       .groupby(dateMonth("date"))
       .where(filter);
   }
@@ -127,8 +125,8 @@ class FilteredVegaClient extends MosaicClient {
   }
 
   query(filter = []) {
-    return Query.from(relation(this.table))
-      .select({ precipitation: mean("precipitation") })
+    return Query.select({ precipitation: mean("precipitation") })
+      .from(this.table)
       .where(filter);
   }
 
