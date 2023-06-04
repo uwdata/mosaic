@@ -146,8 +146,8 @@ export default defineConfig({
               text: 'Mosaic DuckDB',
               collapsed: true,
               items: [
-                { text: 'DuckDB', link: '/api/duckdb/duckdb' },
-                { text: 'dataServer', link: '/api/duckdb/dataServer' }
+                { text: 'DuckDB API', link: '/api/duckdb/duckdb' },
+                { text: 'Data Server', link: '/api/duckdb/dataServer' }
               ]
             },
             {
