@@ -6,6 +6,12 @@ import { voidLogger } from './util/void-logger.js';
 
 let _instance;
 
+/**
+ * Set or retrieve the coordinator instance.
+ *
+ * @param {Coordinator} coordinator the coordinator instance to set
+ * @returns {Coordinator} the coordinator instance
+ */
 export function coordinator(instance) {
   if (instance) {
     _instance = instance;
@@ -105,6 +111,11 @@ export class Coordinator {
       : client.update();
   }
 
+  /**
+   * Connect a client to the coordinator.
+   *
+   * @param {import('./MosaicClient.js').MosaicClient} client the client to disconnect
+   */
   async connect(client) {
     const { catalog, clients, filterGroups, indexes } = this;
 
@@ -133,6 +144,11 @@ export class Coordinator {
     client.requestQuery();
   }
 
+  /**
+   * Disconnect a client from the coordinator.
+   *
+   * @param {import('./MosaicClient.js').MosaicClient} client the client to disconnect
+   */
   disconnect(client) {
     const { clients, filterGroups } = this;
     if (!clients.has(client)) return;
