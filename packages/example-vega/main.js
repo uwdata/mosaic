@@ -13,6 +13,7 @@ import {
   dateMonth,
   mean,
   relation,
+  column,
 } from "@uwdata/mosaic-sql";
 
 const spec = {
@@ -74,35 +75,39 @@ class SelectionVegaClient extends MosaicClient {
     this.selection = selection;
 
     if (this.selection) {
-      this.view.addSignalListener("brush", (name, value) => {
-        const dates = value.month_date;
+      this.view.addSignalListener("brush", (_name, signal) => {
+        const dates = signal.month_date;
+        const value = dates
+          ? isBetween(
+              dateMonth(column("date")),
+              [
+                dateMonth(literal(dates.at(0))),
+                dateMonth(literal(dates.at(-1))),
+              ],
+              false
+            )
+          : null;
 
-        if (!dates) {
-          selection.update({
-            source: this,
-            schema: { type: "interval" },
-            predicate: null,
-          });
-          return;
-        }
-
-        selection.update({
+        const clause = {
           source: this,
           schema: { type: "interval" },
-          predicate: isBetween(
-            dateMonth("date"),
-            [literal(dateMonth(dates.at(0))), literal(dateMonth(dates.at(-1)))],
-            false
-          ),
-        });
+          value,
+          predicate: value,
+        };
+
+        selection.activate(clause);
+        selection.update(clause);
       });
     }
   }
 
   query(filter = []) {
     return Query.from(relation(this.table))
-      .select({ date: dateMonth("date"), precipitation: mean("precipitation") })
-      .groupby(dateMonth("date"))
+      .select({
+        date: dateMonth(column("date")),
+        precipitation: mean(column("precipitation")),
+      })
+      .groupby(dateMonth(column("date")))
       .where(filter);
   }
 
@@ -123,7 +128,7 @@ class FilteredVegaClient extends MosaicClient {
 
   query(filter = []) {
     return Query.from(relation(this.table))
-      .select({ precipitation: mean("precipitation") })
+      .select({ precipitation: mean(column("precipitation")) })
       .where(filter);
   }
 
@@ -133,7 +138,7 @@ class FilteredVegaClient extends MosaicClient {
   }
 }
 
-const wasm = await wasmConnector();
+const wasm = await wasmConnector({ log: true });
 coordinator().databaseConnector(wasm);
 
 await coordinator().exec(
