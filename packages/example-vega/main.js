@@ -51,7 +51,6 @@ const spec = {
       mark: "rule",
       encoding: {
         y: {
-          aggregate: "mean",
           field: "precipitation",
           type: "quantitative",
         },
