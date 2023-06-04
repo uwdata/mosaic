@@ -10,7 +10,7 @@ import {
   isBetween,
   literal,
   loadCSV,
-  mean
+  mean,
 } from "@uwdata/mosaic-sql";
 import embed from "vega-embed";
 
@@ -59,8 +59,6 @@ const spec = {
     },
   ],
 };
-
-const result = await embed("#chart", spec, { actions: false });
 
 class SelectionVegaClient extends MosaicClient {
   constructor(opts) {
@@ -136,27 +134,33 @@ class FilteredVegaClient extends MosaicClient {
   }
 }
 
-const wasm = await wasmConnector({ log: true });
-coordinator().databaseConnector(wasm);
+async function init() {
+  const result = await embed("#chart", spec, { actions: false });
 
-await coordinator().exec(
-  loadCSV("weather", `${window.location}seattle-weather.csv`)
-);
+  const wasm = await wasmConnector({ log: true });
+  coordinator().databaseConnector(wasm);
 
-const selection = Selection.single();
+  await coordinator().exec(
+    loadCSV("weather", `${window.location}seattle-weather.csv`)
+  );
 
-const client1 = new SelectionVegaClient({
-  view: result.view,
-  table: "weather",
-  dataset: "table",
-  selection: selection,
-});
-coordinator().connect(client1);
+  const selection = Selection.single();
 
-const client2 = new FilteredVegaClient({
-  view: result.view,
-  table: "weather",
-  dataset: "filteredTable",
-  filter: selection,
-});
-coordinator().connect(client2);
+  const client1 = new SelectionVegaClient({
+    view: result.view,
+    table: "weather",
+    dataset: "table",
+    selection: selection,
+  });
+  coordinator().connect(client1);
+
+  const client2 = new FilteredVegaClient({
+    view: result.view,
+    table: "weather",
+    dataset: "filteredTable",
+    filter: selection,
+  });
+  coordinator().connect(client2);
+}
+
+init();
