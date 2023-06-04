@@ -12,7 +12,7 @@ export class Search extends MosaicClient {
     from,
     column,
     label,
-    type,
+    type = 'contains',
     as
   } = {}) {
     super(filterBy);
