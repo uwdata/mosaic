@@ -79,7 +79,7 @@ class SelectionVegaClient extends MosaicClient {
         const dates = signal.month_date;
         const value = dates
           ? isBetween(
-              dateMonth(column("date")),
+              dateMonth("date"),
               [
                 dateMonth(literal(dates.at(0))),
                 dateMonth(literal(dates.at(-1))),
@@ -104,10 +104,10 @@ class SelectionVegaClient extends MosaicClient {
   query(filter = []) {
     return Query.from(relation(this.table))
       .select({
-        date: dateMonth(column("date")),
-        precipitation: mean(column("precipitation")),
+        date: dateMonth("date"),
+        precipitation: mean("precipitation"),
       })
-      .groupby(dateMonth(column("date")))
+      .groupby(dateMonth("date"))
       .where(filter);
   }
 
@@ -128,7 +128,7 @@ class FilteredVegaClient extends MosaicClient {
 
   query(filter = []) {
     return Query.from(relation(this.table))
-      .select({ precipitation: mean(column("precipitation")) })
+      .select({ precipitation: mean("precipitation") })
       .where(filter);
   }
 
