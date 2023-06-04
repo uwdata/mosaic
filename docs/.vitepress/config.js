@@ -154,7 +154,7 @@ export default defineConfig({
               text: 'Mosaic SQL',
               collapsed: true,
               items: [
-                { text: 'Query', link: '/api/sql/query' },
+                { text: 'Queries', link: '/api/sql/queries' },
                 { text: 'Expressions', link: '/api/sql/expressions' },
                 { text: 'Operators', link: '/api/sql/operators' },
                 { text: 'Date Functions', link: '/api/sql/date-functions' },

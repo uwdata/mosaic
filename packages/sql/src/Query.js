@@ -156,7 +156,7 @@ export class Query {
       if (typeof value === 'number') {
         spec = value > 0 && value < 1
             ? { perc: 100 * value, method }
-            : { rows: Math.round(value, method) };
+            : { rows: Math.round(value), method };
       }
       query.sample = spec;
       return this;
