@@ -147,7 +147,7 @@ export default defineConfig({
               collapsed: true,
               items: [
                 { text: 'DuckDB API', link: '/api/duckdb/duckdb' },
-                { text: 'Data Server', link: '/api/duckdb/dataServer' }
+                { text: 'Data Server', link: '/api/duckdb/data-server' }
               ]
             },
             {
