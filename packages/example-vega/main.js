@@ -84,9 +84,14 @@ class SelectionVegaClient extends MosaicClient {
             )
           : null;
 
+        const scale = this.view.scale("x");
+
         const clause = {
           source: this,
-          schema: { type: "interval" },
+          schema: {
+            type: "interval",
+            scale: { type: "linear", domain: scale.domain(), range: scale.range() },
+          },
           value,
           predicate: value,
         };
