@@ -40,10 +40,10 @@ export class MosaicClient {
   }
 
   /**
-   * Called by the coordinator to set the field statistics for this client.
+   * Called by the coordinator to set the field info for this client.
    * @returns {this}
    */
-  fieldStats() {
+  fieldInfo() {
     return this;
   }
 

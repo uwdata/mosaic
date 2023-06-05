@@ -1,13 +1,19 @@
 # Connectors
 
-Database connectors that a [`coordinator`](./coordinator) uses to issue requests to a backing data source.
+Database connectors issue query requests to a backing data source.
+
+A connector instance should expose a `query(query)` method that returns a Promise.
+The _query_ argument is an object that may include the following properties:
+
+- _sql_: The SQL query to evaluate.
+- _type_: The query format type, such as `"exec"` (no return value), `"arrow"`, and `"json"`.
+- Any additional connector-specific options.
 
 ## socketConnector
 
 `socketConnector(uri)`
 
 Create a new Web Socket connector to a DuckDB [data server](../duckdb/data-server) at the given _uri_ (default `"http://localhost:3000/"`).
-
 
 ## restConnector
 
