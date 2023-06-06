@@ -14,6 +14,7 @@ import {
 } from "@uwdata/mosaic-sql";
 import embed from "vega-embed";
 
+/** @type {import('vega-lite').TopLevelSpec} */
 const spec = {
   $schema: "https://vega.github.io/schema/vega-lite/v5.json",
   layer: [
@@ -28,7 +29,7 @@ const spec = {
       mark: "bar",
       encoding: {
         x: {
-          timeUnit: "month",
+          timeUnit: "utcmonth",
           field: "date",
           type: "ordinal",
         },
@@ -72,7 +73,7 @@ class SelectionVegaClient extends MosaicClient {
 
     if (this.selection) {
       this.view.addSignalListener("brush", (_name, signal) => {
-        const dates = signal.month_date;
+        const dates = signal.utcmonth_date;
         const value = dates
           ? isBetween(
               dateMonth("date"),
@@ -144,7 +145,7 @@ class FilteredVegaClient extends MosaicClient {
 async function init() {
   const result = await embed("#chart", spec, { actions: false });
 
-  const wasm = await wasmConnector({ log: true });
+  const wasm = await wasmConnector({ log: false });
   coordinator().databaseConnector(wasm);
 
   await coordinator().exec(
