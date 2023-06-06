@@ -90,7 +90,9 @@ class SelectionVegaClient extends MosaicClient {
           source: this,
           schema: {
             type: "interval",
-            scale: { type: "linear", domain: scale.domain(), range: scale.range() },
+            scales: [
+              { type: "time", domain: scale.domain(), range: scale.range() },
+            ],
           },
           value,
           predicate: value,
