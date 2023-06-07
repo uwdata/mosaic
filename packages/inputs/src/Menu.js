@@ -1,12 +1,16 @@
 import { MosaicClient, isParam, isSelection } from '@uwdata/mosaic-core';
 import { Query, eq, literal } from '@uwdata/mosaic-sql';
+import { input } from './input.js';
 
 const isObject = v => {
   return v && typeof v === 'object' && !Array.isArray(v);
 };
 
+export const menu = options => input(Menu, options);
+
 export class Menu extends MosaicClient {
   constructor({
+    element,
     filterBy,
     from,
     column,
@@ -22,7 +26,7 @@ export class Menu extends MosaicClient {
     this.selection = as;
     this.format = format;
 
-    this.element = document.createElement('div');
+    this.element = element ?? document.createElement('div');
     this.element.setAttribute('class', 'input');
     this.element.value = this;
 

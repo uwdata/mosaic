@@ -8,6 +8,13 @@ export {
 } from '@uwdata/mosaic-core';
 
 export {
+  menu,
+  search,
+  slider,
+  table
+} from '@uwdata/mosaic-inputs';
+
+export {
   Query, agg, sql, column, literal,
   cast, castDouble, castInteger,
   argmax, argmin, arrayAgg, avg, count, corr, covarPop, entropy,
@@ -286,13 +293,6 @@ export {
   hspace,
   vspace
 } from './layout/space.js';
-
-export {
-  menu,
-  search,
-  slider,
-  table
-} from './directives/inputs.js';
 
 export {
   Fixed

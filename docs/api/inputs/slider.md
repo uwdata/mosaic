@@ -20,6 +20,7 @@ The supported options are:
 - _step_: The increment to apply between adjacent slider values.
 - _value_: The initial value of the slider. Defaults to the value of any param or selection provided via the _as_ option.
 - _width_: The width of the slider in pixels.
+- _element_: The container DOM element. If unspecified, a new `div` is created.
 
 ### Examples
 

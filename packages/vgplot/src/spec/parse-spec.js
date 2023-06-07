@@ -1,4 +1,5 @@
 import { Param, Selection, coordinator } from '@uwdata/mosaic-core';
+import { menu, search, slider, table } from '@uwdata/mosaic-inputs';
 import {
   sql, avg, count, max, median, min, mode, quantile, sum,
   row_number, rank, dense_rank, percent_rank, cume_dist, ntile,
@@ -6,6 +7,7 @@ import {
   dateMonth, dateMonthDay, dateDay
 } from '@uwdata/mosaic-sql';
 import { feature, mesh } from 'topojson-client';
+
 import { bin } from '../transforms/index.js'
 import { hconcat, vconcat, hspace, vspace } from '../layout/index.js';
 import { parse as isoparse } from 'isoformat';
@@ -13,7 +15,6 @@ import { parse as isoparse } from 'isoformat';
 import { from } from '../directives/data.js';
 import { plot as _plot } from '../directives/plot.js';
 import * as marks from '../directives/marks.js';
-import * as inputs from '../directives/inputs.js';
 import * as legends from '../directives/legends.js';
 import * as attributes from '../directives/attributes.js';
 import * as interactors from '../directives/interactors.js';
@@ -27,6 +28,8 @@ import {
   error, paramRef, toArray,
   isArray, isObject, isNumberOrString, isString, isFunction
 } from './util.js';
+
+const inputs = { menu, search, slider, table };
 
 export const DefaultParamParsers = new Map([
   ['intersect', () => Selection.intersect()],

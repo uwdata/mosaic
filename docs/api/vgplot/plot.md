@@ -52,13 +52,13 @@ Return the "inner" height of the plot, which is the `height` attribute value min
 
 `plot.pending(mark)`
 
-Called by a [`Mark`](./mark/) instance to inform this parent plot that the mark has a pending data update.
+Called by a [`Mark`](./marks) instance to inform this parent plot that the mark has a pending data update.
 
 ### update
 
 `plot.update(mark)`
 
-Called by a [`Mark`](./mark/) instance to inform this parent plot that the mark has completed an update.
+Called by a [`Mark`](./marks) instance to inform this parent plot that the mark has completed an update.
 
 ### render
 
@@ -99,14 +99,14 @@ Removes an event listener _callback_ associated with the given attribute _name_.
 `plot.addParams(mark, paramSet)`
 
 Register a set of [Params](../core/param) associated with a _mark_ to coordinate updates.
-Called by child [`Mark`](./mark/) instances.
+Called by child [`Mark`](./marks) instances.
 
 ### addMark
 
 `plot.addMark(mark)`
 
-Add a [`Mark`](./mark/) instance to this plot.
-Called by [mark directives](./mark/).
+Add a [`Mark`](./marks) instance to this plot.
+Called by [mark directives](./marks).
 
 ### markSet
 

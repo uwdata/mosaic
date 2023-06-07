@@ -20,6 +20,7 @@ The supported options are:
 - _maxWidth_: The maximum width of the full table view in pixels.
 - _height_: The height of the table view in pixels (default 500).
 - _rowBatch_: The number of additional rows to query upon scroll updates (default 100).
+- _element_: The container DOM element. If unspecified, a new `div` is created.
 
 ## Table {#table-class}
 
