@@ -1,4 +1,4 @@
-export { Menu } from './Menu.js';
-export { Search } from './Search.js';
-export { Slider } from './Slider.js';
-export { Table } from './Table.js';
+export { Menu, menu } from './Menu.js';
+export { Search, search } from './Search.js';
+export { Slider, slider } from './Slider.js';
+export { Table, table } from './Table.js';

@@ -2,12 +2,16 @@ import { MosaicClient, isParam, isSelection } from '@uwdata/mosaic-core';
 import {
   Query, regexp_matches, contains, prefix, suffix, literal
 } from '@uwdata/mosaic-sql';
+import { input } from './input.js';
 
 const FUNCTIONS = { contains, prefix, suffix, regexp: regexp_matches };
 let _id = 0;
 
+export const search = options => input(Search, options);
+
 export class Search extends MosaicClient {
   constructor({
+    element,
     filterBy,
     from,
     column,
@@ -22,7 +26,7 @@ export class Search extends MosaicClient {
     this.column = column;
     this.selection = as;
 
-    this.element = document.createElement('div');
+    this.element = element ?? document.createElement('div');
     this.element.setAttribute('class', 'input');
     this.element.value = this;
 

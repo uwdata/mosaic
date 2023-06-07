@@ -1,10 +1,14 @@
 import { MosaicClient, isParam, isSelection } from '@uwdata/mosaic-core';
 import { Query, eq, literal, max, min } from '@uwdata/mosaic-sql';
+import { input } from './input.js';
 
 let _id = 0;
 
+export const slider = options => input(Slider, options);
+
 export class Slider extends MosaicClient {
   constructor({
+    element,
     filterBy,
     as,
     min,
@@ -25,7 +29,7 @@ export class Slider extends MosaicClient {
     this.max = max;
     this.step = step;
 
-    this.element = document.createElement('div');
+    this.element = element || document.createElement('div');
     this.element.setAttribute('class', 'input');
     this.element.value = this;
 

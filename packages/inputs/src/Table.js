@@ -1,11 +1,15 @@
 import { MosaicClient } from '@uwdata/mosaic-core';
 import { Query, column, desc } from '@uwdata/mosaic-sql';
 import { formatDate, formatLocaleAuto, formatLocaleNumber } from './util/format.js';
+import { input } from './input.js';
 
 let _id = -1;
 
+export const table = options => input(Table, options);
+
 export class Table extends MosaicClient {
   constructor({
+    element,
     filterBy,
     from,
     columns = ['*'],
@@ -32,7 +36,7 @@ export class Table extends MosaicClient {
     this.sortColumn = null;
     this.sortDesc = false;
 
-    this.element = document.createElement('div');
+    this.element = element || document.createElement('div');
     this.element.setAttribute('id', this.id);
     this.element.value = this;
     if (typeof width === 'number') this.element.style.width = `${width}px`;
