@@ -63,6 +63,9 @@ export class MosaicClient {
 
   /**
    * Called by the coordinator to return a query result.
+   * 
+   * @param {*} data the query result
+   * @returns {this}
    */
   queryResult() {
     return this;
