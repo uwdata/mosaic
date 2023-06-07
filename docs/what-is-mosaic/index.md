@@ -20,7 +20,7 @@ This website uses WebAssembly to run DuckDB in the browser. WebAssemply support 
 Mosaic supports interaction across clients through reactive variables: _params_ and _selections_.
 _Params_ represent single values that may be shared across components. When a param updates, clients that subscribe to that param will update in turn.
 
-As in the [normalized stocks example](/examples/normalize) below, params can also be used in SQL expressions to create truly dynamic queries, with recalculation pushed to the database.
+As in the [normalized stocks example](/examples/normalize) below, params can be used in SQL expressions to create truly dynamic queries, with recalculation pushed to the database.
 Upon each update, data is queried from a backing DuckDB instance—here running directly in the browser via WebAssembly.
 _Move the cursor to see the return on investment if one had invested on a specific day._
 
@@ -58,18 +58,18 @@ The Mosaic project consists of a suite of packages:
 
 - [`mosaic-core`](/core/):
   The core Mosaic components.
-  A central coordinator, parameters and selections for linking values or query predicates (respectively) across Mosaic clients. The Mosaic coordinator can send queries over the network to a backing server (`socket` and `rest` clients) or to a client-side [DuckDB-WASM](https://duckdb.org/2021/10/29/duckdb-wasm.html) instance (`wasm` client). The binary [Apache Arrow](https://arrow.apache.org/) format is used for efficient data transfer.
+  A central coordinator, parameters and selections for linking values or query predicates (respectively) across Mosaic clients. The Mosaic coordinator can send queries over the network to a backing server (`socket` and `rest` connectors) or to a client-side [DuckDB-WASM](https://duckdb.org/2021/10/29/duckdb-wasm.html) instance (`wasm` connector). The binary [Apache Arrow](https://arrow.apache.org/) format is used for efficient data transfer.
+- [`mosaic-duckdb`](/duckdb/):
+  A Promise-based Node.js API to DuckDB, along with a data server that supports transfer of Apache Arrow and JSON data over either Web Sockets or HTTP.
 - [`mosaic-sql`](/sql/):
   An API for convenient construction and analysis of SQL queries.
   Includes support for aggregate functions, window functions, and arbitrary expressions with dynamic parameters. Query objects coerce to SQL query strings.
-- [`mosaic-duckdb`](/duckdb/):
-  A Promise-based Node.js API to DuckDB, along with a data server that supports transfer of Apache Arrow and JSON data over either Web Sockets or HTTP.
 - [`mosaic-inputs`](/inputs/): Standalone data-driven components such as input menus, text search boxes, and sortable, load-on-scroll data tables.
 - [`vgplot`](/vgplot/): A **v**isualization **g**rammar in which marks (plot layers) are individual Mosaic clients.
   Marks can push data processing (binning, filtering, aggregation, regression, ...) to the database and apply mark-specific optimizations (such as [M4](https://observablehq.com/@uwdata/m4-scalable-time-series-visualization) for line/area charts).
   vgplot provides a JavaScript DSL and a declarative YAML/JSON format that combine marks, interactors, input widgets, and dashboard layout.
   Once data and parameters are marshalled, [Observable Plot](https://observablehq.com/plot) is used to render [SVG](https://developer.mozilla.org/en-US/docs/Web/SVG) output.
-- [`widget`](/jupyter/):
+- [`mosaic-widget`](/jupyter/):
   A Jupyter widget for Mosaic that renders vgplot specifications in Jupyter notebook cells, with data processing by DuckDB in the Python kernel.
 
 ## An Active Research Project
@@ -78,8 +78,10 @@ Mosaic is an active research project from the [UW Interactive Data Lab](https://
 We are interested in unifying advances in scalable visualization methods with languages for interactive visualization.
 This is an exciting area with a number of open challenges!
 
+There will inevitably be some shortcomings, bugs, and documentation gaps.
+We do not yet consider Mosaic "production-ready", but believe that Mosaic (or something like it) is a valuable next step for interactive data systems.
 If you're interested in contributing, please see our [GitHub repository](https://github.com/uwdata/mosaic).
 
 ## Acknowledgments
 
-Mosaic builds on ideas and code from a number of open source efforts, including [DuckDB](https://duckdb.org/), [Apache Arrow](https://arrow.apache.org/), [anywidget](https://anywidget.dev/), [Falcon](https://github.com/vega/falcon), [Vega-Lite](https://vega.github.io/vega-lite/), and [Observable Plot](https://observablehq.com/plot/). Thanks!
+Mosaic builds on code and ideas from a number of open source efforts, including [DuckDB](https://duckdb.org/), [Apache Arrow](https://arrow.apache.org/), [anywidget](https://anywidget.dev/), [Falcon](https://github.com/vega/falcon), [Vega-Lite](https://vega.github.io/vega-lite/), and [Observable Plot](https://observablehq.com/plot/). Thanks!

@@ -3,6 +3,9 @@
 The `MosaicClient` class provides a base class for client implementation.
 Clients are responsible for publishing their data needs and performing data processing tasks&mdash;such as rendering a visualization&mdash;once data is provided by the [coordinator](./coordinator).
 
+If you are interested in creating your own Mosaic clients, see the [Mosaic GitHub repository](https://github.com/uwdata/mosaic).
+For concrete examples, start with the source code of [Mosaic inputs](https://github.com/uwdata/mosaic/tree/main/packages/inputs/src).
+
 ## constructor
 
 `new MosaicClient(filterSelection)`

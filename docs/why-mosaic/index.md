@@ -189,7 +189,7 @@ Compared to Vega-Lite, Mosaic selections are decoupled from input event handling
 
 Importantly, Mosaic selections are first-class entities, and not internal to a single visualization language or tool.
 Any component that implements the Mosaic _client_ interface can both issue queries and be automatically filtered by a provided _selection_.
-Mosaic inputs and vgplot plots can freely interact, as can any other visualization (such as custom D3 plots) that follows the Mosaic client interface.
+Mosaic inputs and vgplot plots can freely interact, as can any other components or visualizations (such as custom [D3](https://d3js.org) plots) that follow the Mosaic client interface.
 
 Though written in JavaScript and deployable over the Web, Mosaic was designed to work well in data science environments such as Jupyter notebooks, too. A DuckDB server can run in a host environment such as a Python kernel and communicate with a Web-based output cell interface. See the [Mosaic Jupyter Widget](/jupyter/) for more.
 
