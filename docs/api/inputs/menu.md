@@ -19,6 +19,7 @@ The supported options are:
 - _format_: An optional format function to transform values to strings for inclusion in the menu.
 - _options_: An explicit array of options to include in the menu. This option can be used instead of pulling values from a backing database table. Each option entry should consist of an object with `label` and `value` properties.
 - _value_: The initial value of the menu.
+- _element_: The container DOM element. If unspecified, a new `div` is created.
 
 ### Examples
 

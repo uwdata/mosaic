@@ -16,6 +16,7 @@ The supported options are:
 - _from_: The name of the backing database table or view. If specified alongside the _column_ options, the autocomplete options will be set to the distinct column values.
 - _column_: The backing database column to search over.
 - _label_: A text label for the search box input.
+- _element_: The container DOM element. If unspecified, a new `div` is created.
 
 ### Examples
 
