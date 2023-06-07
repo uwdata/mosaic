@@ -49,7 +49,6 @@ export const line = (...args) => mark('line', ...args);
 export const lineX = (...args) => mark('lineX', ...args);
 export const lineY = (...args) => mark('lineY', ...args);
 
-export const bar = (...args) => mark('bar', ...args);
 export const barX = (...args) => mark('barX', ...args);
 export const barY = (...args) => mark('barY', ...args);
 
@@ -78,6 +77,8 @@ export const tickX = (...args) => mark('tickX', ...args);
 export const tickY = (...args) => mark('tickY', ...args);
 
 export const vector = (...args) => mark('vector', ...args);
+export const vectorX = (...args) => mark('vectoX', ...args);
+export const vectorY = (...args) => mark('vectorY', ...args);
 export const spike = (...args) => mark('spike', ...args);
 
 export const image = (...args) => mark('image', ...args);

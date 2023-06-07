@@ -30,6 +30,8 @@ Clients can also request queries in response to internal events. The client `req
 The client `requestUpdate()` method instead makes throttled requests for a standard `query()`; multiple calls to `requestUpdate()` may result in only one query (the most recent) being serviced.
 Finally, clients may expose a `filterBy` Selection property. The predicates provided by `filterBy` are passed as an argument to the client `query()` method by the coordinator.
 
+[Client API Reference](/api/core/client)
+
 ## Coordinator
 
 The _coordinator_ is responsible for managing client data needs. Clients are registered via the coordinator `connect(client)` method, and similarly removed using `disconnect()`. Upon registration, the event lifecycle begins.
@@ -37,12 +39,16 @@ In addition to the `fields` and `query` calls described above, the coordinator c
 Upon changes to this selection (e.g., due to interactions such as brushing or zooming), the coordinator collects updated queries for all corresponding clients, queries the data source, and updates clients in turn.
 The Coordinator additionally performs optimizations including caching and data cube indexing.
 
+[Coordinator API Reference](/api/core/coordinator)
+
 ## Data Source
 
 The coordinator submits queries to a _data source_ using an extensible set of database connectors.
 Mosaic uses [DuckDB](/duckdb/) as a backing database and provides connectors for communicating with a DuckDB server via Web Sockets or HTTP calls, with DuckDB-WASM in the browser, or through [Jupyter widgets](/jupyter/) to DuckDB in Python.
 To transfer data, Mosaic uses [Apache Arrow](https://arrow.apache.org/) for efficient serialization of query results with no subsequent parsing overhead.
 While the socket and HTTP connectors also support JSON, this is more costly to serialize, results in larger payloads, and must be parsed on the client side.
+
+[Connectors API Reference](/api/core/connectors)
 
 ## Params
 
@@ -72,6 +78,8 @@ hconcat(
   label
 )
 ```
+
+[Param API Reference](/api/core/param)
 
 ## Selections
 
@@ -115,3 +123,5 @@ Like params, selections support `value` event listeners, corresponding to value 
 Selections additionally support `activate` events, which provide a clause indicative of likely future updates.
 For example, a brush interactor may trigger an activation event when the cursor enters a brushable region, providing an example clause prior to any actual updates.
 Activation events are used to implement optimizations such as prefetching.
+
+[Selection API Reference](/api/core/selection)

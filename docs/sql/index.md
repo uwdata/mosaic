@@ -34,6 +34,8 @@ Query
   .offset(/* offet number of rows */)
 ```
 
+[Query API Reference](/api/sql/queries)
+
 ## SQL Expressions
 
 The `sql` template literal builds individual SQL expressions.
@@ -73,6 +75,8 @@ Query
   .select({ hi: agg`GREATEST(MAX(${foo}), MAX(${bar}))` });
 ```
 
+[Expression API Reference](/api/sql/expressions)
+
 ## Operators
 
 The Mosaic SQL package includes operators for comparing values:
@@ -93,6 +97,8 @@ Query
   .where(and(isBetween("foo", [10, 50]), isBetween("bar", [-5, 10])))
 ```
 
+[Operator API Reference](/api/sql/operators)
+
 ## Aggregate Functions
 
 DuckDB-supported [aggregate functions](https://duckdb.org/docs/sql/aggregates.html), including `min`, `max`, `count`, `sum`, `avg`, `stddev`, `median`, `quantile`, `argmax`, and `argmin`.
@@ -110,6 +116,8 @@ Query.select({
 }).from("myTable");
 ```
 
+[Aggregate Functions API Reference](/api/sql/aggregate-functions)
+
 ## Window Functions
 
 General purpose [window functions](https://duckdb.org/docs/sql/window_functions) include `row_number`, `rank`, `cume_dist`, `lag`, `lead`, _etc_.
@@ -125,6 +133,8 @@ Query.select({
   num: row_number().orderby("date")
 }).from("myTable");
 ```
+
+[Window Functions API Reference](/api/sql/window-functions)
 
 ## Data Loading
 
@@ -165,3 +175,4 @@ const q = loadObjects("table3", [
 ]);
 ```
 
+[Data Loading API Reference](/api/sql/data-loading)
