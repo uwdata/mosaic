@@ -19,7 +19,7 @@ However, because vgplot is based on Mosaic, it easily interoperates with other M
 Internally, vgplot uses Observable Plot to render SVG output.
 
 This page provides an overview of vgplot.
-Skip to the [examples](/examples/) to deep-dive right away.
+Skip to the [examples](/examples/) to dive right in.
 
 ## Plots
 
@@ -59,12 +59,16 @@ The stock chart above consists of three directives:
 2. A `width` attribute to set the chart width in pixels.
 3. A `height` attribute to set the chart height in pixels.
 
+[Plot API Reference](/api/vgplot/plot)
+
 ## Attributes
 
 _Attributes_ are plot-level settings such as `width`, `height`, margins, and scale options (e.g., `xDomain`, `colorRange`, `yTickFormat`). Attributes may be [`Param`](/core/#params)-valued, in which case a plot updates upon param changes.
 
 vgplot includes a special `Fixed` scale domain setting (e.g., `xDomain(Fixed)`), which instructs a plot to first calculate a scale domain in a data-driven manner, but then keep that domain fixed across subsequent updates.
 Fixed domains enable stable configurations without requiring a hard-wired domain to be known in advance, preventing disorienting scale domain "jumps" that hamper comparison across filter interactions.
+
+[Attributes API Reference](/api/vgplot/attributes)
 
 ## Marks
 
@@ -77,6 +81,8 @@ Common expressions include aggregates (`count`, `sum`, `avg`, `median`, _etc._),
 Most field expressions&mdash;including aggregate, window, and date functions&mdash;are specified using [Mosaic SQL](/sql/) builder methods.
 
 Marks support dual modes of operation: if an explicit array of data values is provided instead of a backing `from(tableName)` reference, vgplot will visualize that data without issuing any queries to the database. This functionality is particularly useful for adding manual annotations, such as custom rules or text labels.
+
+[Marks API Reference](/api/vgplot/marks)
 
 ::: warning
 Interactive filtering is not supported if you bypass the database and pass data directly to a mark.
@@ -133,6 +139,8 @@ Non-selected points are set to translucent, neutral gray, or other specified vis
 Selected points maintain normal encodings.
 We perform highlighting by querying the database for a selection bit vector and then modifying the rendered SVG.
 
+[Interactors API Reference](/api/vgplot/interactors)
+
 ## Legends
 
 _Legends_ can be added to `plot` specifications or included as standalone elements.
@@ -144,6 +152,8 @@ Legends also act as interactors, taking a bound Selection as a parameter.
 For example, discrete legends use the logic of the `toggle` interactor to enable point selections.
 Two-way binding is supported for Selections using _single_ resolution, enabling legends and other interactors to share state.
 
+[Legends API Reference](/api/vgplot/legends)
+
 ## Layout
 
 Layout helpers combine elements such as [plots](#plots) and [inputs](/inputs/) into multi-view dashboard displays.
@@ -151,3 +161,5 @@ vgplot includes `vconcat` (vertical concatenation) and `hconcat` (horizontal con
 These methods accept a list of elements and position them using CSS `flexbox` layout.
 Layout helpers can be used with plots, inputs, and arbitrary Web content such as images and videos.
 To ensure spacing, the `vspace` and `hspace` helpers add padding between elements in a layout.
+
+[Layout API Reference](/api/vgplot/layout)

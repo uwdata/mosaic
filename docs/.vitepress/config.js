@@ -36,7 +36,8 @@ export default defineConfig({
           { text: 'Jupyter Widget', link: '/jupyter/' }
         ]
       },
-      { text: 'Examples', link: '/examples/' }
+      { text: 'Examples', link: '/examples/' },
+      { text: 'API Reference', link: '/api/' }
     ],
 
     sidebar: {
@@ -135,11 +136,11 @@ export default defineConfig({
               text: 'Mosaic Core',
               collapsed: true,
               items: [
-                { text: 'Coordinator', link: '/api/core/coordinator' },
                 { text: 'Client', link: '/api/core/client' },
+                { text: 'Coordinator', link: '/api/core/coordinator' },
+                { text: 'Connectors', link: '/api/core/connectors' },
                 { text: 'Param', link: '/api/core/param' },
-                { text: 'Selection', link: '/api/core/selection' },
-                { text: 'Connectors', link: '/api/core/connectors' }
+                { text: 'Selection', link: '/api/core/selection' }
               ]
             },
             {

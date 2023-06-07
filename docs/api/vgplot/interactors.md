@@ -170,4 +170,4 @@ Selected values keep their normal appearance.
 Unselected values are deemphasized.
 
 - _by_: The [Selection](../core/selection) driving the highlighting.
-_ _channels_: An optional object of channel/value mappings that defines what CSS styles to apply to deemphasized items. The default value is to set the `opacity` channel to `0.2`.
+- _channels_: An optional object of channel/value mappings that defines what CSS styles to apply to deemphasized items. The default value is to set the `opacity` channel to `0.2`.

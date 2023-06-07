@@ -30,6 +30,8 @@ db.close();
 
 Unless provided with an explicit web URL (`http://...`), queries that load files (e.g., CSV, JSON, or Parquet) will do so relative to the current working directory.
 
+[DuckDB API Reference](/api/duckdb/duckdb)
+
 ## Data Server
 
 The data server provides network access to a server-side DuckDB instance.
@@ -44,3 +46,5 @@ dataServer(new DuckDB(), { rest: true, socket: true });
 By default the server listens to port 3000.
 If the coordinator sends a request to persist a result, the data server will cache the results to the local filesystem.
 The default cache folder is `.mosaic/cache`, relative to the current working directory.
+
+[Data Server API Reference](/api/duckdb/data-server)

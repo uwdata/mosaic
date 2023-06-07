@@ -18,9 +18,9 @@ _Scroll the table to load more data on demand.<br/>Click a column header to sort
 
 ## Slider, Menu, and Search
 
-The `slider`, `menu`, and `search` inputs support dual modes of operation: they can be manually configured or they can be backed by a database table.
+The [`menu`](/api/inputs/menu), [`search`](/api/inputs/search), and [`slider`](/api/inputs/slider) inputs support dual modes of operation: they can be manually configured or they can be backed by a database table.
+The `menu` and `search` components query for distinct column values, and use those to populate the menu or autocomplete options, respectively.
 If a backing table and column are specified, the `slider` queries for the minimum and maximum column values to parameterize the slider.
-The `menu` and `search` components instead query for distinct column values, and use those to populate the menu or autocomplete options, respectively.
 
 This snippet defines the menus and search box in the example above:
 
@@ -38,6 +38,10 @@ All input widgets can write updates to a provided param or selection.
 Param values are updated to match the input value.
 Selections are provided a predicate clause. This linking can be bidirectional: an input component will also subscribe to a param and track its value updates.
 Two-way linking is also supported for selections using _single_ resolution, where there is no ambiguity regarding the value.
+
+- [Menu API Reference](/api/inputs/menu)
+- [Search API Reference](/api/inputs/search)
+- [Slider API Reference](/api/inputs/slider)
 
 ## Table
 
@@ -69,4 +73,4 @@ As a user scrolls, these sort criteria persist.
 
 If provided, a `filterBy` Selection is used to filter table content.
 
-<!-- Tables can also be used for input: a user may select rows to update a Selection with a predicate selecting rows by either primary key or value equality. -->
+[Table API Reference](/api/inputs/table)
