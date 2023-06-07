@@ -7,7 +7,7 @@ meta:
     A `nearestX` interactor selects the nearest date, and parameterized
     expressions reactively update in response.
 data:
-  stocks: { file: data/stocks.csv }
+  stocks: { file: https://uwdata.github.io/mosaic-datasets/data/stocks.csv }
   labels: SELECT MAX(Date) as Date, ARGMAX(Close, Date) AS Close, Symbol
           FROM stocks GROUP BY Symbol
 params:

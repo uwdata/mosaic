@@ -1,7 +1,7 @@
 import * as vg from "@uwdata/vgplot";
 
 await vg.coordinator().exec(
-  vg.loadCSV("stocks", "data/stocks.csv")
+  vg.loadCSV("stocks", "https://uwdata.github.io/mosaic-datasets/data/stocks.csv")
 );
 await vg.coordinator().exec(
   `CREATE TEMP TABLE IF NOT EXISTS labels AS SELECT MAX(Date) as Date, ARGMAX(Close, Date) AS Close, Symbol FROM stocks GROUP BY Symbol`

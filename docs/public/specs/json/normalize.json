@@ -5,7 +5,7 @@
   },
   "data": {
     "stocks": {
-      "file": "data/stocks.csv"
+      "file": "https://uwdata.github.io/mosaic-datasets/data/stocks.csv"
     },
     "labels": "SELECT MAX(Date) as Date, ARGMAX(Close, Date) AS Close, Symbol FROM stocks GROUP BY Symbol"
   },
