@@ -224,7 +224,7 @@ export {
 export {
   area, areaX, areaY,
   line, lineX, lineY,
-  bar, barX, barY,
+  barX, barY,
   cell, cellX, cellY,
   rect, rectX, rectY,
   dot, dotX, dotY, circle, hexagon,
@@ -237,7 +237,7 @@ export {
   contour,
   hexbin, hexgrid,
   regressionY,
-  vector, spike,
+  vector, vectorX, vectorY, spike,
   voronoi, voronoiMesh, delaunayLink, delaunayMesh, hull,
   arrow, link,
   frame,
