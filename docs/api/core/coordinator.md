@@ -22,7 +22,7 @@ Get or set the [_connector_](./connectors) used by the coordinator to issue quer
 `coordinator.connect(client)`
 
 Connect a [_client_](./client) to this coordinator.
-Upon connection, the [client lifecycle](/core) will initiate.
+Upon connection, the [client lifecycle](/core/) will initiate.
 If the client exposes a `filterBy` selection, the coordinator will handle updates to the client when the selection updates.
 
 ## disconnect

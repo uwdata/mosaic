@@ -55,7 +55,7 @@ Return a query specifying the data needed by this client, incorporating any requ
 If provided, the _filter_ argument should consist of Boolean-valued SQL predicates, suitable for inclusion in a `WHERE` clause.
 
 The `MosaicClient` base class simply returns `null`.
-Subclasses should override this method to provide a query, typically constructed using [Mosaic SQL builder](/sql) utilities.
+Subclasses should override this method to provide a query, typically constructed using [Mosaic SQL builder](/sql/) utilities.
 
 ## queryPending
 
