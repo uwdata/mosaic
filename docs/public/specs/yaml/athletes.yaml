@@ -1,10 +1,10 @@
 meta:
   title: Olympic Athletes
-  description: |
+  description: >
     An interactive dashboard of athlete statistics.
     The input menus and searchbox filter the display and are automatically populated by backing data columns.
 data:
-  athletes: { file: data/athletes.csv }
+  athletes: { file: data/athletes.parquet }
 hconcat:
 - vconcat:
   - hconcat:

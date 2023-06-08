@@ -1,6 +1,6 @@
 meta:
   title: Density 2D
-  description: |
+  description: >
     A 2D `density` plot in which circle size indicates the point density.
     To change the amount of smoothing, use the slider to set the kernel bandwidth.
 data:

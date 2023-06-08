@@ -5,9 +5,7 @@
 
 # Voronoi Diagram
 
-The `voronoi` mark shows the regions closest to each point.
-It is [constructed from its dual](https://observablehq.com/@mbostock/the-delaunays-dual), a Delaunay triangle mesh.
-Reveal triangulations or convex hulls using the dropdowns.
+The `voronoi` mark shows the regions closest to each point. It is [constructed from its dual](https://observablehq.com/@mbostock/the-delaunays-dual), a Delaunay triangle mesh. Reveal triangulations or convex hulls using the dropdowns.
 
 <Example spec="/specs/yaml/voronoi.yaml" />
 

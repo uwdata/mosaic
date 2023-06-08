@@ -1,9 +1,9 @@
 meta:
   title: Symbol Plots
-  description: |
+  description: >
     Two scatter plots with `dot` marks: one with stroked symbols, the other filled.
 data:
-  penguins: { file: data/penguins.csv }
+  penguins: { file: data/penguins.parquet }
 vconcat:
 - hconcat:
   - name: stroked

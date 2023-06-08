@@ -1,11 +1,11 @@
 {
   "meta": {
     "title": "Pan & Zoom",
-    "description": "Linked panning and zooming across plots: drag to pan, scroll to zoom.\n`panZoom` interactors update a set of bound selections, one per unique axis.\n"
+    "description": "Linked panning and zooming across plots: drag to pan, scroll to zoom. `panZoom` interactors update a set of bound selections, one per unique axis.\n"
   },
   "data": {
     "penguins": {
-      "file": "data/penguins.csv"
+      "file": "data/penguins.parquet"
     }
   },
   "hconcat": [

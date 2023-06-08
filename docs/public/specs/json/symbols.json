@@ -5,7 +5,7 @@
   },
   "data": {
     "penguins": {
-      "file": "data/penguins.csv"
+      "file": "data/penguins.parquet"
     }
   },
   "vconcat": [

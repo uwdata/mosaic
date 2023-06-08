@@ -1,7 +1,7 @@
 import * as vg from "@uwdata/vgplot";
 
 await vg.coordinator().exec(
-  vg.loadCSV("penguins", "data/penguins.csv")
+  vg.loadParquet("penguins", "data/penguins.parquet")
 );
 
 const $xs = vg.Selection.intersect();

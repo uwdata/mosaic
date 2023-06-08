@@ -1,11 +1,11 @@
 meta:
   title: Scatter Plot Matrix (SPLOM)
-  description: |
+  description: >
     A scatter plot matrix enables inspection of pairwise bivariate distributions.
     Do points cluster or separate in some dimensions but not others?
     Select a region to highlight corresponding points across all plots.
 data:
-  penguins: { file: data/penguins.csv }
+  penguins: { file: data/penguins.parquet }
 params:
   brush: { select: single }
 plotDefaults:

@@ -1,17 +1,25 @@
 {
   "meta": {
     "title": "Line Density",
-    "description": "The `denseLine` mark shows the densities of line series, here for a collection of stock prices.\nThe top plot normalizes by arc length to remove the vertical artifacts visible in the unnormalized plot below.\nSelect a region in the lower plot to zoom the upper plot.\nThe bandwidth slider smooths the data, while the bin width menu adjusts the raster resolution.\n"
+    "description": "The `denseLine` mark shows the densities of line series, here for a collection of stock prices. The top plot normalizes by arc length to remove the vertical artifacts visible in the unnormalized plot below. Select a region in the lower plot to zoom the upper plot. The bandwidth slider smooths the data, while the bin width menu adjusts the raster resolution.\n"
   },
   "data": {
-    "stocks_after_2006": "SELECT Symbol, Close, Date FROM read_csv_auto('https://uwdata.github.io/mosaic-datasets/data/stocks_after_2006.csv', SAMPLE_SIZE=-1) WHERE CLOSE < 100"
+    "stocks_after_2006": {
+      "file": "data/stocks_after_2006.parquet",
+      "select": [
+        "Symbol",
+        "Close",
+        "Date"
+      ],
+      "where": "Close < 100"
+    }
   },
   "params": {
     "brush": {
       "select": "intersect"
     },
     "bandwidth": 0,
-    "binWidth": 1,
+    "binWidth": 2,
     "schemeColor": "pubugn",
     "scaleColor": "sqrt"
   },

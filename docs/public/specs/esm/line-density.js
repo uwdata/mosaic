@@ -1,12 +1,12 @@
 import * as vg from "@uwdata/vgplot";
 
 await vg.coordinator().exec(
-  `CREATE TEMP TABLE IF NOT EXISTS stocks_after_2006 AS SELECT Symbol, Close, Date FROM read_csv_auto('https://uwdata.github.io/mosaic-datasets/data/stocks_after_2006.csv', SAMPLE_SIZE=-1) WHERE CLOSE < 100`
+  vg.loadParquet("stocks_after_2006", "data/stocks_after_2006.parquet", { select: ["Symbol","Close","Date"], where: "Close < 100" })
 );
 
 const $brush = vg.Selection.intersect();
 const $bandwidth = vg.Param.value(0);
-const $binWidth = vg.Param.value(1);
+const $binWidth = vg.Param.value(2);
 const $schemeColor = vg.Param.value("pubugn");
 const $scaleColor = vg.Param.value("sqrt");
 

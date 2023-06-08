@@ -2,7 +2,7 @@ import * as vg from "@uwdata/vgplot";
 import { feature } from "https://cdn.jsdelivr.net/npm/topojson@3.0.2/+esm";
 
 await vg.coordinator().exec(
-  vg.loadCSV("earthquakes", "data/earthquakes.csv")
+  vg.loadParquet("earthquakes", "data/earthquakes.parquet")
 );
 const land = await fetch("data/countries-110m.json")
   .then(r => r.json())

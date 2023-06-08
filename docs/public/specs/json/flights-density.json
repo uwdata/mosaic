@@ -1,7 +1,7 @@
 {
   "meta": {
     "title": "Flights Density",
-    "description": "Density `raster` and `contour` lines for 200,000+ flights by departure hour and arrival delay.\nThe sliders adjust the smoothing (bandwidth) and number of contour thresholds.\n"
+    "description": "Density `raster` and `contour` lines for 200,000+ flights by departure hour and arrival delay. The sliders adjust the smoothing (bandwidth) and number of contour thresholds.\n"
   },
   "data": {
     "flights": {

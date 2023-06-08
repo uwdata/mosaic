@@ -1,11 +1,11 @@
 meta:
   title: Population Change Arrows
-  description: |
+  description: >
     An `arrow` connects the positions in 1980 and 2015 of each city on this population × inequality chart.
     Color encodes variation.
   credit: Adapted from an [Observable Plot example](https://observablehq.com/@observablehq/plot-arrow-variation-chart).
 data:
-  metros: { file: data/metros.csv }
+  metros: { file: data/metros.parquet }
 params:
   bend: true
 vconcat:

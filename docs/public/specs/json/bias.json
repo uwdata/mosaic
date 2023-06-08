@@ -1,7 +1,7 @@
 {
   "meta": {
     "title": "Bias Parameter",
-    "description": "Dynamically adjust queried values by adding a Param value.\nThe expression is re-computed in the database upon updates.\n"
+    "description": "Dynamically adjust queried values by adding a Param value. The expression is re-computed in the database upon updates.\n"
   },
   "data": {
     "walk": {

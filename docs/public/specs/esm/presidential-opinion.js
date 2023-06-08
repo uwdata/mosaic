@@ -1,7 +1,7 @@
 import * as vg from "@uwdata/vgplot";
 
 await vg.coordinator().exec(
-  vg.loadCSV("presidents", "data/us-president-favorability.csv")
+  vg.loadParquet("presidents", "data/us-president-favorability.parquet")
 );
 
 const $sign = vg.Param.value(1);

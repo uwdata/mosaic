@@ -1,12 +1,12 @@
 {
   "meta": {
     "title": "Population Change Arrows",
-    "description": "An `arrow` connects the positions in 1980 and 2015 of each city on this population × inequality chart.\nColor encodes variation.\n",
+    "description": "An `arrow` connects the positions in 1980 and 2015 of each city on this population × inequality chart. Color encodes variation.\n",
     "credit": "Adapted from an [Observable Plot example](https://observablehq.com/@observablehq/plot-arrow-variation-chart)."
   },
   "data": {
     "metros": {
-      "file": "data/metros.csv"
+      "file": "data/metros.parquet"
     }
   },
   "params": {

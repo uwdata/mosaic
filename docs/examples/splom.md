@@ -5,9 +5,7 @@
 
 # Scatter Plot Matrix (SPLOM)
 
-A scatter plot matrix enables inspection of pairwise bivariate distributions.
-Do points cluster or separate in some dimensions but not others?
-Select a region to highlight corresponding points across all plots.
+A scatter plot matrix enables inspection of pairwise bivariate distributions. Do points cluster or separate in some dimensions but not others? Select a region to highlight corresponding points across all plots.
 
 <Example spec="/specs/yaml/splom.yaml" />
 

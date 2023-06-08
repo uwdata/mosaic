@@ -1,11 +1,11 @@
 {
   "meta": {
     "title": "Linear Regression",
-    "description": "A linear regression plot predicting athletes' heights based on their weights.\nRegression computation is performed in the database.\nThe area around a regression line shows a 95% confidence interval.\nSelect a region to view regression results for a data subset.\n"
+    "description": "A linear regression plot predicting athletes' heights based on their weights. Regression computation is performed in the database. The area around a regression line shows a 95% confidence interval. Select a region to view regression results for a data subset.\n"
   },
   "data": {
     "athletes": {
-      "file": "data/athletes.csv"
+      "file": "data/athletes.parquet"
     }
   },
   "plot": [

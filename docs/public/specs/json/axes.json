@@ -1,7 +1,7 @@
 {
   "meta": {
     "title": "Axes & Gridlines",
-    "description": "Customized axis and gridline marks can be used in addition to standard\nscale attributes such as `xAxis`, `yGrid`, etc. Just add data!\n"
+    "description": "Customized axis and gridline marks can be used in addition to standard scale attributes such as `xAxis`, `yGrid`, etc. Just add data!\n"
   },
   "plot": [
     {

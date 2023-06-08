@@ -1,5 +1,5 @@
 data:
-  aapl: { file: data/stocks.csv, where: Symbol = 'AAPL' }
+  aapl: { file: data/stocks.parquet, where: Symbol = 'AAPL' }
 plot:
 - mark: line
   data: { from: aapl }

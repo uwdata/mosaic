@@ -1,12 +1,12 @@
 meta:
   title: Voronoi Diagram
-  description: |
+  description: >
     The `voronoi` mark shows the regions closest to each point.
     It is [constructed from its dual](https://observablehq.com/@mbostock/the-delaunays-dual), a Delaunay triangle mesh.
     Reveal triangulations or convex hulls using the dropdowns.
   credit: Adapted from an [Observable Plot example](https://observablehq.com/@observablehq/plot-voronoi-scatterplot).
 data:
-  penguins: { file: data/penguins.csv }
+  penguins: { file: data/penguins.parquet }
 params:
   mesh: 0
   hull: 0

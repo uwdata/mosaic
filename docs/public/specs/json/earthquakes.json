@@ -1,12 +1,12 @@
 {
   "meta": {
     "title": "Earthquakes",
-    "description": "A rotatable globe of earthquake activity.\nTo show land masses, this example loads a TopoJSON file directly in the browser, bypassing the database.\n",
+    "description": "A rotatable globe of earthquake activity. To show land masses, this example loads a TopoJSON file directly in the browser, bypassing the database.\n",
     "credit": "Adapted from an [Observable Plot example](https://observablehq.com/@observablehq/plot-earthquake-globe)."
   },
   "data": {
     "earthquakes": {
-      "file": "data/earthquakes.csv"
+      "file": "data/earthquakes.parquet"
     },
     "land": {
       "type": "topojson",

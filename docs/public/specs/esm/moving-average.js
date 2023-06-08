@@ -1,7 +1,7 @@
 import * as vg from "@uwdata/vgplot";
 
 await vg.coordinator().exec(
-  vg.loadCSV("cases", "data/berlin-covid.csv")
+  vg.loadParquet("cases", "data/berlin-covid.parquet")
 );
 
 const $frame = vg.Param.array([-6, 0]);

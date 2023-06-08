@@ -1,11 +1,11 @@
 {
   "meta": {
     "title": "Seattle Temperatures",
-    "description": "Historical monthly temperatures in Seattle, WA.\nThe gray range shows the minimum and maximum recorded temperatures.\nThe blue range shows the average lows and highs.\n"
+    "description": "Historical monthly temperatures in Seattle, WA. The gray range shows the minimum and maximum recorded temperatures. The blue range shows the average lows and highs.\n"
   },
   "data": {
     "weather": {
-      "file": "data/seattle-weather.csv"
+      "file": "data/seattle-weather.parquet"
     }
   },
   "plot": [

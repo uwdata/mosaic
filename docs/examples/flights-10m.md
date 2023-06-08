@@ -5,9 +5,7 @@
 
 # Cross-Filter Flights (10M)
 
-Histograms showing arrival delay, departure time, and distance flown for 10 million flights.
-You may need to wait a few seconds for the dataset to load. Once loaded,
-automatically-generated indexes enable efficient cross-filtered selections.
+Histograms showing arrival delay, departure time, and distance flown for 10 million flights. You may need to wait a few seconds for the dataset to load. Once loaded, automatically-generated indexes enable efficient cross-filtered selections.
 
 <Example spec="/specs/yaml/flights-10m.yaml" />
 

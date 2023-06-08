@@ -1,12 +1,12 @@
 {
   "meta": {
     "title": "Wind Map",
-    "description": "`vector` marks on a grid show both direction and intensity—here, the speed of winds.\nExpressions for `rotate`, `length`, and `stroke` values are evaluated in the database.\n",
+    "description": "`vector` marks on a grid show both direction and intensity—here, the speed of winds. Expressions for `rotate`, `length`, and `stroke` values are evaluated in the database.\n",
     "credit": "Adapted from an [Observable Plot example](https://observablehq.com/@observablehq/plot-wind-map)."
   },
   "data": {
     "wind": {
-      "file": "data/wind.csv"
+      "file": "data/wind.parquet"
     }
   },
   "params": {

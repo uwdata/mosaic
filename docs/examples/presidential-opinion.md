@@ -5,9 +5,7 @@
 
 # Presidential Opinion
 
-Opinion poll data on historical U.S. presidents.
-Image marks are used to show presidential pictures.
-The dropdown menu toggles the opinion metric shown.
+Opinion poll data on historical U.S. presidents. Image marks are used to show presidential pictures. The dropdown menu toggles the opinion metric shown.
 
 <Example spec="/specs/yaml/presidential-opinion.yaml" />
 

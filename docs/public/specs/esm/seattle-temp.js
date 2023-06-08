@@ -1,7 +1,7 @@
 import * as vg from "@uwdata/vgplot";
 
 await vg.coordinator().exec(
-  vg.loadCSV("weather", "data/seattle-weather.csv")
+  vg.loadParquet("weather", "data/seattle-weather.parquet")
 );
 
 export default vg.plot(

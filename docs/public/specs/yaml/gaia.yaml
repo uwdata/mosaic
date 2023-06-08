@@ -1,6 +1,6 @@
 meta:
   title: Gaia Star Catalog
-  description: |
+  description: >
     A 5M row sample of the 1.8B element Gaia star catalog.
     You may need to wait a few seconds for the dataset to load.
     A `raster` sky map reveals our Milky Way galaxy. Select high parallax stars in the histogram to reveal a

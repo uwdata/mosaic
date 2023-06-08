@@ -1,7 +1,7 @@
 import * as vg from "@uwdata/vgplot";
 
 await vg.coordinator().exec(
-  vg.loadCSV("athletes", "data/athletes.csv")
+  vg.loadParquet("athletes", "data/athletes.parquet")
 );
 
 const $query = vg.Selection.intersect();

@@ -5,8 +5,7 @@
 
 # Population Change Arrows
 
-An `arrow` connects the positions in 1980 and 2015 of each city on this population × inequality chart.
-Color encodes variation.
+An `arrow` connects the positions in 1980 and 2015 of each city on this population × inequality chart. Color encodes variation.
 
 <Example spec="/specs/yaml/population-arrows.yaml" />
 

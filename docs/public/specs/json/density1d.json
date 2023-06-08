@@ -1,7 +1,7 @@
 {
   "meta": {
     "title": "Density 1D",
-    "description": "Density plots (`densityY` mark) for over 200,000 flights, created using kernel density estimation.\nBinning is performned in-database, subsequent smoothing in-browser.\nTo change the amount of smoothing, use the slider to set the kernel bandwidth.\n"
+    "description": "Density plots (`densityY` mark) for over 200,000 flights, created using kernel density estimation. Binning is performned in-database, subsequent smoothing in-browser. To change the amount of smoothing, use the slider to set the kernel bandwidth.\n"
   },
   "data": {
     "flights": {

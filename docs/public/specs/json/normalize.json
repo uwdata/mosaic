@@ -1,11 +1,11 @@
 {
   "meta": {
     "title": "Normalized Stock Prices",
-    "description": "What is the return on investment for different days?\nHover over the chart to normalize the stock prices for the percentage\nreturn on a given day.\nA `nearestX` interactor selects the nearest date, and parameterized\nexpressions reactively update in response.\n"
+    "description": "What is the return on investment for different days? Hover over the chart to normalize the stock prices for the percentage return on a given day. A `nearestX` interactor selects the nearest date, and parameterized expressions reactively update in response.\n"
   },
   "data": {
     "stocks": {
-      "file": "https://uwdata.github.io/mosaic-datasets/data/stocks.csv"
+      "file": "data/stocks.parquet"
     },
     "labels": "SELECT MAX(Date) as Date, ARGMAX(Close, Date) AS Close, Symbol FROM stocks GROUP BY Symbol"
   },

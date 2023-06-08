@@ -16,7 +16,6 @@ vconcat:
   xLabel: Arrival Delay (min)
   xLabelAnchor: center
   yTickFormat: s
-  # width: 680
   height: 200
 - plot:
   - mark: rectY
@@ -31,5 +30,4 @@ vconcat:
   xLabel: Departure Time (hour)
   xLabelAnchor: center
   yTickFormat: s
-  # width: 680
   height: 200

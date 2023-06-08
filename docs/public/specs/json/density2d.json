@@ -1,7 +1,7 @@
 {
   "meta": {
     "title": "Density 2D",
-    "description": "A 2D `density` plot in which circle size indicates the point density.\nTo change the amount of smoothing, use the slider to set the kernel bandwidth.\n"
+    "description": "A 2D `density` plot in which circle size indicates the point density. To change the amount of smoothing, use the slider to set the kernel bandwidth.\n"
   },
   "data": {
     "penguins": {

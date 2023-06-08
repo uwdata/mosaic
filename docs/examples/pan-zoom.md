@@ -5,8 +5,7 @@
 
 # Pan & Zoom
 
-Linked panning and zooming across plots: drag to pan, scroll to zoom.
-`panZoom` interactors update a set of bound selections, one per unique axis.
+Linked panning and zooming across plots: drag to pan, scroll to zoom. `panZoom` interactors update a set of bound selections, one per unique axis.
 
 <Example spec="/specs/yaml/pan-zoom.yaml" />
 

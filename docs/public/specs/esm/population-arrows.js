@@ -1,7 +1,7 @@
 import * as vg from "@uwdata/vgplot";
 
 await vg.coordinator().exec(
-  vg.loadCSV("metros", "data/metros.csv")
+  vg.loadParquet("metros", "data/metros.parquet")
 );
 
 const $bend = vg.Param.value(true);

@@ -23,9 +23,10 @@ export default {
       const view = await parseSpec(spec, { baseURL: location.origin + import.meta.env.BASE_URL });
       this.$refs.view.replaceChildren(view);
     } catch (err) {
-      this.$refs.view.innerHTML = `<em>Example failed to load.</em> 😭<br/>
-      <em>Try using Chrome if you're on a different browser.</em>`;
       console.error(err);
+      if (this.$refs?.view) {
+        this.$refs.view.innerHTML = '<em>Example failed to load.</em> 😭';
+      }
     }
   },
   props: {

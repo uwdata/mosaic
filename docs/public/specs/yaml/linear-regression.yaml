@@ -1,12 +1,12 @@
 meta:
   title: Linear Regression
-  description: |
+  description: >
     A linear regression plot predicting athletes' heights based on their weights.
     Regression computation is performed in the database.
     The area around a regression line shows a 95% confidence interval.
     Select a region to view regression results for a data subset.
 data:
-  athletes: { file: data/athletes.csv }
+  athletes: { file: data/athletes.parquet }
 plot:
 - mark: dot
   data: { from: athletes }

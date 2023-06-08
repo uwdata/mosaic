@@ -1,7 +1,7 @@
 import * as vg from "@uwdata/vgplot";
 
 await vg.coordinator().exec(
-  vg.loadCSV("wind", "data/wind.csv")
+  vg.loadParquet("wind", "data/wind.parquet")
 );
 
 const $length = vg.Param.value(2);

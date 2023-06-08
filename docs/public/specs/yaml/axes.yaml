@@ -1,6 +1,6 @@
 meta:
   title: Axes & Gridlines
-  description: |
+  description: >
     Customized axis and gridline marks can be used in addition to standard
     scale attributes such as `xAxis`, `yGrid`, etc. Just add data!
 plot:

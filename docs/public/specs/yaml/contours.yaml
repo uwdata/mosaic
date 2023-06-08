@@ -1,12 +1,12 @@
 meta:
   title: Contour Plot
-  description: |
+  description: >
     Here `raster` and `contour` marks visualize the density of
     data points in a scatter plot of penguin measurments.
     Setting the `fill` color to `"species"` subdivides
     the data into three sets of densities.
 data:
-  penguins: { file: data/penguins.csv }
+  penguins: { file: data/penguins.parquet }
 params:
   bandwidth: 40
   thresholds: 10

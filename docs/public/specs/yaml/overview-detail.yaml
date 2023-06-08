@@ -1,6 +1,6 @@
 meta:
   title: Overview + Detail
-  description: |
+  description: >
     Select the top "overview" series to zoom the "focus" view below.
     An `intervalX` interactor updates a selection that filters the focus view.
     The `line` and `area` marks can apply

@@ -1,7 +1,7 @@
 import * as vg from "@uwdata/vgplot";
 
 await vg.coordinator().exec(
-  vg.loadCSV("aapl", "data/stocks.csv", { where: "Symbol = 'AAPL'" })
+  vg.loadParquet("aapl", "data/stocks.parquet", { where: "Symbol = 'AAPL'" })
 );
 
 export default vg.plot(

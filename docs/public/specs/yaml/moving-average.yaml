@@ -1,12 +1,12 @@
 meta:
   title: Moving Average
-  description: |
+  description: >
     This plot shows daily reported COVID-19 cases from March 3 (day 1) to May 5, 2020 (day 64)
     in Berlin, Germany, as reported by the [Robert Koch Institute](https://www.rki.de/DE/Content/InfAZ/N/Neuartiges_Coronavirus/nCoV.html).
     We can smooth the raw counts using a moving average over various choices of window query frames.
   credit: Adapted from the [Arquero window query tutorial](https://observablehq.com/@uwdata/working-with-window-queries).
 data:
-  cases: { file: data/berlin-covid.csv }
+  cases: { file: data/berlin-covid.parquet }
 params:
   frame: [-6, 0]
 vconcat:
