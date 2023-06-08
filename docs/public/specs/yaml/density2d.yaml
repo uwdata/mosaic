@@ -4,7 +4,7 @@ meta:
     A 2D `density` plot in which circle size indicates the point density.
     To change the amount of smoothing, use the slider to set the kernel bandwidth.
 data:
-  penguins: { file: data/penguins.csv }
+  penguins: { file: data/penguins.parquet }
 params:
   bandwidth: 20
   bins: 20
