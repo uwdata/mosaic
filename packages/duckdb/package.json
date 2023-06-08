@@ -18,6 +18,11 @@
     "type": "git",
     "url": "https://github.com/uwdata/mosaic.git"
   },
+  "bin": {
+    "to-arrow": "./bin/to-arrow.js",
+    "to-csv": "./bin/to-csv.js",
+    "to-parquet": "./bin/to-parquet.js"
+  },
   "scripts": {
     "lint": "eslint src test --ext .js",
     "server": "node bin/run-server.js",
