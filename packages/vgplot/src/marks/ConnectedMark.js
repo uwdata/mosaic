@@ -38,6 +38,11 @@ export class ConnectedMark extends Mark {
   }
 }
 
+/**
+ * M4 is a query for value-preserving time series aggregation (http://www.vldb.org/pvldb/vol7/p797-jugel.pdf).
+ * This implementation uses a more efficient version with a single scan and the aggregation functions
+arg min and arg max from https://arxiv.org/pdf/2306.03714.pdf.
+ */
 function m4(input, bx, x, y, lo, hi, width, cols = []) {
   const bins = sql`FLOOR(${width / (hi - lo)}::DOUBLE * (${bx} - ${+lo}::DOUBLE))::INTEGER`;
 
