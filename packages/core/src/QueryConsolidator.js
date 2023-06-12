@@ -3,44 +3,17 @@ import { Query, Ref } from '@uwdata/mosaic-sql';
 import { queryResult } from './util/query-result.js';
 
 /**
-Consolidate
-
-Query Consolidation Plan
-
-Query pooling:
-- Generate/return request promises for all input queries
-- Wait one frame, gather an ordered list of queries
-
-Query triage:
-- If query is already in cache, let it pass through as-is
-- Generate consolidation keys: source + group by
-- Within each key group:
-  - If only one query, let it pass through as-is
-  - If a repeated query, let pass through in manner that will hit cache
-  - Collect all fields, create canonical output name for each
-    - Build an output name map for each query
-    - Build consolidated query
-
-Query evaluation:
-- Issue query with caching disabled
-  - Upon query completion, dispatch results
-  - Build new arrow tables using output name map
-  - Add result tables to cache (if enabled)
-- Resolve request promises in input order
-
-Questions:
-- Apply consolidation always, or only upon initial client connect?
-  - If "one time", need to disable; perhaps upon triage start
-- What to do if query is already in cache? (Let it pass through)
-- What to do if new queries requested while still processing?
-  Is existing manager queue sufficient? Or do we need to await consolidation?
+ * Create a consolidator to combine structurally compatible queries.
+ * @param {*} enqueue Query manager enqueue method
+ * @param {*} cache Client-side query cache (sql -> data)
+ * @param {*} record Query recorder function
+ * @returns A consolidator object
  */
-
-export function consolidator(enqueue, cache) {
+export function consolidator(enqueue, cache, record) {
   let pending = [];
   let id = 0;
 
-  function triage() {
+  function run() {
     // group queries into bundles that can be consolidated
     const groups = entryGroups(pending, cache);
     pending = [];
@@ -48,7 +21,7 @@ export function consolidator(enqueue, cache) {
 
     // build and issue consolidated queries
     for (const group of groups) {
-      consolidate(group, enqueue);
+      consolidate(group, enqueue, record);
       processResults(group, cache);
     }
   }
@@ -57,7 +30,8 @@ export function consolidator(enqueue, cache) {
     add(entry, priority) {
       if (entry.request.type === 'arrow') {
         // wait one frame, gather an ordered list of queries
-        id = id || requestAnimationFrame(() => triage());
+        // only Apache Arrow is supported, so we can project efficiently
+        id = id || requestAnimationFrame(() => run());
         pending.push({ entry, priority, index: pending.length });
       } else {
         enqueue(entry, priority);
@@ -67,7 +41,7 @@ export function consolidator(enqueue, cache) {
 }
 
 /**
- * Segment query requests into consolidation-compatible groups
+ * Segment query requests into consolidation-compatible groups.
  * @param {*} entries Query request entries ({ request, result } objects)
  * @returns An array of grouped entry arrays
  */
@@ -135,12 +109,18 @@ function consolidationKey(query, cache) {
  * Issue queries, consolidating where possible.
  * @param {*} group Array of bundled query entries
  * @param {*} enqueue Add entry to query queue
+ * @param {*} record Query recorder function
  */
-function consolidate(group, enqueue) {
+function consolidate(group, enqueue, record) {
   if (shouldConsolidate(group)) {
     // issue a single consolidated query
     enqueue({
-      request: { type: 'arrow', cache: false, query: consolidatedQuery(group) },
+      request: {
+        type: 'arrow',
+        cache: false,
+        record: false,
+        query: consolidatedQuery(group, record)
+      },
       result: (group.result = queryResult())
     });
   } else {
@@ -152,7 +132,7 @@ function consolidate(group, enqueue) {
 }
 
 /**
- * Check if a group contains multiple distint queries
+ * Check if a group contains multiple distinct queries.
  * @param {*} group Array of bundled query entries
  * @returns false if group contains a single (possibly repeated) query,
  *  otherwise true
@@ -170,11 +150,12 @@ function shouldConsolidate(group) {
 }
 
 /**
- * Create a consolidated query for a group
+ * Create a consolidated query for a group.
  * @param {*} group Array of bundled query entries
+ * @param {*} record Query recorder function
  * @returns A consolidated Query instance
  */
-function consolidatedQuery(group) {
+function consolidatedQuery(group, record) {
   const maps = group.maps = [];
   const fields = new Map;
 
@@ -191,6 +172,7 @@ function consolidatedQuery(group) {
       const [name] = fields.get(e);
       fieldMap.push([name, as]);
     }
+    record(`${query}`);
   }
 
   // use a cloned query as a starting point
@@ -211,9 +193,9 @@ function consolidatedQuery(group) {
 /**
  * Process query results, dispatch results to original requests
  * @param {*} group Array of query requests
- * @param {*} cache Query cache (sql -> data)
+ * @param {*} cache Client-side query cache (sql -> data)
  */
-async function processResults(group, cache) {
+async function processResults(group, cache, record) {
   const { maps, result } = group;
   if (!maps) return; // no consolidation performed
 

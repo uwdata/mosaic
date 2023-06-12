@@ -26,14 +26,20 @@ export function QueryManager() {
     next();
   }
 
+  function recordQuery(sql) {
+    if (recorders.length && sql) {
+      recorders.forEach(rec => rec.add(sql));
+    }
+  }
+
   async function submit(request, result) {
     try {
-      const { query, type, cache = false, options } = request;
-      const sql = query ? String(query) : null;
+      const { query, type, cache = false, record = true, options } = request;
+      const sql = query ? `${query}` : null;
 
       // update recorders
-      if (recorders.length && sql) {
-        recorders.forEach(rec => rec.add(sql));
+      if (record) {
+        recordQuery(sql);
       }
 
       // check query cache
@@ -74,7 +80,7 @@ export function QueryManager() {
 
     consolidate(flag) {
       if (flag && !consolidate) {
-        consolidate = consolidator(enqueue, clientCache);
+        consolidate = consolidator(enqueue, clientCache, recordQuery);
       } else if (!flag && consolidate) {
         consolidate = null;
       }
