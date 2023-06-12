@@ -1,5 +1,7 @@
+import { consolidator } from './QueryConsolidator.js';
 import { lruCache, voidCache } from './util/cache.js';
 import { priorityQueue } from './util/priority-queue.js';
+import { queryResult } from './util/query-result.js';
 
 export const Priority = { High: 0, Normal: 1, Low: 2 };
 
@@ -10,12 +12,18 @@ export function QueryManager() {
   let logger;
   let recorders = [];
   let pending = null;
+  let consolidate;
 
   function next() {
     if (pending || queue.isEmpty()) return;
     const { request, result } = queue.next();
     pending = submit(request, result);
     pending.finally(() => { pending = null; next(); });
+  }
+
+  function enqueue(entry, priority = Priority.Normal) {
+    queue.insert(entry, priority);
+    next();
   }
 
   async function submit(request, result) {
@@ -64,10 +72,22 @@ export function QueryManager() {
       return connector ? (db = connector) : db;
     },
 
+    consolidate(flag) {
+      if (flag && !consolidate) {
+        consolidate = consolidator(enqueue, clientCache);
+      } else if (!flag && consolidate) {
+        consolidate = null;
+      }
+    },
+
     request(request, priority = Priority.Normal) {
       const result = queryResult();
-      queue.insert({ request, result }, priority);
-      next();
+      const entry = { request, result };
+      if (consolidate) {
+        consolidate.add(entry, priority);
+      } else {
+        enqueue(entry, priority);
+      }
       return result;
     },
 
@@ -104,13 +124,4 @@ export function QueryManager() {
       return recorder;
     }
   };
-}
-
-function queryResult() {
-  let resolve;
-  let reject;
-  const p = new Promise((r, e) => { resolve = r; reject = e; });
-  p.fulfill = value => (resolve(value), p);
-  p.reject = err => (reject(err), p);
-  return p;
 }
