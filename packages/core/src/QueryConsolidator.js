@@ -195,7 +195,7 @@ function consolidatedQuery(group, record) {
  * @param {*} group Array of query requests
  * @param {*} cache Client-side query cache (sql -> data)
  */
-async function processResults(group, cache, record) {
+async function processResults(group, cache) {
   const { maps, result } = group;
   if (!maps) return; // no consolidation performed
 
