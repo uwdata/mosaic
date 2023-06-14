@@ -1,4 +1,4 @@
-import { MosaicClient } from '@uwdata/mosaic-core';
+import { MosaicClient, coordinator } from '@uwdata/mosaic-core';
 import { Query, column, desc } from '@uwdata/mosaic-sql';
 import { formatDate, formatLocaleAuto, formatLocaleNumber } from './util/format.js';
 import { input } from './input.js';
@@ -55,9 +55,7 @@ export class Table extends MosaicClient {
 
       if (scrollHeight - scrollTop < 2 * clientHeight) {
         this.pending = true;
-        this.offset += this.limit;
-        const query = this.queryInternal(this.filterBy?.predicate(this));
-        this.requestQuery(query);
+        this.requestData(this.offset + this.limit);
       }
     });
 
@@ -72,6 +70,17 @@ export class Table extends MosaicClient {
 
     this.style = document.createElement('style');
     this.element.appendChild(this.style);
+  }
+
+  requestData(offset = 0) {
+    this.offset = offset;
+
+    // request next data batch
+    const query = this.query(this.filterBy?.predicate(this));
+    this.requestQuery(query);
+
+    // prefetch subsequent data batch
+    coordinator().prefetch(query.clone().offset(offset + this.limit));
   }
 
   fields() {
@@ -106,12 +115,7 @@ export class Table extends MosaicClient {
     return this;
   }
 
-  query(filter) {
-    this.offset = 0;
-    return this.queryInternal(filter);
-  }
-
-  queryInternal(filter = []) {
+  query(filter = []) {
     const { from, limit, offset, schema, sortColumn, sortDesc } = this;
     return Query.from(from)
       .select(schema.map(s => s.column))
@@ -178,8 +182,7 @@ export class Table extends MosaicClient {
     }
 
     // issue query for sorted data
-    const query = this.query(this.filterBy?.predicate(this));
-    this.requestQuery(query);
+    this.requestData();
   }
 }
 
