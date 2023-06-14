@@ -1,5 +1,7 @@
+import { consolidator } from './QueryConsolidator.js';
 import { lruCache, voidCache } from './util/cache.js';
 import { priorityQueue } from './util/priority-queue.js';
+import { queryResult } from './util/query-result.js';
 
 export const Priority = { High: 0, Normal: 1, Low: 2 };
 
@@ -10,6 +12,7 @@ export function QueryManager() {
   let logger;
   let recorders = [];
   let pending = null;
+  let consolidate;
 
   function next() {
     if (pending || queue.isEmpty()) return;
@@ -18,14 +21,25 @@ export function QueryManager() {
     pending.finally(() => { pending = null; next(); });
   }
 
+  function enqueue(entry, priority = Priority.Normal) {
+    queue.insert(entry, priority);
+    next();
+  }
+
+  function recordQuery(sql) {
+    if (recorders.length && sql) {
+      recorders.forEach(rec => rec.add(sql));
+    }
+  }
+
   async function submit(request, result) {
     try {
-      const { query, type, cache = false, options } = request;
-      const sql = query ? String(query) : null;
+      const { query, type, cache = false, record = true, options } = request;
+      const sql = query ? `${query}` : null;
 
       // update recorders
-      if (recorders.length && sql) {
-        recorders.forEach(rec => rec.add(sql));
+      if (record) {
+        recordQuery(sql);
       }
 
       // check query cache
@@ -64,10 +78,22 @@ export function QueryManager() {
       return connector ? (db = connector) : db;
     },
 
+    consolidate(flag) {
+      if (flag && !consolidate) {
+        consolidate = consolidator(enqueue, clientCache, recordQuery);
+      } else if (!flag && consolidate) {
+        consolidate = null;
+      }
+    },
+
     request(request, priority = Priority.Normal) {
       const result = queryResult();
-      queue.insert({ request, result }, priority);
-      next();
+      const entry = { request, result };
+      if (consolidate) {
+        consolidate.add(entry, priority);
+      } else {
+        enqueue(entry, priority);
+      }
       return result;
     },
 
@@ -104,13 +130,4 @@ export function QueryManager() {
       return recorder;
     }
   };
-}
-
-function queryResult() {
-  let resolve;
-  let reject;
-  const p = new Promise((r, e) => { resolve = r; reject = e; });
-  p.fulfill = value => (resolve(value), p);
-  p.reject = err => (reject(err), p);
-  return p;
 }

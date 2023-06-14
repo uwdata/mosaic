@@ -192,6 +192,11 @@ export class Query {
     }
   }
 
+  $groupby(...expr) {
+    this.query.groupby = [];
+    return this.groupby(...expr);
+  }
+
   having(...expr) {
     const { query } = this;
     if (expr.length === 0) {

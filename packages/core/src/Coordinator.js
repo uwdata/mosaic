@@ -29,7 +29,6 @@ export class Coordinator {
     this.configure(options);
     this.databaseConnector(db);
     this.clear();
-    this._recorders = [];
   }
 
   logger(logger) {
@@ -40,8 +39,9 @@ export class Coordinator {
     return this._logger;
   }
 
-  configure({ cache = true, indexes = true }) {
+  configure({ cache = true, consolidate = true, indexes = true }) {
     this.manager.cache(cache);
+    this.manager.consolidate(consolidate);
     this.indexes = indexes;
   }
 
