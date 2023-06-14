@@ -1,4 +1,3 @@
-import { Table } from 'apache-arrow';
 import { Query, Ref } from '@uwdata/mosaic-sql';
 import { queryResult } from './util/query-result.js';
 
@@ -232,7 +231,7 @@ function projectResult(data, map) {
     for (const [name, as] of map) {
       cols[as] = data.getChild(name);
     }
-    return new Table(cols);
+    return new data.constructor(cols);
   } else {
     return data;
   }
