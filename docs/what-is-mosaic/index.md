@@ -9,12 +9,6 @@ Mosaic is a framework for linking data visualizations, tables, input widgets, an
 
 A key idea is that interface components &ndash; Mosaic _clients_ &ndash; publish their data needs as queries that are managed by a central _coordinator_. The coordinator may further optimize queries before issuing them to a backing _data source_ such as [DuckDB](/duckdb/).
 
-Reactive variables for individual values (_params_) or filter criteria (_selections_) enable linked interaction among clients and the coordinator. A slider might update a _param_ value that parameterizes other clients. Or, interactions with charts or input widgets can populate a _selection_, which the coordinator uses to query filtered data and update linked clients.
-
-::: tip
-This website uses WebAssembly to run DuckDB in the browser. WebAssemply support and performance varies from browser to browser. For a smooth experience, we recommend using Chrome (or Chromium) to view this site.
-:::
-
 ## Linked Interactions
 
 Mosaic supports interaction across clients through reactive variables: _params_ and _selections_.
