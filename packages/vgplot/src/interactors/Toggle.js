@@ -75,6 +75,11 @@ export class Toggle {
       selection.update(this.clause(value));
     });
 
+    svg.addEventListener('dblclick', evt => {
+      this.value = null;
+      selection.update(this.clause(null));
+    });
+
     svg.addEventListener('mouseenter', () => {
       this.selection.activate(this.clause([this.channels.map(() => 0)]));
     });
