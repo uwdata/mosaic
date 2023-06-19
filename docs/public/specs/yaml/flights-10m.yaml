@@ -1,9 +1,10 @@
 meta:
   title: Cross-Filter Flights (10M)
-  description: >
+  description: |
     Histograms showing arrival delay, departure time, and distance flown for 10 million flights.
-    You may need to wait a few seconds for the dataset to load. Once loaded,
-    automatically-generated indexes enable efficient cross-filtered selections.
+    Once loaded, automatically-generated indexes enable efficient cross-filtered selections.
+
+    _You may need to wait a few seconds for the dataset to load._
 data:
   flights10m: SELECT
     GREATEST(-60, LEAST(ARR_DELAY, 180))::DOUBLE AS delay,
