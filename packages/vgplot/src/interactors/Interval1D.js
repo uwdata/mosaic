@@ -85,6 +85,6 @@ export class Interval1D {
       }
     }
 
-    svg.addEventListener('mouseenter', () => this.activate());
+    svg.addEventListener('pointerenter', () => this.activate());
   }
 }
