@@ -39,14 +39,14 @@ export class Nearest {
     const scale = svg.scale(channel);
     const param = !isSelection(selection);
 
-    root.on('mousemove', function(evt) {
+    root.on('pointerdown pointermove', function(evt) {
       const [x, y] = pointer(evt, this);
       const z = findNearest(data, key, scale.invert(channel === 'x' ? x : y));
       selection.update(param ? z : that.clause(z));
     });
 
     if (param) return;
-    svg.addEventListener('mouseenter', () => {
+    svg.addEventListener('pointerenter', () => {
       this.selection.activate(this.clause(0));
     });
   }

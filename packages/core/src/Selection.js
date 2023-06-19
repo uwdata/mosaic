@@ -121,6 +121,13 @@ export class Selection extends Param {
   }
 
   /**
+   * Indicate if this selection has a single resolution strategy.
+   */
+  get single() {
+    return this._resolver.single;
+  }
+
+  /**
    * Emit an activate event with the given selection clause.
    * @param {*} clause The clause repesenting the potential activation.
    */
