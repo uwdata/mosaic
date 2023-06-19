@@ -5,6 +5,7 @@ export class Toggle {
     selection,
     channels
   }) {
+    this.value = null;
     this.mark = mark;
     this.selection = selection;
     this.clients = new Set().add(mark);
@@ -56,31 +57,30 @@ export class Toggle {
     selector = selector || `[data-index="${mark.index}"]`;
     const groups = new Set(svg.querySelectorAll(selector));
 
-    svg.addEventListener('click', evt => {
+    svg.addEventListener('pointerdown', evt => {
+      const state = selection.single ? selection.value : this.value;
       const target = evt.target;
       let value = null;
 
       if (isTargetElement(groups, target)) {
-        const state = selection.single ? selection.value : this.value;
         const point = accessor(target);
         if (evt.shiftKey && state?.length) {
           value = state.filter(s => neq(s, point));
           if (value.length === state.length) value.push(point);
+        } else if (state?.length === 1 && !neq(state[0], point)) {
+          value = null;
         } else {
           value = [point];
         }
       }
 
       this.value = value;
-      selection.update(this.clause(value));
+      if (neqSome(state, value)) {
+        selection.update(this.clause(value));
+      }
     });
 
-    svg.addEventListener('dblclick', evt => {
-      this.value = null;
-      selection.update(this.clause(null));
-    });
-
-    svg.addEventListener('mouseenter', () => {
+    svg.addEventListener('pointerenter', () => {
       this.selection.activate(this.clause([this.channels.map(() => 0)]));
     });
   }
@@ -90,6 +90,12 @@ function isTargetElement(groups, node) {
   return groups.has(node)
     || groups.has(node.parentNode)
     || groups.has(node.parentNode?.parentNode);
+}
+
+function neqSome(a, b) {
+  return (a == null || b == null)
+    ? (a != null || b != null)
+    : (a.length !== b.length || a.some((x, i) => neq(x, b[i])));
 }
 
 function neq(a, b) {
