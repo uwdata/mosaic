@@ -1,6 +1,6 @@
 # Mosaic Widget
 
-A Jupyter Widget for Mosaic. Create interactive Mosaic plots over Pandas and Polars dataframes or DuckDB connections.
+A Jupyter Widget for Mosaic. Create interactive Mosaic plots over Pandas and Polars data frames or DuckDB connections.
 
 Learn how to install and use the widget in the [Mosaic documentation](https://uwdata.github.io/mosaic/jupyter/).
 

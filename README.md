@@ -13,7 +13,7 @@ Mosaic is an extensible architecture for linking data visualizations, tables, in
 
 The key idea is to have interface components "publish" their data needs as declarative queries that can be managed, optimized, and cross-filtered by a coordinator that proxies access to [DuckDB](https://duckdb.org/).
 
-[**Learn more about Mosaic in the documentation**](https://uwdata.github.io/mosaic/).
+[**Learn more about Mosaic at the documentation site**](https://uwdata.github.io/mosaic/).
 
 ## Repository Structure
 
@@ -24,10 +24,10 @@ This repository contains a set of related packages:
 - [`mosaic-sql`](https://github.com/uwdata/mosaic/tree/main/packages/sql): An API for convenient construction and analysis of SQL queries. Query objects then coerce to SQL query strings.
 - [`mosaic-inputs`](https://github.com/uwdata/mosaic/tree/main/packages/inputs): Standalone data-driven components such as input menus, text search boxes, and sortable, load-on-scroll data tables.
 - [`vgplot`](https://github.com/uwdata/mosaic/tree/main/packages/vgplot): A prototype visualization grammar implemented on top of [Observable Plot](https://github.com/observablehq/plot), in which marks (plot layers) are individual Mosaic clients. These marks can push data processing (binning, hex binning, regression) and optimizations (such as M4 for line/area charts) down to the database.
-- [`widget`](https://github.com/uwdata/mosaic/tree/main/packages/widget): A Jupyter widget for Mosaic.
+- [`widget`](https://github.com/uwdata/mosaic/tree/main/packages/widget): A Jupyter widget for Mosaic. Create interactive Mosaic plots over Pandas and Polars data frames or DuckDB connections.
 - [`vega-example`](https://github.com/uwdata/mosaic/tree/main/packages/vega-example): A preliminary example integrating Vega-Lite with Mosaic for data management and cross-view linking.
 
-## Build Instructions
+## Build ans Usage Instructions
 
 To build and develop Mosaic locally:
 
@@ -43,7 +43,7 @@ To run local interactive examples:
 
 To use Mosaic with DuckDB Python in Jupyter Notebooks:
 
-* See the [Mosaic `widget` documentation](https://github.com/uwdata/mosaic/tree/main/packages/widget).
+* See the [Mosaic `widget` documentation](https://uwdata.github.io/mosaic/jupyter/).
 
 To use Mosaic with DuckDB-WASM in Observable Notebooks:
 
