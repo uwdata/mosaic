@@ -16,6 +16,6 @@
     "@uwdata/mosaic-sql": "^0.3.0",
     "@uwdata/vgplot": "^0.3.0",
     "vega": "^5.25.0",
-    "vega-embed": "^6.18.2"
+    "vega-embed": "^6.22.1"
   }
 }
