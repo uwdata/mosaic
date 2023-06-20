@@ -1,6 +1,6 @@
 {
   "name": "@uwdata/vgplot",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "description": "A Mosaic-based interactive grammar of graphics.",
   "keywords": [
     "data",
