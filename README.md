@@ -27,7 +27,7 @@ This repository contains a set of related packages:
 - [`widget`](https://github.com/uwdata/mosaic/tree/main/packages/widget): A Jupyter widget for Mosaic. Create interactive Mosaic plots over Pandas and Polars data frames or DuckDB connections.
 - [`vega-example`](https://github.com/uwdata/mosaic/tree/main/packages/vega-example): A preliminary example integrating Vega-Lite with Mosaic for data management and cross-view linking.
 
-## Build ans Usage Instructions
+## Build and Usage Instructions
 
 To build and develop Mosaic locally:
 
