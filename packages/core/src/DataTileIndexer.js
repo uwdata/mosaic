@@ -15,8 +15,13 @@ const identity = x => x;
  * for an interval or point value predicate.
  */
 export class DataTileIndexer {
-
+  /**
+   * 
+   * @param {import('./Coordinator.js').Coordinator} mc a Mosaic coordinator
+   * @param {*} selection 
+   */
   constructor(mc, selection) {
+    /** @type import('./Coordinator.js').Coordinator */
     this.mc = mc;
     this.selection = selection;
     this.reset();
@@ -185,8 +190,15 @@ function binFunction(domain, range, pixelSize, lift, toSql) {
   return value => sql`${s}FLOOR(${a}::DOUBLE * (${toSql(value)} - ${lo}::DOUBLE))::INTEGER`;
 }
 
+/**
+ * 
+ * @param {import('./Coordinator.js').Coordinator} mc a Mosaic coordinator
+ * @param {*} table the name of the table to create
+ * @param {*} query the query to use to create the table from
+ * @returns 
+ */
 function createIndex(mc, table, query) {
-  return mc.exec(`CREATE TEMP TABLE IF NOT EXISTS ${table} AS ${query}`);
+  return mc.exec(`CREATE ${mc.persistIndexes === true ? '' : 'TEMP '}TABLE IF NOT EXISTS ${table} AS ${query}`);
 }
 
 const NO_INDEX = { from: NaN };

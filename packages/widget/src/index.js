@@ -1,11 +1,14 @@
+// @ts-check
+
 import { coordinator, namedPlots, parseSpec } from '@uwdata/vgplot';
 import * as arrow from 'apache-arrow';
 import './style.css';
 
 /**
  * @typedef Model
- * @prop {Record<any, unknown>} spec - the current specification
- * @prop {Array} selections - the current selections
+ * @prop {Record<any, unknown>} spec the current specification
+ * @prop {boolean} persist_indexes whether indexes should be persistent (not temp tables)
+ * @prop {Array} selections the current selections
  */
 
 /** @type {import("anywidget/types").Render<Model>} */
@@ -14,15 +17,17 @@ export async function render(view) {
 
   const getSpec = () => view.model.get('spec');
 
+  const getPersistIndexes = () => view.model.get('persist_indexes');
+
   const logger = coordinator().logger();
 
   /** @type Map<string, {query: Record<any, unknown>, startTime: number, resolve: (value: any) => void, reject: (reason?: any) => void}> */
   const openQueries = new Map();
 
   /**
-   * @param {Record<any, unknown>} query - the query to send
-   * @param {(value: any) => void} resolve - the promise resolve callback
-   * @param {(reason?: any) => void} reject - the promise reject callback
+   * @param {Record<any, unknown>} query the query to send
+   * @param {(value: any) => void} resolve the promise resolve callback
+   * @param {(reason?: any) => void} reject the promise reject callback
    */
   function send(query, resolve, reject) {
     const uuid = globalThis.crypto.randomUUID();
@@ -69,6 +74,12 @@ export async function render(view) {
 
   view.model.on('change:spec', () => updateSpec());
 
+  function updatePersistIndexes() {
+    coordinator().persistIndexes = getPersistIndexes();
+  }
+
+  view.model.on('change:persist_indexes', () => updatePersistIndexes());
+
   view.model.on('msg:custom', (msg, buffers) => {
     logger.group(`query ${msg.uuid}`);
     logger.log('received message', msg, buffers);
@@ -104,6 +115,7 @@ export async function render(view) {
   });
 
   coordinator().databaseConnector(connector);
+  updatePersistIndexes();
   updateSpec();
 
   return () => {

@@ -1,3 +1,4 @@
+import { quoteTableName } from '@uwdata/mosaic-sql';
 import { jsType } from './util/js-type.js';
 import { summarize } from './util/summarize.js';
 
@@ -61,7 +62,7 @@ export class Catalog {
 
 async function getTableInfo(mc, table) {
   const result = await mc.query(
-    `DESCRIBE "${table}"`,
+    `DESCRIBE ${quoteTableName(table)}`,
     { type: 'json', cache: false }
   );
 

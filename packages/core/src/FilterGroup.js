@@ -1,7 +1,13 @@
 import { DataTileIndexer } from './DataTileIndexer.js';
 
 export class FilterGroup {
+  /**
+   * @param {import('./Coordinator.js').Coordinator} coordinator The Mosaic coordinator.
+   * @param {*} selection 
+   * @param {*} index 
+   */
   constructor(coordinator, selection, index = true) {
+    /** @type import('./Coordinator.js').Coordinator */
     this.mc = coordinator;
     this.selection = selection;
     this.clients = new Set();
