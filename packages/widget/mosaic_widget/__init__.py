@@ -35,7 +35,15 @@ class MosaicWidget(anywidget.AnyWidget):
     # Whether indexes should be created as temp tables
     persist_indexes = traitlets.Bool().tag(sync=True)
 
-    def __init__(self, spec: dict = {}, con=duckdb.connect(), persist_indexes=False, data={}, *args, **kwargs):
+    def __init__(
+        self,
+        spec: dict = {},
+        con=duckdb.connect(),
+        persist_indexes=False,
+        data={},
+        *args,
+        **kwargs,
+    ):
         """Create a Mosaic widget.
 
         Args:
