@@ -30,7 +30,7 @@ export class Ref {
       const col = column.startsWith('*') ? column : `"${column}"`;
       return `${table ? `${quoteTableName(table)}.` : ''}${col}`;
     } else {
-      return table ? `${quoteTableName(table)}` : 'NULL';
+      return table ? quoteTableName(table) : 'NULL';
     }
   }
 }

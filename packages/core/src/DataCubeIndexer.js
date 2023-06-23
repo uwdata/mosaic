@@ -18,7 +18,7 @@ export class DataCubeIndexer {
   /**
    *
    * @param {import('./Coordinator.js').Coordinator} mc a Mosaic coordinator
-   * @param {*} selection
+   * @param {*} options Options hash to configure the data cube indexes and pass selections to the coordinator.
    */
   constructor(mc, { selection, temp = true }) {
     /** @type import('./Coordinator.js').Coordinator */

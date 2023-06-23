@@ -7,7 +7,7 @@ import './style.css';
 /**
  * @typedef Model
  * @prop {Record<any, unknown>} spec the current specification
- * @prop {boolean} persist_indexes whether indexes should be persistent (not temp tables)
+ * @prop {boolean} temp_cubes whether data cube indexes should be created as temp tables
  * @prop {Array} selections the current selections
  */
 
@@ -17,7 +17,7 @@ export async function render(view) {
 
   const getSpec = () => view.model.get('spec');
 
-  const getPersistIndexes = () => view.model.get('persist_indexes');
+  const getTempCubes = () => view.model.get('temp_cubes');
 
   const logger = coordinator().logger();
 
@@ -74,12 +74,12 @@ export async function render(view) {
 
   view.model.on('change:spec', () => updateSpec());
 
-  function updatePersistIndexes() {
-    const indexes = { temp: !getPersistIndexes() };
+  function configureCoordinator() {
+    const indexes = { temp: !getTempCubes() };
     coordinator().configure({ indexes });
   }
 
-  view.model.on('change:persist_indexes', () => updatePersistIndexes());
+  view.model.on('change:temp_cubes', () => configureCoordinator());
 
   view.model.on('msg:custom', (msg, buffers) => {
     logger.group(`query ${msg.uuid}`);
@@ -116,7 +116,7 @@ export async function render(view) {
   });
 
   coordinator().databaseConnector(connector);
-  updatePersistIndexes();
+  configureCoordinator();
   updateSpec();
 
   return () => {
