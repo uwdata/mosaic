@@ -1,6 +1,6 @@
 # Mosaic Jupyter Widget
 
-The Mosaic `widget` package provides a Jupyter widget for creating interactive Mosaic plots over Pandas and Polars dataframes or DuckDB connections.
+The Mosaic `widget` package provides a Jupyter widget for creating interactive Mosaic plots over Pandas and Polars data frames or DuckDB connections.
 
 ## Installation
 

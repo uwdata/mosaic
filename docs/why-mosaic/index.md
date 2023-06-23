@@ -48,7 +48,7 @@ Mosaic improves performance further by caching results and, when possible, perfo
 The figure below shows render times for static plots over increasing dataset sizes.
 Mosaic provides faster results, often by one or more orders of magnitude.
 DuckDB-WASM in the browser fares well, though is limited (compared to a DuckDB server) by WebAssembly's lack of parallel processing.
-[VegaFusion](https://vegafusion.io/) performs server-side optimization for _bars_ and _2D histograms_, but otherwise provided results identical to Vega-Lite.
+[VegaFusion](https://vegafusion.io/) performs server-side optimization for _bars_ and _2D histograms_, but otherwise provides results identical to Vega-Lite.
 
 <svg xmlns="http://www.w3.org/2000/svg" class="plot-why" fill="currentColor" font-family="system-ui, sans-serif" font-size="10" text-anchor="middle" viewBox="0 0 800 115">
   <g aria-label="facet" transform="translate(2,0)">

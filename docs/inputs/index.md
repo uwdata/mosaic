@@ -5,7 +5,7 @@
 
 # Mosaic Inputs
 
-Inspired by [Observable Inputs](https://observablehq.com/@observablehq/inputs), the Mosaic `inputs` pacakage includes a set of input widgets and a table viewer.
+Inspired by [Observable Inputs](https://observablehq.com/@observablehq/inputs), the Mosaic `inputs` package includes a set of input widgets and a table viewer.
 Each input widget is a Mosaic client that uses params or selections for linked interactions.
 
 This example dashboard of Olympic athlete statistics uses `menu` and `search` inputs to filter the display, including the scrollable and sortable `table` below.
