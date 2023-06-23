@@ -30,7 +30,7 @@ export class Ref {
       const col = column.startsWith('*') ? column : `"${column}"`;
       return `${table ? `${quoteTableName(table)}.` : ''}${col}`;
     } else {
-      return table ? `${quoteTableName(table)}` : 'NULL';
+      return table ? quoteTableName(table) : 'NULL';
     }
   }
 }
@@ -40,7 +40,7 @@ export class Ref {
  * @param {string} table the name of the table which may contain a database reference
  * @returns The quoted table name.
  */
-export function quoteTableName(table) {
+function quoteTableName(table) {
   const pieces = table.split('.');
   return pieces.map(p => `"${p}"`).join('.');
 }
