@@ -75,7 +75,7 @@ export async function render(view) {
   view.model.on('change:spec', () => updateSpec());
 
   function configureCoordinator() {
-    const indexes = { temp: !getTempCubes() };
+    const indexes = { temp: getTempCubes() };
     coordinator().configure({ indexes });
   }
 
