@@ -75,7 +75,8 @@ export async function render(view) {
   view.model.on('change:spec', () => updateSpec());
 
   function updatePersistIndexes() {
-    coordinator().persistIndexes = getPersistIndexes();
+    const indexes = { temp: !getPersistIndexes() };
+    coordinator().configure({ indexes });
   }
 
   view.model.on('change:persist_indexes', () => updatePersistIndexes());

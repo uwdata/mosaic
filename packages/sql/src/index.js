@@ -4,8 +4,7 @@ export {
   asRelation,
   all,
   column,
-  relation,
-  quoteTableName
+  relation
 } from './ref.js';
 
 export {

@@ -1,29 +1,30 @@
-import { Query, and, asColumn, epoch_ms, isBetween, sql } from '@uwdata/mosaic-sql';
+import { Query, and, asColumn, create, epoch_ms, isBetween, sql } from '@uwdata/mosaic-sql';
 import { fnv_hash } from './util/hash.js';
 
 const identity = x => x;
 
 /**
- * Build and query optimized indices ("data tiles") for fast computation of
+ * Build and query optimized indices ("data cubes") for fast computation of
  * groupby aggregate queries over compatible client queries and selections.
- * A data tile contains pre-aggregated data for a Mosaic client, subdivided
- * by possible query values from an active view. Index tiles are realized as
+ * A data cube contains pre-aggregated data for a Mosaic client, subdivided
+ * by possible query values from an active view. Indexes are realized as
  * as temporary database tables that can be queried for rapid updates.
  * Compatible client queries must pull data from the same backing table and
  * must consist of only groupby dimensions and supported aggregates.
  * Compatible selections must contain an active clause that exposes a schema
  * for an interval or point value predicate.
  */
-export class DataTileIndexer {
+export class DataCubeIndexer {
   /**
-   * 
+   *
    * @param {import('./Coordinator.js').Coordinator} mc a Mosaic coordinator
-   * @param {*} selection 
+   * @param {*} selection
    */
-  constructor(mc, selection) {
+  constructor(mc, { selection, temp = true }) {
     /** @type import('./Coordinator.js').Coordinator */
     this.mc = mc;
     this.selection = selection;
+    this.temp = temp;
     this.reset();
   }
 
@@ -62,13 +63,14 @@ export class DataTileIndexer {
     const activeView = this.activeView = getActiveView(active);
     if (!activeView) return false; // active selection clause not compatible
 
-    this.mc.logger().warn('DATA TILE INDEX CONSTRUCTION');
+    this.mc.logger().warn('DATA CUBE INDEX CONSTRUCTION');
 
     // create a selection with the active source removed
     const sel = this.selection.remove(source);
 
-    // generate data tile indices
+    // generate data cube indices
     const indices = this.indices = new Map;
+    const { mc, temp } = this;
     for (const client of clients) {
       if (sel.skip(client, active)) continue;
       const index = getIndexColumns(client);
@@ -87,8 +89,8 @@ export class DataTileIndexer {
 
       const sql = query.toString();
       const id = (fnv_hash(sql) >>> 0).toString(16);
-      const table = `tile_index_${id}`;
-      const result = createIndex(this.mc, table, sql);
+      const table = `cube_index_${id}`;
+      const result = mc.exec(create(table, sql, { temp }));
       indices.set(client, { table, result, ...index });
     }
   }
@@ -188,17 +190,6 @@ function binFunction(domain, range, pixelSize, lift, toSql) {
   const a = (Math.abs(lift(range[1]) - lift(range[0])) / (hi - lo)) / pixelSize;
   const s = pixelSize === 1 ? '' : `${pixelSize}::INTEGER * `;
   return value => sql`${s}FLOOR(${a}::DOUBLE * (${toSql(value)} - ${lo}::DOUBLE))::INTEGER`;
-}
-
-/**
- * 
- * @param {import('./Coordinator.js').Coordinator} mc a Mosaic coordinator
- * @param {*} table the name of the table to create
- * @param {*} query the query to use to create the table from
- * @returns 
- */
-function createIndex(mc, table, query) {
-  return mc.exec(`CREATE ${mc.persistIndexes === true ? '' : 'TEMP '}TABLE IF NOT EXISTS ${table} AS ${query}`);
 }
 
 const NO_INDEX = { from: NaN };
