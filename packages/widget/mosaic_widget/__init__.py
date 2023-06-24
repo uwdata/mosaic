@@ -33,13 +33,13 @@ class MosaicWidget(anywidget.AnyWidget):
     selections = traitlets.List([]).tag(sync=True)
 
     # Whether data cube indexes should be created as temp tables
-    temp_cubes = traitlets.Bool().tag(sync=True)
+    temp_indexes = traitlets.Bool().tag(sync=True)
 
     def __init__(
         self,
         spec: dict = {},
         con=duckdb.connect(),
-        temp_cubes=True,
+        temp_indexes=True,
         data={},
         *args,
         **kwargs,
@@ -52,13 +52,13 @@ class MosaicWidget(anywidget.AnyWidget):
                 Defaults to duckdb.connect().
             data (dict, optional): Pandas DataFrames to add to DuckDB.
                 The keys are used as the names of the tables. Defaults to {}.
-            temp_cubes (bool, optional): Whether data cube indexes should be created as
+            temp_indexes (bool, optional): Whether data cube indexes should be created as
                 persistent (rather than temp) tables. Defaults to True.
         """
         super().__init__(*args, **kwargs)
         self.spec = spec
         self.con = con
-        self.temp_cubes = temp_cubes
+        self.temp_indexes = temp_indexes
         for name, df in data.items():
             self.con.register(name, df)
         self.on_msg(self._handle_custom_msg)

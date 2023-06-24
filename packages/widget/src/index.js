@@ -7,7 +7,7 @@ import './style.css';
 /**
  * @typedef Model
  * @prop {Record<any, unknown>} spec the current specification
- * @prop {boolean} temp_cubes whether data cube indexes should be created as temp tables
+ * @prop {boolean} temp_indexes whether data cube indexes should be created as temp tables
  * @prop {Array} selections the current selections
  */
 
@@ -17,7 +17,7 @@ export async function render(view) {
 
   const getSpec = () => view.model.get('spec');
 
-  const getTempCubes = () => view.model.get('temp_cubes');
+  const getTempIndexes = () => view.model.get('temp_indexes');
 
   const logger = coordinator().logger();
 
@@ -75,11 +75,11 @@ export async function render(view) {
   view.model.on('change:spec', () => updateSpec());
 
   function configureCoordinator() {
-    const indexes = { temp: getTempCubes() };
+    const indexes = { temp: getTempIndexes() };
     coordinator().configure({ indexes });
   }
 
-  view.model.on('change:temp_cubes', () => configureCoordinator());
+  view.model.on('change:temp_indexes', () => configureCoordinator());
 
   view.model.on('msg:custom', (msg, buffers) => {
     logger.group(`query ${msg.uuid}`);
