@@ -52,8 +52,8 @@ class MosaicWidget(anywidget.AnyWidget):
                 Defaults to duckdb.connect().
             data (dict, optional): Pandas DataFrames to add to DuckDB.
                 The keys are used as the names of the tables. Defaults to {}.
-            temp_indexes (bool, optional): Whether data cube indexes should be created as
-                persistent (rather than temp) tables. Defaults to True.
+            temp_indexes (bool, optional): Whether data cube indexes should be
+                created as temp tables tables. Defaults to True.
         """
         super().__init__(*args, **kwargs)
         self.spec = spec
