@@ -9,7 +9,7 @@ let _instance;
 /**
  * Set or retrieve the coordinator instance.
  *
- * @param {Coordinator} coordinator the coordinator instance to set
+ * @param {Coordinator} instance the coordinator instance to set
  * @returns {Coordinator} the coordinator instance
  */
 export function coordinator(instance) {

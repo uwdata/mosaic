@@ -28,11 +28,21 @@ export class Ref {
     const { table, column } = this;
     if (column) {
       const col = column.startsWith('*') ? column : `"${column}"`;
-      return `${table ? `"${table}".` : ''}${col}`;
+      return `${table ? `${quoteTableName(table)}.` : ''}${col}`;
     } else {
-      return table ? `"${table}"` : 'NULL';
+      return table ? quoteTableName(table) : 'NULL';
     }
   }
+}
+
+/**
+ * Quote a table name. For example, `foo.bar` becomes `"foo"."bar".
+ * @param {string} table the name of the table which may contain a database reference
+ * @returns The quoted table name.
+ */
+function quoteTableName(table) {
+  const pieces = table.split('.');
+  return pieces.map(p => `"${p}"`).join('.');
 }
 
 /**

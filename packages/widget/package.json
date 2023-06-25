@@ -11,7 +11,8 @@
   "scripts": {
     "build": "vite build",
     "dev": "vite",
-    "test": "tsc"
+    "test": "tsc",
+    "format": "ruff . && black ."
   },
   "dependencies": {
     "@uwdata/vgplot": "^0.3.1",
