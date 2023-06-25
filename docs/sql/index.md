@@ -31,7 +31,7 @@ Query
   .qualify(/* post-window filter criteria */)
   .orderby(/* columns or expressions to sort by */)
   .limit(/* max number of rows */)
-  .offset(/* offet number of rows */)
+  .offset(/* offset number of rows */)
 ```
 
 [Query API Reference](/api/sql/queries)
