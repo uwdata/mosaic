@@ -1,5 +1,7 @@
 const constantOptions = new Set([
   'order',
+  'sort',
+  'filter',
   'label',
   'anchor',
   'curve',
