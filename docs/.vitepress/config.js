@@ -86,6 +86,7 @@ export default defineConfig({
             { text: 'Presidential Opinion', link: '/examples/presidential-opinion' },
             { text: 'Voronoi Diagram', link: '/examples/voronoi' },
             { text: 'Seattle Temperatures', link: '/examples/seattle-temp' },
+            { text: 'Sorted Bars', link: '/examples/sorted-bars' },
             { text: 'Sortable Table', link: '/examples/table' },
             { text: 'Earthquakes', link: '/examples/earthquakes' }
           ]
