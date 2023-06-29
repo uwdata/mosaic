@@ -7,6 +7,9 @@ import { Transform } from '../symbols.js';
 
 const isColorChannel = channel => channel === 'stroke' || channel === 'fill';
 const isSymbolChannel = channel => channel === 'symbol';
+const isFieldObject = (channel, field) => {
+  return channel !== 'sort' && field != null && !Array.isArray(field);
+};
 const fieldEntry = (channel, field) => ({
   channel,
   field,
@@ -58,7 +61,7 @@ export class Mark extends MosaicClient {
             return this.update();
           });
         }
-      } else if (type === 'object' && !Array.isArray(entry) && entry != null) {
+      } else if (type === 'object' && isFieldObject(channel, entry)) {
         channels.push(fieldEntry(channel, entry));
       } else if (entry !== undefined) {
         channels.push(valueEntry(channel, entry));
