@@ -4,6 +4,7 @@
   "private": true,
   "license": "BSD-3-Clause",
   "author": "Dominik Moritz (https://www.domoritz.de)",
+  "type": "module",
   "repository": {
     "type": "git",
     "url": "https://github.com/uwdata/mosaic.git"
@@ -19,6 +20,6 @@
     "apache-arrow": "^11.0.0"
   },
   "devDependencies": {
-    "anywidget": "^0.5.2"
+    "anywidget": "^0.6.1"
   }
 }
