@@ -20,6 +20,6 @@
     "apache-arrow": "^11.0.0"
   },
   "devDependencies": {
-    "anywidget": "^0.6.1"
+    "anywidget": "^0.6.3"
   }
 }
