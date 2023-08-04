@@ -1,6 +1,6 @@
 {
   "name": "@uwdata/mosaic-core",
-  "version": "0.3.2",
+  "version": "0.3.3",
   "description": "Scalable and extensible linked data views.",
   "keywords": [
     "mosaic",
