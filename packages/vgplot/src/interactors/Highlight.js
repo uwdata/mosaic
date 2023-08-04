@@ -55,8 +55,11 @@ async function predicateFunction(mark, selection) {
     return () => true;
   }
 
+  // create a selection with the active source removed
+  const sel = mark.filterBy?.remove(null);
+
   const s = { __: and(pred) };
-  const q = mark.query(mark.filterBy?.predicate(mark));
+  const q = mark.query(sel?.predicate(mark));
   const p = q.groupby().length ? q.select(s) : q.$select(s);
 
   const data = await coordinator().query(p);
