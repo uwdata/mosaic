@@ -1,5 +1,7 @@
 # Mosaic Widget
 
+[![PyPi](https://img.shields.io/pypi/v/mosaic-widget.svg)](https://pypi.org/project/mosaic-widget/)
+
 A Jupyter Widget for Mosaic. Create interactive Mosaic plots over Pandas and Polars data frames or DuckDB connections.
 
 Learn how to install and use the widget in the [Mosaic documentation](https://uwdata.github.io/mosaic/jupyter/).
@@ -18,4 +20,4 @@ Run `npm run build` to build the widget JavaScript code. If you want to live edi
 
 ## Publishing
 
-First, make sure that you set `_DEV = False`. Run the build with `npm run build` and `hatch build`. Then publish with `hatch publish`.
+First, make sure that you set `_DEV = False`. Run the build with `npm run build` and `hatch build`. Then publish with `hatch publish`. We publish using tokens so when asked, set the username to `__token__` and then use your token as the password.
