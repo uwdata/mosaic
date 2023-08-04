@@ -1,0 +1,37 @@
+data:
+  penguins: { file: data/penguins.csv }
+params:
+  filter: { select: crossfilter }
+  select: { select: single }
+vconcat:
+- hconcat:
+  - input: menu
+    label: Species
+    as: $filter
+    from: penguins
+    column: species
+- vspace: 20
+- name: total
+  plot:
+  - mark: barX
+    data: { from: penguins, filterBy: $filter }
+    x: { count: '' }
+  xLabel: Total →
+  xDomain: Fixed
+- vspace: 20
+- name: sex
+  plot:
+  - mark: barY
+    data: { from: penguins, filterBy: $filter }
+    x: sex
+    y: { count: '' }
+  - select: highlight
+    by: $select
+  - select: toggleX
+    as: $select
+  - select: toggleX
+    as: $filter
+  xLabel: ''
+  yLabel: Total
+  xDomain: Fixed
+  yDomain: Fixed
