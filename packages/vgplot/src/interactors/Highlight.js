@@ -55,11 +55,16 @@ async function predicateFunction(mark, selection) {
     return () => true;
   }
 
+  // set flag so we do not skip cross-filtered sources
+  const filter = mark.filterBy?.predicate(mark, true);
+
   const s = { __: and(pred) };
-  const q = mark.query(mark.filterBy?.predicate(mark));
+  const q = mark.query(filter);
   const p = q.groupby().length ? q.select(s) : q.$select(s);
 
   const data = await coordinator().query(p);
   const v = data.getChild?.('__');
-  return v ? (i => v.get(i)) : (i => data[i].__);
+  return !(data.numRows || data.length) ? (() => false)
+    : v ? (i => v.get(i))
+    : (i => data[i].__);
 }
