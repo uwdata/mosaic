@@ -86,7 +86,7 @@ export class Selection extends Param {
 
   /**
    * Create a clone of this Selection with clauses corresponding
-   * to provided source removed.
+   * to the provided source removed.
    * @param {*} source The clause source to remove.
    * @returns {this} A cloned and updated Selection.
    */
@@ -192,12 +192,16 @@ export class Selection extends Param {
   /**
    * Return a selection query predicate for the given client.
    * @param {*} client The client whose data may be filtered.
+   * @param {boolean} [noSkip=false] Disable skipping of active
+   *  cross-filtered sources. If set true, the source of the active
+   *  clause in a cross-filtered selection will not be skipped.
    * @returns {*} The query predicate for filtering client data,
    *  based on the current state of this selection.
    */
-  predicate(client) {
+  predicate(client, noSkip = false) {
     const { clauses } = this;
-    return this._resolver.predicate(clauses, clauses.active, client);
+    const active = noSkip ? null : clauses.active;
+    return this._resolver.predicate(clauses, active, client);
   }
 }
 
