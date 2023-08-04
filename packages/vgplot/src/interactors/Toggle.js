@@ -1,4 +1,4 @@
-import { and, or, eq, literal } from '@uwdata/mosaic-sql';
+import { and, or, isNotDistinct, literal } from '@uwdata/mosaic-sql';
 
 export class Toggle {
   constructor(mark, {
@@ -31,7 +31,9 @@ export class Toggle {
 
     if (value) {
       const clauses = value.map(vals => {
-        const list = vals.map((v, i) => eq(channels[i].field, literal(v)));
+        const list = vals.map((v, i) => {
+          return isNotDistinct(channels[i].field, literal(v));
+        });
         return list.length > 1 ? and(list) : list[0];
       });
       predicate = clauses.length > 1 ? or(clauses) : clauses[0];
