@@ -111,6 +111,7 @@ export default defineConfig({
             { text: 'Cross-Filter Flights 10M', link: '/examples/flights-10m' },
             { text: 'Gaia Star Catalog', link: '/examples/gaia' },
             { text: 'Olympic Athletes', link: '/examples/athletes' },
+            { text: 'Olympic Athletes 2', link: '/examples/athletes-local' },
             { text: 'Pan & Zoom', link: '/examples/pan-zoom' },
             { text: 'Scatter Plot Matrix', link: '/examples/splom' },
             { text: 'Seattle Weather', link: '/examples/weather' }

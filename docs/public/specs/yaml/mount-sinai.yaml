@@ -1,0 +1,50 @@
+meta:
+  title: Hospital Charge Data
+  description: An interactive dashboard of hospital charge data
+
+data:
+  charges: {file: data/131624096_mount-sinai-hospital_standardcharges-subset.parquet}  
+
+hconcat:
+- vconcat:
+  - hconcat:
+    - input: menu 
+      label: Primary Code
+      as: $query
+      from: charges
+      column: Primary_Code
+    - input: search
+      label: Description
+      as: $query
+      from: charges
+      column: description
+      type: contains
+
+  - plot:
+    - mark: dot
+      data: {from: charges, filterBy: $query}
+      x: Minimum_Negotiated_Charge  
+      y: Maximum_Negotiated_Charge
+      opacity: 0.5
+      
+    - mark: regressionY
+      data: {from: charges, filterBy: $query}  
+      x: Minimum_Negotiated_Charge
+      y: Maximum_Negotiated_Charge
+
+  - input: table
+    from: charges
+    filterBy: $query
+    maxWidth: 600
+    columns: 
+      - Code_type
+      - Primary_Code
+      - description
+      - Minimum_Negotiated_Charge
+      - Maximum_Negotiated_Charge
+    width: 
+      Code_type: 100
+      Primary_Code: 100  
+      description: 200
+      Minimum_Negotiated_Charge: 100
+      Maximum_Negotiated_Charge: 100
