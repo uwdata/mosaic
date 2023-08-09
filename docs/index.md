@@ -4,7 +4,7 @@ layout: home
 
 hero:
   text: |
-    Scalable, interactive data visualization Payless
+    Scalable, interactive data visualization Payless2
   tagline: |
     Mosaic is an extensible framework for linking databases and interactive views.
   image:
