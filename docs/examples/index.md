@@ -1,18 +1,5 @@
 # Examples
 
-Mosaic-powered visualizations created with [vgplot](/vgplot/).
-These visualizations can be specified using a JavaScript API, or in a standalone YAML or JSON file. Each example includes code for all three specification formats.
+We use Mosaic (https://uwdata.github.io/mosaic/examples/) to enable the public and employers to access the 4,000+ hospital price files we have collected thanks to a DoltHub data bounty (https://www.dolthub.com/repositories/onefact/paylesshealth).
 
-For example, here is a line chart of historical Apple stock prices:
-
-<Example spec="/specs/yaml/line.yaml" />
-
-::: code-group
-<<< @/public/specs/esm/line.js [JavaScript]
-<<< @/public/specs/yaml/line.yaml [YAML]
-<<< @/public/specs/json/line.json [JSON]
-:::
-
-::: tip
-For greater scalability and performance, consider using a local [DuckDB data server](/duckdb/) or viewing examples in [Jupyter](/jupyter/).
-:::
+Here is Mount Sinai as an example: https://beta.payless.health/examples/mount-sinai.html

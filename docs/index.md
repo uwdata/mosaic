@@ -4,22 +4,16 @@ layout: home
 
 hero:
   text: |
-    Scalable, interactive data visualization 2
+    Why pay more?
   tagline: |
-    Mosaic is an extensible framework for linking databases and interactive views.
-  image:
-    src: /contours.svg
-    alt: Mosaic visualizing the 1.8B Gaia star catalog
+    Payless Health aims to reduce the price of health care by helping people and employers make decisions using open source AI and data.
   actions:
     - theme: brand
-      text: What is Mosaic?
-      link: /what-is-mosaic/
+      text: Who is behind this?
+      link: https://onefact.org/team
     - theme: alt
-      text: Get started
-      link: /get-started/
-    - theme: alt
-      text: Examples
-      link: /examples/
+      text: See an Example of hospital prices visualized
+      link: /examples/mount-sinai
 
 features:
   - icon: 📈
