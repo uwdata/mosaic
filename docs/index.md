@@ -17,16 +17,16 @@ hero:
 
 features:
   - icon: 📈
-    title: Explore massive datasets
-    details: Visualize, select, and filter datasets with millions or billions of records.
+    title: Explore price variation
+    details: Visualize, select, and filter hospital prices and negotiated rates with millions or billions of records.
   - icon: 🚀
     title: Flexible deployment
-    details: Build data-driven web apps, or interact with data directly in Jupyter notebooks.
+    details: We can help your team analyze your employees' claim feeds, and have trained hundreds of people using the infrastructure required for this.
   - icon: 🛠️
     title: Interoperable & extensible
-    details: Create new components that seamlessly integrate across selections and datasets.
+    details: We help you integrate the public data we aggregate into your workflows, identify insights, and create action plans to reduce the cost of care.
   - icon: 🦆
-    title: Powered by DuckDB
-    details: Mosaic pushes computation to <a href="https://duckdb.org/">DuckDB</a>, both server-side and in your browser via WebAssembly.
+    title: Powered by open source
+    details: Our team at One Fact Foundation has published peer-reviewed papers in health equity and bioinformatics research, including having built one of the first large language models for health care, cited over 500+ times. This can help increase transparency and trust in our tools, in addition to our status as a 501(c)(3) non-profit.
 ---
 
