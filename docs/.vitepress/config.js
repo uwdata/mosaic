@@ -4,7 +4,7 @@ import { defineConfig } from 'vitepress'
 export default defineConfig({
   title: 'Mosaic',
   description: 'Scalable, interactive data visualization',
-  base: '/mosaic/',
+  base: '/',
   themeConfig: {
     // https://vitepress.dev/reference/default-theme-config
     logo: {
