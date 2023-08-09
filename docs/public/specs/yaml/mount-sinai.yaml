@@ -9,42 +9,56 @@ hconcat:
 - vconcat:
   - hconcat:
     - input: menu 
-      label: Primary Code
+      label: Code type
       as: $query
       from: charges
-      column: Primary_Code
+      column: Code_type
     - input: search
       label: Description
       as: $query
       from: charges
       column: description
       type: contains
-
+  - vspace: 10
   - plot:
     - mark: dot
       data: {from: charges, filterBy: $query}
-      x: Minimum_Negotiated_Charge  
-      y: Maximum_Negotiated_Charge
-      opacity: 0.5
-      
+      x: Min_Charge  
+      y: Max_Charge
+      opacity: 0.1
+      fill: Code_type
+      r: 2      
     - mark: regressionY
       data: {from: charges, filterBy: $query}  
-      x: Minimum_Negotiated_Charge
-      y: Maximum_Negotiated_Charge
-
+      x: Min_Charge
+      y: Max_Charge
+    - select: intervalXY
+      as: $query
+      brush: { fillOpacity: 0, stroke: black }      
+    margins: { left: 60, top: 20, right: 60 }
+    xyDomain: Fixed
+    width: 570
+    height: 350
+    yDomain: [0, 500000]
+    xDomain: [0, 500000]
+  - vspace: 5
   - input: table
     from: charges
     filterBy: $query
-    maxWidth: 600
+    maxWidth: 700
     columns: 
       - Code_type
       - Primary_Code
       - description
-      - Minimum_Negotiated_Charge
-      - Maximum_Negotiated_Charge
+      - Min_Charge
+      - Max_Charge
+      - Product_Name_Maximum
+      - Product_Name_Minimum
     width: 
       Code_type: 100
       Primary_Code: 100  
       description: 200
-      Minimum_Negotiated_Charge: 100
-      Maximum_Negotiated_Charge: 100
+      Min_Charge: 100
+      Max_Charge: 100
+      Product_Name_Minimum: 120
+      Product_Name_Maximum: 120
