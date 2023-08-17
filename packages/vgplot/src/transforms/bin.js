@@ -38,7 +38,7 @@ function binField(mark, column, options) {
       const base = b.min === 0 ? col : `(${col} - ${b.min})`;
       const alpha = `${(b.max - b.min) / b.steps}::DOUBLE`;
       const off = options.offset ? `${options.offset} + ` : '';
-      return `${min} + ${alpha} * (${off}FLOOR(${base} / ${alpha})::INTEGER)`;
+      return `${b.min} + ${alpha} * (${off}FLOOR(${base} / ${alpha})::INTEGER)`;
     }
   };
 }
