@@ -112,7 +112,7 @@
     const code = await specToModule(spec, { ...options, imports });
     const blob = new Blob([code], { type: 'text/javascript' });
     const url = URL.createObjectURL(blob);
-    return (await import(url)).default;
+    return (await import(url /* @vite-ignore */)).default;
   }
 </script>
 </body>
