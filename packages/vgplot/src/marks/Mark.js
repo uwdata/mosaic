@@ -138,7 +138,19 @@ export class Mark extends MosaicClient {
   }
 
   queryResult(data) {
+    const timestamp_keys = Object.entries(this.stats).filter(([c, s]) => {
+      return s.sqlType === 'TIMESTAMP';
+    }).map(([c, s]) => c);
+    
     this.data = Array.from(data);
+    if (timestamp_keys.length > 0) {
+      this.data = this.data.map(d => {
+        timestamp_keys.forEach(k => {
+          d[k] = new Date(d[k]);
+        });
+        return d;
+      });
+    }
     return this;
   }
 
