@@ -180,6 +180,14 @@ The supported external _options_ are:
 - _params_: An array (default `[]`) of predefined [`Param`](../core/param) instances. Each entry should have the form `[name, param]`.
 - _datasets_: An array (default `[]`) of preloaded browser-managed datasets (such as GeoJSON data). Each entry should have the form `[name, dataset]`.
 
+## parsePlotSpec
+
+`parsePlotSpec(specification, options, element)`
+
+Parse a JSON _specification_ of a single plot and return corresponding `Plot` instance.
+See `parseSpec` for supported _options_.
+If provided, the input _element_ will be used as the container for the plot, otherwise a new `div` element will be generated.
+
 ## specToModule
 
 `specToModule(spec, options)`

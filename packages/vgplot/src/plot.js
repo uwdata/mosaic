@@ -1,4 +1,4 @@
-import { distinct, synchronizer } from '@uwdata/mosaic-core';
+import { coordinator, distinct, synchronizer, AsyncDispatch } from '@uwdata/mosaic-core';
 import { plotRenderer } from './plot-renderer.js';
 
 const DEFAULT_ATTRIBUTES = {
@@ -9,8 +9,10 @@ const DEFAULT_ATTRIBUTES = {
   marginBottom: 30
 };
 
-export class Plot {
+export class Plot extends AsyncDispatch {
   constructor(element) {
+    super();
+
     this.attributes = { ...DEFAULT_ATTRIBUTES };
     this.listeners = null;
     this.interactors = [];
@@ -23,6 +25,7 @@ export class Plot {
     this.element.value = this;
     this.params = new Map;
     this.synch = synchronizer();
+    this.status = 'idle';
   }
 
   margins() {
@@ -44,13 +47,22 @@ export class Plot {
     return this.getAttribute('height') - top - bottom;
   }
 
+  async connect() {
+    this.updateStatus('pendingQuery');
+
+    await Promise.all(this.marks.map(mark => coordinator().connect(mark)));
+  }
+
   pending(mark) {
+    if (this.status !== 'pendingQuery') this.updateStatus('pendingQuery');
+
     this.synch.pending(mark);
   }
 
   update(mark) {
     if (this.synch.ready(mark) && !this.pendingRender) {
       this.pendingRender = true;
+      this.updateStatus('pendingRender');
       requestAnimationFrame(() => this.render());
     }
     return this.synch.promise;
@@ -65,6 +77,7 @@ export class Plot {
     });
     this.element.replaceChildren(svg, ...legends);
     this.synch.resolve();
+    this.updateStatus('idle');
   }
 
   getAttribute(name) {
@@ -95,6 +108,10 @@ export class Plot {
 
   removeAttributeListener(name, callback) {
     return this.listeners?.get(name)?.delete(callback);
+  }
+
+  addDirectives(directives) {
+    directives.forEach(dir => dir(this));
   }
 
   addParams(mark, paramSet) {
@@ -132,5 +149,10 @@ export class Plot {
   addLegend(legend, include = true) {
     legend.setPlot(this);
     this.legends.push({ legend, include });
+  }
+
+  updateStatus(status) {
+    this.status = status;
+    this.emit('status', this.status);
   }
 }

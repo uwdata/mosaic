@@ -3,8 +3,10 @@ import { Plot } from '../plot.js';
 
 export function plot(...directives) {
   const p = new Plot();
-  directives.flat().forEach(dir => dir(p));
-  p.marks.forEach(mark => coordinator().connect(mark));
+
+  p.addDirectives(directives.flat());
+  p.connect();
+
   return p.element;
 }
 

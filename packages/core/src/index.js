@@ -11,3 +11,4 @@ export { wasmConnector } from './connectors/wasm.js';
 export { distinct } from './util/distinct.js';
 export { synchronizer } from './util/synchronizer.js';
 export { throttle } from './util/throttle.js';
+export { AsyncDispatch } from './util/AsyncDispatch.js';

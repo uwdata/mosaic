@@ -13,12 +13,12 @@ import { hconcat, vconcat, hspace, vspace } from '../layout/index.js';
 import { parse as isoparse } from 'isoformat';
 
 import { from } from '../directives/data.js';
-import { plot as _plot } from '../directives/plot.js';
 import * as marks from '../directives/marks.js';
 import * as legends from '../directives/legends.js';
 import * as attributes from '../directives/attributes.js';
 import * as interactors from '../directives/interactors.js';
 import { Fixed } from '../symbols.js';
+import { Plot } from '../plot.js';
 
 import {
   parseData, parseCSVData, parseJSONData,
@@ -97,6 +97,22 @@ export const DefaultInteractors = new Map(Object.entries(interactors));
 export function parseSpec(spec, options) {
   spec = isString(spec) ? JSON.parse(spec) : spec;
   return new ParseContext(options).parse(spec);
+}
+
+export function parsePlotSpec(spec, options, element) {
+  spec = isString(spec) ? JSON.parse(spec) : spec;
+
+  if (!('plot' in spec))
+    throw new Error('Plot spec requires a "plot" property.');
+
+  const parsePlot = (spec, ctx) => parsePlotInstance(spec, ctx, element);
+
+  return new ParseContext({
+    ...options,
+    specParsers: new Map([
+      ['plot', { type: isArray, parse: parsePlot }]
+    ])
+  }).parse(spec);
 }
 
 export class ParseContext {
@@ -273,13 +289,25 @@ function parseHConcat(spec, ctx) {
   return hconcat(spec.hconcat.map(s => parseComponent(s, ctx)));
 }
 
-function parsePlot(spec, ctx) {
+function parsePlotInstance(spec, ctx, element) {
   const { plot, ...attributes } = spec;
   const attrs = ctx.plotDefaults.concat(
     Object.keys(attributes).map(key => parseAttribute(spec, key, ctx))
   );
   const entries = plot.map(e => parseEntry(e, ctx));
-  return _plot(attrs, entries);
+
+  const p = new Plot(element);
+  p.addDirectives([...attrs, ...entries]);
+
+  return p;
+}
+
+function parsePlot(spec, ctx) {
+  const p = parsePlotInstance(spec, ctx);
+
+  p.connect();
+
+  return p.element;
 }
 
 function parseNakedMark(spec, ctx) {
