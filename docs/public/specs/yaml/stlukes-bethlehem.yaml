@@ -1,0 +1,64 @@
+meta:
+  title: Hospital Charge Data
+  description: An interactive dashboard of hospital charge data
+
+data:
+  charges: {file: data/231352213_StLukesHospitalBethlehemCampus_standardcharges-analysis.parquet}  
+
+hconcat:
+- vconcat:
+  - hconcat:
+    - input: menu 
+      label: Insurance_minimum
+      as: $query
+      from: charges
+      column: name_minimum
+    - input: search
+      label: description
+      as: $query
+      from: charges
+      column: description
+      type: contains
+  - vspace: 10
+  - plot:
+    - mark: dot
+      data: {from: charges, filterBy: $query}
+      x: min_charge  
+      y: max_charge
+      opacity: 0.1
+      fill: name_minimum
+      r: 2      
+    - mark: regressionY
+      data: {from: charges, filterBy: $query}  
+      x: min_charge
+      y: max_charge
+    - select: intervalXY
+      as: $query
+      brush: { fillOpacity: 0, stroke: black }      
+    margins: { left: 60, top: 20, right: 60 }
+    xyDomain: Fixed
+    width: 590
+    height: 350
+    yDomain: [0, 500000]
+    xDomain: [0, 500000]
+  - vspace: 5
+  - input: table
+    from: charges
+    filterBy: $query
+    maxWidth: 700
+    columns: 
+      - cpt_drg
+      - record_id
+      - description
+      - min_charge
+      - max_charge
+      - name_minimum
+      - name_maximum
+    width: 
+      cpt_drg: 60
+      record_id: 70  
+      description: 200
+      min_charge: 90
+      max_charge: 90
+      name_maximum: 120
+      name_minimum: 120
