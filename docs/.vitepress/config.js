@@ -27,8 +27,15 @@ export default defineConfig({
       { text: 'Examples', 
         items: [
           { text: 'Mount Sinai', link: '/examples/mount-sinai' },
+          { text: 'St Lukes (Bethlehem)', link: '/examples/stlukes-bethlehem' },
         ]
       },
+      { text: 'Help',
+        items: [
+          { text: 'Your support network', link: '/help/your-personal-support-network' },
+          { text: 'Advocacy & children', link: '/help/supporting-health-care-self-advocacy-in-children' }, 
+        ]
+      }  
     ],
 
     sidebar: {
@@ -39,9 +46,21 @@ export default defineConfig({
       '/examples/': [
         {
           text: 'Examples',
-          collapsed: true,
+          collapsed: false,
           items: [
-            { text: 'Mount Sinai', link: '/examples/mount-sinai' }
+            { text: 'Mount Sinai', link: '/examples/mount-sinai' },
+            { text: 'St Lukes (Bethlehem)', link: '/examples/stlukes-bethlehem' }
+          ],
+        },
+      ],
+
+      '/help/': [
+        {
+          text: 'Help',
+          collapsed: false,
+          items: [
+            { text: 'Your support network', link: '/help/your-personal-support-network' },
+            { text: 'Advocacy & children', link: '/help/supporting-health-care-self-advocacy-in-children' }, 
           ],
         },
       ]

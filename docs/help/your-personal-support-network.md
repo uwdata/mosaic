@@ -1,10 +1,10 @@
-## **4) Your Personal Support Network** 
+## **Your Personal Support Network** 
 
 Author: Rachel Westlake, Editors: Lauren Wheeler, Surabhi Dangi-Garimella
 
 V: Share Alike
 
-## **Purpose of this guidance:** It is easy to feel overwhelmed when your health is not optimal. Doctor’s visits, test results, keeping track of medical bills, taking your medications—things can quickly add up. And then you also have work, your home, and family needs. Your extended family, friends, and co-workers you trust can help support you during these times of need. In this chapter, we arm you with information on how best to use their help.
+**Purpose of this guidance:** It is easy to feel overwhelmed when your health is not optimal. Doctor’s visits, test results, keeping track of medical bills, taking your medications—things can quickly add up. And then you also have work, your home, and family needs. Your extended family, friends, and co-workers you trust can help support you during these times of need. In this chapter, we arm you with information on how best to use their help.
 
 ## Identifying Your Personal Support Network
 

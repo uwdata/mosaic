@@ -1,4 +1,4 @@
-## 2.b) Supporting Health Care Self-Advocacy in Children, and Advocating on Their Behalf
+## Supporting Health Care Self-Advocacy in Children, and Advocating on Their Behalf
 
 Author: Rachel Westlake,
 
