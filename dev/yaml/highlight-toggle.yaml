@@ -21,16 +21,28 @@ vconcat:
 - vspace: 20
 - name: sex
   plot:
+  - mark: gridY
   - mark: barY
     data: { from: penguins, filterBy: $filter }
     x: sex
     y: { count: '' }
-  - select: highlight
-    by: $select
+  - mark: textY
+    data: { from: penguins, filterBy: $filter }
+    x: sex
+    y: { count: '' }
+    text: { count: '' }
+    fill: '#efefef'
+    dy: 10
   - select: toggleX
     as: $select
+    index: 1
+  - select: highlight
+    by: $select
+    index: 1
+    opacity: 0.5
   - select: toggleX
     as: $filter
+    index: 1
   xLabel: ''
   yLabel: Total
   xDomain: Fixed

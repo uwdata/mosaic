@@ -1,6 +1,7 @@
 import * as Plot from '@observablehq/plot';
 import { attributeMap } from './plot-attributes.js';
 import { Fixed } from './symbols.js';
+import { DECORATOR_MARKS } from './directives/marks.js';
 
 const OPTIONS_ONLY_MARKS = new Set([
   'frame',
@@ -8,6 +9,12 @@ const OPTIONS_ONLY_MARKS = new Set([
   'sphere',
   'graticule'
 ]);
+
+const DECORATOR_ARIA_LABELS = new Set(
+  Array
+    .from(DECORATOR_MARKS)
+    .map((type) => type.replace(/(X|Y|Fx|Fy)$/g, ''))
+);
 
 function setProperty(object, path, value) {
   for (let i = 0; i < path.length; ++i) {
@@ -51,7 +58,7 @@ export async function plotRenderer(plot) {
       } else {
         spec.marks.push(Plot[type](data, options));
       }
-      indices.push(mark.index);
+      if (!DECORATOR_MARKS.has(type)) indices.push(mark.index);
     }
   }
 
@@ -162,8 +169,7 @@ function annotateMarks(svg, indices) {
   for (const child of svg.children) {
     const aria = child.getAttribute('aria-label') || '';
     const skip = child.nodeName === 'style'
-      || aria.includes('-axis')
-      || aria.includes('-grid');
+      || Array.from(DECORATOR_ARIA_LABELS).some((label) => aria.includes(label));
     if (!skip) {
       child.setAttribute('data-index', indices[++index]);
     }

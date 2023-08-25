@@ -9,7 +9,7 @@ import { RasterMark } from '../marks/RasterMark.js';
 import { RasterTileMark } from '../marks/RasterTileMark.js';
 import { RegressionMark } from '../marks/RegressionMark.js';
 
-const decorators = new Set([
+export const DECORATOR_MARKS = new Set([
   'frame',
   'axisX', 'axisY', 'axisFx', 'axisFy',
   'gridX', 'gridY', 'gridFx', 'gridFy',
@@ -20,7 +20,7 @@ const decorators = new Set([
 function mark(type, data, channels) {
   if (arguments.length === 2) {
     channels = data;
-    data = decorators.has(type) ? null : [{}];
+    data = DECORATOR_MARKS.has(type) ? null : [{}];
   }
   const MarkClass = type.startsWith('area') || type.startsWith('line')
     ? ConnectedMark

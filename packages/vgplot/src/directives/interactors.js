@@ -7,29 +7,37 @@ import { Nearest } from '../interactors/Nearest.js';
 
 function interactor(InteractorClass, options) {
   return plot => {
-    const mark = plot.marks[plot.marks.length - 1];
+    const mark = findMark(plot.marks, options.index);
     plot.addInteractor(new InteractorClass(mark, options));
   };
 }
 
-export function highlight({ by, ...channels }) {
-  return interactor(Highlight, { selection: by, channels });
+function findMark(marks, index) {
+  const mark = marks[index ?? marks.length - 1];
+
+  if (!mark) throw new Error(`Mark not found with index ${index}.`);
+
+  return mark;
+}
+
+export function highlight({ by, index, ...channels }) {
+  return interactor(Highlight, { selection: by, index, channels });
 }
 
 export function toggle({ as, ...rest }) {
-  return interactor(Toggle, { ...rest, selection: as });
+  return interactor(Toggle, { selection: as, ...rest });
 }
 
-export function toggleX({ as }) {
-  return toggle({ as, channels: ['x'] });
+export function toggleX({ as, index }) {
+  return toggle({ as, index, channels: ['x'] });
 }
 
-export function toggleY({ as }) {
-  return toggle({ as, channels: ['y'] });
+export function toggleY({ as, index }) {
+  return toggle({ as, index, channels: ['y'] });
 }
 
-export function toggleColor({ as }) {
-  return toggle({ as, channels: ['color'] });
+export function toggleColor({ as, index }) {
+  return toggle({ as, index, channels: ['color'] });
 }
 
 export function nearestX({ as, ...rest }) {
