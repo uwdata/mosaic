@@ -59,9 +59,11 @@ export default defineConfig({
           text: 'Help',
           collapsed: false,
           items: [
-            { text: 'Patient-centered mindset', link: '/help/embracing-a-patient-centered-mindset.md' },            
-            { text: 'Your support network', link: '/help/your-personal-support-network' },
+            { text: 'Patient-centered mindset', link: '/help/embracing-a-patient-centered-mindset' },            
             { text: 'Advocacy & children', link: '/help/supporting-health-care-self-advocacy-in-children' }, 
+            { text: 'Your support network', link: '/help/your-personal-support-network' },
+            { text: 'Your support network', link: '/help/shared-decision-making' },
+           
           ],
         },
       ]
