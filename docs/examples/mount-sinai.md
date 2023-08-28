@@ -5,7 +5,11 @@
 
 # Mount Sinai
 
-This demo shows an interactive dashboard of hospital prices:
+This demo shows an interactive dashboard of hospital prices listed by Mount Sinai in New York City. 
+
+The red line is on the diagonal (`y = x`). The points represent the minimum and maximum charges for each procedure, medication, or treatment. 
+
+If the price was the same for all patients, the points would be on the diagonal:
 
 <Example spec="/specs/yaml/mount-sinai.yaml" />
 

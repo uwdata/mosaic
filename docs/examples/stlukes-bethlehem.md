@@ -5,7 +5,11 @@
 
 # St Luke's (Bethlehem)
 
-This demo shows an interactive dashboard of hospital prices:
+This demo shows an interactive dashboard of all hospital prices listed at St Luke's (Bethlehem) in PA. The red line is on the diagonal (`y = x`). The points represent the minimum and maximum charges for each procedure, medication, or treatment. 
+
+If the price was the same for all patients, the points would be on the diagonal:
+
+<!-- <Example spec="/specs/yaml/stlukes-bethlehem-histogram.yaml" /> -->
 
 <Example spec="/specs/yaml/stlukes-bethlehem.yaml" />
 

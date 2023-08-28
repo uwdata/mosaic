@@ -4,7 +4,10 @@ meta:
 
 data:
   charges: {file: data/131624096_mount-sinai-hospital_standardcharges-subset.parquet}  
-
+  dd: [
+    { u: 0, v: 0 },
+    { u: 500000, v: 500000 },
+  ]
 hconcat:
 - vconcat:
   - hconcat:
@@ -34,13 +37,20 @@ hconcat:
       y: Max_Charge
     - select: intervalXY
       as: $query
-      brush: { fillOpacity: 0, stroke: black }      
+      brush: { fillOpacity: 0, stroke: black } 
+    - mark: lineY
+      data: { from: dd }
+      x: u
+      y: v
+      stroke: red     
     margins: { left: 60, top: 20, right: 60 }
     xyDomain: Fixed
     width: 570
     height: 350
     yDomain: [0, 500000]
     xDomain: [0, 500000]
+    xLabel: Listed minimum rate ($) →
+    yLabel: ↑ Listed maximum rate ($)
   - vspace: 5
   - input: table
     from: charges

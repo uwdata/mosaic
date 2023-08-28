@@ -4,7 +4,10 @@ meta:
 
 data:
   charges: {file: data/231352213_StLukesHospitalBethlehemCampus_standardcharges-analysis.parquet}  
-
+  dd: [
+    { u: 0, v: 0 },
+    { u: 500000, v: 500000 },
+  ]
 hconcat:
 - vconcat:
   - hconcat:
@@ -34,13 +37,21 @@ hconcat:
       y: max_charge
     - select: intervalXY
       as: $query
-      brush: { fillOpacity: 0, stroke: black }      
+      brush: { fillOpacity: 0, stroke: black }     
+    - mark: lineY
+      data: { from: dd }
+      x: u
+      y: v
+      stroke: red
+      # curve: monotone-x
     margins: { left: 60, top: 20, right: 60 }
     xyDomain: Fixed
     width: 590
     height: 350
-    yDomain: [0, 500000]
-    xDomain: [0, 500000]
+    yDomain: [0, 100000]
+    xDomain: [0, 100000]
+    yGrid: true
+    xGrid: true
   - vspace: 5
   - input: table
     from: charges

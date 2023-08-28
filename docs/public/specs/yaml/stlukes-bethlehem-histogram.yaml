@@ -1,0 +1,46 @@
+meta:
+  title: Hospital Charges
+data:
+  charges: {file: data/231352213_StLukesHospitalBethlehemCampus_standardcharges-clean.parquet} 
+params:
+  brush: {select: crossfilter}
+  binWidth: 1
+vconcat:    
+- plot:
+  - mark: rectY  
+    data: {from: charges, filterBy: $brush}
+    x: {bin: aetna}
+    y: {count: }
+    fill: steelblue
+    inset: 0.5
+    binWidth: $binWidth
+  - select: intervalX
+    as: $brush
+  xDomain: Fixed  
+  yTickFormat: s
+  width: 600
+  height: 200
+- plot:
+  - mark: rectY
+    data: {from: charges, filterBy: $brush}  
+    x: {bin: aetna_mc}
+    y: {count: }
+    fill: steelblue
+    binWidth: $binWidth
+  - select: intervalX
+    as: $brush
+  xDomain: Fixed
+  width: 600 
+  height: 200
+- plot:
+  - mark: rectY
+    data: {from: charges, filterBy: $brush}
+    x: {bin: united}
+    y: {count: }
+    fill: steelblue
+    binWidth: $binWidth
+  - select: intervalX
+    as: $brush
+  xDomain: Fixed
+  width: 600
+  height: 200
