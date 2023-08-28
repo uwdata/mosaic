@@ -1,4 +1,4 @@
-### **2.A) Embracing a Patient-Centered Mindset:**
+### **Embracing a Patient-Centered Mindset**
 
 
 #### The First Step to Effective Self-Advocacy in Health Care
