@@ -15,7 +15,7 @@ vconcat:
   plot:
   - mark: barX
     data: { from: penguins, filterBy: $filter }
-    x: { count: '' }
+    x: { count: }
   xLabel: Total →
   xDomain: Fixed
 - vspace: 20
@@ -24,14 +24,20 @@ vconcat:
   - mark: barY
     data: { from: penguins, filterBy: $filter }
     x: sex
-    y: { count: '' }
+    y: { count: }
   - select: highlight
     by: $select
   - select: toggleX
     as: $select
   - select: toggleX
     as: $filter
-  xLabel: ''
+  - mark: text
+    data: { from: penguins, filterBy: $filter }
+    x: sex
+    y: { count: }
+    text: { count: }
+    dy: -10
+  xLabel: null
   yLabel: Total
   xDomain: Fixed
   yDomain: Fixed

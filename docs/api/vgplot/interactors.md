@@ -13,6 +13,7 @@ Select individual data values by clicking / shift-clicking points. The supported
 
 - _as_: The [Selection](../core/selection) to populate with filter predicates.
 - _channels_: An array of encoding channels (e.g., `"x"`, `"y"`, `"color"`) indicating the data values to select.
+- _peers_: A Boolean-flag (default `true`) indicating if all marks in the current plot should be considered "peers" in the clients set used to perform cross-filtering. A peer mark will be exempt from filtering. Set this to false if you are using a cross-filtered selection but want to filter across marks within the same plot.
 
 ### toggleX
 
