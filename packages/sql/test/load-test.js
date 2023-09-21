@@ -27,11 +27,11 @@ describe('loadCSV', () => {
   it('accepts DuckDB options', () => {
     const opt = {
       auto_detect: false,
-	    all_varchar: true,
-	    columns: {line: 'VARCHAR'},
+      all_varchar: true,
+      columns: {line: 'VARCHAR'},
       force_not_null: ['line'],
       new_line: '\\n',
-	    header: false,
+      header: false,
       skip: 2
     };
     assert.strictEqual(
