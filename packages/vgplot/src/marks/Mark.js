@@ -3,6 +3,7 @@ import { Query, Ref, column, isParamLike } from '@uwdata/mosaic-sql';
 import { isColor } from './util/is-color.js';
 import { isConstantOption } from './util/is-constant-option.js';
 import { isSymbol } from './util/is-symbol.js';
+import { toDataArray } from './util/to-data-array.js';
 import { Transform } from '../symbols.js';
 
 const isColorChannel = channel => channel === 'stroke' || channel === 'fill';
@@ -138,7 +139,7 @@ export class Mark extends MosaicClient {
   }
 
   queryResult(data) {
-    this.data = Array.from(data);
+    this.data = toDataArray(data);
     return this;
   }
 
