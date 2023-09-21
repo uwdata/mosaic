@@ -33,12 +33,30 @@ export function loadObjects(tableName, data, options = {}) {
 
 function parameters(options) {
   return Object.entries(options)
-    .map(([key, value]) => {
-      const t = typeof value;
-      const v = t === 'boolean' ? String(value)
-        : t === 'string' ? `'${value}'`
-        : value;
-      return `${key}=${v}`;
-    })
+    .map(([key, value]) => `${key}=${toDuckDBValue(value)}`)
     .join(', ');
+}
+
+function toDuckDBValue(value) {
+  switch (typeof value) {
+    case 'boolean':
+      return String(value);
+    case 'string':
+      return `'${value}'`;
+    case 'undefined':
+    case 'object':
+      if (value == null) {
+        return 'NULL';
+      } else if (Array.isArray(value)) {
+        return '[' + value.map(v => toDuckDBValue(v)).join(', ') + ']';
+      } else {
+        return '{'
+          + Object.entries(value)
+              .map(([k, v]) => `'${k}': ${toDuckDBValue(v)}`)
+              .join(', ')
+          + '}';
+      }
+    default:
+      return value;
+  }
 }
