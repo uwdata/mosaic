@@ -1,0 +1,46 @@
+data:
+  athletes: { file: data/athletes.csv }
+params:
+  query: { select: crossfilter }
+  selectNationality: { select: single }
+  selectSport: { select: single }
+vconcat:
+  - plot:
+    - mark: barX
+      data: { from: athletes, filterBy: $query }
+      x: { count: }
+      y: nationality
+      order: nationality
+      sort: {
+        y: '-x',
+        limit: 10
+      }
+    - select: highlight
+      by: $selectNationality
+    - select: toggleY
+      as: $selectNationality
+    - select: toggleY
+      as: $query
+      width: 600
+      height: 400
+    marginLeft: 80
+  - vspace: 10
+  - plot:
+    - mark: barX
+      data: { from: athletes, filterBy: $query }
+      x: { count: }
+      y: sport
+      order: sport
+      sort: {
+        y: '-x',
+        limit: 10
+      }
+    - select: highlight
+      by: $selectSport
+    - select: toggleY
+      as: $selectSport
+    - select: toggleY
+      as: $query
+      width: 600
+      height: 400
+    marginLeft: 80

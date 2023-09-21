@@ -87,11 +87,15 @@ export class DataCubeIndexer {
         subqueryPushdown(subq, cols);
       }
 
+      // push orderby criteria to later cube queries
+      const order = query.orderby();
+      query.query.orderby = [];
+
       const sql = query.toString();
       const id = (fnv_hash(sql) >>> 0).toString(16);
       const table = `cube_index_${id}`;
       const result = mc.exec(create(table, sql, { temp }));
-      indices.set(client, { table, result, ...index });
+      indices.set(client, { table, result, order, ...index });
     }
   }
 
@@ -111,12 +115,13 @@ export class DataCubeIndexer {
       filter = this.activeView.predicate(this.selection.active.predicate);
     }
 
-    const { table, dims, aggr } = index;
+    const { table, dims, aggr, order = [] } = index;
     const query = Query
       .select(dims, aggr)
       .from(table)
       .groupby(dims)
-      .where(filter);
+      .where(filter)
+      .orderby(order);
     return this.mc.updateClient(client, query);
   }
 }
