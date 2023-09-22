@@ -21,6 +21,10 @@ Internally, vgplot uses Observable Plot to render SVG output.
 This page provides an overview of vgplot.
 Skip to the [examples](/examples/) to dive right in.
 
+::: tip
+For convenience, `vgplot` re-exports much of the `mosaic-core`, `mosaic-sql`, and `mosaic-inputs` packages. For most applications, it is sufficient to import `@uwdata/vgplot` alone.
+:::
+
 ## Plots
 
 A `plot` produces a single visualization as a Web element.
