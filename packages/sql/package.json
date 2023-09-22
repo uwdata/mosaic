@@ -1,6 +1,6 @@
 {
   "name": "@uwdata/mosaic-sql",
-  "version": "0.3.2",
+  "version": "0.3.4",
   "description": "SQL query construction and analysis.",
   "keywords": [
     "sql",
