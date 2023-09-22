@@ -1,3 +1,5 @@
+import { isArrowTable } from './is-arrow-table.js';
+
 export function grid1d(n, values) {
   return valuesToGrid(new Float64Array(n), values);
 }
@@ -6,10 +8,6 @@ export function grid2d(m, n, values, groupby = []) {
   return groupby.length
     ? Object.values(groupedValuesToGrids(m * n, values, groupby))
     : [{ grid: valuesToGrid(new Float64Array(m * n), values) }];
-}
-
-function isArrowTable(values) {
-  return typeof values.getChild === 'function';
 }
 
 function valuesToGrid(grid, values) {
