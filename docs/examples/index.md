@@ -13,6 +13,15 @@ For example, here is a line chart of historical Apple stock prices:
 <<< @/public/specs/json/line.json [JSON]
 :::
 
+::: warning
+By default Mosaic connects to a DuckDB server. To use a different database connector (such as DuckDB-WASM in the browser), you must first configure the connector. For example:
+
+``` js
+import { coordinator, wasmConnector } from "@uwdata/vgplot";
+coordinator().databaseConnector(await wasmConnector());
+```
+:::
+
 ::: tip
 For greater scalability and performance, consider using a local [DuckDB data server](/duckdb/) or viewing examples in [Jupyter](/jupyter/).
 :::
