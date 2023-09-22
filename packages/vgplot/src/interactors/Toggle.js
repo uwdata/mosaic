@@ -3,12 +3,13 @@ import { and, or, isNotDistinct, literal } from '@uwdata/mosaic-sql';
 export class Toggle {
   constructor(mark, {
     selection,
-    channels
+    channels,
+    peers = true
   }) {
     this.value = null;
     this.mark = mark;
     this.selection = selection;
-    this.clients = new Set().add(mark);
+    this.peers = peers;
     this.channels = channels.map(c => {
       const q = c === 'color' ? ['fill', 'stroke']
         : c === 'x' ? ['x', 'x1', 'x2']
@@ -26,7 +27,7 @@ export class Toggle {
   }
 
   clause(value) {
-    const { channels, clients } = this;
+    const { channels, mark } = this;
     let predicate = null;
 
     if (value) {
@@ -42,7 +43,7 @@ export class Toggle {
     return {
       source: this,
       schema: { type: 'point' },
-      clients,
+      clients: this.peers ? mark.plot.markSet : new Set().add(mark),
       value,
       predicate
     };

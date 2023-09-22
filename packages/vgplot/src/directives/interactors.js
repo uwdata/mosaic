@@ -20,16 +20,16 @@ export function toggle({ as, ...rest }) {
   return interactor(Toggle, { ...rest, selection: as });
 }
 
-export function toggleX({ as }) {
-  return toggle({ as, channels: ['x'] });
+export function toggleX(options) {
+  return toggle({ ...options, channels: ['x'] });
 }
 
-export function toggleY({ as }) {
-  return toggle({ as, channels: ['y'] });
+export function toggleY(options) {
+  return toggle({ ...options, channels: ['y'] });
 }
 
-export function toggleColor({ as }) {
-  return toggle({ as, channels: ['color'] });
+export function toggleColor(options) {
+  return toggle({ ...options, channels: ['color'] });
 }
 
 export function nearestX({ as, ...rest }) {
