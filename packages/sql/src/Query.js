@@ -323,9 +323,11 @@ export class Query {
     // WHERE
     if (where.length) {
       const clauses = where
-        .map(String)
-        .filter(x => x)
-        .map((clause) => `(${clause})`)
+        .reduce((agg, clause) => {
+          const c = String(clause);
+          if (c) agg.push(clause.op === 'OR' ? `(${c})` : c);
+          return agg;
+        }, [])
         .join(' AND ');
       if (clauses) sql.push(`WHERE ${clauses}`);
     }

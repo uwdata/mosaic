@@ -1,6 +1,6 @@
 import assert from 'node:assert';
 import {
-  column, desc, gt, lt, max, min, relation, sql, Query
+  column, desc, or, eq, gt, lt, max, min, relation, sql, Query
 } from '../src/index.js';
 
 describe('Query', () => {
@@ -234,18 +234,37 @@ describe('Query', () => {
   it('selects filtered rows', () => {
     const foo = column('foo');
     const bar = column('bar');
+    const baz = column('baz');
 
     const query = [
       'SELECT "foo"',
       'FROM "data"',
-      'WHERE ("bar" > 50) AND ("bar" < 100)'
+      'WHERE (("bar" < 50) OR ("bar" > 100)) AND ("baz" = 75)'
     ].join(' ');
 
     assert.strictEqual(
       Query
         .select(foo)
         .from('data')
-        .where(gt(bar, 50), lt(bar, 100))
+        .where(or(lt(bar, 50), gt(bar, 100)), eq(baz, 75))
+        .toString(),
+      query
+    );
+
+    assert.strictEqual(
+      Query.select(foo)
+        .from('data')
+        .where([or(lt(bar, 50), gt(bar, 100)), eq(baz, 75)])
+        .toString(),
+      query,
+    );
+
+    assert.strictEqual(
+      Query
+        .select(foo)
+        .from('data')
+        .where(or(lt(bar, 50), gt(bar, 100)))
+        .where(eq(baz, 75))
         .toString(),
       query
     );
@@ -254,26 +273,7 @@ describe('Query', () => {
       Query
         .select(foo)
         .from('data')
-        .where([gt(bar, 50), lt(bar, 100)])
-        .toString(),
-      query
-    );
-
-    assert.strictEqual(
-      Query
-        .select(foo)
-        .from('data')
-        .where(gt(bar, 50))
-        .where(lt(bar, 100))
-        .toString(),
-      query
-    );
-
-    assert.strictEqual(
-      Query
-        .select(foo)
-        .from('data')
-        .where(sql`("bar" > 50) AND ("bar" < 100)`)
+        .where(sql`(("bar" < 50) OR ("bar" > 100)) AND ("baz" = 75)`)
         .toString(),
       query
     );
