@@ -3,7 +3,7 @@ import { mergeBuffers } from './merge-buffers.js';
 
 const TEMP_DIR = '.duckdb';
 
-const CONFIG = [
+const INIT_STATEMENTS = [
   `PRAGMA temp_directory='${TEMP_DIR}'`,
   `INSTALL arrow`,
   `INSTALL httpfs`,
@@ -12,10 +12,14 @@ const CONFIG = [
 ];
 
 export class DuckDB {
-  constructor(path = ':memory:') {
-    this.db = new duckdb.Database(path);
+  constructor(
+    path = ':memory:',
+    config = {},
+    initStatementsOverride = null
+  ) {
+    this.db = new duckdb.Database(path, config);
     this.con = this.db.connect();
-    this.exec(CONFIG.join(';\n'));
+    this.exec((initStatementsOverride ?? INIT_STATEMENTS).join(';\n'));
   }
 
   close() {
