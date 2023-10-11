@@ -9,7 +9,12 @@ function visit(callback) {
 function logical(op, clauses) {
   const children = clauses.filter(x => x != null).map(asColumn);
   const strings = children.map((c, i) => i ? ` ${op} ` : '');
-  if (clauses.length) strings.push('');
+  if (children.length === 1) {
+    strings.push('')
+  } else if (children.length > 1) {
+    strings[0] = '(';
+    strings.push(')');
+  }
   return sql(strings, ...children).annotate({ op, children, visit });
 }
 

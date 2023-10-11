@@ -12,7 +12,8 @@ describe('Logical operators', () => {
     assert.strictEqual(String(and()), '');
     assert.strictEqual(String(and('foo')), '"foo"');
     assert.strictEqual(String(and(null, true)), 'TRUE');
-    assert.strictEqual(String(and(true, true)), 'TRUE AND TRUE');
+    assert.strictEqual(String(and(true, true)), '(TRUE AND TRUE)');
+    assert.strictEqual(String(and(true, null, false)), '(TRUE AND FALSE)');
     assert.strictEqual(and().op, 'AND');
     assert.strictEqual(and().children.length, 0);
     assert.strictEqual(and('foo').children.length, 1);
@@ -23,7 +24,8 @@ describe('Logical operators', () => {
     assert.strictEqual(String(or()), '');
     assert.strictEqual(String(or('foo')), '"foo"');
     assert.strictEqual(String(or(null, true)), 'TRUE');
-    assert.strictEqual(String(or(false, true)), 'FALSE OR TRUE');
+    assert.strictEqual(String(or(false, true)), '(FALSE OR TRUE)');
+    assert.strictEqual(String(or(false, null, false)), '(FALSE OR FALSE)');
     assert.strictEqual(or().op, 'OR');
     assert.strictEqual(or().children.length, 0);
     assert.strictEqual(or('foo').children.length, 1);
