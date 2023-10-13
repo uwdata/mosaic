@@ -1,9 +1,8 @@
 :root {
-  --vp-c-brand-lighter: #e34e65;
-  --vp-c-brand-light: #d5446d;
-  --vp-c-brand: #c43c75;
-  --vp-c-brand-dark: #912b81;
-  --vp-c-brand-darker: #701f81;
+  --vp-c-brand-1: #c43c75;
+  --vp-c-brand-2: #912b81;
+  --vp-c-brand-3: #c43c75;
+  --vp-c-brand-soft: #fbe9f0;
 }
 
 .VPFooter a {
