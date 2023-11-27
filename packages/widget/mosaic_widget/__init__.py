@@ -1,10 +1,11 @@
-import duckdb
-import anywidget
-import traitlets
-import pyarrow as pa
+import logging
 import pathlib
 import time
-import logging
+
+import anywidget
+import duckdb
+import pyarrow as pa
+import traitlets
 
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
@@ -37,10 +38,10 @@ class MosaicWidget(anywidget.AnyWidget):
 
     def __init__(
         self,
-        spec: dict = {},
-        con=duckdb.connect(),
+        spec: dict = None,
+        con=None,
         temp_indexes=True,
-        data={},
+        data=None,
         *args,
         **kwargs,
     ):
@@ -50,11 +51,18 @@ class MosaicWidget(anywidget.AnyWidget):
             spec (dict, optional): The initial Mosaic specification. Defaults to {}.
             con (connection, optional): A DuckDB connection.
                 Defaults to duckdb.connect().
-            data (dict, optional): Pandas DataFrames to add to DuckDB.
-                The keys are used as the names of the tables. Defaults to {}.
             temp_indexes (bool, optional): Whether data cube indexes should be
                 created as temp tables tables. Defaults to True.
+            data (dict, optional): Pandas DataFrames to add to DuckDB.
+                The keys are used as the names of the tables. Defaults to {}.
         """
+        if data is None:
+            data = {}
+        if spec is None:
+            spec = {}
+        if con is None:
+            con = duckdb.connect()
+
         super().__init__(*args, **kwargs)
         self.spec = spec
         self.con = con
