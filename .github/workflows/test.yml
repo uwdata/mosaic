@@ -57,5 +57,4 @@ jobs:
         run: |
           cd packages/widget
 
-          ruff .
-          black . --check
+          ruff ../..

@@ -27,7 +27,6 @@ dev = [
   "jupyterlab",
   "pandas",
   "pyyaml",
-  "black[jupyter]",
   "ruff",
 ]
 
@@ -37,14 +36,32 @@ features = ["dev"]
 
 [tool.hatch.envs.default.scripts]
 style = [
-  "ruff {args:.}",
-  "black --check --diff {args:.}"
+  "ruff {args:../..}",
 ]
 fmt = [
-  "black {args:.}",
-  "ruff --fix {args:.}"
+  "ruff format {args:../..}",
+  "ruff --fix {args:../..}"
 ]
 
 [tool.hatch.version]
 path = "package.json"
 pattern = "\"version\": \"(?P<version>.+?)\""
+
+[tool.ruff]
+extend-include = ["*.ipynb"]
+# allow long lines, allow end in ;, allow useless expressions
+ignore = ["E501", "E703", "B018"]
+select = [
+    # pycodestyle
+    "E",
+    # Pyflakes
+    "F",
+    # pyupgrade
+    "UP",
+    # flake8-bugbear
+    "B",
+    # flake8-simplify
+    "SIM",
+    # isort
+    "I",
+]
