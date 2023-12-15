@@ -14,6 +14,7 @@
   "module": "src/index.js",
   "jsdelivr": "dist/mosaic-sql.min.js",
   "unpkg": "dist/mosaic-sql.min.js",
+  "types": "dist/types/index.d.ts",
   "repository": {
     "type": "git",
     "url": "https://github.com/uwdata/mosaic.git"
@@ -23,6 +24,7 @@
     "build": "node ../../esbuild.js mosaic-sql",
     "lint": "eslint src test --ext .js",
     "test": "mocha 'test/**/*-test.js'",
-    "prepublishOnly": "npm run test && npm run lint && npm run build"
+    "types": "tsc",
+    "prepublishOnly": "npm run test && npm run lint && npm run build && npm run types"
   }
 }

@@ -14,6 +14,7 @@
   "type": "module",
   "main": "src/index.js",
   "module": "src/index.js",
+  "types": "dist/types/index.d.ts",
   "repository": {
     "type": "git",
     "url": "https://github.com/uwdata/mosaic.git"
@@ -27,7 +28,8 @@
     "lint": "eslint src test --ext .js",
     "server": "node bin/run-server.js",
     "test": "mocha 'test/**/*-test.js'",
-    "prepublishOnly": "npm run test && npm run lint"
+    "types": "tsc",
+    "prepublishOnly": "npm run test && npm run lint && npm run types"
   },
   "dependencies": {
     "duckdb": "~0.8.1",
