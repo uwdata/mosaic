@@ -68,7 +68,7 @@ function createSocketServer(server, handleQuery) {
   });
 }
 
-function queryHandler(db, queryCache) {
+export function queryHandler(db, queryCache) {
 
   // retrieve query result
   async function retrieve(query, get) {
@@ -166,7 +166,7 @@ function httpResponse(res) {
   }
 }
 
-function socketResponse(ws) {
+export function socketResponse(ws) {
   const STRING = { binary: false, fin: true };
   const BINARY = { binary: true, fin: true };
 
