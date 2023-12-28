@@ -24,7 +24,7 @@
   "devDependencies": {
     "esbuild": "^0.19.10",
     "eslint": "^8.56.0",
-    "lerna": "^7.4.2",
+    "lerna": "^8.0.1",
     "mocha": "^10.2.0",
     "nodemon": "^3.0.2",
     "rimraf": "^5.0.5",
