@@ -1,6 +1,6 @@
 {
   "name": "@uwdata/vgplot",
-  "version": "0.3.4",
+  "version": "0.3.5",
   "description": "A Mosaic-based interactive grammar of graphics.",
   "keywords": [
     "data",
@@ -30,9 +30,9 @@
   },
   "dependencies": {
     "@observablehq/plot": "^0.6.13",
-    "@uwdata/mosaic-core": "^0.3.4",
-    "@uwdata/mosaic-inputs": "^0.3.4",
-    "@uwdata/mosaic-sql": "^0.3.4",
+    "@uwdata/mosaic-core": "^0.3.5",
+    "@uwdata/mosaic-inputs": "^0.3.5",
+    "@uwdata/mosaic-sql": "^0.3.5",
     "d3": "^7.8.5",
     "isoformat": "^0.2.1",
     "topojson-client": "^3.1.0"
