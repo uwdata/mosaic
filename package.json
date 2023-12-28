@@ -22,16 +22,16 @@
     "release": "npm run test && npm run lint && lerna publish"
   },
   "devDependencies": {
-    "esbuild": "^0.19.5",
-    "eslint": "^8.53.0",
-    "lerna": "^7.4.2",
+    "esbuild": "^0.19.10",
+    "eslint": "^8.56.0",
+    "lerna": "^8.0.1",
     "mocha": "^10.2.0",
-    "nodemon": "^3.0.1",
+    "nodemon": "^3.0.2",
     "rimraf": "^5.0.5",
     "timezone-mock": "^1.3.6",
-    "typescript": "^5.2.2",
-    "vite": "^4.5.0",
-    "vitepress": "1.0.0-rc.25",
+    "typescript": "^5.3.3",
+    "vite": "^5.0.10",
+    "vitepress": "1.0.0-rc.33",
     "yaml": "^2.3.4"
   },
   "workspaces": [

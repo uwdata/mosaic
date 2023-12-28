@@ -29,7 +29,7 @@
     "prepublishOnly": "npm run test && npm run lint && npm run build"
   },
   "dependencies": {
-    "@observablehq/plot": "^0.6.11",
+    "@observablehq/plot": "^0.6.13",
     "@uwdata/mosaic-core": "^0.3.4",
     "@uwdata/mosaic-inputs": "^0.3.4",
     "@uwdata/mosaic-sql": "^0.3.4",
