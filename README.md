@@ -13,7 +13,22 @@ Mosaic is an extensible architecture for linking data visualizations, tables, in
 
 The key idea is to have interface components "publish" their data needs as declarative queries that can be managed, optimized, and cross-filtered by a coordinator that proxies access to [DuckDB](https://duckdb.org/).
 
-[**Learn more about Mosaic at the documentation site**](https://uwdata.github.io/mosaic/).
+[**Learn more about Mosaic at the documentation site**](https://uwdata.github.io/mosaic/), or [read the Mosaic research paper](https://idl.cs.washington.edu/papers/mosaic).
+
+If referencing Mosaic, please use the following citation:
+
+```bibtex
+@article{heer2024mosaic,
+  title={Mosaic: An Architecture for Scalable \& Interoperable Data Views},
+  author={Heer, Jeffrey and Moritz, Dominik},
+  journal={IEEE Transactions on Visualization and Computer Graphics},
+  year={2024},
+  volume={30},
+  number={1},
+  pages={436-446},
+  doi={10.1109/TVCG.2023.3327189}
+}
+```
 
 ## Repository Structure
 
