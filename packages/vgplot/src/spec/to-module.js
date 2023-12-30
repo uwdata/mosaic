@@ -141,6 +141,13 @@ class CodegenContext extends ParseContext {
     return this.maybeParam(value, 'vg.Selection.intersect()');
   }
 
+  maybeSelections(value) {
+    if (Array.isArray(value)) {
+      return `[${value.map(v => this.maybeSelection(v)).join(',')}]`;
+    }
+    return this.maybeSelection(value);
+  }
+
   maybeTransform(value) {
     if (isObject(value)) {
       return value.expr
@@ -458,7 +465,7 @@ function parseInteractor(spec, ctx) {
   }
   const opt = [];
   for (const key in options) {
-    opt.push(`${key}: ${ctx.maybeSelection(options[key])}`);
+    opt.push(`${key}: ${ctx.maybeSelections(options[key])}`);
   }
   return `${ctx.tab()}vg.${select}({ ${opt.join(', ')} })`;
 }
