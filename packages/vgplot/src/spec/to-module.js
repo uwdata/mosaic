@@ -145,6 +145,8 @@ class CodegenContext extends ParseContext {
     if (isObject(value)) {
       return value.expr
         ? parseExpression(value, this)
+	: value.agg ?
+	parseAggregation(value, this)
         : parseTransform(value, this);
     }
   }
@@ -162,8 +164,9 @@ class CodegenContext extends ParseContext {
   }
 }
 
-function parseExpression(spec, ctx) {
-  const { expr, label } = spec;
+function parseExprOrAgg(spec, ctx, key, func_name) {
+  const { label } = spec;
+  const expr = spec[key]
   const tokens = expr.split(/(\\'|\\"|"(?:\\"|[^"])*"|'(?:\\'|[^'])*'|\$\w+)/g);
   let str = '';
 
@@ -176,8 +179,16 @@ function parseExpression(spec, ctx) {
     }
   }
 
-  return `vg.sql\`${str}\``
+  return `${func_name}\`${str}\``
     + (label ? `.annotate({ label: ${JSON.stringify(label)} })` : '');
+}
+
+function parseExpression(spec, ctx) {
+  return parseExprOrAgg(spec, ctx, "expr", "vg.sql");
+}
+
+function parseAggregation(spec, ctx) {
+  return parseExprOrAgg(spec, ctx, "agg", "vg.agg");
 }
 
 function parseTransform(spec, ctx) {

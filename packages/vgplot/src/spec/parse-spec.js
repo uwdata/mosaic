@@ -1,7 +1,7 @@
 import { Param, Selection, coordinator } from '@uwdata/mosaic-core';
 import { menu, search, slider, table } from '@uwdata/mosaic-inputs';
 import {
-  sql, avg, count, max, median, min, mode, quantile, sum,
+  sql, agg, avg, count, max, median, min, mode, quantile, sum,
   row_number, rank, dense_rank, percent_rank, cume_dist, ntile,
   lag, lead, first_value, last_value, nth_value,
   dateMonth, dateMonthDay, dateDay
@@ -156,8 +156,9 @@ export class ParseContext {
   maybeTransform(value) {
     if (isObject(value)) {
       return value.expr
-        ? parseExpression(value, this)
-        : parseTransform(value, this);
+        ? parseExpression(value, this) :
+        (value.agg ? parseAggregation(value, this)
+        : parseTransform(value, this));
     }
   }
 
@@ -363,8 +364,9 @@ function parseInteractor(spec, ctx) {
   return fn(options);
 }
 
-function parseExpression(spec, ctx) {
-  const { expr, label } = spec;
+function parseExprOrAgg(spec, ctx, key, func) {
+  const { label } = spec;
+  const expr = spec[key];
   const tokens = expr.split(/(\\'|\\"|"(?:\\"|[^"])*"|'(?:\\'|[^'])*'|\$\w+)/g);
   const spans = [''];
   const exprs = [];
@@ -379,7 +381,15 @@ function parseExpression(spec, ctx) {
     }
   }
 
-  return sql(spans, ...exprs).annotate({ label });
+  return func(spans, ...exprs).annotate({ label });
+}
+
+function parseExpression(spec, ctx) {
+  return parseExprOrAgg(spec, ctx, "expr", sql);
+}
+
+function parseAggregation(spec, ctx) {
+  return parseExprOrAgg(spec, ctx, "agg", agg);
 }
 
 function parseTransform(spec, ctx) {
