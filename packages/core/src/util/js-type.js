@@ -19,6 +19,7 @@ export function jsType(type) {
     case 'TIMESTAMPTZ':
     case 'TIMESTAMP WITH TIME ZONE':
     case 'TIME':
+    case 'TIMESTAMP_NS':
       return 'date';
     case 'BOOLEAN':
       return 'boolean';
