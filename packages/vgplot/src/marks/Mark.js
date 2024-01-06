@@ -130,7 +130,7 @@ export class Mark extends MosaicClient {
   query(filter = []) {
     if (this.hasOwnData()) return null;
     const { channels, source: { table } } = this;
-    return markQuery(channels, table).where(filter);
+    return markQuery(channels, table, filter);
   }
 
   queryPending() {
@@ -165,7 +165,7 @@ export function channelOption(c) {
     : c.as;
 }
 
-export function markQuery(channels, table, skip = []) {
+export function markQuery(channels, table, filter, skip = []) {
   const q_with = Query.from({ source: table }).select('*');
   const q = Query.from('__mosaicTemp');
   const dims = new Set;
@@ -189,7 +189,7 @@ export function markQuery(channels, table, skip = []) {
       }
     }
   }
-  q.with({__mosaicTemp: q_with});
+  q.with({__mosaicTemp: q_with.where(filter)});
   if (aggr) {
     q.groupby(Array.from(dims));
   }
