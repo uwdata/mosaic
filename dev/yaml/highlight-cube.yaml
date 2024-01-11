@@ -10,7 +10,6 @@ vconcat:
       data: { from: athletes, filterBy: $query }
       x: { count: }
       y: nationality
-      order: nationality
       sort: {
         y: '-x',
         limit: 10
@@ -30,7 +29,6 @@ vconcat:
       data: { from: athletes, filterBy: $query }
       x: { count: }
       y: sport
-      order: sport
       sort: {
         y: '-x',
         limit: 10

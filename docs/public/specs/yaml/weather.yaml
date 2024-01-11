@@ -50,7 +50,6 @@ vconcat:
     x: { count: }
     y: weather
     fill: weather
-    order: weather
   - select: toggleY
     as: $click
   - select: highlight
