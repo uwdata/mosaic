@@ -182,3 +182,30 @@ export const attributeMap = new Map([
   ['projectionInsetBottom', 'projection.insetBottom'],
   ['projectionClip', 'projection.clip']
 ]);
+
+function setProperty(object, path, value) {
+  for (let i = 0; i < path.length; ++i) {
+    const key = path[i];
+    if (i === path.length - 1) {
+      object[key] = value;
+    } else {
+      object = (object[key] || (object[key] = {}));
+    }
+  }
+}
+
+export function setAttributes(attributes, spec, symbols) {
+  // populate top-level and scale properties
+  for (const key in attributes) {
+    const specKey = attributeMap.get(key);
+    if (specKey == null) {
+      throw new Error(`Unrecognized plot attribute: ${key}`);
+    }
+    const value = attributes[key];
+    if (typeof value === 'symbol') {
+      symbols.push(key);
+    } else if (value !== undefined) {
+      setProperty(spec, specKey.split('.'), value);
+    }
+  }
+}

@@ -1,5 +1,5 @@
 import * as Plot from '@observablehq/plot';
-import { attributeMap } from './plot-attributes.js';
+import { setAttributes } from './plot-attributes.js';
 import { Fixed } from './symbols.js';
 
 const OPTIONS_ONLY_MARKS = new Set([
@@ -9,38 +9,17 @@ const OPTIONS_ONLY_MARKS = new Set([
   'graticule'
 ]);
 
-function setProperty(object, path, value) {
-  for (let i = 0; i < path.length; ++i) {
-    const key = path[i];
-    if (i === path.length - 1) {
-      object[key] = value;
-    } else {
-      object = (object[key] || (object[key] = {}));
-    }
-  }
-}
+
 
 // construct Plot output
 // see https://github.com/observablehq/plot
 export async function plotRenderer(plot) {
   const spec = { marks: [] };
   const symbols = [];
-
   const { attributes, marks } = plot;
 
   // populate top-level and scale properties
-  for (const key in attributes) {
-    const specKey = attributeMap.get(key);
-    if (specKey == null) {
-      throw new Error(`Unrecognized plot attribute: ${key}`);
-    }
-    const value = attributes[key];
-    if (typeof value === 'symbol') {
-      symbols.push(key);
-    } else if (value !== undefined) {
-      setProperty(spec, specKey.split('.'), value);
-    }
-  }
+  setAttributes(attributes, spec, symbols);
 
   // populate marks
   const indices = [];
