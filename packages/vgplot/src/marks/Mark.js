@@ -174,7 +174,7 @@ export function markQuery(channels, table, skip = []) {
     const { channel, field, as } = c;
     if (skip.includes(channel)) continue;
 
-    if (channel === 'order') {
+    if (channel === 'orderby') {
       q.orderby(c.value);
     } else if (field) {
       if (field.aggregate) {

@@ -2,12 +2,43 @@ import { coordinator, throttle } from '@uwdata/mosaic-core';
 import { and } from '@uwdata/mosaic-sql';
 import { sanitizeStyles } from './util/sanitize-styles.js';
 
+function configureMark(mark) {
+  const { channels } = mark;
+  const dims = new Set;
+  let ordered = false;
+  let aggregate = false;
+
+  for (const c of channels) {
+    const { channel, field, as } = c;
+    if (channel === 'orderby') {
+      ordered = true;
+    } else if (field) {
+      if (field.aggregate) {
+        aggregate = true;
+      } else {
+        if (dims.has(as)) continue;
+        dims.add(as);
+      }
+    }
+  }
+
+  // if orderby is defined, we're ok: nothing to do
+  // or, if there is no groupby aggregation, we're ok: nothing to do
+  // grouping may result in optimizations that change result order
+  // so we orderby the grouping dimensions to ensure stable indices
+  if (!ordered && aggregate && dims.size) {
+    mark.channels.push(({ channel: 'orderby', value: Array.from(dims) }));
+  }
+
+  return mark;
+}
+
 export class Highlight {
   constructor(mark, {
     selection,
     channels = {}
   }) {
-    this.mark = mark;
+    this.mark = configureMark(mark);
     this.selection = selection;
     const c = Object.entries(sanitizeStyles(channels));
     this.channels = c.length ? c : [['opacity', 0.2]];

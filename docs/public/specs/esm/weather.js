@@ -36,7 +36,7 @@ export default vg.vconcat(
     ),
     vg.barX(
       vg.from("weather", { filterBy: $range }),
-      { x: vg.count(), y: "weather", fill: "weather", order: "weather" }
+      { x: vg.count(), y: "weather", fill: "weather" }
     ),
     vg.toggleY({ as: $click }),
     vg.highlight({ by: $click }),
