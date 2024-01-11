@@ -143,8 +143,8 @@ class CodegenContext extends ParseContext {
 
   maybeTransform(value) {
     if (isObject(value)) {
-      return value.expr
-        ? parseExpression(value, this)
+      return value.expr ? parseExpression(value, this)
+	: value.agg ? parseExpression(value, this, 'agg', 'agg')
         : parseTransform(value, this);
     }
   }
@@ -162,8 +162,9 @@ class CodegenContext extends ParseContext {
   }
 }
 
-function parseExpression(spec, ctx) {
-  const { expr, label } = spec;
+function parseExpression(spec, ctx, key = 'expr', method = 'sql') {
+  const { label } = spec;
+  const expr = spec[key]
   const tokens = expr.split(/(\\'|\\"|"(?:\\"|[^"])*"|'(?:\\'|[^'])*'|\$\w+)/g);
   let str = '';
 
@@ -176,7 +177,7 @@ function parseExpression(spec, ctx) {
     }
   }
 
-  return `vg.sql\`${str}\``
+  return `vg.${method}\`${str}\``
     + (label ? `.annotate({ label: ${JSON.stringify(label)} })` : '');
 }
 

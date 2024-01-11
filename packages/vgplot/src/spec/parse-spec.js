@@ -155,8 +155,8 @@ export class ParseContext {
 
   maybeTransform(value) {
     if (isObject(value)) {
-      return value.expr
-        ? parseExpression(value, this)
+      return value.expr ? parseExpression(value, this)
+        : value.agg ? parseAggregation(value, this)
         : parseTransform(value, this);
     }
   }
@@ -363,8 +363,9 @@ function parseInteractor(spec, ctx) {
   return fn(options);
 }
 
-function parseExpression(spec, ctx) {
-  const { expr, label } = spec;
+function parseExpression(spec, ctx, key = 'expr') {
+  const { label } = spec;
+  const expr = spec[key];
   const tokens = expr.split(/(\\'|\\"|"(?:\\"|[^"])*"|'(?:\\'|[^'])*'|\$\w+)/g);
   const spans = [''];
   const exprs = [];
@@ -381,6 +382,11 @@ function parseExpression(spec, ctx) {
 
   return sql(spans, ...exprs).annotate({ label });
 }
+
+function parseAggregation(spec, ctx) {
+  return parseExpression(spec, ctx, 'agg').annotate({aggregate: true});
+}
+
 
 function parseTransform(spec, ctx) {
   const { transforms } = ctx;
