@@ -211,7 +211,7 @@ function getIndexColumns(client) {
   let count;
 
   for (const { as, expr: { aggregate } } of q.select()) {
-    switch (aggregate?.toUpperCase()) {
+    switch (aggregate?.toUpperCase?.()) {
       case 'COUNT':
       case 'SUM':
         aggr.push({ [as]: sql`SUM("${as}")::DOUBLE` });
