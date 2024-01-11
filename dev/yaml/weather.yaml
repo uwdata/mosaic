@@ -28,6 +28,7 @@ vconcat:
     colorRange: $colors
     rDomain: Fixed
     rRange: [2, 10]
+    marginLeft: 45
     width: 800
 - plot:
   - mark: barX
@@ -40,7 +41,6 @@ vconcat:
     x: { count: }
     y: weather
     fill: weather
-    order: weather
   - select: toggleY
     as: $click
   - select: highlight
@@ -50,4 +50,5 @@ vconcat:
   yLabel: null
   colorDomain: $domain
   colorRange: $colors
+  marginLeft: 45
   width: 800

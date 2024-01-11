@@ -40,7 +40,7 @@ export class HexbinMark extends Mark {
     const aggr = new Set;
     const cols = {};
     for (const c of channels) {
-      if (c.channel === 'order') {
+      if (c.channel === 'orderby') {
         q.orderby(c.value); // TODO revisit once groupby is added
       } else if (c.channel === 'x') {
         x = c;

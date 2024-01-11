@@ -105,8 +105,7 @@
             "count": null
           },
           "y": "weather",
-          "fill": "weather",
-          "order": "weather"
+          "fill": "weather"
         },
         {
           "select": "toggleY",
