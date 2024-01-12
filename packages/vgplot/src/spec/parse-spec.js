@@ -404,12 +404,12 @@ function parseTransform(spec, ctx) {
   const args = name === 'count' || name == null ? [] : toArray(spec[name]);
   let expr = func(...args);
   if (spec.distinct) expr = expr.distinct();
-  if (spec.order) {
-    const p = toArray(spec.order).map(v => ctx.maybeParam(v));
+  if (spec.orderby) {
+    const p = toArray(spec.orderby).map(v => ctx.maybeParam(v));
     expr = expr.orderby(p);
   }
-  if (spec.partition) {
-    const p = toArray(spec.partition).map(v => ctx.maybeParam(v));
+  if (spec.partitionby) {
+    const p = toArray(spec.partitionby).map(v => ctx.maybeParam(v));
     expr = expr.partitionby(p);
   }
   if (spec.rows) {
