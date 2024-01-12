@@ -12,7 +12,7 @@ vconcat:
   - mark: lineY
     data: { from: cases }
     x: day
-    y: { avg: cases, order: day, rows: $frame }
+    y: { avg: cases, orderby: day, rows: $frame }
     curve: monotone-x
     stroke: black
   width: 1200

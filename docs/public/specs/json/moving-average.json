@@ -39,7 +39,7 @@
           "x": "day",
           "y": {
             "avg": "cases",
-            "order": "day",
+            "orderby": "day",
             "rows": "$frame"
           },
           "curve": "monotone-x",

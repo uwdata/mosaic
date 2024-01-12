@@ -201,12 +201,12 @@ function parseTransform(spec, ctx) {
   if (spec.distinct) {
     str += '.distinct()'
   }
-  if (spec.order) {
-    const p = toArray(spec.order).map(v => ctx.maybeParam(v));
+  if (spec.orderby) {
+    const p = toArray(spec.orderby).map(v => ctx.maybeParam(v));
     str += `.orderby(${p.join(', ')})`;
   }
-  if (spec.partition) {
-    const p = toArray(spec.partition).map(v => ctx.maybeParam(v));
+  if (spec.partitionby) {
+    const p = toArray(spec.partitionby).map(v => ctx.maybeParam(v));
     str += `.partitionby(${p.join(', ')})`;
   }
   if (spec.rows) {
