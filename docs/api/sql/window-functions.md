@@ -25,7 +25,7 @@ The `label` property provides a descriptive text label.
 `WindowFunction.over(name)`
 
 Provide the _name_ of a window definition for this function and returns a new WindowFunction instance.
-The window should be defined separately in an issued query, for example using the [Query.window](./query#Query.window) method.
+The window should be defined separately in an issued query, for example using the [Query.window](./queries#window) method.
 
 ### partitionby
 
