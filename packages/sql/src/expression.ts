@@ -1,18 +1,26 @@
-import { literalToSQL } from './to-sql.js';
+import { Ref } from "./ref";
+import { literalToSQL } from "./to-sql";
+
+export interface Param {
+  addEventListener(type: "value", callback: (a: SQLExpression) => void): void;
+  value?: any;
+  update(value: any): void;
+}
 
 /**
  * Test if a value is parameter-like. Parameters have addEventListener methods.
  * @param {*} value The value to test.
  * @returns True if the value is param-like, false otherwise.
  */
-export const isParamLike = value => typeof value?.addEventListener === 'function';
+export const isParamLike = (value: any): boolean =>
+  typeof value?.addEventListener === "function";
 
 /**
  * Test if a value is a SQL expression instance.
  * @param {*} value The value to test.
  * @returns {boolean} True if value is a SQL expression, false otherwise.
  */
-export function isSQLExpression(value) {
+export function isSQLExpression(value: any): boolean {
   return value instanceof SQLExpression;
 }
 
@@ -21,6 +29,24 @@ export function isSQLExpression(value) {
  * template tag rather than instantiate this class.
  */
 export class SQLExpression {
+  _expr: (string | SQLExpression | Ref | Param)[];
+  _deps: string[];
+  _params?: Param[];
+  _map?: Map<string, Set<(a: SQLExpression) => void>>;
+  aggregate?: string;
+  label?: string;
+
+  /**
+   * Add an event listener callback for the provided event type.
+   * @param {string} type The event type to listen for (for example, "value").
+   * @param {(a: SQLExpression) => Promise?} callback The callback function to
+   *  invoke upon updates. A callback may optionally return a Promise that
+   *  upstream listeners may await before proceeding.
+   */
+  addEventListener?: (
+    type: string,
+    callback: (a: SQLExpression) => void
+  ) => void;
 
   /**
    * Create a new SQL expression instance.
@@ -28,17 +54,30 @@ export class SQLExpression {
    * @param {string[]} [columns=[]] The column dependencies
    * @param {object} [props] Additional properties for this expression.
    */
-  constructor(parts, columns, props) {
+  constructor(
+    parts: (string | SQLExpression | Ref | Param)[],
+    columns: string[],
+    props?: any
+  ) {
     this._expr = Array.isArray(parts) ? parts : [parts];
     this._deps = columns || [];
     this.annotate(props);
 
-    const params = this._expr.filter(part => isParamLike(part));
+    const params: Param[] = this._expr.filter((part) =>
+      isParamLike(part)
+    ) as unknown[] as Param[];
     if (params.length > 0) {
       this._params = Array.from(new Set(params));
-      this._params.forEach(param => {
-        param.addEventListener('value', () => update(this, this.map?.get('value')));
+      this._params.forEach((param) => {
+        param.addEventListener("value", () =>
+          update(this, this._map?.get("value"))
+        );
       });
+      this.addEventListener = (type, callback) => {
+        const map = this._map || (this._map = new Map());
+        const set = map.get(type) || (map.set(type, new Set()), map.get(type));
+        set.add(callback);
+      };
     } else {
       // do not support event listeners if not needed
       // this causes the expression instance to NOT be param-like
@@ -62,13 +101,15 @@ export class SQLExpression {
     const { _params, _deps } = this;
     if (_params) {
       // pull latest dependencies, as they may change across updates
-      const pset = new Set(_params.flatMap(p => {
-        const cols = p.value?.columns;
-        return Array.isArray(cols) ? cols : [];
-      }));
+      const pset = new Set(
+        _params.flatMap((p) => {
+          const cols = p.value?.columns;
+          return Array.isArray(cols) ? cols : [];
+        })
+      );
       if (pset.size) {
         const set = new Set(_deps);
-        pset.forEach(col => set.add(col));
+        pset.forEach((col) => set.add(col));
         return Array.from(set);
       }
     }
@@ -89,7 +130,7 @@ export class SQLExpression {
    * @param {object[]} [props] One or more objects with properties to add.
    * @returns {this} This SQL expression.
    */
-  annotate(...props) {
+  annotate(...props: any[]) {
     return Object.assign(this, ...props);
   }
 
@@ -99,43 +140,37 @@ export class SQLExpression {
    */
   toString() {
     return this._expr
-      .map(p => isParamLike(p) && !isSQLExpression(p) ? literalToSQL(p.value) : p)
-      .join('');
-  }
-
-  /**
-   * Add an event listener callback for the provided event type.
-   * @param {string} type The event type to listen for (for example, "value").
-   * @param {(a: SQLExpression) => Promise?} callback The callback function to
-   *  invoke upon updates. A callback may optionally return a Promise that
-   *  upstream listeners may await before proceeding.
-   */
-  addEventListener(type, callback) {
-    const map = this.map || (this.map = new Map());
-    const set = map.get(type) || (map.set(type, new Set), map.get(type));
-    set.add(callback);
+      .map((p) =>
+        isParamLike(p) && !isSQLExpression(p)
+          ? literalToSQL((p as unknown as Param).value)
+          : p
+      )
+      .join("");
   }
 }
 
-function update(expr, callbacks) {
+function update(expr: SQLExpression, callbacks?: Set<any>) {
   if (callbacks?.size) {
-    return Promise.allSettled(Array.from(callbacks, fn => fn(expr)));
+    return Promise.allSettled(Array.from(callbacks, (fn) => fn(expr)));
   }
 }
 
-export function parseSQL(strings, exprs) {
-  const spans = [strings[0]];
-  const cols = new Set;
+export function parseSQL(
+  strings: readonly string[],
+  exprs: (string | SQLExpression | Ref | Param)[]
+) {
+  const spans: (string | SQLExpression | Ref | Param)[] = [strings[0]];
+  const cols = new Set<string>();
   const n = exprs.length;
-  for (let i = 0, k = 0; i < n;) {
+  for (let i = 0, k = 0; i < n; ) {
     const e = exprs[i];
     if (isParamLike(e)) {
       spans[++k] = e;
     } else {
-      if (Array.isArray(e?.columns)) {
-        e.columns.forEach(col => cols.add(col));
+      if (Array.isArray((e as SQLExpression)?.columns)) {
+        (e as SQLExpression).columns.forEach((col) => cols.add(col));
       }
-      spans[k] += typeof e === 'string' ? e : literalToSQL(e);
+      spans[k] += typeof e === "string" ? e : literalToSQL(e);
     }
     const s = strings[++i];
     if (isParamLike(spans[k])) {
@@ -153,7 +188,10 @@ export function parseSQL(strings, exprs) {
  * may be strings, other SQL expression objects (such as column
  * references), or parameterized values.
  */
-export function sql(strings, ...exprs) {
+export function sql(
+  strings: readonly string[],
+  ...exprs: (SQLExpression | Ref | string | Param)[]
+) {
   const { spans, cols } = parseSQL(strings, exprs);
-  return new SQLExpression(spans, cols);
+  return new SQLExpression(spans as SQLExpression[], cols);
 }

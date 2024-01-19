@@ -2,12 +2,16 @@
  * Class representing a table and/or column reference.
  */
 export class Ref {
+  table?: string;
+  column?: string;
+  label?: string;
+
   /**
    * Create a new Ref instance.
    * @param {string|Ref|null} table The table name.
    * @param {string|null} column The column name.
    */
-  constructor(table, column) {
+  constructor(table?: string | Ref, column?: string) {
     if (table) this.table = String(table);
     if (column) this.column = column;
   }
@@ -27,10 +31,10 @@ export class Ref {
   toString() {
     const { table, column } = this;
     if (column) {
-      const col = column.startsWith('*') ? column : `"${column}"`;
-      return `${table ? `${quoteTableName(table)}.` : ''}${col}`;
+      const col = column.startsWith("*") ? column : `"${column}"`;
+      return `${table ? `${quoteTableName(table)}.` : ""}${col}`;
     } else {
-      return table ? quoteTableName(table) : 'NULL';
+      return table ? quoteTableName(table) : "NULL";
     }
   }
 }
@@ -40,9 +44,9 @@ export class Ref {
  * @param {string} table the name of the table which may contain a database reference
  * @returns The quoted table name.
  */
-function quoteTableName(table) {
-  const pieces = table.split('.');
-  return pieces.map(p => `"${p}"`).join('.');
+function quoteTableName(table: string) {
+  const pieces = table.split(".");
+  return pieces.map((p) => `"${p}"`).join(".");
 }
 
 /**
@@ -52,7 +56,7 @@ function quoteTableName(table) {
  * @returns {boolean} True if ref is a Ref instance that refers to
  *  the given column name. False otherwise.
  */
-export function isColumnRefFor(ref, name) {
+export function isColumnRefFor(ref: any, name: string): boolean {
   return ref instanceof Ref && ref.column === name;
 }
 
@@ -62,8 +66,8 @@ export function isColumnRefFor(ref, name) {
  *  a new column reference will be returned.
  * @returns {*} A column reference or the input value.
  */
-export function asColumn(value) {
-  return typeof value === 'string' ? column(value) : value;
+export function asColumn(value: any): any {
+  return typeof value === "string" ? column(value) : value;
 }
 
 /**
@@ -72,8 +76,8 @@ export function asColumn(value) {
  *  a new table (relation) reference will be returned.
  * @returns {*} A table reference or the input value.
  */
-export function asRelation(value) {
-  return typeof value === 'string' ? relation(value) : value;
+export function asRelation(value: string | Ref): Ref {
+  return typeof value === "string" ? relation(value) : value;
 }
 
 /**
@@ -81,7 +85,7 @@ export function asRelation(value) {
  * @param {string} name The table (relation) name.
  * @returns {Ref} The generated table reference.
  */
-export function relation(name) {
+export function relation(name: string): Ref {
   return new Ref(name);
 }
 
@@ -91,11 +95,7 @@ export function relation(name) {
  * @param {string} column The column name.
  * @returns {Ref} The generated column reference.
  */
-export function column(table, column) {
-  if (arguments.length === 1) {
-    column = table;
-    table = null;
-  }
+export function column(column: string, table?: string): Ref {
   return new Ref(table, column);
 }
 
@@ -104,6 +104,6 @@ export function column(table, column) {
  * @param {string} table The table name.
  * @returns {Ref} The generated reference.
  */
-export function all(table) {
-  return new Ref(table, '*');
+export function all(table: string): Ref {
+  return new Ref(table, "*");
 }

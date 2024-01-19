@@ -22,7 +22,7 @@
   },
   "scripts": {
     "prebuild": "rimraf dist && mkdir dist",
-    "build": "node ../../esbuild.js mosaic-core",
+    "build": "node ../../esbuild.js mosaic-core src/index.js",
     "lint": "eslint src test --ext .js",
     "test": "mocha 'test/**/*-test.js'",
     "prepublishOnly": "npm run test && npm run lint && npm run build"

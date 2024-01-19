@@ -5,8 +5,8 @@
  * @param {*} value The value to convert to SQL.
  * @returns {string} A SQL string.
  */
-export function toSQL(value) {
-  return typeof value === 'string'
+export function toSQL(value: string | any) {
+  return typeof value === "string"
     ? `"${value}"` // strings as column refs
     : literalToSQL(value);
 }
@@ -22,25 +22,25 @@ export function toSQL(value) {
  * @param {*} value The literal value.
  * @returns {string} A SQL string.
  */
-export function literalToSQL(value) {
+export function literalToSQL(value: any) {
   switch (typeof value) {
-    case 'boolean':
-      return value ? 'TRUE' : 'FALSE';
-    case 'string':
+    case "boolean":
+      return value ? "TRUE" : "FALSE";
+    case "string":
       return `'${value}'`;
-    case 'number':
-      return Number.isFinite(value) ? String(value) : 'NULL';
+    case "number":
+      return Number.isFinite(value) ? String(value) : "NULL";
     default:
       if (value == null) {
-        return 'NULL';
+        return "NULL";
       } else if (value instanceof Date) {
         const ts = +value;
-        if (Number.isNaN(ts)) return 'NULL';
+        if (Number.isNaN(ts)) return "NULL";
         const y = value.getUTCFullYear();
         const m = value.getUTCMonth();
         const d = value.getUTCDate();
         return ts === Date.UTC(y, m, d)
-          ? `MAKE_DATE(${y}, ${m+1}, ${d})` // utc date
+          ? `MAKE_DATE(${y}, ${m + 1}, ${d})` // utc date
           : `EPOCH_MS(${ts})`; // timestamp
       } else if (value instanceof RegExp) {
         return `'${value.source}'`;
