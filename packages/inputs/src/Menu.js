@@ -82,7 +82,7 @@ export class Menu extends MosaicClient {
         source: this,
         schema: { type: 'point' },
         value,
-        predicate: value ? eq(column, literal(value)) : null
+        predicate: (value !== '' && value !== undefined) ? eq(column, literal(value)) : null
       });
     } else if (isParam(selection)) {
       selection.update(value);
