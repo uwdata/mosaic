@@ -3,6 +3,7 @@
 import { coordinator, namedPlots, parseSpec } from '@uwdata/vgplot';
 import * as arrow from 'apache-arrow';
 import './style.css';
+import { v4 as uuidv4 } from 'uuid';
 
 /**
  * @typedef Model
@@ -30,7 +31,7 @@ export async function render(view) {
    * @param {(reason?: any) => void} reject the promise reject callback
    */
   function send(query, resolve, reject) {
-    const uuid = globalThis.crypto.randomUUID();
+    const uuid = uuidv4();
 
     openQueries.set(uuid, { query, startTime: performance.now(), resolve, reject });
     view.model.send({ ...query, uuid });
