@@ -59,11 +59,6 @@ export class WindowFunction extends SQLExpression {
     return this.column;
   }
 
-  // get label() {
-  //   const { func } = this;
-  //   return func.label ?? func.toString();
-  // }
-
   over(name: string) {
     const { window: op, func, type, group, order, frame } = this;
     return new WindowFunction(op, func, type, name, group, order, frame);

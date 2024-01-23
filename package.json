@@ -22,6 +22,7 @@
     "release": "npm run build && npm run test && npm run lint && lerna publish"
   },
   "devDependencies": {
+    "@types/mocha": "^10.0.6",
     "esbuild": "^0.19.11",
     "eslint": "^8.56.0",
     "lerna": "^8.0.2",
