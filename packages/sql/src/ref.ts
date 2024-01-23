@@ -95,8 +95,16 @@ export function relation(name: string): Ref {
  * @param {string} column The column name.
  * @returns {Ref} The generated column reference.
  */
-export function column(column: string, table?: string): Ref {
-  return new Ref(table, column);
+export function column(table: string, column: string): Ref;
+export function column(column: string): Ref;
+export function column(tableOrColumn: string, column?: string): Ref {
+  if (typeof column === "string") {
+    // Called with two arguments: table and column
+    return new Ref(tableOrColumn, column);
+  } else {
+    // Called with one argument: column
+    return new Ref(undefined, tableOrColumn);
+  }
 }
 
 /**

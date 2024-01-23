@@ -320,8 +320,8 @@ describe("Query", () => {
 
     assert.strictEqual(
       Query.select({
-        foo: column("foo", "a"),
-        bar: column("bar", "b"),
+        foo: column("a", "foo"),
+        bar: column("b", "bar"),
       })
         .from({ a: "data1", b: "data2" })
         .toString(),
