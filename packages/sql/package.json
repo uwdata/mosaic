@@ -20,7 +20,7 @@
     "url": "https://github.com/uwdata/mosaic.git"
   },
   "scripts": {
-    "prebuild": "rimraf dist && mkdir dist && tsc",
+    "prebuild": "rimraf dist && mkdir dist",
     "build": "node ../../esbuild.js mosaic-sql src/index.ts",
     "lint": "eslint src test --ext .ts",
     "test": "ts-mocha 'test/**/*-test.ts'",

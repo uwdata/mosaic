@@ -6,7 +6,7 @@ const entrypoint = process.argv[3];
 
 function config(opt) {
   return {
-    entryPoints: [entrypoint],
+    entryPoints: [entrypoint ?? `src/index.js`],
     target: ["esnext"],
     format: "esm",
     bundle: true,
