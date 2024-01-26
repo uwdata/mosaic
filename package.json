@@ -23,6 +23,8 @@
   },
   "devDependencies": {
     "@types/mocha": "^10.0.6",
+    "@typescript-eslint/eslint-plugin": "^6.19.1",
+    "@typescript-eslint/parser": "^6.19.1",
     "esbuild": "^0.19.11",
     "eslint": "^8.56.0",
     "lerna": "^8.0.2",
