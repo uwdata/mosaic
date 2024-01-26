@@ -300,6 +300,7 @@ export {
 
 export {
   parseSpec,
+  parsePlotSpec,
   ParseContext
 } from './spec/parse-spec.js';
 

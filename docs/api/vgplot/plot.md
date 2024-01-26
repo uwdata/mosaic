@@ -48,6 +48,25 @@ Return the "inner" width of the plot, which is the `width` attribute value minus
 
 Return the "inner" height of the plot, which is the `height` attribute value minus the `topMargin` and `bottomMargin` values.
 
+### status
+
+`plot.status`
+
+Return the `status` of a `Plot` instance (one of `idle`, `pendingQuery` and `pendingRender`).
+
+- Initial `status` is `idle`.
+- When marks are initially connected to coordinator (via `plot.connect()`) or when a mark of a plot has a pending query, status will change to `pendingQuery`.
+- When all pending queries of plot marks are done, status will change to `pendingRender`.
+- After rendering, status will change to `idle` again.
+
+There is a `status` event listener available, see `plot.addEventListener` and `plot.removeEventListener`.
+
+### connect
+
+`plot.connect()`
+
+Connect all [`Mark`](./marks) instances to coordinator.
+
 ### pending
 
 `plot.pending(mark)`
@@ -94,6 +113,12 @@ Adds an event listener _callback_ that is invoked when the attribute with the gi
 
 Removes an event listener _callback_ associated with the given attribute _name_.
 
+### addDirectives
+
+`plot.addDirectives(directives)`
+
+Adds directives to plot.
+
 ### addParams
 
 `plot.addParams(mark, paramSet)`
@@ -128,3 +153,16 @@ Called by [interactor directives](./interactors).
 Add a _legend_ associated with this plot.
 The _include_ flag (default `true`) indicates if the legend should be included within the same container element as the plot.
 Called by [legend directives](./legends).
+
+### addEventListener
+
+`plot.addEventListener(type, callback)`
+
+Add an event listener _callback_ function for the specified event _type_.
+`Plot` supports `"status"` type events only.
+
+### removeEventListener
+
+`plot.removeEventListener(type, callback)`
+
+Remove an event listener _callback_ function for the specified event _type_.
