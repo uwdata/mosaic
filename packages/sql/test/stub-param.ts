@@ -1,4 +1,4 @@
-import { Param, SQLExpression } from "../src/expression";
+import { Param } from "../src/expression";
 
 export function stubParam(value: any): Param {
   let cb: (v: any) => void;

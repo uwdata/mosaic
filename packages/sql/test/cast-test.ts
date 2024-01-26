@@ -14,7 +14,7 @@ describe("cast", () => {
     assert.strictEqual(expr.aggregate, "AVG");
     assert.strictEqual(expr.column, "bar");
     assert.deepStrictEqual(expr.columns, ["bar"]);
-    assert.strictEqual(expr.label, 'avg("bar")');
+    assert.strictEqual(expr.label, "avg(bar)");
   });
   it("performs double casts", () => {
     assert.strictEqual(String(castDouble("foo")), 'CAST("foo" AS DOUBLE)');
@@ -28,7 +28,7 @@ describe("cast", () => {
     assert.strictEqual(expr.aggregate, "AVG");
     assert.strictEqual(expr.column, "bar");
     assert.deepStrictEqual(expr.columns, ["bar"]);
-    assert.strictEqual(expr.label, 'avg("bar")');
+    assert.strictEqual(expr.label, "avg(bar)");
   });
   it("performs integer casts", () => {
     assert.strictEqual(String(castInteger("foo")), 'CAST("foo" AS INTEGER)');
@@ -42,6 +42,6 @@ describe("cast", () => {
     assert.strictEqual(expr.aggregate, "AVG");
     assert.strictEqual(expr.column, "bar");
     assert.deepStrictEqual(expr.columns, ["bar"]);
-    assert.strictEqual(expr.label, 'avg("bar")');
+    assert.strictEqual(expr.label, "avg(bar)");
   });
 });

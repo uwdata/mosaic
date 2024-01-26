@@ -44,7 +44,9 @@ export class AggregateFunction extends SQLExpression {
 
     // generate the label
     const dist = this.isDistinct ? "DISTINCT " : "";
-    const tail = this.args.length ? `(${dist}${this.args.join(", ")})` : "";
+    const tail = this.args.length
+      ? `(${dist}${this.args.map(unquoted).join(", ")})`
+      : "";
     this.label = `${op.toLowerCase()}${tail}`;
   }
 
