@@ -344,7 +344,7 @@ function parseInput(spec, ctx) {
   }
   const opt = [];
   for (const key in options) {
-    opt.push(`${key}: ${ctx.maybeSelection(options[key])}`);
+    opt.push(`${key}: ${ctx.maybeSelections(options[key])}`);
   }
   return `${ctx.tab()}vg.${input}({ ${opt.join(', ')} })`;
 }

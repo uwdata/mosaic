@@ -267,7 +267,7 @@ function parseInput(spec, ctx) {
     error(`Unrecognized input: ${input}`, spec);
   }
   for (const key in options) {
-    options[key] = ctx.maybeSelection(options[key]);
+    options[key] = ctx.maybeSelections(options[key]);
   }
   return fn(options);
 }
