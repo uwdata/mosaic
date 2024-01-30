@@ -18,7 +18,7 @@ By default Mosaic connects to a DuckDB server. To use a different database conne
 
 ``` js
 import { coordinator, wasmConnector } from "@uwdata/vgplot";
-coordinator().databaseConnector(await wasmConnector());
+coordinator().databaseConnector(wasmConnector());
 ```
 :::
 
