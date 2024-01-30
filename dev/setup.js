@@ -16,7 +16,7 @@ export async function setDatabaseConnector(type, options) {
       connector = restConnector(options);
       break;
     case 'wasm':
-      connector = (wasm || (wasm = await wasmConnector(options)));
+      connector = wasm || (wasm = wasmConnector(options));
       break;
     default:
       throw new Error(`Unrecognized connector type: ${type}`);

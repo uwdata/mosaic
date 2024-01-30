@@ -7,10 +7,9 @@ let ready;
 
 function init() {
   if (!ready) {
-    ready = wasmConnector().then(wasm => {
-      coordinator().logger(null);
-      coordinator().databaseConnector(wasm);
-    });
+    coordinator().logger(null);
+    coordinator().databaseConnector(wasmConnector());
+    ready = true;
   }
   return ready;
 }
@@ -18,7 +17,7 @@ function init() {
 export default {
   async mounted() {
     try {
-      await init();
+      init();
       const spec = yaml.parse(await fetch(withBase(this.spec)).then(r => r.text()));
       const view = await parseSpec(spec, { baseURL: location.origin + import.meta.env.BASE_URL });
       this.$refs.view.replaceChildren(view);

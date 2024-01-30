@@ -1,14 +1,28 @@
 import * as duckdb from '@duckdb/duckdb-wasm';
 
-export async function wasmConnector(options) {
-  const db = await initDatabase(options);
-  const con = await db.connect();
+export function wasmConnector(options = {}) {
+  const { duckdb, connection, ...opts } = options;
+  let db = duckdb;
+  let con = connection;
+
+  async function getDuckDB() {
+    if (!db) db = await initDatabase(opts);
+    return db;
+  }
+
+  async function getConnection() {
+    if (!con) {
+      con = await (await getDuckDB()).connect();
+    }
+    return con;
+  }
 
   return {
-    db,
-    con,
+    getDuckDB,
+    getConnection,
     query: async query => {
       const { type, sql } = query;
+      const con = await getConnection();
       const result = await con.query(sql);
       return type === 'exec' ? undefined
         : type === 'arrow' ? result
