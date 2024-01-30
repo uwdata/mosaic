@@ -4,16 +4,28 @@ export function wasmConnector(options = {}) {
   const { duckdb, connection, ...opts } = options;
   let db = duckdb;
   let con = connection;
+  let loadPromise;
+
+  function load() {
+    if (!loadPromise) {
+      // use a loading promise to avoid race conditions
+      // synchronizes multiple callees on the same load
+      loadPromise = (db
+        ? Promise.resolve(db)
+        : initDatabase(opts).then(result => db = result))
+        .then(db => db.connect())
+        .then(result => con = result);
+    }
+    return loadPromise;
+  }
 
   async function getDuckDB() {
-    if (!db) db = await initDatabase(opts);
+    if (!db) await load();
     return db;
   }
 
   async function getConnection() {
-    if (!con) {
-      con = await (await getDuckDB()).connect();
-    }
+    if (!con) await load();
     return con;
   }
 
