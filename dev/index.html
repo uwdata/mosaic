@@ -45,9 +45,9 @@
     <span>
       Connector:
       <select id="connectors">
-        <option value="socket" selected>Socket</option>
+        <option value="wasm" selected>WASM</option>
+        <option value="socket">Socket</option>
         <option value="rest">REST</option>
-        <option value="wasm">WASM</option>
       </select>
     </span>
 
@@ -113,7 +113,7 @@
     const code = await specToModule(spec, { ...options, imports });
     const blob = new Blob([code], { type: 'text/javascript' });
     const url = URL.createObjectURL(blob);
-    return (await import(url /* @vite-ignore */)).default;
+    return (await import(/* @vite-ignore */ url)).default;
   }
 </script>
 </body>
