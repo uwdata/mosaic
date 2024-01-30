@@ -9,6 +9,8 @@ The _query_ argument is an object that may include the following properties:
 - _type_: The query format type, such as `"exec"` (no return value), `"arrow"`, and `"json"`.
 - Any additional connector-specific options.
 
+Once instantiated, register a connector with the coordinator using the [`coordinator.databaseConnector()`](coordinator#databaseconnector) method.
+
 ## socketConnector
 
 `socketConnector(uri)`

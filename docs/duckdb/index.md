@@ -3,7 +3,7 @@
 The Mosaic `duckdb` package provides facilities for running DuckDB from Node.js and handling query requests over a network connection.
 
 ::: tip
-This package runs a server-side DuckDB instance in Node.js. If instead you want to connect to DuckDB-WASM in a browser, skip this package and look at the [WASM connector](/api/core/connectors#wasmConnector) provided by the `mosaic-core` package.
+This package runs a server-side DuckDB instance in Node.js. If instead you want to connect to DuckDB-WASM in a browser, skip this package and look at the [WASM connector](/api/core/connectors#wasmconnector) provided by the `mosaic-core` package.
 :::
 
 ## DuckDB API
