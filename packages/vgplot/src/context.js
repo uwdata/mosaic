@@ -13,7 +13,8 @@ export function createAPIContext({
     ...extensions,
     context: {
       coordinator,
-      namedPlots
+      namedPlots,
+      ...options
     }
   };
 }

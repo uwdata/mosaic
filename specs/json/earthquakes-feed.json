@@ -1,0 +1,50 @@
+{
+  "meta": {
+    "title": "Eearthquakes Feed",
+    "description": "Earthquakes from the USGS live feed.",
+    "credit": "Adapted from an [Observable Plot example](https://observablehq.com/@observablehq/plot-live-earthquake-map)."
+  },
+  "data": {
+    "earthquakes": {
+      "type": "spatial",
+      "file": "data/usgs-feed.geojson"
+    },
+    "world": {
+      "type": "spatial",
+      "file": "data/countries-110m.json",
+      "layer": "land"
+    }
+  },
+  "plot": [
+    {
+      "mark": "geo",
+      "from": "world",
+      "fill": "currentColor",
+      "fillOpacity": 0.2
+    },
+    {
+      "mark": "sphere",
+      "strokeWidth": 0.5
+    },
+    {
+      "mark": "geo",
+      "from": "earthquakes",
+      "r": {
+        "expr": "POW(10, mag)"
+      },
+      "stroke": "red",
+      "fill": "red",
+      "fillOpacity": 0.2,
+      "title": "title",
+      "href": "url",
+      "target": "_blank"
+    }
+  ],
+  "margins": {
+    "left": 5,
+    "top": 5,
+    "right": 5,
+    "bottom": 5
+  },
+  "projectionType": "equirectangular"
+}

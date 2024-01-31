@@ -1,12 +1,11 @@
 import * as vg from "@uwdata/vgplot";
-import { feature } from "https://cdn.jsdelivr.net/npm/topojson@3.0.2/+esm";
 
 await vg.coordinator().exec(
   vg.loadParquet("earthquakes", "data/earthquakes.parquet")
 );
-const land = await fetch("data/countries-110m.json")
-  .then(r => r.json())
-  .then(json => feature(json, json.objects['land']).features);
+await vg.coordinator().exec(
+  vg.loadSpatial("land", "data/countries-110m.json", {layer: "land"})
+);
 
 const $longitude = vg.Param.value(-180);
 const $latitude = vg.Param.value(-30);
@@ -19,8 +18,8 @@ export default vg.vconcat(
   ),
   vg.plot(
     vg.geo(
-      land,
-      {fill: "currentColor", fillOpacity: 0.2}
+      vg.from("land"),
+      {geometry: vg.geojson("geom"), fill: "currentColor", fillOpacity: 0.2}
     ),
     vg.sphere(),
     vg.dot(

@@ -7,9 +7,9 @@ meta:
 data:
   earthquakes: { file: data/earthquakes.parquet }
   land:
-    type: topojson
+    type: spatial
     file: data/countries-110m.json
-    feature: land
+    layer: land
 params:
   longitude: -180
   latitude: -30
@@ -31,6 +31,7 @@ vconcat:
 - plot:
   - mark: geo
     data: { from: land }
+    geometry: { geojson: geom }
     fill: currentColor
     fillOpacity: 0.2
   - mark: sphere

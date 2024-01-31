@@ -1,5 +1,5 @@
 meta:
-  title: Eearthquakes Live Feed
+  title: Eearthquakes Feed
   description: Earthquakes from the USGS live feed.
   credit: Adapted from an [Observable Plot example](https://observablehq.com/@observablehq/plot-live-earthquake-map).
 data:

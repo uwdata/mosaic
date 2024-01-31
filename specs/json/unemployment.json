@@ -1,0 +1,52 @@
+{
+  "meta": {
+    "title": "U.S. Unemployment",
+    "description": "A choropleth map of unemployment rates for U.S. counties.",
+    "credit": "Adapted from an [Observable Plot example](https://observablehq.com/@observablehq/plot-us-choropleth)."
+  },
+  "data": {
+    "counties": {
+      "type": "spatial",
+      "file": "data/us-counties-10m.json",
+      "layer": "counties"
+    },
+    "rates": {
+      "type": "csv",
+      "file": "data/us-county-unemployment.csv"
+    },
+    "combined": {
+      "type": "table",
+      "query": "SELECT a.geom AS geom, b.rate AS rate FROM counties AS a, rates AS b WHERE a.id = b.id\n"
+    }
+  },
+  "vconcat": [
+    {
+      "legend": "color",
+      "for": "county-map",
+      "label": "Unemployment (%)"
+    },
+    {
+      "plot": [
+        {
+          "mark": "geo",
+          "from": "combined",
+          "fill": "rate",
+          "title": {
+            "expr": "concat(rate, '%')"
+          }
+        }
+      ],
+      "name": "county-map",
+      "margins": {
+        "left": 5,
+        "top": 5,
+        "right": 5,
+        "bottom": 5
+      },
+      "colorScale": "quantile",
+      "colorN": 9,
+      "colorScheme": "blues",
+      "projectionType": "albers-usa"
+    }
+  ]
+}

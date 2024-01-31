@@ -1,8 +1,10 @@
 import { readdir, readFile, writeFile } from 'node:fs/promises';
-import { join } from 'node:path';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { parse } from 'yaml';
 
-const BASE = '../../specs';
+const __dirname = dirname(fileURLToPath(import.meta.url));
+const BASE = join(__dirname, '../../../specs');
 const YAML = join(BASE, 'yaml');
 const JSON = join(BASE, 'json');
 const ESM = join(BASE, 'esm');

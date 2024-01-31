@@ -1,4 +1,3 @@
-import { coordinator as _coordinator } from '@uwdata/mosaic-core';
 import { createAPIContext } from '@uwdata/vgplot';
 import { error, isArray } from './util.js';
 

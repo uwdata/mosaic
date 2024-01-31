@@ -1,4 +1,3 @@
-import { vconcat } from '@uwdata/vgplot';
 import { ASTNode } from './ASTNode.js';
 import { VCONCAT } from '../constants.js';
 

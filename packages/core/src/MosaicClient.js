@@ -27,7 +27,7 @@ export class MosaicClient {
    * Set this client's connected coordinator.
    */
   set coordinator(coordinator) {
-    return this._coordinator = coordinator;
+    this._coordinator = coordinator;
   }
 
   /**

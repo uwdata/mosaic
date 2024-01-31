@@ -28,7 +28,7 @@
     "prepublishOnly": "npm run test && npm run lint && npm run build"
   },
   "dependencies": {
-    "@duckdb/duckdb-wasm": "^1.28.1-dev99.0",
+    "@duckdb/duckdb-wasm": "^1.28.1-dev106.0",
     "@uwdata/mosaic-sql": "^0.4.0",
     "apache-arrow": "^13.0.0"
   }

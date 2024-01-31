@@ -1,0 +1,39 @@
+{
+  "meta": {
+    "title": "U.S. States",
+    "description": "A map of U.S. states overlaid with computed centroids.",
+    "credit": "Adapted from an [Observable Plot example](https://observablehq.com/@observablehq/plot-state-centroids)."
+  },
+  "data": {
+    "states": {
+      "type": "spatial",
+      "file": "data/us-counties-10m.json",
+      "layer": "states"
+    }
+  },
+  "plot": [
+    {
+      "mark": "geo",
+      "from": "states",
+      "fill": "currentColor",
+      "fillOpacity": 0.15,
+      "stroke": "white",
+      "strokeWidth": 1
+    },
+    {
+      "mark": "dot",
+      "from": "states",
+      "x": {
+        "centroidX": "geom"
+      },
+      "y": {
+        "centroidY": "geom"
+      },
+      "r": 2,
+      "fill": "#888",
+      "tip": true,
+      "title": "name"
+    }
+  ],
+  "projectionType": "albers"
+}

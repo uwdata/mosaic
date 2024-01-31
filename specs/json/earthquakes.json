@@ -10,9 +10,9 @@
       "file": "data/earthquakes.parquet"
     },
     "land": {
-      "type": "topojson",
+      "type": "spatial",
       "file": "data/countries-110m.json",
-      "feature": "land"
+      "layer": "land"
     }
   },
   "params": {
@@ -47,11 +47,11 @@
     {
       "plot": [
         {
-          "0": "l",
-          "1": "a",
-          "2": "n",
-          "3": "d",
           "mark": "geo",
+          "from": "land",
+          "geometry": {
+            "geojson": "geom"
+          },
           "fill": "currentColor",
           "fillOpacity": 0.2
         },
