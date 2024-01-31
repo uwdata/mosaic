@@ -22,6 +22,29 @@ export function loadParquet(tableName, fileName, options) {
   return load('read_parquet', tableName, fileName, options);
 }
 
+/**
+ * Load geometry data within a spatial file format.
+ * This method requires that the DuckDB spatial extension is loaded.
+ * Supports GeoJSON, TopoJSON, and other comomn spatial formats.
+ * For TopoJSON, wet the layer option to indicate the feature to extract.
+ */
+export function loadSpatial(tableName, fileName, options = {}) {
+  // nested options map to the open_options argument of st_read
+  const { options: opt, ...rest } = options;
+  if (opt) {
+    // TODO: check correct syntax for open_options
+    const open = Array.isArray(opt) ? opt.join(', ')
+      : typeof opt === 'string' ? opt
+      : Object.entries(opt)
+          .map(([key, value]) => `${key}=${value}`)
+          .join(', ');
+    rest.open_options = open.toUpperCase();
+  }
+  // TODO: handle box_2d for spatial_filter_box option
+  // TODO: handle wkb_blob for spatial_filter option
+  return load('st_read', tableName, fileName, rest);
+}
+
 export function loadObjects(tableName, data, options = {}) {
   const { select = ['*'], ...opt } = options;
   const values = sqlFrom(data);

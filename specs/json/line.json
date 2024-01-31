@@ -1,0 +1,20 @@
+{
+  "meta": {},
+  "data": {
+    "aapl": {
+      "type": "parquet",
+      "file": "data/stocks.parquet",
+      "where": "Symbol = 'AAPL'"
+    }
+  },
+  "plot": [
+    {
+      "mark": "line",
+      "from": "aapl",
+      "x": "Date",
+      "y": "Close"
+    }
+  ],
+  "width": 680,
+  "height": 200
+}

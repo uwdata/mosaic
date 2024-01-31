@@ -1,4 +1,3 @@
-import { coordinator } from './Coordinator.js';
 import { throttle } from './util/throttle.js';
 
 /**
@@ -14,6 +13,21 @@ export class MosaicClient {
   constructor(filterSelection) {
     this._filterBy = filterSelection;
     this._requestUpdate = throttle(() => this.requestQuery(), true);
+    this._coordinator = null;
+  }
+
+  /**
+   * Return this client's connected coordinator.
+   */
+  get coordinator() {
+    return this._coordinator;
+  }
+
+  /**
+   * Set this client's connected coordinator.
+   */
+  set coordinator(coordinator) {
+    return this._coordinator = coordinator;
   }
 
   /**
@@ -63,7 +77,7 @@ export class MosaicClient {
 
   /**
    * Called by the coordinator to return a query result.
-   * 
+   *
    * @param {*} data the query result
    * @returns {this}
    */
@@ -86,7 +100,7 @@ export class MosaicClient {
    */
   requestQuery(query) {
     const q = query || this.query(this.filterBy?.predicate(this));
-    return coordinator().requestQuery(this, q);
+    return this._coordinator.requestQuery(this, q);
   }
 
   /**

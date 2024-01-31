@@ -105,6 +105,15 @@ export {
 } from './functions.js';
 
 export {
+  centroid,
+  centroidX,
+  centroidY,
+  geojson,
+  x,
+  y
+} from './spatial.js';
+
+export {
   row_number,
   rank,
   dense_rank,
@@ -133,5 +142,6 @@ export {
   loadCSV,
   loadJSON,
   loadObjects,
-  loadParquet
+  loadParquet,
+  loadSpatial
 } from './load/load.js';

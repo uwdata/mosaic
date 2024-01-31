@@ -29,12 +29,9 @@
     "prepublishOnly": "npm run test && npm run lint && npm run build"
   },
   "dependencies": {
-    "@observablehq/plot": "^0.6.13",
     "@uwdata/mosaic-core": "^0.4.0",
     "@uwdata/mosaic-inputs": "^0.4.0",
-    "@uwdata/mosaic-sql": "^0.4.0",
-    "d3": "^7.8.5",
-    "isoformat": "^0.2.1",
-    "topojson-client": "^3.1.0"
+    "@uwdata/mosaic-plot": "^0.4.0",
+    "@uwdata/mosaic-sql": "^0.4.0"
   }
 }

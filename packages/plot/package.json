@@ -1,0 +1,38 @@
+{
+  "name": "@uwdata/mosaic-plot",
+  "version": "0.4.0",
+  "description": "A Mosaic-based plotting framework.",
+  "keywords": [
+    "data",
+    "visualization",
+    "query",
+    "database",
+    "duckdb",
+    "mosaic"
+  ],
+  "license": "BSD-3-Clause",
+  "author": "Jeffrey Heer (http://idl.cs.washington.edu)",
+  "type": "module",
+  "main": "src/index.js",
+  "module": "src/index.js",
+  "jsdelivr": "dist/mosaic-plot.min.js",
+  "unpkg": "dist/mosaic-plot.min.js",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/uwdata/mosaic.git"
+  },
+  "scripts": {
+    "prebuild": "rimraf dist && mkdir dist",
+    "build": "node ../../esbuild.js mosaic-plot",
+    "lint": "eslint src test --ext .js",
+    "test": "mocha 'test/**/*-test.js'",
+    "prepublishOnly": "npm run test && npm run lint && npm run build"
+  },
+  "dependencies": {
+    "@observablehq/plot": "^0.6.13",
+    "@uwdata/mosaic-core": "^0.4.0",
+    "@uwdata/mosaic-sql": "^0.4.0",
+    "d3": "^7.8.5",
+    "isoformat": "^0.2.1"
+  }
+}

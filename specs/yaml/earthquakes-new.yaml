@@ -1,0 +1,46 @@
+meta:
+  title: U.S. Counties
+  description: >
+    A rotatable globe of earthquake activity.
+data:
+  earthquakes: { file: data/earthquakes.parquet }
+  land:
+    type: spatial
+    file: data/countries-110m.json
+    layer: land
+params:
+  longitude: -180
+  latitude: -30
+  rotate: [$longitude, $latitude]
+vconcat:
+- hconcat:
+  - input: slider
+    label: Longitude
+    as: $longitude
+    min: -180
+    max: 180
+    step: 1
+  - input: slider
+    label: Latitude
+    as: $latitude
+    min: -90
+    max: 90
+    step: 1
+- plot:
+  - mark: geo
+    data: { from: land }
+    geometry: { geojson: geom }
+    fill: currentColor
+    fillOpacity: 0.2
+  - mark: sphere
+  - mark: dot
+    data: { from: earthquakes }
+    x: longitude
+    y: latitude
+    r: { expr: "POW(10, magnitude)" }
+    stroke: red
+    fill: red
+    fillOpacity: 0.2
+  style: "overflow: visible;"
+  projectionType: orthographic
+  projectionRotate: $rotate

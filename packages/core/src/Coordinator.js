@@ -123,6 +123,7 @@ export class Coordinator {
       throw new Error('Client already connected.');
     }
     clients.add(client); // mark as connected
+    client.coordinator = this;
 
     // retrieve field statistics
     const fields = client.fields();
@@ -154,5 +155,6 @@ export class Coordinator {
     if (!clients.has(client)) return;
     clients.delete(client);
     filterGroups.get(client.filterBy)?.remove(client);
+    client.coordinator = null;
   }
 }
