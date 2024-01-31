@@ -140,7 +140,7 @@ export default {
 };
 
 /** @param {Record<any, unknown>} spec */
-async function instantiateSpec(spec) {
+function instantiateSpec(spec) {
   const ast = parseSpec(spec);
-  return await astToDOM(ast);
+  return astToDOM(ast);
 }
