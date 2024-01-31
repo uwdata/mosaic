@@ -1,6 +1,7 @@
 // @ts-check
 
-import { coordinator, namedPlots, parseSpec } from '@uwdata/vgplot';
+import { coordinator, namedPlots } from '@uwdata/vgplot';
+import { parseSpec, astToDOM } from '@uwdata/mosaic-spec';
 import * as arrow from 'apache-arrow';
 import './style.css';
 import { v4 as uuidv4 } from 'uuid';
@@ -52,7 +53,7 @@ export async function render(view) {
     const spec = getSpec();
     reset();
     logger.log('Setting spec:', spec);
-    view.el.replaceChildren(await parseSpec(spec));
+    view.el.replaceChildren(await instantiateSpec(spec));
 
     // Update the selections traitlet
     const c = coordinator();
@@ -124,4 +125,10 @@ export async function render(view) {
     // cleanup
     reset();
   };
+}
+
+async function instantiateSpec(spec) {
+  const ast = parseSpec(spec);
+  const dom = await astToDOM(ast);
+  return dom.element;
 }
