@@ -1,4 +1,3 @@
-import { Fixed } from '@uwdata/vgplot';
 import { ASTNode } from './ASTNode.js';
 import { ATTRIBUTE, FIXED, LITERAL } from '../constants.js';
 
@@ -39,11 +38,11 @@ export class PlotAttributeNode extends ASTNode {
 export class FixedAttributeNode extends ASTNode {
   constructor() {
     super(LITERAL);
-    this.value = Fixed;
+    this.value = FIXED;
   }
 
-  instantiate() {
-    return this.value;
+  instantiate(ctx) {
+    return ctx.api[FIXED];
   }
 
   codegen(ctx) {

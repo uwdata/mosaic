@@ -5,7 +5,6 @@ import { isArray, isString } from '../util.js';
 import { ASTNode } from './ASTNode.js';
 import { parseOptions } from './OptionsNode.js';
 
-
 const TABLE_DATA = 'table';
 const PARQUET_DATA = 'parquet';
 const CSV_DATA = 'csv';
