@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "mosaic-widget"
-description = "A Jupyter widget for mosaic"
+description = "A Jupyter widget for Mosaic"
 dynamic = ["version"]
 readme = "README.md"
 requires-python = ">=3.8"
@@ -27,7 +27,7 @@ dev = [
   "jupyterlab",
   "pandas",
   "pyyaml",
-  "ruff>=0.1.15",
+  "ruff",
 ]
 
 [tool.hatch.envs.default]
@@ -51,8 +51,8 @@ pattern = "\"version\": \"(?P<version>.+?)\""
 [tool.ruff]
 extend-include = ["*.ipynb"]
 # allow long lines, allow end in ;, allow useless expressions
-ignore = ["E501", "E703", "B018"]
-select = [
+lint.ignore = ["E501", "E703", "B018"]
+lint.select = [
     # pycodestyle
     "E", "W",
     # Pyflakes
