@@ -1,0 +1,62 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "mosaic-server"
+description = "A Server for Mosaic"
+dynamic = ["version"]
+readme = "README.md"
+requires-python = ">=3.8"
+dependencies = [
+  "duckdb==0.8.1",
+  "pyarrow",
+  "pandas",
+  "socketify",
+  "ujson"
+]
+
+[project.urls]
+homepage = "https://github.com/uwdata/mosaic"
+
+[project.optional-dependencies]
+dev = [
+  "ruff",
+  "watchdog[watchmedo]"
+]
+
+[tool.hatch.envs.default]
+python = "3.12"
+features = ["dev"]
+
+[tool.hatch.envs.default.scripts]
+style = [
+  "ruff {args:../..}",
+]
+fmt = [
+  "ruff format {args:../..}",
+  "ruff --fix {args:../..}"
+]
+serve = "watchmedo auto-restart --pattern '*.py' --recursive --signal SIGTERM python mosaic_server/__init__.py"
+
+[tool.hatch.version]
+path = "mosaic_server/__about__.py"
+
+[tool.ruff]
+extend-include = ["*.ipynb"]
+# allow long lines, allow end in ;, allow useless expressions
+ignore = ["E501", "E703", "B018"]
+select = [
+    # pycodestyle
+    "E",
+    # Pyflakes
+    "F",
+    # pyupgrade
+    "UP",
+    # flake8-bugbear
+    "B",
+    # flake8-simplify
+    "SIM",
+    # isort
+    "I",
+]
