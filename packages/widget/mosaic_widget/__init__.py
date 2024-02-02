@@ -77,9 +77,10 @@ class MosaicWidget(anywidget.AnyWidget):
 
         uuid = data["uuid"]
         sql = data["sql"]
+        type = data["type"]
 
         try:
-            if data["type"] == "arrow":
+            if type == "arrow":
                 result = self.con.query(sql).arrow()
                 sink = pa.BufferOutputStream()
                 with pa.ipc.new_stream(sink, result.schema) as writer:
@@ -87,7 +88,7 @@ class MosaicWidget(anywidget.AnyWidget):
                 buf = sink.getvalue()
 
                 self.send({"type": "arrow", "uuid": uuid}, buffers=[buf.to_pybytes()])
-            elif data["type"] == "exec":
+            elif type == "exec":
                 self.con.execute(sql)
                 self.send({"type": "exec", "uuid": uuid})
             else:

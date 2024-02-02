@@ -12,8 +12,8 @@
   "scripts": {
     "build": "vite build",
     "dev": "vite",
-    "test": "tsc",
-    "format": "ruff . && black ."
+    "lint": "eslint src --ext .js",
+    "test": "tsc"
   },
   "dependencies": {
     "@uwdata/vgplot": "^0.4.0",
