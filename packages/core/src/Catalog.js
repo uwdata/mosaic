@@ -6,6 +6,7 @@ const object = () => Object.create(null);
 
 export class Catalog {
   constructor(coordinator) {
+    /** @type {import('@uwdata/mosaic-core').Coordinator} */
     this.mc = coordinator;
     this.clear();
   }
