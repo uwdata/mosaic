@@ -55,10 +55,11 @@ def ws_message(ws, message, opcode):
         data = ujson.loads(message)
     except Exception as e:
         logger.error(e)
-        ws.send({"error": str(e)}, OpCode.TEXT)
+        ok = ws.send({"error": str(e)}, OpCode.TEXT)
         return
 
     logger.debug(f"{data=}")
+
     start = time.time()
 
     sql = data["sql"]
@@ -67,18 +68,18 @@ def ws_message(ws, message, opcode):
     try:
         if type == "exec":
             con.execute(sql)
-            ws.send({}, OpCode.TEXT)
+            ok = ws.send({}, OpCode.TEXT)
         elif type == "arrow":
             buffer = retrieve(data, get_arrow)
-            ws.send(buffer, OpCode.BINARY)
+            ok = ws.send(buffer, OpCode.BINARY)
         elif type == "json":
             json = retrieve(data, get_json)
-            ws.send(json, OpCode.TEXT)
+            ok = ws.send(json, OpCode.TEXT)
         else:
-            ws.send({"error": f"Unknown command {type}"}, OpCode.TEXT)
+            ok = ws.send({"error": f"Unknown command {type}"}, OpCode.TEXT)
     except Exception as e:
         logger.error(e)
-        ws.send({"error": str(e)}, OpCode.TEXT)
+        ok = ws.send({"error": str(e)}, OpCode.TEXT)
 
     total = round((time.time() - start) * 1_000)
     if total > 5000:
@@ -87,8 +88,7 @@ def ws_message(ws, message, opcode):
         logger.info(f"DONE. Query took { total } ms.\n{ sql }")
 
     # Ok is false if backpressure was built up, wait for drain
-    ok = ws.send(message, opcode)
-    print(ok)
+    logger.info(f"OK: {ok}")
 
 
 def server():
