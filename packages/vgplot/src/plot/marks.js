@@ -73,8 +73,8 @@ export const text = (...args) => mark('text', ...args);
 export const textX = (...args) => mark('textX', ...args);
 export const textY = (...args) => mark('textY', ...args);
 
-export const ruleX = (...args) => mark('ruleX', ...args);
-export const ruleY = (...args) => mark('ruleY', ...args);
+export const ruleX = (data, opt) => mark('ruleX', data, opt);
+export const ruleY = (data, opt) => mark('ruleY', data, opt);
 
 export const tickX = (...args) => mark('tickX', ...args);
 export const tickY = (...args) => mark('tickY', ...args);
