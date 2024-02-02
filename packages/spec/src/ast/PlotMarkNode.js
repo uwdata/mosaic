@@ -91,7 +91,7 @@ export class PlotMarkNode extends ASTNode {
     const { type, name, data, options } = this;
     return {
       [type]: name,
-      ...(data ? data.toJSON() : {}),
+      ...(data ? { data: data.toJSON() } : {}),
       ...options.toJSON()
     };
   }
