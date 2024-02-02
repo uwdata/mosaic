@@ -13,6 +13,7 @@ logging.basicConfig(stream=sys.stdout, level=logging.DEBUG)
 
 con = duckdb.connect()
 
+
 def ws_open(ws):
     print("A WebSocket got connected!")
 
@@ -70,13 +71,13 @@ def server():
             "compression": CompressOptions.SHARED_COMPRESSOR,
             "open": ws_open,
             "message": ws_message,
-            'drain': lambda ws: print('WebSocket backpressure: %i' % ws.get_buffered_amount()),
+            "drain": lambda ws: print("WebSocket backpressure: %i" % ws.get_buffered_amount()),
         },
     )
 
     app.any("/", lambda res, req: res.end(f"Mosaic Server {__version__}. Please connect using a WebSocket."))
 
-    app.listen(3000, lambda config: print("Mosaic Server listening at http://localhost:%d\n" % (config.port)))
+    app.listen(3000, lambda config: print("Mosaic Server listening at ws://localhost:%d\n" % (config.port)))
     app.run()
 
 

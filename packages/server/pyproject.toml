@@ -31,11 +31,11 @@ features = ["dev"]
 
 [tool.hatch.envs.default.scripts]
 style = [
-  "ruff {args:../..}",
+  "ruff {args:.}",
 ]
 fmt = [
-  "ruff format {args:../..}",
-  "ruff --fix {args:../..}"
+  "ruff format {args:.}",
+  "ruff --fix {args:.}"
 ]
 serve = "watchmedo auto-restart --pattern '*.py' --recursive --signal SIGTERM python mosaic_server/__init__.py"
 
@@ -43,6 +43,7 @@ serve = "watchmedo auto-restart --pattern '*.py' --recursive --signal SIGTERM py
 path = "mosaic_server/__about__.py"
 
 [tool.ruff]
+line-length = 120
 extend-include = ["*.ipynb"]
 # allow long lines, allow end in ;, allow useless expressions
 lint.ignore = ["E501", "E703", "B018"]
