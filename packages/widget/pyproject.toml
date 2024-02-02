@@ -4,12 +4,12 @@ build-backend = "hatchling.build"
 
 [project]
 name = "mosaic-widget"
-description = "A Jupyter widget for mosaic"
+description = "A Jupyter widget for Mosaic"
 dynamic = ["version"]
 readme = "README.md"
 requires-python = ">=3.8"
 dependencies = [
-  "anywidget>=0.8.1",
+  "anywidget>=0.9.0",
   "duckdb==0.8.1",
   "pyarrow"
 ]
@@ -35,12 +35,13 @@ python = "3.11"
 features = ["dev"]
 
 [tool.hatch.envs.default.scripts]
-style = [
-  "ruff {args:../..}",
+lint = [
+  "ruff {args:.}",
+  "ruff format --check --diff {args:.}",
 ]
 fmt = [
-  "ruff format {args:../..}",
-  "ruff --fix {args:../..}"
+  "ruff format {args:.}",
+  "ruff --fix {args:.}",
 ]
 
 [tool.hatch.version]
@@ -50,10 +51,10 @@ pattern = "\"version\": \"(?P<version>.+?)\""
 [tool.ruff]
 extend-include = ["*.ipynb"]
 # allow long lines, allow end in ;, allow useless expressions
-ignore = ["E501", "E703", "B018"]
-select = [
+lint.ignore = ["E501", "E703", "B018"]
+lint.select = [
     # pycodestyle
-    "E",
+    "E", "W",
     # Pyflakes
     "F",
     # pyupgrade
