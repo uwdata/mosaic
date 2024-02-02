@@ -45,8 +45,8 @@ path = "mosaic_server/__about__.py"
 [tool.ruff]
 extend-include = ["*.ipynb"]
 # allow long lines, allow end in ;, allow useless expressions
-ignore = ["E501", "E703", "B018"]
-select = [
+lint.ignore = ["E501", "E703", "B018"]
+lint.select = [
     # pycodestyle
     "E",
     # Pyflakes

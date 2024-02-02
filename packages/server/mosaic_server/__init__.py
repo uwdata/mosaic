@@ -1,11 +1,12 @@
 import logging
-from __about__ import __version__
-from socketify import App, CompressOptions, OpCode
+import sys
 import time
+
 import duckdb
 import pyarrow as pa
 import ujson
-import sys
+from __about__ import __version__
+from socketify import App, CompressOptions, OpCode
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(stream=sys.stdout, level=logging.DEBUG)
