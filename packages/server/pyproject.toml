@@ -30,12 +30,13 @@ python = "3.12"
 features = ["dev"]
 
 [tool.hatch.envs.default.scripts]
-style = [
+lint = [
   "ruff {args:.}",
+  "ruff format --check --diff {args:.}",
 ]
 fmt = [
   "ruff format {args:.}",
-  "ruff --fix {args:.}"
+  "ruff --fix {args:.}",
 ]
 serve = "watchmedo auto-restart --pattern '*.py' --recursive --signal SIGTERM python mosaic_server/__init__.py"
 

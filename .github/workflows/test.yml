@@ -52,8 +52,14 @@ jobs:
           python -m pip install --upgrade pip
           pip install hatch
 
-      - name: Build and lint
+      - name: Build and lint Widget
         run: |
           cd packages/widget
+          hatch build
+          hatch run lint
+
+      - name: Build and lint Server
+        run: |
+          cd packages/server
           hatch build
           hatch run lint
