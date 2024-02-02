@@ -38,7 +38,7 @@ def get_arrow(sql):
     sink = pa.BufferOutputStream()
     with pa.ipc.new_stream(sink, result.schema) as writer:
         writer.write(result)
-    return sink.getvalue()
+    return sink.getvalue().to_pybytes()
 
 
 def get_json(sql):
