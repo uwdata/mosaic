@@ -19,7 +19,9 @@
       "plot": [
         {
           "mark": "voronoi",
-          "from": "penguins",
+          "data": {
+            "from": "penguins"
+          },
           "x": "bill_length",
           "y": "bill_depth",
           "stroke": "white",
@@ -31,7 +33,9 @@
         },
         {
           "mark": "hull",
-          "from": "penguins",
+          "data": {
+            "from": "penguins"
+          },
           "x": "bill_length",
           "y": "bill_depth",
           "stroke": "species",
@@ -40,7 +44,9 @@
         },
         {
           "mark": "delaunayMesh",
-          "from": "penguins",
+          "data": {
+            "from": "penguins"
+          },
           "x": "bill_length",
           "y": "bill_depth",
           "z": "species",
@@ -50,7 +56,9 @@
         },
         {
           "mark": "dot",
-          "from": "penguins",
+          "data": {
+            "from": "penguins"
+          },
           "x": "bill_length",
           "y": "bill_depth",
           "fill": "species",

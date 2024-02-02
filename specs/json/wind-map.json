@@ -23,7 +23,9 @@
       "plot": [
         {
           "mark": "vector",
-          "from": "wind",
+          "data": {
+            "from": "wind"
+          },
           "x": "longitude",
           "y": "latitude",
           "rotate": {

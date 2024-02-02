@@ -54,8 +54,10 @@
       "plot": [
         {
           "mark": "denseLine",
-          "from": "stocks_after_2006",
-          "filterBy": "$brush",
+          "data": {
+            "from": "stocks_after_2006",
+            "filterBy": "$brush"
+          },
           "x": "Date",
           "y": "Close",
           "z": "Symbol",
@@ -80,7 +82,9 @@
       "plot": [
         {
           "mark": "denseLine",
-          "from": "stocks_after_2006",
+          "data": {
+            "from": "stocks_after_2006"
+          },
           "x": "Date",
           "y": "Close",
           "z": "Symbol",

@@ -28,8 +28,10 @@
       "plot": [
         {
           "mark": "densityY",
-          "from": "flights",
-          "filterBy": "$brush",
+          "data": {
+            "from": "flights",
+            "filterBy": "$brush"
+          },
           "x": "delay",
           "fill": "#888",
           "fillOpacity": 0.5,
@@ -52,8 +54,10 @@
       "plot": [
         {
           "mark": "densityY",
-          "from": "flights",
-          "filterBy": "$brush",
+          "data": {
+            "from": "flights",
+            "filterBy": "$brush"
+          },
           "x": "distance",
           "fill": "#888",
           "fillOpacity": 0.5,

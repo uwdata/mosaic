@@ -26,18 +26,24 @@
       "plot": [
         {
           "mark": "geo",
-          "from": "states",
+          "data": {
+            "from": "states"
+          },
           "stroke": "#aaa",
           "strokeWidth": 1
         },
         {
           "mark": "geo",
-          "from": "nation",
+          "data": {
+            "from": "nation"
+          },
           "stroke": "currentColor"
         },
         {
           "mark": "dot",
-          "from": "walmarts",
+          "data": {
+            "from": "walmarts"
+          },
           "x": "longitude",
           "y": "latitude",
           "fy": {

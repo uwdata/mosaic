@@ -30,8 +30,10 @@
       "plot": [
         {
           "mark": "barX",
-          "from": "athletes",
-          "filterBy": "$query",
+          "data": {
+            "from": "athletes",
+            "filterBy": "$query"
+          },
           "x": {
             "sum": "gold"
           },

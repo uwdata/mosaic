@@ -29,7 +29,9 @@
       "plot": [
         {
           "mark": "geo",
-          "from": "combined",
+          "data": {
+            "from": "combined"
+          },
           "fill": "rate",
           "title": {
             "expr": "concat(rate, '%')"

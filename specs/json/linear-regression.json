@@ -17,7 +17,9 @@
   "plot": [
     {
       "mark": "dot",
-      "from": "athletes",
+      "data": {
+        "from": "athletes"
+      },
       "x": "weight",
       "y": "height",
       "fill": "sex",
@@ -26,8 +28,10 @@
     },
     {
       "mark": "regressionY",
-      "from": "athletes",
-      "filterBy": "$query",
+      "data": {
+        "from": "athletes",
+        "filterBy": "$query"
+      },
       "x": "weight",
       "y": "height",
       "stroke": "sex"

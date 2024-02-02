@@ -45,7 +45,9 @@
           "plot": [
             {
               "mark": "rectY",
-              "from": "flights",
+              "data": {
+                "from": "flights"
+              },
               "x": {
                 "bin": "time"
               },
@@ -86,8 +88,10 @@
           "plot": [
             {
               "mark": "hexbin",
-              "from": "flights",
-              "filterBy": "$query",
+              "data": {
+                "from": "flights",
+                "filterBy": "$query"
+              },
               "x": "time",
               "y": "delay",
               "fill": {
@@ -121,7 +125,9 @@
           "plot": [
             {
               "mark": "rectX",
-              "from": "flights",
+              "data": {
+                "from": "flights"
+              },
               "x": {
                 "count": ""
               },

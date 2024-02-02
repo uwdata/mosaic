@@ -16,7 +16,9 @@
           "plot": [
             {
               "mark": "dot",
-              "from": "penguins",
+              "data": {
+                "from": "penguins"
+              },
               "x": "body_mass",
               "y": "flipper_length",
               "stroke": "species",
@@ -44,7 +46,9 @@
           "plot": [
             {
               "mark": "dot",
-              "from": "penguins",
+              "data": {
+                "from": "penguins"
+              },
               "x": "body_mass",
               "y": "flipper_length",
               "fill": "species",

@@ -48,7 +48,9 @@
       "plot": [
         {
           "mark": "geo",
-          "from": "land",
+          "data": {
+            "from": "land"
+          },
           "geometry": {
             "geojson": "geom"
           },
@@ -60,7 +62,9 @@
         },
         {
           "mark": "dot",
-          "from": "earthquakes",
+          "data": {
+            "from": "earthquakes"
+          },
           "x": "longitude",
           "y": "latitude",
           "r": {

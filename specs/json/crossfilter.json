@@ -16,8 +16,10 @@
       "plot": [
         {
           "mark": "rectY",
-          "from": "flights",
-          "filterBy": "$brush",
+          "data": {
+            "from": "flights",
+            "filterBy": "$brush"
+          },
           "x": {
             "bin": "delay"
           },
@@ -44,8 +46,10 @@
       "plot": [
         {
           "mark": "rectY",
-          "from": "flights",
-          "filterBy": "$brush",
+          "data": {
+            "from": "flights",
+            "filterBy": "$brush"
+          },
           "x": {
             "bin": "time"
           },

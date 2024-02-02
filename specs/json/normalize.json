@@ -33,8 +33,10 @@
     },
     {
       "mark": "text",
-      "from": "labels",
-      "optimize": false,
+      "data": {
+        "from": "labels",
+        "optimize": false
+      },
       "x": "Date",
       "y": {
         "expr": "Close / (SELECT MAX(Close) FROM stocks WHERE Symbol = source.Symbol AND Date = $point)"
@@ -46,8 +48,10 @@
     },
     {
       "mark": "lineY",
-      "from": "stocks",
-      "optimize": false,
+      "data": {
+        "from": "stocks",
+        "optimize": false
+      },
       "x": "Date",
       "y": {
         "expr": "Close / (SELECT MAX(Close) FROM stocks WHERE Symbol = source.Symbol AND Date = $point)"

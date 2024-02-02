@@ -24,8 +24,10 @@
           "plot": [
             {
               "mark": "raster",
-              "from": "gaia",
-              "filterBy": "$brush",
+              "data": {
+                "from": "gaia",
+                "filterBy": "$brush"
+              },
               "x": "u",
               "y": "v",
               "fill": "density",
@@ -56,8 +58,10 @@
               "plot": [
                 {
                   "mark": "rectY",
-                  "from": "gaia",
-                  "filterBy": "$brush",
+                  "data": {
+                    "from": "gaia",
+                    "filterBy": "$brush"
+                  },
                   "x": {
                     "bin": "phot_g_mean_mag"
                   },
@@ -85,8 +89,10 @@
               "plot": [
                 {
                   "mark": "rectY",
-                  "from": "gaia",
-                  "filterBy": "$brush",
+                  "data": {
+                    "from": "gaia",
+                    "filterBy": "$brush"
+                  },
                   "x": {
                     "bin": "parallax"
                   },
@@ -121,8 +127,10 @@
       "plot": [
         {
           "mark": "raster",
-          "from": "gaia",
-          "filterBy": "$brush",
+          "data": {
+            "from": "gaia",
+            "filterBy": "$brush"
+          },
           "x": "bp_rp",
           "y": "phot_g_mean_mag",
           "fill": "density",

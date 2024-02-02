@@ -10,7 +10,9 @@
   "plot": [
     {
       "mark": "line",
-      "from": "aapl",
+      "data": {
+        "from": "aapl"
+      },
       "x": "Date",
       "y": "Close"
     }

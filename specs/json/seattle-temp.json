@@ -12,7 +12,9 @@
   "plot": [
     {
       "mark": "areaY",
-      "from": "weather",
+      "data": {
+        "from": "weather"
+      },
       "x": {
         "dateMonth": "date"
       },
@@ -28,7 +30,9 @@
     },
     {
       "mark": "areaY",
-      "from": "weather",
+      "data": {
+        "from": "weather"
+      },
       "x": {
         "dateMonth": "date"
       },
@@ -43,8 +47,10 @@
       "curve": "monotone-x"
     },
     {
-      "0": 15,
       "mark": "ruleY",
+      "data": [
+        15
+      ],
       "strokeOpacity": 0.5,
       "strokeDasharray": [
         5,

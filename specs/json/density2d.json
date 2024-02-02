@@ -36,7 +36,9 @@
       "plot": [
         {
           "mark": "density",
-          "from": "penguins",
+          "data": {
+            "from": "penguins"
+          },
           "x": "bill_length",
           "y": "bill_depth",
           "r": "density",
@@ -48,7 +50,9 @@
         },
         {
           "mark": "dot",
-          "from": "penguins",
+          "data": {
+            "from": "penguins"
+          },
           "x": "bill_length",
           "y": "bill_depth",
           "fill": "currentColor",

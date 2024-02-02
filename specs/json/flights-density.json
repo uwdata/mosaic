@@ -36,7 +36,9 @@
       "plot": [
         {
           "mark": "raster",
-          "from": "flights",
+          "data": {
+            "from": "flights"
+          },
           "x": "time",
           "y": "delay",
           "fill": "density",
@@ -44,7 +46,9 @@
         },
         {
           "mark": "contour",
-          "from": "flights",
+          "data": {
+            "from": "flights"
+          },
           "x": "time",
           "y": "delay",
           "stroke": "white",

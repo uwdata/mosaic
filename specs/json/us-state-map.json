@@ -14,7 +14,9 @@
   "plot": [
     {
       "mark": "geo",
-      "from": "states",
+      "data": {
+        "from": "states"
+      },
       "fill": "currentColor",
       "fillOpacity": 0.15,
       "stroke": "white",
@@ -22,7 +24,9 @@
     },
     {
       "mark": "dot",
-      "from": "states",
+      "data": {
+        "from": "states"
+      },
       "x": {
         "centroidX": "geom"
       },

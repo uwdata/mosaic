@@ -37,8 +37,10 @@
       "mark": "gridX"
     },
     {
-      "0": 0,
-      "mark": "ruleY"
+      "mark": "ruleY",
+      "data": [
+        0
+      ]
     }
   ],
   "xDomain": [

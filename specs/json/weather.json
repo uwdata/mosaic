@@ -39,8 +39,10 @@
           "plot": [
             {
               "mark": "dot",
-              "from": "weather",
-              "filterBy": "$click",
+              "data": {
+                "from": "weather",
+                "filterBy": "$click"
+              },
               "x": {
                 "dateMonthDay": "date"
               },
@@ -91,7 +93,9 @@
       "plot": [
         {
           "mark": "barX",
-          "from": "weather",
+          "data": {
+            "from": "weather"
+          },
           "x": {
             "count": ""
           },
@@ -101,8 +105,10 @@
         },
         {
           "mark": "barX",
-          "from": "weather",
-          "filterBy": "$range",
+          "data": {
+            "from": "weather",
+            "filterBy": "$range"
+          },
           "x": {
             "count": ""
           },

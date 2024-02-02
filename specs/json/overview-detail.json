@@ -19,7 +19,9 @@
       "plot": [
         {
           "mark": "areaY",
-          "from": "walk",
+          "data": {
+            "from": "walk"
+          },
           "x": "t",
           "y": "v",
           "fill": "steelblue"
@@ -36,8 +38,10 @@
       "plot": [
         {
           "mark": "areaY",
-          "from": "walk",
-          "filterBy": "$brush",
+          "data": {
+            "from": "walk",
+            "filterBy": "$brush"
+          },
           "x": "t",
           "y": "v",
           "fill": "steelblue"

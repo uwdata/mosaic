@@ -25,7 +25,9 @@
       "plot": [
         {
           "mark": "areaY",
-          "from": "walk",
+          "data": {
+            "from": "walk"
+          },
           "x": "t",
           "y": {
             "expr": "v + $point"
