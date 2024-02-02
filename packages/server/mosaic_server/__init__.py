@@ -17,9 +17,9 @@ cache = dict()
 
 
 def retrieve(query, get):
-    sql = query["sql"]
-    type = query["type"]
-    persist = query["persist"]
+    sql = query.get("sql")
+    type = query.get("type")
+    persist = query.get("persist", False)
 
     key = (sql, type)
     result = cache.get(key)
