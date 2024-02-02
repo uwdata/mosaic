@@ -13,9 +13,41 @@ logging.basicConfig(stream=sys.stdout, level=logging.DEBUG)
 
 con = duckdb.connect()
 
+cache = dict()
+
+
+def retrieve(query, get):
+    sql = query["sql"]
+    type = query["type"]
+    persist = query["persist"]
+
+    key = (sql, type)
+    result = cache.get(key)
+
+    if result:
+        logger.debug("Cache hit")
+    else:
+        result = get(sql)
+        if persist:
+            cache[key] = result
+    return result
+
+
+def get_arrow(sql):
+    result = con.query(sql).arrow()
+    sink = pa.BufferOutputStream()
+    with pa.ipc.new_stream(sink, result.schema) as writer:
+        writer.write(result)
+    return sink.getvalue()
+
+
+def get_json(sql):
+    result = con.query(sql).df()
+    return result.to_json(orient="records")
+
 
 def ws_open(ws):
-    print("A WebSocket got connected!")
+    logger.info("A WebSocket got connected!")
 
 
 def ws_message(ws, message, opcode):
@@ -33,20 +65,17 @@ def ws_message(ws, message, opcode):
     type = data["type"]
 
     try:
-        if type == "arrow":
-            result = con.query(sql).arrow()
-            sink = pa.BufferOutputStream()
-            with pa.ipc.new_stream(sink, result.schema) as writer:
-                writer.write(result)
-            buf = sink.getvalue()
-            ws.send(buf.to_pybytes(), OpCode.BINARY)
-        elif type == "exec":
+        if type == "exec":
             con.execute(sql)
             ws.send({}, OpCode.TEXT)
-        else:
-            result = con.query(sql).df()
-            json = result.to_json(orient="records")
+        elif type == "arrow":
+            buffer = retrieve(data, get_arrow)
+            ws.send(buffer, OpCode.BINARY)
+        elif type == "json":
+            json = retrieve(data, get_json)
             ws.send(json, OpCode.TEXT)
+        else:
+            ws.send({"error": f"Unknown command {type}"}, OpCode.TEXT)
     except Exception as e:
         logger.error(e)
         ws.send({"error": str(e)}, OpCode.TEXT)
