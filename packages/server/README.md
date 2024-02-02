@@ -16,4 +16,4 @@ Start the server in development with `hatch run serve`. The server restarts when
 
 ## Publishing
 
-Run the build with `npm run build` and `hatch build`. Then publish with `hatch publish`. We publish using tokens so when asked, set the username to `__token__` and then use your token as the password.
+Run the build with `hatch build`. Then publish with `hatch publish`. We publish using tokens so when asked, set the username to `__token__` and then use your token as the password.
