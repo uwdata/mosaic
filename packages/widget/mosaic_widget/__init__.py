@@ -77,9 +77,10 @@ class MosaicWidget(anywidget.AnyWidget):
 
         uuid = data["uuid"]
         sql = data["sql"]
+        command = data["type"]
 
         try:
-            if data["type"] == "arrow":
+            if command == "arrow":
                 result = self.con.query(sql).arrow()
                 sink = pa.BufferOutputStream()
                 with pa.ipc.new_stream(sink, result.schema) as writer:
@@ -87,13 +88,15 @@ class MosaicWidget(anywidget.AnyWidget):
                 buf = sink.getvalue()
 
                 self.send({"type": "arrow", "uuid": uuid}, buffers=[buf.to_pybytes()])
-            elif data["type"] == "exec":
+            elif command == "exec":
                 self.con.execute(sql)
                 self.send({"type": "exec", "uuid": uuid})
-            else:
+            elif command == "json":
                 result = self.con.query(sql).df()
                 json = result.to_dict(orient="records")
                 self.send({"type": "json", "uuid": uuid, "result": json})
+            else:
+                raise ValueError(f"Unknown command {command}")
         except Exception as e:
             logger.error(e)
             self.send({"error": str(e), "uuid": uuid})
