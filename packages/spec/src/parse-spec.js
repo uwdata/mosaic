@@ -13,6 +13,13 @@ import { transformNames } from './lookup/transforms.js';
 
 import { error, isString, paramRef } from './util.js';
 
+/**
+ * Parse a Mosaic specification to an AST (abstract syntax tree).
+ * @param {object|string} spec The input specification as an object
+ *  or JSON string.
+ * @param {object} [options] Optional parse options object.
+ * @returns {SpecNode} The top-level AST spec node.
+ */
 export function parseSpec(spec, options) {
   spec = isString(spec) ? JSON.parse(spec) : spec;
   return new ParseContext(options).parse(spec);
