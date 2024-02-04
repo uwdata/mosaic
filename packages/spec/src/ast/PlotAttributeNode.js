@@ -50,6 +50,6 @@ export class FixedAttributeNode extends ASTNode {
   }
 
   toJSON() {
-    return { [this.name]: FIXED };
+    return this.value;
   }
 }
