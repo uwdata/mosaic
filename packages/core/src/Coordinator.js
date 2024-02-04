@@ -23,9 +23,13 @@ export function coordinator(instance) {
 
 export class Coordinator {
   constructor(db = socketConnector(), options = {}) {
+    const {
+      logger = console,
+      manager = QueryManager()
+    } = options;
     this.catalog = new Catalog(this);
-    this.manager = options.manager || QueryManager();
-    this.logger(options.logger || console);
+    this.manager = manager;
+    this.logger(logger);
     this.configure(options);
     this.databaseConnector(db);
     this.clear();
