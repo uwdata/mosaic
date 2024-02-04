@@ -1,9 +1,17 @@
 import { createAPIContext } from '@uwdata/vgplot';
 import { error, isArray } from './util.js';
 
+/**
+ * Generate running web application (DOM content) for a Mosaic spec AST.
+ * @param {SpecNode} ast Mosaic AST root node.
+ * @param {object} [options] Instantiation options.
+ * @param {string} [options.baseURL] The base URL for loading data files.
+ * @returns {object} An object with the resulting DOM element, and
+ *   a map of named parameters (Param and Selection instances).
+ */
 export async function astToDOM(ast, options) {
   const { data, params, plotDefaults } = ast;
-  const ctx = new InstatiateContext({ plotDefaults, ...options });
+  const ctx = new InstantiateContext({ plotDefaults, ...options });
 
   // process data definitions, loading data as needed
   // perform sequentially, as later datasets may be derived
@@ -28,7 +36,7 @@ export async function astToDOM(ast, options) {
   };
 }
 
-export class InstatiateContext {
+export class InstantiateContext {
   constructor({
     api = createAPIContext(),
     plotDefaults = [],
