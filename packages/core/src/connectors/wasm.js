@@ -19,11 +19,21 @@ export function wasmConnector(options = {}) {
     return loadPromise;
   }
 
+  /**
+   * Get the backing DuckDB-WASM instance.
+   * Will lazily initialize DuckDB-WASM if not already loaded.
+   * @returns {duckdb.AsyncDuckDB} The DuckDB-WASM instance.
+   */
   async function getDuckDB() {
     if (!db) await load();
     return db;
   }
 
+  /**
+   * Get the backing DuckDB-WASM connection.
+   * Will lazily initialize DuckDB-WASM if not already loaded.
+   * @returns {duckdb.AsyncDuckDBConnection} The DuckDB-WASM connection.
+   */
   async function getConnection() {
     if (!con) await load();
     return con;
@@ -32,6 +42,13 @@ export function wasmConnector(options = {}) {
   return {
     getDuckDB,
     getConnection,
+    /**
+     * Query the DuckDB-WASM instance.
+     * @param {object} query
+     * @param {string} [query.type] The query type: 'exec', 'arrow', or 'json'.
+     * @param {string} query.sql A SQL query string.
+     * @returns the query result
+     */
     query: async query => {
       const { type, sql } = query;
       const con = await getConnection();
