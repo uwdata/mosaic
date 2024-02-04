@@ -7,7 +7,7 @@ export function parseAttribute(key, value, ctx) {
   }
   return new PlotAttributeNode(
     key,
-    value === FIXED ? new FixedAttributeNode : ctx.maybeParam(value)
+    value === FIXED ? new PlotFixedNode : ctx.maybeParam(value)
   );
 }
 
@@ -35,7 +35,7 @@ export class PlotAttributeNode extends ASTNode {
   }
 }
 
-export class FixedAttributeNode extends ASTNode {
+export class PlotFixedNode extends ASTNode {
   constructor() {
     super(LITERAL);
     this.value = FIXED;
