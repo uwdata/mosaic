@@ -47,9 +47,7 @@
           "fill": "steelblue"
         }
       ],
-      "yDomain": {
-        "undefined": "Fixed"
-      },
+      "yDomain": "Fixed",
       "width": 680,
       "height": 200
     }

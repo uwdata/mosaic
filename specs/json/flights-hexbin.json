@@ -68,9 +68,7 @@
             "top": 30,
             "bottom": 0
           },
-          "xDomain": {
-            "undefined": "Fixed"
-          },
+          "xDomain": "Fixed",
           "xAxis": "top",
           "yAxis": null,
           "xLabelAnchor": "center",
@@ -115,9 +113,7 @@
           },
           "xAxis": null,
           "yAxis": null,
-          "xyDomain": {
-            "undefined": "Fixed"
-          },
+          "xyDomain": "Fixed",
           "width": 600,
           "height": 455
         },

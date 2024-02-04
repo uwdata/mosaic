@@ -79,12 +79,8 @@
               }
             }
           ],
-          "xyDomain": {
-            "undefined": "Fixed"
-          },
-          "colorDomain": {
-            "undefined": "Fixed"
-          },
+          "xyDomain": "Fixed",
+          "colorDomain": "Fixed",
           "margins": {
             "left": 35,
             "top": 20,

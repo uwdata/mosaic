@@ -34,9 +34,7 @@
           "as": "$brush"
         }
       ],
-      "xDomain": {
-        "undefined": "Fixed"
-      },
+      "xDomain": "Fixed",
       "xLabel": "Arrival Delay (min)",
       "xLabelAnchor": "center",
       "yTickFormat": "s",
@@ -64,9 +62,7 @@
           "as": "$brush"
         }
       ],
-      "xDomain": {
-        "undefined": "Fixed"
-      },
+      "xDomain": "Fixed",
       "xLabel": "Departure Time (hour)",
       "xLabelAnchor": "center",
       "yTickFormat": "s",

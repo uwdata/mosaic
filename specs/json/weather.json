@@ -71,15 +71,11 @@
               "columns": 1
             }
           ],
-          "xyDomain": {
-            "undefined": "Fixed"
-          },
+          "xyDomain": "Fixed",
           "xTickFormat": "%b",
           "colorDomain": "$domain",
           "colorRange": "$colors",
-          "rDomain": {
-            "undefined": "Fixed"
-          },
+          "rDomain": "Fixed",
           "rRange": [
             2,
             10
@@ -124,9 +120,7 @@
           "by": "$click"
         }
       ],
-      "xDomain": {
-        "undefined": "Fixed"
-      },
+      "xDomain": "Fixed",
       "yDomain": "$domain",
       "yLabel": null,
       "colorDomain": "$domain",

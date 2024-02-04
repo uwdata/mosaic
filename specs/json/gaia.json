@@ -41,9 +41,7 @@
               "as": "$brush"
             }
           ],
-          "xyDomain": {
-            "undefined": "Fixed"
-          },
+          "xyDomain": "Fixed",
           "colorScale": "$scaleType",
           "colorScheme": "viridis",
           "width": 440,
@@ -76,9 +74,7 @@
                   "as": "$brush"
                 }
               ],
-              "xDomain": {
-                "undefined": "Fixed"
-              },
+              "xDomain": "Fixed",
               "yScale": "$scaleType",
               "yGrid": true,
               "width": 220,
@@ -107,9 +103,7 @@
                   "as": "$brush"
                 }
               ],
-              "xDomain": {
-                "undefined": "Fixed"
-              },
+              "xDomain": "Fixed",
               "yScale": "$scaleType",
               "yGrid": true,
               "width": 220,
@@ -144,9 +138,7 @@
           "as": "$brush"
         }
       ],
-      "xyDomain": {
-        "undefined": "Fixed"
-      },
+      "xyDomain": "Fixed",
       "colorScale": "$scaleType",
       "colorScheme": "viridis",
       "yReverse": true,

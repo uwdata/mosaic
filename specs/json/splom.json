@@ -17,15 +17,9 @@
   "plotDefaults": {
     "xTicks": 3,
     "yTicks": 4,
-    "xDomain": {
-      "undefined": "Fixed"
-    },
-    "yDomain": {
-      "undefined": "Fixed"
-    },
-    "colorDomain": {
-      "undefined": "Fixed"
-    },
+    "xDomain": "Fixed",
+    "yDomain": "Fixed",
+    "colorDomain": "Fixed",
     "marginTop": 5,
     "marginBottom": 10,
     "marginLeft": 10,

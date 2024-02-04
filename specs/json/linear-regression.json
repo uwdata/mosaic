@@ -45,10 +45,6 @@
       }
     }
   ],
-  "xyDomain": {
-    "undefined": "Fixed"
-  },
-  "colorDomain": {
-    "undefined": "Fixed"
-  }
+  "xyDomain": "Fixed",
+  "colorDomain": "Fixed"
 }
