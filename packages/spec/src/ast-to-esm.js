@@ -1,14 +1,52 @@
+import { SpecNode } from './ast/SpecNode.js';
 import { error, isArray, isObject, isString, toParamRef } from './util.js';
 
+/**
+ * Generate ESM code for a Mosaic spec AST.
+ * @param {SpecNode} ast Mosaic AST root node.
+ * @param {object} [options] Code generation options.
+ * @param {string} [options.namespace='vg'] The vgplot API namespace object.
+ * @param {string} [options.baseURL] The base URL for loading data files.
+ * @param {number} [options.depth=0] The starting indentation depth.
+ * @param {Map<string,string>} [options.imports] A Map of ESM imports to
+ *  include in generated code. Keys are packages (e.g., '@uwdata/vgplot')
+ *  and values indicate what to import (e.g., '* as vg').
+ * @returns {string} Generated ESM code using the vgplot API.
+ */
 export function astToESM(ast, options) {
   const { root, data, params, plotDefaults } = ast;
   const ctx = new CodegenContext({ plotDefaults, ...options });
+
+  // generate package imports
+  const importsCode = [];
+  for (const [pkg, methods] of ctx.imports) {
+    importsCode.push(
+      isString(methods)
+        ? `import ${methods} from "${pkg}";`
+        : `import { ${methods.join(', ')} } from "${pkg}";`
+    );
+  }
+
+  // generate database connector code
+  const connectorCode = [];
+  if (ctx.connector) {
+    const con = `${ctx.ns()}${ctx.connector}Connector()`;
+    connectorCode.push(
+      `${ctx.tab()}${ctx.ns()}coordinator().databaseConnector(${con});`
+    );
+  }
 
   // generate data definitions
   const dataCode = [];
   for (const node of Object.values(data)) {
     const def = node.codegen(ctx);
     if (def) dataCode.push(def);
+  }
+
+  // generate params / selections
+  const paramCode = [];
+  for (const [key, value] of Object.entries(params)) {
+    paramCode.push(`const ${toParamRef(key)} = ${value.codegen(ctx)};`);
   }
 
   // generate default attributes
@@ -27,25 +65,11 @@ export function astToESM(ast, options) {
     `export default ${root.codegen(ctx)};`
   ];
 
-  // generate params / selections
-  const paramCode = [];
-  for (const [key, value] of Object.entries(params)) {
-    paramCode.push(`const ${toParamRef(key)} = ${value.codegen(ctx)};`);
-  }
-
-  // generate package imports
-  const importsCode = [];
-  for (const [pkg, methods] of ctx.imports) {
-    importsCode.push(
-      isString(methods)
-        ? `import ${methods} from "${pkg}";`
-        : `import { ${methods.join(', ')} } from "${pkg}";`
-    );
-  }
-
   return [
     ...importsCode,
     ...maybeNewline(importsCode),
+    ...connectorCode,
+    ...maybeNewline(connectorCode),
     ...dataCode,
     ...maybeNewline(dataCode),
     ...paramCode,
@@ -59,14 +83,16 @@ export function astToESM(ast, options) {
 export class CodegenContext {
   constructor({
     plotDefaults = null,
-    namespace = 'vg.',
+    namespace = 'vg',
+    connector = null,
     imports = new Map([['@uwdata/vgplot', '* as vg']]),
     baseURL = null,
     baseClientURL = baseURL,
     depth = 0
   } = {}) {
     this.plotDefaults = plotDefaults;
-    this.namespace = namespace;
+    this.namespace = `${namespace}.`;
+    this.connector = connector;
     this.imports = imports;
     this.baseURL = baseURL;
     this.baseClientURL = baseClientURL;
