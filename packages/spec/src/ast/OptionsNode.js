@@ -15,6 +15,14 @@ export class OptionsNode extends ASTNode {
     this.options = options;
   }
 
+  filter(predicate) {
+    const opt = Object.fromEntries(
+      Object.entries(this.options)
+        .filter(([key, value]) => predicate(key, value))
+    );
+    return new OptionsNode(opt);
+  }
+
   instantiate(ctx) {
     const { options } = this;
     const opt = {};
