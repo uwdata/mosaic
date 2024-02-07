@@ -182,7 +182,7 @@ For supported options, see the [Observable Plot `image` documentation](https://o
 ## Line
 
 A `line` mark, with `lineX` and `lineY` variants.
-When feasible, the `lineX` and `lineY` marks will perform [M4 optimization](https://observablehq.com/@uwdata/m4-scalable-time-series-visualization) to limit th number of sample points returned from the database.
+When feasible, the `lineX` and `lineY` marks will perform [M4 optimization](https://observablehq.com/@uwdata/m4-scalable-time-series-visualization) to limit the number of sample points returned from the database.
 Use `from("data", { optimize: false })` to disable this behavior.
 For supported options, see the [Observable Plot `line` documentation](https://observablehq.com/plot/marks/line).
 
