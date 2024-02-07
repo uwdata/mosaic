@@ -1,13 +1,12 @@
 import logging
 import os
 import re
-import sys
 import time
 from functools import partial
 
 import pyarrow as pa
 import ujson
-from socketify import App, CompressOptions, OpCode
+from socketify import App, AppOptions, CompressOptions, OpCode
 
 from .__about__ import __version__
 
@@ -174,6 +173,8 @@ def ws_message(con, ws, message, opcode):
 
 
 def server(con):
+    # SSL server
+    # app = App(AppOptions(key_file_name="./localhost-key.pem", cert_file_name="./localhost.pem"))
     app = App()
     app.json_serializer(ujson)
     app.ws(

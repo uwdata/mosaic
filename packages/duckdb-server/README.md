@@ -1,4 +1,4 @@
-# Mosaic Web Server
+# Mosaic DuckDB Server
 
 [![PyPi](https://img.shields.io/pypi/v/mosaic-server.svg)](https://pypi.org/project/mosaic-server/)
 
@@ -8,11 +8,11 @@ A web server that serves DuckDB queries.
 
 We use [hatch](https://hatch.pypa.io/latest/) to manage our development setup.
 
+Start the server in development with `hatch run serve`. The server restarts when you change the code.
+
 To activate the environment, run `hatch shell`.
 
-This should install the widget in development mode so you can start Jupyter.
-
-Start the server in development with `hatch run serve`. The server restarts when you change the code.
+To set up a local certificate for SSL, use https://github.com/FiloSottile/mkcert.
 
 ## Publishing
 

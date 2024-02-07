@@ -60,7 +60,7 @@ jobs:
 
       - name: Build and lint Server
         run: |
-          cd packages/server
+          cd packages/duckdb-server
           hatch build
           hatch run lint
           hatch run test
