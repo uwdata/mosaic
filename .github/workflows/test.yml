@@ -63,3 +63,4 @@ jobs:
           cd packages/server
           hatch build
           hatch run lint
+          hatch run test

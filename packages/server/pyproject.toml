@@ -13,8 +13,7 @@ dependencies = [
   "pyarrow",
   "pandas",
   "socketify",
-  "ujson",
-  "pytest"
+  "ujson"
 ]
 
 [project.urls]
@@ -23,7 +22,8 @@ homepage = "https://github.com/uwdata/mosaic"
 [project.optional-dependencies]
 dev = [
   "ruff",
-  "watchdog[watchmedo]"
+  "watchdog[watchmedo]",
+  "pytest"
 ]
 
 [tool.hatch.envs.default]
@@ -39,8 +39,8 @@ fmt = [
   "ruff format {args:.}",
   "ruff --fix {args:.}",
 ]
-serve = "watchmedo auto-restart --pattern '*.py' --recursive --signal SIGTERM python mosaic_server/__init__.py"
-test = "pytest mosaic_server"
+serve = "watchmedo auto-restart --pattern '*.py' --recursive --signal SIGTERM python main.py"
+test = "pytest ."
 
 [tool.hatch.version]
 path = "mosaic_server/__about__.py"
