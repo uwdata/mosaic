@@ -2,6 +2,7 @@ from functools import partial
 
 import duckdb
 import pyarrow as pa
+
 from pkg.server import get_arrow, get_json, get_key
 
 

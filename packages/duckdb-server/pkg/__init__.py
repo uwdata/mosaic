@@ -2,6 +2,7 @@ import logging
 import sys
 
 import duckdb
+from diskcache import Cache
 
 from .server import server
 
@@ -15,4 +16,8 @@ def serve():
     logger.info(f"Using DuckDB {db_path}")
 
     con = duckdb.connect(db_path)
-    server(con)
+    cache = Cache()
+
+    logger.info(f"Caching in {cache.directory}")
+
+    server(con, cache)

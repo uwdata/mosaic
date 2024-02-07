@@ -9,9 +9,10 @@ dynamic = ["version"]
 readme = "README.md"
 requires-python = ">=3.8"
 dependencies = [
+  "diskcache",
   "duckdb==0.8.1",
-  "pyarrow",
   "pandas",
+  "pyarrow",
   "socketify",
   "ujson"
 ]

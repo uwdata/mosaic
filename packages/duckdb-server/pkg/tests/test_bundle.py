@@ -2,7 +2,8 @@ from pathlib import Path
 
 import duckdb
 import pytest
-from pkg.server import create_bundle, load_bundle
+
+from pkg.bundle import create_bundle, load_bundle
 
 
 @pytest.fixture(scope="session")
@@ -18,6 +19,10 @@ def test_bundle(bundle_dir):
         'SELECT count(*) FROM "flights"',
     ]
 
-    create_bundle(con, queries, directory=bundle_dir)
+    cache = dict()
 
-    load_bundle(con, directory=bundle_dir)
+    create_bundle(con, cache, queries, directory=bundle_dir)
+
+    load_bundle(con, cache, directory=bundle_dir)
+
+    assert len(cache) == 1
