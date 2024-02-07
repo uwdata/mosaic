@@ -61,7 +61,7 @@ def create_bundle(queries):
     for query in queries:
         sql = query if isinstance(query, str) else query.get("sql")
 
-        if query.get("alias"):
+        if isinstance(query, dict) and query.get("alias"):
             table = query.get("alias")
             file = os.path.join(BUNDLE_DIR, f"{table}.parquet")
             con.execute(f"COPY ({sql}) TO '{file}' (FORMAT PARQUET)")
@@ -88,7 +88,7 @@ def create_bundle(queries):
                 get = get_json
             else:
                 raise ValueError(f"Unknown command {command}")
-            result = retrieve(query, get)
+            result = retrieve(sql, get)
             with open(os.path.join(BUNDLE_DIR, key), "wb") as f:
                 f.write(result)
             manifest["queries"].append(key)
@@ -147,11 +147,10 @@ def ws_message(ws, message, opcode):
             json = retrieve(query, get_json)
             ok = ws.send(json, OpCode.TEXT)
         elif command == "create-bundle":
-            pass
             create_bundle(query.get("queries"))
             ok = ws.send({}, OpCode.TEXT)
         elif command == "load-bundle":
-            pass
+            load_bundle()
             ok = ws.send({}, OpCode.TEXT)
         else:
             raise ValueError(f"Unknown command {command}")
