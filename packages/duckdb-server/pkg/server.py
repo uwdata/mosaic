@@ -3,10 +3,12 @@ import os
 import re
 import time
 from functools import partial
+from hashlib import sha256
+from pathlib import Path
 
 import pyarrow as pa
 import ujson
-from socketify import App, AppOptions, CompressOptions, OpCode
+from socketify import App, CompressOptions, OpCode
 
 from .__about__ import __version__
 
@@ -14,7 +16,11 @@ logger = logging.getLogger(__name__)
 
 cache = dict()
 
-BUNDLE_DIR = ".mosaic/bundle"
+BUNDLE_DIR = Path(".mosaic/bundle")
+
+
+def get_key(sql, command):
+    return f"{sha256(sql.encode('utf-8')).hexdigest()}.{command}"
 
 
 def retrieve(query, get):
@@ -22,7 +28,7 @@ def retrieve(query, get):
     command = query.get("type")
     persist = query.get("persist", False)
 
-    key = (sql, command)
+    key = get_key(sql, command)
     result = cache.get(key)
 
     if result:
@@ -54,7 +60,7 @@ def get_json(con, sql):
     return result.to_json(orient="records")
 
 
-def create_bundle(con, queries):
+def create_bundle(con, queries, directory=BUNDLE_DIR):
     describe_re = re.compile(r"^DESCRIBE ")
     pragma_re = re.compile(r"^PRAGMA ")
     view_re = re.compile(r"^CREATE( TEMP| TEMPORARY)? VIEW")
@@ -62,12 +68,14 @@ def create_bundle(con, queries):
 
     manifest = {"tables": [], "queries": []}
 
+    directory.mkdir(parents=True, exist_ok=True)
+
     for query in queries:
         sql = query if isinstance(query, str) else query.get("sql")
 
         if isinstance(query, dict) and query.get("alias"):
             table = query.get("alias")
-            file = os.path.join(BUNDLE_DIR, f"{table}.parquet")
+            file = directory / f"{table}.parquet"
             con.execute(f"COPY ({sql}) TO '{file}' (FORMAT PARQUET)")
             manifest["tables"].append(table)
 
@@ -78,51 +86,47 @@ def create_bundle(con, queries):
             table_match = table_re.match(sql)
             if table_match:
                 table = table_match.group(3)
-                file = os.path.join(BUNDLE_DIR, f"{table}.parquet")
+                file = directory / f"{table}.parquet"
                 con.execute(sql)
                 con.execute(f"COPY {table} TO '{file}' (FORMAT PARQUET)")
                 manifest["tables"].append(table)
 
         elif not pragma_re.match(sql):
             command = "json" if describe_re.match(sql) else "arrow"
-            key = (sql, command)
+            key = get_key(sql, command)
             if command == "arrow":
                 get = get_arrow_bytes
             elif command == "json":
                 get = get_json
             else:
                 raise ValueError(f"Unknown command {command}")
-            result = retrieve(sql, partial(get, con))
-            with open(os.path.join(BUNDLE_DIR, key), "wb") as f:
+            result = retrieve({"sql": sql, "type": sql}, partial(get, con))
+            with open(directory / key, "wb") as f:
                 f.write(result)
             manifest["queries"].append(key)
 
-    with open(os.path.join(BUNDLE_DIR, "bundle.json"), "w") as f:
+    with open(directory / "bundle.json", "w") as f:
         ujson.dump(manifest, f, indent=2)
 
     return manifest
 
 
-def load_bundle(con):
-    with open(os.path.join(BUNDLE_DIR, "bundle.json")) as f:
+def load_bundle(con, directory=BUNDLE_DIR):
+    with open(directory / "bundle.json") as f:
         manifest = ujson.load(f)
 
     # Load precomputed query results into the cache
     for key in manifest["queries"]:
-        file = os.path.join(BUNDLE_DIR, key)
+        file = directory / key
         json_file = os.path.splitext(file)[1] == ".json"
         with open(file, "rb") as f:
             data = f.read()
-            cache.set(key, ujson.loads(data) if json_file else data)
+            cache[key] = ujson.loads(data) if json_file else data
 
     # Load precomputed temp tables into the database
     for table in manifest["tables"]:
-        file = os.path.join(BUNDLE_DIR, f"{table}.parquet")
+        file = directory / f"{table}.parquet"
         con.execute(f"CREATE TEMP TABLE IF NOT EXISTS {table} AS SELECT * FROM '{file}'")
-
-
-def ws_open(ws):
-    logger.info("A WebSocket got connected!")
 
 
 def ws_message(con, ws, message, opcode):
@@ -151,10 +155,10 @@ def ws_message(con, ws, message, opcode):
             json = retrieve(query, partial(get_json, con))
             ok = ws.send(json, OpCode.TEXT)
         elif command == "create-bundle":
-            create_bundle(con, query.get("queries"))
+            create_bundle(con, query.get("queries"), BUNDLE_DIR)
             ok = ws.send({}, OpCode.TEXT)
         elif command == "load-bundle":
-            load_bundle(con)
+            load_bundle(con, BUNDLE_DIR)
             ok = ws.send({}, OpCode.TEXT)
         else:
             raise ValueError(f"Unknown command {command}")
@@ -169,19 +173,22 @@ def ws_message(con, ws, message, opcode):
         logger.info(f"DONE. Query took { total } ms.\n{ sql }")
 
     # Ok is false if backpressure was built up, wait for drain
-    logger.info(f"OK: {ok}")
+    if not ok:
+        logger.warn("WebSocket backpressure: %i" % ws.get_buffered_amount())
 
 
 def server(con):
     # SSL server
     # app = App(AppOptions(key_file_name="./localhost-key.pem", cert_file_name="./localhost.pem"))
     app = App()
+
+    # faster serialization than standard json
     app.json_serializer(ujson)
+
     app.ws(
         "/*",
         {
             "compression": CompressOptions.SHARED_COMPRESSOR,
-            "open": ws_open,
             "message": partial(ws_message, con),
             "drain": lambda ws: print("WebSocket backpressure: %i" % ws.get_buffered_amount()),
         },

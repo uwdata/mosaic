@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "mosaic-server"
-description = "A Server for Mosaic"
+description = "A DuckDB server for Mosaic"
 dynamic = ["version"]
 readme = "README.md"
 requires-python = ">=3.8"
@@ -43,7 +43,7 @@ serve = "watchmedo auto-restart --pattern '*.py' --recursive --signal SIGTERM py
 test = "pytest ."
 
 [tool.hatch.version]
-path = "mosaic_server/__about__.py"
+path = "pkg/__about__.py"
 
 [tool.ruff]
 line-length = 120
