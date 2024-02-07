@@ -46,6 +46,9 @@ test = "pytest ."
 [tool.hatch.version]
 path = "pkg/__about__.py"
 
+[tool.hatch.build.targets.wheel]
+packages = ["pkg"]
+
 [tool.ruff]
 line-length = 120
 extend-include = ["*.ipynb"]
