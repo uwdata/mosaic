@@ -19,7 +19,7 @@ def test_bundle(bundle_dir):
         'SELECT count(*) FROM "flights"',
     ]
 
-    cache = dict()
+    cache = {}
 
     create_bundle(con, cache, queries, directory=bundle_dir)
 

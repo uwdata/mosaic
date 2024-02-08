@@ -56,11 +56,11 @@ jobs:
         run: |
           cd packages/widget
           hatch build
-          hatch run lint
+          hatch fmt --check
 
       - name: Build, lint, and test Server
         run: |
           cd packages/duckdb-server
           hatch build
-          hatch run lint
-          hatch run test
+          hatch fmt --check
+          hatch run test:cov

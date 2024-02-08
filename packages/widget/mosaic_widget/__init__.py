@@ -1,6 +1,7 @@
 import logging
 import pathlib
 import time
+from typing import Optional
 
 import anywidget
 import duckdb
@@ -11,6 +12,8 @@ logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
 
 _DEV = False  # switch to False for production
+
+SLOW_QUERY_THRESHOLD = 5000
 
 if _DEV:
     # from `npm run dev`
@@ -38,7 +41,7 @@ class MosaicWidget(anywidget.AnyWidget):
 
     def __init__(
         self,
-        spec: dict = None,
+        spec: Optional(dict) = None,
         con=None,
         temp_indexes=True,
         data=None,
@@ -98,11 +101,11 @@ class MosaicWidget(anywidget.AnyWidget):
             else:
                 raise ValueError(f"Unknown command {command}")
         except Exception as e:
-            logger.error(e)
+            logger.exception()
             self.send({"error": str(e), "uuid": uuid})
 
         total = round((time.time() - start) * 1_000)
-        if total > 5000:
+        if total > SLOW_QUERY_THRESHOLD:
             logger.warning(f"DONE. Slow query { uuid } took { total } ms.\n{ sql }")
         else:
             logger.info(f"DONE. Query { uuid } took { total } ms.\n{ sql }")

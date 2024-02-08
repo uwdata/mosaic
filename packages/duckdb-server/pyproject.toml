@@ -22,9 +22,7 @@ homepage = "https://github.com/uwdata/mosaic"
 
 [project.optional-dependencies]
 dev = [
-  "ruff",
-  "watchdog[watchmedo]",
-  "pytest"
+  "watchdog[watchmedo]"
 ]
 
 [tool.hatch.envs.default]
@@ -32,16 +30,17 @@ python = "3.11"
 features = ["dev"]
 
 [tool.hatch.envs.default.scripts]
-lint = [
-  "ruff {args:.}",
-  "ruff format --check --diff {args:.}",
-]
-fmt = [
-  "ruff format {args:.}",
-  "ruff --fix {args:.}",
-]
 serve = "watchmedo auto-restart --pattern '*.py' --recursive --signal SIGTERM python main.py"
-test = "pytest ."
+
+[tool.hatch.envs.test]
+dependencies = [
+  "coverage[toml]",
+  "pytest",
+  "pytest-cov",
+]
+
+[tool.hatch.envs.test.scripts]
+cov = 'pytest --cov-report=term-missing --cov-config=pyproject.toml --cov=pkg'
 
 [tool.hatch.version]
 path = "pkg/__about__.py"
@@ -50,21 +49,4 @@ path = "pkg/__about__.py"
 packages = ["pkg"]
 
 [tool.ruff]
-line-length = 120
-extend-include = ["*.ipynb"]
-# allow long lines, allow end in ;, allow useless expressions
-lint.ignore = ["E501", "E703", "B018"]
-lint.select = [
-    # pycodestyle
-    "E",
-    # Pyflakes
-    "F",
-    # pyupgrade
-    "UP",
-    # flake8-bugbear
-    "B",
-    # flake8-simplify
-    "SIM",
-    # isort
-    "I",
-]
+lint.ignore = ["G004", "TRY301", "EM102", "EM101", "TRY003", "FBT002", "S608", "TRY002", "ARG001"]

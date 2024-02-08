@@ -4,7 +4,7 @@ from functools import partial
 
 import ujson
 
-from .query import get_arrow_bytes, get_json, get_key, retrieve
+from pkg.query import get_arrow_bytes, get_json, get_key, retrieve
 
 
 def create_bundle(con, cache, queries, directory):
