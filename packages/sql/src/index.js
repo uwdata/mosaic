@@ -138,6 +138,7 @@ export {
 } from './to-sql.js';
 
 export { create } from './load/create.js';
+export { loadExtension } from './load/extension.js';
 export {
   loadCSV,
   loadJSON,
