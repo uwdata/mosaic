@@ -72,6 +72,7 @@ export class Coordinator {
   }
 
   exec(query, { priority = Priority.Normal } = {}) {
+    query = Array.isArray(query) ? query.join(';\n') : query;
     return this.manager.request({ type: 'exec', query }, priority);
   }
 
