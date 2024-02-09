@@ -1,0 +1,52 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "mosaic-server"
+description = "A DuckDB server for Mosaic"
+dynamic = ["version"]
+readme = "README.md"
+requires-python = ">=3.8"
+dependencies = [
+  "diskcache",
+  "duckdb==0.8.1",
+  "pandas",
+  "pyarrow",
+  "socketify",
+  "ujson"
+]
+
+[project.urls]
+homepage = "https://github.com/uwdata/mosaic"
+
+[project.optional-dependencies]
+dev = [
+  "watchdog[watchmedo]"
+]
+
+[tool.hatch.envs.default]
+python = "3.11"
+features = ["dev"]
+
+[tool.hatch.envs.default.scripts]
+serve = "watchmedo auto-restart --pattern '*.py' --recursive --signal SIGTERM python main.py"
+
+[tool.hatch.envs.test]
+dependencies = [
+  "coverage[toml]",
+  "pytest",
+  "pytest-cov",
+]
+
+[tool.hatch.envs.test.scripts]
+cov = 'pytest --cov-report=term-missing --cov-config=pyproject.toml --cov=pkg'
+
+[tool.hatch.version]
+path = "pkg/__about__.py"
+
+[tool.hatch.build.targets.wheel]
+packages = ["pkg"]
+
+[tool.ruff]
+lint.ignore = ["G004", "TRY301", "EM102", "EM101", "TRY003", "FBT002", "S608", "TRY002", "ARG001"]

@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Mosaic Bundles</title>
+  <link href="./styles.css" rel="stylesheet">
+</head>
+<body>
+  <header>
+    <span>
+      <button id="create">Create Bundle</button>
+      <button id="load">Load Bundle</button>
+      <button id="query">Query</button>
+    </span>
+
+    <span>
+      Connector:
+      <select id="connectors">
+        <option value="socket" selected>Socket</option>
+        <option value="rest">REST</option>
+      </select>
+    </span>
+  </header>
+  <div id="output"></div>
+<script type="module">
+  import yaml from '../node_modules/yaml/browser/index.js';
+  import { coordinator, setDatabaseConnector } from './setup.js';
+
+  const connectorMenu = document.querySelector('#connectors');
+  connectorMenu.addEventListener('change', setConnector);
+
+  document.querySelector('#create').addEventListener('click', create);
+  document.querySelector('#load').addEventListener('click', load);
+  document.querySelector('#query').addEventListener('click', query);
+
+  const output = document.querySelector('#output');
+
+  setConnector();
+
+  const queries = [
+    `CREATE TEMP TABLE IF NOT EXISTS flights AS SELECT * FROM read_parquet('data/flights-200k.parquet')`,
+    `SELECT count(*) FROM "flights"`
+  ]
+
+  async function setConnector() {
+    await setDatabaseConnector(connectorMenu.value);
+  }
+
+  async function create() {
+    try {
+      await coordinator().createBundle('test', queries);
+      output.innerText = "Created bundle"
+    } catch(err) {
+      output.innerText = `Error: ${err}`
+    }
+  }
+
+  async function load() {
+    try {
+      await coordinator().loadBundle('test');
+      output.innerText = "Loaded bundle"
+    } catch(err) {
+      output.innerText = `Error: ${err}`
+    }
+  }
+
+  async function query() {
+    try {
+      const result = await coordinator().query(queries[1], {cache: false});
+      output.innerText = `Result = ${result}`
+    } catch(err) {
+      output.innerText = `Error: ${err}`
+    }
+  }
+</script>
+</body>
+</html>

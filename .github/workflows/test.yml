@@ -50,11 +50,17 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          cd packages/widget
-          pip install -e .[dev]
+          pip install hatch
 
-      - name: Build and lint
+      - name: Build and lint Widget
         run: |
           cd packages/widget
+          hatch build
+          hatch fmt --check
 
-          ruff ../..
+      - name: Build, lint, and test Server
+        run: |
+          cd packages/duckdb-server
+          hatch build
+          hatch fmt --check
+          hatch run test:cov

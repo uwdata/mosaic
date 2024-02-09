@@ -13,119 +13,130 @@ import { v4 as uuidv4 } from 'uuid';
  * @prop {Array} selections the current selections
  */
 
-/** @type {import("anywidget/types").Render<Model>} */
-export async function render(view) {
-  view.el.classList.add('mosaic-widget');
+export default {
+  /** @type {import('anywidget/types').Initialize<Model>} */
+  // eslint-disable-next-line no-unused-vars
+  initialize(view) {},
 
-  const getSpec = () => view.model.get('spec');
+  /** @type {import('anywidget/types').Render<Model>} */
+  render(view) {
+    view.el.classList.add('mosaic-widget');
 
-  const getTempIndexes = () => view.model.get('temp_indexes');
+    const getSpec = () => view.model.get('spec');
 
-  const logger = coordinator().logger();
+    const getTempIndexes = () => view.model.get('temp_indexes');
 
-  /** @type Map<string, {query: Record<any, unknown>, startTime: number, resolve: (value: any) => void, reject: (reason?: any) => void}> */
-  const openQueries = new Map();
+    const logger = coordinator().logger();
 
-  /**
-   * @param {Record<any, unknown>} query the query to send
-   * @param {(value: any) => void} resolve the promise resolve callback
-   * @param {(reason?: any) => void} reject the promise reject callback
-   */
-  function send(query, resolve, reject) {
-    const uuid = uuidv4();
+    /** @type Map<string, {query: Record<any, unknown>, startTime: number, resolve: (value: any) => void, reject: (reason?: any) => void}> */
+    const openQueries = new Map();
 
-    openQueries.set(uuid, { query, startTime: performance.now(), resolve, reject });
-    view.model.send({ ...query, uuid });
-  }
+    /**
+     * @param {Record<any, unknown>} query the query to send
+     * @param {(value: any) => void} resolve the promise resolve callback
+     * @param {(reason?: any) => void} reject the promise reject callback
+     */
+    function send(query, resolve, reject) {
+      const uuid = uuidv4();
 
-  const connector = {
-    query(query) {
-      return new Promise((resolve, reject) => send(query, resolve, reject));
-    },
-  };
-
-  function reset() {
-    coordinator().clear();
-    namedPlots.clear();
-  }
-
-  async function updateSpec() {
-    const spec = getSpec();
-    reset();
-    logger.log('Setting spec:', spec);
-    view.el.replaceChildren(await instantiateSpec(spec));
-
-    // Update the selections traitlet
-    const c = coordinator();
-    const selections = new Set([...c.clients].flatMap(c => c.filterBy).filter(s => s))
-    for (const s of selections) {
-      s.addEventListener('value', () => {
-        const s = [...selections].map(
-          s => s.clauses.map(
-            c => ({
-              value: c.value,
-              sql: String(c.predicate)
-            })
-          )
-        );
-        view.model.set('selections', s);
-        view.model.save_changes();
+      openQueries.set(uuid, {
+        query,
+        startTime: performance.now(),
+        resolve,
+        reject,
       });
+      view.model.send({ ...query, uuid });
     }
-  }
 
-  view.model.on('change:spec', () => updateSpec());
+    const connector = {
+      query(query) {
+        return new Promise((resolve, reject) => send(query, resolve, reject));
+      },
+    };
 
-  function configureCoordinator() {
-    const indexes = { temp: getTempIndexes() };
-    coordinator().configure({ indexes });
-  }
+    function reset() {
+      coordinator().clear();
+      namedPlots.clear();
+    }
 
-  view.model.on('change:temp_indexes', () => configureCoordinator());
+    async function updateSpec() {
+      const spec = getSpec();
+      reset();
+      logger.log('Setting spec:', spec);
+      view.el.replaceChildren(await instantiateSpec(spec));
 
-  view.model.on('msg:custom', (msg, buffers) => {
-    logger.group(`query ${msg.uuid}`);
-    logger.log('received message', msg, buffers);
-
-    const query = openQueries.get(msg.uuid);
-    openQueries.delete(msg.uuid);
-
-    logger.log(query.query.sql, (performance.now() - query.startTime).toFixed(1));
-
-    if (msg.error) {
-      query.reject(msg.error);
-      logger.error(msg.error);
-    } else {
-      switch (msg.type) {
-        case 'arrow': {
-          const table = arrow.tableFromIPC(buffers[0].buffer);
-          logger.log('table', table);
-          query.resolve(table);
-          break;
-        }
-        case 'json': {
-          logger.log('json', msg.result);
-          query.resolve(msg.result);
-          break;
-        }
-        default: {
-          query.resolve({});
-          break;
-        }
+      // Update the selections traitlet
+      const c = coordinator();
+      const selections = new Set(
+        [...c.clients].flatMap((c) => c.filterBy).filter((s) => s)
+      );
+      for (const s of selections) {
+        s.addEventListener('value', () => {
+          const s = [...selections].map((s) =>
+            s.clauses.map((c) => ({
+              value: c.value,
+              sql: String(c.predicate),
+            }))
+          );
+          view.model.set('selections', s);
+          view.model.save_changes();
+        });
       }
     }
-    logger.groupEnd('query');
-  });
 
-  coordinator().databaseConnector(connector);
-  configureCoordinator();
-  updateSpec();
+    view.model.on('change:spec', () => updateSpec());
 
-  return () => {
-    // cleanup
-    reset();
-  };
-}
+    function configureCoordinator() {
+      const indexes = { temp: getTempIndexes() };
+      coordinator().configure({ indexes });
+    }
+
+    view.model.on('change:temp_indexes', () => configureCoordinator());
+
+    view.model.on('msg:custom', (msg, buffers) => {
+      logger.group(`query ${msg.uuid}`);
+      logger.log('received message', msg, buffers);
+
+      const query = openQueries.get(msg.uuid);
+      openQueries.delete(msg.uuid);
+
+      logger.log(query.query.sql, (performance.now() - query.startTime).toFixed(1));
+
+      if (msg.error) {
+        query.reject(msg.error);
+        logger.error(msg.error);
+      } else {
+        switch (msg.type) {
+          case 'arrow': {
+            const table = arrow.tableFromIPC(buffers[0].buffer);
+            logger.log('table', table);
+            query.resolve(table);
+            break;
+          }
+          case 'json': {
+            logger.log('json', msg.result);
+            query.resolve(msg.result);
+            break;
+          }
+          default: {
+            query.resolve({});
+            break;
+          }
+        }
+      }
+      logger.groupEnd('query');
+    });
+
+    coordinator().databaseConnector(connector);
+    configureCoordinator();
+    updateSpec();
+
+    return () => {
+      // cleanup
+      reset();
+    };
+  },
+};
 
 async function instantiateSpec(spec) {
   const ast = parseSpec(spec);
