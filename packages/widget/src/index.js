@@ -63,7 +63,8 @@ export default {
       const spec = getSpec();
       reset();
       logger.log('Setting spec:', spec);
-      view.el.replaceChildren(await instantiateSpec(spec));
+      const dom = await instantiateSpec(spec);
+      view.el.replaceChildren(dom.element);
 
       // Update the selections traitlet
       const c = coordinator();
@@ -138,8 +139,8 @@ export default {
   },
 };
 
+/** @param {Record<any, unknown>} spec */
 async function instantiateSpec(spec) {
   const ast = parseSpec(spec);
-  const dom = await astToDOM(ast);
-  return dom.element;
+  return await astToDOM(ast);
 }
