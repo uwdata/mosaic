@@ -2,20 +2,25 @@ import { ASTNode } from './ASTNode.js';
 import { INTERSECT, SELECTION } from '../constants.js';
 
 export class SelectionNode extends ASTNode {
-  constructor(select = INTERSECT) {
+  constructor(select = INTERSECT, cross) {
     super(SELECTION);
     this.select = select;
+    this.cross = cross;
   }
 
   instantiate(ctx) {
-    return ctx.api.Selection[this.select]();
+    const { select, cross } = this;
+    return ctx.api.Selection[select]({ cross });
   }
 
   codegen(ctx) {
-    return `${ctx.ns()}Selection.${this.select}()`;
+    const { select, cross } = this;
+    const arg = cross != null ? `{ cross: ${cross} }` : '';
+    return `${ctx.ns()}Selection.${select}(${arg})`;
   }
 
   toJSON() {
-    return { select: this.select };
+    const { select, cross } = this;
+    return { select, cross };
   }
 }

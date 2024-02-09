@@ -8,13 +8,13 @@ const paramTypes = new Set([VALUE, SINGLE, CROSSFILTER, INTERSECT, UNION]);
 
 export function parseParam(spec, ctx) {
   const param = isObject(spec) ? spec : { value: spec };
-  const { select = VALUE, date, value } = param;
+  const { select = VALUE, cross, date, value } = param;
   if (!paramTypes.has(select)) {
     ctx.error(`Unrecognized param type: ${select}`, param);
   }
 
   if (select !== VALUE) {
-    return new SelectionNode(select);
+    return new SelectionNode(select, cross);
   } else if (isArray(value)) {
     return new ParamNode(value.map(v => ctx.maybeParam(v)));
   } else {
