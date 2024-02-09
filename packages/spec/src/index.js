@@ -15,7 +15,6 @@ export {
   SpatialDataNode,
   LiteralJSONDataNode
 } from './ast/DataNode.js';
-export { DataRefNode } from './ast/DataRefNode.js';
 export { ExpressionNode } from './ast/ExpressionNode.js';
 export { HConcatNode } from './ast/HConcatNode.js';
 export { HSpaceNode } from './ast/HSpaceNode.js';

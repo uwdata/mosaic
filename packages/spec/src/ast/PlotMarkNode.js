@@ -1,11 +1,9 @@
 import { MARK } from '../constants.js';
-import { isArray, isObject } from '../util.js';
+import { isObject } from '../util.js';
 import { ASTNode } from './ASTNode.js';
-import { DataRefNode } from './DataRefNode.js';
 import { parseExpression } from './ExpressionNode.js';
-import { LiteralNode } from './LiteralNode.js';
-import { OptionsNode, parseOptions } from './OptionsNode.js';
-import { PlotFromNode } from './PlotFromNode.js';
+import { OptionsNode } from './OptionsNode.js';
+import { parseMarkData } from './PlotFromNode.js';
 import { parseTransform } from './TransformNode.js';
 
 function maybeTransform(value, ctx) {
@@ -31,27 +29,6 @@ export function parseMark(spec, ctx) {
   }
 
   return new PlotMarkNode(mark, input, new OptionsNode(opt));
-}
-
-function parseMarkData(spec, ctx) {
-  if (!spec) {
-    // no data, likely a decoration mark
-    return null;
-  }
-
-  if (isArray(spec)) {
-    // data provided directly, treat as JSON literal
-    return new LiteralNode(spec);
-  }
-
-  const { from: table, ...options } = spec;
-  if (ctx.datasets.get(table)?.client) {
-    // client-managed data, simply pass identifier
-    return new DataRefNode(table);
-  } else {
-    // source-managed data, create from descriptor
-    return new PlotFromNode(table, parseOptions(options, ctx));
-  }
 }
 
 export class PlotMarkNode extends ASTNode {

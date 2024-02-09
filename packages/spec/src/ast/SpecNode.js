@@ -2,22 +2,24 @@ import { SPEC } from '../constants.js';
 import { ASTNode } from './ASTNode.js';
 
 export class SpecNode extends ASTNode {
-  constructor(root, meta, data, params, plotDefaults) {
+  constructor(root, meta, config, data, params, plotDefaults) {
     super(SPEC, [root]);
     this.root = root;
     this.meta = meta;
+    this.config = config;
     this.data = data;
     this.params = params;
     this.plotDefaults = plotDefaults;
   }
 
   toJSON() {
-    const { root, meta, plotDefaults } = this;
+    const { root, meta, config, plotDefaults } = this;
     const dataDefs = new Map(Object.entries(this.data));
     const paramDefs = new Map(Object.entries(this.params));
     const spec = {};
 
     if (meta) spec.meta = { ...meta };
+    if (config) spec.config = { ...config };
 
     if (dataDefs?.size) {
       const data = spec.data = {};

@@ -1,4 +1,5 @@
 import { SpecNode } from './ast/SpecNode.js';
+import { resolveExtensions } from './config/extensions.js';
 import { error, isArray, isObject, isString, toParamRef } from './util.js';
 
 /**
@@ -36,11 +37,24 @@ export function astToESM(ast, options) {
     );
   }
 
-  // generate data definitions
-  const dataCode = [];
+  // process extensions and data definitions
+  const queries = [];
+  for (const name of resolveExtensions(ast)) {
+    queries.push(`${ctx.ns()}loadExtension("${name}")`);
+  }
   for (const node of Object.values(data)) {
-    const def = node.codegen(ctx);
-    if (def) dataCode.push(def);
+    const load = node.codegen(ctx);
+    if (load) queries.push(load);
+  }
+
+  // perform extension and data loading
+  const dataCode = [];
+  if (queries.length) {
+    dataCode.push(`${ctx.tab()}await ${ctx.ns()}coordinator().exec([`);
+    ctx.indent();
+    dataCode.push(queries.map(q => `${ctx.tab()}${q}`).join(',\n'));
+    ctx.undent();
+    dataCode.push(`${ctx.tab()}]);`);
   }
 
   // generate params / selections
@@ -87,7 +101,6 @@ export class CodegenContext {
     connector = null,
     imports = new Map([['@uwdata/vgplot', '* as vg']]),
     baseURL = null,
-    baseClientURL = baseURL,
     depth = 0
   } = {}) {
     this.plotDefaults = plotDefaults;
@@ -95,7 +108,6 @@ export class CodegenContext {
     this.connector = connector;
     this.imports = imports;
     this.baseURL = baseURL;
-    this.baseClientURL = baseClientURL;
     this.depth = depth;
   }
 

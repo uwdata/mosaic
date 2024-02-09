@@ -1,26 +1,21 @@
 import { create } from '@uwdata/mosaic-sql';
-import { feature, mesh } from 'topojson-client';
 import { DATA } from '../constants.js';
 import { isArray, isString } from '../util.js';
 import { ASTNode } from './ASTNode.js';
 import { parseOptions } from './OptionsNode.js';
 
-const TABLE_DATA = 'table';
-const PARQUET_DATA = 'parquet';
-const CSV_DATA = 'csv';
-const JSON_DATA = 'json';
-const SPATIAL_DATA = 'spatial';
-const GEOJSON_DATA = 'geojson';
-const TOPOJSON_DATA = 'topojson';
+export const TABLE_DATA = 'table';
+export const PARQUET_DATA = 'parquet';
+export const CSV_DATA = 'csv';
+export const JSON_DATA = 'json';
+export const SPATIAL_DATA = 'spatial';
 
 const dataFormats = new Map([
   [TABLE_DATA, parseTableData],
   [PARQUET_DATA, parseParquetData],
   [CSV_DATA, parseCSVData],
   [JSON_DATA, parseJSONData],
-  [SPATIAL_DATA, parseSpatialData],
-  [GEOJSON_DATA, parseGeoJSONData],
-  [TOPOJSON_DATA, parseTopoJSONData]
+  [SPATIAL_DATA, parseSpatialData]
 ]);
 
 export function parseData(name, spec, ctx) {
@@ -64,16 +59,6 @@ function parseSpatialData(name, spec, ctx) {
   // eslint-disable-next-line no-unused-vars
   const { file, type, ...options } = spec;
   return new SpatialDataNode(name, file, parseOptions(options, ctx));
-}
-
-function parseGeoJSONData(name, spec) {
-  const { data, file } = spec;
-  return new GeoJSONDataNode(name, data, file);
-}
-
-function parseTopoJSONData(name, spec) {
-  const { data, file, ...options } = spec;
-  return new TopoJSONDataNode(name, data, file, options);
 }
 
 function resolveDataSpec(spec) {
@@ -125,23 +110,19 @@ export class QueryDataNode extends DataNode {
 
   instantiate(ctx) {
     const query = this.instantiateQuery(ctx);
-    if (query) {
-      return ctx.coordinator.exec(query);
-    }
+    if (query) return query;
   }
 
   codegen(ctx) {
     const query = this.codegenQuery(ctx);
-    if (query) {
-      return `await ${ctx.ns()}coordinator().exec(\n  ${query}\n);`
-    }
+    if (query) return query;
   }
 }
 
 export class TableDataNode extends QueryDataNode {
   constructor(name, query, options) {
     super(name, TABLE_DATA);
-    this.query = query;
+    this.query = query?.trim();
     this.options = options;
   }
 
@@ -244,6 +225,20 @@ export class LiteralJSONDataNode extends QueryDataNode {
   }
 }
 
+/*
+export const GEOJSON_DATA = 'geojson';
+export const TOPOJSON_DATA = 'topojson';
+
+function parseGeoJSONData(name, spec) {
+  const { data, file } = spec;
+  return new GeoJSONDataNode(name, data, file);
+}
+
+function parseTopoJSONData(name, spec) {
+  const { data, file, ...options } = spec;
+  return new TopoJSONDataNode(name, data, file, options);
+}
+
 export class ClientDataNode extends DataNode {
   constructor(name, format, data, file, options = {}) {
     super(name, format);
@@ -331,3 +326,4 @@ export class TopoJSONDataNode extends ClientDataNode {
     return data;
   }
 }
+*/

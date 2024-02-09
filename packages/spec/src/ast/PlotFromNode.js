@@ -15,14 +15,8 @@ export function parseMarkData(spec, ctx) {
     return new LiteralNode(spec);
   }
 
-  const { [FROM]: table, ...options } = spec;
-  if (ctx.datasets.has(table)) {
-    // client-managed data, simply pass through
-    return ctx.datasets.get(table);
-  } else {
-    // source-managed data, create from descriptor
-    return new PlotFromNode(table, parseOptions(options, ctx));
-  }
+  const { from: table, ...options } = spec;
+  return new PlotFromNode(table, parseOptions(options, ctx));
 }
 
 export class PlotFromNode extends ASTNode {

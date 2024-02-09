@@ -6,10 +6,10 @@ import { parseAttribute } from './ast/PlotAttributeNode.js';
 import { SelectionNode } from './ast/SelectionNode.js';
 import { SpecNode } from './ast/SpecNode.js';
 
-import { componentMap } from './lookup/components.js';
-import { inputNames } from './lookup/inputs.js';
-import { plotNames } from './lookup/plots.js';
-import { transformNames } from './lookup/transforms.js';
+import { componentMap } from './config/components.js';
+import { inputNames } from './config/inputs.js';
+import { plotNames } from './config/plots.js';
+import { transformNames } from './config/transforms.js';
 
 import { error, isString, paramRef } from './util.js';
 
@@ -44,7 +44,14 @@ export class ParseContext {
 
   parse(spec) {
     // eslint-disable-next-line no-unused-vars
-    const { meta, data = {}, plotDefaults = {}, params, ...rest } = spec;
+    const {
+      meta,
+      config,
+      data = {},
+      params,
+      plotDefaults = {},
+      ...root
+    } = spec;
 
     // parse data definitions
     for (const name in data) {
@@ -61,8 +68,9 @@ export class ParseContext {
     }
 
     return new SpecNode(
-      this.parseComponent(rest),
-      Object.assign({}, meta),
+      this.parseComponent(root),
+      meta ? { ...meta } : undefined,
+      config ? { ...config } : undefined,
       Object.fromEntries(this.datasets),
       Object.fromEntries(this.params),
       this.plotDefaults

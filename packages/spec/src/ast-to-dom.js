@@ -1,5 +1,7 @@
-import { createAPIContext } from '@uwdata/vgplot';
-import { error, isArray } from './util.js';
+import { createAPIContext, loadExtension } from '@uwdata/vgplot';
+import { SpecNode } from './ast/SpecNode.js';
+import { resolveExtensions } from './config/extensions.js';
+import { error } from './util.js';
 
 /**
  * Generate running web application (DOM content) for a Mosaic spec AST.
@@ -13,15 +15,20 @@ export async function astToDOM(ast, options) {
   const { data, params, plotDefaults } = ast;
   const ctx = new InstantiateContext({ plotDefaults, ...options });
 
-  // process data definitions, loading data as needed
-  // perform sequentially, as later datasets may be derived
-  for (const [name, node] of Object.entries(data)) {
-    const dataset = await node.instantiate(ctx);
-    if (isArray(dataset)) {
-      // client-side dataset, not managed by DuckDB
-      ctx.activeData.set(name, dataset);
-    }
+  const queries = [];
+
+  // process database extensions
+  const exts = resolveExtensions(ast);
+  queries.push(...Array.from(exts).map(name => loadExtension(name)));
+
+  // process data definitions
+  for (const node of Object.values(data)) {
+    const query = node.instantiate(ctx);
+    if (query) queries.push(query);
   }
+
+  // perform extension and data loading
+  await ctx.coordinator.exec(queries);
 
   // process param/selection definitions
   for (const [name, node] of Object.entries(params)) {
@@ -31,7 +38,6 @@ export async function astToDOM(ast, options) {
 
   return {
     element: ast.root.instantiate(ctx),
-    data: ctx.activeData,
     params: ctx.activeParams
   };
 }
@@ -40,7 +46,6 @@ export class InstantiateContext {
   constructor({
     api = createAPIContext(),
     plotDefaults = [],
-    activeData = new Map,
     activeParams = new Map,
     baseURL = null,
     baseClientURL = baseURL,
@@ -48,7 +53,6 @@ export class InstantiateContext {
   } = {}) {
     this.api = api;
     this.plotDefaults = plotDefaults;
-    this.activeData = activeData;
     this.activeParams = activeParams;
     this.baseURL = baseURL;
     this.baseClientURL = baseClientURL;
