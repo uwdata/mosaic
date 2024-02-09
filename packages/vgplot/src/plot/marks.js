@@ -20,8 +20,8 @@ const decorators = new Set([
   'graticule', 'sphere'
 ]);
 
-function mark(type, data, channels) {
-  if (arguments.length === 2) {
+function mark(type, data, channels = {}) {
+  if (arguments.length === 2 && !Array.isArray(data)) {
     channels = data;
     data = decorators.has(type) ? null : [{}];
   }
@@ -73,8 +73,8 @@ export const text = (...args) => mark('text', ...args);
 export const textX = (...args) => mark('textX', ...args);
 export const textY = (...args) => mark('textY', ...args);
 
-export const ruleX = (data, opt) => mark('ruleX', data, opt);
-export const ruleY = (data, opt) => mark('ruleY', data, opt);
+export const ruleX = (...args) => mark('ruleX', ...args);
+export const ruleY = (...args) => mark('ruleY', ...args);
 
 export const tickX = (...args) => mark('tickX', ...args);
 export const tickY = (...args) => mark('tickY', ...args);
