@@ -52,8 +52,15 @@ jobs:
           python -m pip install --upgrade pip
           pip install hatch
 
-      - name: Build and lint
+      - name: Build and lint Widget
         run: |
           cd packages/widget
           hatch build
-          hatch run lint
+          hatch fmt --check
+
+      - name: Build, lint, and test Server
+        run: |
+          cd packages/duckdb-server
+          hatch build
+          hatch fmt --check
+          hatch run test:cov
