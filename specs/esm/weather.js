@@ -1,8 +1,8 @@
 import * as vg from "@uwdata/vgplot";
 
-await vg.coordinator().exec(
+await vg.coordinator().exec([
   vg.loadParquet("weather", "data/seattle-weather.parquet")
-);
+]);
 
 const $click = vg.Selection.single();
 const $domain = vg.Param.array(["sun", "fog", "drizzle", "rain", "snow"]);

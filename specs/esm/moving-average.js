@@ -1,8 +1,8 @@
 import * as vg from "@uwdata/vgplot";
 
-await vg.coordinator().exec(
+await vg.coordinator().exec([
   vg.loadParquet("cases", "data/berlin-covid.parquet")
-);
+]);
 
 const $frame = vg.Param.array([-6, 0]);
 

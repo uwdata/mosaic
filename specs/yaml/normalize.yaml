@@ -22,7 +22,7 @@ plot:
   lineAnchor: bottom
   dy: -7
 - mark: text
-  data: { from: labels, optimize: false }
+  data: { from: labels }
   x: Date
   y: { expr: Close / (SELECT MAX(Close) FROM stocks WHERE Symbol = source.Symbol AND Date = $point) }
   dx: 2
@@ -30,7 +30,7 @@ plot:
   fill: Symbol
   textAnchor: start
 - mark: lineY
-  data: { from: stocks, optimize: false }
+  data: { from: stocks }
   x: Date
   y: { expr: Close / (SELECT MAX(Close) FROM stocks WHERE Symbol = source.Symbol AND Date = $point) }
   stroke: Symbol

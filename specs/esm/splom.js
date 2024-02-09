@@ -1,8 +1,8 @@
 import * as vg from "@uwdata/vgplot";
 
-await vg.coordinator().exec(
+await vg.coordinator().exec([
   vg.loadParquet("penguins", "data/penguins.parquet")
-);
+]);
 
 const $brush = vg.Selection.single();
 

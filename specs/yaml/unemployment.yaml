@@ -1,6 +1,8 @@
 meta:
   title: U.S. Unemployment
-  description: A choropleth map of unemployment rates for U.S. counties.
+  description: >
+    A choropleth map of unemployment rates for U.S. counties.
+    Requires the DuckDB `spatial` extension.
   credit: Adapted from an [Observable Plot example](https://observablehq.com/@observablehq/plot-us-choropleth).
 data:
   counties:
@@ -8,7 +10,7 @@ data:
     file: data/us-counties-10m.json
     layer: counties
   rates:
-    file: data/us-county-unemployment.csv
+    file: data/us-county-unemployment.parquet
   combined: >
     SELECT a.geom AS geom, b.rate AS rate
     FROM counties AS a, rates AS b
@@ -23,7 +25,7 @@ vconcat:
     data: { from: combined }
     fill: rate
     title: { expr: "concat(rate, '%')" }
-  margins: {left: 5, top: 5, right: 5, bottom: 5}
+  margin: 0
   colorScale: quantile
   colorN: 9
   colorScheme: blues

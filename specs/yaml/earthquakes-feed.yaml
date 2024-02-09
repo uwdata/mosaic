@@ -1,9 +1,12 @@
 meta:
-  title: Eearthquakes Feed
-  description: Earthquakes from the USGS live feed.
+  title: Earthquakes Feed
+  description: >
+    Earthquake data from the USGS live feed.
+    To show land masses, this example loads and parses TopoJSON data in the database.
+    Requires the DuckDB `spatial` extension.
   credit: Adapted from an [Observable Plot example](https://observablehq.com/@observablehq/plot-live-earthquake-map).
 data:
-  earthquakes:
+  feed:
     type: spatial
     file: data/usgs-feed.geojson
   world:
@@ -18,7 +21,7 @@ plot:
 - mark: sphere
   strokeWidth: 0.5
 - mark: geo
-  data: { from: earthquakes }
+  data: { from: feed }
   r: { expr: "POW(10, mag)" }
   stroke: red
   fill: red
@@ -26,6 +29,6 @@ plot:
   title: title
   href: url
   target: _blank
-margins: {left: 5, top: 5, right: 5, bottom: 5}
+margin: 2
 projectionType: equirectangular
 

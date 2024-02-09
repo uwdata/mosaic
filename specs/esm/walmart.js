@@ -1,14 +1,11 @@
 import * as vg from "@uwdata/vgplot";
 
-await vg.coordinator().exec(
-  vg.loadSpatial("states", "data/us-counties-10m.json", {layer: "states"})
-);
-await vg.coordinator().exec(
-  vg.loadSpatial("nation", "data/us-counties-10m.json", {layer: "nation"})
-);
-await vg.coordinator().exec(
-  vg.loadCSV("walmarts", "data/walmarts.tsv", {delim: "\t"})
-);
+await vg.coordinator().exec([
+  vg.loadExtension("spatial"),
+  vg.loadSpatial("states", "data/us-counties-10m.json", {layer: "states"}),
+  vg.loadSpatial("nation", "data/us-counties-10m.json", {layer: "nation"}),
+  vg.loadParquet("walmarts", "data/walmarts.parquet")
+]);
 
 export default vg.vconcat(
   vg.plot(
@@ -32,7 +29,6 @@ export default vg.vconcat(
     ),
     vg.axisFy({frameAnchor: "top", dy: 30, tickFormat: "d"}),
     vg.margin(0),
-    vg.padding(0),
     vg.fyLabel(null),
     vg.projectionType("albers")
   )

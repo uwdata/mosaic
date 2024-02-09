@@ -1,8 +1,8 @@
 import * as vg from "@uwdata/vgplot";
 
-await vg.coordinator().exec(
+await vg.coordinator().exec([
   `CREATE TEMP TABLE IF NOT EXISTS flights10m AS SELECT GREATEST(-60, LEAST(ARR_DELAY, 180))::DOUBLE AS delay, DISTANCE AS distance, DEP_TIME AS time FROM 'https://uwdata.github.io/mosaic-datasets/data/flights-10m.parquet'`
-);
+]);
 
 const $brush = vg.Selection.crossfilter();
 

@@ -34,8 +34,7 @@
     {
       "mark": "text",
       "data": {
-        "from": "labels",
-        "optimize": false
+        "from": "labels"
       },
       "x": "Date",
       "y": {
@@ -49,8 +48,7 @@
     {
       "mark": "lineY",
       "data": {
-        "from": "stocks",
-        "optimize": false
+        "from": "stocks"
       },
       "x": "Date",
       "y": {

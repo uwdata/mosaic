@@ -1,8 +1,8 @@
 import * as vg from "@uwdata/vgplot";
 
-await vg.coordinator().exec(
+await vg.coordinator().exec([
   vg.loadParquet("penguins", "data/penguins.parquet")
-);
+]);
 
 const $mesh = vg.Param.value(0);
 const $hull = vg.Param.value(0);

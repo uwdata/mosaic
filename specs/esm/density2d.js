@@ -1,8 +1,8 @@
 import * as vg from "@uwdata/vgplot";
 
-await vg.coordinator().exec(
+await vg.coordinator().exec([
   vg.loadParquet("penguins", "data/penguins.parquet")
-);
+]);
 
 const $bandwidth = vg.Param.value(20);
 const $bins = vg.Param.value(20);

@@ -1,11 +1,10 @@
 import * as vg from "@uwdata/vgplot";
 
-await vg.coordinator().exec(
-  vg.loadSpatial("counties", "data/us-counties-10m.json", {layer: "counties"})
-);
-await vg.coordinator().exec(
+await vg.coordinator().exec([
+  vg.loadExtension("spatial"),
+  vg.loadSpatial("counties", "data/us-counties-10m.json", {layer: "counties"}),
   vg.loadSpatial("states", "data/us-counties-10m.json", {layer: "states"})
-);
+]);
 
 export default vg.plot(
   vg.geo(
@@ -27,6 +26,6 @@ export default vg.plot(
       title: "name"
     }
   ),
-  vg.width(1080),
+  vg.margin(0),
   vg.projectionType("albers")
 );

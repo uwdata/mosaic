@@ -1,7 +1,7 @@
 {
   "meta": {
     "title": "Walmart Openings",
-    "description": "Maps showing Walmart store openings per decade.",
+    "description": "Maps showing Walmart store openings per decade. Requires the DuckDB `spatial` extension.\n",
     "credit": "Adapted from an [Observable Plot example](https://observablehq.com/@observablehq/plot-map-large-multiples)."
   },
   "data": {
@@ -16,9 +16,8 @@
       "layer": "nation"
     },
     "walmarts": {
-      "type": "csv",
-      "file": "data/walmarts.tsv",
-      "delim": "\t"
+      "type": "parquet",
+      "file": "data/walmarts.parquet"
     }
   },
   "vconcat": [
@@ -60,7 +59,6 @@
         }
       ],
       "margin": 0,
-      "padding": 0,
       "fyLabel": null,
       "projectionType": "albers"
     }

@@ -1,11 +1,20 @@
 meta:
   title: Walmart Openings
-  description: Maps showing Walmart store openings per decade.
+  description: >
+    Maps showing Walmart store openings per decade.
+    Requires the DuckDB `spatial` extension.
   credit: Adapted from an [Observable Plot example](https://observablehq.com/@observablehq/plot-map-large-multiples).
 data:
-  states: { type: spatial, file: data/us-counties-10m.json, layer: states }
-  nation: { type: spatial, file: data/us-counties-10m.json, layer: nation }
-  walmarts: { type: csv, file: data/walmarts.tsv, delim: "\t" }
+  states:
+    type: spatial
+    file: data/us-counties-10m.json
+    layer: states
+  nation:
+    type: spatial
+    file: data/us-counties-10m.json
+    layer: nation
+  walmarts:
+    file: data/walmarts.parquet
 vconcat:
 - plot:
   - mark: geo
@@ -27,6 +36,5 @@ vconcat:
     dy: 30
     tickFormat: d
   margin: 0
-  padding: 0
   fyLabel: null
   projectionType: albers

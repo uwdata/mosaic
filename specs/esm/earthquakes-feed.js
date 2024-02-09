@@ -1,11 +1,10 @@
 import * as vg from "@uwdata/vgplot";
 
-await vg.coordinator().exec(
-  vg.loadSpatial("earthquakes", "data/usgs-feed.geojson")
-);
-await vg.coordinator().exec(
+await vg.coordinator().exec([
+  vg.loadExtension("spatial"),
+  vg.loadSpatial("feed", "data/usgs-feed.geojson"),
   vg.loadSpatial("world", "data/countries-110m.json", {layer: "land"})
-);
+]);
 
 export default vg.plot(
   vg.geo(
@@ -14,7 +13,7 @@ export default vg.plot(
   ),
   vg.sphere({strokeWidth: 0.5}),
   vg.geo(
-    vg.from("earthquakes"),
+    vg.from("feed"),
     {
       r: vg.sql`POW(10, mag)`,
       stroke: "red",
@@ -25,6 +24,6 @@ export default vg.plot(
       target: "_blank"
     }
   ),
-  vg.margins({left: 5, top: 5, right: 5, bottom: 5}),
+  vg.margin(2),
   vg.projectionType("equirectangular")
 );

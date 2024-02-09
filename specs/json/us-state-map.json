@@ -1,7 +1,7 @@
 {
   "meta": {
     "title": "U.S. States",
-    "description": "A map of U.S. states overlaid with computed centroids.",
+    "description": "A map of U.S. states overlaid with computed centroids. Requires the DuckDB `spatial` extension.\n",
     "credit": "Adapted from an [Observable Plot example](https://observablehq.com/@observablehq/plot-state-centroids)."
   },
   "data": {
@@ -39,5 +39,6 @@
       "title": "name"
     }
   ],
+  "margin": 0,
   "projectionType": "albers"
 }

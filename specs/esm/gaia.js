@@ -1,6 +1,6 @@
 import * as vg from "@uwdata/vgplot";
 
-await vg.coordinator().exec(
+await vg.coordinator().exec([
   `CREATE TEMP TABLE IF NOT EXISTS gaia AS -- compute u and v with natural earth projection
 WITH prep AS (
   SELECT
@@ -17,9 +17,8 @@ SELECT
   t * (1.340264 + (-0.081106 * t2) + (t6 * (0.000893 + 0.003796 * t2))) AS v,
   * EXCLUDE('t', 't2', 't6')
 FROM prep
-WHERE parallax BETWEEN -5 AND 20
-`
-);
+WHERE parallax BETWEEN -5 AND 20`
+]);
 
 const $brush = vg.Selection.crossfilter();
 const $bandwidth = vg.Param.value(0);

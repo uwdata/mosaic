@@ -3,6 +3,7 @@ meta:
   description: >
     A map of U.S. counties.
     County name tooltips are anchored to invisible centroid dot marks.
+    Requires the DuckDB `spatial` extension.
 data:
   counties:
     type: spatial
@@ -31,5 +32,5 @@ plot:
   fill: transparent
   tip: true
   title: name
-width: 1080
+margin: 0
 projectionType: albers

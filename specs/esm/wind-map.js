@@ -1,8 +1,8 @@
 import * as vg from "@uwdata/vgplot";
 
-await vg.coordinator().exec(
+await vg.coordinator().exec([
   vg.loadParquet("wind", "data/wind.parquet")
-);
+]);
 
 const $length = vg.Param.value(2);
 

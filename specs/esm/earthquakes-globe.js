@@ -1,11 +1,10 @@
 import * as vg from "@uwdata/vgplot";
 
-await vg.coordinator().exec(
-  vg.loadParquet("earthquakes", "data/earthquakes.parquet")
-);
-await vg.coordinator().exec(
+await vg.coordinator().exec([
+  vg.loadExtension("spatial"),
+  vg.loadParquet("earthquakes", "data/earthquakes.parquet"),
   vg.loadSpatial("land", "data/countries-110m.json", {layer: "land"})
-);
+]);
 
 const $longitude = vg.Param.value(-180);
 const $latitude = vg.Param.value(-30);
@@ -33,6 +32,7 @@ export default vg.vconcat(
         fillOpacity: 0.2
       }
     ),
+    vg.margin(10),
     vg.style("overflow: visible;"),
     vg.projectionType("orthographic"),
     vg.projectionRotate($rotate)

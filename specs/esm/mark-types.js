@@ -1,6 +1,6 @@
 import * as vg from "@uwdata/vgplot";
 
-await vg.coordinator().exec(
+await vg.coordinator().exec([
   vg.loadObjects("md", [
     {"i":0,"u":"A","v":2},
     {"i":1,"u":"B","v":8},
@@ -11,7 +11,7 @@ await vg.coordinator().exec(
     {"i":6,"u":"G","v":6},
     {"i":7,"u":"H","v":1}
   ],)
-);
+]);
 
 const defaultAttributes = [
   vg.xAxis(null),

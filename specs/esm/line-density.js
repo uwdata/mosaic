@@ -1,8 +1,8 @@
 import * as vg from "@uwdata/vgplot";
 
-await vg.coordinator().exec(
+await vg.coordinator().exec([
   vg.loadParquet("stocks_after_2006", "data/stocks_after_2006.parquet", {select: ["Symbol", "Close", "Date"], where: "Close < 100"})
-);
+]);
 
 const $brush = vg.Selection.intersect();
 const $bandwidth = vg.Param.value(0);

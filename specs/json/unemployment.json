@@ -1,7 +1,7 @@
 {
   "meta": {
     "title": "U.S. Unemployment",
-    "description": "A choropleth map of unemployment rates for U.S. counties.",
+    "description": "A choropleth map of unemployment rates for U.S. counties. Requires the DuckDB `spatial` extension.\n",
     "credit": "Adapted from an [Observable Plot example](https://observablehq.com/@observablehq/plot-us-choropleth)."
   },
   "data": {
@@ -11,12 +11,12 @@
       "layer": "counties"
     },
     "rates": {
-      "type": "csv",
-      "file": "data/us-county-unemployment.csv"
+      "type": "parquet",
+      "file": "data/us-county-unemployment.parquet"
     },
     "combined": {
       "type": "table",
-      "query": "SELECT a.geom AS geom, b.rate AS rate FROM counties AS a, rates AS b WHERE a.id = b.id\n"
+      "query": "SELECT a.geom AS geom, b.rate AS rate FROM counties AS a, rates AS b WHERE a.id = b.id"
     }
   },
   "vconcat": [
@@ -39,12 +39,7 @@
         }
       ],
       "name": "county-map",
-      "margins": {
-        "left": 5,
-        "top": 5,
-        "right": 5,
-        "bottom": 5
-      },
+      "margin": 0,
       "colorScale": "quantile",
       "colorN": 9,
       "colorScheme": "blues",

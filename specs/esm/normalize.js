@@ -1,11 +1,9 @@
 import * as vg from "@uwdata/vgplot";
 
-await vg.coordinator().exec(
-  vg.loadParquet("stocks", "data/stocks.parquet")
-);
-await vg.coordinator().exec(
+await vg.coordinator().exec([
+  vg.loadParquet("stocks", "data/stocks.parquet"),
   `CREATE TEMP TABLE IF NOT EXISTS labels AS SELECT MAX(Date) as Date, ARGMAX(Close, Date) AS Close, Symbol FROM stocks GROUP BY Symbol`
-);
+]);
 
 const $point = vg.Param.value(new Date("2013-05-13"));
 
@@ -13,7 +11,7 @@ export default vg.plot(
   vg.ruleX({x: $point}),
   vg.textX({x: $point, text: $point, frameAnchor: "top", lineAnchor: "bottom", dy: -7}),
   vg.text(
-    vg.from("labels", {optimize: false}),
+    vg.from("labels"),
     {
       x: "Date",
       y: vg.sql`Close / (SELECT MAX(Close) FROM stocks WHERE Symbol = source.Symbol AND Date = ${$point})`,
@@ -24,7 +22,7 @@ export default vg.plot(
     }
   ),
   vg.lineY(
-    vg.from("stocks", {optimize: false}),
+    vg.from("stocks"),
     {
       x: "Date",
       y: vg.sql`Close / (SELECT MAX(Close) FROM stocks WHERE Symbol = source.Symbol AND Date = ${$point})`,

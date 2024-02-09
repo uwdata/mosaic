@@ -1,8 +1,8 @@
 import * as vg from "@uwdata/vgplot";
 
-await vg.coordinator().exec(
+await vg.coordinator().exec([
   vg.loadParquet("flights", "data/flights-200k.parquet")
-);
+]);
 
 const $bandwidth = vg.Param.value(7);
 const $thresholds = vg.Param.value(10);
