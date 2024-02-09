@@ -41,6 +41,15 @@ export function margins(object) {
   return attributes(attr);
 }
 
+export function margin(value) {
+  return attributes({
+    marginTop: value,
+    marginBottom: value,
+    marginLeft: value,
+    marginRight: value
+  });
+}
+
 export function xyDomain(value) {
   return attributes({ xDomain: value, yDomain: value });
 }
@@ -51,7 +60,6 @@ const attrf = name => value => attribute(name, value);
 export const style = attrf('style');
 export const width = attrf('width');
 export const height = attrf('height');
-export const margin = attrf('margin');
 export const marginLeft = attrf('marginLeft');
 export const marginRight = attrf('marginRight');
 export const marginTop = attrf('marginTop');
