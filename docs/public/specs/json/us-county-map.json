@@ -1,0 +1,56 @@
+{
+  "meta": {
+    "title": "U.S. Counties",
+    "description": "A map of U.S. counties. County name tooltips are anchored to invisible centroid dot marks. Requires the DuckDB `spatial` extension.\n"
+  },
+  "data": {
+    "counties": {
+      "type": "spatial",
+      "file": "data/us-counties-10m.json",
+      "layer": "counties"
+    },
+    "states": {
+      "type": "spatial",
+      "file": "data/us-counties-10m.json",
+      "layer": "states"
+    }
+  },
+  "plot": [
+    {
+      "mark": "geo",
+      "data": {
+        "from": "counties"
+      },
+      "fill": "currentColor",
+      "fillOpacity": 0.2,
+      "stroke": "white",
+      "strokeWidth": 0.5
+    },
+    {
+      "mark": "geo",
+      "data": {
+        "from": "states"
+      },
+      "stroke": "white",
+      "strokeWidth": 1.5
+    },
+    {
+      "mark": "dot",
+      "data": {
+        "from": "counties"
+      },
+      "x": {
+        "centroidX": "geom"
+      },
+      "y": {
+        "centroidY": "geom"
+      },
+      "r": 2,
+      "fill": "transparent",
+      "tip": true,
+      "title": "name"
+    }
+  ],
+  "margin": 0,
+  "projectionType": "albers"
+}

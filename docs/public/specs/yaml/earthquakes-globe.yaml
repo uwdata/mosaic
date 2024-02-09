@@ -1,15 +1,17 @@
 meta:
-  title: Earthquakes
+  title: Earthquakes Globe
   description: >
     A rotatable globe of earthquake activity.
-    To show land masses, this example loads a TopoJSON file directly in the browser, bypassing the database.
+    To show land masses, this example loads and parses TopoJSON data in the database.
+    Requires the DuckDB `spatial` extension.
   credit: Adapted from an [Observable Plot example](https://observablehq.com/@observablehq/plot-earthquake-globe).
 data:
-  earthquakes: { file: data/earthquakes.parquet }
+  earthquakes:
+    file: data/earthquakes.parquet
   land:
-    type: topojson
+    type: spatial
     file: data/countries-110m.json
-    feature: land
+    layer: land
 params:
   longitude: -180
   latitude: -30
@@ -31,6 +33,7 @@ vconcat:
 - plot:
   - mark: geo
     data: { from: land }
+    geometry: { geojson: geom }
     fill: currentColor
     fillOpacity: 0.2
   - mark: sphere
@@ -42,6 +45,7 @@ vconcat:
     stroke: red
     fill: red
     fillOpacity: 0.2
+  margin: 10
   style: "overflow: visible;"
   projectionType: orthographic
   projectionRotate: $rotate

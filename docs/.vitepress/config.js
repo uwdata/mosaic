@@ -87,8 +87,7 @@ export default defineConfig({
             { text: 'Voronoi Diagram', link: '/examples/voronoi' },
             { text: 'Seattle Temperatures', link: '/examples/seattle-temp' },
             { text: 'Sorted Bars', link: '/examples/sorted-bars' },
-            { text: 'Sortable Table', link: '/examples/table' },
-            { text: 'Earthquakes', link: '/examples/earthquakes' }
+            { text: 'Sortable Table', link: '/examples/table' }
           ]
         },
         {
@@ -101,6 +100,18 @@ export default defineConfig({
             { text: 'Overview + Detail', link: '/examples/overview-detail' },
             { text: 'Linear Regression', link: '/examples/linear-regression' },
             { text: 'Wind Map', link: '/examples/wind-map' }
+          ]
+        },
+        {
+          text: 'Maps & Spatial Data',
+          collapsed: true,
+          items: [
+            { text: 'Earthquakes Feed', link: '/examples/earthquakes-feed' },
+            { text: 'Earthquakes Globe', link: '/examples/earthquakes-globe' },
+            { text: 'U.S. Unemployment', link: '/examples/unemployment' },
+            { text: 'U.S. Counties', link: '/examples/us-county-map' },
+            { text: 'U.S. States', link: '/examples/us-state-map' },
+            { text: 'Walmart Openings', link: '/examples/walmart' }
           ]
         },
         {

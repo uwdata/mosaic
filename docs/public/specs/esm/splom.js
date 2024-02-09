@@ -1,8 +1,8 @@
 import * as vg from "@uwdata/vgplot";
 
-await vg.coordinator().exec(
+await vg.coordinator().exec([
   vg.loadParquet("penguins", "data/penguins.parquet")
-);
+]);
 
 const $brush = vg.Selection.single();
 
@@ -29,148 +29,148 @@ const defaultAttributes = [
 export default vg.vconcat(
   vg.hconcat(
     vg.plot(
-      vg.frame({ stroke: "#ccc" }),
+      vg.frame({stroke: "#ccc"}),
       vg.dot(
         vg.from("penguins"),
-        { x: "bill_length", y: "body_mass", fill: "species", r: 2 }
+        {x: "bill_length", y: "body_mass", fill: "species", r: 2}
       ),
-      vg.intervalXY({ as: $brush }),
-      vg.highlight({ by: $brush, opacity: 0.1 }),
+      vg.intervalXY({as: $brush}),
+      vg.highlight({by: $brush, opacity: 0.1}),
       ...defaultAttributes,
       vg.yAxis("left"),
       vg.marginLeft(45),
       vg.width(185)
     ),
     vg.plot(
-      vg.frame({ stroke: "#ccc" }),
+      vg.frame({stroke: "#ccc"}),
       vg.dot(
         vg.from("penguins"),
-        { x: "bill_depth", y: "body_mass", fill: "species", r: 2 }
+        {x: "bill_depth", y: "body_mass", fill: "species", r: 2}
       ),
-      vg.intervalXY({ as: $brush }),
-      vg.highlight({ by: $brush, opacity: 0.1 }),
+      vg.intervalXY({as: $brush}),
+      vg.highlight({by: $brush, opacity: 0.1}),
       ...defaultAttributes
     ),
     vg.plot(
-      vg.frame({ stroke: "#ccc" }),
+      vg.frame({stroke: "#ccc"}),
       vg.dot(
         vg.from("penguins"),
-        { x: "flipper_length", y: "body_mass", fill: "species", r: 2 }
+        {x: "flipper_length", y: "body_mass", fill: "species", r: 2}
       ),
-      vg.intervalXY({ as: $brush }),
-      vg.highlight({ by: $brush, opacity: 0.1 }),
+      vg.intervalXY({as: $brush}),
+      vg.highlight({by: $brush, opacity: 0.1}),
       ...defaultAttributes
     ),
     vg.plot(
-      vg.frame({ stroke: "#ccc" }),
+      vg.frame({stroke: "#ccc"}),
       vg.dot(
         vg.from("penguins"),
-        { x: "body_mass", y: "body_mass", fill: "species", r: 2 }
+        {x: "body_mass", y: "body_mass", fill: "species", r: 2}
       ),
-      vg.intervalXY({ as: $brush }),
-      vg.highlight({ by: $brush, opacity: 0.1 }),
+      vg.intervalXY({as: $brush}),
+      vg.highlight({by: $brush, opacity: 0.1}),
       ...defaultAttributes
     )
   ),
   vg.hconcat(
     vg.plot(
-      vg.frame({ stroke: "#ccc" }),
+      vg.frame({stroke: "#ccc"}),
       vg.dot(
         vg.from("penguins"),
-        { x: "bill_length", y: "flipper_length", fill: "species", r: 2 }
+        {x: "bill_length", y: "flipper_length", fill: "species", r: 2}
       ),
-      vg.intervalXY({ as: $brush }),
-      vg.highlight({ by: $brush, opacity: 0.1 }),
+      vg.intervalXY({as: $brush}),
+      vg.highlight({by: $brush, opacity: 0.1}),
       ...defaultAttributes,
       vg.yAxis("left"),
       vg.marginLeft(45),
       vg.width(185)
     ),
     vg.plot(
-      vg.frame({ stroke: "#ccc" }),
+      vg.frame({stroke: "#ccc"}),
       vg.dot(
         vg.from("penguins"),
-        { x: "bill_depth", y: "flipper_length", fill: "species", r: 2 }
+        {x: "bill_depth", y: "flipper_length", fill: "species", r: 2}
       ),
-      vg.intervalXY({ as: $brush }),
-      vg.highlight({ by: $brush, opacity: 0.1 }),
+      vg.intervalXY({as: $brush}),
+      vg.highlight({by: $brush, opacity: 0.1}),
       ...defaultAttributes
     ),
     vg.plot(
-      vg.frame({ stroke: "#ccc" }),
+      vg.frame({stroke: "#ccc"}),
       vg.dot(
         vg.from("penguins"),
-        { x: "flipper_length", y: "flipper_length", fill: "species", r: 2 }
+        {x: "flipper_length", y: "flipper_length", fill: "species", r: 2}
       ),
-      vg.intervalXY({ as: $brush }),
-      vg.highlight({ by: $brush, opacity: 0.1 }),
+      vg.intervalXY({as: $brush}),
+      vg.highlight({by: $brush, opacity: 0.1}),
       ...defaultAttributes
     ),
     vg.plot(
-      vg.frame({ stroke: "#ccc" }),
+      vg.frame({stroke: "#ccc"}),
       vg.dot(
         vg.from("penguins"),
-        { x: "body_mass", y: "flipper_length", fill: "species", r: 2 }
+        {x: "body_mass", y: "flipper_length", fill: "species", r: 2}
       ),
-      vg.intervalXY({ as: $brush }),
-      vg.highlight({ by: $brush, opacity: 0.1 }),
+      vg.intervalXY({as: $brush}),
+      vg.highlight({by: $brush, opacity: 0.1}),
       ...defaultAttributes
     )
   ),
   vg.hconcat(
     vg.plot(
-      vg.frame({ stroke: "#ccc" }),
+      vg.frame({stroke: "#ccc"}),
       vg.dot(
         vg.from("penguins"),
-        { x: "bill_length", y: "bill_depth", fill: "species", r: 2 }
+        {x: "bill_length", y: "bill_depth", fill: "species", r: 2}
       ),
-      vg.intervalXY({ as: $brush }),
-      vg.highlight({ by: $brush, opacity: 0.1 }),
+      vg.intervalXY({as: $brush}),
+      vg.highlight({by: $brush, opacity: 0.1}),
       ...defaultAttributes,
       vg.yAxis("left"),
       vg.marginLeft(45),
       vg.width(185)
     ),
     vg.plot(
-      vg.frame({ stroke: "#ccc" }),
+      vg.frame({stroke: "#ccc"}),
       vg.dot(
         vg.from("penguins"),
-        { x: "bill_depth", y: "bill_depth", fill: "species", r: 2 }
+        {x: "bill_depth", y: "bill_depth", fill: "species", r: 2}
       ),
-      vg.intervalXY({ as: $brush }),
-      vg.highlight({ by: $brush, opacity: 0.1 }),
+      vg.intervalXY({as: $brush}),
+      vg.highlight({by: $brush, opacity: 0.1}),
       ...defaultAttributes
     ),
     vg.plot(
-      vg.frame({ stroke: "#ccc" }),
+      vg.frame({stroke: "#ccc"}),
       vg.dot(
         vg.from("penguins"),
-        { x: "flipper_length", y: "bill_depth", fill: "species", r: 2 }
+        {x: "flipper_length", y: "bill_depth", fill: "species", r: 2}
       ),
-      vg.intervalXY({ as: $brush }),
-      vg.highlight({ by: $brush, opacity: 0.1 }),
+      vg.intervalXY({as: $brush}),
+      vg.highlight({by: $brush, opacity: 0.1}),
       ...defaultAttributes
     ),
     vg.plot(
-      vg.frame({ stroke: "#ccc" }),
+      vg.frame({stroke: "#ccc"}),
       vg.dot(
         vg.from("penguins"),
-        { x: "body_mass", y: "bill_depth", fill: "species", r: 2 }
+        {x: "body_mass", y: "bill_depth", fill: "species", r: 2}
       ),
-      vg.intervalXY({ as: $brush }),
-      vg.highlight({ by: $brush, opacity: 0.1 }),
+      vg.intervalXY({as: $brush}),
+      vg.highlight({by: $brush, opacity: 0.1}),
       ...defaultAttributes
     )
   ),
   vg.hconcat(
     vg.plot(
-      vg.frame({ stroke: "#ccc" }),
+      vg.frame({stroke: "#ccc"}),
       vg.dot(
         vg.from("penguins"),
-        { x: "bill_length", y: "bill_length", fill: "species", r: 2 }
+        {x: "bill_length", y: "bill_length", fill: "species", r: 2}
       ),
-      vg.intervalXY({ as: $brush }),
-      vg.highlight({ by: $brush, opacity: 0.1 }),
+      vg.intervalXY({as: $brush}),
+      vg.highlight({by: $brush, opacity: 0.1}),
       ...defaultAttributes,
       vg.yAxis("left"),
       vg.xAxis("bottom"),
@@ -180,39 +180,39 @@ export default vg.vconcat(
       vg.height(175)
     ),
     vg.plot(
-      vg.frame({ stroke: "#ccc" }),
+      vg.frame({stroke: "#ccc"}),
       vg.dot(
         vg.from("penguins"),
-        { x: "bill_depth", y: "bill_length", fill: "species", r: 2 }
+        {x: "bill_depth", y: "bill_length", fill: "species", r: 2}
       ),
-      vg.intervalXY({ as: $brush }),
-      vg.highlight({ by: $brush, opacity: 0.1 }),
+      vg.intervalXY({as: $brush}),
+      vg.highlight({by: $brush, opacity: 0.1}),
       ...defaultAttributes,
       vg.xAxis("bottom"),
       vg.height(175),
       vg.marginBottom(35)
     ),
     vg.plot(
-      vg.frame({ stroke: "#ccc" }),
+      vg.frame({stroke: "#ccc"}),
       vg.dot(
         vg.from("penguins"),
-        { x: "flipper_length", y: "bill_length", fill: "species", r: 2 }
+        {x: "flipper_length", y: "bill_length", fill: "species", r: 2}
       ),
-      vg.intervalXY({ as: $brush }),
-      vg.highlight({ by: $brush, opacity: 0.1 }),
+      vg.intervalXY({as: $brush}),
+      vg.highlight({by: $brush, opacity: 0.1}),
       ...defaultAttributes,
       vg.xAxis("bottom"),
       vg.height(175),
       vg.marginBottom(35)
     ),
     vg.plot(
-      vg.frame({ stroke: "#ccc" }),
+      vg.frame({stroke: "#ccc"}),
       vg.dot(
         vg.from("penguins"),
-        { x: "body_mass", y: "bill_length", fill: "species", r: 2 }
+        {x: "body_mass", y: "bill_length", fill: "species", r: 2}
       ),
-      vg.intervalXY({ as: $brush }),
-      vg.highlight({ by: $brush, opacity: 0.1 }),
+      vg.intervalXY({as: $brush}),
+      vg.highlight({by: $brush, opacity: 0.1}),
       ...defaultAttributes,
       vg.xAxis("bottom"),
       vg.height(175),

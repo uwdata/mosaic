@@ -1,6 +1,6 @@
 import * as vg from "@uwdata/vgplot";
 
-await vg.coordinator().exec(
+await vg.coordinator().exec([
   `CREATE TEMP TABLE IF NOT EXISTS gaia AS -- compute u and v with natural earth projection
 WITH prep AS (
   SELECT
@@ -17,9 +17,8 @@ SELECT
   t * (1.340264 + (-0.081106 * t2) + (t6 * (0.000893 + 0.003796 * t2))) AS v,
   * EXCLUDE('t', 't2', 't6')
 FROM prep
-WHERE parallax BETWEEN -5 AND 20
-`
-);
+WHERE parallax BETWEEN -5 AND 20`
+]);
 
 const $brush = vg.Selection.crossfilter();
 const $bandwidth = vg.Param.value(0);
@@ -30,10 +29,17 @@ export default vg.hconcat(
   vg.vconcat(
     vg.plot(
       vg.raster(
-        vg.from("gaia", { filterBy: $brush }),
-        { x: "u", y: "v", fill: "density", bandwidth: $bandwidth, binWidth: $binWidth, binType: "normal" }
+        vg.from("gaia", {filterBy: $brush}),
+        {
+          x: "u",
+          y: "v",
+          fill: "density",
+          bandwidth: $bandwidth,
+          binWidth: $binWidth,
+          binType: "normal"
+        }
       ),
-      vg.intervalXY({ pixelSize: 2, as: $brush }),
+      vg.intervalXY({pixelSize: 2, as: $brush}),
       vg.xyDomain(vg.Fixed),
       vg.colorScale($scaleType),
       vg.colorScheme("viridis"),
@@ -46,10 +52,15 @@ export default vg.hconcat(
     vg.hconcat(
       vg.plot(
         vg.rectY(
-          vg.from("gaia", { filterBy: $brush }),
-          { x: vg.bin("phot_g_mean_mag"), y: vg.count(), fill: "steelblue", inset: 0.5 }
+          vg.from("gaia", {filterBy: $brush}),
+          {
+            x: vg.bin("phot_g_mean_mag"),
+            y: vg.count(),
+            fill: "steelblue",
+            inset: 0.5
+          }
         ),
-        vg.intervalX({ as: $brush }),
+        vg.intervalX({as: $brush}),
         vg.xDomain(vg.Fixed),
         vg.yScale($scaleType),
         vg.yGrid(true),
@@ -59,10 +70,10 @@ export default vg.hconcat(
       ),
       vg.plot(
         vg.rectY(
-          vg.from("gaia", { filterBy: $brush }),
-          { x: vg.bin("parallax"), y: vg.count(), fill: "steelblue", inset: 0.5 }
+          vg.from("gaia", {filterBy: $brush}),
+          {x: vg.bin("parallax"), y: vg.count(), fill: "steelblue", inset: 0.5}
         ),
-        vg.intervalX({ as: $brush }),
+        vg.intervalX({as: $brush}),
         vg.xDomain(vg.Fixed),
         vg.yScale($scaleType),
         vg.yGrid(true),
@@ -75,10 +86,17 @@ export default vg.hconcat(
   vg.hspace(10),
   vg.plot(
     vg.raster(
-      vg.from("gaia", { filterBy: $brush }),
-      { x: "bp_rp", y: "phot_g_mean_mag", fill: "density", bandwidth: $bandwidth, binWidth: $binWidth, binType: "normal" }
+      vg.from("gaia", {filterBy: $brush}),
+      {
+        x: "bp_rp",
+        y: "phot_g_mean_mag",
+        fill: "density",
+        bandwidth: $bandwidth,
+        binWidth: $binWidth,
+        binType: "normal"
+      }
     ),
-    vg.intervalXY({ pixelSize: 2, as: $brush }),
+    vg.intervalXY({pixelSize: 2, as: $brush}),
     vg.xyDomain(vg.Fixed),
     vg.colorScale($scaleType),
     vg.colorScheme("viridis"),

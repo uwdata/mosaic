@@ -1,8 +1,8 @@
 import * as vg from "@uwdata/vgplot";
 
-await vg.coordinator().exec(
+await vg.coordinator().exec([
   vg.loadParquet("penguins", "data/penguins.parquet")
-);
+]);
 
 const $xs = vg.Selection.intersect();
 const $ys = vg.Selection.intersect();
@@ -15,9 +15,9 @@ export default vg.hconcat(
       vg.frame(),
       vg.dot(
         vg.from("penguins"),
-        { x: "bill_length", y: "bill_depth", fill: "species", r: 2, clip: true }
+        {x: "bill_length", y: "bill_depth", fill: "species", r: 2, clip: true}
       ),
-      vg.panZoom({ x: $xs, y: $ys }),
+      vg.panZoom({x: $xs, y: $ys}),
       vg.width(320),
       vg.height(240)
     ),
@@ -26,9 +26,15 @@ export default vg.hconcat(
       vg.frame(),
       vg.dot(
         vg.from("penguins"),
-        { x: "bill_length", y: "flipper_length", fill: "species", r: 2, clip: true }
+        {
+          x: "bill_length",
+          y: "flipper_length",
+          fill: "species",
+          r: 2,
+          clip: true
+        }
       ),
-      vg.panZoom({ x: $xs, y: $zs }),
+      vg.panZoom({x: $xs, y: $zs}),
       vg.width(320),
       vg.height(240)
     )
@@ -39,9 +45,9 @@ export default vg.hconcat(
       vg.frame(),
       vg.dot(
         vg.from("penguins"),
-        { x: "body_mass", y: "bill_depth", fill: "species", r: 2, clip: true }
+        {x: "body_mass", y: "bill_depth", fill: "species", r: 2, clip: true}
       ),
-      vg.panZoom({ x: $ws, y: $ys }),
+      vg.panZoom({x: $ws, y: $ys}),
       vg.width(320),
       vg.height(240)
     ),
@@ -50,9 +56,9 @@ export default vg.hconcat(
       vg.frame(),
       vg.dot(
         vg.from("penguins"),
-        { x: "body_mass", y: "flipper_length", fill: "species", r: 2, clip: true }
+        {x: "body_mass", y: "flipper_length", fill: "species", r: 2, clip: true}
       ),
-      vg.panZoom({ x: $ws, y: $zs }),
+      vg.panZoom({x: $ws, y: $zs}),
       vg.width(320),
       vg.height(240)
     )
