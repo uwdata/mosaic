@@ -1,7 +1,8 @@
+from __future__ import annotations
+
 import logging
 import pathlib
 import time
-from typing import Optional
 
 import anywidget
 import duckdb
@@ -41,7 +42,7 @@ class MosaicWidget(anywidget.AnyWidget):
 
     def __init__(
         self,
-        spec: Optional(dict) = None,
+        spec: dict | None = None,
         con=None,
         temp_indexes=True,
         data=None,
