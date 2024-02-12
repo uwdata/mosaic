@@ -27,8 +27,10 @@ export async function astToDOM(ast, options) {
     if (query) queries.push(query);
   }
 
-  // perform extension and data loading
-  await ctx.coordinator.exec(queries);
+  // perform extension and data loading, if needed
+  if (queries.length > 0) {
+    await ctx.coordinator.exec(queries);
+  }
 
   // process param/selection definitions
   for (const [name, node] of Object.entries(params)) {
