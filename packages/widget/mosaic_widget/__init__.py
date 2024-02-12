@@ -41,7 +41,7 @@ class MosaicWidget(anywidget.AnyWidget):
 
     def __init__(
         self,
-        spec: Optional(dict) = None,
+        spec: Optional[dict] = None,
         con=None,
         temp_indexes=True,
         data=None,
