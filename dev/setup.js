@@ -4,6 +4,9 @@ import { createAPIContext } from '@uwdata/vgplot';
 export { parseSpec, astToDOM, astToESM } from '@uwdata/mosaic-spec';
 export const vg = createAPIContext();
 
+// make API accesible for console debugging
+self.vg = vg;
+
 export const { coordinator, namedPlots } = vg.context;
 
 export function clear() {
@@ -24,8 +27,6 @@ export async function setDatabaseConnector(type, options) {
       break;
     case 'wasm':
       connector = wasm || (wasm = wasmConnector(options));
-      const con = await connector.getConnection();
-      await con.query('INSTALL spatial; LOAD spatial;');
       break;
     default:
       throw new Error(`Unrecognized connector type: ${type}`);
