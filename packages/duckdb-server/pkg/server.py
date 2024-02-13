@@ -103,7 +103,7 @@ def handle_query(handler: Handler, con, cache, query):
         else:
             raise ValueError(f"Unknown command {command}")
     except Exception as e:
-        logger.exception(e)
+        logger.exception("Eror processing query")
         handler.error(e)
 
     total = round((time.time() - start) * 1_000)
@@ -134,7 +134,7 @@ def server(con, cache):
         try:
             query = ujson.loads(message)
         except Exception as e:
-            logger.exception(e)
+            logger.exception("Error reading message from WebSocket")
             handler.error(e)
             return
 

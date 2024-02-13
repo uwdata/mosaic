@@ -102,7 +102,7 @@ class MosaicWidget(anywidget.AnyWidget):
             else:
                 raise ValueError(f"Unknown command {command}")
         except Exception as e:
-            logger.exception()
+            logger.exception("Error processing query")
             self.send({"error": str(e), "uuid": uuid})
 
         total = round((time.time() - start) * 1_000)
