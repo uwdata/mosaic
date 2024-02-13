@@ -111,7 +111,8 @@ export default defineConfig({
             { text: 'U.S. Unemployment', link: '/examples/unemployment' },
             { text: 'U.S. Counties', link: '/examples/us-county-map' },
             { text: 'U.S. States', link: '/examples/us-state-map' },
-            { text: 'Walmart Openings', link: '/examples/walmart' }
+            { text: 'Walmart Openings', link: '/examples/walmart' },
+            { text: 'NYC Taxi Rides', link: '/examples/nyc-taxi-rides' }
           ]
         },
         {
