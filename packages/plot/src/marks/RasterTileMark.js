@@ -243,9 +243,12 @@ function imageScale(mark) {
 function imagePalette(mark, domain, value, steps = 1024) {
   const { densityMap, plot } = mark;
   const scheme = plot.getAttribute('colorScheme');
-  let color;
 
-  if (densityMap.fill) {
+  // initialize color to constant fill, if specified
+  const fill = mark.channel('fill');
+  let color = isColor(fill?.value) ? fill.value : undefined;
+
+  if (densityMap.fill || (scheme && !color)) {
     if (scheme) {
       try {
         return palette(
@@ -265,10 +268,6 @@ function imagePalette(mark, domain, value, steps = 1024) {
       scheme: scheme || (range ? undefined : 'tableau10')
     };
     color = scale({ color: spec }).apply(value);
-  } else {
-    // fill color is a constant
-    const fill = mark.channelField('fill');
-    color = isColor(fill?.value) ? fill.value : undefined;
   }
 
   return palette(steps, opacityMap(color));
