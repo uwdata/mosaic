@@ -33,8 +33,7 @@ export class Density1DMark extends Mark {
     const [lo, hi] = this.extent = (dim === 'x' ? extentX : extentY)(this, filter);
     const bx = binField(this, dim);
     return binLinear1d(
-      markQuery(channels, table, [dim])
-        .where(filter.concat(isBetween(bx, [lo, hi]))),
+      markQuery(channels, table, filter.concat(isBetween(bx, [lo, hi])), [dim]),
       bin1d(bx, lo, hi, bins),
       this.channelField('weight') ? 'weight' : null
     );
