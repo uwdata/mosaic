@@ -5,7 +5,7 @@ import { Mark } from './Mark.js';
 
 export class ConnectedMark extends Mark {
   constructor(type, source, encodings) {
-    const dim = type.endsWith('X') ? 'y' : 'x';
+    const dim = type.endsWith('X') ? 'y' : type.endsWith('Y') ? 'x' : null;
     const req = { [dim]: ['count', 'min', 'max'] };
 
     super(type, source, encodings, req);
@@ -15,10 +15,11 @@ export class ConnectedMark extends Mark {
   query(filter = []) {
     const { plot, dim, source, stats } = this;
     const { optimize = true } = source.options || {};
-    const { field, as } = this.channelField(dim);
     const q = super.query(filter);
 
-    if (optimize) {
+    if (optimize && dim) {
+      const { field, as } = this.channelField(dim);
+
       // TODO: handle stacked data
       const { column } = field;
       const { count, max, min } = stats[column];
@@ -32,9 +33,11 @@ export class ConnectedMark extends Mark {
         const cols = q.select().map(c => c.as).filter(c => c !== as && c !== val);
         return m4(q, dd, as, val, lo, hi, size, cols);
       }
+
+      q.orderby(as);
     }
 
-    return q.orderby(as);
+    return q;
   }
 }
 
