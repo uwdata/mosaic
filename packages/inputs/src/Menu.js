@@ -23,7 +23,7 @@ export class Menu extends MosaicClient {
     super(filterBy);
     this.from = from;
     this.column = column;
-    this.selection = as;
+    this.selections = (as === undefined) ? [] : Array.isArray(as) ? as : [as];
     this.format = format;
 
     this.element = element ?? document.createElement('div');
@@ -39,22 +39,25 @@ export class Menu extends MosaicClient {
       this.data = options.map(value => isObject(value) ? value : { value });
       this.update();
     }
-    value = value ?? this.selection?.value ?? this.data?.[0]?.value;
-    if (this.selection?.value === undefined) this.publish(value);
+    this.selections.forEach(s => { value = value ?? s?.value});
+    value = value ?? this.data?.[0]?.value;
+    if (this.selections.some(s => s?.value === undefined)) {
+      this.publish(value);
+    }
     this.element.appendChild(this.select);
 
-    if (this.selection) {
+    this.selections.forEach(selection => {
       this.select.addEventListener('input', () => {
         this.publish(this.selectedValue() ?? null);
       });
-      if (!isSelection(this.selection)) {
-        this.selection.addEventListener('value', value => {
+      if (!isSelection(selection)) {
+        selection.addEventListener('value', value => {
           if (value !== this.select.value) {
             this.selectedValue(value);
           }
         });
       }
-    }
+    });
   }
 
   selectedValue(value) {
@@ -76,17 +79,19 @@ export class Menu extends MosaicClient {
   }
 
   publish(value) {
-    const { selection, column } = this;
-    if (isSelection(selection)) {
-      selection.update({
+    const { selections, column } = this;
+    selections.forEach(selection => {
+      if (isSelection(selection)) {
+        selection.update({
         source: this,
         schema: { type: 'point' },
         value,
         predicate: value ? eq(column, literal(value)) : null
       });
-    } else if (isParam(selection)) {
+      } else if (isParam(selection)) {
       selection.update(value);
-    }
+      }
+    });
   }
 
   query(filter = []) {
@@ -114,9 +119,9 @@ export class Menu extends MosaicClient {
       opt.innerText = label ?? format(value);
       this.select.appendChild(opt);
     }
-    if (this.selection) {
-      this.selectedValue(this.selection?.value ?? '');
-    }
+    this.selections.forEach(selection => {
+      this.selectedValue(selection?.value ?? '');
+    });
     return this;
   }
 }

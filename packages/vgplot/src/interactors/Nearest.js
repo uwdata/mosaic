@@ -10,7 +10,11 @@ export class Nearest {
     field
   }) {
     this.mark = mark;
-    this.selection = selection;
+    if (Array.isArray(selection)) {
+      this.selections = selection;
+    } else {
+      this.selections = [selection];
+    }
     this.clients = new Set().add(mark);
     this.channel = channel;
     this.field = field || getField(mark, [channel]);
@@ -30,24 +34,28 @@ export class Nearest {
 
   init(svg) {
     const that = this;
-    const { mark, channel, selection } = this;
+    const { mark, channel, selections } = this;
     const { data } = mark;
     const key = mark.channelField(channel).as;
 
     const facets = select(svg).selectAll('g[aria-label="facet"]');
     const root = facets.size() ? facets : select(svg);
     const scale = svg.scale(channel);
-    const param = !isSelection(selection);
 
     root.on('pointerdown pointermove', function(evt) {
       const [x, y] = pointer(evt, this);
       const z = findNearest(data, key, scale.invert(channel === 'x' ? x : y));
-      selection.update(param ? z : that.clause(z));
+      selections.forEach(selection => {
+	const param = !isSelection(selection);
+	selection.update(param ? z : that.clause(z));
+      });
     });
 
-    if (param) return;
-    svg.addEventListener('pointerenter', () => {
-      this.selection.activate(this.clause(0));
+    selections.forEach(selection => {
+      if (!isSelection(selection)) return;
+      svg.addEventListener('pointerenter', () => {
+	selection.activate(this.clause(0));
+      });
     });
   }
 }

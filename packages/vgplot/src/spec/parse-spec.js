@@ -153,6 +153,13 @@ export class ParseContext {
     return this.maybeParam(value, () => Selection.intersect());
   }
 
+  maybeSelections(value) {
+    if (Array.isArray(value)) {
+      return value.map(v => this.maybeSelection(v));
+    }
+    return this.maybeSelection(value);
+  }
+
   maybeTransform(value) {
     if (isObject(value)) {
       return value.expr ? parseExpression(value, this)
@@ -260,7 +267,7 @@ function parseInput(spec, ctx) {
     error(`Unrecognized input: ${input}`, spec);
   }
   for (const key in options) {
-    options[key] = ctx.maybeSelection(options[key]);
+    options[key] = ctx.maybeSelections(options[key]);
   }
   return fn(options);
 }
@@ -358,7 +365,7 @@ function parseInteractor(spec, ctx) {
     error(`Unrecognized interactor type: ${select}`, spec);
   }
   for (const key in options) {
-    options[key] = ctx.maybeSelection(options[key]);
+    options[key] = ctx.maybeSelections(options[key]);
   }
   return fn(options);
 }
