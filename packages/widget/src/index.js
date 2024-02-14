@@ -7,7 +7,7 @@ import './style.css';
 import { v4 as uuidv4 } from 'uuid';
 
 /**
- * @typedef {Record<string, {value: unknown, sql?: string}>} Params
+ * @typedef {Record<string, {value: unknown, predicate?: string}>} Params
  *
  * @typedef Model
  * @prop {Record<any, unknown>} spec the current specification
@@ -74,11 +74,11 @@ export default {
       for (const [name, param] of dom.params) {
         params[name] = {
           value: param.value,
-          ...(param.predicate ? { sql: String(param.predicate()) } : {}),
+          ...(param.predicate ? { predicate: String(param.predicate()) } : {}),
         };
 
         param.addEventListener('value', (value) => {
-          params[name] = { value, sql: String(param.predicate()) };
+          params[name] = { value, predicate: String(param.predicate()) };
           view.model.set('params', params);
           view.model.save_changes();
         });
