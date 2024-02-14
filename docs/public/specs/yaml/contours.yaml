@@ -40,7 +40,7 @@ vconcat:
     data: { from: penguins }
     x: bill_length
     y: bill_depth
-    fill: black
+    fill: currentColor
     r: 1
   xAxis: bottom
   xLabelAnchor: center

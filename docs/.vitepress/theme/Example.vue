@@ -55,6 +55,10 @@ export default {
   background: none !important;
 }
 
+.mosaic-example .plot [aria-label="tip"] {
+  --plot-background: var(--vp-c-bg-alt);
+}
+
 .mosaic-example label {
   margin-right: 0.5em;
 }

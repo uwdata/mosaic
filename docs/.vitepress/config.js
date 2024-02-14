@@ -82,6 +82,8 @@ export default defineConfig({
             { text: 'Mark Types', link: '/examples/mark-types' },
             { text: 'Symbol Plots', link: '/examples/symbols' },
             { text: 'Axes & Gridlines', link: '/examples/axes' },
+            { text: 'Airline Travelers', link: '/examples/airline-travelers' },
+            { text: 'Driving Shifts into Reverse', link: '/examples/driving-shifts' },
             { text: 'Population Arrows', link: '/examples/population-arrows' },
             { text: 'Presidential Opinion', link: '/examples/presidential-opinion' },
             { text: 'Voronoi Diagram', link: '/examples/voronoi' },
@@ -108,10 +110,10 @@ export default defineConfig({
           items: [
             { text: 'Earthquakes Feed', link: '/examples/earthquakes-feed' },
             { text: 'Earthquakes Globe', link: '/examples/earthquakes-globe' },
-            { text: 'U.S. Unemployment', link: '/examples/unemployment' },
-            { text: 'U.S. Counties', link: '/examples/us-county-map' },
             { text: 'U.S. States', link: '/examples/us-state-map' },
-            { text: 'Walmart Openings', link: '/examples/walmart' },
+            { text: 'U.S. Counties', link: '/examples/us-county-map' },
+            { text: 'U.S. Unemployment', link: '/examples/unemployment' },
+            { text: 'Walmart Openings', link: '/examples/walmart-openings' },
             { text: 'NYC Taxi Rides', link: '/examples/nyc-taxi-rides' }
           ]
         },

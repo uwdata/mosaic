@@ -8,7 +8,7 @@ await vg.coordinator().exec([
 export default vg.plot(
   vg.geo(
     vg.from("states"),
-    {fill: "currentColor", fillOpacity: 0.15, stroke: "white", strokeWidth: 1}
+    {stroke: "currentColor", strokeWidth: 1}
   ),
   vg.dot(
     vg.from("states"),
@@ -16,7 +16,7 @@ export default vg.plot(
       x: vg.centroidX("geom"),
       y: vg.centroidY("geom"),
       r: 2,
-      fill: "#888",
+      fill: "steelblue",
       tip: true,
       title: "name"
     }

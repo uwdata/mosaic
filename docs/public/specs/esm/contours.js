@@ -34,7 +34,7 @@ export default vg.vconcat(
     ),
     vg.dot(
       vg.from("penguins"),
-      {x: "bill_length", y: "bill_depth", fill: "black", r: 1}
+      {x: "bill_length", y: "bill_depth", fill: "currentColor", r: 1}
     ),
     vg.xAxis("bottom"),
     vg.xLabelAnchor("center"),
