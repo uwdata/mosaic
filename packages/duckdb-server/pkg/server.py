@@ -21,13 +21,13 @@ class Handler:
     def done(self):
         raise Exception("NotImplementedException")
 
-    def arrow(self):
+    def arrow(self, _buffer):
         raise Exception("NotImplementedException")
 
-    def json(self):
+    def json(self, _data):
         raise Exception("NotImplementedException")
 
-    def error(self):
+    def error(self, _error):
         raise Exception("NotImplementedException")
 
 
@@ -98,7 +98,7 @@ def handle_query(handler: Handler, con, cache, query):
             create_bundle(con, cache, query.get("queries"), BUNDLE_DIR)
             handler.done()
         elif command == "load-bundle":
-            load_bundle(con, BUNDLE_DIR)
+            load_bundle(con, cache, BUNDLE_DIR)
             handler.done()
         else:
             raise ValueError(f"Unknown command {command}")
