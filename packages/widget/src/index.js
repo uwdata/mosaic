@@ -7,10 +7,12 @@ import './style.css';
 import { v4 as uuidv4 } from 'uuid';
 
 /**
+ * @typedef {Record<string, {value: unknown, sql?: string}>} Params
+ *
  * @typedef Model
  * @prop {Record<any, unknown>} spec the current specification
  * @prop {boolean} temp_indexes whether data cube indexes should be created as temp tables
- * @prop {Array} selections the current selections
+ * @prop {Params} params the current params
  */
 
 export default {
@@ -66,23 +68,24 @@ export default {
       const dom = await instantiateSpec(spec);
       view.el.replaceChildren(dom.element);
 
-      // Update the selections traitlet
-      const c = coordinator();
-      const selections = new Set(
-        [...c.clients].flatMap((c) => c.filterBy).filter((s) => s)
-      );
-      for (const s of selections) {
-        s.addEventListener('value', () => {
-          const s = [...selections].map((s) =>
-            s.clauses.map((c) => ({
-              value: c.value,
-              sql: String(c.predicate),
-            }))
-          );
-          view.model.set('selections', s);
+      /** @type Params */
+      const params = {};
+
+      for (const [name, param] of dom.params) {
+        params[name] = {
+          value: param.value,
+          ...(param.predicate ? { sql: String(param.predicate()) } : {}),
+        };
+
+        param.addEventListener('value', (value) => {
+          params[name] = { value, sql: String(param.predicate()) };
+          view.model.set('params', params);
           view.model.save_changes();
         });
       }
+
+      view.model.set('params', params);
+      view.model.save_changes();
     }
 
     view.model.on('change:spec', () => updateSpec());

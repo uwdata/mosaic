@@ -34,8 +34,8 @@ class MosaicWidget(anywidget.AnyWidget):
     # The Mosaic specification
     spec = traitlets.Dict({}).tag(sync=True)
 
-    # The current selections
-    selections = traitlets.List([]).tag(sync=True)
+    # The current params indexed by name
+    params = traitlets.Dict({}).tag(sync=True)
 
     # Whether data cube indexes should be created as temp tables
     temp_indexes = traitlets.Bool().tag(sync=True)
