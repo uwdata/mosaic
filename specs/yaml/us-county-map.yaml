@@ -16,14 +16,12 @@ data:
 plot:
 - mark: geo
   data: { from: counties }
-  fill: currentColor
-  fillOpacity: 0.2
-  stroke: white
-  strokeWidth: 0.5
+  stroke: currentColor
+  strokeWidth: 0.25
 - mark: geo
   data: { from: states }
-  stroke: white
-  strokeWidth: 1.5
+  stroke: currentColor
+  strokeWidth: 1
 - mark: dot
   data: { from: counties }
   x: { centroidX: geom }

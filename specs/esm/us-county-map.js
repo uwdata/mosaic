@@ -9,11 +9,11 @@ await vg.coordinator().exec([
 export default vg.plot(
   vg.geo(
     vg.from("counties"),
-    {fill: "currentColor", fillOpacity: 0.2, stroke: "white", strokeWidth: 0.5}
+    {stroke: "currentColor", strokeWidth: 0.25}
   ),
   vg.geo(
     vg.from("states"),
-    {stroke: "white", strokeWidth: 1.5}
+    {stroke: "currentColor", strokeWidth: 1}
   ),
   vg.dot(
     vg.from("counties"),
