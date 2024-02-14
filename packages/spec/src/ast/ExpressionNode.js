@@ -1,9 +1,9 @@
-import { AGG, EXPR, EXPRESSION } from '../constants.js';
+import { AGG, EXPRESSION, SQL } from '../constants.js';
 import { ASTNode } from './ASTNode.js';
 
 export function parseExpression(spec, ctx) {
   const { label } = spec;
-  const key = spec[EXPR] ? EXPR
+  const key = spec[SQL] ? SQL
     : spec[AGG] ? AGG
     : ctx.error('Unrecognized expression type', spec);
 
@@ -37,14 +37,14 @@ export class ExpressionNode extends ASTNode {
 
   instantiate(ctx) {
     const { spans, params, label, aggregate } = this;
-    const tag = ctx.api[aggregate ? 'agg' : 'sql'];
+    const tag = ctx.api[aggregate ? AGG : SQL];
     const args = params.map(e => e.instantiate(ctx));
     return tag(spans, ...args).annotate({ label });
   }
 
   codegen(ctx) {
     const { spans, params, label, aggregate } = this;
-    const method = aggregate ? 'agg' : 'sql';
+    const method = aggregate ? AGG : SQL;
 
     // reconstitute expression string
     let str = '';
@@ -59,7 +59,7 @@ export class ExpressionNode extends ASTNode {
   }
 
   toJSON() {
-    const key = this.aggregate ? AGG : EXPR;
+    const key = this.aggregate ? AGG : SQL;
     return { [key]: this.value };
   }
 }

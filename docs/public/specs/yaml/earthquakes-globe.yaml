@@ -41,7 +41,7 @@ vconcat:
     data: { from: earthquakes }
     x: longitude
     y: latitude
-    r: { expr: "POW(10, magnitude)" }
+    r: { sql: "POW(10, magnitude)" }
     stroke: red
     fill: red
     fillOpacity: 0.2

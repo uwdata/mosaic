@@ -1,7 +1,7 @@
 {
   "meta": {
     "title": "Bias Parameter",
-    "description": "Dynamically adjust queried values by adding a Param value. The expression is re-computed in the database upon updates.\n"
+    "description": "Dynamically adjust queried values by adding a Param value. The SQL expression is re-computed in the database upon updates.\n"
   },
   "data": {
     "walk": {
@@ -30,7 +30,7 @@
           },
           "x": "t",
           "y": {
-            "expr": "v + $point"
+            "sql": "v + $point"
           },
           "fill": "steelblue"
         }

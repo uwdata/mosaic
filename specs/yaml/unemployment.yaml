@@ -24,7 +24,7 @@ vconcat:
   - mark: geo
     data: { from: combined }
     fill: rate
-    title: { expr: "concat(rate, '%')" }
+    title: { sql: "concat(rate, '%')" }
   margin: 0
   colorScale: quantile
   colorN: 9

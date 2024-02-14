@@ -28,12 +28,12 @@
       "x": "miles",
       "y": "gas",
       "text": {
-        "expr": "year::VARCHAR"
+        "sql": "year::VARCHAR"
       },
       "dy": -6,
       "lineAnchor": "bottom",
       "filter": {
-        "expr": "year % 5 = 0"
+        "sql": "year % 5 = 0"
       }
     }
   ],

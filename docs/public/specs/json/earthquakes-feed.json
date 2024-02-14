@@ -34,7 +34,7 @@
         "from": "feed"
       },
       "r": {
-        "expr": "POW(10, mag)"
+        "sql": "POW(10, mag)"
       },
       "stroke": "red",
       "fill": "red",

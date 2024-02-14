@@ -45,7 +45,7 @@
           "x": "longitude",
           "y": "latitude",
           "fy": {
-            "expr": "10 * decade(date)"
+            "sql": "10 * decade(date)"
           },
           "r": 1.5,
           "fill": "blue"

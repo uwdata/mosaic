@@ -2,7 +2,7 @@ meta:
   title: Bias Parameter
   description: >
     Dynamically adjust queried values by adding a Param value.
-    The expression is re-computed in the database upon updates.
+    The SQL expression is re-computed in the database upon updates.
 data:
   walk: { file: data/random-walk.parquet }
 params:
@@ -18,7 +18,7 @@ vconcat:
   - mark: areaY
     data: { from: walk }
     x: t
-    y: { expr: v + $point }
+    y: { sql: v + $point }
     fill: steelblue
   width: 680
   height: 200

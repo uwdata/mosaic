@@ -31,7 +31,7 @@
           },
           "fill": "rate",
           "title": {
-            "expr": "concat(rate, '%')"
+            "sql": "concat(rate, '%')"
           }
         }
       ],

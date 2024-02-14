@@ -22,7 +22,7 @@ plot:
   strokeWidth: 0.5
 - mark: geo
   data: { from: feed }
-  r: { expr: "POW(10, mag)" }
+  r: { sql: "POW(10, mag)" }
   stroke: red
   fill: red
   fillOpacity: 0.2

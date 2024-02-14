@@ -29,13 +29,13 @@
           "x": "longitude",
           "y": "latitude",
           "rotate": {
-            "expr": "degrees(atan2(u, v))"
+            "sql": "degrees(atan2(u, v))"
           },
           "length": {
-            "expr": "$length * sqrt(u * u + v * v)"
+            "sql": "$length * sqrt(u * u + v * v)"
           },
           "stroke": {
-            "expr": "sqrt(u * u + v * v)"
+            "sql": "sqrt(u * u + v * v)"
           }
         }
       ],

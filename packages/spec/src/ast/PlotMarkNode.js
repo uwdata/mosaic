@@ -1,4 +1,4 @@
-import { MARK } from '../constants.js';
+import { AGG, MARK, SQL } from '../constants.js';
 import { isObject } from '../util.js';
 import { ASTNode } from './ASTNode.js';
 import { parseExpression } from './ExpressionNode.js';
@@ -8,7 +8,7 @@ import { parseTransform } from './TransformNode.js';
 
 function maybeTransform(value, ctx) {
   if (isObject(value)) {
-    return (value.expr || value.agg)
+    return (value[SQL] || value[AGG])
       ? parseExpression(value, ctx)
       : parseTransform(value, ctx);
   }

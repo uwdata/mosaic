@@ -18,10 +18,10 @@ plot:
   data: { from: driving }
   x: miles
   y: gas
-  text: { expr: year::VARCHAR } # sidestep Plot's auto-format
+  text: { sql: year::VARCHAR } # sidestep Plot's auto-format
   dy: -6
   lineAnchor: bottom
-  filter: { expr: year % 5 = 0 }
+  filter: { sql: year % 5 = 0 }
 inset: 10
 grid: true
 xLabel: Miles driven (per person-year)

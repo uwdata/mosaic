@@ -17,7 +17,7 @@ vconcat:
     data: { from: presidents }
     x: "First Inauguration Date"
     y:
-      expr: '"Very Favorable %" + "Somewhat Favorable %" + $sign * ("Very Unfavorable %" + "Somewhat Unfavorable %")'
+      sql: '"Very Favorable %" + "Somewhat Favorable %" + $sign * ("Very Unfavorable %" + "Somewhat Unfavorable %")'
     src: "Portrait URL"
     r: 20
     preserveAspectRatio: "xMidYMin slice"

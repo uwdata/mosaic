@@ -28,7 +28,7 @@ export const DATA = 'data';
 
 // sql expressions
 export const EXPRESSION = 'expression';
-export const EXPR = 'expr';
+export const SQL = 'sql';
 export const AGG = 'agg';
 
 // inputs

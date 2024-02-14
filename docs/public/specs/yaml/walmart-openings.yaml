@@ -28,7 +28,7 @@ vconcat:
     data: { from: walmarts }
     x: longitude
     y: latitude
-    fy: { expr: 10 * decade(date) }
+    fy: { sql: 10 * decade(date) }
     r: 1.5
     fill: blue
   - mark: axisFy

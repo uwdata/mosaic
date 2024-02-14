@@ -68,7 +68,7 @@
           "x": "longitude",
           "y": "latitude",
           "r": {
-            "expr": "POW(10, magnitude)"
+            "sql": "POW(10, magnitude)"
           },
           "stroke": "red",
           "fill": "red",

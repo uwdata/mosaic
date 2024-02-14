@@ -25,7 +25,7 @@
           },
           "x1": "day",
           "x2": {
-            "expr": "day + 1"
+            "sql": "day + 1"
           },
           "inset": 1,
           "y": "cases",
