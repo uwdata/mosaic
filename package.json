@@ -17,7 +17,8 @@
     "build": "lerna run build",
     "lint": "lerna run lint",
     "test": "lerna run test",
-    "server": "nodemon packages/duckdb/bin/run-server.js",
+    "server": "cd packages/duckdb-server && hatch run serve",
+    "server:node": "nodemon packages/duckdb/bin/run-server.js",
     "dev": "vite",
     "release": "npm run test && npm run lint && lerna publish"
   },
