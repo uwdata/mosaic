@@ -17,6 +17,9 @@ dependencies = [
   "ujson"
 ]
 
+[project.scripts]
+duckdb-server = "pkg.__main__:serve"
+
 [project.urls]
 homepage = "https://github.com/uwdata/mosaic"
 
@@ -30,7 +33,7 @@ python = "3.11"
 features = ["dev"]
 
 [tool.hatch.envs.default.scripts]
-serve = "watchmedo auto-restart --pattern '*.py' --recursive --signal SIGTERM python main.py"
+serve = "watchmedo auto-restart --pattern '*.py' --recursive --signal SIGTERM python pkg/__main__.py"
 
 [tool.hatch.envs.test]
 dependencies = [

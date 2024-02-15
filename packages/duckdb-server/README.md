@@ -6,6 +6,16 @@ A Python-based server that runs a local DuckDB instance and support queries over
 
 _Note:_ This package provides a local DuckDB server. To instead use DuckDB-WASM in the browser, use the `wasmConnector` in the [`mosaic-core`](https://github.com/uwdata/mosaic/tree/main/packages/mosaic-core) package.
 
+## Installation and usage
+
+We recommend running the server in an isolated environment with [pipx](https://github.com/pypa/pipx). For example, to directly run the server, use:
+
+```bash
+pipx run duckdb-server
+```
+
+Alternatively, you can install the server with `pip install duckdb-server`. Then you can start the server with `duckdb-server`.
+
 ## Developer Setup
 
 We use [hatch](https://hatch.pypa.io/latest/) to manage our development setup.
