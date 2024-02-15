@@ -1,6 +1,6 @@
 # Mosaic DuckDB Server
 
-[![PyPi](https://img.shields.io/pypi/v/mosaic-server.svg)](https://pypi.org/project/mosaic-server/)
+[![PyPi](https://img.shields.io/pypi/v/duckdb-server.svg)](https://pypi.org/project/duckdb-server/)
 
 A Python-based server that runs a local DuckDB instance and support queries over Web Sockets or HTTP, returning data in either [Apache Arrow](https://arrow.apache.org/) or JSON format.
 

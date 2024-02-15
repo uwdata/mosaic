@@ -3,7 +3,7 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "mosaic-server"
+name = "duckdb-server"
 description = "A DuckDB server for Mosaic"
 dynamic = ["version"]
 readme = "README.md"
