@@ -10,7 +10,7 @@ readme = "README.md"
 requires-python = ">=3.9"
 dependencies = [
   "diskcache",
-  "duckdb==0.9.2",
+  "duckdb==0.10.0",
   "pandas",
   "pyarrow",
   "socketify",
