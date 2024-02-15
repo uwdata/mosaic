@@ -5,7 +5,7 @@ await vg.coordinator().exec([
 ]);
 
 export default vg.plot(
-  vg.line(
+  vg.lineY(
     vg.from("aapl"),
     {x: "Date", y: "Close"}
   ),

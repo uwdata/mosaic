@@ -7,7 +7,7 @@
   },
   "plot": [
     {
-      "mark": "line",
+      "mark": "lineY",
       "data": {
         "from": "aapl"
       },

@@ -29,10 +29,11 @@ export default defineConfig({
         text: 'Guide',
         items: [
           { text: 'Mosaic Core', link: '/core/' },
-          { text: 'Mosaic DuckDB', link: '/duckdb/' },
           { text: 'Mosaic SQL', link: '/sql/' },
           { text: 'Mosaic Inputs', link: '/inputs/' },
           { text: 'Mosaic vgplot', link: '/vgplot/' },
+          { text: 'Mosaic Spec', link: '/spec/' },
+          { text: 'Mosaic Server', link: '/server/' },
           { text: 'Jupyter Widget', link: '/jupyter/' }
         ]
       },
@@ -56,10 +57,11 @@ export default defineConfig({
           collapsed: false,
           items: [
             { text: 'Mosaic Core', link: '/core/' },
-            { text: 'Mosaic DuckDB', link: '/duckdb/' },
             { text: 'Mosaic SQL', link: '/sql/' },
             { text: 'Mosaic Inputs', link: '/inputs/' },
             { text: 'Mosaic vgplot', link: '/vgplot/' },
+            { text: 'Mosaic Spec', link: '/spec/' },
+            { text: 'Mosaic Server', link: '/server/' },
             { text: 'Jupyter Widget', link: '/jupyter/' }
           ]
         },
@@ -163,14 +165,7 @@ export default defineConfig({
             { text: 'Selection', link: '/api/core/selection' }
           ]
         },
-        {
-          text: 'Mosaic DuckDB',
-          collapsed: true,
-          items: [
-            { text: 'DuckDB API', link: '/api/duckdb/duckdb' },
-            { text: 'Data Server', link: '/api/duckdb/data-server' }
-          ]
-        },
+
         {
           text: 'Mosaic SQL',
           collapsed: true,
@@ -203,10 +198,25 @@ export default defineConfig({
             { text: 'Marks', link: '/api/vgplot/marks' },
             { text: 'Interactors', link: '/api/vgplot/interactors' },
             { text: 'Legends', link: '/api/vgplot/legends' },
-            { text: 'Layout', link: '/api/vgplot/layout' },
-            { text: 'JSON Specifications', link: '/api/vgplot/specs' }
+            { text: 'Layout', link: '/api/vgplot/layout' }
           ]
-        }
+        },
+        {
+          text: 'Mosaic Spec',
+          collapsed: true,
+          items: [
+            { text: 'Specification Format', link: '/api/spec/format' },
+            { text: 'Parser & Generators', link: '/api/spec/parser-generators' }
+          ]
+        },
+        {
+          text: 'Mosaic DuckDB',
+          collapsed: true,
+          items: [
+            { text: 'DuckDB API', link: '/api/duckdb/duckdb' },
+            { text: 'Data Server', link: '/api/duckdb/data-server' }
+          ]
+        },
       ]
     },
 

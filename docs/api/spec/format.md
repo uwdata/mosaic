@@ -2,12 +2,13 @@
 
 Both individual plots and interactive dashboards can be defined using declarative specifications in either [JSON](https://en.wikipedia.org/wiki/JSON) or [YAML](https://en.wikipedia.org/wiki/YAML) format.
 
-The code below illustrates an example specification in both YAML and JSON formats, along with corresponding JavaScript code produced by [`specToModule`](#spectomodule).
-To parse a JSON specification to live elements, use [`parseSpec`](#parsespec).
+The code below shows an example specification in both YAML and JSON formats, as well as corresponding JavaScript code produced by [`astToESM`](parser-generators#asttoesm).
+To parse a JSON specification use [`parseSpec`](parser-generators##parsespec).
+To generate a running application from a parsed spec, use [`astToDOM`](parser-generators#asttodom).
 
 ::: code-group
-<<< @/public/specs/json/bias.json [JSON]
 <<< @/public/specs/yaml/bias.yaml [YAML]
+<<< @/public/specs/json/bias.json [JSON]
 <<< @/public/specs/esm/bias.js [JavaScript]
 :::
 
@@ -18,11 +19,30 @@ At the top-level, a specification may contain the following keys:
 ``` json
 {
   "meta": { /* optional metadata */ },
+  "config": { /* optional configuration */ },
   "data": { /* input data definitions */ },
   "params": { /* param and selection definitions */ },
   ... /* top-level element properties */
 }
 ```
+
+### Metadata
+
+The `meta` object can contain arbitrary metadata information. Commonly used properties include `title` (the specification title), `description` (a longer text description), and `credit` (acknowledgements).
+
+### Configuration
+
+The `config` object specifies additional configuration. At present the only supported property is `extensions`, a string or string array indicating DuckDB extensions to load.
+
+The following snippet loads the DuckDB `spatial` extension, which provides support for geometric data, projections, and spatial operations:
+
+```json
+"config": {
+  "extensions": "spatial"
+}
+```
+
+Additional configuration properties may be added in the future.
 
 ### Data Definitions
 
@@ -158,34 +178,3 @@ Standalone legends are defined using an object with a `legend` key:
   "for": "plotName" // the plot _must_ have a name attribute
 }
 ```
-
-## parseSpec
-
-`parseSpec(specification, options)`
-
-Parse a JSON _specification_ and return the resulting top-level Web element.
-The input _specification_ can either be a JSON-formatted string or a JavaScript object.
-
-To instead use a YAML specification, parse the YAML text first:
-
-``` js
-import yaml from 'yaml';
-const spec = yaml.parse(yamlText);
-parseSpec(spec);
-```
-
-The supported external _options_ are:
-
-- _baseURL_: The base URL (default `null`) from which to load data files.
-- _params_: An array (default `[]`) of predefined [`Param`](../core/param) instances. Each entry should have the form `[name, param]`.
-- _datasets_: An array (default `[]`) of preloaded browser-managed datasets (such as GeoJSON data). Each entry should have the form `[name, dataset]`.
-
-## specToModule
-
-`specToModule(spec, options)`
-
-Convert a JSON _specification_ into JavaScript module code.
-
-The supported external _options_ are:
-
-- _baseURL_: The base URL (default `null`) from which to load data files.

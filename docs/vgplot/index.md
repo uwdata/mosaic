@@ -13,15 +13,15 @@ A grammar of interactive graphics in which graphical marks are Mosaic clients.
 <Example spec="/specs/yaml/mark-types.yaml" />
 
 As the name suggests, `vgplot` combines concepts from existing tools such as Vega-Lite, ggplot2, and Observable Plot.
-Like Vega-Lite, vgplot supports rich interactions and declarative specification either using an API or standalone JSON/YAML specs.
-However, because vgplot is based on Mosaic, it easily interoperates with other Mosaic clients, such as [Mosaic Inputs](/inputs/).
-Internally, vgplot uses Observable Plot to render SVG output.
+Like Vega-Lite, vgplot supports rich interactions and declarative specification either using an API or standalone JSON/YAML specs (via the [`mosaic-spec`](/spec/) package).
+However, because vgplot is based on Mosaic, it interoperates with other Mosaic clients, such as the included [Mosaic Inputs](/inputs/).
+vgplot calls Observable Plot to render SVG output.
 
 This page provides an overview of vgplot.
 Skip to the [examples](/examples/) to dive right in.
 
 ::: tip
-For convenience, `vgplot` re-exports much of the `mosaic-core`, `mosaic-sql`, and `mosaic-inputs` packages. For most applications, it is sufficient to import `@uwdata/vgplot` alone.
+For convenience, `vgplot` re-exports much of the `mosaic-core`, `mosaic-sql`, `mosaic-plot`, and `mosaic-inputs` packages. For many applications, it is sufficient to import `@uwdata/vgplot` alone.
 :::
 
 ## Plots
@@ -40,14 +40,14 @@ Plots are rendered to SVG output by marshalling a specification and passing it t
 ``` js [JavaScript]
 import { plot, line, from, width, height } from "@uwdata/vgplot";
 plot(
-  line(from("aapl"), { x: "Date", y: "Close" }),
+  lineY(from("aapl"), { x: "Date", y: "Close" }),
   width(680),
   height(200)
 )
 ```
 ``` yaml [YAML]
 plot:
-- mark: line
+- mark: lineY
   data: { from: aapl }
   x: Date
   y: Close
@@ -58,7 +58,7 @@ height: 200
 
 The stock chart above consists of three directives:
 
-1. A `line` mark to visualize data from a backing data table named `"aapl"`.
+1. A `lineY` mark to visualize data from a backing data table named `"aapl"`.
 2. A `width` attribute to set the chart width in pixels.
 3. A `height` attribute to set the chart height in pixels.
 
