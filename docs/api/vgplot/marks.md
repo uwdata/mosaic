@@ -7,7 +7,7 @@ Most mark functions take two arguments: a _data_ source and an _options_ object 
 To visualize data from a backing database, the `from()` method should be used to specify the data source. For example, `from("data", { filterBy: sel })` indicates that data should be drawn from the database table `"data"`, interactively filtered by the selection `sel`.
 
 ``` js
-import { barY, from, plot } from '@uwdata/vgplot';
+import { barY, from, plot } from "@uwdata/vgplot";
 plot(
   barY(from("data"), { x: "a", y: "b", fill: "steelblue", opacity: 0.5 })
 )

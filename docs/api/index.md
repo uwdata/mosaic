@@ -35,6 +35,7 @@ Mosaic API Reference.
 - [Interactors](/api/vgplot/interactors)
 - [Legends](/api/vgplot/legends)
 - [Layout](/api/vgplot/layout)
+- [API Context](/api/vgplot/context)
 
 ## Mosaic Spec
 

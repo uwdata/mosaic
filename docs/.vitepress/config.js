@@ -198,7 +198,8 @@ export default defineConfig({
             { text: 'Marks', link: '/api/vgplot/marks' },
             { text: 'Interactors', link: '/api/vgplot/interactors' },
             { text: 'Legends', link: '/api/vgplot/legends' },
-            { text: 'Layout', link: '/api/vgplot/layout' }
+            { text: 'Layout', link: '/api/vgplot/layout' },
+            { text: 'API Context', link: '/api/vgplot/context' }
           ]
         },
         {

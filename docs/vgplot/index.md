@@ -21,7 +21,7 @@ This page provides an overview of vgplot.
 Skip to the [examples](/examples/) to dive right in.
 
 ::: tip
-For convenience, `vgplot` re-exports much of the `mosaic-core`, `mosaic-sql`, `mosaic-plot`, and `mosaic-inputs` packages. For many applications, it is sufficient to import `@uwdata/vgplot` alone.
+`vgplot` re-exports much of the `mosaic-core`, `mosaic-sql`, `mosaic-plot`, and `mosaic-inputs` packages. For many applications, it is sufficient to import `@uwdata/vgplot` alone.
 :::
 
 ## Plots
