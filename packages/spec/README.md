@@ -29,7 +29,7 @@ const ast = parseSpec(spec);
 // serialize back to a normalized JSON format
 const json = ast.toJSON();
 
-// generate ESM (ECMAScript Modiule) code
+// generate ESM (ECMAScript Module) code
 const code = astToESM(ast);
 
 // instantiate a running application

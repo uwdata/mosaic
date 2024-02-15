@@ -49,16 +49,12 @@ export class InstantiateContext {
     api = createAPIContext(),
     plotDefaults = [],
     activeParams = new Map,
-    baseURL = null,
-    baseClientURL = baseURL,
-    fetch = (...args) => window.fetch(...args)
+    baseURL = null
   } = {}) {
     this.api = api;
     this.plotDefaults = plotDefaults;
     this.activeParams = activeParams;
     this.baseURL = baseURL;
-    this.baseClientURL = baseClientURL;
-    this.fetch = fetch;
     this.coordinator = api.context.coordinator;
   }
 
