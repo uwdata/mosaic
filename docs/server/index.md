@@ -8,20 +8,16 @@ This package provides a local DuckDB server. To instead use DuckDB-WASM in the b
 
 ## Usage
 
-To run the server from the Mosaic repository:
+The server package is available on [PyPi](https://pypi.org/project/duckdb-server/).
 
-* Clone [https://github.com/uwdata/mosaic](https://github.com/uwdata/mosaic).
-* Install [hatch](https://hatch.pypa.io/latest/install/), if not already present.
-* Run `npm run server` to launch the server. This runs the server in development mode, so the server will restart if you change its code.
+We recommend running the server in an isolated environment with [pipx](https://github.com/pypa/pipx). For example, to directly run the server, use:
+
+```bash
+pipx run duckdb-server
+```
+
+Alternatively, you can install the server with `pip install duckdb-server`. Then you can start the server with `duckdb-server`.
 
 ## Developer Setup
 
-We use [hatch](https://hatch.pypa.io/latest/) to manage our development setup.
-
-Start the server in development with `hatch run serve`. The server restarts when you change the code.
-
-To activate the environment, run `hatch shell`.
-
-To set up a local certificate for SSL, use https://github.com/FiloSottile/mkcert.
-
-The server support queries via HTTP GET and POST, and WebSockets. The GET endpoint is useful for debugging.
+To run the server from the Mosaic repository and to run the server in development mode, follow the [instructions for the duckdb-server package](https://github.com/uwdata/mosaic/blob/main/packages/duckdb-server/README.md).
