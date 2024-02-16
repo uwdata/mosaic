@@ -29,10 +29,11 @@ export default defineConfig({
         text: 'Guide',
         items: [
           { text: 'Mosaic Core', link: '/core/' },
-          { text: 'Mosaic DuckDB', link: '/duckdb/' },
           { text: 'Mosaic SQL', link: '/sql/' },
           { text: 'Mosaic Inputs', link: '/inputs/' },
           { text: 'Mosaic vgplot', link: '/vgplot/' },
+          { text: 'Mosaic Spec', link: '/spec/' },
+          { text: 'Mosaic Server', link: '/server/' },
           { text: 'Jupyter Widget', link: '/jupyter/' }
         ]
       },
@@ -56,10 +57,11 @@ export default defineConfig({
           collapsed: false,
           items: [
             { text: 'Mosaic Core', link: '/core/' },
-            { text: 'Mosaic DuckDB', link: '/duckdb/' },
             { text: 'Mosaic SQL', link: '/sql/' },
             { text: 'Mosaic Inputs', link: '/inputs/' },
             { text: 'Mosaic vgplot', link: '/vgplot/' },
+            { text: 'Mosaic Spec', link: '/spec/' },
+            { text: 'Mosaic Server', link: '/server/' },
             { text: 'Jupyter Widget', link: '/jupyter/' }
           ]
         },
@@ -82,13 +84,14 @@ export default defineConfig({
             { text: 'Mark Types', link: '/examples/mark-types' },
             { text: 'Symbol Plots', link: '/examples/symbols' },
             { text: 'Axes & Gridlines', link: '/examples/axes' },
+            { text: 'Airline Travelers', link: '/examples/airline-travelers' },
+            { text: 'Driving Shifts into Reverse', link: '/examples/driving-shifts' },
             { text: 'Population Arrows', link: '/examples/population-arrows' },
             { text: 'Presidential Opinion', link: '/examples/presidential-opinion' },
             { text: 'Voronoi Diagram', link: '/examples/voronoi' },
             { text: 'Seattle Temperatures', link: '/examples/seattle-temp' },
             { text: 'Sorted Bars', link: '/examples/sorted-bars' },
-            { text: 'Sortable Table', link: '/examples/table' },
-            { text: 'Earthquakes', link: '/examples/earthquakes' }
+            { text: 'Sortable Table', link: '/examples/table' }
           ]
         },
         {
@@ -101,6 +104,19 @@ export default defineConfig({
             { text: 'Overview + Detail', link: '/examples/overview-detail' },
             { text: 'Linear Regression', link: '/examples/linear-regression' },
             { text: 'Wind Map', link: '/examples/wind-map' }
+          ]
+        },
+        {
+          text: 'Maps & Spatial Data',
+          collapsed: true,
+          items: [
+            { text: 'Earthquakes Feed', link: '/examples/earthquakes-feed' },
+            { text: 'Earthquakes Globe', link: '/examples/earthquakes-globe' },
+            { text: 'U.S. States', link: '/examples/us-state-map' },
+            { text: 'U.S. Counties', link: '/examples/us-county-map' },
+            { text: 'U.S. Unemployment', link: '/examples/unemployment' },
+            { text: 'Walmart Openings', link: '/examples/walmart-openings' },
+            { text: 'NYC Taxi Rides', link: '/examples/nyc-taxi-rides' }
           ]
         },
         {
@@ -149,14 +165,7 @@ export default defineConfig({
             { text: 'Selection', link: '/api/core/selection' }
           ]
         },
-        {
-          text: 'Mosaic DuckDB',
-          collapsed: true,
-          items: [
-            { text: 'DuckDB API', link: '/api/duckdb/duckdb' },
-            { text: 'Data Server', link: '/api/duckdb/data-server' }
-          ]
-        },
+
         {
           text: 'Mosaic SQL',
           collapsed: true,
@@ -190,9 +199,25 @@ export default defineConfig({
             { text: 'Interactors', link: '/api/vgplot/interactors' },
             { text: 'Legends', link: '/api/vgplot/legends' },
             { text: 'Layout', link: '/api/vgplot/layout' },
-            { text: 'JSON Specifications', link: '/api/vgplot/specs' }
+            { text: 'API Context', link: '/api/vgplot/context' }
           ]
-        }
+        },
+        {
+          text: 'Mosaic Spec',
+          collapsed: true,
+          items: [
+            { text: 'Specification Format', link: '/api/spec/format' },
+            { text: 'Parser & Generators', link: '/api/spec/parser-generators' }
+          ]
+        },
+        {
+          text: 'Mosaic DuckDB',
+          collapsed: true,
+          items: [
+            { text: 'DuckDB API', link: '/api/duckdb/duckdb' },
+            { text: 'Data Server', link: '/api/duckdb/data-server' }
+          ]
+        },
       ]
     },
 

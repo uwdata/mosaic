@@ -1,6 +1,6 @@
 <script setup>
-  import { reset } from '@uwdata/vgplot';
-  reset();
+  import { coordinator } from '@uwdata/vgplot';
+  coordinator().clear();
 </script>
 
 # Wind Map

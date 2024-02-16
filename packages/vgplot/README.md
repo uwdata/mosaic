@@ -1,3 +1,5 @@
-# vgplot
+# vgplot: A Mosaic-powered Visualization Grammar
 
-A prototype visualization grammar implemented on top of [Observable Plot](https://github.com/observablehq/plot), in which marks (plot layers) are individual Mosaic clients. These marks can push data processing (binning, hex binning, regression) and optimizations (such as M4 for line/area charts) down to the database.
+A **v**isualization **g**rammar for interactive Mosaic-powered visualizations and dashboards. This package provides convenient, composable methods that combines multiple Mosaic packages (core, inputs, plot, etc.) in an integrated API.
+
+vgplot is a JavaScript API for creating visualizations and dashboards. See the [mosaic-spec](https://github.com/uwdata/mosaic/tree/main/packages/mosaic-spec) package to instead use declarative specifications in JSON or YAML format.

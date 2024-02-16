@@ -23,9 +23,13 @@ export function coordinator(instance) {
 
 export class Coordinator {
   constructor(db = socketConnector(), options = {}) {
+    const {
+      logger = console,
+      manager = QueryManager()
+    } = options;
     this.catalog = new Catalog(this);
-    this.manager = options.manager || QueryManager();
-    this.logger(options.logger || console);
+    this.manager = manager;
+    this.logger(logger);
     this.configure(options);
     this.databaseConnector(db);
     this.clear();
@@ -68,6 +72,7 @@ export class Coordinator {
   }
 
   exec(query, { priority = Priority.Normal } = {}) {
+    query = Array.isArray(query) ? query.join(';\n') : query;
     return this.manager.request({ type: 'exec', query }, priority);
   }
 
@@ -123,6 +128,7 @@ export class Coordinator {
       throw new Error('Client already connected.');
     }
     clients.add(client); // mark as connected
+    client.coordinator = this;
 
     // retrieve field statistics
     const fields = client.fields();
@@ -154,5 +160,6 @@ export class Coordinator {
     if (!clients.has(client)) return;
     clients.delete(client);
     filterGroups.get(client.filterBy)?.remove(client);
+    client.coordinator = null;
   }
 }

@@ -12,8 +12,12 @@
     "es6": true
   },
   "rules": {
-    "no-unexpected-multiline": "off"
+    "no-unexpected-multiline": "off",
+    "jsdoc/no-undefined-types": 1
   },
+  "plugins": [
+    "jsdoc"
+  ],
   "globals": {
     "globalThis": false
   }

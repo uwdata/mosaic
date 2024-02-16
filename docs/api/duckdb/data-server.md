@@ -1,7 +1,11 @@
 # Data Server
 
-The data server provides network access to a server-side DuckDB instance.
+The data server provides network access to a server-side DuckDB instance from Node.js.
 Both WebSocket (`socket`) and HTTP (`rest`) connections are supported.
+
+::: warning
+Due to persistent quality issues involving the DuckDB Node.js client and Arrow extension, we recommend using Mosaic's Python-based [`duckdb-server`](/server/) package instead. However, we retain this JavaScript-based server for both backwards compatibility and potential future use as quality issues improve.
+:::
 
 ## dataServer
 

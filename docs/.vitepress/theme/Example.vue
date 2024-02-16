@@ -1,7 +1,8 @@
 <script>
-import { withBase } from 'vitepress'
+import { withBase } from 'vitepress';
 import yaml from 'yaml';
-import { coordinator, parseSpec, wasmConnector } from '@uwdata/vgplot';
+import { astToDOM, parseSpec } from '@uwdata/mosaic-spec';
+import { coordinator, wasmConnector } from '@uwdata/vgplot';
 
 let ready;
 
@@ -18,9 +19,11 @@ export default {
   async mounted() {
     try {
       init();
-      const spec = yaml.parse(await fetch(withBase(this.spec)).then(r => r.text()));
-      const view = await parseSpec(spec, { baseURL: location.origin + import.meta.env.BASE_URL });
-      this.$refs.view.replaceChildren(view);
+      const baseURL = location.origin + import.meta.env.BASE_URL;
+      const text = await fetch(withBase(this.spec)).then(r => r.text());
+      const spec = yaml.parse(text);
+      const view = await astToDOM(parseSpec(spec), { baseURL });
+      this.$refs.view.replaceChildren(view.element);
     } catch (err) {
       console.error(err);
       if (this.$refs?.view) {
@@ -50,6 +53,10 @@ export default {
 
 .mosaic-example .plot-d6a7b5 {
   background: none !important;
+}
+
+.mosaic-example .plot [aria-label="tip"] {
+  --plot-background: var(--vp-c-bg-alt);
 }
 
 .mosaic-example label {

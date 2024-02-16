@@ -1,24 +1,36 @@
 #! /usr/bin/env node
 import { basename, extname, join, resolve } from 'node:path';
-import { readdir, readFile, writeFile } from 'node:fs/promises';
-import { specToModule } from '@uwdata/vgplot';
+import { copyFile, readdir, readFile, writeFile } from 'node:fs/promises';
+import { parseSpec, astToESM } from '@uwdata/mosaic-spec';
 import { parse } from 'yaml';
 
-const baseDir = 'docs';
-const yamlDir = join(baseDir, 'public', 'specs', 'yaml');
-const jsonDir = join(baseDir, 'public', 'specs', 'json');
-const esmDir = join(baseDir, 'public', 'specs', 'esm');
-const exampleDir = join(baseDir, 'examples');
+const specDir = join('specs', 'yaml');
 
-const files = await Promise.allSettled((await readdir(yamlDir))
-  .filter(file => extname(file) === '.yaml')
-  .map(async file => {
-    const base = basename(file, '.yaml');
-    const text = await readFile(resolve(yamlDir, file), 'utf8');
+const docsDir = 'docs';
+const yamlDir = join(docsDir, 'public', 'specs', 'yaml');
+const jsonDir = join(docsDir, 'public', 'specs', 'json');
+const esmDir = join(docsDir, 'public', 'specs', 'esm');
+const exampleDir = join(docsDir, 'examples');
+
+const files = await Promise.allSettled((await readdir(specDir))
+  .filter(name => extname(name) === '.yaml')
+  .map(async name => {
+    const base = basename(name, '.yaml');
+    const file = resolve(specDir, name);
+    const text = await readFile(file, 'utf8');
+
+    // parse spec and perform code generation
+    // do this first to catch any errors
     const spec = parse(text);
-    const code = await specToModule(spec);
+    const code = astToESM(parseSpec(spec));
 
     try {
+      // copy YAML file
+      await copyFile(
+        file,
+        resolve(yamlDir, `${base}.yaml`)
+      );
+
       // write JSON spec
       await writeFile(
         resolve(jsonDir, `${base}.json`),
@@ -56,8 +68,8 @@ files
 
 function examplePage(spec, { title = spec, description, credit } = {}) {
   return `<script setup>
-  import { reset } from '@uwdata/vgplot';
-  reset();
+  import { coordinator } from '@uwdata/vgplot';
+  coordinator().clear();
 </script>
 
 # ${title}

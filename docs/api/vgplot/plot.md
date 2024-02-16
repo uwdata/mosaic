@@ -5,7 +5,7 @@ A `Plot` is defined using a set of directives that specify [_attributes_](./attr
 ``` js
 plot(
   width(500), // attribute
-  rectY(from("table"), { x1: 'u', x2: 'v', y: 'w', fill: 'c' }), // mark
+  rectY(from("table"), { x1: "u", x2: "v", y: "w", fill: "c" }), // mark
   intervalX({ as: selection }), // interactor
   colorLegend() // legend
 )

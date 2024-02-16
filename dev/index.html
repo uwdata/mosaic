@@ -11,33 +11,43 @@
       <select id="examples">
         <option value="none"></option>
         <option value="athletes">Athletes</option>
+        <option value="airline-travelers">Airline Travelers</option>
+        <option value="axes">Axes &amp; Gridlines</option>
         <option value="bias">Bias Parameter</option>
         <option value="contours">Contours</option>
+        <option value="crossfilter">Crossfilter</option>
         <option value="density1d">Density 1D</option>
         <option value="density2d">Density 2D</option>
-        <option value="axes">Axes &amp; Gridlines</option>
-        <option value="earthquakes">Earthquakes</option>
-        <option value="flights-density">Flights Density</option>
-        <option value="flights">Flights</option>
+        <option value="driving-shifts">Driving Shifts into Reverse</option>
+        <option value="earthquakes-feed">Earthquakes Feed</option>
+        <option value="earthquakes-globe">Earthquakes Globe</option>
+        <option value="flights-200k">Flights 200k</option>
         <option value="flights-10m">Flights 10M</option>
+        <option value="flights-density">Flights Density</option>
+        <option value="flights-hexbin">Flights Hexbin</option>
         <option value="gaia">Gaia Star Catalog</option>
-        <option value="hexbin">Hexbin</option>
-        <option value="highlight-cube">Highlight Cube</option>
-        <option value="highlight-toggle">Highlight Toggle</option>
-        <option value="images">Images</option>
-        <option value="links">Links</option>
         <option value="line-density">Line Density</option>
-        <option value="marks">Mark Types</option>
+        <option value="line">Line</option>
+        <option value="linear-regression">Linear Regression</option>
+        <option value="mark-types">Mark Types</option>
         <option value="moving-average">Moving Average</option>
         <option value="normalize">Normalize Stocks</option>
+        <option value="nyc-taxi-rides">NYC Taxi Rides</option>
         <option value="overview-detail">Overview + Detail</option>
         <option value="pan-zoom">Pan + Zoom</option>
-        <option value="regression">Regression</option>
+        <option value="population-arrows">Population Arrows</option>
+        <option value="presidential-opinion">Presidential Opinion</option>
+        <option value="seattle-temp">Seattle Temperatures</option>
+        <option value="sorted-bars">Sorted Bars</option>
         <option value="splom">Scatter Plot Matrix</option>
-        <option value="weather">Seattle Weather</option>
         <option value="symbols">Symbols</option>
         <option value="table">Table</option>
+        <option value="unemployment">Unemployment</option>
+        <option value="us-county-map">U.S. County Map</option>
+        <option value="us-state-map">U.S. State Map</option>
         <option value="voronoi">Voronoi</option>
+        <option value="walmart-openings">Walmart Openings</option>
+        <option value="weather">Seattle Weather</option>
         <option value="wind-map">Wind Map</option>
       </select>
     </span>
@@ -62,7 +72,7 @@
   <div id="view"></div>
 <script type="module">
   import yaml from '../node_modules/yaml/browser/index.js';
-  import { parseSpec, specToModule, reset, setDatabaseConnector } from './setup.js';
+  import { astToDOM, astToESM, clear, parseSpec, setDatabaseConnector, vg } from './setup.js';
 
   const view = document.querySelector('#view');
   const connectorMenu = document.querySelector('#connectors');
@@ -84,33 +94,36 @@
 
   async function load(name, source) {
     view.replaceChildren();
-    reset();
+    clear(); // reset coordinator and namedPlot state
     if (name === 'none' && location.search) {
       // get example name from query string
       name = location.search.slice(1);
     }
     if (name !== 'none') {
       const spec = yaml.parse(
-        await fetch(`./yaml/${name}.yaml`).then(res => res.text())
+        await fetch(`../specs/yaml/${name}.yaml`).then(res => res.text())
       );
+
+      // provide options for output generation
+      // if using a local server, use baseURL for client-loaded data only
+      const baseURL = location.origin + '/';
       const options = connectorMenu.value === 'wasm'
-        ? { baseURL: location.origin + '/' }
-        : {};
-      try {
-        const child = source === 'esm'
-          ? await loadModuleView(spec, options)
-          : await parseSpec(spec, options);
-        view.replaceChildren(child);
-      } catch (err) {
-        console.error(err, err.data);
-      }
+        ? { baseURL }
+        : { baseClientURL: baseURL };
+
+      const ast = parseSpec(spec);
+      const child = source === 'esm'
+        ? await loadModuleView(ast, options)
+        : (await astToDOM(ast, options)).element;
+      view.replaceChildren(child);
     }
   }
 
   async function loadModuleView(spec, options) {
     const vgplot = new URL('./setup.js', window.location.href).toString();
-    const imports = new Map([[vgplot, '* as vg']]);
-    const code = await specToModule(spec, { ...options, imports });
+    const imports = new Map([[vgplot, ['vg']]]);
+    const code = astToESM(spec, { ...options, imports });
+    console.log(code);
     const blob = new Blob([code], { type: 'text/javascript' });
     const url = URL.createObjectURL(blob);
     return (await import(/* @vite-ignore */ url)).default;

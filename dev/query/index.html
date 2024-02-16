@@ -10,9 +10,9 @@
       <span style="margin-right: 0.5em;"></span>
         Connector:
         <select id="connector">
-          <option value="socket" selected>Socket</option>
+          <option value="socket">Socket</option>
           <option value="rest">REST</option>
-          <option value="wasm">WASM</option>
+          <option value="wasm" selected>WASM</option>
         </select>
       </span>
       <span style="margin-right: 0.5em;"></span>
@@ -29,7 +29,7 @@
     <br/>
     <div id="output"></div>
 <script type="module">
-  import { setDatabaseConnector, coordinator, table } from '../setup.js';
+  import { setDatabaseConnector, coordinator, vg } from '../setup.js';
   const tableName = 'query_result';
 
   const input = document.querySelector('#input');
@@ -54,15 +54,15 @@
   submit.addEventListener('click', async () => {
     disable();
     if (mode.value === 'exec') {
-      await coordinator().exec(`${input.value}`);
+      await coordinator.exec(`${input.value}`);
       output.replaceChildren();
     } else {
       await coordinator().exec(
         `DROP TABLE IF EXISTS ${tableName};
         CREATE TEMP TABLE ${tableName} AS ${input.value}`
       );
-      coordinator().clear({ catalog: true });
-      output.replaceChildren(table({ from: tableName, height: 500 }));
+      coordinator.clear({ catalog: true });
+      output.replaceChildren(vg.table({ from: tableName, height: 500 }));
     }
     enable();
   });

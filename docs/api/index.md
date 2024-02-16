@@ -10,11 +10,6 @@ Mosaic API Reference.
 - [Param](/api/core/param)
 - [Selection](/api/core/selection)
 
-## Mosaic DuckDB
-
-- [DuckDB API](/api/duckdb/duckdb)
-- [Data Server](/api/duckdb/data-server)
-
 ## Mosaic SQL
 
 - [Queries](/api/sql/queries)
@@ -40,4 +35,14 @@ Mosaic API Reference.
 - [Interactors](/api/vgplot/interactors)
 - [Legends](/api/vgplot/legends)
 - [Layout](/api/vgplot/layout)
-- [JSON Specifications](/api/vgplot/specs)
+- [API Context](/api/vgplot/context)
+
+## Mosaic Spec
+
+- [Specification Format](/api/spec/format)
+- [Parser & Generators](/api/spec/parser-generators)
+
+## Mosaic DuckDB
+
+- [DuckDB API](/api/duckdb/duckdb)
+- [Data Server](/api/duckdb/data-server)

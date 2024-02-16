@@ -1,6 +1,6 @@
 <script setup>
-  import { reset } from '@uwdata/vgplot';
-  reset();
+  import { coordinator } from '@uwdata/vgplot';
+  coordinator().clear();
 </script>
 
 # What is Mosaic?
@@ -48,23 +48,40 @@ While 200,000 points will stress many web-based visualization tools, Mosaic does
 
 ## Putting the Pieces Together
 
-The Mosaic project consists of a suite of packages:
+The Mosaic project consists of a suite of packages.
 
-- [`mosaic-core`](/core/):
+### Application-Level Packages
+
+* [`vgplot`](/vgplot/):
+  A **v**isualization **g**rammar for building interactive Mosaic-powered visualizations and dashboards.
+  This package provides an integrated API with convenient, composable methods that combine multiple Mosaic packages (core, inputs, plot, etc.). This API re-exports much of the `mosaic-core`, `mosaic-sql`, `mosaic-plot`, and `mosaic-inputs` packages, enabling use in a stand-alone fashion.
+* [`mosaic-spec`](/spec/):
+  Declarative specification of Mosaic-powered applications as JSON or YAML files.
+  This package provides a parser and code generation framework for reading specifications in a JSON format and generating live Mosaic visualizations and dashboards using the [`vgplot`](/vgplot/) API.
+* [`duckdb-server`](/server/):
+  A Python-based server that runs a local DuckDB instance and support queries over Web Sockets or HTTP, returning data in either [Apache Arrow](https://arrow.apache.org/) or JSON format.
+* [`mosaic-widget`](/jupyter/):
+  A Jupyter widget for Mosaic that renders vgplot specifications in Jupyter notebook cells, with data processing by DuckDB in the Python kernel.
+
+### Core Packages
+
+* [`mosaic-core`](/core/):
   The core Mosaic components.
   A central coordinator, parameters and selections for linking values or query predicates (respectively) across Mosaic clients. The Mosaic coordinator can send queries over the network to a backing server (`socket` and `rest` connectors) or to a client-side [DuckDB-WASM](https://duckdb.org/2021/10/29/duckdb-wasm.html) instance (`wasm` connector). The binary [Apache Arrow](https://arrow.apache.org/) format is used for efficient data transfer.
-- [`mosaic-duckdb`](/duckdb/):
-  A Promise-based Node.js API to DuckDB, along with a data server that supports transfer of Apache Arrow and JSON data over either Web Sockets or HTTP.
-- [`mosaic-sql`](/sql/):
+* [`mosaic-sql`](/sql/):
   An API for convenient construction and analysis of SQL queries.
   Includes support for aggregate functions, window functions, and arbitrary expressions with dynamic parameters. Query objects coerce to SQL query strings.
-- [`mosaic-inputs`](/inputs/): Standalone data-driven components such as input menus, text search boxes, and sortable, load-on-scroll data tables.
-- [`vgplot`](/vgplot/): A **v**isualization **g**rammar in which marks (plot layers) are individual Mosaic clients.
+* [`mosaic-inputs`](/inputs/):
+  Data-driven input components such as menus, text search boxes, and sortable, load-on-scroll data tables.
+* [`mosaic-plot`](https://github.com/uwdata/mosaic/tree/main/packages/plot):
+  An interactive grammar of graphics in which marks (plot layers) serve as individual Mosaic clients.
   Marks can push data processing (binning, filtering, aggregation, regression, ...) to the database and apply mark-specific optimizations (such as [M4](https://observablehq.com/@uwdata/m4-scalable-time-series-visualization) for line/area charts).
-  vgplot provides a JavaScript DSL and a declarative YAML/JSON format that combine marks, interactors, input widgets, and dashboard layout.
   Once data and parameters are marshalled, [Observable Plot](https://observablehq.com/plot) is used to render [SVG](https://developer.mozilla.org/en-US/docs/Web/SVG) output.
-- [`mosaic-widget`](/jupyter/):
-  A Jupyter widget for Mosaic that renders vgplot specifications in Jupyter notebook cells, with data processing by DuckDB in the Python kernel.
+  This package also provides interactors for linked selection, filtering, and highlighting using Mosaic Params and Selections.
+
+::: tip
+For convenience, the `vgplot` package re-exports much of the `mosaic-core`, `mosaic-sql`, `mosaic-plot`, and `mosaic-inputs` packages. For most applications, it is sufficient to either import `@uwdata/vgplot` alone or in conjunction with `@uwdata/mosaic-spec`.
+:::
 
 ## An Active Research Project
 

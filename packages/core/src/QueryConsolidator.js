@@ -1,6 +1,13 @@
 import { Query, Ref } from '@uwdata/mosaic-sql';
 import { queryResult } from './util/query-result.js';
 
+function wait(callback) {
+  const method = typeof requestAnimationFrame !== 'undefined'
+    ? requestAnimationFrame
+    : typeof setImmediate !== 'undefined' ? setImmediate : setTimeout;
+  return method(callback);
+}
+
 /**
  * Create a consolidator to combine structurally compatible queries.
  * @param {*} enqueue Query manager enqueue method
@@ -30,7 +37,7 @@ export function consolidator(enqueue, cache, record) {
       if (entry.request.type === 'arrow') {
         // wait one frame, gather an ordered list of queries
         // only Apache Arrow is supported, so we can project efficiently
-        id = id || requestAnimationFrame(() => run());
+        id = id || wait(() => run());
         pending.push({ entry, priority, index: pending.length });
       } else {
         enqueue(entry, priority);

@@ -1,0 +1,152 @@
+{
+  "meta": {
+    "title": "Gaia Star Catalog",
+    "description": "A 5M row sample of the 1.8B element Gaia star catalog.\nA `raster` sky map reveals our Milky Way galaxy. Select high parallax stars in the histogram to reveal a\n[Hertzsprung-Russel diagram](https://en.wikipedia.org/wiki/Hertzsprung%E2%80%93Russell_diagram)\nin the plot of stellar color vs. magnitude on the right.\n\n_You may need to wait a few seconds for the dataset to load._\n"
+  },
+  "data": {
+    "gaia": {
+      "type": "table",
+      "query": "-- compute u and v with natural earth projection\nWITH prep AS (\n  SELECT\n    radians((-l + 540) % 360 - 180) AS lambda,\n    radians(b) AS phi,\n    asin(sqrt(3)/2 * sin(phi)) AS t,\n    t^2 AS t2,\n    t2^3 AS t6,\n    *\n  FROM 'https://uwdata.github.io/mosaic-datasets/data/gaia-5m.parquet'\n)\nSELECT\n  (1.340264 * lambda * cos(t)) / (sqrt(3)/2 * (1.340264 + (-0.081106 * 3 * t2) + (t6 * (0.000893 * 7 + 0.003796 * 9 * t2)))) AS u,\n  t * (1.340264 + (-0.081106 * t2) + (t6 * (0.000893 + 0.003796 * t2))) AS v,\n  * EXCLUDE('t', 't2', 't6')\nFROM prep\nWHERE parallax BETWEEN -5 AND 20"
+    }
+  },
+  "params": {
+    "brush": {
+      "select": "crossfilter"
+    },
+    "bandwidth": 0,
+    "binWidth": 2,
+    "scaleType": "sqrt"
+  },
+  "hconcat": [
+    {
+      "vconcat": [
+        {
+          "plot": [
+            {
+              "mark": "raster",
+              "data": {
+                "from": "gaia",
+                "filterBy": "$brush"
+              },
+              "x": "u",
+              "y": "v",
+              "fill": "density",
+              "bandwidth": "$bandwidth",
+              "binWidth": "$binWidth",
+              "binType": "normal"
+            },
+            {
+              "select": "intervalXY",
+              "pixelSize": 2,
+              "as": "$brush"
+            }
+          ],
+          "xyDomain": "Fixed",
+          "colorScale": "$scaleType",
+          "colorScheme": "viridis",
+          "width": 440,
+          "height": 250,
+          "marginLeft": 25,
+          "marginTop": 20,
+          "marginRight": 1
+        },
+        {
+          "hconcat": [
+            {
+              "plot": [
+                {
+                  "mark": "rectY",
+                  "data": {
+                    "from": "gaia",
+                    "filterBy": "$brush"
+                  },
+                  "x": {
+                    "bin": "phot_g_mean_mag"
+                  },
+                  "y": {
+                    "count": ""
+                  },
+                  "fill": "steelblue",
+                  "inset": 0.5
+                },
+                {
+                  "select": "intervalX",
+                  "as": "$brush"
+                }
+              ],
+              "xDomain": "Fixed",
+              "yScale": "$scaleType",
+              "yGrid": true,
+              "width": 220,
+              "height": 120,
+              "marginLeft": 65
+            },
+            {
+              "plot": [
+                {
+                  "mark": "rectY",
+                  "data": {
+                    "from": "gaia",
+                    "filterBy": "$brush"
+                  },
+                  "x": {
+                    "bin": "parallax"
+                  },
+                  "y": {
+                    "count": ""
+                  },
+                  "fill": "steelblue",
+                  "inset": 0.5
+                },
+                {
+                  "select": "intervalX",
+                  "as": "$brush"
+                }
+              ],
+              "xDomain": "Fixed",
+              "yScale": "$scaleType",
+              "yGrid": true,
+              "width": 220,
+              "height": 120,
+              "marginLeft": 65
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "hspace": 10
+    },
+    {
+      "plot": [
+        {
+          "mark": "raster",
+          "data": {
+            "from": "gaia",
+            "filterBy": "$brush"
+          },
+          "x": "bp_rp",
+          "y": "phot_g_mean_mag",
+          "fill": "density",
+          "bandwidth": "$bandwidth",
+          "binWidth": "$binWidth",
+          "binType": "normal"
+        },
+        {
+          "select": "intervalXY",
+          "pixelSize": 2,
+          "as": "$brush"
+        }
+      ],
+      "xyDomain": "Fixed",
+      "colorScale": "$scaleType",
+      "colorScheme": "viridis",
+      "yReverse": true,
+      "width": 230,
+      "height": 370,
+      "marginLeft": 25,
+      "marginTop": 20,
+      "marginRight": 1
+    }
+  ]
+}

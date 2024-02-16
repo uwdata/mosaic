@@ -1,15 +1,18 @@
 // @ts-check
 
-import { coordinator, namedPlots, parseSpec } from '@uwdata/vgplot';
+import { coordinator, namedPlots } from '@uwdata/vgplot';
+import { parseSpec, astToDOM } from '@uwdata/mosaic-spec';
 import * as arrow from 'apache-arrow';
 import './style.css';
 import { v4 as uuidv4 } from 'uuid';
 
 /**
+ * @typedef {Record<string, {value: unknown, predicate?: string}>} Params
+ *
  * @typedef Model
  * @prop {Record<any, unknown>} spec the current specification
  * @prop {boolean} temp_indexes whether data cube indexes should be created as temp tables
- * @prop {Array} selections the current selections
+ * @prop {Params} params the current params
  */
 
 export default {
@@ -62,25 +65,27 @@ export default {
       const spec = getSpec();
       reset();
       logger.log('Setting spec:', spec);
-      view.el.replaceChildren(await parseSpec(spec));
+      const dom = await instantiateSpec(spec);
+      view.el.replaceChildren(dom.element);
 
-      // Update the selections traitlet
-      const c = coordinator();
-      const selections = new Set(
-        [...c.clients].flatMap((c) => c.filterBy).filter((s) => s)
-      );
-      for (const s of selections) {
-        s.addEventListener('value', () => {
-          const s = [...selections].map((s) =>
-            s.clauses.map((c) => ({
-              value: c.value,
-              sql: String(c.predicate),
-            }))
-          );
-          view.model.set('selections', s);
+      /** @type Params */
+      const params = {};
+
+      for (const [name, param] of dom.params) {
+        params[name] = {
+          value: param.value,
+          ...(param.predicate ? { predicate: String(param.predicate()) } : {}),
+        };
+
+        param.addEventListener('value', (value) => {
+          params[name] = { value, predicate: String(param.predicate()) };
+          view.model.set('params', params);
           view.model.save_changes();
         });
       }
+
+      view.model.set('params', params);
+      view.model.save_changes();
     }
 
     view.model.on('change:spec', () => updateSpec());
@@ -136,3 +141,9 @@ export default {
     };
   },
 };
+
+/** @param {Record<any, unknown>} spec */
+function instantiateSpec(spec) {
+  const ast = parseSpec(spec);
+  return astToDOM(ast);
+}
