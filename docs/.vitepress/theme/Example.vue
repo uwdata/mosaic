@@ -27,7 +27,8 @@ export default {
     } catch (err) {
       console.error(err);
       if (this.$refs?.view) {
-        this.$refs.view.innerHTML = '<em>Example failed to load.</em> 😭';
+        this.$refs.view.innerHTML = '<em>Example failed to load.</em> 😭<br/>'
+          + '<em>If using Firefox, try with another browser?</em>';
       }
     }
   },
