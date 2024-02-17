@@ -14,61 +14,85 @@ data:
   rides:
     file: https://uwdata.github.io/mosaic-datasets/data/nyc-rides-2010.parquet
     select:
+      - pickup_datetime::TIMESTAMP AS datetime
       - ST_Transform(ST_Point(pickup_latitude, pickup_longitude), 'EPSG:4326', 'ESRI:102718') AS pick
       - ST_Transform(ST_Point(dropoff_latitude, dropoff_longitude), 'EPSG:4326', 'ESRI:102718') AS drop
   trips: >
     SELECT
+      (HOUR(datetime) + MINUTE(datetime)/60) AS time,
       ST_X(pick) AS px, ST_Y(pick) AS py,
       ST_X(drop) AS dx, ST_Y(drop) AS dy
     FROM rides
 params:
   filter: { select: crossfilter }
-plotDefaults:
-  width: 335
-  height: 550
-  margin: 0
-  xAxis: null
-  yAxis: null
-  xDomain: [9.75e5, 1.005e6]
-  yDomain: [1.9e5, 2.4e5]
-  colorScale: symlog
-hconcat:
+vconcat:
+- hconcat:
+  - plot:
+    - mark: raster
+      data: { from: trips, filterBy: $filter }
+      x: px
+      y: py
+      binType: normal
+      binWidth: 1
+      bandwidth: 0
+    - select: intervalXY
+      as: $filter
+    - mark: text
+      data: [{ label: Taxi Pickups }]
+      dx: 10
+      dy: 10
+      text: label
+      fill: black
+      fontSize: 1.2em
+      frameAnchor: top-left
+    width: 335
+    height: 550
+    margin: 0
+    xAxis: null
+    yAxis: null
+    xDomain: [9.75e5, 1.005e6]
+    yDomain: [1.9e5, 2.4e5]
+    colorScale: symlog
+    colorScheme: blues
+  - hspace: 10
+  - plot:
+    - mark: raster
+      data: { from: trips, filterBy: $filter }
+      x: dx
+      y: dy
+      binType: normal
+      binWidth: 1
+      bandwidth: 0
+    - select: intervalXY
+      as: $filter
+    - mark: text
+      data: [{ label: Taxi Dropoffs }]
+      dx: 10
+      dy: 10
+      text: label
+      fill: black
+      fontSize: 1.2em
+      frameAnchor: top-left
+    width: 335
+    height: 550
+    margin: 0
+    xAxis: null
+    yAxis: null
+    xDomain: [9.75e5, 1.005e6]
+    yDomain: [1.9e5, 2.4e5]
+    colorScale: symlog
+    colorScheme: oranges
+- vspace: 10
 - plot:
-  - mark: raster
-    data: { from: trips, filterBy: $filter }
-    x: px
-    y: py
-    binType: normal
-    binWidth: 1
-    bandwidth: 0
-  - select: intervalXY
+  - mark: rectY
+    data: { from: trips }
+    x: { bin: time }
+    y: { count: }
+    fill: steelblue
+    inset: 0.5
+  - select: intervalX
     as: $filter
-  - mark: text
-    data: [{ label: Taxi Pickups }]
-    dx: 10
-    dy: 10
-    text: label
-    fill: black
-    fontSize: 1.2em
-    frameAnchor: top-left
-  colorScheme: blues
-- hspace: 10
-- plot:
-  - mark: raster
-    data: { from: trips, filterBy: $filter }
-    x: dx
-    y: dy
-    binType: normal
-    binWidth: 1
-    bandwidth: 0
-  - select: intervalXY
-    as: $filter
-  - mark: text
-    data: [{ label: Taxi Dropoffs }]
-    dx: 10
-    dy: 10
-    text: label
-    fill: black
-    fontSize: 1.2em
-    frameAnchor: top-left
-  colorScheme: oranges
+  yTickFormat: s
+  xLabel: Pickup Hour →
+  width: 680
+  height: 100
