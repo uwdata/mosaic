@@ -10,9 +10,7 @@
     }
   },
   "params": {
-    "scale": {
-      "select": "intersect"
-    },
+    "scale": "log",
     "query": {
       "select": "intersect"
     }

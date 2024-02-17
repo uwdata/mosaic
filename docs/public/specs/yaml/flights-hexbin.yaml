@@ -5,6 +5,9 @@ meta:
     Select regions in the marginal histograms to filter the density display.
 data:
   flights: { file: data/flights-200k.parquet }
+params:
+  scale: { value: log }
+  query: { select: intersect }
 vconcat:
 - hconcat:
   - input: menu

@@ -4,7 +4,7 @@ await vg.coordinator().exec([
   vg.loadParquet("flights", "data/flights-200k.parquet")
 ]);
 
-const $scale = vg.Selection.intersect();
+const $scale = vg.Param.value("log");
 const $query = vg.Selection.intersect();
 
 export default vg.vconcat(
