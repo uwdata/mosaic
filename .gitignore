@@ -7,3 +7,4 @@ docs/.vitepress/dist
 node_modules
 packages/*/dist
 packages/*/test-output
+*.swp
