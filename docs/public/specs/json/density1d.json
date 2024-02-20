@@ -1,7 +1,7 @@
 {
   "meta": {
     "title": "Density 1D",
-    "description": "Density plots (`densityY` mark) for over 200,000 flights, created using kernel density estimation. Binning is performned in-database, subsequent smoothing in-browser. To change the amount of smoothing, use the slider to set the kernel bandwidth.\n"
+    "description": "Density plots (`densityY` mark) for over 200,000 flights, created using kernel density estimation. Binning is performned in-database, subsequent smoothing in-browser. The distance density uses a log-scaled domain. To change the amount of smoothing, use the slider to set the kernel bandwidth.\n"
   },
   "data": {
     "flights": {
@@ -12,7 +12,7 @@
     "brush": {
       "select": "crossfilter"
     },
-    "bandwidth": 10
+    "bandwidth": 20
   },
   "vconcat": [
     {
@@ -66,6 +66,7 @@
         }
       ],
       "yAxis": null,
+      "xScale": "log",
       "xDomain": "Fixed",
       "width": 600,
       "marginLeft": 10,
