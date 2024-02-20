@@ -137,6 +137,10 @@ export {
   literalToSQL
 } from './to-sql.js';
 
+export {
+  scaleTransform
+} from './scales.js';
+
 export { create } from './load/create.js';
 export { loadExtension } from './load/extension.js';
 export {

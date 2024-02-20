@@ -1,5 +1,5 @@
 import { Query, and, count, isNull, isBetween, sql, sum } from '@uwdata/mosaic-sql';
-import { binField, bin1d } from './util/bin-field.js';
+import { binExpr } from './util/bin-expr.js';
 import { extentX, extentY } from './util/extent.js';
 import { handleParam } from './util/handle-param.js';
 import { RasterMark } from './RasterMark.js';
@@ -12,16 +12,10 @@ export class DenseLineMark extends RasterMark {
   }
 
   query(filter = []) {
-    const { plot, channels, normalize, source } = this;
-    const [x0, x1] = extentX(this, filter);
-    const [y0, y1] = extentY(this, filter);
+    const { channels, normalize, source, binPad } = this;
     const [nx, ny] = this.bins = this.binDimensions(this);
-    const bx = binField(this, 'x');
-    const by = binField(this, 'y');
-    const rx = !!plot.getAttribute('xReverse');
-    const ry = !!plot.getAttribute('yReverse');
-    const x = bin1d(bx, x0, x1, nx, rx, this.binPad);
-    const y = bin1d(by, y0, y1, ny, ry, this.binPad);
+    const [x] = binExpr(this, 'x', nx, extentX(this, filter), binPad);
+    const [y] = binExpr(this, 'y', ny, extentY(this, filter), binPad);
 
     const q = Query
       .from(source.table)
@@ -132,7 +126,7 @@ function lineDensity(
         ? { w: sql`1.0 / COUNT(*) OVER (PARTITION BY ${pointPart})` }
         : null
     )
-    .where(and(isBetween('x', [0, xn]), isBetween('y', [0, yn])));
+    .where(and(isBetween('x', [0, xn], true), isBetween('y', [0, yn], true)));
 
   // sum normalized, rasterized series into output grids
   return Query

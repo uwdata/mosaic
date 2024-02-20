@@ -1,7 +1,5 @@
-import { Query, and, asColumn, create, epoch_ms, isBetween, sql } from '@uwdata/mosaic-sql';
+import { Query, and, create, isBetween, scaleTransform, sql } from '@uwdata/mosaic-sql';
 import { fnv_hash } from './util/hash.js';
-
-const identity = x => x;
 
 /**
  * Build and query optimized indices ("data cubes") for fast computation of
@@ -149,7 +147,7 @@ function getActiveView(clause) {
       );
     }
   } else if (type === 'point') {
-    predicate = identity;
+    predicate = x => x;
     columns = Object.fromEntries(columns.map(col => [col.toString(), col]));
   } else {
     return null; // unsupported type
@@ -160,41 +158,14 @@ function getActiveView(clause) {
 
 function binInterval(scale, pixelSize) {
   const { type, domain, range } = scale;
-  let lift, toSql;
-
-  switch (type) {
-    case 'linear':
-      lift = identity;
-      toSql = asColumn;
-      break;
-    case 'log':
-      lift = Math.log;
-      toSql = c => sql`LN(${asColumn(c)})`;
-      break;
-    case 'symlog':
-      // TODO: support log constants other than 1?
-      lift = x => Math.sign(x) * Math.log1p(Math.abs(x));
-      toSql = c => (c = asColumn(c), sql`SIGN(${c}) * LN(1 + ABS(${c}))`);
-      break;
-    case 'sqrt':
-      lift = Math.sqrt;
-      toSql = c => sql`SQRT(${asColumn(c)})`;
-      break;
-    case 'utc':
-    case 'time':
-      lift = x => +x;
-      toSql = c => c instanceof Date ? +c : epoch_ms(asColumn(c));
-      break;
+  const { apply, sql: toSQL } = scaleTransform(type);
+  if (apply) {
+    const lo = apply(Math.min(...domain));
+    const hi = apply(Math.max(...domain));
+    const a = (Math.abs(range[1] - range[0]) / (hi - lo)) / pixelSize;
+    const s = pixelSize === 1 ? '' : `${pixelSize}::INTEGER * `;
+    return value => sql`${s}FLOOR(${a}::DOUBLE * (${toSQL(value)} - ${lo}::DOUBLE))::INTEGER`;
   }
-  return lift ? binFunction(domain, range, pixelSize, lift, toSql) : null;
-}
-
-function binFunction(domain, range, pixelSize, lift, toSql) {
-  const lo = lift(Math.min(domain[0], domain[1]));
-  const hi = lift(Math.max(domain[0], domain[1]));
-  const a = (Math.abs(lift(range[1]) - lift(range[0])) / (hi - lo)) / pixelSize;
-  const s = pixelSize === 1 ? '' : `${pixelSize}::INTEGER * `;
-  return value => sql`${s}FLOOR(${a}::DOUBLE * (${toSql(value)} - ${lo}::DOUBLE))::INTEGER`;
 }
 
 const NO_INDEX = { from: NaN };

@@ -1,6 +1,6 @@
 import { Query, gt, isBetween, sql, sum } from '@uwdata/mosaic-sql';
 import { Transient } from '../symbols.js';
-import { binField, bin1d } from './util/bin-field.js';
+import { binExpr } from './util/bin-expr.js';
 import { dericheConfig, dericheConv1d } from './util/density.js';
 import { extentX, extentY, xext, yext } from './util/extent.js';
 import { grid1d } from './util/grid.js';
@@ -30,14 +30,12 @@ export class Density1DMark extends Mark {
   query(filter = []) {
     if (this.hasOwnData()) throw new Error('Density1DMark requires a data source');
     const { bins, channels, dim, source: { table } } = this;
-    const [lo, hi] = this.extent = (dim === 'x' ? extentX : extentY)(this, filter);
-    const bx = binField(this, dim);
-    return binLinear1d(
-      markQuery(channels, table, [dim])
-        .where(filter.concat(isBetween(bx, [lo, hi]))),
-      bin1d(bx, lo, hi, bins),
-      this.channelField('weight') ? 'weight' : null
-    );
+    const extent = this.extent = (dim === 'x' ? extentX : extentY)(this, filter);
+    const [x, bx] = binExpr(this, dim, bins, extent);
+    const q = markQuery(channels, table, [dim])
+      .where(filter.concat(isBetween(bx, extent)));
+    const v = this.channelField('weight') ? 'weight' : null;
+    return binLinear1d(q, x, v);
   }
 
   queryResult(data) {

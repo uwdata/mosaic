@@ -1,6 +1,6 @@
 import { Query, count, gt, isBetween, lt, lte, sql, sum } from '@uwdata/mosaic-sql';
 import { Transient } from '../symbols.js';
-import { binField } from './util/bin-field.js';
+import { binExpr } from './util/bin-expr.js';
 import { dericheConfig, dericheConv2d } from './util/density.js';
 import { extentX, extentY, xyext } from './util/extent.js';
 import { grid2d } from './util/grid.js';
@@ -43,16 +43,12 @@ export class Grid2DMark extends Mark {
   }
 
   query(filter = []) {
-    const { plot, binType, binPad, channels, densityMap, source } = this;
+    const { binType, binPad, channels, densityMap, source } = this;
     const [x0, x1] = this.extentX = extentX(this, filter);
     const [y0, y1] = this.extentY = extentY(this, filter);
     const [nx, ny] = this.bins = this.binDimensions(this);
-    const bx = binField(this, 'x');
-    const by = binField(this, 'y');
-    const rx = !!plot.getAttribute('xReverse');
-    const ry = !!plot.getAttribute('yReverse');
-    const x = bin1d(bx, x0, x1, nx, rx, this.binPad);
-    const y = bin1d(by, y0, y1, ny, ry, this.binPad);
+    const [x, bx] = binExpr(this, 'x', nx, [x0, x1], binPad);
+    const [y, by] = binExpr(this, 'y', ny, [y0, y1], binPad);
 
     // with padded bins, include the entire domain extent
     // if the bins are flush, exclude the extent max
@@ -136,14 +132,6 @@ function createDensityMap(channels) {
     }
   }
   return densityMap;
-}
-
-function bin1d(x, x0, x1, n, reverse, pad) {
-  const d = (n - pad) / (x1 - x0);
-  const f = d !== 1 ? ` * ${d}::DOUBLE` : '';
-  return reverse
-    ? sql`(${x1} - ${x}::DOUBLE)${f}`
-    : sql`(${x}::DOUBLE - ${x0})${f}`;
 }
 
 function bin2d(q, xp, yp, value, xn, groupby) {
