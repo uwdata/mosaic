@@ -1,11 +1,11 @@
 import { coordinator } from '@uwdata/mosaic-core';
 import { Query, count, isBetween, lt, lte, neq, sql, sum } from '@uwdata/mosaic-sql';
 import { scale } from '@observablehq/plot';
+import { binExpr } from './util/bin-expr.js';
 import { extentX, extentY } from './util/extent.js';
 import { isColor } from './util/is-color.js';
 import { createCanvas, raster, opacityMap, palette } from './util/raster.js';
 import { Grid2DMark } from './Grid2DMark.js';
-import { binField } from './util/bin-field.js';
 
 export class RasterTileMark extends Grid2DMark {
   constructor(source, options) {
@@ -35,15 +35,11 @@ export class RasterTileMark extends Grid2DMark {
   }
 
   tileQuery(extent) {
-    const { plot, binType, binPad, channels, densityMap, source } = this;
+    const { binType, binPad, channels, densityMap, source } = this;
     const [[x0, x1], [y0, y1]] = extent;
     const [nx, ny] = this.bins;
-    const bx = binField(this, 'x');
-    const by = binField(this, 'y');
-    const rx = !!plot.getAttribute('xReverse');
-    const ry = !!plot.getAttribute('yReverse');
-    const x = bin1d(bx, x0, x1, nx, rx, binPad);
-    const y = bin1d(by, y0, y1, ny, ry, binPad);
+    const [x, bx] = binExpr(this, 'x', nx, [x0, x1], binPad);
+    const [y, by] = binExpr(this, 'y', ny, [y0, y1], binPad);
 
     // with padded bins, include the entire domain extent
     // if the bins are flush, exclude the extent max
@@ -271,14 +267,6 @@ function imagePalette(mark, domain, value, steps = 1024) {
   }
 
   return palette(steps, opacityMap(color));
-}
-
-function bin1d(x, x0, x1, n, reverse, pad) {
-  const d = (n - pad) / (x1 - x0);
-  const f = d !== 1 ? ` * ${d}::DOUBLE` : '';
-  return reverse
-    ? sql`(${x1} - ${x}::DOUBLE)${f}`
-    : sql`(${x}::DOUBLE - ${x0})${f}`;
 }
 
 function bin2d(q, xp, yp, value, xn, groupby) {
