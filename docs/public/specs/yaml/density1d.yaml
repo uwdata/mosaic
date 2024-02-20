@@ -3,12 +3,13 @@ meta:
   description: >
     Density plots (`densityY` mark) for over 200,000 flights, created using kernel density estimation.
     Binning is performned in-database, subsequent smoothing in-browser.
+    The distance density uses a log-scaled domain.
     To change the amount of smoothing, use the slider to set the kernel bandwidth.
 data:
   flights: { file: data/flights-200k.parquet }
 params:
   brush: { select: crossfilter }
-  bandwidth: 10
+  bandwidth: 20
 vconcat:
 - input: slider
   label: Bandwidth (σ)
@@ -40,6 +41,7 @@ vconcat:
   - select: intervalX
     as: $brush
   yAxis: null
+  xScale: log
   xDomain: Fixed
   width: 600
   marginLeft: 10

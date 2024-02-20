@@ -5,7 +5,7 @@ await vg.coordinator().exec([
 ]);
 
 const $brush = vg.Selection.crossfilter();
-const $bandwidth = vg.Param.value(10);
+const $bandwidth = vg.Param.value(20);
 
 export default vg.vconcat(
   vg.slider({label: "Bandwidth (σ)", as: $bandwidth, min: 0.1, max: 100, step: 0.1}),
@@ -28,6 +28,7 @@ export default vg.vconcat(
     ),
     vg.intervalX({as: $brush}),
     vg.yAxis(null),
+    vg.xScale("log"),
     vg.xDomain(vg.Fixed),
     vg.width(600),
     vg.marginLeft(10),
