@@ -104,6 +104,9 @@ export const xAriaLabel = attrf('xAriaLabel');
 export const xAriaDescription = attrf('xAriaDescription');
 export const xReverse = attrf('xReverse');
 export const xZero = attrf('xZero');
+export const xBase = attrf('xBase');
+export const xExponent = attrf('xExponent');
+export const xConstant = attrf('xConstant');
 
 // y scale attributes
 export const yScale = attrf('yScale');
@@ -136,6 +139,9 @@ export const yAriaLabel = attrf('yAriaLabel');
 export const yAriaDescription = attrf('yAriaDescription');
 export const yReverse = attrf('yReverse');
 export const yZero = attrf('yZero');
+export const yBase = attrf('yBase');
+export const yExponent = attrf('yExponent');
+export const yConstant = attrf('yConstant');
 
 // facet attributes
 export const facetMargin = attrf('facetMargin');
@@ -219,6 +225,9 @@ export const colorLabel = attrf('colorLabel');
 export const colorReverse = attrf('colorReverse');
 export const colorZero = attrf('colorZero');
 export const colorTickFormat = attrf('colorTickFormat');
+export const colorBase = attrf('colorBase');
+export const colorExponent = attrf('colorExponent');
+export const colorConstant = attrf('colorConstant');
 
 // opacity scale attributes
 export const opacityScale = attrf('opacityScale');
@@ -230,6 +239,9 @@ export const opacityLabel = attrf('opacityLabel');
 export const opacityReverse = attrf('opacityReverse');
 export const opacityZero = attrf('opacityZero');
 export const opacityTickFormat = attrf('opacityTickFormat');
+export const opacityBase = attrf('opacityBase');
+export const opacityExponent = attrf('opacityExponent');
+export const opacityConstant = attrf('opacityConstant');
 
 // r scale attributes
 export const rScale = attrf('rScale');
@@ -238,6 +250,9 @@ export const rRange = attrf('rRange');
 export const rClamp = attrf('rClamp');
 export const rNice = attrf('rNice');
 export const rZero = attrf('rZero');
+export const rBase = attrf('rBase');
+export const rExponent = attrf('rExponent');
+export const rConstant = attrf('rConstant');
 
 // length scale attributes
 export const lengthScale = attrf('lengthScale');
@@ -246,6 +261,9 @@ export const lengthRange = attrf('lengthRange');
 export const lengthClamp = attrf('lengthClamp');
 export const lengthNice = attrf('lengthNice');
 export const lengthZero = attrf('lengthZero');
+export const lengthBase = attrf('lengthBase');
+export const lengthExponent = attrf('lengthExponent');
+export const lengthConstant = attrf('lengthConstant');
 
 // projection attributes
 export const projectionType = attrf('projectionType');

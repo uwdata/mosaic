@@ -3,6 +3,8 @@
  */
 export function transformNames(overrides = []) {
   return new Set([
+    'argmin',
+    'argmax',
     'avg',
     'bin',
     'centroid',
@@ -12,11 +14,14 @@ export function transformNames(overrides = []) {
     'dateMonth',
     'dateMonthDay',
     'dateDay',
+    'first',
     'geojson',
+    'last',
     'max',
     'median',
     'min',
     'mode',
+    'product',
     'quantile',
     'sum',
     'row_number',
