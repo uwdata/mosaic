@@ -21,6 +21,7 @@ export class DenseLineMark extends RasterMark {
       .from(source.table)
       .where(stripXY(this, filter));
 
+    this.aggr = ['density'];
     const groupby = this.groupby = [];
     const z = [];
     for (const c of channels) {
@@ -134,7 +135,7 @@ function lineDensity(
     .from('points')
     .select(groupby, {
       index: sql`x + y * ${xn}::INTEGER`,
-      value: normalize ? sum('w') : count()
+      density: normalize ? sum('w') : count()
     })
     .groupby('index', groupby);
 }

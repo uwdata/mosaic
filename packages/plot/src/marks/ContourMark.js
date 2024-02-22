@@ -1,4 +1,5 @@
-import { contours, max } from 'd3';
+import { contours } from 'd3';
+import { gridDomainContinuous } from './util/grid.js';
 import { handleParam } from './util/handle-param.js';
 import { Grid2DMark } from './Grid2DMark.js';
 import { channelOption } from './Mark.js';
@@ -17,12 +18,12 @@ export class ContourMark extends Grid2DMark {
   }
 
   contours() {
-    const { bins, densityMap, kde, thresholds, groupby, plot } = this;
+    const { bins, densityMap, kde, thresholds, plot } = this;
 
     let tz = thresholds;
     if (!Array.isArray(tz)) {
-      const scale = max(kde.map(k => max(k)));
-      tz = Array.from({length: tz - 1}, (_, i) => (scale * (i + 1)) / tz);
+      const [, hi] = gridDomainContinuous(kde, 'density');
+      tz = Array.from({length: tz - 1}, (_, i) => (hi * (i + 1)) / tz);
     }
 
     if (densityMap.fill || densityMap.stroke) {
@@ -45,11 +46,11 @@ export class ContourMark extends Grid2DMark {
     const contour = contours().size(bins);
 
     // generate contours
-    this.data = kde.flatMap(k => tz.map(t => {
-      const c = transform(contour.contour(k, t), x, y);
-      groupby.forEach((name, i) => c[name] = k.key[i]);
-      c.density = t;
-      return c;
+    this.data = kde.flatMap(cell => tz.map(t => {
+      return Object.assign(
+        transform(contour.contour(cell.density, t), x, y),
+        { ...cell, density: t }
+      );
     }));
 
     return this;

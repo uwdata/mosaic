@@ -79,8 +79,8 @@ export class Density1DMark extends Mark {
   }
 }
 
-function binLinear1d(q, p, value) {
-  const w = value ? `* ${value}` : '';
+function binLinear1d(q, p, density) {
+  const w = density ? `* ${density}` : '';
 
   const u = q.clone().select({
     p,
@@ -96,7 +96,7 @@ function binLinear1d(q, p, value) {
 
   return Query
     .from(Query.unionAll(u, v))
-    .select({ index: 'i', value: sum('w') })
+    .select({ index: 'i', density: sum('w') })
     .groupby('index')
-    .having(gt('value', 0));
+    .having(gt('density', 0));
 }
