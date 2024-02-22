@@ -1,5 +1,5 @@
 import { sql } from '@uwdata/mosaic-sql';
-import { channelScale } from './channel-scale';
+import { channelScale } from './channel-scale.js';
 
 /**
  * Generates a SQL expression for 1D pixel-level binning.
