@@ -1,7 +1,4 @@
-import { isArrowTable } from './is-arrow-table.js';
-
-const INTEGER = 2;
-const TIMESTAMP = 10;
+import { convertArrow, isArrowTable } from './arrow.js';
 
 export function toDataArray(data) {
   return isArrowTable(data) ? arrowToObjects(data) : data;
@@ -37,7 +34,7 @@ export function arrowToObjects(data) {
     for (let j = 0; j < numCols; ++j) {
       const child = batch.getChildAt(j);
       const { name, type } = schema.fields[j];
-      const valueOf = convert(type);
+      const valueOf = convertArrow(type);
 
       // for each row in the current batch...
       for (let o = k, i = 0; i < numRows; ++i, ++o) {
@@ -50,21 +47,4 @@ export function arrowToObjects(data) {
   }
 
   return objects;
-}
-
-function convert(type) {
-  const { typeId } = type;
-
-  // map timestamp numbers to date objects
-  if (typeId === TIMESTAMP) {
-    return v => v == null ? v : new Date(v);
-  }
-
-  // map bignum to number
-  if (typeId === INTEGER && type.bitWidth >= 64) {
-    return v => v == null ? v : Number(v);
-  }
-
-  // otherwise use Arrow JS defaults
-  return v => v;
 }

@@ -1,4 +1,4 @@
-import { Query, count, gt, isBetween, lt, lte, sql, sum } from '@uwdata/mosaic-sql';
+import { Query, count, isBetween, lt, lte, neq, sql, sum } from '@uwdata/mosaic-sql';
 import { Transient } from '../symbols.js';
 import { binExpr } from './util/bin-expr.js';
 import { dericheConfig, dericheConv2d } from './util/density.js';
@@ -7,6 +7,8 @@ import { grid2d } from './util/grid.js';
 import { handleParam } from './util/handle-param.js';
 import { Mark } from './Mark.js';
 
+export const DENSITY = 'density';
+
 export class Grid2DMark extends Mark {
   constructor(type, source, options) {
     const {
@@ -14,6 +16,8 @@ export class Grid2DMark extends Mark {
       binType = 'linear',
       binWidth = 2,
       binPad = 1,
+      binsX,
+      binsY,
       ...channels
     } = options;
 
@@ -27,6 +31,8 @@ export class Grid2DMark extends Mark {
     handleParam(this, 'binWidth', binWidth);
     handleParam(this, 'binType', binType);
     handleParam(this, 'binPad', binPad);
+    handleParam(this, 'binsX', binsX);
+    handleParam(this, 'binsY', binsY);
   }
 
   setPlot(plot, index) {
@@ -53,68 +59,104 @@ export class Grid2DMark extends Mark {
     // with padded bins, include the entire domain extent
     // if the bins are flush, exclude the extent max
     const bounds = binPad
-      ? [isBetween(bx, [x0, x1]), isBetween(by, [y0, y1])]
-      : [lte(x0, bx), lt(bx, x1), lte(y0, by), lt(by, y1)];
+      ? [isBetween(bx, [+x0, +x1]), isBetween(by, [+y0, +y1])]
+      : [lte(+x0, bx), lt(bx, +x1), lte(+y0, by), lt(by, +y1)];
 
     const q = Query
       .from(source.table)
       .where(filter.concat(bounds));
 
     const groupby = this.groupby = [];
-    let agg = count();
+    const aggrMap = {};
     for (const c of channels) {
       if (Object.hasOwn(c, 'field')) {
         const { as, channel, field } = c;
         if (field.aggregate) {
-          agg = field;
+          // include custom aggregate
+          aggrMap[channel] = field;
           densityMap[channel] = true;
         } else if (channel === 'weight') {
-          agg = sum(field);
+          // compute weighted density
+          aggrMap[DENSITY] = sum(field);
         } else if (channel !== 'x' && channel !== 'y') {
+          // add groupby field
           q.select({ [as]: field });
           groupby.push(as);
         }
       }
     }
+    const aggr = this.aggr = Object.keys(aggrMap);
 
-    return binType === 'linear'
-      ? binLinear2d(q, x, y, agg, nx, groupby)
-      : bin2d(q, x, y, agg, nx, groupby);
+    // check for incompatible encodings
+    if (aggrMap.density && aggr.length > 1) {
+      throw new Error('Weight option can not be used with custom aggregates.');
+    }
+
+    // if no aggregates, default to count density
+    if (!aggr.length) {
+      aggr.push(DENSITY);
+      aggrMap.density = count();
+    }
+
+    // generate grid binning query
+    if (binType === 'linear') {
+      if (aggr.length > 1) {
+        throw new Error('Linear binning not applicable to multiple aggregates.');
+      }
+      if (!aggrMap.density) {
+        throw new Error('Linear binning not applicable to custom aggregates.');
+      }
+      return binLinear2d(q, x, y, aggrMap[DENSITY], nx, groupby);
+    } else {
+      return bin2d(q, x, y, aggrMap, nx, groupby);
+    }
   }
 
   binDimensions() {
-    const { plot, binWidth } = this;
+    const { plot, binWidth, binsX, binsY } = this;
     return [
-      Math.round(plot.innerWidth() / binWidth),
-      Math.round(plot.innerHeight() / binWidth)
+      binsX ?? Math.round(plot.innerWidth() / binWidth),
+      binsY ?? Math.round(plot.innerHeight() / binWidth)
     ];
   }
 
   queryResult(data) {
     const [nx, ny] = this.bins;
-    this.grids = grid2d(nx, ny, data, this.groupby);
+    this.grids = grid2d(nx, ny, data, this.aggr, this.groupby);
     return this.convolve();
   }
 
   convolve() {
-    const { bandwidth, bins, grids, plot } = this;
+    const { aggr, bandwidth, bins, grids, plot } = this;
 
-    if (bandwidth <= 0) {
-      this.kde = this.grids.map(({ key, grid }) => {
-        return (grid.key = key, grid);
-      });
-    } else {
+    // no smoothing as default fallback
+    this.kde = this.grids;
+
+    if (bandwidth > 0) {
+      // determine which grid to smooth
+      const gridProp = aggr.length === 1 ? aggr[0]
+        : aggr.includes(DENSITY) ? DENSITY
+        : null;
+
+      // bail if no compatible grid found
+      if (!gridProp) {
+        console.warn('No compatible grid found for smoothing.');
+        return this;
+      }
+
+      // apply smoothing
       const w = plot.innerWidth();
       const h = plot.innerHeight();
       const [nx, ny] = bins;
-      const neg = grids.some(({ grid }) => grid.some(v => v < 0));
+      const neg = grids.some(cell => cell[gridProp].some(v => v < 0));
       const configX = dericheConfig(bandwidth * (nx - 1) / w, neg);
       const configY = dericheConfig(bandwidth * (ny - 1) / h, neg);
-      this.kde = this.grids.map(({ key, grid }) => {
-        const k = dericheConv2d(configX, configY, grid, bins);
-        return (k.key = key, k);
+      this.kde = this.grids.map(grid => {
+        const density = dericheConv2d(configX, configY, grid[gridProp], bins);
+        return { ...grid, [gridProp]: density };
       });
     }
+
     return this;
   }
 
@@ -123,6 +165,9 @@ export class Grid2DMark extends Mark {
   }
 }
 
+/**
+ * Extract channels that explicitly encode computed densities.
+ */
 function createDensityMap(channels) {
   const densityMap = {};
   for (const key in channels) {
@@ -134,17 +179,17 @@ function createDensityMap(channels) {
   return densityMap;
 }
 
-function bin2d(q, xp, yp, value, xn, groupby) {
+function bin2d(q, xp, yp, aggs, xn, groupby) {
   return q
     .select({
       index: sql`FLOOR(${xp})::INTEGER + FLOOR(${yp})::INTEGER * ${xn}`,
-      value
+      ...aggs
     })
     .groupby('index', groupby);
 }
 
-function binLinear2d(q, xp, yp, value, xn, groupby) {
-  const w = value.column ? `* ${value.column}` : '';
+function binLinear2d(q, xp, yp, density, xn, groupby) {
+  const w = density?.column ? `* ${density.column}` : '';
   const subq = (i, w) => q.clone().select({ xp, yp, i, w });
 
   // grid[xu + yu * xn] += (xv - xp) * (yv - yp) * wi;
@@ -173,7 +218,7 @@ function binLinear2d(q, xp, yp, value, xn, groupby) {
 
   return Query
     .from(Query.unionAll(a, b, c, d))
-    .select({ index: 'i', value: sum('w') }, groupby)
+    .select({ index: 'i', density: sum('w') }, groupby)
     .groupby('index', groupby)
-    .having(gt('value', 0));
+    .having(neq('density', 0));
 }

@@ -1,35 +1,34 @@
-import { handleParam } from './util/handle-param.js';
+import { channelScale } from './util/channel-scale.js';
 import { Grid2DMark } from './Grid2DMark.js';
 import { channelOption } from './Mark.js';
 
 export class Density2DMark extends Grid2DMark {
   constructor(source, options) {
-    const { type = 'dot', binsX, binsY, ...channels } = options;
-    channels.binPad = channels.binPad ?? 0;
-    super(type, source, channels);
-    handleParam(this, 'binsX', binsX);
-    handleParam(this, 'binsY', binsY);
+    const { type = 'dot', ...channels } = options;
+    super(type, source, {
+      binPad: 0,
+      binType: 'linear',
+      binWidth: 2,
+      ...channels
+    });
   }
 
   convolve() {
     super.convolve();
     const { bins, binPad, extentX, extentY } = this;
     const [nx, ny] = bins;
-    const [x0, x1] = extentX;
-    const [y0, y1] = extentY;
+    const scaleX = channelScale(this, 'x');
+    const scaleY = channelScale(this, 'y');
+    const [x0, x1] = extentX.map(v => scaleX.apply(v));
+    const [y0, y1] = extentY.map(v => scaleY.apply(v));
     const deltaX = (x1 - x0) / (nx - binPad);
     const deltaY = (y1 - y0) / (ny - binPad);
     const offset = binPad ? 0 : 0.5;
-    this.data = points(this.kde, bins, x0, y0, deltaX, deltaY, offset);
+    this.data = points(
+      this.kde, bins, x0, y0, deltaX, deltaY,
+      scaleX.invert, scaleY.invert, offset
+    );
     return this;
-  }
-
-  binDimensions() {
-    const { plot, binWidth, binsX, binsY } = this;
-    return [
-      binsX ?? Math.round(plot.innerWidth() / binWidth),
-      binsY ?? Math.round(plot.innerHeight() / binWidth)
-    ];
   }
 
   plotSpecs() {
@@ -50,16 +49,18 @@ export class Density2DMark extends Grid2DMark {
   }
 }
 
-function points(kde, bins, x0, y0, deltaX, deltaY, offset) {
+function points(kde, bins, x0, y0, deltaX, deltaY, invertX, invertY, offset) {
   const scale = 1 / (deltaX * deltaY);
   const [nx, ny] = bins;
   const data = [];
-  for (const grid of kde) {
+  for (const cell of kde) {
+    const grid = cell.density;
     for (let k = 0, j = 0; j < ny; ++j) {
       for (let i = 0; i < nx; ++i, ++k) {
         data.push({
-          x: x0 + (i + offset) * deltaX,
-          y: y0 + (j + offset) * deltaY,
+          ...cell,
+          x: invertX(x0 + (i + offset) * deltaX),
+          y: invertY(y0 + (j + offset) * deltaY),
           density: grid[k] * scale
         });
       }

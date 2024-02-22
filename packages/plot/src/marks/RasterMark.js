@@ -1,7 +1,10 @@
+import { ascending } from 'd3';
 import { scale } from '@observablehq/plot';
+import { gridDomainContinuous, gridDomainDiscrete } from './util/grid.js';
 import { isColor } from './util/is-color.js';
-import { createCanvas, raster, opacityMap, palette } from './util/raster.js';
-import { Grid2DMark } from './Grid2DMark.js';
+import { alphaScheme, alphaConstant, colorConstant, colorCategory, colorScheme, createCanvas } from './util/raster.js';
+import { DENSITY, Grid2DMark } from './Grid2DMark.js';
+import { Fixed, Transient } from '../symbols.js';
 
 export class RasterMark extends Grid2DMark {
   constructor(source, options) {
@@ -19,23 +22,19 @@ export class RasterMark extends Grid2DMark {
   }
 
   rasterize() {
-    const { bins, kde, groupby } = this;
+    const { bins, kde } = this;
     const [ w, h ] = bins;
 
     // raster data
     const { canvas, ctx, img } = imageData(this, w, h);
 
-    // scale function to map densities to [0, 1]
-    const s = imageScale(this);
+    // color + opacity encodings
+    const { alpha, alphaProp, color, colorProp } = rasterEncoding(this);
 
-    // gather color domain as needed
-    const idx = groupby.indexOf(this.channelField('fill')?.as);
-    const domain = idx < 0 ? [] : kde.map(({ key }) => key[idx]);
-
-    // generate raster images
-    this.data = kde.map(grid => {
-      const palette = imagePalette(this, domain, grid.key?.[idx]);
-      raster(grid, img.data, w, h, s, palette);
+    // generate rasters
+    this.data = kde.map(cell => {
+      color?.(img.data, w, h, cell[colorProp]);
+      alpha?.(img.data, w, h, cell[alphaProp]);
       ctx.putImageData(img, 0, 0);
       return { src: canvas.toDataURL() };
     });
@@ -57,7 +56,154 @@ export class RasterMark extends Grid2DMark {
   }
 }
 
-function imageData(mark, w, h) {
+export function rasterEncoding(mark) {
+  const { aggr, densityMap, groupby, plot } = mark;
+  const hasDensity = aggr.includes(DENSITY);
+  const hasFillOpacity = aggr.includes('fillOpacity');
+  const fillEntry = mark.channel('fill');
+  const opacEntry = mark.channel('fillOpacity');
+
+  // check constraints, raise errors
+  if (aggr.length > 2 || (hasDensity && hasFillOpacity)) {
+    throw new Error('Invalid raster encodings. Try dropping an aggregate?');
+  }
+  if (groupby.includes(opacEntry?.as)) {
+    throw new Error('Raster fillOpacity must be an aggregate or constant.');
+  }
+
+  // determine fill encoding channel use
+  const fill = densityMap.fill || aggr.includes('fill') ? 'grid'
+    : groupby.includes(fillEntry?.as) ? 'group' // groupby
+    : isColor(fillEntry?.value) ? fillEntry.value // constant
+    : hasDensity && plot.getAttribute('colorScheme') ? 'grid'
+    : undefined;
+
+  // determine fill opacity encoding channel use
+  const opac = densityMap.fillOpacity || aggr.includes('fillOpacity') ? 'grid'
+    : typeof opacEntry?.value === 'number' ? opacEntry.value // constant
+    : hasDensity && fill !== 'grid' ? 'grid'
+    : undefined;
+
+  if (fill !== 'grid' && opac !== 'grid') {
+    // TODO: use a threshold-based encoding?
+    throw new Error('Raster mark missing density values.');
+  }
+
+  const colorProp = fillEntry?.as ?? (fill === 'grid' ? DENSITY : null);
+  const alphaProp = opacEntry?.as ?? (opac === 'grid' ? DENSITY : null);
+  const color = fill !== 'grid' && fill !== 'group'
+    ? colorConstant(fill)
+    : colorScale(mark, colorProp);
+  const alpha = opac !== 'grid'
+    ? alphaConstant(opac)
+    : alphaScale(mark, alphaProp);
+
+  return { alphaProp, colorProp, alpha, color };
+}
+
+function alphaScale(mark, prop) {
+  const { plot, kde: grids } = mark;
+
+  // determine scale domain
+  const domainAttr = plot.getAttribute('opacityDomain');
+  const domainFixed = domainAttr === Fixed;
+  const domainTransient = domainAttr?.[Transient];
+  const domain = (!domainFixed && !domainTransient && domainAttr)
+    || gridDomainContinuous(grids, prop);
+  if (domainFixed || domainTransient) {
+    if (domainTransient) domain[Transient] = true;
+    plot.setAttribute('colorDomain', domain);
+  }
+
+  // generate opacity scale
+  const s = scale({
+    opacity: {
+      type: plot.getAttribute('opacityScale'),
+      domain,
+      clamp: plot.getAttribute('opacityClamp'),
+      nice: plot.getAttribute('opacityNice'),
+      reverse: plot.getAttribute('opacityReverse'),
+      zero: plot.getAttribute('opacityZero'),
+      base: plot.getAttribute('opacityBase'),
+      exponent: plot.getAttribute('opacityExponent'),
+      constant: plot.getAttribute('opacityConstant')
+    }
+  });
+  return alphaScheme(s);
+}
+
+function colorScale(mark, prop) {
+  const { plot, kde: grids } = mark;
+  const flat = !grids[0][prop]?.map; // not array-like
+  const discrete = flat || Array.isArray(grids[0][prop]);
+
+  // determine scale domain
+  const domainAttr = plot.getAttribute('colorDomain');
+  const domainFixed = domainAttr === Fixed;
+  const domainTransient = domainAttr?.[Transient];
+  const domain = (!domainFixed && !domainTransient && domainAttr) || (
+    flat ? grids.map(cell => cell[prop]).sort(ascending)
+      : discrete ? gridDomainDiscrete(grids, prop)
+      : gridDomainContinuous(grids, prop)
+  );
+  if (domainFixed || domainTransient) {
+    if (domainTransient) domain[Transient] = true;
+    plot.setAttribute('colorDomain', domain);
+  }
+
+  // generate color scale
+  const s = scale({
+    color: {
+      type: plot.getAttribute('colorScale'),
+      domain,
+      range: plot.getAttribute('colorRange'),
+      clamp: plot.getAttribute('colorClamp'),
+      n: plot.getAttribute('colorN'),
+      nice: plot.getAttribute('colorNice'),
+      reverse: plot.getAttribute('colorReverse'),
+      scheme: plot.getAttribute('colorScheme'),
+      interpolate: plot.getAttribute('colorInterpolate'),
+      pivot: plot.getAttribute('colorPivot'),
+      symmetric: plot.getAttribute('colorSymmetric'),
+      zero: plot.getAttribute('colorZero'),
+      base: plot.getAttribute('colorBase'),
+      exponent: plot.getAttribute('colorExponent'),
+      constant: plot.getAttribute('colorConstant')
+    }
+  });
+
+  // TODO: add support for threshold scales?
+  if (discrete) {
+    return colorCategory(s);
+  } else {
+    // Plot scales do not expose intermediate transformation of
+    // values to [0, 1] fractions. So we hobble together our own.
+    const frac = scale({
+      x: {
+        type: inferScaleType(s.type),
+        domain: s.domain,
+        reverse: s.reverse,
+        range: [0, 1],
+        clamp: s.clamp,
+        base: s.base,
+        exponent: s.exponent,
+        constant: s.constant
+      }
+    });
+    return colorScheme(1024, s, frac.apply);
+  }
+}
+
+function inferScaleType(type) {
+  if (type.endsWith('symlog')) return 'symlog';
+  if (type.endsWith('log')) return 'log';
+  if (type.endsWith('pow')) return 'pow';
+  if (type.endsWith('sqrt')) return 'sqrt';
+  if (type === 'diverging') return 'linear';
+  return type;
+}
+
+export function imageData(mark, w, h) {
   if (!mark.image || mark.image.w !== w || mark.image.h !== h) {
     const canvas = createCanvas(w, h);
     const ctx = canvas.getContext('2d', { willReadFrequently: true });
@@ -65,57 +211,4 @@ function imageData(mark, w, h) {
     mark.image = { canvas, ctx, img, w, h };
   }
   return mark.image;
-}
-
-function imageScale(mark) {
-  const { densityMap, kde, plot } = mark;
-  let domain = densityMap.fill && plot.getAttribute('colorDomain');
-
-  // compute kde grid extents if no explicit domain
-  if (!domain) {
-    let lo = 0, hi = 0;
-    kde.forEach(grid => {
-      for (const v of grid) {
-        if (v < lo) lo = v;
-        if (v > hi) hi = v;
-      }
-    });
-    domain = (lo === 0 && hi === 0) ? [0, 1] : [lo, hi];
-  }
-
-  const type = plot.getAttribute('colorScale');
-  return scale({ x: { type, domain, range: [0, 1] } }).apply;
-}
-
-function imagePalette(mark, domain, value, steps = 1024) {
-  const { densityMap, plot } = mark;
-  const scheme = plot.getAttribute('colorScheme');
-
-  // initialize color to constant fill, if specified
-  const fill = mark.channel('fill');
-  let color = isColor(fill?.value) ? fill.value : undefined;
-
-  if (densityMap.fill || (scheme && !color)) {
-    if (scheme) {
-      try {
-        return palette(
-          steps,
-          scale({color: { scheme, domain: [0, 1] }}).interpolate
-        );
-      } catch (err) {
-        console.warn(err);
-      }
-    }
-  } else if (domain.length) {
-    // fill is based on data values
-    const range = plot.getAttribute('colorRange');
-    const spec = {
-      domain,
-      range,
-      scheme: scheme || (range ? undefined : 'tableau10')
-    };
-    color = scale({ color: spec }).apply(value);
-  }
-
-  return palette(steps, opacityMap(color));
 }

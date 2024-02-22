@@ -1,11 +1,10 @@
 import { coordinator } from '@uwdata/mosaic-core';
 import { Query, count, isBetween, lt, lte, neq, sql, sum } from '@uwdata/mosaic-sql';
-import { scale } from '@observablehq/plot';
 import { binExpr } from './util/bin-expr.js';
 import { extentX, extentY } from './util/extent.js';
-import { isColor } from './util/is-color.js';
-import { createCanvas, raster, opacityMap, palette } from './util/raster.js';
+import { createCanvas } from './util/raster.js';
 import { Grid2DMark } from './Grid2DMark.js';
+import { rasterEncoding } from './RasterMark.js';
 
 export class RasterTileMark extends Grid2DMark {
   constructor(source, options) {
@@ -44,33 +43,57 @@ export class RasterTileMark extends Grid2DMark {
     // with padded bins, include the entire domain extent
     // if the bins are flush, exclude the extent max
     const bounds = binPad
-      ? [isBetween(bx, [x0, x1]), isBetween(by, [y0, y1])]
-      : [lte(x0, bx), lt(bx, x1), lte(y0, by), lt(by, y1)];
+      ? [isBetween(bx, [+x0, +x1]), isBetween(by, [+y0, +y1])]
+      : [lte(+x0, bx), lt(bx, +x1), lte(+y0, by), lt(by, +y1)];
 
     const q = Query
       .from(source.table)
       .where(bounds);
 
     const groupby = this.groupby = [];
-    let agg = count();
+    const aggrMap = {};
     for (const c of channels) {
       if (Object.hasOwn(c, 'field')) {
-        const { channel, field } = c;
+        const { as, channel, field } = c;
         if (field.aggregate) {
-          agg = field;
+          // include custom aggregate
+          aggrMap[channel] = field;
           densityMap[channel] = true;
         } else if (channel === 'weight') {
-          agg = sum(field);
+          // compute weighted density
+          aggrMap.density = sum(field);
         } else if (channel !== 'x' && channel !== 'y') {
-          q.select({ [channel]: field });
-          groupby.push(channel);
+          // add groupby field
+          q.select({ [as]: field });
+          groupby.push(as);
         }
       }
     }
+    const aggr = this.aggr = Object.keys(aggrMap);
 
-    return binType === 'linear'
-      ? binLinear2d(q, x, y, agg, nx, groupby)
-      : bin2d(q, x, y, agg, nx, groupby);
+    // check for incompatible encodings
+    if (aggrMap.density && aggr.length > 1) {
+      throw new Error('Weight option can not be used with custom aggregates.');
+    }
+
+    // if no aggregates, default to count density
+    if (!aggr.length) {
+      aggr.push('density');
+      aggrMap.density = count();
+    }
+
+    // generate grid binning query
+    if (binType === 'linear') {
+      if (aggr.length > 1) {
+        throw new Error('Linear binning not applicable to multiple aggregates.');
+      }
+      if (!aggrMap.density) {
+        throw new Error('Linear binning not applicable to custom aggregates.');
+      }
+      return binLinear2d(q, x, y, aggrMap.density, nx, groupby);
+    } else {
+      return bin2d(q, x, y, aggrMap, nx, groupby);
+    }
   }
 
   async requestTiles() {
@@ -132,7 +155,7 @@ export class RasterTileMark extends Grid2DMark {
 
     // wait for tile queries to complete, then update
     const tiles = await Promise.all(queries);
-    this.grids = [{ grid: processTiles(m, n, xx, yy, coords, tiles) }];
+    this.grids = [{ density: processTiles(m, n, xx, yy, coords, tiles) }];
     this.convolve().update();
   }
 
@@ -141,23 +164,19 @@ export class RasterTileMark extends Grid2DMark {
   }
 
   rasterize() {
-    const { bins, kde, groupby } = this;
+    const { bins, kde } = this;
     const [ w, h ] = bins;
 
     // raster data
     const { canvas, ctx, img } = imageData(this, w, h);
 
-    // scale function to map densities to [0, 1]
-    const s = imageScale(this);
+    // color + opacity encodings
+    const { alpha, alphaProp, color, colorProp } = rasterEncoding(this);
 
-    // gather color domain as needed
-    const idx = groupby.indexOf(this.channelField('fill')?.as);
-    const domain = idx < 0 ? [] : kde.map(({ key }) => key[idx]);
-
-    // generate raster images
-    this.data = kde.map(grid => {
-      const palette = imagePalette(this, domain, grid.key?.[idx]);
-      raster(grid, img.data, w, h, s, palette);
+    // generate rasters
+    this.data = kde.map(cell => {
+      color?.(img.data, w, h, cell[colorProp]);
+      alpha?.(img.data, w, h, cell[alphaProp]);
       ctx.putImageData(img, 0, 0);
       return { src: canvas.toDataURL() };
     });
@@ -195,7 +214,7 @@ function copy(m, n, grid, values, tx, ty) {
   const num = values.numRows;
   if (num === 0) return;
   const index = values.getChild('index').toArray();
-  const value = values.getChild('value').toArray();
+  const value = values.getChild('density').toArray();
   for (let row = 0; row < num; ++row) {
     const idx = index[row];
     const i = tx + (idx % m);
@@ -216,64 +235,11 @@ function imageData(mark, w, h) {
   return mark.image;
 }
 
-function imageScale(mark) {
-  const { densityMap, kde, plot } = mark;
-  let domain = densityMap.fill && plot.getAttribute('colorDomain');
-
-  // compute kde grid extents if no explicit domain
-  if (!domain) {
-    let lo = 0, hi = 0;
-    kde.forEach(grid => {
-      for (const v of grid) {
-        if (v < lo) lo = v;
-        if (v > hi) hi = v;
-      }
-    });
-    domain = (lo === 0 && hi === 0) ? [0, 1] : [lo, hi];
-  }
-
-  const type = plot.getAttribute('colorScale');
-  return scale({ x: { type, domain, range: [0, 1] } }).apply;
-}
-
-function imagePalette(mark, domain, value, steps = 1024) {
-  const { densityMap, plot } = mark;
-  const scheme = plot.getAttribute('colorScheme');
-
-  // initialize color to constant fill, if specified
-  const fill = mark.channel('fill');
-  let color = isColor(fill?.value) ? fill.value : undefined;
-
-  if (densityMap.fill || (scheme && !color)) {
-    if (scheme) {
-      try {
-        return palette(
-          steps,
-          scale({color: { scheme, domain: [0, 1] }}).interpolate
-        );
-      } catch (err) {
-        console.warn(err);
-      }
-    }
-  } else if (domain.length) {
-    // fill is based on data values
-    const range = plot.getAttribute('colorRange');
-    const spec = {
-      domain,
-      range,
-      scheme: scheme || (range ? undefined : 'tableau10')
-    };
-    color = scale({ color: spec }).apply(value);
-  }
-
-  return palette(steps, opacityMap(color));
-}
-
-function bin2d(q, xp, yp, value, xn, groupby) {
+function bin2d(q, xp, yp, aggs, xn, groupby) {
   return q
     .select({
       index: sql`FLOOR(${xp})::INTEGER + FLOOR(${yp})::INTEGER * ${xn}`,
-      value
+      ...aggs
     })
     .groupby('index', groupby);
 }
@@ -308,9 +274,9 @@ function binLinear2d(q, xp, yp, value, xn, groupby) {
 
   return Query
     .from(Query.unionAll(a, b, c, d))
-    .select({ index: 'i', value: sum('w') }, groupby)
+    .select({ index: 'i', density: sum('w') }, groupby)
     .groupby('index', groupby)
-    .having(neq('value', 0));
+    .having(neq('density', 0));
 }
 
 function tileFloor(value) {
