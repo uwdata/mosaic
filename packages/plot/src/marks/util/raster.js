@@ -1,4 +1,4 @@
-import { InternMap, rgb } from 'd3';
+import { rgb } from 'd3';
 
 export function createCanvas(w, h) {
   if (typeof document !== 'undefined') {
@@ -87,7 +87,7 @@ export function colorCategory(scale) {
       }
     } else {
       // categorical value for group
-      const c = idx[grid[i + row]];
+      const c = idx[grid];
       for (let j = 0, k = 0; j < h; ++j) {
         for (let i = 0; i < w; ++i, k += 4) {
           data[k + 0] = p[c + 0];
