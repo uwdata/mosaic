@@ -1,4 +1,5 @@
-import { scaleTransform, sql } from '@uwdata/mosaic-sql';
+import { sql } from '@uwdata/mosaic-sql';
+import { channelScale } from './channel-scale';
 
 /**
  * Generates a SQL expression for 1D pixel-level binning.
@@ -8,19 +9,17 @@ import { scaleTransform, sql } from '@uwdata/mosaic-sql';
  * name. For time data, fields are mapped to numerical timestamps.
  */
 export function binExpr(mark, channel, n, extent, pad = 1, expr) {
-  const { plot } = mark;
-
   // get base expression, the channel field unless otherwise given
-  expr = expr ?? mark.channelField(channel).field;
+  const { field } = mark.channelField(channel);
+  expr = expr ?? field;
 
   // extract scale information
-  const reverse = !!plot.getAttribute(`${channel}Reverse`);
-  const type = plot.getAttribute(`${channel}Scale`) || scaleType(extent);
-  const scale = scaleTransform(type);
+  const { type, apply, sqlApply } = channelScale(mark, channel);
+  const reverse = !!mark.plot.getAttribute(`${channel}Reverse`);
 
   // return expressions for (unrounded) bin index and field
-  const [lo, hi] = extent.map(v => scale.apply(v));
-  const v = scale.sql(expr);
+  const [lo, hi] = extent.map(v => apply(v));
+  const v = sqlApply(expr);
   const f = type === 'time' || type === 'utc' ? v : expr;
   const d = hi === lo ? 0 : (n - pad) / (hi - lo);
   const s = d !== 1 ? ` * ${d}::DOUBLE` : '';
@@ -28,11 +27,4 @@ export function binExpr(mark, channel, n, extent, pad = 1, expr) {
     ? sql`(${hi} - ${v}::DOUBLE)${s}`
     : sql`(${v}::DOUBLE - ${lo})${s}`;
   return [bin, f];
-}
-
-// Check the min/max value types to infer time scales.
-function scaleType(extent) {
-  return extent[0] instanceof Date || extent[1] instanceof Date
-    ? 'time'
-    : 'linear';
 }

@@ -1,30 +1,26 @@
-import { asColumn } from '@uwdata/mosaic-sql';
 import { Transform } from '../symbols.js';
+import { channelScale } from '../marks/util/channel-scale.js';
 
-const EXTENT = [
-  'rectY-x', 'rectX-y', 'rect-x', 'rect-y'
-];
-
-function hasExtent(channel, type) {
-  return EXTENT.includes(`${type}-${channel}`);
-}
+const EXTENT = new Set(['rectY-x', 'rectX-y', 'rect-x', 'rect-y']);
 
 export function bin(field, options = { steps: 25 }) {
   const fn = (mark, channel) => {
-    return hasExtent(channel, mark.type)
-      ? {
-          [`${channel}1`]: binField(mark, field, options),
-          [`${channel}2`]: binField(mark, field, { ...options, offset: 1 })
-        }
-      : {
-          [channel]: binField(mark, field, options)
-        };
+    if (EXTENT.has(`${mark.type}-${channel}`)) {
+      return {
+        [`${channel}1`]: binField(mark, channel, field, options),
+        [`${channel}2`]: binField(mark, channel, field, { ...options, offset: 1 })
+      };
+    } else {
+      return {
+        [channel]: binField(mark, channel, field, options)
+      };
+    }
   };
   fn[Transform] = true;
   return fn;
 }
 
-function binField(mark, column, options) {
+function binField(mark, channel, column, options) {
   return {
     column,
     label: column,
@@ -32,13 +28,15 @@ function binField(mark, column, options) {
     get columns() { return [column]; },
     get basis() { return column; },
     toString() {
+      const { apply, sqlApply, sqlInvert } = channelScale(mark, channel);
       const { min, max } = mark.stats[column];
-      const b = bins(min, max, options);
-      const col = asColumn(column);
+      const b = bins(apply(min), apply(max), options);
+      const col = sqlApply(column);
       const base = b.min === 0 ? col : `(${col} - ${b.min})`;
       const alpha = `${(b.max - b.min) / b.steps}::DOUBLE`;
       const off = options.offset ? `${options.offset} + ` : '';
-      return `${b.min} + ${alpha} * (${off}FLOOR(${base} / ${alpha})::INTEGER)`;
+      const expr = `${b.min} + ${alpha} * (${off}FLOOR(${base} / ${alpha}))`;
+      return `${sqlInvert(expr)}`;
     }
   };
 }

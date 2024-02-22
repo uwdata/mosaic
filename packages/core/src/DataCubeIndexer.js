@@ -157,14 +157,14 @@ function getActiveView(clause) {
 }
 
 function binInterval(scale, pixelSize) {
-  const { type, domain, range } = scale;
-  const { apply, sql: toSQL } = scaleTransform(type);
+  const { apply, sqlApply } = scaleTransform(scale);
   if (apply) {
+    const { domain, range } = scale;
     const lo = apply(Math.min(...domain));
     const hi = apply(Math.max(...domain));
     const a = (Math.abs(range[1] - range[0]) / (hi - lo)) / pixelSize;
     const s = pixelSize === 1 ? '' : `${pixelSize}::INTEGER * `;
-    return value => sql`${s}FLOOR(${a}::DOUBLE * (${toSQL(value)} - ${lo}::DOUBLE))::INTEGER`;
+    return value => sql`${s}FLOOR(${a}::DOUBLE * (${sqlApply(value)} - ${lo}::DOUBLE))::INTEGER`;
   }
 }
 
