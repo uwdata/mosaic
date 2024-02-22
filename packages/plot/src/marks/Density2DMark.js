@@ -6,24 +6,25 @@ export class Density2DMark extends Grid2DMark {
   constructor(source, options) {
     const { type = 'dot', ...channels } = options;
     super(type, source, {
-      binPad: 0,
-      binType: 'linear',
-      binWidth: 2,
+      bandwidth: 20,
+      interpolate: 'linear',
+      pad: 0,
+      pixelSize: 2,
       ...channels
     });
   }
 
   convolve() {
     super.convolve();
-    const { bins, binPad, extentX, extentY } = this;
+    const { bins, pad, extentX, extentY } = this;
     const [nx, ny] = bins;
     const scaleX = channelScale(this, 'x');
     const scaleY = channelScale(this, 'y');
     const [x0, x1] = extentX.map(v => scaleX.apply(v));
     const [y0, y1] = extentY.map(v => scaleY.apply(v));
-    const deltaX = (x1 - x0) / (nx - binPad);
-    const deltaY = (y1 - y0) / (ny - binPad);
-    const offset = binPad ? 0 : 0.5;
+    const deltaX = (x1 - x0) / (nx - pad);
+    const deltaY = (y1 - y0) / (ny - pad);
+    const offset = pad ? 0 : 0.5;
     this.data = points(
       this.kde, bins, x0, y0, deltaX, deltaY,
       scaleX.invert, scaleY.invert, offset

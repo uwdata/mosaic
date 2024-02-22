@@ -6,6 +6,17 @@ import { alphaScheme, alphaConstant, colorConstant, colorCategory, colorScheme, 
 import { DENSITY, Grid2DMark } from './Grid2DMark.js';
 import { Fixed, Transient } from '../symbols.js';
 
+/**
+ * Raster image mark. Data is binned to a grid based on the x and y options.
+ * The grid cells are then colored to form an image.
+ * The raster grid size defaults to the pixel width/height of the
+ * plot. The pixelSize option (default 1) changes the grid cell to pixel
+ * ratio. For example, a pixelSize of 0.5 will create a larger raster
+ * for higher resolution images on retina displays. The width and height
+ * options set the grid dimensions directly, overriding other options.
+ * The raster grid can optionally be smoothed (blurred) by setting
+ * the bandwidth option.
+ */
 export class RasterMark extends Grid2DMark {
   constructor(source, options) {
     super('image', source, options);
@@ -56,6 +67,26 @@ export class RasterMark extends Grid2DMark {
   }
 }
 
+/**
+ * Density heatmap image.
+ * This is just a raster mark with default options for
+ * accurate binning and smoothing for density estimation.
+ */
+export class HeatmapMark extends RasterMark {
+  constructor(source, options) {
+    super(source, {
+      bandwidth: 20,
+      interpolate: 'linear',
+      pixelSize: 2,
+      ...options
+    });
+  }
+}
+
+/**
+ * Utility method to generate color and alpha encoding helpers.
+ * The returned methods can write directly to a pixel raster.
+ */
 export function rasterEncoding(mark) {
   const { aggr, densityMap, groupby, plot } = mark;
   const hasDensity = aggr.includes(DENSITY);

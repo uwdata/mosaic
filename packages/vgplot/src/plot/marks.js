@@ -6,6 +6,7 @@ import {
   Density2DMark,
   DenseLineMark,
   GeoMark,
+  HeatmapMark,
   HexbinMark,
   RasterMark,
   RasterTileMark,
@@ -92,6 +93,7 @@ export const densityY = (...args) => explicitType(Density1DMark, 'areaY', ...arg
 export const density = (...args) => implicitType(Density2DMark, ...args);
 export const denseLine = (...args) => implicitType(DenseLineMark, ...args);
 export const contour = (...args) => implicitType(ContourMark, ...args);
+export const heatmap = (...args) => implicitType(HeatmapMark, ...args);
 export const raster = (...args) => implicitType(RasterMark, ...args);
 export const rasterTile = (...args) => implicitType(RasterTileMark, ...args);
 

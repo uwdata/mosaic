@@ -7,7 +7,12 @@ import { channelOption } from './Mark.js';
 export class ContourMark extends Grid2DMark {
   constructor(source, options) {
     const { thresholds = 10, ...channels } = options;
-    super('geo', source, channels);
+    super('geo', source, {
+      bandwidth: 20,
+      interpolate: 'linear',
+      pixelSize: 2,
+      ...channels
+    });
     handleParam(this, 'thresholds', thresholds, () => {
       return this.grids ? this.contours().update() : null
     });

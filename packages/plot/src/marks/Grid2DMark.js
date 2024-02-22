@@ -12,12 +12,12 @@ export const DENSITY = 'density';
 export class Grid2DMark extends Mark {
   constructor(type, source, options) {
     const {
-      bandwidth = 20,
-      binType = 'linear',
-      binWidth = 2,
-      binPad = 1,
-      binsX,
-      binsY,
+      bandwidth = 0,
+      interpolate = 'none',
+      pixelSize = 1,
+      pad = 1,
+      width,
+      height,
       ...channels
     } = options;
 
@@ -28,11 +28,11 @@ export class Grid2DMark extends Mark {
     handleParam(this, 'bandwidth', bandwidth, () => {
       return this.grids ? this.convolve().update() : null;
     });
-    handleParam(this, 'binWidth', binWidth);
-    handleParam(this, 'binType', binType);
-    handleParam(this, 'binPad', binPad);
-    handleParam(this, 'binsX', binsX);
-    handleParam(this, 'binsY', binsY);
+    handleParam(this, 'pixelSize', pixelSize);
+    handleParam(this, 'interpolate', interpolate);
+    handleParam(this, 'pad', pad);
+    handleParam(this, 'width', width);
+    handleParam(this, 'height', height);
   }
 
   setPlot(plot, index) {
@@ -49,16 +49,16 @@ export class Grid2DMark extends Mark {
   }
 
   query(filter = []) {
-    const { binType, binPad, channels, densityMap, source } = this;
+    const { interpolate, pad, channels, densityMap, source } = this;
     const [x0, x1] = this.extentX = extentX(this, filter);
     const [y0, y1] = this.extentY = extentY(this, filter);
     const [nx, ny] = this.bins = this.binDimensions(this);
-    const [x, bx] = binExpr(this, 'x', nx, [x0, x1], binPad);
-    const [y, by] = binExpr(this, 'y', ny, [y0, y1], binPad);
+    const [x, bx] = binExpr(this, 'x', nx, [x0, x1], pad);
+    const [y, by] = binExpr(this, 'y', ny, [y0, y1], pad);
 
     // with padded bins, include the entire domain extent
     // if the bins are flush, exclude the extent max
-    const bounds = binPad
+    const bounds = pad
       ? [isBetween(bx, [+x0, +x1]), isBetween(by, [+y0, +y1])]
       : [lte(+x0, bx), lt(bx, +x1), lte(+y0, by), lt(by, +y1)];
 
@@ -99,7 +99,7 @@ export class Grid2DMark extends Mark {
     }
 
     // generate grid binning query
-    if (binType === 'linear') {
+    if (interpolate === 'linear') {
       if (aggr.length > 1) {
         throw new Error('Linear binning not applicable to multiple aggregates.');
       }
@@ -113,10 +113,10 @@ export class Grid2DMark extends Mark {
   }
 
   binDimensions() {
-    const { plot, binWidth, binsX, binsY } = this;
+    const { plot, pixelSize, width, height } = this;
     return [
-      binsX ?? Math.round(plot.innerWidth() / binWidth),
-      binsY ?? Math.round(plot.innerHeight() / binWidth)
+      width ?? Math.round(plot.innerWidth() / pixelSize),
+      height ?? Math.round(plot.innerHeight() / pixelSize)
     ];
   }
 
@@ -144,7 +144,7 @@ export class Grid2DMark extends Mark {
         return this;
       }
 
-      // apply smoothing
+      // apply smoothing, bandwidth uses units of screen pixels
       const w = plot.innerWidth();
       const h = plot.innerHeight();
       const [nx, ny] = bins;
