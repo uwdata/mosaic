@@ -7,7 +7,7 @@ import { RasterMark } from './RasterMark.js';
 export class DenseLineMark extends RasterMark {
   constructor(source, options) {
     const { normalize = true, ...rest } = options;
-    super(source, { bandwidth: 0, ...rest });
+    super(source, rest);
     handleParam(this, 'normalize', normalize);
   }
 

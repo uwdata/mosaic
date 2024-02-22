@@ -11,7 +11,7 @@ export { Density2DMark } from './marks/Density2DMark.js';
 export { GeoMark } from './marks/GeoMark.js';
 export { Grid2DMark } from './marks/Grid2DMark.js';
 export { HexbinMark } from './marks/HexbinMark.js';
-export { RasterMark } from './marks/RasterMark.js';
+export { RasterMark, HeatmapMark } from './marks/RasterMark.js';
 export { RasterTileMark } from './marks/RasterTileMark.js';
 export { RegressionMark } from './marks/RegressionMark.js';
 
