@@ -15,21 +15,27 @@ export class ConnectedMark extends Mark {
     const { plot, dim, source, stats } = this;
     const { optimize = true } = source.options || {};
     const q = super.query(filter);
+    if (!dim) return q;
 
-    if (optimize && dim) {
+    const ortho = dim === 'x' ? 'y' : 'x';
+    const value = this.channelField(ortho)?.as;
+    const { field, as } = this.channelField(dim);
+    const { type } = stats[field.column];
+    const isContinuous = type === 'date' || type === 'number';
+
+    if (optimize && isContinuous && value) {
       // TODO: handle stacked data!
-      const { field, as } = this.channelField(dim);
       const { column } = field;
       const { max, min } = stats[column];
       const size = dim === 'x' ? plot.innerWidth() : plot.innerHeight();
-
       const [lo, hi] = filteredExtent(filter, column) || [min, max];
       const [expr] = binExpr(this, dim, size, [lo, hi], 1, as);
-      const val = this.channelField(dim === 'x' ? 'y' : 'x').as;
-      const cols = q.select().map(c => c.as).filter(c => c !== as && c !== val);
-      return m4(q, expr, as, val, cols);
+      const cols = q.select()
+        .map(c => c.as)
+        .filter(c => c !== as && c !== value);
+      return m4(q, expr, as, value, cols);
     } else {
-      return q;
+      return q.orderby(field);
     }
   }
 }
