@@ -5,7 +5,7 @@
 
 # Contour Plot
 
-Here `raster` and `contour` marks visualize the density of data points in a scatter plot of penguin measurments. Setting the `fill` color to `"species"` subdivides the data into three sets of densities.
+Here `heatmap` and `contour` marks visualize the density of data points in a scatter plot of penguin measurments. Setting the `fill` color to `"species"` subdivides the data into three sets of densities.
 
 <Example spec="/specs/yaml/contours.yaml" />
 

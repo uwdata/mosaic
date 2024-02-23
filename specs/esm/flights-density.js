@@ -13,7 +13,7 @@ export default vg.vconcat(
     vg.slider({label: "Thresholds", as: $thresholds, min: 2, max: 20})
   ),
   vg.plot(
-    vg.raster(
+    vg.heatmap(
       vg.from("flights"),
       {x: "time", y: "delay", fill: "density", bandwidth: $bandwidth}
     ),

@@ -1,7 +1,7 @@
 meta:
   title: Flights Density
   description: >
-    Density `raster` and `contour` lines for 200,000+ flights by departure hour and arrival delay.
+    Density `heatmap` and `contour` lines for 200,000+ flights by departure hour and arrival delay.
     The sliders adjust the smoothing (bandwidth) and number of contour thresholds.
 data:
   flights: { file: data/flights-200k.parquet }
@@ -21,7 +21,7 @@ vconcat:
     min: 2
     max: 20
 - plot:
-  - mark: raster
+  - mark: heatmap
     data: { from: flights }
     x: time
     y: delay

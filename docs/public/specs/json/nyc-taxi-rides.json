@@ -35,8 +35,6 @@
               },
               "x": "px",
               "y": "py",
-              "binType": "normal",
-              "binWidth": 1,
               "bandwidth": 0
             },
             {
@@ -87,8 +85,6 @@
               },
               "x": "dx",
               "y": "dy",
-              "binType": "normal",
-              "binWidth": 1,
               "bandwidth": 0
             },
             {
