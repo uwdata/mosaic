@@ -19,7 +19,7 @@
       "select": "intersect"
     },
     "bandwidth": 0,
-    "binWidth": 2,
+    "pixelSize": 2,
     "schemeColor": "pubugn",
     "scaleColor": "sqrt"
   },
@@ -36,8 +36,8 @@
         },
         {
           "input": "menu",
-          "label": "Bin Width",
-          "as": "$binWidth",
+          "label": "Pixel Size",
+          "as": "$pixelSize",
           "options": [
             0.5,
             1,
@@ -62,7 +62,7 @@
           "z": "Symbol",
           "fill": "density",
           "bandwidth": "$bandwidth",
-          "binWidth": "$binWidth"
+          "pixelSize": "$pixelSize"
         }
       ],
       "colorScheme": "$schemeColor",
@@ -90,7 +90,7 @@
           "fill": "density",
           "normalize": false,
           "bandwidth": "$bandwidth",
-          "binWidth": "$binWidth"
+          "pixelSize": "$pixelSize"
         },
         {
           "select": "intervalXY",

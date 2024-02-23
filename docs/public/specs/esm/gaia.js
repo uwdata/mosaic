@@ -22,7 +22,7 @@ WHERE parallax BETWEEN -5 AND 20`
 
 const $brush = vg.Selection.crossfilter();
 const $bandwidth = vg.Param.value(0);
-const $binWidth = vg.Param.value(2);
+const $pixelSize = vg.Param.value(2);
 const $scaleType = vg.Param.value("sqrt");
 
 export default vg.hconcat(
@@ -35,8 +35,7 @@ export default vg.hconcat(
           y: "v",
           fill: "density",
           bandwidth: $bandwidth,
-          binWidth: $binWidth,
-          binType: "normal"
+          pixelSize: $pixelSize
         }
       ),
       vg.intervalXY({pixelSize: 2, as: $brush}),
@@ -92,8 +91,7 @@ export default vg.hconcat(
         y: "phot_g_mean_mag",
         fill: "density",
         bandwidth: $bandwidth,
-        binWidth: $binWidth,
-        binType: "normal"
+        pixelSize: $pixelSize
       }
     ),
     vg.intervalXY({pixelSize: 2, as: $brush}),

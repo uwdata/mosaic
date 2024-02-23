@@ -6,14 +6,14 @@ await vg.coordinator().exec([
 
 const $brush = vg.Selection.intersect();
 const $bandwidth = vg.Param.value(0);
-const $binWidth = vg.Param.value(2);
+const $pixelSize = vg.Param.value(2);
 const $schemeColor = vg.Param.value("pubugn");
 const $scaleColor = vg.Param.value("sqrt");
 
 export default vg.vconcat(
   vg.hconcat(
     vg.slider({label: "Bandwidth (σ)", as: $bandwidth, min: 0, max: 10, step: 0.1}),
-    vg.menu({label: "Bin Width", as: $binWidth, options: [0.5, 1, 2]})
+    vg.menu({label: "Pixel Size", as: $pixelSize, options: [0.5, 1, 2]})
   ),
   vg.vspace(10),
   vg.plot(
@@ -25,7 +25,7 @@ export default vg.vconcat(
         z: "Symbol",
         fill: "density",
         bandwidth: $bandwidth,
-        binWidth: $binWidth
+        pixelSize: $pixelSize
       }
     ),
     vg.colorScheme($schemeColor),
@@ -46,7 +46,7 @@ export default vg.vconcat(
         fill: "density",
         normalize: false,
         bandwidth: $bandwidth,
-        binWidth: $binWidth
+        pixelSize: $pixelSize
       }
     ),
     vg.intervalXY({as: $brush}),

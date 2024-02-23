@@ -98,7 +98,7 @@ export default vg.vconcat(
       vg.xDomain([-1, 8])
     ),
     vg.plot(
-      vg.raster(
+      vg.heatmap(
         vg.from("md"),
         {x: "i", y: "v", fill: "density", bandwidth: 15}
       ),
@@ -109,7 +109,7 @@ export default vg.vconcat(
     vg.plot(
       vg.denseLine(
         vg.from("md"),
-        {x: "i", y: "v", fill: "density", bandwidth: 2, binWidth: 1}
+        {x: "i", y: "v", fill: "density", bandwidth: 2, pixelSize: 1}
       ),
       ...defaultAttributes,
       vg.colorScheme("blues"),

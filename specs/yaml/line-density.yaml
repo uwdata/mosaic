@@ -13,7 +13,7 @@ data:
 params:
   brush: { select: intersect }
   bandwidth: 0
-  binWidth: 2
+  pixelSize: 2
   schemeColor: pubugn
   scaleColor: sqrt
 vconcat:
@@ -25,8 +25,8 @@ vconcat:
     max: 10
     step: 0.1
   - input: menu
-    label: Bin Width
-    as: $binWidth
+    label: Pixel Size
+    as: $pixelSize
     options: [0.5, 1, 2]
 - vspace: 10
 - plot:
@@ -37,7 +37,7 @@ vconcat:
     z: Symbol
     fill: density
     bandwidth: $bandwidth
-    binWidth: $binWidth
+    pixelSize: $pixelSize
   colorScheme: $schemeColor
   colorScale: $scaleColor
   yLabel: Close (Normalized) ↑
@@ -54,7 +54,7 @@ vconcat:
     fill: density
     normalize: false
     bandwidth: $bandwidth
-    binWidth: $binWidth
+    pixelSize: $pixelSize
   - select: intervalXY
     as: $brush
   colorScheme: $schemeColor

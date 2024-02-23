@@ -23,7 +23,7 @@ export default vg.vconcat(
     vg.plot(
       vg.raster(
         vg.from("trips", {filterBy: $filter}),
-        {x: "px", y: "py", binType: "normal", binWidth: 1, bandwidth: 0}
+        {x: "px", y: "py", bandwidth: 0}
       ),
       vg.intervalXY({as: $filter}),
       vg.text(
@@ -51,7 +51,7 @@ export default vg.vconcat(
     vg.plot(
       vg.raster(
         vg.from("trips", {filterBy: $filter}),
-        {x: "dx", y: "dy", binType: "normal", binWidth: 1, bandwidth: 0}
+        {x: "dx", y: "dy", bandwidth: 0}
       ),
       vg.intervalXY({as: $filter}),
       vg.text(

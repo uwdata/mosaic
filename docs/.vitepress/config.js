@@ -126,6 +126,7 @@ export default defineConfig({
             { text: 'Cross-Filter Flights 200k', link: '/examples/flights-200k' },
             { text: 'Cross-Filter Flights 10M', link: '/examples/flights-10m' },
             { text: 'Gaia Star Catalog', link: '/examples/gaia' },
+            { text: 'Observable Latency', link: '/examples/observable-latency' },
             { text: 'Olympic Athletes', link: '/examples/athletes' },
             { text: 'Pan & Zoom', link: '/examples/pan-zoom' },
             { text: 'Scatter Plot Matrix', link: '/examples/splom' },

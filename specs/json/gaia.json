@@ -14,7 +14,7 @@
       "select": "crossfilter"
     },
     "bandwidth": 0,
-    "binWidth": 2,
+    "pixelSize": 2,
     "scaleType": "sqrt"
   },
   "hconcat": [
@@ -32,8 +32,7 @@
               "y": "v",
               "fill": "density",
               "bandwidth": "$bandwidth",
-              "binWidth": "$binWidth",
-              "binType": "normal"
+              "pixelSize": "$pixelSize"
             },
             {
               "select": "intervalXY",
@@ -129,8 +128,7 @@
           "y": "phot_g_mean_mag",
           "fill": "density",
           "bandwidth": "$bandwidth",
-          "binWidth": "$binWidth",
-          "binType": "normal"
+          "pixelSize": "$pixelSize"
         },
         {
           "select": "intervalXY",

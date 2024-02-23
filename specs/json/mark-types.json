@@ -1,7 +1,7 @@
 {
   "meta": {
     "title": "Mark Types",
-    "description": "A subset of supported mark types.\n\n- Row 1: `barY`, `lineY`, `text`, `tickY`, `areaY`\n- Row 2: `regressionY`, `hexbin`, `contour`, `raster`, `denseLine`\n"
+    "description": "A subset of supported mark types.\n\n- Row 1: `barY`, `lineY`, `text`, `tickY`, `areaY`\n- Row 2: `regressionY`, `hexbin`, `contour`, `heatmap`, `denseLine`\n"
   },
   "data": {
     "md": {
@@ -214,7 +214,7 @@
         {
           "plot": [
             {
-              "mark": "raster",
+              "mark": "heatmap",
               "data": {
                 "from": "md"
               },
@@ -241,7 +241,7 @@
               "y": "v",
               "fill": "density",
               "bandwidth": 2,
-              "binWidth": 1
+              "pixelSize": 1
             }
           ],
           "colorScheme": "blues",

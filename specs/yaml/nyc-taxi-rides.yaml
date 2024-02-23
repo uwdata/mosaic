@@ -32,8 +32,6 @@ vconcat:
       data: { from: trips, filterBy: $filter }
       x: px
       y: py
-      binType: normal
-      binWidth: 1
       bandwidth: 0
     - select: intervalXY
       as: $filter
@@ -60,8 +58,6 @@ vconcat:
       data: { from: trips, filterBy: $filter }
       x: dx
       y: dy
-      binType: normal
-      binWidth: 1
       bandwidth: 0
     - select: intervalXY
       as: $filter
