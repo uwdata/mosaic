@@ -67,10 +67,12 @@ The supported _options_ are:
 - _fill_: The contour fill color
 - _stroke_: The contour stroke color
 - _thresholds_: The number of contour thresholds to include (default `10`)
-- _bandwidth_: The kernel density bandwidth for smoothing (default `0`)
-- _binType_: The binning method to use, one of `"linear"` (default) or `"normal"`
-- _binWidth_: The bin size in screen pixels (default `2`)
-- _binPad_: The bin padding, one of `1` (default) to include extra padding for the final bin, or `0` to make the bins flush with the maximum domain value
+- _bandwidth_: The kernel density bandwidth for smoothing, in pixels (default `20`)
+- _interpolate_: The binning interpolation method to use, one of `"linear"` (default) or `"none"`
+- _pixelSize_: The grid cell size in screen pixels (default `2`); ignored when _width_ and _height_ options are provided
+- _width_: The number of grid bins to include along the _x_ dimension
+- _height_: The number of grid bins to include along the _y_ dimension
+- _pad_: The bin padding, one of `0` (default) to make the bins flush with the maximum domain value, or `1` to include extra padding for the final bin
 - Other standard mark options including _fillOpacity_ and _strokeWidth_
 
 ## Delaunay
@@ -106,11 +108,11 @@ The supported _options_ are:
 - _y_: The y dimension encoding channel
 - _type_: The mark type to use (default [`dot`](#dot))
 - _bandwidth_: The kernel density bandwidth for smoothing, in pixels (default `20`)
-- _binType_: The binning method to use, one of `"linear"` (default) or `"normal"`
-- _binWidth_: The bin size in screen pixels (default `2`); ignored when _binsX_ and _binsY_ options are provided
-- _binsX_: The number of bins to include along the _x_ dimension
-- _binsY_: The number of bins to include along the _y_ dimension
-- _binPad_: The bin padding, one of `0` (default) to make the bins flush with the maximum domain value, or `1` to include extra padding for the final bin
+- _interpolate_: The binning interpolation method to use, one of `"linear"` (default) or `"none"`
+- _pixelSize_: The grid cell size in screen pixels (default `2`); ignored when _width_ and _height_ options are provided
+- _width_: The number of grid bins to include along the _x_ dimension
+- _height_: The number of grid bins to include along the _y_ dimension
+- _pad_: The bin padding, one of `0` (default) to make the bins flush with the maximum domain value, or `1` to include extra padding for the final bin
 - Any options accepted by the mark _type_, including _fill_, _stroke_, and _r_
 
 ## Dense Line
@@ -124,9 +126,10 @@ The supported _options_ are:
 - _x_: The x dimension encoding channel
 - _y_: The y dimension encoding channel
 - _bandwidth_: The kernel density bandwidth for smoothing (default `0`)
-- _binType_: The binning method to use, one of `"linear"` (default) or `"normal"`
-- _binWidth_: The bin size in screen pixels (default `2`)
-- _binPad_: The bin padding, one of `1` (default) to include extra padding for the final bin, or `0` to make the bins flush with the maximum domain value.
+- _pixelSize_: The grid cell size in screen pixels (default `1`)
+- _pad_: The bin padding, one of `1` (default) to include extra padding for the final bin, or `0` to make the bins flush with the maximum domain value.
+- _width_: The number of grid bins to include along the _x_ dimension
+- _height_: The number of grid bins to include along the _y_ dimension
 - _normalize_: Boolean flag (default `true`) controlling approximate arc length normalization.
 
 ## Dot
@@ -144,9 +147,15 @@ For supported options, see the [Observable Plot `frame` documentation](https://o
 ## Geo
 
 The `geo` mark draws geographic features—polygons, lines, points, and other geometry—often as thematic maps.
-Input data should be in a GeoJSON format.
+Input data can be provided directly an array of GeoJSON features or geographic data can be loaded and queried directly in DuckDB using the `spatial` extension.
+
+The _geometry_ option indicates the column name containing GeoJSON features or GeoJSON geometry objects.
+If _geometry_ is not specified, the mark will interpret input objects as GeoJSON when data is passed in directly.
+When querying geometry from a DuckDB table, the _geometry_ option will default to `'geom'` (the default name for geometry data loaded using the `spatial` extension's `ST_Read` function) and will be automatically converted to GeoJSON format in the databse using the `ST_asGeoJSON` function.
+If the _geometry_ option is specified, automatic conversion of DuckDB query results is _not_ performed; this enables more fine-grained control, but may require explicit conversion of data to GeoJSON format using `ST_asGeoJSON` (or equivalently using Mosaic's `geojson()` SQL helper).
+
 The `sphere` and `graticule` marks (which do not accept input data) include the sphere of the Earth and global reference lines, respectively.
-For supported options, see the [Observable Plot `geo` documentation](https://observablehq.com/plot/marks/geo).
+For other supported options, see the [Observable Plot `geo` documentation](https://observablehq.com/plot/marks/geo).
 
 ## Grid
 
@@ -154,6 +163,12 @@ The grid mark is a specially-configured rule for drawing an axis-aligned grid.
 To go beyond the built-in axis generation, the grid mark supports explicit inclusion of grid lines, along with control over drawing order.
 The provided mark directives are `gridX` and `gridY` (for standard axes) as well as `gridFx` and `gridFy` (for facet axes).
 For supported options, see the [Observable Plot `grid` documentation](https://observablehq.com/plot/marks/grid).
+
+## Heatmap
+
+The `heatmap` mark is a raster mark with default options for accurate smoothing of density estimates.
+The _bandwidth_ (`20`), _interpolate_ (`"linear"`), and _pixelSize_ (`2`) options are set to produce smoothed density heatmaps.
+For all supported options, see the [`raster`](#raster) mark.
 
 ## Hexbin
 
@@ -208,7 +223,7 @@ For supported options, see the [Observable Plot `link` documentation](https://ob
 The `raster` mark draws an image whose pixel colors are a function of the underlying data.
 The _x_ and _y_ data domains are binned into the cells of the raster grid, with an aggregate function evaluated over the binned data.
 The result can then be optionally smoothed in-browser.
-One common use of a raster is to draw a density heatmap.
+To create a smoothed density heatmap, use the [`heatmap`](#heatmap) mark: a raster mark with different default options.
 
 The supported _options_ are:
 
@@ -216,10 +231,12 @@ The supported _options_ are:
 - _y_: The y dimension encoding channel
 - _fill_: The fill color. Use the special value `"density"` to map pixel colors to a computed density. Use an aggregate expression to instead visualized an aggregate value per bin. If provided discrete data values, multiple rasters will be created with unique colors per layer, and opacity will be used to convey densities.
 - _weight_: A data column by which to weight computed densities
-- _bandwidth_: The kernel density bandwidth for smoothing (default `20`)
-- _binType_: The binning method to use, one of `"linear"` (default) or `"normal"`
-- _binWidth_: The bin size in screen pixels (default `2`)
-- _binPad_: The bin padding, one of `1` (default) to include extra padding for the final bin, or `0` to make the bins flush with the maximum domain value
+- _bandwidth_: The kernel density bandwidth for smoothing, in pixels (default `0`)
+- _interpolate_: The binning interpolation method to use, one of `"none"` (default) or `"linear"` (for more accurate density estimation when smoothing).
+- _pixelSize_: The grid cell size in screen pixels (default `1`); ignored when _width_ and _height_ options are provided
+- _width_: The number of grid bins to include along the _x_ dimension
+- _height_: The number of grid bins to include along the _y_ dimension
+- _pad_: The bin padding, one of `1` (default) to include extra padding for the final bin, or `0` to make the bins flush with the maximum domain value
 
 ## Rect
 

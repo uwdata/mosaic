@@ -110,13 +110,18 @@ Connected marks are treated similarly to basic marks, with one notable addition:
 
 Separately, vgplot includes a `regressionY` mark for linear regression fits. Regression calculations and associated statistics are performed in-database in a single aggregate query. The mark then draws the regression line and optional confidence interval area.
 
+### Geography and Geometry
+
+The `geo` mark visualizes geometry data, such as geographic regions, in GeoJSON format.
+An array of GeoJSON features can be provided directly as data, or geographic data can be loaded and queried directly in database using the DuckDB `spatial` extension.
+
 ### Density Marks
 
 The `densityY` mark performs 1D kernel density estimation (KDE).
 The `densityY` mark defaults to areas, but supports a `type` option to instead use lines, points, or other basic marks.
 The generated query performs _linear binning_, an alternative to standard binning that proportionally distributes the weight of a point between adjacent bins to provide greater accuracy for density estimation. The query uses subqueries for the "left" and "right" bins, then aggregates the results. The query result is a 1D grid of binned values which are then smoothed. As smoothing is performed in the browser, interactive bandwidth updates are processed immediately.
 
-The `density`, `contour`, and `raster` marks compute densities over a 2D domain using either linear (default) or standard binning. Smoothing again is performed in browser; setting the `bandwidth` option to zero disables smoothing. The `contour` mark then performs contour generation, whereas the `raster` mark generates a colored bitmap. Dynamic changes of bandwidth, contour thresholds, and color scales are handled immediately in browser.
+The `density`, `contour`, `heatmap`, and `raster` marks compute densities over a 2D domain using either linear (default) or standard binning. Smoothing again is performed in browser; setting the `bandwidth` option to zero disables smoothing. The `contour` mark then performs contour generation, whereas the `raster` mark generates a colored bitmap. The `heatmap` mark is a convenient shortcut for a `raster` that performs smoothing by default. Dynamic changes of bandwidth, contour thresholds, and color scales are handled immediately in browser.
 
 The `hexbin` mark pushes hexagonal binning and aggregation to the database. Color and size channels may be mapped to `count` or other aggregates. Hexagon plotting symbols can be replaced by other basic marks (such as `text`) via the `type` option.
 

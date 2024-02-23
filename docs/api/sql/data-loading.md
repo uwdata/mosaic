@@ -3,6 +3,12 @@
 SQL data loading utilities.
 These methods generate queries that load data into DuckDB.
 
+## loadExtension
+
+`loadExtension(extensionName)`
+
+Generates a query to install and load a named DuckDB extension. For example, `vg.loadExtension("spatial")` will load the [`spatial` extension](https://duckdb.org/docs/extensions/spatial.html).
+
 ## loadCSV
 
 `loadCSV(tableName, file, options)`
@@ -101,4 +107,29 @@ const q = loadObjects("table3", [
   { foo: 3, bar: 4 },
   ...
 ]);
+```
+
+## loadSpatial
+
+`loadSpatial(tableName, file, options)`
+
+Generate a SQL query to create a table containing the values of a spatial data file by calling the [`ST_Read` function](https://duckdb.org/docs/extensions/spatial.html#st_read---read-spatial-data-from-files) of the DuckDB `spatial` extension.
+The _file_ argument may be a URL or a local filesystem path (if running DuckDB locally, _not_ via WebAssembly).
+
+The supported _options_ are:
+
+- _select_: An optional list of column expressions to select. If not specified, all columns are included.
+- _where_: An optional filter predicate (`WHERE` clause) to filter the data on load.
+- _view_: A boolean flag (default `false`) indicating if a `VIEW` should be created over the file, rather than a `TABLE`.
+- _temp_: A boolean flag (default `true`) indicating if the created table or view should be a temporary instance that should not persist beyond the current session.
+- _replace_: A boolean flag (default `false`) indicating that the file contents should replace any existing table or view with the same name. The default behavior is to do nothing if a name conflict exists.
+- _layer_: The layer to extract from a multi-layer file. For example, for TopoJSON data this indicates which named object to extract.
+- Additional spatial-specific options. See the [DuckDB spatial documentation](https://duckdb.org/docs/extensions/spatial.html).
+
+``` js
+// Loads us-states.json into the table "table1":
+// CREATE TEMP TABLE IF NOT EXISTS table1 AS
+//   SELECT *
+//   FROM st_read('us-states.json', layer="states")
+loadSpatial("table1", "us-states.json", "states");
 ```
