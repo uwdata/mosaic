@@ -32,8 +32,8 @@ export default vg.vconcat(
     vg.xScale("utc"),
     vg.xLabel(null),
     vg.xDomain([1706227200000, 1706832000000]),
-    vg.width(1063),
-    vg.height(550),
+    vg.width(680),
+    vg.height(300),
     vg.margins({left: 35, top: 20, bottom: 30, right: 20})
   ),
   vg.plot(
@@ -51,7 +51,7 @@ export default vg.vconcat(
     vg.xLabel("Routes by Total Requests"),
     vg.xTickFormat("s"),
     vg.yLabel(null),
-    vg.width(1063),
+    vg.width(680),
     vg.height(300),
     vg.marginTop(5),
     vg.marginLeft(220),

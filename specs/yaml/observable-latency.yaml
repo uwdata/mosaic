@@ -34,8 +34,8 @@ vconcat:
   xScale: utc
   xLabel: null
   xDomain: [1706227200000, 1706832000000]
-  width: 1063
-  height: 550
+  width: 680
+  height: 300
   margins: { left: 35, top: 20, bottom: 30, right: 20 }
 - plot:
   - mark: barX
@@ -51,7 +51,7 @@ vconcat:
   xLabel: Routes by Total Requests
   xTickFormat: s
   yLabel: null
-  width: 1063
+  width: 680
   height: 300
   marginTop: 5
   marginLeft: 220

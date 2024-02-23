@@ -58,8 +58,8 @@
         1706227200000,
         1706832000000
       ],
-      "width": 1063,
-      "height": 550,
+      "width": 680,
+      "height": 300,
       "margins": {
         "left": 35,
         "top": 20,
@@ -96,7 +96,7 @@
       "xLabel": "Routes by Total Requests",
       "xTickFormat": "s",
       "yLabel": null,
-      "width": 1063,
+      "width": 680,
       "height": 300,
       "marginTop": 5,
       "marginLeft": 220,
