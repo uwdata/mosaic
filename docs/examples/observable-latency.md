@@ -6,8 +6,8 @@
 # Observable Latency
 
 Web request latency on Observable.com.
-Each pixel in the heatmap shows of the most common route (URL pattern) with a given response latency within a time interval.
-Use the bar chart of most common routes to filter the heatmap and isolate specific routes.
+Each pixel in the heatmap shows the most common route (URL pattern) at a given response latency within a time interval.
+Use the bar chart of most-requested routes to filter the heatmap and isolate specific patterns.
 
 _You may need to wait a few seconds for the dataset to load._
 
