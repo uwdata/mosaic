@@ -1,7 +1,7 @@
 {
   "meta": {
     "title": "Observable Latency",
-    "description": "Web request latency on Observable.com.\nEach pixel in the heatmap shows of the most common route (URL pattern) with a given response latency within a time interval.\nUse the bar chart of most common routes to filter the heatmap and isolate specific routes.\n\n_You may need to wait a few seconds for the dataset to load._\n",
+    "description": "Web request latency on Observable.com.\nEach pixel in the heatmap shows the most common route (URL pattern) at a given response latency within a time interval.\nUse the bar chart of most-requested routes to filter the heatmap and isolate specific patterns.\n\n_You may need to wait a few seconds for the dataset to load._\n",
     "credit": "Adapted from an [Observable Framework example](https://observablehq.com/framework/examples/api/)."
   },
   "data": {
