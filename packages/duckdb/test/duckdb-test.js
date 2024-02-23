@@ -22,7 +22,7 @@ describe('DuckDB', () => {
   describe('loadArrow', () => {
     it('loads an arrow ipc buffer', async () => {
       await loadArrow(db, 'arrow', await db.arrowBuffer('SELECT * FROM penguins'));
-      const res = await db.query('SELECT count() AS count FROM arrow');
+      const res = await db.query('SELECT count()::INTEGER AS count FROM arrow');
       assert.strictEqual(res[0]?.count, 342);
       await db.exec('DROP VIEW arrow');
     });
