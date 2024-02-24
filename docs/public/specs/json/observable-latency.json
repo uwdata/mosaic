@@ -1,12 +1,17 @@
 {
   "meta": {
     "title": "Observable Latency",
-    "description": "Web request latency on Observable.com.\nEach pixel in the heatmap shows the most common route (URL pattern) at a given response latency within a time interval.\nUse the bar chart of most-requested routes to filter the heatmap and isolate specific patterns.\n\n_You may need to wait a few seconds for the dataset to load._\n",
+    "description": "Web request latency on Observable.com.\nEach pixel in the heatmap shows the most common route (URL pattern) at a given response latency within a time interval.\nUse the bar chart of most-requested routes to filter the heatmap and isolate specific patterns.\nOr, select a range in the heatmap to show the corresponding most-requested routes.\n\n_You may need to wait a few seconds for the dataset to load._\n",
     "credit": "Adapted from an [Observable Framework example](https://observablehq.com/framework/examples/api/)."
   },
   "data": {
     "latency": {
       "file": "https://uwdata.github.io/mosaic-datasets/data/observable-latency.parquet"
+    }
+  },
+  "params": {
+    "filter": {
+      "select": "crossfilter"
     }
   },
   "vconcat": [
@@ -36,6 +41,10 @@
           "width": 2016,
           "height": 500,
           "imageRendering": "pixelated"
+        },
+        {
+          "select": "intervalXY",
+          "as": "$filter"
         }
       ],
       "colorDomain": "Fixed",
@@ -72,7 +81,8 @@
         {
           "mark": "barX",
           "data": {
-            "from": "latency"
+            "from": "latency",
+            "filterBy": "$filter"
           },
           "x": {
             "sum": "count"
@@ -89,10 +99,15 @@
           "as": "$filter"
         },
         {
+          "select": "toggleY",
+          "as": "$highlight"
+        },
+        {
           "select": "highlight",
-          "by": "$filter"
+          "by": "$highlight"
         }
       ],
+      "colorDomain": "Fixed",
       "xLabel": "Routes by Total Requests",
       "xTickFormat": "s",
       "yLabel": null,

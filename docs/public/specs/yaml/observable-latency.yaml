@@ -4,12 +4,15 @@ meta:
     Web request latency on Observable.com.
     Each pixel in the heatmap shows the most common route (URL pattern) at a given response latency within a time interval.
     Use the bar chart of most-requested routes to filter the heatmap and isolate specific patterns.
+    Or, select a range in the heatmap to show the corresponding most-requested routes.
 
     _You may need to wait a few seconds for the dataset to load._
   credit: Adapted from an [Observable Framework example](https://observablehq.com/framework/examples/api/).
 data:
   latency:
     file: https://uwdata.github.io/mosaic-datasets/data/observable-latency.parquet
+params:
+  filter: { select: crossfilter }
 vconcat:
 - plot:
   - mark: frame
@@ -23,6 +26,8 @@ vconcat:
     width: 2016
     height: 500
     imageRendering: pixelated
+  - select: intervalXY
+    as: $filter
   colorDomain: Fixed
   colorScheme: observable10
   opacityDomain: [0, 25]
@@ -39,15 +44,18 @@ vconcat:
   margins: { left: 35, top: 20, bottom: 30, right: 20 }
 - plot:
   - mark: barX
-    data: { from: latency }
+    data: { from: latency, filterBy: $filter }
     x: { sum: count }
     y: route
     fill: route
     sort: { y: -x, limit: 15 }
   - select: toggleY
     as: $filter
+  - select: toggleY
+    as: $highlight
   - select: highlight
-    by: $filter
+    by: $highlight
+  colorDomain: Fixed
   xLabel: Routes by Total Requests
   xTickFormat: s
   yLabel: null

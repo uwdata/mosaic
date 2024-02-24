@@ -4,7 +4,8 @@ await vg.coordinator().exec([
   vg.loadParquet("latency", "https://uwdata.github.io/mosaic-datasets/data/observable-latency.parquet")
 ]);
 
-const $filter = vg.Selection.intersect();
+const $filter = vg.Selection.crossfilter();
+const $highlight = vg.Selection.intersect();
 
 export default vg.vconcat(
   vg.plot(
@@ -21,6 +22,7 @@ export default vg.vconcat(
         imageRendering: "pixelated"
       }
     ),
+    vg.intervalXY({as: $filter}),
     vg.colorDomain(vg.Fixed),
     vg.colorScheme("observable10"),
     vg.opacityDomain([0, 25]),
@@ -38,7 +40,7 @@ export default vg.vconcat(
   ),
   vg.plot(
     vg.barX(
-      vg.from("latency"),
+      vg.from("latency", {filterBy: $filter}),
       {
         x: vg.sum("count"),
         y: "route",
@@ -47,7 +49,9 @@ export default vg.vconcat(
       }
     ),
     vg.toggleY({as: $filter}),
-    vg.highlight({by: $filter}),
+    vg.toggleY({as: $highlight}),
+    vg.highlight({by: $highlight}),
+    vg.colorDomain(vg.Fixed),
     vg.xLabel("Routes by Total Requests"),
     vg.xTickFormat("s"),
     vg.yLabel(null),
