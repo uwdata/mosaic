@@ -80,3 +80,7 @@ To use Mosaic with DuckDB Python in Jupyter Notebooks:
 To use Mosaic with DuckDB-WASM in Observable Notebooks:
 
 * See the [Mosaic 10M Flights example](https://observablehq.com/@uwdata/mosaic-cross-filter-flights-10m).
+
+To use Mosaic and DuckDB in Observable Framework:
+
+* See the [Mosaic + Framework example site](https://github.com/uwdata/mosaic-framework-example).
