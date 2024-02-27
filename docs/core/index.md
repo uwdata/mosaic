@@ -20,14 +20,14 @@ Upon selection updates, the coordinator determines filter queries and updates cl
 
 Mosaic _clients_ are responsible for publishing their data needs and performing data processing tasks&mdash;such as rendering a visualization&mdash;once data is provided by the coordinator. Clients typically take the form of Web (HTML/SVG) elements, but are not required to. A Web element may even consist of multiple clients, such as multiple marks (chart layers) in [vgplot](/vgplot/).
 
-Upon registration, the coordinator calls the client `fields()` method to request a list of fields, consisting of table and column names as well as optional requested statistics. If a client does not require any field information, it can provide an empty list. The Coordinator queries the data source for requested metadata (e.g., column type) and summary statistics, and returns them via the client `fieldInfo()` method.
+Upon registration with a [`coordinator.connect(client)`](/api/core/coordinator.html#connect) call, the coordinator calls the client `fields()` method to request a list of column names and optional summary statistics. If a client does not require any field information, it can provide an empty list. The Coordinator queries the data source for requested metadata (e.g., column type) and statistics, and returns them via the client `fieldInfo()` method.
 
 Next, the coordinator calls the client `query()` method. The return value may be a SQL query string or a structured object that produces a query upon string coercion. Mosaic includes a [query builder API](/sql/) that simplifies the construction of complex queries while enabling query analysis without need of a parser. The `query` method takes a single argument: an optional `filter` predicate (akin to a SQL `WHERE` clause) indicating a data subset. The client is responsible for incorporating the filter criteria into the returned query.
 
 Before the coordinator submits a query for execution, it calls `queryPending()` to inform the client. Once query execution completes, the coordinator returns data via the client `queryResult()` method or reports an error via `queryError()`.
 
-Clients can also request queries in response to internal events. The client `requestQuery()` method passes a query to the coordinator with a guarantee that it will be evaluated.
-The client `requestUpdate()` method instead makes throttled requests for a standard `query()`; multiple calls to `requestUpdate()` may result in only one query (the most recent) being serviced.
+Clients can also request queries in response to internal events. The client `requestQuery()` method issues a query to the coordinator with a guarantee that it will be evaluated.
+The `requestUpdate()` method makes throttled requests for a standard `query()`; multiple calls to `requestUpdate()` may result in only one query (the most recent) being serviced.
 Finally, clients may expose a `filterBy` Selection property. The predicates provided by `filterBy` are passed as an argument to the client `query()` method by the coordinator.
 
 [Client API Reference](/api/core/client)
