@@ -33,6 +33,11 @@ const chart = vg.plot(
 To create scalable visualizations within Jupyter notebooks, you can use [Mosaic vgplot](/vgplot/) specifications in either YAML or JSON format. See the [Jupyter widget](/jupyter/) docs for more.
 In the future we hope to also support a Python API, not unlike [Vega Altair](https://altair-viz.github.io/).
 
+## Deploy in Observable Framework
+
+Mosaic-powered visualizations can be in deployed dashboards or data apps published with [Observable Framework](https://observablehq.com/framework/).
+For guidance on deploying Mosaic and using DuckDB to prepare data, see the [Mosaic + Framework example site](https://uwdata.github.io/mosaic-framework-example).
+
 ## Run and develop locally
 
 To run Mosaic examples on a local DuckDB server or work on Mosaic development, make a local clone of the [Mosaic GitHub repository](https://github.com/uwdata/mosaic).
