@@ -5,6 +5,9 @@ import { dericheConfig, dericheConv2d } from './util/density.js';
 import { extentX, extentY, xyext } from './util/extent.js';
 import { grid2d } from './util/grid.js';
 import { handleParam } from './util/handle-param.js';
+import {
+  interpolateNearest, interpolatorBarycentric, interpolatorRandomWalk
+} from './util/interpolate.js';
 import { Mark } from './Mark.js';
 
 export const DENSITY = 'density';
@@ -121,8 +124,9 @@ export class Grid2DMark extends Mark {
   }
 
   queryResult(data) {
-    const [nx, ny] = this.bins;
-    this.grids = grid2d(nx, ny, data, this.aggr, this.groupby);
+    const [w, h] = this.bins;
+    const interp = maybeInterpolate(this.interpolate);
+    this.grids = grid2d(w, h, data, this.aggr, this.groupby, interp);
     return this.convolve();
   }
 
@@ -177,6 +181,22 @@ function createDensityMap(channels) {
     }
   }
   return densityMap;
+}
+
+function maybeInterpolate(interpolate = 'none') {
+  if (typeof interpolate === 'function') return interpolate;
+  switch (`${interpolate}`.toLowerCase()) {
+    case 'none':
+    case 'linear':
+      return undefined; // no special interpolation need
+    case 'nearest':
+      return interpolateNearest;
+    case 'barycentric':
+      return interpolatorBarycentric();
+    case 'random-walk':
+      return interpolatorRandomWalk();
+  }
+  throw new Error(`invalid interpolate: ${interpolate}`);
 }
 
 function bin2d(q, xp, yp, aggs, xn, groupby) {
