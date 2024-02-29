@@ -39,9 +39,14 @@ export class Plot {
     return this.getAttribute('width') - left - right;
   }
 
-  innerHeight() {
+  innerHeight(defaultValue = 400) {
     const { top, bottom } = this.margins();
-    return this.getAttribute('height') - top - bottom;
+    let h = this.getAttribute('height');
+    if (h == null && defaultValue != null) {
+      h = defaultValue; // TODO could apply more nuanced logic here
+      this.setAttribute('height', h, { silent: true });
+    }
+    return h - top - bottom;
   }
 
   pending(mark) {
