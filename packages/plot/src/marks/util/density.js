@@ -96,7 +96,7 @@ export function dericheConv2d(cx, cy, grid, [nx, ny]) {
   // allocate buffers
   const yc = new Float64Array(Math.max(nx, ny)); // causal
   const ya = new Float64Array(Math.max(nx, ny)); // anticausal
-  const h = new Float64Array(5);
+  const h = new Float64Array(5); // q + 1
   const d = new Float64Array(grid.length);
 
   // convolve rows
@@ -119,7 +119,7 @@ export function dericheConv1d(
   stride = 1,
   y_causal = new Float64Array(N),
   y_anticausal = new Float64Array(N),
-  h = new Float64Array(5),
+  h = new Float64Array(5), // q + 1
   d = y_causal,
   init = dericheInitZeroPad
 ) {
@@ -153,6 +153,7 @@ export function dericheConv1d(
   }
 
   // initialize the anticausal filter on the right boundary
+  // dest, src, N, stride, b, p, a, q, sum, h
   init(
     y_anticausal, src, N, -stride,
     c.b_anticausal, 4, c.a, 4, c.sum_anticausal, h, c.sigma
@@ -176,7 +177,7 @@ export function dericheConv1d(
 
   // sum the causal and anticausal responses to obtain the final result
   if (c.negative) {
-    // do not threshold if the input grid includes negatively weighted values
+    // do not threshold if the input grid includes negative values
     for (n = 0, i = 0; n < N; ++n, i += stride) {
       d[i] = y_causal[n] + y_anticausal[N - n - 1];
     }
@@ -190,13 +191,16 @@ export function dericheConv1d(
   return d;
 }
 
-export function dericheInitZeroPad(dest, src, N, stride, b, p, a, q, sum, h) {
+export function dericheInitZeroPad(
+  dest, src, N, stride, b, p, a, q,
+  sum, h, sigma, tol = 0.5
+) {
   const stride_N = Math.abs(stride) * N;
   const off = stride < 0 ? stride_N + stride : 0;
   let i, n, m;
 
   // compute the first q taps of the impulse response, h_0, ..., h_{q-1}
-  for (n = 0; n < q; ++n) {
+  for (n = 0; n <= q; ++n) {
     h[n] = (n <= p) ? b[n] : 0;
     for (m = 1; m <= q && m <= n; ++m) {
       h[n] -= a[m] * h[n - m];
@@ -214,11 +218,26 @@ export function dericheInitZeroPad(dest, src, N, stride, b, p, a, q, sum, h) {
     }
   }
 
-  // dest_m = dest_m + h_{n+m} src_{-n}
   const cur = src[off];
-  if (cur > 0) {
+  const max_iter = Math.ceil(sigma * 10);
+  for (n = 0; n < max_iter; ++n) {
+    /* dest_m = dest_m + h_{n+m} src_{-n} */
     for (m = 0; m < q; ++m) {
       dest[m] += h[m] * cur;
+    }
+
+    sum -= Math.abs(h[0]);
+    if (sum <= tol) break;
+
+    /* Compute the next impulse response tap, h_{n+q} */
+    h[q] = (n + q <= p) ? b[n + q] : 0;
+    for (m = 1; m <= q; ++m) {
+      h[q] -= a[m] * h[q - m];
+    }
+
+    /* Shift the h array for the next iteration */
+    for (m = 0; m < q; ++m) {
+      h[m] = h[m + 1];
     }
   }
 
