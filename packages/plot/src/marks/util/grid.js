@@ -1,17 +1,9 @@
 import { InternSet, ascending } from 'd3';
-import { DECIMAL, FLOAT, INTEGER, isArrowTable } from './arrow.js';
+import { convertArrowColumn, convertArrowType, isArrowTable } from './arrow.js';
 
 function arrayType(values, name = 'density') {
   if (isArrowTable(values)) {
-    const type = values.getChild(name).type;
-    switch (type.typeId) {
-      case INTEGER:
-      case FLOAT:
-      case DECIMAL:
-        return Float64Array;
-      default:
-        return Array;
-    }
+    return convertArrowType(values.getChild(name).type);
   } else {
     return typeof values[0][name] === 'number' ? Float64Array : Array;
   }
@@ -22,27 +14,13 @@ export function grid1d(n, values) {
   return valuesToGrid(new Type(n), values);
 }
 
-export function grid2d(m, n, values, aggr, groupby = []) {
-  if (groupby.length) {
-    // generate grids per group
-    return groupedValuesToGrids(m * n, values, aggr, groupby);
-  } else {
-    const cell = {};
-    aggr.forEach(name => {
-      const Type = arrayType(values, name);
-      cell[name] = valuesToGrid(new Type(m * n), values, name);
-    });
-    return [cell];
-  }
-}
-
 function valuesToGrid(grid, values, name = 'density') {
   if (isArrowTable(values)) {
     // optimize access for Arrow tables
     const numRows = values.numRows;
     if (numRows === 0) return grid;
-    const index = values.getChild('index').toArray();
-    const value = values.getChild(name).toArray();
+    const index = convertArrowColumn(values.getChild('index'));
+    const value = convertArrowColumn(values.getChild(name));
     for (let row = 0; row < numRows; ++row) {
       grid[index[row]] = value[row];
     }
@@ -55,30 +33,35 @@ function valuesToGrid(grid, values, name = 'density') {
   return grid;
 }
 
-function groupedValuesToGrids(size, values, aggr, groupby) {
+export function grid2d(w, h, values, aggr, groupby = [], interpolate) {
+  const size = w * h;
   const Types = aggr.map(name => arrayType(values, name));
   const numAggr = aggr.length;
 
-  const cellMap = {};
-  const getCell = key => {
-    let cell = cellMap[key];
-    if (!cell) {
-      cell = cellMap[key] = {};
-      groupby.forEach((name, i) => cell[name] = key[i]);
-      aggr.forEach((name, i) => cell[name] = new Types[i](size));
-    }
+  // grid data tuples
+  const createCell = (key) => {
+    const cell = {};
+    groupby.forEach((name, i) => cell[name] = key[i]);
+    aggr.forEach((name, i) => cell[name] = new Types[i](size));
     return cell;
   };
+  const cellMap = {};
+  const baseCell = groupby.length ? null : (cellMap[[]] = createCell([]));
+  const getCell = groupby.length
+    ? key => cellMap[key] ?? (cellMap[key] = createCell(key))
+    : () => baseCell;
 
-  if (isArrowTable(values)) {
-    // optimize access for Arrow tables
-    const numRows = values.numRows;
-    if (numRows === 0) return [];
+  // early exit if empty query result
+  const numRows = values.numRows;
+  if (numRows === 0) return Object.values(cellMap);
 
-    const index = values.getChild('index').toArray();
-    const value = aggr.map(name => values.getChild(name).toArray());
-    const groups = groupby.map(name => values.getChild(name));
+  // extract arrays from arrow table
+  const index = convertArrowColumn(values.getChild('index'));
+  const value = aggr.map(name => convertArrowColumn(values.getChild(name)));
+  const groups = groupby.map(name => values.getChild(name));
 
+  if (!interpolate) {
+    // if no interpolation, copy values over
     for (let row = 0; row < numRows; ++row) {
       const key = groups.map(vec => vec.get(row));
       const cell = getCell(key);
@@ -87,14 +70,25 @@ function groupedValuesToGrids(size, values, aggr, groupby) {
       }
     }
   } else {
-    // fallback to iterable data
-    for (const row of values) {
-      const key = groupby.map(col => row[col]);
-      const cell = getCell(key);
-      for (let i = 0; i < numAggr; ++i) {
-        cell[aggr[i]][row.index] = row[aggr[i]];
+    // prepare index arrays, then interpolate grid values
+    const X = index.map(k => k % w);
+    const Y = index.map(k => Math.floor(k / w));
+    if (groupby.length) {
+      for (let row = 0; row < numRows; ++row) {
+        const key = groups.map(vec => vec.get(row));
+        const cell = getCell(key);
+        if (!cell.index) { cell.index = []; }
+        cell.index.push(row);
       }
+    } else {
+      baseCell.index = index.map((_, i) => i);
     }
+    Object.values(cellMap).forEach(cell => {
+      for (let i = 0; i < numAggr; ++i) {
+        interpolate(cell.index, w, h, X, Y, value[i], cell[aggr[i]]);
+      }
+      delete cell.index;
+    })
   }
 
   return Object.values(cellMap);
