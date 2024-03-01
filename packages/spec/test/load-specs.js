@@ -1,4 +1,4 @@
-import { readdir, readFile, writeFile } from 'node:fs/promises';
+import { readdir, readFile } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { parse } from 'yaml';
@@ -26,14 +26,6 @@ export function loadJSON(name) {
   return readFile(join(JSON, `${name}.json`), 'utf8');
 }
 
-export function writeJSON(name, data) {
-  return writeFile(join(JSON, `${name}.json`), data);
-}
-
 export function loadESM(name) {
   return readFile(join(ESM, `${name}.js`), 'utf8');
-}
-
-export function writeESM(name, data) {
-  return writeFile(join(ESM, `${name}.js`), data);
 }

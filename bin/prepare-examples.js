@@ -4,12 +4,21 @@ import { copyFile, readdir, readFile, writeFile } from 'node:fs/promises';
 import { parseSpec, astToESM } from '@uwdata/mosaic-spec';
 import { parse } from 'yaml';
 
+// This script prepares all Mosaic example specifications
+// ...AND WILL OVERWRITE EXISTING TEST CASE DATA AND DOCS!
+
+// - Parsed AST JSON and ESM code written to /specs
+// - YAML, non-parsed JSON, and ESM code written to /docs/public/specs
+// - Example Markdown pages written to /docs/examples
+
 const specDir = join('specs', 'yaml');
+const esmTestDir = join('specs', 'esm');
+const jsonTestDir = join('specs', 'json');
 
 const docsDir = 'docs';
-const yamlDir = join(docsDir, 'public', 'specs', 'yaml');
-const jsonDir = join(docsDir, 'public', 'specs', 'json');
-const esmDir = join(docsDir, 'public', 'specs', 'esm');
+const yamlDocsDir = join(docsDir, 'public', 'specs', 'yaml');
+const jsonDocsDir = join(docsDir, 'public', 'specs', 'json');
+const esmDocsDir = join(docsDir, 'public', 'specs', 'esm');
 const exampleDir = join(docsDir, 'examples');
 
 const files = await Promise.allSettled((await readdir(specDir))
@@ -22,29 +31,33 @@ const files = await Promise.allSettled((await readdir(specDir))
     // parse spec and perform code generation
     // do this first to catch any errors
     const spec = parse(text);
-    const code = astToESM(parseSpec(spec));
+    const ast = parseSpec(spec);
+    const code = astToESM(ast);
 
     try {
-      // copy YAML file
-      await copyFile(
-        file,
-        resolve(yamlDir, `${base}.yaml`)
-      );
-
-      // write JSON spec
-      await writeFile(
-        resolve(jsonDir, `${base}.json`),
-        JSON.stringify(spec, 0, 2)
-      );
-
-      // write ESM DSL spec
-      await writeFile(resolve(esmDir, `${base}.js`), code);
-
-      // write examples page
-      await writeFile(
-        resolve(exampleDir, `${base}.md`),
-        examplePage(base, spec.meta)
-      );
+      await Promise.all([
+        // write ESM DSL spec to tests
+        writeFile(resolve(esmTestDir, `${base}.js`), code),
+        // write JSON spec to tests
+        writeFile(
+          resolve(jsonTestDir, `${base}.json`),
+          JSON.stringify(ast.toJSON(), 0, 2)
+        ),
+        // copy YAML file to docs
+        copyFile(file, resolve(yamlDocsDir, `${base}.yaml`)),
+        // write JSON spec to docs
+        writeFile(
+          resolve(jsonDocsDir, `${base}.json`),
+          JSON.stringify(spec, 0, 2)
+        ),
+        // write ESM DSL spec to docs
+        writeFile(resolve(esmDocsDir, `${base}.js`), code),
+        // write examples page to docs
+        writeFile(
+          resolve(exampleDir, `${base}.md`),
+          examplePage(base, spec.meta)
+        )
+      ]);
     } catch (err) {
       console.error(err);
     }
