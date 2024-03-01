@@ -24,7 +24,7 @@
   },
   "devDependencies": {
     "esbuild": "^0.20.1",
-    "eslint": "^8.56.0",
+    "eslint": "^8.57.0",
     "eslint-plugin-jsdoc": "^48.2.0",
     "lerna": "^8.1.2",
     "mocha": "^10.3.0",
@@ -34,7 +34,7 @@
     "typescript": "^5.3.3",
     "vite": "^5.1.4",
     "vitepress": "1.0.0-rc.44",
-    "yaml": "^2.3.4"
+    "yaml": "^2.4.0"
   },
   "workspaces": [
     "packages/*"
