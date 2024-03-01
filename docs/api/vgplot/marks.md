@@ -166,7 +166,7 @@ For supported options, see the [Observable Plot `grid` documentation](https://ob
 
 ## Heatmap
 
-The `heatmap` mark is a raster mark with default options for accurate smoothing of density estimates.
+The `heatmap` mark is a raster mark with default options for accurate density estimation via smoothing.
 The _bandwidth_ (`20`), _interpolate_ (`"linear"`), and _pixelSize_ (`2`) options are set to produce smoothed density heatmaps.
 For all supported options, see the [`raster`](#raster) mark.
 
@@ -221,18 +221,24 @@ For supported options, see the [Observable Plot `link` documentation](https://ob
 ## Raster
 
 The `raster` mark draws an image whose pixel colors are a function of the underlying data.
-The _x_ and _y_ data domains are binned into the cells of the raster grid, with an aggregate function evaluated over the binned data.
-The result can then be optionally smoothed in-browser.
-To create a smoothed density heatmap, use the [`heatmap`](#heatmap) mark: a raster mark with different default options.
+The _x_ and _y_ data domains are binned into the cells ("pixels") of a raster grid, typically with an aggregate function evaluated over the binned data.
+The result can be optionally smoothed (blurred) in-browser.
+To create a smoothed density heatmap, use the [`heatmap`](#heatmap) mark; this is a raster mark with different default options.
 
 The supported _options_ are:
 
 - _x_: The x dimension encoding channel
 - _y_: The y dimension encoding channel
-- _fill_: The fill color. Use the special value `"density"` to map pixel colors to a computed density. Use an aggregate expression to instead visualized an aggregate value per bin. If provided discrete data values, multiple rasters will be created with unique colors per layer, and opacity will be used to convey densities.
+- _fill_: The pixel fill color. Use the special value `"density"` to map computed density values to pixel colors. Use an aggregate expression to instead visualize an aggregate value per raster bin. If _fill_ is set to a constant color or to a non-aggregate field, opacity will be used to convey densities. If a non-aggregate (group by) field is provided, multiple rasters are created with a unique categorical color per layer.
+- _fillOpacity_: The pixel fill opacity. Use the special value `"density"` to map computed density values to opacity. Use an aggregate expression to instead visualize an aggregate value per raster bin.
 - _weight_: A data column by which to weight computed densities
 - _bandwidth_: The kernel density bandwidth for smoothing, in pixels (default `0`)
-- _interpolate_: The binning interpolation method to use, one of `"none"` (default) or `"linear"` (for more accurate density estimation when smoothing).
+- _interpolate_: The binning interpolation method to use. The `"none"` and `"linear"` methods are performed in-database and only fill bins corresponding to observed data samples. The other methods are performed in-browser and interpolate to fill all raster pixels. The options are:
+  - `"none"` (default): Map data samples to single bins only.
+  - `"linear"`: Linearly distribute the "weight" of a sample across adjacent bin boundaries. Linear binning provides more stable and accurate density estimation upon subsequent smoothing.
+  - `"nearest"`: Perform nearest-neighbor interpolation, forming a pixel-level Voronoi diagram.
+  - `"barycentric"`: Interpolate over a triangulation of sample points. Pixels outside the convex hull of data samples are extrapolated.
+  - `"random-walk`: Apply a random walk from empty pixels until a sample is found.
 - _pixelSize_: The grid cell size in screen pixels (default `1`); ignored when _width_ and _height_ options are provided
 - _width_: The number of grid bins to include along the _x_ dimension
 - _height_: The number of grid bins to include along the _y_ dimension
