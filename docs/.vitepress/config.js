@@ -88,6 +88,7 @@ export default defineConfig({
             { text: 'Driving Shifts into Reverse', link: '/examples/driving-shifts' },
             { text: 'Population Arrows', link: '/examples/population-arrows' },
             { text: 'Presidential Opinion', link: '/examples/presidential-opinion' },
+            { text: 'Aeromagnetic Survey', link: '/examples/aeromagnetic-survey' },
             { text: 'Voronoi Diagram', link: '/examples/voronoi' },
             { text: 'Seattle Temperatures', link: '/examples/seattle-temp' },
             { text: 'Sorted Bars', link: '/examples/sorted-bars' },
