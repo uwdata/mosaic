@@ -1,6 +1,6 @@
 {
   "name": "mosaic-widget",
-  "version": "0.6.0",
+  "version": "0.6.1",
   "private": true,
   "license": "BSD-3-Clause",
   "author": "Dominik Moritz (https://www.domoritz.de)",
@@ -17,7 +17,7 @@
     "format": "hatch run fmt"
   },
   "dependencies": {
-    "@uwdata/vgplot": "^0.6.0",
+    "@uwdata/vgplot": "^0.6.1",
     "apache-arrow": "^15.0.0",
     "uuid": "^9.0.1"
   },
