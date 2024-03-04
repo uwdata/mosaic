@@ -1,5 +1,8 @@
 import { Delaunay, randomLcg } from 'd3';
 
+// Derived from Observable Plot’s interpolatorBarycentric:
+// https://github.com/observablehq/plot/blob/41a63e372453d2f95e7a046839dfd245d21e7660/src/marks/raster.js#L283-L334
+
 export function interpolatorBarycentric({random = randomLcg(42)} = {}) {
   return (index, width, height, X, Y, V, W) => {
     // Interpolate the interior of all triangles with barycentric coordinates
@@ -122,6 +125,9 @@ function ray(j, X, Y) {
   };
 }
 
+// Derived from Observable Plot’s interpolateNearest:
+// https://github.com/observablehq/plot/blob/41a63e372453d2f95e7a046839dfd245d21e7660/src/marks/raster.js#L410-L428
+
 export function interpolateNearest(index, width, height, X, Y, V, W) {
   const delaunay = Delaunay.from(index, (i) => X[i], (i) => Y[i]);
   // memoization of delaunay.find for the line start (iy) and pixel (ix)
@@ -136,6 +142,9 @@ export function interpolateNearest(index, width, height, X, Y, V, W) {
   }
   return W;
 }
+
+// Derived from Observable Plot’s interpolatorRandomWalk:
+// https://github.com/observablehq/plot/blob/41a63e372453d2f95e7a046839dfd245d21e7660/src/marks/raster.js#L430-L462
 
 // https://observablehq.com/@observablehq/walk-on-spheres-precision
 export function interpolatorRandomWalk({random = randomLcg(42), minDistance = 0.5, maxSteps = 2} = {}) {
