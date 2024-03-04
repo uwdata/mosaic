@@ -1,5 +1,8 @@
 import { color } from 'd3';
 
+// Derived from Observable Plot’s isColor:
+// https://github.com/observablehq/plot/blob/a063b226fec284c5b0e973701fdbbb244ef9ac2c/src/options.js#L462-L477
+
 // Mostly relies on d3-color, with a few extra color keywords. Currently this
 // strictly requires that the value be a string; we might want to apply string
 // coercion here, though note that d3-color instances would need to support
