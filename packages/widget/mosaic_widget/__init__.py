@@ -23,8 +23,8 @@ if _DEV:
 else:
     # from `npm run build`
     bundled_assets_dir = pathlib.Path(__file__).parent / "static"
-    ESM = (bundled_assets_dir / "index.js")
-    CSS = (bundled_assets_dir / "style.css")
+    ESM = bundled_assets_dir / "index.js"
+    CSS = bundled_assets_dir / "style.css"
 
 
 class MosaicWidget(anywidget.AnyWidget):
