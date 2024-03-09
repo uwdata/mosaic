@@ -6,29 +6,26 @@ import { Mark } from './Mark.js';
 export class ConnectedMark extends Mark {
   constructor(type, source, encodings) {
     const dim = type.endsWith('X') ? 'y' : type.endsWith('Y') ? 'x' : null;
-    const req = { [dim]: ['min', 'max'] };
+    const req = dim ? { [dim]: ['min', 'max'] } : undefined;
     super(type, source, encodings, req);
     this.dim = dim;
   }
 
   query(filter = []) {
-    const { plot, dim, source, stats } = this;
+    const { plot, dim, source } = this;
     const { optimize = true } = source.options || {};
     const q = super.query(filter);
     if (!dim) return q;
 
     const ortho = dim === 'x' ? 'y' : 'x';
-    const value = this.channelField(ortho)?.as;
-    const { field, as } = this.channelField(dim);
-    const { type } = stats[field.column];
+    const value = this.channelField(ortho, { exact: true })?.as;
+    const { field, as, type, min, max } = this.channelField(dim);
     const isContinuous = type === 'date' || type === 'number';
 
     if (optimize && isContinuous && value) {
       // TODO: handle stacked data!
-      const { column } = field;
-      const { max, min } = stats[column];
       const size = dim === 'x' ? plot.innerWidth() : plot.innerHeight();
-      const [lo, hi] = filteredExtent(filter, column) || [min, max];
+      const [lo, hi] = filteredExtent(filter, field) || [min, max];
       const [expr] = binExpr(this, dim, size, [lo, hi], 1, as);
       const cols = q.select()
         .map(c => c.as)

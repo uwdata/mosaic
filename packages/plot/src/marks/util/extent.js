@@ -6,16 +6,14 @@ export const yext = { y: ['min', 'max'] };
 export const xyext = { ...xext, ...yext };
 
 export function plotExtent(mark, filter, channel, domainAttr, niceAttr) {
-  const { plot, stats } = mark;
+  const { plot } = mark;
   const domain = plot.getAttribute(domainAttr);
   const nice = plot.getAttribute(niceAttr);
 
   if (Array.isArray(domain) && !domain[Transient]) {
     return domain;
   } else {
-    const { field } = mark.channelField(channel);
-    const { column } = field;
-    const { min, max } = stats[column];
+    const { column, min, max } = mark.channelField(channel);
     const dom = filteredExtent(filter, column) || (nice
       ? scaleLinear().domain([min, max]).nice().domain()
       : [min, max]);
@@ -39,7 +37,7 @@ export function filteredExtent(filter, column) {
   let lo;
   let hi;
   const visitor = (type, clause) => {
-    if (type === 'BETWEEN' && clause.field.column === column) {
+    if (type === 'BETWEEN' && `${clause.field}` === column) {
       const { range } = clause;
       if (range && (lo == null || range[0] < lo)) lo = range[0];
       if (range && (hi == null || range[1] > hi)) hi = range[1];

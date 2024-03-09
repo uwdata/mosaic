@@ -24,12 +24,12 @@ function binField(mark, channel, column, options) {
   return {
     column,
     label: column,
-    get stats() { return ['min', 'max']; },
+    get stats() { return { column, stats: ['min', 'max'] }; },
     get columns() { return [column]; },
     get basis() { return column; },
     toString() {
       const { apply, sqlApply, sqlInvert } = channelScale(mark, channel);
-      const { min, max } = mark.stats[column];
+      const { min, max } = mark.channelField(channel);
       const b = bins(apply(min), apply(max), options);
       const col = sqlApply(column);
       const base = b.min === 0 ? col : `(${col} - ${b.min})`;

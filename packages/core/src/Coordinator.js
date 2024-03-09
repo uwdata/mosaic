@@ -1,7 +1,7 @@
 import { socketConnector } from './connectors/socket.js';
-import { Catalog } from './Catalog.js';
 import { FilterGroup } from './FilterGroup.js';
 import { QueryManager, Priority } from './QueryManager.js';
+import { queryFieldInfo } from './util/field-info.js';
 import { voidLogger } from './util/void-logger.js';
 
 let _instance;
@@ -27,7 +27,6 @@ export class Coordinator {
       logger = console,
       manager = QueryManager()
     } = options;
-    this.catalog = new Catalog(this);
     this.manager = manager;
     this.logger(logger);
     this.configure(options);
@@ -49,7 +48,7 @@ export class Coordinator {
     this.indexes = indexes;
   }
 
-  clear({ clients = true, cache = true, catalog = false } = {}) {
+  clear({ clients = true, cache = true } = {}) {
     this.manager.clear();
     if (clients) {
       this.clients?.forEach(client => this.disconnect(client));
@@ -58,7 +57,6 @@ export class Coordinator {
       this.filterGroups = new Map;
     }
     if (cache) this.manager.cache().clear();
-    if (catalog) this.catalog.clear();
   }
 
   databaseConnector(db) {
@@ -122,7 +120,7 @@ export class Coordinator {
    * @param {import('./MosaicClient.js').MosaicClient} client the client to disconnect
    */
   async connect(client) {
-    const { catalog, clients, filterGroups, indexes } = this;
+    const { clients, filterGroups, indexes } = this;
 
     if (clients.has(client)) {
       throw new Error('Client already connected.');
@@ -133,7 +131,7 @@ export class Coordinator {
     // retrieve field statistics
     const fields = client.fields();
     if (fields?.length) {
-      client.fieldInfo(await catalog.queryFields(fields));
+      client.fieldInfo(await queryFieldInfo(this, fields));
     }
 
     // connect filters

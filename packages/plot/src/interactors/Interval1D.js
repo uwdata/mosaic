@@ -21,7 +21,7 @@ export class Interval1D {
     this.pixelSize = pixelSize || 1;
     this.selection = selection;
     this.peers = peers;
-    this.field = field || getField(mark, [channel, channel+'1', channel+'2']);
+    this.field = field || getField(mark, channel);
     this.style = style && sanitizeStyles(style);
     this.brush = channel === 'y' ? brushY() : brushX();
     this.brush.on('brush end', ({ selection }) => this.publish(selection));

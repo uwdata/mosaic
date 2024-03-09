@@ -56,8 +56,10 @@ function findMark({ marks }, channel) {
     : null;
   if (channels == null) return null;
   for (let i = marks.length - 1; i > -1; --i) {
-    if (marks[i].channelField(channels)) {
-      return marks[i];
+    for (const channel of channels) {
+      if (marks[i].channelField(channel, { exact: true })) {
+        return marks[i];
+      }
     }
   }
   return null;

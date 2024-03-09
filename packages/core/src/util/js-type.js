@@ -26,13 +26,20 @@ export function jsType(type) {
     case 'VARCHAR':
     case 'UUID':
       return 'string';
+    case 'ARRAY':
     case 'LIST':
       return 'array';
     case 'BLOB':
     case 'STRUCT':
     case 'MAP':
+    case 'GEOMETRY':
       return 'object';
     default:
+      if (type.startsWith('STRUCT') || type.startsWith('MAP')) {
+        return 'object';
+      } else if (type.endsWith(']')) {
+        return 'array';
+      }
       throw new Error(`Unsupported type: ${type}`);
   }
 }

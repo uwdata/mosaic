@@ -22,8 +22,8 @@ export class Interval2D {
     this.pixelSize = pixelSize || 1;
     this.selection = selection;
     this.peers = peers;
-    this.xfield = xfield || getField(mark, ['x', 'x1', 'x2']);
-    this.yfield = yfield || getField(mark, ['y', 'y1', 'y2']);
+    this.xfield = xfield || getField(mark, 'x');
+    this.yfield = yfield || getField(mark, 'y');
     this.style = style && sanitizeStyles(style);
     this.brush = brush();
     this.brush.on('brush end', ({ selection }) => this.publish(selection));
