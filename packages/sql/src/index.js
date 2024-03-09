@@ -129,7 +129,8 @@ export {
 
 export {
   Query,
-  isQuery
+  isQuery,
+  isDescribeQuery
 } from './Query.js';
 
 export {

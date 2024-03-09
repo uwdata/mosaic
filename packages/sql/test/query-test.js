@@ -456,4 +456,58 @@ describe('Query', () => {
       ].join(' ')
     );
   });
+
+  it('performs set operations', () => {
+    const q = [
+      Query.select('foo', 'bar', 'baz').from('data1'),
+      Query.select('foo', 'bar', 'baz').from('data2')
+    ];
+
+    assert.strictEqual(
+      Query.union(q).toString(),
+      q.join(' UNION ')
+    );
+    assert.strictEqual(
+      Query.union(...q).toString(),
+      q.join(' UNION ')
+    );
+
+    assert.strictEqual(
+      Query.unionAll(q).toString(),
+      q.join(' UNION ALL ')
+    );
+    assert.strictEqual(
+      Query.unionAll(...q).toString(),
+      q.join(' UNION ALL ')
+    );
+
+    assert.strictEqual(
+      Query.intersect(q).toString(),
+      q.join(' INTERSECT ')
+    );
+    assert.strictEqual(
+      Query.intersect(...q).toString(),
+      q.join(' INTERSECT ')
+    );
+
+    assert.strictEqual(
+      Query.except(q).toString(),
+      q.join(' EXCEPT ')
+    );
+    assert.strictEqual(
+      Query.except(...q).toString(),
+      q.join(' EXCEPT ')
+    );
+  });
+
+  it('supports describe queries', () => {
+    const q = Query.select('foo', 'bar').from('data');
+    assert.strictEqual(Query.describe(q).toString(), `DESCRIBE ${q}`);
+
+    const u = Query.unionAll(
+      Query.select('foo', 'bar').from('data1'),
+      Query.select('foo', 'bar').from('data2')
+    );
+    assert.strictEqual(Query.describe(u).toString(), `DESCRIBE ${u}`);
+  });
 });
