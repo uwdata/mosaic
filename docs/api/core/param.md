@@ -36,13 +36,13 @@ should emit a 'value' event even if the internal value is unchanged.
 
 ## addEventListener
 
-`selection.addEventListener(type, callback)`
+`param.addEventListener(type, callback)`
 
 Add an event listener _callback_ function for the specified event _type_.
 Params support `"value"` type events only.
 
 ## removeEventListener
 
-`selection.removeEventListener(type, callback)`
+`param.removeEventListener(type, callback)`
 
 Remove an event listener _callback_ function for the specified event _type_.

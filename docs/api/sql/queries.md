@@ -56,6 +56,10 @@ In addition, the following static methods take multiple queries as input and ret
 - `Query.intersect(...queries)`: Query for distinct rows that are output by both the left and right input queries.
 - `Query.except(...queries)`: Query for distinct rows from the left input query that aren't output by the right input query.
 
+To instead create a query for metadata (column names and types), pass a query to the static `describe` method:
+
+- `Query.describe(query)`: Request a description of the columns that a query will produce, with one row per selected column.
+
 ## clone
 
 `query.clone()`

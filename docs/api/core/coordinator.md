@@ -59,7 +59,6 @@ Resets the state of the coordinator. Supports the following _options_:
 
 - _clients_: A Boolean flag (default `true`) indicating if all current clients should be disconnected.
 - _cache_: A Boolean flag (default `true`) indicating if the query cache should be cleared.
-- _catalog_: A Boolean flag (default `false`) indicating if the table catalog cache with backing table column names and types should be cleared.
 
 ## exec
 
