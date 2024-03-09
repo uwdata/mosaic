@@ -31,6 +31,16 @@ export class Query {
     return new SetOperation('EXCEPT', queries.flat());
   }
 
+  static describe(query) {
+    const q = query.clone();
+    const { clone, toString } = q;
+    return Object.assign(q, {
+      describe: true,
+      clone: () => Query.describe(clone.call(q)),
+      toString: () => `DESCRIBE ${toString.call(q)}`
+    });
+  }
+
   constructor() {
     this.query = {
       with: [],
@@ -291,8 +301,8 @@ export class Query {
 
   toString() {
     const {
-      select, distinct, from, sample, where, groupby,
-      having, window, qualify, orderby, limit, offset, with: cte
+      with: cte, select, distinct, from, sample, where, groupby,
+      having, window, qualify, orderby, limit, offset
     } = this.query;
 
     const sql = [];
@@ -430,6 +440,7 @@ export class SetOperation {
   toString() {
     const { op, queries, query: { orderby, limit, offset } } = this;
 
+    // SUBQUERIES
     const sql = [ queries.join(` ${op} `) ];
 
     // ORDER BY
@@ -453,6 +464,10 @@ export class SetOperation {
 
 export function isQuery(value) {
   return value instanceof Query || value instanceof SetOperation;
+}
+
+export function isDescribeQuery(value) {
+  return isQuery(value) && value.describe;
 }
 
 function unquote(s) {
