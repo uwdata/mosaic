@@ -18,7 +18,7 @@ export class RasterTileMark extends Grid2DMark {
   }
 
   setPlot(plot, index) {
-    const update = () => { if (this.stats) this.rasterize(); };
+    const update = () => { if (this.hasFieldInfo()) this.rasterize(); };
     plot.addAttributeListener('schemeColor', update);
     super.setPlot(plot, index);
   }

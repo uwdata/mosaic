@@ -5,8 +5,7 @@ export function channelScale(mark, channel) {
 
   let scaleType = plot.getAttribute(`${channel}Scale`);
   if (!scaleType) {
-    const { field } = mark.channelField(channel, `${channel}1`, `${channel}2`);
-    const { type } = mark.stats[field.column];
+    const { type } = mark.channelField(channel);
     scaleType = type === 'date' ? 'time' : 'linear';
   }
 

@@ -19,6 +19,8 @@ const fieldEntry = (channel, field) => ({
 });
 const valueEntry = (channel, value) => ({ channel, value });
 
+// checks if a data source is an explicit array of values
+// as opposed to a database table refernece
 export const isDataArray = source => Array.isArray(source);
 
 export class Mark extends MosaicClient {
@@ -94,45 +96,47 @@ export class Mark extends MosaicClient {
     return this.source == null || isDataArray(this.source);
   }
 
+  hasFieldInfo() {
+    return !!this._fieldInfo;
+  }
+
   channel(channel) {
     return this.channels.find(c => c.channel === channel);
   }
 
-  channelField(...channels) {
-    const list = channels.flat();
-    for (const channel of list) {
-      const c = this.channel(channel);
-      if (c?.field) return c;
-    }
-    return null;
+  channelField(channel, { exact } = {}) {
+    const c = exact
+      ? this.channel(channel)
+      : this.channels.find(c => c.channel.startsWith(channel));
+    return c?.field ? c : null;
   }
 
   fields() {
     if (this.hasOwnData()) return null;
-    const { source: { table }, channels, reqs } = this;
 
+    const { source: { table }, channels, reqs } = this;
     const fields = new Map;
     for (const { channel, field } of channels) {
-      const column = field?.column;
-      if (!column) {
-        continue; // no column to lookup
-      } else if (field.stats?.length || reqs[channel]) {
-        if (!fields.has(column)) fields.set(column, new Set);
-        const entry = fields.get(column);
-        reqs[channel]?.forEach(s => entry.add(s));
-        field.stats?.forEach(s => entry.add(s));
-      }
+      if (!field) continue;
+      const stats = field.stats?.stats || [];
+      const key = field.stats?.column ?? field;
+      const entry = fields.get(key) ?? fields.set(key, new Set).get(key);
+      stats.forEach(s => entry.add(s));
+      reqs[channel]?.forEach(s => entry.add(s));
     }
-    return Array.from(fields, ([column, stats]) => {
-      return { table, column, stats: Array.from(stats) };
-    });
+
+    return Array.from(fields, ([c, s]) => ({ table, column: c, stats: s }));
   }
 
   fieldInfo(info) {
-    this.stats = info.reduce(
-      (o, d) => (o[d.column] = d, o),
-      Object.create(null)
-    );
+    const lookup = Object.fromEntries(info.map(x => [x.column, x]));
+    for (const entry of this.channels) {
+      const { field } = entry;
+      if (field) {
+        Object.assign(entry, lookup[field.stats?.column ?? field]);
+      }
+    }
+    this._fieldInfo = true;
     return this;
   }
 
@@ -169,6 +173,13 @@ export class Mark extends MosaicClient {
   }
 }
 
+/**
+ * Helper method for setting a channel option in a Plot specification.
+ * Checks if a constant value or a data field is needed.
+ * Also avoids misinterpretation of data values as color names.
+ * @param {*} c a visual encoding channel spec
+ * @returns the Plot channel option
+ */
 export function channelOption(c) {
   // use a scale override for color channels to sidestep
   // https://github.com/observablehq/plot/issues/1593
@@ -177,6 +188,16 @@ export function channelOption(c) {
     : c.as;
 }
 
+/**
+ * Default query construction for a mark.
+ * Tracks aggregates by checking fields for an aggregate flag.
+ * If aggregates are found, groups by all non-aggregate fields.
+ * @param {*} channels array of visual encoding channel specs.
+ * @param {*} table the table to query.
+ * @param {*} skip an optional array of channels to skip.
+ *  Mark subclasses can skip channels that require special handling.
+ * @returns a Query instance
+ */
 export function markQuery(channels, table, skip = []) {
   const q = Query.from({ source: table });
   const dims = new Set;

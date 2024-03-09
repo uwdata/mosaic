@@ -18,8 +18,8 @@ export class PanZoom {
     this.mark = mark;
     this.xsel = x;
     this.ysel = y;
-    this.xfield = xfield || getField(mark, ['x', 'x1', 'x2']);
-    this.yfield = yfield || getField(mark, ['y', 'y1', 'y2']);
+    this.xfield = xfield || getField(mark, 'x');
+    this.yfield = yfield || getField(mark, 'y');
     this.zoom = extent(zoom, [0, Infinity], [1, 1]);
     this.panx = this.xsel && panx;
     this.pany = this.ysel && pany;

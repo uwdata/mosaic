@@ -9,8 +9,6 @@ const OPTIONS_ONLY_MARKS = new Set([
   'graticule'
 ]);
 
-
-
 // construct Plot output
 // see https://github.com/observablehq/plot
 export async function plotRenderer(plot) {
@@ -76,17 +74,17 @@ function setSymbolAttributes(plot, svg, attributes, symbols) {
 
 function inferLabels(spec, plot) {
   const { marks } = plot;
-  inferLabel('x', spec, marks, ['x', 'x1', 'x2']);
-  inferLabel('y', spec, marks, ['y', 'y1', 'y2']);
+  inferLabel('x', spec, marks);
+  inferLabel('y', spec, marks);
   inferLabel('fx', spec, marks);
   inferLabel('fy', spec, marks);
 }
 
-function inferLabel(key, spec, marks, channels = [key]) {
+function inferLabel(key, spec, marks) {
   const scale = spec[key] || {};
   if (scale.axis === null || scale.label !== undefined) return; // nothing to do
 
-  const fields = marks.map(mark => mark.channelField(channels)?.field);
+  const fields = marks.map(mark => mark.channelField(key)?.field);
   if (fields.every(x => x == null)) return; // no columns found
 
   // check for consistent columns / labels
@@ -100,7 +98,7 @@ function inferLabel(key, spec, marks, channels = [key]) {
     } else if (candCol === undefined && candLabel === undefined) {
       candCol = column;
       candLabel = label;
-      type = getType(marks[i].data, channels) || 'number';
+      type = getType(marks[i].data, key) || 'number';
     } else if (candLabel !== label) {
       candLabel = undefined;
     } else if (candCol !== column) {
@@ -149,13 +147,11 @@ function annotateMarks(svg, indices) {
   }
 }
 
-function getType(data, channels) {
+function getType(data, channel) {
   for (const row of data) {
-    for (let j = 0; j < channels.length; ++j) {
-      const v = row[channels[j]];
-      if (v != null) {
-        return v instanceof Date ? 'date' : typeof v;
-      }
+    const v = row[channel] ?? row[channel+'1'] ?? row[channel+'2'];
+    if (v != null) {
+      return v instanceof Date ? 'date' : typeof v;
     }
   }
 }

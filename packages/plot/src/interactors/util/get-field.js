@@ -1,4 +1,4 @@
-export function getField(mark, channels) {
-  const field = mark.channelField(channels)?.field;
+export function getField(mark, channel) {
+  const field = mark.channelField(channel)?.field;
   return field?.basis || field;
 }

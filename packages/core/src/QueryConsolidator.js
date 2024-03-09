@@ -1,4 +1,4 @@
-import { Query, Ref } from '@uwdata/mosaic-sql';
+import { Query, Ref, isDescribeQuery } from '@uwdata/mosaic-sql';
 import { queryResult } from './util/query-result.js';
 
 function wait(callback) {
@@ -125,7 +125,7 @@ function consolidate(group, enqueue, record) {
         type: 'arrow',
         cache: false,
         record: false,
-        query: consolidatedQuery(group, record)
+        query: (group.query = consolidatedQuery(group, record))
       },
       result: (group.result = queryResult())
     });
@@ -192,7 +192,7 @@ function consolidatedQuery(group, record) {
     query.$groupby(groupby.map(e => (e instanceof Ref && map[e.column]) || e));
   }
 
-  // update select statemenet and return
+  // update select statement and return
   return query.$select(Array.from(fields.values()));
 }
 
@@ -202,9 +202,13 @@ function consolidatedQuery(group, record) {
  * @param {*} cache Client-side query cache (sql -> data)
  */
 async function processResults(group, cache) {
-  const { maps, result } = group;
-  if (!maps) return; // no consolidation performed
+  const { maps, query, result } = group;
 
+  // exit early if no consolidation performed
+  // in this case results are passed directly
+  if (!maps) return;
+
+  // await consolidated query result, pass errors if needed
   let data;
   try {
     data = await result;
@@ -216,13 +220,19 @@ async function processResults(group, cache) {
     return;
   }
 
+  // extract result for each query in the consolidation group
+  // update cache and pass extract to original issuer
+  const describe = isDescribeQuery(query);
   group.forEach(({ entry }, index) => {
     const { request, result } = entry;
-    const projected = projectResult(data, maps[index]);
+    const map = maps[index];
+    const extract = describe && map ? filterResult(data, map)
+      : map ? projectResult(data, map)
+      : data;
     if (request.cache) {
-      cache.set(String(request.query), projected);
+      cache.set(String(request.query), extract);
     }
-    result.fulfill(projected);
+    result.fulfill(extract);
   });
 }
 
@@ -233,13 +243,26 @@ async function processResults(group, cache) {
  * @returns the projected Apache Arrow table
  */
 function projectResult(data, map) {
-  if (map) {
-    const cols = {};
-    for (const [name, as] of map) {
-      cols[as] = data.getChild(name);
-    }
-    return new data.constructor(cols);
-  } else {
-    return data;
+  const cols = {};
+  for (const [name, as] of map) {
+    cols[as] = data.getChild(name);
   }
+  return new data.constructor(cols);
+}
+
+/**
+ * Filter a consolidated describe query result to a client result
+ * @param {*} data Consolidated query result
+ * @param {*} map Column name map as [source, target] pairs
+ * @returns the filtered table data
+ */
+function filterResult(data, map) {
+  const lookup = new Map(map);
+  const result = [];
+  for (const d of data) {
+    if (lookup.has(d.column_name)) {
+      result.push({ ...d, column_name: lookup.get(d.column_name) })
+    }
+  }
+  return result;
 }
