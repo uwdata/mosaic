@@ -28,7 +28,7 @@ Create a new HTTP rest connector to a DuckDB [data server](../duckdb/data-server
 `wasmConnector(options)`
 
 Create a new DuckDB-WASM connector with the given _options_.
-This method will instantiate a new DuckDB instance in-browser using Web Assembly. If no existing DuckDB-WASM instance provided as an option, a new instance is created lazily upon first access.
+This method will instantiate a new DuckDB instance in-browser using Web Assembly. If no existing DuckDB-WASM instance is provided as an option, a new instance is created lazily upon first access.
 
 The supported options are:
 
