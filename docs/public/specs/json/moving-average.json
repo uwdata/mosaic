@@ -36,7 +36,9 @@
           "data": {
             "from": "cases"
           },
-          "x": "day",
+          "x": {
+            "sql": "day + 0.5"
+          },
           "y": {
             "avg": "cases",
             "orderby": "day",

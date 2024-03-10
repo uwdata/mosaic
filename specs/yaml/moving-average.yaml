@@ -20,7 +20,7 @@ vconcat:
     fill: steelblue
   - mark: lineY
     data: { from: cases }
-    x: day
+    x: { sql: day + 0.5 } # place value at mid-day
     y: { avg: cases, orderby: day, rows: $frame }
     curve: monotone-x
     stroke: currentColor
