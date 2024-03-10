@@ -22,7 +22,7 @@ We use [hatch](https://hatch.pypa.io/latest/) to manage our development setup.
 
 Start the server in development with `hatch run serve`. The server restarts when you change the code.
 
-To activate the environment, run `hatch shell`.
+To run the tests, use `hatch run test:cov`.
 
 To set up a local certificate for SSL, use https://github.com/FiloSottile/mkcert.
 
@@ -54,4 +54,4 @@ Loads the bundled results.
 
 ## Publishing
 
-Run the build with `hatch build`. Then publish with `hatch publish`. We publish using tokens so when asked, set the username to `__token__` and then use your token as the password.
+Run the build with `hatch build`. Then publish with `hatch publish`. We publish using tokens so when asked, set the username to `__token__` and then use your token as the password. Alternatively, create a [`.pypirc` file](https://packaging.python.org/en/latest/guides/distributing-packages-using-setuptools/#create-an-account).

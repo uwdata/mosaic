@@ -1,0 +1,9 @@
+{
+  "name": "duckdb-server",
+  "version": "0.6.1",
+  "private": true,
+  "scripts": {
+    "prepublishOnly": "hatch run test:cov && hatch fmt --check && hatch build",
+    "publish": "hatch publish"
+  }
+}

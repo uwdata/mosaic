@@ -14,7 +14,8 @@
     "dev": "vite",
     "test": "tsc",
     "lint": "eslint src --ext .js",
-    "format": "hatch run fmt"
+    "prepublishOnly": "npm run test && npm run lint && hatch fmt --check && npm run build && hatch build",
+    "publish": "hatch publish"
   },
   "dependencies": {
     "@uwdata/vgplot": "^0.6.1",
