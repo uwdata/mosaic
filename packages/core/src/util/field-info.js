@@ -1,5 +1,6 @@
 import { Query, asRelation, count, isNull, max, min, sql } from '@uwdata/mosaic-sql';
 import { jsType } from './js-type.js';
+import { convertArrowValue } from './convert-arrow.js';
 
 export const Count = 'count';
 export const Nulls = 'nulls';
@@ -34,7 +35,7 @@ export async function queryFieldInfo(mc, fields) {
 
 async function getFieldInfo(mc, { table, column, stats }) {
   // generate and issue a query for field metadata info
-  // use GROUP BY ALL for consolidation of aggregates
+  // use GROUP BY ALL to differentiate & consolidate aggregates
   const q = Query.from({ source: table })
     .select({ column })
     .groupby(column.aggregate ? sql`ALL` : []);
@@ -47,22 +48,22 @@ async function getFieldInfo(mc, { table, column, stats }) {
     nullable: desc.null === 'YES'
   };
 
-  // column does not exist
-  if (info == null) return;
-
   // no need for summary statistics
   if (!(stats?.length || stats?.size)) return info;
 
   // query for summary stats
-  const [summary] = Array.from(
-    await mc.query(summarize(table, column, stats), { persist: true })
+  const result = await mc.query(
+    summarize(table, column, stats),
+    { persist: true }
   );
 
-  // copy summary stats, coerce bigint to number
-  Object.keys(summary).forEach(key => {
-    const value = summary[key];
-    info[key] = typeof value === 'bigint' ? Number(value) : value;
-  });
+  // extract summary stats, copy to field info
+  for (let i = 0; i < result.numCols; ++i) {
+    const { name } = result.schema.fields[i];
+    const child = result.getChildAt(i);
+    const convert = convertArrowValue(child.type);
+    info[name] = convert(child.get(0));
+  }
 
   return info;
 }
