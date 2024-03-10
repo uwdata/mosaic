@@ -1,4 +1,4 @@
-import { convertArrow, isArrowTable } from './arrow.js';
+import { convertArrowValue, isArrowTable } from '@uwdata/mosaic-core';
 
 export function toDataArray(data) {
   return isArrowTable(data) ? arrowToObjects(data) : data;
@@ -34,7 +34,7 @@ export function arrowToObjects(data) {
     for (let j = 0; j < numCols; ++j) {
       const child = batch.getChildAt(j);
       const { name, type } = schema.fields[j];
-      const valueOf = convertArrow(type);
+      const valueOf = convertArrowValue(type);
 
       // for each row in the current batch...
       for (let o = k, i = 0; i < numRows; ++i, ++o) {

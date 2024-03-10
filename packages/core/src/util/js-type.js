@@ -12,7 +12,6 @@ export function jsType(type) {
     case 'DOUBLE':
     case 'FLOAT':
     case 'REAL':
-    case 'DECIMAL':
       return 'number';
     case 'DATE':
     case 'TIMESTAMP':
@@ -35,7 +34,9 @@ export function jsType(type) {
     case 'GEOMETRY':
       return 'object';
     default:
-      if (type.startsWith('STRUCT') || type.startsWith('MAP')) {
+      if (type.startsWith('DECIMAL')) {
+        return 'number';
+      } else if (type.startsWith('STRUCT') || type.startsWith('MAP')) {
         return 'object';
       } else if (type.endsWith(']')) {
         return 'array';

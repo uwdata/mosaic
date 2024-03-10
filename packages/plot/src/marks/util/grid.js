@@ -1,20 +1,18 @@
 import { InternSet, ascending } from 'd3';
-import { convertArrowColumn, convertArrowType, isArrowTable } from './arrow.js';
+import {
+  convertArrowArrayType,
+  convertArrowColumn,
+  isArrowTable
+} from '@uwdata/mosaic-core';
 
 function arrayType(values, name = 'density') {
-  if (isArrowTable(values)) {
-    return convertArrowType(values.getChild(name).type);
-  } else {
-    return typeof values[0][name] === 'number' ? Float64Array : Array;
-  }
+  return isArrowTable(values)
+    ? convertArrowArrayType(values.getChild(name).type)
+    : typeof values[0]?.[name] === 'number' ? Float64Array : Array;
 }
 
-export function grid1d(n, values) {
-  const Type = arrayType(values);
-  return valuesToGrid(new Type(n), values);
-}
-
-function valuesToGrid(grid, values, name = 'density') {
+export function grid1d(n, values, name = 'density') {
+  const grid = new (arrayType(values))(n);
   if (isArrowTable(values)) {
     // optimize access for Arrow tables
     const numRows = values.numRows;
