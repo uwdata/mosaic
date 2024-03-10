@@ -45,11 +45,12 @@ dependencies = [
 [tool.hatch.envs.test.scripts]
 cov = 'pytest --cov-report=term-missing --cov-config=pyproject.toml --cov=pkg'
 
-[tool.hatch.version]
-path = "pkg/__about__.py"
-
 [tool.hatch.build.targets.wheel]
 packages = ["pkg"]
+
+[tool.hatch.version]
+path = "package.json"
+pattern = "\"version\": \"(?P<version>.+?)\""
 
 [tool.ruff]
 lint.ignore = ["G004", "TRY301", "EM102", "EM101", "TRY003", "FBT002", "S608", "TRY002", "ARG001"]

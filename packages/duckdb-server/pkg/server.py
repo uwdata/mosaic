@@ -7,7 +7,6 @@ from pathlib import Path
 import ujson
 from socketify import App, CompressOptions, OpCode
 
-from pkg.__about__ import __version__
 from pkg.bundle import create_bundle, load_bundle
 from pkg.query import get_arrow_bytes, get_json, retrieve
 
@@ -176,7 +175,7 @@ def server(con, cache):
     app.listen(
         3000,
         lambda config: sys.stdout.write(
-            f"Mosaic Server {__version__} listening at ws://localhost:{config.port} and http://localhost:{config.port}\n"
+            f"DuckDB Server listening at ws://localhost:{config.port} and http://localhost:{config.port}\n"
         ),
     )
     app.run()
