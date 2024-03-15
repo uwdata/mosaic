@@ -15,13 +15,13 @@ Once instantiated, register a connector with the coordinator using the [`coordin
 
 `socketConnector(uri)`
 
-Create a new Web Socket connector to a DuckDB [data server](../duckdb/data-server) at the given _uri_ (default `"http://localhost:3000/"`).
+Create a new Web Socket connector to a DuckDB [data server](../duckdb/data-server) at the given _uri_ (default `"ws://localhost:3000/"`).
 
 ## restConnector
 
 `restConnector(uri)`
 
-Create a new HTTP rest connector to a DuckDB [data server](../duckdb/data-server) at the given _uri_ (default `"ws://localhost:3000/"`).
+Create a new HTTP rest connector to a DuckDB [data server](../duckdb/data-server) at the given _uri_ (default `"http://localhost:3000/"`).
 
 ## wasmConnector
 
