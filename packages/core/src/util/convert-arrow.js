@@ -133,9 +133,9 @@ function decimalToNumber(v, scale) {
   const n = v.length;
   let x = 0;
 
-  if (v.signed && (v[n-1]|0) < 0) {
+  if (v.signed && (v[n - 1] | 0) < 0) {
     for (let i = 0; i < n; ++i) {
-      x += ~(v[i] | 0) * BASE32[i];
+      x += ~v[i] * BASE32[i];
     }
     x = -(x + 1);
   } else {
