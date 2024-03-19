@@ -64,7 +64,7 @@ Given a parsed specification AST, load data, generate Params/Selections, and ins
 The supported _options_ are:
 
 - _api_: A [vgplot API context](../vgplot/context) to use. By default, a new API context is created that uses the global `Coordinator` and a new, empty `namedPlots` map.
-- _activeParams_: A `Map` from parameter names to live Param or Selection instances. The default is an empty map. A pre-populated map can be provided to reuse params across specifications.
+- _params_: A `Map` from parameter names to live Param or Selection instances. The default is an empty map. A pre-populated map can be provided to reuse params across specifications.
 - _baseURL_: The base URL (default `null`) from which to load data files.
 
 The fulfilled value of the returned Promise is an object with the following properties:

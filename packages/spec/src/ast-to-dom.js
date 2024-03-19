@@ -33,9 +33,12 @@ export async function astToDOM(ast, options) {
   }
 
   // process param/selection definitions
+  // skip definitions with names already defined
   for (const [name, node] of Object.entries(params)) {
-    const param = node.instantiate(ctx);
-    ctx.activeParams.set(name, param);
+    if (!ctx.activeParams.has(name)) {
+      const param = node.instantiate(ctx);
+      ctx.activeParams.set(name, param);
+    }
   }
 
   return {
@@ -48,12 +51,12 @@ export class InstantiateContext {
   constructor({
     api = createAPIContext(),
     plotDefaults = [],
-    activeParams = new Map,
+    params = new Map,
     baseURL = null
   } = {}) {
     this.api = api;
     this.plotDefaults = plotDefaults;
-    this.activeParams = activeParams;
+    this.activeParams = params;
     this.baseURL = baseURL;
     this.coordinator = api.context.coordinator;
   }
