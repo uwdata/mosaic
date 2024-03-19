@@ -109,9 +109,7 @@
       // provide options for output generation
       // if using a local server, use baseURL for client-loaded data only
       const baseURL = location.origin + '/';
-      const options = connectorMenu.value === 'wasm'
-        ? { baseURL }
-        : { baseClientURL: baseURL };
+      const options = connectorMenu.value === 'wasm' ? { baseURL } : {};
 
       const ast = parseSpec(spec);
       const child = source === 'esm'
