@@ -1,6 +1,6 @@
 {
   "name": "@uwdata/vgplot",
-  "version": "0.7.0",
+  "version": "0.7.1",
   "description": "An API for interactive Mosaic-powered visualizations and dashboards.",
   "keywords": [
     "data",
@@ -30,9 +30,9 @@
     "prepublishOnly": "npm run test && npm run lint && npm run build"
   },
   "dependencies": {
-    "@uwdata/mosaic-core": "^0.7.0",
-    "@uwdata/mosaic-inputs": "^0.7.0",
-    "@uwdata/mosaic-plot": "^0.7.0",
+    "@uwdata/mosaic-core": "^0.7.1",
+    "@uwdata/mosaic-inputs": "^0.7.1",
+    "@uwdata/mosaic-plot": "^0.7.1",
     "@uwdata/mosaic-sql": "^0.7.0"
   }
 }
