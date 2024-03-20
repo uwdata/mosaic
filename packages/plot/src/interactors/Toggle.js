@@ -11,12 +11,12 @@ export class Toggle {
     this.selection = selection;
     this.peers = peers;
     this.channels = channels.map(c => {
-      const q = c === 'color' ? ['fill', 'stroke']
+      const q = c === 'color' ? ['color', 'fill', 'stroke']
         : c === 'x' ? ['x', 'x1', 'x2']
         : c === 'y' ? ['y', 'y1', 'y2']
         : [c];
       for (let i = 0; i < q.length; ++i) {
-        const f = mark.channelField(q[i]);
+        const f = mark.channelField(q[i], { exact: true });
         if (f) return {
           field: f.field?.basis || f.field,
           as: f.as
@@ -67,7 +67,7 @@ export class Toggle {
 
       if (isTargetElement(groups, target)) {
         const point = accessor(target);
-        if (evt.shiftKey && state?.length) {
+        if ((evt.shiftKey || evt.metaKey) && state?.length) {
           value = state.filter(s => neq(s, point));
           if (value.length === state.length) value.push(point);
         } else if (state?.length === 1 && !neq(state[0], point)) {
