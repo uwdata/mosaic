@@ -141,9 +141,9 @@ function alphaScale(mark, prop) {
   const domainTransient = domainAttr?.[Transient];
   const domain = (!domainFixed && !domainTransient && domainAttr)
     || gridDomainContinuous(grids, prop);
-  if (domainFixed || domainTransient) {
-    if (domainTransient) domain[Transient] = true;
-    plot.setAttribute('colorDomain', domain);
+  if (domainFixed || domainTransient || !domainAttr) {
+    if (!domainFixed) domain[Transient] = true;
+    plot.setAttribute('opacityDomain', domain);
   }
 
   // generate opacity scale
@@ -177,8 +177,8 @@ function colorScale(mark, prop) {
       : discrete ? gridDomainDiscrete(grids, prop)
       : gridDomainContinuous(grids, prop)
   );
-  if (domainFixed || domainTransient) {
-    if (domainTransient) domain[Transient] = true;
+  if (domainFixed || domainTransient || !domainAttr) {
+    if (!domainFixed) domain[Transient] = true;
     plot.setAttribute('colorDomain', domain);
   }
 
