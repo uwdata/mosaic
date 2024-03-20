@@ -7,6 +7,7 @@ import { toDataArray } from './util/to-data-array.js';
 import { Transform } from '../symbols.js';
 
 const isColorChannel = channel => channel === 'stroke' || channel === 'fill';
+const isOpacityChannel = channel => /opacity$/i.test(channel);
 const isSymbolChannel = channel => channel === 'symbol';
 const isFieldObject = (channel, field) => {
   return channel !== 'sort' && channel !== 'tip'
@@ -185,6 +186,7 @@ export function channelOption(c) {
   // https://github.com/observablehq/plot/issues/1593
   return Object.hasOwn(c, 'value') ? c.value
     : isColorChannel(c.channel) ? { value: c.as, scale: 'color' }
+    : isOpacityChannel(c.channel) ? { value: c.as, scale: 'opacity' }
     : c.as;
 }
 

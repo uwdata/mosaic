@@ -52,9 +52,12 @@ export class ContourMark extends Grid2DMark {
 
     // generate contours
     this.data = kde.flatMap(cell => tz.map(t => {
+      // annotate contour geojson with cell groupby fields
+      // d3-contour already adds a threshold "value" property
+      const { density, ...groupby } = cell;
       return Object.assign(
-        transform(contour.contour(cell.density, t), x, y),
-        { ...cell, density: t }
+        transform(contour.contour(density, t), x, y),
+        { ...groupby }
       );
     }));
 
@@ -70,8 +73,12 @@ export class ContourMark extends Grid2DMark {
         options[channel] = channelOption(c);
       }
     }
-    if (densityMap.fill) options.fill = 'density';
-    if (densityMap.stroke) options.stroke = 'density';
+    // d3-contour adds a threshold "value" property
+    // here we ensure requested density values are encoded
+    for (const channel in densityMap) {
+      if (!densityMap[channel]) continue;
+      options[channel] = channelOption({ channel, as: 'value' });
+    }
     return [{ type, data, options }];
   }
 }
