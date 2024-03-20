@@ -72,6 +72,9 @@ export class RegressionMark extends Mark {
         case 'y':
         case 'fill':
           break;
+        case 'tip':
+          aopt.tip = channelOption(c);
+          break;
         case 'stroke':
           lopt.stroke = aopt.fill = channelOption(c);
           break;
