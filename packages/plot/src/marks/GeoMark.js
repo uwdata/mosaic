@@ -24,7 +24,6 @@ export class GeoMark extends Mark {
     // parse GeoJSON strings to JSON objects
     const geom = this.channelField('geometry')?.as;
 
-    // convert Arrow table if necessary
     if (isArrowTable(data)) {
       this.data = data.toArray();
     }
