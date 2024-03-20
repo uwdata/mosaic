@@ -243,6 +243,11 @@ export const opacityBase = attrf('opacityBase');
 export const opacityExponent = attrf('opacityExponent');
 export const opacityConstant = attrf('opacityConstant');
 
+// symbol scale attributes
+export const symbolScale = attrf('symbolScale');
+export const symbolDomain = attrf('symbolDomain');
+export const symbolRange = attrf('symbolRange');
+
 // r scale attributes
 export const rScale = attrf('rScale');
 export const rDomain = attrf('rDomain');
