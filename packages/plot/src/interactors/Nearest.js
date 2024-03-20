@@ -1,4 +1,4 @@
-import { isSelection } from '@uwdata/mosaic-core';
+import { isArrowTable, isSelection } from '@uwdata/mosaic-core';
 import { eq, literal } from '@uwdata/mosaic-sql';
 import { select, pointer } from 'd3';
 import { getField } from './util/get-field.js';
@@ -55,12 +55,24 @@ export class Nearest {
 function findNearest(data, key, value) {
   let dist = Infinity;
   let v;
-  data.forEach(d => {
-    const delta = Math.abs(d[key] - value);
-    if (delta < dist) {
-      dist = delta;
-      v = d[key];
+  
+  if (isArrowTable(data)) {
+    // optimized code for Arrow tables
+    for (const d of data.getChild(key)) {
+      const delta = Math.abs(d - value);
+      if (delta < dist) {
+        dist = delta;
+        v = d;
+      }
     }
-  });
+  } else {
+    for (const d of data) {
+      const delta = Math.abs(d[key] - value);
+      if (delta < dist) {
+        dist = delta;
+        v = d[key];
+      }
+    }
+  }
   return v;
 }

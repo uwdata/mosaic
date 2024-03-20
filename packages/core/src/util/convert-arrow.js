@@ -12,19 +12,12 @@ export function isArrowTable(values) {
 }
 
 /**
- * Return a JavaScript array type for an Apache Arrow column type.
- * @param {*} type an Apache Arrow column type
- * @returns a JavaScript array constructor
+ * Checks whether the Arrow data type needs special handling.
+ *
+ * @param {DataType} type An Arrow data type.
  */
-export function convertArrowArrayType(type) {
-  switch (type.typeId) {
-    case INTEGER:
-    case FLOAT:
-    case DECIMAL:
-      return Float64Array;
-    default:
-      return Array;
-  }
+export function needsIntervention(type) {
+  return DataType.isInt(type) && type.bitWidth >= 64 || DataType.isTimestamp(type) || DataType.isDecimal(type);
 }
 
 /**

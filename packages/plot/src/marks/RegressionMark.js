@@ -7,7 +7,7 @@ import {
 import { qt } from './util/stats.js';
 import { Mark, channelOption } from './Mark.js';
 import { handleParam } from './util/handle-param.js';
-import { toDataArray } from './util/to-data-array.js';
+import { toObjectArray } from './util/to-data-array.js';
 
 export class RegressionMark extends Mark {
   constructor(source, options) {
@@ -44,7 +44,7 @@ export class RegressionMark extends Mark {
   }
 
   queryResult(data) {
-    this.modelFit = toDataArray(data);
+    this.modelFit = toObjectArray(data);
 
     // regression line
     this.lineData = this.modelFit.flatMap(m => linePoints(m));

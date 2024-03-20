@@ -1,7 +1,26 @@
-import { convertArrowValue, isArrowTable } from '@uwdata/mosaic-core';
+import { convertArrowValue, isArrowTable, needsIntervention } from '@uwdata/mosaic-core';
+
+export function toObjectArray(data) {
+  return isArrowTable(data) ? arrowToObjects(data) : data;
+}
 
 export function toDataArray(data) {
-  return isArrowTable(data) ? arrowToObjects(data) : data;
+  if (isArrowTable(data)) {
+    if (isSimpleArrowTable(data)) {
+      return data;
+    }
+    return arrowToObjects(data);
+  }
+  return data;
+}
+
+/**
+ * @param {import('apache-arrow').Table} data
+ */
+function isSimpleArrowTable(data) {
+  const simple = data.schema.fields.every(f => !needsIntervention(f.type));
+  console.log("simple", simple, data.schema.fields.map(f => String(f.type)))
+  return simple;
 }
 
 /**

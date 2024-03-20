@@ -1,13 +1,12 @@
 import { InternSet, ascending } from 'd3';
 import {
-  convertArrowArrayType,
   convertArrowColumn,
   isArrowTable
 } from '@uwdata/mosaic-core';
 
 function arrayType(values, name = 'density') {
   return isArrowTable(values)
-    ? convertArrowArrayType(values.getChild(name).type)
+    ? values.getChild(name).type.ArrayType
     : typeof values[0]?.[name] === 'number' ? Float64Array : Array;
 }
 
