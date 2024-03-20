@@ -61,7 +61,7 @@ export class Interval1D {
     };
   }
 
-  init(svg) {
+  init(svg, root) {
     const { brush, channel, style } = this;
     this.scale = svg.scale(channel);
 
@@ -70,7 +70,7 @@ export class Interval1D {
     brush.extent([[min(rx), min(ry)], [max(rx), max(ry)]]);
 
     const facets = select(svg).selectAll('g[aria-label="facet"]');
-    const root = facets.size() ? facets : select(svg);
+    root = facets.size() ? facets : select(root ?? svg);
     this.g = root
       .append('g')
       .attr('class', `interval-${channel}`)
