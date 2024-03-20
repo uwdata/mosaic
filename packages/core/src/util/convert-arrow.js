@@ -1,8 +1,4 @@
-// arrow type ids
-const INTEGER = 2;
-const FLOAT = 3;
-const DECIMAL = 7;
-const TIMESTAMP = 10;
+import { DataType } from "apache-arrow";
 
 /**
  * Test if a value is an Apache Arrow table.
@@ -41,20 +37,18 @@ export function convertArrowArrayType(type) {
  * @returns a value conversion function
  */
 export function convertArrowValue(type) {
-  const { typeId } = type;
-
   // map timestamp numbers to date objects
-  if (typeId === TIMESTAMP) {
+  if (DataType.isTimestamp(type)) {
     return v => v == null ? v : new Date(v);
   }
 
   // map bigint to number
-  if (typeId === INTEGER && type.bitWidth >= 64) {
+  if (DataType.isInt(type) && type.bitWidth >= 64) {
     return v => v == null ? v : Number(v);
   }
 
   // map decimal to number
-  if (typeId === DECIMAL) {
+  if (DataType.isDecimal(type)) {
     const scale = 1 / Math.pow(10, type.scale);
     return v => v == null ? v : decimalToNumber(v, scale);
   }
@@ -74,10 +68,9 @@ export function convertArrowValue(type) {
  */
 export function convertArrowColumn(column) {
   const { type } = column;
-  const { typeId } = type;
 
   // map timestamp numbers to date objects
-  if (typeId === TIMESTAMP) {
+  if (DataType.isTimestamp(type)) {
     const size = column.length;
     const array = new Array(size);
     for (let row = 0; row < size; ++row) {
@@ -88,7 +81,7 @@ export function convertArrowColumn(column) {
   }
 
   // map bigint to number
-  if (typeId === INTEGER && type.bitWidth >= 64) {
+  if (DataType.isInt(type) && type.bitWidth >= 64) {
     const size = column.length;
     const array = new Float64Array(size);
     for (let row = 0; row < size; ++row) {
@@ -99,7 +92,7 @@ export function convertArrowColumn(column) {
   }
 
   // map decimal to number
-  if (typeId === DECIMAL) {
+  if (DataType.isDecimal(type)) {
     const scale = 1 / Math.pow(10, type.scale);
     const size = column.length;
     const array = new Float64Array(size);
