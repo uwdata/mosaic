@@ -18,9 +18,7 @@ export function toDataArray(data) {
  * @param {import('apache-arrow').Table} data
  */
 function isSimpleArrowTable(data) {
-  const simple = data.schema.fields.every(f => !needsIntervention(f.type));
-  console.log("simple", simple, data.schema.fields.map(f => String(f.type)))
-  return simple;
+  return data.schema.fields.every(f => !needsIntervention(f.type));
 }
 
 /**
