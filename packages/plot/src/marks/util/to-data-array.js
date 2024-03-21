@@ -1,4 +1,4 @@
-import { convertArrowValue, isArrowTable, needsIntervention } from '@uwdata/mosaic-core';
+import { convertArrowValue, isArrowTable, needsConversion } from '@uwdata/mosaic-core';
 
 export function toObjectArray(data) {
   return isArrowTable(data) ? arrowToObjects(data) : data;
@@ -18,7 +18,7 @@ export function toDataArray(data) {
  * @param {import('apache-arrow').Table} data
  */
 function isSimpleArrowTable(data) {
-  return data.schema.fields.every(f => !needsIntervention(f.type));
+  return data.schema.fields.every(f => !needsConversion(f.type));
 }
 
 /**

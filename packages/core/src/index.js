@@ -10,7 +10,8 @@ export { wasmConnector } from './connectors/wasm.js';
 
 export {
   isArrowTable,
-  needsIntervention,
+  needsConversion,
+  convertArrowArrayType,
   convertArrowValue,
   convertArrowColumn
 } from './util/convert-arrow.js'
