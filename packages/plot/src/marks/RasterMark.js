@@ -86,7 +86,6 @@ export class HeatmapMark extends RasterMark {
 /**
  * Utility method to generate color and alpha encoding helpers.
  * The returned methods can write directly to a pixel raster.
- * 
  * @param {RasterMark} mark
  */
 export function rasterEncoding(mark) {
@@ -135,9 +134,10 @@ export function rasterEncoding(mark) {
 }
 
 /**
+ * Generate an opacity rasterizer for a bitmap alpha channel.
  * @param {RasterMark} mark The mark instance
- * @param {string} prop
- * @returns
+ * @param {string} prop The data property name
+ * @returns A bitmap rasterizer function.
  */
 function alphaScale(mark, prop) {
   const { plot, kde: grids } = mark;
@@ -171,9 +171,10 @@ function alphaScale(mark, prop) {
 }
 
 /**
+ * Generate an color rasterizer for bitmap r, g, b channels.
  * @param {RasterMark} mark The mark instance
  * @param {string} prop
- * @returns
+ * @returns A bitmap rasterizer function.
  */
 function colorScale(mark, prop) {
   const { plot, kde: grids } = mark;
@@ -247,10 +248,13 @@ function inferScaleType(type) {
 }
 
 /**
+ * Retrieve canvas image data for a 2D raster bitmap.
+ * The resulting data is cached in the mark.image property.
+ * If the canvas dimensions change, a new canvas is created.
  * @param {RasterMark} mark The mark instance
- * @param {number} w 
- * @param {number} h 
- * @returns 
+ * @param {number} w The canvas width.
+ * @param {number} h The canvas height.
+ * @returns An object with a canvas, context, image data, and dimensions.
  */
 export function imageData(mark, w, h) {
   if (!mark.image || mark.image.w !== w || mark.image.h !== h) {
