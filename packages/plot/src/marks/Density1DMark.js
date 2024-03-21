@@ -53,29 +53,30 @@ export class Density1DMark extends Mark {
     const result = dericheConv1d(config, grid, bins);
 
     // map smoothed grid values to sample data points
-    const points = this.data = [];
     const v = dim === 'x' ? 'y' : 'x';
     const b = this.channelField(dim).as;
     const b0 = +lo;
     const delta = (hi - b0) / (bins - 1);
     const scale = 1 / delta;
+
+    const _b = new Float64Array(bins);
+    const _v = new Float64Array(bins);
     for (let i = 0; i < bins; ++i) {
-      points.push({
-        [b]: b0 + i * delta,
-        [v]: result[i] * scale
-      });
+      _b[i] = b0 + i * delta;
+      _v[i] = result[i] * scale;
     }
+    this.data = { numRows: bins, columns: { [b]: _b, [v]: _v } };
 
     return this;
   }
 
   plotSpecs() {
-    const { type, data, channels, dim } = this;
-    const options = dim === 'x' ? { y: 'y' } : { x: 'x' };
+    const { type, data: { numRows: length, columns }, channels, dim } = this;
+    const options = dim === 'x' ? { y: columns.y } : { x: columns.x };
     for (const c of channels) {
-      options[c.channel] = channelOption(c);
+      options[c.channel] = channelOption(c, columns);
     }
-    return [{ type, data, options }];
+    return [{ type, data: { length }, options }];
   }
 }
 

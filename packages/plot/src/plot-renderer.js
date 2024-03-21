@@ -165,10 +165,13 @@ function annotateMarks(svg, indices) {
 }
 
 function getType(data, channel) {
-  for (const row of data) {
-    const v = row[channel] ?? row[channel+'1'] ?? row[channel+'2'];
-    if (v != null) {
-      return v instanceof Date ? 'date' : typeof v;
+  const { columns } = data;
+  const col = columns[channel] ?? columns[channel+'1'] ?? columns[channel+'2'];
+  if (col) {
+    for (const v of col) {
+      if (v != null) {
+        return v instanceof Date ? 'date' : typeof v;
+      }
     }
   }
 }

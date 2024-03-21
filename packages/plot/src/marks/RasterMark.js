@@ -43,27 +43,32 @@ export class RasterMark extends Grid2DMark {
     const { alpha, alphaProp, color, colorProp } = rasterEncoding(this);
 
     // generate rasters
-    this.data = kde.map(cell => {
-      color?.(img.data, w, h, cell[colorProp]);
-      alpha?.(img.data, w, h, cell[alphaProp]);
-      ctx.putImageData(img, 0, 0);
-      return { src: canvas.toDataURL() };
-    });
+    this.data = {
+      numRows: kde.length,
+      columns: {
+        src: kde.map(cell => {
+          color?.(img.data, w, h, cell[colorProp]);
+          alpha?.(img.data, w, h, cell[alphaProp]);
+          ctx.putImageData(img, 0, 0);
+          return canvas.toDataURL();
+        })
+      }
+    };
 
     return this;
   }
 
   plotSpecs() {
-    const { type, plot, data } = this;
+    const { type, plot, data: { numRows: length, columns } } = this;
     const options = {
-      src: 'src',
+      src: columns.src,
       width: plot.innerWidth(),
       height: plot.innerHeight(),
       preserveAspectRatio: 'none',
       imageRendering: this.channel('imageRendering')?.value,
       frameAnchor: 'middle'
     };
-    return [{ type, data, options }];
+    return [{ type, data: { length }, options }];
   }
 }
 

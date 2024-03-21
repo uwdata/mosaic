@@ -1,6 +1,5 @@
 import { geojson } from '@uwdata/mosaic-sql';
 import { Mark, isDataArray } from './Mark.js';
-import { isArrowTable } from '@uwdata/mosaic-core';
 
 // default geometry column created by st_read
 // warning: if another "geom" column exists this default
@@ -19,20 +18,14 @@ export class GeoMark extends Mark {
   }
 
   queryResult(data) {
-    super.queryResult(data);
+    super.queryResult(data); // map to columns, set this.data
 
-    // parse GeoJSON strings to JSON objects
+    // look for an explicit geometry field
     const geom = this.channelField('geometry')?.as;
-
-    if (isArrowTable(data)) {
-      this.data = data.toArray();
-    }
-
-    if (geom && this.data) {
-      for (const data of this.data) {
-        if (typeof data[geom] === 'string') {
-          data[geom] = JSON.parse(data[geom]);
-        }
+    if (geom) {
+      const { columns } = this.data;
+      if (typeof columns[geom][0] === 'string') {
+        columns[geom] = columns[geom].map(s => JSON.parse(s));
       }
     }
 
