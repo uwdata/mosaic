@@ -86,6 +86,8 @@ export class HeatmapMark extends RasterMark {
 /**
  * Utility method to generate color and alpha encoding helpers.
  * The returned methods can write directly to a pixel raster.
+ * 
+ * @param {RasterMark} mark
  */
 export function rasterEncoding(mark) {
   const { aggr, densityMap, groupby, plot } = mark;
@@ -132,6 +134,11 @@ export function rasterEncoding(mark) {
   return { alphaProp, colorProp, alpha, color };
 }
 
+/**
+ * @param {RasterMark} mark The mark instance
+ * @param {string} prop
+ * @returns
+ */
 function alphaScale(mark, prop) {
   const { plot, kde: grids } = mark;
 
@@ -163,6 +170,11 @@ function alphaScale(mark, prop) {
   return alphaScheme(s);
 }
 
+/**
+ * @param {RasterMark} mark The mark instance
+ * @param {string} prop
+ * @returns
+ */
 function colorScale(mark, prop) {
   const { plot, kde: grids } = mark;
   const flat = !grids[0][prop]?.map; // not array-like
@@ -234,6 +246,12 @@ function inferScaleType(type) {
   return type;
 }
 
+/**
+ * @param {RasterMark} mark The mark instance
+ * @param {number} w 
+ * @param {number} h 
+ * @returns 
+ */
 export function imageData(mark, w, h) {
   if (!mark.image || mark.image.w !== w || mark.image.h !== h) {
     const canvas = createCanvas(w, h);
