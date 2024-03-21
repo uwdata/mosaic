@@ -1,6 +1,7 @@
 import * as Plot from '@observablehq/plot';
 import { setAttributes } from './plot-attributes.js';
 import { Fixed } from './symbols.js';
+import { isArrowTable } from '@uwdata/mosaic-core';
 
 const OPTIONS_ONLY_MARKS = new Set([
   'frame',
@@ -25,6 +26,21 @@ export async function plotRenderer(plot) {
     for (const { type, data, options } of mark.plotSpecs()) {
       if (OPTIONS_ONLY_MARKS.has(type)) {
         spec.marks.push(Plot[type](options));
+      } else if (isArrowTable(data)) {
+        // optimized calls to Plot for Arrow:
+        // https://github.com/observablehq/plot/issues/191#issuecomment-2010986851
+        const opts = Object.fromEntries(
+          Object.entries(options).map(([k, v]) => {
+            let value = v;
+            if (typeof v === 'string') {
+              value = data.getChild(v) ?? v;
+            } else if (typeof v === 'object') {
+              value = data.getChild(v.value) ?? v;
+            }
+            return [k, value]
+          })
+        );
+        spec.marks.push(Plot[type]({length: data.numRows}, opts));
       } else {
         spec.marks.push(Plot[type](data, options));
       }

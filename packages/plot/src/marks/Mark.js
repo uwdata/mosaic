@@ -152,6 +152,10 @@ export class Mark extends MosaicClient {
     return this;
   }
 
+  /**
+   * @param {import('apache-arrow').Table} data The data for the mark.
+   * @returns {this}
+   */
   queryResult(data) {
     this.data = toDataArray(data);
     return this;
