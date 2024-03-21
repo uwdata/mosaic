@@ -1,12 +1,18 @@
+import { isArrowTable } from '@uwdata/mosaic-core';
 import { and, or, isNotDistinct, literal } from '@uwdata/mosaic-sql';
 
 export class Toggle {
+  /**
+   * @param {import('@uwdata/mosaic-plot').Mark} mark The mark.
+   * @param {*} options The options.
+   */
   constructor(mark, {
     selection,
     channels,
     peers = true
   }) {
     this.value = null;
+    /** @type {import('@uwdata/mosaic-plot').Mark} */
     this.mark = mark;
     this.selection = selection;
     this.peers = peers;
@@ -15,8 +21,8 @@ export class Toggle {
         : c === 'x' ? ['x', 'x1', 'x2']
         : c === 'y' ? ['y', 'y1', 'y2']
         : [c];
-      for (let i = 0; i < q.length; ++i) {
-        const f = mark.channelField(q[i]);
+      for (const element of q) {
+        const f = mark.channelField(element);
         if (f) return {
           field: f.field?.basis || f.field,
           as: f.as
@@ -52,8 +58,9 @@ export class Toggle {
   init(svg, selector, accessor) {
     const { mark, channels, selection } = this;
     const { data } = mark;
+    const method = isArrowTable(data) ? 'get' : 'at';
     accessor = accessor || (target => {
-      const datum = data[target.__data__];
+      const datum =data[method](target.__data__);
       return channels.map(c => datum[c.as]);
     });
 
