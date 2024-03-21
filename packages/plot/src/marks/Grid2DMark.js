@@ -185,7 +185,7 @@ function createDensityMap(channels) {
 
 function maybeInterpolate(interpolate = 'none') {
   if (typeof interpolate === 'function') return interpolate;
-  switch (`${interpolate}`.toLowerCase()) {
+  switch (interpolate.toLowerCase()) {
     case 'none':
     case 'linear':
       return undefined; // no special interpolation need
