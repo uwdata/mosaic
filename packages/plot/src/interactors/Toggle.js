@@ -1,4 +1,3 @@
-import { isArrowTable } from '@uwdata/mosaic-core';
 import { and, or, isNotDistinct, literal } from '@uwdata/mosaic-sql';
 
 export class Toggle {
@@ -57,14 +56,9 @@ export class Toggle {
 
   init(svg, selector, accessor) {
     const { mark, channels, selection } = this;
-    const { data } = mark;
-    const method = isArrowTable(data) ? 'get' : 'at';
-    accessor = accessor || (target => {
-      const datum =data[method](target.__data__);
-      return channels.map(c => datum[c.as]);
-    });
-
-    selector = selector || `[data-index="${mark.index}"]`;
+    const { data: { columns } } = mark;
+    accessor ??= target => channels.map(c => columns[c.as][target.__data__]);
+    selector ??= `[data-index="${mark.index}"]`;
     const groups = new Set(svg.querySelectorAll(selector));
 
     svg.addEventListener('pointerdown', evt => {

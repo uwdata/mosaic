@@ -3,7 +3,7 @@ import { Query, Ref, column, isParamLike } from '@uwdata/mosaic-sql';
 import { isColor } from './util/is-color.js';
 import { isConstantOption } from './util/is-constant-option.js';
 import { isSymbol } from './util/is-symbol.js';
-import { toDataArray } from './util/to-data-array.js';
+import { toDataColumns } from './util/to-data-columns.js';
 import { Transform } from '../symbols.js';
 
 const isColorChannel = channel => channel === 'stroke' || channel === 'fill';
@@ -32,7 +32,7 @@ export class Mark extends MosaicClient {
 
     this.source = source;
     if (isDataArray(this.source)) {
-      this.data = this.source;
+      this.data = toDataColumns(this.source);
     }
 
     const channels = this.channels = [];
@@ -153,11 +153,12 @@ export class Mark extends MosaicClient {
   }
 
   /**
-   * @param {import('apache-arrow').Table} data The data for the mark.
+   * Provide query result data to the mark.
+   * @param {import('apache-arrow').Table} data The backing mark data.
    * @returns {this}
    */
   queryResult(data) {
-    this.data = toDataArray(data);
+    this.data = toDataColumns(data);
     return this;
   }
 
@@ -166,15 +167,23 @@ export class Mark extends MosaicClient {
   }
 
   plotSpecs() {
-    const { type, data, detail, channels } = this;
+    const { type, detail, channels } = this;
+    const { numRows: length, values, columns } = this.data || {};
+
+    // populate plot specification options
     const options = {};
     const side = {};
     for (const c of channels) {
       const obj = detail.has(c.channel) ? side : options;
-      obj[c.channel] = channelOption(c)
+      obj[c.channel] = channelOption(c, columns);
     }
     if (detail.size) options.channels = side;
-    return [{ type, data, options }];
+
+    // if provided raw source values (not objects) pass as-is
+    // otherwise we pass columnar data directy in the options
+    const data = values ?? (this.data ? { length } : null);
+    const spec = [{ type, data, options }];
+    return spec;
   }
 }
 
@@ -183,15 +192,17 @@ export class Mark extends MosaicClient {
  * Checks if a constant value or a data field is needed.
  * Also avoids misinterpretation of data values as color names.
  * @param {*} c a visual encoding channel spec
+ * @param {object} columns named data column arrays
  * @returns the Plot channel option
  */
-export function channelOption(c) {
+export function channelOption(c, columns) {
   // use a scale override for color channels to sidestep
   // https://github.com/observablehq/plot/issues/1593
+  const value = columns?.[c.as] ?? c.as;
   return Object.hasOwn(c, 'value') ? c.value
-    : isColorChannel(c.channel) ? { value: c.as, scale: 'color' }
-    : isOpacityChannel(c.channel) ? { value: c.as, scale: 'opacity' }
-    : c.as;
+    : isColorChannel(c.channel) ? { value, scale: 'color' }
+    : isOpacityChannel(c.channel) ? { value, scale: 'opacity' }
+    : value;
 }
 
 /**

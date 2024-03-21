@@ -33,39 +33,54 @@ export class Density2DMark extends Grid2DMark {
   }
 
   plotSpecs() {
-    const { type, channels, densityMap, data } = this;
+    const { type, channels, densityMap, data: { numRows: length, columns } } = this;
     const options = {};
     for (const c of channels) {
       const { channel } = c;
       options[channel] = (channel === 'x' || channel === 'y')
-        ? channel // use generated x/y data fields
-        : channelOption(c);
+        ? columns[channel] // use generated x/y data fields
+        : channelOption(c, columns);
     }
     for (const channel in densityMap) {
       if (densityMap[channel]) {
-        options[channel] = 'density';
+        options[channel] = columns.density;
       }
     }
-    return [{ type, data, options }];
+    return [{ type, data: { length }, options }];
   }
 }
 
 function points(kde, bins, x0, y0, deltaX, deltaY, invertX, invertY, offset) {
   const scale = 1 / (deltaX * deltaY);
   const [nx, ny] = bins;
-  const data = [];
+  const batch = nx * ny;
+  const numRows = batch * kde.length;
+
+  const x = new Float64Array(numRows);
+  const y = new Float64Array(numRows);
+  const density = new Float64Array(numRows);
+  const columns = { x, y, density };
+  const { density: _, ...rest } = kde[0]; // eslint-disable-line no-unused-vars
+  for (const name in rest) {
+    columns[name] = new Array(numRows);
+  }
+
+  let r = 0;
   for (const cell of kde) {
-    const grid = cell.density;
+    const { density: grid, ...rest } = cell;
+    // copy repeated values in batch
+    for (const name in rest) {
+      columns[name].fill(rest[name], r, r + batch);
+    }
+    // copy individual grid values
     for (let k = 0, j = 0; j < ny; ++j) {
-      for (let i = 0; i < nx; ++i, ++k) {
-        data.push({
-          ...cell,
-          x: invertX(x0 + (i + offset) * deltaX),
-          y: invertY(y0 + (j + offset) * deltaY),
-          density: grid[k] * scale
-        });
+      for (let i = 0; i < nx; ++i, ++r, ++k) {
+        x[r] = invertX(x0 + (i + offset) * deltaX);
+        y[r] = invertY(y0 + (j + offset) * deltaY);
+        density[r] = grid[k] * scale;
       }
     }
   }
-  return data;
+
+  return { numRows, columns };
 }

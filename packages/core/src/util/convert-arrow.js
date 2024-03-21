@@ -1,4 +1,4 @@
-import { DataType } from "apache-arrow";
+import { DataType } from 'apache-arrow';
 
 /**
  * Test if a value is an Apache Arrow table.
@@ -13,11 +13,12 @@ export function isArrowTable(values) {
 
 /**
  * Checks whether the Arrow data type needs special handling.
- *
  * @param {DataType} type An Arrow data type.
  */
 export function needsConversion(type) {
-  return DataType.isInt(type) && type.bitWidth >= 64 || DataType.isTimestamp(type) || DataType.isDecimal(type);
+  return DataType.isInt(type) && type.bitWidth >= 64
+    || DataType.isTimestamp(type)
+    || DataType.isDecimal(type);
 }
 
 /**
@@ -26,10 +27,9 @@ export function needsConversion(type) {
   * @returns a JavaScript array constructor
   */
 export function convertArrowArrayType(type) {
-  if (DataType.isInt(type) || DataType.isFloat(type) || DataType.isDecimal(type)) {
-    return Float64Array;
-  }
-  return Array;
+  return DataType.isInt(type) || DataType.isFloat(type) || DataType.isDecimal(type)
+    ? Float64Array
+    : Array;
 }
 
 /**
