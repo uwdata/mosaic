@@ -31,13 +31,14 @@ export async function plotRenderer(plot) {
         // https://github.com/observablehq/plot/issues/191#issuecomment-2010986851
         const opts = Object.fromEntries(
           Object.entries(options).map(([k, v]) => {
-            let value = v;
+            let val = v;
             if (typeof v === 'string') {
-              value = data.getChild(v) ?? v;
+              val = data.getChild(v) ?? v;
             } else if (typeof v === 'object') {
-              value = data.getChild(v.value) ?? v;
+              const value = data.getChild(v.value);
+              val = value ? {value} : v;
             }
-            return [k, value]
+            return [k, val]
           })
         );
         spec.marks.push(Plot[type]({length: data.numRows}, opts));
