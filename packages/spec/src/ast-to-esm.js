@@ -1,22 +1,27 @@
 import { SpecNode } from './ast/SpecNode.js';
 import { resolveExtensions } from './config/extensions.js';
-import { error, isArray, isObject, isString, toParamRef } from './util.js';
+import { error, isArray, isObject, isString, toArray, toParamRef } from './util.js';
 
 /**
  * Generate ESM code for a Mosaic spec AST.
  * @param {SpecNode} ast Mosaic AST root node.
  * @param {object} [options] Code generation options.
- * @param {string} [options.namespace='vg'] The vgplot API namespace object.
  * @param {string} [options.baseURL] The base URL for loading data files.
+ * @param {string} [options.connector] A database connector to initialize.
+ *  Valid values are 'wasm', 'socket', and 'rest'.
+ *  If undefined, no connector code is generated.
+ * @param {string} [options.namespace='vg'] The vgplot API namespace object.
  * @param {number} [options.depth=0] The starting indentation depth.
  * @param {Map<string,string>} [options.imports] A Map of ESM imports to
  *  include in generated code. Keys are packages (e.g., '@uwdata/vgplot')
  *  and values indicate what to import (e.g., '* as vg').
+ * @param {string|string[]} [options.preamble] Code to include after imports.
  * @returns {string} Generated ESM code using the vgplot API.
  */
-export function astToESM(ast, options) {
+export function astToESM(ast, options = {}) {
   const { root, data, params, plotDefaults } = ast;
-  const ctx = new CodegenContext({ plotDefaults, ...options });
+  const { preamble, ...ctxOptions } = options;
+  const ctx = new CodegenContext({ plotDefaults, ...ctxOptions });
 
   // generate package imports
   const importsCode = [];
@@ -27,6 +32,11 @@ export function astToESM(ast, options) {
         : `import { ${methods.join(', ')} } from "${pkg}";`
     );
   }
+
+  // preamble code comes directly after imports
+  const preambleCode = preamble
+    ? toArray(preamble).map(s => `${ctx.tab()}${s}`)
+    : [];
 
   // generate database connector code
   const connectorCode = [];
@@ -82,6 +92,8 @@ export function astToESM(ast, options) {
   return [
     ...importsCode,
     ...maybeNewline(importsCode),
+    ...preambleCode,
+    ...maybeNewline(preambleCode),
     ...connectorCode,
     ...maybeNewline(connectorCode),
     ...dataCode,
