@@ -6,7 +6,7 @@ import { getField } from './util/get-field.js';
 import { invert } from './util/invert.js';
 import { patchScreenCTM } from './util/patchScreenCTM.js';
 import { sanitizeStyles } from './util/sanitize-styles.js';
-import { pointerdown } from './util/pointerdown.js';
+import { pointerIsDown } from './util/pointerIsDown.js';
 
 export class Interval1D {
   constructor(mark, {
@@ -86,6 +86,6 @@ export class Interval1D {
       }
     }
 
-    svg.addEventListener('pointerenter', () => pointerdown || this.activate());
+    svg.addEventListener('pointerenter', () => pointerIsDown || this.activate());
   }
 }
