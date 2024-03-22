@@ -6,6 +6,7 @@ import { getField } from './util/get-field.js';
 import { invert } from './util/invert.js';
 import { patchScreenCTM } from './util/patchScreenCTM.js';
 import { sanitizeStyles } from './util/sanitize-styles.js';
+import { pointerdown } from './util/pointerdown.js';
 
 const asc = (a, b) => a - b;
 
@@ -97,6 +98,6 @@ export class Interval2D {
       this.g.call(brush.moveSilent, [[x1, y1], [x2, y2]]);
     }
 
-    svg.addEventListener('pointerenter', () => this.activate());
+    svg.addEventListener('pointerenter', () => pointerdown || this.activate());
   }
 }
