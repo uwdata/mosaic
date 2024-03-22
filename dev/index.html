@@ -97,7 +97,6 @@
 
   async function load(name, source) {
     view.replaceChildren();
-    clear(); // reset coordinator and namedPlot state
     if (name === 'none' && location.search) {
       // get example name from query string
       name = location.search.slice(1);
@@ -107,23 +106,28 @@
         await fetch(`../specs/yaml/${name}.yaml`).then(res => res.text())
       );
 
-      // provide options for output generation
-      // if using a local server, use baseURL for client-loaded data only
+      // options for output generation
       const baseURL = location.origin + '/';
       const options = connectorMenu.value === 'wasm' ? { baseURL } : {};
 
+      // parse and load spec
       const ast = parseSpec(spec);
-      const child = source === 'esm'
-        ? await loadModuleView(ast, options)
-        : (await astToDOM(ast, options)).element;
-      view.replaceChildren(child);
+      const el = await (source === 'esm' ? loadESM : loadDOM)(ast, options);
+      view.replaceChildren(el);
     }
   }
 
-  async function loadModuleView(spec, options) {
+  async function loadDOM(ast, options) {
+    clear();
+    const { element } = await astToDOM(ast, { ...options, api: vg });
+    return element;
+  }
+
+  async function loadESM(ast, options) {
     const vgplot = new URL('./setup.js', window.location.href).toString();
-    const imports = new Map([[vgplot, ['vg']]]);
-    const code = astToESM(spec, { ...options, imports });
+    const imports = new Map([[vgplot, ['vg', 'clear']]]);
+    const preamble = 'clear();';
+    const code = astToESM(ast, { ...options, imports, preamble });
     console.log(code);
     const blob = new Blob([code], { type: 'text/javascript' });
     const url = URL.createObjectURL(blob);
