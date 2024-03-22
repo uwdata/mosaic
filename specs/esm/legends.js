@@ -32,7 +32,7 @@ export default vg.vconcat(
     vg.hspace(35),
     vg.symbolLegend({for: "symbol-categorical", label: "Symbol Swatch (External)", as: $toggle})
   ),
-  vg.vspace(1em),
+  vg.vspace("1em"),
   vg.hconcat(
     vg.plot(
       vg.opacityLegend({label: "Opacity Ramp", as: $interval}),
@@ -53,7 +53,7 @@ export default vg.vconcat(
     vg.hspace(30),
     vg.opacityLegend({for: "opacity-linear-no-label"})
   ),
-  vg.vspace(1em),
+  vg.vspace("1em"),
   vg.hconcat(
     vg.plot(
       vg.colorLegend({label: "Linear Color Ramp", as: $interval}),
@@ -74,7 +74,7 @@ export default vg.vconcat(
     vg.hspace(30),
     vg.colorLegend({for: "color-linear-no-label"})
   ),
-  vg.vspace(1em),
+  vg.vspace("1em"),
   vg.hconcat(
     vg.plot(
       vg.colorLegend({label: "Logarithmic Color Ramp", as: $interval}),

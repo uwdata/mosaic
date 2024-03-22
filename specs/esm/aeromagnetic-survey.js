@@ -14,10 +14,10 @@ export default vg.vconcat(
       options: ["none", "nearest", "barycentric", "random-walk"],
       as: $interp
     }),
-    vg.hspace(1em),
+    vg.hspace("1em"),
     vg.slider({label: "Blur", min: 0, max: 100, as: $blur})
   ),
-  vg.vspace(1em),
+  vg.vspace("1em"),
   vg.plot(
     vg.raster(
       vg.from("ca55"),

@@ -16,7 +16,7 @@ export class HSpaceNode extends ASTNode {
   }
 
   codegen(ctx) {
-    return `${ctx.tab()}${ctx.ns()}${this.type}(${this.value})`;
+    return `${ctx.tab()}${ctx.ns()}${this.type}(${ctx.stringify(this.value)})`;
   }
 
   toJSON() {
