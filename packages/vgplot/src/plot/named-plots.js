@@ -19,6 +19,10 @@ export class NamedPlots extends Map {
     }
     return super.set(name, plot);
   }
+  clear() {
+    this.waiting?.clear();
+    return super.clear();
+  }
 }
 
 /**
