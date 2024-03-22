@@ -46,8 +46,8 @@ export class Nearest {
     });
 
     if (param) return;
-    svg.addEventListener('pointerenter', () => {
-      this.selection.activate(this.clause(0));
+    svg.addEventListener('pointerenter', evt => {
+      if (!evt.buttons) this.selection.activate(this.clause(0));
     });
   }
 }
