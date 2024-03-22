@@ -56,7 +56,7 @@ export class Toggle {
 
   init(svg, selector, accessor) {
     const { mark, channels, selection } = this;
-    const { data: { columns } } = mark;
+    const { data: { columns } = {} } = mark;
     accessor ??= target => channels.map(c => columns[c.as][target.__data__]);
     selector ??= `[data-index="${mark.index}"]`;
     const groups = new Set(svg.querySelectorAll(selector));
