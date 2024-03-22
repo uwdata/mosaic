@@ -1,6 +1,7 @@
 import * as Plot from '@observablehq/plot';
 import { setAttributes } from './plot-attributes.js';
 import { Fixed } from './symbols.js';
+import { isArrowTable } from '@uwdata/mosaic-core';
 
 const OPTIONS_ONLY_MARKS = new Set([
   'frame',
@@ -25,6 +26,22 @@ export async function plotRenderer(plot) {
     for (const { type, data, options } of mark.plotSpecs()) {
       if (OPTIONS_ONLY_MARKS.has(type)) {
         spec.marks.push(Plot[type](options));
+      } else if (isArrowTable(data)) {
+        // optimized calls to Plot for Arrow:
+        // https://github.com/observablehq/plot/issues/191#issuecomment-2010986851
+        const opts = Object.fromEntries(
+          Object.entries(options).map(([k, v]) => {
+            let val = v;
+            if (typeof v === 'string') {
+              val = data.getChild(v) ?? v;
+            } else if (typeof v === 'object') {
+              const value = data.getChild(v.value);
+              val = value ? {value} : v;
+            }
+            return [k, val]
+          })
+        );
+        spec.marks.push(Plot[type]({length: data.numRows}, opts));
       } else {
         spec.marks.push(Plot[type](data, options));
       }
@@ -148,10 +165,13 @@ function annotateMarks(svg, indices) {
 }
 
 function getType(data, channel) {
-  for (const row of data) {
-    const v = row[channel] ?? row[channel+'1'] ?? row[channel+'2'];
-    if (v != null) {
-      return v instanceof Date ? 'date' : typeof v;
+  const { columns } = data;
+  const col = columns[channel] ?? columns[channel+'1'] ?? columns[channel+'2'];
+  if (col) {
+    for (const v of col) {
+      if (v != null) {
+        return v instanceof Date ? 'date' : typeof v;
+      }
     }
   }
 }

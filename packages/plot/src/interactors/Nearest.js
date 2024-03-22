@@ -41,7 +41,7 @@ export class Nearest {
 
     root.on('pointerdown pointermove', function(evt) {
       const [x, y] = pointer(evt, this);
-      const z = findNearest(data, key, scale.invert(channel === 'x' ? x : y));
+      const z = findNearest(data.columns[key], scale.invert(channel === 'x' ? x : y));
       selection.update(param ? z : that.clause(z));
     });
 
@@ -52,15 +52,16 @@ export class Nearest {
   }
 }
 
-function findNearest(data, key, value) {
+function findNearest(values, value) {
   let dist = Infinity;
-  let v;
-  data.forEach(d => {
-    const delta = Math.abs(d[key] - value);
+  let nearest;
+
+  for (let i = 0; i < values.length; ++i) {
+    const delta = Math.abs(values[i] - value);
     if (delta < dist) {
       dist = delta;
-      v = d[key];
+      nearest = values[i];
     }
-  });
-  return v;
+  }
+  return nearest;
 }

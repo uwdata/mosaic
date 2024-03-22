@@ -18,16 +18,15 @@ export class GeoMark extends Mark {
   }
 
   queryResult(data) {
-    super.queryResult(data);
+    super.queryResult(data); // map to columns, set this.data
 
-    // parse GeoJSON strings to JSON objects
+    // look for an explicit geometry field
     const geom = this.channelField('geometry')?.as;
-    if (geom && this.data) {
-      this.data.forEach(data => {
-        if (typeof data[geom] === 'string') {
-          data[geom] = JSON.parse(data[geom]);
-        }
-      });
+    if (geom) {
+      const { columns } = this.data;
+      if (typeof columns[geom][0] === 'string') {
+        columns[geom] = columns[geom].map(s => JSON.parse(s));
+      }
     }
 
     return this;

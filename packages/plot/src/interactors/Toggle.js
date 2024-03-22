@@ -1,12 +1,17 @@
 import { and, or, isNotDistinct, literal } from '@uwdata/mosaic-sql';
 
 export class Toggle {
+  /**
+   * @param {import('@uwdata/mosaic-plot').Mark} mark The mark.
+   * @param {*} options The options.
+   */
   constructor(mark, {
     selection,
     channels,
     peers = true
   }) {
     this.value = null;
+    /** @type {import('@uwdata/mosaic-plot').Mark} */
     this.mark = mark;
     this.selection = selection;
     this.peers = peers;
@@ -51,13 +56,9 @@ export class Toggle {
 
   init(svg, selector, accessor) {
     const { mark, channels, selection } = this;
-    const { data } = mark;
-    accessor = accessor || (target => {
-      const datum = data[target.__data__];
-      return channels.map(c => datum[c.as]);
-    });
-
-    selector = selector || `[data-index="${mark.index}"]`;
+    const { data: { columns } } = mark;
+    accessor ??= target => channels.map(c => columns[c.as][target.__data__]);
+    selector ??= `[data-index="${mark.index}"]`;
     const groups = new Set(svg.querySelectorAll(selector));
 
     svg.addEventListener('pointerdown', evt => {
