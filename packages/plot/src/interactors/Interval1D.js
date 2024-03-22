@@ -85,6 +85,8 @@ export class Interval1D {
       }
     }
 
-    svg.addEventListener('pointerenter', () => this.activate());
+    svg.addEventListener('pointerenter', evt => {
+      if (!evt.buttons) this.activate();
+    });
   }
 }

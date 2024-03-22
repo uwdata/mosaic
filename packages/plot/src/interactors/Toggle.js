@@ -84,7 +84,8 @@ export class Toggle {
       }
     });
 
-    svg.addEventListener('pointerenter', () => {
+    svg.addEventListener('pointerenter', evt => {
+      if (evt.buttons) return;
       this.selection.activate(this.clause([this.channels.map(() => 0)]));
     });
   }

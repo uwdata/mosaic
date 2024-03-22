@@ -97,6 +97,8 @@ export class Interval2D {
       this.g.call(brush.moveSilent, [[x1, y1], [x2, y2]]);
     }
 
-    svg.addEventListener('pointerenter', () => this.activate());
+    svg.addEventListener('pointerenter', evt => {
+      if (!evt.buttons) this.activate();
+    });
   }
 }

@@ -86,8 +86,9 @@ export class PanZoom {
 
     if (panx || pany) {
       let enter = false;
-      element.addEventListener('mouseenter', () => {
+      element.addEventListener('pointerenter', evt => {
         if (enter) return; else enter = true;
+        if (evt.buttons) return; // don't activate if mouse down
         if (panx) {
           const { xscale, xfield } = this;
           xsel.activate(this.clause(xscale.domain, xfield, xscale));
@@ -97,7 +98,7 @@ export class PanZoom {
           ysel.activate(this.clause(yscale.domain, yfield, yscale));
         }
       });
-      element.addEventListener('mouseleave', () => enter = false);
+      element.addEventListener('pointerleave', () => enter = false);
     }
   }
 }
