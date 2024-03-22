@@ -41,8 +41,7 @@ export class TransformNode extends ASTNode {
     const { name, args, options } = this;
     const { distinct, orderby, partitionby, rows, range } = options;
 
-    const fn = ctx.api[name];
-    let expr = fn(...args);
+    let expr = ctx.api[name](...args);
     if (distinct) {
       expr = expr.distinct();
     }

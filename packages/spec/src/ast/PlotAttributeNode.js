@@ -20,8 +20,7 @@ export class PlotAttributeNode extends ASTNode {
 
   instantiate(ctx) {
     const { name, value } = this;
-    const fn = ctx.api[name];
-    return fn(value.instantiate(ctx));
+    return ctx.api[name](value.instantiate(ctx));
   }
 
   codegen(ctx) {
