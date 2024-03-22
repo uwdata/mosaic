@@ -12,16 +12,6 @@ export function isArrowTable(values) {
 }
 
 /**
- * Checks whether the Arrow data type needs special handling.
- * @param {DataType} type An Arrow data type.
- */
-export function needsConversion(type) {
-  return DataType.isInt(type) && type.bitWidth >= 64
-    || DataType.isTimestamp(type)
-    || DataType.isDecimal(type);
-}
-
-/**
   * Return a JavaScript array type for an Apache Arrow column type.
   * @param {DataType} type an Apache Arrow column type
   * @returns a JavaScript array constructor
