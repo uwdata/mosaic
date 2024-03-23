@@ -26,7 +26,7 @@ export class Density2DMark extends Grid2DMark {
     const deltaY = (y1 - y0) / (ny - pad);
     const offset = pad ? 0 : 0.5;
     this.data = points(
-      this.kde, bins, x0, y0, deltaX, deltaY,
+      this.grids, bins, x0, y0, deltaX, deltaY,
       scaleX.invert, scaleY.invert, offset
     );
     return this;
@@ -50,29 +50,29 @@ export class Density2DMark extends Grid2DMark {
   }
 }
 
-function points(kde, bins, x0, y0, deltaX, deltaY, invertX, invertY, offset) {
+function points(data, bins, x0, y0, deltaX, deltaY, invertX, invertY, offset) {
   const scale = 1 / (deltaX * deltaY);
   const [nx, ny] = bins;
   const batch = nx * ny;
-  const numRows = batch * kde.length;
+  const numRows = batch * data.numRows;
 
   const x = new Float64Array(numRows);
   const y = new Float64Array(numRows);
   const density = new Float64Array(numRows);
   const columns = { x, y, density };
-  const { density: _, ...rest } = kde[0]; // eslint-disable-line no-unused-vars
+  const { density: grids, ...rest } = data.columns;
   for (const name in rest) {
-    columns[name] = new Array(numRows);
+    columns[name] = new rest[name].constructor(numRows);
   }
 
   let r = 0;
-  for (const cell of kde) {
-    const { density: grid, ...rest } = cell;
+  for (let row = 0; row < data.numRows; ++row) {
     // copy repeated values in batch
     for (const name in rest) {
-      columns[name].fill(rest[name], r, r + batch);
+      columns[name].fill(rest[name][row], r, r + batch);
     }
     // copy individual grid values
+    const grid = grids[row];
     for (let k = 0, j = 0; j < ny; ++j) {
       for (let i = 0; i < nx; ++i, ++r, ++k) {
         x[r] = invertX(x0 + (i + offset) * deltaX);

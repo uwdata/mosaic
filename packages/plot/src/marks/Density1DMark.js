@@ -6,6 +6,7 @@ import { extentX, extentY, xext, yext } from './util/extent.js';
 import { grid1d } from './util/grid.js';
 import { handleParam } from './util/handle-param.js';
 import { Mark, channelOption, markQuery } from './Mark.js';
+import { toDataColumns } from './util/to-data-columns.js';
 
 export class Density1DMark extends Mark {
   constructor(type, source, options) {
@@ -39,7 +40,8 @@ export class Density1DMark extends Mark {
   }
 
   queryResult(data) {
-    this.grid = grid1d(this.bins, data);
+    const { columns: { index, density } } = toDataColumns(data);
+    this.grid = grid1d(this.bins, index, density);
     return this.convolve();
   }
 

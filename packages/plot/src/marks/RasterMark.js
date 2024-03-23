@@ -33,22 +33,25 @@ export class RasterMark extends Grid2DMark {
   }
 
   rasterize() {
-    const { bins, kde } = this;
+    const { bins, grids } = this;
     const [ w, h ] = bins;
+    const { numRows, columns } = grids;
 
     // raster data
     const { canvas, ctx, img } = imageData(this, w, h);
 
     // color + opacity encodings
     const { alpha, alphaProp, color, colorProp } = rasterEncoding(this);
+    const alphaData = columns[alphaProp] ?? [];
+    const colorData = columns[colorProp] ?? [];
 
     // generate rasters
     this.data = {
-      numRows: kde.length,
+      numRows,
       columns: {
-        src: kde.map(cell => {
-          color?.(img.data, w, h, cell[colorProp]);
-          alpha?.(img.data, w, h, cell[alphaProp]);
+        src: Array.from({ length: numRows }, (_, i) => {
+          color?.(img.data, w, h, colorData[i]);
+          alpha?.(img.data, w, h, alphaData[i]);
           ctx.putImageData(img, 0, 0);
           return canvas.toDataURL();
         })
@@ -145,14 +148,14 @@ export function rasterEncoding(mark) {
  * @returns A bitmap rasterizer function.
  */
 function alphaScale(mark, prop) {
-  const { plot, kde: grids } = mark;
+  const { plot, grids } = mark;
 
   // determine scale domain
   const domainAttr = plot.getAttribute('opacityDomain');
   const domainFixed = domainAttr === Fixed;
   const domainTransient = domainAttr?.[Transient];
   const domain = (!domainFixed && !domainTransient && domainAttr)
-    || gridDomainContinuous(grids, prop);
+    || gridDomainContinuous(grids.columns[prop]);
   if (domainFixed || domainTransient || !domainAttr) {
     if (!domainFixed) domain[Transient] = true;
     plot.setAttribute('opacityDomain', domain);
@@ -182,18 +185,19 @@ function alphaScale(mark, prop) {
  * @returns A bitmap rasterizer function.
  */
 function colorScale(mark, prop) {
-  const { plot, kde: grids } = mark;
-  const flat = !grids[0][prop]?.map; // not array-like
-  const discrete = flat || Array.isArray(grids[0][prop]);
+  const { plot, grids } = mark;
+  const data = grids.columns[prop];
+  const flat = !data[0]?.map; // not array-like
+  const discrete = flat || Array.isArray(data[0]);
 
   // determine scale domain
   const domainAttr = plot.getAttribute('colorDomain');
   const domainFixed = domainAttr === Fixed;
   const domainTransient = domainAttr?.[Transient];
   const domain = (!domainFixed && !domainTransient && domainAttr) || (
-    flat ? grids.map(cell => cell[prop]).sort(ascending)
-      : discrete ? gridDomainDiscrete(grids, prop)
-      : gridDomainContinuous(grids, prop)
+    flat ? data.sort(ascending)
+      : discrete ? gridDomainDiscrete(data)
+      : gridDomainContinuous(data)
   );
   if (domainFixed || domainTransient || !domainAttr) {
     if (!domainFixed) domain[Transient] = true;
