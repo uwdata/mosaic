@@ -23,11 +23,12 @@ export class ContourMark extends Grid2DMark {
   }
 
   contours() {
-    const { bins, densityMap, kde, thresholds, plot } = this;
+    const { bins, densityMap, grids, thresholds, plot } = this;
+    const { numRows, columns } = grids;
 
     let tz = thresholds;
     if (!Array.isArray(tz)) {
-      const [, hi] = gridDomainContinuous(kde, 'density');
+      const [, hi] = gridDomainContinuous(columns.density);
       tz = Array.from({length: tz - 1}, (_, i) => (hi * (i + 1)) / tz);
     }
 
@@ -51,15 +52,21 @@ export class ContourMark extends Grid2DMark {
     const contour = contours().size(bins);
 
     // generate contours
-    this.data = kde.flatMap(cell => tz.map(t => {
-      // annotate contour geojson with cell groupby fields
-      // d3-contour already adds a threshold "value" property
-      const { density, ...groupby } = cell;
-      return Object.assign(
-        transform(contour.contour(density, t), x, y),
-        { ...groupby }
-      );
-    }));
+    const data = this.data = Array(numRows * tz.length);
+    const { density, ...groupby } = columns;
+    const groups = Object.entries(groupby);
+    for (let i = 0, k = 0; i < numRows; ++i) {
+      const grid = density[i];
+      const rest = groups.reduce((o, [name, col]) => (o[name] = col[i], o), {});
+      for (let j = 0; j < tz.length; ++j, ++k) {
+        // annotate contour geojson with cell groupby fields
+        // d3-contour already adds a threshold "value" property
+        data[k] = Object.assign(
+          transform(contour.contour(grid, tz[j]), x, y),
+          rest
+        );
+      }
+    }
 
     return this;
   }

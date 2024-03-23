@@ -164,22 +164,25 @@ export class RasterTileMark extends Grid2DMark {
   }
 
   rasterize() {
-    const { bins, kde } = this;
+    const { bins, grids } = this;
     const [ w, h ] = bins;
+    const { numRows, columns } = grids;
 
     // raster data
     const { canvas, ctx, img } = imageData(this, w, h);
 
     // color + opacity encodings
     const { alpha, alphaProp, color, colorProp } = rasterEncoding(this);
+    const alphaData = columns[alphaProp] ?? [];
+    const colorData = columns[colorProp] ?? [];
 
     // generate rasters
     this.data = {
-      numRows: kde.length,
+      numRows,
       columns: {
-        src: kde.map(cell => {
-          color?.(img.data, w, h, cell[colorProp]);
-          alpha?.(img.data, w, h, cell[alphaProp]);
+        src: Array.from({ length: numRows }, (_, i) => {
+          color?.(img.data, w, h, colorData[i]);
+          alpha?.(img.data, w, h, alphaData[i]);
           ctx.putImageData(img, 0, 0);
           return canvas.toDataURL();
         })

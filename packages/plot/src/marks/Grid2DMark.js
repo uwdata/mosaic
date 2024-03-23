@@ -1,3 +1,4 @@
+import { interpolatorBarycentric, interpolateNearest, interpolatorRandomWalk } from '@observablehq/plot';
 import { Query, count, isBetween, lt, lte, neq, sql, sum } from '@uwdata/mosaic-sql';
 import { Transient } from '../symbols.js';
 import { binExpr } from './util/bin-expr.js';
@@ -5,9 +6,7 @@ import { dericheConfig, dericheConv2d } from './util/density.js';
 import { extentX, extentY, xyext } from './util/extent.js';
 import { grid2d } from './util/grid.js';
 import { handleParam } from './util/handle-param.js';
-import {
-  interpolateNearest, interpolatorBarycentric, interpolatorRandomWalk
-} from './util/interpolate.js';
+import { toDataColumns } from './util/to-data-columns.js';
 import { Mark } from './Mark.js';
 
 export const DENSITY = 'density';
@@ -126,39 +125,44 @@ export class Grid2DMark extends Mark {
   queryResult(data) {
     const [w, h] = this.bins;
     const interp = maybeInterpolate(this.interpolate);
-    this.grids = grid2d(w, h, data, this.aggr, this.groupby, interp);
+    const { columns } = toDataColumns(data);
+    this.grids0 = grid2d(w, h, columns.index, columns, this.aggr, this.groupby, interp);
     return this.convolve();
   }
 
   convolve() {
-    const { aggr, bandwidth, bins, grids, plot } = this;
+    const { aggr, bandwidth, bins, grids0, plot } = this;
 
     // no smoothing as default fallback
-    this.kde = this.grids;
+    this.grids = grids0;
 
     if (bandwidth > 0) {
       // determine which grid to smooth
-      const gridProp = aggr.length === 1 ? aggr[0]
+      const prop = aggr.length === 1 ? aggr[0]
         : aggr.includes(DENSITY) ? DENSITY
         : null;
 
       // bail if no compatible grid found
-      if (!gridProp) {
+      if (!prop) {
         console.warn('No compatible grid found for smoothing.');
         return this;
       }
+      const g = grids0.columns[prop];
 
       // apply smoothing, bandwidth uses units of screen pixels
       const w = plot.innerWidth();
       const h = plot.innerHeight();
       const [nx, ny] = bins;
-      const neg = grids.some(cell => cell[gridProp].some(v => v < 0));
+      const neg = g.some(grid => grid.some(v => v < 0));
       const configX = dericheConfig(bandwidth * (nx - 1) / w, neg);
       const configY = dericheConfig(bandwidth * (ny - 1) / h, neg);
-      this.kde = this.grids.map(grid => {
-        const density = dericheConv2d(configX, configY, grid[gridProp], bins);
-        return { ...grid, [gridProp]: density };
-      });
+      this.grids = {
+        numRows: grids0.numRows,
+        columns: {
+          ...grids0.columns,
+          [prop]: g.map(grid => dericheConv2d(configX, configY, grid, bins))
+        }
+      };
     }
 
     return this;
