@@ -85,6 +85,7 @@ export default defineConfig({
             { text: 'Symbol Plots', link: '/examples/symbols' },
             { text: 'Axes & Gridlines', link: '/examples/axes' },
             { text: 'Airline Travelers', link: '/examples/airline-travelers' },
+            { text: 'Aeromagnetic Survey', link: '/examples/aeromagnetic-survey' },
             { text: 'Driving Shifts into Reverse', link: '/examples/driving-shifts' },
             { text: 'Population Arrows', link: '/examples/population-arrows' },
             { text: 'Presidential Opinion', link: '/examples/presidential-opinion' },
