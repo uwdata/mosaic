@@ -6,6 +6,7 @@ import { getField } from './util/get-field.js';
 import { invert } from './util/invert.js';
 import { patchScreenCTM } from './util/patchScreenCTM.js';
 import { sanitizeStyles } from './util/sanitize-styles.js';
+import { getScale } from './util/scale.js';
 
 export class Interval1D {
   constructor(mark, {
@@ -62,11 +63,11 @@ export class Interval1D {
   }
 
   init(svg, root) {
-    const { brush, channel, style } = this;
-    this.scale = svg.scale(channel);
+    const { brush, channel, style, mark: { plot } } = this;
+    this.scale = getScale(svg, channel, plot);
 
-    const rx = svg.scale('x').range;
-    const ry = svg.scale('y').range;
+    const rx = getScale(svg, 'x', plot).range;
+    const ry = getScale(svg, 'y', plot).range;
     brush.extent([[min(rx), min(ry)], [max(rx), max(ry)]]);
 
     const facets = select(svg).selectAll('g[aria-label="facet"]');

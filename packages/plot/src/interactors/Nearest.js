@@ -2,6 +2,7 @@ import { isSelection } from '@uwdata/mosaic-core';
 import { eq, literal } from '@uwdata/mosaic-sql';
 import { select, pointer } from 'd3';
 import { getField } from './util/get-field.js';
+import { getScale } from './util/scale.js';
 
 export class Nearest {
   constructor(mark, {
@@ -36,7 +37,7 @@ export class Nearest {
 
     const facets = select(svg).selectAll('g[aria-label="facet"]');
     const root = facets.size() ? facets : select(svg);
-    const scale = svg.scale(channel);
+    const scale = getScale(svg, channel, mark.plot);
     const param = !isSelection(selection);
 
     root.on('pointerdown pointermove', function(evt) {
