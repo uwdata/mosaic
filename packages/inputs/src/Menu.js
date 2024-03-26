@@ -1,10 +1,21 @@
 import { MosaicClient, isParam, isSelection } from '@uwdata/mosaic-core';
-import { Query, eq, literal } from '@uwdata/mosaic-sql';
+import { Query, eq, literal, sql as sqlFunc} from '@uwdata/mosaic-sql';
 import { input } from './input.js';
 
 const isObject = v => {
   return v && typeof v === 'object' && !Array.isArray(v);
 };
+
+const parseOption = value => {
+  if (!isObject(value)) {
+    return { value };
+  }
+  const { value: { sql }, ...options } = value;
+  if (sql === undefined) {
+    return value;
+  }
+  return {value: sqlFunc`${sql}`, ...options}
+}
 
 export const menu = options => input(Menu, options);
 
@@ -36,7 +47,7 @@ export class Menu extends MosaicClient {
 
     this.select = document.createElement('select');
     if (options) {
-      this.data = options.map(value => isObject(value) ? value : { value });
+      this.data = options.map(parseOption);
       this.update();
     }
     value = value ?? this.selection?.value ?? this.data?.[0]?.value;
