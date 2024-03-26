@@ -72,6 +72,9 @@ export const grid = attrf('grid');
 export const label = attrf('label');
 export const padding = attrf('padding');
 export const round = attrf('round');
+export const title = attrf("title");
+export const subtitle = attrf("subtitle");
+export const caption = attrf("caption");
 
 // x scale attributes
 export const xScale = attrf('xScale');
