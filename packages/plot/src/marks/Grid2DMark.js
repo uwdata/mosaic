@@ -39,8 +39,8 @@ export class Grid2DMark extends Mark {
 
   setPlot(plot, index) {
     const update = () => { if (this.hasFieldInfo()) this.requestUpdate(); };
-    plot.addAttributeListener('domainX', update);
-    plot.addAttributeListener('domainY', update);
+    plot.addAttributeListener('xDomain', update);
+    plot.addAttributeListener('yDomain', update);
     return super.setPlot(plot, index);
   }
 
