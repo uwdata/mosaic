@@ -10,5 +10,5 @@
       "@uwdata/mosaic-spec": ["index"]
     }
   },
-  "include": ["src/**/*.d.ts", "src/**/*.js", "src/**/*.ts"]
+  "include": ["src/**/*.d.ts", "src/**/*.js", "src/**/*.ts", "../../specs/ts/*.ts"]
 }
