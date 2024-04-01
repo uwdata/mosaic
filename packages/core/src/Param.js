@@ -4,7 +4,7 @@ import { distinct } from './util/distinct.js';
 /**
  * Test if a value is a Param instance.
  * @param {*} x The value to test.
- * @returns {boolean} True if the input is a Param, false otherwise.
+ * @returns {x is Param} True if the input is a Param, false otherwise.
  */
 export function isParam(x) {
   return x instanceof Param;
@@ -43,7 +43,9 @@ export class Param extends AsyncDispatch {
   static array(values) {
     if (values.some(v => isParam(v))) {
       const p = new Param();
-      const update = () => p.update(values.map(v => isParam(v) ? v.value : v));
+      const update = () => {
+        p.update(values.map(v => isParam(v) ? v.value : v));
+      };
       update();
       values.forEach(v => isParam(v) ? v.addEventListener('value', update) : 0);
       return p;

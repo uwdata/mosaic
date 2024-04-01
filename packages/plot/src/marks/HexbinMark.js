@@ -2,12 +2,17 @@ import { Query, isNotNull, sql } from '@uwdata/mosaic-sql';
 import { Transient } from '../symbols.js';
 import { extentX, extentY, xyext } from './util/extent.js';
 import { Mark } from './Mark.js';
+import { handleParam } from './util/handle-param.js';
 
 export class HexbinMark extends Mark {
   constructor(source, options) {
     const { type = 'hexagon', binWidth = 20, ...channels } = options;
     super(type, source, { r: binWidth / 2, clip: true, ...channels }, xyext);
-    this.binWidth = binWidth;
+
+    /** @type {number} */
+    this.binWidth = handleParam(binWidth, value => {
+      return (this.binWidth = value, this.requestUpdate());
+    });
   }
 
   get filterIndexable() {
@@ -39,9 +44,10 @@ export class HexbinMark extends Mark {
     let x, y;
     const aggr = new Set;
     const cols = {};
+    let orderby;
     for (const c of channels) {
       if (c.channel === 'orderby') {
-        q.orderby(c.value); // TODO revisit once groupby is added
+        orderby = c.value; // TODO revisit once groupby is added
       } else if (c.channel === 'x') {
         x = c;
       } else if (c.channel === 'y') {
@@ -62,6 +68,8 @@ export class HexbinMark extends Mark {
       [y.as]: sql`${y2}::DOUBLE - (y * ${dy} + ${oy})::DOUBLE / ${yr}`,
       ...cols
     }).groupby('x', 'y');
+
+    if (orderby) q.orderby(orderby);
 
     // Map x/y channels to screen space
     const xx = `${xr} * (${x.field} - ${x1}::DOUBLE)`;

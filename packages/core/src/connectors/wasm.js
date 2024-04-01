@@ -22,7 +22,7 @@ export function wasmConnector(options = {}) {
   /**
    * Get the backing DuckDB-WASM instance.
    * Will lazily initialize DuckDB-WASM if not already loaded.
-   * @returns {duckdb.AsyncDuckDB} The DuckDB-WASM instance.
+   * @returns {Promise<duckdb.AsyncDuckDB>} The DuckDB-WASM instance.
    */
   async function getDuckDB() {
     if (!db) await load();
@@ -32,7 +32,7 @@ export function wasmConnector(options = {}) {
   /**
    * Get the backing DuckDB-WASM connection.
    * Will lazily initialize DuckDB-WASM if not already loaded.
-   * @returns {duckdb.AsyncDuckDBConnection} The DuckDB-WASM connection.
+   * @returns {Promise<duckdb.AsyncDuckDBConnection>} The DuckDB-WASM connection.
    */
   async function getConnection() {
     if (!con) await load();

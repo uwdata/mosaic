@@ -16,9 +16,15 @@ export class Density1DMark extends Mark {
     super(type, source, channels, dim === 'x' ? xext : yext);
     this.dim = dim;
 
-    handleParam(this, 'bins', bins);
-    handleParam(this, 'bandwidth', bandwidth, () => {
-      return this.grid ? this.convolve().update() : null
+    /** @type {number} */
+    this.bins = handleParam(bins, value => {
+      return (this.bins = value, this.requestUpdate());
+    });
+
+    /** @type {number} */
+    this.bandwidth = handleParam(bandwidth, value => {
+      this.bandwidth = value;
+      return this.grid ? this.convolve().update() : null;
     });
   }
 

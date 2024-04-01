@@ -42,6 +42,9 @@ export function formatDate(date) {
 
 // Memoize the last-returned locale.
 export function localize(f) {
-  let key = localize, value;
-  return (locale = 'en') => locale === key ? value : (value = f(key = locale));
+  let key = null;
+  let value;
+  return (locale = 'en') => locale === key
+    ? value
+    : (value = f(key = locale));
 }

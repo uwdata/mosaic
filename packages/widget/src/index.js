@@ -1,6 +1,7 @@
 // @ts-check
 
 import { coordinator, namedPlots } from '@uwdata/vgplot';
+import { isSelection } from '@uwdata/mosaic-core';
 import { parseSpec, astToDOM } from '@uwdata/mosaic-spec';
 import * as arrow from 'apache-arrow';
 import './style.css';
@@ -74,11 +75,14 @@ export default {
       for (const [name, param] of dom.params) {
         params[name] = {
           value: param.value,
-          ...(param.predicate ? { predicate: String(param.predicate()) } : {}),
+          ...(isSelection(param) ? { predicate: String(param.predicate()) } : {}),
         };
 
         param.addEventListener('value', (value) => {
-          params[name] = { value, predicate: String(param.predicate()) };
+          params[name] = {
+            value,
+            ...(isSelection(param) ? { predicate: String(param.predicate()) } : {}),
+          };
           view.model.set('params', params);
           view.model.save_changes();
         });
@@ -142,7 +146,6 @@ export default {
   },
 };
 
-/** @param {Record<any, unknown>} spec */
 function instantiateSpec(spec) {
   const ast = parseSpec(spec);
   return astToDOM(ast);

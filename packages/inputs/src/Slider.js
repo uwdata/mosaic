@@ -7,6 +7,10 @@ let _id = 0;
 export const slider = options => input(Slider, options);
 
 export class Slider extends MosaicClient {
+  /**
+   * Create a new Slider instance.
+   * @param {object} options Options object
+   */
   constructor({
     element,
     filterBy,
@@ -80,7 +84,7 @@ export class Slider extends MosaicClient {
     const { min, max } = Array.from(data)[0];
     if (this.min == null) this.slider.setAttribute('min', min);
     if (this.max == null) this.slider.setAttribute('max', max);
-    if (this.step == null) this.slider.setAttribute('step', (max - min) / 500);
+    if (this.step == null) this.slider.setAttribute('step', String((max - min) / 500));
     return this;
   }
 

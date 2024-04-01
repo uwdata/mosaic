@@ -27,14 +27,36 @@ export class Grid2DMark extends Mark {
     super(type, source, channels, xyext);
     this.densityMap = densityMap;
 
-    handleParam(this, 'bandwidth', bandwidth, () => {
+    /** @type {number} */
+    this.bandwidth = handleParam(bandwidth, value => {
+      this.bandwidth = value;
       return this.grids ? this.convolve().update() : null;
     });
-    handleParam(this, 'pixelSize', pixelSize);
-    handleParam(this, 'interpolate', interpolate);
-    handleParam(this, 'pad', pad);
-    handleParam(this, 'width', width);
-    handleParam(this, 'height', height);
+
+    /** @type {string} */
+    this.interpolate = handleParam(interpolate, value => {
+      return (this.interpolate = value, this.requestUpdate());
+    });
+
+    /** @type {number} */
+    this.pixelSize = handleParam(pixelSize, value => {
+      return (this.pixelSize = value, this.requestUpdate());
+    });
+
+    /** @type {number} */
+    this.pad = handleParam(pad, value => {
+      return (this.pad = value, this.requestUpdate());
+    });
+
+    /** @type {number|undefined} */
+    this.width = handleParam(width, value => {
+      return (this.width = value, this.requestUpdate());
+    });
+
+    /** @type {number|undefined} */
+    this.height = handleParam(height, value => {
+      return (this.height = value, this.requestUpdate());
+    });
   }
 
   setPlot(plot, index) {
@@ -54,7 +76,7 @@ export class Grid2DMark extends Mark {
     const { interpolate, pad, channels, densityMap, source } = this;
     const [x0, x1] = this.extentX = extentX(this, filter);
     const [y0, y1] = this.extentY = extentY(this, filter);
-    const [nx, ny] = this.bins = this.binDimensions(this);
+    const [nx, ny] = this.bins = this.binDimensions();
     const [x, bx] = binExpr(this, 'x', nx, [x0, x1], pad);
     const [y, by] = binExpr(this, 'y', ny, [y0, y1], pad);
 
@@ -160,16 +182,13 @@ export class Grid2DMark extends Mark {
         numRows: grids0.numRows,
         columns: {
           ...grids0.columns,
+          // @ts-ignore
           [prop]: g.map(grid => dericheConv2d(configX, configY, grid, bins))
         }
       };
     }
 
     return this;
-  }
-
-  plotSpecs() {
-    throw new Error('Unimplemented. Use a Grid2D mark subclass.');
   }
 }
 

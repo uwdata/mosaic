@@ -8,6 +8,10 @@ let _id = -1;
 export const table = options => input(Table, options);
 
 export class Table extends MosaicClient {
+  /**
+   * Create a new Table instance.
+   * @param {object} options Options object
+   */
   constructor({
     element,
     filterBy,

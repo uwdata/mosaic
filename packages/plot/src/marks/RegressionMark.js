@@ -13,11 +13,18 @@ export class RegressionMark extends Mark {
   constructor(source, options) {
     const { ci = 0.95, precision = 4, ...channels } = options;
     super('line', source, channels);
-    const update = () => {
-      return this.modelFit ? this.confidenceBand().update() : null
-    };
-    handleParam(this, 'ci', ci, update);
-    handleParam(this, 'precision', precision, update);
+
+    const update = () => this.modelFit ? this.confidenceBand().update() : null;
+
+    /** @type {number} */
+    this.ci = handleParam(ci, value => {
+      return (this.ci = value, update());
+    });
+
+    /** @type {number} */
+    this.precision = handleParam(precision, value => {
+      return (this.precision = value, update());
+    });
   }
 
   query(filter = []) {

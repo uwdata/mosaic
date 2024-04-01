@@ -15,10 +15,11 @@ export class Legend {
     this.handler = null;
     this.selection = as;
     this.field = field;
+    this.legend = null;
 
     this.element = document.createElement('div');
     this.element.setAttribute('class', 'legend');
-    this.element.value = this;
+    Object.assign(this.element, { value: this });
   }
 
   setPlot(plot) {

@@ -20,6 +20,13 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
+/**
+ * ibetainv function
+ * @param {number} p
+ * @param {number} a
+ * @param {number} b
+ * @returns {number}
+ */
 export function ibetainv(p, a, b) {
   var EPS = 1e-8;
   var a1 = a - 1;
@@ -60,11 +67,18 @@ export function ibetainv(p, a, b) {
   return x;
 }
 
+/**
+ * ibeta function
+ * @param {number} x
+ * @param {number} a
+ * @param {number} b
+ * @returns {number}
+ */
 export function ibeta(x, a, b) {
   // Factors in front of the continued fraction.
   var bt =
     x === 0 || x === 1 ? 0 : Math.exp(gammaln(a + b) - gammaln(a) - gammaln(b) + a * Math.log(x) + b * Math.log(1 - x));
-  if (x < 0 || x > 1) return false;
+  if (x < 0 || x > 1) return 0;
   if (x < (a + 1) / (a + b + 2))
     // Use continued fraction directly.
     return (bt * betacf(x, a, b)) / a;
@@ -72,6 +86,13 @@ export function ibeta(x, a, b) {
   return 1 - (bt * betacf(1 - x, b, a)) / b;
 }
 
+/**
+ * betacf function
+ * @param {number} x
+ * @param {number} a
+ * @param {number} b
+ * @returns {number}
+ */
 export function betacf(x, a, b) {
   var fpmin = 1e-30;
   var m = 1;
@@ -112,6 +133,11 @@ export function betacf(x, a, b) {
   return h;
 }
 
+/**
+ * gammaln function
+ * @param {number} x
+ * @returns {number}
+ */
 export function gammaln(x) {
   var j = 0;
   var cof = [
@@ -126,6 +152,12 @@ export function gammaln(x) {
   return Math.log((2.506628274631 * ser) / xx) - tmp;
 }
 
+/**
+ * qt function
+ * @param {number} p
+ * @param {number} dof
+ * @returns {number}
+ */
 export function qt(p, dof) {
   var x = ibetainv(2 * Math.min(p, 1 - p), 0.5 * dof, 0.5);
   x = Math.sqrt((dof * (1 - x)) / x);

@@ -38,7 +38,7 @@ export function loadSpatial(tableName, fileName, options = {}) {
       : Object.entries(opt)
           .map(([key, value]) => `${key}=${value}`)
           .join(', ');
-    rest.open_options = open.toUpperCase();
+    Object.assign(rest, { open_options: open.toUpperCase() });
   }
   // TODO: handle box_2d for spatial_filter_box option
   // TODO: handle wkb_blob for spatial_filter option

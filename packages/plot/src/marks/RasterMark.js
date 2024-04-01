@@ -20,6 +20,7 @@ import { Fixed, Transient } from '../symbols.js';
 export class RasterMark extends Grid2DMark {
   constructor(source, options) {
     super('image', source, options);
+    this.image = null;
   }
 
   setPlot(plot, index) {

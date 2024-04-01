@@ -4,8 +4,8 @@ import { asColumn } from './ref.js';
 /**
  * Annotate an expression to indicate descending sort order.
  * Null values are ordered last.
- * @param {SQLExpression|string} expr A SQL expression or column name string.
- * @returns {SQLExpression} An expression with descending order.
+ * @param {import('./expression.js').SQLExpression|string} expr A SQL expression or column name string.
+ * @returns {import('./expression.js').SQLExpression} An expression with descending order.
  */
 export function desc(expr) {
   const e = asColumn(expr);

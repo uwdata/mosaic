@@ -13,7 +13,7 @@ function scaleLinear() {
   };
 }
 
-function scaleLog({ base } = {}) {
+function scaleLog({ base = null } = {}) {
   if (base == null || base === Math.E) {
     return {
       apply: Math.log,

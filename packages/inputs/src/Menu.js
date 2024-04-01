@@ -9,6 +9,10 @@ const isObject = v => {
 export const menu = options => input(Menu, options);
 
 export class Menu extends MosaicClient {
+  /**
+   * Create a new Menu instance.
+   * @param {object} options Options object
+   */
   constructor({
     element,
     filterBy,

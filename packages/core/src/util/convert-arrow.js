@@ -5,7 +5,7 @@ import { DataType } from 'apache-arrow';
  * As sometimes multiple Arrow versions may be used simultaneously,
  * we use a "duck typing" approach and check for a getChild function.
  * @param {*} values The value to test
- * @returns true if the value duck types as Apache Arrow data
+ * @returns {values is import('apache-arrow').Table} true if the value duck types as Apache Arrow data
  */
 export function isArrowTable(values) {
   return typeof values?.getChild === 'function';
@@ -28,7 +28,7 @@ export function convertArrowArrayType(type) {
  * Large integers (BigInt) are converted to Float64 numbers.
  * Fixed-point decimal values are convert to Float64 numbers.
  * Otherwise, the default Arrow values are used.
- * @param {*} type an Apache Arrow column type
+ * @param {DataType} type an Apache Arrow column type
  * @returns a value conversion function
  */
 export function convertArrowValue(type) {
@@ -112,10 +112,10 @@ const BASE32 = Array.from(
 /**
  * Convert a fixed point decimal value to a double precision number.
  * Note: if the value is sufficiently large the conversion may be lossy!
- * @param {Uint32Array} v a fixed decimal value
+ * @param {Uint32Array & { signed: boolean }} v a fixed decimal value
  * @param {number} scale a scale factor, corresponding to the
  *  number of fractional decimal digits in the fixed point value
- * @returns the resulting number
+ * @returns {number} the resulting number
  */
 function decimalToNumber(v, scale) {
   const n = v.length;

@@ -11,7 +11,7 @@ export class Interval1D {
   constructor(mark, {
     channel,
     selection,
-    field,
+    field = undefined,
     pixelSize = 1,
     peers = true,
     brush: style

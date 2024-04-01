@@ -9,6 +9,16 @@ import { repeat } from './repeat.js';
  * rather than instantiate this class.
  */
 export class WindowFunction extends SQLExpression {
+  /**
+   * Create a new WindowFunction instance.
+   * @param {string} op The window operation indicator.
+   * @param {*} func The window function expression.
+   * @param {*} [type] The SQL data type to cast to.
+   * @param {string} [name] The window definition name.
+   * @param {*} [group] Grouping (partition by) expressions.
+   * @param {*} [order] Sorting (order by) expressions.
+   * @param {*} [frame] The window frame definition.
+   */
   constructor(op, func, type, name, group = '', order = '', frame = '') {
     // build and parse expression
     let expr;
@@ -24,7 +34,14 @@ export class WindowFunction extends SQLExpression {
       expr = sql`(${expr})::${type}`;
     }
     const { _expr, _deps } = expr;
-    super(_expr, _deps, { window: op, func, type, name, group, order, frame });
+    super(_expr, _deps);
+    this.window = op;
+    this.func = func;
+    this.type = type;
+    this.name = name;
+    this.group = group;
+    this.order = order;
+    this.frame = frame;
   }
 
   get basis() {
@@ -36,11 +53,21 @@ export class WindowFunction extends SQLExpression {
     return func.label ?? func.toString();
   }
 
+  /**
+   * Return an updated window function over a named window definition.
+   * @param {string} name The window definition name.
+   * @returns {WindowFunction} A new window function.
+   */
   over(name) {
     const { window: op, func, type, group, order, frame } = this;
     return new WindowFunction(op, func, type, name, group, order, frame);
   }
 
+  /**
+   * Return an updated window function with the given partitioning.
+   * @param {*} expr The grouping (partition by) criteria for the window function.
+   * @returns {WindowFunction} A new window function.
+   */
   partitionby(...expr) {
     const exprs = expr.flat().filter(x => x).map(asColumn);
     const group = sql(
@@ -51,6 +78,11 @@ export class WindowFunction extends SQLExpression {
     return new WindowFunction(op, func, type, name, group, order, frame);
   }
 
+  /**
+   * Return an updated window function with the given ordering.
+   * @param {*} expr The sorting (order by) criteria for the window function.
+   * @returns {WindowFunction} A new window function.
+   */
   orderby(...expr) {
     const exprs = expr.flat().filter(x => x).map(asColumn);
     const order = sql(
@@ -61,12 +93,22 @@ export class WindowFunction extends SQLExpression {
     return new WindowFunction(op, func, type, name, group, order, frame);
   }
 
+  /**
+   * Return an updated window function with the given rows frame.
+   * @param {(number|null)[] | import('./expression.js').ParamLike} expr The row-based window frame.
+   * @returns {WindowFunction} A new window function.
+   */
   rows(expr) {
     const frame = windowFrame('ROWS', expr);
     const { window: op, func, type, name, group, order } = this;
     return new WindowFunction(op, func, type, name, group, order, frame);
   }
 
+  /**
+   * Return an updated window function with the given range frame.
+   * @param {(number|null)[] | import('./expression.js').ParamLike} expr The range-based window frame.
+   * @returns {WindowFunction} A new window function.
+   */
   range(expr) {
     const frame = windowFrame('RANGE', expr);
     const { window: op, func, type, name, group, order } = this;
