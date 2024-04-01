@@ -37,6 +37,11 @@ export class Grid2DMark extends Mark {
     handleParam(this, 'height', height);
   }
 
+  /**
+   * @param {import('../plot.js').Plot} plot The plot.
+   * @param {number} index 
+   * @returns {this}
+   */
   setPlot(plot, index) {
     const update = () => { if (this.hasFieldInfo()) this.requestUpdate(); };
     plot.addAttributeListener('xDomain', update);
