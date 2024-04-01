@@ -1,0 +1,14 @@
+{
+  "compilerOptions": {
+    "allowJs": true,
+    "noEmit": true,
+    "noImplicitAny": false,
+    "module": "Node16",
+    "baseUrl": "./src",
+    "skipLibCheck": true,
+    "paths": {
+      "@uwdata/mosaic-spec": ["index"]
+    }
+  },
+  "include": ["src/**/*.d.ts", "src/**/*.js", "src/**/*.ts"]
+}

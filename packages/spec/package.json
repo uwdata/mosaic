@@ -16,6 +16,7 @@
   "module": "src/index.js",
   "jsdelivr": "dist/mosaic-spec.min.js",
   "unpkg": "dist/mosaic-spec.min.js",
+  "types": "src/index.d.ts",
   "repository": {
     "type": "git",
     "url": "https://github.com/uwdata/mosaic.git"
@@ -24,7 +25,7 @@
     "prebuild": "rimraf dist && mkdir dist",
     "build": "node ../../esbuild.js mosaic-spec",
     "lint": "eslint src test --ext .js",
-    "test": "mocha 'test/**/*-test.js'",
+    "test": "mocha 'test/**/*-test.js' && tsc",
     "prepublishOnly": "npm run test && npm run lint && npm run build"
   },
   "dependencies": {
