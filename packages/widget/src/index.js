@@ -1,5 +1,3 @@
-// @ts-check
-
 import { coordinator, namedPlots } from '@uwdata/vgplot';
 import { isSelection } from '@uwdata/mosaic-core';
 import { parseSpec, astToDOM } from '@uwdata/mosaic-spec';

@@ -122,6 +122,8 @@ export class MosaicClient {
   /**
    * Requests a client update.
    * For example to (re-)render an interface component.
+   * 
+   * @returns {this | Promise<any>}
    */
   update() {
     return this;

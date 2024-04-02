@@ -1,7 +1,7 @@
 {
   "compilerOptions": {
-    "checkJs": true,
     "noEmit": true,
+    "checkJs": true,
     "noImplicitAny": false,
     "module": "Node16",
     "baseUrl": "./src",
@@ -10,5 +10,5 @@
       "@uwdata/mosaic-widget": ["index"]
     }
   },
-  "include": ["src/**/*.d.ts", "src/**/*.js", "src/**/*.ts"]
+  "files": ["src/index.js"]
 }

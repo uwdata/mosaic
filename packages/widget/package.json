@@ -12,7 +12,7 @@
   "scripts": {
     "build": "vite build",
     "dev": "vite",
-    "test": "tsc",
+    "test": "tsc -p jsconfig.json",
     "lint": "eslint src --ext .js",
     "prepublishOnly": "npm run test && npm run lint && hatch fmt --check && npm run build && hatch build",
     "publish": "hatch publish"

@@ -83,7 +83,7 @@ export class Plot {
   /**
    * @param {string} name The name of the attribute to set.
    * @param {*} value The value to set.
-   * @param {{silent: boolean}?} options Options for setting the attribute.
+   * @param {{silent: boolean}} [options] Options for setting the attribute.
    * @returns {boolean} whether the value changed.
    */
   setAttribute(name, value, options) {

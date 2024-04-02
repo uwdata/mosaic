@@ -62,13 +62,12 @@ export class Grid2DMark extends Mark {
   /**
    * @param {import('../plot.js').Plot} plot The plot.
    * @param {number} index 
-   * @returns {this}
    */
   setPlot(plot, index) {
     const update = () => { if (this.hasFieldInfo()) this.requestUpdate(); };
     plot.addAttributeListener('xDomain', update);
     plot.addAttributeListener('yDomain', update);
-    return super.setPlot(plot, index);
+    super.setPlot(plot, index);
   }
 
   get filterIndexable() {
@@ -141,6 +140,9 @@ export class Grid2DMark extends Mark {
     }
   }
 
+  /**
+   * @returns {[number, number]} The bin dimensions.
+   */
   binDimensions() {
     const { plot, pixelSize, width, height } = this;
     return [
