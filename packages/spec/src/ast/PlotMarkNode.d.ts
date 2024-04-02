@@ -1,4 +1,7 @@
+import { SpecExpression } from './ExpressionNode.js';
+import { SpecParamRef } from './ParamRefNode.js';
 import { SpecPlotMarkData } from './PlotFromNode.js';
+import { SpecTransform } from './TransformNode.js';
 
 export type MarkType =
   | 'area'
@@ -63,9 +66,91 @@ export type MarkType =
   | 'sphere'
   | 'graticule';
 
-export type SpecPlotMark = {
-  mark: MarkType,
-  data?: SpecPlotMarkData
-} & {
-  [key: string]: any
+export type MarkOption =
+  | SpecParamRef
+  | number
+  | string
+  | boolean
+  | SpecExpression
+  | SpecTransform
+  | any[];
+
+/**
+ * A graphical mark (layer) for a plot.
+ */
+export interface SpecPlotMark {
+  /** The mark type. */
+  mark: MarkType;
+  /** The data the mark should visualize. */
+  data?: SpecPlotMarkData;
+
+  filter?: MarkOption;
+  sort?: any;
+  clip?: MarkOption;
+
+  title?: MarkOption;
+  tip?: MarkOption;
+  href?: MarkOption;
+  target?: MarkOption;
+  frameAnchor?: MarkOption;
+
+  x?: MarkOption;
+  x1?: MarkOption;
+  x2?: MarkOption;
+  y?: MarkOption;
+  y1?: MarkOption;
+  y2?: MarkOption;
+  fx?: MarkOption;
+  fy?: MarkOption;
+
+  z?: MarkOption;
+  r?: MarkOption;
+  length?: MarkOption;
+  rotate?: MarkOption;
+  symbol?: MarkOption;
+  opacity?: MarkOption;
+  fill?: MarkOption;
+  fillOpacity?: MarkOption;
+  stroke?: MarkOption;
+  strokeOpacity?: MarkOption;
+  strokeWidth?: MarkOption;
+  strokeDasharray?: MarkOption;
+
+  geometry?: MarkOption;
+
+  text?: MarkOption;
+  textAnchor?: MarkOption;
+  lineAnchor?: MarkOption;
+  fontSize?: MarkOption;
+  dx?: MarkOption;
+  dy?: MarkOption;
+
+  anchor?: MarkOption;
+  label?: MarkOption;
+  labelAnchor?: MarkOption;
+  tickFormat?: MarkOption;
+  tickSize?: MarkOption;
+  tickPadding?: MarkOption;
+
+  bandwidth?: MarkOption;
+  pixelSize?: MarkOption;
+  interpolate?: MarkOption;
+  pad?: MarkOption;
+
+  width?: MarkOption;
+  height?: MarkOption;
+
+  src?: MarkOption;
+  imageRendering?: MarkOption;
+  preserveAspectRatio?: MarkOption;
+
+  thresholds?: MarkOption;
+
+  normalize?: MarkOption;
+
+  binWidth?: MarkOption;
+  inset?: MarkOption;
+  curve?: MarkOption;
+  marker?: MarkOption;
+  bend?: MarkOption;
 }

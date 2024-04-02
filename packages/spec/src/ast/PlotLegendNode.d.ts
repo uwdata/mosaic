@@ -1,16 +1,24 @@
 import { SpecParamRef } from './ParamNode.js';
 
-export const LegendType = 'color' | 'opacity' | 'symbol';
+export type LegendType =
+  | 'color'
+  | 'opacity'
+  | 'symbol';
 
-export type SpecPlotLegend = {
+export interface SpecPlotLegend {
   legend: LegendType;
   as?: SpecParamRef;
   field?: string;
-} & {
-  // todo: legend options
-  [key: string]: any
-};
+  tickSize?: number;
+  marginTop?: number;
+  marginBottom?: number;
+  marginLeft?: number;
+  marginRight?: number;
+  width?: number;
+  height?: number;
+  columns?: number;
+}
 
-export type SpecLegend =
-  & SpecPlotLegend
-  & { for: string };
+export interface SpecLegend extends SpecPlotLegend {
+  for: string;
+}

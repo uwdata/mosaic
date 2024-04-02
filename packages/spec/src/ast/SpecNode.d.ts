@@ -22,28 +22,34 @@ import { PlotNode } from './PlotNode.js';
 import { PlotMarkNode } from './PlotMarkNode.js';
 import { PlotLegendNode } from './PlotLegendNode.js';
 
-export type Spec = {
-  meta?: SpecMeta;
-  config?: SpecConfig;
-  data?: SpecData;
-  params?: SpecParams;
-  plotDefaults?: SpecPlotAttributes;
-} & SpecComponent;
-
-export type SpecMeta = {
+/** Specification metadata. */
+export interface SpecMeta extends Record<string, any> {
+  /** The specification title. */
   title?: string;
+  /** A description of the specification content.  */
   description?: string;
+  /** Credits or other acknowledgements. */
   credit?: string;
-} & Record<string, any>;
+}
 
-export type SpecConfig = {
+/** Configuration options. */
+export interface SpecConfig extends Record<string, any> {
   extensions?: string | string[];
-} & Record<string, any>;
+}
 
-export type SpecData = Record<string, SpecDataDefinition>;
+/** Top-level dataset definitions. */
+export interface SpecData {
+  /** A dataset name and definition. */
+  [name: string]: SpecDataDefinition;
+}
 
-export type SpecParams = Record<string, SpecParamDefinition>;
+/** Top-level Param and Selection definitions. */
+export interface SpecData {
+  /** A parameter name and the Param or Selection definition. */
+  [name: string]: SpecParamDefinition;
+}
 
+/** A specifcation component such as a plot, input widget, or layout. */
 export type SpecComponent =
   | SpecHConcatNode
   | SpecVConcatNode
@@ -53,3 +59,17 @@ export type SpecComponent =
   | SpecPlot
   | SpecPlotMark
   | SpecLegend;
+
+/** A declarative Mosaic specification. */
+export type Spec = {
+  /** Specification metadata. */
+  meta?: SpecMeta;
+  /** Configuration options. */
+  config?: SpecConfig;
+  /** Dataset definitions. */
+  data?: SpecData;
+  /** Param and Selection definitions. */
+  params?: SpecParams;
+  /** A default set of attributes to apply to all plot components. */
+  plotDefaults?: SpecPlotAttributes;
+} & SpecComponent;

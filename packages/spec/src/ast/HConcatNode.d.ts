@@ -1,5 +1,8 @@
 import { SpecComponent } from './SpecNode.js';
 
-export type SpecHConcatNode = {
-  hconcat: SpecComponent[]
-};
+export interface SpecHConcatNode {
+  /**
+   * Horizontally concatenate components in a row layout.
+   */
+  hconcat: SpecComponent[];
+}

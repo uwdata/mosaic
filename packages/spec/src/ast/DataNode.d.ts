@@ -1,82 +1,63 @@
-export type SpecDataObjects = object[];
+export interface SpecDataBaseOptions {
+  select?: string[];
+  where?: string | string[];
+  view?: boolean;
+  temp?: boolean;
+  replace?: boolean;
+}
+
+export type SpecDataQuery = string;
+
+export type SpecDataArray = Array<any>;
+
+export interface SpecDataFile {
+  /**
+   * The data file to load. If no type option is provided,
+   * the file suffix must be one of `.csv`, `.json`, or `.parquet`.
+   */
+  file: `${string}.parquet` | `${string}.csv` | `${string}.json`;
+}
+
+export interface SpecDataTable extends SpecDataBaseOptions {
+  type: 'table';
+  query: string;
+}
+
+export interface SpecDataParquet extends SpecDataBaseOptions {
+  type: 'parquet';
+  file: string;
+}
+
+export interface SpecDataCSV extends SpecDataBaseOptions {
+  type: 'csv';
+  file: string;
+  delimiter?: string,
+  sample_size?: number;
+}
+
+export interface SpecDataSpatial extends SpecDataBaseOptions {
+  type: 'spatial';
+  file: string;
+  layer?: string;
+}
+
+export interface SpecDataJSON extends SpecDataBaseOptions {
+  type: 'json';
+  file: string;
+}
+
+export interface SpecDataJSONObjects extends SpecDataBaseOptions {
+  type?: 'json';
+  data: object[];
+}
 
 export type SpecDataDefinition =
   | SpecDataQuery
   | SpecDataArray
+  | SpecDataFile
   | SpecDataTable
   | SpecDataParquet
   | SpecDataCSV
   | SpecDataSpatial
   | SpecDataJSON
   | SpecDataJSONObjects;
-
-export type SpecDataQuery = string;
-
-export type SpecDataArray = Array<any>;
-
-export type SpecDataBaseOptions = {
-  select?: string[];
-  where?: string | string[];
-  view?: boolean;
-  temp?: boolean;
-  replace?: boolean;
-};
-
-export type SpecDataObject =
-  | SpecDataTable;
-
-export type SpecDataTable = {
-  type: 'table';
-  query: string;
-} & SpecDataBaseOptions;
-
-export type SpecDataParquet =
-  & (
-      { type: 'parquet'; file: string; } |
-      { file: `${string}.parquet` }
-    )
-  & SpecDataBaseOptions;
-
-export type SpecDataCSV =
-  & (
-    { type: 'csv'; file: string; } |
-    { file: `${string}.csv` }
-  )
-  & SpecDataCSVOptions
-  & SpecDataBaseOptions;
-
-export interface SpecDataCSVOptions {
-  delimiter?: string,
-  sample_size?: number;
-}
-
-export type SpecDataSpatial =
-  & {
-      type: 'spatial',
-      file: string,
-    }
-  & SpecDataSpatialOptions
-  & SpecDataBaseOptions;
-
-export type SpecDataSpatialOptions = {
-  [key: string]: any
-};
-
-export type SpecDataJSON =
-  & (
-    { type: 'json'; file: string; } |
-    { file: `${string}.json` }
-  )
-  & SpecDataJSONOptions
-  & SpecDataBaseOptions;
-
-export type SpecDataJSONOptions = {
-  [key: string]: any
-};
-
-export type SpecDataJSONObjects =
-  & {
-      type?: 'json',
-      data: SpecDataObjects
-    }
-  & SpecDataBaseOptions;

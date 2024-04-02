@@ -1,5 +1,8 @@
 import { SpecComponent } from './SpecNode.js';
 
-export type SpecVConcatNode = {
-  vconcat: SpecComponent[]
-};
+export interface SpecVConcatNode {
+  /**
+   * Vertically concatenate components in a column layout.
+   */
+  vconcat: SpecComponent[];
+}
