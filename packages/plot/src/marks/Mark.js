@@ -89,6 +89,11 @@ export class Mark extends MosaicClient {
     }
   }
 
+  /**
+   * @param {import('../plot.js').Plot} plot The plot.
+   * @param {number} index 
+   * @returns {this}
+   */
   setPlot(plot, index) {
     this.plot = plot;
     this.index = index;
