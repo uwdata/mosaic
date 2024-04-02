@@ -29,6 +29,9 @@ For additional documentation of scale attributes, see the corresponding [Observa
 - `label(value)`: Set a global setting for axis labels.
 - `padding(value)`: Set the axis padding across all axes.
 - `round(value)`: Set axis roundings across all axes.
+- `title(value)`: Set the plot title (displayed at the top of the plot).
+- `subtitle(value)`: Set the plot subtitle (displayed right under the title).
+- `caption(value)`: Set set the plot caption (displayed under the plot).
 
 ## x Scale Attributes
 
