@@ -1,14 +1,13 @@
 import { createAPIContext, loadExtension } from '@uwdata/vgplot';
-import { SpecNode } from './ast/SpecNode.js';
 import { resolveExtensions } from './config/extensions.js';
 import { error } from './util.js';
 
 /**
  * Generate running web application (DOM content) for a Mosaic spec AST.
- * @param {SpecNode} ast Mosaic AST root node.
+ * @param {import('ast/SpecNode.js').SpecNode)} ast Mosaic AST root node.
  * @param {object} [options] Instantiation options.
  * @param {string} [options.baseURL] The base URL for loading data files.
- * @returns {object} An object with the resulting DOM element, and
+ * @returns {Promise<import('ast-to-dom.js').AstToDOMResult>} An object with the resulting DOM element, and
  *   a map of named parameters (Param and Selection instances).
  */
 export async function astToDOM(ast, options) {
