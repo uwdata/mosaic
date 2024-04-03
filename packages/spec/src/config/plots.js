@@ -19,6 +19,7 @@ export function plotNames({
 
 /**
  * Names of attribute directive functions.
+ * @returns {Set<string>}
  */
 export function plotAttributeNames(overrides = []) {
   return new Set([
@@ -29,6 +30,7 @@ export function plotAttributeNames(overrides = []) {
 
 /**
  * Names interactor directive functions.
+ * @returns {Set<string>}
  */
 export function plotInteractorNames(overrides = []) {
   return new Set([
@@ -39,6 +41,7 @@ export function plotInteractorNames(overrides = []) {
 
 /**
  * Names of legend directive functions.
+ * @returns {Set<string>}
  */
 export function plotLegendNames(overrides = []) {
   return new Set([
@@ -49,6 +52,7 @@ export function plotLegendNames(overrides = []) {
 
 /**
  * Names of mark directive functions.
+ * @returns {Set<string>}
  */
 export function plotMarkNames(overrides = []) {
   return new Set([

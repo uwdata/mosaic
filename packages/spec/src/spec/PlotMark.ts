@@ -1,7 +1,7 @@
-import { SpecExpression } from './ExpressionNode.js';
-import { SpecParamRef } from './ParamRefNode.js';
-import { SpecPlotMarkData } from './PlotFromNode.js';
-import { SpecTransform } from './TransformNode.js';
+import { Expression } from './Expression.js';
+import { ParamRef } from './Param.js';
+import { PlotMarkData } from './PlotFrom.js';
+import { Transform } from './Transform.js';
 
 export type MarkType =
   | 'area'
@@ -67,22 +67,22 @@ export type MarkType =
   | 'graticule';
 
 export type MarkOption =
-  | SpecParamRef
+  | ParamRef
   | number
   | string
   | boolean
-  | SpecExpression
-  | SpecTransform
+  | Expression
+  | Transform
   | any[];
 
 /**
  * A graphical mark (layer) for a plot.
  */
-export interface SpecPlotMark {
+export interface PlotMark {
   /** The mark type. */
   mark: MarkType;
   /** The data the mark should visualize. */
-  data?: SpecPlotMarkData;
+  data?: PlotMarkData;
 
   filter?: MarkOption;
   sort?: any;

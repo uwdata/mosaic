@@ -45,3 +45,11 @@ export function isFunction(value) {
 export function error(message, data) {
   throw Object.assign(Error(message), { data });
 }
+
+const re = /^(?:[-+]\d{2})?\d{4}(?:-\d{2}(?:-\d{2})?)?(?:T\d{2}:\d{2}(?::\d{2}(?:\.\d{3})?)?(?:Z|[-+]\d{2}:?\d{2})?)?$/;
+
+// adapted from https://github.com/mbostock/isoformat/
+export function isoparse(string, fallback) {
+  if (!re.test(string += '')) return fallback;
+  return new Date(string);
+}

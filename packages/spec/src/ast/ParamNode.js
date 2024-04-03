@@ -1,5 +1,4 @@
-import { parse as isoparse } from 'isoformat';
-import { isArray, isObject } from '../util.js';
+import { isArray, isObject, isoparse } from '../util.js';
 import { ASTNode } from './ASTNode.js';
 import { CROSSFILTER, INTERSECT, PARAM, SINGLE, UNION, VALUE } from '../constants.js';
 import { SelectionNode } from './SelectionNode.js';

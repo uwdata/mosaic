@@ -1,14 +1,10 @@
 {
+  "files": ["src/index.js"],
   "compilerOptions": {
     "noEmit": true,
     "checkJs": true,
     "noImplicitAny": false,
-    "module": "Node16",
-    "baseUrl": "./src",
-    "skipLibCheck": true,
-    "paths": {
-      "@uwdata/mosaic-widget": ["index"]
-    }
-  },
-  "files": ["src/index.js"]
+    "module": "node16",
+    "skipLibCheck": true
+  }
 }
