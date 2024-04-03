@@ -14,7 +14,6 @@ export const attributeMap = new Map([
   ['grid', 'grid'],
   ['label', 'label'],
   ['padding', 'padding'],
-  ['round', 'round'],
   ['xScale', 'x.type'],
   ['xDomain', 'x.domain'],
   ['xRange', 'x.range'],

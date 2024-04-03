@@ -100,7 +100,6 @@ export {
   grid,
   label,
   padding,
-  round,
   xScale,
   xDomain,
   xRange,
