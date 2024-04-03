@@ -71,7 +71,6 @@ export const inset = attrf('inset');
 export const grid = attrf('grid');
 export const label = attrf('label');
 export const padding = attrf('padding');
-export const round = attrf('round');
 
 // x scale attributes
 export const xScale = attrf('xScale');
