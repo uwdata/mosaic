@@ -16,6 +16,7 @@ export interface AggregateOptions {
 }
 
 type Arg = string | number | boolean;
+type Arg0 = null | [];
 type Arg1 = Arg | [Arg];
 type Arg2 = [Arg, Arg];
 type Arg2Opt = Arg | [Arg, Arg?];
@@ -132,7 +133,7 @@ export interface Count extends AggregateOptions, WindowOptions {
   /**
    * Compute the count of records in an aggregation group.
    */
-  count: [] | Arg1;
+  count: Arg0 | Arg1;
 }
 
 export interface First extends AggregateOptions, WindowOptions {
@@ -203,7 +204,7 @@ export interface RowNumber extends WindowOptions {
   /**
    * Compute the 1-based row number over an ordered window partition.
    */
-  row_number: [];
+  row_number: Arg0;
 }
 
 export interface Rank extends WindowOptions {
@@ -211,7 +212,7 @@ export interface Rank extends WindowOptions {
    * Compute the row rank over an ordered window partition.
    * Sorting ties result in gaps in the rank numbers ([1, 1, 3, ...]).
    */
-  rank: [];
+  rank: Arg0;
 }
 
 export interface DenseRank extends WindowOptions {
@@ -219,14 +220,14 @@ export interface DenseRank extends WindowOptions {
    * Compute the dense row rank (no gaps) over an ordered window partition.
    * Sorting ties do not result in gaps in the rank numbers ( [1, 1, 2, ...]).
    */
-  dense_rank: [];
+  dense_rank: Arg0;
 }
 
 export interface PercentRank extends WindowOptions {
   /**
    * Compute the percetange rank over an ordered window partition.
    */
-  percent_rank: [];
+  percent_rank: Arg0;
 }
 
 export interface CumeDist extends WindowOptions {
@@ -235,7 +236,7 @@ export interface CumeDist extends WindowOptions {
    * partition. Equals the number of partition rows preceding or peer with
    * the current row, divided by the total number of partition rows.
    */
-  cume_dist: [];
+  cume_dist: Arg0;
 }
 
 export interface NTile extends WindowOptions {
