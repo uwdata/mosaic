@@ -16,22 +16,22 @@
   "module": "src/index.js",
   "jsdelivr": "dist/mosaic-spec.min.js",
   "unpkg": "dist/mosaic-spec.min.js",
-  "types": "src/index.d.ts",
+  "types": "dist/types/index.d.ts",
   "repository": {
     "type": "git",
     "url": "https://github.com/uwdata/mosaic.git"
   },
   "scripts": {
     "prebuild": "rimraf dist && mkdir dist",
-    "build": "node ../../esbuild.js mosaic-spec",
+    "build": "tsc && node ../../esbuild.js mosaic-spec",
     "lint": "eslint src test --ext .js",
+    "pretest": "tsc",
     "test": "mocha 'test/**/*-test.js' && tsc -p jsconfig.json",
     "prepublishOnly": "npm run test && npm run lint && npm run build"
   },
   "dependencies": {
     "@uwdata/mosaic-core": "^0.7.1",
     "@uwdata/mosaic-sql": "^0.7.0",
-    "@uwdata/vgplot": "^0.7.1",
-    "isoformat": "^0.2.1"
+    "@uwdata/vgplot": "^0.7.1"
   }
 }

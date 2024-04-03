@@ -1,8 +1,8 @@
-export interface SpecVSpace {
+export interface HSpace {
   /**
-   * Vertical space to place between components.
+   * Horizontal space to place between components.
    * Number values indicate screen pixels.
    * String values may use CSS units (em, pt, px, etc).
    */
-  vspace: number | string;
+  hspace: number | string;
 }

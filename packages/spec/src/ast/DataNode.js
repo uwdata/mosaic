@@ -10,6 +10,7 @@ export const CSV_DATA = 'csv';
 export const JSON_DATA = 'json';
 export const SPATIAL_DATA = 'spatial';
 
+// @ts-ignore
 const dataFormats = new Map([
   [TABLE_DATA, parseTableData],
   [PARQUET_DATA, parseParquetData],
@@ -18,14 +19,38 @@ const dataFormats = new Map([
   [SPATIAL_DATA, parseSpatialData]
 ]);
 
+/**
+ * Parse a data definition spec.
+ * @param {string} name The name of the dataset
+ * @param {import('../spec/Data.js').DataDefinition} spec The data definition spec.
+ * @param {import('../parse-spec.js').ParseContext} ctx The parser context.
+ * @returns {DataNode} a parsed data definition AST node
+ */
 export function parseData(name, spec, ctx) {
-  spec = resolveDataSpec(spec);
-  if (dataFormats.has(spec.type)) {
-    const parse = dataFormats.get(spec.type);
-    return parse(name, spec, ctx);
+  const def = resolveDataSpec(spec);
+  if (dataFormats.has(def.type)) {
+    const parse = dataFormats.get(def.type);
+    return parse(name, def, ctx);
   } else {
     ctx.error(`Unrecognized data format type.`, spec);
   }
+}
+
+function resolveDataSpec(spec) {
+  if (isArray(spec)) spec = { type: 'json', data: spec };
+  if (isString(spec)) spec = { type: 'table', query: spec };
+  return { ...spec, type: inferType(spec) };
+}
+
+function inferType(spec) {
+  return spec.type
+    || fileExtension(spec.file)
+    || 'table';
+}
+
+function fileExtension(file) {
+  const idx = file?.lastIndexOf('.');
+  return idx > 0 ? file.slice(idx + 1) : null;
 }
 
 function parseTableData(name, spec, ctx) {
@@ -61,23 +86,6 @@ function parseSpatialData(name, spec, ctx) {
   return new SpatialDataNode(name, file, parseOptions(options, ctx));
 }
 
-function resolveDataSpec(spec) {
-  if (isArray(spec)) spec = { type: 'json', data: spec };
-  if (isString(spec)) spec = { type: 'table', query: spec };
-  return { ...spec, type: inferType(spec) };
-}
-
-function inferType(spec) {
-  return spec.type
-    || fileExtension(spec.file)
-    || 'table';
-}
-
-function fileExtension(file) {
-  const idx = file?.lastIndexOf('.');
-  return idx > 0 ? file.slice(idx + 1) : null;
-}
-
 function resolveFileURL(file, baseURL) {
   return baseURL ? new URL(file, baseURL).toString() : file;
 }
@@ -100,19 +108,39 @@ export class QueryDataNode extends DataNode {
     super(name, format);
   }
 
+  /**
+   * Instantiate a table creation query.
+   * @param {import('../ast-to-dom.js').InstantiateContext} ctx The instantiation context.
+   * @returns {string|void} The instantiated query.
+   */
   instantiateQuery(ctx) {
     ctx.error('instantiateQuery not implemented');
   }
 
+  /**
+   * Code generate a table creation query.
+   * @param {import('../ast-to-esm.js').CodegenContext} ctx The code generator context.
+   * @returns {string|void} The generated query code.
+   */
   codegenQuery(ctx) {
     ctx.error('codegenQuery not implemented');
   }
 
+  /**
+   * Instantiate this AST node to use in a live web application.
+   * @param {import('../ast-to-dom.js').InstantiateContext} ctx The instantiation context.
+   * @returns {*} The instantiated value of this node.
+   */
   instantiate(ctx) {
     const query = this.instantiateQuery(ctx);
     if (query) return query;
   }
 
+  /**
+   * Generate ESM code for this AST node.
+   * @param {import('../ast-to-esm.js').CodegenContext} ctx The code generator context.
+   * @returns {string|void} The generated ESM code for the node.
+   */
   codegen(ctx) {
     const query = this.codegenQuery(ctx);
     if (query) return query;
@@ -126,6 +154,11 @@ export class TableDataNode extends QueryDataNode {
     this.options = options;
   }
 
+  /**
+   * Instantiate a table creation query.
+   * @param {import('../ast-to-dom.js').InstantiateContext} ctx The instantiation context.
+   * @returns {string|void} The instantiated query.
+   */
   instantiateQuery(ctx) {
     const { name, query, options } = this;
     if (query) {
@@ -133,6 +166,11 @@ export class TableDataNode extends QueryDataNode {
     }
   }
 
+  /**
+   * Code generate a table creation query.
+   * @param {import('../ast-to-esm.js').CodegenContext} ctx The code generator context.
+   * @returns {string|void} The generated query code.
+   */
   codegenQuery(ctx) {
     const { name, query, options } = this;
     if (query) {
@@ -154,6 +192,11 @@ export class FileDataNode extends QueryDataNode {
     this.options = options;
   }
 
+  /**
+   * Instantiate a table creation query.
+   * @param {import('../ast-to-dom.js').InstantiateContext} ctx The instantiation context.
+   * @returns {string|void} The instantiated query.
+   */
   instantiateQuery(ctx) {
     const { name, method, file, options } = this;
     const url = resolveFileURL(file, ctx.baseURL);
@@ -161,6 +204,11 @@ export class FileDataNode extends QueryDataNode {
     return ctx.api[method](name, url, opt);
   }
 
+  /**
+   * Code generate a table creation query.
+   * @param {import('../ast-to-esm.js').CodegenContext} ctx The code generator context.
+   * @returns {string|void} The generated query code.
+   */
   codegenQuery(ctx) {
     const { name, method, file, options } = this;
     const url = resolveFileURL(file, ctx.baseURL);
@@ -205,11 +253,21 @@ export class LiteralJSONDataNode extends QueryDataNode {
     this.options = options;
   }
 
+  /**
+   * Instantiate a table creation query.
+   * @param {import('../ast-to-dom.js').InstantiateContext} ctx The instantiation context.
+   * @returns {string|void} The instantiated query.
+   */
   instantiateQuery(ctx) {
     const { name, data, options } = this;
     return ctx.api.loadObjects(name, data, options.instantiate(ctx));
   }
 
+  /**
+   * Code generate a table creation query.
+   * @param {import('../ast-to-esm.js').CodegenContext} ctx The code generator context.
+   * @returns {string|void} The generated query code.
+   */
   codegenQuery(ctx) {
     const { name, data, options } = this;
     const opt = options ? ',' + options.codegen(ctx) : '';

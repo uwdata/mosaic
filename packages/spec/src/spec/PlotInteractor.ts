@@ -1,4 +1,4 @@
-export type SpecPlotInteractor = {
+export type PlotInteractor = {
   select: string;
 } & {
   // todo: specific interactors

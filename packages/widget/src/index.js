@@ -9,7 +9,7 @@ import { v4 as uuidv4 } from 'uuid';
  * @typedef {Record<string, {value: unknown, predicate?: string}>} Params
  *
  * @typedef Model
- * @prop {Record<any, unknown>} spec the current specification
+ * @prop {import('@uwdata/mosaic-spec').Spec} spec the current specification
  * @prop {boolean} temp_indexes whether data cube indexes should be created as temp tables
  * @prop {Params} params the current params
  */
