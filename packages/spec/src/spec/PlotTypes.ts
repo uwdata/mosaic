@@ -382,3 +382,116 @@ type ColorSchemeCase =
  * - *Sinebow* - Bumgardner and Loyd’s “sinebow” scheme
  */
 export type ColorScheme = ColorSchemeCase | (Lowercase<ColorSchemeCase> & Record<never, never>);
+
+/**
+ * The built-in symbol implementations. For fill, one of:
+ *
+ * - *circle* - a circle
+ * - *cross* - a Greek cross with arms of equal length
+ * - *diamond* - a rhombus
+ * - *square* - a square
+ * - *star* - a pentagonal star (pentagram)
+ * - *triangle* - an up-pointing triangle
+ * - *wye* - a Y with arms of equal length
+ *
+ * For stroke (based on [Heman Robinson’s research][1]), one of:
+ *
+ * - *circle* - a circle
+ * - *plus* - a plus sign
+ * - *times* - an X with arms of equal length
+ * - *triangle2* - an (alternate) up-pointing triangle
+ * - *asterisk* - an asterisk
+ * - *square2* - a (alternate) square
+ * - *diamond2* - a rotated square
+ *
+ * The *hexagon* symbol is also supported.
+ *
+ * [1]: https://www.tandfonline.com/doi/abs/10.1080/10618600.2019.1637746
+ */
+export type SymbolType =
+  | "asterisk"
+  | "circle"
+  | "cross"
+  | "diamond"
+  | "diamond2"
+  | "hexagon"
+  | "plus"
+  | "square"
+  | "square2"
+  | "star"
+  | "times"
+  | "triangle"
+  | "triangle2"
+  | "wye";
+
+/**
+ * How to anchor a mark relative to the plot’s frame; one of:
+ *
+ * - *middle* - centered in the middle
+ * - in the middle of one of the edges: *top*, *right*, *bottom*, *left*
+ * - in one of the corners: *top-left*, *top-right*, *bottom-right*, *bottom-left*
+ */
+export type FrameAnchor =
+  | "middle"
+  | "top-left"
+  | "top"
+  | "top-right"
+  | "right"
+  | "bottom-right"
+  | "bottom"
+  | "bottom-left"
+  | "left";
+
+// from https://github.com/observablehq/plot/blob/main/src/reducer.d.ts
+type Digit = 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9;
+
+// For internal use.
+export type ReducerPercentile =
+  | (`p${Digit}${Digit}` & Record<never, never>) // see https://github.com/microsoft/TypeScript/issues/29729
+  | "p25"
+  | "p50"
+  | "p75";
+
+/**
+ * How to reduce aggregated (binned or grouped) values; one of:
+ *
+ * - *first* - the first value, in input order
+ * - *last* - the last value, in input order
+ * - *count* - the number of elements (frequency)
+ * - *distinct* - the number of distinct values
+ * - *sum* - the sum of values
+ * - *proportion* - the sum proportional to the overall total (weighted frequency)
+ * - *proportion-facet* - the sum proportional to the facet total
+ * - *deviation* - the standard deviation
+ * - *min* - the minimum value
+ * - *min-index* - the zero-based index of the minimum value
+ * - *max* - the maximum value
+ * - *max-index* - the zero-based index of the maximum value
+ * - *mean* - the mean value (average)
+ * - *median* - the median value
+ * - *variance* - the variance per [Welford’s algorithm][1]
+ * - *mode* - the value with the most occurrences
+ * - *pXX* - the percentile value, where XX is a number in [00,99]
+ * - *identity* - the array of values
+ *
+ * [1]: https://en.wikipedia.org/wiki/Algorithms_for_calculating_variance#Welford's_online_algorithm
+ */
+export type Reducer =
+  | "first"
+  | "last"
+  | "identity"
+  | "count"
+  | "distinct"
+  | "sum"
+  | "proportion"
+  | "proportion-facet"
+  | "deviation"
+  | "min"
+  | "min-index"
+  | "max"
+  | "max-index"
+  | "mean"
+  | "median"
+  | "variance"
+  | "mode"
+  | ReducerPercentile;

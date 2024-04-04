@@ -2,6 +2,7 @@ import { Expression } from './Expression.js';
 import { ParamRef } from './Param.js';
 import { PlotMarkData } from './PlotFrom.js';
 import { Transform } from './Transform.js';
+import { Circle, Dot, DotX, DotY, Hexagon } from './marks/Dot.js';
 
 export type MarkType =
   | 'area'
@@ -18,11 +19,11 @@ export type MarkType =
   | 'rect'
   | 'rectX'
   | 'rectY'
-  | 'dot'
-  | 'dotX'
-  | 'dotY'
-  | 'circle'
-  | 'hexagon'
+  // | 'dot'
+  // | 'dotX'
+  // | 'dotY'
+  // | 'circle'
+  // | 'hexagon'
   | 'text'
   | 'textX'
   | 'textY'
@@ -75,12 +76,17 @@ export type MarkOption =
   | Transform
   | any[];
 
+export type PlotMark =
+  | Dot | DotX | DotY | Circle | Hexagon
+  | GenericPlotMark;
+
 /**
  * A graphical mark (layer) for a plot.
  */
-export interface PlotMark {
+export interface GenericPlotMark {
   /** The mark type. */
   mark: MarkType;
+
   /** The data the mark should visualize. */
   data?: PlotMarkData;
 
