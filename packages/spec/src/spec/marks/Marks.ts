@@ -1,7 +1,7 @@
 import { AggregateExpression, SQLExpression } from '../Expression.js';
 import { ParamRef } from '../Param.js';
 import { PlotMarkData } from '../PlotFrom.js';
-import { FrameAnchor, Interval, Reducer, ScaleName } from '../PlotTypes.js';
+import { CurveName, FrameAnchor, Interval, Reducer, ScaleName } from '../PlotTypes.js';
 import { Transform } from '../Transform.js';
 
 /**
@@ -41,7 +41,7 @@ export type ChannelName =
   | 'z'
   | (string & Record<never, never>); // custom channel; see also https://github.com/microsoft/TypeScript/issues/29729
 
-type ChannelScale = ScaleName | "auto" | boolean | null;
+type ChannelScale = ScaleName | 'auto' | boolean | null;
 
 /**
  * A channel’s values may be expressed as:
@@ -769,4 +769,258 @@ export interface TipOptions extends MarkOptions, TextStyles {
 
   /** The padding around the text in pixels; defaults to 8. */
   textPadding?: number | ParamRef;
+}
+
+/** How to interpolate between control points. */
+export type Curve = CurveName;
+
+/** Options for marks that support curves, such as lines and areas. */
+export interface CurveOptions extends CurveAutoOptions {
+  /**
+   * The curve (interpolation) method for connecting adjacent points. One of:
+   *
+   * - *basis* - a cubic basis spline (repeating the end points)
+   * - *basis-open* - an open cubic basis spline
+   * - *basis-closed* - a closed cubic basis spline
+   * - *bump-x* - a Bézier curve with horizontal tangents
+   * - *bump-y* - a Bézier curve with vertical tangents
+   * - *bundle* - a straightened cubic basis spline (suitable for lines only, not areas)
+   * - *cardinal* - a cubic cardinal spline (with one-sided differences at the ends)
+   * - *cardinal-open* - an open cubic cardinal spline
+   * - *cardinal-closed* - an closed cubic cardinal spline
+   * - *catmull-rom* - a cubic Catmull–Rom spline (with one-sided differences at the ends)
+   * - *catmull-rom-open* - an open cubic Catmull–Rom spline
+   * - *catmull-rom-closed* - a closed cubic Catmull–Rom spline
+   * - *linear* - a piecewise linear curve (*i.e.*, straight line segments)
+   * - *linear-closed* - a closed piecewise linear curve (*i.e.*, straight line segments)
+   * - *monotone-x* - a cubic spline that preserves monotonicity in *x*
+   * - *monotone-y* - a cubic spline that preserves monotonicity in *y*
+   * - *natural* - a natural cubic spline
+   * - *step* - a piecewise constant function where *y* changes at the midpoint of *x*
+   * - *step-after* - a piecewise constant function where *y* changes after *x*
+   * - *step-before* - a piecewise constant function where *x* changes after *y*
+   */
+  curve?: Curve | ParamRef;
+}
+
+/** Options for marks that support possibly-projected curves. */
+export interface CurveAutoOptions {
+  /**
+   * The curve (interpolation) method for connecting adjacent points. One of:
+   *
+   * - *basis* - a cubic basis spline (repeating the end points)
+   * - *basis-open* - an open cubic basis spline
+   * - *basis-closed* - a closed cubic basis spline
+   * - *bump-x* - a Bézier curve with horizontal tangents
+   * - *bump-y* - a Bézier curve with vertical tangents
+   * - *bundle* - a straightened cubic basis spline (suitable for lines only, not areas)
+   * - *cardinal* - a cubic cardinal spline (with one-sided differences at the ends)
+   * - *cardinal-open* - an open cubic cardinal spline
+   * - *cardinal-closed* - an closed cubic cardinal spline
+   * - *catmull-rom* - a cubic Catmull–Rom spline (with one-sided differences at the ends)
+   * - *catmull-rom-open* - an open cubic Catmull–Rom spline
+   * - *catmull-rom-closed* - a closed cubic Catmull–Rom spline
+   * - *linear* - a piecewise linear curve (*i.e.*, straight line segments)
+   * - *linear-closed* - a closed piecewise linear curve (*i.e.*, straight line segments)
+   * - *monotone-x* - a cubic spline that preserves monotonicity in *x*
+   * - *monotone-y* - a cubic spline that preserves monotonicity in *y*
+   * - *natural* - a natural cubic spline
+   * - *step* - a piecewise constant function where *y* changes at the midpoint of *x*
+   * - *step-after* - a piecewise constant function where *y* changes after *x*
+   * - *step-before* - a piecewise constant function where *x* changes after *y*
+   * - *auto* (default) - like *linear*, but use the (possibly spherical) projection, if any
+   *
+   * The *auto* curve is typically used in conjunction with a spherical
+   * projection to interpolate along geodesics.
+   */
+  curve?: Curve | 'auto' | ParamRef;
+
+  /**
+   * The tension option only has an effect on bundle, cardinal and Catmull–Rom
+   * splines (*bundle*, *cardinal*, *cardinal-open*, *cardinal-closed*,
+   * *catmull-rom*, *catmull-rom-open*, and *catmull-rom-closed*). For bundle
+   * splines, it corresponds to [beta][1]; for cardinal splines, [tension][2];
+   * for Catmull–Rom splines, [alpha][3].
+   *
+   * [1]: https://d3js.org/d3-shape/curve#curveBundle_beta
+   * [2]: https://d3js.org/d3-shape/curve#curveCardinal_tension
+   * [3]: https://d3js.org/d3-shape/curve#curveCatmullRom_alpha
+   */
+  tension?: number | ParamRef;
+}
+
+/**
+ * A built-in stack offset method; one of:
+ *
+ * - *normalize* - rescale each stack to fill [0, 1]
+ * - *center* - align the centers of all stacks
+ * - *wiggle* - translate stacks to minimize apparent movement
+ *
+ * If a given stack has zero total value, the *normalize* offset will not adjust
+ * the stack’s position. Both the *center* and *wiggle* offsets ensure that the
+ * lowest element across stacks starts at zero for better default axes. The
+ * *wiggle* offset is recommended for streamgraphs in conjunction with the
+ * *inside-out* order. For more, see [Byron & Wattenberg][1].
+ *
+ * [1]: https://leebyron.com/streamgraph/
+ */
+export type StackOffsetName =
+  | 'center'
+  | 'normalize'
+  | 'wiggle'
+  | ('expand' & Record<never, never>) // deprecated; use normalize
+  | ('silhouette' & Record<never, never>); // deprecated; use center
+
+/**
+ * A stack offset method; one of:
+ *
+ * - *normalize* - rescale each stack to fill [0, 1]
+ * - *center* - align the centers of all stacks
+ * - *wiggle* - translate stacks to minimize apparent movement
+ *
+ * If a given stack has zero total value, the *normalize* offset will not adjust
+ * the stack’s position. Both the *center* and *wiggle* offsets ensure that the
+ * lowest element across stacks starts at zero for better default axes. The
+ * *wiggle* offset is recommended for streamgraphs in conjunction with the
+ * *inside-out* order. For more, see [Byron & Wattenberg][1].
+ *
+ * [1]: https://leebyron.com/streamgraph/
+ */
+export type StackOffset = StackOffsetName;
+
+/**
+ * The built-in stack order methods; one of:
+ *
+ * - *x* - alias of *value*; for stackX only
+ * - *y* - alias of *value*; for stackY only
+ * - *value* - ascending value (or descending with **reverse**)
+ * - *sum* - total value per series
+ * - *appearance* - position of maximum value per series
+ * - *inside-out* (default with *wiggle*) - order the earliest-appearing series on the inside
+ *
+ * The *inside-out* order is recommended for streamgraphs in conjunction with
+ * the *wiggle* offset. For more, see [Byron & Wattenberg][1].
+ *
+ * [1]: https://leebyron.com/streamgraph/
+ */
+export type StackOrderName = 'value' | 'x' | 'y' | 'z' | 'sum' | 'appearance' | 'inside-out';
+
+/**
+ * How to order layers prior to stacking; one of:
+ *
+ * - a named stack order method such as *inside-out* or *sum*
+ * - a field name, for natural order of the corresponding values
+ * - an accessor function, for natural order of the corresponding values
+ * - a comparator function for ordering data
+ * - an array of explicit **z** values in the desired order
+ */
+export type StackOrder =
+  | StackOrderName
+  | `-${StackOrderName}`
+  | (string & Record<never, never>)
+  | any[];
+
+/** Options for the stack transform. */
+export interface StackOptions {
+  /**
+   * After stacking, an optional **offset** can be applied to translate and
+   * scale stacks, say to produce a streamgraph; defaults to null for a zero
+   * baseline (**y** = 0 for stackY, and **x** = 0 for stackX). If the *wiggle*
+   * offset is used, the default **order** changes to *inside-out*.
+   */
+  offset?: StackOffset | null | ParamRef;
+
+  /**
+   * The order in which stacks are layered; one of:
+   *
+   * - null (default) for input order
+   * - a named stack order method such as *inside-out* or *sum*
+   * - a field name, for natural order of the corresponding values
+   * - a function of data, for natural order of the corresponding values
+   * - an array of explicit **z** values in the desired order
+   *
+   * If the *wiggle* **offset** is used, as for a streamgraph, the default
+   * changes to *inside-out*.
+   */
+  order?: StackOrder | null | ParamRef;
+
+  /** If true, reverse the effective order of the stacks. */
+  reverse?: boolean | ParamRef;
+
+  /**
+   * The **z** channel defines the series of each value in the stack. Used when
+   * the **order** is *sum*, *appearance*, *inside-out*, or an explicit array of
+   * **z** values.
+   */
+  z?: ChannelValue;
+}
+
+/**
+ * The built-in marker implementations; one of:
+ *
+ * - *arrow* - an arrowhead with *auto* orientation
+ * - *arrow-reverse* - an arrowhead with *auto-start-reverse* orientation
+ * - *dot* - a filled *circle* with no stroke and 2.5px radius
+ * - *circle-fill* - a filled circle with a white stroke and 3px radius
+ * - *circle-stroke* - a stroked circle with a white fill and 3px radius
+ * - *circle* - alias for *circle-fill*
+ * - *tick* - a small opposing line
+ * - *tick-x* - a small horizontal line
+ * - *tick-y* - a small vertical line
+ */
+export type MarkerName =
+  | 'arrow'
+  | 'arrow-reverse'
+  | 'dot'
+  | 'circle'
+  | 'circle-fill'
+  | 'circle-stroke'
+  | 'tick'
+  | 'tick-x'
+  | 'tick-y';
+
+/** Options for marks that support markers, such as lines and links. */
+export interface MarkerOptions {
+  /**
+   * Shorthand to set the same default for markerStart, markerMid, and
+   * markerEnd; one of:
+   *
+   * - a marker name such as *arrow* or *circle*
+   * - *none* (default) - no marker
+   * * true - alias for *circle-fill*
+   * * false or null - alias for *none*
+   */
+  marker?: MarkerName | 'none' | boolean | null | ParamRef;
+
+  /**
+   * The marker for the starting point of a line segment; one of:
+   *
+   * - a marker name such as *arrow* or *circle*
+   * * *none* (default) - no marker
+   * * true - alias for *circle-fill*
+   * * false or null - alias for *none*
+   */
+  markerStart?: MarkerName | 'none' | boolean | null | ParamRef;
+
+  /**
+   * The marker for any middle (interior) points of a line segment. If the line
+   * segment only has a start and end point, this option has no effect. One of:
+   *
+   * - a marker name such as *arrow* or *circle*
+   * * *none* (default) - no marker
+   * * true - alias for *circle-fill*
+   * * false or null - alias for *none*
+   * * a function - a custom marker function; see below
+   */
+  markerMid?: MarkerName | 'none' | boolean | null | ParamRef;
+
+  /**
+   * The marker for the ending point of a line segment; one of:
+   *
+   * - a marker name such as *arrow* or *circle*
+   * * *none* (default) - no marker
+   * * true - alias for *circle-fill*
+   * * false or null - alias for *none*
+   */
+  markerEnd?: MarkerName | 'none' | boolean | null | ParamRef;
 }

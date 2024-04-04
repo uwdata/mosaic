@@ -2,15 +2,17 @@ import { Expression } from './Expression.js';
 import { ParamRef } from './Param.js';
 import { PlotMarkData } from './PlotFrom.js';
 import { Transform } from './Transform.js';
+import { Area, AreaX, AreaY } from './marks/Area.js';
 import { Circle, Dot, DotX, DotY, Hexagon } from './marks/Dot.js';
+import { Line, LineX, LineY } from './marks/Line.js';
 
 export type MarkType =
-  | 'area'
-  | 'areaX'
-  | 'areaY'
-  | 'line'
-  | 'lineX'
-  | 'lineY'
+  // | 'area'
+  // | 'areaX'
+  // | 'areaY'
+  // | 'line'
+  // | 'lineX'
+  // | 'lineY'
   | 'barX'
   | 'barY'
   | 'cell'
@@ -77,7 +79,9 @@ export type MarkOption =
   | any[];
 
 export type PlotMark =
+  | Area | AreaX | AreaY
   | Dot | DotX | DotY | Circle | Hexagon
+  | Line | LineX | LineY
   | GenericPlotMark;
 
 /**

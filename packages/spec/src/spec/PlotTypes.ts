@@ -1,4 +1,3 @@
-
 /**
  * A symbol indicating a fixed scale domain. A fixed domain is initially
  * determined from data as usual, but subsequently "fixed" so that it does not
@@ -8,8 +7,8 @@ export type Fixed = 'Fixed';
 
 // For internal use.
 export type LiteralTimeInterval =
-  | "3 months"
-  | "10 years"
+  | '3 months'
+  | '10 years'
   | TimeIntervalName
   | (`${TimeIntervalName}s` & Record<never, never>)
   | (`${number} ${TimeIntervalName}` & Record<never, never>)
@@ -22,22 +21,22 @@ export type LiteralTimeInterval =
  * start of the year.
  */
 export type TimeIntervalName =
-  | "second"
-  | "minute"
-  | "hour"
-  | "day"
-  | "week"
-  | "month"
-  | "quarter" // 3 months
-  | "half" // 6 months
-  | "year"
-  | "monday"
-  | "tuesday"
-  | "wednesday"
-  | "thursday"
-  | "friday"
-  | "saturday"
-  | "sunday";
+  | 'second'
+  | 'minute'
+  | 'hour'
+  | 'day'
+  | 'week'
+  | 'month'
+  | 'quarter' // 3 months
+  | 'half' // 6 months
+  | 'year'
+  | 'monday'
+  | 'tuesday'
+  | 'wednesday'
+  | 'thursday'
+  | 'friday'
+  | 'saturday'
+  | 'sunday';
 
 /**
  * How to partition a continuous range into discrete intervals; one of:
@@ -409,20 +408,20 @@ export type ColorScheme = ColorSchemeCase | (Lowercase<ColorSchemeCase> & Record
  * [1]: https://www.tandfonline.com/doi/abs/10.1080/10618600.2019.1637746
  */
 export type SymbolType =
-  | "asterisk"
-  | "circle"
-  | "cross"
-  | "diamond"
-  | "diamond2"
-  | "hexagon"
-  | "plus"
-  | "square"
-  | "square2"
-  | "star"
-  | "times"
-  | "triangle"
-  | "triangle2"
-  | "wye";
+  | 'asterisk'
+  | 'circle'
+  | 'cross'
+  | 'diamond'
+  | 'diamond2'
+  | 'hexagon'
+  | 'plus'
+  | 'square'
+  | 'square2'
+  | 'star'
+  | 'times'
+  | 'triangle'
+  | 'triangle2'
+  | 'wye';
 
 /**
  * How to anchor a mark relative to the plot’s frame; one of:
@@ -432,15 +431,15 @@ export type SymbolType =
  * - in one of the corners: *top-left*, *top-right*, *bottom-right*, *bottom-left*
  */
 export type FrameAnchor =
-  | "middle"
-  | "top-left"
-  | "top"
-  | "top-right"
-  | "right"
-  | "bottom-right"
-  | "bottom"
-  | "bottom-left"
-  | "left";
+  | 'middle'
+  | 'top-left'
+  | 'top'
+  | 'top-right'
+  | 'right'
+  | 'bottom-right'
+  | 'bottom'
+  | 'bottom-left'
+  | 'left';
 
 // from https://github.com/observablehq/plot/blob/main/src/reducer.d.ts
 type Digit = 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9;
@@ -448,9 +447,9 @@ type Digit = 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9;
 // For internal use.
 export type ReducerPercentile =
   | (`p${Digit}${Digit}` & Record<never, never>) // see https://github.com/microsoft/TypeScript/issues/29729
-  | "p25"
-  | "p50"
-  | "p75";
+  | 'p25'
+  | 'p50'
+  | 'p75';
 
 /**
  * How to reduce aggregated (binned or grouped) values; one of:
@@ -477,21 +476,44 @@ export type ReducerPercentile =
  * [1]: https://en.wikipedia.org/wiki/Algorithms_for_calculating_variance#Welford's_online_algorithm
  */
 export type Reducer =
-  | "first"
-  | "last"
-  | "identity"
-  | "count"
-  | "distinct"
-  | "sum"
-  | "proportion"
-  | "proportion-facet"
-  | "deviation"
-  | "min"
-  | "min-index"
-  | "max"
-  | "max-index"
-  | "mean"
-  | "median"
-  | "variance"
-  | "mode"
+  | 'first'
+  | 'last'
+  | 'identity'
+  | 'count'
+  | 'distinct'
+  | 'sum'
+  | 'proportion'
+  | 'proportion-facet'
+  | 'deviation'
+  | 'min'
+  | 'min-index'
+  | 'max'
+  | 'max-index'
+  | 'mean'
+  | 'median'
+  | 'variance'
+  | 'mode'
   | ReducerPercentile;
+
+/** The built-in curve implementations. */
+export type CurveName =
+  | 'basis'
+  | 'basis-closed'
+  | 'basis-open'
+  | 'bundle'
+  | 'bump-x'
+  | 'bump-y'
+  | 'cardinal'
+  | 'cardinal-closed'
+  | 'cardinal-open'
+  | 'catmull-rom'
+  | 'catmull-rom-closed'
+  | 'catmull-rom-open'
+  | 'linear'
+  | 'linear-closed'
+  | 'monotone-x'
+  | 'monotone-y'
+  | 'natural'
+  | 'step'
+  | 'step-after'
+  | 'step-before';
