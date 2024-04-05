@@ -12,26 +12,24 @@ import { Circle, Dot, DotX, DotY, Hexagon } from './marks/Dot.js';
 import { Frame } from './marks/Frame.js';
 import { Geo, Graticule, Sphere } from './marks/Geo.js';
 import { Hexgrid } from './marks/Hexgrid.js';
+import { Image } from './marks/Image.js';
 import { Line, LineX, LineY } from './marks/Line.js';
 import { Link } from './marks/Link.js';
+import { Heatmap, Raster, RasterTile } from './marks/Raster.js';
 import { Rect, RectX, RectY } from './marks/Rect.js';
+import { RegressionY } from './marks/Regression.js';
 import { RuleX, RuleY } from './marks/Rule.js';
 import { Text,TextX, TextY } from './marks/Text.js';
 import { TickX, TickY } from './marks/Tick.js';
 import { Spike, Vector, VectorX, VectorY } from './marks/Vector.js';
 
 export type MarkType =
-  | 'image'
   | 'densityX'
   | 'densityY'
   | 'density'
   | 'denseLine'
   | 'contour'
-  | 'heatmap'
-  | 'raster'
-  | 'rasterTile'
-  | 'hexbin'
-  | 'regressionY';
+  | 'hexbin';
 
 export type MarkOption =
   | ParamRef
@@ -53,9 +51,12 @@ export type PlotMark =
   | Frame
   | Geo | Graticule | Sphere
   | Hexgrid
+  | Image
   | Line | LineX | LineY
   | Link
+  | Raster | Heatmap | RasterTile
   | Rect | RectX | RectY
+  | RegressionY
   | RuleX | RuleY
   | Text | TextX | TextY
   | TickX | TickY
