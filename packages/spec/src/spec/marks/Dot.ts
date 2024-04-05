@@ -93,6 +93,7 @@ export interface DotYOptions extends Omit<DotOptions, "x"> {
   interval?: Interval | ParamRef;
 }
 
+/** The dot mark. */
 export interface Dot extends DotOptions {
   /**
    * A dot mark that draws circles, or other symbols, as in a scatterplot.
@@ -109,6 +110,7 @@ export interface Dot extends DotOptions {
   mark: 'dot';
 }
 
+/** The dotX mark. */
 export interface DotX extends DotXOptions {
   /**
    * Like dot, except that **x** defaults to the identity function, assuming that
@@ -120,6 +122,7 @@ export interface DotX extends DotXOptions {
   mark: 'dotX';
 }
 
+/** The dotY mark. */
 export interface DotY extends DotYOptions {
   /**
    * Like dot, except that **y** defaults to the identity function, assuming that
@@ -131,11 +134,13 @@ export interface DotY extends DotYOptions {
   mark: 'dotY';
 }
 
+/** The circle mark. */
 export interface Circle extends Exclude<DotOptions, 'symbol'> {
   /** Like dot, except that the **symbol** option is set to *circle*. */
   mark: 'circle';
 }
 
+/** The hexagon mark. */
 export interface Hexagon extends Exclude<DotOptions, 'symbol'> {
   /** Like dot, except that the **symbol** option is set to *hexagon*. */
   mark: 'hexagon';

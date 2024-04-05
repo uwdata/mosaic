@@ -138,6 +138,7 @@ export interface RectYOptions extends RectOptions {
   y?: ChannelValueSpec; // disallow y interval
 }
 
+/** The rect mark. */
 export interface Rect extends RectOptions {
   /**
    * A rect mark. The rectangle extends horizontally from **x1** to **x2**,
@@ -159,6 +160,7 @@ export interface Rect extends RectOptions {
   mark: 'rect';
 }
 
+/** The rectX mark. */
 export interface RectX extends RectXOptions {
   /**
    * Like rect, but if neither **x1** nor **x2** is specified, an implicit
@@ -169,6 +171,7 @@ export interface RectX extends RectXOptions {
   mark: 'rectX';
 }
 
+/** The rectY mark. */
 export interface RectY extends RectYOptions {
   /**
    * Like rect, but if neither **y1** nor **y2** is specified, apply an

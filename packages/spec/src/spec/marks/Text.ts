@@ -81,6 +81,7 @@ export interface TextYOptions extends Omit<TextOptions, 'x'> {
   interval?: Interval;
 }
 
+/** The text mark. */
 export interface Text extends TextOptions {
   /**
    * A text mark. The **text** channel specifies the textual contents of the
@@ -100,6 +101,7 @@ export interface Text extends TextOptions {
   mark: 'text';
 }
 
+/** The textX mark. */
 export interface TextX extends TextXOptions {
   /**
    * Like text, but **x** defaults to the identity function, assuming that
@@ -109,6 +111,7 @@ export interface TextX extends TextXOptions {
   mark: 'textX';
 }
 
+/** The textY mark. */
 export interface TextY extends TextYOptions {
   /**
    * Like text, but **y** defaults to the identity function, assuming that

@@ -42,6 +42,7 @@ export interface LineYOptions extends LineOptions {
   x?: ChannelValueSpec;
 }
 
+/** The line mark. */
 export interface Line extends LineOptions {
   /**
    * A line mark that connects control points.
@@ -71,6 +72,7 @@ export interface Line extends LineOptions {
   mark: 'line';
 }
 
+/** The linex mark. */
 export interface LineX extends LineXOptions {
   /**
    * Like line, except that **x** defaults to the identity function assuming
@@ -80,6 +82,7 @@ export interface LineX extends LineXOptions {
   mark: 'lineX'
 }
 
+/** The lineY mark. */
 export interface LineY extends LineYOptions {
   /**
    * Like line, except **y** defaults to the identity function and assumes

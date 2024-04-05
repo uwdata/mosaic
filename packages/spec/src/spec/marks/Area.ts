@@ -83,6 +83,7 @@ export interface AreaYOptions extends Omit<AreaOptions, 'x1' | 'x2'> {
   y?: ChannelValueSpec;
 }
 
+/** The area mark. */
 export interface Area extends AreaOptions {
   /**
    * An area mark. The area mark is rarely used directly; it is only needed
@@ -94,6 +95,7 @@ export interface Area extends AreaOptions {
   mark: 'area';
 }
 
+/** The areaX mark. */
 export interface AreaX extends AreaXOptions {
   /**
    * A vertically-oriented area mark, where the baseline and topline share
@@ -122,6 +124,7 @@ export interface AreaX extends AreaXOptions {
   mark: 'areaX';
 }
 
+/** The areaY mark. */
 export interface AreaY extends AreaYOptions {
   /**
    * A horizontally-oriented area mark, where the baseline and topline share

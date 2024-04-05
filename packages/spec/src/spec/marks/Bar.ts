@@ -3,8 +3,6 @@ import { Interval } from '../PlotTypes.js';
 import { ChannelValueIntervalSpec, ChannelValueSpec, InsetOptions, MarkData, MarkOptions, StackOptions } from './Marks.js';
 import { RectCornerOptions } from './Rect.js';
 
-// export interface AreaOptions extends MarkData, MarkOptions, StackOptions, CurveOptions {
-
 /** Options for the barX and barY marks. */
 interface BarOptions extends MarkData, MarkOptions, InsetOptions, RectCornerOptions, StackOptions {
   /**
@@ -111,6 +109,7 @@ export interface BarYOptions extends BarOptions {
   x?: ChannelValueSpec;
 }
 
+/** The barX mark. */
 export interface BarX extends BarXOptions {
   /**
    * A horizontal bar mark. The required *x* values should be quantitative or
@@ -135,6 +134,7 @@ export interface BarX extends BarXOptions {
   mark: 'barX';
 }
 
+/** The barY mark. */
 export interface BarY extends BarYOptions {
   /**
    * A vertical bar mark. The required *y* values should be quantitative or

@@ -12,6 +12,7 @@ export interface FrameOptions extends MarkOptions, InsetOptions, RectCornerOptio
   anchor?: 'top' | 'right' | 'bottom' | 'left' | null | ParamRef;
 }
 
+/** The frame mark. */
 export interface Frame extends FrameOptions {
   /**
    * Draws a rectangle around the plot’s frame, or if an **anchor** is given,

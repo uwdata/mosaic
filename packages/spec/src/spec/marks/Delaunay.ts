@@ -13,6 +13,7 @@ export interface DelaunayOptions extends MarkData, MarkOptions, MarkerOptions, C
   z?: ChannelValue;
 }
 
+/** The delaunayLink mark. */
 export interface DelaunayLink extends DelaunayOptions {
   /**
    *A mark that draws links for each edge of the Delaunay triangulation
@@ -28,6 +29,7 @@ export interface DelaunayLink extends DelaunayOptions {
   mark: 'delaunayLink';
 }
 
+/** The delaunayMesh mark. */
 export interface DelaunayMesh extends DelaunayOptions {
   /**
    * A mark that draws a mesh of the Delaunay triangulation of the points
@@ -43,6 +45,7 @@ export interface DelaunayMesh extends DelaunayOptions {
   mark: 'delaunayMesh';
 }
 
+/** The hull mark. */
 export interface Hull extends DelaunayOptions {
   /**
    * A mark that draws a convex hull around the points given by the **x** and
@@ -59,6 +62,7 @@ export interface Hull extends DelaunayOptions {
   mark: 'hull';
 }
 
+/** The voronoi mark. */
 export interface Voronoi extends DelaunayOptions {
   /**
    * A mark that draws polygons for each cell of the Voronoi tesselation
@@ -70,6 +74,7 @@ export interface Voronoi extends DelaunayOptions {
   mark: 'voronoi';
 }
 
+/** The voronoiMesh mark. */
 export interface VoronoiMesh extends DelaunayOptions {
   /**
    * A mark that draws a mesh for the cell boundaries of the Voronoi

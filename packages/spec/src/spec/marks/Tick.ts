@@ -1,4 +1,6 @@
-import { ChannelValueSpec, InsetOptions, MarkData, MarkOptions, MarkerOptions } from './Marks.js';
+import {
+  ChannelValueSpec, InsetOptions, MarkData, MarkOptions, MarkerOptions
+} from './Marks.js';
 
 /** Options for the tickX mark. */
 export interface TickXOptions extends MarkData, MarkOptions, MarkerOptions, Omit<InsetOptions, 'insetLeft' | 'insetRight'> {
@@ -38,6 +40,7 @@ export interface TickYOptions extends MarkData, MarkOptions, MarkerOptions, Omit
   x?: ChannelValueSpec;
 }
 
+/** The tickX mark. */
 export interface TickX extends TickXOptions {
   /**
    * A horizontally-positioned tickX mark (a vertical line, |). The **x**
@@ -51,6 +54,7 @@ export interface TickX extends TickXOptions {
   mark: 'tickX';
 }
 
+/** The tickY mark. */
 export interface TickY extends TickYOptions {
   /**
    * A vertically-positioned tickY mark (a horizontal line, —). The **y**

@@ -24,6 +24,7 @@ export interface CellOptions extends MarkData, MarkOptions, InsetOptions, RectCo
   y?: ChannelValueSpec;
 }
 
+/** The cell mark. */
 export interface Cell extends CellOptions {
   /**
    * A rectangular cell mark. Along with **x** and/or **y**, a **fill** channel
@@ -40,6 +41,7 @@ export interface Cell extends CellOptions {
   mark: 'cell';
 }
 
+/** The cellX mark. */
 export interface CellX extends CellOptions {
   /**
    * Like cell, but **x** defaults to the zero-based index [0, 1, 2, …], and if
@@ -49,6 +51,7 @@ export interface CellX extends CellOptions {
   mark: 'cellX';
 }
 
+/** The cellY mark. */
 export interface CellY extends CellOptions {
   /**
    * Like cell, but **y** defaults to the zero-based index [0, 1, 2, …], and if

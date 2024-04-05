@@ -23,6 +23,7 @@ export interface GeoOptions extends MarkData, MarkOptions {
   r?: ChannelValueSpec | ParamRef;
 }
 
+/** The geo mark. */
 export interface Geo extends GeoOptions {
   /**
    * A geo mark. The **geometry** channel, which defaults to the identity
@@ -38,6 +39,7 @@ export interface Geo extends GeoOptions {
   mark: 'geo';
 }
 
+/** The sphere mark. */
 export interface Sphere extends MarkOptions {
   /**
    * A geo mark whose *data* is the outline of the sphere on the
@@ -46,6 +48,7 @@ export interface Sphere extends MarkOptions {
   mark: 'sphere';
 }
 
+/** The graticule mark. */
 export interface Graticule extends MarkOptions {
   /**
    * A geo mark whose *data* is a 10° global graticule. (For use with a

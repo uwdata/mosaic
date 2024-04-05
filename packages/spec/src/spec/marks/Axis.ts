@@ -5,6 +5,7 @@ import { RuleXOptions, RuleYOptions } from './Rule.js';
 import { TextOptions } from './Text.js';
 import { TickXOptions, TickYOptions } from './Tick.js';
 
+/** The scale options used by axis and grid marks. */
 interface ScaleOptions {
   /**
    * Enforces uniformity for data at regular intervals, such as integer values
@@ -157,6 +158,7 @@ export interface GridXOptions extends GridOptions, Omit<RuleXOptions, 'data' | '
 /** Options for the gridY and gridFy marks. */
 export interface GridYOptions extends GridOptions, Omit<RuleYOptions, 'data' | 'interval'> {}
 
+/** The axisX mark. */
 export interface AxisX extends AxisXOptions {
   /**
    * An axis mark to document the visual encoding of the horizontal position
@@ -182,6 +184,7 @@ export interface AxisX extends AxisXOptions {
   mark: 'axisX';
 }
 
+/** The axisFx mark. */
 export interface AxisFx extends AxisXOptions {
   /**
    * An axis mark to document the visual encoding of the horizontal facet
@@ -207,6 +210,7 @@ export interface AxisFx extends AxisXOptions {
   mark: 'axisFx';
 }
 
+/** The axisY mark. */
 export interface AxisY extends AxisYOptions {
   /**
    * An axis mark to document the visual encoding of the vertical position *y*
@@ -232,6 +236,7 @@ export interface AxisY extends AxisYOptions {
   mark: 'axisY';
 }
 
+/** The axisFy mark. */
 export interface AxisFy extends AxisYOptions {
   /**
    * An axis mark to document the visual encoding of the vertical facet
@@ -257,6 +262,7 @@ export interface AxisFy extends AxisYOptions {
   mark: 'axisFy';
 }
 
+/** The gridX mark. */
 export interface GridX extends GridXOptions {
   /**
    * A horizontally-positioned ruleX mark (a vertical line, |) that renders a
@@ -267,6 +273,7 @@ export interface GridX extends GridXOptions {
   mark: 'gridX';
 }
 
+/** The gridFx mark. */
 export interface GridFx extends GridXOptions {
   /**
    * A horizontally-positioned ruleX mark (a vertical line, |) that renders a
@@ -276,6 +283,7 @@ export interface GridFx extends GridXOptions {
   mark: 'gridFx';
 }
 
+/** The gridY mark. */
 export interface GridY extends GridYOptions {
   /**
    * A vertically-positioned ruleY mark (a horizontal line, —) that renders a
@@ -286,6 +294,7 @@ export interface GridY extends GridYOptions {
   mark: 'gridY';
 }
 
+/** The gridFy mark. */
 export interface GridFy extends GridYOptions {
   /**
    * A vertically-positioned ruleY mark (a horizontal line, —) that renders a

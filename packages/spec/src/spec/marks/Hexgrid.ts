@@ -10,6 +10,7 @@ export interface HexgridOptions extends MarkOptions {
   binWidth?: number | ParamRef;
 }
 
+/** The hexgrid mark. */
 export interface Hexgrid extends HexgridOptions {
   /**
    * The hexgrid decoration mark complements the hexbin mark, showing the

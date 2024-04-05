@@ -1,6 +1,9 @@
 import { ParamRef } from '../Param.js';
 import { Interval } from '../PlotTypes.js';
-import { ChannelValueIntervalSpec, ChannelValueSpec, InsetOptions, MarkDataOptional, MarkOptions, MarkerOptions } from './Marks.js';
+import {
+  ChannelValueIntervalSpec, ChannelValueSpec, InsetOptions,
+  MarkDataOptional, MarkOptions, MarkerOptions
+} from './Marks.js';
 
 /** Options for the ruleX and ruleY marks. */
 interface RuleOptions extends MarkDataOptional, MarkOptions, MarkerOptions {
@@ -81,6 +84,7 @@ export interface RuleYOptions extends RuleOptions, Omit<InsetOptions, "insetTop"
   y?: ChannelValueSpec;
 }
 
+/** The ruleX mark. */
 export interface RuleX extends RuleXOptions {
   /**
    * A horizontally-positioned ruleX mark (a vertical line, |). The **x**
@@ -94,6 +98,7 @@ export interface RuleX extends RuleXOptions {
   mark: 'ruleX';
 }
 
+/** The ruleY mark. */
 export interface RuleY extends RuleXOptions {
   /**
    * A vertically-positioned ruleY mark (a horizontal line, —). The **y**

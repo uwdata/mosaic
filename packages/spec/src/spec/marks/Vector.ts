@@ -72,6 +72,7 @@ export interface VectorOptions extends MarkData, MarkOptions {
   frameAnchor?: FrameAnchor | ParamRef;
 }
 
+/** The vector mark. */
 export interface Vector extends VectorOptions {
   /**
    * A vector mark.
@@ -83,6 +84,7 @@ export interface Vector extends VectorOptions {
   mark: 'vector';
 }
 
+/** The vectorX mark. */
 export interface VectorX extends VectorOptions {
   /**
    * Like vector, but **x** instead defaults to the identity function and **y**
@@ -92,6 +94,7 @@ export interface VectorX extends VectorOptions {
   mark: 'vectorX';
 }
 
+/** The vectorY mark. */
 export interface VectorY extends VectorOptions {
   /**
    * Like vector, but **y** instead defaults to the identity function and **x**
@@ -101,6 +104,7 @@ export interface VectorY extends VectorOptions {
   mark: 'vectorY';
 }
 
+/** The spike mark. */
 export interface Spike extends VectorOptions {
   /**
    * Like vector, but with default *options* suitable for drawing a spike map.
