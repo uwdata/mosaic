@@ -8,6 +8,7 @@ import { BarX, BarY } from './marks/Bar.js';
 import { Cell, CellX, CellY } from './marks/Cell.js';
 import { Circle, Dot, DotX, DotY, Hexagon } from './marks/Dot.js';
 import { Frame } from './marks/Frame.js';
+import { Geo, Graticule, Sphere } from './marks/Geo.js';
 import { Hexgrid } from './marks/Hexgrid.js';
 import { Line, LineX, LineY } from './marks/Line.js';
 import { Rect, RectX, RectY } from './marks/Rect.js';
@@ -34,10 +35,7 @@ export type MarkType =
   | 'delaunayMesh'
   | 'hull'
   | 'arrow'
-  | 'link'
-  | 'geo'
-  | 'sphere'
-  | 'graticule';
+  | 'link';
 
 export type MarkOption =
   | ParamRef
@@ -55,6 +53,7 @@ export type PlotMark =
   | Cell | CellX | CellY
   | Dot | DotX | DotY | Circle | Hexagon
   | Frame
+  | Geo | Graticule | Sphere
   | Hexgrid
   | Line | LineX | LineY
   | Rect | RectX | RectY
