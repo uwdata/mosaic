@@ -53,10 +53,7 @@ export const spec : Spec = {
         15
       ],
       "strokeOpacity": 0.5,
-      "strokeDasharray": [
-        5,
-        5
-      ]
+      "strokeDasharray": "5 5"
     }
   ],
   "xTickFormat": "%b",

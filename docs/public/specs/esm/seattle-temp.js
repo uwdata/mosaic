@@ -29,7 +29,7 @@ export default vg.plot(
   ),
   vg.ruleY(
     [15],
-    {strokeOpacity: 0.5, strokeDasharray: [5, 5]}
+    {strokeOpacity: 0.5, strokeDasharray: "5 5"}
   ),
   vg.xTickFormat("%b"),
   vg.yLabel("Temperature Range (°C)"),

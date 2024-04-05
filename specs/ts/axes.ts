@@ -8,10 +8,7 @@ export const spec : Spec = {
   "plot": [
     {
       "mark": "gridY",
-      "strokeDasharray": [
-        0.75,
-        2
-      ],
+      "strokeDasharray": "0.75 2",
       "strokeOpacity": 1
     },
     {

@@ -3,36 +3,18 @@ import { ParamRef } from './Param.js';
 import { PlotMarkData } from './PlotFrom.js';
 import { Transform } from './Transform.js';
 import { Area, AreaX, AreaY } from './marks/Area.js';
+import { AxisFx, AxisFy, AxisX, AxisY, GridFx, GridFy, GridX, GridY } from './marks/Axis.js';
+import { BarX, BarY } from './marks/Bar.js';
+import { Cell, CellX, CellY } from './marks/Cell.js';
 import { Circle, Dot, DotX, DotY, Hexagon } from './marks/Dot.js';
+import { Frame } from './marks/Frame.js';
 import { Line, LineX, LineY } from './marks/Line.js';
+import { Rect, RectX, RectY } from './marks/Rect.js';
+import { RuleX, RuleY } from './marks/Rule.js';
+import { Text,TextX, TextY } from './marks/Text.js';
+import { TickX, TickY } from './marks/Tick.js';
 
 export type MarkType =
-  // | 'area'
-  // | 'areaX'
-  // | 'areaY'
-  // | 'line'
-  // | 'lineX'
-  // | 'lineY'
-  | 'barX'
-  | 'barY'
-  | 'cell'
-  | 'cellX'
-  | 'cellY'
-  | 'rect'
-  | 'rectX'
-  | 'rectY'
-  // | 'dot'
-  // | 'dotX'
-  // | 'dotY'
-  // | 'circle'
-  // | 'hexagon'
-  | 'text'
-  | 'textX'
-  | 'textY'
-  | 'ruleX'
-  | 'ruleY'
-  | 'tickX'
-  | 'tickY'
   | 'vector'
   | 'vectorX'
   | 'vectorY'
@@ -56,15 +38,6 @@ export type MarkType =
   | 'hull'
   | 'arrow'
   | 'link'
-  | 'frame'
-  | 'axisX'
-  | 'axisY'
-  | 'axisFx'
-  | 'axisFy'
-  | 'gridX'
-  | 'gridY'
-  | 'gridFx'
-  | 'gridFy'
   | 'geo'
   | 'sphere'
   | 'graticule';
@@ -80,8 +53,16 @@ export type MarkOption =
 
 export type PlotMark =
   | Area | AreaX | AreaY
+  | AxisX | AxisY | AxisFx | AxisFy | GridX | GridY | GridFx | GridFy
+  | BarX | BarY
+  | Cell | CellX | CellY
   | Dot | DotX | DotY | Circle | Hexagon
+  | Frame
   | Line | LineX | LineY
+  | Rect | RectX | RectY
+  | RuleX | RuleY
+  | Text | TextX | TextY
+  | TickX | TickY
   | GenericPlotMark;
 
 /**
