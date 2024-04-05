@@ -8,17 +8,15 @@ import { BarX, BarY } from './marks/Bar.js';
 import { Cell, CellX, CellY } from './marks/Cell.js';
 import { Circle, Dot, DotX, DotY, Hexagon } from './marks/Dot.js';
 import { Frame } from './marks/Frame.js';
+import { Hexgrid } from './marks/Hexgrid.js';
 import { Line, LineX, LineY } from './marks/Line.js';
 import { Rect, RectX, RectY } from './marks/Rect.js';
 import { RuleX, RuleY } from './marks/Rule.js';
 import { Text,TextX, TextY } from './marks/Text.js';
 import { TickX, TickY } from './marks/Tick.js';
+import { Spike, Vector, VectorX, VectorY } from './marks/Vector.js';
 
 export type MarkType =
-  | 'vector'
-  | 'vectorX'
-  | 'vectorY'
-  | 'spike'
   | 'image'
   | 'densityX'
   | 'densityY'
@@ -29,7 +27,6 @@ export type MarkType =
   | 'raster'
   | 'rasterTile'
   | 'hexbin'
-  | 'hexgrid'
   | 'regressionY'
   | 'voronoi'
   | 'voronoiMesh'
@@ -58,11 +55,13 @@ export type PlotMark =
   | Cell | CellX | CellY
   | Dot | DotX | DotY | Circle | Hexagon
   | Frame
+  | Hexgrid
   | Line | LineX | LineY
   | Rect | RectX | RectY
   | RuleX | RuleY
   | Text | TextX | TextY
   | TickX | TickY
+  | Vector | VectorX | VectorY | Spike
   | GenericPlotMark;
 
 /**
