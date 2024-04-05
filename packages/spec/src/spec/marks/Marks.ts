@@ -82,7 +82,7 @@ export type ChannelValueSpec =
  */
 export type ChannelValueIntervalSpec =
   | ChannelValueSpec
-  | { value: ChannelValue; interval?: Interval };
+  | { value: ChannelValue; interval: Interval };
 
 /** A channel name, or an implied one for domain sorting. */
 type ChannelDomainName = ChannelName | 'data' | 'width' | 'height';

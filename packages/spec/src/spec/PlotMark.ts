@@ -3,6 +3,7 @@ import { ParamRef } from './Param.js';
 import { PlotMarkData } from './PlotFrom.js';
 import { Transform } from './Transform.js';
 import { Area, AreaX, AreaY } from './marks/Area.js';
+import { Arrow } from './marks/Arrow.js';
 import { AxisFx, AxisFy, AxisX, AxisY, GridFx, GridFy, GridX, GridY } from './marks/Axis.js';
 import { BarX, BarY } from './marks/Bar.js';
 import { Cell, CellX, CellY } from './marks/Cell.js';
@@ -12,6 +13,7 @@ import { Frame } from './marks/Frame.js';
 import { Geo, Graticule, Sphere } from './marks/Geo.js';
 import { Hexgrid } from './marks/Hexgrid.js';
 import { Line, LineX, LineY } from './marks/Line.js';
+import { Link } from './marks/Link.js';
 import { Rect, RectX, RectY } from './marks/Rect.js';
 import { RuleX, RuleY } from './marks/Rule.js';
 import { Text,TextX, TextY } from './marks/Text.js';
@@ -29,9 +31,7 @@ export type MarkType =
   | 'raster'
   | 'rasterTile'
   | 'hexbin'
-  | 'regressionY'
-  | 'arrow'
-  | 'link';
+  | 'regressionY';
 
 export type MarkOption =
   | ParamRef
@@ -44,6 +44,7 @@ export type MarkOption =
 
 export type PlotMark =
   | Area | AreaX | AreaY
+  | Arrow
   | AxisX | AxisY | AxisFx | AxisFy | GridX | GridY | GridFx | GridFy
   | BarX | BarY
   | Cell | CellX | CellY
@@ -53,6 +54,7 @@ export type PlotMark =
   | Geo | Graticule | Sphere
   | Hexgrid
   | Line | LineX | LineY
+  | Link
   | Rect | RectX | RectY
   | RuleX | RuleY
   | Text | TextX | TextY
