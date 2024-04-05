@@ -6,6 +6,7 @@ import { Area, AreaX, AreaY } from './marks/Area.js';
 import { AxisFx, AxisFy, AxisX, AxisY, GridFx, GridFy, GridX, GridY } from './marks/Axis.js';
 import { BarX, BarY } from './marks/Bar.js';
 import { Cell, CellX, CellY } from './marks/Cell.js';
+import { DelaunayLink, DelaunayMesh, Hull, Voronoi, VoronoiMesh } from './marks/Delaunay.js';
 import { Circle, Dot, DotX, DotY, Hexagon } from './marks/Dot.js';
 import { Frame } from './marks/Frame.js';
 import { Geo, Graticule, Sphere } from './marks/Geo.js';
@@ -29,11 +30,6 @@ export type MarkType =
   | 'rasterTile'
   | 'hexbin'
   | 'regressionY'
-  | 'voronoi'
-  | 'voronoiMesh'
-  | 'delaunayLink'
-  | 'delaunayMesh'
-  | 'hull'
   | 'arrow'
   | 'link';
 
@@ -51,6 +47,7 @@ export type PlotMark =
   | AxisX | AxisY | AxisFx | AxisFy | GridX | GridY | GridFx | GridFy
   | BarX | BarY
   | Cell | CellX | CellY
+  | DelaunayLink | DelaunayMesh | Hull | Voronoi | VoronoiMesh
   | Dot | DotX | DotY | Circle | Hexagon
   | Frame
   | Geo | Graticule | Sphere

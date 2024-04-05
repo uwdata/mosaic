@@ -28,7 +28,6 @@ export const spec : Spec = {
           "stroke": "white",
           "strokeWidth": 1,
           "strokeOpacity": 0.5,
-          "inset": 1,
           "fill": "species",
           "fillOpacity": 0.2
         },
