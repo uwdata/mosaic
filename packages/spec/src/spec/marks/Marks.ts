@@ -196,7 +196,6 @@ export type SortOrder =
   | { value?: ChannelValue; order?: 'ascending' | 'descending' }
   | { channel?: ChannelName | `-${ChannelName}`; order?: 'ascending' | 'descending' };
 
-
 /** The pointer mode for the tip; corresponds to pointerX, pointerY, and pointer. */
 export type TipPointer = 'x' | 'y' | 'xy';
 

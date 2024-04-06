@@ -4,6 +4,7 @@ import {
   Fixed, Interpolate, Interval, PositionScaleType, ProjectionName
 } from './PlotTypes.js';
 
+/** Plot attributes. */
 export interface PlotAttributes {
   /**
    * A unique name for the plot. The name is used by standalone legend

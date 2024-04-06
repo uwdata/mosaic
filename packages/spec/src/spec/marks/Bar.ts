@@ -4,7 +4,7 @@ import { ChannelValueIntervalSpec, ChannelValueSpec, InsetOptions, MarkData, Mar
 import { RectCornerOptions } from './Rect.js';
 
 /** Options for the barX and barY marks. */
-interface BarOptions extends MarkData, MarkOptions, InsetOptions, RectCornerOptions, StackOptions {
+interface BarOptions extends MarkOptions, InsetOptions, RectCornerOptions, StackOptions {
   /**
    * How to convert a continuous value (**x** for barX, or **y** for barY) into
    * an interval (**x1** and **x2** for barX, or **y1** and **y2** for barY);
@@ -110,7 +110,7 @@ export interface BarYOptions extends BarOptions {
 }
 
 /** The barX mark. */
-export interface BarX extends BarXOptions {
+export interface BarX extends MarkData, BarXOptions {
   /**
    * A horizontal bar mark. The required *x* values should be quantitative or
    * temporal, and the optional *y* values should be ordinal.
@@ -135,7 +135,7 @@ export interface BarX extends BarXOptions {
 }
 
 /** The barY mark. */
-export interface BarY extends BarYOptions {
+export interface BarY extends MarkData, BarYOptions {
   /**
    * A vertical bar mark. The required *y* values should be quantitative or
    * temporal, and the optional *x* values should be ordinal.

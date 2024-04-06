@@ -6,7 +6,7 @@ import {
 } from './Marks.js';
 
 /** Options for the text mark. */
-export interface TextOptions extends MarkDataOptional, MarkOptions, TextStyles {
+export interface TextOptions extends MarkOptions, TextStyles {
   /**
    * The horizontal position channel specifying the text’s anchor point,
    * typically bound to the *x* scale.
@@ -82,7 +82,7 @@ export interface TextYOptions extends Omit<TextOptions, 'x'> {
 }
 
 /** The text mark. */
-export interface Text extends TextOptions {
+export interface Text extends MarkDataOptional, TextOptions {
   /**
    * A text mark. The **text** channel specifies the textual contents of the
    * mark, which may be preformatted with line breaks (\n, \r\n, or \r), or
@@ -102,7 +102,7 @@ export interface Text extends TextOptions {
 }
 
 /** The textX mark. */
-export interface TextX extends TextXOptions {
+export interface TextX extends MarkDataOptional, TextXOptions {
   /**
    * Like text, but **x** defaults to the identity function, assuming that
    * *data* = [*x₀*, *x₁*, *x₂*, …]. If an **interval** is specified, such as
@@ -112,7 +112,7 @@ export interface TextX extends TextXOptions {
 }
 
 /** The textY mark. */
-export interface TextY extends TextYOptions {
+export interface TextY extends MarkDataOptional, TextYOptions {
   /**
    * Like text, but **y** defaults to the identity function, assuming that
    * *data* = [*y₀*, *y₁*, *y₂*, …]. If an **interval** is specified, such as

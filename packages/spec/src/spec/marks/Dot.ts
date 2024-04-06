@@ -6,7 +6,7 @@ import {
 } from './Marks.js';
 
 /** Options for the dot mark. */
-export interface DotOptions extends MarkData, MarkOptions {
+export interface DotOptions extends MarkOptions {
   /**
    * The horizontal position channel specifying the dot’s center, typically
    * bound to the *x* scale.
@@ -94,7 +94,7 @@ export interface DotYOptions extends Omit<DotOptions, "x"> {
 }
 
 /** The dot mark. */
-export interface Dot extends DotOptions {
+export interface Dot extends MarkData, DotOptions {
   /**
    * A dot mark that draws circles, or other symbols, as in a scatterplot.
    *
@@ -111,7 +111,7 @@ export interface Dot extends DotOptions {
 }
 
 /** The dotX mark. */
-export interface DotX extends DotXOptions {
+export interface DotX extends MarkData, DotXOptions {
   /**
    * Like dot, except that **x** defaults to the identity function, assuming that
    * *data* = [*x₀*, *x₁*, *x₂*, …].
@@ -123,7 +123,7 @@ export interface DotX extends DotXOptions {
 }
 
 /** The dotY mark. */
-export interface DotY extends DotYOptions {
+export interface DotY extends MarkData, DotYOptions {
   /**
    * Like dot, except that **y** defaults to the identity function, assuming that
    * *data* = [*y₀*, *y₁*, *y₂*, …].
@@ -135,13 +135,13 @@ export interface DotY extends DotYOptions {
 }
 
 /** The circle mark. */
-export interface Circle extends Exclude<DotOptions, 'symbol'> {
+export interface Circle extends MarkData, Exclude<DotOptions, 'symbol'> {
   /** Like dot, except that the **symbol** option is set to *circle*. */
   mark: 'circle';
 }
 
 /** The hexagon mark. */
-export interface Hexagon extends Exclude<DotOptions, 'symbol'> {
+export interface Hexagon extends MarkData, Exclude<DotOptions, 'symbol'> {
   /** Like dot, except that the **symbol** option is set to *hexagon*. */
   mark: 'hexagon';
 }

@@ -1,3 +1,4 @@
+/** A vspace component. */
 export interface VSpace {
   /**
    * Vertical space to place between components.

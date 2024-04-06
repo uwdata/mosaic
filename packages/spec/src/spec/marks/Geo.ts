@@ -2,7 +2,7 @@ import { ParamRef } from '../Param.js';
 import { ChannelValue, ChannelValueSpec, MarkData, MarkOptions } from './Marks.js';
 
 /** Options for the geo mark. */
-export interface GeoOptions extends MarkData, MarkOptions {
+export interface GeoOptions extends MarkOptions {
   /**
    * A required channel for the geometry to render; defaults to identity,
    * assuming *data* is a GeoJSON object or an iterable of GeoJSON objects.
@@ -24,7 +24,7 @@ export interface GeoOptions extends MarkData, MarkOptions {
 }
 
 /** The geo mark. */
-export interface Geo extends GeoOptions {
+export interface Geo extends MarkData, GeoOptions {
   /**
    * A geo mark. The **geometry** channel, which defaults to the identity
    * function assuming that *data* is a GeoJSON object or an iterable of

@@ -4,19 +4,22 @@ import {
 } from './Marks.js';
 
 /** Options for the Delaunay marks. */
-export interface DelaunayOptions extends MarkData, MarkOptions, MarkerOptions, CurveOptions {
+export interface DelaunayOptions extends MarkOptions, MarkerOptions, CurveOptions {
   /** The horizontal position channel, typically bound to the *x* scale. */
   x?: ChannelValueSpec;
   /** The vertical position channel, typically bound to the *y* scale. */
   y?: ChannelValueSpec;
-  /** An optional ordinal channel for grouping to produce multiple (possibly overlapping) triangulations. */
+  /**
+   * An optional ordinal channel for grouping to produce multiple
+   * (possibly overlapping) triangulations.
+   */
   z?: ChannelValue;
 }
 
 /** The delaunayLink mark. */
-export interface DelaunayLink extends DelaunayOptions {
+export interface DelaunayLink extends MarkData, DelaunayOptions {
   /**
-   *A mark that draws links for each edge of the Delaunay triangulation
+   * A mark that draws links for each edge of the Delaunay triangulation
    * of points given by the **x** and **y** channels. Like the link mark,
    * except that **x1**, **y1**, **x2**, and **y2** are derived automatically
    * from **x** and **y**. When an aesthetic channel is specified (such as
@@ -30,7 +33,7 @@ export interface DelaunayLink extends DelaunayOptions {
 }
 
 /** The delaunayMesh mark. */
-export interface DelaunayMesh extends DelaunayOptions {
+export interface DelaunayMesh extends MarkData, DelaunayOptions {
   /**
    * A mark that draws a mesh of the Delaunay triangulation of the points
    * given by the **x** and **y** channels. The **stroke** option defaults to
@@ -46,7 +49,7 @@ export interface DelaunayMesh extends DelaunayOptions {
 }
 
 /** The hull mark. */
-export interface Hull extends DelaunayOptions {
+export interface Hull extends MarkData, DelaunayOptions {
   /**
    * A mark that draws a convex hull around the points given by the **x** and
    * **y** channels. The **stroke** option defaults to _currentColor_ and the
@@ -63,7 +66,7 @@ export interface Hull extends DelaunayOptions {
 }
 
 /** The voronoi mark. */
-export interface Voronoi extends DelaunayOptions {
+export interface Voronoi extends MarkData, DelaunayOptions {
   /**
    * A mark that draws polygons for each cell of the Voronoi tesselation
    * of the points given by the **x** and **y** channels.
@@ -75,7 +78,7 @@ export interface Voronoi extends DelaunayOptions {
 }
 
 /** The voronoiMesh mark. */
-export interface VoronoiMesh extends DelaunayOptions {
+export interface VoronoiMesh extends MarkData, DelaunayOptions {
   /**
    * A mark that draws a mesh for the cell boundaries of the Voronoi
    * tesselation of the points given by the **x** and **y** channels. The

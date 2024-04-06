@@ -2,7 +2,7 @@ import { ParamRef } from '../Param.js';
 import { ChannelValueSpec, MarkData, MarkOptions } from './Marks.js';
 
 /** Options for the arrow mark. */
-export interface ArrowOptions extends MarkData, MarkOptions {
+export interface ArrowOptions extends MarkOptions {
   /**
    * The horizontal position, for vertical arrows; typically bound to the *x*
    * scale; shorthand for setting defaults for both **x1** and **x2**.
@@ -99,7 +99,7 @@ export interface ArrowOptions extends MarkData, MarkOptions {
 }
 
 /** The arrow mark. */
-export interface Arrow extends ArrowOptions {
+export interface Arrow extends MarkData, ArrowOptions {
   /**
    * An arrow mark, drawing (possibly swoopy) arrows connecting pairs of
    * points.

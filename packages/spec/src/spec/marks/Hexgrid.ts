@@ -5,7 +5,7 @@ import { MarkOptions } from './Marks.js';
 export interface HexgridOptions extends MarkOptions {
   /**
    * The distance between centers of neighboring hexagons, in pixels; defaults
-   * to 20. Should match the **binWidth** of the hexbin transform.
+   * to 20. Should match the **binWidth** of the hexbin mark.
    */
   binWidth?: number | ParamRef;
 }

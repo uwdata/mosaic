@@ -1,27 +1,47 @@
 import { ParamRef } from './Param.js';
 
-export type TransformField =
-  | string
-  | ParamRef;
+/** A field argument to a data transform. */
+export type TransformField = string | ParamRef;
 
+/** Window transform options. */
 export interface WindowOptions {
   orderby?: TransformField | TransformField[];
   partitionby?: TransformField | TransformField[];
-  rows?: ParamRef | (number | null)[];
-  range?: ParamRef | (number | null)[];
+  rows?: (number | null)[] | ParamRef;
+  range?: (number | null)[] | ParamRef;
 }
 
+/** Aggregate transform options. */
 export interface AggregateOptions {
   distinct?: boolean;
 }
 
+/** A transform argument. */
 type Arg = string | number | boolean;
+
+/** A zero argument transform signature. */
 type Arg0 = null | [];
+
+/** A single argument transform signature. */
 type Arg1 = Arg | [Arg];
+
+/**
+ * A two argument transform signature; both arguments are required.
+ */
 type Arg2 = [Arg, Arg];
+
+/**
+ * A two argument transform signature; the second argument is optional.
+ */
 type Arg2Opt = Arg | [Arg, Arg?];
+
+/**
+ * A three argument transform signature; the
+ * second and third arguments are optional.
+ */
 type Arg3Opt = Arg | [Arg, Arg?, Arg?];
 
+/** Bin transform options. */
 export interface BinOptions {
   /**
    * The target number of binning steps to use. To accommodate human-friendly
@@ -44,6 +64,7 @@ export interface BinOptions {
   offset?: number;
 }
 
+/* A bin transform. */
 export interface Bin {
   /**
    * Bin a continuous variable into discrete intervals. This transform accepts
@@ -52,6 +73,7 @@ export interface Bin {
   bin: Arg | [Arg] | [Arg, BinOptions];
 }
 
+/* A dateMonth transform. */
 export interface DateMonth {
   /**
    * Transform a Date value to a month boundary for cyclic comparison.
@@ -60,6 +82,7 @@ export interface DateMonth {
   dateMonth: Arg1;
 }
 
+/* A dateMonthDay transform. */
 export interface DateMonthDay {
   /**
    * Transform a Date value to a month and day boundary for cyclic comparison.
@@ -68,6 +91,7 @@ export interface DateMonthDay {
   dateMonthDay: Arg1;
 }
 
+/* A dateDay transform. */
 export interface DateDay {
   /**
    * Transform a Date value to a day of the month for cyclic comparison.
@@ -76,6 +100,7 @@ export interface DateDay {
   dateDay: Arg1;
 }
 
+/* A centroid transform. */
 export interface Centroid {
   /**
    * Compute the 2D centroid of geometry-typed data.
@@ -84,6 +109,7 @@ export interface Centroid {
   centroid: Arg1;
 }
 
+/* A centroidX transform. */
 export interface CentroidX {
   /**
    * Compute the centroid x-coordinate of geometry-typed data.
@@ -92,6 +118,7 @@ export interface CentroidX {
   centroidX: Arg1;
 }
 
+/* A centroidY transform. */
 export interface CentroidY {
   /**
    * Compute the centroid y-coordinate of geometry-typed data.
@@ -100,6 +127,7 @@ export interface CentroidY {
   centroidY: Arg1;
 }
 
+/* A geojson transform. */
 export interface GeoJSON {
   /**
    * Compute a GeoJSON-formatted string from geometry-typed data.
@@ -108,6 +136,7 @@ export interface GeoJSON {
   geojson: Arg1;
 }
 
+/* An argmax aggregate transform. */
 export interface Argmax extends AggregateOptions, WindowOptions {
   /**
    * Find a value of the first column that maximizes the second column.
@@ -115,6 +144,7 @@ export interface Argmax extends AggregateOptions, WindowOptions {
   argmax: Arg2;
 }
 
+/* An argmin aggregate transform. */
 export interface Argmin extends AggregateOptions, WindowOptions {
   /**
    * Find a value of the first column that minimizes the second column.
@@ -122,6 +152,7 @@ export interface Argmin extends AggregateOptions, WindowOptions {
   argmin: Arg2;
 }
 
+/* An avg (average, or mean) aggregate transform. */
 export interface Avg extends AggregateOptions, WindowOptions {
   /**
    * Compute the average (mean) value of the given column.
@@ -129,6 +160,7 @@ export interface Avg extends AggregateOptions, WindowOptions {
   avg: Arg1;
 }
 
+/* A count aggregate transform. */
 export interface Count extends AggregateOptions, WindowOptions {
   /**
    * Compute the count of records in an aggregation group.
@@ -136,6 +168,7 @@ export interface Count extends AggregateOptions, WindowOptions {
   count: Arg0 | Arg1;
 }
 
+/* A first aggregate transform. */
 export interface First extends AggregateOptions, WindowOptions {
   /**
    * Return the first column value found in an aggregation group.
@@ -143,6 +176,7 @@ export interface First extends AggregateOptions, WindowOptions {
   first: Arg1;
 }
 
+/* A last aggregate transform. */
 export interface Last extends AggregateOptions, WindowOptions {
   /**
    * Return the last column value found in an aggregation group.
@@ -150,6 +184,7 @@ export interface Last extends AggregateOptions, WindowOptions {
   last: Arg1;
 }
 
+/* A max aggregate transform. */
 export interface Max extends AggregateOptions, WindowOptions {
   /**
    * Compute the maximum value of the given column.
@@ -157,6 +192,7 @@ export interface Max extends AggregateOptions, WindowOptions {
   max: Arg1;
 }
 
+/* A min aggregate transform. */
 export interface Min extends AggregateOptions, WindowOptions {
   /**
    * Compute the minimum value of the given column.
@@ -164,6 +200,7 @@ export interface Min extends AggregateOptions, WindowOptions {
   min: Arg1;
 }
 
+/* A median aggregate transform. */
 export interface Median extends AggregateOptions, WindowOptions {
   /**
    * Compute the median value of the given column.
@@ -171,6 +208,7 @@ export interface Median extends AggregateOptions, WindowOptions {
   median: Arg1;
 }
 
+/* A mode aggregate transform. */
 export interface Mode extends AggregateOptions, WindowOptions {
   /**
    * Compute the mode value of the given column.
@@ -178,6 +216,7 @@ export interface Mode extends AggregateOptions, WindowOptions {
   mode: Arg1;
 }
 
+/* A product aggregate transform. */
 export interface Product extends AggregateOptions, WindowOptions {
   /**
    * Compute the product of the given column.
@@ -185,6 +224,7 @@ export interface Product extends AggregateOptions, WindowOptions {
   product: Arg1;
 }
 
+/* A quantile aggregate transform. */
 export interface Quantile extends AggregateOptions, WindowOptions {
   /**
    * Compute the quantile value of the given column at the provided
@@ -193,6 +233,7 @@ export interface Quantile extends AggregateOptions, WindowOptions {
   quantile: Arg2;
 }
 
+/* A sum aggregate transform. */
 export interface Sum extends AggregateOptions, WindowOptions {
   /**
    * Compute the sum of the given column.
@@ -200,6 +241,7 @@ export interface Sum extends AggregateOptions, WindowOptions {
   sum: Arg1;
 }
 
+/* A row_number window transform. */
 export interface RowNumber extends WindowOptions {
   /**
    * Compute the 1-based row number over an ordered window partition.
@@ -207,6 +249,7 @@ export interface RowNumber extends WindowOptions {
   row_number: Arg0;
 }
 
+/* A rank window transform. */
 export interface Rank extends WindowOptions {
   /**
    * Compute the row rank over an ordered window partition.
@@ -215,6 +258,7 @@ export interface Rank extends WindowOptions {
   rank: Arg0;
 }
 
+/* A dense_rank window transform. */
 export interface DenseRank extends WindowOptions {
   /**
    * Compute the dense row rank (no gaps) over an ordered window partition.
@@ -223,6 +267,7 @@ export interface DenseRank extends WindowOptions {
   dense_rank: Arg0;
 }
 
+/* A percent_rank window transform. */
 export interface PercentRank extends WindowOptions {
   /**
    * Compute the percetange rank over an ordered window partition.
@@ -230,6 +275,7 @@ export interface PercentRank extends WindowOptions {
   percent_rank: Arg0;
 }
 
+/* A cume_dist window transform. */
 export interface CumeDist extends WindowOptions {
   /**
    * Compute the cumulative distribution value over an ordered window
@@ -239,6 +285,7 @@ export interface CumeDist extends WindowOptions {
   cume_dist: Arg0;
 }
 
+/* An ntile window transform. */
 export interface NTile extends WindowOptions {
   /**
    * Compute an n-tile integer ranging from 1 to the provided argument
@@ -247,6 +294,7 @@ export interface NTile extends WindowOptions {
   ntile: Arg1;
 }
 
+/* A lag window transform. */
 export interface Lag extends WindowOptions {
   /**
    * Compute lagging values in a column. Returns the value at the row that is
@@ -258,6 +306,7 @@ export interface Lag extends WindowOptions {
   lag: Arg3Opt;
 }
 
+/* A lead window transform. */
 export interface Lead extends WindowOptions {
   /**
    * Compute leading values in a column. Returns the value at the row that is
@@ -269,6 +318,7 @@ export interface Lead extends WindowOptions {
   lag: Arg3Opt;
 }
 
+/* A first_value window transform. */
 export interface FirstValue extends WindowOptions {
   /**
    * Get the first value of the given column in the current window frame.
@@ -276,6 +326,7 @@ export interface FirstValue extends WindowOptions {
   first_value: Arg1;
 }
 
+/* A last_value window transform. */
 export interface LastValue extends WindowOptions {
   /**
    * Get the last value of the given column in the current window frame.
@@ -283,6 +334,7 @@ export interface LastValue extends WindowOptions {
   last_value: Arg1;
 }
 
+/* An nth_value window transform. */
 export interface NthValue extends WindowOptions {
   /**
    * Get the nth value of the given column in the current window frame,
@@ -291,7 +343,8 @@ export interface NthValue extends WindowOptions {
   nth_value: Arg2Opt;
 }
 
-export type Transform =
+/** A data transform that maps one column value to another. */
+export type ColumnTransform =
   | Bin
   | DateMonth
   | DateMonthDay
@@ -299,7 +352,10 @@ export type Transform =
   | Centroid
   | CentroidX
   | CentroidY
-  | GeoJSON
+  | GeoJSON;
+
+/** An aggregate transform that combines multiple values. */
+export type AggregateTransform =
   | Argmax
   | Argmin
   | Avg
@@ -314,7 +370,10 @@ export type Transform =
   | Mode
   | Product
   | Quantile
-  | Sum
+  | Sum;
+
+/* A window transform that operates over a sorted domain. */
+export type WindowTransform =
   | RowNumber
   | Rank
   | DenseRank
@@ -327,3 +386,9 @@ export type Transform =
   | FirstValue
   | LastValue
   | NthValue;
+
+/** A data transform. */
+export type Transform =
+  | ColumnTransform
+  | AggregateTransform
+  | WindowTransform;

@@ -1,3 +1,4 @@
+/** An hspace component. */
 export interface HSpace {
   /**
    * Horizontal space to place between components.

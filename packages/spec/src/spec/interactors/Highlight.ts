@@ -1,5 +1,6 @@
 import { ParamRef } from '../Param.js';
 
+/** A highlight interactor. */
 export interface Highlight {
   /**
    * Highlight selected marks by deemphasizing the others.

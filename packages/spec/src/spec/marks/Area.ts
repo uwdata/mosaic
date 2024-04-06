@@ -4,7 +4,7 @@ import {
 } from './Marks.js';
 
 /** Options for the area, areaX, and areaY marks. */
-export interface AreaOptions extends MarkData, MarkOptions, StackOptions, CurveOptions {
+export interface AreaOptions extends MarkOptions, StackOptions, CurveOptions {
   /**
    * The required primary (starting, often left) horizontal position channel,
    * representing the area’s baseline, typically bound to the *x* scale. For
@@ -84,7 +84,7 @@ export interface AreaYOptions extends Omit<AreaOptions, 'x1' | 'x2'> {
 }
 
 /** The area mark. */
-export interface Area extends AreaOptions {
+export interface Area extends MarkData, AreaOptions {
   /**
    * An area mark. The area mark is rarely used directly; it is only needed
    * when the baseline and topline have neither *x* nor *y* values in common.
@@ -96,7 +96,7 @@ export interface Area extends AreaOptions {
 }
 
 /** The areaX mark. */
-export interface AreaX extends AreaXOptions {
+export interface AreaX extends MarkData, AreaXOptions {
   /**
    * A vertically-oriented area mark, where the baseline and topline share
    * **y** values, as in a time-series area chart where time goes up↑.
@@ -125,7 +125,7 @@ export interface AreaX extends AreaXOptions {
 }
 
 /** The areaY mark. */
-export interface AreaY extends AreaYOptions {
+export interface AreaY extends MarkData, AreaYOptions {
   /**
    * A horizontally-oriented area mark, where the baseline and topline share
    * **x** values, as in a time-series area chart where time goes right→.

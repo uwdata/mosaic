@@ -31,6 +31,20 @@ export type Data = Record<string, DataDefinition>;
 /** Top-level Param and Selection definitions. */
 export type Params = Record<string, ParamDefinition>;
 
+/** Top-level specification properties. */
+export interface SpecHead {
+  /** Specification metadata. */
+  meta?: Meta;
+  /** Configuration options. */
+  config?: Config;
+  /** Dataset definitions. */
+  data?: Data;
+  /** Param and Selection definitions. */
+  params?: Params;
+  /** A default set of attributes to apply to all plot components. */
+  plotDefaults?: PlotAttributes;
+}
+
 /** A specifcation component such as a plot, input widget, or layout. */
 export type Component =
   | HConcat
@@ -46,15 +60,4 @@ export type Component =
   | Legend;
 
 /** A declarative Mosaic specification. */
-export type Spec = {
-  /** Specification metadata. */
-  meta?: Meta;
-  /** Configuration options. */
-  config?: Config;
-  /** Dataset definitions. */
-  data?: Data;
-  /** Param and Selection definitions. */
-  params?: Params;
-  /** A default set of attributes to apply to all plot components. */
-  plotDefaults?: PlotAttributes;
-} & Component;
+export type Spec = SpecHead & Component;

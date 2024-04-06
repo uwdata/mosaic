@@ -6,7 +6,7 @@ import {
 } from './Marks.js';
 
 /** Options for the ruleX and ruleY marks. */
-interface RuleOptions extends MarkDataOptional, MarkOptions, MarkerOptions {
+interface RuleOptions extends MarkOptions, MarkerOptions {
   /**
    * How to convert a continuous value (**y** for ruleX, or **x** for ruleY)
    * into an interval (**y1** and **y2** for ruleX, or **x1** and **x2** for
@@ -85,7 +85,7 @@ export interface RuleYOptions extends RuleOptions, Omit<InsetOptions, "insetTop"
 }
 
 /** The ruleX mark. */
-export interface RuleX extends RuleXOptions {
+export interface RuleX extends MarkDataOptional, RuleXOptions {
   /**
    * A horizontally-positioned ruleX mark (a vertical line, |). The **x**
    * channel specifies the rule’s horizontal position and defaults to identity,
@@ -99,7 +99,7 @@ export interface RuleX extends RuleXOptions {
 }
 
 /** The ruleY mark. */
-export interface RuleY extends RuleXOptions {
+export interface RuleY extends MarkDataOptional, RuleXOptions {
   /**
    * A vertically-positioned ruleY mark (a horizontal line, —). The **y**
    * channel specifies the rule's vertical position and defaults to identity,

@@ -1,5 +1,6 @@
 import { ParamRef } from '../Param.js';
 
+/** Options for pan/zoom interactors. */
 export interface PanZoomOptions {
   /**
    * The output selection for the `x` domain.
@@ -27,31 +28,37 @@ export interface PanZoomOptions {
   yfield?: string;
 }
 
+/** A pan interactor. */
 export interface Pan extends PanZoomOptions {
   /** Pan a plot along both the `x` and `y` scales. */
   select: 'pan';
 }
 
+/** A panX interactor. */
 export interface PanX extends PanZoomOptions {
   /** Pan a plot along the `x` scale only. */
   select: 'panX';
 }
 
+/** A panY interactor. */
 export interface PanY extends PanZoomOptions {
   /** Pan a plot along the `y` scale only. */
   select: 'panY';
 }
 
+/** A panZoom interactor. */
 export interface PanZoom extends PanZoomOptions {
   /** Pan and zoom a plot along both the `x` and `y` scales. */
   select: 'panZoom';
 }
 
+/** A panZoomX interactor. */
 export interface PanZoomX extends PanZoomOptions {
   /** Pan and zoom a plot along the `x` scale only. */
   select: 'panZoomX';
 }
 
+/** A panZoomY interactor. */
 export interface PanZoomY extends PanZoomOptions {
   /** Pan and zoom a plot along the `y` scale only. */
   select: 'panZoomY';

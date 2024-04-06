@@ -14,7 +14,7 @@ export type VectorShapeName = 'arrow' | 'spike';
 export type VectorShape = VectorShapeName;
 
 /** Options for the vector mark. */
-export interface VectorOptions extends MarkData, MarkOptions {
+export interface VectorOptions extends MarkOptions {
   /**
    * The horizontal position of the vector’s anchor point; an optional channel
    * bound to the *x* scale. Default depends on the **frameAnchor**.
@@ -73,7 +73,7 @@ export interface VectorOptions extends MarkData, MarkOptions {
 }
 
 /** The vector mark. */
-export interface Vector extends VectorOptions {
+export interface Vector extends MarkData, VectorOptions {
   /**
    * A vector mark.
    *
@@ -85,7 +85,7 @@ export interface Vector extends VectorOptions {
 }
 
 /** The vectorX mark. */
-export interface VectorX extends VectorOptions {
+export interface VectorX extends MarkData, VectorOptions {
   /**
    * Like vector, but **x** instead defaults to the identity function and **y**
    * defaults to null, assuming that *data* is an array of numbers [*x₀*, *x₁*,
@@ -95,7 +95,7 @@ export interface VectorX extends VectorOptions {
 }
 
 /** The vectorY mark. */
-export interface VectorY extends VectorOptions {
+export interface VectorY extends MarkData, VectorOptions {
   /**
    * Like vector, but **y** instead defaults to the identity function and **x**
    * defaults to null, assuming that *data* is an array of numbers [*y₀*, *y₁*,
@@ -105,7 +105,7 @@ export interface VectorY extends VectorOptions {
 }
 
 /** The spike mark. */
-export interface Spike extends VectorOptions {
+export interface Spike extends MarkData, VectorOptions {
   /**
    * Like vector, but with default *options* suitable for drawing a spike map.
    */

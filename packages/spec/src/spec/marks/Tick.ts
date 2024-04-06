@@ -3,7 +3,7 @@ import {
 } from './Marks.js';
 
 /** Options for the tickX mark. */
-export interface TickXOptions extends MarkData, MarkOptions, MarkerOptions, Omit<InsetOptions, 'insetLeft' | 'insetRight'> {
+export interface TickXOptions extends MarkOptions, MarkerOptions, Omit<InsetOptions, 'insetLeft' | 'insetRight'> {
   /**
    * The required horizontal position of the tick; a channel typically bound to
    * the *x* scale.
@@ -22,7 +22,7 @@ export interface TickXOptions extends MarkData, MarkOptions, MarkerOptions, Omit
 }
 
 /** Options for the tickY mark. */
-export interface TickYOptions extends MarkData, MarkOptions, MarkerOptions, Omit<InsetOptions, 'insetTop' | 'insetBottom'> {
+export interface TickYOptions extends MarkOptions, MarkerOptions, Omit<InsetOptions, 'insetTop' | 'insetBottom'> {
   /**
    * The required vertical position of the tick; a channel typically bound to
    * the *y* scale.
@@ -41,7 +41,7 @@ export interface TickYOptions extends MarkData, MarkOptions, MarkerOptions, Omit
 }
 
 /** The tickX mark. */
-export interface TickX extends TickXOptions {
+export interface TickX extends MarkData, TickXOptions {
   /**
    * A horizontally-positioned tickX mark (a vertical line, |). The **x**
    * channel specifies the tick’s horizontal position and defaults to identity,
@@ -55,7 +55,7 @@ export interface TickX extends TickXOptions {
 }
 
 /** The tickY mark. */
-export interface TickY extends TickYOptions {
+export interface TickY extends MarkData, TickYOptions {
   /**
    * A vertically-positioned tickY mark (a horizontal line, —). The **y**
    * channel specifies the tick's vertical position and defaults to identity,

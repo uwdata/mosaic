@@ -1,5 +1,6 @@
 import { ParamRef } from '../Param.js';
 
+/** Options for toggle interactors. */
 export interface ToggleOptions {
   /**
    * The output selection. A clause of the form
@@ -15,6 +16,7 @@ export interface ToggleOptions {
   peers?: boolean;
 }
 
+/** A toggle interactor. */
 export interface Toggle extends ToggleOptions {
   /** Select individal values. */
   select: 'toggle';
@@ -26,6 +28,7 @@ export interface Toggle extends ToggleOptions {
   channels: string[];
 }
 
+/** A toggleX interactor. */
 export interface ToggleX extends ToggleOptions {
   /**
    * Select individal values in the `x` scale domain.
@@ -34,6 +37,7 @@ export interface ToggleX extends ToggleOptions {
   select: 'toggleX';
 }
 
+/** A toggleY interactor. */
 export interface ToggleY extends ToggleOptions {
   /**
    * Select individal values in the `y` scale domain.
@@ -42,6 +46,7 @@ export interface ToggleY extends ToggleOptions {
   select: 'toggleY';
 }
 
+/** A toggleColor interactor. */
 export interface ToggleColor extends ToggleOptions {
   /**
    * Select individal values in the `color` scale domain.

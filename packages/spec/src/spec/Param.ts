@@ -1,5 +1,6 @@
 export type ParamRef = `$${string}`;
 
+/** Base properties shared by Param definitions. */
 export interface ParamBase {
   /**
    * The type of reactive parameter. One of:
@@ -12,6 +13,7 @@ export interface ParamBase {
   select?: 'value';
 }
 
+/** A Param definition. */
 export interface Param extends ParamBase {
   /**
    * The initial parameter value.
@@ -19,6 +21,7 @@ export interface Param extends ParamBase {
   value: ParamValue;
 }
 
+/** A Date-valued Param definition. */
 export interface ParamDate extends ParamBase {
   /**
    * The initial parameter value as an ISO date/time
@@ -27,21 +30,18 @@ export interface ParamDate extends ParamBase {
   date: string;
 }
 
+/** Literal Param values. */
 export type ParamLiteral =
   | string
   | number
   | boolean;
 
+/** Valid Param values. */
 export type ParamValue =
   | ParamLiteral
   | Array<ParamLiteral | ParamRef>;
 
-export type SelectionType =
-  | 'crossfilter'
-  | 'intersect'
-  | 'single'
-  | 'union';
-
+/** A Selection definition. */
 export interface Selection {
   /**
    * The type of reactive parameter. One of:
@@ -51,7 +51,8 @@ export interface Selection {
    * - `"single"` for a `Selection` that retains a single clause only
    * - `"crossfilter"` for a cross-filtered intersection `Selection`
    */
-  select: SelectionType;
+  select: 'crossfilter' | 'intersect' | 'single' | 'union';
+
   /**
    * A flag for cross-filtering, where selections made in a plot filter others
    * but not oneself (default `false`, except for `crossfilter` selections).
@@ -59,6 +60,7 @@ export interface Selection {
   cross?: boolean;
 }
 
+/** A Param or Selection definition. */
 export type ParamDefinition =
   | ParamValue
   | Param

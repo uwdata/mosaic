@@ -2,7 +2,7 @@ import { ChannelValueSpec, InsetOptions, MarkData, MarkOptions } from './Marks.j
 import { RectCornerOptions } from './Rect.js';
 
 /** Options for the cell mark. */
-export interface CellOptions extends MarkData, MarkOptions, InsetOptions, RectCornerOptions {
+export interface CellOptions extends MarkOptions, InsetOptions, RectCornerOptions {
   /**
    * The horizontal position of the cell; an optional ordinal channel typically
    * bound to the *x* scale. If not specified, the cell spans the horizontal
@@ -25,7 +25,7 @@ export interface CellOptions extends MarkData, MarkOptions, InsetOptions, RectCo
 }
 
 /** The cell mark. */
-export interface Cell extends CellOptions {
+export interface Cell extends MarkData, CellOptions {
   /**
    * A rectangular cell mark. Along with **x** and/or **y**, a **fill** channel
    * is typically specified to encode value as color.
@@ -42,7 +42,7 @@ export interface Cell extends CellOptions {
 }
 
 /** The cellX mark. */
-export interface CellX extends CellOptions {
+export interface CellX extends MarkData, CellOptions {
   /**
    * Like cell, but **x** defaults to the zero-based index [0, 1, 2, …], and if
    * **stroke** is not a channel, **fill** defaults to the identity function,
@@ -52,7 +52,7 @@ export interface CellX extends CellOptions {
 }
 
 /** The cellY mark. */
-export interface CellY extends CellOptions {
+export interface CellY extends MarkData, CellOptions {
   /**
    * Like cell, but **y** defaults to the zero-based index [0, 1, 2, …], and if
    * **stroke** is not a channel, **fill** defaults to the identity function,

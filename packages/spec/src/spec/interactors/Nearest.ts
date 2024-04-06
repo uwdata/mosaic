@@ -1,5 +1,6 @@
 import { ParamRef } from '../Param.js';
 
+/** Options for nearest interactors. */
 export interface NearestOptions {
   /**
    * The output selection. A clause of the form `field = value`
@@ -14,12 +15,14 @@ export interface NearestOptions {
   field?: string;
 }
 
+/** A nearestX interactor. */
 export interface NearestX extends NearestOptions {
-  /** Select the `x` domain value of the mark closest to the pointer. */
+  /** Select the **x** domain value of the mark closest to the pointer. */
   select: 'nearestX';
 }
 
+/** A nearestY interactor. */
 export interface NearestY extends NearestOptions {
-  /** Select the `y` domain value of the mark closest to the pointer. */
+  /** Select the **y** domain value of the mark closest to the pointer. */
   select: 'nearestY';
 }

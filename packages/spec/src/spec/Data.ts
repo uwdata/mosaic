@@ -34,6 +34,9 @@ export type DataQuery = string;
  */
 export type DataArray = object[];
 
+/**
+ * A data definition that loads an external data file.
+ */
 export interface DataFile {
   /**
    * The data file to load. If no type option is provided,
@@ -42,6 +45,9 @@ export interface DataFile {
   file: `${string}.parquet` | `${string}.csv` | `${string}.json`;
 }
 
+/**
+ * A data definition that queries an existing table.
+ */
 export interface DataTable extends DataBaseOptions {
   /**
    * The data source type. One of:
@@ -58,6 +64,9 @@ export interface DataTable extends DataBaseOptions {
   query: string;
 }
 
+/**
+ * A data definition that loads a parquet file.
+ */
 export interface DataParquet extends DataBaseOptions {
   /**
    * The data source type. One of:
@@ -74,6 +83,9 @@ export interface DataParquet extends DataBaseOptions {
   file: string;
 }
 
+/**
+ * A data definition that loads a csv file.
+ */
 export interface DataCSV extends DataBaseOptions {
   /**
    * The data source type. One of:
@@ -100,6 +112,9 @@ export interface DataCSV extends DataBaseOptions {
   sample_size?: number;
 }
 
+/**
+ * A data definition that loads a supported spatial data file format.
+ */
 export interface DataSpatial extends DataBaseOptions {
   /**
    * The data source type. One of:
@@ -111,7 +126,10 @@ export interface DataSpatial extends DataBaseOptions {
    */
   type: 'spatial';
   /**
-   * The file path for the dataset to load.
+   * The file path for the spatial dataset to load. See the DuckDB spatial
+   * documention [1] for more information on supported file types.
+   *
+   * [1] https://duckdb.org/docs/extensions/spatial.html#st_read--read-spatial-data-from-files
    */
   file: string;
   /**

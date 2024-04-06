@@ -4,7 +4,7 @@ import {
 } from './Marks.js';
 
 /** Options for the link mark. */
-export interface LinkOptions extends MarkData, MarkOptions, MarkerOptions, CurveAutoOptions {
+export interface LinkOptions extends MarkOptions, MarkerOptions, CurveAutoOptions {
   /**
    * The horizontal position, for vertical links; typically bound to the *x*
    * scale; shorthand for setting defaults for both **x1** and **x2**.
@@ -58,7 +58,7 @@ export interface LinkOptions extends MarkData, MarkOptions, MarkerOptions, Curve
 }
 
 /** The link mark. */
-export interface Link extends LinkOptions {
+export interface Link extends MarkData, LinkOptions {
   /**
    * A link mark, drawing line segments (curves) connecting pairs of points.
    *

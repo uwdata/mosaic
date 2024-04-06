@@ -19,10 +19,16 @@ export type GridInterpolate =
 
 /** Options for grid2d marks. */
 export interface Grid2DOptions {
-  /** The horizontal position channel, typically bound to the *x* scale. */
+  /**
+   * The horizontal position channel, typically bound to the *x* scale.
+   * Domain values are binned into a grid with *width* horizontal bins.
+   */
   x?: ChannelValueSpec;
 
-  /** The vertical position channel, typically bound to the *y* scale. */
+  /**
+   * The vertical position channel, typically bound to the *y* scale.
+   * Domain values are binned into a grid with *height* vertical bins.
+   */
   y?: ChannelValueSpec;
 
   /** The width (number of columns) of the grid, in actual pixels. */
@@ -44,9 +50,7 @@ export interface Grid2DOptions {
   pad?: number | ParamRef;
 
   /**
-   * A non-negative pixel radius for smoothing; defaults to 0. Note that
-   * blurring is applied on the values (before the color scale is applied) if
-   * quantitative, and after (on the materialized pixels), if ordinal.
+   * The kernel density bandwidth for smoothing, in pixels.
    */
   bandwidth?: number | ParamRef;
 
@@ -63,7 +67,7 @@ export interface Grid2DOptions {
 }
 
 /** Options for the raster mark. */
-export interface RasterOptions extends MarkData, Grid2DOptions, Omit<MarkOptions, 'fill' | 'fillOpacity'> {
+export interface RasterOptions extends Grid2DOptions, Omit<MarkOptions, 'fill' | 'fillOpacity'> {
   /**
    * The [image-rendering attribute][1]; defaults to *auto* (bilinear). The
    * option may be set to *pixelated* to disable bilinear interpolation for a
@@ -94,7 +98,8 @@ export interface RasterOptions extends MarkData, Grid2DOptions, Omit<MarkOptions
   fillOpacity?: ChannelValueSpec | ParamRef;
 }
 
-export interface Raster extends RasterOptions {
+/** The raster mark. */
+export interface Raster extends MarkData, RasterOptions {
   /**
    * A raster mark which renders a raster image from spatial samples. It
    * represents discrete samples in abstract coordinates **x** and **y**;
@@ -112,7 +117,8 @@ export interface Raster extends RasterOptions {
   mark: 'raster';
 }
 
-export interface Heatmap extends RasterOptions {
+/** The heatmap mark. */
+export interface Heatmap extends MarkData, RasterOptions {
   /**
    * Like raster, but with default options for accurate density estimation
    * via smoothing. The *bandwidth* (20), *interpolate* ("linear"), and
@@ -121,7 +127,8 @@ export interface Heatmap extends RasterOptions {
   mark: 'heatmap';
 }
 
-export interface RasterTile extends RasterOptions {
+/** The rasterTile mark. */
+export interface RasterTile extends MarkData, RasterOptions {
   /**
    * An experimental raster mark which performs tiling and prefetching to
    * support more scalable rasters upon panning the domain. Uses a tile

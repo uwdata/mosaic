@@ -5,6 +5,7 @@ import { NearestX, NearestY } from './interactors/Nearest.js';
 import { Pan, PanX, PanY, PanZoom, PanZoomX, PanZoomY } from './interactors/PanZoom.js';
 import { Toggle, ToggleColor, ToggleX, ToggleY } from './interactors/Toggle.js';
 
+/** A plot interactor entry. */
 export type PlotInteractor =
   | Highlight
   | IntervalX

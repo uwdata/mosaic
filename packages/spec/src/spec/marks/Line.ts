@@ -4,7 +4,7 @@ import {
 } from './Marks.js';
 
 /** Options for the line mark. */
-export interface LineOptions extends MarkData, MarkOptions, MarkerOptions, CurveAutoOptions {
+export interface LineOptions extends MarkOptions, MarkerOptions, CurveAutoOptions {
   /**
    * The required horizontal position channel, typically bound to the *x*
    * scale.
@@ -43,7 +43,7 @@ export interface LineYOptions extends LineOptions {
 }
 
 /** The line mark. */
-export interface Line extends LineOptions {
+export interface Line extends MarkData, LineOptions {
   /**
    * A line mark that connects control points.
    *
@@ -72,8 +72,8 @@ export interface Line extends LineOptions {
   mark: 'line';
 }
 
-/** The linex mark. */
-export interface LineX extends LineXOptions {
+/** The lineX mark. */
+export interface LineX extends MarkData, LineXOptions {
   /**
    * Like line, except that **x** defaults to the identity function assuming
    * that *data* = [*x₀*, *x₁*, *x₂*, …] and **y** defaults to the zero-based
@@ -83,7 +83,7 @@ export interface LineX extends LineXOptions {
 }
 
 /** The lineY mark. */
-export interface LineY extends LineYOptions {
+export interface LineY extends MarkData, LineYOptions {
   /**
    * Like line, except **y** defaults to the identity function and assumes
    * that *data* = [*y₀*, *y₁*, *y₂*, …] and **x** defaults to the zero-based

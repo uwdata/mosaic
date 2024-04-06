@@ -1,6 +1,7 @@
 import { ParamRef } from '../Param.js';
 import { BrushStyles } from './Interval1D.js';
 
+/** Options for 2D interval interactors. */
 export interface Interval2DOptions {
   /**
    * The output selection. A clause of the form
@@ -37,6 +38,7 @@ export interface Interval2DOptions {
   brush?: BrushStyles;
 }
 
+/** An intervalXY interactor. */
 export interface IntervalXY extends Interval2DOptions {
   /**
    * Select a continuous 2D interval selection

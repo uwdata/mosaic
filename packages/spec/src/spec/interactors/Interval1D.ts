@@ -1,5 +1,6 @@
 import { ParamRef } from '../Param.js';
 
+/** Styles for rectangular selection brushes. */
 export interface BrushStyles {
   /**
    * The overall opacity of the brush rectangle.
@@ -23,6 +24,7 @@ export interface BrushStyles {
   stroke?: string;
 }
 
+/** Options for 1D interval interactors. */
 export interface Interval1DOptions {
   /**
    * The output selection. A clause of the form `field BETWEEN lo AND hi`
@@ -52,11 +54,13 @@ export interface Interval1DOptions {
   brush?: BrushStyles;
 }
 
+/** An intervalX interactor. */
 export interface IntervalX extends Interval1DOptions {
   /** Select a continuous 1D interval selection over the `x` scale domain. */
   select: 'intervalX';
 }
 
+/** An intervalY interactor. */
 export interface IntervalY extends Interval1DOptions {
   /** Select a continuous 1D interval selection over the `y` scale domain. */
   select: 'intervalY';

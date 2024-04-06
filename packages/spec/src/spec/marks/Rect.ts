@@ -27,7 +27,7 @@ export interface RectCornerOptions {
 }
 
 /** Options for the rect mark. */
-export interface RectOptions extends MarkData, MarkOptions, InsetOptions, RectCornerOptions, StackOptions {
+export interface RectOptions extends MarkOptions, InsetOptions, RectCornerOptions, StackOptions {
   /**
    * The horizontal position (or length/width) channel, typically bound to the
    * *x* scale.
@@ -139,7 +139,7 @@ export interface RectYOptions extends RectOptions {
 }
 
 /** The rect mark. */
-export interface Rect extends RectOptions {
+export interface Rect extends MarkData, RectOptions {
   /**
    * A rect mark. The rectangle extends horizontally from **x1** to **x2**,
    * and vertically from **y1** to **y2**. The position channels are often
@@ -161,7 +161,7 @@ export interface Rect extends RectOptions {
 }
 
 /** The rectX mark. */
-export interface RectX extends RectXOptions {
+export interface RectX extends MarkData, RectXOptions {
   /**
    * Like rect, but if neither **x1** nor **x2** is specified, an implicit
    * stackX transform is applied to **x**, and if **x** is not specified, it
@@ -172,7 +172,7 @@ export interface RectX extends RectXOptions {
 }
 
 /** The rectY mark. */
-export interface RectY extends RectYOptions {
+export interface RectY extends MarkData, RectYOptions {
   /**
    * Like rect, but if neither **y1** nor **y2** is specified, apply an
    * implicit stackY transform is applied to **y**, and if **y** is not

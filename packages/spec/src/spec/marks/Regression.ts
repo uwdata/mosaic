@@ -2,7 +2,7 @@ import { ParamRef } from '../Param.js';
 import { ChannelValue, ChannelValueSpec, MarkData, MarkOptions } from './Marks.js';
 
 /** Options for regression marks. */
-interface RegressionOptions extends MarkData, MarkOptions {
+interface RegressionOptions extends MarkOptions {
   /**
    * The confidence interval in (0, 1), or 0 to hide bands; defaults to 0.95.
    */
@@ -39,7 +39,8 @@ export interface RegressionYOptions extends RegressionOptions {
   y?: ChannelValueSpec;
 }
 
-export interface RegressionY extends RegressionYOptions {
+/** The regressionY mark. */
+export interface RegressionY extends MarkData, RegressionYOptions {
   /**
    * A mark that draws [linear regression][1] lines with confidence bands,
    * representing the estimated relation of a dependent variable (*y*) on an

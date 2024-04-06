@@ -3,7 +3,7 @@ import { FrameAnchor } from '../PlotTypes.js';
 import { ChannelValue, ChannelValueSpec, MarkData, MarkOptions } from './Marks.js';
 
 /** Options for the image mark. */
-export interface ImageOptions extends MarkData, MarkOptions {
+export interface ImageOptions extends MarkOptions {
   /**
    * The horizontal position channel specifying the image’s center; typically
    * bound to the *x* scale.
@@ -87,7 +87,7 @@ export interface ImageOptions extends MarkData, MarkOptions {
   imageRendering?: string | ParamRef;
 }
 
-export interface Image extends ImageOptions {
+export interface Image extends MarkData, ImageOptions {
   /**
    * An image mark that draws images as in a scatterplot.
    *
