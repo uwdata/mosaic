@@ -1,0 +1,10 @@
+{
+  "files": ["src/index.js"],
+  "compilerOptions": {
+    "noEmit": true,
+    "checkJs": true,
+    "noImplicitAny": false,
+    "module": "node16",
+    "skipLibCheck": true
+  }
+}

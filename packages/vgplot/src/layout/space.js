@@ -2,9 +2,7 @@ export function space({ dim = 'width', size = 10 }) {
   const span = document.createElement('span');
   span.style.display = 'inline-block';
   span.style[dim] = Number.isNaN(+size) ? size : `${size}px`;
-  const obj = { element: span };
-  span.value = obj;
-  return span;
+  return Object.assign(span, { value: { element: span } });
 }
 
 export function vspace(size) {

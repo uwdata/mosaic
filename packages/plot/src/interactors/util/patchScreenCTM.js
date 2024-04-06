@@ -4,6 +4,8 @@
  * even after the node is removed from the DOM.
  */
 export function patchScreenCTM() {
+  /** @type {SVGGraphicsElement} */
+  // @ts-ignore
   const node = this;
   const getScreenCTM = node.getScreenCTM;
   let memo;

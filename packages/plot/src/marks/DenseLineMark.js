@@ -8,14 +8,18 @@ export class DenseLineMark extends RasterMark {
   constructor(source, options) {
     const { normalize = true, ...rest } = options;
     super(source, rest);
-    handleParam(this, 'normalize', normalize);
+
+    /** @type {boolean} */
+    this.normalize = handleParam(normalize, value => {
+      return (this.normalize = value, this.requestUpdate());
+    });
   }
 
   query(filter = []) {
-    const { channels, normalize, source, binPad } = this;
-    const [nx, ny] = this.bins = this.binDimensions(this);
-    const [x] = binExpr(this, 'x', nx, extentX(this, filter), binPad);
-    const [y] = binExpr(this, 'y', ny, extentY(this, filter), binPad);
+    const { channels, normalize, source, pad } = this;
+    const [nx, ny] = this.bins = this.binDimensions();
+    const [x] = binExpr(this, 'x', nx, extentX(this, filter), pad);
+    const [y] = binExpr(this, 'y', ny, extentY(this, filter), pad);
 
     const q = Query
       .from(source.table)

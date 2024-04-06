@@ -10,6 +10,7 @@ export class RasterTileMark extends Grid2DMark {
   constructor(source, options) {
     const { origin = [0, 0], dim = 'xy', ...markOptions } = options;
     super('image', source, markOptions);
+    this.image = null;
 
     // TODO: make part of data source instead of options?
     this.origin = origin;
@@ -34,15 +35,15 @@ export class RasterTileMark extends Grid2DMark {
   }
 
   tileQuery(extent) {
-    const { binType, binPad, channels, densityMap, source } = this;
+    const { interpolate, pad, channels, densityMap, source } = this;
     const [[x0, x1], [y0, y1]] = extent;
     const [nx, ny] = this.bins;
-    const [x, bx] = binExpr(this, 'x', nx, [x0, x1], binPad);
-    const [y, by] = binExpr(this, 'y', ny, [y0, y1], binPad);
+    const [x, bx] = binExpr(this, 'x', nx, [x0, x1], pad);
+    const [y, by] = binExpr(this, 'y', ny, [y0, y1], pad);
 
     // with padded bins, include the entire domain extent
     // if the bins are flush, exclude the extent max
-    const bounds = binPad
+    const bounds = pad
       ? [isBetween(bx, [+x0, +x1]), isBetween(by, [+y0, +y1])]
       : [lte(+x0, bx), lt(bx, +x1), lte(+y0, by), lt(by, +y1)];
 
@@ -83,7 +84,7 @@ export class RasterTileMark extends Grid2DMark {
     }
 
     // generate grid binning query
-    if (binType === 'linear') {
+    if (interpolate === 'linear') {
       if (aggr.length > 1) {
         throw new Error('Linear binning not applicable to multiple aggregates.');
       }
@@ -102,14 +103,14 @@ export class RasterTileMark extends Grid2DMark {
     if (this.prefetch) mc.cancel(this.prefetch);
 
     // get view extent info
-    const { binPad, tileX, tileY, origin: [tx, ty] } = this;
-    const [m, n] = this.bins = this.binDimensions(this);
+    const { pad, tileX, tileY, origin: [tx, ty] } = this;
+    const [m, n] = this.bins = this.binDimensions();
     const [x0, x1] = extentX(this, this._filter);
     const [y0, y1] = extentY(this, this._filter);
     const xspan = x1 - x0;
     const yspan = y1 - y0;
-    const xx = Math.floor((x0 - tx) * (m - binPad) / xspan);
-    const yy = Math.floor((y0 - ty) * (n - binPad) / yspan);
+    const xx = Math.floor((x0 - tx) * (m - pad) / xspan);
+    const yy = Math.floor((y0 - ty) * (n - pad) / yspan);
 
     const tileExtent = (i, j) => [
       [tx + i * xspan, tx + (i + 1) * xspan],
@@ -155,7 +156,11 @@ export class RasterTileMark extends Grid2DMark {
 
     // wait for tile queries to complete, then update
     const tiles = await Promise.all(queries);
-    this.grids = [{ density: processTiles(m, n, xx, yy, coords, tiles) }];
+    const density = processTiles(m, n, xx, yy, coords, tiles);
+    this.grids0 = {
+      numRows: density.length,
+      columns: { density: [density] }
+    };
     this.convolve().update();
   }
 

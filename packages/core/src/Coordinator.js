@@ -8,8 +8,7 @@ let _instance;
 
 /**
  * Set or retrieve the coordinator instance.
- *
- * @param {Coordinator} instance the coordinator instance to set
+ * @param {Coordinator} [instance] the coordinator instance to set
  * @returns {Coordinator} the coordinator instance
  */
 export function coordinator(instance) {
@@ -42,7 +41,15 @@ export class Coordinator {
     return this._logger;
   }
 
-  configure({ cache = true, consolidate = true, indexes = true }) {
+  /**
+   * Set configuration options for this coordinator.
+   * @param {object} [options] Configration options.
+   * @param {boolean} [options.cache=true] Boolean flag to enable/disable query caching.
+   * @param {boolean} [options.consolidate=true] Boolean flag to enable/disable query consolidation.
+   * @param {boolean|object} [options.indexes=true] Boolean flag to enable/disable
+   *  automatic data cube indexes or an index options object.
+   */
+  configure({ cache = true, consolidate = true, indexes = true } = {}) {
     this.manager.cache(cache);
     this.manager.consolidate(consolidate);
     this.indexes = indexes;
@@ -116,7 +123,6 @@ export class Coordinator {
 
   /**
    * Connect a client to the coordinator.
-   *
    * @param {import('./MosaicClient.js').MosaicClient} client the client to disconnect
    */
   async connect(client) {

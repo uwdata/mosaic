@@ -16,7 +16,7 @@ export class AsyncDispatch {
   /**
    * Add an event listener callback for the provided event type.
    * @param {string} type The event type.
-   * @param {(value: *) => Promise?} callback The event handler
+   * @param {(value: *) => void | Promise} callback The event handler
    *  callback function to add. If the callback has already been
    *  added for the event type, this method has no effect.
    */
@@ -35,7 +35,7 @@ export class AsyncDispatch {
   /**
    * Remove an event listener callback for the provided event type.
    * @param {string} type The event type.
-   * @param {(value: *) => Promise?} callback The event handler
+   * @param {(value: *) => void | Promise} callback The event handler
    *  callback function to remove.
    */
   removeEventListener(type, callback) {
@@ -64,11 +64,12 @@ export class AsyncDispatch {
    * This default implementation simply returns null, indicating that
    * any other unemitted event values should be dropped (that is, all
    * queued events are filtered)
+   * @param {string} type The event type.
    * @param {*} value The new event value that will be enqueued.
    * @returns {(value: *) => boolean|null} A dispatch queue filter
    *  function, or null if all unemitted event values should be filtered.
    */
-  emitQueueFilter() {
+  emitQueueFilter(type, value) { // eslint-disable-line no-unused-vars
     // removes all pending items
     return null;
   }

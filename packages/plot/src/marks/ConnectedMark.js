@@ -11,6 +11,11 @@ export class ConnectedMark extends Mark {
     this.dim = dim;
   }
 
+  /**
+   * Return a query specifying the data needed by this Mark client.
+   * @param {*} [filter] The filtering criteria to apply in the query.
+   * @returns {*} The client query
+   */
   query(filter = []) {
     const { plot, dim, source } = this;
     const { optimize = true } = source.options || {};
@@ -28,6 +33,7 @@ export class ConnectedMark extends Mark {
       const [lo, hi] = filteredExtent(filter, field) || [min, max];
       const [expr] = binExpr(this, dim, size, [lo, hi], 1, as);
       const cols = q.select()
+        // @ts-ignore
         .map(c => c.as)
         .filter(c => c !== as && c !== value);
       return m4(q, expr, as, value, cols);

@@ -1,16 +1,25 @@
 import { literalToSQL } from './to-sql.js';
 
 /**
+ * @typedef {{
+ *   value: any;
+ *   addEventListener(type: string, callback: Function): any;
+ *   column?: string,
+ *   columns?: string[]
+ * }} ParamLike
+ */
+
+/**
  * Test if a value is parameter-like. Parameters have addEventListener methods.
  * @param {*} value The value to test.
- * @returns True if the value is param-like, false otherwise.
+ * @returns {value is ParamLike} True if the value is param-like, false otherwise.
  */
 export const isParamLike = value => typeof value?.addEventListener === 'function';
 
 /**
  * Test if a value is a SQL expression instance.
  * @param {*} value The value to test.
- * @returns {boolean} True if value is a SQL expression, false otherwise.
+ * @returns {value is SQLExpression} True if value is a SQL expression, false otherwise.
  */
 export function isSQLExpression(value) {
   return value instanceof SQLExpression;
@@ -24,7 +33,7 @@ export class SQLExpression {
 
   /**
    * Create a new SQL expression instance.
-   * @param {(string|SQLExpression|Ref)[]} parts The parts of the expression.
+   * @param {(string | ParamLike | SQLExpression | import('./ref.js').Ref)[]} parts The parts of the expression.
    * @param {string[]} [columns=[]] The column dependencies
    * @param {object} [props] Additional properties for this expression.
    */
@@ -35,6 +44,8 @@ export class SQLExpression {
 
     const params = this._expr.filter(part => isParamLike(part));
     if (params.length > 0) {
+      /** @type {ParamLike[]} */
+      // @ts-ignore
       this._params = Array.from(new Set(params));
       this._params.forEach(param => {
         param.addEventListener('value', () => update(this, this.map?.get('value')));

@@ -5,7 +5,7 @@ export class Ref {
   /**
    * Create a new Ref instance.
    * @param {string|Ref|null} table The table name.
-   * @param {string|null} column The column name.
+   * @param {string|null} [column] The column name.
    */
   constructor(table, column) {
     if (table) this.table = String(table);
@@ -87,11 +87,11 @@ export function relation(name) {
 
 /**
  * Create a column reference.
- * @param {string} [table] The table name (optional).
- * @param {string} column The column name.
+ * @param {string} table The table name (optional).
+ * @param {string} [column] The column name.
  * @returns {Ref} The generated column reference.
  */
-export function column(table, column) {
+export function column(table, column = null) {
   if (arguments.length === 1) {
     column = table;
     table = null;

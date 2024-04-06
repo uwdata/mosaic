@@ -1,22 +1,30 @@
 import { InternSet, ascending } from 'd3';
 
 /**
+ * @typedef {Array | Int8Array | Uint8Array | Uint8ClampedArray
+ *  | Int16Array | Uint16Array | Int32Array | Uint32Array
+ *  | Float32Array | Float64Array
+ * } Arrayish - an Array or TypedArray
+ */
+
+/**
  * Generate a new array with designated size and type.
  * @param {number} size The size of the array
- * @param {ArrayLike} [proto] A prototype object of the desired array type.
+ * @param {Arrayish} [proto] A prototype object of the desired array type.
  *  This may be a typed array or standard array (the default).
- * @returns {ArrayLike} The generated array.
+ * @returns {Arrayish} The generated array.
  */
 export function array(size, proto = []) {
+  // @ts-ignore
   return new proto.constructor(size);
 }
 
 /**
  * Create a 1D grid for the given sample values
  * @param {number} size The grid size.
- * @param {ArrayLike} index The grid indices for sample points.
- * @param {ArrayLike} value The sample point values.
- * @returns {ArrayLike} The generated value grid.
+ * @param {Arrayish} index The grid indices for sample points.
+ * @param {Arrayish} value The sample point values.
+ * @returns {Arrayish} The generated value grid.
  */
 export function grid1d(size, index, value) {
   const G = array(size, value);
@@ -32,14 +40,17 @@ export function grid1d(size, index, value) {
  * Can handle multiple grids and groupby values per output row.
  * @param {number} w The grid width.
  * @param {number} h The grid height.
- * @param {ArrayLike} index The grid indices for sample points.
+ * @param {Arrayish} index The grid indices for sample points.
  *  An index value is an integer of the form (y * w + x).
- * @param {ArrayLike} columns Named column arrays with sample point values.
+ * @param {Record<string,Arrayish>} columns Named column arrays with sample point values.
  * @param {string[]} aggregates The names of aggregate columns to grid.
  * @param {string[]} groupby The names of additional columns to group by.
  * @param {function} [interpolate] A grid interpolation function.
  *  By default sample values are directly copied to output grid arrays.
- * @returns {object} Named column arrays of generated grid values.
+ * @returns {{
+ *  numRows: number;
+ *  columns: { [key:string]: Arrayish }
+ * }} Named column arrays of generated grid values.
  */
 export function grid2d(w, h, index, columns, aggregates, groupby, interpolate) {
   const numRows = index.length;
@@ -87,6 +98,7 @@ export function grid2d(w, h, index, columns, aggregates, groupby, interpolate) {
     });
   }
 
+  // @ts-ignore
   return { numRows: cells.length, columns: result };
 }
 

@@ -64,12 +64,15 @@ export class Mark extends MosaicClient {
         }
       } else if (isParamLike(entry)) {
         if (Array.isArray(entry.columns)) {
+          // we currently duck-type to having a columns array
+          // as a check that this is SQLExpression-compatible
           channels.push(fieldEntry(channel, entry));
           params.add(entry);
         } else {
           const c = valueEntry(channel, entry.value);
           channels.push(c);
           entry.addEventListener('value', value => {
+            // update immediately, the value is simply passed to Plot
             c.value = value;
             return this.update();
           });
@@ -86,6 +89,10 @@ export class Mark extends MosaicClient {
     }
   }
 
+  /**
+   * @param {import('../plot.js').Plot} plot The plot.
+   * @param {number} index 
+   */
   setPlot(plot, index) {
     this.plot = plot;
     this.index = index;
@@ -105,7 +112,7 @@ export class Mark extends MosaicClient {
     return this.channels.find(c => c.channel === channel);
   }
 
-  channelField(channel, { exact } = {}) {
+  channelField(channel, { exact = false } = {}) {
     const c = exact
       ? this.channel(channel)
       : this.channels.find(c => c.channel.startsWith(channel));
@@ -141,6 +148,11 @@ export class Mark extends MosaicClient {
     return this;
   }
 
+  /**
+   * Return a query specifying the data needed by this Mark client.
+   * @param {*} [filter] The filtering criteria to apply in the query.
+   * @returns {*} The client query
+   */
   query(filter = []) {
     if (this.hasOwnData()) return null;
     const { channels, source: { table } } = this;
@@ -154,8 +166,6 @@ export class Mark extends MosaicClient {
 
   /**
    * Provide query result data to the mark.
-   * @param {import('apache-arrow').Table} data The backing mark data.
-   * @returns {this}
    */
   queryResult(data) {
     this.data = toDataColumns(data);
@@ -166,8 +176,13 @@ export class Mark extends MosaicClient {
     return this.plot.update(this);
   }
 
+  /**
+   * Generate an array of Plot mark specifications.
+   * @returns {object[]}
+   */
   plotSpecs() {
     const { type, detail, channels } = this;
+    // @ts-ignore
     const { numRows: length, values, columns } = this.data || {};
 
     // populate plot specification options
@@ -213,7 +228,7 @@ export function channelOption(c, columns) {
  * @param {*} table the table to query.
  * @param {*} skip an optional array of channels to skip.
  *  Mark subclasses can skip channels that require special handling.
- * @returns a Query instance
+ * @returns {Query} a Query instance
  */
 export function markQuery(channels, table, skip = []) {
   const q = Query.from({ source: table });

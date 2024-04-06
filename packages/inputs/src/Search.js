@@ -10,6 +10,10 @@ let _id = 0;
 export const search = options => input(Search, options);
 
 export class Search extends MosaicClient {
+  /**
+   * Create a new Search instance.
+   * @param {object} options Options object
+   */
   constructor({
     element,
     filterBy,

@@ -5,27 +5,52 @@ import { ParamRefNode } from './ast/ParamRefNode.js';
 import { parseAttribute } from './ast/PlotAttributeNode.js';
 import { SelectionNode } from './ast/SelectionNode.js';
 import { SpecNode } from './ast/SpecNode.js';
-
 import { componentMap } from './config/components.js';
 import { inputNames } from './config/inputs.js';
 import { plotNames } from './config/plots.js';
 import { transformNames } from './config/transforms.js';
+import { error, paramRef } from './util.js';
 
-import { error, isString, paramRef } from './util.js';
+/**
+ * @typedef {{
+ *   attributes: Set<string>;
+ *   interactors: Set<string>;
+ *   legends: Set<string>;
+ *   marks: Set<string>;
+ * }} PlotNames names for supported plot elements
+ */
 
 /**
  * Parse a Mosaic specification to an AST (abstract syntax tree).
- * @param {object|string} spec The input specification as an object
- *  or JSON string.
+ * @param {import('./spec/Spec.js').Spec} spec The input specification.
  * @param {object} [options] Optional parse options object.
+ * @param {Map<string, Function>} [options.components] Map of component names to parse functions.
+ * @param {Set<string>} [options.transforms] The names of allowed transform functions.
+ * @param {Set<string>} [options.inputs] The names of supported input widgets.
+ * @param {PlotNames} [options.plot] The names of supported plot elements.
+ * @param {any[]} [options.params] An array of [name, node] pairs of pre-parsed
+ *  Param or Selection AST nodes.
+ * @param {any[]} [options.datasets] An array of [name, node] pairs of pre-parsed
+ *  dataset definition AST nodes.
  * @returns {SpecNode} The top-level AST spec node.
  */
 export function parseSpec(spec, options) {
-  spec = isString(spec) ? JSON.parse(spec) : spec;
   return new ParseContext(options).parse(spec);
 }
 
 export class ParseContext {
+  /**
+   * Create a new parser context.
+   * @param {object} [options]
+   * @param {Map<string, Function>} [options.components] Map of component names to parse functions.
+   * @param {Set<string>} [options.transforms] The names of allowed transform functions.
+   * @param {Set<string>} [options.inputs] The names of supported input widgets.
+   * @param {PlotNames} [options.plot] The names of supported plot elements.
+   * @param {any[]} [options.params] An array of [name, node] pairs of pre-parsed
+   *  Param or Selection AST nodes.
+   * @param {any[]} [options.datasets] An array of [name, node] pairs of pre-parsed
+   *  dataset definition AST nodes.
+   */
   constructor({
     components = componentMap(),
     transforms = transformNames(),
@@ -87,6 +112,14 @@ export class ParseContext {
     this.error(`Invalid specification.`, spec);
   }
 
+  /**
+   * Test if a value is param reference, if so, generate a paramter definition
+   * as needed and return a new ParamRefNode. Otherwise, return a LiteralNode.
+   * @param {*} value The value to test.
+   * @param {() => ParamNode | SelectionNode} [makeNode] A Param of Selection AST
+   *  node constructor.
+   * @returns {ParamRefNode|LiteralNode} An AST node for the input value.
+   */
   maybeParam(value, makeNode = () => new ParamNode) {
     const { params } = this;
     const name = paramRef(value);

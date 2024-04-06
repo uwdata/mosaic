@@ -12,12 +12,13 @@
   "scripts": {
     "build": "vite build",
     "dev": "vite",
-    "test": "tsc",
+    "test": "tsc -p jsconfig.json",
     "lint": "eslint src --ext .js",
     "prepublishOnly": "npm run test && npm run lint && hatch fmt --check && npm run build && hatch build",
     "publish": "hatch publish"
   },
   "dependencies": {
+    "@uwdata/mosaic-spec": "0.7.1",
     "@uwdata/vgplot": "^0.7.1",
     "apache-arrow": "^15.0.0",
     "uuid": "^9.0.1"

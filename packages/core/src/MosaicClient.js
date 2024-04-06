@@ -48,6 +48,7 @@ export class MosaicClient {
 
   /**
    * Return an array of fields queried by this client.
+   * @returns {object[]|null} The fields to retrieve info for.
    */
   fields() {
     return null;
@@ -55,21 +56,25 @@ export class MosaicClient {
 
   /**
    * Called by the coordinator to set the field info for this client.
+   * @param {*} info The field info result.
    * @returns {this}
    */
-  fieldInfo() {
+  fieldInfo(info) { // eslint-disable-line no-unused-vars
     return this;
   }
 
   /**
    * Return a query specifying the data needed by this client.
+   * @param {*} [filter] The filtering criteria to apply in the query.
+   * @returns {*} The client query
    */
-  query() {
+  query(filter) { // eslint-disable-line no-unused-vars
     return null;
   }
 
   /**
    * Called by the coordinator to inform the client that a query is pending.
+   * @returns {this}
    */
   queryPending() {
     return this;
@@ -77,16 +82,17 @@ export class MosaicClient {
 
   /**
    * Called by the coordinator to return a query result.
-   *
-   * @param {*} data the query result
+   * @param {*} data The query result.
    * @returns {this}
    */
-  queryResult() {
+  queryResult(data) { // eslint-disable-line no-unused-vars
     return this;
   }
 
   /**
    * Called by the coordinator to report a query execution error.
+   * @param {*} error
+   * @returns {this}
    */
   queryError(error) {
     console.error(error);
@@ -116,6 +122,8 @@ export class MosaicClient {
   /**
    * Requests a client update.
    * For example to (re-)render an interface component.
+   * 
+   * @returns {this | Promise<any>}
    */
   update() {
     return this;

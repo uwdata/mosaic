@@ -13,8 +13,11 @@ export class ContourMark extends Grid2DMark {
       pixelSize: 2,
       ...channels
     });
-    handleParam(this, 'thresholds', thresholds, () => {
-      return this.grids ? this.contours().update() : null
+
+    /** @type {number|number[]} */
+    this.thresholds = handleParam(thresholds, value => {
+      this.thresholds = value;
+      return this.grids ? this.contours().update() : null;
     });
   }
 
@@ -26,10 +29,13 @@ export class ContourMark extends Grid2DMark {
     const { bins, densityMap, grids, thresholds, plot } = this;
     const { numRows, columns } = grids;
 
-    let tz = thresholds;
-    if (!Array.isArray(tz)) {
+    let t = thresholds;
+    let tz;
+    if (Array.isArray(t)) {
+      tz = t;
+    } else {
       const [, hi] = gridDomainContinuous(columns.density);
-      tz = Array.from({length: tz - 1}, (_, i) => (hi * (i + 1)) / tz);
+      tz = Array.from({length: t - 1}, (_, i) => (hi * (i + 1)) / t);
     }
 
     if (densityMap.fill || densityMap.stroke) {
@@ -52,7 +58,7 @@ export class ContourMark extends Grid2DMark {
     const contour = contours().size(bins);
 
     // generate contours
-    const data = this.data = Array(numRows * tz.length);
+    const data = this.contourData = Array(numRows * tz.length);
     const { density, ...groupby } = columns;
     const groups = Object.entries(groupby);
     for (let i = 0, k = 0; i < numRows; ++i) {
@@ -72,7 +78,7 @@ export class ContourMark extends Grid2DMark {
   }
 
   plotSpecs() {
-    const { type, channels, densityMap, data } = this;
+    const { type, channels, densityMap, contourData: data } = this;
     const options = {};
     for (const c of channels) {
       const { channel } = c;

@@ -72,10 +72,20 @@ export class Plot {
     this.synch.resolve();
   }
 
+  /**
+   * @param {string} name The attribute to return.
+   * @returns {*} The value of the attribute.
+   */
   getAttribute(name) {
     return this.attributes[name];
   }
 
+  /**
+   * @param {string} name The name of the attribute to set.
+   * @param {*} value The value to set.
+   * @param {{silent: boolean}} [options] Options for setting the attribute.
+   * @returns {boolean} whether the value changed.
+   */
   setAttribute(name, value, options) {
     if (distinct(this.attributes[name], value)) {
       if (value === undefined) {
@@ -91,6 +101,11 @@ export class Plot {
     return false;
   }
 
+  /**
+   * @param {string} name The attribute name.
+   * @param {*} callback The function to call when the attribute changes.
+   * @returns {this}
+   */
   addAttributeListener(name, callback) {
     const map = this.listeners || (this.listeners = new Map);
     if (!map.has(name)) map.set(name, new Set);
@@ -98,6 +113,11 @@ export class Plot {
     return this;
   }
 
+  /**
+   * @param {string} name The attribute name.
+   * @param {*} callback The function to call when the attribute changes.
+   * @returns {void}
+   */
   removeAttributeListener(name, callback) {
     return this.listeners?.get(name)?.delete(callback);
   }

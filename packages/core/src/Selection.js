@@ -4,7 +4,7 @@ import { Param } from './Param.js';
 /**
  * Test if a value is a Selection instance.
  * @param {*} x The value to test.
- * @returns {boolean} True if the input is a Selection, false otherwise.
+ * @returns {x is Selection} True if the input is a Selection, false otherwise.
  */
 export function isSelection(x) {
   return x instanceof Selection;
@@ -76,7 +76,7 @@ export class Selection extends Param {
 
   /**
    * Create a cloned copy of this Selection instance.
-   * @returns {this} A clone of this selection.
+   * @returns {Selection} A clone of this selection.
    */
   clone() {
     const s = new Selection(this._resolver);
@@ -88,7 +88,7 @@ export class Selection extends Param {
    * Create a clone of this Selection with clauses corresponding
    * to the provided source removed.
    * @param {*} source The clause source to remove.
-   * @returns {this} A cloned and updated Selection.
+   * @returns {Selection} A cloned and updated Selection.
    */
   remove(source) {
     const s = this.clone();
@@ -168,9 +168,9 @@ export class Selection extends Param {
    * Upon value-typed updates, returns a dispatch queue filter function.
    * The return value depends on the selection resolution strategy.
    * @param {string} type The event type.
-   * @param {*} value The input event value.
-   * @returns {*} For value-typed events, returns a dispatch queue filter
-   *  function. Otherwise returns null.
+   * @param {*} value The new event value that will be enqueued.
+   * @returns {(value: *) => boolean|null} For value-typed events,
+   *  returns a dispatch queue filter function. Otherwise returns null.
    */
   emitQueueFilter(type, value) {
     return type === 'value'
@@ -285,5 +285,6 @@ export class SelectionResolver {
       const source = value.active?.source;
       return clauses => clauses.active?.source !== source;
     }
+    return null;
   }
 }

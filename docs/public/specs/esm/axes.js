@@ -1,7 +1,7 @@
 import * as vg from "@uwdata/vgplot";
 
 export default vg.plot(
-  vg.gridY({strokeDasharray: [0.75, 2], strokeOpacity: 1}),
+  vg.gridY({strokeDasharray: "0.75 2", strokeOpacity: 1}),
   vg.axisY({anchor: "left", tickSize: 0, dx: 38, dy: -4, lineAnchor: "bottom"}),
   vg.axisY({
     anchor: "right",
