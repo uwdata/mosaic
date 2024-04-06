@@ -23,8 +23,9 @@
   },
   "scripts": {
     "prebuild": "rimraf dist && mkdir dist",
-    "build": "tsc && node ../../esbuild.js mosaic-spec",
+    "build": "tsc && node ../../esbuild.js mosaic-spec && npm run schema",
     "lint": "eslint src test --ext .js",
+    "schema": "ts-json-schema-generator -f tsconfig.json -p src/spec/Spec.ts -t Spec --no-type-check --no-ref-encode > dist/mosaic-schema.json",
     "pretest": "tsc",
     "test": "mocha 'test/**/*-test.js' && tsc -p jsconfig.json",
     "prepublishOnly": "npm run test && npm run lint && npm run build"
@@ -32,6 +33,7 @@
   "dependencies": {
     "@uwdata/mosaic-core": "^0.7.1",
     "@uwdata/mosaic-sql": "^0.7.0",
-    "@uwdata/vgplot": "^0.7.1"
+    "@uwdata/vgplot": "^0.7.1",
+    "ts-json-schema-generator": "^1.5.0"
   }
 }
