@@ -54,7 +54,8 @@ export class DataCubeIndexer {
 
     active = active || this.selection.active;
     const { source } = active;
-    if (source && source === this.activeView?.source) return true; // we're good!
+    // exit early if indexes already set up for active view
+    if (source && source === this.activeView?.source) return true;
 
     this.clear();
     if (!source) return false; // nothing to work with
@@ -75,7 +76,7 @@ export class DataCubeIndexer {
 
       // build index construction query
       const query = client.query(sel.predicate(client))
-        .select({ ...activeView.columns, ...index.auxiliary })
+        .select({ ...activeView.columns, ...index.aux })
         .groupby(Object.keys(activeView.columns));
 
       // ensure active view columns are selected by subqueries
@@ -95,6 +96,9 @@ export class DataCubeIndexer {
       const result = mc.exec(create(table, sql, { temp }));
       indices.set(client, { table, result, order, ...index });
     }
+
+    // index creation successful
+    return true;
   }
 
   async update() {
@@ -179,7 +183,7 @@ function getIndexColumns(client) {
 
   const aggr = [];
   const dims = [];
-  const auxiliary = {};
+  const aux = {}; // auxiliary columns needed by aggregates
   let auxAs;
 
   for (const entry of q.select()) {
@@ -191,17 +195,15 @@ function getIndexColumns(client) {
         aggr.push({ [as]: sql`SUM("${as}")::DOUBLE` });
         break;
       case 'AVG':
-        auxiliary._count_ = sql`COUNT(*)`;
-        aggr.push({ [as]: sql`(SUM("${as}" * _count_) / SUM(_count_))::DOUBLE` });
+        aux[auxAs = '__count__'] = sql`COUNT(*)`;
+        aggr.push({ [as]: sql`(SUM("${as}" * ${auxAs}) / SUM(${auxAs}))::DOUBLE` });
         break;
       case 'ARG_MAX':
-        auxAs = `_max_${as}_`;
-        auxiliary[auxAs] = sql`MAX(${args[1]})`;
+        aux[auxAs = `__max_${as}__`] = sql`MAX(${args[1]})`;
         aggr.push({ [as]: sql`ARG_MAX("${as}", ${auxAs})` });
         break;
       case 'ARG_MIN':
-        auxAs = `_min_${as}_`;
-        auxiliary[auxAs] = sql`MIN(${args[1]})`;
+        aux[auxAs = `__min_${as}__`] = sql`MIN(${args[1]})`;
         aggr.push({ [as]: sql`ARG_MIN("${as}", ${auxAs})` });
         break;
 
@@ -222,12 +224,7 @@ function getIndexColumns(client) {
     }
   }
 
-  return {
-    aggr,
-    dims,
-    auxiliary,
-    from
-  };
+  return { aggr, dims, aux, from };
 }
 
 function getBaseTable(query) {
