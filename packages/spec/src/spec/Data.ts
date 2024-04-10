@@ -126,10 +126,10 @@ export interface DataSpatial extends DataBaseOptions {
    */
   type: 'spatial';
   /**
-   * The file path for the spatial dataset to load. See the DuckDB spatial
-   * documention [1] for more information on supported file types.
+   * The file path for the spatial dataset to load. See the [DuckDB spatial
+   * documention][1] for more information on supported file types.
    *
-   * [1] https://duckdb.org/docs/extensions/spatial.html#st_read--read-spatial-data-from-files
+   * [1]: https://duckdb.org/docs/extensions/spatial.html#st_read--read-spatial-data-from-files
    */
   file: string;
   /**
