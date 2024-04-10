@@ -75,7 +75,7 @@ export class DataCubeIndexer {
 
       // build index construction query
       const query = client.query(sel.predicate(client))
-        .select({ ...activeView.columns, ...index.count })
+        .select({ ...activeView.columns, ...index.auxiliary })
         .groupby(Object.keys(activeView.columns));
 
       // ensure active view columns are selected by subqueries
@@ -179,23 +179,42 @@ function getIndexColumns(client) {
 
   const aggr = [];
   const dims = [];
-  let count;
+  const auxiliary = {};
+  let auxAs;
 
-  for (const { as, expr: { aggregate } } of q.select()) {
-    switch (aggregate?.toUpperCase?.()) {
+  for (const entry of q.select()) {
+    const { as, expr: { aggregate, args } } = entry;
+    const op = aggregate?.toUpperCase?.();
+    switch (op) {
       case 'COUNT':
       case 'SUM':
         aggr.push({ [as]: sql`SUM("${as}")::DOUBLE` });
         break;
       case 'AVG':
-        count = '_count_';
-        aggr.push({ [as]: sql`(SUM("${as}" * ${count}) / SUM(${count}))::DOUBLE` });
+        auxiliary._count_ = sql`COUNT(*)`;
+        aggr.push({ [as]: sql`(SUM("${as}" * _count_) / SUM(_count_))::DOUBLE` });
         break;
+      case 'ARG_MAX':
+        auxAs = `_max_${as}_`;
+        auxiliary[auxAs] = sql`MAX(${args[1]})`;
+        aggr.push({ [as]: sql`ARG_MAX("${as}", ${auxAs})` });
+        break;
+      case 'ARG_MIN':
+        auxAs = `_min_${as}_`;
+        auxiliary[auxAs] = sql`MIN(${args[1]})`;
+        aggr.push({ [as]: sql`ARG_MIN("${as}", ${auxAs})` });
+        break;
+
+      // aggregates that commute directly
       case 'MAX':
-        aggr.push({ [as]: sql`MAX("${as}")` });
-        break;
       case 'MIN':
-        aggr.push({ [as]: sql`MIN("${as}")` });
+      case 'BIT_AND':
+      case 'BIT_OR':
+      case 'BIT_XOR':
+      case 'BOOL_AND':
+      case 'BOOL_OR':
+      case 'PRODUCT':
+        aggr.push({ [as]: sql`${op}("${as}")` });
         break;
       default:
         if (g.has(as)) dims.push(as);
@@ -206,7 +225,7 @@ function getIndexColumns(client) {
   return {
     aggr,
     dims,
-    count: count ? { [count]: sql`COUNT(*)` } : {},
+    auxiliary,
     from
   };
 }
