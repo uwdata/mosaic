@@ -54,7 +54,8 @@ export class DataCubeIndexer {
 
     active = active || this.selection.active;
     const { source } = active;
-    if (source && source === this.activeView?.source) return true; // we're good!
+    // exit early if indexes already set up for active view
+    if (source && source === this.activeView?.source) return true;
 
     this.clear();
     if (!source) return false; // nothing to work with
@@ -75,7 +76,7 @@ export class DataCubeIndexer {
 
       // build index construction query
       const query = client.query(sel.predicate(client))
-        .select({ ...activeView.columns, ...index.count })
+        .select({ ...activeView.columns, ...index.aux })
         .groupby(Object.keys(activeView.columns));
 
       // ensure active view columns are selected by subqueries
@@ -95,6 +96,9 @@ export class DataCubeIndexer {
       const result = mc.exec(create(table, sql, { temp }));
       indices.set(client, { table, result, order, ...index });
     }
+
+    // index creation successful
+    return true;
   }
 
   async update() {
@@ -179,23 +183,40 @@ function getIndexColumns(client) {
 
   const aggr = [];
   const dims = [];
-  let count;
+  const aux = {}; // auxiliary columns needed by aggregates
+  let auxAs;
 
-  for (const { as, expr: { aggregate } } of q.select()) {
-    switch (aggregate?.toUpperCase?.()) {
+  for (const entry of q.select()) {
+    const { as, expr: { aggregate, args } } = entry;
+    const op = aggregate?.toUpperCase?.();
+    switch (op) {
       case 'COUNT':
       case 'SUM':
         aggr.push({ [as]: sql`SUM("${as}")::DOUBLE` });
         break;
       case 'AVG':
-        count = '_count_';
-        aggr.push({ [as]: sql`(SUM("${as}" * ${count}) / SUM(${count}))::DOUBLE` });
+        aux[auxAs = '__count__'] = sql`COUNT(*)`;
+        aggr.push({ [as]: sql`(SUM("${as}" * ${auxAs}) / SUM(${auxAs}))::DOUBLE` });
         break;
+      case 'ARG_MAX':
+        aux[auxAs = `__max_${as}__`] = sql`MAX(${args[1]})`;
+        aggr.push({ [as]: sql`ARG_MAX("${as}", ${auxAs})` });
+        break;
+      case 'ARG_MIN':
+        aux[auxAs = `__min_${as}__`] = sql`MIN(${args[1]})`;
+        aggr.push({ [as]: sql`ARG_MIN("${as}", ${auxAs})` });
+        break;
+
+      // aggregates that commute directly
       case 'MAX':
-        aggr.push({ [as]: sql`MAX("${as}")` });
-        break;
       case 'MIN':
-        aggr.push({ [as]: sql`MIN("${as}")` });
+      case 'BIT_AND':
+      case 'BIT_OR':
+      case 'BIT_XOR':
+      case 'BOOL_AND':
+      case 'BOOL_OR':
+      case 'PRODUCT':
+        aggr.push({ [as]: sql`${op}("${as}")` });
         break;
       default:
         if (g.has(as)) dims.push(as);
@@ -203,12 +224,7 @@ function getIndexColumns(client) {
     }
   }
 
-  return {
-    aggr,
-    dims,
-    count: count ? { [count]: sql`COUNT(*)` } : {},
-    from
-  };
+  return { aggr, dims, aux, from };
 }
 
 function getBaseTable(query) {

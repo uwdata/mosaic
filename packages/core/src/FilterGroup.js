@@ -48,9 +48,12 @@ export class FilterGroup {
 
   update() {
     const { mc, indexer, clients, selection } = this;
-    return indexer?.index(clients)
-      ? indexer.update()
-      : defaultUpdate(mc, clients, selection);
+    const hasIndex = indexer?.index(clients);
+    if (hasIndex) {
+      indexer.update();
+    } else {
+      defaultUpdate(mc, clients, selection);
+    }
   }
 }
 
