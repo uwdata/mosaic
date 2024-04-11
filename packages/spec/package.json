@@ -24,7 +24,7 @@
   "scripts": {
     "prebuild": "rimraf dist && mkdir dist",
     "build": "tsc && node ../../esbuild.js mosaic-spec",
-    "lint": "eslint src test --ext .js",
+    "lint": "eslint src test",
     "pretest": "tsc",
     "test": "mocha 'test/**/*-test.js' && tsc -p jsconfig.json",
     "prepublishOnly": "npm run test && npm run lint && npm run build"
