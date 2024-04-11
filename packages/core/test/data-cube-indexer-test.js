@@ -3,19 +3,9 @@ import {
   Query, argmax, argmin, avg, count, isNotDistinct,
   literal, loadObjects, max, min, product, sum
 } from '@uwdata/mosaic-sql';
+import { Coordinator, Selection } from '../src/index.js';
 import { nodeConnector } from './util/node-connector.js';
-import { Coordinator, MosaicClient, Selection } from '../src/index.js';
-
-class TestClient extends MosaicClient {
-  constructor(measure, filterBy, onData) {
-    super(filterBy);
-    this._query = Query.from('testData').select({ measure });
-    this.queryResult = onData;
-  }
-  query(filter = []) {
-    return this._query.clone().where(filter);
-  }
-}
+import { TestClient } from './util/test-client.js';
 
 async function setup(loadQuery) {
   const mc = new Coordinator(nodeConnector(), {
@@ -35,20 +25,19 @@ async function run(measure) {
     { dim: 'b', val: 4 }
   ]);
   const mc = await setup(loadQuery);
+  const sel = Selection.single({ cross: true });
+  const q = Query.from('testData').select({ measure });
+
   return new Promise((resolve) => {
-    const sel = Selection.single({ cross: true });
     let iter = 0;
-    const client = new TestClient(measure, sel, data => {
-      iter
+    mc.connect(new TestClient(q, sel, {
+      queryResult: data => iter
         ? resolve(Array.from(data)[0].measure)
-        : ++iter;
-    });
-    mc.connect(client);
+        : ++iter
+    }));
     sel.update({
-      source: 'foo',
+      source: 'test',
       schema: { type: 'point' },
-      clients: new Set,
-      value: 'b',
       predicate: isNotDistinct('dim', literal('b'))
     });
   });
