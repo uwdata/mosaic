@@ -21,7 +21,7 @@
   "scripts": {
     "prebuild": "rimraf dist && mkdir dist",
     "build": "node ../../esbuild.js mosaic-sql",
-    "lint": "eslint src test --ext .js",
+    "lint": "eslint src test",
     "test": "mocha 'test/**/*-test.js'",
     "prepublishOnly": "npm run test && npm run lint && npm run build"
   }

@@ -24,13 +24,13 @@
     "to-parquet": "./bin/to-parquet.js"
   },
   "scripts": {
-    "lint": "eslint src test --ext .js",
+    "lint": "eslint src test",
     "server": "node bin/run-server.js",
     "test": "mocha 'test/**/*-test.js'",
     "prepublishOnly": "npm run test && npm run lint"
   },
   "dependencies": {
-    "duckdb": "~0.10.0",
+    "duckdb": "~0.10.1",
     "ws": "^8.16.0"
   }
 }
