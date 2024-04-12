@@ -46,14 +46,17 @@ export class FilterGroup {
     return this;
   }
 
+  /**
+   * Internal method to process a selection update.
+   * The return value is passed as a selection callback value.
+   * @returns {Promise} A Promise that resolves when the update completes.
+   */
   update() {
     const { mc, indexer, clients, selection } = this;
     const hasIndex = indexer?.index(clients);
-    if (hasIndex) {
-      indexer.update();
-    } else {
-      defaultUpdate(mc, clients, selection);
-    }
+    return hasIndex
+      ? indexer.update()
+      : defaultUpdate(mc, clients, selection);
   }
 }
 
