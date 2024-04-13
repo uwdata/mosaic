@@ -95,20 +95,22 @@ export class AsyncDispatch {
   emit(type, value) {
     const entry = this._callbacks.get(type) || {};
     if (entry.pending) {
+      // an earlier emit is still processing
+      // enqueue the current update, possibly filtering other pending updates
       entry.queue.enqueue(value, this.emitQueueFilter(type, value));
     } else {
       const event = this.willEmit(type, value);
       const { callbacks, queue } = entry;
       if (callbacks?.size) {
-        const promise = Promise
-          .allSettled(Array.from(callbacks, callback => callback(event)))
-          .then(() => {
-            entry.pending = null;
-            if (!queue.isEmpty()) {
-              this.emit(type, queue.dequeue());
-            }
-          });
-        entry.pending = promise;
+        // broadcast update to callbacks, which may return promises
+        // wait until promises resolve, then process pending updates
+        const callbackValues = Array.from(callbacks, cb => cb(event));
+        entry.pending = Promise.allSettled(callbackValues).then(() => {
+          entry.pending = null;
+          if (!queue.isEmpty()) {
+            this.emit(type, queue.dequeue());
+          }
+        });
       }
     }
   }

@@ -4,6 +4,17 @@ import {
   Fixed, Interpolate, Interval, PositionScaleType, ProjectionName
 } from './PlotTypes.js';
 
+export type LabelArrow =
+  | 'auto'
+  | 'up'
+  | 'right'
+  | 'down'
+  | 'left'
+  | 'none'
+  | true
+  | false
+  | null;
+
 /** Plot attributes. */
 export interface PlotAttributes {
   /**
@@ -391,6 +402,13 @@ export interface PlotAttributes {
   xLabelAnchor?: 'top' | 'right' | 'bottom' | 'left' | 'center' | ParamRef;
 
   /**
+   * Whether to apply a directional arrow such as → or ↑ to the x-axis scale
+   * label. If *auto* (the default), the presence of the arrow depends on
+   * whether the scale is ordinal.
+   */
+  xLabelArrow?: LabelArrow | ParamRef;
+
+  /**
    * The axis **label** position offset (in pixels); default depends on margins
    * and orientation.
    */
@@ -411,6 +429,12 @@ export interface PlotAttributes {
    * A textual description for the axis in the accessibility tree.
    */
   xAriaDescription?: string | ParamRef;
+
+  /**
+   * If true, shorthand for a transform suitable for percentages, mapping
+   * proportions in [0, 1] to [0, 100].
+   */
+  xPercent?: boolean | ParamRef;
 
   /**
    * Whether to reverse the scale’s encoding; equivalent to reversing either the
@@ -656,6 +680,13 @@ export interface PlotAttributes {
   yLabelAnchor?: 'top' | 'right' | 'bottom' | 'left' | 'center' | ParamRef;
 
   /**
+   * Whether to apply a directional arrow such as → or ↑ to the x-axis scale
+   * label. If *auto* (the default), the presence of the arrow depends on
+   * whether the scale is ordinal.
+   */
+  yLabelArrow?: LabelArrow | ParamRef;
+
+  /**
    * The axis **label** position offset (in pixels); default depends on margins
    * and orientation.
    */
@@ -676,6 +707,12 @@ export interface PlotAttributes {
    * A textual description for the axis in the accessibility tree.
    */
   yAriaDescription?: string | ParamRef;
+
+  /**
+   * If true, shorthand for a transform suitable for percentages, mapping
+   * proportions in [0, 1] to [0, 100].
+   */
+  yPercent?: boolean | ParamRef;
 
   /**
    * Whether to reverse the scale’s encoding; equivalent to reversing either the
@@ -1261,6 +1298,12 @@ export interface PlotAttributes {
   colorLabel?: string | null | ParamRef;
 
   /**
+   * If true, shorthand for a transform suitable for percentages, mapping
+   * proportions in [0, 1] to [0, 100].
+   */
+  colorPercent?: boolean | ParamRef;
+
+  /**
    * Whether to reverse the scale’s encoding; equivalent to reversing either the
    * **domain** or **range**.
    */
@@ -1368,6 +1411,12 @@ export interface PlotAttributes {
    * For axes and legends only.
    */
   opacityLabel?: string | null | ParamRef;
+
+  /**
+   * If true, shorthand for a transform suitable for percentages, mapping
+   * proportions in [0, 1] to [0, 100].
+   */
+  opacityPercent?: boolean | ParamRef;
 
   /**
    * Whether to reverse the scale’s encoding; equivalent to reversing either the
@@ -1507,6 +1556,12 @@ export interface PlotAttributes {
   rNice?: boolean | number| Interval | ParamRef;
 
   /**
+   * If true, shorthand for a transform suitable for percentages, mapping
+   * proportions in [0, 1] to [0, 100].
+   */
+  rPercent?: boolean | ParamRef;
+
+  /**
    * Whether the **domain** must include zero. If the domain minimum is
    * positive, it will be set to zero; otherwise if the domain maximum is
    * negative, it will be set to zero.
@@ -1597,6 +1652,12 @@ export interface PlotAttributes {
    * For continuous scales only.
    */
   lengthNice?: boolean | number| Interval | ParamRef;
+
+  /**
+   * If true, shorthand for a transform suitable for percentages, mapping
+   * proportions in [0, 1] to [0, 100].
+   */
+  lengthPercent?: boolean | ParamRef;
 
   /**
    * Whether the **domain** must include zero. If the domain minimum is
