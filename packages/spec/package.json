@@ -23,7 +23,7 @@
   },
   "scripts": {
     "prebuild": "rimraf dist && mkdir dist",
-    "build": "tsc && node ../../esbuild.js mosaic-spec && nom run schema",
+    "build": "tsc && node ../../esbuild.js mosaic-spec && npm run schema",
     "lint": "eslint src test",
     "schema": "ts-json-schema-generator -f tsconfig.json -p src/spec/Spec.ts -t Spec --no-type-check --no-ref-encode --functions hide > dist/mosaic-schema.json",
     "pretest": "tsc",
