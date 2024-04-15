@@ -31,11 +31,13 @@ dev = [
 [tool.hatch.envs.default]
 python = "3.11"
 features = ["dev"]
+uv = true
 
 [tool.hatch.envs.default.scripts]
 serve = "watchmedo auto-restart --pattern '*.py' --recursive --signal SIGTERM python pkg/__main__.py"
 
 [tool.hatch.envs.test]
+uv = true
 dependencies = [
   "coverage[toml]",
   "pytest",
