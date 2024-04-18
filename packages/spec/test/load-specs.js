@@ -29,3 +29,9 @@ export function loadJSON(name) {
 export function loadESM(name) {
   return readFile(join(ESM, `${name}.js`), 'utf8');
 }
+
+export async function loadJSONSchema() {
+  const path = join(__dirname, '../dist/mosaic-schema.json');
+  const text = await readFile(path, 'utf8');
+  return parse(text);
+}

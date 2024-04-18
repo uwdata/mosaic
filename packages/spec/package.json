@@ -23,10 +23,11 @@
   },
   "scripts": {
     "prebuild": "rimraf dist && mkdir dist",
-    "build": "tsc && node ../../esbuild.js mosaic-spec && npm run schema",
+    "build": "npm run types && node ../../esbuild.js mosaic-spec",
     "lint": "eslint src test",
+    "types": "tsc -p tsconfig.json && npm run schema",
     "schema": "ts-json-schema-generator -f tsconfig.json -p src/spec/Spec.ts -t Spec --no-type-check --no-ref-encode --functions hide > dist/mosaic-schema.json",
-    "pretest": "tsc",
+    "pretest": "npm run prebuild && npm run types",
     "test": "mocha 'test/**/*-test.js' && tsc -p jsconfig.json",
     "prepublishOnly": "npm run test && npm run lint && npm run build"
   },
@@ -35,5 +36,8 @@
     "@uwdata/mosaic-sql": "^0.7.0",
     "@uwdata/vgplot": "^0.7.1",
     "ts-json-schema-generator": "^2.0.0"
+  },
+  "devDependencies": {
+    "ajv": "^8.12.0"
   }
 }
