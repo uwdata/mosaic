@@ -446,7 +446,7 @@ type Digit = 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9;
 
 // For internal use.
 export type ReducerPercentile =
-  | `p${Digit}${Digit}`
+  | (`p${Digit}${Digit}` & Record<never, never>) // see https://github.com/microsoft/TypeScript/issues/29729
   | 'p25'
   | 'p50'
   | 'p75';
