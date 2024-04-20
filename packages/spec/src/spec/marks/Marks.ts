@@ -4,10 +4,7 @@ import { PlotMarkData } from '../PlotFrom.js';
 import { CurveName, FrameAnchor, Interval, Reducer, ScaleName } from '../PlotTypes.js';
 import { Transform } from '../Transform.js';
 
-/**
- * The set of known channel names. Channels in custom marks may use other names;
- * these known names are enumerated for convenient autocomplete.
- */
+/** The set of known channel names. */
 export type ChannelName =
   | 'ariaLabel'
   | 'fill'
@@ -38,8 +35,7 @@ export type ChannelName =
   | 'y'
   | 'y1'
   | 'y2'
-  | 'z'
-  | (string & Record<never, never>); // custom channel; see also https://github.com/microsoft/TypeScript/issues/29729
+  | 'z';
 
 type ChannelScale = ScaleName | 'auto' | boolean | null;
 
@@ -49,13 +45,12 @@ type ChannelScale = ScaleName | 'auto' | boolean | null;
  * - a field name, to extract the corresponding value for each datum
  * - an iterable of values, typically of the same length as the data
  * - a channel transform or SQL expression
- * - a constant date, number, or boolean
+ * - a constant number or boolean
  * - null to represent no value
  */
 export type ChannelValue =
   | any[] // column of values
   | (string & Record<never, never>) // field or literal color; see also https://github.com/microsoft/TypeScript/issues/29729
-  | Date // constant
   | number // constant
   | boolean // constant
   | null // constant
@@ -912,9 +907,7 @@ export interface CurveAutoOptions {
 export type StackOffsetName =
   | 'center'
   | 'normalize'
-  | 'wiggle'
-  | ('expand' & Record<never, never>) // deprecated; use normalize
-  | ('silhouette' & Record<never, never>); // deprecated; use center
+  | 'wiggle';
 
 /**
  * A stack offset method; one of:
@@ -955,8 +948,6 @@ export type StackOrderName = 'value' | 'x' | 'y' | 'z' | 'sum' | 'appearance' | 
  *
  * - a named stack order method such as *inside-out* or *sum*
  * - a field name, for natural order of the corresponding values
- * - an accessor function, for natural order of the corresponding values
- * - a comparator function for ordering data
  * - an array of explicit **z** values in the desired order
  */
 export type StackOrder =

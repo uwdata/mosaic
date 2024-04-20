@@ -1,3 +1,4 @@
+import { CSSStyles } from './CSSStyles.js';
 import { ParamRef } from './Param.js';
 import {
   ColorScaleType, ColorScheme, ContinuousScaleType, DiscreteScaleType,
@@ -124,7 +125,7 @@ export interface PlotAttributes {
    * [3]: https://www.w3.org/TR/css-values-4/#deprecated-quirky-length
    * [4]: https://developer.mozilla.org/en-US/docs/Web/CSS/color_value#currentcolor_keyword
    */
-  style?: string | Partial<CSSStyleDeclaration> | null | ParamRef;
+  style?: string | CSSStyles | null | ParamRef;
 
   /**
    * How to distribute unused space in the **range** for *point* and *band*

@@ -37,7 +37,7 @@ export type DataArray = object[];
 /**
  * A data definition that loads an external data file.
  */
-export interface DataFile {
+export interface DataFile extends DataBaseOptions {
   /**
    * The data file to load. If no type option is provided,
    * the file suffix must be one of `.csv`, `.json`, or `.parquet`.

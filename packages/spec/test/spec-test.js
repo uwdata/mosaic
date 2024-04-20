@@ -1,7 +1,25 @@
 import assert from 'node:assert';
-import { specs, loadJSON, loadESM } from './load-specs.js';
+import ajv from 'ajv';
+import { specs, loadJSON, loadJSONSchema, loadESM } from './load-specs.js';
 import { astToESM, parseSpec } from '../src/index.js';
 
+// initialize JSON schema validator
+const validator = new ajv({
+  allErrors: true,
+  allowUnionTypes: true,
+  verbose: true
+});
+const schema = await loadJSONSchema();
+const validate = validator.compile(schema);
+
+// validate JSON schema
+describe('JSON schema', () => {
+  it('is a valid JSON schema', () => {
+    assert.ok(validator.validateSchema(schema));
+  });
+});
+
+// validate specs, parsing, and generation
 for (const [name, spec] of specs) {
   describe(`Test specification: ${name}`, () => {
     it(`produces esm output`, async () => {
@@ -22,6 +40,14 @@ for (const [name, spec] of specs) {
         JSON.stringify(parseSpec(json).toJSON()),
         `${name} did not round trip unchanged`
       );
+    });
+    it(`passes JSON schema validation`, () => {
+      const valid = validate(spec);
+      if (!valid) {
+        console.error(validate.errors);
+      }
+      assert.ok(valid);
+      assert.ok(parseSpec(spec).toJSON());
     });
   });
 }
