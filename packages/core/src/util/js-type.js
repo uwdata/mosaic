@@ -24,6 +24,7 @@ export function jsType(type) {
       return 'boolean';
     case 'VARCHAR':
     case 'UUID':
+    case 'JSON':
       return 'string';
     case 'ARRAY':
     case 'LIST':
