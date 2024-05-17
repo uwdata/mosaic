@@ -233,12 +233,44 @@ export interface Quantile extends AggregateOptions, WindowOptions {
   quantile: Arg2;
 }
 
+/* A sample standard deviation aggregate transform. */
+export interface Stddev extends AggregateOptions, WindowOptions {
+  /**
+   * Compute the sum of the given column.
+   */
+  stddev: Arg1;
+}
+
+/* A population standard deviation aggregate transform. */
+export interface StddevPop extends AggregateOptions, WindowOptions {
+  /**
+   * Compute the sum of the given column.
+   */
+  stddevPop: Arg1;
+}
+
 /* A sum aggregate transform. */
 export interface Sum extends AggregateOptions, WindowOptions {
   /**
    * Compute the sum of the given column.
    */
   sum: Arg1;
+}
+
+/* A sample variance aggregate transform. */
+export interface Variance extends AggregateOptions, WindowOptions {
+  /**
+   * Compute the sum of the given column.
+   */
+  variance: Arg1;
+}
+
+/* A population variance aggregate transform. */
+export interface VarPop extends AggregateOptions, WindowOptions {
+  /**
+   * Compute the sum of the given column.
+   */
+  varPop: Arg1;
 }
 
 /* A row_number window transform. */
@@ -370,7 +402,11 @@ export type AggregateTransform =
   | Mode
   | Product
   | Quantile
-  | Sum;
+  | Stddev
+  | StddevPop
+  | Sum
+  | Variance
+  | VarPop;
 
 /* A window transform that operates over a sorted domain. */
 export type WindowTransform =
