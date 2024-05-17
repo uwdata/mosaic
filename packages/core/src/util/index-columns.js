@@ -105,7 +105,8 @@ export function indexColumns(client) {
  * @returns {string} A sanitized auxiliary column name.
  */
 function auxName(type, ...args) {
-  return `__${type}${args.map(x => `_${sanitize(x)}`)}__`;
+  const cols = args.length ? '_' + args.map(sanitize).join('_') : '';
+  return `__${type}${cols}__`;
 }
 
 /**
@@ -181,7 +182,7 @@ function avgExpr(aux, as, [x]) {
  *  pre-aggregated data partitions.
  */
 function argmaxExpr(aux, as, [, y]) {
-  const max = `__max_${sanitize(y)}__`;
+  const max = auxName('max', y);
   aux[max] = sql`MAX(${y})`;
   return sql`ARG_MAX("${as}", ${max})`;
 }
@@ -199,7 +200,7 @@ function argmaxExpr(aux, as, [, y]) {
  *  pre-aggregated data partitions.
  */
 function argminExpr(aux, as, [, y]) {
-  const min = `__min_${sanitize(y)}__`;
+  const min = auxName('min', y);
   aux[min] = sql`MIN(${y})`;
   return sql`ARG_MIN("${as}", ${min})`;
 }
@@ -224,15 +225,15 @@ function argminExpr(aux, as, [, y]) {
  *  pre-aggregated data partitions.
  */
 function varianceExpr(aux, x, from, correction = true) {
-  const name = sanitize(x);
-  const adj = correction ? ` - 1` : '';
-  const n = `__count_${name}__`; // count, excluding null values
-  const ssq = `__rssq_${name}__`; // residual sum of squares
-  const sum = `__rsum_${name}__`; // residual sum
-  const mean = sql`(SELECT AVG(${x}) FROM "${from}")`;
+  const adj = correction ? ` - 1` : ''; // Bessel correction
+  const xn = sanitize(x);
+  const n = auxName('count', xn);  // count, excluding null values
+  const ssq = auxName('rssq', xn); // residual sum of squares
+  const sum = auxName('rsum', xn); // residual sum
+  const ux = sql`(SELECT AVG(${x}) FROM "${from}")`; // to mean-center data
   aux[n] = sql`COUNT(${x})`;
-  aux[ssq] = sql`SUM((${x} - ${mean}) ** 2)`;
-  aux[sum] = sql`SUM(${x} - ${mean})`;
+  aux[ssq] = sql`SUM((${x} - ${ux}) ** 2)`;
+  aux[sum] = sql`SUM(${x} - ${ux})`;
   return sql`(SUM(${ssq}) - (SUM(${sum}) ** 2 / SUM(${n}))) / (SUM(${n})${adj})`;
 }
 
@@ -255,15 +256,15 @@ function varianceExpr(aux, x, from, correction = true) {
  *  pre-aggregated data partitions.
  */
 function covarianceExpr(aux, [x, y], from, correction = true) {
+  const adj = correction ? ` - 1` : '';  // Bessel correction
   const xn = sanitize(x);
   const yn = sanitize(y);
-  const adj = correction ? ` - 1` : '';
-  const n = `__count_${xn}_${yn}__`; // count, excluding null values
-  const sxy = `__sxy_${xn}_${yn}__`; // residual sum of squares
-  const sx = `__sx_${xn}__`; // residual sum
-  const sy = `__sy_${yn}__`; // residual sum
-  const ux = sql`(SELECT AVG(${x}) FROM "${from}")`;
-  const uy = sql`(SELECT AVG(${y}) FROM "${from}")`;
+  const n = auxName('count', xn, yn); // count, excluding null values
+  const sxy = auxName('sxy', xn, yn); // residual sum of squares
+  const sx = auxName('sx', xn);       // residual sum
+  const sy = auxName('sy', yn);       // residual sum
+  const ux = sql`(SELECT AVG(${x}) FROM "${from}")`; // to mean-center data
+  const uy = sql`(SELECT AVG(${y}) FROM "${from}")`; // to mean-center data
   aux[n] = sql`REGR_COUNT(${y}, ${x})`;
   aux[sxy] = sql`SUM((${x} - ${ux}) * (${y} - ${uy}))`;
   aux[sx] = sql`SUM(${x} - ${ux}) FILTER (${y} IS NOT NULL)`;
@@ -289,14 +290,14 @@ function covarianceExpr(aux, [x, y], from, correction = true) {
 function corrExpr(aux, [x, y], from) {
   const xn = sanitize(x);
   const yn = sanitize(y);
-  const n = `__count_${xn}_${yn}__`; // count, excluding null values
-  const sxy = `__sxy_${xn}_${yn}__`; // residual sum of squares
-  const sxx = `__sxx_${xn}__`; // residual sum of squares
-  const syy = `__syy_${yn}__`; // residual sum of squares
-  const sx = `__sx_${xn}__`; // residual sum
-  const sy = `__sy_${yn}__`; // residual sum
-  const ux = sql`(SELECT AVG(${x}) FROM "${from}")`;
-  const uy = sql`(SELECT AVG(${y}) FROM "${from}")`;
+  const n = auxName('count', xn, yn); // count, excluding null values
+  const sxy = auxName('sxy', xn, yn); // residual sum of squares
+  const sxx = auxName('sxx', xn);     // residual sum of squares
+  const syy = auxName('syy', yn);     // residual sum of squares
+  const sx = auxName('sx', xn);       // residual sum
+  const sy = auxName('sy', yn);       // residual sum
+  const ux = sql`(SELECT AVG(${x}) FROM "${from}")`; // to mean-center data
+  const uy = sql`(SELECT AVG(${y}) FROM "${from}")`; // to mean-center data
   aux[n] = sql`REGR_COUNT(${y}, ${x})`;
   aux[sxy] = sql`SUM((${x} - ${ux}) * (${y} - ${uy}))`;
   aux[sxx] = sql`SUM((${x} - ${ux}) ** 2) FILTER (${y} IS NOT NULL)`;
