@@ -24,6 +24,7 @@ export {
   avg,
   count,
   corr,
+  covariance,
   covarPop,
   entropy,
   first,
