@@ -11,6 +11,8 @@ export function transformNames(overrides = []) {
     'centroidX',
     'centroidY',
     'count',
+    'covariance',
+    'covarPop',
     'dateMonth',
     'dateMonthDay',
     'dateDay',

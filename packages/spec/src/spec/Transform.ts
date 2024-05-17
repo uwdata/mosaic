@@ -168,6 +168,22 @@ export interface Count extends AggregateOptions, WindowOptions {
   count: Arg0 | Arg1;
 }
 
+/* A sample covariance aggregate transform. */
+export interface Covariance extends AggregateOptions, WindowOptions {
+  /**
+   * Compute the sample covariance of between the given columns.
+   */
+  covariance: Arg2;
+}
+
+/* A population covariance aggregate transform. */
+export interface CovarPop extends AggregateOptions, WindowOptions {
+  /**
+   * Compute the population covariance of between the given columns.
+   */
+  covarPop: Arg2;
+}
+
 /* A first aggregate transform. */
 export interface First extends AggregateOptions, WindowOptions {
   /**
@@ -260,7 +276,7 @@ export interface Sum extends AggregateOptions, WindowOptions {
 /* A sample variance aggregate transform. */
 export interface Variance extends AggregateOptions, WindowOptions {
   /**
-   * Compute the sum of the given column.
+   * Compute the sample variance of the given column.
    */
   variance: Arg1;
 }
@@ -268,7 +284,7 @@ export interface Variance extends AggregateOptions, WindowOptions {
 /* A population variance aggregate transform. */
 export interface VarPop extends AggregateOptions, WindowOptions {
   /**
-   * Compute the sum of the given column.
+   * Compute the population variance of the given column.
    */
   varPop: Arg1;
 }
