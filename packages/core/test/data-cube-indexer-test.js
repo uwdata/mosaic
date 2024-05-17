@@ -1,7 +1,8 @@
 import assert from 'node:assert';
 import {
   Query, argmax, argmin, avg, count, isNotDistinct,
-  literal, loadObjects, max, min, product, sum
+  literal, loadObjects, max, min, product, stddev, sum,
+  variance
 } from '@uwdata/mosaic-sql';
 import { Coordinator, Selection } from '../src/index.js';
 import { nodeConnector } from './util/node-connector.js';
@@ -67,5 +68,11 @@ describe('DataCubeIndexer', () => {
   });
   it('supports argmin aggregate', async () => {
     assert.strictEqual(await run(argmin('dim', 'val')), 'b');
+  });
+  it('supports variance aggregate', async () => {
+    assert.strictEqual(await run(variance('val')), 0.5);
+  });
+  it('supports stddev aggregate', async () => {
+    assert.strictEqual(await run(stddev('val')), Math.sqrt(0.5));
   });
 });
