@@ -1,6 +1,6 @@
 import { Query, and, create, isBetween, scaleTransform, sql } from '@uwdata/mosaic-sql';
-import { MosaicClient } from './MosaicClient.js';
 import { fnv_hash } from './util/hash.js';
+import { indexColumns } from './util/index-columns.js';
 
 /**
  * Build and query optimized indices ("data cubes") for fast computation of
@@ -44,7 +44,7 @@ export class DataCubeIndexer {
   index(clients, active) {
     if (this.clients !== clients) {
       // test client views for compatibility
-      const cols = Array.from(clients, getIndexColumns);
+      const cols = Array.from(clients, indexColumns);
       const from = cols[0]?.from;
       this.enabled = cols.every(c => c && c.from === from);
       this.clients = clients;
@@ -74,7 +74,7 @@ export class DataCubeIndexer {
     const { mc, temp } = this;
     for (const client of clients) {
       if (sel.skip(client, active)) continue;
-      const index = getIndexColumns(client);
+      const index = indexColumns(client);
 
       // build index construction query
       const query = client.query(sel.predicate(client))
@@ -173,236 +173,6 @@ function binInterval(scale, pixelSize) {
     const s = pixelSize === 1 ? '' : `${pixelSize}::INTEGER * `;
     return value => sql`${s}FLOOR(${a}::DOUBLE * (${sqlApply(value)} - ${lo}::DOUBLE))::INTEGER`;
   }
-}
-
-const NO_INDEX = { from: NaN };
-
-/**
- * Determine data cube index columns for a given Mosaic client.
- * @param {MosaicClient} client The Mosaic client.
- * @returns An object with necessary column data to generate data
- *  cube index columns, null if an invalid or unparseable expression
- * is encountered, or NO_INDEX if the client is not indexable.
- */
-function getIndexColumns(client) {
-  if (!client.filterIndexable) return NO_INDEX;
-  const q = client.query();
-  const from = getBaseTable(q);
-  if (!from || !q.groupby) return NO_INDEX;
-  const g = new Set(q.groupby().map(c => c.column));
-
-  const aggr = [];
-  const dims = [];
-  const aux = {}; // auxiliary columns needed by aggregates
-  let auxAs;
-
-  for (const entry of q.select()) {
-    const { as, expr: { aggregate, args } } = entry;
-    const op = aggregate?.toUpperCase?.();
-    switch (op) {
-      case 'COUNT':
-      case 'SUM':
-        aggr.push({ [as]: sql`SUM("${as}")::DOUBLE` });
-        break;
-      case 'AVG':
-        aux[auxAs = `__count_${sanitize(args[0])}__`] = sql`COUNT(${args[0]})`;
-        aggr.push({ [as]: sql`(SUM("${as}" * ${auxAs}) / SUM(${auxAs}))::DOUBLE` });
-        break;
-      case 'ARG_MAX':
-        aux[auxAs = `__max_${as}__`] = sql`MAX(${args[1]})`;
-        aggr.push({ [as]: sql`ARG_MAX("${as}", ${auxAs})` });
-        break;
-      case 'ARG_MIN':
-        aux[auxAs = `__min_${as}__`] = sql`MIN(${args[1]})`;
-        aggr.push({ [as]: sql`ARG_MIN("${as}", ${auxAs})` });
-        break;
-
-      // variance statistics
-      case 'VARIANCE':
-      case 'VAR_SAMP':
-      case 'VAR_POP':
-        aux[as] = null; // omit original variance aggregate
-        aggr.push({
-          [as]: varianceExpr(aux, args[0], from, op !== 'VAR_POP')
-        });
-        break;
-      case 'STDDEV':
-      case 'STDDEV_SAMP':
-      case 'STDDEV_POP':
-        aux[as] = null; // omit original std. deviation aggregate
-        aggr.push({
-          [as]: sql`SQRT(${varianceExpr(aux, args[0], from, op !== 'STDDEV_POP')})`
-        });
-        break;
-      case 'COVAR_SAMP':
-      case 'COVAR_POP':
-        aux[as] = null; // omit original covariance aggregate
-        aggr.push({
-          [as]: covarianceExpr(aux, args, from, op !== 'COVAR_POP')
-        });
-        break;
-      case 'CORR':
-        aux[as] = null; // omit original correlation aggregate
-        aggr.push({ [as]: corrExpr(aux, args, from) });
-        break;
-
-      // aggregates that commute directly
-      case 'MAX':
-      case 'MIN':
-      case 'BIT_AND':
-      case 'BIT_OR':
-      case 'BIT_XOR':
-      case 'BOOL_AND':
-      case 'BOOL_OR':
-      case 'PRODUCT':
-        aggr.push({ [as]: sql`${op}("${as}")` });
-        break;
-      default:
-        if (g.has(as)) dims.push(as);
-        else return null;
-    }
-  }
-
-  return { from, dims, aggr, aux };
-}
-
-/**
- * Generate expressions for calculating variance over data partitions.
- * This method uses the "textbook" definition of variance (E[X^2] - E[X]^2),
- * but on mean-centered data to reduce floating point error. The variance
- * calculation uses three sufficient statistics: the count of non-null values,
- * the residual sum of squares and the sum of residual (mean-centered) values.
- * As a side effect, this method adds columns for these statistics to the
- * input *aux* object.
- * @param {object} aux An object for auxiliary columns (such as
- *  sufficient statistics) to include in the data cube aggregation.
- * @param {*} x The source data table column. This may be a string,
- *  column reference, SQL expression, or other string-coercible value.
- * @param {string} from The source data table name.
- * @param {boolean} [correction=true] A flag for whether a Bessel
- *  correction should be applied to compute the sample variance
- *  rather than the populatation variance.
- * @returns An aggregate expression for calculating variance over
- *  pre-aggregated data partitions.
- */
-function varianceExpr(aux, x, from, correction = true) {
-  const name = sanitize(x);
-  const adj = correction ? ` - 1` : '';
-  const n = `__count_${name}__`; // count, excluding null values
-  const ssq = `__rssq_${name}__`; // residual sum of squares
-  const sum = `__rsum_${name}__`; // residual sum
-  const mean = sql`(SELECT AVG(${x}) FROM "${from}")`;
-  aux[n] = sql`COUNT(${x})`;
-  aux[ssq] = sql`SUM((${x} - ${mean}) ** 2)`;
-  aux[sum] = sql`SUM(${x} - ${mean})`;
-  // TODO: coalesce null values with 0, or leave that for downstream?
-  return sql`(SUM(${ssq}) - (SUM(${sum}) ** 2 / SUM(${n}))) / (SUM(${n})${adj})`;
-}
-
-/**
- * Generate expressions for calculating covariance over data partitions.
- * This method uses mean-centered data to reduce floating point error. The
- * covariance calculation uses four sufficient statistics: the count of
- * non-null value pairs, the sum of residual products, and residual sums
- * (of mean-centered values) for x and y. As a side effect, this method
- * adds columns for these statistics to the input *aux* object.
- * @param {object} aux An object for auxiliary columns (such as
- *  sufficient statistics) to include in the data cube aggregation.
- * @param {any[]} args Source data table columns. The entries may be strings,
- *  column references, SQL expressions, or other string-coercible values.
- * @param {string} from The source data table name.
- * @param {boolean} [correction=true] A flag for whether a Bessel
- *  correction should be applied to compute the sample covariance
- *  rather than the populatation covariance.
- * @returns An aggregate expression for calculating covariance over
- *  pre-aggregated data partitions.
- */
-function covarianceExpr(aux, [x, y], from, correction = true) {
-  const xn = sanitize(x);
-  const yn = sanitize(y);
-  const adj = correction ? ` - 1` : '';
-  const n = `__count_${xn}_${yn}__`; // count, excluding null values
-  const sxy = `__sxy_${xn}_${yn}__`; // residual sum of squares
-  const sx = `__sx_${xn}__`; // residual sum
-  const sy = `__sy_${yn}__`; // residual sum
-  const ux = sql`(SELECT AVG(${x}) FROM "${from}")`;
-  const uy = sql`(SELECT AVG(${y}) FROM "${from}")`;
-  aux[n] = sql`REGR_COUNT(${y}, ${x})`;
-  aux[sxy] = sql`SUM((${x} - ${ux}) * (${y} - ${uy}))`;
-  aux[sx] = sql`SUM(${x} - ${ux}) FILTER (${y} IS NOT NULL)`;
-  aux[sy] = sql`SUM(${y} - ${uy}) FILTER (${x} IS NOT NULL)`;
-  return sql`(SUM(${sxy}) - SUM(${sx}) * SUM(${sy}) / SUM(${n})) / (SUM(${n})${adj})`;
-}
-
-/**
- * Generate expressions for calculating correlation over data partitions.
- * This method uses mean-centered data to reduce floating point error. The
- * correlation calculation uses six sufficient statistics: the count of
- * non-null value pairs, the sum of residual products, residual sums and
- * sums of squres (of mean-centered values) for x and y. As a side effect,
- * this method adds columns for these statistics to the input *aux* object.
- * @param {object} aux An object for auxiliary columns (such as
- *  sufficient statistics) to include in the data cube aggregation.
- * @param {any[]} args Source data table columns. The entries may be strings,
- *  column references, SQL expressions, or other string-coercible values.
- * @param {string} from The source data table name.
- * @returns An aggregate expression for calculating correlation over
- *  pre-aggregated data partitions.
- */
-function corrExpr(aux, [x, y], from) {
-  const xn = sanitize(x);
-  const yn = sanitize(y);
-  const n = `__count_${xn}_${yn}__`; // count, excluding null values
-  const sxy = `__sxy_${xn}_${yn}__`; // residual sum of squares
-  const sxx = `__sxx_${xn}__`; // residual sum of squares
-  const syy = `__syy_${yn}__`; // residual sum of squares
-  const sx = `__sx_${xn}__`; // residual sum
-  const sy = `__sy_${yn}__`; // residual sum
-  const ux = sql`(SELECT AVG(${x}) FROM "${from}")`;
-  const uy = sql`(SELECT AVG(${y}) FROM "${from}")`;
-  aux[n] = sql`REGR_COUNT(${y}, ${x})`;
-  aux[sxy] = sql`SUM((${x} - ${ux}) * (${y} - ${uy}))`;
-  aux[sxx] = sql`SUM((${x} - ${ux}) ** 2) FILTER (${y} IS NOT NULL)`;
-  aux[syy] = sql`SUM((${y} - ${uy}) ** 2) FILTER (${x} IS NOT NULL)`;
-  aux[sx] = sql`SUM(${x} - ${ux}) FILTER (${y} IS NOT NULL)`;
-  aux[sy] = sql`SUM(${y} - ${uy}) FILTER (${x} IS NOT NULL)`;
-  const numer = sql`(SUM(${sxy}) - SUM(${sx}) * SUM(${sy}) / SUM(${n}))`;
-  const sdx = sql`SQRT(SUM(${sxx}) - (SUM(${sx}) ** 2) / SUM(${n}))`;
-  const sdy = sql`SQRT(SUM(${syy}) - (SUM(${sy}) ** 2) / SUM(${n}))`;
-  return sql`${numer} / (${sdx} * ${sdy})`;
-}
-
-/**
- * Sanitize a table column reference as a "safe" string value to
- * use as part of derived column names.
- * @param {*} col The source data table column. This may be a string,
- *  column reference, SQL expression, or other string-coercible value.
- * @returns {string} The sanitized column name.
- */
-function sanitize(col) {
-  return `${col}`
-    .replaceAll('"', '')
-    .replaceAll(' ', '_');
-}
-
-function getBaseTable(query) {
-  const subq = query.subqueries;
-
-  // select query
-  if (query.select) {
-    const from = query.from();
-    if (!from.length) return undefined;
-    if (subq.length === 0) return from[0].from.table;
-  }
-
-  // handle set operations / subqueries
-  const base = getBaseTable(subq[0]);
-  for (let i = 1; i < subq.length; ++i) {
-    const from = getBaseTable(subq[i]);
-    if (from === undefined) continue;
-    if (from !== base) return NaN;
-  }
-  return base;
 }
 
 function subqueryPushdown(query, cols) {
