@@ -1,7 +1,9 @@
 import { Transform } from '../symbols.js';
 import { channelScale } from '../marks/util/channel-scale.js';
 
-const EXTENT = new Set(['rectY-x', 'rectX-y', 'rect-x', 'rect-y']);
+const EXTENT = new Set([
+  'rectY-x', 'rectX-y', 'rect-x', 'rect-y', 'ruleY-x', 'ruleX-y'
+]);
 
 export function bin(field, options = { steps: 25 }) {
   const fn = (mark, channel) => {
