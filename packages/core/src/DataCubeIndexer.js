@@ -241,6 +241,10 @@ function getIndexColumns(client) {
           [as]: covarianceExpr(aux, args, from, op !== 'COVAR_POP')
         });
         break;
+      case 'CORR':
+        aux[as] = null; // omit original correlation aggregate
+        aggr.push({ [as]: corrExpr(aux, args, from) });
+        break;
 
       // aggregates that commute directly
       case 'MAX':
@@ -328,6 +332,44 @@ function covarianceExpr(aux, [x, y], from, correction = true) {
   aux[sx] = sql`SUM(${x} - ${ux}) FILTER (${y} IS NOT NULL)`;
   aux[sy] = sql`SUM(${y} - ${uy}) FILTER (${x} IS NOT NULL)`;
   return sql`(SUM(${sxy}) - SUM(${sx}) * SUM(${sy}) / SUM(${n})) / (SUM(${n})${adj})`;
+}
+
+/**
+ * Generate expressions for calculating correlation over data partitions.
+ * This method uses mean-centered data to reduce floating point error. The
+ * correlation calculation uses six sufficient statistics: the count of
+ * non-null value pairs, the sum of residual products, residual sums and
+ * sums of squres (of mean-centered values) for x and y. As a side effect,
+ * this method adds columns for these statistics to the input *aux* object.
+ * @param {object} aux An object for auxiliary columns (such as
+ *  sufficient statistics) to include in the data cube aggregation.
+ * @param {any[]} args Source data table columns. The entries may be strings,
+ *  column references, SQL expressions, or other string-coercible values.
+ * @param {string} from The source data table name.
+ * @returns An aggregate expression for calculating correlation over
+ *  pre-aggregated data partitions.
+ */
+function corrExpr(aux, [x, y], from) {
+  const xn = sanitize(x);
+  const yn = sanitize(y);
+  const n = `__count_${xn}_${yn}__`; // count, excluding null values
+  const sxy = `__sxy_${xn}_${yn}__`; // residual sum of squares
+  const sxx = `__sxx_${xn}__`; // residual sum of squares
+  const syy = `__syy_${yn}__`; // residual sum of squares
+  const sx = `__sx_${xn}__`; // residual sum
+  const sy = `__sy_${yn}__`; // residual sum
+  const ux = sql`(SELECT AVG(${x}) FROM "${from}")`;
+  const uy = sql`(SELECT AVG(${y}) FROM "${from}")`;
+  aux[n] = sql`REGR_COUNT(${y}, ${x})`;
+  aux[sxy] = sql`SUM((${x} - ${ux}) * (${y} - ${uy}))`;
+  aux[sxx] = sql`SUM((${x} - ${ux}) ** 2) FILTER (${y} IS NOT NULL)`;
+  aux[syy] = sql`SUM((${y} - ${uy}) ** 2) FILTER (${x} IS NOT NULL)`;
+  aux[sx] = sql`SUM(${x} - ${ux}) FILTER (${y} IS NOT NULL)`;
+  aux[sy] = sql`SUM(${y} - ${uy}) FILTER (${x} IS NOT NULL)`;
+  const numer = sql`(SUM(${sxy}) - SUM(${sx}) * SUM(${sy}) / SUM(${n}))`;
+  const sdx = sql`SQRT(SUM(${sxx}) - (SUM(${sx}) ** 2) / SUM(${n}))`;
+  const sdy = sql`SQRT(SUM(${syy}) - (SUM(${sy}) ** 2) / SUM(${n}))`;
+  return sql`${numer} / (${sdx} * ${sdy})`;
 }
 
 /**
