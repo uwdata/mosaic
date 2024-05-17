@@ -1,9 +1,8 @@
 import assert from 'node:assert';
 import {
-  Query, argmax, argmin, avg, count, covarPop, covariance, isNotDistinct,
-  literal, loadObjects, max, min, product, stddev, stddevPop, sum,
-  varPop,
-  variance
+  Query, argmax, argmin, avg, corr, count, covarPop, covariance,
+  isNotDistinct, literal, loadObjects, max, min, product, stddev,
+  stddevPop, sum, varPop, variance
 } from '@uwdata/mosaic-sql';
 import { Coordinator, Selection } from '../src/index.js';
 import { nodeConnector } from './util/node-connector.js';
@@ -91,5 +90,9 @@ describe('DataCubeIndexer', () => {
   it('supports covarPop aggregate', async () => {
     assert.strictEqual(await run(covarPop('x', 'y')), -0.25);
     assert.strictEqual(await run(covarPop('y', 'x')), -0.25);
+  });
+  it('supports corr aggregate', async () => {
+    assert.strictEqual(await run(corr('x', 'y')), -1);
+    assert.strictEqual(await run(corr('y', 'x')), -1);
   });
 });
