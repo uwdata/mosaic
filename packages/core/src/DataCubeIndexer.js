@@ -234,6 +234,13 @@ function getIndexColumns(client) {
           [as]: sql`SQRT(${varianceExpr(aux, args[0], from, op !== 'STDDEV_POP')})`
         });
         break;
+      case 'COVAR_SAMP':
+      case 'COVAR_POP':
+        aux[as] = null;
+        aggr.push({
+          [as]: covarianceExpr(aux, args, from, op !== 'COVAR_POP')
+        });
+        break;
 
       // aggregates that commute directly
       case 'MAX':
@@ -256,34 +263,71 @@ function getIndexColumns(client) {
 }
 
 /**
- * Generate expressions for calculating variance over a set of data partitions.
+ * Generate expressions for calculating variance over data partitions.
  * This method uses the "textbook" definition of variance (E[X^2] - E[X]^2),
  * but on mean-centered data to reduce floating point error. The variance
- * calculation uses two sufficient statistics: the residual sum of squares
- * and the sum of residual (mean-centered) values. As a side effect, this
- * method adds columns for these statistics to the input *aux* object.
+ * calculation uses three sufficient statistics: the count of non-null values,
+ * the residual sum of squares and the sum of residual (mean-centered) values.
+ * As a side effect, this method adds columns for these statistics to the
+ * input *aux* object.
  * @param {object} aux An object for auxiliary columns (such as
  *  sufficient statistics) to include in the data cube aggregation.
- * @param {*} arg The source data table column. This may be a string,
+ * @param {*} x The source data table column. This may be a string,
  *  column reference, SQL expression, or other string-coercible value.
  * @param {string} from The source data table name.
  * @param {boolean} [correction=true] A flag for whether a Bessel
  *  correction should be applied to compute the sample variance
  *  rather than the populatation variance.
- * @returns An aggregate expression for calculating variance.
+ * @returns An aggregate expression for calculating variance over
+ *  pre-aggregated data partitions.
  */
-function varianceExpr(aux, arg, from, correction = true) {
-  const name = sanitize(arg);
+function varianceExpr(aux, x, from, correction = true) {
+  const name = sanitize(x);
   const adj = correction ? ` - 1` : '';
   const n = `__count_${name}__`; // count, excluding null values
   const ssq = `__rssq_${name}__`; // residual sum of squares
   const sum = `__rsum_${name}__`; // residual sum
-  const mean = sql`(SELECT AVG(${arg}) FROM "${from}")`;
-  aux[n] = sql`COUNT(*)`;
-  aux[ssq] = sql`SUM((${arg} - ${mean}) ** 2)`;
-  aux[sum] = sql`SUM(${arg} - ${mean})`;
+  const mean = sql`(SELECT AVG(${x}) FROM "${from}")`;
+  aux[n] = sql`COUNT(${x})`;
+  aux[ssq] = sql`SUM((${x} - ${mean}) ** 2)`;
+  aux[sum] = sql`SUM(${x} - ${mean})`;
   // TODO: coalesce null values with 0, or leave that for downstream?
   return sql`(SUM(${ssq}) - (SUM(${sum}) ** 2 / SUM(${n}))) / (SUM(${n})${adj})`;
+}
+
+/**
+ * Generate expressions for calculating covariance over data partitions.
+ * This method uses mean-centered data to reduce floating point error. The
+ * covariance calculation uses four sufficient statistics: the count of
+ * non-null value pairs, the sum of residual products, and residual sums
+ * (of mean-centered values) for x and y. As a side effect, this method
+ * adds columns for these statistics to the input *aux* object.
+ * @param {object} aux An object for auxiliary columns (such as
+ *  sufficient statistics) to include in the data cube aggregation.
+ * @param {any[]} args Source data table columns. The entries may be strings,
+ *  column references, SQL expressions, or other string-coercible values.
+ * @param {string} from The source data table name.
+ * @param {boolean} [correction=true] A flag for whether a Bessel
+ *  correction should be applied to compute the sample covariance
+ *  rather than the populatation covariance.
+ * @returns An aggregate expression for calculating covariance over
+ *  pre-aggregated data partitions.
+ */
+function covarianceExpr(aux, [x, y], from, correction = true) {
+  const xn = sanitize(x);
+  const yn = sanitize(y);
+  const adj = correction ? ` - 1` : '';
+  const n = `__count_${xn}_${yn}__`; // count, excluding null values
+  const sxy = `__sxy_${xn}_${yn}__`; // residual sum of squares
+  const sx = `__sx_${xn}__`; // residual sum
+  const sy = `__sy_${yn}__`; // residual sum
+  const ux = sql`(SELECT AVG(${x}) FROM "${from}")`;
+  const uy = sql`(SELECT AVG(${y}) FROM "${from}")`;
+  aux[n] = sql`REGR_COUNT(${y}, ${x})`;
+  aux[sxy] = sql`SUM((${x} - ${ux}) * (${y} - ${uy}))`;
+  aux[sx] = sql`SUM(${x} - ${ux}) FILTER (${y} IS NOT NULL)`;
+  aux[sy] = sql`SUM(${y} - ${uy}) FILTER (${x} IS NOT NULL)`;
+  return sql`(SUM(${sxy}) - SUM(${sx}) * SUM(${sy}) / SUM(${n})) / (SUM(${n})${adj})`;
 }
 
 /**
