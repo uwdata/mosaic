@@ -221,7 +221,7 @@ function getIndexColumns(client) {
       case 'VARIANCE':
       case 'VAR_SAMP':
       case 'VAR_POP':
-        aux[as] = null;
+        aux[as] = null; // omit original variance aggregate
         aggr.push({
           [as]: varianceExpr(aux, args[0], from, op !== 'VAR_POP')
         });
@@ -229,14 +229,14 @@ function getIndexColumns(client) {
       case 'STDDEV':
       case 'STDDEV_SAMP':
       case 'STDDEV_POP':
-        aux[as] = null;
+        aux[as] = null; // omit original std. deviation aggregate
         aggr.push({
           [as]: sql`SQRT(${varianceExpr(aux, args[0], from, op !== 'STDDEV_POP')})`
         });
         break;
       case 'COVAR_SAMP':
       case 'COVAR_POP':
-        aux[as] = null;
+        aux[as] = null; // omit original covariance aggregate
         aggr.push({
           [as]: covarianceExpr(aux, args, from, op !== 'COVAR_POP')
         });
