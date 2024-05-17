@@ -90,6 +90,19 @@ describe('Query', () => {
     );
   });
 
+  it('selects only the most recent reference', () => {
+    const query = 'SELECT "baz", "foo" + 1 AS "bar" FROM "data"';
+
+    assert.strictEqual(
+      Query
+        .select('foo', 'bar', 'baz')
+        .select({ bar: sql`"foo" + 1`, foo: null })
+        .from('data')
+        .toString(),
+      query
+    );
+  });
+
   it('selects distinct columns', () => {
     assert.strictEqual(
       Query
