@@ -30,6 +30,7 @@
         <option value="line-density">Line Density</option>
         <option value="line">Line</option>
         <option value="linear-regression">Linear Regression</option>
+        <option value="linear-regression-10m">Linear Regression 10M</option>
         <option value="legends">Legends</option>
         <option value="mark-types">Mark Types</option>
         <option value="moving-average">Moving Average</option>
@@ -64,13 +65,38 @@
       </select>
     </span>
 
-    <span>
-      Source:
-      <select id="source">
-        <option value="yaml" selected>YAML</option>
-        <option value="esm">JavaScript (ESM)</option>
-      </select>
-    </span>
+    <details>
+      <summary>Advanced Options</summary>
+      <div>
+        <div>
+          Spec Type:
+          <select id="source">
+            <option value="yaml" selected>YAML</option>
+            <option value="esm">ESM</option>
+          </select>
+        </div>
+        <div>
+          Log Queries:
+          <input id="query-log" type="checkbox" />
+        </div>
+        <div>
+          Query Cache:
+          <input id="cache" type="checkbox" checked />
+        </div>
+        <div>
+          Query Consolidation:
+          <input id="consolidate" type="checkbox" checked />
+        </div>
+        <div>
+          Data Cube Indexes:
+          <input id="index" type="checkbox" checked />
+        </div>
+        <div>
+          Active Index State:
+          <button id="index-state">Log</button>
+        </div>
+      </div>
+    </details>
   </header>
   <div id="view"></div>
 <script type="module">
@@ -81,14 +107,59 @@
   const connectorMenu = document.querySelector('#connectors');
   const exampleMenu = document.querySelector('#examples');
   const sourceMenu = document.querySelector('#source');
+  const qlogToggle = document.querySelector('#query-log');
+  const cacheToggle = document.querySelector('#cache');
+  const consolidateToggle = document.querySelector('#consolidate');
+  const indexToggle = document.querySelector('#index');
+  const indexState = document.querySelector('#index-state');
+
   connectorMenu.addEventListener('change', setConnector);
   exampleMenu.addEventListener('change', reload);
   sourceMenu.addEventListener('change', reload);
+  qlogToggle.addEventListener('input', setQueryLog);
+  cacheToggle.addEventListener('input', setCache);
+  consolidateToggle.addEventListener('input', setConsolidate);
+  indexToggle.addEventListener('input', setIndex);
+  indexState.addEventListener('click', () => {
+    const active = Array.from(vg.coordinator().filterGroups.values())
+      .filter(group => group.indexer?.activeView);
+    if (active.length) {
+      active.forEach(group => console.warn(
+        'Data Cube Index Entries',
+        Array.from(group.indexer.indices.values())
+      ));
+    } else {
+      console.warn('No Active Data Cube Index');
+    }
+  });
+
+  setQueryLog();
+  setCache();
+  setConsolidate();
+  setIndex();
   setConnector();
 
   async function setConnector() {
     await setDatabaseConnector(connectorMenu.value);
     reload();
+  }
+
+  function setQueryLog() {
+    vg.coordinator().manager.logQueries(qlogToggle.checked);
+  }
+
+  function setCache() {
+    vg.coordinator().manager.cache(cacheToggle.checked);
+  }
+
+  function setConsolidate() {
+    vg.coordinator().manager.consolidate(consolidateToggle.checked);
+  }
+
+  function setIndex() {
+    const state = indexToggle.checked;
+    vg.coordinator().indexes = state;
+    vg.coordinator().filterGroups.forEach(group => group.index(state));
   }
 
   function reload() {
