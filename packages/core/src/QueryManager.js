@@ -10,6 +10,7 @@ export function QueryManager() {
   let db;
   let clientCache;
   let logger;
+  let logQueries = false;
   let recorders = [];
   let pending = null;
   let consolidate;
@@ -54,6 +55,9 @@ export function QueryManager() {
 
       // issue query, potentially cache result
       const t0 = performance.now();
+      if (logQueries) {
+        logger.debug('Query', { type, sql, ...options });
+      }
       const data = await db.query({ type, sql, ...options });
       if (cache) clientCache.set(sql, data);
       logger.debug(`Request: ${(performance.now() - t0).toFixed(1)}`);
@@ -72,6 +76,10 @@ export function QueryManager() {
 
     logger(value) {
       return value ? (logger = value) : logger;
+    },
+
+    logQueries(value) {
+      return value !== undefined ? logQueries = !!value : logQueries;
     },
 
     connector(connector) {

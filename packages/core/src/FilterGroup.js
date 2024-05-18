@@ -1,24 +1,27 @@
+import { Coordinator } from './Coordinator.js';
 import { DataCubeIndexer } from './DataCubeIndexer.js';
+import { MosaicClient } from './MosaicClient.js';
+import { Selection } from './Selection.js';
 
 export class FilterGroup {
   /**
-   * @param {import('./Coordinator.js').Coordinator} coordinator The Mosaic coordinator.
-   * @param {*} selection The shared filter selection.
-   * @param {*} index Boolean flag or options hash for data cube indexer.
-   *  Falsy values disable indexing.
+   * @param {Coordinator} coordinator The Mosaic coordinator.
+   * @param {Selection} selection The shared filter selection.
+   * @param {object|boolean} index Boolean flag or options hash for
+   *  a data cube indexer. Falsy values disable indexing.
    */
   constructor(coordinator, selection, index = true) {
-    /** @type import('./Coordinator.js').Coordinator */
     this.mc = coordinator;
     this.selection = selection;
+    /** @type {Set<MosaicClient>} */
     this.clients = new Set();
-    this.indexer = index
-      ? new DataCubeIndexer(this.mc, { ...index, selection })
-      : null;
+    /** @type {DataCubeIndexer | null} */
+    this.indexer = null;
+    this.index(index);
 
     const { value, activate } = this.handlers = {
       value: () => this.update(),
-      activate: clause => this.indexer?.index(this.clients, clause)
+      activate: clause => { this.indexer?.index(this.clients, clause); }
     };
     selection.addEventListener('value', value);
     selection.addEventListener('activate', activate);
@@ -28,6 +31,13 @@ export class FilterGroup {
     const { value, activate } = this.handlers;
     this.selection.removeEventListener('value', value);
     this.selection.removeEventListener('activate', activate);
+  }
+
+  index(state) {
+    const { selection } = this;
+    this.indexer = state
+      ? new DataCubeIndexer(this.mc, { ...state, selection })
+      : null;
   }
 
   reset() {
