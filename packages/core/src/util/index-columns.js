@@ -1,4 +1,4 @@
-import { Query, sql } from '@uwdata/mosaic-sql';
+import { Query, agg, sql } from '@uwdata/mosaic-sql';
 import { MosaicClient } from '../MosaicClient.js';
 
 export const NO_INDEX = { from: NaN };
@@ -27,14 +27,13 @@ export function indexColumns(client) {
     switch (op) {
       case 'COUNT':
       case 'SUM':
-      case 'REGR_COUNT':
         // TODO: revisit this DOUBLE cast in the future
         // for now, this sidesteps client-side conversions
         // of bignum and fixed decimal types to JS numbers
-        aggr.push({ [as]: sql`SUM("${as}")::DOUBLE` });
+        aggr.push({ [as]: agg`SUM("${as}")::DOUBLE` });
         break;
       case 'AVG':
-        aggr.push({ [as]: avgExpr(aux, as, args) });
+        aggr.push({ [as]: avgExpr(aux, as, args[0]) });
         break;
       case 'ARG_MAX':
         aggr.push({ [as]: argmaxExpr(aux, as, args) });
@@ -57,11 +56,11 @@ export function indexColumns(client) {
       case 'STDDEV':
       case 'STDDEV_SAMP':
         aux[as] = null;
-        aggr.push({ [as]: sql`SQRT(${varianceExpr(aux, args[0], from)})` });
+        aggr.push({ [as]: agg`SQRT(${varianceExpr(aux, args[0], from)})` });
         break;
       case 'STDDEV_POP':
         aux[as] = null;
-        aggr.push({ [as]: sql`SQRT(${varianceExpr(aux, args[0], from, false)})` });
+        aggr.push({ [as]: agg`SQRT(${varianceExpr(aux, args[0], from, false)})` });
         break;
       case 'COVAR_SAMP':
         aux[as] = null;
@@ -77,11 +76,17 @@ export function indexColumns(client) {
         break;
 
       // regression statistics
+      case 'REGR_COUNT':
+        aux[as] = null;
+        aggr.push({ [as]: agg`${regrCountExpr(aux, args)}::DOUBLE` });
+        break;
       case 'REGR_AVGX':
-        aggr.push({ [as]: regrAvgExpr(aux, as, args) });
+        aux[as] = null;
+        aggr.push({ [as]: regrAvgXExpr(aux, args) });
         break;
       case 'REGR_AVGY':
-        aggr.push({ [as]: regrAvgExpr(aux, as, args) });
+        aux[as] = null;
+        aggr.push({ [as]: regrAvgYExpr(aux, args) });
         break;
       case 'REGR_SYY':
         aux[as] = null;
@@ -109,7 +114,7 @@ export function indexColumns(client) {
       case 'BOOL_AND':
       case 'BOOL_OR':
       case 'PRODUCT':
-        aggr.push({ [as]: sql`${op}("${as}")` });
+        aggr.push({ [as]: agg`${op}("${as}")` });
         break;
 
       // otherwise, check if dimension
@@ -176,25 +181,52 @@ function getBaseTable(query) {
 }
 
 /**
- * Generate expressions for calculating averages over data partitions.
+ * Generate an expression for calculating counts over data partitions.
+ * As a side effect, this method adds a column to the input *aux* object
+ * to track the count of non-null values per-partition.
+ * @param {object} aux An object for auxiliary columns (such as
+ *  sufficient statistics) to include in the data cube aggregation.
+ * @param {any} arg Source data table column. This value may be a string,
+ *  column reference, SQL expression, or other string-coercible value.
+ * @returns An aggregate expression for calculating counts over
+ *  pre-aggregated data partitions.
+ */
+function countExpr(aux, arg) {
+  const n = auxName('count', arg);
+  aux[n] = agg`COUNT(${arg})`;
+  return agg`SUM(${n})`.annotate({ name: n });
+}
+
+/**
+ * Generate an expression for calculating averages over data partitions.
  * As a side effect, this method adds a column to the input *aux* object
  * to track the count of non-null values per-partition.
  * @param {object} aux An object for auxiliary columns (such as
  *  sufficient statistics) to include in the data cube aggregation.
  * @param {string} as The output column for the original aggregate.
- * @param {[any]} args Source data table columns. The entries may be strings,
- *  column references, SQL expressions, or other string-coercible values.
- * @returns An aggregate expression for calculating argmax over
+ * @param {any} arg Source data table column. This value may be a string,
+ *  column reference, SQL expression, or other string-coercible value.
+ * @returns An aggregate expression for calculating averages over
  *  pre-aggregated data partitions.
  */
-function avgExpr(aux, as, [x]) {
-  const n = auxName('count', x);
-  aux[n] = sql`COUNT(${x})`;
-  return sql`(SUM("${as}" * ${n}) / SUM(${n}))`;
+function avgExpr(aux, as, arg) {
+  const n = countExpr(aux, arg);
+  return agg`(SUM("${as}" * ${n.name}) / ${n})`;
 }
 
 /**
- * Generate expressions for calculating argmax over data partitions.
+ * Generate a scalar subquery for a global average.
+ * This value can be used to mean-center data.
+ * @param {*} x Souce data table column.
+ * @param {string} from The source data table name.
+ * @returns A scalar aggregate query
+ */
+function avg(x, from) {
+  return sql`(SELECT AVG(${x}) FROM "${from}")`;
+}
+
+/**
+ * Generate an expression for calculating argmax over data partitions.
  * As a side effect, this method adds a column to the input *aux* object
  * to track a maximum value per-partition.
  * @param {object} aux An object for auxiliary columns (such as
@@ -207,12 +239,12 @@ function avgExpr(aux, as, [x]) {
  */
 function argmaxExpr(aux, as, [, y]) {
   const max = auxName('max', y);
-  aux[max] = sql`MAX(${y})`;
-  return sql`ARG_MAX("${as}", ${max})`;
+  aux[max] = agg`MAX(${y})`;
+  return agg`ARG_MAX("${as}", ${max})`;
 }
 
 /**
- * Generate expressions for calculating argmin over data partitions.
+ * Generate an expression for calculating argmin over data partitions.
  * As a side effect, this method adds a column to the input *aux* object
  * to track a minimum value per-partition.
  * @param {object} aux An object for auxiliary columns (such as
@@ -225,12 +257,12 @@ function argmaxExpr(aux, as, [, y]) {
  */
 function argminExpr(aux, as, [, y]) {
   const min = auxName('min', y);
-  aux[min] = sql`MIN(${y})`;
-  return sql`ARG_MIN("${as}", ${min})`;
+  aux[min] = agg`MIN(${y})`;
+  return agg`ARG_MIN("${as}", ${min})`;
 }
 
 /**
- * Generate expressions for calculating variance over data partitions.
+ * Generate an expression for calculating variance over data partitions.
  * This method uses the "textbook" definition of variance (E[X^2] - E[X]^2),
  * but on mean-centered data to reduce floating point error. The variance
  * calculation uses three sufficient statistics: the count of non-null values,
@@ -249,20 +281,18 @@ function argminExpr(aux, as, [, y]) {
  *  pre-aggregated data partitions.
  */
 function varianceExpr(aux, x, from, correction = true) {
+  const n = countExpr(aux, x);
+  const ssq = auxName('rssq', x); // residual sum of squares
+  const sum = auxName('rsum', x); // residual sum
+  const delta = sql`${x} - ${avg(x, from)}`;
+  aux[ssq] = agg`SUM((${delta}) ** 2)`;
+  aux[sum] = agg`SUM(${delta})`;
   const adj = correction ? ` - 1` : ''; // Bessel correction
-  const xn = sanitize(x);
-  const n = auxName('count', xn);  // count, excluding null values
-  const ssq = auxName('rssq', xn); // residual sum of squares
-  const sum = auxName('rsum', xn); // residual sum
-  const ux = sql`(SELECT AVG(${x}) FROM "${from}")`; // to mean-center data
-  aux[n] = sql`COUNT(${x})`;
-  aux[ssq] = sql`SUM((${x} - ${ux}) ** 2)`;
-  aux[sum] = sql`SUM(${x} - ${ux})`;
-  return sql`(SUM(${ssq}) - (SUM(${sum}) ** 2 / SUM(${n}))) / (SUM(${n})${adj})`;
+  return agg`(SUM(${ssq}) - (SUM(${sum}) ** 2 / ${n})) / (${n}${adj})`;
 }
 
 /**
- * Generate expressions for calculating covariance over data partitions.
+ * Generate an expression for calculating covariance over data partitions.
  * This method uses mean-centered data to reduce floating point error. The
  * covariance calculation uses four sufficient statistics: the count of
  * non-null value pairs, the sum of residual products, and residual sums
@@ -280,32 +310,25 @@ function varianceExpr(aux, x, from, correction = true) {
  * @returns An aggregate expression for calculating covariance over
  *  pre-aggregated data partitions.
  */
-function covarianceExpr(aux, [y, x], from, correction = true) {
-  const xn = sanitize(x);
-  const yn = sanitize(y);
-  const n = auxName('count', yn, xn); // count, excluding null values
-  const sxy = auxName('sxy', yn, xn); // residual sum of squares
-  const sx = auxName('rs', xn);       // residual sum
-  const sy = auxName('rs', yn);       // residual sum
-  const ux = sql`(SELECT AVG(${x}) FROM "${from}")`; // to mean-center data
-  const uy = sql`(SELECT AVG(${y}) FROM "${from}")`; // to mean-center data
-  aux[n] = sql`REGR_COUNT(${y}, ${x})`;
-  aux[sxy] = sql`SUM((${x} - ${ux}) * (${y} - ${uy}))`;
-  aux[sx] = sql`SUM(${x} - ${ux}) FILTER (${y} IS NOT NULL)`;
-  aux[sy] = sql`SUM(${y} - ${uy}) FILTER (${x} IS NOT NULL)`;
+function covarianceExpr(aux, args, from, correction = true) {
+  const n = regrCountExpr(aux, args);
+  const sxy = regrSumXYExpr(aux, args, from);
+  const sx = regrSumExpr(aux, 1, args, from);
+  const sy = regrSumExpr(aux, 0, args, from);
   const adj = correction === null ? ''  // do not divide by count
-    : correction ? ` / (SUM(${n}) - 1)` // Bessel correction (sample)
-    : ` / SUM(${n})`;                   // no correction (population)
-  return sql`(SUM(${sxy}) - SUM(${sx}) * SUM(${sy}) / SUM(${n}))${adj}`;
+    : correction ? ` / (${n} - 1)` // Bessel correction (sample)
+    : ` / ${n}`;                   // no correction (population)
+  return agg`(${sxy} - ${sx} * ${sy} / ${n})${adj}`;
 }
 
 /**
- * Generate expressions for calculating correlation over data partitions.
- * This method uses mean-centered data to reduce floating point error. The
- * correlation calculation uses six sufficient statistics: the count of
- * non-null value pairs, the sum of residual products, residual sums and
- * sums of squres (of mean-centered values) for x and y. As a side effect,
- * this method adds columns for these statistics to the input *aux* object.
+ * Generate an expression for calculating Pearson product-moment correlation
+ * coefficients over data partitions. This method uses mean-centered data
+ * to reduce floating point error. The correlation calculation uses six
+ * sufficient statistics: the count of non-null value pairs, the sum of
+ * residual products, and both residual sums and sums of squares for x and y.
+ * As a side effect, this method adds columns for these statistics to the
+ * input *aux* object.
  * @param {object} aux An object for auxiliary columns (such as
  *  sufficient statistics) to include in the data cube aggregation.
  * @param {any[]} args Source data table columns. The entries may be strings,
@@ -314,68 +337,194 @@ function covarianceExpr(aux, [y, x], from, correction = true) {
  * @returns An aggregate expression for calculating correlation over
  *  pre-aggregated data partitions.
  */
-function corrExpr(aux, [y, x], from) {
-  const xn = sanitize(x);
-  const yn = sanitize(y);
-  const n = auxName('count', yn, xn); // count, excluding null values
-  const sxy = auxName('sxy', yn, xn); // residual sum of squares
-  const sxx = auxName('rss', xn);     // residual sum of squares
-  const syy = auxName('rss', yn);     // residual sum of squares
-  const sx = auxName('rs', xn);       // residual sum
-  const sy = auxName('rs', yn);       // residual sum
-  const ux = sql`(SELECT AVG(${x}) FROM "${from}")`; // to mean-center data
-  const uy = sql`(SELECT AVG(${y}) FROM "${from}")`; // to mean-center data
-  aux[n] = sql`REGR_COUNT(${y}, ${x})`;
-  aux[sxy] = sql`SUM((${x} - ${ux}) * (${y} - ${uy}))`;
-  aux[sxx] = sql`SUM((${x} - ${ux}) ** 2) FILTER (${y} IS NOT NULL)`;
-  aux[syy] = sql`SUM((${y} - ${uy}) ** 2) FILTER (${x} IS NOT NULL)`;
-  aux[sx] = sql`SUM(${x} - ${ux}) FILTER (${y} IS NOT NULL)`;
-  aux[sy] = sql`SUM(${y} - ${uy}) FILTER (${x} IS NOT NULL)`;
-  const numer = sql`(SUM(${sxy}) - SUM(${sx}) * SUM(${sy}) / SUM(${n}))`;
-  const vx = sql`SUM(${sxx}) - (SUM(${sx}) ** 2) / SUM(${n})`;
-  const vy = sql`SUM(${syy}) - (SUM(${sy}) ** 2) / SUM(${n})`;
-  return sql`${numer} / SQRT((${vx}) * (${vy}))`;
+function corrExpr(aux, args, from) {
+  const n = regrCountExpr(aux, args);
+  const sxy = regrSumXYExpr(aux, args, from);
+  const sxx = regrSumSqExpr(aux, 1, args, from);
+  const syy = regrSumSqExpr(aux, 0, args, from);
+  const sx = regrSumExpr(aux, 1, args, from);
+  const sy = regrSumExpr(aux, 0, args, from);
+  const vx = agg`(${sxx} - (${sx} ** 2) / ${n})`;
+  const vy = agg`(${syy} - (${sy} ** 2) / ${n})`;
+  return agg`(${sxy} - ${sx} * ${sy} / ${n}) / SQRT(${vx} * ${vy})`;
 }
 
-function regrAvgExpr(aux, as, [y, x]) {
-  const xn = sanitize(x);
-  const yn = sanitize(y);
-  const n = auxName('count', yn, xn); // count, excluding null values
-  aux[n] = sql`REGR_COUNT(${y}, ${x})`;
-  return sql`(SUM("${as}" * ${n}) / SUM(${n}))`;
+/**
+ * Generate an expression for the count of non-null (x, y) pairs. As a side
+ * effect, this method adds columns to the input *aux* object to the
+ * partition-level count of non-null pairs.
+ * @param {object} aux An object for auxiliary columns (such as
+ *  sufficient statistics) to include in the data cube aggregation.
+ * @param {any[]} args Source data table columns. The entries may be strings,
+ *  column references, SQL expressions, or other string-coercible values.
+ * @returns An aggregate expression for calculating regression pair counts
+ *  over pre-aggregated data partitions.
+ */
+function regrCountExpr(aux, [y, x]) {
+  const n = auxName('count', y, x);
+  aux[n] = agg`REGR_COUNT(${y}, ${x})`;
+  return agg`SUM(${n})`.annotate({ name: n });
 }
 
-function regrVarExpr(aux, i, args, from) {
-  const nn = args.map(sanitize).slice(0, 2);
-  const z = args[i];
+/**
+ * Generate an expression for calculating sums of residual values for use in
+ * covariance and regression queries. Only values corresponding to non-null
+ * (x, y) pairs are included. This method uses mean-centered data to reduce
+ * floating point error. As a side effect, this method adds a column for
+ * partition-level sums to the input *aux* object.
+ * @param {object} aux An object for auxiliary columns (such as
+ *  sufficient statistics) to include in the data cube aggregation.
+ * @param {number} i An index indicating which argument column to sum.
+ * @param {any[]} args Source data table columns. The entries may be strings,
+ *  column references, SQL expressions, or other string-coercible values.
+ * @param {string} from The source data table name.
+ * @returns An aggregate expression over pre-aggregated data partitions.
+ */
+function regrSumExpr(aux, i, args, from) {
+  const v = args[i];
   const o = args[1 - i];
-  const zn = nn[i];
-  const n = auxName('count', ...nn); // count, excluding null values
-  const ssq = auxName('rss', zn);    // residual sum of squares
-  const sum = auxName('rs', zn);     // residual sum
-  const uz = sql`(SELECT AVG(${z}) FROM "${from}")`; // to mean-center data
-  aux[n] = sql`REGR_COUNT(${args[1]}, ${args[0]})`;
-  aux[ssq] = sql`SUM((${z} - ${uz}) ** 2) FILTER (${o} IS NOT NULL)`;
-  aux[sum] = sql`SUM(${z} - ${uz})  FILTER (${o} IS NOT NULL)`;
-  return sql`(SUM(${ssq}) - (SUM(${sum}) ** 2 / SUM(${n})))`;
+  const sum = auxName('rs', v);
+  aux[sum] = agg`SUM(${v} - ${avg(v, from)}) FILTER (${o} IS NOT NULL)`;
+  return agg`SUM(${sum})`
 }
 
+/**
+ * Generate an expressios for calculating sums of squared residual values for
+ * use in covariance and regression queries. Only values corresponding to
+ * non-null (x, y) pairs are included. This method uses mean-centered data to
+ * reduce floating point error. As a side effect, this method adds a column
+ * for partition-level sums to the input *aux* object.
+ * @param {object} aux An object for auxiliary columns (such as
+ *  sufficient statistics) to include in the data cube aggregation.
+ * @param {number} i An index indicating which argument column to sum.
+ * @param {any[]} args Source data table columns. The entries may be strings,
+ *  column references, SQL expressions, or other string-coercible values.
+ * @param {string} from The source data table name.
+ * @returns An aggregate expression over pre-aggregated data partitions.
+ */
+function regrSumSqExpr(aux, i, args, from) {
+  const v = args[i];
+  const u = args[1 - i];
+  const ssq = auxName('rss', v);
+  aux[ssq] = agg`SUM((${v} - ${avg(v, from)}) ** 2) FILTER (${u} IS NOT NULL)`;
+  return agg`SUM(${ssq})`
+}
+
+/**
+ * Generate an expression for calculating sums of residual product values for
+ * use in covariance and regression queries. Only values corresponding to
+ * non-null (x, y) pairs are included. This method uses mean-centered data to
+ * reduce floating point error. As a side effect, this method adds a column
+ * for partition-level sums to the input *aux* object.
+ * @param {object} aux An object for auxiliary columns (such as
+ *  sufficient statistics) to include in the data cube aggregation.
+ * @param {any[]} args Source data table columns. The entries may be strings,
+ *  column references, SQL expressions, or other string-coercible values.
+ * @param {string} from The source data table name.
+ * @returns An aggregate expression over pre-aggregated data partitions.
+ */
+function regrSumXYExpr(aux, args, from) {
+  const [y, x] = args;
+  const sxy = auxName('sxy', y, x);
+  aux[sxy] = agg`SUM((${x} - ${avg(x, from)}) * (${y} - ${avg(y, from)}))`;
+  return agg`SUM(${sxy})`;
+}
+
+/**
+ * Generate an expression for the average x value in a regression context.
+ * Only values corresponding to non-null (x, y) pairs are included. As a side
+ * effect, this method adds columns to the input *aux* object to track both
+ * the count of non-null pairs and partition-level averages.
+ * @param {object} aux An object for auxiliary columns (such as
+ *  sufficient statistics) to include in the data cube aggregation.
+ * @param {any[]} args Source data table columns. The entries may be strings,
+ *  column references, SQL expressions, or other string-coercible values.
+ * @returns An aggregate expression over pre-aggregated data partitions.
+ */
+function regrAvgXExpr(aux, args) {
+  const [y, x] = args;
+  const n = regrCountExpr(aux, args);
+  const a = auxName('avg', x, y);
+  aux[a] = agg`REGR_AVGX(${y}, ${x})`;
+  return agg`(SUM(${a} * ${n.name}) / ${n})`;
+}
+
+/**
+ * Generate an expression for the average y value in a regression context.
+ * Only values corresponding to non-null (x, y) pairs are included. As a side
+ * effect, this method adds columns to the input *aux* object to track both
+ * the count of non-null pairs and partition-level averages.
+ * @param {object} aux An object for auxiliary columns (such as
+ *  sufficient statistics) to include in the data cube aggregation.
+ * @param {any[]} args Source data table columns. The entries may be strings,
+ *  column references, SQL expressions, or other string-coercible values.
+ * @returns An aggregate expression over pre-aggregated data partitions.
+ */
+function regrAvgYExpr(aux, args) {
+  const [y, x] = args;
+  const n = regrCountExpr(aux, args);
+  const a = auxName('avg', y, x);
+  aux[a] = agg`REGR_AVGY(${y}, ${x})`;
+  return agg`(SUM(${a} * ${n.name}) / ${n})`;
+}
+
+/**
+ * Generate an expression for calculating variance over data partitions for
+ * use in covariance and regression queries. Only values corresponding to
+ * non-null (x, y) pairs are included. This method uses mean-centered data to
+ * reduce floating point error. As a side effect, this method adds columns
+ * for partition-level count and sums to the input *aux* object.
+ * @param {object} aux An object for auxiliary columns (such as
+ *  sufficient statistics) to include in the data cube aggregation.
+ * @param {number} i The index of the argument to compute the variance for.
+ * @param {any[]} args Source data table columns. The entries may be strings,
+ *  column references, SQL expressions, or other string-coercible values.
+ * @param {string} from The source data table name.
+ * @returns An aggregate expression for calculating variance over
+ *  pre-aggregated data partitions.
+ */
+function regrVarExpr(aux, i, args, from) {
+  const n = regrCountExpr(aux, args);
+  const sum = regrSumExpr(aux, i, args, from);
+  const ssq = regrSumSqExpr(aux, i, args, from);
+  return agg`(${ssq} - (${sum} ** 2 / ${n}))`;
+}
+
+/**
+ * Generate an expression for calculating a regression slope. The slope is
+ * computed as the covariance divided by the variance of the x variable. As a
+ * side effect, this method adds columns for sufficient statistics to the
+ * input *aux* object.
+ * @param {object} aux An object for auxiliary columns (such as
+ *  sufficient statistics) to include in the data cube aggregation.
+ * @param {any[]} args Source data table columns. The entries may be strings,
+ *  column references, SQL expressions, or other string-coercible values.
+ * @param {string} from The source data table name.
+ * @returns An aggregate expression for calculating regression slopes over
+ *  pre-aggregated data partitions.
+ */
 function regrSlopeExpr(aux, args, from) {
   const cov = covarianceExpr(aux, args, from, null);
   const varx = regrVarExpr(aux, 1, args, from);
-  return sql`(${cov}) / ${varx}`;
+  return agg`(${cov}) / ${varx}`;
 }
 
+/**
+ * Generate an expression for calculating a regression intercept. The intercept
+ * is derived from the regression slope and average x and y values. As a
+ * side effect, this method adds columns for sufficient statistics to the
+ * input *aux* object.
+ * @param {object} aux An object for auxiliary columns (such as
+ *  sufficient statistics) to include in the data cube aggregation.
+ * @param {any[]} args Source data table columns. The entries may be strings,
+ *  column references, SQL expressions, or other string-coercible values.
+ * @param {string} from The source data table name.
+ * @returns An aggregate expression for calculating regression intercepts over
+ *  pre-aggregated data partitions.
+ */
 function regrInterceptExpr(aux, args, from) {
-  const [y, x] = args;
-  const xn = sanitize(x);
-  const yn = sanitize(y);
-  const n = auxName('count', yn, xn);
-  const ax = auxName('avg', xn, yn);
-  const ay = auxName('avg', yn, xn);
-  aux[ax] = sql`REGR_AVGX(${y}, ${x})`;
-  aux[ay] = sql`REGR_AVGY(${y}, ${x})`;
-  const cov = covarianceExpr(aux, args, from, null);
-  const varx = regrVarExpr(aux, 1, args, from);
-  return sql`SUM(${ay} * ${n}) / SUM(${n}) - ((${cov}) / ${varx}) * (SUM(${ax} * ${n}) / SUM(${n}))`;
+  const ax = regrAvgXExpr(aux, args);
+  const ay = regrAvgYExpr(aux, args);
+  const m = regrSlopeExpr(aux, args, from);
+  return agg`${ay} - (${m}) * ${ax}`;
 }
