@@ -27,6 +27,7 @@ export function indexColumns(client) {
     switch (op) {
       case 'COUNT':
       case 'SUM':
+      case 'REGR_COUNT':
         // TODO: revisit this DOUBLE cast in the future
         // for now, this sidesteps client-side conversions
         // of bignum and fixed decimal types to JS numbers
@@ -73,6 +74,30 @@ export function indexColumns(client) {
       case 'CORR':
         aux[as] = null;
         aggr.push({ [as]: corrExpr(aux, args, from) });
+        break;
+
+      // regression statistics
+      case 'REGR_AVGX':
+        aggr.push({ [as]: regrAvgExpr(aux, as, args) });
+        break;
+      case 'REGR_AVGY':
+        aggr.push({ [as]: regrAvgExpr(aux, as, args) });
+        break;
+      case 'REGR_SYY':
+        aux[as] = null;
+        aggr.push({ [as]: regrVarExpr(aux, 0, args, from) });
+        break;
+      case 'REGR_SXX':
+        aux[as] = null;
+        aggr.push({ [as]: regrVarExpr(aux, 1, args, from) });
+        break;
+      case 'REGR_SLOPE':
+        aux[as] = null;
+        aggr.push({ [as]: regrSlopeExpr(aux, args, from) });
+        break;
+      case 'REGR_INTERCEPT':
+        aux[as] = null;
+        aggr.push({ [as]: regrInterceptExpr(aux, args, from) });
         break;
 
       // aggregates that commute directly
@@ -150,7 +175,6 @@ function getBaseTable(query) {
   return base;
 }
 
-
 /**
  * Generate expressions for calculating averages over data partitions.
  * As a side effect, this method adds a column to the input *aux* object
@@ -164,9 +188,9 @@ function getBaseTable(query) {
  *  pre-aggregated data partitions.
  */
 function avgExpr(aux, as, [x]) {
-  const count = auxName('count', x);
-  aux[count] = sql`COUNT(${x})`;
-  return sql`(SUM("${as}" * ${count}) / SUM(${count}))`;
+  const n = auxName('count', x);
+  aux[n] = sql`COUNT(${x})`;
+  return sql`(SUM("${as}" * ${n}) / SUM(${n}))`;
 }
 
 /**
@@ -249,27 +273,30 @@ function varianceExpr(aux, x, from, correction = true) {
  * @param {any[]} args Source data table columns. The entries may be strings,
  *  column references, SQL expressions, or other string-coercible values.
  * @param {string} from The source data table name.
- * @param {boolean} [correction=true] A flag for whether a Bessel
- *  correction should be applied to compute the sample covariance
- *  rather than the populatation covariance.
+ * @param {boolean|null} [correction=true] A flag for whether a Bessel
+ *  correction should be applied to compute the sample covariance rather
+ *  than the populatation covariance. If null, an expression for the
+ *  unnormalized covariance (no division by sample count) is returned.
  * @returns An aggregate expression for calculating covariance over
  *  pre-aggregated data partitions.
  */
-function covarianceExpr(aux, [x, y], from, correction = true) {
-  const adj = correction ? ` - 1` : '';  // Bessel correction
+function covarianceExpr(aux, [y, x], from, correction = true) {
   const xn = sanitize(x);
   const yn = sanitize(y);
-  const n = auxName('count', xn, yn); // count, excluding null values
-  const sxy = auxName('sxy', xn, yn); // residual sum of squares
-  const sx = auxName('sx', xn);       // residual sum
-  const sy = auxName('sy', yn);       // residual sum
+  const n = auxName('count', yn, xn); // count, excluding null values
+  const sxy = auxName('sxy', yn, xn); // residual sum of squares
+  const sx = auxName('rs', xn);       // residual sum
+  const sy = auxName('rs', yn);       // residual sum
   const ux = sql`(SELECT AVG(${x}) FROM "${from}")`; // to mean-center data
   const uy = sql`(SELECT AVG(${y}) FROM "${from}")`; // to mean-center data
   aux[n] = sql`REGR_COUNT(${y}, ${x})`;
   aux[sxy] = sql`SUM((${x} - ${ux}) * (${y} - ${uy}))`;
   aux[sx] = sql`SUM(${x} - ${ux}) FILTER (${y} IS NOT NULL)`;
   aux[sy] = sql`SUM(${y} - ${uy}) FILTER (${x} IS NOT NULL)`;
-  return sql`(SUM(${sxy}) - SUM(${sx}) * SUM(${sy}) / SUM(${n})) / (SUM(${n})${adj})`;
+  const adj = correction === null ? ''  // do not divide by count
+    : correction ? ` / (SUM(${n}) - 1)` // Bessel correction (sample)
+    : ` / SUM(${n})`;                   // no correction (population)
+  return sql`(SUM(${sxy}) - SUM(${sx}) * SUM(${sy}) / SUM(${n}))${adj}`;
 }
 
 /**
@@ -287,15 +314,15 @@ function covarianceExpr(aux, [x, y], from, correction = true) {
  * @returns An aggregate expression for calculating correlation over
  *  pre-aggregated data partitions.
  */
-function corrExpr(aux, [x, y], from) {
+function corrExpr(aux, [y, x], from) {
   const xn = sanitize(x);
   const yn = sanitize(y);
-  const n = auxName('count', xn, yn); // count, excluding null values
-  const sxy = auxName('sxy', xn, yn); // residual sum of squares
-  const sxx = auxName('sxx', xn);     // residual sum of squares
-  const syy = auxName('syy', yn);     // residual sum of squares
-  const sx = auxName('sx', xn);       // residual sum
-  const sy = auxName('sy', yn);       // residual sum
+  const n = auxName('count', yn, xn); // count, excluding null values
+  const sxy = auxName('sxy', yn, xn); // residual sum of squares
+  const sxx = auxName('rss', xn);     // residual sum of squares
+  const syy = auxName('rss', yn);     // residual sum of squares
+  const sx = auxName('rs', xn);       // residual sum
+  const sy = auxName('rs', yn);       // residual sum
   const ux = sql`(SELECT AVG(${x}) FROM "${from}")`; // to mean-center data
   const uy = sql`(SELECT AVG(${y}) FROM "${from}")`; // to mean-center data
   aux[n] = sql`REGR_COUNT(${y}, ${x})`;
@@ -308,4 +335,47 @@ function corrExpr(aux, [x, y], from) {
   const vx = sql`SUM(${sxx}) - (SUM(${sx}) ** 2) / SUM(${n})`;
   const vy = sql`SUM(${syy}) - (SUM(${sy}) ** 2) / SUM(${n})`;
   return sql`${numer} / SQRT((${vx}) * (${vy}))`;
+}
+
+function regrAvgExpr(aux, as, [y, x]) {
+  const xn = sanitize(x);
+  const yn = sanitize(y);
+  const n = auxName('count', yn, xn); // count, excluding null values
+  aux[n] = sql`REGR_COUNT(${y}, ${x})`;
+  return sql`(SUM("${as}" * ${n}) / SUM(${n}))`;
+}
+
+function regrVarExpr(aux, i, args, from) {
+  const nn = args.map(sanitize).slice(0, 2);
+  const z = args[i];
+  const o = args[1 - i];
+  const zn = nn[i];
+  const n = auxName('count', ...nn); // count, excluding null values
+  const ssq = auxName('rss', zn);    // residual sum of squares
+  const sum = auxName('rs', zn);     // residual sum
+  const uz = sql`(SELECT AVG(${z}) FROM "${from}")`; // to mean-center data
+  aux[n] = sql`REGR_COUNT(${args[1]}, ${args[0]})`;
+  aux[ssq] = sql`SUM((${z} - ${uz}) ** 2) FILTER (${o} IS NOT NULL)`;
+  aux[sum] = sql`SUM(${z} - ${uz})  FILTER (${o} IS NOT NULL)`;
+  return sql`(SUM(${ssq}) - (SUM(${sum}) ** 2 / SUM(${n})))`;
+}
+
+function regrSlopeExpr(aux, args, from) {
+  const cov = covarianceExpr(aux, args, from, null);
+  const varx = regrVarExpr(aux, 1, args, from);
+  return sql`(${cov}) / ${varx}`;
+}
+
+function regrInterceptExpr(aux, args, from) {
+  const [y, x] = args;
+  const xn = sanitize(x);
+  const yn = sanitize(y);
+  const n = auxName('count', yn, xn);
+  const ax = auxName('avg', xn, yn);
+  const ay = auxName('avg', yn, xn);
+  aux[ax] = sql`REGR_AVGX(${y}, ${x})`;
+  aux[ay] = sql`REGR_AVGY(${y}, ${x})`;
+  const cov = covarianceExpr(aux, args, from, null);
+  const varx = regrVarExpr(aux, 1, args, from);
+  return sql`SUM(${ay} * ${n}) / SUM(${n}) - ((${cov}) / ${varx}) * (SUM(${ax} * ${n}) / SUM(${n}))`;
 }
