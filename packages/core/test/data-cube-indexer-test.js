@@ -2,8 +2,8 @@ import assert from 'node:assert';
 import {
   Query, argmax, argmin, avg, corr, count, covarPop, covariance,
   isNotDistinct, literal, loadObjects, max, min, product, regrAvgX,
-  regrAvgY, regrCount, regrIntercept, regrSXX, regrSYY, regrSlope,
-  stddev, stddevPop, sum, varPop, variance
+  regrAvgY, regrCount, regrIntercept, regrR2, regrSXX, regrSXY,
+  regrSYY, regrSlope, stddev, stddevPop, sum, varPop, variance
 } from '@uwdata/mosaic-sql';
 import { Coordinator, Selection } from '../src/index.js';
 import { nodeConnector } from './util/node-connector.js';
@@ -102,7 +102,9 @@ describe('DataCubeIndexer', () => {
     assert.strictEqual(await run(regrAvgY('y', 'x')), 6.5);
     assert.strictEqual(await run(regrSXX('y', 'x')), 0.5);
     assert.strictEqual(await run(regrSYY('y', 'x')), 0.5);
+    assert.strictEqual(await run(regrSXY('y', 'x')), -0.5);
     assert.strictEqual(await run(regrSlope('y', 'x')), -1);
     assert.strictEqual(await run(regrIntercept('y', 'x')), 10);
+    assert.strictEqual(await run(regrR2('y', 'x')), 1);
   });
 });

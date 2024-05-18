@@ -96,6 +96,10 @@ export function indexColumns(client) {
         aux[as] = null;
         aggr.push({ [as]: regrVarExpr(aux, 1, args, from) });
         break;
+      case 'REGR_SXY':
+        aux[as] = null;
+        aggr.push({ [as]: covarianceExpr(aux, args, from, null) });
+        break;
       case 'REGR_SLOPE':
         aux[as] = null;
         aggr.push({ [as]: regrSlopeExpr(aux, args, from) });
@@ -103,6 +107,10 @@ export function indexColumns(client) {
       case 'REGR_INTERCEPT':
         aux[as] = null;
         aggr.push({ [as]: regrInterceptExpr(aux, args, from) });
+        break;
+      case 'REGR_R2':
+        aux[as] = null;
+        aggr.push({ [as]: agg`(${corrExpr(aux, args, from)}) ** 2` });
         break;
 
       // aggregates that commute directly
