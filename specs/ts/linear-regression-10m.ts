@@ -17,6 +17,7 @@ export const spec : Spec = {
       "x": "time",
       "y": "delay",
       "pixelSize": 4,
+      "pad": 0,
       "imageRendering": "pixelated"
     },
     {

@@ -9,7 +9,7 @@ const $query = vg.Selection.intersect();
 export default vg.plot(
   vg.raster(
     vg.from("flights10m"),
-    {x: "time", y: "delay", pixelSize: 4, imageRendering: "pixelated"}
+    {x: "time", y: "delay", pixelSize: 4, pad: 0, imageRendering: "pixelated"}
   ),
   vg.regressionY(
     vg.from("flights10m"),
