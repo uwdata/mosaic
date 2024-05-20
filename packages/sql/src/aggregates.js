@@ -163,6 +163,7 @@ export const varPop = aggf('VAR_POP');
 export const stddevPop = aggf('STDDEV_POP');
 
 export const corr = aggf('CORR');
+export const covariance = aggf('COVAR_SAMP');
 export const covarPop = aggf('COVAR_POP');
 export const regrIntercept = aggf('REGR_INTERCEPT');
 export const regrSlope = aggf('REGR_SLOPE');

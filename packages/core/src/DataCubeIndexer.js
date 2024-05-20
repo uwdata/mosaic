@@ -1,5 +1,6 @@
 import { Query, and, create, isBetween, scaleTransform, sql } from '@uwdata/mosaic-sql';
 import { fnv_hash } from './util/hash.js';
+import { indexColumns } from './util/index-columns.js';
 
 /**
  * Build and query optimized indices ("data cubes") for fast computation of
@@ -43,7 +44,7 @@ export class DataCubeIndexer {
   index(clients, active) {
     if (this.clients !== clients) {
       // test client views for compatibility
-      const cols = Array.from(clients, getIndexColumns);
+      const cols = Array.from(clients, indexColumns);
       const from = cols[0]?.from;
       this.enabled = cols.every(c => c && c.from === from);
       this.clients = clients;
@@ -62,7 +63,8 @@ export class DataCubeIndexer {
     const activeView = this.activeView = getActiveView(active);
     if (!activeView) return false; // active selection clause not compatible
 
-    this.mc.logger().warn('DATA CUBE INDEX CONSTRUCTION');
+    const logger = this.mc.logger();
+    logger.warn('DATA CUBE INDEX CONSTRUCTION');
 
     // create a selection with the active source removed
     const sel = this.selection.remove(source);
@@ -72,7 +74,7 @@ export class DataCubeIndexer {
     const { mc, temp } = this;
     for (const client of clients) {
       if (sel.skip(client, active)) continue;
-      const index = getIndexColumns(client);
+      const index = indexColumns(client);
 
       // build index construction query
       const query = client.query(sel.predicate(client))
@@ -94,6 +96,7 @@ export class DataCubeIndexer {
       const id = (fnv_hash(sql) >>> 0).toString(16);
       const table = `cube_index_${id}`;
       const result = mc.exec(create(table, sql, { temp }));
+      result.catch(e => logger.error(e));
       indices.set(client, { table, result, order, ...index });
     }
 
@@ -170,81 +173,6 @@ function binInterval(scale, pixelSize) {
     const s = pixelSize === 1 ? '' : `${pixelSize}::INTEGER * `;
     return value => sql`${s}FLOOR(${a}::DOUBLE * (${sqlApply(value)} - ${lo}::DOUBLE))::INTEGER`;
   }
-}
-
-const NO_INDEX = { from: NaN };
-
-function getIndexColumns(client) {
-  if (!client.filterIndexable) return NO_INDEX;
-  const q = client.query();
-  const from = getBaseTable(q);
-  if (!from || !q.groupby) return NO_INDEX;
-  const g = new Set(q.groupby().map(c => c.column));
-
-  const aggr = [];
-  const dims = [];
-  const aux = {}; // auxiliary columns needed by aggregates
-  let auxAs;
-
-  for (const entry of q.select()) {
-    const { as, expr: { aggregate, args } } = entry;
-    const op = aggregate?.toUpperCase?.();
-    switch (op) {
-      case 'COUNT':
-      case 'SUM':
-        aggr.push({ [as]: sql`SUM("${as}")::DOUBLE` });
-        break;
-      case 'AVG':
-        aux[auxAs = '__count__'] = sql`COUNT(*)`;
-        aggr.push({ [as]: sql`(SUM("${as}" * ${auxAs}) / SUM(${auxAs}))::DOUBLE` });
-        break;
-      case 'ARG_MAX':
-        aux[auxAs = `__max_${as}__`] = sql`MAX(${args[1]})`;
-        aggr.push({ [as]: sql`ARG_MAX("${as}", ${auxAs})` });
-        break;
-      case 'ARG_MIN':
-        aux[auxAs = `__min_${as}__`] = sql`MIN(${args[1]})`;
-        aggr.push({ [as]: sql`ARG_MIN("${as}", ${auxAs})` });
-        break;
-
-      // aggregates that commute directly
-      case 'MAX':
-      case 'MIN':
-      case 'BIT_AND':
-      case 'BIT_OR':
-      case 'BIT_XOR':
-      case 'BOOL_AND':
-      case 'BOOL_OR':
-      case 'PRODUCT':
-        aggr.push({ [as]: sql`${op}("${as}")` });
-        break;
-      default:
-        if (g.has(as)) dims.push(as);
-        else return null;
-    }
-  }
-
-  return { aggr, dims, aux, from };
-}
-
-function getBaseTable(query) {
-  const subq = query.subqueries;
-
-  // select query
-  if (query.select) {
-    const from = query.from();
-    if (!from.length) return undefined;
-    if (subq.length === 0) return from[0].from.table;
-  }
-
-  // handle set operations / subqueries
-  const base = getBaseTable(subq[0]);
-  for (let i = 1; i < subq.length; ++i) {
-    const from = getBaseTable(subq[i]);
-    if (from === undefined) continue;
-    if (from !== base) return NaN;
-  }
-  return base;
 }
 
 function subqueryPushdown(query, cols) {

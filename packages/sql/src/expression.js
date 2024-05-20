@@ -98,7 +98,7 @@ export class SQLExpression {
   /**
    * Annotate this expression instance with additional properties.
    * @param {object[]} [props] One or more objects with properties to add.
-   * @returns {this} This SQL expression.
+   * @returns This SQL expression.
    */
   annotate(...props) {
     return Object.assign(this, ...props);

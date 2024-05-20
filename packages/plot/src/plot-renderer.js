@@ -165,6 +165,7 @@ function annotateMarks(svg, indices) {
 }
 
 function getType(data, channel) {
+  if (!data) return;
   const { columns } = data;
   const col = columns[channel] ?? columns[channel+'1'] ?? columns[channel+'2'];
   if (col) {
