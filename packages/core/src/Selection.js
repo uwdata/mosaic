@@ -98,6 +98,13 @@ export class Selection extends Param {
   }
 
   /**
+   * The selection clause resolver.
+   */
+  get resolver() {
+    return this._resolver;
+  }
+
+  /**
    * The current active (most recently updated) selection clause.
    */
   get active() {
