@@ -1,4 +1,4 @@
-import { Query, and, create, isBetween, scaleTransform, sql } from '@uwdata/mosaic-sql';
+import { Query, and, asColumn, create, isBetween, scaleTransform, sql } from '@uwdata/mosaic-sql';
 import { fnv_hash } from './util/hash.js';
 import { indexColumns } from './util/index-columns.js';
 
@@ -36,7 +36,7 @@ export class DataCubeIndexer {
 
   clear() {
     if (this.indices) {
-      this.mc.cancel(Array.from(this.indices.values(), index => index.result));
+      this.mc.cancel(Array.from(this.indices.values(), index => index?.result));
       this.indices = null;
     }
   }
@@ -44,9 +44,9 @@ export class DataCubeIndexer {
   index(clients, active) {
     if (this.clients !== clients) {
       // test client views for compatibility
-      const cols = Array.from(clients, indexColumns);
+      const cols = Array.from(clients, indexColumns).filter(x => x);
       const from = cols[0]?.from;
-      this.enabled = cols.every(c => c && c.from === from);
+      this.enabled = cols.length && cols.every(c => c.from === from);
       this.clients = clients;
       this.activeView = null;
       this.clear();
@@ -73,10 +73,21 @@ export class DataCubeIndexer {
     const indices = this.indices = new Map;
     const { mc, temp } = this;
     for (const client of clients) {
-      if (sel.skip(client, active)) continue;
+      // determine if client should be skipped due to cross-filtering
+      if (sel.skip(client, active)) {
+        indices.set(client, null);
+        continue;
+      }
+
+      // generate column definitions for data cube and cube queries
       const index = indexColumns(client);
 
-      // build index construction query
+      // skip if client is not indexable
+      if (!index) {
+        continue;
+      }
+
+      // build index table construction query
       const query = client.query(sel.predicate(client))
         .select({ ...activeView.columns, ...index.aux })
         .groupby(Object.keys(activeView.columns));
@@ -84,7 +95,7 @@ export class DataCubeIndexer {
       // ensure active view columns are selected by subqueries
       const [subq] = query.subqueries;
       if (subq) {
-        const cols = Object.values(activeView.columns).map(c => c.columns[0]);
+        const cols = Object.values(activeView.columns).flatMap(c => c.columns);
         subqueryPushdown(subq, cols);
       }
 
@@ -113,13 +124,20 @@ export class DataCubeIndexer {
   }
 
   async updateClient(client, filter) {
+    const { mc, indices, selection } = this;
+
+    // if client has no index, perform a standard update
+    if (!indices.has(client)) {
+      filter = selection.predicate(client);
+      return mc.updateClient(client, client.query(filter));
+    };
+
     const index = this.indices.get(client);
+
+    // skip update if cross-filtered
     if (!index) return;
 
-    if (!filter) {
-      filter = this.activeView.predicate(this.selection.active.predicate);
-    }
-
+    // otherwise, query a data cube index table
     const { table, dims, aggr, order = [] } = index;
     const query = Query
       .select(dims, aggr)
@@ -127,7 +145,7 @@ export class DataCubeIndexer {
       .groupby(dims)
       .where(filter)
       .orderby(order);
-    return this.mc.updateClient(client, query);
+    return mc.updateClient(client, query);
   }
 }
 
@@ -139,13 +157,18 @@ function getActiveView(clause) {
   let predicate;
 
   if (type === 'interval' && scales) {
+    // determine pixel-level binning
     const bins = scales.map(s => binInterval(s, pixelSize));
-    if (bins.some(b => b == null)) return null; // unsupported scale type
+
+    // bail if the scale type is unsupported
+    if (bins.some(b => b == null)) return null;
 
     if (bins.length === 1) {
+      // single interval selection
       predicate = p => p ? isBetween('active0', p.range.map(bins[0])) : [];
       columns = { active0: bins[0](clause.predicate.field) };
     } else {
+      // multiple interval selection
       predicate = p => p
         ? and(p.children.map(({ range }, i) => isBetween(`active${i}`, range.map(bins[i]))))
         : [];
@@ -155,9 +178,10 @@ function getActiveView(clause) {
     }
   } else if (type === 'point') {
     predicate = x => x;
-    columns = Object.fromEntries(columns.map(col => [col.toString(), col]));
+    columns = Object.fromEntries(columns.map(col => [`${col}`, asColumn(col)]));
   } else {
-    return null; // unsupported type
+    // unsupported selection type
+    return null;
   }
 
   return { source, columns, predicate };
