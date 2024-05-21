@@ -35,7 +35,8 @@ export class FilterGroup {
 
   index(state) {
     const { selection } = this;
-    this.indexer = state
+    const { resolver } = selection;
+    this.indexer = state && (resolver.single || !resolver.union)
       ? new DataCubeIndexer(this.mc, { ...state, selection })
       : null;
   }
