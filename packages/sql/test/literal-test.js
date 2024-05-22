@@ -57,5 +57,9 @@ describe('literal', () => {
     const emptyExpr = literal('');
     assert.strictEqual(emptyExpr.value, '');
     assert.strictEqual(String(emptyExpr), `''`);
+
+    const stringWithQuotes = literal(`don't`);
+    assert.strictEqual(stringWithQuotes.value, `don't`);
+    assert.strictEqual(String(stringWithQuotes), `'don''t'`);
   });
 });
