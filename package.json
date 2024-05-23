@@ -38,8 +38,5 @@
   },
   "workspaces": [
     "packages/*"
-  ],
-  "dependencies": {
-    "vega-lite": "^5.18.1"
-  }
+  ]
 }
