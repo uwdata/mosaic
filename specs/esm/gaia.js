@@ -11,13 +11,13 @@ WITH prep AS (
     t2^3 AS t6,
     *
   FROM 'https://uwdata.github.io/mosaic-datasets/data/gaia-5m.parquet'
+  WHERE parallax BETWEEN -5 AND 20 AND phot_g_mean_mag IS NOT NULL AND bp_rp IS NOT NULL
 )
 SELECT
   (1.340264 * lambda * cos(t)) / (sqrt(3)/2 * (1.340264 + (-0.081106 * 3 * t2) + (t6 * (0.000893 * 7 + 0.003796 * 9 * t2)))) AS u,
   t * (1.340264 + (-0.081106 * t2) + (t6 * (0.000893 + 0.003796 * t2))) AS v,
   * EXCLUDE('t', 't2', 't6')
-FROM prep
-WHERE parallax BETWEEN -5 AND 20`
+FROM prep`
 ]);
 
 const $brush = vg.Selection.crossfilter();

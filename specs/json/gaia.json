@@ -6,7 +6,7 @@
   "data": {
     "gaia": {
       "type": "table",
-      "query": "-- compute u and v with natural earth projection\nWITH prep AS (\n  SELECT\n    radians((-l + 540) % 360 - 180) AS lambda,\n    radians(b) AS phi,\n    asin(sqrt(3)/2 * sin(phi)) AS t,\n    t^2 AS t2,\n    t2^3 AS t6,\n    *\n  FROM 'https://uwdata.github.io/mosaic-datasets/data/gaia-5m.parquet'\n)\nSELECT\n  (1.340264 * lambda * cos(t)) / (sqrt(3)/2 * (1.340264 + (-0.081106 * 3 * t2) + (t6 * (0.000893 * 7 + 0.003796 * 9 * t2)))) AS u,\n  t * (1.340264 + (-0.081106 * t2) + (t6 * (0.000893 + 0.003796 * t2))) AS v,\n  * EXCLUDE('t', 't2', 't6')\nFROM prep\nWHERE parallax BETWEEN -5 AND 20"
+      "query": "-- compute u and v with natural earth projection\nWITH prep AS (\n  SELECT\n    radians((-l + 540) % 360 - 180) AS lambda,\n    radians(b) AS phi,\n    asin(sqrt(3)/2 * sin(phi)) AS t,\n    t^2 AS t2,\n    t2^3 AS t6,\n    *\n  FROM 'https://uwdata.github.io/mosaic-datasets/data/gaia-5m.parquet'\n  WHERE parallax BETWEEN -5 AND 20 AND phot_g_mean_mag IS NOT NULL AND bp_rp IS NOT NULL\n)\nSELECT\n  (1.340264 * lambda * cos(t)) / (sqrt(3)/2 * (1.340264 + (-0.081106 * 3 * t2) + (t6 * (0.000893 * 7 + 0.003796 * 9 * t2)))) AS u,\n  t * (1.340264 + (-0.081106 * t2) + (t6 * (0.000893 + 0.003796 * t2))) AS v,\n  * EXCLUDE('t', 't2', 't6')\nFROM prep"
     }
   },
   "params": {
