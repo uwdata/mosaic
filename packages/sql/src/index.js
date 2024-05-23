@@ -10,7 +10,8 @@ export {
 export {
   isSQLExpression,
   isParamLike,
-  sql
+  sql,
+  SQLExpression
 } from './expression.js';
 
 export {

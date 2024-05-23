@@ -1,5 +1,5 @@
-import { MosaicClient, isParam, isSelection } from '@uwdata/mosaic-core';
-import { Query, eq, literal } from '@uwdata/mosaic-sql';
+import { MosaicClient, isParam, isSelection, point } from '@uwdata/mosaic-core';
+import { Query } from '@uwdata/mosaic-sql';
 import { input } from './input.js';
 
 const isObject = v => {
@@ -82,12 +82,9 @@ export class Menu extends MosaicClient {
   publish(value) {
     const { selection, column } = this;
     if (isSelection(selection)) {
-      selection.update({
-        source: this,
-        schema: { type: 'point' },
-        value,
-        predicate: (value !== '' && value !== undefined) ? eq(column, literal(value)) : null
-      });
+      if (value === '') value = undefined; // 'All' option
+      const clause = point(column, value, { source: this });
+      selection.update(clause);
     } else if (isParam(selection)) {
       selection.update(value);
     }
