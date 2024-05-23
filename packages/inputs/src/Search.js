@@ -1,10 +1,7 @@
-import { MosaicClient, isParam, isSelection } from '@uwdata/mosaic-core';
-import {
-  Query, regexp_matches, contains, prefix, suffix, literal
-} from '@uwdata/mosaic-sql';
+import { MosaicClient, isParam, isSelection, match } from '@uwdata/mosaic-core';
+import { Query } from '@uwdata/mosaic-sql';
 import { input } from './input.js';
 
-const FUNCTIONS = { contains, prefix, suffix, regexp: regexp_matches };
 let _id = 0;
 
 export const search = options => input(Search, options);
@@ -68,12 +65,8 @@ export class Search extends MosaicClient {
   publish(value) {
     const { selection, column, type } = this;
     if (isSelection(selection)) {
-      selection.update({
-        source: this,
-        schema: { type },
-        value,
-        predicate: value ? FUNCTIONS[type](column, literal(value)) : null
-      });
+      const clause = match(column, value, { source: this, method: type });
+      selection.update(clause);
     } else if (isParam(selection)) {
       selection.update(value);
     }

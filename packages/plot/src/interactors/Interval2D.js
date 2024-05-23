@@ -1,5 +1,5 @@
+import { intervals } from '@uwdata/mosaic-core';
 import { select, min, max } from 'd3';
-import { and, isBetween } from '@uwdata/mosaic-sql';
 import { brush } from './util/brush.js';
 import { closeTo } from './util/close-to.js';
 import { getField } from './util/get-field.js';
@@ -57,15 +57,12 @@ export class Interval2D {
 
   clause(value) {
     const { mark, pixelSize, xfield, yfield, xscale, yscale } = this;
-    return {
+    return intervals([xfield, yfield], value, {
       source: this,
-      schema: { type: 'interval', pixelSize, scales: [xscale, yscale] },
       clients: this.peers ? mark.plot.markSet : new Set().add(mark),
-      value,
-      predicate: value
-        ? and(isBetween(xfield, value[0]), isBetween(yfield, value[1]))
-        : null
-    };
+      scales: [xscale, yscale],
+      pixelSize
+    });
   }
 
   init(svg) {
