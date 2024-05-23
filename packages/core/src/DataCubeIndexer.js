@@ -10,7 +10,7 @@ import { indexColumns } from './util/index-columns.js';
  * as temporary database tables that can be queried for rapid updates.
  * Compatible client queries must pull data from the same backing table and
  * must consist of only groupby dimensions and supported aggregates.
- * Compatible selections must contain an active clause that exposes a schema
+ * Compatible selections must contain an active clause that exposes metadata
  * for an interval or point value predicate.
  */
 export class DataCubeIndexer {
@@ -150,10 +150,10 @@ export class DataCubeIndexer {
 }
 
 function getActiveView(clause) {
-  const { source, schema } = clause;
+  const { source, meta } = clause;
   let columns = clause.predicate?.columns;
-  if (!schema || !columns) return null;
-  const { type, scales, pixelSize = 1 } = schema;
+  if (!meta || !columns) return null;
+  const { type, scales, pixelSize = 1 } = meta;
   let predicate;
 
   if (type === 'interval' && scales) {

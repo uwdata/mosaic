@@ -1,5 +1,5 @@
-import { MosaicClient, isParam, isSelection } from '@uwdata/mosaic-core';
-import { Query, eq, literal, max, min } from '@uwdata/mosaic-sql';
+import { MosaicClient, isParam, isSelection, point } from '@uwdata/mosaic-core';
+import { Query, max, min } from '@uwdata/mosaic-sql';
 import { input } from './input.js';
 
 let _id = 0;
@@ -91,12 +91,8 @@ export class Slider extends MosaicClient {
   publish(value) {
     const { selection, column } = this;
     if (isSelection(selection)) {
-      selection.update({
-        source: this,
-        schema: { type: 'point' },
-        value,
-        predicate: eq(column, literal(value))
-      });
+      const clause = point(column, value, { source: this });
+      selection.update(clause);
     } else if (isParam(this.selection)) {
       selection.update(value);
     }
