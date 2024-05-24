@@ -27,8 +27,8 @@ export class Menu extends MosaicClient {
     super(filterBy);
     this.from = from;
     this.column = column;
-    this.selection = as;
     this.format = format;
+    const selection = this.selection = as;
 
     this.element = element ?? document.createElement('div');
     this.element.setAttribute('class', 'input');
@@ -39,19 +39,33 @@ export class Menu extends MosaicClient {
     this.element.appendChild(lab);
 
     this.select = document.createElement('select');
-    if (options) {
-      this.data = options.map(value => isObject(value) ? value : { value });
-      this.update();
-    }
-    value = value ?? this.selection?.value ?? this.data?.[0]?.value;
-    if (this.selection?.value === undefined) this.publish(value);
     this.element.appendChild(this.select);
 
-    if (this.selection) {
+    // if provided, populate menu options
+    if (options) {
+      this.data = options.map(value => isObject(value) ? value : { value });
+      this.selectedValue(value ?? '');
+      this.update();
+    }
+
+    // initialize selection or param bindings
+    if (selection) {
+      const isParam = !isSelection(selection);
+
+      // publish any initial menu value to the selection/param
+      // later updates propagate this back to the menu element
+      // do not publish if using a param that already has a value
+      if (value != null && (!isParam || selection.value === undefined)) {
+        this.publish(value);
+      }
+
+      // publish selected value upon menu change
       this.select.addEventListener('input', () => {
         this.publish(this.selectedValue() ?? null);
       });
-      if (!isSelection(this.selection)) {
+
+      // if bound to a scalar param, respond to value updates
+      if (isParam) {
         this.selection.addEventListener('value', value => {
           if (value !== this.select.value) {
             this.selectedValue(value);
@@ -105,12 +119,15 @@ export class Menu extends MosaicClient {
   }
 
   queryResult(data) {
+    // column option values, with an inserted 'All' value
     this.data = [{ value: '', label: 'All' }, ...data];
     return this;
   }
 
   update() {
-    const { data, format, select } = this;
+    const { data, format, select, selection } = this;
+
+    // generate menu item options
     select.replaceChildren();
     for (const { value, label } of data) {
       const opt = document.createElement('option');
@@ -118,9 +135,15 @@ export class Menu extends MosaicClient {
       opt.innerText = label ?? format(value);
       this.select.appendChild(opt);
     }
-    if (this.selection) {
-      this.selectedValue(this.selection?.value ?? '');
+
+    // update menu value based on param/selection
+    if (selection) {
+      const value = isSelection(selection)
+        ? selection.valueFor(this)
+        : selection.value;
+      this.selectedValue(value ?? '');
     }
+
     return this;
   }
 }

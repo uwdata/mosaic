@@ -105,6 +105,20 @@ export class Selection extends Param {
   }
 
   /**
+   * Indicate if this selection has a single resolution strategy.
+   */
+  get single() {
+    return this._resolver.single;
+  }
+
+  /**
+   * The current array of selection clauses.
+   */
+  get clauses() {
+    return super.value;
+  }
+
+  /**
    * The current active (most recently updated) selection clause.
    */
   get active() {
@@ -116,22 +130,16 @@ export class Selection extends Param {
    * This method ensures compatibility where a normal Param is expected.
    */
   get value() {
-    // return value of the active clause
     return this.active?.value;
   }
 
   /**
-   * The current array of selection clauses.
+   * The value corresponding to a given source. Returns undefined if
+   * this selection does not include a clause from this source.
+   * @param {*} source The clause source to look up the value for.
    */
-  get clauses() {
-    return super.value;
-  }
-
-  /**
-   * Indicate if this selection has a single resolution strategy.
-   */
-  get single() {
-    return this._resolver.single;
+  valueFor(source) {
+    return this.clauses.find(c => c.source === source)?.value;
   }
 
   /**
