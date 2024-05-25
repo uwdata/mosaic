@@ -78,6 +78,7 @@ function scaleTime() {
 }
 
 const scales = {
+  identity: scaleLinear,
   linear: scaleLinear,
   log: scaleLog,
   symlog: scaleSymlog,
