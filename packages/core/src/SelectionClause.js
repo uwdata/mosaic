@@ -9,6 +9,7 @@ import { MosaicClient } from './MosaicClient.js';
  * @typedef {import('./util/selection-types.js').Scale} Scale
  * @typedef {import('./util/selection-types.js').Extent} Extent
  * @typedef {import('./util/selection-types.js').MatchMethod} MatchMethod
+ * @typedef {import('./util/selection-types.js').BinMethod} BinMethod
  * @typedef {SQLExpression | string} Field
  */
 
@@ -78,7 +79,7 @@ export function points(fields, value, { source, clients = undefined }) {
  *  with this clause. These clients are not filtered by this clause in
  *  cross-filtering contexts.
  * @param {Scale} [options.scale] The scale mapping descriptor.
- * @param {string} [options.bin] A binning function hint.
+ * @param {BinMethod} [options.bin] A binning method hint.
  * @param {number} [options.pixelSize=1] The interactive pixel size.
  * @returns {SelectionClause} The generated selection clause.
  */
@@ -103,7 +104,7 @@ export function interval(field, value, {
  *  cross-filtering contexts.
  * @param {Scale[]} [options.scales] The scale mapping descriptors,
  *  in an order matching the given *fields* and *value* extents.
- * @param {string} [options.bin] A binning function hint.
+ * @param {BinMethod} [options.bin] A binning method hint.
  * @param {number} [options.pixelSize=1] The interactive pixel size.
  * @returns {SelectionClause} The generated selection clause.
  */

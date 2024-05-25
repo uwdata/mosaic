@@ -97,9 +97,9 @@ export class Slider extends MosaicClient {
 
     // respond to slider input
     this.slider.addEventListener('input', () => {
-      const value = +this.slider.value;
+      const { value } = this.slider;
       this.curval.innerText = value;
-      if (this.selection) this.publish(value);
+      if (this.selection) this.publish(+value);
     });
 
     // track param updates
@@ -143,6 +143,7 @@ export class Slider extends MosaicClient {
     const { column, selectionType, selection } = this;
     if (isSelection(selection)) {
       if (selectionType === 'interval') {
+        /** @type {[number, number]} */
         const domain = [this.min ?? 0, value];
         selection.update(interval(column, domain, {
           source: this,
