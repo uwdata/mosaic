@@ -308,6 +308,7 @@ export {
   cell, cellX, cellY,
   rect, rectX, rectY,
   dot, dotX, dotY, circle, hexagon,
+  errorbarX, errorbarY,
   text, textX, textY,
   image,
   tickX, tickY,

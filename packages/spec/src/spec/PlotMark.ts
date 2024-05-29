@@ -8,6 +8,7 @@ import { DelaunayLink, DelaunayMesh, Hull, Voronoi, VoronoiMesh } from './marks/
 import { DenseLine } from './marks/DenseLine.js';
 import { Density, DensityX, DensityY } from './marks/Density.js';
 import { Circle, Dot, DotX, DotY, Hexagon } from './marks/Dot.js';
+import { ErrorBarX, ErrorBarY } from './marks/ErrorBar.js';
 import { Frame } from './marks/Frame.js';
 import { Geo, Graticule, Sphere } from './marks/Geo.js';
 import { Hexbin } from './marks/Hexbin.js';
@@ -35,6 +36,7 @@ export type PlotMark =
   | DenseLine
   | Density | DensityX | DensityY
   | Dot | DotX | DotY | Circle | Hexagon
+  | ErrorBarX | ErrorBarY
   | Frame
   | Geo | Graticule | Sphere
   | Hexbin

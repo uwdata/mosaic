@@ -91,7 +91,7 @@ export class Mark extends MosaicClient {
 
   /**
    * @param {import('../plot.js').Plot} plot The plot.
-   * @param {number} index 
+   * @param {number} index
    */
   setPlot(plot, index) {
     this.plot = plot;
@@ -181,24 +181,8 @@ export class Mark extends MosaicClient {
    * @returns {object[]}
    */
   plotSpecs() {
-    const { type, detail, channels } = this;
-    // @ts-ignore
-    const { numRows: length, values, columns } = this.data || {};
-
-    // populate plot specification options
-    const options = {};
-    const side = {};
-    for (const c of channels) {
-      const obj = detail.has(c.channel) ? side : options;
-      obj[c.channel] = channelOption(c, columns);
-    }
-    if (detail.size) options.channels = side;
-
-    // if provided raw source values (not objects) pass as-is
-    // otherwise we pass columnar data directy in the options
-    const data = values ?? (this.data ? { length } : null);
-    const spec = [{ type, data, options }];
-    return spec;
+    const { type, data, detail, channels } = this;
+    return markPlotSpec(type, detail, channels, data);
   }
 }
 
@@ -257,4 +241,28 @@ export function markQuery(channels, table, skip = []) {
   }
 
   return q;
+}
+
+
+/**
+ * Generate an array of Plot mark specifications.
+ * @returns {object[]}
+ */
+export function markPlotSpec(type, detail, channels, data, options = {}) {
+  // @ts-ignore
+  const { numRows: length, values, columns } = data ?? {};
+
+  // populate plot specification options
+  const side = {};
+  for (const c of channels) {
+    const obj = detail.has(c.channel) ? side : options;
+    obj[c.channel] = channelOption(c, columns);
+  }
+  if (detail.size) options.channels = side;
+
+  // if provided raw source values (not objects) pass as-is
+  // otherwise we pass columnar data directy in the options
+  const specData = values ?? (data ? { length } : null);
+  const spec = [{ type, data: specData, options }];
+  return spec;
 }

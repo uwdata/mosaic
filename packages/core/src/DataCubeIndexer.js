@@ -31,7 +31,7 @@ export class DataCubeIndexer {
     this.enabled = false;
     this.clients = null;
     this.indices = null;
-    this.activeView = null;
+    this.active = null;
   }
 
   clear() {
@@ -41,27 +41,27 @@ export class DataCubeIndexer {
     }
   }
 
-  index(clients, active) {
+  index(clients, activeClause) {
     if (this.clients !== clients) {
       // test client views for compatibility
       const cols = Array.from(clients, indexColumns).filter(x => x);
       const from = cols[0]?.from;
       this.enabled = cols.length && cols.every(c => c.from === from);
       this.clients = clients;
-      this.activeView = null;
+      this.active = null;
       this.clear();
     }
     if (!this.enabled) return false; // client views are not indexable
 
-    active = active || this.selection.active;
-    const { source } = active;
+    activeClause = activeClause || this.selection.active;
+    const { source } = activeClause;
     // exit early if indexes already set up for active view
-    if (source && source === this.activeView?.source) return true;
+    if (source && source === this.active?.source) return true;
 
     this.clear();
     if (!source) return false; // nothing to work with
-    const activeView = this.activeView = getActiveView(active);
-    if (!activeView) return false; // active selection clause not compatible
+    const active = this.active = activeColumns(activeClause);
+    if (!active) return false; // active selection clause not compatible
 
     const logger = this.mc.logger();
     logger.warn('DATA CUBE INDEX CONSTRUCTION');
@@ -74,7 +74,7 @@ export class DataCubeIndexer {
     const { mc, temp } = this;
     for (const client of clients) {
       // determine if client should be skipped due to cross-filtering
-      if (sel.skip(client, active)) {
+      if (sel.skip(client, activeClause)) {
         indices.set(client, null);
         continue;
       }
@@ -89,13 +89,13 @@ export class DataCubeIndexer {
 
       // build index table construction query
       const query = client.query(sel.predicate(client))
-        .select({ ...activeView.columns, ...index.aux })
-        .groupby(Object.keys(activeView.columns));
+        .select({ ...active.columns, ...index.aux })
+        .groupby(Object.keys(active.columns));
 
       // ensure active view columns are selected by subqueries
       const [subq] = query.subqueries;
       if (subq) {
-        const cols = Object.values(activeView.columns).flatMap(c => c.columns);
+        const cols = Object.values(active.columns).flatMap(c => c.columns);
         subqueryPushdown(subq, cols);
       }
 
@@ -116,8 +116,8 @@ export class DataCubeIndexer {
   }
 
   async update() {
-    const { clients, selection, activeView } = this;
-    const filter = activeView.predicate(selection.active.predicate);
+    const { clients, selection, active } = this;
+    const filter = active.predicate(selection.active.predicate);
     return Promise.all(
       Array.from(clients).map(client => this.updateClient(client, filter))
     );
@@ -149,16 +149,16 @@ export class DataCubeIndexer {
   }
 }
 
-function getActiveView(clause) {
+function activeColumns(clause) {
   const { source, meta } = clause;
   let columns = clause.predicate?.columns;
   if (!meta || !columns) return null;
-  const { type, scales, pixelSize = 1 } = meta;
+  const { type, scales, bin, pixelSize = 1 } = meta;
   let predicate;
 
   if (type === 'interval' && scales) {
     // determine pixel-level binning
-    const bins = scales.map(s => binInterval(s, pixelSize));
+    const bins = scales.map(s => binInterval(s, pixelSize, bin));
 
     // bail if the scale type is unsupported
     if (bins.some(b => b == null)) return null;
@@ -187,16 +187,18 @@ function getActiveView(clause) {
   return { source, columns, predicate };
 }
 
-function binInterval(scale, pixelSize) {
-  const { apply, sqlApply } = scaleTransform(scale);
-  if (apply) {
-    const { domain, range } = scale;
-    const lo = apply(Math.min(...domain));
-    const hi = apply(Math.max(...domain));
-    const a = (Math.abs(range[1] - range[0]) / (hi - lo)) / pixelSize;
-    const s = pixelSize === 1 ? '' : `${pixelSize}::INTEGER * `;
-    return value => sql`${s}FLOOR(${a}::DOUBLE * (${sqlApply(value)} - ${lo}::DOUBLE))::INTEGER`;
-  }
+const BIN = { ceil: 'CEIL', round: 'ROUND' };
+
+function binInterval(scale, pixelSize, bin) {
+  const { type, domain, range, apply, sqlApply } = scaleTransform(scale);
+  if (!apply) return; // unsupported scale type
+  const fn = BIN[`${bin}`.toLowerCase()] || 'FLOOR';
+  const lo = apply(Math.min(...domain));
+  const hi = apply(Math.max(...domain));
+  const a = type === 'identity' ? 1 : Math.abs(range[1] - range[0]) / (hi - lo);
+  const s = a / pixelSize === 1 ? '' : `${a / pixelSize}::DOUBLE * `;
+  const d = lo === 0 ? '' : ` - ${lo}::DOUBLE`;
+  return value => sql`${fn}(${s}(${sqlApply(value)}${d}))::INTEGER`;
 }
 
 function subqueryPushdown(query, cols) {

@@ -9,6 +9,7 @@ import { MosaicClient } from './MosaicClient.js';
  * @typedef {import('./util/selection-types.js').Scale} Scale
  * @typedef {import('./util/selection-types.js').Extent} Extent
  * @typedef {import('./util/selection-types.js').MatchMethod} MatchMethod
+ * @typedef {import('./util/selection-types.js').BinMethod} BinMethod
  * @typedef {SQLExpression | string} Field
  */
 
@@ -78,16 +79,17 @@ export function points(fields, value, { source, clients = undefined }) {
  *  with this clause. These clients are not filtered by this clause in
  *  cross-filtering contexts.
  * @param {Scale} [options.scale] The scale mapping descriptor.
+ * @param {BinMethod} [options.bin] A binning method hint.
  * @param {number} [options.pixelSize=1] The interactive pixel size.
  * @returns {SelectionClause} The generated selection clause.
  */
 export function interval(field, value, {
-  source, clients = undefined, scale = null, pixelSize = 1
+  source, clients, bin, scale, pixelSize = 1
 }) {
   /** @type {SQLExpression | null} */
   const predicate = value != null ? isBetween(field, value) : null;
   /** @type {import('./util/selection-types.js').IntervalMetadata} */
-  const meta = { type: 'interval', scales: [scale], pixelSize };
+  const meta = { type: 'interval', scales: [scale], bin, pixelSize };
   return { meta, source, clients, value, predicate };
 }
 
@@ -102,18 +104,19 @@ export function interval(field, value, {
  *  cross-filtering contexts.
  * @param {Scale[]} [options.scales] The scale mapping descriptors,
  *  in an order matching the given *fields* and *value* extents.
+ * @param {BinMethod} [options.bin] A binning method hint.
  * @param {number} [options.pixelSize=1] The interactive pixel size.
  * @returns {SelectionClause} The generated selection clause.
  */
 export function intervals(fields, value, {
-  source, clients = undefined, scales = [], pixelSize = 1
+  source, clients, bin, scales = [], pixelSize = 1
 }) {
   /** @type {SQLExpression | null} */
   const predicate = value != null
     ? and(fields.map((f, i) => isBetween(f, value[i])))
     : null;
   /** @type {import('./util/selection-types.js').IntervalMetadata} */
-  const meta = { type: 'interval', scales, pixelSize };
+  const meta = { type: 'interval', scales, bin, pixelSize };
   return { meta, source, clients, value, predicate };
 }
 

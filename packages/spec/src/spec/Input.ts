@@ -94,6 +94,13 @@ export interface Slider {
    */
   as?: ParamRef;
   /**
+   * The type of selection clause predicate to generate if the **as** option
+   * is a Selection. If `'point'` (the default), the selection predicate is an
+   * equality check for the slider value. If `'interval'`, the predicate checks
+   * an interval from the minimum to the current slider value.
+   */
+  select?: 'point' | 'interval';
+  /**
    * The name of a database table to use as a data source for this widget.
    * Used in conjunction with the `column` property.
    * The minimum and maximum values of the column determine the slider range.

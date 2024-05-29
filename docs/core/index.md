@@ -63,19 +63,13 @@ Params can parameterize Mosaic clients and may be updated by input widgets or ot
 import { hconcat, slider } from "@uwdata/vgplot";
 import { Param } from "@uwdata/mosaic-core";
 
-// create a new Param, and a label span to show the value
+// create a new Param
 const param = Param.value(5);
-const label = document.createElement('span');
-label.innerText = param.value;
-
-// update label text upon param update
-param.addEventListener('value', value => label.innerText = value);
 
 // bind two sliders (with different ranges!) to the param
 hconcat(
   slider({ label: 'Param', min: 0, max: 10, step: 1, as: param }),
-  slider({ min: 0, max: 15, step: 1, as: param }),
-  label
+  slider({ min: 0, max: 15, step: 1, as: param })
 )
 ```
 

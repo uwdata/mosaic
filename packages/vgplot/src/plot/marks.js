@@ -5,12 +5,13 @@ import {
   Density1DMark,
   Density2DMark,
   DenseLineMark,
+  ErrorBarMark,
   GeoMark,
   HeatmapMark,
   HexbinMark,
   RasterMark,
   RasterTileMark,
-  RegressionMark
+  RegressionMark,
 } from '@uwdata/mosaic-plot';
 
 const decorators = new Set([
@@ -101,6 +102,9 @@ export const hexbin = (...args) => implicitType(HexbinMark, ...args);
 export const hexgrid = (...args) => mark('hexgrid', ...args);
 
 export const regressionY = (...args) => implicitType(RegressionMark, ...args);
+
+export const errorbarX = (...args) => explicitType(ErrorBarMark, 'ruleY', ...args);
+export const errorbarY = (...args) => implicitType(ErrorBarMark, 'ruleX', ...args);
 
 export const voronoi = (...args) => mark('voronoi', ...args);
 export const voronoiMesh = (...args) => mark('voronoiMesh', ...args);
