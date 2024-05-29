@@ -42,7 +42,7 @@ export class Table extends MosaicClient {
 
     this.element = element || document.createElement('div');
     this.element.setAttribute('id', this.id);
-    this.element.value = this;
+    Object.defineProperty(this.element, 'value', { value: this });
     if (typeof width === 'number') this.element.style.width = `${width}px`;
     if (maxWidth) this.element.style.maxWidth = `${maxWidth}px`;
     this.element.style.maxHeight = `${height}px`;

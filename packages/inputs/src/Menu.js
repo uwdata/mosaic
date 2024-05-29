@@ -1,4 +1,4 @@
-import { MosaicClient, isParam, isSelection, point } from '@uwdata/mosaic-core';
+import { MosaicClient, Param, isParam, isSelection, point } from '@uwdata/mosaic-core';
 import { Query } from '@uwdata/mosaic-sql';
 import { input } from './input.js';
 
@@ -10,8 +10,31 @@ export const menu = options => input(Menu, options);
 
 export class Menu extends MosaicClient {
   /**
-   * Create a new Menu instance.
-   * @param {object} options Options object
+   * Create a new menu input.
+   * @param {object} [options] Options object
+   * @param {HTMLElement} [options.element] The parent DOM element in which to
+   *  place the menu elements. If undefined, a new `div` element is created.
+   * @param {Selection} [options.filterBy] A selection to filter the database
+   *  table indicated by the *from* option.
+   * @param {Param} [options.as] The output param or selection. A selection
+   *  clause is added for the currently selected menu option.
+   * @param {string} [options.field] The database column name to use within
+   *  generated selection clause predicates. Defaults to the *column* option.
+   * @param {(any | { value: any, label?: string })[]} [options.options] An
+   *  array of menu options, as literal values or option objects. Option
+   *  objects have a `value` property and an optional `label` property. If no
+   *  label or *format* function is provided, the string-coerced value is used.
+   * @param {(value: any) => string} [options.format] A format function that
+   *  takes an option value as input and generates a string label. The format
+   *  function is not applied when an explicit label is provided in an option
+   *  object.
+   * @param {*} [options.value] The initial selecion menu value.
+   * @param {string} [options.from] The name of a database table to use as a data
+   *  source for this widget. Used in conjunction with the *column* option.
+   * @param {string} [options.column] The name of a database column from which
+   *  to pull menu options. The unique column values are used as menu options.
+   *  Used in conjunction with the *from* option.
+   * @param {string} [options.label] A text label for this input.
    */
   constructor({
     element,
@@ -22,17 +45,19 @@ export class Menu extends MosaicClient {
     format = x => x, // TODO
     options,
     value,
+    field = column,
     as
   } = {}) {
     super(filterBy);
     this.from = from;
     this.column = column;
     this.format = format;
+    this.field = field;
     const selection = this.selection = as;
 
     this.element = element ?? document.createElement('div');
     this.element.setAttribute('class', 'input');
-    this.element.value = this;
+    Object.defineProperty(this.element, 'value', { value: this });
 
     const lab = document.createElement('label');
     lab.innerText = label || column;
@@ -94,10 +119,10 @@ export class Menu extends MosaicClient {
   }
 
   publish(value) {
-    const { selection, column } = this;
+    const { selection, field } = this;
     if (isSelection(selection)) {
       if (value === '') value = undefined; // 'All' option
-      const clause = point(column, value, { source: this });
+      const clause = point(field, value, { source: this });
       selection.update(clause);
     } else if (isParam(selection)) {
       selection.update(value);
