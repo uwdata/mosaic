@@ -24,8 +24,9 @@ export class Coordinator {
   constructor(db = socketConnector(), options = {}) {
     const {
       logger = console,
-      manager = QueryManager()
+      manager = new QueryManager()
     } = options;
+    /** @type QueryManager */
     this.manager = manager;
     this.logger(logger);
     this.configure(options);
