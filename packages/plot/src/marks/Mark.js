@@ -248,9 +248,9 @@ export function markQuery(channels, table, skip = []) {
  * Generate an array of Plot mark specifications.
  * @returns {object[]}
  */
-export function markPlotSpec(type, detail, channels, data = {}, options = {}) {
+export function markPlotSpec(type, detail, channels, data, options = {}) {
   // @ts-ignore
-  const { numRows: length, values, columns } = data;
+  const { numRows: length, values, columns } = data ?? {};
 
   // populate plot specification options
   const side = {};
