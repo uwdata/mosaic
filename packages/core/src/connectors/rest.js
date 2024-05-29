@@ -2,6 +2,13 @@ import { tableFromIPC } from 'apache-arrow';
 
 export function restConnector(uri = 'http://localhost:3000/') {
   return {
+    /**
+     * Query the DuckDB server.
+     * @param {object} query
+     * @param {'exec' | 'arrow' | 'json'} [query.type] The query type: 'exec', 'arrow', or 'json'.
+     * @param {string} query.sql A SQL query string.
+     * @returns the query result
+     */
     async query(query) {
       const req = fetch(uri, {
         method: 'POST',
