@@ -26,7 +26,6 @@ export class Coordinator {
       logger = console,
       manager = new QueryManager()
     } = options;
-    /** @type QueryManager */
     this.manager = manager;
     this.logger(logger);
     this.configure(options);
