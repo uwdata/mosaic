@@ -6,6 +6,7 @@ import { getField } from './util/get-field.js';
 import { invert } from './util/invert.js';
 import { patchScreenCTM } from './util/patchScreenCTM.js';
 import { sanitizeStyles } from './util/sanitize-styles.js';
+import { getScale } from './util/scale.js';
 
 const asc = (a, b) => a - b;
 
@@ -66,9 +67,9 @@ export class Interval2D {
   }
 
   init(svg) {
-    const { brush, style } = this;
-    const xscale = this.xscale = svg.scale('x');
-    const yscale = this.yscale = svg.scale('y');
+    const { brush, style, mark: { plot } } = this;
+    const xscale = this.xscale = getScale(svg, 'x', plot);
+    const yscale = this.yscale = getScale(svg, 'y', plot);
     const rx = xscale.range;
     const ry = yscale.range;
     brush.extent([[min(rx), min(ry)], [max(rx), max(ry)]]);
