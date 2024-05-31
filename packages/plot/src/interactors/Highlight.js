@@ -69,7 +69,8 @@ export class Highlight {
     for (let i = 0; i < nodes.length; ++i) {
       const node = nodes[i];
       const base = values[i];
-      const t = test(node.__data__);
+      const data = node.__data__;
+      const t = test(Array.isArray(data) ? data[0] : data);
       // TODO? handle inherited values / remove attributes
       for (let j = 0; j < channels.length; ++j) {
         const [attr, value] = channels[j];
@@ -91,9 +92,11 @@ async function predicateFunction(mark, selection) {
 
   const s = { __: and(pred) };
   const q = mark.query(filter);
-  const p = q.groupby().length ? q.select(s) : q.$select(s);
+  (q.queries || [q]).forEach(q => {
+    q.groupby().length ? q.select(s) : q.$select(s);
+  });
 
-  const data = await mark.coordinator.query(p);
+  const data = await mark.coordinator.query(q);
   const v = data.getChild?.('__');
   return !(data.numRows || data.length) ? (() => false)
     : v ? (i => v.get(i))
