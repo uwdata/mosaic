@@ -337,6 +337,7 @@ export {
   toggle,
   toggleX,
   toggleY,
+  toggleZ,
   toggleColor,
   pan,
   panX,

@@ -30,6 +30,10 @@ export function toggleY(options) {
   return toggle({ ...options, channels: ['y'] });
 }
 
+export function toggleZ(options) {
+  return toggle({ ...options, channels: ['z'] });
+}
+
 export function toggleColor(options) {
   return toggle({ ...options, channels: ['color'] });
 }
