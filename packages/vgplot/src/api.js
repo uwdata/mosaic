@@ -332,6 +332,7 @@ export {
   intervalX,
   intervalY,
   intervalXY,
+  nearest,
   nearestX,
   nearestY,
   toggle,
