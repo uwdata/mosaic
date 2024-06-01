@@ -20,6 +20,11 @@ export interface DotOptions extends MarkOptions {
   y?: ChannelValueSpec;
 
   /**
+   * An optional ordinal channel for grouping data into series.
+   */
+  z?: ChannelValue;
+
+  /**
    * The radius of dots; either a channel or constant. When a number, it is
    * interpreted as a constant radius in pixels. Otherwise it is interpreted as
    * a channel, typically bound to the *r* channel, which defaults to the *sqrt*
