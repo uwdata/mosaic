@@ -30,11 +30,13 @@ if (version.includes('-')) {
   process.exit();
 }
 
+const schemaFile = `v${version}.json`;
+
 // symlink minor version number
-await link(targetFile, join(publishDir, `v${v[0]}.${v[1]}.json`));
+await link(schemaFile, join(publishDir, `v${v[0]}.${v[1]}.json`));
 
 // symlink major version number
-await link(targetFile, join(publishDir, `v${v[0]}.json`));
+await link(schemaFile, join(publishDir, `v${v[0]}.json`));
 
 // symlink latest
-await link(targetFile, join(publishDir, `latest.json`));
+await link(schemaFile, join(publishDir, `latest.json`));
