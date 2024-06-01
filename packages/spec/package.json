@@ -1,6 +1,6 @@
 {
   "name": "@uwdata/mosaic-spec",
-  "version": "0.8.0",
+  "version": "0.9.0",
   "description": "Declarative specification of Mosaic-powered applications.",
   "keywords": [
     "mosaic",
@@ -33,9 +33,9 @@
     "prepublishOnly": "npm run test && npm run lint && npm run build"
   },
   "dependencies": {
-    "@uwdata/mosaic-core": "^0.8.0",
-    "@uwdata/mosaic-sql": "^0.8.0",
-    "@uwdata/vgplot": "^0.8.0",
+    "@uwdata/mosaic-core": "^0.9.0",
+    "@uwdata/mosaic-sql": "^0.9.0",
+    "@uwdata/vgplot": "^0.9.0",
     "ts-json-schema-generator": "^2.2.0"
   }
 }
