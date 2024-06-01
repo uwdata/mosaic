@@ -14,6 +14,7 @@
     "docs:build": "vitepress build docs",
     "docs:examples": "node bin/prepare-examples.js",
     "docs:preview": "vitepress preview docs",
+    "docs:schema": "node bin/publish-schema.js",
     "build": "lerna run build",
     "lint": "lerna run lint",
     "test": "lerna run test",
