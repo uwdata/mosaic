@@ -15,7 +15,7 @@
     "test": "tsc -p jsconfig.json",
     "lint": "eslint src",
     "prepublishOnly": "npm run test && npm run lint && hatch fmt --check && npm run build && hatch build",
-    "publish": "hatch publish"
+    "publish": "hatch publish --user __token__"
   },
   "dependencies": {
     "@uwdata/mosaic-spec": "^0.8.0",

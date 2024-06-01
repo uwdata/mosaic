@@ -19,8 +19,9 @@ const { version } = JSON.parse(await readFile(packageFile));
 const v = version.split('.');
 
 // copy generated schema to file with full version number
+const schemaFile = `v${version}.json`;
 const sourceFile = join(packageDir, 'dist', 'mosaic-schema.json');
-const targetFile = join(publishDir, `v${version}.json`);
+const targetFile = join(publishDir, schemaFile);
 await copyFile(sourceFile, targetFile);
 console.log(`Wrote JSON schema to ${targetFile}`);
 
@@ -29,8 +30,6 @@ console.log(`Wrote JSON schema to ${targetFile}`);
 if (version.includes('-')) {
   process.exit();
 }
-
-const schemaFile = `v${version}.json`;
 
 // symlink minor version number
 await link(schemaFile, join(publishDir, `v${v[0]}.${v[1]}.json`));

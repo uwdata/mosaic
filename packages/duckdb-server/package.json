@@ -4,6 +4,6 @@
   "private": true,
   "scripts": {
     "prepublishOnly": "hatch run test:cov && hatch fmt --check && hatch build",
-    "publish": "hatch publish"
+    "publish": "hatch publish --user __token__"
   }
 }

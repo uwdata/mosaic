@@ -21,7 +21,10 @@
     "server": "cd packages/duckdb-server && hatch run serve",
     "server:node": "nodemon packages/duckdb/bin/run-server.js",
     "dev": "vite",
-    "release": "npm run test && npm run lint && lerna publish"
+    "release": "npm run test && npm run lint && lerna publish && npm run release:python",
+    "release:python": "npm run release:server && npm run release:widget",
+    "release:server": "cd packages/duckdb-server && npm run publish",
+    "release:widget": "cd packages/widget && npm run publish"
   },
   "devDependencies": {
     "ajv": "^8.14.0",
