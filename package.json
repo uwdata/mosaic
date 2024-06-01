@@ -25,6 +25,7 @@
   },
   "devDependencies": {
     "ajv": "^8.14.0",
+    "ajv-formats": "^3.0.1",
     "esbuild": "^0.21.4",
     "eslint": "^9.3.0",
     "eslint-plugin-jsdoc": "^48.2.7",
