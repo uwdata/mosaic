@@ -35,9 +35,6 @@
     "@uwdata/mosaic-core": "^0.8.0",
     "@uwdata/mosaic-sql": "^0.8.0",
     "@uwdata/vgplot": "^0.8.0",
-    "ts-json-schema-generator": "^2.1.1"
-  },
-  "devDependencies": {
-    "ajv": "^8.13.0"
+    "ts-json-schema-generator": "^2.2.0"
   }
 }

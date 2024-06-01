@@ -33,6 +33,13 @@ export type Params = Record<string, ParamDefinition>;
 
 /** Top-level specification properties. */
 export interface SpecHead {
+  /**
+   * A [JSON schema](http://json-schema.org/) URL for this specification,
+   * such as https://uwdata.github.io/mosaic/schema/latest.json. This property
+   * enables validation and autocomplete in editors with JSON schema support.
+   * @format uri
+   */
+  $schema?: string;
   /** Specification metadata. */
   meta?: Meta;
   /** Configuration options. */

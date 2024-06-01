@@ -1,0 +1,8 @@
+{
+  "yaml.schemas": {
+    "packages/spec/dist/mosaic-schema.json": [
+      "specs/yaml/*",
+      "docs/public/specs/yaml/*"
+    ]
+  }
+}

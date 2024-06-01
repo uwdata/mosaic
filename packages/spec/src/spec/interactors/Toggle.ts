@@ -46,6 +46,15 @@ export interface ToggleY extends ToggleOptions {
   select: 'toggleY';
 }
 
+/** A toggleZ interactor. */
+export interface ToggleZ extends ToggleOptions {
+  /**
+   * Select individal values in the `z` scale domain.
+   * Clicking or touching a mark toggles its selection status.
+   */
+  select: 'toggleZ';
+}
+
 /** A toggleColor interactor. */
 export interface ToggleColor extends ToggleOptions {
   /**

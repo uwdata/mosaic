@@ -30,16 +30,24 @@ export function toggleY(options) {
   return toggle({ ...options, channels: ['y'] });
 }
 
+export function toggleZ(options) {
+  return toggle({ ...options, channels: ['z'] });
+}
+
 export function toggleColor(options) {
   return toggle({ ...options, channels: ['color'] });
 }
 
+export function nearest({ as, ...rest }) {
+  return interactor(Nearest, { ...rest, selection: as, pointer: 'xy' });
+}
+
 export function nearestX({ as, ...rest }) {
-  return interactor(Nearest, { ...rest, selection: as, channel: 'x' });
+  return interactor(Nearest, { ...rest, selection: as, pointer: 'x' });
 }
 
 export function nearestY({ as, ...rest }) {
-  return interactor(Nearest, { ...rest, selection: as, channel: 'y' });
+  return interactor(Nearest, { ...rest, selection: as, pointer: 'y' });
 }
 
 export function intervalX({ as, ...rest }) {

@@ -28,7 +28,7 @@ export class Menu extends MosaicClient {
    *  takes an option value as input and generates a string label. The format
    *  function is not applied when an explicit label is provided in an option
    *  object.
-   * @param {*} [options.value] The initial selecion menu value.
+   * @param {*} [options.value] The initial selected menu value.
    * @param {string} [options.from] The name of a database table to use as a data
    *  source for this widget. Used in conjunction with the *column* option.
    * @param {string} [options.column] The name of a database column from which

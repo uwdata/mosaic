@@ -1,4 +1,8 @@
-import { DataType, Vector } from 'apache-arrow';
+import { DataType } from 'apache-arrow';
+
+/**
+ * @typedef {import('apache-arrow').Vector} Vector
+ */
 
 /**
  * Test if a value is an Apache Arrow table.

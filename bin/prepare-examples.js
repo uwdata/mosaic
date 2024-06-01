@@ -1,4 +1,4 @@
-#! /usr/bin/env node
+#!/usr/bin/env node
 import { basename, extname, join, resolve } from 'node:path';
 import { copyFile, readdir, readFile, writeFile } from 'node:fs/promises';
 import { parseSpec, astToESM } from '@uwdata/mosaic-spec';

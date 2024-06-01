@@ -2,6 +2,7 @@ import { coordinator } from '@uwdata/mosaic-core';
 import { Query, count, isBetween, lt, lte, neq, sql, sum } from '@uwdata/mosaic-sql';
 import { binExpr } from './util/bin-expr.js';
 import { extentX, extentY } from './util/extent.js';
+import { indices, permute } from './util/permute.js';
 import { createCanvas } from './util/raster.js';
 import { Grid2DMark } from './Grid2DMark.js';
 import { rasterEncoding } from './RasterMark.js';
@@ -181,13 +182,18 @@ export class RasterTileMark extends Grid2DMark {
     const alphaData = columns[alphaProp] ?? [];
     const colorData = columns[colorProp] ?? [];
 
+    // determine raster order
+    const idx = numRows > 1 && colorProp && this.groupby?.includes(colorProp)
+      ? permute(colorData, this.plot.getAttribute('colorDomain'))
+      : indices(numRows);
+
     // generate rasters
     this.data = {
       numRows,
       columns: {
         src: Array.from({ length: numRows }, (_, i) => {
-          color?.(img.data, w, h, colorData[i]);
-          alpha?.(img.data, w, h, alphaData[i]);
+          color?.(img.data, w, h, colorData[idx[i]]);
+          alpha?.(img.data, w, h, alphaData[idx[i]]);
           ctx.putImageData(img, 0, 0);
           return canvas.toDataURL();
         })

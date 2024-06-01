@@ -2,6 +2,7 @@ import { ascending } from 'd3';
 import { scale } from '@observablehq/plot';
 import { gridDomainContinuous, gridDomainDiscrete } from './util/grid.js';
 import { isColor } from './util/is-color.js';
+import { indices, permute } from './util/permute.js';
 import { alphaScheme, alphaConstant, colorConstant, colorCategory, colorScheme, createCanvas } from './util/raster.js';
 import { DENSITY, Grid2DMark } from './Grid2DMark.js';
 import { Fixed, Transient } from '../symbols.js';
@@ -46,13 +47,18 @@ export class RasterMark extends Grid2DMark {
     const alphaData = columns[alphaProp] ?? [];
     const colorData = columns[colorProp] ?? [];
 
+    // determine raster order
+    const idx = numRows > 1 && colorProp && this.groupby?.includes(colorProp)
+      ? permute(colorData, this.plot.getAttribute('colorDomain'))
+      : indices(numRows);
+
     // generate rasters
     this.data = {
       numRows,
       columns: {
         src: Array.from({ length: numRows }, (_, i) => {
-          color?.(img.data, w, h, colorData[i]);
-          alpha?.(img.data, w, h, alphaData[i]);
+          color?.(img.data, w, h, colorData[idx[i]]);
+          alpha?.(img.data, w, h, alphaData[idx[i]]);
           ctx.putImageData(img, 0, 0);
           return canvas.toDataURL();
         })
@@ -196,7 +202,7 @@ function colorScale(mark, prop) {
   const domainFixed = domainAttr === Fixed;
   const domainTransient = domainAttr?.[Transient];
   const domain = (!domainFixed && !domainTransient && domainAttr) || (
-    flat ? data.sort(ascending)
+    flat ? data.slice().sort(ascending)
       : discrete ? gridDomainDiscrete(data)
       : gridDomainContinuous(data)
   );

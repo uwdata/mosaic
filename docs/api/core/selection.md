@@ -73,6 +73,13 @@ Property getter for the current active (most recently updated) selection clause.
 The value corresponding to the current active selection clause.
 Selections override the [`Param.value`](./param#value) property to return the active clause _value_, making selections compatible where standard params are expected.
 
+## valueFor
+
+`selection.valueFor(source)`
+
+The value corresponding to a given clause _source_.
+Returns `undefined` if this selection does not include a clause from this source.
+
 ## clauses
 
 `selection.clauses`
