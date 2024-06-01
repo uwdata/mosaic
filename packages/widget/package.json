@@ -14,8 +14,9 @@
     "dev": "vite",
     "test": "tsc -p jsconfig.json",
     "lint": "eslint src",
-    "prepublishOnly": "npm run test && npm run lint && hatch fmt --check && npm run build && hatch build",
-    "publish": "hatch publish --user __token__"
+    "prepublishOnly": "rimraf dist && mkdir dist && npm run test && npm run lint && hatch fmt --check && npm run build && hatch build",
+    "publish": "hatch publish --user __token__",
+    "release": "npm run prepublishOnly && npm run publish"
   },
   "dependencies": {
     "@uwdata/mosaic-spec": "^0.9.0",
