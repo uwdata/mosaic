@@ -1,9 +1,13 @@
 import { socketConnector } from './connectors/socket.js';
-import { FilterGroup } from './FilterGroup.js';
+import { DataCubeIndexer } from './DataCubeIndexer.js';
 import { QueryManager, Priority } from './QueryManager.js';
 import { queryFieldInfo } from './util/field-info.js';
 import { voidLogger } from './util/void-logger.js';
 
+/**
+ * The singleton Coordinator instance.
+ * @type {Coordinator}
+ */
 let _instance;
 
 /**
@@ -20,15 +24,29 @@ export function coordinator(instance) {
   return _instance;
 }
 
+/**
+ * A Mosaic Coordinator manages all database communication for clients and
+ * handles selection updates. The Coordinator also performs optimizations
+ * including query caching, consolidation, and data cube indexing.
+ * @param {*} [db] Database connector. Defaults to a web socket connection.
+ * @param {object} [options] Coordinator options.
+ * @param {boolean} [options.cache=true] Boolean flag to enable/disable query caching.
+ * @param {boolean} [options.consolidate=true] Boolean flag to enable/disable query consolidation.
+ * @param {object} [options.indexes] Data cube indexer options.
+ */
 export class Coordinator {
-  constructor(db = socketConnector(), options = {}) {
-    const {
-      logger = console,
-      manager = new QueryManager()
-    } = options;
+  constructor(db = socketConnector(), {
+    logger = console,
+    manager = new QueryManager(),
+    cache = true,
+    consolidate = true,
+    indexes = {}
+  } = {}) {
     this.manager = manager;
+    this.manager.cache(cache);
+    this.manager.consolidate(consolidate);
+    this.dataCubeIndexer = new DataCubeIndexer(this, indexes);
     this.logger(logger);
-    this.configure(options);
     this.databaseConnector(db);
     this.clear();
   }
@@ -41,27 +59,13 @@ export class Coordinator {
     return this._logger;
   }
 
-  /**
-   * Set configuration options for this coordinator.
-   * @param {object} [options] Configration options.
-   * @param {boolean} [options.cache=true] Boolean flag to enable/disable query caching.
-   * @param {boolean} [options.consolidate=true] Boolean flag to enable/disable query consolidation.
-   * @param {boolean|object} [options.indexes=true] Boolean flag to enable/disable
-   *  automatic data cube indexes or an index options object.
-   */
-  configure({ cache = true, consolidate = true, indexes = true } = {}) {
-    this.manager.cache(cache);
-    this.manager.consolidate(consolidate);
-    this.indexes = indexes;
-  }
-
   clear({ clients = true, cache = true } = {}) {
     this.manager.clear();
     if (clients) {
-      this.clients?.forEach(client => this.disconnect(client));
-      this.filterGroups?.forEach(group => group.finalize());
-      this.clients = new Set;
+      this.filterGroups?.forEach(group => group.disconnect());
       this.filterGroups = new Map;
+      this.clients?.forEach(client => this.disconnect(client));
+      this.clients = new Set;
     }
     if (cache) this.manager.cache().clear();
   }
@@ -115,7 +119,7 @@ export class Coordinator {
   }
 
   requestQuery(client, query) {
-    this.filterGroups.get(client.filterBy)?.reset();
+    this.dataCubeIndexer.clear();
     return query
       ? this.updateClient(client, query)
       : client.update();
@@ -126,7 +130,7 @@ export class Coordinator {
    * @param {import('./MosaicClient.js').MosaicClient} client the client to disconnect
    */
   async connect(client) {
-    const { clients, filterGroups, indexes } = this;
+    const { clients } = this;
 
     if (clients.has(client)) {
       throw new Error('Client already connected.');
@@ -140,16 +144,8 @@ export class Coordinator {
       client.fieldInfo(await queryFieldInfo(this, fields));
     }
 
-    // connect filters
-    const filter = client.filterBy;
-    if (filter) {
-      if (filterGroups.has(filter)) {
-        filterGroups.get(filter).add(client);
-      } else {
-        const group = new FilterGroup(this, filter, indexes);
-        filterGroups.set(filter, group.add(client));
-      }
-    }
+    // connect filter selection
+    connectSelection(this, client.filterBy, client);
 
     client.requestQuery();
   }
@@ -163,7 +159,78 @@ export class Coordinator {
     const { clients, filterGroups } = this;
     if (!clients.has(client)) return;
     clients.delete(client);
-    filterGroups.get(client.filterBy)?.remove(client);
     client.coordinator = null;
+
+    const group = filterGroups.get(client.filterBy);
+    if (group) {
+      group.clients.delete(client);
+    }
   }
+}
+
+/**
+ * Connect a selection-client pair to process updates.
+ * @param {Coordinator} mc
+ * @param {import('./Selection.js').Selection} selection
+ * @param {import('./MosaicClient.js').MosaicClient} client
+ */
+function connectSelection(mc, selection, client) {
+  if (!selection) return;
+  let entry = mc.filterGroups.get(selection);
+  if (!entry) {
+    const activate = clause => activateSelection(mc, selection, clause);
+    const value = () => updateSelection(mc, selection);
+
+    selection.addEventListener('activate', activate);
+    selection.addEventListener('value', value);
+
+    entry = {
+      selection,
+      clients: new Set,
+      disconnect() {
+        selection.removeEventListener('activate', activate);
+        selection.removeEventListener('value', value);
+      }
+    };
+    mc.filterGroups.set(selection, entry);
+  }
+  entry.clients.add(client);
+}
+
+/**
+ * Activate a selection, potentially precomputing optimizations.
+ * @param {Coordinator} mc
+ * @param {import('./Selection.js').Selection} selection
+ * @param {import('./util/selection-types.js').SelectionClause} clause
+ */
+function activateSelection(mc, selection, clause) {
+  const { dataCubeIndexer, filterGroups } = mc;
+  if (dataCubeIndexer) {
+    const { clients } = filterGroups.get(selection);
+    for (const client of clients) {
+      dataCubeIndexer.index(client, selection, clause);
+    }
+  }
+}
+
+/**
+ * Process an updated selection value, querying filtered data for any
+ * associated clients.
+ * @param {Coordinator} mc
+ * @param {import('./Selection.js').Selection} selection
+ * @returns {Promise} A Promise that resolves when the update completes.
+ */
+function updateSelection(mc, selection) {
+  const { dataCubeIndexer, filterGroups } = mc;
+  const { clients } = filterGroups.get(selection);
+  const { active } = selection;
+  return Promise.allSettled(Array.from(clients).map(client => {
+    const info = dataCubeIndexer.index(client, selection, active);
+    if (!info?.skip) {
+      // @ts-ignore
+      const query = info?.query(active.predicate)
+        ?? client.query(selection.predicate(client));
+      return mc.updateClient(client, query);
+    }
+  }));
 }

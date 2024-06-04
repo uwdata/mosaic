@@ -108,7 +108,9 @@ export class QueryManager {
 
   cancel(requests) {
     const set = new Set(requests);
-    this.queue.remove(({ result }) => set.has(result));
+    if (set.size) {
+      this.queue.remove(({ result }) => set.has(result));
+    }
   }
 
   clear() {

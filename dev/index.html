@@ -123,13 +123,12 @@
   consolidateToggle.addEventListener('input', setConsolidate);
   indexToggle.addEventListener('input', setIndex);
   indexState.addEventListener('click', () => {
-    const active = Array.from(vg.coordinator().filterGroups.values())
-      .filter(group => group.indexer?.activeView);
-    if (active.length) {
-      active.forEach(group => console.warn(
+    const { indexes } = vg.coordinator().dataCubeIndexer || {};
+    if (indexes) {
+      console.warn(
         'Data Cube Index Entries',
-        Array.from(group.indexer.indices.values())
-      ));
+        Array.from(indexes.values())
+      );
     } else {
       console.warn('No Active Data Cube Index');
     }
@@ -159,9 +158,7 @@
   }
 
   function setIndex() {
-    const state = indexToggle.checked;
-    vg.coordinator().indexes = state;
-    vg.coordinator().filterGroups.forEach(group => group.index(state));
+    vg.coordinator().dataCubeIndexer.enabled(indexToggle.checked);
   }
 
   function reload() {
