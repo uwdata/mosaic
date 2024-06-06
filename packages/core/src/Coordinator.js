@@ -30,6 +30,8 @@ export function coordinator(instance) {
  * including query caching, consolidation, and data cube indexing.
  * @param {*} [db] Database connector. Defaults to a web socket connection.
  * @param {object} [options] Coordinator options.
+ * @param {*} [options.logger=console] The logger to use, defaults to `console`.
+ * @param {*} [options.manager] The query manager to use.
  * @param {boolean} [options.cache=true] Boolean flag to enable/disable query caching.
  * @param {boolean} [options.consolidate=true] Boolean flag to enable/disable query consolidation.
  * @param {object} [options.indexes] Data cube indexer options.
@@ -51,14 +53,12 @@ export class Coordinator {
     this.clear();
   }
 
-  logger(logger) {
-    if (arguments.length) {
-      this._logger = logger || voidLogger();
-      this.manager.logger(this._logger);
-    }
-    return this._logger;
-  }
-
+  /**
+   * Clear the coordinator state.
+   * @param {object} [options] Options object.
+   * @param {boolean} [options.clients=true] If true, disconnect all clients.
+   * @param {boolean} [options.cache=true] If true, clear the query cache.
+   */
   clear({ clients = true, cache = true } = {}) {
     this.manager.clear();
     if (clients) {
@@ -70,21 +70,66 @@ export class Coordinator {
     if (cache) this.manager.cache().clear();
   }
 
+  /**
+   * Get or set the database connector.
+   * @param {*} [db] The database connector to use.
+   * @returns The current database connector.
+   */
   databaseConnector(db) {
     return this.manager.connector(db);
   }
 
+  /**
+   * Get or set the logger.
+   * @param {*} logger  The logger to use.
+   * @returns The current logger
+   */
+  logger(logger) {
+    if (arguments.length) {
+      this._logger = logger || voidLogger();
+      this.manager.logger(this._logger);
+    }
+    return this._logger;
+  }
+
   // -- Query Management ----
 
+  /**
+   * Cancel previosuly submitted query requests. These queries will be
+   * canceled if they are queued but have not yet been submitted.
+   * @param {import('./util/query-result.js').QueryResult[]} requests An array
+   *  of query result objects, such as those returned by the `query` method.
+   */
   cancel(requests) {
     this.manager.cancel(requests);
   }
 
+  /**
+   * Issue a query for which no result (return value) is needed.
+   * @param {import('@uwdata/mosaic-sql').Query | string} query The query.
+   * @param {object} [options] An options object.
+   * @param {number} [options.priority] The query priority, defaults to
+   *  `Priority.Normal`.
+   * @returns {import('./util/query-result.js').QueryResult} A query result
+   *  promise.
+   */
   exec(query, { priority = Priority.Normal } = {}) {
     query = Array.isArray(query) ? query.join(';\n') : query;
     return this.manager.request({ type: 'exec', query }, priority);
   }
 
+  /**
+   * Issue a query to the backing database. The submitted query may be
+   * consolidate with other queries and its results may be cached.
+   * @param {import('@uwdata/mosaic-sql').Query | string} query The query.
+   * @param {object} [options] An options object.
+   * @param {'arrow' | 'json'} [options.type] The query result format type.
+   * @param {boolean} [options.cache=true] If true, cache the query result.
+   * @param {number} [options.priority] The query priority, defaults to
+   *  `Priority.Normal`.
+   * @returns {import('./util/query-result.js').QueryResult} A query result
+   *  promise.
+   */
   query(query, {
     type = 'arrow',
     cache = true,
@@ -94,6 +139,15 @@ export class Coordinator {
     return this.manager.request({ type, query, cache, options }, priority);
   }
 
+  /**
+   * Issue a query to prefetch data for later use. The query result is cached
+   * for efficient future access.
+   * @param {import('@uwdata/mosaic-sql').Query | string} query The query.
+   * @param {object} [options] An options object.
+   * @param {'arrow' | 'json'} [options.type] The query result format type.
+   * @returns {import('./util/query-result.js').QueryResult} A query result
+   *  promise.
+   */
   prefetch(query, options = {}) {
     return this.query(query, { ...options, cache: true, priority: Priority.Low });
   }
@@ -110,6 +164,14 @@ export class Coordinator {
 
   // -- Client Management ----
 
+  /**
+   * Update client data by submitting the given query and returning the
+   * data (or error) to the client.
+   * @param {import('./MosaicClient.js').MosaicClient} client A Mosaic client.
+   * @param {import('@uwdata/mosaic-sql').Query | string} query The data query.
+   * @param {number} [priority] The query priority.
+   * @returns {Promise} A Promise that resolves upon completion of the update.
+   */
   updateClient(client, query, priority = Priority.Normal) {
     client.queryPending();
     return this.query(query, { priority }).then(
@@ -118,6 +180,15 @@ export class Coordinator {
     );
   }
 
+  /**
+   * Issue a query request for a client. If the query is null or undefined,
+   * the client is simply updated. Otherwise `updateClient` is calles. As a
+   * side effect, this method clears the current data cube indexer state.
+   * @param {import('./MosaicClient.js').MosaicClient} client The client
+   *  to update.
+   * @param {import('@uwdata/mosaic-sql').Query | string | null} [query]
+   *  The query to issue.
+   */
   requestQuery(client, query) {
     this.dataCubeIndexer.clear();
     return query
@@ -127,7 +198,8 @@ export class Coordinator {
 
   /**
    * Connect a client to the coordinator.
-   * @param {import('./MosaicClient.js').MosaicClient} client the client to disconnect
+   * @param {import('./MosaicClient.js').MosaicClient} client The Mosaic
+   *  client to connect.
    */
   async connect(client) {
     const { clients } = this;
@@ -152,8 +224,8 @@ export class Coordinator {
 
   /**
    * Disconnect a client from the coordinator.
-   *
-   * @param {import('./MosaicClient.js').MosaicClient} client the client to disconnect
+   * @param {import('./MosaicClient.js').MosaicClient} client The Mosaic
+   *  client to disconnect.
    */
   disconnect(client) {
     const { clients, filterGroups } = this;
@@ -169,10 +241,11 @@ export class Coordinator {
 }
 
 /**
- * Connect a selection-client pair to process updates.
- * @param {Coordinator} mc
- * @param {import('./Selection.js').Selection} selection
- * @param {import('./MosaicClient.js').MosaicClient} client
+ * Connect a selection-client pair to the coordinator to process updates.
+ * @param {Coordinator} mc The Mosaic coordinator.
+ * @param {import('./Selection.js').Selection} selection A selection.
+ * @param {import('./MosaicClient.js').MosaicClient} client A Mosiac
+ *  client that is filtered by the given selection.
  */
 function connectSelection(mc, selection, client) {
   if (!selection) return;
@@ -198,10 +271,13 @@ function connectSelection(mc, selection, client) {
 }
 
 /**
- * Activate a selection, potentially precomputing optimizations.
- * @param {Coordinator} mc
- * @param {import('./Selection.js').Selection} selection
- * @param {import('./util/selection-types.js').SelectionClause} clause
+ * Activate a selection, providing a clause indicative of potential
+ * next updates. Activation provides a preview of likely next events,
+ * enabling potential precomputation to optimize updates.
+ * @param {Coordinator} mc The Mosaic coordinator.
+ * @param {import('./Selection.js').Selection} selection A selection.
+ * @param {import('./util/selection-types.js').SelectionClause} clause A
+ *  selection clause representative of the activation.
  */
 function activateSelection(mc, selection, clause) {
   const { dataCubeIndexer, filterGroups } = mc;
@@ -216,21 +292,23 @@ function activateSelection(mc, selection, clause) {
 /**
  * Process an updated selection value, querying filtered data for any
  * associated clients.
- * @param {Coordinator} mc
- * @param {import('./Selection.js').Selection} selection
+ * @param {Coordinator} mc The Mosaic coordinator.
+ * @param {import('./Selection.js').Selection} selection A selection.
  * @returns {Promise} A Promise that resolves when the update completes.
  */
 function updateSelection(mc, selection) {
   const { dataCubeIndexer, filterGroups } = mc;
   const { clients } = filterGroups.get(selection);
   const { active } = selection;
-  return Promise.allSettled(Array.from(clients).map(client => {
+  return Promise.allSettled(Array.from(clients, client => {
     const info = dataCubeIndexer.index(client, selection, active);
-    if (!info?.skip) {
-      // @ts-ignore
-      const query = info?.query(active.predicate)
-        ?? client.query(selection.predicate(client));
-      return mc.updateClient(client, query);
-    }
+    const filter = info ? null : selection.predicate(client);
+
+    // skip due to cross-filtering
+    if (info?.skip || (!info && !filter)) return;
+
+    // @ts-ignore
+    const query = info?.query(active.predicate) ?? client.query(filter);
+    return mc.updateClient(client, query);
   }));
 }
