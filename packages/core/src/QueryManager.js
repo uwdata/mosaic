@@ -1,7 +1,7 @@
 import { consolidator } from './QueryConsolidator.js';
 import { lruCache, voidCache } from './util/cache.js';
 import { priorityQueue } from './util/priority-queue.js';
-import { queryResult } from './util/query-result.js';
+import { QueryResult } from './util/query-result.js';
 
 export const Priority = { High: 0, Normal: 1, Low: 2 };
 
@@ -96,7 +96,7 @@ export class QueryManager {
   }
 
   request(request, priority = Priority.Normal) {
-    const result = queryResult();
+    const result = new QueryResult();
     const entry = { request, result };
     if (this._consolidate) {
       this._consolidate.add(entry, priority);
