@@ -93,8 +93,7 @@ export default {
     view.model.on('change:spec', () => updateSpec());
 
     function configureCoordinator() {
-      const indexes = { temp: getTempIndexes() };
-      coordinator().configure({ indexes });
+      coordinator().dataCubeIndexer.temp = getTempIndexes();
     }
 
     view.model.on('change:temp_indexes', () => configureCoordinator());

@@ -24,7 +24,10 @@ import { MosaicClient } from './MosaicClient.js';
  *  cross-filtering contexts.
  * @returns {SelectionClause} The generated selection clause.
  */
-export function point(field, value, { source, clients = undefined }) {
+export function point(field, value, {
+  source,
+  clients = source ? new Set([source]) : undefined
+}) {
   /** @type {SQLExpression | null} */
   const predicate = value !== undefined
     ? isNotDistinct(field, literal(value))
@@ -50,7 +53,10 @@ export function point(field, value, { source, clients = undefined }) {
  *  cross-filtering contexts.
  * @returns {SelectionClause} The generated selection clause.
  */
-export function points(fields, value, { source, clients = undefined }) {
+export function points(fields, value, {
+  source,
+  clients = source ? new Set([source]) : undefined
+}) {
   /** @type {SQLExpression | null} */
   let predicate = null;
   if (value) {
@@ -84,7 +90,11 @@ export function points(fields, value, { source, clients = undefined }) {
  * @returns {SelectionClause} The generated selection clause.
  */
 export function interval(field, value, {
-  source, clients, bin, scale, pixelSize = 1
+  source,
+  clients = source ? new Set([source]) : undefined,
+  bin,
+  scale,
+  pixelSize = 1
 }) {
   /** @type {SQLExpression | null} */
   const predicate = value != null ? isBetween(field, value) : null;
@@ -109,7 +119,11 @@ export function interval(field, value, {
  * @returns {SelectionClause} The generated selection clause.
  */
 export function intervals(fields, value, {
-  source, clients, bin, scales = [], pixelSize = 1
+  source,
+  clients = source ? new Set([source]) : undefined,
+  bin,
+  scales = [],
+  pixelSize = 1
 }) {
   /** @type {SQLExpression | null} */
   const predicate = value != null

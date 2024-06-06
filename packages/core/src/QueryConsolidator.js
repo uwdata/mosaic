@@ -1,5 +1,5 @@
 import { Query, Ref, isDescribeQuery } from '@uwdata/mosaic-sql';
-import { queryResult } from './util/query-result.js';
+import { QueryResult } from './util/query-result.js';
 
 function wait(callback) {
   const method = typeof requestAnimationFrame !== 'undefined'
@@ -133,7 +133,7 @@ function consolidate(group, enqueue, record) {
         record: false,
         query: (group.query = consolidatedQuery(group, record))
       },
-      result: (group.result = queryResult())
+      result: (group.result = new QueryResult())
     });
   } else {
     // issue queries directly
