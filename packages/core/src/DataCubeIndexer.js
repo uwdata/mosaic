@@ -226,7 +226,6 @@ function binInterval(scale, pixelSize, bin) {
  * @returns {DataCubeInfo}
  */
 function dataCubeInfo(clientQuery, active, indexCols) {
-  console.log(clientQuery);
   const { dims, aggr, aux } = indexCols;
   const { columns } = active;
 
