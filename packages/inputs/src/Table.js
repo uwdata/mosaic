@@ -78,7 +78,9 @@ export class Table extends MosaicClient {
 
     if (this.selection) {
       this.body.addEventListener('pointerover', evt => {
+        // @ts-ignore
         if (evt.target?.tagName === 'TD') {
+          // @ts-ignore
           const row = +evt.target.parentElement.__row__;
           if (row !== this.currentRow) {
             this.currentRow = row;
@@ -181,7 +183,7 @@ export class Table extends MosaicClient {
     const cols = schema.map(s => columns[s.column]);
     for (let i = 0; i < numRows; ++i) {
       const tr = document.createElement('tr');
-      tr.__row__ = rowCount + i;
+      Object.assign(tr, { __row__: rowCount + i });
       for (let j = 0; j < nf; ++j) {
         const value = cols[j][i];
         const td = document.createElement('td');
