@@ -1,6 +1,5 @@
+import { interval, Selection } from '@uwdata/mosaic-core';
 import { select, zoom, ZoomTransform } from 'd3';
-import { Selection } from '@uwdata/mosaic-core';
-import { isBetween } from '@uwdata/mosaic-sql';
 import { getField } from './util/get-field.js';
 
 const asc = (a, b) => a - b;
@@ -49,13 +48,11 @@ export class PanZoom {
   }
 
   clause(value, field, scale) {
-    return {
+    return interval(field, value, {
       source: this,
-      schema: { type: 'interval', scales: [scale] },
       clients: this.mark.plot.markSet,
-      value,
-      predicate: value ? isBetween(field, value) : null
-    };
+      scale
+    });
   }
 
   init(svg) {

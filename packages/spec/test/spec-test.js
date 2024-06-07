@@ -1,5 +1,6 @@
 import assert from 'node:assert';
 import ajv from 'ajv';
+import ajvFormats from 'ajv-formats';
 import { specs, loadJSON, loadJSONSchema, loadESM } from './load-specs.js';
 import { astToESM, parseSpec } from '../src/index.js';
 
@@ -9,6 +10,7 @@ const validator = new ajv({
   allowUnionTypes: true,
   verbose: true
 });
+ajvFormats(validator);
 const schema = await loadJSONSchema();
 const validate = validator.compile(schema);
 

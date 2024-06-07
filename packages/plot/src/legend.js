@@ -19,7 +19,7 @@ export class Legend {
 
     this.element = document.createElement('div');
     this.element.setAttribute('class', 'legend');
-    Object.assign(this.element, { value: this });
+    Object.defineProperty(this.element, 'value', { value: this });
   }
 
   setPlot(plot) {
@@ -35,8 +35,13 @@ export class Legend {
 
   update() {
     if (!this.legend) return;
-    const { value } = this.selection;
-    const curr = value && value.length ? new Set(value.map(v => v[0])) : null;
+    const { selection, handler } = this;
+    const { single, value } = selection;
+
+    // extract currently selected values
+    const vals = single ? value : selection.valueFor(handler);
+    const curr = vals && vals.length ? new Set(vals.map(v => v[0])) : null;
+
     const nodes = this.legend.querySelectorAll(TOGGLE_SELECTOR);
     for (const node of nodes) {
       const selected = curr ? curr.has(node.__data__) : true;
@@ -103,11 +108,19 @@ function getInteractor(legend, type) {
   // otherwise instantiate an appropriate interactor
   const mark = interactorMark(legend);
   if (type === SWATCH) {
-    legend.handler = new Toggle(mark, { selection, channels: [channel] });
+    legend.handler = new Toggle(mark, {
+      selection,
+      channels: [channel],
+      peers: false
+    });
     selection.addEventListener('value', () => legend.update());
   } else {
-    const brush = { fill: 'none', stroke: 'currentColor' };
-    legend.handler = new Interval1D(mark, { selection, channel, brush });
+    legend.handler = new Interval1D(mark, {
+      selection,
+      channel,
+      brush: { fill: 'none', stroke: 'currentColor' },
+      peers: false
+    });
   }
 
   return legend.handler;

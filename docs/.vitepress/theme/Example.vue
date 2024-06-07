@@ -73,16 +73,22 @@ export default {
   --plot-background: var(--vp-c-bg-alt);
 }
 
-.mosaic-example label {
-  margin-right: 0.5em;
-}
-
 .mosaic-example .input {
   margin-right: 1em;
 }
 
 .mosaic-example .input > * {
   vertical-align: middle;
+}
+
+.mosaic-example .input label:first-of-type {
+  margin-right: 0.5em;
+}
+
+.mosaic-example .input label.value {
+  display: inline-block;
+  margin-left: 0.5em;
+  min-width: 40px;
 }
 
 .mosaic-example select {

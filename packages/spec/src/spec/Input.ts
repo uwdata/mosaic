@@ -12,6 +12,11 @@ export interface Menu {
    */
   as?: ParamRef;
   /**
+   * The database column name to use within generated selection clause
+   * predicates. Defaults to the `column` property.
+   */
+  field?: string;
+  /**
    * The name of a database table to use as a data source for this widget.
    * Used in conjunction with the `column` property.
    */
@@ -33,11 +38,11 @@ export interface Menu {
   /**
    * An array of menu options, as literal values or option objects.
    * Option objects have a `value` property and an optional `label` property.
-   * If no label is provided, the (string-coerced) value is used.
+   * If no label is provided, the string-coerced value is used.
    */
-  options?: Array<any>;
+  options?: Array<any | { value: any, label?: string }>;
   /**
-   * The initial selected menu option.
+   * The initial selected menu value.
    */
   value?: any;
 }
@@ -53,6 +58,11 @@ export interface Search {
    * current text search query.
    */
   as?: ParamRef;
+  /**
+   * The database column name to use within generated selection clause
+   * predicates. Defaults to the `column` property.
+   */
+  field?: string;
   /**
    * The type of text search query to perform. One of:
    * - `"contains"` (default): the query string may appear anywhere in the text
@@ -93,6 +103,18 @@ export interface Slider {
    * currently selected slider option.
    */
   as?: ParamRef;
+  /**
+   * The database column name to use within generated selection clause
+   * predicates. Defaults to the `column` property.
+   */
+  field?: string;
+  /**
+   * The type of selection clause predicate to generate if the **as** option
+   * is a Selection. If `'point'` (the default), the selection predicate is an
+   * equality check for the slider value. If `'interval'`, the predicate checks
+   * an interval from the minimum to the current slider value.
+   */
+  select?: 'point' | 'interval';
   /**
    * The name of a database table to use as a data source for this widget.
    * Used in conjunction with the `column` property.

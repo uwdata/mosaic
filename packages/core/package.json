@@ -1,6 +1,6 @@
 {
   "name": "@uwdata/mosaic-core",
-  "version": "0.8.0",
+  "version": "0.9.0",
   "description": "Scalable and extensible linked data views.",
   "keywords": [
     "mosaic",
@@ -28,11 +28,11 @@
     "prepublishOnly": "npm run test && npm run lint && npm run build"
   },
   "dependencies": {
-    "@duckdb/duckdb-wasm": "^1.28.1-dev194.0",
-    "@uwdata/mosaic-sql": "^0.8.0",
+    "@duckdb/duckdb-wasm": "^1.28.1-dev195.0",
+    "@uwdata/mosaic-sql": "^0.9.0",
     "apache-arrow": "^15.0.2"
   },
   "devDependencies": {
-    "@uwdata/mosaic-duckdb": "^0.8.0"
+    "@uwdata/mosaic-duckdb": "^0.9.0"
   }
 }

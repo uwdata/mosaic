@@ -100,11 +100,13 @@ export default defineConfig({
           text: 'Data Transformation',
           collapsed: true,
           items: [
+            { text: 'Athlete Height Intervals', link: '/examples/athlete-height' },
             { text: 'Bias Parameter', link: '/examples/bias' },
+            { text: 'Linear Regression', link: '/examples/linear-regression' },
             { text: 'Moving Average', link: '/examples/moving-average' },
+            { text: 'Line Multi-Series', link: '/examples/line-multi-series' },
             { text: 'Normalized Stock Prices', link: '/examples/normalize' },
             { text: 'Overview + Detail', link: '/examples/overview-detail' },
-            { text: 'Linear Regression', link: '/examples/linear-regression' },
             { text: 'Wind Map', link: '/examples/wind-map' }
           ]
         },

@@ -194,6 +194,18 @@ export type SortOrder =
 /** The pointer mode for the tip; corresponds to pointerX, pointerY, and pointer. */
 export type TipPointer = 'x' | 'y' | 'xy';
 
+/** Selection filters to apply internally to mark data. */
+export type SelectFilter =
+  | 'first'
+  | 'last'
+  | 'maxX'
+  | 'maxY'
+  | 'minX'
+  | 'minY'
+  | 'nearest'
+  | 'nearestX'
+  | 'nearestY';
+
 export interface MarkData {
   /**
    * The data source for the mark.
@@ -215,9 +227,23 @@ export interface MarkOptions {
    * channel values; only truthy values are retained.
    *
    * Note that filtering only affects the rendered mark index, not the
-   * associated channel values, and thus has no effect on imputed scale domains.
+   * associated channel values, and has no effect on imputed scale domains.
    */
   filter?: ChannelValue;
+
+  /**
+   * Applies a filter transform after data is loaded to highlight selected
+   * values only. For example, `first` and `last` select the first or last
+   * values of series only (using the *z* channel to separate series).
+   * Meanwhile, `nearestX` and `nearestY` select the point nearest to the
+   * pointer along the *x* or *y* channel dimension. Unlike Mosaic selections,
+   * a mark level *select* is internal to the mark only, and does not populate
+   * a param or selection value to be shared across clients.
+   *
+   * Note that filtering only affects the rendered mark index, not the
+   * associated channel values, and has no effect on imputed scale domains.
+   */
+  select?: SelectFilter;
 
   /**
    * Applies a transform to reverse the order of the mark’s index, say for

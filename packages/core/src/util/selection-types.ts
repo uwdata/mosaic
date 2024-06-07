@@ -40,6 +40,7 @@ export interface MatchMetadata extends ClauseMetadata {
 
 /** Quantitative scale types. */
 export type ScaleType =
+  | 'identity'
   | 'linear'
   | 'log'
   | 'sqrt'
@@ -59,8 +60,11 @@ export interface Scale {
   type: ScaleType;
   /** The scale domain, as an array of start and end data values. */
   domain: Extent;
-  /** The scale range, as an array of stard and end screen pixels. */
-  range: [number, number];
+  /**
+   * The scale range, as an array of start and end screen pixels.
+   * The range may be omitted for *identity* scales.
+   */
+  range?: [number, number];
   /** The base of the logarithm. For `'log'` scales only. */
   base?: number;
   /** The constant parameter. For `'symlog'` scales only. */
@@ -68,6 +72,9 @@ export interface Scale {
   /** The exponent parameter. For `'pow'` scales only. */
   exponent?: number;
 }
+
+/** A binning method name. */
+export type BinMethod = 'floor' | 'ceil' | 'round';
 
 /**
  * Selection clause metadata for one or more selected intervals. This
@@ -87,6 +94,11 @@ export interface IntervalMetadata extends ClauseMetadata {
    * mapping from data values to screen pixels.
    */
   scales?: Scale[];
+  /**
+   * A hint for the binning method to use when discretizing the
+   * interval domain. If unspecified, the default is `'floor'`.
+   */
+  bin?: BinMethod
 }
 
 /**

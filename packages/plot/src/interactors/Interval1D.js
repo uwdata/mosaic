@@ -1,5 +1,5 @@
-import { select, min, max } from 'd3';
-import { isBetween } from '@uwdata/mosaic-sql';
+import { interval } from '@uwdata/mosaic-core';
+import { ascending, min, max, select } from 'd3';
 import { brushX, brushY } from './util/brush.js';
 import { closeTo } from './util/close-to.js';
 import { getField } from './util/get-field.js';
@@ -52,13 +52,12 @@ export class Interval1D {
 
   clause(value) {
     const { mark, pixelSize, field, scale } = this;
-    return {
+    return interval(field, value, {
       source: this,
-      schema: { type: 'interval', pixelSize, scales: [scale] },
       clients: this.peers ? mark.plot.markSet : new Set().add(mark),
-      value,
-      predicate: value ? isBetween(field, value) : null
-    };
+      scale,
+      pixelSize
+    });
   }
 
   init(svg, root) {
@@ -69,6 +68,7 @@ export class Interval1D {
     const ry = svg.scale('y').range;
     brush.extent([[min(rx), min(ry)], [max(rx), max(ry)]]);
 
+    const range = this.value?.map(this.scale.apply).sort(ascending);
     const facets = select(svg).selectAll('g[aria-label="facet"]');
     root = facets.size() ? facets : select(root ?? svg);
     this.g = root
@@ -76,7 +76,7 @@ export class Interval1D {
       .attr('class', `interval-${channel}`)
       .each(patchScreenCTM)
       .call(brush)
-      .call(brush.moveSilent, this.value?.map(this.scale.apply));
+      .call(brush.moveSilent, range);
 
     if (style) {
       const brushes = this.g.selectAll('rect.selection');

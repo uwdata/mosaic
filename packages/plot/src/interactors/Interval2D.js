@@ -1,13 +1,11 @@
-import { select, min, max } from 'd3';
-import { and, isBetween } from '@uwdata/mosaic-sql';
+import { intervals } from '@uwdata/mosaic-core';
+import { ascending, min, max, select } from 'd3';
 import { brush } from './util/brush.js';
 import { closeTo } from './util/close-to.js';
 import { getField } from './util/get-field.js';
 import { invert } from './util/invert.js';
 import { patchScreenCTM } from './util/patchScreenCTM.js';
 import { sanitizeStyles } from './util/sanitize-styles.js';
-
-const asc = (a, b) => a - b;
 
 export class Interval2D {
   constructor(mark, {
@@ -44,8 +42,8 @@ export class Interval2D {
     let yr = undefined;
     if (extent) {
       const [a, b] = extent;
-      xr = [a[0], b[0]].map(v => invert(v, xscale, pixelSize)).sort(asc);
-      yr = [a[1], b[1]].map(v => invert(v, yscale, pixelSize)).sort(asc);
+      xr = [a[0], b[0]].map(v => invert(v, xscale, pixelSize)).sort(ascending);
+      yr = [a[1], b[1]].map(v => invert(v, yscale, pixelSize)).sort(ascending);
     }
 
     if (!closeTo(xr, value?.[0]) || !closeTo(yr, value?.[1])) {
@@ -57,15 +55,12 @@ export class Interval2D {
 
   clause(value) {
     const { mark, pixelSize, xfield, yfield, xscale, yscale } = this;
-    return {
+    return intervals([xfield, yfield], value, {
       source: this,
-      schema: { type: 'interval', pixelSize, scales: [xscale, yscale] },
       clients: this.peers ? mark.plot.markSet : new Set().add(mark),
-      value,
-      predicate: value
-        ? and(isBetween(xfield, value[0]), isBetween(yfield, value[1]))
-        : null
-    };
+      scales: [xscale, yscale],
+      pixelSize
+    });
   }
 
   init(svg) {
@@ -92,8 +87,8 @@ export class Interval2D {
     }
 
     if (this.value) {
-      const [x1, x2] = this.value[0].map(xscale.apply).sort(asc);
-      const [y1, y2] = this.value[1].map(yscale.apply).sort(asc);
+      const [x1, x2] = this.value[0].map(xscale.apply).sort(ascending);
+      const [y1, y2] = this.value[1].map(yscale.apply).sort(ascending);
       this.g.call(brush.moveSilent, [[x1, y1], [x2, y2]]);
     }
 

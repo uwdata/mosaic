@@ -34,14 +34,25 @@ details > div > div:not(:last-child) {
   margin-bottom: 0.5em;
 }
 
-label { margin-right: 0.5em; }
-
 .input {
   margin-right: 1em;
 }
 
 .input > * {
   vertical-align: middle;
+}
+
+.input label:first-of-type {
+  margin-right: 0.5em;
+}
+
+.input label.value {
+  display: inline-block;
+  min-width: 40px;
+}
+
+.input input[type="range"] {
+  margin-right: 0.5em;
 }
 
 table {

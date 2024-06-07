@@ -1,13 +1,25 @@
 import * as Plot from '@observablehq/plot';
 import { setAttributes } from './plot-attributes.js';
 import { Fixed } from './symbols.js';
-import { isArrowTable } from '@uwdata/mosaic-core';
 
 const OPTIONS_ONLY_MARKS = new Set([
   'frame',
   'hexgrid',
   'sphere',
   'graticule'
+]);
+
+// @ts-ignore
+const SELECT_TRANSFORMS = new Map([
+  ['first', Plot.selectFirst],
+  ['last', Plot.selectLast],
+  ['maxX', Plot.selectMaxX],
+  ['maxY', Plot.selectMaxY],
+  ['minX', Plot.selectMinX],
+  ['minY', Plot.selectMinY],
+  ['nearest', Plot.pointer],
+  ['nearestX', Plot.pointerX],
+  ['nearestXY', Plot.pointerY]
 ]);
 
 // construct Plot output
@@ -24,27 +36,13 @@ export async function plotRenderer(plot) {
   const indices = [];
   for (const mark of marks) {
     for (const { type, data, options } of mark.plotSpecs()) {
-      if (OPTIONS_ONLY_MARKS.has(type)) {
-        spec.marks.push(Plot[type](options));
-      } else if (isArrowTable(data)) {
-        // optimized calls to Plot for Arrow:
-        // https://github.com/observablehq/plot/issues/191#issuecomment-2010986851
-        const opts = Object.fromEntries(
-          Object.entries(options).map(([k, v]) => {
-            let val = v;
-            if (typeof v === 'string') {
-              val = data.getChild(v) ?? v;
-            } else if (typeof v === 'object') {
-              const value = data.getChild(v.value);
-              val = value ? {value} : v;
-            }
-            return [k, val]
-          })
-        );
-        spec.marks.push(Plot[type]({length: data.numRows}, opts));
-      } else {
-        spec.marks.push(Plot[type](data, options));
-      }
+      // prepare mark options
+      const { select, ...rest } = options;
+      const opt = SELECT_TRANSFORMS.get(select)?.(rest) ?? rest;
+      const arg = OPTIONS_ONLY_MARKS.has(type) ? [opt] : [data, opt];
+
+      // instantiate Plot mark and add to spec
+      spec.marks.push(Plot[type](...arg));
       indices.push(mark.index);
     }
   }

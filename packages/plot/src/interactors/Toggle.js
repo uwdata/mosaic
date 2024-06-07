@@ -1,4 +1,4 @@
-import { and, or, isNotDistinct, literal } from '@uwdata/mosaic-sql';
+import { points } from '@uwdata/mosaic-core';
 
 export class Toggle {
   /**
@@ -14,49 +14,40 @@ export class Toggle {
     this.mark = mark;
     this.selection = selection;
     this.peers = peers;
-    this.channels = channels.map(c => {
+    const fields = this.fields = [];
+    const as = this.as = [];
+    channels.forEach(c => {
       const q = c === 'color' ? ['color', 'fill', 'stroke']
         : c === 'x' ? ['x', 'x1', 'x2']
         : c === 'y' ? ['y', 'y1', 'y2']
         : [c];
       for (let i = 0; i < q.length; ++i) {
         const f = mark.channelField(q[i], { exact: true });
-        if (f) return {
-          field: f.field?.basis || f.field,
-          as: f.as
-        };
+        if (f) {
+          fields.push(f.field?.basis || f.field);
+          as.push(f.as);
+          return;
+        }
       }
       throw new Error(`Missing channel: ${c}`);
     });
   }
 
   clause(value) {
-    const { channels, mark } = this;
-    let predicate = null;
-
-    if (value) {
-      const clauses = value.map(vals => {
-        const list = vals.map((v, i) => {
-          return isNotDistinct(channels[i].field, literal(v));
-        });
-        return list.length > 1 ? and(list) : list[0];
-      });
-      predicate = clauses.length > 1 ? or(clauses) : clauses[0];
-    }
-
-    return {
+    const { fields, mark } = this;
+    return points(fields, value, {
       source: this,
-      schema: { type: 'point' },
-      clients: this.peers ? mark.plot.markSet : new Set().add(mark),
-      value,
-      predicate
-    };
+      clients: this.peers ? mark.plot.markSet : new Set().add(mark)
+    });
   }
 
   init(svg, selector, accessor) {
-    const { mark, channels, selection } = this;
+    const { mark, as, selection } = this;
     const { data: { columns = {} } = {} } = mark;
-    accessor ??= target => channels.map(c => columns[c.as][target.__data__]);
+    accessor ??= target => as.map(name => {
+      const data = target.__data__;
+      return columns[name][Array.isArray(data) ? data[0] : data];
+    });
     selector ??= `[data-index="${mark.index}"]`;
     const groups = new Set(svg.querySelectorAll(selector));
 
@@ -85,7 +76,7 @@ export class Toggle {
 
     svg.addEventListener('pointerenter', evt => {
       if (evt.buttons) return;
-      this.selection.activate(this.clause([this.channels.map(() => 0)]));
+      this.selection.activate(this.clause([this.fields.map(() => 0)]));
     });
   }
 }

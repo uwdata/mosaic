@@ -20,6 +20,11 @@ export interface TextOptions extends MarkOptions, TextStyles {
   y?: ChannelValueSpec;
 
   /**
+   * An optional ordinal channel for grouping data into series.
+   */
+  z?: ChannelValue;
+
+  /**
    * The text contents channel, possibly with line breaks (\n, \r\n, or \r). If
    * not specified, defaults to the zero-based index [0, 1, 2, …].
    */
