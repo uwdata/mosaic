@@ -164,6 +164,11 @@ export interface Table {
    */
   input: 'table';
   /**
+   * The output selection. A selection clause is added for each
+   * currently selected table row.
+   */
+  as?: ParamRef;
+  /**
    * The name of a database table to use as a data source for this widget.
    */
   from: string;

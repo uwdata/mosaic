@@ -1,4 +1,4 @@
-import { MosaicClient, coordinator } from '@uwdata/mosaic-core';
+import { MosaicClient, coordinator, points, toDataColumns } from '@uwdata/mosaic-core';
 import { Query, column, desc } from '@uwdata/mosaic-sql';
 import { formatDate, formatLocaleAuto, formatLocaleNumber } from './util/format.js';
 import { input } from './input.js';
@@ -23,6 +23,7 @@ export class Table extends MosaicClient {
     maxWidth,
     height = 500,
     rowBatch = 100,
+    as
   } = {}) {
     super(filterBy);
     this.id = `table-${++_id}`;
@@ -35,6 +36,9 @@ export class Table extends MosaicClient {
     this.offset = 0;
     this.limit = +rowBatch;
     this.pending = false;
+
+    this.selection = as;
+    this.currentRow = -1;
 
     this.sortHeader = null;
     this.sortColumn = null;
@@ -72,8 +76,35 @@ export class Table extends MosaicClient {
     this.body = document.createElement('tbody');
     this.tbl.appendChild(this.body);
 
+    if (this.selection) {
+      this.body.addEventListener('pointerover', evt => {
+        if (evt.target?.tagName === 'TD') {
+          const row = +evt.target.parentElement.__row__;
+          if (row !== this.currentRow) {
+            this.currentRow = row;
+            this.publish([row]);
+          }
+        }
+      });
+      this.body.addEventListener('pointerleave', () => {
+        this.currentRow = -1;
+        this.publish([]);
+      });
+    }
+
     this.style = document.createElement('style');
     this.element.appendChild(this.style);
+  }
+
+  publish(rows = []) {
+    const { data, limit, schema, selection } = this;
+    const fields = schema.map(s => s.column);
+    const values = rows.map(row => {
+      const { columns } = data[~~(row / limit)];
+      return fields.map(f => columns[f][row % limit]);
+    });
+    const clause = points(fields, values, { source: this });
+    selection.update(clause);
   }
 
   requestData(offset = 0) {
@@ -133,30 +164,34 @@ export class Table extends MosaicClient {
     if (!this.pending) {
       // data is not from an internal request, so reset table
       this.loaded = false;
+      this.data = [];
       this.body.replaceChildren();
     }
-    this.data = data;
+    this.data.push(toDataColumns(data));
     return this;
   }
 
   update() {
     const { body, formats, data, schema, limit } = this;
     const nf = schema.length;
+    const n = data.length - 1;
+    const rowCount = limit * n;
 
-    let count = 0;
-    for (const row of data) {
-      ++count;
+    const { numRows, columns } = data[n];
+    const cols = schema.map(s => columns[s.column]);
+    for (let i = 0; i < numRows; ++i) {
       const tr = document.createElement('tr');
-      for (let i = 0; i < nf; ++i) {
-        const value = row[schema[i].column];
+      tr.__row__ = rowCount + i;
+      for (let j = 0; j < nf; ++j) {
+        const value = cols[j][i];
         const td = document.createElement('td');
-        td.innerText = value == null ? '' : formats[i](value);
+        td.innerText = value == null ? '' : formats[j](value);
         tr.appendChild(td);
       }
       body.appendChild(tr);
     }
 
-    if (count < limit) {
+    if (numRows < limit) {
       // data table has been fully loaded
       this.loaded = true;
     }
