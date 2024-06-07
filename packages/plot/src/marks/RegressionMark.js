@@ -118,7 +118,7 @@ function concat(a, b) {
 
 function linePoints(fit) {
   // eslint-disable-next-line no-unused-vars
-  const { x0, x1, xm, intercept, slope, n, ssx, ssy, ...rest } = fit.columns;
+  const { x0 = [], x1 = [], xm, intercept, slope, n, ssx, ssy, ...rest } = fit.columns;
   const predict = (x, i) => intercept[i] + x * slope[i];
   const x = concat(x0, x1);
   const y = concat(x0.map(predict), x1.map(predict));

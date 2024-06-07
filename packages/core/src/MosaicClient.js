@@ -94,8 +94,8 @@ export class MosaicClient {
    * @param {*} error
    * @returns {this}
    */
-  queryError(error) {
-    console.error(error);
+  queryError(error) { // eslint-disable-line no-unused-vars
+    // do nothing, the coordinator logs the error
     return this;
   }
 
@@ -122,7 +122,7 @@ export class MosaicClient {
   /**
    * Requests a client update.
    * For example to (re-)render an interface component.
-   * 
+   *
    * @returns {this | Promise<any>}
    */
   update() {
