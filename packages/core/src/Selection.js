@@ -22,10 +22,13 @@ export class Selection extends Param {
    * @param {boolean} [options.cross=false] Boolean flag indicating
    *  cross-filtered resolution. If true, selection clauses will not
    *  be applied to the clients they are associated with.
+   * @param {boolean} [options.empty=false] Boolean flag indicating if a lack
+   *  of clauses should correspond to an empty selection with no records. This
+   *  setting determines the default selection state.
    * @returns {Selection} The new Selection instance.
    */
-  static intersect({ cross = false } = {}) {
-    return new Selection(new SelectionResolver({ cross }));
+  static intersect({ cross = false, empty = false } = {}) {
+    return new Selection(new SelectionResolver({ cross, empty }));
   }
 
   /**
@@ -35,10 +38,13 @@ export class Selection extends Param {
    * @param {boolean} [options.cross=false] Boolean flag indicating
    *  cross-filtered resolution. If true, selection clauses will not
    *  be applied to the clients they are associated with.
+   * @param {boolean} [options.empty=false] Boolean flag indicating if a lack
+   *  of clauses should correspond to an empty selection with no records. This
+   *  setting determines the default selection state.
    * @returns {Selection} The new Selection instance.
    */
-  static union({ cross = false } = {}) {
-    return new Selection(new SelectionResolver({ cross, union: true }));
+  static union({ cross = false, empty = false } = {}) {
+    return new Selection(new SelectionResolver({ cross, empty, union: true }));
   }
 
   /**
@@ -48,19 +54,26 @@ export class Selection extends Param {
    * @param {boolean} [options.cross=false] Boolean flag indicating
    *  cross-filtered resolution. If true, selection clauses will not
    *  be applied to the clients they are associated with.
+   * @param {boolean} [options.empty=false] Boolean flag indicating if a lack
+   *  of clauses should correspond to an empty selection with no records. This
+   *  setting determines the default selection state.
    * @returns {Selection} The new Selection instance.
    */
-  static single({ cross = false } = {}) {
-    return new Selection(new SelectionResolver({ cross, single: true }));
+  static single({ cross = false, empty = false } = {}) {
+    return new Selection(new SelectionResolver({ cross, empty, single: true }));
   }
 
   /**
    * Create a new Selection instance with a
    * cross-filtered intersect resolution strategy.
+   * @param {object} [options] The selection options.
+   * @param {boolean} [options.empty=false] Boolean flag indicating if a lack
+   *  of clauses should correspond to an empty selection with no records. This
+   *  setting determines the default selection state.
    * @returns {Selection} The new Selection instance.
    */
-  static crossfilter() {
-    return new Selection(new SelectionResolver({ cross: true }));
+  static crossfilter({ empty = false } = {}) {
+    return new Selection(new SelectionResolver({ cross: true, empty }));
   }
 
   /**
@@ -232,11 +245,15 @@ export class SelectionResolver {
    *  If false, an intersection strategy is used.
    * @param {boolean} [options.cross=false] Boolean flag to indicate cross-filtering.
    * @param {boolean} [options.single=false] Boolean flag to indicate single clauses only.
+   * @param {boolean} [options.empty=false] Boolean flag indicating if a lack
+   *  of clauses should correspond to an empty selection with no records. This
+   *  setting determines the default selection state.
    */
-  constructor({ union, cross, single } = {}) {
+  constructor({ union, cross, single, empty } = {}) {
     this.union = !!union;
     this.cross = !!cross;
     this.single = !!single;
+    this.empty = !!empty;
   }
 
   /**
@@ -274,7 +291,11 @@ export class SelectionResolver {
    *  based on the current state of this selection.
    */
   predicate(clauseList, active, client) {
-    const { union } = this;
+    const { empty, union } = this;
+
+    if (empty && !clauseList.length) {
+      return ['FALSE'];
+    }
 
     // do nothing if cross-filtering and client is currently active
     if (this.skip(client, active)) return undefined;
