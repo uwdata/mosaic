@@ -25,6 +25,6 @@
     "uuid": "^9.0.1"
   },
   "devDependencies": {
-    "anywidget": "^0.9.10"
+    "anywidget": "^0.9.12"
   }
 }

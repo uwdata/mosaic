@@ -174,10 +174,12 @@ export class Coordinator {
    */
   updateClient(client, query, priority = Priority.Normal) {
     client.queryPending();
-    return this.query(query, { priority }).then(
-      data => client.queryResult(data).update(),
-      err => { client.queryError(err); this._logger.error(err); }
-    );
+    return this.query(query, { priority })
+      .then(
+        data => client.queryResult(data).update(),
+        err => { this._logger.error(err); client.queryError(err); }
+      )
+      .catch(err => this._logger.error(err));
   }
 
   /**
