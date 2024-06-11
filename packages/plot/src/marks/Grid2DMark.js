@@ -1,4 +1,5 @@
 import { interpolatorBarycentric, interpolateNearest, interpolatorRandomWalk } from '@observablehq/plot';
+import { toDataColumns } from '@uwdata/mosaic-core';
 import { Query, count, isBetween, lt, lte, neq, sql, sum } from '@uwdata/mosaic-sql';
 import { Transient } from '../symbols.js';
 import { binExpr } from './util/bin-expr.js';
@@ -6,7 +7,6 @@ import { dericheConfig, dericheConv2d } from './util/density.js';
 import { extentX, extentY, xyext } from './util/extent.js';
 import { grid2d } from './util/grid.js';
 import { handleParam } from './util/handle-param.js';
-import { toDataColumns } from './util/to-data-columns.js';
 import { Mark } from './Mark.js';
 
 export const DENSITY = 'density';

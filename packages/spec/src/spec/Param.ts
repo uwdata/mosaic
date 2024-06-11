@@ -58,6 +58,13 @@ export interface Selection {
    * but not oneself (default `false`, except for `crossfilter` selections).
    */
   cross?: boolean;
+
+  /**
+   * A flag for setting an initial empty selection state. If true, a selection
+   * with no clauses corresponds to an empty selection with no records. If
+   * false, a selection with no clauses selects all values.
+   */
+  empty?: boolean;
 }
 
 /** A Param or Selection definition. */

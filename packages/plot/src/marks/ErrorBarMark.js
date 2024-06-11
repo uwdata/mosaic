@@ -1,8 +1,8 @@
+import { toDataColumns } from '@uwdata/mosaic-core';
 import { avg, count, stddev } from '@uwdata/mosaic-sql';
 import { erfinv } from './util/stats.js';
 import { Mark, markPlotSpec, markQuery } from './Mark.js';
 import { handleParam } from './util/handle-param.js';
-import { toDataColumns } from './util/to-data-columns.js';
 
 export class ErrorBarMark extends Mark {
   constructor(type, source, options) {
