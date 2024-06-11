@@ -78,19 +78,15 @@ export class Table extends MosaicClient {
 
     if (this.selection) {
       this.body.addEventListener('pointerover', evt => {
-        // @ts-ignore
-        if (evt.target?.tagName === 'TD') {
-          // @ts-ignore
-          const row = +evt.target.parentElement.__row__;
-          if (row !== this.currentRow) {
-            this.currentRow = row;
-            this.publish([row]);
-          }
+        const row = resolveRow(evt.target);
+        if (row > -1 && row !== this.currentRow) {
+          this.currentRow = row;
+          this.selection.update(this.clause([row]));
         }
       });
       this.body.addEventListener('pointerleave', () => {
         this.currentRow = -1;
-        this.publish([]);
+        this.selection.update(this.clause());
       });
     }
 
@@ -98,15 +94,14 @@ export class Table extends MosaicClient {
     this.element.appendChild(this.style);
   }
 
-  publish(rows = []) {
-    const { data, limit, schema, selection } = this;
+  clause(rows = []) {
+    const { data, limit, schema } = this;
     const fields = schema.map(s => s.column);
     const values = rows.map(row => {
       const { columns } = data[~~(row / limit)];
       return fields.map(f => columns[f][row % limit]);
     });
-    const clause = points(fields, values, { source: this });
-    selection.update(clause);
+    return points(fields, values, { source: this });
   }
 
   requestData(offset = 0) {
@@ -225,6 +220,16 @@ export class Table extends MosaicClient {
     // issue query for sorted data
     this.requestData();
   }
+}
+
+/**
+ * Resolve a table row number from a table cell element.
+ * @param {any} element An HTML element.
+ * @returns {number} The resolved row, or -1 if not a row.
+ */
+function resolveRow(element) {
+  const p = element.parentElement;
+  return Object.hasOwn(p, '__row__') ? +p.__row__ : -1;
 }
 
 function formatof(base = {}, schema, locale) {
