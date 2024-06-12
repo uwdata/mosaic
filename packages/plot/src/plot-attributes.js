@@ -182,6 +182,7 @@ export const attributeMap = new Map([
   ['rRange', 'r.range'],
   ['rClamp', 'r.clamp'],
   ['rNice', 'r.nice'],
+  ['rLabel', 'r.label'],
   ['rPercent', 'r.percent'],
   ['rZero', 'r.zero'],
   ['rBase', 'r.base'],
