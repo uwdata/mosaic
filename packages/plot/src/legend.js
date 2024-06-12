@@ -10,7 +10,7 @@ export class Legend {
   constructor(channel, options) {
     const { as, field, ...rest } = options;
     this.channel = channel;
-    this.options = { label: null, ...rest };
+    this.options = rest;
     this.type = null;
     this.handler = null;
     this.selection = as;
@@ -51,9 +51,14 @@ export class Legend {
 }
 
 function createLegend(legend, svg) {
-  const { channel, options, selection } = legend;
+  const { channel, plot, selection } = legend;
   const scale = svg.scale(channel);
   const type = scale.type === 'ordinal' ? SWATCH : RAMP;
+
+  const options = {
+    label: plot.getAttribute(`${channel}Label`) ?? null,
+    ...legend.options
+  };
 
   // labels for swatch legends are not yet supported by Plot
   // track here: https://github.com/observablehq/plot/issues/834
