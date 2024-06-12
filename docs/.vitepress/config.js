@@ -89,7 +89,6 @@ export default defineConfig({
             { text: 'Driving Shifts into Reverse', link: '/examples/driving-shifts' },
             { text: 'Population Arrows', link: '/examples/population-arrows' },
             { text: 'Presidential Opinion', link: '/examples/presidential-opinion' },
-            { text: 'Aeromagnetic Survey', link: '/examples/aeromagnetic-survey' },
             { text: 'Voronoi Diagram', link: '/examples/voronoi' },
             { text: 'Seattle Temperatures', link: '/examples/seattle-temp' },
             { text: 'Sorted Bars', link: '/examples/sorted-bars' },
@@ -103,6 +102,7 @@ export default defineConfig({
             { text: 'Athlete Height Intervals', link: '/examples/athlete-height' },
             { text: 'Bias Parameter', link: '/examples/bias' },
             { text: 'Linear Regression', link: '/examples/linear-regression' },
+            { text: 'Linear Regression 10M', link: '/examples/linear-regression-10m' },
             { text: 'Moving Average', link: '/examples/moving-average' },
             { text: 'Line Multi-Series', link: '/examples/line-multi-series' },
             { text: 'Normalized Stock Prices', link: '/examples/normalize' },
@@ -167,7 +167,8 @@ export default defineConfig({
             { text: 'Coordinator', link: '/api/core/coordinator' },
             { text: 'Connectors', link: '/api/core/connectors' },
             { text: 'Param', link: '/api/core/param' },
-            { text: 'Selection', link: '/api/core/selection' }
+            { text: 'Selection', link: '/api/core/selection' },
+            { text: 'Multi-Database Support', link: '/api/core/multi-database-support' }
           ]
         },
 
