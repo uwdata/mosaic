@@ -3,7 +3,7 @@ meta:
   description: >
     Every field goal attempt in the 2023 WNBA regular season.
     Shots are grouped into hexagonal bins, with color indicating shot potency
-    (averge score) and size indicating the total count of shots per location.
+    (average score) and size indicating the total count of shots per location.
     The menu filters isolate shots by team or athlete.
   credit: >
     Data from [Wehoop](https://wehoop.sportsdataverse.org/). Design inspired by

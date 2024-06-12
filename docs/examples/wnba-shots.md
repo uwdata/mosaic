@@ -5,7 +5,7 @@
 
 # WNBA Shot Chart
 
-Every field goal attempt in the 2023 WNBA regular season. Shots are grouped into hexagonal bins, with color indicating shot potency (averge score) and size indicating the total count of shots per location. The menu filters isolate shots by team or athlete.
+Every field goal attempt in the 2023 WNBA regular season. Shots are grouped into hexagonal bins, with color indicating shot potency (average score) and size indicating the total count of shots per location. The menu filters isolate shots by team or athlete.
 
 <Example spec="/specs/yaml/wnba-shots.yaml" />
 
