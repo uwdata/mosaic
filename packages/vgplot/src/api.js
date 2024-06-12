@@ -269,6 +269,7 @@ export {
   rRange,
   rClamp,
   rNice,
+  rLabel,
   rPercent,
   rZero,
   rBase,
