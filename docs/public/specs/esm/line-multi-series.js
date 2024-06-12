@@ -48,5 +48,6 @@ export default vg.plot(
   vg.xTicks(10),
   vg.yLabel("Unemployment (%)"),
   vg.yGrid(true),
+  vg.style("overflow: visible;"),
   vg.width(680)
 );

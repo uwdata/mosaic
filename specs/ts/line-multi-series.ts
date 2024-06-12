@@ -72,5 +72,6 @@ export const spec : Spec = {
   "xTicks": 10,
   "yLabel": "Unemployment (%)",
   "yGrid": true,
+  "style": "overflow: visible;",
   "width": 680
 };
