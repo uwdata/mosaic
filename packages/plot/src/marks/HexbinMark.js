@@ -25,20 +25,6 @@ export class HexbinMark extends Mark {
     if (this.hasOwnData()) return null;
     const { plot, binWidth, channels, source } = this;
 
-    // get x / y extents, may update plot domainX / domainY
-    const [x1, x2] = extentX(this, filter);
-    const [y1, y2] = extentY(this, filter);
-
-    // Adjust screen-space coordinates by top/left
-    // margins as this is what Observable Plot does.
-    // TODO use zero margins when faceted?
-    const ox = 0.5 - plot.getAttribute('marginLeft');
-    const oy = 0 - plot.getAttribute('marginTop');
-    const dx = `${binWidth}::DOUBLE`;
-    const dy = `${binWidth * (1.5 / Math.sqrt(3))}::DOUBLE`;
-    const xr = `${plot.innerWidth() / (x2 - x1)}::DOUBLE`;
-    const yr = `${plot.innerHeight() / (y2 - y1)}::DOUBLE`;
-
     // Extract channel information, update top-level query
     // and extract dependent columns for aggregates
     let x, y;
@@ -59,6 +45,19 @@ export class HexbinMark extends Mark {
         }
       }
     }
+
+    // get x / y extents, may update plot xDomain / yDomain
+    const [x1, x2] = extentX(this, filter);
+    const [y1, y2] = extentY(this, filter);
+
+    // Adjust screen-space coordinates by top/left
+    // margins as this is what Observable Plot does.
+    const ox = 0.5 - plot.getAttribute('marginLeft');
+    const oy = 0 - plot.getAttribute('marginTop');
+    const dx = `${binWidth}::DOUBLE`;
+    const dy = `${binWidth * (1.5 / Math.sqrt(3))}::DOUBLE`;
+    const xr = `${plot.innerWidth() / (x2 - x1)}::DOUBLE`;
+    const yr = `${plot.innerHeight() / (y2 - y1)}::DOUBLE`;
 
     // Top-level query maps from screen space back to data values.
     // Doing so ensures that Plot generates correct data-driven scales.
