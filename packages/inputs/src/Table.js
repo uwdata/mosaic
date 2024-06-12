@@ -163,6 +163,7 @@ export class Table extends MosaicClient {
       this.loaded = false;
       this.data = [];
       this.body.replaceChildren();
+      this.offset = 0;
     }
     this.data.push(toDataColumns(data));
     return this;
