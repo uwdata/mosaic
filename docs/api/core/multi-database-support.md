@@ -1,22 +1,37 @@
-# Connect DuckDB to other Databases: 
+# Multi-Database Support
 
-Mosaic utilizes DuckDB, which [can supports multiple databases](https://duckdb.org/2024/01/26/multi-database-support-in-duckdb.html) such as MySQL, PostgreSQL, and SQLite, by using [DuckDB extensions](https://duckdb.org/docs/extensions/overview.html). This capability allows data to be seamlessly read into DuckDB and transferred between systems, enhancing flexibility and interoperability in data management.
+Mosaic uses DuckDB, which [supports multiple databases](https://duckdb.org/2024/01/26/multi-database-support-in-duckdb.html) such as MySQL, PostgreSQL, and SQLite, via [DuckDB extensions](https://duckdb.org/docs/extensions/overview.html). This capability allows data to be read into DuckDB and transferred between systems, enabling flexibile and interoperable data management.
 
-## Examples:
-### Connecting to `PostgreSQL`:
+Mosaic can take advantage of these features to visualize data stored in alternative databases. As shown in the examples below, database configuration can be performed via direct DuckDB queries. Once configured, Mosaic can be used in a normal fashion.
+
+## Connect to PostgreSQL
 
 ``` js
 import * as vg from "@uwdata/vgplot";
 
-const postgres_connection_string = `dbname=YOUR_DATABASE_NAME user=postgres password=YOUR_PASSWORD host=YOUR_HOST_IP`;
+// database configuration info
+// replace values with your specific configuration
+const config = {
+  dbname: "YOUR_DATABASE_NAME",
+  user: "postgres",
+  password: "YOUR_PASSWORD",
+  host: "YOUR_HOST_IP"
+};
+
+// map configuration info to a connection string
+const postgres_connection_string = Object.entries(config)
+  .map([key, value] => `${key}=${value}`)
+  .join(" ");
 
 await vg.coordinator().exec([
-  `ATTACH '${postgres_connection_string}' AS postgres_db (TYPE POSTGRES)`,   // Attach PostgreSQL databases
-  "USE postgres_db",   // Select the attach PostgreSQL database
-  vg.loadParquet("ca55", "data/ca55-south.parquet")   // Load the dataset into the PostgreSQL database
+  // attach and use a PostgreSQL database
+  `ATTACH '${postgres_connection_string}' AS postgres_db (TYPE POSTGRES)`,
+  "USE postgres_db",
+  vg.loadParquet("ca55", "data/ca55-south.parquet") // load a dataset
 ]);
 
-// Create interactive visualizations for your dataset
+// create interactive visualizations for your dataset as usual!
+// here we've copied the aeromagnetic-survey example...
 const $interp = vg.Param.value("random-walk");
 const $blur = vg.Param.value(0);
 
@@ -46,36 +61,49 @@ export default vg.vconcat(
     vg.colorDomain(vg.Fixed)
   )
 );
-
 ```
 
-
-### Connecting to `MySQL`:
+## Connect to MySQL
 
 ``` js
 import * as vg from "@uwdata/vgplot";
 
-const mysql_connection_string = `host=YOUR_HOST_IP password=YOUR_PASSWORD user=root port=YOUR_PORT database=YOUR_DATABASE_NAME`;
+// database configuration info
+// replace values with your specific configuration
+const config = {
+  database: "YOUR_DATABASE_NAME",
+  user: "root",
+  password: "YOUR_PASSWORD",
+  host: "YOUR_HOST_IP",
+  port: "YOUR_PORT"
+};
+
+// map configuration info to a connection string
+const mysql_connection_string = Object.entries(config)
+  .map([key, value] => `${key}=${value}`)
+  .join(" ");
 
 await vg.coordinator().exec([
-  `ATTACH '${mysql_connection_string}' AS mysqldb (TYPE MYSQL)`,   // Attach the MySQL database
-  "USE mysqldb",   // Specify the database name
-  vg.loadParquet("ca55", "data/ca55-south.parquet")   // Load the dataset into the MySQL database
+  // attach and use a MySQL database
+  `ATTACH '${mysql_connection_string}' AS mysqldb (TYPE MYSQL)`,
+  "USE mysqldb",
+  vg.loadParquet("ca55", "data/ca55-south.parquet") // load a dataset
 ]);
 
-// Mosaic specification goes here.
+// now add Mosaic specification code as usual!
 ```
 
-### Connecting to `SQLite`:
+## Connect to SQLite
 
 ``` js
 import * as vg from "@uwdata/vgplot";
 
 await vg.coordinator().exec([
-  `ATTACH 'sakila.db' (TYPE SQLITE)`,   // Attach SQLite database
-  "USE sakila",   // Switch to the database called sakila
-  vg.loadParquet("ca55", "data/ca55-south.parquet")   // Load the dataset into the SQLite database
+  // attach and use a SQLite database
+  `ATTACH 'sakila.db' (TYPE SQLITE)`,
+  "USE sakila",
+  vg.loadParquet("ca55", "data/ca55-south.parquet") // load the dataset
 ]);
 
-// Mosaic specification goes here
+// now add Mosaic specification code as usual!
 ```
