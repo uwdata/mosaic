@@ -85,10 +85,10 @@ For convenience, the `vgplot` package re-exports much of the `mosaic-core`, `mos
 
 ## An Active Research Project
 
-Mosaic is an active research project from the [UW Interactive Data Lab](https://idl.cs.washington.edu/), in collaboration with the [CMU Data Interaction Group](https://dig.cmu.edu/).
+Mosaic is an active research project from the [UW Interactive Data Lab](https://idl.uw.edu/), in collaboration with the [CMU Data Interaction Group](https://dig.cmu.edu/).
 We are interested in unifying advances in scalable visualization methods with languages for interactive visualization.
 This is an exciting area with a number of open challenges!
-For more, read the [TVCG'24 Mosaic research paper](https://idl.cs.washington.edu/papers/mosaic).
+For more, read the [TVCG'24 Mosaic research paper](https://idl.uw.edu/papers/mosaic).
 
 There will inevitably be some shortcomings, bugs, and documentation gaps.
 We do not yet consider Mosaic "production-ready", but believe that Mosaic (or something like it) is a valuable next step for interactive data systems.

@@ -13,7 +13,7 @@ Mosaic is an extensible architecture for linking data visualizations, tables, in
 
 The key idea is to have interface components "publish" their data needs as declarative queries that can be managed, optimized, and cross-filtered by a coordinator that proxies access to [DuckDB](https://duckdb.org/).
 
-[**Learn more about Mosaic at the documentation site**](https://uwdata.github.io/mosaic/), or [read the Mosaic research paper](https://idl.cs.washington.edu/papers/mosaic).
+[**Learn more about Mosaic at the documentation site**](https://idl.uw.edu/mosaic/), or [read the Mosaic research paper](https://idl.uw.edu/papers/mosaic).
 
 If referencing Mosaic, please use the following citation:
 
@@ -75,7 +75,7 @@ To launch a local DuckDB server:
 
 To use Mosaic with DuckDB Python in Jupyter Notebooks:
 
-* See the [Mosaic `widget` documentation](https://uwdata.github.io/mosaic/jupyter/).
+* See the [Mosaic `widget` documentation](https://idl.uw.edu/mosaic/jupyter/).
 
 To use Mosaic with DuckDB-WASM in Observable Notebooks:
 

@@ -15,7 +15,7 @@ export default defineConfig({
     siteTitle: false,
 
     footer: {
-      message: 'Mosaic is a collaboration of the <a href="https://idl.cs.washington.edu/">UW Interactive Data Lab</a> and the <a href="https://dig.cmu.edu/">CMU Data Interaction Group</a>.',
+      message: 'Mosaic is a collaboration of the <a href="https://idl.uw.edu/">UW Interactive Data Lab</a> and the <a href="https://dig.cmu.edu/">CMU Data Interaction Group</a>.',
       copyright: 'Released under the BSD License. Copyright © 2023-Present UW Interactive Data Lab.'
     },
 
