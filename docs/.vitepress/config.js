@@ -107,7 +107,8 @@ export default defineConfig({
             { text: 'Line Multi-Series', link: '/examples/line-multi-series' },
             { text: 'Normalized Stock Prices', link: '/examples/normalize' },
             { text: 'Overview + Detail', link: '/examples/overview-detail' },
-            { text: 'Wind Map', link: '/examples/wind-map' }
+            { text: 'Wind Map', link: '/examples/wind-map' },
+            { text: 'WNBA Shot Chart', link: '/examples/wnba-shots' }
           ]
         },
         {
