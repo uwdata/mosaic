@@ -8,7 +8,7 @@ export const spec : Spec = {
   },
   "data": {
     "latency": {
-      "file": "https://uwdata.github.io/mosaic-datasets/data/observable-latency.parquet"
+      "file": "https://idl.uw.edu/mosaic-datasets/data/observable-latency.parquet"
     }
   },
   "params": {

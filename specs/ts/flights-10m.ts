@@ -6,7 +6,7 @@ export const spec : Spec = {
     "description": "Histograms showing arrival delay, departure time, and distance flown for 10 million flights.\nOnce loaded, automatically-generated indexes enable efficient cross-filtered selections.\n\n_You may need to wait a few seconds for the dataset to load._\n"
   },
   "data": {
-    "flights10m": "SELECT GREATEST(-60, LEAST(ARR_DELAY, 180))::DOUBLE AS delay, DISTANCE AS distance, DEP_TIME AS time FROM 'https://uwdata.github.io/mosaic-datasets/data/flights-10m.parquet'"
+    "flights10m": "SELECT GREATEST(-60, LEAST(ARR_DELAY, 180))::DOUBLE AS delay, DISTANCE AS distance, DEP_TIME AS time FROM 'https://idl.uw.edu/mosaic-datasets/data/flights-10m.parquet'"
   },
   "params": {
     "brush": {
