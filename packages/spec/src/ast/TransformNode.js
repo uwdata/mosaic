@@ -1,5 +1,6 @@
 import { ASTNode } from './ASTNode.js';
 import { TRANSFORM } from '../constants.js';
+import { parseOptions } from './OptionsNode.js';
 
 function toArray(value) {
   return value == null ? [] : [value].flat();
@@ -19,7 +20,8 @@ export function parseTransform(spec, ctx) {
 
   if (name === 'bin') {
     const { bin, ...options } = spec;
-    return new TransformNode(name, [toArray(bin)[0], options], {});
+    const [arg] = toArray(bin);
+    return new BinTransformNode(name, arg, parseOptions(options, ctx));
   } else {
     const args = name === 'count' && !spec[name] ? [] : toArray(spec[name]);
     const options = {
@@ -49,10 +51,10 @@ export class TransformNode extends ASTNode {
     if (distinct) {
       expr = expr.distinct();
     }
-    if (orderby?.length) {
+    if (orderby.length) {
       expr = expr.orderby(orderby.map(v => v.instantiate(ctx)));
     }
-    if (partitionby?.length) {
+    if (partitionby.length) {
       expr = expr.partitionby(partitionby.map(v => v.instantiate(ctx)));
     }
     if (rows != null) {
@@ -113,6 +115,34 @@ export class TransformNode extends ASTNode {
     }
 
     return json;
+  }
+}
+
+export class BinTransformNode extends ASTNode {
+  constructor(name, arg, options) {
+    super(TRANSFORM);
+    this.name = name;
+    this.arg = arg;
+    this.options = options;
+  }
+
+  instantiate(ctx) {
+    const { name, arg, options } = this;
+    return ctx.api[name](arg, options.instantiate(ctx));
+  }
+
+  codegen(ctx) {
+    const { name, arg, options } = this;
+    const opt = options.codegen(ctx);
+    return `${ctx.ns()}${name}(`
+        + JSON.stringify(arg)
+        + (opt ? `, ${opt}` : '')
+        + ')';
+  }
+
+  toJSON() {
+    const { name, arg, options } = this;
+    return { [name]: arg, ...options.toJSON() };
   }
 }
 
