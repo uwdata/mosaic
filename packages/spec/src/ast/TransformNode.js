@@ -17,16 +17,20 @@ export function parseTransform(spec, ctx) {
     return; // return undefined to signal no transform!
   }
 
-  const args = name === 'count' || name == null ? [] : toArray(spec[name]);
-  const options = {
-    distinct: spec.distinct,
-    orderby: toArray(spec.orderby).map(v => ctx.maybeParam(v)),
-    partitionby: toArray(spec.partitionby).map(v => ctx.maybeParam(v)),
-    rows: spec.rows ? ctx.maybeParam(spec.rows) : null,
-    range: spec.range ? ctx.maybeParam(spec.range) : null
-  };
-
-  return new TransformNode(name, args, options);
+  if (name === 'bin') {
+    const { bin, ...options } = spec;
+    return new TransformNode(name, [toArray(bin)[0], options], {});
+  } else {
+    const args = name === 'count' && !spec[name] ? [] : toArray(spec[name]);
+    const options = {
+      distinct: spec.distinct,
+      orderby: toArray(spec.orderby).map(v => ctx.maybeParam(v)),
+      partitionby: toArray(spec.partitionby).map(v => ctx.maybeParam(v)),
+      rows: spec.rows ? ctx.maybeParam(spec.rows) : null,
+      range: spec.range ? ctx.maybeParam(spec.range) : null
+    };
+    return new TransformNode(name, args, options);
+  }
 }
 
 export class TransformNode extends ASTNode {
@@ -45,10 +49,10 @@ export class TransformNode extends ASTNode {
     if (distinct) {
       expr = expr.distinct();
     }
-    if (orderby.length) {
+    if (orderby?.length) {
       expr = expr.orderby(orderby.map(v => v.instantiate(ctx)));
     }
-    if (partitionby.length) {
+    if (partitionby?.length) {
       expr = expr.partitionby(partitionby.map(v => v.instantiate(ctx)));
     }
     if (rows != null) {
