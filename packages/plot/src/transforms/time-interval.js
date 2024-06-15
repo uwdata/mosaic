@@ -17,6 +17,7 @@ const durationWeek = durationDay * 7;
 const durationMonth = durationDay * 30;
 const durationYear = durationDay * 365;
 
+/** @type {[string, number, number][]} */
 const intervals = [
   [SECOND,  1,      durationSecond],
   [SECOND,  5,  5 * durationSecond],
