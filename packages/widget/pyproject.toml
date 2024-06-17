@@ -32,7 +32,7 @@ dev = [
 [tool.hatch.envs.default]
 python = "3.11"
 features = ["dev"]
-uv = true
+installer = "uv"
 
 [tool.hatch.version]
 path = "package.json"
