@@ -1,5 +1,6 @@
 import { ASTNode } from './ASTNode.js';
 import { TRANSFORM } from '../constants.js';
+import { parseOptions } from './OptionsNode.js';
 
 function toArray(value) {
   return value == null ? [] : [value].flat();
@@ -17,16 +18,21 @@ export function parseTransform(spec, ctx) {
     return; // return undefined to signal no transform!
   }
 
-  const args = name === 'count' || name == null ? [] : toArray(spec[name]);
-  const options = {
-    distinct: spec.distinct,
-    orderby: toArray(spec.orderby).map(v => ctx.maybeParam(v)),
-    partitionby: toArray(spec.partitionby).map(v => ctx.maybeParam(v)),
-    rows: spec.rows ? ctx.maybeParam(spec.rows) : null,
-    range: spec.range ? ctx.maybeParam(spec.range) : null
-  };
-
-  return new TransformNode(name, args, options);
+  if (name === 'bin') {
+    const { bin, ...options } = spec;
+    const [arg] = toArray(bin);
+    return new BinTransformNode(name, arg, parseOptions(options, ctx));
+  } else {
+    const args = name === 'count' && !spec[name] ? [] : toArray(spec[name]);
+    const options = {
+      distinct: spec.distinct,
+      orderby: toArray(spec.orderby).map(v => ctx.maybeParam(v)),
+      partitionby: toArray(spec.partitionby).map(v => ctx.maybeParam(v)),
+      rows: spec.rows ? ctx.maybeParam(spec.rows) : null,
+      range: spec.range ? ctx.maybeParam(spec.range) : null
+    };
+    return new TransformNode(name, args, options);
+  }
 }
 
 export class TransformNode extends ASTNode {
@@ -109,6 +115,34 @@ export class TransformNode extends ASTNode {
     }
 
     return json;
+  }
+}
+
+export class BinTransformNode extends ASTNode {
+  constructor(name, arg, options) {
+    super(TRANSFORM);
+    this.name = name;
+    this.arg = arg;
+    this.options = options;
+  }
+
+  instantiate(ctx) {
+    const { name, arg, options } = this;
+    return ctx.api[name](arg, options.instantiate(ctx));
+  }
+
+  codegen(ctx) {
+    const { name, arg, options } = this;
+    const opt = options.codegen(ctx);
+    return `${ctx.ns()}${name}(`
+        + JSON.stringify(arg)
+        + (opt ? `, ${opt}` : '')
+        + ')';
+  }
+
+  toJSON() {
+    const { name, arg, options } = this;
+    return { [name]: arg, ...options.toJSON() };
   }
 }
 

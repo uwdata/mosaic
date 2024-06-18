@@ -88,6 +88,7 @@ export {
 
 export {
   epoch_ms,
+  dateBin,
   dateMonth,
   dateMonthDay,
   dateDay
