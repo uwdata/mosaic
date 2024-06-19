@@ -6,6 +6,10 @@ The Mosaic `duckdb-server` package provides a Python-based server that runs a lo
 This package provides a local DuckDB server. To instead use DuckDB-WASM in the browser, use the `wasmConnector` from the [`mosaic-core`](/core/) package.
 :::
 
+::: info
+DuckDB can also connect to and query other databases, such as PostgreSQL and MySQL. See the [multi-database support page](/api/core/multi-database-support) for examples.
+:::
+
 ## Usage
 
 The server package is available on [PyPi](https://pypi.org/project/duckdb-server/).

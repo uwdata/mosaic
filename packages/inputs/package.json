@@ -7,7 +7,7 @@
     "mosaic"
   ],
   "license": "BSD-3-Clause",
-  "author": "Jeffrey Heer (http://idl.cs.washington.edu)",
+  "author": "Jeffrey Heer (https://idl.uw.edu)",
   "type": "module",
   "main": "src/index.js",
   "module": "src/index.js",

@@ -1,4 +1,4 @@
-import { convertArrowColumn, isArrowTable } from '@uwdata/mosaic-core';
+import { convertArrowColumn, isArrowTable } from './convert-arrow.js';
 
 /**
  * @typedef {Array | Int8Array | Uint8Array | Uint8ClampedArray

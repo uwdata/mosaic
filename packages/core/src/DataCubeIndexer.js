@@ -118,7 +118,7 @@ export class DataCubeIndexer {
     const indexCols = indexColumns(client);
 
     let info;
-    if (!indexCols?.from) {
+    if (!indexCols) {
       // if client is not indexable, record null index
       info = null;
     } else if (selection.skip(client, activeClause)) {

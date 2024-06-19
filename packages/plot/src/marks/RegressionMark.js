@@ -1,4 +1,5 @@
 import { range } from 'd3';
+import { toDataColumns } from '@uwdata/mosaic-core';
 import {
   Query, max, min, castDouble, isNotNull,
   regrIntercept, regrSlope, regrCount,
@@ -7,7 +8,6 @@ import {
 import { qt } from './util/stats.js';
 import { Mark, channelOption } from './Mark.js';
 import { handleParam } from './util/handle-param.js';
-import { toDataColumns } from './util/to-data-columns.js';
 
 export class RegressionMark extends Mark {
   constructor(source, options) {

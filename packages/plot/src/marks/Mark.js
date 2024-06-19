@@ -1,9 +1,8 @@
-import { MosaicClient } from '@uwdata/mosaic-core';
+import { MosaicClient, toDataColumns } from '@uwdata/mosaic-core';
 import { Query, Ref, column, isParamLike } from '@uwdata/mosaic-sql';
 import { isColor } from './util/is-color.js';
 import { isConstantOption } from './util/is-constant-option.js';
 import { isSymbol } from './util/is-symbol.js';
-import { toDataColumns } from './util/to-data-columns.js';
 import { Transform } from '../symbols.js';
 
 const isColorChannel = channel => channel === 'stroke' || channel === 'fill';

@@ -1557,6 +1557,13 @@ export interface PlotAttributes {
   rNice?: boolean | number| Interval | ParamRef;
 
   /**
+   * A textual label to show on the axis or legend; if null, show no label. By
+   * default the scale label is inferred from channel definitions, possibly with
+   * an arrow (↑, →, ↓, or ←) to indicate the direction of increasing value.
+   */
+  rLabel?: string | null | ParamRef;
+
+  /**
    * If true, shorthand for a transform suitable for percentages, mapping
    * proportions in [0, 1] to [0, 100].
    */

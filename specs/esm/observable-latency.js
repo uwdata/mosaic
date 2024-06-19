@@ -1,7 +1,7 @@
 import * as vg from "@uwdata/vgplot";
 
 await vg.coordinator().exec([
-  vg.loadParquet("latency", "https://uwdata.github.io/mosaic-datasets/data/observable-latency.parquet")
+  vg.loadParquet("latency", "https://idl.uw.edu/mosaic-datasets/data/observable-latency.parquet")
 ]);
 
 const $filter = vg.Selection.crossfilter();

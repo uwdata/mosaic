@@ -1,21 +1,20 @@
 import { Query, agg, sql } from '@uwdata/mosaic-sql';
 import { MosaicClient } from '../MosaicClient.js';
 
-export const NO_INDEX = { from: NaN };
-
 /**
  * Determine data cube index columns for a given Mosaic client.
  * @param {MosaicClient} client The Mosaic client.
  * @returns An object with necessary column data to generate data
- *  cube index columns, null if an invalid or unsupported expression
- *  is encountered, or NO_INDEX if the client is not indexable.
+ *  cube index columns, or null if the client is not indexable or
+ *  the client query contains an invalid or unsupported expression.
  */
 export function indexColumns(client) {
-  if (!client.filterIndexable) return NO_INDEX;
+  if (!client.filterIndexable) return null;
   const q = client.query();
   const from = getBaseTable(q);
-  if (typeof from !== 'string' || !q.groupby) return NO_INDEX;
-  const g = new Set(q.groupby().map(c => c.column));
+
+  // bail if no base table or the query is not analyzable
+  if (typeof from !== 'string' || !q.select) return null;
 
   const aggr = []; // list of output aggregate columns
   const dims = []; // list of grouping dimension columns
@@ -127,10 +126,13 @@ export function indexColumns(client) {
 
       // otherwise, check if dimension
       default:
-        if (g.has(as)) dims.push(as);
+        if (!aggregate) dims.push(as);
         else return null; // unsupported aggregate
     }
   }
+
+  // bail if the query has no aggregates
+  if (!aggr.length) return null;
 
   return { from, dims, aggr, aux };
 }

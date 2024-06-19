@@ -70,5 +70,6 @@
   "xTicks": 10,
   "yLabel": "Unemployment (%)",
   "yGrid": true,
+  "style": "overflow: visible;",
   "width": 680
 }

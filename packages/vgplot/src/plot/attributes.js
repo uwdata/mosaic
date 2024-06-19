@@ -257,6 +257,7 @@ export const rDomain = attrf('rDomain');
 export const rRange = attrf('rRange');
 export const rClamp = attrf('rClamp');
 export const rNice = attrf('rNice');
+export const rLabel = attrf('rLabel');
 export const rPercent = attrf('rPercent');
 export const rZero = attrf('rZero');
 export const rBase = attrf('rBase');

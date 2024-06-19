@@ -18,7 +18,7 @@ data:
         t^2 AS t2,
         t2^3 AS t6,
         *
-      FROM 'https://uwdata.github.io/mosaic-datasets/data/gaia-5m.parquet'
+      FROM 'https://idl.uw.edu/mosaic-datasets/data/gaia-5m.parquet'
       WHERE parallax BETWEEN -5 AND 20 AND phot_g_mean_mag IS NOT NULL AND bp_rp IS NOT NULL
     )
     SELECT

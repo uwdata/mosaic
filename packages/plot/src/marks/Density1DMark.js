@@ -1,3 +1,4 @@
+import { toDataColumns } from '@uwdata/mosaic-core';
 import { Query, gt, isBetween, sql, sum } from '@uwdata/mosaic-sql';
 import { Transient } from '../symbols.js';
 import { binExpr } from './util/bin-expr.js';
@@ -6,7 +7,6 @@ import { extentX, extentY, xext, yext } from './util/extent.js';
 import { grid1d } from './util/grid.js';
 import { handleParam } from './util/handle-param.js';
 import { Mark, channelOption, markQuery } from './Mark.js';
-import { toDataColumns } from './util/to-data-columns.js';
 
 export class Density1DMark extends Mark {
   constructor(type, source, options) {
