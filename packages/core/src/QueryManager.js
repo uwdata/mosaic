@@ -18,10 +18,24 @@ export class QueryManager {
   }
 
   next() {
+    /*
     if (this.pending || this.queue.isEmpty()) return;
     const { request, result } = this.queue.next();
     this.pending = this.submit(request, result);
     this.pending.finally(() => { this.pending = null; this.next(); });
+    */
+    /* */
+    if (this.pending || this.queue.isEmpty()) return;
+    const requests = [];
+    const results = [];
+    while (!this.queue.isEmpty()) {
+      const { request, result } = this.queue.next();
+      requests.push(request);
+      results.push(result);
+    }
+    this.pending = this.submitBatch(requests, results);
+    this.pending.finally(() => { this.pending = null; this.next(); });
+    /* */
   }
 
   enqueue(entry, priority = Priority.Normal) {
@@ -66,6 +80,39 @@ export class QueryManager {
       result.fulfill(data);
     } catch (err) {
       result.reject(err);
+    }
+  }
+
+  async submitBatch(requests, results) {
+    for(let i = 0; i < requests.length; i++){
+      try {
+        const { query, type, cache = false, record = true, options } = requests[i];
+        const sql = query ? `${query}` : null;
+        if (record) {
+          this.recordQuery(sql);
+        }
+        if (cache) {
+          const cached = this.clientCache.get(sql);
+          if (cached) {
+            this._logger.debug('Cache');
+            results[i].fulfill(cached);
+            continue;
+          }
+        }
+        const t0 = performance.now();
+        if (this._logQueries) {
+          this._logger.debug('Query', { type, sql, ...options });
+        }
+        this.db.query({ type, sql, ...options }).then(data => {
+          if (cache) this.clientCache.set(sql, data);
+          this._logger.debug(`Request: ${(performance.now() - t0).toFixed(1)}`);
+          results[i].fulfill(data);
+        }).catch(err => {
+          results[i].reject(err);
+        });
+      } catch (err) {
+        results[i].reject(err);
+      }
     }
   }
 
