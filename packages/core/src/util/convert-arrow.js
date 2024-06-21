@@ -62,7 +62,7 @@ export function convertArrowValue(type) {
  * Large integers (BigInt) are converted to Float64 numbers.
  * Fixed-point decimal values are convert to Float64 numbers.
  * Otherwise, the default Arrow values are used.
-  * @param {Vector} column An Apache Arrow column
+ * @param {Vector} column An Apache Arrow column
  * @returns an array of values
  */
 export function convertArrowColumn(column) {
@@ -102,8 +102,8 @@ export function convertArrowColumn(column) {
     return array;
   }
 
-   // if there are null values, use a standard array
-   if (column.nullCount) {
+  // if there are null values, use a standard array
+  if (column.nullCount) {
     return Array.from(column);
   }
 
