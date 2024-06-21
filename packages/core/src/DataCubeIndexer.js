@@ -59,7 +59,7 @@ export class DataCubeIndexer {
    */
   clear() {
     this.mc.cancel(Array.from(this.indexes.values(), info => info?.result));
-    this.indexes = new Map();
+    this.indexes.clear();
     this.active = null;
   }
 

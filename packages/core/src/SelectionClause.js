@@ -99,7 +99,7 @@ export function interval(field, value, {
   /** @type {SQLExpression | null} */
   const predicate = value != null ? isBetween(field, value) : null;
   /** @type {import('./util/selection-types.js').IntervalMetadata} */
-  const meta = { type: 'interval', scales: [scale], bin, pixelSize };
+  const meta = { type: 'interval', scales: scale && [scale], bin, pixelSize };
   return { meta, source, clients, value, predicate };
 }
 
