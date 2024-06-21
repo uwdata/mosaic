@@ -19,7 +19,7 @@ import { error, isArray, isObject, isString, toArray, toParamRef } from './util.
  * @returns {string} Generated ESM code using the vgplot API.
  */
 export function astToESM(ast, options = {}) {
-  const { root, data, params, plotDefaults } = ast;
+  const { root, data, params, relay, plotDefaults } = ast;
   const { preamble, ...ctxOptions } = options;
   const ctx = new CodegenContext({ plotDefaults, ...ctxOptions });
 
@@ -74,6 +74,10 @@ export function astToESM(ast, options = {}) {
     paramCode.push(`const ${toParamRef(key)} = ${value.codegen(ctx)};`);
   }
 
+  // generate selection relays
+  const relayCode = [];
+  if (relay) relayCode.push(relay.codegen(ctx));
+
   // generate default attributes
   let defaultCode = [];
   const defaultList = plotDefaults;
@@ -101,6 +105,8 @@ export function astToESM(ast, options = {}) {
     ...maybeNewline(dataCode),
     ...paramCode,
     ...maybeNewline(paramCode),
+    ...relayCode,
+    ...maybeNewline(relayCode),
     ...defaultCode,
     ...maybeNewline(defaultCode),
     ...specCode

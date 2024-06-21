@@ -85,6 +85,18 @@ export class Selection extends Param {
     super([]);
     this._resolved = this._value;
     this._resolver = resolver;
+    /** @type {Selection[]} */
+    this._relay = [];
+  }
+
+  /**
+   * Downstream selections to relay clauses to. Any clauses published to
+   * this selection are published (relayed) in turn to these selections.
+   * @param {...(Selection|Selection[])} selections
+   */
+  relay(...selections) {
+    this._relay = selections.flat();
+    return this;
   }
 
   /**
@@ -161,6 +173,7 @@ export class Selection extends Param {
    */
   activate(clause) {
     this.emit('activate', clause);
+    this._relay.forEach(sel => sel.activate(clause));
   }
 
   /**
@@ -173,6 +186,7 @@ export class Selection extends Param {
     // this ensures consistent clause state across unemitted event values
     this._resolved = this._resolver.resolve(this._resolved, clause, true);
     this._resolved.active = clause;
+    this._relay.forEach(sel => sel.update(clause));
     return super.update(this._resolved);
   }
 

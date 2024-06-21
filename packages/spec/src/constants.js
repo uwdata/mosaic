@@ -14,6 +14,7 @@ export const OPTIONS = 'options';
 export const SELECTION = 'selection';
 export const PARAMREF = 'paramref';
 export const PARAM = 'param';
+export const RELAY = 'relay';
 
 // param and selection types
 export const SELECT = 'select';
