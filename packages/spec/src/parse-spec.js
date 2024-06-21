@@ -3,6 +3,7 @@ import { LiteralNode } from './ast/LiteralNode.js';
 import { parseParam, ParamNode } from './ast/ParamNode.js';
 import { ParamRefNode } from './ast/ParamRefNode.js';
 import { parseAttribute } from './ast/PlotAttributeNode.js';
+import { parseRelay } from './ast/RelayNode.js';
 import { SelectionNode } from './ast/SelectionNode.js';
 import { SpecNode } from './ast/SpecNode.js';
 import { componentMap } from './config/components.js';
@@ -68,12 +69,12 @@ export class ParseContext {
   }
 
   parse(spec) {
-    // eslint-disable-next-line no-unused-vars
     const {
       meta,
       config,
       data = {},
       params,
+      relay,
       plotDefaults = {},
       ...root
     } = spec;
@@ -98,6 +99,7 @@ export class ParseContext {
       config ? { ...config } : undefined,
       Object.fromEntries(this.datasets),
       Object.fromEntries(this.params),
+      parseRelay(relay, this),
       this.plotDefaults
     );
   }
@@ -113,29 +115,67 @@ export class ParseContext {
   }
 
   /**
-   * Test if a value is param reference, if so, generate a paramter definition
-   * as needed and return a new ParamRefNode. Otherwise, return a LiteralNode.
+   * Test if a value is a param reference, if so, generates a parameter
+   * definition as needed and returns a new ParamRefNode. Otherwise,
+   * returns a LiteralNode for the given value.
    * @param {*} value The value to test.
-   * @param {() => ParamNode | SelectionNode} [makeNode] A Param of Selection AST
-   *  node constructor.
    * @returns {ParamRefNode|LiteralNode} An AST node for the input value.
    */
-  maybeParam(value, makeNode = () => new ParamNode) {
-    const { params } = this;
+  maybeParam(value) {
     const name = paramRef(value);
-
-    if (name) {
-      if (!params.has(name)) {
-        const p = makeNode();
-        params.set(name, p);
-      }
-      return new ParamRefNode(name);
-    }
-    return new LiteralNode(value);
+    return name
+      ? this.paramRef(name)
+      : new LiteralNode(value);
   }
 
+  /**
+   * Test if a value is a param reference, if so, generates a selection
+   * definition as needed and returns a new ParamRefNode. Otherwise,
+   * returns a LiteralNode for the given value.
+   * @param {*} value The value to test.
+   * @returns {ParamRefNode|LiteralNode} An AST node for the input value.
+   */
   maybeSelection(value) {
-    return this.maybeParam(value, () => new SelectionNode);
+    const name = paramRef(value);
+    return name
+      ? this.selectionRef(name)
+      : new LiteralNode(value);
+  }
+
+  /**
+   * Create a parameter reference. Generates a parameter definition if needed
+   * and returns a new ParamRefNode.
+   * @param {string} name The parameter name.
+   * @param {() => ParamNode | SelectionNode} [makeNode] A Param or Selection AST
+   *  node constructor.
+   * @returns {ParamRefNode|null} A node referring to the param or selection.
+   */
+  paramRef(name, makeNode = () => new ParamNode) {
+    const { params } = this;
+    if (!name) return null;
+    let p = params.get(name);
+    if (!p) {
+      p = makeNode();
+      params.set(name, p);
+    }
+    return new ParamRefNode(name);
+  }
+
+  /**
+   * Create a selection reference. Generates a selection definition if needed
+   * and returns a new ParamRefNode. Returns null if a non-selection parameter
+   * with the same name already exists and *strict* is true.
+   * @param {string} name The selection name.
+   * @param {boolean} [strict=false] Indicates if this method may return param
+   *  references (false, default) or only selection references (true).
+   * @returns {ParamRefNode|null} A node referring to the param or selection.
+   */
+  selectionRef(name, strict = false) {
+    const p = this.params.get(name);
+    if (strict && p && !(p instanceof SelectionNode)) {
+      return null;
+    }
+    return this.paramRef(name, () => new SelectionNode);
   }
 
   error(message, data) {

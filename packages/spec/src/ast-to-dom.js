@@ -18,7 +18,7 @@ import { error } from './util.js';
  *  DOM element, and a map of named parameters (Param and Selection instances).
  */
 export async function astToDOM(ast, options) {
-  const { data, params, plotDefaults } = ast;
+  const { data, params, relay, plotDefaults } = ast;
   const ctx = new InstantiateContext({ plotDefaults, ...options });
 
   const queries = [];
@@ -45,6 +45,10 @@ export async function astToDOM(ast, options) {
       const param = node.instantiate(ctx);
       ctx.activeParams.set(name, param);
     }
+  }
+
+  if (relay) {
+    relay.instantiate(ctx);
   }
 
   return {
