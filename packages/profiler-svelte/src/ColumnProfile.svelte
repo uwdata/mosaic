@@ -11,7 +11,6 @@
     var uniqueId = `plot-${uuidv4()}`;
 
     async function getPlot() {
-
         if (type == 'DOUBLE' || type == 'BIGINT') {
             document.querySelector(`#${uniqueId}`).replaceChildren(vg.vconcat(vg.plot(
                 vg.rectY(
@@ -54,7 +53,6 @@
                 LIMIT 2;
             `, { cache: false });
 
-            const cols = Array.from(countOfEachCategory).map(row => row[colName]);
             const counts = Array.from(countOfEachCategory).map(row => row.frequency);
 
             document.querySelector(`#${uniqueId}`).replaceChildren(vg.vconcat(vg.plot(
