@@ -1,4 +1,4 @@
-import { MosaicClient, Param, interval, isParam, isSelection, point } from '@uwdata/mosaic-core';
+import { MosaicClient, Param, clauseInterval, clausePoint, isParam, isSelection } from '@uwdata/mosaic-core';
 import { Query, max, min } from '@uwdata/mosaic-sql';
 import { input } from './input.js';
 
@@ -145,14 +145,14 @@ export class Slider extends MosaicClient {
       if (selectionType === 'interval') {
         /** @type {[number, number]} */
         const domain = [this.min ?? 0, value];
-        selection.update(interval(field, domain, {
+        selection.update(clauseInterval(field, domain, {
           source: this,
           bin: 'ceil',
           scale: { type: 'identity', domain },
           pixelSize: this.step
         }));
       } else {
-        selection.update(point(field, value, { source: this }));
+        selection.update(clausePoint(field, value, { source: this }));
       }
     } else if (isParam(this.selection)) {
       selection.update(value);

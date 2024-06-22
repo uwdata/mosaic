@@ -1,4 +1,4 @@
-import { MosaicClient, coordinator, points, toDataColumns } from '@uwdata/mosaic-core';
+import { MosaicClient, clausePoints, coordinator, toDataColumns } from '@uwdata/mosaic-core';
 import { Query, column, desc } from '@uwdata/mosaic-sql';
 import { formatDate, formatLocaleAuto, formatLocaleNumber } from './util/format.js';
 import { input } from './input.js';
@@ -101,7 +101,7 @@ export class Table extends MosaicClient {
       const { columns } = data[~~(row / limit)];
       return fields.map(f => columns[f][row % limit]);
     });
-    return points(fields, values, { source: this });
+    return clausePoints(fields, values, { source: this });
   }
 
   requestData(offset = 0) {

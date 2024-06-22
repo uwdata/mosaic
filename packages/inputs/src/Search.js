@@ -1,4 +1,4 @@
-import { MosaicClient, Param, isParam, isSelection, match } from '@uwdata/mosaic-core';
+import { MosaicClient, Param, isParam, isSelection, clauseMatch } from '@uwdata/mosaic-core';
 import { Query } from '@uwdata/mosaic-sql';
 import { input } from './input.js';
 
@@ -88,7 +88,7 @@ export class Search extends MosaicClient {
   publish(value) {
     const { selection, field, type } = this;
     if (isSelection(selection)) {
-      const clause = match(field, value, { source: this, method: type });
+      const clause = clauseMatch(field, value, { source: this, method: type });
       selection.update(clause);
     } else if (isParam(selection)) {
       selection.update(value);

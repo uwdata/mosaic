@@ -1,4 +1,4 @@
-import { points } from '@uwdata/mosaic-core';
+import { clausePoints } from '@uwdata/mosaic-core';
 
 export class Toggle {
   /**
@@ -35,7 +35,7 @@ export class Toggle {
 
   clause(value) {
     const { fields, mark } = this;
-    return points(fields, value, {
+    return clausePoints(fields, value, {
       source: this,
       clients: this.peers ? mark.plot.markSet : new Set().add(mark)
     });
