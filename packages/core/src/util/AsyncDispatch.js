@@ -1,8 +1,7 @@
 /**
- * Event dispatcher supporting asynchronous updates.
- * If an event handler callback returns a Promise, this dispatcher will
- * wait for all such Promises to settle before dispatching future events
- * of the same type.
+ * Event dispatcher supporting asynchronous updates. If an event handler
+ * callback returns a Promise, the dispatcher waits for all such Promises
+ * to settle before dispatching future events of the same type.
  */
 export class AsyncDispatch {
 
@@ -63,7 +62,7 @@ export class AsyncDispatch {
    * queue of unemitted event values prior to enqueueing a new value.
    * This default implementation simply returns null, indicating that
    * any other unemitted event values should be dropped (that is, all
-   * queued events are filtered)
+   * queued events are filtered).
    * @param {string} type The event type.
    * @param {*} value The new event value that will be enqueued.
    * @returns {(value: *) => boolean|null} A dispatch queue filter
@@ -81,6 +80,17 @@ export class AsyncDispatch {
   cancel(type) {
     const entry = this._callbacks.get(type);
     entry?.queue.clear();
+  }
+
+  /**
+   * Returns a promise that resolves when any pending updates complete for
+   * the event of the given type currently being processed. The Promise will
+   * resolve immediately if the queue for the given event type is empty.
+   * @param {string} type The event type to wait for.
+   * @returns {Promise} A pending event promise.
+   */
+  async pending(type) {
+    await this._callbacks.get(type)?.pending;
   }
 
   /**
