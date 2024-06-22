@@ -1,4 +1,4 @@
-import { isSelection, points } from '@uwdata/mosaic-core';
+import { clausePoints, isSelection } from '@uwdata/mosaic-core';
 import { select, pointer } from 'd3';
 import { getField } from './util/get-field.js';
 
@@ -24,7 +24,10 @@ export class Nearest {
 
   clause(value) {
     const { clients, fields } = this;
-    return points(fields, value ? [value] : value, { source: this, clients });
+    return clausePoints(fields, value ? [value] : value, {
+      source: this,
+      clients
+    });
   }
 
   init(svg) {

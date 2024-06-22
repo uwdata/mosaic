@@ -3,11 +3,18 @@ export { Coordinator, coordinator } from './Coordinator.js';
 export { Selection, isSelection } from './Selection.js';
 export { Param, isParam } from './Param.js';
 export { Priority } from './QueryManager.js';
-export { point, points, interval, intervals, match } from './SelectionClause.js';
 
 export { restConnector } from './connectors/rest.js';
 export { socketConnector } from './connectors/socket.js';
 export { wasmConnector } from './connectors/wasm.js';
+
+export {
+  clauseInterval,
+  clauseIntervals,
+  clausePoint,
+  clausePoints,
+  clauseMatch
+} from './SelectionClause.js';
 
 export {
   isArrowTable,
@@ -15,6 +22,7 @@ export {
   convertArrowValue,
   convertArrowColumn
 } from './util/convert-arrow.js'
+
 export { distinct } from './util/distinct.js';
 export { synchronizer } from './util/synchronizer.js';
 export { throttle } from './util/throttle.js';

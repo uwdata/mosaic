@@ -1,4 +1,4 @@
-import { MosaicClient, Param, isParam, isSelection, point } from '@uwdata/mosaic-core';
+import { MosaicClient, Param, isParam, isSelection, clausePoint } from '@uwdata/mosaic-core';
 import { Query } from '@uwdata/mosaic-sql';
 import { input } from './input.js';
 
@@ -122,7 +122,7 @@ export class Menu extends MosaicClient {
     const { selection, field } = this;
     if (isSelection(selection)) {
       if (value === '') value = undefined; // 'All' option
-      const clause = point(field, value, { source: this });
+      const clause = clausePoint(field, value, { source: this });
       selection.update(clause);
     } else if (isParam(selection)) {
       selection.update(value);
