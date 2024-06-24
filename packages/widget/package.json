@@ -25,6 +25,7 @@
     "uuid": "^10.0.0"
   },
   "devDependencies": {
+    "@anywidget/vite": "^0.2.0",
     "anywidget": "^0.9.13"
   }
 }
