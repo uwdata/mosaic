@@ -9,7 +9,18 @@ Where possible, the coordinator also applies optimizations, such as caching and 
 
 `coordinator()`
 
-Get the global coordinator instance.
+Get the default global coordinator instance.
+
+## constructor
+
+`new Coordinator(connector, options)`
+
+Create a new Mosaic Coordinator to manage all database communication for clients and handle selection updates. Accepts a database _connector_ and an _options_ object:
+
+* _logger_: The logger to use, defaults to `console`.
+* _cache_: Boolean flag to enable/disable query caching (default `true`).
+* _consolidate_ Boolean flag to enable/disable query consolidation (default `true`).
+* _indexes_: Data cube indexer options object. The _enabled_ flag (default `true`) determines if data cube indexes should be used when possible. The _temp_ flag (default `true`) controls if temporary tables should be created for data cube indexes.
 
 ## databaseConnector
 
@@ -39,17 +50,6 @@ Get or set the coordinator's logger.
 The logger defaults to the standard JavaScript `console`.
 A logger instance must support `log`, `info`, `warn`, and `error` mehthods.
 If set to `null`, logging will be suppressed.
-
-## configure
-
-`coordinator.configure(options)`
-
-Configure the coordinator. Supports the following _options_:
-
-- _cache_: A Boolean flag (default `true`) to enable client-side caching, or a cache instance that exposes `get(key)`, `set(key, value)`, and `clear()` methods. By default an [LRU cache](https://en.wikipedia.org/wiki/Cache_replacement_policies#Least_recently_used_(LRU)) is used.
-- _indexes_: A Boolean flag (default `true`) to enable query analysis and automatic indexing of supported aggregation queries.
-
-This method can be used to disable optimizations for testing or benchmarking purposes.
 
 ## clear
 

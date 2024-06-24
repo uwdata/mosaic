@@ -580,6 +580,7 @@ export function isQuery(value) {
 }
 
 export function isDescribeQuery(value) {
+  // @ts-ignore
   return isQuery(value) && value.describe;
 }
 
