@@ -11,6 +11,8 @@ Selections apply a _resolution_ strategy to merge clauses into client-specific p
 In addition, selections can be _cross-filtered_, so that they affect views other than the one currently being interacted with.
 The strategies above are modified to omit clauses where the _clients_ set includes the input argument to the `predicate()` function.
 
+By default, a selection without any clauses selects all records. To instead select no records, set the _empty_ option to `true`.
+
 ## isSelection
 
 `isSelection(value)`
@@ -23,7 +25,7 @@ Returns `true` if the input value is a `Selection`, false otherwise.
 
 Create a new Selection instance with an intersect (conjunction) resolution strategy.
 
-The _options_ object may include a Boolean _cross_ flag (default `false`) indicating cross-filtered resolution. If true, selection clauses will not be applied to the clients they are associated with.
+The _options_ object may include a Boolean _cross_ flag (default `false`) indicating cross-filtered resolution. If true, selection clauses will not be applied to the clients they are associated with. The _empty_ flag (default `false`) indicates whether a selection without any clauses should not select an empty set with no records (`true`) or select all records (`false`).
 
 ## Selection.union
 
@@ -31,7 +33,7 @@ The _options_ object may include a Boolean _cross_ flag (default `false`) indica
 
 Create a new Selection instance with a union (disjunction) resolution strategy.
 
-The _options_ object may include a Boolean _cross_ flag (default `false`) indicating cross-filtered resolution. If true, selection clauses will not be applied to the clients they are associated with.
+The _options_ object may include a Boolean _cross_ flag (default `false`) indicating cross-filtered resolution. If true, selection clauses will not be applied to the clients they are associated with. The _empty_ flag (default `false`) indicates whether a selection without any clauses should not select an empty set with no records (`true`) or select all records (`false`).
 
 ## Selection.single
 
@@ -39,7 +41,7 @@ The _options_ object may include a Boolean _cross_ flag (default `false`) indica
 
 Create a new Selection instance with a singular resolution strategy that keeps only the most recent selection clause.
 
-The _options_ object may include a Boolean _cross_ flag (default `false`) indicating cross-filtered resolution. If true, selection clauses will not be applied to the clients they are associated with.
+The _options_ object may include a Boolean _cross_ flag (default `false`) indicating cross-filtered resolution. If true, selection clauses will not be applied to the clients they are associated with. The _empty_ flag (default `false`) indicates whether a selection without any clauses should not select an empty set with no records (`true`) or select all records (`false`).
 
 ## Selection.crossfilter
 
@@ -129,3 +131,9 @@ Selections support both `"value"` and `"activate"` type events.
 `selection.removeEventListener(type, callback)`
 
 Remove an event listener _callback_ function for the specified event _type_.
+
+## pending
+
+`selection.pending(type)`
+
+Returns a promise that resolves when any pending updates complete for the event of the given type currently being processed. The Promise will resolve immediately if the queue for the given event type is empty.
