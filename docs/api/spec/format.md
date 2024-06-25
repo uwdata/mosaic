@@ -12,6 +12,10 @@ To generate a running application from a parsed spec, use [`astToDOM`](parser-ge
 <<< @/public/specs/esm/bias.js [JavaScript]
 :::
 
+::: tip
+The [TypeScript types in the `@uwdata/mosaic-spec` package](https://github.com/uwdata/mosaic/tree/main/packages/spec/src/spec) provide comprehensive documentation of Mosaic declarative specifications.
+:::
+
 ## Specification Format
 
 At the top-level, a specification may contain the following keys:

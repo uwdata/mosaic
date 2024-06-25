@@ -4,7 +4,11 @@ import { copyFile, readFile, symlink, unlink } from 'node:fs/promises';
 
 // utility function to create symlinks
 async function link(schemaFile, linkFile) {
-  await unlink(linkFile);
+  try {
+    await unlink(linkFile);
+  } catch (err) { // eslint-disable-line no-unused-vars
+    // file may not have existed
+  }
   await symlink(schemaFile, linkFile);
   console.log(`Symlinked JSON schema to ${linkFile}`);
 }

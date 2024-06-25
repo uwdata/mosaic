@@ -107,7 +107,7 @@ For additional documentation of scale attributes, see the corresponding [Observa
 - `colorInterpolate(value)`: Set a custom color interpolation function.
 - `colorPivot(value)`: Set the pivot value for diverging `color` scales.
 - `colorSymmetric(value)`: Set the domain to be symmetric around a pivot.
-- `colorLabel(value)`: Set the legend label.
+- `colorLabel(value)`: Set the scale label.
 - `colorReverse(value)`: Set if the range should be reversed.
 - `colorZero(value)`: Set the domain to always include zero.
 - `colorTickFormat(value)`: Set the legend tick format.
@@ -119,7 +119,7 @@ For additional documentation of scale attributes, see the corresponding [Observa
 - `opacityRange(value)`: Set the scale range.
 - `opacityClamp(value)`: Set if the scale should clamp out-of-domain values.
 - `opacityNice(value)`: Set if the scale domain should have "nice" (human-friendly) end points.
-- `opacityLabel(value)`: Set the legend label.
+- `opacityLabel(value)`: Set the scale label.
 - `opacityReverse(value)`: Set if the range should be reversed.
 - `opacityZero(value)`: Set the domain to always include zero.
 - `opacityTickFormat(value)`: Set the legend tick format.
@@ -131,6 +131,7 @@ For additional documentation of scale attributes, see the corresponding [Observa
 - `rRange(value)`: Set the scale range.
 - `rClamp(value)`: Set if the scale should clamp out-of-domain values.
 - `rNice(value)`: Set if the scale domain should have "nice" (human-friendly) end points.
+- `rLabel(value)`: Set the scale label.
 - `rZero(value)`: Set the domain to always include zero.
 
 ## length Scale Attributes

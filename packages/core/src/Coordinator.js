@@ -184,7 +184,7 @@ export class Coordinator {
 
   /**
    * Issue a query request for a client. If the query is null or undefined,
-   * the client is simply updated. Otherwise `updateClient` is calles. As a
+   * the client is simply updated. Otherwise `updateClient` is called. As a
    * side effect, this method clears the current data cube indexer state.
    * @param {import('./MosaicClient.js').MosaicClient} client The client
    *  to update.
@@ -283,11 +283,9 @@ function connectSelection(mc, selection, client) {
  */
 function activateSelection(mc, selection, clause) {
   const { dataCubeIndexer, filterGroups } = mc;
-  if (dataCubeIndexer) {
-    const { clients } = filterGroups.get(selection);
-    for (const client of clients) {
-      dataCubeIndexer.index(client, selection, clause);
-    }
+  const { clients } = filterGroups.get(selection);
+  for (const client of clients) {
+    dataCubeIndexer.index(client, selection, clause);
   }
 }
 

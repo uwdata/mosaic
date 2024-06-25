@@ -24,7 +24,7 @@ import { MosaicClient } from './MosaicClient.js';
  *  cross-filtering contexts.
  * @returns {SelectionClause} The generated selection clause.
  */
-export function point(field, value, {
+export function clausePoint(field, value, {
   source,
   clients = source ? new Set([source]) : undefined
 }) {
@@ -53,7 +53,7 @@ export function point(field, value, {
  *  cross-filtering contexts.
  * @returns {SelectionClause} The generated selection clause.
  */
-export function points(fields, value, {
+export function clausePoints(fields, value, {
   source,
   clients = source ? new Set([source]) : undefined
 }) {
@@ -89,7 +89,7 @@ export function points(fields, value, {
  * @param {number} [options.pixelSize=1] The interactive pixel size.
  * @returns {SelectionClause} The generated selection clause.
  */
-export function interval(field, value, {
+export function clauseInterval(field, value, {
   source,
   clients = source ? new Set([source]) : undefined,
   bin,
@@ -99,7 +99,7 @@ export function interval(field, value, {
   /** @type {SQLExpression | null} */
   const predicate = value != null ? isBetween(field, value) : null;
   /** @type {import('./util/selection-types.js').IntervalMetadata} */
-  const meta = { type: 'interval', scales: [scale], bin, pixelSize };
+  const meta = { type: 'interval', scales: scale && [scale], bin, pixelSize };
   return { meta, source, clients, value, predicate };
 }
 
@@ -118,7 +118,7 @@ export function interval(field, value, {
  * @param {number} [options.pixelSize=1] The interactive pixel size.
  * @returns {SelectionClause} The generated selection clause.
  */
-export function intervals(fields, value, {
+export function clauseIntervals(fields, value, {
   source,
   clients = source ? new Set([source]) : undefined,
   bin,
@@ -149,7 +149,7 @@ const MATCH_METHODS = { contains, prefix, suffix, regexp: regexp_matches };
  *  text matching method to use. Defaults to `'contains'`.
  * @returns {SelectionClause} The generated selection clause.
  */
-export function match(field, value, {
+export function clauseMatch(field, value, {
   source, clients = undefined, method = 'contains'
 }) {
   let fn = MATCH_METHODS[method];
