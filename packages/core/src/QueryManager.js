@@ -18,13 +18,6 @@ export class QueryManager {
   }
 
   next() {
-    /*
-    if (this.pending || this.queue.isEmpty()) return;
-    const { request, result } = this.queue.next();
-    this.pending = this.submit(request, result);
-    this.pending.finally(() => { this.pending = null; this.next(); });
-    */
-    /* */
     if (this.pending || this.queue.isEmpty()) return;
     const requests = [];
     const results = [];
