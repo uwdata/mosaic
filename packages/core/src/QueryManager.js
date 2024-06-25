@@ -28,7 +28,6 @@ export class QueryManager {
     }
     this.pending = this.submitBatch(requests, results);
     this.pending.finally(() => { this.pending = null; this.next(); });
-    /* */
   }
 
   enqueue(entry, priority = Priority.Normal) {
