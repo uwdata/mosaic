@@ -1,4 +1,4 @@
-import { interval } from '@uwdata/mosaic-core';
+import { clauseInterval } from '@uwdata/mosaic-core';
 import { ascending, min, max, select } from 'd3';
 import { brushX, brushY } from './util/brush.js';
 import { closeTo } from './util/close-to.js';
@@ -52,7 +52,7 @@ export class Interval1D {
 
   clause(value) {
     const { mark, pixelSize, field, scale } = this;
-    return interval(field, value, {
+    return clauseInterval(field, value, {
       source: this,
       clients: this.peers ? mark.plot.markSet : new Set().add(mark),
       scale,
