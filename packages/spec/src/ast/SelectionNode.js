@@ -1,30 +1,36 @@
 import { ASTNode } from './ASTNode.js';
+import { OptionsNode, parseOptions } from './OptionsNode.js';
 import { INTERSECT, SELECTION } from '../constants.js';
 
+export function parseSelection(spec, ctx) {
+  const { select, ...options } = spec;
+  return new SelectionNode(select, parseOptions(options, ctx));
+}
+
 export class SelectionNode extends ASTNode {
-  constructor(select = INTERSECT, cross, empty) {
+  /**
+   * Create a Selection AST node.
+   * @param {string} select The selection type.
+   * @param {OptionsNode} options Selection options.
+   */
+  constructor(select = INTERSECT, options = new OptionsNode({})) {
     super(SELECTION);
     this.select = select;
-    this.cross = cross;
-    this.empty = empty;
+    this.options = options;
   }
 
   instantiate(ctx) {
-    const { select, cross, empty } = this;
-    return ctx.api.Selection[select]({ cross, empty });
+    const { select, options } = this;
+    return ctx.api.Selection[select](options.instantiate(ctx));
   }
 
   codegen(ctx) {
-    const { select, cross, empty } = this;
-    const args = [['cross', cross], ['empty', empty]]
-      .filter(a => a[1] != null)
-      .map(a => `${a[0]}: ${a[1]}`);
-    const arg = args.length ? `{ ${args.join(', ')} }` : '';
-    return `${ctx.ns()}Selection.${select}(${arg})`;
+    const { select, options } = this;
+    return `${ctx.ns()}Selection.${select}(${options.codegen(ctx)})`;
   }
 
   toJSON() {
-    const { select, cross, empty } = this;
-    return { select, cross, empty };
+    const { select, options } = this;
+    return { select, ...options.toJSON() };
   }
 }
