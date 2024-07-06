@@ -1,18 +1,28 @@
 # DuckDB Server
 
-## Developers
+## Build
+
+Build the release binary with
+
+```sh
+cargo build --release
+```
+
+## Develop
+
+To run the server and restart it when the code changes, install `cargo-watch` and `systemfd` with
 
 ```sh
 cargo install cargo-watch systemfd
 ```
 
-Run with
+Then run the server with
 
 ```sh
 systemfd --no-pid -s http::3000 -- cargo watch -x run
 ```
 
-Or just (but this won't restart when the code changes)
+Or just use (but this won't restart when the code changes)
 
 ```sh
 cargo run

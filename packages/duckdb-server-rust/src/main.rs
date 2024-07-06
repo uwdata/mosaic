@@ -91,6 +91,7 @@ where
 {
     let mut cache_lock = cache.lock().await;
     if let Some(cached) = cache_lock.get(key) {
+        tracing::debug!("Cache hit!");
         Ok(cached.clone())
     } else {
         let result = f().await?;
@@ -106,7 +107,7 @@ async fn handle_query(
     let command = &params.query_type;
     let sql = params.sql.as_deref().unwrap_or("");
 
-    tracing::debug!("Command: '{}', SQL Query: '{}'", command, sql);
+    tracing::info!("Command: '{}', SQL Query: '{}'", command, sql);
 
     match command.as_str() {
         "exec" => {
@@ -195,7 +196,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let con = Connection::open_in_memory()?;
     let db = Arc::new(DuckDbDatabase::new(con));
-    let cache = lru::LruCache::new(100.try_into().unwrap());
+    let cache = lru::LruCache::new(1000.try_into().unwrap());
 
     let state = Arc::new(AppState {
         db,
