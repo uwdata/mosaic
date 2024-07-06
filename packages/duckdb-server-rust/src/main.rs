@@ -126,18 +126,22 @@ async fn load_bundle(
     Ok(())
 }
 
-async fn retrieve<F, Fut>(cache: &Mutex<lru::LruCache<String, Vec<u8>>>, key: &str, f: F) -> Vec<u8>
+async fn retrieve<F, Fut>(
+    cache: &Mutex<lru::LruCache<String, Vec<u8>>>,
+    key: &str,
+    f: F
+) -> Result<Vec<u8>>
 where
     F: FnOnce() -> Fut,
     Fut: std::future::Future<Output = Result<Vec<u8>>>,
 {
     let mut cache_lock = cache.lock().await;
     if let Some(cached) = cache_lock.get(key) {
-        cached.clone()
+        Ok(cached.clone())
     } else {
-        let result = f().await.unwrap_or_else(|_| Vec::new());
+        let result = f().await?;
         cache_lock.put(key.to_string(), result.clone());
-        result
+        Ok(result)
     }
 }
 
@@ -158,14 +162,23 @@ async fn handle_query(
             Ok(QueryResponse::Empty)
         }
         "arrow" => {
-            let buffer = retrieve(&state.cache, sql, || get_arrow_bytes(&state.con, sql)).await;
+            let buffer = retrieve(&state.cache, sql, || get_arrow_bytes(&state.con, sql))
+                .await
+                .map_err(|e| {
+                    tracing::error!("Arrow retrieval error: {:?}", e);
+                    StatusCode::INTERNAL_SERVER_ERROR
+                })?;
             Ok(QueryResponse::Arrow(buffer))
         }
         "json" => {
-            let json: Vec<u8> = retrieve(&state.cache, sql, || async {
+             let json: Vec<u8> = retrieve(&state.cache, sql, || async {
                 get_json(&state.con, sql).await
             })
-            .await;
+            .await
+            .map_err(|e| {
+                tracing::error!("JSON retrieval error: {:?}", e);
+                StatusCode::INTERNAL_SERVER_ERROR
+            })?;
             let string = String::from_utf8(json).map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
             Ok(QueryResponse::Json(string))
         }
@@ -178,7 +191,10 @@ async fn handle_query(
                     Path::new(".mosaic/bundle"),
                 )
                 .await
-                .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+                .map_err(|e| {
+                    tracing::error!("Bundle creation error: {:?}", e);
+                    StatusCode::INTERNAL_SERVER_ERROR
+                })?;
                 Ok(QueryResponse::Empty)
             } else {
                 Err(StatusCode::BAD_REQUEST)
@@ -187,7 +203,10 @@ async fn handle_query(
         "load-bundle" => {
             load_bundle(&state.con, &state.cache, Path::new(".mosaic/bundle"))
                 .await
-                .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+                .map_err(|e| {
+                    tracing::error!("Bundle loading error: {:?}", e);
+                    StatusCode::INTERNAL_SERVER_ERROR
+                })?;
             Ok(QueryResponse::Empty)
         }
         _ => Err(StatusCode::BAD_REQUEST),
