@@ -11,14 +11,15 @@ use axum::{
     routing::get,
     Router,
 };
+use axum_server::tls_rustls::RustlsConfig;
 use duckdb::Connection;
 use listenfd::ListenFd;
 use serde::{Deserialize, Serialize};
-use std::net::{Ipv4Addr, SocketAddr};
+use std::net::TcpListener;
 use std::path::Path;
 use std::sync::Arc;
 use std::time::Duration;
-use tokio::net::TcpListener;
+use std::{net::Ipv4Addr, net::SocketAddr, path::PathBuf};
 use tokio::sync::Mutex;
 use tower_http::cors::{Any, CorsLayer};
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
@@ -185,6 +186,7 @@ async fn handle_post(
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    // Tracing setup
     tracing_subscriber::registry()
         .with(
             tracing_subscriber::EnvFilter::try_from_default_env().unwrap_or_else(|_| {
@@ -194,6 +196,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .with(tracing_subscriber::fmt::layer())
         .init();
 
+    // Database and state setup
     let con = Connection::open_in_memory()?;
     let db = Arc::new(DuckDbDatabase::new(con));
     let cache = lru::LruCache::new(1000.try_into().unwrap());
@@ -203,36 +206,48 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         cache: Mutex::new(cache),
     });
 
+    // CORS setup
     let cors = CorsLayer::new()
         .allow_origin(Any)
         .allow_methods([Method::OPTIONS, Method::POST, Method::GET])
         .allow_headers(Any)
         .max_age(Duration::from_secs(60) * 60 * 24);
 
+    // Router setup
     let app = Router::new()
         .route("/", get(handle_get).post(handle_post))
         .with_state(state)
         .layer(cors);
 
-    let addr = SocketAddr::new(Ipv4Addr::LOCALHOST.into(), 3000);
+    // TLS configuration
+    let config = RustlsConfig::from_pem_file(
+        PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("localhost.pem"),
+        PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("localhost-key.pem"),
+    )
+    .await
+    .unwrap();
 
+    // Listenfd setup
+    let addr = SocketAddr::new(Ipv4Addr::LOCALHOST.into(), 3000);
     let mut listenfd = ListenFd::from_env();
     let listener = match listenfd.take_tcp_listener(0).unwrap() {
         // if we are given a tcp listener on listen fd 0, we use that one
         Some(listener) => {
             listener.set_nonblocking(true).unwrap();
-            TcpListener::from_std(listener).unwrap()
+            listener
         }
         // otherwise fall back to local listening
-        None => TcpListener::bind(addr).await.unwrap(),
+        None => TcpListener::bind(addr).unwrap(),
     };
 
-    // run it
+    // Run the server
     tracing::debug!(
-        "DuckDB Server listening on http://{}",
+        "DuckDB Server listening on https://{}",
         listener.local_addr().unwrap()
     );
-    axum::serve(listener, app).await?;
+    axum_server::from_tcp_rustls(listener, config)
+        .serve(app.into_make_service())
+        .await?;
 
     Ok(())
 }
