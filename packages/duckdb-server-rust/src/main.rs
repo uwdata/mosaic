@@ -1,5 +1,7 @@
+mod db;
+use db::{Database, DuckDbDatabase};
+
 use anyhow::Result;
-use arrow::{ipc::writer::FileWriter, json::ArrayWriter};
 use axum::{
     body::Bytes,
     extract::{Query, State},
@@ -9,7 +11,7 @@ use axum::{
     routing::get,
     Router,
 };
-use duckdb::{arrow::array::RecordBatch, Connection};
+use duckdb::Connection;
 use listenfd::ListenFd;
 use serde::{Deserialize, Serialize};
 use std::net::{Ipv4Addr, SocketAddr};
@@ -22,7 +24,7 @@ use tower_http::cors::{Any, CorsLayer};
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
 struct AppState {
-    con: Mutex<Connection>,
+    db: Arc<dyn Database>,
     cache: Mutex<lru::LruCache<String, Vec<u8>>>,
 }
 
@@ -55,56 +57,8 @@ impl IntoResponse for QueryResponse {
     }
 }
 
-async fn execute(con: &Mutex<Connection>, sql: &str) -> Result<()> {
-    let conn = con.lock().await;
-    conn.execute_batch(sql)?;
-    Ok(())
-}
-
-async fn get_json(con: &Mutex<Connection>, sql: &str) -> Result<Vec<u8>> {
-    let conn = con.lock().await;
-    let mut stmt = conn.prepare(sql)?;
-    let arrow = stmt.query_arrow([])?;
-
-    let rbs: Vec<RecordBatch> = arrow.collect();
-
-    let buf = Vec::new();
-    let mut writer = ArrayWriter::new(buf);
-    for batch in rbs {
-        writer.write(&batch)?;
-    }
-    writer.finish()?;
-    let json_data = writer.into_inner();
-    Ok(json_data)
-}
-
-async fn get_arrow_bytes(con: &Mutex<Connection>, sql: &str) -> Result<Vec<u8>> {
-    let conn = con.lock().await;
-    let mut stmt = conn.prepare(sql)?;
-    let arrow = stmt.query_arrow([])?;
-    let schema = arrow.get_schema();
-
-    let rbs: Vec<RecordBatch> = arrow.collect();
-
-    // Serialize RecordBatch to Arrow IPC format
-    let mut buffer: Vec<u8> = Vec::new();
-    {
-        let schema_ref = schema.as_ref();
-        let mut writer = FileWriter::try_new(&mut buffer, schema_ref)?;
-
-        for batch in rbs {
-            writer.write(&batch)?;
-        }
-
-        writer.finish()?;
-    }
-
-    // Return the serialized bytes
-    Ok(buffer)
-}
-
 async fn create_bundle(
-    con: &Mutex<Connection>,
+    db: &dyn Database,
     cache: &Mutex<lru::LruCache<String, Vec<u8>>>,
     queries: &[String],
     bundle_dir: &Path,
@@ -116,7 +70,7 @@ async fn create_bundle(
 }
 
 async fn load_bundle(
-    con: &Mutex<Connection>,
+    db: &dyn Database,
     cache: &Mutex<lru::LruCache<String, Vec<u8>>>,
     bundle_dir: &Path,
 ) -> Result<()> {
@@ -129,7 +83,7 @@ async fn load_bundle(
 async fn retrieve<F, Fut>(
     cache: &Mutex<lru::LruCache<String, Vec<u8>>>,
     key: &str,
-    f: F
+    f: F,
 ) -> Result<Vec<u8>>
 where
     F: FnOnce() -> Fut,
@@ -156,13 +110,15 @@ async fn handle_query(
 
     match command.as_str() {
         "exec" => {
-            execute(&state.con, sql)
+            state
+                .db
+                .execute(sql)
                 .await
                 .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
             Ok(QueryResponse::Empty)
         }
         "arrow" => {
-            let buffer = retrieve(&state.cache, sql, || get_arrow_bytes(&state.con, sql))
+            let buffer = retrieve(&state.cache, sql, || state.db.get_arrow_bytes(sql))
                 .await
                 .map_err(|e| {
                     tracing::error!("Arrow retrieval error: {:?}", e);
@@ -171,21 +127,20 @@ async fn handle_query(
             Ok(QueryResponse::Arrow(buffer))
         }
         "json" => {
-             let json: Vec<u8> = retrieve(&state.cache, sql, || async {
-                get_json(&state.con, sql).await
-            })
-            .await
-            .map_err(|e| {
-                tracing::error!("JSON retrieval error: {:?}", e);
-                StatusCode::INTERNAL_SERVER_ERROR
-            })?;
+            let json: Vec<u8> =
+                retrieve(&state.cache, sql, || async { state.db.get_json(sql).await })
+                    .await
+                    .map_err(|e| {
+                        tracing::error!("JSON retrieval error: {:?}", e);
+                        StatusCode::INTERNAL_SERVER_ERROR
+                    })?;
             let string = String::from_utf8(json).map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
             Ok(QueryResponse::Json(string))
         }
         "create-bundle" => {
             if let Some(queries) = params.queries {
                 create_bundle(
-                    &state.con,
+                    state.db.as_ref(),
                     &state.cache,
                     &queries,
                     Path::new(".mosaic/bundle"),
@@ -201,7 +156,7 @@ async fn handle_query(
             }
         }
         "load-bundle" => {
-            load_bundle(&state.con, &state.cache, Path::new(".mosaic/bundle"))
+            load_bundle(state.db.as_ref(), &state.cache, Path::new(".mosaic/bundle"))
                 .await
                 .map_err(|e| {
                     tracing::error!("Bundle loading error: {:?}", e);
@@ -239,10 +194,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .init();
 
     let con = Connection::open_in_memory()?;
+    let db = Arc::new(DuckDbDatabase::new(con));
     let cache = lru::LruCache::new(100.try_into().unwrap());
 
     let state = Arc::new(AppState {
-        con: Mutex::new(con),
+        db,
         cache: Mutex::new(cache),
     });
 
