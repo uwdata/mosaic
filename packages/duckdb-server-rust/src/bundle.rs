@@ -12,7 +12,7 @@ pub struct Manifest {
     queries: Vec<String>,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug)]
 pub struct Query {
     sql: String,
     alias: Option<String>,

@@ -32,11 +32,12 @@ struct AppState {
     cache: Mutex<lru::LruCache<String, Vec<u8>>>,
 }
 
-#[derive(Deserialize, Serialize)]
+#[derive(Deserialize, Serialize, Debug)]
 struct QueryParams {
     #[serde(rename = "type")]
     query_type: String,
     sql: Option<String>,
+    name: Option<String>,
     queries: Option<Vec<BundleQuery>>,
 }
 
@@ -86,65 +87,77 @@ async fn handle_query(
     params: QueryParams,
 ) -> Result<QueryResponse, StatusCode> {
     let command = &params.query_type;
-    let sql = params.sql.as_deref().unwrap_or("");
-
-    tracing::info!("Command: '{}', SQL Query: '{}'", command, sql);
+    tracing::info!("Command: '{}', Params: '{:?}'", command, params);
 
     match command.as_str() {
         "exec" => {
-            state
-                .db
-                .execute(sql)
-                .await
-                .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
-            Ok(QueryResponse::Empty)
+            if let Some(sql) = params.sql.as_deref() {
+                state
+                    .db
+                    .execute(sql)
+                    .await
+                    .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+                Ok(QueryResponse::Empty)
+            } else {
+                Err(StatusCode::BAD_REQUEST)
+            }
         }
         "arrow" => {
-            let buffer = retrieve(&state.cache, sql, || state.db.get_arrow_bytes(sql))
-                .await
-                .map_err(|e| {
-                    tracing::error!("Arrow retrieval error: {:?}", e);
-                    StatusCode::INTERNAL_SERVER_ERROR
-                })?;
-            Ok(QueryResponse::Arrow(buffer))
+            if let Some(sql) = params.sql.as_deref() {
+                let buffer = retrieve(&state.cache, sql, || state.db.get_arrow_bytes(sql))
+                    .await
+                    .map_err(|e| {
+                        tracing::error!("Arrow retrieval error: {:?}", e);
+                        StatusCode::INTERNAL_SERVER_ERROR
+                    })?;
+                Ok(QueryResponse::Arrow(buffer))
+            } else {
+                Err(StatusCode::BAD_REQUEST)
+            }
         }
         "json" => {
-            let json: Vec<u8> =
-                retrieve(&state.cache, sql, || state.db.get_json(sql))
+            if let Some(sql) = params.sql.as_deref() {
+                let json: Vec<u8> = retrieve(&state.cache, sql, || state.db.get_json(sql))
                     .await
                     .map_err(|e| {
                         tracing::error!("JSON retrieval error: {:?}", e);
                         StatusCode::INTERNAL_SERVER_ERROR
                     })?;
-            let string = String::from_utf8(json).map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
-            Ok(QueryResponse::Json(string))
+                let string =
+                    String::from_utf8(json).map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+                Ok(QueryResponse::Json(string))
+            } else {
+                Err(StatusCode::BAD_REQUEST)
+            }
         }
         "create-bundle" => {
             if let Some(queries) = params.queries {
-                create_bundle(
-                    state.db.as_ref(),
-                    &state.cache,
-                    queries,
-                    Path::new(".mosaic/bundle"),
-                )
-                .await
-                .map_err(|e| {
-                    tracing::error!("Bundle creation error: {:?}", e);
-                    StatusCode::INTERNAL_SERVER_ERROR
-                })?;
+                let bundle_name = params.name.unwrap_or_else(|| "default".to_string());
+                let bundle_path = Path::new(".mosaic").join("bundle").join(&bundle_name);
+                create_bundle(state.db.as_ref(), &state.cache, queries, &bundle_path)
+                    .await
+                    .map_err(|e| {
+                        tracing::error!("Bundle creation error: {:?}", e);
+                        StatusCode::INTERNAL_SERVER_ERROR
+                    })?;
                 Ok(QueryResponse::Empty)
             } else {
                 Err(StatusCode::BAD_REQUEST)
             }
         }
         "load-bundle" => {
-            load_bundle(state.db.as_ref(), &state.cache, Path::new(".mosaic/bundle"))
-                .await
-                .map_err(|e| {
-                    tracing::error!("Bundle loading error: {:?}", e);
-                    StatusCode::INTERNAL_SERVER_ERROR
-                })?;
-            Ok(QueryResponse::Empty)
+            if let Some(bundle_name) = params.name {
+                let bundle_path = Path::new(".mosaic").join("bundle").join(&bundle_name);
+                load_bundle(state.db.as_ref(), &state.cache, &bundle_path)
+                    .await
+                    .map_err(|e| {
+                        tracing::error!("Bundle loading error: {:?}", e);
+                        StatusCode::INTERNAL_SERVER_ERROR
+                    })?;
+                Ok(QueryResponse::Empty)
+            } else {
+                Err(StatusCode::BAD_REQUEST)
+            }
         }
         _ => Err(StatusCode::BAD_REQUEST),
     }

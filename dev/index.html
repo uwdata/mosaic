@@ -143,9 +143,7 @@
   setConnector();
 
   async function setConnector() {
-    const value = connectorMenu.value;
-    const isHttps = value === 'rest_https';
-    await setDatabaseConnector(isHttps ? 'rest' : value, isHttps ? 'https://localhost:3000/' : undefined);
+    await setDatabaseConnector(connectorMenu.value);
     reload();
   }
 
