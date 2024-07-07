@@ -19,7 +19,7 @@ pub struct Query {
     alias: Option<String>,
 }
 
-pub async fn create_bundle(
+pub async fn create(
     db: &dyn Database,
     cache: &Mutex<lru::LruCache<String, Vec<u8>>>,
     queries: Vec<Query>,
@@ -41,7 +41,7 @@ pub async fn create_bundle(
         let sql = &query.sql;
 
         if let Some(alias) = &query.alias {
-            let file = bundle_dir.join(format!("{}.parquet", alias));
+            let file = bundle_dir.join(format!("{alias}.parquet"));
             db.execute(&format!(
                 "COPY ({}) TO '{}' (FORMAT PARQUET)",
                 sql,
@@ -56,7 +56,7 @@ pub async fn create_bundle(
 
             if let Some(captures) = table_re.captures(sql) {
                 let table = captures.get(3).unwrap().as_str();
-                let file = bundle_dir.join(format!("{}.parquet", table));
+                let file = bundle_dir.join(format!("{table}.parquet"));
                 db.execute(sql).await?;
                 db.execute(&format!(
                     "COPY {} TO '{}' (FORMAT PARQUET)",
@@ -95,7 +95,7 @@ pub async fn create_bundle(
     Ok(manifest)
 }
 
-pub async fn load_bundle(
+pub async fn load(
     db: &dyn Database,
     cache: &Mutex<lru::LruCache<String, Vec<u8>>>,
     bundle_dir: &Path,
@@ -118,7 +118,7 @@ pub async fn load_bundle(
 
     // Load precomputed temp tables into the database
     for table in &manifest.tables {
-        let file = bundle_dir.join(format!("{}.parquet", table));
+        let file = bundle_dir.join(format!("{table}.parquet"));
         db.execute(&format!(
             "CREATE TEMP TABLE IF NOT EXISTS {} AS SELECT * FROM '{}'",
             table,

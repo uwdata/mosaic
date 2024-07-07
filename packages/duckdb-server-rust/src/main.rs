@@ -25,7 +25,7 @@ mod bundle;
 mod cache;
 mod db;
 
-use bundle::{create_bundle, load_bundle, Query as BundleQuery};
+use bundle::{create, load, Query as BundleQuery};
 use cache::retrieve;
 use db::{Database, DuckDbDatabase};
 
@@ -128,7 +128,7 @@ async fn handle_query(
             if let Some(queries) = params.queries {
                 let bundle_name = params.name.unwrap_or_else(|| "default".to_string());
                 let bundle_path = Path::new(".mosaic").join("bundle").join(&bundle_name);
-                create_bundle(state.db.as_ref(), &state.cache, queries, &bundle_path)
+                create(state.db.as_ref(), &state.cache, queries, &bundle_path)
                     .await
                     .map_err(|e| {
                         tracing::error!("Bundle creation error: {:?}", e);
@@ -142,7 +142,7 @@ async fn handle_query(
         "load-bundle" => {
             if let Some(bundle_name) = params.name {
                 let bundle_path = Path::new(".mosaic").join("bundle").join(&bundle_name);
-                load_bundle(state.db.as_ref(), &state.cache, &bundle_path)
+                load(state.db.as_ref(), &state.cache, &bundle_path)
                     .await
                     .map_err(|e| {
                         tracing::error!("Bundle loading error: {:?}", e);
@@ -175,7 +175,7 @@ pub fn app() -> Result<Router> {
     // Database and state setup
     let con = Connection::open_in_memory()?;
     let db = Arc::new(DuckDbDatabase::new(con));
-    let cache = lru::LruCache::new(1000.try_into().unwrap());
+    let cache = lru::LruCache::new(1000.try_into()?);
 
     let state = Arc::new(AppState {
         db,
