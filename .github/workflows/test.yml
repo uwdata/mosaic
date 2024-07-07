@@ -34,7 +34,7 @@ jobs:
       - run: npm run test
 
   python:
-    name: Test on Python
+    name: Test in Python
 
     runs-on: ubuntu-latest
 
@@ -66,6 +66,8 @@ jobs:
           hatch run test:cov
 
   rust:
+    name: Test in Rust
+
     runs-on: ubuntu-latest
 
     steps:
