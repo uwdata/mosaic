@@ -12,3 +12,7 @@ updates:
     directory: "/packages/widget"
     schedule:
       interval: monthly
+ - package-ecosystem: pip
+   directory: "/packages/duckdb-server"
+   schedule:
+     interval: monthly
