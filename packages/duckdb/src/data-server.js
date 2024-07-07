@@ -103,7 +103,7 @@ export function queryHandler(db, queryCache) {
 
     try {
       const { sql, type = 'json' } = query;
-      console.log(`> ${type.toUpperCase()}${sql ? ' ' + sql : ''}`);
+      console.log(`> ${type.toUpperCase()}${sql ? ` ${sql}` : ''}`);
 
       // process query and return result
       switch (type) {
