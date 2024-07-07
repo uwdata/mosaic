@@ -64,3 +64,23 @@ jobs:
           hatch build
           hatch fmt --check
           hatch run test:cov
+
+  rust:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy, rust-src, rustfmt
+      - name: Check formatting
+        run: cargo fmt -- --check
+      - name: Check
+        run: cargo check
+      - name: Clippy
+        run: cargo clippy --all -- -D warnings
+      - name: Build
+        run: cargo build --verbose
+      - name: Test
+        run: cargo test --verbose
