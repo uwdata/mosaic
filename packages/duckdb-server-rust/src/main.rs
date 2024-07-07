@@ -19,6 +19,7 @@ use std::time::Duration;
 use std::{net::Ipv4Addr, net::SocketAddr, path::PathBuf};
 use tokio::sync::Mutex;
 use tower_http::cors::{Any, CorsLayer};
+use tower_http::{compression::CompressionLayer, trace::TraceLayer};
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
 mod bundle;
@@ -193,7 +194,9 @@ pub fn app() -> Result<Router> {
     Ok(Router::new()
         .route("/", get(handle_get).post(handle_post))
         .with_state(state)
-        .layer(cors))
+        .layer(cors)
+        .layer(CompressionLayer::new())
+        .layer(TraceLayer::new_for_http()))
 }
 
 #[tokio::main]
