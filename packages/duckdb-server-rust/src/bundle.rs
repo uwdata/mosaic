@@ -79,7 +79,8 @@ pub async fn create_bundle(
                 } else {
                     db.get_json(sql)
                 }
-            }).await?;
+            })
+            .await?;
             fs::write(bundle_dir.join(&key), &result)
                 .context("Failed to write query result to file")?;
             manifest.queries.push(key);

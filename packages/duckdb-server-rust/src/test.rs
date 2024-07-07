@@ -38,7 +38,7 @@ async fn select_1_post() {
                 .uri("/")
                 .header(http::header::CONTENT_TYPE, mime::APPLICATION_JSON.as_ref())
                 .body(Body::from(
-                    serde_json::to_vec(&json!({"type": "json", "sql": "select 1 as foo"})).unwrap()
+                    serde_json::to_vec(&json!({"type": "json", "sql": "select 1 as foo"})).unwrap(),
                 ))
                 .unwrap(),
         )
