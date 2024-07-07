@@ -36,11 +36,9 @@ impl Database for DuckDbDatabase {
         let mut stmt = conn.prepare(sql)?;
         let arrow = stmt.query_arrow([])?;
 
-        let rbs: Vec<RecordBatch> = arrow.collect();
-
         let buf = Vec::new();
         let mut writer = arrow::json::ArrayWriter::new(buf);
-        for batch in rbs {
+        for batch in arrow {
             writer.write(&batch)?;
         }
         writer.finish()?;
@@ -54,14 +52,12 @@ impl Database for DuckDbDatabase {
         let arrow = stmt.query_arrow([])?;
         let schema = arrow.get_schema();
 
-        let rbs: Vec<RecordBatch> = arrow.collect();
-
         let mut buffer: Vec<u8> = Vec::new();
         {
             let schema_ref = schema.as_ref();
             let mut writer = arrow::ipc::writer::FileWriter::try_new(&mut buffer, schema_ref)?;
 
-            for batch in rbs {
+            for batch in arrow {
                 writer.write(&batch)?;
             }
 

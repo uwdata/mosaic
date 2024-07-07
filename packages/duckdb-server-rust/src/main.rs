@@ -50,7 +50,12 @@ enum QueryResponse {
 impl IntoResponse for QueryResponse {
     fn into_response(self) -> Response {
         match self {
-            QueryResponse::Json(value) => value.into_response(),
+            QueryResponse::Json(value) => (
+                StatusCode::OK,
+                [("Content-Type", "application/json")],
+                value,
+            )
+                .into_response(),
             QueryResponse::Arrow(bytes) => (
                 StatusCode::OK,
                 [("Content-Type", "application/octet-stream")],
