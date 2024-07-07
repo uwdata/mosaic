@@ -13,6 +13,7 @@ pub async fn retrieve<F, Fut>(
     cache: &Mutex<lru::LruCache<String, Vec<u8>>>,
     sql: &str,
     command: &str,
+    persist: bool,
     f: F,
 ) -> Result<Vec<u8>>
 where
@@ -24,9 +25,14 @@ where
     if let Some(cached) = cache_lock.get(&key) {
         tracing::debug!("Cache hit {}!", key);
         Ok(cached.clone())
-    } else {
+    } else if persist {
         let result = f().await?;
         cache_lock.put(key, result.clone());
+        Ok(result)
+    } else {
+        // no need to keep the cache lock if we are not storing anything
+        drop(cache_lock);
+        let result = f().await?;
         Ok(result)
     }
 }
