@@ -1,5 +1,12 @@
 import { literalToSQL } from '../to-sql.js';
 
+/**
+ * Create a SQL query that embeds the given data for loading.
+ * @param {*} data The dataset
+ * @param {object} [options] Loading options
+ * @param {string[]|object} [options.columns] The columns to include
+ * @returns {string} SQL query string to load data
+ */
 export function sqlFrom(data, {
   columns = Object.keys(data?.[0] || {})
 } = {}) {

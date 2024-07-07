@@ -3,7 +3,7 @@
   "name": "mosaic",
   "description": "Scalable and extensible linked data views.",
   "license": "BSD-3-Clause",
-  "author": "Jeffrey Heer (http://idl.cs.washington.edu)",
+  "author": "Jeffrey Heer (https://idl.uw.edu)",
   "type": "module",
   "repository": {
     "type": "git",
@@ -14,6 +14,7 @@
     "docs:build": "vitepress build docs",
     "docs:examples": "node bin/prepare-examples.js",
     "docs:preview": "vitepress preview docs",
+    "docs:schema": "node bin/publish-schema.js",
     "build": "lerna run build",
     "lint": "lerna run lint",
     "test": "lerna run test",
@@ -21,21 +22,26 @@
     "server:rust": "cd packages/duckdb-server-rust && cargo run",
     "server:node": "nodemon packages/duckdb/bin/run-server.js",
     "dev": "vite",
-    "release": "npm run test && npm run lint && lerna publish"
+    "release": "npm run test && npm run lint && lerna publish && npm run release:python",
+    "release:python": "npm run release:server && npm run release:widget",
+    "release:server": "cd packages/duckdb-server && npm run release",
+    "release:widget": "cd packages/widget && npm run release"
   },
   "devDependencies": {
-    "esbuild": "^0.20.2",
-    "eslint": "^8.57.0",
-    "eslint-plugin-jsdoc": "^48.2.1",
-    "lerna": "^8.1.2",
-    "mocha": "^10.3.0",
-    "nodemon": "^3.1.0",
-    "rimraf": "^5.0.5",
+    "ajv": "^8.16.0",
+    "ajv-formats": "^3.0.1",
+    "esbuild": "^0.21.5",
+    "eslint": "^9.5.0",
+    "eslint-plugin-jsdoc": "^48.4.0",
+    "lerna": "^8.1.5",
+    "mocha": "^10.5.0",
+    "nodemon": "^3.1.4",
+    "rimraf": "^5.0.7",
     "timezone-mock": "^1.3.6",
-    "typescript": "^5.3.3",
-    "vite": "^5.1.6",
-    "vitepress": "1.0.0-rc.45",
-    "yaml": "^2.4.1"
+    "typescript": "^5.5.2",
+    "vite": "^5.3.1",
+    "vitepress": "1.2.3",
+    "yaml": "^2.4.5"
   },
   "workspaces": [
     "packages/*"

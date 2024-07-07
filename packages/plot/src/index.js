@@ -8,6 +8,7 @@ export { ContourMark } from './marks/ContourMark.js';
 export { DenseLineMark } from './marks/DenseLineMark.js';
 export { Density1DMark } from './marks/Density1DMark.js';
 export { Density2DMark } from './marks/Density2DMark.js';
+export { ErrorBarMark } from './marks/ErrorBarMark.js';
 export { GeoMark } from './marks/GeoMark.js';
 export { Grid2DMark } from './marks/Grid2DMark.js';
 export { HexbinMark } from './marks/HexbinMark.js';

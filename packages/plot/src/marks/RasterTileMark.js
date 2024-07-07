@@ -2,6 +2,7 @@ import { coordinator } from '@uwdata/mosaic-core';
 import { Query, count, isBetween, lt, lte, neq, sql, sum } from '@uwdata/mosaic-sql';
 import { binExpr } from './util/bin-expr.js';
 import { extentX, extentY } from './util/extent.js';
+import { indices, permute } from './util/permute.js';
 import { createCanvas } from './util/raster.js';
 import { Grid2DMark } from './Grid2DMark.js';
 import { rasterEncoding } from './RasterMark.js';
@@ -10,6 +11,7 @@ export class RasterTileMark extends Grid2DMark {
   constructor(source, options) {
     const { origin = [0, 0], dim = 'xy', ...markOptions } = options;
     super('image', source, markOptions);
+    this.image = null;
 
     // TODO: make part of data source instead of options?
     this.origin = origin;
@@ -34,15 +36,15 @@ export class RasterTileMark extends Grid2DMark {
   }
 
   tileQuery(extent) {
-    const { binType, binPad, channels, densityMap, source } = this;
+    const { interpolate, pad, channels, densityMap, source } = this;
     const [[x0, x1], [y0, y1]] = extent;
     const [nx, ny] = this.bins;
-    const [x, bx] = binExpr(this, 'x', nx, [x0, x1], binPad);
-    const [y, by] = binExpr(this, 'y', ny, [y0, y1], binPad);
+    const [x, bx] = binExpr(this, 'x', nx, [x0, x1], pad);
+    const [y, by] = binExpr(this, 'y', ny, [y0, y1], pad);
 
     // with padded bins, include the entire domain extent
     // if the bins are flush, exclude the extent max
-    const bounds = binPad
+    const bounds = pad
       ? [isBetween(bx, [+x0, +x1]), isBetween(by, [+y0, +y1])]
       : [lte(+x0, bx), lt(bx, +x1), lte(+y0, by), lt(by, +y1)];
 
@@ -83,7 +85,7 @@ export class RasterTileMark extends Grid2DMark {
     }
 
     // generate grid binning query
-    if (binType === 'linear') {
+    if (interpolate === 'linear') {
       if (aggr.length > 1) {
         throw new Error('Linear binning not applicable to multiple aggregates.');
       }
@@ -102,14 +104,14 @@ export class RasterTileMark extends Grid2DMark {
     if (this.prefetch) mc.cancel(this.prefetch);
 
     // get view extent info
-    const { binPad, tileX, tileY, origin: [tx, ty] } = this;
-    const [m, n] = this.bins = this.binDimensions(this);
+    const { pad, tileX, tileY, origin: [tx, ty] } = this;
+    const [m, n] = this.bins = this.binDimensions();
     const [x0, x1] = extentX(this, this._filter);
     const [y0, y1] = extentY(this, this._filter);
     const xspan = x1 - x0;
     const yspan = y1 - y0;
-    const xx = Math.floor((x0 - tx) * (m - binPad) / xspan);
-    const yy = Math.floor((y0 - ty) * (n - binPad) / yspan);
+    const xx = Math.floor((x0 - tx) * (m - pad) / xspan);
+    const yy = Math.floor((y0 - ty) * (n - pad) / yspan);
 
     const tileExtent = (i, j) => [
       [tx + i * xspan, tx + (i + 1) * xspan],
@@ -155,7 +157,11 @@ export class RasterTileMark extends Grid2DMark {
 
     // wait for tile queries to complete, then update
     const tiles = await Promise.all(queries);
-    this.grids = [{ density: processTiles(m, n, xx, yy, coords, tiles) }];
+    const density = processTiles(m, n, xx, yy, coords, tiles);
+    this.grids0 = {
+      numRows: density.length,
+      columns: { density: [density] }
+    };
     this.convolve().update();
   }
 
@@ -164,37 +170,50 @@ export class RasterTileMark extends Grid2DMark {
   }
 
   rasterize() {
-    const { bins, kde } = this;
+    const { bins, grids } = this;
     const [ w, h ] = bins;
+    const { numRows, columns } = grids;
 
     // raster data
     const { canvas, ctx, img } = imageData(this, w, h);
 
     // color + opacity encodings
     const { alpha, alphaProp, color, colorProp } = rasterEncoding(this);
+    const alphaData = columns[alphaProp] ?? [];
+    const colorData = columns[colorProp] ?? [];
+
+    // determine raster order
+    const idx = numRows > 1 && colorProp && this.groupby?.includes(colorProp)
+      ? permute(colorData, this.plot.getAttribute('colorDomain'))
+      : indices(numRows);
 
     // generate rasters
-    this.data = kde.map(cell => {
-      color?.(img.data, w, h, cell[colorProp]);
-      alpha?.(img.data, w, h, cell[alphaProp]);
-      ctx.putImageData(img, 0, 0);
-      return { src: canvas.toDataURL() };
-    });
+    this.data = {
+      numRows,
+      columns: {
+        src: Array.from({ length: numRows }, (_, i) => {
+          color?.(img.data, w, h, colorData[idx[i]]);
+          alpha?.(img.data, w, h, alphaData[idx[i]]);
+          ctx.putImageData(img, 0, 0);
+          return canvas.toDataURL();
+        })
+      }
+    };
 
     return this;
   }
 
   plotSpecs() {
-    const { type, data, plot } = this;
+    const { type, plot, data: { numRows: length, columns } } = this;
     const options = {
-      src: 'src',
+      src: columns.src,
       width: plot.innerWidth(),
       height: plot.innerHeight(),
       preserveAspectRatio: 'none',
       imageRendering: this.channel('imageRendering')?.value,
       frameAnchor: 'middle'
     };
-    return [{ type, data, options }];
+    return [{ type, data: { length }, options }];
   }
 }
 

@@ -1,6 +1,6 @@
 {
   "name": "@uwdata/mosaic-spec",
-  "version": "0.7.1",
+  "version": "0.10.0",
   "description": "Declarative specification of Mosaic-powered applications.",
   "keywords": [
     "mosaic",
@@ -10,27 +10,32 @@
     "specification"
   ],
   "license": "BSD-3-Clause",
-  "author": "Jeffrey Heer (http://idl.cs.washington.edu)",
+  "author": "Jeffrey Heer (https://idl.uw.edu)",
   "type": "module",
   "main": "src/index.js",
   "module": "src/index.js",
   "jsdelivr": "dist/mosaic-spec.min.js",
   "unpkg": "dist/mosaic-spec.min.js",
+  "types": "dist/types/index.d.ts",
   "repository": {
     "type": "git",
     "url": "https://github.com/uwdata/mosaic.git"
   },
   "scripts": {
     "prebuild": "rimraf dist && mkdir dist",
-    "build": "node ../../esbuild.js mosaic-spec",
-    "lint": "eslint src test --ext .js",
-    "test": "mocha 'test/**/*-test.js'",
+    "build": "npm run types && node ../../esbuild.js mosaic-spec",
+    "lint": "eslint src test",
+    "types": "tsc -p tsconfig.json && npm run schema",
+    "schema": "ts-json-schema-generator -f tsconfig.json -p src/spec/Spec.ts -t Spec --no-type-check --no-ref-encode --functions hide > dist/mosaic-schema.json",
+    "pretest": "npm run prebuild && npm run types",
+    "test": "mocha 'test/**/*-test.js' && tsc -p jsconfig.json",
+    "version": "cd ../.. && npm run docs:schema",
     "prepublishOnly": "npm run test && npm run lint && npm run build"
   },
   "dependencies": {
-    "@uwdata/mosaic-core": "^0.7.1",
-    "@uwdata/mosaic-sql": "^0.7.0",
-    "@uwdata/vgplot": "^0.7.1",
-    "isoformat": "^0.2.1"
+    "@uwdata/mosaic-core": "^0.10.0",
+    "@uwdata/mosaic-sql": "^0.10.0",
+    "@uwdata/vgplot": "^0.10.0",
+    "ts-json-schema-generator": "^2.3.0"
   }
 }

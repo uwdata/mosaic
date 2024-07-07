@@ -41,9 +41,10 @@ export class PlotMarkNode extends ASTNode {
 
   instantiate(ctx) {
     const { name, data, options } = this;
-    const fn = ctx.api[name];
     const opt = options.instantiate(ctx);
-    return data ? fn(data.instantiate(ctx), opt) : fn(opt);
+    return data
+      ? ctx.api[name](data.instantiate(ctx), opt)
+      : ctx.api[name](opt);
   }
 
   codegen(ctx) {

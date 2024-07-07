@@ -1,4 +1,4 @@
-#! /usr/bin/env node
+#!/usr/bin/env node
 import { basename, extname, join, resolve } from 'node:path';
 import { copyFile, readdir, readFile, writeFile } from 'node:fs/promises';
 import { parseSpec, astToESM } from '@uwdata/mosaic-spec';
@@ -14,12 +14,20 @@ import { parse } from 'yaml';
 const specDir = join('specs', 'yaml');
 const esmTestDir = join('specs', 'esm');
 const jsonTestDir = join('specs', 'json');
+const tsTestDir = join('specs', 'ts');
 
 const docsDir = 'docs';
 const yamlDocsDir = join(docsDir, 'public', 'specs', 'yaml');
 const jsonDocsDir = join(docsDir, 'public', 'specs', 'json');
 const esmDocsDir = join(docsDir, 'public', 'specs', 'esm');
 const exampleDir = join(docsDir, 'examples');
+
+const specToTS = spec => {
+  return `import { Spec } from '@uwdata/mosaic-spec';
+
+export const spec : Spec = ${JSON.stringify(spec, 0, 2)};
+`;
+}
 
 const files = await Promise.allSettled((await readdir(specDir))
   .filter(name => extname(name) === '.yaml')
@@ -42,6 +50,11 @@ const files = await Promise.allSettled((await readdir(specDir))
         writeFile(
           resolve(jsonTestDir, `${base}.json`),
           JSON.stringify(ast.toJSON(), 0, 2)
+        ),
+        // write TS JSON spec to tests
+        writeFile(
+          resolve(tsTestDir, `${base}.ts`),
+          specToTS(spec)
         ),
         // copy YAML file to docs
         copyFile(file, resolve(yamlDocsDir, `${base}.yaml`)),

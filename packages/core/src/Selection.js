@@ -4,7 +4,7 @@ import { Param } from './Param.js';
 /**
  * Test if a value is a Selection instance.
  * @param {*} x The value to test.
- * @returns {boolean} True if the input is a Selection, false otherwise.
+ * @returns {x is Selection} True if the input is a Selection, false otherwise.
  */
 export function isSelection(x) {
   return x instanceof Selection;
@@ -22,10 +22,13 @@ export class Selection extends Param {
    * @param {boolean} [options.cross=false] Boolean flag indicating
    *  cross-filtered resolution. If true, selection clauses will not
    *  be applied to the clients they are associated with.
+   * @param {boolean} [options.empty=false] Boolean flag indicating if a lack
+   *  of clauses should correspond to an empty selection with no records. This
+   *  setting determines the default selection state.
    * @returns {Selection} The new Selection instance.
    */
-  static intersect({ cross = false } = {}) {
-    return new Selection(new SelectionResolver({ cross }));
+  static intersect({ cross = false, empty = false } = {}) {
+    return new Selection(new SelectionResolver({ cross, empty }));
   }
 
   /**
@@ -35,10 +38,13 @@ export class Selection extends Param {
    * @param {boolean} [options.cross=false] Boolean flag indicating
    *  cross-filtered resolution. If true, selection clauses will not
    *  be applied to the clients they are associated with.
+   * @param {boolean} [options.empty=false] Boolean flag indicating if a lack
+   *  of clauses should correspond to an empty selection with no records. This
+   *  setting determines the default selection state.
    * @returns {Selection} The new Selection instance.
    */
-  static union({ cross = false } = {}) {
-    return new Selection(new SelectionResolver({ cross, union: true }));
+  static union({ cross = false, empty = false } = {}) {
+    return new Selection(new SelectionResolver({ cross, empty, union: true }));
   }
 
   /**
@@ -48,19 +54,26 @@ export class Selection extends Param {
    * @param {boolean} [options.cross=false] Boolean flag indicating
    *  cross-filtered resolution. If true, selection clauses will not
    *  be applied to the clients they are associated with.
+   * @param {boolean} [options.empty=false] Boolean flag indicating if a lack
+   *  of clauses should correspond to an empty selection with no records. This
+   *  setting determines the default selection state.
    * @returns {Selection} The new Selection instance.
    */
-  static single({ cross = false } = {}) {
-    return new Selection(new SelectionResolver({ cross, single: true }));
+  static single({ cross = false, empty = false } = {}) {
+    return new Selection(new SelectionResolver({ cross, empty, single: true }));
   }
 
   /**
    * Create a new Selection instance with a
    * cross-filtered intersect resolution strategy.
+   * @param {object} [options] The selection options.
+   * @param {boolean} [options.empty=false] Boolean flag indicating if a lack
+   *  of clauses should correspond to an empty selection with no records. This
+   *  setting determines the default selection state.
    * @returns {Selection} The new Selection instance.
    */
-  static crossfilter() {
-    return new Selection(new SelectionResolver({ cross: true }));
+  static crossfilter({ empty = false } = {}) {
+    return new Selection(new SelectionResolver({ cross: true, empty }));
   }
 
   /**
@@ -76,7 +89,7 @@ export class Selection extends Param {
 
   /**
    * Create a cloned copy of this Selection instance.
-   * @returns {this} A clone of this selection.
+   * @returns {Selection} A clone of this selection.
    */
   clone() {
     const s = new Selection(this._resolver);
@@ -88,13 +101,34 @@ export class Selection extends Param {
    * Create a clone of this Selection with clauses corresponding
    * to the provided source removed.
    * @param {*} source The clause source to remove.
-   * @returns {this} A cloned and updated Selection.
+   * @returns {Selection} A cloned and updated Selection.
    */
   remove(source) {
     const s = this.clone();
     s._value = s._resolved = s._resolver.resolve(this._resolved, { source });
     s._value.active = { source };
     return s;
+  }
+
+  /**
+   * The selection clause resolver.
+   */
+  get resolver() {
+    return this._resolver;
+  }
+
+  /**
+   * Indicate if this selection has a single resolution strategy.
+   */
+  get single() {
+    return this._resolver.single;
+  }
+
+  /**
+   * The current array of selection clauses.
+   */
+  get clauses() {
+    return super.value;
   }
 
   /**
@@ -109,22 +143,16 @@ export class Selection extends Param {
    * This method ensures compatibility where a normal Param is expected.
    */
   get value() {
-    // return value of the active clause
     return this.active?.value;
   }
 
   /**
-   * The current array of selection clauses.
+   * The value corresponding to a given source. Returns undefined if
+   * this selection does not include a clause from this source.
+   * @param {*} source The clause source to look up the value for.
    */
-  get clauses() {
-    return super.value;
-  }
-
-  /**
-   * Indicate if this selection has a single resolution strategy.
-   */
-  get single() {
-    return this._resolver.single;
+  valueFor(source) {
+    return this.clauses.find(c => c.source === source)?.value;
   }
 
   /**
@@ -168,9 +196,9 @@ export class Selection extends Param {
    * Upon value-typed updates, returns a dispatch queue filter function.
    * The return value depends on the selection resolution strategy.
    * @param {string} type The event type.
-   * @param {*} value The input event value.
-   * @returns {*} For value-typed events, returns a dispatch queue filter
-   *  function. Otherwise returns null.
+   * @param {*} value The new event value that will be enqueued.
+   * @returns {(value: *) => boolean|null} For value-typed events,
+   *  returns a dispatch queue filter function. Otherwise returns null.
    */
   emitQueueFilter(type, value) {
     return type === 'value'
@@ -217,11 +245,15 @@ export class SelectionResolver {
    *  If false, an intersection strategy is used.
    * @param {boolean} [options.cross=false] Boolean flag to indicate cross-filtering.
    * @param {boolean} [options.single=false] Boolean flag to indicate single clauses only.
+   * @param {boolean} [options.empty=false] Boolean flag indicating if a lack
+   *  of clauses should correspond to an empty selection with no records. This
+   *  setting determines the default selection state.
    */
-  constructor({ union, cross, single } = {}) {
+  constructor({ union, cross, single, empty } = {}) {
     this.union = !!union;
     this.cross = !!cross;
     this.single = !!single;
+    this.empty = !!empty;
   }
 
   /**
@@ -259,7 +291,11 @@ export class SelectionResolver {
    *  based on the current state of this selection.
    */
   predicate(clauseList, active, client) {
-    const { union } = this;
+    const { empty, union } = this;
+
+    if (empty && !clauseList.length) {
+      return ['FALSE'];
+    }
 
     // do nothing if cross-filtering and client is currently active
     if (this.skip(client, active)) return undefined;
@@ -285,5 +321,6 @@ export class SelectionResolver {
       const source = value.active?.source;
       return clauses => clauses.active?.source !== source;
     }
+    return null;
   }
 }

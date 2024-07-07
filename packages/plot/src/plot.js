@@ -42,8 +42,9 @@ export class Plot {
   innerHeight(defaultValue = 400) {
     const { top, bottom } = this.margins();
     let h = this.getAttribute('height');
-    if (h == null && defaultValue != null) {
-      h = defaultValue; // TODO could apply more nuanced logic here
+    if (h == null) {
+      // TODO could apply more nuanced logic here?
+      h = maybeAspectRatio(this, top, bottom) || defaultValue;
       this.setAttribute('height', h, { silent: true });
     }
     return h - top - bottom;
@@ -72,10 +73,20 @@ export class Plot {
     this.synch.resolve();
   }
 
+  /**
+   * @param {string} name The attribute to return.
+   * @returns {*} The value of the attribute.
+   */
   getAttribute(name) {
     return this.attributes[name];
   }
 
+  /**
+   * @param {string} name The name of the attribute to set.
+   * @param {*} value The value to set.
+   * @param {{silent: boolean}} [options] Options for setting the attribute.
+   * @returns {boolean} whether the value changed.
+   */
   setAttribute(name, value, options) {
     if (distinct(this.attributes[name], value)) {
       if (value === undefined) {
@@ -91,6 +102,11 @@ export class Plot {
     return false;
   }
 
+  /**
+   * @param {string} name The attribute name.
+   * @param {*} callback The function to call when the attribute changes.
+   * @returns {this}
+   */
   addAttributeListener(name, callback) {
     const map = this.listeners || (this.listeners = new Map);
     if (!map.has(name)) map.set(name, new Set);
@@ -98,6 +114,11 @@ export class Plot {
     return this;
   }
 
+  /**
+   * @param {string} name The attribute name.
+   * @param {*} callback The function to call when the attribute changes.
+   * @returns {void}
+   */
   removeAttributeListener(name, callback) {
     return this.listeners?.get(name)?.delete(callback);
   }
@@ -138,4 +159,15 @@ export class Plot {
     legend.setPlot(this);
     this.legends.push({ legend, include });
   }
+}
+
+function maybeAspectRatio(plot, top, bottom) {
+  const ar = plot.getAttribute('aspectRatio');
+  if (ar == null) return;
+  const x = plot.getAttribute('xDomain');
+  const y = plot.getAttribute('yDomain');
+  if (!x || !y) return;
+  const dx = Math.abs(x[1] - x[0]);
+  const dy = Math.abs(y[1] - y[0]);
+  return dy * plot.innerWidth() / (ar * dx) + top + bottom;
 }

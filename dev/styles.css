@@ -10,9 +10,29 @@ header {
 
 @media print { header { display: none; } }
 
-header > span { margin-right: 1em; }
+header > span {
+  vertical-align: top;
+  margin-right: 1em;
+}
 
-label { margin-right: 0.5em; }
+details {
+  position: relative;
+  display: inline-block;
+  vertical-align: top;
+}
+
+details > div {
+  position: absolute;
+  min-width: 200px;
+  margin-top: 0.5em;
+  padding: 0.5em;
+  background-color: white;
+  border: 1px solid #ccc;
+}
+
+details > div > div:not(:last-child) {
+  margin-bottom: 0.5em;
+}
 
 .input {
   margin-right: 1em;
@@ -20,6 +40,19 @@ label { margin-right: 0.5em; }
 
 .input > * {
   vertical-align: middle;
+}
+
+.input label:first-of-type {
+  margin-right: 0.5em;
+}
+
+.input label.value {
+  display: inline-block;
+  min-width: 40px;
+}
+
+.input input[type="range"] {
+  margin-right: 0.5em;
 }
 
 table {

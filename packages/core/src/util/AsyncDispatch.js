@@ -1,8 +1,7 @@
 /**
- * Event dispatcher supporting asynchronous updates.
- * If an event handler callback returns a Promise, this dispatcher will
- * wait for all such Promises to settle before dispatching future events
- * of the same type.
+ * Event dispatcher supporting asynchronous updates. If an event handler
+ * callback returns a Promise, the dispatcher waits for all such Promises
+ * to settle before dispatching future events of the same type.
  */
 export class AsyncDispatch {
 
@@ -16,7 +15,7 @@ export class AsyncDispatch {
   /**
    * Add an event listener callback for the provided event type.
    * @param {string} type The event type.
-   * @param {(value: *) => Promise?} callback The event handler
+   * @param {(value: *) => void | Promise} callback The event handler
    *  callback function to add. If the callback has already been
    *  added for the event type, this method has no effect.
    */
@@ -35,7 +34,7 @@ export class AsyncDispatch {
   /**
    * Remove an event listener callback for the provided event type.
    * @param {string} type The event type.
-   * @param {(value: *) => Promise?} callback The event handler
+   * @param {(value: *) => void | Promise} callback The event handler
    *  callback function to remove.
    */
   removeEventListener(type, callback) {
@@ -63,12 +62,13 @@ export class AsyncDispatch {
    * queue of unemitted event values prior to enqueueing a new value.
    * This default implementation simply returns null, indicating that
    * any other unemitted event values should be dropped (that is, all
-   * queued events are filtered)
+   * queued events are filtered).
+   * @param {string} type The event type.
    * @param {*} value The new event value that will be enqueued.
    * @returns {(value: *) => boolean|null} A dispatch queue filter
    *  function, or null if all unemitted event values should be filtered.
    */
-  emitQueueFilter() {
+  emitQueueFilter(type, value) { // eslint-disable-line no-unused-vars
     // removes all pending items
     return null;
   }
@@ -83,6 +83,17 @@ export class AsyncDispatch {
   }
 
   /**
+   * Returns a promise that resolves when any pending updates complete for
+   * the event of the given type currently being processed. The Promise will
+   * resolve immediately if the queue for the given event type is empty.
+   * @param {string} type The event type to wait for.
+   * @returns {Promise} A pending event promise.
+   */
+  async pending(type) {
+    await this._callbacks.get(type)?.pending;
+  }
+
+  /**
    * Emit an event value to listeners for the given event type.
    * If a previous emit has not yet resolved, the event value
    * will be queued to be emitted later.
@@ -94,20 +105,22 @@ export class AsyncDispatch {
   emit(type, value) {
     const entry = this._callbacks.get(type) || {};
     if (entry.pending) {
+      // an earlier emit is still processing
+      // enqueue the current update, possibly filtering other pending updates
       entry.queue.enqueue(value, this.emitQueueFilter(type, value));
     } else {
       const event = this.willEmit(type, value);
       const { callbacks, queue } = entry;
       if (callbacks?.size) {
-        const promise = Promise
-          .allSettled(Array.from(callbacks, callback => callback(event)))
-          .then(() => {
-            entry.pending = null;
-            if (!queue.isEmpty()) {
-              this.emit(type, queue.dequeue());
-            }
-          });
-        entry.pending = promise;
+        // broadcast update to callbacks, which may return promises
+        // wait until promises resolve, then process pending updates
+        const callbackValues = Array.from(callbacks, cb => cb(event));
+        entry.pending = Promise.allSettled(callbackValues).then(() => {
+          entry.pending = null;
+          if (!queue.isEmpty()) {
+            this.emit(type, queue.dequeue());
+          }
+        });
       }
     }
   }

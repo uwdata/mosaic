@@ -20,8 +20,7 @@ export class PlotLegendNode extends ASTNode {
   }
 
   instantiate(ctx) {
-    const fn = ctx.api[this.key];
-    return fn(this.options.instantiate(ctx));
+    return ctx.api[this.key](this.options.instantiate(ctx));
   }
 
   codegen(ctx) {

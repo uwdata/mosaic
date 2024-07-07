@@ -1,3 +1,5 @@
+import { interpolatorBarycentric, interpolateNearest, interpolatorRandomWalk } from '@observablehq/plot';
+import { toDataColumns } from '@uwdata/mosaic-core';
 import { Query, count, isBetween, lt, lte, neq, sql, sum } from '@uwdata/mosaic-sql';
 import { Transient } from '../symbols.js';
 import { binExpr } from './util/bin-expr.js';
@@ -5,9 +7,6 @@ import { dericheConfig, dericheConv2d } from './util/density.js';
 import { extentX, extentY, xyext } from './util/extent.js';
 import { grid2d } from './util/grid.js';
 import { handleParam } from './util/handle-param.js';
-import {
-  interpolateNearest, interpolatorBarycentric, interpolatorRandomWalk
-} from './util/interpolate.js';
 import { Mark } from './Mark.js';
 
 export const DENSITY = 'density';
@@ -28,21 +27,47 @@ export class Grid2DMark extends Mark {
     super(type, source, channels, xyext);
     this.densityMap = densityMap;
 
-    handleParam(this, 'bandwidth', bandwidth, () => {
+    /** @type {number} */
+    this.bandwidth = handleParam(bandwidth, value => {
+      this.bandwidth = value;
       return this.grids ? this.convolve().update() : null;
     });
-    handleParam(this, 'pixelSize', pixelSize);
-    handleParam(this, 'interpolate', interpolate);
-    handleParam(this, 'pad', pad);
-    handleParam(this, 'width', width);
-    handleParam(this, 'height', height);
+
+    /** @type {string} */
+    this.interpolate = handleParam(interpolate, value => {
+      return (this.interpolate = value, this.requestUpdate());
+    });
+
+    /** @type {number} */
+    this.pixelSize = handleParam(pixelSize, value => {
+      return (this.pixelSize = value, this.requestUpdate());
+    });
+
+    /** @type {number} */
+    this.pad = handleParam(pad, value => {
+      return (this.pad = value, this.requestUpdate());
+    });
+
+    /** @type {number|undefined} */
+    this.width = handleParam(width, value => {
+      return (this.width = value, this.requestUpdate());
+    });
+
+    /** @type {number|undefined} */
+    this.height = handleParam(height, value => {
+      return (this.height = value, this.requestUpdate());
+    });
   }
 
+  /**
+   * @param {import('../plot.js').Plot} plot The plot.
+   * @param {number} index
+   */
   setPlot(plot, index) {
     const update = () => { if (this.hasFieldInfo()) this.requestUpdate(); };
-    plot.addAttributeListener('domainX', update);
-    plot.addAttributeListener('domainY', update);
-    return super.setPlot(plot, index);
+    plot.addAttributeListener('xDomain', update);
+    plot.addAttributeListener('yDomain', update);
+    super.setPlot(plot, index);
   }
 
   get filterIndexable() {
@@ -55,7 +80,7 @@ export class Grid2DMark extends Mark {
     const { interpolate, pad, channels, densityMap, source } = this;
     const [x0, x1] = this.extentX = extentX(this, filter);
     const [y0, y1] = this.extentY = extentY(this, filter);
-    const [nx, ny] = this.bins = this.binDimensions(this);
+    const [nx, ny] = this.bins = this.binDimensions();
     const [x, bx] = binExpr(this, 'x', nx, [x0, x1], pad);
     const [y, by] = binExpr(this, 'y', ny, [y0, y1], pad);
 
@@ -115,6 +140,9 @@ export class Grid2DMark extends Mark {
     }
   }
 
+  /**
+   * @returns {[number, number]} The bin dimensions.
+   */
   binDimensions() {
     const { plot, pixelSize, width, height } = this;
     return [
@@ -126,46 +154,48 @@ export class Grid2DMark extends Mark {
   queryResult(data) {
     const [w, h] = this.bins;
     const interp = maybeInterpolate(this.interpolate);
-    this.grids = grid2d(w, h, data, this.aggr, this.groupby, interp);
+    const { columns } = toDataColumns(data);
+    this.grids0 = grid2d(w, h, columns.index, columns, this.aggr, this.groupby, interp);
     return this.convolve();
   }
 
   convolve() {
-    const { aggr, bandwidth, bins, grids, plot } = this;
+    const { aggr, bandwidth, bins, grids0, plot } = this;
 
     // no smoothing as default fallback
-    this.kde = this.grids;
+    this.grids = grids0;
 
     if (bandwidth > 0) {
       // determine which grid to smooth
-      const gridProp = aggr.length === 1 ? aggr[0]
+      const prop = aggr.length === 1 ? aggr[0]
         : aggr.includes(DENSITY) ? DENSITY
         : null;
 
       // bail if no compatible grid found
-      if (!gridProp) {
+      if (!prop) {
         console.warn('No compatible grid found for smoothing.');
         return this;
       }
+      const g = grids0.columns[prop];
 
       // apply smoothing, bandwidth uses units of screen pixels
       const w = plot.innerWidth();
       const h = plot.innerHeight();
       const [nx, ny] = bins;
-      const neg = grids.some(cell => cell[gridProp].some(v => v < 0));
+      const neg = g.some(grid => grid.some(v => v < 0));
       const configX = dericheConfig(bandwidth * (nx - 1) / w, neg);
       const configY = dericheConfig(bandwidth * (ny - 1) / h, neg);
-      this.kde = this.grids.map(grid => {
-        const density = dericheConv2d(configX, configY, grid[gridProp], bins);
-        return { ...grid, [gridProp]: density };
-      });
+      this.grids = {
+        numRows: grids0.numRows,
+        columns: {
+          ...grids0.columns,
+          // @ts-ignore
+          [prop]: g.map(grid => dericheConv2d(configX, configY, grid, bins))
+        }
+      };
     }
 
     return this;
-  }
-
-  plotSpecs() {
-    throw new Error('Unimplemented. Use a Grid2D mark subclass.');
   }
 }
 
@@ -185,7 +215,7 @@ function createDensityMap(channels) {
 
 function maybeInterpolate(interpolate = 'none') {
   if (typeof interpolate === 'function') return interpolate;
-  switch (`${interpolate}`.toLowerCase()) {
+  switch (interpolate.toLowerCase()) {
     case 'none':
     case 'linear':
       return undefined; // no special interpolation need

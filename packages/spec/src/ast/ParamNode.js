@@ -1,5 +1,4 @@
-import { parse as isoparse } from 'isoformat';
-import { isArray, isObject } from '../util.js';
+import { isArray, isObject, isoparse } from '../util.js';
 import { ASTNode } from './ASTNode.js';
 import { CROSSFILTER, INTERSECT, PARAM, SINGLE, UNION, VALUE } from '../constants.js';
 import { SelectionNode } from './SelectionNode.js';
@@ -8,13 +7,13 @@ const paramTypes = new Set([VALUE, SINGLE, CROSSFILTER, INTERSECT, UNION]);
 
 export function parseParam(spec, ctx) {
   const param = isObject(spec) ? spec : { value: spec };
-  const { select = VALUE, cross, date, value } = param;
+  const { select = VALUE, cross, empty, date, value } = param;
   if (!paramTypes.has(select)) {
     ctx.error(`Unrecognized param type: ${select}`, param);
   }
 
   if (select !== VALUE) {
-    return new SelectionNode(select, cross);
+    return new SelectionNode(select, cross, empty);
   } else if (isArray(value)) {
     return new ParamNode(value.map(v => ctx.maybeParam(v)));
   } else {

@@ -33,7 +33,8 @@ const constantOptions = new Set([
   'crossOrigin',
   'paintOrder',
   'pointerEvents',
-  'target'
+  'target',
+  'select'
 ]);
 
 export function isConstantOption(value) {

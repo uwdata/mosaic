@@ -1,14 +1,13 @@
 import { isParam } from '@uwdata/mosaic-core';
 
-export function handleParam(client, key, param, update) {
-  if (isParam(param)) {
-    update = update || (() => client.requestUpdate());
-    param.addEventListener('value', value => {
-      client[key] = value;
-      return update();
-    });
-    client[key] = param.value;
-  } else {
-    client[key] = param;
-  }
+/**
+ * Utility to check if a value is a Param, and if so, bind a listener.
+ * @param {*} value A potentially Param-typed value.
+ * @param {(value: *) => Promise|void} update Update callback
+ * @returns the input value or (if a Param) the current Param value.
+ */
+export function handleParam(value, update) {
+  return isParam(value)
+    ? (value.addEventListener('value', update), value.value)
+    : value;
 }

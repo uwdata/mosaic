@@ -18,8 +18,7 @@ export class InputNode extends ASTNode {
   }
 
   instantiate(ctx) {
-    const fn = ctx.api[this.name];
-    return fn(this.options.instantiate(ctx));
+    return ctx.api[this.name](this.options.instantiate(ctx));
   }
 
   codegen(ctx) {

@@ -13,6 +13,7 @@
         <option value="aeromagnetic-survey">Aeromagnetic Survey</option>
         <option value="airline-travelers">Airline Travelers</option>
         <option value="athletes">Athletes</option>
+        <option value="athlete-height">Athlete Height Intervals</option>
         <option value="axes">Axes &amp; Gridlines</option>
         <option value="bias">Bias Parameter</option>
         <option value="contours">Contours</option>
@@ -29,7 +30,10 @@
         <option value="gaia">Gaia Star Catalog</option>
         <option value="line-density">Line Density</option>
         <option value="line">Line</option>
+        <option value="line-multi-series">Line Multi-Series</option>
         <option value="linear-regression">Linear Regression</option>
+        <option value="linear-regression-10m">Linear Regression 10M</option>
+        <option value="legends">Legends</option>
         <option value="mark-types">Mark Types</option>
         <option value="moving-average">Moving Average</option>
         <option value="normalize">Normalize Stocks</option>
@@ -51,6 +55,7 @@
         <option value="walmart-openings">Walmart Openings</option>
         <option value="weather">Seattle Weather</option>
         <option value="wind-map">Wind Map</option>
+        <option value="wnba-shots">WNBA Shot Chart</option>
       </select>
     </span>
 
@@ -63,13 +68,38 @@
       </select>
     </span>
 
-    <span>
-      Source:
-      <select id="source">
-        <option value="yaml" selected>YAML</option>
-        <option value="esm">JavaScript (ESM)</option>
-      </select>
-    </span>
+    <details>
+      <summary>Advanced Options</summary>
+      <div>
+        <div>
+          Spec Type:
+          <select id="source">
+            <option value="yaml" selected>YAML</option>
+            <option value="esm">ESM</option>
+          </select>
+        </div>
+        <div>
+          Log Queries:
+          <input id="query-log" type="checkbox" />
+        </div>
+        <div>
+          Query Cache:
+          <input id="cache" type="checkbox" checked />
+        </div>
+        <div>
+          Query Consolidation:
+          <input id="consolidate" type="checkbox" checked />
+        </div>
+        <div>
+          Data Cube Indexes:
+          <input id="index" type="checkbox" checked />
+        </div>
+        <div>
+          Active Index State:
+          <button id="index-state">Log</button>
+        </div>
+      </div>
+    </details>
   </header>
   <div id="view"></div>
 <script type="module">
@@ -80,14 +110,56 @@
   const connectorMenu = document.querySelector('#connectors');
   const exampleMenu = document.querySelector('#examples');
   const sourceMenu = document.querySelector('#source');
+  const qlogToggle = document.querySelector('#query-log');
+  const cacheToggle = document.querySelector('#cache');
+  const consolidateToggle = document.querySelector('#consolidate');
+  const indexToggle = document.querySelector('#index');
+  const indexState = document.querySelector('#index-state');
+
   connectorMenu.addEventListener('change', setConnector);
   exampleMenu.addEventListener('change', reload);
   sourceMenu.addEventListener('change', reload);
+  qlogToggle.addEventListener('input', setQueryLog);
+  cacheToggle.addEventListener('input', setCache);
+  consolidateToggle.addEventListener('input', setConsolidate);
+  indexToggle.addEventListener('input', setIndex);
+  indexState.addEventListener('click', () => {
+    const { indexes } = vg.coordinator().dataCubeIndexer || {};
+    if (indexes) {
+      console.warn(
+        'Data Cube Index Entries',
+        Array.from(indexes.values())
+      );
+    } else {
+      console.warn('No Active Data Cube Index');
+    }
+  });
+
+  setQueryLog();
+  setCache();
+  setConsolidate();
+  setIndex();
   setConnector();
 
   async function setConnector() {
     await setDatabaseConnector(connectorMenu.value);
     reload();
+  }
+
+  function setQueryLog() {
+    vg.coordinator().manager.logQueries(qlogToggle.checked);
+  }
+
+  function setCache() {
+    vg.coordinator().manager.cache(cacheToggle.checked);
+  }
+
+  function setConsolidate() {
+    vg.coordinator().manager.consolidate(consolidateToggle.checked);
+  }
+
+  function setIndex() {
+    vg.coordinator().dataCubeIndexer.enabled(indexToggle.checked);
   }
 
   function reload() {
@@ -96,7 +168,6 @@
 
   async function load(name, source) {
     view.replaceChildren();
-    clear(); // reset coordinator and namedPlot state
     if (name === 'none' && location.search) {
       // get example name from query string
       name = location.search.slice(1);
@@ -106,23 +177,28 @@
         await fetch(`../specs/yaml/${name}.yaml`).then(res => res.text())
       );
 
-      // provide options for output generation
-      // if using a local server, use baseURL for client-loaded data only
+      // options for output generation
       const baseURL = location.origin + '/';
       const options = connectorMenu.value === 'wasm' ? { baseURL } : {};
 
+      // parse and load spec
       const ast = parseSpec(spec);
-      const child = source === 'esm'
-        ? await loadModuleView(ast, options)
-        : (await astToDOM(ast, options)).element;
-      view.replaceChildren(child);
+      const el = await (source === 'esm' ? loadESM : loadDOM)(ast, options);
+      view.replaceChildren(el);
     }
   }
 
-  async function loadModuleView(spec, options) {
+  async function loadDOM(ast, options) {
+    clear();
+    const { element } = await astToDOM(ast, { ...options, api: vg });
+    return element;
+  }
+
+  async function loadESM(ast, options) {
     const vgplot = new URL('./setup.js', window.location.href).toString();
-    const imports = new Map([[vgplot, ['vg']]]);
-    const code = astToESM(spec, { ...options, imports });
+    const imports = new Map([[vgplot, ['vg', 'clear']]]);
+    const preamble = 'clear();';
+    const code = astToESM(ast, { ...options, imports, preamble });
     console.log(code);
     const blob = new Blob([code], { type: 'text/javascript' });
     const url = URL.createObjectURL(blob);

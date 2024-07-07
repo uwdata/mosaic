@@ -10,7 +10,8 @@ export {
 export {
   isSQLExpression,
   isParamLike,
-  sql
+  sql,
+  SQLExpression
 } from './expression.js';
 
 export {
@@ -47,6 +48,7 @@ export {
   avg,
   corr,
   count,
+  covariance,
   covarPop,
   entropy,
   first,
@@ -86,6 +88,7 @@ export {
 
 export {
   epoch_ms,
+  dateBin,
   dateMonth,
   dateMonthDay,
   dateDay

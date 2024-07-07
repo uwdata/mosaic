@@ -1,10 +1,11 @@
 import { Query, Ref, isDescribeQuery } from '@uwdata/mosaic-sql';
-import { queryResult } from './util/query-result.js';
+import { QueryResult } from './util/query-result.js';
 
 function wait(callback) {
   const method = typeof requestAnimationFrame !== 'undefined'
     ? requestAnimationFrame
     : typeof setImmediate !== 'undefined' ? setImmediate : setTimeout;
+  // @ts-ignore
   return method(callback);
 }
 
@@ -82,7 +83,9 @@ function consolidationKey(query, cache) {
   const sql = `${query}`;
   if (query instanceof Query && !cache.get(sql)) {
     if (
+      // @ts-ignore
       query.orderby().length || query.where().length ||
+      // @ts-ignore
       query.qualify().length || query.having().length
     ) {
       // do not try to analyze if query includes clauses
@@ -97,9 +100,12 @@ function consolidationKey(query, cache) {
     // queries may refer to *derived* columns as group by criteria
     // we resolve these against the true grouping expressions
     const groupby = query.groupby();
+    // @ts-ignore
     if (groupby.length) {
       const map = {}; // expression map (as -> expr)
+      // @ts-ignore
       query.select().forEach(({ as, expr }) => map[as] = expr);
+      // @ts-ignore
       q.$groupby(groupby.map(e => (e instanceof Ref && map[e.column]) || e));
     }
 
@@ -127,7 +133,7 @@ function consolidate(group, enqueue, record) {
         record: false,
         query: (group.query = consolidatedQuery(group, record))
       },
-      result: (group.result = queryResult())
+      result: (group.result = new QueryResult())
     });
   } else {
     // issue queries directly

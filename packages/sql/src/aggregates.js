@@ -19,11 +19,24 @@ export function agg(strings, ...exprs) {
  * rather than instantiate this class.
  */
 export class AggregateFunction extends SQLExpression {
+  /**
+   * Create a new AggregateFunction instance.
+   * @param {*} op The aggregate operation.
+   * @param {*} [args] The aggregate function arguments.
+   * @param {*} [type] The SQL data type to cast to.
+   * @param {boolean} [isDistinct] Flag indicating if this is a distinct value aggregate.
+   * @param {*} [filter] Filtering expression to apply prior to aggregation.
+   */
   constructor(op, args, type, isDistinct, filter) {
     args = (args || []).map(asColumn);
     const { strings, exprs } = aggExpr(op, args, type, isDistinct, filter);
     const { spans, cols } = parseSQL(strings, exprs);
-    super(spans, cols, { aggregate: op, args, type, isDistinct, filter });
+    super(spans, cols);
+    this.aggregate = op;
+    this.args = args;
+    this.type = type;
+    this.isDistinct = isDistinct;
+    this.filter = filter;
   }
 
   get basis() {
@@ -37,36 +50,69 @@ export class AggregateFunction extends SQLExpression {
     return `${op.toLowerCase()}${tail}`;
   }
 
+  /**
+   * Return a new derived aggregate function over distinct values.
+   * @returns {AggregateFunction} A new aggregate function.
+   */
   distinct() {
     const { aggregate: op, args, type, filter } = this;
     return new AggregateFunction(op, args, type, true, filter);
   }
 
+  /**
+   * Return a new derived aggregate function that filters values.
+   * @param {*} filter The filter expresion.
+   * @returns {AggregateFunction} A new aggregate function.
+   */
   where(filter) {
     const { aggregate: op, args, type, isDistinct } = this;
     return new AggregateFunction(op, args, type, isDistinct, filter);
   }
 
+  /**
+   * Return a new window function over this aggregate.
+   * @returns {WindowFunction} A new aggregate function.
+   */
   window() {
     const { aggregate: op, args, type, isDistinct } = this;
     const func = new AggregateFunction(op, args, null, isDistinct);
     return new WindowFunction(op, func, type);
   }
 
+  /**
+   * Return a window function over this aggregate with the given partitioning.
+   * @param {*} expr The grouping (partition by) criteria for the window function.
+   * @returns {WindowFunction} A new window function.
+   */
   partitionby(...expr) {
     return this.window().partitionby(...expr);
   }
 
+  /**
+   * Return a window function over this aggregate with the given ordering.
+   * @param {*} expr The sorting (order by) criteria for the window function.
+   * @returns {WindowFunction} A new window function.
+   */
   orderby(...expr) {
     return this.window().orderby(...expr);
   }
 
-  rows(prev, next) {
-    return this.window().rows(prev, next);
+  /**
+   * Return a window function over this aggregate with the given row frame.
+   * @param {(number|null)[] | import('./expression.js').ParamLike} frame The row-based window frame.
+   * @returns {WindowFunction} A new window function.
+   */
+  rows(frame) {
+    return this.window().rows(frame);
   }
 
-  range(prev, next) {
-    return this.window().range(prev, next);
+  /**
+   * Return a window function over this aggregate with the given range frame.
+   * @param {(number|null)[] | import('./expression.js').ParamLike} frame The range-based window frame.
+   * @returns {WindowFunction} A new window function.
+   */
+  range(frame) {
+    return this.window().range(frame);
   }
 }
 
@@ -117,6 +163,7 @@ export const varPop = aggf('VAR_POP');
 export const stddevPop = aggf('STDDEV_POP');
 
 export const corr = aggf('CORR');
+export const covariance = aggf('COVAR_SAMP');
 export const covarPop = aggf('COVAR_POP');
 export const regrIntercept = aggf('REGR_INTERCEPT');
 export const regrSlope = aggf('REGR_SLOPE');

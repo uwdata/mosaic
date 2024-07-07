@@ -5,7 +5,7 @@ meta:
     scale attributes such as `xAxis`, `yGrid`, etc. Just add data!
 plot:
 - mark: gridY
-  strokeDasharray: [0.75, 2] # dashed
+  strokeDasharray: 0.75 2 # dashed
   strokeOpacity: 1 # opaque
 - mark: axisY
   anchor: left

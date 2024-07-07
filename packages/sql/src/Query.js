@@ -53,6 +53,7 @@ export class Query {
       qualify: [],
       orderby: []
     };
+    this.cteFor = null;
   }
 
   clone() {
@@ -61,9 +62,18 @@ export class Query {
     return q;
   }
 
+  /**
+   * Retrieve current WITH common table expressions (CTEs).
+   * @returns {any[]}
+   *//**
+   * Add WITH common table expressions (CTEs).
+   * @param  {...any} expr Expressions to add.
+   * @returns {this}
+   */
   with(...expr) {
     const { query } = this;
     if (expr.length === 0) {
+      // @ts-ignore
       return query.with;
     } else {
       const list = [];
@@ -88,9 +98,18 @@ export class Query {
     }
   }
 
+  /**
+   * Retrieve current SELECT expressions.
+   * @returns {any[]}
+   *//**
+   * Add SELECT expressions.
+   * @param {...any} expr Expressions to add.
+   * @returns {this}
+   */
   select(...expr) {
     const { query } = this;
     if (expr.length === 0) {
+      // @ts-ignore
       return query.select;
     } else {
       const list = [];
@@ -109,7 +128,11 @@ export class Query {
           }
         }
       }
-      query.select = query.select.concat(list);
+
+      const keys = new Set(list.map(x => x.as));
+      query.select = query.select
+        .filter(x => !keys.has(x.as))
+        .concat(list.filter(x => x.expr));
       return this;
     }
   }
@@ -124,9 +147,18 @@ export class Query {
     return this;
   }
 
+  /**
+   * Retrieve current from expressions.
+   * @returns {any[]}
+   *//**
+   * Provide table from expressions.
+   * @param  {...any} expr
+   * @returns {this}
+   */
   from(...expr) {
     const { query } = this;
     if (expr.length === 0) {
+      // @ts-ignore
       return query.from;
     } else {
       const list = [];
@@ -157,9 +189,19 @@ export class Query {
     return this.from(...expr);
   }
 
+  /**
+   * Retrieve current SAMPLE settings.
+   * @returns {any[]}
+   *//**
+   * Set SAMPLE settings.
+   * @param {number|object} value The percentage or number of rows to sample.
+   * @param {string} [method] The sampling method to use.
+   * @returns {this}
+   */
   sample(value, method) {
     const { query } = this;
     if (arguments.length === 0) {
+      // @ts-ignore
       return query.sample;
     } else {
       let spec = value;
@@ -173,9 +215,18 @@ export class Query {
     }
   }
 
+  /**
+   * Retrieve current WHERE expressions.
+   * @returns {any[]}
+   *//**
+   * Add WHERE expressions.
+   * @param  {...any} expr Expressions to add.
+   * @returns {this}
+   */
   where(...expr) {
     const { query } = this;
     if (expr.length === 0) {
+      // @ts-ignore
       return query.where;
     } else {
       query.where = query.where.concat(
@@ -190,9 +241,18 @@ export class Query {
     return this.where(...expr);
   }
 
+  /**
+   * Retrieve current GROUP BY expressions.
+   * @returns {any[]}
+   *//**
+   * Add GROUP BY expressions.
+   * @param  {...any} expr Expressions to add.
+   * @returns {this}
+   */
   groupby(...expr) {
     const { query } = this;
     if (expr.length === 0) {
+      // @ts-ignore
       return query.groupby;
     } else {
       query.groupby = query.groupby.concat(
@@ -207,9 +267,18 @@ export class Query {
     return this.groupby(...expr);
   }
 
+  /**
+   * Retrieve current HAVING expressions.
+   * @returns {any[]}
+   *//**
+   * Add HAVING expressions.
+   * @param  {...any} expr Expressions to add.
+   * @returns {this}
+   */
   having(...expr) {
     const { query } = this;
     if (expr.length === 0) {
+      // @ts-ignore
       return query.having;
     } else {
       query.having = query.having.concat(
@@ -219,9 +288,18 @@ export class Query {
     }
   }
 
+  /**
+   * Retrieve current WINDOW definitions.
+   * @returns {any[]}
+   *//**
+   * Add WINDOW definitions.
+   * @param  {...any} expr Expressions to add.
+   * @returns {this}
+   */
   window(...expr) {
     const { query } = this;
     if (expr.length === 0) {
+      // @ts-ignore
       return query.window;
     } else {
       const list = [];
@@ -239,9 +317,18 @@ export class Query {
     }
   }
 
+  /**
+   * Retrieve current QUALIFY expressions.
+   * @returns {any[]}
+   *//**
+   * Add QUALIFY expressions.
+   * @param  {...any} expr Expressions to add.
+   * @returns {this}
+   */
   qualify(...expr) {
     const { query } = this;
     if (expr.length === 0) {
+      // @ts-ignore
       return query.qualify;
     } else {
       query.qualify = query.qualify.concat(
@@ -251,9 +338,18 @@ export class Query {
     }
   }
 
+  /**
+   * Retrieve current ORDER BY expressions.
+   * @returns {any[]}
+   *//**
+   * Add ORDER BY expressions.
+   * @param  {...any} expr Expressions to add.
+   * @returns {this}
+   */
   orderby(...expr) {
     const { query } = this;
     if (expr.length === 0) {
+      // @ts-ignore
       return query.orderby;
     } else {
       query.orderby = query.orderby.concat(
@@ -263,6 +359,14 @@ export class Query {
     }
   }
 
+  /**
+   * Retrieve current LIMIT value.
+   * @returns {number|null}
+   *//**
+   * Set the query result LIMIT.
+   * @param {number} value The limit value.
+   * @returns {this}
+   */
   limit(value) {
     const { query } = this;
     if (arguments.length === 0) {
@@ -273,6 +377,14 @@ export class Query {
     }
   }
 
+  /**
+   * Retrieve current OFFSET value.
+   * @returns {number|null}
+   *//**
+   * Set the query result OFFSET.
+   * @param {number} value The offset value.
+   * @returns {this}
+   */
   offset(value) {
     const { query } = this;
     if (arguments.length === 0) {
@@ -391,6 +503,7 @@ export class SetOperation {
     this.op = op;
     this.queries = queries.map(q => q.clone());
     this.query = { orderby: [] };
+    this.cteFor = null;
   }
 
   clone() {
@@ -467,6 +580,7 @@ export function isQuery(value) {
 }
 
 export function isDescribeQuery(value) {
+  // @ts-ignore
   return isQuery(value) && value.describe;
 }
 

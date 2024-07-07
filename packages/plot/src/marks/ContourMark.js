@@ -13,8 +13,11 @@ export class ContourMark extends Grid2DMark {
       pixelSize: 2,
       ...channels
     });
-    handleParam(this, 'thresholds', thresholds, () => {
-      return this.grids ? this.contours().update() : null
+
+    /** @type {number|number[]} */
+    this.thresholds = handleParam(thresholds, value => {
+      this.thresholds = value;
+      return this.grids ? this.contours().update() : null;
     });
   }
 
@@ -23,12 +26,16 @@ export class ContourMark extends Grid2DMark {
   }
 
   contours() {
-    const { bins, densityMap, kde, thresholds, plot } = this;
+    const { bins, densityMap, grids, thresholds, plot } = this;
+    const { numRows, columns } = grids;
 
-    let tz = thresholds;
-    if (!Array.isArray(tz)) {
-      const [, hi] = gridDomainContinuous(kde, 'density');
-      tz = Array.from({length: tz - 1}, (_, i) => (hi * (i + 1)) / tz);
+    let t = thresholds;
+    let tz;
+    if (Array.isArray(t)) {
+      tz = t;
+    } else {
+      const [, hi] = gridDomainContinuous(columns.density);
+      tz = Array.from({length: t - 1}, (_, i) => (hi * (i + 1)) / t);
     }
 
     if (densityMap.fill || densityMap.stroke) {
@@ -51,18 +58,27 @@ export class ContourMark extends Grid2DMark {
     const contour = contours().size(bins);
 
     // generate contours
-    this.data = kde.flatMap(cell => tz.map(t => {
-      return Object.assign(
-        transform(contour.contour(cell.density, t), x, y),
-        { ...cell, density: t }
-      );
-    }));
+    const data = this.contourData = Array(numRows * tz.length);
+    const { density, ...groupby } = columns;
+    const groups = Object.entries(groupby);
+    for (let i = 0, k = 0; i < numRows; ++i) {
+      const grid = density[i];
+      const rest = groups.reduce((o, [name, col]) => (o[name] = col[i], o), {});
+      for (let j = 0; j < tz.length; ++j, ++k) {
+        // annotate contour geojson with cell groupby fields
+        // d3-contour already adds a threshold "value" property
+        data[k] = Object.assign(
+          transform(contour.contour(grid, tz[j]), x, y),
+          rest
+        );
+      }
+    }
 
     return this;
   }
 
   plotSpecs() {
-    const { type, channels, densityMap, data } = this;
+    const { type, channels, densityMap, contourData: data } = this;
     const options = {};
     for (const c of channels) {
       const { channel } = c;
@@ -70,8 +86,12 @@ export class ContourMark extends Grid2DMark {
         options[channel] = channelOption(c);
       }
     }
-    if (densityMap.fill) options.fill = 'density';
-    if (densityMap.stroke) options.stroke = 'density';
+    // d3-contour adds a threshold "value" property
+    // here we ensure requested density values are encoded
+    for (const channel in densityMap) {
+      if (!densityMap[channel]) continue;
+      options[channel] = channelOption({ channel, as: 'value' });
+    }
     return [{ type, data, options }];
   }
 }

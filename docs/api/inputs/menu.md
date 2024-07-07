@@ -12,14 +12,15 @@ Creates an instance of the [`Menu`](#menu-class) class, connects it to [`coordin
 The supported options are:
 
 - _as_: A `Param` or `Selection` that this menu should update. For a `Param`, the selected menu value is set to be the new param value. For a `Selection`, a predicate of the form `column = value` will be added to the selection.
+- _field_: The database column name to use within generated selection clause predicates. Defaults to the *column* option.
 - _filterBy_: An optional selection by which to filter the content of the menu, if drawn from a backing table.
-- _from_: The name of the backing database table or view.
-- _column_: The backing database column this menu represents. If specified, the distinct column values will be queried to populate the menu.
-- _label_: A text label for the menu input. If unspecified, the _column_ name (if provided) will be used by default.
-- _format_: An optional format function to transform values to strings for inclusion in the menu.
-- _options_: An explicit array of options to include in the menu. This option can be used instead of pulling values from a backing database table. Each option entry should consist of an object with `label` and `value` properties.
-- _value_: The initial value of the menu.
-- _element_: The container DOM element. If unspecified, a new `div` is created.
+- _from_: The name of a backing database table to use as a data source of menu options. Used in conjunction with the *column* option.
+- _column_: The name of a backing database column from which to pull menu options. The unique column values are used as menu options. Used in conjunction with the *from* option.
+- _label_: A text label for the menu input. If unspecified, the *column* name (if provided) will be used by default.
+- _format_: A format function that takes an option value as input and generates a string label. The format function is not applied when an explicit label is provided in an option object.
+- _options_: An array of menu options, as literal values or option objects. Option objects have a `value` property and an optional `label` property. If no label or *format* function is provided, the string-coerced value is used.
+- _value_: The initial selected menu value.
+- _element_: The parent DOM element in which to place the menu elements. If undefined, a new `div` element is created.
 
 ### Examples
 

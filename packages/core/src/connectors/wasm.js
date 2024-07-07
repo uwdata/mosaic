@@ -22,7 +22,7 @@ export function wasmConnector(options = {}) {
   /**
    * Get the backing DuckDB-WASM instance.
    * Will lazily initialize DuckDB-WASM if not already loaded.
-   * @returns {duckdb.AsyncDuckDB} The DuckDB-WASM instance.
+   * @returns {Promise<duckdb.AsyncDuckDB>} The DuckDB-WASM instance.
    */
   async function getDuckDB() {
     if (!db) await load();
@@ -32,7 +32,7 @@ export function wasmConnector(options = {}) {
   /**
    * Get the backing DuckDB-WASM connection.
    * Will lazily initialize DuckDB-WASM if not already loaded.
-   * @returns {duckdb.AsyncDuckDBConnection} The DuckDB-WASM connection.
+   * @returns {Promise<duckdb.AsyncDuckDBConnection>} The DuckDB-WASM connection.
    */
   async function getConnection() {
     if (!con) await load();
@@ -45,7 +45,7 @@ export function wasmConnector(options = {}) {
     /**
      * Query the DuckDB-WASM instance.
      * @param {object} query
-     * @param {string} [query.type] The query type: 'exec', 'arrow', or 'json'.
+     * @param {'exec' | 'arrow' | 'json'} [query.type] The query type: 'exec', 'arrow', or 'json'.
      * @param {string} query.sql A SQL query string.
      * @returns the query result
      */
@@ -55,7 +55,7 @@ export function wasmConnector(options = {}) {
       const result = await con.query(sql);
       return type === 'exec' ? undefined
         : type === 'arrow' ? result
-        : Array.from(result);
+        : result.toArray();
     }
   };
 }

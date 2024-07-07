@@ -8,7 +8,7 @@
   },
   "data": {
     "rides": {
-      "file": "https://uwdata.github.io/mosaic-datasets/data/nyc-rides-2010.parquet",
+      "file": "https://idl.uw.edu/mosaic-datasets/data/nyc-rides-2010.parquet",
       "select": [
         "pickup_datetime::TIMESTAMP AS datetime",
         "ST_Transform(ST_Point(pickup_latitude, pickup_longitude), 'EPSG:4326', 'ESRI:102718') AS pick",

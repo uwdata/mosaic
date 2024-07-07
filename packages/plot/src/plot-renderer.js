@@ -9,6 +9,19 @@ const OPTIONS_ONLY_MARKS = new Set([
   'graticule'
 ]);
 
+// @ts-ignore
+const SELECT_TRANSFORMS = new Map([
+  ['first', Plot.selectFirst],
+  ['last', Plot.selectLast],
+  ['maxX', Plot.selectMaxX],
+  ['maxY', Plot.selectMaxY],
+  ['minX', Plot.selectMinX],
+  ['minY', Plot.selectMinY],
+  ['nearest', Plot.pointer],
+  ['nearestX', Plot.pointerX],
+  ['nearestXY', Plot.pointerY]
+]);
+
 // construct Plot output
 // see https://github.com/observablehq/plot
 export async function plotRenderer(plot) {
@@ -23,11 +36,13 @@ export async function plotRenderer(plot) {
   const indices = [];
   for (const mark of marks) {
     for (const { type, data, options } of mark.plotSpecs()) {
-      if (OPTIONS_ONLY_MARKS.has(type)) {
-        spec.marks.push(Plot[type](options));
-      } else {
-        spec.marks.push(Plot[type](data, options));
-      }
+      // prepare mark options
+      const { select, ...rest } = options;
+      const opt = SELECT_TRANSFORMS.get(select)?.(rest) ?? rest;
+      const arg = OPTIONS_ONLY_MARKS.has(type) ? [opt] : [data, opt];
+
+      // instantiate Plot mark and add to spec
+      spec.marks.push(Plot[type](...arg));
       indices.push(mark.index);
     }
   }
@@ -148,10 +163,14 @@ function annotateMarks(svg, indices) {
 }
 
 function getType(data, channel) {
-  for (const row of data) {
-    const v = row[channel] ?? row[channel+'1'] ?? row[channel+'2'];
-    if (v != null) {
-      return v instanceof Date ? 'date' : typeof v;
+  if (!data) return;
+  const { columns } = data;
+  const col = columns[channel] ?? columns[channel+'1'] ?? columns[channel+'2'];
+  if (col) {
+    for (const v of col) {
+      if (v != null) {
+        return v instanceof Date ? 'date' : typeof v;
+      }
     }
   }
 }

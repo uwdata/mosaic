@@ -1,12 +1,12 @@
-import { MosaicClient } from '@uwdata/mosaic-core';
+import { MosaicClient, toDataColumns } from '@uwdata/mosaic-core';
 import { Query, Ref, column, isParamLike } from '@uwdata/mosaic-sql';
 import { isColor } from './util/is-color.js';
 import { isConstantOption } from './util/is-constant-option.js';
 import { isSymbol } from './util/is-symbol.js';
-import { toDataArray } from './util/to-data-array.js';
 import { Transform } from '../symbols.js';
 
 const isColorChannel = channel => channel === 'stroke' || channel === 'fill';
+const isOpacityChannel = channel => /opacity$/i.test(channel);
 const isSymbolChannel = channel => channel === 'symbol';
 const isFieldObject = (channel, field) => {
   return channel !== 'sort' && channel !== 'tip'
@@ -31,7 +31,7 @@ export class Mark extends MosaicClient {
 
     this.source = source;
     if (isDataArray(this.source)) {
-      this.data = this.source;
+      this.data = toDataColumns(this.source);
     }
 
     const channels = this.channels = [];
@@ -63,12 +63,15 @@ export class Mark extends MosaicClient {
         }
       } else if (isParamLike(entry)) {
         if (Array.isArray(entry.columns)) {
+          // we currently duck-type to having a columns array
+          // as a check that this is SQLExpression-compatible
           channels.push(fieldEntry(channel, entry));
           params.add(entry);
         } else {
           const c = valueEntry(channel, entry.value);
           channels.push(c);
           entry.addEventListener('value', value => {
+            // update immediately, the value is simply passed to Plot
             c.value = value;
             return this.update();
           });
@@ -85,6 +88,10 @@ export class Mark extends MosaicClient {
     }
   }
 
+  /**
+   * @param {import('../plot.js').Plot} plot The plot.
+   * @param {number} index
+   */
   setPlot(plot, index) {
     this.plot = plot;
     this.index = index;
@@ -104,7 +111,7 @@ export class Mark extends MosaicClient {
     return this.channels.find(c => c.channel === channel);
   }
 
-  channelField(channel, { exact } = {}) {
+  channelField(channel, { exact = false } = {}) {
     const c = exact
       ? this.channel(channel)
       : this.channels.find(c => c.channel.startsWith(channel));
@@ -140,6 +147,11 @@ export class Mark extends MosaicClient {
     return this;
   }
 
+  /**
+   * Return a query specifying the data needed by this Mark client.
+   * @param {*} [filter] The filtering criteria to apply in the query.
+   * @returns {*} The client query
+   */
   query(filter = []) {
     if (this.hasOwnData()) return null;
     const { channels, source: { table } } = this;
@@ -151,8 +163,11 @@ export class Mark extends MosaicClient {
     return this;
   }
 
+  /**
+   * Provide query result data to the mark.
+   */
   queryResult(data) {
-    this.data = toDataArray(data);
+    this.data = toDataColumns(data);
     return this;
   }
 
@@ -160,16 +175,13 @@ export class Mark extends MosaicClient {
     return this.plot.update(this);
   }
 
+  /**
+   * Generate an array of Plot mark specifications.
+   * @returns {object[]}
+   */
   plotSpecs() {
     const { type, data, detail, channels } = this;
-    const options = {};
-    const side = {};
-    for (const c of channels) {
-      const obj = detail.has(c.channel) ? side : options;
-      obj[c.channel] = channelOption(c)
-    }
-    if (detail.size) options.channels = side;
-    return [{ type, data, options }];
+    return markPlotSpec(type, detail, channels, data);
   }
 }
 
@@ -178,14 +190,17 @@ export class Mark extends MosaicClient {
  * Checks if a constant value or a data field is needed.
  * Also avoids misinterpretation of data values as color names.
  * @param {*} c a visual encoding channel spec
+ * @param {object} columns named data column arrays
  * @returns the Plot channel option
  */
-export function channelOption(c) {
+export function channelOption(c, columns) {
   // use a scale override for color channels to sidestep
   // https://github.com/observablehq/plot/issues/1593
+  const value = columns?.[c.as] ?? c.as;
   return Object.hasOwn(c, 'value') ? c.value
-    : isColorChannel(c.channel) ? { value: c.as, scale: 'color' }
-    : c.as;
+    : isColorChannel(c.channel) ? { value, scale: 'color' }
+    : isOpacityChannel(c.channel) ? { value, scale: 'opacity' }
+    : value;
 }
 
 /**
@@ -196,7 +211,7 @@ export function channelOption(c) {
  * @param {*} table the table to query.
  * @param {*} skip an optional array of channels to skip.
  *  Mark subclasses can skip channels that require special handling.
- * @returns a Query instance
+ * @returns {Query} a Query instance
  */
 export function markQuery(channels, table, skip = []) {
   const q = Query.from({ source: table });
@@ -225,4 +240,28 @@ export function markQuery(channels, table, skip = []) {
   }
 
   return q;
+}
+
+
+/**
+ * Generate an array of Plot mark specifications.
+ * @returns {object[]}
+ */
+export function markPlotSpec(type, detail, channels, data, options = {}) {
+  // @ts-ignore
+  const { numRows: length, values, columns } = data ?? {};
+
+  // populate plot specification options
+  const side = {};
+  for (const c of channels) {
+    const obj = detail.has(c.channel) ? side : options;
+    obj[c.channel] = channelOption(c, columns);
+  }
+  if (detail.size) options.channels = side;
+
+  // if provided raw source values (not objects) pass as-is
+  // otherwise we pass columnar data directy in the options
+  const specData = values ?? (data ? { length } : null);
+  const spec = [{ type, data: specData, options }];
+  return spec;
 }

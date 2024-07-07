@@ -1,6 +1,5 @@
-// @ts-check
-
 import { coordinator, namedPlots } from '@uwdata/vgplot';
+import { isSelection } from '@uwdata/mosaic-core';
 import { parseSpec, astToDOM } from '@uwdata/mosaic-spec';
 import * as arrow from 'apache-arrow';
 import './style.css';
@@ -10,7 +9,7 @@ import { v4 as uuidv4 } from 'uuid';
  * @typedef {Record<string, {value: unknown, predicate?: string}>} Params
  *
  * @typedef Model
- * @prop {Record<any, unknown>} spec the current specification
+ * @prop {import('@uwdata/mosaic-spec').Spec} spec the current specification
  * @prop {boolean} temp_indexes whether data cube indexes should be created as temp tables
  * @prop {Params} params the current params
  */
@@ -74,11 +73,14 @@ export default {
       for (const [name, param] of dom.params) {
         params[name] = {
           value: param.value,
-          ...(param.predicate ? { predicate: String(param.predicate()) } : {}),
+          ...(isSelection(param) ? { predicate: String(param.predicate()) } : {}),
         };
 
         param.addEventListener('value', (value) => {
-          params[name] = { value, predicate: String(param.predicate()) };
+          params[name] = {
+            value,
+            ...(isSelection(param) ? { predicate: String(param.predicate()) } : {}),
+          };
           view.model.set('params', params);
           view.model.save_changes();
         });
@@ -91,8 +93,7 @@ export default {
     view.model.on('change:spec', () => updateSpec());
 
     function configureCoordinator() {
-      const indexes = { temp: getTempIndexes() };
-      coordinator().configure({ indexes });
+      coordinator().dataCubeIndexer.temp = getTempIndexes();
     }
 
     view.model.on('change:temp_indexes', () => configureCoordinator());
@@ -142,7 +143,6 @@ export default {
   },
 };
 
-/** @param {Record<any, unknown>} spec */
 function instantiateSpec(spec) {
   const ast = parseSpec(spec);
   return astToDOM(ast);

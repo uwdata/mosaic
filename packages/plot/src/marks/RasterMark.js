@@ -2,6 +2,7 @@ import { ascending } from 'd3';
 import { scale } from '@observablehq/plot';
 import { gridDomainContinuous, gridDomainDiscrete } from './util/grid.js';
 import { isColor } from './util/is-color.js';
+import { indices, permute } from './util/permute.js';
 import { alphaScheme, alphaConstant, colorConstant, colorCategory, colorScheme, createCanvas } from './util/raster.js';
 import { DENSITY, Grid2DMark } from './Grid2DMark.js';
 import { Fixed, Transient } from '../symbols.js';
@@ -20,6 +21,7 @@ import { Fixed, Transient } from '../symbols.js';
 export class RasterMark extends Grid2DMark {
   constructor(source, options) {
     super('image', source, options);
+    this.image = null;
   }
 
   setPlot(plot, index) {
@@ -33,37 +35,50 @@ export class RasterMark extends Grid2DMark {
   }
 
   rasterize() {
-    const { bins, kde } = this;
+    const { bins, grids } = this;
     const [ w, h ] = bins;
+    const { numRows, columns } = grids;
 
     // raster data
     const { canvas, ctx, img } = imageData(this, w, h);
 
     // color + opacity encodings
     const { alpha, alphaProp, color, colorProp } = rasterEncoding(this);
+    const alphaData = columns[alphaProp] ?? [];
+    const colorData = columns[colorProp] ?? [];
+
+    // determine raster order
+    const idx = numRows > 1 && colorProp && this.groupby?.includes(colorProp)
+      ? permute(colorData, this.plot.getAttribute('colorDomain'))
+      : indices(numRows);
 
     // generate rasters
-    this.data = kde.map(cell => {
-      color?.(img.data, w, h, cell[colorProp]);
-      alpha?.(img.data, w, h, cell[alphaProp]);
-      ctx.putImageData(img, 0, 0);
-      return { src: canvas.toDataURL() };
-    });
+    this.data = {
+      numRows,
+      columns: {
+        src: Array.from({ length: numRows }, (_, i) => {
+          color?.(img.data, w, h, colorData[idx[i]]);
+          alpha?.(img.data, w, h, alphaData[idx[i]]);
+          ctx.putImageData(img, 0, 0);
+          return canvas.toDataURL();
+        })
+      }
+    };
 
     return this;
   }
 
   plotSpecs() {
-    const { type, plot, data } = this;
+    const { type, plot, data: { numRows: length, columns } } = this;
     const options = {
-      src: 'src',
+      src: columns.src,
       width: plot.innerWidth(),
       height: plot.innerHeight(),
       preserveAspectRatio: 'none',
       imageRendering: this.channel('imageRendering')?.value,
       frameAnchor: 'middle'
     };
-    return [{ type, data, options }];
+    return [{ type, data: { length }, options }];
   }
 }
 
@@ -86,6 +101,7 @@ export class HeatmapMark extends RasterMark {
 /**
  * Utility method to generate color and alpha encoding helpers.
  * The returned methods can write directly to a pixel raster.
+ * @param {RasterMark} mark
  */
 export function rasterEncoding(mark) {
   const { aggr, densityMap, groupby, plot } = mark;
@@ -132,18 +148,24 @@ export function rasterEncoding(mark) {
   return { alphaProp, colorProp, alpha, color };
 }
 
+/**
+ * Generate an opacity rasterizer for a bitmap alpha channel.
+ * @param {RasterMark} mark The mark instance
+ * @param {string} prop The data property name
+ * @returns A bitmap rasterizer function.
+ */
 function alphaScale(mark, prop) {
-  const { plot, kde: grids } = mark;
+  const { plot, grids } = mark;
 
   // determine scale domain
   const domainAttr = plot.getAttribute('opacityDomain');
   const domainFixed = domainAttr === Fixed;
   const domainTransient = domainAttr?.[Transient];
   const domain = (!domainFixed && !domainTransient && domainAttr)
-    || gridDomainContinuous(grids, prop);
-  if (domainFixed || domainTransient) {
-    if (domainTransient) domain[Transient] = true;
-    plot.setAttribute('colorDomain', domain);
+    || gridDomainContinuous(grids.columns[prop]);
+  if (domainFixed || domainTransient || !domainAttr) {
+    if (!domainFixed) domain[Transient] = true;
+    plot.setAttribute('opacityDomain', domain);
   }
 
   // generate opacity scale
@@ -163,22 +185,29 @@ function alphaScale(mark, prop) {
   return alphaScheme(s);
 }
 
+/**
+ * Generate an color rasterizer for bitmap r, g, b channels.
+ * @param {RasterMark} mark The mark instance
+ * @param {string} prop
+ * @returns A bitmap rasterizer function.
+ */
 function colorScale(mark, prop) {
-  const { plot, kde: grids } = mark;
-  const flat = !grids[0][prop]?.map; // not array-like
-  const discrete = flat || Array.isArray(grids[0][prop]);
+  const { plot, grids } = mark;
+  const data = grids.columns[prop];
+  const flat = !data[0]?.map; // not array-like
+  const discrete = flat || Array.isArray(data[0]);
 
   // determine scale domain
   const domainAttr = plot.getAttribute('colorDomain');
   const domainFixed = domainAttr === Fixed;
   const domainTransient = domainAttr?.[Transient];
   const domain = (!domainFixed && !domainTransient && domainAttr) || (
-    flat ? grids.map(cell => cell[prop]).sort(ascending)
-      : discrete ? gridDomainDiscrete(grids, prop)
-      : gridDomainContinuous(grids, prop)
+    flat ? data.slice().sort(ascending)
+      : discrete ? gridDomainDiscrete(data)
+      : gridDomainContinuous(data)
   );
-  if (domainFixed || domainTransient) {
-    if (domainTransient) domain[Transient] = true;
+  if (domainFixed || domainTransient || !domainAttr) {
+    if (!domainFixed) domain[Transient] = true;
     plot.setAttribute('colorDomain', domain);
   }
 
@@ -234,6 +263,15 @@ function inferScaleType(type) {
   return type;
 }
 
+/**
+ * Retrieve canvas image data for a 2D raster bitmap.
+ * The resulting data is cached in the mark.image property.
+ * If the canvas dimensions change, a new canvas is created.
+ * @param {RasterMark} mark The mark instance
+ * @param {number} w The canvas width.
+ * @param {number} h The canvas height.
+ * @returns An object with a canvas, context, image data, and dimensions.
+ */
 export function imageData(mark, w, h) {
   if (!mark.image || mark.image.w !== w || mark.image.h !== h) {
     const canvas = createCanvas(w, h);

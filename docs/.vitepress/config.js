@@ -15,7 +15,7 @@ export default defineConfig({
     siteTitle: false,
 
     footer: {
-      message: 'Mosaic is a collaboration of the <a href="https://idl.cs.washington.edu/">UW Interactive Data Lab</a> and the <a href="https://dig.cmu.edu/">CMU Data Interaction Group</a>.',
+      message: 'Mosaic is a collaboration of the <a href="https://idl.uw.edu/">UW Interactive Data Lab</a> and the <a href="https://dig.cmu.edu/">CMU Data Interaction Group</a>.',
       copyright: 'Released under the BSD License. Copyright © 2023-Present UW Interactive Data Lab.'
     },
 
@@ -85,10 +85,10 @@ export default defineConfig({
             { text: 'Symbol Plots', link: '/examples/symbols' },
             { text: 'Axes & Gridlines', link: '/examples/axes' },
             { text: 'Airline Travelers', link: '/examples/airline-travelers' },
+            { text: 'Aeromagnetic Survey', link: '/examples/aeromagnetic-survey' },
             { text: 'Driving Shifts into Reverse', link: '/examples/driving-shifts' },
             { text: 'Population Arrows', link: '/examples/population-arrows' },
             { text: 'Presidential Opinion', link: '/examples/presidential-opinion' },
-            { text: 'Aeromagnetic Survey', link: '/examples/aeromagnetic-survey' },
             { text: 'Voronoi Diagram', link: '/examples/voronoi' },
             { text: 'Seattle Temperatures', link: '/examples/seattle-temp' },
             { text: 'Sorted Bars', link: '/examples/sorted-bars' },
@@ -99,12 +99,16 @@ export default defineConfig({
           text: 'Data Transformation',
           collapsed: true,
           items: [
+            { text: 'Athlete Height Intervals', link: '/examples/athlete-height' },
             { text: 'Bias Parameter', link: '/examples/bias' },
+            { text: 'Linear Regression', link: '/examples/linear-regression' },
+            { text: 'Linear Regression 10M', link: '/examples/linear-regression-10m' },
             { text: 'Moving Average', link: '/examples/moving-average' },
+            { text: 'Line Multi-Series', link: '/examples/line-multi-series' },
             { text: 'Normalized Stock Prices', link: '/examples/normalize' },
             { text: 'Overview + Detail', link: '/examples/overview-detail' },
-            { text: 'Linear Regression', link: '/examples/linear-regression' },
-            { text: 'Wind Map', link: '/examples/wind-map' }
+            { text: 'Wind Map', link: '/examples/wind-map' },
+            { text: 'WNBA Shot Chart', link: '/examples/wnba-shots' }
           ]
         },
         {
@@ -164,7 +168,8 @@ export default defineConfig({
             { text: 'Coordinator', link: '/api/core/coordinator' },
             { text: 'Connectors', link: '/api/core/connectors' },
             { text: 'Param', link: '/api/core/param' },
-            { text: 'Selection', link: '/api/core/selection' }
+            { text: 'Selection', link: '/api/core/selection' },
+            { text: 'Multi-Database Support', link: '/api/core/multi-database-support' }
           ]
         },
 

@@ -1,34 +1,29 @@
-// arrow type ids
-const INTEGER = 2;
-const FLOAT = 3;
-const DECIMAL = 7;
-const TIMESTAMP = 10;
+import { DataType } from 'apache-arrow';
+
+/**
+ * @typedef {import('apache-arrow').Vector} Vector
+ */
 
 /**
  * Test if a value is an Apache Arrow table.
  * As sometimes multiple Arrow versions may be used simultaneously,
  * we use a "duck typing" approach and check for a getChild function.
  * @param {*} values The value to test
- * @returns true if the value duck types as Apache Arrow data
+ * @returns {values is import('apache-arrow').Table} true if the value duck types as Apache Arrow data
  */
 export function isArrowTable(values) {
   return typeof values?.getChild === 'function';
 }
 
 /**
- * Return a JavaScript array type for an Apache Arrow column type.
- * @param {*} type an Apache Arrow column type
- * @returns a JavaScript array constructor
- */
+  * Return a JavaScript array type for an Apache Arrow column type.
+  * @param {DataType} type an Apache Arrow column type
+  * @returns a JavaScript array constructor
+  */
 export function convertArrowArrayType(type) {
-  switch (type.typeId) {
-    case INTEGER:
-    case FLOAT:
-    case DECIMAL:
-      return Float64Array;
-    default:
-      return Array;
-  }
+  return DataType.isInt(type) || DataType.isFloat(type) || DataType.isDecimal(type)
+    ? Float64Array
+    : Array;
 }
 
 /**
@@ -37,24 +32,22 @@ export function convertArrowArrayType(type) {
  * Large integers (BigInt) are converted to Float64 numbers.
  * Fixed-point decimal values are convert to Float64 numbers.
  * Otherwise, the default Arrow values are used.
- * @param {*} type an Apache Arrow column type
+ * @param {DataType} type an Apache Arrow column type
  * @returns a value conversion function
  */
 export function convertArrowValue(type) {
-  const { typeId } = type;
-
   // map timestamp numbers to date objects
-  if (typeId === TIMESTAMP) {
+  if (DataType.isTimestamp(type)) {
     return v => v == null ? v : new Date(v);
   }
 
   // map bigint to number
-  if (typeId === INTEGER && type.bitWidth >= 64) {
+  if (DataType.isInt(type) && type.bitWidth >= 64) {
     return v => v == null ? v : Number(v);
   }
 
   // map decimal to number
-  if (typeId === DECIMAL) {
+  if (DataType.isDecimal(type)) {
     const scale = 1 / Math.pow(10, type.scale);
     return v => v == null ? v : decimalToNumber(v, scale);
   }
@@ -69,15 +62,14 @@ export function convertArrowValue(type) {
  * Large integers (BigInt) are converted to Float64 numbers.
  * Fixed-point decimal values are convert to Float64 numbers.
  * Otherwise, the default Arrow values are used.
- * @param {*} column An Apache Arrow column
+ * @param {Vector} column An Apache Arrow column
  * @returns an array of values
  */
 export function convertArrowColumn(column) {
   const { type } = column;
-  const { typeId } = type;
 
   // map timestamp numbers to date objects
-  if (typeId === TIMESTAMP) {
+  if (DataType.isTimestamp(type)) {
     const size = column.length;
     const array = new Array(size);
     for (let row = 0; row < size; ++row) {
@@ -88,26 +80,31 @@ export function convertArrowColumn(column) {
   }
 
   // map bigint to number
-  if (typeId === INTEGER && type.bitWidth >= 64) {
+  if (DataType.isInt(type) && type.bitWidth >= 64) {
     const size = column.length;
-    const array = new Float64Array(size);
+    const array = column.nullCount ? new Array(size) : new Float64Array(size);
     for (let row = 0; row < size; ++row) {
       const v = column.get(row);
-      array[row] = v == null ? NaN : Number(v);
+      array[row] = v == null ? null : Number(v);
     }
     return array;
   }
 
   // map decimal to number
-  if (typeId === DECIMAL) {
+  if (DataType.isDecimal(type)) {
     const scale = 1 / Math.pow(10, type.scale);
     const size = column.length;
-    const array = new Float64Array(size);
+    const array = column.nullCount ? new Array(size) : new Float64Array(size);
     for (let row = 0; row < size; ++row) {
       const v = column.get(row);
-      array[row] = v == null ? NaN : decimalToNumber(v, scale);
+      array[row] = v == null ? null : decimalToNumber(v, scale);
     }
     return array;
+  }
+
+  // if there are null values, use a standard array
+  if (column.nullCount) {
+    return Array.from(column);
   }
 
   // otherwise use Arrow JS defaults
@@ -124,10 +121,10 @@ const BASE32 = Array.from(
 /**
  * Convert a fixed point decimal value to a double precision number.
  * Note: if the value is sufficiently large the conversion may be lossy!
- * @param {Uint32Array} v a fixed decimal value
+ * @param {Uint32Array & { signed: boolean }} v a fixed decimal value
  * @param {number} scale a scale factor, corresponding to the
  *  number of fractional decimal digits in the fixed point value
- * @returns the resulting number
+ * @returns {number} the resulting number
  */
 function decimalToNumber(v, scale) {
   const n = v.length;

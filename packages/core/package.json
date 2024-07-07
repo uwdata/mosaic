@@ -1,6 +1,6 @@
 {
   "name": "@uwdata/mosaic-core",
-  "version": "0.7.1",
+  "version": "0.10.0",
   "description": "Scalable and extensible linked data views.",
   "keywords": [
     "mosaic",
@@ -10,7 +10,7 @@
     "interface"
   ],
   "license": "BSD-3-Clause",
-  "author": "Jeffrey Heer (http://idl.cs.washington.edu)",
+  "author": "Jeffrey Heer (https://idl.uw.edu)",
   "type": "module",
   "main": "src/index.js",
   "module": "src/index.js",
@@ -23,13 +23,16 @@
   "scripts": {
     "prebuild": "rimraf dist && mkdir dist",
     "build": "node ../../esbuild.js mosaic-core",
-    "lint": "eslint src test --ext .js",
+    "lint": "eslint src test",
     "test": "mocha 'test/**/*-test.js'",
     "prepublishOnly": "npm run test && npm run lint && npm run build"
   },
   "dependencies": {
-    "@duckdb/duckdb-wasm": "^1.28.1-dev109.0",
-    "@uwdata/mosaic-sql": "^0.7.0",
-    "apache-arrow": "^15.0.0"
+    "@duckdb/duckdb-wasm": "^1.28.1-dev232.0",
+    "@uwdata/mosaic-sql": "^0.10.0",
+    "apache-arrow": "^16.1.0"
+  },
+  "devDependencies": {
+    "@uwdata/mosaic-duckdb": "^0.10.0"
   }
 }

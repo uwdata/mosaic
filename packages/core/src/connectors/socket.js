@@ -81,6 +81,13 @@ export function socketConnector(uri = 'ws://localhost:3000/') {
     get connected() {
       return connected;
     },
+    /**
+     * Query the DuckDB server.
+     * @param {object} query
+     * @param {'exec' | 'arrow' | 'json'} [query.type] The query type: 'exec', 'arrow', or 'json'.
+     * @param {string} query.sql A SQL query string.
+     * @returns the query result
+     */
     query(query) {
       return new Promise(
         (resolve, reject) => enqueue(query, resolve, reject)

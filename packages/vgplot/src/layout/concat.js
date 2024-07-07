@@ -6,7 +6,7 @@ export function concat({ direction = 'vertical', wrap = false }, children) {
   div.style.justifyContent = 'flex-start';
   div.style.alignItems = 'flex-start';
   children.forEach(child => div.appendChild(child));
-  div.value = { element: div };
+  Object.assign(div, { value: { element: div } });
   return div;
 }
 

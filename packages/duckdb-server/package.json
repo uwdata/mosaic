@@ -1,9 +1,10 @@
 {
   "name": "duckdb-server",
-  "version": "0.7.0",
+  "version": "0.10.0",
   "private": true,
   "scripts": {
-    "prepublishOnly": "hatch run test:cov && hatch fmt --check && hatch build",
-    "publish": "hatch publish"
+    "prepublishOnly": "rimraf dist && mkdir dist && hatch run test:cov && hatch fmt --check && hatch build",
+    "publish": "hatch publish --user __token__",
+    "release": "npm run prepublishOnly && npm run publish"
   }
 }

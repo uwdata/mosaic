@@ -1,15 +1,37 @@
-import { MosaicClient, isParam, isSelection } from '@uwdata/mosaic-core';
-import {
-  Query, regexp_matches, contains, prefix, suffix, literal
-} from '@uwdata/mosaic-sql';
+import { MosaicClient, Param, isParam, isSelection, clauseMatch } from '@uwdata/mosaic-core';
+import { Query } from '@uwdata/mosaic-sql';
 import { input } from './input.js';
 
-const FUNCTIONS = { contains, prefix, suffix, regexp: regexp_matches };
 let _id = 0;
 
 export const search = options => input(Search, options);
 
 export class Search extends MosaicClient {
+  /**
+   * Create a new text search input.
+   * @param {object} [options] Options object
+   * @param {HTMLElement} [options.element] The parent DOM element in which to
+   *  place the search elements. If undefined, a new `div` element is created.
+   * @param {Selection} [options.filterBy] A selection to filter the database
+   *  table indicated by the *from* option.
+   * @param {Param} [options.as] The output param or selection. A selection
+   *  clause is added based on the current text search query.
+   * @param {string} [options.field] The database column name to use within
+   *  generated selection clause predicates. Defaults to the *column* option.
+   * @param {'contains' | 'prefix' | 'suffix' | 'regexp'} [options.type] The
+   *  type of text search query to perform. One of:
+   *  - `"contains"` (default): the query string may appear anywhere in the text
+   *  - `"prefix"`: the query string must appear at the start of the text
+   *  - `"suffix"`: the query string must appear at the end of the text
+   *  - `"regexp"`: the query string is a regular expression the text must match
+   * @param {string} [options.from] The name of a database table to use as an
+   *  autocomplete data source for this widget. Used in conjunction with the
+   *  *column* option.
+   * @param {string} [options.column] The name of a database column from which
+   *  to pull valid search results. The unique column values are used as search
+   *  autocomplete values. Used in conjunction with the *from* option.
+   * @param {string} [options.label] A text label for this input.
+   */
   constructor({
     element,
     filterBy,
@@ -17,6 +39,7 @@ export class Search extends MosaicClient {
     column,
     label,
     type = 'contains',
+    field = column,
     as
   } = {}) {
     super(filterBy);
@@ -25,10 +48,11 @@ export class Search extends MosaicClient {
     this.from = from;
     this.column = column;
     this.selection = as;
+    this.field = field;
 
     this.element = element ?? document.createElement('div');
     this.element.setAttribute('class', 'input');
-    this.element.value = this;
+    Object.defineProperty(this.element, 'value', { value: this });
 
     if (label) {
       const lab = document.createElement('label');
@@ -62,14 +86,10 @@ export class Search extends MosaicClient {
   }
 
   publish(value) {
-    const { selection, column, type } = this;
+    const { selection, field, type } = this;
     if (isSelection(selection)) {
-      selection.update({
-        source: this,
-        schema: { type },
-        value,
-        predicate: value ? FUNCTIONS[type](column, literal(value)) : null
-      });
+      const clause = clauseMatch(field, value, { source: this, method: type });
+      selection.update(clause);
     } else if (isParam(selection)) {
       selection.update(value);
     }

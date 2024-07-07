@@ -9,11 +9,21 @@ export { socketConnector } from './connectors/socket.js';
 export { wasmConnector } from './connectors/wasm.js';
 
 export {
+  clauseInterval,
+  clauseIntervals,
+  clausePoint,
+  clausePoints,
+  clauseMatch
+} from './SelectionClause.js';
+
+export {
   isArrowTable,
   convertArrowArrayType,
   convertArrowValue,
   convertArrowColumn
 } from './util/convert-arrow.js'
+
 export { distinct } from './util/distinct.js';
 export { synchronizer } from './util/synchronizer.js';
 export { throttle } from './util/throttle.js';
+export { toDataColumns } from './util/to-data-columns.js'
