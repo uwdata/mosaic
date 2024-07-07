@@ -5,7 +5,7 @@ export function restConnector(uri = 'http://localhost:3000/') {
     /**
      * Query the DuckDB server.
      * @param {object} query
-     * @param {'exec' | 'arrow' | 'json'} [query.type] The query type: 'exec', 'arrow', or 'json'.
+     * @param {'exec' | 'arrow' | 'json' | 'create-bundle' | 'load-bundle'} [query.type] The query type.
      * @param {string} query.sql A SQL query string.
      * @returns the query result
      */
@@ -19,9 +19,9 @@ export function restConnector(uri = 'http://localhost:3000/') {
         body: JSON.stringify(query)
       });
 
-      return query.type === 'exec' ? req
+      return query.type === 'json' ? (await req).json()
         : query.type === 'arrow' ? tableFromIPC(req)
-        : (await req).json();
+        : req;
     }
   };
 }
