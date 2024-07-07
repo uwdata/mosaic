@@ -1,6 +1,3 @@
-mod db;
-use db::{Database, DuckDbDatabase};
-
 use anyhow::Result;
 use axum::{
     body::Bytes,
@@ -24,6 +21,12 @@ use tokio::sync::Mutex;
 use tower_http::cors::{Any, CorsLayer};
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
+mod bundle;
+mod db;
+
+use bundle::{create_bundle, load_bundle, Query as BundleQuery};
+use db::{Database, DuckDbDatabase};
+
 struct AppState {
     db: Arc<dyn Database>,
     cache: Mutex<lru::LruCache<String, Vec<u8>>>,
@@ -34,7 +37,7 @@ struct QueryParams {
     #[serde(rename = "type")]
     query_type: String,
     sql: Option<String>,
-    queries: Option<Vec<String>>,
+    queries: Option<Vec<BundleQuery>>,
 }
 
 enum QueryResponse {
@@ -56,29 +59,6 @@ impl IntoResponse for QueryResponse {
             QueryResponse::Empty => StatusCode::OK.into_response(),
         }
     }
-}
-
-async fn create_bundle(
-    db: &dyn Database,
-    cache: &Mutex<lru::LruCache<String, Vec<u8>>>,
-    queries: &[String],
-    bundle_dir: &Path,
-) -> Result<()> {
-    // Save cache to bundle_dir
-    // This is a placeholder and needs to be implemented based on your caching strategy
-    todo!("Implement saving cache to bundle directory");
-    Ok(())
-}
-
-async fn load_bundle(
-    db: &dyn Database,
-    cache: &Mutex<lru::LruCache<String, Vec<u8>>>,
-    bundle_dir: &Path,
-) -> Result<()> {
-    // Load cache from bundle_dir
-    // This is a placeholder and needs to be implemented based on your caching strategy
-    todo!("Implement loading cache from bundle directory");
-    Ok(())
 }
 
 async fn retrieve<F, Fut>(
@@ -130,7 +110,7 @@ async fn handle_query(
         }
         "json" => {
             let json: Vec<u8> =
-                retrieve(&state.cache, sql, || async { state.db.get_json(sql).await })
+                retrieve(&state.cache, sql, || state.db.get_json(sql))
                     .await
                     .map_err(|e| {
                         tracing::error!("JSON retrieval error: {:?}", e);
@@ -144,7 +124,7 @@ async fn handle_query(
                 create_bundle(
                     state.db.as_ref(),
                     &state.cache,
-                    &queries,
+                    queries,
                     Path::new(".mosaic/bundle"),
                 )
                 .await

@@ -8,7 +8,7 @@ export class FilterGroup {
    *  Falsy values disable indexing.
    */
   constructor(coordinator, selection, index = true) {
-    /** @type import('./Coordinator.js').Coordinator */
+    /** @type {import('./Coordinator.js').Coordinator} */
     this.mc = coordinator;
     this.selection = selection;
     this.clients = new Set();

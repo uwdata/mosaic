@@ -9,7 +9,7 @@ let _instance;
 /**
  * Set or retrieve the coordinator instance.
  *
- * @param {Coordinator} instance the coordinator instance to set
+ * @param {Coordinator} [instance] the coordinator instance to set
  * @returns {Coordinator} the coordinator instance
  */
 export function coordinator(instance) {
@@ -27,6 +27,7 @@ export class Coordinator {
       logger = console,
       manager = QueryManager()
     } = options;
+    /** @type {QueryManager} */
     this.manager = manager;
     this.logger(logger);
     this.configure(options);
@@ -87,11 +88,25 @@ export class Coordinator {
     return this.query(query, { ...options, cache: true, priority: Priority.Low });
   }
 
+  /**
+   * Create a bundle of queries that can be loaded into the cache.
+   *
+   * @param {string} name The name of the bundle.
+   * @param {[string | {sql: string},  {alias: string}]} queries The queries to save into the bundle.
+   * @param {typeof Priority} priority Request priority.
+   * @returns 
+   */
   createBundle(name, queries, priority = Priority.Low) {
-    const options = { name, queries };
+    const options = { name, queries: queries.map(q => typeof q == 'string' ? {sql: q} : q) };
     return this.manager.request({ type: 'create-bundle', options }, priority);
   }
 
+  /**
+   * Load a bundle into the cache.
+   * @param {*} name The name of the bundle.
+   * @param {*} priority Request priority.
+   * @returns 
+   */
   loadBundle(name, priority = Priority.High) {
     const options = { name };
     return this.manager.request({ type: 'load-bundle', options }, priority);

@@ -19,7 +19,7 @@ export class DataCubeIndexer {
    * @param {*} options Options hash to configure the data cube indexes and pass selections to the coordinator.
    */
   constructor(mc, { selection, temp = true }) {
-    /** @type import('./Coordinator.js').Coordinator */
+    /** @type {import('./Coordinator.js').Coordinator} */
     this.mc = mc;
     this.selection = selection;
     this.temp = temp;
