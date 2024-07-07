@@ -65,6 +65,7 @@
         <option value="wasm" selected>WASM</option>
         <option value="socket">Socket</option>
         <option value="rest">REST</option>
+        <option value="rest_https">REST (HTTPS)</option>
       </select>
     </span>
 
@@ -142,7 +143,9 @@
   setConnector();
 
   async function setConnector() {
-    await setDatabaseConnector(connectorMenu.value);
+    const value = connectorMenu.value;
+    const isHttps = value === 'rest_https';
+    await setDatabaseConnector(isHttps ? 'rest' : value, isHttps ? 'https://localhost:3000/' : undefined);
     reload();
   }
 
