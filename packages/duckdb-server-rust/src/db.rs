@@ -1,6 +1,6 @@
 use anyhow::Result;
 use async_trait::async_trait;
-use duckdb::{arrow::array::RecordBatch, Connection};
+use duckdb::Connection;
 use std::sync::Arc;
 use tokio::sync::Mutex;
 

@@ -93,12 +93,14 @@ async fn handle_query(
         "arrow" => {
             if let Some(sql) = params.sql.as_deref() {
                 let persist = params.persist.unwrap_or(true);
-                let buffer = retrieve(&state.cache, sql, command, persist, || state.db.get_arrow_bytes(sql))
-                    .await
-                    .map_err(|e| {
-                        tracing::error!("Arrow retrieval error: {:?}", e);
-                        StatusCode::INTERNAL_SERVER_ERROR
-                    })?;
+                let buffer = retrieve(&state.cache, sql, command, persist, || {
+                    state.db.get_arrow_bytes(sql)
+                })
+                .await
+                .map_err(|e| {
+                    tracing::error!("Arrow retrieval error: {:?}", e);
+                    StatusCode::INTERNAL_SERVER_ERROR
+                })?;
                 Ok(QueryResponse::Arrow(buffer))
             } else {
                 Err(StatusCode::BAD_REQUEST)
@@ -107,12 +109,14 @@ async fn handle_query(
         "json" => {
             if let Some(sql) = params.sql.as_deref() {
                 let persist = params.persist.unwrap_or(true);
-                let json: Vec<u8> = retrieve(&state.cache, sql, command, persist, || state.db.get_json(sql))
-                    .await
-                    .map_err(|e| {
-                        tracing::error!("JSON retrieval error: {:?}", e);
-                        StatusCode::INTERNAL_SERVER_ERROR
-                    })?;
+                let json: Vec<u8> = retrieve(&state.cache, sql, command, persist, || {
+                    state.db.get_json(sql)
+                })
+                .await
+                .map_err(|e| {
+                    tracing::error!("JSON retrieval error: {:?}", e);
+                    StatusCode::INTERNAL_SERVER_ERROR
+                })?;
                 let string =
                     String::from_utf8(json).map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
                 Ok(QueryResponse::Json(string))

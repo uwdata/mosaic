@@ -1,5 +1,5 @@
+use crate::cache::{get_key, retrieve};
 use crate::db::Database;
-use crate::cache::get_key;
 use anyhow::{Context, Result};
 use regex::Regex;
 use serde::{Deserialize, Serialize};
@@ -73,12 +73,13 @@ pub async fn create_bundle(
                 "arrow"
             };
             let key = get_key(sql, command);
-            let result = if command == "arrow" {
-                db.get_arrow_bytes(sql).await?
-            } else {
-                db.get_json(sql).await?
-            };
-
+            let result = retrieve(cache, sql, command, true, || {
+                if command == "arrow" {
+                    db.get_arrow_bytes(sql)
+                } else {
+                    db.get_json(sql)
+                }
+            }).await?;
             fs::write(bundle_dir.join(&key), &result)
                 .context("Failed to write query result to file")?;
             manifest.queries.push(key);
@@ -107,18 +108,10 @@ pub async fn load_bundle(
     // Load precomputed query results into the cache
     let mut cache_lock = cache.lock().await;
     for key in &manifest.queries {
-        tracing::debug!("Key {}", key);
+        tracing::debug!("Load from bundle into cache: {}", key);
         let file = bundle_dir.join(key);
-        let is_json = file.extension().and_then(|ext| ext.to_str()) == Some("json");
         let data = fs::read(&file).context("Failed to read query result file")?;
-        if is_json {
-            let json_str = String::from_utf8(data).context("Failed to parse JSON data as UTF-8")?;
-            let json_value: serde_json::Value =
-                serde_json::from_str(&json_str).context("Failed to parse JSON data")?;
-            cache_lock.put(key.clone(), serde_json::to_vec(&json_value)?);
-        } else {
-            cache_lock.put(key.clone(), data);
-        }
+        cache_lock.put(key.clone(), data);
     }
     drop(cache_lock);
 

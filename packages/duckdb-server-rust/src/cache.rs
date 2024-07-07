@@ -1,5 +1,5 @@
-use tokio::sync::Mutex;
 use anyhow::Result;
+use tokio::sync::Mutex;
 
 pub fn get_key(sql: &str, command: &str) -> String {
     use sha2::{Digest, Sha256};
@@ -21,18 +21,17 @@ where
     Fut: std::future::Future<Output = Result<Vec<u8>>>,
 {
     let key = get_key(sql, command);
-    let mut cache_lock = cache.lock().await;
-    if let Some(cached) = cache_lock.get(&key) {
+
+    if let Some(cached) = cache.lock().await.get(&key) {
         tracing::debug!("Cache hit {}!", key);
-        Ok(cached.clone())
-    } else if persist {
-        let result = f().await?;
-        cache_lock.put(key, result.clone());
-        Ok(result)
-    } else {
-        // no need to keep the cache lock if we are not storing anything
-        drop(cache_lock);
-        let result = f().await?;
-        Ok(result)
+        return Ok(cached.clone());
     }
+
+    let result = f().await?;
+
+    if persist {
+        cache.lock().await.put(key, result.clone());
+    }
+
+    Ok(result)
 }
