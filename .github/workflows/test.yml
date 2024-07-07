@@ -76,13 +76,24 @@ jobs:
         uses: dtolnay/rust-toolchain@stable
         with:
           components: clippy, rust-src, rustfmt
+
       - name: Check formatting
-        run: cargo fmt -- --check
+        run: |
+          cd packages/duckdb-server-rust
+          cargo fmt -- --check
       - name: Check
-        run: cargo check
+        run: |
+          cd packages/duckdb-server-rust
+          cargo check
       - name: Clippy
-        run: cargo clippy --all -- -D warnings
+        run: |
+          cd packages/duckdb-server-rust
+          cargo clippy --all -- -D warnings
       - name: Build
-        run: cargo build --verbose
+        run: |
+          cd packages/duckdb-server-rust
+          cargo build --verbose
       - name: Test
-        run: cargo test --verbose
+        run: |
+          cd packages/duckdb-server-rust
+          cargo test --verbose
