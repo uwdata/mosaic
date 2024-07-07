@@ -34,8 +34,8 @@ struct AppState {
     cache: Mutex<lru::LruCache<String, Vec<u8>>>,
 }
 
-#[derive(Deserialize, Serialize, Debug)]
-struct QueryParams {
+#[derive(Deserialize, Serialize, Debug, Default)]
+pub struct QueryParams {
     #[serde(rename = "type")]
     query_type: String,
     persist: Option<bool>,
@@ -55,13 +55,13 @@ impl IntoResponse for QueryResponse {
         match self {
             QueryResponse::Json(value) => (
                 StatusCode::OK,
-                [("Content-Type", "application/json")],
+                [("Content-Type", mime::APPLICATION_JSON.as_ref())],
                 value,
             )
                 .into_response(),
             QueryResponse::Arrow(bytes) => (
                 StatusCode::OK,
-                [("Content-Type", "application/octet-stream")],
+                [("Content-Type", mime::APPLICATION_OCTET_STREAM.as_ref())],
                 Bytes::from(bytes),
             )
                 .into_response(),
@@ -171,18 +171,7 @@ async fn handle_post(
     handle_query(State(state), params).await
 }
 
-#[tokio::main]
-async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    // Tracing setup
-    tracing_subscriber::registry()
-        .with(
-            tracing_subscriber::EnvFilter::try_from_default_env().unwrap_or_else(|_| {
-                "duckdb_server_rust=debug,tower_http=debug,axum::rejection=trace".into()
-            }),
-        )
-        .with(tracing_subscriber::fmt::layer())
-        .init();
-
+pub fn app() -> Result<Router> {
     // Database and state setup
     let con = Connection::open_in_memory()?;
     let db = Arc::new(DuckDbDatabase::new(con));
@@ -201,10 +190,26 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .max_age(Duration::from_secs(60) * 60 * 24);
 
     // Router setup
-    let app = Router::new()
+    Ok(Router::new()
         .route("/", get(handle_get).post(handle_post))
         .with_state(state)
-        .layer(cors);
+        .layer(cors))
+}
+
+#[tokio::main]
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    // Tracing setup
+    tracing_subscriber::registry()
+        .with(
+            tracing_subscriber::EnvFilter::try_from_default_env().unwrap_or_else(|_| {
+                "duckdb_server_rust=debug,tower_http=debug,axum::rejection=trace".into()
+            }),
+        )
+        .with(tracing_subscriber::fmt::layer())
+        .init();
+
+    // App setup
+    let app = app()?;
 
     // TLS configuration
     let config = RustlsConfig::from_pem_file(
@@ -238,3 +243,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     Ok(())
 }
+
+#[cfg(test)]
+mod test;
