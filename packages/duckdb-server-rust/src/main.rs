@@ -22,9 +22,11 @@ use tower_http::cors::{Any, CorsLayer};
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
 mod bundle;
+mod cache;
 mod db;
 
 use bundle::{create_bundle, load_bundle, Query as BundleQuery};
+use cache::retrieve;
 use db::{Database, DuckDbDatabase};
 
 struct AppState {
@@ -67,26 +69,6 @@ impl IntoResponse for QueryResponse {
     }
 }
 
-async fn retrieve<F, Fut>(
-    cache: &Mutex<lru::LruCache<String, Vec<u8>>>,
-    key: &str,
-    f: F,
-) -> Result<Vec<u8>>
-where
-    F: FnOnce() -> Fut,
-    Fut: std::future::Future<Output = Result<Vec<u8>>>,
-{
-    let mut cache_lock = cache.lock().await;
-    if let Some(cached) = cache_lock.get(key) {
-        tracing::debug!("Cache hit!");
-        Ok(cached.clone())
-    } else {
-        let result = f().await?;
-        cache_lock.put(key.to_string(), result.clone());
-        Ok(result)
-    }
-}
-
 async fn handle_query(
     State(state): State<Arc<AppState>>,
     params: QueryParams,
@@ -109,7 +91,7 @@ async fn handle_query(
         }
         "arrow" => {
             if let Some(sql) = params.sql.as_deref() {
-                let buffer = retrieve(&state.cache, sql, || state.db.get_arrow_bytes(sql))
+                let buffer = retrieve(&state.cache, sql, command, || state.db.get_arrow_bytes(sql))
                     .await
                     .map_err(|e| {
                         tracing::error!("Arrow retrieval error: {:?}", e);
@@ -122,7 +104,7 @@ async fn handle_query(
         }
         "json" => {
             if let Some(sql) = params.sql.as_deref() {
-                let json: Vec<u8> = retrieve(&state.cache, sql, || state.db.get_json(sql))
+                let json: Vec<u8> = retrieve(&state.cache, sql, command, || state.db.get_json(sql))
                     .await
                     .map_err(|e| {
                         tracing::error!("JSON retrieval error: {:?}", e);

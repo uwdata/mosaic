@@ -1,4 +1,5 @@
 use crate::db::Database;
+use crate::cache::get_key;
 use anyhow::{Context, Result};
 use regex::Regex;
 use serde::{Deserialize, Serialize};
@@ -16,14 +17,6 @@ pub struct Manifest {
 pub struct Query {
     sql: String,
     alias: Option<String>,
-}
-
-fn get_key(sql: &str, command: &str) -> String {
-    use sha2::{Digest, Sha256};
-    let mut hasher = Sha256::new();
-    hasher.update(sql);
-    hasher.update(command);
-    format!("{:x}.{}", hasher.finalize(), command)
 }
 
 pub async fn create_bundle(
@@ -107,13 +100,14 @@ pub async fn load_bundle(
 ) -> Result<()> {
     let manifest_file = bundle_dir.join("bundle.json");
     let manifest_json =
-        fs::read_to_string(manifest_file).context("Failed to read manifest file")?;
+        fs::read_to_string(&manifest_file).context("Failed to read manifest file")?;
     let manifest: Manifest =
         serde_json::from_str(&manifest_json).context("Failed to deserialize manifest")?;
 
     // Load precomputed query results into the cache
     let mut cache_lock = cache.lock().await;
     for key in &manifest.queries {
+        tracing::debug!("Key {}", key);
         let file = bundle_dir.join(key);
         let is_json = file.extension().and_then(|ext| ext.to_str()) == Some("json");
         let data = fs::read(&file).context("Failed to read query result file")?;
