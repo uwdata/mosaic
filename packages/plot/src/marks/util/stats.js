@@ -172,7 +172,7 @@ export function qt(p, dof) {
 export function erfinv(x) {
   // Implementation from "Approximating the erfinv function" by Mike Giles,
   // GPU Computing Gems, volume 2, 2010.
-  // Ported from Apache Commons Math, http://www.apache.org/licenses/LICENSE-2.0
+  // Ported from Apache Commons Math, https://www.apache.org/licenses/LICENSE-2.0
 
   // beware that the logarithm argument must be
   // computed as (1.0 - x) * (1.0 + x),

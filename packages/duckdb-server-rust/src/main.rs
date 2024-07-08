@@ -240,7 +240,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         "DuckDB Server listening on https://{}",
         listener.local_addr().unwrap()
     );
-    axum_server::from_tcp_rustls(listener, config)
+    axum_server_dual_protocol::from_tcp_dual_protocol(listener, config)
         .serve(app.into_make_service())
         .await?;
 
