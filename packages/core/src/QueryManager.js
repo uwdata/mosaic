@@ -18,7 +18,6 @@ export class QueryManager {
   }
 
   next() {
-    if (this.pending || this.queue.isEmpty()) return;
     const requests = [];
     const results = [];
     while (!this.queue.isEmpty()) {
@@ -27,7 +26,6 @@ export class QueryManager {
       results.push(result);
     }
     this.pending = this.submitBatch(requests, results);
-    this.pending.finally(() => { this.pending = null; this.next(); });
   }
 
   enqueue(entry, priority = Priority.Normal) {
@@ -55,7 +53,7 @@ export class QueryManager {
       if (cache) {
         const cached = this.clientCache.get(sql);
         if (cached) {
-          this._logger.debug('Cache');
+          this._logger.debug(`Cache`);
           result.fulfill(cached);
           return;
         }
@@ -68,7 +66,7 @@ export class QueryManager {
       }
       const data = await this.db.query({ type, sql, ...options });
       if (cache) this.clientCache.set(sql, data);
-      this._logger.debug(`Request: ${(performance.now() - t0).toFixed(1)}`);
+      this._logger.debug(`Request: ${(performance.now() - t0).toFixed(1)} ms, ${(t0).toFixed(1)} ms`);
       result.fulfill(data);
     } catch (err) {
       result.reject(err);
