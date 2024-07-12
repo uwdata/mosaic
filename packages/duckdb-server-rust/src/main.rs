@@ -37,7 +37,7 @@ async fn handle_get(
 ) -> Result<QueryResponse, AppError> {
     if let Some(ws) = ws {
         // WebSocket upgrade
-        Ok(QueryResponse::WebSocket(
+        Ok(QueryResponse::Response(
             ws.on_upgrade(|socket| handle_websocket(socket, state)),
         ))
     } else {

@@ -800,7 +800,6 @@ dependencies = [
  "http-body-util",
  "listenfd",
  "lru",
- "mime",
  "regex",
  "serde",
  "serde_json",

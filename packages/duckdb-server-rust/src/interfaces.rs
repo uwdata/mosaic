@@ -15,10 +15,20 @@ pub struct AppState {
     pub cache: Mutex<lru::LruCache<String, Vec<u8>>>,
 }
 
+#[derive(Deserialize, Serialize, Debug)]
+#[serde(rename_all = "kebab-case")]
+pub enum Command {
+    Exec,
+    Arrow,
+    Json,
+    CreateBundle,
+    LoadBundle,
+}
+
 #[derive(Deserialize, Serialize, Debug, Default)]
 pub struct QueryParams {
     #[serde(rename = "type")]
-    pub query_type: String,
+    pub query_type: Option<Command>,
     pub persist: Option<bool>,
     pub sql: Option<String>,
     pub name: Option<String>,
@@ -28,8 +38,7 @@ pub struct QueryParams {
 pub enum QueryResponse {
     Json(String),
     Arrow(Vec<u8>),
-    WebSocket(Response),
-    BadRequest,
+    Response(Response),
     Empty,
 }
 
@@ -38,33 +47,40 @@ impl IntoResponse for QueryResponse {
         match self {
             QueryResponse::Json(value) => (
                 StatusCode::OK,
-                [("Content-Type", mime::APPLICATION_JSON.as_ref())],
+                [("Content-Type", "application/json")],
                 value,
             )
                 .into_response(),
             QueryResponse::Arrow(bytes) => (
                 StatusCode::OK,
-                [("Content-Type", mime::APPLICATION_OCTET_STREAM.as_ref())],
+                [("Content-Type", "application/vnd.apache.arrow.stream")],
                 Bytes::from(bytes),
             )
                 .into_response(),
-            QueryResponse::WebSocket(response) => response,
-            QueryResponse::BadRequest => StatusCode::BAD_REQUEST.into_response(),
+            QueryResponse::Response(response) => response,
             QueryResponse::Empty => StatusCode::OK.into_response(),
         }
     }
 }
 
-pub struct AppError(anyhow::Error);
+pub enum AppError {
+    Error(anyhow::Error),
+    BadRequest,
+}
 
 impl IntoResponse for AppError {
     fn into_response(self) -> Response {
-        tracing::error!("Error: {:?}", self.0);
-        (
-            StatusCode::INTERNAL_SERVER_ERROR,
-            format!("Something went wrong: {}", self.0),
-        )
-            .into_response()
+        match self {
+            AppError::Error(error) => {
+                tracing::error!("Error: {:?}", error);
+                (
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    format!("Something went wrong: {}", error),
+                )
+                    .into_response()
+            }
+            AppError::BadRequest => (StatusCode::BAD_REQUEST).into_response(),
+        }
     }
 }
 
@@ -73,6 +89,6 @@ where
     E: Into<anyhow::Error>,
 {
     fn from(err: E) -> Self {
-        Self(err.into())
+        AppError::Error(err.into())
     }
 }

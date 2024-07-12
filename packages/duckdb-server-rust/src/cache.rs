@@ -1,18 +1,20 @@
 use anyhow::Result;
+use serde_json::to_string;
 use tokio::sync::Mutex;
 
-pub fn get_key(sql: &str, command: &str) -> String {
+use crate::interfaces::Command;
+
+pub fn get_key(sql: &str, command: &Command) -> String {
     use sha2::{Digest, Sha256};
     let mut hasher = Sha256::new();
     hasher.update(sql);
-    hasher.update(command);
-    format!("{:x}.{}", hasher.finalize(), command)
+    format!("{:x}.{}", hasher.finalize(), to_string(&command).unwrap())
 }
 
 pub async fn retrieve<F, Fut>(
     cache: &Mutex<lru::LruCache<String, Vec<u8>>>,
     sql: &str,
-    command: &str,
+    command: &Command,
     persist: bool,
     f: F,
 ) -> Result<Vec<u8>>

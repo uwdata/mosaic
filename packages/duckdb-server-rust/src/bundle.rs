@@ -1,5 +1,6 @@
 use crate::cache::{get_key, retrieve};
 use crate::db::Database;
+use crate::interfaces::Command;
 use anyhow::{Context, Result};
 use regex::Regex;
 use serde::{Deserialize, Serialize};
@@ -68,17 +69,14 @@ pub async fn create(
             }
         } else if !pragma_re.is_match(sql) {
             let command = if describe_re.is_match(sql) {
-                "json"
+                Command::Json
             } else {
-                "arrow"
+                Command::Arrow
             };
-            let key = get_key(sql, command);
-            let result = retrieve(cache, sql, command, true, || {
-                if command == "arrow" {
-                    db.get_arrow_bytes(sql)
-                } else {
-                    db.get_json(sql)
-                }
+            let key = get_key(sql, &command);
+            let result = retrieve(cache, sql, &command, true, || match command {
+                Command::Arrow => db.get_arrow_bytes(sql),
+                _ => db.get_json(sql),
             })
             .await?;
             fs::write(bundle_dir.join(&key), &result)

@@ -1,6 +1,10 @@
-use crate::AppState;
+use crate::{
+    interfaces::{AppError, QueryResponse},
+    query::handle_query,
+    AppState,
+};
 use axum::extract::ws::{Message, WebSocket};
-use futures::SinkExt;
+use serde_json::json;
 use std::sync::Arc;
 
 pub async fn handle_websocket(mut socket: WebSocket, state: Arc<AppState>) {
@@ -8,9 +12,43 @@ pub async fn handle_websocket(mut socket: WebSocket, state: Arc<AppState>) {
         if let Ok(msg) = msg {
             match msg {
                 Message::Text(text) => {
-                    // Handle text messages
-                    let response = handle_websocket_message(text, &state).await;
-                    if socket.send(Message::Text(response)).await.is_err() {
+                    let response = handle_message(text, state.clone()).await;
+                    if match response {
+                        Err(error) => match error {
+                            AppError::BadRequest => {
+                                socket
+                                    .send(Message::Text(
+                                        json!({"error": "Bad request"}).to_string(),
+                                    ))
+                                    .await
+                            }
+                            AppError::Error(error) => {
+                                socket
+                                    .send(Message::Text(
+                                        json!({"error": format!("{}", error)}).to_string(),
+                                    ))
+                                    .await
+                            }
+                        },
+                        Ok(result) => match result {
+                            QueryResponse::Arrow(arrow) => {
+                                socket.send(Message::Binary(arrow)).await
+                            }
+                            QueryResponse::Json(json) => socket.send(Message::Text(json)).await,
+                            QueryResponse::Empty => {
+                                socket.send(Message::Text("{}".to_string())).await
+                            }
+                            _ => {
+                                socket
+                                    .send(Message::Text(
+                                        json!({"error": "Unknown response Type"}).to_string(),
+                                    ))
+                                    .await
+                            }
+                        },
+                    }
+                    .is_err()
+                    {
                         break;
                     }
                 }
@@ -23,8 +61,7 @@ pub async fn handle_websocket(mut socket: WebSocket, state: Arc<AppState>) {
     }
 }
 
-async fn handle_websocket_message(message: String, state: &Arc<AppState>) -> String {
-    // Implement your WebSocket message handling logic here
-    // You can use state.db and state.cache as needed
-    format!("Received: {}", message)
+async fn handle_message(message: String, state: Arc<AppState>) -> Result<QueryResponse, AppError> {
+    let params = serde_json::from_str(&message)?;
+    handle_query(state, params).await
 }
