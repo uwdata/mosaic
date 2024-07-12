@@ -1,9 +1,8 @@
-use anyhow::Result;
+use anyhow::{Context, Result};
 use axum::{
     body::Bytes,
-    extract::{Query, State},
-    http::Method,
-    http::StatusCode,
+    extract::{Query, State, WebSocketUpgrade},
+    http::{Method, StatusCode},
     response::{IntoResponse, Json, Response},
     routing::get,
     Router,
@@ -25,151 +24,38 @@ use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 mod bundle;
 mod cache;
 mod db;
+mod interfaces;
+mod query;
+mod websocket;
 
 use bundle::{create, load, Query as BundleQuery};
 use cache::retrieve;
 use db::{Database, DuckDbDatabase};
-
-struct AppState {
-    db: Arc<dyn Database>,
-    cache: Mutex<lru::LruCache<String, Vec<u8>>>,
-}
-
-#[derive(Deserialize, Serialize, Debug, Default)]
-pub struct QueryParams {
-    #[serde(rename = "type")]
-    query_type: String,
-    persist: Option<bool>,
-    sql: Option<String>,
-    name: Option<String>,
-    queries: Option<Vec<BundleQuery>>,
-}
-
-enum QueryResponse {
-    Json(String),
-    Arrow(Vec<u8>),
-    Empty,
-}
-
-impl IntoResponse for QueryResponse {
-    fn into_response(self) -> Response {
-        match self {
-            QueryResponse::Json(value) => (
-                StatusCode::OK,
-                [("Content-Type", mime::APPLICATION_JSON.as_ref())],
-                value,
-            )
-                .into_response(),
-            QueryResponse::Arrow(bytes) => (
-                StatusCode::OK,
-                [("Content-Type", mime::APPLICATION_OCTET_STREAM.as_ref())],
-                Bytes::from(bytes),
-            )
-                .into_response(),
-            QueryResponse::Empty => StatusCode::OK.into_response(),
-        }
-    }
-}
-
-async fn handle_query(
-    State(state): State<Arc<AppState>>,
-    params: QueryParams,
-) -> Result<QueryResponse, StatusCode> {
-    let command = &params.query_type;
-    tracing::info!("Command: '{}', Params: '{:?}'", command, params);
-
-    match command.as_str() {
-        "exec" => {
-            if let Some(sql) = params.sql.as_deref() {
-                state
-                    .db
-                    .execute(sql)
-                    .await
-                    .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
-                Ok(QueryResponse::Empty)
-            } else {
-                Err(StatusCode::BAD_REQUEST)
-            }
-        }
-        "arrow" => {
-            if let Some(sql) = params.sql.as_deref() {
-                let persist = params.persist.unwrap_or(true);
-                let buffer = retrieve(&state.cache, sql, command, persist, || {
-                    state.db.get_arrow_bytes(sql)
-                })
-                .await
-                .map_err(|e| {
-                    tracing::error!("Arrow retrieval error: {:?}", e);
-                    StatusCode::INTERNAL_SERVER_ERROR
-                })?;
-                Ok(QueryResponse::Arrow(buffer))
-            } else {
-                Err(StatusCode::BAD_REQUEST)
-            }
-        }
-        "json" => {
-            if let Some(sql) = params.sql.as_deref() {
-                let persist = params.persist.unwrap_or(true);
-                let json: Vec<u8> = retrieve(&state.cache, sql, command, persist, || {
-                    state.db.get_json(sql)
-                })
-                .await
-                .map_err(|e| {
-                    tracing::error!("JSON retrieval error: {:?}", e);
-                    StatusCode::INTERNAL_SERVER_ERROR
-                })?;
-                let string =
-                    String::from_utf8(json).map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
-                Ok(QueryResponse::Json(string))
-            } else {
-                Err(StatusCode::BAD_REQUEST)
-            }
-        }
-        "create-bundle" => {
-            if let Some(queries) = params.queries {
-                let bundle_name = params.name.unwrap_or_else(|| "default".to_string());
-                let bundle_path = Path::new(".mosaic").join("bundle").join(&bundle_name);
-                create(state.db.as_ref(), &state.cache, queries, &bundle_path)
-                    .await
-                    .map_err(|e| {
-                        tracing::error!("Bundle creation error: {:?}", e);
-                        StatusCode::INTERNAL_SERVER_ERROR
-                    })?;
-                Ok(QueryResponse::Empty)
-            } else {
-                Err(StatusCode::BAD_REQUEST)
-            }
-        }
-        "load-bundle" => {
-            if let Some(bundle_name) = params.name {
-                let bundle_path = Path::new(".mosaic").join("bundle").join(&bundle_name);
-                load(state.db.as_ref(), &state.cache, &bundle_path)
-                    .await
-                    .map_err(|e| {
-                        tracing::error!("Bundle loading error: {:?}", e);
-                        StatusCode::INTERNAL_SERVER_ERROR
-                    })?;
-                Ok(QueryResponse::Empty)
-            } else {
-                Err(StatusCode::BAD_REQUEST)
-            }
-        }
-        _ => Err(StatusCode::BAD_REQUEST),
-    }
-}
+use interfaces::{AppError, AppState, QueryParams, QueryResponse};
+use query::handle_query;
+use websocket::handle_websocket;
 
 async fn handle_get(
     State(state): State<Arc<AppState>>,
-    Query(params): Query<QueryParams>,
-) -> Result<QueryResponse, StatusCode> {
-    handle_query(State(state), params).await
+    ws: Option<WebSocketUpgrade>,
+    Query(params): Query<QueryParams>
+) -> Result<QueryResponse, AppError> {
+    if let Some(ws) = ws {
+        // WebSocket upgrade
+        Ok(QueryResponse::WebSocket(
+            ws.on_upgrade(|socket| handle_websocket(socket, state)),
+        ))
+    } else {
+        // HTTP request
+        handle_query(state, params).await
+    }
 }
 
 async fn handle_post(
     State(state): State<Arc<AppState>>,
     Json(params): Json<QueryParams>,
-) -> Result<QueryResponse, StatusCode> {
-    handle_query(State(state), params).await
+) -> Result<QueryResponse, AppError> {
+    handle_query(state, params).await
 }
 
 pub fn app() -> Result<Router> {
