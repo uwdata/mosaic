@@ -1,31 +1,10 @@
-use anyhow::{Context, Result};
-use axum::{
-    body::Bytes,
-    extract::{Query, State, WebSocketUpgrade},
-    http::{Method, StatusCode},
-    response::{IntoResponse, Json, Response},
-    routing::get,
-    Router,
-};
-use axum_server::tls_rustls::RustlsConfig;
-use duckdb::Connection;
-use listenfd::ListenFd;
-use serde::{Deserialize, Serialize};
-use std::net::TcpListener;
+use anyhow::Result;
 use std::path::Path;
 use std::sync::Arc;
-use std::time::Duration;
-use std::{net::Ipv4Addr, net::SocketAddr, path::PathBuf};
-use tokio::sync::Mutex;
-use tower_http::cors::{Any, CorsLayer};
-use tower_http::{compression::CompressionLayer, trace::TraceLayer};
-use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
-use crate::bundle::{create, load, Query as BundleQuery};
+use crate::bundle::{create, load};
 use crate::cache::retrieve;
-use crate::db::{Database, DuckDbDatabase};
 use crate::interfaces::{AppError, AppState, QueryParams, QueryResponse};
-use crate::websocket::handle_websocket;
 
 pub async fn handle_query(
     state: Arc<AppState>,

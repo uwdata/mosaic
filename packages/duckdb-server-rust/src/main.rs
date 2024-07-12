@@ -1,18 +1,15 @@
-use anyhow::{Context, Result};
+use anyhow::Result;
 use axum::{
-    body::Bytes,
     extract::{Query, State, WebSocketUpgrade},
-    http::{Method, StatusCode},
-    response::{IntoResponse, Json, Response},
+    http::Method,
+    response::Json,
     routing::get,
     Router,
 };
 use axum_server::tls_rustls::RustlsConfig;
 use duckdb::Connection;
 use listenfd::ListenFd;
-use serde::{Deserialize, Serialize};
 use std::net::TcpListener;
-use std::path::Path;
 use std::sync::Arc;
 use std::time::Duration;
 use std::{net::Ipv4Addr, net::SocketAddr, path::PathBuf};
@@ -28,9 +25,7 @@ mod interfaces;
 mod query;
 mod websocket;
 
-use bundle::{create, load, Query as BundleQuery};
-use cache::retrieve;
-use db::{Database, DuckDbDatabase};
+use db::DuckDbDatabase;
 use interfaces::{AppError, AppState, QueryParams, QueryResponse};
 use query::handle_query;
 use websocket::handle_websocket;
@@ -38,7 +33,7 @@ use websocket::handle_websocket;
 async fn handle_get(
     State(state): State<Arc<AppState>>,
     ws: Option<WebSocketUpgrade>,
-    Query(params): Query<QueryParams>
+    Query(params): Query<QueryParams>,
 ) -> Result<QueryResponse, AppError> {
     if let Some(ws) = ws {
         // WebSocket upgrade
