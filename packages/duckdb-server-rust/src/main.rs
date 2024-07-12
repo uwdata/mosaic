@@ -27,8 +27,6 @@ mod websocket;
 
 use db::DuckDbDatabase;
 use interfaces::{AppError, AppState, QueryParams, QueryResponse};
-use query::handle_query;
-use websocket::handle_websocket;
 
 async fn handle_get(
     State(state): State<Arc<AppState>>,
@@ -38,11 +36,11 @@ async fn handle_get(
     if let Some(ws) = ws {
         // WebSocket upgrade
         Ok(QueryResponse::Response(
-            ws.on_upgrade(|socket| handle_websocket(socket, state)),
+            ws.on_upgrade(|socket| websocket::handle(socket, state)),
         ))
     } else {
         // HTTP request
-        handle_query(state, params).await
+        query::handle(state, params).await
     }
 }
 
@@ -50,7 +48,7 @@ async fn handle_post(
     State(state): State<Arc<AppState>>,
     Json(params): Json<QueryParams>,
 ) -> Result<QueryResponse, AppError> {
-    handle_query(state, params).await
+    query::handle(state, params).await
 }
 
 pub fn app() -> Result<Router> {
@@ -118,7 +116,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // Run the server
     tracing::debug!(
-        "DuckDB Server listening on https://{}",
+        "DuckDB Server listening on http(s)://{0} and ws://{0}",
         listener.local_addr().unwrap()
     );
     axum_server_dual_protocol::from_tcp_dual_protocol(listener, config)

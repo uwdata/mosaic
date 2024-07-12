@@ -1,13 +1,12 @@
 use crate::{
     interfaces::{AppError, QueryResponse},
-    query::handle_query,
     AppState,
 };
 use axum::extract::ws::{Message, WebSocket};
 use serde_json::json;
 use std::sync::Arc;
 
-pub async fn handle_websocket(mut socket: WebSocket, state: Arc<AppState>) {
+pub async fn handle(mut socket: WebSocket, state: Arc<AppState>) {
     while let Some(msg) = socket.recv().await {
         if let Ok(msg) = msg {
             match msg {
@@ -38,7 +37,7 @@ pub async fn handle_websocket(mut socket: WebSocket, state: Arc<AppState>) {
                             QueryResponse::Empty => {
                                 socket.send(Message::Text("{}".to_string())).await
                             }
-                            _ => {
+                            QueryResponse::Response(_) => {
                                 socket
                                     .send(Message::Text(
                                         json!({"error": "Unknown response Type"}).to_string(),
@@ -63,5 +62,5 @@ pub async fn handle_websocket(mut socket: WebSocket, state: Arc<AppState>) {
 
 async fn handle_message(message: String, state: Arc<AppState>) -> Result<QueryResponse, AppError> {
     let params = serde_json::from_str(&message)?;
-    handle_query(state, params).await
+    crate::query::handle(state, params).await
 }

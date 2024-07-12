@@ -6,7 +6,7 @@ use crate::bundle::{create, load};
 use crate::cache::retrieve;
 use crate::interfaces::{AppError, AppState, Command, QueryParams, QueryResponse};
 
-pub async fn handle_query(
+pub async fn handle(
     state: Arc<AppState>,
     params: QueryParams,
 ) -> Result<QueryResponse, AppError> {

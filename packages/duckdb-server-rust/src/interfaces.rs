@@ -75,7 +75,7 @@ impl IntoResponse for AppError {
                 tracing::error!("Error: {:?}", error);
                 (
                     StatusCode::INTERNAL_SERVER_ERROR,
-                    format!("Something went wrong: {}", error),
+                    format!("Something went wrong: {error}"),
                 )
                     .into_response()
             }

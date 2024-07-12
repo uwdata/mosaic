@@ -6,25 +6,25 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-duckdb = { version = "0.10", features = ["bundled", "csv", "json", "parquet", "url", "httpfs"] }
+anyhow = "1.0"
+arrow = "52.1"
+async-trait = "0.1.80"
 axum = { version = "0.7", features = ["http1", "http2", "ws", "json", "tokio", "tracing"] }
 axum-server = { version = "0.6", features = ["tls-rustls"] }
-tokio = { version = "1", features = ["full"] }
-tower-http = { version = "0.5.0", features = ["cors", "compression-full", "trace"] }
+axum-server-dual-protocol = "0.6"
+duckdb = { version = "1", features = ["bundled", "csv", "json", "parquet", "url"] }
+futures = "0.3"
 listenfd = "1.0.1"
+lru = "0.12"
+regex = "1.5"
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
-lru = "0.12"
-arrow = "51.0"
-anyhow = "1.0"
+sha2 = "0.10"
+tokio = { version = "1", features = ["full"] }
+tower-http = { version = "0.5.0", features = ["cors", "compression-full", "trace"] }
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
-async-trait = "0.1.80"
-regex = "1.5"
-sha2 = "0.10"
-axum-server-dual-protocol = "0.6"
-futures = "0.3"
 
 [dev-dependencies]
-tower = { version = "0.4", features = ["util"] }
 http-body-util = "0.1.0"
+tower = { version = "0.4", features = ["util"] }
