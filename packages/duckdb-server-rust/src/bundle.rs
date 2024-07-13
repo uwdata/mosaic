@@ -74,9 +74,12 @@ pub async fn create(
                 Command::Arrow
             };
             let key = get_key(sql, &command);
-            let result = retrieve(cache, sql, &command, true, || match command {
-                Command::Arrow => db.get_arrow_bytes(sql),
-                _ => db.get_json(sql),
+            let result = retrieve(cache, sql, &command, true, || {
+                if let Command::Arrow = command {
+                    db.get_arrow(sql)
+                } else {
+                    db.get_json(sql)
+                }
             })
             .await?;
             fs::write(bundle_dir.join(&key), &result)

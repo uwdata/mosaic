@@ -8,7 +8,7 @@ use tokio::sync::Mutex;
 pub trait Database: Send + Sync {
     async fn execute(&self, sql: &str) -> Result<()>;
     async fn get_json(&self, sql: &str) -> Result<Vec<u8>>;
-    async fn get_arrow_bytes(&self, sql: &str) -> Result<Vec<u8>>;
+    async fn get_arrow(&self, sql: &str) -> Result<Vec<u8>>;
 }
 
 pub struct DuckDbDatabase {
@@ -46,7 +46,7 @@ impl Database for DuckDbDatabase {
         Ok(json_data)
     }
 
-    async fn get_arrow_bytes(&self, sql: &str) -> Result<Vec<u8>> {
+    async fn get_arrow(&self, sql: &str) -> Result<Vec<u8>> {
         let conn = self.con.lock().await;
         let mut stmt = conn.prepare(sql)?;
         let arrow = stmt.query_arrow([])?;
