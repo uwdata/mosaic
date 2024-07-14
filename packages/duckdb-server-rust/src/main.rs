@@ -54,7 +54,7 @@ async fn handle_post(
 pub fn app() -> Result<Router> {
     // Database and state setup
     let con = Connection::open_in_memory()?;
-    let db = Arc::new(DuckDbDatabase::new(con));
+    let db = Box::new(DuckDbDatabase::new(con));
     let cache = lru::LruCache::new(1000.try_into()?);
 
     let state = Arc::new(AppState {

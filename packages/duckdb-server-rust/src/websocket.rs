@@ -62,5 +62,5 @@ pub async fn handle(mut socket: WebSocket, state: Arc<AppState>) {
 
 async fn handle_message(message: String, state: &AppState) -> Result<QueryResponse, AppError> {
     let params = serde_json::from_str(&message)?;
-    crate::query::handle(&state, params).await
+    crate::query::handle(state, params).await
 }

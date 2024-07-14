@@ -4,14 +4,13 @@ use axum::{
     response::{IntoResponse, Response},
 };
 use serde::{Deserialize, Serialize};
-use std::sync::Arc;
 use tokio::sync::Mutex;
 
 use crate::bundle::Query as BundleQuery;
 use crate::db::Database;
 
 pub struct AppState {
-    pub db: Arc<dyn Database>,
+    pub db: Box<dyn Database>,
     pub cache: Mutex<lru::LruCache<String, Vec<u8>>>,
 }
 
