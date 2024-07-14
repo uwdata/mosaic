@@ -40,7 +40,7 @@ async fn handle_get(
         ))
     } else {
         // HTTP request
-        query::handle(state, params).await
+        query::handle(&state, params).await
     }
 }
 
@@ -48,7 +48,7 @@ async fn handle_post(
     State(state): State<Arc<AppState>>,
     Json(params): Json<QueryParams>,
 ) -> Result<QueryResponse, AppError> {
-    query::handle(state, params).await
+    query::handle(&state, params).await
 }
 
 pub fn app() -> Result<Router> {

@@ -11,7 +11,7 @@ pub async fn handle(mut socket: WebSocket, state: Arc<AppState>) {
         if let Ok(msg) = msg {
             match msg {
                 Message::Text(text) => {
-                    let response = handle_message(text, state.clone()).await;
+                    let response = handle_message(text, &state).await;
                     if match response {
                         Err(error) => match error {
                             AppError::BadRequest => {
@@ -60,7 +60,7 @@ pub async fn handle(mut socket: WebSocket, state: Arc<AppState>) {
     }
 }
 
-async fn handle_message(message: String, state: Arc<AppState>) -> Result<QueryResponse, AppError> {
+async fn handle_message(message: String, state: &AppState) -> Result<QueryResponse, AppError> {
     let params = serde_json::from_str(&message)?;
-    crate::query::handle(state, params).await
+    crate::query::handle(&state, params).await
 }

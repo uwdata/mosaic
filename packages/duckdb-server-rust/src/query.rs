@@ -1,12 +1,11 @@
 use anyhow::Result;
 use std::path::Path;
-use std::sync::Arc;
 
 use crate::bundle::{create, load};
 use crate::cache::retrieve;
 use crate::interfaces::{AppError, AppState, Command, QueryParams, QueryResponse};
 
-pub async fn handle(state: Arc<AppState>, params: QueryParams) -> Result<QueryResponse, AppError> {
+pub async fn handle(state: &AppState, params: QueryParams) -> Result<QueryResponse, AppError> {
     let command = &params.query_type;
     tracing::info!("Command: '{:?}', Params: '{:?}'", command, params);
     match command {
