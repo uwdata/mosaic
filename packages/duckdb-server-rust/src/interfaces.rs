@@ -18,8 +18,8 @@ pub struct AppState {
 #[derive(Deserialize, Serialize, Debug)]
 #[serde(rename_all = "kebab-case")]
 pub enum Command {
-    Exec,
     Arrow,
+    Exec,
     Json,
     CreateBundle,
     LoadBundle,
@@ -36,8 +36,8 @@ pub struct QueryParams {
 }
 
 pub enum QueryResponse {
-    Json(String),
     Arrow(Vec<u8>),
+    Json(String),
     Response(Response),
     Empty,
 }
@@ -45,16 +45,16 @@ pub enum QueryResponse {
 impl IntoResponse for QueryResponse {
     fn into_response(self) -> Response {
         match self {
-            QueryResponse::Json(value) => (
-                StatusCode::OK,
-                [("Content-Type", "application/json")],
-                value,
-            )
-                .into_response(),
             QueryResponse::Arrow(bytes) => (
                 StatusCode::OK,
                 [("Content-Type", "application/vnd.apache.arrow.stream")],
                 Bytes::from(bytes),
+            )
+                .into_response(),
+            QueryResponse::Json(value) => (
+                StatusCode::OK,
+                [("Content-Type", "application/json")],
+                value,
             )
                 .into_response(),
             QueryResponse::Response(response) => response,

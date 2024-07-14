@@ -10,14 +10,6 @@ pub async fn handle(state: Arc<AppState>, params: QueryParams) -> Result<QueryRe
     let command = &params.query_type;
     tracing::info!("Command: '{:?}', Params: '{:?}'", command, params);
     match command {
-        Some(Command::Exec) => {
-            if let Some(sql) = params.sql.as_deref() {
-                state.db.execute(sql).await?;
-                Ok(QueryResponse::Empty)
-            } else {
-                Err(AppError::BadRequest)
-            }
-        }
         Some(Command::Arrow) => {
             if let Some(sql) = params.sql.as_deref() {
                 let persist = params.persist.unwrap_or(true);
@@ -26,6 +18,14 @@ pub async fn handle(state: Arc<AppState>, params: QueryParams) -> Result<QueryRe
                 })
                 .await?;
                 Ok(QueryResponse::Arrow(buffer))
+            } else {
+                Err(AppError::BadRequest)
+            }
+        }
+        Some(Command::Exec) => {
+            if let Some(sql) = params.sql.as_deref() {
+                state.db.execute(sql).await?;
+                Ok(QueryResponse::Empty)
             } else {
                 Err(AppError::BadRequest)
             }
