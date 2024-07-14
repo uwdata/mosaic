@@ -7,7 +7,6 @@ use axum::{
     Router,
 };
 use axum_server::tls_rustls::RustlsConfig;
-use duckdb::Connection;
 use listenfd::ListenFd;
 use std::net::TcpListener;
 use std::sync::Arc;
@@ -25,7 +24,7 @@ mod interfaces;
 mod query;
 mod websocket;
 
-use db::DuckDbDatabase;
+use db::ConnectionPool;
 use interfaces::{AppError, AppState, QueryParams, QueryResponse};
 
 async fn handle_get(
@@ -53,12 +52,11 @@ async fn handle_post(
 
 pub fn app() -> Result<Router> {
     // Database and state setup
-    let con = Connection::open_in_memory()?;
-    let db = Box::new(DuckDbDatabase::new(con));
+    let db = ConnectionPool::new(":memory:", 10)?;
     let cache = lru::LruCache::new(1000.try_into()?);
 
     let state = Arc::new(AppState {
-        db,
+        db: Box::new(db),
         cache: Mutex::new(cache),
     });
 
