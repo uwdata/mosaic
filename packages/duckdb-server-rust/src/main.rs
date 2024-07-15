@@ -5,6 +5,7 @@ use axum::{
     response::Json,
     routing::get,
     Router,
+    debug_handler
 };
 use axum_server::tls_rustls::RustlsConfig;
 use listenfd::ListenFd;
@@ -27,6 +28,7 @@ mod websocket;
 use db::ConnectionPool;
 use interfaces::{AppError, AppState, QueryParams, QueryResponse};
 
+#[debug_handler]
 async fn handle_get(
     State(state): State<Arc<AppState>>,
     ws: Option<WebSocketUpgrade>,
@@ -43,6 +45,7 @@ async fn handle_get(
     }
 }
 
+#[debug_handler]
 async fn handle_post(
     State(state): State<Arc<AppState>>,
     Json(params): Json<QueryParams>,

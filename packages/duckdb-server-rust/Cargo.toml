@@ -9,7 +9,7 @@ edition = "2021"
 anyhow = "1.0"
 arrow = "52.1"
 async-trait = "0.1.80"
-axum = { version = "0.7", features = ["http1", "http2", "ws", "json", "tokio", "tracing"] }
+axum = { version = "0.7", features = ["http1", "http2", "ws", "json", "tokio", "tracing", "macros"] }
 axum-server = { version = "0.6", features = ["tls-rustls"] }
 axum-server-dual-protocol = "0.6"
 duckdb = { version = "1", features = ["bundled", "csv", "json", "parquet", "url", "r2d2"] }
