@@ -5,7 +5,7 @@ import { resolve } from 'node:path';
 import { send } from 'vite';
 
 describe('coordinator', () => {
-  it('has accessible singleton', async () => {
+  it('has accessible singleton', () => {
     const mc = coordinator();
     assert.ok(mc instanceof Coordinator);
 

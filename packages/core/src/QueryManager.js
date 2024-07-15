@@ -53,7 +53,7 @@ export class QueryManager {
       if (cache) {
         const cached = this.clientCache.get(sql);
         if (cached) {
-          this._logger.debug(`Cache`);
+          this._logger.debug('Cache');
           result.fulfill(cached);
           return;
         }
@@ -66,7 +66,7 @@ export class QueryManager {
       }
       const data = await this.db.query({ type, sql, ...options });
       if (cache) this.clientCache.set(sql, data);
-      this._logger.debug(`Request: ${(performance.now() - t0).toFixed(1)} ms, ${(t0).toFixed(1)} ms`);
+      this._logger.debug(`Request: ${(performance.now() - t0).toFixed(1)} ms`);
       result.fulfill(data);
     } catch (err) {
       result.reject(err);
