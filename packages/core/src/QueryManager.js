@@ -78,6 +78,7 @@ export class QueryManager {
       try {
         const { query, type, cache = false, record = true, options } = requests[i];
         const sql = query ? `${query}` : null;
+        const id = i;
         if (record) {
           this.recordQuery(sql);
         }
@@ -85,7 +86,7 @@ export class QueryManager {
           const cached = this.clientCache.get(sql);
           if (cached) {
             this._logger.debug('Cache');
-            results[i].fulfill(cached);
+            results[id].fulfill(cached);
             continue;
           }
         }
@@ -96,12 +97,12 @@ export class QueryManager {
         this.db.query({ type, sql, ...options }).then(data => {
           if (cache) this.clientCache.set(sql, data);
           this._logger.debug(`Request: ${(performance.now() - t0).toFixed(1)}`);
-          results[i].fulfill(data);
+          results[id].fulfill(data);
         }).catch(err => {
-          results[i].reject(err);
+          results[id].reject(err);
         });
       } catch (err) {
-        results[i].reject(err);
+        results[id].reject(err);
       }
     }
   }
