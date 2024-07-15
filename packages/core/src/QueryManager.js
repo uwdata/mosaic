@@ -98,8 +98,6 @@ export class QueryManager {
           if (cache) this.clientCache.set(sql, data);
           this._logger.debug(`Request: ${(performance.now() - t0).toFixed(1)}`);
           results[id].fulfill(data);
-        }).catch(err => {
-          results[id].reject(err);
         });
       } catch (err) {
         results[id].reject(err);
