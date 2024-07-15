@@ -53,12 +53,9 @@ export class DataCubeIndexer {
 
   /**
    * Clear the cache of data cube index table entries for the current active
-   * selection clause. This method will also cancel any queued data cube table
-   * creation queries that have not yet been submitted to the database. This
-   * method does _not_ drop any existing data cube tables.
+   * selection clause. This method does _not_ drop any existing data cube tables.
    */
   clear() {
-    this.mc.cancel(Array.from(this.indexes.values(), info => info?.result));
     this.indexes.clear();
     this.active = null;
   }
