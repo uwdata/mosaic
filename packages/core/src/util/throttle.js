@@ -6,7 +6,7 @@ export function throttle(callback, debounce = false) {
   let pending = NIL;
 
   function invoke(event) {
-    curr = callback(event).then(() => {
+    curr = callback(event).finally(() => {
       if (next) {
         const { value } = next;
         next = null;
