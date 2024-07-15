@@ -66,7 +66,7 @@ export class QueryManager {
       }
       const data = await this.db.query({ type, sql, ...options });
       if (cache) this.clientCache.set(sql, data);
-      this._logger.debug(`Request: ${(performance.now() - t0).toFixed(1)} ms`);
+      this._logger.debug(`Request: ${(performance.now() - t0).toFixed(1)}`);
       result.fulfill(data);
     } catch (err) {
       result.reject(err);
