@@ -109,7 +109,13 @@ export class QueryManager {
   cancel(requests) {
     const set = new Set(requests);
     if (set.size) {
-      this.queue.remove(({ result }) => set.has(result));
+      this.queue.remove(({ result }) => {
+        if (set.has(result)) {
+          result.reject('Canceled');
+          return true;
+        }
+        return false;
+      });
     }
   }
 
