@@ -1,5 +1,15 @@
 const NIL = {};
 
+/**
+ * Throttle invocations of a callback function. The callback must return
+ * a Promise. Upon repeated invocation, the callback will not be invoked
+ * until a prior Promise resolves. If multiple invocations occurs while
+ * waiting, only the most recent invocation will be pending.
+ * @param {(event: *) => Promise} callback The callback function.
+ * @param {boolean} [debounce=true] Flag indicating if invocations
+ *  should also be debounced within the current animation frame.
+ * @returns A new function that throttles access to the callback.
+ */
 export function throttle(callback, debounce = false) {
   let curr;
   let next;

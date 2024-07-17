@@ -13,7 +13,7 @@ export function priorityQueue(ranks) {
 	return {
 		/**
 		 * Indicate if the queue is empty.
-		 * @returns [boolean] true if empty, false otherwise.
+		 * @returns {boolean} true if empty, false otherwise.
 		 */
 		isEmpty() {
 			return queue.every(list => !list.head);

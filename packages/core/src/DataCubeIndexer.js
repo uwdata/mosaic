@@ -53,7 +53,8 @@ export class DataCubeIndexer {
 
   /**
    * Clear the cache of data cube index table entries for the current active
-   * selection clause. This method does _not_ drop any existing data cube tables.
+   * selection clause. This method does _not_ drop any existing data cube
+   * tables.
    */
   clear() {
     this.indexes.clear();
