@@ -75,10 +75,10 @@ export class QueryManager {
 
   async submitBatch(requests, results) {
     for(let i = 0; i < requests.length; i++){
+      const id = i;
       try {
         const { query, type, cache = false, record = true, options } = requests[i];
         const sql = query ? `${query}` : null;
-        const id = i;
         if (record) {
           this.recordQuery(sql);
         }

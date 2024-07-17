@@ -16,16 +16,31 @@ describe('coordinator', () => {
   });
 
   it('query results returned in correct order', async () => {
+    class Deferred {
+      constructor(id) {
+        this.id = id;
+        this.promise = new Promise((resolve, reject)=> {
+          this.reject = reject
+          this.resolve = resolve
+        })
+      }
+    }
 
     const connector = {
       uid : 0,
+      promises : [],
 
       async query(query) {
         this.uid++;
         let id = this.uid;
         //Earlier queries are resolved later so that they are purposely returned out of order
-        let result = new Promise((resolve, reject) => setTimeout(() => resolve(id), 200*(10-id)));
-        return result;
+        let result = new Deferred(id); this.promises.push(result);
+        if(this.uid == 10){ 
+          for(let i = 9; i >= 0; i--){
+            this.promises[i].resolve(this.promises[i].id);
+          }
+        }
+        return result.promise;
       },
     };
 
