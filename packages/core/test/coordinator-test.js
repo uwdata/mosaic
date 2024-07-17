@@ -1,8 +1,5 @@
 import assert from 'node:assert';
 import { Coordinator, coordinator } from '../src/index.js';
-import { QueryResult } from '../src/util/query-result.js';
-import { resolve } from 'node:path';
-import { send } from 'vite';
 
 describe('coordinator', () => {
   it('has accessible singleton', () => {
