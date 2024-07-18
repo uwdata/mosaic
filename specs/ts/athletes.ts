@@ -15,15 +15,13 @@ export const spec : Spec = {
       "select": "intersect"
     },
     "query": {
-      "select": "intersect"
+      "select": "intersect",
+      "include": "$category"
     },
     "hover": {
       "select": "intersect",
       "empty": true
     }
-  },
-  "relay": {
-    "category": "$query"
   },
   "hconcat": [
     {

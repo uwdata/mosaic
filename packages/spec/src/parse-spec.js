@@ -3,7 +3,6 @@ import { LiteralNode } from './ast/LiteralNode.js';
 import { parseParam, ParamNode } from './ast/ParamNode.js';
 import { ParamRefNode } from './ast/ParamRefNode.js';
 import { parseAttribute } from './ast/PlotAttributeNode.js';
-import { parseRelay } from './ast/RelayNode.js';
 import { SelectionNode } from './ast/SelectionNode.js';
 import { SpecNode } from './ast/SpecNode.js';
 import { componentMap } from './config/components.js';
@@ -74,7 +73,6 @@ export class ParseContext {
       config,
       data = {},
       params,
-      relay,
       plotDefaults = {},
       ...root
     } = spec;
@@ -99,7 +97,6 @@ export class ParseContext {
       config ? { ...config } : undefined,
       Object.fromEntries(this.datasets),
       Object.fromEntries(this.params),
-      parseRelay(relay, this),
       this.plotDefaults
     );
   }

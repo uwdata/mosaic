@@ -7,10 +7,8 @@ data:
   athletes: { file: data/athletes.parquet }
 params:
   category: { select: intersect }
-  query: { select: intersect }
+  query: { select: intersect, include: $category }
   hover: { select: intersect, empty: true } # select nothing when empty
-relay:
-  category: $query # relay clauses from category selection to query selection
 hconcat:
 - vconcat:
   - hconcat:

@@ -31,9 +31,6 @@ export type Data = Record<string, DataDefinition>;
 /** Top-level Param and Selection definitions. */
 export type Params = Record<string, ParamDefinition>;
 
-/** Top-level Selection relay definitions. */
-export type Relay = Record<string, ParamRef | ParamRef[]>;
-
 /** Top-level specification properties. */
 export interface SpecHead {
   /**
@@ -51,8 +48,6 @@ export interface SpecHead {
   data?: Data;
   /** Param and Selection definitions. */
   params?: Params;
-  /** Selection relay definitions. */
-  relay?: Relay;
   /** A default set of attributes to apply to all plot components. */
   plotDefaults?: PlotAttributes;
 }

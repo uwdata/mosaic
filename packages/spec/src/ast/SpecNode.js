@@ -2,19 +2,18 @@ import { SPEC } from '../constants.js';
 import { ASTNode } from './ASTNode.js';
 
 export class SpecNode extends ASTNode {
-  constructor(root, meta, config, data, params, relay, plotDefaults) {
+  constructor(root, meta, config, data, params, plotDefaults) {
     super(SPEC, [root]);
     this.root = root;
     this.meta = meta;
     this.config = config;
     this.data = data;
     this.params = params;
-    this.relay = relay;
     this.plotDefaults = plotDefaults;
   }
 
   toJSON() {
-    const { root, meta, config, relay, plotDefaults } = this;
+    const { root, meta, config, plotDefaults } = this;
     const dataDefs = new Map(Object.entries(this.data));
     const paramDefs = new Map(Object.entries(this.params));
     const spec = {};
@@ -35,8 +34,6 @@ export class SpecNode extends ASTNode {
         params[name] = node.toJSON();
       }
     }
-
-    if (relay) spec.relay = relay.toJSON();
 
     if (plotDefaults?.length) {
       const defaults = spec.plotDefaults = {};

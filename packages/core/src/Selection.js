@@ -10,6 +10,13 @@ export function isSelection(x) {
   return x instanceof Selection;
 }
 
+function create(options, include) {
+  return new Selection(
+    new SelectionResolver(options),
+    include ? [include].flat() : include
+  );
+}
+
 /**
  * Represents a dynamic set of query filter predicates.
  */
@@ -25,10 +32,13 @@ export class Selection extends Param {
    * @param {boolean} [options.empty=false] Boolean flag indicating if a lack
    *  of clauses should correspond to an empty selection with no records. This
    *  setting determines the default selection state.
+   * @param {Selection|Selection[]} [options.include] Upstream selections whose
+   *  clauses should be included as part of the new selection. Any clauses
+   *  published to upstream selections will be relayed to the new selection.
    * @returns {Selection} The new Selection instance.
    */
-  static intersect({ cross = false, empty = false } = {}) {
-    return new Selection(new SelectionResolver({ cross, empty }));
+  static intersect({ cross = false, empty = false, include = [] } = {}) {
+    return create({ cross, empty }, include);
   }
 
   /**
@@ -41,10 +51,13 @@ export class Selection extends Param {
    * @param {boolean} [options.empty=false] Boolean flag indicating if a lack
    *  of clauses should correspond to an empty selection with no records. This
    *  setting determines the default selection state.
+   * @param {Selection|Selection[]} [options.include] Upstream selections whose
+   *  clauses should be included as part of the new selection. Any clauses
+   *  published to upstream selections will be relayed to the new selection.
    * @returns {Selection} The new Selection instance.
    */
-  static union({ cross = false, empty = false } = {}) {
-    return new Selection(new SelectionResolver({ cross, empty, union: true }));
+  static union({ cross = false, empty = false, include = [] } = {}) {
+    return create({ cross, empty, union: true }, include);
   }
 
   /**
@@ -57,10 +70,13 @@ export class Selection extends Param {
    * @param {boolean} [options.empty=false] Boolean flag indicating if a lack
    *  of clauses should correspond to an empty selection with no records. This
    *  setting determines the default selection state.
+   * @param {Selection|Selection[]} [options.include] Upstream selections whose
+   *  clauses should be included as part of the new selection. Any clauses
+   *  published to upstream selections will be relayed to the new selection.
    * @returns {Selection} The new Selection instance.
    */
-  static single({ cross = false, empty = false } = {}) {
-    return new Selection(new SelectionResolver({ cross, empty, single: true }));
+  static single({ cross = false, empty = false, include = [] } = {}) {
+    return create({ cross, empty, single: true }, include);
   }
 
   /**
@@ -70,33 +86,34 @@ export class Selection extends Param {
    * @param {boolean} [options.empty=false] Boolean flag indicating if a lack
    *  of clauses should correspond to an empty selection with no records. This
    *  setting determines the default selection state.
+   * @param {Selection|Selection[]} [options.include] Upstream selections whose
+   *  clauses should be included as part of the new selection. Any clauses
+   *  published to upstream selections will be relayed to the new selection.
    * @returns {Selection} The new Selection instance.
    */
-  static crossfilter({ empty = false } = {}) {
-    return new Selection(new SelectionResolver({ cross: true, empty }));
+  static crossfilter({ empty = false, include = [] } = {}) {
+    return create({ cross: true, empty }, include);
   }
 
   /**
    * Create a new Selection instance.
-   * @param {SelectionResolver} resolver The selection resolution
+   * @param {SelectionResolver} [resolver] The selection resolution
    *  strategy to apply.
+   * @param {Selection[]} [include] Upstream selections whose clauses
+   * should be included as part of this selection. Any clauses published
+   * to these upstream selections will be relayed to this selection.
    */
-  constructor(resolver = new SelectionResolver()) {
+  constructor(resolver = new SelectionResolver(), include = []) {
     super([]);
     this._resolved = this._value;
     this._resolver = resolver;
-    /** @type {Selection[]} */
-    this._relay = [];
-  }
-
-  /**
-   * Downstream selections to relay clauses to. Any clauses published to
-   * this selection are published (relayed) in turn to these selections.
-   * @param {...(Selection|Selection[])} selections
-   */
-  relay(...selections) {
-    this._relay = selections.flat();
-    return this;
+    /** @type {Set<Selection>} */
+    this._relay = new Set;
+    if (Array.isArray(include)) {
+      for (const sel of include) {
+        sel._relay.add(this);
+      }
+    }
   }
 
   /**

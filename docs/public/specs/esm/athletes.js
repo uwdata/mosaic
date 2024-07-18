@@ -5,10 +5,8 @@ await vg.coordinator().exec([
 ]);
 
 const $category = vg.Selection.intersect();
-const $query = vg.Selection.intersect();
+const $query = vg.Selection.intersect({include: [$category]});
 const $hover = vg.Selection.intersect({empty: true});
-
-$category.relay($query);
 
 export default vg.hconcat(
   vg.vconcat(

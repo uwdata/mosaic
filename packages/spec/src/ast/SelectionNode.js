@@ -1,10 +1,17 @@
 import { ASTNode } from './ASTNode.js';
 import { OptionsNode, parseOptions } from './OptionsNode.js';
-import { INTERSECT, SELECTION } from '../constants.js';
+import { INCLUDE, INTERSECT, SELECTION } from '../constants.js';
+import { paramRef, toArray } from '../util.js';
 
 export function parseSelection(spec, ctx) {
-  const { select, ...options } = spec;
-  return new SelectionNode(select, parseOptions(options, ctx));
+  const { select, include, ...options } = spec;
+  const opt = parseOptions(options, ctx);
+  if (include) {
+    opt.options.include = new IncludeNode(
+      toArray(include).map(ref => ctx.selectionRef(paramRef(ref)))
+    );
+  }
+  return new SelectionNode(select, opt);
 }
 
 export class SelectionNode extends ASTNode {
@@ -32,5 +39,24 @@ export class SelectionNode extends ASTNode {
   toJSON() {
     const { select, options } = this;
     return { select, ...options.toJSON() };
+  }
+}
+
+export class IncludeNode extends ASTNode {
+  constructor(refs) {
+    super(INCLUDE);
+    this.refs = refs;
+  }
+
+  instantiate(ctx) {
+    return this.refs.map(ref => ref.instantiate(ctx));
+  }
+
+  codegen(ctx) {
+    return `[${this.refs.map(ref => ref.codegen(ctx)).join(', ')}]`;
+  }
+
+  toJSON() {
+    return this.refs.map(ref => ref.toJSON());
   }
 }
