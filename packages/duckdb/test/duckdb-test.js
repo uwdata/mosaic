@@ -1,6 +1,6 @@
 import assert from 'node:assert';
 import { db } from './db.js';
-import { loadArrow } from '../src/index.js';
+import { loadArrow, loadJSON } from '../src/index.js';
 
 describe('DuckDB', () => {
   before(async () => {
@@ -25,6 +25,15 @@ describe('DuckDB', () => {
       const res = await db.query('SELECT count()::INTEGER AS count FROM arrow');
       assert.strictEqual(res[0]?.count, 342);
       await db.exec('DROP VIEW arrow');
+    });
+  });
+
+  describe('loadJSON', () => {
+    it('loads a json file', async () => {
+      await loadJSON(db, 'json', '../../data/penguins.json');
+      const res = await db.query('SELECT count()::INTEGER AS count FROM json');
+      assert.strictEqual(res[0]?.count, 342);
+      await db.exec('DROP TABLE json');
     });
   });
 });

@@ -16,7 +16,7 @@ export class PriorityQueue {
    * @returns {boolean} true if empty, false otherwise.
    */
   isEmpty() {
-    return this.queue.every((list) => !list.head);
+    return this.queue.every(list => !list.head);
   }
 
   /**
