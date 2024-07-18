@@ -1,11 +1,11 @@
 use anyhow::Result;
 use axum::{
+    debug_handler,
     extract::{Query, State, WebSocketUpgrade},
     http::Method,
     response::Json,
     routing::get,
     Router,
-    debug_handler
 };
 use axum_server::tls_rustls::RustlsConfig;
 use listenfd::ListenFd;
