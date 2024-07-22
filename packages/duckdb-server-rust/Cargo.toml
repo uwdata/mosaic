@@ -1,7 +1,10 @@
 [package]
-name = "duckdb-server-rust"
+name = "duckdb-server"
 version = "0.1.0"
 edition = "2021"
+repository = "https://github.com/uwdata/mosaic"
+description = "DuckDB Server for Mosaic."
+license = "BSD 3-Clause"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
