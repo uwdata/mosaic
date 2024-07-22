@@ -96,26 +96,25 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("localhost.pem"),
         PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("localhost-key.pem"),
     )
-    .await
-    .unwrap();
+    .await?;
 
     // Listenfd setup
     let addr = SocketAddr::new(Ipv4Addr::LOCALHOST.into(), 3000);
     let mut listenfd = ListenFd::from_env();
-    let listener = match listenfd.take_tcp_listener(0).unwrap() {
+    let listener = match listenfd.take_tcp_listener(0)? {
         // if we are given a tcp listener on listen fd 0, we use that one
         Some(listener) => {
-            listener.set_nonblocking(true).unwrap();
+            listener.set_nonblocking(true)?;
             listener
         }
         // otherwise fall back to local listening
-        None => TcpListener::bind(addr).unwrap(),
+        None => TcpListener::bind(addr)?,
     };
 
     // Run the server
     tracing::info!(
         "DuckDB Server listening on http(s)://{0} and ws://{0}",
-        listener.local_addr().unwrap()
+        listener.local_addr()?
     );
     axum_server_dual_protocol::from_tcp_dual_protocol(listener, config)
         .serve(app.into_make_service())
