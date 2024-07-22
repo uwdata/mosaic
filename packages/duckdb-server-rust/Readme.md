@@ -78,4 +78,4 @@ cargo fmt
 
 ### Update dependencies
 
-Update the lockfile with `cargo update` and look for outdated dependencies with [cargo-outdated](https://github.com/kbknapp/cargo-outdated) `cargo outdated -d 1`.
+Bump the version in `Cargo.toml` and then run `cargo publish`.
