@@ -8,13 +8,15 @@ _Note:_ This package provides a local DuckDB server. To instead use DuckDB-WASM 
 
 ## Usage
 
-Install the server with Cargo.
+Install the server with Cargo or [Cargo B(inary)Install](https://github.com/cargo-bins/cargo-binstall).
 
 ```sh
 cargo install duckdb-server
+# or
+cargo binstall duckdb-server
 ```
 
-Then run the serve with 
+Then run the server with
 
 ```sh
 duckdb-server
