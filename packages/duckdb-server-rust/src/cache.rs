@@ -13,23 +13,23 @@ pub fn get_key(sql: &str, command: &Command) -> String {
 
 pub async fn retrieve<F, Fut>(
     cache: &Mutex<lru::LruCache<String, Vec<u8>>>,
-    sql: &str,
+    sql: String,
     command: &Command,
     persist: bool,
     f: F,
 ) -> Result<Vec<u8>>
 where
-    F: FnOnce() -> Fut,
+    F: FnOnce(String) -> Fut,
     Fut: std::future::Future<Output = Result<Vec<u8>>>,
 {
-    let key = get_key(sql, command);
+    let key = get_key(&sql, command);
 
     if let Some(cached) = cache.lock().await.get(&key) {
         tracing::debug!("Cache hit {}!", key);
         return Ok(cached.clone());
     }
 
-    let result = f().await?;
+    let result = f(sql).await?;
 
     if persist {
         cache.lock().await.put(key, result.clone());

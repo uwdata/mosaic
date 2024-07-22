@@ -39,11 +39,11 @@ pub async fn create(
     fs::create_dir_all(bundle_dir).context("Failed to create bundle directory")?;
 
     for query in queries {
-        let sql = &query.sql;
+        let sql = query.sql;
 
         if let Some(alias) = &query.alias {
             let file = bundle_dir.join(format!("{alias}.parquet"));
-            db.execute(&format!(
+            db.execute(format!(
                 "COPY ({}) TO '{}' (FORMAT PARQUET)",
                 sql,
                 file.display()
@@ -51,15 +51,15 @@ pub async fn create(
             .await?;
             manifest.tables.push(alias.clone());
         } else if sql.starts_with("CREATE ") {
-            if view_re.is_match(sql) {
+            if view_re.is_match(&sql) {
                 continue; // Ignore views
             }
 
-            if let Some(captures) = table_re.captures(sql) {
+            if let Some(captures) = table_re.captures(&sql) {
                 let table = captures.get(3).unwrap().as_str();
                 let file = bundle_dir.join(format!("{table}.parquet"));
-                db.execute(sql).await?;
-                db.execute(&format!(
+                db.execute(sql.clone()).await?;
+                db.execute(format!(
                     "COPY {} TO '{}' (FORMAT PARQUET)",
                     table,
                     file.display()
@@ -67,14 +67,14 @@ pub async fn create(
                 .await?;
                 manifest.tables.push(table.to_string());
             }
-        } else if !pragma_re.is_match(sql) {
-            let command = if describe_re.is_match(sql) {
+        } else if !pragma_re.is_match(&sql) {
+            let command = if describe_re.is_match(&sql) {
                 Command::Json
             } else {
                 Command::Arrow
             };
-            let key = get_key(sql, &command);
-            let result = retrieve(cache, sql, &command, true, || {
+            let key = get_key(&sql, &command);
+            let result = retrieve(cache, sql, &command, true, |sql| {
                 if let Command::Arrow = command {
                     db.get_arrow(sql)
                 } else {
@@ -120,7 +120,7 @@ pub async fn load(
     // Load precomputed temp tables into the database
     for table in &manifest.tables {
         let file = bundle_dir.join(format!("{table}.parquet"));
-        db.execute(&format!(
+        db.execute(format!(
             "CREATE TEMP TABLE IF NOT EXISTS {} AS SELECT * FROM '{}'",
             table,
             file.display()

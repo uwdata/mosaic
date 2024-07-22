@@ -1,9 +1,13 @@
+use anyhow::anyhow;
+use axum::Json;
 use axum::{
     body::Bytes,
     http::StatusCode,
     response::{IntoResponse, Response},
 };
+use deadpool_r2d2::InteractError;
 use serde::{Deserialize, Serialize};
+use serde_json::json;
 use tokio::sync::Mutex;
 
 use crate::bundle::Query as BundleQuery;
@@ -69,17 +73,17 @@ pub enum AppError {
 
 impl IntoResponse for AppError {
     fn into_response(self) -> Response {
-        match self {
+        let (status, err_msg) = match self {
             AppError::Error(error) => {
                 tracing::error!("Error: {:?}", error);
                 (
                     StatusCode::INTERNAL_SERVER_ERROR,
                     format!("Something went wrong: {error}"),
                 )
-                    .into_response()
             }
-            AppError::BadRequest => (StatusCode::BAD_REQUEST).into_response(),
-        }
+            AppError::BadRequest => (StatusCode::BAD_REQUEST, "Bad request".to_string()),
+        };
+        (status, Json(json!({ "message": err_msg }))).into_response()
     }
 }
 
@@ -91,3 +95,58 @@ where
         AppError::Error(err.into())
     }
 }
+
+pub fn adapt_anyhow_error<T: Error>(error: T) -> anyhow::Error {
+    error.as_anyhow_error()
+}
+
+pub trait Error {
+    fn as_anyhow_error(&self) -> anyhow::Error;
+}
+
+impl Error for InteractError {
+    fn as_anyhow_error(&self) -> anyhow::Error {
+        anyhow!("Interact Error {:?}", self)
+    }
+}
+
+
+// pub fn adapt_app_error<T: Error>(error: T) -> AppError {
+//     error.as_app_error()
+// }
+
+// pub trait Error {
+//     fn as_app_error(&self) -> AppError;
+// }
+
+// impl Error for InteractError {
+//     fn as_app_error(&self) -> AppError {
+//         AppError::InteractError
+//     }
+// }
+
+// #[derive(Debug)]
+// pub struct InfraError;
+
+// pub fn adapt_infra_error<T: Error>(error: T) -> InfraError {
+//     error.as_infra_error()
+// }
+
+// pub trait Error {
+//     fn as_infra_error(&self) -> InfraError;
+// }
+
+// impl Error for InteractError {
+//     fn as_infra_error(&self) -> InfraError {
+//         InfraError
+//     }
+// }
+
+// impl<E> From<E> for InfraError
+// where
+//     E: Into<anyhow::Error>,
+// {
+//     fn from(_: E) -> Self {
+//         InfraError
+//     }
+// }
