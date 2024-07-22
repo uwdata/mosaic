@@ -1,6 +1,5 @@
 use anyhow::Result;
 use axum::{
-    debug_handler,
     extract::{Query, State, WebSocketUpgrade},
     http::Method,
     response::Json,
@@ -28,7 +27,6 @@ mod websocket;
 use db::ConnectionPool;
 use interfaces::{AppError, AppState, QueryParams, QueryResponse};
 
-#[debug_handler]
 async fn handle_get(
     State(state): State<Arc<AppState>>,
     ws: Option<WebSocketUpgrade>,
@@ -45,7 +43,6 @@ async fn handle_get(
     }
 }
 
-#[debug_handler]
 async fn handle_post(
     State(state): State<Arc<AppState>>,
     Json(params): Json<QueryParams>,
@@ -116,7 +113,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     };
 
     // Run the server
-    tracing::debug!(
+    tracing::info!(
         "DuckDB Server listening on http(s)://{0} and ws://{0}",
         listener.local_addr().unwrap()
     );
