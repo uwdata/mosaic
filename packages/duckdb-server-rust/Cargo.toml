@@ -21,7 +21,7 @@ axum-server = { version = "0.6", features = ["tls-rustls"] }
 axum-server-dual-protocol = "0.6"
 duckdb = { version = "1", features = ["bundled", "csv", "json", "parquet", "url", "r2d2"] }
 futures = "0.3"
-listenfd = "1.0.1"
+listenfd = "1.0"
 lru = "0.12"
 r2d2 = "0.8"
 regex = "1.5"

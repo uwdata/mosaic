@@ -12,6 +12,7 @@ use std::net::TcpListener;
 use std::sync::Arc;
 use std::time::Duration;
 use std::{net::Ipv4Addr, net::SocketAddr, path::PathBuf};
+use tokio::net;
 use tokio::sync::Mutex;
 use tower_http::cors::{Any, CorsLayer};
 use tower_http::{compression::CompressionLayer, trace::TraceLayer};
@@ -92,11 +93,20 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let app = app()?;
 
     // TLS configuration
-    let config = RustlsConfig::from_pem_file(
+    let mut config = RustlsConfig::from_pem_file(
         PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("localhost.pem"),
         PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("localhost-key.pem"),
     )
-    .await?;
+    .await;
+
+    if let Err(_) = config {
+        // try current directory for HTTPS keys if env didn't work
+        config = RustlsConfig::from_pem_file(
+            "./localhost.pem",
+            "./localhost-key.pem",
+        )
+        .await;
+    }
 
     // Listenfd setup
     let addr = SocketAddr::new(Ipv4Addr::LOCALHOST.into(), 3000);
@@ -112,13 +122,28 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     };
 
     // Run the server
-    tracing::info!(
-        "DuckDB Server listening on http(s)://{0} and ws://{0}",
-        listener.local_addr()?
-    );
-    axum_server_dual_protocol::from_tcp_dual_protocol(listener, config)
-        .serve(app.into_make_service())
-        .await?;
+    match config {
+        Err(_) => {
+            tracing::warn!("No keys for HTTPS found.");
+            tracing::info!(
+                "DuckDB Server listening on http://{0} and ws://{0}.",
+                listener.local_addr()?
+            );
+
+            let listener = net::TcpListener::from_std(listener)?;
+            axum::serve(listener, app).await?;
+        }
+        Ok(config) => {
+            tracing::info!(
+                "DuckDB Server listening on http(s)://{0} and ws://{0}",
+                listener.local_addr()?
+            );
+
+            axum_server_dual_protocol::from_tcp_dual_protocol(listener, config)
+                .serve(app.into_make_service())
+                .await?;
+        }
+    }
 
     Ok(())
 }

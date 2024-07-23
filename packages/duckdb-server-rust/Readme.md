@@ -34,6 +34,14 @@ The server can reuse existing sockets with `listenfd`.
 systemfd --no-pid -s http::3000 -- duckdb-server
 ```
 
+To use HTTPS and HTTP/2, you need `localhost.pem` and `localhost-key.pem` in the current directory or at the env variable `CARGO_MANIFEST_DIR`.
+
+Create certificates for localhost with [mkcert](https://github.com/FiloSottile/mkcert)
+
+```sh
+mkcert localhost
+```
+
 ## Developers
 
 ### Build
@@ -62,12 +70,6 @@ Or just use (but this won't restart when the code changes)
 
 ```sh
 cargo run
-```
-
-Create certificates for HTTPS with
-
-```sh
-mkcert localhost
 ```
 
 Before sending a pull request, run the tests with
