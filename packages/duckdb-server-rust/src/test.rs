@@ -162,7 +162,6 @@ async fn query_arrow() -> Result<()> {
     Ok(())
 }
 
-
 #[tokio::test]
 async fn create_and_load_bundle() -> Result<()> {
     let temp = TempDir::default();
