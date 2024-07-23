@@ -42,6 +42,32 @@ Create certificates for localhost with [mkcert](https://github.com/FiloSottile/m
 mkcert localhost
 ```
 
+## API
+
+The server supports queries via HTTP GET and POST, and WebSockets. The GET endpoint is useful for debugging. For example, you can query it with [this url](<http://localhost:3000/?query={"sql":"select 1","type":"json"}>).
+
+Each endpoint takes a JSON object with a command in the `type`. The server supports the following commands.
+
+### `exec`
+
+Executes the SQL query in the `sql` field.
+
+### `arrow`
+
+Executes the SQL query in the `sql` field and returns the result in Apache Arrow format.
+
+### `json`
+
+Executes the SQL query in the `sql` field and returns the result in JSON format.
+
+### `create-bundle`
+
+Caches the results of the SQL queries in the `queries` field and the required datasets.
+
+### `load-bundle`
+
+Loads the bundled results.
+
 ## Developers
 
 ### Build

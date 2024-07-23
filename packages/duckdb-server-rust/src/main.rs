@@ -99,13 +99,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     )
     .await;
 
-    if let Err(_) = config {
+    if config.is_err() {
         // try current directory for HTTPS keys if env didn't work
-        config = RustlsConfig::from_pem_file(
-            "./localhost.pem",
-            "./localhost-key.pem",
-        )
-        .await;
+        config = RustlsConfig::from_pem_file("./localhost.pem", "./localhost-key.pem").await;
     }
 
     // Listenfd setup
