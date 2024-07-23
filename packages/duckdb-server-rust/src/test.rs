@@ -8,9 +8,11 @@ use axum::{
     body::Body,
     http::{self, Request, StatusCode},
 };
+use bundle::{create, load, Query};
 use http_body_util::BodyExt;
 use query::handle;
 use serde_json::json;
+use temp_testdir::TempDir;
 use tower::ServiceExt;
 
 use cache::get_key;
@@ -27,8 +29,8 @@ fn key() {
 
 #[tokio::test]
 async fn get_json() -> Result<()> {
-    let db = ConnectionPool::new(":memory:", 10)?;
-    let cache = lru::LruCache::new(1000.try_into()?);
+    let db = ConnectionPool::new(":memory:", 1)?;
+    let cache = lru::LruCache::new(10.try_into()?);
 
     let state = Arc::new(AppState {
         db: Box::new(db),
@@ -52,8 +54,8 @@ async fn get_json() -> Result<()> {
 
 #[tokio::test]
 async fn get_arrow() -> Result<()> {
-    let db = ConnectionPool::new(":memory:", 10)?;
-    let cache = lru::LruCache::new(1000.try_into()?);
+    let db = ConnectionPool::new(":memory:", 1)?;
+    let cache = lru::LruCache::new(10.try_into()?);
 
     let state = Arc::new(AppState {
         db: Box::new(db),
@@ -156,6 +158,34 @@ async fn query_arrow() -> Result<()> {
     let batch = RecordBatch::try_new(schema.clone(), vec![Arc::new(foo_values)])?;
 
     assert_eq!(actual_batch, batch);
+
+    Ok(())
+}
+
+
+#[tokio::test]
+async fn create_and_load_bundle() -> Result<()> {
+    let temp = TempDir::default();
+
+    let db = ConnectionPool::new(":memory:", 1)?;
+    let cache = &Mutex::new(lru::LruCache::new(10.try_into()?));
+
+    let queries = vec![
+        Query {sql: r#"CREATE TEMP TABLE IF NOT EXISTS flights AS SELECT * FROM read_parquet("data/flights-200k.parquet")"#.to_string(), alias: None},
+        Query {sql: r#"SELECT count(*) FROM "flights""#.to_string(), alias: None},
+    ];
+
+    assert_eq!(cache.lock().await.len(), 0);
+
+    create(&db, cache, queries, &temp).await?;
+
+    assert_eq!(cache.lock().await.len(), 1);
+    cache.lock().await.clear();
+
+    load(&db, cache, &temp).await?;
+
+    let cache = cache;
+    assert_eq!(cache.lock().await.len(), 1);
 
     Ok(())
 }

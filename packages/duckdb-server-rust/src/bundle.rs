@@ -16,8 +16,8 @@ pub struct Manifest {
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Query {
-    sql: String,
-    alias: Option<String>,
+    pub sql: String,
+    pub alias: Option<String>,
 }
 
 pub async fn create(

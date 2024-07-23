@@ -819,6 +819,7 @@ dependencies = [
  "serde",
  "serde_json",
  "sha2",
+ "temp_testdir",
  "tokio",
  "tower",
  "tower-http",
@@ -2224,6 +2225,12 @@ dependencies = [
  "libc",
  "xattr",
 ]
+
+[[package]]
+name = "temp_testdir"
+version = "0.2.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "921f1e9c427802414907a48b21a6504ff6b3a15a1a3cf37e699590949ad9befc"
 
 [[package]]
 name = "thiserror"
