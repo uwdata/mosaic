@@ -1,7 +1,4 @@
-use crate::{
-    interfaces::{AppError, QueryResponse},
-    AppState,
-};
+use crate::interfaces::{AppError, AppState, QueryResponse};
 use axum::extract::ws::{Message, WebSocket};
 use serde_json::json;
 use std::sync::Arc;
