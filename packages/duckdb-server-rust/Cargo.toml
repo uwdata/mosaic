@@ -37,3 +37,5 @@ tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 http-body-util = "0.1.0"
 temp_testdir = "0.2"
 tower = { version = "0.4", features = ["util"] }
+[profile.release]
+codegen-units = 1

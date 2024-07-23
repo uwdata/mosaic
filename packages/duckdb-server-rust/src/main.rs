@@ -53,7 +53,7 @@ async fn handle_post(
 
 pub fn app() -> Result<Router> {
     // Database and state setup
-    let db = ConnectionPool::new(":memory:", 10)?;
+    let db = ConnectionPool::new(":memory:", 16)?;
     let cache = lru::LruCache::new(1000.try_into()?);
 
     let state = Arc::new(AppState {
