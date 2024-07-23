@@ -4,6 +4,7 @@ use tokio::sync::Mutex;
 
 use crate::interfaces::Command;
 
+#[must_use]
 pub fn get_key(sql: &str, command: &Command) -> String {
     use sha2::{Digest, Sha256};
     let mut hasher = Sha256::new();

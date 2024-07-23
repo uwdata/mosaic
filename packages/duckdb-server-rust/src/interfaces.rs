@@ -14,7 +14,7 @@ pub struct AppState {
     pub cache: Mutex<lru::LruCache<String, Vec<u8>>>,
 }
 
-#[derive(Deserialize, Serialize, Debug)]
+#[derive(Deserialize, Serialize, Debug, Clone)]
 #[serde(rename_all = "kebab-case")]
 pub enum Command {
     Arrow,

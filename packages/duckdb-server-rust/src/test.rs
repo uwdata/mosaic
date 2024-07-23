@@ -1,4 +1,4 @@
-use super::*;
+use anyhow::Result;
 use arrow::{
     array::{Int32Array, RecordBatch},
     datatypes::{DataType, Field, Schema},
@@ -8,15 +8,20 @@ use axum::{
     body::Body,
     http::{self, Request, StatusCode},
 };
-use bundle::{create, load, Query};
 use http_body_util::BodyExt;
-use query::handle;
 use serde_json::json;
+use std::sync::Arc;
 use temp_testdir::TempDir;
+use tokio::sync::Mutex;
 use tower::ServiceExt;
 
-use cache::get_key;
-use interfaces::Command;
+use crate::bundle::{create, load, Query};
+use crate::cache::get_key;
+use crate::db::ConnectionPool;
+use crate::interfaces::QueryParams;
+use crate::interfaces::QueryResponse;
+use crate::interfaces::{AppState, Command};
+use crate::{app, query::handle};
 
 #[test]
 fn key() {
@@ -87,7 +92,7 @@ async fn get_arrow() -> Result<()> {
 
 #[tokio::test]
 async fn select_1_get() -> Result<()> {
-    let app = app()?;
+    let app = app::app()?;
 
     let response = app
         .oneshot(
@@ -107,7 +112,7 @@ async fn select_1_get() -> Result<()> {
 
 #[tokio::test]
 async fn select_1_post() -> Result<()> {
-    let app = app()?;
+    let app = app::app()?;
 
     let response = app
         .oneshot(
@@ -131,7 +136,7 @@ async fn select_1_post() -> Result<()> {
 
 #[tokio::test]
 async fn query_arrow() -> Result<()> {
-    let app = app()?;
+    let app = app::app()?;
 
     let response = app
         .oneshot(

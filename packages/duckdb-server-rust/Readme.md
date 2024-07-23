@@ -106,6 +106,12 @@ cargo clippy
 cargo fmt
 ```
 
+Run the benchmarks with
+
+```sh
+cargo bench
+```
+
 ### Update dependencies
 
 Bump the version in `Cargo.toml` and then run `cargo publish`.

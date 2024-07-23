@@ -1,7 +1,14 @@
-use crate::interfaces::{AppError, AppState, QueryResponse};
 use axum::extract::ws::{Message, WebSocket};
 use serde_json::json;
 use std::sync::Arc;
+
+use crate::interfaces::{AppError, AppState, QueryResponse};
+use crate::query;
+
+async fn handle_message(message: String, state: &AppState) -> Result<QueryResponse, AppError> {
+    let params = serde_json::from_str(&message)?;
+    query::handle(state, params).await
+}
 
 pub async fn handle(mut socket: WebSocket, state: Arc<AppState>) {
     while let Some(msg) = socket.recv().await {
@@ -55,9 +62,4 @@ pub async fn handle(mut socket: WebSocket, state: Arc<AppState>) {
             break;
         }
     }
-}
-
-async fn handle_message(message: String, state: &AppState) -> Result<QueryResponse, AppError> {
-    let params = serde_json::from_str(&message)?;
-    crate::query::handle(state, params).await
 }

@@ -34,8 +34,14 @@ tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 
 [dev-dependencies]
+criterion = {version = "0.3", features=["async_futures", "html_reports"]}
 http-body-util = "0.1.0"
 temp_testdir = "0.2"
 tower = { version = "0.4", features = ["util"] }
+
+[[bench]]
+name = "benchmark"
+harness = false
+
 [profile.release]
 codegen-units = 1
