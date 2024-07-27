@@ -18,6 +18,7 @@ dependencies = [
 homepage = "https://github.com/uwdata/mosaic"
 
 [tool.hatch.build]
+only-packages = true
 artifacts = [
   "mosaic_widget/static/"
 ]
