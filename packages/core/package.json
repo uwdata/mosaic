@@ -30,7 +30,7 @@
   "dependencies": {
     "@duckdb/duckdb-wasm": "^1.28.1-dev240.0",
     "@uwdata/mosaic-sql": "^0.10.0",
-    "apache-arrow": "^16.1.0"
+    "apache-arrow": "^17.0.0"
   },
   "devDependencies": {
     "@uwdata/mosaic-duckdb": "^0.10.0"

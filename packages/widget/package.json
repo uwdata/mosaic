@@ -21,7 +21,7 @@
   "dependencies": {
     "@uwdata/mosaic-spec": "^0.10.0",
     "@uwdata/vgplot": "^0.10.0",
-    "apache-arrow": "^16.1.0",
+    "apache-arrow": "^17.0.0",
     "uuid": "^10.0.0"
   },
   "devDependencies": {
