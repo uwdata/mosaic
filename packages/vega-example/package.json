@@ -9,14 +9,14 @@
     "preview": "vite preview"
   },
   "devDependencies": {
-    "vite": "^5.2.8"
+    "vite": "^5.3.5"
   },
   "dependencies": {
     "@uwdata/mosaic-core": "^0.10.0",
     "@uwdata/mosaic-sql": "^0.10.0",
     "@uwdata/vgplot": "^0.10.0",
     "vega": "^5.30.0",
-    "vega-embed": "^6.25.0",
-    "vega-lite": "^5.19.0"
+    "vega-embed": "^6.26.0",
+    "vega-lite": "^5.20.1"
   }
 }
