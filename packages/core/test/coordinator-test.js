@@ -1,8 +1,13 @@
-import assert from 'node:assert';
-import { Coordinator, coordinator } from '../src/index.js';
+import assert from "node:assert";
+import { Coordinator, coordinator } from "../src/index.js";
+import { QueryResult } from "../src/util/query-result.js";
 
-describe('coordinator', () => {
-  it('has accessible singleton', () => {
+async function wait() {
+  return new Promise(setTimeout);
+}
+
+describe("coordinator", () => {
+  it("has accessible singleton", () => {
     const mc = coordinator();
     assert.ok(mc instanceof Coordinator);
 
@@ -12,40 +17,39 @@ describe('coordinator', () => {
     assert.strictEqual(mc2, coordinator());
   });
 
-  it('query results returned in correct order', async () => {
-    class Deferred {
-      constructor(id) {
-        this.id = id;
-        this.promise = new Promise((resolve, reject)=> {
-          this.reject = reject
-          this.resolve = resolve
-        })
-      }
-    }
+  it("query results returned in correct order", async () => {
+    const promises = [];
 
     const connector = {
-      uid : 0,
-      promises : [],
-
-      async query(query) {
-        this.uid++;
-        let id = this.uid;
-        //Earlier queries are resolved later so that they are purposely returned out of order
-        let result = new Deferred(id); this.promises.push(result);
-        if(this.uid == 10){ 
-          for(let i = 9; i >= 0; i--){
-            this.promises[i].resolve(this.promises[i].id);
-          }
-        }
-        return result.promise;
+      async query() {
+        const promise = new QueryResult();
+        promises.push(promise);
+        return promise;
       },
     };
 
-    let results = [];
     const coord = new Coordinator(connector);
-    for (let i = 0; i < 10; i++) {
-      results.push(coord.query({sql: 'SELECT 1 as foo'}));
+
+    const results = Array.from({ length: 10 }, (_, i) =>
+      coord.query()
+    );
+
+    // queries have not been sent yet
+    assert.equal(promises.length, 0);
+
+    await wait();
+
+    // all queries should have been sent to the coordinator
+    assert.equal(promises.length, 10);
+
+    // resolve promises in reverse order
+    for (let i = results.length-1; i >= 0; i--) {
+      promises[i].fulfill(i);
     }
-    assert.deepStrictEqual(await Promise.all(results), [1,2,3,4,5,6,7,8,9,10]);
+
+    assert.deepStrictEqual(
+      await Promise.all(results),
+      Array.from({ length: 10 }, (_, i) => i)
+    );
   });
 });
