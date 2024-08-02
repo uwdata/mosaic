@@ -45,7 +45,7 @@ export function wasmConnector(options = {}) {
     /**
      * Query the DuckDB-WASM instance.
      * @param {object} query
-     * @param {'exec' | 'arrow' | 'json'} [query.type] The query type: 'exec', 'arrow', or 'json'.
+     * @param {'exec' | 'arrow' | 'json' | 'create-bundle' | 'load-bundle'} [query.type] The query type.
      * @param {string} query.sql A SQL query string.
      * @returns the query result
      */
@@ -53,9 +53,9 @@ export function wasmConnector(options = {}) {
       const { type, sql } = query;
       const con = await getConnection();
       const result = await con.query(sql);
-      return type === 'exec' ? undefined
+      return type === 'json' ? result.toArray()
         : type === 'arrow' ? result
-        : result.toArray();
+        : undefined;
     }
   };
 }

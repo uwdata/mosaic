@@ -21,7 +21,11 @@ def test_bundle(bundle_dir):
 
     cache = {}
 
+    assert len(cache) == 0
+
     create_bundle(con, cache, queries, directory=bundle_dir)
+
+    assert len(cache) == 0
 
     load_bundle(con, cache, directory=bundle_dir)
 

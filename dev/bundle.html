@@ -17,6 +17,7 @@
       <select id="connectors">
         <option value="socket" selected>Socket</option>
         <option value="rest">REST</option>
+        <option value="rest_https">REST (HTTPS)</option>
       </select>
     </span>
   </header>
@@ -47,28 +48,31 @@
 
   async function create() {
     try {
-      await coordinator().createBundle('test', queries);
-      output.innerText = "Created bundle"
+      await coordinator.createBundle('test', queries);
+      output.innerText = "Created bundle";
     } catch(err) {
-      output.innerText = `Error: ${err}`
+      output.innerText = `Error: ${err}`;
+      console.log(err.stack);
     }
   }
 
   async function load() {
     try {
-      await coordinator().loadBundle('test');
-      output.innerText = "Loaded bundle"
+      await coordinator.loadBundle('test');
+      output.innerText = "Loaded bundle";
     } catch(err) {
-      output.innerText = `Error: ${err}`
+      output.innerText = `Error: ${err}`;
+      console.log(err.stack);
     }
   }
 
   async function query() {
     try {
-      const result = await coordinator().query(queries[1], {cache: false});
-      output.innerText = `Result = ${result}`
+      const result = await coordinator.query(queries[1], {cache: false});
+      output.innerText = `Result = ${result}`;
     } catch(err) {
-      output.innerText = `Error: ${err}`
+      output.innerText = `Error: ${err}`;
+      console.log(err.stack);
     }
   }
 </script>

@@ -1,13 +1,13 @@
 import { consolidator } from './QueryConsolidator.js';
 import { lruCache, voidCache } from './util/cache.js';
-import { priorityQueue } from './util/priority-queue.js';
+import { PriorityQueue } from './util/priority-queue.js';
 import { QueryResult } from './util/query-result.js';
 
 export const Priority = { High: 0, Normal: 1, Low: 2 };
 
 export class QueryManager {
   constructor() {
-    this.queue = priorityQueue(3);
+    this.queue = new PriorityQueue(3);
     this.db = null;
     this.clientCache = null;
     this._logger = null;

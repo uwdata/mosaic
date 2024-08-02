@@ -34,7 +34,7 @@ jobs:
       - run: npm run test
 
   python:
-    name: Test on Python
+    name: Test in Python
 
     runs-on: ubuntu-latest
 
@@ -64,3 +64,36 @@ jobs:
           hatch build
           hatch fmt --check
           hatch run test:cov
+
+  rust:
+    name: Test in Rust
+
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy, rust-src, rustfmt
+
+      - name: Check formatting
+        run: |
+          cd packages/duckdb-server-rust
+          cargo fmt -- --check
+      - name: Check
+        run: |
+          cd packages/duckdb-server-rust
+          cargo check
+      - name: Clippy
+        run: |
+          cd packages/duckdb-server-rust
+          cargo clippy --all -- -D warnings
+      - name: Build
+        run: |
+          cd packages/duckdb-server-rust
+          cargo build --verbose
+      - name: Test
+        run: |
+          cd packages/duckdb-server-rust
+          cargo test --verbose

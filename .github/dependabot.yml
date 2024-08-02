@@ -16,3 +16,7 @@ updates:
     directory: "/packages/duckdb-server"
     schedule:
       interval: monthly
+  - package-ecosystem: cargo
+    directory: "/packages/duckdb-server-rust"
+    schedule:
+      interval: monthly

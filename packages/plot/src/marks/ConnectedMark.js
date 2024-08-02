@@ -45,7 +45,7 @@ export class ConnectedMark extends Mark {
 
 /**
  * M4 is an optimization for value-preserving time-series aggregation
- * (http://www.vldb.org/pvldb/vol7/p797-jugel.pdf). This implementation uses
+ * (https://www.vldb.org/pvldb/vol7/p797-jugel.pdf). This implementation uses
  * an efficient version with a single scan and the aggregate function
  * argmin and argmax, following https://arxiv.org/pdf/2306.03714.pdf.
  */
