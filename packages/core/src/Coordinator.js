@@ -44,6 +44,7 @@ export class Coordinator {
     consolidate = true,
     indexes = {}
   } = {}) {
+    /** @type QueryManager */
     this.manager = manager;
     this.manager.cache(cache);
     this.manager.consolidate(consolidate);

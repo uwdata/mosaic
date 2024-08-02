@@ -30,7 +30,7 @@ describe("coordinator", () => {
 
     const coord = new Coordinator(connector);
 
-    const results = Array.from({ length: 10 }, (_, i) =>
+    const results = Array.from({ length: 10 }, () =>
       coord.query()
     );
 

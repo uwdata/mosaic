@@ -6,22 +6,34 @@ import { QueryResult } from './util/query-result.js';
 export const Priority = { High: 0, Normal: 1, Low: 2 };
 
 export class QueryManager {
-  constructor() {
+  constructor(
+    maxConcurrentRequests = 32
+  ) {
     this.queue = priorityQueue(3);
     this.db = null;
     this.clientCache = null;
     this._logger = null;
     this._logQueries = false;
     this.recorders = [];
-    this.pending = null;
     this._consolidate = null;
+    this.pendingRequests = new Set();
+    this.maxConcurrentRequests = maxConcurrentRequests;
   }
 
   next() {
-    if (this.pending || this.queue.isEmpty()) return;
+    if (this.queue.isEmpty() || this.pendingRequests.size > this.maxConcurrentRequests) {
+      return;
+    }
+
     const { request, result } = this.queue.next();
-    this.pending = this.submit(request, result);
-    this.pending.finally(() => { this.pending = null; this.next(); });
+
+    const pending = this.submit(request, result);
+    this.pendingRequests.add(pending);
+
+    pending.finally(() => {
+      this.pendingRequests.delete(pending);
+      this.next();
+    });
   }
 
   enqueue(entry, priority = Priority.Normal) {
