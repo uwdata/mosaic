@@ -30,9 +30,10 @@ describe("coordinator", () => {
 
     const coord = new Coordinator(connector);
 
-    const results = Array.from({ length: 10 }, () =>
-      coord.query()
-    );
+    const r0 = coord.query();
+    const r1 = coord.query();
+    const r2 = coord.query();
+    const r3 = coord.query();
 
     // queries have not been sent yet
     assert.equal(promises.length, 0);
@@ -40,16 +41,23 @@ describe("coordinator", () => {
     await wait();
 
     // all queries should have been sent to the connector
-    assert.equal(promises.length, 10);
+    assert.equal(promises.length, 4);
 
     // resolve promises in reverse order
-    for (let i = results.length-1; i >= 0; i--) {
-      promises[i].fulfill(i);
-    }
+    promises.at(-1).fulfill();
+    assert.equal(r0.pending, true);
 
-    assert.deepStrictEqual(
-      await Promise.all(results),
-      Array.from({ length: 10 }, (_, i) => i)
-    );
+    promises.at(-2).fulfill();
+    assert.equal(r1.pending, true);
+
+    promises.at(-3).fulfill();
+    assert.equal(r2.pending, true);
+
+    // promises are only fulfilled after the last request to the coordinator resolves
+    promises.at(-4).fulfill();
+    assert.equal(r0.pending, false);
+    assert.equal(r1.pending, false);
+    assert.equal(r2.pending, false);
+    assert.equal(r3.pending, false);
   });
 });

@@ -15,6 +15,7 @@ export class QueryResult extends Promise {
     });
     this._resolve = resolve;
     this._reject = reject;
+    this._pending = true;
   }
 
   /**
@@ -23,6 +24,7 @@ export class QueryResult extends Promise {
    * @returns {this}
    */
   fulfill(value) {
+    this._pending = false;
     this._resolve(value);
     return this;
   }
@@ -33,8 +35,17 @@ export class QueryResult extends Promise {
    * @returns {this}
    */
   reject(error) {
+    this._pending = false;
     this._reject(error);
     return this;
+  }
+
+  /**
+   * Whether this promise is still pending.
+   * @returns {boolean}
+   */
+  get pending() {
+    return this._pending;
   }
 }
 
