@@ -39,7 +39,7 @@ describe("coordinator", () => {
 
     await wait();
 
-    // all queries should have been sent to the coordinator
+    // all queries should have been sent to the connector
     assert.equal(promises.length, 10);
 
     // resolve promises in reverse order
