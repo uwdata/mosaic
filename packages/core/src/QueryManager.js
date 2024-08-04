@@ -28,10 +28,8 @@ export class QueryManager {
 
     const { request, result } = this.queue.next();
 
-    const pending = this.submit(request, result);
     this.pendingResults.push(result);
-
-    pending.finally(() => {
+    this.submit(request, result).finally(() => {
       // return from the queue all the prepared requests
       while (this.pendingResults.length && this.pendingResults[0].state !== QueryState.pending) {
         const result = this.pendingResults.shift();

@@ -33,15 +33,15 @@ export class QueryResult extends Promise {
    * @returns {this}
    */
   fulfill(value) {
-    if (value !== undefined) {
-      if (this._value !== undefined) {
+    if (this._value !== undefined) {
+      if (value !== undefined) {
         throw Error('Promise has prepared and provided value');
       }
-      this._resolve(value);
-    } else if (this._value === undefined) {
+      this._resolve(this._value);
+    } else if (value === undefined) {
       throw Error('Promise has has neither prepared nor provided value');
     } else {
-      this._resolve(this._value);
+      this._resolve(value);
     }
 
     this._state = QueryState.done;
