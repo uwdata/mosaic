@@ -238,7 +238,7 @@ async function processResults(group, cache) {
     if (request.cache) {
       cache.set(String(request.query), extract);
     }
-    result.fulfill(extract);
+    result.prepare(extract);
   });
 }
 

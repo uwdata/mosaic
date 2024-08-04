@@ -1,6 +1,6 @@
 import assert from "node:assert";
-import { Coordinator, coordinator } from "../src/index.js";
-import { QueryResult } from "../src/util/query-result.js";
+import { coordinator, Coordinator } from "../src/index.js";
+import { QueryResult, QueryState } from "../src/util/query-result.js";
 
 async function wait() {
   return new Promise(setTimeout);
@@ -42,22 +42,44 @@ describe("coordinator", () => {
 
     // all queries should have been sent to the connector
     assert.equal(promises.length, 4);
+    assert.equal(coord.manager.pendingResults.length, 4);
 
     // resolve promises in reverse order
-    promises.at(-1).fulfill();
-    assert.equal(r0.pending, true);
 
-    promises.at(-2).fulfill();
-    assert.equal(r1.pending, true);
+    promises.at(3).fulfill(0);
+    await wait();
 
-    promises.at(-3).fulfill();
-    assert.equal(r2.pending, true);
+    assert.equal(r0.state, QueryState.pending);
+    assert.equal(r1.state, QueryState.pending);
+    assert.equal(r2.state, QueryState.pending);
+    assert.equal(r3.state, QueryState.prepared);
 
-    // promises are only fulfilled after the last request to the coordinator resolves
-    promises.at(-4).fulfill();
-    assert.equal(r0.pending, false);
-    assert.equal(r1.pending, false);
-    assert.equal(r2.pending, false);
-    assert.equal(r3.pending, false);
+    promises.at(1).fulfill(0);
+    await wait();
+
+    assert.equal(r0.state, QueryState.pending);
+    assert.equal(r1.state, QueryState.prepared);
+    assert.equal(r2.state, QueryState.pending);
+    assert.equal(r3.state, QueryState.prepared);
+
+    promises.at(0).fulfill(0);
+    await wait();
+
+    assert.equal(coord.manager.pendingResults.length, 2);
+
+    assert.equal(r0.state, QueryState.done);
+    assert.equal(r1.state, QueryState.done);
+    assert.equal(r2.state, QueryState.pending);
+    assert.equal(r3.state, QueryState.prepared);
+
+    promises.at(2).fulfill(0);
+    await wait();
+
+    assert.equal(coord.manager.pendingResults.length, 0);
+
+    assert.equal(r0.state, QueryState.done);
+    assert.equal(r1.state, QueryState.done);
+    assert.equal(r2.state, QueryState.done);
+    assert.equal(r3.state, QueryState.done);
   });
 });
