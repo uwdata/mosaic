@@ -1,27 +1,46 @@
 import { consolidator } from './QueryConsolidator.js';
 import { lruCache, voidCache } from './util/cache.js';
 import { priorityQueue } from './util/priority-queue.js';
-import { QueryResult } from './util/query-result.js';
+import { QueryResult, QueryState } from './util/query-result.js';
 
-export const Priority = { High: 0, Normal: 1, Low: 2 };
+export const Priority = Object.freeze({ High: 0, Normal: 1, Low: 2 });
 
 export class QueryManager {
-  constructor() {
+  constructor(
+    maxConcurrentRequests = 32
+  ) {
     this.queue = priorityQueue(3);
     this.db = null;
     this.clientCache = null;
     this._logger = null;
     this._logQueries = false;
     this.recorders = [];
-    this.pending = null;
     this._consolidate = null;
+    /** @type QueryResult[] */
+    this.pendingResults = [];
+    this.maxConcurrentRequests = maxConcurrentRequests;
   }
 
   next() {
-    if (this.pending || this.queue.isEmpty()) return;
+    if (this.queue.isEmpty() || this.pendingResults.length > this.maxConcurrentRequests) {
+      return;
+    }
+
     const { request, result } = this.queue.next();
-    this.pending = this.submit(request, result);
-    this.pending.finally(() => { this.pending = null; this.next(); });
+
+    this.pendingResults.push(result);
+    this.submit(request, result).finally(() => {
+      // return from the queue all the prepared requests
+      while (this.pendingResults.length && this.pendingResults[0].state !== QueryState.pending) {
+        const result = this.pendingResults.shift();
+        if (result.state === QueryState.prepared) {
+          result.fulfill();
+        } else if (result.state === QueryState.done) {
+          console.warn('Found resolved query in pending results.');
+        }
+      }
+      this.next();
+    });
   }
 
   enqueue(entry, priority = Priority.Normal) {
@@ -50,7 +69,7 @@ export class QueryManager {
         const cached = this.clientCache.get(sql);
         if (cached) {
           this._logger.debug('Cache');
-          result.fulfill(cached);
+          result.prepare(cached);
           return;
         }
       }
@@ -63,7 +82,7 @@ export class QueryManager {
       const data = await this.db.query({ type, sql, ...options });
       if (cache) this.clientCache.set(sql, data);
       this._logger.debug(`Request: ${(performance.now() - t0).toFixed(1)}`);
-      result.fulfill(data);
+      result.prepare(data);
     } catch (err) {
       result.reject(err);
     }
@@ -116,6 +135,12 @@ export class QueryManager {
         }
         return false;
       });
+
+      for (const result of this.pendingResults) {
+        if (set.has(result)) {
+          result.reject('Canceled');
+        }
+      }
     }
   }
 
@@ -124,6 +149,11 @@ export class QueryManager {
       result.reject('Cleared');
       return true;
     });
+
+    for (const result of this.pendingResults) {
+      result.reject('Cleared');
+    }
+    this.pendingResults = [];
   }
 
   record() {
