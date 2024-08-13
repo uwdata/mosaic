@@ -17,12 +17,6 @@ export class QueryManager {
     this.recorders = [];
     this._consolidate = null;
     /**
-     * Requests pending with the connector.
-     * 
-     * @type Map<string, Promise>
-     */
-    this.pendingRequests = new Map;
-    /**
      * Requests pending with the query manager.
      * 
      * @type QueryResult[]
@@ -78,19 +72,11 @@ export class QueryManager {
       if (cache) {
         const cached = this.clientCache.get(sql);
         if (cached) {
+          const data = await cached;
           this._logger.debug('Cache');
-          result.prepare(cached);
+          result.prepare(type === 'exec' ? null : data);
           return;
         }
-      }
-
-      // check pending results to avoid sending the same request twice
-      const pending = this.pendingRequests.get(sql);
-      if (pending) {
-        this._logger.debug('Reusing coordinator request');
-        const data = await pending;
-        result.prepare(type === 'exec' ? null : data);
-        return;
       }
 
       // issue query, potentially cache result
@@ -100,12 +86,12 @@ export class QueryManager {
       }
 
       const promise = this.db.query({ type, sql, ...options });
+      if (cache) this.clientCache.set(sql, promise);
 
-      this.pendingRequests.set(sql, promise);
       const data = await promise;
-      this.pendingRequests.delete(sql);
 
       if (cache) this.clientCache.set(sql, data);
+
       this._logger.debug(`Request: ${(performance.now() - t0).toFixed(1)}`);
       result.prepare(type === 'exec' ? null : data);
     } catch (err) {

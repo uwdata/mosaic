@@ -30,10 +30,10 @@ describe("coordinator", () => {
 
     const coord = new Coordinator(connector);
 
-    const r0 = coord.query();
-    const r1 = coord.query();
-    const r2 = coord.query();
-    const r3 = coord.query();
+    const r0 = coord.query("SELECT 0");
+    const r1 = coord.query("SELECT 1");
+    const r2 = coord.query("SELECT 2");
+    const r3 = coord.query("SELECT 3");
 
     // queries have not been sent yet
     assert.equal(promises.length, 0);
