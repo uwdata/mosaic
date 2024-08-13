@@ -1,4 +1,4 @@
-import { tableFromIPC } from 'apache-arrow';
+import { decodeIPC } from '../util/decode-ipc.js';
 
 export function socketConnector(uri = 'ws://localhost:3000/') {
   const queue = [];
@@ -47,7 +47,7 @@ export function socketConnector(uri = 'ws://localhost:3000/') {
         } else if (query.type === 'exec') {
           resolve();
         } else if (query.type === 'arrow') {
-          resolve(tableFromIPC(data.arrayBuffer()));
+          resolve(decodeIPC(data));
         } else {
           throw new Error(`Unexpected socket data: ${data}`);
         }
@@ -59,6 +59,7 @@ export function socketConnector(uri = 'ws://localhost:3000/') {
 
   function init() {
     ws = new WebSocket(uri);
+    ws.binaryType = 'arraybuffer';
     for (const type in events) {
       ws.addEventListener(type, events[type]);
     }

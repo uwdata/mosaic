@@ -1,4 +1,19 @@
 import * as duckdb from '@duckdb/duckdb-wasm';
+import { decodeIPC } from '../util/decode-ipc.js';
+
+// bypass duckdb-wasm query method to get Arrow IPC bytes directly
+function getArrowIPC(con, query) {
+  return new Promise((resolve, reject) => {
+    con.useUnsafe(async (bindings, conn) => {
+      try {
+        const buffer = await bindings.runQuery(conn, query);
+        resolve(buffer);
+      } catch (error) {
+        reject(error);
+      }
+    });
+  });
+}
 
 export function wasmConnector(options = {}) {
   const { duckdb, connection, ...opts } = options;
@@ -52,10 +67,10 @@ export function wasmConnector(options = {}) {
     query: async query => {
       const { type, sql } = query;
       const con = await getConnection();
-      const result = await con.query(sql);
+      const result = await getArrowIPC(con, sql);
       return type === 'exec' ? undefined
-        : type === 'arrow' ? result
-        : result.toArray();
+        : type === 'arrow' ? decodeIPC(result)
+        : decodeIPC(result).toArray();
     }
   };
 }

@@ -17,11 +17,8 @@ export {
 } from './SelectionClause.js';
 
 export {
-  isArrowTable,
-  convertArrowArrayType,
-  convertArrowValue,
-  convertArrowColumn
-} from './util/convert-arrow.js'
+  isArrowTable
+} from './util/is-arrow-table.js'
 
 export { distinct } from './util/distinct.js';
 export { synchronizer } from './util/synchronizer.js';
