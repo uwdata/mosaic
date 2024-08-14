@@ -125,6 +125,12 @@ export class QueryManager {
     }
   }
 
+  /**
+   * Request a query result.
+   * @param {*} request The request.
+   * @param {number} priority The query priority, defaults to `Priority.Normal`.
+   * @returns {QueryResult} A query result promise.
+   */
   request(request, priority = Priority.Normal) {
     const result = new QueryResult();
     const entry = { request, result };
