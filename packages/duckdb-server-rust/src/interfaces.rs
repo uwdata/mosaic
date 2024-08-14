@@ -1,9 +1,13 @@
+use anyhow::anyhow;
+use axum::Json;
 use axum::{
     body::Bytes,
     http::StatusCode,
     response::{IntoResponse, Response},
 };
+use deadpool_r2d2::InteractError;
 use serde::{Deserialize, Serialize};
+use serde_json::json;
 use tokio::sync::Mutex;
 
 use crate::bundle::Query as BundleQuery;
@@ -70,17 +74,17 @@ pub enum AppError {
 
 impl IntoResponse for AppError {
     fn into_response(self) -> Response {
-        match self {
+        let (status, err_msg) = match self {
             AppError::Error(error) => {
                 tracing::error!("Error: {:?}", error);
                 (
                     StatusCode::INTERNAL_SERVER_ERROR,
                     format!("Something went wrong: {error}"),
                 )
-                    .into_response()
             }
-            AppError::BadRequest => (StatusCode::BAD_REQUEST).into_response(),
-        }
+            AppError::BadRequest => (StatusCode::BAD_REQUEST, "Bad request".to_string()),
+        };
+        (status, Json(json!({ "message": err_msg }))).into_response()
     }
 }
 
@@ -90,5 +94,19 @@ where
 {
     fn from(err: E) -> Self {
         AppError::Error(err.into())
+    }
+}
+
+pub fn adapt_anyhow_error<T: Error>(error: T) -> anyhow::Error {
+    error.as_anyhow_error()
+}
+
+pub trait Error {
+    fn as_anyhow_error(&self) -> anyhow::Error;
+}
+
+impl Error for InteractError {
+    fn as_anyhow_error(&self) -> anyhow::Error {
+        anyhow!("Interact Error {:?}", self)
     }
 }

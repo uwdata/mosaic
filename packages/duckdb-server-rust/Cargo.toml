@@ -32,6 +32,11 @@ tokio = { version = "1", features = ["full"] }
 tower-http = { version = "0.5.0", features = ["cors", "compression-full", "trace"] }
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+axum-streams = { version = "0.18", features=["arrow"] }
+async-stream = "0.3"
+deadpool = { version = "0.12", features = ["managed"] }
+deadpool-r2d2 = {version = "0.4.1"}
+tokio-stream = "0.1"
 
 [dev-dependencies]
 criterion = {version = "0.5", features=["async_futures", "html_reports"]}
