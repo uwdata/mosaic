@@ -17,8 +17,8 @@ anyhow = "1.0"
 arrow = "52.1"
 async-trait = "0.1.80"
 axum = { version = "0.7", features = ["http1", "http2", "ws", "json", "tokio", "tracing", "macros"] }
-axum-server = { version = "0.6", features = ["tls-rustls"] }
-axum-server-dual-protocol = "0.6"
+axum-server = { version = "0.7", features = ["tls-rustls"] }
+axum-server-dual-protocol = "0.7"
 duckdb = { version = "1", features = ["bundled", "csv", "json", "parquet", "url", "r2d2"] }
 futures = "0.3"
 listenfd = "1.0"
@@ -37,7 +37,7 @@ tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 criterion = {version = "0.5", features=["async_futures", "html_reports"]}
 http-body-util = "0.1.0"
 temp_testdir = "0.2"
-tower = { version = "0.4", features = ["util"] }
+tower = { version = "0.5", features = ["util"] }
 
 [[bench]]
 name = "benchmark"
