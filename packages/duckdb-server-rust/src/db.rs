@@ -44,8 +44,7 @@ impl Database for ConnectionPool {
             writer.write(&batch)?;
         }
         writer.finish()?;
-        let json_data = writer.into_inner();
-        Ok(json_data)
+        Ok(writer.into_inner())
     }
 
     async fn get_arrow(&self, sql: &str) -> Result<Vec<u8>> {
