@@ -36,8 +36,8 @@ export function convertArrowArrayType(type) {
  * @returns a value conversion function
  */
 export function convertArrowValue(type) {
-  // map timestamp numbers to date objects
-  if (DataType.isTimestamp(type)) {
+  // map dates and timestamp numbers to date objects
+  if (DataType.isDate(type) || DataType.isTimestamp(type)) {
     return v => v == null ? v : new Date(v);
   }
 
@@ -68,8 +68,8 @@ export function convertArrowValue(type) {
 export function convertArrowColumn(column) {
   const { type } = column;
 
-  // map timestamp numbers to date objects
-  if (DataType.isTimestamp(type)) {
+  // map dates and timestamp numbers to date objects
+  if (DataType.isDate(type) || DataType.isTimestamp(type)) {
     const size = column.length;
     const array = new Array(size);
     for (let row = 0; row < size; ++row) {
