@@ -1,6 +1,6 @@
 export const QueryState = Object.freeze({
-  pending:   Symbol('pending'),
-  prepared:  Symbol('prepared'),
+  pending: Symbol('pending'),
+  prepared: Symbol('prepared'),
   error: Symbol('error'),
   done: Symbol('done')
 });
@@ -73,7 +73,7 @@ export class QueryResult extends Promise {
 
   /**
    * Returns the state of this query result.
-   * @returns {QueryState}
+   * @returns {symbol}
    */
   get state() {
     return this._state;

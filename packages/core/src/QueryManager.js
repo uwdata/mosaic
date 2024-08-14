@@ -47,6 +47,13 @@ export class QueryManager {
     });
   }
 
+  /**
+   * Add an entry to the query queue with a priority.
+   * @param {object} entry The entry to add.
+   * @param {*} [entry.request] The query request.
+   * @param {QueryResult} [entry.result] The query result.
+   * @param {number} priority The query priority, defaults to `Priority.Normal`.
+   */
   enqueue(entry, priority = Priority.Normal) {
     this.queue.insert(entry, priority);
     this.next();
@@ -58,6 +65,11 @@ export class QueryManager {
     }
   }
 
+  /**
+   * Submit the query to the connector.
+   * @param {*} request The request.
+   * @param {QueryResult} result The query result.
+   */
   async submit(request, result) {
     try {
       const { query, type, cache = false, record = true, options } = request;
