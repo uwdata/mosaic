@@ -1,21 +1,9 @@
 use anyhow::{Error, Result};
 use arrow::record_batch::RecordBatch;
-use async_stream::stream;
-use async_stream::try_stream;
 use async_trait::async_trait;
-use axum::response::IntoResponse;
-use axum_streams::StreamBodyAs;
-use deadpool::managed::{Manager, Object, Pool};
 use deadpool_r2d2::Runtime;
-use duckdb::arrow::ipc::writer::StreamWriter;
 use duckdb::DuckdbConnectionManager;
-use futures::future::FutureExt;
-use futures::prelude::*;
-use futures::stream::BoxStream;
 use futures::stream::Stream;
-use futures::stream::StreamExt;
-use std::{pin::Pin, sync::Arc};
-use tracing::span::Record;
 
 use tokio::sync::mpsc;
 use tokio_stream::wrappers::ReceiverStream;
@@ -54,7 +42,7 @@ impl ConnectionPool {
 impl Database for ConnectionPool {
     async fn execute(&self, sql: String) -> Result<()> {
         let manager = self.pool.get().await?;
-        manager
+        let _ = manager
             .interact(move |conn| conn.execute_batch(&sql))
             .await
             .map_err(adapt_anyhow_error)?;
