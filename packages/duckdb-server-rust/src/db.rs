@@ -1,7 +1,7 @@
 use anyhow::{Error, Result};
 use arrow::record_batch::RecordBatch;
-use async_stream::try_stream;
 use async_stream::stream;
+use async_stream::try_stream;
 use async_trait::async_trait;
 use axum::response::IntoResponse;
 use axum_streams::StreamBodyAs;
@@ -9,13 +9,13 @@ use deadpool::managed::{Manager, Object, Pool};
 use deadpool_r2d2::Runtime;
 use duckdb::arrow::ipc::writer::StreamWriter;
 use duckdb::DuckdbConnectionManager;
+use futures::future::FutureExt;
 use futures::prelude::*;
 use futures::stream::BoxStream;
 use futures::stream::Stream;
+use futures::stream::StreamExt;
 use std::{pin::Pin, sync::Arc};
 use tracing::span::Record;
-use futures::future::FutureExt;
-use futures::stream::StreamExt;
 
 use tokio::sync::mpsc;
 use tokio_stream::wrappers::ReceiverStream;
@@ -54,7 +54,8 @@ impl ConnectionPool {
 impl Database for ConnectionPool {
     async fn execute(&self, sql: String) -> Result<()> {
         let manager = self.pool.get().await?;
-        manager.interact(move |conn| conn.execute_batch(&sql))
+        manager
+            .interact(move |conn| conn.execute_batch(&sql))
             .await
             .map_err(adapt_anyhow_error)?;
         Ok(())
@@ -116,26 +117,28 @@ impl Database for ConnectionPool {
     ) -> Result<Box<dyn Stream<Item = RecordBatch>>, Error> {
         let conn = self.pool.get().await?;
         let (tx, rx) = mpsc::channel(100);
-    
+
         tokio::spawn(async move {
-            let result = conn.interact(move |conn| {
-                let mut stmt = conn.prepare(&sql)?;
-                let arrow = stmt.query_arrow([])?;
-                
-                for batch in arrow {
-                    if let Err(e) = tx.blocking_send(batch) {
-                        tracing::error!("Error processing batch: {:?}", e);
-                        break;
+            let result = conn
+                .interact(move |conn| {
+                    let mut stmt = conn.prepare(&sql)?;
+                    let arrow = stmt.query_arrow([])?;
+
+                    for batch in arrow {
+                        if let Err(e) = tx.blocking_send(batch) {
+                            tracing::error!("Error processing batch: {:?}", e);
+                            break;
+                        }
                     }
-                }
-                Ok::<_, Error>(())
-            }).await;
-    
+                    Ok::<_, Error>(())
+                })
+                .await;
+
             if let Err(e) = result {
                 tracing::error!("Error in database interaction: {:?}", e);
             }
         });
-    
+
         Ok(Box::new(ReceiverStream::new(rx)))
     }
 }
