@@ -29,6 +29,7 @@ axum-streams = { version = "0.18", features=["arrow"] }
 async-stream = "0.3"
 deadpool = { version = "0.12", features = ["managed"] }
 deadpool-r2d2 = {version = "0.4.1"}
+tokio-stream = "0.1"
 
 [dev-dependencies]
 http-body-util = "0.1.0"
