@@ -411,7 +411,7 @@ export class Query {
     return q;
   }
 
-  toString() {
+  toString(params = []) {
     const {
       with: cte, select, distinct, from, sample, where, groupby,
       having, window, qualify, orderby, limit, offset
@@ -421,7 +421,7 @@ export class Query {
 
     // WITH
     if (cte.length) {
-      const list = cte.map(({ as, query })=> `"${as}" AS (${query})`);
+      const list = cte.map(({ as, query })=> `"${as.toString(params)}" AS (${query})`);
       sql.push(`WITH ${list.join(', ')}`);
     }
 
@@ -444,7 +444,7 @@ export class Query {
 
     // WHERE
     if (where.length) {
-      const clauses = where.map(String).filter(x => x).join(' AND ');
+      const clauses = where.map(c => c.toString(params)).filter(x => x).join(' AND ');
       if (clauses) sql.push(`WHERE ${clauses}`);
     }
 
@@ -463,13 +463,13 @@ export class Query {
 
     // HAVING
     if (having.length) {
-      const clauses = having.map(String).filter(x => x).join(' AND ');
+      const clauses = having.map(c => c.toString(params)).filter(x => x).join(' AND ');
       if (clauses) sql.push(`HAVING ${clauses}`);
     }
 
     // WINDOW
     if (window.length) {
-      const windows = window.map(({ as, expr }) => `"${as}" AS (${expr})`);
+      const windows = window.map(({ as, expr }) => `"${as.toString(params)}" AS (${expr})`);
       sql.push(`WINDOW ${windows.join(', ')}`);
     }
 

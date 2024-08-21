@@ -22,14 +22,29 @@ export function toSQL(value) {
  * @param {*} value The literal value.
  * @returns {string} A SQL string.
  */
-export function literalToSQL(value) {
+export function literalToSQL(value, params) {
   switch (typeof value) {
     case 'boolean':
+      if (params) {
+        params.push(value);
+        return '?';
+      }
       return value ? 'TRUE' : 'FALSE';
     case 'string':
+      if (params) {
+        params.push(value);
+        return '?';
+      }
       return `'${value.replace(`'`, `''`)}'`;
     case 'number':
-      return Number.isFinite(value) ? String(value) : 'NULL';
+      if (Number.isFinite(value)) {
+        if (params) {
+          params.push(value);
+          return '?';
+        }
+        return String(value)
+      }
+      return 'NULL';
     default:
       if (value == null) {
         return 'NULL';
@@ -46,6 +61,9 @@ export function literalToSQL(value) {
         return `'${value.source}'`;
       } else {
         // otherwise rely on string coercion
+        if (params && value.toSQL) {
+          return value.toSQL(params)
+        }
         return String(value);
       }
   }

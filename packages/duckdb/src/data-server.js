@@ -72,14 +72,14 @@ export function queryHandler(db, queryCache) {
 
   // retrieve query result
   async function retrieve(query, get) {
-    const { sql, type, persist } = query;
-    const key = cacheKey(sql, type);
+    const { sql, type, persist, params } = query;
+    const key = cacheKey(sql, type, params);
     let result = queryCache?.get(key);
 
     if (result) {
       console.log('CACHE HIT');
     } else {
-      result = await get(sql);
+      result = await get(params ?? sql);
       if (persist) {
         queryCache?.set(key, result, { persist });
       }
@@ -102,8 +102,13 @@ export function queryHandler(db, queryCache) {
     }
 
     try {
-      const { sql, type = 'json' } = query;
-      console.log(`> ${type.toUpperCase()}${sql ? ' ' + sql : ''}`);
+      const { sql, type = 'json', params } = query;
+      console.log(`> ${type.toUpperCase()}${sql ? ' ' + sql : ''}`, params);
+
+      let statement;
+      if (params) {
+        statement = db.prepare(sql);
+      }
 
       // process query and return result
       switch (type) {
@@ -112,13 +117,19 @@ export function queryHandler(db, queryCache) {
           await db.exec(sql);
           res.done();
           break;
+        case 'prepare':
+          // Prepare the query for later execution
+          await db.prepare(sql);
+          res.done();
+          break;
         case 'arrow':
           // Apache Arrow response format
-          res.arrow(await retrieve(query, sql => db.arrowBuffer(sql)));
+          console.log(statement, params)
+          res.arrow(await retrieve(query, statement?.arrowBuffer.bind(statement) ?? db.arrowBuffer.bind(db)));
           break;
         case 'json':
           // JSON response format
-          res.json(await retrieve(query, sql => db.query(sql)));
+          res.json(await retrieve(query, statement?.query.bind(statement) ?? db.query.bind(db)));
           break;
         case 'create-bundle':
           // Create a named bundle of precomputed resources

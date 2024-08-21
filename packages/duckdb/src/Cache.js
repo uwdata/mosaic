@@ -5,8 +5,10 @@ import path from 'node:path';
 const DEFAULT_CACHE_DIR = '.cache';
 const DEFAULT_TTL = 1000 * 60 * 60 * 24 * 7; // 7 days
 
-export function cacheKey(hashable, type) {
-  return createHash('sha256').update(hashable).digest('hex') + '.' + type;
+export function cacheKey(hashable, type, params) {
+  const hash = createHash('sha256').update(hashable);
+  if (params) hash.update(params.join(","));
+  return hash.digest('hex') + '.' + type;
 }
 
 class CacheEntry {

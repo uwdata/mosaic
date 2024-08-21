@@ -36,4 +36,24 @@ describe('DuckDB', () => {
       await db.exec('DROP TABLE json');
     });
   });
+
+  describe('prepare', () => {
+    it('can run a prepared statement', async () => {
+      const statement = db.prepare('SELECT ?+? AS foo');
+      const res0 = await statement.query([1,2]);
+      assert.deepEqual(res0, [{foo: 3}]);
+
+      const res1 = await statement.query([2,3]);
+      assert.deepEqual(res1, [{foo: 5}]);
+    });
+
+    it('can run a prepared arrow statement', async () => {
+      const statement = db.prepare('SELECT ?+? AS foo');
+      const res0 = await statement.arrowBuffer([1,2]);
+      assert.deepEqual(res0, [{foo: 3}]);
+
+      const res1 = await statement.arrowBuffer([2,3]);
+      assert.deepEqual(res1, [{foo: 5}]);
+    });
+  });
 });

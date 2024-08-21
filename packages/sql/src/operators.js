@@ -47,6 +47,7 @@ function rangeOp(op, a, range, exclusive) {
   const expr = !range ? sql``
     : exclusive ? sql`${prefix}(${range[0]} <= ${a} AND ${a} < ${range[1]})`
     : sql`(${a} ${op} ${range[0]} AND ${range[1]})`;
+  expr.params = [...(range[0].params ?? []), ... (range[1].params ?? [])];
   return expr.annotate({ op, visit, field: a, range });
 }
 
