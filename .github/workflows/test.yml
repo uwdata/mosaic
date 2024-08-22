@@ -77,21 +77,14 @@ jobs:
         with:
           components: clippy, rust-src, rustfmt
       - name: Cache
-        uses: actions/cache@v3
-        with:
-          path: |
-            ~/.cargo/bin/
-            ~/.cargo/registry/index/
-            ~/.cargo/registry/cache/
-            ~/.cargo/git/db/
-            target/
-          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+        uses: Swatinem/rust-cache@v2
 
-      - name: Lint
+      - name: Format
         working-directory: ./packages/duckdb-server-rust
-        run: |
-          cargo fmt -- --check
-          cargo clippy --all -- -D warnings
+        run: cargo fmt -- --check
+      - name: Clippy
+        working-directory: ./packages/duckdb-server-rust
+        run: cargo clippy --all -- -D warnings
       - name: Test
         working-directory: ./packages/duckdb-server-rust
         run: cargo test --verbose
