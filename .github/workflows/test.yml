@@ -87,14 +87,11 @@ jobs:
           components: clippy, rust-src, rustfmt
 
       - name: Check formatting
-        run: |
-          cd packages/duckdb-server-rust
-          cargo fmt -- --check
+        working-directory: ./packages/duckdb-server-rust
+        run: cargo fmt -- --check
       - name: Clippy
-        run: |
-          cd packages/duckdb-server-rust
-          cargo clippy --all -- -D warnings
+        working-directory: ./packages/duckdb-server-rust
+        run: cargo clippy --all -- -D warnings
       - name: Test
-        run: |
-          cd packages/duckdb-server-rust
-          cargo test --verbose
+        working-directory: ./packages/duckdb-server-rust
+        run: cargo test --verbose
