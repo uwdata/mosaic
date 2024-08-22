@@ -13,6 +13,8 @@ The strategies above are modified to omit clauses where the _clients_ set includ
 
 By default, a selection without any clauses selects all records. To instead select no records, set the _empty_ option to `true`.
 
+A Selection can `include` the clauses of one or more upstream selections. New clauses or activations published to those selections will be relayed to any selections that include them. Beyond these relays, the selections act independently and so may apply different resolution strategies.
+
 ## isSelection
 
 `isSelection(value)`
@@ -25,7 +27,10 @@ Returns `true` if the input value is a `Selection`, false otherwise.
 
 Create a new Selection instance with an intersect (conjunction) resolution strategy.
 
-The _options_ object may include a Boolean _cross_ flag (default `false`) indicating cross-filtered resolution. If true, selection clauses will not be applied to the clients they are associated with. The _empty_ flag (default `false`) indicates whether a selection without any clauses should not select an empty set with no records (`true`) or select all records (`false`).
+The _options_ object may include:
+- A Boolean _cross_ flag (default `false`) indicating cross-filtered resolution. If true, selection clauses will not be applied to the clients they are associated with.
+- An _empty_ flag (default `false`) indicates whether a selection without any clauses should not select an empty set with no records (`true`) or select all records (`false`).
+- An _include_ option (default `[]`) indicating one or more selections whose clauses should be included as part of this selection. The option value can be either a single `Selection` instance or an array of `Selection` instances.
 
 ## Selection.union
 
@@ -33,7 +38,10 @@ The _options_ object may include a Boolean _cross_ flag (default `false`) indica
 
 Create a new Selection instance with a union (disjunction) resolution strategy.
 
-The _options_ object may include a Boolean _cross_ flag (default `false`) indicating cross-filtered resolution. If true, selection clauses will not be applied to the clients they are associated with. The _empty_ flag (default `false`) indicates whether a selection without any clauses should not select an empty set with no records (`true`) or select all records (`false`).
+The _options_ object may include:
+- A Boolean _cross_ flag (default `false`) indicating cross-filtered resolution. If true, selection clauses will not be applied to the clients they are associated with.
+- An _empty_ flag (default `false`) indicates whether a selection without any clauses should not select an empty set with no records (`true`) or select all records (`false`).
+- An _include_ option (default `[]`) indicating one or more selections whose clauses should be included as part of this selection. The option value can be either a single `Selection` instance or an array of `Selection` instances.
 
 ## Selection.single
 
@@ -41,7 +49,10 @@ The _options_ object may include a Boolean _cross_ flag (default `false`) indica
 
 Create a new Selection instance with a singular resolution strategy that keeps only the most recent selection clause.
 
-The _options_ object may include a Boolean _cross_ flag (default `false`) indicating cross-filtered resolution. If true, selection clauses will not be applied to the clients they are associated with. The _empty_ flag (default `false`) indicates whether a selection without any clauses should not select an empty set with no records (`true`) or select all records (`false`).
+The _options_ object may include:
+- A Boolean _cross_ flag (default `false`) indicating cross-filtered resolution. If true, selection clauses will not be applied to the clients they are associated with.
+- An _empty_ flag (default `false`) indicates whether a selection without any clauses should not select an empty set with no records (`true`) or select all records (`false`).
+- An _include_ option (default `[]`) indicating one or more selections whose clauses should be included as part of this selection. The option value can be either a single `Selection` instance or an array of `Selection` instances.
 
 ## Selection.crossfilter
 
