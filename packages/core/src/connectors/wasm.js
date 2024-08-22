@@ -2,6 +2,7 @@ import * as duckdb from '@duckdb/duckdb-wasm';
 import { decodeIPC } from '../util/decode-ipc.js';
 
 // bypass duckdb-wasm query method to get Arrow IPC bytes directly
+// https://github.com/duckdb/duckdb-wasm/issues/267#issuecomment-2252749509
 function getArrowIPC(con, query) {
   return new Promise((resolve, reject) => {
     con.useUnsafe(async (bindings, conn) => {
