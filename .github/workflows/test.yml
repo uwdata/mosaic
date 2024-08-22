@@ -72,17 +72,16 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
-      - name: Install Rust
-        run: rustup toolchain install stable --profile minimal --no-self-update
-      - name: Cache
-        uses: Swatinem/rust-cache@v2
+      - uses: actions-rust-lang/setup-rust-toolchain@v1
+        with:
+          components: clippy, rust-src, rustfmt
+          cache: true
+          cache-workspaces: |-
+            ./packages/duckdb-server-rust
 
       - name: Format
-        working-directory: ./packages/duckdb-server-rust
-        run: cargo fmt -- --check
+        run: cargo fmt --manifest-path=./packages/duckdb-server-rust/Cargo.toml -- --check
       - name: Clippy
-        working-directory: ./packages/duckdb-server-rust
-        run: cargo clippy --all -- -D warnings
+        run: cargo clippy --manifest-path=./packages/duckdb-server-rust/Cargo.toml --all -- -D warnings
       - name: Test
-        working-directory: ./packages/duckdb-server-rust
-        run: cargo test --verbose
+        run: cargo test --manifest-path=./packages/duckdb-server-rust/Cargo.toml --verbose
