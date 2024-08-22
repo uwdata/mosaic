@@ -38,7 +38,8 @@ export class QueryManager {
   async submit(request, result) {
     try {
       const { query, type, cache = false, record = true, options } = request;
-      const sql = query ? `${query}` : null;
+      const params = [];
+      let sql = query ? query.toString(params) : null;
 
       // update recorders
       if (record) {
@@ -58,9 +59,9 @@ export class QueryManager {
       // issue query, potentially cache result
       const t0 = performance.now();
       if (this._logQueries) {
-        this._logger.debug('Query', { type, sql, ...options });
+        this._logger.debug('Query', { type, sql, params, ...options });
       }
-      const data = await this.db.query({ type, sql, ...options });
+      const data = await this.db.query({ type, sql, params: params.length ? params : undefined, ...options });
       if (cache) this.clientCache.set(sql, data);
       this._logger.debug(`Request: ${(performance.now() - t0).toFixed(1)}`);
       result.fulfill(data);

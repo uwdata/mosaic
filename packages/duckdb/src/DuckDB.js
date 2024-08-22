@@ -20,6 +20,7 @@ export class DuckDB {
     this.db = new duckdb.Database(path, config);
     this.con = this.db.connect();
     this.exec(initStatements);
+    this.preparedStatements = new Map;
   }
 
   close() {
@@ -35,7 +36,13 @@ export class DuckDB {
   }
 
   prepare(sql) {
-    return new DuckDBStatement(this.con.prepare(sql));
+    let statement = this.preparedStatements.get(sql);
+    if (statement) {
+      return statement
+    }
+    statement = new DuckDBStatement(this.con.prepare(sql));
+    this.preparedStatements.set(sql, statement);
+    return statement;
   }
 
   exec(sql) {

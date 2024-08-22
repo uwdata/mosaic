@@ -290,6 +290,23 @@ describe('Query', () => {
         .toString(),
       query
     );
+
+    assert.strictEqual(gt(bar, 50).toSQL([]), `"bar" > ?`);
+
+    const params = [];
+    assert.strictEqual(
+      Query
+        .select(foo)
+        .from('data')
+        .where(gt(bar, 50), lt(bar, 100))
+        .toSQL(params),
+      [
+        'SELECT "foo"',
+        'FROM "data"',
+        'WHERE ("bar" > ?) AND ("bar" < ?)'
+      ].join(' ')
+    );
+    assert.deepStrictEqual(params, [50, 100]);
   });
 
   it('selects ordered rows', () => {

@@ -62,4 +62,11 @@ describe('literal', () => {
     assert.strictEqual(stringWithQuotes.value, `don't`);
     assert.strictEqual(String(stringWithQuotes), `'don''t'`);
   });
+  it(`supports toSQL`, () => {
+    const numberExpr = literal(1);
+
+    const params = [];
+    assert.strictEqual(numberExpr.toSQL(params), `?`);
+    assert.deepStrictEqual(params, [1]);
+  })
 });

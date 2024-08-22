@@ -37,10 +37,12 @@ export class SQLExpression {
    * @param {string[]} [columns=[]] The column dependencies
    * @param {object} [props] Additional properties for this expression.
    */
-  constructor(parts, columns, props) {
+  constructor(parts, columns, queryParams, props) {
     this._expr = Array.isArray(parts) ? parts : [parts];
     this._deps = columns || [];
     this.annotate(props);
+
+    this.params = queryParams;
 
     const params = this._expr.filter(part => isParamLike(part));
     if (params.length > 0) {
@@ -108,9 +110,13 @@ export class SQLExpression {
    * Generate a SQL code string corresponding to this expression.
    * @returns {string} A SQL code string.
    */
-  toString() {
+  toString(params) {
+    console.log(this?.params)
+    if (params) {
+      params.push(...(this?.params ?? []));
+    }
     return this._expr
-      .map(p => isParamLike(p) && !isSQLExpression(p) ? literalToSQL(p.value) : p)
+      .map(p => isParamLike(p) && !isSQLExpression(p) ? literalToSQL(p.value, params) : p)
       .join('');
   }
 
@@ -134,7 +140,7 @@ function update(expr, callbacks) {
   }
 }
 
-export function parseSQL(strings, exprs) {
+export function parseSQL(strings, exprs, params) {
   const spans = [strings[0]];
   const cols = new Set;
   const n = exprs.length;
@@ -146,7 +152,7 @@ export function parseSQL(strings, exprs) {
       if (Array.isArray(e?.columns)) {
         e.columns.forEach(col => cols.add(col));
       }
-      spans[k] += typeof e === 'string' ? e : literalToSQL(e);
+      spans[k] += typeof e === 'string' ? e : literalToSQL(e, params);
     }
     const s = strings[++i];
     if (isParamLike(spans[k])) {
@@ -165,6 +171,7 @@ export function parseSQL(strings, exprs) {
  * references), or parameterized values.
  */
 export function sql(strings, ...exprs) {
-  const { spans, cols } = parseSQL(strings, exprs);
-  return new SQLExpression(spans, cols);
+  const params = [];
+  const { spans, cols } = parseSQL(strings, exprs, params);
+  return new SQLExpression(spans, cols, params);
 }
