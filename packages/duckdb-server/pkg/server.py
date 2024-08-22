@@ -94,10 +94,10 @@ def handle_query(handler: Handler, con, cache, query):
             json = retrieve(cache, query, partial(get_json, con))
             handler.json(json)
         elif command == "create-bundle":
-            create_bundle(con, cache, query.get("queries"), BUNDLE_DIR)
+            create_bundle(con, cache, query.get("queries"), BUNDLE_DIR / query.get("name"))
             handler.done()
         elif command == "load-bundle":
-            load_bundle(con, cache, BUNDLE_DIR)
+            load_bundle(con, cache, BUNDLE_DIR / query.get("name"))
             handler.done()
         else:
             raise ValueError(f"Unknown command {command}")

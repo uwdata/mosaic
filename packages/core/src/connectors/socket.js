@@ -85,7 +85,7 @@ export function socketConnector(uri = 'ws://localhost:3000/') {
     /**
      * Query the DuckDB server.
      * @param {object} query
-     * @param {'exec' | 'arrow' | 'json'} [query.type] The query type: 'exec', 'arrow', or 'json'.
+     * @param {'exec' | 'arrow' | 'json' | 'create-bundle' | 'load-bundle'} [query.type] The query type.
      * @param {string} query.sql A SQL query string.
      * @returns the query result
      */

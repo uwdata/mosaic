@@ -19,6 +19,7 @@
     "lint": "lerna run lint",
     "test": "lerna run test",
     "server": "cd packages/duckdb-server && hatch run serve",
+    "server:rust": "cd packages/duckdb-server-rust && cargo run",
     "server:node": "nodemon packages/duckdb/bin/run-server.js",
     "dev": "vite",
     "release": "npm run test && npm run lint && lerna publish && npm run release:python",

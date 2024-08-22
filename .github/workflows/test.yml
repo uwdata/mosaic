@@ -34,7 +34,7 @@ jobs:
       - run: npm run test
 
   python:
-    name: Test on Python
+    name: Test in Python
 
     runs-on: ubuntu-latest
 
@@ -64,3 +64,25 @@ jobs:
           hatch build
           hatch fmt --check
           hatch run test:cov
+
+  rust:
+    name: Test in Rust
+
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Rust
+        uses: actions-rust-lang/setup-rust-toolchain@v1
+        with:
+          components: clippy, rustfmt
+          cache: true
+          cache-workspaces: |-
+            ./packages/duckdb-server-rust
+
+      - name: Format
+        run: cargo fmt --manifest-path=./packages/duckdb-server-rust/Cargo.toml -- --check
+      - name: Clippy
+        run: cargo clippy --manifest-path=./packages/duckdb-server-rust/Cargo.toml --all -- -D warnings
+      - name: Test
+        run: cargo test --manifest-path=./packages/duckdb-server-rust/Cargo.toml --verbose
