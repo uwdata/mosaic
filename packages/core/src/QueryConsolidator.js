@@ -109,8 +109,10 @@ function consolidationKey(query, cache) {
       q.$groupby(groupby.map(e => (e instanceof Ref && map[e.column]) || e));
     }
     // @ts-ignore
-    else if(query.select().some(({ expr }) => expr.aggregate)) {
-      q.$groupby('*');
+    else if (query.select().some(({ expr }) => expr.aggregate)) {
+      // if query is an ungrouped aggregate, add an explicit groupby to
+      // prevent improper consolidation with non-aggregate queries
+      q.$groupby('ALL');
     }
 
     // key is just the transformed query as SQL
