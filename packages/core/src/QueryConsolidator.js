@@ -248,22 +248,20 @@ async function processResults(group, cache) {
 
 /**
  * Project a consolidated result to a client result
- * @param {*} data Consolidated query result, as an Apache Arrow Table
- * @param {*} map Column name map as [source, target] pairs
+ * @param {import('@uwdata/flechette').Table} data
+ *  Consolidated query result, as an Arrow Table
+ * @param {[string, string][]} map Column name map as [source, target] pairs
  * @returns the projected Apache Arrow table
  */
 function projectResult(data, map) {
-  const cols = {};
-  for (const [name, as] of map) {
-    cols[as] = data.getChild(name);
-  }
-  return new data.constructor(cols);
+  return data.select(map.map(x => x[0]), map.map(x => x[1]));
 }
 
 /**
  * Filter a consolidated describe query result to a client result
- * @param {*} data Consolidated query result
- * @param {*} map Column name map as [source, target] pairs
+ * @param {import('@uwdata/flechette').Table} data
+ *  Consolidated query result, as an Arrow Table
+ * @param {[string, string][]} map Column name map as [source, target] pairs
  * @returns the filtered table data
  */
 function filterResult(data, map) {

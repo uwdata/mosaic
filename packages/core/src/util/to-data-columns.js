@@ -1,4 +1,4 @@
-import { convertArrowColumn, isArrowTable } from './convert-arrow.js';
+import { isArrowTable } from './is-arrow-table.js';
 
 /**
  * @typedef {Array | Int8Array | Uint8Array | Uint8ClampedArray
@@ -27,23 +27,12 @@ export function toDataColumns(data) {
 
 /**
  * Convert an Arrow table to a set of column arrays.
- * @param {import('apache-arrow').Table} data An Apache Arrow Table.
+ * @param {import('@uwdata/flechette').Table} data An Arrow Table.
  * @returns {DataColumns} An object with named column arrays.
  */
 function arrowToColumns(data) {
-  const { numRows, numCols, schema: { fields } } = data;
-  const columns = {};
-
-  for (let col = 0; col < numCols; ++col) {
-    const name = fields[col].name;
-    if (columns[name]) {
-      console.warn(`Redundant column name "${name}". Skipping...`);
-    } else {
-      columns[name] = convertArrowColumn(data.getChildAt(col));
-    }
-  }
-
-  return { numRows, columns };
+  const { numRows } = data;
+  return { numRows, columns: data.toColumns() };
 }
 
 /**

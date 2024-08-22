@@ -1,6 +1,5 @@
 import { Query, asRelation, count, isNull, max, min, sql } from '@uwdata/mosaic-sql';
 import { jsType } from './js-type.js';
-import { convertArrowValue } from './convert-arrow.js';
 
 export const Count = 'count';
 export const Nulls = 'nulls';
@@ -52,20 +51,13 @@ async function getFieldInfo(mc, { table, column, stats }) {
   if (!(stats?.length || stats?.size)) return info;
 
   // query for summary stats
-  const result = await mc.query(
+  const [result] = await mc.query(
     summarize(table, column, stats),
     { persist: true }
   );
 
-  // extract summary stats, copy to field info
-  for (let i = 0; i < result.numCols; ++i) {
-    const { name } = result.schema.fields[i];
-    const child = result.getChildAt(i);
-    const convert = convertArrowValue(child.type);
-    info[name] = convert(child.get(0));
-  }
-
-  return info;
+  // extract summary stats, copy to field info, and return
+  return Object.assign(info, result);
 }
 
 async function getTableInfo(mc, table) {
