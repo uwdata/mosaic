@@ -28,14 +28,14 @@ export class QueryResult extends Promise {
 
   /**
    * Resolve the result Promise with a prepared value or the provided value.
-   * This method will only succeed if either a value is provided or prepared.
+   * This method will only succeed if either a value is provided or the promise is ready.
    * @param {*} value The result value.
    * @returns {this}
    */
   fulfill(value) {
     if (this._value !== undefined) {
       if (value !== undefined) {
-        throw Error('Promise has prepared and provided value');
+        throw Error('Promise is ready and fulfill has a provided value');
       }
       this._resolve(this._value);
     } else if (value === undefined) {
@@ -50,11 +50,11 @@ export class QueryResult extends Promise {
   }
 
   /**
-   * Prepare to resolve the result Promise with the provided value.
+   * Prepare to resolve with the provided value.
    * @param {*} value The result value.
    * @returns {this}
    */
-  prepare(value) {
+  ready(value) {
     this._state = QueryState.ready;
     this._value = value;
     return this;

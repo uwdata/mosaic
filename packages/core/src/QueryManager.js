@@ -34,7 +34,7 @@ export class QueryManager {
 
     this.pendingResults.push(result);
     this.submit(request, result).finally(() => {
-      // return from the queue all the prepared requests
+      // return from the queue all requests that are ready
       while (this.pendingResults.length && this.pendingResults[0].state !== QueryState.pending) {
         const result = this.pendingResults.shift();
         if (result.state === QueryState.ready) {
@@ -86,7 +86,7 @@ export class QueryManager {
         if (cached) {
           const data = await cached;
           this._logger.debug('Cache');
-          result.prepare(type === 'exec' ? null : data);
+          result.ready(type === 'exec' ? null : data);
           return;
         }
       }
@@ -105,7 +105,7 @@ export class QueryManager {
       if (cache) this.clientCache.set(sql, data);
 
       this._logger.debug(`Request: ${(performance.now() - t0).toFixed(1)}`);
-      result.prepare(type === 'exec' ? null : data);
+      result.ready(type === 'exec' ? null : data);
     } catch (err) {
       result.reject(err);
     }
