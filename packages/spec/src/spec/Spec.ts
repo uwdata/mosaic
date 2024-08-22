@@ -1,5 +1,5 @@
 import { DataDefinition } from './Data.js';
-import { ParamDefinition } from './Param.js';
+import { ParamDefinition, ParamRef } from './Param.js';
 import { HConcat } from './HConcat.js';
 import { VConcat } from './VConcat.js';
 import { HSpace } from './HSpace.js';

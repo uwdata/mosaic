@@ -1,4 +1,4 @@
-import { tableFromIPC } from 'apache-arrow';
+import { decodeIPC } from '../util/decode-ipc.js';
 
 export function restConnector(uri = 'http://localhost:3000/') {
   return {
@@ -19,9 +19,9 @@ export function restConnector(uri = 'http://localhost:3000/') {
         body: JSON.stringify(query)
       });
 
-      return query.type === 'json' ? (await req).json()
-        : query.type === 'arrow' ? tableFromIPC(req)
-        : req;
+      return query.type === 'exec' ? req
+        : query.type === 'arrow' ? decodeIPC(await (await req).arrayBuffer())
+        : (await req).json();
     }
   };
 }
