@@ -65,6 +65,13 @@ export interface Selection {
    * false, a selection with no clauses selects all values.
    */
   empty?: boolean;
+
+  /**
+   * Upstream selections whose clauses should be included as part of this
+   * selection. Any clauses or activations published to the upstream
+   * selections will be relayed to this selection.
+   */
+  include?: ParamRef | ParamRef[];
 }
 
 /** A Param or Selection definition. */
