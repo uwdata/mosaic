@@ -103,6 +103,7 @@ export class MosaicClient {
    * Request the coordinator to execute a query for this client.
    * If an explicit query is not provided, the client query method will
    * be called, filtered by the current filterBy selection.
+   * @returns {Promise}
    */
   requestQuery(query) {
     const q = query || this.query(this.filterBy?.predicate(this));
@@ -117,6 +118,14 @@ export class MosaicClient {
    */
   requestUpdate() {
     this._requestUpdate();
+  }
+
+  /**
+   * Reset this client, initiating new field info and query requests.
+   * @returns {Promise}
+   */
+  initialize() {
+    return this._coordinator.initializeClient(this);
   }
 
   /**

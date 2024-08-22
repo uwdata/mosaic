@@ -132,7 +132,7 @@ export class Plot {
         params.set(param, [mark]);
         param.addEventListener('value', () => {
           return Promise.allSettled(
-            params.get(param).map(mark => mark.requestQuery())
+            params.get(param).map(mark => mark.initialize())
           );
         });
       }
