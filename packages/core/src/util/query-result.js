@@ -1,6 +1,6 @@
 export const QueryState = Object.freeze({
   pending: Symbol('pending'),
-  prepared: Symbol('prepared'),
+  ready: Symbol('ready'),
   error: Symbol('error'),
   done: Symbol('done')
 });
@@ -39,7 +39,7 @@ export class QueryResult extends Promise {
       }
       this._resolve(this._value);
     } else if (value === undefined) {
-      throw Error('Promise has has neither prepared nor provided value');
+      throw Error('Promise is neither ready nor has provided value');
     } else {
       this._resolve(value);
     }
@@ -55,7 +55,7 @@ export class QueryResult extends Promise {
    * @returns {this}
    */
   prepare(value) {
-    this._state = QueryState.prepared;
+    this._state = QueryState.ready;
     this._value = value;
     return this;
   }

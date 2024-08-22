@@ -37,7 +37,7 @@ export class QueryManager {
       // return from the queue all the prepared requests
       while (this.pendingResults.length && this.pendingResults[0].state !== QueryState.pending) {
         const result = this.pendingResults.shift();
-        if (result.state === QueryState.prepared) {
+        if (result.state === QueryState.ready) {
           result.fulfill();
         } else if (result.state === QueryState.done) {
           console.warn('Found resolved query in pending results.');
