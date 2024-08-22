@@ -94,10 +94,6 @@ jobs:
         run: |
           cd packages/duckdb-server-rust
           cargo clippy --all -- -D warnings
-      - name: Check
-        run: |
-          cd packages/duckdb-server-rust
-          cargo check
       - name: Test
         run: |
           cd packages/duckdb-server-rust
