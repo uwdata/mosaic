@@ -76,9 +76,9 @@ jobs:
         uses: actions/cache@v3
         with:
           path: |
-            ~/.cargo/bin
-            ~/.cargo/git
-            ~/.cargo/registry
+            $CARGO_HOME/bin
+            $CARGO_HOME/git
+            $CARGO_HOME/registry
             target
           key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
       - name: Install Rust
@@ -90,18 +90,14 @@ jobs:
         run: |
           cd packages/duckdb-server-rust
           cargo fmt -- --check
-      - name: Check
-        run: |
-          cd packages/duckdb-server-rust
-          cargo check
       - name: Clippy
         run: |
           cd packages/duckdb-server-rust
           cargo clippy --all -- -D warnings
-      - name: Build
+      - name: Check
         run: |
           cd packages/duckdb-server-rust
-          cargo build --verbose
+          cargo check
       - name: Test
         run: |
           cd packages/duckdb-server-rust
