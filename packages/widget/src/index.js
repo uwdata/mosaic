@@ -1,7 +1,7 @@
 import { coordinator, namedPlots } from '@uwdata/vgplot';
 import { isSelection } from '@uwdata/mosaic-core';
 import { parseSpec, astToDOM } from '@uwdata/mosaic-spec';
-import * as arrow from 'apache-arrow';
+import { tableFromIPC } from '@uwdata/flechette';
 import './style.css';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -113,7 +113,7 @@ export default {
       } else {
         switch (msg.type) {
           case 'arrow': {
-            const table = arrow.tableFromIPC(buffers[0].buffer);
+            const table = tableFromIPC(buffers[0].buffer);
             logger.log('table', table);
             query.resolve(table);
             break;

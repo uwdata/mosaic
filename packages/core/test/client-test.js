@@ -46,9 +46,7 @@ describe('MosaicClient', () => {
       queryResult(data) {
         // fulfill pending promise with sorted data
         this.pending.fulfill(
-          data.toArray()
-            .map(row => row.toJSON())
-            .sort((a, b) => a.key - b.key)
+          data.toArray().sort((a, b) => a.key - b.key)
         );
         return this;
       }
