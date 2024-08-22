@@ -72,6 +72,10 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy, rust-src, rustfmt
       - name: Cache
         uses: actions/cache@v3
         with:
@@ -81,10 +85,6 @@ jobs:
             $CARGO_HOME/registry
             target
           key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
-      - name: Install Rust
-        uses: dtolnay/rust-toolchain@stable
-        with:
-          components: clippy, rust-src, rustfmt
 
       - name: Check formatting
         working-directory: ./packages/duckdb-server-rust
