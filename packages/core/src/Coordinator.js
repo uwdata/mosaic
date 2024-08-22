@@ -212,16 +212,22 @@ export class Coordinator {
     clients.add(client); // mark as connected
     client.coordinator = this;
 
+    // initialize client lifecycle
+    this.initializeClient(client);
+
+    // connect filter selection
+    connectSelection(this, client.filterBy, client);
+  }
+
+  async initializeClient(client) {
     // retrieve field statistics
     const fields = client.fields();
     if (fields?.length) {
       client.fieldInfo(await queryFieldInfo(this, fields));
     }
 
-    // connect filter selection
-    connectSelection(this, client.filterBy, client);
-
-    client.requestQuery();
+    // request data query
+    return client.requestQuery();
   }
 
   /**
