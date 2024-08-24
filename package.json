@@ -30,18 +30,18 @@
   "devDependencies": {
     "ajv": "^8.17.1",
     "ajv-formats": "^3.0.1",
-    "esbuild": "^0.23.0",
-    "eslint": "^9.7.0",
-    "eslint-plugin-jsdoc": "^48.7.0",
-    "lerna": "^8.1.6",
-    "mocha": "^10.6.0",
+    "esbuild": "^0.23.1",
+    "eslint": "^9.9.1",
+    "eslint-plugin-jsdoc": "^50.2.2",
+    "lerna": "^8.1.8",
+    "mocha": "^10.7.3",
     "nodemon": "^3.1.4",
     "rimraf": "^6.0.1",
     "timezone-mock": "^1.3.6",
-    "typescript": "^5.5.3",
-    "vite": "^5.3.4",
-    "vitepress": "1.3.1",
-    "yaml": "^2.4.5"
+    "typescript": "^5.5.4",
+    "vite": "^5.4.2",
+    "vitepress": "1.3.3",
+    "yaml": "^2.5.0"
   },
   "workspaces": [
     "packages/*"
