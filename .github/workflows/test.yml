@@ -13,7 +13,7 @@ permissions:
 
 jobs:
   node:
-    name: Test on Node
+    name: Test in Node
 
     runs-on: ubuntu-latest
 
