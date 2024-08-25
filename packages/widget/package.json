@@ -19,7 +19,7 @@
     "release": "npm run prepublishOnly && npm run publish"
   },
   "dependencies": {
-    "@uwdata/flechette": "~0.0.8",
+    "@uwdata/mosaic-core": "^0.10.0",
     "@uwdata/mosaic-spec": "^0.10.0",
     "@uwdata/vgplot": "^0.10.0",
     "uuid": "^10.0.0"
