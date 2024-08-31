@@ -1,4 +1,4 @@
-import assert from 'node:assert';
+import { expect, describe, it } from 'vitest';
 import {
   column, desc, gt, lt, max, min, relation, sql, Query
 } from '../src/index.js';
@@ -7,47 +7,42 @@ describe('Query', () => {
   it('selects column name strings', () => {
     const query = 'SELECT "foo", "bar", "baz" FROM "data"';
 
-    assert.strictEqual(
+    expect(
       Query
         .select('foo', 'bar', 'baz')
         .from('data')
-        .toString(),
-      query
-    );
+        .toString()
+    ).toBe(query);
 
-    assert.strictEqual(
+    expect(
       Query
         .select('foo', 'bar', 'baz')
         .from(relation('data'))
-        .toString(),
-      query
-    );
+        .toString()
+    ).toBe(query);
 
-    assert.strictEqual(
+    expect(
       Query
         .select(['foo', 'bar', 'baz'])
         .from('data')
-        .toString(),
-      query
-    );
+        .toString()
+    ).toBe(query);
 
-    assert.strictEqual(
+    expect(
       Query
         .select({ foo: 'foo', bar: 'bar', baz: 'baz' })
         .from('data')
-        .toString(),
-      query
-    );
+        .toString()
+    ).toBe(query);
 
-    assert.strictEqual(
+    expect(
       Query
         .select('foo')
         .select('bar')
         .select('baz')
         .from('data')
-        .toString(),
-      query
-    );
+        .toString()
+    ).toBe(query);
   });
 
   it('selects column ref objects', () => {
@@ -55,91 +50,82 @@ describe('Query', () => {
     const bar = column('bar');
     const baz = column('baz');
 
-    assert.strictEqual(
+    expect(
       Query
         .select(foo, bar, baz)
         .from('data')
-        .toString(),
-      'SELECT "foo", "bar", "baz" FROM "data"'
-    );
+        .toString()
+    ).toBe('SELECT "foo", "bar", "baz" FROM "data"');
 
-    assert.strictEqual(
+    expect(
       Query
         .select([foo, bar, baz])
         .from('data')
-        .toString(),
-      'SELECT "foo", "bar", "baz" FROM "data"'
-    );
+        .toString()
+    ).toBe('SELECT "foo", "bar", "baz" FROM "data"');
 
-    assert.strictEqual(
+    expect(
       Query
         .select({ foo, bar, baz })
         .from('data')
-        .toString(),
-      'SELECT "foo", "bar", "baz" FROM "data"'
-    );
+        .toString()
+    ).toBe('SELECT "foo", "bar", "baz" FROM "data"');
 
-    assert.strictEqual(
+    expect(
       Query
         .select(foo)
         .select(bar)
         .select(baz)
         .from('data')
-        .toString(),
-      'SELECT "foo", "bar", "baz" FROM "data"'
-    );
+        .toString()
+    ).toBe('SELECT "foo", "bar", "baz" FROM "data"');
   });
 
   it('selects only the most recent reference', () => {
     const query = 'SELECT "baz", "foo" + 1 AS "bar" FROM "data"';
 
-    assert.strictEqual(
+    expect(
       Query
         .select('foo', 'bar', 'baz')
         .select({ bar: sql`"foo" + 1`, foo: null })
         .from('data')
-        .toString(),
-      query
-    );
+        .toString()
+    ).toBe(query);
   });
 
   it('selects distinct columns', () => {
-    assert.strictEqual(
+    expect(
       Query
         .select('foo', 'bar', 'baz')
         .distinct()
         .from('data')
-        .toString(),
-      'SELECT DISTINCT "foo", "bar", "baz" FROM "data"'
-    );
+        .toString()
+    ).toBe('SELECT DISTINCT "foo", "bar", "baz" FROM "data"');
   });
 
   it('selects aggregates', () => {
     const foo = column('foo');
 
-    assert.strictEqual(
+    expect(
       Query
         .select({ min: min('foo'), max: max('foo') })
         .from('data')
-        .toString(),
-      'SELECT MIN("foo") AS "min", MAX("foo") AS "max" FROM "data"'
-    );
+        .toString()
+    ).toBe('SELECT MIN("foo") AS "min", MAX("foo") AS "max" FROM "data"');
 
-    assert.strictEqual(
+    expect(
       Query
         .select({ min: min(foo), max: max(foo) })
         .from('data')
-        .toString(),
-      'SELECT MIN("foo") AS "min", MAX("foo") AS "max" FROM "data"'
-    );
+        .toString()
+    ).toBe('SELECT MIN("foo") AS "min", MAX("foo") AS "max" FROM "data"');
 
-    assert.strictEqual(
+    expect(
       Query
         .select({ min: min('foo').where(gt('bar', 5)) })
         .from('data')
-        .toString(),
-      'SELECT MIN("foo") FILTER (WHERE ("bar" > 5)) AS "min" FROM "data"'
-    );
+        .toString()
+    ).toBe('SELECT MIN("foo") FILTER (WHERE ("bar" > 5)) AS "min" FROM "data"');
   });
 
   it('selects grouped aggregates', () => {
@@ -153,42 +139,38 @@ describe('Query', () => {
       'GROUP BY "bar", "baz"'
     ].join(' ');
 
-    assert.strictEqual(
+    expect(
       Query
         .select({ min: min('foo'), max: max('foo'), bar: 'bar', baz: 'baz' })
         .from('data')
         .groupby('bar', 'baz')
-        .toString(),
-      query
-    );
+        .toString()
+    ).toBe(query);
 
-    assert.strictEqual(
+    expect(
       Query
         .select({ min: min(foo), max: max(foo), bar: bar, baz: baz })
         .from('data')
         .groupby(bar, baz)
-        .toString(),
-      query
-    );
+        .toString()
+    ).toBe(query);
 
-    assert.strictEqual(
+    expect(
       Query
         .select({ min: min(foo), max: max(foo), bar, baz })
         .from('data')
         .groupby([bar, baz])
-        .toString(),
-      query
-    );
+        .toString()
+    ).toBe(query);
 
-    assert.strictEqual(
+    expect(
       Query
         .select({ min: min(foo), max: max(foo), bar, baz })
         .from('data')
         .groupby(bar)
         .groupby(baz)
-        .toString(),
-      query
-    );
+        .toString()
+    ).toBe(query);
   });
 
   it('selects filtered aggregates', () => {
@@ -202,46 +184,42 @@ describe('Query', () => {
       'HAVING ("min" > 50) AND ("min" < 100)'
     ].join(' ');
 
-    assert.strictEqual(
+    expect(
       Query
         .select({ min: min(foo), bar })
         .from('data')
         .groupby(bar)
         .having(gt('min', 50), lt('min', 100))
-        .toString(),
-      query
-    );
+        .toString()
+    ).toBe(query);
 
-    assert.strictEqual(
+    expect(
       Query
         .select({ min: min(foo), bar })
         .from('data')
         .groupby(bar)
         .having([gt('min', 50), lt('min', 100)])
-        .toString(),
-      query
-    );
+        .toString()
+    ).toBe(query);
 
-    assert.strictEqual(
+    expect(
       Query
         .select({ min: min(foo), bar })
         .from('data')
         .groupby(bar)
         .having(gt('min', 50))
         .having(lt('min', 100))
-        .toString(),
-      query
-    );
+        .toString()
+    ).toBe(query);
 
-    assert.strictEqual(
+    expect(
       Query
         .select({ min: min(foo), bar })
         .from('data')
         .groupby(bar)
         .having(sql`("min" > 50) AND ("min" < 100)`)
-        .toString(),
-      query
-    );
+        .toString()
+    ).toBe(query);
   });
 
   it('selects filtered rows', () => {
@@ -254,42 +232,38 @@ describe('Query', () => {
       'WHERE ("bar" > 50) AND ("bar" < 100)'
     ].join(' ');
 
-    assert.strictEqual(
+    expect(
       Query
         .select(foo)
         .from('data')
         .where(gt(bar, 50), lt(bar, 100))
-        .toString(),
-      query
-    );
+        .toString()
+    ).toBe(query);
 
-    assert.strictEqual(
+    expect(
       Query
         .select(foo)
         .from('data')
         .where([gt(bar, 50), lt(bar, 100)])
-        .toString(),
-      query
-    );
+        .toString()
+    ).toBe(query);
 
-    assert.strictEqual(
+    expect(
       Query
         .select(foo)
         .from('data')
         .where(gt(bar, 50))
         .where(lt(bar, 100))
-        .toString(),
-      query
-    );
+        .toString()
+    ).toBe(query);
 
-    assert.strictEqual(
+    expect(
       Query
         .select(foo)
         .from('data')
         .where(sql`("bar" > 50) AND ("bar" < 100)`)
-        .toString(),
-      query
-    );
+        .toString()
+    ).toBe(query);
   });
 
   it('selects ordered rows', () => {
@@ -302,98 +276,88 @@ describe('Query', () => {
       'ORDER BY "bar", "baz" DESC NULLS LAST'
     ].join(' ');
 
-    assert.strictEqual(
+    expect(
       Query
         .select('*')
         .from('data')
         .orderby(bar, desc(baz))
-        .toString(),
-      query
-    );
+        .toString()
+    ).toBe(query);
 
-    assert.strictEqual(
+    expect(
       Query
         .select('*')
         .from('data')
         .orderby([bar, desc(baz)])
-        .toString(),
-      query
-    );
+        .toString()
+    ).toBe(query);
 
-    assert.strictEqual(
+    expect(
       Query
         .select('*')
         .from('data')
         .orderby(bar)
         .orderby(desc(baz))
-        .toString(),
-      query
-    );
+        .toString()
+    ).toBe(query);
 
-    assert.strictEqual(
+    expect(
       Query
         .select('*')
         .from('data')
         .orderby(sql`"bar", "baz" DESC NULLS LAST`)
-        .toString(),
-      query
-    );
+        .toString()
+    ).toBe(query);
   });
 
   it('selects sampled rows', () => {
-    assert.strictEqual(
+    expect(
       Query
         .select('*')
         .from('data')
         .sample(10)
-        .toString(),
-      'SELECT * FROM "data" USING SAMPLE 10 ROWS'
-    );
+        .toString()
+    ).toBe('SELECT * FROM "data" USING SAMPLE 10 ROWS');
 
-    assert.strictEqual(
+    expect(
       Query
         .select('*')
         .from('data')
         .sample({ rows: 10 })
-        .toString(),
-      'SELECT * FROM "data" USING SAMPLE 10 ROWS'
-    );
+        .toString()
+    ).toBe('SELECT * FROM "data" USING SAMPLE 10 ROWS');
 
-    assert.strictEqual(
+    expect(
       Query
         .select('*')
         .from('data')
         .sample(0.3)
-        .toString(),
-      'SELECT * FROM "data" USING SAMPLE 30 PERCENT'
-    );
+        .toString()
+    ).toBe('SELECT * FROM "data" USING SAMPLE 30 PERCENT');
 
-    assert.strictEqual(
+    expect(
       Query
         .select('*')
         .from('data')
         .sample({ perc: 30 })
-        .toString(),
-      'SELECT * FROM "data" USING SAMPLE 30 PERCENT'
-    );
+        .toString()
+    ).toBe('SELECT * FROM "data" USING SAMPLE 30 PERCENT');
 
-    assert.strictEqual(
+    expect(
       Query
         .select('*')
         .from('data')
         .sample({ rows: 100, method: 'bernoulli' })
-        .toString(),
-      'SELECT * FROM "data" USING SAMPLE 100 ROWS (bernoulli)'
-    );
+        .toString()
+    ).toBe('SELECT * FROM "data" USING SAMPLE 100 ROWS (bernoulli)');
 
-    assert.strictEqual(
+    expect(
       Query
         .select('*')
         .from('data')
         .sample({ rows: 100, method: 'bernoulli', seed: 12345 })
-        .toString(),
-      'SELECT * FROM "data" USING SAMPLE 100 ROWS (bernoulli, 12345)'
-    );
+        .toString()
+    ).toBe('SELECT * FROM "data" USING SAMPLE 100 ROWS (bernoulli, 12345)');
   });
 
   it('selects from multiple relations', () => {
@@ -402,58 +366,53 @@ describe('Query', () => {
       'FROM "data1" AS "a", "data2" AS "b"'
     ].join(' ');
 
-    assert.strictEqual(
+    expect(
       Query
         .select({
           foo: column('a', 'foo'),
           bar: column('b', 'bar')
         })
         .from({ a: 'data1', b: 'data2' })
-        .toString(),
-      query
-    );
+        .toString()
+    ).toBe(query);
   });
 
   it('selects over windows', () => {
-    assert.strictEqual(
+    expect(
       Query
         .select({ lead: sql`lead("foo") OVER "win"` })
         .from('data')
         .window({ win: sql`ORDER BY "foo" ASC` })
-        .toString(),
-      'SELECT lead("foo") OVER "win" AS "lead" FROM "data" WINDOW "win" AS (ORDER BY "foo" ASC)'
-    );
+        .toString()
+    ).toBe('SELECT lead("foo") OVER "win" AS "lead" FROM "data" WINDOW "win" AS (ORDER BY "foo" ASC)');
   });
 
   it('selects from subqueries', () => {
-    assert.strictEqual(
+    expect(
       Query
         .select('foo', 'bar')
         .from(Query.select('*').from('data'))
-        .toString(),
-      'SELECT "foo", "bar" FROM (SELECT * FROM "data")'
-    );
+        .toString()
+    ).toBe('SELECT "foo", "bar" FROM (SELECT * FROM "data")');
 
-    assert.strictEqual(
+    expect(
       Query
         .select('foo', 'bar')
         .from({ a: Query.select('*').from('data') })
-        .toString(),
-      'SELECT "foo", "bar" FROM (SELECT * FROM "data") AS "a"'
-    );
+        .toString()
+    ).toBe('SELECT "foo", "bar" FROM (SELECT * FROM "data") AS "a"');
   });
 
   it('selects with common table expressions', () => {
-    assert.strictEqual(
+    expect(
       Query
         .with({ a: Query.select('*').from('data') })
         .select('foo', 'bar')
         .from('a')
-        .toString(),
-      'WITH "a" AS (SELECT * FROM "data") SELECT "foo", "bar" FROM "a"'
-    );
+        .toString()
+    ).toBe('WITH "a" AS (SELECT * FROM "data") SELECT "foo", "bar" FROM "a"');
 
-    assert.strictEqual(
+    expect(
       Query
         .with({
           a: Query.select('foo').from('data1'),
@@ -461,13 +420,12 @@ describe('Query', () => {
         })
         .select('*')
         .from('a', 'b')
-        .toString(),
-      [
-        'WITH "a" AS (SELECT "foo" FROM "data1"),',
-             '"b" AS (SELECT "bar" FROM "data2")',
-        'SELECT * FROM "a", "b"'
-      ].join(' ')
-    );
+        .toString()
+    ).toBe([
+      'WITH "a" AS (SELECT "foo" FROM "data1"),',
+           '"b" AS (SELECT "bar" FROM "data2")',
+      'SELECT * FROM "a", "b"'
+    ].join(' '));
   });
 
   it('performs set operations', () => {
@@ -476,51 +434,27 @@ describe('Query', () => {
       Query.select('foo', 'bar', 'baz').from('data2')
     ];
 
-    assert.strictEqual(
-      Query.union(q).toString(),
-      q.join(' UNION ')
-    );
-    assert.strictEqual(
-      Query.union(...q).toString(),
-      q.join(' UNION ')
-    );
+    expect(Query.union(q).toString()).toBe(q.join(' UNION '));
+    expect(Query.union(...q).toString()).toBe(q.join(' UNION '));
 
-    assert.strictEqual(
-      Query.unionAll(q).toString(),
-      q.join(' UNION ALL ')
-    );
-    assert.strictEqual(
-      Query.unionAll(...q).toString(),
-      q.join(' UNION ALL ')
-    );
+    expect(Query.unionAll(q).toString()).toBe(q.join(' UNION ALL '));
+    expect(Query.unionAll(...q).toString()).toBe(q.join(' UNION ALL '));
 
-    assert.strictEqual(
-      Query.intersect(q).toString(),
-      q.join(' INTERSECT ')
-    );
-    assert.strictEqual(
-      Query.intersect(...q).toString(),
-      q.join(' INTERSECT ')
-    );
+    expect(Query.intersect(q).toString()).toBe(q.join(' INTERSECT '));
+    expect(Query.intersect(...q).toString()).toBe(q.join(' INTERSECT '));
 
-    assert.strictEqual(
-      Query.except(q).toString(),
-      q.join(' EXCEPT ')
-    );
-    assert.strictEqual(
-      Query.except(...q).toString(),
-      q.join(' EXCEPT ')
-    );
+    expect(Query.except(q).toString()).toBe(q.join(' EXCEPT '));
+    expect(Query.except(...q).toString()).toBe(q.join(' EXCEPT '));
   });
 
   it('supports describe queries', () => {
     const q = Query.select('foo', 'bar').from('data');
-    assert.strictEqual(Query.describe(q).toString(), `DESCRIBE ${q}`);
+    expect(Query.describe(q).toString()).toBe(`DESCRIBE ${q}`);
 
     const u = Query.unionAll(
       Query.select('foo', 'bar').from('data1'),
       Query.select('foo', 'bar').from('data2')
     );
-    assert.strictEqual(Query.describe(u).toString(), `DESCRIBE ${u}`);
+    expect(Query.describe(u).toString()).toBe(`DESCRIBE ${u}`);
   });
 });

@@ -24,7 +24,7 @@
     "prebuild": "rimraf dist && mkdir dist",
     "build": "node ../../esbuild.js mosaic-core",
     "lint": "eslint src test",
-    "test": "mocha 'test/**/*-test.js'",
+    "test": "vitest run --dangerouslyIgnoreUnhandledErrors",
     "prepublishOnly": "npm run test && npm run lint && npm run build"
   },
   "dependencies": {

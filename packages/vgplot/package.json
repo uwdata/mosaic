@@ -26,7 +26,7 @@
     "prebuild": "rimraf dist && mkdir dist",
     "build": "node ../../esbuild.js vgplot",
     "lint": "eslint src test",
-    "test": "mocha 'test/**/*-test.js'",
+    "test": "vitest run",
     "prepublishOnly": "npm run test && npm run lint && npm run build"
   },
   "dependencies": {

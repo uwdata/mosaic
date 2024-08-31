@@ -1,4 +1,4 @@
-import assert from 'node:assert';
+import { describe, it, expect } from 'vitest';
 import { Query, count } from '@uwdata/mosaic-sql';
 import { nodeConnector } from './util/node-connector.js';
 import { Coordinator, MosaicClient, Selection, clauseInterval } from '../src/index.js';
@@ -61,18 +61,15 @@ describe('MosaicClient', () => {
     coord.connect(client2);
 
     // initial results with empty selection
-    assert.deepStrictEqual(
-      await Promise.all(pending),
-      [
-        [ {key: 10, value: 1}, {key: 12, value: 1} ],
-        [ {key: 1, value: 1}, {key: 3, value: 1} ]
-      ]
-    );
+    expect(await Promise.all(pending)).toEqual([
+      [ {key: 10, value: 1}, {key: 12, value: 1} ],
+      [ {key: 1, value: 1}, {key: 3, value: 1} ]
+    ]);
     pending = [];
 
     // selection should produce empty arrays (no where clauses)
-    assert.deepStrictEqual(selection.predicate(client1), []);
-    assert.deepStrictEqual(selection.predicate(client2), []);
+    expect(selection.predicate(client1)).toEqual([]);
+    expect(selection.predicate(client2)).toEqual([]);
 
     // -- UPDATE SELECTION FROM CLIENT 1 --
 
@@ -82,18 +79,16 @@ describe('MosaicClient', () => {
     selection.update(
       clauseInterval('HourOfDay', [0, 24], { source: client1 })
     );
-    assert.strictEqual(selection.active?.source, client1);
-    assert.strictEqual(selection.predicate(client1), undefined);
-    assert.strictEqual(
-      selection.predicate(client2)+'',
+    expect(selection.active?.source).toBe(client1);
+    expect(selection.predicate(client1)).toBeUndefined();
+    expect(selection.predicate(client2)+'').toBe(
       `("HourOfDay" BETWEEN 0 AND 24)`
     );
 
     // only client 2 should get a data update
-    assert.deepStrictEqual(
-      await Promise.all(pending),
-      [ [ {key: 1, value: 1}, {key: 3, value: 1} ] ]
-    );
+    expect(await Promise.all(pending)).toEqual([
+      [ {key: 1, value: 1}, {key: 3, value: 1} ]
+    ]);
     pending = [];
 
     // wait for internal selection update to complete
@@ -108,18 +103,16 @@ describe('MosaicClient', () => {
     selection.update(
       clauseInterval('DayOfWeek', [0, 7], { source: client2 })
     );
-    assert.strictEqual(selection.active?.source, client2);
-    assert.strictEqual(
-      selection.predicate(client1)+'',
+    expect(selection.active?.source).toBe(client2);
+    expect(selection.predicate(client1)+'').toBe(
       `("DayOfWeek" BETWEEN 0 AND 7)`
     );
-    assert.strictEqual(selection.predicate(client2), undefined);
+    expect(selection.predicate(client2)).toBeUndefined();
 
     // only client 1 should get a data update
-    assert.deepStrictEqual(
-      await Promise.all(pending),
-      [ [ {key: 10, value: 1}, {key: 12, value: 1} ] ]
-    );
+    expect(await Promise.all(pending)).toEqual([
+      [ {key: 10, value: 1}, {key: 12, value: 1} ]
+    ]);
     pending = [];
   });
 });
