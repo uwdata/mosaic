@@ -20,6 +20,7 @@ describe('coordinator', () => {
   it('query results returned in correct order', async () => {
     const promises = [];
 
+    // Mock the connector
     const connector = {
       async query() {
         const promise = new QueryResult();

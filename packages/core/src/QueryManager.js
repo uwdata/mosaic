@@ -2,6 +2,7 @@ import { consolidator } from './QueryConsolidator.js';
 import { lruCache, voidCache } from './util/cache.js';
 import { PriorityQueue } from './util/priority-queue.js';
 import { QueryResult, QueryState } from './util/query-result.js';
+import { voidLogger } from './util/void-logger.js';
 
 export const Priority = Object.freeze({ High: 0, Normal: 1, Low: 2 });
 
@@ -12,7 +13,7 @@ export class QueryManager {
     this.queue = new PriorityQueue(3);
     this.db = null;
     this.clientCache = null;
-    this._logger = null;
+    this._logger = voidLogger();
     this._logQueries = false;
     this.recorders = [];
     this._consolidate = null;
@@ -34,7 +35,7 @@ export class QueryManager {
     const { request, result } = this.queue.next();
 
     this.pendingResults.push(result);
-    this.pendingExec = request.type === 'exec';
+    if (request.type === 'exec') this.pendingExec = true;
 
     this.submit(request, result).finally(() => {
       // return from the queue all requests that are ready
