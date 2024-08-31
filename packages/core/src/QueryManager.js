@@ -23,6 +23,7 @@ export class QueryManager {
      */
     this.pendingResults = [];
     this.maxConcurrentRequests = maxConcurrentRequests;
+    this.pendingExecCount = 0;
   }
 
   next() {
@@ -30,9 +31,20 @@ export class QueryManager {
       return;
     }
 
+    // Check if there are pending exec requests which we want to wait for before running queries
+    if (this.pendingExecCount > 0) {
+      const { request } = this.queue.head();
+      if (request.type !== 'exec') {
+        this._logger.debug('Not yet ready to run query request due to pending execs');
+        return;
+      }
+    }
+
     const { request, result } = this.queue.next();
 
     this.pendingResults.push(result);
+    if (request.type === 'exec') this.pendingExecCount++;
+
     this.submit(request, result).finally(() => {
       // return from the queue all requests that are ready
       while (this.pendingResults.length && this.pendingResults[0].state !== QueryState.pending) {
@@ -43,6 +55,7 @@ export class QueryManager {
           console.warn('Found resolved query in pending results.');
         }
       }
+      if (request.type === 'exec') this.pendingExecCount--;
       this.next();
     });
   }
