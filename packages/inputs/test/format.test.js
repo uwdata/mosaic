@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect } from 'vitest';
 import { register, unregister } from 'timezone-mock';
 import { formatDate } from '../src/util/format.js';
 
