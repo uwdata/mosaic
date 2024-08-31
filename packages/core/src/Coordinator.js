@@ -44,7 +44,7 @@ export class Coordinator {
     consolidate = true,
     indexes = {}
   } = {}) {
-    /** @type QueryManager */
+    /** @type {QueryManager} */
     this.manager = manager;
     this.manager.cache(cache);
     this.manager.consolidate(consolidate);
@@ -153,11 +153,25 @@ export class Coordinator {
     return this.query(query, { ...options, cache: true, priority: Priority.Low });
   }
 
+  /**
+   * Create a bundle of queries that can be loaded into the cache.
+   *
+   * @param {string} name The name of the bundle.
+   * @param {[string | {sql: string},  {alias: string}]} queries The queries to save into the bundle.
+   * @param {number} priority Request priority.
+   * @returns 
+   */
   createBundle(name, queries, priority = Priority.Low) {
-    const options = { name, queries };
+    const options = { name, queries: queries.map(q => typeof q == 'string' ? {sql: q} : q) };
     return this.manager.request({ type: 'create-bundle', options }, priority);
   }
 
+  /**
+   * Load a bundle into the cache.
+   * @param {string} name The name of the bundle.
+   * @param {number} priority Request priority.
+   * @returns 
+   */
   loadBundle(name, priority = Priority.High) {
     const options = { name };
     return this.manager.request({ type: 'load-bundle', options }, priority);
@@ -213,16 +227,22 @@ export class Coordinator {
     clients.add(client); // mark as connected
     client.coordinator = this;
 
+    // initialize client lifecycle
+    this.initializeClient(client);
+
+    // connect filter selection
+    connectSelection(this, client.filterBy, client);
+  }
+
+  async initializeClient(client) {
     // retrieve field statistics
     const fields = client.fields();
     if (fields?.length) {
       client.fieldInfo(await queryFieldInfo(this, fields));
     }
 
-    // connect filter selection
-    connectSelection(this, client.filterBy, client);
-
-    client.requestQuery();
+    // request data query
+    return client.requestQuery();
   }
 
   /**

@@ -1,11 +1,11 @@
-import { tableFromIPC } from 'apache-arrow';
+import { decodeIPC } from '../util/decode-ipc.js';
 
 export function restConnector(uri = 'http://localhost:3000/') {
   return {
     /**
      * Query the DuckDB server.
      * @param {object} query
-     * @param {'exec' | 'arrow' | 'json'} [query.type] The query type: 'exec', 'arrow', or 'json'.
+     * @param {'exec' | 'arrow' | 'json' | 'create-bundle' | 'load-bundle'} [query.type] The query type.
      * @param {string} query.sql A SQL query string.
      * @returns the query result
      */
@@ -20,7 +20,7 @@ export function restConnector(uri = 'http://localhost:3000/') {
       });
 
       return query.type === 'exec' ? req
-        : query.type === 'arrow' ? tableFromIPC(req)
+        : query.type === 'arrow' ? decodeIPC(await (await req).arrayBuffer())
         : (await req).json();
     }
   };

@@ -16,14 +16,9 @@ export {
   clauseMatch
 } from './SelectionClause.js';
 
-export {
-  isArrowTable,
-  convertArrowArrayType,
-  convertArrowValue,
-  convertArrowColumn
-} from './util/convert-arrow.js'
-
+export { decodeIPC } from './util/decode-ipc.js';
 export { distinct } from './util/distinct.js';
+export { isArrowTable } from './util/is-arrow-table.js';
 export { synchronizer } from './util/synchronizer.js';
 export { throttle } from './util/throttle.js';
-export { toDataColumns } from './util/to-data-columns.js'
+export { toDataColumns } from './util/to-data-columns.js';

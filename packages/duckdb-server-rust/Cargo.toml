@@ -1,0 +1,47 @@
+[package]
+name = "duckdb-server"
+version = "0.1.0"
+edition = "2021"
+repository = "https://github.com/uwdata/mosaic"
+description = "DuckDB Server for Mosaic."
+license = "BSD-3-Clause"
+exclude = [
+    "data/*",
+    ".vscode/*",
+]
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+anyhow = "1.0"
+arrow = "52.1"
+async-trait = "0.1.80"
+axum = { version = "0.7", features = ["http1", "http2", "ws", "json", "tokio", "tracing", "macros"] }
+axum-server = { version = "0.7", features = ["tls-rustls"] }
+axum-server-dual-protocol = "0.7"
+duckdb = { version = "1", features = ["bundled", "csv", "json", "parquet", "url", "r2d2"] }
+futures = "0.3"
+listenfd = "1.0"
+lru = "0.12"
+r2d2 = "0.8"
+regex = "1.5"
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+sha2 = "0.10"
+tokio = { version = "1", features = ["full"] }
+tower-http = { version = "0.5.0", features = ["cors", "compression-full", "trace"] }
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+
+[dev-dependencies]
+criterion = {version = "0.5", features=["async_futures", "html_reports"]}
+http-body-util = "0.1.0"
+temp_testdir = "0.2"
+tower = { version = "0.5", features = ["util"] }
+
+[[bench]]
+name = "benchmark"
+harness = false
+
+[profile.release]
+codegen-units = 1

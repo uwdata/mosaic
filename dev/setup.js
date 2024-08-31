@@ -16,17 +16,20 @@ export function clear() {
 
 let wasm;
 
-export async function setDatabaseConnector(type, options) {
+export async function setDatabaseConnector(type) {
   let connector;
   switch (type) {
     case 'socket':
-      connector = socketConnector(options);
+      connector = socketConnector();
       break;
     case 'rest':
-      connector = restConnector(options);
+      connector = restConnector();
+      break;
+    case 'rest_https':
+      connector = restConnector('https://localhost:3000/');
       break;
     case 'wasm':
-      connector = wasm || (wasm = wasmConnector(options));
+      connector = wasm || (wasm = wasmConnector());
       break;
     default:
       throw new Error(`Unrecognized connector type: ${type}`);

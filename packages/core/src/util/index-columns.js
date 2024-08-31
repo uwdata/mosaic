@@ -11,7 +11,7 @@ import { MosaicClient } from '../MosaicClient.js';
 export function indexColumns(client) {
   if (!client.filterIndexable) return null;
   const q = client.query();
-  const from = getBaseTable(q);
+  const from = getBase(q, q => q.from()?.[0].from.table);
 
   // bail if no base table or the query is not analyzable
   if (typeof from !== 'string' || !q.select) return null;
@@ -19,6 +19,13 @@ export function indexColumns(client) {
   const aggr = []; // list of output aggregate columns
   const dims = []; // list of grouping dimension columns
   const aux = {};  // auxiliary columns needed by aggregates
+
+  const avg = ref => {
+    const name = ref.column;
+    // @ts-ignore
+    const expr = getBase(q, q => q.select().find(c => c.as === name)?.expr);
+    return `(SELECT AVG(${expr ?? ref}) FROM "${from}")`;
+  };
 
   for (const entry of q.select()) {
     const { as, expr: { aggregate, args } } = entry;
@@ -46,32 +53,32 @@ export function indexColumns(client) {
       case 'VARIANCE':
       case 'VAR_SAMP':
         aux[as] = null;
-        aggr.push({ [as]: varianceExpr(aux, args[0], from) });
+        aggr.push({ [as]: varianceExpr(aux, args[0], avg) });
         break;
       case 'VAR_POP':
         aux[as] = null;
-        aggr.push({ [as]: varianceExpr(aux, args[0], from, false) });
+        aggr.push({ [as]: varianceExpr(aux, args[0], avg, false) });
         break;
       case 'STDDEV':
       case 'STDDEV_SAMP':
         aux[as] = null;
-        aggr.push({ [as]: agg`SQRT(${varianceExpr(aux, args[0], from)})` });
+        aggr.push({ [as]: agg`SQRT(${varianceExpr(aux, args[0], avg)})` });
         break;
       case 'STDDEV_POP':
         aux[as] = null;
-        aggr.push({ [as]: agg`SQRT(${varianceExpr(aux, args[0], from, false)})` });
+        aggr.push({ [as]: agg`SQRT(${varianceExpr(aux, args[0], avg, false)})` });
         break;
       case 'COVAR_SAMP':
         aux[as] = null;
-        aggr.push({ [as]: covarianceExpr(aux, args, from) });
+        aggr.push({ [as]: covarianceExpr(aux, args, avg) });
         break;
       case 'COVAR_POP':
         aux[as] = null;
-        aggr.push({ [as]: covarianceExpr(aux, args, from, false) });
+        aggr.push({ [as]: covarianceExpr(aux, args, avg, false) });
         break;
       case 'CORR':
         aux[as] = null;
-        aggr.push({ [as]: corrExpr(aux, args, from) });
+        aggr.push({ [as]: corrExpr(aux, args, avg) });
         break;
 
       // regression statistics
@@ -89,27 +96,27 @@ export function indexColumns(client) {
         break;
       case 'REGR_SYY':
         aux[as] = null;
-        aggr.push({ [as]: regrVarExpr(aux, 0, args, from) });
+        aggr.push({ [as]: regrVarExpr(aux, 0, args, avg) });
         break;
       case 'REGR_SXX':
         aux[as] = null;
-        aggr.push({ [as]: regrVarExpr(aux, 1, args, from) });
+        aggr.push({ [as]: regrVarExpr(aux, 1, args, avg) });
         break;
       case 'REGR_SXY':
         aux[as] = null;
-        aggr.push({ [as]: covarianceExpr(aux, args, from, null) });
+        aggr.push({ [as]: covarianceExpr(aux, args, avg, null) });
         break;
       case 'REGR_SLOPE':
         aux[as] = null;
-        aggr.push({ [as]: regrSlopeExpr(aux, args, from) });
+        aggr.push({ [as]: regrSlopeExpr(aux, args, avg) });
         break;
       case 'REGR_INTERCEPT':
         aux[as] = null;
-        aggr.push({ [as]: regrInterceptExpr(aux, args, from) });
+        aggr.push({ [as]: regrInterceptExpr(aux, args, avg) });
         break;
       case 'REGR_R2':
         aux[as] = null;
-        aggr.push({ [as]: agg`(${corrExpr(aux, args, from)}) ** 2` });
+        aggr.push({ [as]: agg`(${corrExpr(aux, args, avg)}) ** 2` });
         break;
 
       // aggregates that commute directly
@@ -163,29 +170,30 @@ function sanitize(col) {
 }
 
 /**
- * Identify a single base (source) table of a query.
+ * Identify a shared base (source) query and extract a value from it.
+ * This method is used to find a shared base table name or extract
+ * the original column name within a base table.
  * @param {Query} query The input query.
- * @returns {string | undefined | NaN} the base table name, or
+ * @param {(q: Query) => any} get A getter function to extract
+ *  a value from a base query.
+ * @returns {string | undefined | NaN} the base query value, or
  *  `undefined` if there is no source table, or `NaN` if the
  *  query operates over multiple source tables.
  */
-function getBaseTable(query) {
+function getBase(query, get) {
   const subq = query.subqueries;
 
   // select query
-  if (query.select) {
-    const from = query.from();
-    // @ts-ignore
-    if (!from.length) return undefined;
-    if (subq.length === 0) return from[0].from.table;
+  if (query.select && subq.length === 0) {
+    return get(query);
   }
 
   // handle set operations / subqueries
-  const base = getBaseTable(subq[0]);
+  const base = getBase(subq[0], get);
   for (let i = 1; i < subq.length; ++i) {
-    const from = getBaseTable(subq[i]);
-    if (from === undefined) continue;
-    if (from !== base) return NaN;
+    const value = getBase(subq[i], get);
+    if (value === undefined) continue;
+    if (value !== base) return NaN;
   }
   return base;
 }
@@ -222,17 +230,6 @@ function countExpr(aux, arg) {
 function avgExpr(aux, as, arg) {
   const n = countExpr(aux, arg);
   return agg`(SUM("${as}" * ${n.name}) / ${n})`;
-}
-
-/**
- * Generate a scalar subquery for a global average.
- * This value can be used to mean-center data.
- * @param {*} x Souce data table column.
- * @param {string} from The source data table name.
- * @returns A scalar aggregate query
- */
-function avg(x, from) {
-  return sql`(SELECT AVG(${x}) FROM "${from}")`;
 }
 
 /**
@@ -283,18 +280,18 @@ function argminExpr(aux, as, [, y]) {
  *  sufficient statistics) to include in the data cube aggregation.
  * @param {*} x The source data table column. This may be a string,
  *  column reference, SQL expression, or other string-coercible value.
- * @param {string} from The source data table name.
+ * @param {(field: any) => string} avg Global average query generator.
  * @param {boolean} [correction=true] A flag for whether a Bessel
  *  correction should be applied to compute the sample variance
  *  rather than the populatation variance.
  * @returns An aggregate expression for calculating variance over
  *  pre-aggregated data partitions.
  */
-function varianceExpr(aux, x, from, correction = true) {
+function varianceExpr(aux, x, avg, correction = true) {
   const n = countExpr(aux, x);
   const ssq = auxName('rssq', x); // residual sum of squares
   const sum = auxName('rsum', x); // residual sum
-  const delta = sql`${x} - ${avg(x, from)}`;
+  const delta = sql`${x} - ${avg(x)}`;
   aux[ssq] = agg`SUM((${delta}) ** 2)`;
   aux[sum] = agg`SUM(${delta})`;
   const adj = correction ? ` - 1` : ''; // Bessel correction
@@ -312,7 +309,7 @@ function varianceExpr(aux, x, from, correction = true) {
  *  sufficient statistics) to include in the data cube aggregation.
  * @param {any[]} args Source data table columns. The entries may be strings,
  *  column references, SQL expressions, or other string-coercible values.
- * @param {string} from The source data table name.
+ * @param {(field: any) => string} avg Global average query generator.
  * @param {boolean|null} [correction=true] A flag for whether a Bessel
  *  correction should be applied to compute the sample covariance rather
  *  than the populatation covariance. If null, an expression for the
@@ -320,11 +317,11 @@ function varianceExpr(aux, x, from, correction = true) {
  * @returns An aggregate expression for calculating covariance over
  *  pre-aggregated data partitions.
  */
-function covarianceExpr(aux, args, from, correction = true) {
+function covarianceExpr(aux, args, avg, correction = true) {
   const n = regrCountExpr(aux, args);
-  const sxy = regrSumXYExpr(aux, args, from);
-  const sx = regrSumExpr(aux, 1, args, from);
-  const sy = regrSumExpr(aux, 0, args, from);
+  const sxy = regrSumXYExpr(aux, args, avg);
+  const sx = regrSumExpr(aux, 1, args, avg);
+  const sy = regrSumExpr(aux, 0, args, avg);
   const adj = correction === null ? ''  // do not divide by count
     : correction ? ` / (${n} - 1)` // Bessel correction (sample)
     : ` / ${n}`;                   // no correction (population)
@@ -343,17 +340,17 @@ function covarianceExpr(aux, args, from, correction = true) {
  *  sufficient statistics) to include in the data cube aggregation.
  * @param {any[]} args Source data table columns. The entries may be strings,
  *  column references, SQL expressions, or other string-coercible values.
- * @param {string} from The source data table name.
+ * @param {(field: any) => string} avg Global average query generator.
  * @returns An aggregate expression for calculating correlation over
  *  pre-aggregated data partitions.
  */
-function corrExpr(aux, args, from) {
+function corrExpr(aux, args, avg) {
   const n = regrCountExpr(aux, args);
-  const sxy = regrSumXYExpr(aux, args, from);
-  const sxx = regrSumSqExpr(aux, 1, args, from);
-  const syy = regrSumSqExpr(aux, 0, args, from);
-  const sx = regrSumExpr(aux, 1, args, from);
-  const sy = regrSumExpr(aux, 0, args, from);
+  const sxy = regrSumXYExpr(aux, args, avg);
+  const sxx = regrSumSqExpr(aux, 1, args, avg);
+  const syy = regrSumSqExpr(aux, 0, args, avg);
+  const sx = regrSumExpr(aux, 1, args, avg);
+  const sy = regrSumExpr(aux, 0, args, avg);
   const vx = agg`(${sxx} - (${sx} ** 2) / ${n})`;
   const vy = agg`(${syy} - (${sy} ** 2) / ${n})`;
   return agg`(${sxy} - ${sx} * ${sy} / ${n}) / SQRT(${vx} * ${vy})`;
@@ -387,14 +384,14 @@ function regrCountExpr(aux, [y, x]) {
  * @param {number} i An index indicating which argument column to sum.
  * @param {any[]} args Source data table columns. The entries may be strings,
  *  column references, SQL expressions, or other string-coercible values.
- * @param {string} from The source data table name.
+ * @param {(field: any) => string} avg Global average query generator.
  * @returns An aggregate expression over pre-aggregated data partitions.
  */
-function regrSumExpr(aux, i, args, from) {
+function regrSumExpr(aux, i, args, avg) {
   const v = args[i];
   const o = args[1 - i];
   const sum = auxName('rs', v);
-  aux[sum] = agg`SUM(${v} - ${avg(v, from)}) FILTER (${o} IS NOT NULL)`;
+  aux[sum] = agg`SUM(${v} - ${avg(v)}) FILTER (${o} IS NOT NULL)`;
   return agg`SUM(${sum})`
 }
 
@@ -409,14 +406,14 @@ function regrSumExpr(aux, i, args, from) {
  * @param {number} i An index indicating which argument column to sum.
  * @param {any[]} args Source data table columns. The entries may be strings,
  *  column references, SQL expressions, or other string-coercible values.
- * @param {string} from The source data table name.
+ * @param {(field: any) => string} avg Global average query generator.
  * @returns An aggregate expression over pre-aggregated data partitions.
  */
-function regrSumSqExpr(aux, i, args, from) {
+function regrSumSqExpr(aux, i, args, avg) {
   const v = args[i];
   const u = args[1 - i];
   const ssq = auxName('rss', v);
-  aux[ssq] = agg`SUM((${v} - ${avg(v, from)}) ** 2) FILTER (${u} IS NOT NULL)`;
+  aux[ssq] = agg`SUM((${v} - ${avg(v)}) ** 2) FILTER (${u} IS NOT NULL)`;
   return agg`SUM(${ssq})`
 }
 
@@ -430,13 +427,13 @@ function regrSumSqExpr(aux, i, args, from) {
  *  sufficient statistics) to include in the data cube aggregation.
  * @param {any[]} args Source data table columns. The entries may be strings,
  *  column references, SQL expressions, or other string-coercible values.
- * @param {string} from The source data table name.
+ * @param {(field: any) => string} avg Global average query generator.
  * @returns An aggregate expression over pre-aggregated data partitions.
  */
-function regrSumXYExpr(aux, args, from) {
+function regrSumXYExpr(aux, args, avg) {
   const [y, x] = args;
   const sxy = auxName('sxy', y, x);
-  aux[sxy] = agg`SUM((${x} - ${avg(x, from)}) * (${y} - ${avg(y, from)}))`;
+  aux[sxy] = agg`SUM((${x} - ${avg(x)}) * (${y} - ${avg(y)}))`;
   return agg`SUM(${sxy})`;
 }
 
@@ -489,14 +486,14 @@ function regrAvgYExpr(aux, args) {
  * @param {number} i The index of the argument to compute the variance for.
  * @param {any[]} args Source data table columns. The entries may be strings,
  *  column references, SQL expressions, or other string-coercible values.
- * @param {string} from The source data table name.
+ * @param {(field: any) => string} avg Global average query generator.
  * @returns An aggregate expression for calculating variance over
  *  pre-aggregated data partitions.
  */
-function regrVarExpr(aux, i, args, from) {
+function regrVarExpr(aux, i, args, avg) {
   const n = regrCountExpr(aux, args);
-  const sum = regrSumExpr(aux, i, args, from);
-  const ssq = regrSumSqExpr(aux, i, args, from);
+  const sum = regrSumExpr(aux, i, args, avg);
+  const ssq = regrSumSqExpr(aux, i, args, avg);
   return agg`(${ssq} - (${sum} ** 2 / ${n}))`;
 }
 
@@ -509,13 +506,13 @@ function regrVarExpr(aux, i, args, from) {
  *  sufficient statistics) to include in the data cube aggregation.
  * @param {any[]} args Source data table columns. The entries may be strings,
  *  column references, SQL expressions, or other string-coercible values.
- * @param {string} from The source data table name.
+ * @param {(field: any) => string} avg Global average query generator.
  * @returns An aggregate expression for calculating regression slopes over
  *  pre-aggregated data partitions.
  */
-function regrSlopeExpr(aux, args, from) {
-  const cov = covarianceExpr(aux, args, from, null);
-  const varx = regrVarExpr(aux, 1, args, from);
+function regrSlopeExpr(aux, args, avg) {
+  const cov = covarianceExpr(aux, args, avg, null);
+  const varx = regrVarExpr(aux, 1, args, avg);
   return agg`(${cov}) / ${varx}`;
 }
 
@@ -528,13 +525,13 @@ function regrSlopeExpr(aux, args, from) {
  *  sufficient statistics) to include in the data cube aggregation.
  * @param {any[]} args Source data table columns. The entries may be strings,
  *  column references, SQL expressions, or other string-coercible values.
- * @param {string} from The source data table name.
+ * @param {(field: any) => string} avg Global average query generator.
  * @returns An aggregate expression for calculating regression intercepts over
  *  pre-aggregated data partitions.
  */
-function regrInterceptExpr(aux, args, from) {
+function regrInterceptExpr(aux, args, avg) {
   const ax = regrAvgXExpr(aux, args);
   const ay = regrAvgYExpr(aux, args);
-  const m = regrSlopeExpr(aux, args, from);
+  const m = regrSlopeExpr(aux, args, avg);
   return agg`${ay} - (${m}) * ${ax}`;
 }

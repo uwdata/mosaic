@@ -3,11 +3,24 @@ import { Spec } from '@uwdata/mosaic-spec';
 export const spec : Spec = {
   "meta": {
     "title": "Olympic Athletes",
-    "description": "An interactive dashboard of athlete statistics. The input menus and searchbox filter the display and are automatically populated by backing data columns.\n"
+    "description": "An interactive dashboard of athlete statistics. The menus and searchbox filter the display and are automatically populated by backing data columns.\n"
   },
   "data": {
     "athletes": {
       "file": "data/athletes.parquet"
+    }
+  },
+  "params": {
+    "category": {
+      "select": "intersect"
+    },
+    "query": {
+      "select": "intersect",
+      "include": "$category"
+    },
+    "hover": {
+      "select": "intersect",
+      "empty": true
     }
   },
   "hconcat": [
@@ -18,20 +31,21 @@ export const spec : Spec = {
             {
               "input": "menu",
               "label": "Sport",
-              "as": "$query",
+              "as": "$category",
               "from": "athletes",
               "column": "sport"
             },
             {
               "input": "menu",
               "label": "Sex",
-              "as": "$query",
+              "as": "$category",
               "from": "athletes",
               "column": "sex"
             },
             {
               "input": "search",
               "label": "Name",
+              "filterBy": "$category",
               "as": "$query",
               "from": "athletes",
               "column": "name",
@@ -73,6 +87,19 @@ export const spec : Spec = {
                 "fillOpacity": 0,
                 "stroke": "black"
               }
+            },
+            {
+              "mark": "dot",
+              "data": {
+                "from": "athletes",
+                "filterBy": "$hover"
+              },
+              "x": "weight",
+              "y": "height",
+              "fill": "sex",
+              "stroke": "currentColor",
+              "strokeWidth": 1,
+              "r": 3
             }
           ],
           "xyDomain": "Fixed",
@@ -94,6 +121,7 @@ export const spec : Spec = {
           "maxWidth": 570,
           "height": 250,
           "filterBy": "$query",
+          "as": "$hover",
           "columns": [
             "name",
             "nationality",

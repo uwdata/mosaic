@@ -1,4 +1,20 @@
 import * as duckdb from '@duckdb/duckdb-wasm';
+import { decodeIPC } from '../util/decode-ipc.js';
+
+// bypass duckdb-wasm query method to get Arrow IPC bytes directly
+// https://github.com/duckdb/duckdb-wasm/issues/267#issuecomment-2252749509
+function getArrowIPC(con, query) {
+  return new Promise((resolve, reject) => {
+    con.useUnsafe(async (bindings, conn) => {
+      try {
+        const buffer = await bindings.runQuery(conn, query);
+        resolve(buffer);
+      } catch (error) {
+        reject(error);
+      }
+    });
+  });
+}
 
 export function wasmConnector(options = {}) {
   const { duckdb, connection, ...opts } = options;
@@ -45,17 +61,17 @@ export function wasmConnector(options = {}) {
     /**
      * Query the DuckDB-WASM instance.
      * @param {object} query
-     * @param {'exec' | 'arrow' | 'json'} [query.type] The query type: 'exec', 'arrow', or 'json'.
+     * @param {'exec' | 'arrow' | 'json' | 'create-bundle' | 'load-bundle'} [query.type] The query type.
      * @param {string} query.sql A SQL query string.
      * @returns the query result
      */
     query: async query => {
       const { type, sql } = query;
       const con = await getConnection();
-      const result = await con.query(sql);
+      const result = await getArrowIPC(con, sql);
       return type === 'exec' ? undefined
-        : type === 'arrow' ? result
-        : result.toArray();
+        : type === 'arrow' ? decodeIPC(result)
+        : decodeIPC(result).toArray();
     }
   };
 }

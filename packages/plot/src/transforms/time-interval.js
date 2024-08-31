@@ -43,7 +43,7 @@ export function timeInterval(min, max, steps) {
   const target = span / steps;
   let i = bisector(i => i[2]).right(intervals, target);
   if (i === intervals.length) {
-    return { interval: YEAR, step: binStep(span, steps) };
+    return { interval: YEAR, step: binStep(span / durationYear, steps) };
   } else if (i) {
     i = intervals[target / intervals[i - 1][2] < intervals[i][2] / target ? i - 1 : i];
     return { interval: i[0], step: i[1] };

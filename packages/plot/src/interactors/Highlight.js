@@ -99,6 +99,6 @@ async function predicateFunction(mark, selection) {
   const data = await mark.coordinator.query(q);
   const v = data.getChild?.('__');
   return !(data.numRows || data.length) ? (() => false)
-    : v ? (i => v.get(i))
+    : v ? (i => v.at(i))
     : (i => data[i].__);
 }

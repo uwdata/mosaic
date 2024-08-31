@@ -1,7 +1,5 @@
-import { coordinator, namedPlots } from '@uwdata/vgplot';
-import { isSelection } from '@uwdata/mosaic-core';
+import { coordinator, decodeIPC, isSelection } from '@uwdata/mosaic-core';
 import { parseSpec, astToDOM } from '@uwdata/mosaic-spec';
-import * as arrow from 'apache-arrow';
 import './style.css';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -57,7 +55,6 @@ export default {
 
     function reset() {
       coordinator().clear();
-      namedPlots.clear();
     }
 
     async function updateSpec() {
@@ -113,7 +110,7 @@ export default {
       } else {
         switch (msg.type) {
           case 'arrow': {
-            const table = arrow.tableFromIPC(buffers[0].buffer);
+            const table = decodeIPC(buffers[0].buffer);
             logger.log('table', table);
             query.resolve(table);
             break;
@@ -144,6 +141,8 @@ export default {
 };
 
 function instantiateSpec(spec) {
-  const ast = parseSpec(spec);
-  return astToDOM(ast);
+  // parse specification, and instantiate it
+  // astToDOM creates a new vgplot API context with the
+  // standard coordinator and a custom namedPlots map
+  return astToDOM(parseSpec(spec));
 }
