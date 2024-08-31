@@ -81,17 +81,4 @@ export class PriorityQueue {
       }
     }
   }
-
-  /**
-   * Return the next highest priority item without removing it from the queue.
-   * @returns {*} The next item in the queue,
-   * or undefined if this queue is empty.
-   */
-  head() {
-    for (const list of this.queue) {
-      if (list.head !== null) {
-        return list.head.item;
-      }
-    }
-  }
 }
