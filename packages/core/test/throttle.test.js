@@ -1,4 +1,4 @@
-import assert from 'node:assert';
+import { describe, it, expect } from 'vitest';
 import { throttle } from '../src/util/throttle.js';
 import { QueryResult } from '../src/util/query-result.js';
 
@@ -17,16 +17,16 @@ describe('throttle', () => {
 
     throttled();
     await wait();
-    assert.equal(requests.length, 1);
+    expect(requests.length).toBe(1);
 
     throttled();
     await wait();
-    assert.equal(requests.length, 1);
+    expect(requests.length).toBe(1);
 
     requests[0].fulfill('done');
     await wait();
 
-    assert.equal(requests.length, 2);
+    expect(requests.length).toBe(2);
   });
 
   it('should throttle unsuccessful query results', async () => {
@@ -39,15 +39,15 @@ describe('throttle', () => {
 
     throttled();
     await wait();
-    assert.equal(requests.length, 1);
+    expect(requests.length).toBe(1);
 
     throttled();
     await wait();
-    assert.equal(requests.length, 1);
+    expect(requests.length).toBe(1);
 
     requests[0].reject('done');
     await wait();
 
-    assert.equal(requests.length, 2);
+    expect(requests.length).toBe(2);
   });
 });

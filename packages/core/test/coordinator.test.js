@@ -1,14 +1,14 @@
-import assert from 'node:assert';
+import { describe, it, expect } from 'vitest';
 import { Coordinator, coordinator } from '../src/index.js';
 
 describe('coordinator', () => {
   it('has accessible singleton', () => {
     const mc = coordinator();
-    assert.ok(mc instanceof Coordinator);
+    expect(mc).toBeInstanceOf(Coordinator);
 
     const mc2 = new Coordinator();
     coordinator(mc2);
 
-    assert.strictEqual(mc2, coordinator());
+    expect(coordinator()).toBe(mc2);
   });
 });

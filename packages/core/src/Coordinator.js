@@ -216,7 +216,7 @@ export class Coordinator {
     this.dataCubeIndexer.clear();
     return query
       ? this.updateClient(client, query)
-      : client.update();
+      : Promise.resolve(client.update());
   }
 
   /**

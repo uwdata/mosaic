@@ -1,4 +1,4 @@
-import assert from 'node:assert';
+import { describe, it, expect } from 'vitest';
 import { Query } from '@uwdata/mosaic-sql/src/Query.js';
 import { count, sum } from '@uwdata/mosaic-sql/src/aggregates.js';
 import { consolidator } from '../src/QueryConsolidator.js';
@@ -20,7 +20,7 @@ describe('QueryConsolidation', () => {
     const q1 = Query.from({ source: 'table' }).select({ c: count() });
     const q2 = Query.from({ source: 'table' }).select({ c: sum() });
     const consolidated = await getConsolidatedQueries(q1, q2);
-    assert.deepEqual(consolidated, [
+    expect(consolidated).toEqual([
       Query.from({ source: 'table' }).select({ col0: count(), col1: sum() }).toString(),
     ]);
   });
@@ -29,7 +29,7 @@ describe('QueryConsolidation', () => {
     const q1 = Query.from({ source: 'table' }).select({ c: 'x' });
     const q2 = Query.from({ source: 'table' }).select({ c: 'y' });
     const consolidated = await getConsolidatedQueries(q1, q2);
-    assert.deepEqual(consolidated, [
+    expect(consolidated).toEqual([
       Query.from({ source: 'table' }).select({ col0: 'x', col1: 'y' }).toString(),
     ]);
   });
@@ -38,7 +38,7 @@ describe('QueryConsolidation', () => {
     const q1 = Query.from({ source: 'table' }).select({ c: 'x' });
     const q2 = Query.from({ source: 'table' }).select({ c: count() });
     const consolidated = await getConsolidatedQueries(q1, q2);
-    assert.deepEqual(consolidated, [
+    expect(consolidated).toEqual([
       q1.toString(),
       q2.toString(),
     ]);
