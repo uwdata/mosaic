@@ -159,7 +159,7 @@ export class Coordinator {
    * @param {string} name The name of the bundle.
    * @param {[string | {sql: string},  {alias: string}]} queries The queries to save into the bundle.
    * @param {number} priority Request priority.
-   * @returns 
+   * @returns
    */
   createBundle(name, queries, priority = Priority.Low) {
     const options = { name, queries: queries.map(q => typeof q == 'string' ? {sql: q} : q) };
@@ -170,7 +170,7 @@ export class Coordinator {
    * Load a bundle into the cache.
    * @param {string} name The name of the bundle.
    * @param {number} priority Request priority.
-   * @returns 
+   * @returns
    */
   loadBundle(name, priority = Priority.High) {
     const options = { name };
@@ -210,7 +210,7 @@ export class Coordinator {
     this.dataCubeIndexer.clear();
     return query
       ? this.updateClient(client, query)
-      : client.update();
+      : Promise.resolve(client.update());
   }
 
   /**
