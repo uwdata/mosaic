@@ -7,54 +7,111 @@ import { fnv_hash } from './util/hash.js';
 const Skip = { skip: true, result: null };
 
 /**
+ * @typedef {object} DataCubeIndexerOptions
+ * @property {string} [schema] Database schema (namespace) in which to write
+ *  data cube index tables (default 'mosaic').
+ * @property {boolean} [options.enabled=true] Flag to enable or disable the
+ *  indexer. This setting can later be updated via the `enabled` method.
+ */
+
+/**
  * Build and query optimized indices ("data cubes") for fast computation of
  * groupby aggregate queries over compatible client queries and selections.
  * A data cube contains pre-aggregated data for a Mosaic client, subdivided
  * by possible query values from an active selection clause. These cubes are
  * realized as as database tables that can be queried for rapid updates.
+ *
  * Compatible client queries must consist of only groupby dimensions and
  * supported aggregate functions. Compatible selections must contain an active
  * clause that exposes metadata for an interval or point value predicate.
+ *
+ * Data cube index tables are written to a dedicated schema (namespace) that
+ * can be set using the *schema* constructor option. This schema acts as a
+ * persistent cache, and index tables may be used across sessions. The
+ * `dropIndexTables` method issues a query to remove *all* tables within
+ * this schema. This may be needed if the original tables have updated data,
+ * but should be used with care.
  */
 export class DataCubeIndexer {
   /**
    * Create a new data cube index table manager.
    * @param {import('./Coordinator.js').Coordinator} coordinator A Mosaic coordinator.
-   * @param {object} [options] Indexer options.
-   * @param {boolean} [options.enabled=true] Flag to enable/disable indexer.
-   * @param {boolean} [options.temp=true] Flag to indicate if generated data
-   *  cube index tables should be temporary tables.
+   * @param {DataCubeIndexerOptions} [options] Data cube indexer options.
    */
   constructor(coordinator, {
-    enabled = true,
-    temp = true
+    schema = 'mosaic',
+    enabled = true
   } = {}) {
     /** @type {Map<import('./MosaicClient.js').MosaicClient, DataCubeInfo | Skip | null>} */
     this.indexes = new Map();
     this.active = null;
-    this.temp = temp;
     this.mc = coordinator;
+    this._schema = schema;
     this._enabled = enabled;
   }
 
   /**
-   * Set the enabled state of this indexer. If false, any cached state is
+   * Set the enabled state of this indexer. If false, any local state is
    * cleared and subsequent index calls will return null until re-enabled.
-   * @param {boolean} state The enabled state.
+   * This method has no effect on any index tables already in the database.
+   * @param {boolean} [state] The enabled state to set.
    */
-  enabled(state) {
-    if (state === undefined) {
-      return this._enabled;
-    } else if (this._enabled !== state) {
+  set enabled(state) {
+    if (this._enabled !== state) {
       if (!state) this.clear();
       this._enabled = state;
     }
   }
 
   /**
+   * Get the enabled state of this indexer.
+   * @returns {boolean} The current enabled state.
+   */
+  get enabled() {
+    return this._enabled;
+  }
+
+  /**
+   * Set the database schema used by this indexer. Upon changes, any local
+   * state is cleared. This method does _not_ drop any existing data cube
+   * tables, use `dropIndexTables` before changing the schema to also remove
+   * existing index tables in the database.
+   * @param {string} [schema] The schema name to set.
+   */
+  set schema(schema) {
+    if (this._schema !== schema) {
+      this.clear();
+      this._schema = schema;
+    }
+  }
+
+  /**
+   * Get the database schema used by this indexer.
+   * @returns {string} The current schema name.
+   */
+  get schema() {
+    return this._schema;
+  }
+
+  /**
+   * Issues a query through the coordinator to drop the current index table
+   * schema. *All* tables in the schema will be removed and local state is
+   * cleared. Call this method if the underlying base tables have been updated,
+   * causing derived index tables to become stale and inaccurate. Use this
+   * method with care! Once dropped, the schema will be repopulated by future
+   * data cube indexer requests.
+   * @returns A query result promise.
+   */
+  dropIndexTables() {
+    this.clear();
+    return this.mc.exec(`DROP SCHEMA IF EXISTS "${this.schema}" CASCADE`);
+  }
+
+  /**
    * Clear the cache of data cube index table entries for the current active
    * selection clause. This method does _not_ drop any existing data cube
-   * tables.
+   * tables. Use `dropIndexTables` to remove existing index tables from the
+   * database.
    */
   clear() {
     this.indexes.clear();
@@ -77,9 +134,9 @@ export class DataCubeIndexer {
    */
   index(client, selection, activeClause) {
     // if not enabled, do nothing
-    if (!this._enabled) return null;
+    if (!this.enabled) return null;
 
-    const { indexes, mc, temp } = this;
+    const { indexes, mc, schema } = this;
     const { source } = activeClause;
 
     // if there is no clause source to track, do nothing
@@ -125,8 +182,11 @@ export class DataCubeIndexer {
     } else {
       // generate data cube index table
       const filter = selection.remove(source).predicate(client);
-      info = dataCubeInfo(client.query(filter), active, indexCols);
-      info.result = mc.exec(create(info.table, info.create, { temp }));
+      info = dataCubeInfo(client.query(filter), active, indexCols, schema);
+      info.result = mc.exec([
+        `CREATE SCHEMA IF NOT EXISTS ${schema}`,
+        create(info.table, info.create, { temp: false })
+      ]);
       info.result.catch(e => mc.logger().error(e));
     }
 
@@ -223,7 +283,7 @@ function binInterval(scale, pixelSize, bin) {
  * @param {*} indexCols Data cube index column definitions.
  * @returns {DataCubeInfo}
  */
-function dataCubeInfo(clientQuery, active, indexCols) {
+function dataCubeInfo(clientQuery, active, indexCols, schema) {
   const { dims, aggr, aux } = indexCols;
   const { columns } = active;
 
@@ -246,7 +306,7 @@ function dataCubeInfo(clientQuery, active, indexCols) {
   // generate creation query string and hash id
   const create = query.toString();
   const id = (fnv_hash(create) >>> 0).toString(16);
-  const table = `cube_index_${id}`;
+  const table = `${schema}.cube_${id}`;
 
   // generate data cube select query
   const select = Query
@@ -255,7 +315,7 @@ function dataCubeInfo(clientQuery, active, indexCols) {
     .groupby(dims)
     .orderby(order);
 
-  return new DataCubeInfo({ table, create, active, select });
+  return new DataCubeInfo({ id, table, create, active, select });
 }
 
 /**

@@ -7,24 +7,24 @@ import { v4 as uuidv4 } from 'uuid';
  * @typedef {Record<string, {value: unknown, predicate?: string}>} Params
  *
  * @typedef Model
- * @prop {import('@uwdata/mosaic-spec').Spec} spec the current specification
- * @prop {boolean} temp_indexes whether data cube indexes should be created as temp tables
- * @prop {Params} params the current params
+ * @property {import('@uwdata/mosaic-spec').Spec} spec
+ *  The current Mosaic specification.
+ * @property {string} dataCubeSchema The database schema in which to store
+ *  data cube index tables (default 'mosaic').
+ * @property {Params} params The current params.
  */
 
 export default {
   /** @type {import('anywidget/types').Initialize<Model>} */
-  // eslint-disable-next-line no-unused-vars
-  initialize(view) {},
+  initialize(view) {
+    view.model.set('dataCubeSchema', coordinator().dataCubeIndexer.schema);
+  },
 
   /** @type {import('anywidget/types').Render<Model>} */
   render(view) {
     view.el.classList.add('mosaic-widget');
-
     const getSpec = () => view.model.get('spec');
-
-    const getTempIndexes = () => view.model.get('temp_indexes');
-
+    const getDataCubeSchema = () => view.model.get('dataCubeSchema');
     const logger = coordinator().logger();
 
     /** @type Map<string, {query: Record<any, unknown>, startTime: number, resolve: (value: any) => void, reject: (reason?: any) => void}> */
@@ -90,10 +90,10 @@ export default {
     view.model.on('change:spec', () => updateSpec());
 
     function configureCoordinator() {
-      coordinator().dataCubeIndexer.temp = getTempIndexes();
+      coordinator().dataCubeIndexer.schema = getDataCubeSchema();
     }
 
-    view.model.on('change:temp_indexes', () => configureCoordinator());
+    view.model.on('change:dataCubeSchema', () => configureCoordinator());
 
     view.model.on('msg:custom', (msg, buffers) => {
       logger.group(`query ${msg.uuid}`);
