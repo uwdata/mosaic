@@ -1,4 +1,4 @@
-import assert from 'node:assert';
+import { describe, it, expect } from 'vitest';
 import {
   Query, argmax, argmin, avg, corr, count, covarPop, covariance,
   isNotDistinct, literal, loadObjects, max, min, product, regrAvgX,
@@ -48,63 +48,63 @@ async function run(measure) {
 
 describe('DataCubeIndexer', () => {
   it('supports count aggregate', async () => {
-    assert.strictEqual(await run(count()), 3);
-    assert.strictEqual(await run(count('x')), 2);
+    expect(await run(count())).toBe(3);
+    expect(await run(count('x'))).toBe(2);
   });
   it('supports sum aggregate', async () => {
-    assert.strictEqual(await run(sum('x')), 7);
+    expect(await run(sum('x'))).toBe(7);
   });
   it('supports avg aggregate', async () => {
-    assert.strictEqual(await run(avg('x')), 3.5);
+    expect(await run(avg('x'))).toBe(3.5);
   });
   it('supports min aggregate', async () => {
-    assert.strictEqual(await run(min('x')), 3);
+    expect(await run(min('x'))).toBe(3);
   });
   it('supports max aggregate', async () => {
-    assert.strictEqual(await run(max('x')), 4);
+    expect(await run(max('x'))).toBe(4);
   });
   it('supports product aggregate', async () => {
-    assert.strictEqual(await run(product('x')), 12);
+    expect(await run(product('x'))).toBe(12);
   });
   it('supports argmax aggregate', async () => {
-    assert.strictEqual(await run(argmax('dim', 'x')), 'b');
+    expect(await run(argmax('dim', 'x'))).toBe('b');
   });
   it('supports argmin aggregate', async () => {
-    assert.strictEqual(await run(argmin('dim', 'x')), 'b');
+    expect(await run(argmin('dim', 'x'))).toBe('b');
   });
   it('supports variance aggregate', async () => {
-    assert.strictEqual(await run(variance('x')), 0.5);
+    expect(await run(variance('x'))).toBe(0.5);
   });
   it('supports varPop aggregate', async () => {
-    assert.strictEqual(await run(varPop('x')), 0.25);
+    expect(await run(varPop('x'))).toBe(0.25);
   });
   it('supports stddev aggregate', async () => {
-    assert.strictEqual(await run(stddev('x')), Math.sqrt(0.5));
+    expect(await run(stddev('x'))).toBe(Math.sqrt(0.5));
   });
   it('supports stddevPop aggregate', async () => {
-    assert.strictEqual(await run(stddevPop('x')), Math.sqrt(0.25));
+    expect(await run(stddevPop('x'))).toBe(Math.sqrt(0.25));
   });
   it('supports covariance aggregate', async () => {
-    assert.strictEqual(await run(covariance('x', 'y')), -0.5);
-    assert.strictEqual(await run(covariance('y', 'x')), -0.5);
+    expect(await run(covariance('x', 'y'))).toBe(-0.5);
+    expect(await run(covariance('y', 'x'))).toBe(-0.5);
   });
   it('supports covarPop aggregate', async () => {
-    assert.strictEqual(await run(covarPop('x', 'y')), -0.25);
-    assert.strictEqual(await run(covarPop('y', 'x')), -0.25);
+    expect(await run(covarPop('x', 'y'))).toBe(-0.25);
+    expect(await run(covarPop('y', 'x'))).toBe(-0.25);
   });
   it('supports corr aggregate', async () => {
-    assert.strictEqual(await run(corr('x', 'y')), -1);
-    assert.strictEqual(await run(corr('y', 'x')), -1);
+    expect(await run(corr('x', 'y'))).toBe(-1);
+    expect(await run(corr('y', 'x'))).toBe(-1);
   });
   it('supports regression aggregates', async () => {
-    assert.strictEqual(await run(regrCount('y', 'x')), 2);
-    assert.strictEqual(await run(regrAvgX('y', 'x')), 3.5);
-    assert.strictEqual(await run(regrAvgY('y', 'x')), 6.5);
-    assert.strictEqual(await run(regrSXX('y', 'x')), 0.5);
-    assert.strictEqual(await run(regrSYY('y', 'x')), 0.5);
-    assert.strictEqual(await run(regrSXY('y', 'x')), -0.5);
-    assert.strictEqual(await run(regrSlope('y', 'x')), -1);
-    assert.strictEqual(await run(regrIntercept('y', 'x')), 10);
-    assert.strictEqual(await run(regrR2('y', 'x')), 1);
+    expect(await run(regrCount('y', 'x'))).toBe(2);
+    expect(await run(regrAvgX('y', 'x'))).toBe(3.5);
+    expect(await run(regrAvgY('y', 'x'))).toBe(6.5);
+    expect(await run(regrSXX('y', 'x'))).toBe(0.5);
+    expect(await run(regrSYY('y', 'x'))).toBe(0.5);
+    expect(await run(regrSXY('y', 'x'))).toBe(-0.5);
+    expect(await run(regrSlope('y', 'x'))).toBe(-1);
+    expect(await run(regrIntercept('y', 'x'))).toBe(10);
+    expect(await run(regrR2('y', 'x'))).toBe(1);
   });
 });
