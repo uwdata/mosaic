@@ -12,24 +12,11 @@ import traitlets
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
 
-_DEV = False  # switch to False for production
-
 SLOW_QUERY_THRESHOLD = 5000
 
-if _DEV:
-    # from `npm run dev`
-    ESM = "http://localhost:5173/src/index.js?anywidget"
-    CSS = ""
-else:
-    # from `npm run build`
-    bundled_assets_dir = pathlib.Path(__file__).parent / "static"
-    ESM = bundled_assets_dir / "index.js"
-    CSS = bundled_assets_dir / "style.css"
-
-
 class MosaicWidget(anywidget.AnyWidget):
-    _esm = ESM
-    _css = CSS
+    _esm = pathlib.Path(__file__).parent / "static" / "index.js"
+    _css = pathlib.Path(__file__).parent / "static" / "index.css"
 
     # The Mosaic specification
     spec = traitlets.Dict({}).tag(sync=True)
