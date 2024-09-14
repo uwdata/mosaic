@@ -9,7 +9,7 @@ import { v4 as uuidv4 } from 'uuid';
  * @typedef Model
  * @property {import('@uwdata/mosaic-spec').Spec} spec
  *  The current Mosaic specification.
- * @property {string} dataCubeSchema The database schema in which to store
+ * @property {string} data_cube_schema The database schema in which to store
  *  data cube index tables (default 'mosaic').
  * @property {Params} params The current params.
  */
@@ -17,14 +17,14 @@ import { v4 as uuidv4 } from 'uuid';
 export default {
   /** @type {import('anywidget/types').Initialize<Model>} */
   initialize(view) {
-    view.model.set('dataCubeSchema', coordinator().dataCubeIndexer.schema);
+    view.model.set('data_cube_schema', coordinator().dataCubeIndexer.schema);
   },
 
   /** @type {import('anywidget/types').Render<Model>} */
   render(view) {
     view.el.classList.add('mosaic-widget');
     const getSpec = () => view.model.get('spec');
-    const getDataCubeSchema = () => view.model.get('dataCubeSchema');
+    const getDataCubeSchema = () => view.model.get('data_cube_schema');
     const logger = coordinator().logger();
 
     /** @type Map<string, {query: Record<any, unknown>, startTime: number, resolve: (value: any) => void, reject: (reason?: any) => void}> */
@@ -93,7 +93,7 @@ export default {
       coordinator().dataCubeIndexer.schema = getDataCubeSchema();
     }
 
-    view.model.on('change:dataCubeSchema', () => configureCoordinator());
+    view.model.on('change:data_cube_schema', () => configureCoordinator());
 
     view.model.on('msg:custom', (msg, buffers) => {
       logger.group(`query ${msg.uuid}`);
