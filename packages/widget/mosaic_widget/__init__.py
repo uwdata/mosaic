@@ -14,6 +14,7 @@ logger.addHandler(logging.NullHandler())
 
 SLOW_QUERY_THRESHOLD = 5000
 
+
 class MosaicWidget(anywidget.AnyWidget):
     _esm = pathlib.Path(__file__).parent / "static" / "index.js"
     _css = pathlib.Path(__file__).parent / "static" / "index.css"
