@@ -17,6 +17,8 @@ from urllib import request
 import vl_convert as vlc
 
 sys.path.insert(0, str(Path.cwd()))
+###(H) SchemaInfo class imported from altair/tools/schemapi/utils.py
+### It's a wrapper for inspecting JSON schema
 from tools.schemapi import CodeSnippet, SchemaInfo, codegen
 from tools.schemapi.utils import (
     TypeAliasTracer,
@@ -799,6 +801,7 @@ def vegalite_main(skip_download: bool = False) -> None:
     vn = version.split(".")[0]
     fp = (Path(__file__).parent / ".." / "altair" / "vegalite" / vn).resolve()
     schemapath = fp / "schema"
+    ###(H) They download the schema, eg: altair/altair/vegalite/v5/schema/vega-lite-schema.json
     schemafile = download_schemafile(
         version=version,
         schemapath=schemapath,
@@ -818,10 +821,15 @@ def vegalite_main(skip_download: bool = False) -> None:
         f"SCHEMA_VERSION = '{version}'\n",
         f"SCHEMA_URL = {schema_url(version)!r}\n",
     ]
+    ###(H)ruff is a python 'linter' written in Rust, which is essentially
+    ###syntax formatting and checking.
+    ###The function below is a combination of writing, ruff checking and formatting
     ruff_write_lint_format_str(outfile, content)
 
     TypeAliasTracer.update_aliases(("Map", "Mapping[str, Any]"))
 
+    ###(H) Note: Path is a type imported from pathlib. Every Path added to the files 
+    ### dictionary is eventually written to and formatted using ruff
     files: dict[Path, str | Iterable[str]] = {}
 
     # Generate the core schema wrappers
