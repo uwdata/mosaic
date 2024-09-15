@@ -37,14 +37,13 @@ class MosaicWidget(anywidget.AnyWidget):
     # The current params indexed by name
     params = traitlets.Dict({}).tag(sync=True)
 
-    # Whether data cube indexes should be created as temp tables
-    temp_indexes = traitlets.Bool().tag(sync=True)
+    # Where data cube indexes should be created
+    data_cube_schema = traitlets.Unicode().tag(sync=True)
 
     def __init__(
         self,
         spec: dict | None = None,
         con=None,
-        temp_indexes=True,
         data=None,
         *args,
         **kwargs,
@@ -55,8 +54,6 @@ class MosaicWidget(anywidget.AnyWidget):
             spec (dict, optional): The initial Mosaic specification. Defaults to {}.
             con (connection, optional): A DuckDB connection.
                 Defaults to duckdb.connect().
-            temp_indexes (bool, optional): Whether data cube indexes should be
-                created as temp tables tables. Defaults to True.
             data (dict, optional): Pandas DataFrames to add to DuckDB.
                 The keys are used as the names of the tables. Defaults to {}.
         """
@@ -70,7 +67,6 @@ class MosaicWidget(anywidget.AnyWidget):
         super().__init__(*args, **kwargs)
         self.spec = spec
         self.con = con
-        self.temp_indexes = temp_indexes
         for name, df in data.items():
             self.con.register(name, df)
         self.on_msg(self._handle_custom_msg)

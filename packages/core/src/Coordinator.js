@@ -1,7 +1,9 @@
 import { socketConnector } from './connectors/socket.js';
 import { DataCubeIndexer } from './DataCubeIndexer.js';
+import { MosaicClient } from './MosaicClient.js';
 import { QueryManager, Priority } from './QueryManager.js';
 import { queryFieldInfo } from './util/field-info.js';
+import { QueryResult } from './util/query-result.js';
 import { voidLogger } from './util/void-logger.js';
 
 /**
@@ -25,6 +27,10 @@ export function coordinator(instance) {
 }
 
 /**
+ * @typedef {import('@uwdata/mosaic-sql').Query | string} QueryType
+ */
+
+/**
  * A Mosaic Coordinator manages all database communication for clients and
  * handles selection updates. The Coordinator also performs optimizations
  * including query caching, consolidation, and data cube indexing.
@@ -34,7 +40,8 @@ export function coordinator(instance) {
  * @param {*} [options.manager] The query manager to use.
  * @param {boolean} [options.cache=true] Boolean flag to enable/disable query caching.
  * @param {boolean} [options.consolidate=true] Boolean flag to enable/disable query consolidation.
- * @param {object} [options.indexes] Data cube indexer options.
+ * @param {import('./DataCubeIndexer.js').DataCubeIndexerOptions} [options.indexes]
+ *  Data cube indexer options.
  */
 export class Coordinator {
   constructor(db = socketConnector(), {
@@ -48,10 +55,10 @@ export class Coordinator {
     this.manager = manager;
     this.manager.cache(cache);
     this.manager.consolidate(consolidate);
-    this.dataCubeIndexer = new DataCubeIndexer(this, indexes);
-    this.logger(logger);
     this.databaseConnector(db);
+    this.logger(logger);
     this.clear();
+    this.dataCubeIndexer = new DataCubeIndexer(this, indexes);
   }
 
   /**
@@ -98,7 +105,7 @@ export class Coordinator {
   /**
    * Cancel previosuly submitted query requests. These queries will be
    * canceled if they are queued but have not yet been submitted.
-   * @param {import('./util/query-result.js').QueryResult[]} requests An array
+   * @param {QueryResult[]} requests An array
    *  of query result objects, such as those returned by the `query` method.
    */
   cancel(requests) {
@@ -107,29 +114,30 @@ export class Coordinator {
 
   /**
    * Issue a query for which no result (return value) is needed.
-   * @param {import('@uwdata/mosaic-sql').Query | string} query The query.
+   * @param {QueryType | QueryType[]} query The query or an array of queries.
+   *  Each query should be either a Query builder object or a SQL string.
    * @param {object} [options] An options object.
    * @param {number} [options.priority] The query priority, defaults to
    *  `Priority.Normal`.
-   * @returns {import('./util/query-result.js').QueryResult} A query result
+   * @returns {QueryResult} A query result
    *  promise.
    */
   exec(query, { priority = Priority.Normal } = {}) {
-    query = Array.isArray(query) ? query.join(';\n') : query;
+    query = Array.isArray(query) ? query.filter(x => x).join(';\n') : query;
     return this.manager.request({ type: 'exec', query }, priority);
   }
 
   /**
    * Issue a query to the backing database. The submitted query may be
    * consolidate with other queries and its results may be cached.
-   * @param {import('@uwdata/mosaic-sql').Query | string} query The query.
+   * @param {QueryType} query The query as either a Query builder object
+   *  or a SQL string.
    * @param {object} [options] An options object.
    * @param {'arrow' | 'json'} [options.type] The query result format type.
    * @param {boolean} [options.cache=true] If true, cache the query result.
    * @param {number} [options.priority] The query priority, defaults to
    *  `Priority.Normal`.
-   * @returns {import('./util/query-result.js').QueryResult} A query result
-   *  promise.
+   * @returns {QueryResult} A query result promise.
    */
   query(query, {
     type = 'arrow',
@@ -143,11 +151,11 @@ export class Coordinator {
   /**
    * Issue a query to prefetch data for later use. The query result is cached
    * for efficient future access.
-   * @param {import('@uwdata/mosaic-sql').Query | string} query The query.
+   * @param {QueryType} query The query as either a Query builder object
+   *  or a SQL string.
    * @param {object} [options] An options object.
    * @param {'arrow' | 'json'} [options.type] The query result format type.
-   * @returns {import('./util/query-result.js').QueryResult} A query result
-   *  promise.
+   * @returns {QueryResult} A query result promise.
    */
   prefetch(query, options = {}) {
     return this.query(query, { ...options, cache: true, priority: Priority.Low });
@@ -159,7 +167,7 @@ export class Coordinator {
    * @param {string} name The name of the bundle.
    * @param {[string | {sql: string},  {alias: string}]} queries The queries to save into the bundle.
    * @param {number} priority Request priority.
-   * @returns
+   * @returns {QueryResult} A query result promise.
    */
   createBundle(name, queries, priority = Priority.Low) {
     const options = { name, queries: queries.map(q => typeof q == 'string' ? {sql: q} : q) };
@@ -170,7 +178,7 @@ export class Coordinator {
    * Load a bundle into the cache.
    * @param {string} name The name of the bundle.
    * @param {number} priority Request priority.
-   * @returns
+   * @returns {QueryResult} A query result promise.
    */
   loadBundle(name, priority = Priority.High) {
     const options = { name };
@@ -182,8 +190,8 @@ export class Coordinator {
   /**
    * Update client data by submitting the given query and returning the
    * data (or error) to the client.
-   * @param {import('./MosaicClient.js').MosaicClient} client A Mosaic client.
-   * @param {import('@uwdata/mosaic-sql').Query | string} query The data query.
+   * @param {MosaicClient} client A Mosaic client.
+   * @param {QueryType} query The data query.
    * @param {number} [priority] The query priority.
    * @returns {Promise} A Promise that resolves upon completion of the update.
    */
@@ -201,10 +209,8 @@ export class Coordinator {
    * Issue a query request for a client. If the query is null or undefined,
    * the client is simply updated. Otherwise `updateClient` is called. As a
    * side effect, this method clears the current data cube indexer state.
-   * @param {import('./MosaicClient.js').MosaicClient} client The client
-   *  to update.
-   * @param {import('@uwdata/mosaic-sql').Query | string | null} [query]
-   *  The query to issue.
+   * @param {MosaicClient} client The client to update.
+   * @param {QueryType | null} [query] The query to issue.
    */
   requestQuery(client, query) {
     this.dataCubeIndexer.clear();
@@ -215,8 +221,7 @@ export class Coordinator {
 
   /**
    * Connect a client to the coordinator.
-   * @param {import('./MosaicClient.js').MosaicClient} client The Mosaic
-   *  client to connect.
+   * @param {MosaicClient} client The Mosaic client to connect.
    */
   async connect(client) {
     const { clients } = this;
@@ -247,8 +252,7 @@ export class Coordinator {
 
   /**
    * Disconnect a client from the coordinator.
-   * @param {import('./MosaicClient.js').MosaicClient} client The Mosaic
-   *  client to disconnect.
+   * @param {MosaicClient} client The Mosaic client to disconnect.
    */
   disconnect(client) {
     const { clients, filterGroups } = this;
@@ -267,8 +271,8 @@ export class Coordinator {
  * Connect a selection-client pair to the coordinator to process updates.
  * @param {Coordinator} mc The Mosaic coordinator.
  * @param {import('./Selection.js').Selection} selection A selection.
- * @param {import('./MosaicClient.js').MosaicClient} client A Mosiac
- *  client that is filtered by the given selection.
+ * @param {MosaicClient} client A Mosiac client that is filtered by the
+ *  given selection.
  */
 function connectSelection(mc, selection, client) {
   if (!selection) return;
