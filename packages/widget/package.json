@@ -10,8 +10,8 @@
     "url": "https://github.com/uwdata/mosaic.git"
   },
   "scripts": {
-    "build": "vite build",
-    "dev": "vite",
+    "build": "esbuild --bundle --format=esm --outdir=mosaic_widget/static src/index.js",
+    "dev": "npm run build -- --watch",
     "test": "tsc -p jsconfig.json",
     "lint": "eslint src",
     "prepublishOnly": "rimraf dist && mkdir dist && npm run test && npm run lint && hatch fmt --check && npm run build && hatch build",
@@ -25,7 +25,6 @@
     "uuid": "^10.0.0"
   },
   "devDependencies": {
-    "@anywidget/vite": "^0.2.0",
     "anywidget": "^0.9.13"
   }
 }
