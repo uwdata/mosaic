@@ -31,8 +31,8 @@ class MosaicWidget(anywidget.AnyWidget):
     def __init__(
         self,
         spec: dict | None = None,
-        con=None,
-        data=None,
+        con: duckdb.DuckDBPyConnection | None = None,
+        data: dict | None = None,
         *args,
         **kwargs,
     ):
@@ -42,8 +42,10 @@ class MosaicWidget(anywidget.AnyWidget):
             spec (dict, optional): The initial Mosaic specification. Defaults to {}.
             con (connection, optional): A DuckDB connection.
                 Defaults to duckdb.connect().
-            data (dict, optional): Pandas DataFrames to add to DuckDB.
-                The keys are used as the names of the tables. Defaults to {}.
+            data (dict, optional): DataFrames/Arrow objects to "register" with DuckDB.
+                Defaults to {}. Keys are table names, values are objects to register as
+                virtual tables (similar to SQL VIEWs). Supports pandas/polars DataFrames
+                and other Arrow objects.
         """
         if data is None:
             data = {}
