@@ -1,5 +1,39 @@
 """Generate a schema wrapper from a schema."""
 
+"""
+(X) The file is organized into several key sections:
+
+1. **Constants**: 
+   - This section defines constants that are used throughout the module for configuration and encoding methods.
+
+2. **Schema Generation Functions**:
+   - `generate_vegalite_schema_wrapper`: This function generates a schema wrapper for Vega-Lite based on the provided schema file.
+   - `load_schema_with_shorthand_properties`: Loads the schema and incorporates shorthand properties for easier usage.
+   - `_add_shorthand_property_to_field_encodings`: Adds shorthand properties to field encodings within the schema.
+
+3. **Utility Functions**:
+   - `copy_schemapi_util`: Copies the schemapi utility into the altair/utils directory for reuse.
+   - `recursive_dict_update`: Recursively updates a dictionary schema with new definitions, ensuring that references are resolved.
+   - `get_field_datum_value_defs`: Retrieves definitions for fields, datum, and values from a given property schema.
+   - `toposort`: Performs a topological sort on a directed acyclic graph, which is useful for managing dependencies between schema definitions.
+
+4. **Channel Wrapper Generation**:
+   - `generate_vegalite_channel_wrappers`: Generates channel wrappers for the Vega-Lite schema, allowing for the mapping of data properties to visual properties.
+
+5. **Mixin Generation**:
+   - `generate_vegalite_mark_mixin`: Creates a mixin class that defines methods for different types of marks in Vega-Lite.
+   - `generate_vegalite_config_mixin`: Generates a mixin class that provides configuration methods for the schema.
+
+6. **Main Execution Function**:
+   - `vegalite_main`: The main function that orchestrates the schema generation process, handling the loading of schemas and the creation of wrapper files.
+
+7. **Encoding Artifacts Generation**:
+   - `generate_encoding_artifacts`: Generates artifacts related to encoding, including type aliases and mixin classes for encoding methods.
+
+8. **Main Entry Point**:
+   - `main`: The entry point for the script, which processes command-line arguments and initiates the schema generation workflow.
+"""
+
 from __future__ import annotations
 
 import argparse
@@ -498,7 +532,7 @@ def toposort(graph: dict[str, list[str]]) -> list[str]:
     visit(graph)
     return stack
 
-
+### (X) Function to generate a schema wrapper for Vega-Lite.
 def generate_vegalite_schema_wrapper(schema_file: Path) -> str:
     """Generate a schema wrapper at the given path."""
     # TODO: generate simple tests for each wrapper
@@ -508,6 +542,7 @@ def generate_vegalite_schema_wrapper(schema_file: Path) -> str:
 
     definitions: dict[str, SchemaGenerator] = {}
 
+    ### (X) Loop through the definitions in the rootschema and create a SchemaGenerator for each one.
     for name in rootschema["definitions"]:
         defschema = {"$ref": "#/definitions/" + name}
         defschema_repr = {"$ref": "#/definitions/" + name}
@@ -521,6 +556,7 @@ def generate_vegalite_schema_wrapper(schema_file: Path) -> str:
             rootschemarepr=CodeSnippet(f"{basename}._rootschema"),
         )
 
+    ### (X) Create a DAG of the definitions.
     graph: dict[str, list[str]] = {}
 
     for name, schema in definitions.items():
@@ -567,6 +603,7 @@ def generate_vegalite_schema_wrapper(schema_file: Path) -> str:
         ),
     ]
 
+    ### (X) Append the schema classes in topological order to the contents.
     for name in toposort(graph):
         contents.append(definitions[name].schema_class())
 
