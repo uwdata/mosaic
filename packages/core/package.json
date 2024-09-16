@@ -29,7 +29,7 @@
   },
   "dependencies": {
     "@duckdb/duckdb-wasm": "^1.28.1-dev278.0",
-    "@uwdata/flechette": "^1.0.0-beta.2",
+    "@uwdata/flechette": "^1.0.2",
     "@uwdata/mosaic-sql": "^0.10.0"
   },
   "devDependencies": {
