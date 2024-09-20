@@ -173,6 +173,7 @@ function alphaScale(mark, prop) {
     opacity: {
       type: plot.getAttribute('opacityScale'),
       domain,
+      range: plot.getAttribute('opacityRange'),
       clamp: plot.getAttribute('opacityClamp'),
       nice: plot.getAttribute('opacityNice'),
       reverse: plot.getAttribute('opacityReverse'),
