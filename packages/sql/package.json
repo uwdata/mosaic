@@ -1,6 +1,6 @@
 {
   "name": "@uwdata/mosaic-sql",
-  "version": "0.10.0",
+  "version": "0.11.0",
   "description": "SQL query construction and analysis.",
   "keywords": [
     "sql",
@@ -22,7 +22,7 @@
     "prebuild": "rimraf dist && mkdir dist",
     "build": "node ../../esbuild.js mosaic-sql",
     "lint": "eslint src test",
-    "test": "mocha 'test/**/*-test.js'",
+    "test": "vitest run",
     "prepublishOnly": "npm run test && npm run lint && npm run build"
   }
 }

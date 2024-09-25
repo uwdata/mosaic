@@ -1,6 +1,6 @@
 {
   "name": "@uwdata/mosaic-plot",
-  "version": "0.10.0",
+  "version": "0.11.0",
   "description": "A Mosaic-powered plotting framework based on Observable Plot.",
   "keywords": [
     "data",
@@ -24,13 +24,13 @@
     "prebuild": "rimraf dist && mkdir dist",
     "build": "node ../../esbuild.js mosaic-plot",
     "lint": "eslint src test",
-    "test": "mocha 'test/**/*-test.js'",
+    "test": "vitest run",
     "prepublishOnly": "npm run test && npm run lint && npm run build"
   },
   "dependencies": {
     "@observablehq/plot": "^0.6.16",
-    "@uwdata/mosaic-core": "^0.10.0",
-    "@uwdata/mosaic-sql": "^0.10.0",
+    "@uwdata/mosaic-core": "^0.11.0",
+    "@uwdata/mosaic-sql": "^0.11.0",
     "d3": "^7.9.0",
     "isoformat": "^0.2.1"
   }

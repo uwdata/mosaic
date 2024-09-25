@@ -15,7 +15,7 @@ export function loadCSV(tableName, fileName, options) {
 }
 
 export function loadJSON(tableName, fileName, options) {
-  return load('read_json', tableName, fileName, options, { auto_detect: true, json_format: 'auto' });
+  return load('read_json', tableName, fileName, options, { auto_detect: true, format: 'auto' });
 }
 
 export function loadParquet(tableName, fileName, options) {

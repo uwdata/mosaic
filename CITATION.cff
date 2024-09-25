@@ -1,0 +1,20 @@
+citation-file-format: 1.2.0
+creator:
+  - family-names: Heer
+    given-names: Jeffrey
+  - family-names: Moritz
+    given-names: Dominik
+title: "Mosaic: An Architecture for Scalable & Interoperable Data Views"
+url: https://github.com/uwdata/mosaic
+license: BSD 3-Clause
+preferred-citation:
+  type: article
+  authors:
+    - family-names: Heer
+      given-names: Jeffrey
+    - family-names: Moritz
+      given-names: Dominik
+  title: "Mosaic: An Architecture for Scalable & Interoperable Data Views"
+  journal: IEEE Transactions on Visualization and Computer Graphics
+  year: 2024
+  doi: 10.1109/TVCG.2023.3327189

@@ -27,7 +27,8 @@ artifacts = [
 dev = [
   "jupyterlab",
   "pandas",
-  "pyyaml"
+  "pyyaml",
+  "watchfiles"
 ]
 
 [tool.hatch.envs.default]

@@ -58,11 +58,10 @@ export class Nearest {
       if (i !== this.valueIndex) {
         this.valueIndex = i;
         const v = i < 0 ? undefined : keys.map(k => columns[k][i]);
-        if (param) {
-          if (i > -1) selection.update(v.length > 1 ? v : v[0]);
-        } else {
-          selection.update(that.clause(v));
-        }
+        selection.update(
+          // provide value for param, clause for selection
+          param ? (!v || v.length > 1 ? v : v[0]) : that.clause(v)
+        );
       }
     });
 
