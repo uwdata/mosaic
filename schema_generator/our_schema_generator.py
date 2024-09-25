@@ -3,6 +3,20 @@ from typing import Final
 from urllib import request
 from pathlib import Path
 
+sys.path.insert(0, str(Path.cwd()))
+from reference.altair_schema_api import CodeSnippet, SchemaInfo, codegen
+from reference.altair_schema_api.utils import (
+    TypeAliasTracer,
+    get_valid_identifier,
+    indent_docstring,
+    resolve_references,
+    rst_parse,
+    rst_syntax_for_class,
+    ruff_format_py,
+    ruff_write_lint_format_str,
+    spell_literal,
+)
+
 SCHEMA_VERSION: Final = "v0.10.0"
 
 SCHEMA_URL_TEMPLATE: Final = "https://github.com/uwdata/mosaic/blob/main/docs/public/schema/{version}.json"
@@ -34,7 +48,37 @@ def mosaic_main(skip_download: bool = False) -> None:
         schemapath=schemapath,
         skip_download=skip_download,
     )
+    
+def recursive_dict_update(schema: dict, root: dict, def_dict: dict) -> None:
+    if "$ref" in schema:
+        next_schema = resolve_references(schema, root)
+        if "properties" in next_schema:
+            definition = schema["$ref"]
+            properties = next_schema["properties"]
+            for k in def_dict:
+                if k in properties:
+                    def_dict[k] = definition
+        else:
+            recursive_dict_update(next_schema, root, def_dict)
+    elif "anyOf" in schema:
+        for sub_schema in schema["anyOf"]:
+            recursive_dict_update(sub_schema, root, def_dict)
 
+
+def get_field_datum_value_defs(propschema: SchemaInfo, root: dict) -> dict[str, str]:
+    def_dict: dict[str, str | None] = dict.fromkeys(("field", "datum", "value"))
+    schema = propschema.schema
+    if propschema.is_reference() and "properties" in schema:
+        if "field" in schema["properties"]:
+            def_dict["field"] = propschema.ref
+        else:
+            msg = "Unexpected schema structure"
+            raise ValueError(msg)
+    else:
+        recursive_dict_update(schema, root, def_dict)
+
+    return {i: j for i, j in def_dict.items() if j}
+    
 def main() -> None:
     parser = argparse.ArgumentParser(
         prog="our_schema_generator", description="Generate the JSON schema for mosaic apps"
