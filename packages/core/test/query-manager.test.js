@@ -1,4 +1,4 @@
-import assert from 'node:assert';
+import { describe, it, expect } from 'vitest';
 import { QueryManager } from '../src/QueryManager.js';
 import { QueryResult } from '../src/util/query-result.js';
 
@@ -9,7 +9,7 @@ describe('QueryManager', () => {
     // Mock the connector
     queryManager.connector({
       query: async ({ sql }) => {
-        assert.equal(sql, 'SELECT 1');
+        expect(sql).toBe('SELECT 1');
         return [{ column: 1 }];
       }
     });
@@ -20,10 +20,10 @@ describe('QueryManager', () => {
     };
 
     const result = queryManager.request(request);
-    assert(result instanceof QueryResult);
+    expect(result).toBeInstanceOf(QueryResult);
 
     const data = await result;
-    assert.deepStrictEqual(data, [{ column: 1 }]);
+    expect(data).toEqual([{ column: 1 }]);
   });
 
   it('should not run a query when there is a pending exec', async () => {
@@ -32,7 +32,7 @@ describe('QueryManager', () => {
     // Mock the connector
     queryManager.connector({
       query: async ({ sql }) => {
-        assert.equal(sql, 'CREATE TABLE test (id INT)');
+        expect(sql).toBe('CREATE TABLE test (id INT)');
         return undefined;
       }
     });
@@ -50,6 +50,6 @@ describe('QueryManager', () => {
     queryManager.request(request1);
     queryManager.request(request2);
 
-    assert.equal(queryManager.pendingResults.length, 1);
+    expect(queryManager.pendingResults).toHaveLength(1);
   });
 });
