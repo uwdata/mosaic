@@ -1,3 +1,4 @@
+from __future__ import annotations
 """Generate a schema wrapper from a schema."""
 
 """
@@ -34,8 +35,7 @@
    - `main`: The entry point for the script, which processes command-line arguments and initiates the schema generation workflow.
 """
 
-from __future__ import annotations
-
+import yaml
 import argparse
 import copy
 import json
@@ -421,6 +421,8 @@ def load_schema_with_shorthand_properties(schemapath: Path) -> dict:
     with schemapath.open(encoding="utf8") as f:
         schema = json.load(f)
 
+    # At this point, schema is a python Dict
+    # Not sure what the below function does. It uses a lot of JSON logic
     schema = _add_shorthand_property_to_field_encodings(schema)
     return schema
 
@@ -430,6 +432,7 @@ def _add_shorthand_property_to_field_encodings(schema: dict) -> dict:
 
     encoding = SchemaInfo(schema["definitions"][encoding_def], rootschema=schema)
 
+    #print(yaml.dump(schema, default_flow_style=False))
     for _, propschema in encoding.properties.items():
         def_dict = get_field_datum_value_defs(propschema, schema)
 
@@ -538,11 +541,14 @@ def generate_vegalite_schema_wrapper(schema_file: Path) -> str:
     # TODO: generate simple tests for each wrapper
     basename = "VegaLiteSchema"
 
+    # Not sure what the below function does. It uses a lot of JSON logic
+    # I'm thinkking of it as just loading the schema
     rootschema = load_schema_with_shorthand_properties(schema_file)
 
     definitions: dict[str, SchemaGenerator] = {}
 
     ### (X) Loop through the definitions in the rootschema and create a SchemaGenerator for each one.
+    # There is a schema generator object for every single lowest level key in the JSON object
     for name in rootschema["definitions"]:
         defschema = {"$ref": "#/definitions/" + name}
         defschema_repr = {"$ref": "#/definitions/" + name}
@@ -556,7 +562,12 @@ def generate_vegalite_schema_wrapper(schema_file: Path) -> str:
             rootschemarepr=CodeSnippet(f"{basename}._rootschema"),
         )
 
+    #print(definitions)
+    #print("\n\n\n")
+
     ### (X) Create a DAG of the definitions.
+    # The DAG consists of each lowest level key corresponding to an array of each in-document $ref
+    # reference in a dictionary
     graph: dict[str, list[str]] = {}
 
     for name, schema in definitions.items():
@@ -570,6 +581,8 @@ def generate_vegalite_schema_wrapper(schema_file: Path) -> str:
             else:
                 assert isinstance(child.basename, list)
                 child.basename.append(name)
+
+    #print(graph)
 
     # Specify __all__ explicitly so that we can exclude the ones from the list
     # of exported classes which are also defined in the channels or api modules which takes
@@ -604,6 +617,7 @@ def generate_vegalite_schema_wrapper(schema_file: Path) -> str:
     ]
 
     ### (X) Append the schema classes in topological order to the contents.
+    # This sort puts the edges at the start of the reference chain first
     for name in toposort(graph):
         contents.append(definitions[name].schema_class())
 
@@ -852,6 +866,7 @@ def vegalite_main(skip_download: bool = False) -> None:
     # Generate __init__.py file
     outfile = schemapath / "__init__.py"
     print(f"Writing {outfile!s}")
+    # The content is written word for word as seen
     content = [
         "# ruff: noqa\n",
         "from .core import *\nfrom .channels import *\n",
@@ -863,6 +878,7 @@ def vegalite_main(skip_download: bool = False) -> None:
     ###The function below is a combination of writing, ruff checking and formatting
     ruff_write_lint_format_str(outfile, content)
 
+    # TypeAliasTracer is imported from utils.py and keeps track of all aliases for literals
     TypeAliasTracer.update_aliases(("Map", "Mapping[str, Any]"))
 
     ###(H) Note: Path is a type imported from pathlib. Every Path added to the files 
@@ -872,6 +888,7 @@ def vegalite_main(skip_download: bool = False) -> None:
     # Generate the core schema wrappers
     fp_core = schemapath / "core.py"
     print(f"Generating\n {schemafile!s}\n  ->{fp_core!s}")
+    # Reminder: the schemafile here is the downloaded reference schemafile
     files[fp_core] = generate_vegalite_schema_wrapper(schemafile)
 
     # Generate the channel wrappers
@@ -880,9 +897,12 @@ def vegalite_main(skip_download: bool = False) -> None:
     files[fp_channels] = generate_vegalite_channel_wrappers(schemafile, version=version)
 
     # generate the mark mixin
+    # A mixin class is one which provides functionality to other classes as a standalone class 
     markdefs = {k: f"{k}Def" for k in ["Mark", "BoxPlot", "ErrorBar", "ErrorBand"]}
     fp_mixins = schemapath / "mixins.py"
     print(f"Generating\n {schemafile!s}\n  ->{fp_mixins!s}")
+
+    # The following function dynamically creates a mixin class that can be used for 'marks' (eg. bars on bar chart, dot on scatter)
     mark_imports, mark_mixin = generate_vegalite_mark_mixin(schemafile, markdefs)
     config_imports, config_mixin = generate_vegalite_config_mixin(schemafile)
     try_except_imports = [
@@ -1003,6 +1023,7 @@ def main() -> None:
     args = parser.parse_args()
     ###(H) Copies the schemapi.py file from schemapi to ../altair/utils
     copy_schemapi_util()
+
     vegalite_main(args.skip_download)
 
     # The modules below are imported after the generation of the new schema files
