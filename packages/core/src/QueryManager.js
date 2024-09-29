@@ -44,7 +44,7 @@ export class QueryManager {
         if (result.state === QueryState.ready) {
           result.fulfill();
         } else if (result.state === QueryState.done) {
-          console.warn('Found resolved query in pending results.');
+          this._logger.warn('Found resolved query in pending results.');
         }
       }
       if (request.type === 'exec') this.pendingExec = false;
@@ -91,7 +91,7 @@ export class QueryManager {
         if (cached) {
           const data = await cached;
           this._logger.debug('Cache');
-          result.ready(type === 'exec' ? null : data);
+          result.ready(data);
           return;
         }
       }
