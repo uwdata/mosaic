@@ -3,10 +3,11 @@ class AggregateExpression:
     def __init__(self, agg: str, label: str = None):
         self.agg = agg
         self.label = label
+        
 class ParamRef:
     def __init__(self):
         pass
-    
+
 class TransformField:
     def __init__(self, value: Union["str", "ParamRef"]):
         self.value = value

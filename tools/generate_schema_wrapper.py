@@ -26,21 +26,12 @@ from tools.schemapi.utils import (
 )
 
 def generate_class(class_name: str, class_schema: Dict[str, Any]) -> str:
-    #Hard coded this for now...?
+
     imports = "from typing import Any, Union\n"
 
-
-    # Define a list of primitive types
-   # primitive_types = ['string', 'number', 'integer', 'boolean']
-
-    # Check if the schema defines a simple type (like string, number) without properties
     if 'type' in class_schema and 'properties' not in class_schema:
         return f"class {class_name}:\n    def __init__(self):\n        pass\n"
 
-
-
-
-    # Check for '$ref' and handle it
     if '$ref' in class_schema:
         ref_class_name = class_schema['$ref'].split('/')[-1]
         return f"{imports}\nclass {class_name}:\n    pass  # This is a reference to {ref_class_name}\n"
@@ -48,26 +39,21 @@ def generate_class(class_name: str, class_schema: Dict[str, Any]) -> str:
     if 'anyOf' in class_schema:
             return generate_any_of_class(class_name, class_schema['anyOf'])
 
-    # Extract properties and required fields
     properties = class_schema.get('properties', {})
     required = class_schema.get('required', [])
 
     class_def = f"{imports}class {class_name}:\n"
     class_def += "    def __init__(self"
 
-    # Generate __init__ method parameters
     for prop, prop_schema in properties.items():
         type_hint = get_type_hint(prop_schema)
         if prop in required:
-            # Required parameters should not have default values
             class_def += f", {prop}: {type_hint}"
         else:
-            # Optional parameters should have a default value of None
             class_def += f", {prop}: {type_hint} = None"
 
     class_def += "):\n"
 
-    # Generate attribute assignments in __init__
     for prop in properties:
         class_def += f"        self.{prop} = {prop}\n"
 
@@ -76,7 +62,7 @@ def generate_class(class_name: str, class_schema: Dict[str, Any]) -> str:
 
 def generate_any_of_class(class_name: str, any_of_schemas: List[Dict[str, Any]]) -> str:
     types = [get_type_hint(schema) for schema in any_of_schemas]
-    type_union = "Union[" + ", ".join(f'"{t}"' for t in types) + "]"  # Add quotes
+    type_union = "Union[" + ", ".join(f'"{t}"' for t in types) + "]"  
 
     class_def = f"class {class_name}:\n"
     class_def += f"    def __init__(self, value: {type_union}):\n"
@@ -99,7 +85,7 @@ def get_type_hint(prop_schema: Dict[str, Any]) -> str:
             types = [get_type_hint(option) for option in prop_schema['anyOf']]
             return f'Union[{", ".join(types)}]'
         elif '$ref' in prop_schema:
-            return prop_schema['$ref'].split('/')[-1]  # Get the definition name
+            return prop_schema['$ref'].split('/')[-1] 
         return 'Any'
 
 def load_schema(schema_path: Path) -> dict:
@@ -113,7 +99,6 @@ def generate_schema_wrapper(schema_file: Path, output_file: Path) -> str:
     
     definitions: Dict[str, str] = {}
 
-    # Loop through the definitions and generate classes
     for name, schema in rootschema.get("definitions", {}).items():
         class_code = generate_class(name, schema)
         definitions[name] = class_code
@@ -123,8 +108,7 @@ def generate_schema_wrapper(schema_file: Path, output_file: Path) -> str:
     with open(output_file, 'w') as f:
         f.write(generated_classes)
 
-# Main execution
 if __name__ == "__main__":
-    schema_file = "tools/testingSchema.json"  # Update this path as needed
+    schema_file = "tools/testingSchema.json" 
     output_file = Path("tools/generated_classes.py")
     generate_schema_wrapper(Path(schema_file), output_file)
