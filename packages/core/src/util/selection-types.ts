@@ -1,4 +1,5 @@
 import { SQLExpression } from '@uwdata/mosaic-sql';
+// @ts-expect-error Could not find a declaration file for module '@uwdata/mosaic-core'.
 import { MosaicClient } from '../MosaicClient.js';
 
 /**
