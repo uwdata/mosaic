@@ -16,13 +16,15 @@
   "module": "src/index.js",
   "jsdelivr": "dist/mosaic-core.min.js",
   "unpkg": "dist/mosaic-core.min.js",
+  "types": "dist/types/index.d.ts",
   "repository": {
     "type": "git",
     "url": "https://github.com/uwdata/mosaic.git"
   },
   "scripts": {
     "prebuild": "rimraf dist && mkdir dist",
-    "build": "node ../../esbuild.js mosaic-core",
+    "build": "npm run types && node ../../esbuild.js mosaic-core",
+    "types": "tsc",
     "lint": "eslint src test",
     "test": "vitest run --dangerouslyIgnoreUnhandledErrors",
     "prepublishOnly": "npm run test && npm run lint && npm run build"
