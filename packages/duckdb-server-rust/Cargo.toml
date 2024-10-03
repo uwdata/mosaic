@@ -15,7 +15,7 @@ exclude = [
 [dependencies]
 anyhow = "1.0"
 arrow = "52.1"
-async-trait = "0.1.80"
+async-trait = "0.1.83"
 axum = { version = "0.7", features = ["http1", "http2", "ws", "json", "tokio", "tracing", "macros"] }
 axum-server = { version = "0.7", features = ["tls-rustls"] }
 axum-server-dual-protocol = "0.7"
@@ -29,7 +29,7 @@ serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 sha2 = "0.10"
 tokio = { version = "1", features = ["full"] }
-tower-http = { version = "0.5.0", features = ["cors", "compression-full", "trace"] }
+tower-http = { version = "0.6.1", features = ["cors", "compression-full", "trace"] }
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 
