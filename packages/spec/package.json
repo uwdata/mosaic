@@ -25,7 +25,7 @@
     "prebuild": "rimraf dist && mkdir dist",
     "build": "npm run types && node ../../esbuild.js mosaic-spec",
     "lint": "eslint src test",
-    "types": "tsc -p tsconfig.json && npm run schema",
+    "types": "tsc && npm run schema",
     "schema": "ts-json-schema-generator -f tsconfig.json -p src/spec/Spec.ts -t Spec --no-type-check --no-ref-encode --functions hide > dist/mosaic-schema.json",
     "pretest": "npm run prebuild && npm run types",
     "test": "vitest run && tsc -p jsconfig.json",
