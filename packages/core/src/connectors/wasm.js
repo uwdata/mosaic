@@ -61,7 +61,7 @@ export function wasmConnector(options = {}) {
     /**
      * Query the DuckDB-WASM instance.
      * @param {object} query
-     * @param {'exec' | 'arrow' | 'json' | 'create-bundle' | 'load-bundle'} [query.type] The query type.
+     * @param {'exec' | 'arrow' | 'json'} [query.type] The query type.
      * @param {string} query.sql A SQL query string.
      * @returns the query result
      */
