@@ -19,10 +19,11 @@ export function dataServer(db, {
   const app = createHTTPServer(handleQuery, rest);
   if (socket) createSocketServer(app, handleQuery);
 
-  app.listen(port);
+  const server = app.listen(port);
   console.log(`Data server running on port ${port}`);
   if (rest) console.log(`  http://localhost:${port}/`);
   if (socket) console.log(`  ws://localhost:${port}/`);
+  return server;
 }
 
 function createHTTPServer(handleQuery, rest) {
