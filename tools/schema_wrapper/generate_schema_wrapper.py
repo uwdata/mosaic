@@ -1,6 +1,11 @@
+"""
+Run: generate-schema-wrapper path/to/your/schema.json
+e.g. generate-schema-wrapper ../reference/testingSchema.json
+"""
+
 import json
 from typing import Any, Dict
-import utils
+from . import utils
 
 def generate_schema_wrapper(schema_file: str) -> str:
     with open(schema_file, 'r') as f:
@@ -57,7 +62,15 @@ def get_type_hint(prop_schema: Dict[str, Any]) -> str:
         return prop_schema['$ref'].split('/')[-1]
     return 'Any'
 
-if __name__ == "__main__":
-    schema_file = "reference/testingSchema.json"
-    generated_code = generate_schema_wrapper(schema_file)
+def main():
+    import argparse
+    
+    parser = argparse.ArgumentParser(description="Generate schema wrapper classes")
+    parser.add_argument("schema_file", help="Path to the JSON schema file")
+    args = parser.parse_args()
+    
+    generated_code = generate_schema_wrapper(args.schema_file)
     print(generated_code)
+
+if __name__ == "__main__":
+    main()
