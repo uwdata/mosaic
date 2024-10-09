@@ -17,6 +17,62 @@
       },
       "required": ["agg"],
       "type": "object"
+    },
+    "AggregateTransform": {
+      "anyOf": [
+        {
+          "$ref": "#/definitions/Argmax"
+        },
+        {
+          "$ref": "#/definitions/Argmin"
+        },
+        {
+          "$ref": "#/definitions/Avg"
+        },
+        {
+          "$ref": "#/definitions/Count"
+        },
+        {
+          "$ref": "#/definitions/Max"
+        },
+        {
+          "$ref": "#/definitions/Min"
+        },
+        {
+          "$ref": "#/definitions/First"
+        },
+        {
+          "$ref": "#/definitions/Last"
+        },
+        {
+          "$ref": "#/definitions/Median"
+        },
+        {
+          "$ref": "#/definitions/Mode"
+        },
+        {
+          "$ref": "#/definitions/Product"
+        },
+        {
+          "$ref": "#/definitions/Quantile"
+        },
+        {
+          "$ref": "#/definitions/Stddev"
+        },
+        {
+          "$ref": "#/definitions/StddevPop"
+        },
+        {
+          "$ref": "#/definitions/Sum"
+        },
+        {
+          "$ref": "#/definitions/Variance"
+        },
+        {
+          "$ref": "#/definitions/VarPop"
+        }
+      ],
+      "description": "An aggregate transform that combines multiple values."
     }
   }
 }
