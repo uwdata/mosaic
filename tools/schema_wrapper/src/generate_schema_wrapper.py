@@ -60,9 +60,16 @@ def generate_class(class_name: str, class_schema: Dict[str, Any]) -> str:
 
     # Generate __init__ method parameters
     optional_params = []
+
+    # Ensuring all the property names are valid Python identifiers
+    for prop, prop_schema in properties.items():
+        valid_prop = get_valid_identifier(prop)
+        if valid_prop != prop:
+            properties.pop(prop)
+            properties[valid_prop] = prop_schema
+
     for prop, prop_schema in properties.items():
         type_hint = get_type_hint(prop_schema)
-        prop = get_valid_identifier(prop)
         if prop in required:
             # Required parameters should not have default values
             class_def += f", {prop}: {type_hint}"
