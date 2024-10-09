@@ -62,7 +62,8 @@ def generate_class(class_name: str, class_schema: Dict[str, Any]) -> str:
     optional_params = []
 
     # Ensuring all the property names are valid Python identifiers
-    for prop, prop_schema in properties.items():
+    property_items = list(properties.items())
+    for prop, prop_schema in property_items:
         valid_prop = get_valid_identifier(prop)
         if valid_prop != prop:
             properties.pop(prop)
