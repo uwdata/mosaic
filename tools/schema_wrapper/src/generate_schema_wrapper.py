@@ -11,17 +11,12 @@ from itertools import chain
 from pathlib import Path 
 from urllib import request
 import graphlib
+from utils import get_valid_identifier, get_key_by_value, get_dependencies
 
 sys.path.insert(0, str(Path.cwd()))
 
 SCHEMA_VERSION: Final = "v0.10.0"
 SCHEMA_URL_TEMPLATE: Final = "https://raw.githubusercontent.com/uwdata/mosaic/refs/heads/main/docs/public/schema/{version}.json"
-
-def get_key_by_value(dictionary, target_value):
-    for key, value in dictionary.items():
-        if value == target_value:
-            return key
-    return None
 
 def schema_url(version: str = SCHEMA_VERSION) -> str:
     return SCHEMA_URL_TEMPLATE.format(version=version)
@@ -37,27 +32,11 @@ def download_schemafile(
         raise ValueError(msg)
     return schemapath
 
-def get_dependencies(data) -> List[str]:
-    dependencies = []
-
-    if isinstance(data, dict):
-        if "$ref" in data:
-            refVal = data["$ref"]
-            dependencies.append(refVal.split('/')[-1])
-        
-        for key, value in data.items():
-            if key != "anyOf":
-                dependencies = dependencies + get_dependencies(value)
-    elif isinstance(data, list):
-        for item in data:
-            dependencies = dependencies + get_dependencies(item)
-
-    return dependencies
-
 def generate_class(class_name: str, class_schema: Dict[str, Any]) -> str:
 
     # Define a list of primitive types
     # primitive_types = ['string', 'number', 'integer', 'boolean']
+    class_name = get_valid_identifier(class_name)
 
     # Check if the schema defines a simple type (like string, number) without properties
     if 'type' in class_schema and 'properties' not in class_schema: #DISCUSS: Change this to not isinstance(class_schema, Iterable)
@@ -81,6 +60,15 @@ def generate_class(class_name: str, class_schema: Dict[str, Any]) -> str:
 
     # Generate __init__ method parameters
     optional_params = []
+
+    # Ensuring all the property names are valid Python identifiers
+    property_items = list(properties.items())
+    for prop, prop_schema in property_items:
+        valid_prop = get_valid_identifier(prop)
+        if valid_prop != prop:
+            properties.pop(prop)
+            properties[valid_prop] = prop_schema
+
     for prop, prop_schema in properties.items():
         type_hint = get_type_hint(prop_schema)
         if prop in required:
