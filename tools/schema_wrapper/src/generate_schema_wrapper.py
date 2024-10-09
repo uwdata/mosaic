@@ -132,6 +132,9 @@ def generate_schema_wrapper(schema_file: Path, output_file: Path) -> str:
     rootschema_definitions = rootschema.get("definitions", {})
     ts = graphlib.TopologicalSorter()
     
+    # if not output_file.parent.exists():
+    #     output_file.parent.mkdir(parents=True, exist_ok=True)
+
     for name, schema in rootschema_definitions.items():
         #print(name)
         dependencies = get_dependencies(schema)
@@ -175,7 +178,7 @@ def main():
         download = args.download
     )
 
-    output_file = "generated_classes.py"
+    output_file = Path("tools/schema_wrapper/src/generated_classes.py")
     generate_schema_wrapper(schemapath, output_file)
 
 # Main execution
