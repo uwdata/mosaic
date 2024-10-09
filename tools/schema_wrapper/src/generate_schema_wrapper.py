@@ -36,6 +36,7 @@ def generate_class(class_name: str, class_schema: Dict[str, Any]) -> str:
 
     # Define a list of primitive types
     # primitive_types = ['string', 'number', 'integer', 'boolean']
+    class_name = get_valid_identifier(class_name)
 
     # Check if the schema defines a simple type (like string, number) without properties
     if 'type' in class_schema and 'properties' not in class_schema: #DISCUSS: Change this to not isinstance(class_schema, Iterable)
@@ -61,6 +62,7 @@ def generate_class(class_name: str, class_schema: Dict[str, Any]) -> str:
     optional_params = []
     for prop, prop_schema in properties.items():
         type_hint = get_type_hint(prop_schema)
+        prop = get_valid_identifier(prop)
         if prop in required:
             # Required parameters should not have default values
             class_def += f", {prop}: {type_hint}"
