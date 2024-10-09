@@ -101,3 +101,25 @@ def get_valid_identifier(
     if keyword.iskeyword(valid):
         valid += "_"
     return valid
+
+def get_key_by_value(dictionary, target_value):
+    for key, value in dictionary.items():
+        if value == target_value:
+            return key
+
+def get_dependencies(data) -> List[str]:
+    dependencies = []
+
+    if isinstance(data, dict):
+        if "$ref" in data:
+            refVal = data["$ref"]
+            dependencies.append(refVal.split('/')[-1])
+        
+        for key, value in data.items():
+            if key != "anyOf":
+                dependencies = dependencies + get_dependencies(value)
+    elif isinstance(data, list):
+        for item in data:
+            dependencies = dependencies + get_dependencies(item)
+
+    return dependencies

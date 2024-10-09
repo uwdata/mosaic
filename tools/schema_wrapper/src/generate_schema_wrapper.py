@@ -11,17 +11,12 @@ from itertools import chain
 from pathlib import Path 
 from urllib import request
 import graphlib
+from utils import get_valid_identifier, get_key_by_value, get_dependencies
 
 sys.path.insert(0, str(Path.cwd()))
 
 SCHEMA_VERSION: Final = "v0.10.0"
 SCHEMA_URL_TEMPLATE: Final = "https://raw.githubusercontent.com/uwdata/mosaic/refs/heads/main/docs/public/schema/{version}.json"
-
-def get_key_by_value(dictionary, target_value):
-    for key, value in dictionary.items():
-        if value == target_value:
-            return key
-    return None
 
 def schema_url(version: str = SCHEMA_VERSION) -> str:
     return SCHEMA_URL_TEMPLATE.format(version=version)
@@ -36,23 +31,6 @@ def download_schemafile(
         msg = f"Cannot skip download: {schemapath!s} does not exist"
         raise ValueError(msg)
     return schemapath
-
-def get_dependencies(data) -> List[str]:
-    dependencies = []
-
-    if isinstance(data, dict):
-        if "$ref" in data:
-            refVal = data["$ref"]
-            dependencies.append(refVal.split('/')[-1])
-        
-        for key, value in data.items():
-            if key != "anyOf":
-                dependencies = dependencies + get_dependencies(value)
-    elif isinstance(data, list):
-        for item in data:
-            dependencies = dependencies + get_dependencies(item)
-
-    return dependencies
 
 def generate_class(class_name: str, class_schema: Dict[str, Any]) -> str:
 
