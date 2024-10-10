@@ -1,6 +1,6 @@
 export function create(name, query, {
   replace = false,
-  temp = true,
+  temp = false,
   view = false
 } = {}) {
   return 'CREATE'
