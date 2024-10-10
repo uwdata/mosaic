@@ -2,7 +2,7 @@ import * as vg from "@uwdata/vgplot";
 
 await vg.coordinator().exec([
   vg.loadParquet("travelers", "data/travelers.parquet"),
-  `CREATE TEMP TABLE IF NOT EXISTS endpoint AS SELECT * FROM travelers ORDER BY date DESC LIMIT 1`
+  `CREATE TABLE IF NOT EXISTS endpoint AS SELECT * FROM travelers ORDER BY date DESC LIMIT 1`
 ]);
 
 export default vg.plot(

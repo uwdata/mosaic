@@ -4,7 +4,7 @@ await vg.coordinator().exec([
   vg.loadExtension("spatial"),
   vg.loadSpatial("counties", "data/us-counties-10m.json", {layer: "counties"}),
   vg.loadParquet("rates", "data/us-county-unemployment.parquet"),
-  `CREATE TEMP TABLE IF NOT EXISTS combined AS SELECT a.geom AS geom, b.rate AS rate FROM counties AS a, rates AS b WHERE a.id = b.id`
+  `CREATE TABLE IF NOT EXISTS combined AS SELECT a.geom AS geom, b.rate AS rate FROM counties AS a, rates AS b WHERE a.id = b.id`
 ]);
 
 export default vg.vconcat(
