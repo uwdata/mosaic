@@ -37,7 +37,7 @@ Finally, clients may expose a `filterBy` Selection property. The predicates prov
 The _coordinator_ is responsible for managing client data needs. Clients are registered via the coordinator `connect(client)` method, and similarly removed using `disconnect()`. Upon registration, the event lifecycle begins.
 In addition to the `fields` and `query` calls described above, the coordinator checks if a client exposes a `filterBy` property, and if so, adds the client to a _filter group_: a set of clients that share the same `filterBy` selection.
 Upon changes to this selection (e.g., due to interactions such as brushing or zooming), the coordinator collects updated queries for all corresponding clients, queries the data source, and updates clients in turn.
-The Coordinator additionally performs optimizations including caching and data cube indexing.
+The Coordinator additionally performs optimizations including caching and pre-aggregation.
 
 [Coordinator API Reference](/api/core/coordinator)
 

@@ -92,7 +92,7 @@
           <input id="consolidate" type="checkbox" checked />
         </div>
         <div>
-          Data Cube Indexes:
+          Indexes:
           <input id="index" type="checkbox" checked />
         </div>
         <div>
@@ -125,14 +125,14 @@
   consolidateToggle.addEventListener('input', setConsolidate);
   indexToggle.addEventListener('input', setIndex);
   indexState.addEventListener('click', () => {
-    const { indexes } = vg.coordinator().dataCubeIndexer || {};
+    const { indexes } = vg.coordinator().indexer || {};
     if (indexes) {
       console.warn(
-        'Data Cube Index Entries',
+        'Index Entries',
         Array.from(indexes.values())
       );
     } else {
-      console.warn('No Active Data Cube Index');
+      console.warn('No Active Index');
     }
   });
 
@@ -160,7 +160,7 @@
   }
 
   function setIndex() {
-    vg.coordinator().dataCubeIndexer.enabled = indexToggle.checked;
+    vg.coordinator().indexer.enabled = indexToggle.checked;
   }
 
   function reload() {

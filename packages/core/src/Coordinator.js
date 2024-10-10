@@ -1,5 +1,5 @@
 import { socketConnector } from './connectors/socket.js';
-import { DataCubeIndexer } from './DataCubeIndexer.js';
+import { Indexer } from './Indexer.js';
 import { MosaicClient } from './MosaicClient.js';
 import { QueryManager, Priority } from './QueryManager.js';
 import { queryFieldInfo } from './util/field-info.js';
@@ -33,15 +33,14 @@ export function coordinator(instance) {
 /**
  * A Mosaic Coordinator manages all database communication for clients and
  * handles selection updates. The Coordinator also performs optimizations
- * including query caching, consolidation, and data cube indexing.
+ * including query caching, consolidation, and indexing.
  * @param {*} [db] Database connector. Defaults to a web socket connection.
  * @param {object} [options] Coordinator options.
  * @param {*} [options.logger=console] The logger to use, defaults to `console`.
  * @param {*} [options.manager] The query manager to use.
  * @param {boolean} [options.cache=true] Boolean flag to enable/disable query caching.
  * @param {boolean} [options.consolidate=true] Boolean flag to enable/disable query consolidation.
- * @param {import('./DataCubeIndexer.js').DataCubeIndexerOptions} [options.indexes]
- *  Data cube indexer options.
+ * @param {import('./Indexer.js').IndexerOptions} [options.indexes] Indexer options.
  */
 export class Coordinator {
   constructor(db = socketConnector(), {
@@ -58,7 +57,7 @@ export class Coordinator {
     this.databaseConnector(db);
     this.logger(logger);
     this.clear();
-    this.dataCubeIndexer = new DataCubeIndexer(this, indexes);
+    this.indexer = new Indexer(this, indexes);
   }
 
   /**
@@ -208,12 +207,12 @@ export class Coordinator {
   /**
    * Issue a query request for a client. If the query is null or undefined,
    * the client is simply updated. Otherwise `updateClient` is called. As a
-   * side effect, this method clears the current data cube indexer state.
+   * side effect, this method clears the current indexer state.
    * @param {MosaicClient} client The client to update.
    * @param {QueryType | null} [query] The query to issue.
    */
   requestQuery(client, query) {
-    this.dataCubeIndexer.clear();
+    this.indexer.clear();
     return query
       ? this.updateClient(client, query)
       : Promise.resolve(client.update());
@@ -307,10 +306,10 @@ function connectSelection(mc, selection, client) {
  *  selection clause representative of the activation.
  */
 function activateSelection(mc, selection, clause) {
-  const { dataCubeIndexer, filterGroups } = mc;
+  const { indexer, filterGroups } = mc;
   const { clients } = filterGroups.get(selection);
   for (const client of clients) {
-    dataCubeIndexer.index(client, selection, clause);
+    indexer.index(client, selection, clause);
   }
 }
 
@@ -322,11 +321,11 @@ function activateSelection(mc, selection, clause) {
  * @returns {Promise} A Promise that resolves when the update completes.
  */
 function updateSelection(mc, selection) {
-  const { dataCubeIndexer, filterGroups } = mc;
+  const { indexer, filterGroups } = mc;
   const { clients } = filterGroups.get(selection);
   const { active } = selection;
   return Promise.allSettled(Array.from(clients, client => {
-    const info = dataCubeIndexer.index(client, selection, active);
+    const info = indexer.index(client, selection, active);
     const filter = info ? null : selection.predicate(client);
 
     // skip due to cross-filtering

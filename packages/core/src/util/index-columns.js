@@ -2,11 +2,11 @@ import { Query, agg, sql } from '@uwdata/mosaic-sql';
 import { MosaicClient } from '../MosaicClient.js';
 
 /**
- * Determine data cube index columns for a given Mosaic client.
+ * Determine index columns for a given Mosaic client.
  * @param {MosaicClient} client The Mosaic client.
  * @returns An object with necessary column data to generate data
- *  cube index columns, or null if the client is not indexable or
- *  the client query contains an invalid or unsupported expression.
+ *  index columns, or null if the client is not indexable or the client query
+ * contains an invalid or unsupported expression.
  */
 export function indexColumns(client) {
   if (!client.filterIndexable) return null;
@@ -146,7 +146,7 @@ export function indexColumns(client) {
 
 /**
  * Generate an output column name for use as an auxiliary column
- * (e.g., for sufficient statistics) within a data cube index.
+ * (e.g., for sufficient statistics) within an index.
  * @param {string} type The operation type.
  * @param  {...any} args The input column arguments.
  * @returns {string} A sanitized auxiliary column name.
@@ -203,7 +203,7 @@ function getBase(query, get) {
  * As a side effect, this method adds a column to the input *aux* object
  * to track the count of non-null values per-partition.
  * @param {object} aux An object for auxiliary columns (such as
- *  sufficient statistics) to include in the data cube aggregation.
+ *  sufficient statistics) to include in the pre-aggregation.
  * @param {any} arg Source data table column. This value may be a string,
  *  column reference, SQL expression, or other string-coercible value.
  * @returns An aggregate expression for calculating counts over
@@ -220,7 +220,7 @@ function countExpr(aux, arg) {
  * As a side effect, this method adds a column to the input *aux* object
  * to track the count of non-null values per-partition.
  * @param {object} aux An object for auxiliary columns (such as
- *  sufficient statistics) to include in the data cube aggregation.
+ *  sufficient statistics) to include in the pre-aggregation.
  * @param {string} as The output column for the original aggregate.
  * @param {any} arg Source data table column. This value may be a string,
  *  column reference, SQL expression, or other string-coercible value.
@@ -237,7 +237,7 @@ function avgExpr(aux, as, arg) {
  * As a side effect, this method adds a column to the input *aux* object
  * to track a maximum value per-partition.
  * @param {object} aux An object for auxiliary columns (such as
- *  sufficient statistics) to include in the data cube aggregation.
+ *  sufficient statistics) to include in the pre-aggregation.
  * @param {string} as The output column for the original aggregate.
  * @param {any[]} args Source data table columns. The entries may be strings,
  *  column references, SQL expressions, or other string-coercible values.
@@ -255,7 +255,7 @@ function argmaxExpr(aux, as, [, y]) {
  * As a side effect, this method adds a column to the input *aux* object
  * to track a minimum value per-partition.
  * @param {object} aux An object for auxiliary columns (such as
- *  sufficient statistics) to include in the data cube aggregation.
+ *  sufficient statistics) to include in the pre-aggregation.
  * @param {string} as The output column for the original aggregate.
  * @param {any[]} args Source data table columns. The entries may be strings,
  *  column references, SQL expressions, or other string-coercible values.
@@ -277,7 +277,7 @@ function argminExpr(aux, as, [, y]) {
  * As a side effect, this method adds columns for these statistics to the
  * input *aux* object.
  * @param {object} aux An object for auxiliary columns (such as
- *  sufficient statistics) to include in the data cube aggregation.
+ *  sufficient statistics) to include in the pre-aggregation.
  * @param {*} x The source data table column. This may be a string,
  *  column reference, SQL expression, or other string-coercible value.
  * @param {(field: any) => string} avg Global average query generator.
@@ -306,7 +306,7 @@ function varianceExpr(aux, x, avg, correction = true) {
  * (of mean-centered values) for x and y. As a side effect, this method
  * adds columns for these statistics to the input *aux* object.
  * @param {object} aux An object for auxiliary columns (such as
- *  sufficient statistics) to include in the data cube aggregation.
+ *  sufficient statistics) to include in the pre-aggregation.
  * @param {any[]} args Source data table columns. The entries may be strings,
  *  column references, SQL expressions, or other string-coercible values.
  * @param {(field: any) => string} avg Global average query generator.
@@ -337,7 +337,7 @@ function covarianceExpr(aux, args, avg, correction = true) {
  * As a side effect, this method adds columns for these statistics to the
  * input *aux* object.
  * @param {object} aux An object for auxiliary columns (such as
- *  sufficient statistics) to include in the data cube aggregation.
+ *  sufficient statistics) to include in the pre-aggregation.
  * @param {any[]} args Source data table columns. The entries may be strings,
  *  column references, SQL expressions, or other string-coercible values.
  * @param {(field: any) => string} avg Global average query generator.
@@ -361,7 +361,7 @@ function corrExpr(aux, args, avg) {
  * effect, this method adds columns to the input *aux* object to the
  * partition-level count of non-null pairs.
  * @param {object} aux An object for auxiliary columns (such as
- *  sufficient statistics) to include in the data cube aggregation.
+ *  sufficient statistics) to include in the pre-aggregation.
  * @param {any[]} args Source data table columns. The entries may be strings,
  *  column references, SQL expressions, or other string-coercible values.
  * @returns An aggregate expression for calculating regression pair counts
@@ -380,7 +380,7 @@ function regrCountExpr(aux, [y, x]) {
  * floating point error. As a side effect, this method adds a column for
  * partition-level sums to the input *aux* object.
  * @param {object} aux An object for auxiliary columns (such as
- *  sufficient statistics) to include in the data cube aggregation.
+ *  sufficient statistics) to include in the pre-aggregation.
  * @param {number} i An index indicating which argument column to sum.
  * @param {any[]} args Source data table columns. The entries may be strings,
  *  column references, SQL expressions, or other string-coercible values.
@@ -402,7 +402,7 @@ function regrSumExpr(aux, i, args, avg) {
  * reduce floating point error. As a side effect, this method adds a column
  * for partition-level sums to the input *aux* object.
  * @param {object} aux An object for auxiliary columns (such as
- *  sufficient statistics) to include in the data cube aggregation.
+ *  sufficient statistics) to include in the pre-aggregation.
  * @param {number} i An index indicating which argument column to sum.
  * @param {any[]} args Source data table columns. The entries may be strings,
  *  column references, SQL expressions, or other string-coercible values.
@@ -424,7 +424,7 @@ function regrSumSqExpr(aux, i, args, avg) {
  * reduce floating point error. As a side effect, this method adds a column
  * for partition-level sums to the input *aux* object.
  * @param {object} aux An object for auxiliary columns (such as
- *  sufficient statistics) to include in the data cube aggregation.
+ *  sufficient statistics) to include in the pre-aggregation.
  * @param {any[]} args Source data table columns. The entries may be strings,
  *  column references, SQL expressions, or other string-coercible values.
  * @param {(field: any) => string} avg Global average query generator.
@@ -443,7 +443,7 @@ function regrSumXYExpr(aux, args, avg) {
  * effect, this method adds columns to the input *aux* object to track both
  * the count of non-null pairs and partition-level averages.
  * @param {object} aux An object for auxiliary columns (such as
- *  sufficient statistics) to include in the data cube aggregation.
+ *  sufficient statistics) to include in the pre-aggregation.
  * @param {any[]} args Source data table columns. The entries may be strings,
  *  column references, SQL expressions, or other string-coercible values.
  * @returns An aggregate expression over pre-aggregated data partitions.
@@ -462,7 +462,7 @@ function regrAvgXExpr(aux, args) {
  * effect, this method adds columns to the input *aux* object to track both
  * the count of non-null pairs and partition-level averages.
  * @param {object} aux An object for auxiliary columns (such as
- *  sufficient statistics) to include in the data cube aggregation.
+ *  sufficient statistics) to include in the pre-aggregation.
  * @param {any[]} args Source data table columns. The entries may be strings,
  *  column references, SQL expressions, or other string-coercible values.
  * @returns An aggregate expression over pre-aggregated data partitions.
@@ -482,7 +482,7 @@ function regrAvgYExpr(aux, args) {
  * reduce floating point error. As a side effect, this method adds columns
  * for partition-level count and sums to the input *aux* object.
  * @param {object} aux An object for auxiliary columns (such as
- *  sufficient statistics) to include in the data cube aggregation.
+ *  sufficient statistics) to include in the pre-aggregation.
  * @param {number} i The index of the argument to compute the variance for.
  * @param {any[]} args Source data table columns. The entries may be strings,
  *  column references, SQL expressions, or other string-coercible values.
@@ -503,7 +503,7 @@ function regrVarExpr(aux, i, args, avg) {
  * side effect, this method adds columns for sufficient statistics to the
  * input *aux* object.
  * @param {object} aux An object for auxiliary columns (such as
- *  sufficient statistics) to include in the data cube aggregation.
+ *  sufficient statistics) to include in the pre-aggregation.
  * @param {any[]} args Source data table columns. The entries may be strings,
  *  column references, SQL expressions, or other string-coercible values.
  * @param {(field: any) => string} avg Global average query generator.
@@ -522,7 +522,7 @@ function regrSlopeExpr(aux, args, avg) {
  * side effect, this method adds columns for sufficient statistics to the
  * input *aux* object.
  * @param {object} aux An object for auxiliary columns (such as
- *  sufficient statistics) to include in the data cube aggregation.
+ *  sufficient statistics) to include in the pre-aggregation.
  * @param {any[]} args Source data table columns. The entries may be strings,
  *  column references, SQL expressions, or other string-coercible values.
  * @param {(field: any) => string} avg Global average query generator.
