@@ -1,4 +1,4 @@
-import { create } from './create.js';
+import { createTable } from './create.js';
 import { sqlFrom } from './sql-from.js';
 
 export function load(method, tableName, fileName, options = {}, defaults = {}) {
@@ -7,7 +7,7 @@ export function load(method, tableName, fileName, options = {}, defaults = {}) {
   const read = `${method}('${fileName}'${params ? ', ' + params : ''})`;
   const filter = where ? ` WHERE ${where}` : '';
   const query = `SELECT ${select.join(', ')} FROM ${read}${filter}`;
-  return create(tableName, query, { view, temp, replace });
+  return createTable(tableName, query, { view, temp, replace });
 }
 
 export function loadCSV(tableName, fileName, options) {
@@ -51,7 +51,7 @@ export function loadObjects(tableName, data, options = {}) {
   const query = select.length === 1 && select[0] === '*'
     ? values
     : `SELECT ${select} FROM ${values}`;
-  return create(tableName, query, opt);
+  return createTable(tableName, query, opt);
 }
 
 function parameters(options) {

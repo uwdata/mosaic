@@ -1,7 +1,6 @@
-import { createTable } from './create-table.js';
+import { loadParquet as loadParquetSQL } from "@uwdata/mosaic-sql";
 
 export function loadParquet(db, tableName, fileName, options = {}) {
-  const { select = ['*'], ...tableOptions } = options;
-  const query = `SELECT ${select.join(', ')} FROM read_parquet('${fileName}')`;
-  return createTable(db, tableName, query, tableOptions);
+  const query = loadParquetSQL(tableName, fileName, options)
+  return db.exec(query)
 }

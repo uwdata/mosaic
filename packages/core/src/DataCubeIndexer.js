@@ -1,5 +1,5 @@
 import {
-  Query, and, asColumn, create, isBetween, scaleTransform, sql
+  Query, and, asColumn, createTable, isBetween, scaleTransform, sql
 } from '@uwdata/mosaic-sql';
 import { indexColumns } from './util/index-columns.js';
 import { fnv_hash } from './util/hash.js';
@@ -185,7 +185,7 @@ export class DataCubeIndexer {
       info = dataCubeInfo(client.query(filter), active, indexCols, schema);
       info.result = mc.exec([
         `CREATE SCHEMA IF NOT EXISTS ${schema}`,
-        create(info.table, info.create, { temp: false })
+        createTable(info.table, info.create, { temp: false })
       ]);
       info.result.catch(e => mc.logger().error(e));
     }
