@@ -6,7 +6,7 @@ import { loadJSON } from '../src/index.js';
 describe('DuckDB', () => {
   beforeAll(async () => {
     const file = path.resolve(__dirname, '../../../data/penguins.csv');
-    await db.exec(`CREATE TEMP TABLE penguins AS SELECT * FROM '${file}'`);
+    await db.exec(`CREATE TABLE penguins AS SELECT * FROM '${file}'`);
   });
 
   afterAll(async () => {
