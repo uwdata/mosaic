@@ -23,7 +23,7 @@ export interface Interval2DOptions {
   yfield?: string;
   /**
    * The size of an interative pixel (default `1`). Larger pixel sizes reduce
-   * the brush resolution, which can reduce the size of data cube indexes.
+   * the brush resolution, which can reduce the size of indexes.
    */
   pixelSize?: number;
   /**
