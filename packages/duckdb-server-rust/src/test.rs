@@ -175,7 +175,7 @@ async fn create_and_load_bundle() -> Result<()> {
     let cache = &Mutex::new(lru::LruCache::new(10.try_into()?));
 
     let queries = vec![
-        Query {sql: r#"CREATE TEMP TABLE IF NOT EXISTS flights AS SELECT * FROM read_parquet("data/flights-200k.parquet")"#.to_string(), alias: None},
+        Query {sql: r#"CREATE TABLE IF NOT EXISTS flights AS SELECT * FROM read_parquet("data/flights-200k.parquet")"#.to_string(), alias: None},
         Query {sql: r#"SELECT count(*) FROM "flights""#.to_string(), alias: None},
     ];
 

@@ -27,7 +27,7 @@ The supported _options_ are:
 
 ``` js
 // Loads file.csv into the table "table1" with default options:
-// CREATE TEMP TABLE IF NOT EXISTS table1 AS
+// CREATE TABLE IF NOT EXISTS table1 AS
 //   SELECT *
 //   FROM read_csv('file.csv', auto_detect=true, sample_size=-1)
 loadCSV("table1", "file.csv");
@@ -51,7 +51,7 @@ The supported _options_ are:
 
 ``` js
 // Loads file.json into the table "table1" with default options:
-// CREATE TEMP TABLE IF NOT EXISTS table1 AS
+// CREATE TABLE IF NOT EXISTS table1 AS
 //   SELECT *
 //   FROM read_json('file.json', auto_detect=true, json_format='auto')
 loadJSON("table1", "file.json");
@@ -75,7 +75,7 @@ The supported _options_ are:
 
 ```js
 // Load named columns from a parquet file, filtered upon load:
-// CREATE TEMP TABLE IF NOT EXISTS table1 AS
+// CREATE TABLE IF NOT EXISTS table1 AS
 //   SELECT foo, bar, value
 //   FROM read_parquet('file.parquet')
 //   WHERE value > 1
@@ -99,7 +99,7 @@ The supported _options_ are:
 - _replace_: A boolean flag (default `false`) indicating that the file contents should replace any existing table or view with the same name. The default behavior is to do nothing if a name conflict exists.
 
 ``` js
-// CREATE TEMP TABLE IF NOT EXISTS table3 AS
+// CREATE TABLE IF NOT EXISTS table3 AS
 //   (SELECT 1 AS "foo", 2 AS "bar") UNION ALL
 //   (SELECT 3 AS "foo", 4 AS "bar") UNION ALL ...
 const q = loadObjects("table3", [
@@ -128,7 +128,7 @@ The supported _options_ are:
 
 ``` js
 // Loads us-states.json into the table "table1":
-// CREATE TEMP TABLE IF NOT EXISTS table1 AS
+// CREATE TABLE IF NOT EXISTS table1 AS
 //   SELECT *
 //   FROM st_read('us-states.json', layer="states")
 loadSpatial("table1", "us-states.json", "states");

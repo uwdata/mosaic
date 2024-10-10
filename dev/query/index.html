@@ -59,7 +59,7 @@
     } else {
       await coordinator().exec(
         `DROP TABLE IF EXISTS ${tableName};
-        CREATE TEMP TABLE ${tableName} AS ${input.value}`
+        CREATE TABLE ${tableName} AS ${input.value}`
       );
       coordinator.clear({ catalog: true });
       output.replaceChildren(vg.table({ from: tableName, height: 500 }));

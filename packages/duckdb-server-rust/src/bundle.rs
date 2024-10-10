@@ -117,11 +117,11 @@ pub async fn load(
     }
     drop(cache_lock);
 
-    // Load precomputed temp tables into the database
+    // Load precomputed tables into the database
     for table in &manifest.tables {
         let file = bundle_dir.join(format!("{table}.parquet"));
         db.execute(&format!(
-            "CREATE TEMP TABLE IF NOT EXISTS {} AS SELECT * FROM '{}'",
+            "CREATE TABLE IF NOT EXISTS {} AS SELECT * FROM '{}'",
             table,
             file.display()
         ))
