@@ -46,7 +46,8 @@ def generate_class(class_name: str, class_schema: Dict[str, Any]) -> str:
     # Check for '$ref' and handle it
     if '$ref' in class_schema:
         ref_class_name = class_schema['$ref'].split('/')[-1]
-        return f"\nclass {class_name}:\n    pass  # This is a reference to {ref_class_name}\n"
+        return f"\nclass {class_name}:\n    pass  # This is a reference to '{ref_class_name}'\n"
+
 
     if 'anyOf' in class_schema:
         return generate_any_of_class(class_name, class_schema['anyOf'])
@@ -94,7 +95,7 @@ def generate_class(class_name: str, class_schema: Dict[str, Any]) -> str:
 
 def generate_any_of_class(class_name: str, any_of_schemas: List[Dict[str, Any]]) -> str:
     types = [get_type_hint(schema) for schema in any_of_schemas]
-    type_union = "Union[" + ", ".join(f'"{t}"' for t in types) + "]"  # Add quotes
+    type_union = "Union[" + ", ".join(types) + "]"
 
     class_def = f"class {class_name}:\n"
     class_def += f"    def __init__(self, value: {type_union}):\n"
@@ -117,7 +118,8 @@ def get_type_hint(prop_schema: Dict[str, Any]) -> str:
             types = [get_type_hint(option) for option in prop_schema['anyOf']]
             return f'Union[{", ".join(types)}]'
         elif '$ref' in prop_schema:
-            return prop_schema['$ref'].split('/')[-1]  # Get the definition name
+            ref_class_name = prop_schema['$ref'].split('/')[-1]
+            return f'"{ref_class_name}"'  
         return 'Any'
 
 def load_schema(schema_path: Path) -> dict:
