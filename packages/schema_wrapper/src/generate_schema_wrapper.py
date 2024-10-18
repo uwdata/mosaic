@@ -178,7 +178,7 @@ def main():
         download = args.download
     )
 
-    output_file = Path("packages/schema_wrapper/src/generated_classes.py")
+    output_file = Path("packages/schema_wrapper/generated_classes.py")
     generate_schema_wrapper(schemapath, output_file)
 
 # Main execution
