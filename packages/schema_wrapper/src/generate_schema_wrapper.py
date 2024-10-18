@@ -153,7 +153,7 @@ def generate_schema_wrapper(schema_file: Path, output_file: Path) -> str:
         definitions[name] = class_code
 
     generated_classes =  "\n\n".join(definitions.values())
-    generated_classes = "from typing import Any, Union\n\n" + generated_classes
+    generated_classes = "from typing import Union, Dict, Any\n\n" + generated_classes
     #print(generated_classes)
 
     with open(output_file, 'w') as f:
