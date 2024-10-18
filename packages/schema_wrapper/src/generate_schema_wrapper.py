@@ -117,18 +117,9 @@ def get_type_hint(type_schema: Dict[str, Any]) -> str:
             assert type_schema['type'] == 'array'
             
             items_schema = type_schema['items']
-            datatype = "Any"
-            if 'type' in items_schema:
-                datatype = get_type_hint(items_schema)
-            elif '$ref' in items_schema:
-                datatype = get_type_hint(items_schema['$ref'])
-            elif isinstance(items_schema, List):
-                print(items_schema)
-                datatype = get_type_hint(items_schema)
-            else:
-                assert isinstance(items_schema, Dict)
-                datatype = get_type_hint(items_schema)
+            # items_schema contains the types which are stored in the list
 
+            datatype = get_type_hint(items_schema)
             return f"List[{datatype}]"
 
         if 'type' in type_schema:
