@@ -11,12 +11,16 @@ from itertools import chain
 from pathlib import Path 
 from urllib import request
 import graphlib
-from .utils import get_valid_identifier, get_key_by_value, get_dependencies
+#from .utils import get_valid_identifier, get_key_by_value, get_dependencies
+###REMOVE IN FINAL VERSION
+from utils import get_valid_identifier, get_key_by_value, get_dependencies
+###
 
 sys.path.insert(0, str(Path.cwd()))
 
 SCHEMA_VERSION: Final = "v0.10.0"
 SCHEMA_URL_TEMPLATE: Final = "https://raw.githubusercontent.com/uwdata/mosaic/refs/heads/main/docs/public/schema/{version}.json"
+KNOWN_PRIMITIVES = {"string": "str", "boolean": "bool", "number": "float", "object": "Dict[str, Any]"}
 
 def schema_url(version: str = SCHEMA_VERSION) -> str:
     return SCHEMA_URL_TEMPLATE.format(version=version)
@@ -92,10 +96,21 @@ def generate_class(class_name: str, class_schema: Dict[str, Any]) -> str:
 
     return class_def
 
+def get_type_union(types: List[str]):
+    unique_types = list(set(types))
+    if len(unique_types) == 1:
+        return unique_types[0]
+
+    # Moving the potential "Any" to the end of the list
+    if "Any" in unique_types:
+        unique_types.remove("Any")
+        unique_types.append("Any")
+
+    return f'Union[{", ".join(unique_types)}]'
 
 def generate_any_of_class(class_name: str, any_of_schemas: List[Dict[str, Any]]) -> str:
     types = [get_type_hint(schema) for schema in any_of_schemas]
-    type_union = "Union[" + ", ".join(types) + "]"
+    type_union = get_type_union(types)
 
     class_def = f"class {class_name}:\n"
     class_def += f"    def __init__(self, value: {type_union}):\n"
@@ -103,22 +118,39 @@ def generate_any_of_class(class_name: str, any_of_schemas: List[Dict[str, Any]])
     
     return class_def
 
-
-    
-def get_type_hint(prop_schema: Dict[str, Any]) -> str:
+def get_type_hint(type_schema: Dict[str, Any]) -> str:
         """Get type hint for a property schema."""
-        if 'type' in prop_schema:
-            if prop_schema['type'] == 'string':
-                return 'str'
-            elif prop_schema['type'] == 'boolean':
-                return 'bool'
-            elif prop_schema['type'] == 'object':
-                return 'Dict[str, Any]'
-        elif 'anyOf' in prop_schema:
-            types = [get_type_hint(option) for option in prop_schema['anyOf']]
-            return f'Union[{", ".join(types)}]'
-        elif '$ref' in prop_schema:
-            ref_class_name = prop_schema['$ref'].split('/')[-1]
+        if 'items' in type_schema:
+            assert type_schema['type'] == 'array'
+            
+            items_schema = type_schema['items']
+            # items_schema contains the types which are stored in the list
+
+            datatype = get_type_hint(items_schema)
+            return f"List[{datatype}]"
+
+        if 'type' in type_schema:
+            if isinstance(type_schema['type'], Iterable):
+                types = []
+                for t in type_schema['type']:
+                    datatype = KNOWN_PRIMITIVES.get(t)
+                    if datatype == None:
+                        types.append('Any')
+                    else:
+                        types.append(datatype)
+                
+                return get_type_union(types)
+            else:
+                datatype = KNOWN_PRIMITIVES.get(type_schema['type'])
+                if datatype == None:
+                    return 'Any'
+                return datatype
+        elif 'anyOf' in type_schema:
+            #print(f"anyOf to iterate: {type_schema}")
+            types = [get_type_hint(option) for option in type_schema['anyOf']]
+            return get_type_union(types)
+        elif '$ref' in type_schema:
+            ref_class_name = type_schema['$ref'].split('/')[-1]
             return f'"{ref_class_name}"'  
         return 'Any'
 
@@ -155,7 +187,7 @@ def generate_schema_wrapper(schema_file: Path, output_file: Path) -> str:
         definitions[name] = class_code
 
     generated_classes =  "\n\n".join(definitions.values())
-    generated_classes = "from typing import Union, Dict, Any\n\n" + generated_classes
+    generated_classes = "from typing import List, Dict, Any, Union\n\n" + generated_classes
     #print(generated_classes)
 
     with open(output_file, 'w') as f:
