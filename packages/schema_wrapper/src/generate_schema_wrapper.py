@@ -95,12 +95,6 @@ def generate_class(class_name: str, class_schema: Dict[str, Any]) -> str:
 
 
 def generate_any_of_class(class_name: str, any_of_schemas: List[Dict[str, Any]]) -> str:
-    ### REMOVE BLOCK BELOW
-    #if class_name == "ChannelValue":
-    #    for schema in any_of_schemas:
-    #        print(f"schema: {schema}")
-    ###
-
     types = [get_type_hint(schema) for schema in any_of_schemas]
     type_union = "Union[" + ", ".join(types) + "]"
 
