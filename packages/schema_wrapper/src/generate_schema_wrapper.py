@@ -11,7 +11,10 @@ from itertools import chain
 from pathlib import Path 
 from urllib import request
 import graphlib
-from .utils import get_valid_identifier, get_key_by_value, get_dependencies
+#from .utils import get_valid_identifier, get_key_by_value, get_dependencies
+###REMOVE IN FINAL VERSION
+from utils import get_valid_identifier, get_key_by_value, get_dependencies
+###
 
 sys.path.insert(0, str(Path.cwd()))
 
@@ -93,17 +96,27 @@ def generate_class(class_name: str, class_schema: Dict[str, Any]) -> str:
 
     return class_def
 
+def get_type_union(types: List[str]):
+    unique_types = list(set(types))
+    if len(unique_types) == 1:
+        return unique_types[0]
+
+    # Moving the potential "Any" to the end of the list
+    if "Any" in unique_types:
+        unique_types.remove("Any")
+        unique_types.append("Any")
+
+    return f'Union[{", ".join(unique_types)}]'
 
 def generate_any_of_class(class_name: str, any_of_schemas: List[Dict[str, Any]]) -> str:
     types = [get_type_hint(schema) for schema in any_of_schemas]
-    type_union = "Union[" + ", ".join(types) + "]"
+    type_union = get_type_union(types)
 
     class_def = f"class {class_name}:\n"
     class_def += f"    def __init__(self, value: {type_union}):\n"
     class_def += "        self.value = value\n"
     
     return class_def
-
 
 def get_type_hint(type_schema: Dict[str, Any]) -> str:
         """Get type hint for a property schema."""
@@ -126,7 +139,7 @@ def get_type_hint(type_schema: Dict[str, Any]) -> str:
                     else:
                         types.append(datatype)
                 
-                return f'Union[{", ".join(types)}]'
+                return get_type_union(types)
             else:
                 datatype = KNOWN_PRIMITIVES.get(type_schema['type'])
                 if datatype == None:
@@ -135,7 +148,7 @@ def get_type_hint(type_schema: Dict[str, Any]) -> str:
         elif 'anyOf' in type_schema:
             #print(f"anyOf to iterate: {type_schema}")
             types = [get_type_hint(option) for option in type_schema['anyOf']]
-            return f'Union[{", ".join(types)}]'
+            return get_type_union(types)
         elif '$ref' in type_schema:
             ref_class_name = type_schema['$ref'].split('/')[-1]
             return f'"{ref_class_name}"'  
