@@ -11,10 +11,7 @@ from itertools import chain
 from pathlib import Path 
 from urllib import request
 import graphlib
-#from .utils import get_valid_identifier, get_key_by_value, get_dependencies
-###REMOVE IN FINAL VERSION
-from utils import get_valid_identifier, get_key_by_value, get_dependencies
-###
+from .utils import get_valid_identifier, get_key_by_value, get_dependencies
 
 sys.path.insert(0, str(Path.cwd()))
 
@@ -76,6 +73,7 @@ def generate_class(class_name: str, class_schema: Dict[str, Any]) -> str:
 
     for prop, prop_schema in properties.items():
         type_hint = get_type_hint(prop_schema)
+        
         if prop in required:
             # Required parameters should not have default values
             class_def += f", {prop}: {type_hint}"
