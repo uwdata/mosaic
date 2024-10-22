@@ -12,7 +12,8 @@ from packages.schema_wrapper.generated_classes import (
     Argmax,
     Avg,
     CSSStyles,
-    Plot
+    Plot,
+    BrushStyles
 )
 
 class TestGeneratedClasses(unittest.TestCase):
@@ -27,6 +28,12 @@ class TestGeneratedClasses(unittest.TestCase):
         agg_transform = AggregateTransform(avg)
         self.assertIsInstance(agg_transform.value, Avg)
         self.assertEqual(agg_transform.value.avg, "value")
+
+        agg_transform = AggregateTransform(Avg(avg=2))
+        self.assertEqual(agg_transform.value.avg, 2)
+
+        agg_transform = AggregateTransform(Avg(avg=True))
+        self.assertEqual(agg_transform.value.avg, True)
 
     def test_channel_value(self):
         channel_value = ChannelValue("x")
@@ -65,6 +72,20 @@ class TestGeneratedClasses(unittest.TestCase):
         self.assertEqual(plot.height, 300)
         self.assertEqual(plot.xLabel, "X Axis")
         self.assertEqual(plot.yLabel, "Y Axis")
+
+    def test_brush_styles(self):
+        styles = BrushStyles(
+            fill="red",
+            fillOpacity=0.5,
+            opacity=0.7,
+            stroke="black",
+            strokeOpacity=0.3
+        )
+        self.assertEqual(styles.fill, "red")
+        self.assertEqual(styles.fillOpacity, 0.5)
+        self.assertEqual(styles.opacity, 0.7)
+        self.assertEqual(styles.stroke, "black")
+        self.assertEqual(styles.strokeOpacity, 0.3)
 
 if __name__ == '__main__':
     unittest.main()
