@@ -11,7 +11,7 @@ from itertools import chain
 from pathlib import Path 
 from urllib import request
 import graphlib
-from .utils import get_valid_identifier, get_key_by_value, get_dependencies
+from utils import get_valid_identifier, get_key_by_value, get_dependencies
 
 sys.path.insert(0, str(Path.cwd()))
 
@@ -34,9 +34,6 @@ def download_schemafile(
     return schemapath
 
 def generate_class(class_name: str, class_schema: Dict[str, Any]) -> str:
-
-    # Define a list of primitive types
-    # primitive_types = ['string', 'number', 'integer', 'boolean']
     class_name = get_valid_identifier(class_name)
 
     # Check if the schema defines a simple type (like string, number) without properties
@@ -64,12 +61,8 @@ def generate_class(class_name: str, class_schema: Dict[str, Any]) -> str:
     optional_params = []
 
     # Ensuring all the property names are valid Python identifiers
-    property_items = list(properties.items())
-    for prop, prop_schema in property_items:
-        valid_prop = get_valid_identifier(prop)
-        if valid_prop != prop:
-            properties.pop(prop)
-            properties[valid_prop] = prop_schema
+    valid_property_keys = map(get_valid_identifier, properties.keys())
+    properties = dict(zip(valid_property_keys, properties.values()))
 
     for prop, prop_schema in properties.items():
         type_hint = get_type_hint(prop_schema)
@@ -128,7 +121,7 @@ def get_type_hint(type_schema: Dict[str, Any]) -> str:
             return f"List[{datatype}]"
 
         if 'type' in type_schema:
-            if isinstance(type_schema['type'], Iterable):
+            if not isinstance(type_schema['type'], str) and isinstance(type_schema['type'], Iterable):
                 types = []
                 for t in type_schema['type']:
                     datatype = KNOWN_PRIMITIVES.get(t)
@@ -144,7 +137,7 @@ def get_type_hint(type_schema: Dict[str, Any]) -> str:
                     return 'Any'
                 return datatype
         elif 'anyOf' in type_schema:
-            #print(f"anyOf to iterate: {type_schema}")
+            assert isinstance(type_schema['anyOf'], list)
             types = [get_type_hint(option) for option in type_schema['anyOf']]
             return get_type_union(types)
         elif '$ref' in type_schema:
@@ -164,9 +157,6 @@ def generate_schema_wrapper(schema_file: Path, output_file: Path) -> str:
     rootschema_definitions = rootschema.get("definitions", {})
     ts = graphlib.TopologicalSorter()
     
-    # if not output_file.parent.exists():
-    #     output_file.parent.mkdir(parents=True, exist_ok=True)
-
     for name, schema in rootschema_definitions.items():
         #print(name)
         dependencies = get_dependencies(schema)
