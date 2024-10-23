@@ -30,14 +30,14 @@ plot:
     y: unemployment
     z: division
     r: 2
-    fill: black
+    fill: currentColor
     select: nearestX
   - mark: text
     data: { from: bls_unemp }
     x: date
     y: unemployment
     text: division
-    fill: black
+    fill: currentColor
     dy: -8
     select: nearestX
 marginLeft: 24
