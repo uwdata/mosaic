@@ -46,7 +46,7 @@ async function run(measure) {
   });
 }
 
-describe('Indexer', () => {
+describe('PreAggregator', () => {
   it('supports count aggregate', async () => {
     expect(await run(count())).toBe(3);
     expect(await run(count('x'))).toBe(2);

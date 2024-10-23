@@ -2,13 +2,13 @@ import { Query, agg, sql } from '@uwdata/mosaic-sql';
 import { MosaicClient } from '../MosaicClient.js';
 
 /**
- * Determine index columns for a given Mosaic client.
+ * Determine pre-aggregation columns for a given Mosaic client.
  * @param {MosaicClient} client The Mosaic client.
- * @returns An object with necessary column data to generate data
- *  index columns, or null if the client is not indexable or the client query
- * contains an invalid or unsupported expression.
+ * @returns An object with necessary column data to generate pre-aggregated
+ *  columns, or null if the client is not indexable or the client query
+ *  contains an invalid or unsupported expression.
  */
-export function indexColumns(client) {
+export function preaggColumns(client) {
   if (!client.filterIndexable) return null;
   const q = client.query();
   const from = getBase(q, q => q.from()?.[0].from.table);
@@ -146,7 +146,7 @@ export function indexColumns(client) {
 
 /**
  * Generate an output column name for use as an auxiliary column
- * (e.g., for sufficient statistics) within an index.
+ * (e.g., for sufficient statistics) within a preaggregated table.
  * @param {string} type The operation type.
  * @param  {...any} args The input column arguments.
  * @returns {string} A sanitized auxiliary column name.

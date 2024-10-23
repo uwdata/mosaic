@@ -85,20 +85,20 @@
           <input id="query-log" type="checkbox" />
         </div>
         <div>
-          Query Cache:
+          Cache Queries:
           <input id="cache" type="checkbox" checked />
         </div>
         <div>
-          Query Consolidation:
+          Consolidate Queries:
           <input id="consolidate" type="checkbox" checked />
         </div>
         <div>
-          Indexes:
-          <input id="index" type="checkbox" checked />
+          Preaggregate:
+          <input id="preagg" type="checkbox" checked />
         </div>
         <div>
-          Active Index State:
-          <button id="index-state">Log</button>
+          Preaggregate State:
+          <button id="preagg-state">Log</button>
         </div>
       </div>
     </details>
@@ -115,8 +115,8 @@
   const qlogToggle = document.querySelector('#query-log');
   const cacheToggle = document.querySelector('#cache');
   const consolidateToggle = document.querySelector('#consolidate');
-  const indexToggle = document.querySelector('#index');
-  const indexState = document.querySelector('#index-state');
+  const preaggToggle = document.querySelector('#preagg');
+  const preaggState = document.querySelector('#preagg-state');
 
   connectorMenu.addEventListener('change', setConnector);
   exampleMenu.addEventListener('change', reload);
@@ -124,23 +124,23 @@
   qlogToggle.addEventListener('input', setQueryLog);
   cacheToggle.addEventListener('input', setCache);
   consolidateToggle.addEventListener('input', setConsolidate);
-  indexToggle.addEventListener('input', setIndex);
-  indexState.addEventListener('click', () => {
-    const { indexes } = vg.coordinator().indexer || {};
-    if (indexes) {
+  preaggToggle.addEventListener('input', setPreaggregate);
+  preaggState.addEventListener('click', () => {
+    const { entries } = vg.coordinator().preaggregator || {};
+    if (entries) {
       console.warn(
-        'Index Entries',
-        Array.from(indexes.values())
+        'Preaggregate Entries',
+        Array.from(entries.values())
       );
     } else {
-      console.warn('No Active Index');
+      console.warn('No Preaggregate Entries');
     }
   });
 
   setQueryLog();
   setCache();
   setConsolidate();
-  setIndex();
+  setPreaggregate();
   setConnector();
 
   async function setConnector() {
@@ -160,8 +160,8 @@
     vg.coordinator().manager.consolidate(consolidateToggle.checked);
   }
 
-  function setIndex() {
-    vg.coordinator().indexer.enabled = indexToggle.checked;
+  function setPreaggregate() {
+    vg.coordinator().preaggregator.enabled = preaggToggle.checked;
   }
 
   function reload() {

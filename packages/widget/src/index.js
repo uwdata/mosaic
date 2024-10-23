@@ -9,22 +9,22 @@ import { v4 as uuidv4 } from 'uuid';
  * @typedef Model
  * @property {import('@uwdata/mosaic-spec').Spec} spec
  *  The current Mosaic specification.
- * @property {string} index_schema The database schema in which to store
- *  materialized views (default 'mosaic').
+ * @property {string} preagg_schema The database schema in which to store
+ *  pre-aggregated materialized views (default 'mosaic').
  * @property {Params} params The current params.
  */
 
 export default {
   /** @type {import('anywidget/types').Initialize<Model>} */
   initialize(view) {
-    view.model.set('index_schema', coordinator().indexer.schema);
+    view.model.set('preagg_schema', coordinator().preaggregator.schema);
   },
 
   /** @type {import('anywidget/types').Render<Model>} */
   render(view) {
     view.el.classList.add('mosaic-widget');
     const getSpec = () => view.model.get('spec');
-    const getIndexSchema = () => view.model.get('index_schema');
+    const getPreaggSchema = () => view.model.get('preagg_schema');
     const logger = coordinator().logger();
 
     /** @type Map<string, {query: Record<any, unknown>, startTime: number, resolve: (value: any) => void, reject: (reason?: any) => void}> */
@@ -90,10 +90,10 @@ export default {
     view.model.on('change:spec', () => updateSpec());
 
     function configureCoordinator() {
-      coordinator().indexer.schema = getIndexSchema();
+      coordinator().preaggregator.schema = getPreaggSchema();
     }
 
-    view.model.on('change:index_schema', () => configureCoordinator());
+    view.model.on('change:preagg_schema', () => configureCoordinator());
 
     view.model.on('msg:custom', (msg, buffers) => {
       logger.group(`query ${msg.uuid}`);
