@@ -28,7 +28,7 @@ export default vg.plot(
       y: "unemployment",
       z: "division",
       r: 2,
-      fill: "black",
+      fill: "currentColor",
       select: "nearestX"
     }
   ),
@@ -38,7 +38,7 @@ export default vg.plot(
       x: "date",
       y: "unemployment",
       text: "division",
-      fill: "black",
+      fill: "currentColor",
       dy: -8,
       select: "nearestX"
     }
