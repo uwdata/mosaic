@@ -10,7 +10,13 @@ export default vg.vconcat(
   vg.plot(
     vg.rectY(
       vg.from("flights", {filterBy: $brush}),
-      {x: vg.bin("delay"), y: vg.count(), fill: "steelblue", inset: 0.5}
+      {
+        x: vg.bin("delay"),
+        y: vg.count(),
+        fill: "steelblue",
+        insetLeft: 0.5,
+        insetRight: 0.5
+      }
     ),
     vg.intervalX({as: $brush}),
     vg.xDomain(vg.Fixed),
@@ -22,7 +28,13 @@ export default vg.vconcat(
   vg.plot(
     vg.rectY(
       vg.from("flights", {filterBy: $brush}),
-      {x: vg.bin("time"), y: vg.count(), fill: "steelblue", inset: 0.5}
+      {
+        x: vg.bin("time"),
+        y: vg.count(),
+        fill: "steelblue",
+        insetLeft: 0.5,
+        insetRight: 0.5
+      }
     ),
     vg.intervalX({as: $brush}),
     vg.xDomain(vg.Fixed),

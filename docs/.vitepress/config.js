@@ -133,6 +133,7 @@ export default defineConfig({
             { text: 'Gaia Star Catalog', link: '/examples/gaia' },
             { text: 'Observable Latency', link: '/examples/observable-latency' },
             { text: 'Olympic Athletes', link: '/examples/athletes' },
+            { text: 'Protein Design', link: '/examples/protein-design' },
             { text: 'Pan & Zoom', link: '/examples/pan-zoom' },
             { text: 'Scatter Plot Matrix', link: '/examples/splom' },
             { text: 'Seattle Weather', link: '/examples/weather' }
