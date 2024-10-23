@@ -34,24 +34,18 @@ def download_schemafile(
     return schemapath
 
 def generate_class(class_name: str, class_schema: Dict[str, Any]) -> str:
-
-    # Define a list of primitive types
-    # primitive_types = ['string', 'number', 'integer', 'boolean']
     class_name = get_valid_identifier(class_name)
 
     # Check if the schema defines a simple type (like string, number) without properties
-    if 'type' in class_schema and 'properties' not in class_schema: #DISCUSS: Change this to not isinstance(class_schema, Iterable)
-        #assert not isinstance(class_schema, Iterable)
+    if 'type' in class_schema and 'properties' not in class_schema:
         return f"class {class_name}:\n    def __init__(self):\n        pass\n"
 
     # Check for '$ref' and handle it
     if '$ref' in class_schema:
         ref_class_name = class_schema['$ref'].split('/')[-1]
         return f"\nclass {class_name}:\n    pass  # This is a reference to '{ref_class_name}'\n"
-
-
     if 'anyOf' in class_schema:
-        return generate_any_of_class(class_name, class_schema['anyOf'])
+            return generate_any_of_class(class_name, class_schema['anyOf'])
 
     # Extract properties and required fields
     properties = class_schema.get('properties', {})
@@ -64,32 +58,32 @@ def generate_class(class_name: str, class_schema: Dict[str, Any]) -> str:
     optional_params = []
 
     # Ensuring all the property names are valid Python identifiers
-    property_items = list(properties.items())
-    for prop, prop_schema in property_items:
-        valid_prop = get_valid_identifier(prop)
-        if valid_prop != prop:
-            properties.pop(prop)
-            properties[valid_prop] = prop_schema
-
+    valid_properties = {}
     for prop, prop_schema in properties.items():
-        type_hint = get_type_hint(prop_schema)
+        valid_prop = get_valid_identifier(prop)
+        valid_properties[valid_prop] = prop_schema
+
+    for prop, prop_schema in valid_properties.items():
+        if 'anyOf' in prop_schema:
+            # Handle anyOf case
+            type_hint = f"Union[{', '.join(get_type_hint(item) for item in prop_schema['anyOf'])}]"
+        else:
+            type_hint = get_type_hint(prop_schema)
         
         if prop in required:
             # Required parameters should not have default values
             class_def += f", {prop}: {type_hint}"
         else:
             # Ensure we add optional parameters last
-            optional_params.append((prop, prop_schema))
+            optional_params.append((prop, type_hint))
 
-    for prop, prop_schema in optional_params:
-        # Optional parameters should have a default value of None
+    for prop, type_hint in optional_params:
         class_def += f", {prop}: {type_hint} = None"
-
 
     class_def += "):\n"
 
     # Generate attribute assignments in __init__
-    for prop in properties:
+    for prop in valid_properties:
         class_def += f"        self.{prop} = {prop}\n"
 
     return class_def
@@ -103,13 +97,12 @@ def get_type_union(types: List[str]):
     if "Any" in unique_types:
         unique_types.remove("Any")
         unique_types.append("Any")
-
     return f'Union[{", ".join(unique_types)}]'
 
 def generate_any_of_class(class_name: str, any_of_schemas: List[Dict[str, Any]]) -> str:
     types = [get_type_hint(schema) for schema in any_of_schemas]
     type_union = get_type_union(types)
-
+    
     class_def = f"class {class_name}:\n"
     class_def += f"    def __init__(self, value: {type_union}):\n"
     class_def += "        self.value = value\n"
@@ -126,9 +119,9 @@ def get_type_hint(type_schema: Dict[str, Any]) -> str:
 
             datatype = get_type_hint(items_schema)
             return f"List[{datatype}]"
-
+            
         if 'type' in type_schema:
-            if isinstance(type_schema['type'], Iterable):
+            if isinstance(type_schema['type'], list):
                 types = []
                 for t in type_schema['type']:
                     datatype = KNOWN_PRIMITIVES.get(t)
@@ -144,7 +137,6 @@ def get_type_hint(type_schema: Dict[str, Any]) -> str:
                     return 'Any'
                 return datatype
         elif 'anyOf' in type_schema:
-            #print(f"anyOf to iterate: {type_schema}")
             types = [get_type_hint(option) for option in type_schema['anyOf']]
             return get_type_union(types)
         elif '$ref' in type_schema:
@@ -168,7 +160,6 @@ def generate_schema_wrapper(schema_file: Path, output_file: Path) -> str:
     #     output_file.parent.mkdir(parents=True, exist_ok=True)
 
     for name, schema in rootschema_definitions.items():
-        #print(name)
         dependencies = get_dependencies(schema)
         if dependencies:
             ts.add(name, *dependencies)
@@ -186,7 +177,6 @@ def generate_schema_wrapper(schema_file: Path, output_file: Path) -> str:
 
     generated_classes =  "\n\n".join(definitions.values())
     generated_classes = "from typing import List, Dict, Any, Union\n\n" + generated_classes
-    #print(generated_classes)
 
     with open(output_file, 'w') as f:
         f.write(generated_classes)
