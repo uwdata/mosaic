@@ -1,4 +1,4 @@
-import { create } from '@uwdata/mosaic-sql';
+import { createTable } from '@uwdata/mosaic-sql';
 import { DATA } from '../constants.js';
 import { isArray, isString } from '../util.js';
 import { ASTNode } from './ASTNode.js';
@@ -162,7 +162,7 @@ export class TableDataNode extends QueryDataNode {
   instantiateQuery(ctx) {
     const { name, query, options } = this;
     if (query) {
-      return ctx.api.create(name, query, options.instantiate(ctx));
+      return ctx.api.createTable(name, query, options.instantiate(ctx));
     }
   }
 
@@ -174,7 +174,7 @@ export class TableDataNode extends QueryDataNode {
   codegenQuery(ctx) {
     const { name, query, options } = this;
     if (query) {
-      return `\`${create(name, query, options.instantiate(ctx))}\``;
+      return `\`${createTable(name, query, options.instantiate(ctx))}\``;
     }
   }
 

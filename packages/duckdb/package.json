@@ -30,6 +30,7 @@
     "prepublishOnly": "npm run test && npm run lint"
   },
   "dependencies": {
+    "@uwdata/mosaic-sql": "^0.11.0",
     "duckdb": "^1.1.1",
     "ws": "^8.18.0"
   }
