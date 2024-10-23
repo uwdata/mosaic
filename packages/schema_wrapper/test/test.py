@@ -9,6 +9,7 @@ from packages.schema_wrapper.generated_classes import (
     ChannelValue,
     PlotMarkData,
     ChannelValueSpec,
+    Argmin,
     Argmax,
     Avg,
     CSSStyles,
@@ -48,6 +49,18 @@ class TestGeneratedClasses(unittest.TestCase):
         channel_value_spec = ChannelValueSpec("y")
         self.assertEqual(channel_value_spec.value, "y")
 
+    def test_argmin(self):
+        argmin = Argmin([1.0, 2.0], distinct=True, orderby="date")
+        self.assertEqual(argmin.argmin, [1.0, 2.0])
+        self.assertEqual(argmin.distinct, True)
+        self.assertEqual(argmin.orderby, "date")
+
+        #type checking
+        self.assertIsInstance(argmin.argmin, list)  
+        self.assertTrue(all(isinstance(item, (float, bool, str)) for item in argmin.argmin))
+        self.assertIsInstance(argmin.distinct, bool)
+
+    
     def test_argmax(self):
         argmax = Argmax("value", distinct=True, orderby="date")
         self.assertEqual(argmax.argmax, "value")
