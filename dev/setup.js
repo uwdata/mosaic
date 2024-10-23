@@ -7,6 +7,15 @@ export const vg = createAPIContext();
 // make API accesible for console debugging
 self.vg = vg;
 
+// enable query interface
+self.query = async (sql) => {
+  const r = await vg.coordinator().databaseConnector().query({
+    type: 'arrow',
+    sql
+  });
+  return r.toArray();
+}
+
 export const { coordinator, namedPlots } = vg.context;
 
 export function clear() {
