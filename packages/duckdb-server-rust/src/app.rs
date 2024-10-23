@@ -42,7 +42,7 @@ async fn handle_post(
 
 pub fn app() -> Result<Router> {
     // Database and state setup
-    let db = ConnectionPool::new(":memory:", 1)?; // TODO: we can only use one connection since temp tables are scoped per connection
+    let db = ConnectionPool::new(":memory:", 10)?;
     let cache = lru::LruCache::new(1000.try_into()?);
 
     let state = Arc::new(AppState {

@@ -67,9 +67,9 @@ export async function loadBundle(db, cache, dir) {
     cache.set(key, json ? JSON.parse(data) : data);
   }
 
-  // load precomputed temp tables into the database
+  // load precomputed tables into the database
   for (const table of manifest.tables) {
     const file = path.resolve(dir, `${table}.parquet`);
-    await db.exec(`CREATE TEMP TABLE IF NOT EXISTS ${table} AS SELECT * FROM '${file}'`);
+    await db.exec(`CREATE TABLE IF NOT EXISTS ${table} AS SELECT * FROM '${file}'`);
   }
 }

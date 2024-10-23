@@ -14,7 +14,7 @@ exclude = [
 
 [dependencies]
 anyhow = "1.0"
-arrow = "52.1"
+arrow = "53.1"
 async-trait = "0.1.83"
 axum = { version = "0.7", features = ["http1", "http2", "ws", "json", "tokio", "tracing", "macros"] }
 axum-server = { version = "0.7", features = ["tls-rustls"] }

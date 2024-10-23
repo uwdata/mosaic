@@ -29,7 +29,8 @@ export const spec : Spec = {
             "count": null
           },
           "fill": "steelblue",
-          "inset": 0.5
+          "insetLeft": 0.5,
+          "insetRight": 0.5
         },
         {
           "select": "intervalX",
@@ -37,7 +38,8 @@ export const spec : Spec = {
         }
       ],
       "xDomain": "Fixed",
-      "marginLeft": 75,
+      "xLabel": "Arrival Delay (min)",
+      "yTickFormat": "s",
       "width": 600,
       "height": 200
     },
@@ -56,7 +58,8 @@ export const spec : Spec = {
             "count": null
           },
           "fill": "steelblue",
-          "inset": 0.5
+          "insetLeft": 0.5,
+          "insetRight": 0.5
         },
         {
           "select": "intervalX",
@@ -64,7 +67,8 @@ export const spec : Spec = {
         }
       ],
       "xDomain": "Fixed",
-      "marginLeft": 75,
+      "xLabel": "Departure Time (hour)",
+      "yTickFormat": "s",
       "width": 600,
       "height": 200
     },
@@ -83,7 +87,8 @@ export const spec : Spec = {
             "count": null
           },
           "fill": "steelblue",
-          "inset": 0.5
+          "insetLeft": 0.5,
+          "insetRight": 0.5
         },
         {
           "select": "intervalX",
@@ -91,7 +96,8 @@ export const spec : Spec = {
         }
       ],
       "xDomain": "Fixed",
-      "marginLeft": 75,
+      "xLabel": "Flight Distance (miles)",
+      "yTickFormat": "s",
       "width": 600,
       "height": 200
     }

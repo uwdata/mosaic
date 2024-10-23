@@ -9,7 +9,8 @@ vconcat:
     x: { bin: delay }
     y: { count: }
     fill: steelblue
-    inset: 0.5
+    insetLeft: 0.5
+    insetRight: 0.5
   - select: intervalX
     as: $brush
   xDomain: Fixed
@@ -23,7 +24,8 @@ vconcat:
     x: { bin: time }
     y: { count: }
     fill: steelblue
-    inset: 0.5
+    insetLeft: 0.5
+    insetRight: 0.5
   - select: intervalX
     as: $brush
   xDomain: Fixed
