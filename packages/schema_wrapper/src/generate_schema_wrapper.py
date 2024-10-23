@@ -11,7 +11,7 @@ from itertools import chain
 from pathlib import Path 
 from urllib import request
 import graphlib
-from utils import get_valid_identifier, get_key_by_value, get_dependencies
+from .utils import get_valid_identifier, get_key_by_value, get_dependencies
 
 sys.path.insert(0, str(Path.cwd()))
 
@@ -58,13 +58,7 @@ def generate_class(class_name: str, class_schema: Dict[str, Any]) -> str:
     optional_params = []
 
     # Ensuring all the property names are valid Python identifiers
-<<<<<<< HEAD
     valid_properties = {}
-=======
-    valid_property_keys = map(get_valid_identifier, properties.keys())
-    properties = dict(zip(valid_property_keys, properties.values()))
-
->>>>>>> 5a69500f83ddf4e842161bbf7cac73e6d3a32621
     for prop, prop_schema in properties.items():
         valid_prop = get_valid_identifier(prop)
         valid_properties[valid_prop] = prop_schema
@@ -127,11 +121,7 @@ def get_type_hint(type_schema: Dict[str, Any]) -> str:
             return f"List[{datatype}]"
             
         if 'type' in type_schema:
-<<<<<<< HEAD
             if isinstance(type_schema['type'], list):
-=======
-            if not isinstance(type_schema['type'], str) and isinstance(type_schema['type'], Iterable):
->>>>>>> 5a69500f83ddf4e842161bbf7cac73e6d3a32621
                 types = []
                 for t in type_schema['type']:
                     datatype = KNOWN_PRIMITIVES.get(t)
@@ -147,10 +137,6 @@ def get_type_hint(type_schema: Dict[str, Any]) -> str:
                     return 'Any'
                 return datatype
         elif 'anyOf' in type_schema:
-<<<<<<< HEAD
-=======
-            assert isinstance(type_schema['anyOf'], list)
->>>>>>> 5a69500f83ddf4e842161bbf7cac73e6d3a32621
             types = [get_type_hint(option) for option in type_schema['anyOf']]
             return get_type_union(types)
         elif '$ref' in type_schema:
@@ -169,7 +155,7 @@ def generate_schema_wrapper(schema_file: Path, output_file: Path) -> str:
     
     rootschema_definitions = rootschema.get("definitions", {})
     ts = graphlib.TopologicalSorter()
-    
+
     for name, schema in rootschema_definitions.items():
         dependencies = get_dependencies(schema)
         if dependencies:
@@ -188,6 +174,7 @@ def generate_schema_wrapper(schema_file: Path, output_file: Path) -> str:
 
     generated_classes =  "\n\n".join(definitions.values())
     generated_classes = "from typing import List, Dict, Any, Union\n\n" + generated_classes
+
 
     with open(output_file, 'w') as f:
         f.write(generated_classes)
