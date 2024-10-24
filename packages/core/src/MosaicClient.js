@@ -38,11 +38,12 @@ export class MosaicClient {
   }
 
   /**
-   * Return a boolean indicating if the client query can be indexed. Should
-   * return true if changes to the filterBy selection does not change the
-   * groupby domain of the client query.
+   * Return a boolean indicating if the client query can be sped up with
+   * materialized views of pre-aggregated data. Should return true if changes to
+   * the filterBy selection does not change the groupby domain of the client
+   * query.
    */
-  get filterIndexable() {
+  get optimizable() {
     return true;
   }
 

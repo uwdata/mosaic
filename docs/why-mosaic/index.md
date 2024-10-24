@@ -130,7 +130,7 @@ DuckDB-WASM in the browser fares well, though is limited (compared to a DuckDB s
 
 When it comes to interaction, Mosaic really shines!
 For many forms of aggregated data, the coordinator will automatically pre-aggregate data into smaller tables ("materialized views") to support real-time interaction with billion+ element databases.
-The figure below shows benchmark results for index-optimized interactive updates.
+The figure below shows benchmark results for optimized interactive updates.
 Even with billions of rows, Mosaic with a server-side DuckDB instance maintains interactive response rates.
 
 <svg xmlns="http://www.w3.org/2000/svg" class="plot-why" fill="currentColor" font-family="system-ui, sans-serif" font-size="10" text-anchor="middle" width="420" height="115" viewBox="0 0 420 115">

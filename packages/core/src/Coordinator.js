@@ -41,7 +41,7 @@ export function coordinator(instance) {
  * @param {boolean} [options.cache=true] Boolean flag to enable/disable query caching.
  * @param {boolean} [options.consolidate=true] Boolean flag to enable/disable query consolidation.
  * @param {import('./PreAggregator.js').PreAggregateOptions} [options.preagg]
- *  Data cube indexer options.
+ *  Options for the Pre-aggregator.
  */
 export class Coordinator {
   constructor(db = socketConnector(), {

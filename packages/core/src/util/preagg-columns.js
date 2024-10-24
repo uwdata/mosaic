@@ -5,11 +5,11 @@ import { MosaicClient } from '../MosaicClient.js';
  * Determine pre-aggregation columns for a given Mosaic client.
  * @param {MosaicClient} client The Mosaic client.
  * @returns An object with necessary column data to generate pre-aggregated
- *  columns, or null if the client is not indexable or the client query
+ *  columns, or null if the client can be optimized or the client query
  *  contains an invalid or unsupported expression.
  */
 export function preaggColumns(client) {
-  if (!client.filterIndexable) return null;
+  if (!client.optimizable) return null;
   const q = client.query();
   const from = getBase(q, q => q.from()?.[0].from.table);
 
