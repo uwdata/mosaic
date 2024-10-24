@@ -23,7 +23,7 @@ The [coordinator](./coordinator) uses this property to provide automatic updates
 
 `client.filterIndexable`
 
-Property getter for a Boolean value indicating if the client query can be safely indexed using a pre-aggregated data cube.
+Property getter for a Boolean value indicating if the client query can be safely optimized using a pre-aggregated materialized view.
 This property should return true if changes to the `filterBy` selection do not change the groupby (e.g., binning) values of the client query.
 
 The `MosaicClient` base class will always return `true`.

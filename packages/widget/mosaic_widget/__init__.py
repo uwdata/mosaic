@@ -25,8 +25,8 @@ class MosaicWidget(anywidget.AnyWidget):
     # The current params indexed by name
     params = traitlets.Dict({}).tag(sync=True)
 
-    # Where data cube indexes should be created
-    data_cube_schema = traitlets.Unicode().tag(sync=True)
+    # Where pre-aggregated materialized views should be created
+    preagg_schema = traitlets.Unicode().tag(sync=True)
 
     def __init__(
         self,
