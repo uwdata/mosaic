@@ -122,7 +122,7 @@ export class PreAggregator {
 
   /**
    * Return pre-aggregation information for the active state of a
-   * client-selection pair, or null if the client is not optimizable.
+   * client-selection pair, or null if the client has unstable filters.
    * This method has multiple possible side effects, including materialized
    * view creation and updating internal caches.
    * @param {import('./MosaicClient.js').MosaicClient} client A Mosaic client.
@@ -132,7 +132,7 @@ export class PreAggregator {
    *  A representative active selection clause for which to (possibly) generate
    *  materialized views of pre-aggregates.
    * @returns {PreAggregateInfo | Skip | null} Information and query generator
-   * for pre-aggregated tables, or null if the client is not optimizable.
+   * for pre-aggregated tables, or null if the client has unstable filters.
    */
   request(client, selection, activeClause) {
     // if not enabled, do nothing
@@ -150,7 +150,7 @@ export class PreAggregator {
       // this cancels outstanding requests and clears the local cache
       // a clear also sets this.active to null
       if (this.active.source !== source) this.clear();
-      // if we've seen this source and it's not optimizable, do nothing
+      // if we've seen this source and it has unstable filters, do nothing
       if (this.active?.source === null) return null;
     }
 
@@ -160,9 +160,9 @@ export class PreAggregator {
     // if cached active columns are unset, analyze the active clause
     if (!active) {
       // generate active dimension columns to select over
-      // will return an object with null source if not optimizable
+      // will return an object with null source if it has unstable filters
       this.active = active = activeColumns(activeClause);
-      // if the active clause is not optimizable, exit now
+      // if the active clause has unstable filters, exit now
       if (active.source === null) return null;
     }
 

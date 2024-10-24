@@ -43,7 +43,7 @@ export class MosaicClient {
    * the filterBy selection does not change the groupby domain of the client
    * query.
    */
-  get optimizable() {
+  get filterStable() {
     return true;
   }
 

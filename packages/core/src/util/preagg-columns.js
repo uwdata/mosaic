@@ -9,7 +9,7 @@ import { MosaicClient } from '../MosaicClient.js';
  *  contains an invalid or unsupported expression.
  */
 export function preaggColumns(client) {
-  if (!client.optimizable) return null;
+  if (!client.filterStable) return null;
   const q = client.query();
   const from = getBase(q, q => q.from()?.[0].from.table);
 

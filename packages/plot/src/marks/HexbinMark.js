@@ -15,7 +15,7 @@ export class HexbinMark extends Mark {
     });
   }
 
-  get optimizable() {
+  get filterStable() {
     const xdom = this.plot.getAttribute('xDomain');
     const ydom = this.plot.getAttribute('yDomain');
     return xdom && ydom && !xdom[Transient] && !ydom[Transient];

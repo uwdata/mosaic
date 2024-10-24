@@ -70,7 +70,7 @@ export class Grid2DMark extends Mark {
     super.setPlot(plot, index);
   }
 
-  get optimizable() {
+  get filterStable() {
     const xdom = this.plot.getAttribute('xDomain');
     const ydom = this.plot.getAttribute('yDomain');
     return xdom && ydom && !xdom[Transient] && !ydom[Transient];

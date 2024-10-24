@@ -19,9 +19,9 @@ Create a new client instance. If provided, the [Selection](./selection)-valued _
 Property getter for the Selection that should filter this client.
 The [coordinator](./coordinator) uses this property to provide automatic updates to the client upon selection changes.
 
-## optimizable
+## filterStable
 
-`client.optimizable`
+`client.filterStable`
 
 Property getter for a Boolean value indicating if the client query can be safely optimized using a pre-aggregated materialized view.
 This property should return true if changes to the `filterBy` selection do not change the groupby (e.g., binning) values of the client query.
