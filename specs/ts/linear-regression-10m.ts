@@ -3,7 +3,7 @@ import { Spec } from '@uwdata/mosaic-spec';
 export const spec : Spec = {
   "meta": {
     "title": "Linear Regression 10M",
-    "description": "A linear regression plot predicting flight arrival delay based on the time of departure, over 10 million flight records. Regression computation is performed in the database, with optimized selection updates using data cube indexes. The area around a regression line shows a 95% confidence interval. Select a region to view regression results for a data subset.\n"
+    "description": "A linear regression plot predicting flight arrival delay based on the time of departure, over 10 million flight records. Regression computation is performed in the database, with optimized selection updates using pre-aggregated materialized views. The area around a regression line shows a 95% confidence interval. Select a region to view regression results for a data subset.\n"
   },
   "data": {
     "flights10m": "SELECT GREATEST(-60, LEAST(ARR_DELAY, 180))::DOUBLE AS delay, DISTANCE AS distance, DEP_TIME AS time FROM 'https://idl.uw.edu/mosaic-datasets/data/flights-10m.parquet'"

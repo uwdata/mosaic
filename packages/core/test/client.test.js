@@ -7,10 +7,10 @@ import { QueryResult } from '../src/util/query-result.js';
 describe('MosaicClient', () => {
   it('is filtered by selections', async () => {
     // instantiate coordinator to use node.js DuckDB
-    // disable logging and data cube indexes
+    // disable logging and preaggregation
     const coord = new Coordinator(nodeConnector(), {
       logger: null,
-      indexes: { enabled: false }
+      preagg: { enabled: false }
     });
 
     // load test data

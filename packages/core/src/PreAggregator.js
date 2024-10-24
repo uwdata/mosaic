@@ -1,49 +1,50 @@
 import {
   Query, and, asColumn, createTable, isBetween, scaleTransform, sql
 } from '@uwdata/mosaic-sql';
-import { indexColumns } from './util/index-columns.js';
+import { preaggColumns } from './util/preagg-columns.js';
 import { fnv_hash } from './util/hash.js';
 
 const Skip = { skip: true, result: null };
 
 /**
- * @typedef {object} DataCubeIndexerOptions
+ * @typedef {object} PreAggregateOptions
  * @property {string} [schema] Database schema (namespace) in which to write
- *  data cube index tables (default 'mosaic').
+ *  pre-aggregated materialzied views (default 'mosaic').
  * @property {boolean} [options.enabled=true] Flag to enable or disable the
- *  indexer. This setting can later be updated via the `enabled` method.
+ *  pre-aggregation. This flag can be updated later via the `enabled` property.
  */
 
 /**
- * Build and query optimized indices ("data cubes") for fast computation of
- * groupby aggregate queries over compatible client queries and selections.
- * A data cube contains pre-aggregated data for a Mosaic client, subdivided
- * by possible query values from an active selection clause. These cubes are
- * realized as as database tables that can be queried for rapid updates.
+ * Build and query optimized pre-aggregated materaialized views, for fast
+ * computation of groupby aggregate queries over compatible client queries
+ * and selections. The materialized views contains pre-aggregated data for a
+ * Mosaic client, subdivided by possible query values from an active selection
+ * clause. These materialized views are database tables that can be queried
+ * for rapid updates.
  *
  * Compatible client queries must consist of only groupby dimensions and
  * supported aggregate functions. Compatible selections must contain an active
  * clause that exposes metadata for an interval or point value predicate.
  *
- * Data cube index tables are written to a dedicated schema (namespace) that
+ * Materialized views are written to a dedicated schema (namespace) that
  * can be set using the *schema* constructor option. This schema acts as a
- * persistent cache, and index tables may be used across sessions. The
- * `dropIndexTables` method issues a query to remove *all* tables within
- * this schema. This may be needed if the original tables have updated data,
- * but should be used with care.
+ * persistent cache, and materialized view tables may be used across sessions.
+ * The `dropSchema` method issues a query to remove *all* tables within this
+ * schema. This may be needed if the original tables have updated data, but
+ * should be used with care.
  */
-export class DataCubeIndexer {
+export class PreAggregator {
   /**
-   * Create a new data cube index table manager.
+   * Create a new manager of materialized views of pre-aggregated data.
    * @param {import('./Coordinator.js').Coordinator} coordinator A Mosaic coordinator.
-   * @param {DataCubeIndexerOptions} [options] Data cube indexer options.
+   * @param {PreAggregateOptions} [options] Pre-aggregation options.
    */
   constructor(coordinator, {
     schema = 'mosaic',
     enabled = true
   } = {}) {
-    /** @type {Map<import('./MosaicClient.js').MosaicClient, DataCubeInfo | Skip | null>} */
-    this.indexes = new Map();
+    /** @type {Map<import('./MosaicClient.js').MosaicClient, PreAggregateInfo | Skip | null>} */
+    this.entries = new Map();
     this.active = null;
     this.mc = coordinator;
     this._schema = schema;
@@ -51,9 +52,10 @@ export class DataCubeIndexer {
   }
 
   /**
-   * Set the enabled state of this indexer. If false, any local state is
-   * cleared and subsequent index calls will return null until re-enabled.
-   * This method has no effect on any index tables already in the database.
+   * Set the enabled state of this manager. If false, any local state is
+   * cleared and subsequent request calls will return null until re-enabled.
+   * This method has no effect on any pre-aggregated tables already in the
+   * database.
    * @param {boolean} [state] The enabled state to set.
    */
   set enabled(state) {
@@ -64,7 +66,7 @@ export class DataCubeIndexer {
   }
 
   /**
-   * Get the enabled state of this indexer.
+   * Get the enabled state of this manager.
    * @returns {boolean} The current enabled state.
    */
   get enabled() {
@@ -72,10 +74,10 @@ export class DataCubeIndexer {
   }
 
   /**
-   * Set the database schema used by this indexer. Upon changes, any local
-   * state is cleared. This method does _not_ drop any existing data cube
-   * tables, use `dropIndexTables` before changing the schema to also remove
-   * existing index tables in the database.
+   * Set the database schema used for pre-aggregated materialized view tables.
+   * Upon changes, any local state is cleared. This method does _not_ drop any
+   * existing materialized views, use `dropSchema` before changing the schema
+   * to also remove existing materalized views in the database.
    * @param {string} [schema] The schema name to set.
    */
   set schema(schema) {
@@ -86,7 +88,7 @@ export class DataCubeIndexer {
   }
 
   /**
-   * Get the database schema used by this indexer.
+   * Get the database schema used for pre-aggregated materialized view tables.
    * @returns {string} The current schema name.
    */
   get schema() {
@@ -94,49 +96,49 @@ export class DataCubeIndexer {
   }
 
   /**
-   * Issues a query through the coordinator to drop the current index table
-   * schema. *All* tables in the schema will be removed and local state is
-   * cleared. Call this method if the underlying base tables have been updated,
-   * causing derived index tables to become stale and inaccurate. Use this
-   * method with care! Once dropped, the schema will be repopulated by future
-   * data cube indexer requests.
+   * Issues a query through the coordinator to drop the current schema for
+   * pre-aggregated materialized views. *All* materialized view tables in the
+   * schema will be removed and local state is cleared. Call this method if
+   * the underlying base tables have been updated, causing materialized view
+   * to become stale and inaccurate. Use this method with care! Once dropped,
+   * the schema will be repopulated by future pre-aggregation requests.
    * @returns A query result promise.
    */
-  dropIndexTables() {
+  dropSchema() {
     this.clear();
     return this.mc.exec(`DROP SCHEMA IF EXISTS "${this.schema}" CASCADE`);
   }
 
   /**
-   * Clear the cache of data cube index table entries for the current active
-   * selection clause. This method does _not_ drop any existing data cube
-   * tables. Use `dropIndexTables` to remove existing index tables from the
-   * database.
+   * Clear the cache of pre-aggregation entries for the current active
+   * selection clause. This method does _not_ drop any existing materialized
+   * views. Use `dropSchema` to remove existing materialized view tables from
+   * the database.
    */
   clear() {
-    this.indexes.clear();
+    this.entries.clear();
     this.active = null;
   }
 
   /**
-   * Return data cube index table information for the active state of a
-   * client-selection pair, or null if the client is not indexable. This
-   * method has multiple possible side effects, including data cube table
-   * generation and updating internal caches.
+   * Return pre-aggregation information for the active state of a
+   * client-selection pair, or null if the client is not indexable.
+   * This method has multiple possible side effects, including materialized
+   * view creation and updating internal caches.
    * @param {import('./MosaicClient.js').MosaicClient} client A Mosaic client.
    * @param {import('./Selection.js').Selection} selection A Mosaic selection
    *  to filter the client by.
    * @param {import('./util/selection-types.js').SelectionClause} activeClause
    *  A representative active selection clause for which to (possibly) generate
-   *  data cube index tables.
-   * @returns {DataCubeInfo | Skip | null} Data cube index table
-   *  information and query generator, or null if the client is not indexable.
+   *  materialized views of pre-aggregates.
+   * @returns {PreAggregateInfo | Skip | null} Information and query generator
+   * for pre-aggregated tables, or null if the client is not indexable.
    */
-  index(client, selection, activeClause) {
+  request(client, selection, activeClause) {
     // if not enabled, do nothing
     if (!this.enabled) return null;
 
-    const { indexes, mc, schema } = this;
+    const { entries, mc, schema } = this;
     const { source } = activeClause;
 
     // if there is no clause source to track, do nothing
@@ -144,8 +146,8 @@ export class DataCubeIndexer {
 
     // if we have cached active columns, check for updates or exit
     if (this.active) {
-      // if the active clause source has changed, clear indexer state
-      // this cancels outstanding requests and clears the index cache
+      // if the active clause source has changed, clear the state
+      // this cancels outstanding requests and clears the local cache
       // a clear also sets this.active to null
       if (this.active.source !== source) this.clear();
       // if we've seen this source and it's not indexable, do nothing
@@ -157,32 +159,32 @@ export class DataCubeIndexer {
 
     // if cached active columns are unset, analyze the active clause
     if (!active) {
-      // generate active data cube dimension columns to select over
+      // generate active dimension columns to select over
       // will return an object with null source if not indexable
       this.active = active = activeColumns(activeClause);
       // if the active clause is not indexable, exit now
       if (active.source === null) return null;
     }
 
-    // if we have cached data cube index table info, return that
-    if (indexes.has(client)) {
-      return indexes.get(client);
+    // if we have cached pre-aggregate info, return that
+    if (entries.has(client)) {
+      return entries.get(client);
     }
 
-    // get non-active data cube index table columns
-    const indexCols = indexColumns(client);
+    // get non-active materialized view columns
+    const preaggCols = preaggColumns(client);
 
     let info;
-    if (!indexCols) {
-      // if client is not indexable, record null index
+    if (!preaggCols) {
+      // if client is not indexable, record null info
       info = null;
     } else if (selection.skip(client, activeClause)) {
       // skip client if untouched by cross-filtering
       info = Skip;
     } else {
-      // generate data cube index table
+      // generate materialized view table
       const filter = selection.remove(source).predicate(client);
-      info = dataCubeInfo(client.query(filter), active, indexCols, schema);
+      info = preaggregateInfo(client.query(filter), active, preaggCols, schema);
       info.result = mc.exec([
         `CREATE SCHEMA IF NOT EXISTS ${schema}`,
         createTable(info.table, info.create, { temp: false })
@@ -190,19 +192,19 @@ export class DataCubeIndexer {
       info.result.catch(e => mc.logger().error(e));
     }
 
-    indexes.set(client, info);
+    entries.set(client, info);
     return info;
   }
 }
 
 /**
- * Determines the active data cube dimension columns to select over. Returns
- * an object with the clause source, column definitions, and a predicate
- * generator function for the active dimensions of a data cube index table. If
- * the active clause is not indexable or is missing metadata, this method
+ * Determines the active dimension columns to select over. Returns an object
+ * with the clause source, column definitions, and a predicate generator
+ * function for the active dimensions of a pre-aggregated materialized view.
+ * If the active clause is not indexable or is missing metadata, this method
  * returns an object with a null source property.
- * @param {import('./util/selection-types.js').SelectionClause} clause The
- *  active selection clause to analyze.
+ * @param {import('./util/selection-types.js').SelectionClause} clause
+ *  The active selection clause to analyze.
  */
 function activeColumns(clause) {
   const { source, meta } = clause;
@@ -277,17 +279,17 @@ function binInterval(scale, pixelSize, bin) {
 }
 
 /**
- * Generate data cube table query information.
+ * Generate pre-aggregate query information.
  * @param {Query} clientQuery The original client query.
  * @param {*} active Active (selected) column definitions.
- * @param {*} indexCols Data cube index column definitions.
- * @returns {DataCubeInfo}
+ * @param {*} preaggCols Pre-aggregate column definitions.
+ * @returns {PreAggregateInfo}
  */
-function dataCubeInfo(clientQuery, active, indexCols, schema) {
-  const { dims, aggr, aux } = indexCols;
+function preaggregateInfo(clientQuery, active, preaggCols, schema) {
+  const { dims, aggr, aux } = preaggCols;
   const { columns } = active;
 
-  // build index table construction query
+  // build materialized view construction query
   const query = clientQuery
     .select({ ...columns, ...aux })
     .groupby(Object.keys(columns));
@@ -299,23 +301,23 @@ function dataCubeInfo(clientQuery, active, indexCols, schema) {
     subqueryPushdown(subq, cols);
   }
 
-  // push orderby criteria to later cube queries
+  // push orderby criteria to later queries
   const order = query.orderby();
   query.query.orderby = [];
 
   // generate creation query string and hash id
   const create = query.toString();
   const id = (fnv_hash(create) >>> 0).toString(16);
-  const table = `${schema}.cube_${id}`;
+  const table = `${schema}.preagg_${id}`;
 
-  // generate data cube select query
+  // generate preaggregate select query
   const select = Query
     .select(dims, aggr)
     .from(table)
     .groupby(dims)
     .orderby(order);
 
-  return new DataCubeInfo({ id, table, create, active, select });
+  return new PreAggregateInfo({ table, create, active, select });
 }
 
 /**
@@ -335,42 +337,60 @@ function subqueryPushdown(query, cols) {
 }
 
 /**
- * Metadata and query generator for a data cube index table. This
- * object provides the information needed to generate and query
- * a data cube index table for a client-selection pair relative to
- * a specific active clause and selection state.
+ * Metadata and query generator for materialized views of pre-aggregated data.
+ * This object provides the information needed to generate and query the
+ * materialized views for a client-selection pair relative to a specific
+ * active clause and selection state.
  */
-export class DataCubeInfo {
+export class PreAggregateInfo {
   /**
-   * Create a new DataCubeInfo instance.
-   * @param {object} options
+   * Create a new pre-aggregation information instance.
+   * @param {object} options Options object.
+   * @param {string} options.table The materialized view table name.
+   * @param {string} options.create The table creation query.
+   * @param {*} options.active Active column information.
+   * @param {Query} options.select Base query for requesting updates
+   *  using a pre-aggregated materialized view.
    */
-  constructor({ table, create, active, select } = {}) {
-    /** The name of the data cube index table. */
+  constructor({ table, create, active, select }) {
+    /**
+     * The name of the materialized view.
+     * @type {string}
+     */
     this.table = table;
-    /** The SQL query used to generate the data cube index table. */
+    /**
+     * The SQL query used to generate the materialized view.
+     * @type {string}
+     */
     this.create = create;
-    /** A result promise returned for the data cube creation query. */
+    /**
+     * A result promise returned for the materialized view creation query.
+     * @type {Promise | null}
+     */
     this.result = null;
     /**
      * Definitions and predicate function for the active columns,
      * which are dynamically filtered by the active clause.
      */
     this.active = active;
-    /** Select query (sans where clause) for data cube tables. */
+    /**
+     * Select query (sans where clause) for materialized views.
+     * @type {Query}
+     */
     this.select = select;
     /**
      * Boolean flag indicating a client that should be skipped.
-     * This value is always false for completed data cube info.
+     * This value is always false for a created materialized view.
+     * @type {boolean}
      */
     this.skip = false;
   }
 
   /**
-   * Generate a data cube index table query for the given predicate.
+   * Generate a materialized view query for the given predicate.
    * @param {import('@uwdata/mosaic-sql').SQLExpression} predicate The current
    *  active clause predicate.
-   * @returns {Query} A data cube index table query.
+   * @returns {Query} A materialized view query.
    */
   query(predicate) {
     return this.select.clone().where(this.active.predicate(predicate));
