@@ -131,7 +131,7 @@ export interface SelectionClause {
   /**
    * Optional clause metadata that varies based on the selection type.
    * The metadata can be used to optimize selection queries, for example
-   * by creating pre-aggregated data cubes when applicable.
+   * by creating materialized views of pre-aggregated data when applicable.
    */
   meta?: ClauseMetadata;
 }

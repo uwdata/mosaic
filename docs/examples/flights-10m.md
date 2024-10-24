@@ -6,7 +6,7 @@
 # Cross-Filter Flights (10M)
 
 Histograms showing arrival delay, departure time, and distance flown for 10 million flights.
-Once loaded, automatically-generated indexes enable efficient cross-filtered selections.
+Once loaded, automatic pre-aggregation optimizations enable efficient cross-filtered selections.
 
 _You may need to wait a few seconds for the dataset to load._
 

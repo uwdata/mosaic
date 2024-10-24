@@ -20,7 +20,7 @@ Create a new Mosaic Coordinator to manage all database communication for clients
 * _logger_: The logger to use, defaults to `console`.
 * _cache_: Boolean flag to enable/disable query caching (default `true`).
 * _consolidate_ Boolean flag to enable/disable query consolidation (default `true`).
-* _indexes_: Data cube indexer options object. The _enabled_ flag (default `true`) determines if data cube indexes should be used when possible. The _schema_ option (default `'mosaic'`) indicates the database schema in which data cube index tables should be created.
+* _preagg_: Pre-aggregation options object. The _enabled_ flag (default `true`) determines if pre-aggregation optimizations should be used when possible. The _schema_ option (default `'mosaic'`) indicates the database schema in which materialized view tables should be created for pre-aggregated data.
 
 ## databaseConnector
 

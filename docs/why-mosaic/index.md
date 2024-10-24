@@ -129,8 +129,8 @@ DuckDB-WASM in the browser fares well, though is limited (compared to a DuckDB s
 <div style="display: flex; flex-flow: row nowrap; justify-content: flex-start; align-items: flex-start;"><span style="display: inline-block; width: 35px;"></span><div class="legend"><div class="plot-why-swatches plot-why-swatches-wrap"><span class="plot-why-swatch"><svg width="15" height="15" fill="#e15759"><rect width="100%" height="100%"></rect></svg>Vega(-Lite)</span><span class="plot-why-swatch"><svg width="15" height="15" fill="#ff9da6"><rect width="100%" height="100%"></rect></svg>VegaFusion</span><span class="plot-why-swatch"><svg width="15" height="15" fill="#f28e2c"><rect width="100%" height="100%"></rect></svg>Observable Plot</span><span class="plot-why-swatch"><svg width="15" height="15" fill="#4e79a7"><rect width="100%" height="100%"></rect></svg>Mosaic WASM</span><span class="plot-why-swatch"><svg width="15" height="15" fill="#76b7b2"><rect width="100%" height="100%"></rect></svg>Mosaic Local</span></div></div></div>
 
 When it comes to interaction, Mosaic really shines!
-For many forms of aggregated data, the coordinator will automatically pre-aggregate data into smaller "data cube" indexes to support real-time interaction with billion+ element databases.
-The figure below shows benchmark results for index-optimized interactive updates.
+For many forms of aggregated data, the coordinator will automatically pre-aggregate data into smaller tables ("materialized views") to support real-time interaction with billion+ element databases.
+The figure below shows benchmark results for optimized interactive updates.
 Even with billions of rows, Mosaic with a server-side DuckDB instance maintains interactive response rates.
 
 <svg xmlns="http://www.w3.org/2000/svg" class="plot-why" fill="currentColor" font-family="system-ui, sans-serif" font-size="10" text-anchor="middle" width="420" height="115" viewBox="0 0 420 115">
@@ -173,8 +173,8 @@ Even with billions of rows, Mosaic with a server-side DuckDB instance maintains 
 </svg>
 <div style="display: flex; flex-flow: row nowrap; justify-content: flex-start; align-items: flex-start;"><span style="display: inline-block; width: 40px;"></span><div class="legend"><div class="plot-why-swatches plot-why-swatches-wrap"><span class="plot-why-swatch"><svg width="15" height="15" fill="#ff9da6"><rect width="100%" height="100%"></rect></svg>VegaFusion</span><span class="plot-why-swatch"><svg width="15" height="15" fill="#4e79a7"><rect width="100%" height="100%"></rect></svg>Mosaic WASM</span><span class="plot-why-swatch"><svg width="15" height="15" fill="#76b7b2"><rect width="100%" height="100%"></rect></svg>Mosaic Local</span><span class="plot-why-swatch"><svg width="15" height="15" fill="#59a14f"><rect width="100%" height="100%"></rect></svg>Mosaic Remote</span></div></div></div>
 
-If not already present, Mosaic will create data cube index tables when the mouse cursor enters a view.
-For very large data sets with longer data cube construction times, precomputation and server-side caching are supported.
+If not already present, Mosaic will build pre-aggregated data tables when the mouse cursor enters a view.
+For very large data sets with longer pre-aggregation times, precomputation and server-side caching are supported.
 
 Other tasks, like changing a color encoding or adjusting a smoothing parameter, can be carried out quickly in the browser alone, including over aggregated data. Mosaic clients have the flexibility of choosing what works best.
 
