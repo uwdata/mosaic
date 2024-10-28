@@ -6,7 +6,7 @@ import unittest
 from pathlib import Path
 import pytest
 
-from packages.schema_wrapper.generated_classes import (
+from ..generated_classes import (
     AggregateExpression,
     AggregateTransform,
     ChannelValue,
