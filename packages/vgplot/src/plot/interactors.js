@@ -1,10 +1,11 @@
 import {
   Highlight,
-  Toggle,
   Interval1D,
   Interval2D,
+  Nearest,
   PanZoom,
-  Nearest
+  Region,
+  Toggle
 } from '@uwdata/mosaic-plot';
 
 function interactor(InteractorClass, options) {
@@ -16,6 +17,34 @@ function interactor(InteractorClass, options) {
 
 export function highlight({ by, ...channels }) {
   return interactor(Highlight, { selection: by, channels });
+}
+
+export function intervalX({ as, ...rest }) {
+  return interactor(Interval1D, { ...rest, selection: as, channel: 'x' });
+}
+
+export function intervalY({ as, ...rest }) {
+  return interactor(Interval1D, { ...rest, selection: as, channel: 'y' });
+}
+
+export function intervalXY({ as, ...rest }) {
+  return interactor(Interval2D, { ...rest, selection: as });
+}
+
+export function nearest({ as, ...rest }) {
+  return interactor(Nearest, { ...rest, selection: as, pointer: 'xy' });
+}
+
+export function nearestX({ as, ...rest }) {
+  return interactor(Nearest, { ...rest, selection: as, pointer: 'x' });
+}
+
+export function nearestY({ as, ...rest }) {
+  return interactor(Nearest, { ...rest, selection: as, pointer: 'y' });
+}
+
+export function region({ as, ...rest }) {
+  return interactor(Region, { ...rest, selection: as });
 }
 
 export function toggle({ as, ...rest }) {
@@ -36,30 +65,6 @@ export function toggleZ(options) {
 
 export function toggleColor(options) {
   return toggle({ ...options, channels: ['color'] });
-}
-
-export function nearest({ as, ...rest }) {
-  return interactor(Nearest, { ...rest, selection: as, pointer: 'xy' });
-}
-
-export function nearestX({ as, ...rest }) {
-  return interactor(Nearest, { ...rest, selection: as, pointer: 'x' });
-}
-
-export function nearestY({ as, ...rest }) {
-  return interactor(Nearest, { ...rest, selection: as, pointer: 'y' });
-}
-
-export function intervalX({ as, ...rest }) {
-  return interactor(Interval1D, { ...rest, selection: as, channel: 'x' });
-}
-
-export function intervalY({ as, ...rest }) {
-  return interactor(Interval1D, { ...rest, selection: as, channel: 'y' });
-}
-
-export function intervalXY({ as, ...rest }) {
-  return interactor(Interval2D, { ...rest, selection: as });
 }
 
 function zoom(options) {

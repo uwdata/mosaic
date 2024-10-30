@@ -336,17 +336,18 @@ export {
   nearest,
   nearestX,
   nearestY,
-  toggle,
-  toggleX,
-  toggleY,
-  toggleZ,
-  toggleColor,
   pan,
   panX,
   panY,
   panZoom,
   panZoomX,
-  panZoomY
+  panZoomY,
+  region,
+  toggle,
+  toggleX,
+  toggleY,
+  toggleZ,
+  toggleColor
 } from './plot/interactors.js';
 
 export {
