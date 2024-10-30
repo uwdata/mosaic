@@ -1,5 +1,5 @@
 import {
-  SQLExpression, and, contains, isBetween, isNotDistinct, literal,
+  SQLExpression, and, contains, isBetween, isIn, isNotDistinct, literal,
   or, prefix, regexp_matches, suffix
 } from '@uwdata/mosaic-sql';
 import { MosaicClient } from './MosaicClient.js';
@@ -44,8 +44,8 @@ export function clausePoint(field, value, {
 /**
  * Generate a selection clause for multiple selected point values.
  * @param {Field[]} fields The table columns or expressions to select.
- * @param {any[][]} value The selected values, as an array of arrays where
- *  each subarray contains values corresponding to each *fields* entry.
+ * @param {any[][] | undefined} value The selected values, as an array of
+ *  arrays. Each subarray contains values for each *fields* entry.
  * @param {object} options Additional clause properties.
  * @param {*} options.source The source component generating this clause.
  * @param {Set<MosaicClient>} [options.clients] The Mosaic clients associated
@@ -60,11 +60,12 @@ export function clausePoints(fields, value, {
   /** @type {SQLExpression | null} */
   let predicate = null;
   if (value) {
-    const clauses = value.map(vals => {
-      const list = vals.map((v, i) => isNotDistinct(fields[i], literal(v)));
-      return list.length > 1 ? and(list) : list[0];
-    });
-    predicate = clauses.length > 1 ? or(clauses) : clauses[0];
+    const clauses = value.length && fields.length === 1
+      ? [isIn(fields[0], value.map(v => literal(v[0])))]
+      : value.map(v => and(v.map((_, i) => isNotDistinct(fields[i], literal(_)))));
+    predicate = value.length === 0 ? literal(false)
+      : clauses.length > 1 ? or(clauses)
+      : clauses[0];
   }
   return {
     meta: { type: 'point' },
