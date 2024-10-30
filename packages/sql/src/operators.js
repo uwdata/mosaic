@@ -52,3 +52,8 @@ function rangeOp(op, a, range, exclusive) {
 
 export const isBetween = (a, range, exclusive) => rangeOp('BETWEEN', a, range, exclusive);
 export const isNotBetween = (a, range, exclusive) => rangeOp('NOT BETWEEN', a, range, exclusive);
+
+export const isIn = (field, values) => {
+  return sql`(${asColumn(field)} IN (${values.join(', ')}))`
+    .annotate({ op: 'IN', field, values });
+}
