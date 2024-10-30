@@ -18,7 +18,7 @@
     "build": "lerna run build",
     "lint": "lerna run lint",
     "test": "lerna run test",
-    "server": "cd packages/duckdb-server && hatch run serve",
+    "server": "cd packages/duckdb-server && uv run duckdb-server",
     "server:rust": "cd packages/duckdb-server-rust && cargo run",
     "server:node": "nodemon packages/duckdb/bin/run-server.js",
     "dev": "vite",

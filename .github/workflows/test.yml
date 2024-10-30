@@ -41,29 +41,29 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: actions/setup-python@v5
+      - uses: astral-sh/setup-uv@v3
         with:
-          python-version-file: ".python-version"
-          cache: "pip"
-          cache-dependency-path: "**/pyproject.toml"
-
-      - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install hatch
+          version: ">=0.4.0"
+          enable-cache: true
+          cache-dependency-glob: "**/pyproject.toml"
 
       - name: Build and lint Widget
         run: |
           cd packages/widget
-          hatch build
-          hatch fmt --check
+
+          uv build
+          uv run ruff check
+          uv run ruff format --check
 
       - name: Build, lint, and test Server
         run: |
           cd packages/duckdb-server
-          hatch build
-          hatch fmt --check
-          hatch run test:cov
+
+          uv build
+          uv run ruff check
+          uv run ruff format --check
+          uv run mypy
+          uv run --with pytest-cov pytest --cov-report=term-missing --color=yes --cov=pkg
 
   rust:
     name: Test in Rust

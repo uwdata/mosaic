@@ -1,7 +1,3 @@
-[build-system]
-requires = ["hatchling"]
-build-backend = "hatchling.build"
-
 [project]
 name = "mosaic-widget"
 description = "A Jupyter widget for Mosaic"
@@ -17,29 +13,33 @@ dependencies = [
 [project.urls]
 homepage = "https://github.com/uwdata/mosaic"
 
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
 [tool.hatch.build]
 only-packages = true
 artifacts = [
   "mosaic_widget/static/"
 ]
 
-[project.optional-dependencies]
-dev = [
-  "jupyterlab",
+[tool.uv]
+dev-dependencies = [
+  "jupyterlab>=4.2.5",
   "pandas",
   "pyyaml",
-  "watchfiles"
+  "ruff>=0.6.2"
 ]
-
-[tool.hatch.envs.default]
-python = "3.11"
-features = ["dev"]
-installer = "uv"
 
 [tool.hatch.version]
 path = "package.json"
 pattern = "\"version\": \"(?P<version>.+?)\""
 
+# https://github.com/charliermarsh/ruff
 [tool.ruff]
+src = ["mosaic_widget"]
 extend-include = ["*.ipynb"]
-lint.ignore = ["G004", "TRY301", "EM102", "TRY003", "FBT002"]
+
+[tool.ruff.lint]
+pydocstyle = { convention = "numpy" }
+ignore = ["G004", "TRY301", "EM102", "TRY003", "FBT002"]

@@ -1,4 +1,5 @@
 dist
 __pycache__
 .ruff_cache
+.venv
 mosaic_widget/static

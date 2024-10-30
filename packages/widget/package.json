@@ -14,9 +14,10 @@
     "dev": "npm run build -- --watch",
     "test": "tsc -p jsconfig.json",
     "lint": "eslint src",
-    "prepublishOnly": "rimraf dist && mkdir dist && npm run test && npm run lint && hatch fmt --check && npm run build && hatch build",
-    "publish": "hatch publish --user __token__",
-    "release": "npm run prepublishOnly && npm run publish"
+    "prepublishOnly": "npm run test && npm run lint && uv run ruff check && uv run ruff format --check && npm run build",
+    "publish": "uv build && uvx twine upload --skip-existing dist/*",
+    "release": "npm run prepublishOnly && npm run publish",
+    "clean": "rimraf dist"
   },
   "dependencies": {
     "@uwdata/mosaic-core": "^0.11.0",
