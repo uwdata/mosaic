@@ -1,4 +1,6 @@
 import { clausePoints } from '@uwdata/mosaic-core';
+import { getDatum } from './util/get-datum.js';
+import { neq, neqSome } from './util/neq.js';
 
 export class Toggle {
   /**
@@ -44,10 +46,7 @@ export class Toggle {
   init(svg, selector, accessor) {
     const { mark, as, selection } = this;
     const { data: { columns = {} } = {} } = mark;
-    accessor ??= target => as.map(name => {
-      const data = target.__data__;
-      return columns[name][Array.isArray(data) ? data[0] : data];
-    });
+    accessor ??= target => as.map(name => columns[name][getDatum(target)]);
     selector ??= `[data-index="${mark.index}"]`;
     const groups = new Set(svg.querySelectorAll(selector));
 
@@ -85,19 +84,4 @@ function isTargetElement(groups, node) {
   return groups.has(node)
     || groups.has(node.parentNode)
     || groups.has(node.parentNode?.parentNode);
-}
-
-function neqSome(a, b) {
-  return (a == null || b == null)
-    ? (a != null || b != null)
-    : (a.length !== b.length || a.some((x, i) => neq(x, b[i])));
-}
-
-function neq(a, b) {
-  const n = a.length;
-  if (b.length !== n) return true;
-  for (let i = 0; i < n; ++i) {
-    if (a[i] !== b[i]) return true;
-  }
-  return false;
 }

@@ -1,10 +1,9 @@
 import { clauseInterval } from '@uwdata/mosaic-core';
-import { ascending, min, max, select } from 'd3';
-import { brushX, brushY } from './util/brush.js';
+import { ascending, min, max } from 'd3';
+import { brushGroups, brushX, brushY } from './util/brush.js';
 import { closeTo } from './util/close-to.js';
 import { getField } from './util/get-field.js';
 import { invert } from './util/invert.js';
-import { patchScreenCTM } from './util/patchScreenCTM.js';
 import { sanitizeStyles } from './util/sanitize-styles.js';
 
 export class Interval1D {
@@ -63,18 +62,12 @@ export class Interval1D {
   init(svg, root) {
     const { brush, channel, style } = this;
     this.scale = svg.scale(channel);
+    const range = this.value?.map(this.scale.apply).sort(ascending);
 
     const rx = svg.scale('x').range;
     const ry = svg.scale('y').range;
     brush.extent([[min(rx), min(ry)], [max(rx), max(ry)]]);
-
-    const range = this.value?.map(this.scale.apply).sort(ascending);
-    const facets = select(svg).selectAll('g[aria-label="facet"]');
-    root = facets.size() ? facets : select(root ?? svg);
-    this.g = root
-      .append('g')
-      .attr('class', `interval-${channel}`)
-      .each(patchScreenCTM)
+    this.g = brushGroups(svg, root, min(rx), min(ry), `interval-${channel}`)
       .call(brush)
       .call(brush.moveSilent, range);
 
