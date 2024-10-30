@@ -53,13 +53,13 @@ export class Region {
   }
 
   publish(extent) {
-    const { as, bbox, group, mark, svg } = this;
+    const { as, group, mark, svg } = this;
     let value;
 
     // extract channel values for points
     if (extent) {
       const { data: { columns = {} } = {} } = mark;
-      const points = intersect(svg, group, extent, bbox);
+      const points = intersect(svg, group, extent);
       const map = new Map;
       points.forEach(el => {
         const index = getDatum(el);
