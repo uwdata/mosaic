@@ -36,6 +36,7 @@ export {
   isNotBetween,
   isDistinct,
   isNotDistinct,
+  isIn,
   isNull,
   isNotNull
 } from './operators.js';
