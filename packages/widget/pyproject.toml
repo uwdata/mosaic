@@ -23,8 +23,8 @@ artifacts = [
   "mosaic_widget/static/"
 ]
 
-[tool.uv]
-dev-dependencies = [
+[dependency-groups]
+dev = [
   "jupyterlab>=4.2.5",
   "pandas",
   "pyyaml",
