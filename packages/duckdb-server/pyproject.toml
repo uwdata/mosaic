@@ -23,8 +23,8 @@ homepage = "https://github.com/uwdata/mosaic"
 requires = ["hatchling"]
 build-backend = "hatchling.build"
 
-[tool.uv]
-dev-dependencies = [
+[dependency-groups]
+dev = [
     "watchdog[watchmehatch]",
     "mypy>=1.11.1",
     "pytest>=7.4.4",
