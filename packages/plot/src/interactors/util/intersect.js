@@ -30,7 +30,7 @@ export function intersect(svg, el, extent) {
       list.push(child);
     }
   }
-  return list;
+  return /** @type {SVGElement[]} */(list);
 }
 
 function intersects(sel, ox, oy, el, matrix) {

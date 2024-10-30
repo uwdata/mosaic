@@ -1,7 +1,7 @@
 import {
   brush as d3_brush, brushX as d3_brushX, brushY as d3_brushY, select
 } from 'd3';
-import { patchScreenCTM } from './patchScreenCTM';
+import { patchScreenCTM } from './patchScreenCTM.js';
 
 function wrap(brush) {
   const brushOn = brush.on;
