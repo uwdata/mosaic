@@ -1,28 +1,5 @@
 import { ParamRef } from '../Param.js';
-
-/** Styles for rectangular selection brushes. */
-export interface BrushStyles {
-  /**
-   * The overall opacity of the brush rectangle.
-   */
-  opacity?: number;
-  /**
-   * The fill opacity of the brush rectangle.
-   */
-  fillOpacity?: number;
-  /**
-   * The stroke opacity of the brush rectangle.
-   */
-  strokeOpacity?: number;
-  /**
-   * The fill color of the brush rectangle.
-   */
-  fill?: string;
-  /**
-   * The stroke color of the brush rectangle.
-   */
-  stroke?: string;
-}
+import { BrushStyles } from './BrushStyles.js';
 
 /** Options for 1D interval interactors. */
 export interface Interval1DOptions {
@@ -44,9 +21,9 @@ export interface Interval1DOptions {
    */
   pixelSize?: number;
   /**
-   * A flag indicating if peer (sibling) marks are when cross-filtering
-   * (default `true`). If set, peer marks will not be filtered by this
-   * interactor's selection in cross-filtering setups.
+   * A flag indicating if peer (sibling) marks are excluded when
+   * cross-filtering (default `true`). If set, peer marks will not be
+   * filtered by this interactor's selection in cross-filtering setups.
    */
   peers?: boolean;
   /**
