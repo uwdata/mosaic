@@ -59,9 +59,8 @@ export class Region {
     // extract channel values for points
     if (extent) {
       const { data: { columns = {} } = {} } = mark;
-      const points = intersect(svg, group, extent);
       const map = new Map;
-      points.forEach(el => {
+      intersect(svg, group, extent).forEach(el => {
         const index = getDatum(el);
         const vals = as.map(name => columns[name][index]);
         map.set(vals.join('|'), vals); // deduplicate values
