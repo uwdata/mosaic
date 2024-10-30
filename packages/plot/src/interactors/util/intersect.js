@@ -7,7 +7,7 @@ import { parsePath } from './parse-path.js';
  * @param {[[number, number], [number, number]]} extent Rectangular brush
  *  extent within which to select elements. The extent is represented as
  *  upper-left and bottom-right (x, y) coordinates.
- * @returns {SVGElement[]} A list of intersecting SVG elements.
+ * @returns {Element[]} A list of intersecting SVG elements.
  */
 export function intersect(svg, el, extent) {
   // svg origin in viewport coordinates
@@ -20,7 +20,6 @@ export function intersect(svg, el, extent) {
     if (child.tagName === 'g') {
       // handle faceted mark
       const matrix = getTransformMatrix(child) ?? identity;
-      // if (matrix !== identity && matrix.type !== matrix.)
       for (const grandchild of child.children) {
         if (intersects(extent, x, y, grandchild, matrix)) {
           list.push(grandchild);
@@ -30,7 +29,7 @@ export function intersect(svg, el, extent) {
       list.push(child);
     }
   }
-  return /** @type {SVGElement[]} */(list);
+  return list;
 }
 
 function intersects(sel, ox, oy, el, matrix) {

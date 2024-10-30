@@ -433,7 +433,7 @@ export interface MarkOptions {
     | ParamRef;
 
   /**
-   * Additional named channels, for example to include in a tooltop.
+   * Additional named channels, for example to include in a tooltip.
    * Consists of (channel name, data field name) key-value pairs.
    */
   channels?: Record<string, string>;
