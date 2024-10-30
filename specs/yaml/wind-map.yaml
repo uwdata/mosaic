@@ -3,15 +3,20 @@ meta:
   description: >
     `vector` marks on a grid show both direction and intensity—here, the speed of winds.
     Expressions for `rotate`, `length`, and `stroke` values are evaluated in the database.
+    Both the legend and map support interactive selections to highlight values.
   credit: Adapted from an [Observable Plot example](https://observablehq.com/@observablehq/plot-wind-map).
 data:
-  wind: { file: data/wind.parquet }
+  wind:
+    file: data/wind.parquet
+    select: ['*', 'row_number() over () as id']
 params:
+  selected: { select: union }
   length: 2
 vconcat:
 - legend: color
   for: wind-map
   label: Speed (m/s)
+  as: $selected
 - name: wind-map
   plot:
   - mark: vector
@@ -21,6 +26,12 @@ vconcat:
     rotate: { sql: "degrees(atan2(u, v))" }
     length: { sql: $length * sqrt(u * u + v * v) }
     stroke: { sql: sqrt(u * u + v * v) }
+    channels: { id: id }
+  - select: region
+    as: $selected
+    channels: ['id']
+  - select: highlight
+    by: $selected
   lengthScale: identity
   colorZero: true
   inset: 10
