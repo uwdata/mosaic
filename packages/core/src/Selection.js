@@ -1,4 +1,4 @@
-import { or } from '@uwdata/mosaic-sql';
+import { literal, or } from '@uwdata/mosaic-sql';
 import { Param } from './Param.js';
 
 /**
@@ -325,7 +325,7 @@ export class SelectionResolver {
     const { empty, union } = this;
 
     if (empty && !clauseList.length) {
-      return ['FALSE'];
+      return [literal(false)];
     }
 
     // do nothing if cross-filtering and client is currently active
