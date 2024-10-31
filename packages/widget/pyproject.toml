@@ -34,12 +34,3 @@ dev = [
 [tool.hatch.version]
 path = "package.json"
 pattern = "\"version\": \"(?P<version>.+?)\""
-
-# https://github.com/charliermarsh/ruff
-[tool.ruff]
-src = ["mosaic_widget"]
-extend-include = ["*.ipynb"]
-
-[tool.ruff.lint]
-pydocstyle = { convention = "numpy" }
-ignore = ["G004", "TRY301", "EM102", "TRY003", "FBT002"]

@@ -47,21 +47,19 @@ jobs:
           enable-cache: true
           cache-dependency-glob: "**/pyproject.toml"
 
-      - name: Build and lint Widget
+      - name: Format and lint
         run: |
-          cd packages/widget
-
-          uv build
           uv run ruff check
           uv run ruff format --check
 
-      - name: Build, lint, and test Server
+      - name: Build widget
+        run: uv build --package duckdb-server
+
+      - name: Build and test server
         run: |
           cd packages/duckdb-server
 
           uv build
-          uv run ruff check
-          uv run ruff format --check
           uv run mypy
           uv run --with pytest-cov pytest --cov-report=term-missing --color=yes --cov=pkg
 

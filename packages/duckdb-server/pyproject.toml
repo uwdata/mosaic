@@ -39,14 +39,6 @@ packages = ["pkg"]
 path = "package.json"
 pattern = "\"version\": \"(?P<version>.+?)\""
 
-# https://github.com/charliermarsh/ruff
-[tool.ruff]
-src = ["pkg"]
-
-[tool.ruff.lint]
-pydocstyle = { convention = "numpy" }
-ignore = ["G004", "TRY301", "EM102", "EM101", "TRY003", "FBT002", "S608", "TRY002", "ARG001"]
-
 # https://mypy.readthedocs.io/en/stable/config_file.html
 [tool.mypy]
 files = "pkg/**/*.py"
