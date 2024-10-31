@@ -1,13 +1,9 @@
-[build-system]
-requires = ["hatchling"]
-build-backend = "hatchling.build"
-
 [project]
 name = "mosaic-widget"
 description = "A Jupyter widget for Mosaic"
 dynamic = ["version"]
 readme = "README.md"
-requires-python = ">=3.9"
+requires-python = ">=3.10"
 dependencies = [
   "anywidget>=0.9.0",
   "duckdb==1.1.1",
@@ -17,29 +13,24 @@ dependencies = [
 [project.urls]
 homepage = "https://github.com/uwdata/mosaic"
 
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
 [tool.hatch.build]
 only-packages = true
 artifacts = [
   "mosaic_widget/static/"
 ]
 
-[project.optional-dependencies]
+[dependency-groups]
 dev = [
-  "jupyterlab",
+  "jupyterlab>=4.2.5",
   "pandas",
   "pyyaml",
-  "watchfiles"
+  "ruff>=0.6.2"
 ]
-
-[tool.hatch.envs.default]
-python = "3.11"
-features = ["dev"]
-installer = "uv"
 
 [tool.hatch.version]
 path = "package.json"
 pattern = "\"version\": \"(?P<version>.+?)\""
-
-[tool.ruff]
-extend-include = ["*.ipynb"]
-lint.ignore = ["G004", "TRY301", "EM102", "TRY003", "FBT002"]

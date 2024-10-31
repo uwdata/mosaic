@@ -8,16 +8,14 @@ Learn how to install and use the widget in the [Mosaic documentation](https://uw
 
 ## Developer Setup
 
-We use [hatch](https://hatch.pypa.io/latest/) to manage our development setup.
+We use [uv](https://docs.astral.sh/uv/) to manage our development setup.
 
-To activate the environment, run `hatch shell`.
-
-This should install the widget in development mode so you can start Jupyter.
-
-You can start Jupyter with `ANYWIDGET_HMR=1 jupyter lab --notebook-dir=../../dev/notebooks`. If you cannot import the widget module, make sure that your Jupyter uses the right environment. You can add your environment to Jupyter by running `python -m ipykernel install --user --name=mosaic` and then select `mosaic` in the Jupyter environment dropdown.
+You can start Jupyter with `ANYWIDGET_HMR=1 uv run jupyter lab --notebook-dir=../../dev/notebooks`.
 
 Run `npm run build` to build the widget JavaScript code. If you want to live edit the widget code, run `npm run dev` in a separate terminal.
 
+Run `uv run ruff check --fix` and `uv run ruff format` to lint the code.
+
 ## Publishing
 
-Run the build with `npm run build` and `hatch build`. Then publish with `hatch publish`. We publish using tokens so when asked, set the username to `__token__` and then use your token as the password. Alternatively, create a [`.pypirc` file](https://packaging.python.org/en/latest/guides/distributing-packages-using-setuptools/#create-an-account).
+Run the build with `uv build`. Then publish with `uvx twine upload --skip-existing dist/*`. We publish using tokens so when asked, set the username to `__token__` and then use your token as the password. Alternatively, create a [`.pypirc` file](https://packaging.python.org/en/latest/guides/distributing-packages-using-setuptools/#create-an-account).

@@ -70,7 +70,7 @@ To run local interactive examples:
 
 To launch a local DuckDB server:
 
-* Install [hatch](https://hatch.pypa.io/latest/install/), if not already present.
+* Install [uv](https://docs.astral.sh/uv/), if not already present.
 * Run `npm run server` to launch the [`duckdb-server`](https://github.com/uwdata/mosaic/tree/main/packages/duckdb-server). This runs the server in development mode, so the server will restart if you change its code.
 
 To use Mosaic with DuckDB Python in Jupyter Notebooks:
