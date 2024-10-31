@@ -3,7 +3,7 @@ name = "duckdb-server"
 description = "A DuckDB server for Mosaic"
 dynamic = ["version"]
 readme = "README.md"
-requires-python = ">=3.9"
+requires-python = ">=3.10"
 dependencies = [
   "diskcache",
   "duckdb==1.1.1",
@@ -25,7 +25,7 @@ build-backend = "hatchling.build"
 
 [dependency-groups]
 dev = [
-    "watchdog[watchmehatch]",
+    "watchdog",
     "mypy>=1.11.1",
     "pytest>=7.4.4",
     "ruff>=0.6.1",
