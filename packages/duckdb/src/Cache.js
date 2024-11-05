@@ -22,7 +22,7 @@ class CacheEntry {
 
 export class Cache {
   constructor({
-    max = 10000, // max entries
+    max = 10 * 1024 * 1024, // 10 MB cache size as default
     dir = DEFAULT_CACHE_DIR,
     ttl = DEFAULT_TTL
   }) {
@@ -30,6 +30,7 @@ export class Cache {
     this.max = max;
     this.dir = dir;
     this.ttl = ttl;
+    this.curr_size = 0;
     readEntries(dir, this.cache);
   }
 
@@ -52,39 +53,45 @@ export class Cache {
   set(key, data, { persist = false, ttl = this.ttl } = {}) {
     const entry = new CacheEntry(data, persist ? Infinity : ttl);
     this.cache.set(key, entry);
+    this.curr_size += new Blob([entry]).size;
     if (persist) writeEntry(this.dir, key, entry);
     if (this.shouldEvict()) setTimeout(() => this.evict());
     return this;
   }
 
   shouldEvict() {
-    return this.cache.size > this.max;
+    return this.curr_size > this.max;
   }
 
   evict() {
     const expire = performance.now();
-    let lruKey = null;
-    let lruLast = Infinity;
 
-    for (const [key, entry] of this.cache) {
-      const { last } = entry;
-      if (last === Infinity) continue;
+    while (this.shouldEvict()) {
+      let lruKey = null;
+      let lruLast = Infinity;
 
-      // least recently used entry seen so far
-      if (last < lruLast) {
-        lruKey = key;
-        lruLast = last;
+      for (const [key, entry] of this.cache) {
+        const { last } = entry;
+        if (last === Infinity) continue;
+
+        // least recently used entry seen so far
+        if (last < lruLast) {
+          lruKey = key;
+          lruLast = last;
+        }
+
+        // remove if time since last access exceeds ttl
+        if (expire > last) {
+          this.cache.delete(key);
+          this.curr_size -= new Blob([entry]).size;
+        }
       }
 
-      // remove if time since last access exceeds ttl
-      if (expire > last) {
-        this.cache.delete(key);
+      // remove lru entry
+      if (this.shouldEvict() && this.cache.has(lruKey)) {
+        this.curr_size -= new Blob([this.cache.get(lruKey)]).size;
+        this.cache.delete(lruKey);
       }
-    }
-
-    // remove lru entry
-    if (this.cache.size > this.max && lruKey) {
-      this.cache.delete(lruKey);
     }
   }
 }
