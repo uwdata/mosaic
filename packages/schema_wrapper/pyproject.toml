@@ -9,8 +9,24 @@ description = "Schema wrapper classes for Mosaic"
 readme = "README.md"
 requires-python = ">=3.9"
 
+# Add development dependencies
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0",
+    "pytest-cov>=4.0",
+]
+
+[tool.hatch.envs.test]
+dependencies = [
+    "pytest>=7.0",
+    "pytest-cov>=4.0",
+]
+
+[tool.hatch.envs.test.scripts]
+cov = "pytest --cov-report=term-missing --cov=. {args}"
+
 [tool.hatch.build.targets.wheel]
-packages = ["."]  # Changed from "src" to "." since files are in root
+packages = ["."]
 
 [tool.pytest.ini_options]
 testpaths = ["test"]
