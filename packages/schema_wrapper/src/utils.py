@@ -123,3 +123,15 @@ def get_dependencies(data) -> List[str]:
             dependencies = dependencies + get_dependencies(item)
 
     return dependencies
+
+def to_dict(cur_object):
+    if isinstance(cur_object, dict):
+        return {k: to_dict(v) for k, v in cur_object.items()}
+    elif isinstance(cur_object, list):
+        return [to_dict(i) for i in cur_object]
+    elif hasattr(cur_object, '__dict__'):
+        return {k: to_dict(v) for k, v in cur_object.__dict__.items()}
+    elif isinstance(cur_object, (str, int, float, bool, type(None))):
+        return cur_object
+    else:
+        return str(cur_object)
