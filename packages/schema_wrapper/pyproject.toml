@@ -30,7 +30,6 @@ dependencies = [
     "coverage[toml]",
     "pytest",
     "pytest-cov",
-    "pyyaml",
 ]
 
 [tool.hatch.envs.test.scripts]
