@@ -8,6 +8,9 @@ version = "0.1.0"
 description = "Schema wrapper classes for Mosaic"
 readme = "README.md"
 requires-python = ">=3.9"
+dependencies = [
+    "pyyaml",
+]
 
 # Add development dependencies
 [project.optional-dependencies]
@@ -16,14 +19,22 @@ dev = [
     "pytest-cov>=4.0",
 ]
 
+[tool.hatch.envs.default]
+python = "3.11"
+features = ["dev"]
+installer = "uv"
+
 [tool.hatch.envs.test]
+installer = "uv"
 dependencies = [
-    "pytest>=7.0",
-    "pytest-cov>=4.0",
+    "coverage[toml]",
+    "pytest",
+    "pytest-cov",
+    "pyyaml",
 ]
 
 [tool.hatch.envs.test.scripts]
-cov = "pytest --cov-report=term-missing --cov=. {args}"
+cov = "pytest --cov-report=term-missing --cov-config=pyproject.toml --cov=."
 
 [tool.hatch.build.targets.wheel]
 packages = ["."]
