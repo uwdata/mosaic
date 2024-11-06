@@ -1,28 +1,12 @@
 """
 pytest packages/schema_wrapper/test/test.py
 """
-
 import unittest
 from pathlib import Path
 import pytest
+from ..src.utils import to_dict
 
-from ..generated_classes import (
-    AggregateExpression,
-    AggregateTransform,
-    ChannelValue,
-    PlotMarkData,
-    ChannelValueSpec,
-    Argmin,
-    Argmax,
-    Avg,
-    CSSStyles,
-    Plot,
-    BrushStyles,
-    DataCSV,
-    DataQuery,
-    DataSpatial,
-    DataTable
-)
+from ..generated_classes import *
 
 @pytest.fixture
 def sample_data():
@@ -111,6 +95,7 @@ def test_plot_components():
     assert styles.opacity == 0.7
     assert styles.stroke == "black"
     assert styles.strokeOpacity == 0.3
+    print(to_dict(styles))
 
 def test_argmin_argmax():
     # Test Argmin
@@ -127,5 +112,25 @@ def test_argmin_argmax():
     assert argmax.distinct == True
     assert argmax.orderby == "date"
 
+def test_composite():
+    argmax = Argmax([5, 6, True, 0.5], False, TransformField("test"), [TransformField("1"), TransformField("2"), TransformField("3")], ParamRef())
+    print(to_dict(argmax))
+
+def test_plot():
+    plot_spec = Plot(
+
+        plot = [PlotMark(Dot(mark="dot", data=PlotFrom(from_="weather", filterBy="$click"), x=ChannelValueSpec(ChannelValue({"dateMonthDay": "date"})), y=ChannelValueSpec(ChannelValue("temp_max")), fill="weather", r="precipitation"))],
+        xyDomain = "Fixed",
+        xTickFormat = "%b",
+        colorDomain = "$domain",
+        colorRange = "$colors",
+        rDomain = "Fixed",
+        rRange = [2, 10],
+        width = 800
+    )
+
+    print(to_dict(plot_spec))
+
 if __name__ == '__main__':
     pytest.main([__file__])
+

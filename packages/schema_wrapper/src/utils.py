@@ -102,6 +102,9 @@ def get_valid_identifier(
         valid += "_"
     return valid
 
+def revert_validation(field):
+    return field.strip('_')
+
 def get_key_by_value(dictionary, target_value):
     for key, value in dictionary.items():
         if value == target_value:
@@ -123,3 +126,19 @@ def get_dependencies(data) -> List[str]:
             dependencies = dependencies + get_dependencies(item)
 
     return dependencies
+
+def to_dict(cur_object):
+    if isinstance(cur_object, dict):
+        return {revert_validation(k): to_dict(v) for k, v in cur_object.items() if v is not None}
+    elif isinstance(cur_object, list):
+        return [to_dict(i) for i in cur_object if i is not None]
+    elif hasattr(cur_object, '__dict__'):
+        obj_asdict = cur_object.__dict__
+        if len(obj_asdict.keys()) == 1:
+            return to_dict(list(obj_asdict.values())[0])
+        else:
+            return {revert_validation(k): to_dict(v) for k, v in obj_asdict.items() if v is not None}
+    elif isinstance(cur_object, (str, int, float, bool)):
+        return cur_object
+    elif cur_object != None:
+        return str(cur_object)
