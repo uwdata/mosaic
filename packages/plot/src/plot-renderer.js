@@ -1,4 +1,3 @@
-// import { isColumnRef, isNode } from '@uwdata/mosaic-sql';
 import * as Plot from '@observablehq/plot';
 import { setAttributes } from './plot-attributes.js';
 import { Fixed } from './symbols.js';
@@ -103,25 +102,18 @@ function inferLabel(key, spec, marks) {
   const fields = marks.map(mark => mark.channelField(key)?.field);
   if (fields.every(x => x == null)) return; // no columns found
 
-  // check for consistent columns / labels
-  let candCol;
-  let candLabel;
+  // check for consistent label
+  let candidate;
   for (let i = 0; i < fields.length; ++i) {
-    // const { column, label = `${fields[i]}` } = fields[i] || {};
-    let column;
     const label = fieldLabel(fields[i]);
-    if (column === undefined && label === undefined) {
+    if (label === undefined) {
       continue;
-    } else if (candCol === undefined && candLabel === undefined) {
-      candCol = column;
-      candLabel = label;
-    } else if (candLabel !== label) {
-      candLabel = undefined;
-    } else if (candCol !== column) {
-      candCol = undefined;
+    } else if (candidate === undefined) {
+      candidate = label;
+    } else if (candidate !== label) {
+      candidate = undefined;
     }
   }
-  let candidate = candLabel || candCol;
   if (candidate === undefined) return;
 
   // add label to spec
