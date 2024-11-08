@@ -23,7 +23,7 @@ describe('throttle', () => {
     await wait();
     expect(requests.length).toBe(1);
 
-    requests[0].fulfill('done');
+    requests[0].fulfill('fulfilled');
     await wait();
 
     expect(requests.length).toBe(2);
@@ -45,7 +45,7 @@ describe('throttle', () => {
     await wait();
     expect(requests.length).toBe(1);
 
-    requests[0].reject('done');
+    requests[0].reject('rejected');
     await wait();
 
     expect(requests.length).toBe(2);

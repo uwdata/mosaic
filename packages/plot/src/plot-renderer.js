@@ -1,3 +1,4 @@
+// import { isColumnRef, isNode } from '@uwdata/mosaic-sql';
 import * as Plot from '@observablehq/plot';
 import { setAttributes } from './plot-attributes.js';
 import { Fixed } from './symbols.js';
@@ -105,15 +106,15 @@ function inferLabel(key, spec, marks) {
   // check for consistent columns / labels
   let candCol;
   let candLabel;
-  let type;
   for (let i = 0; i < fields.length; ++i) {
-    const { column, label } = fields[i] || {};
+    // const { column, label = `${fields[i]}` } = fields[i] || {};
+    let column;
+    const label = fieldLabel(fields[i]);
     if (column === undefined && label === undefined) {
       continue;
     } else if (candCol === undefined && candLabel === undefined) {
       candCol = column;
       candLabel = label;
-      type = getType(marks[i].data, key) || 'number';
     } else if (candLabel !== label) {
       candLabel = undefined;
     } else if (candCol !== column) {
@@ -123,19 +124,25 @@ function inferLabel(key, spec, marks) {
   let candidate = candLabel || candCol;
   if (candidate === undefined) return;
 
-  // adjust candidate label formatting
-  if ((type === 'number' || type === 'date') && (key === 'x' || key === 'y')) {
-    if (scale.percent) candidate = `${candidate} (%)`;
-    const order = (key === 'x' ? 1 : -1) * (scale.reverse ? -1 : 1);
-    if (key === 'x' || scale.labelAnchor === 'center') {
-      candidate = (key === 'x') === order < 0 ? `← ${candidate}` : `${candidate} →`;
-    } else {
-      candidate = `${order < 0 ? '↑ ' : '↓ '}${candidate}`;
-    }
-  }
-
   // add label to spec
   spec[key] = { ...scale, label: candidate };
+}
+
+function fieldLabel(field) {
+  if (!field) return undefined;
+  switch (field.type) {
+    case 'COLUMN_REF': return field.column;
+    case 'CAST': return fieldLabel(field.expr);
+    case 'FUNCTION':
+      if (field.name === 'make_date') return 'date';
+      break;
+  }
+  return exprLabel(field);
+}
+
+function exprLabel(field) {
+  const s = `${field}`.replaceAll('"', '').replaceAll('*', '');
+  return s.endsWith('()') ? s.slice(0, -2) : s;
 }
 
 function annotatePlot(svg, indices) {
@@ -158,19 +165,6 @@ function annotateMarks(svg, indices) {
       || aria.includes('-grid');
     if (!skip) {
       child.setAttribute('data-index', indices[++index]);
-    }
-  }
-}
-
-function getType(data, channel) {
-  if (!data) return;
-  const { columns } = data;
-  const col = columns[channel] ?? columns[channel+'1'] ?? columns[channel+'2'];
-  if (col) {
-    for (const v of col) {
-      if (v != null) {
-        return v instanceof Date ? 'date' : typeof v;
-      }
     }
   }
 }

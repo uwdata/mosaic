@@ -11,13 +11,13 @@ export {
 
 export {
   Query,
-  agg,
   sql,
   column,
   literal,
   cast,
-  castDouble,
-  castInteger,
+  float32,
+  float64,
+  int32,
   argmax,
   argmin,
   arrayAgg,

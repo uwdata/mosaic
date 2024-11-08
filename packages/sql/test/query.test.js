@@ -1,7 +1,5 @@
 import { expect, describe, it } from 'vitest';
-import {
-  column, desc, gt, lt, max, min, relation, sql, Query
-} from '../src/index.js';
+import { asNode, asTableRef, column, desc, gt, lt, max, min, sql, Query, sum, lead, over } from '../src/index.js';
 
 describe('Query', () => {
   it('selects column name strings', () => {
@@ -17,7 +15,7 @@ describe('Query', () => {
     expect(
       Query
         .select('foo', 'bar', 'baz')
-        .from(relation('data'))
+        .from(asTableRef('data'))
         .toString()
     ).toBe(query);
 
@@ -111,21 +109,60 @@ describe('Query', () => {
         .select({ min: min('foo'), max: max('foo') })
         .from('data')
         .toString()
-    ).toBe('SELECT MIN("foo") AS "min", MAX("foo") AS "max" FROM "data"');
+    ).toBe('SELECT min("foo") AS "min", max("foo") AS "max" FROM "data"');
 
     expect(
       Query
         .select({ min: min(foo), max: max(foo) })
         .from('data')
         .toString()
-    ).toBe('SELECT MIN("foo") AS "min", MAX("foo") AS "max" FROM "data"');
+    ).toBe('SELECT min("foo") AS "min", max("foo") AS "max" FROM "data"');
 
     expect(
       Query
         .select({ min: min('foo').where(gt('bar', 5)) })
         .from('data')
         .toString()
-    ).toBe('SELECT MIN("foo") FILTER (WHERE ("bar" > 5)) AS "min" FROM "data"');
+    ).toBe('SELECT min("foo") FILTER (WHERE ("bar" > 5)) AS "min" FROM "data"');
+  });
+
+  it('selects windowed aggregates', () => {
+    const foo = column('foo');
+
+    expect(
+      Query
+        .select({ csum: sum('foo').window() })
+        .from('data')
+        .toString()
+    ).toBe('SELECT sum("foo") OVER () AS "csum" FROM "data"');
+
+    expect(
+      Query
+        .select({ csum: sum(foo).window() })
+        .from('data')
+        .toString()
+    ).toBe('SELECT sum("foo") OVER () AS "csum" FROM "data"');
+
+    expect(
+      Query
+        .select({ csum: sum(foo).partitionby('baz') })
+        .from('data')
+        .toString()
+    ).toBe('SELECT sum("foo") OVER (PARTITION BY "baz") AS "csum" FROM "data"');
+
+    expect(
+      Query
+        .select({ csum: sum(foo).orderby('bop') })
+        .from('data')
+        .toString()
+    ).toBe('SELECT sum("foo") OVER (ORDER BY "bop") AS "csum" FROM "data"');
+
+    expect(
+      Query
+        .select({ csum: sum(foo).partitionby('baz').orderby('bop') })
+        .from('data')
+        .toString()
+    ).toBe('SELECT sum("foo") OVER (PARTITION BY "baz" ORDER BY "bop") AS "csum" FROM "data"');
   });
 
   it('selects grouped aggregates', () => {
@@ -134,7 +171,7 @@ describe('Query', () => {
     const baz = column('baz');
 
     const query = [
-      'SELECT MIN("foo") AS "min", MAX("foo") AS "max", "bar", "baz"',
+      'SELECT min("foo") AS "min", max("foo") AS "max", "bar", "baz"',
       'FROM "data"',
       'GROUP BY "bar", "baz"'
     ].join(' ');
@@ -178,7 +215,7 @@ describe('Query', () => {
     const bar = column('bar');
 
     const query = [
-      'SELECT MIN("foo") AS "min", "bar"',
+      'SELECT min("foo") AS "min", "bar"',
       'FROM "data"',
       'GROUP BY "bar"',
       'HAVING ("min" > 50) AND ("min" < 100)'
@@ -273,7 +310,7 @@ describe('Query', () => {
     const query = [
       'SELECT *',
       'FROM "data"',
-      'ORDER BY "bar", "baz" DESC NULLS LAST'
+      'ORDER BY "bar", "baz" DESC'
     ].join(' ');
 
     expect(
@@ -305,7 +342,7 @@ describe('Query', () => {
       Query
         .select('*')
         .from('data')
-        .orderby(sql`"bar", "baz" DESC NULLS LAST`)
+        .orderby(sql`"bar", "baz" DESC`)
         .toString()
     ).toBe(query);
   });
@@ -323,41 +360,25 @@ describe('Query', () => {
       Query
         .select('*')
         .from('data')
-        .sample({ rows: 10 })
-        .toString()
-    ).toBe('SELECT * FROM "data" USING SAMPLE 10 ROWS');
-
-    expect(
-      Query
-        .select('*')
-        .from('data')
         .sample(0.3)
         .toString()
-    ).toBe('SELECT * FROM "data" USING SAMPLE 30 PERCENT');
+    ).toBe('SELECT * FROM "data" USING SAMPLE 30%');
 
     expect(
       Query
         .select('*')
         .from('data')
-        .sample({ perc: 30 })
+        .sample(0.1, 'bernoulli')
         .toString()
-    ).toBe('SELECT * FROM "data" USING SAMPLE 30 PERCENT');
+    ).toBe('SELECT * FROM "data" USING SAMPLE 10% (bernoulli)');
 
     expect(
       Query
         .select('*')
         .from('data')
-        .sample({ rows: 100, method: 'bernoulli' })
+        .sample(0.1, 'bernoulli', 12345)
         .toString()
-    ).toBe('SELECT * FROM "data" USING SAMPLE 100 ROWS (bernoulli)');
-
-    expect(
-      Query
-        .select('*')
-        .from('data')
-        .sample({ rows: 100, method: 'bernoulli', seed: 12345 })
-        .toString()
-    ).toBe('SELECT * FROM "data" USING SAMPLE 100 ROWS (bernoulli, 12345)');
+    ).toBe('SELECT * FROM "data" USING SAMPLE 10% (bernoulli, 12345)');
   });
 
   it('selects from multiple relations', () => {
@@ -369,8 +390,8 @@ describe('Query', () => {
     expect(
       Query
         .select({
-          foo: column('a', 'foo'),
-          bar: column('b', 'bar')
+          foo: asNode('a.foo'),
+          bar: asNode('b.bar')
         })
         .from({ a: 'data1', b: 'data2' })
         .toString()
@@ -380,11 +401,27 @@ describe('Query', () => {
   it('selects over windows', () => {
     expect(
       Query
-        .select({ lead: sql`lead("foo") OVER "win"` })
+        .select({ lead: lead('foo').over('win') })
         .from('data')
-        .window({ win: sql`ORDER BY "foo" ASC` })
+        .window({ win: sql`(ORDER BY "foo" ASC)` })
         .toString()
     ).toBe('SELECT lead("foo") OVER "win" AS "lead" FROM "data" WINDOW "win" AS (ORDER BY "foo" ASC)');
+
+    expect(
+      Query
+        .select({ lead: lead('foo').over('win') })
+        .from('data')
+        .window({ win: over().orderby('foo') })
+        .toString()
+    ).toBe('SELECT lead("foo") OVER "win" AS "lead" FROM "data" WINDOW "win" AS (ORDER BY "foo")');
+
+    expect(
+      Query
+        .select({ lead: lead('foo').over('win') })
+        .from('data')
+        .window({ win: over().orderby(desc('foo')) })
+        .toString()
+    ).toBe('SELECT lead("foo") OVER "win" AS "lead" FROM "data" WINDOW "win" AS (ORDER BY "foo" DESC)');
   });
 
   it('selects from subqueries', () => {

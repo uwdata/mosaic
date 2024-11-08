@@ -1,5 +1,14 @@
+import { isNode } from '@uwdata/mosaic-sql';
+
 function extractField(field) {
-  return field?.basis || field;
+  if (isNode(field)) {
+    if (field.type === 'COLUMN_REF') {
+      return field.column;
+    } else if (field.type === 'AGGREGATE') {
+      return field.args[0] ?? field;
+    }
+  }
+  return field;
 }
 
 export function getField(mark, channel) {

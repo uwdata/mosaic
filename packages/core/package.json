@@ -26,7 +26,7 @@
     "build": "npm run types && node ../../esbuild.js mosaic-core",
     "types": "tsc",
     "lint": "eslint src test",
-    "test": "vitest run --dangerouslyIgnoreUnhandledErrors",
+    "test": "vitest run && tsc -p jsconfig.json",
     "prepublishOnly": "npm run test && npm run lint && npm run build"
   },
   "dependencies": {

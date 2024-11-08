@@ -1,4 +1,4 @@
-import { dateBin } from '@uwdata/mosaic-sql';
+import { ExprNode, add, dateBin, div, float64, floor, interval, mul, sub } from '@uwdata/mosaic-sql';
 import { Transform } from '../symbols.js';
 import { channelScale } from '../marks/util/channel-scale.js';
 import { bins } from './bin-step.js';
@@ -16,12 +16,12 @@ export function bin(field, options = {}) {
   const fn = (mark, channel) => {
     if (hasExtent(mark, channel)) {
       return {
-        [`${channel}1`]: binField(mark, channel, field, options),
-        [`${channel}2`]: binField(mark, channel, field, { ...options, offset: 1 })
+        [`${channel}1`]: binNode(mark, channel, field, options),
+        [`${channel}2`]: binNode(mark, channel, field, { ...options, offset: 1 })
       };
     } else {
       return {
-        [channel]: binField(mark, channel, field, options)
+        [channel]: binNode(mark, channel, field, options)
       };
     }
   };
@@ -29,43 +29,54 @@ export function bin(field, options = {}) {
   return fn;
 }
 
-function binField(mark, channel, column, options) {
-  return {
-    column,
-    label: column,
-    get columns() { return [column]; },
-    get basis() { return column; },
-    get stats() { return { column, stats: ['min', 'max'] }; },
-    toString() {
-      const { type, min, max } = mark.channelField(channel);
-      const { interval: i, steps, offset = 0 } = options;
-      const interval = i ?? (
-        type === 'date' || hasTimeScale(mark, channel) ? 'date' : 'number'
-      );
-
-      if (interval === 'number') {
-        // perform number binning
-        const { apply, sqlApply, sqlInvert } = channelScale(mark, channel);
-        const b = bins(apply(min), apply(max), options);
-        const col = sqlApply(column);
-        const base = b.min === 0 ? col : `(${col} - ${b.min})`;
-        const alpha = `${(b.max - b.min) / b.steps}::DOUBLE`;
-        const off = offset ? `${offset} + ` : '';
-        const expr = `${b.min} + ${alpha} * (${off}FLOOR(${base} / ${alpha}))`;
-        return `${sqlInvert(expr)}`;
-      } else {
-        // perform date/time binning
-        const { interval: unit, step = 1 } = interval === 'date'
-          ? timeInterval(min, max, steps || 40)
-          : options;
-        const off = offset ? ` + INTERVAL ${offset * step} ${unit}` : '';
-        return `(${dateBin(column, unit, step)}${off})`;
-      }
-    }
-  };
+function binNode(mark, channel, column, options) {
+  return new BinTransformNode(column, mark, channel, options);
 }
 
 function hasTimeScale(mark, channel) {
   const scale = mark.plot.getAttribute(`${channel}Scale`);
   return scale === 'utc' || scale === 'time';
+}
+
+class BinTransformNode extends ExprNode {
+  constructor(column, mark, channel, options) {
+    super('COLUMN_REF');
+    this.column = column;
+    this.mark = mark;
+    this.channel = channel;
+    this.options = options;
+  }
+
+  get stats() {
+    return { column: this.column, stats: ['min', 'max'] };
+  }
+
+  toString() {
+    const { mark, channel, column, options } = this;
+    const { type, min, max } = mark.channelField(channel);
+    const { interval: i, steps, offset = 0 } = options;
+    const ival = i ?? (
+      type === 'date' || hasTimeScale(mark, channel) ? 'date' : 'number'
+    );
+
+    let result;
+    if (ival === 'number') {
+      // perform number binning
+      const { apply, sqlApply, sqlInvert } = channelScale(mark, channel);
+      const b = bins(apply(min), apply(max), options);
+      const col = sqlApply(column);
+      const alpha = float64((b.max - b.min) / b.steps);
+      const bin = floor(div(b.min === 0 ? col : sub(col, b.min), alpha));
+      const expr = add(b.min, mul(alpha, offset ? add(offset, bin) : bin));
+      result = sqlInvert(expr);
+    } else {
+      // perform date/time binning
+      const { interval: unit, step = 1 } = ival === 'date'
+        ? timeInterval(min, max, steps || 40)
+        : options;
+      const bin = dateBin(column, unit, step);
+      result = offset ? add(bin, interval(unit, offset * step)) : bin;
+    }
+    return `${result}`;
+  }
 }

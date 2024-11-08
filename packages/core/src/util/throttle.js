@@ -16,15 +16,17 @@ export function throttle(callback, debounce = false) {
   let pending = NIL;
 
   function invoke(event) {
-    curr = callback(event).finally(() => {
-      if (next) {
-        const { value } = next;
-        next = null;
-        invoke(value);
-      } else {
-        curr = null;
-      }
-    });
+    curr = callback(event)
+      .catch(() => {})
+      .finally(() => {
+        if (next) {
+          const { value } = next;
+          next = null;
+          invoke(value);
+        } else {
+          curr = null;
+        }
+      });
   }
 
   function enqueue(event) {

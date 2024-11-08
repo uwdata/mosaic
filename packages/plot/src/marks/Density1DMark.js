@@ -1,5 +1,5 @@
 import { toDataColumns } from '@uwdata/mosaic-core';
-import { Query, gt, isBetween, sql, sum } from '@uwdata/mosaic-sql';
+import { binLinear1d, isBetween } from '@uwdata/mosaic-sql';
 import { Transient } from '../symbols.js';
 import { binExpr } from './util/bin-expr.js';
 import { dericheConfig, dericheConv1d } from './util/density.js';
@@ -86,26 +86,4 @@ export class Density1DMark extends Mark {
     }
     return [{ type, data: { length }, options }];
   }
-}
-
-function binLinear1d(q, p, density) {
-  const w = density ? `* ${density}` : '';
-
-  const u = q.clone().select({
-    p,
-    i: sql`FLOOR(p)::INTEGER`,
-    w: sql`(FLOOR(p) + 1 - p)${w}`
-  });
-
-  const v = q.clone().select({
-    p,
-    i: sql`FLOOR(p)::INTEGER + 1`,
-    w: sql`(p - FLOOR(p))${w}`
-  });
-
-  return Query
-    .from(Query.unionAll(u, v))
-    .select({ index: 'i', density: sum('w') })
-    .groupby('index')
-    .having(gt('density', 0));
 }
