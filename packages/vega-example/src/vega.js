@@ -1,5 +1,5 @@
 import { MosaicClient } from '@uwdata/mosaic-core';
-import { Query, dateMonth, isBetween, literal, mean } from '@uwdata/mosaic-sql';
+import { Query, avg, dateMonth, isBetween, literal } from '@uwdata/mosaic-sql';
 
 /** @type {import('vega-lite').TopLevelSpec} */
 export const spec = {
@@ -95,7 +95,7 @@ export class SelectionVegaClient extends MosaicClient {
   query(filter = []) {
     return Query.select({
       date: dateMonth("date"),
-      precipitation: mean("precipitation"),
+      precipitation: avg("precipitation"),
     })
       .from(this.table)
       .groupby(dateMonth("date"))
@@ -118,7 +118,7 @@ export class FilteredVegaClient extends MosaicClient {
   }
 
   query(filter = []) {
-    return Query.select({ precipitation: mean("precipitation") })
+    return Query.select({ precipitation: avg("precipitation") })
       .from(this.table)
       .where(filter);
   }
