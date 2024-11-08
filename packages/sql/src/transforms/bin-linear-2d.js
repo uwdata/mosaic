@@ -2,7 +2,7 @@ import { Query, SelectQuery } from '../ast/query.js';
 import { sum } from '../functions/aggregate.js';
 import { int32 } from '../functions/cast.js';
 import { floor } from '../functions/numeric.js';
-import { add, mul, neq, sub } from '../functions/operators.js';
+import { add, mul, sub } from '../functions/operators.js';
 
 /**
  * Identity function.
@@ -66,6 +66,5 @@ export function binLinear2d(q, xp, yp, weight, xn, groupby) {
       subq(index(xv, yv), w(mul(xpu, ypu)))
     ))
     .select({ index: 'i', density: sum('w') }, groupby)
-    .groupby('index', groupby)
-    .having(neq('density', 0));
+    .groupby('index', groupby);
 }
