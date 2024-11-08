@@ -1,6 +1,6 @@
 import { scaleLinear } from 'd3';
 import { Fixed, Transient } from '../../symbols.js';
-import { isNode, walk } from '@uwdata/mosaic-sql';
+import { BetweenOpNode, walk } from '@uwdata/mosaic-sql';
 
 export const xext = { x: ['min', 'max'] };
 export const yext = { y: ['min', 'max'] };
@@ -39,8 +39,9 @@ export function filteredExtent(filter, column) {
   let hi;
 
   [filter].flat().forEach(p => walk(p, (node) => {
-    if (node.type === 'BETWEEN' && `${node.expr}` === column) {
-      const extent = (node.extent ?? []).map(v => isNode(v) ? v.value : v);
+    if (node instanceof BetweenOpNode && `${node.expr}` === column) {
+      // @ts-ignore
+      const extent = (node.extent ?? []).map(v => v?.value ?? v);
       if (lo == null || extent[0] < lo) lo = extent[0];
       if (hi == null || extent[1] > hi) hi = extent[1];
     }

@@ -1,4 +1,4 @@
-import { Query, abs, add, and, bitAnd, column, cond, div, float64, gt, int32, isAggregateExpression, isNotNull, lt, mul, neq, pow, round, sub } from '@uwdata/mosaic-sql';
+import { Query, abs, add, and, bitAnd, cond, div, float64, gt, int32, isAggregateExpression, isNotNull, lt, mul, neq, pow, round, sub } from '@uwdata/mosaic-sql';
 import { Transient } from '../symbols.js';
 import { extentX, extentY, xyext } from './util/extent.js';
 import { Mark } from './Mark.js';
@@ -60,13 +60,13 @@ export class HexbinMark extends Mark {
     const yr = float64(plot.innerHeight() / (y2 - y1));
 
     // column references
-    const x = column('_x');
-    const y = column('_y');
-    const px = column('_px');
-    const py = column('_py');
-    const pi = column('_pi');
-    const pj = column('_pj');
-    const tt = column('_tt');
+    const x ='_x';
+    const y = '_y';
+    const px = '_px';
+    const py = '_py';
+    const pi = '_pi';
+    const pj = '_pj';
+    const tt = '_tt';
 
     // Top-level query maps from screen space back to data values.
     // Doing so ensures that Plot generates correct data-driven scales.

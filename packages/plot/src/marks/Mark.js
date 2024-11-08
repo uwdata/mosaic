@@ -1,5 +1,5 @@
 import { MosaicClient, toDataColumns } from '@uwdata/mosaic-core';
-import { Query, collectParams, column, isAggregateExpression, isColumnRef, isNode, isParamLike } from '@uwdata/mosaic-sql';
+import { Query, SelectQuery, collectParams, column, isAggregateExpression, isColumnRef, isNode, isParamLike } from '@uwdata/mosaic-sql';
 import { isColor } from './util/is-color.js';
 import { isConstantOption } from './util/is-constant-option.js';
 import { isSymbol } from './util/is-symbol.js';
@@ -207,7 +207,7 @@ export function channelOption(c, columns) {
  * @param {*} table the table to query.
  * @param {*} skip an optional array of channels to skip.
  *  Mark subclasses can skip channels that require special handling.
- * @returns {Query} a Query instance
+ * @returns {SelectQuery} a Query instance
  */
 export function markQuery(channels, table, skip = []) {
   const q = Query.from({ source: table });

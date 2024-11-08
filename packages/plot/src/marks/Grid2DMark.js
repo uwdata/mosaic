@@ -1,6 +1,6 @@
 import { interpolatorBarycentric, interpolateNearest, interpolatorRandomWalk } from '@observablehq/plot';
 import { toDataColumns } from '@uwdata/mosaic-core';
-import { Query, bin2d, binLinear2d, collectColumns, count, isAggregateExpression, isBetween, lt, lte, sum } from '@uwdata/mosaic-sql';
+import { ExprNode, Query, bin2d, binLinear2d, collectColumns, count, isAggregateExpression, isBetween, lt, lte, sum } from '@uwdata/mosaic-sql';
 import { Transient } from '../symbols.js';
 import { binExpr } from './util/bin-expr.js';
 import { dericheConfig, dericheConv2d } from './util/density.js';
@@ -94,7 +94,9 @@ export class Grid2DMark extends Mark {
       .from(source.table)
       .where(filter.concat(bounds));
 
+    /** @type {string[]} */
     const groupby = this.groupby = [];
+    /** @type {Record<string, ExprNode>} */
     const aggrMap = {};
     for (const c of channels) {
       if (Object.hasOwn(c, 'field')) {
