@@ -2,7 +2,7 @@ import { Query } from '../ast/query.js';
 import { sum } from '../functions/aggregate.js';
 import { int32 } from '../functions/cast.js';
 import { floor } from '../functions/numeric.js';
-import { add, mul, sub } from '../functions/operators.js';
+import { add, mul, neq, sub } from '../functions/operators.js';
 
 /**
  * Perform linear binning in one dimension.
@@ -21,5 +21,6 @@ export function binLinear1d(query, x, weight) {
       query.clone().select({ i: int32(p1), w: w(sub(x, p0)) })
     ))
     .select({ index: 'i', density: sum('w') })
-    .groupby('index');
+    .groupby('index')
+    .having(neq('density', 0));
 }

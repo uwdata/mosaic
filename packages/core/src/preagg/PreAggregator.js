@@ -307,8 +307,10 @@ function preaggregateInfo(clientQuery, active, preaggCols, schema) {
     subqueryPushdown(subq, cols);
   }
 
-  // push orderby criteria to later queries
+  // push any having or orderby criteria to output queries
+  const having = query._having;
   const order = query._orderby;
+  query._having = [];
   query._orderby = [];
 
   // generate creation query string and hash id
@@ -321,6 +323,7 @@ function preaggregateInfo(clientQuery, active, preaggCols, schema) {
     .select(group, output)
     .from(table)
     .groupby(group)
+    .having(having)
     .orderby(order);
 
   return new PreAggregateInfo({ table, create, active, select });
