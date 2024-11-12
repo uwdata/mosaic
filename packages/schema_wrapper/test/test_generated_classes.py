@@ -128,7 +128,21 @@ def test_weather_plot():
         rRange = [2, 10],
         width = 800
     )
-    print(to_dict(plot_spec))
+    assert({'colorDomain': '$domain', 
+            'colorRange': '$colors', 
+            'plot': [
+                {'data': {'filterBy': '$click', 'from': 'weather'}, 
+                 'fill': 'weather', 
+                 'mark': 'dot', 
+                 'r': 'precipitation', 
+                 'x': {'dateMonthDay': 'date'}, 
+                 'y': 'temp_max'}
+                ], 
+            'rDomain': 'Fixed', 
+            'rRange': [2, 10], 
+            'width': 800, 
+            'xTickFormat': '%b', 
+            'xyDomain': 'Fixed'} == to_dict(plot_spec))
 
 def test_stock_plot():
     plot_spec = Plot(
@@ -141,7 +155,14 @@ def test_stock_plot():
         width = 680,
         height = 200
     )
-    print(to_dict(plot_spec))
+    assert({'height': 200, 
+            'plot': [
+                {'data': {'from': 'aapl'}, 
+                 'mark': 'lineY', 
+                 'x': 'Date', 
+                 'y': 'Close'}
+                ], 
+            'width': 680} == to_dict(plot_spec))
 
 if __name__ == '__main__':
     pytest.main([__file__])
