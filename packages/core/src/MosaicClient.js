@@ -79,6 +79,13 @@ export class MosaicClient {
   }
 
   /**
+   * Prepare the client before start running queries. You may query additional
+   * information in this function.
+   */
+  async prepare() {
+  }
+
+  /**
    * Return a query specifying the data needed by this client.
    * @param {*} [filter] The filtering criteria to apply in the query.
    * @returns {*} The client query
@@ -136,7 +143,7 @@ export class MosaicClient {
   }
 
   /**
-   * Reset this client, initiating new field info and query requests.
+   * Reset this client, initiating new field info, call the prepare method, and query requests.
    * @returns {Promise}
    */
   initialize() {

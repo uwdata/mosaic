@@ -245,6 +245,9 @@ export class Coordinator {
       client.fieldInfo(await queryFieldInfo(this, fields));
     }
 
+    // call prepare
+    await client.prepare();
+
     // request data query
     return client.requestQuery();
   }
@@ -263,6 +266,14 @@ export class Coordinator {
     if (group) {
       group.clients.delete(client);
     }
+  }
+
+  /** Query field info for the given fields.
+   * @param {any[]} fields - The field(s) to query field info.
+   * @returns {Promise<any[]>} The resulting field info(s).
+   */
+  async queryFieldInfo(fields) {
+    return queryFieldInfo(this, fields);
   }
 }
 
