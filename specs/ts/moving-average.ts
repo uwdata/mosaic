@@ -50,6 +50,7 @@ export const spec : Spec = {
           "stroke": "currentColor"
         }
       ],
+      "xLabel": "day",
       "width": 680,
       "height": 300
     },

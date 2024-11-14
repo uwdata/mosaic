@@ -21,6 +21,7 @@ export default vg.vconcat(
         stroke: "currentColor"
       }
     ),
+    vg.xLabel("day"),
     vg.width(680),
     vg.height(300)
   ),
