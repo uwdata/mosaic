@@ -4,8 +4,13 @@ import { ColumnRefNode } from '../ast/column-ref.js';
 import { SQLNode } from '../ast/node.js';
 import { walk } from './walk.js';
 
+// regexp to match valid aggregate function names
 const aggrRegExp = new RegExp(`^(${aggregateNames.join('|')})`);
-const funcRegExp = /(\\'|\\"|"(?:\\"|[^"])*"|'(?:\\'|[^'])*'|\$\w+|\w+\()/g;
+
+// regexp to tokenize sql text in order to find function calls
+// includes checks to avoid analyzing text within quoted strings
+// function call tokens will have a pattern like "name(".
+const funcRegExp = /(\\'|\\"|"(?:\\"|[^"])*"|'(?:\\'|[^'])*'|\w+\()/g;
 
 function hasVerbatimAggregate(s) {
   return s
