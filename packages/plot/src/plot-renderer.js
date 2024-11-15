@@ -138,17 +138,6 @@ function exprLabel(field) {
 }
 
 function annotatePlot(svg, indices) {
-  const facets = svg.querySelectorAll('g[aria-label="facet"]');
-  if (facets.length) {
-    for (const facet of facets) {
-      annotateMarks(facet, indices);
-    }
-  } else {
-    annotateMarks(svg, indices);
-  }
-}
-
-function annotateMarks(svg, indices) {
   let index = -1;
   for (const child of svg.children) {
     const aria = child.getAttribute('aria-label') || '';
