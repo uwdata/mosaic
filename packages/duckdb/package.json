@@ -31,7 +31,7 @@
   },
   "dependencies": {
     "@uwdata/mosaic-sql": "^0.11.0",
-    "duckdb": "^1.1.1",
+    "duckdb": "^1.1.3",
     "ws": "^8.18.0"
   }
 }
