@@ -172,13 +172,20 @@
 
   async function load(name, source) {
     view.replaceChildren();
+
+    let dir = '../specs/yaml';
     if (name === 'none' && location.search) {
       // get example name from query string
       name = location.search.slice(1);
+      if (name.startsWith('dev:')) {
+        // route to local spec for testing / exploration
+        name = name.slice(4);
+        dir = './specs';
+      }
     }
     if (name !== 'none') {
       const spec = yaml.parse(
-        await fetch(`../specs/yaml/${name}.yaml`).then(res => res.text())
+        await fetch(`${dir}/${name}.yaml`).then(res => res.text())
       );
 
       // options for output generation
