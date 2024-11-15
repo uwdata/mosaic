@@ -1,5 +1,5 @@
 import { clausePoint, clausePoints, isSelection } from '@uwdata/mosaic-core';
-import { select, pointer } from 'd3';
+import { select, pointer, min } from 'd3';
 import { getField } from './util/get-field.js';
 
 export class Nearest {
@@ -39,16 +39,12 @@ export class Nearest {
     const keys = channels.map(c => mark.channelField(c).as);
     const param = !isSelection(selection);
 
-    const facets = select(svg).selectAll('g[aria-label="facet"]');
-    const root = facets.size() ? facets : select(svg);
-
     // extract x, y coordinates for data values and determine scale factors
-    const xscale = svg.scale('x').apply;
-    const yscale = svg.scale('y').apply;
-    const X = Array.from(columns[mark.channelField('x').as], xscale);
-    const Y = Array.from(columns[mark.channelField('y').as], yscale);
+    const [X, Y] = calculateXY(svg, mark);
     const sx = this.pointer === 'y' ? 0.01 : 1;
     const sy = this.pointer === 'x' ? 0.01 : 1;
+
+    const root = select(svg);
 
     // find value nearest to pointer and update param or selection
     // we don't pass undefined values to params, but do allow empty selections
@@ -81,6 +77,41 @@ export class Nearest {
       }
     });
   }
+}
+
+/**
+ * Extract x, y coordinates for data values.
+ */
+function calculateXY(svg, mark) {
+  const { data: { columns } } = mark;
+  const data = c => columns[mark.channelField(c)?.as];
+  const scale = c => svg.scale(c);
+
+  const sx = svg.scale('x');
+  const sy = svg.scale('y');
+  const sfx = scale('fx')?.apply;
+  const sfy = scale('fy')?.apply;
+
+  const X = Array.from(data('x'), sx.apply);
+  const Y = Array.from(data('y'), sy.apply);
+
+  // as needed, adjust coordinates by facets
+  if (sfx) {
+    const dx = min(sx.range);
+    const FX = data('fx');
+    for (let i = 0; i < FX.length; ++i) {
+      X[i] += sfx(FX[i]) - dx;
+    }
+  }
+  if (sfy) {
+    const dy = min(sy.range);
+    const FY = data('fy');
+    for (let i = 0; i < FY.length; ++i) {
+      Y[i] += sfy(FY[i]) - dy;
+    }
+  }
+
+  return [X, Y];
 }
 
 /**
