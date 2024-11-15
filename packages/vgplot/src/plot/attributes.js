@@ -69,8 +69,11 @@ export const aspectRatio = attrf('aspectRatio');
 export const axis = attrf('axis');
 export const inset = attrf('inset');
 export const grid = attrf('grid');
-export const label = attrf('label');
+export const clip = attrf('clip');
 export const padding = attrf('padding');
+export const ariaLabel = attrf('ariaLabel');
+export const ariaDescription = attrf('ariaDescription');
+
 
 // x scale attributes
 export const xScale = attrf('xScale');
