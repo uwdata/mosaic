@@ -13,10 +13,9 @@ function wait(callback) {
  * Create a consolidator to combine structurally compatible queries.
  * @param {*} enqueue Query manager enqueue method
  * @param {*} cache Client-side query cache (sql -> data)
- * @param {*} record Query recorder function
  * @returns A consolidator object
  */
-export function consolidator(enqueue, cache, record) {
+export function consolidator(enqueue, cache) {
   let pending = [];
   let id = 0;
 
@@ -28,7 +27,7 @@ export function consolidator(enqueue, cache, record) {
 
     // build and issue consolidated queries
     for (const group of groups) {
-      consolidate(group, enqueue, record);
+      consolidate(group, enqueue);
       processResults(group, cache);
     }
   }
@@ -127,17 +126,15 @@ function consolidationKey(query, cache) {
  * Issue queries, consolidating where possible.
  * @param {*} group Array of bundled query entries
  * @param {*} enqueue Add entry to query queue
- * @param {*} record Query recorder function
  */
-function consolidate(group, enqueue, record) {
+function consolidate(group, enqueue) {
   if (shouldConsolidate(group)) {
     // issue a single consolidated query
     enqueue({
       request: {
         type: 'arrow',
         cache: false,
-        record: false,
-        query: (group.query = consolidatedQuery(group, record))
+        query: (group.query = consolidatedQuery(group))
       },
       result: (group.result = new QueryResult())
     });
@@ -170,10 +167,9 @@ function shouldConsolidate(group) {
 /**
  * Create a consolidated query for a group.
  * @param {*} group Array of bundled query entries
- * @param {*} record Query recorder function
  * @returns A consolidated Query instance
  */
-function consolidatedQuery(group, record) {
+function consolidatedQuery(group) {
   const maps = group.maps = [];
   const fields = new Map;
 
@@ -190,7 +186,6 @@ function consolidatedQuery(group, record) {
       const [name] = fields.get(e);
       fieldMap.push([name, as]);
     }
-    record(`${query}`);
   }
 
   // use a cloned query as a starting point
