@@ -38,7 +38,7 @@
       },
       "x": "Date",
       "y": {
-        "sql": "Close / (SELECT MAX(Close) FROM stocks WHERE Symbol = source.Symbol AND Date = $point)"
+        "sql": "Close / (SELECT max(Close) FROM stocks WHERE Symbol = source.Symbol AND Date = $point)"
       },
       "dx": 2,
       "text": "Symbol",
@@ -52,7 +52,7 @@
       },
       "x": "Date",
       "y": {
-        "sql": "Close / (SELECT MAX(Close) FROM stocks WHERE Symbol = source.Symbol AND Date = $point)"
+        "sql": "Close / (SELECT max(Close) FROM stocks WHERE Symbol = source.Symbol AND Date = $point)"
       },
       "stroke": "Symbol"
     },

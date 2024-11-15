@@ -30,7 +30,6 @@ export const DATA = 'data';
 // sql expressions
 export const EXPRESSION = 'expression';
 export const SQL = 'sql';
-export const AGG = 'agg';
 
 // inputs
 export const INPUT = 'input';

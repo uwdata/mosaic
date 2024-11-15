@@ -1,5 +1,5 @@
 import { throttle } from '@uwdata/mosaic-core';
-import { and } from '@uwdata/mosaic-sql';
+import { and, isAggregateExpression } from '@uwdata/mosaic-sql';
 import { getDatum } from './util/get-datum.js';
 import { sanitizeStyles } from './util/sanitize-styles.js';
 
@@ -14,7 +14,7 @@ function configureMark(mark) {
     if (channel === 'orderby') {
       ordered = true;
     } else if (field) {
-      if (field.aggregate) {
+      if (isAggregateExpression(field)) {
         aggregate = true;
       } else {
         if (dims.has(as)) continue;
@@ -95,7 +95,7 @@ async function predicateFunction(mark, selection) {
   const s = { __: and(pred) };
   const q = mark.query(filter);
   (q.queries || [q]).forEach(q => {
-    q.groupby().length ? q.select(s) : q.$select(s);
+    q._groupby.length ? q.select(s) : q.setSelect(s);
   });
 
   const data = await mark.coordinator.query(q);

@@ -116,7 +116,7 @@ export class Table extends MosaicClient {
   }
 
   fields() {
-    return this.columns.map(name => column(this.from, name));
+    return this.columns.map(name => column(name, this.from));
   }
 
   fieldInfo(info) {

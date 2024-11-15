@@ -1,6 +1,6 @@
 import { interpolatorBarycentric, interpolateNearest, interpolatorRandomWalk } from '@observablehq/plot';
 import { toDataColumns } from '@uwdata/mosaic-core';
-import { Query, count, isBetween, lt, lte, neq, sql, sum } from '@uwdata/mosaic-sql';
+import { ExprNode, Query, bin2d, binLinear2d, collectColumns, count, isAggregateExpression, isBetween, lt, lte, sum } from '@uwdata/mosaic-sql';
 import { Transient } from '../symbols.js';
 import { binExpr } from './util/bin-expr.js';
 import { dericheConfig, dericheConv2d } from './util/density.js';
@@ -94,12 +94,14 @@ export class Grid2DMark extends Mark {
       .from(source.table)
       .where(filter.concat(bounds));
 
+    /** @type {string[]} */
     const groupby = this.groupby = [];
+    /** @type {Record<string, ExprNode>} */
     const aggrMap = {};
     for (const c of channels) {
       if (Object.hasOwn(c, 'field')) {
         const { as, channel, field } = c;
-        if (field.aggregate) {
+        if (isAggregateExpression(field)) {
           // include custom aggregate
           aggrMap[channel] = field;
           densityMap[channel] = true;
@@ -123,7 +125,7 @@ export class Grid2DMark extends Mark {
     // if no aggregates, default to count density
     if (!aggr.length) {
       aggr.push(DENSITY);
-      aggrMap.density = count();
+      aggrMap[DENSITY] = count();
     }
 
     // generate grid binning query
@@ -131,10 +133,11 @@ export class Grid2DMark extends Mark {
       if (aggr.length > 1) {
         throw new Error('Linear binning not applicable to multiple aggregates.');
       }
-      if (!aggrMap.density) {
+      if (!aggrMap[DENSITY]) {
         throw new Error('Linear binning not applicable to custom aggregates.');
       }
-      return binLinear2d(q, x, y, aggrMap[DENSITY], nx, groupby);
+      const weight = collectColumns(aggrMap[DENSITY])[0];
+      return binLinear2d(q, x, y, weight, nx, groupby);
     } else {
       return bin2d(q, x, y, aggrMap, nx, groupby);
     }
@@ -227,48 +230,4 @@ function maybeInterpolate(interpolate = 'none') {
       return interpolatorRandomWalk();
   }
   throw new Error(`invalid interpolate: ${interpolate}`);
-}
-
-function bin2d(q, xp, yp, aggs, xn, groupby) {
-  return q
-    .select({
-      index: sql`FLOOR(${xp})::INTEGER + FLOOR(${yp})::INTEGER * ${xn}`,
-      ...aggs
-    })
-    .groupby('index', groupby);
-}
-
-function binLinear2d(q, xp, yp, density, xn, groupby) {
-  const w = density?.column ? `* ${density.column}` : '';
-  const subq = (i, w) => q.clone().select({ xp, yp, i, w });
-
-  // grid[xu + yu * xn] += (xv - xp) * (yv - yp) * wi;
-  const a = subq(
-    sql`FLOOR(xp)::INTEGER + FLOOR(yp)::INTEGER * ${xn}`,
-    sql`(FLOOR(xp)::INTEGER + 1 - xp) * (FLOOR(yp)::INTEGER + 1 - yp)${w}`
-  );
-
-  // grid[xu + yv * xn] += (xv - xp) * (yp - yu) * wi;
-  const b = subq(
-    sql`FLOOR(xp)::INTEGER + (FLOOR(yp)::INTEGER + 1) * ${xn}`,
-    sql`(FLOOR(xp)::INTEGER + 1 - xp) * (yp - FLOOR(yp)::INTEGER)${w}`
-  );
-
-  // grid[xv + yu * xn] += (xp - xu) * (yv - yp) * wi;
-  const c = subq(
-    sql`FLOOR(xp)::INTEGER + 1 + FLOOR(yp)::INTEGER * ${xn}`,
-    sql`(xp - FLOOR(xp)::INTEGER) * (FLOOR(yp)::INTEGER + 1 - yp)${w}`
-  );
-
-  // grid[xv + yv * xn] += (xp - xu) * (yp - yu) * wi;
-  const d = subq(
-    sql`FLOOR(xp)::INTEGER + 1 + (FLOOR(yp)::INTEGER + 1) * ${xn}`,
-    sql`(xp - FLOOR(xp)::INTEGER) * (yp - FLOOR(yp)::INTEGER)${w}`
-  );
-
-  return Query
-    .from(Query.unionAll(a, b, c, d))
-    .select({ index: 'i', density: sum('w') }, groupby)
-    .groupby('index', groupby)
-    .having(neq('density', 0));
 }

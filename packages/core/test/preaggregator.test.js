@@ -1,10 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import {
-  Query, argmax, argmin, avg, corr, count, covarPop, covariance,
-  isNotDistinct, literal, loadObjects, max, min, product, regrAvgX,
-  regrAvgY, regrCount, regrIntercept, regrR2, regrSXX, regrSXY,
-  regrSYY, regrSlope, stddev, stddevPop, sum, varPop, variance
-} from '@uwdata/mosaic-sql';
+import { Query, add, argmax, argmin, avg, corr, count, covarPop, covariance, gt, isNotDistinct, literal, loadObjects, max, min, product, regrAvgX, regrAvgY, regrCount, regrIntercept, regrR2, regrSXX, regrSXY, regrSYY, regrSlope, stddev, stddevPop, sum, varPop, variance } from '@uwdata/mosaic-sql';
 import { Coordinator, Selection } from '../src/index.js';
 import { nodeConnector } from './util/node-connector.js';
 import { TestClient } from './util/test-client.js';
@@ -34,13 +29,19 @@ async function run(measure) {
   return new Promise((resolve) => {
     let iter = 0;
     mc.connect(new TestClient(q, sel, {
-      queryResult: data => iter
-        ? resolve(Array.from(data)[0].measure)
-        : ++iter
+      queryResult(data) {
+        if (iter) {
+          resolve([
+            Array.from(data)[0].measure, // query result
+            !!mc.preaggregator.entries.get(this) // optimized?
+          ]);
+        }
+        ++iter;
+      }
     }));
     sel.update({
       source: 'test',
-      schema: { type: 'point' },
+      meta: { type: 'point' },
       predicate: isNotDistinct('dim', literal('b'))
     });
   });
@@ -48,63 +49,93 @@ async function run(measure) {
 
 describe('PreAggregator', () => {
   it('supports count aggregate', async () => {
-    expect(await run(count())).toBe(3);
-    expect(await run(count('x'))).toBe(2);
+    expect(await run(count())).toStrictEqual([3, true]);
+    expect(await run(count('x'))).toStrictEqual([2, true]);
   });
+
   it('supports sum aggregate', async () => {
-    expect(await run(sum('x'))).toBe(7);
+    expect(await run(sum('x'))).toStrictEqual([7, true]);
   });
+
   it('supports avg aggregate', async () => {
-    expect(await run(avg('x'))).toBe(3.5);
+    expect(await run(avg('x'))).toStrictEqual([3.5, true]);
   });
+
   it('supports min aggregate', async () => {
-    expect(await run(min('x'))).toBe(3);
+    expect(await run(min('x'))).toStrictEqual([3, true]);
   });
+
   it('supports max aggregate', async () => {
-    expect(await run(max('x'))).toBe(4);
+    expect(await run(max('x'))).toStrictEqual([4, true]);
   });
+
   it('supports product aggregate', async () => {
-    expect(await run(product('x'))).toBe(12);
+    expect(await run(product('x'))).toStrictEqual([12, true]);
   });
+
   it('supports argmax aggregate', async () => {
-    expect(await run(argmax('dim', 'x'))).toBe('b');
+    expect(await run(argmax('dim', 'x'))).toStrictEqual(['b', true]);
   });
+
   it('supports argmin aggregate', async () => {
-    expect(await run(argmin('dim', 'x'))).toBe('b');
+    expect(await run(argmin('dim', 'x'))).toStrictEqual(['b', true]);
   });
+
   it('supports variance aggregate', async () => {
-    expect(await run(variance('x'))).toBe(0.5);
+    expect(await run(variance('x'))).toStrictEqual([0.5, true]);
   });
+
   it('supports varPop aggregate', async () => {
-    expect(await run(varPop('x'))).toBe(0.25);
+    expect(await run(varPop('x'))).toStrictEqual([0.25, true]);
   });
+
   it('supports stddev aggregate', async () => {
-    expect(await run(stddev('x'))).toBe(Math.sqrt(0.5));
+    expect(await run(stddev('x'))).toStrictEqual([Math.sqrt(0.5), true]);
   });
+
   it('supports stddevPop aggregate', async () => {
-    expect(await run(stddevPop('x'))).toBe(Math.sqrt(0.25));
+    expect(await run(stddevPop('x'))).toStrictEqual([Math.sqrt(0.25), true]);
   });
+
   it('supports covariance aggregate', async () => {
-    expect(await run(covariance('x', 'y'))).toBe(-0.5);
-    expect(await run(covariance('y', 'x'))).toBe(-0.5);
+    expect(await run(covariance('x', 'y'))).toStrictEqual([-0.5, true]);
+    expect(await run(covariance('y', 'x'))).toStrictEqual([-0.5, true]);
   });
+
   it('supports covarPop aggregate', async () => {
-    expect(await run(covarPop('x', 'y'))).toBe(-0.25);
-    expect(await run(covarPop('y', 'x'))).toBe(-0.25);
+    expect(await run(covarPop('x', 'y'))).toStrictEqual([-0.25, true]);
+    expect(await run(covarPop('y', 'x'))).toStrictEqual([-0.25, true]);
   });
+
   it('supports corr aggregate', async () => {
-    expect(await run(corr('x', 'y'))).toBe(-1);
-    expect(await run(corr('y', 'x'))).toBe(-1);
+    expect(await run(corr('x', 'y'))).toStrictEqual([-1, true]);
+    expect(await run(corr('y', 'x'))).toStrictEqual([-1, true]);
   });
+
   it('supports regression aggregates', async () => {
-    expect(await run(regrCount('y', 'x'))).toBe(2);
-    expect(await run(regrAvgX('y', 'x'))).toBe(3.5);
-    expect(await run(regrAvgY('y', 'x'))).toBe(6.5);
-    expect(await run(regrSXX('y', 'x'))).toBe(0.5);
-    expect(await run(regrSYY('y', 'x'))).toBe(0.5);
-    expect(await run(regrSXY('y', 'x'))).toBe(-0.5);
-    expect(await run(regrSlope('y', 'x'))).toBe(-1);
-    expect(await run(regrIntercept('y', 'x'))).toBe(10);
-    expect(await run(regrR2('y', 'x'))).toBe(1);
+    expect(await run(regrCount('y', 'x'))).toStrictEqual([2, true]);
+    expect(await run(regrAvgX('y', 'x'))).toStrictEqual([3.5, true]);
+    expect(await run(regrAvgY('y', 'x'))).toStrictEqual([6.5, true]);
+    expect(await run(regrSXX('y', 'x'))).toStrictEqual([0.5, true]);
+    expect(await run(regrSYY('y', 'x'))).toStrictEqual([0.5, true]);
+    expect(await run(regrSXY('y', 'x'))).toStrictEqual([-0.5, true]);
+    expect(await run(regrSlope('y', 'x'))).toStrictEqual([-1, true]);
+    expect(await run(regrIntercept('y', 'x'))).toStrictEqual([10, true]);
+    expect(await run(regrR2('y', 'x'))).toStrictEqual([1, true]);
+  });
+
+  it('supports multi-aggregate expressions', async () => {
+    expect(await run(add(sum('x'), product('x')))).toStrictEqual([19, true]);
+  });
+
+  it('supports aggregate filter clause', async () => {
+    expect(await run(sum('x').where(gt('x', 2)))).toStrictEqual([7, true]);
+    expect(await run(sum('x').where(gt('x', 3)))).toStrictEqual([4, true]);
+    expect(await run(sum('x').where(gt('x', 4)))).toStrictEqual([null, true]);
+  });
+
+  it('does not support distinct aggregates', async () => {
+    // should handle query, but through non-optimized route
+    expect(await run(count('x').distinct())).toStrictEqual([2, false]);
   });
 });

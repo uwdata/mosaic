@@ -1,12 +1,12 @@
-import { sql } from '@uwdata/mosaic-sql';
+import { bin1d } from '@uwdata/mosaic-sql';
 import { channelScale } from './channel-scale.js';
 
 /**
  * Generates a SQL expression for 1D pixel-level binning.
  * Adjusts for scale transformations (log, sqrt, ...).
  * Returns a [binExpression, field] array, where field is the
- * input value that is binned. Often the field is just a column
- * name. For time data, fields are mapped to numerical timestamps.
+ * input value being binned. Often the field is just a column
+ * name. For time data, fields are mapped to millisecond timestamps.
  */
 export function binExpr(mark, channel, n, extent, pad = 1, expr) {
   // get base expression, the channel field unless otherwise given
@@ -21,10 +21,5 @@ export function binExpr(mark, channel, n, extent, pad = 1, expr) {
   const [lo, hi] = extent.map(v => apply(v));
   const v = sqlApply(expr);
   const f = type === 'time' || type === 'utc' ? v : expr;
-  const d = hi === lo ? 0 : (n - pad) / (hi - lo);
-  const s = d !== 1 ? ` * ${d}::DOUBLE` : '';
-  const bin = reverse
-    ? sql`(${hi} - ${v}::DOUBLE)${s}`
-    : sql`(${v}::DOUBLE - ${lo})${s}`;
-  return [bin, f];
+  return [bin1d(v, lo, hi, n - pad, reverse), f];
 }

@@ -31,9 +31,9 @@ describe('QueryManager', () => {
 
     // Mock the connector
     queryManager.connector({
-      query: async ({ sql }) => {
+      query: ({ sql }) => {
         expect(sql).toBe('CREATE TABLE test (id INT)');
-        return undefined;
+        return new Promise(() => {});
       }
     });
 

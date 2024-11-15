@@ -1,11 +1,12 @@
 {
-    "include": ["src/**/*.js", "src/**/*.ts"],
-    "compilerOptions": {
-      "allowJs": true,
-      "declaration": true,
-      "emitDeclarationOnly": true,
-      "outDir": "dist/types",
-      "module": "node16",
-      "skipLibCheck": true
-    }
+  "include": ["src/index-types.ts"],
+  "compilerOptions": {
+    "allowJs": true,
+    "declaration": true,
+    "emitDeclarationOnly": true,
+    "outDir": "dist/types",
+    "module": "node16",
+    "skipLibCheck": true,
+    "types": []
   }
+}

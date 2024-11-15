@@ -99,3 +99,9 @@ Equivalent to `lo <= expression AND expression <= hi`.
 
 Returns an expression testing if the input _expression_ does not lie between the values _lo_ and _hi_, provided as a two-element array.
 Equivalent to `NOT(lo <= expression AND expression <= hi)`.
+
+## isIn
+
+`isIn(expression, values)`
+
+Returns an expression testing if the input _expression_ matches any of the entries in the _values_ array. Maps to `expression IN (...values)`.

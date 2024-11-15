@@ -1,5 +1,5 @@
 import { MosaicClient, toDataColumns } from '@uwdata/mosaic-core';
-import { Query, Ref, column, isParamLike } from '@uwdata/mosaic-sql';
+import { Query, SelectQuery, collectParams, column, isAggregateExpression, isColumnRef, isNode, isParamLike } from '@uwdata/mosaic-sql';
 import { isColor } from './util/is-color.js';
 import { isConstantOption } from './util/is-constant-option.js';
 import { isSymbol } from './util/is-symbol.js';
@@ -15,7 +15,7 @@ const isFieldObject = (channel, field) => {
 const fieldEntry = (channel, field) => ({
   channel,
   field,
-  as: field instanceof Ref ? field.column : channel
+  as: isColumnRef(field) ? field.column : channel
 });
 const valueEntry = (channel, value) => ({ channel, value });
 
@@ -62,20 +62,16 @@ export class Mark extends MosaicClient {
           channels.push(fieldEntry(channel, column(entry)));
         }
       } else if (isParamLike(entry)) {
-        if (Array.isArray(entry.columns)) {
-          // we currently duck-type to having a columns array
-          // as a check that this is SQLExpression-compatible
-          channels.push(fieldEntry(channel, entry));
-          params.add(entry);
-        } else {
-          const c = valueEntry(channel, entry.value);
-          channels.push(c);
-          entry.addEventListener('value', value => {
-            // update immediately, the value is simply passed to Plot
-            c.value = value;
-            return this.update();
-          });
-        }
+        const c = valueEntry(channel, entry.value);
+        channels.push(c);
+        entry.addEventListener('value', value => {
+          // update immediately, the value is simply passed to Plot
+          c.value = value;
+          return this.update();
+        });
+      } else if (isNode(entry)) {
+        collectParams(entry).forEach(p => params.add(p));
+        channels.push(fieldEntry(channel, entry))
       } else if (type === 'object' && isFieldObject(channel, entry)) {
         channels.push(fieldEntry(channel, entry));
       } else if (entry !== undefined) {
@@ -211,7 +207,7 @@ export function channelOption(c, columns) {
  * @param {*} table the table to query.
  * @param {*} skip an optional array of channels to skip.
  *  Mark subclasses can skip channels that require special handling.
- * @returns {Query} a Query instance
+ * @returns {SelectQuery} a Query instance
  */
 export function markQuery(channels, table, skip = []) {
   const q = Query.from({ source: table });
@@ -225,7 +221,7 @@ export function markQuery(channels, table, skip = []) {
     if (channel === 'orderby') {
       q.orderby(c.value);
     } else if (field) {
-      if (field.aggregate) {
+      if (isAggregateExpression(field)) {
         aggr = true;
       } else {
         if (dims.has(as)) continue;

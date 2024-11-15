@@ -1,6 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { Query } from '@uwdata/mosaic-sql/src/Query.js';
-import { count, sum } from '@uwdata/mosaic-sql/src/aggregates.js';
+import { Query, count, sum } from '@uwdata/mosaic-sql';
 import { consolidator } from '../src/QueryConsolidator.js';
 import { Priority } from '../src/QueryManager.js';
 import { voidCache } from '../src/util/cache.js';
