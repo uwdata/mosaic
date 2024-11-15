@@ -5,7 +5,7 @@ import { SQLNode } from '../ast/node.js';
 import { walk } from './walk.js';
 
 // regexp to match valid aggregate function names
-const aggrRegExp = new RegExp(`^(${aggregateNames.join('|')})`);
+const aggrRegExp = new RegExp(`^(${aggregateNames.join('|')})$`);
 
 // regexp to tokenize sql text in order to find function calls
 // includes checks to avoid analyzing text within quoted strings
@@ -15,7 +15,7 @@ const funcRegExp = /(\\'|\\"|"(?:\\"|[^"])*"|'(?:\\'|[^'])*'|\w+\()/g;
 function hasVerbatimAggregate(s) {
   return s
     .split(funcRegExp)
-    .some(tok => tok.endsWith('(') && aggrRegExp.test(tok));
+    .some(tok => tok.endsWith('(') && aggrRegExp.test(tok.slice(0, -1)));
 }
 
 /**
