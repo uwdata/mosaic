@@ -171,7 +171,7 @@ export interface Table {
   /**
    * The name of a database table to use as a data source for this widget.
    */
-  from: string;
+  from: string | ParamRef;
   /**
    * A list of column names to include in the table grid.
    * If unspecified, all table columns are included.
