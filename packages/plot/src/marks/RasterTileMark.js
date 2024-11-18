@@ -36,7 +36,7 @@ export class RasterTileMark extends Grid2DMark {
   }
 
   tileQuery(extent) {
-    const { interpolate, pad, channels, densityMap, source } = this;
+    const { interpolate, pad, channels, densityMap } = this;
     const [[x0, x1], [y0, y1]] = extent;
     const [nx, ny] = this.bins;
     const [x, bx] = binExpr(this, 'x', nx, [x0, x1], pad);
@@ -49,7 +49,7 @@ export class RasterTileMark extends Grid2DMark {
       : [lte(+x0, bx), lt(bx, +x1), lte(+y0, by), lt(by, +y1)];
 
     const q = Query
-      .from(source.table)
+      .from(this.sourceTable())
       .where(bounds);
 
     const groupby = this.groupby = [];

@@ -16,13 +16,13 @@ export class DenseLineMark extends RasterMark {
   }
 
   query(filter = []) {
-    const { channels, normalize, source, pad } = this;
+    const { channels, normalize, pad } = this;
     const [nx, ny] = this.bins = this.binDimensions();
     const [x] = binExpr(this, 'x', nx, extentX(this, filter), pad);
     const [y] = binExpr(this, 'y', ny, extentY(this, filter), pad);
 
     const q = Query
-      .from(source.table)
+      .from(this.sourceTable())
       .where(stripXY(this, filter));
 
     this.aggr = ['density'];

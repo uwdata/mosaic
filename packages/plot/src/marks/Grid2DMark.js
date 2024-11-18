@@ -77,7 +77,7 @@ export class Grid2DMark extends Mark {
   }
 
   query(filter = []) {
-    const { interpolate, pad, channels, densityMap, source } = this;
+    const { interpolate, pad, channels, densityMap } = this;
     const [x0, x1] = this.extentX = extentX(this, filter);
     const [y0, y1] = this.extentY = extentY(this, filter);
     const [nx, ny] = this.bins = this.binDimensions();
@@ -91,7 +91,7 @@ export class Grid2DMark extends Mark {
       : [lte(+x0, bx), lt(bx, +x1), lte(+y0, by), lt(by, +y1)];
 
     const q = Query
-      .from(source.table)
+      .from(this.sourceTable())
       .where(filter.concat(bounds));
 
     /** @type {string[]} */

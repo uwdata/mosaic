@@ -20,12 +20,12 @@ export class ErrorBarMark extends Mark {
   }
 
   query(filter = []) {
-    const { channels, field, source: { table } } = this;
+    const { channels, field } = this;
     const fields = channels.concat([
       { field: avg(field), as: '__avg__' },
       { field: div(stddev(field), sqrt(count(field))), as: '__se__', }
     ]);
-    return markQuery(fields, table).where(filter);
+    return markQuery(fields, this.sourceTable()).where(filter);
   }
 
   queryResult(data) {
