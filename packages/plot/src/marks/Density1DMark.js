@@ -36,10 +36,10 @@ export class Density1DMark extends Mark {
 
   query(filter = []) {
     if (this.hasOwnData()) throw new Error('Density1DMark requires a data source');
-    const { bins, channels, dim, source: { table } } = this;
+    const { bins, channels, dim } = this;
     const extent = this.extent = (dim === 'x' ? extentX : extentY)(this, filter);
     const [x, bx] = binExpr(this, dim, bins, extent);
-    const q = markQuery(channels, table, [dim])
+    const q = markQuery(channels, this.sourceTable(), [dim])
       .where(filter.concat(isBetween(bx, extent)));
     const v = this.channelField('weight') ? 'weight' : null;
     return binLinear1d(q, x, v);

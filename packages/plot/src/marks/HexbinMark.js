@@ -23,7 +23,7 @@ export class HexbinMark extends Mark {
 
   query(filter = []) {
     if (this.hasOwnData()) return null;
-    const { plot, binWidth, channels, source } = this;
+    const { plot, binWidth, channels } = this;
 
     // Extract channel information, update top-level query
     // and extract dependent columns for aggregates
@@ -109,7 +109,7 @@ export class HexbinMark extends Mark {
               ),
             [y]: cond(tt, int32(add(pj, cond(lt(py, pj), -1, 1))), pj)
           }, '*')
-          .from(source.table)
+          .from(this.sourceTable())
           .where(isNotNull(xc.field), isNotNull(yc.field), filter)
       );
   }

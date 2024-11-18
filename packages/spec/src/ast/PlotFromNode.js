@@ -16,7 +16,7 @@ export function parseMarkData(spec, ctx) {
   }
 
   const { from: table, ...options } = spec;
-  return new PlotFromNode(table, parseOptions(options, ctx));
+  return new PlotFromNode(ctx.maybeParam(table), parseOptions(options, ctx));
 }
 
 export class PlotFromNode extends ASTNode {
@@ -28,17 +28,17 @@ export class PlotFromNode extends ASTNode {
 
   instantiate(ctx) {
     const { table, options } = this;
-    return ctx.api[FROM](table, options.instantiate(ctx));
+    return ctx.api[FROM](table.instantiate(ctx), options.instantiate(ctx));
   }
 
   codegen(ctx) {
-    const { type, table, options } = this;
-    const opt = options.codegen(ctx);
-    return `${ctx.ns()}${type}("${table}"${opt ? ', ' + opt : ''})`;
+    const table = this.table.codegen(ctx);
+    const opt = this.options.codegen(ctx);
+    return `${ctx.ns()}${this.type}(${table}${opt ? ', ' + opt : ''})`;
   }
 
   toJSON() {
     const { type, table, options } = this;
-    return { [type]: table, ...options.toJSON() };
+    return { [type]: table.toJSON(), ...options.toJSON() };
   }
 }

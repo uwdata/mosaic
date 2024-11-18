@@ -1,4 +1,4 @@
-import { MosaicClient, toDataColumns } from '@uwdata/mosaic-core';
+import { isParam, MosaicClient, toDataColumns } from '@uwdata/mosaic-core';
 import { Query, SelectQuery, collectParams, column, isAggregateExpression, isColumnRef, isNode, isParamLike } from '@uwdata/mosaic-sql';
 import { isColor } from './util/is-color.js';
 import { isConstantOption } from './util/is-constant-option.js';
@@ -28,15 +28,17 @@ export class Mark extends MosaicClient {
     super(source?.options?.filterBy);
     this.type = type;
     this.reqs = reqs;
-
     this.source = source;
-    if (isDataArray(this.source)) {
-      this.data = toDataColumns(this.source);
-    }
 
     const channels = this.channels = [];
     const detail = this.detail = new Set;
     const params = this.params = new Set;
+
+    if (isDataArray(source)) {
+      this.data = toDataColumns(source);
+    } else if (isParam(source?.table)) {
+      params.add(source.table);
+    }
 
     const process = (channel, entry) => {
       const type = typeof entry;
@@ -95,6 +97,11 @@ export class Mark extends MosaicClient {
     if (this.source?.table) this.queryPending();
   }
 
+  sourceTable() {
+    const table = this.source?.table;
+    return table ? (isParam(table) ? table.value : table) : null;
+  }
+
   hasOwnData() {
     return this.source == null || isDataArray(this.source);
   }
@@ -117,7 +124,7 @@ export class Mark extends MosaicClient {
   fields() {
     if (this.hasOwnData()) return null;
 
-    const { source: { table }, channels, reqs } = this;
+    const { channels, reqs } = this;
     const fields = new Map;
     for (const { channel, field } of channels) {
       if (!field) continue;
@@ -128,6 +135,7 @@ export class Mark extends MosaicClient {
       reqs[channel]?.forEach(s => entry.add(s));
     }
 
+    const table = this.sourceTable();
     return Array.from(fields, ([c, s]) => ({ table, column: c, stats: s }));
   }
 
@@ -150,8 +158,7 @@ export class Mark extends MosaicClient {
    */
   query(filter = []) {
     if (this.hasOwnData()) return null;
-    const { channels, source: { table } } = this;
-    return markQuery(channels, table).where(filter);
+    return markQuery(this.channels, this.sourceTable()).where(filter);
   }
 
   queryPending() {
