@@ -13,34 +13,36 @@ export function lruCache({
   ttl = 3 * 60 * 60 * 1000 // time-to-live, default 3 hours
 } = {}) {
   let cache = new Map;
-  let curr_size = 0;
+  let currSize = 0;
 
   function evict() {
     const expire = performance.now() - ttl;
 
-    while (curr_size > max) {
+    while (currSize > max) {
       let lruKey = null;
       let lruLast = Infinity;
+      let lruSize = null;
 
       for (const [key, value] of cache) {
-        const { last } = value;
+        const { last, size } = value;
   
         // least recently used entry seen so far
         if (last < lruLast) {
           lruKey = key;
           lruLast = last;
+          lruSize = size;
         }
   
         // remove if time since last access exceeds ttl
         if (expire > last) {
           cache.delete(key);
-          curr_size -= new Blob([value]).size;
+          currSize -= lruSize;
         }
       }
   
       // remove lru entry
-      if (cache.has(lruKey) && curr_size > max) {
-        curr_size -= new Blob([cache.get(lruKey)]).size;
+      if (cache.has(lruKey)) {
+        currSize -= cache.get(lruKey).size;
         cache.delete(lruKey);
       }
     }
@@ -55,11 +57,15 @@ export function lruCache({
       }
     },
     set(key, value) {
-      let set_value = { last: performance.now(), value };
-      cache.set(key, set_value);
-      curr_size += new Blob([value]).size;
+      let setValue = { 
+        last: performance.now(), 
+        size: new Blob([value]).size,
+        value 
+      };
+      cache.set(key, setValue);
+      currSize += setValue.size;
       
-      if (curr_size > max) requestIdle(evict);
+      if (currSize > max) requestIdle(evict);
       return value;
     },
     clear() { cache = new Map; }
