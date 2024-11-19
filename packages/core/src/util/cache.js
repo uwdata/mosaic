@@ -36,13 +36,13 @@ export function lruCache({
         // remove if time since last access exceeds ttl
         if (expire > last) {
           cache.delete(key);
-          currSize -= lruSize;
+          currSize -= size;
         }
       }
   
       // remove lru entry
       if (cache.has(lruKey)) {
-        currSize -= cache.get(lruKey).size;
+        currSize -= lruSize;
         cache.delete(lruKey);
       }
     }
@@ -51,6 +51,7 @@ export function lruCache({
   return {
     get(key) {
       const entry = cache.get(key);
+      console.log("Size", currSize, cache.size)
       if (entry) {
         entry.last = performance.now();
         return entry.value;
@@ -62,6 +63,10 @@ export function lruCache({
         size: new Blob([value]).size,
         value 
       };
+      
+      if (cache.has(key)) {
+        currSize -= cache.get(key).size;
+      }
       cache.set(key, setValue);
       currSize += setValue.size;
       
