@@ -1,34 +1,29 @@
 import { COLUMN_PARAM } from '../constants.js';
-import { columnRefString } from './column-ref.js';
-import { ExprNode } from './node.js';
+import { ColumnRefNode } from './column-ref.js';
 
-export class ColumnParamNode extends ExprNode {
+export class ColumnParamNode extends ColumnRefNode {
   /**
    * Instantiate a column param node.
-   * @param {import('../types.js').ParamLike} param The column name as a parameter.
-   * @param {import('./table-ref.js').TableRefNode} [table] The table reference.
+   * @param {import('./param.js').ParamNode} param The column name as a
+   *  parameter node.
+   * @param {import('./table-ref.js').TableRefNode} [table] The table
+   *  reference.
    */
   constructor(param, table) {
-    super(COLUMN_PARAM);
+    super(COLUMN_PARAM, table);
     /**
-     * The column name as a parameter.
-     * @type {import('../types.js').ParamLike}
+     * The column name as a parameter node.
+     * @type {import('./param.js').ParamNode}
      * @readonly
      */
     this.param = param;
-    /**
-     * The table reference.
-     * @type {import('./table-ref.js').TableRefNode}
-     * @readonly
-     */
-    this.table = table;
   }
 
   /**
-   * Generate a SQL query string for this node.
+   * Returns the column name.
    * @returns {string}
    */
-  toString() {
-    return columnRefString(this.param.value, this.table);
+  get column() {
+    return `${this.param.value}`;
   }
 }
