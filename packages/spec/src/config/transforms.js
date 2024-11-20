@@ -10,6 +10,7 @@ export function transformNames(overrides = []) {
     'centroid',
     'centroidX',
     'centroidY',
+    'column',
     'count',
     'covariance',
     'covarPop',

@@ -13,6 +13,7 @@ export const OPTIONS = 'options';
 // params and selections
 export const SELECTION = 'selection';
 export const PARAMREF = 'paramref';
+export const COLUMPARAMREF = 'columnparamref';
 export const PARAM = 'param';
 export const INCLUDE = 'include';
 
