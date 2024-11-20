@@ -133,7 +133,7 @@ function fieldLabel(field) {
 }
 
 function exprLabel(field) {
-  const s = `${field}`.replaceAll('"', '').replaceAll('*', '');
+  const s = `${field}`.replaceAll('"', '').replaceAll('(*)', '()');
   return s.endsWith('()') ? s.slice(0, -2) : s;
 }
 
