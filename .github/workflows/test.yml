@@ -50,7 +50,7 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install hatch
+          pip install hatch pytest pytest-cov
 
       - name: Build and lint Widget
         run: |
@@ -64,6 +64,12 @@ jobs:
           hatch build
           hatch fmt --check
           hatch run test:cov
+
+      - name: Build and test Schema Wrapper
+        run: |
+          cd packages/schema_wrapper
+          pip install -e .
+          pytest test/ --cov=schema_wrapper --cov-report=term-missing
 
   rust:
     name: Test in Rust

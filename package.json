@@ -30,7 +30,7 @@
   "devDependencies": {
     "ajv": "^8.17.1",
     "ajv-formats": "^3.0.1",
-    "esbuild": "^0.23.1",
+    "esbuild": "^0.24.0",
     "eslint": "^9.10.0",
     "eslint-plugin-jsdoc": "^50.2.3",
     "lerna": "^8.1.8",

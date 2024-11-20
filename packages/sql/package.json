@@ -14,13 +14,15 @@
   "module": "src/index.js",
   "jsdelivr": "dist/mosaic-sql.min.js",
   "unpkg": "dist/mosaic-sql.min.js",
+  "types": "dist/types/index.d.ts",
   "repository": {
     "type": "git",
     "url": "https://github.com/uwdata/mosaic.git"
   },
   "scripts": {
     "prebuild": "rimraf dist && mkdir dist",
-    "build": "node ../../esbuild.js mosaic-sql",
+    "build": "npm run types && node ../../esbuild.js mosaic-sql",
+    "types": "tsc",
     "lint": "eslint src test",
     "test": "vitest run",
     "prepublishOnly": "npm run test && npm run lint && npm run build"
