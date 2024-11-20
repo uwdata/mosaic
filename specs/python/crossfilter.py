@@ -1,0 +1,74 @@
+from mosaic_spec import *
+from typing import Dict, Any, Union
+
+spec = {
+  "data": {
+    "flights": {
+      "type": "parquet",
+      "file": "data/flights-200k.parquet"
+    }
+  },
+  "params": {
+    "brush": {
+      "select": "crossfilter"
+    }
+  },
+  "vconcat": [
+    {
+      "plot": [
+        {
+          "mark": "rectY",
+          "data": {
+            "from": "flights",
+            "filterBy": "$brush"
+          },
+          "x": {
+            "bin": "delay"
+          },
+          "y": {
+            "count": ""
+          },
+          "fill": "steelblue",
+          "inset": 0.5
+        },
+        {
+          "select": "intervalX",
+          "as": "$brush"
+        }
+      ],
+      "xDomain": "Fixed",
+      "xLabel": "Arrival Delay (min)",
+      "xLabelAnchor": "center",
+      "yTickFormat": "s",
+      "height": 200
+    },
+    {
+      "plot": [
+        {
+          "mark": "rectY",
+          "data": {
+            "from": "flights",
+            "filterBy": "$brush"
+          },
+          "x": {
+            "bin": "time"
+          },
+          "y": {
+            "count": ""
+          },
+          "fill": "steelblue",
+          "inset": 0.5
+        },
+        {
+          "select": "intervalX",
+          "as": "$brush"
+        }
+      ],
+      "xDomain": "Fixed",
+      "xLabel": "Departure Time (hour)",
+      "xLabelAnchor": "center",
+      "yTickFormat": "s",
+      "height": 200
+    }
+  ]
+}
