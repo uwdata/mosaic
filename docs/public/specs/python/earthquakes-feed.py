@@ -1,52 +1,27 @@
-from mosaic_spec import *
+from mosaic import *
+from mosaic.spec import *
+from mosaic.generated_classes import *
 from typing import Dict, Any, Union
 
-spec = {
-  "meta": {
-    "title": "Earthquakes Feed",
-    "description": "Earthquake data from the USGS live feed. To show land masses, this example loads and parses TopoJSON data in the database. Requires the DuckDB `spatial` extension.\n",
-    "credit": "Adapted from an [Observable Plot example](https://observablehq.com/@observablehq/plot-live-earthquake-map)."
-  },
-  "data": {
-    "feed": {
-      "type": "spatial",
-      "file": "data/usgs-feed.geojson"
-    },
-    "world": {
-      "type": "spatial",
-      "file": "data/countries-110m.json",
-      "layer": "land"
-    }
-  },
-  "plot": [
-    {
-      "mark": "geo",
-      "data": {
-        "from": "world"
-      },
-      "fill": "currentColor",
-      "fillOpacity": 0.2
-    },
-    {
-      "mark": "sphere",
-      "strokeWidth": 0.5
-    },
-    {
-      "mark": "geo",
-      "data": {
-        "from": "feed"
-      },
-      "r": {
-        "sql": "POW(10, mag)"
-      },
-      "stroke": "red",
-      "fill": "red",
-      "fillOpacity": 0.2,
-      "title": "title",
-      "href": "url",
-      "target": "_blank"
-    }
-  ],
-  "margin": 2,
-  "projectionType": "equirectangular"
-}
+
+feed = DataSource(
+    type="spatial",
+    file="data/usgs-feed.geojson",
+    where=""
+)
+world = DataSource(
+    type="spatial",
+    file="data/countries-110m.json",
+    where=""
+)
+
+spec = Plot(
+    plot=[
+        PlotMark(Geo(mark="geo", data=PlotFrom(from_="world"), fill=ChannelValueSpec(ChannelValue("currentColor")), fillOpacity=0.2)),
+        PlotMark(Sphere(mark="sphere", strokeWidth=0.5)),
+        PlotMark(Geo(mark="geo", data=PlotFrom(from_="feed"), fill=ChannelValueSpec(ChannelValue("red")), stroke=ChannelValueSpec(ChannelValue("red")), fillOpacity=0.2, r=ChannelValueSpec(ChannelValue(sql="POW(10, mag)")), title=ChannelValueSpec(ChannelValue("title"))))
+    ],
+    width=None,
+    height=None,
+    margin=2
+)

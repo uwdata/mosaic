@@ -1,149 +1,22 @@
-from mosaic_spec import *
+from mosaic import *
+from mosaic.spec import *
+from mosaic.generated_classes import *
 from typing import Dict, Any, Union
 
-spec = {
-  "meta": {
-    "title": "Olympic Athletes",
-    "description": "An interactive dashboard of athlete statistics. The menus and searchbox filter the display and are automatically populated by backing data columns.\n"
-  },
-  "data": {
-    "athletes": {
-      "type": "parquet",
-      "file": "data/athletes.parquet"
-    }
-  },
-  "params": {
-    "category": {
-      "select": "intersect"
-    },
-    "query": {
-      "select": "intersect",
-      "include": [
-        "$category"
-      ]
-    },
-    "hover": {
-      "select": "intersect",
-      "empty": True
-    }
-  },
-  "hconcat": [
-    {
-      "vconcat": [
-        {
-          "hconcat": [
-            {
-              "input": "menu",
-              "label": "Sport",
-              "as": "$category",
-              "from": "athletes",
-              "column": "sport"
-            },
-            {
-              "input": "menu",
-              "label": "Sex",
-              "as": "$category",
-              "from": "athletes",
-              "column": "sex"
-            },
-            {
-              "input": "search",
-              "label": "Name",
-              "filterBy": "$category",
-              "as": "$query",
-              "from": "athletes",
-              "column": "name",
-              "type": "contains"
-            }
-          ]
-        },
-        {
-          "vspace": 10
-        },
-        {
-          "plot": [
-            {
-              "mark": "dot",
-              "data": {
-                "from": "athletes",
-                "filterBy": "$query"
-              },
-              "x": "weight",
-              "y": "height",
-              "fill": "sex",
-              "r": 2,
-              "opacity": 0.1
-            },
-            {
-              "mark": "regressionY",
-              "data": {
-                "from": "athletes",
-                "filterBy": "$query"
-              },
-              "x": "weight",
-              "y": "height",
-              "stroke": "sex"
-            },
-            {
-              "select": "intervalXY",
-              "as": "$query",
-              "brush": {
-                "fillOpacity": 0,
-                "stroke": "black"
-              }
-            },
-            {
-              "mark": "dot",
-              "data": {
-                "from": "athletes",
-                "filterBy": "$hover"
-              },
-              "x": "weight",
-              "y": "height",
-              "fill": "sex",
-              "stroke": "currentColor",
-              "strokeWidth": 1,
-              "r": 3
-            }
-          ],
-          "xyDomain": "Fixed",
-          "colorDomain": "Fixed",
-          "margins": {
-            "left": 35,
-            "top": 20,
-            "right": 1
-          },
-          "width": 570,
-          "height": 350
-        },
-        {
-          "vspace": 5
-        },
-        {
-          "input": "table",
-          "from": "athletes",
-          "maxWidth": 570,
-          "height": 250,
-          "filterBy": "$query",
-          "as": "$hover",
-          "columns": [
-            "name",
-            "nationality",
-            "sex",
-            "height",
-            "weight",
-            "sport"
-          ],
-          "width": {
-            "name": 180,
-            "nationality": 100,
-            "sex": 50,
-            "height": 50,
-            "weight": 50,
-            "sport": 100
-          }
-        }
-      ]
-    }
-  ]
-}
+
+athletes = DataSource(
+    type="parquet",
+    file="data/athletes.parquet",
+    where=""
+)
+
+spec = Plot(
+    plot=[
+        PlotMark(Dot(mark="dot", data=PlotFrom(from_="athletes", filterBy=$query), x=ChannelValueSpec(ChannelValue("weight")), y=ChannelValueSpec(ChannelValue("height")), fill=ChannelValueSpec(ChannelValue("sex")), r=2)),
+        PlotMark(RegressionY(mark="regressionY", data=PlotFrom(from_="athletes", filterBy=$query), x=ChannelValueSpec(ChannelValue("weight")), y=ChannelValueSpec(ChannelValue("height")), stroke=ChannelValueSpec(ChannelValue("sex")))),
+        PlotMark(),
+        PlotMark(Dot(mark="dot", data=PlotFrom(from_="athletes", filterBy=$hover), x=ChannelValueSpec(ChannelValue("weight")), y=ChannelValueSpec(ChannelValue("height")), fill=ChannelValueSpec(ChannelValue("sex")), stroke=ChannelValueSpec(ChannelValue("currentColor")), strokeWidth=1, r=3))
+    ],
+    width=570,
+    height=350
+)

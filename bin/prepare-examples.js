@@ -97,15 +97,6 @@ const files = await Promise.allSettled(
     })
 );
 
-// output successfully written examples
-console.log(
-  JSON.stringify(
-    files.filter((x) => x.status === "fulfilled").map((x) => x.value),
-    0,
-    2
-  )
-);
-
 // output unsuccessful example errors
 files
   .filter((x) => x.status === "rejected")

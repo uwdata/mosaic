@@ -1,83 +1,20 @@
-from mosaic_spec import *
+from mosaic import *
+from mosaic.spec import *
+from mosaic.generated_classes import *
 from typing import Dict, Any, Union
 
-spec = {
-  "meta": {
-    "title": "Density 2D",
-    "description": "A 2D `density` plot in which circle size indicates the point density. The data is divided by fill color into three sets of densities. To change the amount of smoothing, use the slider to set the kernel bandwidth.\n"
-  },
-  "data": {
-    "penguins": {
-      "type": "parquet",
-      "file": "data/penguins.parquet"
-    }
-  },
-  "params": {
-    "bandwidth": 20,
-    "bins": 20
-  },
-  "vconcat": [
-    {
-      "hconcat": [
-        {
-          "input": "slider",
-          "label": "Bandwidth (σ)",
-          "as": "$bandwidth",
-          "min": 1,
-          "max": 100
-        },
-        {
-          "input": "slider",
-          "label": "Bins",
-          "as": "$bins",
-          "min": 10,
-          "max": 60
-        }
-      ]
-    },
-    {
-      "plot": [
-        {
-          "mark": "density",
-          "data": {
-            "from": "penguins"
-          },
-          "x": "bill_length",
-          "y": "bill_depth",
-          "r": "density",
-          "fill": "species",
-          "fillOpacity": 0.5,
-          "width": "$bins",
-          "height": "$bins",
-          "bandwidth": "$bandwidth"
-        },
-        {
-          "mark": "dot",
-          "data": {
-            "from": "penguins"
-          },
-          "x": "bill_length",
-          "y": "bill_depth",
-          "fill": "currentColor",
-          "r": 1
-        }
-      ],
-      "rRange": [
-        0,
-        16
-      ],
-      "xAxis": "bottom",
-      "xLabelAnchor": "center",
-      "yAxis": "right",
-      "yLabelAnchor": "center",
-      "margins": {
-        "top": 5,
-        "bottom": 30,
-        "left": 5,
-        "right": 50
-      },
-      "width": 700,
-      "height": 480
-    }
-  ]
-}
+
+penguins = DataSource(
+    type="parquet",
+    file="data/penguins.parquet",
+    where=""
+)
+
+spec = Plot(
+    plot=[
+        PlotMark(Density(mark="density", data=PlotFrom(from_="penguins"), x=ChannelValueSpec(ChannelValue("bill_length")), y=ChannelValueSpec(ChannelValue("bill_depth")), fill=ChannelValueSpec(ChannelValue("species")), fillOpacity=0.5, r=ChannelValueSpec(ChannelValue("density")))),
+        PlotMark(Dot(mark="dot", data=PlotFrom(from_="penguins"), x=ChannelValueSpec(ChannelValue("bill_length")), y=ChannelValueSpec(ChannelValue("bill_depth")), fill=ChannelValueSpec(ChannelValue("currentColor")), r=1))
+    ],
+    width=700,
+    height=480
+)

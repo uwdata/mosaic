@@ -1,24 +1,19 @@
-from mosaic_spec import *
+from mosaic import *
+from mosaic.spec import *
+from mosaic.generated_classes import *
 from typing import Dict, Any, Union
 
-spec = {
-  "data": {
-    "aapl": {
-      "type": "parquet",
-      "file": "data/stocks.parquet",
-      "where": "Symbol = 'AAPL'"
-    }
-  },
-  "plot": [
-    {
-      "mark": "lineY",
-      "data": {
-        "from": "aapl"
-      },
-      "x": "Date",
-      "y": "Close"
-    }
-  ],
-  "width": 680,
-  "height": 200
-}
+
+aapl = DataSource(
+    type="parquet",
+    file="data/stocks.parquet",
+    where="Symbol = 'AAPL'"
+)
+
+spec = Plot(
+    plot=[
+        PlotMark(LineY(mark="lineY", data=PlotFrom(from_="aapl"), x=ChannelValueSpec(ChannelValue("Date")), y=ChannelValueSpec(ChannelValue("Close"))))
+    ],
+    width=680,
+    height=200
+)

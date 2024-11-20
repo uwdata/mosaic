@@ -1,57 +1,19 @@
-from mosaic_spec import *
+from mosaic import *
+from mosaic.spec import *
+from mosaic.generated_classes import *
 from typing import Dict, Any, Union
 
-spec = {
-  "meta": {
-    "title": "Sorted Bars",
-    "description": "Sort and limit an aggregate bar chart of gold medals by country.\n"
-  },
-  "data": {
-    "athletes": {
-      "type": "parquet",
-      "file": "data/athletes.parquet"
-    }
-  },
-  "params": {
-    "query": {
-      "select": "intersect"
-    }
-  },
-  "vconcat": [
-    {
-      "input": "menu",
-      "label": "Sport",
-      "as": "$query",
-      "from": "athletes",
-      "column": "sport",
-      "value": "aquatics"
-    },
-    {
-      "vspace": 10
-    },
-    {
-      "plot": [
-        {
-          "mark": "barX",
-          "data": {
-            "from": "athletes",
-            "filterBy": "$query"
-          },
-          "x": {
-            "sum": "gold"
-          },
-          "y": "nationality",
-          "fill": "steelblue",
-          "sort": {
-            "y": "-x",
-            "limit": 10
-          }
-        }
-      ],
-      "xLabel": "Gold Medals",
-      "yLabel": "Nationality",
-      "yLabelAnchor": "top",
-      "marginTop": 15
-    }
-  ]
-}
+
+athletes = DataSource(
+    type="parquet",
+    file="data/athletes.parquet",
+    where=""
+)
+
+spec = Plot(
+    plot=[
+        PlotMark(BarX(mark="barX", data=PlotFrom(from_="athletes", filterBy=$query), x=ChannelValueSpec(ChannelValue({"sum":"gold"})), y=ChannelValueSpec(ChannelValue("nationality")), fill=ChannelValueSpec(ChannelValue("steelblue"))))
+    ],
+    width=None,
+    height=None
+)

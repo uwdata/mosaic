@@ -1,48 +1,20 @@
-from mosaic_spec import *
+from mosaic import *
+from mosaic.spec import *
+from mosaic.generated_classes import *
 from typing import Dict, Any, Union
 
-spec = {
-  "meta": {
-    "title": "Driving Shifts into Reverse",
-    "description": "A connected scatter plot of miles driven vs. gas prices.",
-    "credit": "Adapted from an [Observable Plot example](https://observablehq.com/@observablehq/plot-connected-scatterplot), which in turn adapts Hannah Fairfield's [New York Times article](http://www.nytimes.com/imagepages/2010/05/02/business/02metrics.html).\n"
-  },
-  "data": {
-    "driving": {
-      "type": "parquet",
-      "file": "data/driving.parquet"
-    }
-  },
-  "plot": [
-    {
-      "mark": "line",
-      "data": {
-        "from": "driving"
-      },
-      "x": "miles",
-      "y": "gas",
-      "curve": "catmull-rom",
-      "marker": True
-    },
-    {
-      "mark": "text",
-      "data": {
-        "from": "driving"
-      },
-      "x": "miles",
-      "y": "gas",
-      "text": {
-        "sql": "year::VARCHAR"
-      },
-      "dy": -6,
-      "lineAnchor": "bottom",
-      "filter": {
-        "sql": "year % 5 = 0"
-      }
-    }
-  ],
-  "inset": 10,
-  "grid": True,
-  "xLabel": "Miles driven (per person-year)",
-  "yLabel": "Cost of gasoline ($ per gallon)"
-}
+
+driving = DataSource(
+    type="parquet",
+    file="data/driving.parquet",
+    where=""
+)
+
+spec = Plot(
+    plot=[
+        PlotMark(Line(mark="line", data=PlotFrom(from_="driving"), x=ChannelValueSpec(ChannelValue("miles")), y=ChannelValueSpec(ChannelValue("gas")))),
+        PlotMark(Text(mark="text", data=PlotFrom(from_="driving"), x=ChannelValueSpec(ChannelValue("miles")), y=ChannelValueSpec(ChannelValue("gas")), dy=-6))
+    ],
+    width=None,
+    height=None
+)

@@ -1,53 +1,21 @@
-from mosaic_spec import *
+from mosaic import *
+from mosaic.spec import *
+from mosaic.generated_classes import *
 from typing import Dict, Any, Union
 
-spec = {
-  "meta": {
-    "title": "Linear Regression",
-    "description": "A linear regression plot predicting athletes' heights based on their weights. Regression computation is performed in the database. The area around a regression line shows a 95% confidence interval. Select a region to view regression results for a data subset.\n"
-  },
-  "data": {
-    "athletes": {
-      "type": "parquet",
-      "file": "data/athletes.parquet"
-    }
-  },
-  "params": {
-    "query": {
-      "select": "intersect"
-    }
-  },
-  "plot": [
-    {
-      "mark": "dot",
-      "data": {
-        "from": "athletes"
-      },
-      "x": "weight",
-      "y": "height",
-      "fill": "sex",
-      "r": 2,
-      "opacity": 0.05
-    },
-    {
-      "mark": "regressionY",
-      "data": {
-        "from": "athletes",
-        "filterBy": "$query"
-      },
-      "x": "weight",
-      "y": "height",
-      "stroke": "sex"
-    },
-    {
-      "select": "intervalXY",
-      "as": "$query",
-      "brush": {
-        "fillOpacity": 0,
-        "stroke": "currentColor"
-      }
-    }
-  ],
-  "xyDomain": "Fixed",
-  "colorDomain": "Fixed"
-}
+
+athletes = DataSource(
+    type="parquet",
+    file="data/athletes.parquet",
+    where=""
+)
+
+spec = Plot(
+    plot=[
+        PlotMark(Dot(mark="dot", data=PlotFrom(from_="athletes"), x=ChannelValueSpec(ChannelValue("weight")), y=ChannelValueSpec(ChannelValue("height")), fill=ChannelValueSpec(ChannelValue("sex")), r=2)),
+        PlotMark(RegressionY(mark="regressionY", data=PlotFrom(from_="athletes", filterBy=$query), x=ChannelValueSpec(ChannelValue("weight")), y=ChannelValueSpec(ChannelValue("height")), stroke=ChannelValueSpec(ChannelValue("sex")))),
+        PlotMark()
+    ],
+    width=None,
+    height=None
+)

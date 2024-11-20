@@ -1,61 +1,19 @@
-from mosaic_spec import *
+from mosaic import *
+from mosaic.spec import *
+from mosaic.generated_classes import *
 from typing import Dict, Any, Union
 
-spec = {
-  "meta": {
-    "title": "Wind Map",
-    "description": "`vector` marks on a grid show both direction and intensity—here, the speed of winds. Expressions for `rotate`, `length`, and `stroke` values are evaluated in the database.\n",
-    "credit": "Adapted from an [Observable Plot example](https://observablehq.com/@observablehq/plot-wind-map)."
-  },
-  "data": {
-    "wind": {
-      "type": "parquet",
-      "file": "data/wind.parquet"
-    }
-  },
-  "params": {
-    "length": 2
-  },
-  "vconcat": [
-    {
-      "legend": "color",
-      "for": "wind-map",
-      "label": "Speed (m/s)"
-    },
-    {
-      "plot": [
-        {
-          "mark": "vector",
-          "data": {
-            "from": "wind"
-          },
-          "x": "longitude",
-          "y": "latitude",
-          "rotate": {
-            "sql": "degrees(atan2(u, v))"
-          },
-          "length": {
-            "sql": "$length * sqrt(u * u + v * v)"
-          },
-          "stroke": {
-            "sql": "sqrt(u * u + v * v)"
-          }
-        }
-      ],
-      "name": "wind-map",
-      "lengthScale": "identity",
-      "colorZero": True,
-      "inset": 10,
-      "aspectRatio": 1,
-      "width": 680
-    },
-    {
-      "input": "slider",
-      "min": 1,
-      "max": 7,
-      "step": 0.1,
-      "as": "$length",
-      "label": "Vector Length"
-    }
-  ]
-}
+
+wind = DataSource(
+    type="parquet",
+    file="data/wind.parquet",
+    where=""
+)
+
+spec = Plot(
+    plot=[
+        PlotMark(Vector(mark="vector", data=PlotFrom(from_="wind"), x=ChannelValueSpec(ChannelValue("longitude")), y=ChannelValueSpec(ChannelValue("latitude")), stroke=ChannelValueSpec(ChannelValue(sql="sqrt(u * u + v * v)")), rotate=ChannelValueSpec(ChannelValue(sql="degrees(atan2(u, v))")), length=ChannelValueSpec(ChannelValue(sql="$length * sqrt(u * u + v * v)"))))
+    ],
+    width=680,
+    height=None
+)

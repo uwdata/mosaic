@@ -1,45 +1,21 @@
-from mosaic_spec import *
+from mosaic import *
+from mosaic.spec import *
+from mosaic.generated_classes import *
 from typing import Dict, Any, Union
 
-spec = {
-  "meta": {
-    "title": "U.S. States",
-    "description": "A map of U.S. states overlaid with computed centroids. Requires the DuckDB `spatial` extension.\n",
-    "credit": "Adapted from an [Observable Plot example](https://observablehq.com/@observablehq/plot-state-centroids)."
-  },
-  "data": {
-    "states": {
-      "type": "spatial",
-      "file": "data/us-counties-10m.json",
-      "layer": "states"
-    }
-  },
-  "plot": [
-    {
-      "mark": "geo",
-      "data": {
-        "from": "states"
-      },
-      "stroke": "currentColor",
-      "strokeWidth": 1
-    },
-    {
-      "mark": "dot",
-      "data": {
-        "from": "states"
-      },
-      "x": {
-        "centroidX": "geom"
-      },
-      "y": {
-        "centroidY": "geom"
-      },
-      "r": 2,
-      "fill": "steelblue",
-      "tip": True,
-      "title": "name"
-    }
-  ],
-  "margin": 0,
-  "projectionType": "albers"
-}
+
+states = DataSource(
+    type="spatial",
+    file="data/us-counties-10m.json",
+    where=""
+)
+
+spec = Plot(
+    plot=[
+        PlotMark(Geo(mark="geo", data=PlotFrom(from_="states"), stroke=ChannelValueSpec(ChannelValue("currentColor")), strokeWidth=1)),
+        PlotMark(Dot(mark="dot", data=PlotFrom(from_="states"), x=ChannelValueSpec(ChannelValue({"centroidX":"geom"})), y=ChannelValueSpec(ChannelValue({"centroidY":"geom"})), fill=ChannelValueSpec(ChannelValue("steelblue")), r=2, tip=None, title=ChannelValueSpec(ChannelValue("name"))))
+    ],
+    width=None,
+    height=None,
+    margin=0
+)

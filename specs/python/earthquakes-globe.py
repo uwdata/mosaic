@@ -1,87 +1,27 @@
-from mosaic_spec import *
+from mosaic import *
+from mosaic.spec import *
+from mosaic.generated_classes import *
 from typing import Dict, Any, Union
 
-spec = {
-  "meta": {
-    "title": "Earthquakes Globe",
-    "description": "A rotatable globe of earthquake activity. To show land masses, this example loads and parses TopoJSON data in the database. Requires the DuckDB `spatial` extension.\n",
-    "credit": "Adapted from an [Observable Plot example](https://observablehq.com/@observablehq/plot-earthquake-globe)."
-  },
-  "data": {
-    "earthquakes": {
-      "type": "parquet",
-      "file": "data/earthquakes.parquet"
-    },
-    "land": {
-      "type": "spatial",
-      "file": "data/countries-110m.json",
-      "layer": "land"
-    }
-  },
-  "params": {
-    "longitude": -180,
-    "latitude": -30,
-    "rotate": [
-      "$longitude",
-      "$latitude"
-    ]
-  },
-  "vconcat": [
-    {
-      "hconcat": [
-        {
-          "input": "slider",
-          "label": "Longitude",
-          "as": "$longitude",
-          "min": -180,
-          "max": 180,
-          "step": 1
-        },
-        {
-          "input": "slider",
-          "label": "Latitude",
-          "as": "$latitude",
-          "min": -90,
-          "max": 90,
-          "step": 1
-        }
-      ]
-    },
-    {
-      "plot": [
-        {
-          "mark": "geo",
-          "data": {
-            "from": "land"
-          },
-          "geometry": {
-            "geojson": "geom"
-          },
-          "fill": "currentColor",
-          "fillOpacity": 0.2
-        },
-        {
-          "mark": "sphere"
-        },
-        {
-          "mark": "dot",
-          "data": {
-            "from": "earthquakes"
-          },
-          "x": "longitude",
-          "y": "latitude",
-          "r": {
-            "sql": "POW(10, magnitude)"
-          },
-          "stroke": "red",
-          "fill": "red",
-          "fillOpacity": 0.2
-        }
-      ],
-      "margin": 10,
-      "style": "overflow: visible;",
-      "projectionType": "orthographic",
-      "projectionRotate": "$rotate"
-    }
-  ]
-}
+
+earthquakes = DataSource(
+    type="parquet",
+    file="data/earthquakes.parquet",
+    where=""
+)
+land = DataSource(
+    type="spatial",
+    file="data/countries-110m.json",
+    where=""
+)
+
+spec = Plot(
+    plot=[
+        PlotMark(Geo(mark="geo", data=PlotFrom(from_="land"), fill=ChannelValueSpec(ChannelValue("currentColor")), fillOpacity=0.2)),
+        PlotMark(Sphere(mark="sphere")),
+        PlotMark(Dot(mark="dot", data=PlotFrom(from_="earthquakes"), x=ChannelValueSpec(ChannelValue("longitude")), y=ChannelValueSpec(ChannelValue("latitude")), fill=ChannelValueSpec(ChannelValue("red")), stroke=ChannelValueSpec(ChannelValue("red")), fillOpacity=0.2, r=ChannelValueSpec(ChannelValue(sql="POW(10, magnitude)"))))
+    ],
+    width=None,
+    height=None,
+    margin=10
+)

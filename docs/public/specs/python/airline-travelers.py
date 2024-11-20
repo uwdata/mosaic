@@ -1,75 +1,28 @@
-from mosaic_spec import *
+from mosaic import *
+from mosaic.spec import *
+from mosaic.generated_classes import *
 from typing import Dict, Any, Union
 
-spec = {
-  "meta": {
-    "title": "Airline Travelers",
-    "description": "A labeled line chart comparing airport travelers in 2019 and 2020.",
-    "credit": "Adapted from an [Observable Plot example](https://observablehq.com/@observablehq/plot-labeled-line-chart)."
-  },
-  "data": {
-    "travelers": {
-      "type": "parquet",
-      "file": "data/travelers.parquet"
-    },
-    "endpoint": {
-      "type": "table",
-      "query": "SELECT * FROM travelers ORDER BY date DESC LIMIT 1"
-    }
-  },
-  "plot": [
-    {
-      "mark": "ruleY",
-      "data": [
-        0
-      ]
-    },
-    {
-      "mark": "lineY",
-      "data": {
-        "from": "travelers"
-      },
-      "x": "date",
-      "y": "previous",
-      "strokeOpacity": 0.35
-    },
-    {
-      "mark": "lineY",
-      "data": {
-        "from": "travelers"
-      },
-      "x": "date",
-      "y": "current"
-    },
-    {
-      "mark": "text",
-      "data": {
-        "from": "endpoint"
-      },
-      "x": "date",
-      "y": "previous",
-      "text": [
-        "2019"
-      ],
-      "fillOpacity": 0.5,
-      "lineAnchor": "bottom",
-      "dy": -6
-    },
-    {
-      "mark": "text",
-      "data": {
-        "from": "endpoint"
-      },
-      "x": "date",
-      "y": "current",
-      "text": [
-        "2020"
-      ],
-      "lineAnchor": "top",
-      "dy": 6
-    }
-  ],
-  "yGrid": True,
-  "yLabel": "↑ Travelers per day",
-  "yTickFormat": "s"
-}
+
+travelers = DataSource(
+    type="parquet",
+    file="data/travelers.parquet",
+    where=""
+)
+endpoint = DataSource(
+    type="table",
+    file="undefined",
+    where=""
+)
+
+spec = Plot(
+    plot=[
+        PlotMark(RuleY(mark="ruleY")),
+        PlotMark(LineY(mark="lineY", data=PlotFrom(from_="travelers"), x=ChannelValueSpec(ChannelValue("date")), y=ChannelValueSpec(ChannelValue("previous")), strokeOpacity=0.35)),
+        PlotMark(LineY(mark="lineY", data=PlotFrom(from_="travelers"), x=ChannelValueSpec(ChannelValue("date")), y=ChannelValueSpec(ChannelValue("current")))),
+        PlotMark(Text(mark="text", data=PlotFrom(from_="endpoint"), x=ChannelValueSpec(ChannelValue("date")), y=ChannelValueSpec(ChannelValue("previous")), fillOpacity=0.5, dy=-6)),
+        PlotMark(Text(mark="text", data=PlotFrom(from_="endpoint"), x=ChannelValueSpec(ChannelValue("date")), y=ChannelValueSpec(ChannelValue("current")), dy=6))
+    ],
+    width=None,
+    height=None
+)

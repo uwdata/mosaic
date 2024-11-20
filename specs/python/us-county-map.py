@@ -1,57 +1,27 @@
-from mosaic_spec import *
+from mosaic import *
+from mosaic.spec import *
+from mosaic.generated_classes import *
 from typing import Dict, Any, Union
 
-spec = {
-  "meta": {
-    "title": "U.S. Counties",
-    "description": "A map of U.S. counties. County name tooltips are anchored to invisible centroid dot marks. Requires the DuckDB `spatial` extension.\n"
-  },
-  "data": {
-    "counties": {
-      "type": "spatial",
-      "file": "data/us-counties-10m.json",
-      "layer": "counties"
-    },
-    "states": {
-      "type": "spatial",
-      "file": "data/us-counties-10m.json",
-      "layer": "states"
-    }
-  },
-  "plot": [
-    {
-      "mark": "geo",
-      "data": {
-        "from": "counties"
-      },
-      "stroke": "currentColor",
-      "strokeWidth": 0.25
-    },
-    {
-      "mark": "geo",
-      "data": {
-        "from": "states"
-      },
-      "stroke": "currentColor",
-      "strokeWidth": 1
-    },
-    {
-      "mark": "dot",
-      "data": {
-        "from": "counties"
-      },
-      "x": {
-        "centroidX": "geom"
-      },
-      "y": {
-        "centroidY": "geom"
-      },
-      "r": 2,
-      "fill": "transparent",
-      "tip": True,
-      "title": "name"
-    }
-  ],
-  "margin": 0,
-  "projectionType": "albers"
-}
+
+counties = DataSource(
+    type="spatial",
+    file="data/us-counties-10m.json",
+    where=""
+)
+states = DataSource(
+    type="spatial",
+    file="data/us-counties-10m.json",
+    where=""
+)
+
+spec = Plot(
+    plot=[
+        PlotMark(Geo(mark="geo", data=PlotFrom(from_="counties"), stroke=ChannelValueSpec(ChannelValue("currentColor")), strokeWidth=0.25)),
+        PlotMark(Geo(mark="geo", data=PlotFrom(from_="states"), stroke=ChannelValueSpec(ChannelValue("currentColor")), strokeWidth=1)),
+        PlotMark(Dot(mark="dot", data=PlotFrom(from_="counties"), x=ChannelValueSpec(ChannelValue({"centroidX":"geom"})), y=ChannelValueSpec(ChannelValue({"centroidY":"geom"})), fill=ChannelValueSpec(ChannelValue("transparent")), r=2, tip=None, title=ChannelValueSpec(ChannelValue("name"))))
+    ],
+    width=None,
+    height=None,
+    margin=0
+)

@@ -1,45 +1,19 @@
-from mosaic_spec import *
+from mosaic import *
+from mosaic.spec import *
+from mosaic.generated_classes import *
 from typing import Dict, Any, Union
 
-spec = {
-  "meta": {
-    "title": "Bias Parameter",
-    "description": "Dynamically adjust queried values by adding a Param value. The SQL expression is re-computed in the database upon updates.\n"
-  },
-  "data": {
-    "walk": {
-      "type": "parquet",
-      "file": "data/random-walk.parquet"
-    }
-  },
-  "params": {
-    "point": 0
-  },
-  "vconcat": [
-    {
-      "input": "slider",
-      "label": "Bias",
-      "as": "$point",
-      "min": 1,
-      "max": 1000,
-      "step": 0.1
-    },
-    {
-      "plot": [
-        {
-          "mark": "areaY",
-          "data": {
-            "from": "walk"
-          },
-          "x": "t",
-          "y": {
-            "sql": "v + $point"
-          },
-          "fill": "steelblue"
-        }
-      ],
-      "width": 680,
-      "height": 200
-    }
-  ]
-}
+
+walk = DataSource(
+    type="parquet",
+    file="data/random-walk.parquet",
+    where=""
+)
+
+spec = Plot(
+    plot=[
+        PlotMark(AreaY(mark="areaY", data=PlotFrom(from_="walk"), x=ChannelValueSpec(ChannelValue("t")), y=ChannelValueSpec(ChannelValue(sql="v + $point")), fill=ChannelValueSpec(ChannelValue("steelblue"))))
+    ],
+    width=680,
+    height=200
+)

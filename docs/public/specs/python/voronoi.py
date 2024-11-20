@@ -1,114 +1,23 @@
-from mosaic_spec import *
+from mosaic import *
+from mosaic.spec import *
+from mosaic.generated_classes import *
 from typing import Dict, Any, Union
 
-spec = {
-  "meta": {
-    "title": "Voronoi Diagram",
-    "description": "The `voronoi` mark shows the regions closest to each point. It is [constructed from its dual](https://observablehq.com/@mbostock/the-delaunays-dual), a Delaunay triangle mesh. Reveal triangulations or convex hulls using the dropdowns.\n",
-    "credit": "Adapted from an [Observable Plot example](https://observablehq.com/@observablehq/plot-voronoi-scatterplot)."
-  },
-  "data": {
-    "penguins": {
-      "type": "parquet",
-      "file": "data/penguins.parquet"
-    }
-  },
-  "params": {
-    "mesh": 0,
-    "hull": 0
-  },
-  "vconcat": [
-    {
-      "plot": [
-        {
-          "mark": "voronoi",
-          "data": {
-            "from": "penguins"
-          },
-          "x": "bill_length",
-          "y": "bill_depth",
-          "stroke": "white",
-          "strokeWidth": 1,
-          "strokeOpacity": 0.5,
-          "fill": "species",
-          "fillOpacity": 0.2
-        },
-        {
-          "mark": "hull",
-          "data": {
-            "from": "penguins"
-          },
-          "x": "bill_length",
-          "y": "bill_depth",
-          "stroke": "species",
-          "strokeOpacity": "$hull",
-          "strokeWidth": 1.5
-        },
-        {
-          "mark": "delaunayMesh",
-          "data": {
-            "from": "penguins"
-          },
-          "x": "bill_length",
-          "y": "bill_depth",
-          "z": "species",
-          "stroke": "species",
-          "strokeOpacity": "$mesh",
-          "strokeWidth": 1
-        },
-        {
-          "mark": "dot",
-          "data": {
-            "from": "penguins"
-          },
-          "x": "bill_length",
-          "y": "bill_depth",
-          "fill": "species",
-          "r": 2
-        },
-        {
-          "mark": "frame"
-        }
-      ],
-      "inset": 10,
-      "width": 680
-    },
-    {
-      "hconcat": [
-        {
-          "input": "menu",
-          "label": "Delaunay Mesh",
-          "options": [
-            {
-              "value": 0,
-              "label": "Hide"
-            },
-            {
-              "value": 0.5,
-              "label": "Show"
-            }
-          ],
-          "as": "$mesh"
-        },
-        {
-          "hspace": 5
-        },
-        {
-          "input": "menu",
-          "label": "Convex Hull",
-          "options": [
-            {
-              "value": 0,
-              "label": "Hide"
-            },
-            {
-              "value": 1,
-              "label": "Show"
-            }
-          ],
-          "as": "$hull"
-        }
-      ]
-    }
-  ]
-}
+
+penguins = DataSource(
+    type="parquet",
+    file="data/penguins.parquet",
+    where=""
+)
+
+spec = Plot(
+    plot=[
+        PlotMark(Voronoi(mark="voronoi", data=PlotFrom(from_="penguins"), x=ChannelValueSpec(ChannelValue("bill_length")), y=ChannelValueSpec(ChannelValue("bill_depth")), fill=ChannelValueSpec(ChannelValue("species")), stroke=ChannelValueSpec(ChannelValue("white")), strokeWidth=1, strokeOpacity=0.5, fillOpacity=0.2)),
+        PlotMark(Hull(mark="hull", data=PlotFrom(from_="penguins"), x=ChannelValueSpec(ChannelValue("bill_length")), y=ChannelValueSpec(ChannelValue("bill_depth")), stroke=ChannelValueSpec(ChannelValue("species")), strokeWidth=1.5, strokeOpacity=$hull)),
+        PlotMark(DelaunayMesh(mark="delaunayMesh", data=PlotFrom(from_="penguins"), x=ChannelValueSpec(ChannelValue("bill_length")), y=ChannelValueSpec(ChannelValue("bill_depth")), z=ChannelValueSpec(ChannelValue("species")), stroke=ChannelValueSpec(ChannelValue("species")), strokeWidth=1, strokeOpacity=$mesh)),
+        PlotMark(Dot(mark="dot", data=PlotFrom(from_="penguins"), x=ChannelValueSpec(ChannelValue("bill_length")), y=ChannelValueSpec(ChannelValue("bill_depth")), fill=ChannelValueSpec(ChannelValue("species")), r=2)),
+        PlotMark(Frame(mark="frame"))
+    ],
+    width=680,
+    height=None
+)

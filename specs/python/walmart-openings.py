@@ -1,69 +1,33 @@
-from mosaic_spec import *
+from mosaic import *
+from mosaic.spec import *
+from mosaic.generated_classes import *
 from typing import Dict, Any, Union
 
-spec = {
-  "meta": {
-    "title": "Walmart Openings",
-    "description": "Maps showing Walmart store openings per decade. Requires the DuckDB `spatial` extension.\n",
-    "credit": "Adapted from an [Observable Plot example](https://observablehq.com/@observablehq/plot-map-large-multiples)."
-  },
-  "data": {
-    "states": {
-      "type": "spatial",
-      "file": "data/us-counties-10m.json",
-      "layer": "states"
-    },
-    "nation": {
-      "type": "spatial",
-      "file": "data/us-counties-10m.json",
-      "layer": "nation"
-    },
-    "walmarts": {
-      "type": "parquet",
-      "file": "data/walmarts.parquet"
-    }
-  },
-  "vconcat": [
-    {
-      "plot": [
-        {
-          "mark": "geo",
-          "data": {
-            "from": "states"
-          },
-          "stroke": "#aaa",
-          "strokeWidth": 1
-        },
-        {
-          "mark": "geo",
-          "data": {
-            "from": "nation"
-          },
-          "stroke": "currentColor"
-        },
-        {
-          "mark": "dot",
-          "data": {
-            "from": "walmarts"
-          },
-          "x": "longitude",
-          "y": "latitude",
-          "fy": {
-            "sql": "10 * decade(date)"
-          },
-          "r": 1.5,
-          "fill": "blue"
-        },
-        {
-          "mark": "axisFy",
-          "frameAnchor": "top",
-          "dy": 30,
-          "tickFormat": "d"
-        }
-      ],
-      "margin": 0,
-      "fyLabel": None,
-      "projectionType": "albers"
-    }
-  ]
-}
+
+states = DataSource(
+    type="spatial",
+    file="data/us-counties-10m.json",
+    where=""
+)
+nation = DataSource(
+    type="spatial",
+    file="data/us-counties-10m.json",
+    where=""
+)
+walmarts = DataSource(
+    type="parquet",
+    file="data/walmarts.parquet",
+    where=""
+)
+
+spec = Plot(
+    plot=[
+        PlotMark(Geo(mark="geo", data=PlotFrom(from_="states"), stroke=ChannelValueSpec(ChannelValue("#aaa")), strokeWidth=1)),
+        PlotMark(Geo(mark="geo", data=PlotFrom(from_="nation"), stroke=ChannelValueSpec(ChannelValue("currentColor")))),
+        PlotMark(Dot(mark="dot", data=PlotFrom(from_="walmarts"), x=ChannelValueSpec(ChannelValue("longitude")), y=ChannelValueSpec(ChannelValue("latitude")), fill=ChannelValueSpec(ChannelValue("blue")), r=1.5)),
+        PlotMark(AxisFy(mark="axisFy", frameAnchor="top", dy=30, tickFormat="d"))
+    ],
+    width=None,
+    height=None,
+    margin=0
+)
