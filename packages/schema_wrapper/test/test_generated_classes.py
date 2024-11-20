@@ -141,7 +141,12 @@ def test_stock_plot():
         width = 680,
         height = 200
     )
-    print(to_dict(plot_spec))
+    assert to_dict(plot_spec) == {
+        'height': 200, 
+        'plot': [{'data': {'from': 'aapl'}, 'mark': 'lineY', 'x': 'Date', 'y': 'Close'}], 
+        'width': 680
+        }
+    
 
 if __name__ == '__main__':
     pytest.main([__file__])
