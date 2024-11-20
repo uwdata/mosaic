@@ -11,6 +11,12 @@ export function isColumnRef(value) {
   return value instanceof ColumnRefNode;
 }
 
+export function columnRefString(column, table) {
+  const tref = `${table ?? ''}`;
+  const id = column === '*' ? '*' : quoteIdentifier(column);
+  return (tref ? (tref + '.') : '') + id;
+}
+
 export class ColumnRefNode extends ExprNode {
   /**
    * Instantiate a column reference node.
@@ -38,9 +44,6 @@ export class ColumnRefNode extends ExprNode {
    * @returns {string}
    */
   toString() {
-    const { column, table } = this;
-    const tref = `${table ?? ''}`;
-    const id = column === '*' ? '*' : quoteIdentifier(column);
-    return (tref ? (tref + '.') : '') + id;
+    return columnRefString(this.column, this.table);
   }
 }
