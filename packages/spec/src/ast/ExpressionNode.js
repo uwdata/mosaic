@@ -1,7 +1,8 @@
 import { EXPRESSION, SQL } from '../constants.js';
 import { ASTNode } from './ASTNode.js';
+import { ColumnParamRefNode } from './ColumnParamRefNode.js';
 
-const tokenRegExp = /(\\'|\\"|"(?:\\"|[^"])*"|'(?:\\'|[^'])*'|\$\w+)/g;
+const tokenRegExp = /(\\'|\\"|"(?:\\"|[^"])*"|'(?:\\'|[^'])*'|\${1,2}\w+)/g;
 
 export function parseExpression(spec, ctx) {
   const expr = spec[SQL];
@@ -12,7 +13,9 @@ export function parseExpression(spec, ctx) {
   for (let i = 0, k = 0; i < tokens.length; ++i) {
     const tok = tokens[i];
     if (tok.startsWith('$')) {
-      params[k] = ctx.maybeParam(tok);
+      params[k] = tok.startsWith('$$')
+        ? new ColumnParamRefNode(ctx.paramRef(tok.slice(2)))
+        : ctx.maybeParam(tok);
       spans[++k] = '';
     } else {
       spans[k] += tok;
