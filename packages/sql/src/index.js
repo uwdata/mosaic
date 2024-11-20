@@ -3,6 +3,7 @@ export { BetweenOpNode, NotBetweenOpNode } from './ast/between-op.js'
 export { BinaryOpNode } from './ast/binary-op.js';
 export { CaseNode, WhenNode } from './ast/case.js';
 export { CastNode } from './ast/cast.js';
+export { ColumnParamNode } from './ast/column-param.js';
 export { ColumnRefNode, isColumnRef } from './ast/column-ref.js';
 export { FragmentNode } from './ast/fragment.js';
 export { FromClauseNode } from './ast/from.js';
@@ -55,4 +56,3 @@ export { scaleTransform } from './transforms/scales.js';
 
 export { asLiteral, asNode, asTableRef, asVerbatim, over } from './util/ast.js';
 export { isParamLike } from './util/type-check.js';
-
