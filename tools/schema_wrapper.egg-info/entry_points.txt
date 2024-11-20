@@ -1,2 +1,0 @@
-[console_scripts]
-generate-schema-wrapper = schema_wrapper.generate_schema_wrapper:main

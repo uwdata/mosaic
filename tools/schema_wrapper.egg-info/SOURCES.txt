@@ -1,9 +1,0 @@
-pyproject.toml
-schema_wrapper/__init__.py
-schema_wrapper/generate_schema_wrapper.py
-schema_wrapper/utils.py
-schema_wrapper.egg-info/PKG-INFO
-schema_wrapper.egg-info/SOURCES.txt
-schema_wrapper.egg-info/dependency_links.txt
-schema_wrapper.egg-info/entry_points.txt
-schema_wrapper.egg-info/top_level.txt
