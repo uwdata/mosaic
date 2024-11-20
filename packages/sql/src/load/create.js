@@ -1,6 +1,6 @@
-export function create(name, query, {
+export function createTable(name, query, {
   replace = false,
-  temp = true,
+  temp = false,
   view = false
 } = {}) {
   return 'CREATE'
@@ -9,4 +9,12 @@ export function create(name, query, {
     + (view ? 'VIEW' : 'TABLE')
     + (replace ? ' ' : ' IF NOT EXISTS ')
     + name + ' AS ' + query;
+}
+
+export function createSchema(name, {
+  strict = false
+} = {}) {
+  return 'CREATE SCHEMA '
+    + (strict ? '' : 'IF NOT EXISTS ')
+    + name;
 }

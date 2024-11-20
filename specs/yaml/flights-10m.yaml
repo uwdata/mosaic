@@ -2,7 +2,7 @@ meta:
   title: Cross-Filter Flights (10M)
   description: |
     Histograms showing arrival delay, departure time, and distance flown for 10 million flights.
-    Once loaded, automatically-generated indexes enable efficient cross-filtered selections.
+    Once loaded, automatic pre-aggregation optimizations enable efficient cross-filtered selections.
 
     _You may need to wait a few seconds for the dataset to load._
 data:
@@ -20,11 +20,13 @@ vconcat:
     x: { bin: delay }
     y: { count: }
     fill: steelblue
-    inset: 0.5
+    insetLeft: 0.5
+    insetRight: 0.5
   - select: intervalX
     as: $brush
   xDomain: Fixed
-  marginLeft: 75
+  xLabel: Arrival Delay (min)
+  yTickFormat: s
   width: 600
   height: 200
 - plot:
@@ -33,11 +35,13 @@ vconcat:
     x: { bin: time }
     y: { count: }
     fill: steelblue
-    inset: 0.5
+    insetLeft: 0.5
+    insetRight: 0.5
   - select: intervalX
     as: $brush
   xDomain: Fixed
-  marginLeft: 75
+  xLabel: Departure Time (hour)
+  yTickFormat: s
   width: 600
   height: 200
 - plot:
@@ -46,10 +50,12 @@ vconcat:
     x: { bin: distance }
     y: { count: }
     fill: steelblue
-    inset: 0.5
+    insetLeft: 0.5
+    insetRight: 0.5
   - select: intervalX
     as: $brush
   xDomain: Fixed
-  marginLeft: 75
+  xLabel: Flight Distance (miles)
+  yTickFormat: s
   width: 600
   height: 200

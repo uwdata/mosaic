@@ -3,7 +3,7 @@ import { Spec } from '@uwdata/mosaic-spec';
 export const spec : Spec = {
   "meta": {
     "title": "Cross-Filter Flights (10M)",
-    "description": "Histograms showing arrival delay, departure time, and distance flown for 10 million flights.\nOnce loaded, automatically-generated indexes enable efficient cross-filtered selections.\n\n_You may need to wait a few seconds for the dataset to load._\n"
+    "description": "Histograms showing arrival delay, departure time, and distance flown for 10 million flights.\nOnce loaded, automatic pre-aggregation optimizations enable efficient cross-filtered selections.\n\n_You may need to wait a few seconds for the dataset to load._\n"
   },
   "data": {
     "flights10m": "SELECT GREATEST(-60, LEAST(ARR_DELAY, 180))::DOUBLE AS delay, DISTANCE AS distance, DEP_TIME AS time FROM 'https://idl.uw.edu/mosaic-datasets/data/flights-10m.parquet'"
@@ -29,7 +29,8 @@ export const spec : Spec = {
             "count": null
           },
           "fill": "steelblue",
-          "inset": 0.5
+          "insetLeft": 0.5,
+          "insetRight": 0.5
         },
         {
           "select": "intervalX",
@@ -37,7 +38,8 @@ export const spec : Spec = {
         }
       ],
       "xDomain": "Fixed",
-      "marginLeft": 75,
+      "xLabel": "Arrival Delay (min)",
+      "yTickFormat": "s",
       "width": 600,
       "height": 200
     },
@@ -56,7 +58,8 @@ export const spec : Spec = {
             "count": null
           },
           "fill": "steelblue",
-          "inset": 0.5
+          "insetLeft": 0.5,
+          "insetRight": 0.5
         },
         {
           "select": "intervalX",
@@ -64,7 +67,8 @@ export const spec : Spec = {
         }
       ],
       "xDomain": "Fixed",
-      "marginLeft": 75,
+      "xLabel": "Departure Time (hour)",
+      "yTickFormat": "s",
       "width": 600,
       "height": 200
     },
@@ -83,7 +87,8 @@ export const spec : Spec = {
             "count": null
           },
           "fill": "steelblue",
-          "inset": 0.5
+          "insetLeft": 0.5,
+          "insetRight": 0.5
         },
         {
           "select": "intervalX",
@@ -91,7 +96,8 @@ export const spec : Spec = {
         }
       ],
       "xDomain": "Fixed",
-      "marginLeft": 75,
+      "xLabel": "Flight Distance (miles)",
+      "yTickFormat": "s",
       "width": 600,
       "height": 200
     }

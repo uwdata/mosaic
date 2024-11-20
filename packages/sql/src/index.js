@@ -36,6 +36,7 @@ export {
   isNotBetween,
   isDistinct,
   isNotDistinct,
+  isIn,
   isNull,
   isNotNull
 } from './operators.js';
@@ -145,7 +146,7 @@ export {
   scaleTransform
 } from './scales.js';
 
-export { create } from './load/create.js';
+export { createTable, createSchema } from './load/create.js';
 export { loadExtension } from './load/extension.js';
 export {
   loadCSV,

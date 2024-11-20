@@ -27,7 +27,8 @@ export const spec : Spec = {
             "count": null
           },
           "fill": "steelblue",
-          "inset": 0.5
+          "insetLeft": 0.5,
+          "insetRight": 0.5
         },
         {
           "select": "intervalX",
@@ -55,7 +56,8 @@ export const spec : Spec = {
             "count": null
           },
           "fill": "steelblue",
-          "inset": 0.5
+          "insetLeft": 0.5,
+          "insetRight": 0.5
         },
         {
           "select": "intervalX",

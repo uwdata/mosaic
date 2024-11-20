@@ -433,6 +433,12 @@ export interface MarkOptions {
     | ParamRef;
 
   /**
+   * Additional named channels, for example to include in a tooltip.
+   * Consists of (channel name, data field name) key-value pairs.
+   */
+  channels?: Record<string, string>;
+
+  /**
    * How to clip the mark; one of:
    *
    * - *frame* or true - clip to the plot’s frame (inner area)

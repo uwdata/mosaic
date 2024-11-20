@@ -9,9 +9,9 @@ export interface ToggleOptions {
    */
   as: ParamRef;
   /**
-   * A flag indicating if peer (sibling) marks are when cross-filtering
-   * (default `true`). If set, peer marks will not be filtered by this
-   * interactor's selection in cross-filtering setups.
+   * A flag indicating if peer (sibling) marks are excluded when
+   * cross-filtering (default `true`). If set, peer marks will not be
+   * filtered by this interactor's selection in cross-filtering setups.
    */
   peers?: boolean;
 }

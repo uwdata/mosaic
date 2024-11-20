@@ -1,16 +1,12 @@
-[build-system]
-requires = ["hatchling"]
-build-backend = "hatchling.build"
-
 [project]
 name = "duckdb-server"
 description = "A DuckDB server for Mosaic"
 dynamic = ["version"]
 readme = "README.md"
-requires-python = ">=3.9"
+requires-python = ">=3.10"
 dependencies = [
   "diskcache",
-  "duckdb==1.0.0",
+  "duckdb==1.1.1",
   "pandas",
   "pyarrow",
   "socketify",
@@ -23,29 +19,18 @@ duckdb-server = "pkg.__main__:serve"
 [project.urls]
 homepage = "https://github.com/uwdata/mosaic"
 
-[project.optional-dependencies]
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[dependency-groups]
 dev = [
-  "watchdog[watchmedo]"
+    "watchdog",
+    "mypy>=1.11.1",
+    "pytest>=7.4.4",
+    "ruff>=0.6.1",
+    "types-ujson",
 ]
-
-[tool.hatch.envs.default]
-python = "3.11"
-features = ["dev"]
-installer = "uv"
-
-[tool.hatch.envs.default.scripts]
-serve = "watchmedo auto-restart --pattern '*.py' --recursive --signal SIGTERM python pkg/__main__.py"
-
-[tool.hatch.envs.test]
-installer = "uv"
-dependencies = [
-  "coverage[toml]",
-  "pytest",
-  "pytest-cov",
-]
-
-[tool.hatch.envs.test.scripts]
-cov = 'pytest --cov-report=term-missing --cov-config=pyproject.toml --cov=pkg'
 
 [tool.hatch.build.targets.wheel]
 packages = ["pkg"]
@@ -54,5 +39,8 @@ packages = ["pkg"]
 path = "package.json"
 pattern = "\"version\": \"(?P<version>.+?)\""
 
-[tool.ruff]
-lint.ignore = ["G004", "TRY301", "EM102", "EM101", "TRY003", "FBT002", "S608", "TRY002", "ARG001"]
+# https://mypy.readthedocs.io/en/stable/config_file.html
+[tool.mypy]
+files = "pkg/**/*.py"
+strict = false
+ignore_missing_imports = true

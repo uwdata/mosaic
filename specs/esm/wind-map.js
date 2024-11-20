@@ -1,13 +1,14 @@
 import * as vg from "@uwdata/vgplot";
 
 await vg.coordinator().exec([
-  vg.loadParquet("wind", "data/wind.parquet")
+  vg.loadParquet("wind", "data/wind.parquet", {select: ["*", "row_number() over () as id"]})
 ]);
 
+const $selected = vg.Selection.union();
 const $length = vg.Param.value(2);
 
 export default vg.vconcat(
-  vg.colorLegend({for: "wind-map", label: "Speed (m/s)"}),
+  vg.colorLegend({for: "wind-map", label: "Speed (m/s)", as: $selected}),
   vg.plot(
     vg.vector(
       vg.from("wind"),
@@ -16,9 +17,12 @@ export default vg.vconcat(
         y: "latitude",
         rotate: vg.sql`degrees(atan2(u, v))`,
         length: vg.sql`${$length} * sqrt(u * u + v * v)`,
-        stroke: vg.sql`sqrt(u * u + v * v)`
+        stroke: vg.sql`sqrt(u * u + v * v)`,
+        channels: {id: "id"}
       }
     ),
+    vg.region({as: $selected, channels: ["id"]}),
+    vg.highlight({by: $selected}),
     vg.name("wind-map"),
     vg.lengthScale("identity"),
     vg.colorZero(true),

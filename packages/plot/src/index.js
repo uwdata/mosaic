@@ -22,6 +22,7 @@ export { Interval1D } from './interactors/Interval1D.js';
 export { Interval2D } from './interactors/Interval2D.js';
 export { Nearest } from './interactors/Nearest.js';
 export { PanZoom } from './interactors/PanZoom.js';
+export { Region } from './interactors/Region.js';
 export { Toggle } from './interactors/Toggle.js';
 
 // legend

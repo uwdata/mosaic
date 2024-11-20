@@ -1,5 +1,5 @@
 import { ParamRef } from '../Param.js';
-import { BrushStyles } from './Interval1D.js';
+import { BrushStyles } from './BrushStyles.js';
 
 /** Options for 2D interval interactors. */
 export interface Interval2DOptions {
@@ -23,13 +23,14 @@ export interface Interval2DOptions {
   yfield?: string;
   /**
    * The size of an interative pixel (default `1`). Larger pixel sizes reduce
-   * the brush resolution, which can reduce the size of data cube indexes.
+   * the brush resolution, which can reduce the size of pre-aggregated
+   * materialized views.
    */
   pixelSize?: number;
   /**
-   * A flag indicating if peer (sibling) marks are when cross-filtering
-   * (default `true`). If set, peer marks will not be filtered by this
-   * interactor's selection in cross-filtering setups.
+   * A flag indicating if peer (sibling) marks are excluded when
+   * cross-filtering (default `true`). If set, peer marks will not be
+   * filtered by this interactor's selection in cross-filtering setups.
    */
   peers?: boolean;
   /**

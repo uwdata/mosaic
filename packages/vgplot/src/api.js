@@ -61,7 +61,7 @@ export {
   isDistinct, isNotDistinct,
   isNull, isNotNull,
   centroid, centroidX, centroidY, geojson,
-  create, loadExtension,
+  createTable, createSchema, loadExtension,
   loadCSV, loadJSON, loadObjects, loadParquet, loadSpatial
 } from '@uwdata/mosaic-sql';
 
@@ -336,17 +336,18 @@ export {
   nearest,
   nearestX,
   nearestY,
-  toggle,
-  toggleX,
-  toggleY,
-  toggleZ,
-  toggleColor,
   pan,
   panX,
   panY,
   panZoom,
   panZoomX,
-  panZoomY
+  panZoomY,
+  region,
+  toggle,
+  toggleX,
+  toggleY,
+  toggleZ,
+  toggleColor
 } from './plot/interactors.js';
 
 export {

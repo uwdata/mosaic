@@ -94,7 +94,9 @@ def handle_query(handler: Handler, con, cache, query):
             json = retrieve(cache, query, partial(get_json, con))
             handler.json(json)
         elif command == "create-bundle":
-            create_bundle(con, cache, query.get("queries"), BUNDLE_DIR / query.get("name"))
+            create_bundle(
+                con, cache, query.get("queries"), BUNDLE_DIR / query.get("name")
+            )
             handler.done()
         elif command == "load-bundle":
             load_bundle(con, cache, BUNDLE_DIR / query.get("name"))
@@ -164,7 +166,9 @@ def server(con, cache):
         {
             "compression": CompressOptions.SHARED_COMPRESSOR,
             "message": ws_message,
-            "drain": lambda ws: logger.warning(f"WebSocket backpressure: {ws.get_buffered_amount()}"),
+            "drain": lambda ws: logger.warning(
+                f"WebSocket backpressure: {ws.get_buffered_amount()}"
+            ),
         },
     )
 

@@ -23,6 +23,7 @@
         <option value="driving-shifts">Driving Shifts into Reverse</option>
         <option value="earthquakes-feed">Earthquakes Feed</option>
         <option value="earthquakes-globe">Earthquakes Globe</option>
+        <option value="facet-interval">Facet Interval</option>
         <option value="flights-200k">Flights 200k</option>
         <option value="flights-10m">Flights 10M</option>
         <option value="flights-density">Flights Density</option>
@@ -43,6 +44,8 @@
         <option value="pan-zoom">Pan + Zoom</option>
         <option value="population-arrows">Population Arrows</option>
         <option value="presidential-opinion">Presidential Opinion</option>
+        <option value="protein-design">Protein Design</option>
+        <option value="region-tests">Region Tests</option>
         <option value="seattle-temp">Seattle Temperatures</option>
         <option value="sorted-bars">Sorted Bars</option>
         <option value="splom">Scatter Plot Matrix</option>
@@ -84,20 +87,20 @@
           <input id="query-log" type="checkbox" />
         </div>
         <div>
-          Query Cache:
+          Cache Queries:
           <input id="cache" type="checkbox" checked />
         </div>
         <div>
-          Query Consolidation:
+          Consolidate Queries:
           <input id="consolidate" type="checkbox" checked />
         </div>
         <div>
-          Data Cube Indexes:
-          <input id="index" type="checkbox" checked />
+          Pre-aggregate:
+          <input id="preagg" type="checkbox" checked />
         </div>
         <div>
-          Active Index State:
-          <button id="index-state">Log</button>
+          Pre-aggregate State:
+          <button id="preagg-state">Log</button>
         </div>
       </div>
     </details>
@@ -114,8 +117,8 @@
   const qlogToggle = document.querySelector('#query-log');
   const cacheToggle = document.querySelector('#cache');
   const consolidateToggle = document.querySelector('#consolidate');
-  const indexToggle = document.querySelector('#index');
-  const indexState = document.querySelector('#index-state');
+  const preaggToggle = document.querySelector('#preagg');
+  const preaggState = document.querySelector('#preagg-state');
 
   connectorMenu.addEventListener('change', setConnector);
   exampleMenu.addEventListener('change', reload);
@@ -123,23 +126,23 @@
   qlogToggle.addEventListener('input', setQueryLog);
   cacheToggle.addEventListener('input', setCache);
   consolidateToggle.addEventListener('input', setConsolidate);
-  indexToggle.addEventListener('input', setIndex);
-  indexState.addEventListener('click', () => {
-    const { indexes } = vg.coordinator().dataCubeIndexer || {};
-    if (indexes) {
+  preaggToggle.addEventListener('input', setPreAggregate);
+  preaggState.addEventListener('click', () => {
+    const { entries } = vg.coordinator().preaggregator || {};
+    if (entries) {
       console.warn(
-        'Data Cube Index Entries',
-        Array.from(indexes.values())
+        'Pre-aggregate Entries',
+        Array.from(entries.values())
       );
     } else {
-      console.warn('No Active Data Cube Index');
+      console.warn('No Pre-aggregate Entries');
     }
   });
 
   setQueryLog();
   setCache();
   setConsolidate();
-  setIndex();
+  setPreAggregate();
   setConnector();
 
   async function setConnector() {
@@ -159,8 +162,8 @@
     vg.coordinator().manager.consolidate(consolidateToggle.checked);
   }
 
-  function setIndex() {
-    vg.coordinator().dataCubeIndexer.enabled = indexToggle.checked;
+  function setPreAggregate() {
+    vg.coordinator().preaggregator.enabled = preaggToggle.checked;
   }
 
   function reload() {

@@ -5,7 +5,7 @@
 
 # Wind Map
 
-`vector` marks on a grid show both direction and intensity—here, the speed of winds. Expressions for `rotate`, `length`, and `stroke` values are evaluated in the database.
+`vector` marks on a grid show both direction and intensity—here, the speed of winds. Expressions for `rotate`, `length`, and `stroke` values are evaluated in the database. Both the legend and map support interactive selections to highlight values.
 
 <Example spec="/specs/yaml/wind-map.yaml" />
 

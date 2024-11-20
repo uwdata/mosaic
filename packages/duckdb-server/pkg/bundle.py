@@ -70,7 +70,7 @@ def load_bundle(con, cache, directory):
             data = f.read()
             cache[key] = ujson.loads(data) if json_file else data
 
-    # Load precomputed temp tables into the database
+    # Load precomputed tables into the database
     for table in manifest["tables"]:
         file = directory / f"{table}.parquet"
-        con.execute(f"CREATE TEMP TABLE IF NOT EXISTS {table} AS SELECT * FROM '{file}'")
+        con.execute(f"CREATE TABLE IF NOT EXISTS {table} AS SELECT * FROM '{file}'")

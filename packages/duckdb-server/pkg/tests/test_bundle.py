@@ -15,7 +15,7 @@ def test_bundle(bundle_dir):
     con = duckdb.connect()
 
     queries = [
-        'CREATE TEMP TABLE IF NOT EXISTS flights AS SELECT * FROM read_parquet("data/flights-200k.parquet")',
+        'CREATE TABLE IF NOT EXISTS flights AS SELECT * FROM read_parquet("data/flights-200k.parquet")',
         'SELECT count(*) FROM "flights"',
     ]
 
