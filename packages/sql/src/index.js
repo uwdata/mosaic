@@ -4,7 +4,7 @@ export { BinaryOpNode } from './ast/binary-op.js';
 export { CaseNode, WhenNode } from './ast/case.js';
 export { CastNode } from './ast/cast.js';
 export { ColumnParamNode } from './ast/column-param.js';
-export { ColumnRefNode, isColumnRef } from './ast/column-ref.js';
+export { ColumnRefNode, ColumnNameRefNode, isColumnRef } from './ast/column-ref.js';
 export { FragmentNode } from './ast/fragment.js';
 export { FromClauseNode } from './ast/from.js';
 export { FunctionNode } from './ast/function.js';
