@@ -63,6 +63,7 @@ To build and develop Mosaic locally:
 * Run `npm i` to install dependencies.
 * Run `npm test` to run the test suite.
 * Run `npm run build` to build client-side bundles.
+* Run `uv build --all-packages` to build the Python packages.
 
 To run local interactive examples:
 

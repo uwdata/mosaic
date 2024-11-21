@@ -16,8 +16,7 @@
     "lint": "eslint src",
     "prepublishOnly": "npm run test && npm run lint && uv run ruff check && uv run ruff format --check && npm run build",
     "publish": "uv build && uvx twine upload --skip-existing dist/*",
-    "release": "npm run prepublishOnly && npm run publish",
-    "clean": "rimraf dist"
+    "release": "npm run prepublishOnly && npm run publish"
   },
   "dependencies": {
     "@uwdata/mosaic-core": "^0.12.0",

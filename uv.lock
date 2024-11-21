@@ -412,7 +412,7 @@ wheels = [
 
 [[package]]
 name = "duckdb-server"
-version = "0.11.0"
+version = "0.12.0"
 source = { editable = "packages/duckdb-server" }
 dependencies = [
     { name = "diskcache" },
@@ -943,7 +943,7 @@ wheels = [
 
 [[package]]
 name = "mosaic-widget"
-version = "0.11.0"
+version = "0.12.0"
 source = { editable = "packages/widget" }
 dependencies = [
     { name = "anywidget" },
