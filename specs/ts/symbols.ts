@@ -3,14 +3,47 @@ import { Spec } from '@uwdata/mosaic-spec';
 export const spec : Spec = {
   "meta": {
     "title": "Symbol Plots",
-    "description": "Two scatter plots with `dot` marks: one with stroked symbols, the other filled.\n"
+    "description": "Two scatter plots with `dot` marks: one with stroked symbols, the other filled. Drop-down menus control which data table columns are plotted.\n"
   },
   "data": {
     "penguins": {
       "file": "data/penguins.parquet"
     }
   },
+  "params": {
+    "x": "body_mass",
+    "y": "flipper_length"
+  },
   "vconcat": [
+    {
+      "hconcat": [
+        {
+          "input": "menu",
+          "label": "Y",
+          "options": [
+            "body_mass",
+            "flipper_length",
+            "bill_depth",
+            "bill_length"
+          ],
+          "as": "$y"
+        },
+        {
+          "input": "menu",
+          "label": "X",
+          "options": [
+            "body_mass",
+            "flipper_length",
+            "bill_depth",
+            "bill_length"
+          ],
+          "as": "$x"
+        }
+      ]
+    },
+    {
+      "vspace": 10
+    },
     {
       "hconcat": [
         {
@@ -21,8 +54,12 @@ export const spec : Spec = {
               "data": {
                 "from": "penguins"
               },
-              "x": "body_mass",
-              "y": "flipper_length",
+              "x": {
+                "column": "$x"
+              },
+              "y": {
+                "column": "$y"
+              },
               "stroke": "species",
               "symbol": "species"
             }
@@ -51,8 +88,12 @@ export const spec : Spec = {
               "data": {
                 "from": "penguins"
               },
-              "x": "body_mass",
-              "y": "flipper_length",
+              "x": {
+                "column": "$x"
+              },
+              "y": {
+                "column": "$y"
+              },
               "fill": "species",
               "symbol": "species"
             }
