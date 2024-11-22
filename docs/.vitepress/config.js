@@ -86,6 +86,7 @@ export default defineConfig({
             { text: 'Axes & Gridlines', link: '/examples/axes' },
             { text: 'Airline Travelers', link: '/examples/airline-travelers' },
             { text: 'Aeromagnetic Survey', link: '/examples/aeromagnetic-survey' },
+            { text: 'Athlete Birth Waffle', link: '/examples/athlete-birth-waffle' },
             { text: 'Driving Shifts into Reverse', link: '/examples/driving-shifts' },
             { text: 'Population Arrows', link: '/examples/population-arrows' },
             { text: 'Presidential Opinion', link: '/examples/presidential-opinion' },
