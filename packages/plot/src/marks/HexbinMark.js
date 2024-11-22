@@ -75,7 +75,10 @@ export class HexbinMark extends Mark {
           float64(x1),
           div(add(mul(add(x, mul(0.5, bitAnd(y, 1))), dx), ox), xr)
         ),
-        [yc.as]: sub(float64(y2), div(add(mul(y, dy), oy), yr)),
+        [yc.as]: sub(
+          float64(y2),
+          div(add(mul(y, dy), oy), yr)
+        ),
         ...cols
       })
       .groupby(x, y, ...dims)
@@ -83,7 +86,7 @@ export class HexbinMark extends Mark {
         // Subquery performs hex binning in screen space and also passes
         // original columns through (the DB should optimize this).
         Query.select({
-            [py]: div(mul(yr, sub(sub(y2, yc.field), oy)), dy),
+            [py]: div(sub(mul(yr, sub(y2, yc.field)), oy), dy),
             [pj]: int32(round(py)),
             [px]: sub(
                 div(sub(mul(xr, sub(xc.field, x1)), ox), dx),
