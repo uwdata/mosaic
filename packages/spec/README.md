@@ -1,5 +1,7 @@
 # mosaic-spec
 
+[![npm version](https://img.shields.io/npm/v/@uwdata/mosaic-spec.svg)](https://www.npmjs.com/package/@uwdata/mosaic-spec)
+
 Declarative specification of Mosaic-powered applications as JSON or YAML files. This package provides a parser and code generation framework for reading specifications in a JSON format and generating live Mosaic visualizations and dashboards using the [vgplot](https://github.com/uwdata/mosaic/tree/main/packages/vgplot) API.
 
 ## Usage
