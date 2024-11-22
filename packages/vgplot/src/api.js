@@ -327,7 +327,8 @@ export {
   frame,
   axisX, axisY, axisFx, axisFy,
   gridX, gridY, gridFx, gridFy,
-  geo, sphere, graticule
+  geo, sphere, graticule,
+  waffleX, waffleY
 } from './plot/marks.js';
 
 export {
