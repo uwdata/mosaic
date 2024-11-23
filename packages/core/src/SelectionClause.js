@@ -26,7 +26,7 @@ export function clausePoint(field, value, {
 }) {
   /** @type {ExprNode | null} */
   const predicate = value !== undefined
-    ? isNotDistinct(field, literal(value))
+    ? isIn(field, [literal(value)])
     : null;
   return {
     meta: { type: 'point' },
