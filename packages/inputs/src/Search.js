@@ -77,6 +77,12 @@ export class Search extends MosaicClient {
             this.searchbox.value = value;
           }
         });
+      } else {
+        // trigger selection activation
+        this.searchbox.addEventListener('pointerenter', evt => {
+          if (!evt.buttons) this.activate();
+        });
+        this.searchbox.addEventListener('focus', () => this.activate());
       }
     }
   }
@@ -85,11 +91,20 @@ export class Search extends MosaicClient {
     this.searchbox.value = '';
   }
 
+  clause(value) {
+    const { field, type } = this;
+    return clauseMatch(field, value, { source: this, method: type });
+  }
+
+  activate() {
+    // @ts-ignore - activate is only called for a Selection
+    this.selection.activate(this.clause(''));
+  }
+
   publish(value) {
-    const { selection, field, type } = this;
+    const { selection } = this;
     if (isSelection(selection)) {
-      const clause = clauseMatch(field, value, { source: this, method: type });
-      selection.update(clause);
+      selection.update(this.clause(value));
     } else if (isParam(selection)) {
       selection.update(value);
     }

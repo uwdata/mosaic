@@ -102,14 +102,23 @@ export class Slider extends MosaicClient {
       if (this.selection) this.publish(+value);
     });
 
-    // track param updates
-    if (this.selection && !isSelection(this.selection)) {
-      this.selection.addEventListener('value', value => {
-        if (value !== +this.slider.value) {
-          this.slider.value = value;
-          this.curval.innerText = value;
-        }
-      });
+
+    if (this.selection) {
+      if (!isSelection(this.selection)) {
+        // track param updates
+        this.selection.addEventListener('value', value => {
+          if (value !== +this.slider.value) {
+            this.slider.value = value;
+            this.curval.innerText = value;
+          }
+        });
+      } else {
+        // trigger selection activation
+        this.slider.addEventListener('pointerenter', evt => {
+          if (!evt.buttons) this.activate();
+        });
+        this.slider.addEventListener('focus', () => this.activate());
+      }
     }
   }
 
@@ -139,21 +148,31 @@ export class Slider extends MosaicClient {
     return this;
   }
 
+  clause(value) {
+    const { field, selectionType } = this;
+    if (selectionType === 'interval') {
+      /** @type {[number, number]} */
+      const domain = [this.min ?? 0, value];
+      return clauseInterval(field, domain, {
+        source: this,
+        bin: 'ceil',
+        scale: { type: 'identity', domain },
+        pixelSize: this.step
+      });
+    } else {
+      return clausePoint(field, value, { source: this });
+    }
+  }
+
+  activate() {
+    // @ts-ignore - activate is only called for a Selection
+    this.selection.activate(this.clause(0));
+  }
+
   publish(value) {
-    const { field, selectionType, selection } = this;
+    const { selection } = this;
     if (isSelection(selection)) {
-      if (selectionType === 'interval') {
-        /** @type {[number, number]} */
-        const domain = [this.min ?? 0, value];
-        selection.update(clauseInterval(field, domain, {
-          source: this,
-          bin: 'ceil',
-          scale: { type: 'identity', domain },
-          pixelSize: this.step
-        }));
-      } else {
-        selection.update(clausePoint(field, value, { source: this }));
-      }
+      selection.update(this.clause(value));
     } else if (isParam(this.selection)) {
       selection.update(value);
     }
