@@ -1,6 +1,6 @@
 {
   "name": "mosaic-widget",
-  "version": "0.12.0",
+  "version": "0.12.1",
   "private": true,
   "license": "BSD-3-Clause",
   "author": "Dominik Moritz (https://www.domoritz.de)",
@@ -19,9 +19,9 @@
     "release": "npm run prepublishOnly && npm run publish"
   },
   "dependencies": {
-    "@uwdata/mosaic-core": "^0.12.0",
-    "@uwdata/mosaic-spec": "^0.12.0",
-    "@uwdata/vgplot": "^0.12.0",
+    "@uwdata/mosaic-core": "^0.12.1",
+    "@uwdata/mosaic-spec": "^0.12.1",
+    "@uwdata/vgplot": "^0.12.1",
     "uuid": "^11.0.3"
   },
   "devDependencies": {
