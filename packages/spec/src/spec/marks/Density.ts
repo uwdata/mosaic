@@ -1,10 +1,10 @@
-import { ParamRef } from "../Param.js";
-import { AreaXOptions, AreaYOptions } from "./Area.js";
-import { DotOptions } from "./Dot.js";
-import { LineXOptions, LineYOptions } from "./Line.js";
-import { MarkData, MarkOptions, TextStyles } from "./Marks.js";
-import { Grid2DOptions } from "./Raster.js";
-import { TextOptions } from "./Text.js";
+import { ParamRef } from '../Param.js';
+import { AreaXOptions, AreaYOptions } from './Area.js';
+import { DotOptions } from './Dot.js';
+import { LineXOptions, LineYOptions } from './Line.js';
+import { MarkData, MarkOptions, TextStyles } from './Marks.js';
+import { Grid2DOptions } from './Raster.js';
+import { TextOptions } from './Text.js';
 
 // Density2D
 
@@ -44,6 +44,12 @@ export interface Density1DOptions {
    * Defaults to 1024.
    */
   bins?: number | ParamRef;
+
+  /**
+   * Flag indicating if density estimates should be normalized by dividing
+   * by the total point mass. Defaults to false.
+   */
+  normalize?: boolean | ParamRef;
 }
 
 export interface DensityAreaXOptions extends Omit<AreaXOptions, 'x' | 'x1' | 'x2'> {
