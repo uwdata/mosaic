@@ -1,6 +1,15 @@
 import { COLUMN_PARAM } from '../constants.js';
 import { ColumnRefNode } from './column-ref.js';
 
+/**
+ * Check if a value is a dynamic column reference node.
+ * @param {*} value The value to check.
+ * @returns {value is ColumnParamNode}
+ */
+export function isColumnParam(value) {
+  return value instanceof ColumnParamNode;
+}
+
 export class ColumnParamNode extends ColumnRefNode {
   /**
    * Instantiate a column param node.
