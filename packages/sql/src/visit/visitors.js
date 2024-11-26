@@ -1,4 +1,4 @@
-import { AGGREGATE, COLUMN_REF, FRAGMENT, PARAM, VERBATIM, WINDOW } from '../constants.js';
+import { AGGREGATE, COLUMN_PARAM, COLUMN_REF, FRAGMENT, PARAM, VERBATIM, WINDOW } from '../constants.js';
 import { aggregateNames, AggregateNode } from '../ast/aggregate.js';
 import { ColumnRefNode } from '../ast/column-ref.js';
 import { SQLNode } from '../ast/node.js';
@@ -82,7 +82,7 @@ export function collectAggregates(root) {
 export function collectColumns(root) {
   const cols = {};
   walk(root, (node) => {
-    if (node.type === COLUMN_REF) {
+    if (node.type === COLUMN_REF || node.type === COLUMN_PARAM) {
       cols[node] = node; // key on string-coerced node
     }
   });
