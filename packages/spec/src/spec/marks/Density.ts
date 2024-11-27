@@ -46,10 +46,12 @@ export interface Density1DOptions {
   bins?: number | ParamRef;
 
   /**
-   * Flag indicating if density estimates should be normalized by dividing
-   * by the total point mass. Defaults to false.
+   * Normalization method for density estimates. If `false` or `'none'` (the
+   * default), the density estimates are smoothed weighted counts. If `true`
+   * or `'sum'`, density estimates are divided by the sum of the total point
+   * mass. If `'max'`, estimates are divided by the maximum smoothed value.
    */
-  normalize?: boolean | ParamRef;
+  normalize?: boolean | 'max' | 'sum' | 'none' | ParamRef;
 }
 
 export interface DensityAreaXOptions extends Omit<AreaXOptions, 'x' | 'x1' | 'x2'> {

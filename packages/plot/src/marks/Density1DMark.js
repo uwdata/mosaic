@@ -1,6 +1,6 @@
 import { toDataColumns } from '@uwdata/mosaic-core';
 import { binLinear1d, isBetween } from '@uwdata/mosaic-sql';
-import { sum } from 'd3';
+import { max, sum } from 'd3';
 import { Transient } from '../symbols.js';
 import { binExpr } from './util/bin-expr.js';
 import { dericheConfig, dericheConv1d } from './util/density.js';
@@ -78,7 +78,7 @@ export class Density1DMark extends Mark {
     const b = this.channelField(dim).as;
     const b0 = +lo;
     const delta = (hi - b0) / (bins - 1);
-    const scale = 1 / (delta * (normalize ? sum(grid) : 1));
+    const scale = 1 / (delta * norm(grid, result, normalize));
 
     const _b = new Float64Array(bins);
     const _v = new Float64Array(bins);
@@ -99,4 +99,11 @@ export class Density1DMark extends Mark {
     }
     return [{ type, data: { length }, options }];
   }
+}
+
+function norm(grid, smoothed, type) {
+  const value = type === true || type === 'sum' ? sum(grid)
+    : type === 'max' ? max(smoothed)
+    : 1;
+  return value || 1;
 }
