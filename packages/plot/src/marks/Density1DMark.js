@@ -1,5 +1,6 @@
 import { toDataColumns } from '@uwdata/mosaic-core';
 import { binLinear1d, isBetween } from '@uwdata/mosaic-sql';
+import { max, sum } from 'd3';
 import { Transient } from '../symbols.js';
 import { binExpr } from './util/bin-expr.js';
 import { dericheConfig, dericheConv1d } from './util/density.js';
@@ -10,7 +11,12 @@ import { Mark, channelOption, markQuery } from './Mark.js';
 
 export class Density1DMark extends Mark {
   constructor(type, source, options) {
-    const { bins = 1024, bandwidth = 20, ...channels } = options;
+    const {
+      bins = 1024,
+      bandwidth = 20,
+      normalize = false,
+      ...channels
+    } = options;
     const dim = type.endsWith('X') ? 'y' : 'x';
 
     super(type, source, channels, dim === 'x' ? xext : yext);
@@ -25,6 +31,11 @@ export class Density1DMark extends Mark {
     this.bandwidth = handleParam(bandwidth, value => {
       this.bandwidth = value;
       return this.grid ? this.convolve().update() : null;
+    });
+
+    /** @type {boolean} */
+    this.normalize = handleParam(normalize, value => {
+      return (this.normalize = value, this.convolve().update());
     });
   }
 
@@ -52,7 +63,9 @@ export class Density1DMark extends Mark {
   }
 
   convolve() {
-    const { bins, bandwidth, dim, grid, plot, extent: [lo, hi] } = this;
+    const {
+      bins, bandwidth, normalize, dim, grid, plot, extent: [lo, hi]
+    } = this;
 
     // perform smoothing
     const neg = grid.some(v => v < 0);
@@ -65,7 +78,7 @@ export class Density1DMark extends Mark {
     const b = this.channelField(dim).as;
     const b0 = +lo;
     const delta = (hi - b0) / (bins - 1);
-    const scale = 1 / delta;
+    const scale = 1 / (delta * norm(grid, result, normalize));
 
     const _b = new Float64Array(bins);
     const _v = new Float64Array(bins);
@@ -86,4 +99,11 @@ export class Density1DMark extends Mark {
     }
     return [{ type, data: { length }, options }];
   }
+}
+
+function norm(grid, smoothed, type) {
+  const value = type === true || type === 'sum' ? sum(grid)
+    : type === 'max' ? max(smoothed)
+    : 1;
+  return value || 1;
 }
