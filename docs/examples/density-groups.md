@@ -5,7 +5,7 @@
 
 # Density Groups
 
-Density plots of penguin bill depths, grouped by species. The normalize parameter supporting different forms of comparison, controlling if an individual density estimate is scaled by total point mass or normalized by the sum or max of the point mass. The stack and offset parameters control stacking of density areas.
+Density plots of penguin bill depths, grouped by species. The normalize parameter supports different forms of comparison, controlling if an individual density estimate is scaled by total point mass or normalized by the sum or max of the point mass. The stack and offset parameters control stacking of density areas.
 
 <Example spec="/specs/yaml/density-groups.yaml" />
 
