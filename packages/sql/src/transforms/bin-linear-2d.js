@@ -26,11 +26,11 @@ function identity(x) {
  * @param {import('../types.js').ExprValue} yp The y grid bin expression
  * @param {import('../types.js').ExprValue | undefined} weight Point weights.
  * @param {number} xn The number of x grid bins.
- * @param {string[]} groupby Group by expressions.
+ * @param {string[]} [groupby] Group by expressions.
  * @returns {SelectQuery} A linear binning query for bin `index` and
  *  aggregate `density` columns, in addition to any group by expressions.
  */
-export function binLinear2d(q, xp, yp, weight, xn, groupby) {
+export function binLinear2d(q, xp, yp, weight, xn, groupby = []) {
 
   const w = weight ? x => mul(x, weight) : identity;
 
