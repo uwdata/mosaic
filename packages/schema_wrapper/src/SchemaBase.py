@@ -28,5 +28,7 @@ class SchemaBase:
 
         if not class_dictionary:
             return None
-        print(f"\nself: {self}, class_dict: {class_dictionary}")
+        elif len(list(class_dictionary.values())) == 1 and list(class_dictionary.keys())[0] == 'value':
+            return class_dictionary['value']
+
         return class_dictionary
