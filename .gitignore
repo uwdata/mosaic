@@ -13,3 +13,22 @@ packages/*/test-output
 **/.mypy_cache
 **/.coverage
 **/.venv
+transitionFolder
+
+# Virtual environment
+venv/
+.env/
+
+# Conda environment
+conda-env/
+
+# Python cache
+__pycache__/
+*.pyc
+
+# Test cache
+.pytest_cache/
+.coverage
+
+# Python API Generated classes
+packages/schema_wrapper/generated_classes.py

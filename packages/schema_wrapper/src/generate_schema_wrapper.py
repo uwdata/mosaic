@@ -12,6 +12,7 @@ from pathlib import Path
 from urllib import request
 import graphlib
 from .utils import get_valid_identifier, get_key_by_value, get_dependencies
+from .SchemaBase import SchemaBase
 
 sys.path.insert(0, str(Path.cwd()))
 
@@ -38,12 +39,12 @@ def generate_class(class_name: str, class_schema: Dict[str, Any]) -> str:
 
     # Check if the schema defines a simple type (like string, number) without properties
     if 'type' in class_schema and 'properties' not in class_schema:
-        return f"class {class_name}:\n    def __init__(self):\n        pass\n"
+        return f"class {class_name}(SchemaBase):\n    def __init__(self):\n        pass\n"
 
     # Check for '$ref' and handle it
     if '$ref' in class_schema:
         ref_class_name = class_schema['$ref'].split('/')[-1]
-        return f"\nclass {class_name}:\n    pass  # This is a reference to '{ref_class_name}'\n"
+        return f"\nclass {class_name}(SchemaBase):\n    pass  # This is a reference to '{ref_class_name}'\n"
     if 'anyOf' in class_schema:
             return generate_any_of_class(class_name, class_schema['anyOf'])
 
@@ -51,7 +52,7 @@ def generate_class(class_name: str, class_schema: Dict[str, Any]) -> str:
     properties = class_schema.get('properties', {})
     required = class_schema.get('required', [])
 
-    class_def = f"class {class_name}:\n"
+    class_def = f"class {class_name}(SchemaBase):\n"
     class_def += "    def __init__(self"
 
     # Generate __init__ method parameters
@@ -103,7 +104,7 @@ def generate_any_of_class(class_name: str, any_of_schemas: List[Dict[str, Any]])
     types = [get_type_hint(schema) for schema in any_of_schemas]
     type_union = get_type_union(types)
     
-    class_def = f"class {class_name}:\n"
+    class_def = f"class {class_name}(SchemaBase):\n"
     class_def += f"    def __init__(self, value: {type_union}):\n"
     class_def += "        self.value = value\n"
     
