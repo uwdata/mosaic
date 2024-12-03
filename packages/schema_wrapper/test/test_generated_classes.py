@@ -142,7 +142,7 @@ def test_weather_plot():
             'rRange': [2, 10], 
             'width': 800, 
             'xTickFormat': '%b', 
-            'xyDomain': 'Fixed'} == to_dict(plot_spec))
+            'xyDomain': 'Fixed'} == _todict(plot_spec))
 
 def test_stock_plot():
     plot_spec = Plot(
@@ -155,6 +155,8 @@ def test_stock_plot():
         width = 680,
         height = 200
     )
+    dict_rep = _todict(plot_spec)
+    print(f"rep: {dict_rep}")
     assert({'height': 200, 
             'plot': [
                 {'data': {'from': 'aapl'}, 
@@ -162,7 +164,7 @@ def test_stock_plot():
                  'x': 'Date', 
                  'y': 'Close'}
                 ], 
-            'width': 680} == to_dict(plot_spec))
+            'width': 680} == _todict(plot_spec))
 
 if __name__ == '__main__':
     pytest.main([__file__])
