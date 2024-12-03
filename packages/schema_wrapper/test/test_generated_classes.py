@@ -4,8 +4,7 @@ pytest packages/schema_wrapper/test/test.py
 import unittest
 from pathlib import Path
 import pytest
-from ..src.utils import to_dict
-
+from ..src.utils import _todict
 from ..generated_classes import *
 
 @pytest.fixture
@@ -95,7 +94,6 @@ def test_plot_components():
     assert styles.opacity == 0.7
     assert styles.stroke == "black"
     assert styles.strokeOpacity == 0.3
-    print(to_dict(styles))
 
 def test_argmin_argmax():
     # Test Argmin
@@ -114,7 +112,6 @@ def test_argmin_argmax():
 
 def test_composite():
     argmax = Argmax([5, 6, True, 0.5], False, TransformField("test"), [TransformField("1"), TransformField("2"), TransformField("3")], ParamRef())
-    print(to_dict(argmax))
 
 def test_weather_plot():
     plot_spec = Plot(
@@ -166,4 +163,3 @@ def test_stock_plot():
 
 if __name__ == '__main__':
     pytest.main([__file__])
-
