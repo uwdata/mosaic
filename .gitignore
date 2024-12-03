@@ -7,3 +7,21 @@ docs/.vitepress/dist
 node_modules
 packages/*/dist
 packages/*/test-output
+transitionFolder
+
+# Virtual environment
+venv/
+.env/
+
+# Conda environment
+conda-env/
+
+# Python cache
+__pycache__/
+packages/schema_wrapper/generated_classes.py
+*.pyc
+
+# Test cache
+.pytest_cache/
+.coverage
+

@@ -267,9 +267,9 @@ def _todict(obj: Any, context: dict[str, Any] | None = None, np_opt: Any = None,
     elif (
         hasattr(obj, "to_dict")
         and (module_name := obj.__module__)
-        and module_name.startswith("altair")
+        #and module_name.startswith("altair")
     ):
-        return obj.to_dict()
+        return obj.to_dict(False)
     elif pd_opt is not None and isinstance(obj, pd_opt.Timestamp):
         return pd_opt.Timestamp(obj).isoformat()
     elif _is_iterable(obj, exclude=(str, bytes)):
@@ -331,4 +331,3 @@ def to_dict(
         except jsonschema.ValidationError as err:
             raise SchemaValidationError(self, err) from None
     return result
-

@@ -1,6 +1,6 @@
 {
   "name": "@uwdata/mosaic-core",
-  "version": "0.10.0",
+  "version": "0.11.0",
   "description": "Scalable and extensible linked data views.",
   "keywords": [
     "mosaic",
@@ -16,23 +16,25 @@
   "module": "src/index.js",
   "jsdelivr": "dist/mosaic-core.min.js",
   "unpkg": "dist/mosaic-core.min.js",
+  "types": "dist/types/index.d.ts",
   "repository": {
     "type": "git",
     "url": "https://github.com/uwdata/mosaic.git"
   },
   "scripts": {
     "prebuild": "rimraf dist && mkdir dist",
-    "build": "node ../../esbuild.js mosaic-core",
+    "build": "npm run types && node ../../esbuild.js mosaic-core",
+    "types": "tsc",
     "lint": "eslint src test",
-    "test": "mocha 'test/**/*-test.js'",
+    "test": "vitest run --dangerouslyIgnoreUnhandledErrors",
     "prepublishOnly": "npm run test && npm run lint && npm run build"
   },
   "dependencies": {
-    "@duckdb/duckdb-wasm": "^1.28.1-dev258.0",
-    "@uwdata/flechette": "~0.0.8",
-    "@uwdata/mosaic-sql": "^0.10.0"
+    "@duckdb/duckdb-wasm": "^1.28.1-dev278.0",
+    "@uwdata/flechette": "^1.0.2",
+    "@uwdata/mosaic-sql": "^0.11.0"
   },
   "devDependencies": {
-    "@uwdata/mosaic-duckdb": "^0.10.0"
+    "@uwdata/mosaic-duckdb": "^0.11.0"
   }
 }
