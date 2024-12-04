@@ -15,7 +15,7 @@ export class ASTNode {
    * @returns {*} The instantiated value of this node.
    */
   instantiate(ctx) {
-    // eslint-disable-line no-unused-vars
+     
     // @ts-ignore
     throw Error("instantiate not implemented");
   }
@@ -26,7 +26,7 @@ export class ASTNode {
    * @returns {string|void} The generated ESM code for the node.
    */
   codegen(ctx) {
-    // eslint-disable-line no-unused-vars
+     
     // @ts-ignore
     return Error("codegen not implemented");
   }
@@ -45,6 +45,8 @@ export class ASTNode {
    * @returns {string} The generated Python code for the node.
    */
   toPython(ctx) {
+     
+    // @ts-ignore
     // Default implementation: convert to JSON and return as Python dict literal
     return JSON.stringify(this.toJSON());
   }

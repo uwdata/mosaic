@@ -6,9 +6,9 @@ import { SpecNode } from "./ast/SpecNode.js";
  * @param {object} [options] Code generation options.
  * @returns {string} Generated Python code using the mosaic-spec classes.
  */
-export function astToPython(ast, options = {}) {
-  const ctx = new PythonCodegenContext(options);
-  const { root, data, params } = ast;
+export function astToPython(ast) {
+  //const ctx = new PythonCodegenContext(options);
+  const { root, data} = ast;
 
   // Function to format channel values
   const formatChannel = (value) => {

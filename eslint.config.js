@@ -19,7 +19,9 @@ export default [
     },
     rules: {
       "no-unexpected-multiline": "off",
-      "jsdoc/no-undefined-types": 1
+      "jsdoc/no-undefined-types": 1,
+      "no-unused-vars": "off", // Disable the base no-unused-vars rule
+      "@typescript-eslint/no-unused-vars": "off", // Disable the TypeScript-specific version if you are using TypeScript
     },
     plugins: {
       jsdoc
