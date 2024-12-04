@@ -6,7 +6,7 @@ import { SpecNode } from "./ast/SpecNode.js";
  * @param {object} [options] Code generation options.
  * @returns {string} Generated Python code using the mosaic-spec classes.
  */
-export function astToPython(ast) {
+export function astToPython(ast, options = {}) {
   //const ctx = new PythonCodegenContext(options);
   const { root, data} = ast;
 
