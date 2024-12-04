@@ -23,6 +23,7 @@ import { RuleX, RuleY } from './marks/Rule.js';
 import { Text,TextX, TextY } from './marks/Text.js';
 import { TickX, TickY } from './marks/Tick.js';
 import { Spike, Vector, VectorX, VectorY } from './marks/Vector.js';
+import { WaffleX, WaffleY } from './marks/Waffle.js';
 
 /** A plot mark entry. */
 export type PlotMark =
@@ -50,4 +51,5 @@ export type PlotMark =
   | RuleX | RuleY
   | Text | TextX | TextY
   | TickX | TickY
-  | Vector | VectorX | VectorY | Spike;
+  | Vector | VectorX | VectorY | Spike
+  | WaffleX | WaffleY;

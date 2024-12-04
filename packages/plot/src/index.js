@@ -29,4 +29,4 @@ export { Toggle } from './interactors/Toggle.js';
 export { Legend } from './legend.js';
 
 // transforms
-export { bin } from './transforms/index.js';
+export { bin } from './transforms/bin.js';

@@ -1,50 +1,47 @@
-import { AGG, EXPRESSION, SQL } from '../constants.js';
+import { EXPRESSION, SQL } from '../constants.js';
 import { ASTNode } from './ASTNode.js';
+import { ColumnParamRefNode } from './ColumnParamRefNode.js';
+
+const tokenRegExp = /(\\'|\\"|"(?:\\"|[^"])*"|'(?:\\'|[^'])*'|\${1,2}\w+)/g;
 
 export function parseExpression(spec, ctx) {
-  const { label } = spec;
-  const key = spec[SQL] ? SQL
-    : spec[AGG] ? AGG
-    : ctx.error('Unrecognized expression type', spec);
-
-  const expr = spec[key];
-  const tokens = expr.split(/(\\'|\\"|"(?:\\"|[^"])*"|'(?:\\'|[^'])*'|\$\w+)/g);
+  const expr = spec[SQL];
+  const tokens = expr.split(tokenRegExp);
   const spans = [''];
   const params = [];
 
   for (let i = 0, k = 0; i < tokens.length; ++i) {
     const tok = tokens[i];
     if (tok.startsWith('$')) {
-      params[k] = ctx.maybeParam(tok);
+      params[k] = tok.startsWith('$$')
+        ? new ColumnParamRefNode(ctx.paramRef(tok.slice(2)))
+        : ctx.maybeParam(tok);
       spans[++k] = '';
     } else {
       spans[k] += tok;
     }
   }
 
-  return new ExpressionNode(expr, spans, params, label, key === AGG);
+  return new ExpressionNode(expr, spans, params);
 }
 
 export class ExpressionNode extends ASTNode {
-  constructor(value, spans, params, label, aggregate) {
+  constructor(value, spans, params) {
     super(EXPRESSION);
     this.value = value;
     this.spans = spans;
     this.params = params;
-    this.label = label;
-    this.aggregate = aggregate;
   }
 
   instantiate(ctx) {
-    const { spans, params, label, aggregate } = this;
-    const tag = ctx.api[aggregate ? AGG : SQL];
+    const { spans, params } = this;
+    const tag = ctx.api[SQL];
     const args = params.map(e => e.instantiate(ctx));
-    return tag(spans, ...args).annotate({ label });
+    return tag(spans, ...args);
   }
 
   codegen(ctx) {
-    const { spans, params, label, aggregate } = this;
-    const method = aggregate ? AGG : SQL;
+    const { spans, params } = this;
 
     // reconstitute expression string
     let str = '';
@@ -54,12 +51,10 @@ export class ExpressionNode extends ASTNode {
     }
     str += spans[n];
 
-    return `${ctx.ns()}${method}\`${str}\``
-      + (label ? `.annotate({ label: ${JSON.stringify(label)} })` : '');
+    return `${ctx.ns()}${SQL}\`${str}\``;
   }
 
   toJSON() {
-    const key = this.aggregate ? AGG : SQL;
-    return { [key]: this.value };
+    return { [SQL]: this.value };
   }
 }

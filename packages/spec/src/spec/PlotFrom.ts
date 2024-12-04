@@ -9,7 +9,7 @@ export type PlotDataInline = any[];
 /** Input data specification for a plot mark. */
 export interface PlotFrom {
   /** The name of the backing data table. */
-  from: string;
+  from: string | ParamRef;
   /** A selection that filters the mark data. */
   filterBy?: ParamRef;
   /**

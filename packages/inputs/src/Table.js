@@ -1,4 +1,4 @@
-import { MosaicClient, clausePoints, coordinator, toDataColumns } from '@uwdata/mosaic-core';
+import { MosaicClient, clausePoints, coordinator, isParam, toDataColumns } from '@uwdata/mosaic-core';
 import { Query, column, desc } from '@uwdata/mosaic-sql';
 import { formatDate, formatLocaleAuto, formatLocaleNumber } from './util/format.js';
 import { input } from './input.js';
@@ -32,6 +32,11 @@ export class Table extends MosaicClient {
     this.format = format;
     this.align = align;
     this.widths = typeof width === 'object' ? width : {};
+
+    if (isParam(from)) {
+      // if data table is a param, re-initialize upon change
+      from.addEventListener('value', () => this.initialize());
+    }
 
     this.offset = 0;
     this.limit = +rowBatch;
@@ -94,6 +99,10 @@ export class Table extends MosaicClient {
     this.element.appendChild(this.style);
   }
 
+  sourceTable() {
+    return isParam(this.from) ? this.from.value : this.from;
+  }
+
   clause(rows = []) {
     const { data, limit, schema } = this;
     const fields = schema.map(s => s.column);
@@ -116,7 +125,8 @@ export class Table extends MosaicClient {
   }
 
   fields() {
-    return this.columns.map(name => column(this.from, name));
+    const from = this.sourceTable();
+    return this.columns.map(name => column(name, from));
   }
 
   fieldInfo(info) {
@@ -148,8 +158,8 @@ export class Table extends MosaicClient {
   }
 
   query(filter = []) {
-    const { from, limit, offset, schema, sortColumn, sortDesc } = this;
-    return Query.from(from)
+    const { limit, offset, schema, sortColumn, sortDesc } = this;
+    return Query.from(this.sourceTable())
       .select(schema.map(s => s.column))
       .where(filter)
       .orderby(sortColumn ? (sortDesc ? desc(sortColumn) : sortColumn) : [])

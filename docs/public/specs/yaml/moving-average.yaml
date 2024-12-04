@@ -24,6 +24,7 @@ vconcat:
     y: { avg: cases, orderby: day, rows: $frame }
     curve: monotone-x
     stroke: currentColor
+  xLabel: day
   width: 680
   height: 300
 - input: menu

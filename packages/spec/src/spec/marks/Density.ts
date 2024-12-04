@@ -1,10 +1,10 @@
-import { ParamRef } from "../Param.js";
-import { AreaXOptions, AreaYOptions } from "./Area.js";
-import { DotOptions } from "./Dot.js";
-import { LineXOptions, LineYOptions } from "./Line.js";
-import { MarkData, MarkOptions, TextStyles } from "./Marks.js";
-import { Grid2DOptions } from "./Raster.js";
-import { TextOptions } from "./Text.js";
+import { ParamRef } from '../Param.js';
+import { AreaXOptions, AreaYOptions } from './Area.js';
+import { DotOptions } from './Dot.js';
+import { LineXOptions, LineYOptions } from './Line.js';
+import { MarkData, MarkOptions, TextStyles } from './Marks.js';
+import { Grid2DOptions } from './Raster.js';
+import { TextOptions } from './Text.js';
 
 // Density2D
 
@@ -44,6 +44,14 @@ export interface Density1DOptions {
    * Defaults to 1024.
    */
   bins?: number | ParamRef;
+
+  /**
+   * Normalization method for density estimates. If `false` or `'none'` (the
+   * default), the density estimates are smoothed weighted counts. If `true`
+   * or `'sum'`, density estimates are divided by the sum of the total point
+   * mass. If `'max'`, estimates are divided by the maximum smoothed value.
+   */
+  normalize?: boolean | 'max' | 'sum' | 'none' | ParamRef;
 }
 
 export interface DensityAreaXOptions extends Omit<AreaXOptions, 'x' | 'x1' | 'x2'> {

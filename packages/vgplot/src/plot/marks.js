@@ -130,3 +130,6 @@ export const gridFy = (...args) => mark('gridFy', ...args);
 export const geo = (...args) => implicitType(GeoMark, ...args);
 export const sphere = (...args) => mark('sphere', ...args);
 export const graticule = (...args) => mark('graticule', ...args);
+
+export const waffleX = (...args) => mark('waffleX', ...args);
+export const waffleY = (...args) => mark('waffleY', ...args);

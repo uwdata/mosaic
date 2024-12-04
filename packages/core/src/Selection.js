@@ -1,5 +1,6 @@
 import { literal, or } from '@uwdata/mosaic-sql';
 import { Param } from './Param.js';
+import { MosaicClient } from './MosaicClient.js';
 
 /**
  * Test if a value is a Selection instance.
@@ -315,9 +316,11 @@ export class SelectionResolver {
 
   /**
    * Return a selection query predicate for the given client.
-   * @param {*[]} clauseList An array of selection clauses.
-   * @param {*} active The current active selection clause.
-   * @param {*} client The client whose data may be filtered.
+   * @param {import('./util/selection-types.js').SelectionClause[]} clauseList
+   *  An array of selection clauses.
+   * @param {import('./util/selection-types.js').SelectionClause} active
+   *  The current active selection clause.
+   * @param {MosaicClient} client The client whose data may be filtered.
    * @returns {*} The query predicate for filtering client data,
    *  based on the current state of this selection.
    */

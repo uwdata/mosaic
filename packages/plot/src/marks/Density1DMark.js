@@ -1,5 +1,6 @@
 import { toDataColumns } from '@uwdata/mosaic-core';
-import { Query, gt, isBetween, sql, sum } from '@uwdata/mosaic-sql';
+import { binLinear1d, isBetween } from '@uwdata/mosaic-sql';
+import { max, sum } from 'd3';
 import { Transient } from '../symbols.js';
 import { binExpr } from './util/bin-expr.js';
 import { dericheConfig, dericheConv1d } from './util/density.js';
@@ -10,7 +11,12 @@ import { Mark, channelOption, markQuery } from './Mark.js';
 
 export class Density1DMark extends Mark {
   constructor(type, source, options) {
-    const { bins = 1024, bandwidth = 20, ...channels } = options;
+    const {
+      bins = 1024,
+      bandwidth = 20,
+      normalize = false,
+      ...channels
+    } = options;
     const dim = type.endsWith('X') ? 'y' : 'x';
 
     super(type, source, channels, dim === 'x' ? xext : yext);
@@ -26,6 +32,11 @@ export class Density1DMark extends Mark {
       this.bandwidth = value;
       return this.grid ? this.convolve().update() : null;
     });
+
+    /** @type {boolean} */
+    this.normalize = handleParam(normalize, value => {
+      return (this.normalize = value, this.convolve().update());
+    });
   }
 
   get filterStable() {
@@ -36,10 +47,10 @@ export class Density1DMark extends Mark {
 
   query(filter = []) {
     if (this.hasOwnData()) throw new Error('Density1DMark requires a data source');
-    const { bins, channels, dim, source: { table } } = this;
+    const { bins, channels, dim } = this;
     const extent = this.extent = (dim === 'x' ? extentX : extentY)(this, filter);
     const [x, bx] = binExpr(this, dim, bins, extent);
-    const q = markQuery(channels, table, [dim])
+    const q = markQuery(channels, this.sourceTable(), [dim])
       .where(filter.concat(isBetween(bx, extent)));
     const v = this.channelField('weight') ? 'weight' : null;
     return binLinear1d(q, x, v);
@@ -52,7 +63,9 @@ export class Density1DMark extends Mark {
   }
 
   convolve() {
-    const { bins, bandwidth, dim, grid, plot, extent: [lo, hi] } = this;
+    const {
+      bins, bandwidth, normalize, dim, grid, plot, extent: [lo, hi]
+    } = this;
 
     // perform smoothing
     const neg = grid.some(v => v < 0);
@@ -65,7 +78,7 @@ export class Density1DMark extends Mark {
     const b = this.channelField(dim).as;
     const b0 = +lo;
     const delta = (hi - b0) / (bins - 1);
-    const scale = 1 / delta;
+    const scale = 1 / (delta * norm(grid, result, normalize));
 
     const _b = new Float64Array(bins);
     const _v = new Float64Array(bins);
@@ -88,24 +101,9 @@ export class Density1DMark extends Mark {
   }
 }
 
-function binLinear1d(q, p, density) {
-  const w = density ? `* ${density}` : '';
-
-  const u = q.clone().select({
-    p,
-    i: sql`FLOOR(p)::INTEGER`,
-    w: sql`(FLOOR(p) + 1 - p)${w}`
-  });
-
-  const v = q.clone().select({
-    p,
-    i: sql`FLOOR(p)::INTEGER + 1`,
-    w: sql`(p - FLOOR(p))${w}`
-  });
-
-  return Query
-    .from(Query.unionAll(u, v))
-    .select({ index: 'i', density: sum('w') })
-    .groupby('index')
-    .having(gt('density', 0));
+function norm(grid, smoothed, type) {
+  const value = type === true || type === 'sum' ? sum(grid)
+    : type === 'max' ? max(smoothed)
+    : 1;
+  return value || 1;
 }

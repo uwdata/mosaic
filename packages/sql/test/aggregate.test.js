@@ -1,166 +1,165 @@
 import { expect, describe, it } from 'vitest';
-import { stubParam } from './stub-param.js';
-import {
-  agg, column, isSQLExpression, isParamLike,
-  argmax, argmin, arrayAgg, avg, corr, count, covarPop, entropy, first,
-  kurtosis, mean, mad, max, median, min, mode, last, product, quantile,
-  regrAvgX, regrAvgY, regrCount, regrIntercept, regrR2, regrSXX, regrSXY,
-  regrSYY, regrSlope, skewness, stddev, stddevPop, stringAgg, sum,
-  variance, varPop, sql
-} from '../src/index.js';
-
-describe('agg template tag', () => {
-  it('creates aggregate SQL expressions', () => {
-    const expr = agg`SUM(${column('foo')})`;
-    expect(isSQLExpression(expr)).toBe(true);
-    expect(isParamLike(expr)).toBe(false);
-    expect(String(expr)).toBe('SUM("foo")');
-    expect(expr.column).toBe('foo');
-    expect(expr.columns).toEqual(['foo']);
-  });
-
-  it('creates parameterized aggregate SQL expressions', () => {
-    const col = stubParam(column('bar'));
-    expect(isParamLike(col)).toBe(true);
-
-    const expr = agg`SUM(${col})`;
-    expect(isSQLExpression(expr)).toBe(true);
-    expect(isParamLike(expr)).toBe(true);
-    expect(String(expr)).toBe('SUM("bar")');
-    expect(expr.column).toBe('bar');
-    expect(expr.columns).toEqual(['bar']);
-
-    expr.addEventListener('value', value => {
-      expect(isSQLExpression(value)).toBe(true);
-      expect(String(expr)).toBe(`${value}`);
-    });
-    col.update(column('baz'));
-    expect(String(expr)).toBe('SUM("baz")');
-    expect(expr.column).toBe('baz');
-    expect(expr.columns).toEqual(['baz']);
-  });
-});
+import { columns } from './util/columns.js';
+import { argmax, argmin, arrayAgg, avg, column, corr, count, covariance, covarPop, entropy, first, gt, kurtosis, last, mad, max, median, min, mode, product, quantile, regrAvgX, regrAvgY, regrCount, regrIntercept, regrR2, regrSlope, regrSXX, regrSXY, regrSYY, skewness, stddev, stddevPop, stringAgg, sum, variance, varPop } from '../src/index.js';
 
 describe('Aggregate functions', () => {
-  it('expose metadata', () => {
-    const expr = sum(column('foo'));
-    expect(expr.aggregate).toBe('SUM');
-    expect(expr.column).toBe('foo');
-    expect(expr.columns).toEqual(['foo']);
+  it('include accessible metadata', () => {
+    const expr = sum('foo');
+    expect(expr.name).toBe('sum');
+    expect(columns(expr)).toStrictEqual(['foo']);
   });
+
   it('support distinct', () => {
-    const expr = count(column('foo')).distinct();
-    expect(expr.aggregate).toBe('COUNT');
+    const expr = count('foo').distinct();
+    expect(expr.name).toBe('count');
     expect(expr.isDistinct).toBe(true);
-    expect(expr.type).toBe('INTEGER');
-    expect(String(expr)).toBe('COUNT(DISTINCT "foo")::INTEGER');
+    expect(String(expr)).toBe('count(DISTINCT "foo")');
   });
+
   it('support filter', () => {
     const foo = column('foo');
-    const expr = avg(foo).where(sql`${foo} > 5`);
-    expect(String(expr)).toBe('AVG("foo") FILTER (WHERE "foo" > 5)');
+    expect(String(avg(foo).where(gt(foo, 5))))
+      .toBe('avg("foo") FILTER (WHERE ("foo" > 5))');
   });
-  it('include ARG_MAX', () => {
-    expect(String(argmax('foo', 'bar'))).toBe('ARG_MAX("foo", "bar")');
+
+  it('include arg_max', () => {
+    expect(String(argmax('foo', 'bar'))).toBe('arg_max("foo", "bar")');
   });
-  it('include ARG_MIN', () => {
-    expect(String(argmin('foo', 'bar'))).toBe('ARG_MIN("foo", "bar")');
+
+  it('include arg_min', () => {
+    expect(String(argmin('foo', 'bar'))).toBe('arg_min("foo", "bar")');
   });
-  it('include ARRAY_AGG', () => {
-    expect(String(arrayAgg('foo'))).toBe('ARRAY_AGG("foo")');
+
+  it('include array_agg', () => {
+    expect(String(arrayAgg('foo'))).toBe('array_agg("foo")');
   });
-  it('include AVG', () => {
-    expect(String(avg('foo'))).toBe('AVG("foo")');
-    expect(String(mean('foo'))).toBe('AVG("foo")');
+
+  it('include avg', () => {
+    expect(String(avg('foo'))).toBe('avg("foo")');
   });
-  it('include CORR', () => {
-    expect(String(corr('foo', 'bar'))).toBe('CORR("foo", "bar")');
+
+  it('include corr', () => {
+    expect(String(corr('foo', 'bar'))).toBe('corr("foo", "bar")');
   });
-  it('include COUNT', () => {
-    expect(String(count())).toBe('COUNT(*)::INTEGER');
+
+  it('include count', () => {
+    expect(String(count())).toBe('count(*)');
+    expect(String(count('foo'))).toBe('count("foo")');
   });
-  it('include COVAR_POP', () => {
-    expect(String(covarPop('foo', 'bar'))).toBe('COVAR_POP("foo", "bar")');
+
+  it('include covar_pop', () => {
+    expect(String(covarPop('foo', 'bar'))).toBe('covar_pop("foo", "bar")');
   });
-  it('include ENTROPY', () => {
-    expect(String(entropy('foo'))).toBe('ENTROPY("foo")');
+
+  it('include covar_samp', () => {
+    expect(String(covariance('foo', 'bar'))).toBe('covar_samp("foo", "bar")');
   });
-  it('include FIRST', () => {
-    expect(String(first('foo'))).toBe('FIRST("foo")');
+
+  it('include entropy', () => {
+    expect(String(entropy('foo'))).toBe('entropy("foo")');
   });
-  it('include KURTOSIS', () => {
-    expect(String(kurtosis('foo'))).toBe('KURTOSIS("foo")');
+
+  it('include first', () => {
+    expect(String(first('foo'))).toBe('first("foo")');
   });
-  it('include MAD', () => {
-    expect(String(mad('foo'))).toBe('MAD("foo")');
+
+  it('include kurtosis', () => {
+    expect(String(kurtosis('foo'))).toBe('kurtosis("foo")');
   });
-  it('include MAX', () => {
-    expect(String(max('foo'))).toBe('MAX("foo")');
+
+  it('include mad', () => {
+    expect(String(mad('foo'))).toBe('mad("foo")');
   });
-  it('include MEDIAN', () => {
-    expect(String(median('foo'))).toBe('MEDIAN("foo")');
+
+  it('include max', () => {
+    expect(String(max('foo'))).toBe('max("foo")');
   });
-  it('include MIN', () => {
-    expect(String(min('foo'))).toBe('MIN("foo")');
+
+  it('include median', () => {
+    expect(String(median('foo'))).toBe('median("foo")');
   });
-  it('include MODE', () => {
-    expect(String(mode('foo'))).toBe('MODE("foo")');
+
+  it('include min', () => {
+    expect(String(min('foo'))).toBe('min("foo")');
   });
-  it('include LAST', () => {
-    expect(String(last('foo'))).toBe('LAST("foo")');
+
+  it('include mode', () => {
+    expect(String(mode('foo'))).toBe('mode("foo")');
   });
-  it('include PRODUCT', () => {
-    expect(String(product('foo'))).toBe('PRODUCT("foo")');
+
+  it('include last', () => {
+    expect(String(last('foo'))).toBe('last("foo")');
   });
-  it('include QUANTILE', () => {
-    expect(String(quantile('foo', 0.25))).toBe('QUANTILE("foo", 0.25)');
+
+  it('include product', () => {
+    expect(String(product('foo'))).toBe('product("foo")');
   });
-  it('include REGR_AVGX', () => {
-    expect(String(regrAvgX('x', 'y'))).toBe('REGR_AVGX("x", "y")');
+
+  it('include quantile', () => {
+    expect(String(quantile('foo', 0.25))).toBe('quantile("foo", 0.25)');
   });
-  it('include REGR_AVGY', () => {
-    expect(String(regrAvgY('x', 'y'))).toBe('REGR_AVGY("x", "y")');
+
+  it('include regr_avgx', () => {
+    expect(String(regrAvgX('x', 'y'))).toBe('regr_avgx("x", "y")');
   });
-  it('include REGR_COUNT', () => {
-    expect(String(regrCount('x', 'y'))).toBe('REGR_COUNT("x", "y")');
+
+  it('include regr_avgy', () => {
+    expect(String(regrAvgY('x', 'y'))).toBe('regr_avgy("x", "y")');
   });
-  it('include REGR_INTERCEPT', () => {
-    expect(String(regrIntercept('x', 'y'))).toBe('REGR_INTERCEPT("x", "y")');
+
+  it('include regr_count', () => {
+    expect(String(regrCount('x', 'y'))).toBe('regr_count("x", "y")');
   });
-  it('include REGR_R2', () => {
-    expect(String(regrR2('x', 'y'))).toBe('REGR_R2("x", "y")');
+
+  it('include regr_intercept', () => {
+    expect(String(regrIntercept('x', 'y'))).toBe('regr_intercept("x", "y")');
   });
-  it('include REGR_SXX', () => {
-    expect(String(regrSXX('x', 'y'))).toBe('REGR_SXX("x", "y")');
+
+  it('include regr_r2', () => {
+    expect(String(regrR2('x', 'y'))).toBe('regr_r2("x", "y")');
   });
-  it('include REGR_SXY', () => {
-    expect(String(regrSXY('x', 'y'))).toBe('REGR_SXY("x", "y")');
+
+  it('include regr_sxx', () => {
+    expect(String(regrSXX('x', 'y'))).toBe('regr_sxx("x", "y")');
   });
-  it('include REGR_SYY', () => {
-    expect(String(regrSYY('x', 'y'))).toBe('REGR_SYY("x", "y")');
+
+  it('include regr_sxy', () => {
+    expect(String(regrSXY('x', 'y'))).toBe('regr_sxy("x", "y")');
   });
-  it('include REGR_SLOPE', () => {
-    expect(String(regrSlope('x', 'y'))).toBe('REGR_SLOPE("x", "y")');
+
+  it('include regr_syy', () => {
+    expect(String(regrSYY('x', 'y'))).toBe('regr_syy("x", "y")');
   });
-  it('include SKEWNESS', () => {
-    expect(String(skewness('foo'))).toBe('SKEWNESS("foo")');
+
+  it('include regr_slope', () => {
+    expect(String(regrSlope('x', 'y'))).toBe('regr_slope("x", "y")');
   });
-  it('include STDDEV', () => {
-    expect(String(stddev('foo'))).toBe('STDDEV("foo")');
+
+  it('include skewness', () => {
+    expect(String(skewness('foo'))).toBe('skewness("foo")');
   });
-  it('include STDDEV_POP', () => {
-    expect(String(stddevPop('foo'))).toBe('STDDEV_POP("foo")');
+
+  it('include stddev', () => {
+    expect(String(stddev('foo'))).toBe('stddev("foo")');
   });
-  it('include STRING_AGG', () => {
-    expect(String(stringAgg('foo'))).toBe('STRING_AGG("foo")');
+
+  it('include stddev_pop', () => {
+    expect(String(stddevPop('foo'))).toBe('stddev_pop("foo")');
   });
-  it('include SUM', () => {
-    expect(String(sum('foo'))).toBe('SUM("foo")::DOUBLE');
+
+  it('include string_agg', () => {
+    expect(String(stringAgg('foo'))).toBe('string_agg("foo")');
   });
-  it('include VARIANCE', () => {
-    expect(String(variance('foo'))).toBe('VARIANCE("foo")');
+
+  it('include sum', () => {
+    expect(String(sum('foo'))).toBe('sum("foo")');
   });
-  it('include VAR_POP', () => {
-    expect(String(varPop('foo'))).toBe('VAR_POP("foo")');
+
+  it('include var_samp', () => {
+    expect(String(variance('foo'))).toBe('var_samp("foo")');
+  });
+
+  it('include var_pop', () => {
+    expect(String(varPop('foo'))).toBe('var_pop("foo")');
   });
 });

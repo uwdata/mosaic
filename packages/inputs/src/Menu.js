@@ -96,6 +96,12 @@ export class Menu extends MosaicClient {
             this.selectedValue(value);
           }
         });
+      } else {
+        // trigger selection activation
+        this.select.addEventListener('pointerenter', evt => {
+          if (!evt.buttons) this.activate();
+        });
+        this.select.addEventListener('focus', () => this.activate());
       }
     }
   }
@@ -116,6 +122,11 @@ export class Menu extends MosaicClient {
 
   reset() {
     this.select.selectedIndex = this.from ? 0 : -1;
+  }
+
+  activate() {
+    // @ts-ignore - activate is only called for a Selection
+    this.selection.activate(clausePoint(this.field, 0, { source: this }));
   }
 
   publish(value) {

@@ -1,0 +1,11 @@
+{
+  "include": ["src/**/*"],
+  "compilerOptions": {
+    "checkJs": true,
+    "noEmit": true,
+    "noImplicitAny": false,
+    "module": "node16",
+    "skipLibCheck": true,
+    "types": []
+  }
+}

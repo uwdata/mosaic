@@ -1,4 +1,4 @@
-import { SQLExpression } from '@uwdata/mosaic-sql';
+import { ExprNode } from '@uwdata/mosaic-sql';
 import { MosaicClient } from '../MosaicClient.js';
 
 /**
@@ -127,7 +127,7 @@ export interface SelectionClause {
    * The predicate should apply filtering criteria consistent with this
    * clause's *value* property.
    */
-  predicate: SQLExpression | null;
+  predicate: ExprNode | null;
   /**
    * Optional clause metadata that varies based on the selection type.
    * The metadata can be used to optimize selection queries, for example

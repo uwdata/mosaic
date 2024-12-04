@@ -54,8 +54,8 @@ export const spec : Spec = {
           "y": "unemployment",
           "z": "division",
           "stroke": "steelblue",
-          "curve": "monotone-x",
-          "mixBlendMode": "multiply"
+          "strokeOpacity": 0.9,
+          "curve": "monotone-x"
         },
         {
           "select": "region",

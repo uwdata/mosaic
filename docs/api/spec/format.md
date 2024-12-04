@@ -154,7 +154,7 @@ The remaining top-level keys in the plot object should be attribute names.
       "data": { "from": "tableName", "filterBy": "$selection" },
       "x": "foo", // x-encode values of column "foo"
       "y": "bar", // y-encode values of column "bar"
-      "r": { "expr": "SQRT($areaParam)" }, // size based on an expression
+      "r": { "sql": "SQRT($areaParam)" }, // size based on an expression
       "fill": "$colorParam" // set fill color to a param value
     },
     { "select": "intervalXY", "as": "$selection" },
@@ -169,8 +169,10 @@ The remaining top-level keys in the plot object should be attribute names.
 Mark entries include a `mark` key whose value should be the mark type, a `data` key indicating the input data, and the remaining keys should be mark options such as encoding channels.
 Interactors are defined similarly, but using the `select` key.
 
-SQL expressions can be defined as objects with a single `expr` key.
+SQL expressions can be defined as objects with a single `sql` key.
 Param references (as in `"1 + $param"`) will be parsed and resolved.
+By default, param references evaluate to SQL literal values.
+To instead use a param to refer to a column name, use `$$` syntax: `"1 + $$param"`.
 
 ### Legends
 

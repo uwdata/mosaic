@@ -36,7 +36,7 @@ export const spec : Spec = {
       },
       "x": "Date",
       "y": {
-        "sql": "Close / (SELECT MAX(Close) FROM stocks WHERE Symbol = source.Symbol AND Date = $point)"
+        "sql": "Close / (SELECT max(Close) FROM stocks WHERE Symbol = source.Symbol AND Date = $point)"
       },
       "dx": 2,
       "text": "Symbol",
@@ -50,7 +50,7 @@ export const spec : Spec = {
       },
       "x": "Date",
       "y": {
-        "sql": "Close / (SELECT MAX(Close) FROM stocks WHERE Symbol = source.Symbol AND Date = $point)"
+        "sql": "Close / (SELECT max(Close) FROM stocks WHERE Symbol = source.Symbol AND Date = $point)"
       },
       "stroke": "Symbol"
     },

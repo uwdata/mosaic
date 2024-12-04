@@ -22,8 +22,8 @@ export default vg.vconcat(
         y: "unemployment",
         z: "division",
         stroke: "steelblue",
-        curve: "monotone-x",
-        mixBlendMode: "multiply"
+        strokeOpacity: 0.9,
+        curve: "monotone-x"
       }
     ),
     vg.region({channels: ["z"], as: $series}),

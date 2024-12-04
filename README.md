@@ -53,6 +53,7 @@ _Note_: For convenience, the `vgplot` package re-exports much of the `mosaic-cor
 ### Miscellaneous
 
 * [`mosaic-duckdb`](https://github.com/uwdata/mosaic/tree/main/packages/duckdb): A Promise-based Node.js API to DuckDB, along with a data server that supports transfer of [Apache Arrow](https://arrow.apache.org/) and JSON data over either Web Sockets or HTTP. Due to persistent quality issues involving the Node.js DuckDB client and Arrow extension, we recommend using the Python-based `duckdb-server` package instead. However, we retain this package for both backwards compatibility and potential future use as quality issues improve.
+* [`duckdb-server-rust`](https://github.com/uwdata/mosaic/tree/main/packages/duckdb-server-rust): A Rust-based server similar to `duckdb-server` (Python) and `mosaic-duckdb` (Node.js) with additional support for HTTP/2. We are still evaluating what server component works best. DuckDB support for Rust is often delayed compared to Python.
 * [`vega-example`](https://github.com/uwdata/mosaic/tree/main/packages/vega-example): A proof-of-concept example integrating Vega-Lite with Mosaic for data management and cross-view linking.
 
 ## Build and Usage Instructions
@@ -63,6 +64,7 @@ To build and develop Mosaic locally:
 * Run `npm i` to install dependencies.
 * Run `npm test` to run the test suite.
 * Run `npm run build` to build client-side bundles.
+* Run `uv build --all-packages` to build the Python packages.
 
 To run local interactive examples:
 

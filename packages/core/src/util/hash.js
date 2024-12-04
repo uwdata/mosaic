@@ -7,7 +7,7 @@ export function fnv_hash(v) {
     if (d) a = fnv_multiply(a ^ d >> 8);
     a = fnv_multiply(a ^ c & 0xff);
   }
-  return fnv_mix(a);
+  return fnv_mix(a) >>> 0; // ensure non-zero value
 }
 
 // a * 16777619 mod 2**32

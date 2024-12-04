@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Query Parse AST Test</title>
+  <link href="./styles.css" rel="stylesheet">
+</head>
+<body>
+<script type="module">
+  import yaml from '../node_modules/yaml/browser/index.js';
+  import { coordinator, setDatabaseConnector } from './setup.js';
+  setDatabaseConnector('wasm');
+  const db = coordinator.databaseConnector();
+
+  self.parse = async function(query) {
+    const t0 = Date.now();
+    const result = await db.query({
+      type: 'json',
+      sql: `SELECT json_serialize_sql($$${query}$$, skip_empty:=true, skip_null:=true) AS ast`
+    });
+    const ast = JSON.parse(result[0].ast);
+    ast._time = Date.now() - t0;
+    return ast;
+  };
+</script>
+</body>
+</html>

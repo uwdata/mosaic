@@ -1,10 +1,10 @@
 import { socketConnector } from './connectors/socket.js';
-import { PreAggregator } from './PreAggregator.js';
-import { MosaicClient } from './MosaicClient.js';
-import { QueryManager, Priority } from './QueryManager.js';
+import { PreAggregator } from './preagg/PreAggregator.js';
 import { queryFieldInfo } from './util/field-info.js';
 import { QueryResult } from './util/query-result.js';
 import { voidLogger } from './util/void-logger.js';
+import { MosaicClient } from './MosaicClient.js';
+import { QueryManager, Priority } from './QueryManager.js';
 
 /**
  * The singleton Coordinator instance.
@@ -40,7 +40,7 @@ export function coordinator(instance) {
  * @param {*} [options.manager] The query manager to use.
  * @param {boolean} [options.cache=true] Boolean flag to enable/disable query caching.
  * @param {boolean} [options.consolidate=true] Boolean flag to enable/disable query consolidation.
- * @param {import('./PreAggregator.js').PreAggregateOptions} [options.preagg]
+ * @param {import('./preagg/PreAggregator.js').PreAggregateOptions} [options.preagg]
  *  Options for the Pre-aggregator.
  */
 export class Coordinator {

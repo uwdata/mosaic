@@ -1,5 +1,5 @@
 import { expect, describe, it } from 'vitest';
-import { createSchema, createTable } from '../src/load/create.js';
+import { createSchema, createTable } from '../src/index.js';
 
 describe('createTable', () => {
   it('creates a table', () => {

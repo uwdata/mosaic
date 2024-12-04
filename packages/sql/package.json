@@ -1,6 +1,6 @@
 {
   "name": "@uwdata/mosaic-sql",
-  "version": "0.11.0",
+  "version": "0.12.1",
   "description": "SQL query construction and analysis.",
   "keywords": [
     "sql",
@@ -14,7 +14,7 @@
   "module": "src/index.js",
   "jsdelivr": "dist/mosaic-sql.min.js",
   "unpkg": "dist/mosaic-sql.min.js",
-  "types": "dist/types/index.d.ts",
+  "types": "dist/types/index-types.d.ts",
   "repository": {
     "type": "git",
     "url": "https://github.com/uwdata/mosaic.git"
@@ -24,7 +24,7 @@
     "build": "npm run types && node ../../esbuild.js mosaic-sql",
     "types": "tsc",
     "lint": "eslint src test",
-    "test": "vitest run",
+    "test": "vitest run && tsc -p jsconfig.json",
     "prepublishOnly": "npm run test && npm run lint && npm run build"
   }
 }

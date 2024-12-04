@@ -24,7 +24,7 @@ plot:
 - mark: text
   data: { from: labels }
   x: Date
-  y: { sql: Close / (SELECT MAX(Close) FROM stocks WHERE Symbol = source.Symbol AND Date = $point) }
+  y: { sql: Close / (SELECT max(Close) FROM stocks WHERE Symbol = source.Symbol AND Date = $point) }
   dx: 2
   text: Symbol
   fill: Symbol
@@ -32,7 +32,7 @@ plot:
 - mark: lineY
   data: { from: stocks }
   x: Date
-  y: { sql: Close / (SELECT MAX(Close) FROM stocks WHERE Symbol = source.Symbol AND Date = $point) }
+  y: { sql: Close / (SELECT max(Close) FROM stocks WHERE Symbol = source.Symbol AND Date = $point) }
   stroke: Symbol
 - select: nearestX
   as: $point

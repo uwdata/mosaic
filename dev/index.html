@@ -13,6 +13,7 @@
         <option value="aeromagnetic-survey">Aeromagnetic Survey</option>
         <option value="airline-travelers">Airline Travelers</option>
         <option value="athletes">Athletes</option>
+        <option value="athlete-birth-waffle">Athlete Birth Waffle</option>
         <option value="athlete-height">Athlete Height Intervals</option>
         <option value="axes">Axes &amp; Gridlines</option>
         <option value="bias">Bias Parameter</option>
@@ -172,13 +173,20 @@
 
   async function load(name, source) {
     view.replaceChildren();
+
+    let dir = '../specs/yaml';
     if (name === 'none' && location.search) {
       // get example name from query string
       name = location.search.slice(1);
+      if (name.startsWith('dev:')) {
+        // route to local spec for testing / exploration
+        name = name.slice(4);
+        dir = './specs';
+      }
     }
     if (name !== 'none') {
       const spec = yaml.parse(
-        await fetch(`../specs/yaml/${name}.yaml`).then(res => res.text())
+        await fetch(`${dir}/${name}.yaml`).then(res => res.text())
       );
 
       // options for output generation
