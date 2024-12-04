@@ -38,7 +38,7 @@ function summarize(table, column, stats) {
 
 /**
  * @typedef {{
- *   table: string,
+ *   table: string | import('@uwdata/mosaic-sql').TableRefNode,
  *   column: string,
  *   sqlType: string,
  *   type: ReturnType<typeof jsType>,
