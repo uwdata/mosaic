@@ -134,7 +134,7 @@ export class Coordinator {
    *  or a SQL string.
    * @param {object} [options] An options object.
    * @param {'arrow' | 'json'} [options.type] The query result format type.
-   * @param {boolean} [options.cache=true] If true, cache the query result.
+   * @param {boolean} [options.cache=true] If true, cache the query result in the client (QueryManager).
    * @param {boolean} [options.persist=false] If true, persist cached query result in the server.
    * @param {number} [options.priority] The query priority, defaults to
    *  `Priority.Normal`.
