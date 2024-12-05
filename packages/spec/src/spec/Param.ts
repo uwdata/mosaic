@@ -32,6 +32,7 @@ export interface ParamDate extends ParamBase {
 
 /** Literal Param values. */
 export type ParamLiteral =
+  | null
   | string
   | number
   | boolean;

@@ -60,6 +60,11 @@ export interface DensityAreaXOptions extends Omit<AreaXOptions, 'x' | 'x1' | 'x2
    * areaX mark; lineX, dotX, and textX marks are also supported.
    */
   type: 'areaX';
+
+  /**
+   * Flag indicating if densities should be stacked. Defaults to false.
+   */
+  stack?: boolean | ParamRef;
 }
 
 export interface DensityAreaYOptions extends Omit<AreaYOptions, 'y' | 'y1' | 'y2'> {
@@ -68,6 +73,11 @@ export interface DensityAreaYOptions extends Omit<AreaYOptions, 'y' | 'y1' | 'y2
    * areaY mark; lineY, dot, and text marks are also supported.
    */
   type?: 'areaY';
+
+  /**
+   * Flag indicating if densities should be stacked. Defaults to false.
+   */
+  stack?: boolean | ParamRef;
 }
 
 export interface DensityLineXOptions extends Omit<LineXOptions, 'x' | 'x1' | 'x2'> {

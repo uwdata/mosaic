@@ -145,6 +145,7 @@ export default defineConfig({
           collapsed: true,
           items: [
             { text: 'Contours', link: '/examples/contours' },
+            { text: 'Density Groups', link: '/examples/density-groups' },
             { text: 'Density 1D', link: '/examples/density1d' },
             { text: 'Density 2D', link: '/examples/density2d' },
             { text: 'Flights Density', link: '/examples/flights-density' },
