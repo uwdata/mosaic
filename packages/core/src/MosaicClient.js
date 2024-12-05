@@ -1,16 +1,6 @@
 import { throttle } from './util/throttle.js';
 
 /**
- * @typedef {import('./util/field-info.js').Stat} Stat
- * 
- * @typedef {{
- *   table: string | import('@uwdata/mosaic-sql').TableRefNode,
-*    column: string | import('@uwdata/mosaic-sql').ColumnRefNode,
- *   stats?: Stat[] | Set<Stat>
- * }} MosaicClientField
- */
-
-/**
  * Base class for Mosaic clients.
  */
 export class MosaicClient {
@@ -59,7 +49,7 @@ export class MosaicClient {
 
   /**
    * Return an array of fields queried by this client.
-   * @returns {MosaicClientField[] | null} The fields to retrieve info for.
+   * @returns {import('./util/field-info.js').FieldInfoRequest[] | null} The fields to retrieve info for.
    */
   fields() {
     return null;

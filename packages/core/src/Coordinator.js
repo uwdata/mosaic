@@ -27,7 +27,7 @@ export function coordinator(instance) {
 }
 
 /**
- * @typedef {import('@uwdata/mosaic-sql').Query | string} QueryType
+ * @typedef {import('@uwdata/mosaic-sql').Query | import('@uwdata/mosaic-sql').DescribeQuery | string} QueryType
  */
 
 /**
@@ -135,6 +135,7 @@ export class Coordinator {
    * @param {object} [options] An options object.
    * @param {'arrow' | 'json'} [options.type] The query result format type.
    * @param {boolean} [options.cache=true] If true, cache the query result.
+   * @param {boolean} [options.persist=false] If true, cache the query result.
    * @param {number} [options.priority] The query priority, defaults to
    *  `Priority.Normal`.
    * @returns {QueryResult} A query result promise.
@@ -142,10 +143,11 @@ export class Coordinator {
   query(query, {
     type = 'arrow',
     cache = true,
+    persist = false,
     priority = Priority.Normal,
     ...options
   } = {}) {
-    return this.manager.request({ type, query, cache, options }, priority);
+    return this.manager.request({ type, query, cache, persist, options }, priority);
   }
 
   /**
