@@ -22,6 +22,8 @@ export { isArrowTable } from './util/is-arrow-table.js';
 export { synchronizer } from './util/synchronizer.js';
 export { throttle } from './util/throttle.js';
 export { toDataColumns } from './util/to-data-columns.js';
+export { queryFieldInfo } from './util/field-info.js';
+export { jsType } from './util/js-type.js';
 
 /**
  * @typedef {import('./util/selection-types.js').ClauseMetadata} ClauseMetadata
