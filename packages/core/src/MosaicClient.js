@@ -49,7 +49,8 @@ export class MosaicClient {
 
   /**
    * Return an array of fields queried by this client.
-   * @returns {import('./util/field-info.js').FieldInfoRequest[] | null} The fields to retrieve info for.
+   * @returns {import('./types.js').FieldInfoRequest[] | null}
+   *  The fields to retrieve info for.
    */
   fields() {
     return null;
@@ -57,7 +58,7 @@ export class MosaicClient {
 
   /**
    * Called by the coordinator to set the field info for this client.
-   * @param {import('./util/field-info.js').FieldInfo[]} info The field info result.
+   * @param {import('./types.js').FieldInfo[]} info The field info result.
    * @returns {this}
    */
   fieldInfo(info) { // eslint-disable-line no-unused-vars

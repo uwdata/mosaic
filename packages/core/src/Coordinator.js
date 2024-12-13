@@ -7,6 +7,12 @@ import { MosaicClient } from './MosaicClient.js';
 import { QueryManager, Priority } from './QueryManager.js';
 
 /**
+ * @typedef {import('@uwdata/mosaic-sql').Query
+ *  | import('@uwdata/mosaic-sql').DescribeQuery
+ *  | string} QueryType
+ */
+
+/**
  * The singleton Coordinator instance.
  * @type {Coordinator}
  */
@@ -25,10 +31,6 @@ export function coordinator(instance) {
   }
   return _instance;
 }
-
-/**
- * @typedef {import('@uwdata/mosaic-sql').Query | import('@uwdata/mosaic-sql').DescribeQuery | string} QueryType
- */
 
 /**
  * A Mosaic Coordinator manages all database communication for clients and
@@ -134,8 +136,10 @@ export class Coordinator {
    *  or a SQL string.
    * @param {object} [options] An options object.
    * @param {'arrow' | 'json'} [options.type] The query result format type.
-   * @param {boolean} [options.cache=true] If true, cache the query result in the client (QueryManager).
-   * @param {boolean} [options.persist=false] If true, persist cached query result in the server.
+   * @param {boolean} [options.cache=true] If true, cache the query result
+   *  client-side within the QueryManager.
+   * @param {boolean} [options.persist] If true, request the database
+   *  server to persist a cached query server-side.
    * @param {number} [options.priority] The query priority, defaults to
    *  `Priority.Normal`.
    * @returns {QueryResult} A query result promise.

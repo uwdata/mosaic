@@ -1,5 +1,5 @@
 import { MosaicClient, clausePoints, coordinator, isParam, toDataColumns } from '@uwdata/mosaic-core';
-import { Query, column, desc } from '@uwdata/mosaic-sql';
+import { Query, desc } from '@uwdata/mosaic-sql';
 import { formatDate, formatLocaleAuto, formatLocaleNumber } from './util/format.js';
 import { input } from './input.js';
 
@@ -125,8 +125,8 @@ export class Table extends MosaicClient {
   }
 
   fields() {
-    const from = this.sourceTable();
-    return this.columns.map(name => column(name, from));
+    const table = this.sourceTable();
+    return this.columns.map(column => ({ column, table }));
   }
 
   fieldInfo(info) {
