@@ -143,11 +143,10 @@ export class Coordinator {
   query(query, {
     type = 'arrow',
     cache = true,
-    persist = false,
     priority = Priority.Normal,
     ...options
   } = {}) {
-    return this.manager.request({ type, query, cache, persist, options }, priority);
+    return this.manager.request({ type, query, cache, options }, priority);
   }
 
   /**
