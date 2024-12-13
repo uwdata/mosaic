@@ -1,4 +1,4 @@
-import { AggregateNode, Query, asTableRef, count, isNull, max, min, sql } from '@uwdata/mosaic-sql';
+import { AggregateNode, Query, asTableRef, count, isAggregateExpression, isNode, isNull, max, min, sql } from '@uwdata/mosaic-sql';
 import { jsType } from './js-type.js';
 
 export const Count = 'count';
@@ -9,25 +9,10 @@ export const Distinct = 'distinct';
 export const Stats = { Count, Nulls, Max, Min, Distinct };
 
 /**
- * @typedef {Count | Distinct | Max | Min | Nulls} Stat
- * 
- * @typedef {{
- *   table: string | import('@uwdata/mosaic-sql').TableRefNode,
- *   column: (string | import('@uwdata/mosaic-sql').ColumnRefNode) & { aggregate?: boolean },
- *   stats?: Stat[] | Set<Stat>
- * }} FieldInfoRequest
- * 
- * @typedef {{
- *   table: FieldInfoRequest["table"],
- *   column: string,
- *   sqlType: string,
- *   type: ReturnType<typeof jsType>,
- *   nullable: boolean,
- * } & Partial<Record<Stat, number>>} FieldInfo
- */
-
-/**
- * @type {Record<Stat, (column: FieldInfoRequest["column"]) => AggregateNode>}
+ * @type {Record<
+ *  import('../types.js').Stat,
+ *  (column: import('../types.js').FieldRef) => AggregateNode
+ * >}
  */
 const statMap = {
   [Count]: count,
@@ -39,8 +24,8 @@ const statMap = {
 
 /**
  * Get summary stats of the given column
- * @param {FieldInfoRequest} field
- * @returns {import('@uwdata/mosaic-sql').Query}
+ * @param {import('../types.js').FieldInfoRequest} field
+ * @returns {Query}
  */
 function summarize({ table, column, stats }) {
   return Query
@@ -50,13 +35,13 @@ function summarize({ table, column, stats }) {
 
 /**
  * Queries information about fields of a table.
- * If the `fields` array contains a single field with the column set to '*', 
+ * If the `fields` array contains a single field with the column set to '*',
  * the function will retrieve and return the table information using `getTableInfo`.
- * Otherwise, it will query individual field information using `getFieldInfo` 
+ * Otherwise, it will query individual field information using `getFieldInfo`
  * for each field in the `fields` array.
  * @param {import('../Coordinator.js').Coordinator} mc A Mosaic coordinator.
- * @param {FieldInfoRequest[]} fields 
- * @returns {Promise<FieldInfo[]>}
+ * @param {import('../types.js').FieldInfoRequest[]} fields
+ * @returns {Promise<import('../types.js').FieldInfo[]>}
  */
 export async function queryFieldInfo(mc, fields) {
   if (fields.length === 1 && fields[0].column === '*') {
@@ -71,8 +56,8 @@ export async function queryFieldInfo(mc, fields) {
 /**
  * Get information about a single field of a table.
  * @param {import('../Coordinator.js').Coordinator} mc A Mosaic coordinator.
- * @param {FieldInfoRequest} field 
- * @returns {Promise<FieldInfo>}
+ * @param {import('../types.js').FieldInfoRequest} field
+ * @returns {Promise<import('../types.js').FieldInfo>}
  */
 async function getFieldInfo(mc, { table, column, stats }) {
   // generate and issue a query for field metadata info
@@ -80,8 +65,9 @@ async function getFieldInfo(mc, { table, column, stats }) {
   const q = Query
     .from({ source: table })
     .select({ column })
-    .groupby(column.aggregate ? sql`ALL` : []);
-  /** @type {{ column_name: string, column_type: string, null: "YES" | "NO" }[]} */
+    .groupby(isNode(column) && isAggregateExpression(column) ? sql`ALL` : []);
+
+  /** @type {import('../types.js').ColumnDescription[]} */
   const [desc] = Array.from(await mc.query(Query.describe(q)));
   const info = {
     table,
@@ -92,7 +78,7 @@ async function getFieldInfo(mc, { table, column, stats }) {
   };
 
   // no need for summary statistics
-  if (!((stats instanceof Set && stats.size) || (Array.isArray(stats) && stats.length))) return info;
+  if (!stats?.length) return info;
 
   // query for summary stats
   const [result] = await mc.query(
@@ -107,11 +93,11 @@ async function getFieldInfo(mc, { table, column, stats }) {
 /**
  * Get information about the fields of a table.
  * @param {import('../Coordinator.js').Coordinator} mc A Mosaic coordinator.
- * @param {FieldInfoRequest["table"]} table the table name or reference 
- * @returns {Promise<FieldInfo[]>}
+ * @param {string} table The table name.
+ * @returns {Promise<import('../types.js').FieldInfo[]>}
  */
 async function getTableInfo(mc, table) {
-  /** @type {{ column_name: string, column_type: string, null: "YES" | "NO" }[]} */
+  /** @type {import('../types.js').ColumnDescription[]} */
   const result = Array.from(await mc.query(`DESCRIBE ${asTableRef(table)}`));
   return result.map(desc => ({
     table,

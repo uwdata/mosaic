@@ -136,7 +136,11 @@ export class Mark extends MosaicClient {
     }
 
     const table = this.sourceTable();
-    return Array.from(fields, ([c, s]) => ({ table, column: c, stats: s }));
+    return Array.from(fields, ([c, s]) => ({
+      table,
+      column: c,
+      stats: Array.from(s)
+    }));
   }
 
   fieldInfo(info) {
