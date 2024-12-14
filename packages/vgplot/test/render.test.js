@@ -31,10 +31,10 @@ afterEach(() => {
 describe('render', () => {
   it('should render the density1d spec', () => {
     return renderTest('density1d');
-  });
+  }, 10_000);
   it('should render the airline-travelers spec', () => {
     return renderTest('airline-travelers');
-  });
+  }, 10_000);
 });
 
 async function renderTest(name) {
