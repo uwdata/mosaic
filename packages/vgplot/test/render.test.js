@@ -15,26 +15,29 @@ beforeEach(() => {
     { pretendToBeVisual: true }
   );
 
-  // emulate browser environment globals
   globalThis.window = dom.window;
   globalThis.document = dom.window.document;
+  globalThis.navigator ??= dom.window.navigator;
   globalThis.requestAnimationFrame = window.requestAnimationFrame;
 });
 
 afterEach(() => {
   // remove browser environment globals
-  delete globalThis.window;
-  delete globalThis.document;
   delete globalThis.requestAnimationFrame;
+  if (globalThis.navigator === globalThis.window.navigator) {
+    delete globalThis.navigator;
+  }
+  delete globalThis.document;
+  delete globalThis.window;
 });
 
 describe('render', () => {
   it('should render the density1d spec', () => {
     return renderTest('density1d');
-  }, 10_000);
+  });
   it('should render the airline-travelers spec', () => {
     return renderTest('airline-travelers');
-  }, 10_000);
+  });
 });
 
 async function renderTest(name) {
