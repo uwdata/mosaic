@@ -1,4 +1,10 @@
-import type { ExprNode } from '@uwdata/mosaic-sql';
+import type { DescribeQuery, ExprNode, Query } from '@uwdata/mosaic-sql';
+
+/** Query type accepted by a coordinator. */
+export type QueryType =
+  | string
+  | Query
+  | DescribeQuery;
 
 /** String indicating a JavaScript data type. */
 export type JSType =

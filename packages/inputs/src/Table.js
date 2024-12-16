@@ -40,7 +40,7 @@ export class Table extends MosaicClient {
 
     this.offset = 0;
     this.limit = +rowBatch;
-    this.pending = false;
+    this.isPending = false;
 
     this.selection = as;
     this.currentRow = -1;
@@ -59,15 +59,15 @@ export class Table extends MosaicClient {
 
     let prevScrollTop = -1;
     this.element.addEventListener('scroll', evt => {
-      const { pending, loaded } = this;
+      const { isPending, loaded } = this;
       const { scrollHeight, scrollTop, clientHeight } = evt.target;
 
       const back = scrollTop < prevScrollTop;
       prevScrollTop = scrollTop;
-      if (back || pending || loaded) return;
+      if (back || isPending || loaded) return;
 
       if (scrollHeight - scrollTop < 2 * clientHeight) {
-        this.pending = true;
+        this.isPending = true;
         this.requestData(this.offset + this.limit);
       }
     });
@@ -168,7 +168,7 @@ export class Table extends MosaicClient {
   }
 
   queryResult(data) {
-    if (!this.pending) {
+    if (!this.isPending) {
       // data is not from an internal request, so reset table
       this.loaded = false;
       this.data = [];
@@ -204,7 +204,7 @@ export class Table extends MosaicClient {
       this.loaded = true;
     }
 
-    this.pending = false;
+    this.isPending = false;
     return this;
   }
 

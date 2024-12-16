@@ -40,12 +40,12 @@ describe('MosaicClient', () => {
       }
       queryPending() {
         // add result promise to global pending queue
-        this.pending = new QueryResult();
-        pending.push(this.pending);
+        this.pendingResult = new QueryResult();
+        pending.push(this.pendingResult);
       }
       queryResult(data) {
         // fulfill pending promise with sorted data
-        this.pending.fulfill(
+        this.pendingResult.fulfill(
           data.toArray().sort((a, b) => a.key - b.key)
         );
         return this;

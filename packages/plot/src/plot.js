@@ -10,19 +10,30 @@ const DEFAULT_ATTRIBUTES = {
 };
 
 export class Plot {
+  /**
+   * @param {HTMLElement} [element]
+   */
   constructor(element) {
+    /** @type {Record<string, any>} */
     this.attributes = { ...DEFAULT_ATTRIBUTES };
     this.listeners = null;
     this.interactors = [];
+    /** @type {{ legend: import('./legend.js').Legend, include: boolean }[]} */
     this.legends = [];
+    /** @type {import('./marks/Mark.js').Mark[]} */
     this.marks = [];
+    /** @type {Set<import('./marks/Mark.js').Mark> | null} */
     this.markset = null;
+    /** @type {Map<import('@uwdata/mosaic-core').Param, import('./marks/Mark.js').Mark[]>} */
+    this.params = new Map;
+    /** @type {ReturnType<synchronizer>} */
+    this.synch = synchronizer();
+
+    /** @type {HTMLElement} */
     this.element = element || document.createElement('div');
     this.element.setAttribute('class', 'plot');
     this.element.style.display = 'flex';
-    this.element.value = this;
-    this.params = new Map;
-    this.synch = synchronizer();
+    Object.assign(this.element, { value: this });
   }
 
   margins() {

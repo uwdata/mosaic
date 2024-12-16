@@ -230,7 +230,7 @@ export function markQuery(channels, table, skip = []) {
     if (skip.includes(channel)) continue;
 
     if (channel === 'orderby') {
-      q.orderby(c.value);
+      q.orderby(c.value ?? field);
     } else if (field) {
       if (isAggregateExpression(field)) {
         aggr = true;

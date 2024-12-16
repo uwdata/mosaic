@@ -1,3 +1,5 @@
+import { Coordinator } from './Coordinator.js';
+import { Selection } from './Selection.js';
 import { throttle } from './util/throttle.js';
 
 /**
@@ -11,9 +13,13 @@ export class MosaicClient {
    *  the client when the selection updates.
    */
   constructor(filterSelection) {
+    /** @type {Selection} */
     this._filterBy = filterSelection;
     this._requestUpdate = throttle(() => this.requestQuery(), true);
+    /** @type {Coordinator} */
     this._coordinator = null;
+    /** @type {Promise<any>} */
+    this._pending = Promise.resolve();
   }
 
   /**
@@ -28,6 +34,13 @@ export class MosaicClient {
    */
   set coordinator(coordinator) {
     this._coordinator = coordinator;
+  }
+
+  /**
+   * Return a Promise that resolves once the client has updated.
+   */
+  get pending() {
+    return this._pending;
   }
 
   /**
