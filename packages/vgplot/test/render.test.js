@@ -5,7 +5,7 @@ import { Coordinator } from '@uwdata/mosaic-core';
 import { JSDOM } from 'jsdom';
 import { nodeConnector } from './util/node-connector.js';
 import { createAPIContext } from '../src/index.js';
-import { mosaicReady } from './util/mosaic-ready.js';
+import { clientsReady } from './util/clients-ready.js';
 
 const cwd = import.meta.dirname;
 
@@ -38,20 +38,21 @@ describe('render', () => {
   it('should render the airline-travelers spec', () => {
     return renderTest('airline-travelers');
   });
+  it('should render the weather spec', () => {
+    return renderTest('weather');
+  });
 });
 
 async function renderTest(name) {
   const specPath = resolve(cwd, `specs/${name}.js`);
   const htmlPath = resolve(cwd, `output/${name}.html`);
-  const expected = await readFile(htmlPath, { encoding: 'utf8'});
-  const run = (await import(specPath)).default;
-  const el = await run(vg());
-  await mosaicReady(el);
-  expect(el.outerHTML).toEqual(expected);
-}
+  const [expected, { default: run }] = await Promise.all([
+    readFile(htmlPath, { encoding: 'utf8' }),
+    import(specPath)
+  ]);
+  const mc = new Coordinator(nodeConnector(), { logger: null });
+  const el = await run(createAPIContext({ coordinator: mc }));
 
-function vg() {
-  return createAPIContext({
-    coordinator: new Coordinator(nodeConnector(), { logger: null })
-  });
+  await clientsReady(el);
+  expect(el.outerHTML).toEqual(expected);
 }
