@@ -1,4 +1,5 @@
 {
+  "$schema": "https://idl.uw.edu/mosaic/schema/v0.12.2.json",
   "meta": {
     "title": "Airline Travelers",
     "description": "A labeled line chart comparing airport travelers in 2019 and 2020.",

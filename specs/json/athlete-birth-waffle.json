@@ -1,4 +1,5 @@
 {
+  "$schema": "https://idl.uw.edu/mosaic/schema/v0.12.2.json",
   "meta": {
     "title": "Athlete Birth Waffle",
     "description": "Waffle chart counting Olympic athletes based on which half-decade they were born. The inputs enable adjustment of waffle mark design options.\n",

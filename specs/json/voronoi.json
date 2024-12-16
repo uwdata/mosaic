@@ -1,4 +1,5 @@
 {
+  "$schema": "https://idl.uw.edu/mosaic/schema/v0.12.2.json",
   "meta": {
     "title": "Voronoi Diagram",
     "description": "The `voronoi` mark shows the regions closest to each point. It is [constructed from its dual](https://observablehq.com/@mbostock/the-delaunays-dual), a Delaunay triangle mesh. Reveal triangulations or convex hulls using the dropdowns.\n",

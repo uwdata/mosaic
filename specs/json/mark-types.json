@@ -1,4 +1,5 @@
 {
+  "$schema": "https://idl.uw.edu/mosaic/schema/v0.12.2.json",
   "meta": {
     "title": "Mark Types",
     "description": "A subset of supported mark types.\n\n- Row 1: `barY`, `lineY`, `text`, `tickY`, `areaY`\n- Row 2: `regressionY`, `hexbin`, `contour`, `heatmap`, `denseLine`\n"

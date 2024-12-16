@@ -1,4 +1,5 @@
 {
+  "$schema": "https://idl.uw.edu/mosaic/schema/v0.12.2.json",
   "meta": {
     "title": "Wind Map",
     "description": "`vector` marks on a grid show both direction and intensity—here, the speed of winds. Expressions for `rotate`, `length`, and `stroke` values are evaluated in the database. Both the legend and map support interactive selections to highlight values.\n",

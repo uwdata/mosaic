@@ -11,6 +11,8 @@ import { parse } from 'yaml';
 // - YAML, non-parsed JSON, and ESM code written to /docs/public/specs
 // - Example Markdown pages written to /docs/examples
 
+import pgk from '../packages/spec/package.json' with { type: "json" };
+
 const specDir = join('specs', 'yaml');
 const esmTestDir = join('specs', 'esm');
 const jsonTestDir = join('specs', 'json');
@@ -49,7 +51,10 @@ const files = await Promise.allSettled((await readdir(specDir))
         // write JSON spec to tests
         writeFile(
           resolve(jsonTestDir, `${base}.json`),
-          JSON.stringify(ast.toJSON(), 0, 2)
+          JSON.stringify({
+            $schema: `https://idl.uw.edu/mosaic/schema/v${pgk.version}.json`,
+            ...ast.toJSON()
+          }, 0, 2)
         ),
         // write TS JSON spec to tests
         writeFile(

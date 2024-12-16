@@ -1,4 +1,5 @@
 {
+  "$schema": "https://idl.uw.edu/mosaic/schema/v0.12.2.json",
   "meta": {
     "title": "Population Change Arrows",
     "description": "An `arrow` connects the positions in 1980 and 2015 of each city on this population × inequality chart. Color encodes variation.\n",

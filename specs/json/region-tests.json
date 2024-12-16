@@ -1,4 +1,5 @@
 {
+  "$schema": "https://idl.uw.edu/mosaic/schema/v0.12.2.json",
   "meta": {
     "title": "Region Interactor Tests",
     "descriptions": "Varied plots using region interactors to highlight selected values.\n"

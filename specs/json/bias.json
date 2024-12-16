@@ -1,4 +1,5 @@
 {
+  "$schema": "https://idl.uw.edu/mosaic/schema/v0.12.2.json",
   "meta": {
     "title": "Bias Parameter",
     "description": "Dynamically adjust queried values by adding a Param value. The SQL expression is re-computed in the database upon updates.\n"

@@ -1,4 +1,5 @@
 {
+  "$schema": "https://idl.uw.edu/mosaic/schema/v0.12.2.json",
   "meta": {
     "title": "Sorted Bars",
     "description": "Sort and limit an aggregate bar chart of gold medals by country.\n"
