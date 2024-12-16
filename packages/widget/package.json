@@ -14,9 +14,8 @@
     "dev": "npm run build -- --watch",
     "test": "tsc -p jsconfig.json",
     "lint": "eslint src",
-    "prepublishOnly": "npm run test && npm run lint && uv run ruff check && uv run ruff format --check && npm run build",
-    "publish": "uv build && uvx twine upload --skip-existing dist/*",
-    "release": "npm run prepublishOnly && npm run publish"
+    "prerelease": "npm run test && npm run lint && uv run ruff check && uv run ruff format --check && npm run build",
+    "release": "uv build && uvx twine upload --skip-existing ../../dist/mosaic_widget*"
   },
   "dependencies": {
     "@uwdata/mosaic-core": "^0.12.2",
