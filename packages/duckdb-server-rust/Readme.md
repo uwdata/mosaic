@@ -112,10 +112,10 @@ Run the benchmarks with
 cargo bench
 ```
 
-### Update dependencies
+### Update Dependencies
 
 Update the lockfile with `cargo update` and look for outdated dependencies with [cargo-outdated](https://github.com/kbknapp/cargo-outdated) `cargo outdated -d 1`.
 
-### Release
+### Publishing
 
 Bump the version in `Cargo.toml` and then run `cargo publish`.

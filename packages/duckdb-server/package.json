@@ -3,9 +3,8 @@
   "version": "0.12.1",
   "private": true,
   "scripts": {
-    "prepublishOnly": "uv run pytest && uv run ruff check && uv run ruff format --check",
-    "publish": "uv build && uvx twine upload --skip-existing dist/*",
-    "release": "npm run prepublishOnly && npm run publish",
-    "dev": "uv run watchmedo auto-restart --pattern '*.py' --recursive --signal SIGTERM uv run duckdb-server"
+    "dev": "uv run watchmedo auto-restart --pattern '*.py' --recursive --signal SIGTERM uv run duckdb-server",
+    "prerelease": "uv run pytest && uv run ruff check && uv run ruff format --check",
+    "release": "uv build && uvx twine upload --skip-existing ../../dist/mosaic_widget*"
   }
 }
