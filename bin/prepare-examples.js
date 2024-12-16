@@ -3,7 +3,7 @@ import { basename, extname, join, resolve } from 'node:path';
 import { copyFile, readdir, readFile, writeFile } from 'node:fs/promises';
 import { parseSpec, astToESM } from '@uwdata/mosaic-spec';
 import { parse } from 'yaml';
-import pgk from '../packages/spec/package.json' with { type: "json" };
+import pkg from '../packages/spec/package.json' with { type: "json" };
 
 // This script prepares all Mosaic example specifications
 // ...AND WILL OVERWRITE EXISTING TEST CASE DATA AND DOCS!
@@ -11,6 +11,8 @@ import pgk from '../packages/spec/package.json' with { type: "json" };
 // - Parsed AST JSON and ESM code written to /specs
 // - YAML, non-parsed JSON, and ESM code written to /docs/public/specs
 // - Example Markdown pages written to /docs/examples
+
+const {version} = pkg;
 
 const specDir = join('specs', 'yaml');
 const esmTestDir = join('specs', 'esm');
@@ -51,7 +53,7 @@ const files = await Promise.allSettled((await readdir(specDir))
         writeFile(
           resolve(jsonTestDir, `${base}.json`),
           JSON.stringify({
-            $schema: `https://idl.uw.edu/mosaic/schema/v${pgk.version}.json`,
+            $schema: `https://idl.uw.edu/mosaic/schema/v${version}.json`,
             ...ast.toJSON()
           }, 0, 2)
         ),

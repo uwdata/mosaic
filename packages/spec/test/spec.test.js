@@ -3,7 +3,9 @@ import Ajv from 'ajv';
 import ajvFormats from 'ajv-formats';
 import { specs, loadJSON, loadJSONSchema, loadESM } from './load-specs.js';
 import { astToESM, parseSpec } from '../src/index.js';
-import pgk from '../package.json' with { type: "json" };
+import pkg from '../package.json' with { type: "json" };
+
+const {version} = pkg;
 
 // initialize JSON schema validator
 const validator = new Ajv({
@@ -33,7 +35,7 @@ for (const [name, spec] of specs) {
     it(`produces json output`, async () => {
       const ast = parseSpec(spec);
       const json = JSON.stringify({
-        $schema: `https://idl.uw.edu/mosaic/schema/v${pgk.version}.json`,
+        $schema: `https://idl.uw.edu/mosaic/schema/v${version}.json`,
         ...ast.toJSON()
       }, 0, 2);
       expect(json).toBe(await loadJSON(name));
