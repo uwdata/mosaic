@@ -7,12 +7,6 @@ import { MosaicClient } from './MosaicClient.js';
 import { QueryManager, Priority } from './QueryManager.js';
 
 /**
- * @typedef {import('@uwdata/mosaic-sql').Query
- *  | import('@uwdata/mosaic-sql').DescribeQuery
- *  | string} QueryType
- */
-
-/**
  * The singleton Coordinator instance.
  * @type {Coordinator}
  */
@@ -116,13 +110,13 @@ export class Coordinator {
 
   /**
    * Issue a query for which no result (return value) is needed.
-   * @param {QueryType | QueryType[]} query The query or an array of queries.
+   * @param { import('./types.js').QueryType[] |
+   *  import('./types.js').QueryType} query The query or an array of queries.
    *  Each query should be either a Query builder object or a SQL string.
    * @param {object} [options] An options object.
    * @param {number} [options.priority] The query priority, defaults to
    *  `Priority.Normal`.
-   * @returns {QueryResult} A query result
-   *  promise.
+   * @returns {QueryResult} A query result promise.
    */
   exec(query, { priority = Priority.Normal } = {}) {
     query = Array.isArray(query) ? query.filter(x => x).join(';\n') : query;
@@ -132,8 +126,8 @@ export class Coordinator {
   /**
    * Issue a query to the backing database. The submitted query may be
    * consolidate with other queries and its results may be cached.
-   * @param {QueryType} query The query as either a Query builder object
-   *  or a SQL string.
+   * @param {import('./types.js').QueryType} query The query as either a Query
+   *  builder object or a SQL string.
    * @param {object} [options] An options object.
    * @param {'arrow' | 'json'} [options.type] The query result format type.
    * @param {boolean} [options.cache=true] If true, cache the query result
@@ -156,8 +150,8 @@ export class Coordinator {
   /**
    * Issue a query to prefetch data for later use. The query result is cached
    * for efficient future access.
-   * @param {QueryType} query The query as either a Query builder object
-   *  or a SQL string.
+   * @param {import('./types.js').QueryType} query The query as either a Query
+   *  builder object or a SQL string.
    * @param {object} [options] An options object.
    * @param {'arrow' | 'json'} [options.type] The query result format type.
    * @returns {QueryResult} A query result promise.
@@ -196,13 +190,13 @@ export class Coordinator {
    * Update client data by submitting the given query and returning the
    * data (or error) to the client.
    * @param {MosaicClient} client A Mosaic client.
-   * @param {QueryType} query The data query.
+   * @param {import('./types.js').QueryType} query The data query.
    * @param {number} [priority] The query priority.
    * @returns {Promise} A Promise that resolves upon completion of the update.
    */
   updateClient(client, query, priority = Priority.Normal) {
     client.queryPending();
-    return this.query(query, { priority })
+    return client._pending = this.query(query, { priority })
       .then(
         data => client.queryResult(data).update(),
         err => { this._logger.error(err); client.queryError(err); }
@@ -215,7 +209,7 @@ export class Coordinator {
    * the client is simply updated. Otherwise `updateClient` is called. As a
    * side effect, this method clears the current preaggregator state.
    * @param {MosaicClient} client The client to update.
-   * @param {QueryType | null} [query] The query to issue.
+   * @param {import('./types.js').QueryType | null} [query] The query to issue.
    */
   requestQuery(client, query) {
     this.preaggregator.clear();
@@ -238,7 +232,7 @@ export class Coordinator {
     client.coordinator = this;
 
     // initialize client lifecycle
-    this.initializeClient(client);
+    client._pending = this.initializeClient(client);
 
     // connect filter selection
     connectSelection(this, client.filterBy, client);

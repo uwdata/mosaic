@@ -10,6 +10,7 @@ export class QueryManager {
   constructor(
     maxConcurrentRequests = 32
   ) {
+    /** @type {PriorityQueue} */
     this.queue = new PriorityQueue(3);
     this.db = null;
     this.clientCache = null;
@@ -18,11 +19,12 @@ export class QueryManager {
     this._consolidate = null;
     /**
      * Requests pending with the query manager.
-     * 
      * @type {QueryResult[]}
      */
     this.pendingResults = [];
+    /** @type {number} */
     this.maxConcurrentRequests = maxConcurrentRequests;
+    /** @type {boolean} */
     this.pendingExec = false;
   }
 
