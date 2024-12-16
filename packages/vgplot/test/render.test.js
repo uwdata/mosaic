@@ -1,5 +1,4 @@
 import { beforeEach, afterEach, expect, describe, it } from 'vitest';
-import { readFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import { Coordinator } from '@uwdata/mosaic-core';
 import { JSDOM } from 'jsdom';
@@ -15,6 +14,7 @@ beforeEach(() => {
     { pretendToBeVisual: true }
   );
 
+  // assign browser environment globals
   globalThis.window = dom.window;
   globalThis.document = dom.window.document;
   globalThis.navigator ??= dom.window.navigator;
@@ -46,13 +46,9 @@ describe('render', () => {
 async function renderTest(name) {
   const specPath = resolve(cwd, `specs/${name}.js`);
   const htmlPath = resolve(cwd, `output/${name}.html`);
-  const [expected, { default: run }] = await Promise.all([
-    readFile(htmlPath, { encoding: 'utf8' }),
-    import(specPath)
-  ]);
+  const { default: run } = await import(specPath);
   const mc = new Coordinator(nodeConnector(), { logger: null });
   const el = await run(createAPIContext({ coordinator: mc }));
-
   await clientsReady(el);
-  expect(el.outerHTML).toEqual(expected);
+  await expect(el.outerHTML).toMatchFileSnapshot(htmlPath);
 }
