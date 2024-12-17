@@ -8,8 +8,9 @@ hero:
   tagline: |
     Mosaic is an extensible framework for linking databases and interactive views.
   image:
-    src: /contours.svg
-    alt: Mosaic visualizing the 1.8B Gaia star catalog
+    dark: /demo-dark.mp4
+    light: /demo-light.mp4
+    alt: Mosaic visualizing flight data
   actions:
     - theme: brand
       text: What is Mosaic?
