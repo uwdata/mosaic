@@ -233,7 +233,7 @@ export default defineConfig({
 
     socialLinks: [
       { icon: 'github', link: 'https://github.com/uwdata/mosaic' },
-      { icon: 'twitter', link: 'https://twitter.com/uwdata/' }
+      { icon: 'bluesky', link: 'https://bsky.app/profile/idl.uw.edu' }
     ]
   }
 })
