@@ -5,8 +5,10 @@ import DefaultTheme from "vitepress/theme";
 <template>
   <DefaultTheme.Layout>
     <template #home-hero-image>
-      <video autoplay loop muted src="/demo-dark.mp4" class="video dark" />
-      <video autoplay loop muted src="/demo-light.mp4" class="video light" />
+      <a href="./examples/flights-10m.html">
+        <video autoplay loop muted src="/demo-dark.mp4" class="video dark" />
+        <video autoplay loop muted src="/demo-light.mp4" class="video light" />
+      </a>
     </template>
   </DefaultTheme.Layout>
 </template>
