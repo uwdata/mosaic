@@ -5,6 +5,7 @@ use std::net::TcpListener;
 use std::{net::Ipv4Addr, net::SocketAddr, path::PathBuf};
 use tokio::net;
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
+use clap::Parser;
 
 mod app;
 mod bundle;
@@ -14,8 +15,30 @@ mod interfaces;
 mod query;
 mod websocket;
 
+#[derive(Parser, Debug)]
+#[command(version, about, long_about = None)]
+struct Args {
+    /// Path of database file (e.g., "database.db". ":memory:" for in-memory database)
+    #[arg(default_value = ":memory:")]
+    database: String,
+
+    /// HTTP Port
+    #[arg(short, long, default_value_t = 3000)]
+    port: u16,
+
+    /// Max connection pool size
+    #[arg(long, default_value_t = 10)]
+    connection_pool_size: u32,
+
+    /// Max number of cache entries 
+    #[arg(long, default_value_t = 1000)]
+    cache_size: usize,
+}
+
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let args = Args::parse();
+
     // Tracing setup
     tracing_subscriber::registry()
         .with(
@@ -27,7 +50,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .init();
 
     // App setup
-    let app = app::app()?;
+    let app = app::app(&args.database, args.connection_pool_size, args.cache_size)?;
 
     // TLS configuration
     let mut config = RustlsConfig::from_pem_file(
@@ -42,7 +65,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     }
 
     // Listenfd setup
-    let addr = SocketAddr::new(Ipv4Addr::LOCALHOST.into(), 3000);
+    let addr = SocketAddr::new(Ipv4Addr::LOCALHOST.into(), args.port);
     let mut listenfd = ListenFd::from_env();
     let listener = match listenfd.take_tcp_listener(0)? {
         // if we are given a tcp listener on listen fd 0, we use that one
