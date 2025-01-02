@@ -1,11 +1,11 @@
 use anyhow::Result;
 use axum_server::tls_rustls::RustlsConfig;
+use clap::Parser;
 use listenfd::ListenFd;
 use std::net::TcpListener;
 use std::{net::Ipv4Addr, net::SocketAddr, path::PathBuf};
 use tokio::net;
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
-use clap::Parser;
 
 mod app;
 mod bundle;
@@ -30,7 +30,7 @@ struct Args {
     #[arg(long, default_value_t = 10)]
     connection_pool_size: u32,
 
-    /// Max number of cache entries 
+    /// Max number of cache entries
     #[arg(long, default_value_t = 1000)]
     cache_size: usize,
 }
@@ -50,7 +50,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .init();
 
     // App setup
-    let app = app::app(Some(&args.database), Some(args.connection_pool_size), Some(args.cache_size))?;
+    let app = app::app(
+        Some(&args.database),
+        Some(args.connection_pool_size),
+        Some(args.cache_size),
+    )?;
 
     // TLS configuration
     let mut config = RustlsConfig::from_pem_file(
