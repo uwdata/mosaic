@@ -16,7 +16,7 @@ exclude = [
 anyhow = "1.0"
 arrow = "53.3"
 async-trait = "0.1.83"
-axum = { version = "0.7", features = ["http1", "http2", "ws", "json", "tokio", "tracing", "macros"] }
+axum = { version = "0.8", features = ["http1", "http2", "ws", "json", "tokio", "tracing", "macros"] }
 axum-server = { version = "0.7", features = ["tls-rustls"] }
 axum-server-dual-protocol = "0.7"
 duckdb = { version = "1", features = ["bundled", "csv", "json", "parquet", "url", "r2d2"] }
