@@ -40,10 +40,10 @@ async fn handle_post(
     query::handle(&state, params).await
 }
 
-pub fn app(dp_path: &str, connection_pool_size: u32, cache_size: usize) -> Result<Router> {
+pub fn app(dp_path: Option<&str>, connection_pool_size: Option<u32>, cache_size: Option<usize>) -> Result<Router> {
     // Database and state setup
-    let db = ConnectionPool::new(dp_path, connection_pool_size)?;
-    let cache = lru::LruCache::new(cache_size.try_into()?);
+    let db = ConnectionPool::new(dp_path.unwrap_or(":memory:"), connection_pool_size.unwrap_or(10))?;
+    let cache = lru::LruCache::new(cache_size.unwrap_or(1000).try_into()?);
 
     let state = Arc::new(AppState {
         db: Box::new(db),

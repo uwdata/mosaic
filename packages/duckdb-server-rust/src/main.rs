@@ -50,7 +50,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .init();
 
     // App setup
-    let app = app::app(&args.database, args.connection_pool_size, args.cache_size)?;
+    let app = app::app(Some(&args.database), Some(args.connection_pool_size), Some(args.cache_size))?;
 
     // TLS configuration
     let mut config = RustlsConfig::from_pem_file(
