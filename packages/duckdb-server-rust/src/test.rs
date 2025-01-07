@@ -92,7 +92,7 @@ async fn get_arrow() -> Result<()> {
 
 #[tokio::test]
 async fn select_1_get() -> Result<()> {
-    let app = app::app()?;
+    let app = app::app(None, None, None)?;
 
     let response = app
         .oneshot(
@@ -112,7 +112,7 @@ async fn select_1_get() -> Result<()> {
 
 #[tokio::test]
 async fn select_1_post() -> Result<()> {
-    let app = app::app()?;
+    let app = app::app(None, None, None)?;
 
     let response = app
         .oneshot(
@@ -136,7 +136,7 @@ async fn select_1_post() -> Result<()> {
 
 #[tokio::test]
 async fn query_arrow() -> Result<()> {
-    let app = app::app()?;
+    let app = app::app(None, None, None)?;
 
     let response = app
         .oneshot(
