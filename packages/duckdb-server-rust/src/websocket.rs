@@ -45,7 +45,9 @@ pub async fn handle(mut socket: WebSocket, state: Arc<AppState>) {
                             QueryResponse::Response(_) => {
                                 socket
                                     .send(Message::Text(
-                                        json!({"error": "Unknown response Type"}).to_string().into(),
+                                        json!({"error": "Unknown response Type"})
+                                            .to_string()
+                                            .into(),
                                     ))
                                     .await
                             }
