@@ -15,12 +15,12 @@ exclude = [
 [dependencies]
 anyhow = "1.0"
 arrow = "53.3"
-async-trait = "0.1.83"
-axum = { version = "0.7", features = ["http1", "http2", "ws", "json", "tokio", "tracing", "macros"] }
+async-trait = "0.1"
+axum = { version = "0.8", features = ["http1", "http2", "ws", "json", "tokio", "tracing", "macros"] }
 axum-server = { version = "0.7", features = ["tls-rustls"] }
 axum-server-dual-protocol = "0.7"
-clap = { version = "4.5.23", features = ["derive"] }
-duckdb = { version = "1", features = ["bundled", "csv", "json", "parquet", "url", "r2d2"] }
+clap = { version = "4.5", features = ["derive"] }
+duckdb = { version = "1.1", features = ["bundled", "csv", "json", "parquet", "url", "r2d2"] }
 futures = "0.3"
 listenfd = "1.0"
 lru = "0.12"
@@ -30,13 +30,13 @@ serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 sha2 = "0.10"
 tokio = { version = "1", features = ["full"] }
-tower-http = { version = "0.6.1", features = ["cors", "compression-full", "trace"] }
+tower-http = { version = "0.6", features = ["cors", "compression-full", "trace"] }
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 
 [dev-dependencies]
 criterion = {version = "0.5", features=["async_futures", "html_reports"]}
-http-body-util = "0.1.0"
+http-body-util = "0.1"
 temp_testdir = "0.2"
 tower = { version = "0.5", features = ["util"] }
 

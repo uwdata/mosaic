@@ -1,12 +1,13 @@
-use axum::extract::ws::{Message, WebSocket};
-use serde_json::json;
 use std::sync::Arc;
+
+use axum::extract::ws::{Message, Utf8Bytes, WebSocket};
+use serde_json::json;
 
 use crate::interfaces::{AppError, AppState, QueryResponse};
 use crate::query;
 
-async fn handle_message(message: String, state: &AppState) -> Result<QueryResponse, AppError> {
-    let params = serde_json::from_str(&message)?;
+async fn handle_message(message: Utf8Bytes, state: &AppState) -> Result<QueryResponse, AppError> {
+    let params = serde_json::from_slice(message.as_bytes())?;
     query::handle(state, params).await
 }
 
@@ -21,30 +22,30 @@ pub async fn handle(mut socket: WebSocket, state: Arc<AppState>) {
                             AppError::BadRequest => {
                                 socket
                                     .send(Message::Text(
-                                        json!({"error": "Bad request"}).to_string(),
+                                        json!({"error": "Bad request"}).to_string().into(),
                                     ))
                                     .await
                             }
                             AppError::Error(error) => {
                                 socket
                                     .send(Message::Text(
-                                        json!({"error": format!("{}", error)}).to_string(),
+                                        json!({"error": format!("{}", error)}).to_string().into(),
                                     ))
                                     .await
                             }
                         },
                         Ok(result) => match result {
                             QueryResponse::Arrow(arrow) => {
-                                socket.send(Message::Binary(arrow)).await
+                                socket.send(Message::Binary(arrow.into())).await
                             }
-                            QueryResponse::Json(json) => socket.send(Message::Text(json)).await,
-                            QueryResponse::Empty => {
-                                socket.send(Message::Text("{}".to_string())).await
+                            QueryResponse::Json(json) => {
+                                socket.send(Message::Text(json.into())).await
                             }
+                            QueryResponse::Empty => socket.send(Message::Text("{}".into())).await,
                             QueryResponse::Response(_) => {
                                 socket
                                     .send(Message::Text(
-                                        json!({"error": "Unknown response Type"}).to_string(),
+                                        json!({"error": "Unknown response Type"}).to_string().into(),
                                     ))
                                     .await
                             }

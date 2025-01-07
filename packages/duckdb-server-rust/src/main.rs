@@ -49,6 +49,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .with(tracing_subscriber::fmt::layer())
         .init();
 
+    tracing::info!("Creating database in '{}'", args.database);
+
     // App setup
     let app = app::app(
         Some(&args.database),

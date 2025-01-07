@@ -1,6 +1,6 @@
 use anyhow::Result;
 use axum::{
-    extract::{Query, State, WebSocketUpgrade},
+    extract::{ws::rejection::WebSocketUpgradeRejection, Query, State, WebSocketUpgrade},
     http::Method,
     response::Json,
     routing::get,
@@ -17,12 +17,13 @@ use crate::interfaces::{AppError, AppState, QueryParams, QueryResponse};
 use crate::query;
 use crate::websocket;
 
+#[axum::debug_handler]
 async fn handle_get(
     State(state): State<Arc<AppState>>,
-    ws: Option<WebSocketUpgrade>,
+    ws: Result<WebSocketUpgrade, WebSocketUpgradeRejection>,
     Query(params): Query<QueryParams>,
 ) -> Result<QueryResponse, AppError> {
-    if let Some(ws) = ws {
+    if let Ok(ws) = ws {
         // WebSocket upgrade
         Ok(QueryResponse::Response(
             ws.on_upgrade(|socket| websocket::handle(socket, state)),
@@ -33,6 +34,7 @@ async fn handle_get(
     }
 }
 
+#[axum::debug_handler]
 async fn handle_post(
     State(state): State<Arc<AppState>>,
     Json(params): Json<QueryParams>,

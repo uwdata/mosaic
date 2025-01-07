@@ -29,7 +29,7 @@ impl ConnectionPool {
 impl Database for ConnectionPool {
     async fn execute(&self, sql: &str) -> Result<()> {
         let conn = self.get()?;
-        conn.execute(sql, [])?;
+        conn.execute_batch(sql)?;
         Ok(())
     }
 
