@@ -34,6 +34,10 @@ async fn handle_get(
     }
 }
 
+pub const DEFAULT_DB_PATH: &str = ":memory:";
+pub const DEFAULT_CONNECTION_POOL_SIZE: u32 = 10;
+pub const DEFAULT_CACHE_SIZE: usize = 1000;
+
 #[axum::debug_handler]
 async fn handle_post(
     State(state): State<Arc<AppState>>,
@@ -49,10 +53,10 @@ pub fn app(
 ) -> Result<Router> {
     // Database and state setup
     let db = ConnectionPool::new(
-        dp_path.unwrap_or(":memory:"),
-        connection_pool_size.unwrap_or(10),
+        dp_path.unwrap_or(DEFAULT_DB_PATH),
+        connection_pool_size.unwrap_or(DEFAULT_CONNECTION_POOL_SIZE),
     )?;
-    let cache = lru::LruCache::new(cache_size.unwrap_or(1000).try_into()?);
+    let cache = lru::LruCache::new(cache_size.unwrap_or(DEFAULT_CACHE_SIZE).try_into()?);
 
     let state = Arc::new(AppState {
         db: Box::new(db),
