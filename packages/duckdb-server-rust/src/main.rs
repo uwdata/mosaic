@@ -23,8 +23,8 @@ struct Args {
     database: String,
 
     /// HTTP Address
-    #[arg(short, long, default_value = "127.0.0.1")]
-    address: String,
+    #[arg(short, long, default_value_t = Ipv4Addr::LOCALHOST.into())]
+    address: IpAddr,
 
     /// HTTP Port
     #[arg(short, long, default_value_t = 3000)]
@@ -75,12 +75,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     }
 
     // Listenfd setup
-    let addr = SocketAddr::new(
-        args.address
-            .parse::<IpAddr>()
-            .unwrap_or(Ipv4Addr::LOCALHOST.into()),
-        args.port,
-    );
+    let addr = SocketAddr::new(args.address, args.port);
     let mut listenfd = ListenFd::from_env();
     let listener = match listenfd.take_tcp_listener(0)? {
         // if we are given a tcp listener on listen fd 0, we use that one
