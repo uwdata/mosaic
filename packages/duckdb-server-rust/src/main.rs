@@ -3,9 +3,13 @@ use axum_server::tls_rustls::RustlsConfig;
 use clap::Parser;
 use listenfd::ListenFd;
 use std::net::TcpListener;
-use std::{net::Ipv4Addr, net::SocketAddr, path::PathBuf};
+use std::{net::IpAddr, net::Ipv4Addr, net::SocketAddr, path::PathBuf};
 use tokio::net;
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
+
+use crate::app::DEFAULT_CACHE_SIZE;
+use crate::app::DEFAULT_CONNECTION_POOL_SIZE;
+use crate::app::DEFAULT_DB_PATH;
 
 mod app;
 mod bundle;
@@ -19,19 +23,23 @@ mod websocket;
 #[command(version, about, long_about = None)]
 struct Args {
     /// Path of database file (e.g., "database.db". ":memory:" for in-memory database)
-    #[arg(default_value = ":memory:")]
+    #[arg(default_value = DEFAULT_DB_PATH)]
     database: String,
+
+    /// HTTP Address
+    #[arg(short, long, default_value_t = Ipv4Addr::LOCALHOST.into())]
+    address: IpAddr,
 
     /// HTTP Port
     #[arg(short, long, default_value_t = 3000)]
     port: u16,
 
     /// Max connection pool size
-    #[arg(long, default_value_t = 10)]
+    #[arg(long, default_value_t = DEFAULT_CONNECTION_POOL_SIZE)]
     connection_pool_size: u32,
 
     /// Max number of cache entries
-    #[arg(long, default_value_t = 1000)]
+    #[arg(long, default_value_t = DEFAULT_CACHE_SIZE)]
     cache_size: usize,
 }
 
@@ -71,7 +79,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     }
 
     // Listenfd setup
-    let addr = SocketAddr::new(Ipv4Addr::LOCALHOST.into(), args.port);
+    let addr = SocketAddr::new(args.address, args.port);
     let mut listenfd = ListenFd::from_env();
     let listener = match listenfd.take_tcp_listener(0)? {
         // if we are given a tcp listener on listen fd 0, we use that one
