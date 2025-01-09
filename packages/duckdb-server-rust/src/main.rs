@@ -7,9 +7,9 @@ use std::{net::IpAddr, net::Ipv4Addr, net::SocketAddr, path::PathBuf};
 use tokio::net;
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
-use crate::app::DEFAULT_DB_PATH;
-use crate::app::DEFAULT_CONNECTION_POOL_SIZE;
 use crate::app::DEFAULT_CACHE_SIZE;
+use crate::app::DEFAULT_CONNECTION_POOL_SIZE;
+use crate::app::DEFAULT_DB_PATH;
 
 mod app;
 mod bundle;
