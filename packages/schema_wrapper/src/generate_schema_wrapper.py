@@ -5,7 +5,7 @@ import argparse
 from pathlib import Path 
 from urllib import request
 import graphlib
-from .utils import get_valid_identifier, get_dependencies
+from utils import get_valid_identifier, get_dependencies
 
 sys.path.insert(0, str(Path.cwd()))
 
