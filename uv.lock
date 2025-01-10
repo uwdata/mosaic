@@ -10,6 +10,7 @@ resolution-markers = [
 members = [
     "duckdb-server",
     "mosaic-widget",
+    "schema-wrapper",
 ]
 
 [[package]]
@@ -548,7 +549,7 @@ name = "ipykernel"
 version = "6.29.5"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "appnope", marker = "platform_system == 'Darwin'" },
+    { name = "appnope", marker = "sys_platform == 'darwin'" },
     { name = "comm" },
     { name = "debugpy" },
     { name = "ipython" },
@@ -1015,6 +1016,15 @@ source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/98/a4/1ab47638b92648243faf97a5aeb6ea83059cc3624972ab6b8d2316078d3f/mypy_extensions-1.0.0.tar.gz", hash = "sha256:75dbf8955dc00442a438fc4d0666508a9a97b6bd41aa2f0ffe9d2f2725af0782", size = 4433 }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/2a/e2/5d3f6ada4297caebe1a2add3b126fe800c96f56dbe5d1988a2cbe0b267aa/mypy_extensions-1.0.0-py3-none-any.whl", hash = "sha256:4392f6c0eb8a5668a69e23d168ffa70f0be9ccfd32b5cc2d26a34ae5b844552d", size = 4695 },
+]
+
+[[package]]
+name = "narwhals"
+version = "1.21.1"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/ad/6d/1a3a84b2c3186465aa5e95146e96610b875b7a5bb899f6dd1206f0444c0e/narwhals-1.21.1.tar.gz", hash = "sha256:44082c6273fd0125a2bde5baae6ddb7465e185c24fd6e1c5e71cab1d746c89cc", size = 242809 }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/d0/4f/7c482d8fe70bc19e1e121ccd205fedac936bbb2ff3b789775294fdbe525b/narwhals-1.21.1-py3-none-any.whl", hash = "sha256:f5f2cd33a6fa636de74067f4050d6dd9a9343b39a5a911dc97810d55d8f24cdd", size = 282702 },
 ]
 
 [[package]]
@@ -1742,6 +1752,39 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/0b/fb/c39cbf32d1f3e318674b8622f989417231794926b573f76dd4d0ca49f0f1/ruff-0.7.1-py3-none-win32.whl", hash = "sha256:b517a2011333eb7ce2d402652ecaa0ac1a30c114fbbd55c6b8ee466a7f600ee9", size = 8594180 },
     { url = "https://files.pythonhosted.org/packages/5a/71/ec8cdea34ecb90c830ca60d54ac7b509a7b5eab50fae27e001d4470fe813/ruff-0.7.1-py3-none-win_amd64.whl", hash = "sha256:f38c41fcde1728736b4eb2b18850f6d1e3eedd9678c914dede554a70d5241307", size = 9419751 },
     { url = "https://files.pythonhosted.org/packages/79/7b/884553415e9f0a9bf358ed52fb68b934e67ef6c5a62397ace924a1afdf9a/ruff-0.7.1-py3-none-win_arm64.whl", hash = "sha256:19aa200ec824c0f36d0c9114c8ec0087082021732979a359d6f3c390a6ff2a37", size = 8717402 },
+]
+
+[[package]]
+name = "schema-wrapper"
+version = "0.1.0"
+source = { editable = "packages/schema_wrapper" }
+dependencies = [
+    { name = "narwhals" },
+    { name = "pyyaml" },
+]
+
+[package.dev-dependencies]
+dev = [
+    { name = "mypy" },
+    { name = "pytest" },
+    { name = "ruff" },
+    { name = "types-ujson" },
+    { name = "watchdog" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "narwhals" },
+    { name = "pyyaml" },
+]
+
+[package.metadata.requires-dev]
+dev = [
+    { name = "mypy", specifier = ">=1.11.1" },
+    { name = "pytest", specifier = ">=7.4.4" },
+    { name = "ruff", specifier = ">=0.6.1" },
+    { name = "types-ujson" },
+    { name = "watchdog" },
 ]
 
 [[package]]

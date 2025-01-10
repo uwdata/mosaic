@@ -1,0 +1,86 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "schema-wrapper"
+version = "0.1.0"
+description = "Schema wrapper classes for Mosaic"
+readme = "README.md"
+requires-python = ">=3.9"
+dependencies = [
+    "pyyaml",
+    "narwhals"
+]
+
+[project.scripts]
+schema-wrapper = "src.__main__:main"
+
+[project.urls]
+homepage = "https://github.com/uwdata/mosaic"
+
+[dependency-groups]
+dev = [
+    "jupyterlab>=4.2.5",
+    "mypy>=1.11.1",
+    "pytest>=7.4.4",
+    "ruff>=0.6.1",
+    "pandas",
+    "mosaic-widget"
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src"]
+
+# https://mypy.readthedocs.io/en/stable/config_file.html
+[tool.mypy]
+files = "src/**/*.py"
+strict = false
+ignore_missing_imports = true
+
+
+# # Add development dependencies
+# [project.optional-dependencies]
+# dev = [
+#     "pytest>=7.0",
+#     "pytest-cov>=4.0",
+# ]
+
+# [tool.hatch.envs.default]
+# python = "3.11"
+# features = ["dev"]
+# installer = "uv"
+
+# [tool.hatch.envs.test]
+# installer = "uv"
+# dependencies = [
+#     "coverage[toml]",
+#     "pytest",
+#     "pytest-cov",
+# ]
+
+# [tool.hatch.envs.test.scripts]
+# cov = "pytest --cov-report=term-missing --cov-config=pyproject.toml --cov=."
+
+# [tool.hatch.build.targets.wheel]
+# packages = ["."]
+
+# [tool.pytest.ini_options]
+# testpaths = ["test"]
+# python_files = ["test_*.py"]
+# addopts = "-v"
+
+# [tool.coverage.run]
+# source = ["."]
+
+# [tool.coverage.report]
+# exclude_lines = [
+#     "pragma: no cover",
+#     "def __repr__",
+#     "if __name__ == .__main__.:",
+#     "raise NotImplementedError",
+# ]
+
+# [tool.ruff]
+# line-length = 88
+# target-version = "py39"

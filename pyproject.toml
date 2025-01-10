@@ -1,7 +1,8 @@
 [tool.uv.workspace]
 members = [
     "packages/duckdb-server",
-    "packages/widget"
+    "packages/widget",
+    "packages/schema_wrapper"
 ]
 
 # https://github.com/charliermarsh/ruff

@@ -1,16 +1,13 @@
 import json
 from typing import Any, Dict, List, Final
 import sys
-import argparse
-from pathlib import Path 
-from urllib import request
+from pathlib import Path
 import graphlib
-from utils import get_valid_identifier, get_dependencies
+from src.utils import get_valid_identifier, get_dependencies
 
 sys.path.insert(0, str(Path.cwd()))
 
 SCHEMA_VERSION: Final = "v0.10.0"
-SCHEMA_URL_TEMPLATE: Final = "https://raw.githubusercontent.com/uwdata/mosaic/refs/heads/main/docs/public/schema/{version}.json"
 KNOWN_PRIMITIVES = {"string": "str", "boolean": "bool", "number": "float", "object": "Dict[str, Any]"}
 IMPORTS = {"typing": ["List", "Dict", "Any", "Union"], ".src.SchemaBase": ["SchemaBase"], ".src.utils": ["revert_validation"]}
 
@@ -20,20 +17,6 @@ def generate_import_string(imports: Dict[str, List[str]]) -> str:
         import_string += f"from {source} import {', '.join(cur_imports)}\n"
     import_string += '\n'
     return import_string
-
-def schema_url(version: str = SCHEMA_VERSION) -> str:
-    return SCHEMA_URL_TEMPLATE.format(version=version)
-
-def download_schemafile(
-    version: str, schemapath: Path, download: bool = False
-) -> Path:
-    url = schema_url(version=version)
-    if download:
-        request.urlretrieve(url, schemapath)
-    elif not schemapath.exists():
-        msg = f"Cannot skip download: {schemapath!s} does not exist"
-        raise ValueError(msg)
-    return schemapath
 
 def generate_additional_properties_class(class_name: str, class_schema: Dict[str, Any]) -> str:
     # At the moment, this can only handle classes with one $ref additional property
@@ -220,26 +203,11 @@ def generate_schema_wrapper(schema_file: Path, output_file: Path) -> str:
         f.write(generated_classes)
 
 def main():
-    parser = argparse.ArgumentParser(
-        prog="our_schema_generator", description="Generate the JSON schema for mosaic apps"
-    )   
-    parser.add_argument("schema_file", help="Path to the JSON schema file")
+    current_file_path = Path(__file__).parent 
 
-    parser.add_argument(
-        "--download", action="store_true", help="download the schema"
-    )   
-    args = parser.parse_args()
-    
-    #vn = '.'.join(version.split(".")[:1]) #Not using this currently
-    schemapath = Path(args.schema_file).resolve()
-    schemapath = download_schemafile( 
-        version=SCHEMA_VERSION,
-        schemapath=schemapath,
-        download = args.download
-    )
-
-    output_file = Path("packages/schema_wrapper/generated_classes.py")
-    generate_schema_wrapper(schemapath, output_file)
+    schema_path = current_file_path.parent.parent.parent /  "docs" / "public" / "schema" / f"{SCHEMA_VERSION}.json"
+    output_file = current_file_path.parent  / "src" / "generated_classes.py"
+    generate_schema_wrapper(schema_path, output_file)
 
 # Main execution
 if __name__ == "__main__":
