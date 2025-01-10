@@ -40,9 +40,11 @@ def generate_additional_properties_class(class_name: str, class_schema: Dict[str
     class_def = f"class {class_name}(SchemaBase):\n    def __init__(self, **kwargs):\n"
     properties_object = class_schema.get('additionalProperties', {})
     correct_type = get_type_hint(properties_object)
+    #if correct_type not in KNOWN_PRIMITIVES.values():
+        #correct_type = f'"{correct_type}"'
     class_def += """        for key, value in kwargs.items():
-            if not isinstance(value, """""+ correct_type +""""):
-                raise ValueError(f"Value for key '{key}' must be an instance of """+ correct_type +""".")
+            if not isinstance(value, """+ correct_type +"""):
+                raise ValueError(f"Value for key '{key}' must be an instance of """+ correct_type.strip('"') +""".")
         self.additional_params = kwargs\n\n"""
     return class_def
 
@@ -122,11 +124,9 @@ def generate_class(class_name: str, class_schema: Dict[str, Any]) -> str:
     # Handling additionalProperties
     if additional_properties != False and additional_properties != None:
         correct_type = get_type_hint(additional_properties)
-        if correct_type not in KNOWN_PRIMITIVES.values():
-            correct_type = f'"{correct_type}"'
         class_def += """        for key, value in kwargs.items():
             if not isinstance(value, """+ correct_type +"""):
-                raise ValueError(f"Value for key '{key}' must be an instance of """+ correct_type +""".")
+                raise ValueError(f"Value for key '{key}' must be an instance of """+ correct_type.strip('"') +""".")
         self.additional_params = kwargs\n\n"""
 
 
