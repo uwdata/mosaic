@@ -68,14 +68,14 @@ def generate_class(class_name: str, class_schema: Dict[str, Any]) -> str:
         elif 'enum' in class_schema:
             return generate_enum_class(class_name, class_schema)
         else:
-            #print(f"class_name: {class_name}\nschema: {class_schema}\n\n")
             type_hint = get_type_hint(class_schema)
             return f"class {class_name}(SchemaBase):\n    def __init__(self, value: {type_hint}):\n        self.value = value\n"
 
     # Check for '$ref' and handle it
     if '$ref' in class_schema:
+        print(f"class_name: {class_name}\nschema: {class_schema}\n\n")
         ref_class_name = get_valid_identifier(class_schema['$ref'].split('/')[-1])
-        return f"\nclass {class_name}(SchemaBase):\n    pass  # This is a reference to '{ref_class_name}'\n"
+        return f"\nclass {class_name}({ref_class_name}):\n    pass  # This is a reference to '{ref_class_name}'\n"
     if 'anyOf' in class_schema:
             return generate_any_of_class(class_name, class_schema['anyOf'])
 
@@ -156,17 +156,12 @@ def get_type_hint(type_schema: Dict[str, Any]) -> str:
             if isinstance(type_schema['type'], list):
                 types = []
                 for t in type_schema['type']:
-                    datatype = KNOWN_PRIMITIVES.get(t)
-                    if datatype == None:
-                        types.append('Any')
-                    else:
-                        types.append(datatype)
+                    datatype = KNOWN_PRIMITIVES.get(t, "Any")
+                    types.append(datatype)
                 
                 return get_type_union(types)
             else:
-                datatype = KNOWN_PRIMITIVES.get(type_schema['type'])
-                if datatype == None:
-                    return 'Any'
+                datatype = KNOWN_PRIMITIVES.get(type_schema['type'], "Any")
                 return datatype
         elif 'anyOf' in type_schema:
             types = [get_type_hint(option) for option in type_schema['anyOf']]
