@@ -4,7 +4,7 @@ pytest packages/schema_wrapper/test/test.py
 import unittest
 from pathlib import Path
 import pytest
-from ..src.utils import to_dict_ours, _todict
+from ..src.utils import _todict
 
 from ..generated_classes import *
 

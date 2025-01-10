@@ -249,9 +249,9 @@ def _todict(obj: Any, context: dict[str, Any] | None = None, np_opt: Any = None,
     elif (
         hasattr(obj, "to_dict")
         and (module_name := obj.__module__)
-        #and module_name.startswith("altair")
+        and module_name.startswith("schema_wrapper") # <--
     ):
-        return obj.to_dict(False)
+        return obj.to_dict(False) # <-- Only these two lines are the ones that are changed from altair
     elif pd_opt is not None and isinstance(obj, pd_opt.Timestamp):
         return pd_opt.Timestamp(obj).isoformat()
     elif _is_iterable(obj, exclude=(str, bytes)):
@@ -259,58 +259,58 @@ def _todict(obj: Any, context: dict[str, Any] | None = None, np_opt: Any = None,
     else:
         return obj
 
-def to_dict(
-    self,
-    validate: bool = True,
-    *,
-    ignore: list[str] | None = None,
-    context: dict[str, Any] | None = None,
-) -> dict[str, Any]:
-    """
-    Return a dictionary representation of the object.
-
-    Parameters
-    ----------
-    validate : bool, optional
-        If True (default), then validate the result against the schema.
-    ignore : list[str], optional
-        A list of keys to ignore.
-    context : dict[str, Any], optional
-        A context dictionary.
-
-    Raises
-    ------
-    SchemaValidationError :
-        If ``validate`` and the result does not conform to the schema.
-
-    Notes
-    -----
-    - ``ignore``, ``context`` are usually not needed to be specified as a user.
-    - *Technical*: ``ignore`` will **not** be passed to child :meth:`.to_dict()`.
-    """
-    context = context or {}
-    ignore = ignore or []
-    opts = _get_optional_modules(np_opt="numpy", pd_opt="pandas")
-
-    if self._args and not self._kwds:
-        kwds = self._args[0]
-    elif not self._args:
-        kwds = self._kwds.copy()
-        exclude = {*ignore, "shorthand"}
-        if parsed := context.pop("parsed_shorthand", None):
-            kwds = _replace_parsed_shorthand(parsed, kwds)
-        kwds = {k: v for k, v in kwds.items() if k not in exclude}
-        if (mark := kwds.get("mark")) and isinstance(mark, str):
-            kwds["mark"] = {"type": mark}
-    else:
-        msg = f"{type(self)} instance has both a value and properties : cannot serialize to dict"
-        raise ValueError(msg)
-    result = _todict(kwds, context=context, **opts)
-    if validate:
-        # NOTE: Don't raise `from err`, see `SchemaValidationError` doc
-        try:
-            self.validate(result)
-        except jsonschema.ValidationError as err:
-            raise SchemaValidationError(self, err) from None
-    return result
-
+#def to_dict(
+#    self,
+#    validate: bool = True,
+#    *,
+#    ignore: list[str] | None = None,
+#    context: dict[str, Any] | None = None,
+#) -> dict[str, Any]:
+#    """
+#    Return a dictionary representation of the object.
+#
+#    Parameters
+#    ----------
+#    validate : bool, optional
+#        If True (default), then validate the result against the schema.
+#    ignore : list[str], optional
+#        A list of keys to ignore.
+#    context : dict[str, Any], optional
+#        A context dictionary.
+#
+#    Raises
+#    ------
+#    SchemaValidationError :
+#        If ``validate`` and the result does not conform to the schema.
+#
+#    Notes
+#    -----
+#    - ``ignore``, ``context`` are usually not needed to be specified as a user.
+#    - *Technical*: ``ignore`` will **not** be passed to child :meth:`.to_dict()`.
+#    """
+#    context = context or {}
+#    ignore = ignore or []
+#    opts = _get_optional_modules(np_opt="numpy", pd_opt="pandas")
+#
+#    if self._args and not self._kwds:
+#        kwds = self._args[0]
+#    elif not self._args:
+#        kwds = self._kwds.copy()
+#        exclude = {*ignore, "shorthand"}
+#        if parsed := context.pop("parsed_shorthand", None):
+#            kwds = _replace_parsed_shorthand(parsed, kwds)
+#        kwds = {k: v for k, v in kwds.items() if k not in exclude}
+#        if (mark := kwds.get("mark")) and isinstance(mark, str):
+#            kwds["mark"] = {"type": mark}
+#    else:
+#        msg = f"{type(self)} instance has both a value and properties : cannot serialize to dict"
+#        raise ValueError(msg)
+#    result = _todict(kwds, context=context, **opts)
+#    if validate:
+#        # NOTE: Don't raise `from err`, see `SchemaValidationError` doc
+#        try:
+#            self.validate(result)
+#        except jsonschema.ValidationError as err:
+#            raise SchemaValidationError(self, err) from None
+#    return result
+#

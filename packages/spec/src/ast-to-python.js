@@ -7,8 +7,12 @@ import { SpecNode } from "./ast/SpecNode.js";
  * @returns {string} Generated Python code using the mosaic-spec classes.
  */
 export function astToPython(ast, options = {}) {
-  //const ctx = new PythonCodegenContext(options);
-  const { root, data} = ast;
+  // WHAT DOES THE BELOW DO?
+  const ctx = new PythonCodegenContext(options);
+  const { root, data, params } = ast; //'root' is everything except data, params and meta in the ast
+  //console.log(`root: ${JSON.stringify(root, null, 2)}\n\n`);
+  //console.log(`data: ${JSON.stringify(data, null, 2)}\n\n`);
+  //console.log(`params: ${JSON.stringify(params, null, 2)}\n\n`);
 
   // Function to format channel values
   const formatChannel = (value) => {
@@ -51,6 +55,8 @@ export function astToPython(ast, options = {}) {
 
   // Function to generate mark code
   const generateMarkCode = (mark) => {
+    // ASSUMES MARKS NEED TO HAVE A VALUE UNDER THE KEY OF MARK TO BE VALID WHICH ISN'T TRUE
+      // Cant work out a rule off the top of my head, needs careful consideration of structure
     if (!mark?.mark) {
       console.warn("Invalid mark:", mark);
       return "        PlotMark()";
@@ -107,6 +113,9 @@ export function astToPython(ast, options = {}) {
   }
 
   // Function to find plot marks in nested structure
+  // MAKE THIS RETURN ALL THE PLOTS FOUND NOT JUST THE FIRST
+    // Concat structures can have more than one plot by definition
+    // I think this function also loses key information? returning all the node.plots is insufficient
   const findPlotMarks = (node) => {
     if (node.plot) {
       return node.plot;
@@ -127,6 +136,7 @@ export function astToPython(ast, options = {}) {
   };
 
   // Function to find plot properties in nested structure
+  // MAKE THIS RETURN ALL THE PLOT PROPERTIES FOUND NOT JUST THE FIRST
   const findPlotProperties = (node) => {
     if (
       node.width !== undefined ||
@@ -155,8 +165,10 @@ export function astToPython(ast, options = {}) {
   };
 
   // Get plot marks and properties
-  const rootJSON = root.toJSON();
+  const rootJSON = root.toJSON(); // IS THIS NECESSARY?
+  console.log(`rootJSON: ${JSON.stringify(rootJSON, null, 2)}\n\n`)
   const plotMarks = findPlotMarks(rootJSON);
+  console.log(`plotMarks: ${JSON.stringify(params, null, 2)}\n\n`);
   const plotProps = findPlotProperties(rootJSON);
 
   // Generate mark code if plot marks exist
@@ -184,8 +196,10 @@ ${plotMarksCode}
     "from typing import Dict, Any, Union",
     "",
   ];
-
-  return [...imports, "", ...dataCode, "", specCode].join("\n");
+  
+  returnCode = [...imports, "", ...dataCode, "", specCode].join("\n");
+  console.log(`returnCode: ${JSON.stringify(returnCode, null, 2)}\n\n`);
+  return returnCode;
 }
 
 export class PythonCodegenContext {

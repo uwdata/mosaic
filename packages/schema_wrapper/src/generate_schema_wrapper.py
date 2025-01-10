@@ -27,16 +27,45 @@ def download_schemafile(
         raise ValueError(msg)
     return schemapath
 
+def generate_additional_properties_class(class_name: str, class_schema: Dict[str, Any]) -> str:
+    # At the moment, this can only handle classes with one $ref additional property
+    class_def = f"class {class_name}(SchemaBase):\n    def __init__(self, **kwargs):\n"
+    properties_object = class_schema.get('additionalProperties', {})
+    correct_type = get_valid_identifier(properties_object['$ref'].split('/')[-1])
+    class_def += """        for key, value in kwargs.items():
+        if not isinstance(value, "ParamDefinition"):
+            raise ValueError(f"Value for key '{key}' must be an instance of """+ correct_type +""".")
+    self.params = kwargs\n\n"""
+
+    class_def += """    def to_dict(self):    
+    return {revert_validation(k): _todict(v) for k, v in self.params.items()}"""
+    return class_def
+
+def generate_enum_class(class_name: str, class_schema: Dict[str, Any]) -> str:
+    enum_options = class_schema.get('enum', [])
+    enum_type = get_type_hint(class_schema)
+    class_def = f"class {class_name}(SchemaBase):\n   enum_options = {enum_options}\n\n    def __init__(self, value: {enum_type}):\n"
+    class_def += """        if value not in self.enum_options:
+            raise ValueError(f"Value of enum not in allowed values: {self.enum_options}")
+        self.value = value\n"""
+    return class_def
+
 def generate_class(class_name: str, class_schema: Dict[str, Any]) -> str:
     class_name = get_valid_identifier(class_name)
 
     # Check if the schema defines a simple type (like string, number) without properties
     if 'type' in class_schema and 'properties' not in class_schema:
+        if 'additionalProperties' in class_schema:
+            return generate_additional_properties_class(class_name, class_schema)
+        elif 'enum' in class_schema:
+            return generate_enum_class(class_name, class_schema)
+        #if 'items' in class_schema:
+        #    print(f"class_name: {class_name}")
         return f"class {class_name}(SchemaBase):\n    def __init__(self):\n        pass\n"
 
     # Check for '$ref' and handle it
     if '$ref' in class_schema:
-        ref_class_name = class_schema['$ref'].split('/')[-1]
+        ref_class_name = get_valid_identifier(class_schema['$ref'].split('/')[-1])
         return f"\nclass {class_name}(SchemaBase):\n    pass  # This is a reference to '{ref_class_name}'\n"
     if 'anyOf' in class_schema:
             return generate_any_of_class(class_name, class_schema['anyOf'])
@@ -134,7 +163,7 @@ def get_type_hint(type_schema: Dict[str, Any]) -> str:
             types = [get_type_hint(option) for option in type_schema['anyOf']]
             return get_type_union(types)
         elif '$ref' in type_schema:
-            ref_class_name = type_schema['$ref'].split('/')[-1]
+            ref_class_name = get_valid_identifier(type_schema['$ref'].split('/')[-1])
             return f'"{ref_class_name}"'  
         return 'Any'
 
@@ -167,7 +196,7 @@ def generate_schema_wrapper(schema_file: Path, output_file: Path) -> str:
         definitions[name] = class_code
 
     generated_classes =  "\n\n".join(definitions.values())
-    generated_classes = "from typing import List, Dict, Any, Union\nfrom .src.SchemaBase import SchemaBase\n\n" + generated_classes
+    generated_classes = "from typing import List, Dict, Any, Union\nfrom .src.SchemaBase import SchemaBase\n\nfrom .src.utils import revert_validation" + generated_classes
 
 
     with open(output_file, 'w') as f:
