@@ -5,6 +5,11 @@ class SchemaBase:
     def to_dict(self, keep_none_values: bool):
         class_dictionary = {}
         for field, value in vars(self).items():
+            if field == "additional_params":
+                additional_parameter_dict = {k: _todict(v) for k, v in value.items()}
+                # The dictionaries shouldn't have any overlapping keys
+                class_dictionary.update(additional_parameter_dict)
+                continue
             field = revert_validation(field)
             val_as_dict = str(value) # Default value
 

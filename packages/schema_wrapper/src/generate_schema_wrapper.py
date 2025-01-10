@@ -39,14 +39,11 @@ def generate_additional_properties_class(class_name: str, class_schema: Dict[str
     # At the moment, this can only handle classes with one $ref additional property
     class_def = f"class {class_name}(SchemaBase):\n    def __init__(self, **kwargs):\n"
     properties_object = class_schema.get('additionalProperties', {})
-    correct_type = get_valid_identifier(properties_object['$ref'].split('/')[-1])
+    correct_type = get_type_hint(properties_object)
     class_def += """        for key, value in kwargs.items():
-        if not isinstance(value, "ParamDefinition"):
-            raise ValueError(f"Value for key '{key}' must be an instance of """+ correct_type +""".")
-    self.params = kwargs\n\n"""
-
-    class_def += """    def to_dict(self):    
-    return {revert_validation(k): _todict(v) for k, v in self.params.items()}"""
+            if not isinstance(value, """""+ correct_type +""""):
+                raise ValueError(f"Value for key '{key}' must be an instance of """+ correct_type +""".")
+        self.additional_params = kwargs\n\n"""
     return class_def
 
 def generate_enum_class(class_name: str, class_schema: Dict[str, Any]) -> str:
@@ -73,7 +70,6 @@ def generate_class(class_name: str, class_schema: Dict[str, Any]) -> str:
 
     # Check for '$ref' and handle it
     if '$ref' in class_schema:
-        print(f"class_name: {class_name}\nschema: {class_schema}\n\n")
         ref_class_name = get_valid_identifier(class_schema['$ref'].split('/')[-1])
         return f"\nclass {class_name}({ref_class_name}):\n    pass  # This is a reference to '{ref_class_name}'\n"
     if 'anyOf' in class_schema:
@@ -82,6 +78,7 @@ def generate_class(class_name: str, class_schema: Dict[str, Any]) -> str:
     # Extract properties and required fields
     properties = class_schema.get('properties', {})
     required = class_schema.get('required', [])
+    additional_properties = class_schema.get('additionalProperties')
 
     class_def = f"class {class_name}(SchemaBase):\n"
     class_def += "    def __init__(self"
@@ -112,11 +109,26 @@ def generate_class(class_name: str, class_schema: Dict[str, Any]) -> str:
     for prop, type_hint in optional_params:
         class_def += f", {prop}: {type_hint} = None"
 
+    # Handling additionalProperties
+    if additional_properties != False and additional_properties != None:
+            class_def += ", **kwargs"
+
     class_def += "):\n"
 
     # Generate attribute assignments in __init__
     for prop in valid_properties:
         class_def += f"        self.{prop} = {prop}\n"
+    
+    # Handling additionalProperties
+    if additional_properties != False and additional_properties != None:
+        correct_type = get_type_hint(additional_properties)
+        if correct_type not in KNOWN_PRIMITIVES.values():
+            correct_type = f'"{correct_type}"'
+        class_def += """        for key, value in kwargs.items():
+            if not isinstance(value, """+ correct_type +"""):
+                raise ValueError(f"Value for key '{key}' must be an instance of """+ correct_type +""".")
+        self.additional_params = kwargs\n\n"""
+
 
     return class_def
 
