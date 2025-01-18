@@ -17,7 +17,7 @@
     "docs:schema": "node bin/publish-schema.js",
     "build": "lerna run build",
     "lint": "lerna run lint",
-    "test": "lerna run test",
+    "test": "vitest run && lerna run tsc",
     "server": "cd packages/duckdb-server && npm run dev",
     "server:rust": "cd packages/duckdb-server-rust && cargo run",
     "server:node": "nodemon packages/duckdb/bin/run-server.js",
