@@ -412,7 +412,6 @@ wheels = [
 
 [[package]]
 name = "duckdb-server"
-version = "0.12.0"
 source = { editable = "packages/duckdb-server" }
 dependencies = [
     { name = "diskcache" },
@@ -548,7 +547,7 @@ name = "ipykernel"
 version = "6.29.5"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "appnope", marker = "platform_system == 'Darwin'" },
+    { name = "appnope", marker = "sys_platform == 'darwin'" },
     { name = "comm" },
     { name = "debugpy" },
     { name = "ipython" },
@@ -943,7 +942,6 @@ wheels = [
 
 [[package]]
 name = "mosaic-widget"
-version = "0.12.0"
 source = { editable = "packages/widget" }
 dependencies = [
     { name = "anywidget" },
