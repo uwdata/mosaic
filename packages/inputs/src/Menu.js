@@ -1,6 +1,6 @@
-import { MosaicClient, Param, isParam, isSelection, clausePoint } from '@uwdata/mosaic-core';
+import { Param, isParam, isSelection, clausePoint } from '@uwdata/mosaic-core';
 import { Query } from '@uwdata/mosaic-sql';
-import { input } from './input.js';
+import { input, Input } from './input.js';
 
 const isObject = v => {
   return v && typeof v === 'object' && !Array.isArray(v);
@@ -8,7 +8,7 @@ const isObject = v => {
 
 export const menu = options => input(Menu, options);
 
-export class Menu extends MosaicClient {
+export class Menu extends Input {
   /**
    * Create a new menu input.
    * @param {object} [options] Options object
@@ -125,8 +125,7 @@ export class Menu extends MosaicClient {
   }
 
   activate() {
-    // @ts-ignore - activate is only called for a Selection
-    this.selection.activate(clausePoint(this.field, 0, { source: this }));
+    if (isSelection(this.selection)) this.selection.activate(clausePoint(this.field, 0, { source: this }));
   }
 
   publish(value) {

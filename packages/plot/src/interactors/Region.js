@@ -7,8 +7,9 @@ import { patchScreenCTM } from './util/patchScreenCTM.js';
 import { sanitizeStyles } from './util/sanitize-styles.js';
 import { neqSome } from './util/neq.js';
 import { getDatum } from './util/get-datum.js';
+import { Interactor } from './Interactor.js';
 
-export class Region {
+export class Region extends Interactor {
   constructor(mark, {
     channels,
     selection,
@@ -19,7 +20,7 @@ export class Region {
       strokeDasharray: '1,1'
     }
   }) {
-    this.mark = mark;
+    super(mark);
     this.selection = selection;
     this.peers = peers;
 

@@ -1,13 +1,13 @@
-import { MosaicClient, clausePoints, coordinator, isParam, toDataColumns } from '@uwdata/mosaic-core';
+import { clausePoints, coordinator, isParam, toDataColumns } from '@uwdata/mosaic-core';
 import { Query, desc } from '@uwdata/mosaic-sql';
 import { formatDate, formatLocaleAuto, formatLocaleNumber } from './util/format.js';
-import { input } from './input.js';
+import { input, Input } from './input.js';
 
 let _id = -1;
 
 export const table = options => input(Table, options);
 
-export class Table extends MosaicClient {
+export class Table extends Input {
   /**
    * Create a new Table instance.
    * @param {object} options Options object
@@ -206,6 +206,23 @@ export class Table extends MosaicClient {
 
     this.isPending = false;
     return this;
+  }
+
+  activate() {
+    const { data } = this;
+    const n = data.length - 1;
+
+    const { numRows } = data[n];
+
+    for (let i = 0; i < numRows; i++) {
+      this.currentRow = i;
+      this.selection.update(this.clause([i]));
+    }
+    
+    if (numRows > 0) {
+      this.currentRow = -1;
+      this.selection.update(this.clause());
+    }
   }
 
   sort(event, column) {

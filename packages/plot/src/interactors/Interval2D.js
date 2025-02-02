@@ -5,8 +5,9 @@ import { closeTo } from './util/close-to.js';
 import { getField } from './util/get-field.js';
 import { invert } from './util/invert.js';
 import { sanitizeStyles } from './util/sanitize-styles.js';
+import { Interactor } from './Interactor.js';
 
-export class Interval2D {
+export class Interval2D extends Interactor {
   constructor(mark, {
     selection,
     xfield,
@@ -15,7 +16,7 @@ export class Interval2D {
     peers = true,
     brush: style
   }) {
-    this.mark = mark;
+    super(mark);
     this.pixelSize = pixelSize || 1;
     this.selection = selection;
     this.peers = peers;

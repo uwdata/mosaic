@@ -2,6 +2,7 @@ import { throttle } from '@uwdata/mosaic-core';
 import { and, isAggregateExpression } from '@uwdata/mosaic-sql';
 import { getDatum } from './util/get-datum.js';
 import { sanitizeStyles } from './util/sanitize-styles.js';
+import { Interactor } from './Interactor.js';
 
 function configureMark(mark) {
   const { channels } = mark;
@@ -34,12 +35,12 @@ function configureMark(mark) {
   return mark;
 }
 
-export class Highlight {
+export class Highlight extends Interactor {
   constructor(mark, {
     selection,
     channels = {}
   }) {
-    this.mark = configureMark(mark);
+    super(configureMark(mark));
     this.selection = selection;
     const c = Object.entries(sanitizeStyles(channels));
     this.channels = c.length ? c : [['opacity', 0.2]];
@@ -79,6 +80,10 @@ export class Highlight {
         node.setAttribute(attr, t ? base[j] : value);
       }
     }
+  }
+
+  activate() {
+    return this.update();
   }
 }
 

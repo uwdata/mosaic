@@ -1,0 +1,14 @@
+{
+  "include": ["src/**/*.js", "src/**/*.ts"],
+  "exclude": ["node_modules", "dist"],
+  "compilerOptions": {
+    "allowJs": true,
+    "outDir": "dist/",
+    "declaration": true,
+    "strict": true,
+    "moduleResolution": "Node16",
+    "module": "Node16",
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+  },
+}
