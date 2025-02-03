@@ -223,42 +223,69 @@ def _replace_parsed_shorthand(
         if kwds.get(k, Undefined) is Undefined
     )
     return kwds
-
 def _todict(obj: Any, context: dict[str, Any] | None = None, np_opt: Any = None, pd_opt: Any = None) -> Any:  # noqa: C901
-    """Convert an object to a dict representation."""
-    if np_opt is not None:
-        np = np_opt
-        if isinstance(obj, np.ndarray):
+        """Convert an object to a dict representation."""
+        if np_opt is not None:
+            np = np_opt
+            if isinstance(obj, np.ndarray):
+                return [_todict(v, context, np_opt, pd_opt) for v in obj]
+            elif isinstance(obj, np.number):
+                return float(obj)
+            elif isinstance(obj, np.datetime64):
+                result = str(obj)
+                if "T" not in result:
+                    result += "T00:00:00"
+                return result
+        elif isinstance(obj, (list, tuple)):
             return [_todict(v, context, np_opt, pd_opt) for v in obj]
-        elif isinstance(obj, np.number):
-            return float(obj)
-        elif isinstance(obj, np.datetime64):
-            result = str(obj)
-            if "T" not in result:
-                # See https://github.com/vega/altair/issues/1027 for why this is necessary.
-                result += "T00:00:00"
-            return result
-    elif isinstance(obj, (list, tuple)):
-        return [_todict(v, context, np_opt, pd_opt) for v in obj]
-    elif isinstance(obj, dict):
-        return {
-            k: _todict(v, context, np_opt, pd_opt)
-            for k, v in obj.items()
-            if v is not Undefined
-        }
-    elif (
-        hasattr(obj, "to_dict")
-        and (module_name := obj.__module__)
-        and module_name.startswith("schema_wrapper") # <--
-    ):
-        return obj.to_dict(False) # <-- Only these two lines are the ones that are changed from altair
-    elif pd_opt is not None and isinstance(obj, pd_opt.Timestamp):
-        return pd_opt.Timestamp(obj).isoformat()
-    elif _is_iterable(obj, exclude=(str, bytes)):
-        return _todict(_from_array_like(obj), context, np_opt, pd_opt)
-    else:
-        return obj
-
+        elif isinstance(obj, dict):
+            return {
+                k: _todict(v, context, np_opt, pd_opt)
+                for k, v in obj.items()
+                if v is not Undefined
+            }
+        elif hasattr(obj, "to_dict"):
+            return obj.to_dict(False)
+        elif pd_opt is not None and isinstance(obj, pd_opt.Timestamp):
+            return pd_opt.Timestamp(obj).isoformat()
+        elif _is_iterable(obj, exclude=(str, bytes)):
+            return _todict(_from_array_like(obj), context, np_opt, pd_opt)
+        else:
+            return obj   
+# def _todict(obj: Any, context: dict[str, Any] | None = None, np_opt: Any = None, pd_opt: Any = None) -> Any:  # noqa: C901
+#     """Convert an object to a dict representation."""
+#     if np_opt is not None:
+#         np = np_opt
+#         if isinstance(obj, np.ndarray):
+#             return [_todict(v, context, np_opt, pd_opt) for v in obj]
+#         elif isinstance(obj, np.number):
+#             return float(obj)
+#         elif isinstance(obj, np.datetime64):
+#             result = str(obj)
+#             if "T" not in result:
+#                 # See https://github.com/vega/altair/issues/1027 for why this is necessary.
+#                 result += "T00:00:00"
+#             return result
+#     elif isinstance(obj, (list, tuple)):
+#         return [_todict(v, context, np_opt, pd_opt) for v in obj]
+#     elif isinstance(obj, dict):
+#         return {
+#             k: _todict(v, context, np_opt, pd_opt)
+#             for k, v in obj.items()
+#             if v is not Undefined
+#         }
+#     elif (
+#         hasattr(obj, "to_dict")
+#         and (module_name := obj.__module__)
+#         and module_name.startswith("schema_wrapper") # <--
+#     ):
+#         return obj.to_dict(False) # <-- Only these two lines are the ones that are changed from altair
+#     elif pd_opt is not None and isinstance(obj, pd_opt.Timestamp):
+    #     return pd_opt.Timestamp(obj).isoformat()
+    # elif _is_iterable(obj, exclude=(str, bytes)):
+    #     return _todict(_from_array_like(obj), context, np_opt, pd_opt)
+    # else:
+    #     return obj
 #def to_dict(
 #    self,
 #    validate: bool = True,
