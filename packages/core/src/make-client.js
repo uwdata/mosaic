@@ -8,7 +8,7 @@ import {
  * @property {import('./Coordinator.js').Coordinator} [coordinator] - Mosaic coordinator. Default to the global coordinator.
  * @property {import('./Selection.js').Selection|null} [selection] - A selection whose predicates will be fed into the query function to produce the SQL query.
  * @property {function(): Promise<void>} [prepare] - An async function to prepare the client before running queries.
- * @property {function(input: any): any} query - A function that returns a query from a list of selection predicates.
+ * @property {function(any): any} query - A function that returns a query from a list of selection predicates.
  * @property {function(any): void} [queryResult] - Called by the coordinator to return a query result.
  * @property {function(): void} [queryPending] - Called by the coordinator to report a query execution error.
  * @property {function(any): void} [queryError] - Called by the coordinator to inform the client that a query is pending.
@@ -19,8 +19,8 @@ import {
  * @returns {MosaicClient & { destroy: () => void }} - The result object with methods to request an update or destroy the client.
  */
 export function makeClient(options) {
-  let coordinator = options.coordinator ?? defaultCoordinator();
-  let client = new DynamicQueryClient({ ...options, coordinator: coordinator });
+  const coordinator = options.coordinator ?? defaultCoordinator();
+  const client = new DynamicQueryClient({ ...options, coordinator });
   coordinator.connect(client);
   return client;
 }
