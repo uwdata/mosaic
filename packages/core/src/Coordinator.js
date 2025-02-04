@@ -267,14 +267,6 @@ export class Coordinator {
       group.clients.delete(client);
     }
   }
-
-  /** Query field info for the given fields.
-   * @param {any[]} fields - The field(s) to query field info.
-   * @returns {Promise<any[]>} The resulting field info(s).
-   */
-  async queryFieldInfo(fields) {
-    return queryFieldInfo(this, fields);
-  }
 }
 
 /**
