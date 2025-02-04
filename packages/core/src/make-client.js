@@ -36,9 +36,7 @@ class DynamicQueryClient extends MosaicClient {
   }
 
   async prepare() {
-    if (this._options.prepare) {
-      await this._options.prepare();
-    }
+    await this._options.prepare?.();
   }
 
   query(filter) {
