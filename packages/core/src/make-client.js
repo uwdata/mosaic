@@ -1,14 +1,12 @@
 import { MosaicClient } from "./MosaicClient.js";
-import { Selection } from "./Selection.js";
 import {
-  Coordinator,
   coordinator as defaultCoordinator,
 } from "./Coordinator.js";
 
 /**
  * @typedef {Object} MakeClientOptions
- * @property {Coordinator} [coordinator] - Mosaic coordinator. Default to the global coordinator.
- * @property {Selection|null} [selection] - A selection whose predicates will be fed into the query function to produce the SQL query.
+ * @property {import('./Coordinator.js').Coordinator} [coordinator] - Mosaic coordinator. Default to the global coordinator.
+ * @property {import('./Selection.js').Selection|null} [selection] - A selection whose predicates will be fed into the query function to produce the SQL query.
  * @property {function(): Promise<void>} [prepare] - An async function to prepare the client before running queries.
  * @property {function(input: any): any} query - A function that returns a query from a list of selection predicates.
  * @property {function(any): void} [queryResult] - Called by the coordinator to return a query result.
