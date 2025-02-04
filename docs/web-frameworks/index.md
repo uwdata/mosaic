@@ -1,7 +1,9 @@
 # Working with Web Frameworks
 
-Many applications are written in web frameworks such as React, Svelte, Vue.
+Many applications are written in web frameworks such as [React](https://react.dev), [Svelte](https://svelte.dev), and [Vue](https://vuejs.org).
 Mosaic has a `makeClient` API that makes it smoother to integrate with such frameworks.
+
+## Svelte Example
 
 Here is an example `Count` component written in Svelte, with `$effect`:
 
@@ -82,6 +84,8 @@ The `makeClient` API combined with `$effect` allows the component to update its 
 - Replacement of the `coordinator` instance.
 - Changes to the `table` name.
 - Replacement of the `selection` instance (i.e., when the `selection` is replaced with a new instance of `Selection`).
+
+## React Example
 
 Here is the same example in React:
 
