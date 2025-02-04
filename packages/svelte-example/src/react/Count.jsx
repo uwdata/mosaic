@@ -6,29 +6,29 @@ import { createRoot } from "react-dom/client";
 /** Show the number of rows in the table.
  * If a `selection` is provided, show the filtered number of rows as well. */
 export function Count(props) {
-  let { coordinator, table, selection } = props;
+  const { coordinator, table, selection } = props;
 
-  let [totalCount, setTotalCount] = useState(null);
-  let [filteredCount, setFilteredCount] = useState(null);
-  let [isError, setIsError] = useState(false);
-  let [isPending, setIsPending] = useState(false);
+  const [totalCount, setTotalCount] = useState(null);
+  const [filteredCount, setFilteredCount] = useState(null);
+  const [isError, setIsError] = useState(false);
+  const [isPending, setIsPending] = useState(false);
 
   useEffect(() => {
     // Capture tableName so Svelte keeps track of it in the effect.
     // When `table` changes, Svelte will re-run the effect and cause the old client
     // be destroyed and a new client be created.
-    let tableName = table;
+    const tableName = table;
 
     // Note that the identity of `selection` is also captured below.
     // If it is replaced with a new instance of Selection, the client will get recreated as well.
 
-    let client = makeClient({
+    const client = makeClient({
       coordinator,
       selection,
       prepare: async () => {
         // Preparation work before the client starts.
         // Here we get the total number of rows in the table.
-        let result = await coordinator.query(
+        const result = await coordinator.query(
           Query.from(tableName).select({ count: count() })
         );
         setTotalCount(result.get(0).count);
@@ -75,7 +75,7 @@ export function Count(props) {
 }
 
 export function bridgeCount(element, props) {
-  let root = createRoot(element);
+  const root = createRoot(element);
   root.render(<Count {...props} />);
   return {
     update(props) {

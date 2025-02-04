@@ -2,13 +2,13 @@
   import { onMount } from "svelte";
   import * as vg from "@uwdata/vgplot";
 
-  let { selection } = $props();
+  const { selection } = $props();
 
   let container;
 
   onMount(() => {
     $effect(() => {
-      let plot = vg.plot(
+      const plot = vg.plot(
         vg.areaY(vg.from("weather", { filterBy: selection }), {
           x: vg.dateMonthDay("date"),
           y1: vg.max("temp_max"),

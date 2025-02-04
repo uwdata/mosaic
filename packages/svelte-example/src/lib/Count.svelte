@@ -5,7 +5,7 @@
   import { makeClient } from "@uwdata/mosaic-core";
   import { count, Query } from "@uwdata/mosaic-sql";
 
-  let { coordinator, table, selection } = $props();
+  const { coordinator, table, selection } = $props();
 
   let totalCount = $state(null);
   let filteredCount = $state(null);
@@ -16,18 +16,18 @@
     // Capture tableName so Svelte keeps track of it in the effect.
     // When `table` changes, Svelte will re-run the effect and cause the old client
     // be destroyed and a new client be created.
-    let tableName = table;
+    const tableName = table;
 
     // Note that the identity of `selection` is also captured below.
     // If it is replaced with a new instance of Selection, the client will get recreated as well.
 
-    let client = makeClient({
+    const client = makeClient({
       coordinator,
       selection,
       prepare: async () => {
         // Preparation work before the client starts.
         // Here we get the total number of rows in the table.
-        let result = await coordinator.query(
+        const result = await coordinator.query(
           Query.from(tableName).select({ count: count() })
         );
         totalCount = result.get(0).count;

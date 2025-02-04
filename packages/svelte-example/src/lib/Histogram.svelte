@@ -4,7 +4,7 @@
   import { makeClient } from "@uwdata/mosaic-core";
   import { count, dateMonth, desc, Query, eq } from "@uwdata/mosaic-sql";
 
-  let { coordinator, table, selection } = $props();
+  const { coordinator, table, selection } = $props();
 
   const MONTH_NAMES = "Jan,Feb,Mar,Apr,May,Jun,Jul,Aug,Sep,Oct,Nov,Dec".split(
     ","
@@ -15,9 +15,9 @@
   let selectedMonth = $state(null);
 
   $effect(() => {
-    let tableName = table;
+    const tableName = table;
 
-    let client = makeClient({
+    const client = makeClient({
       coordinator,
       selection,
       query: (predicate) => {
