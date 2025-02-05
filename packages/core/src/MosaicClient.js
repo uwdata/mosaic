@@ -122,7 +122,7 @@ export class MosaicClient {
    */
   requestQuery(query) {
     const q = query || this.query(this.filterBy?.predicate(this));
-    return this._coordinator.requestQuery(this, q);
+    return this._coordinator?.requestQuery(this, q);
   }
 
   /**
@@ -140,7 +140,7 @@ export class MosaicClient {
    * @returns {Promise}
    */
   initialize() {
-    return this._coordinator.initializeClient(this);
+    return this._coordinator?.initializeClient(this);
   }
 
   /**
