@@ -39,7 +39,7 @@ export class ConnectedMark extends Mark {
         .filter(c => c !== as && c !== value);
       return m4(q, expr, as, value, cols);
     } else {
-      return q.orderby(field);
+      return q.orderby(as);
     }
   }
 }
