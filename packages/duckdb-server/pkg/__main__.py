@@ -2,20 +2,12 @@ import logging
 import sys
 
 import ibis
-import sqlglot
 from diskcache import Cache
 
 from pkg.server import server
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(stream=sys.stdout, level=logging.DEBUG)
-
-
-def process_query(query: str) -> str:
-    logger.debug(f"Processing query: {query}")
-    target_query = sqlglot.transpile(query, read="duckdb", write="postgres")[0]
-    logger.debug(f"Transpiled query: {target_query}")
-    return target_query
 
 
 class MosaicConnection:
