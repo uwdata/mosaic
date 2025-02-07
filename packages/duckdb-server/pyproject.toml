@@ -7,10 +7,11 @@ requires-python = ">=3.10"
 dependencies = [
   "diskcache",
   "duckdb>=1.1.3",
+  "ibis-framework[duckdb,polars,clickhouse,postgres]",
   "pandas",
   "pyarrow",
   "socketify",
-  "ujson"
+  "ujson",
 ]
 
 [project.scripts]

@@ -27,7 +27,7 @@ def retrieve(cache, query, get):
 
 
 def get_arrow(con, sql):
-    return con.query(sql).arrow()
+    return con.query(sql).to_pyarrow()
 
 
 def arrow_to_bytes(arrow):
@@ -42,5 +42,5 @@ def get_arrow_bytes(con, sql):
 
 
 def get_json(con, sql):
-    result = con.query(sql).df()
+    result = con.query(sql).to_pandas()
     return result.to_json(orient="records")
