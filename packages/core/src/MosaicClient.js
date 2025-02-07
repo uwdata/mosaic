@@ -79,8 +79,7 @@ export class MosaicClient {
   }
 
   /**
-   * Prepare the client before start running queries. You may query additional
-   * information in this function.
+   * Prepare the client before the query() method is called.
    */
   async prepare() {
   }
