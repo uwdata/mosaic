@@ -20,13 +20,13 @@ import {
  */
 export function makeClient(options) {
   const coordinator = options.coordinator ?? defaultCoordinator();
-  const client = new DynamicQueryClient({ ...options, coordinator });
+  const client = new ProxyClient({ ...options, coordinator });
   coordinator.connect(client);
   return client;
 }
 
 /** An internal class used to implement the makeClient API */
-class DynamicQueryClient extends MosaicClient {
+class ProxyClient extends MosaicClient {
   /** @param {MakeClientOptions} options */
   constructor(options) {
     super(options.selection);
