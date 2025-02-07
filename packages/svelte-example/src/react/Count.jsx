@@ -14,13 +14,8 @@ export function Count(props) {
   const [isPending, setIsPending] = useState(false);
 
   useEffect(() => {
-    // Capture tableName so Svelte keeps track of it in the effect.
-    // When `table` changes, Svelte will re-run the effect and cause the old client
-    // be destroyed and a new client be created.
-    const tableName = table;
-
-    // Note that the identity of `selection` is also captured below.
-    // If it is replaced with a new instance of Selection, the client will get recreated as well.
+    // Note that the identity of `table` and `selection` is captured below.
+    // If they are replaced with a new instances, the client will get recreated as well.
 
     const client = makeClient({
       coordinator,
@@ -29,7 +24,7 @@ export function Count(props) {
         // Preparation work before the client starts.
         // Here we get the total number of rows in the table.
         const result = await coordinator.query(
-          Query.from(tableName).select({ count: count() })
+          Query.from(table).select({ count: count() })
         );
         setTotalCount(result.get(0).count);
       },
@@ -37,7 +32,7 @@ export function Count(props) {
         // Returns a query to retrieve the data.
         // The `predicate` is the selection's predicate for this client.
         // Here we use it to get the filtered count.
-        return Query.from(tableName)
+        return Query.from(table)
           .select({ count: count() })
           .where(predicate);
       },

@@ -109,13 +109,8 @@ export function Count(props) {
   const [isPending, setIsPending] = useState(false);
 
   useEffect(() => {
-    // Capture tableName so Svelte keeps track of it in the effect.
-    // When `table` changes, Svelte will re-run the effect and cause the old client
-    // be destroyed and a new client be created.
-    const tableName = table;
-
-    // Note that the identity of `selection` is also captured below.
-    // If it is replaced with a new instance of Selection, the client will get recreated as well.
+    // Note that the identity of `table` and `selection` is captured below.
+    // If they are replaced with a new instances, the client will get recreated as well.
 
     const client = makeClient({
       coordinator,
