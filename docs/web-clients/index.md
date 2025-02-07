@@ -1,4 +1,4 @@
-# Developing Clients for Web Frameworks
+# Clients for Web Frameworks
 
 [Clients](/core/#clients) are responsible for publishing their data needs and performing data processing tasks&mdash;such as rendering a visualization.
 The [`MosaicClient` class](/api/core/client.html) provides a base class for client implementation.

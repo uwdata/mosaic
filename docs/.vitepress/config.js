@@ -35,7 +35,7 @@ export default defineConfig({
           { text: 'Mosaic Spec', link: '/spec/' },
           { text: 'Mosaic Server', link: '/server/' },
           { text: 'Jupyter Widget', link: '/jupyter/' },
-          { text: 'Developing Clients', link: '/web-frameworks/' }
+          { text: 'Web Clients', link: '/web-clients/' }
         ]
       },
       { text: 'Examples', link: '/examples/' },
@@ -64,7 +64,7 @@ export default defineConfig({
             { text: 'Mosaic Spec', link: '/spec/' },
             { text: 'Mosaic Server', link: '/server/' },
             { text: 'Jupyter Widget', link: '/jupyter/' },
-            { text: 'Developing Clients', link: '/web-frameworks/' }
+            { text: 'Web Clients', link: '/web-clients/' }
           ]
         },
         { text: 'Examples', link: '/examples/' },
