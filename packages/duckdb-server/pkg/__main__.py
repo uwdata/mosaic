@@ -33,6 +33,7 @@ class MosaicConnection:
 
         # In all other cases we go through the Ibis backend's SQL API
         # DuckDB query -> Ibis internal query representation -> Backend-specific query
+        logger.debug(f'Executing query on backend: {self.backend.name}')
         table = self.backend.sql(query, dialect="duckdb")
         logger.debug(f'Ibis internal representation: {table}')
         return table
@@ -41,11 +42,11 @@ class MosaicConnection:
         # For this experiment we create all tables in DuckDB first, then sync them to the backend
         # (many backends do not support read_parquet, do not have access to local files, etc.)
         execute_res = self.duckdb.con.execute(query)
-        self.sync_tables()
+        self._sync_tables()
         return execute_res
 
-    def sync_tables(self):
-        # We use the DuckDB backend instance as our catalog of tables and copy them to the target backend
+    def _sync_tables(self):
+        # We use the DuckDB backend instance as our catalog of tables and copy their contents to the target backend
         for table_name in self.duckdb.list_tables():
             table = self.duckdb.table(table_name)
             self.backend.create_table(table_name, table.to_pyarrow(), overwrite=True)
