@@ -125,8 +125,7 @@ export class Menu extends ActivatableClient {
   }
 
   activate() {
-    // @ts-ignore - activate is only called for a Selection
-    this.selection.activate(clausePoint(this.field, 0, { source: this }));
+    if (isSelection(this.selection)) this.selection.activate(clausePoint(this.field, 0, { source: this }));
   }
 
   publish(value) {

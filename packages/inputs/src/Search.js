@@ -97,8 +97,7 @@ export class Search extends ActivatableClient {
   }
 
   activate() {
-    // @ts-ignore - activate is only called for a Selection
-    this.selection.activate(this.clause(''));
+    if (isSelection(this.selection)) this.selection.activate(this.clause(''));
   }
 
   publish(value) {

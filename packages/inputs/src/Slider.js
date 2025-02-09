@@ -165,8 +165,7 @@ export class Slider extends ActivatableClient {
   }
 
   activate() {
-    // @ts-ignore - activate is only called for a Selection
-    this.selection.activate(this.clause(0));
+    if (isSelection(this.selection)) this.selection.activate(this.clause(0));
   }
 
   publish(value) {

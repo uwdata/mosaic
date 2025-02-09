@@ -72,11 +72,13 @@ export class Nearest extends Activatable {
 
     // trigger activation updates
     svg.addEventListener('pointerenter', evt => {
-      if (!evt.buttons) {
-        const v = this.channels.map(() => 0);
-        selection.activate(this.clause(v));
-      }
+      if (!evt.buttons) this.activate();
     });
+  }
+
+  activate() {
+    const v = this.channels.map(() => 0);
+    this.selection.activate(this.clause(v));
   }
 }
 

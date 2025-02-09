@@ -81,6 +81,10 @@ export class Highlight extends Activatable {
       }
     }
   }
+
+  activate() {
+    return this.update();
+  }
 }
 
 async function predicateFunction(mark, selection) {

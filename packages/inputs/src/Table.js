@@ -208,6 +208,23 @@ export class Table extends ActivatableClient {
     return this;
   }
 
+  activate() {
+    const { data } = this;
+    const n = data.length - 1;
+
+    const { numRows } = data[n];
+
+    for (let i = 0; i < numRows; i++) {
+      this.currentRow = i;
+      this.selection.update(this.clause([i]));
+    }
+    
+    if (numRows > 0) {
+      this.currentRow = -1;
+      this.selection.update(this.clause());
+    }
+  }
+
   sort(event, column) {
     if (column === this.sortColumn) {
       this.sortDesc = !this.sortDesc;

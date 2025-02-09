@@ -15,7 +15,6 @@ export class Toggle extends Activatable {
     super();
     this.mark = mark;
     this.value = null;
-    this.mark = mark;
     this.selection = selection;
     this.peers = peers;
     const fields = this.fields = [];
@@ -77,9 +76,12 @@ export class Toggle extends Activatable {
     });
 
     svg.addEventListener('pointerenter', evt => {
-      if (evt.buttons) return;
-      this.selection.activate(this.clause([this.fields.map(() => 0)]));
+      if (!evt.buttons) this.activate();
     });
+  }
+
+  activate() {
+    this.selection.activate(this.clause([this.fields.map(() => 0)]));
   }
 }
 
