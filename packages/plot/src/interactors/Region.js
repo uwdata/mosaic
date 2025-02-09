@@ -1,4 +1,4 @@
-import { clausePoints } from '@uwdata/mosaic-core';
+import { Activatable, clausePoints } from '@uwdata/mosaic-core';
 import { select } from 'd3';
 import { brush } from './util/brush.js';
 import { getFields } from './util/get-field.js';
@@ -7,9 +7,8 @@ import { patchScreenCTM } from './util/patchScreenCTM.js';
 import { sanitizeStyles } from './util/sanitize-styles.js';
 import { neqSome } from './util/neq.js';
 import { getDatum } from './util/get-datum.js';
-import { Interactor } from './Interactor.js';
 
-export class Region extends Interactor {
+export class Region extends Activatable {
   constructor(mark, {
     channels,
     selection,
@@ -20,7 +19,8 @@ export class Region extends Interactor {
       strokeDasharray: '1,1'
     }
   }) {
-    super(mark);
+    super();
+    this.mark = mark;
     this.selection = selection;
     this.peers = peers;
 

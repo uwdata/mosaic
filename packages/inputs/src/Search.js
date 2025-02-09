@@ -1,12 +1,12 @@
-import { Param, isParam, isSelection, clauseMatch } from '@uwdata/mosaic-core';
+import { ActivatableClient, Param, isParam, isSelection, clauseMatch } from '@uwdata/mosaic-core';
 import { Query } from '@uwdata/mosaic-sql';
-import { input, Input } from './input.js';
+import { input } from './input.js';
 
 let _id = 0;
 
 export const search = options => input(Search, options);
 
-export class Search extends Input {
+export class Search extends ActivatableClient {
   /**
    * Create a new text search input.
    * @param {object} [options] Options object

@@ -1,9 +1,8 @@
-import { clausePoints } from '@uwdata/mosaic-core';
+import { Activatable, clausePoints } from '@uwdata/mosaic-core';
 import { getDatum } from './util/get-datum.js';
 import { neq, neqSome } from './util/neq.js';
-import { Interactor } from './Interactor.js';
 
-export class Toggle extends Interactor {
+export class Toggle extends Activatable {
   /**
    * @param {*} mark The mark to interact with.
    * @param {*} options The interactor options.
@@ -13,7 +12,8 @@ export class Toggle extends Interactor {
     channels,
     peers = true
   }) {
-    super(mark)
+    super();
+    this.mark = mark;
     this.value = null;
     this.selection = selection;
     this.peers = peers;

@@ -1,13 +1,13 @@
-import { clausePoints, coordinator, isParam, toDataColumns } from '@uwdata/mosaic-core';
+import { ActivatableClient, clausePoints, coordinator, isParam, toDataColumns } from '@uwdata/mosaic-core';
 import { Query, desc } from '@uwdata/mosaic-sql';
 import { formatDate, formatLocaleAuto, formatLocaleNumber } from './util/format.js';
-import { input, Input } from './input.js';
+import { input } from './input.js';
 
 let _id = -1;
 
 export const table = options => input(Table, options);
 
-export class Table extends Input {
+export class Table extends ActivatableClient {
   /**
    * Create a new Table instance.
    * @param {object} options Options object

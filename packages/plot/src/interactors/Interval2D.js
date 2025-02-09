@@ -1,13 +1,12 @@
-import { clauseIntervals } from '@uwdata/mosaic-core';
+import { Activatable, clauseIntervals } from '@uwdata/mosaic-core';
 import { ascending, min, max } from 'd3';
 import { brush, brushGroups } from './util/brush.js';
 import { closeTo } from './util/close-to.js';
 import { getField } from './util/get-field.js';
 import { invert } from './util/invert.js';
 import { sanitizeStyles } from './util/sanitize-styles.js';
-import { Interactor } from './Interactor.js';
 
-export class Interval2D extends Interactor {
+export class Interval2D extends Activatable {
   constructor(mark, {
     selection,
     xfield,
@@ -16,7 +15,8 @@ export class Interval2D extends Interactor {
     peers = true,
     brush: style
   }) {
-    super(mark);
+    super();
+    this.mark = mark;
     this.pixelSize = pixelSize || 1;
     this.selection = selection;
     this.peers = peers;
