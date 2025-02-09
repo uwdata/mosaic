@@ -1,4 +1,4 @@
-import { MosaicClient, Param, clauseInterval, clausePoint, isParam, isSelection } from '@uwdata/mosaic-core';
+import { ActivatableClient, Param, clauseInterval, clausePoint, isParam, isSelection } from '@uwdata/mosaic-core';
 import { Query, max, min } from '@uwdata/mosaic-sql';
 import { input } from './input.js';
 
@@ -6,7 +6,7 @@ let _id = 0;
 
 export const slider = options => input(Slider, options);
 
-export class Slider extends MosaicClient {
+export class Slider extends ActivatableClient {
   /**
    * Create a new slider input.
    * @param {object} [options] Options object

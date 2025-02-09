@@ -1,4 +1,4 @@
-import { MosaicClient, Param, isParam, isSelection, clausePoint } from '@uwdata/mosaic-core';
+import { ActivatableClient, Param, isParam, isSelection, clausePoint } from '@uwdata/mosaic-core';
 import { Query } from '@uwdata/mosaic-sql';
 import { input } from './input.js';
 
@@ -8,7 +8,7 @@ const isObject = v => {
 
 export const menu = options => input(Menu, options);
 
-export class Menu extends MosaicClient {
+export class Menu extends ActivatableClient {
   /**
    * Create a new menu input.
    * @param {object} [options] Options object

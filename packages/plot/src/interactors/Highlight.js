@@ -1,4 +1,4 @@
-import { throttle } from '@uwdata/mosaic-core';
+import { Activatable, throttle } from '@uwdata/mosaic-core';
 import { and, isAggregateExpression } from '@uwdata/mosaic-sql';
 import { getDatum } from './util/get-datum.js';
 import { sanitizeStyles } from './util/sanitize-styles.js';
@@ -34,11 +34,12 @@ function configureMark(mark) {
   return mark;
 }
 
-export class Highlight {
+export class Highlight extends Activatable {
   constructor(mark, {
     selection,
     channels = {}
   }) {
+    super();
     this.mark = configureMark(mark);
     this.selection = selection;
     const c = Object.entries(sanitizeStyles(channels));

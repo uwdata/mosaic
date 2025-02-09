@@ -1,4 +1,5 @@
 export { MosaicClient } from './MosaicClient.js';
+export { Activatable, ActivatableClient } from './ActivatableClient.js';
 export { Coordinator, coordinator } from './Coordinator.js';
 export { Selection, isSelection } from './Selection.js';
 export { Param, isParam } from './Param.js';

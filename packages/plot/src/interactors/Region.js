@@ -1,4 +1,4 @@
-import { clausePoints } from '@uwdata/mosaic-core';
+import { Activatable, clausePoints } from '@uwdata/mosaic-core';
 import { select } from 'd3';
 import { brush } from './util/brush.js';
 import { getFields } from './util/get-field.js';
@@ -8,7 +8,7 @@ import { sanitizeStyles } from './util/sanitize-styles.js';
 import { neqSome } from './util/neq.js';
 import { getDatum } from './util/get-datum.js';
 
-export class Region {
+export class Region extends Activatable {
   constructor(mark, {
     channels,
     selection,
@@ -19,6 +19,7 @@ export class Region {
       strokeDasharray: '1,1'
     }
   }) {
+    super();
     this.mark = mark;
     this.selection = selection;
     this.peers = peers;
