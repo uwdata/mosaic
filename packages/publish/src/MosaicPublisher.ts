@@ -5,25 +5,24 @@ import chalk from 'chalk';
 import path from "path";
 
 // Mosaic modules
-import { 
-  parseSpec, astToESM, astToDOM, 
-  SpecNode, DataNode, FileDataNode, 
-  ParquetDataNode, OptionsNode, 
-  CodegenContext, 
+import {
+  parseSpec, astToESM, astToDOM,
+  SpecNode, DataNode, FileDataNode,
+  ParquetDataNode, OptionsNode,
+  CodegenContext,
   QueryDataNode,
 } from '@uwdata/mosaic-spec';
 import { ExprNode, ColumnNameRefNode } from '@uwdata/mosaic-sql';
 import { MosaicClient } from '../../vgplot/src/index.js';
-import { Interactor } from '@uwdata/mosaic-plot/src/interactors/Interactor.js';
-import { Input } from '@uwdata/mosaic-inputs/src/input.js';
 
 // Utility imports
-import { 
-  clientsReady, htmlTemplate, mockCanvas, 
+import {
+  clientsReady, htmlTemplate, mockCanvas,
   publishConnector, PublishContext, templateCSS, VGPLOT,
   LogLevel, Logger,
   preamble
 } from './util/index.js';
+import { isActivatable } from "@uwdata/mosaic-core/src/index.js";
 
 /**
  * Class to facilitate publishing a Mosaic specification.
@@ -46,11 +45,11 @@ export class MosaicPublisher {
   private ctx: PublishContext;
   private ast?: SpecNode;
   private data?: Record<string, DataNode>;
-  
+
   constructor(
-    specPath: string, 
-    outputPath: string, 
-    title: string | undefined, 
+    specPath: string,
+    outputPath: string,
+    title: string | undefined,
     optimize: 'minimal' | 'more' | 'most',
     logLevel: LogLevel
   ) {
@@ -75,7 +74,7 @@ export class MosaicPublisher {
    */
   public async publish() {
     this.logger.info(chalk.cyan('Parsing and processing specification...'));
-    
+
     // Parse specification
     this.parseSpecification();
     if (!this.ast) return;
@@ -88,7 +87,7 @@ export class MosaicPublisher {
     }
     this.logger.debug(`Creating directory: ${this.outputPath}`);
     fs.mkdirSync(this.outputPath, { recursive: true });
-    
+
     // Setup jsdom
     this.logger.debug('Setting up jsdom environment...');
     const dom = new JSDOM(
@@ -103,14 +102,14 @@ export class MosaicPublisher {
 
     // Load the visualization in the DOM and gather interactors/inputs
     // TODO: fix type issue with astToDOM to remove the any cast
-    const { element } = await astToDOM(this.ast, {api: this.ctx.api} as any);
+    const { element } = await astToDOM(this.ast, { api: this.ctx.api } as any);
     document.body.appendChild(element);
     this.logger.debug('Waiting for clients to be ready...');
     await clientsReady(this.ctx);
 
     const { interactors, inputs, tables } = this.processClients();
     const isInteractive = interactors.size + inputs.size !== 0;
-    
+
     if (isInteractive) {
       // Activate interactors and inputs
       this.logger.info(chalk.cyan('Activating interactive elements...'));
@@ -118,7 +117,7 @@ export class MosaicPublisher {
 
       // Modify AST and process data (extensions, data definitions, etc.)
       const og = FileDataNode.prototype.codegenQuery;
-      FileDataNode.prototype.codegenQuery = function(ctx: CodegenContext) {
+      FileDataNode.prototype.codegenQuery = function (ctx: CodegenContext) {
         const code = og.call(this, ctx);
         const { file } = this;
         return code?.replace(`"${file}"`, `window.location.origin + "/${file}"`);
@@ -148,8 +147,8 @@ export class MosaicPublisher {
   private processClients() {
     this.logger.debug('--------------- Clients ---------------');
 
-    const interactors = new Set<Interactor>();
-    const inputs = new Set<Input>();
+    const interactors = new Set<any>();
+    const inputs = new Set<MosaicClient>();
     const tables: Record<string, Set<string>> = {};
 
     for (const client of this.ctx.coordinator.clients) {
@@ -169,14 +168,15 @@ export class MosaicPublisher {
             }
           }
         }
-      }
-      if (client instanceof Input) {
-        inputs.add(client);
-        
-        const input = client as any; // TODO: change Input class to make this cleaner
-        if (input.from && input.column) {
-          if (!(input.from in tables)) tables[input.from] = new Set();
-          tables[input.from].add(input.column);
+
+        if (isActivatable(client)) {
+          inputs.add(client);
+
+          const input = client as any;
+          if (input.from && input.column) {
+            if (!(input.from in tables)) tables[input.from] = new Set();
+            tables[input.from].add(input.column);
+          }
         }
       }
       if (client.plot) {
@@ -192,17 +192,18 @@ export class MosaicPublisher {
    * Activate the Interactors and Inputs, waiting 
    * for queries to finish.
    */
-  private async activateInteractorsAndInputs(interactors: Set<Interactor>, inputs: Set<Input>) {
+  private async activateInteractorsAndInputs(interactors: Set<any>, inputs: Set<MosaicClient>) {
     this.logger.debug('--------------- Activating ---------------');
+    this.ctx.coordinator.manager._logQueries = true;
     for (const interactor of interactors) {
       this.logger.debug(interactor.constructor.name);
-      interactor.activate();
+      if (isActivatable(interactor)) interactor.activate();
       await this.waitForQueryToFinish();
     }
 
     for (const input of inputs) {
       this.logger.debug(input.constructor.name);
-      input.activate();
+      if (isActivatable(input)) input.activate();
       await this.waitForQueryToFinish();
     }
   }
