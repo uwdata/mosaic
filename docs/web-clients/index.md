@@ -119,7 +119,7 @@ export function Count(props) {
         // Preparation work before the client starts.
         // Here we get the total number of rows in the table.
         const result = await coordinator.query(
-          Query.from(tableName).select({ count: count() })
+          Query.from(table).select({ count: count() })
         );
         setTotalCount(result.get(0).count);
       },
@@ -127,7 +127,7 @@ export function Count(props) {
         // Returns a query to retrieve the data.
         // The `predicate` is the selection's predicate for this client.
         // Here we use it to get the filtered count.
-        return Query.from(tableName)
+        return Query.from(table)
           .select({ count: count() })
           .where(predicate);
       },

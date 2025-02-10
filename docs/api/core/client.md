@@ -5,7 +5,7 @@ Clients are responsible for publishing their data needs and performing data proc
 
 If you are interested in creating your own Mosaic clients, see the [Mosaic GitHub repository](https://github.com/uwdata/mosaic).
 For concrete examples, start with the source code of [Mosaic inputs](https://github.com/uwdata/mosaic/tree/main/packages/inputs/src).
-If you are creating clients for web frameworks such as React, Svelte, or Vue, see the [web frameworks](/web-frameworks) documentation.
+If you are creating clients for web frameworks such as React, Svelte, or Vue, see the [web clients](/web-clients) documentation.
 
 ## constructor
 
