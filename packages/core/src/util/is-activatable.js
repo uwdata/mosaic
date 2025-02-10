@@ -5,5 +5,5 @@
  * @returns {value is import("../Activatable.js").Activatable}
  */
 export function isActivatable(value) {
-    return typeof value?.activate === 'function' && value.activate.length === 0;
+  return typeof value?.activate === 'function' && value.activate.length === 0;
 }
