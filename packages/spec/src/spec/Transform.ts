@@ -234,7 +234,7 @@ export interface Geomean extends AggregateOptions, WindowOptions {
   /**
    * Compute the geometric mean value of the given column.
    */
-  first: Arg1;
+  geomean: Arg1;
 }
 
 /* A last aggregate transform. */
