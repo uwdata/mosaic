@@ -24,7 +24,7 @@ export { VerbatimNode } from './ast/verbatim.js';
 export { WindowClauseNode, WindowDefNode, WindowFrameNode, WindowFunctionNode, WindowNode } from './ast/window.js';
 export { WithClauseNode } from './ast/with.js';
 
-export { argmax, argmin, arrayAgg, avg, corr, count, covariance, covarPop, entropy, first, kurtosis, mad, max, median, min, mode, last, product, quantile, regrAvgX, regrAvgY, regrCount, regrIntercept, regrR2, regrSXX, regrSXY, regrSYY, regrSlope, skewness, stddev, stddevPop, stringAgg, sum, variance, varPop } from './functions/aggregate.js';
+export { argmax, argmin, arrayAgg, avg, corr, count, covariance, covarPop, entropy, first, geomean, kurtosis, mad, max, median, min, mode, last, product, quantile, regrAvgX, regrAvgY, regrCount, regrIntercept, regrR2, regrSXX, regrSXY, regrSYY, regrSlope, skewness, stddev, stddevPop, stringAgg, sum, variance, varPop } from './functions/aggregate.js';
 export { cond } from './functions/case.js';
 export { cast, float32, float64, int32 } from './functions/cast.js';
 export { column } from './functions/column.js';

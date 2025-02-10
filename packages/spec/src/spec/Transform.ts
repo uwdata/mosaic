@@ -229,6 +229,14 @@ export interface First extends AggregateOptions, WindowOptions {
   first: Arg1;
 }
 
+/* A geometric mean aggregate transform. */
+export interface Geomean extends AggregateOptions, WindowOptions {
+  /**
+   * Compute the geometric mean value of the given column.
+   */
+  first: Arg1;
+}
+
 /* A last aggregate transform. */
 export interface Last extends AggregateOptions, WindowOptions {
   /**

@@ -1,4 +1,4 @@
-import { AggregateNode, and, argmax, argmin, count, div, ExprNode, isNotNull, max, min, mul, pow, regrAvgX, regrAvgY, regrCount, sql, sqrt, sub, sum } from '@uwdata/mosaic-sql';
+import { AggregateNode, and, argmax, argmin, count, div, ExprNode, isNotNull, max, min, mul, pow, product, regrAvgX, regrAvgY, regrCount, sql, sqrt, sub, sum } from '@uwdata/mosaic-sql';
 import { fnv_hash } from '../util/hash.js';
 
 /**
@@ -18,6 +18,8 @@ export function sufficientStatistics(node, preagg, avg) {
       return sumExpr(preagg, node);
     case 'avg':
       return avgExpr(preagg, node);
+    case 'geomean':
+      return geomeanExpr(preagg, node);
     case 'arg_max':
       return argmaxExpr(preagg, node);
     case 'arg_min':
@@ -153,6 +155,21 @@ function avgExpr(preagg, node) {
   const as = addStat(preagg, node);
   const { expr, name } = countExpr(preagg, node);
   return div(sum(mul(as, name)), expr);
+}
+
+/**
+ * Generate an expression for calculating geometric means over data dimensions.
+ * As a side effect, this method adds a column to the input *preagg* object
+ * to track the count of non-null values per-partition.
+ * @param {Record<string, ExprNode>} preagg A map of columns (such as
+ *  sufficient statistics) to pre-aggregate.
+ * @param {AggregateNode} [node] The originating aggregate function call.
+ * @returns {ExprNode} An aggregate expression over pre-aggregated dimensions.
+ */
+function geomeanExpr(preagg, node) {
+  const as = addStat(preagg, node);
+  const { expr, name } = countExpr(preagg, node);
+  return pow(product(pow(as, name)), div(1, expr));
 }
 
 /**

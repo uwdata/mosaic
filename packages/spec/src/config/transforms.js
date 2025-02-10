@@ -18,6 +18,7 @@ export function transformNames(overrides = []) {
     'dateMonthDay',
     'dateDay',
     'first',
+    'geomean',
     'geojson',
     'last',
     'max',
