@@ -1,10 +1,13 @@
-import { Activatable, Selection, clauseInterval } from '@uwdata/mosaic-core';
+import { Selection, clauseInterval } from '@uwdata/mosaic-core';
 import { select, zoom, ZoomTransform } from 'd3';
 import { getField } from './util/get-field.js';
 
 const asc = (a, b) => a - b;
 
-export class PanZoom extends Activatable {
+/**
+ * @implements {import('@uwdata/mosaic-core').Activatable}
+ */
+export class PanZoom {
   constructor(mark, {
     x = new Selection(),
     y = new Selection(),
@@ -14,7 +17,6 @@ export class PanZoom extends Activatable {
     panx = true,
     pany = true
   }) {
-    super();
     this.mark = mark;
     this.xsel = x;
     this.ysel = y;

@@ -1,8 +1,11 @@
-import { Activatable, clausePoint, clausePoints, isSelection } from '@uwdata/mosaic-core';
+import { clausePoint, clausePoints, isSelection } from '@uwdata/mosaic-core';
 import { select, pointer, min } from 'd3';
 import { getField } from './util/get-field.js';
 
-export class Nearest extends Activatable {
+/**
+ * @implements {import('@uwdata/mosaic-core').Activatable}
+ */
+export class Nearest {
   constructor(mark, {
     selection,
     pointer,
@@ -10,7 +13,6 @@ export class Nearest extends Activatable {
     fields,
     maxRadius = 40
   }) {
-    super();
     this.mark = mark;
     this.selection = selection;
     this.clients = new Set().add(mark);
