@@ -28,7 +28,7 @@ async function run(measure) {
 
   return new Promise((resolve) => {
     let iter = 0;
-    mc.connect(new TestClient(q, sel, {
+    const client = new TestClient(q, sel, {
       queryResult(data) {
         if (iter) {
           resolve([
@@ -38,11 +38,14 @@ async function run(measure) {
         }
         ++iter;
       }
-    }));
-    sel.update({
-      source: 'test',
-      meta: { type: 'point' },
-      predicate: isNotDistinct('dim', literal('b'))
+    });
+    mc.connect(client);
+    client.pending.then(() => {
+      sel.update({
+        source: 'test',
+        meta: { type: 'point' },
+        predicate: isNotDistinct('dim', literal('b'))
+      });
     });
   });
 }

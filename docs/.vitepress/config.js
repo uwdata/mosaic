@@ -34,7 +34,8 @@ export default defineConfig({
           { text: 'Mosaic vgplot', link: '/vgplot/' },
           { text: 'Mosaic Spec', link: '/spec/' },
           { text: 'Mosaic Server', link: '/server/' },
-          { text: 'Jupyter Widget', link: '/jupyter/' }
+          { text: 'Jupyter Widget', link: '/jupyter/' },
+          { text: 'Web Clients', link: '/web-clients/' }
         ]
       },
       { text: 'Examples', link: '/examples/' },
@@ -62,7 +63,8 @@ export default defineConfig({
             { text: 'Mosaic vgplot', link: '/vgplot/' },
             { text: 'Mosaic Spec', link: '/spec/' },
             { text: 'Mosaic Server', link: '/server/' },
-            { text: 'Jupyter Widget', link: '/jupyter/' }
+            { text: 'Jupyter Widget', link: '/jupyter/' },
+            { text: 'Web Clients', link: '/web-clients/' }
           ]
         },
         { text: 'Examples', link: '/examples/' },
