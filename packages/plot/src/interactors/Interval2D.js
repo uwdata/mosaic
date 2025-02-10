@@ -7,7 +7,11 @@ import { invert } from './util/invert.js';
 import { sanitizeStyles } from './util/sanitize-styles.js';
 
 /**
- * @implements {import('@uwdata/mosaic-core').Activatable}
+ * @typedef {import('@uwdata/mosaic-core').Activatable} Activatable
+ */
+
+/**
+ * @implements {Activatable}
  */
 export class Interval2D {
   constructor(mark, {

@@ -3,7 +3,11 @@ import { select, pointer, min } from 'd3';
 import { getField } from './util/get-field.js';
 
 /**
- * @implements {import('@uwdata/mosaic-core').Activatable}
+ * @typedef {import('@uwdata/mosaic-core').Activatable} Activatable
+ */
+
+/**
+ * @implements {Activatable}
  */
 export class Nearest {
   constructor(mark, {

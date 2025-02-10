@@ -2,6 +2,10 @@ import { MosaicClient, Param, isParam, isSelection, clauseMatch } from '@uwdata/
 import { Query } from '@uwdata/mosaic-sql';
 import { input } from './input.js';
 
+/**
+ * @typedef {import('@uwdata/mosaic-core').Activatable} Activatable
+ */
+
 let _id = 0;
 
 export const search = options => input(Search, options);
@@ -9,7 +13,7 @@ export const search = options => input(Search, options);
 /**
  * A HTML input based text search input.
  * 
- * @implements {import('@uwdata/mosaic-core').Activatable}
+ * @implements {Activatable}
  */
 export class Search extends MosaicClient {
   /**
