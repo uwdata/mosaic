@@ -1,5 +1,4 @@
 export { MosaicClient } from './MosaicClient.js';
-export { Activatable, ActivatableClient } from './ActivatableClient.js';
 export { Coordinator, coordinator } from './Coordinator.js';
 export { Selection, isSelection } from './Selection.js';
 export { Param, isParam } from './Param.js';
@@ -25,6 +24,7 @@ export { throttle } from './util/throttle.js';
 export { toDataColumns } from './util/to-data-columns.js';
 export { queryFieldInfo } from './util/field-info.js';
 export { jsType } from './util/js-type.js';
+export { isActivatable } from './util/is-activatable.js';
 
 /**
  * @typedef {import('./util/selection-types.js').ClauseMetadata} ClauseMetadata
@@ -37,4 +37,6 @@ export { jsType } from './util/js-type.js';
  * @typedef {import('./util/selection-types.js').BinMethod} BinMethod
  * @typedef {import('./util/selection-types.js').IntervalMetadata} IntervalMetadata
  * @typedef {import('./util/selection-types.js').SelectionClause} SelectionClause
+ * 
+ * @typedef {import('./Activatable.js').Activatable} Activatable
  */
