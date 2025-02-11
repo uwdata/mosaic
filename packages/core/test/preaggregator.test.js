@@ -64,7 +64,7 @@ describe('PreAggregator', () => {
   it('supports geomean aggregate', async () => {
     const [result, optimized] = await run(geomean('x'));
 
-    expect(result).toBeCloseTo(Math.pow(12, 1 / 2), 10);
+    expect(result).toBeCloseTo(Math.sqrt(12), 10);
     expect(optimized).toBe(true);
   });
 
