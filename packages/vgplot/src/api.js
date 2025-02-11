@@ -28,6 +28,7 @@ export {
   covarPop,
   entropy,
   first,
+  geomean,
   kurtosis,
   mad,
   max,

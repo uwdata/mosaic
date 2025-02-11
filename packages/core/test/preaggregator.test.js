@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { Query, add, argmax, argmin, avg, corr, count, covarPop, covariance, gt, isNotDistinct, literal, loadObjects, max, min, product, regrAvgX, regrAvgY, regrCount, regrIntercept, regrR2, regrSXX, regrSXY, regrSYY, regrSlope, stddev, stddevPop, sum, varPop, variance } from '@uwdata/mosaic-sql';
+import { Query, add, argmax, argmin, avg, corr, count, covarPop, covariance, geomean, gt, isNotDistinct, literal, loadObjects, max, min, product, regrAvgX, regrAvgY, regrCount, regrIntercept, regrR2, regrSXX, regrSXY, regrSYY, regrSlope, stddev, stddevPop, sum, varPop, variance } from '@uwdata/mosaic-sql';
 import { Coordinator, Selection } from '../src/index.js';
 import { nodeConnector } from './util/node-connector.js';
 import { TestClient } from './util/test-client.js';
@@ -62,6 +62,13 @@ describe('PreAggregator', () => {
 
   it('supports avg aggregate', async () => {
     expect(await run(avg('x'))).toStrictEqual([3.5, true]);
+  });
+
+  it('supports geomean aggregate', async () => {
+    const [result, optimized] = await run(geomean('x'));
+
+    expect(result).toBeCloseTo(Math.sqrt(12), 10);
+    expect(optimized).toBe(true);
   });
 
   it('supports min aggregate', async () => {
