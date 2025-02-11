@@ -1,4 +1,4 @@
-# mosaic-publish TODO: Adjust this doc 
+# mosaic-publish
 
 A CLI tool for compiling and optimizing specifications. The tool processes spec files, handles dataset optimizations, and provides a configurable way to manage different compile and optimization tasks.
 

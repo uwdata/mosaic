@@ -267,6 +267,7 @@ export class MosaicPublisher {
    */
   private async exportDataFromDuckDB(tables: Record<string, Set<string>>) {
     const copy_queries: string[] = [];
+    let containsPreAggData = false;
     for (const node of Object.values(this.data!)) {
       if (!(node instanceof ParquetDataNode)) continue;
       const table = node.name;
@@ -290,12 +291,15 @@ export class MosaicPublisher {
           throw new Error(`Invalid optimization level: ${this.optimize}`);
       }
       copy_queries.push(query);
+
+      if (file.startsWith('.mosaic')) {
+        containsPreAggData = true;
+      }
     }
 
     if (copy_queries.length > 0) {
-      // TODO: Make the following conditionally on data needs
       fs.mkdirSync(path.join(this.outputPath, 'data'), { recursive: true });
-      fs.mkdirSync(path.join(this.outputPath, 'data/.mosaic'), { recursive: true });
+      if (containsPreAggData) fs.mkdirSync(path.join(this.outputPath, 'data/.mosaic'), { recursive: true });
 
       await this.ctx.coordinator.exec(copy_queries);
     }
