@@ -9,7 +9,11 @@ import { neqSome } from './util/neq.js';
 import { getDatum } from './util/get-datum.js';
 
 /**
- * @implements {import('@uwdata/mosaic-core').Activatable}
+ * @typedef {import('@uwdata/mosaic-core').Activatable} Activatable
+ */
+
+/**
+ * @implements {Activatable}
  */
 export class Region {
   constructor(mark, {

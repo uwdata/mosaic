@@ -2,9 +2,12 @@ import { clausePoints } from '@uwdata/mosaic-core';
 import { getDatum } from './util/get-datum.js';
 import { neq, neqSome } from './util/neq.js';
 
+/**
+ * @typedef {import('@uwdata/mosaic-core').Activatable} Activatable
+ */
 
 /**
- * @implements {import('@uwdata/mosaic-core').Activatable}
+ * @implements {Activatable}
  */
 export class Toggle {
   /**

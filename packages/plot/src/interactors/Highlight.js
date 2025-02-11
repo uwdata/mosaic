@@ -3,6 +3,10 @@ import { and, isAggregateExpression } from '@uwdata/mosaic-sql';
 import { getDatum } from './util/get-datum.js';
 import { sanitizeStyles } from './util/sanitize-styles.js';
 
+/**
+ * @typedef {import('@uwdata/mosaic-core').Activatable} Activatable
+ */
+
 function configureMark(mark) {
   const { channels } = mark;
   const dims = new Set;
@@ -35,7 +39,7 @@ function configureMark(mark) {
 }
 
 /**
- * @implements {import('@uwdata/mosaic-core').Activatable}
+ * @implements {Activatable}
  */
 export class Highlight {
   constructor(mark, {

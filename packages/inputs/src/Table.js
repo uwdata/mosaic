@@ -3,6 +3,10 @@ import { Query, desc } from '@uwdata/mosaic-sql';
 import { formatDate, formatLocaleAuto, formatLocaleNumber } from './util/format.js';
 import { input } from './input.js';
 
+/**
+ * @typedef {import('@uwdata/mosaic-core').Activatable} Activatable
+ */
+
 let _id = -1;
 
 export const table = options => input(Table, options);
@@ -11,7 +15,7 @@ export const table = options => input(Table, options);
 /**
  * A HTML table based table component.
  * 
- * @implements {import('@uwdata/mosaic-core').Activatable}
+ * @implements {Activatable}
  */
 export class Table extends MosaicClient {
   /**
