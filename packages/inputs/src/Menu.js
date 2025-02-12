@@ -2,10 +2,6 @@ import { MosaicClient, Param, isParam, isSelection, clausePoint } from '@uwdata/
 import { Query } from '@uwdata/mosaic-sql';
 import { input } from './input.js';
 
-/**
- * @typedef {import('@uwdata/mosaic-core').Activatable} Activatable
- */
-
 const isObject = v => {
   return v && typeof v === 'object' && !Array.isArray(v);
 };
@@ -15,6 +11,7 @@ export const menu = options => input(Menu, options);
 /**
  * A HTML select based dropdown menu input.
  * 
+ * @import {Activatable} from '@uwdata/mosaic-core'
  * @implements {Activatable}
  */
 export class Menu extends MosaicClient {

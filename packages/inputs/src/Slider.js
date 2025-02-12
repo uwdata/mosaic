@@ -2,10 +2,6 @@ import { MosaicClient, Param, clauseInterval, clausePoint, isParam, isSelection 
 import { Query, max, min } from '@uwdata/mosaic-sql';
 import { input } from './input.js';
 
-/**
- * @typedef {import('@uwdata/mosaic-core').Activatable} Activatable
- */
-
 let _id = 0;
 
 export const slider = options => input(Slider, options);
@@ -13,6 +9,7 @@ export const slider = options => input(Slider, options);
 /**
  *  A HTML range based slider input.
  * 
+ * @import {Activatable} from '@uwdata/mosaic-core'
  * @implements {Activatable}
  */
 export class Slider extends MosaicClient {
