@@ -3,10 +3,7 @@ import { getDatum } from './util/get-datum.js';
 import { neq, neqSome } from './util/neq.js';
 
 /**
- * @typedef {import('@uwdata/mosaic-core').Activatable} Activatable
- */
-
-/**
+ * @import {Activatable} from '@uwdata/mosaic-core'
  * @implements {Activatable}
  */
 export class Toggle {

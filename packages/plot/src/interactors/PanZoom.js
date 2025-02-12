@@ -2,13 +2,10 @@ import { Selection, clauseInterval } from '@uwdata/mosaic-core';
 import { select, zoom, ZoomTransform } from 'd3';
 import { getField } from './util/get-field.js';
 
-/**
- * @typedef {import('@uwdata/mosaic-core').Activatable} Activatable
- */
-
 const asc = (a, b) => a - b;
 
 /**
+ * @import {Activatable} from '@uwdata/mosaic-core'
  * @implements {Activatable}
  */
 export class PanZoom {

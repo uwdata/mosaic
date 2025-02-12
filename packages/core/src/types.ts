@@ -1,5 +1,8 @@
 import type { DescribeQuery, ExprNode, Query } from '@uwdata/mosaic-sql';
 
+export * from './util/selection-types.js';
+export * from './Activatable.js';
+
 /** Query type accepted by a coordinator. */
 export type QueryType =
   | string
