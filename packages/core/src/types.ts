@@ -52,3 +52,13 @@ export interface ColumnDescription {
   column_type: string,
   null: 'YES' | 'NO'
 }
+
+/**
+ * Interface for components that perform selection activation.
+ */
+export interface Activatable {
+  /**
+   * Activate the selection that this component publishes to.
+   */
+  activate(): void;
+}

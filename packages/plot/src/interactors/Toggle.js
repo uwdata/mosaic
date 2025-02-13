@@ -2,6 +2,10 @@ import { clausePoints } from '@uwdata/mosaic-core';
 import { getDatum } from './util/get-datum.js';
 import { neq, neqSome } from './util/neq.js';
 
+/**
+ * @import {Activatable} from '@uwdata/mosaic-core'
+ * @implements {Activatable}
+ */
 export class Toggle {
   /**
    * @param {*} mark The mark to interact with.
@@ -12,8 +16,8 @@ export class Toggle {
     channels,
     peers = true
   }) {
-    this.value = null;
     this.mark = mark;
+    this.value = null;
     this.selection = selection;
     this.peers = peers;
     const fields = this.fields = [];
@@ -75,9 +79,12 @@ export class Toggle {
     });
 
     svg.addEventListener('pointerenter', evt => {
-      if (evt.buttons) return;
-      this.selection.activate(this.clause([this.fields.map(() => 0)]));
+      if (!evt.buttons) this.activate();
     });
+  }
+
+  activate() {
+    this.selection.activate(this.clause([this.fields.map(() => 0)]));
   }
 }
 

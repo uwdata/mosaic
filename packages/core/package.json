@@ -16,7 +16,7 @@
   "module": "src/index.js",
   "jsdelivr": "dist/mosaic-core.min.js",
   "unpkg": "dist/mosaic-core.min.js",
-  "types": "dist/types/index.d.ts",
+  "types": "dist/types/index-types.d.ts",
   "repository": {
     "type": "git",
     "url": "https://github.com/uwdata/mosaic.git"

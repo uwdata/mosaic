@@ -99,6 +99,15 @@ export function first(expr) {
 }
 
 /**
+ * Compute a geomean aggregate.
+ * @param {import('../types.js').ExprValue} expr The expression to aggregate.
+ * @returns {AggregateNode} A SQL aggregate function call.
+ */
+export function geomean(expr) {
+  return aggFn('geomean', expr);
+}
+
+/**
  * Compute a sample kurtosis aggregate.
  * @param {import('../types.js').ExprValue} expr The expression to aggregate.
  * @returns {AggregateNode} A SQL aggregate function call.

@@ -6,6 +6,12 @@ let _id = 0;
 
 export const slider = options => input(Slider, options);
 
+/**
+ *  A HTML range based slider input.
+ *
+ * @import {Activatable} from '@uwdata/mosaic-core'
+ * @implements {Activatable}
+ */
 export class Slider extends MosaicClient {
   /**
    * Create a new slider input.
@@ -165,8 +171,9 @@ export class Slider extends MosaicClient {
   }
 
   activate() {
-    // @ts-ignore - activate is only called for a Selection
-    this.selection.activate(this.clause(0));
+    if (isSelection(this.selection)) {
+      this.selection.activate(this.clause(0));
+    }
   }
 
   publish(value) {

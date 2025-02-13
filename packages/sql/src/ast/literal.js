@@ -30,7 +30,7 @@ export function literalToSQL(value) {
     case 'number':
       return Number.isFinite(value) ? `${value}` : 'NULL';
     case 'string':
-      return `'${value.replace(`'`, `''`)}'`;
+      return `'${value.replaceAll(`'`, `''`)}'`;
     case 'boolean':
       return value ? 'TRUE' : 'FALSE';
     default:

@@ -1,4 +1,4 @@
-import { MosaicClient, clausePoints, coordinator, isParam, toDataColumns } from '@uwdata/mosaic-core';
+import { MosaicClient, clausePoints, coordinator, isParam, isSelection, toDataColumns } from '@uwdata/mosaic-core';
 import { Query, desc } from '@uwdata/mosaic-sql';
 import { formatDate, formatLocaleAuto, formatLocaleNumber } from './util/format.js';
 import { input } from './input.js';
@@ -7,6 +7,13 @@ let _id = -1;
 
 export const table = options => input(Table, options);
 
+
+/**
+ * A HTML table based table component.
+ *
+ * @import {Activatable} from '@uwdata/mosaic-core'
+ * @implements {Activatable}
+ */
 export class Table extends MosaicClient {
   /**
    * Create a new Table instance.
@@ -206,6 +213,12 @@ export class Table extends MosaicClient {
 
     this.isPending = false;
     return this;
+  }
+
+  activate() {
+    if (isSelection(this.selection)) {
+      this.selection.activate(this.clause([]));
+    }
   }
 
   sort(event, column) {

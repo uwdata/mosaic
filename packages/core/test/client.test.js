@@ -60,6 +60,8 @@ describe('MosaicClient', () => {
     coord.connect(client1);
     coord.connect(client2);
 
+    await Promise.all([client1.pending, client2.pending]);
+
     // initial results with empty selection
     expect(await Promise.all(pending)).toEqual([
       [ {key: 10, value: 1}, {key: 12, value: 1} ],
