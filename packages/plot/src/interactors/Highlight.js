@@ -84,10 +84,6 @@ export class Highlight {
       }
     }
   }
-
-  activate() {
-    return this.update();
-  }
 }
 
 async function predicateFunction(mark, selection) {
