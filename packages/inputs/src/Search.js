@@ -8,7 +8,7 @@ export const search = options => input(Search, options);
 
 /**
  * A HTML input based text search input.
- * 
+ *
  * @import {Activatable} from '@uwdata/mosaic-core'
  * @implements {Activatable}
  */
@@ -103,7 +103,9 @@ export class Search extends MosaicClient {
   }
 
   activate() {
-    if (isSelection(this.selection)) this.selection.activate(this.clause(''));
+    if (isSelection(this.selection)) {
+      this.selection.activate(this.clause(''));
+    }
   }
 
   publish(value) {

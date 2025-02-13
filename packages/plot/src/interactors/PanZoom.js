@@ -63,7 +63,7 @@ export class PanZoom {
     this.svg = svg;
     if (this.initialized) return; else this.initialized = true;
 
-    const { panx, pany, mark: { plot: { element } }} = this;
+    const { panx, pany, mark: { plot: { element } } } = this;
 
     this.xscale = svg.scale('x');
     this.yscale = svg.scale('y');

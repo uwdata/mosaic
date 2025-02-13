@@ -10,7 +10,7 @@ export const table = options => input(Table, options);
 
 /**
  * A HTML table based table component.
- * 
+ *
  * @import {Activatable} from '@uwdata/mosaic-core'
  * @implements {Activatable}
  */
@@ -216,7 +216,9 @@ export class Table extends MosaicClient {
   }
 
   activate() {
-    if (isSelection(this.selection)) this.selection.activate(this.clause([]));
+    if (isSelection(this.selection)) {
+      this.selection.activate(this.clause([]));
+    }
   }
 
   sort(event, column) {
