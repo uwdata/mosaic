@@ -45,6 +45,7 @@
     "yaml": "^2.7.0"
   },
   "workspaces": [
-    "packages/*"
+    "packages/*",
+    "examples/*"
   ]
 }
