@@ -52,3 +52,10 @@ export interface ColumnDescription {
   column_type: string,
   null: 'YES' | 'NO'
 }
+
+/**
+ * Interface for activatable objects.
+ */
+export interface Activatable {
+  activate(): void;
+}

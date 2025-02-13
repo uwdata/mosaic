@@ -2,6 +2,10 @@ import { clausePoint, clausePoints, isSelection } from '@uwdata/mosaic-core';
 import { select, pointer, min } from 'd3';
 import { getField } from './util/get-field.js';
 
+/**
+ * @import {Activatable} from '@uwdata/mosaic-core'
+ * @implements {Activatable}
+ */
 export class Nearest {
   constructor(mark, {
     selection,
@@ -71,11 +75,13 @@ export class Nearest {
 
     // trigger activation updates
     svg.addEventListener('pointerenter', evt => {
-      if (!evt.buttons) {
-        const v = this.channels.map(() => 0);
-        selection.activate(this.clause(v));
-      }
+      if (!evt.buttons) this.activate();
     });
+  }
+
+  activate() {
+    const v = this.channels.map(() => 0);
+    this.selection.activate(this.clause(v));
   }
 }
 

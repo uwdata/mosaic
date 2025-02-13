@@ -8,6 +8,10 @@ import { sanitizeStyles } from './util/sanitize-styles.js';
 import { neqSome } from './util/neq.js';
 import { getDatum } from './util/get-datum.js';
 
+/**
+ * @import {Activatable} from '@uwdata/mosaic-core'
+ * @implements {Activatable}
+ */
 export class Region {
   constructor(mark, {
     channels,

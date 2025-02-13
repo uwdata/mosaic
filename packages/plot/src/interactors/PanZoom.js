@@ -4,6 +4,10 @@ import { getField } from './util/get-field.js';
 
 const asc = (a, b) => a - b;
 
+/**
+ * @import {Activatable} from '@uwdata/mosaic-core'
+ * @implements {Activatable}
+ */
 export class PanZoom {
   constructor(mark, {
     x = new Selection(),
@@ -59,7 +63,7 @@ export class PanZoom {
     this.svg = svg;
     if (this.initialized) return; else this.initialized = true;
 
-    const { panx, pany, mark: { plot: { element } }, xsel, ysel } = this;
+    const { panx, pany, mark: { plot: { element } }} = this;
 
     this.xscale = svg.scale('x');
     this.yscale = svg.scale('y');
@@ -85,17 +89,20 @@ export class PanZoom {
       let enter = false;
       element.addEventListener('pointerenter', evt => {
         if (enter) return; else enter = true;
-        if (evt.buttons) return; // don't activate if mouse down
-        if (panx) {
-          const { xscale, xfield } = this;
-          xsel.activate(this.clause(xscale.domain, xfield, xscale));
-        }
-        if (pany) {
-          const { yscale, yfield } = this;
-          ysel.activate(this.clause(yscale.domain, yfield, yscale));
-        }
+        if (!evt.buttons) this.activate(); // don't activate if mouse down
       });
       element.addEventListener('pointerleave', () => enter = false);
+    }
+  }
+
+  activate() {
+    if (this.panx) {
+      const { xscale, xfield } = this;
+      this.xsel.activate(this.clause(xscale.domain, xfield, xscale));
+    }
+    if (this.pany) {
+      const { yscale, yfield } = this;
+      this.ysel.activate(this.clause(yscale.domain, yfield, yscale));
     }
   }
 }

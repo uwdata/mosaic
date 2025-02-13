@@ -8,6 +8,12 @@ const isObject = v => {
 
 export const menu = options => input(Menu, options);
 
+/**
+ * A HTML select based dropdown menu input.
+ * 
+ * @import {Activatable} from '@uwdata/mosaic-core'
+ * @implements {Activatable}
+ */
 export class Menu extends MosaicClient {
   /**
    * Create a new menu input.
@@ -125,8 +131,7 @@ export class Menu extends MosaicClient {
   }
 
   activate() {
-    // @ts-ignore - activate is only called for a Selection
-    this.selection.activate(clausePoint(this.field, 0, { source: this }));
+    if (isSelection(this.selection)) this.selection.activate(clausePoint(this.field, 0, { source: this }));
   }
 
   publish(value) {
