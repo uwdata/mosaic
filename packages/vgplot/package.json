@@ -24,7 +24,7 @@
   "scripts": {
     "lint": "eslint src test",
     "test": "vitest run",
-    "prepublishOnly": "npm run test && npm run lint && npm run build"
+    "prepublishOnly": "npm run test && npm run lint"
   },
   "dependencies": {
     "@uwdata/mosaic-core": "^0.12.2",
