@@ -9,17 +9,15 @@
   "license": "BSD-3-Clause",
   "author": "Jeffrey Heer (https://idl.uw.edu)",
   "type": "module",
-  "main": "src/index.js",
-  "module": "src/index.js",
-  "jsdelivr": "dist/mosaic-inputs.min.js",
-  "unpkg": "dist/mosaic-inputs.min.js",
+  "exports": {
+    "default": "./src/index.js"
+  },
   "repository": {
     "type": "git",
     "url": "https://github.com/uwdata/mosaic.git"
   },
   "scripts": {
     "prebuild": "rimraf dist && mkdir dist",
-    "build": "node ../../esbuild.js mosaic-inputs",
     "lint": "eslint src test",
     "test": "vitest run",
     "prepublishOnly": "npm run test && npm run lint && npm run build"
