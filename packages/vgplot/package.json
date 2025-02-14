@@ -22,7 +22,6 @@
     "url": "https://github.com/uwdata/mosaic.git"
   },
   "scripts": {
-    "prebuild": "rimraf dist && mkdir dist",
     "lint": "eslint src test",
     "test": "vitest run",
     "prepublishOnly": "npm run test && npm run lint && npm run build"
