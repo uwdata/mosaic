@@ -1,18 +1,42 @@
-import { MosaicClient, Param, isParam, isSelection, clauseMatch } from '@uwdata/mosaic-core';
+import { Param, Selection, isParam, isSelection, clauseMatch } from '@uwdata/mosaic-core';
 import { Query } from '@uwdata/mosaic-sql';
-import { input } from './input.js';
+import { Input, input } from './input.js';
 
 let _id = 0;
 
+/**
+ * Create a new text search input instance.
+ * @param {object} [options] Options object
+ * @param {HTMLElement} [options.element] The parent DOM element in which to
+ *  place the search elements. If undefined, a new `div` element is created.
+ * @param {Selection} [options.filterBy] A selection to filter the database
+ *  table indicated by the *from* option.
+ * @param {Param} [options.as] The output param or selection. A selection
+ *  clause is added based on the current text search query.
+ * @param {string} [options.field] The database column name to use within
+ *  generated selection clause predicates. Defaults to the *column* option.
+ * @param {'contains' | 'prefix' | 'suffix' | 'regexp'} [options.type] The
+ *  type of text search query to perform. One of:
+ *  - `"contains"` (default): the query string may appear anywhere in the text
+ *  - `"prefix"`: the query string must appear at the start of the text
+ *  - `"suffix"`: the query string must appear at the end of the text
+ *  - `"regexp"`: the query string is a regular expression the text must match
+ * @param {string} [options.from] The name of a database table to use as an
+ *  autocomplete data source for this widget. Used in conjunction with the
+ *  *column* option.
+ * @param {string} [options.column] The name of a database column from which
+ *  to pull valid search results. The unique column values are used as search
+ *  autocomplete values. Used in conjunction with the *from* option.
+ * @param {string} [options.label] A text label for this input.
+ * @returns {HTMLElement} The container element for a text search input.
+ */
 export const search = options => input(Search, options);
 
 /**
- * A HTML input based text search input.
- *
- * @import {Activatable} from '@uwdata/mosaic-core'
- * @implements {Activatable}
+ * A HTML text search input.
+ * @extends {Input}
  */
-export class Search extends MosaicClient {
+export class Search extends Input {
   /**
    * Create a new text search input.
    * @param {object} [options] Options object
@@ -48,17 +72,13 @@ export class Search extends MosaicClient {
     field = column,
     as
   } = {}) {
-    super(filterBy);
+    super(filterBy, element);
     this.id = 'search_' + (++_id);
     this.type = type;
     this.from = from;
     this.column = column;
     this.selection = as;
     this.field = field;
-
-    this.element = element ?? document.createElement('div');
-    this.element.setAttribute('class', 'input');
-    Object.defineProperty(this.element, 'value', { value: this });
 
     if (label) {
       const lab = document.createElement('label');
