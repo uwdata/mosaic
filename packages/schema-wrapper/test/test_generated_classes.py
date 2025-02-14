@@ -2,30 +2,21 @@ import pytest
 from schema_wrapper.utils import _todict
 from schema_wrapper.generated_classes import *
 
+
 @pytest.fixture
 def sample_data():
     return {
-        "csv_data": {
-            "file": "data.csv",
-            "type": "csv",
-            "delimiter": ",",
-            "temp": True
-        },
-        "spatial_data": {
-            "file": "map.geojson",
-            "type": "geojson",
-            "layer": "features"
-        },
-        "table_data": {
-            "query": "SELECT * FROM table",
-            "type": "table"
-        }
+        "csv_data": {"file": "data.csv", "type": "csv", "delimiter": ",", "temp": True},
+        "spatial_data": {"file": "map.geojson", "type": "geojson", "layer": "features"},
+        "table_data": {"query": "SELECT * FROM table", "type": "table"},
     }
+
 
 def test_aggregate_expression():
     agg_expr = AggregateExpression("sum", "total")
     assert agg_expr.agg == "sum"
     assert agg_expr.label == "total"
+
 
 def test_aggregate_transform():
     # Test with string value
@@ -41,6 +32,7 @@ def test_aggregate_transform():
     # Test with boolean value
     agg_transform = AggregateTransform(Avg(avg=True))
     assert agg_transform.value.avg == True
+
 
 def test_data_classes(sample_data):
     # Test CSV data
@@ -61,15 +53,10 @@ def test_data_classes(sample_data):
     assert table_data.query == "SELECT * FROM table"
     assert table_data.type == "table"
 
+
 def test_plot_components():
     # Test Plot class
-    plot = Plot(
-        "scatter",
-        width=500,
-        height=300,
-        xLabel="X Axis",
-        yLabel="Y Axis"
-    )
+    plot = Plot("scatter", width=500, height=300, xLabel="X Axis", yLabel="Y Axis")
     assert plot.plot == "scatter"
     assert plot.width == 500
     assert plot.height == 300
@@ -78,17 +65,14 @@ def test_plot_components():
 
     # Test BrushStyles
     styles = BrushStyles(
-        fill="red",
-        fillOpacity=0.5,
-        opacity=0.7,
-        stroke="black",
-        strokeOpacity=0.3
+        fill="red", fillOpacity=0.5, opacity=0.7, stroke="black", strokeOpacity=0.3
     )
     assert styles.fill == "red"
     assert styles.fillOpacity == 0.5
     assert styles.opacity == 0.7
     assert styles.stroke == "black"
     assert styles.strokeOpacity == 0.3
+
 
 def test_argmin_argmax():
     # Test Argmin
@@ -105,56 +89,83 @@ def test_argmin_argmax():
     assert argmax.distinct == True
     assert argmax.orderby == "date"
 
+
 def test_composite():
-    argmax = Argmax([5, 6, True, 0.5], False, TransformField("test"), [TransformField("1"), TransformField("2"), TransformField("3")], ParamRef())
+    argmax = Argmax(
+        [5, 6, True, 0.5],
+        False,
+        TransformField("test"),
+        [TransformField("1"), TransformField("2"), TransformField("3")],
+        ParamRef(),
+    )
+
 
 def test_weather_plot():
     plot_spec = Plot(
-
-        plot = [PlotMark(Dot(mark="dot", data=PlotFrom(from_="weather", filterBy="$click"), x=ChannelValueSpec(ChannelValue({"dateMonthDay": "date"})), y=ChannelValueSpec(ChannelValue("temp_max")), fill="weather", r="precipitation"))],
-        xyDomain = "Fixed",
-        xTickFormat = "%b",
-        colorDomain = "$domain",
-        colorRange = "$colors",
-        rDomain = "Fixed",
-        rRange = [2, 10],
-        width = 800
+        plot=[
+            PlotMark(
+                Dot(
+                    mark="dot",
+                    data=PlotFrom(from_="weather", filterBy="$click"),
+                    x=ChannelValueSpec(ChannelValue({"dateMonthDay": "date"})),
+                    y=ChannelValueSpec(ChannelValue("temp_max")),
+                    fill="weather",
+                    r="precipitation",
+                )
+            )
+        ],
+        xyDomain="Fixed",
+        xTickFormat="%b",
+        colorDomain="$domain",
+        colorRange="$colors",
+        rDomain="Fixed",
+        rRange=[2, 10],
+        width=800,
     )
-    assert({'colorDomain': '$domain', 
-            'colorRange': '$colors', 
-            'plot': [
-                {'data': {'filterBy': '$click', 'from': 'weather'}, 
-                 'fill': 'weather', 
-                 'mark': 'dot', 
-                 'r': 'precipitation', 
-                 'x': {'dateMonthDay': 'date'}, 
-                 'y': 'temp_max'}
-                ], 
-            'rDomain': 'Fixed', 
-            'rRange': [2, 10], 
-            'width': 800, 
-            'xTickFormat': '%b', 
-            'xyDomain': 'Fixed'} == _todict(plot_spec))
+    assert {
+        "colorDomain": "$domain",
+        "colorRange": "$colors",
+        "plot": [
+            {
+                "data": {"filterBy": "$click", "from": "weather"},
+                "fill": "weather",
+                "mark": "dot",
+                "r": "precipitation",
+                "x": {"dateMonthDay": "date"},
+                "y": "temp_max",
+            }
+        ],
+        "rDomain": "Fixed",
+        "rRange": [2, 10],
+        "width": 800,
+        "xTickFormat": "%b",
+        "xyDomain": "Fixed",
+    } == _todict(plot_spec)
+
 
 def test_stock_plot():
     plot_spec = Plot(
-        plot = [PlotMark(LineY(
-            mark="lineY", 
-            data=PlotFrom(from_="aapl"), 
-            x=ChannelValueSpec(ChannelValue("Date")), 
-            y=ChannelValueSpec(ChannelValue("Close"))
-        ))],
-        width = 680,
-        height = 200
+        plot=[
+            PlotMark(
+                LineY(
+                    mark="lineY",
+                    data=PlotFrom(from_="aapl"),
+                    x=ChannelValueSpec(ChannelValue("Date")),
+                    y=ChannelValueSpec(ChannelValue("Close")),
+                )
+            )
+        ],
+        width=680,
+        height=200,
     )
-    assert({'height': 200, 
-            'plot': [
-                {'data': {'from': 'aapl'}, 
-                 'mark': 'lineY', 
-                 'x': 'Date', 
-                 'y': 'Close'}
-                ], 
-            'width': 680} == _todict(plot_spec))
+    assert {
+        "height": 200,
+        "plot": [
+            {"data": {"from": "aapl"}, "mark": "lineY", "x": "Date", "y": "Close"}
+        ],
+        "width": 680,
+    } == _todict(plot_spec)
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     pytest.main([__file__])

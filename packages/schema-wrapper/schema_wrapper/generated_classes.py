@@ -2,6 +2,7 @@ from typing import List, Dict, Any, Union
 from schema_wrapper.SchemaBase import SchemaBase
 from schema_wrapper.utils import revert_validation
 
+
 class AggregateExpression(SchemaBase):
     def __init__(self, agg: str, label: str = None):
         self.agg = agg
@@ -9,12 +10,45 @@ class AggregateExpression(SchemaBase):
 
 
 class AggregateTransform(SchemaBase):
-    def __init__(self, value: Union["Max", "Avg", "VarPop", "Mode", "Stddev", "Argmax", "Argmin", "StddevPop", "Variance", "Median", "First", "Min", "Product", "Sum", "Last", "Quantile", "Count"]):
+    def __init__(
+        self,
+        value: Union[
+            "Max",
+            "Avg",
+            "VarPop",
+            "Mode",
+            "Stddev",
+            "Argmax",
+            "Argmin",
+            "StddevPop",
+            "Variance",
+            "Median",
+            "First",
+            "Min",
+            "Product",
+            "Sum",
+            "Last",
+            "Quantile",
+            "Count",
+        ],
+    ):
         self.value = value
 
 
 class ChannelValue(SchemaBase):
-    def __init__(self, value: Union[bool, List[Any], "AggregateExpression", str, "Transform", float, "SQLExpression", Any]):
+    def __init__(
+        self,
+        value: Union[
+            bool,
+            List[Any],
+            "AggregateExpression",
+            str,
+            "Transform",
+            float,
+            "SQLExpression",
+            Any,
+        ],
+    ):
         self.value = value
 
 
@@ -29,16 +63,36 @@ class ChannelValueSpec(SchemaBase):
 
 
 class SelectFilter(SchemaBase):
-    enum_options = ['first', 'last', 'maxX', 'maxY', 'minX', 'minY', 'nearest', 'nearestX', 'nearestY']
+    enum_options = [
+        "first",
+        "last",
+        "maxX",
+        "maxY",
+        "minX",
+        "minY",
+        "nearest",
+        "nearestX",
+        "nearestY",
+    ]
 
     def __init__(self, value: str):
         if value not in self.enum_options:
-            raise ValueError(f"Value of enum not in allowed values: {self.enum_options}")
+            raise ValueError(
+                f"Value of enum not in allowed values: {self.enum_options}"
+            )
         self.value = value
 
 
 class Argmax(SchemaBase):
-    def __init__(self, argmax: List[Union[bool, float, str]], distinct: bool = None, orderby: Union["TransformField", List["TransformField"]] = None, partitionby: Union["TransformField", List["TransformField"]] = None, range: Union[List[Union[float, Any]], "ParamRef"] = None, rows: Union[List[Union[float, Any]], "ParamRef"] = None):
+    def __init__(
+        self,
+        argmax: List[Union[bool, float, str]],
+        distinct: bool = None,
+        orderby: Union["TransformField", List["TransformField"]] = None,
+        partitionby: Union["TransformField", List["TransformField"]] = None,
+        range: Union[List[Union[float, Any]], "ParamRef"] = None,
+        rows: Union[List[Union[float, Any]], "ParamRef"] = None,
+    ):
         self.argmax = argmax
         self.distinct = distinct
         self.orderby = orderby
@@ -48,7 +102,15 @@ class Argmax(SchemaBase):
 
 
 class Argmin(SchemaBase):
-    def __init__(self, argmin: List[Union[bool, float, str]], distinct: bool = None, orderby: Union["TransformField", List["TransformField"]] = None, partitionby: Union["TransformField", List["TransformField"]] = None, range: Union[List[Union[float, Any]], "ParamRef"] = None, rows: Union[List[Union[float, Any]], "ParamRef"] = None):
+    def __init__(
+        self,
+        argmin: List[Union[bool, float, str]],
+        distinct: bool = None,
+        orderby: Union["TransformField", List["TransformField"]] = None,
+        partitionby: Union["TransformField", List["TransformField"]] = None,
+        range: Union[List[Union[float, Any]], "ParamRef"] = None,
+        rows: Union[List[Union[float, Any]], "ParamRef"] = None,
+    ):
         self.argmin = argmin
         self.distinct = distinct
         self.orderby = orderby
@@ -58,7 +120,15 @@ class Argmin(SchemaBase):
 
 
 class Avg(SchemaBase):
-    def __init__(self, avg: Union[Union[bool, float, str], List[Union[bool, float, str]]], distinct: bool = None, orderby: Union["TransformField", List["TransformField"]] = None, partitionby: Union["TransformField", List["TransformField"]] = None, range: Union[List[Union[float, Any]], "ParamRef"] = None, rows: Union[List[Union[float, Any]], "ParamRef"] = None):
+    def __init__(
+        self,
+        avg: Union[Union[bool, float, str], List[Union[bool, float, str]]],
+        distinct: bool = None,
+        orderby: Union["TransformField", List["TransformField"]] = None,
+        partitionby: Union["TransformField", List["TransformField"]] = None,
+        range: Union[List[Union[float, Any]], "ParamRef"] = None,
+        rows: Union[List[Union[float, Any]], "ParamRef"] = None,
+    ):
         self.avg = avg
         self.distinct = distinct
         self.orderby = orderby
@@ -73,16 +143,35 @@ class ChannelValueIntervalSpec(SchemaBase):
 
 
 class BinInterval(SchemaBase):
-    enum_options = ['date', 'number', 'millisecond', 'second', 'minute', 'hour', 'day', 'month', 'year']
+    enum_options = [
+        "date",
+        "number",
+        "millisecond",
+        "second",
+        "minute",
+        "hour",
+        "day",
+        "month",
+        "year",
+    ]
 
     def __init__(self, value: str):
         if value not in self.enum_options:
-            raise ValueError(f"Value of enum not in allowed values: {self.enum_options}")
+            raise ValueError(
+                f"Value of enum not in allowed values: {self.enum_options}"
+            )
         self.value = value
 
 
 class BrushStyles(SchemaBase):
-    def __init__(self, fill: str = None, fillOpacity: float = None, opacity: float = None, stroke: str = None, strokeOpacity: float = None):
+    def __init__(
+        self,
+        fill: str = None,
+        fillOpacity: float = None,
+        opacity: float = None,
+        stroke: str = None,
+        strokeOpacity: float = None,
+    ):
         self.fill = fill
         self.fillOpacity = fillOpacity
         self.opacity = opacity
@@ -91,7 +180,508 @@ class BrushStyles(SchemaBase):
 
 
 class CSSStyles(SchemaBase):
-    def __init__(self, accentColor: str = None, alignContent: str = None, alignItems: str = None, alignSelf: str = None, alignmentBaseline: str = None, all: str = None, animation: str = None, animationComposition: str = None, animationDelay: str = None, animationDirection: str = None, animationDuration: str = None, animationFillMode: str = None, animationIterationCount: str = None, animationName: str = None, animationPlayState: str = None, animationTimingFunction: str = None, appearance: str = None, aspectRatio: str = None, backdropFilter: str = None, backfaceVisibility: str = None, background: str = None, backgroundAttachment: str = None, backgroundBlendMode: str = None, backgroundClip: str = None, backgroundColor: str = None, backgroundImage: str = None, backgroundOrigin: str = None, backgroundPosition: str = None, backgroundPositionX: str = None, backgroundPositionY: str = None, backgroundRepeat: str = None, backgroundSize: str = None, baselineShift: str = None, baselineSource: str = None, blockSize: str = None, border: str = None, borderBlock: str = None, borderBlockColor: str = None, borderBlockEnd: str = None, borderBlockEndColor: str = None, borderBlockEndStyle: str = None, borderBlockEndWidth: str = None, borderBlockStart: str = None, borderBlockStartColor: str = None, borderBlockStartStyle: str = None, borderBlockStartWidth: str = None, borderBlockStyle: str = None, borderBlockWidth: str = None, borderBottom: str = None, borderBottomColor: str = None, borderBottomLeftRadius: str = None, borderBottomRightRadius: str = None, borderBottomStyle: str = None, borderBottomWidth: str = None, borderCollapse: str = None, borderColor: str = None, borderEndEndRadius: str = None, borderEndStartRadius: str = None, borderImage: str = None, borderImageOutset: str = None, borderImageRepeat: str = None, borderImageSlice: str = None, borderImageSource: str = None, borderImageWidth: str = None, borderInline: str = None, borderInlineColor: str = None, borderInlineEnd: str = None, borderInlineEndColor: str = None, borderInlineEndStyle: str = None, borderInlineEndWidth: str = None, borderInlineStart: str = None, borderInlineStartColor: str = None, borderInlineStartStyle: str = None, borderInlineStartWidth: str = None, borderInlineStyle: str = None, borderInlineWidth: str = None, borderLeft: str = None, borderLeftColor: str = None, borderLeftStyle: str = None, borderLeftWidth: str = None, borderRadius: str = None, borderRight: str = None, borderRightColor: str = None, borderRightStyle: str = None, borderRightWidth: str = None, borderSpacing: str = None, borderStartEndRadius: str = None, borderStartStartRadius: str = None, borderStyle: str = None, borderTop: str = None, borderTopColor: str = None, borderTopLeftRadius: str = None, borderTopRightRadius: str = None, borderTopStyle: str = None, borderTopWidth: str = None, borderWidth: str = None, bottom: str = None, boxShadow: str = None, boxSizing: str = None, breakAfter: str = None, breakBefore: str = None, breakInside: str = None, captionSide: str = None, caretColor: str = None, clear: str = None, clip: str = None, clipPath: str = None, clipRule: str = None, color: str = None, colorInterpolation: str = None, colorInterpolationFilters: str = None, colorScheme: str = None, columnCount: str = None, columnFill: str = None, columnGap: str = None, columnRule: str = None, columnRuleColor: str = None, columnRuleStyle: str = None, columnRuleWidth: str = None, columnSpan: str = None, columnWidth: str = None, columns: str = None, contain: str = None, containIntrinsicBlockSize: str = None, containIntrinsicHeight: str = None, containIntrinsicInlineSize: str = None, containIntrinsicSize: str = None, containIntrinsicWidth: str = None, container: str = None, containerName: str = None, containerType: str = None, content: str = None, contentVisibility: str = None, counterIncrement: str = None, counterReset: str = None, counterSet: str = None, cssFloat: str = None, cssText: str = None, cursor: str = None, cx: str = None, cy: str = None, d: str = None, direction: str = None, display: str = None, dominantBaseline: str = None, emptyCells: str = None, fill: str = None, fillOpacity: str = None, fillRule: str = None, filter: str = None, flex: str = None, flexBasis: str = None, flexDirection: str = None, flexFlow: str = None, flexGrow: str = None, flexShrink: str = None, flexWrap: str = None, float: str = None, floodColor: str = None, floodOpacity: str = None, font: str = None, fontFamily: str = None, fontFeatureSettings: str = None, fontKerning: str = None, fontOpticalSizing: str = None, fontPalette: str = None, fontSize: str = None, fontSizeAdjust: str = None, fontStretch: str = None, fontStyle: str = None, fontSynthesis: str = None, fontSynthesisSmallCaps: str = None, fontSynthesisStyle: str = None, fontSynthesisWeight: str = None, fontVariant: str = None, fontVariantAlternates: str = None, fontVariantCaps: str = None, fontVariantEastAsian: str = None, fontVariantLigatures: str = None, fontVariantNumeric: str = None, fontVariantPosition: str = None, fontVariationSettings: str = None, fontWeight: str = None, forcedColorAdjust: str = None, gap: str = None, grid: str = None, gridArea: str = None, gridAutoColumns: str = None, gridAutoFlow: str = None, gridAutoRows: str = None, gridColumn: str = None, gridColumnEnd: str = None, gridColumnGap: str = None, gridColumnStart: str = None, gridGap: str = None, gridRow: str = None, gridRowEnd: str = None, gridRowGap: str = None, gridRowStart: str = None, gridTemplate: str = None, gridTemplateAreas: str = None, gridTemplateColumns: str = None, gridTemplateRows: str = None, height: str = None, hyphenateCharacter: str = None, hyphens: str = None, imageOrientation: str = None, imageRendering: str = None, inlineSize: str = None, inset: str = None, insetBlock: str = None, insetBlockEnd: str = None, insetBlockStart: str = None, insetInline: str = None, insetInlineEnd: str = None, insetInlineStart: str = None, isolation: str = None, justifyContent: str = None, justifyItems: str = None, justifySelf: str = None, left: str = None, length: float = None, letterSpacing: str = None, lightingColor: str = None, lineBreak: str = None, lineHeight: str = None, listStyle: str = None, listStyleImage: str = None, listStylePosition: str = None, listStyleType: str = None, margin: str = None, marginBlock: str = None, marginBlockEnd: str = None, marginBlockStart: str = None, marginBottom: str = None, marginInline: str = None, marginInlineEnd: str = None, marginInlineStart: str = None, marginLeft: str = None, marginRight: str = None, marginTop: str = None, marker: str = None, markerEnd: str = None, markerMid: str = None, markerStart: str = None, mask: str = None, maskClip: str = None, maskComposite: str = None, maskImage: str = None, maskMode: str = None, maskOrigin: str = None, maskPosition: str = None, maskRepeat: str = None, maskSize: str = None, maskType: str = None, mathDepth: str = None, mathStyle: str = None, maxBlockSize: str = None, maxHeight: str = None, maxInlineSize: str = None, maxWidth: str = None, minBlockSize: str = None, minHeight: str = None, minInlineSize: str = None, minWidth: str = None, mixBlendMode: str = None, objectFit: str = None, objectPosition: str = None, offset: str = None, offsetAnchor: str = None, offsetDistance: str = None, offsetPath: str = None, offsetPosition: str = None, offsetRotate: str = None, opacity: str = None, order: str = None, orphans: str = None, outline: str = None, outlineColor: str = None, outlineOffset: str = None, outlineStyle: str = None, outlineWidth: str = None, overflow: str = None, overflowAnchor: str = None, overflowClipMargin: str = None, overflowWrap: str = None, overflowX: str = None, overflowY: str = None, overscrollBehavior: str = None, overscrollBehaviorBlock: str = None, overscrollBehaviorInline: str = None, overscrollBehaviorX: str = None, overscrollBehaviorY: str = None, padding: str = None, paddingBlock: str = None, paddingBlockEnd: str = None, paddingBlockStart: str = None, paddingBottom: str = None, paddingInline: str = None, paddingInlineEnd: str = None, paddingInlineStart: str = None, paddingLeft: str = None, paddingRight: str = None, paddingTop: str = None, page: str = None, pageBreakAfter: str = None, pageBreakBefore: str = None, pageBreakInside: str = None, paintOrder: str = None, perspective: str = None, perspectiveOrigin: str = None, placeContent: str = None, placeItems: str = None, placeSelf: str = None, pointerEvents: str = None, position: str = None, printColorAdjust: str = None, quotes: str = None, r: str = None, resize: str = None, right: str = None, rotate: str = None, rowGap: str = None, rubyPosition: str = None, rx: str = None, ry: str = None, scale: str = None, scrollBehavior: str = None, scrollMargin: str = None, scrollMarginBlock: str = None, scrollMarginBlockEnd: str = None, scrollMarginBlockStart: str = None, scrollMarginBottom: str = None, scrollMarginInline: str = None, scrollMarginInlineEnd: str = None, scrollMarginInlineStart: str = None, scrollMarginLeft: str = None, scrollMarginRight: str = None, scrollMarginTop: str = None, scrollPadding: str = None, scrollPaddingBlock: str = None, scrollPaddingBlockEnd: str = None, scrollPaddingBlockStart: str = None, scrollPaddingBottom: str = None, scrollPaddingInline: str = None, scrollPaddingInlineEnd: str = None, scrollPaddingInlineStart: str = None, scrollPaddingLeft: str = None, scrollPaddingRight: str = None, scrollPaddingTop: str = None, scrollSnapAlign: str = None, scrollSnapStop: str = None, scrollSnapType: str = None, scrollbarColor: str = None, scrollbarGutter: str = None, scrollbarWidth: str = None, shapeImageThreshold: str = None, shapeMargin: str = None, shapeOutside: str = None, shapeRendering: str = None, stopColor: str = None, stopOpacity: str = None, stroke: str = None, strokeDasharray: str = None, strokeDashoffset: str = None, strokeLinecap: str = None, strokeLinejoin: str = None, strokeMiterlimit: str = None, strokeOpacity: str = None, strokeWidth: str = None, tabSize: str = None, tableLayout: str = None, textAlign: str = None, textAlignLast: str = None, textAnchor: str = None, textCombineUpright: str = None, textDecoration: str = None, textDecorationColor: str = None, textDecorationLine: str = None, textDecorationSkipInk: str = None, textDecorationStyle: str = None, textDecorationThickness: str = None, textEmphasis: str = None, textEmphasisColor: str = None, textEmphasisPosition: str = None, textEmphasisStyle: str = None, textIndent: str = None, textOrientation: str = None, textOverflow: str = None, textRendering: str = None, textShadow: str = None, textTransform: str = None, textUnderlineOffset: str = None, textUnderlinePosition: str = None, textWrap: str = None, textWrapMode: str = None, textWrapStyle: str = None, top: str = None, touchAction: str = None, transform: str = None, transformBox: str = None, transformOrigin: str = None, transformStyle: str = None, transition: str = None, transitionBehavior: str = None, transitionDelay: str = None, transitionDuration: str = None, transitionProperty: str = None, transitionTimingFunction: str = None, translate: str = None, unicodeBidi: str = None, userSelect: str = None, vectorEffect: str = None, verticalAlign: str = None, visibility: str = None, webkitAlignContent: str = None, webkitAlignItems: str = None, webkitAlignSelf: str = None, webkitAnimation: str = None, webkitAnimationDelay: str = None, webkitAnimationDirection: str = None, webkitAnimationDuration: str = None, webkitAnimationFillMode: str = None, webkitAnimationIterationCount: str = None, webkitAnimationName: str = None, webkitAnimationPlayState: str = None, webkitAnimationTimingFunction: str = None, webkitAppearance: str = None, webkitBackfaceVisibility: str = None, webkitBackgroundClip: str = None, webkitBackgroundOrigin: str = None, webkitBackgroundSize: str = None, webkitBorderBottomLeftRadius: str = None, webkitBorderBottomRightRadius: str = None, webkitBorderRadius: str = None, webkitBorderTopLeftRadius: str = None, webkitBorderTopRightRadius: str = None, webkitBoxAlign: str = None, webkitBoxFlex: str = None, webkitBoxOrdinalGroup: str = None, webkitBoxOrient: str = None, webkitBoxPack: str = None, webkitBoxShadow: str = None, webkitBoxSizing: str = None, webkitFilter: str = None, webkitFlex: str = None, webkitFlexBasis: str = None, webkitFlexDirection: str = None, webkitFlexFlow: str = None, webkitFlexGrow: str = None, webkitFlexShrink: str = None, webkitFlexWrap: str = None, webkitJustifyContent: str = None, webkitLineClamp: str = None, webkitMask: str = None, webkitMaskBoxImage: str = None, webkitMaskBoxImageOutset: str = None, webkitMaskBoxImageRepeat: str = None, webkitMaskBoxImageSlice: str = None, webkitMaskBoxImageSource: str = None, webkitMaskBoxImageWidth: str = None, webkitMaskClip: str = None, webkitMaskComposite: str = None, webkitMaskImage: str = None, webkitMaskOrigin: str = None, webkitMaskPosition: str = None, webkitMaskRepeat: str = None, webkitMaskSize: str = None, webkitOrder: str = None, webkitPerspective: str = None, webkitPerspectiveOrigin: str = None, webkitTextFillColor: str = None, webkitTextSizeAdjust: str = None, webkitTextStroke: str = None, webkitTextStrokeColor: str = None, webkitTextStrokeWidth: str = None, webkitTransform: str = None, webkitTransformOrigin: str = None, webkitTransformStyle: str = None, webkitTransition: str = None, webkitTransitionDelay: str = None, webkitTransitionDuration: str = None, webkitTransitionProperty: str = None, webkitTransitionTimingFunction: str = None, webkitUserSelect: str = None, whiteSpace: str = None, whiteSpaceCollapse: str = None, widows: str = None, width: str = None, willChange: str = None, wordBreak: str = None, wordSpacing: str = None, wordWrap: str = None, writingMode: str = None, x: str = None, y: str = None, zIndex: str = None, zoom: str = None, **kwargs):
+    def __init__(
+        self,
+        accentColor: str = None,
+        alignContent: str = None,
+        alignItems: str = None,
+        alignSelf: str = None,
+        alignmentBaseline: str = None,
+        all: str = None,
+        animation: str = None,
+        animationComposition: str = None,
+        animationDelay: str = None,
+        animationDirection: str = None,
+        animationDuration: str = None,
+        animationFillMode: str = None,
+        animationIterationCount: str = None,
+        animationName: str = None,
+        animationPlayState: str = None,
+        animationTimingFunction: str = None,
+        appearance: str = None,
+        aspectRatio: str = None,
+        backdropFilter: str = None,
+        backfaceVisibility: str = None,
+        background: str = None,
+        backgroundAttachment: str = None,
+        backgroundBlendMode: str = None,
+        backgroundClip: str = None,
+        backgroundColor: str = None,
+        backgroundImage: str = None,
+        backgroundOrigin: str = None,
+        backgroundPosition: str = None,
+        backgroundPositionX: str = None,
+        backgroundPositionY: str = None,
+        backgroundRepeat: str = None,
+        backgroundSize: str = None,
+        baselineShift: str = None,
+        baselineSource: str = None,
+        blockSize: str = None,
+        border: str = None,
+        borderBlock: str = None,
+        borderBlockColor: str = None,
+        borderBlockEnd: str = None,
+        borderBlockEndColor: str = None,
+        borderBlockEndStyle: str = None,
+        borderBlockEndWidth: str = None,
+        borderBlockStart: str = None,
+        borderBlockStartColor: str = None,
+        borderBlockStartStyle: str = None,
+        borderBlockStartWidth: str = None,
+        borderBlockStyle: str = None,
+        borderBlockWidth: str = None,
+        borderBottom: str = None,
+        borderBottomColor: str = None,
+        borderBottomLeftRadius: str = None,
+        borderBottomRightRadius: str = None,
+        borderBottomStyle: str = None,
+        borderBottomWidth: str = None,
+        borderCollapse: str = None,
+        borderColor: str = None,
+        borderEndEndRadius: str = None,
+        borderEndStartRadius: str = None,
+        borderImage: str = None,
+        borderImageOutset: str = None,
+        borderImageRepeat: str = None,
+        borderImageSlice: str = None,
+        borderImageSource: str = None,
+        borderImageWidth: str = None,
+        borderInline: str = None,
+        borderInlineColor: str = None,
+        borderInlineEnd: str = None,
+        borderInlineEndColor: str = None,
+        borderInlineEndStyle: str = None,
+        borderInlineEndWidth: str = None,
+        borderInlineStart: str = None,
+        borderInlineStartColor: str = None,
+        borderInlineStartStyle: str = None,
+        borderInlineStartWidth: str = None,
+        borderInlineStyle: str = None,
+        borderInlineWidth: str = None,
+        borderLeft: str = None,
+        borderLeftColor: str = None,
+        borderLeftStyle: str = None,
+        borderLeftWidth: str = None,
+        borderRadius: str = None,
+        borderRight: str = None,
+        borderRightColor: str = None,
+        borderRightStyle: str = None,
+        borderRightWidth: str = None,
+        borderSpacing: str = None,
+        borderStartEndRadius: str = None,
+        borderStartStartRadius: str = None,
+        borderStyle: str = None,
+        borderTop: str = None,
+        borderTopColor: str = None,
+        borderTopLeftRadius: str = None,
+        borderTopRightRadius: str = None,
+        borderTopStyle: str = None,
+        borderTopWidth: str = None,
+        borderWidth: str = None,
+        bottom: str = None,
+        boxShadow: str = None,
+        boxSizing: str = None,
+        breakAfter: str = None,
+        breakBefore: str = None,
+        breakInside: str = None,
+        captionSide: str = None,
+        caretColor: str = None,
+        clear: str = None,
+        clip: str = None,
+        clipPath: str = None,
+        clipRule: str = None,
+        color: str = None,
+        colorInterpolation: str = None,
+        colorInterpolationFilters: str = None,
+        colorScheme: str = None,
+        columnCount: str = None,
+        columnFill: str = None,
+        columnGap: str = None,
+        columnRule: str = None,
+        columnRuleColor: str = None,
+        columnRuleStyle: str = None,
+        columnRuleWidth: str = None,
+        columnSpan: str = None,
+        columnWidth: str = None,
+        columns: str = None,
+        contain: str = None,
+        containIntrinsicBlockSize: str = None,
+        containIntrinsicHeight: str = None,
+        containIntrinsicInlineSize: str = None,
+        containIntrinsicSize: str = None,
+        containIntrinsicWidth: str = None,
+        container: str = None,
+        containerName: str = None,
+        containerType: str = None,
+        content: str = None,
+        contentVisibility: str = None,
+        counterIncrement: str = None,
+        counterReset: str = None,
+        counterSet: str = None,
+        cssFloat: str = None,
+        cssText: str = None,
+        cursor: str = None,
+        cx: str = None,
+        cy: str = None,
+        d: str = None,
+        direction: str = None,
+        display: str = None,
+        dominantBaseline: str = None,
+        emptyCells: str = None,
+        fill: str = None,
+        fillOpacity: str = None,
+        fillRule: str = None,
+        filter: str = None,
+        flex: str = None,
+        flexBasis: str = None,
+        flexDirection: str = None,
+        flexFlow: str = None,
+        flexGrow: str = None,
+        flexShrink: str = None,
+        flexWrap: str = None,
+        float: str = None,
+        floodColor: str = None,
+        floodOpacity: str = None,
+        font: str = None,
+        fontFamily: str = None,
+        fontFeatureSettings: str = None,
+        fontKerning: str = None,
+        fontOpticalSizing: str = None,
+        fontPalette: str = None,
+        fontSize: str = None,
+        fontSizeAdjust: str = None,
+        fontStretch: str = None,
+        fontStyle: str = None,
+        fontSynthesis: str = None,
+        fontSynthesisSmallCaps: str = None,
+        fontSynthesisStyle: str = None,
+        fontSynthesisWeight: str = None,
+        fontVariant: str = None,
+        fontVariantAlternates: str = None,
+        fontVariantCaps: str = None,
+        fontVariantEastAsian: str = None,
+        fontVariantLigatures: str = None,
+        fontVariantNumeric: str = None,
+        fontVariantPosition: str = None,
+        fontVariationSettings: str = None,
+        fontWeight: str = None,
+        forcedColorAdjust: str = None,
+        gap: str = None,
+        grid: str = None,
+        gridArea: str = None,
+        gridAutoColumns: str = None,
+        gridAutoFlow: str = None,
+        gridAutoRows: str = None,
+        gridColumn: str = None,
+        gridColumnEnd: str = None,
+        gridColumnGap: str = None,
+        gridColumnStart: str = None,
+        gridGap: str = None,
+        gridRow: str = None,
+        gridRowEnd: str = None,
+        gridRowGap: str = None,
+        gridRowStart: str = None,
+        gridTemplate: str = None,
+        gridTemplateAreas: str = None,
+        gridTemplateColumns: str = None,
+        gridTemplateRows: str = None,
+        height: str = None,
+        hyphenateCharacter: str = None,
+        hyphens: str = None,
+        imageOrientation: str = None,
+        imageRendering: str = None,
+        inlineSize: str = None,
+        inset: str = None,
+        insetBlock: str = None,
+        insetBlockEnd: str = None,
+        insetBlockStart: str = None,
+        insetInline: str = None,
+        insetInlineEnd: str = None,
+        insetInlineStart: str = None,
+        isolation: str = None,
+        justifyContent: str = None,
+        justifyItems: str = None,
+        justifySelf: str = None,
+        left: str = None,
+        length: float = None,
+        letterSpacing: str = None,
+        lightingColor: str = None,
+        lineBreak: str = None,
+        lineHeight: str = None,
+        listStyle: str = None,
+        listStyleImage: str = None,
+        listStylePosition: str = None,
+        listStyleType: str = None,
+        margin: str = None,
+        marginBlock: str = None,
+        marginBlockEnd: str = None,
+        marginBlockStart: str = None,
+        marginBottom: str = None,
+        marginInline: str = None,
+        marginInlineEnd: str = None,
+        marginInlineStart: str = None,
+        marginLeft: str = None,
+        marginRight: str = None,
+        marginTop: str = None,
+        marker: str = None,
+        markerEnd: str = None,
+        markerMid: str = None,
+        markerStart: str = None,
+        mask: str = None,
+        maskClip: str = None,
+        maskComposite: str = None,
+        maskImage: str = None,
+        maskMode: str = None,
+        maskOrigin: str = None,
+        maskPosition: str = None,
+        maskRepeat: str = None,
+        maskSize: str = None,
+        maskType: str = None,
+        mathDepth: str = None,
+        mathStyle: str = None,
+        maxBlockSize: str = None,
+        maxHeight: str = None,
+        maxInlineSize: str = None,
+        maxWidth: str = None,
+        minBlockSize: str = None,
+        minHeight: str = None,
+        minInlineSize: str = None,
+        minWidth: str = None,
+        mixBlendMode: str = None,
+        objectFit: str = None,
+        objectPosition: str = None,
+        offset: str = None,
+        offsetAnchor: str = None,
+        offsetDistance: str = None,
+        offsetPath: str = None,
+        offsetPosition: str = None,
+        offsetRotate: str = None,
+        opacity: str = None,
+        order: str = None,
+        orphans: str = None,
+        outline: str = None,
+        outlineColor: str = None,
+        outlineOffset: str = None,
+        outlineStyle: str = None,
+        outlineWidth: str = None,
+        overflow: str = None,
+        overflowAnchor: str = None,
+        overflowClipMargin: str = None,
+        overflowWrap: str = None,
+        overflowX: str = None,
+        overflowY: str = None,
+        overscrollBehavior: str = None,
+        overscrollBehaviorBlock: str = None,
+        overscrollBehaviorInline: str = None,
+        overscrollBehaviorX: str = None,
+        overscrollBehaviorY: str = None,
+        padding: str = None,
+        paddingBlock: str = None,
+        paddingBlockEnd: str = None,
+        paddingBlockStart: str = None,
+        paddingBottom: str = None,
+        paddingInline: str = None,
+        paddingInlineEnd: str = None,
+        paddingInlineStart: str = None,
+        paddingLeft: str = None,
+        paddingRight: str = None,
+        paddingTop: str = None,
+        page: str = None,
+        pageBreakAfter: str = None,
+        pageBreakBefore: str = None,
+        pageBreakInside: str = None,
+        paintOrder: str = None,
+        perspective: str = None,
+        perspectiveOrigin: str = None,
+        placeContent: str = None,
+        placeItems: str = None,
+        placeSelf: str = None,
+        pointerEvents: str = None,
+        position: str = None,
+        printColorAdjust: str = None,
+        quotes: str = None,
+        r: str = None,
+        resize: str = None,
+        right: str = None,
+        rotate: str = None,
+        rowGap: str = None,
+        rubyPosition: str = None,
+        rx: str = None,
+        ry: str = None,
+        scale: str = None,
+        scrollBehavior: str = None,
+        scrollMargin: str = None,
+        scrollMarginBlock: str = None,
+        scrollMarginBlockEnd: str = None,
+        scrollMarginBlockStart: str = None,
+        scrollMarginBottom: str = None,
+        scrollMarginInline: str = None,
+        scrollMarginInlineEnd: str = None,
+        scrollMarginInlineStart: str = None,
+        scrollMarginLeft: str = None,
+        scrollMarginRight: str = None,
+        scrollMarginTop: str = None,
+        scrollPadding: str = None,
+        scrollPaddingBlock: str = None,
+        scrollPaddingBlockEnd: str = None,
+        scrollPaddingBlockStart: str = None,
+        scrollPaddingBottom: str = None,
+        scrollPaddingInline: str = None,
+        scrollPaddingInlineEnd: str = None,
+        scrollPaddingInlineStart: str = None,
+        scrollPaddingLeft: str = None,
+        scrollPaddingRight: str = None,
+        scrollPaddingTop: str = None,
+        scrollSnapAlign: str = None,
+        scrollSnapStop: str = None,
+        scrollSnapType: str = None,
+        scrollbarColor: str = None,
+        scrollbarGutter: str = None,
+        scrollbarWidth: str = None,
+        shapeImageThreshold: str = None,
+        shapeMargin: str = None,
+        shapeOutside: str = None,
+        shapeRendering: str = None,
+        stopColor: str = None,
+        stopOpacity: str = None,
+        stroke: str = None,
+        strokeDasharray: str = None,
+        strokeDashoffset: str = None,
+        strokeLinecap: str = None,
+        strokeLinejoin: str = None,
+        strokeMiterlimit: str = None,
+        strokeOpacity: str = None,
+        strokeWidth: str = None,
+        tabSize: str = None,
+        tableLayout: str = None,
+        textAlign: str = None,
+        textAlignLast: str = None,
+        textAnchor: str = None,
+        textCombineUpright: str = None,
+        textDecoration: str = None,
+        textDecorationColor: str = None,
+        textDecorationLine: str = None,
+        textDecorationSkipInk: str = None,
+        textDecorationStyle: str = None,
+        textDecorationThickness: str = None,
+        textEmphasis: str = None,
+        textEmphasisColor: str = None,
+        textEmphasisPosition: str = None,
+        textEmphasisStyle: str = None,
+        textIndent: str = None,
+        textOrientation: str = None,
+        textOverflow: str = None,
+        textRendering: str = None,
+        textShadow: str = None,
+        textTransform: str = None,
+        textUnderlineOffset: str = None,
+        textUnderlinePosition: str = None,
+        textWrap: str = None,
+        textWrapMode: str = None,
+        textWrapStyle: str = None,
+        top: str = None,
+        touchAction: str = None,
+        transform: str = None,
+        transformBox: str = None,
+        transformOrigin: str = None,
+        transformStyle: str = None,
+        transition: str = None,
+        transitionBehavior: str = None,
+        transitionDelay: str = None,
+        transitionDuration: str = None,
+        transitionProperty: str = None,
+        transitionTimingFunction: str = None,
+        translate: str = None,
+        unicodeBidi: str = None,
+        userSelect: str = None,
+        vectorEffect: str = None,
+        verticalAlign: str = None,
+        visibility: str = None,
+        webkitAlignContent: str = None,
+        webkitAlignItems: str = None,
+        webkitAlignSelf: str = None,
+        webkitAnimation: str = None,
+        webkitAnimationDelay: str = None,
+        webkitAnimationDirection: str = None,
+        webkitAnimationDuration: str = None,
+        webkitAnimationFillMode: str = None,
+        webkitAnimationIterationCount: str = None,
+        webkitAnimationName: str = None,
+        webkitAnimationPlayState: str = None,
+        webkitAnimationTimingFunction: str = None,
+        webkitAppearance: str = None,
+        webkitBackfaceVisibility: str = None,
+        webkitBackgroundClip: str = None,
+        webkitBackgroundOrigin: str = None,
+        webkitBackgroundSize: str = None,
+        webkitBorderBottomLeftRadius: str = None,
+        webkitBorderBottomRightRadius: str = None,
+        webkitBorderRadius: str = None,
+        webkitBorderTopLeftRadius: str = None,
+        webkitBorderTopRightRadius: str = None,
+        webkitBoxAlign: str = None,
+        webkitBoxFlex: str = None,
+        webkitBoxOrdinalGroup: str = None,
+        webkitBoxOrient: str = None,
+        webkitBoxPack: str = None,
+        webkitBoxShadow: str = None,
+        webkitBoxSizing: str = None,
+        webkitFilter: str = None,
+        webkitFlex: str = None,
+        webkitFlexBasis: str = None,
+        webkitFlexDirection: str = None,
+        webkitFlexFlow: str = None,
+        webkitFlexGrow: str = None,
+        webkitFlexShrink: str = None,
+        webkitFlexWrap: str = None,
+        webkitJustifyContent: str = None,
+        webkitLineClamp: str = None,
+        webkitMask: str = None,
+        webkitMaskBoxImage: str = None,
+        webkitMaskBoxImageOutset: str = None,
+        webkitMaskBoxImageRepeat: str = None,
+        webkitMaskBoxImageSlice: str = None,
+        webkitMaskBoxImageSource: str = None,
+        webkitMaskBoxImageWidth: str = None,
+        webkitMaskClip: str = None,
+        webkitMaskComposite: str = None,
+        webkitMaskImage: str = None,
+        webkitMaskOrigin: str = None,
+        webkitMaskPosition: str = None,
+        webkitMaskRepeat: str = None,
+        webkitMaskSize: str = None,
+        webkitOrder: str = None,
+        webkitPerspective: str = None,
+        webkitPerspectiveOrigin: str = None,
+        webkitTextFillColor: str = None,
+        webkitTextSizeAdjust: str = None,
+        webkitTextStroke: str = None,
+        webkitTextStrokeColor: str = None,
+        webkitTextStrokeWidth: str = None,
+        webkitTransform: str = None,
+        webkitTransformOrigin: str = None,
+        webkitTransformStyle: str = None,
+        webkitTransition: str = None,
+        webkitTransitionDelay: str = None,
+        webkitTransitionDuration: str = None,
+        webkitTransitionProperty: str = None,
+        webkitTransitionTimingFunction: str = None,
+        webkitUserSelect: str = None,
+        whiteSpace: str = None,
+        whiteSpaceCollapse: str = None,
+        widows: str = None,
+        width: str = None,
+        willChange: str = None,
+        wordBreak: str = None,
+        wordSpacing: str = None,
+        wordWrap: str = None,
+        writingMode: str = None,
+        x: str = None,
+        y: str = None,
+        zIndex: str = None,
+        zoom: str = None,
+        **kwargs,
+    ):
         self.accentColor = accentColor
         self.alignContent = alignContent
         self.alignItems = alignItems
@@ -596,19 +1186,24 @@ class CSSStyles(SchemaBase):
         self.additional_params = kwargs
 
 
-
 class Centroid(SchemaBase):
-    def __init__(self, centroid: Union[Union[bool, float, str], List[Union[bool, float, str]]]):
+    def __init__(
+        self, centroid: Union[Union[bool, float, str], List[Union[bool, float, str]]]
+    ):
         self.centroid = centroid
 
 
 class CentroidX(SchemaBase):
-    def __init__(self, centroidX: Union[Union[bool, float, str], List[Union[bool, float, str]]]):
+    def __init__(
+        self, centroidX: Union[Union[bool, float, str], List[Union[bool, float, str]]]
+    ):
         self.centroidX = centroidX
 
 
 class CentroidY(SchemaBase):
-    def __init__(self, centroidY: Union[Union[bool, float, str], List[Union[bool, float, str]]]):
+    def __init__(
+        self, centroidY: Union[Union[bool, float, str], List[Union[bool, float, str]]]
+    ):
         self.centroidY = centroidY
 
 
@@ -623,20 +1218,78 @@ class ChannelDomainValue(SchemaBase):
 
 
 class ChannelName(SchemaBase):
-    enum_options = ['ariaLabel', 'fill', 'fillOpacity', 'fontSize', 'fx', 'fy', 'geometry', 'height', 'href', 'length', 'opacity', 'path', 'r', 'rotate', 'src', 'stroke', 'strokeOpacity', 'strokeWidth', 'symbol', 'text', 'title', 'weight', 'width', 'x', 'x1', 'x2', 'y', 'y1', 'y2', 'z']
+    enum_options = [
+        "ariaLabel",
+        "fill",
+        "fillOpacity",
+        "fontSize",
+        "fx",
+        "fy",
+        "geometry",
+        "height",
+        "href",
+        "length",
+        "opacity",
+        "path",
+        "r",
+        "rotate",
+        "src",
+        "stroke",
+        "strokeOpacity",
+        "strokeWidth",
+        "symbol",
+        "text",
+        "title",
+        "weight",
+        "width",
+        "x",
+        "x1",
+        "x2",
+        "y",
+        "y1",
+        "y2",
+        "z",
+    ]
 
     def __init__(self, value: str):
         if value not in self.enum_options:
-            raise ValueError(f"Value of enum not in allowed values: {self.enum_options}")
+            raise ValueError(
+                f"Value of enum not in allowed values: {self.enum_options}"
+            )
         self.value = value
 
 
 class ColorScaleType(SchemaBase):
-    enum_options = ['linear', 'pow', 'sqrt', 'log', 'symlog', 'utc', 'time', 'point', 'band', 'ordinal', 'sequential', 'cyclical', 'diverging', 'diverging-log', 'diverging-pow', 'diverging-sqrt', 'diverging-symlog', 'categorical', 'threshold', 'quantile', 'quantize', 'identity']
+    enum_options = [
+        "linear",
+        "pow",
+        "sqrt",
+        "log",
+        "symlog",
+        "utc",
+        "time",
+        "point",
+        "band",
+        "ordinal",
+        "sequential",
+        "cyclical",
+        "diverging",
+        "diverging-log",
+        "diverging-pow",
+        "diverging-sqrt",
+        "diverging-symlog",
+        "categorical",
+        "threshold",
+        "quantile",
+        "quantize",
+        "identity",
+    ]
 
     def __init__(self, value: str):
         if value not in self.enum_options:
-            raise ValueError(f"Value of enum not in allowed values: {self.enum_options}")
+            raise ValueError(
+                f"Value of enum not in allowed values: {self.enum_options}"
+            )
         self.value = value
 
 
@@ -646,12 +1299,39 @@ class ColorScheme(SchemaBase):
 
 
 class ColumnTransform(SchemaBase):
-    def __init__(self, value: Union["DateDay", "Centroid", "DateMonth", "CentroidX", "CentroidY", "DateMonthDay", "Bin", "GeoJSON"]):
+    def __init__(
+        self,
+        value: Union[
+            "DateDay",
+            "Centroid",
+            "DateMonth",
+            "CentroidX",
+            "CentroidY",
+            "DateMonthDay",
+            "Bin",
+            "GeoJSON",
+        ],
+    ):
         self.value = value
 
 
 class Component(SchemaBase):
-    def __init__(self, value: Union["Legend", "HConcat", "HSpace", "Menu", "Plot", "Search", "VConcat", "Slider", "VSpace", "PlotMark", "Table"]):
+    def __init__(
+        self,
+        value: Union[
+            "Legend",
+            "HConcat",
+            "HSpace",
+            "Menu",
+            "Plot",
+            "Search",
+            "VConcat",
+            "Slider",
+            "VSpace",
+            "PlotMark",
+            "Table",
+        ],
+    ):
         self.value = value
 
 
@@ -661,16 +1341,28 @@ class Config(SchemaBase):
 
 
 class ContinuousScaleType(SchemaBase):
-    enum_options = ['linear', 'pow', 'sqrt', 'log', 'symlog', 'utc', 'time', 'identity']
+    enum_options = ["linear", "pow", "sqrt", "log", "symlog", "utc", "time", "identity"]
 
     def __init__(self, value: str):
         if value not in self.enum_options:
-            raise ValueError(f"Value of enum not in allowed values: {self.enum_options}")
+            raise ValueError(
+                f"Value of enum not in allowed values: {self.enum_options}"
+            )
         self.value = value
 
 
 class Count(SchemaBase):
-    def __init__(self, count: Union[Any, Union[Union[bool, float, str], List[Union[bool, float, str]]]], distinct: bool = None, orderby: Union["TransformField", List["TransformField"]] = None, partitionby: Union["TransformField", List["TransformField"]] = None, range: Union[List[Union[float, Any]], "ParamRef"] = None, rows: Union[List[Union[float, Any]], "ParamRef"] = None):
+    def __init__(
+        self,
+        count: Union[
+            Any, Union[Union[bool, float, str], List[Union[bool, float, str]]]
+        ],
+        distinct: bool = None,
+        orderby: Union["TransformField", List["TransformField"]] = None,
+        partitionby: Union["TransformField", List["TransformField"]] = None,
+        range: Union[List[Union[float, Any]], "ParamRef"] = None,
+        rows: Union[List[Union[float, Any]], "ParamRef"] = None,
+    ):
         self.count = count
         self.distinct = distinct
         self.orderby = orderby
@@ -680,7 +1372,14 @@ class Count(SchemaBase):
 
 
 class CumeDist(SchemaBase):
-    def __init__(self, cume_dist: Union[Any, Any], orderby: Union["TransformField", List["TransformField"]] = None, partitionby: Union["TransformField", List["TransformField"]] = None, range: Union[List[Union[float, Any]], "ParamRef"] = None, rows: Union[List[Union[float, Any]], "ParamRef"] = None):
+    def __init__(
+        self,
+        cume_dist: Union[Any, Any],
+        orderby: Union["TransformField", List["TransformField"]] = None,
+        partitionby: Union["TransformField", List["TransformField"]] = None,
+        range: Union[List[Union[float, Any]], "ParamRef"] = None,
+        rows: Union[List[Union[float, Any]], "ParamRef"] = None,
+    ):
         self.cume_dist = cume_dist
         self.orderby = orderby
         self.partitionby = partitionby
@@ -689,16 +1388,52 @@ class CumeDist(SchemaBase):
 
 
 class CurveName(SchemaBase):
-    enum_options = ['basis', 'basis-closed', 'basis-open', 'bundle', 'bump-x', 'bump-y', 'cardinal', 'cardinal-closed', 'cardinal-open', 'catmull-rom', 'catmull-rom-closed', 'catmull-rom-open', 'linear', 'linear-closed', 'monotone-x', 'monotone-y', 'natural', 'step', 'step-after', 'step-before']
+    enum_options = [
+        "basis",
+        "basis-closed",
+        "basis-open",
+        "bundle",
+        "bump-x",
+        "bump-y",
+        "cardinal",
+        "cardinal-closed",
+        "cardinal-open",
+        "catmull-rom",
+        "catmull-rom-closed",
+        "catmull-rom-open",
+        "linear",
+        "linear-closed",
+        "monotone-x",
+        "monotone-y",
+        "natural",
+        "step",
+        "step-after",
+        "step-before",
+    ]
 
     def __init__(self, value: str):
         if value not in self.enum_options:
-            raise ValueError(f"Value of enum not in allowed values: {self.enum_options}")
+            raise ValueError(
+                f"Value of enum not in allowed values: {self.enum_options}"
+            )
         self.value = value
 
 
 class DataDefinition(SchemaBase):
-    def __init__(self, value: Union["DataJSON", "DataFile", "DataCSV", "DataParquet", "DataSpatial", "DataArray", "DataJSONObjects", "DataQuery", "DataTable"]):
+    def __init__(
+        self,
+        value: Union[
+            "DataJSON",
+            "DataFile",
+            "DataCSV",
+            "DataParquet",
+            "DataSpatial",
+            "DataArray",
+            "DataJSONObjects",
+            "DataQuery",
+            "DataTable",
+        ],
+    ):
         self.value = value
 
 
@@ -708,7 +1443,18 @@ class DataArray(SchemaBase):
 
 
 class DataCSV(SchemaBase):
-    def __init__(self, file: str, type: str, delimiter: str = None, replace: bool = None, sample_size: float = None, select: List[str] = None, temp: bool = None, view: bool = None, where: Union[str, List[str]] = None):
+    def __init__(
+        self,
+        file: str,
+        type: str,
+        delimiter: str = None,
+        replace: bool = None,
+        sample_size: float = None,
+        select: List[str] = None,
+        temp: bool = None,
+        view: bool = None,
+        where: Union[str, List[str]] = None,
+    ):
         self.delimiter = delimiter
         self.file = file
         self.replace = replace
@@ -721,7 +1467,15 @@ class DataCSV(SchemaBase):
 
 
 class DataFile(SchemaBase):
-    def __init__(self, file: str, replace: bool = None, select: List[str] = None, temp: bool = None, view: bool = None, where: Union[str, List[str]] = None):
+    def __init__(
+        self,
+        file: str,
+        replace: bool = None,
+        select: List[str] = None,
+        temp: bool = None,
+        view: bool = None,
+        where: Union[str, List[str]] = None,
+    ):
         self.file = file
         self.replace = replace
         self.select = select
@@ -731,7 +1485,16 @@ class DataFile(SchemaBase):
 
 
 class DataJSON(SchemaBase):
-    def __init__(self, file: str, type: str, replace: bool = None, select: List[str] = None, temp: bool = None, view: bool = None, where: Union[str, List[str]] = None):
+    def __init__(
+        self,
+        file: str,
+        type: str,
+        replace: bool = None,
+        select: List[str] = None,
+        temp: bool = None,
+        view: bool = None,
+        where: Union[str, List[str]] = None,
+    ):
         self.file = file
         self.replace = replace
         self.select = select
@@ -742,7 +1505,16 @@ class DataJSON(SchemaBase):
 
 
 class DataJSONObjects(SchemaBase):
-    def __init__(self, data: List[Dict[str, Any]], replace: bool = None, select: List[str] = None, temp: bool = None, type: str = None, view: bool = None, where: Union[str, List[str]] = None):
+    def __init__(
+        self,
+        data: List[Dict[str, Any]],
+        replace: bool = None,
+        select: List[str] = None,
+        temp: bool = None,
+        type: str = None,
+        view: bool = None,
+        where: Union[str, List[str]] = None,
+    ):
         self.data = data
         self.replace = replace
         self.select = select
@@ -753,7 +1525,16 @@ class DataJSONObjects(SchemaBase):
 
 
 class DataParquet(SchemaBase):
-    def __init__(self, file: str, type: str, replace: bool = None, select: List[str] = None, temp: bool = None, view: bool = None, where: Union[str, List[str]] = None):
+    def __init__(
+        self,
+        file: str,
+        type: str,
+        replace: bool = None,
+        select: List[str] = None,
+        temp: bool = None,
+        view: bool = None,
+        where: Union[str, List[str]] = None,
+    ):
         self.file = file
         self.replace = replace
         self.select = select
@@ -769,7 +1550,17 @@ class DataQuery(SchemaBase):
 
 
 class DataSpatial(SchemaBase):
-    def __init__(self, file: str, type: str, layer: str = None, replace: bool = None, select: List[str] = None, temp: bool = None, view: bool = None, where: Union[str, List[str]] = None):
+    def __init__(
+        self,
+        file: str,
+        type: str,
+        layer: str = None,
+        replace: bool = None,
+        select: List[str] = None,
+        temp: bool = None,
+        view: bool = None,
+        where: Union[str, List[str]] = None,
+    ):
         self.file = file
         self.layer = layer
         self.replace = replace
@@ -781,7 +1572,16 @@ class DataSpatial(SchemaBase):
 
 
 class DataTable(SchemaBase):
-    def __init__(self, query: str, type: str, replace: bool = None, select: List[str] = None, temp: bool = None, view: bool = None, where: Union[str, List[str]] = None):
+    def __init__(
+        self,
+        query: str,
+        type: str,
+        replace: bool = None,
+        select: List[str] = None,
+        temp: bool = None,
+        view: bool = None,
+        where: Union[str, List[str]] = None,
+    ):
         self.query = query
         self.replace = replace
         self.select = select
@@ -792,22 +1592,36 @@ class DataTable(SchemaBase):
 
 
 class DateDay(SchemaBase):
-    def __init__(self, dateDay: Union[Union[bool, float, str], List[Union[bool, float, str]]]):
+    def __init__(
+        self, dateDay: Union[Union[bool, float, str], List[Union[bool, float, str]]]
+    ):
         self.dateDay = dateDay
 
 
 class DateMonth(SchemaBase):
-    def __init__(self, dateMonth: Union[Union[bool, float, str], List[Union[bool, float, str]]]):
+    def __init__(
+        self, dateMonth: Union[Union[bool, float, str], List[Union[bool, float, str]]]
+    ):
         self.dateMonth = dateMonth
 
 
 class DateMonthDay(SchemaBase):
-    def __init__(self, dateMonthDay: Union[Union[bool, float, str], List[Union[bool, float, str]]]):
+    def __init__(
+        self,
+        dateMonthDay: Union[Union[bool, float, str], List[Union[bool, float, str]]],
+    ):
         self.dateMonthDay = dateMonthDay
 
 
 class DenseRank(SchemaBase):
-    def __init__(self, dense_rank: Union[Any, Any], orderby: Union["TransformField", List["TransformField"]] = None, partitionby: Union["TransformField", List["TransformField"]] = None, range: Union[List[Union[float, Any]], "ParamRef"] = None, rows: Union[List[Union[float, Any]], "ParamRef"] = None):
+    def __init__(
+        self,
+        dense_rank: Union[Any, Any],
+        orderby: Union["TransformField", List["TransformField"]] = None,
+        partitionby: Union["TransformField", List["TransformField"]] = None,
+        range: Union[List[Union[float, Any]], "ParamRef"] = None,
+        rows: Union[List[Union[float, Any]], "ParamRef"] = None,
+    ):
         self.dense_rank = dense_rank
         self.orderby = orderby
         self.partitionby = partitionby
@@ -826,16 +1640,26 @@ class DensityY(SchemaBase):
 
 
 class DiscreteScaleType(SchemaBase):
-    enum_options = ['ordinal', 'identity']
+    enum_options = ["ordinal", "identity"]
 
     def __init__(self, value: str):
         if value not in self.enum_options:
-            raise ValueError(f"Value of enum not in allowed values: {self.enum_options}")
+            raise ValueError(
+                f"Value of enum not in allowed values: {self.enum_options}"
+            )
         self.value = value
 
 
 class First(SchemaBase):
-    def __init__(self, first: Union[Union[bool, float, str], List[Union[bool, float, str]]], distinct: bool = None, orderby: Union["TransformField", List["TransformField"]] = None, partitionby: Union["TransformField", List["TransformField"]] = None, range: Union[List[Union[float, Any]], "ParamRef"] = None, rows: Union[List[Union[float, Any]], "ParamRef"] = None):
+    def __init__(
+        self,
+        first: Union[Union[bool, float, str], List[Union[bool, float, str]]],
+        distinct: bool = None,
+        orderby: Union["TransformField", List["TransformField"]] = None,
+        partitionby: Union["TransformField", List["TransformField"]] = None,
+        range: Union[List[Union[float, Any]], "ParamRef"] = None,
+        rows: Union[List[Union[float, Any]], "ParamRef"] = None,
+    ):
         self.distinct = distinct
         self.first = first
         self.orderby = orderby
@@ -845,7 +1669,14 @@ class First(SchemaBase):
 
 
 class FirstValue(SchemaBase):
-    def __init__(self, first_value: Union[Union[bool, float, str], List[Union[bool, float, str]]], orderby: Union["TransformField", List["TransformField"]] = None, partitionby: Union["TransformField", List["TransformField"]] = None, range: Union[List[Union[float, Any]], "ParamRef"] = None, rows: Union[List[Union[float, Any]], "ParamRef"] = None):
+    def __init__(
+        self,
+        first_value: Union[Union[bool, float, str], List[Union[bool, float, str]]],
+        orderby: Union["TransformField", List["TransformField"]] = None,
+        partitionby: Union["TransformField", List["TransformField"]] = None,
+        range: Union[List[Union[float, Any]], "ParamRef"] = None,
+        rows: Union[List[Union[float, Any]], "ParamRef"] = None,
+    ):
         self.first_value = first_value
         self.orderby = orderby
         self.partitionby = partitionby
@@ -859,25 +1690,41 @@ class Fixed(SchemaBase):
 
 
 class FrameAnchor(SchemaBase):
-    enum_options = ['middle', 'top-left', 'top', 'top-right', 'right', 'bottom-right', 'bottom', 'bottom-left', 'left']
+    enum_options = [
+        "middle",
+        "top-left",
+        "top",
+        "top-right",
+        "right",
+        "bottom-right",
+        "bottom",
+        "bottom-left",
+        "left",
+    ]
 
     def __init__(self, value: str):
         if value not in self.enum_options:
-            raise ValueError(f"Value of enum not in allowed values: {self.enum_options}")
+            raise ValueError(
+                f"Value of enum not in allowed values: {self.enum_options}"
+            )
         self.value = value
 
 
 class GeoJSON(SchemaBase):
-    def __init__(self, geojson: Union[Union[bool, float, str], List[Union[bool, float, str]]]):
+    def __init__(
+        self, geojson: Union[Union[bool, float, str], List[Union[bool, float, str]]]
+    ):
         self.geojson = geojson
 
 
 class GridInterpolate(SchemaBase):
-    enum_options = ['none', 'linear', 'nearest', 'barycentric', 'random-walk']
+    enum_options = ["none", "linear", "nearest", "barycentric", "random-walk"]
 
     def __init__(self, value: str):
         if value not in self.enum_options:
-            raise ValueError(f"Value of enum not in allowed values: {self.enum_options}")
+            raise ValueError(
+                f"Value of enum not in allowed values: {self.enum_options}"
+            )
         self.value = value
 
 
@@ -892,11 +1739,13 @@ class ParamRef(SchemaBase):
 
 
 class Interpolate(SchemaBase):
-    enum_options = ['number', 'rgb', 'hsl', 'hcl', 'lab']
+    enum_options = ["number", "rgb", "hsl", "hcl", "lab"]
 
     def __init__(self, value: str):
         if value not in self.enum_options:
-            raise ValueError(f"Value of enum not in allowed values: {self.enum_options}")
+            raise ValueError(
+                f"Value of enum not in allowed values: {self.enum_options}"
+            )
         self.value = value
 
 
@@ -906,16 +1755,25 @@ class LiteralTimeInterval(SchemaBase):
 
 
 class LabelArrow(SchemaBase):
-    enum_options = ['auto', 'up', 'right', 'down', 'left', 'none', True, False, None]
+    enum_options = ["auto", "up", "right", "down", "left", "none", True, False, None]
 
     def __init__(self, value: Union[bool, str, Any]):
         if value not in self.enum_options:
-            raise ValueError(f"Value of enum not in allowed values: {self.enum_options}")
+            raise ValueError(
+                f"Value of enum not in allowed values: {self.enum_options}"
+            )
         self.value = value
 
 
 class Lag(SchemaBase):
-    def __init__(self, lag: Union[Union[bool, float, str], List[Union[bool, float, str]]], orderby: Union["TransformField", List["TransformField"]] = None, partitionby: Union["TransformField", List["TransformField"]] = None, range: Union[List[Union[float, Any]], "ParamRef"] = None, rows: Union[List[Union[float, Any]], "ParamRef"] = None):
+    def __init__(
+        self,
+        lag: Union[Union[bool, float, str], List[Union[bool, float, str]]],
+        orderby: Union["TransformField", List["TransformField"]] = None,
+        partitionby: Union["TransformField", List["TransformField"]] = None,
+        range: Union[List[Union[float, Any]], "ParamRef"] = None,
+        rows: Union[List[Union[float, Any]], "ParamRef"] = None,
+    ):
         self.lag = lag
         self.orderby = orderby
         self.partitionby = partitionby
@@ -924,7 +1782,15 @@ class Lag(SchemaBase):
 
 
 class Last(SchemaBase):
-    def __init__(self, last: Union[Union[bool, float, str], List[Union[bool, float, str]]], distinct: bool = None, orderby: Union["TransformField", List["TransformField"]] = None, partitionby: Union["TransformField", List["TransformField"]] = None, range: Union[List[Union[float, Any]], "ParamRef"] = None, rows: Union[List[Union[float, Any]], "ParamRef"] = None):
+    def __init__(
+        self,
+        last: Union[Union[bool, float, str], List[Union[bool, float, str]]],
+        distinct: bool = None,
+        orderby: Union["TransformField", List["TransformField"]] = None,
+        partitionby: Union["TransformField", List["TransformField"]] = None,
+        range: Union[List[Union[float, Any]], "ParamRef"] = None,
+        rows: Union[List[Union[float, Any]], "ParamRef"] = None,
+    ):
         self.distinct = distinct
         self.last = last
         self.orderby = orderby
@@ -934,7 +1800,14 @@ class Last(SchemaBase):
 
 
 class LastValue(SchemaBase):
-    def __init__(self, last_value: Union[Union[bool, float, str], List[Union[bool, float, str]]], orderby: Union["TransformField", List["TransformField"]] = None, partitionby: Union["TransformField", List["TransformField"]] = None, range: Union[List[Union[float, Any]], "ParamRef"] = None, rows: Union[List[Union[float, Any]], "ParamRef"] = None):
+    def __init__(
+        self,
+        last_value: Union[Union[bool, float, str], List[Union[bool, float, str]]],
+        orderby: Union["TransformField", List["TransformField"]] = None,
+        partitionby: Union["TransformField", List["TransformField"]] = None,
+        range: Union[List[Union[float, Any]], "ParamRef"] = None,
+        rows: Union[List[Union[float, Any]], "ParamRef"] = None,
+    ):
         self.last_value = last_value
         self.orderby = orderby
         self.partitionby = partitionby
@@ -943,7 +1816,14 @@ class LastValue(SchemaBase):
 
 
 class Lead(SchemaBase):
-    def __init__(self, lag: Union[Union[bool, float, str], List[Union[bool, float, str]]], orderby: Union["TransformField", List["TransformField"]] = None, partitionby: Union["TransformField", List["TransformField"]] = None, range: Union[List[Union[float, Any]], "ParamRef"] = None, rows: Union[List[Union[float, Any]], "ParamRef"] = None):
+    def __init__(
+        self,
+        lag: Union[Union[bool, float, str], List[Union[bool, float, str]]],
+        orderby: Union["TransformField", List["TransformField"]] = None,
+        partitionby: Union["TransformField", List["TransformField"]] = None,
+        range: Union[List[Union[float, Any]], "ParamRef"] = None,
+        rows: Union[List[Union[float, Any]], "ParamRef"] = None,
+    ):
         self.lag = lag
         self.orderby = orderby
         self.partitionby = partitionby
@@ -952,16 +1832,36 @@ class Lead(SchemaBase):
 
 
 class MarkerName(SchemaBase):
-    enum_options = ['arrow', 'arrow-reverse', 'dot', 'circle', 'circle-fill', 'circle-stroke', 'tick', 'tick-x', 'tick-y']
+    enum_options = [
+        "arrow",
+        "arrow-reverse",
+        "dot",
+        "circle",
+        "circle-fill",
+        "circle-stroke",
+        "tick",
+        "tick-x",
+        "tick-y",
+    ]
 
     def __init__(self, value: str):
         if value not in self.enum_options:
-            raise ValueError(f"Value of enum not in allowed values: {self.enum_options}")
+            raise ValueError(
+                f"Value of enum not in allowed values: {self.enum_options}"
+            )
         self.value = value
 
 
 class Max(SchemaBase):
-    def __init__(self, max: Union[Union[bool, float, str], List[Union[bool, float, str]]], distinct: bool = None, orderby: Union["TransformField", List["TransformField"]] = None, partitionby: Union["TransformField", List["TransformField"]] = None, range: Union[List[Union[float, Any]], "ParamRef"] = None, rows: Union[List[Union[float, Any]], "ParamRef"] = None):
+    def __init__(
+        self,
+        max: Union[Union[bool, float, str], List[Union[bool, float, str]]],
+        distinct: bool = None,
+        orderby: Union["TransformField", List["TransformField"]] = None,
+        partitionby: Union["TransformField", List["TransformField"]] = None,
+        range: Union[List[Union[float, Any]], "ParamRef"] = None,
+        rows: Union[List[Union[float, Any]], "ParamRef"] = None,
+    ):
         self.distinct = distinct
         self.max = max
         self.orderby = orderby
@@ -971,7 +1871,15 @@ class Max(SchemaBase):
 
 
 class Median(SchemaBase):
-    def __init__(self, median: Union[Union[bool, float, str], List[Union[bool, float, str]]], distinct: bool = None, orderby: Union["TransformField", List["TransformField"]] = None, partitionby: Union["TransformField", List["TransformField"]] = None, range: Union[List[Union[float, Any]], "ParamRef"] = None, rows: Union[List[Union[float, Any]], "ParamRef"] = None):
+    def __init__(
+        self,
+        median: Union[Union[bool, float, str], List[Union[bool, float, str]]],
+        distinct: bool = None,
+        orderby: Union["TransformField", List["TransformField"]] = None,
+        partitionby: Union["TransformField", List["TransformField"]] = None,
+        range: Union[List[Union[float, Any]], "ParamRef"] = None,
+        rows: Union[List[Union[float, Any]], "ParamRef"] = None,
+    ):
         self.distinct = distinct
         self.median = median
         self.orderby = orderby
@@ -988,7 +1896,15 @@ class Meta(SchemaBase):
 
 
 class Min(SchemaBase):
-    def __init__(self, min: Union[Union[bool, float, str], List[Union[bool, float, str]]], distinct: bool = None, orderby: Union["TransformField", List["TransformField"]] = None, partitionby: Union["TransformField", List["TransformField"]] = None, range: Union[List[Union[float, Any]], "ParamRef"] = None, rows: Union[List[Union[float, Any]], "ParamRef"] = None):
+    def __init__(
+        self,
+        min: Union[Union[bool, float, str], List[Union[bool, float, str]]],
+        distinct: bool = None,
+        orderby: Union["TransformField", List["TransformField"]] = None,
+        partitionby: Union["TransformField", List["TransformField"]] = None,
+        range: Union[List[Union[float, Any]], "ParamRef"] = None,
+        rows: Union[List[Union[float, Any]], "ParamRef"] = None,
+    ):
         self.distinct = distinct
         self.min = min
         self.orderby = orderby
@@ -998,7 +1914,15 @@ class Min(SchemaBase):
 
 
 class Mode(SchemaBase):
-    def __init__(self, mode: Union[Union[bool, float, str], List[Union[bool, float, str]]], distinct: bool = None, orderby: Union["TransformField", List["TransformField"]] = None, partitionby: Union["TransformField", List["TransformField"]] = None, range: Union[List[Union[float, Any]], "ParamRef"] = None, rows: Union[List[Union[float, Any]], "ParamRef"] = None):
+    def __init__(
+        self,
+        mode: Union[Union[bool, float, str], List[Union[bool, float, str]]],
+        distinct: bool = None,
+        orderby: Union["TransformField", List["TransformField"]] = None,
+        partitionby: Union["TransformField", List["TransformField"]] = None,
+        range: Union[List[Union[float, Any]], "ParamRef"] = None,
+        rows: Union[List[Union[float, Any]], "ParamRef"] = None,
+    ):
         self.distinct = distinct
         self.mode = mode
         self.orderby = orderby
@@ -1008,7 +1932,14 @@ class Mode(SchemaBase):
 
 
 class NTile(SchemaBase):
-    def __init__(self, ntile: Union[Union[bool, float, str], List[Union[bool, float, str]]], orderby: Union["TransformField", List["TransformField"]] = None, partitionby: Union["TransformField", List["TransformField"]] = None, range: Union[List[Union[float, Any]], "ParamRef"] = None, rows: Union[List[Union[float, Any]], "ParamRef"] = None):
+    def __init__(
+        self,
+        ntile: Union[Union[bool, float, str], List[Union[bool, float, str]]],
+        orderby: Union["TransformField", List["TransformField"]] = None,
+        partitionby: Union["TransformField", List["TransformField"]] = None,
+        range: Union[List[Union[float, Any]], "ParamRef"] = None,
+        rows: Union[List[Union[float, Any]], "ParamRef"] = None,
+    ):
         self.ntile = ntile
         self.orderby = orderby
         self.partitionby = partitionby
@@ -1017,7 +1948,14 @@ class NTile(SchemaBase):
 
 
 class NthValue(SchemaBase):
-    def __init__(self, nth_value: Union[Union[bool, float, str], List[Union[bool, float, str]]], orderby: Union["TransformField", List["TransformField"]] = None, partitionby: Union["TransformField", List["TransformField"]] = None, range: Union[List[Union[float, Any]], "ParamRef"] = None, rows: Union[List[Union[float, Any]], "ParamRef"] = None):
+    def __init__(
+        self,
+        nth_value: Union[Union[bool, float, str], List[Union[bool, float, str]]],
+        orderby: Union["TransformField", List["TransformField"]] = None,
+        partitionby: Union["TransformField", List["TransformField"]] = None,
+        range: Union[List[Union[float, Any]], "ParamRef"] = None,
+        rows: Union[List[Union[float, Any]], "ParamRef"] = None,
+    ):
         self.nth_value = nth_value
         self.orderby = orderby
         self.partitionby = partitionby
@@ -1026,7 +1964,9 @@ class NthValue(SchemaBase):
 
 
 class ParamValue(SchemaBase):
-    def __init__(self, value: Union["ParamLiteral", List[Union["ParamLiteral", "ParamRef"]]]):
+    def __init__(
+        self, value: Union["ParamLiteral", List[Union["ParamLiteral", "ParamRef"]]]
+    ):
         self.value = value
 
 
@@ -1047,7 +1987,14 @@ class ParamLiteral(SchemaBase):
 
 
 class PercentRank(SchemaBase):
-    def __init__(self, percent_rank: Union[Any, Any], orderby: Union["TransformField", List["TransformField"]] = None, partitionby: Union["TransformField", List["TransformField"]] = None, range: Union[List[Union[float, Any]], "ParamRef"] = None, rows: Union[List[Union[float, Any]], "ParamRef"] = None):
+    def __init__(
+        self,
+        percent_rank: Union[Any, Any],
+        orderby: Union["TransformField", List["TransformField"]] = None,
+        partitionby: Union["TransformField", List["TransformField"]] = None,
+        range: Union[List[Union[float, Any]], "ParamRef"] = None,
+        rows: Union[List[Union[float, Any]], "ParamRef"] = None,
+    ):
         self.orderby = orderby
         self.partitionby = partitionby
         self.percent_rank = percent_rank
@@ -1056,7 +2003,223 @@ class PercentRank(SchemaBase):
 
 
 class Plot(SchemaBase):
-    def __init__(self, plot: List[Union["PlotInteractor", "PlotMark", "PlotLegend"]], align: Union[float, "ParamRef"] = None, aspectRatio: Union[float, bool, Any, "ParamRef"] = None, axis: Union[str, str, str, str, str, bool, Any, "ParamRef"] = None, colorBase: Union[float, "ParamRef"] = None, colorClamp: Union[bool, "ParamRef"] = None, colorConstant: Union[float, "ParamRef"] = None, colorDomain: Union[List[Any], "Fixed", "ParamRef"] = None, colorExponent: Union[float, "ParamRef"] = None, colorInterpolate: Union["Interpolate", "ParamRef"] = None, colorLabel: Union[str, Any, "ParamRef"] = None, colorN: Union[float, "ParamRef"] = None, colorNice: Union[bool, float, "Interval", "ParamRef"] = None, colorPercent: Union[bool, "ParamRef"] = None, colorPivot: Union[Any, "ParamRef"] = None, colorRange: Union[List[Any], "Fixed", "ParamRef"] = None, colorReverse: Union[bool, "ParamRef"] = None, colorScale: Union["ColorScaleType", Any, "ParamRef"] = None, colorScheme: Union["ColorScheme", "ParamRef"] = None, colorSymmetric: Union[bool, "ParamRef"] = None, colorTickFormat: Union[str, Any, "ParamRef"] = None, colorZero: Union[bool, "ParamRef"] = None, facetGrid: Union[bool, str, "Interval", List[Any], "ParamRef"] = None, facetLabel: Union[str, Any, "ParamRef"] = None, facetMargin: Union[float, "ParamRef"] = None, facetMarginBottom: Union[float, "ParamRef"] = None, facetMarginLeft: Union[float, "ParamRef"] = None, facetMarginRight: Union[float, "ParamRef"] = None, facetMarginTop: Union[float, "ParamRef"] = None, fxAlign: Union[float, "ParamRef"] = None, fxAriaDescription: Union[str, "ParamRef"] = None, fxAriaLabel: Union[str, "ParamRef"] = None, fxAxis: Union[str, str, str, bool, Any, "ParamRef"] = None, fxDomain: Union[List[Any], "Fixed", "ParamRef"] = None, fxFontVariant: Union[str, "ParamRef"] = None, fxGrid: Union[bool, str, "Interval", List[Any], "ParamRef"] = None, fxInset: Union[float, "ParamRef"] = None, fxInsetLeft: Union[float, "ParamRef"] = None, fxInsetRight: Union[float, "ParamRef"] = None, fxLabel: Union[str, Any, "ParamRef"] = None, fxLabelAnchor: Union[str, str, str, str, str, "ParamRef"] = None, fxLabelOffset: Union[float, "ParamRef"] = None, fxLine: Union[bool, "ParamRef"] = None, fxPadding: Union[float, "ParamRef"] = None, fxPaddingInner: Union[float, "ParamRef"] = None, fxPaddingOuter: Union[float, "ParamRef"] = None, fxRange: Union[List[Any], "Fixed", "ParamRef"] = None, fxReverse: Union[bool, "ParamRef"] = None, fxRound: Union[bool, "ParamRef"] = None, fxTickFormat: Union[str, Any, "ParamRef"] = None, fxTickPadding: Union[float, "ParamRef"] = None, fxTickRotate: Union[float, "ParamRef"] = None, fxTickSize: Union[float, "ParamRef"] = None, fxTickSpacing: Union[float, "ParamRef"] = None, fxTicks: Union[float, "Interval", List[Any], "ParamRef"] = None, fyAlign: Union[float, "ParamRef"] = None, fyAriaDescription: Union[str, "ParamRef"] = None, fyAriaLabel: Union[str, "ParamRef"] = None, fyAxis: Union[str, str, str, bool, Any, "ParamRef"] = None, fyDomain: Union[List[Any], "Fixed", "ParamRef"] = None, fyFontVariant: Union[str, "ParamRef"] = None, fyGrid: Union[bool, str, "Interval", List[Any], "ParamRef"] = None, fyInset: Union[float, "ParamRef"] = None, fyInsetBottom: Union[float, "ParamRef"] = None, fyInsetTop: Union[float, "ParamRef"] = None, fyLabel: Union[str, Any, "ParamRef"] = None, fyLabelAnchor: Union[str, str, str, str, str, "ParamRef"] = None, fyLabelOffset: Union[float, "ParamRef"] = None, fyLine: Union[bool, "ParamRef"] = None, fyPadding: Union[float, "ParamRef"] = None, fyPaddingInner: Union[float, "ParamRef"] = None, fyPaddingOuter: Union[float, "ParamRef"] = None, fyRange: Union[List[Any], "Fixed", "ParamRef"] = None, fyReverse: Union[bool, "ParamRef"] = None, fyRound: Union[bool, "ParamRef"] = None, fyTickFormat: Union[str, Any, "ParamRef"] = None, fyTickPadding: Union[float, "ParamRef"] = None, fyTickRotate: Union[float, "ParamRef"] = None, fyTickSize: Union[float, "ParamRef"] = None, fyTickSpacing: Union[float, "ParamRef"] = None, fyTicks: Union[float, "Interval", List[Any], "ParamRef"] = None, grid: Union[bool, str, "ParamRef"] = None, height: Union[float, "ParamRef"] = None, inset: Union[float, "ParamRef"] = None, label: Union[str, Any, "ParamRef"] = None, lengthBase: Union[float, "ParamRef"] = None, lengthClamp: Any = None, lengthConstant: Union[float, "ParamRef"] = None, lengthDomain: Union[List[Any], "Fixed", "ParamRef"] = None, lengthExponent: Union[float, "ParamRef"] = None, lengthNice: Union[bool, float, "Interval", "ParamRef"] = None, lengthPercent: Union[bool, "ParamRef"] = None, lengthRange: Union[List[Any], "Fixed", "ParamRef"] = None, lengthScale: Union["ContinuousScaleType", Any, "ParamRef"] = None, lengthZero: Union[bool, "ParamRef"] = None, margin: Union[float, "ParamRef"] = None, marginBottom: Union[float, "ParamRef"] = None, marginLeft: Union[float, "ParamRef"] = None, marginRight: Union[float, "ParamRef"] = None, marginTop: Union[float, "ParamRef"] = None, margins: Dict[str, Any] = None, name: str = None, opacityBase: Union[float, "ParamRef"] = None, opacityClamp: Union[bool, "ParamRef"] = None, opacityConstant: Union[float, "ParamRef"] = None, opacityDomain: Union[List[Any], "Fixed", "ParamRef"] = None, opacityExponent: Union[float, "ParamRef"] = None, opacityLabel: Union[str, Any, "ParamRef"] = None, opacityNice: Union[bool, float, "Interval", "ParamRef"] = None, opacityPercent: Union[bool, "ParamRef"] = None, opacityRange: Union[List[Any], "Fixed", "ParamRef"] = None, opacityReverse: Union[bool, "ParamRef"] = None, opacityScale: Union["ContinuousScaleType", Any, "ParamRef"] = None, opacityTickFormat: Union[str, Any, "ParamRef"] = None, opacityZero: Union[bool, "ParamRef"] = None, padding: Union[float, "ParamRef"] = None, projectionClip: Union[bool, float, str, Any, "ParamRef"] = None, projectionDomain: Union[Dict[str, Any], "ParamRef"] = None, projectionInset: Union[float, "ParamRef"] = None, projectionInsetBottom: Union[float, "ParamRef"] = None, projectionInsetLeft: Union[float, "ParamRef"] = None, projectionInsetRight: Union[float, "ParamRef"] = None, projectionInsetTop: Union[float, "ParamRef"] = None, projectionParallels: Union[List[Any], "ParamRef"] = None, projectionPrecision: Union[float, "ParamRef"] = None, projectionRotate: Union[List[Any], "ParamRef"] = None, projectionType: Union["ProjectionName", Any, "ParamRef"] = None, rBase: Union[float, "ParamRef"] = None, rClamp: Any = None, rConstant: Union[float, "ParamRef"] = None, rDomain: Union[List[Any], "Fixed", "ParamRef"] = None, rExponent: Union[float, "ParamRef"] = None, rLabel: Union[str, Any, "ParamRef"] = None, rNice: Union[bool, float, "Interval", "ParamRef"] = None, rPercent: Union[bool, "ParamRef"] = None, rRange: Union[List[Any], "Fixed", "ParamRef"] = None, rScale: Union["ContinuousScaleType", Any, "ParamRef"] = None, rZero: Union[bool, "ParamRef"] = None, style: Union[str, "CSSStyles", Any, "ParamRef"] = None, symbolDomain: Union[List[Any], "Fixed", "ParamRef"] = None, symbolRange: Union[List[Any], "Fixed", "ParamRef"] = None, symbolScale: Union["DiscreteScaleType", Any, "ParamRef"] = None, width: Union[float, "ParamRef"] = None, xAlign: Union[float, "ParamRef"] = None, xAriaDescription: Union[str, "ParamRef"] = None, xAriaLabel: Union[str, "ParamRef"] = None, xAxis: Union[str, str, str, bool, Any, "ParamRef"] = None, xBase: Union[float, "ParamRef"] = None, xClamp: Union[bool, "ParamRef"] = None, xConstant: Union[float, "ParamRef"] = None, xDomain: Union[List[Any], "Fixed", "ParamRef"] = None, xExponent: Union[float, "ParamRef"] = None, xFontVariant: Union[str, "ParamRef"] = None, xGrid: Union[bool, str, "Interval", List[Any], "ParamRef"] = None, xInset: Union[float, "ParamRef"] = None, xInsetLeft: Union[float, "ParamRef"] = None, xInsetRight: Union[float, "ParamRef"] = None, xLabel: Union[str, Any, "ParamRef"] = None, xLabelAnchor: Union[str, str, str, str, str, "ParamRef"] = None, xLabelArrow: Union["LabelArrow", "ParamRef"] = None, xLabelOffset: Union[float, "ParamRef"] = None, xLine: Union[bool, "ParamRef"] = None, xNice: Union[bool, float, "Interval", "ParamRef"] = None, xPadding: Union[float, "ParamRef"] = None, xPaddingInner: Union[float, "ParamRef"] = None, xPaddingOuter: Union[float, "ParamRef"] = None, xPercent: Union[bool, "ParamRef"] = None, xRange: Union[List[Any], "Fixed", "ParamRef"] = None, xReverse: Union[bool, "ParamRef"] = None, xRound: Union[bool, "ParamRef"] = None, xScale: Union["PositionScaleType", Any, "ParamRef"] = None, xTickFormat: Union[str, Any, "ParamRef"] = None, xTickPadding: Union[float, "ParamRef"] = None, xTickRotate: Union[float, "ParamRef"] = None, xTickSize: Union[float, "ParamRef"] = None, xTickSpacing: Union[float, "ParamRef"] = None, xTicks: Union[float, "Interval", List[Any], "ParamRef"] = None, xZero: Union[bool, "ParamRef"] = None, xyDomain: Union[List[Any], "Fixed", "ParamRef"] = None, yAlign: Union[float, "ParamRef"] = None, yAriaDescription: Union[str, "ParamRef"] = None, yAriaLabel: Union[str, "ParamRef"] = None, yAxis: Union[str, str, str, bool, Any, "ParamRef"] = None, yBase: Union[float, "ParamRef"] = None, yClamp: Union[bool, "ParamRef"] = None, yConstant: Union[float, "ParamRef"] = None, yDomain: Union[List[Any], "Fixed", "ParamRef"] = None, yExponent: Union[float, "ParamRef"] = None, yFontVariant: Union[str, "ParamRef"] = None, yGrid: Union[bool, str, "Interval", List[Any], "ParamRef"] = None, yInset: Union[float, "ParamRef"] = None, yInsetBottom: Union[float, "ParamRef"] = None, yInsetTop: Union[float, "ParamRef"] = None, yLabel: Union[str, Any, "ParamRef"] = None, yLabelAnchor: Union[str, str, str, str, str, "ParamRef"] = None, yLabelArrow: Union["LabelArrow", "ParamRef"] = None, yLabelOffset: Union[float, "ParamRef"] = None, yLine: Union[bool, "ParamRef"] = None, yNice: Union[bool, float, "Interval", "ParamRef"] = None, yPadding: Union[float, "ParamRef"] = None, yPaddingInner: Union[float, "ParamRef"] = None, yPaddingOuter: Union[float, "ParamRef"] = None, yPercent: Union[bool, "ParamRef"] = None, yRange: Union[List[Any], "Fixed", "ParamRef"] = None, yReverse: Union[bool, "ParamRef"] = None, yRound: Union[bool, "ParamRef"] = None, yScale: Union["PositionScaleType", Any, "ParamRef"] = None, yTickFormat: Union[str, Any, "ParamRef"] = None, yTickPadding: Union[float, "ParamRef"] = None, yTickRotate: Union[float, "ParamRef"] = None, yTickSize: Union[float, "ParamRef"] = None, yTickSpacing: Union[float, "ParamRef"] = None, yTicks: Union[float, "Interval", List[Any], "ParamRef"] = None, yZero: Union[bool, "ParamRef"] = None):
+    def __init__(
+        self,
+        plot: List[Union["PlotInteractor", "PlotMark", "PlotLegend"]],
+        align: Union[float, "ParamRef"] = None,
+        aspectRatio: Union[float, bool, Any, "ParamRef"] = None,
+        axis: Union[str, str, str, str, str, bool, Any, "ParamRef"] = None,
+        colorBase: Union[float, "ParamRef"] = None,
+        colorClamp: Union[bool, "ParamRef"] = None,
+        colorConstant: Union[float, "ParamRef"] = None,
+        colorDomain: Union[List[Any], "Fixed", "ParamRef"] = None,
+        colorExponent: Union[float, "ParamRef"] = None,
+        colorInterpolate: Union["Interpolate", "ParamRef"] = None,
+        colorLabel: Union[str, Any, "ParamRef"] = None,
+        colorN: Union[float, "ParamRef"] = None,
+        colorNice: Union[bool, float, "Interval", "ParamRef"] = None,
+        colorPercent: Union[bool, "ParamRef"] = None,
+        colorPivot: Union[Any, "ParamRef"] = None,
+        colorRange: Union[List[Any], "Fixed", "ParamRef"] = None,
+        colorReverse: Union[bool, "ParamRef"] = None,
+        colorScale: Union["ColorScaleType", Any, "ParamRef"] = None,
+        colorScheme: Union["ColorScheme", "ParamRef"] = None,
+        colorSymmetric: Union[bool, "ParamRef"] = None,
+        colorTickFormat: Union[str, Any, "ParamRef"] = None,
+        colorZero: Union[bool, "ParamRef"] = None,
+        facetGrid: Union[bool, str, "Interval", List[Any], "ParamRef"] = None,
+        facetLabel: Union[str, Any, "ParamRef"] = None,
+        facetMargin: Union[float, "ParamRef"] = None,
+        facetMarginBottom: Union[float, "ParamRef"] = None,
+        facetMarginLeft: Union[float, "ParamRef"] = None,
+        facetMarginRight: Union[float, "ParamRef"] = None,
+        facetMarginTop: Union[float, "ParamRef"] = None,
+        fxAlign: Union[float, "ParamRef"] = None,
+        fxAriaDescription: Union[str, "ParamRef"] = None,
+        fxAriaLabel: Union[str, "ParamRef"] = None,
+        fxAxis: Union[str, str, str, bool, Any, "ParamRef"] = None,
+        fxDomain: Union[List[Any], "Fixed", "ParamRef"] = None,
+        fxFontVariant: Union[str, "ParamRef"] = None,
+        fxGrid: Union[bool, str, "Interval", List[Any], "ParamRef"] = None,
+        fxInset: Union[float, "ParamRef"] = None,
+        fxInsetLeft: Union[float, "ParamRef"] = None,
+        fxInsetRight: Union[float, "ParamRef"] = None,
+        fxLabel: Union[str, Any, "ParamRef"] = None,
+        fxLabelAnchor: Union[str, str, str, str, str, "ParamRef"] = None,
+        fxLabelOffset: Union[float, "ParamRef"] = None,
+        fxLine: Union[bool, "ParamRef"] = None,
+        fxPadding: Union[float, "ParamRef"] = None,
+        fxPaddingInner: Union[float, "ParamRef"] = None,
+        fxPaddingOuter: Union[float, "ParamRef"] = None,
+        fxRange: Union[List[Any], "Fixed", "ParamRef"] = None,
+        fxReverse: Union[bool, "ParamRef"] = None,
+        fxRound: Union[bool, "ParamRef"] = None,
+        fxTickFormat: Union[str, Any, "ParamRef"] = None,
+        fxTickPadding: Union[float, "ParamRef"] = None,
+        fxTickRotate: Union[float, "ParamRef"] = None,
+        fxTickSize: Union[float, "ParamRef"] = None,
+        fxTickSpacing: Union[float, "ParamRef"] = None,
+        fxTicks: Union[float, "Interval", List[Any], "ParamRef"] = None,
+        fyAlign: Union[float, "ParamRef"] = None,
+        fyAriaDescription: Union[str, "ParamRef"] = None,
+        fyAriaLabel: Union[str, "ParamRef"] = None,
+        fyAxis: Union[str, str, str, bool, Any, "ParamRef"] = None,
+        fyDomain: Union[List[Any], "Fixed", "ParamRef"] = None,
+        fyFontVariant: Union[str, "ParamRef"] = None,
+        fyGrid: Union[bool, str, "Interval", List[Any], "ParamRef"] = None,
+        fyInset: Union[float, "ParamRef"] = None,
+        fyInsetBottom: Union[float, "ParamRef"] = None,
+        fyInsetTop: Union[float, "ParamRef"] = None,
+        fyLabel: Union[str, Any, "ParamRef"] = None,
+        fyLabelAnchor: Union[str, str, str, str, str, "ParamRef"] = None,
+        fyLabelOffset: Union[float, "ParamRef"] = None,
+        fyLine: Union[bool, "ParamRef"] = None,
+        fyPadding: Union[float, "ParamRef"] = None,
+        fyPaddingInner: Union[float, "ParamRef"] = None,
+        fyPaddingOuter: Union[float, "ParamRef"] = None,
+        fyRange: Union[List[Any], "Fixed", "ParamRef"] = None,
+        fyReverse: Union[bool, "ParamRef"] = None,
+        fyRound: Union[bool, "ParamRef"] = None,
+        fyTickFormat: Union[str, Any, "ParamRef"] = None,
+        fyTickPadding: Union[float, "ParamRef"] = None,
+        fyTickRotate: Union[float, "ParamRef"] = None,
+        fyTickSize: Union[float, "ParamRef"] = None,
+        fyTickSpacing: Union[float, "ParamRef"] = None,
+        fyTicks: Union[float, "Interval", List[Any], "ParamRef"] = None,
+        grid: Union[bool, str, "ParamRef"] = None,
+        height: Union[float, "ParamRef"] = None,
+        inset: Union[float, "ParamRef"] = None,
+        label: Union[str, Any, "ParamRef"] = None,
+        lengthBase: Union[float, "ParamRef"] = None,
+        lengthClamp: Any = None,
+        lengthConstant: Union[float, "ParamRef"] = None,
+        lengthDomain: Union[List[Any], "Fixed", "ParamRef"] = None,
+        lengthExponent: Union[float, "ParamRef"] = None,
+        lengthNice: Union[bool, float, "Interval", "ParamRef"] = None,
+        lengthPercent: Union[bool, "ParamRef"] = None,
+        lengthRange: Union[List[Any], "Fixed", "ParamRef"] = None,
+        lengthScale: Union["ContinuousScaleType", Any, "ParamRef"] = None,
+        lengthZero: Union[bool, "ParamRef"] = None,
+        margin: Union[float, "ParamRef"] = None,
+        marginBottom: Union[float, "ParamRef"] = None,
+        marginLeft: Union[float, "ParamRef"] = None,
+        marginRight: Union[float, "ParamRef"] = None,
+        marginTop: Union[float, "ParamRef"] = None,
+        margins: Dict[str, Any] = None,
+        name: str = None,
+        opacityBase: Union[float, "ParamRef"] = None,
+        opacityClamp: Union[bool, "ParamRef"] = None,
+        opacityConstant: Union[float, "ParamRef"] = None,
+        opacityDomain: Union[List[Any], "Fixed", "ParamRef"] = None,
+        opacityExponent: Union[float, "ParamRef"] = None,
+        opacityLabel: Union[str, Any, "ParamRef"] = None,
+        opacityNice: Union[bool, float, "Interval", "ParamRef"] = None,
+        opacityPercent: Union[bool, "ParamRef"] = None,
+        opacityRange: Union[List[Any], "Fixed", "ParamRef"] = None,
+        opacityReverse: Union[bool, "ParamRef"] = None,
+        opacityScale: Union["ContinuousScaleType", Any, "ParamRef"] = None,
+        opacityTickFormat: Union[str, Any, "ParamRef"] = None,
+        opacityZero: Union[bool, "ParamRef"] = None,
+        padding: Union[float, "ParamRef"] = None,
+        projectionClip: Union[bool, float, str, Any, "ParamRef"] = None,
+        projectionDomain: Union[Dict[str, Any], "ParamRef"] = None,
+        projectionInset: Union[float, "ParamRef"] = None,
+        projectionInsetBottom: Union[float, "ParamRef"] = None,
+        projectionInsetLeft: Union[float, "ParamRef"] = None,
+        projectionInsetRight: Union[float, "ParamRef"] = None,
+        projectionInsetTop: Union[float, "ParamRef"] = None,
+        projectionParallels: Union[List[Any], "ParamRef"] = None,
+        projectionPrecision: Union[float, "ParamRef"] = None,
+        projectionRotate: Union[List[Any], "ParamRef"] = None,
+        projectionType: Union["ProjectionName", Any, "ParamRef"] = None,
+        rBase: Union[float, "ParamRef"] = None,
+        rClamp: Any = None,
+        rConstant: Union[float, "ParamRef"] = None,
+        rDomain: Union[List[Any], "Fixed", "ParamRef"] = None,
+        rExponent: Union[float, "ParamRef"] = None,
+        rLabel: Union[str, Any, "ParamRef"] = None,
+        rNice: Union[bool, float, "Interval", "ParamRef"] = None,
+        rPercent: Union[bool, "ParamRef"] = None,
+        rRange: Union[List[Any], "Fixed", "ParamRef"] = None,
+        rScale: Union["ContinuousScaleType", Any, "ParamRef"] = None,
+        rZero: Union[bool, "ParamRef"] = None,
+        style: Union[str, "CSSStyles", Any, "ParamRef"] = None,
+        symbolDomain: Union[List[Any], "Fixed", "ParamRef"] = None,
+        symbolRange: Union[List[Any], "Fixed", "ParamRef"] = None,
+        symbolScale: Union["DiscreteScaleType", Any, "ParamRef"] = None,
+        width: Union[float, "ParamRef"] = None,
+        xAlign: Union[float, "ParamRef"] = None,
+        xAriaDescription: Union[str, "ParamRef"] = None,
+        xAriaLabel: Union[str, "ParamRef"] = None,
+        xAxis: Union[str, str, str, bool, Any, "ParamRef"] = None,
+        xBase: Union[float, "ParamRef"] = None,
+        xClamp: Union[bool, "ParamRef"] = None,
+        xConstant: Union[float, "ParamRef"] = None,
+        xDomain: Union[List[Any], "Fixed", "ParamRef"] = None,
+        xExponent: Union[float, "ParamRef"] = None,
+        xFontVariant: Union[str, "ParamRef"] = None,
+        xGrid: Union[bool, str, "Interval", List[Any], "ParamRef"] = None,
+        xInset: Union[float, "ParamRef"] = None,
+        xInsetLeft: Union[float, "ParamRef"] = None,
+        xInsetRight: Union[float, "ParamRef"] = None,
+        xLabel: Union[str, Any, "ParamRef"] = None,
+        xLabelAnchor: Union[str, str, str, str, str, "ParamRef"] = None,
+        xLabelArrow: Union["LabelArrow", "ParamRef"] = None,
+        xLabelOffset: Union[float, "ParamRef"] = None,
+        xLine: Union[bool, "ParamRef"] = None,
+        xNice: Union[bool, float, "Interval", "ParamRef"] = None,
+        xPadding: Union[float, "ParamRef"] = None,
+        xPaddingInner: Union[float, "ParamRef"] = None,
+        xPaddingOuter: Union[float, "ParamRef"] = None,
+        xPercent: Union[bool, "ParamRef"] = None,
+        xRange: Union[List[Any], "Fixed", "ParamRef"] = None,
+        xReverse: Union[bool, "ParamRef"] = None,
+        xRound: Union[bool, "ParamRef"] = None,
+        xScale: Union["PositionScaleType", Any, "ParamRef"] = None,
+        xTickFormat: Union[str, Any, "ParamRef"] = None,
+        xTickPadding: Union[float, "ParamRef"] = None,
+        xTickRotate: Union[float, "ParamRef"] = None,
+        xTickSize: Union[float, "ParamRef"] = None,
+        xTickSpacing: Union[float, "ParamRef"] = None,
+        xTicks: Union[float, "Interval", List[Any], "ParamRef"] = None,
+        xZero: Union[bool, "ParamRef"] = None,
+        xyDomain: Union[List[Any], "Fixed", "ParamRef"] = None,
+        yAlign: Union[float, "ParamRef"] = None,
+        yAriaDescription: Union[str, "ParamRef"] = None,
+        yAriaLabel: Union[str, "ParamRef"] = None,
+        yAxis: Union[str, str, str, bool, Any, "ParamRef"] = None,
+        yBase: Union[float, "ParamRef"] = None,
+        yClamp: Union[bool, "ParamRef"] = None,
+        yConstant: Union[float, "ParamRef"] = None,
+        yDomain: Union[List[Any], "Fixed", "ParamRef"] = None,
+        yExponent: Union[float, "ParamRef"] = None,
+        yFontVariant: Union[str, "ParamRef"] = None,
+        yGrid: Union[bool, str, "Interval", List[Any], "ParamRef"] = None,
+        yInset: Union[float, "ParamRef"] = None,
+        yInsetBottom: Union[float, "ParamRef"] = None,
+        yInsetTop: Union[float, "ParamRef"] = None,
+        yLabel: Union[str, Any, "ParamRef"] = None,
+        yLabelAnchor: Union[str, str, str, str, str, "ParamRef"] = None,
+        yLabelArrow: Union["LabelArrow", "ParamRef"] = None,
+        yLabelOffset: Union[float, "ParamRef"] = None,
+        yLine: Union[bool, "ParamRef"] = None,
+        yNice: Union[bool, float, "Interval", "ParamRef"] = None,
+        yPadding: Union[float, "ParamRef"] = None,
+        yPaddingInner: Union[float, "ParamRef"] = None,
+        yPaddingOuter: Union[float, "ParamRef"] = None,
+        yPercent: Union[bool, "ParamRef"] = None,
+        yRange: Union[List[Any], "Fixed", "ParamRef"] = None,
+        yReverse: Union[bool, "ParamRef"] = None,
+        yRound: Union[bool, "ParamRef"] = None,
+        yScale: Union["PositionScaleType", Any, "ParamRef"] = None,
+        yTickFormat: Union[str, Any, "ParamRef"] = None,
+        yTickPadding: Union[float, "ParamRef"] = None,
+        yTickRotate: Union[float, "ParamRef"] = None,
+        yTickSize: Union[float, "ParamRef"] = None,
+        yTickSpacing: Union[float, "ParamRef"] = None,
+        yTicks: Union[float, "Interval", List[Any], "ParamRef"] = None,
+        yZero: Union[bool, "ParamRef"] = None,
+    ):
         self.align = align
         self.aspectRatio = aspectRatio
         self.axis = axis
@@ -1274,7 +2437,222 @@ class Plot(SchemaBase):
 
 
 class PlotAttributes(SchemaBase):
-    def __init__(self, align: Union[float, "ParamRef"] = None, aspectRatio: Union[float, bool, Any, "ParamRef"] = None, axis: Union[str, str, str, str, str, bool, Any, "ParamRef"] = None, colorBase: Union[float, "ParamRef"] = None, colorClamp: Union[bool, "ParamRef"] = None, colorConstant: Union[float, "ParamRef"] = None, colorDomain: Union[List[Any], "Fixed", "ParamRef"] = None, colorExponent: Union[float, "ParamRef"] = None, colorInterpolate: Union["Interpolate", "ParamRef"] = None, colorLabel: Union[str, Any, "ParamRef"] = None, colorN: Union[float, "ParamRef"] = None, colorNice: Union[bool, float, "Interval", "ParamRef"] = None, colorPercent: Union[bool, "ParamRef"] = None, colorPivot: Union[Any, "ParamRef"] = None, colorRange: Union[List[Any], "Fixed", "ParamRef"] = None, colorReverse: Union[bool, "ParamRef"] = None, colorScale: Union["ColorScaleType", Any, "ParamRef"] = None, colorScheme: Union["ColorScheme", "ParamRef"] = None, colorSymmetric: Union[bool, "ParamRef"] = None, colorTickFormat: Union[str, Any, "ParamRef"] = None, colorZero: Union[bool, "ParamRef"] = None, facetGrid: Union[bool, str, "Interval", List[Any], "ParamRef"] = None, facetLabel: Union[str, Any, "ParamRef"] = None, facetMargin: Union[float, "ParamRef"] = None, facetMarginBottom: Union[float, "ParamRef"] = None, facetMarginLeft: Union[float, "ParamRef"] = None, facetMarginRight: Union[float, "ParamRef"] = None, facetMarginTop: Union[float, "ParamRef"] = None, fxAlign: Union[float, "ParamRef"] = None, fxAriaDescription: Union[str, "ParamRef"] = None, fxAriaLabel: Union[str, "ParamRef"] = None, fxAxis: Union[str, str, str, bool, Any, "ParamRef"] = None, fxDomain: Union[List[Any], "Fixed", "ParamRef"] = None, fxFontVariant: Union[str, "ParamRef"] = None, fxGrid: Union[bool, str, "Interval", List[Any], "ParamRef"] = None, fxInset: Union[float, "ParamRef"] = None, fxInsetLeft: Union[float, "ParamRef"] = None, fxInsetRight: Union[float, "ParamRef"] = None, fxLabel: Union[str, Any, "ParamRef"] = None, fxLabelAnchor: Union[str, str, str, str, str, "ParamRef"] = None, fxLabelOffset: Union[float, "ParamRef"] = None, fxLine: Union[bool, "ParamRef"] = None, fxPadding: Union[float, "ParamRef"] = None, fxPaddingInner: Union[float, "ParamRef"] = None, fxPaddingOuter: Union[float, "ParamRef"] = None, fxRange: Union[List[Any], "Fixed", "ParamRef"] = None, fxReverse: Union[bool, "ParamRef"] = None, fxRound: Union[bool, "ParamRef"] = None, fxTickFormat: Union[str, Any, "ParamRef"] = None, fxTickPadding: Union[float, "ParamRef"] = None, fxTickRotate: Union[float, "ParamRef"] = None, fxTickSize: Union[float, "ParamRef"] = None, fxTickSpacing: Union[float, "ParamRef"] = None, fxTicks: Union[float, "Interval", List[Any], "ParamRef"] = None, fyAlign: Union[float, "ParamRef"] = None, fyAriaDescription: Union[str, "ParamRef"] = None, fyAriaLabel: Union[str, "ParamRef"] = None, fyAxis: Union[str, str, str, bool, Any, "ParamRef"] = None, fyDomain: Union[List[Any], "Fixed", "ParamRef"] = None, fyFontVariant: Union[str, "ParamRef"] = None, fyGrid: Union[bool, str, "Interval", List[Any], "ParamRef"] = None, fyInset: Union[float, "ParamRef"] = None, fyInsetBottom: Union[float, "ParamRef"] = None, fyInsetTop: Union[float, "ParamRef"] = None, fyLabel: Union[str, Any, "ParamRef"] = None, fyLabelAnchor: Union[str, str, str, str, str, "ParamRef"] = None, fyLabelOffset: Union[float, "ParamRef"] = None, fyLine: Union[bool, "ParamRef"] = None, fyPadding: Union[float, "ParamRef"] = None, fyPaddingInner: Union[float, "ParamRef"] = None, fyPaddingOuter: Union[float, "ParamRef"] = None, fyRange: Union[List[Any], "Fixed", "ParamRef"] = None, fyReverse: Union[bool, "ParamRef"] = None, fyRound: Union[bool, "ParamRef"] = None, fyTickFormat: Union[str, Any, "ParamRef"] = None, fyTickPadding: Union[float, "ParamRef"] = None, fyTickRotate: Union[float, "ParamRef"] = None, fyTickSize: Union[float, "ParamRef"] = None, fyTickSpacing: Union[float, "ParamRef"] = None, fyTicks: Union[float, "Interval", List[Any], "ParamRef"] = None, grid: Union[bool, str, "ParamRef"] = None, height: Union[float, "ParamRef"] = None, inset: Union[float, "ParamRef"] = None, label: Union[str, Any, "ParamRef"] = None, lengthBase: Union[float, "ParamRef"] = None, lengthClamp: Any = None, lengthConstant: Union[float, "ParamRef"] = None, lengthDomain: Union[List[Any], "Fixed", "ParamRef"] = None, lengthExponent: Union[float, "ParamRef"] = None, lengthNice: Union[bool, float, "Interval", "ParamRef"] = None, lengthPercent: Union[bool, "ParamRef"] = None, lengthRange: Union[List[Any], "Fixed", "ParamRef"] = None, lengthScale: Union["ContinuousScaleType", Any, "ParamRef"] = None, lengthZero: Union[bool, "ParamRef"] = None, margin: Union[float, "ParamRef"] = None, marginBottom: Union[float, "ParamRef"] = None, marginLeft: Union[float, "ParamRef"] = None, marginRight: Union[float, "ParamRef"] = None, marginTop: Union[float, "ParamRef"] = None, margins: Dict[str, Any] = None, name: str = None, opacityBase: Union[float, "ParamRef"] = None, opacityClamp: Union[bool, "ParamRef"] = None, opacityConstant: Union[float, "ParamRef"] = None, opacityDomain: Union[List[Any], "Fixed", "ParamRef"] = None, opacityExponent: Union[float, "ParamRef"] = None, opacityLabel: Union[str, Any, "ParamRef"] = None, opacityNice: Union[bool, float, "Interval", "ParamRef"] = None, opacityPercent: Union[bool, "ParamRef"] = None, opacityRange: Union[List[Any], "Fixed", "ParamRef"] = None, opacityReverse: Union[bool, "ParamRef"] = None, opacityScale: Union["ContinuousScaleType", Any, "ParamRef"] = None, opacityTickFormat: Union[str, Any, "ParamRef"] = None, opacityZero: Union[bool, "ParamRef"] = None, padding: Union[float, "ParamRef"] = None, projectionClip: Union[bool, float, str, Any, "ParamRef"] = None, projectionDomain: Union[Dict[str, Any], "ParamRef"] = None, projectionInset: Union[float, "ParamRef"] = None, projectionInsetBottom: Union[float, "ParamRef"] = None, projectionInsetLeft: Union[float, "ParamRef"] = None, projectionInsetRight: Union[float, "ParamRef"] = None, projectionInsetTop: Union[float, "ParamRef"] = None, projectionParallels: Union[List[Any], "ParamRef"] = None, projectionPrecision: Union[float, "ParamRef"] = None, projectionRotate: Union[List[Any], "ParamRef"] = None, projectionType: Union["ProjectionName", Any, "ParamRef"] = None, rBase: Union[float, "ParamRef"] = None, rClamp: Any = None, rConstant: Union[float, "ParamRef"] = None, rDomain: Union[List[Any], "Fixed", "ParamRef"] = None, rExponent: Union[float, "ParamRef"] = None, rLabel: Union[str, Any, "ParamRef"] = None, rNice: Union[bool, float, "Interval", "ParamRef"] = None, rPercent: Union[bool, "ParamRef"] = None, rRange: Union[List[Any], "Fixed", "ParamRef"] = None, rScale: Union["ContinuousScaleType", Any, "ParamRef"] = None, rZero: Union[bool, "ParamRef"] = None, style: Union[str, "CSSStyles", Any, "ParamRef"] = None, symbolDomain: Union[List[Any], "Fixed", "ParamRef"] = None, symbolRange: Union[List[Any], "Fixed", "ParamRef"] = None, symbolScale: Union["DiscreteScaleType", Any, "ParamRef"] = None, width: Union[float, "ParamRef"] = None, xAlign: Union[float, "ParamRef"] = None, xAriaDescription: Union[str, "ParamRef"] = None, xAriaLabel: Union[str, "ParamRef"] = None, xAxis: Union[str, str, str, bool, Any, "ParamRef"] = None, xBase: Union[float, "ParamRef"] = None, xClamp: Union[bool, "ParamRef"] = None, xConstant: Union[float, "ParamRef"] = None, xDomain: Union[List[Any], "Fixed", "ParamRef"] = None, xExponent: Union[float, "ParamRef"] = None, xFontVariant: Union[str, "ParamRef"] = None, xGrid: Union[bool, str, "Interval", List[Any], "ParamRef"] = None, xInset: Union[float, "ParamRef"] = None, xInsetLeft: Union[float, "ParamRef"] = None, xInsetRight: Union[float, "ParamRef"] = None, xLabel: Union[str, Any, "ParamRef"] = None, xLabelAnchor: Union[str, str, str, str, str, "ParamRef"] = None, xLabelArrow: Union["LabelArrow", "ParamRef"] = None, xLabelOffset: Union[float, "ParamRef"] = None, xLine: Union[bool, "ParamRef"] = None, xNice: Union[bool, float, "Interval", "ParamRef"] = None, xPadding: Union[float, "ParamRef"] = None, xPaddingInner: Union[float, "ParamRef"] = None, xPaddingOuter: Union[float, "ParamRef"] = None, xPercent: Union[bool, "ParamRef"] = None, xRange: Union[List[Any], "Fixed", "ParamRef"] = None, xReverse: Union[bool, "ParamRef"] = None, xRound: Union[bool, "ParamRef"] = None, xScale: Union["PositionScaleType", Any, "ParamRef"] = None, xTickFormat: Union[str, Any, "ParamRef"] = None, xTickPadding: Union[float, "ParamRef"] = None, xTickRotate: Union[float, "ParamRef"] = None, xTickSize: Union[float, "ParamRef"] = None, xTickSpacing: Union[float, "ParamRef"] = None, xTicks: Union[float, "Interval", List[Any], "ParamRef"] = None, xZero: Union[bool, "ParamRef"] = None, xyDomain: Union[List[Any], "Fixed", "ParamRef"] = None, yAlign: Union[float, "ParamRef"] = None, yAriaDescription: Union[str, "ParamRef"] = None, yAriaLabel: Union[str, "ParamRef"] = None, yAxis: Union[str, str, str, bool, Any, "ParamRef"] = None, yBase: Union[float, "ParamRef"] = None, yClamp: Union[bool, "ParamRef"] = None, yConstant: Union[float, "ParamRef"] = None, yDomain: Union[List[Any], "Fixed", "ParamRef"] = None, yExponent: Union[float, "ParamRef"] = None, yFontVariant: Union[str, "ParamRef"] = None, yGrid: Union[bool, str, "Interval", List[Any], "ParamRef"] = None, yInset: Union[float, "ParamRef"] = None, yInsetBottom: Union[float, "ParamRef"] = None, yInsetTop: Union[float, "ParamRef"] = None, yLabel: Union[str, Any, "ParamRef"] = None, yLabelAnchor: Union[str, str, str, str, str, "ParamRef"] = None, yLabelArrow: Union["LabelArrow", "ParamRef"] = None, yLabelOffset: Union[float, "ParamRef"] = None, yLine: Union[bool, "ParamRef"] = None, yNice: Union[bool, float, "Interval", "ParamRef"] = None, yPadding: Union[float, "ParamRef"] = None, yPaddingInner: Union[float, "ParamRef"] = None, yPaddingOuter: Union[float, "ParamRef"] = None, yPercent: Union[bool, "ParamRef"] = None, yRange: Union[List[Any], "Fixed", "ParamRef"] = None, yReverse: Union[bool, "ParamRef"] = None, yRound: Union[bool, "ParamRef"] = None, yScale: Union["PositionScaleType", Any, "ParamRef"] = None, yTickFormat: Union[str, Any, "ParamRef"] = None, yTickPadding: Union[float, "ParamRef"] = None, yTickRotate: Union[float, "ParamRef"] = None, yTickSize: Union[float, "ParamRef"] = None, yTickSpacing: Union[float, "ParamRef"] = None, yTicks: Union[float, "Interval", List[Any], "ParamRef"] = None, yZero: Union[bool, "ParamRef"] = None):
+    def __init__(
+        self,
+        align: Union[float, "ParamRef"] = None,
+        aspectRatio: Union[float, bool, Any, "ParamRef"] = None,
+        axis: Union[str, str, str, str, str, bool, Any, "ParamRef"] = None,
+        colorBase: Union[float, "ParamRef"] = None,
+        colorClamp: Union[bool, "ParamRef"] = None,
+        colorConstant: Union[float, "ParamRef"] = None,
+        colorDomain: Union[List[Any], "Fixed", "ParamRef"] = None,
+        colorExponent: Union[float, "ParamRef"] = None,
+        colorInterpolate: Union["Interpolate", "ParamRef"] = None,
+        colorLabel: Union[str, Any, "ParamRef"] = None,
+        colorN: Union[float, "ParamRef"] = None,
+        colorNice: Union[bool, float, "Interval", "ParamRef"] = None,
+        colorPercent: Union[bool, "ParamRef"] = None,
+        colorPivot: Union[Any, "ParamRef"] = None,
+        colorRange: Union[List[Any], "Fixed", "ParamRef"] = None,
+        colorReverse: Union[bool, "ParamRef"] = None,
+        colorScale: Union["ColorScaleType", Any, "ParamRef"] = None,
+        colorScheme: Union["ColorScheme", "ParamRef"] = None,
+        colorSymmetric: Union[bool, "ParamRef"] = None,
+        colorTickFormat: Union[str, Any, "ParamRef"] = None,
+        colorZero: Union[bool, "ParamRef"] = None,
+        facetGrid: Union[bool, str, "Interval", List[Any], "ParamRef"] = None,
+        facetLabel: Union[str, Any, "ParamRef"] = None,
+        facetMargin: Union[float, "ParamRef"] = None,
+        facetMarginBottom: Union[float, "ParamRef"] = None,
+        facetMarginLeft: Union[float, "ParamRef"] = None,
+        facetMarginRight: Union[float, "ParamRef"] = None,
+        facetMarginTop: Union[float, "ParamRef"] = None,
+        fxAlign: Union[float, "ParamRef"] = None,
+        fxAriaDescription: Union[str, "ParamRef"] = None,
+        fxAriaLabel: Union[str, "ParamRef"] = None,
+        fxAxis: Union[str, str, str, bool, Any, "ParamRef"] = None,
+        fxDomain: Union[List[Any], "Fixed", "ParamRef"] = None,
+        fxFontVariant: Union[str, "ParamRef"] = None,
+        fxGrid: Union[bool, str, "Interval", List[Any], "ParamRef"] = None,
+        fxInset: Union[float, "ParamRef"] = None,
+        fxInsetLeft: Union[float, "ParamRef"] = None,
+        fxInsetRight: Union[float, "ParamRef"] = None,
+        fxLabel: Union[str, Any, "ParamRef"] = None,
+        fxLabelAnchor: Union[str, str, str, str, str, "ParamRef"] = None,
+        fxLabelOffset: Union[float, "ParamRef"] = None,
+        fxLine: Union[bool, "ParamRef"] = None,
+        fxPadding: Union[float, "ParamRef"] = None,
+        fxPaddingInner: Union[float, "ParamRef"] = None,
+        fxPaddingOuter: Union[float, "ParamRef"] = None,
+        fxRange: Union[List[Any], "Fixed", "ParamRef"] = None,
+        fxReverse: Union[bool, "ParamRef"] = None,
+        fxRound: Union[bool, "ParamRef"] = None,
+        fxTickFormat: Union[str, Any, "ParamRef"] = None,
+        fxTickPadding: Union[float, "ParamRef"] = None,
+        fxTickRotate: Union[float, "ParamRef"] = None,
+        fxTickSize: Union[float, "ParamRef"] = None,
+        fxTickSpacing: Union[float, "ParamRef"] = None,
+        fxTicks: Union[float, "Interval", List[Any], "ParamRef"] = None,
+        fyAlign: Union[float, "ParamRef"] = None,
+        fyAriaDescription: Union[str, "ParamRef"] = None,
+        fyAriaLabel: Union[str, "ParamRef"] = None,
+        fyAxis: Union[str, str, str, bool, Any, "ParamRef"] = None,
+        fyDomain: Union[List[Any], "Fixed", "ParamRef"] = None,
+        fyFontVariant: Union[str, "ParamRef"] = None,
+        fyGrid: Union[bool, str, "Interval", List[Any], "ParamRef"] = None,
+        fyInset: Union[float, "ParamRef"] = None,
+        fyInsetBottom: Union[float, "ParamRef"] = None,
+        fyInsetTop: Union[float, "ParamRef"] = None,
+        fyLabel: Union[str, Any, "ParamRef"] = None,
+        fyLabelAnchor: Union[str, str, str, str, str, "ParamRef"] = None,
+        fyLabelOffset: Union[float, "ParamRef"] = None,
+        fyLine: Union[bool, "ParamRef"] = None,
+        fyPadding: Union[float, "ParamRef"] = None,
+        fyPaddingInner: Union[float, "ParamRef"] = None,
+        fyPaddingOuter: Union[float, "ParamRef"] = None,
+        fyRange: Union[List[Any], "Fixed", "ParamRef"] = None,
+        fyReverse: Union[bool, "ParamRef"] = None,
+        fyRound: Union[bool, "ParamRef"] = None,
+        fyTickFormat: Union[str, Any, "ParamRef"] = None,
+        fyTickPadding: Union[float, "ParamRef"] = None,
+        fyTickRotate: Union[float, "ParamRef"] = None,
+        fyTickSize: Union[float, "ParamRef"] = None,
+        fyTickSpacing: Union[float, "ParamRef"] = None,
+        fyTicks: Union[float, "Interval", List[Any], "ParamRef"] = None,
+        grid: Union[bool, str, "ParamRef"] = None,
+        height: Union[float, "ParamRef"] = None,
+        inset: Union[float, "ParamRef"] = None,
+        label: Union[str, Any, "ParamRef"] = None,
+        lengthBase: Union[float, "ParamRef"] = None,
+        lengthClamp: Any = None,
+        lengthConstant: Union[float, "ParamRef"] = None,
+        lengthDomain: Union[List[Any], "Fixed", "ParamRef"] = None,
+        lengthExponent: Union[float, "ParamRef"] = None,
+        lengthNice: Union[bool, float, "Interval", "ParamRef"] = None,
+        lengthPercent: Union[bool, "ParamRef"] = None,
+        lengthRange: Union[List[Any], "Fixed", "ParamRef"] = None,
+        lengthScale: Union["ContinuousScaleType", Any, "ParamRef"] = None,
+        lengthZero: Union[bool, "ParamRef"] = None,
+        margin: Union[float, "ParamRef"] = None,
+        marginBottom: Union[float, "ParamRef"] = None,
+        marginLeft: Union[float, "ParamRef"] = None,
+        marginRight: Union[float, "ParamRef"] = None,
+        marginTop: Union[float, "ParamRef"] = None,
+        margins: Dict[str, Any] = None,
+        name: str = None,
+        opacityBase: Union[float, "ParamRef"] = None,
+        opacityClamp: Union[bool, "ParamRef"] = None,
+        opacityConstant: Union[float, "ParamRef"] = None,
+        opacityDomain: Union[List[Any], "Fixed", "ParamRef"] = None,
+        opacityExponent: Union[float, "ParamRef"] = None,
+        opacityLabel: Union[str, Any, "ParamRef"] = None,
+        opacityNice: Union[bool, float, "Interval", "ParamRef"] = None,
+        opacityPercent: Union[bool, "ParamRef"] = None,
+        opacityRange: Union[List[Any], "Fixed", "ParamRef"] = None,
+        opacityReverse: Union[bool, "ParamRef"] = None,
+        opacityScale: Union["ContinuousScaleType", Any, "ParamRef"] = None,
+        opacityTickFormat: Union[str, Any, "ParamRef"] = None,
+        opacityZero: Union[bool, "ParamRef"] = None,
+        padding: Union[float, "ParamRef"] = None,
+        projectionClip: Union[bool, float, str, Any, "ParamRef"] = None,
+        projectionDomain: Union[Dict[str, Any], "ParamRef"] = None,
+        projectionInset: Union[float, "ParamRef"] = None,
+        projectionInsetBottom: Union[float, "ParamRef"] = None,
+        projectionInsetLeft: Union[float, "ParamRef"] = None,
+        projectionInsetRight: Union[float, "ParamRef"] = None,
+        projectionInsetTop: Union[float, "ParamRef"] = None,
+        projectionParallels: Union[List[Any], "ParamRef"] = None,
+        projectionPrecision: Union[float, "ParamRef"] = None,
+        projectionRotate: Union[List[Any], "ParamRef"] = None,
+        projectionType: Union["ProjectionName", Any, "ParamRef"] = None,
+        rBase: Union[float, "ParamRef"] = None,
+        rClamp: Any = None,
+        rConstant: Union[float, "ParamRef"] = None,
+        rDomain: Union[List[Any], "Fixed", "ParamRef"] = None,
+        rExponent: Union[float, "ParamRef"] = None,
+        rLabel: Union[str, Any, "ParamRef"] = None,
+        rNice: Union[bool, float, "Interval", "ParamRef"] = None,
+        rPercent: Union[bool, "ParamRef"] = None,
+        rRange: Union[List[Any], "Fixed", "ParamRef"] = None,
+        rScale: Union["ContinuousScaleType", Any, "ParamRef"] = None,
+        rZero: Union[bool, "ParamRef"] = None,
+        style: Union[str, "CSSStyles", Any, "ParamRef"] = None,
+        symbolDomain: Union[List[Any], "Fixed", "ParamRef"] = None,
+        symbolRange: Union[List[Any], "Fixed", "ParamRef"] = None,
+        symbolScale: Union["DiscreteScaleType", Any, "ParamRef"] = None,
+        width: Union[float, "ParamRef"] = None,
+        xAlign: Union[float, "ParamRef"] = None,
+        xAriaDescription: Union[str, "ParamRef"] = None,
+        xAriaLabel: Union[str, "ParamRef"] = None,
+        xAxis: Union[str, str, str, bool, Any, "ParamRef"] = None,
+        xBase: Union[float, "ParamRef"] = None,
+        xClamp: Union[bool, "ParamRef"] = None,
+        xConstant: Union[float, "ParamRef"] = None,
+        xDomain: Union[List[Any], "Fixed", "ParamRef"] = None,
+        xExponent: Union[float, "ParamRef"] = None,
+        xFontVariant: Union[str, "ParamRef"] = None,
+        xGrid: Union[bool, str, "Interval", List[Any], "ParamRef"] = None,
+        xInset: Union[float, "ParamRef"] = None,
+        xInsetLeft: Union[float, "ParamRef"] = None,
+        xInsetRight: Union[float, "ParamRef"] = None,
+        xLabel: Union[str, Any, "ParamRef"] = None,
+        xLabelAnchor: Union[str, str, str, str, str, "ParamRef"] = None,
+        xLabelArrow: Union["LabelArrow", "ParamRef"] = None,
+        xLabelOffset: Union[float, "ParamRef"] = None,
+        xLine: Union[bool, "ParamRef"] = None,
+        xNice: Union[bool, float, "Interval", "ParamRef"] = None,
+        xPadding: Union[float, "ParamRef"] = None,
+        xPaddingInner: Union[float, "ParamRef"] = None,
+        xPaddingOuter: Union[float, "ParamRef"] = None,
+        xPercent: Union[bool, "ParamRef"] = None,
+        xRange: Union[List[Any], "Fixed", "ParamRef"] = None,
+        xReverse: Union[bool, "ParamRef"] = None,
+        xRound: Union[bool, "ParamRef"] = None,
+        xScale: Union["PositionScaleType", Any, "ParamRef"] = None,
+        xTickFormat: Union[str, Any, "ParamRef"] = None,
+        xTickPadding: Union[float, "ParamRef"] = None,
+        xTickRotate: Union[float, "ParamRef"] = None,
+        xTickSize: Union[float, "ParamRef"] = None,
+        xTickSpacing: Union[float, "ParamRef"] = None,
+        xTicks: Union[float, "Interval", List[Any], "ParamRef"] = None,
+        xZero: Union[bool, "ParamRef"] = None,
+        xyDomain: Union[List[Any], "Fixed", "ParamRef"] = None,
+        yAlign: Union[float, "ParamRef"] = None,
+        yAriaDescription: Union[str, "ParamRef"] = None,
+        yAriaLabel: Union[str, "ParamRef"] = None,
+        yAxis: Union[str, str, str, bool, Any, "ParamRef"] = None,
+        yBase: Union[float, "ParamRef"] = None,
+        yClamp: Union[bool, "ParamRef"] = None,
+        yConstant: Union[float, "ParamRef"] = None,
+        yDomain: Union[List[Any], "Fixed", "ParamRef"] = None,
+        yExponent: Union[float, "ParamRef"] = None,
+        yFontVariant: Union[str, "ParamRef"] = None,
+        yGrid: Union[bool, str, "Interval", List[Any], "ParamRef"] = None,
+        yInset: Union[float, "ParamRef"] = None,
+        yInsetBottom: Union[float, "ParamRef"] = None,
+        yInsetTop: Union[float, "ParamRef"] = None,
+        yLabel: Union[str, Any, "ParamRef"] = None,
+        yLabelAnchor: Union[str, str, str, str, str, "ParamRef"] = None,
+        yLabelArrow: Union["LabelArrow", "ParamRef"] = None,
+        yLabelOffset: Union[float, "ParamRef"] = None,
+        yLine: Union[bool, "ParamRef"] = None,
+        yNice: Union[bool, float, "Interval", "ParamRef"] = None,
+        yPadding: Union[float, "ParamRef"] = None,
+        yPaddingInner: Union[float, "ParamRef"] = None,
+        yPaddingOuter: Union[float, "ParamRef"] = None,
+        yPercent: Union[bool, "ParamRef"] = None,
+        yRange: Union[List[Any], "Fixed", "ParamRef"] = None,
+        yReverse: Union[bool, "ParamRef"] = None,
+        yRound: Union[bool, "ParamRef"] = None,
+        yScale: Union["PositionScaleType", Any, "ParamRef"] = None,
+        yTickFormat: Union[str, Any, "ParamRef"] = None,
+        yTickPadding: Union[float, "ParamRef"] = None,
+        yTickRotate: Union[float, "ParamRef"] = None,
+        yTickSize: Union[float, "ParamRef"] = None,
+        yTickSpacing: Union[float, "ParamRef"] = None,
+        yTicks: Union[float, "Interval", List[Any], "ParamRef"] = None,
+        yZero: Union[bool, "ParamRef"] = None,
+    ):
         self.align = align
         self.aspectRatio = aspectRatio
         self.axis = axis
@@ -1496,26 +2874,137 @@ class PlotDataInline(SchemaBase):
 
 
 class PlotInteractor(SchemaBase):
-    def __init__(self, value: Union["IntervalY", "ToggleX", "Highlight", "PanX", "PanY", "ToggleY", "PanZoom", "PanZoomY", "ToggleColor", "PanZoomX", "NearestY", "Pan", "Toggle", "IntervalX", "NearestX", "IntervalXY"]):
+    def __init__(
+        self,
+        value: Union[
+            "IntervalY",
+            "ToggleX",
+            "Highlight",
+            "PanX",
+            "PanY",
+            "ToggleY",
+            "PanZoom",
+            "PanZoomY",
+            "ToggleColor",
+            "PanZoomX",
+            "NearestY",
+            "Pan",
+            "Toggle",
+            "IntervalX",
+            "NearestX",
+            "IntervalXY",
+        ],
+    ):
         self.value = value
 
 
 class PlotMark(SchemaBase):
-    def __init__(self, value: Union["VoronoiMesh", "Circle", "Vector", "Rect", "Sphere", "AxisFy", "Dot", "CellY", "ErrorBarY", "Voronoi", "LineX", "DotX", "Frame", "DotY", "Hexagon", "DensityX", "DensityY", "Density", "Link", "GridFy", "RasterTile", "RegressionY", "DelaunayLink", "Contour", "TextX", "Hull", "Text", "CellX", "GridX", "AreaX", "AxisY", "AxisFx", "BarY", "Image", "RectY", "AreaY", "BarX", "LineY", "VectorX", "Area", "Heatmap", "Spike", "AxisX", "VectorY", "RuleY", "Hexbin", "TickY", "ErrorBarX", "DelaunayMesh", "Cell", "RectX", "Line", "Arrow", "Geo", "TextY", "Hexgrid", "GridY", "TickX", "RuleX", "Graticule", "Raster", "GridFx", "DenseLine"]):
+    def __init__(
+        self,
+        value: Union[
+            "VoronoiMesh",
+            "Circle",
+            "Vector",
+            "Rect",
+            "Sphere",
+            "AxisFy",
+            "Dot",
+            "CellY",
+            "ErrorBarY",
+            "Voronoi",
+            "LineX",
+            "DotX",
+            "Frame",
+            "DotY",
+            "Hexagon",
+            "DensityX",
+            "DensityY",
+            "Density",
+            "Link",
+            "GridFy",
+            "RasterTile",
+            "RegressionY",
+            "DelaunayLink",
+            "Contour",
+            "TextX",
+            "Hull",
+            "Text",
+            "CellX",
+            "GridX",
+            "AreaX",
+            "AxisY",
+            "AxisFx",
+            "BarY",
+            "Image",
+            "RectY",
+            "AreaY",
+            "BarX",
+            "LineY",
+            "VectorX",
+            "Area",
+            "Heatmap",
+            "Spike",
+            "AxisX",
+            "VectorY",
+            "RuleY",
+            "Hexbin",
+            "TickY",
+            "ErrorBarX",
+            "DelaunayMesh",
+            "Cell",
+            "RectX",
+            "Line",
+            "Arrow",
+            "Geo",
+            "TextY",
+            "Hexgrid",
+            "GridY",
+            "TickX",
+            "RuleX",
+            "Graticule",
+            "Raster",
+            "GridFx",
+            "DenseLine",
+        ],
+    ):
         self.value = value
 
 
 class PositionScaleType(SchemaBase):
-    enum_options = ['linear', 'pow', 'sqrt', 'log', 'symlog', 'utc', 'time', 'point', 'band', 'threshold', 'quantile', 'quantize', 'identity']
+    enum_options = [
+        "linear",
+        "pow",
+        "sqrt",
+        "log",
+        "symlog",
+        "utc",
+        "time",
+        "point",
+        "band",
+        "threshold",
+        "quantile",
+        "quantize",
+        "identity",
+    ]
 
     def __init__(self, value: str):
         if value not in self.enum_options:
-            raise ValueError(f"Value of enum not in allowed values: {self.enum_options}")
+            raise ValueError(
+                f"Value of enum not in allowed values: {self.enum_options}"
+            )
         self.value = value
 
 
 class Product(SchemaBase):
-    def __init__(self, product: Union[Union[bool, float, str], List[Union[bool, float, str]]], distinct: bool = None, orderby: Union["TransformField", List["TransformField"]] = None, partitionby: Union["TransformField", List["TransformField"]] = None, range: Union[List[Union[float, Any]], "ParamRef"] = None, rows: Union[List[Union[float, Any]], "ParamRef"] = None):
+    def __init__(
+        self,
+        product: Union[Union[bool, float, str], List[Union[bool, float, str]]],
+        distinct: bool = None,
+        orderby: Union["TransformField", List["TransformField"]] = None,
+        partitionby: Union["TransformField", List["TransformField"]] = None,
+        range: Union[List[Union[float, Any]], "ParamRef"] = None,
+        rows: Union[List[Union[float, Any]], "ParamRef"] = None,
+    ):
         self.distinct = distinct
         self.orderby = orderby
         self.partitionby = partitionby
@@ -1525,16 +3014,43 @@ class Product(SchemaBase):
 
 
 class ProjectionName(SchemaBase):
-    enum_options = ['albers-usa', 'albers', 'azimuthal-equal-area', 'azimuthal-equidistant', 'conic-conformal', 'conic-equal-area', 'conic-equidistant', 'equal-earth', 'equirectangular', 'gnomonic', 'identity', 'reflect-y', 'mercator', 'orthographic', 'stereographic', 'transverse-mercator']
+    enum_options = [
+        "albers-usa",
+        "albers",
+        "azimuthal-equal-area",
+        "azimuthal-equidistant",
+        "conic-conformal",
+        "conic-equal-area",
+        "conic-equidistant",
+        "equal-earth",
+        "equirectangular",
+        "gnomonic",
+        "identity",
+        "reflect-y",
+        "mercator",
+        "orthographic",
+        "stereographic",
+        "transverse-mercator",
+    ]
 
     def __init__(self, value: str):
         if value not in self.enum_options:
-            raise ValueError(f"Value of enum not in allowed values: {self.enum_options}")
+            raise ValueError(
+                f"Value of enum not in allowed values: {self.enum_options}"
+            )
         self.value = value
 
 
 class Quantile(SchemaBase):
-    def __init__(self, quantile: List[Union[bool, float, str]], distinct: bool = None, orderby: Union["TransformField", List["TransformField"]] = None, partitionby: Union["TransformField", List["TransformField"]] = None, range: Union[List[Union[float, Any]], "ParamRef"] = None, rows: Union[List[Union[float, Any]], "ParamRef"] = None):
+    def __init__(
+        self,
+        quantile: List[Union[bool, float, str]],
+        distinct: bool = None,
+        orderby: Union["TransformField", List["TransformField"]] = None,
+        partitionby: Union["TransformField", List["TransformField"]] = None,
+        range: Union[List[Union[float, Any]], "ParamRef"] = None,
+        rows: Union[List[Union[float, Any]], "ParamRef"] = None,
+    ):
         self.distinct = distinct
         self.orderby = orderby
         self.partitionby = partitionby
@@ -1544,7 +3060,14 @@ class Quantile(SchemaBase):
 
 
 class Rank(SchemaBase):
-    def __init__(self, rank: Union[Any, Any], orderby: Union["TransformField", List["TransformField"]] = None, partitionby: Union["TransformField", List["TransformField"]] = None, range: Union[List[Union[float, Any]], "ParamRef"] = None, rows: Union[List[Union[float, Any]], "ParamRef"] = None):
+    def __init__(
+        self,
+        rank: Union[Any, Any],
+        orderby: Union["TransformField", List["TransformField"]] = None,
+        partitionby: Union["TransformField", List["TransformField"]] = None,
+        range: Union[List[Union[float, Any]], "ParamRef"] = None,
+        rows: Union[List[Union[float, Any]], "ParamRef"] = None,
+    ):
         self.orderby = orderby
         self.partitionby = partitionby
         self.range = range
@@ -1558,16 +3081,126 @@ class Reducer(SchemaBase):
 
 
 class ReducerPercentile(SchemaBase):
-    enum_options = ['p00', 'p01', 'p02', 'p03', 'p04', 'p05', 'p06', 'p07', 'p08', 'p09', 'p10', 'p11', 'p12', 'p13', 'p14', 'p15', 'p16', 'p17', 'p18', 'p19', 'p20', 'p21', 'p22', 'p23', 'p24', 'p25', 'p26', 'p27', 'p28', 'p29', 'p30', 'p31', 'p32', 'p33', 'p34', 'p35', 'p36', 'p37', 'p38', 'p39', 'p40', 'p41', 'p42', 'p43', 'p44', 'p45', 'p46', 'p47', 'p48', 'p49', 'p50', 'p51', 'p52', 'p53', 'p54', 'p55', 'p56', 'p57', 'p58', 'p59', 'p60', 'p61', 'p62', 'p63', 'p64', 'p65', 'p66', 'p67', 'p68', 'p69', 'p70', 'p71', 'p72', 'p73', 'p74', 'p75', 'p76', 'p77', 'p78', 'p79', 'p80', 'p81', 'p82', 'p83', 'p84', 'p85', 'p86', 'p87', 'p88', 'p89', 'p90', 'p91', 'p92', 'p93', 'p94', 'p95', 'p96', 'p97', 'p98', 'p99']
+    enum_options = [
+        "p00",
+        "p01",
+        "p02",
+        "p03",
+        "p04",
+        "p05",
+        "p06",
+        "p07",
+        "p08",
+        "p09",
+        "p10",
+        "p11",
+        "p12",
+        "p13",
+        "p14",
+        "p15",
+        "p16",
+        "p17",
+        "p18",
+        "p19",
+        "p20",
+        "p21",
+        "p22",
+        "p23",
+        "p24",
+        "p25",
+        "p26",
+        "p27",
+        "p28",
+        "p29",
+        "p30",
+        "p31",
+        "p32",
+        "p33",
+        "p34",
+        "p35",
+        "p36",
+        "p37",
+        "p38",
+        "p39",
+        "p40",
+        "p41",
+        "p42",
+        "p43",
+        "p44",
+        "p45",
+        "p46",
+        "p47",
+        "p48",
+        "p49",
+        "p50",
+        "p51",
+        "p52",
+        "p53",
+        "p54",
+        "p55",
+        "p56",
+        "p57",
+        "p58",
+        "p59",
+        "p60",
+        "p61",
+        "p62",
+        "p63",
+        "p64",
+        "p65",
+        "p66",
+        "p67",
+        "p68",
+        "p69",
+        "p70",
+        "p71",
+        "p72",
+        "p73",
+        "p74",
+        "p75",
+        "p76",
+        "p77",
+        "p78",
+        "p79",
+        "p80",
+        "p81",
+        "p82",
+        "p83",
+        "p84",
+        "p85",
+        "p86",
+        "p87",
+        "p88",
+        "p89",
+        "p90",
+        "p91",
+        "p92",
+        "p93",
+        "p94",
+        "p95",
+        "p96",
+        "p97",
+        "p98",
+        "p99",
+    ]
 
     def __init__(self, value: str):
         if value not in self.enum_options:
-            raise ValueError(f"Value of enum not in allowed values: {self.enum_options}")
+            raise ValueError(
+                f"Value of enum not in allowed values: {self.enum_options}"
+            )
         self.value = value
 
 
 class RowNumber(SchemaBase):
-    def __init__(self, row_number: Union[Any, Any], orderby: Union["TransformField", List["TransformField"]] = None, partitionby: Union["TransformField", List["TransformField"]] = None, range: Union[List[Union[float, Any]], "ParamRef"] = None, rows: Union[List[Union[float, Any]], "ParamRef"] = None):
+    def __init__(
+        self,
+        row_number: Union[Any, Any],
+        orderby: Union["TransformField", List["TransformField"]] = None,
+        partitionby: Union["TransformField", List["TransformField"]] = None,
+        range: Union[List[Union[float, Any]], "ParamRef"] = None,
+        rows: Union[List[Union[float, Any]], "ParamRef"] = None,
+    ):
         self.orderby = orderby
         self.partitionby = partitionby
         self.range = range
@@ -1582,11 +3215,13 @@ class SQLExpression(SchemaBase):
 
 
 class ScaleName(SchemaBase):
-    enum_options = ['x', 'y', 'fx', 'fy', 'r', 'color', 'opacity', 'symbol', 'length']
+    enum_options = ["x", "y", "fx", "fy", "r", "color", "opacity", "symbol", "length"]
 
     def __init__(self, value: str):
         if value not in self.enum_options:
-            raise ValueError(f"Value of enum not in allowed values: {self.enum_options}")
+            raise ValueError(
+                f"Value of enum not in allowed values: {self.enum_options}"
+            )
         self.value = value
 
 
@@ -1608,11 +3243,13 @@ class Spec(SchemaBase):
 
 
 class StackOffsetName(SchemaBase):
-    enum_options = ['center', 'normalize', 'wiggle']
+    enum_options = ["center", "normalize", "wiggle"]
 
     def __init__(self, value: str):
         if value not in self.enum_options:
-            raise ValueError(f"Value of enum not in allowed values: {self.enum_options}")
+            raise ValueError(
+                f"Value of enum not in allowed values: {self.enum_options}"
+            )
         self.value = value
 
 
@@ -1622,16 +3259,26 @@ class StackOrder(SchemaBase):
 
 
 class StackOrderName(SchemaBase):
-    enum_options = ['value', 'x', 'y', 'z', 'sum', 'appearance', 'inside-out']
+    enum_options = ["value", "x", "y", "z", "sum", "appearance", "inside-out"]
 
     def __init__(self, value: str):
         if value not in self.enum_options:
-            raise ValueError(f"Value of enum not in allowed values: {self.enum_options}")
+            raise ValueError(
+                f"Value of enum not in allowed values: {self.enum_options}"
+            )
         self.value = value
 
 
 class Stddev(SchemaBase):
-    def __init__(self, stddev: Union[Union[bool, float, str], List[Union[bool, float, str]]], distinct: bool = None, orderby: Union["TransformField", List["TransformField"]] = None, partitionby: Union["TransformField", List["TransformField"]] = None, range: Union[List[Union[float, Any]], "ParamRef"] = None, rows: Union[List[Union[float, Any]], "ParamRef"] = None):
+    def __init__(
+        self,
+        stddev: Union[Union[bool, float, str], List[Union[bool, float, str]]],
+        distinct: bool = None,
+        orderby: Union["TransformField", List["TransformField"]] = None,
+        partitionby: Union["TransformField", List["TransformField"]] = None,
+        range: Union[List[Union[float, Any]], "ParamRef"] = None,
+        rows: Union[List[Union[float, Any]], "ParamRef"] = None,
+    ):
         self.distinct = distinct
         self.orderby = orderby
         self.partitionby = partitionby
@@ -1641,7 +3288,15 @@ class Stddev(SchemaBase):
 
 
 class StddevPop(SchemaBase):
-    def __init__(self, stddevPop: Union[Union[bool, float, str], List[Union[bool, float, str]]], distinct: bool = None, orderby: Union["TransformField", List["TransformField"]] = None, partitionby: Union["TransformField", List["TransformField"]] = None, range: Union[List[Union[float, Any]], "ParamRef"] = None, rows: Union[List[Union[float, Any]], "ParamRef"] = None):
+    def __init__(
+        self,
+        stddevPop: Union[Union[bool, float, str], List[Union[bool, float, str]]],
+        distinct: bool = None,
+        orderby: Union["TransformField", List["TransformField"]] = None,
+        partitionby: Union["TransformField", List["TransformField"]] = None,
+        range: Union[List[Union[float, Any]], "ParamRef"] = None,
+        rows: Union[List[Union[float, Any]], "ParamRef"] = None,
+    ):
         self.distinct = distinct
         self.orderby = orderby
         self.partitionby = partitionby
@@ -1651,7 +3306,15 @@ class StddevPop(SchemaBase):
 
 
 class Sum(SchemaBase):
-    def __init__(self, sum: Union[Union[bool, float, str], List[Union[bool, float, str]]], distinct: bool = None, orderby: Union["TransformField", List["TransformField"]] = None, partitionby: Union["TransformField", List["TransformField"]] = None, range: Union[List[Union[float, Any]], "ParamRef"] = None, rows: Union[List[Union[float, Any]], "ParamRef"] = None):
+    def __init__(
+        self,
+        sum: Union[Union[bool, float, str], List[Union[bool, float, str]]],
+        distinct: bool = None,
+        orderby: Union["TransformField", List["TransformField"]] = None,
+        partitionby: Union["TransformField", List["TransformField"]] = None,
+        range: Union[List[Union[float, Any]], "ParamRef"] = None,
+        rows: Union[List[Union[float, Any]], "ParamRef"] = None,
+    ):
         self.distinct = distinct
         self.orderby = orderby
         self.partitionby = partitionby
@@ -1661,34 +3324,74 @@ class Sum(SchemaBase):
 
 
 class SymbolType(SchemaBase):
-    enum_options = ['asterisk', 'circle', 'cross', 'diamond', 'diamond2', 'hexagon', 'plus', 'square', 'square2', 'star', 'times', 'triangle', 'triangle2', 'wye']
+    enum_options = [
+        "asterisk",
+        "circle",
+        "cross",
+        "diamond",
+        "diamond2",
+        "hexagon",
+        "plus",
+        "square",
+        "square2",
+        "star",
+        "times",
+        "triangle",
+        "triangle2",
+        "wye",
+    ]
 
     def __init__(self, value: str):
         if value not in self.enum_options:
-            raise ValueError(f"Value of enum not in allowed values: {self.enum_options}")
+            raise ValueError(
+                f"Value of enum not in allowed values: {self.enum_options}"
+            )
         self.value = value
 
 
 class TimeIntervalName(SchemaBase):
-    enum_options = ['second', 'minute', 'hour', 'day', 'week', 'month', 'quarter', 'half', 'year', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday']
+    enum_options = [
+        "second",
+        "minute",
+        "hour",
+        "day",
+        "week",
+        "month",
+        "quarter",
+        "half",
+        "year",
+        "monday",
+        "tuesday",
+        "wednesday",
+        "thursday",
+        "friday",
+        "saturday",
+        "sunday",
+    ]
 
     def __init__(self, value: str):
         if value not in self.enum_options:
-            raise ValueError(f"Value of enum not in allowed values: {self.enum_options}")
+            raise ValueError(
+                f"Value of enum not in allowed values: {self.enum_options}"
+            )
         self.value = value
 
 
 class TipPointer(SchemaBase):
-    enum_options = ['x', 'y', 'xy']
+    enum_options = ["x", "y", "xy"]
 
     def __init__(self, value: str):
         if value not in self.enum_options:
-            raise ValueError(f"Value of enum not in allowed values: {self.enum_options}")
+            raise ValueError(
+                f"Value of enum not in allowed values: {self.enum_options}"
+            )
         self.value = value
 
 
 class Transform(SchemaBase):
-    def __init__(self, value: Union["ColumnTransform", "WindowTransform", "AggregateTransform"]):
+    def __init__(
+        self, value: Union["ColumnTransform", "WindowTransform", "AggregateTransform"]
+    ):
         self.value = value
 
 
@@ -1703,7 +3406,15 @@ class VSpace(SchemaBase):
 
 
 class VarPop(SchemaBase):
-    def __init__(self, varPop: Union[Union[bool, float, str], List[Union[bool, float, str]]], distinct: bool = None, orderby: Union["TransformField", List["TransformField"]] = None, partitionby: Union["TransformField", List["TransformField"]] = None, range: Union[List[Union[float, Any]], "ParamRef"] = None, rows: Union[List[Union[float, Any]], "ParamRef"] = None):
+    def __init__(
+        self,
+        varPop: Union[Union[bool, float, str], List[Union[bool, float, str]]],
+        distinct: bool = None,
+        orderby: Union["TransformField", List["TransformField"]] = None,
+        partitionby: Union["TransformField", List["TransformField"]] = None,
+        range: Union[List[Union[float, Any]], "ParamRef"] = None,
+        rows: Union[List[Union[float, Any]], "ParamRef"] = None,
+    ):
         self.distinct = distinct
         self.orderby = orderby
         self.partitionby = partitionby
@@ -1713,7 +3424,15 @@ class VarPop(SchemaBase):
 
 
 class Variance(SchemaBase):
-    def __init__(self, variance: Union[Union[bool, float, str], List[Union[bool, float, str]]], distinct: bool = None, orderby: Union["TransformField", List["TransformField"]] = None, partitionby: Union["TransformField", List["TransformField"]] = None, range: Union[List[Union[float, Any]], "ParamRef"] = None, rows: Union[List[Union[float, Any]], "ParamRef"] = None):
+    def __init__(
+        self,
+        variance: Union[Union[bool, float, str], List[Union[bool, float, str]]],
+        distinct: bool = None,
+        orderby: Union["TransformField", List["TransformField"]] = None,
+        partitionby: Union["TransformField", List["TransformField"]] = None,
+        range: Union[List[Union[float, Any]], "ParamRef"] = None,
+        rows: Union[List[Union[float, Any]], "ParamRef"] = None,
+    ):
         self.distinct = distinct
         self.orderby = orderby
         self.partitionby = partitionby
@@ -1723,21 +3442,106 @@ class Variance(SchemaBase):
 
 
 class VectorShapeName(SchemaBase):
-    enum_options = ['arrow', 'spike']
+    enum_options = ["arrow", "spike"]
 
     def __init__(self, value: str):
         if value not in self.enum_options:
-            raise ValueError(f"Value of enum not in allowed values: {self.enum_options}")
+            raise ValueError(
+                f"Value of enum not in allowed values: {self.enum_options}"
+            )
         self.value = value
 
 
 class WindowTransform(SchemaBase):
-    def __init__(self, value: Union["NTile", "DenseRank", "FirstValue", "CumeDist", "LastValue", "NthValue", "RowNumber", "Rank", "PercentRank", "Lead", "Lag"]):
+    def __init__(
+        self,
+        value: Union[
+            "NTile",
+            "DenseRank",
+            "FirstValue",
+            "CumeDist",
+            "LastValue",
+            "NthValue",
+            "RowNumber",
+            "Rank",
+            "PercentRank",
+            "Lead",
+            "Lag",
+        ],
+    ):
         self.value = value
 
 
 class Area(SchemaBase):
-    def __init__(self, data: "PlotMarkData", mark: str, ariaDescription: Union[str, "ParamRef"] = None, ariaHidden: Union[str, "ParamRef"] = None, ariaLabel: "ChannelValue" = None, clip: Union[str, str, bool, Any, "ParamRef"] = None, curve: Union["Curve", "ParamRef"] = None, dx: Union[float, "ParamRef"] = None, dy: Union[float, "ParamRef"] = None, facet: Union[str, str, str, str, bool, Any, "ParamRef"] = None, facetAnchor: Union[str, str, str, str, str, str, str, str, str, str, str, str, str, Any, "ParamRef"] = None, fill: Union["ChannelValueSpec", "ParamRef"] = None, fillOpacity: Union["ChannelValueSpec", "ParamRef"] = None, filter: "ChannelValue" = None, fx: "ChannelValue" = None, fy: "ChannelValue" = None, href: "ChannelValue" = None, imageFilter: Union[str, "ParamRef"] = None, margin: Union[float, "ParamRef"] = None, marginBottom: Union[float, "ParamRef"] = None, marginLeft: Union[float, "ParamRef"] = None, marginRight: Union[float, "ParamRef"] = None, marginTop: Union[float, "ParamRef"] = None, mixBlendMode: Union[str, "ParamRef"] = None, offset: Union["StackOffset", Any, "ParamRef"] = None, opacity: "ChannelValueSpec" = None, order: Union["StackOrder", Any, "ParamRef"] = None, paintOrder: Union[str, "ParamRef"] = None, pointerEvents: Union[str, "ParamRef"] = None, reverse: Union[bool, "ParamRef"] = None, select: "SelectFilter" = None, shapeRendering: Union[str, "ParamRef"] = None, sort: Union["SortOrder", "ChannelDomainSort"] = None, stroke: Union["ChannelValueSpec", "ParamRef"] = None, strokeDasharray: Union[str, float, "ParamRef"] = None, strokeDashoffset: Union[str, float, "ParamRef"] = None, strokeLinecap: Union[str, "ParamRef"] = None, strokeLinejoin: Union[str, "ParamRef"] = None, strokeMiterlimit: Union[float, "ParamRef"] = None, strokeOpacity: "ChannelValueSpec" = None, strokeWidth: "ChannelValueSpec" = None, target: Union[str, "ParamRef"] = None, tension: Union[float, "ParamRef"] = None, tip: Union[bool, "TipPointer", Dict[str, Any], "ParamRef"] = None, title: "ChannelValue" = None, x1: "ChannelValueSpec" = None, x2: "ChannelValueSpec" = None, y1: "ChannelValueSpec" = None, y2: "ChannelValueSpec" = None, z: "ChannelValue" = None):
+    def __init__(
+        self,
+        data: "PlotMarkData",
+        mark: str,
+        ariaDescription: Union[str, "ParamRef"] = None,
+        ariaHidden: Union[str, "ParamRef"] = None,
+        ariaLabel: "ChannelValue" = None,
+        clip: Union[str, str, bool, Any, "ParamRef"] = None,
+        curve: Union["Curve", "ParamRef"] = None,
+        dx: Union[float, "ParamRef"] = None,
+        dy: Union[float, "ParamRef"] = None,
+        facet: Union[str, str, str, str, bool, Any, "ParamRef"] = None,
+        facetAnchor: Union[
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            Any,
+            "ParamRef",
+        ] = None,
+        fill: Union["ChannelValueSpec", "ParamRef"] = None,
+        fillOpacity: Union["ChannelValueSpec", "ParamRef"] = None,
+        filter: "ChannelValue" = None,
+        fx: "ChannelValue" = None,
+        fy: "ChannelValue" = None,
+        href: "ChannelValue" = None,
+        imageFilter: Union[str, "ParamRef"] = None,
+        margin: Union[float, "ParamRef"] = None,
+        marginBottom: Union[float, "ParamRef"] = None,
+        marginLeft: Union[float, "ParamRef"] = None,
+        marginRight: Union[float, "ParamRef"] = None,
+        marginTop: Union[float, "ParamRef"] = None,
+        mixBlendMode: Union[str, "ParamRef"] = None,
+        offset: Union["StackOffset", Any, "ParamRef"] = None,
+        opacity: "ChannelValueSpec" = None,
+        order: Union["StackOrder", Any, "ParamRef"] = None,
+        paintOrder: Union[str, "ParamRef"] = None,
+        pointerEvents: Union[str, "ParamRef"] = None,
+        reverse: Union[bool, "ParamRef"] = None,
+        select: "SelectFilter" = None,
+        shapeRendering: Union[str, "ParamRef"] = None,
+        sort: Union["SortOrder", "ChannelDomainSort"] = None,
+        stroke: Union["ChannelValueSpec", "ParamRef"] = None,
+        strokeDasharray: Union[str, float, "ParamRef"] = None,
+        strokeDashoffset: Union[str, float, "ParamRef"] = None,
+        strokeLinecap: Union[str, "ParamRef"] = None,
+        strokeLinejoin: Union[str, "ParamRef"] = None,
+        strokeMiterlimit: Union[float, "ParamRef"] = None,
+        strokeOpacity: "ChannelValueSpec" = None,
+        strokeWidth: "ChannelValueSpec" = None,
+        target: Union[str, "ParamRef"] = None,
+        tension: Union[float, "ParamRef"] = None,
+        tip: Union[bool, "TipPointer", Dict[str, Any], "ParamRef"] = None,
+        title: "ChannelValue" = None,
+        x1: "ChannelValueSpec" = None,
+        x2: "ChannelValueSpec" = None,
+        y1: "ChannelValueSpec" = None,
+        y2: "ChannelValueSpec" = None,
+        z: "ChannelValue" = None,
+    ):
         self.ariaDescription = ariaDescription
         self.ariaHidden = ariaHidden
         self.ariaLabel = ariaLabel
@@ -1791,7 +3595,75 @@ class Area(SchemaBase):
 
 
 class AreaX(SchemaBase):
-    def __init__(self, data: "PlotMarkData", mark: str, ariaDescription: Union[str, "ParamRef"] = None, ariaHidden: Union[str, "ParamRef"] = None, ariaLabel: "ChannelValue" = None, clip: Union[str, str, bool, Any, "ParamRef"] = None, curve: Union["Curve", "ParamRef"] = None, dx: Union[float, "ParamRef"] = None, dy: Union[float, "ParamRef"] = None, facet: Union[str, str, str, str, bool, Any, "ParamRef"] = None, facetAnchor: Union[str, str, str, str, str, str, str, str, str, str, str, str, str, Any, "ParamRef"] = None, fill: Union["ChannelValueSpec", "ParamRef"] = None, fillOpacity: Union["ChannelValueSpec", "ParamRef"] = None, filter: "ChannelValue" = None, fx: "ChannelValue" = None, fy: "ChannelValue" = None, href: "ChannelValue" = None, imageFilter: Union[str, "ParamRef"] = None, margin: Union[float, "ParamRef"] = None, marginBottom: Union[float, "ParamRef"] = None, marginLeft: Union[float, "ParamRef"] = None, marginRight: Union[float, "ParamRef"] = None, marginTop: Union[float, "ParamRef"] = None, mixBlendMode: Union[str, "ParamRef"] = None, offset: Union["StackOffset", Any, "ParamRef"] = None, opacity: "ChannelValueSpec" = None, order: Union["StackOrder", Any, "ParamRef"] = None, paintOrder: Union[str, "ParamRef"] = None, pointerEvents: Union[str, "ParamRef"] = None, reverse: Union[bool, "ParamRef"] = None, select: "SelectFilter" = None, shapeRendering: Union[str, "ParamRef"] = None, sort: Union["SortOrder", "ChannelDomainSort"] = None, stroke: Union["ChannelValueSpec", "ParamRef"] = None, strokeDasharray: Union[str, float, "ParamRef"] = None, strokeDashoffset: Union[str, float, "ParamRef"] = None, strokeLinecap: Union[str, "ParamRef"] = None, strokeLinejoin: Union[str, "ParamRef"] = None, strokeMiterlimit: Union[float, "ParamRef"] = None, strokeOpacity: "ChannelValueSpec" = None, strokeWidth: "ChannelValueSpec" = None, target: Union[str, "ParamRef"] = None, tension: Union[float, "ParamRef"] = None, tip: Union[bool, "TipPointer", Dict[str, Any], "ParamRef"] = None, title: "ChannelValue" = None, x: "ChannelValueSpec" = None, x1: "ChannelValueSpec" = None, x2: "ChannelValueSpec" = None, y: "ChannelValueSpec" = None, z: "ChannelValue" = None):
+    def __init__(
+        self,
+        data: "PlotMarkData",
+        mark: str,
+        ariaDescription: Union[str, "ParamRef"] = None,
+        ariaHidden: Union[str, "ParamRef"] = None,
+        ariaLabel: "ChannelValue" = None,
+        clip: Union[str, str, bool, Any, "ParamRef"] = None,
+        curve: Union["Curve", "ParamRef"] = None,
+        dx: Union[float, "ParamRef"] = None,
+        dy: Union[float, "ParamRef"] = None,
+        facet: Union[str, str, str, str, bool, Any, "ParamRef"] = None,
+        facetAnchor: Union[
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            Any,
+            "ParamRef",
+        ] = None,
+        fill: Union["ChannelValueSpec", "ParamRef"] = None,
+        fillOpacity: Union["ChannelValueSpec", "ParamRef"] = None,
+        filter: "ChannelValue" = None,
+        fx: "ChannelValue" = None,
+        fy: "ChannelValue" = None,
+        href: "ChannelValue" = None,
+        imageFilter: Union[str, "ParamRef"] = None,
+        margin: Union[float, "ParamRef"] = None,
+        marginBottom: Union[float, "ParamRef"] = None,
+        marginLeft: Union[float, "ParamRef"] = None,
+        marginRight: Union[float, "ParamRef"] = None,
+        marginTop: Union[float, "ParamRef"] = None,
+        mixBlendMode: Union[str, "ParamRef"] = None,
+        offset: Union["StackOffset", Any, "ParamRef"] = None,
+        opacity: "ChannelValueSpec" = None,
+        order: Union["StackOrder", Any, "ParamRef"] = None,
+        paintOrder: Union[str, "ParamRef"] = None,
+        pointerEvents: Union[str, "ParamRef"] = None,
+        reverse: Union[bool, "ParamRef"] = None,
+        select: "SelectFilter" = None,
+        shapeRendering: Union[str, "ParamRef"] = None,
+        sort: Union["SortOrder", "ChannelDomainSort"] = None,
+        stroke: Union["ChannelValueSpec", "ParamRef"] = None,
+        strokeDasharray: Union[str, float, "ParamRef"] = None,
+        strokeDashoffset: Union[str, float, "ParamRef"] = None,
+        strokeLinecap: Union[str, "ParamRef"] = None,
+        strokeLinejoin: Union[str, "ParamRef"] = None,
+        strokeMiterlimit: Union[float, "ParamRef"] = None,
+        strokeOpacity: "ChannelValueSpec" = None,
+        strokeWidth: "ChannelValueSpec" = None,
+        target: Union[str, "ParamRef"] = None,
+        tension: Union[float, "ParamRef"] = None,
+        tip: Union[bool, "TipPointer", Dict[str, Any], "ParamRef"] = None,
+        title: "ChannelValue" = None,
+        x: "ChannelValueSpec" = None,
+        x1: "ChannelValueSpec" = None,
+        x2: "ChannelValueSpec" = None,
+        y: "ChannelValueSpec" = None,
+        z: "ChannelValue" = None,
+    ):
         self.ariaDescription = ariaDescription
         self.ariaHidden = ariaHidden
         self.ariaLabel = ariaLabel
@@ -1845,7 +3717,75 @@ class AreaX(SchemaBase):
 
 
 class AreaY(SchemaBase):
-    def __init__(self, data: "PlotMarkData", mark: str, ariaDescription: Union[str, "ParamRef"] = None, ariaHidden: Union[str, "ParamRef"] = None, ariaLabel: "ChannelValue" = None, clip: Union[str, str, bool, Any, "ParamRef"] = None, curve: Union["Curve", "ParamRef"] = None, dx: Union[float, "ParamRef"] = None, dy: Union[float, "ParamRef"] = None, facet: Union[str, str, str, str, bool, Any, "ParamRef"] = None, facetAnchor: Union[str, str, str, str, str, str, str, str, str, str, str, str, str, Any, "ParamRef"] = None, fill: Union["ChannelValueSpec", "ParamRef"] = None, fillOpacity: Union["ChannelValueSpec", "ParamRef"] = None, filter: "ChannelValue" = None, fx: "ChannelValue" = None, fy: "ChannelValue" = None, href: "ChannelValue" = None, imageFilter: Union[str, "ParamRef"] = None, margin: Union[float, "ParamRef"] = None, marginBottom: Union[float, "ParamRef"] = None, marginLeft: Union[float, "ParamRef"] = None, marginRight: Union[float, "ParamRef"] = None, marginTop: Union[float, "ParamRef"] = None, mixBlendMode: Union[str, "ParamRef"] = None, offset: Union["StackOffset", Any, "ParamRef"] = None, opacity: "ChannelValueSpec" = None, order: Union["StackOrder", Any, "ParamRef"] = None, paintOrder: Union[str, "ParamRef"] = None, pointerEvents: Union[str, "ParamRef"] = None, reverse: Union[bool, "ParamRef"] = None, select: "SelectFilter" = None, shapeRendering: Union[str, "ParamRef"] = None, sort: Union["SortOrder", "ChannelDomainSort"] = None, stroke: Union["ChannelValueSpec", "ParamRef"] = None, strokeDasharray: Union[str, float, "ParamRef"] = None, strokeDashoffset: Union[str, float, "ParamRef"] = None, strokeLinecap: Union[str, "ParamRef"] = None, strokeLinejoin: Union[str, "ParamRef"] = None, strokeMiterlimit: Union[float, "ParamRef"] = None, strokeOpacity: "ChannelValueSpec" = None, strokeWidth: "ChannelValueSpec" = None, target: Union[str, "ParamRef"] = None, tension: Union[float, "ParamRef"] = None, tip: Union[bool, "TipPointer", Dict[str, Any], "ParamRef"] = None, title: "ChannelValue" = None, x: "ChannelValueSpec" = None, y: "ChannelValueSpec" = None, y1: "ChannelValueSpec" = None, y2: "ChannelValueSpec" = None, z: "ChannelValue" = None):
+    def __init__(
+        self,
+        data: "PlotMarkData",
+        mark: str,
+        ariaDescription: Union[str, "ParamRef"] = None,
+        ariaHidden: Union[str, "ParamRef"] = None,
+        ariaLabel: "ChannelValue" = None,
+        clip: Union[str, str, bool, Any, "ParamRef"] = None,
+        curve: Union["Curve", "ParamRef"] = None,
+        dx: Union[float, "ParamRef"] = None,
+        dy: Union[float, "ParamRef"] = None,
+        facet: Union[str, str, str, str, bool, Any, "ParamRef"] = None,
+        facetAnchor: Union[
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            Any,
+            "ParamRef",
+        ] = None,
+        fill: Union["ChannelValueSpec", "ParamRef"] = None,
+        fillOpacity: Union["ChannelValueSpec", "ParamRef"] = None,
+        filter: "ChannelValue" = None,
+        fx: "ChannelValue" = None,
+        fy: "ChannelValue" = None,
+        href: "ChannelValue" = None,
+        imageFilter: Union[str, "ParamRef"] = None,
+        margin: Union[float, "ParamRef"] = None,
+        marginBottom: Union[float, "ParamRef"] = None,
+        marginLeft: Union[float, "ParamRef"] = None,
+        marginRight: Union[float, "ParamRef"] = None,
+        marginTop: Union[float, "ParamRef"] = None,
+        mixBlendMode: Union[str, "ParamRef"] = None,
+        offset: Union["StackOffset", Any, "ParamRef"] = None,
+        opacity: "ChannelValueSpec" = None,
+        order: Union["StackOrder", Any, "ParamRef"] = None,
+        paintOrder: Union[str, "ParamRef"] = None,
+        pointerEvents: Union[str, "ParamRef"] = None,
+        reverse: Union[bool, "ParamRef"] = None,
+        select: "SelectFilter" = None,
+        shapeRendering: Union[str, "ParamRef"] = None,
+        sort: Union["SortOrder", "ChannelDomainSort"] = None,
+        stroke: Union["ChannelValueSpec", "ParamRef"] = None,
+        strokeDasharray: Union[str, float, "ParamRef"] = None,
+        strokeDashoffset: Union[str, float, "ParamRef"] = None,
+        strokeLinecap: Union[str, "ParamRef"] = None,
+        strokeLinejoin: Union[str, "ParamRef"] = None,
+        strokeMiterlimit: Union[float, "ParamRef"] = None,
+        strokeOpacity: "ChannelValueSpec" = None,
+        strokeWidth: "ChannelValueSpec" = None,
+        target: Union[str, "ParamRef"] = None,
+        tension: Union[float, "ParamRef"] = None,
+        tip: Union[bool, "TipPointer", Dict[str, Any], "ParamRef"] = None,
+        title: "ChannelValue" = None,
+        x: "ChannelValueSpec" = None,
+        y: "ChannelValueSpec" = None,
+        y1: "ChannelValueSpec" = None,
+        y2: "ChannelValueSpec" = None,
+        z: "ChannelValue" = None,
+    ):
         self.ariaDescription = ariaDescription
         self.ariaHidden = ariaHidden
         self.ariaLabel = ariaLabel
@@ -1899,7 +3839,79 @@ class AreaY(SchemaBase):
 
 
 class Arrow(SchemaBase):
-    def __init__(self, data: "PlotMarkData", mark: str, ariaDescription: Union[str, "ParamRef"] = None, ariaHidden: Union[str, "ParamRef"] = None, ariaLabel: "ChannelValue" = None, bend: Union[float, bool, "ParamRef"] = None, clip: Union[str, str, bool, Any, "ParamRef"] = None, dx: Union[float, "ParamRef"] = None, dy: Union[float, "ParamRef"] = None, facet: Union[str, str, str, str, bool, Any, "ParamRef"] = None, facetAnchor: Union[str, str, str, str, str, str, str, str, str, str, str, str, str, Any, "ParamRef"] = None, fill: Union["ChannelValueSpec", "ParamRef"] = None, fillOpacity: Union["ChannelValueSpec", "ParamRef"] = None, filter: "ChannelValue" = None, fx: "ChannelValue" = None, fy: "ChannelValue" = None, headAngle: Union[float, "ParamRef"] = None, headLength: Union[float, "ParamRef"] = None, href: "ChannelValue" = None, imageFilter: Union[str, "ParamRef"] = None, inset: Union[float, "ParamRef"] = None, insetEnd: Union[float, "ParamRef"] = None, insetStart: Union[float, "ParamRef"] = None, margin: Union[float, "ParamRef"] = None, marginBottom: Union[float, "ParamRef"] = None, marginLeft: Union[float, "ParamRef"] = None, marginRight: Union[float, "ParamRef"] = None, marginTop: Union[float, "ParamRef"] = None, mixBlendMode: Union[str, "ParamRef"] = None, opacity: "ChannelValueSpec" = None, paintOrder: Union[str, "ParamRef"] = None, pointerEvents: Union[str, "ParamRef"] = None, reverse: Union[bool, "ParamRef"] = None, select: "SelectFilter" = None, shapeRendering: Union[str, "ParamRef"] = None, sort: Union["SortOrder", "ChannelDomainSort"] = None, stroke: Union["ChannelValueSpec", "ParamRef"] = None, strokeDasharray: Union[str, float, "ParamRef"] = None, strokeDashoffset: Union[str, float, "ParamRef"] = None, strokeLinecap: Union[str, "ParamRef"] = None, strokeLinejoin: Union[str, "ParamRef"] = None, strokeMiterlimit: Union[float, "ParamRef"] = None, strokeOpacity: "ChannelValueSpec" = None, strokeWidth: "ChannelValueSpec" = None, sweep: Union[float, str, str, str, str, "ParamRef"] = None, target: Union[str, "ParamRef"] = None, tip: Union[bool, "TipPointer", Dict[str, Any], "ParamRef"] = None, title: "ChannelValue" = None, x: "ChannelValueSpec" = None, x1: "ChannelValueSpec" = None, x2: "ChannelValueSpec" = None, y: "ChannelValueSpec" = None, y1: "ChannelValueSpec" = None, y2: "ChannelValueSpec" = None):
+    def __init__(
+        self,
+        data: "PlotMarkData",
+        mark: str,
+        ariaDescription: Union[str, "ParamRef"] = None,
+        ariaHidden: Union[str, "ParamRef"] = None,
+        ariaLabel: "ChannelValue" = None,
+        bend: Union[float, bool, "ParamRef"] = None,
+        clip: Union[str, str, bool, Any, "ParamRef"] = None,
+        dx: Union[float, "ParamRef"] = None,
+        dy: Union[float, "ParamRef"] = None,
+        facet: Union[str, str, str, str, bool, Any, "ParamRef"] = None,
+        facetAnchor: Union[
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            Any,
+            "ParamRef",
+        ] = None,
+        fill: Union["ChannelValueSpec", "ParamRef"] = None,
+        fillOpacity: Union["ChannelValueSpec", "ParamRef"] = None,
+        filter: "ChannelValue" = None,
+        fx: "ChannelValue" = None,
+        fy: "ChannelValue" = None,
+        headAngle: Union[float, "ParamRef"] = None,
+        headLength: Union[float, "ParamRef"] = None,
+        href: "ChannelValue" = None,
+        imageFilter: Union[str, "ParamRef"] = None,
+        inset: Union[float, "ParamRef"] = None,
+        insetEnd: Union[float, "ParamRef"] = None,
+        insetStart: Union[float, "ParamRef"] = None,
+        margin: Union[float, "ParamRef"] = None,
+        marginBottom: Union[float, "ParamRef"] = None,
+        marginLeft: Union[float, "ParamRef"] = None,
+        marginRight: Union[float, "ParamRef"] = None,
+        marginTop: Union[float, "ParamRef"] = None,
+        mixBlendMode: Union[str, "ParamRef"] = None,
+        opacity: "ChannelValueSpec" = None,
+        paintOrder: Union[str, "ParamRef"] = None,
+        pointerEvents: Union[str, "ParamRef"] = None,
+        reverse: Union[bool, "ParamRef"] = None,
+        select: "SelectFilter" = None,
+        shapeRendering: Union[str, "ParamRef"] = None,
+        sort: Union["SortOrder", "ChannelDomainSort"] = None,
+        stroke: Union["ChannelValueSpec", "ParamRef"] = None,
+        strokeDasharray: Union[str, float, "ParamRef"] = None,
+        strokeDashoffset: Union[str, float, "ParamRef"] = None,
+        strokeLinecap: Union[str, "ParamRef"] = None,
+        strokeLinejoin: Union[str, "ParamRef"] = None,
+        strokeMiterlimit: Union[float, "ParamRef"] = None,
+        strokeOpacity: "ChannelValueSpec" = None,
+        strokeWidth: "ChannelValueSpec" = None,
+        sweep: Union[float, str, str, str, str, "ParamRef"] = None,
+        target: Union[str, "ParamRef"] = None,
+        tip: Union[bool, "TipPointer", Dict[str, Any], "ParamRef"] = None,
+        title: "ChannelValue" = None,
+        x: "ChannelValueSpec" = None,
+        x1: "ChannelValueSpec" = None,
+        x2: "ChannelValueSpec" = None,
+        y: "ChannelValueSpec" = None,
+        y1: "ChannelValueSpec" = None,
+        y2: "ChannelValueSpec" = None,
+    ):
         self.ariaDescription = ariaDescription
         self.ariaHidden = ariaHidden
         self.ariaLabel = ariaLabel
@@ -1957,7 +3969,107 @@ class Arrow(SchemaBase):
 
 
 class AxisFx(SchemaBase):
-    def __init__(self, mark: str, anchor: Union[str, str, str, str, "ParamRef"] = None, ariaDescription: Union[str, "ParamRef"] = None, ariaHidden: Union[str, "ParamRef"] = None, ariaLabel: "ChannelValue" = None, clip: Union[str, str, bool, Any, "ParamRef"] = None, color: Union["ChannelValueSpec", "ParamRef"] = None, dx: Union[float, "ParamRef"] = None, dy: Union[float, "ParamRef"] = None, facet: Union[str, str, str, str, bool, Any, "ParamRef"] = None, facetAnchor: Union[str, str, str, str, str, str, str, str, str, str, str, str, str, Any, "ParamRef"] = None, fill: Union["ChannelValueSpec", "ParamRef"] = None, fillOpacity: Union["ChannelValueSpec", "ParamRef"] = None, filter: "ChannelValue" = None, fontFamily: Union[str, "ParamRef"] = None, fontSize: Union["ChannelValue", "ParamRef"] = None, fontStyle: Union[str, "ParamRef"] = None, fontVariant: Union[str, "ParamRef"] = None, fontWeight: Union[str, float, "ParamRef"] = None, frameAnchor: Union["FrameAnchor", "ParamRef"] = None, fx: "ChannelValue" = None, fy: "ChannelValue" = None, href: "ChannelValue" = None, imageFilter: Union[str, "ParamRef"] = None, inset: Union[float, "ParamRef"] = None, insetBottom: Union[float, "ParamRef"] = None, insetTop: Union[float, "ParamRef"] = None, interval: Union["Interval", "ParamRef"] = None, label: Union[str, Any, "ParamRef"] = None, labelAnchor: Union[str, str, str, str, str, "ParamRef"] = None, labelArrow: Union[str, str, str, str, str, str, bool, bool, Any, "ParamRef"] = None, labelOffset: Union[float, "ParamRef"] = None, lineAnchor: Union[str, str, str, "ParamRef"] = None, lineHeight: Union[float, "ParamRef"] = None, lineWidth: Union[float, "ParamRef"] = None, margin: Union[float, "ParamRef"] = None, marginBottom: Union[float, "ParamRef"] = None, marginLeft: Union[float, "ParamRef"] = None, marginRight: Union[float, "ParamRef"] = None, marginTop: Union[float, "ParamRef"] = None, marker: Union["MarkerName", str, bool, Any, "ParamRef"] = None, markerEnd: Union["MarkerName", str, bool, Any, "ParamRef"] = None, markerMid: Union["MarkerName", str, bool, Any, "ParamRef"] = None, markerStart: Union["MarkerName", str, bool, Any, "ParamRef"] = None, mixBlendMode: Union[str, "ParamRef"] = None, monospace: Union[bool, "ParamRef"] = None, opacity: "ChannelValueSpec" = None, paintOrder: Union[str, "ParamRef"] = None, pointerEvents: Union[str, "ParamRef"] = None, reverse: Union[bool, "ParamRef"] = None, rotate: Union["ChannelValue", "ParamRef"] = None, select: "SelectFilter" = None, shapeRendering: Union[str, "ParamRef"] = None, sort: Union["SortOrder", "ChannelDomainSort"] = None, stroke: Union["ChannelValueSpec", "ParamRef"] = None, strokeDasharray: Union[str, float, "ParamRef"] = None, strokeDashoffset: Union[str, float, "ParamRef"] = None, strokeLinecap: Union[str, "ParamRef"] = None, strokeLinejoin: Union[str, "ParamRef"] = None, strokeMiterlimit: Union[float, "ParamRef"] = None, strokeOpacity: "ChannelValueSpec" = None, strokeWidth: "ChannelValueSpec" = None, target: Union[str, "ParamRef"] = None, text: "ChannelValue" = None, textAnchor: Union[str, str, str, "ParamRef"] = None, textOverflow: Union[Any, str, str, str, str, str, str, str, "ParamRef"] = None, textStroke: Union["ChannelValueSpec", "ParamRef"] = None, textStrokeOpacity: "ChannelValueSpec" = None, textStrokeWidth: "ChannelValueSpec" = None, tickFormat: Union[str, Any, "ParamRef"] = None, tickPadding: Union[float, "ParamRef"] = None, tickRotate: Union[float, "ParamRef"] = None, tickSize: Union[float, "ParamRef"] = None, tickSpacing: Union[float, "ParamRef"] = None, ticks: Union[float, "Interval", List[Any], "ParamRef"] = None, tip: Union[bool, "TipPointer", Dict[str, Any], "ParamRef"] = None, title: "ChannelValue" = None, x: "ChannelValueSpec" = None, y: "ChannelValueSpec" = None, z: "ChannelValue" = None):
+    def __init__(
+        self,
+        mark: str,
+        anchor: Union[str, str, str, str, "ParamRef"] = None,
+        ariaDescription: Union[str, "ParamRef"] = None,
+        ariaHidden: Union[str, "ParamRef"] = None,
+        ariaLabel: "ChannelValue" = None,
+        clip: Union[str, str, bool, Any, "ParamRef"] = None,
+        color: Union["ChannelValueSpec", "ParamRef"] = None,
+        dx: Union[float, "ParamRef"] = None,
+        dy: Union[float, "ParamRef"] = None,
+        facet: Union[str, str, str, str, bool, Any, "ParamRef"] = None,
+        facetAnchor: Union[
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            Any,
+            "ParamRef",
+        ] = None,
+        fill: Union["ChannelValueSpec", "ParamRef"] = None,
+        fillOpacity: Union["ChannelValueSpec", "ParamRef"] = None,
+        filter: "ChannelValue" = None,
+        fontFamily: Union[str, "ParamRef"] = None,
+        fontSize: Union["ChannelValue", "ParamRef"] = None,
+        fontStyle: Union[str, "ParamRef"] = None,
+        fontVariant: Union[str, "ParamRef"] = None,
+        fontWeight: Union[str, float, "ParamRef"] = None,
+        frameAnchor: Union["FrameAnchor", "ParamRef"] = None,
+        fx: "ChannelValue" = None,
+        fy: "ChannelValue" = None,
+        href: "ChannelValue" = None,
+        imageFilter: Union[str, "ParamRef"] = None,
+        inset: Union[float, "ParamRef"] = None,
+        insetBottom: Union[float, "ParamRef"] = None,
+        insetTop: Union[float, "ParamRef"] = None,
+        interval: Union["Interval", "ParamRef"] = None,
+        label: Union[str, Any, "ParamRef"] = None,
+        labelAnchor: Union[str, str, str, str, str, "ParamRef"] = None,
+        labelArrow: Union[
+            str, str, str, str, str, str, bool, bool, Any, "ParamRef"
+        ] = None,
+        labelOffset: Union[float, "ParamRef"] = None,
+        lineAnchor: Union[str, str, str, "ParamRef"] = None,
+        lineHeight: Union[float, "ParamRef"] = None,
+        lineWidth: Union[float, "ParamRef"] = None,
+        margin: Union[float, "ParamRef"] = None,
+        marginBottom: Union[float, "ParamRef"] = None,
+        marginLeft: Union[float, "ParamRef"] = None,
+        marginRight: Union[float, "ParamRef"] = None,
+        marginTop: Union[float, "ParamRef"] = None,
+        marker: Union["MarkerName", str, bool, Any, "ParamRef"] = None,
+        markerEnd: Union["MarkerName", str, bool, Any, "ParamRef"] = None,
+        markerMid: Union["MarkerName", str, bool, Any, "ParamRef"] = None,
+        markerStart: Union["MarkerName", str, bool, Any, "ParamRef"] = None,
+        mixBlendMode: Union[str, "ParamRef"] = None,
+        monospace: Union[bool, "ParamRef"] = None,
+        opacity: "ChannelValueSpec" = None,
+        paintOrder: Union[str, "ParamRef"] = None,
+        pointerEvents: Union[str, "ParamRef"] = None,
+        reverse: Union[bool, "ParamRef"] = None,
+        rotate: Union["ChannelValue", "ParamRef"] = None,
+        select: "SelectFilter" = None,
+        shapeRendering: Union[str, "ParamRef"] = None,
+        sort: Union["SortOrder", "ChannelDomainSort"] = None,
+        stroke: Union["ChannelValueSpec", "ParamRef"] = None,
+        strokeDasharray: Union[str, float, "ParamRef"] = None,
+        strokeDashoffset: Union[str, float, "ParamRef"] = None,
+        strokeLinecap: Union[str, "ParamRef"] = None,
+        strokeLinejoin: Union[str, "ParamRef"] = None,
+        strokeMiterlimit: Union[float, "ParamRef"] = None,
+        strokeOpacity: "ChannelValueSpec" = None,
+        strokeWidth: "ChannelValueSpec" = None,
+        target: Union[str, "ParamRef"] = None,
+        text: "ChannelValue" = None,
+        textAnchor: Union[str, str, str, "ParamRef"] = None,
+        textOverflow: Union[Any, str, str, str, str, str, str, str, "ParamRef"] = None,
+        textStroke: Union["ChannelValueSpec", "ParamRef"] = None,
+        textStrokeOpacity: "ChannelValueSpec" = None,
+        textStrokeWidth: "ChannelValueSpec" = None,
+        tickFormat: Union[str, Any, "ParamRef"] = None,
+        tickPadding: Union[float, "ParamRef"] = None,
+        tickRotate: Union[float, "ParamRef"] = None,
+        tickSize: Union[float, "ParamRef"] = None,
+        tickSpacing: Union[float, "ParamRef"] = None,
+        ticks: Union[float, "Interval", List[Any], "ParamRef"] = None,
+        tip: Union[bool, "TipPointer", Dict[str, Any], "ParamRef"] = None,
+        title: "ChannelValue" = None,
+        x: "ChannelValueSpec" = None,
+        y: "ChannelValueSpec" = None,
+        z: "ChannelValue" = None,
+    ):
         self.anchor = anchor
         self.ariaDescription = ariaDescription
         self.ariaHidden = ariaHidden
@@ -2041,7 +4153,107 @@ class AxisFx(SchemaBase):
 
 
 class AxisFy(SchemaBase):
-    def __init__(self, mark: str, anchor: Union[str, str, str, str, "ParamRef"] = None, ariaDescription: Union[str, "ParamRef"] = None, ariaHidden: Union[str, "ParamRef"] = None, ariaLabel: "ChannelValue" = None, clip: Union[str, str, bool, Any, "ParamRef"] = None, color: Union["ChannelValueSpec", "ParamRef"] = None, dx: Union[float, "ParamRef"] = None, dy: Union[float, "ParamRef"] = None, facet: Union[str, str, str, str, bool, Any, "ParamRef"] = None, facetAnchor: Union[str, str, str, str, str, str, str, str, str, str, str, str, str, Any, "ParamRef"] = None, fill: Union["ChannelValueSpec", "ParamRef"] = None, fillOpacity: Union["ChannelValueSpec", "ParamRef"] = None, filter: "ChannelValue" = None, fontFamily: Union[str, "ParamRef"] = None, fontSize: Union["ChannelValue", "ParamRef"] = None, fontStyle: Union[str, "ParamRef"] = None, fontVariant: Union[str, "ParamRef"] = None, fontWeight: Union[str, float, "ParamRef"] = None, frameAnchor: Union["FrameAnchor", "ParamRef"] = None, fx: "ChannelValue" = None, fy: "ChannelValue" = None, href: "ChannelValue" = None, imageFilter: Union[str, "ParamRef"] = None, inset: Union[float, "ParamRef"] = None, insetLeft: Union[float, "ParamRef"] = None, insetRight: Union[float, "ParamRef"] = None, interval: Union["Interval", "ParamRef"] = None, label: Union[str, Any, "ParamRef"] = None, labelAnchor: Union[str, str, str, str, str, "ParamRef"] = None, labelArrow: Union[str, str, str, str, str, str, bool, bool, Any, "ParamRef"] = None, labelOffset: Union[float, "ParamRef"] = None, lineAnchor: Union[str, str, str, "ParamRef"] = None, lineHeight: Union[float, "ParamRef"] = None, lineWidth: Union[float, "ParamRef"] = None, margin: Union[float, "ParamRef"] = None, marginBottom: Union[float, "ParamRef"] = None, marginLeft: Union[float, "ParamRef"] = None, marginRight: Union[float, "ParamRef"] = None, marginTop: Union[float, "ParamRef"] = None, marker: Union["MarkerName", str, bool, Any, "ParamRef"] = None, markerEnd: Union["MarkerName", str, bool, Any, "ParamRef"] = None, markerMid: Union["MarkerName", str, bool, Any, "ParamRef"] = None, markerStart: Union["MarkerName", str, bool, Any, "ParamRef"] = None, mixBlendMode: Union[str, "ParamRef"] = None, monospace: Union[bool, "ParamRef"] = None, opacity: "ChannelValueSpec" = None, paintOrder: Union[str, "ParamRef"] = None, pointerEvents: Union[str, "ParamRef"] = None, reverse: Union[bool, "ParamRef"] = None, rotate: Union["ChannelValue", "ParamRef"] = None, select: "SelectFilter" = None, shapeRendering: Union[str, "ParamRef"] = None, sort: Union["SortOrder", "ChannelDomainSort"] = None, stroke: Union["ChannelValueSpec", "ParamRef"] = None, strokeDasharray: Union[str, float, "ParamRef"] = None, strokeDashoffset: Union[str, float, "ParamRef"] = None, strokeLinecap: Union[str, "ParamRef"] = None, strokeLinejoin: Union[str, "ParamRef"] = None, strokeMiterlimit: Union[float, "ParamRef"] = None, strokeOpacity: "ChannelValueSpec" = None, strokeWidth: "ChannelValueSpec" = None, target: Union[str, "ParamRef"] = None, text: "ChannelValue" = None, textAnchor: Union[str, str, str, "ParamRef"] = None, textOverflow: Union[Any, str, str, str, str, str, str, str, "ParamRef"] = None, textStroke: Union["ChannelValueSpec", "ParamRef"] = None, textStrokeOpacity: "ChannelValueSpec" = None, textStrokeWidth: "ChannelValueSpec" = None, tickFormat: Union[str, Any, "ParamRef"] = None, tickPadding: Union[float, "ParamRef"] = None, tickRotate: Union[float, "ParamRef"] = None, tickSize: Union[float, "ParamRef"] = None, tickSpacing: Union[float, "ParamRef"] = None, ticks: Union[float, "Interval", List[Any], "ParamRef"] = None, tip: Union[bool, "TipPointer", Dict[str, Any], "ParamRef"] = None, title: "ChannelValue" = None, x: "ChannelValueSpec" = None, y: "ChannelValueSpec" = None, z: "ChannelValue" = None):
+    def __init__(
+        self,
+        mark: str,
+        anchor: Union[str, str, str, str, "ParamRef"] = None,
+        ariaDescription: Union[str, "ParamRef"] = None,
+        ariaHidden: Union[str, "ParamRef"] = None,
+        ariaLabel: "ChannelValue" = None,
+        clip: Union[str, str, bool, Any, "ParamRef"] = None,
+        color: Union["ChannelValueSpec", "ParamRef"] = None,
+        dx: Union[float, "ParamRef"] = None,
+        dy: Union[float, "ParamRef"] = None,
+        facet: Union[str, str, str, str, bool, Any, "ParamRef"] = None,
+        facetAnchor: Union[
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            Any,
+            "ParamRef",
+        ] = None,
+        fill: Union["ChannelValueSpec", "ParamRef"] = None,
+        fillOpacity: Union["ChannelValueSpec", "ParamRef"] = None,
+        filter: "ChannelValue" = None,
+        fontFamily: Union[str, "ParamRef"] = None,
+        fontSize: Union["ChannelValue", "ParamRef"] = None,
+        fontStyle: Union[str, "ParamRef"] = None,
+        fontVariant: Union[str, "ParamRef"] = None,
+        fontWeight: Union[str, float, "ParamRef"] = None,
+        frameAnchor: Union["FrameAnchor", "ParamRef"] = None,
+        fx: "ChannelValue" = None,
+        fy: "ChannelValue" = None,
+        href: "ChannelValue" = None,
+        imageFilter: Union[str, "ParamRef"] = None,
+        inset: Union[float, "ParamRef"] = None,
+        insetLeft: Union[float, "ParamRef"] = None,
+        insetRight: Union[float, "ParamRef"] = None,
+        interval: Union["Interval", "ParamRef"] = None,
+        label: Union[str, Any, "ParamRef"] = None,
+        labelAnchor: Union[str, str, str, str, str, "ParamRef"] = None,
+        labelArrow: Union[
+            str, str, str, str, str, str, bool, bool, Any, "ParamRef"
+        ] = None,
+        labelOffset: Union[float, "ParamRef"] = None,
+        lineAnchor: Union[str, str, str, "ParamRef"] = None,
+        lineHeight: Union[float, "ParamRef"] = None,
+        lineWidth: Union[float, "ParamRef"] = None,
+        margin: Union[float, "ParamRef"] = None,
+        marginBottom: Union[float, "ParamRef"] = None,
+        marginLeft: Union[float, "ParamRef"] = None,
+        marginRight: Union[float, "ParamRef"] = None,
+        marginTop: Union[float, "ParamRef"] = None,
+        marker: Union["MarkerName", str, bool, Any, "ParamRef"] = None,
+        markerEnd: Union["MarkerName", str, bool, Any, "ParamRef"] = None,
+        markerMid: Union["MarkerName", str, bool, Any, "ParamRef"] = None,
+        markerStart: Union["MarkerName", str, bool, Any, "ParamRef"] = None,
+        mixBlendMode: Union[str, "ParamRef"] = None,
+        monospace: Union[bool, "ParamRef"] = None,
+        opacity: "ChannelValueSpec" = None,
+        paintOrder: Union[str, "ParamRef"] = None,
+        pointerEvents: Union[str, "ParamRef"] = None,
+        reverse: Union[bool, "ParamRef"] = None,
+        rotate: Union["ChannelValue", "ParamRef"] = None,
+        select: "SelectFilter" = None,
+        shapeRendering: Union[str, "ParamRef"] = None,
+        sort: Union["SortOrder", "ChannelDomainSort"] = None,
+        stroke: Union["ChannelValueSpec", "ParamRef"] = None,
+        strokeDasharray: Union[str, float, "ParamRef"] = None,
+        strokeDashoffset: Union[str, float, "ParamRef"] = None,
+        strokeLinecap: Union[str, "ParamRef"] = None,
+        strokeLinejoin: Union[str, "ParamRef"] = None,
+        strokeMiterlimit: Union[float, "ParamRef"] = None,
+        strokeOpacity: "ChannelValueSpec" = None,
+        strokeWidth: "ChannelValueSpec" = None,
+        target: Union[str, "ParamRef"] = None,
+        text: "ChannelValue" = None,
+        textAnchor: Union[str, str, str, "ParamRef"] = None,
+        textOverflow: Union[Any, str, str, str, str, str, str, str, "ParamRef"] = None,
+        textStroke: Union["ChannelValueSpec", "ParamRef"] = None,
+        textStrokeOpacity: "ChannelValueSpec" = None,
+        textStrokeWidth: "ChannelValueSpec" = None,
+        tickFormat: Union[str, Any, "ParamRef"] = None,
+        tickPadding: Union[float, "ParamRef"] = None,
+        tickRotate: Union[float, "ParamRef"] = None,
+        tickSize: Union[float, "ParamRef"] = None,
+        tickSpacing: Union[float, "ParamRef"] = None,
+        ticks: Union[float, "Interval", List[Any], "ParamRef"] = None,
+        tip: Union[bool, "TipPointer", Dict[str, Any], "ParamRef"] = None,
+        title: "ChannelValue" = None,
+        x: "ChannelValueSpec" = None,
+        y: "ChannelValueSpec" = None,
+        z: "ChannelValue" = None,
+    ):
         self.anchor = anchor
         self.ariaDescription = ariaDescription
         self.ariaHidden = ariaHidden
@@ -2125,7 +4337,107 @@ class AxisFy(SchemaBase):
 
 
 class AxisX(SchemaBase):
-    def __init__(self, mark: str, anchor: Union[str, str, str, str, "ParamRef"] = None, ariaDescription: Union[str, "ParamRef"] = None, ariaHidden: Union[str, "ParamRef"] = None, ariaLabel: "ChannelValue" = None, clip: Union[str, str, bool, Any, "ParamRef"] = None, color: Union["ChannelValueSpec", "ParamRef"] = None, dx: Union[float, "ParamRef"] = None, dy: Union[float, "ParamRef"] = None, facet: Union[str, str, str, str, bool, Any, "ParamRef"] = None, facetAnchor: Union[str, str, str, str, str, str, str, str, str, str, str, str, str, Any, "ParamRef"] = None, fill: Union["ChannelValueSpec", "ParamRef"] = None, fillOpacity: Union["ChannelValueSpec", "ParamRef"] = None, filter: "ChannelValue" = None, fontFamily: Union[str, "ParamRef"] = None, fontSize: Union["ChannelValue", "ParamRef"] = None, fontStyle: Union[str, "ParamRef"] = None, fontVariant: Union[str, "ParamRef"] = None, fontWeight: Union[str, float, "ParamRef"] = None, frameAnchor: Union["FrameAnchor", "ParamRef"] = None, fx: "ChannelValue" = None, fy: "ChannelValue" = None, href: "ChannelValue" = None, imageFilter: Union[str, "ParamRef"] = None, inset: Union[float, "ParamRef"] = None, insetBottom: Union[float, "ParamRef"] = None, insetTop: Union[float, "ParamRef"] = None, interval: Union["Interval", "ParamRef"] = None, label: Union[str, Any, "ParamRef"] = None, labelAnchor: Union[str, str, str, str, str, "ParamRef"] = None, labelArrow: Union[str, str, str, str, str, str, bool, bool, Any, "ParamRef"] = None, labelOffset: Union[float, "ParamRef"] = None, lineAnchor: Union[str, str, str, "ParamRef"] = None, lineHeight: Union[float, "ParamRef"] = None, lineWidth: Union[float, "ParamRef"] = None, margin: Union[float, "ParamRef"] = None, marginBottom: Union[float, "ParamRef"] = None, marginLeft: Union[float, "ParamRef"] = None, marginRight: Union[float, "ParamRef"] = None, marginTop: Union[float, "ParamRef"] = None, marker: Union["MarkerName", str, bool, Any, "ParamRef"] = None, markerEnd: Union["MarkerName", str, bool, Any, "ParamRef"] = None, markerMid: Union["MarkerName", str, bool, Any, "ParamRef"] = None, markerStart: Union["MarkerName", str, bool, Any, "ParamRef"] = None, mixBlendMode: Union[str, "ParamRef"] = None, monospace: Union[bool, "ParamRef"] = None, opacity: "ChannelValueSpec" = None, paintOrder: Union[str, "ParamRef"] = None, pointerEvents: Union[str, "ParamRef"] = None, reverse: Union[bool, "ParamRef"] = None, rotate: Union["ChannelValue", "ParamRef"] = None, select: "SelectFilter" = None, shapeRendering: Union[str, "ParamRef"] = None, sort: Union["SortOrder", "ChannelDomainSort"] = None, stroke: Union["ChannelValueSpec", "ParamRef"] = None, strokeDasharray: Union[str, float, "ParamRef"] = None, strokeDashoffset: Union[str, float, "ParamRef"] = None, strokeLinecap: Union[str, "ParamRef"] = None, strokeLinejoin: Union[str, "ParamRef"] = None, strokeMiterlimit: Union[float, "ParamRef"] = None, strokeOpacity: "ChannelValueSpec" = None, strokeWidth: "ChannelValueSpec" = None, target: Union[str, "ParamRef"] = None, text: "ChannelValue" = None, textAnchor: Union[str, str, str, "ParamRef"] = None, textOverflow: Union[Any, str, str, str, str, str, str, str, "ParamRef"] = None, textStroke: Union["ChannelValueSpec", "ParamRef"] = None, textStrokeOpacity: "ChannelValueSpec" = None, textStrokeWidth: "ChannelValueSpec" = None, tickFormat: Union[str, Any, "ParamRef"] = None, tickPadding: Union[float, "ParamRef"] = None, tickRotate: Union[float, "ParamRef"] = None, tickSize: Union[float, "ParamRef"] = None, tickSpacing: Union[float, "ParamRef"] = None, ticks: Union[float, "Interval", List[Any], "ParamRef"] = None, tip: Union[bool, "TipPointer", Dict[str, Any], "ParamRef"] = None, title: "ChannelValue" = None, x: "ChannelValueSpec" = None, y: "ChannelValueSpec" = None, z: "ChannelValue" = None):
+    def __init__(
+        self,
+        mark: str,
+        anchor: Union[str, str, str, str, "ParamRef"] = None,
+        ariaDescription: Union[str, "ParamRef"] = None,
+        ariaHidden: Union[str, "ParamRef"] = None,
+        ariaLabel: "ChannelValue" = None,
+        clip: Union[str, str, bool, Any, "ParamRef"] = None,
+        color: Union["ChannelValueSpec", "ParamRef"] = None,
+        dx: Union[float, "ParamRef"] = None,
+        dy: Union[float, "ParamRef"] = None,
+        facet: Union[str, str, str, str, bool, Any, "ParamRef"] = None,
+        facetAnchor: Union[
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            Any,
+            "ParamRef",
+        ] = None,
+        fill: Union["ChannelValueSpec", "ParamRef"] = None,
+        fillOpacity: Union["ChannelValueSpec", "ParamRef"] = None,
+        filter: "ChannelValue" = None,
+        fontFamily: Union[str, "ParamRef"] = None,
+        fontSize: Union["ChannelValue", "ParamRef"] = None,
+        fontStyle: Union[str, "ParamRef"] = None,
+        fontVariant: Union[str, "ParamRef"] = None,
+        fontWeight: Union[str, float, "ParamRef"] = None,
+        frameAnchor: Union["FrameAnchor", "ParamRef"] = None,
+        fx: "ChannelValue" = None,
+        fy: "ChannelValue" = None,
+        href: "ChannelValue" = None,
+        imageFilter: Union[str, "ParamRef"] = None,
+        inset: Union[float, "ParamRef"] = None,
+        insetBottom: Union[float, "ParamRef"] = None,
+        insetTop: Union[float, "ParamRef"] = None,
+        interval: Union["Interval", "ParamRef"] = None,
+        label: Union[str, Any, "ParamRef"] = None,
+        labelAnchor: Union[str, str, str, str, str, "ParamRef"] = None,
+        labelArrow: Union[
+            str, str, str, str, str, str, bool, bool, Any, "ParamRef"
+        ] = None,
+        labelOffset: Union[float, "ParamRef"] = None,
+        lineAnchor: Union[str, str, str, "ParamRef"] = None,
+        lineHeight: Union[float, "ParamRef"] = None,
+        lineWidth: Union[float, "ParamRef"] = None,
+        margin: Union[float, "ParamRef"] = None,
+        marginBottom: Union[float, "ParamRef"] = None,
+        marginLeft: Union[float, "ParamRef"] = None,
+        marginRight: Union[float, "ParamRef"] = None,
+        marginTop: Union[float, "ParamRef"] = None,
+        marker: Union["MarkerName", str, bool, Any, "ParamRef"] = None,
+        markerEnd: Union["MarkerName", str, bool, Any, "ParamRef"] = None,
+        markerMid: Union["MarkerName", str, bool, Any, "ParamRef"] = None,
+        markerStart: Union["MarkerName", str, bool, Any, "ParamRef"] = None,
+        mixBlendMode: Union[str, "ParamRef"] = None,
+        monospace: Union[bool, "ParamRef"] = None,
+        opacity: "ChannelValueSpec" = None,
+        paintOrder: Union[str, "ParamRef"] = None,
+        pointerEvents: Union[str, "ParamRef"] = None,
+        reverse: Union[bool, "ParamRef"] = None,
+        rotate: Union["ChannelValue", "ParamRef"] = None,
+        select: "SelectFilter" = None,
+        shapeRendering: Union[str, "ParamRef"] = None,
+        sort: Union["SortOrder", "ChannelDomainSort"] = None,
+        stroke: Union["ChannelValueSpec", "ParamRef"] = None,
+        strokeDasharray: Union[str, float, "ParamRef"] = None,
+        strokeDashoffset: Union[str, float, "ParamRef"] = None,
+        strokeLinecap: Union[str, "ParamRef"] = None,
+        strokeLinejoin: Union[str, "ParamRef"] = None,
+        strokeMiterlimit: Union[float, "ParamRef"] = None,
+        strokeOpacity: "ChannelValueSpec" = None,
+        strokeWidth: "ChannelValueSpec" = None,
+        target: Union[str, "ParamRef"] = None,
+        text: "ChannelValue" = None,
+        textAnchor: Union[str, str, str, "ParamRef"] = None,
+        textOverflow: Union[Any, str, str, str, str, str, str, str, "ParamRef"] = None,
+        textStroke: Union["ChannelValueSpec", "ParamRef"] = None,
+        textStrokeOpacity: "ChannelValueSpec" = None,
+        textStrokeWidth: "ChannelValueSpec" = None,
+        tickFormat: Union[str, Any, "ParamRef"] = None,
+        tickPadding: Union[float, "ParamRef"] = None,
+        tickRotate: Union[float, "ParamRef"] = None,
+        tickSize: Union[float, "ParamRef"] = None,
+        tickSpacing: Union[float, "ParamRef"] = None,
+        ticks: Union[float, "Interval", List[Any], "ParamRef"] = None,
+        tip: Union[bool, "TipPointer", Dict[str, Any], "ParamRef"] = None,
+        title: "ChannelValue" = None,
+        x: "ChannelValueSpec" = None,
+        y: "ChannelValueSpec" = None,
+        z: "ChannelValue" = None,
+    ):
         self.anchor = anchor
         self.ariaDescription = ariaDescription
         self.ariaHidden = ariaHidden
@@ -2209,7 +4521,107 @@ class AxisX(SchemaBase):
 
 
 class AxisY(SchemaBase):
-    def __init__(self, mark: str, anchor: Union[str, str, str, str, "ParamRef"] = None, ariaDescription: Union[str, "ParamRef"] = None, ariaHidden: Union[str, "ParamRef"] = None, ariaLabel: "ChannelValue" = None, clip: Union[str, str, bool, Any, "ParamRef"] = None, color: Union["ChannelValueSpec", "ParamRef"] = None, dx: Union[float, "ParamRef"] = None, dy: Union[float, "ParamRef"] = None, facet: Union[str, str, str, str, bool, Any, "ParamRef"] = None, facetAnchor: Union[str, str, str, str, str, str, str, str, str, str, str, str, str, Any, "ParamRef"] = None, fill: Union["ChannelValueSpec", "ParamRef"] = None, fillOpacity: Union["ChannelValueSpec", "ParamRef"] = None, filter: "ChannelValue" = None, fontFamily: Union[str, "ParamRef"] = None, fontSize: Union["ChannelValue", "ParamRef"] = None, fontStyle: Union[str, "ParamRef"] = None, fontVariant: Union[str, "ParamRef"] = None, fontWeight: Union[str, float, "ParamRef"] = None, frameAnchor: Union["FrameAnchor", "ParamRef"] = None, fx: "ChannelValue" = None, fy: "ChannelValue" = None, href: "ChannelValue" = None, imageFilter: Union[str, "ParamRef"] = None, inset: Union[float, "ParamRef"] = None, insetLeft: Union[float, "ParamRef"] = None, insetRight: Union[float, "ParamRef"] = None, interval: Union["Interval", "ParamRef"] = None, label: Union[str, Any, "ParamRef"] = None, labelAnchor: Union[str, str, str, str, str, "ParamRef"] = None, labelArrow: Union[str, str, str, str, str, str, bool, bool, Any, "ParamRef"] = None, labelOffset: Union[float, "ParamRef"] = None, lineAnchor: Union[str, str, str, "ParamRef"] = None, lineHeight: Union[float, "ParamRef"] = None, lineWidth: Union[float, "ParamRef"] = None, margin: Union[float, "ParamRef"] = None, marginBottom: Union[float, "ParamRef"] = None, marginLeft: Union[float, "ParamRef"] = None, marginRight: Union[float, "ParamRef"] = None, marginTop: Union[float, "ParamRef"] = None, marker: Union["MarkerName", str, bool, Any, "ParamRef"] = None, markerEnd: Union["MarkerName", str, bool, Any, "ParamRef"] = None, markerMid: Union["MarkerName", str, bool, Any, "ParamRef"] = None, markerStart: Union["MarkerName", str, bool, Any, "ParamRef"] = None, mixBlendMode: Union[str, "ParamRef"] = None, monospace: Union[bool, "ParamRef"] = None, opacity: "ChannelValueSpec" = None, paintOrder: Union[str, "ParamRef"] = None, pointerEvents: Union[str, "ParamRef"] = None, reverse: Union[bool, "ParamRef"] = None, rotate: Union["ChannelValue", "ParamRef"] = None, select: "SelectFilter" = None, shapeRendering: Union[str, "ParamRef"] = None, sort: Union["SortOrder", "ChannelDomainSort"] = None, stroke: Union["ChannelValueSpec", "ParamRef"] = None, strokeDasharray: Union[str, float, "ParamRef"] = None, strokeDashoffset: Union[str, float, "ParamRef"] = None, strokeLinecap: Union[str, "ParamRef"] = None, strokeLinejoin: Union[str, "ParamRef"] = None, strokeMiterlimit: Union[float, "ParamRef"] = None, strokeOpacity: "ChannelValueSpec" = None, strokeWidth: "ChannelValueSpec" = None, target: Union[str, "ParamRef"] = None, text: "ChannelValue" = None, textAnchor: Union[str, str, str, "ParamRef"] = None, textOverflow: Union[Any, str, str, str, str, str, str, str, "ParamRef"] = None, textStroke: Union["ChannelValueSpec", "ParamRef"] = None, textStrokeOpacity: "ChannelValueSpec" = None, textStrokeWidth: "ChannelValueSpec" = None, tickFormat: Union[str, Any, "ParamRef"] = None, tickPadding: Union[float, "ParamRef"] = None, tickRotate: Union[float, "ParamRef"] = None, tickSize: Union[float, "ParamRef"] = None, tickSpacing: Union[float, "ParamRef"] = None, ticks: Union[float, "Interval", List[Any], "ParamRef"] = None, tip: Union[bool, "TipPointer", Dict[str, Any], "ParamRef"] = None, title: "ChannelValue" = None, x: "ChannelValueSpec" = None, y: "ChannelValueSpec" = None, z: "ChannelValue" = None):
+    def __init__(
+        self,
+        mark: str,
+        anchor: Union[str, str, str, str, "ParamRef"] = None,
+        ariaDescription: Union[str, "ParamRef"] = None,
+        ariaHidden: Union[str, "ParamRef"] = None,
+        ariaLabel: "ChannelValue" = None,
+        clip: Union[str, str, bool, Any, "ParamRef"] = None,
+        color: Union["ChannelValueSpec", "ParamRef"] = None,
+        dx: Union[float, "ParamRef"] = None,
+        dy: Union[float, "ParamRef"] = None,
+        facet: Union[str, str, str, str, bool, Any, "ParamRef"] = None,
+        facetAnchor: Union[
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            Any,
+            "ParamRef",
+        ] = None,
+        fill: Union["ChannelValueSpec", "ParamRef"] = None,
+        fillOpacity: Union["ChannelValueSpec", "ParamRef"] = None,
+        filter: "ChannelValue" = None,
+        fontFamily: Union[str, "ParamRef"] = None,
+        fontSize: Union["ChannelValue", "ParamRef"] = None,
+        fontStyle: Union[str, "ParamRef"] = None,
+        fontVariant: Union[str, "ParamRef"] = None,
+        fontWeight: Union[str, float, "ParamRef"] = None,
+        frameAnchor: Union["FrameAnchor", "ParamRef"] = None,
+        fx: "ChannelValue" = None,
+        fy: "ChannelValue" = None,
+        href: "ChannelValue" = None,
+        imageFilter: Union[str, "ParamRef"] = None,
+        inset: Union[float, "ParamRef"] = None,
+        insetLeft: Union[float, "ParamRef"] = None,
+        insetRight: Union[float, "ParamRef"] = None,
+        interval: Union["Interval", "ParamRef"] = None,
+        label: Union[str, Any, "ParamRef"] = None,
+        labelAnchor: Union[str, str, str, str, str, "ParamRef"] = None,
+        labelArrow: Union[
+            str, str, str, str, str, str, bool, bool, Any, "ParamRef"
+        ] = None,
+        labelOffset: Union[float, "ParamRef"] = None,
+        lineAnchor: Union[str, str, str, "ParamRef"] = None,
+        lineHeight: Union[float, "ParamRef"] = None,
+        lineWidth: Union[float, "ParamRef"] = None,
+        margin: Union[float, "ParamRef"] = None,
+        marginBottom: Union[float, "ParamRef"] = None,
+        marginLeft: Union[float, "ParamRef"] = None,
+        marginRight: Union[float, "ParamRef"] = None,
+        marginTop: Union[float, "ParamRef"] = None,
+        marker: Union["MarkerName", str, bool, Any, "ParamRef"] = None,
+        markerEnd: Union["MarkerName", str, bool, Any, "ParamRef"] = None,
+        markerMid: Union["MarkerName", str, bool, Any, "ParamRef"] = None,
+        markerStart: Union["MarkerName", str, bool, Any, "ParamRef"] = None,
+        mixBlendMode: Union[str, "ParamRef"] = None,
+        monospace: Union[bool, "ParamRef"] = None,
+        opacity: "ChannelValueSpec" = None,
+        paintOrder: Union[str, "ParamRef"] = None,
+        pointerEvents: Union[str, "ParamRef"] = None,
+        reverse: Union[bool, "ParamRef"] = None,
+        rotate: Union["ChannelValue", "ParamRef"] = None,
+        select: "SelectFilter" = None,
+        shapeRendering: Union[str, "ParamRef"] = None,
+        sort: Union["SortOrder", "ChannelDomainSort"] = None,
+        stroke: Union["ChannelValueSpec", "ParamRef"] = None,
+        strokeDasharray: Union[str, float, "ParamRef"] = None,
+        strokeDashoffset: Union[str, float, "ParamRef"] = None,
+        strokeLinecap: Union[str, "ParamRef"] = None,
+        strokeLinejoin: Union[str, "ParamRef"] = None,
+        strokeMiterlimit: Union[float, "ParamRef"] = None,
+        strokeOpacity: "ChannelValueSpec" = None,
+        strokeWidth: "ChannelValueSpec" = None,
+        target: Union[str, "ParamRef"] = None,
+        text: "ChannelValue" = None,
+        textAnchor: Union[str, str, str, "ParamRef"] = None,
+        textOverflow: Union[Any, str, str, str, str, str, str, str, "ParamRef"] = None,
+        textStroke: Union["ChannelValueSpec", "ParamRef"] = None,
+        textStrokeOpacity: "ChannelValueSpec" = None,
+        textStrokeWidth: "ChannelValueSpec" = None,
+        tickFormat: Union[str, Any, "ParamRef"] = None,
+        tickPadding: Union[float, "ParamRef"] = None,
+        tickRotate: Union[float, "ParamRef"] = None,
+        tickSize: Union[float, "ParamRef"] = None,
+        tickSpacing: Union[float, "ParamRef"] = None,
+        ticks: Union[float, "Interval", List[Any], "ParamRef"] = None,
+        tip: Union[bool, "TipPointer", Dict[str, Any], "ParamRef"] = None,
+        title: "ChannelValue" = None,
+        x: "ChannelValueSpec" = None,
+        y: "ChannelValueSpec" = None,
+        z: "ChannelValue" = None,
+    ):
         self.anchor = anchor
         self.ariaDescription = ariaDescription
         self.ariaHidden = ariaHidden
@@ -2293,7 +4705,75 @@ class AxisY(SchemaBase):
 
 
 class Cell(SchemaBase):
-    def __init__(self, data: "PlotMarkData", mark: str, ariaDescription: Union[str, "ParamRef"] = None, ariaHidden: Union[str, "ParamRef"] = None, ariaLabel: "ChannelValue" = None, clip: Union[str, str, bool, Any, "ParamRef"] = None, dx: Union[float, "ParamRef"] = None, dy: Union[float, "ParamRef"] = None, facet: Union[str, str, str, str, bool, Any, "ParamRef"] = None, facetAnchor: Union[str, str, str, str, str, str, str, str, str, str, str, str, str, Any, "ParamRef"] = None, fill: Union["ChannelValueSpec", "ParamRef"] = None, fillOpacity: Union["ChannelValueSpec", "ParamRef"] = None, filter: "ChannelValue" = None, fx: "ChannelValue" = None, fy: "ChannelValue" = None, href: "ChannelValue" = None, imageFilter: Union[str, "ParamRef"] = None, inset: Union[float, "ParamRef"] = None, insetBottom: Union[float, "ParamRef"] = None, insetLeft: Union[float, "ParamRef"] = None, insetRight: Union[float, "ParamRef"] = None, insetTop: Union[float, "ParamRef"] = None, margin: Union[float, "ParamRef"] = None, marginBottom: Union[float, "ParamRef"] = None, marginLeft: Union[float, "ParamRef"] = None, marginRight: Union[float, "ParamRef"] = None, marginTop: Union[float, "ParamRef"] = None, mixBlendMode: Union[str, "ParamRef"] = None, opacity: "ChannelValueSpec" = None, paintOrder: Union[str, "ParamRef"] = None, pointerEvents: Union[str, "ParamRef"] = None, reverse: Union[bool, "ParamRef"] = None, rx: Union[float, str, "ParamRef"] = None, ry: Union[float, str, "ParamRef"] = None, select: "SelectFilter" = None, shapeRendering: Union[str, "ParamRef"] = None, sort: Union["SortOrder", "ChannelDomainSort"] = None, stroke: Union["ChannelValueSpec", "ParamRef"] = None, strokeDasharray: Union[str, float, "ParamRef"] = None, strokeDashoffset: Union[str, float, "ParamRef"] = None, strokeLinecap: Union[str, "ParamRef"] = None, strokeLinejoin: Union[str, "ParamRef"] = None, strokeMiterlimit: Union[float, "ParamRef"] = None, strokeOpacity: "ChannelValueSpec" = None, strokeWidth: "ChannelValueSpec" = None, target: Union[str, "ParamRef"] = None, tip: Union[bool, "TipPointer", Dict[str, Any], "ParamRef"] = None, title: "ChannelValue" = None, x: "ChannelValueSpec" = None, y: "ChannelValueSpec" = None):
+    def __init__(
+        self,
+        data: "PlotMarkData",
+        mark: str,
+        ariaDescription: Union[str, "ParamRef"] = None,
+        ariaHidden: Union[str, "ParamRef"] = None,
+        ariaLabel: "ChannelValue" = None,
+        clip: Union[str, str, bool, Any, "ParamRef"] = None,
+        dx: Union[float, "ParamRef"] = None,
+        dy: Union[float, "ParamRef"] = None,
+        facet: Union[str, str, str, str, bool, Any, "ParamRef"] = None,
+        facetAnchor: Union[
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            Any,
+            "ParamRef",
+        ] = None,
+        fill: Union["ChannelValueSpec", "ParamRef"] = None,
+        fillOpacity: Union["ChannelValueSpec", "ParamRef"] = None,
+        filter: "ChannelValue" = None,
+        fx: "ChannelValue" = None,
+        fy: "ChannelValue" = None,
+        href: "ChannelValue" = None,
+        imageFilter: Union[str, "ParamRef"] = None,
+        inset: Union[float, "ParamRef"] = None,
+        insetBottom: Union[float, "ParamRef"] = None,
+        insetLeft: Union[float, "ParamRef"] = None,
+        insetRight: Union[float, "ParamRef"] = None,
+        insetTop: Union[float, "ParamRef"] = None,
+        margin: Union[float, "ParamRef"] = None,
+        marginBottom: Union[float, "ParamRef"] = None,
+        marginLeft: Union[float, "ParamRef"] = None,
+        marginRight: Union[float, "ParamRef"] = None,
+        marginTop: Union[float, "ParamRef"] = None,
+        mixBlendMode: Union[str, "ParamRef"] = None,
+        opacity: "ChannelValueSpec" = None,
+        paintOrder: Union[str, "ParamRef"] = None,
+        pointerEvents: Union[str, "ParamRef"] = None,
+        reverse: Union[bool, "ParamRef"] = None,
+        rx: Union[float, str, "ParamRef"] = None,
+        ry: Union[float, str, "ParamRef"] = None,
+        select: "SelectFilter" = None,
+        shapeRendering: Union[str, "ParamRef"] = None,
+        sort: Union["SortOrder", "ChannelDomainSort"] = None,
+        stroke: Union["ChannelValueSpec", "ParamRef"] = None,
+        strokeDasharray: Union[str, float, "ParamRef"] = None,
+        strokeDashoffset: Union[str, float, "ParamRef"] = None,
+        strokeLinecap: Union[str, "ParamRef"] = None,
+        strokeLinejoin: Union[str, "ParamRef"] = None,
+        strokeMiterlimit: Union[float, "ParamRef"] = None,
+        strokeOpacity: "ChannelValueSpec" = None,
+        strokeWidth: "ChannelValueSpec" = None,
+        target: Union[str, "ParamRef"] = None,
+        tip: Union[bool, "TipPointer", Dict[str, Any], "ParamRef"] = None,
+        title: "ChannelValue" = None,
+        x: "ChannelValueSpec" = None,
+        y: "ChannelValueSpec" = None,
+    ):
         self.ariaDescription = ariaDescription
         self.ariaHidden = ariaHidden
         self.ariaLabel = ariaLabel
@@ -2347,7 +4827,75 @@ class Cell(SchemaBase):
 
 
 class CellX(SchemaBase):
-    def __init__(self, data: "PlotMarkData", mark: str, ariaDescription: Union[str, "ParamRef"] = None, ariaHidden: Union[str, "ParamRef"] = None, ariaLabel: "ChannelValue" = None, clip: Union[str, str, bool, Any, "ParamRef"] = None, dx: Union[float, "ParamRef"] = None, dy: Union[float, "ParamRef"] = None, facet: Union[str, str, str, str, bool, Any, "ParamRef"] = None, facetAnchor: Union[str, str, str, str, str, str, str, str, str, str, str, str, str, Any, "ParamRef"] = None, fill: Union["ChannelValueSpec", "ParamRef"] = None, fillOpacity: Union["ChannelValueSpec", "ParamRef"] = None, filter: "ChannelValue" = None, fx: "ChannelValue" = None, fy: "ChannelValue" = None, href: "ChannelValue" = None, imageFilter: Union[str, "ParamRef"] = None, inset: Union[float, "ParamRef"] = None, insetBottom: Union[float, "ParamRef"] = None, insetLeft: Union[float, "ParamRef"] = None, insetRight: Union[float, "ParamRef"] = None, insetTop: Union[float, "ParamRef"] = None, margin: Union[float, "ParamRef"] = None, marginBottom: Union[float, "ParamRef"] = None, marginLeft: Union[float, "ParamRef"] = None, marginRight: Union[float, "ParamRef"] = None, marginTop: Union[float, "ParamRef"] = None, mixBlendMode: Union[str, "ParamRef"] = None, opacity: "ChannelValueSpec" = None, paintOrder: Union[str, "ParamRef"] = None, pointerEvents: Union[str, "ParamRef"] = None, reverse: Union[bool, "ParamRef"] = None, rx: Union[float, str, "ParamRef"] = None, ry: Union[float, str, "ParamRef"] = None, select: "SelectFilter" = None, shapeRendering: Union[str, "ParamRef"] = None, sort: Union["SortOrder", "ChannelDomainSort"] = None, stroke: Union["ChannelValueSpec", "ParamRef"] = None, strokeDasharray: Union[str, float, "ParamRef"] = None, strokeDashoffset: Union[str, float, "ParamRef"] = None, strokeLinecap: Union[str, "ParamRef"] = None, strokeLinejoin: Union[str, "ParamRef"] = None, strokeMiterlimit: Union[float, "ParamRef"] = None, strokeOpacity: "ChannelValueSpec" = None, strokeWidth: "ChannelValueSpec" = None, target: Union[str, "ParamRef"] = None, tip: Union[bool, "TipPointer", Dict[str, Any], "ParamRef"] = None, title: "ChannelValue" = None, x: "ChannelValueSpec" = None, y: "ChannelValueSpec" = None):
+    def __init__(
+        self,
+        data: "PlotMarkData",
+        mark: str,
+        ariaDescription: Union[str, "ParamRef"] = None,
+        ariaHidden: Union[str, "ParamRef"] = None,
+        ariaLabel: "ChannelValue" = None,
+        clip: Union[str, str, bool, Any, "ParamRef"] = None,
+        dx: Union[float, "ParamRef"] = None,
+        dy: Union[float, "ParamRef"] = None,
+        facet: Union[str, str, str, str, bool, Any, "ParamRef"] = None,
+        facetAnchor: Union[
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            Any,
+            "ParamRef",
+        ] = None,
+        fill: Union["ChannelValueSpec", "ParamRef"] = None,
+        fillOpacity: Union["ChannelValueSpec", "ParamRef"] = None,
+        filter: "ChannelValue" = None,
+        fx: "ChannelValue" = None,
+        fy: "ChannelValue" = None,
+        href: "ChannelValue" = None,
+        imageFilter: Union[str, "ParamRef"] = None,
+        inset: Union[float, "ParamRef"] = None,
+        insetBottom: Union[float, "ParamRef"] = None,
+        insetLeft: Union[float, "ParamRef"] = None,
+        insetRight: Union[float, "ParamRef"] = None,
+        insetTop: Union[float, "ParamRef"] = None,
+        margin: Union[float, "ParamRef"] = None,
+        marginBottom: Union[float, "ParamRef"] = None,
+        marginLeft: Union[float, "ParamRef"] = None,
+        marginRight: Union[float, "ParamRef"] = None,
+        marginTop: Union[float, "ParamRef"] = None,
+        mixBlendMode: Union[str, "ParamRef"] = None,
+        opacity: "ChannelValueSpec" = None,
+        paintOrder: Union[str, "ParamRef"] = None,
+        pointerEvents: Union[str, "ParamRef"] = None,
+        reverse: Union[bool, "ParamRef"] = None,
+        rx: Union[float, str, "ParamRef"] = None,
+        ry: Union[float, str, "ParamRef"] = None,
+        select: "SelectFilter" = None,
+        shapeRendering: Union[str, "ParamRef"] = None,
+        sort: Union["SortOrder", "ChannelDomainSort"] = None,
+        stroke: Union["ChannelValueSpec", "ParamRef"] = None,
+        strokeDasharray: Union[str, float, "ParamRef"] = None,
+        strokeDashoffset: Union[str, float, "ParamRef"] = None,
+        strokeLinecap: Union[str, "ParamRef"] = None,
+        strokeLinejoin: Union[str, "ParamRef"] = None,
+        strokeMiterlimit: Union[float, "ParamRef"] = None,
+        strokeOpacity: "ChannelValueSpec" = None,
+        strokeWidth: "ChannelValueSpec" = None,
+        target: Union[str, "ParamRef"] = None,
+        tip: Union[bool, "TipPointer", Dict[str, Any], "ParamRef"] = None,
+        title: "ChannelValue" = None,
+        x: "ChannelValueSpec" = None,
+        y: "ChannelValueSpec" = None,
+    ):
         self.ariaDescription = ariaDescription
         self.ariaHidden = ariaHidden
         self.ariaLabel = ariaLabel
@@ -2401,7 +4949,75 @@ class CellX(SchemaBase):
 
 
 class CellY(SchemaBase):
-    def __init__(self, data: "PlotMarkData", mark: str, ariaDescription: Union[str, "ParamRef"] = None, ariaHidden: Union[str, "ParamRef"] = None, ariaLabel: "ChannelValue" = None, clip: Union[str, str, bool, Any, "ParamRef"] = None, dx: Union[float, "ParamRef"] = None, dy: Union[float, "ParamRef"] = None, facet: Union[str, str, str, str, bool, Any, "ParamRef"] = None, facetAnchor: Union[str, str, str, str, str, str, str, str, str, str, str, str, str, Any, "ParamRef"] = None, fill: Union["ChannelValueSpec", "ParamRef"] = None, fillOpacity: Union["ChannelValueSpec", "ParamRef"] = None, filter: "ChannelValue" = None, fx: "ChannelValue" = None, fy: "ChannelValue" = None, href: "ChannelValue" = None, imageFilter: Union[str, "ParamRef"] = None, inset: Union[float, "ParamRef"] = None, insetBottom: Union[float, "ParamRef"] = None, insetLeft: Union[float, "ParamRef"] = None, insetRight: Union[float, "ParamRef"] = None, insetTop: Union[float, "ParamRef"] = None, margin: Union[float, "ParamRef"] = None, marginBottom: Union[float, "ParamRef"] = None, marginLeft: Union[float, "ParamRef"] = None, marginRight: Union[float, "ParamRef"] = None, marginTop: Union[float, "ParamRef"] = None, mixBlendMode: Union[str, "ParamRef"] = None, opacity: "ChannelValueSpec" = None, paintOrder: Union[str, "ParamRef"] = None, pointerEvents: Union[str, "ParamRef"] = None, reverse: Union[bool, "ParamRef"] = None, rx: Union[float, str, "ParamRef"] = None, ry: Union[float, str, "ParamRef"] = None, select: "SelectFilter" = None, shapeRendering: Union[str, "ParamRef"] = None, sort: Union["SortOrder", "ChannelDomainSort"] = None, stroke: Union["ChannelValueSpec", "ParamRef"] = None, strokeDasharray: Union[str, float, "ParamRef"] = None, strokeDashoffset: Union[str, float, "ParamRef"] = None, strokeLinecap: Union[str, "ParamRef"] = None, strokeLinejoin: Union[str, "ParamRef"] = None, strokeMiterlimit: Union[float, "ParamRef"] = None, strokeOpacity: "ChannelValueSpec" = None, strokeWidth: "ChannelValueSpec" = None, target: Union[str, "ParamRef"] = None, tip: Union[bool, "TipPointer", Dict[str, Any], "ParamRef"] = None, title: "ChannelValue" = None, x: "ChannelValueSpec" = None, y: "ChannelValueSpec" = None):
+    def __init__(
+        self,
+        data: "PlotMarkData",
+        mark: str,
+        ariaDescription: Union[str, "ParamRef"] = None,
+        ariaHidden: Union[str, "ParamRef"] = None,
+        ariaLabel: "ChannelValue" = None,
+        clip: Union[str, str, bool, Any, "ParamRef"] = None,
+        dx: Union[float, "ParamRef"] = None,
+        dy: Union[float, "ParamRef"] = None,
+        facet: Union[str, str, str, str, bool, Any, "ParamRef"] = None,
+        facetAnchor: Union[
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            Any,
+            "ParamRef",
+        ] = None,
+        fill: Union["ChannelValueSpec", "ParamRef"] = None,
+        fillOpacity: Union["ChannelValueSpec", "ParamRef"] = None,
+        filter: "ChannelValue" = None,
+        fx: "ChannelValue" = None,
+        fy: "ChannelValue" = None,
+        href: "ChannelValue" = None,
+        imageFilter: Union[str, "ParamRef"] = None,
+        inset: Union[float, "ParamRef"] = None,
+        insetBottom: Union[float, "ParamRef"] = None,
+        insetLeft: Union[float, "ParamRef"] = None,
+        insetRight: Union[float, "ParamRef"] = None,
+        insetTop: Union[float, "ParamRef"] = None,
+        margin: Union[float, "ParamRef"] = None,
+        marginBottom: Union[float, "ParamRef"] = None,
+        marginLeft: Union[float, "ParamRef"] = None,
+        marginRight: Union[float, "ParamRef"] = None,
+        marginTop: Union[float, "ParamRef"] = None,
+        mixBlendMode: Union[str, "ParamRef"] = None,
+        opacity: "ChannelValueSpec" = None,
+        paintOrder: Union[str, "ParamRef"] = None,
+        pointerEvents: Union[str, "ParamRef"] = None,
+        reverse: Union[bool, "ParamRef"] = None,
+        rx: Union[float, str, "ParamRef"] = None,
+        ry: Union[float, str, "ParamRef"] = None,
+        select: "SelectFilter" = None,
+        shapeRendering: Union[str, "ParamRef"] = None,
+        sort: Union["SortOrder", "ChannelDomainSort"] = None,
+        stroke: Union["ChannelValueSpec", "ParamRef"] = None,
+        strokeDasharray: Union[str, float, "ParamRef"] = None,
+        strokeDashoffset: Union[str, float, "ParamRef"] = None,
+        strokeLinecap: Union[str, "ParamRef"] = None,
+        strokeLinejoin: Union[str, "ParamRef"] = None,
+        strokeMiterlimit: Union[float, "ParamRef"] = None,
+        strokeOpacity: "ChannelValueSpec" = None,
+        strokeWidth: "ChannelValueSpec" = None,
+        target: Union[str, "ParamRef"] = None,
+        tip: Union[bool, "TipPointer", Dict[str, Any], "ParamRef"] = None,
+        title: "ChannelValue" = None,
+        x: "ChannelValueSpec" = None,
+        y: "ChannelValueSpec" = None,
+    ):
         self.ariaDescription = ariaDescription
         self.ariaHidden = ariaHidden
         self.ariaLabel = ariaLabel
@@ -2455,7 +5071,73 @@ class CellY(SchemaBase):
 
 
 class Circle(SchemaBase):
-    def __init__(self, data: "PlotMarkData", mark: str, ariaDescription: Union[str, "ParamRef"] = None, ariaHidden: Union[str, "ParamRef"] = None, ariaLabel: "ChannelValue" = None, clip: Union[str, str, bool, Any, "ParamRef"] = None, dx: Union[float, "ParamRef"] = None, dy: Union[float, "ParamRef"] = None, facet: Union[str, str, str, str, bool, Any, "ParamRef"] = None, facetAnchor: Union[str, str, str, str, str, str, str, str, str, str, str, str, str, Any, "ParamRef"] = None, fill: Union["ChannelValueSpec", "ParamRef"] = None, fillOpacity: Union["ChannelValueSpec", "ParamRef"] = None, filter: "ChannelValue" = None, frameAnchor: Union["FrameAnchor", "ParamRef"] = None, fx: "ChannelValue" = None, fy: "ChannelValue" = None, href: "ChannelValue" = None, imageFilter: Union[str, "ParamRef"] = None, margin: Union[float, "ParamRef"] = None, marginBottom: Union[float, "ParamRef"] = None, marginLeft: Union[float, "ParamRef"] = None, marginRight: Union[float, "ParamRef"] = None, marginTop: Union[float, "ParamRef"] = None, mixBlendMode: Union[str, "ParamRef"] = None, opacity: "ChannelValueSpec" = None, paintOrder: Union[str, "ParamRef"] = None, pointerEvents: Union[str, "ParamRef"] = None, r: Union["ChannelValueSpec", float, "ParamRef"] = None, reverse: Union[bool, "ParamRef"] = None, rotate: Union["ChannelValue", float, "ParamRef"] = None, select: "SelectFilter" = None, shapeRendering: Union[str, "ParamRef"] = None, sort: Union["SortOrder", "ChannelDomainSort"] = None, stroke: Union["ChannelValueSpec", "ParamRef"] = None, strokeDasharray: Union[str, float, "ParamRef"] = None, strokeDashoffset: Union[str, float, "ParamRef"] = None, strokeLinecap: Union[str, "ParamRef"] = None, strokeLinejoin: Union[str, "ParamRef"] = None, strokeMiterlimit: Union[float, "ParamRef"] = None, strokeOpacity: "ChannelValueSpec" = None, strokeWidth: "ChannelValueSpec" = None, symbol: Union["ChannelValueSpec", "SymbolType", "ParamRef"] = None, target: Union[str, "ParamRef"] = None, tip: Union[bool, "TipPointer", Dict[str, Any], "ParamRef"] = None, title: "ChannelValue" = None, x: "ChannelValueSpec" = None, y: "ChannelValueSpec" = None, z: "ChannelValue" = None):
+    def __init__(
+        self,
+        data: "PlotMarkData",
+        mark: str,
+        ariaDescription: Union[str, "ParamRef"] = None,
+        ariaHidden: Union[str, "ParamRef"] = None,
+        ariaLabel: "ChannelValue" = None,
+        clip: Union[str, str, bool, Any, "ParamRef"] = None,
+        dx: Union[float, "ParamRef"] = None,
+        dy: Union[float, "ParamRef"] = None,
+        facet: Union[str, str, str, str, bool, Any, "ParamRef"] = None,
+        facetAnchor: Union[
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            Any,
+            "ParamRef",
+        ] = None,
+        fill: Union["ChannelValueSpec", "ParamRef"] = None,
+        fillOpacity: Union["ChannelValueSpec", "ParamRef"] = None,
+        filter: "ChannelValue" = None,
+        frameAnchor: Union["FrameAnchor", "ParamRef"] = None,
+        fx: "ChannelValue" = None,
+        fy: "ChannelValue" = None,
+        href: "ChannelValue" = None,
+        imageFilter: Union[str, "ParamRef"] = None,
+        margin: Union[float, "ParamRef"] = None,
+        marginBottom: Union[float, "ParamRef"] = None,
+        marginLeft: Union[float, "ParamRef"] = None,
+        marginRight: Union[float, "ParamRef"] = None,
+        marginTop: Union[float, "ParamRef"] = None,
+        mixBlendMode: Union[str, "ParamRef"] = None,
+        opacity: "ChannelValueSpec" = None,
+        paintOrder: Union[str, "ParamRef"] = None,
+        pointerEvents: Union[str, "ParamRef"] = None,
+        r: Union["ChannelValueSpec", float, "ParamRef"] = None,
+        reverse: Union[bool, "ParamRef"] = None,
+        rotate: Union["ChannelValue", float, "ParamRef"] = None,
+        select: "SelectFilter" = None,
+        shapeRendering: Union[str, "ParamRef"] = None,
+        sort: Union["SortOrder", "ChannelDomainSort"] = None,
+        stroke: Union["ChannelValueSpec", "ParamRef"] = None,
+        strokeDasharray: Union[str, float, "ParamRef"] = None,
+        strokeDashoffset: Union[str, float, "ParamRef"] = None,
+        strokeLinecap: Union[str, "ParamRef"] = None,
+        strokeLinejoin: Union[str, "ParamRef"] = None,
+        strokeMiterlimit: Union[float, "ParamRef"] = None,
+        strokeOpacity: "ChannelValueSpec" = None,
+        strokeWidth: "ChannelValueSpec" = None,
+        symbol: Union["ChannelValueSpec", "SymbolType", "ParamRef"] = None,
+        target: Union[str, "ParamRef"] = None,
+        tip: Union[bool, "TipPointer", Dict[str, Any], "ParamRef"] = None,
+        title: "ChannelValue" = None,
+        x: "ChannelValueSpec" = None,
+        y: "ChannelValueSpec" = None,
+        z: "ChannelValue" = None,
+    ):
         self.ariaDescription = ariaDescription
         self.ariaHidden = ariaHidden
         self.ariaLabel = ariaLabel
@@ -2507,7 +5189,75 @@ class Circle(SchemaBase):
 
 
 class Contour(SchemaBase):
-    def __init__(self, data: "PlotMarkData", mark: str, ariaDescription: Union[str, "ParamRef"] = None, ariaHidden: Union[str, "ParamRef"] = None, ariaLabel: "ChannelValue" = None, bandwidth: Union[float, "ParamRef"] = None, clip: Union[str, str, bool, Any, "ParamRef"] = None, dx: Union[float, "ParamRef"] = None, dy: Union[float, "ParamRef"] = None, facet: Union[str, str, str, str, bool, Any, "ParamRef"] = None, facetAnchor: Union[str, str, str, str, str, str, str, str, str, str, str, str, str, Any, "ParamRef"] = None, fill: Union["ChannelValueSpec", "ParamRef"] = None, fillOpacity: Union["ChannelValueSpec", "ParamRef"] = None, filter: "ChannelValue" = None, fx: "ChannelValue" = None, fy: "ChannelValue" = None, height: Union[float, "ParamRef"] = None, href: "ChannelValue" = None, imageFilter: Union[str, "ParamRef"] = None, interpolate: Union["GridInterpolate", Any, "ParamRef"] = None, margin: Union[float, "ParamRef"] = None, marginBottom: Union[float, "ParamRef"] = None, marginLeft: Union[float, "ParamRef"] = None, marginRight: Union[float, "ParamRef"] = None, marginTop: Union[float, "ParamRef"] = None, mixBlendMode: Union[str, "ParamRef"] = None, opacity: "ChannelValueSpec" = None, pad: Union[float, "ParamRef"] = None, paintOrder: Union[str, "ParamRef"] = None, pixelSize: Union[float, "ParamRef"] = None, pointerEvents: Union[str, "ParamRef"] = None, reverse: Union[bool, "ParamRef"] = None, select: "SelectFilter" = None, shapeRendering: Union[str, "ParamRef"] = None, sort: Union["SortOrder", "ChannelDomainSort"] = None, stroke: Union["ChannelValueSpec", "ParamRef"] = None, strokeDasharray: Union[str, float, "ParamRef"] = None, strokeDashoffset: Union[str, float, "ParamRef"] = None, strokeLinecap: Union[str, "ParamRef"] = None, strokeLinejoin: Union[str, "ParamRef"] = None, strokeMiterlimit: Union[float, "ParamRef"] = None, strokeOpacity: "ChannelValueSpec" = None, strokeWidth: "ChannelValueSpec" = None, target: Union[str, "ParamRef"] = None, thresholds: Union[float, List[float], "ParamRef"] = None, tip: Union[bool, "TipPointer", Dict[str, Any], "ParamRef"] = None, title: "ChannelValue" = None, width: Union[float, "ParamRef"] = None, x: "ChannelValueSpec" = None, y: "ChannelValueSpec" = None):
+    def __init__(
+        self,
+        data: "PlotMarkData",
+        mark: str,
+        ariaDescription: Union[str, "ParamRef"] = None,
+        ariaHidden: Union[str, "ParamRef"] = None,
+        ariaLabel: "ChannelValue" = None,
+        bandwidth: Union[float, "ParamRef"] = None,
+        clip: Union[str, str, bool, Any, "ParamRef"] = None,
+        dx: Union[float, "ParamRef"] = None,
+        dy: Union[float, "ParamRef"] = None,
+        facet: Union[str, str, str, str, bool, Any, "ParamRef"] = None,
+        facetAnchor: Union[
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            Any,
+            "ParamRef",
+        ] = None,
+        fill: Union["ChannelValueSpec", "ParamRef"] = None,
+        fillOpacity: Union["ChannelValueSpec", "ParamRef"] = None,
+        filter: "ChannelValue" = None,
+        fx: "ChannelValue" = None,
+        fy: "ChannelValue" = None,
+        height: Union[float, "ParamRef"] = None,
+        href: "ChannelValue" = None,
+        imageFilter: Union[str, "ParamRef"] = None,
+        interpolate: Union["GridInterpolate", Any, "ParamRef"] = None,
+        margin: Union[float, "ParamRef"] = None,
+        marginBottom: Union[float, "ParamRef"] = None,
+        marginLeft: Union[float, "ParamRef"] = None,
+        marginRight: Union[float, "ParamRef"] = None,
+        marginTop: Union[float, "ParamRef"] = None,
+        mixBlendMode: Union[str, "ParamRef"] = None,
+        opacity: "ChannelValueSpec" = None,
+        pad: Union[float, "ParamRef"] = None,
+        paintOrder: Union[str, "ParamRef"] = None,
+        pixelSize: Union[float, "ParamRef"] = None,
+        pointerEvents: Union[str, "ParamRef"] = None,
+        reverse: Union[bool, "ParamRef"] = None,
+        select: "SelectFilter" = None,
+        shapeRendering: Union[str, "ParamRef"] = None,
+        sort: Union["SortOrder", "ChannelDomainSort"] = None,
+        stroke: Union["ChannelValueSpec", "ParamRef"] = None,
+        strokeDasharray: Union[str, float, "ParamRef"] = None,
+        strokeDashoffset: Union[str, float, "ParamRef"] = None,
+        strokeLinecap: Union[str, "ParamRef"] = None,
+        strokeLinejoin: Union[str, "ParamRef"] = None,
+        strokeMiterlimit: Union[float, "ParamRef"] = None,
+        strokeOpacity: "ChannelValueSpec" = None,
+        strokeWidth: "ChannelValueSpec" = None,
+        target: Union[str, "ParamRef"] = None,
+        thresholds: Union[float, List[float], "ParamRef"] = None,
+        tip: Union[bool, "TipPointer", Dict[str, Any], "ParamRef"] = None,
+        title: "ChannelValue" = None,
+        width: Union[float, "ParamRef"] = None,
+        x: "ChannelValueSpec" = None,
+        y: "ChannelValueSpec" = None,
+    ):
         self.ariaDescription = ariaDescription
         self.ariaHidden = ariaHidden
         self.ariaLabel = ariaLabel
@@ -2561,7 +5311,75 @@ class Contour(SchemaBase):
 
 
 class DelaunayLink(SchemaBase):
-    def __init__(self, data: "PlotMarkData", mark: str, ariaDescription: Union[str, "ParamRef"] = None, ariaHidden: Union[str, "ParamRef"] = None, ariaLabel: "ChannelValue" = None, clip: Union[str, str, bool, Any, "ParamRef"] = None, curve: Union["Curve", "ParamRef"] = None, dx: Union[float, "ParamRef"] = None, dy: Union[float, "ParamRef"] = None, facet: Union[str, str, str, str, bool, Any, "ParamRef"] = None, facetAnchor: Union[str, str, str, str, str, str, str, str, str, str, str, str, str, Any, "ParamRef"] = None, fill: Union["ChannelValueSpec", "ParamRef"] = None, fillOpacity: Union["ChannelValueSpec", "ParamRef"] = None, filter: "ChannelValue" = None, fx: "ChannelValue" = None, fy: "ChannelValue" = None, href: "ChannelValue" = None, imageFilter: Union[str, "ParamRef"] = None, margin: Union[float, "ParamRef"] = None, marginBottom: Union[float, "ParamRef"] = None, marginLeft: Union[float, "ParamRef"] = None, marginRight: Union[float, "ParamRef"] = None, marginTop: Union[float, "ParamRef"] = None, marker: Union["MarkerName", str, bool, Any, "ParamRef"] = None, markerEnd: Union["MarkerName", str, bool, Any, "ParamRef"] = None, markerMid: Union["MarkerName", str, bool, Any, "ParamRef"] = None, markerStart: Union["MarkerName", str, bool, Any, "ParamRef"] = None, mixBlendMode: Union[str, "ParamRef"] = None, opacity: "ChannelValueSpec" = None, paintOrder: Union[str, "ParamRef"] = None, pointerEvents: Union[str, "ParamRef"] = None, reverse: Union[bool, "ParamRef"] = None, select: "SelectFilter" = None, shapeRendering: Union[str, "ParamRef"] = None, sort: Union["SortOrder", "ChannelDomainSort"] = None, stroke: Union["ChannelValueSpec", "ParamRef"] = None, strokeDasharray: Union[str, float, "ParamRef"] = None, strokeDashoffset: Union[str, float, "ParamRef"] = None, strokeLinecap: Union[str, "ParamRef"] = None, strokeLinejoin: Union[str, "ParamRef"] = None, strokeMiterlimit: Union[float, "ParamRef"] = None, strokeOpacity: "ChannelValueSpec" = None, strokeWidth: "ChannelValueSpec" = None, target: Union[str, "ParamRef"] = None, tension: Union[float, "ParamRef"] = None, tip: Union[bool, "TipPointer", Dict[str, Any], "ParamRef"] = None, title: "ChannelValue" = None, x: "ChannelValueSpec" = None, y: "ChannelValueSpec" = None, z: "ChannelValue" = None):
+    def __init__(
+        self,
+        data: "PlotMarkData",
+        mark: str,
+        ariaDescription: Union[str, "ParamRef"] = None,
+        ariaHidden: Union[str, "ParamRef"] = None,
+        ariaLabel: "ChannelValue" = None,
+        clip: Union[str, str, bool, Any, "ParamRef"] = None,
+        curve: Union["Curve", "ParamRef"] = None,
+        dx: Union[float, "ParamRef"] = None,
+        dy: Union[float, "ParamRef"] = None,
+        facet: Union[str, str, str, str, bool, Any, "ParamRef"] = None,
+        facetAnchor: Union[
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            Any,
+            "ParamRef",
+        ] = None,
+        fill: Union["ChannelValueSpec", "ParamRef"] = None,
+        fillOpacity: Union["ChannelValueSpec", "ParamRef"] = None,
+        filter: "ChannelValue" = None,
+        fx: "ChannelValue" = None,
+        fy: "ChannelValue" = None,
+        href: "ChannelValue" = None,
+        imageFilter: Union[str, "ParamRef"] = None,
+        margin: Union[float, "ParamRef"] = None,
+        marginBottom: Union[float, "ParamRef"] = None,
+        marginLeft: Union[float, "ParamRef"] = None,
+        marginRight: Union[float, "ParamRef"] = None,
+        marginTop: Union[float, "ParamRef"] = None,
+        marker: Union["MarkerName", str, bool, Any, "ParamRef"] = None,
+        markerEnd: Union["MarkerName", str, bool, Any, "ParamRef"] = None,
+        markerMid: Union["MarkerName", str, bool, Any, "ParamRef"] = None,
+        markerStart: Union["MarkerName", str, bool, Any, "ParamRef"] = None,
+        mixBlendMode: Union[str, "ParamRef"] = None,
+        opacity: "ChannelValueSpec" = None,
+        paintOrder: Union[str, "ParamRef"] = None,
+        pointerEvents: Union[str, "ParamRef"] = None,
+        reverse: Union[bool, "ParamRef"] = None,
+        select: "SelectFilter" = None,
+        shapeRendering: Union[str, "ParamRef"] = None,
+        sort: Union["SortOrder", "ChannelDomainSort"] = None,
+        stroke: Union["ChannelValueSpec", "ParamRef"] = None,
+        strokeDasharray: Union[str, float, "ParamRef"] = None,
+        strokeDashoffset: Union[str, float, "ParamRef"] = None,
+        strokeLinecap: Union[str, "ParamRef"] = None,
+        strokeLinejoin: Union[str, "ParamRef"] = None,
+        strokeMiterlimit: Union[float, "ParamRef"] = None,
+        strokeOpacity: "ChannelValueSpec" = None,
+        strokeWidth: "ChannelValueSpec" = None,
+        target: Union[str, "ParamRef"] = None,
+        tension: Union[float, "ParamRef"] = None,
+        tip: Union[bool, "TipPointer", Dict[str, Any], "ParamRef"] = None,
+        title: "ChannelValue" = None,
+        x: "ChannelValueSpec" = None,
+        y: "ChannelValueSpec" = None,
+        z: "ChannelValue" = None,
+    ):
         self.ariaDescription = ariaDescription
         self.ariaHidden = ariaHidden
         self.ariaLabel = ariaLabel
@@ -2615,7 +5433,75 @@ class DelaunayLink(SchemaBase):
 
 
 class DelaunayMesh(SchemaBase):
-    def __init__(self, data: "PlotMarkData", mark: str, ariaDescription: Union[str, "ParamRef"] = None, ariaHidden: Union[str, "ParamRef"] = None, ariaLabel: "ChannelValue" = None, clip: Union[str, str, bool, Any, "ParamRef"] = None, curve: Union["Curve", "ParamRef"] = None, dx: Union[float, "ParamRef"] = None, dy: Union[float, "ParamRef"] = None, facet: Union[str, str, str, str, bool, Any, "ParamRef"] = None, facetAnchor: Union[str, str, str, str, str, str, str, str, str, str, str, str, str, Any, "ParamRef"] = None, fill: Union["ChannelValueSpec", "ParamRef"] = None, fillOpacity: Union["ChannelValueSpec", "ParamRef"] = None, filter: "ChannelValue" = None, fx: "ChannelValue" = None, fy: "ChannelValue" = None, href: "ChannelValue" = None, imageFilter: Union[str, "ParamRef"] = None, margin: Union[float, "ParamRef"] = None, marginBottom: Union[float, "ParamRef"] = None, marginLeft: Union[float, "ParamRef"] = None, marginRight: Union[float, "ParamRef"] = None, marginTop: Union[float, "ParamRef"] = None, marker: Union["MarkerName", str, bool, Any, "ParamRef"] = None, markerEnd: Union["MarkerName", str, bool, Any, "ParamRef"] = None, markerMid: Union["MarkerName", str, bool, Any, "ParamRef"] = None, markerStart: Union["MarkerName", str, bool, Any, "ParamRef"] = None, mixBlendMode: Union[str, "ParamRef"] = None, opacity: "ChannelValueSpec" = None, paintOrder: Union[str, "ParamRef"] = None, pointerEvents: Union[str, "ParamRef"] = None, reverse: Union[bool, "ParamRef"] = None, select: "SelectFilter" = None, shapeRendering: Union[str, "ParamRef"] = None, sort: Union["SortOrder", "ChannelDomainSort"] = None, stroke: Union["ChannelValueSpec", "ParamRef"] = None, strokeDasharray: Union[str, float, "ParamRef"] = None, strokeDashoffset: Union[str, float, "ParamRef"] = None, strokeLinecap: Union[str, "ParamRef"] = None, strokeLinejoin: Union[str, "ParamRef"] = None, strokeMiterlimit: Union[float, "ParamRef"] = None, strokeOpacity: "ChannelValueSpec" = None, strokeWidth: "ChannelValueSpec" = None, target: Union[str, "ParamRef"] = None, tension: Union[float, "ParamRef"] = None, tip: Union[bool, "TipPointer", Dict[str, Any], "ParamRef"] = None, title: "ChannelValue" = None, x: "ChannelValueSpec" = None, y: "ChannelValueSpec" = None, z: "ChannelValue" = None):
+    def __init__(
+        self,
+        data: "PlotMarkData",
+        mark: str,
+        ariaDescription: Union[str, "ParamRef"] = None,
+        ariaHidden: Union[str, "ParamRef"] = None,
+        ariaLabel: "ChannelValue" = None,
+        clip: Union[str, str, bool, Any, "ParamRef"] = None,
+        curve: Union["Curve", "ParamRef"] = None,
+        dx: Union[float, "ParamRef"] = None,
+        dy: Union[float, "ParamRef"] = None,
+        facet: Union[str, str, str, str, bool, Any, "ParamRef"] = None,
+        facetAnchor: Union[
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            Any,
+            "ParamRef",
+        ] = None,
+        fill: Union["ChannelValueSpec", "ParamRef"] = None,
+        fillOpacity: Union["ChannelValueSpec", "ParamRef"] = None,
+        filter: "ChannelValue" = None,
+        fx: "ChannelValue" = None,
+        fy: "ChannelValue" = None,
+        href: "ChannelValue" = None,
+        imageFilter: Union[str, "ParamRef"] = None,
+        margin: Union[float, "ParamRef"] = None,
+        marginBottom: Union[float, "ParamRef"] = None,
+        marginLeft: Union[float, "ParamRef"] = None,
+        marginRight: Union[float, "ParamRef"] = None,
+        marginTop: Union[float, "ParamRef"] = None,
+        marker: Union["MarkerName", str, bool, Any, "ParamRef"] = None,
+        markerEnd: Union["MarkerName", str, bool, Any, "ParamRef"] = None,
+        markerMid: Union["MarkerName", str, bool, Any, "ParamRef"] = None,
+        markerStart: Union["MarkerName", str, bool, Any, "ParamRef"] = None,
+        mixBlendMode: Union[str, "ParamRef"] = None,
+        opacity: "ChannelValueSpec" = None,
+        paintOrder: Union[str, "ParamRef"] = None,
+        pointerEvents: Union[str, "ParamRef"] = None,
+        reverse: Union[bool, "ParamRef"] = None,
+        select: "SelectFilter" = None,
+        shapeRendering: Union[str, "ParamRef"] = None,
+        sort: Union["SortOrder", "ChannelDomainSort"] = None,
+        stroke: Union["ChannelValueSpec", "ParamRef"] = None,
+        strokeDasharray: Union[str, float, "ParamRef"] = None,
+        strokeDashoffset: Union[str, float, "ParamRef"] = None,
+        strokeLinecap: Union[str, "ParamRef"] = None,
+        strokeLinejoin: Union[str, "ParamRef"] = None,
+        strokeMiterlimit: Union[float, "ParamRef"] = None,
+        strokeOpacity: "ChannelValueSpec" = None,
+        strokeWidth: "ChannelValueSpec" = None,
+        target: Union[str, "ParamRef"] = None,
+        tension: Union[float, "ParamRef"] = None,
+        tip: Union[bool, "TipPointer", Dict[str, Any], "ParamRef"] = None,
+        title: "ChannelValue" = None,
+        x: "ChannelValueSpec" = None,
+        y: "ChannelValueSpec" = None,
+        z: "ChannelValue" = None,
+    ):
         self.ariaDescription = ariaDescription
         self.ariaHidden = ariaHidden
         self.ariaLabel = ariaLabel
@@ -2669,7 +5555,77 @@ class DelaunayMesh(SchemaBase):
 
 
 class DenseLine(SchemaBase):
-    def __init__(self, data: "PlotMarkData", mark: str, ariaDescription: Union[str, "ParamRef"] = None, ariaHidden: Union[str, "ParamRef"] = None, ariaLabel: "ChannelValue" = None, bandwidth: Union[float, "ParamRef"] = None, clip: Union[str, str, bool, Any, "ParamRef"] = None, dx: Union[float, "ParamRef"] = None, dy: Union[float, "ParamRef"] = None, facet: Union[str, str, str, str, bool, Any, "ParamRef"] = None, facetAnchor: Union[str, str, str, str, str, str, str, str, str, str, str, str, str, Any, "ParamRef"] = None, fill: Union["ChannelValueSpec", "ParamRef"] = None, fillOpacity: Union["ChannelValueSpec", "ParamRef"] = None, filter: "ChannelValue" = None, fx: "ChannelValue" = None, fy: "ChannelValue" = None, height: Union[float, "ParamRef"] = None, href: "ChannelValue" = None, imageFilter: Union[str, "ParamRef"] = None, imageRendering: Union[str, "ParamRef"] = None, interpolate: Union["GridInterpolate", Any, "ParamRef"] = None, margin: Union[float, "ParamRef"] = None, marginBottom: Union[float, "ParamRef"] = None, marginLeft: Union[float, "ParamRef"] = None, marginRight: Union[float, "ParamRef"] = None, marginTop: Union[float, "ParamRef"] = None, mixBlendMode: Union[str, "ParamRef"] = None, normalize: Union[bool, "ParamRef"] = None, opacity: "ChannelValueSpec" = None, pad: Union[float, "ParamRef"] = None, paintOrder: Union[str, "ParamRef"] = None, pixelSize: Union[float, "ParamRef"] = None, pointerEvents: Union[str, "ParamRef"] = None, reverse: Union[bool, "ParamRef"] = None, select: "SelectFilter" = None, shapeRendering: Union[str, "ParamRef"] = None, sort: Union["SortOrder", "ChannelDomainSort"] = None, stroke: Union["ChannelValueSpec", "ParamRef"] = None, strokeDasharray: Union[str, float, "ParamRef"] = None, strokeDashoffset: Union[str, float, "ParamRef"] = None, strokeLinecap: Union[str, "ParamRef"] = None, strokeLinejoin: Union[str, "ParamRef"] = None, strokeMiterlimit: Union[float, "ParamRef"] = None, strokeOpacity: "ChannelValueSpec" = None, strokeWidth: "ChannelValueSpec" = None, target: Union[str, "ParamRef"] = None, tip: Union[bool, "TipPointer", Dict[str, Any], "ParamRef"] = None, title: "ChannelValue" = None, width: Union[float, "ParamRef"] = None, x: "ChannelValueSpec" = None, y: "ChannelValueSpec" = None, z: "ChannelValue" = None):
+    def __init__(
+        self,
+        data: "PlotMarkData",
+        mark: str,
+        ariaDescription: Union[str, "ParamRef"] = None,
+        ariaHidden: Union[str, "ParamRef"] = None,
+        ariaLabel: "ChannelValue" = None,
+        bandwidth: Union[float, "ParamRef"] = None,
+        clip: Union[str, str, bool, Any, "ParamRef"] = None,
+        dx: Union[float, "ParamRef"] = None,
+        dy: Union[float, "ParamRef"] = None,
+        facet: Union[str, str, str, str, bool, Any, "ParamRef"] = None,
+        facetAnchor: Union[
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            Any,
+            "ParamRef",
+        ] = None,
+        fill: Union["ChannelValueSpec", "ParamRef"] = None,
+        fillOpacity: Union["ChannelValueSpec", "ParamRef"] = None,
+        filter: "ChannelValue" = None,
+        fx: "ChannelValue" = None,
+        fy: "ChannelValue" = None,
+        height: Union[float, "ParamRef"] = None,
+        href: "ChannelValue" = None,
+        imageFilter: Union[str, "ParamRef"] = None,
+        imageRendering: Union[str, "ParamRef"] = None,
+        interpolate: Union["GridInterpolate", Any, "ParamRef"] = None,
+        margin: Union[float, "ParamRef"] = None,
+        marginBottom: Union[float, "ParamRef"] = None,
+        marginLeft: Union[float, "ParamRef"] = None,
+        marginRight: Union[float, "ParamRef"] = None,
+        marginTop: Union[float, "ParamRef"] = None,
+        mixBlendMode: Union[str, "ParamRef"] = None,
+        normalize: Union[bool, "ParamRef"] = None,
+        opacity: "ChannelValueSpec" = None,
+        pad: Union[float, "ParamRef"] = None,
+        paintOrder: Union[str, "ParamRef"] = None,
+        pixelSize: Union[float, "ParamRef"] = None,
+        pointerEvents: Union[str, "ParamRef"] = None,
+        reverse: Union[bool, "ParamRef"] = None,
+        select: "SelectFilter" = None,
+        shapeRendering: Union[str, "ParamRef"] = None,
+        sort: Union["SortOrder", "ChannelDomainSort"] = None,
+        stroke: Union["ChannelValueSpec", "ParamRef"] = None,
+        strokeDasharray: Union[str, float, "ParamRef"] = None,
+        strokeDashoffset: Union[str, float, "ParamRef"] = None,
+        strokeLinecap: Union[str, "ParamRef"] = None,
+        strokeLinejoin: Union[str, "ParamRef"] = None,
+        strokeMiterlimit: Union[float, "ParamRef"] = None,
+        strokeOpacity: "ChannelValueSpec" = None,
+        strokeWidth: "ChannelValueSpec" = None,
+        target: Union[str, "ParamRef"] = None,
+        tip: Union[bool, "TipPointer", Dict[str, Any], "ParamRef"] = None,
+        title: "ChannelValue" = None,
+        width: Union[float, "ParamRef"] = None,
+        x: "ChannelValueSpec" = None,
+        y: "ChannelValueSpec" = None,
+        z: "ChannelValue" = None,
+    ):
         self.ariaDescription = ariaDescription
         self.ariaHidden = ariaHidden
         self.ariaLabel = ariaLabel
@@ -2725,7 +5681,90 @@ class DenseLine(SchemaBase):
 
 
 class Density(SchemaBase):
-    def __init__(self, data: "PlotMarkData", mark: str, ariaDescription: Union[str, "ParamRef"] = None, ariaHidden: Union[str, "ParamRef"] = None, ariaLabel: "ChannelValue" = None, bandwidth: Union[float, "ParamRef"] = None, clip: Union[str, str, bool, Any, "ParamRef"] = None, dx: Union[float, "ParamRef"] = None, dy: Union[float, "ParamRef"] = None, facet: Union[str, str, str, str, bool, Any, "ParamRef"] = None, facetAnchor: Union[str, str, str, str, str, str, str, str, str, str, str, str, str, Any, "ParamRef"] = None, fill: Union["ChannelValueSpec", "ParamRef"] = None, fillOpacity: Union["ChannelValueSpec", "ParamRef"] = None, filter: "ChannelValue" = None, fontFamily: Union[str, "ParamRef"] = None, fontSize: Union["ChannelValue", "ParamRef"] = None, fontStyle: Union[str, "ParamRef"] = None, fontVariant: Union[str, "ParamRef"] = None, fontWeight: Union[str, float, "ParamRef"] = None, frameAnchor: Union["FrameAnchor", "ParamRef"] = None, fx: "ChannelValue" = None, fy: "ChannelValue" = None, height: Union[float, "ParamRef"] = None, href: "ChannelValue" = None, imageFilter: Union[str, "ParamRef"] = None, interpolate: Union["GridInterpolate", Any, "ParamRef"] = None, lineHeight: Union[float, "ParamRef"] = None, lineWidth: Union[float, "ParamRef"] = None, margin: Union[float, "ParamRef"] = None, marginBottom: Union[float, "ParamRef"] = None, marginLeft: Union[float, "ParamRef"] = None, marginRight: Union[float, "ParamRef"] = None, marginTop: Union[float, "ParamRef"] = None, mixBlendMode: Union[str, "ParamRef"] = None, monospace: Union[bool, "ParamRef"] = None, opacity: "ChannelValueSpec" = None, pad: Union[float, "ParamRef"] = None, paintOrder: Union[str, "ParamRef"] = None, pixelSize: Union[float, "ParamRef"] = None, pointerEvents: Union[str, "ParamRef"] = None, r: Union["ChannelValueSpec", float, "ParamRef"] = None, reverse: Union[bool, "ParamRef"] = None, rotate: Union["ChannelValue", float, "ParamRef"] = None, select: "SelectFilter" = None, shapeRendering: Union[str, "ParamRef"] = None, sort: Union["SortOrder", "ChannelDomainSort"] = None, stroke: Union["ChannelValueSpec", "ParamRef"] = None, strokeDasharray: Union[str, float, "ParamRef"] = None, strokeDashoffset: Union[str, float, "ParamRef"] = None, strokeLinecap: Union[str, "ParamRef"] = None, strokeLinejoin: Union[str, "ParamRef"] = None, strokeMiterlimit: Union[float, "ParamRef"] = None, strokeOpacity: "ChannelValueSpec" = None, strokeWidth: "ChannelValueSpec" = None, symbol: Union["ChannelValueSpec", "SymbolType", "ParamRef"] = None, target: Union[str, "ParamRef"] = None, textAnchor: Union[str, str, str, "ParamRef"] = None, textOverflow: Union[Any, str, str, str, str, str, str, str, "ParamRef"] = None, tip: Union[bool, "TipPointer", Dict[str, Any], "ParamRef"] = None, title: "ChannelValue" = None, type: Union[str, str, str, str, str, "ParamRef"] = None, width: Union[float, "ParamRef"] = None, x: "ChannelValueSpec" = None, y: "ChannelValueSpec" = None, z: "ChannelValue" = None):
+    def __init__(
+        self,
+        data: "PlotMarkData",
+        mark: str,
+        ariaDescription: Union[str, "ParamRef"] = None,
+        ariaHidden: Union[str, "ParamRef"] = None,
+        ariaLabel: "ChannelValue" = None,
+        bandwidth: Union[float, "ParamRef"] = None,
+        clip: Union[str, str, bool, Any, "ParamRef"] = None,
+        dx: Union[float, "ParamRef"] = None,
+        dy: Union[float, "ParamRef"] = None,
+        facet: Union[str, str, str, str, bool, Any, "ParamRef"] = None,
+        facetAnchor: Union[
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            Any,
+            "ParamRef",
+        ] = None,
+        fill: Union["ChannelValueSpec", "ParamRef"] = None,
+        fillOpacity: Union["ChannelValueSpec", "ParamRef"] = None,
+        filter: "ChannelValue" = None,
+        fontFamily: Union[str, "ParamRef"] = None,
+        fontSize: Union["ChannelValue", "ParamRef"] = None,
+        fontStyle: Union[str, "ParamRef"] = None,
+        fontVariant: Union[str, "ParamRef"] = None,
+        fontWeight: Union[str, float, "ParamRef"] = None,
+        frameAnchor: Union["FrameAnchor", "ParamRef"] = None,
+        fx: "ChannelValue" = None,
+        fy: "ChannelValue" = None,
+        height: Union[float, "ParamRef"] = None,
+        href: "ChannelValue" = None,
+        imageFilter: Union[str, "ParamRef"] = None,
+        interpolate: Union["GridInterpolate", Any, "ParamRef"] = None,
+        lineHeight: Union[float, "ParamRef"] = None,
+        lineWidth: Union[float, "ParamRef"] = None,
+        margin: Union[float, "ParamRef"] = None,
+        marginBottom: Union[float, "ParamRef"] = None,
+        marginLeft: Union[float, "ParamRef"] = None,
+        marginRight: Union[float, "ParamRef"] = None,
+        marginTop: Union[float, "ParamRef"] = None,
+        mixBlendMode: Union[str, "ParamRef"] = None,
+        monospace: Union[bool, "ParamRef"] = None,
+        opacity: "ChannelValueSpec" = None,
+        pad: Union[float, "ParamRef"] = None,
+        paintOrder: Union[str, "ParamRef"] = None,
+        pixelSize: Union[float, "ParamRef"] = None,
+        pointerEvents: Union[str, "ParamRef"] = None,
+        r: Union["ChannelValueSpec", float, "ParamRef"] = None,
+        reverse: Union[bool, "ParamRef"] = None,
+        rotate: Union["ChannelValue", float, "ParamRef"] = None,
+        select: "SelectFilter" = None,
+        shapeRendering: Union[str, "ParamRef"] = None,
+        sort: Union["SortOrder", "ChannelDomainSort"] = None,
+        stroke: Union["ChannelValueSpec", "ParamRef"] = None,
+        strokeDasharray: Union[str, float, "ParamRef"] = None,
+        strokeDashoffset: Union[str, float, "ParamRef"] = None,
+        strokeLinecap: Union[str, "ParamRef"] = None,
+        strokeLinejoin: Union[str, "ParamRef"] = None,
+        strokeMiterlimit: Union[float, "ParamRef"] = None,
+        strokeOpacity: "ChannelValueSpec" = None,
+        strokeWidth: "ChannelValueSpec" = None,
+        symbol: Union["ChannelValueSpec", "SymbolType", "ParamRef"] = None,
+        target: Union[str, "ParamRef"] = None,
+        textAnchor: Union[str, str, str, "ParamRef"] = None,
+        textOverflow: Union[Any, str, str, str, str, str, str, str, "ParamRef"] = None,
+        tip: Union[bool, "TipPointer", Dict[str, Any], "ParamRef"] = None,
+        title: "ChannelValue" = None,
+        type: Union[str, str, str, str, str, "ParamRef"] = None,
+        width: Union[float, "ParamRef"] = None,
+        x: "ChannelValueSpec" = None,
+        y: "ChannelValueSpec" = None,
+        z: "ChannelValue" = None,
+    ):
         self.ariaDescription = ariaDescription
         self.ariaHidden = ariaHidden
         self.ariaLabel = ariaLabel
@@ -2794,7 +5833,73 @@ class Density(SchemaBase):
 
 
 class Dot(SchemaBase):
-    def __init__(self, data: "PlotMarkData", mark: str, ariaDescription: Union[str, "ParamRef"] = None, ariaHidden: Union[str, "ParamRef"] = None, ariaLabel: "ChannelValue" = None, clip: Union[str, str, bool, Any, "ParamRef"] = None, dx: Union[float, "ParamRef"] = None, dy: Union[float, "ParamRef"] = None, facet: Union[str, str, str, str, bool, Any, "ParamRef"] = None, facetAnchor: Union[str, str, str, str, str, str, str, str, str, str, str, str, str, Any, "ParamRef"] = None, fill: Union["ChannelValueSpec", "ParamRef"] = None, fillOpacity: Union["ChannelValueSpec", "ParamRef"] = None, filter: "ChannelValue" = None, frameAnchor: Union["FrameAnchor", "ParamRef"] = None, fx: "ChannelValue" = None, fy: "ChannelValue" = None, href: "ChannelValue" = None, imageFilter: Union[str, "ParamRef"] = None, margin: Union[float, "ParamRef"] = None, marginBottom: Union[float, "ParamRef"] = None, marginLeft: Union[float, "ParamRef"] = None, marginRight: Union[float, "ParamRef"] = None, marginTop: Union[float, "ParamRef"] = None, mixBlendMode: Union[str, "ParamRef"] = None, opacity: "ChannelValueSpec" = None, paintOrder: Union[str, "ParamRef"] = None, pointerEvents: Union[str, "ParamRef"] = None, r: Union["ChannelValueSpec", float, "ParamRef"] = None, reverse: Union[bool, "ParamRef"] = None, rotate: Union["ChannelValue", float, "ParamRef"] = None, select: "SelectFilter" = None, shapeRendering: Union[str, "ParamRef"] = None, sort: Union["SortOrder", "ChannelDomainSort"] = None, stroke: Union["ChannelValueSpec", "ParamRef"] = None, strokeDasharray: Union[str, float, "ParamRef"] = None, strokeDashoffset: Union[str, float, "ParamRef"] = None, strokeLinecap: Union[str, "ParamRef"] = None, strokeLinejoin: Union[str, "ParamRef"] = None, strokeMiterlimit: Union[float, "ParamRef"] = None, strokeOpacity: "ChannelValueSpec" = None, strokeWidth: "ChannelValueSpec" = None, symbol: Union["ChannelValueSpec", "SymbolType", "ParamRef"] = None, target: Union[str, "ParamRef"] = None, tip: Union[bool, "TipPointer", Dict[str, Any], "ParamRef"] = None, title: "ChannelValue" = None, x: "ChannelValueSpec" = None, y: "ChannelValueSpec" = None, z: "ChannelValue" = None):
+    def __init__(
+        self,
+        data: "PlotMarkData",
+        mark: str,
+        ariaDescription: Union[str, "ParamRef"] = None,
+        ariaHidden: Union[str, "ParamRef"] = None,
+        ariaLabel: "ChannelValue" = None,
+        clip: Union[str, str, bool, Any, "ParamRef"] = None,
+        dx: Union[float, "ParamRef"] = None,
+        dy: Union[float, "ParamRef"] = None,
+        facet: Union[str, str, str, str, bool, Any, "ParamRef"] = None,
+        facetAnchor: Union[
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            Any,
+            "ParamRef",
+        ] = None,
+        fill: Union["ChannelValueSpec", "ParamRef"] = None,
+        fillOpacity: Union["ChannelValueSpec", "ParamRef"] = None,
+        filter: "ChannelValue" = None,
+        frameAnchor: Union["FrameAnchor", "ParamRef"] = None,
+        fx: "ChannelValue" = None,
+        fy: "ChannelValue" = None,
+        href: "ChannelValue" = None,
+        imageFilter: Union[str, "ParamRef"] = None,
+        margin: Union[float, "ParamRef"] = None,
+        marginBottom: Union[float, "ParamRef"] = None,
+        marginLeft: Union[float, "ParamRef"] = None,
+        marginRight: Union[float, "ParamRef"] = None,
+        marginTop: Union[float, "ParamRef"] = None,
+        mixBlendMode: Union[str, "ParamRef"] = None,
+        opacity: "ChannelValueSpec" = None,
+        paintOrder: Union[str, "ParamRef"] = None,
+        pointerEvents: Union[str, "ParamRef"] = None,
+        r: Union["ChannelValueSpec", float, "ParamRef"] = None,
+        reverse: Union[bool, "ParamRef"] = None,
+        rotate: Union["ChannelValue", float, "ParamRef"] = None,
+        select: "SelectFilter" = None,
+        shapeRendering: Union[str, "ParamRef"] = None,
+        sort: Union["SortOrder", "ChannelDomainSort"] = None,
+        stroke: Union["ChannelValueSpec", "ParamRef"] = None,
+        strokeDasharray: Union[str, float, "ParamRef"] = None,
+        strokeDashoffset: Union[str, float, "ParamRef"] = None,
+        strokeLinecap: Union[str, "ParamRef"] = None,
+        strokeLinejoin: Union[str, "ParamRef"] = None,
+        strokeMiterlimit: Union[float, "ParamRef"] = None,
+        strokeOpacity: "ChannelValueSpec" = None,
+        strokeWidth: "ChannelValueSpec" = None,
+        symbol: Union["ChannelValueSpec", "SymbolType", "ParamRef"] = None,
+        target: Union[str, "ParamRef"] = None,
+        tip: Union[bool, "TipPointer", Dict[str, Any], "ParamRef"] = None,
+        title: "ChannelValue" = None,
+        x: "ChannelValueSpec" = None,
+        y: "ChannelValueSpec" = None,
+        z: "ChannelValue" = None,
+    ):
         self.ariaDescription = ariaDescription
         self.ariaHidden = ariaHidden
         self.ariaLabel = ariaLabel
@@ -2846,7 +5951,74 @@ class Dot(SchemaBase):
 
 
 class ErrorBarX(SchemaBase):
-    def __init__(self, data: "PlotMarkData", mark: str, x: "ChannelValueSpec", ariaDescription: Union[str, "ParamRef"] = None, ariaHidden: Union[str, "ParamRef"] = None, ariaLabel: "ChannelValue" = None, ci: Union[float, "ParamRef"] = None, clip: Union[str, str, bool, Any, "ParamRef"] = None, dx: Union[float, "ParamRef"] = None, dy: Union[float, "ParamRef"] = None, facet: Union[str, str, str, str, bool, Any, "ParamRef"] = None, facetAnchor: Union[str, str, str, str, str, str, str, str, str, str, str, str, str, Any, "ParamRef"] = None, fill: Union["ChannelValueSpec", "ParamRef"] = None, fillOpacity: Union["ChannelValueSpec", "ParamRef"] = None, filter: "ChannelValue" = None, fx: "ChannelValue" = None, fy: "ChannelValue" = None, href: "ChannelValue" = None, imageFilter: Union[str, "ParamRef"] = None, margin: Union[float, "ParamRef"] = None, marginBottom: Union[float, "ParamRef"] = None, marginLeft: Union[float, "ParamRef"] = None, marginRight: Union[float, "ParamRef"] = None, marginTop: Union[float, "ParamRef"] = None, marker: Union["MarkerName", str, bool, Any, "ParamRef"] = None, markerEnd: Union["MarkerName", str, bool, Any, "ParamRef"] = None, markerMid: Union["MarkerName", str, bool, Any, "ParamRef"] = None, markerStart: Union["MarkerName", str, bool, Any, "ParamRef"] = None, mixBlendMode: Union[str, "ParamRef"] = None, opacity: "ChannelValueSpec" = None, paintOrder: Union[str, "ParamRef"] = None, pointerEvents: Union[str, "ParamRef"] = None, reverse: Union[bool, "ParamRef"] = None, select: "SelectFilter" = None, shapeRendering: Union[str, "ParamRef"] = None, sort: Union["SortOrder", "ChannelDomainSort"] = None, stroke: Union["ChannelValueSpec", "ParamRef"] = None, strokeDasharray: Union[str, float, "ParamRef"] = None, strokeDashoffset: Union[str, float, "ParamRef"] = None, strokeLinecap: Union[str, "ParamRef"] = None, strokeLinejoin: Union[str, "ParamRef"] = None, strokeMiterlimit: Union[float, "ParamRef"] = None, strokeOpacity: "ChannelValueSpec" = None, strokeWidth: "ChannelValueSpec" = None, target: Union[str, "ParamRef"] = None, tip: Union[bool, "TipPointer", Dict[str, Any], "ParamRef"] = None, title: "ChannelValue" = None, y: "ChannelValueSpec" = None, z: "ChannelValue" = None):
+    def __init__(
+        self,
+        data: "PlotMarkData",
+        mark: str,
+        x: "ChannelValueSpec",
+        ariaDescription: Union[str, "ParamRef"] = None,
+        ariaHidden: Union[str, "ParamRef"] = None,
+        ariaLabel: "ChannelValue" = None,
+        ci: Union[float, "ParamRef"] = None,
+        clip: Union[str, str, bool, Any, "ParamRef"] = None,
+        dx: Union[float, "ParamRef"] = None,
+        dy: Union[float, "ParamRef"] = None,
+        facet: Union[str, str, str, str, bool, Any, "ParamRef"] = None,
+        facetAnchor: Union[
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            Any,
+            "ParamRef",
+        ] = None,
+        fill: Union["ChannelValueSpec", "ParamRef"] = None,
+        fillOpacity: Union["ChannelValueSpec", "ParamRef"] = None,
+        filter: "ChannelValue" = None,
+        fx: "ChannelValue" = None,
+        fy: "ChannelValue" = None,
+        href: "ChannelValue" = None,
+        imageFilter: Union[str, "ParamRef"] = None,
+        margin: Union[float, "ParamRef"] = None,
+        marginBottom: Union[float, "ParamRef"] = None,
+        marginLeft: Union[float, "ParamRef"] = None,
+        marginRight: Union[float, "ParamRef"] = None,
+        marginTop: Union[float, "ParamRef"] = None,
+        marker: Union["MarkerName", str, bool, Any, "ParamRef"] = None,
+        markerEnd: Union["MarkerName", str, bool, Any, "ParamRef"] = None,
+        markerMid: Union["MarkerName", str, bool, Any, "ParamRef"] = None,
+        markerStart: Union["MarkerName", str, bool, Any, "ParamRef"] = None,
+        mixBlendMode: Union[str, "ParamRef"] = None,
+        opacity: "ChannelValueSpec" = None,
+        paintOrder: Union[str, "ParamRef"] = None,
+        pointerEvents: Union[str, "ParamRef"] = None,
+        reverse: Union[bool, "ParamRef"] = None,
+        select: "SelectFilter" = None,
+        shapeRendering: Union[str, "ParamRef"] = None,
+        sort: Union["SortOrder", "ChannelDomainSort"] = None,
+        stroke: Union["ChannelValueSpec", "ParamRef"] = None,
+        strokeDasharray: Union[str, float, "ParamRef"] = None,
+        strokeDashoffset: Union[str, float, "ParamRef"] = None,
+        strokeLinecap: Union[str, "ParamRef"] = None,
+        strokeLinejoin: Union[str, "ParamRef"] = None,
+        strokeMiterlimit: Union[float, "ParamRef"] = None,
+        strokeOpacity: "ChannelValueSpec" = None,
+        strokeWidth: "ChannelValueSpec" = None,
+        target: Union[str, "ParamRef"] = None,
+        tip: Union[bool, "TipPointer", Dict[str, Any], "ParamRef"] = None,
+        title: "ChannelValue" = None,
+        y: "ChannelValueSpec" = None,
+        z: "ChannelValue" = None,
+    ):
         self.ariaDescription = ariaDescription
         self.ariaHidden = ariaHidden
         self.ariaLabel = ariaLabel
@@ -2899,7 +6071,74 @@ class ErrorBarX(SchemaBase):
 
 
 class ErrorBarY(SchemaBase):
-    def __init__(self, data: "PlotMarkData", mark: str, y: "ChannelValueSpec", ariaDescription: Union[str, "ParamRef"] = None, ariaHidden: Union[str, "ParamRef"] = None, ariaLabel: "ChannelValue" = None, ci: Union[float, "ParamRef"] = None, clip: Union[str, str, bool, Any, "ParamRef"] = None, dx: Union[float, "ParamRef"] = None, dy: Union[float, "ParamRef"] = None, facet: Union[str, str, str, str, bool, Any, "ParamRef"] = None, facetAnchor: Union[str, str, str, str, str, str, str, str, str, str, str, str, str, Any, "ParamRef"] = None, fill: Union["ChannelValueSpec", "ParamRef"] = None, fillOpacity: Union["ChannelValueSpec", "ParamRef"] = None, filter: "ChannelValue" = None, fx: "ChannelValue" = None, fy: "ChannelValue" = None, href: "ChannelValue" = None, imageFilter: Union[str, "ParamRef"] = None, margin: Union[float, "ParamRef"] = None, marginBottom: Union[float, "ParamRef"] = None, marginLeft: Union[float, "ParamRef"] = None, marginRight: Union[float, "ParamRef"] = None, marginTop: Union[float, "ParamRef"] = None, marker: Union["MarkerName", str, bool, Any, "ParamRef"] = None, markerEnd: Union["MarkerName", str, bool, Any, "ParamRef"] = None, markerMid: Union["MarkerName", str, bool, Any, "ParamRef"] = None, markerStart: Union["MarkerName", str, bool, Any, "ParamRef"] = None, mixBlendMode: Union[str, "ParamRef"] = None, opacity: "ChannelValueSpec" = None, paintOrder: Union[str, "ParamRef"] = None, pointerEvents: Union[str, "ParamRef"] = None, reverse: Union[bool, "ParamRef"] = None, select: "SelectFilter" = None, shapeRendering: Union[str, "ParamRef"] = None, sort: Union["SortOrder", "ChannelDomainSort"] = None, stroke: Union["ChannelValueSpec", "ParamRef"] = None, strokeDasharray: Union[str, float, "ParamRef"] = None, strokeDashoffset: Union[str, float, "ParamRef"] = None, strokeLinecap: Union[str, "ParamRef"] = None, strokeLinejoin: Union[str, "ParamRef"] = None, strokeMiterlimit: Union[float, "ParamRef"] = None, strokeOpacity: "ChannelValueSpec" = None, strokeWidth: "ChannelValueSpec" = None, target: Union[str, "ParamRef"] = None, tip: Union[bool, "TipPointer", Dict[str, Any], "ParamRef"] = None, title: "ChannelValue" = None, x: "ChannelValueSpec" = None, z: "ChannelValue" = None):
+    def __init__(
+        self,
+        data: "PlotMarkData",
+        mark: str,
+        y: "ChannelValueSpec",
+        ariaDescription: Union[str, "ParamRef"] = None,
+        ariaHidden: Union[str, "ParamRef"] = None,
+        ariaLabel: "ChannelValue" = None,
+        ci: Union[float, "ParamRef"] = None,
+        clip: Union[str, str, bool, Any, "ParamRef"] = None,
+        dx: Union[float, "ParamRef"] = None,
+        dy: Union[float, "ParamRef"] = None,
+        facet: Union[str, str, str, str, bool, Any, "ParamRef"] = None,
+        facetAnchor: Union[
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            Any,
+            "ParamRef",
+        ] = None,
+        fill: Union["ChannelValueSpec", "ParamRef"] = None,
+        fillOpacity: Union["ChannelValueSpec", "ParamRef"] = None,
+        filter: "ChannelValue" = None,
+        fx: "ChannelValue" = None,
+        fy: "ChannelValue" = None,
+        href: "ChannelValue" = None,
+        imageFilter: Union[str, "ParamRef"] = None,
+        margin: Union[float, "ParamRef"] = None,
+        marginBottom: Union[float, "ParamRef"] = None,
+        marginLeft: Union[float, "ParamRef"] = None,
+        marginRight: Union[float, "ParamRef"] = None,
+        marginTop: Union[float, "ParamRef"] = None,
+        marker: Union["MarkerName", str, bool, Any, "ParamRef"] = None,
+        markerEnd: Union["MarkerName", str, bool, Any, "ParamRef"] = None,
+        markerMid: Union["MarkerName", str, bool, Any, "ParamRef"] = None,
+        markerStart: Union["MarkerName", str, bool, Any, "ParamRef"] = None,
+        mixBlendMode: Union[str, "ParamRef"] = None,
+        opacity: "ChannelValueSpec" = None,
+        paintOrder: Union[str, "ParamRef"] = None,
+        pointerEvents: Union[str, "ParamRef"] = None,
+        reverse: Union[bool, "ParamRef"] = None,
+        select: "SelectFilter" = None,
+        shapeRendering: Union[str, "ParamRef"] = None,
+        sort: Union["SortOrder", "ChannelDomainSort"] = None,
+        stroke: Union["ChannelValueSpec", "ParamRef"] = None,
+        strokeDasharray: Union[str, float, "ParamRef"] = None,
+        strokeDashoffset: Union[str, float, "ParamRef"] = None,
+        strokeLinecap: Union[str, "ParamRef"] = None,
+        strokeLinejoin: Union[str, "ParamRef"] = None,
+        strokeMiterlimit: Union[float, "ParamRef"] = None,
+        strokeOpacity: "ChannelValueSpec" = None,
+        strokeWidth: "ChannelValueSpec" = None,
+        target: Union[str, "ParamRef"] = None,
+        tip: Union[bool, "TipPointer", Dict[str, Any], "ParamRef"] = None,
+        title: "ChannelValue" = None,
+        x: "ChannelValueSpec" = None,
+        z: "ChannelValue" = None,
+    ):
         self.ariaDescription = ariaDescription
         self.ariaHidden = ariaHidden
         self.ariaLabel = ariaLabel
@@ -2952,7 +6191,73 @@ class ErrorBarY(SchemaBase):
 
 
 class Frame(SchemaBase):
-    def __init__(self, mark: str, anchor: Union[str, str, str, str, Any, "ParamRef"] = None, ariaDescription: Union[str, "ParamRef"] = None, ariaHidden: Union[str, "ParamRef"] = None, ariaLabel: "ChannelValue" = None, clip: Union[str, str, bool, Any, "ParamRef"] = None, dx: Union[float, "ParamRef"] = None, dy: Union[float, "ParamRef"] = None, facet: Union[str, str, str, str, bool, Any, "ParamRef"] = None, facetAnchor: Union[str, str, str, str, str, str, str, str, str, str, str, str, str, Any, "ParamRef"] = None, fill: Union["ChannelValueSpec", "ParamRef"] = None, fillOpacity: Union["ChannelValueSpec", "ParamRef"] = None, filter: "ChannelValue" = None, fx: "ChannelValue" = None, fy: "ChannelValue" = None, href: "ChannelValue" = None, imageFilter: Union[str, "ParamRef"] = None, inset: Union[float, "ParamRef"] = None, insetBottom: Union[float, "ParamRef"] = None, insetLeft: Union[float, "ParamRef"] = None, insetRight: Union[float, "ParamRef"] = None, insetTop: Union[float, "ParamRef"] = None, margin: Union[float, "ParamRef"] = None, marginBottom: Union[float, "ParamRef"] = None, marginLeft: Union[float, "ParamRef"] = None, marginRight: Union[float, "ParamRef"] = None, marginTop: Union[float, "ParamRef"] = None, mixBlendMode: Union[str, "ParamRef"] = None, opacity: "ChannelValueSpec" = None, paintOrder: Union[str, "ParamRef"] = None, pointerEvents: Union[str, "ParamRef"] = None, reverse: Union[bool, "ParamRef"] = None, rx: Union[float, str, "ParamRef"] = None, ry: Union[float, str, "ParamRef"] = None, select: "SelectFilter" = None, shapeRendering: Union[str, "ParamRef"] = None, sort: Union["SortOrder", "ChannelDomainSort"] = None, stroke: Union["ChannelValueSpec", "ParamRef"] = None, strokeDasharray: Union[str, float, "ParamRef"] = None, strokeDashoffset: Union[str, float, "ParamRef"] = None, strokeLinecap: Union[str, "ParamRef"] = None, strokeLinejoin: Union[str, "ParamRef"] = None, strokeMiterlimit: Union[float, "ParamRef"] = None, strokeOpacity: "ChannelValueSpec" = None, strokeWidth: "ChannelValueSpec" = None, target: Union[str, "ParamRef"] = None, tip: Union[bool, "TipPointer", Dict[str, Any], "ParamRef"] = None, title: "ChannelValue" = None):
+    def __init__(
+        self,
+        mark: str,
+        anchor: Union[str, str, str, str, Any, "ParamRef"] = None,
+        ariaDescription: Union[str, "ParamRef"] = None,
+        ariaHidden: Union[str, "ParamRef"] = None,
+        ariaLabel: "ChannelValue" = None,
+        clip: Union[str, str, bool, Any, "ParamRef"] = None,
+        dx: Union[float, "ParamRef"] = None,
+        dy: Union[float, "ParamRef"] = None,
+        facet: Union[str, str, str, str, bool, Any, "ParamRef"] = None,
+        facetAnchor: Union[
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            Any,
+            "ParamRef",
+        ] = None,
+        fill: Union["ChannelValueSpec", "ParamRef"] = None,
+        fillOpacity: Union["ChannelValueSpec", "ParamRef"] = None,
+        filter: "ChannelValue" = None,
+        fx: "ChannelValue" = None,
+        fy: "ChannelValue" = None,
+        href: "ChannelValue" = None,
+        imageFilter: Union[str, "ParamRef"] = None,
+        inset: Union[float, "ParamRef"] = None,
+        insetBottom: Union[float, "ParamRef"] = None,
+        insetLeft: Union[float, "ParamRef"] = None,
+        insetRight: Union[float, "ParamRef"] = None,
+        insetTop: Union[float, "ParamRef"] = None,
+        margin: Union[float, "ParamRef"] = None,
+        marginBottom: Union[float, "ParamRef"] = None,
+        marginLeft: Union[float, "ParamRef"] = None,
+        marginRight: Union[float, "ParamRef"] = None,
+        marginTop: Union[float, "ParamRef"] = None,
+        mixBlendMode: Union[str, "ParamRef"] = None,
+        opacity: "ChannelValueSpec" = None,
+        paintOrder: Union[str, "ParamRef"] = None,
+        pointerEvents: Union[str, "ParamRef"] = None,
+        reverse: Union[bool, "ParamRef"] = None,
+        rx: Union[float, str, "ParamRef"] = None,
+        ry: Union[float, str, "ParamRef"] = None,
+        select: "SelectFilter" = None,
+        shapeRendering: Union[str, "ParamRef"] = None,
+        sort: Union["SortOrder", "ChannelDomainSort"] = None,
+        stroke: Union["ChannelValueSpec", "ParamRef"] = None,
+        strokeDasharray: Union[str, float, "ParamRef"] = None,
+        strokeDashoffset: Union[str, float, "ParamRef"] = None,
+        strokeLinecap: Union[str, "ParamRef"] = None,
+        strokeLinejoin: Union[str, "ParamRef"] = None,
+        strokeMiterlimit: Union[float, "ParamRef"] = None,
+        strokeOpacity: "ChannelValueSpec" = None,
+        strokeWidth: "ChannelValueSpec" = None,
+        target: Union[str, "ParamRef"] = None,
+        tip: Union[bool, "TipPointer", Dict[str, Any], "ParamRef"] = None,
+        title: "ChannelValue" = None,
+    ):
         self.anchor = anchor
         self.ariaDescription = ariaDescription
         self.ariaHidden = ariaHidden
@@ -3004,7 +6309,68 @@ class Frame(SchemaBase):
 
 
 class Geo(SchemaBase):
-    def __init__(self, data: "PlotMarkData", mark: str, ariaDescription: Union[str, "ParamRef"] = None, ariaHidden: Union[str, "ParamRef"] = None, ariaLabel: "ChannelValue" = None, clip: Union[str, str, bool, Any, "ParamRef"] = None, dx: Union[float, "ParamRef"] = None, dy: Union[float, "ParamRef"] = None, facet: Union[str, str, str, str, bool, Any, "ParamRef"] = None, facetAnchor: Union[str, str, str, str, str, str, str, str, str, str, str, str, str, Any, "ParamRef"] = None, fill: Union["ChannelValueSpec", "ParamRef"] = None, fillOpacity: Union["ChannelValueSpec", "ParamRef"] = None, filter: "ChannelValue" = None, fx: "ChannelValue" = None, fy: "ChannelValue" = None, geometry: "ChannelValue" = None, href: "ChannelValue" = None, imageFilter: Union[str, "ParamRef"] = None, margin: Union[float, "ParamRef"] = None, marginBottom: Union[float, "ParamRef"] = None, marginLeft: Union[float, "ParamRef"] = None, marginRight: Union[float, "ParamRef"] = None, marginTop: Union[float, "ParamRef"] = None, mixBlendMode: Union[str, "ParamRef"] = None, opacity: "ChannelValueSpec" = None, paintOrder: Union[str, "ParamRef"] = None, pointerEvents: Union[str, "ParamRef"] = None, r: Union["ChannelValueSpec", "ParamRef"] = None, reverse: Union[bool, "ParamRef"] = None, select: "SelectFilter" = None, shapeRendering: Union[str, "ParamRef"] = None, sort: Union["SortOrder", "ChannelDomainSort"] = None, stroke: Union["ChannelValueSpec", "ParamRef"] = None, strokeDasharray: Union[str, float, "ParamRef"] = None, strokeDashoffset: Union[str, float, "ParamRef"] = None, strokeLinecap: Union[str, "ParamRef"] = None, strokeLinejoin: Union[str, "ParamRef"] = None, strokeMiterlimit: Union[float, "ParamRef"] = None, strokeOpacity: "ChannelValueSpec" = None, strokeWidth: "ChannelValueSpec" = None, target: Union[str, "ParamRef"] = None, tip: Union[bool, "TipPointer", Dict[str, Any], "ParamRef"] = None, title: "ChannelValue" = None):
+    def __init__(
+        self,
+        data: "PlotMarkData",
+        mark: str,
+        ariaDescription: Union[str, "ParamRef"] = None,
+        ariaHidden: Union[str, "ParamRef"] = None,
+        ariaLabel: "ChannelValue" = None,
+        clip: Union[str, str, bool, Any, "ParamRef"] = None,
+        dx: Union[float, "ParamRef"] = None,
+        dy: Union[float, "ParamRef"] = None,
+        facet: Union[str, str, str, str, bool, Any, "ParamRef"] = None,
+        facetAnchor: Union[
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            Any,
+            "ParamRef",
+        ] = None,
+        fill: Union["ChannelValueSpec", "ParamRef"] = None,
+        fillOpacity: Union["ChannelValueSpec", "ParamRef"] = None,
+        filter: "ChannelValue" = None,
+        fx: "ChannelValue" = None,
+        fy: "ChannelValue" = None,
+        geometry: "ChannelValue" = None,
+        href: "ChannelValue" = None,
+        imageFilter: Union[str, "ParamRef"] = None,
+        margin: Union[float, "ParamRef"] = None,
+        marginBottom: Union[float, "ParamRef"] = None,
+        marginLeft: Union[float, "ParamRef"] = None,
+        marginRight: Union[float, "ParamRef"] = None,
+        marginTop: Union[float, "ParamRef"] = None,
+        mixBlendMode: Union[str, "ParamRef"] = None,
+        opacity: "ChannelValueSpec" = None,
+        paintOrder: Union[str, "ParamRef"] = None,
+        pointerEvents: Union[str, "ParamRef"] = None,
+        r: Union["ChannelValueSpec", "ParamRef"] = None,
+        reverse: Union[bool, "ParamRef"] = None,
+        select: "SelectFilter" = None,
+        shapeRendering: Union[str, "ParamRef"] = None,
+        sort: Union["SortOrder", "ChannelDomainSort"] = None,
+        stroke: Union["ChannelValueSpec", "ParamRef"] = None,
+        strokeDasharray: Union[str, float, "ParamRef"] = None,
+        strokeDashoffset: Union[str, float, "ParamRef"] = None,
+        strokeLinecap: Union[str, "ParamRef"] = None,
+        strokeLinejoin: Union[str, "ParamRef"] = None,
+        strokeMiterlimit: Union[float, "ParamRef"] = None,
+        strokeOpacity: "ChannelValueSpec" = None,
+        strokeWidth: "ChannelValueSpec" = None,
+        target: Union[str, "ParamRef"] = None,
+        tip: Union[bool, "TipPointer", Dict[str, Any], "ParamRef"] = None,
+        title: "ChannelValue" = None,
+    ):
         self.ariaDescription = ariaDescription
         self.ariaHidden = ariaHidden
         self.ariaLabel = ariaLabel
@@ -3051,7 +6417,65 @@ class Geo(SchemaBase):
 
 
 class Graticule(SchemaBase):
-    def __init__(self, mark: str, ariaDescription: Union[str, "ParamRef"] = None, ariaHidden: Union[str, "ParamRef"] = None, ariaLabel: "ChannelValue" = None, clip: Union[str, str, bool, Any, "ParamRef"] = None, dx: Union[float, "ParamRef"] = None, dy: Union[float, "ParamRef"] = None, facet: Union[str, str, str, str, bool, Any, "ParamRef"] = None, facetAnchor: Union[str, str, str, str, str, str, str, str, str, str, str, str, str, Any, "ParamRef"] = None, fill: Union["ChannelValueSpec", "ParamRef"] = None, fillOpacity: Union["ChannelValueSpec", "ParamRef"] = None, filter: "ChannelValue" = None, fx: "ChannelValue" = None, fy: "ChannelValue" = None, href: "ChannelValue" = None, imageFilter: Union[str, "ParamRef"] = None, margin: Union[float, "ParamRef"] = None, marginBottom: Union[float, "ParamRef"] = None, marginLeft: Union[float, "ParamRef"] = None, marginRight: Union[float, "ParamRef"] = None, marginTop: Union[float, "ParamRef"] = None, mixBlendMode: Union[str, "ParamRef"] = None, opacity: "ChannelValueSpec" = None, paintOrder: Union[str, "ParamRef"] = None, pointerEvents: Union[str, "ParamRef"] = None, reverse: Union[bool, "ParamRef"] = None, select: "SelectFilter" = None, shapeRendering: Union[str, "ParamRef"] = None, sort: Union["SortOrder", "ChannelDomainSort"] = None, stroke: Union["ChannelValueSpec", "ParamRef"] = None, strokeDasharray: Union[str, float, "ParamRef"] = None, strokeDashoffset: Union[str, float, "ParamRef"] = None, strokeLinecap: Union[str, "ParamRef"] = None, strokeLinejoin: Union[str, "ParamRef"] = None, strokeMiterlimit: Union[float, "ParamRef"] = None, strokeOpacity: "ChannelValueSpec" = None, strokeWidth: "ChannelValueSpec" = None, target: Union[str, "ParamRef"] = None, tip: Union[bool, "TipPointer", Dict[str, Any], "ParamRef"] = None, title: "ChannelValue" = None):
+    def __init__(
+        self,
+        mark: str,
+        ariaDescription: Union[str, "ParamRef"] = None,
+        ariaHidden: Union[str, "ParamRef"] = None,
+        ariaLabel: "ChannelValue" = None,
+        clip: Union[str, str, bool, Any, "ParamRef"] = None,
+        dx: Union[float, "ParamRef"] = None,
+        dy: Union[float, "ParamRef"] = None,
+        facet: Union[str, str, str, str, bool, Any, "ParamRef"] = None,
+        facetAnchor: Union[
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            Any,
+            "ParamRef",
+        ] = None,
+        fill: Union["ChannelValueSpec", "ParamRef"] = None,
+        fillOpacity: Union["ChannelValueSpec", "ParamRef"] = None,
+        filter: "ChannelValue" = None,
+        fx: "ChannelValue" = None,
+        fy: "ChannelValue" = None,
+        href: "ChannelValue" = None,
+        imageFilter: Union[str, "ParamRef"] = None,
+        margin: Union[float, "ParamRef"] = None,
+        marginBottom: Union[float, "ParamRef"] = None,
+        marginLeft: Union[float, "ParamRef"] = None,
+        marginRight: Union[float, "ParamRef"] = None,
+        marginTop: Union[float, "ParamRef"] = None,
+        mixBlendMode: Union[str, "ParamRef"] = None,
+        opacity: "ChannelValueSpec" = None,
+        paintOrder: Union[str, "ParamRef"] = None,
+        pointerEvents: Union[str, "ParamRef"] = None,
+        reverse: Union[bool, "ParamRef"] = None,
+        select: "SelectFilter" = None,
+        shapeRendering: Union[str, "ParamRef"] = None,
+        sort: Union["SortOrder", "ChannelDomainSort"] = None,
+        stroke: Union["ChannelValueSpec", "ParamRef"] = None,
+        strokeDasharray: Union[str, float, "ParamRef"] = None,
+        strokeDashoffset: Union[str, float, "ParamRef"] = None,
+        strokeLinecap: Union[str, "ParamRef"] = None,
+        strokeLinejoin: Union[str, "ParamRef"] = None,
+        strokeMiterlimit: Union[float, "ParamRef"] = None,
+        strokeOpacity: "ChannelValueSpec" = None,
+        strokeWidth: "ChannelValueSpec" = None,
+        target: Union[str, "ParamRef"] = None,
+        tip: Union[bool, "TipPointer", Dict[str, Any], "ParamRef"] = None,
+        title: "ChannelValue" = None,
+    ):
         self.ariaDescription = ariaDescription
         self.ariaHidden = ariaHidden
         self.ariaLabel = ariaLabel
@@ -3095,7 +6519,75 @@ class Graticule(SchemaBase):
 
 
 class Heatmap(SchemaBase):
-    def __init__(self, data: "PlotMarkData", mark: str, ariaDescription: Union[str, "ParamRef"] = None, ariaHidden: Union[str, "ParamRef"] = None, ariaLabel: "ChannelValue" = None, bandwidth: Union[float, "ParamRef"] = None, clip: Union[str, str, bool, Any, "ParamRef"] = None, dx: Union[float, "ParamRef"] = None, dy: Union[float, "ParamRef"] = None, facet: Union[str, str, str, str, bool, Any, "ParamRef"] = None, facetAnchor: Union[str, str, str, str, str, str, str, str, str, str, str, str, str, Any, "ParamRef"] = None, fill: Union["ChannelValueSpec", "ParamRef"] = None, fillOpacity: Union["ChannelValueSpec", "ParamRef"] = None, filter: "ChannelValue" = None, fx: "ChannelValue" = None, fy: "ChannelValue" = None, height: Union[float, "ParamRef"] = None, href: "ChannelValue" = None, imageFilter: Union[str, "ParamRef"] = None, imageRendering: Union[str, "ParamRef"] = None, interpolate: Union["GridInterpolate", Any, "ParamRef"] = None, margin: Union[float, "ParamRef"] = None, marginBottom: Union[float, "ParamRef"] = None, marginLeft: Union[float, "ParamRef"] = None, marginRight: Union[float, "ParamRef"] = None, marginTop: Union[float, "ParamRef"] = None, mixBlendMode: Union[str, "ParamRef"] = None, opacity: "ChannelValueSpec" = None, pad: Union[float, "ParamRef"] = None, paintOrder: Union[str, "ParamRef"] = None, pixelSize: Union[float, "ParamRef"] = None, pointerEvents: Union[str, "ParamRef"] = None, reverse: Union[bool, "ParamRef"] = None, select: "SelectFilter" = None, shapeRendering: Union[str, "ParamRef"] = None, sort: Union["SortOrder", "ChannelDomainSort"] = None, stroke: Union["ChannelValueSpec", "ParamRef"] = None, strokeDasharray: Union[str, float, "ParamRef"] = None, strokeDashoffset: Union[str, float, "ParamRef"] = None, strokeLinecap: Union[str, "ParamRef"] = None, strokeLinejoin: Union[str, "ParamRef"] = None, strokeMiterlimit: Union[float, "ParamRef"] = None, strokeOpacity: "ChannelValueSpec" = None, strokeWidth: "ChannelValueSpec" = None, target: Union[str, "ParamRef"] = None, tip: Union[bool, "TipPointer", Dict[str, Any], "ParamRef"] = None, title: "ChannelValue" = None, width: Union[float, "ParamRef"] = None, x: "ChannelValueSpec" = None, y: "ChannelValueSpec" = None):
+    def __init__(
+        self,
+        data: "PlotMarkData",
+        mark: str,
+        ariaDescription: Union[str, "ParamRef"] = None,
+        ariaHidden: Union[str, "ParamRef"] = None,
+        ariaLabel: "ChannelValue" = None,
+        bandwidth: Union[float, "ParamRef"] = None,
+        clip: Union[str, str, bool, Any, "ParamRef"] = None,
+        dx: Union[float, "ParamRef"] = None,
+        dy: Union[float, "ParamRef"] = None,
+        facet: Union[str, str, str, str, bool, Any, "ParamRef"] = None,
+        facetAnchor: Union[
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            Any,
+            "ParamRef",
+        ] = None,
+        fill: Union["ChannelValueSpec", "ParamRef"] = None,
+        fillOpacity: Union["ChannelValueSpec", "ParamRef"] = None,
+        filter: "ChannelValue" = None,
+        fx: "ChannelValue" = None,
+        fy: "ChannelValue" = None,
+        height: Union[float, "ParamRef"] = None,
+        href: "ChannelValue" = None,
+        imageFilter: Union[str, "ParamRef"] = None,
+        imageRendering: Union[str, "ParamRef"] = None,
+        interpolate: Union["GridInterpolate", Any, "ParamRef"] = None,
+        margin: Union[float, "ParamRef"] = None,
+        marginBottom: Union[float, "ParamRef"] = None,
+        marginLeft: Union[float, "ParamRef"] = None,
+        marginRight: Union[float, "ParamRef"] = None,
+        marginTop: Union[float, "ParamRef"] = None,
+        mixBlendMode: Union[str, "ParamRef"] = None,
+        opacity: "ChannelValueSpec" = None,
+        pad: Union[float, "ParamRef"] = None,
+        paintOrder: Union[str, "ParamRef"] = None,
+        pixelSize: Union[float, "ParamRef"] = None,
+        pointerEvents: Union[str, "ParamRef"] = None,
+        reverse: Union[bool, "ParamRef"] = None,
+        select: "SelectFilter" = None,
+        shapeRendering: Union[str, "ParamRef"] = None,
+        sort: Union["SortOrder", "ChannelDomainSort"] = None,
+        stroke: Union["ChannelValueSpec", "ParamRef"] = None,
+        strokeDasharray: Union[str, float, "ParamRef"] = None,
+        strokeDashoffset: Union[str, float, "ParamRef"] = None,
+        strokeLinecap: Union[str, "ParamRef"] = None,
+        strokeLinejoin: Union[str, "ParamRef"] = None,
+        strokeMiterlimit: Union[float, "ParamRef"] = None,
+        strokeOpacity: "ChannelValueSpec" = None,
+        strokeWidth: "ChannelValueSpec" = None,
+        target: Union[str, "ParamRef"] = None,
+        tip: Union[bool, "TipPointer", Dict[str, Any], "ParamRef"] = None,
+        title: "ChannelValue" = None,
+        width: Union[float, "ParamRef"] = None,
+        x: "ChannelValueSpec" = None,
+        y: "ChannelValueSpec" = None,
+    ):
         self.ariaDescription = ariaDescription
         self.ariaHidden = ariaHidden
         self.ariaLabel = ariaLabel
@@ -3149,7 +6641,73 @@ class Heatmap(SchemaBase):
 
 
 class Hexagon(SchemaBase):
-    def __init__(self, data: "PlotMarkData", mark: str, ariaDescription: Union[str, "ParamRef"] = None, ariaHidden: Union[str, "ParamRef"] = None, ariaLabel: "ChannelValue" = None, clip: Union[str, str, bool, Any, "ParamRef"] = None, dx: Union[float, "ParamRef"] = None, dy: Union[float, "ParamRef"] = None, facet: Union[str, str, str, str, bool, Any, "ParamRef"] = None, facetAnchor: Union[str, str, str, str, str, str, str, str, str, str, str, str, str, Any, "ParamRef"] = None, fill: Union["ChannelValueSpec", "ParamRef"] = None, fillOpacity: Union["ChannelValueSpec", "ParamRef"] = None, filter: "ChannelValue" = None, frameAnchor: Union["FrameAnchor", "ParamRef"] = None, fx: "ChannelValue" = None, fy: "ChannelValue" = None, href: "ChannelValue" = None, imageFilter: Union[str, "ParamRef"] = None, margin: Union[float, "ParamRef"] = None, marginBottom: Union[float, "ParamRef"] = None, marginLeft: Union[float, "ParamRef"] = None, marginRight: Union[float, "ParamRef"] = None, marginTop: Union[float, "ParamRef"] = None, mixBlendMode: Union[str, "ParamRef"] = None, opacity: "ChannelValueSpec" = None, paintOrder: Union[str, "ParamRef"] = None, pointerEvents: Union[str, "ParamRef"] = None, r: Union["ChannelValueSpec", float, "ParamRef"] = None, reverse: Union[bool, "ParamRef"] = None, rotate: Union["ChannelValue", float, "ParamRef"] = None, select: "SelectFilter" = None, shapeRendering: Union[str, "ParamRef"] = None, sort: Union["SortOrder", "ChannelDomainSort"] = None, stroke: Union["ChannelValueSpec", "ParamRef"] = None, strokeDasharray: Union[str, float, "ParamRef"] = None, strokeDashoffset: Union[str, float, "ParamRef"] = None, strokeLinecap: Union[str, "ParamRef"] = None, strokeLinejoin: Union[str, "ParamRef"] = None, strokeMiterlimit: Union[float, "ParamRef"] = None, strokeOpacity: "ChannelValueSpec" = None, strokeWidth: "ChannelValueSpec" = None, symbol: Union["ChannelValueSpec", "SymbolType", "ParamRef"] = None, target: Union[str, "ParamRef"] = None, tip: Union[bool, "TipPointer", Dict[str, Any], "ParamRef"] = None, title: "ChannelValue" = None, x: "ChannelValueSpec" = None, y: "ChannelValueSpec" = None, z: "ChannelValue" = None):
+    def __init__(
+        self,
+        data: "PlotMarkData",
+        mark: str,
+        ariaDescription: Union[str, "ParamRef"] = None,
+        ariaHidden: Union[str, "ParamRef"] = None,
+        ariaLabel: "ChannelValue" = None,
+        clip: Union[str, str, bool, Any, "ParamRef"] = None,
+        dx: Union[float, "ParamRef"] = None,
+        dy: Union[float, "ParamRef"] = None,
+        facet: Union[str, str, str, str, bool, Any, "ParamRef"] = None,
+        facetAnchor: Union[
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            Any,
+            "ParamRef",
+        ] = None,
+        fill: Union["ChannelValueSpec", "ParamRef"] = None,
+        fillOpacity: Union["ChannelValueSpec", "ParamRef"] = None,
+        filter: "ChannelValue" = None,
+        frameAnchor: Union["FrameAnchor", "ParamRef"] = None,
+        fx: "ChannelValue" = None,
+        fy: "ChannelValue" = None,
+        href: "ChannelValue" = None,
+        imageFilter: Union[str, "ParamRef"] = None,
+        margin: Union[float, "ParamRef"] = None,
+        marginBottom: Union[float, "ParamRef"] = None,
+        marginLeft: Union[float, "ParamRef"] = None,
+        marginRight: Union[float, "ParamRef"] = None,
+        marginTop: Union[float, "ParamRef"] = None,
+        mixBlendMode: Union[str, "ParamRef"] = None,
+        opacity: "ChannelValueSpec" = None,
+        paintOrder: Union[str, "ParamRef"] = None,
+        pointerEvents: Union[str, "ParamRef"] = None,
+        r: Union["ChannelValueSpec", float, "ParamRef"] = None,
+        reverse: Union[bool, "ParamRef"] = None,
+        rotate: Union["ChannelValue", float, "ParamRef"] = None,
+        select: "SelectFilter" = None,
+        shapeRendering: Union[str, "ParamRef"] = None,
+        sort: Union["SortOrder", "ChannelDomainSort"] = None,
+        stroke: Union["ChannelValueSpec", "ParamRef"] = None,
+        strokeDasharray: Union[str, float, "ParamRef"] = None,
+        strokeDashoffset: Union[str, float, "ParamRef"] = None,
+        strokeLinecap: Union[str, "ParamRef"] = None,
+        strokeLinejoin: Union[str, "ParamRef"] = None,
+        strokeMiterlimit: Union[float, "ParamRef"] = None,
+        strokeOpacity: "ChannelValueSpec" = None,
+        strokeWidth: "ChannelValueSpec" = None,
+        symbol: Union["ChannelValueSpec", "SymbolType", "ParamRef"] = None,
+        target: Union[str, "ParamRef"] = None,
+        tip: Union[bool, "TipPointer", Dict[str, Any], "ParamRef"] = None,
+        title: "ChannelValue" = None,
+        x: "ChannelValueSpec" = None,
+        y: "ChannelValueSpec" = None,
+        z: "ChannelValue" = None,
+    ):
         self.ariaDescription = ariaDescription
         self.ariaHidden = ariaHidden
         self.ariaLabel = ariaLabel
@@ -3201,7 +6759,85 @@ class Hexagon(SchemaBase):
 
 
 class Hexbin(SchemaBase):
-    def __init__(self, data: "PlotMarkData", mark: str, ariaDescription: Union[str, "ParamRef"] = None, ariaHidden: Union[str, "ParamRef"] = None, ariaLabel: "ChannelValue" = None, binWidth: Union[float, "ParamRef"] = None, clip: Union[str, str, bool, Any, "ParamRef"] = None, dx: Union[float, "ParamRef"] = None, dy: Union[float, "ParamRef"] = None, facet: Union[str, str, str, str, bool, Any, "ParamRef"] = None, facetAnchor: Union[str, str, str, str, str, str, str, str, str, str, str, str, str, Any, "ParamRef"] = None, fill: Union["ChannelValueSpec", "ParamRef"] = None, fillOpacity: Union["ChannelValueSpec", "ParamRef"] = None, filter: "ChannelValue" = None, fontFamily: Union[str, "ParamRef"] = None, fontSize: Union["ChannelValue", "ParamRef"] = None, fontStyle: Union[str, "ParamRef"] = None, fontVariant: Union[str, "ParamRef"] = None, fontWeight: Union[str, float, "ParamRef"] = None, frameAnchor: Union["FrameAnchor", "ParamRef"] = None, fx: "ChannelValue" = None, fy: "ChannelValue" = None, href: "ChannelValue" = None, imageFilter: Union[str, "ParamRef"] = None, lineHeight: Union[float, "ParamRef"] = None, lineWidth: Union[float, "ParamRef"] = None, margin: Union[float, "ParamRef"] = None, marginBottom: Union[float, "ParamRef"] = None, marginLeft: Union[float, "ParamRef"] = None, marginRight: Union[float, "ParamRef"] = None, marginTop: Union[float, "ParamRef"] = None, mixBlendMode: Union[str, "ParamRef"] = None, monospace: Union[bool, "ParamRef"] = None, opacity: "ChannelValueSpec" = None, paintOrder: Union[str, "ParamRef"] = None, pointerEvents: Union[str, "ParamRef"] = None, r: Union["ChannelValueSpec", float, "ParamRef"] = None, reverse: Union[bool, "ParamRef"] = None, rotate: Union["ChannelValue", float, "ParamRef"] = None, select: "SelectFilter" = None, shapeRendering: Union[str, "ParamRef"] = None, sort: Union["SortOrder", "ChannelDomainSort"] = None, stroke: Union["ChannelValueSpec", "ParamRef"] = None, strokeDasharray: Union[str, float, "ParamRef"] = None, strokeDashoffset: Union[str, float, "ParamRef"] = None, strokeLinecap: Union[str, "ParamRef"] = None, strokeLinejoin: Union[str, "ParamRef"] = None, strokeMiterlimit: Union[float, "ParamRef"] = None, strokeOpacity: "ChannelValueSpec" = None, strokeWidth: "ChannelValueSpec" = None, symbol: Union["ChannelValueSpec", "SymbolType", "ParamRef"] = None, target: Union[str, "ParamRef"] = None, textAnchor: Union[str, str, str, "ParamRef"] = None, textOverflow: Union[Any, str, str, str, str, str, str, str, "ParamRef"] = None, tip: Union[bool, "TipPointer", Dict[str, Any], "ParamRef"] = None, title: "ChannelValue" = None, type: Union[str, str, str, str, "ParamRef"] = None, x: "ChannelValueSpec" = None, y: "ChannelValueSpec" = None, z: "ChannelValue" = None):
+    def __init__(
+        self,
+        data: "PlotMarkData",
+        mark: str,
+        ariaDescription: Union[str, "ParamRef"] = None,
+        ariaHidden: Union[str, "ParamRef"] = None,
+        ariaLabel: "ChannelValue" = None,
+        binWidth: Union[float, "ParamRef"] = None,
+        clip: Union[str, str, bool, Any, "ParamRef"] = None,
+        dx: Union[float, "ParamRef"] = None,
+        dy: Union[float, "ParamRef"] = None,
+        facet: Union[str, str, str, str, bool, Any, "ParamRef"] = None,
+        facetAnchor: Union[
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            Any,
+            "ParamRef",
+        ] = None,
+        fill: Union["ChannelValueSpec", "ParamRef"] = None,
+        fillOpacity: Union["ChannelValueSpec", "ParamRef"] = None,
+        filter: "ChannelValue" = None,
+        fontFamily: Union[str, "ParamRef"] = None,
+        fontSize: Union["ChannelValue", "ParamRef"] = None,
+        fontStyle: Union[str, "ParamRef"] = None,
+        fontVariant: Union[str, "ParamRef"] = None,
+        fontWeight: Union[str, float, "ParamRef"] = None,
+        frameAnchor: Union["FrameAnchor", "ParamRef"] = None,
+        fx: "ChannelValue" = None,
+        fy: "ChannelValue" = None,
+        href: "ChannelValue" = None,
+        imageFilter: Union[str, "ParamRef"] = None,
+        lineHeight: Union[float, "ParamRef"] = None,
+        lineWidth: Union[float, "ParamRef"] = None,
+        margin: Union[float, "ParamRef"] = None,
+        marginBottom: Union[float, "ParamRef"] = None,
+        marginLeft: Union[float, "ParamRef"] = None,
+        marginRight: Union[float, "ParamRef"] = None,
+        marginTop: Union[float, "ParamRef"] = None,
+        mixBlendMode: Union[str, "ParamRef"] = None,
+        monospace: Union[bool, "ParamRef"] = None,
+        opacity: "ChannelValueSpec" = None,
+        paintOrder: Union[str, "ParamRef"] = None,
+        pointerEvents: Union[str, "ParamRef"] = None,
+        r: Union["ChannelValueSpec", float, "ParamRef"] = None,
+        reverse: Union[bool, "ParamRef"] = None,
+        rotate: Union["ChannelValue", float, "ParamRef"] = None,
+        select: "SelectFilter" = None,
+        shapeRendering: Union[str, "ParamRef"] = None,
+        sort: Union["SortOrder", "ChannelDomainSort"] = None,
+        stroke: Union["ChannelValueSpec", "ParamRef"] = None,
+        strokeDasharray: Union[str, float, "ParamRef"] = None,
+        strokeDashoffset: Union[str, float, "ParamRef"] = None,
+        strokeLinecap: Union[str, "ParamRef"] = None,
+        strokeLinejoin: Union[str, "ParamRef"] = None,
+        strokeMiterlimit: Union[float, "ParamRef"] = None,
+        strokeOpacity: "ChannelValueSpec" = None,
+        strokeWidth: "ChannelValueSpec" = None,
+        symbol: Union["ChannelValueSpec", "SymbolType", "ParamRef"] = None,
+        target: Union[str, "ParamRef"] = None,
+        textAnchor: Union[str, str, str, "ParamRef"] = None,
+        textOverflow: Union[Any, str, str, str, str, str, str, str, "ParamRef"] = None,
+        tip: Union[bool, "TipPointer", Dict[str, Any], "ParamRef"] = None,
+        title: "ChannelValue" = None,
+        type: Union[str, str, str, str, "ParamRef"] = None,
+        x: "ChannelValueSpec" = None,
+        y: "ChannelValueSpec" = None,
+        z: "ChannelValue" = None,
+    ):
         self.ariaDescription = ariaDescription
         self.ariaHidden = ariaHidden
         self.ariaLabel = ariaLabel
@@ -3265,7 +6901,66 @@ class Hexbin(SchemaBase):
 
 
 class Hexgrid(SchemaBase):
-    def __init__(self, mark: str, ariaDescription: Union[str, "ParamRef"] = None, ariaHidden: Union[str, "ParamRef"] = None, ariaLabel: "ChannelValue" = None, binWidth: Union[float, "ParamRef"] = None, clip: Union[str, str, bool, Any, "ParamRef"] = None, dx: Union[float, "ParamRef"] = None, dy: Union[float, "ParamRef"] = None, facet: Union[str, str, str, str, bool, Any, "ParamRef"] = None, facetAnchor: Union[str, str, str, str, str, str, str, str, str, str, str, str, str, Any, "ParamRef"] = None, fill: Union["ChannelValueSpec", "ParamRef"] = None, fillOpacity: Union["ChannelValueSpec", "ParamRef"] = None, filter: "ChannelValue" = None, fx: "ChannelValue" = None, fy: "ChannelValue" = None, href: "ChannelValue" = None, imageFilter: Union[str, "ParamRef"] = None, margin: Union[float, "ParamRef"] = None, marginBottom: Union[float, "ParamRef"] = None, marginLeft: Union[float, "ParamRef"] = None, marginRight: Union[float, "ParamRef"] = None, marginTop: Union[float, "ParamRef"] = None, mixBlendMode: Union[str, "ParamRef"] = None, opacity: "ChannelValueSpec" = None, paintOrder: Union[str, "ParamRef"] = None, pointerEvents: Union[str, "ParamRef"] = None, reverse: Union[bool, "ParamRef"] = None, select: "SelectFilter" = None, shapeRendering: Union[str, "ParamRef"] = None, sort: Union["SortOrder", "ChannelDomainSort"] = None, stroke: Union["ChannelValueSpec", "ParamRef"] = None, strokeDasharray: Union[str, float, "ParamRef"] = None, strokeDashoffset: Union[str, float, "ParamRef"] = None, strokeLinecap: Union[str, "ParamRef"] = None, strokeLinejoin: Union[str, "ParamRef"] = None, strokeMiterlimit: Union[float, "ParamRef"] = None, strokeOpacity: "ChannelValueSpec" = None, strokeWidth: "ChannelValueSpec" = None, target: Union[str, "ParamRef"] = None, tip: Union[bool, "TipPointer", Dict[str, Any], "ParamRef"] = None, title: "ChannelValue" = None):
+    def __init__(
+        self,
+        mark: str,
+        ariaDescription: Union[str, "ParamRef"] = None,
+        ariaHidden: Union[str, "ParamRef"] = None,
+        ariaLabel: "ChannelValue" = None,
+        binWidth: Union[float, "ParamRef"] = None,
+        clip: Union[str, str, bool, Any, "ParamRef"] = None,
+        dx: Union[float, "ParamRef"] = None,
+        dy: Union[float, "ParamRef"] = None,
+        facet: Union[str, str, str, str, bool, Any, "ParamRef"] = None,
+        facetAnchor: Union[
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            Any,
+            "ParamRef",
+        ] = None,
+        fill: Union["ChannelValueSpec", "ParamRef"] = None,
+        fillOpacity: Union["ChannelValueSpec", "ParamRef"] = None,
+        filter: "ChannelValue" = None,
+        fx: "ChannelValue" = None,
+        fy: "ChannelValue" = None,
+        href: "ChannelValue" = None,
+        imageFilter: Union[str, "ParamRef"] = None,
+        margin: Union[float, "ParamRef"] = None,
+        marginBottom: Union[float, "ParamRef"] = None,
+        marginLeft: Union[float, "ParamRef"] = None,
+        marginRight: Union[float, "ParamRef"] = None,
+        marginTop: Union[float, "ParamRef"] = None,
+        mixBlendMode: Union[str, "ParamRef"] = None,
+        opacity: "ChannelValueSpec" = None,
+        paintOrder: Union[str, "ParamRef"] = None,
+        pointerEvents: Union[str, "ParamRef"] = None,
+        reverse: Union[bool, "ParamRef"] = None,
+        select: "SelectFilter" = None,
+        shapeRendering: Union[str, "ParamRef"] = None,
+        sort: Union["SortOrder", "ChannelDomainSort"] = None,
+        stroke: Union["ChannelValueSpec", "ParamRef"] = None,
+        strokeDasharray: Union[str, float, "ParamRef"] = None,
+        strokeDashoffset: Union[str, float, "ParamRef"] = None,
+        strokeLinecap: Union[str, "ParamRef"] = None,
+        strokeLinejoin: Union[str, "ParamRef"] = None,
+        strokeMiterlimit: Union[float, "ParamRef"] = None,
+        strokeOpacity: "ChannelValueSpec" = None,
+        strokeWidth: "ChannelValueSpec" = None,
+        target: Union[str, "ParamRef"] = None,
+        tip: Union[bool, "TipPointer", Dict[str, Any], "ParamRef"] = None,
+        title: "ChannelValue" = None,
+    ):
         self.ariaDescription = ariaDescription
         self.ariaHidden = ariaHidden
         self.ariaLabel = ariaLabel
@@ -3310,7 +7005,75 @@ class Hexgrid(SchemaBase):
 
 
 class Hull(SchemaBase):
-    def __init__(self, data: "PlotMarkData", mark: str, ariaDescription: Union[str, "ParamRef"] = None, ariaHidden: Union[str, "ParamRef"] = None, ariaLabel: "ChannelValue" = None, clip: Union[str, str, bool, Any, "ParamRef"] = None, curve: Union["Curve", "ParamRef"] = None, dx: Union[float, "ParamRef"] = None, dy: Union[float, "ParamRef"] = None, facet: Union[str, str, str, str, bool, Any, "ParamRef"] = None, facetAnchor: Union[str, str, str, str, str, str, str, str, str, str, str, str, str, Any, "ParamRef"] = None, fill: Union["ChannelValueSpec", "ParamRef"] = None, fillOpacity: Union["ChannelValueSpec", "ParamRef"] = None, filter: "ChannelValue" = None, fx: "ChannelValue" = None, fy: "ChannelValue" = None, href: "ChannelValue" = None, imageFilter: Union[str, "ParamRef"] = None, margin: Union[float, "ParamRef"] = None, marginBottom: Union[float, "ParamRef"] = None, marginLeft: Union[float, "ParamRef"] = None, marginRight: Union[float, "ParamRef"] = None, marginTop: Union[float, "ParamRef"] = None, marker: Union["MarkerName", str, bool, Any, "ParamRef"] = None, markerEnd: Union["MarkerName", str, bool, Any, "ParamRef"] = None, markerMid: Union["MarkerName", str, bool, Any, "ParamRef"] = None, markerStart: Union["MarkerName", str, bool, Any, "ParamRef"] = None, mixBlendMode: Union[str, "ParamRef"] = None, opacity: "ChannelValueSpec" = None, paintOrder: Union[str, "ParamRef"] = None, pointerEvents: Union[str, "ParamRef"] = None, reverse: Union[bool, "ParamRef"] = None, select: "SelectFilter" = None, shapeRendering: Union[str, "ParamRef"] = None, sort: Union["SortOrder", "ChannelDomainSort"] = None, stroke: Union["ChannelValueSpec", "ParamRef"] = None, strokeDasharray: Union[str, float, "ParamRef"] = None, strokeDashoffset: Union[str, float, "ParamRef"] = None, strokeLinecap: Union[str, "ParamRef"] = None, strokeLinejoin: Union[str, "ParamRef"] = None, strokeMiterlimit: Union[float, "ParamRef"] = None, strokeOpacity: "ChannelValueSpec" = None, strokeWidth: "ChannelValueSpec" = None, target: Union[str, "ParamRef"] = None, tension: Union[float, "ParamRef"] = None, tip: Union[bool, "TipPointer", Dict[str, Any], "ParamRef"] = None, title: "ChannelValue" = None, x: "ChannelValueSpec" = None, y: "ChannelValueSpec" = None, z: "ChannelValue" = None):
+    def __init__(
+        self,
+        data: "PlotMarkData",
+        mark: str,
+        ariaDescription: Union[str, "ParamRef"] = None,
+        ariaHidden: Union[str, "ParamRef"] = None,
+        ariaLabel: "ChannelValue" = None,
+        clip: Union[str, str, bool, Any, "ParamRef"] = None,
+        curve: Union["Curve", "ParamRef"] = None,
+        dx: Union[float, "ParamRef"] = None,
+        dy: Union[float, "ParamRef"] = None,
+        facet: Union[str, str, str, str, bool, Any, "ParamRef"] = None,
+        facetAnchor: Union[
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            Any,
+            "ParamRef",
+        ] = None,
+        fill: Union["ChannelValueSpec", "ParamRef"] = None,
+        fillOpacity: Union["ChannelValueSpec", "ParamRef"] = None,
+        filter: "ChannelValue" = None,
+        fx: "ChannelValue" = None,
+        fy: "ChannelValue" = None,
+        href: "ChannelValue" = None,
+        imageFilter: Union[str, "ParamRef"] = None,
+        margin: Union[float, "ParamRef"] = None,
+        marginBottom: Union[float, "ParamRef"] = None,
+        marginLeft: Union[float, "ParamRef"] = None,
+        marginRight: Union[float, "ParamRef"] = None,
+        marginTop: Union[float, "ParamRef"] = None,
+        marker: Union["MarkerName", str, bool, Any, "ParamRef"] = None,
+        markerEnd: Union["MarkerName", str, bool, Any, "ParamRef"] = None,
+        markerMid: Union["MarkerName", str, bool, Any, "ParamRef"] = None,
+        markerStart: Union["MarkerName", str, bool, Any, "ParamRef"] = None,
+        mixBlendMode: Union[str, "ParamRef"] = None,
+        opacity: "ChannelValueSpec" = None,
+        paintOrder: Union[str, "ParamRef"] = None,
+        pointerEvents: Union[str, "ParamRef"] = None,
+        reverse: Union[bool, "ParamRef"] = None,
+        select: "SelectFilter" = None,
+        shapeRendering: Union[str, "ParamRef"] = None,
+        sort: Union["SortOrder", "ChannelDomainSort"] = None,
+        stroke: Union["ChannelValueSpec", "ParamRef"] = None,
+        strokeDasharray: Union[str, float, "ParamRef"] = None,
+        strokeDashoffset: Union[str, float, "ParamRef"] = None,
+        strokeLinecap: Union[str, "ParamRef"] = None,
+        strokeLinejoin: Union[str, "ParamRef"] = None,
+        strokeMiterlimit: Union[float, "ParamRef"] = None,
+        strokeOpacity: "ChannelValueSpec" = None,
+        strokeWidth: "ChannelValueSpec" = None,
+        target: Union[str, "ParamRef"] = None,
+        tension: Union[float, "ParamRef"] = None,
+        tip: Union[bool, "TipPointer", Dict[str, Any], "ParamRef"] = None,
+        title: "ChannelValue" = None,
+        x: "ChannelValueSpec" = None,
+        y: "ChannelValueSpec" = None,
+        z: "ChannelValue" = None,
+    ):
         self.ariaDescription = ariaDescription
         self.ariaHidden = ariaHidden
         self.ariaLabel = ariaLabel
@@ -3364,7 +7127,77 @@ class Hull(SchemaBase):
 
 
 class Image(SchemaBase):
-    def __init__(self, data: "PlotMarkData", mark: str, ariaDescription: Union[str, "ParamRef"] = None, ariaHidden: Union[str, "ParamRef"] = None, ariaLabel: "ChannelValue" = None, clip: Union[str, str, bool, Any, "ParamRef"] = None, crossOrigin: Union[str, "ParamRef"] = None, dx: Union[float, "ParamRef"] = None, dy: Union[float, "ParamRef"] = None, facet: Union[str, str, str, str, bool, Any, "ParamRef"] = None, facetAnchor: Union[str, str, str, str, str, str, str, str, str, str, str, str, str, Any, "ParamRef"] = None, fill: Union["ChannelValueSpec", "ParamRef"] = None, fillOpacity: Union["ChannelValueSpec", "ParamRef"] = None, filter: "ChannelValue" = None, frameAnchor: Union["FrameAnchor", "ParamRef"] = None, fx: "ChannelValue" = None, fy: "ChannelValue" = None, height: Union["ChannelValue", "ParamRef"] = None, href: "ChannelValue" = None, imageFilter: Union[str, "ParamRef"] = None, imageRendering: Union[str, "ParamRef"] = None, margin: Union[float, "ParamRef"] = None, marginBottom: Union[float, "ParamRef"] = None, marginLeft: Union[float, "ParamRef"] = None, marginRight: Union[float, "ParamRef"] = None, marginTop: Union[float, "ParamRef"] = None, mixBlendMode: Union[str, "ParamRef"] = None, opacity: "ChannelValueSpec" = None, paintOrder: Union[str, "ParamRef"] = None, pointerEvents: Union[str, "ParamRef"] = None, preserveAspectRatio: Union[str, "ParamRef"] = None, r: Union["ChannelValue", "ParamRef"] = None, reverse: Union[bool, "ParamRef"] = None, rotate: Union["ChannelValue", "ParamRef"] = None, select: "SelectFilter" = None, shapeRendering: Union[str, "ParamRef"] = None, sort: Union["SortOrder", "ChannelDomainSort"] = None, src: Union["ChannelValue", "ParamRef"] = None, stroke: Union["ChannelValueSpec", "ParamRef"] = None, strokeDasharray: Union[str, float, "ParamRef"] = None, strokeDashoffset: Union[str, float, "ParamRef"] = None, strokeLinecap: Union[str, "ParamRef"] = None, strokeLinejoin: Union[str, "ParamRef"] = None, strokeMiterlimit: Union[float, "ParamRef"] = None, strokeOpacity: "ChannelValueSpec" = None, strokeWidth: "ChannelValueSpec" = None, target: Union[str, "ParamRef"] = None, tip: Union[bool, "TipPointer", Dict[str, Any], "ParamRef"] = None, title: "ChannelValue" = None, width: Union["ChannelValue", "ParamRef"] = None, x: "ChannelValueSpec" = None, y: "ChannelValueSpec" = None):
+    def __init__(
+        self,
+        data: "PlotMarkData",
+        mark: str,
+        ariaDescription: Union[str, "ParamRef"] = None,
+        ariaHidden: Union[str, "ParamRef"] = None,
+        ariaLabel: "ChannelValue" = None,
+        clip: Union[str, str, bool, Any, "ParamRef"] = None,
+        crossOrigin: Union[str, "ParamRef"] = None,
+        dx: Union[float, "ParamRef"] = None,
+        dy: Union[float, "ParamRef"] = None,
+        facet: Union[str, str, str, str, bool, Any, "ParamRef"] = None,
+        facetAnchor: Union[
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            Any,
+            "ParamRef",
+        ] = None,
+        fill: Union["ChannelValueSpec", "ParamRef"] = None,
+        fillOpacity: Union["ChannelValueSpec", "ParamRef"] = None,
+        filter: "ChannelValue" = None,
+        frameAnchor: Union["FrameAnchor", "ParamRef"] = None,
+        fx: "ChannelValue" = None,
+        fy: "ChannelValue" = None,
+        height: Union["ChannelValue", "ParamRef"] = None,
+        href: "ChannelValue" = None,
+        imageFilter: Union[str, "ParamRef"] = None,
+        imageRendering: Union[str, "ParamRef"] = None,
+        margin: Union[float, "ParamRef"] = None,
+        marginBottom: Union[float, "ParamRef"] = None,
+        marginLeft: Union[float, "ParamRef"] = None,
+        marginRight: Union[float, "ParamRef"] = None,
+        marginTop: Union[float, "ParamRef"] = None,
+        mixBlendMode: Union[str, "ParamRef"] = None,
+        opacity: "ChannelValueSpec" = None,
+        paintOrder: Union[str, "ParamRef"] = None,
+        pointerEvents: Union[str, "ParamRef"] = None,
+        preserveAspectRatio: Union[str, "ParamRef"] = None,
+        r: Union["ChannelValue", "ParamRef"] = None,
+        reverse: Union[bool, "ParamRef"] = None,
+        rotate: Union["ChannelValue", "ParamRef"] = None,
+        select: "SelectFilter" = None,
+        shapeRendering: Union[str, "ParamRef"] = None,
+        sort: Union["SortOrder", "ChannelDomainSort"] = None,
+        src: Union["ChannelValue", "ParamRef"] = None,
+        stroke: Union["ChannelValueSpec", "ParamRef"] = None,
+        strokeDasharray: Union[str, float, "ParamRef"] = None,
+        strokeDashoffset: Union[str, float, "ParamRef"] = None,
+        strokeLinecap: Union[str, "ParamRef"] = None,
+        strokeLinejoin: Union[str, "ParamRef"] = None,
+        strokeMiterlimit: Union[float, "ParamRef"] = None,
+        strokeOpacity: "ChannelValueSpec" = None,
+        strokeWidth: "ChannelValueSpec" = None,
+        target: Union[str, "ParamRef"] = None,
+        tip: Union[bool, "TipPointer", Dict[str, Any], "ParamRef"] = None,
+        title: "ChannelValue" = None,
+        width: Union["ChannelValue", "ParamRef"] = None,
+        x: "ChannelValueSpec" = None,
+        y: "ChannelValueSpec" = None,
+    ):
         self.ariaDescription = ariaDescription
         self.ariaHidden = ariaHidden
         self.ariaLabel = ariaLabel
@@ -3420,7 +7253,75 @@ class Image(SchemaBase):
 
 
 class Line(SchemaBase):
-    def __init__(self, data: "PlotMarkData", mark: str, ariaDescription: Union[str, "ParamRef"] = None, ariaHidden: Union[str, "ParamRef"] = None, ariaLabel: "ChannelValue" = None, clip: Union[str, str, bool, Any, "ParamRef"] = None, curve: Union["Curve", str, "ParamRef"] = None, dx: Union[float, "ParamRef"] = None, dy: Union[float, "ParamRef"] = None, facet: Union[str, str, str, str, bool, Any, "ParamRef"] = None, facetAnchor: Union[str, str, str, str, str, str, str, str, str, str, str, str, str, Any, "ParamRef"] = None, fill: Union["ChannelValueSpec", "ParamRef"] = None, fillOpacity: Union["ChannelValueSpec", "ParamRef"] = None, filter: "ChannelValue" = None, fx: "ChannelValue" = None, fy: "ChannelValue" = None, href: "ChannelValue" = None, imageFilter: Union[str, "ParamRef"] = None, margin: Union[float, "ParamRef"] = None, marginBottom: Union[float, "ParamRef"] = None, marginLeft: Union[float, "ParamRef"] = None, marginRight: Union[float, "ParamRef"] = None, marginTop: Union[float, "ParamRef"] = None, marker: Union["MarkerName", str, bool, Any, "ParamRef"] = None, markerEnd: Union["MarkerName", str, bool, Any, "ParamRef"] = None, markerMid: Union["MarkerName", str, bool, Any, "ParamRef"] = None, markerStart: Union["MarkerName", str, bool, Any, "ParamRef"] = None, mixBlendMode: Union[str, "ParamRef"] = None, opacity: "ChannelValueSpec" = None, paintOrder: Union[str, "ParamRef"] = None, pointerEvents: Union[str, "ParamRef"] = None, reverse: Union[bool, "ParamRef"] = None, select: "SelectFilter" = None, shapeRendering: Union[str, "ParamRef"] = None, sort: Union["SortOrder", "ChannelDomainSort"] = None, stroke: Union["ChannelValueSpec", "ParamRef"] = None, strokeDasharray: Union[str, float, "ParamRef"] = None, strokeDashoffset: Union[str, float, "ParamRef"] = None, strokeLinecap: Union[str, "ParamRef"] = None, strokeLinejoin: Union[str, "ParamRef"] = None, strokeMiterlimit: Union[float, "ParamRef"] = None, strokeOpacity: "ChannelValueSpec" = None, strokeWidth: "ChannelValueSpec" = None, target: Union[str, "ParamRef"] = None, tension: Union[float, "ParamRef"] = None, tip: Union[bool, "TipPointer", Dict[str, Any], "ParamRef"] = None, title: "ChannelValue" = None, x: "ChannelValueSpec" = None, y: "ChannelValueSpec" = None, z: "ChannelValue" = None):
+    def __init__(
+        self,
+        data: "PlotMarkData",
+        mark: str,
+        ariaDescription: Union[str, "ParamRef"] = None,
+        ariaHidden: Union[str, "ParamRef"] = None,
+        ariaLabel: "ChannelValue" = None,
+        clip: Union[str, str, bool, Any, "ParamRef"] = None,
+        curve: Union["Curve", str, "ParamRef"] = None,
+        dx: Union[float, "ParamRef"] = None,
+        dy: Union[float, "ParamRef"] = None,
+        facet: Union[str, str, str, str, bool, Any, "ParamRef"] = None,
+        facetAnchor: Union[
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            Any,
+            "ParamRef",
+        ] = None,
+        fill: Union["ChannelValueSpec", "ParamRef"] = None,
+        fillOpacity: Union["ChannelValueSpec", "ParamRef"] = None,
+        filter: "ChannelValue" = None,
+        fx: "ChannelValue" = None,
+        fy: "ChannelValue" = None,
+        href: "ChannelValue" = None,
+        imageFilter: Union[str, "ParamRef"] = None,
+        margin: Union[float, "ParamRef"] = None,
+        marginBottom: Union[float, "ParamRef"] = None,
+        marginLeft: Union[float, "ParamRef"] = None,
+        marginRight: Union[float, "ParamRef"] = None,
+        marginTop: Union[float, "ParamRef"] = None,
+        marker: Union["MarkerName", str, bool, Any, "ParamRef"] = None,
+        markerEnd: Union["MarkerName", str, bool, Any, "ParamRef"] = None,
+        markerMid: Union["MarkerName", str, bool, Any, "ParamRef"] = None,
+        markerStart: Union["MarkerName", str, bool, Any, "ParamRef"] = None,
+        mixBlendMode: Union[str, "ParamRef"] = None,
+        opacity: "ChannelValueSpec" = None,
+        paintOrder: Union[str, "ParamRef"] = None,
+        pointerEvents: Union[str, "ParamRef"] = None,
+        reverse: Union[bool, "ParamRef"] = None,
+        select: "SelectFilter" = None,
+        shapeRendering: Union[str, "ParamRef"] = None,
+        sort: Union["SortOrder", "ChannelDomainSort"] = None,
+        stroke: Union["ChannelValueSpec", "ParamRef"] = None,
+        strokeDasharray: Union[str, float, "ParamRef"] = None,
+        strokeDashoffset: Union[str, float, "ParamRef"] = None,
+        strokeLinecap: Union[str, "ParamRef"] = None,
+        strokeLinejoin: Union[str, "ParamRef"] = None,
+        strokeMiterlimit: Union[float, "ParamRef"] = None,
+        strokeOpacity: "ChannelValueSpec" = None,
+        strokeWidth: "ChannelValueSpec" = None,
+        target: Union[str, "ParamRef"] = None,
+        tension: Union[float, "ParamRef"] = None,
+        tip: Union[bool, "TipPointer", Dict[str, Any], "ParamRef"] = None,
+        title: "ChannelValue" = None,
+        x: "ChannelValueSpec" = None,
+        y: "ChannelValueSpec" = None,
+        z: "ChannelValue" = None,
+    ):
         self.ariaDescription = ariaDescription
         self.ariaHidden = ariaHidden
         self.ariaLabel = ariaLabel
@@ -3474,7 +7375,75 @@ class Line(SchemaBase):
 
 
 class LineX(SchemaBase):
-    def __init__(self, data: "PlotMarkData", mark: str, ariaDescription: Union[str, "ParamRef"] = None, ariaHidden: Union[str, "ParamRef"] = None, ariaLabel: "ChannelValue" = None, clip: Union[str, str, bool, Any, "ParamRef"] = None, curve: Union["Curve", str, "ParamRef"] = None, dx: Union[float, "ParamRef"] = None, dy: Union[float, "ParamRef"] = None, facet: Union[str, str, str, str, bool, Any, "ParamRef"] = None, facetAnchor: Union[str, str, str, str, str, str, str, str, str, str, str, str, str, Any, "ParamRef"] = None, fill: Union["ChannelValueSpec", "ParamRef"] = None, fillOpacity: Union["ChannelValueSpec", "ParamRef"] = None, filter: "ChannelValue" = None, fx: "ChannelValue" = None, fy: "ChannelValue" = None, href: "ChannelValue" = None, imageFilter: Union[str, "ParamRef"] = None, margin: Union[float, "ParamRef"] = None, marginBottom: Union[float, "ParamRef"] = None, marginLeft: Union[float, "ParamRef"] = None, marginRight: Union[float, "ParamRef"] = None, marginTop: Union[float, "ParamRef"] = None, marker: Union["MarkerName", str, bool, Any, "ParamRef"] = None, markerEnd: Union["MarkerName", str, bool, Any, "ParamRef"] = None, markerMid: Union["MarkerName", str, bool, Any, "ParamRef"] = None, markerStart: Union["MarkerName", str, bool, Any, "ParamRef"] = None, mixBlendMode: Union[str, "ParamRef"] = None, opacity: "ChannelValueSpec" = None, paintOrder: Union[str, "ParamRef"] = None, pointerEvents: Union[str, "ParamRef"] = None, reverse: Union[bool, "ParamRef"] = None, select: "SelectFilter" = None, shapeRendering: Union[str, "ParamRef"] = None, sort: Union["SortOrder", "ChannelDomainSort"] = None, stroke: Union["ChannelValueSpec", "ParamRef"] = None, strokeDasharray: Union[str, float, "ParamRef"] = None, strokeDashoffset: Union[str, float, "ParamRef"] = None, strokeLinecap: Union[str, "ParamRef"] = None, strokeLinejoin: Union[str, "ParamRef"] = None, strokeMiterlimit: Union[float, "ParamRef"] = None, strokeOpacity: "ChannelValueSpec" = None, strokeWidth: "ChannelValueSpec" = None, target: Union[str, "ParamRef"] = None, tension: Union[float, "ParamRef"] = None, tip: Union[bool, "TipPointer", Dict[str, Any], "ParamRef"] = None, title: "ChannelValue" = None, x: "ChannelValueSpec" = None, y: "ChannelValueSpec" = None, z: "ChannelValue" = None):
+    def __init__(
+        self,
+        data: "PlotMarkData",
+        mark: str,
+        ariaDescription: Union[str, "ParamRef"] = None,
+        ariaHidden: Union[str, "ParamRef"] = None,
+        ariaLabel: "ChannelValue" = None,
+        clip: Union[str, str, bool, Any, "ParamRef"] = None,
+        curve: Union["Curve", str, "ParamRef"] = None,
+        dx: Union[float, "ParamRef"] = None,
+        dy: Union[float, "ParamRef"] = None,
+        facet: Union[str, str, str, str, bool, Any, "ParamRef"] = None,
+        facetAnchor: Union[
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            Any,
+            "ParamRef",
+        ] = None,
+        fill: Union["ChannelValueSpec", "ParamRef"] = None,
+        fillOpacity: Union["ChannelValueSpec", "ParamRef"] = None,
+        filter: "ChannelValue" = None,
+        fx: "ChannelValue" = None,
+        fy: "ChannelValue" = None,
+        href: "ChannelValue" = None,
+        imageFilter: Union[str, "ParamRef"] = None,
+        margin: Union[float, "ParamRef"] = None,
+        marginBottom: Union[float, "ParamRef"] = None,
+        marginLeft: Union[float, "ParamRef"] = None,
+        marginRight: Union[float, "ParamRef"] = None,
+        marginTop: Union[float, "ParamRef"] = None,
+        marker: Union["MarkerName", str, bool, Any, "ParamRef"] = None,
+        markerEnd: Union["MarkerName", str, bool, Any, "ParamRef"] = None,
+        markerMid: Union["MarkerName", str, bool, Any, "ParamRef"] = None,
+        markerStart: Union["MarkerName", str, bool, Any, "ParamRef"] = None,
+        mixBlendMode: Union[str, "ParamRef"] = None,
+        opacity: "ChannelValueSpec" = None,
+        paintOrder: Union[str, "ParamRef"] = None,
+        pointerEvents: Union[str, "ParamRef"] = None,
+        reverse: Union[bool, "ParamRef"] = None,
+        select: "SelectFilter" = None,
+        shapeRendering: Union[str, "ParamRef"] = None,
+        sort: Union["SortOrder", "ChannelDomainSort"] = None,
+        stroke: Union["ChannelValueSpec", "ParamRef"] = None,
+        strokeDasharray: Union[str, float, "ParamRef"] = None,
+        strokeDashoffset: Union[str, float, "ParamRef"] = None,
+        strokeLinecap: Union[str, "ParamRef"] = None,
+        strokeLinejoin: Union[str, "ParamRef"] = None,
+        strokeMiterlimit: Union[float, "ParamRef"] = None,
+        strokeOpacity: "ChannelValueSpec" = None,
+        strokeWidth: "ChannelValueSpec" = None,
+        target: Union[str, "ParamRef"] = None,
+        tension: Union[float, "ParamRef"] = None,
+        tip: Union[bool, "TipPointer", Dict[str, Any], "ParamRef"] = None,
+        title: "ChannelValue" = None,
+        x: "ChannelValueSpec" = None,
+        y: "ChannelValueSpec" = None,
+        z: "ChannelValue" = None,
+    ):
         self.ariaDescription = ariaDescription
         self.ariaHidden = ariaHidden
         self.ariaLabel = ariaLabel
@@ -3528,7 +7497,75 @@ class LineX(SchemaBase):
 
 
 class LineY(SchemaBase):
-    def __init__(self, data: "PlotMarkData", mark: str, ariaDescription: Union[str, "ParamRef"] = None, ariaHidden: Union[str, "ParamRef"] = None, ariaLabel: "ChannelValue" = None, clip: Union[str, str, bool, Any, "ParamRef"] = None, curve: Union["Curve", str, "ParamRef"] = None, dx: Union[float, "ParamRef"] = None, dy: Union[float, "ParamRef"] = None, facet: Union[str, str, str, str, bool, Any, "ParamRef"] = None, facetAnchor: Union[str, str, str, str, str, str, str, str, str, str, str, str, str, Any, "ParamRef"] = None, fill: Union["ChannelValueSpec", "ParamRef"] = None, fillOpacity: Union["ChannelValueSpec", "ParamRef"] = None, filter: "ChannelValue" = None, fx: "ChannelValue" = None, fy: "ChannelValue" = None, href: "ChannelValue" = None, imageFilter: Union[str, "ParamRef"] = None, margin: Union[float, "ParamRef"] = None, marginBottom: Union[float, "ParamRef"] = None, marginLeft: Union[float, "ParamRef"] = None, marginRight: Union[float, "ParamRef"] = None, marginTop: Union[float, "ParamRef"] = None, marker: Union["MarkerName", str, bool, Any, "ParamRef"] = None, markerEnd: Union["MarkerName", str, bool, Any, "ParamRef"] = None, markerMid: Union["MarkerName", str, bool, Any, "ParamRef"] = None, markerStart: Union["MarkerName", str, bool, Any, "ParamRef"] = None, mixBlendMode: Union[str, "ParamRef"] = None, opacity: "ChannelValueSpec" = None, paintOrder: Union[str, "ParamRef"] = None, pointerEvents: Union[str, "ParamRef"] = None, reverse: Union[bool, "ParamRef"] = None, select: "SelectFilter" = None, shapeRendering: Union[str, "ParamRef"] = None, sort: Union["SortOrder", "ChannelDomainSort"] = None, stroke: Union["ChannelValueSpec", "ParamRef"] = None, strokeDasharray: Union[str, float, "ParamRef"] = None, strokeDashoffset: Union[str, float, "ParamRef"] = None, strokeLinecap: Union[str, "ParamRef"] = None, strokeLinejoin: Union[str, "ParamRef"] = None, strokeMiterlimit: Union[float, "ParamRef"] = None, strokeOpacity: "ChannelValueSpec" = None, strokeWidth: "ChannelValueSpec" = None, target: Union[str, "ParamRef"] = None, tension: Union[float, "ParamRef"] = None, tip: Union[bool, "TipPointer", Dict[str, Any], "ParamRef"] = None, title: "ChannelValue" = None, x: "ChannelValueSpec" = None, y: "ChannelValueSpec" = None, z: "ChannelValue" = None):
+    def __init__(
+        self,
+        data: "PlotMarkData",
+        mark: str,
+        ariaDescription: Union[str, "ParamRef"] = None,
+        ariaHidden: Union[str, "ParamRef"] = None,
+        ariaLabel: "ChannelValue" = None,
+        clip: Union[str, str, bool, Any, "ParamRef"] = None,
+        curve: Union["Curve", str, "ParamRef"] = None,
+        dx: Union[float, "ParamRef"] = None,
+        dy: Union[float, "ParamRef"] = None,
+        facet: Union[str, str, str, str, bool, Any, "ParamRef"] = None,
+        facetAnchor: Union[
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            Any,
+            "ParamRef",
+        ] = None,
+        fill: Union["ChannelValueSpec", "ParamRef"] = None,
+        fillOpacity: Union["ChannelValueSpec", "ParamRef"] = None,
+        filter: "ChannelValue" = None,
+        fx: "ChannelValue" = None,
+        fy: "ChannelValue" = None,
+        href: "ChannelValue" = None,
+        imageFilter: Union[str, "ParamRef"] = None,
+        margin: Union[float, "ParamRef"] = None,
+        marginBottom: Union[float, "ParamRef"] = None,
+        marginLeft: Union[float, "ParamRef"] = None,
+        marginRight: Union[float, "ParamRef"] = None,
+        marginTop: Union[float, "ParamRef"] = None,
+        marker: Union["MarkerName", str, bool, Any, "ParamRef"] = None,
+        markerEnd: Union["MarkerName", str, bool, Any, "ParamRef"] = None,
+        markerMid: Union["MarkerName", str, bool, Any, "ParamRef"] = None,
+        markerStart: Union["MarkerName", str, bool, Any, "ParamRef"] = None,
+        mixBlendMode: Union[str, "ParamRef"] = None,
+        opacity: "ChannelValueSpec" = None,
+        paintOrder: Union[str, "ParamRef"] = None,
+        pointerEvents: Union[str, "ParamRef"] = None,
+        reverse: Union[bool, "ParamRef"] = None,
+        select: "SelectFilter" = None,
+        shapeRendering: Union[str, "ParamRef"] = None,
+        sort: Union["SortOrder", "ChannelDomainSort"] = None,
+        stroke: Union["ChannelValueSpec", "ParamRef"] = None,
+        strokeDasharray: Union[str, float, "ParamRef"] = None,
+        strokeDashoffset: Union[str, float, "ParamRef"] = None,
+        strokeLinecap: Union[str, "ParamRef"] = None,
+        strokeLinejoin: Union[str, "ParamRef"] = None,
+        strokeMiterlimit: Union[float, "ParamRef"] = None,
+        strokeOpacity: "ChannelValueSpec" = None,
+        strokeWidth: "ChannelValueSpec" = None,
+        target: Union[str, "ParamRef"] = None,
+        tension: Union[float, "ParamRef"] = None,
+        tip: Union[bool, "TipPointer", Dict[str, Any], "ParamRef"] = None,
+        title: "ChannelValue" = None,
+        x: "ChannelValueSpec" = None,
+        y: "ChannelValueSpec" = None,
+        z: "ChannelValue" = None,
+    ):
         self.ariaDescription = ariaDescription
         self.ariaHidden = ariaHidden
         self.ariaLabel = ariaLabel
@@ -3582,7 +7619,78 @@ class LineY(SchemaBase):
 
 
 class Link(SchemaBase):
-    def __init__(self, data: "PlotMarkData", mark: str, ariaDescription: Union[str, "ParamRef"] = None, ariaHidden: Union[str, "ParamRef"] = None, ariaLabel: "ChannelValue" = None, clip: Union[str, str, bool, Any, "ParamRef"] = None, curve: Union[Union["Curve", "ParamRef", str], "ParamRef"] = None, dx: Union[float, "ParamRef"] = None, dy: Union[float, "ParamRef"] = None, facet: Union[str, str, str, str, bool, Any, "ParamRef"] = None, facetAnchor: Union[str, str, str, str, str, str, str, str, str, str, str, str, str, Any, "ParamRef"] = None, fill: Union["ChannelValueSpec", "ParamRef"] = None, fillOpacity: Union["ChannelValueSpec", "ParamRef"] = None, filter: "ChannelValue" = None, fx: "ChannelValue" = None, fy: "ChannelValue" = None, href: "ChannelValue" = None, imageFilter: Union[str, "ParamRef"] = None, margin: Union[float, "ParamRef"] = None, marginBottom: Union[float, "ParamRef"] = None, marginLeft: Union[float, "ParamRef"] = None, marginRight: Union[float, "ParamRef"] = None, marginTop: Union[float, "ParamRef"] = None, marker: Union["MarkerName", str, bool, Any, "ParamRef"] = None, markerEnd: Union["MarkerName", str, bool, Any, "ParamRef"] = None, markerMid: Union["MarkerName", str, bool, Any, "ParamRef"] = None, markerStart: Union["MarkerName", str, bool, Any, "ParamRef"] = None, mixBlendMode: Union[str, "ParamRef"] = None, opacity: "ChannelValueSpec" = None, paintOrder: Union[str, "ParamRef"] = None, pointerEvents: Union[str, "ParamRef"] = None, reverse: Union[bool, "ParamRef"] = None, select: "SelectFilter" = None, shapeRendering: Union[str, "ParamRef"] = None, sort: Union["SortOrder", "ChannelDomainSort"] = None, stroke: Union["ChannelValueSpec", "ParamRef"] = None, strokeDasharray: Union[str, float, "ParamRef"] = None, strokeDashoffset: Union[str, float, "ParamRef"] = None, strokeLinecap: Union[str, "ParamRef"] = None, strokeLinejoin: Union[str, "ParamRef"] = None, strokeMiterlimit: Union[float, "ParamRef"] = None, strokeOpacity: "ChannelValueSpec" = None, strokeWidth: "ChannelValueSpec" = None, target: Union[str, "ParamRef"] = None, tension: Union[float, "ParamRef"] = None, tip: Union[bool, "TipPointer", Dict[str, Any], "ParamRef"] = None, title: "ChannelValue" = None, x: "ChannelValueSpec" = None, x1: "ChannelValueSpec" = None, x2: "ChannelValueSpec" = None, y: "ChannelValueSpec" = None, y1: "ChannelValueSpec" = None, y2: "ChannelValueSpec" = None):
+    def __init__(
+        self,
+        data: "PlotMarkData",
+        mark: str,
+        ariaDescription: Union[str, "ParamRef"] = None,
+        ariaHidden: Union[str, "ParamRef"] = None,
+        ariaLabel: "ChannelValue" = None,
+        clip: Union[str, str, bool, Any, "ParamRef"] = None,
+        curve: Union[Union["Curve", "ParamRef", str], "ParamRef"] = None,
+        dx: Union[float, "ParamRef"] = None,
+        dy: Union[float, "ParamRef"] = None,
+        facet: Union[str, str, str, str, bool, Any, "ParamRef"] = None,
+        facetAnchor: Union[
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            Any,
+            "ParamRef",
+        ] = None,
+        fill: Union["ChannelValueSpec", "ParamRef"] = None,
+        fillOpacity: Union["ChannelValueSpec", "ParamRef"] = None,
+        filter: "ChannelValue" = None,
+        fx: "ChannelValue" = None,
+        fy: "ChannelValue" = None,
+        href: "ChannelValue" = None,
+        imageFilter: Union[str, "ParamRef"] = None,
+        margin: Union[float, "ParamRef"] = None,
+        marginBottom: Union[float, "ParamRef"] = None,
+        marginLeft: Union[float, "ParamRef"] = None,
+        marginRight: Union[float, "ParamRef"] = None,
+        marginTop: Union[float, "ParamRef"] = None,
+        marker: Union["MarkerName", str, bool, Any, "ParamRef"] = None,
+        markerEnd: Union["MarkerName", str, bool, Any, "ParamRef"] = None,
+        markerMid: Union["MarkerName", str, bool, Any, "ParamRef"] = None,
+        markerStart: Union["MarkerName", str, bool, Any, "ParamRef"] = None,
+        mixBlendMode: Union[str, "ParamRef"] = None,
+        opacity: "ChannelValueSpec" = None,
+        paintOrder: Union[str, "ParamRef"] = None,
+        pointerEvents: Union[str, "ParamRef"] = None,
+        reverse: Union[bool, "ParamRef"] = None,
+        select: "SelectFilter" = None,
+        shapeRendering: Union[str, "ParamRef"] = None,
+        sort: Union["SortOrder", "ChannelDomainSort"] = None,
+        stroke: Union["ChannelValueSpec", "ParamRef"] = None,
+        strokeDasharray: Union[str, float, "ParamRef"] = None,
+        strokeDashoffset: Union[str, float, "ParamRef"] = None,
+        strokeLinecap: Union[str, "ParamRef"] = None,
+        strokeLinejoin: Union[str, "ParamRef"] = None,
+        strokeMiterlimit: Union[float, "ParamRef"] = None,
+        strokeOpacity: "ChannelValueSpec" = None,
+        strokeWidth: "ChannelValueSpec" = None,
+        target: Union[str, "ParamRef"] = None,
+        tension: Union[float, "ParamRef"] = None,
+        tip: Union[bool, "TipPointer", Dict[str, Any], "ParamRef"] = None,
+        title: "ChannelValue" = None,
+        x: "ChannelValueSpec" = None,
+        x1: "ChannelValueSpec" = None,
+        x2: "ChannelValueSpec" = None,
+        y: "ChannelValueSpec" = None,
+        y1: "ChannelValueSpec" = None,
+        y2: "ChannelValueSpec" = None,
+    ):
         self.ariaDescription = ariaDescription
         self.ariaHidden = ariaHidden
         self.ariaLabel = ariaLabel
@@ -3639,7 +7747,75 @@ class Link(SchemaBase):
 
 
 class Raster(SchemaBase):
-    def __init__(self, data: "PlotMarkData", mark: str, ariaDescription: Union[str, "ParamRef"] = None, ariaHidden: Union[str, "ParamRef"] = None, ariaLabel: "ChannelValue" = None, bandwidth: Union[float, "ParamRef"] = None, clip: Union[str, str, bool, Any, "ParamRef"] = None, dx: Union[float, "ParamRef"] = None, dy: Union[float, "ParamRef"] = None, facet: Union[str, str, str, str, bool, Any, "ParamRef"] = None, facetAnchor: Union[str, str, str, str, str, str, str, str, str, str, str, str, str, Any, "ParamRef"] = None, fill: Union["ChannelValueSpec", "ParamRef"] = None, fillOpacity: Union["ChannelValueSpec", "ParamRef"] = None, filter: "ChannelValue" = None, fx: "ChannelValue" = None, fy: "ChannelValue" = None, height: Union[float, "ParamRef"] = None, href: "ChannelValue" = None, imageFilter: Union[str, "ParamRef"] = None, imageRendering: Union[str, "ParamRef"] = None, interpolate: Union["GridInterpolate", Any, "ParamRef"] = None, margin: Union[float, "ParamRef"] = None, marginBottom: Union[float, "ParamRef"] = None, marginLeft: Union[float, "ParamRef"] = None, marginRight: Union[float, "ParamRef"] = None, marginTop: Union[float, "ParamRef"] = None, mixBlendMode: Union[str, "ParamRef"] = None, opacity: "ChannelValueSpec" = None, pad: Union[float, "ParamRef"] = None, paintOrder: Union[str, "ParamRef"] = None, pixelSize: Union[float, "ParamRef"] = None, pointerEvents: Union[str, "ParamRef"] = None, reverse: Union[bool, "ParamRef"] = None, select: "SelectFilter" = None, shapeRendering: Union[str, "ParamRef"] = None, sort: Union["SortOrder", "ChannelDomainSort"] = None, stroke: Union["ChannelValueSpec", "ParamRef"] = None, strokeDasharray: Union[str, float, "ParamRef"] = None, strokeDashoffset: Union[str, float, "ParamRef"] = None, strokeLinecap: Union[str, "ParamRef"] = None, strokeLinejoin: Union[str, "ParamRef"] = None, strokeMiterlimit: Union[float, "ParamRef"] = None, strokeOpacity: "ChannelValueSpec" = None, strokeWidth: "ChannelValueSpec" = None, target: Union[str, "ParamRef"] = None, tip: Union[bool, "TipPointer", Dict[str, Any], "ParamRef"] = None, title: "ChannelValue" = None, width: Union[float, "ParamRef"] = None, x: "ChannelValueSpec" = None, y: "ChannelValueSpec" = None):
+    def __init__(
+        self,
+        data: "PlotMarkData",
+        mark: str,
+        ariaDescription: Union[str, "ParamRef"] = None,
+        ariaHidden: Union[str, "ParamRef"] = None,
+        ariaLabel: "ChannelValue" = None,
+        bandwidth: Union[float, "ParamRef"] = None,
+        clip: Union[str, str, bool, Any, "ParamRef"] = None,
+        dx: Union[float, "ParamRef"] = None,
+        dy: Union[float, "ParamRef"] = None,
+        facet: Union[str, str, str, str, bool, Any, "ParamRef"] = None,
+        facetAnchor: Union[
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            Any,
+            "ParamRef",
+        ] = None,
+        fill: Union["ChannelValueSpec", "ParamRef"] = None,
+        fillOpacity: Union["ChannelValueSpec", "ParamRef"] = None,
+        filter: "ChannelValue" = None,
+        fx: "ChannelValue" = None,
+        fy: "ChannelValue" = None,
+        height: Union[float, "ParamRef"] = None,
+        href: "ChannelValue" = None,
+        imageFilter: Union[str, "ParamRef"] = None,
+        imageRendering: Union[str, "ParamRef"] = None,
+        interpolate: Union["GridInterpolate", Any, "ParamRef"] = None,
+        margin: Union[float, "ParamRef"] = None,
+        marginBottom: Union[float, "ParamRef"] = None,
+        marginLeft: Union[float, "ParamRef"] = None,
+        marginRight: Union[float, "ParamRef"] = None,
+        marginTop: Union[float, "ParamRef"] = None,
+        mixBlendMode: Union[str, "ParamRef"] = None,
+        opacity: "ChannelValueSpec" = None,
+        pad: Union[float, "ParamRef"] = None,
+        paintOrder: Union[str, "ParamRef"] = None,
+        pixelSize: Union[float, "ParamRef"] = None,
+        pointerEvents: Union[str, "ParamRef"] = None,
+        reverse: Union[bool, "ParamRef"] = None,
+        select: "SelectFilter" = None,
+        shapeRendering: Union[str, "ParamRef"] = None,
+        sort: Union["SortOrder", "ChannelDomainSort"] = None,
+        stroke: Union["ChannelValueSpec", "ParamRef"] = None,
+        strokeDasharray: Union[str, float, "ParamRef"] = None,
+        strokeDashoffset: Union[str, float, "ParamRef"] = None,
+        strokeLinecap: Union[str, "ParamRef"] = None,
+        strokeLinejoin: Union[str, "ParamRef"] = None,
+        strokeMiterlimit: Union[float, "ParamRef"] = None,
+        strokeOpacity: "ChannelValueSpec" = None,
+        strokeWidth: "ChannelValueSpec" = None,
+        target: Union[str, "ParamRef"] = None,
+        tip: Union[bool, "TipPointer", Dict[str, Any], "ParamRef"] = None,
+        title: "ChannelValue" = None,
+        width: Union[float, "ParamRef"] = None,
+        x: "ChannelValueSpec" = None,
+        y: "ChannelValueSpec" = None,
+    ):
         self.ariaDescription = ariaDescription
         self.ariaHidden = ariaHidden
         self.ariaLabel = ariaLabel
@@ -3693,7 +7869,76 @@ class Raster(SchemaBase):
 
 
 class RasterTile(SchemaBase):
-    def __init__(self, data: "PlotMarkData", mark: str, ariaDescription: Union[str, "ParamRef"] = None, ariaHidden: Union[str, "ParamRef"] = None, ariaLabel: "ChannelValue" = None, bandwidth: Union[float, "ParamRef"] = None, clip: Union[str, str, bool, Any, "ParamRef"] = None, dx: Union[float, "ParamRef"] = None, dy: Union[float, "ParamRef"] = None, facet: Union[str, str, str, str, bool, Any, "ParamRef"] = None, facetAnchor: Union[str, str, str, str, str, str, str, str, str, str, str, str, str, Any, "ParamRef"] = None, fill: Union["ChannelValueSpec", "ParamRef"] = None, fillOpacity: Union["ChannelValueSpec", "ParamRef"] = None, filter: "ChannelValue" = None, fx: "ChannelValue" = None, fy: "ChannelValue" = None, height: Union[float, "ParamRef"] = None, href: "ChannelValue" = None, imageFilter: Union[str, "ParamRef"] = None, imageRendering: Union[str, "ParamRef"] = None, interpolate: Union["GridInterpolate", Any, "ParamRef"] = None, margin: Union[float, "ParamRef"] = None, marginBottom: Union[float, "ParamRef"] = None, marginLeft: Union[float, "ParamRef"] = None, marginRight: Union[float, "ParamRef"] = None, marginTop: Union[float, "ParamRef"] = None, mixBlendMode: Union[str, "ParamRef"] = None, opacity: "ChannelValueSpec" = None, origin: Union[List[float], "ParamRef"] = None, pad: Union[float, "ParamRef"] = None, paintOrder: Union[str, "ParamRef"] = None, pixelSize: Union[float, "ParamRef"] = None, pointerEvents: Union[str, "ParamRef"] = None, reverse: Union[bool, "ParamRef"] = None, select: "SelectFilter" = None, shapeRendering: Union[str, "ParamRef"] = None, sort: Union["SortOrder", "ChannelDomainSort"] = None, stroke: Union["ChannelValueSpec", "ParamRef"] = None, strokeDasharray: Union[str, float, "ParamRef"] = None, strokeDashoffset: Union[str, float, "ParamRef"] = None, strokeLinecap: Union[str, "ParamRef"] = None, strokeLinejoin: Union[str, "ParamRef"] = None, strokeMiterlimit: Union[float, "ParamRef"] = None, strokeOpacity: "ChannelValueSpec" = None, strokeWidth: "ChannelValueSpec" = None, target: Union[str, "ParamRef"] = None, tip: Union[bool, "TipPointer", Dict[str, Any], "ParamRef"] = None, title: "ChannelValue" = None, width: Union[float, "ParamRef"] = None, x: "ChannelValueSpec" = None, y: "ChannelValueSpec" = None):
+    def __init__(
+        self,
+        data: "PlotMarkData",
+        mark: str,
+        ariaDescription: Union[str, "ParamRef"] = None,
+        ariaHidden: Union[str, "ParamRef"] = None,
+        ariaLabel: "ChannelValue" = None,
+        bandwidth: Union[float, "ParamRef"] = None,
+        clip: Union[str, str, bool, Any, "ParamRef"] = None,
+        dx: Union[float, "ParamRef"] = None,
+        dy: Union[float, "ParamRef"] = None,
+        facet: Union[str, str, str, str, bool, Any, "ParamRef"] = None,
+        facetAnchor: Union[
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            Any,
+            "ParamRef",
+        ] = None,
+        fill: Union["ChannelValueSpec", "ParamRef"] = None,
+        fillOpacity: Union["ChannelValueSpec", "ParamRef"] = None,
+        filter: "ChannelValue" = None,
+        fx: "ChannelValue" = None,
+        fy: "ChannelValue" = None,
+        height: Union[float, "ParamRef"] = None,
+        href: "ChannelValue" = None,
+        imageFilter: Union[str, "ParamRef"] = None,
+        imageRendering: Union[str, "ParamRef"] = None,
+        interpolate: Union["GridInterpolate", Any, "ParamRef"] = None,
+        margin: Union[float, "ParamRef"] = None,
+        marginBottom: Union[float, "ParamRef"] = None,
+        marginLeft: Union[float, "ParamRef"] = None,
+        marginRight: Union[float, "ParamRef"] = None,
+        marginTop: Union[float, "ParamRef"] = None,
+        mixBlendMode: Union[str, "ParamRef"] = None,
+        opacity: "ChannelValueSpec" = None,
+        origin: Union[List[float], "ParamRef"] = None,
+        pad: Union[float, "ParamRef"] = None,
+        paintOrder: Union[str, "ParamRef"] = None,
+        pixelSize: Union[float, "ParamRef"] = None,
+        pointerEvents: Union[str, "ParamRef"] = None,
+        reverse: Union[bool, "ParamRef"] = None,
+        select: "SelectFilter" = None,
+        shapeRendering: Union[str, "ParamRef"] = None,
+        sort: Union["SortOrder", "ChannelDomainSort"] = None,
+        stroke: Union["ChannelValueSpec", "ParamRef"] = None,
+        strokeDasharray: Union[str, float, "ParamRef"] = None,
+        strokeDashoffset: Union[str, float, "ParamRef"] = None,
+        strokeLinecap: Union[str, "ParamRef"] = None,
+        strokeLinejoin: Union[str, "ParamRef"] = None,
+        strokeMiterlimit: Union[float, "ParamRef"] = None,
+        strokeOpacity: "ChannelValueSpec" = None,
+        strokeWidth: "ChannelValueSpec" = None,
+        target: Union[str, "ParamRef"] = None,
+        tip: Union[bool, "TipPointer", Dict[str, Any], "ParamRef"] = None,
+        title: "ChannelValue" = None,
+        width: Union[float, "ParamRef"] = None,
+        x: "ChannelValueSpec" = None,
+        y: "ChannelValueSpec" = None,
+    ):
         self.ariaDescription = ariaDescription
         self.ariaHidden = ariaHidden
         self.ariaLabel = ariaLabel
@@ -3748,7 +7993,71 @@ class RasterTile(SchemaBase):
 
 
 class RegressionY(SchemaBase):
-    def __init__(self, data: "PlotMarkData", mark: str, ariaDescription: Union[str, "ParamRef"] = None, ariaHidden: Union[str, "ParamRef"] = None, ariaLabel: "ChannelValue" = None, ci: Union[float, "ParamRef"] = None, clip: Union[str, str, bool, Any, "ParamRef"] = None, dx: Union[float, "ParamRef"] = None, dy: Union[float, "ParamRef"] = None, facet: Union[str, str, str, str, bool, Any, "ParamRef"] = None, facetAnchor: Union[str, str, str, str, str, str, str, str, str, str, str, str, str, Any, "ParamRef"] = None, fill: Union["ChannelValueSpec", "ParamRef"] = None, fillOpacity: Union["ChannelValueSpec", "ParamRef"] = None, filter: "ChannelValue" = None, fx: "ChannelValue" = None, fy: "ChannelValue" = None, href: "ChannelValue" = None, imageFilter: Union[str, "ParamRef"] = None, margin: Union[float, "ParamRef"] = None, marginBottom: Union[float, "ParamRef"] = None, marginLeft: Union[float, "ParamRef"] = None, marginRight: Union[float, "ParamRef"] = None, marginTop: Union[float, "ParamRef"] = None, mixBlendMode: Union[str, "ParamRef"] = None, opacity: "ChannelValueSpec" = None, paintOrder: Union[str, "ParamRef"] = None, pointerEvents: Union[str, "ParamRef"] = None, precision: Union[float, "ParamRef"] = None, reverse: Union[bool, "ParamRef"] = None, select: "SelectFilter" = None, shapeRendering: Union[str, "ParamRef"] = None, sort: Union["SortOrder", "ChannelDomainSort"] = None, stroke: Union["ChannelValueSpec", "ParamRef"] = None, strokeDasharray: Union[str, float, "ParamRef"] = None, strokeDashoffset: Union[str, float, "ParamRef"] = None, strokeLinecap: Union[str, "ParamRef"] = None, strokeLinejoin: Union[str, "ParamRef"] = None, strokeMiterlimit: Union[float, "ParamRef"] = None, strokeOpacity: "ChannelValueSpec" = None, strokeWidth: "ChannelValueSpec" = None, target: Union[str, "ParamRef"] = None, tip: Union[bool, "TipPointer", Dict[str, Any], "ParamRef"] = None, title: "ChannelValue" = None, x: "ChannelValueSpec" = None, y: "ChannelValueSpec" = None, z: "ChannelValue" = None):
+    def __init__(
+        self,
+        data: "PlotMarkData",
+        mark: str,
+        ariaDescription: Union[str, "ParamRef"] = None,
+        ariaHidden: Union[str, "ParamRef"] = None,
+        ariaLabel: "ChannelValue" = None,
+        ci: Union[float, "ParamRef"] = None,
+        clip: Union[str, str, bool, Any, "ParamRef"] = None,
+        dx: Union[float, "ParamRef"] = None,
+        dy: Union[float, "ParamRef"] = None,
+        facet: Union[str, str, str, str, bool, Any, "ParamRef"] = None,
+        facetAnchor: Union[
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            Any,
+            "ParamRef",
+        ] = None,
+        fill: Union["ChannelValueSpec", "ParamRef"] = None,
+        fillOpacity: Union["ChannelValueSpec", "ParamRef"] = None,
+        filter: "ChannelValue" = None,
+        fx: "ChannelValue" = None,
+        fy: "ChannelValue" = None,
+        href: "ChannelValue" = None,
+        imageFilter: Union[str, "ParamRef"] = None,
+        margin: Union[float, "ParamRef"] = None,
+        marginBottom: Union[float, "ParamRef"] = None,
+        marginLeft: Union[float, "ParamRef"] = None,
+        marginRight: Union[float, "ParamRef"] = None,
+        marginTop: Union[float, "ParamRef"] = None,
+        mixBlendMode: Union[str, "ParamRef"] = None,
+        opacity: "ChannelValueSpec" = None,
+        paintOrder: Union[str, "ParamRef"] = None,
+        pointerEvents: Union[str, "ParamRef"] = None,
+        precision: Union[float, "ParamRef"] = None,
+        reverse: Union[bool, "ParamRef"] = None,
+        select: "SelectFilter" = None,
+        shapeRendering: Union[str, "ParamRef"] = None,
+        sort: Union["SortOrder", "ChannelDomainSort"] = None,
+        stroke: Union["ChannelValueSpec", "ParamRef"] = None,
+        strokeDasharray: Union[str, float, "ParamRef"] = None,
+        strokeDashoffset: Union[str, float, "ParamRef"] = None,
+        strokeLinecap: Union[str, "ParamRef"] = None,
+        strokeLinejoin: Union[str, "ParamRef"] = None,
+        strokeMiterlimit: Union[float, "ParamRef"] = None,
+        strokeOpacity: "ChannelValueSpec" = None,
+        strokeWidth: "ChannelValueSpec" = None,
+        target: Union[str, "ParamRef"] = None,
+        tip: Union[bool, "TipPointer", Dict[str, Any], "ParamRef"] = None,
+        title: "ChannelValue" = None,
+        x: "ChannelValueSpec" = None,
+        y: "ChannelValueSpec" = None,
+        z: "ChannelValue" = None,
+    ):
         self.ariaDescription = ariaDescription
         self.ariaHidden = ariaHidden
         self.ariaLabel = ariaLabel
@@ -3798,7 +8107,65 @@ class RegressionY(SchemaBase):
 
 
 class Sphere(SchemaBase):
-    def __init__(self, mark: str, ariaDescription: Union[str, "ParamRef"] = None, ariaHidden: Union[str, "ParamRef"] = None, ariaLabel: "ChannelValue" = None, clip: Union[str, str, bool, Any, "ParamRef"] = None, dx: Union[float, "ParamRef"] = None, dy: Union[float, "ParamRef"] = None, facet: Union[str, str, str, str, bool, Any, "ParamRef"] = None, facetAnchor: Union[str, str, str, str, str, str, str, str, str, str, str, str, str, Any, "ParamRef"] = None, fill: Union["ChannelValueSpec", "ParamRef"] = None, fillOpacity: Union["ChannelValueSpec", "ParamRef"] = None, filter: "ChannelValue" = None, fx: "ChannelValue" = None, fy: "ChannelValue" = None, href: "ChannelValue" = None, imageFilter: Union[str, "ParamRef"] = None, margin: Union[float, "ParamRef"] = None, marginBottom: Union[float, "ParamRef"] = None, marginLeft: Union[float, "ParamRef"] = None, marginRight: Union[float, "ParamRef"] = None, marginTop: Union[float, "ParamRef"] = None, mixBlendMode: Union[str, "ParamRef"] = None, opacity: "ChannelValueSpec" = None, paintOrder: Union[str, "ParamRef"] = None, pointerEvents: Union[str, "ParamRef"] = None, reverse: Union[bool, "ParamRef"] = None, select: "SelectFilter" = None, shapeRendering: Union[str, "ParamRef"] = None, sort: Union["SortOrder", "ChannelDomainSort"] = None, stroke: Union["ChannelValueSpec", "ParamRef"] = None, strokeDasharray: Union[str, float, "ParamRef"] = None, strokeDashoffset: Union[str, float, "ParamRef"] = None, strokeLinecap: Union[str, "ParamRef"] = None, strokeLinejoin: Union[str, "ParamRef"] = None, strokeMiterlimit: Union[float, "ParamRef"] = None, strokeOpacity: "ChannelValueSpec" = None, strokeWidth: "ChannelValueSpec" = None, target: Union[str, "ParamRef"] = None, tip: Union[bool, "TipPointer", Dict[str, Any], "ParamRef"] = None, title: "ChannelValue" = None):
+    def __init__(
+        self,
+        mark: str,
+        ariaDescription: Union[str, "ParamRef"] = None,
+        ariaHidden: Union[str, "ParamRef"] = None,
+        ariaLabel: "ChannelValue" = None,
+        clip: Union[str, str, bool, Any, "ParamRef"] = None,
+        dx: Union[float, "ParamRef"] = None,
+        dy: Union[float, "ParamRef"] = None,
+        facet: Union[str, str, str, str, bool, Any, "ParamRef"] = None,
+        facetAnchor: Union[
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            Any,
+            "ParamRef",
+        ] = None,
+        fill: Union["ChannelValueSpec", "ParamRef"] = None,
+        fillOpacity: Union["ChannelValueSpec", "ParamRef"] = None,
+        filter: "ChannelValue" = None,
+        fx: "ChannelValue" = None,
+        fy: "ChannelValue" = None,
+        href: "ChannelValue" = None,
+        imageFilter: Union[str, "ParamRef"] = None,
+        margin: Union[float, "ParamRef"] = None,
+        marginBottom: Union[float, "ParamRef"] = None,
+        marginLeft: Union[float, "ParamRef"] = None,
+        marginRight: Union[float, "ParamRef"] = None,
+        marginTop: Union[float, "ParamRef"] = None,
+        mixBlendMode: Union[str, "ParamRef"] = None,
+        opacity: "ChannelValueSpec" = None,
+        paintOrder: Union[str, "ParamRef"] = None,
+        pointerEvents: Union[str, "ParamRef"] = None,
+        reverse: Union[bool, "ParamRef"] = None,
+        select: "SelectFilter" = None,
+        shapeRendering: Union[str, "ParamRef"] = None,
+        sort: Union["SortOrder", "ChannelDomainSort"] = None,
+        stroke: Union["ChannelValueSpec", "ParamRef"] = None,
+        strokeDasharray: Union[str, float, "ParamRef"] = None,
+        strokeDashoffset: Union[str, float, "ParamRef"] = None,
+        strokeLinecap: Union[str, "ParamRef"] = None,
+        strokeLinejoin: Union[str, "ParamRef"] = None,
+        strokeMiterlimit: Union[float, "ParamRef"] = None,
+        strokeOpacity: "ChannelValueSpec" = None,
+        strokeWidth: "ChannelValueSpec" = None,
+        target: Union[str, "ParamRef"] = None,
+        tip: Union[bool, "TipPointer", Dict[str, Any], "ParamRef"] = None,
+        title: "ChannelValue" = None,
+    ):
         self.ariaDescription = ariaDescription
         self.ariaHidden = ariaHidden
         self.ariaLabel = ariaLabel
@@ -3842,7 +8209,74 @@ class Sphere(SchemaBase):
 
 
 class Spike(SchemaBase):
-    def __init__(self, data: "PlotMarkData", mark: str, anchor: Union[str, str, str, "ParamRef"] = None, ariaDescription: Union[str, "ParamRef"] = None, ariaHidden: Union[str, "ParamRef"] = None, ariaLabel: "ChannelValue" = None, clip: Union[str, str, bool, Any, "ParamRef"] = None, dx: Union[float, "ParamRef"] = None, dy: Union[float, "ParamRef"] = None, facet: Union[str, str, str, str, bool, Any, "ParamRef"] = None, facetAnchor: Union[str, str, str, str, str, str, str, str, str, str, str, str, str, Any, "ParamRef"] = None, fill: Union["ChannelValueSpec", "ParamRef"] = None, fillOpacity: Union["ChannelValueSpec", "ParamRef"] = None, filter: "ChannelValue" = None, frameAnchor: Union["FrameAnchor", "ParamRef"] = None, fx: "ChannelValue" = None, fy: "ChannelValue" = None, href: "ChannelValue" = None, imageFilter: Union[str, "ParamRef"] = None, length: "ChannelValueSpec" = None, margin: Union[float, "ParamRef"] = None, marginBottom: Union[float, "ParamRef"] = None, marginLeft: Union[float, "ParamRef"] = None, marginRight: Union[float, "ParamRef"] = None, marginTop: Union[float, "ParamRef"] = None, mixBlendMode: Union[str, "ParamRef"] = None, opacity: "ChannelValueSpec" = None, paintOrder: Union[str, "ParamRef"] = None, pointerEvents: Union[str, "ParamRef"] = None, r: Union[float, "ParamRef"] = None, reverse: Union[bool, "ParamRef"] = None, rotate: "ChannelValue" = None, select: "SelectFilter" = None, shape: Union["VectorShape", "ParamRef"] = None, shapeRendering: Union[str, "ParamRef"] = None, sort: Union["SortOrder", "ChannelDomainSort"] = None, stroke: Union["ChannelValueSpec", "ParamRef"] = None, strokeDasharray: Union[str, float, "ParamRef"] = None, strokeDashoffset: Union[str, float, "ParamRef"] = None, strokeLinecap: Union[str, "ParamRef"] = None, strokeLinejoin: Union[str, "ParamRef"] = None, strokeMiterlimit: Union[float, "ParamRef"] = None, strokeOpacity: "ChannelValueSpec" = None, strokeWidth: "ChannelValueSpec" = None, target: Union[str, "ParamRef"] = None, tip: Union[bool, "TipPointer", Dict[str, Any], "ParamRef"] = None, title: "ChannelValue" = None, x: "ChannelValueSpec" = None, y: "ChannelValueSpec" = None):
+    def __init__(
+        self,
+        data: "PlotMarkData",
+        mark: str,
+        anchor: Union[str, str, str, "ParamRef"] = None,
+        ariaDescription: Union[str, "ParamRef"] = None,
+        ariaHidden: Union[str, "ParamRef"] = None,
+        ariaLabel: "ChannelValue" = None,
+        clip: Union[str, str, bool, Any, "ParamRef"] = None,
+        dx: Union[float, "ParamRef"] = None,
+        dy: Union[float, "ParamRef"] = None,
+        facet: Union[str, str, str, str, bool, Any, "ParamRef"] = None,
+        facetAnchor: Union[
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            Any,
+            "ParamRef",
+        ] = None,
+        fill: Union["ChannelValueSpec", "ParamRef"] = None,
+        fillOpacity: Union["ChannelValueSpec", "ParamRef"] = None,
+        filter: "ChannelValue" = None,
+        frameAnchor: Union["FrameAnchor", "ParamRef"] = None,
+        fx: "ChannelValue" = None,
+        fy: "ChannelValue" = None,
+        href: "ChannelValue" = None,
+        imageFilter: Union[str, "ParamRef"] = None,
+        length: "ChannelValueSpec" = None,
+        margin: Union[float, "ParamRef"] = None,
+        marginBottom: Union[float, "ParamRef"] = None,
+        marginLeft: Union[float, "ParamRef"] = None,
+        marginRight: Union[float, "ParamRef"] = None,
+        marginTop: Union[float, "ParamRef"] = None,
+        mixBlendMode: Union[str, "ParamRef"] = None,
+        opacity: "ChannelValueSpec" = None,
+        paintOrder: Union[str, "ParamRef"] = None,
+        pointerEvents: Union[str, "ParamRef"] = None,
+        r: Union[float, "ParamRef"] = None,
+        reverse: Union[bool, "ParamRef"] = None,
+        rotate: "ChannelValue" = None,
+        select: "SelectFilter" = None,
+        shape: Union["VectorShape", "ParamRef"] = None,
+        shapeRendering: Union[str, "ParamRef"] = None,
+        sort: Union["SortOrder", "ChannelDomainSort"] = None,
+        stroke: Union["ChannelValueSpec", "ParamRef"] = None,
+        strokeDasharray: Union[str, float, "ParamRef"] = None,
+        strokeDashoffset: Union[str, float, "ParamRef"] = None,
+        strokeLinecap: Union[str, "ParamRef"] = None,
+        strokeLinejoin: Union[str, "ParamRef"] = None,
+        strokeMiterlimit: Union[float, "ParamRef"] = None,
+        strokeOpacity: "ChannelValueSpec" = None,
+        strokeWidth: "ChannelValueSpec" = None,
+        target: Union[str, "ParamRef"] = None,
+        tip: Union[bool, "TipPointer", Dict[str, Any], "ParamRef"] = None,
+        title: "ChannelValue" = None,
+        x: "ChannelValueSpec" = None,
+        y: "ChannelValueSpec" = None,
+    ):
         self.anchor = anchor
         self.ariaDescription = ariaDescription
         self.ariaHidden = ariaHidden
@@ -3895,7 +8329,83 @@ class Spike(SchemaBase):
 
 
 class Text(SchemaBase):
-    def __init__(self, mark: str, ariaDescription: Union[str, "ParamRef"] = None, ariaHidden: Union[str, "ParamRef"] = None, ariaLabel: "ChannelValue" = None, clip: Union[str, str, bool, Any, "ParamRef"] = None, data: "PlotMarkData" = None, dx: Union[float, "ParamRef"] = None, dy: Union[float, "ParamRef"] = None, facet: Union[str, str, str, str, bool, Any, "ParamRef"] = None, facetAnchor: Union[str, str, str, str, str, str, str, str, str, str, str, str, str, Any, "ParamRef"] = None, fill: Union["ChannelValueSpec", "ParamRef"] = None, fillOpacity: Union["ChannelValueSpec", "ParamRef"] = None, filter: "ChannelValue" = None, fontFamily: Union[str, "ParamRef"] = None, fontSize: Union["ChannelValue", "ParamRef"] = None, fontStyle: Union[str, "ParamRef"] = None, fontVariant: Union[str, "ParamRef"] = None, fontWeight: Union[str, float, "ParamRef"] = None, frameAnchor: Union["FrameAnchor", "ParamRef"] = None, fx: "ChannelValue" = None, fy: "ChannelValue" = None, href: "ChannelValue" = None, imageFilter: Union[str, "ParamRef"] = None, lineAnchor: Union[str, str, str, "ParamRef"] = None, lineHeight: Union[float, "ParamRef"] = None, lineWidth: Union[float, "ParamRef"] = None, margin: Union[float, "ParamRef"] = None, marginBottom: Union[float, "ParamRef"] = None, marginLeft: Union[float, "ParamRef"] = None, marginRight: Union[float, "ParamRef"] = None, marginTop: Union[float, "ParamRef"] = None, mixBlendMode: Union[str, "ParamRef"] = None, monospace: Union[bool, "ParamRef"] = None, opacity: "ChannelValueSpec" = None, paintOrder: Union[str, "ParamRef"] = None, pointerEvents: Union[str, "ParamRef"] = None, reverse: Union[bool, "ParamRef"] = None, rotate: Union["ChannelValue", "ParamRef"] = None, select: "SelectFilter" = None, shapeRendering: Union[str, "ParamRef"] = None, sort: Union["SortOrder", "ChannelDomainSort"] = None, stroke: Union["ChannelValueSpec", "ParamRef"] = None, strokeDasharray: Union[str, float, "ParamRef"] = None, strokeDashoffset: Union[str, float, "ParamRef"] = None, strokeLinecap: Union[str, "ParamRef"] = None, strokeLinejoin: Union[str, "ParamRef"] = None, strokeMiterlimit: Union[float, "ParamRef"] = None, strokeOpacity: "ChannelValueSpec" = None, strokeWidth: "ChannelValueSpec" = None, target: Union[str, "ParamRef"] = None, text: "ChannelValue" = None, textAnchor: Union[str, str, str, "ParamRef"] = None, textOverflow: Union[Any, str, str, str, str, str, str, str, "ParamRef"] = None, tip: Union[bool, "TipPointer", Dict[str, Any], "ParamRef"] = None, title: "ChannelValue" = None, x: "ChannelValueSpec" = None, y: "ChannelValueSpec" = None, z: "ChannelValue" = None):
+    def __init__(
+        self,
+        mark: str,
+        ariaDescription: Union[str, "ParamRef"] = None,
+        ariaHidden: Union[str, "ParamRef"] = None,
+        ariaLabel: "ChannelValue" = None,
+        clip: Union[str, str, bool, Any, "ParamRef"] = None,
+        data: "PlotMarkData" = None,
+        dx: Union[float, "ParamRef"] = None,
+        dy: Union[float, "ParamRef"] = None,
+        facet: Union[str, str, str, str, bool, Any, "ParamRef"] = None,
+        facetAnchor: Union[
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            Any,
+            "ParamRef",
+        ] = None,
+        fill: Union["ChannelValueSpec", "ParamRef"] = None,
+        fillOpacity: Union["ChannelValueSpec", "ParamRef"] = None,
+        filter: "ChannelValue" = None,
+        fontFamily: Union[str, "ParamRef"] = None,
+        fontSize: Union["ChannelValue", "ParamRef"] = None,
+        fontStyle: Union[str, "ParamRef"] = None,
+        fontVariant: Union[str, "ParamRef"] = None,
+        fontWeight: Union[str, float, "ParamRef"] = None,
+        frameAnchor: Union["FrameAnchor", "ParamRef"] = None,
+        fx: "ChannelValue" = None,
+        fy: "ChannelValue" = None,
+        href: "ChannelValue" = None,
+        imageFilter: Union[str, "ParamRef"] = None,
+        lineAnchor: Union[str, str, str, "ParamRef"] = None,
+        lineHeight: Union[float, "ParamRef"] = None,
+        lineWidth: Union[float, "ParamRef"] = None,
+        margin: Union[float, "ParamRef"] = None,
+        marginBottom: Union[float, "ParamRef"] = None,
+        marginLeft: Union[float, "ParamRef"] = None,
+        marginRight: Union[float, "ParamRef"] = None,
+        marginTop: Union[float, "ParamRef"] = None,
+        mixBlendMode: Union[str, "ParamRef"] = None,
+        monospace: Union[bool, "ParamRef"] = None,
+        opacity: "ChannelValueSpec" = None,
+        paintOrder: Union[str, "ParamRef"] = None,
+        pointerEvents: Union[str, "ParamRef"] = None,
+        reverse: Union[bool, "ParamRef"] = None,
+        rotate: Union["ChannelValue", "ParamRef"] = None,
+        select: "SelectFilter" = None,
+        shapeRendering: Union[str, "ParamRef"] = None,
+        sort: Union["SortOrder", "ChannelDomainSort"] = None,
+        stroke: Union["ChannelValueSpec", "ParamRef"] = None,
+        strokeDasharray: Union[str, float, "ParamRef"] = None,
+        strokeDashoffset: Union[str, float, "ParamRef"] = None,
+        strokeLinecap: Union[str, "ParamRef"] = None,
+        strokeLinejoin: Union[str, "ParamRef"] = None,
+        strokeMiterlimit: Union[float, "ParamRef"] = None,
+        strokeOpacity: "ChannelValueSpec" = None,
+        strokeWidth: "ChannelValueSpec" = None,
+        target: Union[str, "ParamRef"] = None,
+        text: "ChannelValue" = None,
+        textAnchor: Union[str, str, str, "ParamRef"] = None,
+        textOverflow: Union[Any, str, str, str, str, str, str, str, "ParamRef"] = None,
+        tip: Union[bool, "TipPointer", Dict[str, Any], "ParamRef"] = None,
+        title: "ChannelValue" = None,
+        x: "ChannelValueSpec" = None,
+        y: "ChannelValueSpec" = None,
+        z: "ChannelValue" = None,
+    ):
         self.ariaDescription = ariaDescription
         self.ariaHidden = ariaHidden
         self.ariaLabel = ariaLabel
@@ -3957,7 +8467,75 @@ class Text(SchemaBase):
 
 
 class TickX(SchemaBase):
-    def __init__(self, data: "PlotMarkData", mark: str, ariaDescription: Union[str, "ParamRef"] = None, ariaHidden: Union[str, "ParamRef"] = None, ariaLabel: "ChannelValue" = None, clip: Union[str, str, bool, Any, "ParamRef"] = None, dx: Union[float, "ParamRef"] = None, dy: Union[float, "ParamRef"] = None, facet: Union[str, str, str, str, bool, Any, "ParamRef"] = None, facetAnchor: Union[str, str, str, str, str, str, str, str, str, str, str, str, str, Any, "ParamRef"] = None, fill: Union["ChannelValueSpec", "ParamRef"] = None, fillOpacity: Union["ChannelValueSpec", "ParamRef"] = None, filter: "ChannelValue" = None, fx: "ChannelValue" = None, fy: "ChannelValue" = None, href: "ChannelValue" = None, imageFilter: Union[str, "ParamRef"] = None, inset: Union[float, "ParamRef"] = None, insetBottom: Union[float, "ParamRef"] = None, insetTop: Union[float, "ParamRef"] = None, margin: Union[float, "ParamRef"] = None, marginBottom: Union[float, "ParamRef"] = None, marginLeft: Union[float, "ParamRef"] = None, marginRight: Union[float, "ParamRef"] = None, marginTop: Union[float, "ParamRef"] = None, marker: Union["MarkerName", str, bool, Any, "ParamRef"] = None, markerEnd: Union["MarkerName", str, bool, Any, "ParamRef"] = None, markerMid: Union["MarkerName", str, bool, Any, "ParamRef"] = None, markerStart: Union["MarkerName", str, bool, Any, "ParamRef"] = None, mixBlendMode: Union[str, "ParamRef"] = None, opacity: "ChannelValueSpec" = None, paintOrder: Union[str, "ParamRef"] = None, pointerEvents: Union[str, "ParamRef"] = None, reverse: Union[bool, "ParamRef"] = None, select: "SelectFilter" = None, shapeRendering: Union[str, "ParamRef"] = None, sort: Union["SortOrder", "ChannelDomainSort"] = None, stroke: Union["ChannelValueSpec", "ParamRef"] = None, strokeDasharray: Union[str, float, "ParamRef"] = None, strokeDashoffset: Union[str, float, "ParamRef"] = None, strokeLinecap: Union[str, "ParamRef"] = None, strokeLinejoin: Union[str, "ParamRef"] = None, strokeMiterlimit: Union[float, "ParamRef"] = None, strokeOpacity: "ChannelValueSpec" = None, strokeWidth: "ChannelValueSpec" = None, target: Union[str, "ParamRef"] = None, tip: Union[bool, "TipPointer", Dict[str, Any], "ParamRef"] = None, title: "ChannelValue" = None, x: "ChannelValueSpec" = None, y: "ChannelValueSpec" = None):
+    def __init__(
+        self,
+        data: "PlotMarkData",
+        mark: str,
+        ariaDescription: Union[str, "ParamRef"] = None,
+        ariaHidden: Union[str, "ParamRef"] = None,
+        ariaLabel: "ChannelValue" = None,
+        clip: Union[str, str, bool, Any, "ParamRef"] = None,
+        dx: Union[float, "ParamRef"] = None,
+        dy: Union[float, "ParamRef"] = None,
+        facet: Union[str, str, str, str, bool, Any, "ParamRef"] = None,
+        facetAnchor: Union[
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            Any,
+            "ParamRef",
+        ] = None,
+        fill: Union["ChannelValueSpec", "ParamRef"] = None,
+        fillOpacity: Union["ChannelValueSpec", "ParamRef"] = None,
+        filter: "ChannelValue" = None,
+        fx: "ChannelValue" = None,
+        fy: "ChannelValue" = None,
+        href: "ChannelValue" = None,
+        imageFilter: Union[str, "ParamRef"] = None,
+        inset: Union[float, "ParamRef"] = None,
+        insetBottom: Union[float, "ParamRef"] = None,
+        insetTop: Union[float, "ParamRef"] = None,
+        margin: Union[float, "ParamRef"] = None,
+        marginBottom: Union[float, "ParamRef"] = None,
+        marginLeft: Union[float, "ParamRef"] = None,
+        marginRight: Union[float, "ParamRef"] = None,
+        marginTop: Union[float, "ParamRef"] = None,
+        marker: Union["MarkerName", str, bool, Any, "ParamRef"] = None,
+        markerEnd: Union["MarkerName", str, bool, Any, "ParamRef"] = None,
+        markerMid: Union["MarkerName", str, bool, Any, "ParamRef"] = None,
+        markerStart: Union["MarkerName", str, bool, Any, "ParamRef"] = None,
+        mixBlendMode: Union[str, "ParamRef"] = None,
+        opacity: "ChannelValueSpec" = None,
+        paintOrder: Union[str, "ParamRef"] = None,
+        pointerEvents: Union[str, "ParamRef"] = None,
+        reverse: Union[bool, "ParamRef"] = None,
+        select: "SelectFilter" = None,
+        shapeRendering: Union[str, "ParamRef"] = None,
+        sort: Union["SortOrder", "ChannelDomainSort"] = None,
+        stroke: Union["ChannelValueSpec", "ParamRef"] = None,
+        strokeDasharray: Union[str, float, "ParamRef"] = None,
+        strokeDashoffset: Union[str, float, "ParamRef"] = None,
+        strokeLinecap: Union[str, "ParamRef"] = None,
+        strokeLinejoin: Union[str, "ParamRef"] = None,
+        strokeMiterlimit: Union[float, "ParamRef"] = None,
+        strokeOpacity: "ChannelValueSpec" = None,
+        strokeWidth: "ChannelValueSpec" = None,
+        target: Union[str, "ParamRef"] = None,
+        tip: Union[bool, "TipPointer", Dict[str, Any], "ParamRef"] = None,
+        title: "ChannelValue" = None,
+        x: "ChannelValueSpec" = None,
+        y: "ChannelValueSpec" = None,
+    ):
         self.ariaDescription = ariaDescription
         self.ariaHidden = ariaHidden
         self.ariaLabel = ariaLabel
@@ -4011,7 +8589,75 @@ class TickX(SchemaBase):
 
 
 class TickY(SchemaBase):
-    def __init__(self, data: "PlotMarkData", mark: str, ariaDescription: Union[str, "ParamRef"] = None, ariaHidden: Union[str, "ParamRef"] = None, ariaLabel: "ChannelValue" = None, clip: Union[str, str, bool, Any, "ParamRef"] = None, dx: Union[float, "ParamRef"] = None, dy: Union[float, "ParamRef"] = None, facet: Union[str, str, str, str, bool, Any, "ParamRef"] = None, facetAnchor: Union[str, str, str, str, str, str, str, str, str, str, str, str, str, Any, "ParamRef"] = None, fill: Union["ChannelValueSpec", "ParamRef"] = None, fillOpacity: Union["ChannelValueSpec", "ParamRef"] = None, filter: "ChannelValue" = None, fx: "ChannelValue" = None, fy: "ChannelValue" = None, href: "ChannelValue" = None, imageFilter: Union[str, "ParamRef"] = None, inset: Union[float, "ParamRef"] = None, insetLeft: Union[float, "ParamRef"] = None, insetRight: Union[float, "ParamRef"] = None, margin: Union[float, "ParamRef"] = None, marginBottom: Union[float, "ParamRef"] = None, marginLeft: Union[float, "ParamRef"] = None, marginRight: Union[float, "ParamRef"] = None, marginTop: Union[float, "ParamRef"] = None, marker: Union["MarkerName", str, bool, Any, "ParamRef"] = None, markerEnd: Union["MarkerName", str, bool, Any, "ParamRef"] = None, markerMid: Union["MarkerName", str, bool, Any, "ParamRef"] = None, markerStart: Union["MarkerName", str, bool, Any, "ParamRef"] = None, mixBlendMode: Union[str, "ParamRef"] = None, opacity: "ChannelValueSpec" = None, paintOrder: Union[str, "ParamRef"] = None, pointerEvents: Union[str, "ParamRef"] = None, reverse: Union[bool, "ParamRef"] = None, select: "SelectFilter" = None, shapeRendering: Union[str, "ParamRef"] = None, sort: Union["SortOrder", "ChannelDomainSort"] = None, stroke: Union["ChannelValueSpec", "ParamRef"] = None, strokeDasharray: Union[str, float, "ParamRef"] = None, strokeDashoffset: Union[str, float, "ParamRef"] = None, strokeLinecap: Union[str, "ParamRef"] = None, strokeLinejoin: Union[str, "ParamRef"] = None, strokeMiterlimit: Union[float, "ParamRef"] = None, strokeOpacity: "ChannelValueSpec" = None, strokeWidth: "ChannelValueSpec" = None, target: Union[str, "ParamRef"] = None, tip: Union[bool, "TipPointer", Dict[str, Any], "ParamRef"] = None, title: "ChannelValue" = None, x: "ChannelValueSpec" = None, y: "ChannelValueSpec" = None):
+    def __init__(
+        self,
+        data: "PlotMarkData",
+        mark: str,
+        ariaDescription: Union[str, "ParamRef"] = None,
+        ariaHidden: Union[str, "ParamRef"] = None,
+        ariaLabel: "ChannelValue" = None,
+        clip: Union[str, str, bool, Any, "ParamRef"] = None,
+        dx: Union[float, "ParamRef"] = None,
+        dy: Union[float, "ParamRef"] = None,
+        facet: Union[str, str, str, str, bool, Any, "ParamRef"] = None,
+        facetAnchor: Union[
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            Any,
+            "ParamRef",
+        ] = None,
+        fill: Union["ChannelValueSpec", "ParamRef"] = None,
+        fillOpacity: Union["ChannelValueSpec", "ParamRef"] = None,
+        filter: "ChannelValue" = None,
+        fx: "ChannelValue" = None,
+        fy: "ChannelValue" = None,
+        href: "ChannelValue" = None,
+        imageFilter: Union[str, "ParamRef"] = None,
+        inset: Union[float, "ParamRef"] = None,
+        insetLeft: Union[float, "ParamRef"] = None,
+        insetRight: Union[float, "ParamRef"] = None,
+        margin: Union[float, "ParamRef"] = None,
+        marginBottom: Union[float, "ParamRef"] = None,
+        marginLeft: Union[float, "ParamRef"] = None,
+        marginRight: Union[float, "ParamRef"] = None,
+        marginTop: Union[float, "ParamRef"] = None,
+        marker: Union["MarkerName", str, bool, Any, "ParamRef"] = None,
+        markerEnd: Union["MarkerName", str, bool, Any, "ParamRef"] = None,
+        markerMid: Union["MarkerName", str, bool, Any, "ParamRef"] = None,
+        markerStart: Union["MarkerName", str, bool, Any, "ParamRef"] = None,
+        mixBlendMode: Union[str, "ParamRef"] = None,
+        opacity: "ChannelValueSpec" = None,
+        paintOrder: Union[str, "ParamRef"] = None,
+        pointerEvents: Union[str, "ParamRef"] = None,
+        reverse: Union[bool, "ParamRef"] = None,
+        select: "SelectFilter" = None,
+        shapeRendering: Union[str, "ParamRef"] = None,
+        sort: Union["SortOrder", "ChannelDomainSort"] = None,
+        stroke: Union["ChannelValueSpec", "ParamRef"] = None,
+        strokeDasharray: Union[str, float, "ParamRef"] = None,
+        strokeDashoffset: Union[str, float, "ParamRef"] = None,
+        strokeLinecap: Union[str, "ParamRef"] = None,
+        strokeLinejoin: Union[str, "ParamRef"] = None,
+        strokeMiterlimit: Union[float, "ParamRef"] = None,
+        strokeOpacity: "ChannelValueSpec" = None,
+        strokeWidth: "ChannelValueSpec" = None,
+        target: Union[str, "ParamRef"] = None,
+        tip: Union[bool, "TipPointer", Dict[str, Any], "ParamRef"] = None,
+        title: "ChannelValue" = None,
+        x: "ChannelValueSpec" = None,
+        y: "ChannelValueSpec" = None,
+    ):
         self.ariaDescription = ariaDescription
         self.ariaHidden = ariaHidden
         self.ariaLabel = ariaLabel
@@ -4065,7 +8711,74 @@ class TickY(SchemaBase):
 
 
 class Vector(SchemaBase):
-    def __init__(self, data: "PlotMarkData", mark: str, anchor: Union[str, str, str, "ParamRef"] = None, ariaDescription: Union[str, "ParamRef"] = None, ariaHidden: Union[str, "ParamRef"] = None, ariaLabel: "ChannelValue" = None, clip: Union[str, str, bool, Any, "ParamRef"] = None, dx: Union[float, "ParamRef"] = None, dy: Union[float, "ParamRef"] = None, facet: Union[str, str, str, str, bool, Any, "ParamRef"] = None, facetAnchor: Union[str, str, str, str, str, str, str, str, str, str, str, str, str, Any, "ParamRef"] = None, fill: Union["ChannelValueSpec", "ParamRef"] = None, fillOpacity: Union["ChannelValueSpec", "ParamRef"] = None, filter: "ChannelValue" = None, frameAnchor: Union["FrameAnchor", "ParamRef"] = None, fx: "ChannelValue" = None, fy: "ChannelValue" = None, href: "ChannelValue" = None, imageFilter: Union[str, "ParamRef"] = None, length: "ChannelValueSpec" = None, margin: Union[float, "ParamRef"] = None, marginBottom: Union[float, "ParamRef"] = None, marginLeft: Union[float, "ParamRef"] = None, marginRight: Union[float, "ParamRef"] = None, marginTop: Union[float, "ParamRef"] = None, mixBlendMode: Union[str, "ParamRef"] = None, opacity: "ChannelValueSpec" = None, paintOrder: Union[str, "ParamRef"] = None, pointerEvents: Union[str, "ParamRef"] = None, r: Union[float, "ParamRef"] = None, reverse: Union[bool, "ParamRef"] = None, rotate: "ChannelValue" = None, select: "SelectFilter" = None, shape: Union["VectorShape", "ParamRef"] = None, shapeRendering: Union[str, "ParamRef"] = None, sort: Union["SortOrder", "ChannelDomainSort"] = None, stroke: Union["ChannelValueSpec", "ParamRef"] = None, strokeDasharray: Union[str, float, "ParamRef"] = None, strokeDashoffset: Union[str, float, "ParamRef"] = None, strokeLinecap: Union[str, "ParamRef"] = None, strokeLinejoin: Union[str, "ParamRef"] = None, strokeMiterlimit: Union[float, "ParamRef"] = None, strokeOpacity: "ChannelValueSpec" = None, strokeWidth: "ChannelValueSpec" = None, target: Union[str, "ParamRef"] = None, tip: Union[bool, "TipPointer", Dict[str, Any], "ParamRef"] = None, title: "ChannelValue" = None, x: "ChannelValueSpec" = None, y: "ChannelValueSpec" = None):
+    def __init__(
+        self,
+        data: "PlotMarkData",
+        mark: str,
+        anchor: Union[str, str, str, "ParamRef"] = None,
+        ariaDescription: Union[str, "ParamRef"] = None,
+        ariaHidden: Union[str, "ParamRef"] = None,
+        ariaLabel: "ChannelValue" = None,
+        clip: Union[str, str, bool, Any, "ParamRef"] = None,
+        dx: Union[float, "ParamRef"] = None,
+        dy: Union[float, "ParamRef"] = None,
+        facet: Union[str, str, str, str, bool, Any, "ParamRef"] = None,
+        facetAnchor: Union[
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            Any,
+            "ParamRef",
+        ] = None,
+        fill: Union["ChannelValueSpec", "ParamRef"] = None,
+        fillOpacity: Union["ChannelValueSpec", "ParamRef"] = None,
+        filter: "ChannelValue" = None,
+        frameAnchor: Union["FrameAnchor", "ParamRef"] = None,
+        fx: "ChannelValue" = None,
+        fy: "ChannelValue" = None,
+        href: "ChannelValue" = None,
+        imageFilter: Union[str, "ParamRef"] = None,
+        length: "ChannelValueSpec" = None,
+        margin: Union[float, "ParamRef"] = None,
+        marginBottom: Union[float, "ParamRef"] = None,
+        marginLeft: Union[float, "ParamRef"] = None,
+        marginRight: Union[float, "ParamRef"] = None,
+        marginTop: Union[float, "ParamRef"] = None,
+        mixBlendMode: Union[str, "ParamRef"] = None,
+        opacity: "ChannelValueSpec" = None,
+        paintOrder: Union[str, "ParamRef"] = None,
+        pointerEvents: Union[str, "ParamRef"] = None,
+        r: Union[float, "ParamRef"] = None,
+        reverse: Union[bool, "ParamRef"] = None,
+        rotate: "ChannelValue" = None,
+        select: "SelectFilter" = None,
+        shape: Union["VectorShape", "ParamRef"] = None,
+        shapeRendering: Union[str, "ParamRef"] = None,
+        sort: Union["SortOrder", "ChannelDomainSort"] = None,
+        stroke: Union["ChannelValueSpec", "ParamRef"] = None,
+        strokeDasharray: Union[str, float, "ParamRef"] = None,
+        strokeDashoffset: Union[str, float, "ParamRef"] = None,
+        strokeLinecap: Union[str, "ParamRef"] = None,
+        strokeLinejoin: Union[str, "ParamRef"] = None,
+        strokeMiterlimit: Union[float, "ParamRef"] = None,
+        strokeOpacity: "ChannelValueSpec" = None,
+        strokeWidth: "ChannelValueSpec" = None,
+        target: Union[str, "ParamRef"] = None,
+        tip: Union[bool, "TipPointer", Dict[str, Any], "ParamRef"] = None,
+        title: "ChannelValue" = None,
+        x: "ChannelValueSpec" = None,
+        y: "ChannelValueSpec" = None,
+    ):
         self.anchor = anchor
         self.ariaDescription = ariaDescription
         self.ariaHidden = ariaHidden
@@ -4118,7 +8831,74 @@ class Vector(SchemaBase):
 
 
 class VectorX(SchemaBase):
-    def __init__(self, data: "PlotMarkData", mark: str, anchor: Union[str, str, str, "ParamRef"] = None, ariaDescription: Union[str, "ParamRef"] = None, ariaHidden: Union[str, "ParamRef"] = None, ariaLabel: "ChannelValue" = None, clip: Union[str, str, bool, Any, "ParamRef"] = None, dx: Union[float, "ParamRef"] = None, dy: Union[float, "ParamRef"] = None, facet: Union[str, str, str, str, bool, Any, "ParamRef"] = None, facetAnchor: Union[str, str, str, str, str, str, str, str, str, str, str, str, str, Any, "ParamRef"] = None, fill: Union["ChannelValueSpec", "ParamRef"] = None, fillOpacity: Union["ChannelValueSpec", "ParamRef"] = None, filter: "ChannelValue" = None, frameAnchor: Union["FrameAnchor", "ParamRef"] = None, fx: "ChannelValue" = None, fy: "ChannelValue" = None, href: "ChannelValue" = None, imageFilter: Union[str, "ParamRef"] = None, length: "ChannelValueSpec" = None, margin: Union[float, "ParamRef"] = None, marginBottom: Union[float, "ParamRef"] = None, marginLeft: Union[float, "ParamRef"] = None, marginRight: Union[float, "ParamRef"] = None, marginTop: Union[float, "ParamRef"] = None, mixBlendMode: Union[str, "ParamRef"] = None, opacity: "ChannelValueSpec" = None, paintOrder: Union[str, "ParamRef"] = None, pointerEvents: Union[str, "ParamRef"] = None, r: Union[float, "ParamRef"] = None, reverse: Union[bool, "ParamRef"] = None, rotate: "ChannelValue" = None, select: "SelectFilter" = None, shape: Union["VectorShape", "ParamRef"] = None, shapeRendering: Union[str, "ParamRef"] = None, sort: Union["SortOrder", "ChannelDomainSort"] = None, stroke: Union["ChannelValueSpec", "ParamRef"] = None, strokeDasharray: Union[str, float, "ParamRef"] = None, strokeDashoffset: Union[str, float, "ParamRef"] = None, strokeLinecap: Union[str, "ParamRef"] = None, strokeLinejoin: Union[str, "ParamRef"] = None, strokeMiterlimit: Union[float, "ParamRef"] = None, strokeOpacity: "ChannelValueSpec" = None, strokeWidth: "ChannelValueSpec" = None, target: Union[str, "ParamRef"] = None, tip: Union[bool, "TipPointer", Dict[str, Any], "ParamRef"] = None, title: "ChannelValue" = None, x: "ChannelValueSpec" = None, y: "ChannelValueSpec" = None):
+    def __init__(
+        self,
+        data: "PlotMarkData",
+        mark: str,
+        anchor: Union[str, str, str, "ParamRef"] = None,
+        ariaDescription: Union[str, "ParamRef"] = None,
+        ariaHidden: Union[str, "ParamRef"] = None,
+        ariaLabel: "ChannelValue" = None,
+        clip: Union[str, str, bool, Any, "ParamRef"] = None,
+        dx: Union[float, "ParamRef"] = None,
+        dy: Union[float, "ParamRef"] = None,
+        facet: Union[str, str, str, str, bool, Any, "ParamRef"] = None,
+        facetAnchor: Union[
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            Any,
+            "ParamRef",
+        ] = None,
+        fill: Union["ChannelValueSpec", "ParamRef"] = None,
+        fillOpacity: Union["ChannelValueSpec", "ParamRef"] = None,
+        filter: "ChannelValue" = None,
+        frameAnchor: Union["FrameAnchor", "ParamRef"] = None,
+        fx: "ChannelValue" = None,
+        fy: "ChannelValue" = None,
+        href: "ChannelValue" = None,
+        imageFilter: Union[str, "ParamRef"] = None,
+        length: "ChannelValueSpec" = None,
+        margin: Union[float, "ParamRef"] = None,
+        marginBottom: Union[float, "ParamRef"] = None,
+        marginLeft: Union[float, "ParamRef"] = None,
+        marginRight: Union[float, "ParamRef"] = None,
+        marginTop: Union[float, "ParamRef"] = None,
+        mixBlendMode: Union[str, "ParamRef"] = None,
+        opacity: "ChannelValueSpec" = None,
+        paintOrder: Union[str, "ParamRef"] = None,
+        pointerEvents: Union[str, "ParamRef"] = None,
+        r: Union[float, "ParamRef"] = None,
+        reverse: Union[bool, "ParamRef"] = None,
+        rotate: "ChannelValue" = None,
+        select: "SelectFilter" = None,
+        shape: Union["VectorShape", "ParamRef"] = None,
+        shapeRendering: Union[str, "ParamRef"] = None,
+        sort: Union["SortOrder", "ChannelDomainSort"] = None,
+        stroke: Union["ChannelValueSpec", "ParamRef"] = None,
+        strokeDasharray: Union[str, float, "ParamRef"] = None,
+        strokeDashoffset: Union[str, float, "ParamRef"] = None,
+        strokeLinecap: Union[str, "ParamRef"] = None,
+        strokeLinejoin: Union[str, "ParamRef"] = None,
+        strokeMiterlimit: Union[float, "ParamRef"] = None,
+        strokeOpacity: "ChannelValueSpec" = None,
+        strokeWidth: "ChannelValueSpec" = None,
+        target: Union[str, "ParamRef"] = None,
+        tip: Union[bool, "TipPointer", Dict[str, Any], "ParamRef"] = None,
+        title: "ChannelValue" = None,
+        x: "ChannelValueSpec" = None,
+        y: "ChannelValueSpec" = None,
+    ):
         self.anchor = anchor
         self.ariaDescription = ariaDescription
         self.ariaHidden = ariaHidden
@@ -4171,7 +8951,74 @@ class VectorX(SchemaBase):
 
 
 class VectorY(SchemaBase):
-    def __init__(self, data: "PlotMarkData", mark: str, anchor: Union[str, str, str, "ParamRef"] = None, ariaDescription: Union[str, "ParamRef"] = None, ariaHidden: Union[str, "ParamRef"] = None, ariaLabel: "ChannelValue" = None, clip: Union[str, str, bool, Any, "ParamRef"] = None, dx: Union[float, "ParamRef"] = None, dy: Union[float, "ParamRef"] = None, facet: Union[str, str, str, str, bool, Any, "ParamRef"] = None, facetAnchor: Union[str, str, str, str, str, str, str, str, str, str, str, str, str, Any, "ParamRef"] = None, fill: Union["ChannelValueSpec", "ParamRef"] = None, fillOpacity: Union["ChannelValueSpec", "ParamRef"] = None, filter: "ChannelValue" = None, frameAnchor: Union["FrameAnchor", "ParamRef"] = None, fx: "ChannelValue" = None, fy: "ChannelValue" = None, href: "ChannelValue" = None, imageFilter: Union[str, "ParamRef"] = None, length: "ChannelValueSpec" = None, margin: Union[float, "ParamRef"] = None, marginBottom: Union[float, "ParamRef"] = None, marginLeft: Union[float, "ParamRef"] = None, marginRight: Union[float, "ParamRef"] = None, marginTop: Union[float, "ParamRef"] = None, mixBlendMode: Union[str, "ParamRef"] = None, opacity: "ChannelValueSpec" = None, paintOrder: Union[str, "ParamRef"] = None, pointerEvents: Union[str, "ParamRef"] = None, r: Union[float, "ParamRef"] = None, reverse: Union[bool, "ParamRef"] = None, rotate: "ChannelValue" = None, select: "SelectFilter" = None, shape: Union["VectorShape", "ParamRef"] = None, shapeRendering: Union[str, "ParamRef"] = None, sort: Union["SortOrder", "ChannelDomainSort"] = None, stroke: Union["ChannelValueSpec", "ParamRef"] = None, strokeDasharray: Union[str, float, "ParamRef"] = None, strokeDashoffset: Union[str, float, "ParamRef"] = None, strokeLinecap: Union[str, "ParamRef"] = None, strokeLinejoin: Union[str, "ParamRef"] = None, strokeMiterlimit: Union[float, "ParamRef"] = None, strokeOpacity: "ChannelValueSpec" = None, strokeWidth: "ChannelValueSpec" = None, target: Union[str, "ParamRef"] = None, tip: Union[bool, "TipPointer", Dict[str, Any], "ParamRef"] = None, title: "ChannelValue" = None, x: "ChannelValueSpec" = None, y: "ChannelValueSpec" = None):
+    def __init__(
+        self,
+        data: "PlotMarkData",
+        mark: str,
+        anchor: Union[str, str, str, "ParamRef"] = None,
+        ariaDescription: Union[str, "ParamRef"] = None,
+        ariaHidden: Union[str, "ParamRef"] = None,
+        ariaLabel: "ChannelValue" = None,
+        clip: Union[str, str, bool, Any, "ParamRef"] = None,
+        dx: Union[float, "ParamRef"] = None,
+        dy: Union[float, "ParamRef"] = None,
+        facet: Union[str, str, str, str, bool, Any, "ParamRef"] = None,
+        facetAnchor: Union[
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            Any,
+            "ParamRef",
+        ] = None,
+        fill: Union["ChannelValueSpec", "ParamRef"] = None,
+        fillOpacity: Union["ChannelValueSpec", "ParamRef"] = None,
+        filter: "ChannelValue" = None,
+        frameAnchor: Union["FrameAnchor", "ParamRef"] = None,
+        fx: "ChannelValue" = None,
+        fy: "ChannelValue" = None,
+        href: "ChannelValue" = None,
+        imageFilter: Union[str, "ParamRef"] = None,
+        length: "ChannelValueSpec" = None,
+        margin: Union[float, "ParamRef"] = None,
+        marginBottom: Union[float, "ParamRef"] = None,
+        marginLeft: Union[float, "ParamRef"] = None,
+        marginRight: Union[float, "ParamRef"] = None,
+        marginTop: Union[float, "ParamRef"] = None,
+        mixBlendMode: Union[str, "ParamRef"] = None,
+        opacity: "ChannelValueSpec" = None,
+        paintOrder: Union[str, "ParamRef"] = None,
+        pointerEvents: Union[str, "ParamRef"] = None,
+        r: Union[float, "ParamRef"] = None,
+        reverse: Union[bool, "ParamRef"] = None,
+        rotate: "ChannelValue" = None,
+        select: "SelectFilter" = None,
+        shape: Union["VectorShape", "ParamRef"] = None,
+        shapeRendering: Union[str, "ParamRef"] = None,
+        sort: Union["SortOrder", "ChannelDomainSort"] = None,
+        stroke: Union["ChannelValueSpec", "ParamRef"] = None,
+        strokeDasharray: Union[str, float, "ParamRef"] = None,
+        strokeDashoffset: Union[str, float, "ParamRef"] = None,
+        strokeLinecap: Union[str, "ParamRef"] = None,
+        strokeLinejoin: Union[str, "ParamRef"] = None,
+        strokeMiterlimit: Union[float, "ParamRef"] = None,
+        strokeOpacity: "ChannelValueSpec" = None,
+        strokeWidth: "ChannelValueSpec" = None,
+        target: Union[str, "ParamRef"] = None,
+        tip: Union[bool, "TipPointer", Dict[str, Any], "ParamRef"] = None,
+        title: "ChannelValue" = None,
+        x: "ChannelValueSpec" = None,
+        y: "ChannelValueSpec" = None,
+    ):
         self.anchor = anchor
         self.ariaDescription = ariaDescription
         self.ariaHidden = ariaHidden
@@ -4224,7 +9071,75 @@ class VectorY(SchemaBase):
 
 
 class Voronoi(SchemaBase):
-    def __init__(self, data: "PlotMarkData", mark: str, ariaDescription: Union[str, "ParamRef"] = None, ariaHidden: Union[str, "ParamRef"] = None, ariaLabel: "ChannelValue" = None, clip: Union[str, str, bool, Any, "ParamRef"] = None, curve: Union["Curve", "ParamRef"] = None, dx: Union[float, "ParamRef"] = None, dy: Union[float, "ParamRef"] = None, facet: Union[str, str, str, str, bool, Any, "ParamRef"] = None, facetAnchor: Union[str, str, str, str, str, str, str, str, str, str, str, str, str, Any, "ParamRef"] = None, fill: Union["ChannelValueSpec", "ParamRef"] = None, fillOpacity: Union["ChannelValueSpec", "ParamRef"] = None, filter: "ChannelValue" = None, fx: "ChannelValue" = None, fy: "ChannelValue" = None, href: "ChannelValue" = None, imageFilter: Union[str, "ParamRef"] = None, margin: Union[float, "ParamRef"] = None, marginBottom: Union[float, "ParamRef"] = None, marginLeft: Union[float, "ParamRef"] = None, marginRight: Union[float, "ParamRef"] = None, marginTop: Union[float, "ParamRef"] = None, marker: Union["MarkerName", str, bool, Any, "ParamRef"] = None, markerEnd: Union["MarkerName", str, bool, Any, "ParamRef"] = None, markerMid: Union["MarkerName", str, bool, Any, "ParamRef"] = None, markerStart: Union["MarkerName", str, bool, Any, "ParamRef"] = None, mixBlendMode: Union[str, "ParamRef"] = None, opacity: "ChannelValueSpec" = None, paintOrder: Union[str, "ParamRef"] = None, pointerEvents: Union[str, "ParamRef"] = None, reverse: Union[bool, "ParamRef"] = None, select: "SelectFilter" = None, shapeRendering: Union[str, "ParamRef"] = None, sort: Union["SortOrder", "ChannelDomainSort"] = None, stroke: Union["ChannelValueSpec", "ParamRef"] = None, strokeDasharray: Union[str, float, "ParamRef"] = None, strokeDashoffset: Union[str, float, "ParamRef"] = None, strokeLinecap: Union[str, "ParamRef"] = None, strokeLinejoin: Union[str, "ParamRef"] = None, strokeMiterlimit: Union[float, "ParamRef"] = None, strokeOpacity: "ChannelValueSpec" = None, strokeWidth: "ChannelValueSpec" = None, target: Union[str, "ParamRef"] = None, tension: Union[float, "ParamRef"] = None, tip: Union[bool, "TipPointer", Dict[str, Any], "ParamRef"] = None, title: "ChannelValue" = None, x: "ChannelValueSpec" = None, y: "ChannelValueSpec" = None, z: "ChannelValue" = None):
+    def __init__(
+        self,
+        data: "PlotMarkData",
+        mark: str,
+        ariaDescription: Union[str, "ParamRef"] = None,
+        ariaHidden: Union[str, "ParamRef"] = None,
+        ariaLabel: "ChannelValue" = None,
+        clip: Union[str, str, bool, Any, "ParamRef"] = None,
+        curve: Union["Curve", "ParamRef"] = None,
+        dx: Union[float, "ParamRef"] = None,
+        dy: Union[float, "ParamRef"] = None,
+        facet: Union[str, str, str, str, bool, Any, "ParamRef"] = None,
+        facetAnchor: Union[
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            Any,
+            "ParamRef",
+        ] = None,
+        fill: Union["ChannelValueSpec", "ParamRef"] = None,
+        fillOpacity: Union["ChannelValueSpec", "ParamRef"] = None,
+        filter: "ChannelValue" = None,
+        fx: "ChannelValue" = None,
+        fy: "ChannelValue" = None,
+        href: "ChannelValue" = None,
+        imageFilter: Union[str, "ParamRef"] = None,
+        margin: Union[float, "ParamRef"] = None,
+        marginBottom: Union[float, "ParamRef"] = None,
+        marginLeft: Union[float, "ParamRef"] = None,
+        marginRight: Union[float, "ParamRef"] = None,
+        marginTop: Union[float, "ParamRef"] = None,
+        marker: Union["MarkerName", str, bool, Any, "ParamRef"] = None,
+        markerEnd: Union["MarkerName", str, bool, Any, "ParamRef"] = None,
+        markerMid: Union["MarkerName", str, bool, Any, "ParamRef"] = None,
+        markerStart: Union["MarkerName", str, bool, Any, "ParamRef"] = None,
+        mixBlendMode: Union[str, "ParamRef"] = None,
+        opacity: "ChannelValueSpec" = None,
+        paintOrder: Union[str, "ParamRef"] = None,
+        pointerEvents: Union[str, "ParamRef"] = None,
+        reverse: Union[bool, "ParamRef"] = None,
+        select: "SelectFilter" = None,
+        shapeRendering: Union[str, "ParamRef"] = None,
+        sort: Union["SortOrder", "ChannelDomainSort"] = None,
+        stroke: Union["ChannelValueSpec", "ParamRef"] = None,
+        strokeDasharray: Union[str, float, "ParamRef"] = None,
+        strokeDashoffset: Union[str, float, "ParamRef"] = None,
+        strokeLinecap: Union[str, "ParamRef"] = None,
+        strokeLinejoin: Union[str, "ParamRef"] = None,
+        strokeMiterlimit: Union[float, "ParamRef"] = None,
+        strokeOpacity: "ChannelValueSpec" = None,
+        strokeWidth: "ChannelValueSpec" = None,
+        target: Union[str, "ParamRef"] = None,
+        tension: Union[float, "ParamRef"] = None,
+        tip: Union[bool, "TipPointer", Dict[str, Any], "ParamRef"] = None,
+        title: "ChannelValue" = None,
+        x: "ChannelValueSpec" = None,
+        y: "ChannelValueSpec" = None,
+        z: "ChannelValue" = None,
+    ):
         self.ariaDescription = ariaDescription
         self.ariaHidden = ariaHidden
         self.ariaLabel = ariaLabel
@@ -4278,7 +9193,75 @@ class Voronoi(SchemaBase):
 
 
 class VoronoiMesh(SchemaBase):
-    def __init__(self, data: "PlotMarkData", mark: str, ariaDescription: Union[str, "ParamRef"] = None, ariaHidden: Union[str, "ParamRef"] = None, ariaLabel: "ChannelValue" = None, clip: Union[str, str, bool, Any, "ParamRef"] = None, curve: Union["Curve", "ParamRef"] = None, dx: Union[float, "ParamRef"] = None, dy: Union[float, "ParamRef"] = None, facet: Union[str, str, str, str, bool, Any, "ParamRef"] = None, facetAnchor: Union[str, str, str, str, str, str, str, str, str, str, str, str, str, Any, "ParamRef"] = None, fill: Union["ChannelValueSpec", "ParamRef"] = None, fillOpacity: Union["ChannelValueSpec", "ParamRef"] = None, filter: "ChannelValue" = None, fx: "ChannelValue" = None, fy: "ChannelValue" = None, href: "ChannelValue" = None, imageFilter: Union[str, "ParamRef"] = None, margin: Union[float, "ParamRef"] = None, marginBottom: Union[float, "ParamRef"] = None, marginLeft: Union[float, "ParamRef"] = None, marginRight: Union[float, "ParamRef"] = None, marginTop: Union[float, "ParamRef"] = None, marker: Union["MarkerName", str, bool, Any, "ParamRef"] = None, markerEnd: Union["MarkerName", str, bool, Any, "ParamRef"] = None, markerMid: Union["MarkerName", str, bool, Any, "ParamRef"] = None, markerStart: Union["MarkerName", str, bool, Any, "ParamRef"] = None, mixBlendMode: Union[str, "ParamRef"] = None, opacity: "ChannelValueSpec" = None, paintOrder: Union[str, "ParamRef"] = None, pointerEvents: Union[str, "ParamRef"] = None, reverse: Union[bool, "ParamRef"] = None, select: "SelectFilter" = None, shapeRendering: Union[str, "ParamRef"] = None, sort: Union["SortOrder", "ChannelDomainSort"] = None, stroke: Union["ChannelValueSpec", "ParamRef"] = None, strokeDasharray: Union[str, float, "ParamRef"] = None, strokeDashoffset: Union[str, float, "ParamRef"] = None, strokeLinecap: Union[str, "ParamRef"] = None, strokeLinejoin: Union[str, "ParamRef"] = None, strokeMiterlimit: Union[float, "ParamRef"] = None, strokeOpacity: "ChannelValueSpec" = None, strokeWidth: "ChannelValueSpec" = None, target: Union[str, "ParamRef"] = None, tension: Union[float, "ParamRef"] = None, tip: Union[bool, "TipPointer", Dict[str, Any], "ParamRef"] = None, title: "ChannelValue" = None, x: "ChannelValueSpec" = None, y: "ChannelValueSpec" = None, z: "ChannelValue" = None):
+    def __init__(
+        self,
+        data: "PlotMarkData",
+        mark: str,
+        ariaDescription: Union[str, "ParamRef"] = None,
+        ariaHidden: Union[str, "ParamRef"] = None,
+        ariaLabel: "ChannelValue" = None,
+        clip: Union[str, str, bool, Any, "ParamRef"] = None,
+        curve: Union["Curve", "ParamRef"] = None,
+        dx: Union[float, "ParamRef"] = None,
+        dy: Union[float, "ParamRef"] = None,
+        facet: Union[str, str, str, str, bool, Any, "ParamRef"] = None,
+        facetAnchor: Union[
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            Any,
+            "ParamRef",
+        ] = None,
+        fill: Union["ChannelValueSpec", "ParamRef"] = None,
+        fillOpacity: Union["ChannelValueSpec", "ParamRef"] = None,
+        filter: "ChannelValue" = None,
+        fx: "ChannelValue" = None,
+        fy: "ChannelValue" = None,
+        href: "ChannelValue" = None,
+        imageFilter: Union[str, "ParamRef"] = None,
+        margin: Union[float, "ParamRef"] = None,
+        marginBottom: Union[float, "ParamRef"] = None,
+        marginLeft: Union[float, "ParamRef"] = None,
+        marginRight: Union[float, "ParamRef"] = None,
+        marginTop: Union[float, "ParamRef"] = None,
+        marker: Union["MarkerName", str, bool, Any, "ParamRef"] = None,
+        markerEnd: Union["MarkerName", str, bool, Any, "ParamRef"] = None,
+        markerMid: Union["MarkerName", str, bool, Any, "ParamRef"] = None,
+        markerStart: Union["MarkerName", str, bool, Any, "ParamRef"] = None,
+        mixBlendMode: Union[str, "ParamRef"] = None,
+        opacity: "ChannelValueSpec" = None,
+        paintOrder: Union[str, "ParamRef"] = None,
+        pointerEvents: Union[str, "ParamRef"] = None,
+        reverse: Union[bool, "ParamRef"] = None,
+        select: "SelectFilter" = None,
+        shapeRendering: Union[str, "ParamRef"] = None,
+        sort: Union["SortOrder", "ChannelDomainSort"] = None,
+        stroke: Union["ChannelValueSpec", "ParamRef"] = None,
+        strokeDasharray: Union[str, float, "ParamRef"] = None,
+        strokeDashoffset: Union[str, float, "ParamRef"] = None,
+        strokeLinecap: Union[str, "ParamRef"] = None,
+        strokeLinejoin: Union[str, "ParamRef"] = None,
+        strokeMiterlimit: Union[float, "ParamRef"] = None,
+        strokeOpacity: "ChannelValueSpec" = None,
+        strokeWidth: "ChannelValueSpec" = None,
+        target: Union[str, "ParamRef"] = None,
+        tension: Union[float, "ParamRef"] = None,
+        tip: Union[bool, "TipPointer", Dict[str, Any], "ParamRef"] = None,
+        title: "ChannelValue" = None,
+        x: "ChannelValueSpec" = None,
+        y: "ChannelValueSpec" = None,
+        z: "ChannelValue" = None,
+    ):
         self.ariaDescription = ariaDescription
         self.ariaHidden = ariaHidden
         self.ariaLabel = ariaLabel
@@ -4332,7 +9315,81 @@ class VoronoiMesh(SchemaBase):
 
 
 class BarX(SchemaBase):
-    def __init__(self, data: "PlotMarkData", mark: str, ariaDescription: Union[str, "ParamRef"] = None, ariaHidden: Union[str, "ParamRef"] = None, ariaLabel: "ChannelValue" = None, clip: Union[str, str, bool, Any, "ParamRef"] = None, dx: Union[float, "ParamRef"] = None, dy: Union[float, "ParamRef"] = None, facet: Union[str, str, str, str, bool, Any, "ParamRef"] = None, facetAnchor: Union[str, str, str, str, str, str, str, str, str, str, str, str, str, Any, "ParamRef"] = None, fill: Union["ChannelValueSpec", "ParamRef"] = None, fillOpacity: Union["ChannelValueSpec", "ParamRef"] = None, filter: "ChannelValue" = None, fx: "ChannelValue" = None, fy: "ChannelValue" = None, href: "ChannelValue" = None, imageFilter: Union[str, "ParamRef"] = None, inset: Union[float, "ParamRef"] = None, insetBottom: Union[float, "ParamRef"] = None, insetLeft: Union[float, "ParamRef"] = None, insetRight: Union[float, "ParamRef"] = None, insetTop: Union[float, "ParamRef"] = None, interval: Union["Interval", "ParamRef"] = None, margin: Union[float, "ParamRef"] = None, marginBottom: Union[float, "ParamRef"] = None, marginLeft: Union[float, "ParamRef"] = None, marginRight: Union[float, "ParamRef"] = None, marginTop: Union[float, "ParamRef"] = None, mixBlendMode: Union[str, "ParamRef"] = None, offset: Union["StackOffset", Any, "ParamRef"] = None, opacity: "ChannelValueSpec" = None, order: Union["StackOrder", Any, "ParamRef"] = None, paintOrder: Union[str, "ParamRef"] = None, pointerEvents: Union[str, "ParamRef"] = None, reverse: Union[bool, "ParamRef"] = None, rx: Union[float, str, "ParamRef"] = None, ry: Union[float, str, "ParamRef"] = None, select: "SelectFilter" = None, shapeRendering: Union[str, "ParamRef"] = None, sort: Union["SortOrder", "ChannelDomainSort"] = None, stroke: Union["ChannelValueSpec", "ParamRef"] = None, strokeDasharray: Union[str, float, "ParamRef"] = None, strokeDashoffset: Union[str, float, "ParamRef"] = None, strokeLinecap: Union[str, "ParamRef"] = None, strokeLinejoin: Union[str, "ParamRef"] = None, strokeMiterlimit: Union[float, "ParamRef"] = None, strokeOpacity: "ChannelValueSpec" = None, strokeWidth: "ChannelValueSpec" = None, target: Union[str, "ParamRef"] = None, tip: Union[bool, "TipPointer", Dict[str, Any], "ParamRef"] = None, title: "ChannelValue" = None, x: "ChannelValueIntervalSpec" = None, x1: "ChannelValueSpec" = None, x2: "ChannelValueSpec" = None, y: "ChannelValueSpec" = None, z: "ChannelValue" = None):
+    def __init__(
+        self,
+        data: "PlotMarkData",
+        mark: str,
+        ariaDescription: Union[str, "ParamRef"] = None,
+        ariaHidden: Union[str, "ParamRef"] = None,
+        ariaLabel: "ChannelValue" = None,
+        clip: Union[str, str, bool, Any, "ParamRef"] = None,
+        dx: Union[float, "ParamRef"] = None,
+        dy: Union[float, "ParamRef"] = None,
+        facet: Union[str, str, str, str, bool, Any, "ParamRef"] = None,
+        facetAnchor: Union[
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            Any,
+            "ParamRef",
+        ] = None,
+        fill: Union["ChannelValueSpec", "ParamRef"] = None,
+        fillOpacity: Union["ChannelValueSpec", "ParamRef"] = None,
+        filter: "ChannelValue" = None,
+        fx: "ChannelValue" = None,
+        fy: "ChannelValue" = None,
+        href: "ChannelValue" = None,
+        imageFilter: Union[str, "ParamRef"] = None,
+        inset: Union[float, "ParamRef"] = None,
+        insetBottom: Union[float, "ParamRef"] = None,
+        insetLeft: Union[float, "ParamRef"] = None,
+        insetRight: Union[float, "ParamRef"] = None,
+        insetTop: Union[float, "ParamRef"] = None,
+        interval: Union["Interval", "ParamRef"] = None,
+        margin: Union[float, "ParamRef"] = None,
+        marginBottom: Union[float, "ParamRef"] = None,
+        marginLeft: Union[float, "ParamRef"] = None,
+        marginRight: Union[float, "ParamRef"] = None,
+        marginTop: Union[float, "ParamRef"] = None,
+        mixBlendMode: Union[str, "ParamRef"] = None,
+        offset: Union["StackOffset", Any, "ParamRef"] = None,
+        opacity: "ChannelValueSpec" = None,
+        order: Union["StackOrder", Any, "ParamRef"] = None,
+        paintOrder: Union[str, "ParamRef"] = None,
+        pointerEvents: Union[str, "ParamRef"] = None,
+        reverse: Union[bool, "ParamRef"] = None,
+        rx: Union[float, str, "ParamRef"] = None,
+        ry: Union[float, str, "ParamRef"] = None,
+        select: "SelectFilter" = None,
+        shapeRendering: Union[str, "ParamRef"] = None,
+        sort: Union["SortOrder", "ChannelDomainSort"] = None,
+        stroke: Union["ChannelValueSpec", "ParamRef"] = None,
+        strokeDasharray: Union[str, float, "ParamRef"] = None,
+        strokeDashoffset: Union[str, float, "ParamRef"] = None,
+        strokeLinecap: Union[str, "ParamRef"] = None,
+        strokeLinejoin: Union[str, "ParamRef"] = None,
+        strokeMiterlimit: Union[float, "ParamRef"] = None,
+        strokeOpacity: "ChannelValueSpec" = None,
+        strokeWidth: "ChannelValueSpec" = None,
+        target: Union[str, "ParamRef"] = None,
+        tip: Union[bool, "TipPointer", Dict[str, Any], "ParamRef"] = None,
+        title: "ChannelValue" = None,
+        x: "ChannelValueIntervalSpec" = None,
+        x1: "ChannelValueSpec" = None,
+        x2: "ChannelValueSpec" = None,
+        y: "ChannelValueSpec" = None,
+        z: "ChannelValue" = None,
+    ):
         self.ariaDescription = ariaDescription
         self.ariaHidden = ariaHidden
         self.ariaLabel = ariaLabel
@@ -4392,7 +9449,81 @@ class BarX(SchemaBase):
 
 
 class BarY(SchemaBase):
-    def __init__(self, data: "PlotMarkData", mark: str, ariaDescription: Union[str, "ParamRef"] = None, ariaHidden: Union[str, "ParamRef"] = None, ariaLabel: "ChannelValue" = None, clip: Union[str, str, bool, Any, "ParamRef"] = None, dx: Union[float, "ParamRef"] = None, dy: Union[float, "ParamRef"] = None, facet: Union[str, str, str, str, bool, Any, "ParamRef"] = None, facetAnchor: Union[str, str, str, str, str, str, str, str, str, str, str, str, str, Any, "ParamRef"] = None, fill: Union["ChannelValueSpec", "ParamRef"] = None, fillOpacity: Union["ChannelValueSpec", "ParamRef"] = None, filter: "ChannelValue" = None, fx: "ChannelValue" = None, fy: "ChannelValue" = None, href: "ChannelValue" = None, imageFilter: Union[str, "ParamRef"] = None, inset: Union[float, "ParamRef"] = None, insetBottom: Union[float, "ParamRef"] = None, insetLeft: Union[float, "ParamRef"] = None, insetRight: Union[float, "ParamRef"] = None, insetTop: Union[float, "ParamRef"] = None, interval: Union["Interval", "ParamRef"] = None, margin: Union[float, "ParamRef"] = None, marginBottom: Union[float, "ParamRef"] = None, marginLeft: Union[float, "ParamRef"] = None, marginRight: Union[float, "ParamRef"] = None, marginTop: Union[float, "ParamRef"] = None, mixBlendMode: Union[str, "ParamRef"] = None, offset: Union["StackOffset", Any, "ParamRef"] = None, opacity: "ChannelValueSpec" = None, order: Union["StackOrder", Any, "ParamRef"] = None, paintOrder: Union[str, "ParamRef"] = None, pointerEvents: Union[str, "ParamRef"] = None, reverse: Union[bool, "ParamRef"] = None, rx: Union[float, str, "ParamRef"] = None, ry: Union[float, str, "ParamRef"] = None, select: "SelectFilter" = None, shapeRendering: Union[str, "ParamRef"] = None, sort: Union["SortOrder", "ChannelDomainSort"] = None, stroke: Union["ChannelValueSpec", "ParamRef"] = None, strokeDasharray: Union[str, float, "ParamRef"] = None, strokeDashoffset: Union[str, float, "ParamRef"] = None, strokeLinecap: Union[str, "ParamRef"] = None, strokeLinejoin: Union[str, "ParamRef"] = None, strokeMiterlimit: Union[float, "ParamRef"] = None, strokeOpacity: "ChannelValueSpec" = None, strokeWidth: "ChannelValueSpec" = None, target: Union[str, "ParamRef"] = None, tip: Union[bool, "TipPointer", Dict[str, Any], "ParamRef"] = None, title: "ChannelValue" = None, x: "ChannelValueSpec" = None, y: "ChannelValueIntervalSpec" = None, y1: "ChannelValueSpec" = None, y2: "ChannelValueSpec" = None, z: "ChannelValue" = None):
+    def __init__(
+        self,
+        data: "PlotMarkData",
+        mark: str,
+        ariaDescription: Union[str, "ParamRef"] = None,
+        ariaHidden: Union[str, "ParamRef"] = None,
+        ariaLabel: "ChannelValue" = None,
+        clip: Union[str, str, bool, Any, "ParamRef"] = None,
+        dx: Union[float, "ParamRef"] = None,
+        dy: Union[float, "ParamRef"] = None,
+        facet: Union[str, str, str, str, bool, Any, "ParamRef"] = None,
+        facetAnchor: Union[
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            Any,
+            "ParamRef",
+        ] = None,
+        fill: Union["ChannelValueSpec", "ParamRef"] = None,
+        fillOpacity: Union["ChannelValueSpec", "ParamRef"] = None,
+        filter: "ChannelValue" = None,
+        fx: "ChannelValue" = None,
+        fy: "ChannelValue" = None,
+        href: "ChannelValue" = None,
+        imageFilter: Union[str, "ParamRef"] = None,
+        inset: Union[float, "ParamRef"] = None,
+        insetBottom: Union[float, "ParamRef"] = None,
+        insetLeft: Union[float, "ParamRef"] = None,
+        insetRight: Union[float, "ParamRef"] = None,
+        insetTop: Union[float, "ParamRef"] = None,
+        interval: Union["Interval", "ParamRef"] = None,
+        margin: Union[float, "ParamRef"] = None,
+        marginBottom: Union[float, "ParamRef"] = None,
+        marginLeft: Union[float, "ParamRef"] = None,
+        marginRight: Union[float, "ParamRef"] = None,
+        marginTop: Union[float, "ParamRef"] = None,
+        mixBlendMode: Union[str, "ParamRef"] = None,
+        offset: Union["StackOffset", Any, "ParamRef"] = None,
+        opacity: "ChannelValueSpec" = None,
+        order: Union["StackOrder", Any, "ParamRef"] = None,
+        paintOrder: Union[str, "ParamRef"] = None,
+        pointerEvents: Union[str, "ParamRef"] = None,
+        reverse: Union[bool, "ParamRef"] = None,
+        rx: Union[float, str, "ParamRef"] = None,
+        ry: Union[float, str, "ParamRef"] = None,
+        select: "SelectFilter" = None,
+        shapeRendering: Union[str, "ParamRef"] = None,
+        sort: Union["SortOrder", "ChannelDomainSort"] = None,
+        stroke: Union["ChannelValueSpec", "ParamRef"] = None,
+        strokeDasharray: Union[str, float, "ParamRef"] = None,
+        strokeDashoffset: Union[str, float, "ParamRef"] = None,
+        strokeLinecap: Union[str, "ParamRef"] = None,
+        strokeLinejoin: Union[str, "ParamRef"] = None,
+        strokeMiterlimit: Union[float, "ParamRef"] = None,
+        strokeOpacity: "ChannelValueSpec" = None,
+        strokeWidth: "ChannelValueSpec" = None,
+        target: Union[str, "ParamRef"] = None,
+        tip: Union[bool, "TipPointer", Dict[str, Any], "ParamRef"] = None,
+        title: "ChannelValue" = None,
+        x: "ChannelValueSpec" = None,
+        y: "ChannelValueIntervalSpec" = None,
+        y1: "ChannelValueSpec" = None,
+        y2: "ChannelValueSpec" = None,
+        z: "ChannelValue" = None,
+    ):
         self.ariaDescription = ariaDescription
         self.ariaHidden = ariaHidden
         self.ariaLabel = ariaLabel
@@ -4452,7 +9583,74 @@ class BarY(SchemaBase):
 
 
 class DotX(SchemaBase):
-    def __init__(self, data: "PlotMarkData", mark: str, ariaDescription: Union[str, "ParamRef"] = None, ariaHidden: Union[str, "ParamRef"] = None, ariaLabel: "ChannelValue" = None, clip: Union[str, str, bool, Any, "ParamRef"] = None, dx: Union[float, "ParamRef"] = None, dy: Union[float, "ParamRef"] = None, facet: Union[str, str, str, str, bool, Any, "ParamRef"] = None, facetAnchor: Union[str, str, str, str, str, str, str, str, str, str, str, str, str, Any, "ParamRef"] = None, fill: Union["ChannelValueSpec", "ParamRef"] = None, fillOpacity: Union["ChannelValueSpec", "ParamRef"] = None, filter: "ChannelValue" = None, frameAnchor: Union["FrameAnchor", "ParamRef"] = None, fx: "ChannelValue" = None, fy: "ChannelValue" = None, href: "ChannelValue" = None, imageFilter: Union[str, "ParamRef"] = None, interval: Union["Interval", "ParamRef"] = None, margin: Union[float, "ParamRef"] = None, marginBottom: Union[float, "ParamRef"] = None, marginLeft: Union[float, "ParamRef"] = None, marginRight: Union[float, "ParamRef"] = None, marginTop: Union[float, "ParamRef"] = None, mixBlendMode: Union[str, "ParamRef"] = None, opacity: "ChannelValueSpec" = None, paintOrder: Union[str, "ParamRef"] = None, pointerEvents: Union[str, "ParamRef"] = None, r: Union["ChannelValueSpec", float, "ParamRef"] = None, reverse: Union[bool, "ParamRef"] = None, rotate: Union["ChannelValue", float, "ParamRef"] = None, select: "SelectFilter" = None, shapeRendering: Union[str, "ParamRef"] = None, sort: Union["SortOrder", "ChannelDomainSort"] = None, stroke: Union["ChannelValueSpec", "ParamRef"] = None, strokeDasharray: Union[str, float, "ParamRef"] = None, strokeDashoffset: Union[str, float, "ParamRef"] = None, strokeLinecap: Union[str, "ParamRef"] = None, strokeLinejoin: Union[str, "ParamRef"] = None, strokeMiterlimit: Union[float, "ParamRef"] = None, strokeOpacity: "ChannelValueSpec" = None, strokeWidth: "ChannelValueSpec" = None, symbol: Union["ChannelValueSpec", "SymbolType", "ParamRef"] = None, target: Union[str, "ParamRef"] = None, tip: Union[bool, "TipPointer", Dict[str, Any], "ParamRef"] = None, title: "ChannelValue" = None, x: "ChannelValueSpec" = None, y: "ChannelValueIntervalSpec" = None, z: "ChannelValue" = None):
+    def __init__(
+        self,
+        data: "PlotMarkData",
+        mark: str,
+        ariaDescription: Union[str, "ParamRef"] = None,
+        ariaHidden: Union[str, "ParamRef"] = None,
+        ariaLabel: "ChannelValue" = None,
+        clip: Union[str, str, bool, Any, "ParamRef"] = None,
+        dx: Union[float, "ParamRef"] = None,
+        dy: Union[float, "ParamRef"] = None,
+        facet: Union[str, str, str, str, bool, Any, "ParamRef"] = None,
+        facetAnchor: Union[
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            Any,
+            "ParamRef",
+        ] = None,
+        fill: Union["ChannelValueSpec", "ParamRef"] = None,
+        fillOpacity: Union["ChannelValueSpec", "ParamRef"] = None,
+        filter: "ChannelValue" = None,
+        frameAnchor: Union["FrameAnchor", "ParamRef"] = None,
+        fx: "ChannelValue" = None,
+        fy: "ChannelValue" = None,
+        href: "ChannelValue" = None,
+        imageFilter: Union[str, "ParamRef"] = None,
+        interval: Union["Interval", "ParamRef"] = None,
+        margin: Union[float, "ParamRef"] = None,
+        marginBottom: Union[float, "ParamRef"] = None,
+        marginLeft: Union[float, "ParamRef"] = None,
+        marginRight: Union[float, "ParamRef"] = None,
+        marginTop: Union[float, "ParamRef"] = None,
+        mixBlendMode: Union[str, "ParamRef"] = None,
+        opacity: "ChannelValueSpec" = None,
+        paintOrder: Union[str, "ParamRef"] = None,
+        pointerEvents: Union[str, "ParamRef"] = None,
+        r: Union["ChannelValueSpec", float, "ParamRef"] = None,
+        reverse: Union[bool, "ParamRef"] = None,
+        rotate: Union["ChannelValue", float, "ParamRef"] = None,
+        select: "SelectFilter" = None,
+        shapeRendering: Union[str, "ParamRef"] = None,
+        sort: Union["SortOrder", "ChannelDomainSort"] = None,
+        stroke: Union["ChannelValueSpec", "ParamRef"] = None,
+        strokeDasharray: Union[str, float, "ParamRef"] = None,
+        strokeDashoffset: Union[str, float, "ParamRef"] = None,
+        strokeLinecap: Union[str, "ParamRef"] = None,
+        strokeLinejoin: Union[str, "ParamRef"] = None,
+        strokeMiterlimit: Union[float, "ParamRef"] = None,
+        strokeOpacity: "ChannelValueSpec" = None,
+        strokeWidth: "ChannelValueSpec" = None,
+        symbol: Union["ChannelValueSpec", "SymbolType", "ParamRef"] = None,
+        target: Union[str, "ParamRef"] = None,
+        tip: Union[bool, "TipPointer", Dict[str, Any], "ParamRef"] = None,
+        title: "ChannelValue" = None,
+        x: "ChannelValueSpec" = None,
+        y: "ChannelValueIntervalSpec" = None,
+        z: "ChannelValue" = None,
+    ):
         self.ariaDescription = ariaDescription
         self.ariaHidden = ariaHidden
         self.ariaLabel = ariaLabel
@@ -4505,7 +9703,74 @@ class DotX(SchemaBase):
 
 
 class DotY(SchemaBase):
-    def __init__(self, data: "PlotMarkData", mark: str, ariaDescription: Union[str, "ParamRef"] = None, ariaHidden: Union[str, "ParamRef"] = None, ariaLabel: "ChannelValue" = None, clip: Union[str, str, bool, Any, "ParamRef"] = None, dx: Union[float, "ParamRef"] = None, dy: Union[float, "ParamRef"] = None, facet: Union[str, str, str, str, bool, Any, "ParamRef"] = None, facetAnchor: Union[str, str, str, str, str, str, str, str, str, str, str, str, str, Any, "ParamRef"] = None, fill: Union["ChannelValueSpec", "ParamRef"] = None, fillOpacity: Union["ChannelValueSpec", "ParamRef"] = None, filter: "ChannelValue" = None, frameAnchor: Union["FrameAnchor", "ParamRef"] = None, fx: "ChannelValue" = None, fy: "ChannelValue" = None, href: "ChannelValue" = None, imageFilter: Union[str, "ParamRef"] = None, interval: Union["Interval", "ParamRef"] = None, margin: Union[float, "ParamRef"] = None, marginBottom: Union[float, "ParamRef"] = None, marginLeft: Union[float, "ParamRef"] = None, marginRight: Union[float, "ParamRef"] = None, marginTop: Union[float, "ParamRef"] = None, mixBlendMode: Union[str, "ParamRef"] = None, opacity: "ChannelValueSpec" = None, paintOrder: Union[str, "ParamRef"] = None, pointerEvents: Union[str, "ParamRef"] = None, r: Union["ChannelValueSpec", float, "ParamRef"] = None, reverse: Union[bool, "ParamRef"] = None, rotate: Union["ChannelValue", float, "ParamRef"] = None, select: "SelectFilter" = None, shapeRendering: Union[str, "ParamRef"] = None, sort: Union["SortOrder", "ChannelDomainSort"] = None, stroke: Union["ChannelValueSpec", "ParamRef"] = None, strokeDasharray: Union[str, float, "ParamRef"] = None, strokeDashoffset: Union[str, float, "ParamRef"] = None, strokeLinecap: Union[str, "ParamRef"] = None, strokeLinejoin: Union[str, "ParamRef"] = None, strokeMiterlimit: Union[float, "ParamRef"] = None, strokeOpacity: "ChannelValueSpec" = None, strokeWidth: "ChannelValueSpec" = None, symbol: Union["ChannelValueSpec", "SymbolType", "ParamRef"] = None, target: Union[str, "ParamRef"] = None, tip: Union[bool, "TipPointer", Dict[str, Any], "ParamRef"] = None, title: "ChannelValue" = None, x: "ChannelValueIntervalSpec" = None, y: "ChannelValueSpec" = None, z: "ChannelValue" = None):
+    def __init__(
+        self,
+        data: "PlotMarkData",
+        mark: str,
+        ariaDescription: Union[str, "ParamRef"] = None,
+        ariaHidden: Union[str, "ParamRef"] = None,
+        ariaLabel: "ChannelValue" = None,
+        clip: Union[str, str, bool, Any, "ParamRef"] = None,
+        dx: Union[float, "ParamRef"] = None,
+        dy: Union[float, "ParamRef"] = None,
+        facet: Union[str, str, str, str, bool, Any, "ParamRef"] = None,
+        facetAnchor: Union[
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            Any,
+            "ParamRef",
+        ] = None,
+        fill: Union["ChannelValueSpec", "ParamRef"] = None,
+        fillOpacity: Union["ChannelValueSpec", "ParamRef"] = None,
+        filter: "ChannelValue" = None,
+        frameAnchor: Union["FrameAnchor", "ParamRef"] = None,
+        fx: "ChannelValue" = None,
+        fy: "ChannelValue" = None,
+        href: "ChannelValue" = None,
+        imageFilter: Union[str, "ParamRef"] = None,
+        interval: Union["Interval", "ParamRef"] = None,
+        margin: Union[float, "ParamRef"] = None,
+        marginBottom: Union[float, "ParamRef"] = None,
+        marginLeft: Union[float, "ParamRef"] = None,
+        marginRight: Union[float, "ParamRef"] = None,
+        marginTop: Union[float, "ParamRef"] = None,
+        mixBlendMode: Union[str, "ParamRef"] = None,
+        opacity: "ChannelValueSpec" = None,
+        paintOrder: Union[str, "ParamRef"] = None,
+        pointerEvents: Union[str, "ParamRef"] = None,
+        r: Union["ChannelValueSpec", float, "ParamRef"] = None,
+        reverse: Union[bool, "ParamRef"] = None,
+        rotate: Union["ChannelValue", float, "ParamRef"] = None,
+        select: "SelectFilter" = None,
+        shapeRendering: Union[str, "ParamRef"] = None,
+        sort: Union["SortOrder", "ChannelDomainSort"] = None,
+        stroke: Union["ChannelValueSpec", "ParamRef"] = None,
+        strokeDasharray: Union[str, float, "ParamRef"] = None,
+        strokeDashoffset: Union[str, float, "ParamRef"] = None,
+        strokeLinecap: Union[str, "ParamRef"] = None,
+        strokeLinejoin: Union[str, "ParamRef"] = None,
+        strokeMiterlimit: Union[float, "ParamRef"] = None,
+        strokeOpacity: "ChannelValueSpec" = None,
+        strokeWidth: "ChannelValueSpec" = None,
+        symbol: Union["ChannelValueSpec", "SymbolType", "ParamRef"] = None,
+        target: Union[str, "ParamRef"] = None,
+        tip: Union[bool, "TipPointer", Dict[str, Any], "ParamRef"] = None,
+        title: "ChannelValue" = None,
+        x: "ChannelValueIntervalSpec" = None,
+        y: "ChannelValueSpec" = None,
+        z: "ChannelValue" = None,
+    ):
         self.ariaDescription = ariaDescription
         self.ariaHidden = ariaHidden
         self.ariaLabel = ariaLabel
@@ -4558,7 +9823,81 @@ class DotY(SchemaBase):
 
 
 class GridFx(SchemaBase):
-    def __init__(self, mark: str, anchor: Union[str, str, str, str, "ParamRef"] = None, ariaDescription: Union[str, "ParamRef"] = None, ariaHidden: Union[str, "ParamRef"] = None, ariaLabel: "ChannelValue" = None, clip: Union[str, str, bool, Any, "ParamRef"] = None, color: Union["ChannelValueSpec", "ParamRef"] = None, dx: Union[float, "ParamRef"] = None, dy: Union[float, "ParamRef"] = None, facet: Union[str, str, str, str, bool, Any, "ParamRef"] = None, facetAnchor: Union[str, str, str, str, str, str, str, str, str, str, str, str, str, Any, "ParamRef"] = None, fill: Union["ChannelValueSpec", "ParamRef"] = None, fillOpacity: Union["ChannelValueSpec", "ParamRef"] = None, filter: "ChannelValue" = None, fx: "ChannelValue" = None, fy: "ChannelValue" = None, href: "ChannelValue" = None, imageFilter: Union[str, "ParamRef"] = None, inset: Union[float, "ParamRef"] = None, insetBottom: Union[float, "ParamRef"] = None, insetTop: Union[float, "ParamRef"] = None, interval: Union["Interval", "ParamRef"] = None, margin: Union[float, "ParamRef"] = None, marginBottom: Union[float, "ParamRef"] = None, marginLeft: Union[float, "ParamRef"] = None, marginRight: Union[float, "ParamRef"] = None, marginTop: Union[float, "ParamRef"] = None, marker: Union["MarkerName", str, bool, Any, "ParamRef"] = None, markerEnd: Union["MarkerName", str, bool, Any, "ParamRef"] = None, markerMid: Union["MarkerName", str, bool, Any, "ParamRef"] = None, markerStart: Union["MarkerName", str, bool, Any, "ParamRef"] = None, mixBlendMode: Union[str, "ParamRef"] = None, opacity: "ChannelValueSpec" = None, paintOrder: Union[str, "ParamRef"] = None, pointerEvents: Union[str, "ParamRef"] = None, reverse: Union[bool, "ParamRef"] = None, select: "SelectFilter" = None, shapeRendering: Union[str, "ParamRef"] = None, sort: Union["SortOrder", "ChannelDomainSort"] = None, stroke: Union["ChannelValueSpec", "ParamRef"] = None, strokeDasharray: Union[str, float, "ParamRef"] = None, strokeDashoffset: Union[str, float, "ParamRef"] = None, strokeLinecap: Union[str, "ParamRef"] = None, strokeLinejoin: Union[str, "ParamRef"] = None, strokeMiterlimit: Union[float, "ParamRef"] = None, strokeOpacity: "ChannelValueSpec" = None, strokeWidth: "ChannelValueSpec" = None, target: Union[str, "ParamRef"] = None, tickSpacing: Union[float, "ParamRef"] = None, ticks: Union[float, "Interval", List[Any], "ParamRef"] = None, tip: Union[bool, "TipPointer", Dict[str, Any], "ParamRef"] = None, title: "ChannelValue" = None, x: "ChannelValueSpec" = None, y: "ChannelValueIntervalSpec" = None, y1: "ChannelValueSpec" = None, y2: "ChannelValueSpec" = None):
+    def __init__(
+        self,
+        mark: str,
+        anchor: Union[str, str, str, str, "ParamRef"] = None,
+        ariaDescription: Union[str, "ParamRef"] = None,
+        ariaHidden: Union[str, "ParamRef"] = None,
+        ariaLabel: "ChannelValue" = None,
+        clip: Union[str, str, bool, Any, "ParamRef"] = None,
+        color: Union["ChannelValueSpec", "ParamRef"] = None,
+        dx: Union[float, "ParamRef"] = None,
+        dy: Union[float, "ParamRef"] = None,
+        facet: Union[str, str, str, str, bool, Any, "ParamRef"] = None,
+        facetAnchor: Union[
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            Any,
+            "ParamRef",
+        ] = None,
+        fill: Union["ChannelValueSpec", "ParamRef"] = None,
+        fillOpacity: Union["ChannelValueSpec", "ParamRef"] = None,
+        filter: "ChannelValue" = None,
+        fx: "ChannelValue" = None,
+        fy: "ChannelValue" = None,
+        href: "ChannelValue" = None,
+        imageFilter: Union[str, "ParamRef"] = None,
+        inset: Union[float, "ParamRef"] = None,
+        insetBottom: Union[float, "ParamRef"] = None,
+        insetTop: Union[float, "ParamRef"] = None,
+        interval: Union["Interval", "ParamRef"] = None,
+        margin: Union[float, "ParamRef"] = None,
+        marginBottom: Union[float, "ParamRef"] = None,
+        marginLeft: Union[float, "ParamRef"] = None,
+        marginRight: Union[float, "ParamRef"] = None,
+        marginTop: Union[float, "ParamRef"] = None,
+        marker: Union["MarkerName", str, bool, Any, "ParamRef"] = None,
+        markerEnd: Union["MarkerName", str, bool, Any, "ParamRef"] = None,
+        markerMid: Union["MarkerName", str, bool, Any, "ParamRef"] = None,
+        markerStart: Union["MarkerName", str, bool, Any, "ParamRef"] = None,
+        mixBlendMode: Union[str, "ParamRef"] = None,
+        opacity: "ChannelValueSpec" = None,
+        paintOrder: Union[str, "ParamRef"] = None,
+        pointerEvents: Union[str, "ParamRef"] = None,
+        reverse: Union[bool, "ParamRef"] = None,
+        select: "SelectFilter" = None,
+        shapeRendering: Union[str, "ParamRef"] = None,
+        sort: Union["SortOrder", "ChannelDomainSort"] = None,
+        stroke: Union["ChannelValueSpec", "ParamRef"] = None,
+        strokeDasharray: Union[str, float, "ParamRef"] = None,
+        strokeDashoffset: Union[str, float, "ParamRef"] = None,
+        strokeLinecap: Union[str, "ParamRef"] = None,
+        strokeLinejoin: Union[str, "ParamRef"] = None,
+        strokeMiterlimit: Union[float, "ParamRef"] = None,
+        strokeOpacity: "ChannelValueSpec" = None,
+        strokeWidth: "ChannelValueSpec" = None,
+        target: Union[str, "ParamRef"] = None,
+        tickSpacing: Union[float, "ParamRef"] = None,
+        ticks: Union[float, "Interval", List[Any], "ParamRef"] = None,
+        tip: Union[bool, "TipPointer", Dict[str, Any], "ParamRef"] = None,
+        title: "ChannelValue" = None,
+        x: "ChannelValueSpec" = None,
+        y: "ChannelValueIntervalSpec" = None,
+        y1: "ChannelValueSpec" = None,
+        y2: "ChannelValueSpec" = None,
+    ):
         self.anchor = anchor
         self.ariaDescription = ariaDescription
         self.ariaHidden = ariaHidden
@@ -4618,7 +9957,81 @@ class GridFx(SchemaBase):
 
 
 class GridFy(SchemaBase):
-    def __init__(self, mark: str, anchor: Union[str, str, str, str, "ParamRef"] = None, ariaDescription: Union[str, "ParamRef"] = None, ariaHidden: Union[str, "ParamRef"] = None, ariaLabel: "ChannelValue" = None, clip: Union[str, str, bool, Any, "ParamRef"] = None, color: Union["ChannelValueSpec", "ParamRef"] = None, dx: Union[float, "ParamRef"] = None, dy: Union[float, "ParamRef"] = None, facet: Union[str, str, str, str, bool, Any, "ParamRef"] = None, facetAnchor: Union[str, str, str, str, str, str, str, str, str, str, str, str, str, Any, "ParamRef"] = None, fill: Union["ChannelValueSpec", "ParamRef"] = None, fillOpacity: Union["ChannelValueSpec", "ParamRef"] = None, filter: "ChannelValue" = None, fx: "ChannelValue" = None, fy: "ChannelValue" = None, href: "ChannelValue" = None, imageFilter: Union[str, "ParamRef"] = None, inset: Union[float, "ParamRef"] = None, insetLeft: Union[float, "ParamRef"] = None, insetRight: Union[float, "ParamRef"] = None, interval: Union["Interval", "ParamRef"] = None, margin: Union[float, "ParamRef"] = None, marginBottom: Union[float, "ParamRef"] = None, marginLeft: Union[float, "ParamRef"] = None, marginRight: Union[float, "ParamRef"] = None, marginTop: Union[float, "ParamRef"] = None, marker: Union["MarkerName", str, bool, Any, "ParamRef"] = None, markerEnd: Union["MarkerName", str, bool, Any, "ParamRef"] = None, markerMid: Union["MarkerName", str, bool, Any, "ParamRef"] = None, markerStart: Union["MarkerName", str, bool, Any, "ParamRef"] = None, mixBlendMode: Union[str, "ParamRef"] = None, opacity: "ChannelValueSpec" = None, paintOrder: Union[str, "ParamRef"] = None, pointerEvents: Union[str, "ParamRef"] = None, reverse: Union[bool, "ParamRef"] = None, select: "SelectFilter" = None, shapeRendering: Union[str, "ParamRef"] = None, sort: Union["SortOrder", "ChannelDomainSort"] = None, stroke: Union["ChannelValueSpec", "ParamRef"] = None, strokeDasharray: Union[str, float, "ParamRef"] = None, strokeDashoffset: Union[str, float, "ParamRef"] = None, strokeLinecap: Union[str, "ParamRef"] = None, strokeLinejoin: Union[str, "ParamRef"] = None, strokeMiterlimit: Union[float, "ParamRef"] = None, strokeOpacity: "ChannelValueSpec" = None, strokeWidth: "ChannelValueSpec" = None, target: Union[str, "ParamRef"] = None, tickSpacing: Union[float, "ParamRef"] = None, ticks: Union[float, "Interval", List[Any], "ParamRef"] = None, tip: Union[bool, "TipPointer", Dict[str, Any], "ParamRef"] = None, title: "ChannelValue" = None, x: "ChannelValueIntervalSpec" = None, x1: "ChannelValueSpec" = None, x2: "ChannelValueSpec" = None, y: "ChannelValueSpec" = None):
+    def __init__(
+        self,
+        mark: str,
+        anchor: Union[str, str, str, str, "ParamRef"] = None,
+        ariaDescription: Union[str, "ParamRef"] = None,
+        ariaHidden: Union[str, "ParamRef"] = None,
+        ariaLabel: "ChannelValue" = None,
+        clip: Union[str, str, bool, Any, "ParamRef"] = None,
+        color: Union["ChannelValueSpec", "ParamRef"] = None,
+        dx: Union[float, "ParamRef"] = None,
+        dy: Union[float, "ParamRef"] = None,
+        facet: Union[str, str, str, str, bool, Any, "ParamRef"] = None,
+        facetAnchor: Union[
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            Any,
+            "ParamRef",
+        ] = None,
+        fill: Union["ChannelValueSpec", "ParamRef"] = None,
+        fillOpacity: Union["ChannelValueSpec", "ParamRef"] = None,
+        filter: "ChannelValue" = None,
+        fx: "ChannelValue" = None,
+        fy: "ChannelValue" = None,
+        href: "ChannelValue" = None,
+        imageFilter: Union[str, "ParamRef"] = None,
+        inset: Union[float, "ParamRef"] = None,
+        insetLeft: Union[float, "ParamRef"] = None,
+        insetRight: Union[float, "ParamRef"] = None,
+        interval: Union["Interval", "ParamRef"] = None,
+        margin: Union[float, "ParamRef"] = None,
+        marginBottom: Union[float, "ParamRef"] = None,
+        marginLeft: Union[float, "ParamRef"] = None,
+        marginRight: Union[float, "ParamRef"] = None,
+        marginTop: Union[float, "ParamRef"] = None,
+        marker: Union["MarkerName", str, bool, Any, "ParamRef"] = None,
+        markerEnd: Union["MarkerName", str, bool, Any, "ParamRef"] = None,
+        markerMid: Union["MarkerName", str, bool, Any, "ParamRef"] = None,
+        markerStart: Union["MarkerName", str, bool, Any, "ParamRef"] = None,
+        mixBlendMode: Union[str, "ParamRef"] = None,
+        opacity: "ChannelValueSpec" = None,
+        paintOrder: Union[str, "ParamRef"] = None,
+        pointerEvents: Union[str, "ParamRef"] = None,
+        reverse: Union[bool, "ParamRef"] = None,
+        select: "SelectFilter" = None,
+        shapeRendering: Union[str, "ParamRef"] = None,
+        sort: Union["SortOrder", "ChannelDomainSort"] = None,
+        stroke: Union["ChannelValueSpec", "ParamRef"] = None,
+        strokeDasharray: Union[str, float, "ParamRef"] = None,
+        strokeDashoffset: Union[str, float, "ParamRef"] = None,
+        strokeLinecap: Union[str, "ParamRef"] = None,
+        strokeLinejoin: Union[str, "ParamRef"] = None,
+        strokeMiterlimit: Union[float, "ParamRef"] = None,
+        strokeOpacity: "ChannelValueSpec" = None,
+        strokeWidth: "ChannelValueSpec" = None,
+        target: Union[str, "ParamRef"] = None,
+        tickSpacing: Union[float, "ParamRef"] = None,
+        ticks: Union[float, "Interval", List[Any], "ParamRef"] = None,
+        tip: Union[bool, "TipPointer", Dict[str, Any], "ParamRef"] = None,
+        title: "ChannelValue" = None,
+        x: "ChannelValueIntervalSpec" = None,
+        x1: "ChannelValueSpec" = None,
+        x2: "ChannelValueSpec" = None,
+        y: "ChannelValueSpec" = None,
+    ):
         self.anchor = anchor
         self.ariaDescription = ariaDescription
         self.ariaHidden = ariaHidden
@@ -4678,7 +10091,81 @@ class GridFy(SchemaBase):
 
 
 class GridX(SchemaBase):
-    def __init__(self, mark: str, anchor: Union[str, str, str, str, "ParamRef"] = None, ariaDescription: Union[str, "ParamRef"] = None, ariaHidden: Union[str, "ParamRef"] = None, ariaLabel: "ChannelValue" = None, clip: Union[str, str, bool, Any, "ParamRef"] = None, color: Union["ChannelValueSpec", "ParamRef"] = None, dx: Union[float, "ParamRef"] = None, dy: Union[float, "ParamRef"] = None, facet: Union[str, str, str, str, bool, Any, "ParamRef"] = None, facetAnchor: Union[str, str, str, str, str, str, str, str, str, str, str, str, str, Any, "ParamRef"] = None, fill: Union["ChannelValueSpec", "ParamRef"] = None, fillOpacity: Union["ChannelValueSpec", "ParamRef"] = None, filter: "ChannelValue" = None, fx: "ChannelValue" = None, fy: "ChannelValue" = None, href: "ChannelValue" = None, imageFilter: Union[str, "ParamRef"] = None, inset: Union[float, "ParamRef"] = None, insetBottom: Union[float, "ParamRef"] = None, insetTop: Union[float, "ParamRef"] = None, interval: Union["Interval", "ParamRef"] = None, margin: Union[float, "ParamRef"] = None, marginBottom: Union[float, "ParamRef"] = None, marginLeft: Union[float, "ParamRef"] = None, marginRight: Union[float, "ParamRef"] = None, marginTop: Union[float, "ParamRef"] = None, marker: Union["MarkerName", str, bool, Any, "ParamRef"] = None, markerEnd: Union["MarkerName", str, bool, Any, "ParamRef"] = None, markerMid: Union["MarkerName", str, bool, Any, "ParamRef"] = None, markerStart: Union["MarkerName", str, bool, Any, "ParamRef"] = None, mixBlendMode: Union[str, "ParamRef"] = None, opacity: "ChannelValueSpec" = None, paintOrder: Union[str, "ParamRef"] = None, pointerEvents: Union[str, "ParamRef"] = None, reverse: Union[bool, "ParamRef"] = None, select: "SelectFilter" = None, shapeRendering: Union[str, "ParamRef"] = None, sort: Union["SortOrder", "ChannelDomainSort"] = None, stroke: Union["ChannelValueSpec", "ParamRef"] = None, strokeDasharray: Union[str, float, "ParamRef"] = None, strokeDashoffset: Union[str, float, "ParamRef"] = None, strokeLinecap: Union[str, "ParamRef"] = None, strokeLinejoin: Union[str, "ParamRef"] = None, strokeMiterlimit: Union[float, "ParamRef"] = None, strokeOpacity: "ChannelValueSpec" = None, strokeWidth: "ChannelValueSpec" = None, target: Union[str, "ParamRef"] = None, tickSpacing: Union[float, "ParamRef"] = None, ticks: Union[float, "Interval", List[Any], "ParamRef"] = None, tip: Union[bool, "TipPointer", Dict[str, Any], "ParamRef"] = None, title: "ChannelValue" = None, x: "ChannelValueSpec" = None, y: "ChannelValueIntervalSpec" = None, y1: "ChannelValueSpec" = None, y2: "ChannelValueSpec" = None):
+    def __init__(
+        self,
+        mark: str,
+        anchor: Union[str, str, str, str, "ParamRef"] = None,
+        ariaDescription: Union[str, "ParamRef"] = None,
+        ariaHidden: Union[str, "ParamRef"] = None,
+        ariaLabel: "ChannelValue" = None,
+        clip: Union[str, str, bool, Any, "ParamRef"] = None,
+        color: Union["ChannelValueSpec", "ParamRef"] = None,
+        dx: Union[float, "ParamRef"] = None,
+        dy: Union[float, "ParamRef"] = None,
+        facet: Union[str, str, str, str, bool, Any, "ParamRef"] = None,
+        facetAnchor: Union[
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            Any,
+            "ParamRef",
+        ] = None,
+        fill: Union["ChannelValueSpec", "ParamRef"] = None,
+        fillOpacity: Union["ChannelValueSpec", "ParamRef"] = None,
+        filter: "ChannelValue" = None,
+        fx: "ChannelValue" = None,
+        fy: "ChannelValue" = None,
+        href: "ChannelValue" = None,
+        imageFilter: Union[str, "ParamRef"] = None,
+        inset: Union[float, "ParamRef"] = None,
+        insetBottom: Union[float, "ParamRef"] = None,
+        insetTop: Union[float, "ParamRef"] = None,
+        interval: Union["Interval", "ParamRef"] = None,
+        margin: Union[float, "ParamRef"] = None,
+        marginBottom: Union[float, "ParamRef"] = None,
+        marginLeft: Union[float, "ParamRef"] = None,
+        marginRight: Union[float, "ParamRef"] = None,
+        marginTop: Union[float, "ParamRef"] = None,
+        marker: Union["MarkerName", str, bool, Any, "ParamRef"] = None,
+        markerEnd: Union["MarkerName", str, bool, Any, "ParamRef"] = None,
+        markerMid: Union["MarkerName", str, bool, Any, "ParamRef"] = None,
+        markerStart: Union["MarkerName", str, bool, Any, "ParamRef"] = None,
+        mixBlendMode: Union[str, "ParamRef"] = None,
+        opacity: "ChannelValueSpec" = None,
+        paintOrder: Union[str, "ParamRef"] = None,
+        pointerEvents: Union[str, "ParamRef"] = None,
+        reverse: Union[bool, "ParamRef"] = None,
+        select: "SelectFilter" = None,
+        shapeRendering: Union[str, "ParamRef"] = None,
+        sort: Union["SortOrder", "ChannelDomainSort"] = None,
+        stroke: Union["ChannelValueSpec", "ParamRef"] = None,
+        strokeDasharray: Union[str, float, "ParamRef"] = None,
+        strokeDashoffset: Union[str, float, "ParamRef"] = None,
+        strokeLinecap: Union[str, "ParamRef"] = None,
+        strokeLinejoin: Union[str, "ParamRef"] = None,
+        strokeMiterlimit: Union[float, "ParamRef"] = None,
+        strokeOpacity: "ChannelValueSpec" = None,
+        strokeWidth: "ChannelValueSpec" = None,
+        target: Union[str, "ParamRef"] = None,
+        tickSpacing: Union[float, "ParamRef"] = None,
+        ticks: Union[float, "Interval", List[Any], "ParamRef"] = None,
+        tip: Union[bool, "TipPointer", Dict[str, Any], "ParamRef"] = None,
+        title: "ChannelValue" = None,
+        x: "ChannelValueSpec" = None,
+        y: "ChannelValueIntervalSpec" = None,
+        y1: "ChannelValueSpec" = None,
+        y2: "ChannelValueSpec" = None,
+    ):
         self.anchor = anchor
         self.ariaDescription = ariaDescription
         self.ariaHidden = ariaHidden
@@ -4738,7 +10225,81 @@ class GridX(SchemaBase):
 
 
 class GridY(SchemaBase):
-    def __init__(self, mark: str, anchor: Union[str, str, str, str, "ParamRef"] = None, ariaDescription: Union[str, "ParamRef"] = None, ariaHidden: Union[str, "ParamRef"] = None, ariaLabel: "ChannelValue" = None, clip: Union[str, str, bool, Any, "ParamRef"] = None, color: Union["ChannelValueSpec", "ParamRef"] = None, dx: Union[float, "ParamRef"] = None, dy: Union[float, "ParamRef"] = None, facet: Union[str, str, str, str, bool, Any, "ParamRef"] = None, facetAnchor: Union[str, str, str, str, str, str, str, str, str, str, str, str, str, Any, "ParamRef"] = None, fill: Union["ChannelValueSpec", "ParamRef"] = None, fillOpacity: Union["ChannelValueSpec", "ParamRef"] = None, filter: "ChannelValue" = None, fx: "ChannelValue" = None, fy: "ChannelValue" = None, href: "ChannelValue" = None, imageFilter: Union[str, "ParamRef"] = None, inset: Union[float, "ParamRef"] = None, insetLeft: Union[float, "ParamRef"] = None, insetRight: Union[float, "ParamRef"] = None, interval: Union["Interval", "ParamRef"] = None, margin: Union[float, "ParamRef"] = None, marginBottom: Union[float, "ParamRef"] = None, marginLeft: Union[float, "ParamRef"] = None, marginRight: Union[float, "ParamRef"] = None, marginTop: Union[float, "ParamRef"] = None, marker: Union["MarkerName", str, bool, Any, "ParamRef"] = None, markerEnd: Union["MarkerName", str, bool, Any, "ParamRef"] = None, markerMid: Union["MarkerName", str, bool, Any, "ParamRef"] = None, markerStart: Union["MarkerName", str, bool, Any, "ParamRef"] = None, mixBlendMode: Union[str, "ParamRef"] = None, opacity: "ChannelValueSpec" = None, paintOrder: Union[str, "ParamRef"] = None, pointerEvents: Union[str, "ParamRef"] = None, reverse: Union[bool, "ParamRef"] = None, select: "SelectFilter" = None, shapeRendering: Union[str, "ParamRef"] = None, sort: Union["SortOrder", "ChannelDomainSort"] = None, stroke: Union["ChannelValueSpec", "ParamRef"] = None, strokeDasharray: Union[str, float, "ParamRef"] = None, strokeDashoffset: Union[str, float, "ParamRef"] = None, strokeLinecap: Union[str, "ParamRef"] = None, strokeLinejoin: Union[str, "ParamRef"] = None, strokeMiterlimit: Union[float, "ParamRef"] = None, strokeOpacity: "ChannelValueSpec" = None, strokeWidth: "ChannelValueSpec" = None, target: Union[str, "ParamRef"] = None, tickSpacing: Union[float, "ParamRef"] = None, ticks: Union[float, "Interval", List[Any], "ParamRef"] = None, tip: Union[bool, "TipPointer", Dict[str, Any], "ParamRef"] = None, title: "ChannelValue" = None, x: "ChannelValueIntervalSpec" = None, x1: "ChannelValueSpec" = None, x2: "ChannelValueSpec" = None, y: "ChannelValueSpec" = None):
+    def __init__(
+        self,
+        mark: str,
+        anchor: Union[str, str, str, str, "ParamRef"] = None,
+        ariaDescription: Union[str, "ParamRef"] = None,
+        ariaHidden: Union[str, "ParamRef"] = None,
+        ariaLabel: "ChannelValue" = None,
+        clip: Union[str, str, bool, Any, "ParamRef"] = None,
+        color: Union["ChannelValueSpec", "ParamRef"] = None,
+        dx: Union[float, "ParamRef"] = None,
+        dy: Union[float, "ParamRef"] = None,
+        facet: Union[str, str, str, str, bool, Any, "ParamRef"] = None,
+        facetAnchor: Union[
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            Any,
+            "ParamRef",
+        ] = None,
+        fill: Union["ChannelValueSpec", "ParamRef"] = None,
+        fillOpacity: Union["ChannelValueSpec", "ParamRef"] = None,
+        filter: "ChannelValue" = None,
+        fx: "ChannelValue" = None,
+        fy: "ChannelValue" = None,
+        href: "ChannelValue" = None,
+        imageFilter: Union[str, "ParamRef"] = None,
+        inset: Union[float, "ParamRef"] = None,
+        insetLeft: Union[float, "ParamRef"] = None,
+        insetRight: Union[float, "ParamRef"] = None,
+        interval: Union["Interval", "ParamRef"] = None,
+        margin: Union[float, "ParamRef"] = None,
+        marginBottom: Union[float, "ParamRef"] = None,
+        marginLeft: Union[float, "ParamRef"] = None,
+        marginRight: Union[float, "ParamRef"] = None,
+        marginTop: Union[float, "ParamRef"] = None,
+        marker: Union["MarkerName", str, bool, Any, "ParamRef"] = None,
+        markerEnd: Union["MarkerName", str, bool, Any, "ParamRef"] = None,
+        markerMid: Union["MarkerName", str, bool, Any, "ParamRef"] = None,
+        markerStart: Union["MarkerName", str, bool, Any, "ParamRef"] = None,
+        mixBlendMode: Union[str, "ParamRef"] = None,
+        opacity: "ChannelValueSpec" = None,
+        paintOrder: Union[str, "ParamRef"] = None,
+        pointerEvents: Union[str, "ParamRef"] = None,
+        reverse: Union[bool, "ParamRef"] = None,
+        select: "SelectFilter" = None,
+        shapeRendering: Union[str, "ParamRef"] = None,
+        sort: Union["SortOrder", "ChannelDomainSort"] = None,
+        stroke: Union["ChannelValueSpec", "ParamRef"] = None,
+        strokeDasharray: Union[str, float, "ParamRef"] = None,
+        strokeDashoffset: Union[str, float, "ParamRef"] = None,
+        strokeLinecap: Union[str, "ParamRef"] = None,
+        strokeLinejoin: Union[str, "ParamRef"] = None,
+        strokeMiterlimit: Union[float, "ParamRef"] = None,
+        strokeOpacity: "ChannelValueSpec" = None,
+        strokeWidth: "ChannelValueSpec" = None,
+        target: Union[str, "ParamRef"] = None,
+        tickSpacing: Union[float, "ParamRef"] = None,
+        ticks: Union[float, "Interval", List[Any], "ParamRef"] = None,
+        tip: Union[bool, "TipPointer", Dict[str, Any], "ParamRef"] = None,
+        title: "ChannelValue" = None,
+        x: "ChannelValueIntervalSpec" = None,
+        x1: "ChannelValueSpec" = None,
+        x2: "ChannelValueSpec" = None,
+        y: "ChannelValueSpec" = None,
+    ):
         self.anchor = anchor
         self.ariaDescription = ariaDescription
         self.ariaHidden = ariaHidden
@@ -4798,7 +10359,83 @@ class GridY(SchemaBase):
 
 
 class Rect(SchemaBase):
-    def __init__(self, data: "PlotMarkData", mark: str, ariaDescription: Union[str, "ParamRef"] = None, ariaHidden: Union[str, "ParamRef"] = None, ariaLabel: "ChannelValue" = None, clip: Union[str, str, bool, Any, "ParamRef"] = None, dx: Union[float, "ParamRef"] = None, dy: Union[float, "ParamRef"] = None, facet: Union[str, str, str, str, bool, Any, "ParamRef"] = None, facetAnchor: Union[str, str, str, str, str, str, str, str, str, str, str, str, str, Any, "ParamRef"] = None, fill: Union["ChannelValueSpec", "ParamRef"] = None, fillOpacity: Union["ChannelValueSpec", "ParamRef"] = None, filter: "ChannelValue" = None, fx: "ChannelValue" = None, fy: "ChannelValue" = None, href: "ChannelValue" = None, imageFilter: Union[str, "ParamRef"] = None, inset: Union[float, "ParamRef"] = None, insetBottom: Union[float, "ParamRef"] = None, insetLeft: Union[float, "ParamRef"] = None, insetRight: Union[float, "ParamRef"] = None, insetTop: Union[float, "ParamRef"] = None, interval: Union["Interval", "ParamRef"] = None, margin: Union[float, "ParamRef"] = None, marginBottom: Union[float, "ParamRef"] = None, marginLeft: Union[float, "ParamRef"] = None, marginRight: Union[float, "ParamRef"] = None, marginTop: Union[float, "ParamRef"] = None, mixBlendMode: Union[str, "ParamRef"] = None, offset: Union["StackOffset", Any, "ParamRef"] = None, opacity: "ChannelValueSpec" = None, order: Union["StackOrder", Any, "ParamRef"] = None, paintOrder: Union[str, "ParamRef"] = None, pointerEvents: Union[str, "ParamRef"] = None, reverse: Union[bool, "ParamRef"] = None, rx: Union[float, str, "ParamRef"] = None, ry: Union[float, str, "ParamRef"] = None, select: "SelectFilter" = None, shapeRendering: Union[str, "ParamRef"] = None, sort: Union["SortOrder", "ChannelDomainSort"] = None, stroke: Union["ChannelValueSpec", "ParamRef"] = None, strokeDasharray: Union[str, float, "ParamRef"] = None, strokeDashoffset: Union[str, float, "ParamRef"] = None, strokeLinecap: Union[str, "ParamRef"] = None, strokeLinejoin: Union[str, "ParamRef"] = None, strokeMiterlimit: Union[float, "ParamRef"] = None, strokeOpacity: "ChannelValueSpec" = None, strokeWidth: "ChannelValueSpec" = None, target: Union[str, "ParamRef"] = None, tip: Union[bool, "TipPointer", Dict[str, Any], "ParamRef"] = None, title: "ChannelValue" = None, x: "ChannelValueIntervalSpec" = None, x1: "ChannelValueSpec" = None, x2: "ChannelValueSpec" = None, y: "ChannelValueIntervalSpec" = None, y1: "ChannelValueSpec" = None, y2: "ChannelValueSpec" = None, z: "ChannelValue" = None):
+    def __init__(
+        self,
+        data: "PlotMarkData",
+        mark: str,
+        ariaDescription: Union[str, "ParamRef"] = None,
+        ariaHidden: Union[str, "ParamRef"] = None,
+        ariaLabel: "ChannelValue" = None,
+        clip: Union[str, str, bool, Any, "ParamRef"] = None,
+        dx: Union[float, "ParamRef"] = None,
+        dy: Union[float, "ParamRef"] = None,
+        facet: Union[str, str, str, str, bool, Any, "ParamRef"] = None,
+        facetAnchor: Union[
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            Any,
+            "ParamRef",
+        ] = None,
+        fill: Union["ChannelValueSpec", "ParamRef"] = None,
+        fillOpacity: Union["ChannelValueSpec", "ParamRef"] = None,
+        filter: "ChannelValue" = None,
+        fx: "ChannelValue" = None,
+        fy: "ChannelValue" = None,
+        href: "ChannelValue" = None,
+        imageFilter: Union[str, "ParamRef"] = None,
+        inset: Union[float, "ParamRef"] = None,
+        insetBottom: Union[float, "ParamRef"] = None,
+        insetLeft: Union[float, "ParamRef"] = None,
+        insetRight: Union[float, "ParamRef"] = None,
+        insetTop: Union[float, "ParamRef"] = None,
+        interval: Union["Interval", "ParamRef"] = None,
+        margin: Union[float, "ParamRef"] = None,
+        marginBottom: Union[float, "ParamRef"] = None,
+        marginLeft: Union[float, "ParamRef"] = None,
+        marginRight: Union[float, "ParamRef"] = None,
+        marginTop: Union[float, "ParamRef"] = None,
+        mixBlendMode: Union[str, "ParamRef"] = None,
+        offset: Union["StackOffset", Any, "ParamRef"] = None,
+        opacity: "ChannelValueSpec" = None,
+        order: Union["StackOrder", Any, "ParamRef"] = None,
+        paintOrder: Union[str, "ParamRef"] = None,
+        pointerEvents: Union[str, "ParamRef"] = None,
+        reverse: Union[bool, "ParamRef"] = None,
+        rx: Union[float, str, "ParamRef"] = None,
+        ry: Union[float, str, "ParamRef"] = None,
+        select: "SelectFilter" = None,
+        shapeRendering: Union[str, "ParamRef"] = None,
+        sort: Union["SortOrder", "ChannelDomainSort"] = None,
+        stroke: Union["ChannelValueSpec", "ParamRef"] = None,
+        strokeDasharray: Union[str, float, "ParamRef"] = None,
+        strokeDashoffset: Union[str, float, "ParamRef"] = None,
+        strokeLinecap: Union[str, "ParamRef"] = None,
+        strokeLinejoin: Union[str, "ParamRef"] = None,
+        strokeMiterlimit: Union[float, "ParamRef"] = None,
+        strokeOpacity: "ChannelValueSpec" = None,
+        strokeWidth: "ChannelValueSpec" = None,
+        target: Union[str, "ParamRef"] = None,
+        tip: Union[bool, "TipPointer", Dict[str, Any], "ParamRef"] = None,
+        title: "ChannelValue" = None,
+        x: "ChannelValueIntervalSpec" = None,
+        x1: "ChannelValueSpec" = None,
+        x2: "ChannelValueSpec" = None,
+        y: "ChannelValueIntervalSpec" = None,
+        y1: "ChannelValueSpec" = None,
+        y2: "ChannelValueSpec" = None,
+        z: "ChannelValue" = None,
+    ):
         self.ariaDescription = ariaDescription
         self.ariaHidden = ariaHidden
         self.ariaLabel = ariaLabel
@@ -4860,7 +10497,83 @@ class Rect(SchemaBase):
 
 
 class RectX(SchemaBase):
-    def __init__(self, data: "PlotMarkData", mark: str, ariaDescription: Union[str, "ParamRef"] = None, ariaHidden: Union[str, "ParamRef"] = None, ariaLabel: "ChannelValue" = None, clip: Union[str, str, bool, Any, "ParamRef"] = None, dx: Union[float, "ParamRef"] = None, dy: Union[float, "ParamRef"] = None, facet: Union[str, str, str, str, bool, Any, "ParamRef"] = None, facetAnchor: Union[str, str, str, str, str, str, str, str, str, str, str, str, str, Any, "ParamRef"] = None, fill: Union["ChannelValueSpec", "ParamRef"] = None, fillOpacity: Union["ChannelValueSpec", "ParamRef"] = None, filter: "ChannelValue" = None, fx: "ChannelValue" = None, fy: "ChannelValue" = None, href: "ChannelValue" = None, imageFilter: Union[str, "ParamRef"] = None, inset: Union[float, "ParamRef"] = None, insetBottom: Union[float, "ParamRef"] = None, insetLeft: Union[float, "ParamRef"] = None, insetRight: Union[float, "ParamRef"] = None, insetTop: Union[float, "ParamRef"] = None, interval: Union["Interval", "ParamRef"] = None, margin: Union[float, "ParamRef"] = None, marginBottom: Union[float, "ParamRef"] = None, marginLeft: Union[float, "ParamRef"] = None, marginRight: Union[float, "ParamRef"] = None, marginTop: Union[float, "ParamRef"] = None, mixBlendMode: Union[str, "ParamRef"] = None, offset: Union["StackOffset", Any, "ParamRef"] = None, opacity: "ChannelValueSpec" = None, order: Union["StackOrder", Any, "ParamRef"] = None, paintOrder: Union[str, "ParamRef"] = None, pointerEvents: Union[str, "ParamRef"] = None, reverse: Union[bool, "ParamRef"] = None, rx: Union[float, str, "ParamRef"] = None, ry: Union[float, str, "ParamRef"] = None, select: "SelectFilter" = None, shapeRendering: Union[str, "ParamRef"] = None, sort: Union["SortOrder", "ChannelDomainSort"] = None, stroke: Union["ChannelValueSpec", "ParamRef"] = None, strokeDasharray: Union[str, float, "ParamRef"] = None, strokeDashoffset: Union[str, float, "ParamRef"] = None, strokeLinecap: Union[str, "ParamRef"] = None, strokeLinejoin: Union[str, "ParamRef"] = None, strokeMiterlimit: Union[float, "ParamRef"] = None, strokeOpacity: "ChannelValueSpec" = None, strokeWidth: "ChannelValueSpec" = None, target: Union[str, "ParamRef"] = None, tip: Union[bool, "TipPointer", Dict[str, Any], "ParamRef"] = None, title: "ChannelValue" = None, x: "ChannelValueSpec" = None, x1: "ChannelValueSpec" = None, x2: "ChannelValueSpec" = None, y: "ChannelValueIntervalSpec" = None, y1: "ChannelValueSpec" = None, y2: "ChannelValueSpec" = None, z: "ChannelValue" = None):
+    def __init__(
+        self,
+        data: "PlotMarkData",
+        mark: str,
+        ariaDescription: Union[str, "ParamRef"] = None,
+        ariaHidden: Union[str, "ParamRef"] = None,
+        ariaLabel: "ChannelValue" = None,
+        clip: Union[str, str, bool, Any, "ParamRef"] = None,
+        dx: Union[float, "ParamRef"] = None,
+        dy: Union[float, "ParamRef"] = None,
+        facet: Union[str, str, str, str, bool, Any, "ParamRef"] = None,
+        facetAnchor: Union[
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            Any,
+            "ParamRef",
+        ] = None,
+        fill: Union["ChannelValueSpec", "ParamRef"] = None,
+        fillOpacity: Union["ChannelValueSpec", "ParamRef"] = None,
+        filter: "ChannelValue" = None,
+        fx: "ChannelValue" = None,
+        fy: "ChannelValue" = None,
+        href: "ChannelValue" = None,
+        imageFilter: Union[str, "ParamRef"] = None,
+        inset: Union[float, "ParamRef"] = None,
+        insetBottom: Union[float, "ParamRef"] = None,
+        insetLeft: Union[float, "ParamRef"] = None,
+        insetRight: Union[float, "ParamRef"] = None,
+        insetTop: Union[float, "ParamRef"] = None,
+        interval: Union["Interval", "ParamRef"] = None,
+        margin: Union[float, "ParamRef"] = None,
+        marginBottom: Union[float, "ParamRef"] = None,
+        marginLeft: Union[float, "ParamRef"] = None,
+        marginRight: Union[float, "ParamRef"] = None,
+        marginTop: Union[float, "ParamRef"] = None,
+        mixBlendMode: Union[str, "ParamRef"] = None,
+        offset: Union["StackOffset", Any, "ParamRef"] = None,
+        opacity: "ChannelValueSpec" = None,
+        order: Union["StackOrder", Any, "ParamRef"] = None,
+        paintOrder: Union[str, "ParamRef"] = None,
+        pointerEvents: Union[str, "ParamRef"] = None,
+        reverse: Union[bool, "ParamRef"] = None,
+        rx: Union[float, str, "ParamRef"] = None,
+        ry: Union[float, str, "ParamRef"] = None,
+        select: "SelectFilter" = None,
+        shapeRendering: Union[str, "ParamRef"] = None,
+        sort: Union["SortOrder", "ChannelDomainSort"] = None,
+        stroke: Union["ChannelValueSpec", "ParamRef"] = None,
+        strokeDasharray: Union[str, float, "ParamRef"] = None,
+        strokeDashoffset: Union[str, float, "ParamRef"] = None,
+        strokeLinecap: Union[str, "ParamRef"] = None,
+        strokeLinejoin: Union[str, "ParamRef"] = None,
+        strokeMiterlimit: Union[float, "ParamRef"] = None,
+        strokeOpacity: "ChannelValueSpec" = None,
+        strokeWidth: "ChannelValueSpec" = None,
+        target: Union[str, "ParamRef"] = None,
+        tip: Union[bool, "TipPointer", Dict[str, Any], "ParamRef"] = None,
+        title: "ChannelValue" = None,
+        x: "ChannelValueSpec" = None,
+        x1: "ChannelValueSpec" = None,
+        x2: "ChannelValueSpec" = None,
+        y: "ChannelValueIntervalSpec" = None,
+        y1: "ChannelValueSpec" = None,
+        y2: "ChannelValueSpec" = None,
+        z: "ChannelValue" = None,
+    ):
         self.ariaDescription = ariaDescription
         self.ariaHidden = ariaHidden
         self.ariaLabel = ariaLabel
@@ -4922,7 +10635,83 @@ class RectX(SchemaBase):
 
 
 class RectY(SchemaBase):
-    def __init__(self, data: "PlotMarkData", mark: str, ariaDescription: Union[str, "ParamRef"] = None, ariaHidden: Union[str, "ParamRef"] = None, ariaLabel: "ChannelValue" = None, clip: Union[str, str, bool, Any, "ParamRef"] = None, dx: Union[float, "ParamRef"] = None, dy: Union[float, "ParamRef"] = None, facet: Union[str, str, str, str, bool, Any, "ParamRef"] = None, facetAnchor: Union[str, str, str, str, str, str, str, str, str, str, str, str, str, Any, "ParamRef"] = None, fill: Union["ChannelValueSpec", "ParamRef"] = None, fillOpacity: Union["ChannelValueSpec", "ParamRef"] = None, filter: "ChannelValue" = None, fx: "ChannelValue" = None, fy: "ChannelValue" = None, href: "ChannelValue" = None, imageFilter: Union[str, "ParamRef"] = None, inset: Union[float, "ParamRef"] = None, insetBottom: Union[float, "ParamRef"] = None, insetLeft: Union[float, "ParamRef"] = None, insetRight: Union[float, "ParamRef"] = None, insetTop: Union[float, "ParamRef"] = None, interval: Union["Interval", "ParamRef"] = None, margin: Union[float, "ParamRef"] = None, marginBottom: Union[float, "ParamRef"] = None, marginLeft: Union[float, "ParamRef"] = None, marginRight: Union[float, "ParamRef"] = None, marginTop: Union[float, "ParamRef"] = None, mixBlendMode: Union[str, "ParamRef"] = None, offset: Union["StackOffset", Any, "ParamRef"] = None, opacity: "ChannelValueSpec" = None, order: Union["StackOrder", Any, "ParamRef"] = None, paintOrder: Union[str, "ParamRef"] = None, pointerEvents: Union[str, "ParamRef"] = None, reverse: Union[bool, "ParamRef"] = None, rx: Union[float, str, "ParamRef"] = None, ry: Union[float, str, "ParamRef"] = None, select: "SelectFilter" = None, shapeRendering: Union[str, "ParamRef"] = None, sort: Union["SortOrder", "ChannelDomainSort"] = None, stroke: Union["ChannelValueSpec", "ParamRef"] = None, strokeDasharray: Union[str, float, "ParamRef"] = None, strokeDashoffset: Union[str, float, "ParamRef"] = None, strokeLinecap: Union[str, "ParamRef"] = None, strokeLinejoin: Union[str, "ParamRef"] = None, strokeMiterlimit: Union[float, "ParamRef"] = None, strokeOpacity: "ChannelValueSpec" = None, strokeWidth: "ChannelValueSpec" = None, target: Union[str, "ParamRef"] = None, tip: Union[bool, "TipPointer", Dict[str, Any], "ParamRef"] = None, title: "ChannelValue" = None, x: "ChannelValueIntervalSpec" = None, x1: "ChannelValueSpec" = None, x2: "ChannelValueSpec" = None, y: "ChannelValueSpec" = None, y1: "ChannelValueSpec" = None, y2: "ChannelValueSpec" = None, z: "ChannelValue" = None):
+    def __init__(
+        self,
+        data: "PlotMarkData",
+        mark: str,
+        ariaDescription: Union[str, "ParamRef"] = None,
+        ariaHidden: Union[str, "ParamRef"] = None,
+        ariaLabel: "ChannelValue" = None,
+        clip: Union[str, str, bool, Any, "ParamRef"] = None,
+        dx: Union[float, "ParamRef"] = None,
+        dy: Union[float, "ParamRef"] = None,
+        facet: Union[str, str, str, str, bool, Any, "ParamRef"] = None,
+        facetAnchor: Union[
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            Any,
+            "ParamRef",
+        ] = None,
+        fill: Union["ChannelValueSpec", "ParamRef"] = None,
+        fillOpacity: Union["ChannelValueSpec", "ParamRef"] = None,
+        filter: "ChannelValue" = None,
+        fx: "ChannelValue" = None,
+        fy: "ChannelValue" = None,
+        href: "ChannelValue" = None,
+        imageFilter: Union[str, "ParamRef"] = None,
+        inset: Union[float, "ParamRef"] = None,
+        insetBottom: Union[float, "ParamRef"] = None,
+        insetLeft: Union[float, "ParamRef"] = None,
+        insetRight: Union[float, "ParamRef"] = None,
+        insetTop: Union[float, "ParamRef"] = None,
+        interval: Union["Interval", "ParamRef"] = None,
+        margin: Union[float, "ParamRef"] = None,
+        marginBottom: Union[float, "ParamRef"] = None,
+        marginLeft: Union[float, "ParamRef"] = None,
+        marginRight: Union[float, "ParamRef"] = None,
+        marginTop: Union[float, "ParamRef"] = None,
+        mixBlendMode: Union[str, "ParamRef"] = None,
+        offset: Union["StackOffset", Any, "ParamRef"] = None,
+        opacity: "ChannelValueSpec" = None,
+        order: Union["StackOrder", Any, "ParamRef"] = None,
+        paintOrder: Union[str, "ParamRef"] = None,
+        pointerEvents: Union[str, "ParamRef"] = None,
+        reverse: Union[bool, "ParamRef"] = None,
+        rx: Union[float, str, "ParamRef"] = None,
+        ry: Union[float, str, "ParamRef"] = None,
+        select: "SelectFilter" = None,
+        shapeRendering: Union[str, "ParamRef"] = None,
+        sort: Union["SortOrder", "ChannelDomainSort"] = None,
+        stroke: Union["ChannelValueSpec", "ParamRef"] = None,
+        strokeDasharray: Union[str, float, "ParamRef"] = None,
+        strokeDashoffset: Union[str, float, "ParamRef"] = None,
+        strokeLinecap: Union[str, "ParamRef"] = None,
+        strokeLinejoin: Union[str, "ParamRef"] = None,
+        strokeMiterlimit: Union[float, "ParamRef"] = None,
+        strokeOpacity: "ChannelValueSpec" = None,
+        strokeWidth: "ChannelValueSpec" = None,
+        target: Union[str, "ParamRef"] = None,
+        tip: Union[bool, "TipPointer", Dict[str, Any], "ParamRef"] = None,
+        title: "ChannelValue" = None,
+        x: "ChannelValueIntervalSpec" = None,
+        x1: "ChannelValueSpec" = None,
+        x2: "ChannelValueSpec" = None,
+        y: "ChannelValueSpec" = None,
+        y1: "ChannelValueSpec" = None,
+        y2: "ChannelValueSpec" = None,
+        z: "ChannelValue" = None,
+    ):
         self.ariaDescription = ariaDescription
         self.ariaHidden = ariaHidden
         self.ariaLabel = ariaLabel
@@ -4984,7 +10773,78 @@ class RectY(SchemaBase):
 
 
 class RuleX(SchemaBase):
-    def __init__(self, mark: str, ariaDescription: Union[str, "ParamRef"] = None, ariaHidden: Union[str, "ParamRef"] = None, ariaLabel: "ChannelValue" = None, clip: Union[str, str, bool, Any, "ParamRef"] = None, data: "PlotMarkData" = None, dx: Union[float, "ParamRef"] = None, dy: Union[float, "ParamRef"] = None, facet: Union[str, str, str, str, bool, Any, "ParamRef"] = None, facetAnchor: Union[str, str, str, str, str, str, str, str, str, str, str, str, str, Any, "ParamRef"] = None, fill: Union["ChannelValueSpec", "ParamRef"] = None, fillOpacity: Union["ChannelValueSpec", "ParamRef"] = None, filter: "ChannelValue" = None, fx: "ChannelValue" = None, fy: "ChannelValue" = None, href: "ChannelValue" = None, imageFilter: Union[str, "ParamRef"] = None, inset: Union[float, "ParamRef"] = None, insetBottom: Union[float, "ParamRef"] = None, insetTop: Union[float, "ParamRef"] = None, interval: Union["Interval", "ParamRef"] = None, margin: Union[float, "ParamRef"] = None, marginBottom: Union[float, "ParamRef"] = None, marginLeft: Union[float, "ParamRef"] = None, marginRight: Union[float, "ParamRef"] = None, marginTop: Union[float, "ParamRef"] = None, marker: Union["MarkerName", str, bool, Any, "ParamRef"] = None, markerEnd: Union["MarkerName", str, bool, Any, "ParamRef"] = None, markerMid: Union["MarkerName", str, bool, Any, "ParamRef"] = None, markerStart: Union["MarkerName", str, bool, Any, "ParamRef"] = None, mixBlendMode: Union[str, "ParamRef"] = None, opacity: "ChannelValueSpec" = None, paintOrder: Union[str, "ParamRef"] = None, pointerEvents: Union[str, "ParamRef"] = None, reverse: Union[bool, "ParamRef"] = None, select: "SelectFilter" = None, shapeRendering: Union[str, "ParamRef"] = None, sort: Union["SortOrder", "ChannelDomainSort"] = None, stroke: Union["ChannelValueSpec", "ParamRef"] = None, strokeDasharray: Union[str, float, "ParamRef"] = None, strokeDashoffset: Union[str, float, "ParamRef"] = None, strokeLinecap: Union[str, "ParamRef"] = None, strokeLinejoin: Union[str, "ParamRef"] = None, strokeMiterlimit: Union[float, "ParamRef"] = None, strokeOpacity: "ChannelValueSpec" = None, strokeWidth: "ChannelValueSpec" = None, target: Union[str, "ParamRef"] = None, tip: Union[bool, "TipPointer", Dict[str, Any], "ParamRef"] = None, title: "ChannelValue" = None, x: "ChannelValueSpec" = None, y: "ChannelValueIntervalSpec" = None, y1: "ChannelValueSpec" = None, y2: "ChannelValueSpec" = None):
+    def __init__(
+        self,
+        mark: str,
+        ariaDescription: Union[str, "ParamRef"] = None,
+        ariaHidden: Union[str, "ParamRef"] = None,
+        ariaLabel: "ChannelValue" = None,
+        clip: Union[str, str, bool, Any, "ParamRef"] = None,
+        data: "PlotMarkData" = None,
+        dx: Union[float, "ParamRef"] = None,
+        dy: Union[float, "ParamRef"] = None,
+        facet: Union[str, str, str, str, bool, Any, "ParamRef"] = None,
+        facetAnchor: Union[
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            Any,
+            "ParamRef",
+        ] = None,
+        fill: Union["ChannelValueSpec", "ParamRef"] = None,
+        fillOpacity: Union["ChannelValueSpec", "ParamRef"] = None,
+        filter: "ChannelValue" = None,
+        fx: "ChannelValue" = None,
+        fy: "ChannelValue" = None,
+        href: "ChannelValue" = None,
+        imageFilter: Union[str, "ParamRef"] = None,
+        inset: Union[float, "ParamRef"] = None,
+        insetBottom: Union[float, "ParamRef"] = None,
+        insetTop: Union[float, "ParamRef"] = None,
+        interval: Union["Interval", "ParamRef"] = None,
+        margin: Union[float, "ParamRef"] = None,
+        marginBottom: Union[float, "ParamRef"] = None,
+        marginLeft: Union[float, "ParamRef"] = None,
+        marginRight: Union[float, "ParamRef"] = None,
+        marginTop: Union[float, "ParamRef"] = None,
+        marker: Union["MarkerName", str, bool, Any, "ParamRef"] = None,
+        markerEnd: Union["MarkerName", str, bool, Any, "ParamRef"] = None,
+        markerMid: Union["MarkerName", str, bool, Any, "ParamRef"] = None,
+        markerStart: Union["MarkerName", str, bool, Any, "ParamRef"] = None,
+        mixBlendMode: Union[str, "ParamRef"] = None,
+        opacity: "ChannelValueSpec" = None,
+        paintOrder: Union[str, "ParamRef"] = None,
+        pointerEvents: Union[str, "ParamRef"] = None,
+        reverse: Union[bool, "ParamRef"] = None,
+        select: "SelectFilter" = None,
+        shapeRendering: Union[str, "ParamRef"] = None,
+        sort: Union["SortOrder", "ChannelDomainSort"] = None,
+        stroke: Union["ChannelValueSpec", "ParamRef"] = None,
+        strokeDasharray: Union[str, float, "ParamRef"] = None,
+        strokeDashoffset: Union[str, float, "ParamRef"] = None,
+        strokeLinecap: Union[str, "ParamRef"] = None,
+        strokeLinejoin: Union[str, "ParamRef"] = None,
+        strokeMiterlimit: Union[float, "ParamRef"] = None,
+        strokeOpacity: "ChannelValueSpec" = None,
+        strokeWidth: "ChannelValueSpec" = None,
+        target: Union[str, "ParamRef"] = None,
+        tip: Union[bool, "TipPointer", Dict[str, Any], "ParamRef"] = None,
+        title: "ChannelValue" = None,
+        x: "ChannelValueSpec" = None,
+        y: "ChannelValueIntervalSpec" = None,
+        y1: "ChannelValueSpec" = None,
+        y2: "ChannelValueSpec" = None,
+    ):
         self.ariaDescription = ariaDescription
         self.ariaHidden = ariaHidden
         self.ariaLabel = ariaLabel
@@ -5041,7 +10901,78 @@ class RuleX(SchemaBase):
 
 
 class RuleY(SchemaBase):
-    def __init__(self, mark: str, ariaDescription: Union[str, "ParamRef"] = None, ariaHidden: Union[str, "ParamRef"] = None, ariaLabel: "ChannelValue" = None, clip: Union[str, str, bool, Any, "ParamRef"] = None, data: "PlotMarkData" = None, dx: Union[float, "ParamRef"] = None, dy: Union[float, "ParamRef"] = None, facet: Union[str, str, str, str, bool, Any, "ParamRef"] = None, facetAnchor: Union[str, str, str, str, str, str, str, str, str, str, str, str, str, Any, "ParamRef"] = None, fill: Union["ChannelValueSpec", "ParamRef"] = None, fillOpacity: Union["ChannelValueSpec", "ParamRef"] = None, filter: "ChannelValue" = None, fx: "ChannelValue" = None, fy: "ChannelValue" = None, href: "ChannelValue" = None, imageFilter: Union[str, "ParamRef"] = None, inset: Union[float, "ParamRef"] = None, insetBottom: Union[float, "ParamRef"] = None, insetTop: Union[float, "ParamRef"] = None, interval: Union["Interval", "ParamRef"] = None, margin: Union[float, "ParamRef"] = None, marginBottom: Union[float, "ParamRef"] = None, marginLeft: Union[float, "ParamRef"] = None, marginRight: Union[float, "ParamRef"] = None, marginTop: Union[float, "ParamRef"] = None, marker: Union["MarkerName", str, bool, Any, "ParamRef"] = None, markerEnd: Union["MarkerName", str, bool, Any, "ParamRef"] = None, markerMid: Union["MarkerName", str, bool, Any, "ParamRef"] = None, markerStart: Union["MarkerName", str, bool, Any, "ParamRef"] = None, mixBlendMode: Union[str, "ParamRef"] = None, opacity: "ChannelValueSpec" = None, paintOrder: Union[str, "ParamRef"] = None, pointerEvents: Union[str, "ParamRef"] = None, reverse: Union[bool, "ParamRef"] = None, select: "SelectFilter" = None, shapeRendering: Union[str, "ParamRef"] = None, sort: Union["SortOrder", "ChannelDomainSort"] = None, stroke: Union["ChannelValueSpec", "ParamRef"] = None, strokeDasharray: Union[str, float, "ParamRef"] = None, strokeDashoffset: Union[str, float, "ParamRef"] = None, strokeLinecap: Union[str, "ParamRef"] = None, strokeLinejoin: Union[str, "ParamRef"] = None, strokeMiterlimit: Union[float, "ParamRef"] = None, strokeOpacity: "ChannelValueSpec" = None, strokeWidth: "ChannelValueSpec" = None, target: Union[str, "ParamRef"] = None, tip: Union[bool, "TipPointer", Dict[str, Any], "ParamRef"] = None, title: "ChannelValue" = None, x: "ChannelValueSpec" = None, y: "ChannelValueIntervalSpec" = None, y1: "ChannelValueSpec" = None, y2: "ChannelValueSpec" = None):
+    def __init__(
+        self,
+        mark: str,
+        ariaDescription: Union[str, "ParamRef"] = None,
+        ariaHidden: Union[str, "ParamRef"] = None,
+        ariaLabel: "ChannelValue" = None,
+        clip: Union[str, str, bool, Any, "ParamRef"] = None,
+        data: "PlotMarkData" = None,
+        dx: Union[float, "ParamRef"] = None,
+        dy: Union[float, "ParamRef"] = None,
+        facet: Union[str, str, str, str, bool, Any, "ParamRef"] = None,
+        facetAnchor: Union[
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            Any,
+            "ParamRef",
+        ] = None,
+        fill: Union["ChannelValueSpec", "ParamRef"] = None,
+        fillOpacity: Union["ChannelValueSpec", "ParamRef"] = None,
+        filter: "ChannelValue" = None,
+        fx: "ChannelValue" = None,
+        fy: "ChannelValue" = None,
+        href: "ChannelValue" = None,
+        imageFilter: Union[str, "ParamRef"] = None,
+        inset: Union[float, "ParamRef"] = None,
+        insetBottom: Union[float, "ParamRef"] = None,
+        insetTop: Union[float, "ParamRef"] = None,
+        interval: Union["Interval", "ParamRef"] = None,
+        margin: Union[float, "ParamRef"] = None,
+        marginBottom: Union[float, "ParamRef"] = None,
+        marginLeft: Union[float, "ParamRef"] = None,
+        marginRight: Union[float, "ParamRef"] = None,
+        marginTop: Union[float, "ParamRef"] = None,
+        marker: Union["MarkerName", str, bool, Any, "ParamRef"] = None,
+        markerEnd: Union["MarkerName", str, bool, Any, "ParamRef"] = None,
+        markerMid: Union["MarkerName", str, bool, Any, "ParamRef"] = None,
+        markerStart: Union["MarkerName", str, bool, Any, "ParamRef"] = None,
+        mixBlendMode: Union[str, "ParamRef"] = None,
+        opacity: "ChannelValueSpec" = None,
+        paintOrder: Union[str, "ParamRef"] = None,
+        pointerEvents: Union[str, "ParamRef"] = None,
+        reverse: Union[bool, "ParamRef"] = None,
+        select: "SelectFilter" = None,
+        shapeRendering: Union[str, "ParamRef"] = None,
+        sort: Union["SortOrder", "ChannelDomainSort"] = None,
+        stroke: Union["ChannelValueSpec", "ParamRef"] = None,
+        strokeDasharray: Union[str, float, "ParamRef"] = None,
+        strokeDashoffset: Union[str, float, "ParamRef"] = None,
+        strokeLinecap: Union[str, "ParamRef"] = None,
+        strokeLinejoin: Union[str, "ParamRef"] = None,
+        strokeMiterlimit: Union[float, "ParamRef"] = None,
+        strokeOpacity: "ChannelValueSpec" = None,
+        strokeWidth: "ChannelValueSpec" = None,
+        target: Union[str, "ParamRef"] = None,
+        tip: Union[bool, "TipPointer", Dict[str, Any], "ParamRef"] = None,
+        title: "ChannelValue" = None,
+        x: "ChannelValueSpec" = None,
+        y: "ChannelValueIntervalSpec" = None,
+        y1: "ChannelValueSpec" = None,
+        y2: "ChannelValueSpec" = None,
+    ):
         self.ariaDescription = ariaDescription
         self.ariaHidden = ariaHidden
         self.ariaLabel = ariaLabel
@@ -5098,7 +11029,84 @@ class RuleY(SchemaBase):
 
 
 class TextX(SchemaBase):
-    def __init__(self, mark: str, ariaDescription: Union[str, "ParamRef"] = None, ariaHidden: Union[str, "ParamRef"] = None, ariaLabel: "ChannelValue" = None, clip: Union[str, str, bool, Any, "ParamRef"] = None, data: "PlotMarkData" = None, dx: Union[float, "ParamRef"] = None, dy: Union[float, "ParamRef"] = None, facet: Union[str, str, str, str, bool, Any, "ParamRef"] = None, facetAnchor: Union[str, str, str, str, str, str, str, str, str, str, str, str, str, Any, "ParamRef"] = None, fill: Union["ChannelValueSpec", "ParamRef"] = None, fillOpacity: Union["ChannelValueSpec", "ParamRef"] = None, filter: "ChannelValue" = None, fontFamily: Union[str, "ParamRef"] = None, fontSize: Union["ChannelValue", "ParamRef"] = None, fontStyle: Union[str, "ParamRef"] = None, fontVariant: Union[str, "ParamRef"] = None, fontWeight: Union[str, float, "ParamRef"] = None, frameAnchor: Union["FrameAnchor", "ParamRef"] = None, fx: "ChannelValue" = None, fy: "ChannelValue" = None, href: "ChannelValue" = None, imageFilter: Union[str, "ParamRef"] = None, interval: Union["Interval", "ParamRef"] = None, lineAnchor: Union[str, str, str, "ParamRef"] = None, lineHeight: Union[float, "ParamRef"] = None, lineWidth: Union[float, "ParamRef"] = None, margin: Union[float, "ParamRef"] = None, marginBottom: Union[float, "ParamRef"] = None, marginLeft: Union[float, "ParamRef"] = None, marginRight: Union[float, "ParamRef"] = None, marginTop: Union[float, "ParamRef"] = None, mixBlendMode: Union[str, "ParamRef"] = None, monospace: Union[bool, "ParamRef"] = None, opacity: "ChannelValueSpec" = None, paintOrder: Union[str, "ParamRef"] = None, pointerEvents: Union[str, "ParamRef"] = None, reverse: Union[bool, "ParamRef"] = None, rotate: Union["ChannelValue", "ParamRef"] = None, select: "SelectFilter" = None, shapeRendering: Union[str, "ParamRef"] = None, sort: Union["SortOrder", "ChannelDomainSort"] = None, stroke: Union["ChannelValueSpec", "ParamRef"] = None, strokeDasharray: Union[str, float, "ParamRef"] = None, strokeDashoffset: Union[str, float, "ParamRef"] = None, strokeLinecap: Union[str, "ParamRef"] = None, strokeLinejoin: Union[str, "ParamRef"] = None, strokeMiterlimit: Union[float, "ParamRef"] = None, strokeOpacity: "ChannelValueSpec" = None, strokeWidth: "ChannelValueSpec" = None, target: Union[str, "ParamRef"] = None, text: "ChannelValue" = None, textAnchor: Union[str, str, str, "ParamRef"] = None, textOverflow: Union[Any, str, str, str, str, str, str, str, "ParamRef"] = None, tip: Union[bool, "TipPointer", Dict[str, Any], "ParamRef"] = None, title: "ChannelValue" = None, x: "ChannelValueSpec" = None, y: "ChannelValueIntervalSpec" = None, z: "ChannelValue" = None):
+    def __init__(
+        self,
+        mark: str,
+        ariaDescription: Union[str, "ParamRef"] = None,
+        ariaHidden: Union[str, "ParamRef"] = None,
+        ariaLabel: "ChannelValue" = None,
+        clip: Union[str, str, bool, Any, "ParamRef"] = None,
+        data: "PlotMarkData" = None,
+        dx: Union[float, "ParamRef"] = None,
+        dy: Union[float, "ParamRef"] = None,
+        facet: Union[str, str, str, str, bool, Any, "ParamRef"] = None,
+        facetAnchor: Union[
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            Any,
+            "ParamRef",
+        ] = None,
+        fill: Union["ChannelValueSpec", "ParamRef"] = None,
+        fillOpacity: Union["ChannelValueSpec", "ParamRef"] = None,
+        filter: "ChannelValue" = None,
+        fontFamily: Union[str, "ParamRef"] = None,
+        fontSize: Union["ChannelValue", "ParamRef"] = None,
+        fontStyle: Union[str, "ParamRef"] = None,
+        fontVariant: Union[str, "ParamRef"] = None,
+        fontWeight: Union[str, float, "ParamRef"] = None,
+        frameAnchor: Union["FrameAnchor", "ParamRef"] = None,
+        fx: "ChannelValue" = None,
+        fy: "ChannelValue" = None,
+        href: "ChannelValue" = None,
+        imageFilter: Union[str, "ParamRef"] = None,
+        interval: Union["Interval", "ParamRef"] = None,
+        lineAnchor: Union[str, str, str, "ParamRef"] = None,
+        lineHeight: Union[float, "ParamRef"] = None,
+        lineWidth: Union[float, "ParamRef"] = None,
+        margin: Union[float, "ParamRef"] = None,
+        marginBottom: Union[float, "ParamRef"] = None,
+        marginLeft: Union[float, "ParamRef"] = None,
+        marginRight: Union[float, "ParamRef"] = None,
+        marginTop: Union[float, "ParamRef"] = None,
+        mixBlendMode: Union[str, "ParamRef"] = None,
+        monospace: Union[bool, "ParamRef"] = None,
+        opacity: "ChannelValueSpec" = None,
+        paintOrder: Union[str, "ParamRef"] = None,
+        pointerEvents: Union[str, "ParamRef"] = None,
+        reverse: Union[bool, "ParamRef"] = None,
+        rotate: Union["ChannelValue", "ParamRef"] = None,
+        select: "SelectFilter" = None,
+        shapeRendering: Union[str, "ParamRef"] = None,
+        sort: Union["SortOrder", "ChannelDomainSort"] = None,
+        stroke: Union["ChannelValueSpec", "ParamRef"] = None,
+        strokeDasharray: Union[str, float, "ParamRef"] = None,
+        strokeDashoffset: Union[str, float, "ParamRef"] = None,
+        strokeLinecap: Union[str, "ParamRef"] = None,
+        strokeLinejoin: Union[str, "ParamRef"] = None,
+        strokeMiterlimit: Union[float, "ParamRef"] = None,
+        strokeOpacity: "ChannelValueSpec" = None,
+        strokeWidth: "ChannelValueSpec" = None,
+        target: Union[str, "ParamRef"] = None,
+        text: "ChannelValue" = None,
+        textAnchor: Union[str, str, str, "ParamRef"] = None,
+        textOverflow: Union[Any, str, str, str, str, str, str, str, "ParamRef"] = None,
+        tip: Union[bool, "TipPointer", Dict[str, Any], "ParamRef"] = None,
+        title: "ChannelValue" = None,
+        x: "ChannelValueSpec" = None,
+        y: "ChannelValueIntervalSpec" = None,
+        z: "ChannelValue" = None,
+    ):
         self.ariaDescription = ariaDescription
         self.ariaHidden = ariaHidden
         self.ariaLabel = ariaLabel
@@ -5161,7 +11169,16 @@ class TextX(SchemaBase):
 
 
 class Bin(SchemaBase):
-    def __init__(self, bin: Union[Union[bool, float, str], List[Union[bool, float, str]]], interval: "BinInterval" = None, minstep: float = None, nice: bool = None, offset: float = None, step: float = None, steps: float = None):
+    def __init__(
+        self,
+        bin: Union[Union[bool, float, str], List[Union[bool, float, str]]],
+        interval: "BinInterval" = None,
+        minstep: float = None,
+        nice: bool = None,
+        offset: float = None,
+        step: float = None,
+        steps: float = None,
+    ):
         self.bin = bin
         self.interval = interval
         self.minstep = minstep
@@ -5172,7 +11189,22 @@ class Bin(SchemaBase):
 
 
 class ChannelDomainSort(SchemaBase):
-    def __init__(self, color: "ChannelDomainValueSpec" = None, fx: "ChannelDomainValueSpec" = None, fy: "ChannelDomainValueSpec" = None, length: "ChannelDomainValueSpec" = None, limit: Union[float, List[Any]] = None, opacity: "ChannelDomainValueSpec" = None, order: Union[str, Any] = None, r: "ChannelDomainValueSpec" = None, reduce: Union["Reducer", bool, Any] = None, reverse: bool = None, symbol: "ChannelDomainValueSpec" = None, x: "ChannelDomainValueSpec" = None, y: "ChannelDomainValueSpec" = None):
+    def __init__(
+        self,
+        color: "ChannelDomainValueSpec" = None,
+        fx: "ChannelDomainValueSpec" = None,
+        fy: "ChannelDomainValueSpec" = None,
+        length: "ChannelDomainValueSpec" = None,
+        limit: Union[float, List[Any]] = None,
+        opacity: "ChannelDomainValueSpec" = None,
+        order: Union[str, Any] = None,
+        r: "ChannelDomainValueSpec" = None,
+        reduce: Union["Reducer", bool, Any] = None,
+        reverse: bool = None,
+        symbol: "ChannelDomainValueSpec" = None,
+        x: "ChannelDomainValueSpec" = None,
+        y: "ChannelDomainValueSpec" = None,
+    ):
         self.color = color
         self.fx = fx
         self.fy = fy
@@ -5198,7 +11230,6 @@ class VConcat(SchemaBase):
         self.vconcat = vconcat
 
 
-
 class Curve(CurveName):
     pass  # This is a reference to 'CurveName'
 
@@ -5207,13 +11238,23 @@ class Data(SchemaBase):
     def __init__(self, **kwargs):
         for key, value in kwargs.items():
             if not isinstance(value, "DataDefinition"):
-                raise ValueError(f"Value for key '{key}' must be an instance of DataDefinition.")
+                raise ValueError(
+                    f"Value for key '{key}' must be an instance of DataDefinition."
+                )
         self.additional_params = kwargs
 
 
-
 class Highlight(SchemaBase):
-    def __init__(self, by: "ParamRef", select: str, fill: str = None, fillOpacity: float = None, opacity: float = None, stroke: str = None, strokeOpacity: float = None):
+    def __init__(
+        self,
+        by: "ParamRef",
+        select: str,
+        fill: str = None,
+        fillOpacity: float = None,
+        opacity: float = None,
+        stroke: str = None,
+        strokeOpacity: float = None,
+    ):
         self.by = by
         self.fill = fill
         self.fillOpacity = fillOpacity
@@ -5224,7 +11265,15 @@ class Highlight(SchemaBase):
 
 
 class IntervalX(SchemaBase):
-    def __init__(self, select: str, as_: "ParamRef" = None, brush: "BrushStyles" = None, field: str = None, peers: bool = None, pixelSize: float = None):
+    def __init__(
+        self,
+        select: str,
+        as_: "ParamRef" = None,
+        brush: "BrushStyles" = None,
+        field: str = None,
+        peers: bool = None,
+        pixelSize: float = None,
+    ):
         self.as_ = as_
         self.brush = brush
         self.field = field
@@ -5234,7 +11283,16 @@ class IntervalX(SchemaBase):
 
 
 class IntervalXY(SchemaBase):
-    def __init__(self, select: str, as_: "ParamRef" = None, brush: "BrushStyles" = None, peers: bool = None, pixelSize: float = None, xfield: str = None, yfield: str = None):
+    def __init__(
+        self,
+        select: str,
+        as_: "ParamRef" = None,
+        brush: "BrushStyles" = None,
+        peers: bool = None,
+        pixelSize: float = None,
+        xfield: str = None,
+        yfield: str = None,
+    ):
         self.as_ = as_
         self.brush = brush
         self.peers = peers
@@ -5245,7 +11303,15 @@ class IntervalXY(SchemaBase):
 
 
 class IntervalY(SchemaBase):
-    def __init__(self, select: str, as_: "ParamRef" = None, brush: "BrushStyles" = None, field: str = None, peers: bool = None, pixelSize: float = None):
+    def __init__(
+        self,
+        select: str,
+        as_: "ParamRef" = None,
+        brush: "BrushStyles" = None,
+        field: str = None,
+        peers: bool = None,
+        pixelSize: float = None,
+    ):
         self.as_ = as_
         self.brush = brush
         self.field = field
@@ -5255,7 +11321,22 @@ class IntervalY(SchemaBase):
 
 
 class Legend(SchemaBase):
-    def __init__(self, legend: str, as_: "ParamRef" = None, columns: float = None, field: str = None, for_: str = None, height: float = None, label: str = None, marginBottom: float = None, marginLeft: float = None, marginRight: float = None, marginTop: float = None, tickSize: float = None, width: float = None):
+    def __init__(
+        self,
+        legend: str,
+        as_: "ParamRef" = None,
+        columns: float = None,
+        field: str = None,
+        for_: str = None,
+        height: float = None,
+        label: str = None,
+        marginBottom: float = None,
+        marginLeft: float = None,
+        marginRight: float = None,
+        marginTop: float = None,
+        tickSize: float = None,
+        width: float = None,
+    ):
         self.as_ = as_
         self.columns = columns
         self.field = field
@@ -5272,7 +11353,18 @@ class Legend(SchemaBase):
 
 
 class Menu(SchemaBase):
-    def __init__(self, input: str, as_: "ParamRef" = None, column: str = None, field: str = None, filterBy: "ParamRef" = None, from_: str = None, label: str = None, options: List[Union[Dict[str, Any], Any]] = None, value: Any = None):
+    def __init__(
+        self,
+        input: str,
+        as_: "ParamRef" = None,
+        column: str = None,
+        field: str = None,
+        filterBy: "ParamRef" = None,
+        from_: str = None,
+        label: str = None,
+        options: List[Union[Dict[str, Any], Any]] = None,
+        value: Any = None,
+    ):
         self.as_ = as_
         self.column = column
         self.field = field
@@ -5285,7 +11377,14 @@ class Menu(SchemaBase):
 
 
 class NearestX(SchemaBase):
-    def __init__(self, select: str, as_: "ParamRef" = None, channels: List[str] = None, fields: List[str] = None, maxRadius: float = None):
+    def __init__(
+        self,
+        select: str,
+        as_: "ParamRef" = None,
+        channels: List[str] = None,
+        fields: List[str] = None,
+        maxRadius: float = None,
+    ):
         self.as_ = as_
         self.channels = channels
         self.fields = fields
@@ -5294,7 +11393,14 @@ class NearestX(SchemaBase):
 
 
 class NearestY(SchemaBase):
-    def __init__(self, select: str, as_: "ParamRef" = None, channels: List[str] = None, fields: List[str] = None, maxRadius: float = None):
+    def __init__(
+        self,
+        select: str,
+        as_: "ParamRef" = None,
+        channels: List[str] = None,
+        fields: List[str] = None,
+        maxRadius: float = None,
+    ):
         self.as_ = as_
         self.channels = channels
         self.fields = fields
@@ -5303,7 +11409,14 @@ class NearestY(SchemaBase):
 
 
 class Pan(SchemaBase):
-    def __init__(self, select: str, x: "ParamRef" = None, xfield: str = None, y: "ParamRef" = None, yfield: str = None):
+    def __init__(
+        self,
+        select: str,
+        x: "ParamRef" = None,
+        xfield: str = None,
+        y: "ParamRef" = None,
+        yfield: str = None,
+    ):
         self.select = select
         self.x = x
         self.xfield = xfield
@@ -5312,7 +11425,14 @@ class Pan(SchemaBase):
 
 
 class PanX(SchemaBase):
-    def __init__(self, select: str, x: "ParamRef" = None, xfield: str = None, y: "ParamRef" = None, yfield: str = None):
+    def __init__(
+        self,
+        select: str,
+        x: "ParamRef" = None,
+        xfield: str = None,
+        y: "ParamRef" = None,
+        yfield: str = None,
+    ):
         self.select = select
         self.x = x
         self.xfield = xfield
@@ -5321,7 +11441,14 @@ class PanX(SchemaBase):
 
 
 class PanY(SchemaBase):
-    def __init__(self, select: str, x: "ParamRef" = None, xfield: str = None, y: "ParamRef" = None, yfield: str = None):
+    def __init__(
+        self,
+        select: str,
+        x: "ParamRef" = None,
+        xfield: str = None,
+        y: "ParamRef" = None,
+        yfield: str = None,
+    ):
         self.select = select
         self.x = x
         self.xfield = xfield
@@ -5330,7 +11457,14 @@ class PanY(SchemaBase):
 
 
 class PanZoom(SchemaBase):
-    def __init__(self, select: str, x: "ParamRef" = None, xfield: str = None, y: "ParamRef" = None, yfield: str = None):
+    def __init__(
+        self,
+        select: str,
+        x: "ParamRef" = None,
+        xfield: str = None,
+        y: "ParamRef" = None,
+        yfield: str = None,
+    ):
         self.select = select
         self.x = x
         self.xfield = xfield
@@ -5339,7 +11473,14 @@ class PanZoom(SchemaBase):
 
 
 class PanZoomX(SchemaBase):
-    def __init__(self, select: str, x: "ParamRef" = None, xfield: str = None, y: "ParamRef" = None, yfield: str = None):
+    def __init__(
+        self,
+        select: str,
+        x: "ParamRef" = None,
+        xfield: str = None,
+        y: "ParamRef" = None,
+        yfield: str = None,
+    ):
         self.select = select
         self.x = x
         self.xfield = xfield
@@ -5348,7 +11489,14 @@ class PanZoomX(SchemaBase):
 
 
 class PanZoomY(SchemaBase):
-    def __init__(self, select: str, x: "ParamRef" = None, xfield: str = None, y: "ParamRef" = None, yfield: str = None):
+    def __init__(
+        self,
+        select: str,
+        x: "ParamRef" = None,
+        xfield: str = None,
+        y: "ParamRef" = None,
+        yfield: str = None,
+    ):
         self.select = select
         self.x = x
         self.xfield = xfield
@@ -5357,14 +11505,30 @@ class PanZoomY(SchemaBase):
 
 
 class PlotFrom(SchemaBase):
-    def __init__(self, filterBy: "ParamRef" = None, from_: str = None, optimize: bool = None):
+    def __init__(
+        self, filterBy: "ParamRef" = None, from_: str = None, optimize: bool = None
+    ):
         self.filterBy = filterBy
         self.from_ = from_
         self.optimize = optimize
 
 
 class PlotLegend(SchemaBase):
-    def __init__(self, legend: str, as_: "ParamRef" = None, columns: float = None, field: str = None, height: float = None, label: str = None, marginBottom: float = None, marginLeft: float = None, marginRight: float = None, marginTop: float = None, tickSize: float = None, width: float = None):
+    def __init__(
+        self,
+        legend: str,
+        as_: "ParamRef" = None,
+        columns: float = None,
+        field: str = None,
+        height: float = None,
+        label: str = None,
+        marginBottom: float = None,
+        marginLeft: float = None,
+        marginRight: float = None,
+        marginTop: float = None,
+        tickSize: float = None,
+        width: float = None,
+    ):
         self.as_ = as_
         self.columns = columns
         self.field = field
@@ -5380,7 +11544,17 @@ class PlotLegend(SchemaBase):
 
 
 class Search(SchemaBase):
-    def __init__(self, input: str, as_: "ParamRef" = None, column: str = None, field: str = None, filterBy: "ParamRef" = None, from_: str = None, label: str = None, type: str = None):
+    def __init__(
+        self,
+        input: str,
+        as_: "ParamRef" = None,
+        column: str = None,
+        field: str = None,
+        filterBy: "ParamRef" = None,
+        from_: str = None,
+        label: str = None,
+        type: str = None,
+    ):
         self.as_ = as_
         self.column = column
         self.field = field
@@ -5392,7 +11566,22 @@ class Search(SchemaBase):
 
 
 class Slider(SchemaBase):
-    def __init__(self, input: str, as_: "ParamRef" = None, column: str = None, field: str = None, filterBy: "ParamRef" = None, from_: str = None, label: str = None, max: float = None, min: float = None, select: str = None, step: float = None, value: float = None, width: float = None):
+    def __init__(
+        self,
+        input: str,
+        as_: "ParamRef" = None,
+        column: str = None,
+        field: str = None,
+        filterBy: "ParamRef" = None,
+        from_: str = None,
+        label: str = None,
+        max: float = None,
+        min: float = None,
+        select: str = None,
+        step: float = None,
+        value: float = None,
+        width: float = None,
+    ):
         self.as_ = as_
         self.column = column
         self.field = field
@@ -5409,7 +11598,19 @@ class Slider(SchemaBase):
 
 
 class Table(SchemaBase):
-    def __init__(self, input: str, align: Dict[str, Any] = None, as_: "ParamRef" = None, columns: List[str] = None, filterBy: "ParamRef" = None, from_: str = None, height: float = None, maxWidth: float = None, rowBatch: float = None, width: Union[float, Dict[str, Any]] = None):
+    def __init__(
+        self,
+        input: str,
+        align: Dict[str, Any] = None,
+        as_: "ParamRef" = None,
+        columns: List[str] = None,
+        filterBy: "ParamRef" = None,
+        from_: str = None,
+        height: float = None,
+        maxWidth: float = None,
+        rowBatch: float = None,
+        width: Union[float, Dict[str, Any]] = None,
+    ):
         self.align = align
         self.as_ = as_
         self.columns = columns
@@ -5423,7 +11624,13 @@ class Table(SchemaBase):
 
 
 class Toggle(SchemaBase):
-    def __init__(self, channels: List[str], select: str, as_: "ParamRef" = None, peers: bool = None):
+    def __init__(
+        self,
+        channels: List[str],
+        select: str,
+        as_: "ParamRef" = None,
+        peers: bool = None,
+    ):
         self.as_ = as_
         self.channels = channels
         self.peers = peers
@@ -5451,7 +11658,6 @@ class ToggleY(SchemaBase):
         self.select = select
 
 
-
 class Interval(LiteralTimeInterval):
     pass  # This is a reference to 'LiteralTimeInterval'
 
@@ -5466,15 +11672,14 @@ class Params(SchemaBase):
     def __init__(self, **kwargs):
         for key, value in kwargs.items():
             if not isinstance(value, "ParamDefinition"):
-                raise ValueError(f"Value for key '{key}' must be an instance of ParamDefinition.")
+                raise ValueError(
+                    f"Value for key '{key}' must be an instance of ParamDefinition."
+                )
         self.additional_params = kwargs
-
-
 
 
 class StackOffset(StackOffsetName):
     pass  # This is a reference to 'StackOffsetName'
-
 
 
 class VectorShape(VectorShapeName):
@@ -5482,7 +11687,84 @@ class VectorShape(VectorShapeName):
 
 
 class TextY(SchemaBase):
-    def __init__(self, mark: str, ariaDescription: Union[str, "ParamRef"] = None, ariaHidden: Union[str, "ParamRef"] = None, ariaLabel: "ChannelValue" = None, clip: Union[str, str, bool, Any, "ParamRef"] = None, data: "PlotMarkData" = None, dx: Union[float, "ParamRef"] = None, dy: Union[float, "ParamRef"] = None, facet: Union[str, str, str, str, bool, Any, "ParamRef"] = None, facetAnchor: Union[str, str, str, str, str, str, str, str, str, str, str, str, str, Any, "ParamRef"] = None, fill: Union["ChannelValueSpec", "ParamRef"] = None, fillOpacity: Union["ChannelValueSpec", "ParamRef"] = None, filter: "ChannelValue" = None, fontFamily: Union[str, "ParamRef"] = None, fontSize: Union["ChannelValue", "ParamRef"] = None, fontStyle: Union[str, "ParamRef"] = None, fontVariant: Union[str, "ParamRef"] = None, fontWeight: Union[str, float, "ParamRef"] = None, frameAnchor: Union["FrameAnchor", "ParamRef"] = None, fx: "ChannelValue" = None, fy: "ChannelValue" = None, href: "ChannelValue" = None, imageFilter: Union[str, "ParamRef"] = None, interval: "Interval" = None, lineAnchor: Union[str, str, str, "ParamRef"] = None, lineHeight: Union[float, "ParamRef"] = None, lineWidth: Union[float, "ParamRef"] = None, margin: Union[float, "ParamRef"] = None, marginBottom: Union[float, "ParamRef"] = None, marginLeft: Union[float, "ParamRef"] = None, marginRight: Union[float, "ParamRef"] = None, marginTop: Union[float, "ParamRef"] = None, mixBlendMode: Union[str, "ParamRef"] = None, monospace: Union[bool, "ParamRef"] = None, opacity: "ChannelValueSpec" = None, paintOrder: Union[str, "ParamRef"] = None, pointerEvents: Union[str, "ParamRef"] = None, reverse: Union[bool, "ParamRef"] = None, rotate: Union["ChannelValue", "ParamRef"] = None, select: "SelectFilter" = None, shapeRendering: Union[str, "ParamRef"] = None, sort: Union["SortOrder", "ChannelDomainSort"] = None, stroke: Union["ChannelValueSpec", "ParamRef"] = None, strokeDasharray: Union[str, float, "ParamRef"] = None, strokeDashoffset: Union[str, float, "ParamRef"] = None, strokeLinecap: Union[str, "ParamRef"] = None, strokeLinejoin: Union[str, "ParamRef"] = None, strokeMiterlimit: Union[float, "ParamRef"] = None, strokeOpacity: "ChannelValueSpec" = None, strokeWidth: "ChannelValueSpec" = None, target: Union[str, "ParamRef"] = None, text: "ChannelValue" = None, textAnchor: Union[str, str, str, "ParamRef"] = None, textOverflow: Union[Any, str, str, str, str, str, str, str, "ParamRef"] = None, tip: Union[bool, "TipPointer", Dict[str, Any], "ParamRef"] = None, title: "ChannelValue" = None, x: "ChannelValueIntervalSpec" = None, y: "ChannelValueSpec" = None, z: "ChannelValue" = None):
+    def __init__(
+        self,
+        mark: str,
+        ariaDescription: Union[str, "ParamRef"] = None,
+        ariaHidden: Union[str, "ParamRef"] = None,
+        ariaLabel: "ChannelValue" = None,
+        clip: Union[str, str, bool, Any, "ParamRef"] = None,
+        data: "PlotMarkData" = None,
+        dx: Union[float, "ParamRef"] = None,
+        dy: Union[float, "ParamRef"] = None,
+        facet: Union[str, str, str, str, bool, Any, "ParamRef"] = None,
+        facetAnchor: Union[
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            str,
+            Any,
+            "ParamRef",
+        ] = None,
+        fill: Union["ChannelValueSpec", "ParamRef"] = None,
+        fillOpacity: Union["ChannelValueSpec", "ParamRef"] = None,
+        filter: "ChannelValue" = None,
+        fontFamily: Union[str, "ParamRef"] = None,
+        fontSize: Union["ChannelValue", "ParamRef"] = None,
+        fontStyle: Union[str, "ParamRef"] = None,
+        fontVariant: Union[str, "ParamRef"] = None,
+        fontWeight: Union[str, float, "ParamRef"] = None,
+        frameAnchor: Union["FrameAnchor", "ParamRef"] = None,
+        fx: "ChannelValue" = None,
+        fy: "ChannelValue" = None,
+        href: "ChannelValue" = None,
+        imageFilter: Union[str, "ParamRef"] = None,
+        interval: "Interval" = None,
+        lineAnchor: Union[str, str, str, "ParamRef"] = None,
+        lineHeight: Union[float, "ParamRef"] = None,
+        lineWidth: Union[float, "ParamRef"] = None,
+        margin: Union[float, "ParamRef"] = None,
+        marginBottom: Union[float, "ParamRef"] = None,
+        marginLeft: Union[float, "ParamRef"] = None,
+        marginRight: Union[float, "ParamRef"] = None,
+        marginTop: Union[float, "ParamRef"] = None,
+        mixBlendMode: Union[str, "ParamRef"] = None,
+        monospace: Union[bool, "ParamRef"] = None,
+        opacity: "ChannelValueSpec" = None,
+        paintOrder: Union[str, "ParamRef"] = None,
+        pointerEvents: Union[str, "ParamRef"] = None,
+        reverse: Union[bool, "ParamRef"] = None,
+        rotate: Union["ChannelValue", "ParamRef"] = None,
+        select: "SelectFilter" = None,
+        shapeRendering: Union[str, "ParamRef"] = None,
+        sort: Union["SortOrder", "ChannelDomainSort"] = None,
+        stroke: Union["ChannelValueSpec", "ParamRef"] = None,
+        strokeDasharray: Union[str, float, "ParamRef"] = None,
+        strokeDashoffset: Union[str, float, "ParamRef"] = None,
+        strokeLinecap: Union[str, "ParamRef"] = None,
+        strokeLinejoin: Union[str, "ParamRef"] = None,
+        strokeMiterlimit: Union[float, "ParamRef"] = None,
+        strokeOpacity: "ChannelValueSpec" = None,
+        strokeWidth: "ChannelValueSpec" = None,
+        target: Union[str, "ParamRef"] = None,
+        text: "ChannelValue" = None,
+        textAnchor: Union[str, str, str, "ParamRef"] = None,
+        textOverflow: Union[Any, str, str, str, str, str, str, str, "ParamRef"] = None,
+        tip: Union[bool, "TipPointer", Dict[str, Any], "ParamRef"] = None,
+        title: "ChannelValue" = None,
+        x: "ChannelValueIntervalSpec" = None,
+        y: "ChannelValueSpec" = None,
+        z: "ChannelValue" = None,
+    ):
         self.ariaDescription = ariaDescription
         self.ariaHidden = ariaHidden
         self.ariaLabel = ariaLabel

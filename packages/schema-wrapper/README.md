@@ -8,6 +8,10 @@
 
 `uv run pytest -v`
 
+## Run the ruff formatter
+
+`uv run ruff format` and `uv run ruff check`.
+
 ## Test notebook
 
 `uv run jupyter lab` and then open `example.ipynb`.

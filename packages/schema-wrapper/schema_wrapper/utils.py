@@ -104,13 +104,16 @@ def get_valid_identifier(
         valid += "_"
     return valid
 
+
 def revert_validation(field):
-    return field.strip('_')
+    return field.strip("_")
+
 
 def get_key_by_value(dictionary, target_value):
     for key, value in dictionary.items():
         if value == target_value:
             return key
+
 
 def get_dependencies(data) -> List[str]:
     dependencies = []
@@ -118,8 +121,8 @@ def get_dependencies(data) -> List[str]:
     if isinstance(data, dict):
         if "$ref" in data:
             refVal = data["$ref"]
-            dependencies.append(refVal.split('/')[-1])
-        
+            dependencies.append(refVal.split("/")[-1])
+
         for key, value in data.items():
             if key != "anyOf":
                 dependencies = dependencies + get_dependencies(value)
@@ -130,8 +133,8 @@ def get_dependencies(data) -> List[str]:
     return dependencies
 
 
-
 ### to_dict and all its dependencies are as follows:
+
 
 def _from_array_like(obj: Iterable[Any], /) -> list[Any]:
     try:
@@ -139,6 +142,7 @@ def _from_array_like(obj: Iterable[Any], /) -> list[Any]:
         return ser.to_list()
     except TypeError:
         return list(obj)
+
 
 class UndefinedType:
     """A singleton object for marking undefined parameters."""
@@ -156,10 +160,12 @@ class UndefinedType:
 
 Undefined = UndefinedType()
 
+
 def _is_iterable(
     obj: Any, *, exclude: type | tuple[type, ...] = (str, bytes)
 ) -> TypeIs[Iterable[Any]]:
     return not isinstance(obj, exclude) and isinstance(obj, Iterable)
+
 
 def _get_optional_modules(**modules: str) -> dict[str, _OptionalModule]:
     """
@@ -199,6 +205,7 @@ def _get_optional_modules(**modules: str) -> dict[str, _OptionalModule]:
     """
     return {k: sys.modules.get(v) for k, v in modules.items()}
 
+
 def _replace_parsed_shorthand(
     parsed_shorthand: dict[str, Any], kwds: dict[str, Any]
 ) -> dict[str, Any]:
@@ -223,35 +230,44 @@ def _replace_parsed_shorthand(
         if kwds.get(k, Undefined) is Undefined
     )
     return kwds
-def _todict(obj: Any, context: dict[str, Any] | None = None, np_opt: Any = None, pd_opt: Any = None) -> Any:  # noqa: C901
-        """Convert an object to a dict representation."""
-        if np_opt is not None:
-            np = np_opt
-            if isinstance(obj, np.ndarray):
-                return [_todict(v, context, np_opt, pd_opt) for v in obj]
-            elif isinstance(obj, np.number):
-                return float(obj)
-            elif isinstance(obj, np.datetime64):
-                result = str(obj)
-                if "T" not in result:
-                    result += "T00:00:00"
-                return result
-        elif isinstance(obj, (list, tuple)):
+
+
+def _todict(
+    obj: Any,
+    context: dict[str, Any] | None = None,
+    np_opt: Any = None,
+    pd_opt: Any = None,
+) -> Any:  # noqa: C901
+    """Convert an object to a dict representation."""
+    if np_opt is not None:
+        np = np_opt
+        if isinstance(obj, np.ndarray):
             return [_todict(v, context, np_opt, pd_opt) for v in obj]
-        elif isinstance(obj, dict):
-            return {
-                k: _todict(v, context, np_opt, pd_opt)
-                for k, v in obj.items()
-                if v is not Undefined
-            }
-        elif hasattr(obj, "to_dict"):
-            return obj.to_dict(False)
-        elif pd_opt is not None and isinstance(obj, pd_opt.Timestamp):
-            return pd_opt.Timestamp(obj).isoformat()
-        elif _is_iterable(obj, exclude=(str, bytes)):
-            return _todict(_from_array_like(obj), context, np_opt, pd_opt)
-        else:
-            return obj   
+        elif isinstance(obj, np.number):
+            return float(obj)
+        elif isinstance(obj, np.datetime64):
+            result = str(obj)
+            if "T" not in result:
+                result += "T00:00:00"
+            return result
+    elif isinstance(obj, (list, tuple)):
+        return [_todict(v, context, np_opt, pd_opt) for v in obj]
+    elif isinstance(obj, dict):
+        return {
+            k: _todict(v, context, np_opt, pd_opt)
+            for k, v in obj.items()
+            if v is not Undefined
+        }
+    elif hasattr(obj, "to_dict"):
+        return obj.to_dict(False)
+    elif pd_opt is not None and isinstance(obj, pd_opt.Timestamp):
+        return pd_opt.Timestamp(obj).isoformat()
+    elif _is_iterable(obj, exclude=(str, bytes)):
+        return _todict(_from_array_like(obj), context, np_opt, pd_opt)
+    else:
+        return obj
+
+
 # def _todict(obj: Any, context: dict[str, Any] | None = None, np_opt: Any = None, pd_opt: Any = None) -> Any:  # noqa: C901
 #     """Convert an object to a dict representation."""
 #     if np_opt is not None:
@@ -281,18 +297,18 @@ def _todict(obj: Any, context: dict[str, Any] | None = None, np_opt: Any = None,
 #     ):
 #         return obj.to_dict(False) # <-- Only these two lines are the ones that are changed from altair
 #     elif pd_opt is not None and isinstance(obj, pd_opt.Timestamp):
-    #     return pd_opt.Timestamp(obj).isoformat()
-    # elif _is_iterable(obj, exclude=(str, bytes)):
-    #     return _todict(_from_array_like(obj), context, np_opt, pd_opt)
-    # else:
-    #     return obj
-#def to_dict(
+#     return pd_opt.Timestamp(obj).isoformat()
+# elif _is_iterable(obj, exclude=(str, bytes)):
+#     return _todict(_from_array_like(obj), context, np_opt, pd_opt)
+# else:
+#     return obj
+# def to_dict(
 #    self,
 #    validate: bool = True,
 #    *,
 #    ignore: list[str] | None = None,
 #    context: dict[str, Any] | None = None,
-#) -> dict[str, Any]:
+# ) -> dict[str, Any]:
 #    """
 #    Return a dictionary representation of the object.
 #
