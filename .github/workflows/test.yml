@@ -67,9 +67,7 @@ jobs:
 
       - name: Build and test Schema Wrapper
         run: |
-          cd packages/schema_wrapper
-          pip install -e .
-          pytest test/ --cov=schema_wrapper --cov-report=term-missing
+          uv run pytest test/ --cov=schema_wrapper --cov-report=term-missing
 
   rust:
     name: Test in Rust

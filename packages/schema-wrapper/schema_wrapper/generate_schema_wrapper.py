@@ -9,12 +9,13 @@ sys.path.insert(0, str(Path.cwd()))
 
 SCHEMA_VERSION: Final = "v0.10.0"
 KNOWN_PRIMITIVES = {"string": "str", "boolean": "bool", "number": "float", "object": "Dict[str, Any]"}
-IMPORTS = {"typing": ["List", "Dict", "Any", "Union"], "schema_wrapper.SchemaBase": ["SchemaBase"], "schema_wrapper.utils": ["revert_validation"]}
+IMPORTS = {"typing": ["List", "Dict", "Any", "Union"], "schema_wrapper.SchemaBase": ["SchemaBase"], "schema_wrapper.utils": ["revert_validation"], "schema_wrapper.generated_classes": []}
 
 def generate_import_string(imports: Dict[str, List[str]]) -> str:
     import_string = ""
     for source, cur_imports in imports.items():
-        import_string += f"from {source} import {', '.join(cur_imports)}\n"
+        if cur_imports:
+            import_string += f"from {source} import {', '.join(cur_imports)}\n"
     import_string += '\n'
     return import_string
 
@@ -63,6 +64,9 @@ def generate_class(class_name: str, class_schema: Dict[str, Any]) -> str:
     # Extract properties and required fields
     properties = class_schema.get('properties', {})
     required = class_schema.get('required', [])
+    #print(class_name)
+    #if class_name == "Params":
+    #    print(class_schema)
     additional_properties = class_schema.get('additionalProperties')
 
     class_def = f"class {class_name}(SchemaBase):\n"
@@ -95,8 +99,8 @@ def generate_class(class_name: str, class_schema: Dict[str, Any]) -> str:
         class_def += f", {prop}: {type_hint} = None"
 
     # Handling additionalProperties
-    if additional_properties != False and additional_properties != None:
-            class_def += ", **kwargs"
+    if additional_properties:
+        class_def += ", **kwargs"
 
     class_def += "):\n"
 
@@ -105,8 +109,11 @@ def generate_class(class_name: str, class_schema: Dict[str, Any]) -> str:
         class_def += f"        self.{prop} = {prop}\n"
     
     # Handling additionalProperties
-    if additional_properties != False and additional_properties != None:
-        correct_type = get_type_hint(additional_properties)
+    if additional_properties:
+        correct_type = get_type_hint(additional_properties).strip('"')
+        #print(correct_type)
+        if correct_type not in KNOWN_PRIMITIVES.values() and correct_type not in IMPORTS["schema_wrapper.generated_classes"]:
+            IMPORTS["schema_wrapper.generated_classes"].append(correct_type)
         class_def += """        for key, value in kwargs.items():
             if not isinstance(value, """+ correct_type +"""):
                 raise ValueError(f"Value for key '{key}' must be an instance of """+ correct_type.strip('"') +""".")
