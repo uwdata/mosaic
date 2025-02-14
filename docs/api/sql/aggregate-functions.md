@@ -99,6 +99,12 @@ Create an aggregate function that calculates the sum of the input _expression_.
 
 Create an aggregate function that calculates the product of the input _expression_.
 
+## geomean
+
+`geomean(expression)`
+
+Create an aggregate function that calculates the geometric mean of the input _expression_.
+
 ## median
 
 `median(expression)`

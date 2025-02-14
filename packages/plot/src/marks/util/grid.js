@@ -24,15 +24,44 @@ export function array(size, proto = []) {
  * @param {number} size The grid size.
  * @param {Arrayish} index The grid indices for sample points.
  * @param {Arrayish} value The sample point values.
- * @returns {Arrayish} The generated value grid.
+ * @param {Record<string,Arrayish>} columns Named column arrays with groupby values.
+ * @param {string[]} groupby The names of columns to group by.
+ * @returns {{
+ *  numRows: number;
+ *  columns: { [key:string]: Arrayish }
+ * }} Named column arrays of generated grid values.
  */
-export function grid1d(size, index, value) {
-  const G = array(size, value);
-  const n = value.length;
-  for (let i = 0; i < n; ++i) {
-    G[index[i]] = value[i];
+export function grid1d(size, index, value, columns, groupby) {
+  const numRows = index.length;
+  const result = {};
+  const cells = [];
+
+  // if grouped, generate per-row group indices
+  if (groupby?.length) {
+    const group = new Int32Array(numRows);
+    const gvalues = groupby.map(name => columns[name]);
+    const cellMap = {};
+    for (let row = 0; row < numRows; ++row) {
+      const key = gvalues.map(group => group[row]);
+      group[row] = cellMap[key] ??= cells.push(key) - 1;
+    }
+    for (let i = 0; i < groupby.length; ++i) {
+      result[groupby[i]] = cells.map(cell => cell[i]);
+    }
+    const G = result._grid = cells.map(() => array(size, value));
+    for (let row = 0; row < numRows; ++row) {
+      G[group[row]][index[row]] = value[row];
+    }
+  } else {
+    cells.push([]); // single group
+    const [G] = result._grid = [array(size, value)]
+    for (let row = 0; row < numRows; ++row) {
+      G[index[row]] = value[row];
+    }
   }
-  return G;
+
+  // @ts-ignore
+  return { numRows: cells.length, columns: result };
 }
 
 /**

@@ -40,12 +40,12 @@ describe('MosaicClient', () => {
       }
       queryPending() {
         // add result promise to global pending queue
-        this.pending = new QueryResult();
-        pending.push(this.pending);
+        this.pendingResult = new QueryResult();
+        pending.push(this.pendingResult);
       }
       queryResult(data) {
         // fulfill pending promise with sorted data
-        this.pending.fulfill(
+        this.pendingResult.fulfill(
           data.toArray().sort((a, b) => a.key - b.key)
         );
         return this;
@@ -59,6 +59,8 @@ describe('MosaicClient', () => {
     const client2 = new TestClient('testData', 'DayOfWeek', selection);
     coord.connect(client1);
     coord.connect(client2);
+
+    await Promise.all([client1.pending, client2.pending]);
 
     // initial results with empty selection
     expect(await Promise.all(pending)).toEqual([

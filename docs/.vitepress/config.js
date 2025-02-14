@@ -34,7 +34,8 @@ export default defineConfig({
           { text: 'Mosaic vgplot', link: '/vgplot/' },
           { text: 'Mosaic Spec', link: '/spec/' },
           { text: 'Mosaic Server', link: '/server/' },
-          { text: 'Jupyter Widget', link: '/jupyter/' }
+          { text: 'Jupyter Widget', link: '/jupyter/' },
+          { text: 'Web Clients', link: '/web-clients/' }
         ]
       },
       { text: 'Examples', link: '/examples/' },
@@ -62,7 +63,8 @@ export default defineConfig({
             { text: 'Mosaic vgplot', link: '/vgplot/' },
             { text: 'Mosaic Spec', link: '/spec/' },
             { text: 'Mosaic Server', link: '/server/' },
-            { text: 'Jupyter Widget', link: '/jupyter/' }
+            { text: 'Jupyter Widget', link: '/jupyter/' },
+            { text: 'Web Clients', link: '/web-clients/' }
           ]
         },
         { text: 'Examples', link: '/examples/' },
@@ -145,6 +147,7 @@ export default defineConfig({
           collapsed: true,
           items: [
             { text: 'Contours', link: '/examples/contours' },
+            { text: 'Density Groups', link: '/examples/density-groups' },
             { text: 'Density 1D', link: '/examples/density1d' },
             { text: 'Density 2D', link: '/examples/density2d' },
             { text: 'Flights Density', link: '/examples/flights-density' },
@@ -232,7 +235,7 @@ export default defineConfig({
 
     socialLinks: [
       { icon: 'github', link: 'https://github.com/uwdata/mosaic' },
-      { icon: 'twitter', link: 'https://twitter.com/uwdata/' }
+      { icon: 'bluesky', link: 'https://bsky.app/profile/idl.uw.edu' }
     ]
   }
 })

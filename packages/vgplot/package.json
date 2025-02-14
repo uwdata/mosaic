@@ -1,6 +1,6 @@
 {
   "name": "@uwdata/vgplot",
-  "version": "0.12.1",
+  "version": "0.12.2",
   "description": "An API for interactive Mosaic-powered visualizations and dashboards.",
   "keywords": [
     "data",
@@ -14,25 +14,22 @@
   "license": "BSD-3-Clause",
   "author": "Jeffrey Heer (https://idl.uw.edu)",
   "type": "module",
-  "main": "src/index.js",
-  "module": "src/index.js",
-  "jsdelivr": "dist/vgplot.min.js",
-  "unpkg": "dist/vgplot.min.js",
+  "exports": {
+    "default": "./src/index.js"
+  },
   "repository": {
     "type": "git",
     "url": "https://github.com/uwdata/mosaic.git"
   },
   "scripts": {
-    "prebuild": "rimraf dist && mkdir dist",
-    "build": "node ../../esbuild.js vgplot",
     "lint": "eslint src test",
     "test": "vitest run",
-    "prepublishOnly": "npm run test && npm run lint && npm run build"
+    "prepublishOnly": "npm run test && npm run lint"
   },
   "dependencies": {
-    "@uwdata/mosaic-core": "^0.12.1",
-    "@uwdata/mosaic-inputs": "^0.12.1",
-    "@uwdata/mosaic-plot": "^0.12.1",
-    "@uwdata/mosaic-sql": "^0.12.1"
+    "@uwdata/mosaic-core": "^0.12.2",
+    "@uwdata/mosaic-inputs": "^0.12.2",
+    "@uwdata/mosaic-plot": "^0.12.2",
+    "@uwdata/mosaic-sql": "^0.12.2"
   }
 }

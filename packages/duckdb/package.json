@@ -1,6 +1,6 @@
 {
   "name": "@uwdata/mosaic-duckdb",
-  "version": "0.12.1",
+  "version": "0.12.2",
   "description": "A Promise-based DuckDB API and Node.js data server.",
   "keywords": [
     "duckdb",
@@ -12,8 +12,9 @@
   "license": "BSD-3-Clause",
   "author": "Jeffrey Heer (https://idl.uw.edu)",
   "type": "module",
-  "main": "src/index.js",
-  "module": "src/index.js",
+  "exports": {
+    "default": "./src/index.js"
+  },
   "repository": {
     "type": "git",
     "url": "https://github.com/uwdata/mosaic.git"
@@ -30,7 +31,7 @@
     "prepublishOnly": "npm run test && npm run lint"
   },
   "dependencies": {
-    "@uwdata/mosaic-sql": "^0.12.1",
+    "@uwdata/mosaic-sql": "^0.12.2",
     "duckdb": "^1.1.3",
     "ws": "^8.18.0"
   }

@@ -4,5 +4,12 @@
       "specs/yaml/*",
       "docs/public/specs/yaml/*"
     ]
-  }
+  },
+  "json.schemas": [{
+    "fileMatch": [
+      "specs/json/*",
+      "docs/public/specs/json/*"
+    ],
+    "url": "./packages/spec/dist/mosaic-schema.json"
+  }]
 }

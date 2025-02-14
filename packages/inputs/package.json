@@ -1,6 +1,6 @@
 {
   "name": "@uwdata/mosaic-inputs",
-  "version": "0.12.1",
+  "version": "0.12.2",
   "description": "Mosaic input components.",
   "keywords": [
     "inputs",
@@ -9,24 +9,21 @@
   "license": "BSD-3-Clause",
   "author": "Jeffrey Heer (https://idl.uw.edu)",
   "type": "module",
-  "main": "src/index.js",
-  "module": "src/index.js",
-  "jsdelivr": "dist/mosaic-inputs.min.js",
-  "unpkg": "dist/mosaic-inputs.min.js",
+  "exports": {
+    "default": "./src/index.js"
+  },
   "repository": {
     "type": "git",
     "url": "https://github.com/uwdata/mosaic.git"
   },
   "scripts": {
-    "prebuild": "rimraf dist && mkdir dist",
-    "build": "node ../../esbuild.js mosaic-inputs",
     "lint": "eslint src test",
     "test": "vitest run",
-    "prepublishOnly": "npm run test && npm run lint && npm run build"
+    "prepublishOnly": "npm run test && npm run lint"
   },
   "dependencies": {
-    "@uwdata/mosaic-core": "^0.12.1",
-    "@uwdata/mosaic-sql": "^0.12.1",
+    "@uwdata/mosaic-core": "^0.12.2",
+    "@uwdata/mosaic-sql": "^0.12.2",
     "isoformat": "^0.2.1"
   }
 }

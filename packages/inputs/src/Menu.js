@@ -1,14 +1,46 @@
-import { MosaicClient, Param, isParam, isSelection, clausePoint } from '@uwdata/mosaic-core';
+import { Param, Selection, isParam, isSelection, clausePoint } from '@uwdata/mosaic-core';
 import { Query } from '@uwdata/mosaic-sql';
-import { input } from './input.js';
+import { Input, input } from './input.js';
 
 const isObject = v => {
   return v && typeof v === 'object' && !Array.isArray(v);
 };
 
+/**
+ * Create a new menu input instance.
+ * @param {object} [options] Options object
+ * @param {HTMLElement} [options.element] The parent DOM element in which to
+ *  place the menu elements. If undefined, a new `div` element is created.
+ * @param {Selection} [options.filterBy] A selection to filter the database
+ *  table indicated by the *from* option.
+ * @param {Param} [options.as] The output param or selection. A selection
+ *  clause is added for the currently selected menu option.
+ * @param {string} [options.field] The database column name to use within
+ *  generated selection clause predicates. Defaults to the *column* option.
+ * @param {(any | { value: any, label?: string })[]} [options.options] An
+ *  array of menu options, as literal values or option objects. Option
+ *  objects have a `value` property and an optional `label` property. If no
+ *  label or *format* function is provided, the string-coerced value is used.
+ * @param {(value: any) => string} [options.format] A format function that
+ *  takes an option value as input and generates a string label. The format
+ *  function is not applied when an explicit label is provided in an option
+ *  object.
+ * @param {*} [options.value] The initial selected menu value.
+ * @param {string} [options.from] The name of a database table to use as a data
+ *  source for this widget. Used in conjunction with the *column* option.
+ * @param {string} [options.column] The name of a database column from which
+ *  to pull menu options. The unique column values are used as menu options.
+ *  Used in conjunction with the *from* option.
+ * @param {string} [options.label] A text label for this input.
+ * @returns {HTMLElement} The container element for a menu input.
+ */
 export const menu = options => input(Menu, options);
 
-export class Menu extends MosaicClient {
+/**
+ * A HTML <select>-based dropdown menu input.
+ * @extends {Input}
+ */
+export class Menu extends Input {
   /**
    * Create a new menu input.
    * @param {object} [options] Options object
@@ -39,25 +71,21 @@ export class Menu extends MosaicClient {
   constructor({
     element,
     filterBy,
+    as,
     from,
     column,
     label = column,
     format = x => x, // TODO
     options,
     value,
-    field = column,
-    as
+    field = column
   } = {}) {
-    super(filterBy);
+    super(filterBy, element);
     this.from = from;
     this.column = column;
     this.format = format;
     this.field = field;
     const selection = this.selection = as;
-
-    this.element = element ?? document.createElement('div');
-    this.element.setAttribute('class', 'input');
-    Object.defineProperty(this.element, 'value', { value: this });
 
     const lab = document.createElement('label');
     lab.innerText = label || column;
@@ -68,8 +96,8 @@ export class Menu extends MosaicClient {
 
     // if provided, populate menu options
     if (options) {
-      this.data = options.map(value => isObject(value) ? value : { value });
-      this.selectedValue(value ?? '');
+      this.data = options.map(opt => isObject(opt) ? opt : { value: opt });
+      this.selectedValue(value === undefined ? '' : value);
       this.update();
     }
 
@@ -125,8 +153,9 @@ export class Menu extends MosaicClient {
   }
 
   activate() {
-    // @ts-ignore - activate is only called for a Selection
-    this.selection.activate(clausePoint(this.field, 0, { source: this }));
+    if (isSelection(this.selection)) {
+      this.selection.activate(clausePoint(this.field, 0, { source: this }));
+    }
   }
 
   publish(value) {
@@ -174,7 +203,7 @@ export class Menu extends MosaicClient {
       const value = isSelection(selection)
         ? selection.valueFor(this)
         : selection.value;
-      this.selectedValue(value ?? '');
+      this.selectedValue(value === undefined ? '' : value);
     }
 
     return this;

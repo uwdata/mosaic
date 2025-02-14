@@ -30,6 +30,8 @@ Clients can also request queries in response to internal events. The client `req
 The `requestUpdate()` method makes throttled requests for a standard `query()`; multiple calls to `requestUpdate()` may result in only one query (the most recent) being serviced.
 Finally, clients may expose a `filterBy` Selection property. The predicates provided by `filterBy` are passed as an argument to the client `query()` method by the coordinator.
 
+[Developing Clients for Web Frameworks](/web-clients/)
+
 [Client API Reference](/api/core/client)
 
 ## Coordinator

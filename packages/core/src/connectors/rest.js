@@ -21,9 +21,16 @@ export function restConnector(uri = 'http://localhost:3000/') {
         body: JSON.stringify(query)
       });
 
+
+      const res = await req;
+
+      if (!res.ok) {
+        throw new Error(`Query failed with HTTP status ${res.status}: ${await res.text()}`);
+      }
+
       return query.type === 'exec' ? req
-        : query.type === 'arrow' ? decodeIPC(await (await req).arrayBuffer())
-        : (await req).json();
+        : query.type === 'arrow' ? decodeIPC(await res.arrayBuffer())
+        : res.json();
     }
   };
 }

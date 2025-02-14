@@ -1,3 +1,5 @@
+import { Coordinator } from './Coordinator.js';
+import { Selection } from './Selection.js';
 import { throttle } from './util/throttle.js';
 
 /**
@@ -11,9 +13,13 @@ export class MosaicClient {
    *  the client when the selection updates.
    */
   constructor(filterSelection) {
+    /** @type {Selection} */
     this._filterBy = filterSelection;
     this._requestUpdate = throttle(() => this.requestQuery(), true);
+    /** @type {Coordinator} */
     this._coordinator = null;
+    /** @type {Promise<any>} */
+    this._pending = Promise.resolve();
   }
 
   /**
@@ -28,6 +34,13 @@ export class MosaicClient {
    */
   set coordinator(coordinator) {
     this._coordinator = coordinator;
+  }
+
+  /**
+   * Return a Promise that resolves once the client has updated.
+   */
+  get pending() {
+    return this._pending;
   }
 
   /**
@@ -49,7 +62,8 @@ export class MosaicClient {
 
   /**
    * Return an array of fields queried by this client.
-   * @returns {object[]|null} The fields to retrieve info for.
+   * @returns {import('./types.js').FieldInfoRequest[] | null}
+   *  The fields to retrieve info for.
    */
   fields() {
     return null;
@@ -57,11 +71,17 @@ export class MosaicClient {
 
   /**
    * Called by the coordinator to set the field info for this client.
-   * @param {*} info The field info result.
+   * @param {import('./types.js').FieldInfo[]} info The field info result.
    * @returns {this}
    */
   fieldInfo(info) { // eslint-disable-line no-unused-vars
     return this;
+  }
+
+  /**
+   * Prepare the client before the query() method is called.
+   */
+  async prepare() {
   }
 
   /**
@@ -122,7 +142,7 @@ export class MosaicClient {
   }
 
   /**
-   * Reset this client, initiating new field info and query requests.
+   * Reset this client, initiating new field info, call the prepare method, and query requests.
    * @returns {Promise}
    */
   initialize() {

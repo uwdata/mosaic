@@ -40,7 +40,7 @@ export function clausePoint(field, value, {
 /**
  * Generate a selection clause for multiple selected point values.
  * @param {import('@uwdata/mosaic-sql').ExprValue[]} fields The table columns or expressions to select.
- * @param {any[][] | undefined} value The selected values, as an array of
+ * @param {any[][] | null | undefined} value The selected values, as an array of
  *  arrays. Each subarray contains values for each *fields* entry.
  * @param {object} options Additional clause properties.
  * @param {*} options.source The source component generating this clause.
@@ -75,7 +75,7 @@ export function clausePoints(fields, value, {
 /**
  * Generate a selection clause for a selected 1D interval.
  * @param {import('@uwdata/mosaic-sql').ExprValue} field The table column or expression to select.
- * @param {Extent} value The selected interval as a [lo, hi] array.
+ * @param {Extent | null | undefined} value The selected interval as a [lo, hi] array.
  * @param {object} options Additional clause properties.
  * @param {*} options.source The source component generating this clause.
  * @param {Set<MosaicClient>} [options.clients] The Mosaic clients associated
@@ -93,7 +93,6 @@ export function clauseInterval(field, value, {
   scale,
   pixelSize = 1
 }) {
-  /** @type {ExprNode | null} */
   const predicate = value != null ? isBetween(field, value) : null;
   /** @type {import('./util/selection-types.js').IntervalMetadata} */
   const meta = { type: 'interval', scales: scale && [scale], bin, pixelSize };
@@ -103,7 +102,7 @@ export function clauseInterval(field, value, {
 /**
  * Generate a selection clause for multiple selected intervals.
  * @param {import('@uwdata/mosaic-sql').ExprValue[]} fields The table columns or expressions to select.
- * @param {Extent[]} value The selected intervals, as an array of extents.
+ * @param {Extent[] | null | undefined} value The selected intervals, as an array of extents.
  * @param {object} options Additional clause properties.
  * @param {*} options.source The source component generating this clause.
  * @param {Set<MosaicClient>} [options.clients] The Mosaic clients associated
@@ -122,7 +121,6 @@ export function clauseIntervals(fields, value, {
   scales = [],
   pixelSize = 1
 }) {
-  /** @type {ExprNode | null} */
   const predicate = value != null
     ? and(fields.map((f, i) => isBetween(f, value[i])))
     : null;
@@ -136,7 +134,7 @@ const MATCH_METHODS = { contains, prefix, suffix, regexp: regexp_matches };
 /**
  * Generate a selection clause for text search matching.
  * @param {import('@uwdata/mosaic-sql').ExprValue} field The table column or expression to select.
- * @param {string} value The selected text search query string.
+ * @param {string | null | undefined} value The selected text search query string.
  * @param {object} options Additional clause properties.
  * @param {*} options.source The source component generating this clause.
  * @param {Set<MosaicClient>} [options.clients] The Mosaic clients associated

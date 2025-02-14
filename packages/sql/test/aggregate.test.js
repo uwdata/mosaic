@@ -1,6 +1,6 @@
 import { expect, describe, it } from 'vitest';
 import { columns } from './util/columns.js';
-import { argmax, argmin, arrayAgg, avg, column, corr, count, covariance, covarPop, entropy, first, gt, kurtosis, last, mad, max, median, min, mode, product, quantile, regrAvgX, regrAvgY, regrCount, regrIntercept, regrR2, regrSlope, regrSXX, regrSXY, regrSYY, skewness, stddev, stddevPop, stringAgg, sum, variance, varPop } from '../src/index.js';
+import { argmax, argmin, arrayAgg, avg, column, corr, count, covariance, covarPop, entropy, first, geomean, gt, kurtosis, last, mad, max, median, min, mode, product, quantile, regrAvgX, regrAvgY, regrCount, regrIntercept, regrR2, regrSlope, regrSXX, regrSXY, regrSYY, skewness, stddev, stddevPop, stringAgg, sum, variance, varPop } from '../src/index.js';
 
 describe('Aggregate functions', () => {
   it('include accessible metadata', () => {
@@ -61,6 +61,10 @@ describe('Aggregate functions', () => {
 
   it('include first', () => {
     expect(String(first('foo'))).toBe('first("foo")');
+  });
+
+  it('include geomean', () => {
+    expect(String(geomean('foo'))).toBe('geomean("foo")');
   });
 
   it('include kurtosis', () => {

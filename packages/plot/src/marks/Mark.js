@@ -136,7 +136,11 @@ export class Mark extends MosaicClient {
     }
 
     const table = this.sourceTable();
-    return Array.from(fields, ([c, s]) => ({ table, column: c, stats: s }));
+    return Array.from(fields, ([c, s]) => ({
+      table,
+      column: c,
+      stats: Array.from(s)
+    }));
   }
 
   fieldInfo(info) {
@@ -226,7 +230,7 @@ export function markQuery(channels, table, skip = []) {
     if (skip.includes(channel)) continue;
 
     if (channel === 'orderby') {
-      q.orderby(c.value);
+      q.orderby(c.value ?? field);
     } else if (field) {
       if (isAggregateExpression(field)) {
         aggr = true;

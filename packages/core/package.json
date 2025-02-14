@@ -1,6 +1,6 @@
 {
   "name": "@uwdata/mosaic-core",
-  "version": "0.12.1",
+  "version": "0.12.2",
   "description": "Scalable and extensible linked data views.",
   "keywords": [
     "mosaic",
@@ -12,29 +12,29 @@
   "license": "BSD-3-Clause",
   "author": "Jeffrey Heer (https://idl.uw.edu)",
   "type": "module",
-  "main": "src/index.js",
-  "module": "src/index.js",
-  "jsdelivr": "dist/mosaic-core.min.js",
-  "unpkg": "dist/mosaic-core.min.js",
-  "types": "dist/types/index.d.ts",
+  "exports": {
+    "types": "./dist/types/index-types.d.ts",
+    "default": "./src/index.js"
+  },
   "repository": {
     "type": "git",
     "url": "https://github.com/uwdata/mosaic.git"
   },
   "scripts": {
     "prebuild": "rimraf dist && mkdir dist",
-    "build": "npm run types && node ../../esbuild.js mosaic-core",
+    "build": "npm run types",
     "types": "tsc",
     "lint": "eslint src test",
-    "test": "vitest run && tsc -p jsconfig.json",
+    "test": "vitest run && npm run tsc",
+    "tsc": "tsc -p jsconfig.json",
     "prepublishOnly": "npm run test && npm run lint && npm run build"
   },
   "dependencies": {
     "@duckdb/duckdb-wasm": "^1.29.0",
-    "@uwdata/flechette": "^1.1.1",
-    "@uwdata/mosaic-sql": "^0.12.1"
+    "@uwdata/flechette": "^1.1.2",
+    "@uwdata/mosaic-sql": "^0.12.2"
   },
   "devDependencies": {
-    "@uwdata/mosaic-duckdb": "^0.12.1"
+    "@uwdata/mosaic-duckdb": "^0.12.2"
   }
 }
