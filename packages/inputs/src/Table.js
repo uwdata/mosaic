@@ -40,7 +40,7 @@ export const table = options => input(Table, options);
 
 /**
  * A HTML table based table component.
- * @extend {Input}
+ * @extends {Input}
  */
 export class Table extends Input {
   /**
