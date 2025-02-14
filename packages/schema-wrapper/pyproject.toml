@@ -21,6 +21,7 @@ dev = [
     "jupyterlab>=4.2.5",
     "mypy>=1.11.1",
     "pytest>=7.4.4",
+    "pytest-cov",
     "ruff>=0.6.1",
     "pandas",
     "mosaic-widget"

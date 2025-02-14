@@ -1,11 +1,6 @@
-"""
-pytest packages/schema_wrapper/test/test.py
-"""
-import unittest
-from pathlib import Path
 import pytest
-from ..src.utils import _todict
-from ..generated_classes import *
+from schema_wrapper.utils import _todict
+from schema_wrapper.generated_classes import *
 
 @pytest.fixture
 def sample_data():
