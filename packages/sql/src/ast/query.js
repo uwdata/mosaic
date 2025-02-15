@@ -41,6 +41,15 @@ export function isDescribeQuery(value) {
 
 export class Query extends ExprNode {
   /**
+   * Create a new WITH clause with the given CTE queries.
+   * @param {...import('../types.js').WithExpr} expr The WITH CTE queries.
+   * @returns {WithClause}
+   */
+  static with(...expr) {
+    return new WithClause(expr);
+  }
+
+  /**
    * Create a new select query with the given SELECT expressions.
    * @param {...import('../types.js').SelectExpr} expr The SELECT expressions.
    * @returns {SelectQuery}
@@ -56,15 +65,6 @@ export class Query extends ExprNode {
    */
   static from(...expr) {
     return new SelectQuery().from(...expr);
-  }
-
-  /**
-   * Create a new select query with the given WITH CTE queries.
-   * @param {...import('../types.js').WithExpr} expr The WITH CTE queries.
-   * @returns {SelectQuery}
-   */
-  static with(...expr) {
-    return new SelectQuery().with(...expr);
   }
 
   /**
@@ -117,6 +117,8 @@ export class Query extends ExprNode {
    */
   constructor(type) {
     super(type);
+    /** @type {WithClauseNode[]} */
+    this._with = [];
     /** @type {ExprNode[]} */
     this._orderby = [];
     /** @type {number} */
@@ -140,6 +142,26 @@ export class Query extends ExprNode {
    * @returns {Query}
    */
   clone() {
+    return this;
+  }
+
+  /**
+   * Add WITH common table expressions (CTEs).
+   * @param  {...import('../types.js').WithExpr} expr Expressions to add.
+   * @returns {this}
+   */
+  with(...expr) {
+    /** @type {WithClauseNode[]} */
+    const list = [];
+    const add = (name, q) => {
+      const query = q.clone();
+      query.cteFor = this;
+      list.push(new WithClauseNode(name, query));
+    };
+    expr.flat().forEach(e => {
+      if (e != null) for (const name in e) add(name, e[name]);
+    });
+    this._with = this._with.concat(list);
     return this;
   }
 
@@ -180,8 +202,6 @@ export class SelectQuery extends Query {
    */
   constructor() {
     super(SELECT_QUERY);
-    /** @type {WithClauseNode[]} */
-    this._with = [];
     /** @type {SelectClauseNode[]} */
     this._select = [];
     /** @type {FromClauseNode[]} */
@@ -230,26 +250,6 @@ export class SelectQuery extends Query {
    */
   clone() {
     return Object.assign(new SelectQuery(), this);
-  }
-
-  /**
-   * Add WITH common table expressions (CTEs).
-   * @param  {...import('../types.js').WithExpr} expr Expressions to add.
-   * @returns {this}
-   */
-  with(...expr) {
-    /** @type {WithClauseNode[]} */
-    const list = [];
-    const add = (name, q) => {
-      const query = q.clone();
-      query.cteFor = this;
-      list.push(new WithClauseNode(name, query));
-    };
-    expr.flat().forEach(e => {
-      if (e != null) for (const name in e) add(name, e[name]);
-    });
-    this._with = this._with.concat(list);
-    return this;
   }
 
   /**
@@ -559,10 +559,14 @@ export class SetOperation extends Query {
    * @returns {string}
    */
   toString() {
-    const { op, queries, _orderby, _limit, _offset } = this;
+    const { op, queries, _with, _orderby, _limit, _offset } = this;
+    const sql = [];
+
+    // WITH
+    if (_with.length) sql.push(`WITH ${_with.join(', ')}`);
 
     // SUBQUERIES
-    const sql = [ queries.join(` ${op} `) ];
+    sql.push(queries.join(` ${op} `));
 
     // ORDER BY
     if (_orderby.length) sql.push(`ORDER BY ${_orderby.join(', ')}`);
@@ -574,5 +578,65 @@ export class SetOperation extends Query {
     if (Number.isFinite(_offset)) sql.push(`OFFSET ${_offset}`);
 
     return sql.join(' ');
+  }
+}
+
+class WithClause {
+  constructor(expr) {
+    this._with = expr;
+  }
+
+  /**
+   * Create a new select query with the given SELECT expressions.
+   * @param {...import('../types.js').SelectExpr} expr The SELECT expressions.
+   * @returns {SelectQuery}
+   */
+  select(...expr) {
+    return Query.select(...expr).with(this._with);
+  }
+
+  /**
+   * Create a new select query with the given FROM expressions.
+   * @param {...import('../types.js').FromExpr} expr The FROM expressions.
+   * @returns {SelectQuery}
+   */
+  from(...expr) {
+    return Query.from(...expr).with(this._with);
+  }
+
+  /**
+   * Create a new UNION set operation over the given queries.
+   * @param {...Query} queries The queries.
+   * @returns {SetOperation}
+   */
+  union(...queries) {
+    return Query.union(...queries).with(this._with);
+  }
+
+  /**
+   * Create a new UNION ALL set operation over the given queries.
+   * @param {...Query} queries The queries.
+   * @returns {SetOperation}
+   */
+  unionAll(...queries) {
+    return Query.unionAll(...queries).with(this._with);
+  }
+
+  /**
+   * Create a new INTERSECT set operation over the given queries.
+   * @param {...Query} queries The queries.
+   * @returns {SetOperation}
+   */
+  intersect(...queries) {
+    return Query.intersect(...queries).with(this._with);
+  }
+
+  /**
+   * Create a new EXCEPT set operation over the given queries.
+   * @param {...Query} queries The queries.
+   * @returns {SetOperation}
+   */
+  except(...queries) {
+    return Query.except(...queries).with(this._with);
   }
 }

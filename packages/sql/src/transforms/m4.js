@@ -1,4 +1,4 @@
-import { Query } from '../ast/query.js';
+import { Query, isQuery } from '../ast/query.js';
 import { argmax, argmin, max, min } from '../functions/aggregate.js';
 import { int32 } from '../functions/cast.js';
 import { floor } from '../functions/numeric.js';
@@ -22,12 +22,20 @@ import { floor } from '../functions/numeric.js';
 export function m4(input, bin, x, y, groups = []) {
   const pixel = int32(floor(bin));
 
+  const useCTE = isQuery(input);
+  const inputExpr = useCTE ? 'input' : input;
+  const query = useCTE ? Query.with({ input }) : Query;
+
+  // DuckDB automatically materializes the input query based on heuristics.
+  // Explicit use of MATERIALIZED is not required when:
+  // 1. CTE performs a grouped aggregation
+  // 2. CTE is queried more than once (here 4x)
   const q = (sel) => Query
-    .from(input)
+    .from(inputExpr)
     .select(sel)
     .groupby(pixel, groups);
 
-  return Query
+  return query
     .union(
       q([{ [x]: min(x), [y]: argmin(y, x) }, ...groups]),
       q([{ [x]: max(x), [y]: argmax(y, x) }, ...groups]),
