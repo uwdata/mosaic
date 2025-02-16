@@ -1,4 +1,4 @@
-import { MosaicClient } from "@uwdata/mosaic-core/src/MosaicClient.js";
+import { MosaicClient } from "@uwdata/mosaic-core";
 import { InstantiateContext } from "@uwdata/mosaic-spec";
 import { Canvas } from "skia-canvas";
 
