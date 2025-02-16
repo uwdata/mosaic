@@ -22,7 +22,7 @@ import {
   LogLevel, Logger,
   preamble
 } from './util/index.js';
-import { isActivatable } from "@uwdata/mosaic-core/src/index.js";
+import { isActivatable } from "@uwdata/mosaic-core";
 
 /**
  * Class to facilitate publishing a Mosaic specification.
