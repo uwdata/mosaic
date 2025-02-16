@@ -54,8 +54,11 @@ export interface ColumnDescription {
 }
 
 /**
- * Interface for activatable objects.
+ * Interface for components that perform selection activation.
  */
 export interface Activatable {
+  /**
+   * Activate the selection that this component publishes to.
+   */
   activate(): void;
 }

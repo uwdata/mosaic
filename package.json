@@ -17,7 +17,7 @@
     "docs:schema": "node bin/publish-schema.js",
     "build": "lerna run build",
     "lint": "lerna run lint",
-    "test": "lerna run test",
+    "test": "vitest run && lerna run tsc",
     "server": "cd packages/duckdb-server && npm run dev",
     "server:rust": "cd packages/duckdb-server-rust && cargo run",
     "server:node": "nodemon packages/duckdb/bin/run-server.js",
@@ -30,8 +30,7 @@
   "devDependencies": {
     "ajv": "^8.17.1",
     "ajv-formats": "^3.0.1",
-    "esbuild": "^0.24.2",
-    "eslint": "^9.19.0",
+    "eslint": "^9.20.1",
     "eslint-plugin-jsdoc": "^50.6.3",
     "jsdom": "^26.0.0",
     "lerna": "^8.1.9",
@@ -45,6 +44,7 @@
     "yaml": "^2.7.0"
   },
   "workspaces": [
-    "packages/*"
+    "packages/*",
+    "examples/*"
   ]
 }

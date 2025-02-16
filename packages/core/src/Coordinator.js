@@ -245,6 +245,9 @@ export class Coordinator {
       client.fieldInfo(await queryFieldInfo(this, fields));
     }
 
+    // prepare the client
+    await client.prepare();
+
     // request data query
     return client.requestQuery();
   }

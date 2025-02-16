@@ -10,21 +10,21 @@
   "license": "BSD-3-Clause",
   "author": "Jeffrey Heer (https://idl.uw.edu)",
   "type": "module",
-  "main": "src/index.js",
-  "module": "src/index.js",
-  "jsdelivr": "dist/mosaic-sql.min.js",
-  "unpkg": "dist/mosaic-sql.min.js",
-  "types": "dist/types/index-types.d.ts",
+  "exports": {
+    "types": "./dist/types/index-types.d.ts",
+    "default": "./src/index.js"
+  },
   "repository": {
     "type": "git",
     "url": "https://github.com/uwdata/mosaic.git"
   },
   "scripts": {
     "prebuild": "rimraf dist && mkdir dist",
-    "build": "npm run types && node ../../esbuild.js mosaic-sql",
+    "build": "npm run types",
     "types": "tsc",
     "lint": "eslint src test",
-    "test": "vitest run && tsc -p jsconfig.json",
+    "test": "vitest run && npm run tsc",
+    "tsc": "tsc -p jsconfig.json",
     "prepublishOnly": "npm run test && npm run lint && npm run build"
   }
 }
