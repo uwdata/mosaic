@@ -46,7 +46,7 @@ export class Query extends ExprNode {
    * @returns {WithClause}
    */
   static with(...expr) {
-    return new WithClause(expr);
+    return new WithClause(...expr);
   }
 
   /**
@@ -582,7 +582,11 @@ export class SetOperation extends Query {
 }
 
 class WithClause {
-  constructor(expr) {
+  /**
+   * Instantiate a new WITH clause instance.
+   * @param {...import('../types.js').WithExpr} expr The WITH CTE queries.
+   */
+  constructor(...expr) {
     this._with = expr;
   }
 
@@ -592,7 +596,7 @@ class WithClause {
    * @returns {SelectQuery}
    */
   select(...expr) {
-    return Query.select(...expr).with(this._with);
+    return Query.select(...expr).with(...this._with);
   }
 
   /**
@@ -601,7 +605,7 @@ class WithClause {
    * @returns {SelectQuery}
    */
   from(...expr) {
-    return Query.from(...expr).with(this._with);
+    return Query.from(...expr).with(...this._with);
   }
 
   /**
@@ -610,7 +614,7 @@ class WithClause {
    * @returns {SetOperation}
    */
   union(...queries) {
-    return Query.union(...queries).with(this._with);
+    return Query.union(...queries).with(...this._with);
   }
 
   /**
@@ -619,7 +623,7 @@ class WithClause {
    * @returns {SetOperation}
    */
   unionAll(...queries) {
-    return Query.unionAll(...queries).with(this._with);
+    return Query.unionAll(...queries).with(...this._with);
   }
 
   /**
@@ -628,7 +632,7 @@ class WithClause {
    * @returns {SetOperation}
    */
   intersect(...queries) {
-    return Query.intersect(...queries).with(this._with);
+    return Query.intersect(...queries).with(...this._with);
   }
 
   /**
@@ -637,6 +641,6 @@ class WithClause {
    * @returns {SetOperation}
    */
   except(...queries) {
-    return Query.except(...queries).with(this._with);
+    return Query.except(...queries).with(...this._with);
   }
 }
