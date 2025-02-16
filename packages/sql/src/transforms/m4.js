@@ -22,14 +22,12 @@ import { floor } from '../functions/numeric.js';
 export function m4(input, bin, x, y, groups = []) {
   const pixel = int32(floor(bin));
 
+  // Below, we treat input as a CTE when it is a query. DuckDB will
+  // automatically materialize the CTE if it performs a grouped aggregation.
   const useCTE = isQuery(input);
   const inputExpr = useCTE ? 'input' : input;
   const query = useCTE ? Query.with({ input }) : Query;
 
-  // DuckDB automatically materializes the input query based on heuristics.
-  // Explicit use of MATERIALIZED is not required when:
-  // 1. CTE performs a grouped aggregation
-  // 2. CTE is queried more than once (here 4x)
   const q = (sel) => Query
     .from(inputExpr)
     .select(sel)
