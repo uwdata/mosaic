@@ -4,13 +4,15 @@ import { SpecNode } from './ast/SpecNode.js';
 import { resolveExtensions } from './config/extensions.js';
 import { error } from './util.js';
 
+// * @param {object} [options] Instantiation options.
+//  * @param {string} [options.baseURL] The base URL for loading data files.
+//  * @param {any[]} [options.plotDefaults] Array of default plot attributes.
+//  * @param {Map<string, Param>} [options.params] A map of predefined Params/Selections.
+
 /**
  * Generate a running web application (DOM content) for a Mosaic spec AST.
  * @param {SpecNode} ast Mosaic AST root node.
- * @param {object} [options] Instantiation options.
- * @param {string} [options.baseURL] The base URL for loading data files.
- * @param {any[]} [options.plotDefaults] Array of default plot attributes.
- * @param {Map<string, Param>} [options.params] A map of predefined Params/Selections.
+ * @param {ConstructorParameters<typeof InstantiateContext>[0]} [options] Instantiation options.
  * @returns {Promise<{
  *   element: HTMLElement | SVGSVGElement;
 *    params: Map<string, Param | Selection>;
