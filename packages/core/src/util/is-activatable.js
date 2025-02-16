@@ -6,4 +6,3 @@
 export function isActivatable(value) {
   return typeof value?.activate === 'function' && value.activate.length === 0;
 }
-

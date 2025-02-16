@@ -34,10 +34,6 @@ function configureMark(mark) {
   return mark;
 }
 
-/**
- * @import {Activatable} from '@uwdata/mosaic-core'
- * @implements {Activatable}
- */
 export class Highlight {
   constructor(mark, {
     selection,
@@ -83,10 +79,6 @@ export class Highlight {
         node.setAttribute(attr, t ? base[j] : value);
       }
     }
-  }
-
-  activate() {
-    return this.update();
   }
 }
 
