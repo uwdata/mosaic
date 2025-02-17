@@ -30,6 +30,7 @@ export function publishConnector() {
 export class PublishContext extends InstantiateContext {
   constructor(connector: any) {
     const coordinator = new Coordinator(connector);
+    coordinator.logger(null) // Disable logging
     const api = createAPIContext({ coordinator });
     super({ api });
   }

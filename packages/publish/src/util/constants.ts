@@ -1,8 +1,8 @@
-export const htmlTemplate = (isInteractive: boolean, title?: string, element?: HTMLElement | SVGElement, css = templateCSS) => `
+export const htmlTemplate = (isInteractive: boolean, title: string, element?: HTMLElement | SVGElement, css = templateCSS) => `
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <title>${title ?? 'Mosaic Visualization'}</title>
+  <title>${title}</title>
 </head>
 <body>
   <article class="mosaic">
@@ -21,7 +21,7 @@ ${isInteractive ? `
 ${css}
 </html>`;
 
-export const templateCSS =`<style>
+export const templateCSS = `<style>
 .mosaic {
   position: relative;
   margin-top: 1.5em;

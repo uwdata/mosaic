@@ -25,19 +25,30 @@ import {
 import { isActivatable } from "@uwdata/mosaic-core";
 
 /**
+ * Error class for know publishing errors.
+ * @param message Error message.
+ */
+export class PublishError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'PublishError';
+  }
+}
+
+/**
  * Class to facilitate publishing a Mosaic specification.
- * @param specPath Path to the Mosaic specification file.
+ * @param spec Contents of JSON Mosaic specification file.
  * @param outputPath Path to the desired output directory.
  * @param title Optional title for the HTML file.
  * @param optimize Level of optimization for published visualization.
- * @param logLevel Desired logging level (debug, info, warn, error, silent)
+ * @param logger Optional logger instance to use for logging.
  * 
  * The `publish` method is the main entry point for the class
  */
 export class MosaicPublisher {
-  private specPath: string;
+  private spec: string;
   private outputPath: string;
-  private title?: string;
+  private title: string;
   private optimize: 'minimal' | 'more' | 'most';
   private logger: Logger;
 
@@ -47,49 +58,39 @@ export class MosaicPublisher {
   private data?: Record<string, DataNode>;
 
   constructor(
-    specPath: string,
-    outputPath: string,
-    title: string | undefined,
-    optimize: 'minimal' | 'more' | 'most',
-    logLevel: LogLevel
+    spec: string,
+    outputPath = 'out',
+    title = 'Mosaic Visualization',
+    optimize: 'minimal' | 'more' | 'most' = 'minimal',
+    logger: Logger = new Logger(LogLevel.INFO)
   ) {
-    this.specPath = specPath;
+    this.spec = spec;
     this.outputPath = outputPath;
     this.title = title;
     this.optimize = optimize;
-
-    // Create our logger instance
-    this.logger = new Logger(logLevel);
+    this.logger = logger;
 
     // Create PublishContext
     const connector = publishConnector();
     this.ctx = new PublishContext(connector);
-    if (logLevel !== 'debug') {
-      this.ctx.coordinator.logger(false);
-    }
   }
 
   /**
    * Main entry point for publishing a Mosaic specification.
    */
   public async publish() {
-    this.logger.info(chalk.cyan('Parsing and processing specification...'));
+    this.logger.info('Parsing and processing spec...');
 
     // Parse specification
-    this.parseSpecification();
+    try {
+      this.ast = parseSpec(yaml.parse(this.spec));
+    } catch (err) {
+      throw new PublishError(`Failed to parse specification: ${err}`);
+    }
     if (!this.ast) return;
     this.data = this.ast.data;
 
-    // If spec is valid create relevant output directory
-    if (fs.existsSync(this.outputPath)) {
-      this.logger.debug(`Removing existing directory: ${this.outputPath}`);
-      fs.rmSync(this.outputPath, { recursive: true });
-    }
-    this.logger.debug(`Creating directory: ${this.outputPath}`);
-    fs.mkdirSync(this.outputPath, { recursive: true });
-
     // Setup jsdom
-    this.logger.debug('Setting up jsdom environment...');
     const dom = new JSDOM(
       `<!DOCTYPE html><body></body>`,
       { pretendToBeVisual: true }
@@ -104,15 +105,23 @@ export class MosaicPublisher {
     // TODO: fix type issue with astToDOM to remove the any cast
     const { element } = await astToDOM(this.ast, { api: this.ctx.api } as any);
     document.body.appendChild(element);
-    this.logger.debug('Waiting for clients to be ready...');
     await clientsReady(this.ctx);
 
     const { interactors, inputs, tables } = this.processClients();
     const isInteractive = interactors.size + inputs.size !== 0;
 
+    // If spec is valid create relevant output directory
+    if (fs.existsSync(this.outputPath)) {
+      this.logger.warn(`Clearing output directory: ${this.outputPath}`);
+      fs.rmSync(this.outputPath, { recursive: true });
+      fs.mkdirSync(this.outputPath, { recursive: true });
+    } else {
+      this.logger.info(`Creating output directory: ${this.outputPath}`);
+      fs.mkdirSync(this.outputPath, { recursive: true });
+    }
+
     if (isInteractive) {
       // Activate interactors and inputs
-      this.logger.info(chalk.cyan('Activating interactive elements...'));
       await this.activateInteractorsAndInputs(interactors, inputs);
 
       // Modify AST and process data (extensions, data definitions, etc.)
@@ -122,37 +131,21 @@ export class MosaicPublisher {
         const { file } = this;
         return code?.replace(`"${file}"`, `window.location.origin + "/${file}"`);
       };
-      this.logger.debug('Updating data nodes...');
       await this.updateDataNodes(tables);
 
       // Export relevant data from DuckDB to Parquet
-      this.logger.info(chalk.cyan('Exporting data to Parquet...'));
       await this.exportDataFromDuckDB(tables);
     }
 
-    this.logger.info(chalk.cyan('Writing output files...'));
     this.writeFiles(isInteractive, element);
   }
 
-  private parseSpecification() {
-    try {
-      const specFile = fs.readFileSync(this.specPath, 'utf-8');
-      this.ast = parseSpec(yaml.parse(specFile));
-    } catch (e) {
-      console.error('Error parsing spec:', e);
-      process.exit(1);
-    }
-  }
-
   private processClients() {
-    this.logger.debug('--------------- Clients ---------------');
-
     const interactors = new Set<any>();
     const inputs = new Set<MosaicClient>();
     const tables: Record<string, Set<string>> = {};
 
     for (const client of this.ctx.coordinator.clients) {
-      this.logger.debug(client.constructor.name);
       if (client instanceof MosaicClient) {
         const fields = client.fields();
         if (fields) {
@@ -193,16 +186,13 @@ export class MosaicPublisher {
    * for queries to finish.
    */
   private async activateInteractorsAndInputs(interactors: Set<any>, inputs: Set<MosaicClient>) {
-    this.logger.debug('--------------- Activating ---------------');
     this.ctx.coordinator.manager._logQueries = true;
     for (const interactor of interactors) {
-      this.logger.debug(interactor.constructor.name);
       if (isActivatable(interactor)) interactor.activate();
       await this.waitForQueryToFinish();
     }
 
     for (const input of inputs) {
-      this.logger.debug(input.constructor.name);
       if (isActivatable(input)) input.activate();
       await this.waitForQueryToFinish();
     }
@@ -218,7 +208,7 @@ export class MosaicPublisher {
    * Process data definitions (DataNodes) and converts them to ParquetDataNode
    * objects based on specified tables.
    */
-  private async updateDataNodes(tables: Record<string, Set<string>>) {
+  private async updateDataNodes(tables: Record<string, Set<string> | null>) {
     // process data definitions
     for (const node of Object.values(this.data!)) {
       if (!(node.name in tables)) {
@@ -237,9 +227,11 @@ export class MosaicPublisher {
       for (const table of db_tables) {
         if (table.name.startsWith('preagg_')) {
           const name = `${table.schema}.${table.name}`;
-          tables[name] = new Set(table.column_names);
+          tables[name] = null;
           const file = `data/.mosaic/${table.name}.parquet`;
           this.ast!.data[name] = new ParquetDataNode(name, file, new OptionsNode({}));
+        } else if (table.name in tables && tables[table.name] == new Set(table.column_names)) {
+          tables[table.name] = null;
         }
       }
     }
@@ -265,16 +257,17 @@ export class MosaicPublisher {
   /**
    * Export relevant data from DuckDB to local Parquet
    */
-  private async exportDataFromDuckDB(tables: Record<string, Set<string>>) {
-    const copy_queries: string[] = [];
-    let containsPreAggData = false;
+  private async exportDataFromDuckDB(tables: Record<string, Set<string> | null>) {
+    const table_copy_queries: string[] = [];
+    const materialized_view_copy_queries: string[] = [];
     for (const node of Object.values(this.data!)) {
       if (!(node instanceof ParquetDataNode)) continue;
       const table = node.name;
       const file = node.file;
       const relevant_columns = tables[table];
-      if (relevant_columns.size === 0) {
-        this.logger.debug(`No relevant columns found for table ${table}`);
+      if (relevant_columns?.size === 0) {
+        this.logger.warn(`Skipping export of table: ${table}`);
+        this.logger.warn(`No columns are being used from this table.`);
         continue;
       }
 
@@ -285,23 +278,34 @@ export class MosaicPublisher {
           break;
         case 'more':
         case 'most':
-          query = `COPY (SELECT ${Array.from(relevant_columns).join(', ')} FROM ${table}) TO '${this.outputPath}/${file}' (FORMAT PARQUET)`;
+          if (relevant_columns === null) {
+            query = `COPY (SELECT * FROM ${table}) TO '${this.outputPath}/${file}' (FORMAT PARQUET)`;
+          } else {
+            this.logger.warn(`Partially exporting table: ${table}`);
+            query = `COPY (SELECT ${Array.from(relevant_columns).join(', ')} FROM ${table}) TO '${this.outputPath}/${file}' (FORMAT PARQUET)`;
+          }
           break;
         default:
-          throw new Error(`Invalid optimization level: ${this.optimize}`);
+          throw new PublishError(`Invalid optimization level: ${this.optimize}`);
       }
-      copy_queries.push(query);
 
-      if (file.startsWith('.mosaic')) {
-        containsPreAggData = true;
+      if (table.startsWith('mosaic.preagg_')) {
+        materialized_view_copy_queries.push(query);
+      } else {
+        table_copy_queries.push(query);
       }
     }
 
-    if (copy_queries.length > 0) {
+    if (table_copy_queries.length > 0 || materialized_view_copy_queries.length > 0) {
+      this.logger.info('Exporting data tables to Parquet...');
       fs.mkdirSync(path.join(this.outputPath, 'data'), { recursive: true });
-      if (containsPreAggData) fs.mkdirSync(path.join(this.outputPath, 'data/.mosaic'), { recursive: true });
+      await this.ctx.coordinator.exec(table_copy_queries);
 
-      await this.ctx.coordinator.exec(copy_queries);
+      if (materialized_view_copy_queries.length > 0) {
+        this.logger.info('Exporting materialized views to Parquet...');
+        fs.mkdirSync(path.join(this.outputPath, 'data/.mosaic'), { recursive: true });
+        await this.ctx.coordinator.exec(materialized_view_copy_queries);
+      }
     }
   }
 }
