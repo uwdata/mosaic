@@ -1,4 +1,4 @@
-import { Query } from '../ast/query.js';
+import { Query, isQuery } from '../ast/query.js';
 import { argmax, argmin, max, min } from '../functions/aggregate.js';
 import { int32 } from '../functions/cast.js';
 import { floor } from '../functions/numeric.js';
@@ -22,12 +22,18 @@ import { floor } from '../functions/numeric.js';
 export function m4(input, bin, x, y, groups = []) {
   const pixel = int32(floor(bin));
 
+  // Below, we treat input as a CTE when it is a query. DuckDB will
+  // automatically materialize the CTE if it performs a grouped aggregation.
+  const useCTE = isQuery(input);
+  const inputExpr = useCTE ? 'input' : input;
+  const query = useCTE ? Query.with({ input }) : Query;
+
   const q = (sel) => Query
-    .from(input)
+    .from(inputExpr)
     .select(sel)
     .groupby(pixel, groups);
 
-  return Query
+  return query
     .union(
       q([{ [x]: min(x), [y]: argmin(y, x) }, ...groups]),
       q([{ [x]: max(x), [y]: argmax(y, x) }, ...groups]),
