@@ -159,7 +159,8 @@ export class Query extends ExprNode {
       list.push(new WithClauseNode(name, query));
     };
     expr.flat().forEach(e => {
-      if (e != null) for (const name in e) add(name, e[name]);
+      if (e instanceof WithClauseNode) list.push(e);
+      else if (e != null) for (const name in e) add(name, e[name]);
     });
     this._with = this._with.concat(list);
     return this;
