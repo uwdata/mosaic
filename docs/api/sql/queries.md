@@ -101,8 +101,8 @@ The _tables_ may be table name strings, queries or subquery expressions, and map
 
 `Query.with(...expressions)`
 
-Provide a set of named subqueries in the form of [common table expressions](https://duckdb.org/docs/sql/query_syntax/with.html) and return this query instance.
-The input _expressions_ should consist of one or more maps (as JavaScript `object` values) from subquery names to query expressions.
+Provide a set of named subqueries in the form of [common table expressions (CTEs)](https://duckdb.org/docs/sql/query_syntax/with.html) and return this query instance.
+The input _expressions_ should consist of one or more maps (as JavaScript `object` values) from subquery names to query expressions and/or CTE instances produced by the `cte` method.
 
 ## distinct
 
