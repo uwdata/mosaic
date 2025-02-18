@@ -102,8 +102,7 @@ export class MosaicPublisher {
     mockCanvas(globalThis.window);
 
     // Load the visualization in the DOM and gather interactors/inputs
-    // TODO: fix type issue with astToDOM to remove the any cast
-    const { element } = await astToDOM(this.ast, { api: this.ctx.api } as any);
+    const { element } = await astToDOM(this.ast, { api: this.ctx.api });
     document.body.appendChild(element);
     await clientsReady(this.ctx);
 
