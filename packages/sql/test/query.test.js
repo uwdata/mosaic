@@ -1,5 +1,5 @@
 import { expect, describe, it } from 'vitest';
-import { asNode, asTableRef, column, desc, gt, lt, max, min, sql, Query, sum, lead, over } from '../src/index.js';
+import { asNode, asTableRef, column, desc, gt, lt, max, min, sql, Query, sum, lead, over, cte, add } from '../src/index.js';
 
 describe('Query', () => {
   it('selects column name strings', () => {
@@ -462,6 +462,20 @@ describe('Query', () => {
       'WITH "a" AS (SELECT "foo" FROM "data1"),',
            '"b" AS (SELECT "bar" FROM "data2")',
       'SELECT * FROM "a", "b"'
+    ].join(' '));
+
+    expect(Query
+      .with(
+        cte('foo', Query.select({ x: 42 }), false),
+        cte('bar', Query.select({ y: 42 }), true)
+      )
+      .select({ v: add('x', 'y') })
+      .from('foo', 'bar')
+      .toString()
+    ).toBe([
+      'WITH "foo" AS NOT MATERIALIZED (SELECT 42 AS "x"),',
+           '"bar" AS MATERIALIZED (SELECT 42 AS "y")',
+      'SELECT ("x" + "y") AS "v" FROM "foo", "bar"'
     ].join(' '));
   });
 

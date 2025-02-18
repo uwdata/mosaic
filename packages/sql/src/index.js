@@ -28,6 +28,7 @@ export { argmax, argmin, arrayAgg, avg, corr, count, covariance, covarPop, entro
 export { cond } from './functions/case.js';
 export { cast, float32, float64, int32 } from './functions/cast.js';
 export { column } from './functions/column.js';
+export { cte } from './functions/cte.js';
 export { dateBin, dateMonth, dateMonthDay, dateDay, epoch_ms, interval } from './functions/datetime.js';
 export { literal } from './functions/literal.js';
 export { abs, ceil, exp, floor, greatest, isFinite, isInfinite, isNaN, least, ln, log, round, sign, sqrt, trunc } from './functions/numeric.js';

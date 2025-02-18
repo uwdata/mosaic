@@ -1,6 +1,7 @@
-import { Query } from '../ast/query.js';
+import { Query, isQuery } from '../ast/query.js';
 import { argmax, argmin, max, min } from '../functions/aggregate.js';
 import { int32 } from '../functions/cast.js';
+import { cte } from '../functions/cte.js';
 import { floor } from '../functions/numeric.js';
 
 /**
@@ -22,12 +23,20 @@ import { floor } from '../functions/numeric.js';
 export function m4(input, bin, x, y, groups = []) {
   const pixel = int32(floor(bin));
 
+  // Below, we treat input as a CTE when it is a query. In this case,
+  // we also request that the CTE be explicitly materialized.
+  const useCTE = isQuery(input);
+  const from = useCTE ? 'input' : input;
+  const query = useCTE
+    ? Query.with(cte(/** @type {string} */(from), input, true))
+    : Query;
+
   const q = (sel) => Query
-    .from(input)
+    .from(from)
     .select(sel)
     .groupby(pixel, groups);
 
-  return Query
+  return query
     .union(
       q([{ [x]: min(x), [y]: argmin(y, x) }, ...groups]),
       q([{ [x]: max(x), [y]: argmax(y, x) }, ...groups]),
