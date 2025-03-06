@@ -56,17 +56,8 @@ class BinTransformNode extends ExprNode {
       || type === 'date'
       || hasTimeScale(mark, channel);
     const result = isDate
-      ? binDateProxy(column, [min, max], options)
+      ? binDate(column, [min, max], options)
       : binHistogram(column, [min, max], options, channelScale(mark, channel));
     return `${result}`;
   }
-}
-
-// TODO: revisit representation
-function binDateProxy(column, extent, options) {
-  const { interval: unit, step = 1, ...opt } = options;
-  return binDate(column, extent, {
-    ...opt,
-    interval: unit ? { unit, step } : undefined
-  });
 }

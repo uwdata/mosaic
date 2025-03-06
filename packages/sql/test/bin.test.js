@@ -37,22 +37,22 @@ describe('Binning transforms', () => {
     const days = [new Date(2010, 0, 1), new Date(2010, 0, 10)];
 
     it('accepts explicit time intervals', () => {
-      expect(`${binDate('foo', years, { interval: { unit: 'year', step: 2 } })}`)
+      expect(`${binDate('foo', years, { interval: 'year', step: 2 })}`)
         .toBe('time_bucket(INTERVAL 2 year, "foo")');
 
-      expect(`${binDate('foo', years, { interval: { unit: 'month', step: 6 } })}`)
+      expect(`${binDate('foo', years, { interval: 'month', step: 6 })}`)
         .toBe('time_bucket(INTERVAL 6 month, "foo")');
 
-      expect(`${binDate('foo', months, { interval: { unit: 'month', step: 1 } })}`)
+      expect(`${binDate('foo', months, { interval: 'month', step: 1 })}`)
         .toBe('time_bucket(INTERVAL 1 month, "foo")');
 
-      expect(`${binDate('foo', months, { interval: { unit: 'month', step: 3 } })}`)
+      expect(`${binDate('foo', months, { interval: 'month', step: 3 })}`)
         .toBe('time_bucket(INTERVAL 3 month, "foo")');
 
-      expect(`${binDate('foo', days, { interval: { unit: 'day', step: 2 } })}`)
+      expect(`${binDate('foo', days, { interval: 'day', step: 2 })}`)
         .toBe('time_bucket(INTERVAL 2 day, "foo")');
 
-      expect(`${binDate('foo', days, { interval: { unit: 'hour', step: 12 } })}`)
+      expect(`${binDate('foo', days, { interval: 'hour', step: 12 })}`)
         .toBe('time_bucket(INTERVAL 12 hour, "foo")');
     });
 

@@ -14,20 +14,14 @@ import { timeInterval } from './util/time-interval.js';
 
 /**
  * @typedef {object} BinDateOptions
- * @property {IntervalSpec} [interval] A specification of the desired time
- *  interval by which to bin.
+ * @property {TimeUnit} [interval] A string indicating a time interval
+ *  unit, such as 'year', 'day', or 'hour'.
+ * @property {number} [step] The number of time interval steps to
+ *  take, such as 2 years or 3 months.
  * @property {number} [offset] The number of bin steps (default 0) by
  *  which to offset the result.
  * @property {number} [steps] The desired number of binning steps.
  *  This value is a hint, it does not guarantee an exact number of steps.
- */
-
-/**
- * @typedef {object} IntervalSpec
- * @property {TimeUnit} unit A string indicating a time unit (such as
- *  'year' or 'day').
- * @property {number} [step] The number of time interval steps to
- *  take, such as 2 years or 3 months.
  */
 
 /**
@@ -42,8 +36,8 @@ export function binDate(field, extent, options = {}) {
 
   // use interval if provided, otherwise determine from extent
   const { unit, step = 1 } = options.interval
-    ?? timeInterval(extent[0], extent[1], options.steps || 40);
-  console.log('INTERVAL?', unit, step);
+    ? { unit: options.interval, step: options.step }
+    : timeInterval(extent[0], extent[1], options.steps || 40);
   const bin = dateBin(field, unit, step);
   return offset ? add(bin, interval(unit, offset * step)) : bin;
 }
