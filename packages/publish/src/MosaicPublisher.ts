@@ -248,7 +248,7 @@ export class MosaicPublisher {
         types: {
           cache: map(utf8(), binary())
         }
-      }), { format: 'stream' })!;
+      }), {})!;
       fs.writeFileSync(path.join(this.outputPath, cacheFile), cacheBytes);
     }
 

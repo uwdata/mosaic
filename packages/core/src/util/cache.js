@@ -1,4 +1,5 @@
-import { tableFromIPC, tableToIPC } from "@uwdata/flechette";
+import { tableToIPC } from "@uwdata/flechette";
+import { decodeIPC } from "./decode-ipc.js";
 
 const requestIdle = typeof requestIdleCallback !== 'undefined'
   ? requestIdleCallback
@@ -86,18 +87,12 @@ export function lruCache({
     set,
     clear() { cache = new Map; },
     export() {
-      return Array.from(cache).reduce(
-        (acc, [key, entry]) => {
-          acc.set(key, tableToIPC(entry.value, { format: 'stream' }));
-          return acc;
-        },
-        new Map()
-      );
+      return new Map(Array.from(cache).map(([key, entry]) => [key, tableToIPC(entry.value)]));
     },
     import(data) {
-      Array.from(data).forEach(
-        ([key, value]) => set(key, tableFromIPC(value))
-      );
+      for (const [key, entry] of data) {
+        set(key, decodeIPC(entry));
+      }
     }
   };
 }
