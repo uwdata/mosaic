@@ -7,22 +7,30 @@
  *  step can be less than this value.
  * @property {boolean} [nice] A boolean flag (default true) indicating if bin
  *  extents should be snapped to "nice" numbers such as multiples of 5 or 10.
+ * @property {number} [base] A number indicating the the logarithm base to
+ *  use for automatic step size determination. Defaults to base 10.
  */
 
 /**
- * Generate a numeric binning scheme, suitable for a histogram.
+ * Generate a numeric binning scheme suitable for a histogram.
  * @param {number} min The minimum value of the extent to bin.
  * @param {number} max The maximum value of the extent to bin.
  * @param {BinOptions} options Binning scheme options.
  */
 export function bins(min, max, options) {
-  let { step, steps, minstep = 0, nice = true } = options;
+  let {
+    step,
+    steps = 25,
+    minstep = 0,
+    nice = true,
+    base
+  } = options;
 
   if (nice !== false) {
     // use span to determine step size
     const span = max - min;
-    const logb = Math.LN10;
-    step = step || binStep(span, steps || 25, minstep, logb);
+    const logb = base ? Math.log(base) : Math.LN10;
+    step = step || binStep(span, steps, minstep, logb);
 
     // adjust min/max relative to step
     let v = Math.log(step);
@@ -37,6 +45,17 @@ export function bins(min, max, options) {
   return { min, max, steps };
 }
 
+/**
+ * Determine a bin step interval.
+ * @param {number} span The span from maximum to minimum value.
+ * @param {number} steps The approximate number of desired bins.
+ * @param {number} [minstep=0] The minimum acceptable bin step size.
+ * @param {number} [logb=Math.LN10] The log base for determining
+ *  orders of magnitude for step sizes. Defaults to log base 10
+ *  (`Math.LN10`). For example to use log base 2, provide the
+ *  argument `Math.LN2` instead.
+ * @returns {number} The bin step interval (bin size).
+ */
 export function binStep(span, steps, minstep = 0, logb = Math.LN10) {
   let v;
 

@@ -99,3 +99,14 @@ export type FromExpr = MaybeArray<FromEntry>;
 export type FilterExpr = MaybeArray<string | ExprNode>;
 export type GroupByExpr = MaybeArray<string | ExprNode>;
 export type OrderByExpr = MaybeArray<string | ExprNode>;
+
+export type TimeUnit =
+  | 'year'
+  | 'quarter'
+  | 'month'
+  | 'day'
+  | 'hour'
+  | 'minute'
+  | 'second'
+  | 'millisecond'
+  | 'microsecond';

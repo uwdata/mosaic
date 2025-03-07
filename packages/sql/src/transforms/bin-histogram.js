@@ -1,3 +1,7 @@
+/**
+ * @import {ExprNode} from '../ast/node.js'
+ * @import {ExprValue} from '../types.js'
+ */
 import { float64 } from '../functions/cast.js';
 import { floor } from '../functions/numeric.js';
 import { add, div, mul, sub } from '../functions/operators.js';
@@ -19,12 +23,12 @@ import { scaleTransform } from './scales.js';
 
 /**
  * Return a SQL expression for histogram bins.
- * @param {import('../types.js').ExprValue} field The column or expression to bin.
+ * @param {ExprValue} field The column or expression to bin.
  * @param {[number, number]} extent The min/max extent over which to bin.
  * @param {BinHistogramOptions} [options] Binning options.
  * @param {ReturnType<typeof scaleTransform>} [transform] Scale transforms to
  *  apply to create (potentially non-linear) binning intervals.
- * @returns {import('../ast/node.js').ExprNode} The resulting SQL expression
+ * @returns {ExprNode} The resulting SQL expression
  */
 export function binHistogram(
   field,

@@ -1,16 +1,10 @@
+/**
+ * @import {ExprNode} from '../ast/node.js'
+ * @import {ExprValue, TimeUnit} from '../types.js'
+ */
 import { dateBin, interval } from '../functions/datetime.js';
 import { add } from '../functions/operators.js';
 import { timeInterval } from './util/time-interval.js';
-
-/**
- * @typedef {'year'
- *  | 'month'
- *  | 'day'
- *  | 'hour'
- *  | 'minute'
- *  | 'second'
- *  | 'millisecond'} TimeUnit
- */
 
 /**
  * @typedef {object} BinDateOptions
@@ -26,10 +20,10 @@ import { timeInterval } from './util/time-interval.js';
 
 /**
  * Return a SQL expression for date/time bins.
- * @param {import('../types.js').ExprValue} field The column or expression to bin.
+ * @param {ExprValue} field The column or expression to bin.
  * @param {[Date|number, Date|number]} extent The min/max extent over which to bin.
  * @param {BinDateOptions} [options] Datetime binning options.
- * @returns {import('../ast/node.js').ExprNode}
+ * @returns {ExprNode}
  */
 export function binDate(field, extent, options = {}) {
   const { offset = 0 } = options;
