@@ -1,10 +1,13 @@
-import { AggregateNode } from '../ast/aggregate.js';
+/**
+ * @import { AggregateNode } from '../ast/aggregate.js'
+ * @import { ExprValue } from '../types.js'
+ */
 import { aggFn } from '../util/function.js';
 
 /**
  * Compute an arg_max aggregate.
- * @param {import('../types.js').ExprValue} y The argument to return.
- * @param {import('../types.js').ExprValue} x The expression to maximize.
+ * @param {ExprValue} y The argument to return.
+ * @param {ExprValue} x The expression to maximize.
  * @returns {AggregateNode} A SQL aggregate function call.
  */
 export function argmax(y, x) {
@@ -13,8 +16,8 @@ export function argmax(y, x) {
 
 /**
  * Compute an arg_min aggregate.
- * @param {import('../types.js').ExprValue} y The argument to return.
- * @param {import('../types.js').ExprValue} x The expression to minimize.
+ * @param {ExprValue} y The argument to return.
+ * @param {ExprValue} x The expression to minimize.
  * @returns {AggregateNode} A SQL aggregate function call.
  */
 export function argmin(y, x) {
@@ -23,7 +26,7 @@ export function argmin(y, x) {
 
 /**
  * Compute an array aggregation.
- * @param {import('../types.js').ExprValue} expr The expression to aggregate.
+ * @param {ExprValue} expr The expression to aggregate.
  * @returns {AggregateNode} A SQL aggregate function call.
  */
 export function arrayAgg(expr) {
@@ -32,7 +35,7 @@ export function arrayAgg(expr) {
 
 /**
  * Compute an average aggregate.
- * @param {import('../types.js').ExprValue} expr The expression to aggregate.
+ * @param {ExprValue} expr The expression to aggregate.
  * @returns {AggregateNode} A SQL aggregate function call.
  */
 export function avg(expr) {
@@ -41,8 +44,8 @@ export function avg(expr) {
 
 /**
  * Compute a correlation aggregate.
- * @param {import('../types.js').ExprValue} x The x expression to aggregate.
- * @param {import('../types.js').ExprValue} y The y expression to aggregate.
+ * @param {ExprValue} x The x expression to aggregate.
+ * @param {ExprValue} y The y expression to aggregate.
  * @returns {AggregateNode} A SQL aggregate function call.
  */
 export function corr(x, y) {
@@ -51,7 +54,7 @@ export function corr(x, y) {
 
 /**
  * Compute a count aggregate.
- * @param {import('../types.js').ExprValue} [expr] An optional expression
+ * @param {ExprValue} [expr] An optional expression
  *  to count. If specified, only non-null expression values are counted.
  *  If omitted, all rows within a group are counted.
  * @returns {AggregateNode} A SQL aggregate function call.
@@ -62,8 +65,8 @@ export function count(expr) {
 
 /**
  * Compute a sample covariance aggregate.
- * @param {import('../types.js').ExprValue} x The x expression to aggregate.
- * @param {import('../types.js').ExprValue} y The y expression to aggregate.
+ * @param {ExprValue} x The x expression to aggregate.
+ * @param {ExprValue} y The y expression to aggregate.
  * @returns {AggregateNode} A SQL aggregate function call.
  */
 export function covariance(x, y) {
@@ -72,8 +75,8 @@ export function covariance(x, y) {
 
 /**
  * Compute a population covariance aggregate.
- * @param {import('../types.js').ExprValue} x The x expression to aggregate.
- * @param {import('../types.js').ExprValue} y The y expression to aggregate.
+ * @param {ExprValue} x The x expression to aggregate.
+ * @param {ExprValue} y The y expression to aggregate.
  * @returns {AggregateNode} A SQL aggregate function call.
  */
 export function covarPop(x, y) {
@@ -82,7 +85,7 @@ export function covarPop(x, y) {
 
 /**
  * Compute an entropy aggregate.
- * @param {import('../types.js').ExprValue} expr The expression to aggregate.
+ * @param {ExprValue} expr The expression to aggregate.
  * @returns {AggregateNode} A SQL aggregate function call.
  */
 export function entropy(expr) {
@@ -91,7 +94,7 @@ export function entropy(expr) {
 
 /**
  * Compute a first aggregate.
- * @param {import('../types.js').ExprValue} expr The expression to aggregate.
+ * @param {ExprValue} expr The expression to aggregate.
  * @returns {AggregateNode} A SQL aggregate function call.
  */
 export function first(expr) {
@@ -100,7 +103,7 @@ export function first(expr) {
 
 /**
  * Compute a geomean aggregate.
- * @param {import('../types.js').ExprValue} expr The expression to aggregate.
+ * @param {ExprValue} expr The expression to aggregate.
  * @returns {AggregateNode} A SQL aggregate function call.
  */
 export function geomean(expr) {
@@ -109,7 +112,7 @@ export function geomean(expr) {
 
 /**
  * Compute a sample kurtosis aggregate.
- * @param {import('../types.js').ExprValue} expr The expression to aggregate.
+ * @param {ExprValue} expr The expression to aggregate.
  * @returns {AggregateNode} A SQL aggregate function call.
  */
 export function kurtosis(expr) {
@@ -118,7 +121,7 @@ export function kurtosis(expr) {
 
 /**
  * Compute a median absolute deviation (MAD) aggregate.
- * @param {import('../types.js').ExprValue} expr The expression to aggregate.
+ * @param {ExprValue} expr The expression to aggregate.
  * @returns {AggregateNode} A SQL aggregate function call.
  */
 export function mad(expr) {
@@ -127,7 +130,7 @@ export function mad(expr) {
 
 /**
  * Compute a maximum aggregate.
- * @param {import('../types.js').ExprValue} expr The expression to aggregate.
+ * @param {ExprValue} expr The expression to aggregate.
  * @returns {AggregateNode} A SQL aggregate function call.
  */
 export function max(expr) {
@@ -136,7 +139,7 @@ export function max(expr) {
 
 /**
  * Compute a median aggregate.
- * @param {import('../types.js').ExprValue} expr The expression to aggregate.
+ * @param {ExprValue} expr The expression to aggregate.
  * @returns {AggregateNode} A SQL aggregate function call.
  */
 export function median(expr) {
@@ -145,7 +148,7 @@ export function median(expr) {
 
 /**
  * Compute a minimum aggregate.
- * @param {import('../types.js').ExprValue} expr The expression to aggregate.
+ * @param {ExprValue} expr The expression to aggregate.
  * @returns {AggregateNode} A SQL aggregate function call.
  */
 export function min(expr) {
@@ -154,7 +157,7 @@ export function min(expr) {
 
 /**
  * Compute a mode aggregate.
- * @param {import('../types.js').ExprValue} expr The expression to aggregate.
+ * @param {ExprValue} expr The expression to aggregate.
  * @returns {AggregateNode} A SQL aggregate function call.
  */
 export function mode(expr) {
@@ -163,7 +166,7 @@ export function mode(expr) {
 
 /**
  * Compute a last aggregate.
- * @param {import('../types.js').ExprValue} expr The expression to aggregate.
+ * @param {ExprValue} expr The expression to aggregate.
  * @returns {AggregateNode} A SQL aggregate function call.
  */
 export function last(expr) {
@@ -172,7 +175,7 @@ export function last(expr) {
 
 /**
  * Compute a product aggregate.
- * @param {import('../types.js').ExprValue} expr The expression to aggregate.
+ * @param {ExprValue} expr The expression to aggregate.
  * @returns {AggregateNode} A SQL aggregate function call.
  */
 export function product(expr) {
@@ -181,8 +184,8 @@ export function product(expr) {
 
 /**
  * Compute a quantile aggregate.
- * @param {import('../types.js').ExprValue} expr The expression to aggregate.
- * @param {import('../types.js').ExprValue} p The quantile value.
+ * @param {ExprValue} expr The expression to aggregate.
+ * @param {ExprValue} p The quantile value.
  * @returns {AggregateNode} A SQL aggregate function call.
  */
 export function quantile(expr, p) {
@@ -191,8 +194,8 @@ export function quantile(expr, p) {
 
 /**
  * Compute a linear regression reg_avgX aggregate.
- * @param {import('../types.js').ExprValue} x The x expression to aggregate.
- * @param {import('../types.js').ExprValue} y The y expression to aggregate.
+ * @param {ExprValue} x The x expression to aggregate.
+ * @param {ExprValue} y The y expression to aggregate.
  * @returns {AggregateNode} A SQL aggregate function call.
  */
 export function regrAvgX(x, y) {
@@ -201,8 +204,8 @@ export function regrAvgX(x, y) {
 
 /**
  * Compute a linear regression reg_avgY aggregate.
- * @param {import('../types.js').ExprValue} x The x expression to aggregate.
- * @param {import('../types.js').ExprValue} y The y expression to aggregate.
+ * @param {ExprValue} x The x expression to aggregate.
+ * @param {ExprValue} y The y expression to aggregate.
  * @returns {AggregateNode} A SQL aggregate function call.
  */
 export function regrAvgY(x, y) {
@@ -212,8 +215,8 @@ export function regrAvgY(x, y) {
 /**
  * Compute a linear regression count aggregate.
  * This returns the count of rows where both x and y are non-null.
- * @param {import('../types.js').ExprValue} x The x expression to aggregate.
- * @param {import('../types.js').ExprValue} y The y expression to aggregate.
+ * @param {ExprValue} x The x expression to aggregate.
+ * @param {ExprValue} y The y expression to aggregate.
  * @returns {AggregateNode} A SQL aggregate function call.
  */
 export function regrCount(x, y) {
@@ -222,8 +225,8 @@ export function regrCount(x, y) {
 
 /**
  * Compute a linear regression intercept aggregate.
- * @param {import('../types.js').ExprValue} x The x expression to aggregate.
- * @param {import('../types.js').ExprValue} y The y expression to aggregate.
+ * @param {ExprValue} x The x expression to aggregate.
+ * @param {ExprValue} y The y expression to aggregate.
  * @returns {AggregateNode} A SQL aggregate function call.
  */
 export function regrIntercept(x, y) {
@@ -232,8 +235,8 @@ export function regrIntercept(x, y) {
 
 /**
  * Compute a linear regression R^2 aggregate.
- * @param {import('../types.js').ExprValue} x The x expression to aggregate.
- * @param {import('../types.js').ExprValue} y The y expression to aggregate.
+ * @param {ExprValue} x The x expression to aggregate.
+ * @param {ExprValue} y The y expression to aggregate.
  * @returns {AggregateNode} A SQL aggregate function call.
  */
 export function regrR2(x, y) {
@@ -242,8 +245,8 @@ export function regrR2(x, y) {
 
 /**
  * Compute a linear regression regr_sxx aggregate.
- * @param {import('../types.js').ExprValue} x The x expression to aggregate.
- * @param {import('../types.js').ExprValue} y The y expression to aggregate.
+ * @param {ExprValue} x The x expression to aggregate.
+ * @param {ExprValue} y The y expression to aggregate.
  * @returns {AggregateNode} A SQL aggregate function call.
  */
 export function regrSXX(x, y) {
@@ -252,8 +255,8 @@ export function regrSXX(x, y) {
 
 /**
  * Compute a linear regression regr_sxy aggregate.
- * @param {import('../types.js').ExprValue} x The x expression to aggregate.
- * @param {import('../types.js').ExprValue} y The y expression to aggregate.
+ * @param {ExprValue} x The x expression to aggregate.
+ * @param {ExprValue} y The y expression to aggregate.
  * @returns {AggregateNode} A SQL aggregate function call.
  */
 export function regrSXY(x, y) {
@@ -262,8 +265,8 @@ export function regrSXY(x, y) {
 
 /**
  * Compute a linear regression regr_syy aggregate.
- * @param {import('../types.js').ExprValue} x The x expression to aggregate.
- * @param {import('../types.js').ExprValue} y The y expression to aggregate.
+ * @param {ExprValue} x The x expression to aggregate.
+ * @param {ExprValue} y The y expression to aggregate.
  * @returns {AggregateNode} A SQL aggregate function call.
  */
 export function regrSYY(x, y) {
@@ -272,8 +275,8 @@ export function regrSYY(x, y) {
 
 /**
  * Compute a linear regression slope aggregate.
- * @param {import('../types.js').ExprValue} x The x expression to aggregate.
- * @param {import('../types.js').ExprValue} y The y expression to aggregate.
+ * @param {ExprValue} x The x expression to aggregate.
+ * @param {ExprValue} y The y expression to aggregate.
  * @returns {AggregateNode} A SQL aggregate function call.
  */
 export function regrSlope(x, y) {
@@ -282,7 +285,7 @@ export function regrSlope(x, y) {
 
 /**
  * Compute a skewness aggregate.
- * @param {import('../types.js').ExprValue} expr The expression to aggregate.
+ * @param {ExprValue} expr The expression to aggregate.
  * @returns {AggregateNode} A SQL aggregate function call.
  */
 export function skewness(expr) {
@@ -291,7 +294,7 @@ export function skewness(expr) {
 
 /**
  * Compute a sample standard deviation aggregate.
- * @param {import('../types.js').ExprValue} expr The expression to aggregate.
+ * @param {ExprValue} expr The expression to aggregate.
  * @returns {AggregateNode} A SQL aggregate function call.
  */
 export function stddev(expr) {
@@ -300,7 +303,7 @@ export function stddev(expr) {
 
 /**
  * Compute a population standard deviation aggregate.
- * @param {import('../types.js').ExprValue} expr The expression to aggregate.
+ * @param {ExprValue} expr The expression to aggregate.
  * @returns {AggregateNode} A SQL aggregate function call.
  */
 export function stddevPop(expr) {
@@ -309,7 +312,7 @@ export function stddevPop(expr) {
 
 /**
  * Compute a string aggregation.
- * @param {import('../types.js').ExprValue} expr The expression to aggregate.
+ * @param {ExprValue} expr The expression to aggregate.
  * @returns {AggregateNode} A SQL aggregate function call.
  */
 export function stringAgg(expr) {
@@ -318,7 +321,7 @@ export function stringAgg(expr) {
 
 /**
  * Compute a sum aggregate.
- * @param {import('../types.js').ExprValue} expr The expression to aggregate.
+ * @param {ExprValue} expr The expression to aggregate.
  * @returns {AggregateNode} A SQL aggregate function call.
  */
 export function sum(expr) {
@@ -327,7 +330,7 @@ export function sum(expr) {
 
 /**
  * Compute a sample variance aggregate.
- * @param {import('../types.js').ExprValue} expr The expression to aggregate.
+ * @param {ExprValue} expr The expression to aggregate.
  * @returns {AggregateNode} A SQL aggregate function call.
  */
 export function variance(expr) {
@@ -336,7 +339,7 @@ export function variance(expr) {
 
 /**
  * Compute a population variance aggregate.
- * @param {import('../types.js').ExprValue} expr The expression to aggregate.
+ * @param {ExprValue} expr The expression to aggregate.
  * @returns {AggregateNode} A SQL aggregate function call.
  */
 export function varPop(expr) {

@@ -1,3 +1,6 @@
+/**
+ * @import { ExprValue } from '../types.js'
+ */
 import { CASE, WHEN } from '../constants.js';
 import { asNode } from '../util/ast.js';
 import { ExprNode, SQLNode } from './node.js';
@@ -37,10 +40,8 @@ export class CaseNode extends ExprNode {
   /**
    * Return a new case node with the given conditional added as
    * the last WHEN / THEN pair.
-   * @param {import('../types.js').ExprValue} cond
-   *  The WHEN condition expression.
-   * @param {import('../types.js').ExprValue} value
-   *  The THEN value expression.
+   * @param {ExprValue} cond The WHEN condition expression.
+   * @param {ExprValue} value The THEN value expression.
    * @returns {CaseNode}
    */
   when(cond, value) {
@@ -53,7 +54,7 @@ export class CaseNode extends ExprNode {
 
   /**
    * Return a new case node with the given ELSE expression.
-   * @param {import('../types.js').ExprValue} expr The ELSE expression.
+   * @param {ExprValue} expr The ELSE expression.
    * @returns {CaseNode}
    */
   else(expr) {

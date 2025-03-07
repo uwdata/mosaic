@@ -1,3 +1,7 @@
+/**
+ * @import { ExprNode } from '../ast/node.js'
+ * @import { ExprValue, FromExpr } from '../types.js'
+ */
 import { Query, isQuery } from '../ast/query.js';
 import { argmax, argmin, max, min } from '../functions/aggregate.js';
 import { int32 } from '../functions/cast.js';
@@ -11,12 +15,12 @@ import { floor } from '../functions/numeric.js';
  * argmin and argmax, following https://arxiv.org/pdf/2306.03714.pdf.
  * This method can bin along either the *x* or *y* dimension, as determined
  * by the caller-provided *bin* expression.
- * @param {import('../types.js').FromExpr} input The base query or table.
- * @param {import('../types.js').ExprValue} bin An expression that maps
+ * @param {FromExpr} input The base query or table.
+ * @param {ExprValue} bin An expression that maps
  *  time-series values to fractional pixel positions.
  * @param {string} x The x dimension column name.
  * @param {string} y The y dimension column name.
- * @param {import('../ast/node.js').ExprNode[]} [groups] Additional
+ * @param {ExprNode[]} [groups] Additional
  *  groupby columns, for example for faceted charts.
  * @returns {Query} The resulting M4 query.
  */

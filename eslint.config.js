@@ -14,12 +14,13 @@ export default [
         ...globals.jest,
         ...globals.node,
         ...globals.es6,
-        globalThis: false
+        globalThis: false,
+        TemplateStringsArray: true
       }
     },
     rules: {
       "no-unexpected-multiline": "off",
-      "jsdoc/no-undefined-types": 1
+      "jsdoc/no-undefined-types": "warn"
     },
     plugins: {
       jsdoc

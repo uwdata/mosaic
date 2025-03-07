@@ -1,6 +1,6 @@
 /**
- * @import {ExprNode} from '../ast/node.js'
- * @import {ExprValue, TimeUnit} from '../types.js'
+ * @import { ExprNode } from '../ast/node.js'
+ * @import { ExprValue, TimeUnit } from '../types.js'
  */
 import { dateBin, interval } from '../functions/datetime.js';
 import { add } from '../functions/operators.js';

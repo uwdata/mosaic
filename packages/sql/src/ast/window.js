@@ -1,3 +1,7 @@
+/**
+ * @import { ExprVarArgs, WindowFunctionName } from '../types.js'
+ * @import { ParamLike } from '../types.js'
+ */
 import { WINDOW, WINDOW_CLAUSE, WINDOW_DEF, WINDOW_FRAME } from '../constants.js';
 import { exprList } from '../util/function.js';
 import { quoteIdentifier } from '../util/string.js';
@@ -8,7 +12,7 @@ import { ExprNode, isNode, SQLNode } from './node.js';
 import { ParamNode } from './param.js';
 
 /**
- * @typedef {[any, any] | import('../types.js').ParamLike} FrameExtent
+ * @typedef {[any, any] | ParamLike} FrameExtent
  */
 
 export class WindowClauseNode extends SQLNode {
@@ -69,7 +73,7 @@ export class WindowNode extends ExprNode {
 
   /**
    * Return an updated window with the given partitions.
-   * @param {...import('../types.js').ExprVarArgs} expr The partition by criteria.
+   * @param {...ExprVarArgs} expr The partition by criteria.
    * @returns {WindowNode} A new window node.
    */
   partitionby(...expr) {
@@ -78,7 +82,7 @@ export class WindowNode extends ExprNode {
 
   /**
    * Return an updated window with the given ordering.
-   * @param {...import('../types.js').ExprVarArgs} expr The order by criteria.
+   * @param {...ExprVarArgs} expr The order by criteria.
    * @returns {WindowNode} A new window node.
    */
   orderby(...expr) {
@@ -115,7 +119,7 @@ export class WindowNode extends ExprNode {
 export class WindowFunctionNode extends FunctionNode {
   /**
    * Instantiate a window function call node.
-   * @param {import('../types.js').WindowFunctionName} name The function name.
+   * @param {WindowFunctionName} name The function name.
    * @param {ExprNode[]} [args=[]] The function arguments.
    */
   constructor(name, args) {
@@ -170,7 +174,7 @@ export class WindowDefNode extends SQLNode {
 
   /**
    * Return an updated window definition with the given partitions.
-   * @param {...import('../types.js').ExprVarArgs} expr The partition by criteria.
+   * @param {...ExprVarArgs} expr The partition by criteria.
    * @returns {WindowDefNode} A new window definition node.
    */
   partitionby(...expr) {
@@ -179,7 +183,7 @@ export class WindowDefNode extends SQLNode {
 
   /**
    * Return an updated window definition with the given ordering.
-   * @param {...import('../types.js').ExprVarArgs} expr The order by criteria.
+   * @param {...ExprVarArgs} expr The order by criteria.
    * @returns {WindowDefNode} A new window definition node.
    */
   orderby(...expr) {

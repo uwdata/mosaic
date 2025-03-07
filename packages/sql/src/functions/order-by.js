@@ -1,9 +1,12 @@
+/**
+ * @import { ExprValue } from '../types.js'
+ */
 import { OrderByNode } from '../ast/order-by.js';
 import { asNode } from '../util/ast.js';
 
 /**
  * Indicate ascending sort order for an expression.
- * @param {import('../types.js').ExprValue} expr An expression to order by.
+ * @param {ExprValue} expr An expression to order by.
  * @param {boolean | undefined} [nullsFirst] Flag indicating if null values
  *  should be sorted first.
  * @returns {OrderByNode}
@@ -14,7 +17,7 @@ export function asc(expr, nullsFirst) {
 
 /**
  * Indicate descending sort order for an expression.
- * @param {import('../types.js').ExprValue} expr An expression to order by.
+ * @param {ExprValue} expr An expression to order by.
  * @param {boolean | undefined} [nullsFirst] Flag indicating if null values
  *  should be sorted first.
  * @returns {OrderByNode}
