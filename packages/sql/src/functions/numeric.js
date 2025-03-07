@@ -1,9 +1,13 @@
+/**
+ * @import { FunctionNode } from '../ast/function.js'
+ * @import { ExprValue } from '../types.js'
+ */
 import { fn } from '../util/function.js';
 
 /**
  * Return true if the floating point value is not a number, false otherwise.
- * @param {import('../types.js').ExprValue} expr The input number.
- * @returns {import('../ast/function.js').FunctionNode}
+ * @param {ExprValue} expr The input number.
+ * @returns {FunctionNode}
  */
 export function isNaN(expr) {
   return fn('isnan', expr);
@@ -11,8 +15,8 @@ export function isNaN(expr) {
 
 /**
  * Return true if the floating point value is finite, false otherwise.
- * @param {import('../types.js').ExprValue} expr The input number.
- * @returns {import('../ast/function.js').FunctionNode}
+ * @param {ExprValue} expr The input number.
+ * @returns {FunctionNode}
  */
 export function isFinite(expr) {
   return fn('isfinite', expr);
@@ -20,8 +24,8 @@ export function isFinite(expr) {
 
 /**
  * Return true if the floating point value is infinite, false otherwise.
- * @param {import('../types.js').ExprValue} expr The input number.
- * @returns {import('../ast/function.js').FunctionNode}
+ * @param {ExprValue} expr The input number.
+ * @returns {FunctionNode}
  */
 export function isInfinite(expr) {
   return fn('isinf', expr);
@@ -29,8 +33,8 @@ export function isInfinite(expr) {
 
 /**
  * Selects the largest value.
- * @param {...import('../types.js').ExprValue} expr The input expressions.
- * @returns {import('../ast/function.js').FunctionNode}
+ * @param {...ExprValue} expr The input expressions.
+ * @returns {FunctionNode}
  */
 export function greatest(...expr) {
   return fn('greatest', ...expr);
@@ -38,8 +42,8 @@ export function greatest(...expr) {
 
 /**
  * Selects the smallest value.
- * @param {...import('../types.js').ExprValue} expr The input expressions.
- * @returns {import('../ast/function.js').FunctionNode}
+ * @param {...ExprValue} expr The input expressions.
+ * @returns {FunctionNode}
  */
 export function least(...expr) {
   return fn('least', ...expr);
@@ -47,8 +51,8 @@ export function least(...expr) {
 
 /**
  * Compute the exponentional function `e ** expr`.
- * @param {import('../types.js').ExprValue} expr The input number.
- * @returns {import('../ast/function.js').FunctionNode}
+ * @param {ExprValue} expr The input number.
+ * @returns {FunctionNode}
  */
 export function exp(expr) {
   return fn('exp', expr);
@@ -56,8 +60,8 @@ export function exp(expr) {
 
 /**
  * Compute a base 10 logarithm.
- * @param {import('../types.js').ExprValue} expr The input number.
- * @returns {import('../ast/function.js').FunctionNode}
+ * @param {ExprValue} expr The input number.
+ * @returns {FunctionNode}
  */
 export function log(expr) {
   return fn('log', expr);
@@ -65,8 +69,8 @@ export function log(expr) {
 
 /**
  * Compute a natural logarithm.
- * @param {import('../types.js').ExprValue} expr The input number.
- * @returns {import('../ast/function.js').FunctionNode}
+ * @param {ExprValue} expr The input number.
+ * @returns {FunctionNode}
  */
 export function ln(expr) {
   return fn('ln', expr);
@@ -74,8 +78,8 @@ export function ln(expr) {
 
 /**
  * Compute the sign of a number.
- * @param {import('../types.js').ExprValue} expr The input number.
- * @returns {import('../ast/function.js').FunctionNode}
+ * @param {ExprValue} expr The input number.
+ * @returns {FunctionNode}
  */
 export function sign(expr) {
   return fn('sign', expr);
@@ -83,8 +87,8 @@ export function sign(expr) {
 
 /**
  * Compute the absolute value of a number.
- * @param {import('../types.js').ExprValue} expr The input number.
- * @returns {import('../ast/function.js').FunctionNode}
+ * @param {ExprValue} expr The input number.
+ * @returns {FunctionNode}
  */
 export function abs(expr) {
   return fn('abs', expr);
@@ -92,8 +96,8 @@ export function abs(expr) {
 
 /**
  * Compute the square root of a number.
- * @param {import('../types.js').ExprValue} expr The input number.
- * @returns {import('../ast/function.js').FunctionNode}
+ * @param {ExprValue} expr The input number.
+ * @returns {FunctionNode}
  */
 export function sqrt(expr) {
   return fn('sqrt', expr);
@@ -101,8 +105,8 @@ export function sqrt(expr) {
 
 /**
  * Rounds the number up.
- * @param {import('../types.js').ExprValue} expr The input number.
- * @returns {import('../ast/function.js').FunctionNode}
+ * @param {ExprValue} expr The input number.
+ * @returns {FunctionNode}
  */
 export function ceil(expr) {
   return fn('ceil', expr);
@@ -110,8 +114,8 @@ export function ceil(expr) {
 
 /**
  * Rounds the number down.
- * @param {import('../types.js').ExprValue} expr The input number.
- * @returns {import('../ast/function.js').FunctionNode}
+ * @param {ExprValue} expr The input number.
+ * @returns {FunctionNode}
  */
 export function floor(expr) {
   return fn('floor', expr);
@@ -119,11 +123,11 @@ export function floor(expr) {
 
 /**
  * Round to the given decimal places.
- * @param {import('../types.js').ExprValue} expr The input number.
- * @param {import('../types.js').ExprValue} [places] The decimal places.
+ * @param {ExprValue} expr The input number.
+ * @param {ExprValue} [places] The decimal places.
  *  Negative values are allowed, to round to tens, hundreds, etc.
  *  If unspecified, defaults to zero.
- * @returns {import('../ast/function.js').FunctionNode}
+ * @returns {FunctionNode}
  */
 export function round(expr, places) {
   return fn('round', expr, places);
@@ -131,8 +135,8 @@ export function round(expr, places) {
 
 /**
  * Truncates the number.
- * @param {import('../types.js').ExprValue} expr The input number.
- * @returns {import('../ast/function.js').FunctionNode}
+ * @param {ExprValue} expr The input number.
+ * @returns {FunctionNode}
  */
 export function trunc(expr) {
   return fn('trunc', expr);

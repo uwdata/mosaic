@@ -1,6 +1,9 @@
+/**
+ * @import { ColumnRefNode } from '../ast/column-ref.js'
+ * @import { TableRefNode } from '../ast/table-ref.js'
+ */
 import { ExprNode } from '../ast/node.js';
 import { ParamNode } from '../ast/param.js';
-import { TableRefNode } from '../ast/table-ref.js';
 import { WindowDefNode } from '../ast/window.js';
 import { column } from '../functions/column.js';
 import { literal, verbatim } from '../functions/literal.js';
@@ -68,7 +71,7 @@ export function asTableRef(value) {
  * Parse a string as a column reference, potentially with
  * dot ('.') delimited table, schema, and database references.
  * @param {string} ref The column reference string.
- * @returns {import('../ast/column-ref.js').ColumnRefNode}
+ * @returns {ColumnRefNode}
  */
 export function parseColumnRef(ref) {
   const ids = parseIdentifier(ref);
@@ -79,7 +82,7 @@ export function parseColumnRef(ref) {
  * Parse a string as a table reference, potentially with
  * dot ('.') delimited schema and database references.
  * @param {string} ref The table reference string.
- * @returns {import('../ast/table-ref.js').TableRefNode}
+ * @returns {TableRefNode}
  */
 export function parseTableRef(ref) {
   return tableRef(parseIdentifier(ref));

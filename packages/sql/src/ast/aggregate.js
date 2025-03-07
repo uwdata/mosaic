@@ -1,3 +1,6 @@
+/**
+ * @import { ExprVarArgs } from '../types.js'
+ */
 import { AGGREGATE } from '../constants.js';
 import { asVerbatim } from '../util/ast.js';
 import { isString } from '../util/type-check.js';
@@ -69,7 +72,7 @@ export class AggregateNode extends ExprNode {
 
   /**
    * Return a new window function over this aggregate with the given partitions.
-   * @param {...import('../types.js').ExprVarArgs} expr The partition by criteria.
+   * @param {...ExprVarArgs} expr The partition by criteria.
    * @returns {WindowNode} A new window node.
    */
   partitionby(...expr) {
@@ -78,7 +81,7 @@ export class AggregateNode extends ExprNode {
 
   /**
    * Return a new window function over this aggregate with the given ordering.
-   * @param {...import('../types.js').ExprVarArgs} expr The order by criteria.
+   * @param {...ExprVarArgs} expr The order by criteria.
    * @returns {WindowNode} A new window node.
    */
   orderby(...expr) {

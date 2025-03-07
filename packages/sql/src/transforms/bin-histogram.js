@@ -1,6 +1,6 @@
 /**
- * @import {ExprNode} from '../ast/node.js'
- * @import {ExprValue} from '../types.js'
+ * @import { ExprNode } from '../ast/node.js'
+ * @import { ExprValue } from '../types.js'
  */
 import { float64 } from '../functions/cast.js';
 import { floor } from '../functions/numeric.js';

@@ -1,4 +1,7 @@
-import { SelectQuery } from '../ast/query.js';
+/**
+ * @import { SelectQuery } from '../ast/query.js'
+ * @import { ExprValue } from '../types.js'
+ */
 import { int32 } from '../functions/cast.js';
 import { floor } from '../functions/numeric.js';
 import { add, mul } from '../functions/operators.js';
@@ -11,9 +14,9 @@ import { add, mul } from '../functions/operators.js';
  * and uses a 2D integer bin index of the form (xbin + num_xbins * ybin).
  * @param {SelectQuery} q The input query. The FROM and WHERE clauses should
  *  be added to the query separately, either before or after this method.
- * @param {import('../types.js').ExprValue} xp The x bin expression.
- * @param {import('../types.js').ExprValue} yp The y bin expression.
- * @param {Record<string, import('../types.js').ExprValue>} aggs Named
+ * @param {ExprValue} xp The x bin expression.
+ * @param {ExprValue} yp The y bin expression.
+ * @param {Record<string, ExprValue>} aggs Named
  *  aggregate expressions over bins.
  * @param {number} xn The number of bins along the x dimension
  * @param {string[]} groupby Group by expressions.

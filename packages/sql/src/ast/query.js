@@ -1,3 +1,7 @@
+/**
+ * @import { FilterExpr, FromExpr, GroupByExpr, OrderByExpr, SelectExpr, WithExpr } from '../types.js'
+ * @import { SampleMethod } from './sample.js'
+ */
 import { DESCRIBE_QUERY, SELECT_QUERY, SET_OPERATION } from '../constants.js';
 import { asNode, asTableRef, asVerbatim } from '../util/ast.js';
 import { exprList } from '../util/function.js';
@@ -42,7 +46,7 @@ export function isDescribeQuery(value) {
 export class Query extends ExprNode {
   /**
    * Create a new WITH clause with the given CTE queries.
-   * @param {...import('../types.js').WithExpr} expr The WITH CTE queries.
+   * @param {...WithExpr} expr The WITH CTE queries.
    * @returns {WithClause}
    */
   static with(...expr) {
@@ -51,7 +55,7 @@ export class Query extends ExprNode {
 
   /**
    * Create a new select query with the given SELECT expressions.
-   * @param {...import('../types.js').SelectExpr} expr The SELECT expressions.
+   * @param {...SelectExpr} expr The SELECT expressions.
    * @returns {SelectQuery}
    */
   static select(...expr) {
@@ -60,7 +64,7 @@ export class Query extends ExprNode {
 
   /**
    * Create a new select query with the given FROM expressions.
-   * @param {...import('../types.js').FromExpr} expr The FROM expressions.
+   * @param {...FromExpr} expr The FROM expressions.
    * @returns {SelectQuery}
    */
   static from(...expr) {
@@ -147,7 +151,7 @@ export class Query extends ExprNode {
 
   /**
    * Add WITH common table expressions (CTEs).
-   * @param  {...import('../types.js').WithExpr} expr Expressions to add.
+   * @param  {...WithExpr} expr Expressions to add.
    * @returns {this}
    */
   with(...expr) {
@@ -168,7 +172,7 @@ export class Query extends ExprNode {
 
   /**
    * Add ORDER BY expressions.
-   * @param  {...import('../types.js').OrderByExpr} expr Expressions to add.
+   * @param  {...OrderByExpr} expr Expressions to add.
    * @returns
    */
   orderby(...expr) {
@@ -255,7 +259,7 @@ export class SelectQuery extends Query {
 
   /**
    * Add SELECT expressions.
-   * @param {...import('../types.js').SelectExpr} expr Expressions to add.
+   * @param {...SelectExpr} expr Expressions to add.
    * @returns {this}
    */
   select(...expr) {
@@ -281,7 +285,7 @@ export class SelectQuery extends Query {
 
   /**
    * Set SELECT expressions, replacing any prior expressions.
-   * @param {...import('../types.js').SelectExpr} expr Expressions to add.
+   * @param {...SelectExpr} expr Expressions to add.
    * @returns {this}
    */
   setSelect(...expr) {
@@ -301,7 +305,7 @@ export class SelectQuery extends Query {
 
   /**
    * Add table FROM expressions.
-   * @param  {...import('../types.js').FromExpr} expr Expressions to add.
+   * @param  {...FromExpr} expr Expressions to add.
    * @returns {this}
    */
   from(...expr) {
@@ -321,7 +325,7 @@ export class SelectQuery extends Query {
 
   /**
    * Set FROM expressions, replacing any prior expressions.
-   * @param {...import('../types.js').FromExpr} expr Expressions to add.
+   * @param {...FromExpr} expr Expressions to add.
    * @returns {this}
    */
   setFrom(...expr) {
@@ -333,7 +337,7 @@ export class SelectQuery extends Query {
    * Set SAMPLE settings.
    * @param {number | SampleClauseNode} value Either a sample clause node
    *  or the sample size as either a row count or percentage.
-   * @param {import('./sample.js').SampleMethod} [method] The sampling method
+   * @param {SampleMethod} [method] The sampling method
    *  to use.
    * @param {number} [seed] The random seed.
    * @returns {this}
@@ -353,7 +357,7 @@ export class SelectQuery extends Query {
 
   /**
    * Add WHERE expressions.
-   * @param  {...import('../types.js').FilterExpr} expr Expressions to add.
+   * @param  {...FilterExpr} expr Expressions to add.
    * @returns {this}
    */
   where(...expr) {
@@ -363,7 +367,7 @@ export class SelectQuery extends Query {
 
   /**
    * Set WHERE expressions, replacing any prior expressions.
-   * @param {...import('../types.js').FilterExpr} expr Expressions to add.
+   * @param {...FilterExpr} expr Expressions to add.
    * @returns {this}
    */
   setWhere(...expr) {
@@ -373,7 +377,7 @@ export class SelectQuery extends Query {
 
   /**
    * Add GROUP BY expressions.
-   * @param  {...import('../types.js').GroupByExpr} expr Expressions to add.
+   * @param  {...GroupByExpr} expr Expressions to add.
    * @returns {this}
    */
   groupby(...expr) {
@@ -383,7 +387,7 @@ export class SelectQuery extends Query {
 
   /**
    * Set GROUP BY expressions, replacing any prior expressions.
-   * @param {...import('../types.js').GroupByExpr} expr Expressions to add.
+   * @param {...GroupByExpr} expr Expressions to add.
    * @returns {this}
    */
   setGroupby(...expr) {
@@ -393,7 +397,7 @@ export class SelectQuery extends Query {
 
   /**
    * Add HAVING expressions.
-   * @param {...import('../types.js').FilterExpr} expr Expressions to add.
+   * @param {...FilterExpr} expr Expressions to add.
    * @returns {this}
    */
   having(...expr) {
@@ -419,7 +423,7 @@ export class SelectQuery extends Query {
 
   /**
    * Add QUALIFY expressions.
-   * @param {...import('../types.js').FilterExpr} expr Expressions to add.
+   * @param {...FilterExpr} expr Expressions to add.
    * @returns {this}
    */
   qualify(...expr) {
@@ -585,7 +589,7 @@ export class SetOperation extends Query {
 class WithClause {
   /**
    * Instantiate a new WITH clause instance.
-   * @param {...import('../types.js').WithExpr} expr The WITH CTE queries.
+   * @param {...WithExpr} expr The WITH CTE queries.
    */
   constructor(...expr) {
     this._with = expr;
@@ -593,7 +597,7 @@ class WithClause {
 
   /**
    * Create a new select query with the given SELECT expressions.
-   * @param {...import('../types.js').SelectExpr} expr The SELECT expressions.
+   * @param {...SelectExpr} expr The SELECT expressions.
    * @returns {SelectQuery}
    */
   select(...expr) {
@@ -602,7 +606,7 @@ class WithClause {
 
   /**
    * Create a new select query with the given FROM expressions.
-   * @param {...import('../types.js').FromExpr} expr The FROM expressions.
+   * @param {...FromExpr} expr The FROM expressions.
    * @returns {SelectQuery}
    */
   from(...expr) {

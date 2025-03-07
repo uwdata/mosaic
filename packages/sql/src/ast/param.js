@@ -1,3 +1,6 @@
+/**
+ * @import { ParamLike } from '../types.js'
+ */
 import { PARAM } from '../constants.js';
 import { literalToSQL } from './literal.js';
 import { ExprNode } from './node.js';
@@ -5,13 +8,13 @@ import { ExprNode } from './node.js';
 export class ParamNode extends ExprNode {
   /**
    * Instantiate a param node with a dynamic parameter.
-   * @param {import('../types.js').ParamLike} param The dynamic parameter.
+   * @param {ParamLike} param The dynamic parameter.
    */
   constructor(param) {
     super(PARAM);
     /**
      * The dynamic parameter.
-     * @type {import('../types.js').ParamLike}
+     * @type {ParamLike}
      * @readonly
      */
     this.param = param;

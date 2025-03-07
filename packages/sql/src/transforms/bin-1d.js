@@ -1,9 +1,12 @@
+/**
+ * @import { ExprValue } from '../types.js'
+ */
 import { float64 } from '../functions/cast.js';
 import { mul, sub } from '../functions/operators.js';
 
 /**
  * Compute binned values over a one-dimensional extent.
- * @param {import('../types.js').ExprValue} x The expression to bin.
+ * @param {ExprValue} x The expression to bin.
  *  The expression must return numeric values. For example, to bin
  *  datetime values, the input expression might map them to numeric
  *  values such as milliseconds since the epoch.

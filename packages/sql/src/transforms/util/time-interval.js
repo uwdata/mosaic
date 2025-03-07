@@ -1,4 +1,4 @@
-/** @import {TimeUnit} from '../../types.js' */
+/** @import { TimeUnit } from '../../types.js' */
 import { binStep } from './bin-step.js';
 
 const YEAR = 'year';

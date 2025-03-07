@@ -1,9 +1,12 @@
-import { FunctionNode } from '../ast/function.js';
+/**
+ * @import { FunctionNode } from '../ast/function.js'
+ * @import { ExprValue } from '../types.js'
+ */
 import { fn } from '../util/function.js';
 
 /**
  * Function that converts geometry data to GeoJSON format.
- * @param {import('../types.js').ExprValue} expr The input expression.
+ * @param {ExprValue} expr The input expression.
  * @returns {FunctionNode}
  */
 export function geojson(expr) {
@@ -12,7 +15,7 @@ export function geojson(expr) {
 
 /**
  * Function that returns a spatial x position (using ST_X).
- * @param {import('../types.js').ExprValue} expr The input expression.
+ * @param {ExprValue} expr The input expression.
  * @returns {FunctionNode}
  */
 export function x(expr) {
@@ -21,7 +24,7 @@ export function x(expr) {
 
 /**
  * Function that returns a spatial y position (using ST_Y).
- * @param {import('../types.js').ExprValue} expr The input expression.
+ * @param {ExprValue} expr The input expression.
  * @returns {FunctionNode}
  */
 export function y(expr) {
@@ -30,7 +33,7 @@ export function y(expr) {
 
 /**
  * Function that returns the centroid point for geometry data.
- * @param {import('../types.js').ExprValue} expr The input expression.
+ * @param {ExprValue} expr The input expression.
  * @returns {FunctionNode}
  */
 export function centroid(expr) {
@@ -39,7 +42,7 @@ export function centroid(expr) {
 
 /**
  * Function that returns the centroid x-coordinate for geometry data.
- * @param {import('../types.js').ExprValue} expr The input expression.
+ * @param {ExprValue} expr The input expression.
  * @returns {FunctionNode}
  */
 export function centroidX(expr) {
@@ -48,7 +51,7 @@ export function centroidX(expr) {
 
 /**
  * Function that returns yhe centroid y-coordinate for geometry data.
- * @param {import('../types.js').ExprValue} expr The input expression.
+ * @param {ExprValue} expr The input expression.
  * @returns {FunctionNode}
  */
 export function centroidY(expr) {

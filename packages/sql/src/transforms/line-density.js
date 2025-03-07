@@ -1,4 +1,8 @@
-import { Query, SelectQuery } from '../ast/query.js';
+/**
+ * @import { SelectQuery } from '../ast/query.js'
+ * @import { ExprValue } from '../types.js'
+ */
+import { Query } from '../ast/query.js';
 import { count, max, sum } from '../functions/aggregate.js';
 import { int32 } from '../functions/cast.js';
 import { abs, floor, greatest, round, sign } from '../functions/numeric.js';
@@ -15,9 +19,9 @@ import { over } from '../util/ast.js';
  * and then sum results for all line series to produce a density map.
  * Based on Moritz and Fisher's work: https://arxiv.org/abs/1808.06019
  * @param {SelectQuery} q The base query over the data.
- * @param {import('../types.js').ExprValue} x Bin expression for x dimension.
+ * @param {ExprValue} x Bin expression for x dimension.
  *  Provides gridded x coordinates, potentially with a fractional component.
- * @param {import('../types.js').ExprValue} y Bin expression for x dimension.
+ * @param {ExprValue} y Bin expression for x dimension.
  *  Provides gridded y coordinates, potentially with a fractional component.
  * @param {string[]} z Group by columns that segment data into individual line
  *  series. An empty array indicates there is only a single line series.

@@ -1,4 +1,8 @@
-import { Query, SelectQuery } from '../ast/query.js';
+/**
+ * @import { SelectQuery } from '../ast/query.js'
+ * @import { ExprValue } from '../types.js'
+ */
+import { Query } from '../ast/query.js';
 import { sum } from '../functions/aggregate.js';
 import { int32 } from '../functions/cast.js';
 import { floor } from '../functions/numeric.js';
@@ -22,9 +26,9 @@ function identity(x) {
  * should be in units of grid indices, but can contain fractional components.
  * @param {SelectQuery} q The input query. The FROM and WHERE clauses should
  *  be added to the query separately, before this method is invoked.
- * @param {import('../types.js').ExprValue} xp The x grid bin expression
- * @param {import('../types.js').ExprValue} yp The y grid bin expression
- * @param {import('../types.js').ExprValue | undefined} weight Point weights.
+ * @param {ExprValue} xp The x grid bin expression
+ * @param {ExprValue} yp The y grid bin expression
+ * @param {ExprValue | undefined} weight Point weights.
  * @param {number} xn The number of x grid bins.
  * @param {string[]} [groupby] Group by expressions.
  * @returns {SelectQuery} A linear binning query for bin `index` and
@@ -35,13 +39,13 @@ export function binLinear2d(q, xp, yp, weight, xn, groupby = []) {
   const w = weight ? x => mul(x, weight) : identity;
 
   /**
-   * @param {import('../types.js').ExprValue} i
-   * @param {import('../types.js').ExprValue} w
+   * @param {ExprValue} i
+   * @param {ExprValue} w
    */
   const subq = (i, w) => q.clone().select({ xp, yp, i, w });
   /**
-   * @param {import('../types.js').ExprValue} x
-   * @param {import('../types.js').ExprValue} y
+   * @param {ExprValue} x
+   * @param {ExprValue} y
    */
   const index = (x, y) => add(x, mul(y, xn));
 

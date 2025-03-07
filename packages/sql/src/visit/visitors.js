@@ -1,3 +1,7 @@
+/**
+ * @import { ParamNode } from '../ast/param.js'
+ * @import { ParamLike } from '../types.js'
+ */
 import { AGGREGATE, COLUMN_PARAM, COLUMN_REF, FRAGMENT, PARAM, VERBATIM, WINDOW } from '../constants.js';
 import { aggregateNames, AggregateNode } from '../ast/aggregate.js';
 import { ColumnRefNode } from '../ast/column-ref.js';
@@ -92,14 +96,14 @@ export function collectColumns(root) {
 /**
  * Collect all unique dynamic parameter instances.
  * @param {SQLNode} root The root of the AST to search.
- * @returns {import('../types.js').ParamLike[]}
+ * @returns {ParamLike[]}
  */
 export function collectParams(root) {
   const params = new Set;
   walk(root, (node) => {
     if (node.type === PARAM) {
       params.add(
-        /** @type {import('../ast/param.js').ParamNode} */
+        /** @type {ParamNode} */
         (node).param
       );
     }

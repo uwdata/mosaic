@@ -1,4 +1,7 @@
-import { FunctionNode } from '../ast/function.js';
+/**
+ * @import { FunctionNode } from '../ast/function.js'
+ * @import { ExprValue } from '../types.js'
+ */
 import { IntervalNode } from '../ast/interval.js';
 import { asNode } from '../util/ast.js';
 import { fn } from '../util/function.js';
@@ -15,7 +18,7 @@ export function interval(unit, steps) {
 
 /**
  * Given a date/time value, return the milliseconds since the UNIX epoch.
- * @param {import('../types.js').ExprValue} expr The date/time expression.
+ * @param {ExprValue} expr The date/time expression.
  * @returns {FunctionNode}
  */
 export function epoch_ms(expr) {
@@ -24,7 +27,7 @@ export function epoch_ms(expr) {
 
 /**
  * Perform data binning according to the provided interval unit and steps.
- * @param {import('../types.js').ExprValue} expr The date/time expression to bin.
+ * @param {ExprValue} expr The date/time expression to bin.
  * @param {string} unit The datetime interval unit to bin by.
  * @param {number} [steps=1] The number of interval steps.
  * @returns {FunctionNode}
@@ -36,7 +39,7 @@ export function dateBin(expr, unit, steps = 1) {
 /**
  * Map date/times to a month value, all within the same year for comparison.
  * The resulting value is still date-typed.
- * @param {import('../types.js').ExprValue} expr The date/time expression.
+ * @param {ExprValue} expr The date/time expression.
  * @returns {FunctionNode}
  */
 export function dateMonth(expr) {
@@ -46,7 +49,7 @@ export function dateMonth(expr) {
 /**
  * Map date/times to a month and day value, all within the same year for
  * comparison. The resulting value is still date-typed.
- * @param {import('../types.js').ExprValue} expr The date/time expression.
+ * @param {ExprValue} expr The date/time expression.
  * @returns {FunctionNode}
  */
 export function dateMonthDay(expr) {
@@ -57,7 +60,7 @@ export function dateMonthDay(expr) {
 /**
  * Map date/times to a day of the month value, all within the same year and month
  * for comparison. The resulting value is still date-typed.
- * @param {import('../types.js').ExprValue} expr The date/time expression.
+ * @param {ExprValue} expr The date/time expression.
  * @returns {FunctionNode}
  */
 export function dateDay(expr) {

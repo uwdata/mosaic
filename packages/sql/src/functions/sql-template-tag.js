@@ -1,4 +1,7 @@
-/* eslint-disable jsdoc/no-undefined-types */
+/**
+ * @import { ExprNode } from '../ast/node.js'
+ * @import { ParamLike } from '../types.js'
+ */
 import { FragmentNode } from '../ast/fragment.js';
 import { isNode } from '../ast/node.js';
 import { ParamNode } from '../ast/param.js';
@@ -7,10 +10,7 @@ import { isParamLike, isString } from '../util/type-check.js';
 import { literal } from './literal.js';
 
 /**
- * @typedef {import('../ast/node.js').ExprNode
- *  | import('../types.js').ParamLike
- *  | string | number | boolean | Date
- * } TemplateValue
+ * @typedef { ExprNode | ParamLike | string | number | boolean | Date } TemplateValue
  */
 
 /**
