@@ -18,11 +18,12 @@ import { MosaicClient } from '../../vgplot/src/index.js';
 import {
   preamble, htmlTemplate, templateCSS,
   publishConnector, PublishContext, mockCanvas,
-  VGPLOT,
+  VGPLOT, FLECHETTE,
   LogLevel, Logger,
   clientsReady,
 } from './util/index.js';
 import { isActivatable } from "@uwdata/mosaic-core";
+import { binary, map, tableFromArrays, tableToIPC, utf8 } from "@uwdata/flechette";
 
 /**
  * Error class for know publishing errors.
@@ -243,12 +244,17 @@ export class MosaicPublisher {
     const cache = this.ctx.coordinator.manager.cache().export();
     const cacheFile = '.cache.arrow';
     if (cache) {
-      fs.writeFileSync(path.join(this.outputPath, cacheFile), cache);
+      const cacheBytes = tableToIPC(tableFromArrays({ cache: [cache] }, {
+        types: {
+          cache: map(utf8(), binary())
+        }
+      }), { format: 'stream' })!;
+      fs.writeFileSync(path.join(this.outputPath, cacheFile), cacheBytes);
     }
 
     const code = astToESM(this.ast!, {
       connector: 'wasm',
-      imports: new Map([[VGPLOT, '* as vg']]),
+      imports: new Map([[VGPLOT, '* as vg'], [FLECHETTE, '{ tableFromIPC }']]),
       preamble: preamble(this.optimize == 'most', cache ? cacheFile : undefined),
     });
     const html = htmlTemplate(isInteractive, this.title, element, templateCSS);

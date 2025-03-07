@@ -1,4 +1,4 @@
-import { list, tableFromArrays, tableFromIPC, tableToIPC,  uint8, utf8 } from "@uwdata/flechette";
+import { tableFromIPC, tableToIPC } from "@uwdata/flechette";
 
 const requestIdle = typeof requestIdleCallback !== 'undefined'
   ? requestIdleCallback
@@ -6,50 +6,15 @@ const requestIdle = typeof requestIdleCallback !== 'undefined'
 
 /**
  * @typedef {import('@uwdata/flechette').Table | Promise<import('@uwdata/flechette').Table>} CacheEntry
- * @typedef {Object} Cache
+ * @typedef {object} Cache
  * @property {(key: string) => CacheEntry | undefined} get Retrieves a value from the cache.
  * @property {(key: string, value: CacheEntry) => any} set Stores a value in the cache and returns it.
  * @property {() => void} clear Clears all entries in the cache.
- * @property {() => Uint8Array | null} export Exports the cache as an array of bytes in Arrow IPC binary format or null if the cache is empty.
- * @property {(data: ArrayBuffer | Uint8Array | Uint8Array[]) => void} import Imports the cache from an array of bytes in Arrow IPC binary format.
+ * @property {() => Map<string, Uint8Array> | null} export Exports the cache as a Map where keys are strings and
+ *  values are Arrow IPC binary format (Uint8Array), or null if the cache is empty.
+ * @property {(data: Map<string, Uint8Array>) => void} import Imports the cache from a Map where keys are strings
+ *  and values are Arrow IPC binary format (Uint8Array).
  */
-
-/**
- * Converts a cache instance into a byte buffer.
- * @param {[string, import('@uwdata/flechette').Table][]} kv An array of key-value pairs representing
- * the cache contents.
- * @returns {Uint8Array | null} A byte buffer representing the cache or null if the cache is empty.
- */
-const keyValuesToIPC = (kv) => {
-  const cache_object = kv.reduce(
-    (acc, [key, value]) => {
-      const bytes = tableToIPC(value, { format: 'stream' });
-      acc.key.push(key);
-      acc.value.push(bytes);
-      return acc;
-    },
-    { key: [], value: [] }
-  );
-  const table = tableFromArrays(cache_object, {
-    types: {
-      key: utf8(),
-      value: list(uint8())
-    }
-  });
-  return tableToIPC(table, { format: 'stream' })
-}
-
-/**
- * Converts a byte buffer representing a cache instance into an array of key-value pairs.
- * @param {ArrayBuffer | Uint8Array | Uint8Array[]} bytes The source byte buffer, or an array of buffers representing the cache.
- * @returns {[string, import('@uwdata/flechette').Table][]} An array of key-value pairs representing the cache contents.
- */
-const keyValuesFromIPC = (bytes) => {
-  const cacheTable = tableFromIPC(bytes);
-  return cacheTable.toArray().reduce((acc, row) => {
-    return acc.concat([[row.key, tableFromIPC(row.value)]]);
-  }, []);
-}
 
 /**
  * Creates a cache that does nothing (a no-op cache).
@@ -65,7 +30,7 @@ export const voidCache = () => ({
 
 /**
  * Creates a Least Recently Used (LRU) cache with a fixed size and time-to-live (TTL).
- * @param {Object} [options] Configuration options for the cache.
+ * @param {object} [options] Configuration options for the cache.
  * @param {number} [options.max=1000] Maximum number of entries before eviction.
  * @param {number} [options.ttl=10800000] Time-to-live for each entry in milliseconds (default: 3 hours).
  * @returns {Cache} An LRU cache instance.
@@ -121,12 +86,18 @@ export function lruCache({
     set,
     clear() { cache = new Map; },
     export() {
-      const kv = Array.from(cache, ([key, { value }]) => [key, value])
-      return keyValuesToIPC(kv);
+      return Array.from(cache).reduce(
+        (acc, [key, entry]) => {
+          acc.set(key, tableToIPC(entry.value, { format: 'stream' }));
+          return acc;
+        },
+        new Map()
+      );
     },
     import(data) {
-      const kv = keyValuesFromIPC(data);
-      kv.forEach(([key, value]) => set(key, value));
+      Array.from(data).forEach(
+        ([key, value]) => set(key, tableFromIPC(value))
+      );
     }
   };
 }
