@@ -59,7 +59,7 @@ export function timeInterval(min, max, steps) {
  * @param {I[]} a The array to search.
  * @param {T} x The target value
  * @param {(item: I) => T} accessor
- * @returns
+ * @returns {number} The search result array index.
  */
 function bisect(a, x, accessor) {
   const compare1 = (a, b) => a - b;
