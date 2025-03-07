@@ -1,7 +1,6 @@
 import yaml from "yaml";
 import fs from 'fs';
 import { JSDOM } from 'jsdom';
-import chalk from 'chalk';
 import path from "path";
 
 // Mosaic modules
@@ -17,12 +16,14 @@ import { MosaicClient } from '../../vgplot/src/index.js';
 
 // Utility imports
 import {
-  clientsReady, htmlTemplate, mockCanvas,
-  publishConnector, PublishContext, templateCSS, VGPLOT,
+  preamble, htmlTemplate, templateCSS,
+  publishConnector, PublishContext, mockCanvas,
+  VGPLOT, FLECHETTE,
   LogLevel, Logger,
-  preamble
+  clientsReady,
 } from './util/index.js';
 import { isActivatable } from "@uwdata/mosaic-core";
+import { binary, map, tableFromArrays, tableToIPC, utf8 } from "@uwdata/flechette";
 
 /**
  * Error class for know publishing errors.
@@ -220,7 +221,7 @@ export class MosaicPublisher {
     }
 
     // process tables from DuckDB
-    const db_tables = await this.ctx.coordinator.query('SHOW ALL TABLES', { type: 'json' });
+    const db_tables = await this.ctx.coordinator.query('SHOW ALL TABLES', { cache: false, type: 'json' });
     if (db_tables.some((table: any) => table.name.startsWith('preagg_'))) {
       this.ast!.data['schema'] = new SchemaCreateNode('schema', 'mosaic');
       for (const table of db_tables) {
@@ -240,10 +241,21 @@ export class MosaicPublisher {
    * Write out the index.js, index.html, and create data/ directory as needed.
    */
   private writeFiles(isInteractive: boolean, element?: HTMLElement | SVGElement) {
+    const cache = this.ctx.coordinator.manager.cache().export();
+    const cacheFile = '.cache.arrow';
+    if (cache) {
+      const cacheBytes = tableToIPC(tableFromArrays({ cache: [cache] }, {
+        types: {
+          cache: map(utf8(), binary())
+        }
+      }), {})!;
+      fs.writeFileSync(path.join(this.outputPath, cacheFile), cacheBytes);
+    }
+
     const code = astToESM(this.ast!, {
       connector: 'wasm',
-      imports: new Map([[VGPLOT, '* as vg']]),
-      preamble: this.optimize == 'most' ? preamble : undefined
+      imports: new Map([[VGPLOT, '* as vg'], [FLECHETTE, '{ tableFromIPC }']]),
+      preamble: preamble(this.optimize == 'most', cache ? cacheFile : undefined),
     });
     const html = htmlTemplate(isInteractive, this.title, element, templateCSS);
 

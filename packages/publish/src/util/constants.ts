@@ -162,10 +162,25 @@ export const templateCSS = `<style>
 </style>`;
 
 export const VGPLOT = 'https://cdn.jsdelivr.net/npm/@uwdata/vgplot@latest/dist/vgplot.js';
+export const FLECHETTE = 'https://cdn.jsdelivr.net/npm/@uwdata/flechette@latest/dist/flechette.js';
 
 // TODO: switch this to ./renderHelpers version when changes pushed to npm
 // Currently, this is hack to see when clients are ready use .pending when it is available
-export const preamble = `export function clientsReady() {
+const clientsReady = `export function clientsReady() {
   const clients = [...vg.coordinator().clients];
   return Promise.allSettled(clients.map(c => c.initialize()))
 }`
+
+const loadCache = (cacheFile: string) => `
+const cacheBytes = await fetch(window.location.origin + "/${cacheFile}").then(res => res.arrayBuffer());
+vg.coordinator().manager.cache().import(tableFromIPC(cacheBytes).get(0).cache);`;
+
+export const preamble = (needsClientReady: boolean, cacheFile?: string) => {
+  if (!needsClientReady && !cacheFile) {
+    return undefined
+  }
+  return `
+${needsClientReady ? clientsReady : ''}
+${cacheFile ? loadCache(cacheFile) : ''}
+`
+}
