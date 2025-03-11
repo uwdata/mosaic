@@ -1,4 +1,4 @@
-import { Query, and, asNode, ceil, collectColumns, createTable, float64, floor, isBetween, int32, mul, round, scaleTransform, sub, isSelectQuery, ExprNode, SelectQuery } from '@uwdata/mosaic-sql';
+import { Query, and, asNode, ceil, collectColumns, createTable, float64, floor, isBetween, int32, mul, round, scaleTransform, sub, isSelectQuery, ExprNode, SelectQuery, isAggregateExpression, ColumnNameRefNode } from '@uwdata/mosaic-sql';
 import { preaggColumns } from './preagg-columns.js';
 import { fnv_hash } from '../util/hash.js';
 
@@ -331,18 +331,43 @@ function preaggregateInfo(clientQuery, active, preaggCols, schema) {
 
 /**
  * Push column selections down to subqueries.
+ * @param {Query} query The (sub)query to push down to.
+ * @param {string[]} cols The column names to push down.
  */
 function subqueryPushdown(query, cols) {
   const memo = new Set;
   const pushdown = q => {
+    // it is possible to have duplicate subqueries
+    // so we memoize and exit early if already seen
     if (memo.has(q)) return;
     memo.add(q);
+
     if (isSelectQuery(q) && q._from.length) {
+      // select the pushed down columns
+      // note that the select method will deduplicate for us
       q.select(cols);
+      if (isAggregateQuery(q)) {
+        // if an aggregation query, we need to push to groupby as well
+        // we also deduplicate as the column may already be present
+        const set = new Set(
+          q._groupby.flatMap(x => x instanceof ColumnNameRefNode ? x.name : []
+        ));
+        q.groupby(cols.filter(c => !set.has(c)));
+      }
     }
     q.subqueries.forEach(pushdown);
   };
   pushdown(query);
+}
+
+/**
+ * Test if a query performs aggregation.
+ * @param {SelectQuery} query
+ * @returns {boolean}
+ */
+function isAggregateQuery(query) {
+  return query._groupby.length > 0
+    || query._select.some(node => isAggregateExpression(node));
 }
 
 /**

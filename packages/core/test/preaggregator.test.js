@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { Query, add, argmax, argmin, avg, corr, count, covarPop, covariance, geomean, gt, isNotDistinct, literal, loadObjects, max, min, product, regrAvgX, regrAvgY, regrCount, regrIntercept, regrR2, regrSXX, regrSXY, regrSYY, regrSlope, stddev, stddevPop, sum, varPop, variance } from '@uwdata/mosaic-sql';
+import { Query, add, argmax, argmin, avg, corr, count, covarPop, covariance, geomean, gt, isNotDistinct, literal, loadObjects, max, min, mul, product, regrAvgX, regrAvgY, regrCount, regrIntercept, regrR2, regrSXX, regrSXY, regrSYY, regrSlope, stddev, stddevPop, sum, varPop, variance } from '@uwdata/mosaic-sql';
 import { Coordinator, Selection } from '../src/index.js';
 import { nodeConnector } from './util/node-connector.js';
 import { TestClient } from './util/test-client.js';
@@ -24,11 +24,15 @@ async function run(measure) {
   ]);
   const mc = await setup(loadQuery);
   const sel = Selection.single({ cross: true });
-  const q = Query.from('testData').select({ measure });
 
   return new Promise((resolve) => {
     let iter = 0;
-    const client = new TestClient(q, sel, {
+    const client = new TestClient(null, sel, {
+      query(filter = []) {
+        return typeof measure === 'function'
+          ? measure(filter)
+          : Query.from('testData').select({ measure }).where(filter);
+      },
       queryResult(data) {
         if (iter) {
           resolve([
@@ -147,5 +151,29 @@ describe('PreAggregator', () => {
   it('does not support distinct aggregates', async () => {
     // should handle query, but through non-optimized route
     expect(await run(count('x').distinct())).toStrictEqual([2, false]);
+  });
+
+  it('supports subqueries with aggregates', async () => {
+    const query = (predicate = []) => {
+      const counts = Query.from('testData')
+        .select({ item: 'x', freq: count() })
+        .groupby('x')
+        .where(predicate);
+      return Query.with({ counts })
+        .from('counts')
+        .select({ measure: sum(mul(2, 'freq')) })
+        .groupby('item');
+    };
+    expect(await run(query)).toStrictEqual([6, true]);
+
+    const queryNoGroup = (predicate = []) => {
+      const counts = Query.from('testData')
+        .select({ freq: count() })
+        .where(predicate);
+      return Query.with({ counts })
+        .from('counts')
+        .select({ measure: add(1, sum('freq')) });
+    };
+    expect(await run(queryNoGroup)).toStrictEqual([4, true]);
   });
 });
