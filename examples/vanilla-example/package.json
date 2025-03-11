@@ -1,0 +1,19 @@
+{
+  "name": "mosaic-vanilla-example",
+  "private": true,
+  "version": "0.12.2",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "devDependencies": {
+    "vite": "^6.0.11"
+  },
+  "dependencies": {
+    "@uwdata/mosaic-core": "^0.12.2",
+    "@uwdata/mosaic-sql": "^0.12.2",
+    "@uwdata/vgplot": "^0.12.2"
+  }
+}
