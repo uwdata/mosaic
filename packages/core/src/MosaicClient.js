@@ -123,12 +123,13 @@ export class MosaicClient {
   /**
    * Request the coordinator to execute a query for this client.
    * If an explicit query is not provided, the client query method will
-   * be called, filtered by the current filterBy selection.
+   * be called, filtered by the current filterBy selection. This method
+   * has no effect if the client is not registered with a coordinator.
    * @returns {Promise}
    */
   requestQuery(query) {
     const q = query || this.query(this.filterBy?.predicate(this));
-    return this._coordinator.requestQuery(this, q);
+    return this._coordinator?.requestQuery(this, q);
   }
 
   /**
@@ -142,17 +143,18 @@ export class MosaicClient {
   }
 
   /**
-   * Reset this client, initiating new field info, call the prepare method, and query requests.
+   * Reset this client, initiating new field info, call the prepare method,
+   * and query requests. This method has no effect if the client is not
+   * registered with a coordinator.
    * @returns {Promise}
    */
   initialize() {
-    return this._coordinator.initializeClient(this);
+    return this._coordinator?.initializeClient(this);
   }
 
   /**
-   * Requests a client update.
-   * For example to (re-)render an interface component.
-   *
+   * Requests a client update, for example to (re-)render an interface
+   * component.
    * @returns {this | Promise<any>}
    */
   update() {
