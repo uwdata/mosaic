@@ -4,7 +4,7 @@
   import { loadCSV } from "@uwdata/mosaic-sql";
 
   async function init() {
-    const wasm = await wasmConnector();
+    const wasm = wasmConnector();
     coordinator().databaseConnector(wasm);
 
     await coordinator().exec(
