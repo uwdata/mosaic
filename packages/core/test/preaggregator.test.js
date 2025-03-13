@@ -60,6 +60,15 @@ describe('PreAggregator', () => {
     expect(await run(count('x'))).toStrictEqual([2, true]);
   });
 
+  it('supports empty count aggregate', async () => {
+    const query = (predicate = []) => {
+      return Query.from('testData')
+        .select({ measure: count() })
+        .where(predicate, false);
+    };
+    expect(await run(query)).toStrictEqual([0, true]);
+  });
+
   it('supports sum aggregate', async () => {
     expect(await run(sum('x'))).toStrictEqual([7, true]);
   });
