@@ -60,3 +60,6 @@ export { scaleTransform } from './transforms/scales.js';
 
 export { asLiteral, asNode, asTableRef, asVerbatim, over } from './util/ast.js';
 export { isParamLike } from './util/type-check.js';
+
+export { binSpec, binStep } from './transforms/util/bin-step.js';
+export { timeInterval } from './transforms/util/time-interval.js';

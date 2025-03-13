@@ -17,7 +17,7 @@
  * @param {number} max The maximum value of the extent to bin.
  * @param {BinOptions} options Binning scheme options.
  */
-export function bins(min, max, options) {
+export function binSpec(min, max, options) {
   let {
     step,
     steps = 25,

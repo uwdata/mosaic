@@ -5,7 +5,7 @@
 import { float64 } from '../functions/cast.js';
 import { floor } from '../functions/numeric.js';
 import { add, div, mul, sub } from '../functions/operators.js';
-import { bins } from './util/bin-step.js';
+import { binSpec } from './util/bin-step.js';
 import { scaleTransform } from './scales.js';
 
 /**
@@ -39,7 +39,7 @@ export function binHistogram(
   const [min, max] = extent;
   const { offset = 0 } = options;
   const { apply, sqlApply, sqlInvert } = transform;
-  const b = bins(apply(min), apply(max), options);
+  const b = binSpec(apply(min), apply(max), options);
   const col = sqlApply(field);
   const alpha = (b.max - b.min) / b.steps;
 
