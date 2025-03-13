@@ -1,3 +1,4 @@
+/** @import {SelectionClause} from './util/selection-types.js' */
 import { literal, or } from '@uwdata/mosaic-sql';
 import { Param } from './Param.js';
 import { MosaicClient } from './MosaicClient.js';
@@ -187,7 +188,7 @@ export class Selection extends Param {
 
   /**
    * Emit an activate event with the given selection clause.
-   * @param {*} clause The clause repesenting the potential activation.
+   * @param {SelectionClause} clause The clause repesenting the potential activation.
    */
   activate(clause) {
     this.emit('activate', clause);
@@ -196,7 +197,7 @@ export class Selection extends Param {
 
   /**
    * Update the selection with a new selection clause.
-   * @param {*} clause The selection clause to add.
+   * @param {SelectionClause} clause The selection clause to add.
    * @returns {this} This Selection instance.
    */
   update(clause) {
@@ -206,6 +207,23 @@ export class Selection extends Param {
     this._resolved.active = clause;
     this._relay.forEach(sel => sel.update(clause));
     return super.update(this._resolved);
+  }
+
+  /**
+   * Reset the selection state by removing all provided clauses. If no clause
+   * array is provided as an argument, all current clauses are removed. The
+   * reset method (if defined) is invoked on all corresponding clause sources.
+   * The reset is relayed to downstream selections that include this selection.
+   * @param {SelectionClause[]} [clauses] The clauses to remove. If
+   *  unspecified, all current clauses are used as the default.
+   * @returns {this} This selection instance.
+   */
+  reset(clauses) {
+    clauses ??= this._resolved;
+    clauses.forEach(c => c.source?.reset?.());
+    this._resolved = this._resolved.filter(c => clauses.includes(c));
+    this._relay.forEach(sel => sel.reset(clauses));
+    return super.update(this._resolved = []);
   }
 
   /**
