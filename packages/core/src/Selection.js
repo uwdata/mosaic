@@ -215,7 +215,7 @@ export class Selection extends Param {
    * reset method (if defined) is invoked on all corresponding clause sources.
    * The reset is relayed to downstream selections that include this selection.
    * @param {SelectionClause[]} [clauses] The clauses to remove. If
-   *  unspecified, all current clauses are used as the default.
+   *  unspecified, all current clauses are removed.
    * @returns {this} This selection instance.
    */
   reset(clauses) {
