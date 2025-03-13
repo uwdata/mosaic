@@ -37,6 +37,7 @@ export { asc, desc } from './functions/order-by.js';
 export { geojson, x, y, centroid, centroidX, centroidY } from './functions/spatial.js';
 export { sql } from './functions/sql-template-tag.js';
 export { regexp_matches, contains, prefix, suffix, lower, upper, length } from './functions/string.js';
+export { coalesce } from './functions/util.js';
 export { cume_dist, dense_rank, first_value, lag, last_value, lead, nth_value, ntile, percent_rank, rank, row_number } from './functions/window.js';
 
 export { rewrite } from './visit/rewrite.js';
