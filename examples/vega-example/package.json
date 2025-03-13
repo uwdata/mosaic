@@ -1,7 +1,7 @@
 {
   "name": "mosaic-vega-example",
   "private": true,
-  "version": "0.14.0",
+  "version": "0.14.1",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -12,9 +12,9 @@
     "vite": "^6.2.1"
   },
   "dependencies": {
-    "@uwdata/mosaic-core": "^0.14.0",
-    "@uwdata/mosaic-sql": "^0.14.0",
-    "@uwdata/vgplot": "^0.14.0",
+    "@uwdata/mosaic-core": "^0.14.1",
+    "@uwdata/mosaic-sql": "^0.14.1",
+    "@uwdata/vgplot": "^0.14.1",
     "vega": "^5.32.0",
     "vega-embed": "^6.29.0",
     "vega-lite": "^5.23.0"
