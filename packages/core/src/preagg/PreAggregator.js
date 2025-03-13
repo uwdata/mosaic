@@ -157,6 +157,10 @@ export class PreAggregator {
 
     // if cached active columns are unset, analyze the active clause
     if (!active) {
+      // if active clause predicate is null, we can't analyze it
+      // return null to backoff to standard client query
+      // non-null clauses may come later, so don't set active state
+      if (activeClause.predicate == null) return null;
       // generate active dimension columns to select over
       // will return an object with null source if it has unstable filters
       this.active = active = activeColumns(activeClause);
