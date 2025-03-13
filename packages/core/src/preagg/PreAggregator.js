@@ -134,7 +134,7 @@ export class PreAggregator {
    */
   request(client, selection, activeClause) {
     // if not enabled, do nothing
-    if (!this.enabled) return null;
+    if (!this.enabled || activeClause == null) return null;
 
     const { entries, mc, schema } = this;
     const { source } = activeClause;
