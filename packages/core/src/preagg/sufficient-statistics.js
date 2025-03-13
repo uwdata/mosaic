@@ -1,4 +1,4 @@
-import { AggregateNode, and, argmax, argmin, count, div, exp, ExprNode, isNotNull, ln, max, min, mul, pow, regrAvgX, regrAvgY, regrCount, sql, sqrt, sub, sum } from '@uwdata/mosaic-sql';
+import { AggregateNode, and, argmax, argmin, coalesce, count, div, exp, ExprNode, isNotNull, ln, max, min, mul, pow, regrAvgX, regrAvgY, regrCount, sql, sqrt, sub, sum } from '@uwdata/mosaic-sql';
 import { fnv_hash } from '../util/hash.js';
 
 /**
@@ -14,6 +14,7 @@ import { fnv_hash } from '../util/hash.js';
 export function sufficientStatistics(node, preagg, avg) {
   switch (node.name) {
     case 'count':
+      return sumCountExpr(preagg, node);
     case 'sum':
       return sumExpr(preagg, node);
     case 'avg':
@@ -128,11 +129,24 @@ function addStat(preagg, expr, node) {
  */
 function countExpr(preagg, node) {
   const name = addStat(preagg, count(node.args[0]), node);
-  return { expr: sum(name), name };
+  return { expr: coalesce(sum(name), 0), name };
 }
 
 /**
- * Generate an expression for calculating counts or sums over data dimensions.
+ * Generate an expression for calculating counts over data dimensions.
+ * The expression is a summation with an additional coalesce operation
+ * to map null sums to zero-valued counts.
+ * @param {Record<string, ExprNode>} preagg A map of columns (such as
+ *  sufficient statistics) to pre-aggregate.
+ * @param {AggregateNode} node The originating aggregate function call.
+ * @returns {ExprNode} An aggregate expression over pre-aggregated dimensions.
+ */
+function sumCountExpr(preagg, node) {
+  return coalesce(sumExpr(preagg, node), 0);
+}
+
+/**
+ * Generate an expression for calculating sums over data dimensions.
  * @param {Record<string, ExprNode>} preagg A map of columns (such as
  *  sufficient statistics) to pre-aggregate.
  * @param {AggregateNode} node The originating aggregate function call.
