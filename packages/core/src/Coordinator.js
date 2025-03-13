@@ -222,13 +222,17 @@ export class Coordinator {
    * Connect a client to the coordinator.
    * @param {MosaicClient} client The Mosaic client to connect.
    */
-  async connect(client) {
+  connect(client) {
     const { clients } = this;
 
     if (clients.has(client)) {
       throw new Error('Client already connected.');
     }
-    clients.add(client); // mark as connected
+
+    // add client to client set
+    clients.add(client);
+
+    // register coordinator on client instance
     client.coordinator = this;
 
     // initialize client lifecycle

@@ -6,7 +6,7 @@ import { asNode } from '../util/ast.js';
 
 /**
  * Create a new conditional CASE statement. If three arguments are provided,
- * acts like a ternary conditional (if, then else). If no arguments are
+ * acts like a ternary conditional (if, then, else). If no arguments are
  * provided, the chained `when` and `else` methods can be used to to complete
  * a conditional statement with WHEN/THEN and ELSE expressions.
  * @param {ExprValue} [when] A conditional WHEN expression.
