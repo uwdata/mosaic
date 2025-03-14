@@ -96,7 +96,7 @@ def test_composite():
         False,
         TransformField("test"),
         [TransformField("1"), TransformField("2"), TransformField("3")],
-        ParamRef(),
+        ParamRef("1"),
     )
 
 
