@@ -2,6 +2,8 @@ import pytest
 from schema_wrapper.utils import _todict
 from schema_wrapper.generated_classes import *
 import json
+from unittest import TestCase
+
 
 
 def test_weather_plot():
@@ -204,8 +206,7 @@ def test_weather_plot():
     )
 
     generated_dict = _todict(python_spec, True)
-    print(f"generated_dict: {json.dumps(generated_dict, sort_keys=True)}\n\n\nreference_dict: {json.dumps(correct_dict, sort_keys=True)}")
-    assert json.dumps(correct_dict, sort_keys=True) == json.dumps(generated_dict, sort_keys=True)
+    TestCase().assertDictEqual(generated_dict, correct_dict)
 
 
 def test_stock_plot():
