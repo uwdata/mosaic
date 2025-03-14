@@ -1,6 +1,6 @@
 from generated_classes import *
 
-Spec(
+spec = Spec(
     {
         "params": Params(
             click=ParamDefinition(Selection("single")),
@@ -39,7 +39,7 @@ Spec(
                                             Dot(
                                                 PlotMarkData(
                                                     PlotFrom(
-                                                        ParamRef("click"),
+                                                        ParamRef("$click"),
                                                         from_="weather",
                                                     )
                                                 ),
@@ -124,7 +124,7 @@ Spec(
                         xDomain=Fixed("Fixed"),
                         yDomain=ParamRef("$domain"),
                         yLabel=None,
-                        colorDomain=Fixed("Fixed"),
+                        colorDomain=ParamRef("$domain"),
                         colorRange=ParamRef("$colors"),
                         width=800,
                     )
@@ -133,3 +133,7 @@ Spec(
         ),
     }
 )
+
+if __name__ == "__main__":
+    spec_dict = spec.to_dict(True)
+    print(spec_dict)

@@ -43,7 +43,7 @@ def generate_additional_properties_class(
     class_def += (
         """        for key, value in kwargs.items():
             if not isinstance(value, """
-        + correct_type
+        + correct_type.strip('"')
         + """):
                 raise ValueError(f"Value for key '{key}' must be an instance of """
         + correct_type.strip('"')
@@ -103,12 +103,9 @@ def generate_class(class_name: str, class_schema: Dict[str, Any]) -> str:
         valid_prop = get_valid_identifier(prop)
         valid_properties[valid_prop] = prop_schema
 
+    
     for prop, prop_schema in valid_properties.items():
-        if "anyOf" in prop_schema:
-            # Handle anyOf case
-            type_hint = f"Union[{', '.join(get_type_hint(item) for item in prop_schema['anyOf'])}]"
-        else:
-            type_hint = get_type_hint(prop_schema)
+        type_hint = get_type_hint(prop_schema)
 
         if prop in required:
             # Required parameters should not have default values
@@ -118,7 +115,7 @@ def generate_class(class_name: str, class_schema: Dict[str, Any]) -> str:
             optional_params.append((prop, type_hint))
 
     for prop, type_hint in optional_params:
-        class_def += f", {prop}: {type_hint} = None"
+        class_def += f", {prop}: {type_hint} = ..."
 
     # Handling additionalProperties
     if additional_properties:
@@ -133,16 +130,10 @@ def generate_class(class_name: str, class_schema: Dict[str, Any]) -> str:
     # Handling additionalProperties
     if additional_properties:
         correct_type = get_type_hint(additional_properties).strip('"')
-        # print(correct_type)
-        if (
-            correct_type not in KNOWN_PRIMITIVES.values()
-            and correct_type not in IMPORTS["schema_wrapper.generated_classes"]
-        ):
-            IMPORTS["schema_wrapper.generated_classes"].append(correct_type)
         class_def += (
             """        for key, value in kwargs.items():
             if not isinstance(value, """
-            + correct_type
+            + correct_type.strip('"')
             + """):
                 raise ValueError(f"Value for key '{key}' must be an instance of """
             + correct_type.strip('"')
@@ -203,6 +194,11 @@ def get_type_hint(type_schema: Dict[str, Any]) -> str:
         return get_type_union(types)
     elif "$ref" in type_schema:
         ref_class_name = get_valid_identifier(type_schema["$ref"].split("/")[-1])
+        #if (
+        #    ref_class_name not in KNOWN_PRIMITIVES.values()
+        #    and ref_class_name not in IMPORTS["schema_wrapper.generated_classes"]
+        #):
+        #    IMPORTS["schema_wrapper.generated_classes"].append(ref_class_name)
         return f'"{ref_class_name}"'
     return "Any"
 
