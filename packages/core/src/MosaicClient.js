@@ -15,10 +15,10 @@ import { throttle } from './util/throttle.js';
  * an associated selection. When no longer needed, a client should be
  * disconnected from the coordinator.
  *
- * When active, a client will initialize and respond to query update requests.
- * If set to be inactive, the client will delay initialization not respond to
- * queries until made active again. Making a client inactive can improve system
- * performance when associated interface elements are offscreen or disabled.
+ * When enabled, a client will initialize and respond to query update requests.
+ * If disabled, the client will delay initialization and not respond to queries
+ * until enabled again. Disabling a client can improve system performance when
+ * associated interface elements are offscreen or disabled.
  */
 export class MosaicClient {
   /**
@@ -36,7 +36,7 @@ export class MosaicClient {
     /** @type {Promise<any>} */
     this._pending = Promise.resolve();
     /** @type {boolean} */
-    this._active = true;
+    this._enabled = true;
     /** @type {boolean} */
     this._initialized = false;
     /** @type {Query | boolean} */
@@ -58,25 +58,25 @@ export class MosaicClient {
   }
 
   /**
-   * Return this client's active state.
+   * Return this client's enabled state.
    */
-  get active() {
-    return this._active;
+  get enabled() {
+    return this._enabled;
   }
 
   /**
-   * Set this client's active state;
+   * Set this client's enabled state;
    */
-  set active(state) {
+  set enabled(state) {
     state = !!state; // ensure boolean
-    if (this._active !== state) {
-      this._active = state;
+    if (this._enabled !== state) {
+      this._enabled = state;
       if (state) {
         if (!this._initialized) {
           // initialization includes a query request
           this.initialize();
         } else if (this._request) {
-          // request query now if requested while inactive
+          // request query now if requested while disabled
           this.requestQuery(this._request === true ? undefined : this._request);
         }
         this._request = null;
@@ -173,15 +173,15 @@ export class MosaicClient {
    * If an explicit query is not provided, the client `query` method will
    * be called, filtered by the current `filterBy` selection. This method has
    * no effect if the client is not connected to a coordinator. If the client
-   * is connected by currently inactive, the request will be serviced if/when
-   * the client is later active.
+   * is connected by currently disabled, the request will be serviced if the
+   * client is later enabled.
    * @param {Query} [query] The query to request. If unspecified, the query
    *  will be determind by the client's `query` method and the current
    *  `filterBy` selection state.
    * @returns {Promise}
    */
   requestQuery(query) {
-    if (this._active) {
+    if (this._enabled) {
       const q = query || this.query(this.filterBy?.predicate(this));
       return this._coordinator?.requestQuery(this, q);
     } else {
@@ -196,10 +196,10 @@ export class MosaicClient {
    * in an executed query, multiple calls to requestUpdate may be consolidated
    * into a single update. This method has no effect if the client is not
    * connected to a coordinator. If the client is connected but currently
-   * inactive, the request will be serviced if/when the client is later active.
+   * disabled, the request will be serviced if the client is later enabled.
    */
   requestUpdate() {
-    if (this._active) {
+    if (this._enabled) {
       this._requestUpdate();
     } else {
       this.requestQuery();
@@ -213,8 +213,8 @@ export class MosaicClient {
    * @returns {Promise}
    */
   async initialize() {
-    if (!this._active) {
-      // clear flag so we initialize when active again
+    if (!this._enabled) {
+      // clear flag so we initialize when enabled again
       this._initialized = false;
     } else if (this._coordinator) {
       // if connected, let's initialize

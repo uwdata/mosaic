@@ -301,7 +301,7 @@ function activateSelection(mc, selection, clause) {
   const { preaggregator, filterGroups } = mc;
   const { clients } = filterGroups.get(selection);
   for (const client of clients) {
-    if (client.active) {
+    if (client.enabled) {
       preaggregator.request(client, selection, clause);
     }
   }
@@ -319,7 +319,7 @@ function updateSelection(mc, selection) {
   const { clients } = filterGroups.get(selection);
   const { active } = selection;
   return Promise.allSettled(Array.from(clients, client => {
-    if (!client.active) return client.requestQuery();
+    if (!client.enabled) return client.requestQuery();
     const info = preaggregator.request(client, selection, active);
     const filter = info ? null : selection.predicate(client);
 

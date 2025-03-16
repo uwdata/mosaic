@@ -9,8 +9,8 @@ import { coordinator as defaultCoordinator } from './Coordinator.js';
  *  Defaults to the global coordinator.
  * @property {Selection|null} [selection] A selection whose predicates are
  *  fed into the query function to produce the SQL query.
- * @property {boolean} [active] A flag (default `true`) indicating if the
- *  client should initially be active or inactive.
+ * @property {boolean} [enabled] A flag (default `true`) indicating if the
+ *  client should initially be enabled or not.
  * @property {function(): Promise<void>} [prepare]
  *  An async function to prepare the client before running queries.
  * @property {function(any): any} [query]
@@ -49,11 +49,11 @@ class ProxyClient extends MosaicClient {
    */
   constructor({
     selection = undefined,
-    active = true,
+    enabled = true,
     ...methods
   }) {
     super(selection);
-    this.active = active;
+    this.enabled = enabled;
 
     /** @type {MakeClientOptions} */
     this._methods = methods;

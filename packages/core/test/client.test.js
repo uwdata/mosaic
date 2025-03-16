@@ -118,7 +118,7 @@ describe('MosaicClient', () => {
     pending = [];
   });
 
-  it('respects active status', async () => {
+  it('respects enabled status', async () => {
     // instantiate coordinator to use node.js DuckDB
     // disable logging and preaggregation
     const coord = new Coordinator(nodeConnector(), {
@@ -131,13 +131,13 @@ describe('MosaicClient', () => {
     let result = null;
 
     class TestClient extends MosaicClient {
-      constructor() { super(undefined); this.active = false; }
+      constructor() { super(undefined); this.enabled = false; }
       prepare() { prepared = true; }
       query() { queried = true; return Query.select({ foo: 1 }); }
       queryResult(data) { result = data; }
     }
 
-    // client is inactive, lifecycle methods should defer
+    // client is disabled, lifecycle methods should defer
     const client = new TestClient();
     coord.connect(client);
     await client.pending;
@@ -145,18 +145,18 @@ describe('MosaicClient', () => {
     expect(queried).toBe(false);
     expect(result).toBe(null);
 
-    // activate client, initialization and query should proceed
-    client.active = true;
+    // enable client, initialization and query should proceed
+    client.enabled = true;
     await client.pending;
     expect(prepared).toBe(true);
     expect(queried).toBe(true);
     expect(result == null).toBe(false);
 
-    // clear state and deactivate client
+    // clear state and disable client
     prepared = false;
     queried = false;
     result = null;
-    client.active = false;
+    client.enabled = false;
 
     // request re-initialization, methods should defer
     client.initialize();
@@ -165,8 +165,8 @@ describe('MosaicClient', () => {
     expect(queried).toBe(false);
     expect(result).toBe(null);
 
-    // re-activate client, lifecycle methods should proceed
-    client.active = true;
+    // re-enable client, lifecycle methods should proceed
+    client.enabled = true;
     await client.pending;
     expect(prepared).toBe(true);
     expect(queried).toBe(true);
