@@ -320,7 +320,10 @@ function preaggregateInfo(clientQuery, active, preaggCols, schema) {
   // generate creation query string and hash id
   const create = query.toString();
   const id = (fnv_hash(create) >>> 0).toString(16);
-  const table = `${schema}.preagg_${id}`;
+  
+  // Simplification of Ibis experiment by ensuring all tables land in the default schema
+  // const table = `${schema}.preagg_${id}`;
+  const table = `preagg_${id}`;
 
   // generate preaggregate select query
   const select = Query
