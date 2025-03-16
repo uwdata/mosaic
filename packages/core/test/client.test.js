@@ -117,4 +117,59 @@ describe('MosaicClient', () => {
     ]);
     pending = [];
   });
+
+  it('respects active status', async () => {
+    // instantiate coordinator to use node.js DuckDB
+    // disable logging and preaggregation
+    const coord = new Coordinator(nodeConnector(), {
+      logger: null,
+      preagg: { enabled: false }
+    });
+
+    let prepared = false;
+    let queried = false;
+    let result = null;
+
+    class TestClient extends MosaicClient {
+      constructor() { super(undefined); this.active = false; }
+      prepare() { prepared = true; }
+      query() { queried = true; return Query.select({ foo: 1 }); }
+      queryResult(data) { result = data; }
+    }
+
+    // client is inactive, lifecycle methods should defer
+    const client = new TestClient();
+    coord.connect(client);
+    await client.pending;
+    expect(prepared).toBe(false);
+    expect(queried).toBe(false);
+    expect(result).toBe(null);
+
+    // activate client, initialization and query should proceed
+    client.active = true;
+    await client.pending;
+    expect(prepared).toBe(true);
+    expect(queried).toBe(true);
+    expect(result == null).toBe(false);
+
+    // clear state and deactivate client
+    prepared = false;
+    queried = false;
+    result = null;
+    client.active = false;
+
+    // request re-initialization, methods should defer
+    client.initialize();
+    await client.pending;
+    expect(prepared).toBe(false);
+    expect(queried).toBe(false);
+    expect(result).toBe(null);
+
+    // re-activate client, lifecycle methods should proceed
+    client.active = true;
+    await client.pending;
+    expect(prepared).toBe(true);
+    expect(queried).toBe(true);
+    expect(result == null).toBe(false);
+  });
 });

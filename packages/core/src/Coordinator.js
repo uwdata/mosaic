@@ -1,6 +1,5 @@
 import { socketConnector } from './connectors/socket.js';
 import { PreAggregator } from './preagg/PreAggregator.js';
-import { queryFieldInfo } from './util/field-info.js';
 import { QueryResult } from './util/query-result.js';
 import { voidLogger } from './util/void-logger.js';
 import { MosaicClient } from './MosaicClient.js';
@@ -236,24 +235,10 @@ export class Coordinator {
     client.coordinator = this;
 
     // initialize client lifecycle
-    client._pending = this.initializeClient(client);
+    client.initialize();
 
     // connect filter selection
     connectSelection(this, client.filterBy, client);
-  }
-
-  async initializeClient(client) {
-    // retrieve field statistics
-    const fields = client.fields();
-    if (fields?.length) {
-      client.fieldInfo(await queryFieldInfo(this, fields));
-    }
-
-    // prepare the client
-    await client.prepare();
-
-    // request data query
-    return client.requestQuery();
   }
 
   /**
@@ -316,7 +301,9 @@ function activateSelection(mc, selection, clause) {
   const { preaggregator, filterGroups } = mc;
   const { clients } = filterGroups.get(selection);
   for (const client of clients) {
-    preaggregator.request(client, selection, clause);
+    if (client.active) {
+      preaggregator.request(client, selection, clause);
+    }
   }
 }
 
@@ -332,6 +319,7 @@ function updateSelection(mc, selection) {
   const { clients } = filterGroups.get(selection);
   const { active } = selection;
   return Promise.allSettled(Array.from(clients, client => {
+    if (!client.active) return client.requestQuery();
     const info = preaggregator.request(client, selection, active);
     const filter = info ? null : selection.predicate(client);
 

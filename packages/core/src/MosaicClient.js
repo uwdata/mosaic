@@ -1,16 +1,31 @@
-import { Coordinator } from './Coordinator.js';
-import { Selection } from './Selection.js';
+/** @import { Query } from '@uwdata/mosaic-sql' */
+/** @import { Coordinator } from './Coordinator.js' */
+/** @import { Selection } from './Selection.js' */
+import { queryFieldInfo } from './util/field-info.js';
 import { throttle } from './util/throttle.js';
 
 /**
- * Base class for Mosaic clients.
+ * A Mosaic client is a data consumer that indicates its data needs to a
+ * Mosaic coordinator via the query method. The coordinator is responsible
+ * for issuing queries and returning results to the client.
+ *
+ * The client life-cycle consists of connection to a coordinator,
+ * initialization (potentially involving queries for data schema and summary
+ * statistic information), and then interactive queries that may be driven by
+ * an associated selection. When no longer needed, a client should be
+ * disconnected from the coordinator.
+ *
+ * When active, a client will initialize and respond to query update requests.
+ * If set to be inactive, the client will delay initialization not respond to
+ * queries until made active again. Making a client inactive can improve system
+ * performance when associated interface elements are offscreen or disabled.
  */
 export class MosaicClient {
   /**
-   * Constructor.
-   * @param {*} filterSelection An optional selection to interactively filter
-   *  this client's data. If provided, a coordinator will re-query and update
-   *  the client when the selection updates.
+   * Create a new client instance.
+   * @param {Selection} [filterSelection] An optional selection to
+   *  interactively filter this client's data. If provided, a coordinator
+   *  will re-query and update the client when the selection updates.
    */
   constructor(filterSelection) {
     /** @type {Selection} */
@@ -20,6 +35,12 @@ export class MosaicClient {
     this._coordinator = null;
     /** @type {Promise<any>} */
     this._pending = Promise.resolve();
+    /** @type {boolean} */
+    this._active = true;
+    /** @type {boolean} */
+    this._initialized = false;
+    /** @type {Query | boolean} */
+    this._request = null;
   }
 
   /**
@@ -34,6 +55,33 @@ export class MosaicClient {
    */
   set coordinator(coordinator) {
     this._coordinator = coordinator;
+  }
+
+  /**
+   * Return this client's active state.
+   */
+  get active() {
+    return this._active;
+  }
+
+  /**
+   * Set this client's active state;
+   */
+  set active(state) {
+    state = !!state; // ensure boolean
+    if (this._active !== state) {
+      this._active = state;
+      if (state) {
+        if (!this._initialized) {
+          // initialization includes a query request
+          this.initialize();
+        } else if (this._request) {
+          // request query now if requested while inactive
+          this.requestQuery(this._request === true ? undefined : this._request);
+        }
+        this._request = null;
+      }
+    }
   }
 
   /**
@@ -122,24 +170,40 @@ export class MosaicClient {
 
   /**
    * Request the coordinator to execute a query for this client.
-   * If an explicit query is not provided, the client query method will
-   * be called, filtered by the current filterBy selection. This method
-   * has no effect if the client is not registered with a coordinator.
+   * If an explicit query is not provided, the client `query` method will
+   * be called, filtered by the current `filterBy` selection. This method has
+   * no effect if the client is not connected to a coordinator. If the client
+   * is connected by currently inactive, the request will be serviced if/when
+   * the client is later active.
+   * @param {Query} [query] The query to request. If unspecified, the query
+   *  will be determind by the client's `query` method and the current
+   *  `filterBy` selection state.
    * @returns {Promise}
    */
   requestQuery(query) {
-    const q = query || this.query(this.filterBy?.predicate(this));
-    return this._coordinator?.requestQuery(this, q);
+    if (this._active) {
+      const q = query || this.query(this.filterBy?.predicate(this));
+      return this._coordinator?.requestQuery(this, q);
+    } else {
+      this._request = query ?? true;
+      return null;
+    }
   }
 
   /**
    * Request that the coordinator perform a throttled update of this client
-   * using the default query. Unlike requestQuery, for which every call will
-   * result in an executed query, multiple calls to requestUpdate may be
-   * consolidated into a single update.
+   * using the default query. Unlike requestQuery, for which every call results
+   * in an executed query, multiple calls to requestUpdate may be consolidated
+   * into a single update. This method has no effect if the client is not
+   * connected to a coordinator. If the client is connected but currently
+   * inactive, the request will be serviced if/when the client is later active.
    */
   requestUpdate() {
-    this._requestUpdate();
+    if (this._active) {
+      this._requestUpdate();
+    } else {
+      this.requestQuery();
+    }
   }
 
   /**
@@ -148,8 +212,15 @@ export class MosaicClient {
    * registered with a coordinator.
    * @returns {Promise}
    */
-  initialize() {
-    return this._coordinator?.initializeClient(this);
+  async initialize() {
+    if (!this._active) {
+      // clear flag so we initialize when active again
+      this._initialized = false;
+    } else if (this._coordinator) {
+      // if connected, let's initialize
+      this._initialized = true;
+      this._pending = initialize(this);
+    }
   }
 
   /**
@@ -160,4 +231,20 @@ export class MosaicClient {
   update() {
     return this;
   }
+}
+
+/**
+ * Perform client initialization. This method has been broken out so we can
+ * capture the resulting promise and set it as the client's pending promise.
+ * @param {MosaicClient} client The Mosaic client to initialize.
+ * @returns {Promise} A Promise that resolves when initialization completes.
+ */
+async function initialize(client) {
+  // retrieve field statistics
+  const fields = client.fields();
+  if (fields?.length) {
+    client.fieldInfo(await queryFieldInfo(client.coordinator, fields));
+  }
+  await client.prepare(); // perform custom preparation
+  return client.requestQuery(); // request data query
 }
