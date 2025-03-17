@@ -1,7 +1,6 @@
 /** @import { Query } from '@uwdata/mosaic-sql' */
 /** @import { Coordinator } from './Coordinator.js' */
 /** @import { Selection } from './Selection.js' */
-import { queryFieldInfo } from './util/field-info.js';
 import { throttle } from './util/throttle.js';
 
 /**
@@ -109,24 +108,6 @@ export class MosaicClient {
   }
 
   /**
-   * Return an array of fields queried by this client.
-   * @returns {import('./types.js').FieldInfoRequest[] | null}
-   *  The fields to retrieve info for.
-   */
-  fields() {
-    return null;
-  }
-
-  /**
-   * Called by the coordinator to set the field info for this client.
-   * @param {import('./types.js').FieldInfo[]} info The field info result.
-   * @returns {this}
-   */
-  fieldInfo(info) { // eslint-disable-line no-unused-vars
-    return this;
-  }
-
-  /**
    * Prepare the client before the query() method is called.
    */
   async prepare() {
@@ -207,19 +188,17 @@ export class MosaicClient {
   }
 
   /**
-   * Reset this client, initiating new field info, call the prepare method,
-   * and query requests. This method has no effect if the client is not
-   * registered with a coordinator.
-   * @returns {Promise}
+   * Reset this client, calling the prepare method and query requests. This
+   * method has no effect if the client is not registered with a coordinator.
    */
-  async initialize() {
+  initialize() {
     if (!this._enabled) {
       // clear flag so we initialize when enabled again
       this._initialized = false;
     } else if (this._coordinator) {
       // if connected, let's initialize
       this._initialized = true;
-      this._pending = initialize(this);
+      this._pending = this.prepare().then(() => this.requestQuery());
     }
   }
 
@@ -231,20 +210,4 @@ export class MosaicClient {
   update() {
     return this;
   }
-}
-
-/**
- * Perform client initialization. This method has been broken out so we can
- * capture the resulting promise and set it as the client's pending promise.
- * @param {MosaicClient} client The Mosaic client to initialize.
- * @returns {Promise} A Promise that resolves when initialization completes.
- */
-async function initialize(client) {
-  // retrieve field statistics
-  const fields = client.fields();
-  if (fields?.length) {
-    client.fieldInfo(await queryFieldInfo(client.coordinator, fields));
-  }
-  await client.prepare(); // perform custom preparation
-  return client.requestQuery(); // request data query
 }
