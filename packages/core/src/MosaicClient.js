@@ -99,8 +99,8 @@ export class MosaicClient {
 
   /**
    * Return a boolean indicating if the client query can be sped up with
-   * materialized views of pre-aggregated data. Should return true if changes to
-   * the filterBy selection does not change the groupby domain of the client
+   * materialized views of pre-aggregated data. Should return true if changes
+   * to the filterBy selection do not change the groupby domain of the client
    * query.
    */
   get filterStable() {
