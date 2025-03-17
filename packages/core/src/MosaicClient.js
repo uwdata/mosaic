@@ -108,7 +108,9 @@ export class MosaicClient {
   }
 
   /**
-   * Prepare the client before the query() method is called.
+   * Prepare the client before the `query()` method is called. Subclasses
+   * should override this method as needed, potentially issuing one or more
+   * queries to gather data or metadata needed prior to `query` calls.
    */
   async prepare() {
   }
