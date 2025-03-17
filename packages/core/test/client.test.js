@@ -132,7 +132,7 @@ describe('MosaicClient', () => {
 
     class TestClient extends MosaicClient {
       constructor() { super(undefined); this.enabled = false; }
-      prepare() { prepared = true; }
+      async prepare() { prepared = true; }
       query() { queried = true; return Query.select({ foo: 1 }); }
       queryResult(data) { result = data; }
     }

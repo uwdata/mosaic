@@ -1,4 +1,4 @@
-import { isParam, MosaicClient, toDataColumns } from '@uwdata/mosaic-core';
+import { isParam, MosaicClient, queryFieldInfo, toDataColumns } from '@uwdata/mosaic-core';
 import { Query, SelectQuery, collectParams, column, isAggregateExpression, isColumnParam, isColumnRef, isNode, isParamLike } from '@uwdata/mosaic-sql';
 import { isColor } from './util/is-color.js';
 import { isConstantOption } from './util/is-constant-option.js';
@@ -121,7 +121,7 @@ export class Mark extends MosaicClient {
     return c?.field ? c : null;
   }
 
-  fields() {
+  async prepare() {
     if (this.hasOwnData()) return null;
 
     const { channels, reqs } = this;
@@ -136,14 +136,11 @@ export class Mark extends MosaicClient {
     }
 
     const table = this.sourceTable();
-    return Array.from(fields, ([c, s]) => ({
-      table,
-      column: c,
-      stats: Array.from(s)
-    }));
-  }
+    const info = await queryFieldInfo(
+      this.coordinator,
+      Array.from(fields, ([c, s]) => ({ table, column: c, stats: Array.from(s) }))
+    );
 
-  fieldInfo(info) {
     const lookup = Object.fromEntries(info.map(x => [x.column, x]));
     for (const entry of this.channels) {
       const { field } = entry;
@@ -152,7 +149,6 @@ export class Mark extends MosaicClient {
       }
     }
     this._fieldInfo = true;
-    return this;
   }
 
   /**
