@@ -11,6 +11,9 @@ import { coordinator as defaultCoordinator } from './Coordinator.js';
  *  fed into the query function to produce the SQL query.
  * @property {boolean} [enabled] A flag (default `true`) indicating if the
  *  client should initially be enabled or not.
+ * @property {boolean} [filterStable] A flag (default `true`) indicating if the
+ *  if client queries can be sped up using pre-aggregated data. Should be set
+ *  to `false` if filtering changes the groupby domain of the query.
  * @property {function(): Promise<void>} [prepare]
  *  An async function to prepare the client before running queries.
  * @property {function(any): any} [query]
@@ -50,13 +53,27 @@ class ProxyClient extends MosaicClient {
   constructor({
     selection = undefined,
     enabled = true,
+    filterStable = true,
     ...methods
   }) {
     super(selection);
     this.enabled = enabled;
 
-    /** @type {MakeClientOptions} */
+    /**
+     * @type {MakeClientOptions}
+     * @readonly
+     */
     this._methods = methods;
+
+    /**
+     * @type {boolean}
+     * @readonly
+     */
+    this._filterStable = filterStable;
+  }
+
+  get filterStable() {
+    return this._filterStable;
   }
 
   async prepare() {
