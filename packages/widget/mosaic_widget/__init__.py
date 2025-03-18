@@ -93,6 +93,6 @@ class MosaicWidget(anywidget.AnyWidget):
 
         total = round((time.time() - start) * 1_000)
         if total > SLOW_QUERY_THRESHOLD:
-            logger.warning(f"DONE. Slow query { uuid } took { total } ms.\n{ sql }")
+            logger.warning(f"DONE. Slow query {uuid} took {total} ms.\n{sql}")
         else:
-            logger.info(f"DONE. Query { uuid } took { total } ms.\n{ sql }")
+            logger.info(f"DONE. Query {uuid} took {total} ms.\n{sql}")
