@@ -106,6 +106,11 @@ export class QueryManager {
     }
   }
 
+  /**
+   * Get or set the client cache.
+   * @param {boolean | import('./util/cache.js').Cache} [value] The cache instance or `true` to create an LRU cache.
+   * @returns {import('./util/cache.js').Cache} The cache instance.
+   */
   cache(value) {
     return value !== undefined
       ? (this.clientCache = value === true ? lruCache() : (value || voidCache()))
