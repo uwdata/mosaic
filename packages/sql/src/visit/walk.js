@@ -1,11 +1,16 @@
+/**
+ * @import { SQLNode } from '../ast/node.js'
+ * @import { VisitorCallback, VisitorResult } from '../types.js'
+
+ */
 import { isNode } from '../ast/node.js';
 import { recurse } from './recurse.js';
 
 /**
  * Perform a traversal of a SQL expression AST.
- * @param {import('../ast/node.js').SQLNode} node Root node for AST traversal.
- * @param {import('../types.js').VisitorCallback} visit Visitor callback function.
- * @return {import('../types.js').VisitorResult}
+ * @param {SQLNode} node Root node for AST traversal.
+ * @param {VisitorCallback} visit Visitor callback function.
+ * @return {VisitorResult}
  */
 export function walk(node, visit) {
   if (!isNode(node)) return;

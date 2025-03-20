@@ -1,3 +1,7 @@
+/**
+ * @import { ParamNode } from './param.js'
+ * @import { TableRefNode } from './table-ref.js'
+ */
 import { COLUMN_PARAM } from '../constants.js';
 import { ColumnRefNode } from './column-ref.js';
 
@@ -13,16 +17,14 @@ export function isColumnParam(value) {
 export class ColumnParamNode extends ColumnRefNode {
   /**
    * Instantiate a column param node.
-   * @param {import('./param.js').ParamNode} param The column name as a
-   *  parameter node.
-   * @param {import('./table-ref.js').TableRefNode} [table] The table
-   *  reference.
+   * @param {ParamNode} param The column name as a parameter node.
+   * @param {TableRefNode} [table] The table reference.
    */
   constructor(param, table) {
     super(COLUMN_PARAM, table);
     /**
      * The column name as a parameter node.
-     * @type {import('./param.js').ParamNode}
+     * @type {ParamNode}
      * @readonly
      */
     this.param = param;

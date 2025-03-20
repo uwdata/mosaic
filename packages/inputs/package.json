@@ -1,6 +1,6 @@
 {
   "name": "@uwdata/mosaic-inputs",
-  "version": "0.12.2",
+  "version": "0.15.0",
   "description": "Mosaic input components.",
   "keywords": [
     "inputs",
@@ -22,8 +22,8 @@
     "prepublishOnly": "npm run test && npm run lint"
   },
   "dependencies": {
-    "@uwdata/mosaic-core": "^0.12.2",
-    "@uwdata/mosaic-sql": "^0.12.2",
+    "@uwdata/mosaic-core": "^0.15.0",
+    "@uwdata/mosaic-sql": "^0.15.0",
     "isoformat": "^0.2.1"
   }
 }

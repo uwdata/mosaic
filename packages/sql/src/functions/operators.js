@@ -1,3 +1,6 @@
+/**
+ * @import { ExprValue, ExprVarArgs } from '../types.js'
+ */
 import { BetweenOpNode, NotBetweenOpNode } from '../ast/between-op.js';
 import { BinaryOpNode } from '../ast/binary-op.js';
 import { InOpNode } from '../ast/in-op.js';
@@ -25,7 +28,7 @@ function betweenOp(expr, extent, negate = false) {
 
 /**
  * Logical and (AND) operator.
- * @param {...import('../types.js').ExprVarArgs} clauses The input expressions.
+ * @param {...ExprVarArgs} clauses The input expressions.
  * @returns {AndNode}
  */
 export function and(...clauses) {
@@ -34,7 +37,7 @@ export function and(...clauses) {
 
 /**
  * Logical or (OR) operator.
- * @param {...import('../types.js').ExprVarArgs} clauses The input expressions.
+ * @param {...ExprVarArgs} clauses The input expressions.
  * @returns {OrNode}
  */
 export function or(...clauses) {
@@ -43,7 +46,7 @@ export function or(...clauses) {
 
 /**
  * Logical not (NOT) operator.
- * @param {import('../types.js').ExprValue} expr The expression to negate.
+ * @param {ExprValue} expr The expression to negate.
  * @returns {UnaryOpNode}
  */
 export function not(expr) {
@@ -52,7 +55,7 @@ export function not(expr) {
 
 /**
  * Null check (IS NULL) operator.
- * @param {import('../types.js').ExprValue} expr The expression to test.
+ * @param {ExprValue} expr The expression to test.
  * @returns {UnaryPosftixOpNode}
  */
 export function isNull(expr) {
@@ -61,7 +64,7 @@ export function isNull(expr) {
 
 /**
  * Non-null check (IS NOT NULL) operator.
- * @param {import('../types.js').ExprValue} expr The expression to test.
+ * @param {ExprValue} expr The expression to test.
  * @returns {UnaryPosftixOpNode}
  */
 export function isNotNull(expr) {
@@ -70,7 +73,7 @@ export function isNotNull(expr) {
 
 /**
  * Bitwise not (~) operator.
- * @param {import('../types.js').ExprValue} expr The input expression.
+ * @param {ExprValue} expr The input expression.
  * @returns {UnaryOpNode}
  */
 export function bitNot(expr) {
@@ -79,8 +82,8 @@ export function bitNot(expr) {
 
 /**
  * Bitwise and (&) operator.
- * @param {import('../types.js').ExprValue} left The left argument.
- * @param {import('../types.js').ExprValue} right The right argument.
+ * @param {ExprValue} left The left argument.
+ * @param {ExprValue} right The right argument.
  * @returns {BinaryOpNode}
  */
 export function bitAnd(left, right) {
@@ -89,8 +92,8 @@ export function bitAnd(left, right) {
 
 /**
  * Bitwise or (|) operator.
- * @param {import('../types.js').ExprValue} left The left argument.
- * @param {import('../types.js').ExprValue} right The right argument.
+ * @param {ExprValue} left The left argument.
+ * @param {ExprValue} right The right argument.
  * @returns {BinaryOpNode}
  */
 export function bitOr(left, right) {
@@ -99,8 +102,8 @@ export function bitOr(left, right) {
 
 /**
  * Bit shift left (<<) operator.
- * @param {import('../types.js').ExprValue} left The left argument.
- * @param {import('../types.js').ExprValue} right The right argument.
+ * @param {ExprValue} left The left argument.
+ * @param {ExprValue} right The right argument.
  * @returns {BinaryOpNode}
  */
 export function bitLeft(left, right) {
@@ -109,8 +112,8 @@ export function bitLeft(left, right) {
 
 /**
  * Bit shift right (>>) operator.
- * @param {import('../types.js').ExprValue} left The left argument.
- * @param {import('../types.js').ExprValue} right The right argument.
+ * @param {ExprValue} left The left argument.
+ * @param {ExprValue} right The right argument.
  * @returns {BinaryOpNode}
  */
 export function bitRight(left, right) {
@@ -119,8 +122,8 @@ export function bitRight(left, right) {
 
 /**
  * Addition (+) operator.
- * @param {import('../types.js').ExprValue} left The left argument.
- * @param {import('../types.js').ExprValue} right The right argument.
+ * @param {ExprValue} left The left argument.
+ * @param {ExprValue} right The right argument.
  * @returns {BinaryOpNode}
  */
 export function add(left, right) {
@@ -129,8 +132,8 @@ export function add(left, right) {
 
 /**
  * Subtraction (-) operator.
- * @param {import('../types.js').ExprValue} left The left argument.
- * @param {import('../types.js').ExprValue} right The right argument.
+ * @param {ExprValue} left The left argument.
+ * @param {ExprValue} right The right argument.
  * @returns {BinaryOpNode}
  */
 export function sub(left, right) {
@@ -139,8 +142,8 @@ export function sub(left, right) {
 
 /**
  * Multiplication (*) operator.
- * @param {import('../types.js').ExprValue} left The left argument.
- * @param {import('../types.js').ExprValue} right The right argument.
+ * @param {ExprValue} left The left argument.
+ * @param {ExprValue} right The right argument.
  * @returns {BinaryOpNode}
  */
 export function mul(left, right) {
@@ -149,8 +152,8 @@ export function mul(left, right) {
 
 /**
  * Division (/) operator.
- * @param {import('../types.js').ExprValue} left The left argument.
- * @param {import('../types.js').ExprValue} right The right argument.
+ * @param {ExprValue} left The left argument.
+ * @param {ExprValue} right The right argument.
  * @returns {BinaryOpNode}
  */
 export function div(left, right) {
@@ -159,8 +162,8 @@ export function div(left, right) {
 
 /**
  * Integer division (//) operator.
- * @param {import('../types.js').ExprValue} left The left argument.
- * @param {import('../types.js').ExprValue} right The right argument.
+ * @param {ExprValue} left The left argument.
+ * @param {ExprValue} right The right argument.
  * @returns {BinaryOpNode}
  */
 export function idiv(left, right) {
@@ -169,8 +172,8 @@ export function idiv(left, right) {
 
 /**
  * Modulo (%) operator.
- * @param {import('../types.js').ExprValue} left The left argument.
- * @param {import('../types.js').ExprValue} right The right argument.
+ * @param {ExprValue} left The left argument.
+ * @param {ExprValue} right The right argument.
  * @returns {BinaryOpNode}
  */
 export function mod(left, right) {
@@ -179,8 +182,8 @@ export function mod(left, right) {
 
 /**
  * Exponentiation (**) operator.
- * @param {import('../types.js').ExprValue} left The left argument.
- * @param {import('../types.js').ExprValue} right The right argument.
+ * @param {ExprValue} left The left argument.
+ * @param {ExprValue} right The right argument.
  * @returns {BinaryOpNode}
  */
 export function pow(left, right) {
@@ -189,8 +192,8 @@ export function pow(left, right) {
 
 /**
  * Equality comparision (=) operator.
- * @param {import('../types.js').ExprValue} left The left argument.
- * @param {import('../types.js').ExprValue} right The right argument.
+ * @param {ExprValue} left The left argument.
+ * @param {ExprValue} right The right argument.
  * @returns {BinaryOpNode}
  */
 export function eq(left, right) {
@@ -199,8 +202,8 @@ export function eq(left, right) {
 
 /**
  * Non-equality comparision (<>) operator.
- * @param {import('../types.js').ExprValue} left The left argument.
- * @param {import('../types.js').ExprValue} right The right argument.
+ * @param {ExprValue} left The left argument.
+ * @param {ExprValue} right The right argument.
  * @returns {BinaryOpNode}
  */
 export function neq(left, right) {
@@ -209,8 +212,8 @@ export function neq(left, right) {
 
 /**
  * Less-than comparision (<) operator.
- * @param {import('../types.js').ExprValue} left The left argument.
- * @param {import('../types.js').ExprValue} right The right argument.
+ * @param {ExprValue} left The left argument.
+ * @param {ExprValue} right The right argument.
  * @returns {BinaryOpNode}
  */
 export function lt(left, right) {
@@ -219,8 +222,8 @@ export function lt(left, right) {
 
 /**
  * Greater-than comparision (>) operator.
- * @param {import('../types.js').ExprValue} left The left argument.
- * @param {import('../types.js').ExprValue} right The right argument.
+ * @param {ExprValue} left The left argument.
+ * @param {ExprValue} right The right argument.
  * @returns {BinaryOpNode}
  */
 export function gt(left, right) {
@@ -229,8 +232,8 @@ export function gt(left, right) {
 
 /**
  * Less-than or equal comparision (<=) operator.
- * @param {import('../types.js').ExprValue} left The left argument.
- * @param {import('../types.js').ExprValue} right The right argument.
+ * @param {ExprValue} left The left argument.
+ * @param {ExprValue} right The right argument.
  * @returns {BinaryOpNode}
  */
 export function lte(left, right) {
@@ -239,8 +242,8 @@ export function lte(left, right) {
 
 /**
  * Greater-than or equal comparision (>=) operator.
- * @param {import('../types.js').ExprValue} left The left argument.
- * @param {import('../types.js').ExprValue} right The right argument.
+ * @param {ExprValue} left The left argument.
+ * @param {ExprValue} right The right argument.
  * @returns {BinaryOpNode}
  */
 export function gte(left, right) {
@@ -249,8 +252,8 @@ export function gte(left, right) {
 
 /**
  * Null-inclusive non-equality (IS DISTINCT FROM) operator.
- * @param {import('../types.js').ExprValue} left The left argument.
- * @param {import('../types.js').ExprValue} right The right argument.
+ * @param {ExprValue} left The left argument.
+ * @param {ExprValue} right The right argument.
  * @returns {BinaryOpNode}
  */
 export function isDistinct(left, right) {
@@ -259,8 +262,8 @@ export function isDistinct(left, right) {
 
 /**
  * Null-inclusive equality (IS NOT DISTINCT FROM) operator.
- * @param {import('../types.js').ExprValue} left The left argument.
- * @param {import('../types.js').ExprValue} right The right argument.
+ * @param {ExprValue} left The left argument.
+ * @param {ExprValue} right The right argument.
  * @returns {BinaryOpNode}
  */
 export function isNotDistinct(left, right) {
@@ -269,8 +272,8 @@ export function isNotDistinct(left, right) {
 
 /**
  * Range inclusion (BETWEEN) operator.
- * @param {import('../types.js').ExprValue} expr The expression to test.
- * @param {import('../types.js').ExprValue[]} extent The range extent.
+ * @param {ExprValue} expr The expression to test.
+ * @param {ExprValue[]} extent The range extent.
  * @returns {BetweenOpNode}
  */
 export function isBetween(expr, extent) {
@@ -279,8 +282,8 @@ export function isBetween(expr, extent) {
 
 /**
  * Range exclusion (NOT BETWEEN) operator.
- * @param {import('../types.js').ExprValue} expr The expression to test.
- * @param {import('../types.js').ExprValue[]} extent The range extent.
+ * @param {ExprValue} expr The expression to test.
+ * @param {ExprValue[]} extent The range extent.
  * @returns {NotBetweenOpNode}
  */
 export function isNotBetween(expr, extent) {
@@ -289,8 +292,8 @@ export function isNotBetween(expr, extent) {
 
 /**
  * Set inclusion (IN) operator.
- * @param {import('../types.js').ExprValue} expr The expression to test.
- * @param {import('../types.js').ExprValue[]} values The included values.
+ * @param {ExprValue} expr The expression to test.
+ * @param {ExprValue[]} values The included values.
  * @returns {InOpNode}
  */
 export function isIn(expr, values) {

@@ -1,4 +1,9 @@
-import { Query, and, asNode, ceil, collectColumns, createTable, float64, floor, isBetween, int32, mul, round, scaleTransform, sub, isSelectQuery, ExprNode, SelectQuery } from '@uwdata/mosaic-sql';
+/** @import { ExprNode } from '@uwdata/mosaic-sql' */
+/** @import { Coordinator } from '../Coordinator.js' */
+/** @import { MosaicClient } from '../MosaicClient.js' */
+/** @import { Selection } from '../Selection.js' */
+/** @import { BinMethod, Scale, SelectionClause } from '../util/selection-types.js' */
+import { Query, and, asNode, ceil, collectColumns, createTable, float64, floor, isBetween, int32, mul, round, scaleTransform, sub, isSelectQuery, SelectQuery, isAggregateExpression, ColumnNameRefNode } from '@uwdata/mosaic-sql';
 import { preaggColumns } from './preagg-columns.js';
 import { fnv_hash } from '../util/hash.js';
 
@@ -34,14 +39,14 @@ const Skip = { skip: true, result: null };
 export class PreAggregator {
   /**
    * Create a new manager of materialized views of pre-aggregated data.
-   * @param {import('../Coordinator.js').Coordinator} coordinator A Mosaic coordinator.
+   * @param {Coordinator} coordinator A Mosaic coordinator.
    * @param {PreAggregateOptions} [options] Pre-aggregation options.
    */
   constructor(coordinator, {
     schema = 'mosaic',
     enabled = true
   } = {}) {
-    /** @type {Map<import('../MosaicClient.js').MosaicClient, PreAggregateInfo | Skip | null>} */
+    /** @type {Map<MosaicClient, PreAggregateInfo | Skip | null>} */
     this.entries = new Map();
     this.active = null;
     this.mc = coordinator;
@@ -123,18 +128,16 @@ export class PreAggregator {
    * client-selection pair, or null if the client has unstable filters.
    * This method has multiple possible side effects, including materialized
    * view creation and updating internal caches.
-   * @param {import('../MosaicClient.js').MosaicClient} client A Mosaic client.
-   * @param {import('../Selection.js').Selection} selection A Mosaic selection
-   *  to filter the client by.
-   * @param {import('../util/selection-types.js').SelectionClause} activeClause
-   *  A representative active selection clause for which to (possibly) generate
-   *  materialized views of pre-aggregates.
+   * @param {MosaicClient} client A Mosaic client.
+   * @param {Selection} selection A Mosaic selection to filter the client by.
+   * @param {SelectionClause} activeClause A representative active selection
+   *  clause for which to generate materialized views of pre-aggregates.
    * @returns {PreAggregateInfo | Skip | null} Information and query generator
    * for pre-aggregated tables, or null if the client has unstable filters.
    */
   request(client, selection, activeClause) {
     // if not enabled, do nothing
-    if (!this.enabled) return null;
+    if (!this.enabled || activeClause == null) return null;
 
     const { entries, mc, schema } = this;
     const { source } = activeClause;
@@ -157,6 +160,10 @@ export class PreAggregator {
 
     // if cached active columns are unset, analyze the active clause
     if (!active) {
+      // if active clause predicate is null, we can't analyze it
+      // return null to backoff to standard client query
+      // non-null clauses may come later, so don't set active state
+      if (activeClause.predicate == null) return null;
       // generate active dimension columns to select over
       // will return an object with null source if it has unstable filters
       this.active = active = activeColumns(activeClause);
@@ -201,8 +208,7 @@ export class PreAggregator {
  * function for the active dimensions of a pre-aggregated materialized view.
  * If the active clause is not indexable or is missing metadata, this method
  * returns an object with a null source property.
- * @param {import('../util/selection-types.js').SelectionClause} clause
- *  The active selection clause to analyze.
+ * @param {SelectionClause} clause The active selection clause to analyze.
  */
 function activeColumns(clause) {
   const { source, meta } = clause;
@@ -257,12 +263,12 @@ const BIN = { ceil, round };
 
 /**
  * Returns a bin function generator to discretize a selection interval domain.
- * @param {import('../util/selection-types.js').Scale} scale A scale that maps
- *  domain values to the output range (typically pixels).
+ * @param {Scale} scale A scale that maps domain values to the output range
+ *  (typically pixels).
  * @param {number} pixelSize The interactive pixel size. This value indicates
  *  the bin step size and may be greater than an actual screen pixel.
- * @param {import('../util/selection-types.js').BinMethod} bin The binning
- *  method to apply, one of `floor`, `ceil', or `round`.
+ * @param {BinMethod} bin The binning method to apply, one of `floor`,
+ *  `ceil', or `round`.
  * @returns {(value: any) => ExprNode} A bin function generator.
  */
 function binInterval(scale, pixelSize, bin) {
@@ -331,18 +337,43 @@ function preaggregateInfo(clientQuery, active, preaggCols, schema) {
 
 /**
  * Push column selections down to subqueries.
+ * @param {Query} query The (sub)query to push down to.
+ * @param {string[]} cols The column names to push down.
  */
 function subqueryPushdown(query, cols) {
   const memo = new Set;
   const pushdown = q => {
+    // it is possible to have duplicate subqueries
+    // so we memoize and exit early if already seen
     if (memo.has(q)) return;
     memo.add(q);
+
     if (isSelectQuery(q) && q._from.length) {
+      // select the pushed down columns
+      // note that the select method will deduplicate for us
       q.select(cols);
+      if (isAggregateQuery(q)) {
+        // if an aggregation query, we need to push to groupby as well
+        // we also deduplicate as the column may already be present
+        const set = new Set(
+          q._groupby.flatMap(x => x instanceof ColumnNameRefNode ? x.name : []
+        ));
+        q.groupby(cols.filter(c => !set.has(c)));
+      }
     }
     q.subqueries.forEach(pushdown);
   };
   pushdown(query);
+}
+
+/**
+ * Test if a query performs aggregation.
+ * @param {SelectQuery} query
+ * @returns {boolean}
+ */
+function isAggregateQuery(query) {
+  return query._groupby.length > 0
+    || query._select.some(node => isAggregateExpression(node));
 }
 
 /**
@@ -397,8 +428,7 @@ export class PreAggregateInfo {
 
   /**
    * Generate a materialized view query for the given predicate.
-   * @param {import('@uwdata/mosaic-sql').ExprNode} predicate The current
-   *  active clause predicate.
+   * @param {ExprNode} predicate The current active clause predicate.
    * @returns {SelectQuery} A materialized view query.
    */
   query(predicate) {

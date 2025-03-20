@@ -1,3 +1,6 @@
+/**
+ * @import { TableRefNode } from './table-ref.js'
+ */
 import { COLUMN_REF } from '../constants.js';
 import { quoteIdentifier } from '../util/string.js';
 import { ExprNode } from './node.js';
@@ -14,13 +17,13 @@ export function isColumnRef(value) {
 export class ColumnRefNode extends ExprNode {
   /**
    * Instantiate a column reference node.
-   * @param {import('./table-ref.js').TableRefNode} [table] The table reference.
+   * @param {TableRefNode} [table] The table reference.
    */
   constructor(type, table) {
     super(type);
     /**
      * The table reference.
-     * @type {import('./table-ref.js').TableRefNode}
+     * @type {TableRefNode}
      * @readonly
      */
     this.table = table;
@@ -50,7 +53,7 @@ export class ColumnNameRefNode extends ColumnRefNode {
   /**
    * Instantiate a column reference node.
    * @param {string} name The column name.
-   * @param {import('./table-ref.js').TableRefNode} [table] The table reference.
+   * @param {TableRefNode} [table] The table reference.
    */
   constructor(name, table) {
     super(COLUMN_REF, table);

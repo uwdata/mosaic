@@ -1,3 +1,7 @@
+/**
+ * @import { SelectQuery } from '../ast/query.js'
+ * @import { ExprValue } from '../types.js'
+ */
 import { Query } from '../ast/query.js';
 import { sum } from '../functions/aggregate.js';
 import { int32 } from '../functions/cast.js';
@@ -6,9 +10,9 @@ import { add, mul, neq, sub } from '../functions/operators.js';
 
 /**
  * Perform linear binning in one dimension.
- * @param {import('../ast/query.js').SelectQuery} query The base query to bin.
- * @param {import('../types.js').ExprValue} x The expression to bin.
- * @param {import('../types.js').ExprValue} [weight] The expression to weight by.
+ * @param {SelectQuery} query The base query to bin.
+ * @param {ExprValue} x The expression to bin.
+ * @param {ExprValue} [weight] The expression to weight by.
  * @param {string[]} [groupby] Group by expressions.
  * @returns {Query}
  */

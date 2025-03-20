@@ -2,6 +2,7 @@ import { ColumnRefNode } from './ast/column-ref.js';
 import { ExprNode, SQLNode } from './ast/node.js';
 import { TableRefNode } from './ast/table-ref.js';
 import { Query } from './ast/query.js';
+import { WithClauseNode } from './ast/with.js';
 
 /**
  * Interface representing a dynamic parameter value.
@@ -80,7 +81,11 @@ export type SelectEntry =
 
 export type SelectExpr = MaybeArray<SelectEntry>;
 
-export type WithExpr = MaybeArray<Record<string, Query>>;
+export type WithEntry =
+  | WithClauseNode
+  | Record<string, Query>;
+
+export type WithExpr = MaybeArray<WithEntry>;
 
 export type FromEntry =
   | string
@@ -94,3 +99,14 @@ export type FromExpr = MaybeArray<FromEntry>;
 export type FilterExpr = MaybeArray<string | ExprNode>;
 export type GroupByExpr = MaybeArray<string | ExprNode>;
 export type OrderByExpr = MaybeArray<string | ExprNode>;
+
+export type TimeUnit =
+  | 'year'
+  | 'quarter'
+  | 'month'
+  | 'day'
+  | 'hour'
+  | 'minute'
+  | 'second'
+  | 'millisecond'
+  | 'microsecond';

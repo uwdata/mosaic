@@ -1,4 +1,8 @@
 /**
+ * @import { ParamLike } from '../types.js'
+ */
+
+/**
  * Check if a value is a string.
  * @param {*} value The value to check.
  * @returns {value is string}
@@ -19,7 +23,7 @@ export function isArray(value) {
 /**
  * Check if a value is a dynamic parameter.
  * @param {*} value The value to check.
- * @returns {value is import('../types.js').ParamLike}
+ * @returns {value is ParamLike}
  */
 export function isParamLike(value) {
   return value

@@ -1,4 +1,4 @@
-import { Selection, clausePoints, coordinator, isParam, isSelection, toDataColumns } from '@uwdata/mosaic-core';
+import { Selection, clausePoints, coordinator, isParam, isSelection, queryFieldInfo, toDataColumns } from '@uwdata/mosaic-core';
 import { Query, desc } from '@uwdata/mosaic-sql';
 import { formatDate, formatLocaleAuto, formatLocaleNumber } from './util/format.js';
 import { Input, input } from './input.js';
@@ -186,18 +186,18 @@ export class Table extends Input {
     coordinator().prefetch(query.clone().offset(offset + this.limit));
   }
 
-  fields() {
+  async prepare() {
+    // query for column scheam information
     const table = this.sourceTable();
-    return this.columns.map(column => ({ column, table }));
-  }
+    const fields = this.columns.map(column => ({ column, table }));
+    const schema = await queryFieldInfo(this.coordinator, fields);
+    this.schema = schema;
 
-  fieldInfo(info) {
-    this.schema = info;
-
+    // create table header row
     const thead = this.head;
     thead.innerHTML = '';
     const tr = document.createElement('tr');
-    for (const { column } of info) {
+    for (const { column } of schema) {
       const th = document.createElement('th');
       th.addEventListener('click', evt => this.sort(evt, column));
       th.appendChild(document.createElement('span'));
@@ -207,16 +207,14 @@ export class Table extends Input {
     thead.appendChild(tr);
 
     // get column formatters
-    this.formats = formatof(this.format, info);
+    this.formats = formatof(this.format, schema);
 
     // get column alignment style
     this.style.innerText = tableCSS(
       this.id,
-      alignof(this.align, info),
-      widthof(this.widths, info)
+      alignof(this.align, schema),
+      widthof(this.widths, schema)
     );
-
-    return this;
   }
 
   query(filter = []) {

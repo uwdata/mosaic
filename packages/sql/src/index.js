@@ -28,6 +28,7 @@ export { argmax, argmin, arrayAgg, avg, corr, count, covariance, covarPop, entro
 export { cond } from './functions/case.js';
 export { cast, float32, float64, int32 } from './functions/cast.js';
 export { column } from './functions/column.js';
+export { cte } from './functions/cte.js';
 export { dateBin, dateMonth, dateMonthDay, dateDay, epoch_ms, interval } from './functions/datetime.js';
 export { literal } from './functions/literal.js';
 export { abs, ceil, exp, floor, greatest, isFinite, isInfinite, isNaN, least, ln, log, round, sign, sqrt, trunc } from './functions/numeric.js';
@@ -36,6 +37,7 @@ export { asc, desc } from './functions/order-by.js';
 export { geojson, x, y, centroid, centroidX, centroidY } from './functions/spatial.js';
 export { sql } from './functions/sql-template-tag.js';
 export { regexp_matches, contains, prefix, suffix, lower, upper, length } from './functions/string.js';
+export { coalesce } from './functions/util.js';
 export { cume_dist, dense_rank, first_value, lag, last_value, lead, nth_value, ntile, percent_rank, rank, row_number } from './functions/window.js';
 
 export { rewrite } from './visit/rewrite.js';
@@ -48,6 +50,8 @@ export { loadCSV, loadJSON, loadObjects, loadParquet, loadSpatial } from './load
 
 export { bin1d } from './transforms/bin-1d.js';
 export { bin2d } from './transforms/bin-2d.js';
+export { binDate } from './transforms/bin-date.js';
+export { binHistogram } from './transforms/bin-histogram.js';
 export { binLinear1d } from './transforms/bin-linear-1d.js';
 export { binLinear2d } from './transforms/bin-linear-2d.js';
 export { lineDensity } from './transforms/line-density.js';
@@ -56,3 +60,6 @@ export { scaleTransform } from './transforms/scales.js';
 
 export { asLiteral, asNode, asTableRef, asVerbatim, over } from './util/ast.js';
 export { isParamLike } from './util/type-check.js';
+
+export { binSpec, binStep } from './transforms/util/bin-step.js';
+export { timeInterval } from './transforms/util/time-interval.js';

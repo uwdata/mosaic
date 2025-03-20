@@ -9,6 +9,15 @@ SQL expression builders. All SQL expressions are represented in the form of an a
 Create an expression AST node that references a column by _name_.
 Upon string coercion, the column name will be properly quoted.
 
+## cte
+
+`cte(name, query, materialized)`
+
+Create an AST node for a Common Table Expression (CTE) to be used within a SQL `WITH` clause.
+The resulting node can be passed as an argument to the `Query.with()` method.
+The string-valued _name_ and Query-valued _query_ arguments are required.
+The optional boolean-valued _materialized_ argument indicates if the CTE should be materialized during query execution; if unspecified, it is left to the backing database to decide.
+
 ## literal
 
 `literal(value)`

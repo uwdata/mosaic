@@ -1,16 +1,30 @@
-import { Coordinator } from './Coordinator.js';
-import { Selection } from './Selection.js';
+/** @import { Query } from '@uwdata/mosaic-sql' */
+/** @import { Coordinator } from './Coordinator.js' */
+/** @import { Selection } from './Selection.js' */
 import { throttle } from './util/throttle.js';
 
 /**
- * Base class for Mosaic clients.
+ * A Mosaic client is a data consumer that indicates its data needs to a
+ * Mosaic coordinator via the query method. The coordinator is responsible
+ * for issuing queries and returning results to the client.
+ *
+ * The client life-cycle consists of connection to a coordinator,
+ * initialization (potentially involving queries for data schema and summary
+ * statistic information), and then interactive queries that may be driven by
+ * an associated selection. When no longer needed, a client should be
+ * disconnected from the coordinator.
+ *
+ * When enabled, a client will initialize and respond to query update requests.
+ * If disabled, the client will delay initialization and not respond to queries
+ * until enabled again. Disabling a client can improve system performance when
+ * associated interface elements are offscreen or disabled.
  */
 export class MosaicClient {
   /**
-   * Constructor.
-   * @param {*} filterSelection An optional selection to interactively filter
-   *  this client's data. If provided, a coordinator will re-query and update
-   *  the client when the selection updates.
+   * Create a new client instance.
+   * @param {Selection} [filterSelection] An optional selection to
+   *  interactively filter this client's data. If provided, a coordinator
+   *  will re-query and update the client when the selection updates.
    */
   constructor(filterSelection) {
     /** @type {Selection} */
@@ -20,6 +34,12 @@ export class MosaicClient {
     this._coordinator = null;
     /** @type {Promise<any>} */
     this._pending = Promise.resolve();
+    /** @type {boolean} */
+    this._enabled = true;
+    /** @type {boolean} */
+    this._initialized = false;
+    /** @type {Query | boolean} */
+    this._request = null;
   }
 
   /**
@@ -34,6 +54,33 @@ export class MosaicClient {
    */
   set coordinator(coordinator) {
     this._coordinator = coordinator;
+  }
+
+  /**
+   * Return this client's enabled state.
+   */
+  get enabled() {
+    return this._enabled;
+  }
+
+  /**
+   * Set this client's enabled state;
+   */
+  set enabled(state) {
+    state = !!state; // ensure boolean
+    if (this._enabled !== state) {
+      this._enabled = state;
+      if (state) {
+        if (!this._initialized) {
+          // initialization includes a query request
+          this.initialize();
+        } else if (this._request) {
+          // request query now if requested while disabled
+          this.requestQuery(this._request === true ? undefined : this._request);
+        }
+        this._request = null;
+      }
+    }
   }
 
   /**
@@ -52,8 +99,8 @@ export class MosaicClient {
 
   /**
    * Return a boolean indicating if the client query can be sped up with
-   * materialized views of pre-aggregated data. Should return true if changes to
-   * the filterBy selection does not change the groupby domain of the client
+   * materialized views of pre-aggregated data. Should return true if changes
+   * to the filterBy selection do not change the groupby domain of the client
    * query.
    */
   get filterStable() {
@@ -61,25 +108,9 @@ export class MosaicClient {
   }
 
   /**
-   * Return an array of fields queried by this client.
-   * @returns {import('./types.js').FieldInfoRequest[] | null}
-   *  The fields to retrieve info for.
-   */
-  fields() {
-    return null;
-  }
-
-  /**
-   * Called by the coordinator to set the field info for this client.
-   * @param {import('./types.js').FieldInfo[]} info The field info result.
-   * @returns {this}
-   */
-  fieldInfo(info) { // eslint-disable-line no-unused-vars
-    return this;
-  }
-
-  /**
-   * Prepare the client before the query() method is called.
+   * Prepare the client before the `query()` method is called. Subclasses
+   * should override this method as needed, potentially issuing one or more
+   * queries to gather data or metadata needed prior to `query` calls.
    */
   async prepare() {
   }
@@ -122,37 +153,60 @@ export class MosaicClient {
 
   /**
    * Request the coordinator to execute a query for this client.
-   * If an explicit query is not provided, the client query method will
-   * be called, filtered by the current filterBy selection.
+   * If an explicit query is not provided, the client `query` method will
+   * be called, filtered by the current `filterBy` selection. This method has
+   * no effect if the client is not connected to a coordinator. If the client
+   * is connected by currently disabled, the request will be serviced if the
+   * client is later enabled.
+   * @param {Query} [query] The query to request. If unspecified, the query
+   *  will be determind by the client's `query` method and the current
+   *  `filterBy` selection state.
    * @returns {Promise}
    */
   requestQuery(query) {
-    const q = query || this.query(this.filterBy?.predicate(this));
-    return this._coordinator.requestQuery(this, q);
+    if (this._enabled) {
+      const q = query || this.query(this.filterBy?.predicate(this));
+      return this._coordinator?.requestQuery(this, q);
+    } else {
+      this._request = query ?? true;
+      return null;
+    }
   }
 
   /**
    * Request that the coordinator perform a throttled update of this client
-   * using the default query. Unlike requestQuery, for which every call will
-   * result in an executed query, multiple calls to requestUpdate may be
-   * consolidated into a single update.
+   * using the default query. Unlike requestQuery, for which every call results
+   * in an executed query, multiple calls to requestUpdate may be consolidated
+   * into a single update. This method has no effect if the client is not
+   * connected to a coordinator. If the client is connected but currently
+   * disabled, the request will be serviced if the client is later enabled.
    */
   requestUpdate() {
-    this._requestUpdate();
+    if (this._enabled) {
+      this._requestUpdate();
+    } else {
+      this.requestQuery();
+    }
   }
 
   /**
-   * Reset this client, initiating new field info, call the prepare method, and query requests.
-   * @returns {Promise}
+   * Reset this client, calling the prepare method and query requests. This
+   * method has no effect if the client is not registered with a coordinator.
    */
   initialize() {
-    return this._coordinator.initializeClient(this);
+    if (!this._enabled) {
+      // clear flag so we initialize when enabled again
+      this._initialized = false;
+    } else if (this._coordinator) {
+      // if connected, let's initialize
+      this._initialized = true;
+      this._pending = this.prepare().then(() => this.requestQuery());
+    }
   }
 
   /**
-   * Requests a client update.
-   * For example to (re-)render an interface component.
-   *
+   * Requests a client update, for example to (re-)render an interface
+   * component.
    * @returns {this | Promise<any>}
    */
   update() {

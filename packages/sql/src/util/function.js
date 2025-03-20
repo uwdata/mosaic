@@ -1,3 +1,7 @@
+/**
+ * @import { SQLNode } from '../ast/node.js'
+ * @import { WindowFunctionName } from '../types.js'
+ */
 import { AggregateNode } from '../ast/aggregate.js';
 import { FunctionNode } from '../ast/function.js';
 import { WindowFunctionNode, WindowNode } from '../ast/window.js';
@@ -5,7 +9,7 @@ import { asNode } from './ast.js';
 
 /**
  * Test if an AST node is a specific function call.
- * @param {import('../ast/node.js').SQLNode} node The SQL AST node to test.
+ * @param {SQLNode} node The SQL AST node to test.
  * @param {string} name The function name.
  * @returns {node is FunctionNode}
  */
@@ -37,7 +41,7 @@ export function aggFn(name, ...args) {
  * Create a new window AST node. The output node has an empty window
  * definition. Use chained calls such as `partitionby` and `orderby`
  * to specify the window settings.
- * @param {import('../types.js').WindowFunctionName} name The function name.
+ * @param {WindowFunctionName} name The function name.
  * @param  {...any} args The function arguments.
  * @returns {WindowNode}
  */

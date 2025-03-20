@@ -1,6 +1,11 @@
-import { Query } from '../ast/query.js';
+/**
+ * @import { ExprNode } from '../ast/node.js'
+ * @import { ExprValue, FromExpr } from '../types.js'
+ */
+import { Query, isQuery } from '../ast/query.js';
 import { argmax, argmin, max, min } from '../functions/aggregate.js';
 import { int32 } from '../functions/cast.js';
+import { cte } from '../functions/cte.js';
 import { floor } from '../functions/numeric.js';
 
 /**
@@ -10,24 +15,32 @@ import { floor } from '../functions/numeric.js';
  * argmin and argmax, following https://arxiv.org/pdf/2306.03714.pdf.
  * This method can bin along either the *x* or *y* dimension, as determined
  * by the caller-provided *bin* expression.
- * @param {import('../types.js').FromExpr} input The base query or table.
- * @param {import('../types.js').ExprValue} bin An expression that maps
+ * @param {FromExpr} input The base query or table.
+ * @param {ExprValue} bin An expression that maps
  *  time-series values to fractional pixel positions.
  * @param {string} x The x dimension column name.
  * @param {string} y The y dimension column name.
- * @param {import('../ast/node.js').ExprNode[]} [groups] Additional
+ * @param {ExprNode[]} [groups] Additional
  *  groupby columns, for example for faceted charts.
  * @returns {Query} The resulting M4 query.
  */
 export function m4(input, bin, x, y, groups = []) {
   const pixel = int32(floor(bin));
 
+  // Below, we treat input as a CTE when it is a query. In this case,
+  // we also request that the CTE be explicitly materialized.
+  const useCTE = isQuery(input);
+  const from = useCTE ? 'input' : input;
+  const query = useCTE
+    ? Query.with(cte(/** @type {string} */(from), input, true))
+    : Query;
+
   const q = (sel) => Query
-    .from(input)
+    .from(from)
     .select(sel)
     .groupby(pixel, groups);
 
-  return Query
+  return query
     .union(
       q([{ [x]: min(x), [y]: argmin(y, x) }, ...groups]),
       q([{ [x]: max(x), [y]: argmax(y, x) }, ...groups]),
