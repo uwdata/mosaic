@@ -2,6 +2,11 @@ import yaml from "yaml";
 import fs from 'fs';
 import { JSDOM } from 'jsdom';
 import path from "path";
+import { rollup } from "rollup";
+import virtual from "@rollup/plugin-virtual";
+import resolve from "@rollup/plugin-node-resolve";
+import commonjs from "@rollup/plugin-commonjs";
+
 
 // Mosaic modules
 import {
@@ -12,7 +17,7 @@ import {
   QueryDataNode,
 } from '@uwdata/mosaic-spec';
 import { ExprNode, ColumnNameRefNode } from '@uwdata/mosaic-sql';
-import { MosaicClient } from '../../vgplot/src/index.js';
+import { MosaicClient, isActivatable } from '@uwdata/mosaic-core';
 
 // Utility imports
 import {
@@ -22,7 +27,6 @@ import {
   LogLevel, Logger,
   clientsReady,
 } from './util/index.js';
-import { isActivatable } from "@uwdata/mosaic-core";
 import { binary, map, tableFromArrays, tableToIPC, utf8 } from "@uwdata/flechette";
 
 /**
@@ -137,7 +141,7 @@ export class MosaicPublisher {
       await this.exportDataFromDuckDB(tables);
     }
 
-    this.writeFiles(isInteractive, element);
+    await this.writeFiles(isInteractive, element);
   }
 
   private processClients() {
@@ -240,7 +244,7 @@ export class MosaicPublisher {
   /**
    * Write out the index.js, index.html, and create data/ directory as needed.
    */
-  private writeFiles(isInteractive: boolean, element?: HTMLElement | SVGElement) {
+  private async writeFiles(isInteractive: boolean, element?: HTMLElement | SVGElement) {
     const cache = this.ctx.coordinator.manager.cache().export();
     const cacheFile = '.cache.arrow';
     if (cache) {
@@ -261,7 +265,32 @@ export class MosaicPublisher {
 
     fs.writeFileSync(path.join(this.outputPath, 'index.html'), html);
     if (isInteractive) {
-      fs.writeFileSync(path.join(this.outputPath, 'index.js'), code);
+      const bundle = await rollup({
+        input: 'entry.js',
+        plugins: [  // We ts-ignore these because they use cjs default exports
+          // @ts-ignore
+          virtual({ 'entry.js': code }),
+          // @ts-ignore
+          resolve({ browser: true }),
+          // @ts-ignore
+          commonjs({ defaultIsModuleExports: true }),
+        ],
+        output: {
+          manualChunks: {
+            vgplot: ['@uwdata/vgplot'],
+            flechette: ['@uwdata/flechette'],
+          },
+          minifyInternalExports: true,
+        },
+        logLevel: 'silent',
+        treeshake: true,
+      });
+
+      await bundle.write({
+        dir: this.outputPath,
+        format: 'esm',
+        entryFileNames: 'index.js',
+      });
     }
   }
 

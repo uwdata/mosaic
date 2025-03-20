@@ -161,8 +161,10 @@ export const templateCSS = `<style>
 }
 </style>`;
 
-export const VGPLOT = 'https://cdn.jsdelivr.net/npm/@uwdata/vgplot@latest/dist/vgplot.js';
-export const FLECHETTE = 'https://cdn.jsdelivr.net/npm/@uwdata/flechette@latest/dist/flechette.js';
+// export const VGPLOT = 'https://cdn.jsdelivr.net/npm/@uwdata/vgplot@latest/dist/vgplot.js';
+// export const FLECHETTE = 'https://cdn.jsdelivr.net/npm/@uwdata/flechette@latest/dist/flechette.js';
+export const VGPLOT = '@uwdata/vgplot';
+export const FLECHETTE = '@uwdata/flechette';
 
 // TODO: switch this to ./renderHelpers version when changes pushed to npm
 // Currently, this is hack to see when clients are ready use .pending when it is available

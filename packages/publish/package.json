@@ -13,8 +13,13 @@
     "test": "npm run build && vitest run"
   },
   "dependencies": {
+    "@rollup/plugin-node-resolve": "^16.0.0",
+    "@rollup/plugin-virtual": "^3.0.2",
+    "@rollup/plugin-commonjs": "^28.0.3",
     "@uwdata/flechette": "^2.0.0",
+    "@uwdata/vgplot": "^0.12.2",
     "chalk": "^4.1.2",
+    "rollup": "^4.35.0",
     "skia-canvas": "^2.0.2",
     "yargs": "^17.7.2"
   },
