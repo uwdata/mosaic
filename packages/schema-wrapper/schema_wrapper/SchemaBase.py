@@ -60,7 +60,7 @@ class SchemaBase:
         ):
             if list(class_dictionary.keys())[0] == "value":
                 if self.__class__.__name__ == "Component":
-                    if self.value.__class__.__name__ in ["VConcat", "HConcat"]:
+                    if self.value.__class__.__name__ in ["VConcat", "HConcat", "HSpace", "VSpace"]:
                         return {self.value.__class__.__name__.lower(): class_dictionary["value"]}
 
                 return class_dictionary["value"]

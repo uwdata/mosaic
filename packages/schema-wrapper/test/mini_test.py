@@ -209,22 +209,159 @@ def test_weather_plot():
     TestCase().assertDictEqual(generated_dict, correct_dict)
 
 
-def test_stock_plot():
-    plot_spec = Plot(
-        plot=[
-            PlotMark(
-                LineY(
-                    mark="lineY",
-                    data=PlotFrom(from_="aapl"),
-                    x=ChannelValueSpec(ChannelValue("Date")),
-                    y=ChannelValueSpec(ChannelValue("Close")),
+def test_aeromagnetic_survey_plot():
+    correct_dict = {
+      "meta": {
+        "title": "Aeromagnetic Survey",
+        "description": "A raster visualization of the 1955 [Great Britain aeromagnetic survey](https://www.bgs.ac.uk/datasets/gb-aeromagnetic-survey/), which measured the Earth’s magnetic field by plane. Each sample recorded the longitude and latitude alongside the strength of the [IGRF](https://www.ncei.noaa.gov/products/international-geomagnetic-reference-field) in [nanoteslas](https://en.wikipedia.org/wiki/Tesla_(unit)). This example demonstrates both raster interpolation and smoothing (blur) options.\n",
+        "credit": "Adapted from an [Observable Plot example](https://observablehq.com/@observablehq/plot-igfr90-raster)."
+      },
+      "data": {
+        "ca55": {
+          "type": "parquet",
+          "file": "data/ca55-south.parquet"
+        }
+      },
+      "params": {
+        "interp": "random-walk",
+        "blur": 0
+      },
+      "vconcat": [
+        {
+          "hconcat": [
+            {
+              "input": "menu",
+              "label": "Interpolation Method",
+              "options": [
+                "none",
+                "nearest",
+                "barycentric",
+                "random-walk"
+              ],
+              "as": "$interp"
+            },
+            {
+              "hspace": "1em"
+            },
+            {
+              "input": "slider",
+              "label": "Blur",
+              "min": 0,
+              "max": 100,
+              "as": "$blur"
+            }
+          ]
+        },
+        {
+          "vspace": "1em"
+        },
+        {
+          "plot": [
+            {
+              "mark": "raster",
+              "data": {
+                "from": "ca55"
+              },
+              "x": "LONGITUDE",
+              "y": "LATITUDE",
+              "fill": {
+                "max": "MAG_IGRF90"
+              },
+              "interpolate": "$interp",
+              "bandwidth": "$blur"
+            }
+          ],
+          "colorScale": "diverging",
+          "colorDomain": "Fixed"
+        }
+      ]
+    }
+
+    python_spec = Spec(
+        {
+            "meta": Meta(
+                title="Aeromagnetic Survey",
+                description="A raster visualization of the 1955 [Great Britain aeromagnetic survey](https://www.bgs.ac.uk/datasets/gb-aeromagnetic-survey/), which measured the Earth’s magnetic field by plane. Each sample recorded the longitude and latitude alongside the strength of the [IGRF](https://www.ncei.noaa.gov/products/international-geomagnetic-reference-field) in [nanoteslas](https://en.wikipedia.org/wiki/Tesla_(unit)). This example demonstrates both raster interpolation and smoothing (blur) options.\n",
+                credit="Adapted from an [Observable Plot example](https://observablehq.com/@observablehq/plot-igfr90-raster)."
+            ),
+            "data": Data(
+                ca55=DataDefinition(
+                    DataParquet(
+                        type="parquet",
+                        file="data/ca55-south.parquet"
+                    )
                 )
-            )
-        ],
-        width=680,
-        height=200,
+            ),
+            "params": Params(
+                interp=ParamDefinition(ParamLiteral("random-walk")),
+                blur=ParamDefinition(ParamLiteral(0))
+            ),
+            "vconcat": VConcat(
+                [
+                    Component(
+                        HConcat(
+                            [
+                                Component(
+                                    Menu(
+                                        input="menu",
+                                        label="Interpolation Method",
+                                        options=[
+                                            "none",
+                                            "nearest",
+                                            "barycentric",
+                                            "random-walk"
+                                        ],
+                                        as_="$interp"
+                                    )
+                                ),
+                                Component(
+                                    HSpace(
+                                        hspace="1em"
+                                    )
+                                ),
+                                Component(
+                                    Slider(
+                                        input="slider",
+                                        label="Blur",
+                                        min=0,
+                                        max=100,
+                                        as_="$blur"
+                                    )
+                                )
+                            ]
+                        )
+                    ),
+                    Component(
+                        VSpace(
+                            vspace="1em"
+                        )
+                    ),
+                    Component(
+                        Plot(
+                            plot=[
+                                PlotMark(
+                                    Raster( 
+                                        data=PlotMarkData(PlotFrom(from_="ca55")),
+                                        mark="raster",
+                                        x=ChannelValueSpec(ChannelValue("LONGITUDE")),
+                                        y=ChannelValueSpec(ChannelValue("LATITUDE")),
+                                        fill=ChannelValueSpec({"max": "MAG_IGRF90"}),
+                                        interpolate=ParamRef("$interp"),
+                                        bandwidth=ParamRef("$blur")
+                                    )
+                                )
+                            ],
+                            colorScale=ColorScaleType("diverging"),
+                            colorDomain=Fixed("Fixed")
+                        ),
+                    )
+                ]
+            ),
+        }
     )
-    print(_todict(plot_spec))
+
+    generated_dict = _todict(python_spec, True)
+    TestCase().assertDictEqual(generated_dict, correct_dict)
 
 
 if __name__ == "__main__":
