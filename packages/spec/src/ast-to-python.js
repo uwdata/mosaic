@@ -13,7 +13,6 @@ export function astToPython(ast, options = {}) {
   // if (ast.meta && ast.meta.title === "Seattle Weather") {
   //   console.log("HERE", ast);
   // }
-  
   const generateMetaCode = (meta) => {
     const metaProps = [];
     
