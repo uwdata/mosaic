@@ -4,7 +4,7 @@ from schema_wrapper.generated_classes import *
 import json
 from unittest import TestCase
 
-# Q to ask: how to import the dicts besides using os.path?
+# Q to ask: how to import the dicts besides using os.path? -------------- use pathlib Path
 
 def test_weather_plot():
     correct_dict = {
@@ -360,6 +360,352 @@ def test_aeromagnetic_survey_plot():
         }
     )
 
+    generated_dict = _todict(python_spec, True)
+    TestCase().assertDictEqual(generated_dict, correct_dict)
+
+
+def test_airline_travelers():
+    correct_dict = {
+      "meta": {
+        "title": "Airline Travelers",
+        "description": "A labeled line chart comparing airport travelers in 2019 and 2020.",
+        "credit": "Adapted from an [Observable Plot example](https://observablehq.com/@observablehq/plot-labeled-line-chart)."
+      },
+      "data": {
+        "travelers": {
+          "type": "parquet",
+          "file": "data/travelers.parquet"
+        },
+        "endpoint": {
+          "type": "table",
+          "query": "SELECT * FROM travelers ORDER BY date DESC LIMIT 1"
+        }
+      },
+      "plot": [
+        {
+          "mark": "ruleY",
+          "data": [
+            0
+          ]
+        },
+        {
+          "mark": "lineY",
+          "data": {
+            "from": "travelers"
+          },
+          "x": "date",
+          "y": "previous",
+          "strokeOpacity": 0.35
+        },
+        {
+          "mark": "lineY",
+          "data": {
+            "from": "travelers"
+          },
+          "x": "date",
+          "y": "current"
+        },
+        {
+          "mark": "text",
+          "data": {
+            "from": "endpoint"
+          },
+          "x": "date",
+          "y": "previous",
+          "text": [
+            "2019"
+          ],
+          "fillOpacity": 0.5,
+          "lineAnchor": "bottom",
+          "dy": -6
+        },
+        {
+          "mark": "text",
+          "data": {
+            "from": "endpoint"
+          },
+          "x": "date",
+          "y": "current",
+          "text": [
+            "2020"
+          ],
+          "lineAnchor": "top",
+          "dy": 6
+        }
+      ],
+      "yGrid": True,
+      "yLabel": "↑ Travelers per day",
+      "yTickFormat": "s"
+    }
+
+    python_spec = Spec(
+        {
+            "meta": Meta(
+                title="Airline Travelers",
+                description="A labeled line chart comparing airport travelers in 2019 and 2020.",
+                credit="Adapted from an [Observable Plot example](https://observablehq.com/@observablehq/plot-labeled-line-chart)."
+            ),
+            "data": Data(
+                travelers=DataDefinition(
+                    DataParquet(
+                        type="parquet",
+                        file="data/travelers.parquet"
+                    )
+                ),
+                endpoint=DataDefinition(
+                    DataTable(
+                        type="table",
+                        query="SELECT * FROM travelers ORDER BY date DESC LIMIT 1"
+                    )
+                )
+            ),
+            "plot": [
+                PlotMark(
+                    RuleY(
+                        data=PlotMarkData(PlotDataInline([0])),
+                        mark="ruleY"
+                    )
+                ),
+                PlotMark(
+                    LineY(
+                        data=PlotMarkData(PlotFrom(from_="travelers")),
+                        mark="lineY",
+                        x=ChannelValueSpec(ChannelValue("date")),
+                        y=ChannelValueSpec(ChannelValue("previous")),
+                        strokeOpacity=ChannelValueSpec(ChannelValue(0.35))
+                    )
+                ),
+                PlotMark(
+                    LineY(
+                        data=PlotMarkData(PlotFrom(from_="travelers")),
+                        mark="lineY",
+                        x=ChannelValueSpec(ChannelValue("date")),
+                        y=ChannelValueSpec(ChannelValue("current"))
+                    )
+                ),
+                PlotMark(
+                    Text(
+                        data=PlotMarkData(PlotFrom(from_="endpoint")),
+                        mark="text",
+                        x=ChannelValueSpec(ChannelValue("date")),
+                        y=ChannelValueSpec(ChannelValue("previous")),
+                        text=ChannelValueSpec(ChannelValue(["2019"])),
+                        fillOpacity=ChannelValueSpec(ChannelValue(0.5)),
+                        lineAnchor="bottom",
+                        dy=-6
+                    )
+                ),
+                PlotMark(
+                    Text(
+                        data=PlotMarkData(PlotFrom(from_="endpoint")),
+                        mark="text",
+                        x=ChannelValueSpec(ChannelValue("date")),
+                        y=ChannelValueSpec(ChannelValue("current")),
+                        text=ChannelValueSpec(ChannelValue(["2020"])),
+                        lineAnchor="top",
+                        dy=6
+                    )
+                )
+            ],
+            "yGrid": True,
+            "yLabel": "↑ Travelers per day",
+            "yTickFormat": "s"
+        }
+    )
+
+    generated_dict = _todict(python_spec, True)
+    TestCase().assertDictEqual(generated_dict, correct_dict)
+
+def test_athlete_birth_waffle_spec():
+    correct_dict = {
+      "meta": {
+        "title": "Athlete Birth Waffle",
+        "description": "Waffle chart counting Olympic athletes based on which half-decade they were born. The inputs enable adjustment of waffle mark design options.\n",
+        "credit": "Adapted from an [Observable Plot example](https://observablehq.com/@observablehq/plot-waffle-unit)."
+      },
+      "data": {
+        "athletes": {
+          "type": "parquet",
+          "file": "data/athletes.parquet"
+        }
+      },
+      "params": {
+        "unit": 10,
+        "round": False,
+        "gap": 1,
+        "radius": 0
+      },
+      "vconcat": [
+        {
+          "hconcat": [
+            {
+              "input": "menu",
+              "as": "$unit",
+              "options": [
+                1,
+                2,
+                5,
+                10,
+                25,
+                50,
+                100
+              ],
+              "label": "Unit"
+            },
+            {
+              "input": "menu",
+              "as": "$round",
+              "options": [
+                True,
+                False
+              ],
+              "label": "Round"
+            },
+            {
+              "input": "menu",
+              "as": "$gap",
+              "options": [
+                0,
+                1,
+                2,
+                3,
+                4,
+                5
+              ],
+              "label": "Gap"
+            },
+            {
+              "input": "slider",
+              "as": "$radius",
+              "min": 0,
+              "max": 10,
+              "step": 0.1,
+              "label": "Radius"
+            }
+          ]
+        },
+        {
+          "vspace": 10
+        },
+        {
+          "plot": [
+            {
+              "mark": "waffleY",
+              "data": {
+                "from": "athletes"
+              },
+              "unit": "$unit",
+              "round": "$round",
+              "gap": "$gap",
+              "rx": "$radius",
+              "x": {
+                "sql": "5 * floor(year(\"date_of_birth\") / 5)"
+              },
+              "y": {
+                "count": ""
+              }
+            }
+          ],
+          "xLabel": None,
+          "xTickSize": 0,
+          "xTickFormat": "d"
+        }
+      ]
+    }
+    python_spec = Spec(
+        {
+            "meta": Meta(
+                title="Athlete Birth Waffle",
+                description="Waffle chart counting Olympic athletes based on which half-decade they were born. The inputs enable adjustment of waffle mark design options.\n",
+                credit="Adapted from an [Observable Plot example](https://observablehq.com/@observablehq/plot-waffle-unit)."
+            ),
+            "data": Data(
+                athletes=DataDefinition(
+                    DataParquet(
+                        type="parquet",
+                        file="data/athletes.parquet"
+                    )
+                )
+            ),
+            "params": Params(
+                unit=ParamDefinition(ParamLiteral(10)),
+                round=ParamDefinition(ParamLiteral(False)),
+                gap=ParamDefinition(ParamLiteral(1)),
+                radius=ParamDefinition(ParamLiteral(0))
+            ),
+            "vconcat": VConcat(
+                [
+                    Component(
+                        HConcat(
+                            [
+                                Component(
+                                    Menu(
+                                        input="menu",
+                                        as_="$unit",
+                                        options=[1, 2, 5, 10, 25, 50, 100],
+                                        label="Unit"
+                                    )
+                                ),
+                                Component(
+                                    Menu(
+                                        input="menu",
+                                        as_="$round",
+                                        options=[True, False],
+                                        label="Round"
+                                    )
+                                ),
+                                Component(
+                                    Menu(
+                                        input="menu",
+                                        as_="$gap",
+                                        options=[0, 1, 2, 3, 4, 5],
+                                        label="Gap"
+                                    )
+                                ),
+                                Component(
+                                    Slider(
+                                        input="slider",
+                                        as_="$radius",
+                                        min=0,
+                                        max=10,
+                                        step=0.1,
+                                        label="Radius"
+                                    )
+                                )
+                            ]
+                        )
+                    ),
+                    Component(
+                        VSpace(
+                            vspace=10
+                        )
+                    ),
+                    Component(
+                        Plot(
+                            plot=[
+                                PlotMark(
+                                    Rect(
+                                        data=PlotMarkData(PlotFrom(from_="athletes")),
+                                        mark="waffleY",
+                                        unit=ParamRef("$unit"),
+                                        round=ParamRef("$round"),
+                                        gap=ParamRef("$gap"),
+                                        rx=ParamRef("$radius"),
+                                        x=ChannelValueSpec({"sql": "5 * floor(year(\"date_of_birth\") / 5)"}),
+                                        y=ChannelValueSpec({"count": ""})
+                                    )
+                                )
+                            ],
+                            xLabel=None,
+                            xTickSize=0,
+                            xTickFormat="d"
+                        )
+                    )
+                ]
+            )
+        }
+    )
+    
     generated_dict = _todict(python_spec, True)
     TestCase().assertDictEqual(generated_dict, correct_dict)
 
