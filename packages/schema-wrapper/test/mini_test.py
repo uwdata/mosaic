@@ -4,7 +4,7 @@ from schema_wrapper.generated_classes import *
 import json
 from unittest import TestCase
 
-
+# Q to ask: how to import the dicts besides using os.path?
 
 def test_weather_plot():
     correct_dict = {
