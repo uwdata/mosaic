@@ -8,7 +8,7 @@ export function createTable(name, query, {
     + (temp ? 'TEMP ' : '')
     + (view ? 'VIEW' : 'TABLE')
     + (replace ? ' ' : ' IF NOT EXISTS ')
-    + name + ' AS ' + query;
+    + `'${name}' AS ${query}`;
 }
 
 export function createSchema(name, {
@@ -16,5 +16,5 @@ export function createSchema(name, {
 } = {}) {
   return 'CREATE SCHEMA '
     + (strict ? '' : 'IF NOT EXISTS ')
-    + name;
+    + `'${name}'`;
 }
