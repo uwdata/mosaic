@@ -26,6 +26,8 @@ export function mockCanvas(window: any) {
 }
 
 export function clientsReady(ctx: InstantiateContext) {
+    if (!ctx.coordinator.clients) return Promise.resolve([]);
+
     const clients = [...ctx.coordinator.clients] as MosaicClient[];
     return Promise.allSettled(clients.map(c => c.pending));
 }

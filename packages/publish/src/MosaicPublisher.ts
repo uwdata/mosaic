@@ -147,6 +147,7 @@ export class MosaicPublisher {
   private processClients() {
     const interactors = new Set<any>();
     const inputs = new Set<MosaicClient>();
+    if (!this.ctx.coordinator.clients) return { interactors, inputs };
 
     for (const client of this.ctx.coordinator.clients) {
       if (client instanceof MosaicClient && isActivatable(client)) {
