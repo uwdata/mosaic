@@ -11,7 +11,7 @@ export function mockCanvas(window: any) {
             const canvas = new Canvas();
             const el = og.call(this, tagName) as HTMLCanvasElement;
             el.getContext = canvas.getContext.bind(canvas) as unknown as HTMLCanvasElement['getContext'];
-            el.toDataURL = canvas.toDataURLSync.bind(canvas);
+            el.toDataURL = canvas.toDataURLSync.bind(canvas) as unknown as HTMLCanvasElement['toDataURL'];
             const set = el.setAttribute;
             el.setAttribute = function (name: string, value: string) {
                 if (name !== 'width' && name !== 'height') {

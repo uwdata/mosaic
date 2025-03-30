@@ -16,7 +16,6 @@ import {
   CodegenContext,
   QueryDataNode,
 } from '@uwdata/mosaic-spec';
-import { ExprNode, ColumnNameRefNode } from '@uwdata/mosaic-sql';
 import { MosaicClient, isActivatable } from '@uwdata/mosaic-core';
 
 // Utility imports
@@ -111,7 +110,7 @@ export class MosaicPublisher {
     document.body.appendChild(element);
     await clientsReady(this.ctx);
 
-    const { interactors, inputs, tables } = this.processClients();
+    const { interactors, inputs } = this.processClients();
     const isInteractive = interactors.size + inputs.size !== 0;
 
     // If spec is valid create relevant output directory
@@ -135,6 +134,7 @@ export class MosaicPublisher {
         const { file } = this;
         return code?.replace(`"${file}"`, `window.location.origin + "/${file}"`);
       };
+      const tables = this.ctx.coordinator.databaseConnector().tables();
       await this.updateDataNodes(tables);
 
       // Export relevant data from DuckDB to Parquet
@@ -147,34 +147,10 @@ export class MosaicPublisher {
   private processClients() {
     const interactors = new Set<any>();
     const inputs = new Set<MosaicClient>();
-    const tables: Record<string, Set<string>> = {};
 
     for (const client of this.ctx.coordinator.clients) {
-      if (client instanceof MosaicClient) {
-        const fields = client.fields();
-        if (fields) {
-          for (const field of fields) {
-            const { table, column } = field;
-            if (!(table in tables)) tables[table] = new Set();
-            if (column instanceof ExprNode) {
-              if (column instanceof ColumnNameRefNode) {
-                tables[table].add(column.column);
-              }
-            } else {
-              tables[table].add(column);
-            }
-          }
-        }
-
-        if (isActivatable(client)) {
-          inputs.add(client);
-
-          const input = client as any;
-          if (input.from && input.column) {
-            if (!(input.from in tables)) tables[input.from] = new Set();
-            tables[input.from].add(input.column);
-          }
-        }
+      if (client instanceof MosaicClient && isActivatable(client)) {
+        inputs.add(client);
       }
       if (client.plot) {
         for (const interactor of client.plot.interactors) {
@@ -182,7 +158,7 @@ export class MosaicPublisher {
         }
       }
     }
-    return { interactors, inputs, tables };
+    return { interactors, inputs };
   }
 
   /**
