@@ -87,7 +87,7 @@ export function lruCache({
     set,
     clear() { cache = new Map; },
     export() {
-      return new Map(Array.from(cache).map(([key, entry]) => [key, tableToIPC(entry.value)]));
+      return new Map(Array.from(cache).map(([key, entry]) => [key, tableToIPC(entry.value, {})]));
     },
     import(data) {
       for (const [key, entry] of data) {
