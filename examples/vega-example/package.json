@@ -17,6 +17,6 @@
     "@uwdata/vgplot": "^0.15.0",
     "vega": "^5.32.0",
     "vega-embed": "^6.29.0",
-    "vega-lite": "^5.23.0"
+    "vega-lite": "^6.1.0"
   }
 }
