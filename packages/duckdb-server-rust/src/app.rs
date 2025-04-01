@@ -47,13 +47,13 @@ async fn handle_post(
 }
 
 pub fn app(
-    dp_path: Option<&str>,
+    db_path: Option<&str>,
     connection_pool_size: Option<u32>,
     cache_size: Option<usize>,
 ) -> Result<Router> {
     // Database and state setup
     let db = ConnectionPool::new(
-        dp_path.unwrap_or(DEFAULT_DB_PATH),
+        db_path.unwrap_or(DEFAULT_DB_PATH),
         connection_pool_size.unwrap_or(DEFAULT_CONNECTION_POOL_SIZE),
     )?;
     let cache = lru::LruCache::new(cache_size.unwrap_or(DEFAULT_CACHE_SIZE).try_into()?);
