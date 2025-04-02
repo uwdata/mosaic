@@ -30,7 +30,7 @@ export class MosaicClient {
     /** @type {Selection | undefined} */
     this._filterBy = filterSelection;
     this._requestUpdate = throttle(() => this.requestQuery(), true);
-    /** @type {Coordinator} */
+    /** @type {Coordinator | null} */
     this._coordinator = null;
     /** @type {Promise<any>} */
     this._pending = Promise.resolve();
