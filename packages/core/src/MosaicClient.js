@@ -27,7 +27,7 @@ export class MosaicClient {
    *  will re-query and update the client when the selection updates.
    */
   constructor(filterSelection) {
-    /** @type {Selection} */
+    /** @type {Selection | undefined} */
     this._filterBy = filterSelection;
     this._requestUpdate = throttle(() => this.requestQuery(), true);
     /** @type {Coordinator} */
