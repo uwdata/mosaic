@@ -43,7 +43,7 @@ export class MosaicClient {
   }
 
   /**
-   * Return this client's connected coordinator.
+   * @returns {Coordinator | null}  this client's connected coordinator.
    */
   get coordinator() {
     return this._coordinator;
@@ -91,7 +91,7 @@ export class MosaicClient {
   }
 
   /**
-   * Return this client's filter selection.
+   * @returns {Selection | undefined} this client's filter selection.
    */
   get filterBy() {
     return this._filterBy;
