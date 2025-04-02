@@ -38,7 +38,7 @@ export class MosaicClient {
     this._enabled = true;
     /** @type {boolean} */
     this._initialized = false;
-    /** @type {Query | boolean} */
+    /** @type {Query | boolean | null} */
     this._request = null;
   }
 
