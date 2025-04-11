@@ -1,100 +1,108 @@
+/** @import { Connector } from './Connector.js' */
 import { decodeIPC } from '../util/decode-ipc.js';
 
+/**
+ * Connect to a DuckDB server over a WebSocket interface.
+ * @param {string} uri The URI for the DuckDB socket server.
+ * @returns {SocketConnector} A connector instance.
+ */
 export function socketConnector(uri = 'ws://localhost:3000/') {
-  const queue = [];
-  let connected = false;
-  let request = null;
-  let ws;
+  return new SocketConnector(uri);
+}
 
-  const events = {
-    open() {
-      connected = true;
-      next();
-    },
+/**
+ * DuckDB socket connector.
+ * @implements {Connector}
+ */
+export class SocketConnector {
+  constructor(uri = 'ws://localhost:3000/') {
+    this._uri = uri;
+    this._queue = [];
+    this._connected = false;
+    this._request = null;
+    this._ws = null;
 
-    close() {
-      connected = false;
-      request = null;
-      ws = null;
-      while (queue.length) {
-        queue.shift().reject('Socket closed');
-      }
-    },
+    const c = this;
+    this._events = {
+      open() {
+        c._connected = true;
+        c.next();
+      },
 
-    error(event) {
-      if (request) {
-        const { reject } = request;
-        request = null;
-        next();
-        reject(event);
-      } else {
-        console.error('WebSocket error: ', event);
-      }
-    },
-
-    message({ data }) {
-      if (request) {
-        const { query, resolve, reject } = request;
-
-        // clear state, start next request
-        request = null;
-        next();
-
-        // process result
-        if (typeof data === 'string') {
-          const json = JSON.parse(data);
-          json.error ? reject(json.error) : resolve(json);
-        } else if (query.type === 'exec') {
-          resolve();
-        } else if (query.type === 'arrow') {
-          resolve(decodeIPC(data));
-        } else {
-          throw new Error(`Unexpected socket data: ${data}`);
+      close() {
+        c._connected = false;
+        c._request = null;
+        c._ws = null;
+        while (c._queue.length) {
+          c._queue.shift().reject('Socket closed');
         }
-      } else {
-        console.log('WebSocket message: ', data);
+      },
+
+      error(event) {
+        if (c._request) {
+          const { reject } = c._request;
+          c._request = null;
+          c.next();
+          reject(event);
+        } else {
+          console.error('WebSocket error: ', event);
+        }
+      },
+
+      message({ data }) {
+        if (c._request) {
+          const { query, resolve, reject } = c._request;
+
+          // clear state, start next request
+          c._request = null;
+          c.next();
+
+          // process result
+          if (typeof data === 'string') {
+            const json = JSON.parse(data);
+            json.error ? reject(json.error) : resolve(json);
+          } else if (query.type === 'exec') {
+            resolve();
+          } else if (query.type === 'arrow') {
+            resolve(decodeIPC(data));
+          } else {
+            throw new Error(`Unexpected socket data: ${data}`);
+          }
+        } else {
+          console.log('WebSocket message: ', data);
+        }
       }
     }
   }
 
-  function init() {
-    ws = new WebSocket(uri);
-    ws.binaryType = 'arraybuffer';
-    for (const type in events) {
-      ws.addEventListener(type, events[type]);
+  get connected() {
+    return this._connected;
+  }
+
+  init() {
+    this._ws = new WebSocket(this._uri);
+    this._ws.binaryType = 'arraybuffer';
+    for (const type in this._events) {
+      this._ws.addEventListener(type, this._events[type]);
     }
   }
 
-  function enqueue(query, resolve, reject) {
-    if (ws == null) init();
-    queue.push({ query, resolve, reject });
-    if (connected && !request) next();
+  enqueue(query, resolve, reject) {
+    if (this._ws == null) this.init();
+    this._queue.push({ query, resolve, reject });
+    if (this._connected && !this._request) this.next();
   }
 
-  function next() {
-    if (queue.length) {
-      request = queue.shift();
-      ws.send(JSON.stringify(request.query));
+  next() {
+    if (this._queue.length) {
+      this._request = this._queue.shift();
+      this._ws.send(JSON.stringify(this._request.query));
     }
   }
 
-  return {
-    get connected() {
-      return connected;
-    },
-    /**
-     * Query the DuckDB server.
-     * @param {object} query
-     * @param {'exec' | 'arrow' | 'json' | 'create-bundle' | 'load-bundle'} [query.type] The query type.
-     * @param {string} [query.sql] A SQL query string.
-     * @param {string[]} [query.queries] The queries used to create a bundle.
-     * @param {string} [query.name] The name of a bundle to create or load.
-     * @returns the query result
-     */
-    query(query) {
-      return new Promise(
-        (resolve, reject) => enqueue(query, resolve, reject)
-      );
-    }
-  };
+  query(query) {
+    return new Promise(
+      (resolve, reject) => this.enqueue(query, resolve, reject)
+    );
+  }
 }

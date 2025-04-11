@@ -205,6 +205,18 @@ export class MosaicClient {
   }
 
   /**
+   * Remove this client: disconnect from the coordinator and free up any
+   * resource use. This method has no effect if the client is not connected
+   * to a coordinator.
+   *
+   * If overriding this method in a client subclass, be sure to also
+   * disconnect from the coordinator.
+   */
+  destroy() {
+    this.coordinator?.disconnect(this);
+  }
+
+  /**
    * Requests a client update, for example to (re-)render an interface
    * component.
    * @returns {this | Promise<any>}
