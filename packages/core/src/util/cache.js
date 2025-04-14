@@ -6,17 +6,22 @@ const requestIdle = typeof requestIdleCallback !== 'undefined'
 
 /**
  * Create a new cache that ignores all values.
- * @type {() => Cache}
+ * @returns {Cache}
  */
-export const voidCache = () => ({
-  get: () => undefined,
-  set: (key, value) => value,
-  clear: () => {}
-});
+export function voidCache() {
+  return {
+    get: () => undefined,
+    set: (key, value) => value,
+    clear: () => {}
+  };
+}
 
 /**
  * Create a new cache that uses an LRU eviction policy.
- * @type {(options?: {max?: number, ttl?: number}) => Cache}
+ * @param {object} [options] Cache options.
+ * @param {number} [options.max] Maximum number of cache entries.
+ * @param {number} [options.ttl] Time-to-live for cache entries.
+ * @returns {Cache}
  */
 export function lruCache({
   max = 1000, // max entries

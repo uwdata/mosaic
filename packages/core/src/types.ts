@@ -81,4 +81,7 @@ export interface Logger {
   log(...args: any[]): void;
   warn(...args: any[]): void;
   error(...args: any[]): void;
+  group(label?: any): void;
+  groupCollapsed(label?: any): void;
+  groupEnd(): void;
 }
