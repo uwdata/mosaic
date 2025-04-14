@@ -25,6 +25,6 @@ export interface JSONQueryRequest extends QueryRequest {
 export interface Connector {
   /** Issue a query and return the result. */
   query(query: ArrowQueryRequest): Promise<Table>;
-  query(query: ExecQueryRequest): Promise<undefined>;
+  query(query: ExecQueryRequest): Promise<void>;
   query(query: JSONQueryRequest): Promise<Record<string, any>[]>;
 }

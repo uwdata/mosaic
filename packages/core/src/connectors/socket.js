@@ -1,4 +1,5 @@
-/** @import { Connector } from './Connector.js' */
+/** @import { ArrowQueryRequest, Connector, ExecQueryRequest, JSONQueryRequest } from './Connector.js' */
+/** @import { Table } from '@uwdata/flechette' */
 import { decodeIPC } from '../util/decode-ipc.js';
 
 /**
@@ -100,6 +101,22 @@ export class SocketConnector {
     }
   }
 
+  /**
+   * @overload
+   * @param {ArrowQueryRequest} query
+   * @returns {Promise<Table>}
+   *
+   * @overload
+   * @param {ExecQueryRequest} query
+   * @returns {Promise<void>}
+   *
+   * @overload
+   * @param {JSONQueryRequest} query
+   * @returns {Promise<Record<string, any>[]>}
+   *
+   * @param {ArrowQueryRequest | ExecQueryRequest | JSONQueryRequest} query
+   * @returns {Promise<Table | void | Record<string, any>[]>}}
+   */
   query(query) {
     return new Promise(
       (resolve, reject) => this.enqueue(query, resolve, reject)
