@@ -64,7 +64,7 @@ export interface Activatable {
 }
 
 /**
- * Interface for cache implmenetions.
+ * Interface for cache implementations.
  */
 export interface Cache {
   get(key: string): any;
