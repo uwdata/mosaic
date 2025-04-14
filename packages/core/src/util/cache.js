@@ -1,13 +1,28 @@
+/** @import { Cache } from '../types.js' */
+
 const requestIdle = typeof requestIdleCallback !== 'undefined'
   ? requestIdleCallback
   : setTimeout;
 
-export const voidCache = () => ({
-  get: () => undefined,
-  set: (key, value) => value,
-  clear: () => {}
-});
+/**
+ * Create a new cache that ignores all values.
+ * @returns {Cache}
+ */
+export function voidCache() {
+  return {
+    get: () => undefined,
+    set: (key, value) => value,
+    clear: () => {}
+  };
+}
 
+/**
+ * Create a new cache that uses an LRU eviction policy.
+ * @param {object} [options] Cache options.
+ * @param {number} [options.max] Maximum number of cache entries.
+ * @param {number} [options.ttl] Time-to-live for cache entries.
+ * @returns {Cache}
+ */
 export function lruCache({
   max = 1000, // max entries
   ttl = 3 * 60 * 60 * 1000 // time-to-live, default 3 hours

@@ -1,9 +1,10 @@
+/** @import { Connector } from './connectors/Connector.js' */
 /** @import { PreAggregateOptions } from './preagg/PreAggregator.js' */
 /** @import { QueryResult } from './util/query-result.js' */
 /** @import { SelectionClause } from './util/selection-types.js' */
 /** @import { MosaicClient } from './MosaicClient.js' */
 /** @import { Selection } from './Selection.js' */
-/** @import { QueryType } from './types.js' */
+/** @import { Logger, QueryType } from './types.js' */
 import { socketConnector } from './connectors/socket.js';
 import { PreAggregator } from './preagg/PreAggregator.js';
 import { voidLogger } from './util/void-logger.js';
@@ -33,15 +34,17 @@ export function coordinator(instance) {
  * A Mosaic Coordinator manages all database communication for clients and
  * handles selection updates. The Coordinator also performs optimizations
  * including query caching, consolidation, and pre-aggregation.
- * @param {*} [db] Database connector. Defaults to a web socket connection.
- * @param {object} [options] Coordinator options.
- * @param {*} [options.logger=console] The logger to use, defaults to `console`.
- * @param {*} [options.manager] The query manager to use.
- * @param {boolean} [options.cache=true] Boolean flag to enable/disable query caching.
- * @param {boolean} [options.consolidate=true] Boolean flag to enable/disable query consolidation.
- * @param {PreAggregateOptions} [options.preagg] Options for the Pre-aggregator.
  */
 export class Coordinator {
+  /**
+   * @param {Connector} [db] Database connector. Defaults to a web socket connection.
+   * @param {object} [options] Coordinator options.
+   * @param {Logger} [options.logger=console] The logger to use, defaults to `console`.
+   * @param {QueryManager} [options.manager] The query manager to use.
+   * @param {boolean} [options.cache=true] Boolean flag to enable/disable query caching.
+   * @param {boolean} [options.consolidate=true] Boolean flag to enable/disable query consolidation.
+   * @param {PreAggregateOptions} [options.preagg] Options for the Pre-aggregator.
+   */
   constructor(db = socketConnector(), {
     logger = console,
     manager = new QueryManager(),
@@ -78,8 +81,8 @@ export class Coordinator {
 
   /**
    * Get or set the database connector.
-   * @param {*} [db] The database connector to use.
-   * @returns The current database connector.
+   * @param {Connector} [db] The database connector to use.
+   * @returns {Connector} The current database connector.
    */
   databaseConnector(db) {
     return this.manager.connector(db);
@@ -87,8 +90,8 @@ export class Coordinator {
 
   /**
    * Get or set the logger.
-   * @param {*} logger  The logger to use.
-   * @returns The current logger
+   * @param {Logger} [logger] The logger to use.
+   * @returns {Logger} The current logger
    */
   logger(logger) {
     if (arguments.length) {

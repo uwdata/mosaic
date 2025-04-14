@@ -98,8 +98,4 @@ class ProxyClient extends MosaicClient {
     this._methods.queryError?.(error);
     return this;
   }
-
-  destroy() {
-    this.coordinator.disconnect(this);
-  }
 }

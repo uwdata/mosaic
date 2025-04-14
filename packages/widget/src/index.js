@@ -47,6 +47,7 @@ export default {
       view.model.send({ ...query, uuid });
     }
 
+    /** @type {import('@uwdata/mosaic-core').Connector} */
     const connector = {
       query(query) {
         return new Promise((resolve, reject) => send(query, resolve, reject));
@@ -126,7 +127,7 @@ export default {
           }
         }
       }
-      logger.groupEnd('query');
+      logger.groupEnd();
     });
 
     coordinator().databaseConnector(connector);

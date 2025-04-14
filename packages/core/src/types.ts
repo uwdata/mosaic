@@ -62,3 +62,26 @@ export interface Activatable {
    */
   activate(): void;
 }
+
+/**
+ * Interface for cache implementations.
+ */
+export interface Cache {
+  get(key: string): any;
+  set(key: string, value: any): any;
+  clear(): void;
+}
+
+/**
+ * Interface for logger implementations
+ */
+export interface Logger {
+  debug(...args: any[]): void;
+  info(...args: any[]): void;
+  log(...args: any[]): void;
+  warn(...args: any[]): void;
+  error(...args: any[]): void;
+  group(label?: any): void;
+  groupCollapsed(label?: any): void;
+  groupEnd(): void;
+}
