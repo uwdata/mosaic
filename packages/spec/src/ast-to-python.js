@@ -10,8 +10,8 @@ export function astToPython(ast, options = {}) {
   // WHAT DOES THE BELOW DO?
   const ctx = new PythonCodegenContext(options);
   const { root, data, params } = ast; 
-  // if (ast.meta && ast.meta.title === "Seattle Weather") {
-  //   console.log("HERE", ast);
+  // if (ast.meta && ast.meta.title === "Aeromagnetic Survey") {
+  //   console.log(ast);
   // }
   const generateMetaCode = (meta) => {
     const metaProps = [];
@@ -55,6 +55,10 @@ export function astToPython(ast, options = {}) {
           // Iterate through the properties of options and add them to dataNodeProps
           for (const [optKey, optValue] of Object.entries(dataNode.options)) {
             // Only add options that have a value (not null or undefined)
+            // if (optKey === "format") {
+            //   dataNodeProps.push(`type=${JSON.stringify(optValue)}`);
+            //   continue;
+            // }
             if (optValue !== null && optValue !== undefined) {
               dataNodeProps.push(`${optKey}="${optValue}"`);
             }
@@ -98,74 +102,49 @@ export function astToPython(ast, options = {}) {
                         ? `ParamLiteral(${JSON.stringify(val)})` 
                         : `ParamLiteral("${val}")`;
                 });
-                paramStr.push(`${name}=ParamDefinition(ParamValue([${valueStrs.join(", ")}]))`);
+                paramStr.push(`${name}=ParamDefinition(ParamValue(${valueStrs.join(", ")}))`);
             }
             // If param.value is a single value, treat it as an array with one element
             else if (param.value !== undefined) {
                 // Handle objects by JSON.stringify()
-                paramStr.push(`${name}=ParamDefinition(ParamValue([ParamLiteral("${typeof param.value === 'object' ? JSON.stringify(param.value) : param.value}")]))`);
-            } else {
-                // Handle the case where param.value is undefined or invalid
-                console.warn(`Invalid value for param "${name}"`);
-            }
+                paramStr.push(`${name}=ParamDefinition(ParamValue(ParamLiteral(${typeof param.value === 'string' ? `"${param.value}"` : param.value})))`);
+            } 
         }
     }
     return paramStr.join(",\n");
   };
 
-
-  //  const generatePlotMarkCode = (mark) => {
-  //   if (!mark?.mark) {
-  //     console.warn("Invalid mark:", mark);
-  //     return "PlotMark()";
-  //   }
-
-  //   const props = [];
-  //   const markType = mark.mark;
-  //   const markClass = markType.charAt(0).toUpperCase() + markType.slice(1);
-  //   props.push(`mark="${markType}"`);
-
-  //   // Handle data properties and channels
-  //   if (mark.data?.from) {
-  //     let dataProps = [`from_="${mark.data.from}"`];
-  //     if (mark.data.filterBy) dataProps.push(`filterBy="${mark.data.filterBy}"`);
-  //     props.push(`data=PlotFrom(${dataProps.join(", ")})`);
-  //   }
-
-  //   // Adding other mark properties
-  //   if (mark.x) props.push(`x=${formatChannel(mark.x)}`);
-  //   if (mark.y) props.push(`y=${formatChannel(mark.y)}`);
-  //   if (mark.fill) props.push(`fill=${formatChannel(mark.fill)}`);
-  //   if (mark.r) props.push(`r=${formatChannel(mark.r)}`);
-  //   if (mark.opacity) props.push(`opacity=${formatChannel(mark.opacity)}`);
-    
-  //   return `PlotMark(${markClass}(${props.join(", ")}))`;
-  // };
-
   const generateVConcatCode = (node) => {
-    return `VConcat([Component(${node.children.map(child => generateHConcatCode(child)).join(", ")})])`;
+    if (!node || !node.children || node.children.length === 0) {
+      //console.warn("Invalid or missing 'children' in node:", node);
+      return "VConcat([])";
+    }
+    return `VConcat([Component(HConcat(${node.children.map(child => generateHConcatCode(child)).join(", ")}))])`;
   };
 
   const generateHConcatCode = (node) => {
     // Check for valid children
+
     if (!Array.isArray(node.children)) {
-      console.warn("Invalid or missing 'children' in node:", node);
-      return "HConcat([])";
+      
+      //console.warn("Invalid or missing 'children' in node:", node);
+      return generatePlotCode(node);
+
     }
 
-    return `HConcat([${node.children.map(child => generatePlotCode(child)).join(", ")}])`;
+    return `${node.children.map(child => generatePlotCode(child)).join(", ")}`;
   };
 
   const generatePlotCode = (plot) => {
     if (!plot) {
-      console.warn("Invalid plot:", plot);
+      //console.warn("Invalid plot:", plot);
       return "Plot()";
     }
     
     const plotMarks = [];
     
     // Handle plot marks
-    if (plot.children) {  // Changed from plot.plot to plot.children
+    if (plot.children) { 
       for (const mark of plot.children) {
         // Handle data object if it exists
         if (mark.data) {
@@ -182,122 +161,102 @@ export function astToPython(ast, options = {}) {
           }
           mark.dataString = `PlotMarkData(PlotFrom(${dataProps.join(', ')}))`;
         }
+
+        
         plotMarks.push(generatePlotMarkCode(mark));
+        
       }
-    }
+    } 
 
     // Handle plot attributes
+    const capitalizedPlotName = plot.name ? plot.name.charAt(0).toUpperCase() + plot.name.slice(1) : "";
     const attributes = [];
-    for (const [key, value] of Object.entries(plot)) {
-      if (key === "plot") continue;
-      if (key === "xyDomain" || key === "xDomain" || key === "yDomain") {
-        attributes.push(`${key}=Fixed("Fixed")`);
-      } else if (key.startsWith("color") && value.startsWith("$")) {
-        attributes.push(`${key}=ParamRef("${value}")`);
-      } else if (Array.isArray(value)) {
-        attributes.push(`${key}=${JSON.stringify(value)}`);
-      } else if (typeof value === "number") {
-        attributes.push(`${key}=${value}`);
-      } else {
-        attributes.push(`${key}="${value}"`);
+    if (plot.type === "input") {
+      for (const [key, value] of Object.entries(plot)) {
+        console.log("Key:", key);
+        console.log("Value:", value); 
+        if (key === "plot") continue;
+        if (key === "name") {
+          attributes.push(`input="${value}"`)
+        }
+        // if (key === "as") {
+        //   attributes.push(`);
+        // }        
+        if (key == "options") {
+          for (const [optKey, optValue] of Object.entries(value)) {
+            if (optKey === "options") {
+              for (const [optKey2, optValue2] of Object.entries(optValue)) {
+                attributes.push(`${optKey2}=${JSON.stringify(optValue2)}`);
+              }
+              continue;
+            }
+          }
+        }
+      }
+    } else if (plot.type === "mark") {
+      const plotMark = generatePlotMarkCode(plot,capitalizedPlotName);
+      attributes.push(plotMark);
+    } else {
+      for (const [key, value] of Object.entries(plot)) {
+        if (key === "name") {
+          attributes.push(`name="${value}"`);
+        } else if (key !== "children" && key !== "type") {
+          const componentType = plot.type? plot.type.charAt(0).toUpperCase() + plot.type.slice(1): "";
+
+          attributes.push(`${componentType}(${plot.type}=${JSON.stringify(value)})`);
+        }
       }
     }
-
     const indent = (str) => str.split("\n").map(line => "    " + line).join("\n");
+
+
+    const layoutAttributes = [];
+    for (const [key, value] of Object.entries(plot)) {
+      if (key === "children" || key === "type") continue;
+      
+      layoutAttributes.push(`${key}: ${JSON.stringify(value)}`);
+      
+    }
     const plotContent = [...plotMarks, ...attributes].join(",\n");
-    
-    return `Component(Plot(\n${indent(plotContent)}\n))`;
+    return `Component(${capitalizedPlotName}(\n${indent(plotContent)}\n))`;
   };
 
-  const generatePlotMarkCode = (mark) => {
-    if (!mark) {
-      console.warn("Invalid mark:", mark);
-      return "PlotMark()";
-    }
-
-    // Handle different types of marks
-    if (mark.type === "plot") {
-      return generatePlotMarkWithData(mark);
-    } else if (mark.type === "mark") {
-      return generateBarXMark(mark);
-    } else if (mark.type === "interactor") {
-      return generateInteractorMark(mark);
-    }
-
-    return "PlotMark()";
+  const generatePlotMarkCode = (plot, capitalizedPlotName) => {
+    const attributes = [];
+      for (const [key, value] of Object.entries(plot)) {
+        if (key === "name") {
+          attributes.push(`mark="${value}"`)
+        } else if (key == "options") {
+          for (const [optKey, optValue] of Object.entries(value)) {
+            if (optKey === "options") {
+              for (const [optKey2, optValue2] of Object.entries(optValue)) {
+                attributes.push(`${optKey2}=${JSON.stringify(optValue2)}`);
+              }
+              continue;
+            }
+          }
+        } else if (key === "mark") {
+          attributes.push(`data=PlotMarkData(PlotFrom(from_="${value}"))`);
+        } else if (key === "data") {
+          attributes.push(`${key}=${JSON.stringify(value)}`);
+        }
+      }
+    
+      
+    return `Plot(plot=[PlotMark(${capitalizedPlotName}(${attributes.join(", ")}))])`;
   };
 
-  const generatePlotMarkWithData = (mark) => {
-    const markType = mark.children?.[0]?.mark || "dot";
-    const markClass = markType.charAt(0).toUpperCase() + markType.slice(1);
-    
-    // Handle data section
-    const data = mark.children?.[0]?.data;
-    let dataSection = "";
-    if (data?.from) {
-      const filterBy = data.filterBy ? `, filterBy="${data.filterBy}"` : "";
-      dataSection = `PlotMarkData(PlotFrom(from_="${data.from}"${filterBy}))`;
-    }
-
-    // Handle channels
-    const channels = mark.children?.[0] || {};
-    const channelProps = [];
-    
-    if (channels.x) channelProps.push(`x=ChannelValueSpec(${formatChannelValue(channels.x)})`);
-    if (channels.y) channelProps.push(`y=ChannelValueSpec(${formatChannelValue(channels.y)})`);
-    if (channels.fill) channelProps.push(`fill=ChannelValueSpec(${formatChannelValue(channels.fill)})`);
-    if (channels.r) channelProps.push(`r=ChannelValueSpec(${formatChannelValue(channels.r)})`);
-    if (channels.fillOpacity) channelProps.push(`opacity=ChannelValueSpec(ChannelValue(${channels.fillOpacity}))`);
-
-    const props = [`mark="${markType}"`, dataSection, ...channelProps].filter(Boolean);
-    
-    return `PlotMark(${markClass}(${props.join(", ")}))`;
-  };
-
-  const generateBarXMark = (mark) => {
-    const props = [];
-    
-    if (mark.data) {
-      const filterBy = mark.data.filterBy ? `, filterBy="${mark.data.filterBy}"` : "";
-      props.push(`data=PlotMarkData(PlotFrom(from_="${mark.data.from}"${filterBy}))`);
-    }
-    
-    props.push(`mark="${mark.name}"`);
-    
-    if (mark.options) {
-      if (mark.options.x) props.push(`x=ChannelValueSpec(${formatChannelValue(mark.options.x)})`);
-      if (mark.options.y) props.push(`y=ChannelValueSpec(${formatChannelValue(mark.options.y)})`);
-      if (mark.options.fill) props.push(`fill=ChannelValueSpec(${formatChannelValue(mark.options.fill)})`);
-      if (mark.options.fillOpacity) props.push(`opacity=ChannelValueSpec(ChannelValue(${mark.options.fillOpacity}))`);
-    }
-
-    return `PlotMark(BarX(${props.join(", ")}))`;
-  };
-
-  const generateInteractorMark = (mark) => {
-    const interactorType = mark.name.charAt(0).toUpperCase() + mark.name.slice(1);
-    const props = [];
-
-    if (mark.options) {
-      if (mark.options.as) props.push(`as_=ParamRef("${mark.options.as}")`);
-      if (mark.options.by) props.push(`by=ParamRef("${mark.options.by}")`);
-      if (mark.options.select) props.push(`select="${mark.options.select}"`);
-    }
-
-    return `PlotInteractor(${interactorType}(${props.join(", ")}))`;
-  };
-
-  const formatChannelValue = (value) => {
-    if (typeof value === "string") {
-      if (value.startsWith("$")) return `ParamRef("${value}")`;
-      return `ChannelValue("${value}")`;
-    }
-    if (typeof value === "object") {
-      if (value.dateMonthDay) return `{"dateMonthDay": "${value.dateMonthDay}"}`;
-      if (value.count !== undefined) return `{"count": ${value.count === "" ? "None" : `"${value.count}"`}}`;
-    }
-    return `ChannelValue(${JSON.stringify(value)})`;
-  };
+  // const formatChannelValue = (value) => {
+  //   if (typeof value === "string") {
+  //     if (value.startsWith("$")) return `ParamRef("${value}")`;
+  //     return `ChannelValue("${value}")`;
+  //   }
+  //   if (typeof value === "object") {
+  //     if (value.dateMonthDay) return `{"dateMonthDay": "${value.dateMonthDay}"}`;
+  //     if (value.count !== undefined) return `{"count": ${value.count === "" ? "None" : `"${value.count}"`}}`;
+  //   }
+  //   return `ChannelValue(${JSON.stringify(value)})`;
+  // };
 
   const specCode = `Spec({
     ${ast.meta ? `"meta": Meta(\n    ${generateMetaCode(ast.meta)}\n),` : ''}
