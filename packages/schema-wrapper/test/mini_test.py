@@ -341,13 +341,13 @@ def test_aeromagnetic_survey_plot():
                             plot=[
                                 PlotMark(
                                     Raster( 
-                                        data=PlotMarkData(PlotFrom(from_="ca55")),
+                                        data={"from":"ca55"},
                                         mark="raster",
-                                        x=ChannelValueSpec(ChannelValue("LONGITUDE")),
-                                        y=ChannelValueSpec(ChannelValue("LATITUDE")),
-                                        fill=ChannelValueSpec({"max": "MAG_IGRF90"}),
-                                        interpolate=ParamRef("$interp"),
-                                        bandwidth=ParamRef("$blur")
+                                        x="LONGITUDE",
+                                        y="LATITUDE",
+                                        fill={"max": "MAG_IGRF90"},
+                                        interpolate="$interp",
+                                        bandwidth="$blur"
                                     )
                                 )
                             ],
@@ -460,53 +460,64 @@ def test_airline_travelers():
                 )
             ),
             "plot": [
+              Component(
                 PlotMark(
                     RuleY(
-                        data=PlotMarkData(PlotDataInline([0])),
+                        data=[0],
                         mark="ruleY"
                     )
                 ),
+              ),
+              Component(
                 PlotMark(
                     LineY(
-                        data=PlotMarkData(PlotFrom(from_="travelers")),
+                        data={"from":"travelers"},
                         mark="lineY",
-                        x=ChannelValueSpec(ChannelValue("date")),
-                        y=ChannelValueSpec(ChannelValue("previous")),
-                        strokeOpacity=ChannelValueSpec(ChannelValue(0.35))
+                        x="date",
+                        y="previous",
+                        strokeOpacity=0.35
                     )
                 ),
+              ),
+              Component(
                 PlotMark(
                     LineY(
-                        data=PlotMarkData(PlotFrom(from_="travelers")),
+                        data={"from":"travelers"},
                         mark="lineY",
-                        x=ChannelValueSpec(ChannelValue("date")),
-                        y=ChannelValueSpec(ChannelValue("current"))
+                        x="date",
+                        y="current"
                     )
                 ),
+              ),
+              Component(
                 PlotMark(
                     Text(
-                        data=PlotMarkData(PlotFrom(from_="endpoint")),
+                        data={"from":"endpoint"},
                         mark="text",
-                        x=ChannelValueSpec(ChannelValue("date")),
-                        y=ChannelValueSpec(ChannelValue("previous")),
-                        text=ChannelValueSpec(ChannelValue(["2019"])),
-                        fillOpacity=ChannelValueSpec(ChannelValue(0.5)),
+                        x="date",
+                        y="previous",
+                        text=["2019"],
+                        fillOpacity=0.5,
                         lineAnchor="bottom",
                         dy=-6
                     )
                 ),
+              ),
+              Component(
                 PlotMark(
                     Text(
-                        data=PlotMarkData(PlotFrom(from_="endpoint")),
+                        data={"from":"endpoint"},
                         mark="text",
-                        x=ChannelValueSpec(ChannelValue("date")),
-                        y=ChannelValueSpec(ChannelValue("current")),
-                        text=ChannelValueSpec(ChannelValue(["2020"])),
+                        x="date",
+                        y="current",
+                        text=["2020"],
                         lineAnchor="top",
                         dy=6
                     )
                 )
+              )
             ],
+          
             "yGrid": True,
             "yLabel": "↑ Travelers per day",
             "yTickFormat": "s"

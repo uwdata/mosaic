@@ -10,9 +10,9 @@ export function astToPython(ast, options = {}) {
   // WHAT DOES THE BELOW DO?
   const ctx = new PythonCodegenContext(options);
   const { root, data, params } = ast; 
-  // if (ast.meta && ast.meta.title === "Aeromagnetic Survey") {
-  //   console.log(ast);
-  // }
+  if (ast.meta && ast.meta.title === "Airline Travelers") {
+    console.log("HERE",ast.root);
+  }
   const generateMetaCode = (meta) => {
     const metaProps = [];
     
@@ -23,54 +23,101 @@ export function astToPython(ast, options = {}) {
     return `${metaProps.join(", \n")}`; 
   };
 
-  const generateDataCode = (data) => {
-    const dataProps = [];
+  // const generateDataCode = (data) => {
+  //   const dataProps = [];
+  //   let dataType = "";
      
   
+  //   for (const [name, dataNode] of Object.entries(data || {})) {
+  //     const dataNodeProps = [];
+  //     const methodMapping = {
+  //       loadParquet: "DataParquet",
+  //       loadJSON: "DataJSON",
+  //       loadCSV: "DataCSV",
+  //       loadArray: "DataArray",
+  //       loadTable: "DataTable",
+  //       loadFile: "DataFile",
+  //       loadJSONObjects: "DataJSONObjects",
+  //       loadQuery: "DataQuery",
+  //       loadSpatial: "DataSpatial"
+  //     };
+      
+  //     for (const [key, value] of Object.entries(dataNode)) {
+  //       if (key != "options" && key !== "type" && key !== "method" && key !== "name" && value !== null && value !== undefined) {
+  //         if (key === "format") {
+  //           dataNodeProps.push(`type="${value}"`);
+  //           dataType = value;
+  //         } else {
+  //           dataNodeProps.push(`${key}="${value}"`);
+  //         }
+  //       }
+  //     }
+
+  //     // for (const [name, dataNode] of Object.entries(data || {})) {
+  //     //   const dataNodeProps = [];
+    
+  //     //   // Check if options exists and is an object
+  //     //   if (dataNode.options && typeof dataNode.options === 'object' && Object.keys(dataNode.options).length > 0) {
+  //     //     // Iterate through the properties of options and add them to dataNodeProps
+  //     //     for (const [optKey, optValue] of Object.entries(dataNode.options)) {
+  //     //       // Only add options that have a value (not null or undefined)
+  //     //       // if (optKey === "format") {
+  //     //       //   dataNodeProps.push(`type=${JSON.stringify(optValue)}`);
+  //     //       //   continue;
+  //     //       // }
+  //     //       if (optValue !== null && optValue !== undefined) {
+  //     //         dataNodeProps.push(`${optKey}="${optValue}"`);
+  //     //       }
+  //     //     }
+  //     //   }
+  //     // }
+  //     const dataMethod = dataNode.method ? methodMapping[dataNode.method] : methodMapping[dataType];
+  //     dataProps.push(`${name} = DataDefinition(${dataMethod}(${dataNodeProps.join(", ")}))`);
+  //   }
+  
+  //   return dataProps.join(", \n");
+  // };
+  const generateDataCode = (data) => {
+    const dataProps = [];
+  
     for (const [name, dataNode] of Object.entries(data || {})) {
-      const dataNodeProps = [];
+      let dataNodeProps = [];
+      let dataType = "";
+  
       const methodMapping = {
         loadParquet: "DataParquet",
         loadJSON: "DataJSON",
         loadCSV: "DataCSV",
         loadArray: "DataArray",
-        loadTable: "DataTable",
+        loadTable: "DataTable",  // Ensure this is in the mapping
         loadFile: "DataFile",
         loadJSONObjects: "DataJSONObjects",
         loadQuery: "DataQuery",
         loadSpatial: "DataSpatial"
       };
-      
+  
+      // Process properties of dataNode
       for (const [key, value] of Object.entries(dataNode)) {
-        if (key != "options" && key !== "type" && key !== "method" && key !== "name" && value !== null && value !== undefined) {
-          dataNodeProps.push(`${key}="${value}"`);
-        }
-      }
-
-      for (const [name, dataNode] of Object.entries(data || {})) {
-        const dataNodeProps = [];
-    
-        // Check if options exists and is an object
-        if (dataNode.options && typeof dataNode.options === 'object' && Object.keys(dataNode.options).length > 0) {
-          // Iterate through the properties of options and add them to dataNodeProps
-          for (const [optKey, optValue] of Object.entries(dataNode.options)) {
-            // Only add options that have a value (not null or undefined)
-            // if (optKey === "format") {
-            //   dataNodeProps.push(`type=${JSON.stringify(optValue)}`);
-            //   continue;
-            // }
-            if (optValue !== null && optValue !== undefined) {
-              dataNodeProps.push(`${optKey}="${optValue}"`);
-            }
+        if (key !== "options" && key !== "type" && key !== "method" && key !== "name" && value !== null && value !== undefined) {
+          if (key === "format") {
+            dataType = value;
+            dataNodeProps.push(`type="${value}"`);
+          } else {
+            dataNodeProps.push(`${key}="${value}"`);
           }
         }
       }
-      const dataMethod = methodMapping[dataNode.method] || "DataFile";
+  
+      // Check if method exists in the mapping, otherwise default to DataTable
+      const dataMethod = dataNode.method ? methodMapping[dataNode.method] : "DataTable"; // Fallback to DataTable
+  
+      // Generate the data code
       dataProps.push(`${name} = DataDefinition(${dataMethod}(${dataNodeProps.join(", ")}))`);
     }
   
     return dataProps.join(", \n");
   };
+  
 
 
   const formatChannel = (value) => {
@@ -102,12 +149,12 @@ export function astToPython(ast, options = {}) {
                         ? `ParamLiteral(${JSON.stringify(val)})` 
                         : `ParamLiteral("${val}")`;
                 });
-                paramStr.push(`${name}=ParamDefinition(ParamValue(${valueStrs.join(", ")}))`);
+                paramStr.push(`${name}=ParamDefinition(${valueStrs.join(", ")})`);
             }
             // If param.value is a single value, treat it as an array with one element
             else if (param.value !== undefined) {
                 // Handle objects by JSON.stringify()
-                paramStr.push(`${name}=ParamDefinition(ParamValue(ParamLiteral(${typeof param.value === 'string' ? `"${param.value}"` : param.value})))`);
+                paramStr.push(`${name}=ParamDefinition(ParamLiteral(${typeof param.value === 'string' ? `"${param.value}"` : param.value}))`);
             } 
         }
     }
@@ -125,15 +172,14 @@ export function astToPython(ast, options = {}) {
   const generateHConcatCode = (node) => {
     // Check for valid children
 
-    if (!Array.isArray(node.children)) {
-      
+    if (!Array.isArray(node.children)) { 
       //console.warn("Invalid or missing 'children' in node:", node);
       return generatePlotCode(node);
-
     }
-
     return `${node.children.map(child => generatePlotCode(child)).join(", ")}`;
   };
+
+ 
 
   const generatePlotCode = (plot) => {
     if (!plot) {
@@ -141,87 +187,69 @@ export function astToPython(ast, options = {}) {
       return "Plot()";
     }
     
-    const plotMarks = [];
+    // const plotMarks = [];
     
-    // Handle plot marks
-    if (plot.children) { 
-      for (const mark of plot.children) {
-        // Handle data object if it exists
-        if (mark.data) {
-          const dataProps = [];
-          if (mark.data.from) {
-            dataProps.push(`from_="${mark.data.from}"`);
-          }
-          if (mark.data.filterBy) {
-            if (mark.data.filterBy.startsWith('$')) {
-              dataProps.push(`filterBy=ParamRef("${mark.data.filterBy}")`);
-            } else {
-              dataProps.push(`filterBy="${mark.data.filterBy}"`);
-            }
-          }
-          mark.dataString = `PlotMarkData(PlotFrom(${dataProps.join(', ')}))`;
-        }
-
-        
-        plotMarks.push(generatePlotMarkCode(mark));
-        
-      }
-    } 
+    // //Handle plot marks
+    // if (plot.children) {
+    //   for (const mark of plot.children) {
+    //     console.log("Generating plot mark CODE for:", mark);
+    //     plotMarks.push(generatePlotMarkCode(mark));
+    //   }
+    // }
 
     // Handle plot attributes
-    const capitalizedPlotName = plot.name ? plot.name.charAt(0).toUpperCase() + plot.name.slice(1) : "";
-    const attributes = [];
-    if (plot.type === "input") {
-      for (const [key, value] of Object.entries(plot)) {
-        console.log("Key:", key);
-        console.log("Value:", value); 
-        if (key === "plot") continue;
-        if (key === "name") {
-          attributes.push(`input="${value}"`)
-        }
-        // if (key === "as") {
-        //   attributes.push(`);
-        // }        
-        if (key == "options") {
-          for (const [optKey, optValue] of Object.entries(value)) {
-            if (optKey === "options") {
-              for (const [optKey2, optValue2] of Object.entries(optValue)) {
+    const capitalizedPlotName = plot.name
+    ? plot.name.charAt(0).toUpperCase() + plot.name.slice(1)
+    : "";
+  const attributes = [];
+  let componentString = ""; // this will hold the inner component structure
+
+  if (plot.type === "input") {
+    for (const [key, value] of Object.entries(plot)) {
+      if (key === "plot") continue;
+
+      if (key === "name") {
+        attributes.push(`input="${value}"`);
+      }
+
+      if (key === "options") {
+        for (const [optKey, optValue] of Object.entries(value)) {
+          if (optKey === "options") {
+            for (const [optKey2, optValue2] of Object.entries(optValue)) {
+              if (optKey2 === "as") {
+                attributes.push(`as_=${JSON.stringify(optValue2)}`);
+              } else {
                 attributes.push(`${optKey2}=${JSON.stringify(optValue2)}`);
               }
-              continue;
             }
           }
         }
       }
-    } else if (plot.type === "mark") {
-      const plotMark = generatePlotMarkCode(plot,capitalizedPlotName);
-      attributes.push(plotMark);
-    } else {
-      for (const [key, value] of Object.entries(plot)) {
-        if (key === "name") {
-          attributes.push(`name="${value}"`);
-        } else if (key !== "children" && key !== "type") {
-          const componentType = plot.type? plot.type.charAt(0).toUpperCase() + plot.type.slice(1): "";
-
-          attributes.push(`${componentType}(${plot.type}=${JSON.stringify(value)})`);
-        }
+    }
+    componentString = `${capitalizedPlotName}(\n${attributes.map(line => "    " + line).join(",\n")}\n)`;
+  } else if (plot.type === "mark") {
+    const plotMark = generatePlotMarkCode(plot, capitalizedPlotName);
+    attributes.push(plotMark);
+    componentString = `\n${attributes.map(line => "    " + line).join(",\n")}\n`;
+  } else {
+    for (const [key, value] of Object.entries(plot)) {
+      if (key === "name") {
+        attributes.push(`name="${value}"`);
+      } else if (key !== "children" && key !== "type") {
+        const componentType = plot.type
+          ? plot.type.charAt(0).toUpperCase() + plot.type.slice(1)
+          : "";
+        attributes.push(`${componentType}(${plot.type}=${JSON.stringify(value)})`);
       }
     }
-    const indent = (str) => str.split("\n").map(line => "    " + line).join("\n");
-
-
-    const layoutAttributes = [];
-    for (const [key, value] of Object.entries(plot)) {
-      if (key === "children" || key === "type") continue;
-      
-      layoutAttributes.push(`${key}: ${JSON.stringify(value)}`);
-      
+    componentString = `\n${attributes.map(line => "    " + line).join(",\n")}\n`;
     }
-    const plotContent = [...plotMarks, ...attributes].join(",\n");
-    return `Component(${capitalizedPlotName}(\n${indent(plotContent)}\n))`;
+
+    return `Component(${componentString})`;
   };
 
   const generatePlotMarkCode = (plot, capitalizedPlotName) => {
+    console.log("Generating plot mark code for:", plot);
     const attributes = [];
       for (const [key, value] of Object.entries(plot)) {
         if (key === "name") {
@@ -243,7 +271,7 @@ export function astToPython(ast, options = {}) {
       }
     
       
-    return `Plot(plot=[PlotMark(${capitalizedPlotName}(${attributes.join(", ")}))])`;
+    return `PlotMark(${capitalizedPlotName}(${attributes.join(", ")})`;
   };
 
   // const formatChannelValue = (value) => {
@@ -258,11 +286,26 @@ export function astToPython(ast, options = {}) {
   //   return `ChannelValue(${JSON.stringify(value)})`;
   // };
 
+  const generateRootCode = (root) => {
+    if (root.type === 'vconcat') {
+      return `"vconcat": ${generateVConcatCode(root)}`;
+    } else if (root.type === 'hconcat') {
+      return `"hconcat": ${generateHConcatCode(root)}`;
+    }
+    else {
+      return `"plot": ${generateHConcatCode(root)}`;
+    }
+     
+  };
+  
+  // In your main code
+  const generatedCode = `${ast.root ? generateRootCode(ast.root) : ''}`;
+  
   const specCode = `Spec({
     ${ast.meta ? `"meta": Meta(\n    ${generateMetaCode(ast.meta)}\n),` : ''}
     ${ast.data && Object.keys(ast.data).length ? `"data": Data(\n    ${generateDataCode(ast.data)}\n),` : ''}
     ${ast.params && Object.keys(ast.params).length ? `"params": Params(\n    ${generateParamsCode(ast.params)}\n),` : ''}
-    ${ast.root ? `"vconcat": ${generateVConcatCode(ast.root)}` : ''}
+    ${ast.root ? generateRootCode(ast.root) : ''};
   })`;
   
   
