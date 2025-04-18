@@ -11,7 +11,7 @@ export function astToPython(ast, options = {}) {
   const ctx = new PythonCodegenContext(options);
   const { root, data, params } = ast; 
   if (ast.meta && ast.meta.title === "Airline Travelers") {
-    console.log("HERE",ast.root);
+    console.log("HERE",ast);
   }
   const generateMetaCode = (meta) => {
     const metaProps = [];
@@ -23,60 +23,6 @@ export function astToPython(ast, options = {}) {
     return `${metaProps.join(", \n")}`; 
   };
 
-  // const generateDataCode = (data) => {
-  //   const dataProps = [];
-  //   let dataType = "";
-     
-  
-  //   for (const [name, dataNode] of Object.entries(data || {})) {
-  //     const dataNodeProps = [];
-  //     const methodMapping = {
-  //       loadParquet: "DataParquet",
-  //       loadJSON: "DataJSON",
-  //       loadCSV: "DataCSV",
-  //       loadArray: "DataArray",
-  //       loadTable: "DataTable",
-  //       loadFile: "DataFile",
-  //       loadJSONObjects: "DataJSONObjects",
-  //       loadQuery: "DataQuery",
-  //       loadSpatial: "DataSpatial"
-  //     };
-      
-  //     for (const [key, value] of Object.entries(dataNode)) {
-  //       if (key != "options" && key !== "type" && key !== "method" && key !== "name" && value !== null && value !== undefined) {
-  //         if (key === "format") {
-  //           dataNodeProps.push(`type="${value}"`);
-  //           dataType = value;
-  //         } else {
-  //           dataNodeProps.push(`${key}="${value}"`);
-  //         }
-  //       }
-  //     }
-
-  //     // for (const [name, dataNode] of Object.entries(data || {})) {
-  //     //   const dataNodeProps = [];
-    
-  //     //   // Check if options exists and is an object
-  //     //   if (dataNode.options && typeof dataNode.options === 'object' && Object.keys(dataNode.options).length > 0) {
-  //     //     // Iterate through the properties of options and add them to dataNodeProps
-  //     //     for (const [optKey, optValue] of Object.entries(dataNode.options)) {
-  //     //       // Only add options that have a value (not null or undefined)
-  //     //       // if (optKey === "format") {
-  //     //       //   dataNodeProps.push(`type=${JSON.stringify(optValue)}`);
-  //     //       //   continue;
-  //     //       // }
-  //     //       if (optValue !== null && optValue !== undefined) {
-  //     //         dataNodeProps.push(`${optKey}="${optValue}"`);
-  //     //       }
-  //     //     }
-  //     //   }
-  //     // }
-  //     const dataMethod = dataNode.method ? methodMapping[dataNode.method] : methodMapping[dataType];
-  //     dataProps.push(`${name} = DataDefinition(${dataMethod}(${dataNodeProps.join(", ")}))`);
-  //   }
-  
-  //   return dataProps.join(", \n");
-  // };
   const generateDataCode = (data) => {
     const dataProps = [];
   
@@ -249,7 +195,6 @@ export function astToPython(ast, options = {}) {
   };
 
   const generatePlotMarkCode = (plot, capitalizedPlotName) => {
-    console.log("Generating plot mark code for:", plot);
     const attributes = [];
       for (const [key, value] of Object.entries(plot)) {
         if (key === "name") {
@@ -271,7 +216,7 @@ export function astToPython(ast, options = {}) {
       }
     
       
-    return `PlotMark(${capitalizedPlotName}(${attributes.join(", ")})`;
+    return `PlotMark(${capitalizedPlotName}(${attributes.join(", ")}))`;
   };
 
   // const formatChannelValue = (value) => {
@@ -293,13 +238,10 @@ export function astToPython(ast, options = {}) {
       return `"hconcat": ${generateHConcatCode(root)}`;
     }
     else {
-      return `"plot": ${generateHConcatCode(root)}`;
+      return `"plot": [ ${generateHConcatCode(root)}]`;
     }
      
   };
-  
-  // In your main code
-  const generatedCode = `${ast.root ? generateRootCode(ast.root) : ''}`;
   
   const specCode = `Spec({
     ${ast.meta ? `"meta": Meta(\n    ${generateMetaCode(ast.meta)}\n),` : ''}
