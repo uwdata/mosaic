@@ -76,7 +76,7 @@ export default {
 
         param.addEventListener('value', (value) => {
           view.model.set('params', {
-            ...params,
+            ...view.model.get('params'),
             [name]: {
               value,
               ...(isSelection(param) ? { predicate: String(param.predicate()) } : {})
