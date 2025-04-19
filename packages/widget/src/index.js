@@ -75,11 +75,13 @@ export default {
         };
 
         param.addEventListener('value', (value) => {
-          params[name] = {
-            value,
-            ...(isSelection(param) ? { predicate: String(param.predicate()) } : {}),
-          };
-          view.model.set('params', params);
+          view.model.set('params', {
+            ...params,
+            [name]: {
+              value,
+              ...(isSelection(param) ? { predicate: String(param.predicate()) } : {})
+            },
+          });
           view.model.save_changes();
         });
       }
