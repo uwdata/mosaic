@@ -66,10 +66,10 @@ export default {
       view.el.replaceChildren(dom.element);
 
       /** @type Params */
-      const params = {};
+      const initialParams = {};
 
       for (const [name, param] of dom.params) {
-        params[name] = {
+        initialParams[name] = {
           value: param.value,
           ...(isSelection(param) ? { predicate: String(param.predicate()) } : {}),
         };
@@ -86,7 +86,7 @@ export default {
         });
       }
 
-      view.model.set('params', params);
+      view.model.set('params', initialParams);
       view.model.save_changes();
     }
 
