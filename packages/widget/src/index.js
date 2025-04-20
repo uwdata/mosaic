@@ -75,18 +75,19 @@ export default {
         };
 
         param.addEventListener('value', (value) => {
-          params = {
+          params = Object.freeze({
             ...params,
             [name]: {
               value,
               ...(isSelection(param) ? { predicate: String(param.predicate()) } : {})
             }
-          }
+          })
           view.model.set('params', params);
           view.model.save_changes();
         });
       }
 
+      params = Object.freeze(params);
       view.model.set('params', params);
       view.model.save_changes();
     }
