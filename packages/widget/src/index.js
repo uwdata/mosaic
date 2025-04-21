@@ -66,7 +66,7 @@ export default {
       view.el.replaceChildren(dom.element);
 
       /** @type Params */
-      const params = {};
+      let params = {};
 
       for (const [name, param] of dom.params) {
         params[name] = {
@@ -75,15 +75,19 @@ export default {
         };
 
         param.addEventListener('value', (value) => {
-          params[name] = {
-            value,
-            ...(isSelection(param) ? { predicate: String(param.predicate()) } : {}),
-          };
+          params = Object.freeze({
+            ...params,
+            [name]: {
+              value,
+              ...(isSelection(param) ? { predicate: String(param.predicate()) } : {})
+            }
+          })
           view.model.set('params', params);
           view.model.save_changes();
         });
       }
 
+      params = Object.freeze(params);
       view.model.set('params', params);
       view.model.save_changes();
     }
