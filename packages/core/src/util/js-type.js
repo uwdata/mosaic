@@ -41,7 +41,9 @@ export function jsType(type) {
     case 'GEOMETRY':
       return 'object';
     default:
-      if (type.startsWith('DECIMAL')) {
+      if (type.startsWith("ENUM")) {
+        return "string";
+      } else if (type.startsWith('DECIMAL')) {
         return 'number';
       } else if (type.startsWith('STRUCT') || type.startsWith('MAP')) {
         return 'object';
