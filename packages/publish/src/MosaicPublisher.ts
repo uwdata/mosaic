@@ -20,11 +20,12 @@ import { MosaicClient, isActivatable } from '@uwdata/mosaic-core';
 
 // Utility imports
 import {
-  preamble, htmlTemplate, templateCSS,
+  preamble, PreambleOptions, htmlTemplate, templateCSS,
   publishConnector, PublishContext, mockCanvas,
   VGPLOT, FLECHETTE,
   LogLevel, Logger,
   clientsReady,
+  OPTIMIZATION_LEVEL_TO_OPTIMIZATIONS, Optimizations,
 } from './util/index.js';
 import { binary, map, tableFromArrays, tableToIPC, utf8 } from "@uwdata/flechette";
 
@@ -53,7 +54,7 @@ export class MosaicPublisher {
   private spec: string;
   private outputPath: string;
   private title: string;
-  private optimize: 'minimal' | 'more' | 'most';
+  private optimizations: Optimizations[];
   private logger: Logger;
 
   // Internal references used throughout
@@ -65,13 +66,13 @@ export class MosaicPublisher {
     spec: string,
     outputPath = 'out',
     title = 'Mosaic Visualization',
-    optimize: 'minimal' | 'more' | 'most' = 'minimal',
+    optimize: 'none' | 'minimal' | 'more' | 'most' = 'minimal',
     logger: Logger = new Logger(LogLevel.INFO)
   ) {
     this.spec = spec;
     this.outputPath = outputPath;
     this.title = title;
-    this.optimize = optimize;
+    this.optimizations = OPTIMIZATION_LEVEL_TO_OPTIMIZATIONS[optimize];
     this.logger = logger;
 
     // Create PublishContext
@@ -141,7 +142,10 @@ export class MosaicPublisher {
       await this.exportDataFromDuckDB(tables);
     }
 
-    await this.writeFiles(isInteractive, element);
+    await this.writeFiles(
+      isInteractive,
+      this.optimizations.includes(Optimizations.PRERENDER) ? element : undefined
+    );
   }
 
   private processClients() {
@@ -167,7 +171,7 @@ export class MosaicPublisher {
    * for queries to finish.
    */
   private async activateInteractorsAndInputs(interactors: Set<any>, inputs: Set<MosaicClient>) {
-    this.ctx.coordinator.manager._logQueries = true;
+    await this.ctx.coordinator.exec('CREATE SCHEMA IF NOT EXISTS mosaic');
     for (const interactor of interactors) {
       if (isActivatable(interactor)) interactor.activate();
       await this.waitForQueryToFinish();
@@ -203,7 +207,8 @@ export class MosaicPublisher {
 
     // process tables from DuckDB
     const db_tables = await this.ctx.coordinator.query('SHOW ALL TABLES', { cache: false, type: 'json' });
-    if (db_tables.some((table: any) => table.name.startsWith('preagg_'))) {
+    if (this.optimizations.includes(Optimizations.PREAGREGATE)
+      && db_tables.some((table: any) => table.name.startsWith('preagg_'))) {
       this.ast!.data['schema'] = new SchemaCreateNode('schema', 'mosaic');
       for (const table of db_tables) {
         if (table.name.startsWith('preagg_')) {
@@ -222,23 +227,36 @@ export class MosaicPublisher {
    * Write out the index.js, index.html, and create data/ directory as needed.
    */
   private async writeFiles(isInteractive: boolean, element?: HTMLElement | SVGElement) {
-    const cache = this.ctx.coordinator.manager.cache().export();
-    const cacheFile = '.cache.arrow';
-    if (cache) {
-      const cacheBytes = tableToIPC(tableFromArrays({ cache: [cache] }, {
-        types: {
-          cache: map(utf8(), binary())
-        }
-      }), {})!;
-      fs.writeFileSync(path.join(this.outputPath, cacheFile), cacheBytes);
+    let preambleOptions: PreambleOptions = {
+      needsClientReady: this.optimizations.includes(Optimizations.PRERENDER),
+      cacheFile: undefined,
+    }
+    if (this.optimizations.includes(Optimizations.LOAD_CACHE)) {
+      const cache = this.ctx.coordinator.manager.cache().export();
+      const cacheFile = '.cache.arrow';
+      if (cache) {
+        const cacheBytes = tableToIPC(tableFromArrays({ cache: [cache] }, {
+          types: {
+            cache: map(utf8(), binary())
+          }
+        }), {})!;
+        fs.writeFileSync(path.join(this.outputPath, cacheFile), cacheBytes);
+        preambleOptions.cacheFile = cacheFile;
+      }
     }
 
     const code = astToESM(this.ast!, {
       connector: 'wasm',
       imports: new Map([[VGPLOT, '* as vg'], [FLECHETTE, '{ tableFromIPC }']]),
-      preamble: preamble(this.optimize == 'most', cache ? cacheFile : undefined),
+      preamble: preamble(preambleOptions),
     });
-    const html = htmlTemplate(isInteractive, this.title, element, templateCSS);
+    const html = htmlTemplate({
+      title: this.title,
+      css: templateCSS,
+      isInteractive,
+      needsClientReady: this.optimizations.includes(Optimizations.PRERENDER),
+      element
+    });
 
     fs.writeFileSync(path.join(this.outputPath, 'index.html'), html);
     if (isInteractive) {
@@ -282,28 +300,18 @@ export class MosaicPublisher {
       const table = node.name;
       const file = node.file;
       const relevant_columns = tables[table];
-      if (relevant_columns?.size === 0) {
+      if (relevant_columns?.size === 0 && this.optimizations.includes(Optimizations.DATASHAKE)) {
         this.logger.warn(`Skipping export of table: ${table}`);
         this.logger.warn(`No columns are being used from this table.`);
         continue;
       }
 
       let query: string;
-      switch (this.optimize) {
-        case 'minimal':
-          query = `COPY (SELECT * FROM ${table}) TO '${this.outputPath}/${file}' (FORMAT PARQUET)`;
-          break;
-        case 'more':
-        case 'most':
-          if (relevant_columns === null) {
-            query = `COPY (SELECT * FROM ${table}) TO '${this.outputPath}/${file}' (FORMAT PARQUET)`;
-          } else {
-            this.logger.warn(`Partially exporting table: ${table}`);
-            query = `COPY (SELECT ${Array.from(relevant_columns).join(', ')} FROM ${table}) TO '${this.outputPath}/${file}' (FORMAT PARQUET)`;
-          }
-          break;
-        default:
-          throw new PublishError(`Invalid optimization level: ${this.optimize}`);
+      if (this.optimizations.includes(Optimizations.PROJECTION) && relevant_columns) {
+        this.logger.warn(`Partially exporting table: ${table}`);
+        query = `COPY (SELECT ${Array.from(relevant_columns).join(', ')} FROM ${table}) TO '${this.outputPath}/${file}' (FORMAT PARQUET)`;
+      } else {
+        query = `COPY (SELECT * FROM ${table}) TO '${this.outputPath}/${file}' (FORMAT PARQUET)`;
       }
 
       if (table.startsWith('mosaic.preagg_')) {

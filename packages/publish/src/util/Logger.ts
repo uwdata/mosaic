@@ -26,6 +26,12 @@ export class Logger {
     logFunction(str.split('\n').map(line => prefix + line).join('\n'));
   }
 
+  debug(...args: unknown[]) {
+    if (this.level <= LogLevel.INFO) {
+      this.log(console.debug, chalk.cyanBright('[DEBUG] '), ...args);
+    }
+  }
+
   info(...args: unknown[]) {
     if (this.level <= LogLevel.INFO) {
       this.log(console.log, chalk.blueBright('[INFO] '), ...args);

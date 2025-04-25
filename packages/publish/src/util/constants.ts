@@ -1,24 +1,35 @@
-export const htmlTemplate = (isInteractive: boolean, title: string, element?: HTMLElement | SVGElement, css = templateCSS) => `
+export type HTMLTemplateOptions = {
+  title: string;
+  isInteractive: boolean;
+  needsClientReady: boolean;
+  element?: HTMLElement | SVGElement;
+  css?: string;
+};
+export const htmlTemplate = (options: HTMLTemplateOptions) => `
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <title>${title}</title>
+  <title>${options.title}</title>
 </head>
 <body>
   <article class="mosaic">
-    ${isInteractive ? '<div class="ssr"></div>' : ''}
-    ${element?.outerHTML ?? ''}
+    ${options.isInteractive ? '<div class="ssr"></div>' : ''}
+    ${options.element?.outerHTML ?? ''}
   </article>
 </body>
-${isInteractive ? `
+${options.isInteractive ? `
 <script type="module">
-  import {default as visualization, clientsReady} from './index.js';
+${options.needsClientReady ?
+      `  import {default as visualization, clientsReady} from './index.js';
 
   clientsReady().then(() => {
     document.querySelector('.mosaic')?.replaceChildren(visualization);
-  });
+  });` :
+      `  import {default as visualization} from './index.js';
+
+  document.querySelector('.mosaic')?.replaceChildren(visualization);`}
 </script>` : ''}
-${css}
+${options.css}
 </html>`;
 
 export const templateCSS = `<style>
@@ -177,12 +188,28 @@ const loadCache = (cacheFile: string) => `
 const cacheBytes = await fetch(window.location.origin + "/${cacheFile}").then(res => res.arrayBuffer());
 vg.coordinator().manager.cache().import(tableFromIPC(cacheBytes).get(0).cache);`;
 
-export const preamble = (needsClientReady: boolean, cacheFile?: string) => {
-  if (!needsClientReady && !cacheFile) {
+export type PreambleOptions = { needsClientReady: boolean, cacheFile?: string };
+export const preamble = (options: PreambleOptions) => {
+  if (!options.needsClientReady && !options.cacheFile) {
     return undefined
   }
   return `
-${needsClientReady ? clientsReady : ''}
-${cacheFile ? loadCache(cacheFile) : ''}
+${options.needsClientReady ? clientsReady : ''}
+${options.cacheFile ? loadCache(options.cacheFile) : ''}
 `
 }
+
+export enum Optimizations {
+  PREAGREGATE = 'preaggregate',
+  PROJECTION = 'projection',
+  DATASHAKE = 'datashake',
+  LOAD_CACHE = 'loadCache',
+  PRERENDER = 'prerender',
+}
+
+export const OPTIMIZATION_LEVEL_TO_OPTIMIZATIONS = {
+  none: [],
+  minimal: [Optimizations.PROJECTION, Optimizations.DATASHAKE],
+  more: [Optimizations.PROJECTION, Optimizations.DATASHAKE, Optimizations.PREAGREGATE],
+  most: [Optimizations.PROJECTION, Optimizations.DATASHAKE, Optimizations.PREAGREGATE, Optimizations.LOAD_CACHE, Optimizations.PRERENDER],
+};

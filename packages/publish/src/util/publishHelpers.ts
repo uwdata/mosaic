@@ -1,7 +1,9 @@
 import { Coordinator, decodeIPC } from "@uwdata/mosaic-core";
+// @ts-ignore -- no types
 import { DuckDB } from "@uwdata/mosaic-duckdb";
 import { InstantiateContext } from "@uwdata/mosaic-spec";
-import { createAPIContext } from "../../../vgplot/src/index.js";
+// @ts-ignore -- no types
+import { createAPIContext } from "@uwdata/vgplot";
 
 const SCAN_OP = 'SEQ_SCAN ';
 
@@ -18,10 +20,6 @@ export function publishConnector() {
 
   return {
     query: async (query: Query) => {
-      // run an explain query and extract the result
-      const explain = await db.query(`EXPLAIN (FORMAT json) ${query.sql}`);
-      const plan = JSON.parse(explain[0].explain_value);
-
       // Find SEQ_SCAN by recursively looping over the plan
       const findSeqScan = (node: any): void => {
         if (node.name === SCAN_OP) {
@@ -37,7 +35,12 @@ export function publishConnector() {
           node.children.some(findSeqScan);
         }
       };
-      plan.some(findSeqScan);
+      // run an explain query and extract the result
+      const explain = await db.query(`EXPLAIN (FORMAT json) ${query.sql}`);
+      if (explain.length !== 0 && explain[0].explain_value) {
+        const plan = JSON.parse(explain[0].explain_value);
+        plan.some(findSeqScan);
+      }
 
       const { type, sql } = query;
       switch (type) {

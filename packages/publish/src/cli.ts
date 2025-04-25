@@ -22,7 +22,7 @@ const parsed = yargs(hideBin(process.argv))
       alias: 'o',
       type: 'string',
       describe: 'Level of optimizations',
-      choices: ['minimal', 'more', 'most'] as const,
+      choices: ['none', 'minimal', 'more', 'most'] as const,
       default: 'minimal',
     },
     output: {
@@ -50,7 +50,7 @@ const parsed = yargs(hideBin(process.argv))
 
 const argv = {
   spec: parsed.spec as string,
-  optimize: parsed.optimize as 'minimal' | 'more' | 'most',
+  optimize: parsed.optimize as 'none' | 'minimal' | 'more' | 'most',
   output: parsed.output as string | undefined,
   title: parsed.title as string | undefined,
 };
