@@ -27,9 +27,9 @@ The widget constructor take three arguments which are all optional.
 
 * `spec`, a Mosaic specification as a dictionary. This argument is optional and can be set later via the `spec` traitlet.
 * `con`, a DuckDB connection. If `None`, the widget will create a connection to an in-memory database.
-* `data`, a dictionary of DataFrames that should be added to the database connection. The keys of the dictionary are the table names.
+* `data`, a dictionary of data frames that should be added to the database connection. The keys of the dictionary are the table names.
 
-A widget has a `spec` traitlet that can be used to set the Mosaic specification. A widget automatically updates when the specification changes. A widget also has a `params` traitlet, which updates automatically with params in the widget. The params are a dictionary from parameter name to the current `value` of the parameter and the `predictate` which can be used as the WHERE clause in a SQL query.
+A widget has a `spec` traitlet that can be used to set the Mosaic specification. A widget automatically updates when the specification changes. A widget also has a `params` traitlet, which updates automatically with params in the widget. The params are a dictionary from parameter name to the current `value` of the parameter and the `predicate` which can be used as the WHERE clause in a SQL query.
 
 ## Example
 
@@ -41,7 +41,7 @@ import yaml
 
 from mosaic_widget import MosaicWidget
 
-weather = pd.read_csv("https://uwdata.github.io/mosaic-datasets/data/seattle-weather.csv", parse_dates=['date'])
+weather = pd.read_csv("https://uwdata.github.io/mosaic-datasets/data/seattle-weather.csv", parse_dates=["date"])
 
 # Load weather spec, remove data key to ensure load from Pandas
 with open("weather.yaml") as f:
@@ -61,7 +61,7 @@ import yaml
 
 from mosaic_widget import MosaicWidget
 
-weather = pd.read_csv("https://uwdata.github.io/mosaic-datasets/data/seattle-weather.csv", parse_dates=['date'])
+weather = pd.read_csv("https://uwdata.github.io/mosaic-datasets/data/seattle-weather.csv", parse_dates=["date"])
 
 # Load weather spec, remove data key to ensure load from Pandas
 with open("weather.yaml") as f:
