@@ -106,8 +106,8 @@ export class QueryManager {
       if (cache) this.clientCache.set(sql, promise);
 
       const data = await promise;
-
-      if (cache) this.clientCache.set(sql, data);
+      const latency = performance.now() - t0
+      if (cache) this.clientCache.set(sql, data, latency);
 
       this._logger.debug(`Request: ${(performance.now() - t0).toFixed(1)}`);
       result.ready(type === 'exec' ? null : data);

@@ -8,7 +8,7 @@ use duckdb_server::{get_key, handle, AppState, Command, ConnectionPool, QueryPar
 
 pub fn benchmark(c: &mut Criterion) {
     let db = ConnectionPool::new(":memory:", 10).unwrap();
-    let cache = lru::LruCache::new(10.try_into().unwrap());
+    let cache = lru::::new(10.try_into().unwrap());
 
     let state = Arc::new(AppState {
         db: Box::new(db),
