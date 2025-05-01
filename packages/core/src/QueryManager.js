@@ -1,5 +1,5 @@
 import { consolidator } from './QueryConsolidator.js';
-import { lruCache, voidCache } from './util/cache.js';
+import { hybridLRUCache, voidCache } from './util/cache.js';
 import { PriorityQueue } from './util/priority-queue.js';
 import { QueryResult, QueryState } from './util/query-result.js';
 import { voidLogger } from './util/void-logger.js';
@@ -118,7 +118,7 @@ export class QueryManager {
 
   cache(value) {
     return value !== undefined
-      ? (this.clientCache = value === true ? lruCache() : (value || voidCache()))
+      ? (this.clientCache = value === true ? hybridLRUCache() : (value || voidCache()))
       : this.clientCache;
   }
 

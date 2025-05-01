@@ -8,7 +8,7 @@ export const voidCache = () => ({
   clear: () => {}
 });
 
-export function lruCache({
+export function hybridLRUCache({
   max = 1 * 1024 * 1024, // 1 MB cache size as default
   ttl = 3 * 60 * 60 * 1000, // time-to-live, default 3 hours
   lruWeight = 0.2 // Weight for recency vs cost-benefit (higher = more LRU-like)
@@ -17,7 +17,6 @@ export function lruCache({
   let currSize = 0;
 
   function evict() {
-    console.log("evicting!!")
     const expire = performance.now() - ttl;
 
     while (currSize > max) {
@@ -80,7 +79,6 @@ export function lruCache({
       if (evictKey !== null && cache.has(evictKey)) {
         currSize -= evictSize;
         cache.delete(evictKey);
-        console.log("evicted: ", evictKey)
       } else {
         // Safety break in case we can't find anything to evict
         break;
@@ -91,15 +89,12 @@ export function lruCache({
   return {
     get(key) {
       const entry = cache.get(key);
-      console.log("Size", currSize, cache.size)
       if (entry) {
         entry.last = performance.now();
-        console.log("get: cache hit ", key)
         return entry.value;
       }
     },
     set(key, value, latency=0) {
-      console.log("set: ", key)
       let setValue = { 
         last: performance.now(), 
         size: new Blob([value]).size,
@@ -109,11 +104,9 @@ export function lruCache({
       
       if (cache.has(key)) {
         currSize -= cache.get(key).size;
-        console.log("set: cache hit ", currSize)
       }
       cache.set(key, setValue);
       currSize += setValue.size;
-      console.log("set: new cache size ", currSize)
       
       if (currSize > max) requestIdle(evict);
       return value;
