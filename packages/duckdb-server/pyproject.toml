@@ -6,7 +6,7 @@ readme = "README.md"
 requires-python = ">=3.10"
 dependencies = [
   "diskcache",
-  "duckdb==1.1.1",
+  "duckdb>=1.2.0",
   "pandas",
   "pyarrow",
   "socketify",
@@ -25,11 +25,11 @@ build-backend = "hatchling.build"
 
 [dependency-groups]
 dev = [
-    "watchdog",
-    "mypy>=1.11.1",
-    "pytest>=7.4.4",
-    "ruff>=0.6.1",
-    "types-ujson",
+  "watchdog",
+  "mypy",
+  "pytest",
+  "ruff",
+  "types-ujson",
 ]
 
 [tool.hatch.build.targets.wheel]

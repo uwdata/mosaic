@@ -11,13 +11,13 @@ export {
 
 export {
   Query,
-  agg,
   sql,
   column,
   literal,
   cast,
-  castDouble,
-  castInteger,
+  float32,
+  float64,
+  int32,
   argmax,
   argmin,
   arrayAgg,
@@ -28,6 +28,7 @@ export {
   covarPop,
   entropy,
   first,
+  geomean,
   kurtosis,
   mad,
   max,
@@ -99,8 +100,10 @@ export {
   axis,
   inset,
   grid,
-  label,
+  clip,
   padding,
+  ariaLabel,
+  ariaDescription,
   xScale,
   xDomain,
   xRange,
@@ -325,7 +328,8 @@ export {
   frame,
   axisX, axisY, axisFx, axisFy,
   gridX, gridY, gridFx, gridFy,
-  geo, sphere, graticule
+  geo, sphere, graticule,
+  waffleX, waffleY
 } from './plot/marks.js';
 
 export {

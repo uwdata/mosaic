@@ -14,10 +14,10 @@
     "docs:build": "vitepress build docs",
     "docs:examples": "node bin/prepare-examples.js",
     "docs:preview": "vitepress preview docs",
-    "docs:schema": "node bin/publish-schema.js",
+    "docs:schema": "node bin/publish-schema.js && bin/push-schema.sh",
     "build": "lerna run build",
     "lint": "lerna run lint",
-    "test": "lerna run test",
+    "test": "vitest run && lerna run tsc",
     "server": "cd packages/duckdb-server && npm run dev",
     "server:rust": "cd packages/duckdb-server-rust && cargo run",
     "server:node": "nodemon packages/duckdb/bin/run-server.js",
@@ -30,20 +30,21 @@
   "devDependencies": {
     "ajv": "^8.17.1",
     "ajv-formats": "^3.0.1",
-    "esbuild": "^0.24.0",
-    "eslint": "^9.13.0",
-    "eslint-plugin-jsdoc": "^50.4.3",
-    "lerna": "^8.1.8",
-    "nodemon": "^3.1.7",
+    "eslint": "^9.23.0",
+    "eslint-plugin-jsdoc": "^50.6.9",
+    "jsdom": "^26.0.0",
+    "lerna": "^8.2.1",
+    "nodemon": "^3.1.9",
     "rimraf": "^6.0.1",
     "timezone-mock": "^1.3.6",
-    "typescript": "^5.6.3",
-    "vite": "^5.4.10",
-    "vitepress": "1.4.1",
-    "vitest": "^2.1.3",
-    "yaml": "^2.6.0"
+    "typescript": "^5.8.2",
+    "vite": "^6.2.4",
+    "vitepress": "1.6.3",
+    "vitest": "^3.1.1",
+    "yaml": "^2.7.1"
   },
   "workspaces": [
-    "packages/*"
+    "packages/*",
+    "examples/*"
   ]
 }

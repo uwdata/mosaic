@@ -1,6 +1,6 @@
 {
   "name": "mosaic-widget",
-  "version": "0.11.0",
+  "version": "0.15.0",
   "private": true,
   "license": "BSD-3-Clause",
   "author": "Dominik Moritz (https://www.domoritz.de)",
@@ -12,20 +12,20 @@
   "scripts": {
     "build": "esbuild --bundle --format=esm --outdir=mosaic_widget/static src/index.js",
     "dev": "npm run build -- --watch",
-    "test": "tsc -p jsconfig.json",
+    "test": "npm run tsc",
+    "tsc": "tsc -p jsconfig.json",
     "lint": "eslint src",
-    "prepublishOnly": "npm run test && npm run lint && uv run ruff check && uv run ruff format --check && npm run build",
-    "publish": "uv build && uvx twine upload --skip-existing dist/*",
-    "release": "npm run prepublishOnly && npm run publish",
-    "clean": "rimraf dist"
+    "prerelease": "npm run test && npm run lint && uv run ruff check && uv run ruff format --check && npm run build",
+    "release": "uv build && uvx twine upload --skip-existing ../../dist/mosaic_widget*"
   },
   "dependencies": {
-    "@uwdata/mosaic-core": "^0.11.0",
-    "@uwdata/mosaic-spec": "^0.11.0",
-    "@uwdata/vgplot": "^0.11.0",
-    "uuid": "^10.0.0"
+    "@uwdata/mosaic-core": "^0.15.0",
+    "@uwdata/mosaic-spec": "^0.15.0",
+    "@uwdata/vgplot": "^0.15.0",
+    "uuid": "^11.1.0"
   },
   "devDependencies": {
-    "anywidget": "^0.9.13"
+    "anywidget": "0.9.18",
+    "esbuild": "^0.25.2"
   }
 }

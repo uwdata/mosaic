@@ -17,7 +17,7 @@ export interface AggregateOptions {
 }
 
 /** A transform argument. */
-type Arg = string | number | boolean;
+type Arg = string | number | boolean | ParamRef;
 
 /** A zero argument transform signature. */
 type Arg0 = null | [];
@@ -100,6 +100,14 @@ export interface Bin {
    * result in using the next consecutive bin boundary.
    */
   offset?: number;
+}
+
+/* A column transform. */
+export interface Column {
+  /**
+   * Intpret a string or param-value as a column reference.
+   */
+  column: Arg1;
 }
 
 /* A dateMonth transform. */
@@ -219,6 +227,14 @@ export interface First extends AggregateOptions, WindowOptions {
    * Return the first column value found in an aggregation group.
    */
   first: Arg1;
+}
+
+/* A geometric mean aggregate transform. */
+export interface Geomean extends AggregateOptions, WindowOptions {
+  /**
+   * Compute the geometric mean value of the given column.
+   */
+  geomean: Arg1;
 }
 
 /* A last aggregate transform. */
@@ -423,6 +439,7 @@ export interface NthValue extends WindowOptions {
 /** A data transform that maps one column value to another. */
 export type ColumnTransform =
   | Bin
+  | Column
   | DateMonth
   | DateMonthDay
   | DateDay

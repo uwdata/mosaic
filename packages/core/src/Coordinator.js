@@ -1,10 +1,13 @@
+/** @import { PreAggregateOptions } from './preagg/PreAggregator.js' */
+/** @import { QueryResult } from './util/query-result.js' */
+/** @import { SelectionClause } from './util/selection-types.js' */
+/** @import { MosaicClient } from './MosaicClient.js' */
+/** @import { Selection } from './Selection.js' */
+/** @import { QueryType } from './types.js' */
 import { socketConnector } from './connectors/socket.js';
-import { PreAggregator } from './PreAggregator.js';
-import { MosaicClient } from './MosaicClient.js';
-import { QueryManager, Priority } from './QueryManager.js';
-import { queryFieldInfo } from './util/field-info.js';
-import { QueryResult } from './util/query-result.js';
+import { PreAggregator } from './preagg/PreAggregator.js';
 import { voidLogger } from './util/void-logger.js';
+import { QueryManager, Priority } from './QueryManager.js';
 
 /**
  * The singleton Coordinator instance.
@@ -27,10 +30,6 @@ export function coordinator(instance) {
 }
 
 /**
- * @typedef {import('@uwdata/mosaic-sql').Query | string} QueryType
- */
-
-/**
  * A Mosaic Coordinator manages all database communication for clients and
  * handles selection updates. The Coordinator also performs optimizations
  * including query caching, consolidation, and pre-aggregation.
@@ -40,8 +39,7 @@ export function coordinator(instance) {
  * @param {*} [options.manager] The query manager to use.
  * @param {boolean} [options.cache=true] Boolean flag to enable/disable query caching.
  * @param {boolean} [options.consolidate=true] Boolean flag to enable/disable query consolidation.
- * @param {import('./PreAggregator.js').PreAggregateOptions} [options.preagg]
- *  Options for the Pre-aggregator.
+ * @param {PreAggregateOptions} [options.preagg] Options for the Pre-aggregator.
  */
 export class Coordinator {
   constructor(db = socketConnector(), {
@@ -114,13 +112,12 @@ export class Coordinator {
 
   /**
    * Issue a query for which no result (return value) is needed.
-   * @param {QueryType | QueryType[]} query The query or an array of queries.
+   * @param {QueryType[] | QueryType} query The query or an array of queries.
    *  Each query should be either a Query builder object or a SQL string.
    * @param {object} [options] An options object.
    * @param {number} [options.priority] The query priority, defaults to
    *  `Priority.Normal`.
-   * @returns {QueryResult} A query result
-   *  promise.
+   * @returns {QueryResult} A query result promise.
    */
   exec(query, { priority = Priority.Normal } = {}) {
     query = Array.isArray(query) ? query.filter(x => x).join(';\n') : query;
@@ -130,11 +127,14 @@ export class Coordinator {
   /**
    * Issue a query to the backing database. The submitted query may be
    * consolidate with other queries and its results may be cached.
-   * @param {QueryType} query The query as either a Query builder object
-   *  or a SQL string.
+   * @param {QueryType} query The query as either a Query builder objec
+   *   or a SQL string.
    * @param {object} [options] An options object.
    * @param {'arrow' | 'json'} [options.type] The query result format type.
-   * @param {boolean} [options.cache=true] If true, cache the query result.
+   * @param {boolean} [options.cache=true] If true, cache the query result
+   *  client-side within the QueryManager.
+   * @param {boolean} [options.persist] If true, request the database
+   *  server to persist a cached query server-side.
    * @param {number} [options.priority] The query priority, defaults to
    *  `Priority.Normal`.
    * @returns {QueryResult} A query result promise.
@@ -197,7 +197,7 @@ export class Coordinator {
    */
   updateClient(client, query, priority = Priority.Normal) {
     client.queryPending();
-    return this.query(query, { priority })
+    return client._pending = this.query(query, { priority })
       .then(
         data => client.queryResult(data).update(),
         err => { this._logger.error(err); client.queryError(err); }
@@ -223,31 +223,24 @@ export class Coordinator {
    * Connect a client to the coordinator.
    * @param {MosaicClient} client The Mosaic client to connect.
    */
-  async connect(client) {
+  connect(client) {
     const { clients } = this;
 
     if (clients.has(client)) {
       throw new Error('Client already connected.');
     }
-    clients.add(client); // mark as connected
+
+    // add client to client set
+    clients.add(client);
+
+    // register coordinator on client instance
     client.coordinator = this;
 
     // initialize client lifecycle
-    this.initializeClient(client);
+    client.initialize();
 
     // connect filter selection
     connectSelection(this, client.filterBy, client);
-  }
-
-  async initializeClient(client) {
-    // retrieve field statistics
-    const fields = client.fields();
-    if (fields?.length) {
-      client.fieldInfo(await queryFieldInfo(this, fields));
-    }
-
-    // request data query
-    return client.requestQuery();
   }
 
   /**
@@ -270,7 +263,7 @@ export class Coordinator {
 /**
  * Connect a selection-client pair to the coordinator to process updates.
  * @param {Coordinator} mc The Mosaic coordinator.
- * @param {import('./Selection.js').Selection} selection A selection.
+ * @param {Selection} selection A selection.
  * @param {MosaicClient} client A Mosiac client that is filtered by the
  *  given selection.
  */
@@ -302,15 +295,16 @@ function connectSelection(mc, selection, client) {
  * next updates. Activation provides a preview of likely next events,
  * enabling potential precomputation to optimize updates.
  * @param {Coordinator} mc The Mosaic coordinator.
- * @param {import('./Selection.js').Selection} selection A selection.
- * @param {import('./util/selection-types.js').SelectionClause} clause A
- *  selection clause representative of the activation.
+ * @param {Selection} selection A selection.
+ * @param {SelectionClause} clause A selection clause for the activation.
  */
 function activateSelection(mc, selection, clause) {
   const { preaggregator, filterGroups } = mc;
   const { clients } = filterGroups.get(selection);
   for (const client of clients) {
-    preaggregator.request(client, selection, clause);
+    if (client.enabled) {
+      preaggregator.request(client, selection, clause);
+    }
   }
 }
 
@@ -318,7 +312,7 @@ function activateSelection(mc, selection, clause) {
  * Process an updated selection value, querying filtered data for any
  * associated clients.
  * @param {Coordinator} mc The Mosaic coordinator.
- * @param {import('./Selection.js').Selection} selection A selection.
+ * @param {Selection} selection A selection.
  * @returns {Promise} A Promise that resolves when the update completes.
  */
 function updateSelection(mc, selection) {
@@ -326,6 +320,7 @@ function updateSelection(mc, selection) {
   const { clients } = filterGroups.get(selection);
   const { active } = selection;
   return Promise.allSettled(Array.from(clients, client => {
+    if (!client.enabled) return client.requestQuery();
     const info = preaggregator.request(client, selection, active);
     const filter = info ? null : selection.predicate(client);
 

@@ -14,7 +14,7 @@ export default vg.plot(
     vg.from("labels"),
     {
       x: "Date",
-      y: vg.sql`Close / (SELECT MAX(Close) FROM stocks WHERE Symbol = source.Symbol AND Date = ${$point})`,
+      y: vg.sql`Close / (SELECT max(Close) FROM stocks WHERE Symbol = source.Symbol AND Date = ${$point})`,
       dx: 2,
       text: "Symbol",
       fill: "Symbol",
@@ -25,7 +25,7 @@ export default vg.plot(
     vg.from("stocks"),
     {
       x: "Date",
-      y: vg.sql`Close / (SELECT MAX(Close) FROM stocks WHERE Symbol = source.Symbol AND Date = ${$point})`,
+      y: vg.sql`Close / (SELECT max(Close) FROM stocks WHERE Symbol = source.Symbol AND Date = ${$point})`,
       stroke: "Symbol"
     }
   ),

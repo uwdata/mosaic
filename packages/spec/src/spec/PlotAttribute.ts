@@ -178,13 +178,21 @@ export interface PlotAttributes {
   grid?: boolean | string | ParamRef;
 
   /**
-   * A textual label to show on the axis or legend; if null, show no label. By
-   * default the scale label is inferred from channel definitions, possibly with
-   * an arrow (↑, →, ↓, or ←) to indicate the direction of increasing value.
+   * The [aria-label attribute][1] on the SVG root.
    *
-   * For axes and legends only.
+   * [1]: https://developer.mozilla.org/en-US/docs/Web/Accessibility/ARIA/Attributes/aria-label
    */
-  label?: string | null | ParamRef;
+  ariaLabel?: string | null;
+
+  /**
+   * The [aria-description attribute][1] on the SVG root.
+   *
+   * [1]: https://developer.mozilla.org/en-US/docs/Web/Accessibility/ARIA/Attributes/aria-description
+   */
+  ariaDescription?: string | null;
+
+  /** The default clip for all marks. */
+  clip?: 'frame' | 'sphere' | boolean | null | ParamRef;
 
 
   // x scale attributes

@@ -20,8 +20,8 @@ plot:
     y: unemployment
     z: division
     stroke: steelblue
+    strokeOpacity: 0.9
     curve: monotone-x
-    mixBlendMode: multiply
   - { select: nearestX, channels: ['z'], as: $curr }
   - { select: highlight, by: $curr }
   - mark: dot

@@ -2,11 +2,12 @@
 .mosaic
 .duckdb
 .ipynb_checkpoints
+dev/specs
 docs/.vitepress/cache
 docs/.vitepress/dist
 node_modules
-packages/*/dist
-packages/*/test-output
+**/dist
+**/test-output
 **/__pycache__
 **/.ruff_cache
 **/.pytest_cache

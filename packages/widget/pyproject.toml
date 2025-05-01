@@ -6,7 +6,7 @@ readme = "README.md"
 requires-python = ">=3.10"
 dependencies = [
   "anywidget>=0.9.0",
-  "duckdb==1.1.1",
+  "duckdb>=1.2.0",
   "pyarrow"
 ]
 
@@ -25,10 +25,10 @@ artifacts = [
 
 [dependency-groups]
 dev = [
-  "jupyterlab>=4.2.5",
+  "jupyterlab",
   "pandas",
   "pyyaml",
-  "ruff>=0.6.2"
+  "ruff"
 ]
 
 [tool.hatch.version]

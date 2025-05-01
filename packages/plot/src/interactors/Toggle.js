@@ -2,6 +2,10 @@ import { clausePoints } from '@uwdata/mosaic-core';
 import { getDatum } from './util/get-datum.js';
 import { neq, neqSome } from './util/neq.js';
 
+/**
+ * @import {Activatable} from '@uwdata/mosaic-core'
+ * @implements {Activatable}
+ */
 export class Toggle {
   /**
    * @param {*} mark The mark to interact with.
@@ -12,8 +16,8 @@ export class Toggle {
     channels,
     peers = true
   }) {
-    this.value = null;
     this.mark = mark;
+    this.value = null;
     this.selection = selection;
     this.peers = peers;
     const fields = this.fields = [];
@@ -47,8 +51,9 @@ export class Toggle {
     const { mark, as, selection } = this;
     const { data: { columns = {} } = {} } = mark;
     accessor ??= target => as.map(name => columns[name][getDatum(target)]);
+
     selector ??= `[data-index="${mark.index}"]`;
-    const groups = new Set(svg.querySelectorAll(selector));
+    const groups = Array.from(svg.querySelectorAll(selector));
 
     svg.addEventListener('pointerdown', evt => {
       const state = selection.single ? selection.value : this.value;
@@ -74,14 +79,15 @@ export class Toggle {
     });
 
     svg.addEventListener('pointerenter', evt => {
-      if (evt.buttons) return;
-      this.selection.activate(this.clause([this.fields.map(() => 0)]));
+      if (!evt.buttons) this.activate();
     });
+  }
+
+  activate() {
+    this.selection.activate(this.clause([this.fields.map(() => 0)]));
   }
 }
 
 function isTargetElement(groups, node) {
-  return groups.has(node)
-    || groups.has(node.parentNode)
-    || groups.has(node.parentNode?.parentNode);
+  return groups.some(g => g.contains(node));
 }

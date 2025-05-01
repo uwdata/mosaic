@@ -1,7 +1,7 @@
 import { range } from 'd3';
 import { toDataColumns } from '@uwdata/mosaic-core';
 import {
-  Query, max, min, castDouble, isNotNull,
+  Query, max, min, float64, isNotNull,
   regrIntercept, regrSlope, regrCount,
   regrSYY, regrSXX, regrAvgX
 } from '@uwdata/mosaic-sql';
@@ -43,8 +43,8 @@ export class RegressionMark extends Mark {
         ssy: regrSYY(y, x),
         ssx: regrSXX(y, x),
         xm: regrAvgX(y, x),
-        x0: castDouble(min(x).where(isNotNull(y))),
-        x1: castDouble(max(x).where(isNotNull(y)))
+        x0: float64(min(x).where(isNotNull(y))),
+        x1: float64(max(x).where(isNotNull(y)))
       })
       .select(groupby)
       .groupby(groupby);

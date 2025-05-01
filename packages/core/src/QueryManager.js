@@ -10,20 +10,21 @@ export class QueryManager {
   constructor(
     maxConcurrentRequests = 32
   ) {
+    /** @type {PriorityQueue} */
     this.queue = new PriorityQueue(3);
     this.db = null;
     this.clientCache = null;
     this._logger = voidLogger();
     this._logQueries = false;
-    this.recorders = [];
     this._consolidate = null;
     /**
      * Requests pending with the query manager.
-     * 
      * @type {QueryResult[]}
      */
     this.pendingResults = [];
+    /** @type {number} */
     this.maxConcurrentRequests = maxConcurrentRequests;
+    /** @type {boolean} */
     this.pendingExec = false;
   }
 
@@ -64,12 +65,6 @@ export class QueryManager {
     this.next();
   }
 
-  recordQuery(sql) {
-    if (this.recorders.length && sql) {
-      this.recorders.forEach(rec => rec.add(sql));
-    }
-  }
-
   /**
    * Submit the query to the connector.
    * @param {*} request The request.
@@ -77,13 +72,8 @@ export class QueryManager {
    */
   async submit(request, result) {
     try {
-      const { query, type, cache = false, record = true, options } = request;
+      const { query, type, cache = false, options } = request;
       const sql = query ? `${query}` : null;
-
-      // update recorders
-      if (record) {
-        this.recordQuery(sql);
-      }
 
       // check query cache
       if (cache) {
@@ -136,7 +126,7 @@ export class QueryManager {
 
   consolidate(flag) {
     if (flag && !this._consolidate) {
-      this._consolidate = consolidator(this.enqueue.bind(this), this.clientCache, this.recordQuery.bind(this));
+      this._consolidate = consolidator(this.enqueue.bind(this), this.clientCache);
     } else if (!flag && this._consolidate) {
       this._consolidate = null;
     }
@@ -188,26 +178,5 @@ export class QueryManager {
       result.reject('Cleared');
     }
     this.pendingResults = [];
-  }
-
-  record() {
-    let state = [];
-    const recorder = {
-      add(query) {
-        state.push(query);
-      },
-      reset() {
-        state = [];
-      },
-      snapshot() {
-        return state.slice();
-      },
-      stop() {
-        this.recorders = this.recorders.filter(x => x !== recorder);
-        return state;
-      }
-    };
-    this.recorders.push(recorder);
-    return recorder;
   }
 }

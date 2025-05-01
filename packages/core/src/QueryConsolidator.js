@@ -1,4 +1,4 @@
-import { Query, Ref, isDescribeQuery } from '@uwdata/mosaic-sql';
+import { DescribeQuery, isAggregateExpression, isColumnRef, isDescribeQuery, isSelectQuery, Query } from '@uwdata/mosaic-sql';
 import { QueryResult } from './util/query-result.js';
 
 function wait(callback) {
@@ -13,10 +13,9 @@ function wait(callback) {
  * Create a consolidator to combine structurally compatible queries.
  * @param {*} enqueue Query manager enqueue method
  * @param {*} cache Client-side query cache (sql -> data)
- * @param {*} record Query recorder function
  * @returns A consolidator object
  */
-export function consolidator(enqueue, cache, record) {
+export function consolidator(enqueue, cache) {
   let pending = [];
   let id = 0;
 
@@ -28,7 +27,7 @@ export function consolidator(enqueue, cache, record) {
 
     // build and issue consolidated queries
     for (const group of groups) {
-      consolidate(group, enqueue, record);
+      consolidate(group, enqueue);
       processResults(group, cache);
     }
   }
@@ -75,18 +74,16 @@ function entryGroups(entries, cache) {
  * Queries with matching keys are conosolidation-compatible.
  * If a query is found in the cache, it is exempted from consolidation,
  * which is indicated by returning the precise query SQL as the key.
- * @param {*} query The input query.
+ * @param {Query | DescribeQuery} query The input query.
  * @param {*} cache The query cache (sql -> data).
  * @returns a key string
  */
 function consolidationKey(query, cache) {
   const sql = `${query}`;
-  if (query instanceof Query && !cache.get(sql)) {
+  if (isSelectQuery(query) && !cache.get(sql)) {
     if (
-      // @ts-ignore
-      query.orderby().length || query.where().length ||
-      // @ts-ignore
-      query.qualify().length || query.having().length
+      query._orderby.length || query._where.length ||
+      query._qualify.length || query._having.length
     ) {
       // do not try to analyze if query includes clauses
       // that may refer to *derived* columns we can't resolve
@@ -94,25 +91,21 @@ function consolidationKey(query, cache) {
     }
 
     // create a derived query stripped of selections
-    const q = query.clone().$select('*');
+    const q = query.clone().setSelect('*');
 
     // check group by criteria for compatibility
     // queries may refer to *derived* columns as group by criteria
     // we resolve these against the true grouping expressions
-    const groupby = query.groupby();
-    // @ts-ignore
+    const groupby = query._groupby;
     if (groupby.length) {
-      const map = {}; // expression map (as -> expr)
-      // @ts-ignore
-      query.select().forEach(({ as, expr }) => map[as] = expr);
-      // @ts-ignore
-      q.$groupby(groupby.map(e => (e instanceof Ref && map[e.column]) || e));
+      const map = {}; // expression map (alias -> expr)
+      query._select.forEach(({ alias, expr }) => map[alias] = expr);
+      q.setGroupby(groupby.map(e => (isColumnRef(e) && map[e.column]) || e));
     }
-    // @ts-ignore
-    else if (query.select().some(({ expr }) => expr.aggregate)) {
+    else if (query._select.some(e => isAggregateExpression(e.expr))) {
       // if query is an ungrouped aggregate, add an explicit groupby to
       // prevent improper consolidation with non-aggregate queries
-      q.$groupby('ALL');
+      q.setGroupby('ALL');
     }
 
     // key is just the transformed query as SQL
@@ -127,17 +120,15 @@ function consolidationKey(query, cache) {
  * Issue queries, consolidating where possible.
  * @param {*} group Array of bundled query entries
  * @param {*} enqueue Add entry to query queue
- * @param {*} record Query recorder function
  */
-function consolidate(group, enqueue, record) {
+function consolidate(group, enqueue) {
   if (shouldConsolidate(group)) {
     // issue a single consolidated query
     enqueue({
       request: {
         type: 'arrow',
         cache: false,
-        record: false,
-        query: (group.query = consolidatedQuery(group, record))
+        query: (group.query = consolidatedQuery(group))
       },
       result: (group.result = new QueryResult())
     });
@@ -170,10 +161,9 @@ function shouldConsolidate(group) {
 /**
  * Create a consolidated query for a group.
  * @param {*} group Array of bundled query entries
- * @param {*} record Query recorder function
  * @returns A consolidated Query instance
  */
-function consolidatedQuery(group, record) {
+function consolidatedQuery(group) {
   const maps = group.maps = [];
   const fields = new Map;
 
@@ -182,30 +172,29 @@ function consolidatedQuery(group, record) {
     const { query } = item.entry.request;
     const fieldMap = [];
     maps.push(fieldMap);
-    for (const { as, expr } of query.select()) {
+    for (const { alias, expr } of query._select) {
       const e = `${expr}`;
       if (!fields.has(e)) {
         fields.set(e, [`col${fields.size}`, expr]);
       }
       const [name] = fields.get(e);
-      fieldMap.push([name, as]);
+      fieldMap.push([name, alias]);
     }
-    record(`${query}`);
   }
 
   // use a cloned query as a starting point
   const query = group[0].entry.request.query.clone();
 
   // update group by statement as needed
-  const groupby = query.groupby();
+  const groupby = query._groupby;
   if (groupby.length) {
     const map = {};
     group.maps[0].forEach(([name, as]) => map[as] = name);
-    query.$groupby(groupby.map(e => (e instanceof Ref && map[e.column]) || e));
+    query.setGroupby(groupby.map(e => (isColumnRef(e) && map[e.column]) || e));
   }
 
   // update select statement and return
-  return query.$select(Array.from(fields.values()));
+  return query.setSelect(Array.from(fields.values()));
 }
 
 /**

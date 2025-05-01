@@ -13,28 +13,44 @@ data:
     DISTANCE AS distance,
     DEP_TIME AS time
     FROM 'https://idl.uw.edu/mosaic-datasets/data/flights-10m.parquet'
-plot:
-- mark: raster
-  data: { from: flights10m }
-  x: time
-  y: delay
-  pixelSize: 4
-  pad: 0
-  imageRendering: pixelated
-- mark: regressionY
-  data: { from: flights10m }
-  x: time
-  y: delay
-  stroke: gray
-- mark: regressionY
-  data: { from: flights10m, filterBy: $query }
-  x: time
-  y: delay
-  stroke: firebrick
-- select: intervalXY
-  as: $query
-  brush: { fillOpacity: 0, stroke: currentColor }
-xDomain: [0, 24]
-yDomain: [-60, 180]
-colorScale: symlog
-colorScheme: blues
+  flights10p: SELECT * FROM flights10m USING SAMPLE 10%
+  flights5p: SELECT * FROM flights10m USING SAMPLE 5%
+  flights1p: SELECT * FROM flights10m USING SAMPLE 1%
+params:
+  data: flights10m
+vconcat:
+- input: menu
+  label: Sample
+  as: $data
+  options:
+    - { value: flights10m, label: Full Data }
+    - { value: flights10p, label: 10% Sample }
+    - { value: flights5p, label: 5% Sample }
+    - { value: flights1p, label: 1% Sample }
+- vspace: 10
+- plot:
+  - mark: raster
+    data: { from: $data }
+    x: time
+    y: delay
+    pixelSize: 4
+    pad: 0
+    imageRendering: pixelated
+  - mark: regressionY
+    data: { from: $data }
+    x: time
+    y: delay
+    stroke: gray
+  - mark: regressionY
+    data: { from: $data, filterBy: $query }
+    x: time
+    y: delay
+    stroke: firebrick
+  - select: intervalXY
+    as: $query
+    brush: { fillOpacity: 0, stroke: currentColor }
+  xDomain: [0, 24]
+  yDomain: [-60, 180]
+  colorScale: symlog
+  colorScheme: blues
+  colorDomain: Fixed

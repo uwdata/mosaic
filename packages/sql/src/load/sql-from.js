@@ -1,11 +1,12 @@
-import { literalToSQL } from '../to-sql.js';
+import { asLiteral } from '../util/ast.js';
 
 /**
  * Create a SQL query that embeds the given data for loading.
- * @param {*} data The dataset
- * @param {object} [options] Loading options
- * @param {string[]|object} [options.columns] The columns to include
- * @returns {string} SQL query string to load data
+ * @param {*} data The dataset as an array of objects.
+ * @param {object} [options] Loading options.
+ * @param {string[]|object} [options.columns] The columns to include.
+ *   If not specified, the keys of the first data object are used.
+ * @returns {string} SQL query string to load data.
  */
 export function sqlFrom(data, {
   columns = Object.keys(data?.[0] || {})
@@ -22,7 +23,7 @@ export function sqlFrom(data, {
   }
   const subq = [];
   for (const datum of data) {
-    const sel = keys.map(k => `${literalToSQL(datum[k])} AS "${columns[k]}"`);
+    const sel = keys.map(k => `${asLiteral(datum[k])} AS "${columns[k]}"`);
     subq.push(`(SELECT ${sel.join(', ')})`);
   }
   return subq.join(' UNION ALL ');

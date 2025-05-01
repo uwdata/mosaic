@@ -109,9 +109,9 @@ def handle_query(handler: Handler, con, cache, query):
 
     total = round((time.time() - start) * 1_000)
     if total > SLOW_QUERY_THRESHOLD:
-        logger.warning(f"DONE. Slow query took { total } ms.\n{ sql }")
+        logger.warning(f"DONE. Slow query took {total} ms.\n{sql}")
     else:
-        logger.info(f"DONE. Query took { total } ms.\n{ sql }")
+        logger.info(f"DONE. Query took {total} ms.\n{sql}")
 
 
 def on_error(error, res, req):

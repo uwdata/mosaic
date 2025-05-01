@@ -1,38 +1,33 @@
 import { expect, describe, it } from 'vitest';
-import { avg, cast, castDouble, castInteger, column } from '../src/index.js';
+import { add, cast, column, int32, float32, float64 } from '../src/index.js';
 
 describe('cast', () => {
   it('performs type casts', () => {
-    expect(String(cast('foo', 'DOUBLE'))).toBe('CAST("foo" AS DOUBLE)');
-    expect(String(cast(column('foo'), 'DOUBLE'))).toBe('CAST("foo" AS DOUBLE)');
+    expect(String(cast('foo', 'DOUBLE'))).toBe('("foo")::DOUBLE');
+    expect(String(cast(column('foo'), 'DOUBLE'))).toBe('("foo")::DOUBLE');
 
-    const expr = cast(avg('bar'), 'DOUBLE');
-    expect(String(expr)).toBe('CAST(AVG("bar") AS DOUBLE)');
-    expect(expr.aggregate).toBe('AVG');
-    expect(expr.column).toBe('bar');
-    expect(expr.columns).toEqual(['bar']);
-    expect(expr.label).toBe('avg(bar)');
+    const expr = cast(add('bar', 'baz'), 'INTEGER');
+    expect(String(expr)).toBe('(("bar" + "baz"))::INTEGER');
   });
-  it('performs double casts', () => {
-    expect(String(castDouble('foo'))).toBe('CAST("foo" AS DOUBLE)');
-    expect(String(castDouble(column('foo')))).toBe('CAST("foo" AS DOUBLE)');
 
-    const expr = castDouble(avg('bar'));
-    expect(String(expr)).toBe('CAST(AVG("bar") AS DOUBLE)');
-    expect(expr.aggregate).toBe('AVG');
-    expect(expr.column).toBe('bar');
-    expect(expr.columns).toEqual(['bar']);
-    expect(expr.label).toBe('avg(bar)');
+  describe('int32', () => {
+    it('casts to 32-bit integer', () => {
+      expect(String(int32('foo'))).toBe('("foo")::INTEGER');
+      expect(String(int32(column('foo')))).toBe('("foo")::INTEGER');
+    });
   });
-  it('performs integer casts', () => {
-    expect(String(castInteger('foo'))).toBe('CAST("foo" AS INTEGER)');
-    expect(String(castInteger(column('foo')))).toBe('CAST("foo" AS INTEGER)');
 
-    const expr = castInteger(avg('bar'));
-    expect(String(expr)).toBe('CAST(AVG("bar") AS INTEGER)');
-    expect(expr.aggregate).toBe('AVG');
-    expect(expr.column).toBe('bar');
-    expect(expr.columns).toEqual(['bar']);
-    expect(expr.label).toBe('avg(bar)');
+  describe('float32', () => {
+    it('casts to 32-bit floating point number', () => {
+      expect(String(float32('foo'))).toBe('("foo")::FLOAT');
+      expect(String(float32(column('foo')))).toBe('("foo")::FLOAT');
+    });
+  });
+
+  describe('float64', () => {
+    it('casts to 64-bit floating point number', () => {
+      expect(String(float64('foo'))).toBe('("foo")::DOUBLE');
+      expect(String(float64(column('foo')))).toBe('("foo")::DOUBLE');
+    });
   });
 });

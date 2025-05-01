@@ -5,10 +5,12 @@ const NIL = {};
  * a Promise. Upon repeated invocation, the callback will not be invoked
  * until a prior Promise resolves. If multiple invocations occurs while
  * waiting, only the most recent invocation will be pending.
- * @param {(event: *) => Promise} callback The callback function.
+ * @template E, T
+ * @param {(event: E) => Promise<T>} callback The callback function.
  * @param {boolean} [debounce=true] Flag indicating if invocations
  *  should also be debounced within the current animation frame.
- * @returns A new function that throttles access to the callback.
+ * @returns {(event: E) => void} A new function that throttles
+ *  access to the callback.
  */
 export function throttle(callback, debounce = false) {
   let curr;
@@ -16,15 +18,17 @@ export function throttle(callback, debounce = false) {
   let pending = NIL;
 
   function invoke(event) {
-    curr = callback(event).finally(() => {
-      if (next) {
-        const { value } = next;
-        next = null;
-        invoke(value);
-      } else {
-        curr = null;
-      }
-    });
+    curr = callback(event)
+      .catch(() => {})
+      .finally(() => {
+        if (next) {
+          const { value } = next;
+          next = null;
+          invoke(value);
+        } else {
+          curr = null;
+        }
+      });
   }
 
   function enqueue(event) {

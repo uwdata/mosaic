@@ -7,7 +7,7 @@ await vg.coordinator().exec([
 const $point = vg.Param.value(0);
 
 export default vg.vconcat(
-  vg.slider({label: "Bias", as: $point, min: 1, max: 1000, step: 0.1}),
+  vg.slider({label: "Bias", as: $point, min: 0, max: 1000, step: 1}),
   vg.plot(
     vg.areaY(
       vg.from("walk"),

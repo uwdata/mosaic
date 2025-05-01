@@ -2,48 +2,36 @@
 
 SQL window function expressions.
 
-## WindowFunction {#window-function}
+## WindowNode {#window-node}
 
-The `WindowFunction` class represents a window function.
+The `WindowNode` class represents a window function.
 It includes a non-null `window` property indicating a window expression.
-Users should not need to instantiate `WindowFunction` instances directly, but instead should use window function methods such as [`row_number()`](#row_number), [`lag()`](#lag), _etc_.
-
-### basis
-
-`WindowFunction.basis`
-
-The `basis` property indicates an underlying table column that can serve as a selection target for this window operation.
-
-### label
-
-`WindowFunction.label`
-
-The `label` property provides a descriptive text label.
+Users should not need to instantiate `WindowNode` instances directly, but instead should use window function methods such as [`row_number()`](#row_number), [`lag()`](#lag), _etc_.
 
 ### over
 
-`WindowFunction.over(name)`
+`WindowNode.over(name)`
 
-Provide the _name_ of a window definition for this function and returns a new WindowFunction instance.
+Provide the _name_ of a window definition for this function and returns a new WindowNode instance.
 The window should be defined separately in an issued query, for example using the [Query.window](./queries#window) method.
 
 ### partitionby
 
-`WindowFunction.partitionby(...expressions)`
+`WindowNode.partitionby(...expressions)`
 
 Provide one or more _expressions_ by which to partition this window function and returns a new WindowFunction instance.
 
 ### orderby
 
-`WindowFunction.orderby(...expressions)`
+`WindowNode.orderby(...expressions)`
 
 Provide one or more _expressions_ by which to sort this window function and returns a new WindowFunction instance.
 
 ### rows
 
-`WindowFunction.rows(expression)`
+`WindowNode.rows(expression)`
 
-Provide a window "rows" frame specification as an array or array-valued _expression_ and returns a new WindowFunction instance.
+Provide a window "rows" frame specification as an array or array-valued _expression_ and returns a new WindowNode instance.
 A "rows" window frame is insensitive to peer rows (those that are tied according to the [orderby](#orderby) criteria).
 The frame expression should evaluate to a two-element array indicating the number of preceding or following rows.
 A zero value (`0`) indicates the current row.
@@ -51,9 +39,9 @@ A non-finite value (including `null` and `undefined`) indicates either unbounded
 
 ### range
 
-`WindowFunction.range(expression)`
+`WindowNode.range(expression)`
 
-Provide a window "range" frame specification as an array or array-valued _expression_ and returns a new WindowFunction instance.
+Provide a window "range" frame specification as an array or array-valued _expression_ and returns a new WindowNode instance.
 A "range" window grows to include peer rows (those that are tied according to the [orderby](#orderby) criteria).
 The frame expression should evaluate to a two-element array indicating the number of preceding or following rows.
 A zero value (`0`) indicates the current row.

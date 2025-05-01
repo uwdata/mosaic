@@ -1,10 +1,10 @@
-import { ParamRef } from "../Param.js";
-import { AreaXOptions, AreaYOptions } from "./Area.js";
-import { DotOptions } from "./Dot.js";
-import { LineXOptions, LineYOptions } from "./Line.js";
-import { MarkData, MarkOptions, TextStyles } from "./Marks.js";
-import { Grid2DOptions } from "./Raster.js";
-import { TextOptions } from "./Text.js";
+import { ParamRef } from '../Param.js';
+import { AreaXOptions, AreaYOptions } from './Area.js';
+import { DotOptions } from './Dot.js';
+import { LineXOptions, LineYOptions } from './Line.js';
+import { MarkData, MarkOptions, TextStyles } from './Marks.js';
+import { Grid2DOptions } from './Raster.js';
+import { TextOptions } from './Text.js';
 
 // Density2D
 
@@ -44,6 +44,14 @@ export interface Density1DOptions {
    * Defaults to 1024.
    */
   bins?: number | ParamRef;
+
+  /**
+   * Normalization method for density estimates. If `false` or `'none'` (the
+   * default), the density estimates are smoothed weighted counts. If `true`
+   * or `'sum'`, density estimates are divided by the sum of the total point
+   * mass. If `'max'`, estimates are divided by the maximum smoothed value.
+   */
+  normalize?: boolean | 'max' | 'sum' | 'none' | ParamRef;
 }
 
 export interface DensityAreaXOptions extends Omit<AreaXOptions, 'x' | 'x1' | 'x2'> {
@@ -52,6 +60,11 @@ export interface DensityAreaXOptions extends Omit<AreaXOptions, 'x' | 'x1' | 'x2
    * areaX mark; lineX, dotX, and textX marks are also supported.
    */
   type: 'areaX';
+
+  /**
+   * Flag indicating if densities should be stacked. Defaults to false.
+   */
+  stack?: boolean | ParamRef;
 }
 
 export interface DensityAreaYOptions extends Omit<AreaYOptions, 'y' | 'y1' | 'y2'> {
@@ -60,6 +73,11 @@ export interface DensityAreaYOptions extends Omit<AreaYOptions, 'y' | 'y1' | 'y2
    * areaY mark; lineY, dot, and text marks are also supported.
    */
   type?: 'areaY';
+
+  /**
+   * Flag indicating if densities should be stacked. Defaults to false.
+   */
+  stack?: boolean | ParamRef;
 }
 
 export interface DensityLineXOptions extends Omit<LineXOptions, 'x' | 'x1' | 'x2'> {

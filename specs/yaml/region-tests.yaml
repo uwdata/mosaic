@@ -30,8 +30,8 @@ vconcat:
     y: unemployment
     z: division
     stroke: steelblue
+    strokeOpacity: 0.9
     curve: monotone-x
-    mixBlendMode: multiply
   - select: region
     channels: [z]
     as: $series

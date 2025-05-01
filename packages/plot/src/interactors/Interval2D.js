@@ -6,6 +6,10 @@ import { getField } from './util/get-field.js';
 import { invert } from './util/invert.js';
 import { sanitizeStyles } from './util/sanitize-styles.js';
 
+/**
+ * @import {Activatable} from '@uwdata/mosaic-core'
+ * @implements {Activatable}
+ */
 export class Interval2D {
   constructor(mark, {
     selection,

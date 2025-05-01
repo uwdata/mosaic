@@ -1,16 +1,77 @@
-import { MosaicClient, clausePoints, coordinator, toDataColumns } from '@uwdata/mosaic-core';
-import { Query, column, desc } from '@uwdata/mosaic-sql';
+import { Selection, clausePoints, coordinator, isParam, isSelection, queryFieldInfo, toDataColumns } from '@uwdata/mosaic-core';
+import { Query, desc } from '@uwdata/mosaic-sql';
 import { formatDate, formatLocaleAuto, formatLocaleNumber } from './util/format.js';
-import { input } from './input.js';
+import { Input, input } from './input.js';
 
 let _id = -1;
 
+/**
+ * Create a new table input instance.
+ * @param {object} options Options object
+ * @param {HTMLElement} [options.element] The parent DOM element in which to
+ *  place the table element. If undefined, a new `div` element is created.
+ * @param {Selection} [options.filterBy] A selection to filter the database
+ *  table indicated by the *from* option.
+ * @param {Selection} [options.as] The output selection. A selection
+ *  clause is added for the currently selected table row.
+ * @param {{ [name: string]: 'left' | 'right' | 'center' }} [options.align]
+ *  An object that maps column names to horiztonal text alignment values. If
+ *  unspecified, alignment is determined based on the column data type.
+ * @param {{ [name: string]: (value: any) => string }} [options.format] An
+ *  object that maps column names to format functions to use for that
+ *  column's data. Each format function takes a value as input and generates
+ *  formatted text to show in the table.
+ * @param {string} [options.from] The name of a database table to use as a data
+ *  source for this widget. Used in conjunction with the *columns* option.
+ * @param {string[]} [options.columns] The name of database columns to include
+ *  in the table component. If unspecified, all columns are included.
+ *  Used in conjunction with the *from* option.
+ * @param {number | { [name: string]: number }} [options.width] If a number,
+ *  sets the desired width of the table, in pixels. If an object, is used to
+ *  set explicit pixel widts for each named column included in the object.
+ * @param {number} [options.maxWidth] The maximum width of the table, in pixels.
+ * @param {number} [options.height] The desired height of the table, in pixels.
+ * @param {number} [options.rowBatch] The number of rows to request per query
+ *  batch. The batch size will be used to prefetch data beyond the currently
+ *  visible range.
+ * @returns {HTMLElement} The container element for a table component.
+ */
 export const table = options => input(Table, options);
 
-export class Table extends MosaicClient {
+/**
+ * A HTML table based table component.
+ * @extends {Input}
+ */
+export class Table extends Input {
   /**
    * Create a new Table instance.
    * @param {object} options Options object
+   * @param {HTMLElement} [options.element] The parent DOM element in which to
+   *  place the table element. If undefined, a new `div` element is created.
+   * @param {Selection} [options.filterBy] A selection to filter the database
+   *  table indicated by the *from* option.
+   * @param {Selection} [options.as] The output selection. A selection
+   *  clause is added for the currently selected table row.
+   * @param {{ [name: string]: 'left' | 'right' | 'center' }} [options.align]
+   *  An object that maps column names to horiztonal text alignment values. If
+   *  unspecified, alignment is determined based on the column data type.
+   * @param {{ [name: string]: (value: any) => string }} [options.format] An
+   *  object that maps column names to format functions to use for that
+   *  column's data. Each format function takes a value as input and generates
+   *  formatted text to show in the table.
+   * @param {string} [options.from] The name of a database table to use as a data
+   *  source for this widget. Used in conjunction with the *columns* option.
+   * @param {string[]} [options.columns] The name of database columns to include
+   *  in the table component. If unspecified, all columns are included.
+   *  Used in conjunction with the *from* option.
+   * @param {number | { [name: string]: number }} [options.width] If a number,
+   *  sets the desired width of the table, in pixels. If an object, is used to
+   *  set explicit pixel widts for each named column included in the object.
+   * @param {number} [options.maxWidth] The maximum width of the table, in pixels.
+   * @param {number} [options.height] The desired height of the table, in pixels.
+   * @param {number} [options.rowBatch] The number of rows to request per query
+   *  batch. The batch size will be used to prefetch data beyond the currently
+   *  visible range.
    */
   constructor({
     element,
@@ -25,17 +86,25 @@ export class Table extends MosaicClient {
     rowBatch = 100,
     as
   } = {}) {
-    super(filterBy);
+    super(filterBy, element, null);
+
     this.id = `table-${++_id}`;
+    this.element.setAttribute('id', this.id);
+
     this.from = from;
     this.columns = columns;
     this.format = format;
     this.align = align;
     this.widths = typeof width === 'object' ? width : {};
 
+    if (isParam(from)) {
+      // if data table is a param, re-initialize upon change
+      from.addEventListener('value', () => this.initialize());
+    }
+
     this.offset = 0;
     this.limit = +rowBatch;
-    this.pending = false;
+    this.isPending = false;
 
     this.selection = as;
     this.currentRow = -1;
@@ -44,9 +113,6 @@ export class Table extends MosaicClient {
     this.sortColumn = null;
     this.sortDesc = false;
 
-    this.element = element || document.createElement('div');
-    this.element.setAttribute('id', this.id);
-    Object.defineProperty(this.element, 'value', { value: this });
     if (typeof width === 'number') this.element.style.width = `${width}px`;
     if (maxWidth) this.element.style.maxWidth = `${maxWidth}px`;
     this.element.style.maxHeight = `${height}px`;
@@ -54,15 +120,16 @@ export class Table extends MosaicClient {
 
     let prevScrollTop = -1;
     this.element.addEventListener('scroll', evt => {
-      const { pending, loaded } = this;
+      const { isPending, loaded } = this;
+      // @ts-ignore
       const { scrollHeight, scrollTop, clientHeight } = evt.target;
 
       const back = scrollTop < prevScrollTop;
       prevScrollTop = scrollTop;
-      if (back || pending || loaded) return;
+      if (back || isPending || loaded) return;
 
       if (scrollHeight - scrollTop < 2 * clientHeight) {
-        this.pending = true;
+        this.isPending = true;
         this.requestData(this.offset + this.limit);
       }
     });
@@ -94,6 +161,10 @@ export class Table extends MosaicClient {
     this.element.appendChild(this.style);
   }
 
+  sourceTable() {
+    return isParam(this.from) ? this.from.value : this.from;
+  }
+
   clause(rows = []) {
     const { data, limit, schema } = this;
     const fields = schema.map(s => s.column);
@@ -115,17 +186,18 @@ export class Table extends MosaicClient {
     coordinator().prefetch(query.clone().offset(offset + this.limit));
   }
 
-  fields() {
-    return this.columns.map(name => column(this.from, name));
-  }
+  async prepare() {
+    // query for column scheam information
+    const table = this.sourceTable();
+    const fields = this.columns.map(column => ({ column, table }));
+    const schema = await queryFieldInfo(this.coordinator, fields);
+    this.schema = schema;
 
-  fieldInfo(info) {
-    this.schema = info;
-
+    // create table header row
     const thead = this.head;
     thead.innerHTML = '';
     const tr = document.createElement('tr');
-    for (const { column } of info) {
+    for (const { column } of schema) {
       const th = document.createElement('th');
       th.addEventListener('click', evt => this.sort(evt, column));
       th.appendChild(document.createElement('span'));
@@ -135,21 +207,19 @@ export class Table extends MosaicClient {
     thead.appendChild(tr);
 
     // get column formatters
-    this.formats = formatof(this.format, info);
+    this.formats = formatof(this.format, schema);
 
     // get column alignment style
     this.style.innerText = tableCSS(
       this.id,
-      alignof(this.align, info),
-      widthof(this.widths, info)
+      alignof(this.align, schema),
+      widthof(this.widths, schema)
     );
-
-    return this;
   }
 
   query(filter = []) {
-    const { from, limit, offset, schema, sortColumn, sortDesc } = this;
-    return Query.from(from)
+    const { limit, offset, schema, sortColumn, sortDesc } = this;
+    return Query.from(this.sourceTable())
       .select(schema.map(s => s.column))
       .where(filter)
       .orderby(sortColumn ? (sortDesc ? desc(sortColumn) : sortColumn) : [])
@@ -158,7 +228,7 @@ export class Table extends MosaicClient {
   }
 
   queryResult(data) {
-    if (!this.pending) {
+    if (!this.isPending) {
       // data is not from an internal request, so reset table
       this.loaded = false;
       this.data = [];
@@ -194,8 +264,14 @@ export class Table extends MosaicClient {
       this.loaded = true;
     }
 
-    this.pending = false;
+    this.isPending = false;
     return this;
+  }
+
+  activate() {
+    if (isSelection(this.selection)) {
+      this.selection.activate(this.clause([]));
+    }
   }
 
   sort(event, column) {

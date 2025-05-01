@@ -1,5 +1,5 @@
 import { toDataColumns } from '@uwdata/mosaic-core';
-import { avg, count, stddev } from '@uwdata/mosaic-sql';
+import { avg, count, div, sqrt, stddev } from '@uwdata/mosaic-sql';
 import { erfinv } from './util/stats.js';
 import { Mark, markPlotSpec, markQuery } from './Mark.js';
 import { handleParam } from './util/handle-param.js';
@@ -20,13 +20,12 @@ export class ErrorBarMark extends Mark {
   }
 
   query(filter = []) {
-    const { channels, field, source: { table } } = this;
+    const { channels, field } = this;
     const fields = channels.concat([
       { field: avg(field), as: '__avg__' },
-      { field: count(field), as: '__n__', },
-      { field: stddev(field), as: '__sd__' }
+      { field: div(stddev(field), sqrt(count(field))), as: '__se__', }
     ]);
-    return markQuery(fields, table).where(filter);
+    return markQuery(fields, this.sourceTable()).where(filter);
   }
 
   queryResult(data) {
@@ -39,10 +38,10 @@ export class ErrorBarMark extends Mark {
 
     // compute confidence interval channels
     const p = Math.SQRT2 * erfinv(ci);
-    const { columns: { __avg__: u, __sd__: s, __n__: n } } = data;
+    const { columns: { __avg__: u, __se__: s } } = data;
     const options = {
-      [`${dim}1`]: u.map((u, i) => u - p * s[i] / Math.sqrt(n[i])),
-      [`${dim}2`]: u.map((u, i) => u + p * s[i] / Math.sqrt(n[i]))
+      [`${dim}1`]: u.map((u, i) => u - p * s[i]),
+      [`${dim}2`]: u.map((u, i) => u + p * s[i])
     };
 
     return markPlotSpec(type, detail, channels, data, options);

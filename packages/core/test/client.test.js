@@ -40,12 +40,12 @@ describe('MosaicClient', () => {
       }
       queryPending() {
         // add result promise to global pending queue
-        this.pending = new QueryResult();
-        pending.push(this.pending);
+        this.pendingResult = new QueryResult();
+        pending.push(this.pendingResult);
       }
       queryResult(data) {
         // fulfill pending promise with sorted data
-        this.pending.fulfill(
+        this.pendingResult.fulfill(
           data.toArray().sort((a, b) => a.key - b.key)
         );
         return this;
@@ -59,6 +59,8 @@ describe('MosaicClient', () => {
     const client2 = new TestClient('testData', 'DayOfWeek', selection);
     coord.connect(client1);
     coord.connect(client2);
+
+    await Promise.all([client1.pending, client2.pending]);
 
     // initial results with empty selection
     expect(await Promise.all(pending)).toEqual([
@@ -114,5 +116,60 @@ describe('MosaicClient', () => {
       [ {key: 10, value: 1}, {key: 12, value: 1} ]
     ]);
     pending = [];
+  });
+
+  it('respects enabled status', async () => {
+    // instantiate coordinator to use node.js DuckDB
+    // disable logging and preaggregation
+    const coord = new Coordinator(nodeConnector(), {
+      logger: null,
+      preagg: { enabled: false }
+    });
+
+    let prepared = false;
+    let queried = false;
+    let result = null;
+
+    class TestClient extends MosaicClient {
+      constructor() { super(undefined); this.enabled = false; }
+      async prepare() { prepared = true; }
+      query() { queried = true; return Query.select({ foo: 1 }); }
+      queryResult(data) { result = data; }
+    }
+
+    // client is disabled, lifecycle methods should defer
+    const client = new TestClient();
+    coord.connect(client);
+    await client.pending;
+    expect(prepared).toBe(false);
+    expect(queried).toBe(false);
+    expect(result).toBe(null);
+
+    // enable client, initialization and query should proceed
+    client.enabled = true;
+    await client.pending;
+    expect(prepared).toBe(true);
+    expect(queried).toBe(true);
+    expect(result == null).toBe(false);
+
+    // clear state and disable client
+    prepared = false;
+    queried = false;
+    result = null;
+    client.enabled = false;
+
+    // request re-initialization, methods should defer
+    client.initialize();
+    await client.pending;
+    expect(prepared).toBe(false);
+    expect(queried).toBe(false);
+    expect(result).toBe(null);
+
+    // re-enable client, lifecycle methods should proceed
+    client.enabled = true;
+    await client.pending;
+    expect(prepared).toBe(true);
+    expect(queried).toBe(true);
+    expect(result == null).toBe(false);
   });
 });
