@@ -27,10 +27,10 @@ export class MosaicClient {
    *  will re-query and update the client when the selection updates.
    */
   constructor(filterSelection) {
-    /** @type {Selection} */
+    /** @type {Selection | undefined} */
     this._filterBy = filterSelection;
     this._requestUpdate = throttle(() => this.requestQuery(), true);
-    /** @type {Coordinator} */
+    /** @type {Coordinator | null} */
     this._coordinator = null;
     /** @type {Promise<any>} */
     this._pending = Promise.resolve();
@@ -38,12 +38,12 @@ export class MosaicClient {
     this._enabled = true;
     /** @type {boolean} */
     this._initialized = false;
-    /** @type {Query | boolean} */
+    /** @type {Query | boolean | null} */
     this._request = null;
   }
 
   /**
-   * Return this client's connected coordinator.
+   * @returns {Coordinator | null}  this client's connected coordinator.
    */
   get coordinator() {
     return this._coordinator;
@@ -91,7 +91,7 @@ export class MosaicClient {
   }
 
   /**
-   * Return this client's filter selection.
+   * @returns {Selection | undefined} this client's filter selection.
    */
   get filterBy() {
     return this._filterBy;
@@ -202,6 +202,18 @@ export class MosaicClient {
       this._initialized = true;
       this._pending = this.prepare().then(() => this.requestQuery());
     }
+  }
+
+  /**
+   * Remove this client: disconnect from the coordinator and free up any
+   * resource use. This method has no effect if the client is not connected
+   * to a coordinator.
+   *
+   * If overriding this method in a client subclass, be sure to also
+   * disconnect from the coordinator.
+   */
+  destroy() {
+    this.coordinator?.disconnect(this);
   }
 
   /**

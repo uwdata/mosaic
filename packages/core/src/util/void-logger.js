@@ -5,6 +5,9 @@ export function voidLogger() {
     info(..._) {},
     log(..._) {},
     warn(..._) {},
-    error(..._) {}
+    error(..._) {},
+    group(label) {},
+    groupCollapsed(label) {},
+    groupEnd() {}
   };
 }

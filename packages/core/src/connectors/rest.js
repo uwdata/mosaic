@@ -1,16 +1,13 @@
+/** @import { Connector } from './Connector.js' */
 import { decodeIPC } from '../util/decode-ipc.js';
 
+/**
+ * Connect to a DuckDB server over an HTTP REST interface.
+ * @param {string} uri The URI for the DuckDB REST server.
+ * @returns {Connector} A connector instance.
+ */
 export function restConnector(uri = 'http://localhost:3000/') {
   return {
-    /**
-     * Query the DuckDB server.
-     * @param {object} query
-     * @param {'exec' | 'arrow' | 'json' | 'create-bundle' | 'load-bundle'} [query.type] The query type.
-     * @param {string} [query.sql] A SQL query string.
-     * @param {string[]} [query.queries] The queries used to create a bundle.
-     * @param {string} [query.name] The name of a bundle to create or load.
-     * @returns the query result
-     */
     async query(query) {
       const req = fetch(uri, {
         method: 'POST',
@@ -20,7 +17,6 @@ export function restConnector(uri = 'http://localhost:3000/') {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(query)
       });
-
 
       const res = await req;
 

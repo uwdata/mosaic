@@ -1,3 +1,5 @@
+/** @import { Connector } from './connectors/Connector.js' */
+/** @import { Cache, Logger } from './types.js' */
 import { consolidator } from './QueryConsolidator.js';
 import { lruCache, voidCache } from './util/cache.js';
 import { PriorityQueue } from './util/priority-queue.js';
@@ -12,10 +14,15 @@ export class QueryManager {
   ) {
     /** @type {PriorityQueue} */
     this.queue = new PriorityQueue(3);
+    /** @type {Connector} */
     this.db = null;
+    /** @type {Cache} */
     this.clientCache = null;
+    /** @type {Logger} */
     this._logger = voidLogger();
+    /** @type {boolean} */
     this._logQueries = false;
+    /** @type {ReturnType<typeof consolidator> | null} */
     this._consolidate = null;
     /**
      * Requests pending with the query manager.
@@ -107,9 +114,9 @@ export class QueryManager {
   }
 
   /**
-   * Get or set the client cache.
-   * @param {boolean | import('./util/cache.js').Cache} [value] The cache instance or `true` to create an LRU cache.
-   * @returns {import('./util/cache.js').Cache} The cache instance.
+   * Get or set the current query cache.
+   * @param {Cache | boolean} [value] The cache instance or `true` to create an LRU cache.
+   * @returns {Cache} The cache instance.
    */
   cache(value) {
     return value !== undefined
@@ -117,18 +124,37 @@ export class QueryManager {
       : this.clientCache;
   }
 
+  /**
+   * Get or set the current logger.
+   * @param {Logger} [value]
+   * @returns {Logger}
+   */
   logger(value) {
     return value ? (this._logger = value) : this._logger;
   }
 
+  /**
+   * Get or set if queries should be logged.
+   * @param {boolean} [value]
+   * @returns {boolean}
+   */
   logQueries(value) {
     return value !== undefined ? this._logQueries = !!value : this._logQueries;
   }
 
+  /**
+   * Get or set the database connector.
+   * @param {Connector} [connector]
+   * @returns {Connector}
+   */
   connector(connector) {
     return connector ? (this.db = connector) : this.db;
   }
 
+  /**
+   * Indicate if query consolidation should be performed.
+   * @param {boolean} flag
+   */
   consolidate(flag) {
     if (flag && !this._consolidate) {
       this._consolidate = consolidator(this.enqueue.bind(this), this.clientCache);

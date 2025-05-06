@@ -28,7 +28,8 @@ dev = [
   "jupyterlab",
   "pandas",
   "pyyaml",
-  "ruff"
+  "ruff",
+  "watchfiles"
 ]
 
 [tool.hatch.version]

@@ -9,7 +9,7 @@
     "preview": "vite preview"
   },
   "devDependencies": {
-    "vite": "^6.2.1"
+    "vite": "^6.2.4"
   },
   "dependencies": {
     "@uwdata/mosaic-core": "^0.15.0",
