@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { execFileSync, ExecFileSyncOptionsWithStringEncoding } from 'child_process';
 import { join } from 'path';
 
-const cliPath = join(__dirname, '..', 'dist', 'publish', 'src', 'cli.js');
+const cliPath = join(__dirname, '..', 'dist', 'cli.js');
 
 function runCli(args: string[], options: ExecFileSyncOptionsWithStringEncoding): string {
     return execFileSync('node', [cliPath, ...args], options);
