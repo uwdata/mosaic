@@ -35,8 +35,7 @@ import { MosaicPublisher } from '@uwdata/publish';
 
 const publisher = new MosaicPublisher({
   spec: './path/to/spec.json',
-  outputDir: './docs/public/schema',
-  verbose: true
+  outputPath: './docs/public/schema'
 });
 
 publisher.publish()

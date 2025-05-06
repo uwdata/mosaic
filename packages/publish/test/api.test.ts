@@ -10,13 +10,13 @@ describe('MosaicPublisher API', () => {
             plot: []
         };
 
-        const publisher = new MosaicPublisher(
-            JSON.stringify(dummySpec),
-            './.tmp',
-            'Test Spec',
-            'minimal',
-            new Logger(LogLevel.SILENT)
-        )
+        const publisher = new MosaicPublisher({
+            spec: JSON.stringify(dummySpec),
+            outputPath: './.tmp',
+            title: 'Test Spec',
+            optimize: 'minimal',
+            logger: new Logger(LogLevel.SILENT)
+        });
 
         await expect(publisher.publish()).resolves.toBeUndefined();
 

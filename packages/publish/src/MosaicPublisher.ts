@@ -14,7 +14,6 @@ import {
   SpecNode, DataNode, FileDataNode,
   ParquetDataNode, OptionsNode,
   CodegenContext,
-  QueryDataNode,
 } from '@uwdata/mosaic-spec';
 import { MosaicClient, isActivatable } from '@uwdata/mosaic-core';
 
@@ -40,13 +39,24 @@ export class PublishError extends Error {
   }
 }
 
+export type MosaicPublisherOptions = {
+  spec: string;
+  outputPath?: string;
+  title?: string;
+  optimize?: 'none' | 'minimal' | 'more' | 'most';
+  logger?: Logger;
+  customScript?: string;
+};
+
 /**
  * Class to facilitate publishing a Mosaic specification.
- * @param spec Contents of JSON Mosaic specification file.
- * @param outputPath Path to the desired output directory.
- * @param title Optional title for the HTML file.
- * @param optimize Level of optimization for published visualization.
- * @param logger Optional logger instance to use for logging.
+ * @param options Options for configuring the MosaicPublisher instance.
+ * @param options.spec Contents of JSON Mosaic specification file.
+ * @param options.outputPath Path to the desired output directory.
+ * @param options.title Optional title for the HTML file.
+ * @param options.optimize Level of optimization for published visualization.
+ * @param options.logger Optional logger instance to use for logging.
+ * @param options.customScript Optional custom script to include in the output.
  * 
  * The `publish` method is the main entry point for the class
  */
@@ -56,24 +66,27 @@ export class MosaicPublisher {
   private title: string;
   private optimizations: Optimizations[];
   private logger: Logger;
+  private customScript: string = '';
 
   // Internal references used throughout
   private ctx: PublishContext;
   private ast?: SpecNode;
   private data?: Record<string, DataNode>;
 
-  constructor(
-    spec: string,
+  constructor({
+    spec,
     outputPath = 'out',
     title = 'Mosaic Visualization',
-    optimize: 'none' | 'minimal' | 'more' | 'most' = 'minimal',
-    logger: Logger = new Logger(LogLevel.INFO)
-  ) {
+    optimize = 'minimal',
+    logger = new Logger(LogLevel.INFO),
+    customScript = '',
+  }: MosaicPublisherOptions) {
     this.spec = spec;
     this.outputPath = outputPath;
     this.title = title;
     this.optimizations = OPTIMIZATION_LEVEL_TO_OPTIMIZATIONS[optimize];
     this.logger = logger;
+    this.customScript = customScript;
 
     // Create PublishContext
     const connector = publishConnector();
@@ -124,6 +137,7 @@ export class MosaicPublisher {
       fs.mkdirSync(this.outputPath, { recursive: true });
     }
 
+    let postLoad;
     if (isInteractive) {
       // Activate interactors and inputs
       await this.activateInteractorsAndInputs(interactors, inputs);
@@ -136,15 +150,15 @@ export class MosaicPublisher {
         return code?.replace(`"${file}"`, `window.location.origin + "/${file}"`);
       };
       const tables = this.ctx.coordinator.databaseConnector().tables();
-      await this.updateDataNodes(tables);
-
+      postLoad = await this.updateDataNodes(tables);
       // Export relevant data from DuckDB to Parquet
       await this.exportDataFromDuckDB(tables);
     }
 
     await this.writeFiles(
       isInteractive,
-      this.optimizations.includes(Optimizations.PRERENDER) ? element : undefined
+      this.optimizations.includes(Optimizations.PRERENDER) ? element : undefined,
+      postLoad,
     );
   }
 
@@ -171,7 +185,6 @@ export class MosaicPublisher {
    * for queries to finish.
    */
   private async activateInteractorsAndInputs(interactors: Set<any>, inputs: Set<MosaicClient>) {
-    await this.ctx.coordinator.exec('CREATE SCHEMA IF NOT EXISTS mosaic');
     for (const interactor of interactors) {
       if (isActivatable(interactor)) interactor.activate();
       await this.waitForQueryToFinish();
@@ -193,7 +206,7 @@ export class MosaicPublisher {
    * Process data definitions (DataNodes) and converts them to ParquetDataNode
    * objects based on specified tables.
    */
-  private async updateDataNodes(tables: Record<string, Set<string> | null>) {
+  private async updateDataNodes(tables: Record<string, Set<string> | null>): Promise<string | undefined> {
     // process data definitions
     for (const node of Object.values(this.data!)) {
       if (!(node.name in tables)) {
@@ -209,28 +222,33 @@ export class MosaicPublisher {
     const db_tables = await this.ctx.coordinator.query('SHOW ALL TABLES', { cache: false, type: 'json' });
     if (this.optimizations.includes(Optimizations.PREAGREGATE)
       && db_tables.some((table: any) => table.name.startsWith('preagg_'))) {
-      this.ast!.data['schema'] = new SchemaCreateNode('schema', 'mosaic');
+      let postLoad = "getVgInstance().coordinator().exec([\n\t'CREATE SCHEMA IF NOT EXISTS mosaic;',\n";
+      const genCtx = new CodegenContext({
+        namespace: 'getVgInstance()'
+      });
+
       for (const table of db_tables) {
         if (table.name.startsWith('preagg_')) {
           const name = `${table.schema}.${table.name}`;
           tables[name] = null;
           const file = `data/.mosaic/${table.name}.parquet`;
           this.ast!.data[name] = new ParquetDataNode(name, file, new OptionsNode({}));
+          postLoad += `\t${this.ast!.data[name].codegenQuery(genCtx)},\n`;
         } else if (table.name in tables && tables[table.name] == new Set(table.column_names)) {
           tables[table.name] = null;
         }
       }
+      postLoad += "], {priority: 2})";
+      return postLoad;
     }
+    return undefined;
   }
 
   /**
    * Write out the index.js, index.html, and create data/ directory as needed.
    */
-  private async writeFiles(isInteractive: boolean, element?: HTMLElement | SVGElement) {
-    let preambleOptions: PreambleOptions = {
-      needsClientReady: this.optimizations.includes(Optimizations.PRERENDER),
-      cacheFile: undefined,
-    }
+  private async writeFiles(isInteractive: boolean, element?: HTMLElement | SVGElement, postLoad?: string) {
+    let preambleOptions: PreambleOptions = { cacheFile: undefined }
     if (this.optimizations.includes(Optimizations.LOAD_CACHE)) {
       const cache = this.ctx.coordinator.manager.cache().export();
       const cacheFile = '.cache.arrow';
@@ -253,9 +271,10 @@ export class MosaicPublisher {
     const html = htmlTemplate({
       title: this.title,
       css: templateCSS,
+      postLoad,
       isInteractive,
-      needsClientReady: this.optimizations.includes(Optimizations.PRERENDER),
-      element
+      element,
+      customScript: this.customScript,
     });
 
     fs.writeFileSync(path.join(this.outputPath, 'index.html'), html);
@@ -316,6 +335,7 @@ export class MosaicPublisher {
 
       if (table.startsWith('mosaic.preagg_')) {
         materialized_view_copy_queries.push(query);
+        delete this.ast!.data[table];
       } else {
         table_copy_queries.push(query);
       }
@@ -332,18 +352,5 @@ export class MosaicPublisher {
         await this.ctx.coordinator.exec(materialized_view_copy_queries);
       }
     }
-  }
-}
-
-class SchemaCreateNode extends QueryDataNode {
-  schema: string;
-
-  constructor(name: string, schema: string) {
-    super(name, "schema");
-    this.schema = schema;
-  }
-
-  public codegenQuery(ctx: CodegenContext) {
-    return `'CREATE SCHEMA IF NOT EXISTS ${this.schema};'`;
   }
 }

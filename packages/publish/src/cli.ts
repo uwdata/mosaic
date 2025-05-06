@@ -79,13 +79,13 @@ try {
 }
 
 // Instantiate the publisher
-const publisher = new MosaicPublisher(
+const publisher = new MosaicPublisher({
   spec,
-  argv.output,
-  argv.title,
-  argv.optimize,
+  outputPath: argv.output,
+  title: argv.title,
+  optimize: argv.optimize,
   logger
-);
+});
 
 // Execute publishing in an async context
 (async () => {
