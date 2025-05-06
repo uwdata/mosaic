@@ -1,0 +1,33 @@
+{
+  "name": "@uwdata/publish",
+  "version": "1.0.0",
+  "description": "CLI tool for spec optimization",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "bin": {
+    "mosaic-publish": "./dist/cli.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "test": "npm run build && vitest run"
+  },
+  "dependencies": {
+    "@rollup/plugin-node-resolve": "^16.0.0",
+    "@rollup/plugin-virtual": "^3.0.2",
+    "@rollup/plugin-commonjs": "^28.0.3",
+    "chalk": "^4.1.2",
+    "rollup": "^4.35.0",
+    "skia-canvas": "^2.0.2",
+    "yargs": "^17.7.2"
+  },
+  "devDependencies": {
+    "@types/jsdom": "^21.1.7",
+    "@types/yargs": "^17.0.33",
+    "typescript": "^5.6.3"
+  },
+  "files": [
+    "dist"
+  ],
+  "type": "module"
+}

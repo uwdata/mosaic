@@ -115,8 +115,8 @@ export class QueryManager {
 
   /**
    * Get or set the current query cache.
-   * @param {Cache | boolean} [value]
-   * @returns {Cache}
+   * @param {Cache | boolean} [value] The cache instance or `true` to create an LRU cache.
+   * @returns {Cache} The cache instance.
    */
   cache(value) {
     return value !== undefined
