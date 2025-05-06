@@ -72,6 +72,7 @@ export class MosaicPublisher {
   private ctx: PublishContext;
   private ast?: SpecNode;
   private data?: Record<string, DataNode>;
+  private db: ReturnType<typeof publishConnector>;
 
   constructor({
     spec,
@@ -89,8 +90,8 @@ export class MosaicPublisher {
     this.customScript = customScript;
 
     // Create PublishContext
-    const connector = publishConnector();
-    this.ctx = new PublishContext(connector);
+    this.db = publishConnector();
+    this.ctx = new PublishContext(this.db);
   }
 
   /**
@@ -149,7 +150,7 @@ export class MosaicPublisher {
         const { file } = this;
         return code?.replace(`"${file}"`, `window.location.origin + "/${file}"`);
       };
-      const tables = this.ctx.coordinator.databaseConnector().tables();
+      const tables = this.db.tables();
       postLoad = await this.updateDataNodes(tables);
       // Export relevant data from DuckDB to Parquet
       await this.exportDataFromDuckDB(tables);
