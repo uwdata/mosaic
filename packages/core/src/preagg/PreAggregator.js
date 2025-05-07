@@ -1,9 +1,11 @@
-/** @import { ExprNode } from '@uwdata/mosaic-sql' */
-/** @import { Coordinator } from '../Coordinator.js' */
-/** @import { MosaicClient } from '../MosaicClient.js' */
-/** @import { Selection } from '../Selection.js' */
-/** @import { BinMethod, Scale, SelectionClause } from '../util/selection-types.js' */
-import { Query, and, asNode, ceil, collectColumns, createTable, float64, floor, isBetween, int32, mul, round, scaleTransform, sub, isSelectQuery, SelectQuery, isAggregateExpression, ColumnNameRefNode } from '@uwdata/mosaic-sql';
+/**
+ * @import { ExprNode, SelectQuery } from '@uwdata/mosaic-sql'
+ * @import { Coordinator } from '../Coordinator.js'
+ * @import { MosaicClient } from '../MosaicClient.js'
+ * @import { Selection } from '../Selection.js'
+ * @import { BinMethod, Scale, SelectionClause } from '../util/selection-types.js'
+ */
+import { Query, and, asNode, ceil, collectColumns, createTable, float64, floor, isBetween, int32, mul, round, scaleTransform, sub, isSelectQuery, isAggregateExpression, ColumnNameRefNode } from '@uwdata/mosaic-sql';
 import { preaggColumns } from './preagg-columns.js';
 import { fnv_hash } from '../util/hash.js';
 

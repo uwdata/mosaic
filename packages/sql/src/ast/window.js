@@ -1,4 +1,5 @@
 /**
+ * @import { AggregateNode } from './aggregate.js'
  * @import { ExprVarArgs, WindowFunctionName } from '../types.js'
  * @import { ParamLike } from '../types.js'
  */
@@ -6,7 +7,6 @@ import { WINDOW, WINDOW_CLAUSE, WINDOW_DEF, WINDOW_FRAME } from '../constants.js
 import { exprList } from '../util/function.js';
 import { quoteIdentifier } from '../util/string.js';
 import { isParamLike } from '../util/type-check.js';
-import { AggregateNode } from './aggregate.js';
 import { FunctionNode } from './function.js';
 import { ExprNode, isNode, SQLNode } from './node.js';
 import { ParamNode } from './param.js';

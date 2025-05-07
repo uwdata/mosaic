@@ -1,5 +1,6 @@
+/** @import { SelectQuery } from '@uwdata/mosaic-sql' */
 import { isParam, MosaicClient, queryFieldInfo, toDataColumns } from '@uwdata/mosaic-core';
-import { Query, SelectQuery, collectParams, column, isAggregateExpression, isColumnParam, isColumnRef, isNode, isParamLike } from '@uwdata/mosaic-sql';
+import { Query, collectParams, column, isAggregateExpression, isColumnParam, isColumnRef, isNode, isParamLike } from '@uwdata/mosaic-sql';
 import { isColor } from './util/is-color.js';
 import { isConstantOption } from './util/is-constant-option.js';
 import { isSymbol } from './util/is-symbol.js';

@@ -1,4 +1,5 @@
-import { ExprNode, isNode } from '../ast/node.js';
+/** @import { ExprNode } from '../ast/node.js' */
+import { isNode } from '../ast/node.js';
 import { recurse } from './recurse.js';
 
 /**

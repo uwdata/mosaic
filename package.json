@@ -31,7 +31,6 @@
     "ajv": "^8.17.1",
     "ajv-formats": "^3.0.1",
     "eslint": "^9.26.0",
-    "eslint-plugin-jsdoc": "^50.6.11",
     "jsdom": "^26.1.0",
     "lerna": "^8.2.2",
     "nodemon": "^3.1.10",

@@ -21,9 +21,9 @@
     "prebuild": "rimraf dist && mkdir dist",
     "build": "npm run types",
     "types": "tsc -p tsconfig.json",
-    "types-check": "tsc -p jsconfig.json",
     "lint": "eslint src test",
-    "test": "vitest run && npm run types-check",
+    "test": "vitest run && npm run tsc",
+    "tsc": "tsc -p jsconfig.json",
     "prepublishOnly": "npm run test && npm run lint && npm run build"
   },
   "dependencies": {

@@ -1,7 +1,8 @@
+/** @import { ExprNode } from './node.js' */
 import { SELECT_CLAUSE } from '../constants.js';
 import { quoteIdentifier } from '../util/string.js';
 import { ColumnRefNode } from './column-ref.js';
-import { ExprNode, SQLNode } from './node.js';
+import { SQLNode } from './node.js';
 
 export class SelectClauseNode extends SQLNode {
   /**

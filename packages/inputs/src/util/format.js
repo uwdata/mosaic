@@ -68,12 +68,12 @@ export function localize(f) {
 /**
  * Format a Date in ISO format.
  * @param {Date} date The date to format
- * @param {(date: Date) => string | string} fallback Fallback value or function.
+ * @param {string | ((date: Date) => string)} fallback Fallback value or function.
  * @returns {string}
  */
 function isoformat(date, fallback) {
   if (!(date instanceof Date)) date = new Date(+date);
-  if (isNaN(date)) return typeof fallback === "function" ? fallback(date) : fallback;
+  if (isNaN(+date)) return typeof fallback === "function" ? fallback(date) : fallback;
   const hours = date.getUTCHours();
   const minutes = date.getUTCMinutes();
   const seconds = date.getUTCSeconds();

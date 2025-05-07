@@ -1,4 +1,5 @@
-import { DescribeQuery, isAggregateExpression, isColumnRef, isDescribeQuery, isSelectQuery, Query } from '@uwdata/mosaic-sql';
+/** @import { DescribeQuery, Query } from '@uwdata/mosaic-sql' */
+import { isAggregateExpression, isColumnRef, isDescribeQuery, isSelectQuery } from '@uwdata/mosaic-sql';
 import { QueryResult } from './util/query-result.js';
 
 function wait(callback) {

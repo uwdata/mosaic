@@ -1,6 +1,5 @@
 import js from '@eslint/js';
 import globals from 'globals';
-import jsdoc from 'eslint-plugin-jsdoc';
 
 /** @type {import('@types/eslint').Linter.Config[]} */
 export default [
@@ -15,15 +14,11 @@ export default [
         ...globals.node,
         ...globals.es6,
         globalThis: false,
-        TemplateStringsArray: true
+        TemplateStringsArray: true,
       }
     },
     rules: {
       "no-unexpected-multiline": "off",
-      "jsdoc/no-undefined-types": "warn"
     },
-    plugins: {
-      jsdoc
-    }
   }
 ];

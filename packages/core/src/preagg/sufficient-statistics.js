@@ -1,4 +1,5 @@
-import { AggregateNode, and, argmax, argmin, coalesce, count, div, exp, ExprNode, isNotNull, ln, max, min, mul, pow, regrAvgX, regrAvgY, regrCount, sql, sqrt, sub, sum } from '@uwdata/mosaic-sql';
+/** @import { AggregateNode, ExprNode } from '@uwdata/mosaic-sql' */
+import { and, argmax, argmin, coalesce, count, div, exp, isNotNull, ln, max, min, mul, pow, regrAvgX, regrAvgY, regrCount, sql, sqrt, sub, sum } from '@uwdata/mosaic-sql';
 import { fnv_hash } from '../util/hash.js';
 
 /**
