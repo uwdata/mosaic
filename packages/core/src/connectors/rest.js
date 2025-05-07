@@ -1,12 +1,18 @@
 /** @import { Connector } from './Connector.js' */
+/** @import { ExtractionOptions } from '../util/decode-ipc.js' */
 import { decodeIPC } from '../util/decode-ipc.js';
 
 /**
  * Connect to a DuckDB server over an HTTP REST interface.
- * @param {string} uri The URI for the DuckDB REST server.
+ * @param {object} [options] Connector options.
+ * @param {string} [options.uri] The URI for the DuckDB REST server.
+ * @param {ExtractionOptions} [options.ipc] Arrow IPC extraction options.
  * @returns {Connector} A connector instance.
  */
-export function restConnector(uri = 'http://localhost:3000/') {
+export function restConnector({
+  uri = 'http://localhost:3000/',
+  ipc = undefined,
+} = {}) {
   return {
     async query(query) {
       const req = fetch(uri, {
@@ -25,7 +31,7 @@ export function restConnector(uri = 'http://localhost:3000/') {
       }
 
       return query.type === 'exec' ? req
-        : query.type === 'arrow' ? decodeIPC(await res.arrayBuffer())
+        : query.type === 'arrow' ? decodeIPC(await res.arrayBuffer(), ipc)
         : res.json();
     }
   };

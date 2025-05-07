@@ -1,7 +1,7 @@
 import { DuckDB } from '@uwdata/mosaic-duckdb';
 import { decodeIPC } from '../../src/util/decode-ipc.js';
 
-export function nodeConnector(db = new DuckDB()) {
+export function nodeConnector(db = new DuckDB(), ipc) {
   return {
     /**
      * Query an in-process DuckDB instance.
@@ -16,7 +16,7 @@ export function nodeConnector(db = new DuckDB()) {
         case 'exec':
           return db.exec(sql);
         case 'arrow':
-          return decodeIPC(await db.arrowBuffer(sql));
+          return decodeIPC(await db.arrowBuffer(sql), ipc);
         default:
           return db.query(sql);
       }
