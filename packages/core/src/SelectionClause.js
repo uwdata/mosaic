@@ -1,5 +1,8 @@
-import { ExprNode, and, contains, isBetween, isIn, isNotDistinct, literal, or, prefix, regexp_matches, suffix } from '@uwdata/mosaic-sql';
-import { MosaicClient } from './MosaicClient.js';
+/**
+ * @import { ExprNode } from '@uwdata/mosaic-sql'
+ * @import { MosaicClient } from './MosaicClient.js'
+ */
+import { and, contains, isBetween, isIn, isNotDistinct, literal, or, prefix, regexp_matches, suffix } from '@uwdata/mosaic-sql';
 
 /**
  * @typedef {import('./util/selection-types.js').SelectionClause} SelectionClause

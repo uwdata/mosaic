@@ -1,5 +1,8 @@
-import { AggregateNode, ExprNode, Query, SelectQuery, collectAggregates, isAggregateExpression, isSelectQuery, isTableRef, rewrite, sql } from '@uwdata/mosaic-sql';
-import { MosaicClient } from '../MosaicClient.js';
+/**
+ * @import { AggregateNode, ExprNode, Query, SelectQuery } from '@uwdata/mosaic-sql'
+ * @import { MosaicClient } from '../MosaicClient.js'
+ */
+import { collectAggregates, isAggregateExpression, isSelectQuery, isTableRef, rewrite, sql } from '@uwdata/mosaic-sql';
 import { sufficientStatistics } from './sufficient-statistics.js';
 
 /**

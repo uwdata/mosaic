@@ -1,5 +1,5 @@
+/** @import { SpecNode } from '../ast/SpecNode.js' */
 import { SPATIAL_DATA } from '../ast/DataNode.js';
-import { SpecNode } from '../ast/SpecNode.js';
 import { toArray } from '../util.js';
 
 /**

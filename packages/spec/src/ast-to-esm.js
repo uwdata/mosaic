@@ -1,4 +1,4 @@
-import { SpecNode } from './ast/SpecNode.js';
+/** @import { SpecNode } from './ast/SpecNode.js' */
 import { resolveExtensions } from './config/extensions.js';
 import { error, isArray, isObject, isString, toArray, toParamRef } from './util.js';
 

@@ -1,4 +1,4 @@
-import { Query } from '../ast/query.js';
+/** @import { Query } from '../ast/query.js' */
 import { WithClauseNode } from '../ast/with.js';
 
 /**
