@@ -10,7 +10,7 @@
   "author": "Jeffrey Heer (https://idl.uw.edu)",
   "type": "module",
   "exports": {
-    "types": "./dist/types/index-types.d.ts",
+    "types": "./dist/types/index.d.ts",
     "default": "./src/index.js"
   },
   "repository": {
@@ -28,7 +28,6 @@
   },
   "dependencies": {
     "@uwdata/mosaic-core": "^0.15.0",
-    "@uwdata/mosaic-sql": "^0.15.0",
-    "isoformat": "^0.2.1"
+    "@uwdata/mosaic-sql": "^0.15.0"
   }
 }
