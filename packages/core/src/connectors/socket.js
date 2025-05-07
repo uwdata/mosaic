@@ -1,6 +1,5 @@
+/** @import { ExtractionOptions, Table } from '@uwdata/flechette' */
 /** @import { ArrowQueryRequest, Connector, ExecQueryRequest, JSONQueryRequest } from './Connector.js' */
-/** @import { ExtractionOptions } from '../util/decode-ipc.js' */
-/** @import { Table } from '@uwdata/flechette' */
 import { decodeIPC } from '../util/decode-ipc.js';
 
 /**

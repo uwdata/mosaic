@@ -1,8 +1,6 @@
 /** @import { ExtractionOptions, Table } from '@uwdata/flechette' */
 import { tableFromIPC } from '@uwdata/flechette';
 
-/** @export { ExtractionOptions } */
-
 /**
  * Decode Arrow IPC bytes to a table instance.
  * The default options map date and timestamp values to JS Date objects.

@@ -1,5 +1,5 @@
+/** @import { ExtractionOptions } from '@uwdata/flechette' */
 /** @import { Connector } from './Connector.js' */
-/** @import { ExtractionOptions } from '../util/decode-ipc.js' */
 import { decodeIPC } from '../util/decode-ipc.js';
 
 /**
