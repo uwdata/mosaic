@@ -10,6 +10,7 @@
   "author": "Jeffrey Heer (https://idl.uw.edu)",
   "type": "module",
   "exports": {
+    "types": "./dist/types/index.d.ts",
     "default": "./src/index.js"
   },
   "repository": {
@@ -17,13 +18,16 @@
     "url": "https://github.com/uwdata/mosaic.git"
   },
   "scripts": {
+    "prebuild": "rimraf dist && mkdir dist",
+    "build": "npm run types",
+    "types": "tsc -p tsconfig.json",
+    "types-check": "tsc -p jsconfig.json",
     "lint": "eslint src test",
-    "test": "vitest run",
-    "prepublishOnly": "npm run test && npm run lint"
+    "test": "vitest run && npm run types-check",
+    "prepublishOnly": "npm run test && npm run lint && npm run build"
   },
   "dependencies": {
     "@uwdata/mosaic-core": "^0.15.0",
-    "@uwdata/mosaic-sql": "^0.15.0",
-    "isoformat": "^0.2.1"
+    "@uwdata/mosaic-sql": "^0.15.0"
   }
 }
