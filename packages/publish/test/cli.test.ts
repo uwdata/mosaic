@@ -11,7 +11,7 @@ function runCli(args: string[], options: ExecFileSyncOptionsWithStringEncoding):
 describe('CLI', () => {
     it('should display help information when run with --help', () => {
         const output = runCli(['--help'], { encoding: 'utf8' });
-        expect(output).toContain('mosaic-publish [args]');
+        expect(output).toContain('mosaic-publish <spec> [options]');
         expect(output).toContain('Options:');
     });
 
