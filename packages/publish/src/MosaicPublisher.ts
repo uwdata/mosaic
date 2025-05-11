@@ -29,13 +29,30 @@ import {
 import { binary, map, tableFromArrays, tableToIPC, utf8 } from "@uwdata/flechette";
 
 /**
- * Error class for know publishing errors.
+ * Enum for publish exit codes.
+ */
+export enum PublishExitCode {
+  SUCCESS = 0,
+  FILE_READ_ERROR = 1,
+  SPEC_PARSE_ERROR = 2,
+  PUBLISH_ERROR = 3,
+  OUTPUT_DIR_ERROR = 4,
+  FILE_WRITE_ERROR = 5,
+  BUNDLE_ERROR = 6,
+  UNKNOWN_ERROR = 10
+}
+
+/**
+ * Error class for known publishing errors, with exit code.
  * @param message Error message.
+ * @param code Exit code.
  */
 export class PublishError extends Error {
-  constructor(message: string) {
+  code: PublishExitCode;
+  constructor(message: string, code: PublishExitCode = PublishExitCode.PUBLISH_ERROR) {
     super(message);
     this.name = 'PublishError';
+    this.code = code;
   }
 }
 
@@ -46,6 +63,7 @@ export type MosaicPublisherOptions = {
   optimize?: 'none' | 'minimal' | 'more' | 'most';
   logger?: Logger;
   customScript?: string;
+  overwrite?: boolean;
 };
 
 /**
@@ -57,6 +75,7 @@ export type MosaicPublisherOptions = {
  * @param options.optimize Level of optimization for published visualization.
  * @param options.logger Optional logger instance to use for logging.
  * @param options.customScript Optional custom script to include in the output.
+ * @param options.overwrite Whether to overwrite the output directory if it exists.
  * 
  * The `publish` method is the main entry point for the class
  */
@@ -67,6 +86,7 @@ export class MosaicPublisher {
   private optimizations: Optimizations[];
   private logger: Logger;
   private customScript: string = '';
+  private overwrite: boolean;
 
   // Internal references used throughout
   private ctx: PublishContext;
@@ -81,6 +101,7 @@ export class MosaicPublisher {
     optimize = 'minimal',
     logger = new Logger(LogLevel.INFO),
     customScript = '',
+    overwrite = false
   }: MosaicPublisherOptions) {
     this.spec = spec;
     this.outputPath = outputPath;
@@ -88,6 +109,7 @@ export class MosaicPublisher {
     this.optimizations = OPTIMIZATION_LEVEL_TO_OPTIMIZATIONS[optimize];
     this.logger = logger;
     this.customScript = customScript;
+    this.overwrite = overwrite;
 
     // Create PublishContext
     this.db = publishConnector();
@@ -96,52 +118,78 @@ export class MosaicPublisher {
 
   /**
    * Main entry point for publishing a Mosaic specification.
+   * @param returnData If true, return generated HTML/JS as an object instead of writing files.
    */
-  public async publish() {
+  public async publish(returnData?: boolean): Promise<void | { html: string; js?: string }> {
     this.logger.info('Parsing and processing spec...');
 
     // Parse specification
     try {
       this.ast = parseSpec(yaml.parse(this.spec));
     } catch (err) {
-      throw new PublishError(`Failed to parse specification: ${err}`);
+      if (err instanceof PublishError) throw err;
+      throw new PublishError(`Failed to parse specification: ${err}`, PublishExitCode.SPEC_PARSE_ERROR);
     }
     if (!this.ast) return;
     this.data = this.ast.data;
 
     // Setup jsdom
-    const dom = new JSDOM(
-      `<!DOCTYPE html><body></body>`,
-      { pretendToBeVisual: true }
-    );
-    globalThis.window = dom.window as any;
-    globalThis.document = dom.window.document;
-    globalThis.navigator ??= dom.window.navigator;
-    globalThis.requestAnimationFrame = window.requestAnimationFrame;
-    mockCanvas(globalThis.window);
+    try {
+      const dom = new JSDOM(
+        `<!DOCTYPE html><body></body>`,
+        { pretendToBeVisual: true }
+      );
+      globalThis.window = dom.window as any;
+      globalThis.document = dom.window.document;
+      globalThis.navigator ??= dom.window.navigator;
+      globalThis.requestAnimationFrame = window.requestAnimationFrame;
+      mockCanvas(globalThis.window);
+    } catch (err) {
+      if (err instanceof PublishError) throw err;
+      throw new PublishError(`Failed to initialize DOM: ${err}`, PublishExitCode.PUBLISH_ERROR);
+    }
 
     // Load the visualization in the DOM and gather interactors/inputs
-    const { element } = await astToDOM(this.ast, { api: this.ctx.api });
-    document.body.appendChild(element);
-    await clientsReady(this.ctx);
+    let element;
+    try {
+      const domResult = await astToDOM(this.ast, { api: this.ctx.api });
+      element = domResult.element;
+      document.body.appendChild(element);
+      await clientsReady(this.ctx);
+    } catch (err) {
+      if (err instanceof PublishError) throw err;
+      throw new PublishError(`Failed to process spec DOM: ${err}`, PublishExitCode.PUBLISH_ERROR);
+    }
 
     const { interactors, inputs } = this.processClients();
     const isInteractive = interactors.size + inputs.size !== 0;
+    const needsJS = isInteractive || !this.optimizations.includes(Optimizations.PRERENDER);
 
     // If spec is valid create relevant output directory
-    if (fs.existsSync(this.outputPath)) {
-      this.logger.warn(`Clearing output directory: ${this.outputPath}`);
-      fs.rmSync(this.outputPath, { recursive: true });
-      fs.mkdirSync(this.outputPath, { recursive: true });
-    } else {
-      this.logger.info(`Creating output directory: ${this.outputPath}`);
-      fs.mkdirSync(this.outputPath, { recursive: true });
+    try {
+      if (fs.existsSync(this.outputPath)) {
+        if (!this.overwrite) {
+          throw new PublishError(
+            `Output directory '${this.outputPath}' already exists. Use --overwrite to allow replacing it\nNOTE: This will delete all existing files in the directory.`,
+            PublishExitCode.OUTPUT_DIR_ERROR
+          );
+        }
+        this.logger.warn(`Clearing output directory: ${this.outputPath}`);
+        fs.rmSync(this.outputPath, { recursive: true });
+        fs.mkdirSync(this.outputPath, { recursive: true });
+      } else {
+        this.logger.info(`Creating output directory: ${this.outputPath}`);
+        fs.mkdirSync(this.outputPath, { recursive: true });
+      }
+    } catch (err) {
+      if (err instanceof PublishError) throw err;
+      throw new PublishError(`Failed to create or clear output directory: ${err}`, PublishExitCode.OUTPUT_DIR_ERROR);
     }
 
     let postLoad;
-    if (isInteractive) {
+    if (needsJS) {
       // Activate interactors and inputs
-      await this.activateInteractorsAndInputs(interactors, inputs);
+      if (isInteractive) await this.activateInteractorsAndInputs(interactors, inputs);
 
       // Modify AST and process data (extensions, data definitions, etc.)
       const og = FileDataNode.prototype.codegenQuery;
@@ -150,17 +198,31 @@ export class MosaicPublisher {
         const { file } = this;
         return code?.replace(`"${file}"`, `window.location.origin + "/${file}"`);
       };
+
       const tables = this.db.tables();
       postLoad = await this.updateDataNodes(tables);
       // Export relevant data from DuckDB to Parquet
-      await this.exportDataFromDuckDB(tables);
+      try {
+        await this.exportDataFromDuckDB(tables);
+      } catch (err) {
+        if (err instanceof PublishError) throw err;
+        throw new PublishError(`Failed to export data from DuckDB: ${err}`, PublishExitCode.FILE_WRITE_ERROR);
+      }
     }
 
-    await this.writeFiles(
-      isInteractive,
-      this.optimizations.includes(Optimizations.PRERENDER) ? element : undefined,
-      postLoad,
-    );
+    let result;
+    try {
+      result = await this.writeFiles(
+        needsJS,
+        this.optimizations.includes(Optimizations.PRERENDER) ? element : undefined,
+        postLoad,
+        returnData
+      );
+    } catch (err) {
+      if (err instanceof PublishError) throw err;
+      throw new PublishError(`Failed to write output files: ${err}`, PublishExitCode.FILE_WRITE_ERROR);
+    }
+    if (returnData) return result;
   }
 
   private processClients() {
@@ -221,6 +283,7 @@ export class MosaicPublisher {
 
     // process tables from DuckDB
     const db_tables = await this.ctx.coordinator.query('SHOW ALL TABLES', { cache: false, type: 'json' });
+    this.logger.debug(`DB Tables: ${JSON.stringify(db_tables, null, 2)}`);
     if (this.optimizations.includes(Optimizations.PREAGREGATE)
       && db_tables.some((table: any) => table.name.startsWith('preagg_'))) {
       let postLoad = "getVgInstance().coordinator().exec([\n\t'CREATE SCHEMA IF NOT EXISTS mosaic;',\n";
@@ -248,64 +311,99 @@ export class MosaicPublisher {
   /**
    * Write out the index.js, index.html, and create data/ directory as needed.
    */
-  private async writeFiles(isInteractive: boolean, element?: HTMLElement | SVGElement, postLoad?: string) {
+  private async writeFiles(
+    needsJS: boolean,
+    element?: HTMLElement | SVGElement,
+    postLoad?: string,
+    returnData?: boolean
+  ): Promise<void | { html: string; js?: string }> {
     let preambleOptions: PreambleOptions = { cacheFile: undefined }
-    if (this.optimizations.includes(Optimizations.LOAD_CACHE)) {
+    if (this.optimizations.includes(Optimizations.LOAD_CACHE) && needsJS) {
       const cache = this.ctx.coordinator.manager.cache().export();
       const cacheFile = '.cache.arrow';
       if (cache) {
-        const cacheBytes = tableToIPC(tableFromArrays({ cache: [cache] }, {
-          types: {
-            cache: map(utf8(), binary())
-          }
-        }), {})!;
-        fs.writeFileSync(path.join(this.outputPath, cacheFile), cacheBytes);
-        preambleOptions.cacheFile = cacheFile;
+        try {
+          const cacheBytes = tableToIPC(tableFromArrays({ cache: [cache] }, {
+            types: {
+              cache: map(utf8(), binary())
+            }
+          }), {})!;
+          fs.writeFileSync(path.join(this.outputPath, cacheFile), cacheBytes);
+          preambleOptions.cacheFile = cacheFile;
+        } catch (err) {
+          if (err instanceof PublishError) throw err;
+          throw new PublishError(`Failed to write cache file: ${err}`, PublishExitCode.FILE_WRITE_ERROR);
+        }
       }
     }
 
-    const code = astToESM(this.ast!, {
-      connector: 'wasm',
-      imports: new Map([[VGPLOT, '* as vg'], [FLECHETTE, '{ tableFromIPC }']]),
-      preamble: preamble(preambleOptions),
-    });
-    const html = htmlTemplate({
-      title: this.title,
-      css: templateCSS,
-      postLoad,
-      isInteractive,
-      element,
-      customScript: this.customScript,
-    });
+    let code, html;
+    try {
+      code = astToESM(this.ast!, {
+        connector: 'wasm',
+        imports: new Map([[VGPLOT, '* as vg'], [FLECHETTE, '{ tableFromIPC }']]),
+        preamble: preamble(preambleOptions),
+      });
+      html = htmlTemplate({
+        title: this.title,
+        css: templateCSS,
+        postLoad,
+        needsJS,
+        element,
+        customScript: this.customScript,
+      });
+    } catch (err) {
+      if (err instanceof PublishError) throw err;
+      throw new PublishError(`Failed to generate code or HTML: ${err}`, PublishExitCode.PUBLISH_ERROR);
+    }
 
-    fs.writeFileSync(path.join(this.outputPath, 'index.html'), html);
-    if (isInteractive) {
-      const bundle = await rollup({
-        input: 'entry.js',
-        plugins: [  // We ts-ignore these because they use cjs default exports
-          // @ts-ignore
-          virtual({ 'entry.js': code }),
-          // @ts-ignore
-          resolve({ browser: true }),
-          // @ts-ignore
-          commonjs({ defaultIsModuleExports: true }),
-        ],
-        output: {
-          manualChunks: {
-            vgplot: ['@uwdata/vgplot'],
-            flechette: ['@uwdata/flechette'],
+    if (returnData) {
+      return needsJS ? { html, js: code } : { html };
+    }
+
+    try {
+      fs.writeFileSync(path.join(this.outputPath, 'index.html'), html);
+    } catch (err) {
+      if (err instanceof PublishError) throw err;
+      throw new PublishError(`Failed to write index.html: ${err}`, PublishExitCode.FILE_WRITE_ERROR);
+    }
+    if (needsJS) {
+      let bundle;
+      try {
+        bundle = await rollup({
+          input: 'entry.js',
+          plugins: [  // We ts-ignore these because they use cjs default exports
+            // @ts-ignore
+            virtual({ 'entry.js': code }),
+            // @ts-ignore
+            resolve({ browser: true }),
+            // @ts-ignore
+            commonjs({ defaultIsModuleExports: true }),
+          ],
+          output: {
+            manualChunks: {
+              vgplot: ['@uwdata/vgplot'],
+              flechette: ['@uwdata/flechette'],
+            },
+            minifyInternalExports: true,
           },
-          minifyInternalExports: true,
-        },
-        logLevel: 'silent',
-        treeshake: true,
-      });
-
-      await bundle.write({
-        dir: this.outputPath,
-        format: 'esm',
-        entryFileNames: 'index.js',
-      });
+          logLevel: 'silent',
+          treeshake: true,
+        });
+      } catch (err) {
+        if (err instanceof PublishError) throw err;
+        throw new PublishError(`Failed to bundle JavaScript: ${err}`, PublishExitCode.BUNDLE_ERROR);
+      }
+      try {
+        await bundle.write({
+          dir: this.outputPath,
+          format: 'esm',
+          entryFileNames: 'index.js',
+        });
+      } catch (err) {
+        if (err instanceof PublishError) throw err;
+        throw new PublishError(`Failed to write bundle files: ${err}`, PublishExitCode.FILE_WRITE_ERROR);
+      }
     }
   }
 
@@ -342,16 +440,21 @@ export class MosaicPublisher {
       }
     }
 
-    if (table_copy_queries.length > 0 || materialized_view_copy_queries.length > 0) {
-      this.logger.info('Exporting data tables to Parquet...');
-      fs.mkdirSync(path.join(this.outputPath, 'data'), { recursive: true });
-      await this.ctx.coordinator.exec(table_copy_queries);
+    try {
+      if (table_copy_queries.length > 0 || materialized_view_copy_queries.length > 0) {
+        this.logger.info('Exporting data tables to Parquet...');
+        fs.mkdirSync(path.join(this.outputPath, 'data'), { recursive: true });
+        await this.ctx.coordinator.exec(table_copy_queries);
 
-      if (materialized_view_copy_queries.length > 0) {
-        this.logger.info('Exporting materialized views to Parquet...');
-        fs.mkdirSync(path.join(this.outputPath, 'data/.mosaic'), { recursive: true });
-        await this.ctx.coordinator.exec(materialized_view_copy_queries);
+        if (materialized_view_copy_queries.length > 0) {
+          this.logger.info('Exporting materialized views to Parquet...');
+          fs.mkdirSync(path.join(this.outputPath, 'data/.mosaic'), { recursive: true });
+          await this.ctx.coordinator.exec(materialized_view_copy_queries);
+        }
       }
+    } catch (err) {
+      if (err instanceof PublishError) throw err;
+      throw new PublishError(`Failed to export Parquet files: ${err}`, PublishExitCode.FILE_WRITE_ERROR);
     }
   }
 }

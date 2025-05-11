@@ -2,6 +2,7 @@ import chalk from 'chalk';
 import { format } from 'util';
 
 export enum LogLevel {
+  DEBUG = -1,
   INFO = 0,
   WARN = 1,
   ERROR = 2,
@@ -10,6 +11,7 @@ export enum LogLevel {
 
 export const toLogLevel = (level: string): LogLevel => {
   switch (level.toUpperCase()) {
+    case 'DEBUG': return LogLevel.DEBUG;
     case 'INFO': return LogLevel.INFO;
     case 'WARN': return LogLevel.WARN;
     case 'ERROR': return LogLevel.ERROR;
@@ -27,7 +29,7 @@ export class Logger {
   }
 
   debug(...args: unknown[]) {
-    if (this.level <= LogLevel.INFO) {
+    if (this.level <= LogLevel.DEBUG) {
       this.log(console.debug, chalk.cyanBright('[DEBUG] '), ...args);
     }
   }

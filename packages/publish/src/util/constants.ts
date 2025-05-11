@@ -8,7 +8,7 @@ clientsReady().then(() => {
 
 export type HTMLTemplateOptions = {
   title: string;
-  isInteractive: boolean;
+  needsJS: boolean;
   postLoad?: string;
   customScript?: string;
   element?: HTMLElement | SVGElement;
@@ -22,11 +22,11 @@ export const htmlTemplate = (options: HTMLTemplateOptions) => `
 </head>
 <body>
   <article class="mosaic">
-    ${options.isInteractive && options.element ? '<div class="ssr"></div>' : ''}
+    ${options.needsJS && options.element ? '<div class="ssr"></div>' : ''}
     ${options.element?.outerHTML ?? ''}
   </article>
 </body>
-${options.isInteractive ? jsTemplate(options.postLoad) : ''}
+${options.needsJS ? jsTemplate(options.postLoad) : ''}
 
 ${options.customScript ? `
 <script type="module">
