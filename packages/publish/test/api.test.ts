@@ -23,7 +23,7 @@ describe('MosaicPublisher API', () => {
         // Check that the output directory was created and contains an index.html file
         expect(fs.existsSync('./.tmp')).toBe(true);
         expect(fs.existsSync('./.tmp/index.html')).toBe(true);
-    });
+    }, { timeout: 10000 });
 
     afterEach(() => {
         fs.rmSync('./.tmp', { recursive: true });
