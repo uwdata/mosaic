@@ -1,7 +1,9 @@
-/** @import {SelectionClause} from './util/selection-types.js' */
+/**
+ * @import { MosaicClient } from './MosaicClient.js'
+ * @import { SelectionClause } from './util/selection-types.js'
+ */
 import { literal, or } from '@uwdata/mosaic-sql';
 import { Param } from './Param.js';
-import { MosaicClient } from './MosaicClient.js';
 
 /**
  * Test if a value is a Selection instance.

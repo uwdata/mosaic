@@ -1,11 +1,11 @@
 /**
  * @import { ColumnRefNode } from '../ast/column-ref.js'
+ * @import { TableRefNode } from '../ast/table-ref.js'
  * @import { ParamLike } from '../types.js'
  */
 import { ColumnParamNode } from '../ast/column-param.js';
 import { ColumnNameRefNode } from '../ast/column-ref.js';
 import { ParamNode } from '../ast/param.js';
-import { TableRefNode } from '../ast/table-ref.js';
 import { asTableRef } from '../util/ast.js';
 import { isParamLike } from '../util/type-check.js';
 

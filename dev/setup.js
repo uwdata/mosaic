@@ -35,7 +35,7 @@ export async function setDatabaseConnector(type) {
       connector = restConnector();
       break;
     case 'rest_https':
-      connector = restConnector('https://localhost:3000/');
+      connector = restConnector({ uri: 'https://localhost:3000/' });
       break;
     case 'wasm':
       connector = wasm || (wasm = wasmConnector());

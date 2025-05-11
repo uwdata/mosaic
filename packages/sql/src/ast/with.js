@@ -1,6 +1,6 @@
+/** @import { Query } from './query.js' */
 import { WITH_CLAUSE } from '../constants.js';
 import { SQLNode } from './node.js';
-import { Query } from './query.js';
 
 export class WithClauseNode extends SQLNode {
   /**

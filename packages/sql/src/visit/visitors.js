@@ -1,11 +1,12 @@
 /**
+ * @import { AggregateNode } from '../ast/aggregate.js'
+ * @import { ColumnRefNode } from '../ast/column-ref.js'
+ * @import { SQLNode } from '../ast/node.js'
  * @import { ParamNode } from '../ast/param.js'
  * @import { ParamLike } from '../types.js'
  */
 import { AGGREGATE, COLUMN_PARAM, COLUMN_REF, FRAGMENT, PARAM, VERBATIM, WINDOW } from '../constants.js';
-import { aggregateNames, AggregateNode } from '../ast/aggregate.js';
-import { ColumnRefNode } from '../ast/column-ref.js';
-import { SQLNode } from '../ast/node.js';
+import { aggregateNames } from '../ast/aggregate.js';
 import { walk } from './walk.js';
 
 // regexp to match valid aggregate function names

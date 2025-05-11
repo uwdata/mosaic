@@ -1,5 +1,5 @@
+/** @import { ExtractionOptions, Table } from '@uwdata/flechette' */
 /** @import { ArrowQueryRequest, Connector, ExecQueryRequest, JSONQueryRequest } from './Connector.js' */
-/** @import { Table } from '@uwdata/flechette' */
 import * as duckdb from '@duckdb/duckdb-wasm';
 import { decodeIPC } from '../util/decode-ipc.js';
 
@@ -11,6 +11,8 @@ import { decodeIPC } from '../util/decode-ipc.js';
 /**
  * @typedef {object} DuckDBWASMConnectorOptions
  * @property {boolean} [log] Flag to enable logging.
+ * @property {ExtractionOptions} [ipc]
+ *  Arrow IPC extraction options.
  * @property {duckdb.AsyncDuckDB} [duckdb]
  *  Optional pre-existing DuckDB-WASM instance.
  * @property {duckdb.AsyncDuckDBConnection} [connection]
@@ -19,7 +21,7 @@ import { decodeIPC } from '../util/decode-ipc.js';
 
 /**
  * Connect to a DuckDB-WASM instance.
- * @param {DuckDBWASMConnectorOptions} options Connector options.
+ * @param {DuckDBWASMConnectorOptions} [options] Connector options.
  * @returns {DuckDBWASMConnector} A connector instance.
  */
 export function wasmConnector(options = {}) {
@@ -33,10 +35,12 @@ export function wasmConnector(options = {}) {
 export class DuckDBWASMConnector {
   /**
    * Create a new DuckDB-WASM connector instance.
-   * @param {DuckDBWASMConnectorOptions} options
+   * @param {DuckDBWASMConnectorOptions} [options]
    */
   constructor(options = {}) {
-    const { duckdb, connection, ...opts } = options;
+    const { ipc, duckdb, connection, ...opts } = options;
+    /** @type {ExtractionOptions} */
+    this._ipc = ipc;
     /** @type {DuckDBWASMOptions} */
     this._options = opts;
     /** @type {duckdb.AsyncDuckDB} */
@@ -88,7 +92,7 @@ export class DuckDBWASMConnector {
     const con = await this.getConnection();
     const result = await getArrowIPC(con, sql);
     return type === 'exec' ? undefined
-      : type === 'arrow' ? decodeIPC(result)
+      : type === 'arrow' ? decodeIPC(result, this._ipc)
       : decodeIPC(result).toArray();
   };
 }

@@ -1,4 +1,5 @@
-import { AggregateNode, Query, asTableRef, count, isAggregateExpression, isNode, isNull, max, min, sql } from '@uwdata/mosaic-sql';
+/** @import { AggregateNode } from '@uwdata/mosaic-sql' */
+import { Query, asTableRef, count, isAggregateExpression, isNode, isNull, max, min, sql } from '@uwdata/mosaic-sql';
 import { jsType } from './js-type.js';
 
 export const Count = 'count';
