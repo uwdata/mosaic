@@ -8,6 +8,7 @@
 import { socketConnector } from './connectors/socket.js';
 import { PreAggregator } from './preagg/PreAggregator.js';
 import { voidLogger } from './util/void-logger.js';
+import { isClauseSource } from './util/is-clause-source.js';
 import { QueryManager, Priority } from './QueryManager.js';
 
 /**
@@ -75,6 +76,7 @@ export class Coordinator {
       this.filterGroups = new Map;
       this.clients?.forEach(client => this.disconnect(client));
       this.clients = new Set;
+      this.clauseSources = new Set;
     }
     if (cache) this.manager.cache().clear();
   }
@@ -244,6 +246,17 @@ export class Coordinator {
 
     // connect filter selection
     connectSelection(this, client.filterBy, client);
+
+    // Bookkeep all clause sources
+    if (isClauseSource(client)) {
+      this.clauseSources.add(client);
+    } else if (client.plot) {
+      client.plot.interactors.forEach(interactor => {
+        if (isClauseSource(interactor)) {
+          this.clauseSources.add(interactor);
+        }
+      });
+    }
   }
 
   /**

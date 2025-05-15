@@ -15,7 +15,7 @@ import {
   ParquetDataNode, OptionsNode,
   CodegenContext,
 } from '@uwdata/mosaic-spec';
-import { MosaicClient, isClauseSource } from '@uwdata/mosaic-core';
+import { ClauseSource, MosaicClient, isClauseSource } from '@uwdata/mosaic-core';
 
 // Utility imports
 import {
@@ -161,8 +161,8 @@ export class MosaicPublisher {
       throw new PublishError(`Failed to process spec DOM: ${err}`, PublishExitCode.PUBLISH_ERROR);
     }
 
-    const { interactors, inputs } = this.processClients();
-    const isInteractive = interactors.size + inputs.size !== 0;
+    const clauseSources = this.ctx.coordinator.clauseSources;
+    const isInteractive = clauseSources.size !== 0;
     const needsJS = isInteractive || !this.optimizations.includes(Optimizations.PRERENDER);
 
     // If spec is valid create relevant output directory
@@ -189,7 +189,7 @@ export class MosaicPublisher {
     let postLoad;
     if (needsJS) {
       // Activate interactors and inputs
-      if (isInteractive) await this.activateInteractorsAndInputs(interactors, inputs);
+      if (isInteractive) await this.activateClauseSources(clauseSources);
 
       // Modify AST and process data (extensions, data definitions, etc.)
       const og = FileDataNode.prototype.codegenQuery;
@@ -247,14 +247,9 @@ export class MosaicPublisher {
    * Activate the Interactors and Inputs, waiting 
    * for queries to finish.
    */
-  private async activateInteractorsAndInputs(interactors: Set<any>, inputs: Set<MosaicClient>) {
-    for (const interactor of interactors) {
-      if (isClauseSource(interactor)) interactor.activate();
-      await this.waitForQueryToFinish();
-    }
-
-    for (const input of inputs) {
-      if (isClauseSource(input)) input.activate();
+  private async activateClauseSources(clauseSources: Set<any>) {
+    for (const cs of clauseSources) {
+      if (isClauseSource(cs)) cs.activate();
       await this.waitForQueryToFinish();
     }
   }
