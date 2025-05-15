@@ -135,3 +135,25 @@ export interface SelectionClause {
    */
   meta?: ClauseMetadata;
 }
+
+/**
+ * Interface for components that perform selection activation.
+ */
+export interface ClauseSource {
+  /**
+   * Activate the selection that this component publishes to.
+   * Optionally, no-op
+   */
+  activate(): void;
+
+  /**
+   * Reset this component and respective selection(s) removing all published clauses.
+   * Optionally, no-op
+   */
+  reset(): void;
+
+  /**
+   * Get the selection clause that this component publishes.
+   */
+  clause(): SelectionClause;
+}

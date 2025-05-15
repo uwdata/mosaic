@@ -15,7 +15,7 @@ import {
   ParquetDataNode, OptionsNode,
   CodegenContext,
 } from '@uwdata/mosaic-spec';
-import { MosaicClient, isActivatable } from '@uwdata/mosaic-core';
+import { MosaicClient, isClauseSource } from '@uwdata/mosaic-core';
 
 // Utility imports
 import {
@@ -231,7 +231,7 @@ export class MosaicPublisher {
     if (!this.ctx.coordinator.clients) return { interactors, inputs };
 
     for (const client of this.ctx.coordinator.clients) {
-      if (client instanceof MosaicClient && isActivatable(client)) {
+      if (client instanceof MosaicClient && isClauseSource(client)) {
         inputs.add(client);
       }
       if (client.plot) {
@@ -249,12 +249,12 @@ export class MosaicPublisher {
    */
   private async activateInteractorsAndInputs(interactors: Set<any>, inputs: Set<MosaicClient>) {
     for (const interactor of interactors) {
-      if (isActivatable(interactor)) interactor.activate();
+      if (isClauseSource(interactor)) interactor.activate();
       await this.waitForQueryToFinish();
     }
 
     for (const input of inputs) {
-      if (isActivatable(input)) input.activate();
+      if (isClauseSource(input)) input.activate();
       await this.waitForQueryToFinish();
     }
   }

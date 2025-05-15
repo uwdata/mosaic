@@ -149,22 +149,25 @@ export class Menu extends Input {
     }
   }
 
+  clause(value) {
+    return clausePoint(this.field, value ?? 0, { source: this });
+  }
+
   reset() {
     this.select.selectedIndex = this.from ? 0 : -1;
   }
 
   activate() {
     if (isSelection(this.selection)) {
-      this.selection.activate(clausePoint(this.field, 0, { source: this }));
+      this.selection.activate(this.clause());
     }
   }
 
   publish(value) {
-    const { selection, field } = this;
+    const { selection } = this;
     if (isSelection(selection)) {
       if (value === '') value = undefined; // 'All' option
-      const clause = clausePoint(field, value, { source: this });
-      selection.update(clause);
+      selection.update(this.clause(value));
     } else if (isParam(selection)) {
       selection.update(value);
     }

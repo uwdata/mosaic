@@ -3,8 +3,8 @@ import { getDatum } from './util/get-datum.js';
 import { neq, neqSome } from './util/neq.js';
 
 /**
- * @import {Activatable} from '@uwdata/mosaic-core'
- * @implements {Activatable}
+ * @import {ClauseSource} from '@uwdata/mosaic-core'
+ * @implements {ClauseSource}
  */
 export class Toggle {
   /**
@@ -85,6 +85,11 @@ export class Toggle {
 
   activate() {
     this.selection.activate(this.clause([this.fields.map(() => 0)]));
+  }
+
+  reset() {
+    this.value = null;
+    this.selection.reset();
   }
 }
 

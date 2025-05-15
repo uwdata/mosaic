@@ -7,8 +7,8 @@ import { invert } from './util/invert.js';
 import { sanitizeStyles } from './util/sanitize-styles.js';
 
 /**
- * @import {Activatable} from '@uwdata/mosaic-core'
- * @implements {Activatable}
+ * @import {ClauseSource} from '@uwdata/mosaic-core'
+ * @implements {ClauseSource}
  */
 export class Interval2D {
   constructor(mark, {

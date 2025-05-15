@@ -5,8 +5,8 @@ import { getField } from './util/get-field.js';
 const asc = (a, b) => a - b;
 
 /**
- * @import {Activatable} from '@uwdata/mosaic-core'
- * @implements {Activatable}
+ * @import {ClauseSource} from '@uwdata/mosaic-core'
+ * @implements {ClauseSource}
  */
 export class PanZoom {
   constructor(mark, {
@@ -104,6 +104,11 @@ export class PanZoom {
       const { yscale, yfield } = this;
       this.ysel.activate(this.clause(yscale.domain, yfield, yscale));
     }
+  }
+
+  reset() {
+    if (this.panx) this.xsel.reset();
+    if (this.pany) this.ysel.reset();
   }
 }
 

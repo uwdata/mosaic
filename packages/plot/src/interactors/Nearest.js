@@ -3,8 +3,8 @@ import { select, pointer, min } from 'd3';
 import { getField } from './util/get-field.js';
 
 /**
- * @import {Activatable} from '@uwdata/mosaic-core'
- * @implements {Activatable}
+ * @import {ClauseSource} from '@uwdata/mosaic-core'
+ * @implements {ClauseSource}
  */
 export class Nearest {
   constructor(mark, {
@@ -82,6 +82,11 @@ export class Nearest {
   activate() {
     const v = this.channels.map(() => 0);
     this.selection.activate(this.clause(v));
+  }
+
+  reset() {
+    this.valueIndex = -1;
+    this.selection.reset();
   }
 }
 
