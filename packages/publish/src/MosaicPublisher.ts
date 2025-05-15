@@ -15,7 +15,7 @@ import {
   ParquetDataNode, OptionsNode,
   CodegenContext,
 } from '@uwdata/mosaic-spec';
-import { ClauseSource, MosaicClient, isClauseSource } from '@uwdata/mosaic-core';
+import { MosaicClient, isClauseSource } from '@uwdata/mosaic-core';
 
 // Utility imports
 import {
@@ -162,6 +162,10 @@ export class MosaicPublisher {
     }
 
     const clauseSources = this.ctx.coordinator.clauseSources;
+    if (!clauseSources) throw new PublishError(
+      'No clause sources on coordinator. This should never happen.',
+      PublishExitCode.PUBLISH_ERROR
+    );
     const isInteractive = clauseSources.size !== 0;
     const needsJS = isInteractive || !this.optimizations.includes(Optimizations.PRERENDER);
 
@@ -170,7 +174,7 @@ export class MosaicPublisher {
       if (fs.existsSync(this.outputPath)) {
         if (!this.overwrite) {
           throw new PublishError(
-            `Output directory '${this.outputPath}' already exists. Use --overwrite to allow replacing it\nNOTE: This will delete all existing files in the directory.`,
+            `Output directory '${this.outputPath}' already exists. Use --overwrite to allow replacing it\n\tNOTE: This will delete all existing files in the directory.`,
             PublishExitCode.OUTPUT_DIR_ERROR
           );
         }
