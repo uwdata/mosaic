@@ -35,7 +35,7 @@ import { MosaicPublisher } from '@uwdata/publish';
 import fs from 'fs';
 
 const publisher = new MosaicPublisher({
-  specContent: fs.readFileSync('./path/to/spec.yaml', 'utf8'),
+  spec: fs.readFileSync('./path/to/spec.yaml', 'utf8'),
   outputPath: './path/to/output/directory'
 });
 
