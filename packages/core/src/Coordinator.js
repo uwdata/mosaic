@@ -3,6 +3,7 @@
 /** @import { QueryResult } from './util/query-result.js' */
 /** @import { SelectionClause } from './util/selection-types.js' */
 /** @import { MosaicClient } from './MosaicClient.js' */
+/** @import { ClauseSource } from './util/selection-types.js' */
 /** @import { Selection } from './Selection.js' */
 /** @import { Logger, QueryType } from './types.js' */
 import { socketConnector } from './connectors/socket.js';
@@ -225,6 +226,24 @@ export class Coordinator {
   }
 
   /**
+   * Register a clause source with the coordinator.
+   * @param {ClauseSource} clauseSource The clause source to register.
+   */
+  connectClauseSource(clauseSource) {
+    if (isClauseSource(clauseSource)) {
+      this.clauseSources.add(clauseSource);
+    }
+  }
+
+  /**
+   * Deregister a clause source from the coordinator.
+   * @param {ClauseSource} clauseSource The clause source to deregister.
+   */
+  disconnectClauseSource(clauseSource) {
+    this.clauseSources.delete(clauseSource);
+  }
+
+  /**
    * Connect a client to the coordinator.
    * @param {MosaicClient} client The Mosaic client to connect.
    */
@@ -247,16 +266,8 @@ export class Coordinator {
     // connect filter selection
     connectSelection(this, client.filterBy, client);
 
-    // Bookkeep all clause sources
-    if (isClauseSource(client)) {
-      this.clauseSources.add(client);
-    } else if (client.plot) {
-      client.plot.interactors.forEach(interactor => {
-        if (isClauseSource(interactor)) {
-          this.clauseSources.add(interactor);
-        }
-      });
-    }
+    // Connect this client as a clause source if necessary
+    this.connectClauseSource(client);
   }
 
   /**
@@ -268,6 +279,11 @@ export class Coordinator {
     if (!clients.has(client)) return;
     clients.delete(client);
     client.coordinator = null;
+
+    // Remove direct clause sources
+    if (isClauseSource(client)) {
+      this.disconnectClauseSource(client);
+    }
 
     const group = filterGroups.get(client.filterBy);
     if (group) {

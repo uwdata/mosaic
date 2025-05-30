@@ -229,24 +229,6 @@ export class MosaicPublisher {
     if (returnData) return result;
   }
 
-  private processClients() {
-    const interactors = new Set<any>();
-    const inputs = new Set<MosaicClient>();
-    if (!this.ctx.coordinator.clients) return { interactors, inputs };
-
-    for (const client of this.ctx.coordinator.clients) {
-      if (client instanceof MosaicClient && isClauseSource(client)) {
-        inputs.add(client);
-      }
-      if (client.plot) {
-        for (const interactor of client.plot.interactors) {
-          interactors.add(interactor);
-        }
-      }
-    }
-    return { interactors, inputs };
-  }
-
   /**
    * Activate the Interactors and Inputs, waiting 
    * for queries to finish.

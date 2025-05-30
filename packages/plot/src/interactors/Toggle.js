@@ -52,6 +52,11 @@ export class Toggle {
     const { data: { columns = {} } = {} } = mark;
     accessor ??= target => as.map(name => columns[name][getDatum(target)]);
 
+    // Register with coordinator
+    if (mark.coordinator) {
+      mark.coordinator.connectClauseSource(this);
+    }
+
     selector ??= `[data-index="${mark.index}"]`;
     const groups = Array.from(svg.querySelectorAll(selector));
 

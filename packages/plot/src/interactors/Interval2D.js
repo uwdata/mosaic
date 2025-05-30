@@ -68,9 +68,15 @@ export class Interval2D {
   }
 
   init(svg) {
-    const { brush, style, value } = this;
+    const { brush, style, value, mark } = this;
     const xscale = this.xscale = svg.scale('x');
     const yscale = this.yscale = svg.scale('y');
+
+    // Register with coordinator
+    if (mark.coordinator) {
+      mark.coordinator.connectClauseSource(this);
+    }
+
     const rx = xscale.range;
     const ry = yscale.range;
     brush.extent([[min(rx), min(ry)], [max(rx), max(ry)]]);

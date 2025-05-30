@@ -68,6 +68,11 @@ export class Interval1D {
     this.scale = svg.scale(channel);
     const range = this.value?.map(this.scale.apply).sort(ascending);
 
+    // Register with coordinator
+    if (this.mark.coordinator) {
+      this.mark.coordinator.connectClauseSource(this);
+    }
+
     const rx = svg.scale('x').range;
     const ry = svg.scale('y').range;
     brush.extent([[min(rx), min(ry)], [max(rx), max(ry)]]);

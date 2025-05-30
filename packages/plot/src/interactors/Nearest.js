@@ -43,6 +43,11 @@ export class Nearest {
     const keys = channels.map(c => mark.channelField(c).as);
     const param = !isSelection(selection);
 
+    // Register with coordinator
+    if (mark.coordinator) {
+      mark.coordinator.connectClauseSource(this);
+    }
+
     // extract x, y coordinates for data values and determine scale factors
     const [X, Y] = calculateXY(svg, mark);
     const sx = this.pointer === 'y' ? 0.01 : 1;
