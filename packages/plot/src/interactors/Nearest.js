@@ -86,7 +86,6 @@ export class Nearest {
 
   reset() {
     this.valueIndex = -1;
-    this.selection.reset();
   }
 }
 
