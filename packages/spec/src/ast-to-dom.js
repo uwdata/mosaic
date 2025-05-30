@@ -1,5 +1,5 @@
 /**
- * @import { Param, Selection } from '@uwdata/mosaic-core'
+ * @import { Coordinator, Param, Selection } from '@uwdata/mosaic-core'
  * @import { SpecNode } from './ast/SpecNode.js'
  */
 import { createAPIContext, loadExtension } from '@uwdata/vgplot';
@@ -71,6 +71,7 @@ export class InstantiateContext {
     this.plotDefaults = plotDefaults;
     this.activeParams = params;
     this.baseURL = baseURL;
+    /** @type {Coordinator} */
     this.coordinator = api.context.coordinator;
   }
 

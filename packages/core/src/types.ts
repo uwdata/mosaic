@@ -67,9 +67,16 @@ export interface Activatable {
  * Interface for cache implementations.
  */
 export interface Cache {
+  /** Retrieves a value from the cache. */
   get(key: string): any;
+  /** Stores a value in the cache and returns it. */
   set(key: string, value: any): any;
+  /** Clears all entries in the cache. */
   clear(): void;
+  /** Exports the cache as a Map where keys are strings and values are Arrow IPC binary format (Uint8Array), or null if the cache is empty. */
+  export(): Map<string, Uint8Array> | null;
+  /** Imports the cache from a Map where keys are strings and values are Arrow IPC binary format (Uint8Array). */
+  import(data: Map<string, Uint8Array>): void;
 }
 
 /**
