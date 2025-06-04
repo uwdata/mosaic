@@ -515,7 +515,7 @@ export class DescribeQuery extends SQLNode {
    * @returns {string}
    */
   toString() {
-    return `DESCRIBE ${this.query}`;
+    return `DESC(${this.query})`;
   }
 }
 
