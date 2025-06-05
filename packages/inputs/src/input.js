@@ -44,5 +44,6 @@ export class Input extends MosaicClient {
 
   clause() {
     // subclasses should override
+    return null;
   }
 }

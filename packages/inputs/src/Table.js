@@ -277,13 +277,6 @@ export class Table extends Input {
 
   reset() {
     this.currentRow = -1;
-    
-    if (this.sortHeader) {
-      this.sortHeader.firstChild.textContent = '';
-    }
-    this.sortHeader = null;
-    this.sortColumn = null;
-    this.sortDesc = false;
   }
 
   sort(event, column) {

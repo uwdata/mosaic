@@ -111,30 +111,7 @@ export class PanZoom {
     }
   }
 
-  reset() {
-    if (this.initialized) {
-      const { panx, pany, mark: { plot: { element } } } = this;
-
-      this.xscale = this.svg.scale('x');
-      this.yscale = this.svg.scale('y');
-      const rx = this.xscale.range.slice().sort(asc);
-      const ry = this.yscale.range.slice().sort(asc);
-      const tx = extent(panx, [-Infinity, Infinity], rx);
-      const ty = extent(pany, [-Infinity, Infinity], ry);
-  
-      const z = zoom()
-        .extent([[rx[0], ry[0]], [rx[1], ry[1]]])
-        .scaleExtent(this.zoom)
-        .translateExtent([[tx[0], ty[0]], [tx[1], ty[1]]])
-        .on('start', () => {
-          this.xscale = this.svg.scale('x');
-          this.yscale = this.svg.scale('y');
-        })
-        .on('end', () => element.__zoom = new ZoomTransform(1, 0, 0))
-
-        select(element).call(z);
-    }
-  }
+  reset() { /* No-op */ }
 }
 
 function extent(ext, defaultTrue, defaultFalse) {

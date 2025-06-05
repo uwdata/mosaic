@@ -94,7 +94,6 @@ export class Toggle {
 
   reset() {
     this.value = null;
-    this.selection.reset();
   }
 }
 

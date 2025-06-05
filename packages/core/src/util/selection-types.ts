@@ -144,16 +144,20 @@ export interface ClauseSource {
    * Activate the selection that this component publishes to.
    * Optionally, no-op
    */
-  activate(): void;
+  activate: () => void;
 
   /**
    * Reset this component and respective selection(s) removing all published clauses.
    * Optionally, no-op
    */
-  reset(): void;
+  reset: () => void;
+
 
   /**
    * Get the selection clause that this component publishes.
+   * Note: this function **must** be callable with no arguments
+   * 
+   * @param {...unknown} args - Any number of arguments that may be needed to construct the clause.
    */
-  clause(): SelectionClause;
+  clause: (...args: unknown[]) => SelectionClause;
 }

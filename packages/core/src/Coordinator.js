@@ -230,9 +230,7 @@ export class Coordinator {
    * @param {ClauseSource} clauseSource The clause source to register.
    */
   connectClauseSource(clauseSource) {
-    if (isClauseSource(clauseSource)) {
-      this.clauseSources.add(clauseSource);
-    }
+    this.clauseSources.add(clauseSource);
   }
 
   /**
@@ -267,7 +265,9 @@ export class Coordinator {
     connectSelection(this, client.filterBy, client);
 
     // Connect this client as a clause source if necessary
-    this.connectClauseSource(client);
+    if (isClauseSource(client)) {
+      this.connectClauseSource(client);
+    }
   }
 
   /**
