@@ -44,9 +44,7 @@ export class Nearest {
     const param = !isSelection(selection);
 
     // Register with coordinator
-    if (mark.coordinator) {
-      mark.coordinator.connectClauseSource(this);
-    }
+    mark.coordinator?.connectClauseSource(this);
 
     // extract x, y coordinates for data values and determine scale factors
     const [X, Y] = calculateXY(svg, mark);
