@@ -73,9 +73,7 @@ export class Interval2D {
     const yscale = this.yscale = svg.scale('y');
 
     // Register with coordinator
-    if (mark.coordinator) {
-      mark.coordinator.connectClauseSource(this);
-    }
+    mark.coordinator?.connectClauseSource(this);
 
     const rx = xscale.range;
     const ry = yscale.range;
