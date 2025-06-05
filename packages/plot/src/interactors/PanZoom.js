@@ -64,9 +64,7 @@ export class PanZoom {
     if (this.initialized) return; else this.initialized = true;
 
     // Register with coordinator
-    if (this.mark.coordinator) {
-      this.mark.coordinator.connectClauseSource(this);
-    }
+    this.mark.coordinator?.connectClauseSource(this);
 
     const { panx, pany, mark: { plot: { element } } } = this;
 
