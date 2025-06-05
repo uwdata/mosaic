@@ -1,6 +1,14 @@
 # mosaic-publish
+> ⚠️ **EXPERIMENTAL PACKAGE** ⚠️ - This package is in a development state and things may change without notice. Use with caution in production environments.
 
-A CLI tool and API for compiling and optimizing specifications. The tool processes spec files, handles dataset optimizations, and provides a configurable way to manage different compile and optimization tasks.
+A CLI tool and API for compiling and performing publish time optimizations to Mosaic specifications. The tool processes spec files, incrementally applying data preparation and projection, pre-computation of data assets for optimization, and pre-rendering of visual outputs.
+
+## Package Structure
+
+- **`src/MosaicPublisher.ts`** - Core publisher class that handles spec compilation and optimization
+- **`src/cli.ts`** - Command-line interface implementation using yargs
+- **`src/util/`** - Utility modules including constants, logging, and helper functions
+- **`test/`** - Test files for both API and CLI functionality
 
 ## CLI Installation
 
