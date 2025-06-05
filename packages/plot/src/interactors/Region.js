@@ -84,9 +84,7 @@ export class Region {
     this.svg = svg;
 
     // Register with coordinator
-    if (mark.coordinator) {
-      mark.coordinator.connectClauseSource(this);
-    }
+    mark.coordinator?.connectClauseSource(this);
 
     const w = svg.width.baseVal.value;
     const h = svg.height.baseVal.value;
