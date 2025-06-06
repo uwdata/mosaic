@@ -55,15 +55,14 @@ export class PanZoom {
   }
 
   clause(value, field, scale) {
-    const { xscale, xfield, yscale, yfield } = this;
-    const clauseField = field || xfield || yfield;
-    const clauseValue = value || xscale?.domain || yscale?.domain;
-    const clauseScale = scale || xscale || yscale;
+    if (value == null || field == null) {
+      throw new Error('PanZoom clause requires value and field parameters');
+    }
 
-    return clauseInterval(clauseField, clauseValue, {
+    return clauseInterval(field, value, {
       source: this,
       clients: this.mark.plot.markSet,
-      scale: clauseScale
+      scale
     });
   }
 
