@@ -37,11 +37,16 @@ export class Toggle {
       }
       throw new Error(`Missing channel: ${c}`);
     });
+
+    // Register with coordinator
+    mark.coordinator?.connectClauseSource(this);
   }
 
   clause(value) {
     const { fields, mark } = this;
-    return clausePoints(fields, value, {
+    const clauseValue = value || [fields.map(() => 0)];
+
+    return clausePoints(fields, clauseValue, {
       source: this,
       clients: this.peers ? mark.plot.markSet : new Set().add(mark)
     });
@@ -51,9 +56,6 @@ export class Toggle {
     const { mark, as, selection } = this;
     const { data: { columns = {} } = {} } = mark;
     accessor ??= target => as.map(name => columns[name][getDatum(target)]);
-
-    // Register with coordinator
-    mark.coordinator?.connectClauseSource(this);
 
     selector ??= `[data-index="${mark.index}"]`;
     const groups = Array.from(svg.querySelectorAll(selector));
@@ -87,7 +89,7 @@ export class Toggle {
   }
 
   activate() {
-    this.selection.activate(this.clause([this.fields.map(() => 0)]));
+    this.selection.activate(this.clause());
   }
 
   reset() {

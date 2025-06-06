@@ -36,6 +36,9 @@ export class Region {
     const { fields, as } = getFields(mark, channels);
     this.fields = fields;
     this.as = as;
+
+    // Register with coordinator
+    mark.coordinator?.connectClauseSource(this);
   }
 
   reset() {
@@ -45,12 +48,14 @@ export class Region {
   }
 
   activate() {
-    this.selection.activate(this.clause([this.fields.map(() => 0)]));
+    this.selection.activate(this.clause());
   }
 
   clause(value) {
     const { fields, mark } = this;
-    return clausePoints(fields, value, {
+    const clauseValue = value || [fields.map(() => 0)];
+
+    return clausePoints(fields, clauseValue, {
       source: this,
       clients: this.peers ? mark.plot.markSet : new Set().add(mark)
     });
@@ -82,9 +87,6 @@ export class Region {
   init(svg) {
     const { brush, extent, mark, style } = this;
     this.svg = svg;
-
-    // Register with coordinator
-    mark.coordinator?.connectClauseSource(this);
 
     const w = svg.width.baseVal.value;
     const h = svg.height.baseVal.value;

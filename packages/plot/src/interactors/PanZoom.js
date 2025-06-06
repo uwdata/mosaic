@@ -38,6 +38,9 @@ export class PanZoom {
         if (plot.setAttribute('yDomain', value)) plot.update();
       });
     }
+
+    // Register with coordinator
+    mark.coordinator?.connectClauseSource(this);
   }
 
   publish(transform) {
@@ -52,19 +55,21 @@ export class PanZoom {
   }
 
   clause(value, field, scale) {
-    return clauseInterval(field, value, {
+    const { xscale, xfield, yscale, yfield } = this;
+    const clauseField = field || xfield || yfield;
+    const clauseValue = value || xscale?.domain || yscale?.domain;
+    const clauseScale = scale || xscale || yscale;
+
+    return clauseInterval(clauseField, clauseValue, {
       source: this,
       clients: this.mark.plot.markSet,
-      scale
+      scale: clauseScale
     });
   }
 
   init(svg) {
     this.svg = svg;
     if (this.initialized) return; else this.initialized = true;
-
-    // Register with coordinator
-    this.mark.coordinator?.connectClauseSource(this);
 
     const { panx, pany, mark: { plot: { element } } } = this;
 

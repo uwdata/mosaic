@@ -24,16 +24,21 @@ export class Nearest {
     this.fields = fields || this.channels.map(c => getField(mark, [c]));
     this.maxRadius = maxRadius;
     this.valueIndex = -1;
+
+    // Register with coordinator
+    mark.coordinator?.connectClauseSource(this);
   }
 
   clause(value) {
     const { clients, fields } = this;
     const opt = { source: this, clients };
+    const clauseValue = value || this.channels.map(() => 0);
+
     // if only one field, use a simpler clause that passes the value
     // this allows a single field selection value to act like a param
     return fields.length > 1
-      ? clausePoints(fields, value ? [value] : value, opt)
-      : clausePoint(fields[0], value?.[0], opt);
+      ? clausePoints(fields, clauseValue ? [clauseValue] : clauseValue, opt)
+      : clausePoint(fields[0], clauseValue?.[0], opt);
   }
 
   init(svg) {
@@ -42,9 +47,6 @@ export class Nearest {
     const { data: { columns } } = mark;
     const keys = channels.map(c => mark.channelField(c).as);
     const param = !isSelection(selection);
-
-    // Register with coordinator
-    mark.coordinator?.connectClauseSource(this);
 
     // extract x, y coordinates for data values and determine scale factors
     const [X, Y] = calculateXY(svg, mark);
@@ -83,8 +85,7 @@ export class Nearest {
   }
 
   activate() {
-    const v = this.channels.map(() => 0);
-    this.selection.activate(this.clause(v));
+    this.selection.activate(this.clause());
   }
 
   reset() {
