@@ -2,17 +2,14 @@ import logging
 import sys
 import time
 from functools import partial
-from pathlib import Path
 
 import ujson
 from socketify import App, CompressOptions, OpCode
 
-from pkg.bundle import create_bundle, load_bundle
 from pkg.query import get_arrow_bytes, get_json, retrieve
 
 logger = logging.getLogger(__name__)
 
-BUNDLE_DIR = Path(".mosaic/bundle")
 SLOW_QUERY_THRESHOLD = 5000
 
 
@@ -93,14 +90,6 @@ def handle_query(handler: Handler, con, cache, query):
         elif command == "json":
             json = retrieve(cache, query, partial(get_json, con))
             handler.json(json)
-        elif command == "create-bundle":
-            create_bundle(
-                con, cache, query.get("queries"), BUNDLE_DIR / query.get("name")
-            )
-            handler.done()
-        elif command == "load-bundle":
-            load_bundle(con, cache, BUNDLE_DIR / query.get("name"))
-            handler.done()
         else:
             raise ValueError(f"Unknown command {command}")
     except Exception as e:

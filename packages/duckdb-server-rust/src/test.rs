@@ -11,11 +11,9 @@ use axum::{
 use http_body_util::BodyExt;
 use serde_json::json;
 use std::sync::Arc;
-use temp_testdir::TempDir;
 use tokio::sync::Mutex;
 use tower::ServiceExt;
 
-use crate::bundle::{create, load, Query};
 use crate::cache::get_key;
 use crate::db::ConnectionPool;
 use crate::interfaces::QueryParams;
@@ -163,33 +161,6 @@ async fn query_arrow() -> Result<()> {
     let batch = RecordBatch::try_new(schema.clone(), vec![Arc::new(foo_values)])?;
 
     assert_eq!(actual_batch, batch);
-
-    Ok(())
-}
-
-#[tokio::test]
-async fn create_and_load_bundle() -> Result<()> {
-    let temp = TempDir::default();
-
-    let db = ConnectionPool::new(":memory:", 1)?;
-    let cache = &Mutex::new(lru::LruCache::new(10.try_into()?));
-
-    let queries = vec![
-        Query {sql: r#"CREATE TABLE IF NOT EXISTS flights AS SELECT * FROM read_parquet("data/flights-200k.parquet")"#.to_string(), alias: None},
-        Query {sql: r#"SELECT count(*) FROM "flights""#.to_string(), alias: None},
-    ];
-
-    assert_eq!(cache.lock().await.len(), 0);
-
-    create(&db, cache, queries, &temp).await?;
-
-    assert_eq!(cache.lock().await.len(), 1);
-    cache.lock().await.clear();
-
-    load(&db, cache, &temp).await?;
-
-    let cache = cache;
-    assert_eq!(cache.lock().await.len(), 1);
 
     Ok(())
 }

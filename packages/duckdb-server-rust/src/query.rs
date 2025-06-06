@@ -1,13 +1,7 @@
 use anyhow::Result;
-use std::path::{Path, PathBuf};
 
-use crate::bundle::{create, load};
 use crate::cache::retrieve;
 use crate::interfaces::{AppError, AppState, Command, QueryParams, QueryResponse};
-
-fn create_bundle_path(bundle_name: &str) -> PathBuf {
-    Path::new(".mosaic").join("bundle").join(bundle_name)
-}
 
 pub async fn handle(state: &AppState, params: QueryParams) -> Result<QueryResponse, AppError> {
     let command = &params.query_type;
@@ -42,25 +36,6 @@ pub async fn handle(state: &AppState, params: QueryParams) -> Result<QueryRespon
                 .await?;
                 let string = String::from_utf8(json)?;
                 Ok(QueryResponse::Json(string))
-            } else {
-                Err(AppError::BadRequest)
-            }
-        }
-        Some(Command::CreateBundle) => {
-            if let Some(queries) = params.queries {
-                let bundle_name = params.name.unwrap_or_else(|| "default".to_string());
-                let bundle_path = create_bundle_path(&bundle_name);
-                create(state.db.as_ref(), &state.cache, queries, &bundle_path).await?;
-                Ok(QueryResponse::Empty)
-            } else {
-                Err(AppError::BadRequest)
-            }
-        }
-        Some(Command::LoadBundle) => {
-            if let Some(bundle_name) = params.name {
-                let bundle_path = create_bundle_path(&bundle_name);
-                load(state.db.as_ref(), &state.cache, &bundle_path).await?;
-                Ok(QueryResponse::Empty)
             } else {
                 Err(AppError::BadRequest)
             }

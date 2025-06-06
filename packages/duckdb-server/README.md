@@ -48,14 +48,6 @@ Executes the SQL query in the `sql` field and returns the result in Apache Arrow
 
 Executes the SQL query in the `sql` field and returns the result in JSON format.
 
-### `create-bundle`
-
-Caches the results of the SQL queries in the `queries` field and the required datasets.
-
-### `load-bundle`
-
-Loads the bundled results.
-
 ## Publishing
 
 Run the build with `uv build`. Then publish with `uvx twine upload --skip-existing ../../dist/*`. We publish using tokens so when asked, set the username to `__token__` and then use your token as the password. Alternatively, create a [`.pypirc` file](https://packaging.python.org/en/latest/guides/distributing-packages-using-setuptools/#create-an-account).
