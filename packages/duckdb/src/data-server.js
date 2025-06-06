@@ -3,10 +3,8 @@ import path from 'node:path';
 import url from 'node:url';
 import { WebSocketServer } from 'ws';
 import { Cache, cacheKey } from './Cache.js';
-import { createBundle, loadBundle } from './load/bundle.js';
 
 const CACHE_DIR = '.mosaic/cache';
-const BUNDLE_DIR = '.mosaic/bundle';
 
 export function dataServer(db, {
   cache = true,
@@ -120,19 +118,6 @@ export function queryHandler(db, queryCache) {
         case 'json':
           // JSON response format
           res.json(await retrieve(query, sql => db.query(sql)));
-          break;
-        case 'create-bundle':
-          // Create a named bundle of precomputed resources
-          await createBundle(
-            db, queryCache, query.queries,
-            path.resolve(BUNDLE_DIR, query.name)
-          );
-          res.done();
-          break;
-        case 'load-bundle':
-          // Load a named bundle of precomputed resources
-          await loadBundle(db, queryCache, path.resolve(BUNDLE_DIR, query.name));
-          res.done();
           break;
         default:
           res.error(`Unrecognized command: ${type}`, 400);

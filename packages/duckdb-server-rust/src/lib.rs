@@ -1,5 +1,4 @@
 mod app;
-mod bundle;
 mod cache;
 mod db;
 mod interfaces;

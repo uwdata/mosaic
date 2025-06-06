@@ -60,14 +60,6 @@ Executes the SQL query in the `sql` field and returns the result in Apache Arrow
 
 Executes the SQL query in the `sql` field and returns the result in JSON format.
 
-### `create-bundle`
-
-Caches the results of the SQL queries in the `queries` field and the required datasets.
-
-### `load-bundle`
-
-Loads the bundled results.
-
 ## Developers
 
 ### Build

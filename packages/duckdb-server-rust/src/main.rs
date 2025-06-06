@@ -12,7 +12,6 @@ use crate::app::DEFAULT_CONNECTION_POOL_SIZE;
 use crate::app::DEFAULT_DB_PATH;
 
 mod app;
-mod bundle;
 mod cache;
 mod db;
 mod interfaces;
