@@ -11,7 +11,6 @@ use axum::{
 use http_body_util::BodyExt;
 use serde_json::json;
 use std::sync::Arc;
-use temp_testdir::TempDir;
 use tokio::sync::Mutex;
 use tower::ServiceExt;
 
