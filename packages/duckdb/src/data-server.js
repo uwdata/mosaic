@@ -1,5 +1,4 @@
 import http from 'node:http';
-import path from 'node:path';
 import url from 'node:url';
 import { WebSocketServer } from 'ws';
 import { Cache, cacheKey } from './Cache.js';

@@ -1,5 +1,4 @@
 use anyhow::Result;
-use std::path::{Path, PathBuf};
 
 use crate::cache::retrieve;
 use crate::interfaces::{AppError, AppState, Command, QueryParams, QueryResponse};

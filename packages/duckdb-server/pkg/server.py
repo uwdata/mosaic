@@ -2,7 +2,6 @@ import logging
 import sys
 import time
 from functools import partial
-from pathlib import Path
 
 import ujson
 from socketify import App, CompressOptions, OpCode
