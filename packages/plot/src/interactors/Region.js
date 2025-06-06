@@ -9,8 +9,8 @@ import { neqSome } from './util/neq.js';
 import { getDatum } from './util/get-datum.js';
 
 /**
- * @import {Activatable} from '@uwdata/mosaic-core'
- * @implements {Activatable}
+ * @import {ClauseSource} from '@uwdata/mosaic-core'
+ * @implements {ClauseSource}
  */
 export class Region {
   constructor(mark, {
@@ -36,6 +36,9 @@ export class Region {
     const { fields, as } = getFields(mark, channels);
     this.fields = fields;
     this.as = as;
+
+    // Register with coordinator
+    mark.coordinator?.connectClauseSource(this);
   }
 
   reset() {
@@ -45,12 +48,14 @@ export class Region {
   }
 
   activate() {
-    this.selection.activate(this.clause([this.fields.map(() => 0)]));
+    this.selection.activate(this.clause());
   }
 
   clause(value) {
     const { fields, mark } = this;
-    return clausePoints(fields, value, {
+    const clauseValue = value || [fields.map(() => 0)];
+
+    return clausePoints(fields, clauseValue, {
       source: this,
       clients: this.peers ? mark.plot.markSet : new Set().add(mark)
     });

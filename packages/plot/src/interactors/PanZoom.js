@@ -5,8 +5,8 @@ import { getField } from './util/get-field.js';
 const asc = (a, b) => a - b;
 
 /**
- * @import {Activatable} from '@uwdata/mosaic-core'
- * @implements {Activatable}
+ * @import {ClauseSource} from '@uwdata/mosaic-core'
+ * @implements {ClauseSource}
  */
 export class PanZoom {
   constructor(mark, {
@@ -38,6 +38,9 @@ export class PanZoom {
         if (plot.setAttribute('yDomain', value)) plot.update();
       });
     }
+
+    // Register with coordinator
+    mark.coordinator?.connectClauseSource(this);
   }
 
   publish(transform) {
@@ -52,6 +55,10 @@ export class PanZoom {
   }
 
   clause(value, field, scale) {
+    if (value == null || field == null) {
+      throw new Error('PanZoom clause requires value and field parameters');
+    }
+
     return clauseInterval(field, value, {
       source: this,
       clients: this.mark.plot.markSet,
@@ -105,6 +112,8 @@ export class PanZoom {
       this.ysel.activate(this.clause(yscale.domain, yfield, yscale));
     }
   }
+
+  reset() { /* No-op */ }
 }
 
 function extent(ext, defaultTrue, defaultFalse) {

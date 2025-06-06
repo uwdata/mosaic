@@ -7,8 +7,8 @@ import { invert } from './util/invert.js';
 import { sanitizeStyles } from './util/sanitize-styles.js';
 
 /**
- * @import {Activatable} from '@uwdata/mosaic-core'
- * @implements {Activatable}
+ * @import {ClauseSource} from '@uwdata/mosaic-core'
+ * @implements {ClauseSource}
  */
 export class Interval2D {
   constructor(mark, {
@@ -28,6 +28,9 @@ export class Interval2D {
     this.style = style && sanitizeStyles(style);
     this.brush = brush();
     this.brush.on('brush end', ({ selection }) => this.publish(selection));
+
+    // Register with coordinator
+    mark.coordinator?.connectClauseSource(this);
   }
 
   reset() {
@@ -36,7 +39,7 @@ export class Interval2D {
   }
 
   activate() {
-    this.selection.activate(this.clause(this.value || [[0, 1], [0, 1]]));
+    this.selection.activate(this.clause());
   }
 
   publish(extent) {
@@ -59,7 +62,9 @@ export class Interval2D {
 
   clause(value) {
     const { mark, pixelSize, xfield, yfield, xscale, yscale } = this;
-    return clauseIntervals([xfield, yfield], value, {
+    const clauseValue = value || this.value || [[0, 1], [0, 1]];
+
+    return clauseIntervals([xfield, yfield], clauseValue, {
       source: this,
       clients: this.peers ? mark.plot.markSet : new Set().add(mark),
       scales: [xscale, yscale],
@@ -71,6 +76,7 @@ export class Interval2D {
     const { brush, style, value } = this;
     const xscale = this.xscale = svg.scale('x');
     const yscale = this.yscale = svg.scale('y');
+
     const rx = xscale.range;
     const ry = yscale.range;
     brush.extent([[min(rx), min(ry)], [max(rx), max(ry)]]);

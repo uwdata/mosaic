@@ -15,7 +15,7 @@ import {
   ParquetDataNode, OptionsNode,
   CodegenContext,
 } from '@uwdata/mosaic-spec';
-import { MosaicClient, isActivatable } from '@uwdata/mosaic-core';
+import { MosaicClient, isClauseSource } from '@uwdata/mosaic-core';
 
 // Utility imports
 import {
@@ -161,8 +161,12 @@ export class MosaicPublisher {
       throw new PublishError(`Failed to process spec DOM: ${err}`, PublishExitCode.PUBLISH_ERROR);
     }
 
-    const { interactors, inputs } = this.processClients();
-    const isInteractive = interactors.size + inputs.size !== 0;
+    const clauseSources = this.ctx.coordinator.clauseSources;
+    if (!clauseSources) throw new PublishError(
+      'No clause sources on coordinator. This should never happen.',
+      PublishExitCode.PUBLISH_ERROR
+    );
+    const isInteractive = clauseSources.size !== 0;
     const needsJS = isInteractive || !this.optimizations.includes(Optimizations.PRERENDER);
 
     // If spec is valid create relevant output directory
@@ -170,7 +174,7 @@ export class MosaicPublisher {
       if (fs.existsSync(this.outputPath)) {
         if (!this.overwrite) {
           throw new PublishError(
-            `Output directory '${this.outputPath}' already exists. Use --overwrite to allow replacing it\nNOTE: This will delete all existing files in the directory.`,
+            `Output directory '${this.outputPath}' already exists. Use --overwrite to allow replacing it\n\tNOTE: This will delete all existing files in the directory.`,
             PublishExitCode.OUTPUT_DIR_ERROR
           );
         }
@@ -189,7 +193,7 @@ export class MosaicPublisher {
     let postLoad;
     if (needsJS) {
       // Activate interactors and inputs
-      if (isInteractive) await this.activateInteractorsAndInputs(interactors, inputs);
+      if (isInteractive) await this.activateClauseSources(clauseSources);
 
       // Modify AST and process data (extensions, data definitions, etc.)
       const og = FileDataNode.prototype.codegenQuery;
@@ -225,36 +229,13 @@ export class MosaicPublisher {
     if (returnData) return result;
   }
 
-  private processClients() {
-    const interactors = new Set<any>();
-    const inputs = new Set<MosaicClient>();
-    if (!this.ctx.coordinator.clients) return { interactors, inputs };
-
-    for (const client of this.ctx.coordinator.clients) {
-      if (client instanceof MosaicClient && isActivatable(client)) {
-        inputs.add(client);
-      }
-      if (client.plot) {
-        for (const interactor of client.plot.interactors) {
-          interactors.add(interactor);
-        }
-      }
-    }
-    return { interactors, inputs };
-  }
-
   /**
    * Activate the Interactors and Inputs, waiting 
    * for queries to finish.
    */
-  private async activateInteractorsAndInputs(interactors: Set<any>, inputs: Set<MosaicClient>) {
-    for (const interactor of interactors) {
-      if (isActivatable(interactor)) interactor.activate();
-      await this.waitForQueryToFinish();
-    }
-
-    for (const input of inputs) {
-      if (isActivatable(input)) input.activate();
+  private async activateClauseSources(clauseSources: Set<any>) {
+    for (const cs of clauseSources) {
+      if (isClauseSource(cs)) cs.activate();
       await this.waitForQueryToFinish();
     }
   }

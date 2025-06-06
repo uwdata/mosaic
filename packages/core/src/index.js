@@ -25,4 +25,4 @@ export { throttle } from './util/throttle.js';
 export { toDataColumns } from './util/to-data-columns.js';
 export { queryFieldInfo } from './util/field-info.js';
 export { jsType } from './util/js-type.js';
-export { isActivatable } from './util/is-activatable.js';
+export { isClauseSource } from './util/is-clause-source.js';

@@ -275,6 +275,10 @@ export class Table extends Input {
     }
   }
 
+  reset() {
+    this.currentRow = -1;
+  }
+
   sort(event, column) {
     if (column === this.sortColumn) {
       this.sortDesc = !this.sortDesc;

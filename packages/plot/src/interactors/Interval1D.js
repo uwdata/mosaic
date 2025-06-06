@@ -7,8 +7,8 @@ import { invert } from './util/invert.js';
 import { sanitizeStyles } from './util/sanitize-styles.js';
 
 /**
- * @import {Activatable} from '@uwdata/mosaic-core'
- * @implements {Activatable}
+ * @import {ClauseSource} from '@uwdata/mosaic-core'
+ * @implements {ClauseSource}
  */
 export class Interval1D {
   constructor(mark, {
@@ -28,6 +28,9 @@ export class Interval1D {
     this.style = style && sanitizeStyles(style);
     this.brush = channel === 'y' ? brushY() : brushX();
     this.brush.on('brush end', ({ selection }) => this.publish(selection));
+
+    // Register with coordinator
+    mark.coordinator?.connectClauseSource(this);
   }
 
   reset() {
@@ -36,7 +39,7 @@ export class Interval1D {
   }
 
   activate() {
-    this.selection.activate(this.clause(this.value || [0, 1]));
+    this.selection.activate(this.clause());
   }
 
   publish(extent) {
@@ -55,7 +58,9 @@ export class Interval1D {
 
   clause(value) {
     const { mark, pixelSize, field, scale } = this;
-    return clauseInterval(field, value, {
+    const clauseValue = value || this.value || [0, 1];
+
+    return clauseInterval(field, clauseValue, {
       source: this,
       clients: this.peers ? mark.plot.markSet : new Set().add(mark),
       scale,

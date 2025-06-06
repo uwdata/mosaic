@@ -54,16 +54,6 @@ export interface ColumnDescription {
 }
 
 /**
- * Interface for components that perform selection activation.
- */
-export interface Activatable {
-  /**
-   * Activate the selection that this component publishes to.
-   */
-  activate(): void;
-}
-
-/**
  * Interface for cache implementations.
  */
 export interface Cache {

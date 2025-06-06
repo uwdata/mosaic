@@ -196,6 +196,8 @@ export class Slider extends Input {
     }
   }
 
+  reset() { /* No-op */ }
+
   activate() {
     if (isSelection(this.selection)) {
       this.selection.activate(this.clause(0));

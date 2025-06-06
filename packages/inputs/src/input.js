@@ -16,8 +16,8 @@ export function input(InputClass, ...params) {
 
 /**
  * Base class for input components.
- * @import {Activatable} from '@uwdata/mosaic-core'
- * @implements {Activatable}
+ * @import {ClauseSource} from '@uwdata/mosaic-core'
+ * @implements {ClauseSource}
  */
 export class Input extends MosaicClient {
   /**
@@ -36,5 +36,14 @@ export class Input extends MosaicClient {
 
   activate() {
     // subclasses should override
+  }
+
+  reset() {
+    // subclasses should override
+  }
+
+  clause() {
+    // subclasses should override
+    return null;
   }
 }

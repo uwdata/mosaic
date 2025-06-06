@@ -3,11 +3,13 @@
 /** @import { QueryResult } from './util/query-result.js' */
 /** @import { SelectionClause } from './util/selection-types.js' */
 /** @import { MosaicClient } from './MosaicClient.js' */
+/** @import { ClauseSource } from './util/selection-types.js' */
 /** @import { Selection } from './Selection.js' */
 /** @import { Logger, QueryType } from './types.js' */
 import { socketConnector } from './connectors/socket.js';
 import { PreAggregator } from './preagg/PreAggregator.js';
 import { voidLogger } from './util/void-logger.js';
+import { isClauseSource } from './util/is-clause-source.js';
 import { QueryManager, Priority } from './QueryManager.js';
 
 /**
@@ -75,6 +77,7 @@ export class Coordinator {
       this.filterGroups = new Map;
       this.clients?.forEach(client => this.disconnect(client));
       this.clients = new Set;
+      this.clauseSources = new Set;
     }
     if (cache) this.manager.cache().clear();
   }
@@ -223,6 +226,22 @@ export class Coordinator {
   }
 
   /**
+   * Register a clause source with the coordinator.
+   * @param {ClauseSource} clauseSource The clause source to register.
+   */
+  connectClauseSource(clauseSource) {
+    this.clauseSources.add(clauseSource);
+  }
+
+  /**
+   * Deregister a clause source from the coordinator.
+   * @param {ClauseSource} clauseSource The clause source to deregister.
+   */
+  disconnectClauseSource(clauseSource) {
+    this.clauseSources.delete(clauseSource);
+  }
+
+  /**
    * Connect a client to the coordinator.
    * @param {MosaicClient} client The Mosaic client to connect.
    */
@@ -244,6 +263,11 @@ export class Coordinator {
 
     // connect filter selection
     connectSelection(this, client.filterBy, client);
+
+    // Connect this client as a clause source if necessary
+    if (isClauseSource(client)) {
+      this.connectClauseSource(client);
+    }
   }
 
   /**
@@ -255,6 +279,11 @@ export class Coordinator {
     if (!clients.has(client)) return;
     clients.delete(client);
     client.coordinator = null;
+
+    // Remove direct clause sources
+    if (isClauseSource(client)) {
+      this.disconnectClauseSource(client);
+    }
 
     const group = filterGroups.get(client.filterBy);
     if (group) {
