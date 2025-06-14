@@ -2,8 +2,7 @@
   "extends": "../../tsconfig.base.json",
   "include": ["src/**/*"],
   "compilerOptions": {
-    "emitDeclarationOnly": true,
-    "outDir": "dist"
+    "noEmit": true
   },
   "references": [{ "path": "../sql" }]
 }

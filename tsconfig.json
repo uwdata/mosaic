@@ -2,7 +2,6 @@
   "files": [],
   "references": [
     { "path": "packages/core" },
-    { "path": "packages/duckdb" },
     { "path": "packages/inputs" },
     { "path": "packages/plot" },
     { "path": "packages/spec" },

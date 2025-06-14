@@ -22,11 +22,9 @@
   },
   "scripts": {
     "prebuild": "rimraf dist && mkdir dist",
-    "build": "npm run types",
-    "types": "tsc",
     "lint": "eslint src test",
     "test": "vitest run && tsc",
-    "prepublishOnly": "npm run test && npm run lint && npm run build"
+    "prepublishOnly": "npm run test && npm run lint && tsc"
   },
   "dependencies": {
     "@observablehq/plot": "^0.6.17",
