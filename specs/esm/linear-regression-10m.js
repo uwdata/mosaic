@@ -1,7 +1,7 @@
 import * as vg from "@uwdata/vgplot";
 
 await vg.coordinator().exec([
-  `CREATE TABLE IF NOT EXISTS flights10m AS SELECT GREATEST(-60, LEAST(ARR_DELAY, 180))::DOUBLE AS delay, DISTANCE AS distance, DEP_TIME AS time FROM 'https://idl.uw.edu/mosaic-datasets/data/flights-10m.parquet'`,
+  `CREATE TABLE IF NOT EXISTS flights10m AS SELECT GREATEST(-60, LEAST(ARR_DELAY, 180))::DOUBLE AS delay, DISTANCE AS distance, DEP_TIME AS time FROM 'https://pub-1da360b43ceb401c809f68ca37c7f8a4.r2.dev/data/flights-10m.parquet'`,
   `CREATE TABLE IF NOT EXISTS flights10p AS SELECT * FROM flights10m USING SAMPLE 10%`,
   `CREATE TABLE IF NOT EXISTS flights5p AS SELECT * FROM flights10m USING SAMPLE 5%`,
   `CREATE TABLE IF NOT EXISTS flights1p AS SELECT * FROM flights10m USING SAMPLE 1%`
