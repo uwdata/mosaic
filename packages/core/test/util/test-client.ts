@@ -1,16 +1,16 @@
 import { MosaicClient } from '../../src/index.js';
-import type { Query } from '@uwdata/mosaic-sql';
+import type { Query, SelectQuery } from '@uwdata/mosaic-sql';
 
 export class TestClient extends MosaicClient {
-  private _query: Query;
+  private _query: SelectQuery | null;
 
-  constructor(query: Query, filterBy?: any, callbacks: Record<string, any> = {}) {
+  constructor(query: SelectQuery | null, filterBy?: any, callbacks: Record<string, any> = {}) {
     super(filterBy);
     this._query = query;
     Object.assign(this, callbacks);
   }
 
-  query(filter: any[] = []): Query {
-    return this._query.clone().where(filter);
+  query(filter: any[] = []): SelectQuery | null {
+    return this._query?.clone().where(filter) || null;
   }
 }

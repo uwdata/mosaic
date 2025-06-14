@@ -10,7 +10,7 @@ describe('QueryManager', () => {
     queryManager.connector({
       query: async ({ sql }) => {
         expect(sql).toBe('SELECT 1');
-        return [{ column: 1 }];
+        return [{ column: 1 }] as any;
       }
     });
 
@@ -33,7 +33,7 @@ describe('QueryManager', () => {
     queryManager.connector({
       query: ({ sql }) => {
         expect(sql).toBe('CREATE TABLE test (id INT)');
-        return new Promise(() => {});
+        return new Promise(() => {}) as Promise<any>;
       }
     });
 

@@ -6,6 +6,7 @@
     "strict": true,
     "moduleResolution": "node16",
     "allowJs": true,
+    "checkJs": true,
     "forceConsistentCasingInFileNames": true,
 
     "composite": true,

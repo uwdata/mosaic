@@ -36,7 +36,7 @@ export function coordinator(
  * including query caching, consolidation, and pre-aggregation.
  */
 export class Coordinator {
-  protected manager: QueryManager;
+  public manager: QueryManager;
   public preaggregator: PreAggregator;
   public clients?: Set<MosaicClient>;
   public filterGroups?: Map<Selection, any>;
@@ -54,7 +54,7 @@ export class Coordinator {
   constructor(
     db: Connector = socketConnector(),
     options: {
-      logger?: Logger;
+      logger?: Logger | null;
       manager?: QueryManager;
       cache?: boolean;
       consolidate?: boolean;
@@ -111,7 +111,7 @@ export class Coordinator {
    * @param logger The logger to use.
    * @returns The current logger
    */
-  logger(logger?: Logger): Logger {
+  logger(logger?: Logger | null): Logger {
     if (arguments.length) {
       this._logger = logger || voidLogger();
       this.manager.logger(this._logger);
@@ -317,7 +317,7 @@ function activateSelection(
   clause: SelectionClause
 ): void {
   const { preaggregator, filterGroups } = mc;
-  const { clients } = filterGroups?.get(selection);
+  const { clients } = filterGroups!.get(selection);
   for (const client of clients) {
     if (client.enabled) {
       preaggregator.request(client, selection, clause);
@@ -337,7 +337,7 @@ function updateSelection(
   selection: Selection
 ): Promise<PromiseSettledResult<any>[]> {
   const { preaggregator, filterGroups } = mc;
-  const { clients } = filterGroups?.get(selection);
+  const { clients } = filterGroups!.get(selection);
   const { active } = selection;
   return Promise.allSettled(Array.from(clients, (client: MosaicClient) => {
     if (!client.enabled) return client.requestQuery();
@@ -347,7 +347,7 @@ function updateSelection(
     // skip due to cross-filtering
     if (info?.skip || (!info && !filter)) return;
 
-    // @ts-ignore
+    // @ts-expect-error FIXME
     const query = info?.query(active.predicate) ?? client.query(filter);
     return mc.updateClient(client, query);
   }));

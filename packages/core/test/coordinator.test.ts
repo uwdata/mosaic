@@ -3,7 +3,7 @@ import { Coordinator, coordinator } from '../src/index.js';
 import { QueryResult, QueryState } from '../src/util/query-result.js';
 
 async function wait() {
-  return new Promise(setTimeout);
+  return new Promise<void>(resolve => setTimeout(resolve, 0));
 }
 
 describe('coordinator', () => {
@@ -18,7 +18,7 @@ describe('coordinator', () => {
   });
 
   it('query results returned in correct order', async () => {
-    const promises = [];
+    const promises: QueryResult[] = [];
 
     // Mock the connector
     const connector = {
@@ -47,7 +47,7 @@ describe('coordinator', () => {
 
     // resolve promises in reverse order
 
-    promises.at(3).fulfill(0);
+    promises.at(3)!.fulfill(0);
     await wait();
 
     expect(r0.state).toEqual(QueryState.pending);
@@ -55,7 +55,7 @@ describe('coordinator', () => {
     expect(r2.state).toEqual(QueryState.pending);
     expect(r3.state).toEqual(QueryState.ready);
 
-    promises.at(1).fulfill(0);
+    promises.at(1)!.fulfill(0);
     await wait();
 
     expect(r0.state).toEqual(QueryState.pending);
@@ -63,7 +63,7 @@ describe('coordinator', () => {
     expect(r2.state).toEqual(QueryState.pending);
     expect(r3.state).toEqual(QueryState.ready);
 
-    promises.at(0).fulfill(0);
+    promises.at(0)!.fulfill(0);
     await wait();
 
     expect(coord.manager.pendingResults).toHaveLength(2);
@@ -73,7 +73,7 @@ describe('coordinator', () => {
     expect(r2.state).toEqual(QueryState.pending);
     expect(r3.state).toEqual(QueryState.ready);
 
-    promises.at(2).fulfill(0);
+    promises.at(2)!.fulfill(0);
     await wait();
 
     expect(coord.manager.pendingResults).toHaveLength(0);

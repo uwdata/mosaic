@@ -12,18 +12,17 @@ interface QueueItem<E> {
  * @param callback The callback function.
  * @param debounce Flag indicating if invocations
  *  should also be debounced within the current animation frame.
- * @returns A new function that throttles
- *  access to the callback.
+ * @returns A new function that throttles access to the callback.
  */
 export function throttle<E, T>(
-  callback: (event: E) => Promise<T> | null,
+  callback: (event?: E) => Promise<T> | null,
   debounce: boolean = false
-): (event: E) => void {
+): (event?: E) => void {
   let curr: Promise<any> | null;
-  let next: QueueItem<E> | null;
-  let pending: E | typeof NIL = NIL;
+  let next: QueueItem<E> | undefined | null;
+  let pending: E | undefined | typeof NIL = NIL;
 
-  function invoke(event: E): void {
+  function invoke(event?: E): void {
     curr = callback(event)
       ?.catch(() => {})
       .finally(() => {
@@ -41,11 +40,11 @@ export function throttle<E, T>(
     next = { event };
   }
 
-  function process(event: E): void {
-    curr ? enqueue(event) : invoke(event);
+  function process(event?: E): void {
+    curr ? enqueue(event!) : invoke(event);
   }
 
-  function delay(event: E): void {
+  function delay(event?: E): void {
     if (pending !== event) {
       requestAnimationFrame(() => {
         const e = pending as E;

@@ -49,7 +49,7 @@ interface PreAggregateInfoOptions {
  * should be used with care.
  */
 export class PreAggregator {
-  private entries: Map<MosaicClient, PreAggregateInfo | typeof Skip | null>;
+  public entries: Map<MosaicClient, PreAggregateInfo | typeof Skip | null>;
   private active: ActiveColumnsResult | null;
   private mc: Coordinator;
   private _schema: string;

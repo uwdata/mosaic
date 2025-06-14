@@ -22,11 +22,15 @@ describe('MosaicClient', () => {
     );
 
     // pending query results
-    let pending = [];
+    let pending: QueryResult[] = [];
 
     // test client class
     class TestClient extends MosaicClient {
-      constructor(tableName, columnName, filterBy) {
+      private tableName: string;
+      private columnName: string;
+      private pendingResult: QueryResult;
+
+      constructor(tableName: string, columnName: string, filterBy?: any) {
         super(filterBy);
         this.tableName = tableName;
         this.columnName = columnName;
@@ -42,6 +46,7 @@ describe('MosaicClient', () => {
         // add result promise to global pending queue
         this.pendingResult = new QueryResult();
         pending.push(this.pendingResult);
+        return this;
       }
       queryResult(data) {
         // fulfill pending promise with sorted data
@@ -134,7 +139,7 @@ describe('MosaicClient', () => {
       constructor() { super(undefined); this.enabled = false; }
       async prepare() { prepared = true; }
       query() { queried = true; return Query.select({ foo: 1 }); }
-      queryResult(data) { result = data; }
+      queryResult(data) { result = data; return this; }
     }
 
     // client is disabled, lifecycle methods should defer

@@ -14,7 +14,7 @@ async function setup(loadQuery) {
   return mc;
 }
 
-async function run(measure) {
+async function run(measure): Promise<[number, boolean]> {
   const loadQuery = loadObjects('testData', [
     { dim: 'a', x: 1, y: 9 },
     { dim: 'a', x: 2, y: 8 },
@@ -33,10 +33,10 @@ async function run(measure) {
           ? measure(filter)
           : Query.from('testData').select({ measure }).where(filter);
       },
-      queryResult(data) {
+      queryResult(data: any) {
         if (iter) {
           resolve([
-            Array.from(data)[0].measure, // query result
+            (Array.from(data) as any)[0].measure, // query result
             !!mc.preaggregator.entries.get(this) // optimized?
           ]);
         }
@@ -49,7 +49,7 @@ async function run(measure) {
         source: 'test',
         meta: { type: 'point' },
         predicate: isNotDistinct('dim', literal('b'))
-      });
+      } as any);
     });
   });
 }

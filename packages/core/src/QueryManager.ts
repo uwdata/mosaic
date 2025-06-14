@@ -21,7 +21,7 @@ export class QueryManager {
   private _logQueries: boolean;
   private _consolidate: ReturnType<typeof consolidator> | null;
   /** Requests pending with the query manager. */
-  private pendingResults: QueryResult[];
+  public pendingResults: QueryResult[];
   private maxConcurrentRequests: number;
   private pendingExec: boolean;
 

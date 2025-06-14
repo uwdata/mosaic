@@ -167,7 +167,7 @@ export class MosaicClient {
   requestQuery(query?: Query): Promise<void> | null {
     if (this._enabled) {
       const q = query || this.query(this.filterBy?.predicate(this));
-      return this._coordinator?.requestQuery(this, q)!;
+      return this._coordinator!.requestQuery(this, q);
     } else {
       this._request = query ?? true;
       return null;

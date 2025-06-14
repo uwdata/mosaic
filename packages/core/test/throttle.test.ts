@@ -3,12 +3,12 @@ import { throttle } from '../src/util/throttle.js';
 import { QueryResult } from '../src/util/query-result.js';
 
 async function wait() {
-  return new Promise(setTimeout);
+  return new Promise<void>(resolve => setTimeout(resolve));
 }
 
 describe('throttle', () => {
   it('should throttle successful query results', async () => {
-    const requests = [];
+    const requests: QueryResult[] = [];
     const throttled = throttle(() => {
       const req = new QueryResult();
       requests.push(req);
@@ -30,7 +30,7 @@ describe('throttle', () => {
   });
 
   it('should throttle unsuccessful query results', async () => {
-    const requests = [];
+    const requests: QueryResult[] = [];
     const throttled = throttle(() => {
       const req = new QueryResult();
       requests.push(req);

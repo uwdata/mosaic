@@ -21,7 +21,7 @@ const fieldEntry = (channel, field) => ({
 const valueEntry = (channel, value) => ({ channel, value });
 
 // checks if a data source is an explicit array of values
-// as opposed to a database table refernece
+// as opposed to a database table reference
 export const isDataArray = source => Array.isArray(source);
 
 export class Mark extends MosaicClient {
