@@ -1,7 +1,8 @@
 import { expect, describe, it } from 'vitest';
 import { stubParam } from './util/stub-param.js';
-import { column, cume_dist, dense_rank, desc, first_value, isParamLike, lag, last_value, lead, nth_value, ntile, percent_rank, rank, row_number } from '../src/index.js';
+import { column, cume_dist, days, dense_rank, desc, first_value, following, frameGroups, frameRange, frameRows, isParamLike, lag, last_value, lead, nth_value, ntile, percent_rank, preceding, rank, row_number } from '../src/index.js';
 import { columns } from './util/columns.js';
+import { currentRow } from '../src/functions/window-frame.js';
 
 describe('Window functions', () => {
   it('include accessible metadata', () => {
@@ -28,25 +29,46 @@ describe('Window functions', () => {
   });
 
   it('support rows frame', () => {
-    expect(String(first_value('foo').rows([0, null])))
+    expect(String(first_value('foo').frame(frameRows([0, null]))))
       .toBe('first_value("foo") OVER (ROWS BETWEEN CURRENT ROW AND UNBOUNDED FOLLOWING)');
-    expect(String(first_value('foo').rows([null, null])))
+    expect(String(first_value('foo').frame(frameRows([null, null]))))
       .toBe('first_value("foo") OVER (ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING)');
-    expect(String(first_value('foo').rows([0, 2])))
+    expect(String(first_value('foo').frame(frameRows([0, 2]))))
       .toBe('first_value("foo") OVER (ROWS BETWEEN CURRENT ROW AND 2 FOLLOWING)');
-    expect(String(first_value('foo').rows([2, 0])))
+    expect(String(first_value('foo').frame(frameRows([2, 0]))))
       .toBe('first_value("foo") OVER (ROWS BETWEEN 2 PRECEDING AND CURRENT ROW)');
+    expect(String(first_value('foo').frame(frameRows([2, currentRow()]))))
+      .toBe('first_value("foo") OVER (ROWS BETWEEN 2 PRECEDING AND CURRENT ROW)');
+    expect(String(first_value('foo').frame(frameRows([preceding(2), following(3)]))))
+      .toBe('first_value("foo") OVER (ROWS BETWEEN 2 PRECEDING AND 3 FOLLOWING)');
   });
 
   it('support range frame', () => {
-    expect(String(first_value('foo').range([0, null])))
+    expect(String(first_value('foo').frame(frameRange([0, null]))))
       .toBe('first_value("foo") OVER (RANGE BETWEEN CURRENT ROW AND UNBOUNDED FOLLOWING)');
-    expect(String(first_value('foo').range([null, null])))
+    expect(String(first_value('foo').frame(frameRange([null, null]))))
       .toBe('first_value("foo") OVER (RANGE BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING)');
-    expect(String(first_value('foo').range([0, 2])))
+    expect(String(first_value('foo').frame(frameRange([0, 2]))))
       .toBe('first_value("foo") OVER (RANGE BETWEEN CURRENT ROW AND 2 FOLLOWING)');
-    expect(String(first_value('foo').range([2, 0])))
+    expect(String(first_value('foo').frame(frameRange([2, 0]))))
       .toBe('first_value("foo") OVER (RANGE BETWEEN 2 PRECEDING AND CURRENT ROW)');
+    expect(String(first_value('foo').frame(frameRange([2, currentRow()]))))
+      .toBe('first_value("foo") OVER (RANGE BETWEEN 2 PRECEDING AND CURRENT ROW)');
+    expect(String(first_value('foo').frame(frameRows([preceding(days(3)), following(days(2))]))))
+      .toBe('first_value("foo") OVER (ROWS BETWEEN INTERVAL 3 DAYS PRECEDING AND INTERVAL 2 DAYS FOLLOWING)');
+  });
+
+  it('support groups frame', () => {
+    expect(String(first_value('foo').frame(frameGroups([0, null]))))
+      .toBe('first_value("foo") OVER (GROUPS BETWEEN CURRENT ROW AND UNBOUNDED FOLLOWING)');
+    expect(String(first_value('foo').frame(frameGroups([null, null]))))
+      .toBe('first_value("foo") OVER (GROUPS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING)');
+    expect(String(first_value('foo').frame(frameGroups([0, 2]))))
+      .toBe('first_value("foo") OVER (GROUPS BETWEEN CURRENT ROW AND 2 FOLLOWING)');
+    expect(String(first_value('foo').frame(frameGroups([2, 0]))))
+      .toBe('first_value("foo") OVER (GROUPS BETWEEN 2 PRECEDING AND CURRENT ROW)');
+    expect(String(first_value('foo').frame(frameGroups([2, currentRow()]))))
+      .toBe('first_value("foo") OVER (GROUPS BETWEEN 2 PRECEDING AND CURRENT ROW)');
   });
 
   it('support window name, partition by, order by, and frame', () => {
@@ -54,7 +76,7 @@ describe('Window functions', () => {
       .over('base')
       .partitionby('foo', 'bar')
       .orderby('a', desc('b'))
-      .rows([0, +Infinity]);
+      .frame(frameRows([0, Infinity]));
     expect(String(expr)).toBe('cume_dist() OVER ('
       + '"base" '
       + 'PARTITION BY "foo", "bar" '

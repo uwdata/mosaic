@@ -2,19 +2,9 @@
  * @import { FunctionNode } from '../ast/function.js'
  * @import { ExprValue } from '../types.js'
  */
-import { IntervalNode } from '../ast/interval.js';
 import { asNode } from '../util/ast.js';
 import { fn } from '../util/function.js';
-
-/**
- * Create a new interval.
- * @param {string} unit The interval unit, such as day or year.
- * @param {number} steps The number interval unit steps.
- * @returns {IntervalNode}
- */
-export function interval(unit, steps) {
-  return new IntervalNode(unit, steps);
-}
+import { interval } from './interval.js';
 
 /**
  * Given a date/time value, return the milliseconds since the UNIX epoch.

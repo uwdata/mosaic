@@ -20,6 +20,19 @@ export class SQLNode {
      */
     this.type = type;
   }
+
+  /**
+   * Create a shallow clone of this SQL AST node.
+   * @returns {this} The shallow clone node.
+   */
+  clone() {
+    // @ts-expect-error
+    const clone = new this.constructor();
+    for (const key in this) {
+      clone[key] = this[key];
+    }
+    return clone;
+  }
 }
 
 /**

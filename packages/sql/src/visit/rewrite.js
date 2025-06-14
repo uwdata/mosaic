@@ -17,14 +17,15 @@ export function rewrite(node, map) {
     const props = recurse[node.type];
     const n = props?.length ?? 0;
     if (n > 0) {
-      node = cloneNode(node);
+      node = node.clone();
       for (let i = 0; i < n; ++i) {
         const prop = props[i];
         const child = node[prop];
         if (Array.isArray(child)) {
+          const a = (node[prop] = child.slice());
           const m = child.length;
           for (let j = 0; j < m; ++j) {
-            child[j] = rewrite(child[j], map);
+            a[j] = rewrite(child[j], map);
           }
         } else if (child) {
           node[prop] = rewrite(child, map);
@@ -33,13 +34,4 @@ export function rewrite(node, map) {
     }
   }
   return node;
-}
-
-// TODO: consider typed node.clone() methods
-function cloneNode(node) {
-  const clone = new node.constructor();
-  for (const key in node) {
-    clone[key] = node[key];
-  }
-  return clone;
 }

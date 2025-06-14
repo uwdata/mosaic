@@ -1,19 +1,12 @@
 /**
+ * @import { ExprVarArgs, OrderByExpr, WindowFunctionName } from '../types.js'
  * @import { AggregateNode } from './aggregate.js'
- * @import { ExprVarArgs, WindowFunctionName } from '../types.js'
- * @import { ParamLike } from '../types.js'
+ * @import { WindowFrameNode } from './window-frame.js'
  */
-import { WINDOW, WINDOW_CLAUSE, WINDOW_DEF, WINDOW_FRAME } from '../constants.js';
+import { WINDOW, WINDOW_CLAUSE, WINDOW_DEF, WINDOW_FUNCTION } from '../constants.js';
 import { exprList } from '../util/function.js';
 import { quoteIdentifier } from '../util/string.js';
-import { isParamLike } from '../util/type-check.js';
-import { FunctionNode } from './function.js';
-import { ExprNode, isNode, SQLNode } from './node.js';
-import { ParamNode } from './param.js';
-
-/**
- * @typedef {[any, any] | ParamLike} FrameExtent
- */
+import { ExprNode, SQLNode } from './node.js';
 
 export class WindowClauseNode extends SQLNode {
   /**
@@ -90,21 +83,12 @@ export class WindowNode extends ExprNode {
   }
 
   /**
-   * Return an updated window with the given rows frame.
-   * @param {FrameExtent} extent The row-based window frame extent.
+   * Return an updated window with the given frame definition.
+   * @param {WindowFrameNode} framedef The frame definition.
    * @returns {WindowNode} A new window node.
    */
-  rows(extent) {
-    return new WindowNode(this.func, this.def.rows(extent));
-  }
-
-  /**
-   * Return an updated window with the given range frame.
-   * @param {FrameExtent} extent The range-based window frame extent.
-   * @returns {WindowNode} A new window node.
-   */
-  range(extent) {
-    return new WindowNode(this.func, this.def.range(extent));
+  frame(framedef) {
+    return new WindowNode(this.func, this.def.frame(framedef));
   }
 
   /**
@@ -116,14 +100,55 @@ export class WindowNode extends ExprNode {
   }
 }
 
-export class WindowFunctionNode extends FunctionNode {
+export class WindowFunctionNode extends ExprNode {
   /**
    * Instantiate a window function call node.
-   * @param {WindowFunctionName} name The function name.
-   * @param {ExprNode[]} [args=[]] The function arguments.
+   * @param {WindowFunctionName} name The window function name.
+   * @param {ExprNode[]} [args=[]] The window function arguments.
+   * @param {boolean} [ignoreNulls=false] Flag to ignore null values.
+   * @param {OrderByExpr} [argOrder] Order expressions for window arguments.
+   *  Note that this argument ordering is distinct from the window ordering.
    */
-  constructor(name, args) {
-    super(name, args);
+  constructor(name, args = [], ignoreNulls = false, argOrder = []) {
+    super(WINDOW_FUNCTION);
+    /**
+     * The window function name.
+     * @type {string}
+     * @readonly
+     */
+    this.name = name;
+    /**
+     * The window function arguments.
+     * @type {ExprNode[]}
+     * @readonly
+     */
+    this.args = args;
+    /**
+     * Flag to ignore null values.
+     * @type {boolean}
+     * @readonly
+     */
+    this.ignoreNulls = ignoreNulls;
+    /**
+     * Order by expression for window arguments.
+     * @type {ExprNode[]}
+     * @readonly
+     */
+    this.order = exprList([argOrder]);
+  }
+
+  /**
+   * Generate a SQL query string for this node.
+   * @returns {string}
+   */
+  toString() {
+    const { name, args, ignoreNulls, order } = this;
+    const arg = [
+      args.join(', '),
+      order.length ? `ORDER BY ${order.join(', ')}` : '',
+      ignoreNulls ? 'IGNORE NULLS' : ''
+    ].filter(x => x).join(' ');
+    return `${name}(${arg})`;
   }
 }
 
@@ -133,9 +158,9 @@ export class WindowDefNode extends SQLNode {
    * @param {string} [name] The base window definition name.
    * @param {ExprNode[]} [partition] The partition by criteria.
    * @param {ExprNode[]} [order] The order by criteria.
-   * @param {WindowFrameNode} [frame] The window frame definition.
+   * @param {WindowFrameNode} [framedef] The window frame definition.
    */
-  constructor(name, partition, order, frame) {
+  constructor(name, partition, order, framedef) {
     super(WINDOW_DEF);
     /**
      * The base window definition name.
@@ -160,7 +185,7 @@ export class WindowDefNode extends SQLNode {
      * @type {WindowFrameNode}
      * @readonly
      */
-    this.frame = frame;
+    this.framedef = framedef;
   }
 
   /**
@@ -191,21 +216,12 @@ export class WindowDefNode extends SQLNode {
   }
 
   /**
-   * Return an updated window definition with the given rows frame.
-   * @param {FrameExtent} extent The row-based window frame extent.
+   * Return an updated window definition with the given frame definition.
+   * @param {WindowFrameNode} framedef The frame definition.
    * @returns {WindowDefNode} A new window definition node.
    */
-  rows(extent) {
-    return deriveDef(this, { frame: new WindowFrameNode(extent) });
-  }
-
-  /**
-   * Return an updated window definition with the given range frame.
-   * @param {FrameExtent} extent The range-based window frame extent.
-   * @returns {WindowDefNode} A new window definition node.
-   */
-  range(extent) {
-    return deriveDef(this, { frame: new WindowFrameNode(extent, true) });
+  frame(framedef) {
+    return deriveDef(this, { framedef });
   }
 
   /**
@@ -213,59 +229,15 @@ export class WindowDefNode extends SQLNode {
    * @returns {string}
    */
   toString() {
-    const { name, partition, order, frame } = this;
+    const { name, partition, order, framedef } = this;
     const base = name && quoteIdentifier(name);
     const def = [
       base,
       partition?.length && `PARTITION BY ${partition.join(', ')}`,
       order?.length && `ORDER BY ${order.join(', ')}`,
-      frame
+      framedef
     ].filter(x => x);
     return base && def.length < 2 ? base : `(${def.join(' ')})`;
-  }
-}
-
-export class WindowFrameNode extends SQLNode {
-  /**
-   * Instantiate a window frame definition node.
-   * @param {FrameExtent} extent The frame extent as [preceding, following]
-   *  row or interval offsets.
-   * @param {boolean} [range] The frame type: `true` for range, otherwise rows.
-   * @param {ExprNode} [exclude] The window exclusion criteria.
-   */
-  constructor(extent, range = false, exclude = undefined) {
-    super(WINDOW_FRAME);
-    /**
-     * The frame extent as [preceding, following] row or interval offsets.
-     * @type {ParamNode | [any, any]}
-     * @readonly
-     */
-    this.extent = isParamLike(extent) ? new ParamNode(extent) : extent;
-    /**
-     * The frame type: `true` for range, otherwise rows.
-     * @type {boolean}
-     * @readonly
-     */
-    this.range = range;
-    /**
-     * The window exclusion criteria.
-     * @type {ExprNode}
-     * @readonly
-     */
-    this.exclude = exclude;
-  }
-
-  /**
-   * Generate a SQL query string for this node.
-   * @returns {string}
-   */
-  toString() {
-    const { range, exclude, extent  } = this;
-    const type = range ? 'RANGE' : 'ROWS';
-    const [prev, next] = isNode(extent) ? extent.value : extent;
-    const a = frameValue(prev, 'PRECEDING');
-    const b = frameValue(next, 'FOLLOWING');
-    return `${type} BETWEEN ${a} AND ${b}${exclude ? ` ${exclude}` : ''}`;
   }
 }
 
@@ -276,19 +248,13 @@ export class WindowFrameNode extends SQLNode {
  * @param {string} [options.name] The base window definition name.
  * @param {ExprNode[]} [options.partition] The partition by criteria.
  * @param {ExprNode[]} [options.order] The order by criteria.
- * @param {WindowFrameNode} [options.frame] The window frame definition.
+ * @param {WindowFrameNode} [options.framedef] The window frame definition.
  */
 function deriveDef(def, options) {
   return new WindowDefNode(
     options.name ?? def.name,
     options.partition ?? def.partition,
     options.order ?? def.order,
-    options.frame ?? def.frame
+    options.framedef ?? def.framedef
   );
-}
-
-function frameValue(value, order) {
-  return value === 0 ? 'CURRENT ROW'
-    : Number.isFinite(value) ? `${Math.abs(value)} ${order}`
-    : `UNBOUNDED ${order}`;
 }

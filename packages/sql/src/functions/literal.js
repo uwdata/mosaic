@@ -15,8 +15,9 @@ export function literal(value) {
 /**
  * Return a SQL AST node for verbatim string content.
  * @param {string} value The verbatim value.
+ * @param {string} [hint] A type hint for analyzing verbatim content.
  * @returns {VerbatimNode}
  */
-export function verbatim(value) {
-  return new VerbatimNode(value);
+export function verbatim(value, hint) {
+  return new VerbatimNode(value, hint);
 }

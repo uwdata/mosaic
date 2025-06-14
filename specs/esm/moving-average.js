@@ -16,7 +16,7 @@ export default vg.vconcat(
       vg.from("cases"),
       {
         x: vg.sql`day + 0.5`,
-        y: vg.avg("cases").orderby("day").rows($frame),
+        y: vg.avg("cases").orderby("day").frame(vg.frameRows($frame)),
         curve: "monotone-x",
         stroke: "currentColor"
       }

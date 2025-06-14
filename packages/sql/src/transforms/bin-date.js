@@ -2,7 +2,8 @@
  * @import { ExprNode } from '../ast/node.js'
  * @import { ExprValue, TimeUnit } from '../types.js'
  */
-import { dateBin, interval } from '../functions/datetime.js';
+import { dateBin } from '../functions/datetime.js';
+import { interval } from '../functions/interval.js';
 import { add } from '../functions/operators.js';
 import { timeInterval } from './util/time-interval.js';
 

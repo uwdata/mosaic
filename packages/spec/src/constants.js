@@ -48,5 +48,6 @@ export const PLOT = 'plot';
 export const LEGEND = 'legend';
 export const ATTRIBUTE = 'attribute';
 export const TRANSFORM = 'transform';
+export const WINDOW_FRAME = 'windowframe';
 export const INTERACTOR = 'interactor';
 export const FIXED = 'Fixed';

@@ -1,7 +1,6 @@
 /**
  * @import { SQLNode } from '../ast/node.js'
  * @import { VisitorCallback, VisitorResult } from '../types.js'
-
  */
 import { isNode } from '../ast/node.js';
 import { recurse } from './recurse.js';
