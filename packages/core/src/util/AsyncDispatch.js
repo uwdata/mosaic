@@ -65,7 +65,7 @@ export class AsyncDispatch {
    * queued events are filtered).
    * @param {string} type The event type.
    * @param {*} value The new event value that will be enqueued.
-   * @returns {(value: *) => boolean|null} A dispatch queue filter
+   * @returns {((value: *) => boolean)|null} A dispatch queue filter
    *  function, or null if all unemitted event values should be filtered.
    */
   emitQueueFilter(type, value) { // eslint-disable-line no-unused-vars
