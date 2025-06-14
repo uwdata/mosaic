@@ -1,6 +1,6 @@
-/** @import { Query } from '@uwdata/mosaic-sql' */
-/** @import { Coordinator } from './Coordinator.js' */
-/** @import { Selection } from './Selection.js' */
+import { type Query } from '@uwdata/mosaic-sql';
+import { type Coordinator } from './Coordinator.js';
+import { type Selection } from './Selection.js';
 import { throttle } from './util/throttle.js';
 
 /**
@@ -20,53 +20,55 @@ import { throttle } from './util/throttle.js';
  * associated interface elements are offscreen or disabled.
  */
 export class MosaicClient {
+  _filterBy: Selection | undefined;
+  _requestUpdate: (event?: unknown) => void;
+  _coordinator: Coordinator | null;
+  _pending: Promise<any>;
+  _enabled: boolean;
+  _initialized: boolean;
+  _request: Query | boolean | null;
+
   /**
    * Create a new client instance.
-   * @param {Selection} [filterSelection] An optional selection to
+   * @param filterSelection An optional selection to
    *  interactively filter this client's data. If provided, a coordinator
    *  will re-query and update the client when the selection updates.
    */
-  constructor(filterSelection) {
-    /** @type {Selection | undefined} */
+  constructor(filterSelection?: Selection) {
     this._filterBy = filterSelection;
     this._requestUpdate = throttle(() => this.requestQuery(), true);
-    /** @type {Coordinator | null} */
     this._coordinator = null;
-    /** @type {Promise<any>} */
     this._pending = Promise.resolve();
-    /** @type {boolean} */
     this._enabled = true;
-    /** @type {boolean} */
     this._initialized = false;
-    /** @type {Query | boolean | null} */
     this._request = null;
   }
 
   /**
-   * @returns {Coordinator | null}  this client's connected coordinator.
+   * @returns this client's connected coordinator.
    */
-  get coordinator() {
+  get coordinator(): Coordinator | null {
     return this._coordinator;
   }
 
   /**
    * Set this client's connected coordinator.
    */
-  set coordinator(coordinator) {
+  set coordinator(coordinator: Coordinator | null) {
     this._coordinator = coordinator;
   }
 
   /**
    * Return this client's enabled state.
    */
-  get enabled() {
+  get enabled(): boolean {
     return this._enabled;
   }
 
   /**
    * Set this client's enabled state;
    */
-  set enabled(state) {
+  set enabled(state: boolean) {
     state = !!state; // ensure boolean
     if (this._enabled !== state) {
       this._enabled = state;
@@ -86,14 +88,14 @@ export class MosaicClient {
   /**
    * Return a Promise that resolves once the client has updated.
    */
-  get pending() {
+  get pending(): Promise<any> {
     return this._pending;
   }
 
   /**
-   * @returns {Selection | undefined} this client's filter selection.
+   * @returns this client's filter selection.
    */
-  get filterBy() {
+  get filterBy(): Selection | undefined {
     return this._filterBy;
   }
 
@@ -103,7 +105,7 @@ export class MosaicClient {
    * to the filterBy selection do not change the groupby domain of the client
    * query.
    */
-  get filterStable() {
+  get filterStable(): boolean {
     return true;
   }
 
@@ -112,41 +114,41 @@ export class MosaicClient {
    * should override this method as needed, potentially issuing one or more
    * queries to gather data or metadata needed prior to `query` calls.
    */
-  async prepare() {
+  async prepare(): Promise<void> {
   }
 
   /**
    * Return a query specifying the data needed by this client.
-   * @param {*} [filter] The filtering criteria to apply in the query.
-   * @returns {*} The client query
+   * @param filter The filtering criteria to apply in the query.
+   * @returns The client query
    */
-  query(filter) { // eslint-disable-line no-unused-vars
+  query(filter?: any): any { // eslint-disable-line no-unused-vars
     return null;
   }
 
   /**
    * Called by the coordinator to inform the client that a query is pending.
-   * @returns {this}
+   * @returns this
    */
-  queryPending() {
+  queryPending(): this {
     return this;
   }
 
   /**
    * Called by the coordinator to return a query result.
-   * @param {*} data The query result.
-   * @returns {this}
+   * @param data The query result.
+   * @returns this
    */
-  queryResult(data) { // eslint-disable-line no-unused-vars
+  queryResult(data: any): this { // eslint-disable-line no-unused-vars
     return this;
   }
 
   /**
    * Called by the coordinator to report a query execution error.
-   * @param {*} error
-   * @returns {this}
+   * @param error
+   * @returns this
    */
-  queryError(error) { // eslint-disable-line no-unused-vars
+  queryError(error: any): this { // eslint-disable-line no-unused-vars
     // do nothing, the coordinator logs the error
     return this;
   }
@@ -158,15 +160,14 @@ export class MosaicClient {
    * no effect if the client is not connected to a coordinator. If the client
    * is connected by currently disabled, the request will be serviced if the
    * client is later enabled.
-   * @param {Query} [query] The query to request. If unspecified, the query
-   *  will be determind by the client's `query` method and the current
+   * @param query The query to request. If unspecified, the query
+   *  will be determined by the client's `query` method and the current
    *  `filterBy` selection state.
-   * @returns {Promise}
    */
-  requestQuery(query) {
+  requestQuery(query?: Query): Promise<void> | null {
     if (this._enabled) {
       const q = query || this.query(this.filterBy?.predicate(this));
-      return this._coordinator?.requestQuery(this, q);
+      return this._coordinator?.requestQuery(this, q)!;
     } else {
       this._request = query ?? true;
       return null;
@@ -181,7 +182,7 @@ export class MosaicClient {
    * connected to a coordinator. If the client is connected but currently
    * disabled, the request will be serviced if the client is later enabled.
    */
-  requestUpdate() {
+  requestUpdate(): void {
     if (this._enabled) {
       this._requestUpdate();
     } else {
@@ -193,7 +194,7 @@ export class MosaicClient {
    * Reset this client, calling the prepare method and query requests. This
    * method has no effect if the client is not registered with a coordinator.
    */
-  initialize() {
+  initialize(): void {
     if (!this._enabled) {
       // clear flag so we initialize when enabled again
       this._initialized = false;
@@ -212,16 +213,15 @@ export class MosaicClient {
    * If overriding this method in a client subclass, be sure to also
    * disconnect from the coordinator.
    */
-  destroy() {
+  destroy(): void {
     this.coordinator?.disconnect(this);
   }
 
   /**
    * Requests a client update, for example to (re-)render an interface
    * component.
-   * @returns {this | Promise<any>}
    */
-  update() {
+  update(): this | Promise<any> {
     return this;
   }
 }
