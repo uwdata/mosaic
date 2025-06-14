@@ -30,8 +30,7 @@
     "types": "tsc",
     "lint": "eslint src test",
     "server": "node bin/run-server.js",
-    "test": "vitest run && npm run tsc",
-    "tsc": "tsc",
+    "test": "vitest run && tsc",
     "prepublishOnly": "npm run test && npm run lint"
   },
   "dependencies": {

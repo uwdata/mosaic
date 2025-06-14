@@ -22,8 +22,7 @@
     "build": "npm run types",
     "types": "tsc -p tsconfig.json",
     "lint": "eslint src test",
-    "test": "vitest run && npm run tsc",
-    "tsc": "tsc -p jsconfig.json",
+    "test": "vitest run && tsc",
     "prepublishOnly": "npm run test && npm run lint && npm run build"
   },
   "dependencies": {

@@ -16,6 +16,7 @@
     "docs:preview": "vitepress preview docs",
     "docs:schema": "node bin/publish-schema.js && bin/push-schema.sh",
     "build": "lerna run build",
+    "build:tsc": "tsc --build",
     "lint": "lerna run lint",
     "test": "vitest run && lerna run tsc",
     "server": "cd packages/duckdb-server && npm run dev",
