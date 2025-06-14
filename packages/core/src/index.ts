@@ -20,7 +20,7 @@ export {
 export { decodeIPC } from './util/decode-ipc.js';
 export { distinct } from './util/distinct.js';
 export { isArrowTable } from './util/is-arrow-table.js';
-export { synchronizer } from './util/synchronizer.js';
+export { Synchronizer } from './util/synchronizer.js';
 export { throttle } from './util/throttle.js';
 export { toDataColumns } from './util/to-data-columns.js';
 export { queryFieldInfo } from './util/field-info.js';
@@ -30,4 +30,6 @@ export type { QueryResult } from './util/query-result.js';
 
 export * from './types.js';
 export * from './connectors/Connector.js';
-export * from './util/selection-types.js';
+
+export type * from './Selection.js';
+export type {SelectionClause} from './SelectionClause.js';

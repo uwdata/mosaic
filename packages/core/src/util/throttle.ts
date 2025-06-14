@@ -1,48 +1,54 @@
 const NIL = {};
 
+interface QueueItem<E> {
+  event: E;
+}
+
 /**
  * Throttle invocations of a callback function. The callback must return
  * a Promise. Upon repeated invocation, the callback will not be invoked
  * until a prior Promise resolves. If multiple invocations occurs while
  * waiting, only the most recent invocation will be pending.
- * @template E, T
- * @param {(event: E) => Promise<T> | null} callback The callback function.
- * @param {boolean} [debounce=true] Flag indicating if invocations
+ * @param callback The callback function.
+ * @param debounce Flag indicating if invocations
  *  should also be debounced within the current animation frame.
- * @returns {(event: E) => void} A new function that throttles
+ * @returns A new function that throttles
  *  access to the callback.
  */
-export function throttle(callback, debounce = false) {
-  let curr;
-  let next;
-  let pending = NIL;
+export function throttle<E, T>(
+  callback: (event: E) => Promise<T> | null,
+  debounce: boolean = false
+): (event: E) => void {
+  let curr: Promise<any> | null;
+  let next: QueueItem<E> | null;
+  let pending: E | typeof NIL = NIL;
 
-  function invoke(event) {
+  function invoke(event: E): void {
     curr = callback(event)
-      .catch(() => {})
+      ?.catch(() => {})
       .finally(() => {
         if (next) {
-          const { value } = next;
+          const { event: value } = next;
           next = null;
           invoke(value);
         } else {
           curr = null;
         }
-      });
+      }) || null;
   }
 
-  function enqueue(event) {
+  function enqueue(event: E): void {
     next = { event };
   }
 
-  function process(event) {
+  function process(event: E): void {
     curr ? enqueue(event) : invoke(event);
   }
 
-  function delay(event) {
+  function delay(event: E): void {
     if (pending !== event) {
       requestAnimationFrame(() => {
-        const e = pending;
+        const e = pending as E;
         pending = NIL;
         process(e);
       });

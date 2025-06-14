@@ -1,109 +1,94 @@
-/** @import { ExtractionOptions, Table } from '@uwdata/flechette' */
-/** @import { ArrowQueryRequest, Connector, ExecQueryRequest, JSONQueryRequest } from './Connector.js' */
+import type { ExtractionOptions, Table } from '@uwdata/flechette';
+import type { ArrowQueryRequest, Connector, ExecQueryRequest, JSONQueryRequest } from './Connector.js';
 import * as duckdb from '@duckdb/duckdb-wasm';
 import { decodeIPC } from '../util/decode-ipc.js';
 
-/**
- * @typedef {object} DuckDBWASMOptions
- * @property {boolean} [log] Flag to enable logging.
- */
+interface DuckDBWASMOptions {
+  /** Flag to enable logging. */
+  log?: boolean;
+}
 
-/**
- * @typedef {object} DuckDBWASMConnectorOptions
- * @property {boolean} [log] Flag to enable logging.
- * @property {ExtractionOptions} [ipc]
- *  Arrow IPC extraction options.
- * @property {duckdb.AsyncDuckDB} [duckdb]
- *  Optional pre-existing DuckDB-WASM instance.
- * @property {duckdb.AsyncDuckDBConnection} [connection]
- *  Optional pre-existing DuckDB-WASM connection.
- */
+interface DuckDBWASMConnectorOptions extends DuckDBWASMOptions {
+  /** Arrow IPC extraction options. */
+  ipc?: ExtractionOptions;
+  /** Optional pre-existing DuckDB-WASM instance. */
+  duckdb?: duckdb.AsyncDuckDB;
+  /** Optional pre-existing DuckDB-WASM connection. */
+  connection?: duckdb.AsyncDuckDBConnection;
+}
 
 /**
  * Connect to a DuckDB-WASM instance.
- * @param {DuckDBWASMConnectorOptions} [options] Connector options.
- * @returns {DuckDBWASMConnector} A connector instance.
+ * @param options Connector options.
+ * @returns A connector instance.
  */
-export function wasmConnector(options = {}) {
+export function wasmConnector(options: DuckDBWASMConnectorOptions = {}): DuckDBWASMConnector {
   return new DuckDBWASMConnector(options);
 }
 
 /**
  * DuckDB-WASM connector.
- * @implements {Connector}
  */
-export class DuckDBWASMConnector {
+export class DuckDBWASMConnector implements Connector {
+  private _ipc?: ExtractionOptions;
+  public _options: DuckDBWASMOptions;
+  public _db?: duckdb.AsyncDuckDB;
+  public _con?: duckdb.AsyncDuckDBConnection;
+  public _loadPromise?: Promise<unknown>;
+
   /**
    * Create a new DuckDB-WASM connector instance.
-   * @param {DuckDBWASMConnectorOptions} [options]
+   * @param options Connector options.
    */
-  constructor(options = {}) {
+  constructor(options: DuckDBWASMConnectorOptions = {}) {
     const { ipc, duckdb, connection, ...opts } = options;
-    /** @type {ExtractionOptions} */
     this._ipc = ipc;
-    /** @type {DuckDBWASMOptions} */
     this._options = opts;
-    /** @type {duckdb.AsyncDuckDB} */
     this._db = duckdb;
-    /** @type {duckdb.AsyncDuckDBConnection} */
     this._con = connection;
-    /** @type {Promise<unknown>} */
-    this._loadPromise;
   }
 
   /**
    * Get the backing DuckDB-WASM instance.
    * Lazily initializes DuckDB-WASM if not already loaded.
-   * @returns {Promise<duckdb.AsyncDuckDB>} The DuckDB-WASM instance.
+   * @returns The DuckDB-WASM instance.
    */
-  async getDuckDB() {
+  async getDuckDB(): Promise<duckdb.AsyncDuckDB> {
     if (!this._db) await connect(this);
-    return this._db;
+    return this._db!;
   }
 
   /**
    * Get the backing DuckDB-WASM connection.
    * Lazily initializes DuckDB-WASM if not already loaded.
-   * @returns {Promise<duckdb.AsyncDuckDBConnection>} The DuckDB-WASM connection.
+   * @returns The DuckDB-WASM connection.
    */
-  async getConnection() {
+  async getConnection(): Promise<duckdb.AsyncDuckDBConnection> {
     if (!this._con) await connect(this);
-    return this._con;
+    return this._con!;
   }
 
-  /**
-   * @overload
-   * @param {ArrowQueryRequest} query
-   * @returns {Promise<Table>}
-   *
-   * @overload
-   * @param {ExecQueryRequest} query
-   * @returns {Promise<void>}
-   *
-   * @overload
-   * @param {JSONQueryRequest} query
-   * @returns {Promise<Record<string, any>[]>}
-   *
-   * @param {ArrowQueryRequest | ExecQueryRequest | JSONQueryRequest} query
-   * @returns {Promise<Table | void | Record<string, any>[]>}}
-   */
-  async query(query) {
+  async query(query: ArrowQueryRequest): Promise<Table>;
+  async query(query: ExecQueryRequest): Promise<void>;
+  async query(query: JSONQueryRequest): Promise<Record<string, any>[]>;
+  async query(query: ArrowQueryRequest | ExecQueryRequest | JSONQueryRequest): Promise<Table | void | Record<string, any>[]>;
+  async query(query: any): Promise<any> {
     const { type, sql } = query;
     const con = await this.getConnection();
     const result = await getArrowIPC(con, sql);
     return type === 'exec' ? undefined
       : type === 'arrow' ? decodeIPC(result, this._ipc)
       : decodeIPC(result).toArray();
-  };
+  }
 }
 
 /**
  * Bypass duckdb-wasm query method to get Arrow IPC bytes directly.
  * https://github.com/duckdb/duckdb-wasm/issues/267#issuecomment-2252749509
- * @param {duckdb.AsyncDuckDBConnection} con The DuckDB-WASM connection.
- * @param {string} query The SQL query to run.
+ * @param con The DuckDB-WASM connection.
+ * @param query The SQL query to run.
  */
-function getArrowIPC(con, query) {
+function getArrowIPC(con: duckdb.AsyncDuckDBConnection, query: string): Promise<ArrayBuffer> {
   return new Promise((resolve, reject) => {
     con.useUnsafe(async (bindings, conn) => {
       try {
@@ -118,10 +103,10 @@ function getArrowIPC(con, query) {
 
 /**
  * Establish a new database connection for the given connector.
- * @param {DuckDBWASMConnector} c The connector.
- * @returns {Promise<unknown>}
+ * @param c The connector.
+ * @returns Connection promise.
  */
-function connect(c) {
+function connect(c: DuckDBWASMConnector): Promise<unknown> {
   if (!c._loadPromise) {
     // use a loading promise to avoid race conditions
     // synchronizes multiple callees on the same load
@@ -137,11 +122,11 @@ function connect(c) {
 
 /**
  * Initialize a new DuckDB-WASM instance.
- * @param {DuckDBWASMOptions} options
+ * @param options Database initialization options.
  */
 async function initDatabase({
   log = false
-} = {}) {
+}: DuckDBWASMOptions = {}): Promise<duckdb.AsyncDuckDB> {
   const JSDELIVR_BUNDLES = duckdb.getJsDelivrBundles();
 
   // Select a bundle based on browser checks

@@ -1,10 +1,12 @@
+import type { JSType } from '../types.js';
+
 /**
  * Maps a SQL data type to its corresponding JavaScript type.
- * @param {string} type The name of a SQL data type
- * @returns {import('../types.js').JSType} The corresponding JavaScript type name
- * @throws {Error} Throws an error if the given SQL type name is unsupported or unrecognized.
+ * @param type The name of a SQL data type
+ * @returns The corresponding JavaScript type name
+ * @throws Throws an error if the given SQL type name is unsupported or unrecognized.
  */
-export function jsType(type) {
+export function jsType(type: string): JSType {
   switch (type) {
     case 'BIGINT':
     case 'HUGEINT':

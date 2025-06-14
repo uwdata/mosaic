@@ -1,4 +1,4 @@
-/** @import { AggregateNode, ExprNode } from '@uwdata/mosaic-sql' */
+import type { AggregateNode, ExprNode } from '@uwdata/mosaic-sql';
 import { and, argmax, argmin, coalesce, count, div, exp, isNotNull, ln, max, min, mul, pow, regrAvgX, regrAvgY, regrCount, sql, sqrt, sub, sum } from '@uwdata/mosaic-sql';
 import { fnv_hash } from '../util/hash.js';
 
@@ -6,13 +6,18 @@ import { fnv_hash } from '../util/hash.js';
  * Determine sufficient statistics to preaggregate the given node. This
  * method populates the *preagg* and *aggrs* arguments with necessary
  * information for preaggregation optimization.
- * @param {AggregateNode} node An aggregate function.
- * @param {Record<string, ExprNode>} preagg Map of column names to
+ * @param node An aggregate function.
+ * @param preagg Map of column names to
  *  expressions to include in the preaggregation table.
- * @returns {ExprNode} Output aggregate expression that uses preaggregated
+ * @param avg Global average query generator.
+ * @returns Output aggregate expression that uses preaggregated
  *  sufficient statistics to service updates.
  */
-export function sufficientStatistics(node, preagg, avg) {
+export function sufficientStatistics(
+  node: AggregateNode, 
+  preagg: Record<string, ExprNode>, 
+  avg: (field: any) => ExprNode
+): ExprNode | null {
   switch (node.name) {
     case 'count':
     case 'count_star':
@@ -89,10 +94,10 @@ export function sufficientStatistics(node, preagg, avg) {
 /**
  * Generate a column name for the given aggregate node. The name is
  * made from a hash of the string-serialized SQL expression.
- * @param {AggregateNode} node The aggregate node to name.
- * @returns {string} The generated column name.
+ * @param node The aggregate node to name.
+ * @returns The generated column name.
  */
-function colName(node) {
+function colName(node: AggregateNode): string {
   return 'pre_' + fnv_hash(`${node}`).toString(16);
 }
 
@@ -100,13 +105,13 @@ function colName(node) {
  * Add a sufficient statistic to the preaggregation column set.
  * Generates a unique column name for the statistic and propagates
  * a FILTER clause if one exists on the original aggregate node.
- * @param {Record<string, ExprNode>} preagg A map of columns (such as
+ * @param preagg A map of columns (such as
  *  sufficient statistics) to pre-aggregate.
- * @param {AggregateNode} expr The aggregate statistic to add.
- * @param {AggregateNode} [node] The originating aggregate function call.
- * @returns {string} The name of the statistic column.
+ * @param expr The aggregate statistic to add.
+ * @param node The originating aggregate function call.
+ * @returns The name of the statistic column.
  */
-function addStat(preagg, expr, node) {
+function addStat(preagg: Record<string, ExprNode>, expr: AggregateNode, node?: AggregateNode): string {
   const filter = node?.filter;
   if (filter) {
     // push filter clause to preaggregate expr
@@ -123,13 +128,13 @@ function addStat(preagg, expr, node) {
  * Generate an expression for calculating counts over data dimensions.
  * As a side effect, this method adds a column to the input *preagg* object
  * to track the count of non-null values per-partition.
- * @param {Record<string, ExprNode>} preagg A map of columns (such as
+ * @param preagg A map of columns (such as
  *  sufficient statistics) to pre-aggregate.
- * @param {AggregateNode} node The originating aggregate function call.
- * @returns {{ expr: ExprNode, name: string }} An aggregate expression over
+ * @param node The originating aggregate function call.
+ * @returns An aggregate expression over
  *  pre-aggregated dimensions and associated column name.
  */
-function countExpr(preagg, node) {
+function countExpr(preagg: Record<string, ExprNode>, node: AggregateNode): { expr: ExprNode; name: string } {
   const name = addStat(preagg, count(node.args[0]), node);
   return { expr: coalesce(sum(name), 0), name };
 }
@@ -138,23 +143,23 @@ function countExpr(preagg, node) {
  * Generate an expression for calculating counts over data dimensions.
  * The expression is a summation with an additional coalesce operation
  * to map null sums to zero-valued counts.
- * @param {Record<string, ExprNode>} preagg A map of columns (such as
+ * @param preagg A map of columns (such as
  *  sufficient statistics) to pre-aggregate.
- * @param {AggregateNode} node The originating aggregate function call.
- * @returns {ExprNode} An aggregate expression over pre-aggregated dimensions.
+ * @param node The originating aggregate function call.
+ * @returns An aggregate expression over pre-aggregated dimensions.
  */
-function sumCountExpr(preagg, node) {
+function sumCountExpr(preagg: Record<string, ExprNode>, node: AggregateNode): ExprNode {
   return coalesce(sumExpr(preagg, node), 0);
 }
 
 /**
  * Generate an expression for calculating sums over data dimensions.
- * @param {Record<string, ExprNode>} preagg A map of columns (such as
+ * @param preagg A map of columns (such as
  *  sufficient statistics) to pre-aggregate.
- * @param {AggregateNode} node The originating aggregate function call.
- * @returns {ExprNode} An aggregate expression over pre-aggregated dimensions.
+ * @param node The originating aggregate function call.
+ * @returns An aggregate expression over pre-aggregated dimensions.
  */
-function sumExpr(preagg, node) {
+function sumExpr(preagg: Record<string, ExprNode>, node: AggregateNode): ExprNode {
   return sum(addStat(preagg, node));
 }
 
@@ -162,12 +167,12 @@ function sumExpr(preagg, node) {
  * Generate an expression for calculating averages over data dimensions.
  * As a side effect, this method adds a column to the input *preagg* object
  * to track the count of non-null values per-partition.
- * @param {Record<string, ExprNode>} preagg A map of columns (such as
+ * @param preagg A map of columns (such as
  *  sufficient statistics) to pre-aggregate.
- * @param {AggregateNode} [node] The originating aggregate function call.
- * @returns {ExprNode} An aggregate expression over pre-aggregated dimensions.
+ * @param node The originating aggregate function call.
+ * @returns An aggregate expression over pre-aggregated dimensions.
  */
-function avgExpr(preagg, node) {
+function avgExpr(preagg: Record<string, ExprNode>, node: AggregateNode): ExprNode {
   const as = addStat(preagg, node);
   const { expr, name } = countExpr(preagg, node);
   return div(sum(mul(as, name)), expr);
@@ -179,12 +184,12 @@ function avgExpr(preagg, node) {
  * geomean calculation uses two sufficient statistics: the sum of log values
  * and the count of non-null values. As a side effect, this method adds columns
  * for these statistics to the input *preagg* object.
- * @param {Record<string, ExprNode>} preagg A map of columns (such as
+ * @param preagg A map of columns (such as
  *  sufficient statistics) to pre-aggregate.
- * @param {AggregateNode} node The originating aggregate function call.
- * @returns {ExprNode} An aggregate expression over pre-aggregated dimensions.
+ * @param node The originating aggregate function call.
+ * @returns An aggregate expression over pre-aggregated dimensions.
  */
-function geomeanExpr(preagg, node) {
+function geomeanExpr(preagg: Record<string, ExprNode>, node: AggregateNode): ExprNode {
   const x = node.args[0];
   const expr = addStat(preagg, sum(ln(x)), node);
   const { expr: n } = countExpr(preagg, node);
@@ -195,12 +200,12 @@ function geomeanExpr(preagg, node) {
  * Generate an expression for calculating argmax over data dimensions.
  * As a side effect, this method adds a column to the input *preagg* object
  * to track a maximum value per-partition.
- * @param {Record<string, ExprNode>} preagg A map of columns (such as
+ * @param preagg A map of columns (such as
  *  sufficient statistics) to pre-aggregate.
- * @param {AggregateNode} node The originating aggregate function call.
- * @returns {ExprNode} An aggregate expression over pre-aggregated dimensions.
+ * @param node The originating aggregate function call.
+ * @returns An aggregate expression over pre-aggregated dimensions.
  */
-function argmaxExpr(preagg, node) {
+function argmaxExpr(preagg: Record<string, ExprNode>, node: AggregateNode): ExprNode {
   const expr = addStat(preagg, node);
   const maxy = addStat(preagg, max(node.args[1]), node);
   return argmax(expr, maxy);
@@ -210,13 +215,12 @@ function argmaxExpr(preagg, node) {
  * Generate an expression for calculating argmin over data dimensions.
  * As a side effect, this method adds a column to the input *preagg* object
  * to track a minimum value per-partition.
- * @param {object} preagg An object for columns (such as
- *  sufficient statistics) to include in the pre-aggregation.
- * @param {AggregateNode} node Source data table columns. The entries may be strings,
- *  column references, SQL expressions, or other string-coercible values.
- * @returns {ExprNode} An aggregate expression over pre-aggregated dimensions.
+ * @param preagg A map of columns (such as
+ *  sufficient statistics) to pre-aggregate.
+ * @param node The originating aggregate function call.
+ * @returns An aggregate expression over pre-aggregated dimensions.
  */
-function argminExpr(preagg, node) {
+function argminExpr(preagg: Record<string, ExprNode>, node: AggregateNode): ExprNode {
   const expr = addStat(preagg, node);
   const miny = addStat(preagg, min(node.args[1]), node);
   return argmin(expr, miny);
@@ -230,16 +234,21 @@ function argminExpr(preagg, node) {
  * the residual sum of squares and the sum of residual (mean-centered) values.
  * As a side effect, this method adds columns for these statistics to the
  * input *preagg* object.
- * @param {Record<string, ExprNode>} preagg A map of columns (such as
+ * @param preagg A map of columns (such as
  *  sufficient statistics) to pre-aggregate.
- * @param {AggregateNode} node The originating aggregate function call.
- * @param {(field: any) => ExprNode} avg Global average query generator.
- * @param {boolean} [correction=true] A flag for whether a Bessel
+ * @param node The originating aggregate function call.
+ * @param avg Global average query generator.
+ * @param correction A flag for whether a Bessel
  *  correction should be applied to compute the sample variance
  *  rather than the populatation variance.
- * @returns {ExprNode} An aggregate expression over pre-aggregated dimensions.
+ * @returns An aggregate expression over pre-aggregated dimensions.
  */
-function varianceExpr(preagg, node, avg, correction = true) {
+function varianceExpr(
+  preagg: Record<string, ExprNode>, 
+  node: AggregateNode, 
+  avg: (field: any) => ExprNode, 
+  correction: boolean = true
+): ExprNode {
   const x = node.args[0];
   const { expr: n } = countExpr(preagg, node);
   const delta = sub(x, avg(x));
@@ -256,17 +265,22 @@ function varianceExpr(preagg, node, avg, correction = true) {
  * non-null value pairs, the sum of residual products, and residual sums
  * (of mean-centered values) for x and y. As a side effect, this method
  * adds columns for these statistics to the input *preagg* object.
- * @param {Record<string, ExprNode>} preagg A map of columns (such as
+ * @param preagg A map of columns (such as
  *  sufficient statistics) to pre-aggregate.
- * @param {AggregateNode} node The originating aggregate function call.
- * @param {(field: any) => ExprNode} avg Global average query generator.
- * @param {boolean|null} [correction=true] A flag for whether a Bessel
+ * @param node The originating aggregate function call.
+ * @param avg Global average query generator.
+ * @param correction A flag for whether a Bessel
  *  correction should be applied to compute the sample covariance rather
  *  than the populatation covariance. If null, an expression for the
  *  unnormalized covariance (no division by sample count) is returned.
- * @returns {ExprNode} An aggregate expression over pre-aggregated dimensions.
+ * @returns An aggregate expression over pre-aggregated dimensions.
  */
-function covarianceExpr(preagg, node, avg, correction = true) {
+function covarianceExpr(
+  preagg: Record<string, ExprNode>, 
+  node: AggregateNode, 
+  avg: (field: any) => ExprNode, 
+  correction: boolean | null = true
+): ExprNode {
   const { expr: n } = regrCountExpr(preagg, node);
   const sxy = regrSumXYExpr(preagg, node, avg);
   const sx = regrSumExpr(preagg, 1, node, avg);
@@ -285,13 +299,17 @@ function covarianceExpr(preagg, node, avg, correction = true) {
  * residual products, and both residual sums and sums of squares for x and y.
  * As a side effect, this method adds columns for these statistics to the
  * input *preagg* object.
- * @param {Record<string, ExprNode>} preagg A map of columns (such as
+ * @param preagg A map of columns (such as
  *  sufficient statistics) to pre-aggregate.
- * @param {AggregateNode} node The originating aggregate function call.
- * @param {(field: any) => ExprNode} avg Global average query generator.
- * @returns {ExprNode} An aggregate expression over pre-aggregated dimensions.
+ * @param node The originating aggregate function call.
+ * @param avg Global average query generator.
+ * @returns An aggregate expression over pre-aggregated dimensions.
  */
-function corrExpr(preagg, node, avg) {
+function corrExpr(
+  preagg: Record<string, ExprNode>, 
+  node: AggregateNode, 
+  avg: (field: any) => ExprNode
+): ExprNode {
   const { expr: n } = regrCountExpr(preagg, node);
   const sxy = regrSumXYExpr(preagg, node, avg);
   const sxx = regrSumSqExpr(preagg, 1, node, avg);
@@ -310,13 +328,13 @@ function corrExpr(preagg, node, avg) {
  * Generate an expression for the count of non-null (x, y) pairs. As a side
  * effect, this method adds columns to the input *preagg* object to the
  * partition-level count of non-null pairs.
- * @param {Record<string, ExprNode>} preagg A map of columns (such as
+ * @param preagg A map of columns (such as
  *  sufficient statistics) to pre-aggregate.
- * @param {AggregateNode} node The originating aggregate function call.
- * @returns {{ expr: ExprNode, name: string }} An aggregate expression over
+ * @param node The originating aggregate function call.
+ * @returns An aggregate expression over
  *  pre-aggregated dimensions and associated column name.
  */
-function regrCountExpr(preagg, node) {
+function regrCountExpr(preagg: Record<string, ExprNode>, node: AggregateNode): { expr: ExprNode; name: string } {
   const [x, y] = node.args;
   const n = addStat(preagg, regrCount(x, y), node);
   return { expr: sum(n), name: n };
@@ -328,14 +346,19 @@ function regrCountExpr(preagg, node) {
  * (x, y) pairs are included. This method uses mean-centered data to reduce
  * floating point error. As a side effect, this method adds a column for
  * partition-level sums to the input *preagg* object.
- * @param {Record<string, ExprNode>} preagg A map of columns (such as
+ * @param preagg A map of columns (such as
  *  sufficient statistics) to pre-aggregate.
- * @param {number} i An index indicating which argument column to sum.
- * @param {AggregateNode} node The originating aggregate function call.
- * @param {(field: any) => ExprNode} avg Global average query generator.
- * @returns {ExprNode} An aggregate expression over pre-aggregated dimensions.
+ * @param i An index indicating which argument column to sum.
+ * @param node The originating aggregate function call.
+ * @param avg Global average query generator.
+ * @returns An aggregate expression over pre-aggregated dimensions.
  */
-function regrSumExpr(preagg, i, node, avg) {
+function regrSumExpr(
+  preagg: Record<string, ExprNode>, 
+  i: number, 
+  node: AggregateNode, 
+  avg: (field: any) => ExprNode
+): ExprNode {
   const args = node.args;
   const v = args[i];
   const o = args[1 - i];
@@ -349,14 +372,19 @@ function regrSumExpr(preagg, i, node, avg) {
  * non-null (x, y) pairs are included. This method uses mean-centered data to
  * reduce floating point error. As a side effect, this method adds a column
  * for partition-level sums to the input *preagg* object.
- * @param {Record<string, ExprNode>} preagg A map of columns (such as
+ * @param preagg A map of columns (such as
  *  sufficient statistics) to pre-aggregate.
- * @param {number} i An index indicating which argument column to sum.
- * @param {AggregateNode} node The originating aggregate function call.
- * @param {(field: any) => ExprNode} avg Global average query generator.
- * @returns {ExprNode} An aggregate expression over pre-aggregated dimensions.
+ * @param i An index indicating which argument column to sum.
+ * @param node The originating aggregate function call.
+ * @param avg Global average query generator.
+ * @returns An aggregate expression over pre-aggregated dimensions.
  */
-function regrSumSqExpr(preagg, i, node, avg) {
+function regrSumSqExpr(
+  preagg: Record<string, ExprNode>, 
+  i: number, 
+  node: AggregateNode, 
+  avg: (field: any) => ExprNode
+): ExprNode {
   const args = node.args;
   const v = args[i];
   const u = args[1 - i];
@@ -370,13 +398,17 @@ function regrSumSqExpr(preagg, i, node, avg) {
  * non-null (x, y) pairs are included. This method uses mean-centered data to
  * reduce floating point error. As a side effect, this method adds a column
  * for partition-level sums to the input *preagg* object.
- * @param {Record<string, ExprNode>} preagg A map of columns (such as
+ * @param preagg A map of columns (such as
  *  sufficient statistics) to pre-aggregate.
- * @param {AggregateNode} node The originating aggregate function call.
- * @param {(field: any) => ExprNode} avg Global average query generator.
- * @returns {ExprNode} An aggregate expression over pre-aggregated dimensions.
+ * @param node The originating aggregate function call.
+ * @param avg Global average query generator.
+ * @returns An aggregate expression over pre-aggregated dimensions.
  */
-function regrSumXYExpr(preagg, node, avg) {
+function regrSumXYExpr(
+  preagg: Record<string, ExprNode>, 
+  node: AggregateNode, 
+  avg: (field: any) => ExprNode
+): ExprNode {
   const [y, x] = node.args;
   const sxy = sum(mul(sub(x, avg(x)), sub(y, avg(y))));
   return sum(addStat(preagg, sxy, node));
@@ -387,12 +419,12 @@ function regrSumXYExpr(preagg, node, avg) {
  * Only values corresponding to non-null (x, y) pairs are included. As a side
  * effect, this method adds columns to the input *preagg* object to track both
  * the count of non-null pairs and partition-level averages.
- * @param {Record<string, ExprNode>} preagg A map of columns (such as
+ * @param preagg A map of columns (such as
  *  sufficient statistics) to pre-aggregate.
- * @param {AggregateNode} node The originating aggregate function call.
- * @returns {ExprNode} An aggregate expression over pre-aggregated dimensions.
+ * @param node The originating aggregate function call.
+ * @returns An aggregate expression over pre-aggregated dimensions.
  */
-function regrAvgXExpr(preagg, node) {
+function regrAvgXExpr(preagg: Record<string, ExprNode>, node: AggregateNode): ExprNode {
   const [y, x] = node.args;
   const { expr: n, name } = regrCountExpr(preagg, node);
   const a = addStat(preagg, regrAvgX(y, x), node);
@@ -404,12 +436,12 @@ function regrAvgXExpr(preagg, node) {
  * Only values corresponding to non-null (x, y) pairs are included. As a side
  * effect, this method adds columns to the input *preagg* object to track both
  * the count of non-null pairs and partition-level averages.
- * @param {Record<string, ExprNode>} preagg A map of columns (such as
+ * @param preagg A map of columns (such as
  *  sufficient statistics) to pre-aggregate.
- * @param {AggregateNode} node The originating aggregate function call.
- * @returns {ExprNode} An aggregate expression over pre-aggregated dimensions.
+ * @param node The originating aggregate function call.
+ * @returns An aggregate expression over pre-aggregated dimensions.
  */
-function regrAvgYExpr(preagg, node) {
+function regrAvgYExpr(preagg: Record<string, ExprNode>, node: AggregateNode): ExprNode {
   const [y, x] = node.args;
   const { expr: n, name } = regrCountExpr(preagg, node);
   const a = addStat(preagg, regrAvgY(y, x), node);
@@ -422,15 +454,20 @@ function regrAvgYExpr(preagg, node) {
  * non-null (x, y) pairs are included. This method uses mean-centered data to
  * reduce floating point error. As a side effect, this method adds columns
  * for partition-level count and sums to the input *preagg* object.
- * @param {Record<string, ExprNode>} preagg A map of columns (such as
+ * @param preagg A map of columns (such as
  *  sufficient statistics) to pre-aggregate.
- * @param {number} i The index of the argument to compute the variance for.
- * @param {AggregateNode} node The originating aggregate function call.
- * @param {(field: any) => ExprNode} avg Global average query generator.
- * @returns {ExprNode} An aggregate expression for calculating variance
+ * @param i The index of the argument to compute the variance for.
+ * @param node The originating aggregate function call.
+ * @param avg Global average query generator.
+ * @returns An aggregate expression for calculating variance
  *  over pre-aggregated data dimensions.
  */
-function regrVarExpr(preagg, i, node, avg) {
+function regrVarExpr(
+  preagg: Record<string, ExprNode>, 
+  i: number, 
+  node: AggregateNode, 
+  avg: (field: any) => ExprNode
+): ExprNode {
   const { expr: n } = regrCountExpr(preagg, node);
   const sum = regrSumExpr(preagg, i, node, avg);
   const ssq = regrSumSqExpr(preagg, i, node, avg);
@@ -442,14 +479,18 @@ function regrVarExpr(preagg, i, node, avg) {
  * computed as the covariance divided by the variance of the x variable. As a
  * side effect, this method adds columns for sufficient statistics to the
  * input *preagg* object.
- * @param {Record<string, ExprNode>} preagg A map of columns (such as
+ * @param preagg A map of columns (such as
  *  sufficient statistics) to pre-aggregate.
- * @param {AggregateNode} node The originating aggregate function call.
- * @param {(field: any) => ExprNode} avg Global average query generator.
- * @returns {ExprNode} An aggregate expression for calculating regression
+ * @param node The originating aggregate function call.
+ * @param avg Global average query generator.
+ * @returns An aggregate expression for calculating regression
  *  slopes over pre-aggregated data dimensions.
  */
-function regrSlopeExpr(preagg, node, avg) {
+function regrSlopeExpr(
+  preagg: Record<string, ExprNode>, 
+  node: AggregateNode, 
+  avg: (field: any) => ExprNode
+): ExprNode {
   const cov = covarianceExpr(preagg, node, avg, null);
   const varx = regrVarExpr(preagg, 1, node, avg);
   return div(cov, varx);
@@ -460,14 +501,18 @@ function regrSlopeExpr(preagg, node, avg) {
  * is derived from the regression slope and average x and y values. As a
  * side effect, this method adds columns for sufficient statistics to the
  * input *preagg* object.
- * @param {Record<string, ExprNode>} preagg A map of columns (such as
+ * @param preagg A map of columns (such as
  *  sufficient statistics) to pre-aggregate.
- * @param {AggregateNode} node The originating aggregate function call.
- * @param {(field: any) => ExprNode} avg Global average query generator.
- * @returns {ExprNode} An aggregate expression for calculating regression
+ * @param node The originating aggregate function call.
+ * @param avg Global average query generator.
+ * @returns An aggregate expression for calculating regression
  *  intercepts over pre-aggregated data dimensions.
  */
-function regrInterceptExpr(preagg, node, avg) {
+function regrInterceptExpr(
+  preagg: Record<string, ExprNode>, 
+  node: AggregateNode, 
+  avg: (field: any) => ExprNode
+): ExprNode {
   const ax = regrAvgXExpr(preagg, node);
   const ay = regrAvgYExpr(preagg, node);
   const m = regrSlopeExpr(preagg, node, avg);

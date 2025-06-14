@@ -1,20 +1,23 @@
-/** @import { ExtractionOptions } from '@uwdata/flechette' */
-/** @import { Connector } from './Connector.js' */
+import type { ExtractionOptions } from '@uwdata/flechette';
+import type { Connector } from './Connector.js';
 import { decodeIPC } from '../util/decode-ipc.js';
 
 /**
  * Connect to a DuckDB server over an HTTP REST interface.
- * @param {object} [options] Connector options.
- * @param {string} [options.uri] The URI for the DuckDB REST server.
- * @param {ExtractionOptions} [options.ipc] Arrow IPC extraction options.
- * @returns {Connector} A connector instance.
+ * @param options Connector options.
+ * @param options.uri The URI for the DuckDB REST server.
+ * @param options.ipc Arrow IPC extraction options.
+ * @returns A connector instance.
  */
 export function restConnector({
   uri = 'http://localhost:3000/',
   ipc = undefined,
-} = {}) {
+}: {
+  uri?: string;
+  ipc?: ExtractionOptions;
+} = {}): Connector {
   return {
-    async query(query) {
+    async query(query: any): Promise<any> {
       const req = fetch(uri, {
         method: 'POST',
         mode: 'cors',

@@ -1,18 +1,22 @@
-/**
- * @import { AggregateNode, ExprNode, Query, SelectQuery } from '@uwdata/mosaic-sql'
- * @import { MosaicClient } from '../MosaicClient.js'
- */
+import type { AggregateNode, ExprNode, Query, SelectQuery } from '@uwdata/mosaic-sql';
+import type { MosaicClient } from '../MosaicClient.js';
 import { collectAggregates, isAggregateExpression, isSelectQuery, isTableRef, rewrite, sql } from '@uwdata/mosaic-sql';
 import { sufficientStatistics } from './sufficient-statistics.js';
 
+interface PreAggColumnsResult {
+  group: string[];
+  preagg: Record<string, ExprNode>;
+  output: Record<string, ExprNode>;
+}
+
 /**
  * Determine pre-aggregation columns for a given Mosaic client.
- * @param {MosaicClient} client The Mosaic client.
+ * @param client The Mosaic client.
  * @returns An object with necessary column data to generate pre-aggregated
  *  columns, or null if the client can't be optimized or the client query
  *  contains an invalid or unsupported expression.
  */
-export function preaggColumns(client) {
+export function preaggColumns(client: MosaicClient): PreAggColumnsResult | null {
   if (!client.filterStable) return null;
   const q = client.query();
 
@@ -26,17 +30,13 @@ export function preaggColumns(client) {
   });
   if (typeof from !== 'string') return null;
 
-  /** @type {Map<AggregateNode, ExprNode>} */
-  const aggrs = new Map;
-  /** @type {Record<string, ExprNode>} */
-  const preagg = {};
-  /** @type {Record<string, ExprNode>} */
-  const output = {};
-  /** @type {string[]} */
-  const group = []; // list of grouping dimension columns
+  const aggrs = new Map<AggregateNode, ExprNode>();
+  const preagg: Record<string, ExprNode> = {};
+  const output: Record<string, ExprNode> = {};
+  const group: string[] = []; // list of grouping dimension columns
 
   // generate a scalar subquery for a global average
-  const avg = ref => {
+  const avg = (ref: any) => {
     const name = ref.column;
     const expr = getBase(q, q => q._select.find(c => c.alias === name)?.expr);
     return sql`(SELECT avg(${expr ?? ref}) FROM "${from}")`;
@@ -80,14 +80,14 @@ export function preaggColumns(client) {
  * Identify a shared base (source) query and extract a value from it.
  * This method is used to find a shared base table name or extract
  * the original column name within a base table.
- * @param {Query} query The input query.
- * @param {(q: SelectQuery) => any} get A getter function to extract
+ * @param query The input query.
+ * @param get A getter function to extract
  *  a value from a base query.
- * @returns {string | undefined | NaN} the base query value, or
+ * @returns the base query value, or
  *  `undefined` if there is no source table, or `NaN` if the
  *  query operates over multiple source tables.
  */
-function getBase(query, get) {
+function getBase(query: Query, get: (q: SelectQuery) => any): string | undefined | number {
   const subq = query.subqueries;
 
   // select query

@@ -6,8 +6,8 @@ import { QueryManager, Priority } from './QueryManager.js';
 import { type Selection } from './Selection.js';
 import { type Logger, type QueryType } from './types.js';
 import { type QueryResult } from './util/query-result.js';
-import { type SelectionClause } from './util/selection-types.js';
 import { type MosaicClient } from './MosaicClient.js';
+import { type SelectionClause } from './SelectionClause.js';
 
 /**
  * The singleton Coordinator instance.
@@ -92,7 +92,7 @@ export class Coordinator {
       this.clients?.forEach(client => this.disconnect(client));
       this.clients = new Set;
     }
-    if (cache) this.manager.cache().clear();
+    if (cache) this.manager.cache()!.clear();
   }
 
   /**
@@ -100,8 +100,10 @@ export class Coordinator {
    * @param db The database connector to use.
    * @returns The current database connector.
    */
-  databaseConnector(db?: Connector): Connector {
-    return this.manager.connector(db);
+  databaseConnector(): Connector | null;
+  databaseConnector(db: Connector): Connector;
+  databaseConnector(db?: Connector): Connector | null {
+    return this.manager.connector(db as any);
   }
 
   /**

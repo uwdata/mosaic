@@ -1,7 +1,7 @@
 import { type MosaicClient } from './MosaicClient.js';
-import { type SelectionClause } from './util/selection-types.js';
 import { ExprVarArgs, literal, or } from '@uwdata/mosaic-sql';
 import { Param } from './Param.js';
+import { SelectionClause } from './SelectionClause.js';
 
 export interface SelectionOptions {
   /** Boolean flag indicating cross-filtered resolution. If true, selection clauses will not be applied to the clients they are associated with. */
@@ -35,11 +35,13 @@ function create(options: SelectionResolverOptions, include?: Selection | Selecti
   );
 }
 
+type SelectionClauseArray = SelectionClause[] & { active?: SelectionClause };
+
 /**
  * Represents a dynamic set of query filter predicates.
  */
-export class Selection extends Param {
-  _resolved: SelectionClause[] & { active?: SelectionClause };
+export class Selection extends Param<SelectionClauseArray> {
+  _resolved: SelectionClauseArray;
   _resolver: SelectionResolver;
   _relay: Set<Selection>;
 
@@ -93,7 +95,7 @@ export class Selection extends Param {
    */
   constructor(resolver = new SelectionResolver(), include: Selection[] = []) {
     super([]);
-    this._resolved = this._value;
+    this._resolved = this._value!;
     this._resolver = resolver;
     this._relay = new Set();
     if (Array.isArray(include)) {
@@ -109,7 +111,7 @@ export class Selection extends Param {
    */
   clone(): Selection {
     const s = new Selection(this._resolver);
-    s._value = s._resolved = this._value;
+    s._value = s._resolved = this._value!;
     return s;
   }
 
@@ -119,10 +121,10 @@ export class Selection extends Param {
    * @param source The clause source to remove.
    * @returns A cloned and updated Selection.
    */
-  remove(source: any): Selection {
+  remove(source: SelectionClause): Selection {
     const s = this.clone();
     s._value = s._resolved = s._resolver.resolve(this._resolved, { source });
-    s._value.active = { source };
+    s._value.active = { source } as any; // TODO: fix type
     return s;
   }
 
@@ -143,7 +145,7 @@ export class Selection extends Param {
   /**
    * The current array of selection clauses.
    */
-  get clauses(): SelectionClause[] & { active?: SelectionClause } {
+  get clauses(): SelectionClauseArray {
     return super.value;
   }
 
@@ -158,7 +160,7 @@ export class Selection extends Param {
    * The value corresponding to the current active selection clause.
    * This method ensures compatibility where a normal Param is expected.
    */
-  get value(): any {
+  get value() {
     return this.active?.value;
   }
 

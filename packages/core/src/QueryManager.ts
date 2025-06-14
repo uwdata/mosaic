@@ -1,5 +1,5 @@
-/** @import { Connector } from './connectors/Connector.js' */
-/** @import { Cache, Logger } from './types.js' */
+import type { Connector } from './connectors/Connector.js';
+import type { Cache, Logger } from './types.js';
 import { consolidator } from './QueryConsolidator.js';
 import { lruCache, voidCache } from './util/cache.js';
 import { PriorityQueue } from './util/priority-queue.js';
@@ -8,39 +8,44 @@ import { voidLogger } from './util/void-logger.js';
 
 export const Priority = Object.freeze({ High: 0, Normal: 1, Low: 2 });
 
+interface QueryEntry {
+  request: any;
+  result: QueryResult;
+}
+
 export class QueryManager {
-  constructor(
-    maxConcurrentRequests = 32
-  ) {
-    /** @type {PriorityQueue} */
+  private queue: PriorityQueue<QueryEntry>;
+  private db: Connector | null;
+  private clientCache: Cache | null;
+  private _logger: Logger;
+  private _logQueries: boolean;
+  private _consolidate: ReturnType<typeof consolidator> | null;
+  /** Requests pending with the query manager. */
+  private pendingResults: QueryResult[];
+  private maxConcurrentRequests: number;
+  private pendingExec: boolean;
+
+  constructor(maxConcurrentRequests: number = 32) {
     this.queue = new PriorityQueue(3);
-    /** @type {Connector} */
     this.db = null;
-    /** @type {Cache} */
     this.clientCache = null;
-    /** @type {Logger} */
     this._logger = voidLogger();
-    /** @type {boolean} */
     this._logQueries = false;
-    /** @type {ReturnType<typeof consolidator> | null} */
     this._consolidate = null;
-    /**
-     * Requests pending with the query manager.
-     * @type {QueryResult[]}
-     */
     this.pendingResults = [];
-    /** @type {number} */
     this.maxConcurrentRequests = maxConcurrentRequests;
-    /** @type {boolean} */
     this.pendingExec = false;
   }
 
-  next() {
+  next(): void {
     if (this.queue.isEmpty() || this.pendingResults.length > this.maxConcurrentRequests || this.pendingExec) {
       return;
     }
 
-    const { request, result } = this.queue.next();
+    const entry = this.queue.next();
+    if (!entry) return;
+
+    const { request, result } = entry;
 
     this.pendingResults.push(result);
     if (request.type === 'exec') this.pendingExec = true;
@@ -48,7 +53,7 @@ export class QueryManager {
     this.submit(request, result).finally(() => {
       // return from the queue all requests that are ready
       while (this.pendingResults.length && this.pendingResults[0].state !== QueryState.pending) {
-        const result = this.pendingResults.shift();
+        const result = this.pendingResults.shift()!;
         if (result.state === QueryState.ready) {
           result.fulfill();
         } else if (result.state === QueryState.done) {
@@ -62,29 +67,27 @@ export class QueryManager {
 
   /**
    * Add an entry to the query queue with a priority.
-   * @param {object} entry The entry to add.
-   * @param {*} [entry.request] The query request.
-   * @param {QueryResult} [entry.result] The query result.
-   * @param {number} priority The query priority, defaults to `Priority.Normal`.
+   * @param entry The entry to add.
+   * @param priority The query priority, defaults to `Priority.Normal`.
    */
-  enqueue(entry, priority = Priority.Normal) {
+  enqueue(entry: QueryEntry, priority: number = Priority.Normal): void {
     this.queue.insert(entry, priority);
     this.next();
   }
 
   /**
    * Submit the query to the connector.
-   * @param {*} request The request.
-   * @param {QueryResult} result The query result.
+   * @param request The request.
+   * @param result The query result.
    */
-  async submit(request, result) {
+  async submit(request: any, result: QueryResult): Promise<void> {
     try {
       const { query, type, cache = false, options } = request;
       const sql = query ? `${query}` : null;
 
       // check query cache
       if (cache) {
-        const cached = this.clientCache.get(sql);
+        const cached = this.clientCache!.get(sql!);
         if (cached) {
           const data = await cached;
           this._logger.debug('Cache');
@@ -99,12 +102,12 @@ export class QueryManager {
         this._logger.debug('Query', { type, sql, ...options });
       }
 
-      const promise = this.db.query({ type, sql, ...options });
-      if (cache) this.clientCache.set(sql, promise);
+      const promise = this.db!.query({ type, sql: sql!, ...options });
+      if (cache) this.clientCache!.set(sql!, promise);
 
       const data = await promise;
 
-      if (cache) this.clientCache.set(sql, data);
+      if (cache) this.clientCache!.set(sql!, data);
 
       this._logger.debug(`Request: ${(performance.now() - t0).toFixed(1)}`);
       result.ready(type === 'exec' ? null : data);
@@ -115,10 +118,12 @@ export class QueryManager {
 
   /**
    * Get or set the current query cache.
-   * @param {Cache | boolean} [value]
-   * @returns {Cache}
+   * @param value Cache value to set
+   * @returns Current cache
    */
-  cache(value) {
+  cache(): Cache | null;
+  cache(value: Cache | boolean): Cache;
+  cache(value?: Cache | boolean): Cache | null {
     return value !== undefined
       ? (this.clientCache = value === true ? lruCache() : (value || voidCache()))
       : this.clientCache;
@@ -126,38 +131,44 @@ export class QueryManager {
 
   /**
    * Get or set the current logger.
-   * @param {Logger} [value]
-   * @returns {Logger}
+   * @param value Logger to set
+   * @returns Current logger
    */
-  logger(value) {
+  logger(): Logger;
+  logger(value: Logger): Logger;
+  logger(value?: Logger): Logger {
     return value ? (this._logger = value) : this._logger;
   }
 
   /**
    * Get or set if queries should be logged.
-   * @param {boolean} [value]
-   * @returns {boolean}
+   * @param value Whether to log queries
+   * @returns Current logging state
    */
-  logQueries(value) {
+  logQueries(): boolean;
+  logQueries(value: boolean): boolean;
+  logQueries(value?: boolean): boolean {
     return value !== undefined ? this._logQueries = !!value : this._logQueries;
   }
 
   /**
    * Get or set the database connector.
-   * @param {Connector} [connector]
-   * @returns {Connector}
+   * @param connector Connector to set
+   * @returns Current connector
    */
-  connector(connector) {
+  connector(): Connector | null;
+  connector(connector: Connector): Connector;
+  connector(connector?: Connector): Connector | null {
     return connector ? (this.db = connector) : this.db;
   }
 
   /**
    * Indicate if query consolidation should be performed.
-   * @param {boolean} flag
+   * @param flag Whether to enable consolidation
    */
-  consolidate(flag) {
+  consolidate(flag: boolean): void {
     if (flag && !this._consolidate) {
-      this._consolidate = consolidator(this.enqueue.bind(this), this.clientCache);
+      this._consolidate = consolidator(this.enqueue.bind(this), this.clientCache!);
     } else if (!flag && this._consolidate) {
       this._consolidate = null;
     }
@@ -165,11 +176,11 @@ export class QueryManager {
 
   /**
    * Request a query result.
-   * @param {*} request The request.
-   * @param {number} priority The query priority, defaults to `Priority.Normal`.
-   * @returns {QueryResult} A query result promise.
+   * @param request The request.
+   * @param priority The query priority, defaults to `Priority.Normal`.
+   * @returns A query result promise.
    */
-  request(request, priority = Priority.Normal) {
+  request(request: any, priority: number = Priority.Normal): QueryResult {
     const result = new QueryResult();
     const entry = { request, result };
     if (this._consolidate) {
@@ -180,7 +191,7 @@ export class QueryManager {
     return result;
   }
 
-  cancel(requests) {
+  cancel(requests: QueryResult[]): void {
     const set = new Set(requests);
     if (set.size) {
       this.queue.remove(({ result }) => {
@@ -199,7 +210,7 @@ export class QueryManager {
     }
   }
 
-  clear() {
+  clear(): void {
     this.queue.remove(({ result }) => {
       result.reject('Cleared');
       return true;
