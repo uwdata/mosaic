@@ -125,9 +125,11 @@ export class Query extends ExprNode {
     this._with = [];
     /** @type {ExprNode[]} */
     this._orderby = [];
-    /** @type {number} */
+    /** @type {boolean} */
+    this._limitPerc = false;
+    /** @type {ExprNode} */
     this._limit = undefined;
-    /** @type {number} */
+    /** @type {ExprNode} */
     this._offset = undefined;
     /** @type {Query | null} */
     this.cteFor = null;
@@ -143,10 +145,18 @@ export class Query extends ExprNode {
 
   /**
    * Clone this query.
-   * @returns {Query}
+   * @returns {this}
    */
   clone() {
     return this;
+  }
+
+  /**
+   * Add a pointer to the query for which this query is a CTE.
+   * @param {Query | null} query
+   */
+  setCteFor(query) {
+    this.cteFor = query;
   }
 
   /**
@@ -159,7 +169,7 @@ export class Query extends ExprNode {
     const list = [];
     const add = (name, q) => {
       const query = q.clone();
-      query.cteFor = this;
+      query.setCteFor(this);
       list.push(new WithClauseNode(name, query));
     };
     expr.flat().forEach(e => {
@@ -181,22 +191,34 @@ export class Query extends ExprNode {
   }
 
   /**
+   * Set the query result LIMIT as a percentage value.
+   * @param {number | ExprNode} value The limit percentage value.
+   * @returns {this}
+   */
+  limitPercent(value) {
+    this._limitPerc = true;
+    this._limit = asNode(value);
+    return this;
+  }
+
+  /**
    * Set the query result LIMIT.
-   * @param {number} value The limit value.
+   * @param {number | ExprNode} value The limit value.
    * @returns {this}
    */
   limit(value) {
-    this._limit = Number.isFinite(value) ? value : undefined;
+    this._limitPerc = false;
+    this._limit = asNode(value);
     return this;
   }
 
   /**
    * Set the query result OFFSET.
-   * @param {number} value The offset value.
+   * @param {number | ExprNode} value The offset value.
    * @returns {this}
    */
   offset(value) {
-    this._offset = Number.isFinite(value) ? value : undefined;
+    this._offset = asNode(value);
     return this;
   }
 }
@@ -251,7 +273,7 @@ export class SelectQuery extends Query {
 
   /**
    * Clone this query.
-   * @returns {SelectQuery}
+   * @returns {this}
    */
   clone() {
     return Object.assign(new SelectQuery(), this);
@@ -278,7 +300,7 @@ export class SelectQuery extends Query {
 
     const keys = new Set(list.map(x => x.alias));
     this._select = this._select
-      .filter(x => !keys.has(x.alias))
+      .filter(x => x.alias && !keys.has(x.alias))
       .concat(list.filter(x => x.expr));
     return this;
   }
@@ -313,6 +335,7 @@ export class SelectQuery extends Query {
     const add = (v, as) => list.push(new FromClauseNode(asTableRef(v), unquote(as)));
     expr.flat().forEach(e => {
       if (e == null) return;
+      else if (e instanceof FromClauseNode) list.push(e);
       else if (isString(e)) add(e, e);
       else if (isTableRef(e)) add(e, e.name);
       else if (isNode(e)) add(e);
@@ -438,7 +461,7 @@ export class SelectQuery extends Query {
   toString() {
     const {
       _with, _select, _distinct, _from, _sample, _where, _groupby,
-      _having, _window, _qualify, _orderby, _limit, _offset
+      _having, _window, _qualify, _orderby, _limitPerc, _limit, _offset
     } = this;
     const sql = [];
 
@@ -484,10 +507,10 @@ export class SelectQuery extends Query {
     if (_orderby.length) sql.push(`ORDER BY ${_orderby.join(', ')}`);
 
     // LIMIT
-    if (Number.isFinite(_limit)) sql.push(`LIMIT ${_limit}`);
+    if (_limit) sql.push(`LIMIT ${_limit}${_limitPerc ? '%' : ''}`);
 
     // OFFSET
-    if (Number.isFinite(_offset)) sql.push(`OFFSET ${_offset}`);
+    if (_offset) sql.push(`OFFSET ${_offset}`);
 
     return sql.join(' ');
   }
@@ -504,9 +527,10 @@ export class DescribeQuery extends SQLNode {
 
   /**
    * Clone this describe query.
-   * @returns {DescribeQuery}
+   * @returns {this}
    */
   clone() {
+    // @ts-expect-error
     return new DescribeQuery(this.query.clone());
   }
 
@@ -540,22 +564,30 @@ export class SetOperation extends Query {
   }
 
   /**
+   * Add a pointer to the query for which this query is a CTE.
+   * @param {Query | null} query
+   */
+  setCteFor(query) {
+    super.setCteFor(query);
+    const { queries, cteFor } = this;
+    if (cteFor) queries.forEach(q => q.setCteFor(cteFor));
+  }
+
+  /**
    * Return a list of subqueries.
    * @returns {Query[]}
    */
   get subqueries() {
-    const { queries, cteFor } = this;
-    // TODO: revisit this?
-    if (cteFor) queries.forEach(q => q.cteFor = cteFor);
-    return queries;
+    return this.queries;
   }
 
   /**
    * Clone this set operation.
-   * @returns {SetOperation}
+   * @returns {this}
    */
   clone() {
     const { op, queries, ...rest } = this;
+    // @ts-expect-error
     return Object.assign(new SetOperation(op, queries), rest);
   }
 
@@ -564,7 +596,7 @@ export class SetOperation extends Query {
    * @returns {string}
    */
   toString() {
-    const { op, queries, _with, _orderby, _limit, _offset } = this;
+    const { op, queries, _with, _orderby, _limitPerc, _limit, _offset } = this;
     const sql = [];
 
     // WITH
@@ -577,10 +609,10 @@ export class SetOperation extends Query {
     if (_orderby.length) sql.push(`ORDER BY ${_orderby.join(', ')}`);
 
     // LIMIT
-    if (Number.isFinite(_limit)) sql.push(`LIMIT ${_limit}`);
+    if (_limit) sql.push(`LIMIT ${_limit}${_limitPerc ? '%' : ''}`);
 
     // OFFSET
-    if (Number.isFinite(_offset)) sql.push(`OFFSET ${_offset}`);
+    if (_offset) sql.push(`OFFSET ${_offset}`);
 
     return sql.join(' ');
   }

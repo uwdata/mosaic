@@ -43,6 +43,14 @@ export function transformNames(overrides = []) {
     'first_value',
     'last_value',
     'nth_value',
+    'years',
+    'months',
+    'days',
+    'hours',
+    'minutes',
+    'seconds',
+    'milliseconds',
+    'microseconds',
     ...overrides
   ]);
 }

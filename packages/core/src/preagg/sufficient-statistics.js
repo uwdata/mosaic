@@ -15,6 +15,7 @@ import { fnv_hash } from '../util/hash.js';
 export function sufficientStatistics(node, preagg, avg) {
   switch (node.name) {
     case 'count':
+    case 'count_star':
       return sumCountExpr(preagg, node);
     case 'sum':
       return sumExpr(preagg, node);

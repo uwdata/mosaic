@@ -110,3 +110,12 @@ export type TimeUnit =
   | 'second'
   | 'millisecond'
   | 'microsecond';
+
+export type FrameValue =  ExprNode | number | null;
+
+export type FrameExtent = [FrameValue, FrameValue] | ParamLike;
+
+export type FrameScope =
+  | 'PRECEDING'
+  | 'FOLLOWING'
+  | 'CURRENT ROW';

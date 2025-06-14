@@ -1,5 +1,5 @@
 import { expect, describe, it } from 'vitest';
-import { asNode, asTableRef, column, desc, gt, lt, max, min, sql, Query, sum, lead, over, cte, add } from '../src/index.js';
+import { asNode, asTableRef, column, desc, gt, lt, max, min, sql, Query, sum, lead, over, cte, add, FromClauseNode, SampleClauseNode, frameRows, div, mul } from '../src/index.js';
 
 describe('Query', () => {
   it('selects column name strings', () => {
@@ -101,6 +101,42 @@ describe('Query', () => {
     ).toBe('SELECT DISTINCT "foo", "bar", "baz" FROM "data"');
   });
 
+  it('selects with limit and offset modifiers', () => {
+    expect(
+      Query
+        .select('*')
+        .from('data')
+        .limit(10)
+        .offset(20)
+        .toString()
+    ).toBe('SELECT * FROM "data" LIMIT 10 OFFSET 20');
+
+    expect(
+      Query
+        .select('*')
+        .from('data')
+        .limit(div(10, 2))
+        .offset(mul(5, 4))
+        .toString()
+    ).toBe('SELECT * FROM "data" LIMIT (10 / 2) OFFSET (5 * 4)');
+
+    expect(
+      Query
+        .select('*')
+        .from('data')
+        .limitPercent(div(10, 2))
+        .toString()
+    ).toBe('SELECT * FROM "data" LIMIT (10 / 2)%');
+
+    expect(
+      Query
+        .select('*')
+        .from('data')
+        .limitPercent(10)
+        .toString()
+    ).toBe('SELECT * FROM "data" LIMIT 10%');
+  });
+
   it('selects aggregates', () => {
     const foo = column('foo');
 
@@ -163,6 +199,13 @@ describe('Query', () => {
         .from('data')
         .toString()
     ).toBe('SELECT sum("foo") OVER (PARTITION BY "baz" ORDER BY "bop") AS "csum" FROM "data"');
+
+    expect(
+      Query
+        .select({ csum: sum(foo).frame(frameRows([null, 0])) })
+        .from('data')
+        .toString()
+    ).toBe('SELECT sum("foo") OVER (ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) AS "csum" FROM "data"');
   });
 
   it('selects grouped aggregates', () => {
@@ -354,7 +397,7 @@ describe('Query', () => {
         .from('data')
         .sample(10)
         .toString()
-    ).toBe('SELECT * FROM "data" USING SAMPLE 10 ROWS');
+    ).toBe('SELECT * FROM "data" USING SAMPLE (10 ROWS)');
 
     expect(
       Query
@@ -362,7 +405,7 @@ describe('Query', () => {
         .from('data')
         .sample(0.3)
         .toString()
-    ).toBe('SELECT * FROM "data" USING SAMPLE 30%');
+    ).toBe('SELECT * FROM "data" USING SAMPLE (30%)');
 
     expect(
       Query
@@ -370,7 +413,7 @@ describe('Query', () => {
         .from('data')
         .sample(0.1, 'bernoulli')
         .toString()
-    ).toBe('SELECT * FROM "data" USING SAMPLE 10% (bernoulli)');
+    ).toBe('SELECT * FROM "data" USING SAMPLE bernoulli (10%)');
 
     expect(
       Query
@@ -378,7 +421,16 @@ describe('Query', () => {
         .from('data')
         .sample(0.1, 'bernoulli', 12345)
         .toString()
-    ).toBe('SELECT * FROM "data" USING SAMPLE 10% (bernoulli, 12345)');
+    ).toBe('SELECT * FROM "data" USING SAMPLE bernoulli (10%) REPEATABLE (12345)');
+
+    expect(
+      Query
+        .select('*')
+        .from(new FromClauseNode(
+          asTableRef('foo'), 'foo', new SampleClauseNode(10, true)
+        ))
+        .toString()
+    ).toBe('SELECT * FROM "foo" TABLESAMPLE (10%)');
   });
 
   it('selects from multiple relations', () => {

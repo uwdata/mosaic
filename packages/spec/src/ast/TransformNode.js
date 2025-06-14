@@ -1,6 +1,7 @@
 import { ASTNode } from './ASTNode.js';
 import { TRANSFORM } from '../constants.js';
 import { parseOptions } from './OptionsNode.js';
+import { parseWindowFrame } from './WindowFrameNode.js';
 
 function toArray(value, ctx) {
   return value == null
@@ -30,8 +31,7 @@ export function parseTransform(spec, ctx) {
       distinct: spec.distinct,
       orderby: toArray(spec.orderby, ctx),
       partitionby: toArray(spec.partitionby, ctx),
-      rows: spec.rows ? ctx.maybeParam(spec.rows) : null,
-      range: spec.range ? ctx.maybeParam(spec.range) : null
+      frame: parseWindowFrame(spec, ctx)
     };
     return new TransformNode(name, args, options);
   }
@@ -47,7 +47,7 @@ export class TransformNode extends ASTNode {
 
   instantiate(ctx) {
     const { name, args, options } = this;
-    const { distinct, orderby, partitionby, rows, range } = options;
+    const { distinct, orderby, partitionby, frame } = options;
 
     let expr = ctx.api[name](...args.map(a => a.instantiate(ctx)));
     if (distinct) {
@@ -59,17 +59,15 @@ export class TransformNode extends ASTNode {
     if (partitionby.length) {
       expr = expr.partitionby(partitionby.map(v => v.instantiate(ctx)));
     }
-    if (rows != null) {
-      expr = expr.rows(rows.instantiate(ctx));
-    } else if (range != null) {
-      expr = expr.range(range.instantiate(ctx));
+    if (frame) {
+      expr = expr.frame(frame.instantiate(ctx));
     }
     return expr;
   }
 
   codegen(ctx) {
     const { name, args, options } = this;
-    const { distinct, orderby, partitionby, rows, range } = options;
+    const { distinct, orderby, partitionby, frame } = options;
 
     let str = `${ctx.ns()}${name}(`
       + args.map(v => v.codegen(ctx)).join(', ')
@@ -86,10 +84,8 @@ export class TransformNode extends ASTNode {
       const p = partitionby.map(v => v.codegen(ctx));
       str += `.partitionby(${p.join(', ')})`;
     }
-    if (rows) {
-      str += `.rows(${rows.codegen(ctx)})`;
-    } else if (range) {
-      str += `.range(${range.codegen(ctx)})`;
+    if (frame) {
+      str += `.frame(${frame.codegen(ctx)})`;
     }
 
     return str;
@@ -97,7 +93,7 @@ export class TransformNode extends ASTNode {
 
   toJSON() {
     const { name, args, options } = this;
-    const { distinct, orderby, partitionby, rows, range } = options;
+    const { distinct, orderby, partitionby, frame } = options;
 
     const json = { [name]: simplify(args.map(v => v.toJSON())) };
 
@@ -110,10 +106,8 @@ export class TransformNode extends ASTNode {
     if (partitionby.length) {
       json.partitionby = simplify(partitionby.map(v => v.toJSON()));
     }
-    if (rows) {
-      json.rows = rows.toJSON();
-    } else if (range) {
-      json.range = range.toJSON();
+    if (frame) {
+      Object.assign(json, frame.toJSON());
     }
 
     return json;

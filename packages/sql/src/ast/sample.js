@@ -46,8 +46,8 @@ export class SampleClauseNode extends SQLNode {
 
   toString() {
     const { size, perc, method, seed } = this;
-    const unit = perc ? '%' : ' ROWS';
-    const s = seed != null ? `, ${seed}` : '';
-    return `${size}${unit}${method ? ` (${method}${s})` : ''}`;
+    const m = method ? `${method} ` : '';
+    const s = seed != null ? ` REPEATABLE (${seed})` : '';
+    return `${m}(${size}${perc ? '%' : ' ROWS'})${s}`;
   }
 }

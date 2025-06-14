@@ -5,8 +5,9 @@ export class VerbatimNode extends ExprNode {
   /**
    * Instantiate a raw node with verbatim content.
    * @param {string} value The verbatim content to include.
+   * @param {string} [hint] A type hint for analyzing verbatim content.
    */
-  constructor(value) {
+  constructor(value, hint) {
     super(VERBATIM);
     /**
      * The verbatim content to include.
@@ -14,6 +15,12 @@ export class VerbatimNode extends ExprNode {
      * @readonly
      */
     this.value = value;
+    /**
+     * A type hint for analyzing verbatim content.
+     * @type {string}
+     * @readonly
+     */
+    this.hint = hint;
   }
 
   /**
