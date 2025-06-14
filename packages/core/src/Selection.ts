@@ -9,7 +9,7 @@ export interface SelectionOptions {
   /** Boolean flag indicating if a lack of clauses should correspond to an empty selection with no records. This setting determines the default selection state. */
   empty?: boolean;
   /** Upstream selections whose clauses should be included as part of the new selection. Any clauses published to upstream selections will be relayed to the new selection. */
-  include?: Selection | Selection[];
+  include?: Selection[];
 }
 
 export interface SelectionResolverOptions extends Pick<SelectionOptions, "empty" | "cross"> {
@@ -28,7 +28,7 @@ export function isSelection(x: any): x is Selection {
   return x instanceof Selection;
 }
 
-function create(options: SelectionResolverOptions, include?: Selection | Selection[]): Selection {
+function create(options: SelectionResolverOptions, include?: Selection[]): Selection {
   return new Selection(
     new SelectionResolver(options),
     include ? [include].flat() : include

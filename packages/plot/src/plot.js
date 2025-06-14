@@ -26,7 +26,7 @@ export class Plot {
     this.markset = null;
     /** @type {Map<import('@uwdata/mosaic-core').Param, import('./marks/Mark.js').Mark[]>} */
     this.params = new Map;
-    /** @type {ReturnType<Synchronizer>} */
+    /** @type {Synchronizer} */
     this.synch = new Synchronizer();
 
     /** @type {HTMLElement} */

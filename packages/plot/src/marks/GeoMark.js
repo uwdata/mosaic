@@ -23,6 +23,7 @@ export class GeoMark extends Mark {
     // look for an explicit geometry field
     const geom = this.channelField('geometry')?.as;
     if (geom) {
+      // @ts-expect-error Correct the data column type
       const { columns } = this.data;
       if (typeof columns[geom][0] === 'string') {
         columns[geom] = columns[geom].map(s => JSON.parse(s));

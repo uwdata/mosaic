@@ -1,6 +1,6 @@
 {
   "compilerOptions": {
-    "target": "es2020",
+    "target": "es2022",
     "module": "node16",
     "sourceMap": true,
     "strict": true,
@@ -8,6 +8,11 @@
     "allowJs": true,
     "checkJs": true,
     "forceConsistentCasingInFileNames": true,
+
+    // disable some checks for now until we have stricter types
+    "noImplicitAny": false,
+    "strictNullChecks": false,
+    "noImplicitThis": false,
 
     "composite": true,
     "declaration": true,

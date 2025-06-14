@@ -67,6 +67,7 @@ export class Mark extends MosaicClient {
       } else if (isParamLike(entry)) {
         const c = valueEntry(channel, entry.value);
         channels.push(c);
+        // @ts-expect-error FIXME
         entry.addEventListener('value', value => {
           // update immediately, the value is simply passed to Plot
           c.value = value;
