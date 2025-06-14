@@ -25,7 +25,7 @@ export function loadParquet(tableName, fileName, options) {
 /**
  * Load geometry data within a spatial file format.
  * This method requires that the DuckDB spatial extension is loaded.
- * Supports GeoJSON, TopoJSON, and other comomn spatial formats.
+ * Supports GeoJSON, TopoJSON, and other common spatial formats.
  * For TopoJSON, wet the layer option to indicate the feature to extract.
  */
 export function loadSpatial(tableName, fileName, options = {}) {

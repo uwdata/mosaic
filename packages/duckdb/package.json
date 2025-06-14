@@ -25,9 +25,13 @@
     "to-parquet": "./bin/to-parquet.js"
   },
   "scripts": {
+    "prebuild": "rimraf dist && mkdir dist",
+    "build": "npm run types",
+    "types": "tsc",
     "lint": "eslint src test",
     "server": "node bin/run-server.js",
-    "test": "vitest run",
+    "test": "vitest run && npm run tsc",
+    "tsc": "tsc",
     "prepublishOnly": "npm run test && npm run lint"
   },
   "dependencies": {

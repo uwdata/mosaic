@@ -5,5 +5,10 @@
     "emitDeclarationOnly": true,
     "outDir": "dist"
   },
-  "references": [{ "path": "../sql" }]
+  "references": [
+    { "path": "../core" },
+    { "path": "../inputs" },
+    { "path": "../plot" },
+    { "path": "../sql" }
+  ]
 }

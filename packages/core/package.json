@@ -13,7 +13,7 @@
   "author": "Jeffrey Heer (https://idl.uw.edu)",
   "type": "module",
   "exports": {
-    "types": "./dist/types/index-types.d.ts",
+    "types": "./dist/src/index-types.d.ts",
     "default": "./src/index.js"
   },
   "repository": {
@@ -26,7 +26,7 @@
     "types": "tsc",
     "lint": "eslint src test",
     "test": "vitest run && npm run tsc",
-    "tsc": "tsc -p jsconfig.json",
+    "tsc": "tsc",
     "prepublishOnly": "npm run test && npm run lint && npm run build"
   },
   "dependencies": {

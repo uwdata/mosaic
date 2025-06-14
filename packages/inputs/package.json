@@ -10,7 +10,7 @@
   "author": "Jeffrey Heer (https://idl.uw.edu)",
   "type": "module",
   "exports": {
-    "types": "./dist/types/index.d.ts",
+    "types": "./dist/src/index.d.ts",
     "default": "./src/index.js"
   },
   "repository": {

@@ -1,0 +1,11 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "files": ["src/index.js"],
+  "compilerOptions": {
+    "noEmit": true,
+  },
+  "references": [
+    { "path": "../core" },
+    { "path": "../spec" }
+  ]
+}
