@@ -33,6 +33,7 @@ export class Density2DMark extends Grid2DMark {
   }
 
   plotSpecs() {
+    // @ts-expect-error Correct the data column type
     const { type, channels, densityMap, data: { numRows: length, columns } } = this;
     const options = {};
     for (const c of channels) {

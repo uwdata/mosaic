@@ -93,7 +93,7 @@ async function readEntries(dir, cache) {
   let files;
   try {
     files = await fs.readdir(dir);
-  } catch (err) { // eslint-disable-line no-unused-vars
+  } catch (err) {
     return; // dir does not exist, nothing to do
   }
   await Promise.allSettled(files.map(async file => {
