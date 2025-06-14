@@ -26,3 +26,8 @@ export { toDataColumns } from './util/to-data-columns.js';
 export { queryFieldInfo } from './util/field-info.js';
 export { jsType } from './util/js-type.js';
 export { isActivatable } from './util/is-activatable.js';
+export type { QueryResult } from './util/query-result.js';
+
+export * from './types.js';
+export * from './connectors/Connector.js';
+export * from './util/selection-types.js';
