@@ -4,11 +4,11 @@ import { createAPIContext } from '@uwdata/vgplot';
 export { parseSpec, astToDOM, astToESM } from '@uwdata/mosaic-spec';
 export const vg = createAPIContext();
 
-// make API accesible for console debugging
-self.vg = vg;
+// make API accessible for console debugging
+(self as any).vg = vg;
 
 // enable query interface
-self.query = async (sql) => {
+(self as any).query = async (sql) => {
   const r = await vg.coordinator().databaseConnector().query({
     type: 'arrow',
     sql

@@ -1,11 +1,9 @@
 {
-  "include": ["src/**/*.js", "src/**/*.ts"],
+  "extends": "../../tsconfig.base.json",
+  "include": ["src/**/*"],
   "compilerOptions": {
-    "allowJs": true,
-    "declaration": true,
     "emitDeclarationOnly": true,
-    "outDir": "dist/types",
-    "module": "node16",
-    "skipLibCheck": true
-  }
+    "outDir": "dist"
+  },
+  "references": [{ "path": "../core" }, { "path": "../sql" }]
 }

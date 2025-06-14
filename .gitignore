@@ -14,3 +14,4 @@ node_modules
 **/.mypy_cache
 **/.coverage
 **/.venv
+**/tsconfig.tsbuildinfo

@@ -13,7 +13,7 @@
   "author": "Jeffrey Heer (https://idl.uw.edu)",
   "type": "module",
   "exports": {
-    "types": "./dist/types/index.d.ts",
+    "types": "./dist/src/index.d.ts",
     "default": "./src/index.js"
   },
   "repository": {
@@ -22,13 +22,11 @@
   },
   "scripts": {
     "prebuild": "rimraf dist && mkdir dist",
-    "build": "npm run types",
+    "build": "tsc && npm run schema",
     "lint": "eslint src test",
-    "types": "tsc && npm run schema",
     "schema": "ts-json-schema-generator -f tsconfig.json -p src/spec/Spec.ts -t Spec --no-type-check --no-ref-encode --functions hide > dist/mosaic-schema.json",
     "pretest": "npm run prebuild && npm run types",
-    "test": "vitest run && npm run tsc",
-    "tsc": "tsc -p jsconfig.json",
+    "test": "vitest run && tsc",
     "version": "cd ../.. && npm run docs:schema",
     "prepublishOnly": "npm run test && npm run lint && npm run build"
   },
