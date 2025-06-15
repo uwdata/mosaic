@@ -38,6 +38,7 @@ export class ErrorBarMark extends Mark {
 
     // compute confidence interval channels
     const p = Math.SQRT2 * erfinv(ci);
+    // @ts-expect-error Correct the data column type
     const { columns: { __avg__: u, __se__: s } } = data;
     const options = {
       [`${dim}1`]: u.map((u, i) => u - p * s[i]),

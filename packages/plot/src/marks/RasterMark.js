@@ -69,6 +69,7 @@ export class RasterMark extends Grid2DMark {
   }
 
   plotSpecs() {
+    // @ts-expect-error Correct the data column type
     const { type, plot, data: { numRows: length, columns } } = this;
     const options = {
       src: columns.src,

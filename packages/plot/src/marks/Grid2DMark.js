@@ -158,6 +158,7 @@ export class Grid2DMark extends Mark {
   queryResult(data) {
     const [w, h] = this.bins;
     const interp = maybeInterpolate(this.interpolate);
+    // @ts-expect-error Correct the data column type
     const { columns } = toDataColumns(data);
     this.grids0 = grid2d(w, h, columns.index, columns, this.aggr, this.groupby, interp);
     return this.convolve();
