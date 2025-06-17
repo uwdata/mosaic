@@ -209,7 +209,6 @@ export class PreAggregator {
       info = preaggregateInfo(client.query(filter), active, preaggCols, schema);
       info.result = mc.exec([
         `CREATE SCHEMA IF NOT EXISTS ${schema}`,
-        // @ts-expect-error make type stricter
         createTable(info.table, info.create, { temp: false })
       ]);
       info.result.catch((e: any) => mc.logger().error(e));

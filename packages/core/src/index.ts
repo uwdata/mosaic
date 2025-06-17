@@ -32,4 +32,4 @@ export * from './types.js';
 export * from './connectors/Connector.js';
 
 export type * from './Selection.js';
-export type {SelectionClause} from './SelectionClause.js';
+export type * from './SelectionClause.js';

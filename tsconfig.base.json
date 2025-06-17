@@ -3,16 +3,14 @@
     "target": "es2022",
     "module": "node16",
     "sourceMap": true,
-    "strict": true,
     "moduleResolution": "node16",
     "allowJs": true,
     "checkJs": true,
     "forceConsistentCasingInFileNames": true,
 
-    // disable some checks for now until we have stricter types
-    "noImplicitAny": false,
-    "strictNullChecks": false,
-    "noImplicitThis": false,
+    // Disable strict checks for now until we have better types.
+    // This can be overridden in specific projects.
+    "strict": false,
 
     "composite": true,
     "declaration": true,
