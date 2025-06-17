@@ -68,6 +68,7 @@ export class Density1DMark extends Mark {
   }
 
   queryResult(data) {
+    // @ts-expect-error Correct the data column type
     const c = toDataColumns(data).columns;
     this.grids = grid1d(this.bins, c.index, c.density, c, this.groupby);
     return this.convolve();
@@ -114,6 +115,7 @@ export class Density1DMark extends Mark {
   }
 
   plotSpecs() {
+    // @ts-expect-error Correct the data column type
     const { type, data: { numRows: length, columns }, channels, dim, stack } = this;
 
     // control if Plot's implicit stack transform is applied

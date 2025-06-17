@@ -1,4 +1,4 @@
-import { distinct, synchronizer } from '@uwdata/mosaic-core';
+import { distinct, Synchronizer } from '@uwdata/mosaic-core';
 import { plotRenderer } from './plot-renderer.js';
 
 const DEFAULT_ATTRIBUTES = {
@@ -26,8 +26,8 @@ export class Plot {
     this.markset = null;
     /** @type {Map<import('@uwdata/mosaic-core').Param, import('./marks/Mark.js').Mark[]>} */
     this.params = new Map;
-    /** @type {ReturnType<synchronizer>} */
-    this.synch = synchronizer();
+    /** @type {Synchronizer} */
+    this.synch = new Synchronizer();
 
     /** @type {HTMLElement} */
     this.element = element || document.createElement('div');
