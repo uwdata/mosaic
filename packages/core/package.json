@@ -16,7 +16,7 @@
     "types": "./dist/src/index.d.ts",
     "default": "./dist/src/index.js"
   },
-    "files": [
+  "files": [
     "dist",
     "!dist/tsconfig.tsbuildinfo",
     "src"
