@@ -39,7 +39,7 @@ export interface BinHistogramOptions {
  *  (potentially non-linear) binning intervals.
  * @returns The resulting SQL expression
  */
-export function binHistogram<T>(
+export function binHistogram(
   field: ExprValue,
   extent: [number, number],
   options: BinHistogramOptions = {},

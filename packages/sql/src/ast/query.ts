@@ -492,7 +492,7 @@ export class DescribeQuery extends SQLNode {
    * Clone this describe query.
    */
   clone(): this {
-    // @ts-expect-error
+    // @ts-expect-error creates describe query
     return new DescribeQuery(this.query.clone());
   }
 
@@ -543,7 +543,7 @@ export class SetOperation extends Query {
    */
   clone(): this {
     const { op, queries, ...rest } = this;
-    // @ts-expect-error
+    // @ts-expect-error creates set operation
     return Object.assign(new SetOperation(op, queries), rest);
   }
 

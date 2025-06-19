@@ -36,6 +36,8 @@ export function binSpec(min: number, max: number, options: BinOptions) {
   let {
     step,
     steps = 25,
+  } = options;
+  const {
     minstep = 0,
     nice = true,
     base

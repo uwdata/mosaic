@@ -23,7 +23,7 @@ export class SQLNode {
    * @returns The shallow clone node.
    */
   clone(): this {
-    // @ts-expect-error
+    // @ts-expect-error use constructor
     const clone = new this.constructor();
     for (const key in this) {
       clone[key] = this[key];

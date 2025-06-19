@@ -14,9 +14,9 @@ export function deepClone<T>(node: T): T {
     const n = props?.length ?? 0;
     for (let i = 0; i < n; ++i) {
       const key = props[i];
-      // @ts-expect-error
+      // @ts-expect-error allow assignment
       const value = node[key];
-      // @ts-expect-error
+      // @ts-expect-error allow assignment
       clone[key] = Array.isArray(value)
         ? value.map(v => deepClone(v))
         : deepClone(value);
@@ -40,10 +40,10 @@ function shallowClone<T>(node: T): T {
   } else if (isNode(node)) {
     clone = node.clone();
   } else if (node instanceof Date) {
-    // @ts-expect-error
+    // @ts-expect-error node is known to be Date
     return new Date(+node);
   } else if (Array.isArray(node)) {
-    // @ts-expect-error
+    // @ts-expect-error allow slice
     return node.slice();
   } else {
     return { ...node };

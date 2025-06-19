@@ -5,7 +5,7 @@ export class VerbatimNode extends ExprNode {
   /** The verbatim content to include. */
   readonly value: string;
   /** A type hint for analyzing verbatim content. */
-  readonly hint?: String;
+  readonly hint?: string;
 
   /**
    * Instantiate a raw node with verbatim content.

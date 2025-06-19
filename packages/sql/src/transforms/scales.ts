@@ -135,7 +135,7 @@ const scales = {
 
 export function scaleTransform<T>(options: ScaleOptions): ScaleDescriptor<T> | null {
   const scale = scales[options.type];
-  // @ts-expect-error
+  // @ts-expect-error suppress error, revisit later
   return scale ? { ...options, ...scale(options) } : null;
 }
 

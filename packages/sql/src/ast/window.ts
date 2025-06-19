@@ -5,7 +5,6 @@ import { WINDOW, WINDOW_CLAUSE, WINDOW_DEF, WINDOW_FUNCTION } from '../constants
 import { nodeList } from '../util/function.js';
 import { quoteIdentifier } from '../util/string.js';
 import { ExprNode, SQLNode } from './node.js';
-import { asNode } from '../util/ast.js';
 
 export class WindowClauseNode extends SQLNode {
    /** The window name. */

@@ -22,7 +22,7 @@ export class WindowFrameNode extends SQLNode {
   /** The frame type, one of ROWS, RANGE, or GROUPS. */
   readonly frameType: FrameType;
   /** The window frame extent. */
-  readonly extent: [any, any] | ParamNode;
+  readonly extent: [unknown, unknown] | ParamNode;
   /** The window frame exclusion criteria. */
   readonly exclude?: FrameExclude;
 
@@ -48,7 +48,9 @@ export class WindowFrameNode extends SQLNode {
    */
   toString() {
     const { frameType, exclude, extent } = this;
-    const [prev, next] = isNode(extent) ? extent.value : extent;
+    const [prev, next] = isNode(extent)
+      ? extent.value as [unknown, unknown]
+      : extent;
     const a = asFrameExpr(prev, PRECEDING);
     const b = asFrameExpr(next, FOLLOWING);
     return `${frameType} BETWEEN ${a} AND ${b}${exclude ? ` ${exclude}` : ''}`;
