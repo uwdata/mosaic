@@ -11,8 +11,8 @@
   "author": "Jeffrey Heer (https://idl.uw.edu)",
   "type": "module",
   "exports": {
-    "types": "./dist/src/index-types.d.ts",
-    "default": "./src/index.js"
+    "types": "./dist/src/index.d.ts",
+    "default": "./dist/src/index.js"
   },
   "files": [
     "dist",
