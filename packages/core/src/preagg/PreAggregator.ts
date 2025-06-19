@@ -1,4 +1,4 @@
-import type { ExprNode, SelectQuery, Query } from '@uwdata/mosaic-sql';
+import type { ExprNode, SelectQuery, Query, ExprValue } from '@uwdata/mosaic-sql';
 import type { Coordinator } from '../Coordinator.js';
 import type { MosaicClient } from '../MosaicClient.js';
 import type { Selection } from '../Selection.js';
@@ -286,20 +286,21 @@ const BIN = { ceil, round };
  * @returns A bin function generator.
  */
 function binInterval(scale: Scale, pixelSize: number, bin: BinMethod): ((value: any) => ExprNode) | undefined {
-  const { type, domain, range, apply, sqlApply } = scaleTransform(scale);
+  const { type, domain, range, apply, sqlApply } = scaleTransform(scale)!;
   if (!apply) return; // unsupported scale type
   const binFn = (BIN as any)[`${bin}`.toLowerCase()] || floor;
-  const lo = apply(Math.min(...domain));
-  const hi = apply(Math.max(...domain));
+  const dom = domain!.map(x => Number(x));
+  const lo = apply(Math.min(...dom));
+  const hi = apply(Math.max(...dom));
   const s = (type === 'identity'
     ? 1
-    : Math.abs(range[1] - range[0]) / (hi - lo)) / pixelSize;
+    : Math.abs(range![1] - range![0]) / (hi - lo)) / pixelSize;
   const scalar = s === 1
-    ? (x: any) => x
-    : (x: any) => mul(float64(s), x);
+    ? (x: ExprValue) => x
+    : (x: ExprValue) => mul(float64(s), x);
   const diff = lo === 0
-    ? (x: any) => x
-    : (x: any) => sub(x, float64(lo));
+    ? (x: ExprValue) => x
+    : (x: ExprValue) => sub(x, float64(lo));
   return value => int32(binFn(scalar(diff(sqlApply(value)))));
 }
 

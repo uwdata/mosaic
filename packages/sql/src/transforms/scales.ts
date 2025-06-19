@@ -28,13 +28,20 @@ export type ScaleType =
   ;
 
 export interface ScaleOptions {
-  /** The scale type. */
+  /** The scale type, such as `'linear'`, `'log'`, etc. */
   type: ScaleType;
-  /** Numerical base for log scales. */
+  /** The scale domain, as an array of start and end data values. */
+  domain?: [number, number] | [Date, Date];
+  /**
+   * The scale range, as an array of start and end screen pixels.
+   * The range may be omitted for *identity* scales.
+   */
+  range?: [number, number];
+  /** The base of the logarithm. For `'log'` scales only. */
   base?: number;
-  /** Constant parameter for symlog scales. */
+  /** The constant parameter. For `'symlog'` scales only. */
   constant?: number;
-  /** Exponent for pow scales. */
+  /** The exponent parameter. For `'pow'` scales only. */
   exponent?: number;
 }
 

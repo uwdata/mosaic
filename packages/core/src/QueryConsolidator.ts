@@ -131,7 +131,7 @@ function consolidationKey(query: Query | DescribeQuery, cache: any): string {
       query._select.forEach(({ alias, expr }) => map[alias] = expr);
       q.setGroupby(groupby.map(e => (isColumnRef(e) && map[e.column]) || e));
     }
-    else if (query._select.some(e => isAggregateExpression(e.expr))) {
+    else if (query._select.some(e => isAggregateExpression(e.expr!))) {
       // if query is an ungrouped aggregate, add an explicit groupby to
       // prevent improper consolidation with non-aggregate queries
       q.setGroupby('ALL');
