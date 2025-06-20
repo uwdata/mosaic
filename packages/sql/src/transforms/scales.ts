@@ -56,7 +56,7 @@ function scaleLinear(): ScaleTransform<number> {
   };
 }
 
-function scaleLog({ base = null } = {}): ScaleTransform<number> {
+function scaleLog({ base = null }: {base?: number | null} = { }): ScaleTransform<number> {
   if (base == null || base === Math.E) {
     return {
       apply: Math.log,
