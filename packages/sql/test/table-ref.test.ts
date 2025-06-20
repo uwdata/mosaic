@@ -10,9 +10,9 @@ describe('Table references', () => {
   });
 
   it('are created by asTableRef', () => {
-    expect(asTableRef('foo').table).toStrictEqual(['foo']);
-    expect(asTableRef('foo.bar').table).toStrictEqual(['foo', 'bar']);
-    expect(asTableRef('foo.bar.baz').table).toStrictEqual(['foo', 'bar', 'baz']);
+    expect(asTableRef('foo')?.table).toStrictEqual(['foo']);
+    expect(asTableRef('foo.bar')?.table).toStrictEqual(['foo', 'bar']);
+    expect(asTableRef('foo.bar.baz')?.table).toStrictEqual(['foo', 'bar', 'baz']);
   });
 
   it('clone successfully', () => {

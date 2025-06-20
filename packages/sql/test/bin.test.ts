@@ -21,11 +21,11 @@ describe('Binning transforms', () => {
     });
 
     it('creates non-linear bins', () => {
-      const log10 = scaleTransform({ type: 'log', base: 10 });
+      const log10 = scaleTransform<number>({ type: 'log', base: 10 })!;
       expect(`${binHistogram('foo', [1, 1000], { steps: 5 }, log10)}`)
         .toBe('(10 ** floor(log("foo")))');
 
-      const log2 = scaleTransform({ type: 'log', base: 2 });
+      const log2 = scaleTransform<number>({ type: 'log', base: 2 })!;
       expect(`${binHistogram('foo', [1, 64], { steps: 10 }, log2)}`)
         .toBe('(2 ** floor((ln("foo") / ln(2))))');
     });
