@@ -38,7 +38,7 @@ export class UnaryOpNode extends AbstractUnaryOpNode {
   }
 }
 
-export class UnaryPosftixOpNode extends AbstractUnaryOpNode {
+export class UnaryPostfixOpNode extends AbstractUnaryOpNode {
   /**
    * Instantiate a unary operator node.
    * @param op The operator type.

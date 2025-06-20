@@ -3,7 +3,7 @@ import { BetweenOpNode, Extent, NotBetweenOpNode } from '../ast/between-op.js';
 import { BinaryOpNode } from '../ast/binary-op.js';
 import { InOpNode } from '../ast/in-op.js';
 import { AndNode, OrNode } from '../ast/logical-op.js';
-import { UnaryOpNode, UnaryPosftixOpNode } from '../ast/unary-op.js';
+import { UnaryOpNode, UnaryPostfixOpNode } from '../ast/unary-op.js';
 import { asNode } from '../util/ast.js';
 import { nodeList } from '../util/function.js';
 
@@ -12,7 +12,7 @@ function unaryOp(op: string, expr: unknown) {
 }
 
 function unaryPostfixOp(op: string, expr: unknown) {
-  return new UnaryPosftixOpNode(op, asNode(expr));
+  return new UnaryPostfixOpNode(op, asNode(expr));
 }
 
 function binaryOp(op: string, left: unknown, right: unknown) {

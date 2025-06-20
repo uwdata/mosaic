@@ -21,7 +21,7 @@ export { SampleClauseNode } from './ast/sample.js';
 export { ScalarSubqueryNode } from './ast/subquery.js';
 export { SelectClauseNode } from './ast/select.js';
 export { TableRefNode, isTableRef } from './ast/table-ref.js';
-export { UnaryOpNode, UnaryPosftixOpNode } from './ast/unary-op.js';
+export { UnaryOpNode, UnaryPostfixOpNode } from './ast/unary-op.js';
 export { VerbatimNode } from './ast/verbatim.js';
 export { WindowClauseNode, WindowDefNode, WindowFunctionNode, WindowNode } from './ast/window.js';
 export { WindowFrameNode, WindowFrameExprNode, type FrameExclude, type FrameExtent, type FrameScope, type FrameType, type FrameValue } from './ast/window-frame.js';
