@@ -19,14 +19,14 @@
     "clean": "lerna run clean",
     "lint": "lerna run lint",
     "test": "tsc --build && lerna run schema && vitest run",
-    "server": "cd packages/duckdb-server && npm run dev",
-    "server:rust": "cd packages/duckdb-server-rust && cargo run",
-    "server:node": "nodemon packages/duckdb/bin/run-server.js",
+    "server": "cd packages/server/duckdb-server && npm run dev",
+    "server:rust": "cd packages/server/duckdb-server-rust && cargo run",
+    "server:node": "nodemon packages/server/duckdb/bin/run-server.js",
     "dev": "vite",
     "release": "npm run test && npm run lint && lerna publish && npm run release:python",
     "release:python": "npm run release:server && npm run release:widget",
-    "release:server": "cd packages/duckdb-server && npm run release",
-    "release:widget": "cd packages/widget && npm run release"
+    "release:server": "cd packages/server/duckdb-server && npm run release",
+    "release:widget": "cd packages/vgplot/widget && npm run release"
   },
   "devDependencies": {
     "@eslint/js": "^9.29.0",
@@ -39,14 +39,16 @@
     "rimraf": "^6.0.1",
     "timezone-mock": "^1.3.6",
     "typescript": "^5.8.3",
-    "typescript-eslint": "^8.34.0",
+    "typescript-eslint": "^8.34.1",
     "vite": "^6.3.5",
     "vitepress": "1.6.3",
-    "vitest": "^3.2.3",
+    "vitest": "^3.2.4",
     "yaml": "^2.8.0"
   },
   "workspaces": [
-    "packages/*",
-    "examples/*"
+    "packages/mosaic/*",
+    "packages/server/*",
+    "packages/vgplot/*",
+    "packages/examples/*"
   ]
 }

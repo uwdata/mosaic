@@ -9,14 +9,14 @@ updates:
     schedule:
       interval: monthly
   - package-ecosystem: pip
-    directory: "/packages/widget"
+    directory: "/packages/vgplot/widget"
     schedule:
       interval: monthly
   - package-ecosystem: pip
-    directory: "/packages/duckdb-server"
+    directory: "/packages/server/duckdb-server"
     schedule:
       interval: monthly
   - package-ecosystem: cargo
-    directory: "/packages/duckdb-server-rust"
+    directory: "/packages/server/duckdb-server-rust"
     schedule:
       interval: monthly

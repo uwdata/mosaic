@@ -1,11 +1,12 @@
 {
   "files": [],
   "references": [
-    { "path": "packages/core" },
-    { "path": "packages/inputs" },
-    { "path": "packages/plot" },
-    { "path": "packages/spec" },
-    { "path": "packages/sql" },
-    { "path": "packages/vgplot" }
+    { "path": "packages/mosaic/core" },
+    { "path": "packages/mosaic/sql" },
+    { "path": "packages/server/duckdb" },
+    { "path": "packages/vgplot/inputs" },
+    { "path": "packages/vgplot/plot" },
+    { "path": "packages/vgplot/spec" },
+    { "path": "packages/vgplot/vgplot" }
   ]
 }
