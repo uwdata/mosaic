@@ -1,4 +1,4 @@
-import path from "path";
+import path from 'path';
 
 /** @type {import('vite').UserConfig} */
 export default {
