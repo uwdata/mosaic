@@ -408,7 +408,7 @@ wheels = [
 
 [[package]]
 name = "duckdb-server"
-source = { editable = "packages/duckdb-server" }
+source = { editable = "packages/server/duckdb-server" }
 dependencies = [
     { name = "diskcache" },
     { name = "duckdb" },
