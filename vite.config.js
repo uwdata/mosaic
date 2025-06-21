@@ -18,7 +18,9 @@ export default {
   },
   test: {
     projects: [
-      'packages/*',
+      'packages/mosaic/*',
+      'packages/vgplot/*',
+      'packages/server/*',
     ]
   }
 };
