@@ -984,7 +984,7 @@ wheels = [
 
 [[package]]
 name = "mosaic-widget"
-source = { editable = "packages/widget" }
+source = { editable = "packages/vgplot/widget" }
 dependencies = [
     { name = "anywidget" },
     { name = "duckdb" },
