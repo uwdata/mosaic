@@ -1,8 +1,10 @@
 {
   "$schema": "node_modules/lerna/schemas/lerna-schema.json",
   "packages": [
-    "packages/*",
-    "examples/*"
+    "packages/mosaic/*",
+    "packages/server/*",
+    "packages/vgplot/*",
+    "packages/examples/*"
   ],
   "version": "0.17.0"
 }

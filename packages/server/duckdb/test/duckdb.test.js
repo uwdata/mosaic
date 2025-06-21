@@ -1,11 +1,11 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import path from 'path'
 import { db } from './db.js';
-import { loadJSON } from '../src/index.js';
+import { loadArrow, loadJSON } from '../src/index.js';
 
 describe('DuckDB', () => {
   beforeAll(async () => {
-    const file = path.resolve(__dirname, '../../../data/penguins.csv');
+    const file = path.resolve(__dirname, '../../../../data/penguins.csv');
     await db.exec(`CREATE TABLE penguins AS SELECT * FROM '${file}'`);
   });
 
@@ -20,19 +20,18 @@ describe('DuckDB', () => {
     });
   });
 
-  // suppress test until duckdb bug is fixed
-  // describe('loadArrow', () => {
-  //   it('loads an arrow ipc buffer', async () => {
-  //     await loadArrow(db, 'arrow', await db.arrowBuffer('SELECT * FROM penguins'));
-  //     const res = await db.query('SELECT count()::INTEGER AS count FROM arrow');
-  //     expect(res[0]?.count).toBe(342);
-  //     await db.exec('DROP VIEW arrow');
-  //   });
-  // });
+  describe('loadArrow', () => {
+    it('loads an arrow ipc buffer', async () => {
+      await loadArrow(db, 'arrow', await db.arrowBuffer('SELECT * FROM penguins'));
+      const res = await db.query('SELECT count()::INTEGER AS count FROM arrow');
+      expect(res[0]?.count).toBe(342);
+      await db.exec('DROP VIEW arrow');
+    });
+  });
 
   describe('loadJSON', () => {
     it('loads a json file', async () => {
-      await loadJSON(db, 'json', path.resolve(__dirname, '../../../data/penguins.json'));
+      await loadJSON(db, 'json', path.resolve(__dirname, '../../../../data/penguins.json'));
       const res = await db.query('SELECT count()::INTEGER AS count FROM json');
       expect(res[0]?.count).toBe(342);
       await db.exec('DROP TABLE json');

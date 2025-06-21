@@ -2,7 +2,7 @@ import { readdir, readFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { parse } from 'yaml';
 
-const BASE = join(__dirname, '../../../specs');
+const BASE = join(__dirname, '../../../../specs');
 const YAML_DIR = join(BASE, 'yaml');
 const JSON_DIR = join(BASE, 'json');
 const ESM_DIR = join(BASE, 'esm');

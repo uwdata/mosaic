@@ -1,9 +1,9 @@
 {
-  "extends": "../../tsconfig.base.json",
+  "extends": "../../../tsconfig.base.json",
   "include": ["src/**/*"],
   "compilerOptions": {
     "emitDeclarationOnly": true,
     "outDir": "dist"
   },
-  "references": [{ "path": "../core" }, { "path": "../sql" }]
+  "references": [{ "path": "../../mosaic/sql" }]
 }

@@ -1,14 +1,14 @@
 {
-  "extends": "../../tsconfig.base.json",
+  "extends": "../../../tsconfig.base.json",
   "include": ["src/**/*"],
   "compilerOptions": {
     "emitDeclarationOnly": true,
     "outDir": "dist"
   },
   "references": [
-    { "path": "../core" },
+    { "path": "../../mosaic/core" },
+    { "path": "../../mosaic/sql" },
     { "path": "../inputs" },
-    { "path": "../plot" },
-    { "path": "../sql" }
+    { "path": "../plot" }
   ]
 }
