@@ -20,7 +20,7 @@ For example, below is an example of a declarative specification, in either YAML 
 Using a declarative specification, we can describe an application in a standard file format, enabling portability across platforms. For example, the [Mosaic Jupyter widget](/jupyter/) uses this format to pass visualization and dashboard definitions from Python to the browser.
 
 ::: tip
-The [TypeScript types in the `@uwdata/mosaic-spec` package](https://github.com/uwdata/mosaic/tree/main/packages/spec/src/spec) provide comprehensive documentation of Mosaic declarative specifications.
+The [TypeScript types in the `@uwdata/mosaic-spec` package](https://github.com/uwdata/mosaic/tree/main/packages/vgplot/spec/src/spec) provide comprehensive documentation of Mosaic declarative specifications.
 :::
 
 ## Specification Format

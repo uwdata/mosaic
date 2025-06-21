@@ -237,7 +237,7 @@ export class CustomClient extends MosaicClient {
 ```
 
 If you are interested in creating your own Mosaic clients, see the [Mosaic GitHub repository](https://github.com/uwdata/mosaic).
-For concrete examples, start with the source code of [Mosaic inputs](https://github.com/uwdata/mosaic/tree/main/packages/inputs/src).
+For concrete examples, start with the source code of [Mosaic inputs](https://github.com/uwdata/mosaic/tree/main/packages/vgplot/inputs/src).
 Once you've instantiated a custom client, register it using [`coordinator.connect(client)`](/api/core/coordinator.html#connect).
 
 Mosaic can also be extended with additional database connectors, and &ndash; though not for the faint of heart! &ndash; even the central coordinator can be replaced to experiment with alternative query management and optimization schemes.

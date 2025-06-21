@@ -24,4 +24,4 @@ Alternatively, you can install the server with `pip install duckdb-server`. Then
 
 ## Developer Setup
 
-To run the server from the Mosaic repository and to run the server in development mode, follow the [instructions for the duckdb-server package](https://github.com/uwdata/mosaic/blob/main/packages/duckdb-server/README.md).
+To run the server from the Mosaic repository and to run the server in development mode, follow the [instructions for the duckdb-server package](https://github.com/uwdata/mosaic/blob/main/packages/server/duckdb-server/README.md).

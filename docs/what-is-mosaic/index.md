@@ -73,7 +73,7 @@ The Mosaic project consists of a suite of packages.
   Includes support for aggregate functions, window functions, and arbitrary expressions with dynamic parameters. Query objects coerce to SQL query strings.
 * [`mosaic-inputs`](/inputs/):
   Data-driven input components such as menus, text search boxes, and sortable, load-on-scroll data tables.
-* [`mosaic-plot`](https://github.com/uwdata/mosaic/tree/main/packages/plot):
+* [`mosaic-plot`](https://github.com/uwdata/mosaic/tree/main/packages/vgplot/plot):
   An interactive grammar of graphics in which marks (plot layers) serve as individual Mosaic clients.
   Marks can push data processing (binning, filtering, aggregation, regression, ...) to the database and apply mark-specific optimizations (such as [M4](https://observablehq.com/@uwdata/m4-scalable-time-series-visualization) for line/area charts).
   Once data and parameters are marshalled, [Observable Plot](https://observablehq.com/plot) is used to render [SVG](https://developer.mozilla.org/en-US/docs/Web/SVG) output.
