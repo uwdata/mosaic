@@ -31,9 +31,9 @@
     "clean": "rimraf dist && mkdir dist",
     "prebuild": "npm run clean",
     "lint": "eslint src test",
-    "test": "vitest run && npm run tsc",
+    "test": "vitest run",
     "tsc": "tsc",
-    "prepublishOnly": "npm run test && npm run lint"
+    "prepublishOnly": "npm run test && npm run lint && npm run tsc"
   },
   "dependencies": {
     "@uwdata/mosaic-core": "^0.17.0",

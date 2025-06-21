@@ -28,9 +28,9 @@
   "scripts": {
     "clean": "rimraf dist && mkdir dist",
     "lint": "eslint src test",
-    "test": "vitest run && npm run tsc",
+    "test": "vitest run",
     "tsc": "tsc",
-    "prepublishOnly": "npm run test && npm run lint"
+    "prepublishOnly": "npm run test && npm run lint && npm run tsc"
   },
   "dependencies": {
     "@duckdb/duckdb-wasm": "^1.29.0",
