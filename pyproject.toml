@@ -1,7 +1,7 @@
 [tool.uv.workspace]
 members = [
-    "packages/duckdb-server",
-    "packages/widget"
+    "packages/server/duckdb-server",
+    "packages/vgplot/widget"
 ]
 
 # https://github.com/charliermarsh/ruff
