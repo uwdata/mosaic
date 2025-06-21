@@ -23,10 +23,12 @@
     "url": "https://github.com/uwdata/mosaic.git"
   },
   "scripts": {
-    "prebuild": "rimraf dist && mkdir dist",
+    "clean": "rimraf dist && mkdir dist",
+    "prebuild": "npm run clean",
     "lint": "eslint src test",
-    "test": "vitest run && tsc",
-    "prepublishOnly": "npm run test && npm run lint && tsc"
+    "test": "vitest run",
+    "tsc": "tsc",
+    "prepublishOnly": "npm run test && npm run lint && npm run tsc"
   },
   "dependencies": {
     "@uwdata/mosaic-core": "^0.17.0",

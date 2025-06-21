@@ -11,8 +11,8 @@
   "author": "Jeffrey Heer (https://idl.uw.edu)",
   "type": "module",
   "exports": {
-    "types": "./dist/src/index-types.d.ts",
-    "default": "./src/index.js"
+    "types": "./dist/src/index.d.ts",
+    "default": "./dist/src/index.js"
   },
   "files": [
     "dist",
@@ -24,9 +24,10 @@
     "url": "https://github.com/uwdata/mosaic.git"
   },
   "scripts": {
-    "prebuild": "rimraf dist && mkdir dist",
+    "clean": "rimraf dist && mkdir dist",
     "lint": "eslint src test",
-    "test": "vitest run && tsc",
-    "prepublishOnly": "npm run test && npm run lint && tsc"
+    "test": "vitest run",
+    "tsc": "tsc",
+    "prepublishOnly": "npm run test && npm run lint && npm run tsc"
   }
 }

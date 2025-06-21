@@ -9,7 +9,7 @@ import { WithClauseNode } from './ast/with.js';
  */
 export interface ParamLike {
   /** The current parameter value. */
-  value: any;
+  value: unknown;
   /** Add an event listener callback. */
   addEventListener(type: string, callback: EventCallback): void;
   /** Remove an event listener callback. */
@@ -19,7 +19,7 @@ export interface ParamLike {
 /**
  * Expression value input to SQL builder method.
  */
-export type ExprValue = ExprNode | ParamLike | string | number | boolean | Date;
+export type ExprValue = ExprNode | ParamLike | string | number | boolean | Date | null;
 
 /**
  * Expression values that may be nested in arrays.
@@ -39,22 +39,7 @@ export type NumberValue = ExprNode | ParamLike | number;
 /**
  * Event listener callback function.
  */
-export type EventCallback = <T>(value: any) => Promise<T> | undefined;
-
-/**
- * SQL AST traversal visitor callback result.
- * A falsy value (including `undefined`, `null`, `false`, and `0`) indicates
- * that traversal should continue.
- * A negative number values indicates that traversal should stop immediately.
- * Any other truthy value indicates that traversal should not recurse on the
- * current node, but should otherwise continue.
- */
-export type VisitorResult = boolean | number | null | undefined | void;
-
-/**
- * SQL AST traversal callback function.
- */
-export type VisitorCallback = (node: SQLNode) => VisitorResult;
+export type EventCallback = <T>(value: unknown) => Promise<T> | undefined;
 
 /** Valid window function names. */
 export type WindowFunctionName =
@@ -74,6 +59,7 @@ export type WindowFunctionName =
 export type MaybeArray<T> = T | T[];
 
 export type SelectEntry =
+  | null
   | string
   | ColumnRefNode
   | [string, ExprNode]
@@ -99,23 +85,3 @@ export type FromExpr = MaybeArray<FromEntry>;
 export type FilterExpr = MaybeArray<string | ExprNode>;
 export type GroupByExpr = MaybeArray<string | ExprNode>;
 export type OrderByExpr = MaybeArray<string | ExprNode>;
-
-export type TimeUnit =
-  | 'year'
-  | 'quarter'
-  | 'month'
-  | 'day'
-  | 'hour'
-  | 'minute'
-  | 'second'
-  | 'millisecond'
-  | 'microsecond';
-
-export type FrameValue =  ExprNode | number | null;
-
-export type FrameExtent = [FrameValue, FrameValue] | ParamLike;
-
-export type FrameScope =
-  | 'PRECEDING'
-  | 'FOLLOWING'
-  | 'CURRENT ROW';

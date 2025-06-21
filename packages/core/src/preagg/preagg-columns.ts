@@ -46,13 +46,13 @@ export function preaggColumns(client: MosaicClient): PreAggColumnsResult | null 
   for (const { alias, expr } of q._select) {
     // bail if there is an aggregate we can't analyze
     // a value > 1 indicates an aggregate in verbatim text
-    if (isAggregateExpression(expr) > 1) return null;
+    if (isAggregateExpression(expr!) > 1) return null;
 
-    const nodes = collectAggregates(expr);
+    const nodes = collectAggregates(expr!);
     if (nodes.length === 0) {
       // if no aggregates, expr is a groupby dimension
       group.push(alias);
-      preagg[alias] = expr;
+      preagg[alias] = expr!;
     } else {
       for (const node of nodes) {
         // bail if distinct aggregate
@@ -66,7 +66,7 @@ export function preaggColumns(client: MosaicClient): PreAggColumnsResult | null 
       }
 
       // rewrite original select clause to use preaggregates
-      output[alias] = rewrite(expr, aggrs);
+      output[alias] = rewrite(expr!, aggrs)!;
     }
   }
 

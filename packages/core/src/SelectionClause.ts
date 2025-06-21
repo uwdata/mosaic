@@ -1,7 +1,6 @@
 
 import { MosaicClient } from './MosaicClient.js';
-import type { ExprNode, ExprValue } from '@uwdata/mosaic-sql';
-import { and, contains, isBetween, isIn, isNotDistinct, literal, or, prefix, regexp_matches, suffix } from '@uwdata/mosaic-sql';
+import { type ExprNode, type ExprValue, type ScaleOptions, type ScaleDomain, and, contains, isBetween, isIn, isNotDistinct, literal, or, prefix, regexp_matches, suffix } from '@uwdata/mosaic-sql';
 
 /**
  * Selection clause metadata to guide possible query optimizations.
@@ -32,41 +31,6 @@ export interface MatchMetadata extends ClauseMetadata {
   method?: 'contains' | 'prefix' | 'suffix' | 'regexp' | (string & {});
 }
 
-/** Quantitative scale types. */
-export type ScaleType =
-  | 'identity'
-  | 'linear'
-  | 'log'
-  | 'sqrt'
-  | 'pow'
-  | 'symlog'
-  | 'time'
-  | 'utc';
-
-/** A data value interval extent. */
-export type Extent = [number, number] | [Date, Date];
-
-/**
- * Descriptor for a scale that maps a data domain to screen pixels.
- */
-export interface Scale {
-  /** The scale type, such as `'linear'`, `'log'`, etc. */
-  type: ScaleType;
-  /** The scale domain, as an array of start and end data values. */
-  domain: Extent;
-  /**
-   * The scale range, as an array of start and end screen pixels.
-   * The range may be omitted for *identity* scales.
-   */
-  range?: [number, number];
-  /** The base of the logarithm. For `'log'` scales only. */
-  base?: number;
-  /** The constant parameter. For `'symlog'` scales only. */
-  constant?: number;
-  /** The exponent parameter. For `'pow'` scales only. */
-  exponent?: number;
-}
-
 /** A binning method name. */
 export type BinMethod = 'floor' | 'ceil' | 'round';
 
@@ -87,7 +51,7 @@ export interface IntervalMetadata extends ClauseMetadata {
    * An array of one or more scale descriptors that describe the
    * mapping from data values to screen pixels.
    */
-  scales?: Scale[];
+  scales?: ScaleOptions[];
   /**
    * A hint for the binning method to use when discretizing the
    * interval domain. If unspecified, the default is `'floor'`.
@@ -211,7 +175,7 @@ export function clausePoints(fields: ExprValue[], value: any[][] | null | undefi
  * @param options.pixelSize The interactive pixel size.
  * @returns The generated selection clause.
  */
-export function clauseInterval(field: ExprValue, value: Extent | null | undefined, {
+export function clauseInterval(field: ExprValue, value: ScaleDomain | null | undefined, {
   source,
   clients = source ? new Set([source]) : undefined,
   bin,
@@ -220,16 +184,16 @@ export function clauseInterval(field: ExprValue, value: Extent | null | undefine
 }: {
   source: any;
   clients?: Set<MosaicClient>;
-  scale?: Scale;
+  scale?: ScaleOptions;
   bin?: BinMethod;
   pixelSize?: number;
 }): SelectionClause {
   const predicate = value != null ? isBetween(field, value) : null;
-  const meta: IntervalMetadata = { 
-    type: 'interval', 
-    scales: scale && [scale], 
-    bin, 
-    pixelSize 
+  const meta: IntervalMetadata = {
+    type: 'interval',
+    scales: scale && [scale],
+    bin,
+    pixelSize
   };
   return { meta, source, clients, value, predicate };
 }
@@ -249,7 +213,7 @@ export function clauseInterval(field: ExprValue, value: Extent | null | undefine
  * @param options.pixelSize The interactive pixel size.
  * @returns The generated selection clause.
  */
-export function clauseIntervals(fields: ExprValue[], value: Extent[] | null | undefined, {
+export function clauseIntervals(fields: ExprValue[], value: ScaleDomain[] | null | undefined, {
   source,
   clients = source ? new Set([source]) : undefined,
   bin,
@@ -258,18 +222,18 @@ export function clauseIntervals(fields: ExprValue[], value: Extent[] | null | un
 }: {
   source: any;
   clients?: Set<MosaicClient>;
-  scales?: Scale[];
+  scales?: ScaleOptions[];
   bin?: BinMethod;
   pixelSize?: number;
 }): SelectionClause {
   const predicate = value != null
     ? and(fields.map((f, i) => isBetween(f, value[i])))
     : null;
-  const meta: IntervalMetadata = { 
-    type: 'interval', 
-    scales, 
-    bin, 
-    pixelSize 
+  const meta: IntervalMetadata = {
+    type: 'interval',
+    scales,
+    bin,
+    pixelSize
   };
   return { meta, source, clients, value, predicate };
 }
@@ -292,8 +256,8 @@ export type MatchMethod = keyof typeof MATCH_METHODS | (string & {});
  * @returns The generated selection clause.
  */
 export function clauseMatch(field: ExprValue, value: string | null | undefined, {
-  source, 
-  clients = undefined, 
+  source,
+  clients = undefined,
   method = 'contains'
 }: {
   source: any;
