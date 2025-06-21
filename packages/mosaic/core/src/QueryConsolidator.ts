@@ -285,7 +285,6 @@ function projectResult(data: Table, map: Array<[string, string]>): Table {
 function filterResult(data: Table, map: Array<[string, string]>): any[] {
   const lookup = new Map(map);
   const result: any[] = [];
-  // @ts-expect-error remove this when https://github.com/uwdata/flechette/pull/38 is released
   for (const d of data) {
     if (lookup.has(d.column_name)) {
       result.push({ ...d, column_name: lookup.get(d.column_name) })
