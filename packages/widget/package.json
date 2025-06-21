@@ -10,11 +10,11 @@
     "url": "https://github.com/uwdata/mosaic.git"
   },
   "scripts": {
+    "clean": "rimraf mosaic_widget/static",
     "build": "esbuild --bundle --format=esm --outdir=mosaic_widget/static src/index.js",
     "dev": "npm run build -- --watch",
-    "test": "npm run tsc",
+    "test": "tsc --build",
     "lint": "eslint src",
-    "tsc": "tsc",
     "prerelease": "npm run test && npm run lint && uv run ruff check && uv run ruff format --check && npm run build",
     "release": "uv build && uvx twine upload --skip-existing ../../dist/mosaic_widget*"
   },

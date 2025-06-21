@@ -7,11 +7,7 @@ export default defineConfig({
   description: 'Scalable, interactive data visualization',
   base: '/mosaic/',
   vite: {
-    resolve: {
-      alias: Object.fromEntries(
-        Object.entries(viteConfig.resolve.alias).map(([key, value]) => [key, `.${value}`])
-      )
-    }
+    resolve: viteConfig.resolve
   },
   themeConfig: {
     // https://vitepress.dev/reference/default-theme-config

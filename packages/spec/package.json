@@ -30,10 +30,10 @@
     "prebuild": "npm run clean",
     "build": "npm run schema",
     "lint": "eslint src test",
-    "preschema": "npm run tsc",
+    "preschema": "tsc --build",
     "schema": "ts-json-schema-generator -f tsconfig.json -p src/spec/Spec.ts -t Spec --no-type-check --no-ref-encode --functions hide > dist/mosaic-schema.json",
     "test": "npm run schema && vitest run",
-    "tsc": "tsc",
+
     "version": "cd ../.. && npm run docs:schema",
     "prepublishOnly": "npm run test && npm run lint && npm run build"
   },

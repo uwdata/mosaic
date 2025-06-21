@@ -27,8 +27,7 @@
     "prebuild": "npm run clean",
     "lint": "eslint src test",
     "test": "vitest run",
-    "tsc": "tsc",
-    "prepublishOnly": "npm run test && npm run lint && npm run tsc"
+    "prepublishOnly": "npm run test && npm run lint && tsc --build"
   },
   "dependencies": {
     "@uwdata/mosaic-core": "^0.17.0",
