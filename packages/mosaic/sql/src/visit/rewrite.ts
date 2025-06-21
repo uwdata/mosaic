@@ -17,17 +17,17 @@ export function rewrite(node: ExprNode, map: Map<ExprNode, ExprNode>) {
       node = node.clone();
       for (let i = 0; i < n; ++i) {
         const prop = props[i];
-        // @ts-expect-error
+        // @ts-expect-error lookup valid property
         const child = node[prop];
         if (Array.isArray(child)) {
-          // @ts-expect-error
+          // @ts-expect-error rewrite known property
           const a = (node[prop] = child.slice());
           const m = child.length;
           for (let j = 0; j < m; ++j) {
             a[j] = rewrite(child[j], map);
           }
         } else if (child) {
-          // @ts-expect-error
+          // @ts-expect-error rewrite known property
           node[prop] = rewrite(child, map);
         }
       }

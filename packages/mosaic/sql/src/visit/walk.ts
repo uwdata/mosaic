@@ -30,7 +30,7 @@ export function walk(node: unknown, visit: VisitorCallback): VisitorResult {
   const props = recurse[node.type];
   const n = props?.length ?? 0;
   for (let i = 0; i < n; ++i) {
-    // @ts-expect-error
+    // @ts-expect-error lookup of valid property
     const value = node[props[i]];
     if (Array.isArray(value)) {
       const m = value.length;
