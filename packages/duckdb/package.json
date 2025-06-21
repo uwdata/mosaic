@@ -36,8 +36,7 @@
     "lint": "eslint src test",
     "server": "node bin/run-server.js",
     "test": "vitest run",
-    "tsc": "tsc",
-    "prepublishOnly": "npm run test && npm run lint && npm run tsc"
+    "prepublishOnly": "npm run test && npm run lint && tsc --build"
   },
   "dependencies": {
     "@uwdata/mosaic-sql": "^0.17.0",
