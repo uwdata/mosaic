@@ -1,11 +1,11 @@
-import type { ExprNode, SelectQuery, Query, ExprValue } from '@uwdata/mosaic-sql';
+import type { ExprNode, ScaleOptions, SelectQuery, Query, ExprValue } from '@uwdata/mosaic-sql';
 import type { Coordinator } from '../Coordinator.js';
 import type { MosaicClient } from '../MosaicClient.js';
 import type { Selection } from '../Selection.js';
+import type { BinMethod, SelectionClause } from '../SelectionClause.js';
 import { Query as QueryBuilder, and, asNode, ceil, collectColumns, createTable, float64, floor, isBetween, int32, mul, round, scaleTransform, sub, isSelectQuery, isAggregateExpression, ColumnNameRefNode } from '@uwdata/mosaic-sql';
 import { preaggColumns } from './preagg-columns.js';
 import { fnv_hash } from '../util/hash.js';
-import { BinMethod, Scale, SelectionClause } from '../SelectionClause.js';
 
 const Skip = { skip: true, result: null };
 
@@ -247,7 +247,7 @@ function activeColumns(clause: SelectionClause): ActiveColumnsResult {
     );
   } else if (type === 'interval' && scales) {
     // determine pixel-level binning
-    const bins = scales.map((s: Scale) => binInterval(s, pixelSize, bin));
+    const bins = scales.map((s: ScaleOptions) => binInterval(s, pixelSize, bin));
 
     if (bins.some((b: any) => !b)) {
       // bail if a scale type is unsupported
@@ -285,7 +285,7 @@ const BIN = { ceil, round };
  *  `ceil', or `round`.
  * @returns A bin function generator.
  */
-function binInterval(scale: Scale, pixelSize: number, bin: BinMethod): ((value: any) => ExprNode) | undefined {
+function binInterval(scale: ScaleOptions, pixelSize: number, bin: BinMethod): ((value: any) => ExprNode) | undefined {
   const { type, domain, range, apply, sqlApply } = scaleTransform(scale)!;
   if (!apply) return; // unsupported scale type
   const binFn = (BIN as any)[`${bin}`.toLowerCase()] || floor;

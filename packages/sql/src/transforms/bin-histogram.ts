@@ -4,7 +4,7 @@ import { float64 } from '../functions/cast.js';
 import { floor } from '../functions/numeric.js';
 import { add, div, mul, sub } from '../functions/operators.js';
 import { binSpec } from './util/bin-step.js';
-import { ScaleDescriptor, scaleTransform } from './scales.js';
+import { Scale, scaleTransform } from './scales.js';
 
 export interface BinHistogramOptions {
   /** An exact binning step to use. */
@@ -43,7 +43,7 @@ export function binHistogram(
   field: ExprValue,
   extent: [number, number],
   options: BinHistogramOptions = {},
-  transform: ScaleDescriptor<number> = scaleTransform({ type: 'linear' })!
+  transform: Scale<number> = scaleTransform({ type: 'linear' })!
 ): ExprNode {
   const [min, max] = extent;
   const { offset = 0 } = options;

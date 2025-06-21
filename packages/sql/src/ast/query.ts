@@ -253,10 +253,15 @@ export class SelectQuery extends Query {
    * @param expr Expressions to add.
    */
   select(...expr: SelectExpr[]): this {
+    const keys: Set<string> = new Set;
     const list: SelectClauseNode[] = [];
-    const add = (v: unknown, as: string) => list.push(
-      new SelectClauseNode(v == null ? v : asNode(v), unquote(as)!)
-    );
+
+    const add = (v: unknown, as: string) => {
+      const key = unquote(as)!;
+      keys.add(key);
+      if (v) list.push(new SelectClauseNode(asNode(v), key));
+    };
+
     expr.flat().forEach(e => {
       if (e == null) return;
       else if (isString(e)) add(e, e);
@@ -266,10 +271,7 @@ export class SelectQuery extends Query {
       else for (const alias in e) add(e[alias], alias);
     });
 
-    const keys = new Set(list.map(x => x.alias));
-    this._select = this._select
-      .filter(x => x.alias && !keys.has(x.alias))
-      .concat(list.filter(x => x.expr));
+    this._select = this._select.filter(x => !keys.has(x.alias)).concat(list);
     return this;
   }
 
@@ -297,9 +299,11 @@ export class SelectQuery extends Query {
    */
   from(...expr: FromExpr[]): this {
     const list: FromClauseNode[] = [];
+
     const add = (v: string | string[] | SQLNode, as?: string) => {
       list.push(new FromClauseNode(maybeTableRef(v), unquote(as)));
     };
+
     expr.flat().forEach(e => {
       if (e == null) return;
       else if (e instanceof FromClauseNode) list.push(e);

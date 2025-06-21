@@ -6,7 +6,7 @@ import { SQLNode } from './node.js';
 
 export class SelectClauseNode extends SQLNode {
   /** The select expression. */
-  readonly expr?: ExprNode | null;
+  readonly expr: ExprNode;
   /** The output name. */
   readonly alias: string;
 
@@ -15,7 +15,7 @@ export class SelectClauseNode extends SQLNode {
    * @param expr The select expression.
    * @param alias The output name.
    */
-  constructor(expr: ExprNode | null | undefined, alias: string) {
+  constructor(expr: ExprNode, alias: string) {
     super(SELECT_CLAUSE);
     this.expr = expr;
     this.alias = alias;

@@ -27,11 +27,13 @@ export type ScaleType =
   | 'utc'
   ;
 
+export type ScaleDomain = [number, number] | [Date, Date];
+
 export interface ScaleOptions {
   /** The scale type, such as `'linear'`, `'log'`, etc. */
   type: ScaleType;
   /** The scale domain, as an array of start and end data values. */
-  domain?: [number, number] | [Date, Date];
+  domain?: ScaleDomain;
   /**
    * The scale range, as an array of start and end screen pixels.
    * The range may be omitted for *identity* scales.
@@ -45,7 +47,7 @@ export interface ScaleOptions {
   exponent?: number;
 }
 
-export type ScaleDescriptor<T> = ScaleTransform<T> & ScaleOptions;
+export type Scale<T> = ScaleTransform<T> & ScaleOptions;
 
 function scaleLinear(): ScaleTransform<number> {
   return {
@@ -133,10 +135,11 @@ const scales = {
   utc: scaleTime
 };
 
-export function scaleTransform<T>(options: ScaleOptions): ScaleDescriptor<T> | null {
+export function scaleTransform<T>(options: ScaleOptions): Scale<T> {
   const scale = scales[options.type];
-  // @ts-expect-error suppress error, revisit later
-  return scale ? { ...options, ...scale(options) } : null;
+  if (!scale) throw new Error(`Unrecognized scale type: ${options.type}`);
+  // @ts-expect-error suppress error, revisit later?
+  return { ...options, ...scale(options) };
 }
 
 /**
