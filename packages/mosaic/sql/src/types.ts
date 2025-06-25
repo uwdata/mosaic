@@ -82,6 +82,6 @@ export type FromEntry =
 
 export type FromExpr = MaybeArray<FromEntry>;
 
-export type FilterExpr = MaybeArray<string | ExprNode>;
+export type FilterExpr = MaybeArray<string | boolean | ExprNode>;
 export type GroupByExpr = MaybeArray<string | ExprNode>;
 export type OrderByExpr = MaybeArray<string | ExprNode>;

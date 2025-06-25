@@ -1,4 +1,4 @@
-import type { AggregateNode, ExprNode } from '@uwdata/mosaic-sql';
+import type { AggregateNode, ColumnRefNode, ExprNode } from '@uwdata/mosaic-sql';
 import { and, argmax, argmin, coalesce, count, div, exp, isNotNull, ln, max, min, mul, pow, regrAvgX, regrAvgY, regrCount, sql, sqrt, sub, sum } from '@uwdata/mosaic-sql';
 import { fnv_hash } from '../util/hash.js';
 
@@ -14,9 +14,9 @@ import { fnv_hash } from '../util/hash.js';
  *  sufficient statistics to service updates.
  */
 export function sufficientStatistics(
-  node: AggregateNode, 
-  preagg: Record<string, ExprNode>, 
-  avg: (field: any) => ExprNode
+  node: AggregateNode,
+  preagg: Record<string, ExprNode>,
+  avg: (field: ColumnRefNode) => ExprNode
 ): ExprNode | null {
   switch (node.name) {
     case 'count':
@@ -244,14 +244,14 @@ function argminExpr(preagg: Record<string, ExprNode>, node: AggregateNode): Expr
  * @returns An aggregate expression over pre-aggregated dimensions.
  */
 function varianceExpr(
-  preagg: Record<string, ExprNode>, 
-  node: AggregateNode, 
-  avg: (field: any) => ExprNode, 
+  preagg: Record<string, ExprNode>,
+  node: AggregateNode,
+  avg: (field: ColumnRefNode) => ExprNode,
   correction: boolean = true
 ): ExprNode {
   const x = node.args[0];
   const { expr: n } = countExpr(preagg, node);
-  const delta = sub(x, avg(x));
+  const delta = sub(x, avg(x as ColumnRefNode));
   const rssq = addStat(preagg, sum(pow(delta, 2)), node); // residual sum of squares
   const rsum = addStat(preagg, sum(delta), node); // residual sum
   const denom = correction ? sub(n, 1) : n; // Bessel correction
@@ -276,9 +276,9 @@ function varianceExpr(
  * @returns An aggregate expression over pre-aggregated dimensions.
  */
 function covarianceExpr(
-  preagg: Record<string, ExprNode>, 
-  node: AggregateNode, 
-  avg: (field: any) => ExprNode, 
+  preagg: Record<string, ExprNode>,
+  node: AggregateNode,
+  avg: (field: ColumnRefNode) => ExprNode,
   correction: boolean | null = true
 ): ExprNode {
   const { expr: n } = regrCountExpr(preagg, node);
@@ -306,9 +306,9 @@ function covarianceExpr(
  * @returns An aggregate expression over pre-aggregated dimensions.
  */
 function corrExpr(
-  preagg: Record<string, ExprNode>, 
-  node: AggregateNode, 
-  avg: (field: any) => ExprNode
+  preagg: Record<string, ExprNode>,
+  node: AggregateNode,
+  avg: (field: ColumnRefNode) => ExprNode
 ): ExprNode {
   const { expr: n } = regrCountExpr(preagg, node);
   const sxy = regrSumXYExpr(preagg, node, avg);
@@ -354,15 +354,15 @@ function regrCountExpr(preagg: Record<string, ExprNode>, node: AggregateNode): {
  * @returns An aggregate expression over pre-aggregated dimensions.
  */
 function regrSumExpr(
-  preagg: Record<string, ExprNode>, 
-  i: number, 
-  node: AggregateNode, 
-  avg: (field: any) => ExprNode
+  preagg: Record<string, ExprNode>,
+  i: number,
+  node: AggregateNode,
+  avg: (field: ColumnRefNode) => ExprNode
 ): ExprNode {
   const args = node.args;
   const v = args[i];
   const o = args[1 - i];
-  const rsum = sum(sub(v, avg(v))).where(isNotNull(o));
+  const rsum = sum(sub(v, avg(v as ColumnRefNode))).where(isNotNull(o));
   return sum(addStat(preagg, rsum, node));
 }
 
@@ -380,15 +380,15 @@ function regrSumExpr(
  * @returns An aggregate expression over pre-aggregated dimensions.
  */
 function regrSumSqExpr(
-  preagg: Record<string, ExprNode>, 
-  i: number, 
-  node: AggregateNode, 
-  avg: (field: any) => ExprNode
+  preagg: Record<string, ExprNode>,
+  i: number,
+  node: AggregateNode,
+  avg: (field: ColumnRefNode) => ExprNode
 ): ExprNode {
   const args = node.args;
   const v = args[i];
   const u = args[1 - i];
-  const ssq = sum(pow(sub(v, avg(v)), 2)).where(isNotNull(u));
+  const ssq = sum(pow(sub(v, avg(v as ColumnRefNode)), 2)).where(isNotNull(u));
   return sum(addStat(preagg, ssq, node));
 }
 
@@ -405,12 +405,17 @@ function regrSumSqExpr(
  * @returns An aggregate expression over pre-aggregated dimensions.
  */
 function regrSumXYExpr(
-  preagg: Record<string, ExprNode>, 
-  node: AggregateNode, 
-  avg: (field: any) => ExprNode
+  preagg: Record<string, ExprNode>,
+  node: AggregateNode,
+  avg: (field: ColumnRefNode) => ExprNode
 ): ExprNode {
   const [y, x] = node.args;
-  const sxy = sum(mul(sub(x, avg(x)), sub(y, avg(y))));
+  const sxy = sum(
+    mul(
+      sub(x, avg(x as ColumnRefNode)),
+      sub(y, avg(y as ColumnRefNode))
+    )
+  );
   return sum(addStat(preagg, sxy, node));
 }
 
@@ -463,10 +468,10 @@ function regrAvgYExpr(preagg: Record<string, ExprNode>, node: AggregateNode): Ex
  *  over pre-aggregated data dimensions.
  */
 function regrVarExpr(
-  preagg: Record<string, ExprNode>, 
-  i: number, 
-  node: AggregateNode, 
-  avg: (field: any) => ExprNode
+  preagg: Record<string, ExprNode>,
+  i: number,
+  node: AggregateNode,
+  avg: (field: ColumnRefNode) => ExprNode
 ): ExprNode {
   const { expr: n } = regrCountExpr(preagg, node);
   const sum = regrSumExpr(preagg, i, node, avg);
@@ -487,9 +492,9 @@ function regrVarExpr(
  *  slopes over pre-aggregated data dimensions.
  */
 function regrSlopeExpr(
-  preagg: Record<string, ExprNode>, 
-  node: AggregateNode, 
-  avg: (field: any) => ExprNode
+  preagg: Record<string, ExprNode>,
+  node: AggregateNode,
+  avg: (field: ColumnRefNode) => ExprNode
 ): ExprNode {
   const cov = covarianceExpr(preagg, node, avg, null);
   const varx = regrVarExpr(preagg, 1, node, avg);
@@ -509,9 +514,9 @@ function regrSlopeExpr(
  *  intercepts over pre-aggregated data dimensions.
  */
 function regrInterceptExpr(
-  preagg: Record<string, ExprNode>, 
-  node: AggregateNode, 
-  avg: (field: any) => ExprNode
+  preagg: Record<string, ExprNode>,
+  node: AggregateNode,
+  avg: (field: ColumnRefNode) => ExprNode
 ): ExprNode {
   const ax = regrAvgXExpr(preagg, node);
   const ay = regrAvgYExpr(preagg, node);

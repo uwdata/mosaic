@@ -1,9 +1,9 @@
 interface Logger {
-  debug(...args: any[]): void;
-  info(...args: any[]): void;
-  log(...args: any[]): void;
-  warn(...args: any[]): void;
-  error(...args: any[]): void;
+  debug(...args: unknown[]): void;
+  info(...args: unknown[]): void;
+  log(...args: unknown[]): void;
+  warn(...args: unknown[]): void;
+  error(...args: unknown[]): void;
   group(label?: string): void;
   groupCollapsed(label?: string): void;
   groupEnd(): void;
@@ -11,13 +11,13 @@ interface Logger {
 
 export function voidLogger(): Logger {
   return {
-    debug(..._: any[]): void {},
-    info(..._: any[]): void {},
-    log(..._: any[]): void {},
-    warn(..._: any[]): void {},
-    error(..._: any[]): void {},
-    group(label?: string): void {},
-    groupCollapsed(label?: string): void {},
+    debug(): void {},
+    info(): void {},
+    log(): void {},
+    warn(): void {},
+    error(): void {},
+    group(): void {},
+    groupCollapsed(): void {},
     groupEnd(): void {}
   };
 }

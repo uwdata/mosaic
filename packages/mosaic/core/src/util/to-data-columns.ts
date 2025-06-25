@@ -4,14 +4,14 @@ import type { Table } from '@uwdata/flechette';
 /**
  * An Array or TypedArray
  */
-type Arrayish = Array<any> | Int8Array | Uint8Array | Uint8ClampedArray
+type Arrayish = Array<unknown> | Int8Array | Uint8Array | Uint8ClampedArray
   | Int16Array | Uint16Array | Int32Array | Uint32Array
   | Float32Array | Float64Array;
 
 /**
  * Data columns structure with either named columns or values array
  */
-type DataColumns = 
+type DataColumns =
   | { numRows: number; columns: Record<string, Arrayish> }
   | { numRows: number; values: Arrayish };
 
@@ -20,10 +20,14 @@ type DataColumns =
  * @param data The input data.
  * @returns An object with named column arrays.
  */
-export function toDataColumns(data: any): DataColumns {
-  return isArrowTable(data)
-    ? arrowToColumns(data)
-    : arrayToColumns(data);
+export function toDataColumns(data: unknown): DataColumns {
+  if (isArrowTable(data)) {
+    return arrowToColumns(data);
+  } else if (Array.isArray(data)) {
+    return arrayToColumns(data);
+  } else {
+    throw new Error('Unrecognized data format.');
+  }
 }
 
 /**
@@ -44,11 +48,11 @@ function arrowToColumns(data: Table): DataColumns {
  * @param data An array of data objects.
  * @returns An object with named column arrays.
  */
-function arrayToColumns(data: any[]): DataColumns {
+function arrayToColumns(data: Record<string,unknown>[]): DataColumns {
   const numRows = data.length;
   if (typeof data[0] === 'object') {
-    const names = numRows ? Object.keys(data[0]) : [];
-    const columns: Record<string, any[]> = {};
+    const names = numRows ? Object.keys(data[0]!) : [];
+    const columns: Record<string, unknown[]> = {};
     if (names.length > 0) {
       names.forEach(name => {
         columns[name] = data.map(d => d[name]);

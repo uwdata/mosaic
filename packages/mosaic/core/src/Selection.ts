@@ -1,7 +1,7 @@
 import { type MosaicClient } from './MosaicClient.js';
-import { ExprVarArgs, literal, or } from '@uwdata/mosaic-sql';
+import { type ExprNode, FilterExpr, literal, MaybeArray, or } from '@uwdata/mosaic-sql';
 import { Param } from './Param.js';
-import { SelectionClause } from './SelectionClause.js';
+import { ClauseSource, SelectionClause } from './SelectionClause.js';
 
 export interface SelectionOptions {
   /** Boolean flag indicating cross-filtered resolution. If true, selection clauses will not be applied to the clients they are associated with. */
@@ -24,7 +24,7 @@ export interface SelectionResolverOptions extends Pick<SelectionOptions, "empty"
  * @param x The value to test.
  * @returns True if the input is a Selection, false otherwise.
  */
-export function isSelection(x: any): x is Selection {
+export function isSelection(x: unknown): x is Selection {
   return x instanceof Selection;
 }
 
@@ -36,6 +36,7 @@ function create(options: SelectionResolverOptions, include?: Selection | Selecti
 }
 
 type SelectionClauseArray = SelectionClause[] & { active?: SelectionClause };
+type ResolvedPredicate = MaybeArray<string | boolean | ExprNode> | undefined;
 
 /**
  * Represents a dynamic set of query filter predicates.
@@ -121,10 +122,13 @@ export class Selection extends Param<SelectionClauseArray> {
    * @param source The clause source to remove.
    * @returns A cloned and updated Selection.
    */
-  remove(source: SelectionClause): Selection {
+  remove(source: ClauseSource): Selection {
     const s = this.clone();
-    s._value = s._resolved = s._resolver.resolve(this._resolved, { source });
-    s._value.active = { source } as any; // TODO: fix type
+    s._value = s._resolved = s._resolver.resolve(
+      this._resolved,
+      { source } as SelectionClause
+    );
+    s._value.active = { source } as SelectionClause;
     return s;
   }
 
@@ -146,7 +150,7 @@ export class Selection extends Param<SelectionClauseArray> {
    * The current array of selection clauses.
    */
   get clauses(): SelectionClauseArray {
-    return super.value;
+    return super.value!;
   }
 
   /**
@@ -160,7 +164,8 @@ export class Selection extends Param<SelectionClauseArray> {
    * The value corresponding to the current active selection clause.
    * This method ensures compatibility where a normal Param is expected.
    */
-  get value() {
+  // @ts-expect-error return type differs from Param parent class
+  get value(): unknown {
     return this.active?.value;
   }
 
@@ -169,7 +174,7 @@ export class Selection extends Param<SelectionClauseArray> {
    * this selection does not include a clause from this source.
    * @param source The clause source to look up the value for.
    */
-  valueFor(source: any): any {
+  valueFor(source: unknown): unknown {
     return this.clauses.find(c => c.source === source)?.value;
   }
 
@@ -178,6 +183,7 @@ export class Selection extends Param<SelectionClauseArray> {
    * @param clause The clause representing the potential activation.
    */
   activate(clause: SelectionClause): void {
+    // @ts-expect-error selection operates differently than scalar param
     this.emit('activate', clause);
     this._relay.forEach(sel => sel.activate(clause));
   }
@@ -187,6 +193,7 @@ export class Selection extends Param<SelectionClauseArray> {
    * @param clause The selection clause to add.
    * @returns This Selection instance.
    */
+  // @ts-expect-error selection and param use differing value types
   update(clause: SelectionClause): this {
     // we maintain an up-to-date list of all resolved clauses
     // this ensures consistent clause state across unemitted event values
@@ -220,9 +227,10 @@ export class Selection extends Param<SelectionClauseArray> {
    * @returns For value-typed events, returns the active clause
    *  values. Otherwise returns the input event value as-is.
    */
-  willEmit(type: string, value: any): any {
+  // @ts-expect-error selection and param use differing value types
+  willEmit(type: string, value: unknown): unknown {
     if (type === 'value') {
-      this._value = value;
+      this._value = value as SelectionClauseArray;
       return this.value;
     }
     return value;
@@ -236,7 +244,11 @@ export class Selection extends Param<SelectionClauseArray> {
    * @returns A dispatch queue filter function. For non-value events,
    *  returns a function that always returns null (no filtering).
    */
-  emitQueueFilter(type: string, value: any): ((value: any) => boolean) | null {
+  // @ts-expect-error selection and param use differing value types
+  emitQueueFilter(
+    type: string,
+    value: SelectionClauseArray
+  ): ((value: SelectionClauseArray) => boolean) | null {
     return type === 'value'
       ? this._resolver.queueFilter(value)
       : null;
@@ -245,11 +257,11 @@ export class Selection extends Param<SelectionClauseArray> {
   /**
    * Indicates if a selection clause should not be applied to a given client.
    * The return value depends on the selection resolution strategy.
-   * @param client The selection clause.
-   * @param clause The client to test.
+   * @param client The client to test.
+   * @param clause The selection clause.
    * @returns True if the client should be skipped, false otherwise.
    */
-  skip(client: any, clause: any): boolean {
+  skip(client: MosaicClient, clause: SelectionClause): boolean {
     return this._resolver.skip(client, clause);
   }
 
@@ -262,7 +274,7 @@ export class Selection extends Param<SelectionClauseArray> {
    * @returns The query predicate for filtering client data,
    *  based on the current state of this selection.
    */
-  predicate(client: any, noSkip: boolean = false): any {
+  predicate(client: MosaicClient, noSkip: boolean = false): ResolvedPredicate {
     const { clauses } = this;
     const active = noSkip ? null : clauses.active;
     return this._resolver.predicate(clauses, active!, client);
@@ -302,7 +314,11 @@ export class SelectionResolver {
    * @param clause A new selection clause to add.
    * @returns An updated array of selection clauses.
    */
-  resolve(clauseList: any[], clause: any, reset: boolean = false): SelectionClause[] {
+  resolve(
+    clauseList: SelectionClause[],
+    clause: SelectionClause,
+    reset: boolean = false
+  ): SelectionClause[] {
     const { source, predicate } = clause;
     const filtered = clauseList.filter(c => source !== c.source);
     const clauses = this.single ? [] : filtered;
@@ -318,8 +334,8 @@ export class SelectionResolver {
    * @param clause The client to test.
    * @returns True if the client should be skipped, false otherwise.
    */
-  skip(client: any, clause: any): boolean {
-    return this.cross && clause?.clients?.has(client);
+  skip(client: MosaicClient, clause: SelectionClause): boolean {
+    return Boolean(this.cross && clause?.clients?.has(client));
   }
 
   /**
@@ -330,7 +346,11 @@ export class SelectionResolver {
    * @returns The query predicate for filtering client data,
    *  based on the current state of this selection.
    */
-  predicate(clauseList: SelectionClause[], active: SelectionClause, client: MosaicClient): any {
+  predicate(
+    clauseList: SelectionClause[],
+    active: SelectionClause,
+    client: MosaicClient
+  ): ResolvedPredicate {
     const { empty, union } = this;
 
     if (empty && !clauseList.length) {
@@ -341,7 +361,7 @@ export class SelectionResolver {
     if (this.skip(client, active)) return undefined;
 
     // remove client-specific predicates if cross-filtering
-    const predicates: ExprVarArgs = clauseList
+    const predicates: FilterExpr = clauseList
       .filter(clause => !this.skip(client, clause))
       .map(clause => clause.predicate!);
 
@@ -356,7 +376,9 @@ export class SelectionResolver {
    * @returns A dispatch queue filter
    *  function, or null if all unemitted event values should be filtered.
    */
-  queueFilter(value: any): ((value: any) => boolean) | null {
+  queueFilter(
+    value: SelectionClauseArray
+  ): ((value: SelectionClauseArray) => boolean) | null {
     if (this.cross) {
       const source = value.active?.source;
       return value => value.active?.source !== source;

@@ -3,6 +3,7 @@ import { Query, asTableRef, count, isAggregateExpression, isNode, isNull, max, m
 import { jsType } from './js-type.js';
 import type { Coordinator } from '../Coordinator.js';
 import type { FieldInfoRequest, FieldInfo, Stat, FieldRef, ColumnDescription } from '../types.js';
+import { Table } from '@uwdata/flechette';
 
 export const Count = 'count';
 export const Nulls = 'nulls';
@@ -64,7 +65,9 @@ async function getFieldInfo(mc: Coordinator, { table, column, stats }: FieldInfo
     .select({ column })
     .groupby(isNode(column) && isAggregateExpression(column) ? sql`ALL` : []);
 
-  const [desc] = Array.from(await mc.query(Query.describe(q))) as ColumnDescription[];
+  const [desc] = Array.from(
+    await mc.query(Query.describe(q)) as Table
+  ) as ColumnDescription[];
   const info: FieldInfo = {
     table,
     column: `${column}`,
@@ -80,7 +83,7 @@ async function getFieldInfo(mc: Coordinator, { table, column, stats }: FieldInfo
   const [result] = await mc.query(
     summarize({ table, column, stats }),
     { persist: true }
-  );
+  ) as Table;
 
   // extract summary stats, copy to field info, and return
   return Object.assign(info, result);
@@ -93,7 +96,9 @@ async function getFieldInfo(mc: Coordinator, { table, column, stats }: FieldInfo
  * @returns Promise resolving to array of field information.
  */
 async function getTableInfo(mc: Coordinator, table: string): Promise<FieldInfo[]> {
-  const result = Array.from(await mc.query(`DESCRIBE ${asTableRef(table)}`)) as ColumnDescription[];
+  const result = Array.from(
+    await mc.query(`DESCRIBE ${asTableRef(table)}`) as Table
+  ) as ColumnDescription[];
   return result.map(desc => ({
     table,
     column: desc.column_name,

@@ -1,4 +1,19 @@
 import type { DescribeQuery, ExprNode, Query } from '@uwdata/mosaic-sql';
+import type { QueryResult } from './util/query-result.js';
+
+/** Type for a query request. */
+export interface QueryRequest {
+  type: 'exec' | 'json' | 'arrow';
+  query: string | Query | DescribeQuery;
+  cache?: boolean;
+  options?: Record<string, unknown>;
+}
+
+/** Type for an entry within a query manager. */
+export interface QueryEntry {
+  request: QueryRequest;
+  result: QueryResult;
+}
 
 /** Query type accepted by a coordinator. */
 export type QueryType =
@@ -67,8 +82,8 @@ export interface Activatable {
  * Interface for cache implementations.
  */
 export interface Cache {
-  get(key: string): any;
-  set(key: string, value: any): any;
+  get(key: string): unknown;
+  set(key: string, value: unknown): unknown;
   clear(): void;
 }
 
@@ -76,12 +91,12 @@ export interface Cache {
  * Interface for logger implementations
  */
 export interface Logger {
-  debug(...args: any[]): void;
-  info(...args: any[]): void;
-  log(...args: any[]): void;
-  warn(...args: any[]): void;
-  error(...args: any[]): void;
-  group(label?: any): void;
-  groupCollapsed(label?: any): void;
+  debug(...args: unknown[]): void;
+  info(...args: unknown[]): void;
+  log(...args: unknown[]): void;
+  warn(...args: unknown[]): void;
+  error(...args: unknown[]): void;
+  group(label?: unknown): void;
+  groupCollapsed(label?: unknown): void;
   groupEnd(): void;
 }

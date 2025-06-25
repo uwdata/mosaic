@@ -1,11 +1,16 @@
 import type { ExtractionOptions, Table } from '@uwdata/flechette';
-import type { ArrowQueryRequest, Connector, ExecQueryRequest, JSONQueryRequest } from './Connector.js';
+import type { ArrowQueryRequest, Connector, ExecQueryRequest, JSONQueryRequest, ConnectorQueryRequest } from './Connector.js';
 import { decodeIPC } from '../util/decode-ipc.js';
 
-interface QueueItem {
-  query: any;
-  resolve: (value?: any) => void;
-  reject: (reason?: any) => void;
+interface SocketOptions {
+  uri?: string;
+  ipc?: ExtractionOptions;
+}
+
+interface QueueItem<T = unknown> {
+  query: ConnectorQueryRequest;
+  resolve: (value?: T) => void;
+  reject: (reason?: unknown) => void;
 }
 
 /**
@@ -15,10 +20,7 @@ interface QueueItem {
  * @param options.ipc Arrow IPC extraction options.
  * @returns A connector instance.
  */
-export function socketConnector(options?: {
-  uri?: string;
-  ipc?: ExtractionOptions;
-}): SocketConnector {
+export function socketConnector(options?: SocketOptions) {
   return new SocketConnector(options);
 }
 
@@ -31,7 +33,7 @@ export class SocketConnector implements Connector {
   private _connected: boolean;
   private _request: QueueItem | null;
   private _ws: WebSocket | null;
-  private _events: Record<string, (event?: any) => void>;
+  private _events: Record<string, (event?: unknown) => void>;
 
   /**
    * @param options Connector options.
@@ -41,16 +43,14 @@ export class SocketConnector implements Connector {
   constructor({
     uri = 'ws://localhost:3000/',
     ipc = undefined,
-  }: {
-    uri?: string;
-    ipc?: ExtractionOptions;
-  } = {}) {
+  }: SocketOptions = {}) {
     this._uri = uri;
     this._queue = [];
     this._connected = false;
     this._request = null;
     this._ws = null;
 
+    // eslint-disable-next-line @typescript-eslint/no-this-alias
     const c = this;
     this._events = {
       open() {
@@ -67,7 +67,7 @@ export class SocketConnector implements Connector {
         }
       },
 
-      error(event: any) {
+      error(event: unknown) {
         if (c._request) {
           const { reject } = c._request;
           c._request = null;
@@ -78,7 +78,8 @@ export class SocketConnector implements Connector {
         }
       },
 
-      message({ data }: { data: any }) {
+      message(msg: unknown) {
+        const { data } = msg as { data: unknown };
         if (c._request) {
           const { query, resolve, reject } = c._request;
 
@@ -89,11 +90,12 @@ export class SocketConnector implements Connector {
           // process result
           if (typeof data === 'string') {
             const json = JSON.parse(data);
+            // eslint-disable-next-line @typescript-eslint/no-unused-expressions
             json.error ? reject(json.error) : resolve(json);
           } else if (query.type === 'exec') {
             resolve();
           } else if (query.type === 'arrow') {
-            resolve(decodeIPC(data, ipc));
+            resolve(decodeIPC(data as Uint8Array, ipc));
           } else {
             throw new Error(`Unexpected socket data: ${data}`);
           }
@@ -116,7 +118,11 @@ export class SocketConnector implements Connector {
     }
   }
 
-  enqueue(query: any, resolve: (value?: any) => void, reject: (reason?: any) => void): void {
+  enqueue(
+    query: ConnectorQueryRequest,
+    resolve: (value?: unknown) => void,
+    reject: (reason?: unknown) => void
+  ): void {
     if (this._ws == null) this.init();
     this._queue.push({ query, resolve, reject });
     if (this._connected && !this._request) this.next();
@@ -131,9 +137,8 @@ export class SocketConnector implements Connector {
 
   query(query: ArrowQueryRequest): Promise<Table>;
   query(query: ExecQueryRequest): Promise<void>;
-  query(query: JSONQueryRequest): Promise<Record<string, any>[]>;
-  query(query: ArrowQueryRequest | ExecQueryRequest | JSONQueryRequest): Promise<Table | void | Record<string, any>[]>;
-  query(query: any): Promise<any> {
+  query(query: JSONQueryRequest): Promise<Record<string, unknown>[]>;
+  query(query: ConnectorQueryRequest): Promise<unknown> {
     return new Promise(
       (resolve, reject) => this.enqueue(query, resolve, reject)
     );

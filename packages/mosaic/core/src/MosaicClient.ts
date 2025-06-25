@@ -1,7 +1,13 @@
-import { type Query } from '@uwdata/mosaic-sql';
+import { FilterExpr, type Query } from '@uwdata/mosaic-sql';
 import { type Coordinator } from './Coordinator.js';
 import { type Selection } from './Selection.js';
 import { throttle } from './util/throttle.js';
+
+export type ClientQuery = Query | string | null;
+
+export function isMosaicClient(x: unknown): x is MosaicClient {
+  return x instanceof MosaicClient;
+}
 
 /**
  * A Mosaic client is a data consumer that indicates its data needs to a
@@ -23,7 +29,7 @@ export class MosaicClient {
   _filterBy: Selection | undefined;
   _requestUpdate: (event?: unknown) => void;
   _coordinator: Coordinator | null;
-  _pending: Promise<any>;
+  _pending: Promise<unknown>;
   _enabled: boolean;
   _initialized: boolean;
   _request: Query | boolean | null;
@@ -88,7 +94,7 @@ export class MosaicClient {
   /**
    * Return a Promise that resolves once the client has updated.
    */
-  get pending(): Promise<any> {
+  get pending(): Promise<unknown> {
     return this._pending;
   }
 
@@ -122,7 +128,7 @@ export class MosaicClient {
    * @param filter The filtering criteria to apply in the query.
    * @returns The client query
    */
-  query(filter?: any): any { // eslint-disable-line no-unused-vars
+  query(filter?: FilterExpr | null): ClientQuery { // eslint-disable-line @typescript-eslint/no-unused-vars
     return null;
   }
 
@@ -139,7 +145,7 @@ export class MosaicClient {
    * @param data The query result.
    * @returns this
    */
-  queryResult(data: any): this { // eslint-disable-line no-unused-vars
+  queryResult(data: unknown): this { // eslint-disable-line @typescript-eslint/no-unused-vars
     return this;
   }
 
@@ -148,7 +154,7 @@ export class MosaicClient {
    * @param error
    * @returns this
    */
-  queryError(error: any): this { // eslint-disable-line no-unused-vars
+  queryError(error: Error): this { // eslint-disable-line @typescript-eslint/no-unused-vars
     // do nothing, the coordinator logs the error
     return this;
   }
@@ -164,7 +170,7 @@ export class MosaicClient {
    *  will be determined by the client's `query` method and the current
    *  `filterBy` selection state.
    */
-  requestQuery(query?: Query): Promise<void> | null {
+  requestQuery(query?: Query): Promise<unknown> | null {
     if (this._enabled) {
       const q = query || this.query(this.filterBy?.predicate(this));
       return this._coordinator!.requestQuery(this, q);
@@ -221,7 +227,7 @@ export class MosaicClient {
    * Requests a client update, for example to (re-)render an interface
    * component.
    */
-  update(): this | Promise<any> {
+  update(): this | Promise<unknown> {
     return this;
   }
 }

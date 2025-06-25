@@ -1,16 +1,8 @@
-import type { DescribeQuery, Query } from '@uwdata/mosaic-sql';
+import type { ExprNode, Query, SelectQuery } from '@uwdata/mosaic-sql';
 import type { Table } from '@uwdata/flechette';
 import { isAggregateExpression, isColumnRef, isDescribeQuery, isSelectQuery } from '@uwdata/mosaic-sql';
 import { QueryResult } from './util/query-result.js';
-
-interface QueryEntry {
-  request: {
-    type: string;
-    cache?: boolean;
-    query: Query | DescribeQuery;
-  };
-  result: QueryResult;
-}
+import type { Cache, QueryEntry, QueryType } from './types.js';
 
 interface GroupEntry {
   entry: QueryEntry;
@@ -24,7 +16,7 @@ interface QueryGroup extends Array<GroupEntry> {
   maps?: Array<Array<[string, string]>>;
 }
 
-function wait(callback: () => void): any {
+function wait(callback: () => void): unknown {
   if (typeof requestAnimationFrame !== 'undefined') {
     return requestAnimationFrame(callback);
   } else if (typeof setImmediate !== 'undefined') {
@@ -42,10 +34,10 @@ function wait(callback: () => void): any {
  */
 export function consolidator(
   enqueue: (entry: QueryEntry, priority?: number) => void,
-  cache: { get: (key: string) => any; set: (key: string, value: any) => any }
+  cache: Cache
 ) {
   let pending: GroupEntry[] = [];
-  let id = 0;
+  let id: unknown = 0;
 
   function run(): void {
     // group queries into bundles that can be consolidated
@@ -65,7 +57,7 @@ export function consolidator(
       if (entry.request.type === 'arrow') {
         // wait one frame, gather an ordered list of queries
         // only Apache Arrow is supported, so we can project efficiently
-        id = id || wait(() => run());
+        id ||= wait(() => run());
         pending.push({ entry, priority, index: pending.length });
       } else {
         enqueue(entry, priority);
@@ -80,7 +72,7 @@ export function consolidator(
  * @param cache Client-side query cache
  * @returns An array of grouped entry arrays
  */
-function entryGroups(entries: GroupEntry[], cache: any): QueryGroup[] {
+function entryGroups(entries: GroupEntry[], cache: Cache): QueryGroup[] {
   const groups: QueryGroup[] = [];
   const groupMap = new Map<string, QueryGroup>();
 
@@ -107,7 +99,7 @@ function entryGroups(entries: GroupEntry[], cache: any): QueryGroup[] {
  * @param cache The query cache (sql -> data).
  * @returns a key string
  */
-function consolidationKey(query: Query | DescribeQuery, cache: any): string {
+function consolidationKey(query: QueryType, cache: Cache): string {
   const sql = `${query}`;
   if (isSelectQuery(query) && !cache.get(sql)) {
     if (
@@ -127,7 +119,7 @@ function consolidationKey(query: Query | DescribeQuery, cache: any): string {
     // we resolve these against the true grouping expressions
     const groupby = query._groupby;
     if (groupby.length) {
-      const map: Record<string, any> = {}; // expression map (alias -> expr)
+      const map: Record<string, ExprNode> = {}; // expression map (alias -> expr)
       query._select.forEach(({ alias, expr }) => map[alias] = expr);
       q.setGroupby(groupby.map(e => (isColumnRef(e) && map[e.column]) || e));
     }
@@ -150,7 +142,10 @@ function consolidationKey(query: Query | DescribeQuery, cache: any): string {
  * @param group Array of bundled query entries
  * @param enqueue Add entry to query queue
  */
-function consolidate(group: QueryGroup, enqueue: (entry: QueryEntry, priority?: number) => void): void {
+function consolidate(
+  group: QueryGroup,
+  enqueue: (entry: QueryEntry, priority?: number) => void
+): void {
   if (shouldConsolidate(group)) {
     // issue a single consolidated query
     enqueue({
@@ -194,14 +189,14 @@ function shouldConsolidate(group: QueryGroup): boolean {
  */
 function consolidatedQuery(group: QueryGroup): Query {
   const maps: Array<Array<[string, string]>> = group.maps = [];
-  const fields = new Map<string, [string, any]>();
+  const fields = new Map<string, [string, ExprNode]>();
 
   // gather select fields
   for (const item of group) {
-    const { query } = item.entry.request as { query: Query };
+    const query = item.entry.request.query as SelectQuery;
     const fieldMap: Array<[string, string]> = [];
     maps.push(fieldMap);
-    for (const { alias, expr } of (query as any)._select) {
+    for (const { alias, expr } of query._select) {
       const e = `${expr}`;
       if (!fields.has(e)) {
         fields.set(e, [`col${fields.size}`, expr]);
@@ -212,18 +207,20 @@ function consolidatedQuery(group: QueryGroup): Query {
   }
 
   // use a cloned query as a starting point
-  const query = (group[0].entry.request.query as Query).clone();
+  const query = (group[0].entry.request.query as SelectQuery).clone();
 
   // update group by statement as needed
-  const groupby = (query as any)._groupby;
+  const groupby = query._groupby;
   if (groupby.length) {
     const map: Record<string, string> = {};
     group.maps[0].forEach(([name, as]) => map[as] = name);
-    (query as any).setGroupby(groupby.map((e: any) => (isColumnRef(e) && map[e.column]) || e));
+    query.setGroupby(
+      groupby.map((e: ExprNode) => (isColumnRef(e) && map[e.column]) || e)
+    );
   }
 
   // update select statement and return
-  return (query as any).setSelect(Array.from(fields.values()));
+  return query.setSelect(Array.from(fields.values()));
 }
 
 /**
@@ -231,7 +228,7 @@ function consolidatedQuery(group: QueryGroup): Query {
  * @param group Array of query requests
  * @param cache Client-side query cache (sql -> data)
  */
-async function processResults(group: QueryGroup, cache: any): Promise<void> {
+async function processResults(group: QueryGroup, cache: Cache): Promise<void> {
   const { maps, query, result } = group;
 
   // exit early if no consolidation performed
@@ -239,9 +236,9 @@ async function processResults(group: QueryGroup, cache: any): Promise<void> {
   if (!maps) return;
 
   // await consolidated query result, pass errors if needed
-  let data: any;
+  let data: Table;
   try {
-    data = await result;
+    data = await result as Table;
   } catch (err) {
     // pass error to consolidated queries
     for (const { entry } of group) {
@@ -282,9 +279,9 @@ function projectResult(data: Table, map: Array<[string, string]>): Table {
  * @param map Column name map as [source, target] pairs
  * @returns the filtered table data
  */
-function filterResult(data: Table, map: Array<[string, string]>): any[] {
+function filterResult(data: Table, map: Array<[string, string]>): unknown[] {
   const lookup = new Map(map);
-  const result: any[] = [];
+  const result: unknown[] = [];
   for (const d of data) {
     if (lookup.has(d.column_name)) {
       result.push({ ...d, column_name: lookup.get(d.column_name) })

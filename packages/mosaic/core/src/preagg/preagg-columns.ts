@@ -1,9 +1,9 @@
-import type { AggregateNode, ExprNode, Query, SelectQuery } from '@uwdata/mosaic-sql';
+import type { AggregateNode, ColumnRefNode, ExprNode, Query, SelectQuery } from '@uwdata/mosaic-sql';
 import type { MosaicClient } from '../MosaicClient.js';
 import { collectAggregates, isAggregateExpression, isSelectQuery, isTableRef, rewrite, sql } from '@uwdata/mosaic-sql';
 import { sufficientStatistics } from './sufficient-statistics.js';
 
-interface PreAggColumnsResult {
+export interface PreAggColumnsResult {
   group: string[];
   preagg: Record<string, ExprNode>;
   output: Record<string, ExprNode>;
@@ -36,7 +36,7 @@ export function preaggColumns(client: MosaicClient): PreAggColumnsResult | null 
   const group: string[] = []; // list of grouping dimension columns
 
   // generate a scalar subquery for a global average
-  const avg = (ref: any) => {
+  const avg = (ref: ColumnRefNode) => {
     const name = ref.column;
     const expr = getBase(q, q => q._select.find(c => c.alias === name)?.expr);
     return sql`(SELECT avg(${expr ?? ref}) FROM "${from}")`;
@@ -87,7 +87,10 @@ export function preaggColumns(client: MosaicClient): PreAggColumnsResult | null 
  *  `undefined` if there is no source table, or `NaN` if the
  *  query operates over multiple source tables.
  */
-function getBase(query: Query, get: (q: SelectQuery) => any): string | undefined | number {
+function getBase<T>(
+  query: Query,
+  get: (q: SelectQuery) => T
+): T | number | undefined {
   const subq = query.subqueries;
 
   // select query

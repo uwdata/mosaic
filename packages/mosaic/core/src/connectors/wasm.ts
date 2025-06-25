@@ -1,5 +1,5 @@
 import type { ExtractionOptions, Table } from '@uwdata/flechette';
-import type { ArrowQueryRequest, Connector, ExecQueryRequest, JSONQueryRequest } from './Connector.js';
+import type { ArrowQueryRequest, Connector, ExecQueryRequest, JSONQueryRequest, ConnectorQueryRequest } from './Connector.js';
 import * as duckdb from '@duckdb/duckdb-wasm';
 import { decodeIPC } from '../util/decode-ipc.js';
 
@@ -70,9 +70,8 @@ export class DuckDBWASMConnector implements Connector {
 
   async query(query: ArrowQueryRequest): Promise<Table>;
   async query(query: ExecQueryRequest): Promise<void>;
-  async query(query: JSONQueryRequest): Promise<Record<string, any>[]>;
-  async query(query: ArrowQueryRequest | ExecQueryRequest | JSONQueryRequest): Promise<Table | void | Record<string, any>[]>;
-  async query(query: any): Promise<any> {
+  async query(query: JSONQueryRequest): Promise<Record<string, unknown>[]>;
+  async query(query: ConnectorQueryRequest): Promise<unknown> {
     const { type, sql } = query;
     const con = await this.getConnection();
     const result = await getArrowIPC(con, sql);

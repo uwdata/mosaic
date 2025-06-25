@@ -1,4 +1,7 @@
-/** @import { Selection } from '@uwdata/mosaic-core' */
+/**
+ * @import { ClauseSource, Selection } from '@uwdata/mosaic-core'
+ * @import { FilterExpr } from '@uwdata/mosaic-sql'
+ */
 import { clausePoints, coordinator, isParam, isSelection, queryFieldInfo, toDataColumns } from '@uwdata/mosaic-core';
 import { Query, desc } from '@uwdata/mosaic-sql';
 import { formatDate, formatLocaleAuto, formatLocaleNumber } from './util/format.js';
@@ -122,7 +125,7 @@ export class Table extends Input {
     let prevScrollTop = -1;
     this.element.addEventListener('scroll', evt => {
       const { isPending, loaded } = this;
-      // @ts-ignore
+      // @ts-expect-error unpack event
       const { scrollHeight, scrollTop, clientHeight } = evt.target;
 
       const back = scrollTop < prevScrollTop;
@@ -173,7 +176,7 @@ export class Table extends Input {
       const { columns } = data[~~(row / limit)];
       return fields.map(f => columns[f][row % limit]);
     });
-    return clausePoints(fields, values, { source: this });
+    return clausePoints(fields, values, { source: /** @type {ClauseSource} */(this) });
   }
 
   requestData(offset = 0) {
@@ -218,6 +221,9 @@ export class Table extends Input {
     );
   }
 
+  /**
+   * @param {FilterExpr} filter
+   */
   query(filter = []) {
     const { limit, offset, schema, sortColumn, sortDesc } = this;
     return Query.from(this.sourceTable())

@@ -1,4 +1,4 @@
-/** @import { Param, Selection } from '@uwdata/mosaic-core' */
+/** @import { ClauseSource, Param, Selection } from '@uwdata/mosaic-core' */
 import { clauseInterval, clausePoint, isParam, isSelection } from '@uwdata/mosaic-core';
 import { Query, max, min } from '@uwdata/mosaic-sql';
 import { Input, input } from './input.js';
@@ -186,13 +186,13 @@ export class Slider extends Input {
       /** @type {[number, number]} */
       const domain = [this.min ?? 0, value];
       return clauseInterval(field, domain, {
-        source: this,
+        source: /** @type {ClauseSource} */(this),
         bin: 'ceil',
         scale: { type: 'identity', domain },
         pixelSize: this.step
       });
     } else {
-      return clausePoint(field, value, { source: this });
+      return clausePoint(field, value, { source: /** @type {ClauseSource} */(this) });
     }
   }
 

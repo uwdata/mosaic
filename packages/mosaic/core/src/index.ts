@@ -29,7 +29,7 @@ export { isActivatable } from './util/is-activatable.js';
 export type { QueryResult } from './util/query-result.js';
 
 export * from './types.js';
-export * from './connectors/Connector.js';
 
+export type * from './connectors/Connector.js';
 export type * from './Selection.js';
 export type * from './SelectionClause.js';

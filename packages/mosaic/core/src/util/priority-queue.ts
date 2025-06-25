@@ -8,7 +8,7 @@ interface List<T> {
   tail: ListNode<T> | null;
 }
 
-export class PriorityQueue<T = any> {
+export class PriorityQueue<T = unknown> {
   private queue: List<T>[];
 
   /**

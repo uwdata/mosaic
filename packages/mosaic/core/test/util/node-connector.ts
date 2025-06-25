@@ -1,29 +1,43 @@
-import { DuckDB } from '@uwdata/mosaic-duckdb';
-import { decodeIPC } from '../../src/util/decode-ipc.js';
-import type { ExtractionOptions } from '@uwdata/flechette';
 
-interface QueryRequest {
-  type?: 'exec' | 'arrow' | 'json';
-  sql: string;
+import type { ExtractionOptions, Table } from '@uwdata/flechette';
+import { DuckDB } from '@uwdata/mosaic-duckdb';
+import type { ArrowQueryRequest, Connector, ExecQueryRequest, JSONQueryRequest } from '../../src/index.js';
+import { decodeIPC } from '../../src/util/decode-ipc.js';
+import { ConnectorQueryRequest } from '../../src/connectors/Connector.js';
+
+export function nodeConnector(db?: DuckDB, ipc?: ExtractionOptions) {
+  return new NodeConnector(db, ipc);
 }
 
-export function nodeConnector(db: DuckDB = new DuckDB(), ipc?: ExtractionOptions) {
-  return {
-    /**
-     * Query an in-process DuckDB instance.
-     * @param query Query object with type and SQL
-     * @returns the query result
-     */
-    query: async (query: QueryRequest): Promise<any> => {
-      const { type, sql } = query;
-      switch (type) {
-        case 'exec':
-          return db.exec(sql);
-        case 'arrow':
-          return decodeIPC(await db.arrowBuffer(sql), ipc);
-        default:
-          return db.query(sql);
-      }
+class NodeConnector implements Connector {
+  protected _db: DuckDB;
+  protected _ipc?: ExtractionOptions;
+
+  constructor(
+    db: DuckDB = new DuckDB(),
+    ipc?: ExtractionOptions
+  ) {
+    this._db = db;
+    this._ipc = ipc;
+  }
+
+  /**
+   * Query an in-process DuckDB instance.
+   * @param query Query object with type and SQL
+   * @returns the query result
+   */
+  async query(query: ArrowQueryRequest): Promise<Table>;
+  async query(query: ExecQueryRequest): Promise<void>;
+  async query(query: JSONQueryRequest): Promise<Record<string, unknown>[]>;
+  async query(query: ConnectorQueryRequest): Promise<unknown> {
+    const { type, sql } = query;
+    switch (type) {
+      case 'exec':
+        return this._db.exec(sql);
+      case 'arrow':
+        return decodeIPC(await this._db.arrowBuffer(sql), this._ipc);
+      default:
+        return this._db.query(sql);
     }
-  };
+  }
 }

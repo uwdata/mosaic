@@ -1,5 +1,5 @@
 import type { Connector } from './connectors/Connector.js';
-import type { Cache, Logger } from './types.js';
+import type { Cache, Logger, QueryEntry, QueryRequest } from './types.js';
 import { consolidator } from './QueryConsolidator.js';
 import { lruCache, voidCache } from './util/cache.js';
 import { PriorityQueue } from './util/priority-queue.js';
@@ -7,11 +7,6 @@ import { QueryResult, QueryState } from './util/query-result.js';
 import { voidLogger } from './util/void-logger.js';
 
 export const Priority = Object.freeze({ High: 0, Normal: 1, Low: 2 });
-
-interface QueryEntry {
-  request: any;
-  result: QueryResult;
-}
 
 export class QueryManager {
   private queue: PriorityQueue<QueryEntry>;
@@ -80,7 +75,7 @@ export class QueryManager {
    * @param request The request.
    * @param result The query result.
    */
-  async submit(request: any, result: QueryResult): Promise<void> {
+  async submit(request: QueryRequest, result: QueryResult): Promise<void> {
     try {
       const { query, type, cache = false, options } = request;
       const sql = query ? `${query}` : null;
@@ -102,6 +97,7 @@ export class QueryManager {
         this._logger.debug('Query', { type, sql, ...options });
       }
 
+      // @ts-expect-error type may be exec | json | arrow
       const promise = this.db!.query({ type, sql: sql!, ...options });
       if (cache) this.clientCache!.set(sql!, promise);
 
@@ -180,7 +176,7 @@ export class QueryManager {
    * @param priority The query priority, defaults to `Priority.Normal`.
    * @returns A query result promise.
    */
-  request(request: any, priority: number = Priority.Normal): QueryResult {
+  request(request: QueryRequest, priority: number = Priority.Normal): QueryResult {
     const result = new QueryResult();
     const entry = { request, result };
     if (this._consolidate) {

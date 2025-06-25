@@ -6,6 +6,7 @@ import type { Table } from '@uwdata/flechette';
  * @param values The value to test
  * @returns true if the value duck types as Arrow data
  */
-export function isArrowTable(values: any): values is Table {
+export function isArrowTable(values: unknown): values is Table {
+  // @ts-expect-error check property of unknown value
   return typeof values?.getChild === 'function';
 }

@@ -1,10 +1,10 @@
-import type { ExprNode, ScaleOptions, SelectQuery, Query, ExprValue } from '@uwdata/mosaic-sql';
+import { ExprNode, ScaleOptions, SelectQuery, Query, ExprValue, MaybeArray, FunctionNode, BetweenOpNode, AndNode } from '@uwdata/mosaic-sql';
 import type { Coordinator } from '../Coordinator.js';
 import type { MosaicClient } from '../MosaicClient.js';
 import type { Selection } from '../Selection.js';
-import type { BinMethod, SelectionClause } from '../SelectionClause.js';
+import type { BinMethod, ClauseSource, IntervalMetadata, SelectionClause } from '../SelectionClause.js';
 import { Query as QueryBuilder, and, asNode, ceil, collectColumns, createTable, float64, floor, isBetween, int32, mul, round, scaleTransform, sub, isSelectQuery, isAggregateExpression, ColumnNameRefNode } from '@uwdata/mosaic-sql';
-import { preaggColumns } from './preagg-columns.js';
+import { preaggColumns, PreAggColumnsResult } from './preagg-columns.js';
 import { fnv_hash } from '../util/hash.js';
 
 const Skip = { skip: true, result: null };
@@ -16,10 +16,12 @@ export interface PreAggregateOptions {
   enabled?: boolean;
 }
 
+type ActivePredicate = (p?: ExprNode) => MaybeArray<ExprNode> | undefined;
+
 interface ActiveColumnsResult {
-  source: any | null;
+  source: ClauseSource | null;
   columns?: Record<string, ExprNode>;
-  predicate?: (p: any) => ExprNode | ExprNode[];
+  predicate?: ActivePredicate;
 }
 
 interface PreAggregateInfoOptions {
@@ -124,7 +126,7 @@ export class PreAggregator {
    * the schema will be repopulated by future pre-aggregation requests.
    * @returns A query result promise.
    */
-  dropSchema(): Promise<any> {
+  dropSchema(): Promise<unknown> {
     this.clear();
     return this.mc.exec(`DROP SCHEMA IF EXISTS "${this.schema}" CASCADE`);
   }
@@ -206,12 +208,15 @@ export class PreAggregator {
     } else {
       // generate materialized view table
       const filter = selection.remove(source).predicate(client);
-      info = preaggregateInfo(client.query(filter), active, preaggCols, schema);
+      info = preaggregateInfo(
+        client.query(filter) as SelectQuery,
+        active, preaggCols, schema
+      );
       info.result = mc.exec([
         `CREATE SCHEMA IF NOT EXISTS ${schema}`,
         createTable(info.table, info.create, { temp: false })
       ]);
-      info.result.catch((e: any) => mc.logger().error(e));
+      info.result.catch((e: Error) => mc.logger().error(e));
     }
 
     entries.set(client, info);
@@ -231,49 +236,56 @@ function activeColumns(clause: SelectionClause): ActiveColumnsResult {
   const { source, meta } = clause;
   const clausePred = clause.predicate;
   const clauseCols = collectColumns(clausePred!).map(c => c.column);
-  let predicate: ((p: any) => ExprNode | ExprNode[]) | undefined;
+  let predicate: ActivePredicate | undefined;
   let columns: Record<string, ExprNode> | undefined;
 
   if (!meta || !clauseCols) {
     return { source: null, columns, predicate };
   }
 
-  const { type, scales, bin, pixelSize = 1 } = meta as any;
-
-  if (type === 'point') {
-    predicate = x => x;
-    columns = Object.fromEntries(
-      clauseCols.map(col => [`${col}`, asNode(col)])
-    );
-  } else if (type === 'interval' && scales) {
-    // determine pixel-level binning
-    const bins = scales.map((s: ScaleOptions) => binInterval(s, pixelSize, bin));
-
-    if (bins.some((b: any) => !b)) {
-      // bail if a scale type is unsupported
-    } else if (bins.length === 1) {
-      // selection clause predicate has type BetweenOpNode
-      // single interval selection
-      predicate = p => p ? isBetween('active0', p.extent.map(bins[0])) : [];
-      columns = { active0: bins[0]((clausePred as any).expr) };
-    } else {
-      // selection clause predicate has type AndNode<BetweenOpNode>
-      // multiple interval selection
-      predicate = p => p
-        ? and(p.clauses.map(
-            (c: any, i: number) => isBetween(`active${i}`, c.extent.map(bins[i]))
-          ))
-        : [];
+  switch (meta.type) {
+    case 'point':
+      predicate = x => x;
       columns = Object.fromEntries(
-        (clausePred as any).clauses.map((p: any, i: number) => [`active${i}`, bins[i](p.expr)])
+        clauseCols.map(col => [`${col}`, asNode(col)])
       );
+      break;
+    case 'interval': {
+      const { scales, bin, pixelSize = 1 } = (meta as IntervalMetadata);
+      if (!scales) break;
+
+      // determine pixel-level binning
+      const bins = scales.map((s: ScaleOptions) => binInterval(s, pixelSize, bin));
+      if (bins.some(b => !b)) {
+        // bail if a scale type is unsupported
+      } else if (bins.length === 1) {
+        // selection clause predicate has type BetweenOpNode
+        // single interval selection
+        predicate = (p?: ExprNode) => p
+          ? isBetween('active0', (p as BetweenOpNode).extent?.map(bins[0]!))
+          : [];
+        columns = { active0: bins[0]!((clausePred as BetweenOpNode).expr) };
+      } else {
+        // selection clause predicate has type AndNode<BetweenOpNode>
+        // multiple interval selection
+        predicate = (p?: ExprNode) => p
+          ? and((p as AndNode<BetweenOpNode>).clauses.map(
+              (c, i) => isBetween(`active${i}`, c.extent?.map(bins[i]!))
+            ))
+          : [];
+        columns = Object.fromEntries(
+          (clausePred as AndNode<BetweenOpNode>).clauses.map(
+            (p, i) => [`active${i}`, bins[i]!(p.expr)]
+          )
+        );
+      }
     }
   }
 
   return { source: columns ? source : null, columns, predicate };
 }
 
-const BIN = { ceil, round };
+const BIN: Record<string, (expr: ExprValue) => FunctionNode> = { ceil, round };
 
 /**
  * Returns a bin function generator to discretize a selection interval domain.
@@ -281,14 +293,17 @@ const BIN = { ceil, round };
  *  (typically pixels).
  * @param pixelSize The interactive pixel size. This value indicates
  *  the bin step size and may be greater than an actual screen pixel.
- * @param bin The binning method to apply, one of `floor`,
- *  `ceil', or `round`.
+ * @param bin The binning method to apply, one of `floor`, `ceil', or `round`.
  * @returns A bin function generator.
  */
-function binInterval(scale: ScaleOptions, pixelSize: number, bin: BinMethod): ((value: any) => ExprNode) | undefined {
+function binInterval(
+  scale: ScaleOptions,
+  pixelSize: number,
+  bin?: BinMethod
+): ((value: ExprValue) => ExprNode) | undefined {
   const { type, domain, range, apply, sqlApply } = scaleTransform(scale)!;
   if (!apply) return; // unsupported scale type
-  const binFn = (BIN as any)[`${bin}`.toLowerCase()] || floor;
+  const binFn = BIN[`${bin}`.toLowerCase()] || floor;
   const dom = domain!.map(x => Number(x));
   const lo = apply(Math.min(...dom));
   const hi = apply(Math.max(...dom));
@@ -312,7 +327,12 @@ function binInterval(scale: ScaleOptions, pixelSize: number, bin: BinMethod): ((
  * @param schema Database schema name.
  * @returns Pre-aggregation information.
  */
-function preaggregateInfo(clientQuery: SelectQuery, active: ActiveColumnsResult, preaggCols: any, schema: string): PreAggregateInfo {
+function preaggregateInfo(
+  clientQuery: SelectQuery,
+  active: ActiveColumnsResult,
+  preaggCols: PreAggColumnsResult,
+  schema: string
+): PreAggregateInfo {
   const { group, output, preagg } = preaggCols;
   const { columns } = active;
 
@@ -404,7 +424,7 @@ export class PreAggregateInfo {
   /** The SQL query used to generate the materialized view. */
   create: string;
   /** A result promise returned for the materialized view creation query. */
-  result: Promise<any> | null;
+  result: Promise<unknown> | null;
   /** Definitions and predicate function for the active columns,
    * which are dynamically filtered by the active clause. */
   active: ActiveColumnsResult;
@@ -433,6 +453,6 @@ export class PreAggregateInfo {
    * @returns A materialized view query.
    */
   query(predicate: ExprNode): SelectQuery {
-    return this.select.clone().where(this.active.predicate!(predicate));
+    return this.select.clone().where(this.active.predicate!(predicate)!);
   }
 }

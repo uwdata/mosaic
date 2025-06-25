@@ -18,7 +18,7 @@ export function throttle<E, T>(
   callback: (event?: E) => Promise<T> | null,
   debounce: boolean = false
 ): (event?: E) => void {
-  let curr: Promise<any> | null;
+  let curr: Promise<unknown> | null;
   let next: QueueItem<E> | undefined | null;
   let pending: E | undefined | typeof NIL = NIL;
 
@@ -41,7 +41,7 @@ export function throttle<E, T>(
   }
 
   function process(event?: E): void {
-    curr ? enqueue(event!) : invoke(event);
+    if (curr) enqueue(event!); else invoke(event);
   }
 
   function delay(event?: E): void {

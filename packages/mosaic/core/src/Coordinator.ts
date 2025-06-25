@@ -8,6 +8,13 @@ import { type Logger, type QueryType } from './types.js';
 import { type QueryResult } from './util/query-result.js';
 import { type MosaicClient } from './MosaicClient.js';
 import { type SelectionClause } from './SelectionClause.js';
+import { MaybeArray } from '@uwdata/mosaic-sql';
+
+interface FilterGroupEntry {
+  selection: Selection;
+  clients: Set<MosaicClient>;
+  disconnect(): void;
+}
 
 /**
  * The singleton Coordinator instance.
@@ -38,9 +45,9 @@ export function coordinator(
 export class Coordinator {
   public manager: QueryManager;
   public preaggregator: PreAggregator;
-  public clients?: Set<MosaicClient>;
-  public filterGroups?: Map<Selection, any>;
-  protected _logger?: Logger;
+  public clients: Set<MosaicClient> = new Set;
+  public filterGroups: Map<Selection, FilterGroupEntry> = new Map;
+  protected _logger: Logger = voidLogger();
 
   /**
    * @param db Database connector. Defaults to a web socket connection.
@@ -103,7 +110,9 @@ export class Coordinator {
   databaseConnector(): Connector | null;
   databaseConnector(db: Connector): Connector;
   databaseConnector(db?: Connector): Connector | null {
-    return this.manager.connector(db as any);
+    return db
+      ? this.manager.connector(db)
+      : this.manager.connector();
   }
 
   /**
@@ -138,7 +147,7 @@ export class Coordinator {
    * @returns A query result promise.
    */
   exec(
-    query: QueryType[] | QueryType,
+    query: MaybeArray<QueryType>,
     options: { priority?: number } = {}
   ): QueryResult {
     const { priority = Priority.Normal } = options;
@@ -164,7 +173,7 @@ export class Coordinator {
       cache?: boolean;
       persist?: boolean;
       priority?: number;
-      [key: string]: any;
+      [key: string]: unknown;
     } = {}
   ): QueryResult {
     const {
@@ -186,15 +195,15 @@ export class Coordinator {
    */
   prefetch(
     query: QueryType,
-    options: { type?: 'arrow' | 'json'; [key: string]: any } = {}
+    options: { type?: 'arrow' | 'json'; [key: string]: unknown } = {}
   ): QueryResult {
-    return this.query(query, { ...options, cache: true, priority: Priority.Low as any });
+    return this.query(query, { ...options, cache: true, priority: Priority.Low });
   }
 
   // -- Client Management ----
 
   /**
-   * Update client data by submitting the given query and returning the
+   * Update client data by submitting the given query and returning the()
    * data (or error) to the client.
    * @param client A Mosaic client.
    * @param query The data query.
@@ -205,7 +214,7 @@ export class Coordinator {
     client: MosaicClient,
     query: QueryType,
     priority: number = Priority.Normal
-  ): Promise<void> {
+  ): Promise<unknown> {
     client.queryPending();
     return client._pending = this.query(query, { priority })
       .then(
@@ -222,7 +231,7 @@ export class Coordinator {
    * @param client The client to update.
    * @param query The query to issue.
    */
-  requestQuery(client: MosaicClient, query?: QueryType | null): Promise<void> {
+  requestQuery(client: MosaicClient, query?: QueryType | null): Promise<unknown> {
     this.preaggregator.clear();
     return query
       ? this.updateClient(client, query)
@@ -287,6 +296,7 @@ function connectSelection(
     const activate = (clause: SelectionClause) => activateSelection(mc, selection, clause);
     const value = () => updateSelection(mc, selection);
 
+    // @ts-expect-error todo: update selection dispatch types
     selection.addEventListener('activate', activate);
     selection.addEventListener('value', value);
 
@@ -294,6 +304,7 @@ function connectSelection(
       selection,
       clients: new Set,
       disconnect() {
+        // @ts-expect-error todo: update selection dispatch types
         selection.removeEventListener('activate', activate);
         selection.removeEventListener('value', value);
       }
@@ -317,7 +328,7 @@ function activateSelection(
   clause: SelectionClause
 ): void {
   const { preaggregator, filterGroups } = mc;
-  const { clients } = filterGroups!.get(selection);
+  const { clients } = filterGroups.get(selection)!;
   for (const client of clients) {
     if (client.enabled) {
       preaggregator.request(client, selection, clause);
@@ -335,9 +346,9 @@ function activateSelection(
 function updateSelection(
   mc: Coordinator,
   selection: Selection
-): Promise<PromiseSettledResult<any>[]> {
+): Promise<PromiseSettledResult<unknown>[]> {
   const { preaggregator, filterGroups } = mc;
-  const { clients } = filterGroups!.get(selection);
+  const { clients } = filterGroups!.get(selection)!;
   const { active } = selection;
   return Promise.allSettled(Array.from(clients, (client: MosaicClient) => {
     if (!client.enabled) return client.requestQuery();
