@@ -14,18 +14,18 @@ interface RestOptions {
  * @param options.ipc Arrow IPC extraction options.
  * @returns A connector instance.
  */
-export function restConnector(options: RestOptions = {}) {
-  return new RestConnector(options.uri, options.ipc);
+export function restConnector(options?: RestOptions) {
+  return new RestConnector(options);
 }
 
-class RestConnector implements Connector {
+export class RestConnector implements Connector {
   private _uri: string;
   private _ipc?: ExtractionOptions;
 
-  constructor(
-    uri: string = 'http://localhost:3000/',
-    ipc?: ExtractionOptions
-  ) {
+  constructor({
+    uri = 'http://localhost:3000/',
+    ipc = undefined
+  }: RestOptions = {}) {
     this._uri = uri;
     this._ipc = ipc;
   }

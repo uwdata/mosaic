@@ -27,7 +27,7 @@ export function isMosaicClient(x: unknown): x is MosaicClient {
  */
 export class MosaicClient {
   _filterBy: Selection | undefined;
-  _requestUpdate: (event?: unknown) => void;
+  _requestUpdate: () => void;
   _coordinator: Coordinator | null;
   _pending: Promise<unknown>;
   _enabled: boolean;

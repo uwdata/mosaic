@@ -1,4 +1,4 @@
-import { socketConnector } from './connectors/socket.js';
+import { SocketConnector } from './connectors/socket.js';
 import { type Connector } from './connectors/Connector.js';
 import { PreAggregator, type PreAggregateOptions } from './preagg/PreAggregator.js';
 import { voidLogger } from './util/void-logger.js';
@@ -45,8 +45,8 @@ export function coordinator(
 export class Coordinator {
   public manager: QueryManager;
   public preaggregator: PreAggregator;
-  public clients: Set<MosaicClient> = new Set;
-  public filterGroups: Map<Selection, FilterGroupEntry> = new Map;
+  public clients = new Set<MosaicClient>;
+  public filterGroups = new Map<Selection, FilterGroupEntry>;
   protected _logger: Logger = voidLogger();
 
   /**
@@ -59,7 +59,7 @@ export class Coordinator {
    * @param options.preagg Options for the Pre-aggregator.
    */
   constructor(
-    db: Connector = socketConnector(),
+    db: Connector = new SocketConnector(),
     options: {
       logger?: Logger | null;
       manager?: QueryManager;
@@ -240,6 +240,7 @@ export class Coordinator {
 
   /**
    * Connect a client to the coordinator.
+   * Throws an error if the client is already connected.
    * @param client The Mosaic client to connect.
    */
   connect(client: MosaicClient): void {
@@ -264,6 +265,7 @@ export class Coordinator {
 
   /**
    * Disconnect a client from the coordinator.
+   * This method has no effect if the client is already disconnected.
    * @param client The Mosaic client to disconnect.
    */
   disconnect(client: MosaicClient): void {

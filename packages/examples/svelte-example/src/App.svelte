@@ -1,10 +1,10 @@
 <script>
-  import { coordinator, wasmConnector } from "@uwdata/mosaic-core";
+  import { coordinator, DuckDBWASMConnector } from "@uwdata/mosaic-core";
   import MainView from "./lib/MainView.svelte";
   import { loadCSV } from "@uwdata/mosaic-sql";
 
   async function init() {
-    const wasm = wasmConnector();
+    const wasm = new DuckDBWASMConnector();
     coordinator().databaseConnector(wasm);
 
     await coordinator().exec(
