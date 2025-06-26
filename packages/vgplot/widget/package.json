@@ -16,7 +16,7 @@
     "test": "tsc --build",
     "lint": "eslint src",
     "prerelease": "npm run test && npm run lint && uv run ruff check && uv run ruff format --check && npm run build",
-    "release": "uv build && uvx twine upload --skip-existing ../../dist/mosaic_widget*"
+    "release": "uv build && uvx twine upload --skip-existing ../../../dist/mosaic_widget*"
   },
   "dependencies": {
     "@uwdata/mosaic-core": "^0.18.0",

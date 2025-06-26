@@ -71,7 +71,7 @@ export default {
       for (const [name, param] of dom.params) {
         params[name] = {
           value: param.value,
-          ...(isSelection(param) ? { predicate: String(param.predicate()) } : {}),
+          ...(isSelection(param) ? { predicate: String(param.predicate(undefined)) } : {}),
         };
 
         param.addEventListener('value', (value) => {
@@ -79,7 +79,7 @@ export default {
             ...params,
             [name]: {
               value,
-              ...(isSelection(param) ? { predicate: String(param.predicate()) } : {})
+              ...(isSelection(param) ? { predicate: String(param.predicate(undefined)) } : {})
             }
           })
           view.model.set('params', params);
