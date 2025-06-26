@@ -1,9 +1,12 @@
 export {
   Coordinator,
   MosaicClient,
-  restConnector,
-  socketConnector,
-  wasmConnector
+  RestConnector,
+  SocketConnector,
+  DuckDBWASMConnector,
+  restConnector, // deprecated
+  socketConnector, // deprecated
+  wasmConnector // deprecated
 } from '@uwdata/mosaic-core';
 
 export * from './api.js';

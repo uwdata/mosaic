@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { Query, add, argmax, argmin, avg, corr, count, covarPop, covariance, geomean, gt, isNotDistinct, literal, loadObjects, max, min, mul, product, regrAvgX, regrAvgY, regrCount, regrIntercept, regrR2, regrSXX, regrSXY, regrSYY, regrSlope, stddev, stddevPop, sum, varPop, variance } from '@uwdata/mosaic-sql';
-import { Coordinator, Selection } from '../src/index.js';
+import { Coordinator, Selection, SelectionClause } from '../src/index.js';
 import { nodeConnector } from './util/node-connector.js';
 import { TestClient } from './util/test-client.js';
 
@@ -13,6 +13,8 @@ async function setup(loadQuery) {
   await mc.exec(loadQuery);
   return mc;
 }
+
+type Datum = { measure: number };
 
 async function run(measure): Promise<[number, boolean]> {
   const loadQuery = loadObjects('testData', [
@@ -33,10 +35,10 @@ async function run(measure): Promise<[number, boolean]> {
           ? measure(filter)
           : Query.from('testData').select({ measure }).where(filter);
       },
-      queryResult(data: any) {
+      queryResult(data: unknown) {
         if (iter) {
           resolve([
-            (Array.from(data) as any)[0].measure, // query result
+            (Array.from(data as Iterable<Datum>))[0].measure, // query result
             !!mc.preaggregator.entries.get(this) // optimized?
           ]);
         }
@@ -49,7 +51,7 @@ async function run(measure): Promise<[number, boolean]> {
         source: 'test',
         meta: { type: 'point' },
         predicate: isNotDistinct('dim', literal('b'))
-      } as any);
+      } as unknown as SelectionClause);
     });
   });
 }

@@ -1,3 +1,4 @@
+/** @import { ClauseSource } from '@uwdata/mosaic-core' */
 import { clausePoints } from '@uwdata/mosaic-core';
 import { getDatum } from './util/get-datum.js';
 import { neq, neqSome } from './util/neq.js';
@@ -42,7 +43,7 @@ export class Toggle {
   clause(value) {
     const { fields, mark } = this;
     return clausePoints(fields, value, {
-      source: this,
+      source: /** @type {ClauseSource} */(this),
       clients: this.peers ? mark.plot.markSet : new Set().add(mark)
     });
   }

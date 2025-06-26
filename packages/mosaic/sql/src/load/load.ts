@@ -21,15 +21,15 @@ export function load(
   return createTable(tableName, query, { view, temp, replace });
 }
 
-export function loadCSV(tableName: string, fileName: string, options: Options) {
+export function loadCSV(tableName: string, fileName: string, options?: Options) {
   return load('read_csv', tableName, fileName, options, { auto_detect: true, sample_size: -1 });
 }
 
-export function loadJSON(tableName: string, fileName: string, options: Options) {
+export function loadJSON(tableName: string, fileName: string, options?: Options) {
   return load('read_json', tableName, fileName, options, { auto_detect: true, format: 'auto' });
 }
 
-export function loadParquet(tableName: string, fileName: string, options: Options) {
+export function loadParquet(tableName: string, fileName: string, options?: Options) {
   return load('read_parquet', tableName, fileName, options);
 }
 

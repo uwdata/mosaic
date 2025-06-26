@@ -1,4 +1,4 @@
-import { Selection, coordinator, wasmConnector } from '@uwdata/mosaic-core';
+import { DuckDBWASMConnector, Selection, coordinator } from '@uwdata/mosaic-core';
 import { loadCSV } from '@uwdata/mosaic-sql';
 import * as vg from '@uwdata/vgplot';
 import embed from 'vega-embed';
@@ -7,7 +7,7 @@ import { FilteredVegaClient, SelectionVegaClient, spec } from './vega.js';
 const vegaPlot = document.createElement('div');
 const result = await embed(vegaPlot, spec, { actions: false });
 
-const wasm = wasmConnector({ log: false });
+const wasm = new DuckDBWASMConnector({ log: false });
 coordinator().databaseConnector(wasm);
 
 await coordinator().exec(

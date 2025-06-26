@@ -1,5 +1,5 @@
 
-import { MosaicClient } from './MosaicClient.js';
+import { isMosaicClient, MosaicClient } from './MosaicClient.js';
 import { type ExprNode, type ExprValue, type ScaleOptions, type ScaleDomain, and, contains, isBetween, isIn, isNotDistinct, literal, or, prefix, regexp_matches, suffix } from '@uwdata/mosaic-sql';
 
 /**
@@ -59,6 +59,10 @@ export interface IntervalMetadata extends ClauseMetadata {
   bin?: BinMethod
 }
 
+export interface ClauseSource {
+  reset?: () => void;
+}
+
 /**
  * A selection clause representing filtering criteria
  * to apply within a Mosaic Selection.
@@ -69,7 +73,7 @@ export interface SelectionClause {
    * component that generated this clause. In many cases, this is a
    * reference to the originating component itself.
    */
-  source: any;
+  source: ClauseSource;
   /**
    * A set of Mosaic clients associated with this clause that should not
    * be updated when this clause is applied in a cross-filtering context.
@@ -79,7 +83,7 @@ export interface SelectionClause {
    * A selected value associated with this clause. For example, for a 1D
    * interval selection clause the value may be a [lo, hi] array.
    */
-  value: any;
+  value: unknown;
   /**
    * A predicate SQL expression suitable for use in a query WHERE clause.
    * The predicate should apply filtering criteria consistent with this
@@ -105,11 +109,11 @@ export interface SelectionClause {
  *  cross-filtering contexts.
  * @returns The generated selection clause.
  */
-export function clausePoint(field: ExprValue, value: any, {
+export function clausePoint(field: ExprValue, value: unknown, {
   source,
-  clients = source ? new Set([source]) : undefined
+  clients = isMosaicClient(source) ? new Set([source]) : undefined
 }: {
-  source: any;
+  source: ClauseSource;
   clients?: Set<MosaicClient>;
 }): SelectionClause {
   const predicate: ExprNode | null = value !== undefined
@@ -136,11 +140,11 @@ export function clausePoint(field: ExprValue, value: any, {
  *  cross-filtering contexts.
  * @returns The generated selection clause.
  */
-export function clausePoints(fields: ExprValue[], value: any[][] | null | undefined, {
+export function clausePoints(fields: ExprValue[], value: unknown[][] | null | undefined, {
   source,
-  clients = source ? new Set([source]) : undefined
+  clients = isMosaicClient(source) ? new Set([source]) : undefined
 }: {
-  source: any;
+  source: ClauseSource;
   clients?: Set<MosaicClient>;
 }): SelectionClause {
   let predicate: ExprNode | null = null;
@@ -177,12 +181,12 @@ export function clausePoints(fields: ExprValue[], value: any[][] | null | undefi
  */
 export function clauseInterval(field: ExprValue, value: ScaleDomain | null | undefined, {
   source,
-  clients = source ? new Set([source]) : undefined,
+  clients = isMosaicClient(source) ? new Set([source]) : undefined,
   bin,
   scale,
   pixelSize = 1
 }: {
-  source: any;
+  source: ClauseSource;
   clients?: Set<MosaicClient>;
   scale?: ScaleOptions;
   bin?: BinMethod;
@@ -215,12 +219,12 @@ export function clauseInterval(field: ExprValue, value: ScaleDomain | null | und
  */
 export function clauseIntervals(fields: ExprValue[], value: ScaleDomain[] | null | undefined, {
   source,
-  clients = source ? new Set([source]) : undefined,
+  clients = isMosaicClient(source) ? new Set([source]) : undefined,
   bin,
   scales = [],
   pixelSize = 1
 }: {
-  source: any;
+  source: ClauseSource;
   clients?: Set<MosaicClient>;
   scales?: ScaleOptions[];
   bin?: BinMethod;
@@ -260,7 +264,7 @@ export function clauseMatch(field: ExprValue, value: string | null | undefined, 
   clients = undefined,
   method = 'contains'
 }: {
-  source: any;
+  source: ClauseSource;
   clients?: Set<MosaicClient>;
   method?: MatchMethod;
 }): SelectionClause {

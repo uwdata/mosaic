@@ -1,7 +1,7 @@
 /**
  * Synchronizer class to aid synchronization of updates on multiple pending operations.
  */
-export class Synchronizer<T = any> {
+export class Synchronizer<T = unknown> {
   private _set: Set<T>;
   private _done: () => void;
   private _promise: Promise<void>;
@@ -54,4 +54,3 @@ export class Synchronizer<T = any> {
     return this._promise;
   }
 }
-

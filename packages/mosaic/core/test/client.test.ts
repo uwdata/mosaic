@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { Query, count } from '@uwdata/mosaic-sql';
 import { nodeConnector } from './util/node-connector.js';
-import { Coordinator, MosaicClient, Selection, clauseInterval } from '../src/index.js';
+import { ClauseSource, Coordinator, MosaicClient, Selection, clauseInterval } from '../src/index.js';
 import { QueryResult } from '../src/util/query-result.js';
 
 describe('MosaicClient', () => {
@@ -30,7 +30,7 @@ describe('MosaicClient', () => {
       private columnName: string;
       private pendingResult: QueryResult;
 
-      constructor(tableName: string, columnName: string, filterBy?: any) {
+      constructor(tableName: string, columnName: string, filterBy?: Selection) {
         super(filterBy);
         this.tableName = tableName;
         this.columnName = columnName;
@@ -84,7 +84,7 @@ describe('MosaicClient', () => {
     // crossfilter should skip client1, indicated by undefined result
     // client2 should be filtered by HourOfDay
     selection.update(
-      clauseInterval('HourOfDay', [0, 24], { source: client1 })
+      clauseInterval('HourOfDay', [0, 24], { source: client1 as ClauseSource })
     );
     expect(selection.active?.source).toBe(client1);
     expect(selection.predicate(client1)).toBeUndefined();
@@ -108,7 +108,7 @@ describe('MosaicClient', () => {
     // client1 should be filtered by DayOfWeek
     // crossfilter should skip client2, indicated by undefined result
     selection.update(
-      clauseInterval('DayOfWeek', [0, 7], { source: client2 })
+      clauseInterval('DayOfWeek', [0, 7], { source: client2 as ClauseSource })
     );
     expect(selection.active?.source).toBe(client2);
     expect(selection.predicate(client1)+'').toBe(

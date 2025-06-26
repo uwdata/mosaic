@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { QueryManager } from '../src/QueryManager.js';
 import { QueryResult } from '../src/util/query-result.js';
+import { QueryRequest } from '../src/types.js';
 
 describe('QueryManager', () => {
   it('should run a simple query', async () => {
@@ -8,13 +9,14 @@ describe('QueryManager', () => {
 
     // Mock the connector
     queryManager.connector({
+      // @ts-expect-error assumes type value
       query: async ({ sql }) => {
         expect(sql).toBe('SELECT 1');
-        return [{ column: 1 }] as any;
+        return [{ column: 1 }];
       }
     });
 
-    const request = {
+    const request: QueryRequest = {
       type: 'arrow',
       query: 'SELECT 1'
     };
@@ -31,18 +33,19 @@ describe('QueryManager', () => {
 
     // Mock the connector
     queryManager.connector({
+      // @ts-expect-error assumes type value
       query: ({ sql }) => {
         expect(sql).toBe('CREATE TABLE test (id INT)');
-        return new Promise(() => {}) as Promise<any>;
+        return new Promise(() => {});
       }
     });
 
-    const request1 = {
+    const request1: QueryRequest = {
       type: 'exec',
       query: 'CREATE TABLE test (id INT)'
     };
 
-    const request2 = {
+    const request2: QueryRequest = {
       type: 'arrow',
       query: 'SELECT * FROM test'
     };

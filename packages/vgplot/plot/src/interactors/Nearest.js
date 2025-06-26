@@ -1,3 +1,4 @@
+/** @import { ClauseSource } from '@uwdata/mosaic-core' */
 import { clausePoint, clausePoints, isSelection } from '@uwdata/mosaic-core';
 import { select, pointer, min } from 'd3';
 import { getField } from './util/get-field.js';
@@ -28,7 +29,7 @@ export class Nearest {
 
   clause(value) {
     const { clients, fields } = this;
-    const opt = { source: this, clients };
+    const opt = { source: /** @type {ClauseSource} */(this), clients };
     // if only one field, use a simpler clause that passes the value
     // this allows a single field selection value to act like a param
     return fields.length > 1
@@ -37,6 +38,7 @@ export class Nearest {
   }
 
   init(svg) {
+    // eslint-disable-next-line @typescript-eslint/no-this-alias
     const that = this;
     const { mark, channels, selection, maxRadius } = this;
     const { data: { columns } } = mark;

@@ -1,3 +1,4 @@
+/** @import { ClauseSource } from '@uwdata/mosaic-core' */
 import { Selection, clauseInterval } from '@uwdata/mosaic-core';
 import { select, zoom, ZoomTransform } from 'd3';
 import { getField } from './util/get-field.js';
@@ -53,7 +54,7 @@ export class PanZoom {
 
   clause(value, field, scale) {
     return clauseInterval(field, value, {
-      source: this,
+      source: /** @type {ClauseSource} */(this),
       clients: this.mark.plot.markSet,
       scale
     });

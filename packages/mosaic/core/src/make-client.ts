@@ -1,6 +1,7 @@
 import type { Coordinator } from './Coordinator.js';
 import type { Selection } from './Selection.js';
-import { MosaicClient } from './MosaicClient.js';
+import type { FilterExpr } from '@uwdata/mosaic-sql';
+import { type ClientQuery, MosaicClient } from './MosaicClient.js';
 import { coordinator as defaultCoordinator } from './Coordinator.js';
 
 export interface MakeClientOptions {
@@ -10,19 +11,19 @@ export interface MakeClientOptions {
   selection?: Selection;
   /** A flag (default `true`) indicating if the client should initially be enabled or not. */
   enabled?: boolean;
-  /** A flag (default `true`) indicating if client queries can be sped up using pre-aggregated data. 
+  /** A flag (default `true`) indicating if client queries can be sped up using pre-aggregated data.
    * Should be set to `false` if filtering changes the groupby domain of the query. */
   filterStable?: boolean;
   /** An async function to prepare the client before running queries. */
   prepare?: () => Promise<void>;
   /** A function that returns a query from a list of selection predicates. */
-  query?: (filter: any) => any;
+  query?: (filter: FilterExpr) => ClientQuery;
   /** Called by the coordinator to return a query result. */
-  queryResult?: (data: any) => void;
+  queryResult?: (data: unknown) => void;
   /** Called by the coordinator to inform the client that a query is pending. */
   queryPending?: () => void;
   /** Called by the coordinator to report a query execution error. */
-  queryError?: (error: any) => void;
+  queryError?: (error: Error) => void;
 }
 
 /**
@@ -71,11 +72,11 @@ class ProxyClient extends MosaicClient {
     await this._methods.prepare?.();
   }
 
-  query(filter: any): any {
+  query(filter: FilterExpr): ClientQuery {
     return this._methods.query?.(filter) ?? null;
   }
 
-  queryResult(data: any): this {
+  queryResult(data: unknown): this {
     this._methods.queryResult?.(data);
     return this;
   }
@@ -85,7 +86,7 @@ class ProxyClient extends MosaicClient {
     return this;
   }
 
-  queryError(error: any): this {
+  queryError(error: Error): this {
     this._methods.queryError?.(error);
     return this;
   }

@@ -4,7 +4,7 @@ const requestIdle = typeof requestIdleCallback !== 'undefined'
   ? requestIdleCallback
   : setTimeout;
 
-interface CacheEntry<T> {
+interface CacheEntry<T = unknown> {
   last: number;
   value: T;
 }
@@ -35,7 +35,7 @@ export function lruCache({
   max?: number;
   ttl?: number;
 } = {}): Cache {
-  let cache = new Map<string, CacheEntry<any>>();
+  let cache = new Map<string, CacheEntry>();
 
   function evict(): void {
     const expire = performance.now() - ttl;
@@ -64,20 +64,20 @@ export function lruCache({
   }
 
   return {
-    get(key: string): any {
+    get(key: string): unknown {
       const entry = cache.get(key);
       if (entry) {
         entry.last = performance.now();
         return entry.value;
       }
     },
-    set(key: string, value: any): any {
+    set(key: string, value: unknown): unknown {
       cache.set(key, { last: performance.now(), value });
       if (cache.size > max) requestIdle(evict);
       return value;
     },
-    clear(): void { 
-      cache = new Map(); 
+    clear(): void {
+      cache = new Map();
     }
   };
 }

@@ -1,20 +1,22 @@
-import { socketConnector, restConnector, wasmConnector } from '@uwdata/mosaic-core';
+import { DuckDBWASMConnector, RestConnector, SocketConnector } from '@uwdata/mosaic-core';
 import { createAPIContext } from '@uwdata/vgplot';
 
 export { parseSpec, astToDOM, astToESM } from '@uwdata/mosaic-spec';
 export const vg = createAPIContext();
 
 // make API accessible for console debugging
-(self as any).vg = vg;
+Object.assign(self, { vg });
 
-// enable query interface
-(self as any).query = async (sql) => {
-  const r = await vg.coordinator().databaseConnector().query({
-    type: 'arrow',
-    sql
-  });
-  return r.toArray();
-}
+// enable query interface on global this (window)
+Object.assign(self, {
+  query: async (sql) => {
+    const r = await vg.coordinator().databaseConnector().query({
+      type: 'arrow',
+      sql
+    });
+    return r.toArray();
+  }
+});
 
 export const { coordinator, namedPlots } = vg.context;
 
@@ -29,16 +31,16 @@ export async function setDatabaseConnector(type) {
   let connector;
   switch (type) {
     case 'socket':
-      connector = socketConnector();
+      connector = new SocketConnector();
       break;
     case 'rest':
-      connector = restConnector();
+      connector = new RestConnector();
       break;
     case 'rest_https':
-      connector = restConnector({ uri: 'https://localhost:3000/' });
+      connector = new RestConnector({ uri: 'https://localhost:3000/' });
       break;
     case 'wasm':
-      connector = wasm || (wasm = wasmConnector());
+      connector = wasm || (wasm = new DuckDBWASMConnector());
       break;
     default:
       throw new Error(`Unrecognized connector type: ${type}`);

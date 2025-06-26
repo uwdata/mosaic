@@ -6,7 +6,7 @@ import { distinct } from './util/distinct.js';
  * @param x The value to test.
  * @returns True if the input is a Param, false otherwise.
  */
-export function isParam(x: any): x is Param<any> {
+export function isParam<T>(x: unknown): x is Param<T> {
   return x instanceof Param;
 }
 
@@ -14,7 +14,7 @@ export function isParam(x: any): x is Param<any> {
  * Represents a dynamic parameter that dispatches updates
  * upon parameter changes.
  */
-export class Param<T> extends AsyncDispatch {
+export class Param<T> extends AsyncDispatch<T> {
   protected _value?: T;
 
   /**
@@ -41,23 +41,23 @@ export class Param<T> extends AsyncDispatch {
    * @param values The initial values of the Param.
    * @returns The new Param instance.
    */
-  static array(values: any[]): Param<any> {
+  static array<T>(values: (T|Param<T>)[]): Param<T[]> {
     if (values.some(v => isParam(v))) {
-      const p = new Param();
+      const p = new Param<T[]>();
       const update = (): void => {
-        p.update(values.map(v => isParam(v) ? v.value : v));
+        p.update(values.map(v => isParam<T>(v) ? v.value! : v));
       };
       update();
       values.forEach(v => isParam(v) ? v.addEventListener('value', update) : 0);
       return p;
     }
-    return new Param(values);
+    return new Param(values) as Param<T[]>;
   }
 
   /**
    * The current value of the Param.
    */
-  get value(): any {
+  get value(): T | undefined {
     return this._value;
   }
 
@@ -69,7 +69,7 @@ export class Param<T> extends AsyncDispatch {
    *  should emit a 'value' event even if the internal value is unchanged.
    * @returns This Param instance.
    */
-  update(value: any, { force }: { force?: boolean } = {}): this {
+  update(value: T, { force }: { force?: boolean } = {}): this {
     const shouldEmit = distinct(this._value, value) || force;
     if (shouldEmit) {
       this.emit('value', value);
@@ -86,9 +86,9 @@ export class Param<T> extends AsyncDispatch {
    * @param value The input event value.
    * @returns The input event value.
    */
-  willEmit(type: string, value: any): any {
+  willEmit(type: string, value: T): T {
     if (type === 'value') {
-      this._value = value;
+      this._value = value as T;
     }
     return value;
   }

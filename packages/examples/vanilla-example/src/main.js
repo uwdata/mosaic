@@ -1,8 +1,8 @@
-import { coordinator, wasmConnector } from '@uwdata/mosaic-core';
+import { coordinator, DuckDBWASMConnector } from '@uwdata/mosaic-core';
 import { loadParquet } from '@uwdata/mosaic-sql';
 import * as vg from '@uwdata/vgplot';
 
-const wasm = wasmConnector({ log: false });
+const wasm = new DuckDBWASMConnector({ log: false });
 coordinator().databaseConnector(wasm);
 
 await vg.coordinator().exec([

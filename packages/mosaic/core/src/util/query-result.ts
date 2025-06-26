@@ -11,9 +11,9 @@ type QueryStateType = typeof QueryState[keyof typeof QueryState];
  * A query result Promise that can allows external callers
  * to resolve or reject the Promise.
  */
-export class QueryResult<T = any> extends Promise<T> {
+export class QueryResult<T = unknown> extends Promise<T> {
   private _resolve!: (value: T | PromiseLike<T>) => void;
-  private _reject!: (reason?: any) => void;
+  private _reject!: (reason?: unknown) => void;
   private _state: QueryStateType;
   private _value: T | undefined;
 
@@ -22,7 +22,7 @@ export class QueryResult<T = any> extends Promise<T> {
    */
   constructor() {
     let resolve: (value: T | PromiseLike<T>) => void;
-    let reject: (reason?: any) => void;
+    let reject: (reason?: unknown) => void;
     super((r, e) => {
       resolve = r;
       reject = e;
@@ -72,7 +72,7 @@ export class QueryResult<T = any> extends Promise<T> {
    * @param error The error value.
    * @returns This QueryResult instance.
    */
-  reject(error: any): this {
+  reject(error: unknown): this {
     this._state = QueryState.error;
     this._reject(error);
     return this;
@@ -88,4 +88,4 @@ export class QueryResult<T = any> extends Promise<T> {
 }
 
 // necessary to make Promise subclass act like a Promise
-(QueryResult.prototype as any).constructor = Promise;
+QueryResult.prototype.constructor = Promise;
