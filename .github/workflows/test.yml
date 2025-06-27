@@ -84,3 +84,31 @@ jobs:
         run: cargo clippy --manifest-path=./packages/server/duckdb-server-rust/Cargo.toml --all -- -D warnings
       - name: Test
         run: cargo test --manifest-path=./packages/server/duckdb-server-rust/Cargo.toml --verbose
+
+  go:
+    name: Test in Go
+
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.24'
+          cache-dependency-path: ./packages/server/duckdb-server-go/go.sum
+
+      - name: Build
+        run: go build -tags=duckdb_arrow -v ./...
+        working-directory: ./packages/server/duckdb-server-go
+
+      - name: Test
+        run: go test -tags=duckdb_arrow -v ./...
+        working-directory: ./packages/server/duckdb-server-go
+
+      - name: Run golangci-lint
+        uses: golangci/golangci-lint-action@v8
+        with:
+          version: latest
+          working-directory: ./packages/server/duckdb-server-go
