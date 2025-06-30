@@ -20,3 +20,7 @@ updates:
     directory: "/packages/server/duckdb-server-rust"
     schedule:
       interval: monthly
+  - package-ecosystem: gomod
+    directory: "/packages/server/duckdb-server-go"
+    schedule:
+      interval: monthly
