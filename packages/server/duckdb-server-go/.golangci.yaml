@@ -1,0 +1,12 @@
+version: "2"
+
+run:
+  build-tags:
+    - duckdb_arrow
+
+linters:
+  default: standard
+
+formatters:
+  enable:
+    - gofmt
