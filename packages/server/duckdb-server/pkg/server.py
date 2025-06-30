@@ -93,7 +93,7 @@ def handle_query(handler: Handler, con, cache, query):
         else:
             raise ValueError(f"Unknown command {command}")
     except Exception as e:
-        logger.exception("Eror processing query")
+        logger.exception("Error processing query")
         handler.error(e)
 
     total = round((time.time() - start) * 1_000)
