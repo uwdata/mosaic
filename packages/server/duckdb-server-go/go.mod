@@ -6,7 +6,7 @@ require (
 	github.com/apache/arrow-go/v18 v18.3.1
 	github.com/coder/websocket v1.8.13
 	github.com/marcboeker/go-duckdb/v2 v2.3.2
-	github.com/maypok86/otter/v2 v2.0.0
+	github.com/maypok86/otter/v2 v2.1.0
 	github.com/stretchr/testify v1.10.0
 )
 
