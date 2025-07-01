@@ -16,7 +16,7 @@ describe('DuckDB', () => {
   describe('arrowBuffer', () => {
     it('returns arrow ipc buffers', async () => {
       const buf = await db.arrowBuffer('SELECT * FROM penguins');
-      expect(buf.length).toBe(22052);
+      expect(buf.length).toBe(22316);
     });
   });
 

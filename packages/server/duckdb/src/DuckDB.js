@@ -5,9 +5,9 @@ const TEMP_DIR = '.duckdb';
 
 const DEFAULT_INIT_STATEMENTS = [
   `PRAGMA temp_directory='${TEMP_DIR}'`,
-  `INSTALL arrow`,
+  `INSTALL nanoarrow FROM community`,
   `INSTALL httpfs`,
-  `LOAD arrow`,
+  `LOAD nanoarrow`,
   `LOAD httpfs`
 ].join(';\n');
 
