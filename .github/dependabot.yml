@@ -24,7 +24,7 @@ updates:
     schedule:
       interval: monthly
     groups:
-      pip-vgplot:
+      pip-widget:
         patterns:
           - "*"
 
