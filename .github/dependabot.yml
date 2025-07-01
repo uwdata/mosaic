@@ -4,23 +4,54 @@ updates:
     directory: "/"
     schedule:
       interval: monthly
+    groups:
+      github-actions:
+        patterns:
+          - "*"
+
   - package-ecosystem: npm
     directory: "/"
     schedule:
       interval: monthly
+    groups:
+      dev-deps:
+        dependency-type: "development"
+      prod-deps:
+        dependency-type: "production"
+
   - package-ecosystem: pip
     directory: "/packages/vgplot/widget"
     schedule:
       interval: monthly
+    groups:
+      pip-widget:
+        patterns:
+          - "*"
+
   - package-ecosystem: pip
     directory: "/packages/server/duckdb-server"
     schedule:
       interval: monthly
+    groups:
+      pip-duckdb-server:
+        patterns:
+          - "*"
+
   - package-ecosystem: cargo
     directory: "/packages/server/duckdb-server-rust"
     schedule:
       interval: monthly
+    groups:
+      cargo:
+        patterns:
+          - "*"
+
   - package-ecosystem: gomod
     directory: "/packages/server/duckdb-server-go"
     schedule:
       interval: monthly
+    groups:
+      gomod:
+        patterns:
+          - "*"
+
