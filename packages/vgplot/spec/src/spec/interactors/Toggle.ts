@@ -18,7 +18,7 @@ export interface ToggleOptions {
 
 /** A toggle interactor. */
 export interface Toggle extends ToggleOptions {
-  /** Select individal values. */
+  /** Select individual values. */
   select: 'toggle';
   /**
    * The encoding channels over which to select values.
@@ -31,7 +31,7 @@ export interface Toggle extends ToggleOptions {
 /** A toggleX interactor. */
 export interface ToggleX extends ToggleOptions {
   /**
-   * Select individal values in the `x` scale domain.
+   * Select individual values in the `x` scale domain.
    * Clicking or touching a mark toggles its selection status.
    */
   select: 'toggleX';
@@ -40,7 +40,7 @@ export interface ToggleX extends ToggleOptions {
 /** A toggleY interactor. */
 export interface ToggleY extends ToggleOptions {
   /**
-   * Select individal values in the `y` scale domain.
+   * Select individual values in the `y` scale domain.
    * Clicking or touching a mark toggles its selection status.
    */
   select: 'toggleY';
@@ -49,7 +49,7 @@ export interface ToggleY extends ToggleOptions {
 /** A toggleZ interactor. */
 export interface ToggleZ extends ToggleOptions {
   /**
-   * Select individal values in the `z` scale domain.
+   * Select individual values in the `z` scale domain.
    * Clicking or touching a mark toggles its selection status.
    */
   select: 'toggleZ';
@@ -58,7 +58,7 @@ export interface ToggleZ extends ToggleOptions {
 /** A toggleColor interactor. */
 export interface ToggleColor extends ToggleOptions {
   /**
-   * Select individal values in the `color` scale domain.
+   * Select individual values in the `color` scale domain.
    * Clicking or touching a mark toggles its selection status.
    */
   select: 'toggleColor';
