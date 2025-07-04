@@ -2,7 +2,7 @@ import type {ExprValue, MaybeArray} from '../types.js';
 import { asLiteral } from '../util/ast.js';
 import { argsList, fn } from '../util/function.js';
 import { ListNode } from "../ast/list.js";
-import {ExprNode} from "../ast/node";
+import {ExprNode} from "../ast/node.js";
 
 function listFn(name: string, expr: MaybeArray<ExprValue>, ...args: unknown[]) {
   return fn(name, expr, ...(argsList(args).map(asLiteral)));
@@ -14,7 +14,7 @@ function listFn(name: string, expr: MaybeArray<ExprValue>, ...args: unknown[]) {
  * input value will be directly coerced to a string.
  * @param values
  */
-export function list(values: ExprNode) {
+export function list(values: ExprNode[]) {
   return new ListNode(values);
 }
 
