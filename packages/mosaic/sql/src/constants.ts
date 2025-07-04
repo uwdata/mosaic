@@ -3,6 +3,7 @@ export const COLUMN_PARAM = 'COLUMN_PARAM';
 export const TABLE_REF = 'TABLE_REF';
 export const LITERAL = 'LITERAL';
 export const INTERVAL = 'INTERVAL';
+export const LIST = 'LIST';
 
 export const ORDER_BY = 'ORDER_BY';
 export const CAST = 'CAST';
