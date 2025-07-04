@@ -35,6 +35,7 @@ export { column } from './functions/column.js';
 export { cte } from './functions/cte.js';
 export { dateBin, dateMonth, dateMonthDay, dateDay, epoch_ms } from './functions/datetime.js';
 export { days, hours, interval, microseconds, minutes, milliseconds, months, seconds, years } from './functions/interval.js';
+export { listContains, listHasAll, listHasAny } from './functions/list.js';
 export { literal, verbatim } from './functions/literal.js';
 export { abs, ceil, exp, floor, greatest, isFinite, isInfinite, isNaN, least, ln, log, round, sign, sqrt, trunc } from './functions/numeric.js';
 export { and, or, not, isNull, isNotNull, bitNot, bitAnd, bitOr, bitLeft, bitRight, add, sub, mul, div, idiv, mod, pow, eq, neq, lt, gt, lte, gte, isDistinct, isNotDistinct, isBetween, isNotBetween, isIn } from './functions/operators.js';
