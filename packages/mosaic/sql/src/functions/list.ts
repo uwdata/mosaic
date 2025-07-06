@@ -19,7 +19,7 @@ export function list(...values: ExprValue[]) {
  * @param values
  */
 function exprValuesToExprNode(values: ExprValue | ExprValue[]) {
-  return Array.isArray(values) ? list(values) : asNode(values);
+  return Array.isArray(values) ? list(...values) : asNode(values);
 }
 
 /**
