@@ -1,47 +1,57 @@
-import type {ExprValue, MaybeArray} from '../types.js';
-import { asLiteral } from '../util/ast.js';
-import { argsList, fn } from '../util/function.js';
+import type { ExprValue } from "../types.js";
+import { asLiteral, asNode } from "../util/ast.js";
+import { argsList, fn } from "../util/function.js";
 import { ListNode } from "../ast/list.js";
-import {ExprNode} from "../ast/node.js";
+import { literal } from "./literal.js";
 
-function listFn(name: string, expr: MaybeArray<ExprValue>, ...args: unknown[]) {
-  return fn(name, expr, ...(argsList(args).map(asLiteral)));
+/**
+ * Create a List containing the argument values.
+ * @param values
+ */
+export function list(...values: ExprValue[]) {
+  return new ListNode(argsList(values).map(asLiteral));
 }
 
 /**
- * Return a SQL AST node for a literal value. The supported types are
- * null, string, number, boolean, Date, and RegExp. Otherwise, the
- * input value will be directly coerced to a string.
+ * Convert a single value or an array of values to either a ListNode if the input
+ * is an array, or a single ExprNode if it is a single value. A single string will
+ * be interpreted as a column reference.
  * @param values
  */
-export function list(values: ExprNode[]) {
-  return new ListNode(values);
+function exprValuesToExprNode(values: ExprValue | ExprValue[]) {
+  return Array.isArray(values) ? list(values) : asNode(values);
 }
 
 /**
  * Function that returns true if the list contains the element,
- * false otherwise.
- * @param list
+ * false otherwise. If the first argument is a string, it is
+ * interpreted as a column reference, otherwise it is coerced
+ * to a list.
+ * @param list1
  * @param element
  */
-export function list_contains(
-  list: MaybeArray<ExprValue>,
-  element: ExprValue
+export function listContains(
+  list1: ExprValue | ExprValue[],
+  element: ExprValue,
 ) {
-  return listFn('list_contains', list, element);
+  return fn("list_contains", exprValuesToExprNode(list1), literal(element));
 }
 
 /**
- * Function that returns true if all elements of sub-list exist in list,
+ * Function that returns true if all elements of list2 exist in list1,
  * false otherwise.
- * @param list
- * @param sub_list
+ * @param list1
+ * @param list2
  */
-export function list_has_all(
-  list: MaybeArray<ExprValue>,
-  sub_list: ExprValue[]
+export function listHasAll(
+  list1: ExprValue | ExprValue[],
+  list2: ExprValue | ExprValue[],
 ) {
-  return listFn('list_has_all', list, sub_list);
+  return fn(
+    "list_has_all",
+    exprValuesToExprNode(list1),
+    exprValuesToExprNode(list2),
+  );
 }
 
 /**
@@ -50,9 +60,13 @@ export function list_has_all(
  * @param list1
  * @param list2
  */
-export function list_has_any(
-  list1: MaybeArray<ExprValue>,
-  list2: ExprValue[]
+export function listHasAny(
+  list1: ExprValue | ExprValue[],
+  list2: ExprValue | ExprValue[],
 ) {
-  return listFn('list_has_any', list1, list2);
+  return fn(
+    "list_has_any",
+    exprValuesToExprNode(list1),
+    exprValuesToExprNode(list2),
+  );
 }
