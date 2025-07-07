@@ -1,6 +1,7 @@
 
 import { isMosaicClient, MosaicClient } from './MosaicClient.js';
-import { type ExprNode, type ExprValue, type ScaleOptions, type ScaleDomain, and, contains, isBetween, isIn, isNotDistinct, literal, or, prefix, regexp_matches, suffix, listHasAll, listHasAny } from '@uwdata/mosaic-sql';
+import { type ExprNode, type ExprValue, type ScaleOptions, type ScaleDomain, and, contains, isBetween, isIn, isNotDistinct, literal, or, prefix, regexp_matches, suffix } from '@uwdata/mosaic-sql';
+import { listHasAll, listHasAny } from '../../sql/src/functions/list.js';
 
 /**
  * Selection clause metadata to guide possible query optimizations.
@@ -112,13 +113,13 @@ export interface SelectionClause {
 export function clauseList(field: ExprValue, value: unknown, {
   source,
   clients = isMosaicClient(source) ? new Set([source]) : undefined,
-  listType = 'any'
+  listMatch = 'any'
 }: {
   source: ClauseSource;
   clients?: Set<MosaicClient>;
-  listType?: 'any' | 'all';
+  listMatch?: 'any' | 'all';
 }): SelectionClause {
-  const listFn = listType === 'all' ? listHasAll : listHasAny;
+  const listFn = listMatch === 'all' ? listHasAll : listHasAny;
   const predicate: ExprNode | null = value !== undefined
     ? listFn(field, [literal(value)])
     : null;

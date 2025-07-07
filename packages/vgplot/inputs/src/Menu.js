@@ -1,5 +1,6 @@
 /** @import { Param, Selection } from '@uwdata/mosaic-core' */
-import { isParam, isSelection, clausePoint, clauseList } from '@uwdata/mosaic-core';
+import { isParam, isSelection, clausePoint } from '@uwdata/mosaic-core';
+import { clauseList } from '../../../mosaic/core/src/SelectionClause.js';
 import { Query } from '@uwdata/mosaic-sql';
 import { Input, input } from './input.js';
 
@@ -81,7 +82,7 @@ export class Menu extends Input {
     format = x => x, // TODO
     options,
     value,
-    field = column
+    field = column,
     listMatch,
   } = {}) {
     super(filterBy, element);
@@ -169,7 +170,8 @@ export class Menu extends Input {
       if (value === '') value = undefined; // 'All' option
         let clause;
         if (listMatch) {
-          clause = clauseList(field, value, { source: this, listMatch: listMatch });
+          const match = listMatch === 'any' || listMatch === 'all' ? listMatch : undefined;
+          clause = clauseList(field, value, { source: this, listMatch: match });
         } else {
           clause = clausePoint(field, value, { source: this });
         }
