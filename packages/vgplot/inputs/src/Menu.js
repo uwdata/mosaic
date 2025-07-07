@@ -1,5 +1,5 @@
 /** @import { Param, Selection } from '@uwdata/mosaic-core' */
-import { isParam, isSelection, clausePoint } from '@uwdata/mosaic-core';
+import { isParam, isSelection, clausePoint, clauseList } from '@uwdata/mosaic-core';
 import { Query } from '@uwdata/mosaic-sql';
 import { Input, input } from './input.js';
 
@@ -53,6 +53,8 @@ export class Menu extends Input {
    *  clause is added for the currently selected menu option.
    * @param {string} [options.field] The database column name to use within
    *  generated selection clause predicates. Defaults to the *column* option.
+   * @param {string} [options.listMatch] If the database column is a list type,
+   * this can be set to `any` or `all` to choose how to handle multiple matches.
    * @param {(any | { value: any, label?: string })[]} [options.options] An
    *  array of menu options, as literal values or option objects. Option
    *  objects have a `value` property and an optional `label` property. If no
@@ -80,12 +82,14 @@ export class Menu extends Input {
     options,
     value,
     field = column
+    listMatch,
   } = {}) {
     super(filterBy, element);
     this.from = from;
     this.column = column;
     this.format = format;
     this.field = field;
+    this.listMatch = listMatch;
     const selection = this.selection = as;
 
     const lab = document.createElement('label');
@@ -160,10 +164,15 @@ export class Menu extends Input {
   }
 
   publish(value) {
-    const { selection, field } = this;
+    const { selection, field, listMatch } = this;
     if (isSelection(selection)) {
       if (value === '') value = undefined; // 'All' option
-      const clause = clausePoint(field, value, { source: this });
+        let clause;
+        if (listMatch) {
+          clause = clauseList(field, value, { source: this, listMatch: listMatch });
+        } else {
+          clause = clausePoint(field, value, { source: this });
+        }
       selection.update(clause);
     } else if (isParam(selection)) {
       selection.update(value);
@@ -171,8 +180,11 @@ export class Menu extends Input {
   }
 
   query(filter = []) {
-    const { from, column } = this;
+    let { from, column, listMatch } = this;
     if (!from) return null;
+    if (listMatch) {
+      column = `UNNEST(${column})`;
+    }
     return Query
       .from(from)
       .select({ value: column })
