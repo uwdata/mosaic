@@ -50,6 +50,7 @@ The Mosaic SQL package includes operators for manipulating and comparing values:
 - Arithmetic operators: `add`, `sub`, `mul`, `div`, `idiv`, `mod`, `pow`
 - Bitwise operators: `bitNot`, `bitAnd`, `bitOr`, `bitLeft`, `bitRight`
 - Conditionals: `cond`
+- Unnest: `unnest`
 
 When given a string input, an operator function interprets it as a column name.
 

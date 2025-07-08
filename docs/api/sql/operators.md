@@ -123,3 +123,9 @@ Returns an expression testing if any of the input _values_ exist in the _express
 `listHasAll(expression, values)`
 
 Returns an expression testing if all the input _values_ exist in the _expression_ list. Maps to `list_has_all(expression, value)`.
+
+## unnest
+
+`unnest(expression)`
+
+Returns an expression that unnests the _expression_ list or struct. Maps to `UNNEST(expression)`.
