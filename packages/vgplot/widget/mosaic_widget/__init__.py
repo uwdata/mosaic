@@ -6,8 +6,11 @@ import time
 
 import anywidget
 import duckdb
+import narwhals as nw
 import pyarrow as pa
 import traitlets
+
+from narwhals.typing import Frame
 
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
@@ -32,7 +35,7 @@ class MosaicWidget(anywidget.AnyWidget):
         self,
         spec: dict | None = None,
         con: duckdb.DuckDBPyConnection | None = None,
-        data: dict | None = None,
+        data: dict[str, Frame] | None = None,
         *args,
         **kwargs,
     ):
@@ -58,7 +61,7 @@ class MosaicWidget(anywidget.AnyWidget):
         self.spec = spec
         self.con = con
         for name, df in data.items():
-            self.con.register(name, df)
+            self.con.register(name, _frame_to_arrow(df))
         self.on_msg(self._handle_custom_msg)
 
     def _handle_custom_msg(self, data: dict, buffers: list):
@@ -96,3 +99,14 @@ class MosaicWidget(anywidget.AnyWidget):
             logger.warning(f"DONE. Slow query {uuid} took {total} ms.\n{sql}")
         else:
             logger.info(f"DONE. Query {uuid} took {total} ms.\n{sql}")
+
+
+def _frame_to_arrow(frame: Frame) -> pa.Table:
+    """Converts a native dataframe(-like) object to a PyArrow table so that it can be registered to DuckDB."""
+    nw_frame = nw.from_native(frame)
+
+    # Some backends like Ibis, PySpark, etc. have lazy-only Narwhals support, so we must materialize them
+    if isinstance(nw_frame, nw.LazyFrame):
+        nw_frame = nw_frame.collect()
+
+    return nw_frame.to_arrow()
