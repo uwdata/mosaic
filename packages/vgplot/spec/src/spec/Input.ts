@@ -28,6 +28,11 @@ export interface Menu {
    */
   column?: string;
   /**
+   * If the database column is an array, this property determines how
+   * to match the selected menu option against the array values.
+   */
+  listMatch?: 'any' | 'all';
+  /**
    * A selection to filter the database table indicated by the `from` property.
    */
   filterBy?: ParamRef;
