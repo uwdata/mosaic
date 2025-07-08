@@ -1,7 +1,6 @@
 
 import { isMosaicClient, MosaicClient } from './MosaicClient.js';
-import { type ExprNode, type ExprValue, type ScaleOptions, type ScaleDomain, and, contains, isBetween, isIn, isNotDistinct, literal, or, prefix, regexp_matches, suffix } from '@uwdata/mosaic-sql';
-import { listHasAll, listHasAny } from '../../sql/src/functions/list.js';
+import { type ExprNode, type ExprValue, type ScaleOptions, type ScaleDomain, and, contains, isBetween, isIn, isNotDistinct, literal, or, prefix, regexp_matches, suffix, listHasAny, listHasAll } from '@uwdata/mosaic-sql';
 
 /**
  * Selection clause metadata to guide possible query optimizations.

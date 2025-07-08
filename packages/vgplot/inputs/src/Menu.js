@@ -1,6 +1,5 @@
 /** @import { Param, Selection } from '@uwdata/mosaic-core' */
-import { isParam, isSelection, clausePoint } from '@uwdata/mosaic-core';
-import { clauseList } from '../../../mosaic/core/src/SelectionClause.js';
+import { isParam, isSelection, clausePoint, clauseList } from '@uwdata/mosaic-core';
 import { Query } from '@uwdata/mosaic-sql';
 import { Input, input } from './input.js';
 
