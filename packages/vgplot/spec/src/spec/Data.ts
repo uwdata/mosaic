@@ -6,7 +6,7 @@ export interface DataBaseOptions {
   select?: string[];
   /**
    * A filter (WHERE clause) to apply upon load.
-   * Only rows that pass the filted are included.
+   * Only rows that pass the filter are included.
    */
   where?: string | string[];
   /**
@@ -127,7 +127,7 @@ export interface DataSpatial extends DataBaseOptions {
   type: 'spatial';
   /**
    * The file path for the spatial dataset to load. See the [DuckDB spatial
-   * documention][1] for more information on supported file types.
+   * documentation][1] for more information on supported file types.
    *
    * [1]: https://duckdb.org/docs/extensions/spatial.html#st_read--read-spatial-data-from-files
    */

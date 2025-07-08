@@ -15,7 +15,7 @@ export interface Interval1DOptions {
    */
   field?: string;
   /**
-   * The size of an interative pixel (default `1`). Larger pixel sizes reduce
+   * The size of an interactive pixel (default `1`). Larger pixel sizes reduce
    * the brush resolution, which can reduce the size of pre-aggregated
    * materialized views.
    */

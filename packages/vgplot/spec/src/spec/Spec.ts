@@ -52,7 +52,7 @@ export interface SpecHead {
   plotDefaults?: PlotAttributes;
 }
 
-/** A specifcation component such as a plot, input widget, or layout. */
+/** A specification component such as a plot, input widget, or layout. */
 export type Component =
   | HConcat
   | VConcat

@@ -132,7 +132,7 @@ export interface Slider {
    */
   filterBy?: ParamRef;
   /**
-   * The minumum slider value.
+   * The minimum slider value.
    */
   min?: number;
   /**

@@ -42,7 +42,7 @@ export interface ErrorBarX extends MarkData, ErrorBarXOptions {
    *
    * This mark aggregates raw values to produce a [parametric confidence
    * interval][1] of the mean, assuming a normal distribution. To instead
-   * visualize pre-computeted interval values or custom aggregations, use
+   * visualize pre-computed interval values or custom aggregations, use
    * a **ruleY** mark with specified **x1** and **x2** channels.
    *
    * Multiple error bars can be produced by specifying a **z** or **stroke**
@@ -78,7 +78,7 @@ export interface ErrorBarY extends MarkData, ErrorBarYOptions {
    *
    * This mark aggregates raw values to produce a [parametric confidence
    * interval][1] of the mean, assuming a normal distribution. To instead
-   * visualize pre-computeted interval values or custom aggregations, use
+   * visualize pre-computed interval values or custom aggregations, use
    * a **ruleX** mark with specified **y1** and **y2** channels.
    *
    * Multiple error bars can be produced by specifying a **z** or **stroke**
