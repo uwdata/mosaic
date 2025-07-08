@@ -6,7 +6,7 @@ export type Expression =
 export interface SQLExpression {
   /**
    * A SQL expression string to derive a new column value.
-   * Embedded Param refrences, such as `$param + 1`, are supported.
+   * Embedded Param references, such as `$param + 1`, are supported.
    * For expressions with aggregate functions, use *agg* instead.
    */
   sql: string;

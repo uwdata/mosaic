@@ -112,7 +112,7 @@ export interface Bin {
 /** A column transform. */
 export interface Column {
   /**
-   * Intpret a string or param-value as a column reference.
+   * Interpret a string or param-value as a column reference.
    */
   column: Arg1;
 }
@@ -362,7 +362,7 @@ export interface Rank extends WindowOptions {
 export interface DenseRank extends WindowOptions {
   /**
    * Compute the dense row rank (no gaps) over an ordered window partition.
-   * Sorting ties do not result in gaps in the rank numbers ( [1, 1, 2, ...]).
+   * Sorting ties do not result in gaps in the rank numbers ([1, 1, 2, ...]).
    */
   dense_rank: Arg0;
 }
@@ -370,7 +370,7 @@ export interface DenseRank extends WindowOptions {
 /** A percent_rank window transform. */
 export interface PercentRank extends WindowOptions {
   /**
-   * Compute the percetange rank over an ordered window partition.
+   * Compute the percentage rank over an ordered window partition.
    */
   percent_rank: Arg0;
 }
