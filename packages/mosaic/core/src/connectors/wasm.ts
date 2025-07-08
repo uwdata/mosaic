@@ -15,6 +15,8 @@ interface DuckDBWASMConnectorOptions extends DuckDBWASMOptions {
   duckdb?: duckdb.AsyncDuckDB;
   /** Optional pre-existing DuckDB-WASM connection. */
   connection?: duckdb.AsyncDuckDBConnection;
+  /** Optional database config. */
+  config?: duckdb.DuckDBConfig;
 }
 
 /**
@@ -34,6 +36,7 @@ export class DuckDBWASMConnector implements Connector {
   public _options: DuckDBWASMOptions;
   public _db?: duckdb.AsyncDuckDB;
   public _con?: duckdb.AsyncDuckDBConnection;
+  public _config?: duckdb.DuckDBConfig;
   public _loadPromise?: Promise<unknown>;
 
   /**
@@ -41,11 +44,12 @@ export class DuckDBWASMConnector implements Connector {
    * @param options Connector options.
    */
   constructor(options: DuckDBWASMConnectorOptions = {}) {
-    const { ipc, duckdb, connection, ...opts } = options;
+    const { ipc, duckdb, connection, config, ...opts } = options;
     this._ipc = ipc;
     this._options = opts;
     this._db = duckdb;
     this._con = connection;
+    this._config = config;
   }
 
   /**
@@ -113,6 +117,7 @@ function connect(c: DuckDBWASMConnector): Promise<unknown> {
       c._db
         ? Promise.resolve(c._db)
         : initDatabase(c._options).then(result => c._db = result))
+      .then(db => c._config != undefined ? db.open(c._config).then(() => db) : db)
       .then(db => db.connect())
       .then(result => c._con = result);
   }
@@ -135,7 +140,7 @@ async function initDatabase({
     new Blob([`importScripts("${bundle.mainWorker}");`], {type: 'text/javascript'})
   );
 
-  // Instantiate the asynchronus version of DuckDB-wasm
+  // Instantiate the asynchronous version of DuckDB-wasm
   const worker = new Worker(worker_url);
   const logger = log ? new duckdb.ConsoleLogger() : new duckdb.VoidLogger();
   const db = new duckdb.AsyncDuckDB(logger, worker);
