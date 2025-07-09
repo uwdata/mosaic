@@ -17,6 +17,7 @@ export { DuckDBWASMConnector } from './connectors/wasm.js';
 export {
   clauseInterval,
   clauseIntervals,
+  clauseList,
   clausePoint,
   clausePoints,
   clauseMatch

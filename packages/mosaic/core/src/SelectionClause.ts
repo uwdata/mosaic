@@ -1,6 +1,6 @@
 
 import { isMosaicClient, MosaicClient } from './MosaicClient.js';
-import { type ExprNode, type ExprValue, type ScaleOptions, type ScaleDomain, and, contains, isBetween, isIn, isNotDistinct, literal, or, prefix, regexp_matches, suffix } from '@uwdata/mosaic-sql';
+import { type ExprNode, type ExprValue, type ScaleOptions, type ScaleDomain, and, contains, isBetween, isIn, isNotDistinct, literal, or, prefix, regexp_matches, suffix, listHasAny, listHasAll, listContains } from '@uwdata/mosaic-sql';
 
 /**
  * Selection clause metadata to guide possible query optimizations.
@@ -96,6 +96,39 @@ export interface SelectionClause {
    * by creating materialized views of pre-aggregated data when applicable.
    */
   meta?: ClauseMetadata;
+}
+
+/**
+ * Generate a selection clause for a single selected point value in a list.
+ * @param field The table column or expression to select, which must be a list.
+ * @param value The selected value.
+ * @param options Additional clause properties.
+ * @param options.source The source component generating this clause.
+ * @param options.clients The Mosaic clients associated
+ *  with this clause. These clients are not filtered by this clause in
+ *  cross-filtering contexts.
+ * @returns The generated selection clause.
+ */
+export function clauseList(field: ExprValue, value: unknown, {
+  source,
+  clients = isMosaicClient(source) ? new Set([source]) : undefined,
+  listMatch = 'any'
+}: {
+  source: ClauseSource;
+  clients?: Set<MosaicClient>;
+  listMatch?: 'any' | 'all';
+}): SelectionClause {
+
+  const listFn = listMatch === 'all' ? listHasAll : listHasAny;
+  const predicate: ExprNode | null = value !== undefined
+    ? listFn(field, literal(value))
+    : null;
+  return {
+    source,
+    clients,
+    value,
+    predicate
+  };
 }
 
 /**
