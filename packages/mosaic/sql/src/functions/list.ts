@@ -33,7 +33,7 @@ export function listContains(
   list1: ExprValue | ExprValue[],
   element: ExprValue,
 ) {
-  return fn("list_contains", asList(list1), asList(element));
+  return fn("list_contains", asList(list1), asLiteral(element));
 }
 
 /**
