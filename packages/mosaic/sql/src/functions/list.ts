@@ -2,7 +2,6 @@ import type { ExprValue } from "../types.js";
 import { asLiteral, asNode } from "../util/ast.js";
 import { argsList, fn } from "../util/function.js";
 import { ListNode } from "../ast/list.js";
-import { literal } from "./literal.js";
 
 /**
  * Create a List containing the argument values.
@@ -34,7 +33,7 @@ export function listContains(
   list1: ExprValue | ExprValue[],
   element: ExprValue,
 ) {
-  return fn("list_contains", exprValuesToExprNode(list1), literal(element));
+  return fn("list_contains", exprValuesToExprNode(list1), asLiteral(element));
 }
 
 /**
