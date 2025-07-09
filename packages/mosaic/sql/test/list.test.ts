@@ -17,7 +17,7 @@ describe("List functions", () => {
   });
 
   it("include listContains no columns", () => {
-    const expr = listContains(list("foo", "bar"), "bar");
+    const expr = listContains(list(["foo", "bar"]), "bar");
     expect(String(expr)).toBe(`list_contains(['foo', 'bar'], 'bar')`);
     expect(expr.name).toBe("list_contains");
     expect(expr.args.length).toBe(2);
@@ -25,7 +25,7 @@ describe("List functions", () => {
   });
 
   it("include listHasAll one column", () => {
-    const expr = listHasAll("foo", list("bar", "baz"));
+    const expr = listHasAll("foo", list(["bar", "baz"]));
     expect(String(expr)).toBe(`list_has_all("foo", ['bar', 'baz'])`);
     expect(expr.name).toBe("list_has_all");
     expect(expr.args.length).toBe(2);
@@ -33,7 +33,7 @@ describe("List functions", () => {
   });
 
   it("include listHasAll no columns", () => {
-    const expr = listHasAll(list("bar", "baz"), list("bar", "baz"));
+    const expr = listHasAll(list(["bar", "baz"]), list(["bar", "baz"]));
     expect(String(expr)).toBe(`list_has_all(['bar', 'baz'], ['bar', 'baz'])`);
     expect(expr.name).toBe("list_has_all");
     expect(expr.args.length).toBe(2);
@@ -49,7 +49,7 @@ describe("List functions", () => {
   });
 
   it("include listHasAny", () => {
-    const expr = listHasAny("foo", list("bar", "baz"));
+    const expr = listHasAny("foo", list(["bar", "baz"]));
     expect(String(expr)).toBe(`list_has_any("foo", ['bar', 'baz'])`);
     expect(expr.name).toBe("list_has_any");
     expect(expr.args.length).toBe(2);
@@ -57,7 +57,7 @@ describe("List functions", () => {
   });
 
   it("include listHasAny no columns", () => {
-    const expr = listHasAny(list("bar", "baz"), list("bar", "baz"));
+    const expr = listHasAny(list(["bar", "baz"]), list(["bar", "baz"]));
     expect(String(expr)).toBe(`list_has_any(['bar', 'baz'], ['bar', 'baz'])`);
     expect(expr.name).toBe("list_has_any");
     expect(expr.args.length).toBe(2);

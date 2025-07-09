@@ -43,7 +43,7 @@ describe("Unnest functions", () => {
   });
 
   it("include unnest, hardcoded list, recursive, maxDepth", () => {
-    const expr = unnest(list(1, 2, 3), true, 5);
+    const expr = unnest(list([1, 2, 3]), true, 5);
     expect(String(expr)).toBe(
       `UNNEST([1, 2, 3], recursive := true, max_depth := 5)`,
     );
