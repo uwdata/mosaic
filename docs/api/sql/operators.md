@@ -116,13 +116,13 @@ Returns an expression testing if the input _value_ exists in the _expression_ li
 
 `listHasAny(expression, values)`
 
-Returns an expression testing if any of the input _values_ exist in the _expression_ list. Maps to `list_has_any(expression, value)`.
+Returns an expression testing if any of the input _values_ exist in the _expression_ list. Maps to `list_has_any(expression, values)`.
 
 ## listHasAll
 
 `listHasAll(expression, values)`
 
-Returns an expression testing if all the input _values_ exist in the _expression_ list. Maps to `list_has_all(expression, value)`.
+Returns an expression testing if all the input _values_ exist in the _expression_ list. Maps to `list_has_all(expression, values)`.
 
 ## unnest
 
