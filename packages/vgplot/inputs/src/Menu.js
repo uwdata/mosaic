@@ -1,6 +1,6 @@
 /** @import { Param, Selection } from '@uwdata/mosaic-core' */
-import { isParam, isSelection, clausePoint } from '@uwdata/mosaic-core';
-import { Query } from '@uwdata/mosaic-sql';
+import { isParam, isSelection, clausePoint, clauseList } from '@uwdata/mosaic-core';
+import { Query, unnest } from '@uwdata/mosaic-sql';
 import { Input, input } from './input.js';
 
 const isObject = v => {
@@ -33,6 +33,7 @@ const isObject = v => {
  *  to pull menu options. The unique column values are used as menu options.
  *  Used in conjunction with the *from* option.
  * @param {string} [options.label] A text label for this input.
+ * @param {'any' | 'all'} [options.listMatch] The list match mode.
  * @returns {HTMLElement} The container element for a menu input.
  */
 export const menu = options => input(Menu, options);
@@ -68,6 +69,7 @@ export class Menu extends Input {
    *  to pull menu options. The unique column values are used as menu options.
    *  Used in conjunction with the *from* option.
    * @param {string} [options.label] A text label for this input.
+   * @param {'any' | 'all'} [options.listMatch] The list match mode.
    */
   constructor({
     element,
@@ -79,13 +81,15 @@ export class Menu extends Input {
     format = x => x, // TODO
     options,
     value,
-    field = column
+    field = column,
+    listMatch,
   } = {}) {
     super(filterBy, element);
     this.from = from;
     this.column = column;
     this.format = format;
     this.field = field;
+    this.listMatch = listMatch;
     const selection = this.selection = as;
 
     const lab = document.createElement('label');
@@ -160,10 +164,12 @@ export class Menu extends Input {
   }
 
   publish(value) {
-    const { selection, field } = this;
+    const { selection, field, listMatch } = this;
     if (isSelection(selection)) {
       if (value === '') value = undefined; // 'All' option
-      const clause = clausePoint(field, value, { source: this });
+      const clause = listMatch
+        ? clauseList(field, value, { source: this, listMatch })
+        : clausePoint(field, value, { source: this });
       selection.update(clause);
     } else if (isParam(selection)) {
       selection.update(value);
@@ -171,11 +177,11 @@ export class Menu extends Input {
   }
 
   query(filter = []) {
-    const { from, column } = this;
+    const { from, column, listMatch } = this;
     if (!from) return null;
     return Query
       .from(from)
-      .select({ value: column })
+      .select({ value: listMatch ? unnest(column) : column })
       .distinct()
       .where(filter)
       .orderby(column)
