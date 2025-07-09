@@ -7,7 +7,7 @@ import { ListNode } from "../ast/list.js";
  * Create a List containing the argument values.
  * @param values
  */
-export function list(...values: ExprValue[]) {
+export function list(values: ExprValue[]) {
   return new ListNode(argsList(values).map(asLiteral));
 }
 
@@ -17,8 +17,8 @@ export function list(...values: ExprValue[]) {
  * be interpreted as a column reference.
  * @param values
  */
-function exprValuesToExprNode(values: ExprValue | ExprValue[]) {
-  return Array.isArray(values) ? list(...values) : asNode(values);
+function asList(values: ExprValue | ExprValue[]) {
+  return Array.isArray(values) ? list(values) : asNode(values);
 }
 
 /**
@@ -33,7 +33,7 @@ export function listContains(
   list1: ExprValue | ExprValue[],
   element: ExprValue,
 ) {
-  return fn("list_contains", exprValuesToExprNode(list1), asLiteral(element));
+  return fn("list_contains", asList(list1), asList(element));
 }
 
 /**
@@ -46,11 +46,7 @@ export function listHasAll(
   list1: ExprValue | ExprValue[],
   list2: ExprValue | ExprValue[],
 ) {
-  return fn(
-    "list_has_all",
-    exprValuesToExprNode(list1),
-    exprValuesToExprNode(list2),
-  );
+  return fn("list_has_all", asList(list1), asList(list2));
 }
 
 /**
@@ -63,9 +59,5 @@ export function listHasAny(
   list1: ExprValue | ExprValue[],
   list2: ExprValue | ExprValue[],
 ) {
-  return fn(
-    "list_has_any",
-    exprValuesToExprNode(list1),
-    exprValuesToExprNode(list2),
-  );
+  return fn("list_has_any", asList(list1), asList(list2));
 }
