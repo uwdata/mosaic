@@ -24,7 +24,7 @@ The optional boolean-valued _materialized_ argument indicates if the CTE should 
 
 Create an expression AST node that references a literal _value_.
 Upon string coercion, an appropriate SQL value will be produced.
-For example, string literals will be properly quoted and JavaScript `Date` objects that match an extact UTC date will be converted to the SQL Date definitions.
+For example, string literals will be properly quoted and JavaScript `Date` objects that match an exact UTC date will be converted to the SQL Date definitions.
 The supported primitive types are: boolean, null, number, string, regexp, and Date (maps to SQL Date or Timestamp depending on the value).
 
 ## sql

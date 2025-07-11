@@ -75,7 +75,7 @@ The keys are order-sensitive, as some datasets may be derived from another.
 ```
 
 The `file` key indicates files relative to the current directory (whether in the browser, or where a data server was launched locally).
-Most file types (`"csv"`, `"json"`, `"parquet"`) are inferred by file extenstion, but can be provided using the `type` key.
+Most file types (`"csv"`, `"json"`, `"parquet"`) are inferred by file extension, but can be provided using the `type` key.
 
 Data definitions can also include parameters.
 In the example above, the table `"csvData"` includes a `delimiter` parameter, while the new table `"parquetData"` is created by first filtering rows and selecting a subset of columns from the source data.
@@ -100,7 +100,7 @@ To refer to a param or selection later in the specification, use a `$`-prefixed 
 }
 ```
 
-If a param reference is used in a specifcation but not defined, a new `intersect` selection with a matching name is created.
+If a param reference is used in a specification but not defined, a new `intersect` selection with a matching name is created.
 
 ### Layout
 
