@@ -1,6 +1,6 @@
 # Multi-Database Support
 
-Mosaic uses DuckDB, which [supports multiple databases](https://duckdb.org/2024/01/26/multi-database-support-in-duckdb.html) such as MySQL, PostgreSQL, and SQLite, via [DuckDB extensions](https://duckdb.org/docs/extensions/overview.html). This capability allows data to be read into DuckDB and transferred between systems, enabling flexibile and interoperable data management.
+Mosaic uses DuckDB, which [supports multiple databases](https://duckdb.org/2024/01/26/multi-database-support-in-duckdb.html) such as MySQL, PostgreSQL, and SQLite, via [DuckDB extensions](https://duckdb.org/docs/extensions/overview.html). This capability allows data to be read into DuckDB and transferred between systems, enabling flexible and interoperable data management.
 
 Mosaic can take advantage of these features to visualize data stored in alternative databases. As shown in the examples below, database configuration can be performed via direct DuckDB queries. Once configured, Mosaic can be used in a normal fashion.
 

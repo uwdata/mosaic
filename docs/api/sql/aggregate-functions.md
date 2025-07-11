@@ -35,7 +35,7 @@ Provide one or more _expressions_ by which to partition a windowed version of th
 
 `AggregateNode.orderby(...expressions)`
 
-Provide one or more _expressions_ by which to sort a windowed version of this aggregate function and returns a new [WindowNodw](./window-functions#window-node) instance.
+Provide one or more _expressions_ by which to sort a windowed version of this aggregate function and returns a new [WindowNode](./window-functions#window-node) instance.
 
 ### rows
 

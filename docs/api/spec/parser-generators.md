@@ -21,7 +21,7 @@ parseSpec(spec);
 The resulting AST node is an object with the following properties and methods:
 
 - _meta_: An object of specification metadata, corresponding to the input spec's top-level `meta` property.
-- _config_: An object for top-level configuration options, such as database extenstions to load.
+- _config_: An object for top-level configuration options, such as database extensions to load.
 - _root_: The root node for the rest of the AST. This might represent a `plot`, `hconcat`, `vconcat`, or other top-level specification element.
 - _data_: Dataset definitions as an array of key-value pairs. The keys are dataset names and the values are AST nodes for the dataset definition.
 - _params_: Param and Selection definitions as an array of key-value pairs. The keys are params names and the values are AST nodes for Param or Selection definitions.
