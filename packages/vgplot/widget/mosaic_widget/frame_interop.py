@@ -1,12 +1,12 @@
 import logging
 import narwhals as nw
-from narwhals.typing import Frame
+from narwhals.typing import IntoFrame
 
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
 
 
-def _is_frame_native_to_duckdb(frame: Frame) -> bool:
+def _is_frame_native_to_duckdb(frame: IntoFrame) -> bool:
     """Check if a frame is natively supported by DuckDB to be registered as a virtual table with zero-copy guarantees."""
 
     # "<class '{module_path}'>" -> "{module_path}" via slicing
@@ -16,7 +16,7 @@ def _is_frame_native_to_duckdb(frame: Frame) -> bool:
     return frame_backend in backends_with_native_virtual_table_support
 
 
-def frame_to_duckdb_registrable(frame: Frame) -> object:
+def frame_to_duckdb_registrable(frame: IntoFrame) -> object:
     """Converts a native dataframe(-like) object to a DuckDB-registrable object.
 
     If the passed `frame` is one of the backends supported by DuckDB to be registered as a virtual table with zero-copy guarantees,

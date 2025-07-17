@@ -13,7 +13,7 @@ import traitlets
 from mosaic_widget.frame_interop import frame_to_duckdb_registrable
 
 if TYPE_CHECKING:
-    from narwhals.typing import Frame
+    from narwhals.typing import IntoFrame
 
 
 logger = logging.getLogger(__name__)
@@ -39,7 +39,7 @@ class MosaicWidget(anywidget.AnyWidget):
         self,
         spec: dict | None = None,
         con: duckdb.DuckDBPyConnection | None = None,
-        data: dict[str, "Frame"] | None = None,
+        data: dict[str, "IntoFrame"] | None = None,
         *args,
         **kwargs,
     ):

@@ -1,7 +1,7 @@
 import logging
 
 import pytest
-from narwhals.typing import Frame
+from narwhals.typing import IntoFrame
 
 from mosaic_widget.frame_interop import frame_to_duckdb_registrable
 
@@ -9,28 +9,28 @@ CSV_PATH = "../../../data/seattle-weather.csv"
 
 
 @pytest.fixture
-def dask_frame() -> Frame:
+def dask_frame() -> IntoFrame:
     import dask.dataframe as dd
 
     return dd.read_csv(CSV_PATH, parse_dates=["date"])
 
 
 @pytest.fixture
-def duckdb_frame() -> Frame:
+def duckdb_frame() -> IntoFrame:
     import duckdb
 
     return duckdb.query(f"select * from '{CSV_PATH}'")
 
 
 @pytest.fixture
-def ibis_frame() -> Frame:
+def ibis_frame() -> IntoFrame:
     import ibis
 
     return ibis.read_csv(CSV_PATH)
 
 
 @pytest.fixture
-def modin_frame() -> Frame:
+def modin_frame() -> IntoFrame:
     import os
 
     import modin.pandas as md
@@ -41,7 +41,7 @@ def modin_frame() -> Frame:
 
 
 @pytest.fixture
-def pandas_frame() -> Frame:
+def pandas_frame() -> IntoFrame:
     import pandas as pd
 
     return pd.read_csv(CSV_PATH, parse_dates=["date"])
@@ -55,14 +55,14 @@ def pyarrow_frame(pandas_frame):
 
 
 @pytest.fixture
-def polars_frame() -> Frame:
+def polars_frame() -> IntoFrame:
     import polars as pl
 
     return pl.read_csv(CSV_PATH, try_parse_dates=True)
 
 
 @pytest.fixture
-def frame(request: pytest.FixtureRequest) -> Frame:
+def frame(request: pytest.FixtureRequest) -> IntoFrame:
     """Indirect fixture to handle parameterized frame types."""
     return request.getfixturevalue(request.param)
 
@@ -96,7 +96,7 @@ def materializing_lazy_frame_warning_emitted(caplog: pytest.LogCaptureFixture) -
     indirect=["frame"],
 )
 def test_frame_to_duckdb_registrable_native(
-    frame: Frame,
+    frame: IntoFrame,
     caplog: pytest.LogCaptureFixture,
 ):
     assert frame_to_duckdb_registrable(frame) is not None
@@ -114,7 +114,7 @@ def test_frame_to_duckdb_registrable_native(
     indirect=["frame"],
 )
 def test_frame_to_duckdb_registrable_eager(
-    frame: Frame,
+    frame: IntoFrame,
     caplog: pytest.LogCaptureFixture,
 ):
     assert frame_to_duckdb_registrable(frame) is not None
@@ -134,7 +134,7 @@ def test_frame_to_duckdb_registrable_eager(
     indirect=["frame"],
 )
 def test_frame_to_duckdb_registrable_lazy(
-    frame: Frame,
+    frame: IntoFrame,
     caplog: pytest.LogCaptureFixture,
 ):
     assert frame_to_duckdb_registrable(frame) is not None
