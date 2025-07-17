@@ -48,7 +48,7 @@ def pandas_frame() -> IntoFrame:
 
 
 @pytest.fixture
-def pyarrow_frame(pandas_frame):
+def pyarrow_frame(pandas_frame: IntoFrame) -> IntoFrame:
     import pyarrow as pa
 
     return pa.Table.from_pandas(pandas_frame)
