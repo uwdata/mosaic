@@ -101,7 +101,7 @@ def test_frame_to_duckdb_registrable_native(
 ):
     assert frame_to_duckdb_registrable(frame) is not None
 
-    # Native frames should not produce warnings
+    # Converting frames supported by DuckDB natively should not emit warnings
     assert not materializing_lazy_frame_warning_emitted(caplog)
     assert not zero_copy_warning_emitted(caplog)
 
@@ -119,7 +119,7 @@ def test_frame_to_duckdb_registrable_eager(
 ):
     assert frame_to_duckdb_registrable(frame) is not None
 
-    # Eager frames should warn about potential non-zero-copy operations but not about materializing lazy frames
+    # Converting non-native eager frames should warn about potential non-zero-copy operations but not about materializing lazy frames
     assert not materializing_lazy_frame_warning_emitted(caplog)
     assert zero_copy_warning_emitted(caplog)
 
@@ -139,6 +139,6 @@ def test_frame_to_duckdb_registrable_lazy(
 ):
     assert frame_to_duckdb_registrable(frame) is not None
 
-    # Lazy frames should warn both about materializing and potential non-zero-copy operations
+    # Converting lazy frames should warn both about materializing and potential non-zero-copy operations
     assert materializing_lazy_frame_warning_emitted(caplog)
     assert zero_copy_warning_emitted(caplog)
