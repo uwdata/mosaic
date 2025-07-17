@@ -62,6 +62,14 @@ jobs:
           uv build
           uv run mypy
           uv run --with pytest-cov pytest --cov-report=term-missing --color=yes --cov=pkg
+      
+      - name: Build and test widget
+        run: |
+          cd packages/vgplot/widget
+  
+          uv build
+          uv run mypy
+          uv run --group test --with pytest-cov pytest --cov-report=term-missing --color=yes --cov=mosaic_widget
 
   rust:
     name: Test in Rust
