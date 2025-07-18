@@ -45,7 +45,9 @@ jobs:
         with:
           version: ">=0.5.0"
           enable-cache: true
-          cache-dependency-glob: "**/pyproject.toml"
+          cache-dependency-glob: |
+            uv.lock
+            **/pyproject.toml
 
       - name: Format and lint
         run: |
