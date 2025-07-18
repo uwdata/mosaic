@@ -3,11 +3,18 @@ from __future__ import annotations
 import logging
 import pathlib
 import time
+from typing import TYPE_CHECKING
 
 import anywidget
 import duckdb
 import pyarrow as pa
 import traitlets
+
+from mosaic_widget.frame_interop import frame_to_duckdb_registrable
+
+if TYPE_CHECKING:
+    from narwhals.typing import IntoFrame
+
 
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
@@ -32,7 +39,7 @@ class MosaicWidget(anywidget.AnyWidget):
         self,
         spec: dict | None = None,
         con: duckdb.DuckDBPyConnection | None = None,
-        data: dict | None = None,
+        data: dict[str, "IntoFrame"] | None = None,
         *args,
         **kwargs,
     ):
@@ -58,7 +65,7 @@ class MosaicWidget(anywidget.AnyWidget):
         self.spec = spec
         self.con = con
         for name, df in data.items():
-            self.con.register(name, df)
+            self.con.register(name, frame_to_duckdb_registrable(df))
         self.on_msg(self._handle_custom_msg)
 
     def _handle_custom_msg(self, data: dict, buffers: list):
