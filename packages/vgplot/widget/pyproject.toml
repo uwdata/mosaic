@@ -39,6 +39,7 @@ test = [
   "modin",
   "polars",
   "pyarrow-hotfix",
+  "pytest-cov",
   "pytest",
 ]
 

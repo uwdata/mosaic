@@ -45,7 +45,9 @@ jobs:
         with:
           version: ">=0.5.0"
           enable-cache: true
-          cache-dependency-glob: "**/pyproject.toml"
+          cache-dependency-glob: |
+            uv.lock
+            **/pyproject.toml
 
       - name: Format and lint
         run: |
@@ -60,8 +62,8 @@ jobs:
           cd packages/server/duckdb-server
 
           uv build
-          uv run mypy
-          uv run --with pytest-cov pytest --cov-report=term-missing --color=yes --cov=pkg
+          uv run --group dev mypy
+          uv run --group dev pytest --cov-report=term-missing --color=yes --cov=pkg
       
       - name: Build and test widget
         run: |
@@ -72,8 +74,8 @@ jobs:
           mkdir -p mosaic_widget/static && touch mosaic_widget/static/index.js mosaic_widget/static/index.css
 
           uv build
-          uv run mypy
-          uv run --group test --with pytest-cov pytest --cov-report=term-missing --color=yes --cov=mosaic_widget
+          uv run --group dev mypy
+          uv run --group test pytest --cov-report=term-missing --color=yes --cov=mosaic_widget
 
   rust:
     name: Test in Rust

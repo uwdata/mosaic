@@ -25,11 +25,12 @@ build-backend = "hatchling.build"
 
 [dependency-groups]
 dev = [
-  "watchdog",
   "mypy",
+  "pytest-cov",
   "pytest",
   "ruff",
   "types-ujson",
+  "watchdog",
 ]
 
 [tool.hatch.build.targets.wheel]
