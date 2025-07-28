@@ -88,7 +88,7 @@ func (db *DB) Exec(ctx context.Context, query string) error {
 	return nil
 }
 
-func (db *DB) QueryJSON(ctx context.Context, query string, useCache bool) (json.RawMessage, bool, error) {
+func (db *DB) QueryJSON(ctx context.Context, query string, allowedSchemas []string, useCache bool) (json.RawMessage, bool, error) {
 	var key uint64
 	var data []byte
 
@@ -101,7 +101,7 @@ func (db *DB) QueryJSON(ctx context.Context, query string, useCache bool) (json.
 
 	var buf bytes.Buffer
 
-	err := db.WriteJSON(ctx, query, &buf)
+	err := db.WriteJSON(ctx, query, allowedSchemas, &buf)
 	if err != nil {
 		return nil, false, err
 	}
@@ -113,7 +113,14 @@ func (db *DB) QueryJSON(ctx context.Context, query string, useCache bool) (json.
 	return buf.Bytes(), false, nil
 }
 
-func (db *DB) WriteJSON(ctx context.Context, query string, w io.Writer) error {
+func (db *DB) WriteJSON(ctx context.Context, query string, allowedSchemas []string, w io.Writer) error {
+	if len(allowedSchemas) > 0 {
+		err := db.ValidateSQL(ctx, query, allowedSchemas)
+		if err != nil {
+			return fmt.Errorf("query: validation failed for query: %w", err)
+		}
+	}
+
 	rdr, err := db.arrow.QueryContext(ctx, query)
 	if err != nil {
 		return fmt.Errorf("query: failed to execute query: %w", err)
@@ -155,7 +162,7 @@ func (db *DB) WriteJSON(ctx context.Context, query string, w io.Writer) error {
 	return nil
 }
 
-func (db *DB) QueryArrow(ctx context.Context, query string, useCache bool) ([]byte, bool, error) {
+func (db *DB) QueryArrow(ctx context.Context, query string, allowedSchemas []string, useCache bool) ([]byte, bool, error) {
 	var key uint64
 	var data []byte
 
@@ -168,7 +175,7 @@ func (db *DB) QueryArrow(ctx context.Context, query string, useCache bool) ([]by
 
 	var buf bytes.Buffer
 
-	err := db.WriteArrow(ctx, query, &buf)
+	err := db.WriteArrow(ctx, query, allowedSchemas, &buf)
 	if err != nil {
 		return nil, false, err
 	}
@@ -180,7 +187,14 @@ func (db *DB) QueryArrow(ctx context.Context, query string, useCache bool) ([]by
 	return buf.Bytes(), false, nil
 }
 
-func (db *DB) WriteArrow(ctx context.Context, query string, w io.Writer) error {
+func (db *DB) WriteArrow(ctx context.Context, query string, allowedSchemas []string, w io.Writer) error {
+	if len(allowedSchemas) > 0 {
+		err := db.ValidateSQL(ctx, query, allowedSchemas)
+		if err != nil {
+			return fmt.Errorf("query: validation failed for query: %w", err)
+		}
+	}
+
 	rdr, err := db.arrow.QueryContext(ctx, query)
 	if err != nil {
 		return fmt.Errorf("query: failed to execute query: %w", err)
