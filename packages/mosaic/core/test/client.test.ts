@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { Query, count } from '@uwdata/mosaic-sql';
-import { nodeConnector } from './util/node-connector.js';
+import { NodeConnector } from './util/node-connector.js';
 import { ClauseSource, Coordinator, MosaicClient, Selection, clauseInterval } from '../src/index.js';
 import { QueryResult } from '../src/util/query-result.js';
 
@@ -8,7 +8,8 @@ describe('MosaicClient', () => {
   it('is filtered by selections', async () => {
     // instantiate coordinator to use node.js DuckDB
     // disable logging and preaggregation
-    const coord = new Coordinator(nodeConnector(), {
+    const connector = await NodeConnector.make();
+    const coord = new Coordinator(connector, {
       logger: null,
       preagg: { enabled: false }
     });
@@ -126,7 +127,7 @@ describe('MosaicClient', () => {
   it('respects enabled status', async () => {
     // instantiate coordinator to use node.js DuckDB
     // disable logging and preaggregation
-    const coord = new Coordinator(nodeConnector(), {
+    const coord = new Coordinator(await NodeConnector.make(), {
       logger: null,
       preagg: { enabled: false }
     });

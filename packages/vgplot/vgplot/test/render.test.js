@@ -5,6 +5,7 @@ import { JSDOM } from 'jsdom';
 import { nodeConnector } from './util/node-connector.js';
 import { createAPIContext } from '../src/index.js';
 import { clientsReady } from './util/clients-ready.js';
+import { NodeConnector } from '../../../mosaic/core/test/util/node-connector.js';
 
 const cwd = import.meta.dirname;
 
@@ -47,7 +48,7 @@ async function renderTest(name) {
   const specPath = resolve(cwd, `specs/${name}.js`);
   const htmlPath = resolve(cwd, `output/${name}.html`);
   const { default: run } = await import(specPath);
-  const mc = new Coordinator(nodeConnector(), { logger: null });
+  const mc = new Coordinator(await NodeConnector.make(), { logger: null });
   const el = await run(createAPIContext({ coordinator: mc }));
   await clientsReady(el);
   await expect(el.outerHTML).toMatchFileSnapshot(htmlPath);

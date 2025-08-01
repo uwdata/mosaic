@@ -1,11 +1,11 @@
 import { Query } from "@uwdata/mosaic-sql";
 import { describe, expect, it } from "vitest";
 import { Coordinator, makeClient } from "../src/index.js";
-import { nodeConnector } from "./util/node-connector.js";
+import { NodeConnector } from "./util/node-connector.js";
 
 describe("makeClient", () => {
   it("should create a connected client and destroy it", async () => {
-    const mc = new Coordinator(nodeConnector(), {
+    const mc = new Coordinator(await NodeConnector.make(), {
       logger: null,
     });
 
