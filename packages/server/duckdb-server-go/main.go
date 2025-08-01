@@ -7,6 +7,7 @@ import (
 	"log/slog"
 	"net/http"
 	"os"
+	"strings"
 
 	"github.com/marcboeker/go-duckdb/v2"
 
@@ -22,7 +23,13 @@ func main() {
 	cacheSize := flag.Int("cache-size", 1000, "Max number of cache entries")
 	certFile := flag.String("cert", "", "Path to TLS certificate file (optional, enables HTTPS)")
 	keyFile := flag.String("key", "", "Path to TLS private key file (optional, enables HTTPS)")
+	schemaMatchHeadersStr := flag.String("schema-match-headers", "", "Comma-separated list of headers to match against schema names for multi-tenant access control (e.g., \"X-Tenant-Id,verified-user-id\")")
 	flag.Parse()
+
+	var schemaMatchHeaders []string
+	if *schemaMatchHeadersStr != "" {
+		schemaMatchHeaders = strings.Split(*schemaMatchHeadersStr, ",")
+	}
 
 	ctx := context.Background()
 
@@ -63,7 +70,7 @@ func main() {
 	}
 	defer db.Close()
 
-	s := server.New(db, logger)
+	s := server.New(db, schemaMatchHeaders, logger)
 
 	config := map[string]interface{}{
 		"database":             *dbPath,
@@ -73,6 +80,7 @@ func main() {
 		"cache_size":           *cacheSize,
 		"cert_file":            *certFile,
 		"key_file":             *keyFile,
+		"schema_match_headers": *schemaMatchHeadersStr,
 	}
 	logger.Info("DuckDB Server configuration", "config", config)
 
