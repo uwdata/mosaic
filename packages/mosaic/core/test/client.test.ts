@@ -13,6 +13,9 @@ describe('MosaicClient', () => {
       preagg: { enabled: false }
     });
 
+    // make sure httpfs is installed
+    await coord.exec("INSTALL httpfs");
+
     // load test data
     await coord.exec(
       `CREATE TABLE testData AS (
