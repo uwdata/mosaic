@@ -14,12 +14,15 @@ import (
 	"github.com/apache/arrow-go/v18/arrow/ipc"
 	"github.com/marcboeker/go-duckdb/v2"
 	"github.com/maypok86/otter/v2"
+	"golang.org/x/sync/semaphore"
 )
 
 type DB struct {
 	db    *sql.DB
 	conn  driver.Conn
 	arrow *duckdb.Arrow
+	// Semaphore to limit concurrent Arrow queries, since db.SetMaxOpenConns doesn't apply to Arrow connections
+	arrowSemaphore *semaphore.Weighted
 
 	cache     *otter.Cache[uint64, []byte]
 	cacheSeed maphash.Seed
@@ -43,6 +46,8 @@ func New(ctx context.Context, connector *duckdb.Connector, connectionPoolSize, c
 		return nil, err
 	}
 
+	arrowSemaphore := semaphore.NewWeighted(int64(connectionPoolSize))
+
 	if logger == nil {
 		logger = slog.Default()
 	}
@@ -55,9 +60,10 @@ func New(ctx context.Context, connector *duckdb.Connector, connectionPoolSize, c
 	}
 
 	return &DB{
-		db:    db,
-		conn:  conn,
-		arrow: arrow,
+		db:             db,
+		conn:           conn,
+		arrow:          arrow,
+		arrowSemaphore: arrowSemaphore,
 
 		cache:     cache,
 		cacheSeed: maphash.MakeSeed(), // Initialize the cache seed for consistent hashing
@@ -120,6 +126,12 @@ func (db *DB) WriteJSON(ctx context.Context, query string, allowedSchemas []stri
 			return fmt.Errorf("query: validation failed for query: %w", err)
 		}
 	}
+
+	err := db.arrowSemaphore.Acquire(ctx, 1)
+	if err != nil {
+		return fmt.Errorf("query: failed to acquire connection: %w", err)
+	}
+	defer db.arrowSemaphore.Release(1)
 
 	rdr, err := db.arrow.QueryContext(ctx, query)
 	if err != nil {
@@ -194,6 +206,12 @@ func (db *DB) WriteArrow(ctx context.Context, query string, allowedSchemas []str
 			return fmt.Errorf("query: validation failed for query: %w", err)
 		}
 	}
+
+	err := db.arrowSemaphore.Acquire(ctx, 1)
+	if err != nil {
+		return fmt.Errorf("query: failed to acquire connection: %w", err)
+	}
+	defer db.arrowSemaphore.Release(1)
 
 	rdr, err := db.arrow.QueryContext(ctx, query)
 	if err != nil {
