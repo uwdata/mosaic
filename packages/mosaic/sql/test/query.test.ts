@@ -540,14 +540,26 @@ describe('Query', () => {
     expect(Query.union(q).toString()).toBe(q.join(' UNION '));
     expect(Query.union(...q).toString()).toBe(q.join(' UNION '));
 
+    expect(Query.unionByName(q).toString()).toBe(q.join(' UNION BY NAME '));
+    expect(Query.unionByName(...q).toString()).toBe(q.join(' UNION BY NAME '));
+
     expect(Query.unionAll(q).toString()).toBe(q.join(' UNION ALL '));
     expect(Query.unionAll(...q).toString()).toBe(q.join(' UNION ALL '));
+
+    expect(Query.unionAllByName(q).toString()).toBe(q.join(' UNION ALL BY NAME '));
+    expect(Query.unionAllByName(...q).toString()).toBe(q.join(' UNION ALL BY NAME '));
 
     expect(Query.intersect(q).toString()).toBe(q.join(' INTERSECT '));
     expect(Query.intersect(...q).toString()).toBe(q.join(' INTERSECT '));
 
+    expect(Query.intersectAll(q).toString()).toBe(q.join(' INTERSECT ALL '));
+    expect(Query.intersectAll(...q).toString()).toBe(q.join(' INTERSECT ALL '));
+
     expect(Query.except(q).toString()).toBe(q.join(' EXCEPT '));
     expect(Query.except(...q).toString()).toBe(q.join(' EXCEPT '));
+
+    expect(Query.exceptAll(q).toString()).toBe(q.join(' EXCEPT ALL '));
+    expect(Query.exceptAll(...q).toString()).toBe(q.join(' EXCEPT ALL '));
   });
 
   it('supports describe queries', () => {
