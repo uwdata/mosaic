@@ -29,7 +29,8 @@ You can customize the server behavior with the following command-line flags:
 -   `--cache-size <size>`: The maximum number of cache entries. Defaults to 1000.
 -   `--cert <path>`: Path to a TLS certificate file to enable HTTPS.
 -   `--key <path>`: Path to a TLS private key file to enable HTTPS.
--   `--schema-match-headers`: Comma-separated list of headers to match against schema names for multi-tenant access control (e.g., "X-Tenant-Id,verified-user-id").
+-   `--schema-match-headers`: Comma-separated list of headers to match against schema names for multi-tenant access control (e.g., `X-Tenant-Id,verified-user-id`).
+-   `--load-extensions`: Comma-separated list of extensions to install and load at startup. Use a pipe after the extension name to specify the repository. Unspecified repositories will default to 'core'. (e.g. `mysql_scanner,netquack|community,aws|core_nightly`
 
 By default, the server will look for `localhost.pem` and `localhost-key.pem` in the current directory to enable HTTPS if the `--cert` and `--key` flags are not provided.
 

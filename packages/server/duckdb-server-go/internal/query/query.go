@@ -72,6 +72,42 @@ func New(ctx context.Context, connector *duckdb.Connector, connectionPoolSize, c
 	}, nil
 }
 
+type Extension struct {
+	Name        string `json:"name"`
+	Version     string `json:"version"`
+	Repository  string `json:"repository"`
+	InstallMode string `json:"install_mode"`
+}
+
+func (db *DB) GetExtensions(ctx context.Context) ([]Extension, error) {
+	const stmt = `SELECT extension_name, extension_version, installed_from, install_mode
+FROM duckdb_extensions()
+WHERE install_mode != 'NOT_INSTALLED'`
+
+	rows, err := db.db.QueryContext(ctx, stmt)
+	if err != nil {
+		return nil, fmt.Errorf("query: failed to get extensions: %w", err)
+	}
+	defer rows.Close()
+
+	var extensions []Extension
+	for rows.Next() {
+		var ext Extension
+		err = rows.Scan(&ext.Name, &ext.Version, &ext.Repository, &ext.InstallMode)
+		if err != nil {
+			return nil, fmt.Errorf("query: failed to scan extension row: %w", err)
+		}
+
+		extensions = append(extensions, ext)
+	}
+	err = rows.Err()
+	if err != nil {
+		return nil, fmt.Errorf("query: error during rows iteration: %w", err)
+	}
+
+	return extensions, nil
+}
+
 // Close closes any resources created by New, but does not close the underlying connector.
 func (db *DB) Close() {
 	err := db.db.Close()
