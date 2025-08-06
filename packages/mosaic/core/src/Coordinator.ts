@@ -9,6 +9,7 @@ import { type QueryResult } from './util/query-result.js';
 import { type MosaicClient } from './MosaicClient.js';
 import { type SelectionClause } from './SelectionClause.js';
 import { MaybeArray } from '@uwdata/mosaic-sql';
+import { Table } from '@uwdata/flechette';
 
 interface FilterGroupEntry {
   selection: Selection;
@@ -168,6 +169,26 @@ export class Coordinator {
    */
   query(
     query: QueryType,
+    options?: {
+      type?: 'arrow';
+      cache?: boolean;
+      persist?: boolean;
+      priority?: number;
+      [key: string]: unknown;
+    }
+  ): QueryResult<Table>;
+  query(
+    query: QueryType,
+    options?: {
+      type?: 'json';
+      cache?: boolean;
+      persist?: boolean;
+      priority?: number;
+      [key: string]: unknown;
+    }
+  ): QueryResult<unknown>;
+  query(
+    query: QueryType,
     options: {
       type?: 'arrow' | 'json';
       cache?: boolean;
@@ -175,7 +196,7 @@ export class Coordinator {
       priority?: number;
       [key: string]: unknown;
     } = {}
-  ): QueryResult {
+  ): QueryResult<any> {
     const {
       type = 'arrow',
       cache = true,
@@ -195,8 +216,16 @@ export class Coordinator {
    */
   prefetch(
     query: QueryType,
-    options: { type?: 'arrow' | 'json'; [key: string]: unknown } = {}
-  ): QueryResult {
+    options?: { type?: 'arrow'; [key: string]: unknown }
+  ): QueryResult<Table>
+  prefetch(
+    query: QueryType,
+    options?: { type?: 'json'; [key: string]: unknown }
+  ): QueryResult<unknown>
+  prefetch(
+    query: QueryType,
+    options: any = {}
+  ): QueryResult<any> {
     return this.query(query, { ...options, cache: true, priority: Priority.Low });
   }
 

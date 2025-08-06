@@ -66,7 +66,7 @@ async function getFieldInfo(mc: Coordinator, { table, column, stats }: FieldInfo
     .groupby(isNode(column) && isAggregateExpression(column) ? sql`ALL` : []);
 
   const [desc] = Array.from(
-    await mc.query(Query.describe(q)) as Table
+    await mc.query(Query.describe(q))
   ) as ColumnDescription[];
   const info: FieldInfo = {
     table,
@@ -83,7 +83,7 @@ async function getFieldInfo(mc: Coordinator, { table, column, stats }: FieldInfo
   const [result] = await mc.query(
     summarize({ table, column, stats }),
     { persist: true }
-  ) as Table;
+  );
 
   // extract summary stats, copy to field info, and return
   return Object.assign(info, result);
@@ -97,7 +97,7 @@ async function getFieldInfo(mc: Coordinator, { table, column, stats }: FieldInfo
  */
 async function getTableInfo(mc: Coordinator, table: string): Promise<FieldInfo[]> {
   const result = Array.from(
-    await mc.query(`DESCRIBE ${asTableRef(table)}`) as Table
+    await mc.query(`DESCRIBE ${asTableRef(table)}`)
   ) as ColumnDescription[];
   return result.map(desc => ({
     table,
