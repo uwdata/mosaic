@@ -5,13 +5,16 @@ import type { ArrowQueryRequest, Connector, ExecQueryRequest, JSONQueryRequest }
 import { decodeIPC } from '../../src/util/decode-ipc.js';
 import { ConnectorQueryRequest } from '../../src/connectors/Connector.js';
 
-export function nodeConnector(db?: DuckDB, ipc?: ExtractionOptions) {
-  return new NodeConnector(db, ipc);
-}
-
-class NodeConnector implements Connector {
+export class NodeConnector implements Connector {
   protected _db: DuckDB;
   protected _ipc?: ExtractionOptions;
+
+  static async make(db?: DuckDB, ipc?: ExtractionOptions) {
+    const connector = new NodeConnector(db, ipc);
+    // make sure initialization is complete
+    await connector._db._init;
+    return connector;
+  }
 
   constructor(
     db: DuckDB = new DuckDB(),
