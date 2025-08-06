@@ -180,7 +180,7 @@ export class Coordinator {
   query(
     query: QueryType,
     options?: {
-      type?: 'arrow' | 'json';
+      type?: 'json';
       cache?: boolean;
       persist?: boolean;
       priority?: number;
@@ -216,8 +216,16 @@ export class Coordinator {
    */
   prefetch(
     query: QueryType,
-    options: { type?: 'arrow' | 'json'; [key: string]: unknown } = {}
-  ): QueryResult {
+    options?: { type?: 'arrow'; [key: string]: unknown }
+  ): QueryResult<Table>
+  prefetch(
+    query: QueryType,
+    options?: { type?: 'json'; [key: string]: unknown }
+  ): QueryResult<unknown>
+  prefetch(
+    query: QueryType,
+    options: any = {}
+  ): QueryResult<any> {
     return this.query(query, { ...options, cache: true, priority: Priority.Low });
   }
 
