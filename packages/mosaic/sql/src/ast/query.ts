@@ -72,11 +72,27 @@ export class Query extends ExprNode {
   }
 
   /**
+   * Create a new UNION BY NAME set operation over the given queries.
+   * @param queries The queries.
+   */
+  static unionByName(...queries: MaybeArray<Query>[]) {
+    return new SetOperation('UNION BY NAME', queries.flat());
+  }
+
+  /**
    * Create a new UNION ALL set operation over the given queries.
    * @param queries The queries.
    */
   static unionAll(...queries: MaybeArray<Query>[]) {
     return new SetOperation('UNION ALL', queries.flat());
+  }
+
+  /**
+   * Create a new UNION ALL BY NAME set operation over the given queries.
+   * @param queries The queries.
+   */
+  static unionAllByName(...queries: MaybeArray<Query>[]) {
+    return new SetOperation('UNION ALL BY NAME', queries.flat());
   }
 
   /**
@@ -88,11 +104,27 @@ export class Query extends ExprNode {
   }
 
   /**
+   * Create a new INTERSECT ALL set operation over the given queries.
+   * @param queries The queries.
+   */
+  static intersectAll(...queries: MaybeArray<Query>[]) {
+    return new SetOperation('INTERSECT ALL', queries.flat());
+  }
+
+  /**
    * Create a new EXCEPT set operation over the given queries.
    * @param queries The queries.
    */
   static except(...queries: MaybeArray<Query>[]) {
     return new SetOperation('EXCEPT', queries.flat());
+  }
+
+  /**
+   * Create a new EXCEPT ALL set operation over the given queries.
+   * @param queries The queries.
+   */
+  static exceptAll(...queries: MaybeArray<Query>[]) {
+    return new SetOperation('EXCEPT ALL', queries.flat());
   }
 
   /**
@@ -614,11 +646,27 @@ class WithClause {
   }
 
   /**
+   * Create a new UNION BY NAME set operation over the given queries.
+   * @param queries The queries.
+   */
+  unionByName(...queries: Query[]) {
+    return Query.unionByName(...queries).with(...this._with);
+  }
+
+  /**
    * Create a new UNION ALL set operation over the given queries.
    * @param queries The queries.
    */
   unionAll(...queries: Query[]) {
     return Query.unionAll(...queries).with(...this._with);
+  }
+
+  /**
+   * Create a new UNION ALL BY NAME set operation over the given queries.
+   * @param queries The queries.
+   */
+  unionAllByName(...queries: Query[]) {
+    return Query.unionAllByName(...queries).with(...this._with);
   }
 
   /**
@@ -630,10 +678,26 @@ class WithClause {
   }
 
   /**
+   * Create a new INTERSECT ALL set operation over the given queries.
+   * @param queries The queries.
+   */
+  intersectAll(...queries: Query[]) {
+    return Query.intersectAll(...queries).with(...this._with);
+  }
+
+  /**
    * Create a new EXCEPT set operation over the given queries.
    * @param queries The queries.
    */
   except(...queries: Query[]) {
     return Query.except(...queries).with(...this._with);
+  }
+
+  /**
+   * Create a new EXCEPT ALL set operation over the given queries.
+   * @param queries The queries.
+   */
+  exceptAll(...queries: Query[]) {
+    return Query.exceptAll(...queries).with(...this._with);
   }
 }
