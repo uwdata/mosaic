@@ -55,9 +55,9 @@ In addition, the following static methods take multiple queries as input and ret
 - `Query.unionAll(...queries)`: Union results with no de-duplication of rows.
 - `Query.unionAllByName(...queries)`: Union results with no de-duplication of rows, combining rows from different tables by name, instead of by position.
 - `Query.intersect(...queries)`: Query for distinct rows that are output by both the left and right input queries.
-- `Query.intersectAll(...queries)`: Query for distinct rows that are output by both the left and right input queries using bag semantics, so duplicates are returned.
+- `Query.intersectAll(...queries)`: Query for rows that are output by both the left and right input queries using bag semantics, so duplicates are returned.
 - `Query.except(...queries)`: Query for distinct rows from the left input query that aren't output by the right input query.
-- `Query.exceptAll(...queries)`: Query for distinct rows from the left input query that aren't output by the right input query using bag semantics, so duplicates are returned.
+- `Query.exceptAll(...queries)`: Query for rows from the left input query that aren't output by the right input query using bag semantics, so duplicates are returned.
 
 Common table expressions can be applied via static method
 
