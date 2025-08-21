@@ -30,9 +30,9 @@ export interface MakeClientOptions {
  * Make a new client with the given options, and connect the client to the
  * provided coordinator.
  * @param options The options for making the client.
- * @returns The resulting client, along with a method to destroy the client when no longer needed.
+ * @returns The resulting client.
  */
-export function makeClient(options: MakeClientOptions): MosaicClient & { destroy: () => void } {
+export function makeClient(options: MakeClientOptions): MosaicClient {
   const {
     coordinator = defaultCoordinator(),
     ...clientOptions
