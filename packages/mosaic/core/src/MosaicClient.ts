@@ -220,6 +220,8 @@ export class MosaicClient {
    * disconnect from the coordinator.
    */
   destroy(): void {
+    // disable client to cancel current queries.
+    this._enabled = false;
     this.coordinator?.disconnect(this);
   }
 
