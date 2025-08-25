@@ -220,6 +220,7 @@ export class MosaicClient {
    * disconnect from the coordinator.
    */
   destroy(): void {
+    this._enabled = false;
     this.coordinator?.disconnect(this);
   }
 
