@@ -5,9 +5,9 @@ go 1.24.4
 require (
 	github.com/apache/arrow-go/v18 v18.4.0
 	github.com/coder/websocket v1.8.13
-	github.com/marcboeker/go-duckdb/v2 v2.3.4
+	github.com/marcboeker/go-duckdb/v2 v2.3.5
 	github.com/maypok86/otter/v2 v2.2.1
-	github.com/stretchr/testify v1.10.0
+	github.com/stretchr/testify v1.11.1
 )
 
 require (
