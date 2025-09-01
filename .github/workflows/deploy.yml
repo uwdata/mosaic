@@ -24,7 +24,7 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           fetch-depth: 0
 
@@ -40,7 +40,7 @@ jobs:
         run: npm run docs:build
 
       - uses: actions/configure-pages@v5
-      - uses: actions/upload-pages-artifact@v3
+      - uses: actions/upload-pages-artifact@v4
         with:
           path: docs/.vitepress/dist
       - name: Deploy
