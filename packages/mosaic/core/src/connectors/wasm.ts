@@ -91,7 +91,7 @@ export class DuckDBWASMConnector implements Connector {
  * @param con The DuckDB-WASM connection.
  * @param query The SQL query to run.
  */
-function getArrowIPC(con: duckdb.AsyncDuckDBConnection, query: string): Promise<ArrayBuffer> {
+function getArrowIPC(con: duckdb.AsyncDuckDBConnection, query: string): Promise<Uint8Array> {
   return new Promise((resolve, reject) => {
     con.useUnsafe(async (bindings, conn) => {
       try {
