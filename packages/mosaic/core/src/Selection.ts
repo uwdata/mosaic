@@ -257,24 +257,24 @@ export class Selection extends Param<SelectionClauseArray> {
   /**
    * Indicates if a selection clause should not be applied to a given client.
    * The return value depends on the selection resolution strategy.
-   * @param client The client to test.
+   * @param client The client to test. If null or undefined, return false.
    * @param clause The selection clause.
    * @returns True if the client should be skipped, false otherwise.
    */
-  skip(client: MosaicClient, clause: SelectionClause): boolean {
+  skip(client: MosaicClient | null | undefined, clause: SelectionClause): boolean {
     return this._resolver.skip(client, clause);
   }
 
   /**
    * Return a selection query predicate for the given client.
-   * @param client The client whose data may be filtered.
+   * @param client The client whose data may be filtered. If null or undefined, return a predicate with all clauses.
    * @param noSkip Disable skipping of active
    *  cross-filtered sources. If set true, the source of the active
    *  clause in a cross-filtered selection will not be skipped.
    * @returns The query predicate for filtering client data,
    *  based on the current state of this selection.
    */
-  predicate(client: MosaicClient, noSkip: boolean = false): ResolvedPredicate {
+  predicate(client: MosaicClient | null | undefined = undefined, noSkip: boolean = false): ResolvedPredicate {
     const { clauses } = this;
     const active = noSkip ? null : clauses.active;
     return this._resolver.predicate(clauses, active!, client);
@@ -330,11 +330,14 @@ export class SelectionResolver {
   /**
    * Indicates if a selection clause should not be applied to a given client.
    * The return value depends on the resolution strategy.
-   * @param client The selection clause.
-   * @param clause The client to test.
+   * @param client The client to test. If null or undefined, return false.
+   * @param clause The selection clause.
    * @returns True if the client should be skipped, false otherwise.
    */
-  skip(client: MosaicClient, clause: SelectionClause): boolean {
+  skip(client: MosaicClient | null | undefined, clause: SelectionClause): boolean {
+    if (client == null) {
+      return false;
+    }
     return Boolean(this.cross && clause?.clients?.has(client));
   }
 
@@ -342,14 +345,14 @@ export class SelectionResolver {
    * Return a selection query predicate for the given client.
    * @param clauseList An array of selection clauses.
    * @param active The current active selection clause.
-   * @param client The client whose data may be filtered.
+   * @param client The client whose data may be filtered. If null or undefined, return all clauses.
    * @returns The query predicate for filtering client data,
    *  based on the current state of this selection.
    */
   predicate(
     clauseList: SelectionClause[],
     active: SelectionClause,
-    client: MosaicClient
+    client: MosaicClient | null | undefined
   ): ResolvedPredicate {
     const { empty, union } = this;
 
