@@ -33,12 +33,13 @@ type QueryParams struct {
 type Server struct {
 	*http.ServeMux
 
-	db *query.DB
+	db                 *query.DB
+	schemaMatchHeaders []string // list of headers to match against schema names for multi-tenant access control
 
 	logger *slog.Logger
 }
 
-func New(db *query.DB, logger *slog.Logger) *Server {
+func New(db *query.DB, schemaMatchHeaders []string, logger *slog.Logger) *Server {
 	mux := http.NewServeMux()
 
 	if logger == nil {
@@ -46,9 +47,10 @@ func New(db *query.DB, logger *slog.Logger) *Server {
 	}
 
 	s := &Server{
-		ServeMux: mux,
-		db:       db,
-		logger:   logger,
+		ServeMux:           mux,
+		db:                 db,
+		schemaMatchHeaders: schemaMatchHeaders,
+		logger:             logger,
 	}
 
 	mux.Handle("/", corsMiddleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -81,6 +83,13 @@ func corsMiddleware(next http.Handler) http.Handler {
 }
 
 func (s *Server) handleWebSocket(w http.ResponseWriter, r *http.Request) {
+	allowedSchemas := getAllowedSchemas(r, s.schemaMatchHeaders)
+	if len(s.schemaMatchHeaders) > 0 && len(allowedSchemas) == 0 {
+		s.logger.Error("server: no allowed schemas found in request headers", "headers", s.schemaMatchHeaders)
+		http.Error(w, "no allowed schemas found in request headers", http.StatusUnauthorized)
+		return
+	}
+
 	conn, err := websocket.Accept(w, r, &websocket.AcceptOptions{
 		InsecureSkipVerify: true,
 		CompressionMode:    websocket.CompressionContextTakeover,
@@ -98,7 +107,7 @@ func (s *Server) handleWebSocket(w http.ResponseWriter, r *http.Request) {
 	}()
 
 	for {
-		err = s.handleWebSocketMessage(r.Context(), conn)
+		err = s.handleWebSocketMessage(r.Context(), conn, allowedSchemas)
 		if err != nil {
 			s.logger.Error("server: websocket error, breaking connection", "error", err)
 			break
@@ -107,14 +116,14 @@ func (s *Server) handleWebSocket(w http.ResponseWriter, r *http.Request) {
 }
 
 // only return an error if you want to close the connection, which we do on any write errors, but not on command errors
-func (s *Server) handleWebSocketMessage(ctx context.Context, conn *websocket.Conn) error {
+func (s *Server) handleWebSocketMessage(ctx context.Context, conn *websocket.Conn, allowedSchemas []string) error {
 	var params QueryParams
 	err := wsjson.Read(ctx, conn, &params)
 	if err != nil {
 		return fmt.Errorf("failed to read websocket message: %w", err)
 	}
 
-	data, _, err := s.execCommand(context.TODO(), params)
+	data, _, err := s.execCommand(context.TODO(), params, allowedSchemas)
 	if err != nil {
 		writeErr := wsjson.Write(ctx, conn, map[string]string{"error": err.Error()})
 		if writeErr != nil {
@@ -152,6 +161,13 @@ func (s *Server) handleWebSocketMessage(ctx context.Context, conn *websocket.Con
 }
 
 func (s *Server) handleHTTP(w http.ResponseWriter, r *http.Request) {
+	allowedSchemas := getAllowedSchemas(r, s.schemaMatchHeaders)
+	if len(s.schemaMatchHeaders) > 0 && len(allowedSchemas) == 0 {
+		s.logger.Error("server: no allowed schemas found in request headers", "headers", s.schemaMatchHeaders)
+		http.Error(w, "no allowed schemas found in request headers", http.StatusUnauthorized)
+		return
+	}
+
 	var params QueryParams
 
 	// we support both POST and GET methods for the same endpoint
@@ -185,7 +201,7 @@ func (s *Server) handleHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	data, cacheHit, err := s.execCommand(r.Context(), params)
+	data, cacheHit, err := s.execCommand(r.Context(), params, allowedSchemas)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -229,7 +245,7 @@ func (s *Server) handleHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (s *Server) execCommand(ctx context.Context, params QueryParams) ([]byte, bool, error) {
+func (s *Server) execCommand(ctx context.Context, params QueryParams, allowedSchemas []string) ([]byte, bool, error) {
 	err := params.Validate(s.logger)
 	if err != nil {
 		return nil, false, err
@@ -246,10 +262,10 @@ func (s *Server) execCommand(ctx context.Context, params QueryParams) ([]byte, b
 		return nil, false, s.db.Exec(ctx, *params.SQL) // No data to return for exec command
 
 	case CommandArrow:
-		return s.db.QueryArrow(ctx, *params.SQL, useCache)
+		return s.db.QueryArrow(ctx, *params.SQL, allowedSchemas, useCache)
 
 	case CommandJSON:
-		return s.db.QueryJSON(ctx, *params.SQL, useCache)
+		return s.db.QueryJSON(ctx, *params.SQL, allowedSchemas, useCache)
 
 	default:
 		// should have been caught by validation
@@ -276,4 +292,17 @@ func (p QueryParams) Validate(logger *slog.Logger) error {
 	}
 
 	return nil
+}
+
+func getAllowedSchemas(req *http.Request, schemaMatchHeaders []string) []string {
+	var allowedSchemas []string
+
+	for _, matchHeader := range schemaMatchHeaders {
+		allowedSchema := req.Header.Get(matchHeader)
+		if allowedSchema != "" {
+			allowedSchemas = append(allowedSchemas, allowedSchema)
+		}
+	}
+
+	return allowedSchemas
 }

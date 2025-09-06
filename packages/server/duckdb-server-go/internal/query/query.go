@@ -14,12 +14,15 @@ import (
 	"github.com/apache/arrow-go/v18/arrow/ipc"
 	"github.com/marcboeker/go-duckdb/v2"
 	"github.com/maypok86/otter/v2"
+	"golang.org/x/sync/semaphore"
 )
 
 type DB struct {
 	db    *sql.DB
 	conn  driver.Conn
 	arrow *duckdb.Arrow
+	// Semaphore to limit concurrent Arrow queries, since db.SetMaxOpenConns doesn't apply to Arrow connections
+	arrowSemaphore *semaphore.Weighted
 
 	cache     *otter.Cache[uint64, []byte]
 	cacheSeed maphash.Seed
@@ -43,6 +46,8 @@ func New(ctx context.Context, connector *duckdb.Connector, connectionPoolSize, c
 		return nil, err
 	}
 
+	arrowSemaphore := semaphore.NewWeighted(int64(connectionPoolSize))
+
 	if logger == nil {
 		logger = slog.Default()
 	}
@@ -55,15 +60,52 @@ func New(ctx context.Context, connector *duckdb.Connector, connectionPoolSize, c
 	}
 
 	return &DB{
-		db:    db,
-		conn:  conn,
-		arrow: arrow,
+		db:             db,
+		conn:           conn,
+		arrow:          arrow,
+		arrowSemaphore: arrowSemaphore,
 
 		cache:     cache,
 		cacheSeed: maphash.MakeSeed(), // Initialize the cache seed for consistent hashing
 
 		logger: logger,
 	}, nil
+}
+
+type Extension struct {
+	Name        string `json:"name"`
+	Version     string `json:"version"`
+	Repository  string `json:"repository"`
+	InstallMode string `json:"install_mode"`
+}
+
+func (db *DB) GetExtensions(ctx context.Context) ([]Extension, error) {
+	const stmt = `SELECT extension_name, extension_version, installed_from, install_mode
+FROM duckdb_extensions()
+WHERE install_mode != 'NOT_INSTALLED'`
+
+	rows, err := db.db.QueryContext(ctx, stmt)
+	if err != nil {
+		return nil, fmt.Errorf("query: failed to get extensions: %w", err)
+	}
+	defer rows.Close()
+
+	var extensions []Extension
+	for rows.Next() {
+		var ext Extension
+		err = rows.Scan(&ext.Name, &ext.Version, &ext.Repository, &ext.InstallMode)
+		if err != nil {
+			return nil, fmt.Errorf("query: failed to scan extension row: %w", err)
+		}
+
+		extensions = append(extensions, ext)
+	}
+	err = rows.Err()
+	if err != nil {
+		return nil, fmt.Errorf("query: error during rows iteration: %w", err)
+	}
+
+	return extensions, nil
 }
 
 // Close closes any resources created by New, but does not close the underlying connector.
@@ -88,7 +130,7 @@ func (db *DB) Exec(ctx context.Context, query string) error {
 	return nil
 }
 
-func (db *DB) QueryJSON(ctx context.Context, query string, useCache bool) (json.RawMessage, bool, error) {
+func (db *DB) QueryJSON(ctx context.Context, query string, allowedSchemas []string, useCache bool) (json.RawMessage, bool, error) {
 	var key uint64
 	var data []byte
 
@@ -101,7 +143,7 @@ func (db *DB) QueryJSON(ctx context.Context, query string, useCache bool) (json.
 
 	var buf bytes.Buffer
 
-	err := db.WriteJSON(ctx, query, &buf)
+	err := db.WriteJSON(ctx, query, allowedSchemas, &buf)
 	if err != nil {
 		return nil, false, err
 	}
@@ -113,7 +155,20 @@ func (db *DB) QueryJSON(ctx context.Context, query string, useCache bool) (json.
 	return buf.Bytes(), false, nil
 }
 
-func (db *DB) WriteJSON(ctx context.Context, query string, w io.Writer) error {
+func (db *DB) WriteJSON(ctx context.Context, query string, allowedSchemas []string, w io.Writer) error {
+	if len(allowedSchemas) > 0 {
+		err := db.ValidateSQL(ctx, query, allowedSchemas)
+		if err != nil {
+			return fmt.Errorf("query: validation failed for query: %w", err)
+		}
+	}
+
+	err := db.arrowSemaphore.Acquire(ctx, 1)
+	if err != nil {
+		return fmt.Errorf("query: failed to acquire connection: %w", err)
+	}
+	defer db.arrowSemaphore.Release(1)
+
 	rdr, err := db.arrow.QueryContext(ctx, query)
 	if err != nil {
 		return fmt.Errorf("query: failed to execute query: %w", err)
@@ -155,7 +210,7 @@ func (db *DB) WriteJSON(ctx context.Context, query string, w io.Writer) error {
 	return nil
 }
 
-func (db *DB) QueryArrow(ctx context.Context, query string, useCache bool) ([]byte, bool, error) {
+func (db *DB) QueryArrow(ctx context.Context, query string, allowedSchemas []string, useCache bool) ([]byte, bool, error) {
 	var key uint64
 	var data []byte
 
@@ -168,7 +223,7 @@ func (db *DB) QueryArrow(ctx context.Context, query string, useCache bool) ([]by
 
 	var buf bytes.Buffer
 
-	err := db.WriteArrow(ctx, query, &buf)
+	err := db.WriteArrow(ctx, query, allowedSchemas, &buf)
 	if err != nil {
 		return nil, false, err
 	}
@@ -180,7 +235,20 @@ func (db *DB) QueryArrow(ctx context.Context, query string, useCache bool) ([]by
 	return buf.Bytes(), false, nil
 }
 
-func (db *DB) WriteArrow(ctx context.Context, query string, w io.Writer) error {
+func (db *DB) WriteArrow(ctx context.Context, query string, allowedSchemas []string, w io.Writer) error {
+	if len(allowedSchemas) > 0 {
+		err := db.ValidateSQL(ctx, query, allowedSchemas)
+		if err != nil {
+			return fmt.Errorf("query: validation failed for query: %w", err)
+		}
+	}
+
+	err := db.arrowSemaphore.Acquire(ctx, 1)
+	if err != nil {
+		return fmt.Errorf("query: failed to acquire connection: %w", err)
+	}
+	defer db.arrowSemaphore.Release(1)
+
 	rdr, err := db.arrow.QueryContext(ctx, query)
 	if err != nil {
 		return fmt.Errorf("query: failed to execute query: %w", err)
