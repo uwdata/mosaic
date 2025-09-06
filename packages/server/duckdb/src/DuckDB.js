@@ -19,7 +19,8 @@ export class DuckDB {
   ) {
     this.db = new duckdb.Database(path, config);
     this.con = this.db.connect();
-    this.exec(initStatements);
+    // store initialization promise so that we can wait for it
+    this._init = this.exec(initStatements);
   }
 
   close() {
