@@ -104,7 +104,7 @@ export const hexgrid = (...args) => mark('hexgrid', ...args);
 export const regressionY = (...args) => implicitType(RegressionMark, ...args);
 
 export const errorbarX = (...args) => explicitType(ErrorBarMark, 'ruleY', ...args);
-export const errorbarY = (...args) => implicitType(ErrorBarMark, 'ruleX', ...args);
+export const errorbarY = (...args) => explicitType(ErrorBarMark, 'ruleX', ...args);
 
 export const voronoi = (...args) => mark('voronoi', ...args);
 export const voronoiMesh = (...args) => mark('voronoiMesh', ...args);
