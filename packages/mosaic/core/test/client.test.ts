@@ -85,7 +85,7 @@ describe('MosaicClient', () => {
     // crossfilter should skip client1, indicated by undefined result
     // client2 should be filtered by HourOfDay
     selection.update(
-      clauseInterval('HourOfDay', [0, 24], { source: client1 as ClauseSource })
+      clauseInterval('HourOfDay', [0, 24], { source: client1 })
     );
     expect(selection.active?.source).toBe(client1);
     expect(selection.predicate(client1)).toBeUndefined();
@@ -109,7 +109,7 @@ describe('MosaicClient', () => {
     // client1 should be filtered by DayOfWeek
     // crossfilter should skip client2, indicated by undefined result
     selection.update(
-      clauseInterval('DayOfWeek', [0, 7], { source: client2 as ClauseSource })
+      clauseInterval('DayOfWeek', [0, 7], { source: client2 })
     );
     expect(selection.active?.source).toBe(client2);
     expect(selection.predicate(client1)+'').toBe(

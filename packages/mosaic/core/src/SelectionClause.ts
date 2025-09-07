@@ -59,9 +59,7 @@ export interface IntervalMetadata extends ClauseMetadata {
   bin?: BinMethod
 }
 
-export interface ClauseSource {
-  reset?: () => void;
-}
+export type ClauseSource = object & { reset?: () => void; };
 
 /**
  * A selection clause representing filtering criteria
