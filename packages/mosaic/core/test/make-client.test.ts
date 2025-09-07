@@ -1,6 +1,6 @@
 import { Query } from "@uwdata/mosaic-sql";
 import { describe, expect, it } from "vitest";
-import { Coordinator, makeClient } from "../src/index.js";
+import { Coordinator, makeClient, Selection } from "../src/index.js";
 import { NodeConnector } from "./util/node-connector.js";
 
 describe("makeClient", () => {
@@ -23,6 +23,15 @@ describe("makeClient", () => {
     });
 
     expect(mc.clients).toContain(client);
+
+    // should be able to use the client as a source in a clause.
+    let selection = Selection.single();
+    selection.update({
+      source: client,
+      clients: new Set([client]),
+      predicate: null,
+      value: null
+    });
 
     // await pending queries before destroying the client
     await client.pending;
