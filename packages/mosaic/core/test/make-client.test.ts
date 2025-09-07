@@ -24,9 +24,8 @@ describe("makeClient", () => {
 
     expect(mc.clients).toContain(client);
 
-    // should be able to use the client as a source in a clause.
-    let selection = Selection.single();
-    selection.update({
+    // should be able to use the client as a clause source.
+    Selection.single().update({
       source: client,
       clients: new Set([client]),
       predicate: null,
