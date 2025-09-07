@@ -170,7 +170,7 @@ export class Grid2DMark extends Mark {
     // no smoothing as default fallback
     this.grids = grids0;
 
-    if (bandwidth > 0) {
+    if (bandwidth > 0 && grids0.numRows > 0) {
       // determine which grid to smooth
       const prop = aggr.length === 1 ? aggr[0]
         : aggr.includes(DENSITY) ? DENSITY
@@ -194,7 +194,7 @@ export class Grid2DMark extends Mark {
         numRows: grids0.numRows,
         columns: {
           ...grids0.columns,
-          // @ts-ignore
+          // @ts-expect-error array types
           [prop]: g.map(grid => dericheConv2d(configX, configY, grid, bins))
         }
       };

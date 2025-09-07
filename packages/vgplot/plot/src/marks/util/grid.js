@@ -15,7 +15,7 @@ import { InternSet, ascending } from 'd3';
  * @returns {Arrayish} The generated array.
  */
 export function array(size, proto = []) {
-  // @ts-ignore
+  // @ts-expect-error dynamic instantiation
   return new proto.constructor(size);
 }
 
@@ -32,7 +32,9 @@ export function array(size, proto = []) {
  * }} Named column arrays of generated grid values.
  */
 export function grid1d(size, index, value, columns, groupby) {
+  if (!index?.length) return { numRows: 0, columns: {} };
   const numRows = index.length;
+  /** @type {{ [key:string]: Arrayish }} */
   const result = {};
   const cells = [];
 
@@ -60,7 +62,6 @@ export function grid1d(size, index, value, columns, groupby) {
     }
   }
 
-  // @ts-ignore
   return { numRows: cells.length, columns: result };
 }
 
@@ -82,9 +83,11 @@ export function grid1d(size, index, value, columns, groupby) {
  * }} Named column arrays of generated grid values.
  */
 export function grid2d(w, h, index, columns, aggregates, groupby, interpolate) {
+  if (!index?.length) return { numRows: 0, columns: {} };
   const numRows = index.length;
   const size = w * h;
   const values = aggregates.map(name => columns[name]);
+  /** @type {{ [key:string]: Arrayish }} */
   const result = {};
   const cells = [];
   const group = new Int32Array(numRows);
@@ -127,7 +130,6 @@ export function grid2d(w, h, index, columns, aggregates, groupby, interpolate) {
     });
   }
 
-  // @ts-ignore
   return { numRows: cells.length, columns: result };
 }
 
