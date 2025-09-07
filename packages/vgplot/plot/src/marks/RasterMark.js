@@ -195,7 +195,7 @@ function alphaScale(mark, prop) {
  */
 function colorScale(mark, prop) {
   const { plot, grids } = mark;
-  const data = grids.columns[prop];
+  const data = grids.columns[prop] ?? [];
   const flat = !data[0]?.map; // not array-like
   const discrete = flat || Array.isArray(data[0]);
 
