@@ -20,7 +20,8 @@ export {
   clauseList,
   clausePoint,
   clausePoints,
-  clauseMatch
+  clauseMatch,
+  clauseMatchAny
 } from './SelectionClause.js';
 
 export { decodeIPC } from './util/decode-ipc.js';
