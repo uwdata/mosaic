@@ -32,8 +32,8 @@
     "prepublishOnly": "npm run test && npm run lint && tsc --build"
   },
   "dependencies": {
-    "@duckdb/duckdb-wasm": "^1.29.0",
-    "@uwdata/flechette": "^2.0.1",
+    "@duckdb/duckdb-wasm": "1.29.1-dev283.0",
+    "@uwdata/flechette": "^2.1.0",
     "@uwdata/mosaic-sql": "^0.18.0"
   },
   "devDependencies": {

@@ -40,7 +40,9 @@ export async function setDatabaseConnector(type) {
       connector = new RestConnector({ uri: 'https://localhost:3000/' });
       break;
     case 'wasm':
-      connector = wasm || (wasm = new DuckDBWASMConnector());
+      connector = wasm || (wasm = new DuckDBWASMConnector({
+        config: { filesystem: { forceFullHTTPReads: true } }
+      }));
       break;
     default:
       throw new Error(`Unrecognized connector type: ${type}`);
