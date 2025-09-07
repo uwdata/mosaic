@@ -366,7 +366,7 @@ export class SelectQuery extends Query {
    * @param seed The random seed.
    */
   sample(
-    value: number | SampleClauseNode,
+    value?: number | SampleClauseNode | null,
     method?: SampleMethod,
     seed?: number
   ): this {
@@ -378,7 +378,7 @@ export class SelectQuery extends Query {
     } else {
       clause = value;
     }
-    this._sample = clause;
+    this._sample = clause ?? undefined;
     return this;
   }
 
