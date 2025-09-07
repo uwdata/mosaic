@@ -172,12 +172,10 @@ export class Table extends Input {
   clause(rows = []) {
     const { data, limit, schema } = this;
     const fields = schema.map(s => s.column);
-    const values = rows.length
-      ? rows.map(row => {
-          const { columns } = data[~~(row / limit)];
-          return fields.map(f => columns[f][row % limit]);
-        })
-      : null;
+    const values = rows.map(row => {
+      const { columns } = data[~~(row / limit)];
+      return fields.map(f => columns[f][row % limit]);
+    });
     return clausePoints(fields, values, { source: this });
   }
 

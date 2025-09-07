@@ -1,6 +1,5 @@
-
 import { isMosaicClient, MosaicClient } from './MosaicClient.js';
-import { type ExprNode, type ExprValue, type ScaleOptions, type ScaleDomain, and, contains, isBetween, isIn, isNotDistinct, literal, or, prefix, regexp_matches, suffix, listHasAny, listHasAll, listContains } from '@uwdata/mosaic-sql';
+import { type ExprNode, type ExprValue, type ScaleOptions, type ScaleDomain, and, contains, isBetween, isIn, isNotDistinct, literal, or, prefix, regexp_matches, suffix, listHasAny, listHasAll, lower } from '@uwdata/mosaic-sql';
 
 /**
  * Selection clause metadata to guide possible query optimizations.
@@ -26,7 +25,7 @@ export interface PointMetadata extends ClauseMetadata {
  * Selection clause metadata indicating text search matching.
  */
 export interface MatchMetadata extends ClauseMetadata {
-  type: MatchMethod;
+  type: 'match';
   /** The text search matching method used. */
   method?: 'contains' | 'prefix' | 'suffix' | 'regexp' | (string & {});
 }
@@ -96,37 +95,9 @@ export interface SelectionClause {
   meta?: ClauseMetadata;
 }
 
-/**
- * Generate a selection clause for a single selected point value in a list.
- * @param field The table column or expression to select, which must be a list.
- * @param value The selected value.
- * @param options Additional clause properties.
- * @param options.source The source component generating this clause.
- * @param options.clients The Mosaic clients associated
- *  with this clause. These clients are not filtered by this clause in
- *  cross-filtering contexts.
- * @returns The generated selection clause.
- */
-export function clauseList(field: ExprValue, value: unknown, {
-  source,
-  clients = isMosaicClient(source) ? new Set([source]) : undefined,
-  listMatch = 'any'
-}: {
+interface PointOptions {
   source: ClauseSource;
   clients?: Set<MosaicClient>;
-  listMatch?: 'any' | 'all';
-}): SelectionClause {
-
-  const listFn = listMatch === 'all' ? listHasAll : listHasAny;
-  const predicate: ExprNode | null = value !== undefined
-    ? listFn(field, literal(value))
-    : null;
-  return {
-    source,
-    clients,
-    value,
-    predicate
-  };
 }
 
 /**
@@ -140,13 +111,13 @@ export function clauseList(field: ExprValue, value: unknown, {
  *  cross-filtering contexts.
  * @returns The generated selection clause.
  */
-export function clausePoint(field: ExprValue, value: unknown, {
-  source,
-  clients = isMosaicClient(source) ? new Set([source]) : undefined
-}: {
-  source: ClauseSource;
-  clients?: Set<MosaicClient>;
-}): SelectionClause {
+export function clausePoint(
+  field: ExprValue,
+  value: unknown, {
+    source,
+    clients = isMosaicClient(source) ? new Set([source]) : undefined
+  }: PointOptions
+): SelectionClause {
   const predicate: ExprNode | null = value !== undefined
     ? isIn(field, [literal(value)])
     : null;
@@ -171,15 +142,16 @@ export function clausePoint(field: ExprValue, value: unknown, {
  *  cross-filtering contexts.
  * @returns The generated selection clause.
  */
-export function clausePoints(fields: ExprValue[], value: unknown[][] | null | undefined, {
-  source,
-  clients = isMosaicClient(source) ? new Set([source]) : undefined
-}: {
-  source: ClauseSource;
-  clients?: Set<MosaicClient>;
-}): SelectionClause {
+export function clausePoints(
+  fields: ExprValue[],
+  value: unknown[][] | null | undefined,
+  {
+    source,
+    clients = isMosaicClient(source) ? new Set([source]) : undefined
+  }: PointOptions
+): SelectionClause {
   let predicate: ExprNode | null = null;
-  if (value) {
+  if (value?.length) {
     const clauses = value.length && fields.length === 1
       ? [isIn(fields[0], value.map(v => literal(v[0])))]
       : value.map(v => and(v.map((_, i) => isNotDistinct(fields[i], literal(_)))));
@@ -196,6 +168,14 @@ export function clausePoints(fields: ExprValue[], value: unknown[][] | null | un
   };
 }
 
+/** Interval selection clause options. */
+interface IntervalOptions {
+  source: ClauseSource;
+  clients?: Set<MosaicClient>;
+  bin?: BinMethod;
+  pixelSize?: number;
+}
+
 /**
  * Generate a selection clause for a selected 1D interval.
  * @param field The table column or expression to select.
@@ -210,19 +190,17 @@ export function clausePoints(fields: ExprValue[], value: unknown[][] | null | un
  * @param options.pixelSize The interactive pixel size.
  * @returns The generated selection clause.
  */
-export function clauseInterval(field: ExprValue, value: ScaleDomain | null | undefined, {
-  source,
-  clients = isMosaicClient(source) ? new Set([source]) : undefined,
-  bin,
-  scale,
-  pixelSize = 1
-}: {
-  source: ClauseSource;
-  clients?: Set<MosaicClient>;
-  scale?: ScaleOptions;
-  bin?: BinMethod;
-  pixelSize?: number;
-}): SelectionClause {
+export function clauseInterval(
+  field: ExprValue,
+  value: ScaleDomain | null | undefined,
+  {
+    source,
+    clients = isMosaicClient(source) ? new Set([source]) : undefined,
+    bin,
+    scale,
+    pixelSize = 1
+  }: IntervalOptions & { scale?: ScaleOptions }
+): SelectionClause {
   const predicate = value != null ? isBetween(field, value) : null;
   const meta: IntervalMetadata = {
     type: 'interval',
@@ -248,19 +226,17 @@ export function clauseInterval(field: ExprValue, value: ScaleDomain | null | und
  * @param options.pixelSize The interactive pixel size.
  * @returns The generated selection clause.
  */
-export function clauseIntervals(fields: ExprValue[], value: ScaleDomain[] | null | undefined, {
-  source,
-  clients = isMosaicClient(source) ? new Set([source]) : undefined,
-  bin,
-  scales = [],
-  pixelSize = 1
-}: {
-  source: ClauseSource;
-  clients?: Set<MosaicClient>;
-  scales?: ScaleOptions[];
-  bin?: BinMethod;
-  pixelSize?: number;
-}): SelectionClause {
+export function clauseIntervals(
+  fields: ExprValue[],
+  value: ScaleDomain[] | null | undefined,
+  {
+    source,
+    clients = isMosaicClient(source) ? new Set([source]) : undefined,
+    bin,
+    scales = [],
+    pixelSize = 1
+  }: IntervalOptions & { scales?: ScaleOptions[] }
+): SelectionClause {
   const predicate = value != null
     ? and(fields.map((f, i) => isBetween(f, value[i])))
     : null;
@@ -273,34 +249,109 @@ export function clauseIntervals(fields: ExprValue[], value: ScaleDomain[] | null
   return { meta, source, clients, value, predicate };
 }
 
+const identity = (x: string | ExprNode) => x;
+
 const MATCH_METHODS = { contains, prefix, suffix, regexp: regexp_matches };
 
 /** Text search matching methods. */
-export type MatchMethod = keyof typeof MATCH_METHODS | (string & {});
+export type MatchMethod = keyof typeof MATCH_METHODS;
+
+/** Text matching selection clause options. */
+export interface MatchOptions {
+  source: ClauseSource;
+  clients?: Set<MosaicClient>;
+  method?: MatchMethod;
+  caseSensitive?: boolean;
+}
 
 /**
- * Generate a selection clause for text search matching.
- * @param field The table column or expression to select.
+ * Generate a selection clause for text search matching over a single column.
+ * @param field The table column or expression to match.
  * @param value The selected text search query string.
+ * @param options Additional clause properties.
+ * @param options.source The source component generating this clause.
+ * @param options.clients Mosaic clients associated with this clause.
+ *  These clients are not filtered by this clause in cross-filtering contexts.
+ * @param options.method The text matching method to use, default `'contains'`.
+ * @param options.caseSensitive Flag for case sensitive matching, default `false`.
+ * @returns The generated selection clause.
+ */
+export function clauseMatch(
+  field: string | ExprNode,
+  value: string | null | undefined,
+  {
+    source,
+    clients = undefined,
+    method = 'contains',
+    caseSensitive = false
+  }: MatchOptions
+): SelectionClause {
+  const fn = MATCH_METHODS[method as keyof typeof MATCH_METHODS];
+  const transform = caseSensitive ? identity: lower;
+  const predicate = value ? fn(transform(field), transform(literal(value))) : null;
+  const meta: MatchMetadata = { type: 'match', method };
+  return { meta, source, clients, value, predicate };
+}
+
+/**
+ * Generate a selection clause for text search matching over multiple columns.
+ * A match will succeed if any field successfully matches.
+ * @param fields The table columns or expressions to match.
+ * @param value The selected text search query string.
+ * @param options Additional clause properties.
+ * @param options.source The source component generating this clause.
+ * @param options.clients Mosaic clients associated with this clause.
+ *  These clients are not filtered by this clause in cross-filtering contexts.
+ * @param options.method The text matching method to use, default `'contains'`.
+ * @param options.caseSensitive Flag for case sensitive matching, default `false`.
+ * @returns The generated selection clause.
+ */
+export function clauseMatchAny(
+  fields: (string | ExprNode)[],
+  value: string | null,
+  {
+    source,
+    clients = undefined,
+    method = 'contains',
+    caseSensitive = false
+  }: MatchOptions
+): SelectionClause {
+  value = value || null;
+  const fn = MATCH_METHODS[method];
+  const transform = caseSensitive ? identity : lower;
+  const query = transform(literal(value));
+  const predicate = value
+    ? or(fields.flatMap(field => value ? fn(transform(field), query) : []))
+    : null;
+  const meta: MatchMetadata = { type: 'match', method };
+  return { meta, source, clients, value, predicate };
+}
+
+/**
+ * Generate a selection clause for a single selected point value in a list.
+ * @param field The table column or expression to select, which must be a list.
+ * @param value The selected value.
  * @param options Additional clause properties.
  * @param options.source The source component generating this clause.
  * @param options.clients The Mosaic clients associated
  *  with this clause. These clients are not filtered by this clause in
  *  cross-filtering contexts.
- * @param options.method The text matching method to use. Defaults to `'contains'`.
  * @returns The generated selection clause.
  */
-export function clauseMatch(field: ExprValue, value: string | null | undefined, {
-  source,
-  clients = undefined,
-  method = 'contains'
-}: {
-  source: ClauseSource;
-  clients?: Set<MosaicClient>;
-  method?: MatchMethod;
-}): SelectionClause {
-  const fn = MATCH_METHODS[method as keyof typeof MATCH_METHODS];
-  const predicate: ExprNode | null = value ? fn(field, literal(value)) : null;
-  const meta: MatchMetadata = { type: 'match', method };
-  return { meta, source, clients, value, predicate };
+export function clauseList(
+  field: ExprValue,
+  value: unknown,
+  {
+    source,
+    clients = isMosaicClient(source) ? new Set([source]) : undefined,
+    listMatch = 'any'
+  }: {
+    source: ClauseSource;
+    clients?: Set<MosaicClient>;
+    listMatch?: 'any' | 'all';
+  }
+): SelectionClause {
+  const listFn = listMatch === 'all' ? listHasAll : listHasAny;
+  const predicate = value !== undefined ? listFn(field, literal(value)) : null;
+  return { source, clients, value, predicate };
 }
