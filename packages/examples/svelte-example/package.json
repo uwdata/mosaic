@@ -14,7 +14,7 @@
     "react": "^19.1.1",
     "react-dom": "^19.1.1",
     "svelte": "^5.38.7",
-    "vite": "^7.1.4"
+    "vite": "^7.1.5"
   },
   "dependencies": {
     "@uwdata/mosaic-core": "^0.18.0",
