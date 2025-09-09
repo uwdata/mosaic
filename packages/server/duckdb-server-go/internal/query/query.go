@@ -10,6 +10,8 @@ import (
 	"hash/maphash"
 	"io"
 	"log/slog"
+	"runtime"
+	"sync"
 
 	"github.com/apache/arrow-go/v18/arrow/ipc"
 	"github.com/marcboeker/go-duckdb/v2"
@@ -18,10 +20,11 @@ import (
 )
 
 type DB struct {
-	db    *sql.DB
-	conn  driver.Conn
-	arrow *duckdb.Arrow
-	// Semaphore to limit concurrent Arrow queries, since db.SetMaxOpenConns doesn't apply to Arrow connections
+	db *sql.DB
+
+	// since db.SetMaxOpenConns doesn't apply to Arrow connections, we're using a sync.Pool to reuse connections,
+	// and a semaphore to limit connections to the same as the sql.DB max connections
+	connPool       *sync.Pool
 	arrowSemaphore *semaphore.Weighted
 
 	cache     *otter.Cache[uint64, []byte]
@@ -35,16 +38,6 @@ type DB struct {
 func New(ctx context.Context, connector *duckdb.Connector, connectionPoolSize, cacheSize int, logger *slog.Logger) (*DB, error) {
 	db := sql.OpenDB(connector)
 	db.SetMaxOpenConns(connectionPoolSize)
-
-	conn, err := connector.Connect(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	arrow, err := duckdb.NewArrowFromConn(conn)
-	if err != nil {
-		return nil, err
-	}
 
 	arrowSemaphore := semaphore.NewWeighted(int64(connectionPoolSize))
 
@@ -60,9 +53,9 @@ func New(ctx context.Context, connector *duckdb.Connector, connectionPoolSize, c
 	}
 
 	return &DB{
-		db:             db,
-		conn:           conn,
-		arrow:          arrow,
+		db: db,
+
+		connPool:       newArrowSyncPool(ctx, connector, logger),
 		arrowSemaphore: arrowSemaphore,
 
 		cache:     cache,
@@ -70,6 +63,55 @@ func New(ctx context.Context, connector *duckdb.Connector, connectionPoolSize, c
 
 		logger: logger,
 	}, nil
+}
+
+func newArrowSyncPool(ctx context.Context, connector *duckdb.Connector, logger *slog.Logger) *sync.Pool {
+	return &sync.Pool{
+		New: func() any {
+			conn, err := connector.Connect(ctx)
+			if err != nil {
+				return nil
+			}
+
+			arrow, err := duckdb.NewArrowFromConn(conn)
+			if err != nil {
+				return nil
+			}
+
+			runtime.AddCleanup(arrow, func(driverConn driver.Conn) {
+				closeErr := driverConn.Close()
+				if closeErr != nil {
+					logger.Error("query: failed to close Arrow connection", "error", closeErr)
+				}
+			}, conn)
+
+			return arrow
+		},
+	}
+}
+
+func (db *DB) getArrowConn(ctx context.Context) (*duckdb.Arrow, error) {
+	err := db.arrowSemaphore.Acquire(ctx, 1)
+	if err != nil {
+		return nil, fmt.Errorf("query: failed to acquire connection: %w", err)
+	}
+
+	untypedArrow := db.connPool.Get()
+	if untypedArrow == nil {
+		return nil, fmt.Errorf("query: failed to get Arrow connection from pool")
+	}
+
+	arrow, ok := untypedArrow.(*duckdb.Arrow)
+	if !ok {
+		return nil, fmt.Errorf("query: invalid type in Arrow connection pool")
+	}
+
+	return arrow, nil
+}
+
+func (db *DB) putArrowConn(arrow *duckdb.Arrow) {
+	db.connPool.Put(arrow)
+	db.arrowSemaphore.Release(1)
 }
 
 type Extension struct {
@@ -113,11 +155,6 @@ func (db *DB) Close() {
 	err := db.db.Close()
 	if err != nil {
 		db.logger.Error("failed to close database", "error", err)
-	}
-
-	err = db.conn.Close()
-	if err != nil {
-		db.logger.Error("failed to close database connection", "error", err)
 	}
 }
 
@@ -163,13 +200,13 @@ func (db *DB) WriteJSON(ctx context.Context, query string, allowedSchemas []stri
 		}
 	}
 
-	err := db.arrowSemaphore.Acquire(ctx, 1)
+	arrow, err := db.getArrowConn(ctx)
 	if err != nil {
-		return fmt.Errorf("query: failed to acquire connection: %w", err)
+		return err
 	}
-	defer db.arrowSemaphore.Release(1)
+	defer db.putArrowConn(arrow)
 
-	rdr, err := db.arrow.QueryContext(ctx, query)
+	rdr, err := arrow.QueryContext(ctx, query)
 	if err != nil {
 		return fmt.Errorf("query: failed to execute query: %w", err)
 	}
@@ -243,13 +280,13 @@ func (db *DB) WriteArrow(ctx context.Context, query string, allowedSchemas []str
 		}
 	}
 
-	err := db.arrowSemaphore.Acquire(ctx, 1)
+	arrow, err := db.getArrowConn(ctx)
 	if err != nil {
-		return fmt.Errorf("query: failed to acquire connection: %w", err)
+		return err
 	}
-	defer db.arrowSemaphore.Release(1)
+	defer db.putArrowConn(arrow)
 
-	rdr, err := db.arrow.QueryContext(ctx, query)
+	rdr, err := arrow.QueryContext(ctx, query)
 	if err != nil {
 		return fmt.Errorf("query: failed to execute query: %w", err)
 	}
