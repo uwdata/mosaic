@@ -27,7 +27,7 @@ func setupTestDB(t *testing.T) *DB {
 		Level: slog.LevelError, // Only show errors during tests
 	}))
 
-	db, err := New(ctx, connector, 5, 100, logger)
+	db, err := New(ctx, connector, WithLogger(logger))
 	require.NoError(t, err)
 
 	// Clean up when test completes

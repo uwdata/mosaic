@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/marcboeker/go-duckdb/v2"
 
@@ -21,7 +22,9 @@ func main() {
 	address := flag.String("address", "localhost", "HTTP Address")
 	port := flag.String("port", "3000", "HTTP Port")
 	poolSize := flag.Int("connection-pool-size", 10, "Max connection pool size")
-	cacheSize := flag.Int("cache-size", 1000, "Max number of cache entries")
+	maxCacheEntries := flag.Int("max-cache-entries", 1000, "Max number of cache entries")
+	maxCacheBytes := flag.Int("max-cache-bytes", 0, "Max number of cache size in bytes (overrides max-cache-entries if both are set)")
+	ttlStr := flag.String("cache-ttl", "0s", "Time-to-live for cache entries as a Go duration. 0s means no expiration (e.g., '10m', '1h'). Defaults to 0s.")
 	certFile := flag.String("cert", "", "Path to TLS certificate file (optional, enables HTTPS)")
 	keyFile := flag.String("key", "", "Path to TLS private key file (optional, enables HTTPS)")
 	schemaMatchHeadersStr := flag.String("schema-match-headers", "", "Comma-separated list of headers to match against schema names for multi-tenant access control (e.g., \"X-Tenant-Id,verified-user-id\")")
@@ -65,7 +68,19 @@ func main() {
 		}
 	}()
 
-	db, err := query.New(ctx, connector, *poolSize, *cacheSize, logger)
+	ttl, err := time.ParseDuration(*ttlStr)
+	if err != nil {
+		logger.Error("main: invalid cache-ttl", "error", err)
+		return
+	}
+
+	db, err := query.New(ctx, connector,
+		query.WithMaxConnections(*poolSize),
+		query.WithMaxCacheEntries(*maxCacheEntries),
+		query.WithMaxCacheBytes(*maxCacheBytes),
+		query.WithTTL(ttl),
+		query.WithLogger(logger),
+	)
 	if err != nil {
 		logger.Error("main: error creating query DB", "error", err)
 		return
@@ -79,10 +94,12 @@ func main() {
 		"address":              *address,
 		"port":                 *port,
 		"connection_pool_size": *poolSize,
-		"cache_size":           *cacheSize,
+		"cache_size":           *maxCacheEntries,
 		"cert_file":            *certFile,
 		"key_file":             *keyFile,
 		"schema_match_headers": *schemaMatchHeadersStr,
+		"ttl":                  ttl,
+		"max_cache_bytes":      *maxCacheBytes,
 		"load_extensions":      *extensionsStr,
 	}
 	logger.Info("DuckDB Server configuration", "config", config)
