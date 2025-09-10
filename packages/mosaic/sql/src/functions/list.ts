@@ -33,7 +33,16 @@ export function listContains(
   list1: ExprValue | ExprValue[],
   element: ExprValue,
 ) {
-  return fn("list_contains", asList(list1), asLiteral(element));
+  switch (this.dialect) {
+    case "clickhouse":
+      return fn("has", asList(list1), asLiteral(element));
+    case "starrocks":
+      return fn("array_contains", asList(list1), asLiteral(element));
+    case "bigquery":
+      return "element IN UNNEST(list1)";
+    default:
+      return fn("list_contains", asList(list1), asLiteral(element));
+  }
 }
 
 /**
@@ -46,7 +55,16 @@ export function listHasAll(
   list1: ExprValue | ExprValue[],
   list2: ExprValue | ExprValue[],
 ) {
-  return fn("list_has_all", asList(list1), asList(list2));
+  switch (this.dialect) {
+    case "clickhouse":
+      return fn("hasAll", asList(list1), asList(list2));
+    case "starrocks":
+      return fn("array_contains_all", asList(list1), asList(list2));
+    case "bigquery":
+      return "(SELECT COUNT(l2) = ARRAY_LENGTH(list2) FROM UNNEST(list1) AS l1 JOIN UNNEST(list1) AS l2 ON l1 = l2)";
+    default:
+      return fn("list_has_all", asList(list1), asList(list2));
+  }
 }
 
 /**
@@ -59,5 +77,14 @@ export function listHasAny(
   list1: ExprValue | ExprValue[],
   list2: ExprValue | ExprValue[],
 ) {
-  return fn("list_has_any", asList(list1), asList(list2));
+  switch (this.dialect) {
+    case "clickhouse":
+      return fn("hasAny", asList(list1), asList(list2));
+    case "starrocks":
+      return fn("arrays_overlap", asList(list1), asList(list2));
+    case "bigquery":
+      return "EXISTS(SELECT * FROM UNNEST(list1) AS l1 WHERE l1 IN UNNEST(list2))";
+    default:
+      return fn("list_has_any", asList(list1), asList(list2));
+  }
 }
