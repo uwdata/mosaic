@@ -194,7 +194,8 @@ func (db *DB) QueryJSON(ctx context.Context, query string, allowedSchemas []stri
 
 func (db *DB) WriteJSON(ctx context.Context, query string, allowedSchemas []string, w io.Writer) error {
 	if len(allowedSchemas) > 0 {
-		err := db.ValidateSQL(ctx, query, allowedSchemas)
+		btValidator := newBaseTableValidator(allowedSchemas)
+		err := db.ValidateSQL(ctx, query, btValidator)
 		if err != nil {
 			return fmt.Errorf("query: validation failed for query: %w", err)
 		}
@@ -274,7 +275,8 @@ func (db *DB) QueryArrow(ctx context.Context, query string, allowedSchemas []str
 
 func (db *DB) WriteArrow(ctx context.Context, query string, allowedSchemas []string, w io.Writer) error {
 	if len(allowedSchemas) > 0 {
-		err := db.ValidateSQL(ctx, query, allowedSchemas)
+		btValidator := newBaseTableValidator(allowedSchemas)
+		err := db.ValidateSQL(ctx, query, btValidator)
 		if err != nil {
 			return fmt.Errorf("query: validation failed for query: %w", err)
 		}
