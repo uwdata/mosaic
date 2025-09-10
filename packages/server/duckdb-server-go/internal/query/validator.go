@@ -204,3 +204,56 @@ func (v *baseTableValidator) Validate() []error {
 
 	return errs
 }
+
+// functionBlocklistValidator validates that the SQL query only accesses schemas that match request headers
+type functionBlocklistValidator struct {
+	blockedFunctions []string
+	errs             []error
+}
+
+func newFunctionBlocklistValidator(blockedFunctions []string) Validator {
+	return &functionBlocklistValidator{
+		blockedFunctions: blockedFunctions,
+	}
+}
+
+func (v *functionBlocklistValidator) CheckNode(node map[string]any, keyStack []string) {
+	if len(keyStack) > 0 && keyStack[len(keyStack)-1] != "function" {
+		return
+	}
+
+	class, exists := node["class"]
+	if !exists {
+		return
+	}
+	if class != "FUNCTION" {
+		return
+	}
+
+	typeVal, exists := node["type"]
+	if !exists {
+		return
+	}
+	if typeVal != "FUNCTION" {
+		return
+	}
+
+	functionName, exists := node["function_name"]
+	if !exists {
+		return
+	}
+
+	functionNameStr, ok := functionName.(string)
+	if !ok {
+		v.errs = append(v.errs, fmt.Errorf("query: invalid 'function_name' in function, expected string: %v", functionName))
+		return
+	}
+
+	if slices.Contains(v.blockedFunctions, functionNameStr) {
+		v.errs = append(v.errs, fmt.Errorf("query: access denied: use of function '%s' is not allowed", functionNameStr))
+	}
+}
+
+func (v *functionBlocklistValidator) Validate() []error {
+	return v.errs
+}

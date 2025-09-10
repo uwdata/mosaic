@@ -33,6 +33,7 @@ You can customize the server behavior with the following command-line flags:
 -   `--key <path>`: Path to a TLS private key file to enable HTTPS.
 -   `--schema-match-headers`: Comma-separated list of headers to match against schema names for multi-tenant access control (e.g., `X-Tenant-Id,verified-user-id`).
 -   `--load-extensions`: Comma-separated list of extensions to install and load at startup. Use a pipe after the extension name to specify the repository. Unspecified repositories will default to 'core'. (e.g. `mysql_scanner,netquack|community,aws|core_nightly`
+-   `--function-blocklist`: Comma-separated list of functions to block, useful for blocking functions that may pose security or performance risks. (e.g., 'bigquery_query,read_parquet')`
 
 By default, the server will look for `localhost.pem` and `localhost-key.pem` in the current directory to enable HTTPS if the `--cert` and `--key` flags are not provided.
 

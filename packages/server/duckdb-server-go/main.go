@@ -29,11 +29,17 @@ func main() {
 	keyFile := flag.String("key", "", "Path to TLS private key file (optional, enables HTTPS)")
 	schemaMatchHeadersStr := flag.String("schema-match-headers", "", "Comma-separated list of headers to match against schema names for multi-tenant access control (e.g., \"X-Tenant-Id,verified-user-id\")")
 	extensionsStr := flag.String("load-extensions", "", "Comma-separated list of extensions to install and load at startup. Use a pipe after the extension name to specify the repository. Unspecified repositories will default to 'core'. (e.g. mysql_scanner,netquack|community,aws|core_nightly")
+	functionBlocklistStr := flag.String("function-blocklist", "", "Comma-separated list of functions to block, useful for blocking functions that may pose security or performance risks. (e.g., 'bigquery_query,read_parquet')")
 	flag.Parse()
 
 	var schemaMatchHeaders []string
 	if *schemaMatchHeadersStr != "" {
 		schemaMatchHeaders = strings.Split(*schemaMatchHeadersStr, ",")
+	}
+
+	var functionBlocklist []string
+	if *functionBlocklistStr != "" {
+		functionBlocklist = strings.Split(*functionBlocklistStr, ",")
 	}
 
 	ctx := context.Background()
@@ -80,6 +86,7 @@ func main() {
 		query.WithMaxCacheBytes(*maxCacheBytes),
 		query.WithTTL(ttl),
 		query.WithLogger(logger),
+		query.WithFunctionBlocklist(functionBlocklist),
 	)
 	if err != nil {
 		logger.Error("main: error creating query DB", "error", err)
