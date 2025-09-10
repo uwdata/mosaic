@@ -35,19 +35,44 @@ type DB struct {
 
 // New creates a new DB instance using the provided DuckDB connector, opening a sql.DB and arrow connection.
 // The logger is optional; if nil, it defaults to slog.Default().
-func New(ctx context.Context, connector *duckdb.Connector, connectionPoolSize, cacheSize int, logger *slog.Logger) (*DB, error) {
-	db := sql.OpenDB(connector)
-	db.SetMaxOpenConns(connectionPoolSize)
-
-	arrowSemaphore := semaphore.NewWeighted(int64(connectionPoolSize))
-
-	if logger == nil {
-		logger = slog.Default()
+func New(ctx context.Context, connector *duckdb.Connector, opts ...OptionFunc) (*DB, error) {
+	o := &Options{
+		MaxConnections:  10,
+		MaxCacheEntries: 1000,
+		Logger:          slog.Default(),
+	}
+	for _, opt := range opts {
+		err := opt(o)
+		if err != nil {
+			return nil, fmt.Errorf("query: failed to apply option: %w", err)
+		}
 	}
 
-	cache, err := otter.New[uint64, []byte](&otter.Options[uint64, []byte]{
-		MaximumSize: cacheSize,
-	})
+	db := sql.OpenDB(connector)
+	db.SetMaxOpenConns(o.MaxConnections)
+
+	arrowSemaphore := semaphore.NewWeighted(int64(o.MaxConnections))
+
+	// the cache can be limited either by number of entries or total size in bytes
+	// if both are set, MaxCacheBytes takes precedence
+	cacheOpts := &otter.Options[uint64, []byte]{}
+
+	switch {
+	case o.MaxCacheBytes > 0:
+		cacheOpts.MaximumWeight = uint64(o.MaxCacheBytes)
+		cacheOpts.Weigher = func(key uint64, value []byte) uint32 {
+			return uint32(len(value))
+		}
+
+	case o.MaxCacheEntries > 0:
+		cacheOpts.MaximumSize = o.MaxCacheEntries
+	}
+
+	if o.TTL > 0 {
+		cacheOpts.ExpiryCalculator = otter.ExpiryCreating[uint64, []byte](o.TTL)
+	}
+
+	cache, err := otter.New[uint64, []byte](cacheOpts)
 	if err != nil {
 		return nil, fmt.Errorf("query: failed to create cache: %w", err)
 	}
@@ -55,13 +80,13 @@ func New(ctx context.Context, connector *duckdb.Connector, connectionPoolSize, c
 	return &DB{
 		db: db,
 
-		connPool:       newArrowSyncPool(ctx, connector, logger),
+		connPool:       newArrowSyncPool(ctx, connector, o.Logger),
 		arrowSemaphore: arrowSemaphore,
 
 		cache:     cache,
 		cacheSeed: maphash.MakeSeed(), // Initialize the cache seed for consistent hashing
 
-		logger: logger,
+		logger: o.Logger,
 	}, nil
 }
 
@@ -194,7 +219,8 @@ func (db *DB) QueryJSON(ctx context.Context, query string, allowedSchemas []stri
 
 func (db *DB) WriteJSON(ctx context.Context, query string, allowedSchemas []string, w io.Writer) error {
 	if len(allowedSchemas) > 0 {
-		err := db.ValidateSQL(ctx, query, allowedSchemas)
+		btValidator := newBaseTableValidator(allowedSchemas)
+		err := db.ValidateSQL(ctx, query, btValidator)
 		if err != nil {
 			return fmt.Errorf("query: validation failed for query: %w", err)
 		}
@@ -274,7 +300,8 @@ func (db *DB) QueryArrow(ctx context.Context, query string, allowedSchemas []str
 
 func (db *DB) WriteArrow(ctx context.Context, query string, allowedSchemas []string, w io.Writer) error {
 	if len(allowedSchemas) > 0 {
-		err := db.ValidateSQL(ctx, query, allowedSchemas)
+		btValidator := newBaseTableValidator(allowedSchemas)
+		err := db.ValidateSQL(ctx, query, btValidator)
 		if err != nil {
 			return fmt.Errorf("query: validation failed for query: %w", err)
 		}

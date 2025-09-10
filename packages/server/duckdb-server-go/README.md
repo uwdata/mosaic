@@ -26,11 +26,14 @@ You can customize the server behavior with the following command-line flags:
 -   `--address <address>`: The HTTP address to listen on. Defaults to "localhost".
 -   `--port <port>`: The HTTP port to listen on. Defaults to "3000".
 -   `--connection-pool-size <size>`: The maximum size of the connection pool. Defaults to 10.
--   `--cache-size <size>`: The maximum number of cache entries. Defaults to 1000.
+-   `--max-cache-entries <size>`: The maximum number of cache entries. Defaults to 1000.
+-   `--max-cache-bytes <bytes>`: Max number of cache size in bytes (overrides max-cache-entries if both are set). Defaults to 0 (no limit).
+-   `--cache-ttl <duration>`: Time-to-live for cache entries as a Go duration. 0s means no expiration (e.g., '10m', '1h'). Defaults to 0s.
 -   `--cert <path>`: Path to a TLS certificate file to enable HTTPS.
 -   `--key <path>`: Path to a TLS private key file to enable HTTPS.
 -   `--schema-match-headers`: Comma-separated list of headers to match against schema names for multi-tenant access control (e.g., `X-Tenant-Id,verified-user-id`).
 -   `--load-extensions`: Comma-separated list of extensions to install and load at startup. Use a pipe after the extension name to specify the repository. Unspecified repositories will default to 'core'. (e.g. `mysql_scanner,netquack|community,aws|core_nightly`
+-   `--function-blocklist`: Comma-separated list of functions to block, useful for blocking functions that may pose security or performance risks. (e.g., 'bigquery_query,read_parquet')`
 
 By default, the server will look for `localhost.pem` and `localhost-key.pem` in the current directory to enable HTTPS if the `--cert` and `--key` flags are not provided.
 
