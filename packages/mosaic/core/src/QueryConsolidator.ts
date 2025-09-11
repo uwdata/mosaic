@@ -103,11 +103,11 @@ function consolidationKey(query: QueryType, cache: Cache): string {
   const sql = `${query}`;
   if (isSelectQuery(query) && !cache.get(sql)) {
     if (
-      query._orderby.length || query._where.length ||
-      query._qualify.length || query._having.length
+      query._where.length || query._qualify.length || query._having.length ||
+      query._orderby.length || query._distinct
     ) {
-      // do not try to analyze if query includes clauses
-      // that may refer to *derived* columns we can't resolve
+      // bail if query includes clauses that may refer to *derived* columns
+      // that we can't resolve. also do not consolidate distinct queries
       return sql;
     }
 
