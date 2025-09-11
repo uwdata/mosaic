@@ -9,6 +9,7 @@ describe('QueryConsolidation', () => {
     const consolidated: string[] = [];
     const c = consolidator(q => consolidated.push(q.request.query.toString()), voidCache());
     for(const q of qs) {
+      // @ts-expect-error stub entry for test
       c.add({request: { type: 'arrow', query: q }}, Priority.Normal);
     }
     await new Promise(resolve => setImmediate(resolve));
@@ -40,6 +41,17 @@ describe('QueryConsolidation', () => {
     expect(consolidated).toEqual([
       q1.toString(),
       q2.toString(),
+    ]);
+  });
+
+  it('should not consolidate select distinct queries', async () => {
+    const q1 = Query.from({ source: 'table' }).select({ u: 'x' }).distinct();
+    const q2 = Query.from({ source: 'table' }).select({ v: 'y' });
+    const q3 = Query.from({ source: 'table' }).select({ w: 'z' });
+    const consolidated = await getConsolidatedQueries(q1, q2, q3);
+    expect(consolidated).toEqual([
+      q1.toString(),
+      Query.from({ source: 'table' }).select({ col0: 'y', col1: 'z' }).toString(),
     ]);
   });
 });
