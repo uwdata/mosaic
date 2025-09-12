@@ -9,13 +9,17 @@ export function isNode(value: unknown): value is SQLNode {
 export class SQLNode {
   /** The SQL AST node type. */
   readonly type: string;
+  /** The SQL dialect. */
+  readonly dialect: string;
 
   /**
    * Instantiate a SQL AST node.
    * @param type The SQL AST node type.
+   * @param dialect The SQL dialect (defaults to "duckdb").
    */
-  constructor(type: string) {
+  constructor(type: string, dialect: string = "duckdb") {
     this.type = type;
+    this.dialect = dialect;
   }
 
   /**
