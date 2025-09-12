@@ -1,6 +1,6 @@
 {
   "name": "mosaic-widget",
-  "version": "0.18.0",
+  "version": "0.19.0",
   "private": true,
   "license": "BSD-3-Clause",
   "author": "Dominik Moritz (https://www.domoritz.de)",
@@ -19,8 +19,8 @@
     "release": "uv build && uvx twine upload --skip-existing ../../../dist/mosaic_widget*"
   },
   "dependencies": {
-    "@uwdata/mosaic-core": "^0.18.0",
-    "@uwdata/mosaic-spec": "^0.18.0",
+    "@uwdata/mosaic-core": "^0.19.0",
+    "@uwdata/mosaic-spec": "^0.19.0",
     "uuid": "^13.0.0"
   },
   "devDependencies": {
