@@ -10,6 +10,9 @@ import { tableFromIPC } from '@uwdata/flechette';
  *  values to JS Date objects.
  * @returns A table instance.
  */
-export function decodeIPC(data: ArrayBuffer | Uint8Array, options: ExtractionOptions = { useDate: true }): Table {
+export function decodeIPC(
+  data: ArrayBufferLike | Uint8Array,
+  options: ExtractionOptions = { useDate: true }
+): Table {
   return tableFromIPC(data, options);
 }
