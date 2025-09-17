@@ -1,5 +1,5 @@
 /**
- * @import { ClauseSource, Selection } from '@uwdata/mosaic-core'
+ * @import { Selection } from '@uwdata/mosaic-core'
  * @import { FilterExpr } from '@uwdata/mosaic-sql'
  */
 import { clausePoints, coordinator, isParam, isSelection, queryFieldInfo, toDataColumns } from '@uwdata/mosaic-core';
@@ -19,7 +19,7 @@ let _id = -1;
  * @param {Selection} [options.as] The output selection. A selection
  *  clause is added for the currently selected table row.
  * @param {{ [name: string]: 'left' | 'right' | 'center' }} [options.align]
- *  An object that maps column names to horiztonal text alignment values. If
+ *  An object that maps column names to horizontal text alignment values. If
  *  unspecified, alignment is determined based on the column data type.
  * @param {{ [name: string]: (value: any) => string }} [options.format] An
  *  object that maps column names to format functions to use for that
@@ -32,7 +32,7 @@ let _id = -1;
  *  Used in conjunction with the *from* option.
  * @param {number | { [name: string]: number }} [options.width] If a number,
  *  sets the desired width of the table, in pixels. If an object, is used to
- *  set explicit pixel widts for each named column included in the object.
+ *  set explicit pixel widths for each named column included in the object.
  * @param {number} [options.maxWidth] The maximum width of the table, in pixels.
  * @param {number} [options.height] The desired height of the table, in pixels.
  * @param {number} [options.rowBatch] The number of rows to request per query
@@ -57,7 +57,7 @@ export class Table extends Input {
    * @param {Selection} [options.as] The output selection. A selection
    *  clause is added for the currently selected table row.
    * @param {{ [name: string]: 'left' | 'right' | 'center' }} [options.align]
-   *  An object that maps column names to horiztonal text alignment values. If
+   *  An object that maps column names to horizontal text alignment values. If
    *  unspecified, alignment is determined based on the column data type.
    * @param {{ [name: string]: (value: any) => string }} [options.format] An
    *  object that maps column names to format functions to use for that
@@ -70,7 +70,7 @@ export class Table extends Input {
    *  Used in conjunction with the *from* option.
    * @param {number | { [name: string]: number }} [options.width] If a number,
    *  sets the desired width of the table, in pixels. If an object, is used to
-   *  set explicit pixel widts for each named column included in the object.
+   *  set explicit pixel widths for each named column included in the object.
    * @param {number} [options.maxWidth] The maximum width of the table, in pixels.
    * @param {number} [options.height] The desired height of the table, in pixels.
    * @param {number} [options.rowBatch] The number of rows to request per query
@@ -191,7 +191,7 @@ export class Table extends Input {
   }
 
   async prepare() {
-    // query for column scheam information
+    // query for column schema information
     const table = this.sourceTable();
     const fields = this.columns.map(column => ({ column, table }));
     const schema = await queryFieldInfo(this.coordinator, fields);
