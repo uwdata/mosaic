@@ -18,10 +18,5 @@ export class IntervalNode extends ExprNode {
     this.steps = steps;
   }
 
-  /**
-   * Generate a SQL query string for this node.
-   */
-  toString() {
-    return `INTERVAL ${this.steps} ${this.name}`;
-  }
+
 }

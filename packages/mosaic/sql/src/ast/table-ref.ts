@@ -1,5 +1,4 @@
 import { TABLE_REF } from '../constants.js';
-import { quoteIdentifier } from '../util/string.js';
 import { ExprNode } from './node.js';
 
 /**
@@ -30,10 +29,5 @@ export class TableRefNode extends ExprNode {
     return this.table[this.table.length - 1];
   }
 
-  /**
-   * Generate a SQL query string for this node.
-   */
-  toString() {
-    return this.table.map(t => quoteIdentifier(t)).join('.');
-  }
+
 }

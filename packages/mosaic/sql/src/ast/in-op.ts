@@ -18,10 +18,5 @@ export class InOpNode extends ExprNode {
     this.values = values;
   }
 
-  /**
-   * Generate a SQL query string for this node.
-   */
-  toString() {
-    return `(${this.expr} IN (${this.values.join(', ')}))`;
-  }
+
 }

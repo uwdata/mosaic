@@ -455,65 +455,7 @@ export class SelectQuery extends Query {
     return this;
   }
 
-  /**
-   * Generate a SQL query string.
-   */
-  toString() {
-    const {
-      _with, _select, _distinct, _from, _sample, _where, _groupby,
-      _having, _window, _qualify, _orderby, _limitPerc, _limit, _offset
-    } = this;
-    const sql = [];
 
-    // WITH
-    if (_with.length) sql.push(`WITH ${_with.join(', ')}`);
-
-    // SELECT
-    sql.push(`SELECT${_distinct ? ' DISTINCT' : ''} ${_select.join(', ')}`);
-
-    // FROM
-    if (_from.length) sql.push(`FROM ${_from.join(', ')}`);
-
-    // WHERE
-    if (_where.length) {
-      const clauses = _where.map(String).filter(x => x).join(' AND ');
-      if (clauses) sql.push(`WHERE ${clauses}`);
-    }
-
-    // SAMPLE
-    if (_sample) sql.push(`USING SAMPLE ${_sample}`);
-
-    // GROUP BY
-    if (_groupby.length) {
-      sql.push(`GROUP BY ${_groupby.join(', ')}`);
-    }
-
-    // HAVING
-    if (_having.length) {
-      const clauses = _having.map(String).filter(x => x).join(' AND ');
-      if (clauses) sql.push(`HAVING ${clauses}`);
-    }
-
-    // WINDOW
-    if (_window.length) sql.push(`WINDOW ${_window.join(', ')}`);
-
-    // QUALIFY
-    if (_qualify.length) {
-      const clauses = _qualify.map(String).filter(x => x).join(' AND ');
-      if (clauses) sql.push(`QUALIFY ${clauses}`);
-    }
-
-    // ORDER BY
-    if (_orderby.length) sql.push(`ORDER BY ${_orderby.join(', ')}`);
-
-    // LIMIT
-    if (_limit) sql.push(`LIMIT ${_limit}${_limitPerc ? '%' : ''}`);
-
-    // OFFSET
-    if (_offset) sql.push(`OFFSET ${_offset}`);
-
-    return sql.join(' ');
-  }
 }
 
 export class DescribeQuery extends SQLNode {
@@ -536,12 +478,7 @@ export class DescribeQuery extends SQLNode {
     return new DescribeQuery(this.query.clone());
   }
 
-  /**
-   * Generate a SQL query string.
-   */
-  toString() {
-    return `DESCRIBE ${this.query}`;
-  }
+
 }
 
 export class SetOperation extends Query {
@@ -587,30 +524,7 @@ export class SetOperation extends Query {
     return Object.assign(new SetOperation(op, queries), rest);
   }
 
-  /**
-   * Generate a SQL query string.
-   */
-  toString() {
-    const { op, queries, _with, _orderby, _limitPerc, _limit, _offset } = this;
-    const sql = [];
 
-    // WITH
-    if (_with.length) sql.push(`WITH ${_with.join(', ')}`);
-
-    // SUBQUERIES
-    sql.push(queries.join(` ${op} `));
-
-    // ORDER BY
-    if (_orderby.length) sql.push(`ORDER BY ${_orderby.join(', ')}`);
-
-    // LIMIT
-    if (_limit) sql.push(`LIMIT ${_limit}${_limitPerc ? '%' : ''}`);
-
-    // OFFSET
-    if (_offset) sql.push(`OFFSET ${_offset}`);
-
-    return sql.join(' ');
-  }
 }
 
 class WithClause {

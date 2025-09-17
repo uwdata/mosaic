@@ -35,13 +35,5 @@ export class SampleClauseNode extends SQLNode {
     this.seed = seed;
   }
 
-  /**
-   * Generate a SQL query string for this node.
-   */
-  toString() {
-    const { size, perc, method, seed } = this;
-    const m = method ? `${method} ` : '';
-    const s = seed != null ? ` REPEATABLE (${seed})` : '';
-    return `${m}(${size}${perc ? '%' : ' ROWS'})${s}`;
-  }
+
 }

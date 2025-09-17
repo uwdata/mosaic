@@ -14,12 +14,7 @@ export class LiteralNode extends ExprNode {
     this.value = value;
   }
 
-  /**
-   * Generate a SQL query string for this node.
-   */
-  toString() {
-    return literalToSQL(this.value);
-  }
+
 }
 
 export function literalToSQL(value: unknown) {

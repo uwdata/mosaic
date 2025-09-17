@@ -1,6 +1,5 @@
 import type { TableRefNode } from './table-ref.js';
 import { COLUMN_REF } from '../constants.js';
-import { quoteIdentifier } from '../util/string.js';
 import { ExprNode } from './node.js';
 
 /**
@@ -32,15 +31,7 @@ export class ColumnRefNode extends ExprNode {
     return ''; // subclasses to override
   }
 
-  /**
-   * Generate a SQL query string for this node.
-   */
-  toString() {
-    const { column, table } = this;
-    const tref = `${table ?? ''}`;
-    const id = column === '*' ? '*' : quoteIdentifier(column);
-    return (tref ? (tref + '.') : '') + id;
-  }
+
 }
 
 export class ColumnNameRefNode extends ColumnRefNode {

@@ -18,15 +18,7 @@ export class LogicalOpNode<T extends ExprNode> extends ExprNode {
     this.clauses = clauses;
   }
 
-  /**
-   * Generate a SQL query string for this node.
-   */
-  toString() {
-    const c = this.clauses;
-    return c.length === 0 ? ''
-      : c.length === 1 ? `${c[0]}`
-      : `(${c.join(` ${this.op} `)})`;
-  }
+
 }
 
 export class AndNode<T extends ExprNode> extends LogicalOpNode<T> {

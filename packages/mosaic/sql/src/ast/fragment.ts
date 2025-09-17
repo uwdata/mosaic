@@ -19,10 +19,5 @@ export class FragmentNode extends ExprNode {
     this.spans = spans;
   }
 
-  /**
-   * Generate a SQL query string for this node.
-   */
-  toString() {
-    return this.spans.join('');
-  }
+
 }

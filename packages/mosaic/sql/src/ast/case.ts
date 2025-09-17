@@ -53,16 +53,7 @@ export class CaseNode extends ExprNode {
     return new CaseNode(this.expr, this._when, asNode(expr));
   }
 
-  /**
-   * Generate a SQL query string for this node.
-   */
-  toString() {
-    return 'CASE '
-      + (this.expr ? `${this.expr} ` : '')
-      + this._when.join(' ')
-      + (this._else ? ` ELSE ${this._else}` : '')
-      + ' END';
-  }
+
 }
 
 export class WhenNode extends SQLNode {
@@ -82,10 +73,5 @@ export class WhenNode extends SQLNode {
     this.then = then;
   }
 
-  /**
-   * Generate a SQL query string for this node.
-   */
-  toString() {
-    return `WHEN ${this.when} THEN ${this.then}`;
-  }
+
 }

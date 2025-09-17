@@ -3,7 +3,6 @@ import type { AggregateNode } from './aggregate.js';
 import type { WindowFrameNode } from './window-frame.js';
 import { WINDOW, WINDOW_CLAUSE, WINDOW_DEF, WINDOW_FUNCTION } from '../constants.js';
 import { nodeList } from '../util/function.js';
-import { quoteIdentifier } from '../util/string.js';
 import { ExprNode, SQLNode } from './node.js';
 
 export class WindowClauseNode extends SQLNode {
@@ -23,12 +22,7 @@ export class WindowClauseNode extends SQLNode {
     this.def = def;
   }
 
-  /**
-   * Generate a SQL query string for this node.
-   */
-  toString() {
-    return `${quoteIdentifier(this.name)} AS ${this.def}`;
-  }
+
 }
 
 export class WindowNode extends ExprNode {
@@ -85,12 +79,7 @@ export class WindowNode extends ExprNode {
     return new WindowNode(this.func, this.def.frame(framedef));
   }
 
-  /**
-   * Generate a SQL query string for this node.
-   */
-  toString() {
-    return `${this.func} OVER ${this.def}`;
-  }
+
 }
 
 export class WindowFunctionNode extends ExprNode {
@@ -124,18 +113,7 @@ export class WindowFunctionNode extends ExprNode {
     this.order = nodeList([argOrder]);
   }
 
-  /**
-   * Generate a SQL query string for this node.
-   */
-  toString() {
-    const { name, args, ignoreNulls, order } = this;
-    const arg = [
-      args.join(', '),
-      order.length ? `ORDER BY ${order.join(', ')}` : '',
-      ignoreNulls ? 'IGNORE NULLS' : ''
-    ].filter(x => x).join(' ');
-    return `${name}(${arg})`;
-  }
+
 }
 
 export class WindowDefNode extends SQLNode {
@@ -204,20 +182,7 @@ export class WindowDefNode extends SQLNode {
     return deriveDef(this, { framedef });
   }
 
-  /**
-   * Generate a SQL query string for this node.
-   */
-  toString() {
-    const { name, partition, order, framedef } = this;
-    const base = name && quoteIdentifier(name);
-    const def = [
-      base,
-      partition?.length && `PARTITION BY ${partition.join(', ')}`,
-      order?.length && `ORDER BY ${order.join(', ')}`,
-      framedef
-    ].filter(x => x);
-    return base && def.length < 2 ? base : `(${def.join(' ')})`;
-  }
+
 }
 
 interface DeriveDefOptions {

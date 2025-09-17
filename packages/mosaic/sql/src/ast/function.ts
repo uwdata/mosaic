@@ -18,11 +18,5 @@ export class FunctionNode extends ExprNode {
     this.args = args;
   }
 
-  /**
-   * Generate a SQL query string for this node.
-   */
-  toString() {
-    const { name, args } = this;
-    return `${name}(${args.join(', ')})`;
-  }
+
 }

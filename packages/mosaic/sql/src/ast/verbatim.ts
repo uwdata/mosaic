@@ -18,10 +18,5 @@ export class VerbatimNode extends ExprNode {
     this.hint = hint;
   }
 
-  /**
-   * Generate a SQL query string for this node.
-   */
-  toString() {
-    return this.value;
-  }
+
 }

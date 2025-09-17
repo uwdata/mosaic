@@ -41,12 +41,7 @@ export class BetweenOpNode extends AbstractBetweenOpNode {
     super(BETWEEN_OPERATOR, expr, extent);
   }
 
-  /**
-   * Generate a SQL query string for this node.
-   */
-  toString() {
-    return super.toSQL('BETWEEN');
-  }
+
 }
 
 export class NotBetweenOpNode extends AbstractBetweenOpNode {
@@ -59,10 +54,5 @@ export class NotBetweenOpNode extends AbstractBetweenOpNode {
     super(NOT_BETWEEN_OPERATOR, expr, extent);
   }
 
-  /**
-   * Generate a SQL query string for this node.
-   */
-  toString() {
-    return super.toSQL('NOT BETWEEN');
-  }
+
 }

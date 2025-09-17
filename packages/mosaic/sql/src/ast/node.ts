@@ -1,9 +1,21 @@
+import type { BaseToStringVisitor } from '../visit/to-string-visitor.js';
+
 /**
  * Check if a value is a SQL AST node.
  * @param value The value to check.
  */
 export function isNode(value: unknown): value is SQLNode {
   return value instanceof SQLNode;
+}
+
+let _defaultVisitor: BaseToStringVisitor | null = null;
+
+/**
+ * Set the default visitor for toString operations.
+ * This is used when no visitor is explicitly provided.
+ */
+export function setDefaultVisitor(visitor: BaseToStringVisitor) {
+  _defaultVisitor = visitor;
 }
 
 export class SQLNode {
@@ -23,12 +35,27 @@ export class SQLNode {
    * @returns The shallow clone node.
    */
   clone(): this {
-    // @ts-expect-error use constructor
-    const clone = new this.constructor();
+    // @ts-expect-error use constructor with type
+    const clone = new this.constructor(this.type);
     for (const key in this) {
-      clone[key] = this[key];
+      if (key !== 'type') { // Skip type since it's already set by constructor
+        clone[key] = this[key];
+      }
     }
     return clone;
+  }
+
+  /**
+   * Generate a SQL query string for this node using a specific dialect visitor.
+   * @param visitor Optional SQL visitor to use for string generation. If not provided, uses the default visitor.
+   * @returns The SQL string representation.
+   */
+  toString(visitor?: BaseToStringVisitor): string {
+    const visitorToUse = visitor || _defaultVisitor;
+    if (!visitorToUse) {
+      throw new Error('No visitor provided and no default visitor set.');
+    }
+    return visitorToUse.toString(this);
   }
 }
 

@@ -18,10 +18,5 @@ export class CollateNode extends ExprNode {
     this.collation = collation;
   }
 
-  /**
-   * Generate a SQL query string for this node.
-   */
-  toString() {
-    return `${this.expr} ${COLLATE} ${this.collation}`;
-  }
+
 }
