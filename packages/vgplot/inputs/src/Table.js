@@ -1,5 +1,5 @@
 /**
- * @import { ClauseSource, Selection } from '@uwdata/mosaic-core'
+ * @import { Selection } from '@uwdata/mosaic-core'
  * @import { FilterExpr } from '@uwdata/mosaic-sql'
  */
 import { clausePoints, coordinator, isParam, isSelection, queryFieldInfo, toDataColumns } from '@uwdata/mosaic-core';
@@ -32,7 +32,7 @@ let _id = -1;
  *  Used in conjunction with the *from* option.
  * @param {number | { [name: string]: number }} [options.width] If a number,
  *  sets the desired width of the table, in pixels. If an object, is used to
- *  set explicit pixel widts for each named column included in the object.
+ *  set explicit pixel widths for each named column included in the object.
  * @param {number} [options.maxWidth] The maximum width of the table, in pixels.
  * @param {number} [options.height] The desired height of the table, in pixels.
  * @param {number} [options.rowBatch] The number of rows to request per query
@@ -70,7 +70,7 @@ export class Table extends Input {
    *  Used in conjunction with the *from* option.
    * @param {number | { [name: string]: number }} [options.width] If a number,
    *  sets the desired width of the table, in pixels. If an object, is used to
-   *  set explicit pixel widts for each named column included in the object.
+   *  set explicit pixel widths for each named column included in the object.
    * @param {number} [options.maxWidth] The maximum width of the table, in pixels.
    * @param {number} [options.height] The desired height of the table, in pixels.
    * @param {number} [options.rowBatch] The number of rows to request per query
@@ -191,7 +191,7 @@ export class Table extends Input {
   }
 
   async prepare() {
-    // query for column scheam information
+    // query for column schema information
     const table = this.sourceTable();
     const fields = this.columns.map(column => ({ column, table }));
     const schema = await queryFieldInfo(this.coordinator, fields);
