@@ -62,7 +62,6 @@ export { collectAggregates, collectColumns, collectParams, isAggregateExpression
 export { walk, type VisitorCallback, type VisitorResult } from './visit/walk.js';
 export { ToStringVisitor } from './visit/to-string-visitor.js';
 export { DuckDBVisitor, duckdbVisitor } from './visit/duckdb-visitor.js';
-export { defaultVisitor } from './visit/index.js';
 
 export { createTable, createSchema } from './load/create.js';
 export { loadExtension } from './load/extension.js';

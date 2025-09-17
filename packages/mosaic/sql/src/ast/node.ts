@@ -1,4 +1,4 @@
-import type { BaseToStringVisitor } from '../visit/to-string-visitor.js';
+import type { ToStringVisitor } from '../visit/to-string-visitor.js';
 
 /**
  * Check if a value is a SQL AST node.
@@ -8,13 +8,13 @@ export function isNode(value: unknown): value is SQLNode {
   return value instanceof SQLNode;
 }
 
-let _defaultVisitor: BaseToStringVisitor | null = null;
+let _defaultVisitor: ToStringVisitor | null = null;
 
 /**
  * Set the default visitor for toString operations.
  * This is used when no visitor is explicitly provided.
  */
-export function setDefaultVisitor(visitor: BaseToStringVisitor) {
+export function setDefaultVisitor(visitor: ToStringVisitor) {
   _defaultVisitor = visitor;
 }
 
@@ -50,7 +50,7 @@ export class SQLNode {
    * @param visitor Optional SQL visitor to use for string generation. If not provided, uses the default visitor.
    * @returns The SQL string representation.
    */
-  toString(visitor?: BaseToStringVisitor): string {
+  toString(visitor?: ToStringVisitor): string {
     const visitorToUse = visitor || _defaultVisitor;
     if (!visitorToUse) {
       throw new Error('No visitor provided and no default visitor set.');
