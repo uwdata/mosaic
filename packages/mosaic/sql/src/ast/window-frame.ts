@@ -63,6 +63,4 @@ export class WindowFrameExprNode extends SQLNode {
     this.scope = scope;
     this.expr = expr;
   }
-
-
 }

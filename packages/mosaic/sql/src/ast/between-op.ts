@@ -40,8 +40,6 @@ export class BetweenOpNode extends AbstractBetweenOpNode {
   constructor(expr: ExprNode, extent?: Extent) {
     super(BETWEEN_OPERATOR, expr, extent);
   }
-
-
 }
 
 export class NotBetweenOpNode extends AbstractBetweenOpNode {
@@ -53,6 +51,4 @@ export class NotBetweenOpNode extends AbstractBetweenOpNode {
   constructor(expr: ExprNode, extent?: Extent) {
     super(NOT_BETWEEN_OPERATOR, expr, extent);
   }
-
-
 }

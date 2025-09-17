@@ -18,6 +18,4 @@ export class FragmentNode extends ExprNode {
     super(FRAGMENT);
     this.spans = spans;
   }
-
-
 }

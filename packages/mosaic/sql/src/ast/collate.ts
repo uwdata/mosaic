@@ -17,6 +17,4 @@ export class CollateNode extends ExprNode {
     this.expr = expr;
     this.collation = collation;
   }
-
-
 }

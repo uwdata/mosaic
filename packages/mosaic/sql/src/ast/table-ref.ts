@@ -28,6 +28,4 @@ export class TableRefNode extends ExprNode {
   get name() {
     return this.table[this.table.length - 1];
   }
-
-
 }

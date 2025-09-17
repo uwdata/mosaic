@@ -21,6 +21,4 @@ export class ParamNode extends ExprNode {
   get value() {
     return this.param.value;
   }
-
-
 }

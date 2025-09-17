@@ -17,6 +17,4 @@ export class IntervalNode extends ExprNode {
     this.name = name;
     this.steps = steps;
   }
-
-
 }

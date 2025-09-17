@@ -21,8 +21,6 @@ export class WindowClauseNode extends SQLNode {
     this.name = name;
     this.def = def;
   }
-
-
 }
 
 export class WindowNode extends ExprNode {
@@ -78,8 +76,6 @@ export class WindowNode extends ExprNode {
   frame(framedef: WindowFrameNode) {
     return new WindowNode(this.func, this.def.frame(framedef));
   }
-
-
 }
 
 export class WindowFunctionNode extends ExprNode {
@@ -112,8 +108,6 @@ export class WindowFunctionNode extends ExprNode {
     this.ignoreNulls = ignoreNulls;
     this.order = nodeList([argOrder]);
   }
-
-
 }
 
 export class WindowDefNode extends SQLNode {
@@ -181,8 +175,6 @@ export class WindowDefNode extends SQLNode {
   frame(framedef: WindowFrameNode) {
     return deriveDef(this, { framedef });
   }
-
-
 }
 
 interface DeriveDefOptions {

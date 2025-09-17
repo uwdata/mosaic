@@ -454,8 +454,6 @@ export class SelectQuery extends Query {
     this._qualify = this._qualify.concat(exprList(expr, asVerbatim));
     return this;
   }
-
-
 }
 
 export class DescribeQuery extends SQLNode {
@@ -477,8 +475,6 @@ export class DescribeQuery extends SQLNode {
     // @ts-expect-error creates describe query
     return new DescribeQuery(this.query.clone());
   }
-
-
 }
 
 export class SetOperation extends Query {
@@ -523,8 +519,6 @@ export class SetOperation extends Query {
     // @ts-expect-error creates set operation
     return Object.assign(new SetOperation(op, queries), rest);
   }
-
-
 }
 
 class WithClause {

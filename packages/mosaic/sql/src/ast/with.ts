@@ -29,6 +29,4 @@ export class WithClauseNode extends SQLNode {
     this.query = query;
     this.materialized = materialized;
   }
-
-
 }

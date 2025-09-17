@@ -19,6 +19,4 @@ export class UnnestNode extends ExprNode {
     this.recursive = recursive;
     this.maxDepth = maxDepth;
   }
-
-
 }

@@ -14,6 +14,4 @@ export class ScalarSubqueryNode extends ExprNode {
     super(SCALAR_SUBQUERY);
     this.subquery = subquery;
   }
-
-
 }

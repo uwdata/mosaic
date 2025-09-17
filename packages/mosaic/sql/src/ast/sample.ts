@@ -34,6 +34,4 @@ export class SampleClauseNode extends SQLNode {
     this.method = method;
     this.seed = seed;
   }
-
-
 }

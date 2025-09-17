@@ -13,8 +13,6 @@ export class LiteralNode extends ExprNode {
     super(LITERAL);
     this.value = value;
   }
-
-
 }
 
 export function literalToSQL(value: unknown) {

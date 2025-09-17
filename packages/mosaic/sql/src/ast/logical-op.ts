@@ -17,8 +17,6 @@ export class LogicalOpNode<T extends ExprNode> extends ExprNode {
     this.op = op;
     this.clauses = clauses;
   }
-
-
 }
 
 export class AndNode<T extends ExprNode> extends LogicalOpNode<T> {

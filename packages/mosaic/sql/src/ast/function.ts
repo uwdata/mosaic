@@ -17,6 +17,4 @@ export class FunctionNode extends ExprNode {
     this.name = name;
     this.args = args;
   }
-
-
 }

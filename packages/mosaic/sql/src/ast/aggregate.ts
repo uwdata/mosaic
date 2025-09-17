@@ -104,8 +104,6 @@ export class AggregateNode extends ExprNode {
   frame(framedef: WindowFrameNode) {
     return this.window().frame(framedef);
   }
-
-
 }
 
 /**

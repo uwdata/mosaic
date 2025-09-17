@@ -21,6 +21,4 @@ export class OrderByNode extends ExprNode {
     this.desc = desc;
     this.nullsFirst = nullsFirst;
   }
-
-
 }

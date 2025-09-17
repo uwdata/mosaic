@@ -13,6 +13,4 @@ export class ListNode extends ExprNode {
     super(LIST);
     this.values = values;
   }
-
-
 }

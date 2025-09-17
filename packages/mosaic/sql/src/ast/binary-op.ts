@@ -21,6 +21,4 @@ export class BinaryOpNode extends ExprNode {
     this.left = left;
     this.right = right;
   }
-
-
 }

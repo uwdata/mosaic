@@ -52,8 +52,6 @@ export class CaseNode extends ExprNode {
   else(expr: ExprValue) {
     return new CaseNode(this.expr, this._when, asNode(expr));
   }
-
-
 }
 
 export class WhenNode extends SQLNode {
@@ -72,6 +70,4 @@ export class WhenNode extends SQLNode {
     this.when = when;
     this.then = then;
   }
-
-
 }

@@ -17,6 +17,4 @@ export class InOpNode extends ExprNode {
     this.expr = expr;
     this.values = values;
   }
-
-
 }

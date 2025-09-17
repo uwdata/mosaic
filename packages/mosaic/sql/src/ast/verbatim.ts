@@ -17,6 +17,4 @@ export class VerbatimNode extends ExprNode {
     this.value = value;
     this.hint = hint;
   }
-
-
 }

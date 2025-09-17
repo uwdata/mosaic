@@ -17,6 +17,4 @@ export class CastNode extends ExprNode {
     this.expr = expr;
     this.cast = type;
   }
-
-
 }

@@ -30,8 +30,6 @@ export class ColumnRefNode extends ExprNode {
   get column() {
     return ''; // subclasses to override
   }
-
-
 }
 
 export class ColumnNameRefNode extends ColumnRefNode {
