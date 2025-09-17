@@ -19,7 +19,7 @@ let _id = -1;
  * @param {Selection} [options.as] The output selection. A selection
  *  clause is added for the currently selected table row.
  * @param {{ [name: string]: 'left' | 'right' | 'center' }} [options.align]
- *  An object that maps column names to horiztonal text alignment values. If
+ *  An object that maps column names to horizontal text alignment values. If
  *  unspecified, alignment is determined based on the column data type.
  * @param {{ [name: string]: (value: any) => string }} [options.format] An
  *  object that maps column names to format functions to use for that
@@ -57,7 +57,7 @@ export class Table extends Input {
    * @param {Selection} [options.as] The output selection. A selection
    *  clause is added for the currently selected table row.
    * @param {{ [name: string]: 'left' | 'right' | 'center' }} [options.align]
-   *  An object that maps column names to horiztonal text alignment values. If
+   *  An object that maps column names to horizontal text alignment values. If
    *  unspecified, alignment is determined based on the column data type.
    * @param {{ [name: string]: (value: any) => string }} [options.format] An
    *  object that maps column names to format functions to use for that
