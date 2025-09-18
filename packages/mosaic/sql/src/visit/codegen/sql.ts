@@ -101,8 +101,9 @@ export abstract class SQLCodeGenerator {
       throw new Error(`Node type is not a string: ${typeof node.type}, value: ${node.type}`);
     }
     if (node.type === 'CUSTOM') {
-      // custom node types may bypass visitor
-      return node.toString();
+      // custom node types provide their own handling
+      // pass the visitor through to apply to child nodes
+      return node.toString(this);
     }
     const method = this.getVisitMethod(node.type);
     if (typeof method === 'function') {
@@ -164,7 +165,7 @@ export abstract class SQLCodeGenerator {
    * @param nodes Array of child nodes.
    * @returns Array of SQL strings.
    */
-  protected mapToString(nodes: SQLNode[]): string[] {
+  mapToString(nodes: SQLNode[]): string[] {
     return nodes.map(node => this.toString(node));
   }
 

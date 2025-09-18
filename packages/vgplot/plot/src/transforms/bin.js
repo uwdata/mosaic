@@ -1,4 +1,5 @@
-import { ExprNode, binDate, binHistogram } from '@uwdata/mosaic-sql';
+/** @import { SQLCodeGenerator } from '@uwdata/mosaic-sql'; */
+import { ExprNode, binDate, binHistogram, duckDBCodeGenerator } from '@uwdata/mosaic-sql';
 import { Transform } from '../symbols.js';
 import { channelScale } from '../marks/util/channel-scale.js';
 
@@ -49,7 +50,10 @@ class BinTransformNode extends ExprNode {
     return { column: this.column, stats: ['min', 'max'] };
   }
 
-  toString() {
+  /**
+   * @param {SQLCodeGenerator} visitor
+   */
+  toString(visitor = duckDBCodeGenerator) {
     const { mark, channel, column, options } = this;
     const { type, min, max } = mark.channelField(channel);
     const isDate = options.interval
@@ -58,6 +62,6 @@ class BinTransformNode extends ExprNode {
     const result = isDate
       ? binDate(column, [min, max], options)
       : binHistogram(column, [min, max], options, channelScale(mark, channel));
-    return `${result}`;
+    return visitor.toString(result);
   }
 }

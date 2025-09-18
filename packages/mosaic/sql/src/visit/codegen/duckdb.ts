@@ -40,24 +40,15 @@ import {
   WindowFrameNode,
   WindowFrameExprNode,
   WithClauseNode,
-  isNode
+  isNode,
+  isQuery,
+  isTableRef
 } from '../../index.js';
 import { quoteIdentifier } from '../../util/string.js';
 import { literalToSQL } from '../../ast/literal.js';
 import { SQLCodeGenerator } from './sql.js';
 import { CURRENT_ROW, FOLLOWING, PRECEDING, UNBOUNDED } from '../../ast/window-frame.js';
 import { WINDOW_EXTENT_EXPR } from '../../constants.js';
-
-function betweenToString(node: BetweenOpNode | NotBetweenOpNode, op: string) {
-  const { extent: r, expr } = node;
-  return r ? `(${expr} ${op} ${r[0]} AND ${r[1]})` : '';
-}
-
-function isColumnRefFor(expr: unknown, name: string): expr is ColumnRefNode {
-  return expr instanceof ColumnRefNode
-    && expr.table == null
-    && expr.column === name;
-}
 
 /**
  * DuckDB SQL dialect visitor for converting AST nodes to DuckDB-compatible SQL.
@@ -77,7 +68,7 @@ export class DuckDBCodeGenerator extends SQLCodeGenerator {
   }
 
   visitBetween(node: BetweenOpNode): string {
-    return betweenToString(node, 'BETWEEN');
+    return betweenToString(this, node, 'BETWEEN');
   }
 
   visitBinary(node: BinaryOpNode): string {
@@ -117,7 +108,7 @@ export class DuckDBCodeGenerator extends SQLCodeGenerator {
 
   visitDescribeQuery(node: DescribeQuery): string {
     const { query } = node;
-    return `DESCRIBE ${this.toString(query)}`;
+    return `DESC ${this.toString(query)}`;
   }
 
   visitExpression(node: ExprNode): string {
@@ -135,11 +126,8 @@ export class DuckDBCodeGenerator extends SQLCodeGenerator {
 
   visitFromClause(node: FromClauseNode): string {
     const { expr, alias, sample } = node;
-    const isQuery = expr.type === 'SELECT_QUERY' || expr.type === 'SET_OPERATION';
-    const isTableRef = expr.type === 'TABLE_REF';
-    const ref = isQuery ? `(${this.toString(expr)})` : `${this.toString(expr)}`;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const from = alias && !(isTableRef && (expr as any).table?.join('.') === alias)
+    const ref = isQuery(expr) ? `(${this.toString(expr)})` : `${this.toString(expr)}`;
+    const from = alias && !(isTableRef(expr) && expr.table?.join('.') === alias)
       ? `${ref} AS ${quoteIdentifier(alias)}`
       : `${ref}`;
     return `${from}${sample ? ` TABLESAMPLE ${this.toString(sample)}` : ''}`;
@@ -168,12 +156,12 @@ export class DuckDBCodeGenerator extends SQLCodeGenerator {
 
     if (joinVariant !== 'CROSS') {
       type = joinType !== 'INNER' ? `${joinType} ` : '';
-      cond = condition ? ` ON ${condition}`
-        : using ? ` USING (${using?.join(', ')})`
+      cond = condition ? ` ON ${this.toString(condition)}`
+        : using ? ` USING (${this.mapToString(using).join(', ')})`
         : '';
     }
-    const samp = sample ? ` USING SAMPLE ${sample}` : '';
-    return `${left} ${variant}${type}JOIN ${right}${cond}${samp}`;
+    const samp = sample ? ` USING SAMPLE ${this.toString(sample)}` : '';
+    return `${this.toString(left)} ${variant}${type}JOIN ${this.toString(right)}${cond}${samp}`;
   }
 
   visitList(node: ListNode): string {
@@ -195,7 +183,7 @@ export class DuckDBCodeGenerator extends SQLCodeGenerator {
   }
 
   visitNotBetween(node: NotBetweenOpNode): string {
-    return betweenToString(node, 'NOT BETWEEN');
+    return betweenToString(this, node, 'NOT BETWEEN');
   }
 
   visitOrderBy(node: OrderByNode): string {
@@ -312,19 +300,19 @@ export class DuckDBCodeGenerator extends SQLCodeGenerator {
     const sql = [];
 
     // WITH
-    if (_with.length) sql.push(`WITH ${_with.join(', ')}`);
+    if (_with.length) sql.push(`WITH ${this.mapToString(_with).join(', ')}`);
 
     // SUBQUERIES
     sql.push(queries.join(` ${op} `));
 
     // ORDER BY
-    if (_orderby.length) sql.push(`ORDER BY ${_orderby.join(', ')}`);
+    if (_orderby.length) sql.push(`ORDER BY ${this.mapToString(_orderby).join(', ')}`);
 
     // LIMIT
-    if (_limit) sql.push(`LIMIT ${_limit}${_limitPerc ? '%' : ''}`);
+    if (_limit) sql.push(`LIMIT ${this.toString(_limit)}${_limitPerc ? '%' : ''}`);
 
     // OFFSET
-    if (_offset) sql.push(`OFFSET ${_offset}`);
+    if (_offset) sql.push(`OFFSET ${this.toString(_offset)}`);
 
     return sql.join(' ');
   }
@@ -402,18 +390,9 @@ export class DuckDBCodeGenerator extends SQLCodeGenerator {
     const [prev, next] = isNode(extent)
       ? extent.value as [unknown, unknown]
       : extent;
-    const a = this.formatFrameExpr(prev, PRECEDING);
-    const b = this.formatFrameExpr(next, FOLLOWING);
+    const a = formatFrameExpr(this, prev, PRECEDING);
+    const b = formatFrameExpr(this, next, FOLLOWING);
     return `${frameType} BETWEEN ${a} AND ${b}${exclude ? ` ${exclude}` : ''}`;
-  }
-
-  private formatFrameExpr(value: unknown, scope: string) {
-    const x = isNode(value) ? this.toString(value) : value;
-    return isNode(value) && value.type === WINDOW_EXTENT_EXPR ? x
-      : x != null && typeof x !== 'number' ? `${x} ${scope}`
-      : x === 0 ? CURRENT_ROW
-      : !(x && Number.isFinite(x)) ? `${UNBOUNDED} ${scope}`
-      : `${Math.abs(x)} ${scope}`;
   }
 
   visitWindowFunction(node: WindowFunctionNode): string {
@@ -433,6 +412,32 @@ export class DuckDBCodeGenerator extends SQLCodeGenerator {
       : '';
     return `${quoteIdentifier(name)} AS ${mat}(${this.toString(query)})`;
   }
+}
+
+function isColumnRefFor(expr: unknown, name: string): expr is ColumnRefNode {
+  return expr instanceof ColumnRefNode
+    && expr.table == null
+    && expr.column === name;
+}
+
+function betweenToString(
+  visitor: SQLCodeGenerator,
+  node: BetweenOpNode | NotBetweenOpNode,
+  op: string
+) {
+  const { extent, expr } = node;
+  if (!extent) return '';
+  const [a, b] = visitor.mapToString(extent);
+  return `(${visitor.toString(expr)} ${op} ${a} AND ${b})`;
+}
+
+function formatFrameExpr(visitor: SQLCodeGenerator, value: unknown, scope: string) {
+  const x = isNode(value) ? visitor.toString(value) : value;
+  return isNode(value) && value.type === WINDOW_EXTENT_EXPR ? x
+    : x != null && typeof x !== 'number' ? `${x} ${scope}`
+    : x === 0 ? CURRENT_ROW
+    : !(x && Number.isFinite(x)) ? `${UNBOUNDED} ${scope}`
+    : `${Math.abs(x)} ${scope}`;
 }
 
 // Create a default DuckDB visitor instance for convenience
