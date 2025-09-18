@@ -60,8 +60,8 @@ export { deepClone } from './visit/clone.js';
 export { rewrite } from './visit/rewrite.js';
 export { collectAggregates, collectColumns, collectParams, isAggregateExpression } from './visit/visitors.js';
 export { walk, type VisitorCallback, type VisitorResult } from './visit/walk.js';
-export { ToStringVisitor } from './visit/to-string-visitor.js';
-export { DuckDBVisitor, duckdbVisitor } from './visit/duckdb-visitor.js';
+export { SQLCodeGenerator as ToStringVisitor } from './visit/codegen/sql.js';
+export { DuckDBCodeGenerator, duckDBCodeGenerator } from './visit/codegen/duckdb.js';
 
 export { createTable, createSchema } from './load/create.js';
 export { loadExtension } from './load/extension.js';

@@ -16,6 +16,7 @@ import type {
   FunctionNode,
   InOpNode,
   IntervalNode,
+  JoinNode,
   ListNode,
   LiteralNode,
   LogicalOpNode,
@@ -39,7 +40,7 @@ import type {
   WindowFrameNode,
   WindowFrameExprNode,
   WithClauseNode
-} from '../index.js';
+} from '../../index.js';
 import {
   AGGREGATE,
   BETWEEN_OPERATOR,
@@ -56,6 +57,7 @@ import {
   FUNCTION,
   IN_OPERATOR,
   INTERVAL,
+  JOIN_CLAUSE,
   LIST,
   LITERAL,
   LOGICAL_OPERATOR,
@@ -80,12 +82,12 @@ import {
   WINDOW_FRAME,
   WINDOW_FUNCTION,
   WITH_CLAUSE
-} from '../constants.js';
+} from '../../constants.js';
 
 /**
- * Abstract base class for SQL visitors providing common functionality.
+ * Abstract base class for SQL code generation visitors.
  */
-export abstract class ToStringVisitor {
+export abstract class SQLCodeGenerator {
   /**
    * Convert a SQL AST node to a string using this visitor.
    * @param node The SQL AST node to convert.
@@ -98,9 +100,13 @@ export abstract class ToStringVisitor {
     if (typeof node.type !== 'string') {
       throw new Error(`Node type is not a string: ${typeof node.type}, value: ${node.type}`);
     }
+    if (node.type === 'CUSTOM') {
+      // custom node types may bypass visitor
+      return node.toString();
+    }
     const method = this.getVisitMethod(node.type);
     if (typeof method === 'function') {
-      // @ts-expect-error: fix me
+      // @ts-expect-error: dispatch based on node type
       return method.call(this, node);
     }
     throw new Error(`No visitor method for node type: '${node.type}'`);
@@ -123,6 +129,7 @@ export abstract class ToStringVisitor {
       case FUNCTION: return this.visitFunction;
       case IN_OPERATOR: return this.visitIn;
       case INTERVAL: return this.visitInterval;
+      case JOIN_CLAUSE: return this.visitJoinClause;
       case LIST: return this.visitList;
       case LITERAL: return this.visitLiteral;
       case LOGICAL_OPERATOR: return this.visitLogicalOperator;
@@ -177,6 +184,7 @@ export abstract class ToStringVisitor {
   abstract visitFunction(node: FunctionNode): string;
   abstract visitIn(node: InOpNode): string;
   abstract visitInterval(node: IntervalNode): string;
+  abstract visitJoinClause(node: JoinNode): string;
   abstract visitList(node: ListNode): string;
   abstract visitLiteral(node: LiteralNode): string;
   abstract visitLogicalOperator(node: LogicalOpNode<ExprNode>): string;

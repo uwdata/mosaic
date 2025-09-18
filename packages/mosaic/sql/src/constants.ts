@@ -27,6 +27,7 @@ export const WINDOW_FUNCTION = 'WINDOW_FUNCTION';
 export const WINDOW_DEF = 'WINDOW_DEF';
 export const WINDOW_FRAME = 'WINDOW_FRAME';
 export const WINDOW_EXTENT_EXPR = 'WINDOW_EXTENT_EXPR';
+export const CUSTOM = 'CUSTOM';
 
 export const EXPRESSION = 'EXPRESSION';
 export const FRAGMENT = 'FRAGMENT';

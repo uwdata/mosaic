@@ -1,5 +1,5 @@
 import { setDefaultVisitor } from './ast/node.js';
-import { duckdbVisitor } from './visit/duckdb-visitor.js';
+import { duckDBCodeGenerator } from './visit/codegen/duckdb.js';
 
 // Initialize the default visitor
-setDefaultVisitor(duckdbVisitor);
+setDefaultVisitor(duckDBCodeGenerator);

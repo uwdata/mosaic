@@ -1,4 +1,4 @@
-import type { ToStringVisitor } from '../visit/to-string-visitor.js';
+import type { SQLCodeGenerator } from '../visit/codegen/sql.js';
 
 /**
  * Check if a value is a SQL AST node.
@@ -8,13 +8,13 @@ export function isNode(value: unknown): value is SQLNode {
   return value instanceof SQLNode;
 }
 
-let _defaultVisitor: ToStringVisitor | null = null;
+let _defaultVisitor: SQLCodeGenerator | undefined;
 
 /**
  * Set the default visitor for toString operations.
  * This is used when no visitor is explicitly provided.
  */
-export function setDefaultVisitor(visitor: ToStringVisitor) {
+export function setDefaultVisitor(visitor: SQLCodeGenerator) {
   _defaultVisitor = visitor;
 }
 
@@ -47,15 +47,15 @@ export class SQLNode {
 
   /**
    * Generate a SQL query string for this node using a specific dialect visitor.
-   * @param visitor Optional SQL visitor to use for string generation. If not provided, uses the default visitor.
+   * @param visitor Optional SQL visitor to use for string generation.
+   *  If not provided, uses the default visitor.
    * @returns The SQL string representation.
    */
-  toString(visitor?: ToStringVisitor): string {
-    const visitorToUse = visitor || _defaultVisitor;
-    if (!visitorToUse) {
+  toString(visitor: SQLCodeGenerator | undefined = _defaultVisitor): string {
+    if (!visitor) {
       throw new Error('No visitor provided and no default visitor set.');
     }
-    return visitorToUse.toString(this);
+    return visitor.toString(this);
   }
 }
 

@@ -1,4 +1,3 @@
-import { ToStringVisitor } from './to-string-visitor.js';
 import {
   SQLNode,
   ExprNode,
@@ -17,6 +16,7 @@ import {
   FunctionNode,
   InOpNode,
   IntervalNode,
+  JoinNode,
   ListNode,
   LiteralNode,
   LogicalOpNode,
@@ -39,16 +39,19 @@ import {
   WindowFunctionNode,
   WindowFrameNode,
   WindowFrameExprNode,
-  WithClauseNode
-} from '../index.js';
-import { quoteIdentifier } from '../util/string.js';
-import { literalToSQL } from '../ast/literal.js';
+  WithClauseNode,
+  isNode
+} from '../../index.js';
+import { quoteIdentifier } from '../../util/string.js';
+import { literalToSQL } from '../../ast/literal.js';
+import { SQLCodeGenerator } from './sql.js';
+import { CURRENT_ROW, FOLLOWING, PRECEDING, UNBOUNDED } from '../../ast/window-frame.js';
+import { WINDOW_EXTENT_EXPR } from '../../constants.js';
 
 function betweenToString(node: BetweenOpNode | NotBetweenOpNode, op: string) {
   const { extent: r, expr } = node;
   return r ? `(${expr} ${op} ${r[0]} AND ${r[1]})` : '';
 }
-
 
 function isColumnRefFor(expr: unknown, name: string): expr is ColumnRefNode {
   return expr instanceof ColumnRefNode
@@ -56,11 +59,10 @@ function isColumnRefFor(expr: unknown, name: string): expr is ColumnRefNode {
     && expr.column === name;
 }
 
-
 /**
  * DuckDB SQL dialect visitor for converting AST nodes to DuckDB-compatible SQL.
  */
-export class DuckDBVisitor extends ToStringVisitor {
+export class DuckDBCodeGenerator extends SQLCodeGenerator {
   visitAggregate(node: AggregateNode): string {
     const { name, args, isDistinct, filter, order } = node;
     const arg = [
@@ -103,9 +105,7 @@ export class DuckDBVisitor extends ToStringVisitor {
   }
 
   visitColumnParam(node: ColumnParamNode): string {
-    const { param, table } = node;
-    const tref = table ? `${this.toString(table)}.` : '';
-    return `${tref}${this.toString(param)}`;
+    return this.visitColumnRef(node);
   }
 
   visitColumnRef(node: ColumnRefNode): string {
@@ -138,6 +138,7 @@ export class DuckDBVisitor extends ToStringVisitor {
     const isQuery = expr.type === 'SELECT_QUERY' || expr.type === 'SET_OPERATION';
     const isTableRef = expr.type === 'TABLE_REF';
     const ref = isQuery ? `(${this.toString(expr)})` : `${this.toString(expr)}`;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const from = alias && !(isTableRef && (expr as any).table?.join('.') === alias)
       ? `${ref} AS ${quoteIdentifier(alias)}`
       : `${ref}`;
@@ -157,6 +158,22 @@ export class DuckDBVisitor extends ToStringVisitor {
   visitInterval(node: IntervalNode): string {
     const { steps, name } = node;
     return `INTERVAL ${steps} ${name}`;
+  }
+
+  visitJoinClause(node: JoinNode): string {
+    const { left, right, joinVariant, joinType, condition, using, sample } = node;
+    const variant = joinVariant === 'REGULAR' ? '' : `${joinVariant} `;
+    let type = '';
+    let cond = '';
+
+    if (joinVariant !== 'CROSS') {
+      type = joinType !== 'INNER' ? `${joinType} ` : '';
+      cond = condition ? ` ON ${condition}`
+        : using ? ` USING (${using?.join(', ')})`
+        : '';
+    }
+    const samp = sample ? ` USING SAMPLE ${sample}` : '';
+    return `${left} ${variant}${type}JOIN ${right}${cond}${samp}`;
   }
 
   visitList(node: ListNode): string {
@@ -291,12 +308,25 @@ export class DuckDBVisitor extends ToStringVisitor {
   }
 
   visitSetOperation(node: SetOperation): string {
-    const { queries, op, _orderby } = node;
-    let sql = this.mapToString(queries).join(` ${op} `);
-    if (_orderby.length) {
-      sql += ` ORDER BY ${this.mapToString(_orderby).join(', ')}`;
-    }
-    return sql;
+    const { op, queries, _with, _orderby, _limitPerc, _limit, _offset } = node;
+    const sql = [];
+
+    // WITH
+    if (_with.length) sql.push(`WITH ${_with.join(', ')}`);
+
+    // SUBQUERIES
+    sql.push(queries.join(` ${op} `));
+
+    // ORDER BY
+    if (_orderby.length) sql.push(`ORDER BY ${_orderby.join(', ')}`);
+
+    // LIMIT
+    if (_limit) sql.push(`LIMIT ${_limit}${_limitPerc ? '%' : ''}`);
+
+    // OFFSET
+    if (_offset) sql.push(`OFFSET ${_offset}`);
+
+    return sql.join(' ');
   }
 
   visitTableRef(node: TableRefNode): string {
@@ -362,62 +392,28 @@ export class DuckDBVisitor extends ToStringVisitor {
 
   visitWindowExtentExpr(node: WindowFrameExprNode): string {
     const { scope, expr } = node;
-    if (expr === null || expr === undefined) {
-      return scope; // e.g., "CURRENT ROW", "UNBOUNDED PRECEDING", etc.
-    }
-
-    // If expr is a SQLNode, process it through the visitor
-    if (expr && typeof expr === 'object' && expr.type) {
-      return `${this.toString(expr)} ${scope}`;
-    }
-
-    // If expr is a raw value (number, string, etc), use it directly
-    return `${expr} ${scope}`;
+    return scope === CURRENT_ROW
+      ? scope
+      : `${isNode(expr) ? this.toString(expr) : (expr ?? UNBOUNDED)} ${scope}`;
   }
 
   visitWindowFrame(node: WindowFrameNode): string {
-    const { frameType, extent, exclude } = node;
-    if (!extent) return '';
-
-    // Handle ParamNode extent
-    if ((extent as any).type === 'PARAM') {
-      return `${frameType} ${this.toString(extent as ParamNode)}`;
-    }
-
-    // Handle array extent [start, end]
-    if (Array.isArray(extent) && extent.length === 2) {
-      const [start, end] = extent;
-      const startExpr = this.formatFrameValue(start, 'PRECEDING');
-      const endExpr = this.formatFrameValue(end, 'FOLLOWING');
-      const excludeClause = exclude ? ` EXCLUDE ${exclude}` : '';
-      return `${frameType} BETWEEN ${startExpr} AND ${endExpr}${excludeClause}`;
-    }
-
-    return '';
+    const { frameType, exclude, extent } = node;
+    const [prev, next] = isNode(extent)
+      ? extent.value as [unknown, unknown]
+      : extent;
+    const a = this.formatFrameExpr(prev, PRECEDING);
+    const b = this.formatFrameExpr(next, FOLLOWING);
+    return `${frameType} BETWEEN ${a} AND ${b}${exclude ? ` ${exclude}` : ''}`;
   }
 
-  private formatFrameValue(value: unknown, defaultScope: string): string {
-    // Handle WindowFrameExprNode
-    if (value && typeof value === 'object' && 'type' in value && value.type === 'WINDOW_EXTENT_EXPR') {
-      return this.toString(value as SQLNode);
-    }
-
-    // Handle other SQLNode types
-    if (value && typeof value === 'object' && 'type' in value) {
-      return this.toString(value as SQLNode);
-    }
-
-    // Handle raw values using the same logic as asFrameExpr
-    if (value != null && typeof value !== 'number') {
-      return `${value} ${defaultScope}`;
-    }
-    if (value === 0) {
-      return 'CURRENT ROW';
-    }
-    if (!(value && Number.isFinite(value as number))) {
-      return `UNBOUNDED ${defaultScope}`;
-    }
-    return `${Math.abs(value as number)} ${defaultScope}`;
+  private formatFrameExpr(value: unknown, scope: string) {
+    const x = isNode(value) ? this.toString(value) : value;
+    return isNode(value) && value.type === WINDOW_EXTENT_EXPR ? x
+      : x != null && typeof x !== 'number' ? `${x} ${scope}`
+      : x === 0 ? CURRENT_ROW
+      : !(x && Number.isFinite(x)) ? `${UNBOUNDED} ${scope}`
+      : `${Math.abs(x)} ${scope}`;
   }
 
   visitWindowFunction(node: WindowFunctionNode): string {
@@ -440,4 +436,4 @@ export class DuckDBVisitor extends ToStringVisitor {
 }
 
 // Create a default DuckDB visitor instance for convenience
-export const duckdbVisitor = new DuckDBVisitor();
+export const duckDBCodeGenerator = new DuckDBCodeGenerator();
