@@ -564,12 +564,12 @@ describe('Query', () => {
 
   it('supports describe queries', () => {
     const q = Query.select('foo', 'bar').from('data');
-    expect(Query.describe(q).toString()).toBe(`DESCRIBE ${q}`);
+    expect(Query.describe(q).toString()).toBe(`DESC ${q}`);
 
     const u = Query.unionAll(
       Query.select('foo', 'bar').from('data1'),
       Query.select('foo', 'bar').from('data2')
     );
-    expect(Query.describe(u).toString()).toBe(`DESCRIBE ${u}`);
+    expect(Query.describe(u).toString()).toBe(`DESC ${u}`);
   });
 });
