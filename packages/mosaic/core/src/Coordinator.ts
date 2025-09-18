@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { SocketConnector } from './connectors/socket.js';
 import { type Connector } from './connectors/Connector.js';
 import { PreAggregator, type PreAggregateOptions } from './preagg/PreAggregator.js';

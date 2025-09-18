@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { Query, count } from '@uwdata/mosaic-sql';
 import { NodeConnector } from './util/node-connector.js';
-import { ClauseSource, Coordinator, MosaicClient, Selection, clauseInterval } from '../src/index.js';
+import { Coordinator, MosaicClient, Selection, clauseInterval } from '../src/index.js';
 import { QueryResult } from '../src/util/query-result.js';
 
 describe('MosaicClient', () => {

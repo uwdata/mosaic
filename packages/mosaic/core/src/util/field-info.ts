@@ -3,7 +3,6 @@ import { Query, asTableRef, count, isAggregateExpression, isNode, isNull, max, m
 import { jsType } from './js-type.js';
 import type { Coordinator } from '../Coordinator.js';
 import type { FieldInfoRequest, FieldInfo, Stat, FieldRef, ColumnDescription } from '../types.js';
-import { Table } from '@uwdata/flechette';
 
 export const Count = 'count';
 export const Nulls = 'nulls';
@@ -97,7 +96,7 @@ async function getFieldInfo(mc: Coordinator, { table, column, stats }: FieldInfo
  */
 async function getTableInfo(mc: Coordinator, table: string): Promise<FieldInfo[]> {
   const result = Array.from(
-    await mc.query(`DESCRIBE ${asTableRef(table)}`)
+    await mc.query(`DESC ${asTableRef(table)}`)
   ) as ColumnDescription[];
   return result.map(desc => ({
     table,
