@@ -1,5 +1,5 @@
 import { expect, describe, it } from 'vitest';
-import { asof_join, column, cross_join, eq, from, join, positional_join, TableRefNode, walk } from '../src/index.js';
+import { asof_join, column, cross_join, eq, from, join, positional_join, walk } from '../src/index.js';
 import { JOIN_CLAUSE, TABLE_REF } from '../src/constants.js';
 
 describe('Join functions', () => {
