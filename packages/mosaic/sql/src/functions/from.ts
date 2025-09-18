@@ -4,7 +4,7 @@ import { TableRefNode } from "../ast/table-ref.js";
 import { asTableRef } from "../util/ast.js";
 
 /**
- * Create a new table FROM reference, applicable in a query or join .
+ * Create a new table FROM reference, applicable in a query or join.
  * @param table The table.
  * @param alias An optional table alias.
  * @param sample An optional table sample to apply.
