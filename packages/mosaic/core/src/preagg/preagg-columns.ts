@@ -1,6 +1,6 @@
 import type { AggregateNode, ColumnRefNode, ExprNode, Query, SelectQuery } from '@uwdata/mosaic-sql';
 import type { MosaicClient } from '../MosaicClient.js';
-import { collectAggregates, isAggregateExpression, isSelectQuery, isTableRef, rewrite, sql } from '@uwdata/mosaic-sql';
+import { collectAggregates, FromClauseNode, isAggregateExpression, isSelectQuery, isTableRef, rewrite, sql } from '@uwdata/mosaic-sql';
 import { sufficientStatistics } from './sufficient-statistics.js';
 
 export interface PreAggColumnsResult {
@@ -25,7 +25,8 @@ export function preaggColumns(client: MosaicClient): PreAggColumnsResult | null 
 
   // bail if no base table
   const from = getBase(q, q => {
-    const ref = q._from[0]?.expr;
+    const node = q._from[0];
+    const ref = node instanceof FromClauseNode && node.expr;
     return isTableRef(ref) ? ref.name : ref;
   });
   if (typeof from !== 'string') return null;

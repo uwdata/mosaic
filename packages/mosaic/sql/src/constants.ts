@@ -37,6 +37,7 @@ export const WITH_CLAUSE = 'WITH_CLAUSE';
 export const WINDOW_CLAUSE = 'WINDOW_CLAUSE';
 export const SELECT_CLAUSE = 'SELECT_CLAUSE';
 export const FROM_CLAUSE = 'FROM_CLAUSE';
+export const JOIN_CLAUSE = 'JOIN_CLAUSE';
 export const SAMPLE_CLAUSE = 'SAMPLE_CLAUSE';
 
 export const SELECT_QUERY = 'SELECT_QUERY';

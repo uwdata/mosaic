@@ -5,7 +5,14 @@ import { SQLNode } from './node.js';
 import { isQuery } from './query.js';
 import { isTableRef } from './table-ref.js';
 
-export class FromClauseNode extends SQLNode {
+/**
+ * AST node corresponding to a table source which can appear
+ * within a SQL `FROM` clause.
+ */
+export class FromNode extends SQLNode {
+}
+
+export class FromClauseNode extends FromNode {
   /** The from expression. */
   readonly expr: SQLNode;
   /** The output name. */
@@ -24,6 +31,14 @@ export class FromClauseNode extends SQLNode {
     this.expr = expr;
     this.alias = alias;
     this.sample = sample;
+  }
+
+  /**
+   * Create a new from clause node that uses the given alias.
+   * @param string alias
+   */
+  as(alias: string) {
+    return new FromClauseNode(this.expr, alias, this.sample);
   }
 
   /**
