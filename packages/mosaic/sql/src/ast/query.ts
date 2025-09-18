@@ -6,7 +6,7 @@ import { exprList, nodeList } from '../util/function.js';
 import { unquote } from '../util/string.js';
 import { isArray, isString } from '../util/type-check.js';
 import { isColumnRef } from './column-ref.js';
-import { FromClauseNode } from './from.js';
+import { FromClauseNode, FromNode } from './from.js';
 import { ExprNode, SQLNode, isNode } from './node.js';
 import { SampleClauseNode } from './sample.js';
 import { SelectClauseNode } from './select.js';
@@ -231,7 +231,7 @@ export class Query extends ExprNode {
 
 export class SelectQuery extends Query {
   _select: SelectClauseNode[] = [];
-  _from: FromClauseNode[] = [];
+  _from: FromNode[] = [];
   _where: ExprNode[] = [];
   _sample?: SampleClauseNode;
   _groupby: ExprNode[] = [];
@@ -261,13 +261,17 @@ export class SelectQuery extends Query {
 
     // extract subqueries in FROM clause
     // unused CTEs will be ignored
+    // WARNING: does not recurse into join inputs!
     const queries: Query[] = [];
-    this._from.forEach(({ expr }) => {
-      if (isQuery(expr)) {
-        queries.push(expr);
-      } else if (isTableRef(expr)) {
-        const subq = cte[expr.name];
-        if (subq) queries.push(subq);
+    this._from.forEach(node => {
+      if (node instanceof FromClauseNode) {
+        const { expr } = node;
+        if (isQuery(expr)) {
+          queries.push(expr);
+        } else if (isTableRef(expr)) {
+          const subq = cte[expr.name];
+          if (subq) queries.push(subq);
+        }
       }
     });
     return queries;
@@ -330,7 +334,7 @@ export class SelectQuery extends Query {
    * @param expr Expressions to add.
    */
   from(...expr: FromExpr[]): this {
-    const list: FromClauseNode[] = [];
+    const list: FromNode[] = [];
 
     const add = (v: string | string[] | SQLNode, as?: string) => {
       list.push(new FromClauseNode(maybeTableRef(v), unquote(as)));
@@ -338,7 +342,7 @@ export class SelectQuery extends Query {
 
     expr.flat().forEach(e => {
       if (e == null) return;
-      else if (e instanceof FromClauseNode) list.push(e);
+      else if (e instanceof FromNode) list.push(e);
       else if (isString(e)) add(e, e);
       else if (isTableRef(e)) add(e, e.name);
       else if (isNode(e)) add(e);
