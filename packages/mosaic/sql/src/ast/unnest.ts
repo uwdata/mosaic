@@ -19,13 +19,4 @@ export class UnnestNode extends ExprNode {
     this.recursive = recursive;
     this.maxDepth = maxDepth;
   }
-
-  /**
-   * Generate a SQL query string for this node.
-   */
-  toString() {
-    const recursive = this.recursive ? ', recursive := true' : '';
-    const maxDepth = this.maxDepth > 0 ? `, max_depth := ${this.maxDepth}` : '';
-    return `UNNEST(${this.expr}${recursive}${maxDepth})`;
-  }
 }

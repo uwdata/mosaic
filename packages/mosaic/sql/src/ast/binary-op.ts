@@ -21,11 +21,4 @@ export class BinaryOpNode extends ExprNode {
     this.left = left;
     this.right = right;
   }
-
-  /**
-   * Generate a SQL query string for this node.
-   */
-  toString() {
-    return `(${this.left} ${this.op} ${this.right})`;
-  }
 }

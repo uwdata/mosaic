@@ -1,3 +1,6 @@
+// Initialize default visitor
+import './init.js';
+
 export { AggregateNode, aggregateNames, isAggregateFunction } from './ast/aggregate.js';
 export { BetweenOpNode, NotBetweenOpNode } from './ast/between-op.js'
 export { BinaryOpNode } from './ast/binary-op.js';
@@ -14,7 +17,7 @@ export { IntervalNode } from './ast/interval.js';
 export { JoinNode, type JoinType, type JoinVariant } from './ast/join.js';
 export { ListNode } from './ast/list.js';
 export { LiteralNode } from './ast/literal.js';
-export { AndNode, OrNode } from './ast/logical-op.js';
+export { LogicalOpNode, AndNode, OrNode } from './ast/logical-op.js';
 export { SQLNode, ExprNode, isNode } from './ast/node.js';
 export { OrderByNode } from './ast/order-by.js';
 export { ParamNode } from './ast/param.js';
@@ -57,6 +60,8 @@ export { deepClone } from './visit/clone.js';
 export { rewrite } from './visit/rewrite.js';
 export { collectAggregates, collectColumns, collectParams, isAggregateExpression } from './visit/visitors.js';
 export { walk, type VisitorCallback, type VisitorResult } from './visit/walk.js';
+export { SQLCodeGenerator as ToStringVisitor } from './visit/codegen/sql.js';
+export { DuckDBCodeGenerator, duckDBCodeGenerator } from './visit/codegen/duckdb.js';
 
 export { createTable, createSchema } from './load/create.js';
 export { loadExtension } from './load/extension.js';

@@ -1,7 +1,7 @@
 import { WINDOW_EXTENT_EXPR, WINDOW_FRAME } from '../constants.js';
 import { type ParamLike } from '../types.js';
 import { isParamLike } from '../util/type-check.js';
-import { type ExprNode, isNode, SQLNode } from './node.js';
+import { type ExprNode, SQLNode } from './node.js';
 import { ParamNode } from './param.js';
 
 export type FrameValue =  ExprNode | number | null;
@@ -42,27 +42,6 @@ export class WindowFrameNode extends SQLNode {
     this.extent = isParamLike(extent) ? new ParamNode(extent) : extent;
     this.exclude = exclude;
   }
-
-  /**
-   * Generate a SQL query string for this node.
-   */
-  toString() {
-    const { frameType, exclude, extent } = this;
-    const [prev, next] = isNode(extent)
-      ? extent.value as [unknown, unknown]
-      : extent;
-    const a = asFrameExpr(prev, PRECEDING);
-    const b = asFrameExpr(next, FOLLOWING);
-    return `${frameType} BETWEEN ${a} AND ${b}${exclude ? ` ${exclude}` : ''}`;
-  }
-}
-
-function asFrameExpr(value: unknown, scope: string) {
-  return value instanceof WindowFrameExprNode ? value
-    : value != null && typeof value !== 'number' ? `${value} ${scope}`
-    : value === 0 ? CURRENT_ROW
-    : !(value && Number.isFinite(value)) ? `${UNBOUNDED} ${scope}`
-    : `${Math.abs(value)} ${scope}`;
 }
 
 export class WindowFrameExprNode extends SQLNode {
@@ -83,15 +62,5 @@ export class WindowFrameExprNode extends SQLNode {
     super(WINDOW_EXTENT_EXPR);
     this.scope = scope;
     this.expr = expr;
-  }
-
-  /**
-   * Generate a SQL query string for this node.
-   */
-  toString() {
-    const { scope, expr } = this;
-    return scope === CURRENT_ROW
-      ? scope
-      : `${expr ?? UNBOUNDED} ${scope}`;
   }
 }

@@ -29,15 +29,4 @@ export class WithClauseNode extends SQLNode {
     this.query = query;
     this.materialized = materialized;
   }
-
-  /**
-   * Generate a SQL query string for this node.
-   */
-  toString() {
-    const flag = this.materialized;
-    const mat = flag === true ? ' MATERIALIZED'
-      : flag === false ? ' NOT MATERIALIZED'
-      : '';
-    return `"${this.name}" AS${mat} (${this.query})`;
-  }
 }

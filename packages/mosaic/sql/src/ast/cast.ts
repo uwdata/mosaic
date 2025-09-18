@@ -17,12 +17,4 @@ export class CastNode extends ExprNode {
     this.expr = expr;
     this.cast = type;
   }
-
-  /**
-   * Generate a SQL query string for this node.
-   */
-  toString() {
-    // TODO? could include check to see if parens are necessary
-    return `(${this.expr})::${this.cast}`;
-  }
 }

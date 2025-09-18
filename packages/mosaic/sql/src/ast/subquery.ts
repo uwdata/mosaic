@@ -14,11 +14,4 @@ export class ScalarSubqueryNode extends ExprNode {
     super(SCALAR_SUBQUERY);
     this.subquery = subquery;
   }
-
-  /**
-   * Generate a SQL query string for this node.
-   */
-  toString() {
-    return `(${this.subquery})`;
-  }
 }

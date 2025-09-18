@@ -21,18 +21,4 @@ export class OrderByNode extends ExprNode {
     this.desc = desc;
     this.nullsFirst = nullsFirst;
   }
-
-  /**
-   * Generate a SQL query string for this node.
-   */
-  toString() {
-    const { expr, desc, nullsFirst } = this;
-    const dir = desc ? ' DESC'
-      : desc === false ? ' ASC'
-      : '';
-    const nf = nullsFirst ? ' NULLS FIRST'
-      : nullsFirst === false ? ' NULLS LAST'
-      : '';
-    return `${expr}${dir}${nf}`;
-  }
 }

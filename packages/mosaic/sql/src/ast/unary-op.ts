@@ -29,13 +29,6 @@ export class UnaryOpNode extends AbstractUnaryOpNode {
   constructor(op: string, expr: ExprNode) {
     super(UNARY_OPERATOR, op, expr);
   }
-
-  /**
-   * Generate a SQL query string for this node.
-   */
-  toString() {
-    return `(${this.op} ${this.expr})`;
-  }
 }
 
 export class UnaryPostfixOpNode extends AbstractUnaryOpNode {
@@ -46,12 +39,5 @@ export class UnaryPostfixOpNode extends AbstractUnaryOpNode {
    */
   constructor(op: string, expr: ExprNode) {
     super(UNARY_POSTFIX_OPERATOR, op, expr);
-  }
-
-  /**
-   * Generate a SQL query string for this node.
-   */
-  toString() {
-    return `(${this.expr} ${this.op})`;
   }
 }

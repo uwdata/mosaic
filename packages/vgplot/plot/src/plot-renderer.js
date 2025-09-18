@@ -123,7 +123,9 @@ function inferLabel(key, spec, marks) {
 function fieldLabel(field) {
   if (!field) return undefined;
   switch (field.type) {
-    case 'COLUMN_REF': return field.column;
+    case 'COLUMN_REF':
+    case 'CUSTOM':
+      return field.column;
     case 'CAST': return fieldLabel(field.expr);
     case 'FUNCTION':
       if (field.name === 'make_date') return 'date';

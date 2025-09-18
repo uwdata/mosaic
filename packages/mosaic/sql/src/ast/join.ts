@@ -63,23 +63,4 @@ export class JoinNode extends FromNode {
     this.using = using;
     this.sample = sample;
   }
-
-  /**
-   * Generate a SQL query string for this node.
-   */
-  toString() {
-    const { left, right, joinVariant, joinType, condition, using, sample } = this;
-    const variant = joinVariant === 'REGULAR' ? '' : `${joinVariant} `;
-    let type = '';
-    let cond = '';
-
-    if (joinVariant !== 'CROSS') {
-      type = joinType !== 'INNER' ? `${joinType} ` : '';
-      cond = condition ? ` ON ${condition}`
-        : using ? ` USING (${using?.join(', ')})`
-        : '';
-    }
-    const samp = sample ? ` USING SAMPLE ${sample}` : '';
-    return `${left} ${variant}${type}JOIN ${right}${cond}${samp}`;
-  }
 }

@@ -104,22 +104,6 @@ export class AggregateNode extends ExprNode {
   frame(framedef: WindowFrameNode) {
     return this.window().frame(framedef);
   }
-
-  /**
-   * Generate a SQL query string for this node.
-   */
-  toString() {
-    const { name, args, isDistinct, filter, order } = this;
-    const arg = [
-      isDistinct ? 'DISTINCT' : '',
-      args?.length ? args.join(', ')
-        : name.toLowerCase() === 'count' ?  '*'
-        : '',
-      order.length ? `ORDER BY ${order.join(', ')}` : ''
-    ].filter(x => x).join(' ');
-    const filt = filter ? ` FILTER (WHERE ${filter})` : '';
-    return `${name}(${arg})${filt}`;
-  }
 }
 
 /**

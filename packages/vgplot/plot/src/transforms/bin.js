@@ -38,7 +38,7 @@ function hasTimeScale(mark, channel) {
 
 class BinTransformNode extends ExprNode {
   constructor(column, mark, channel, options) {
-    super('COLUMN_REF');
+    super('CUSTOM');
     this.column = column;
     this.mark = mark;
     this.channel = channel;

@@ -1,6 +1,5 @@
 import type { ParamLike } from '../types.js';
 import { PARAM } from '../constants.js';
-import { literalToSQL } from './literal.js';
 import { ExprNode } from './node.js';
 
 export class ParamNode extends ExprNode {
@@ -21,12 +20,5 @@ export class ParamNode extends ExprNode {
    */
   get value() {
     return this.param.value;
-  }
-
-  /**
-   * Generate a SQL query string for this node.
-   */
-  toString() {
-    return literalToSQL(this.value);
   }
 }
