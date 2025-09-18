@@ -64,7 +64,7 @@ describe('Join functions', () => {
     expect(() => asof_join('A', 'B', { type: 'RIGHT' })).toThrow();
   });
 
-  it('are visitable', () => {
+  it('are walkable', () => {
     expect(() => walk(
       join('A', 'B'),
       (x) => {
