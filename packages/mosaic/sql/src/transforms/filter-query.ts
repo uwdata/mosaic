@@ -3,6 +3,7 @@ import { isSelectQuery, type Query } from '../ast/query.js';
 import { isTableRef, type TableRefNode } from '../ast/table-ref.js';
 import { deepClone } from '../visit/clone.js';
 import { walk } from '../visit/walk.js';
+import { FromClauseNode } from '../ast/from.js';
 
 /**
  * Returns a generator function that clones the given query and adds
@@ -18,6 +19,7 @@ export function filterQuery(query: Query, tableRef: TableRefNode) {
       if (
         isSelectQuery(node) &&
         node._from.length === 1 &&
+        node._from[0] instanceof FromClauseNode &&
         isTableRef(node._from[0].expr) &&
         arrayEquals(node._from[0].expr.table, tableRef.table)
       ) {
