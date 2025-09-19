@@ -63,6 +63,10 @@ export function timeInterval(
   steps: number
 ): ({ unit: TimeUnit, step: number }) {
   const span = +max - +min;
+
+  // if degenerate span, default to one day
+  if (span === 0) return { unit: DAY, step: 1 };
+
   const t = span / steps; // target step size duration
   const i = bisect(units, t, v => v.dt);
 

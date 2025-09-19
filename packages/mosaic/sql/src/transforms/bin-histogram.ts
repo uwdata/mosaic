@@ -3,6 +3,7 @@ import type { ExprValue } from '../types.js';
 import { float64 } from '../functions/cast.js';
 import { floor } from '../functions/numeric.js';
 import { add, div, mul, sub } from '../functions/operators.js';
+import { asNode } from '../util/ast.js';
 import { binSpec } from './util/bin-step.js';
 import { Scale, scaleTransform } from './scales.js';
 
@@ -47,14 +48,19 @@ export function binHistogram(
 ): ExprNode {
   const [min, max] = extent;
   const { offset = 0 } = options;
+
+  // handle degenerate extent
+  if (max === min) return offset ? add(offset, field) : asNode(field);
+
   const { apply, sqlApply, sqlInvert } = transform;
   const b = binSpec(apply(min), apply(max), options);
   const col = sqlApply(field);
-  const alpha = (b.max - b.min) / b.steps;
+  const alpha = ((b.max - b.min) / b.steps) || 1;
 
   let expr = b.min === 0 ? col : sub(col, b.min);
   if (alpha !== 1) expr = div(expr, float64(alpha));
-  expr = floor(offset ? add(offset, expr) : expr);
+  // add offset *after* floor to dodge nasty floating point nuances
+  expr = offset ? add(offset, floor(expr)) : floor(expr);
   if (alpha !== 1) expr = mul(alpha, expr);
   if (b.min !== 0) expr = add(b.min, expr);
   return sqlInvert(expr);
