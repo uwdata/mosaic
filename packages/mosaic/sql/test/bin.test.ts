@@ -29,6 +29,11 @@ describe('Binning transforms', () => {
       expect(`${binHistogram('foo', [1, 64], { steps: 10 }, log2)}`)
         .toBe('(2 ** floor((ln("foo") / ln(2))))');
     });
+
+    it('handles degenerate span', () => {
+      expect(`${binHistogram('foo', [1, 1])}`).toBe('"foo"');
+      expect(`${binHistogram('foo', [1, 1], { offset: 1 })}`).toBe('(1 + "foo")');
+    });
   });
 
   describe('binDate', () => {
@@ -109,6 +114,13 @@ describe('Binning transforms', () => {
 
       expect(`${binDate('foo', [0, 0.1])}`)
         .toBe('time_bucket(INTERVAL 5 microsecond, "foo")');
+    });
+
+    it('handles degenerate span', () => {
+      expect(`${binDate('foo', [1, 1])}`)
+        .toBe('time_bucket(INTERVAL 1 day, "foo")');
+      expect(`${binDate('foo', [1, 1], { offset: 1 })}`)
+        .toBe('(time_bucket(INTERVAL 1 day, "foo") + INTERVAL 1 day)');
     });
   });
 });
