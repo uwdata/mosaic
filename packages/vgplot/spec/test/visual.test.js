@@ -49,6 +49,7 @@ test.describe('Visual regression tests for JSON specs', () => {
               const ast = parseSpec(specData);
 
               const { element } = await astToDOM(ast, {
+                api: vg,
                 baseURL: window.location.origin + '/'
               });
 
