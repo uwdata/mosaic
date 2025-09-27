@@ -17,7 +17,7 @@ export default defineConfig({
   },
 
   webServer: {
-    command: 'npx vite --port 5173 --host',
+    command: 'npx vite --port 5173 --host --config vite.config.docker.js',
     port: 5173,
     reuseExistingServer: true,
     cwd: '../../../',
