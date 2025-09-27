@@ -26,12 +26,36 @@ jobs:
           node-version: "20.x"
           cache: "npm"
 
+      - name: Install Playwright Browsers
+        run: npx playwright install --with-deps chromium --only-shell
+
       - name: Install Node dependencies
         run: npm ci
 
       - run: npm run lint
       - run: npm run build
       - run: npm run test
+
+  browser:
+    name: Test in Browser
+
+    runs-on: ubuntu-latest
+    container:
+      image: mcr.microsoft.com/playwright:v1.55.0-noble
+      options: --user 1001
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Setup node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20.x"
+          cache: "npm"
+
+      - name: Install Node dependencies
+        run: npm ci
+
       - run: npm run test:visual -w @uwdata/mosaic-spec
 
   python:
