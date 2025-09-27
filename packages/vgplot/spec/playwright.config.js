@@ -12,6 +12,10 @@ export default defineConfig({
 
   testMatch: '**/visual*.test.js',
 
+  use: {
+    viewport: { height: 1280, width: 720 },
+  },
+
   webServer: {
     command: 'npx vite --port 5173 --host',
     port: 5173,
