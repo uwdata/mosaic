@@ -21,6 +21,14 @@ describe('JSON schema', () => {
   });
 });
 
+// generate specs list snapshot
+describe('Specs list', () => {
+  it('generates specs.json snapshot', async () => {
+    const specsList = Array.from(specs.keys()).sort();
+    await expect(JSON.stringify(specsList, null, 2)).toMatchFileSnapshot('./specs.json');
+  });
+});
+
 // validate specs, parsing, and generation
 for (const [name, spec] of specs) {
   describe(`Test specification: ${name}`, () => {
