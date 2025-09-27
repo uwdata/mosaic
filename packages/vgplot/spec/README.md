@@ -78,3 +78,5 @@ container run --rm -it \
 ```
 
 Run `container system stop` when you are done.
+
+Alternatively, you can remove the snapshots and download them from GitHub. At the end of the `browser` action, the snapshots will be uploaded as an artifact.
