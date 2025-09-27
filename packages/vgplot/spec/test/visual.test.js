@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { readFile } from 'node:fs/promises';
+import { readFile, readdir } from 'node:fs/promises';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { dirname } from 'node:path';
@@ -8,9 +8,12 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
 async function getSpecFiles() {
-  const specsJsonPath = join(__dirname, './specs.json');
-  const specsJsonText = await readFile(specsJsonPath, 'utf8');
-  return JSON.parse(specsJsonText);
+  const specsDir = join(__dirname, '../../../../specs/json');
+  const files = await readdir(specsDir);
+  return files
+    .filter(file => file.endsWith('.json'))
+    .map(file => file.replace('.json', ''))
+    .sort();
 }
 
 const specFiles = await getSpecFiles();
