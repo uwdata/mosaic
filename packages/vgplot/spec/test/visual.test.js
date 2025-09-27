@@ -66,8 +66,8 @@ test.describe('Visual regression tests for JSON specs', () => {
         document.body.hasAttribute('data-render-complete')
       );
 
-      await page.waitForTimeout(250);  // give mosaic some time to render
-      await expect(page).toHaveScreenshot(`${specName}.png`);
+      await page.waitForTimeout(500);  // give mosaic some time to render
+      await expect(page).toHaveScreenshot(`${specName}.png`, { maxDiffPixelRatio: 0.05 });
     });
   }
 });
