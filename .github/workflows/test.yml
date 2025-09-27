@@ -59,6 +59,15 @@ jobs:
       - run: npm run build
       - run: npm run test:visual -w @uwdata/mosaic-spec
 
+      - name: Upload Playwright results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: playwright-test-results
+          path: |
+            packages/vgplot/spec/test-results/
+            packages/vgplot/spec/test/visual.test.js-snapshots/
+
   python:
     name: Test in Python
 
