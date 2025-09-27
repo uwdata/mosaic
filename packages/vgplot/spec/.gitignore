@@ -1,2 +1,3 @@
 test-results
-test/*.js-snapshots
+test/visual.test.js-snapshots/*
+!test/visual.test.js-snapshots/*-linux.png
