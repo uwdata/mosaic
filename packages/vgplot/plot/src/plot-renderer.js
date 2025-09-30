@@ -144,8 +144,12 @@ function annotatePlot(svg, indices) {
   for (const child of svg.children) {
     const aria = child.getAttribute('aria-label') || '';
     const skip = child.nodeName === 'style'
+      // skip axis and grid marks
       || aria.includes('-axis')
-      || aria.includes('-grid');
+      || aria.includes('-grid')
+      // skip frame lines, such as those generated for axes
+      // imperfect fix, as explicit anchored frames will fail :(
+      || (child.nodeName === 'line' && aria === 'frame');
     if (!skip) {
       child.setAttribute('data-index', indices[++index]);
     }
