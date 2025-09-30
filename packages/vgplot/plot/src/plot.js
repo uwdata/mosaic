@@ -1,5 +1,6 @@
 import { distinct, Synchronizer } from '@uwdata/mosaic-core';
 import { plotRenderer } from './plot-renderer.js';
+import { guideMarks } from './marks/util/guide-marks.js';
 
 const DEFAULT_ATTRIBUTES = {
   width: 640,
@@ -151,7 +152,13 @@ export class Plot {
   }
 
   addMark(mark) {
-    mark.setPlot(this, this.marks.length);
+    // determine index for annotating marks
+    // we use this to match marks with SVG output
+    // skip all guides (axis, grid, frame, etc)
+    const idx = guideMarks.has(mark.type)
+      ? -1
+      : this.marks.reduce((sum, mark) => sum + (guideMarks.has(mark.type) ? 0 : 1), 0);
+    mark.setPlot(this, idx);
     this.marks.push(mark);
     this.markset = null;
     return this;
