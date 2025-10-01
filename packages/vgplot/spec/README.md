@@ -57,3 +57,26 @@ const spec = parse(yaml); // parse yaml to JS objects
 // parse specification to internal AST (abstract syntax tree)
 const ast = parseSpec(spec);
 ```
+
+## Developers
+
+To rebuild the playwright snapshots, use docker. On macOS 26+, you can use
+
+```sh
+brew install --cask container
+container system start
+```
+
+Then run this at the Mosaic repo root level.
+
+```sh
+container run --rm -it \
+  -v $(pwd):/workspace \
+  -w /workspace \
+  mcr.microsoft.com/playwright:v1.55.1-noble \
+  bash -c "npm i && npm run test:visual:update -w @uwdata/mosaic-spec"
+```
+
+Run `container system stop` when you are done.
+
+Alternatively, you can remove the snapshots and download them from GitHub. At the end of the `browser` action, the snapshots will be uploaded as an artifact.
