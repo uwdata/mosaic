@@ -1,12 +1,14 @@
 import logging
 from hashlib import sha256
+import duckdb
 
-import pyarrow as pa
+import pyarrow
+import pyarrow.lib
 
 logger = logging.getLogger(__name__)
 
 
-def get_key(sql, command):
+def get_key(sql: str, command: str) -> str:
     return f"{sha256(sql.encode('utf-8')).hexdigest()}.{command}"
 
 
@@ -26,21 +28,24 @@ def retrieve(cache, query, get):
     return result
 
 
-def get_arrow(con, sql):
+def get_arrow(
+    con: duckdb.DuckDBPyConnection, sql: str
+) -> pyarrow.lib.RecordBatchReader:
     return con.query(sql).arrow()
 
 
-def arrow_to_bytes(arrow):
-    sink = pa.BufferOutputStream()
-    with pa.ipc.new_stream(sink, arrow.schema) as writer:
-        writer.write(arrow)
+def arrow_to_bytes(reader: pyarrow.lib.RecordBatchReader):
+    sink = pyarrow.BufferOutputStream()
+    with pyarrow.ipc.new_stream(sink, reader.schema) as writer:
+        for batch in reader:
+            writer.write(batch)
     return sink.getvalue().to_pybytes()
 
 
-def get_arrow_bytes(con, sql):
+def get_arrow_bytes(con: duckdb.DuckDBPyConnection, sql: str):
     return arrow_to_bytes(get_arrow(con, sql))
 
 
-def get_json(con, sql):
+def get_json(con: duckdb.DuckDBPyConnection, sql: str):
     result = con.query(sql).df()
     return result.to_json(orient="records")
