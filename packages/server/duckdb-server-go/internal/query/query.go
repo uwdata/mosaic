@@ -252,7 +252,7 @@ func (db *DB) WriteJSON(ctx context.Context, query string, allowedSchemas []stri
 		}
 
 		var jsonBytes []byte
-		jsonBytes, err = rdr.Record().MarshalJSON()
+		jsonBytes, err = rdr.RecordBatch().MarshalJSON()
 		if err != nil {
 			return fmt.Errorf("failed to marshal record to JSON: %w", err)
 		}
@@ -328,7 +328,7 @@ func (db *DB) WriteArrow(ctx context.Context, query string, allowedSchemas []str
 	}()
 
 	for rdr.Next() {
-		err = arrowWriter.Write(rdr.Record())
+		err = arrowWriter.Write(rdr.RecordBatch())
 		if err != nil {
 			return fmt.Errorf("query: failed to write record: %w", err)
 		}
