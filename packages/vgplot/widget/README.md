@@ -10,7 +10,7 @@ Learn how to install and use the widget in the [Mosaic documentation](https://uw
 
 We use [uv](https://docs.astral.sh/uv/) to manage our development setup.
 
-You can start Jupyter with `ANYWIDGET_HMR=1 uv run jupyter lab --notebook-dir=../../dev/notebooks`.
+You can start Jupyter with `ANYWIDGET_HMR=1 uv run jupyter lab --notebook-dir=../../../dev/notebooks`.
 
 Run `npm run build` to build the widget JavaScript code. If you want to live edit the widget code, run `npm run dev` in a separate terminal.
 
