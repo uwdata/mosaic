@@ -81,7 +81,8 @@ class MosaicWidget(anywidget.AnyWidget):
                 result = self.con.query(sql).arrow()
                 sink = pa.BufferOutputStream()
                 with pa.ipc.new_stream(sink, result.schema) as writer:
-                    writer.write(result)
+                    for batch in result:
+                        writer.write(batch)
                 buf = sink.getvalue()
 
                 self.send({"type": "arrow", "uuid": uuid}, buffers=[buf.to_pybytes()])
