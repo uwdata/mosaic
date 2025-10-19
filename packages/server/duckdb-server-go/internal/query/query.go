@@ -14,7 +14,7 @@ import (
 	"sync"
 
 	"github.com/apache/arrow-go/v18/arrow/ipc"
-	"github.com/marcboeker/go-duckdb/v2"
+	"github.com/duckdb/duckdb-go/v2"
 	"github.com/maypok86/otter/v2"
 	"golang.org/x/sync/semaphore"
 )
