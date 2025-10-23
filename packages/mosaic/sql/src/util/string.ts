@@ -3,8 +3,9 @@ export function parseIdentifier(id: string) {
   return id.split('.');
 }
 
-export function quoteIdentifier(value: unknown) {
-  return `"${value}"`;
+export function quoteIdentifier(value: string) {
+  // escape double quotes if they occur in identifier
+  return `"${value.replaceAll('"', '""')}"`;
 }
 
 export function unquote(s?: string) {
