@@ -5,9 +5,7 @@ export function parseIdentifier(id: string) {
 
 export function quoteIdentifier(value: string) {
   // escape double quotes if they occur in identifier
-  return value.includes('"')
-    ? `"${value.replaceAll('"', '""')}"`
-    : `"${value}"`;
+  return `"${value.replaceAll('"', '""')}"`;
 }
 
 export function unquote(s?: string) {
