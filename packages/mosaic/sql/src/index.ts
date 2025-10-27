@@ -39,7 +39,7 @@ export { cast, float32, float64, int32 } from './functions/cast.js';
 export { collate } from './functions/collate.js';
 export { column } from './functions/column.js';
 export { cte } from './functions/cte.js';
-export { dateBin, dateMonth, dateMonthDay, dateDay, epoch_ms } from './functions/datetime.js';
+export { dateBin, dateMonth, dateMonthDay, dateDay, epoch_ms, timezone } from './functions/datetime.js';
 export { from } from './functions/from.js';
 export { days, hours, interval, microseconds, minutes, milliseconds, months, seconds, years } from './functions/interval.js';
 export { asof_join, cross_join, join, positional_join } from './functions/join.js';
