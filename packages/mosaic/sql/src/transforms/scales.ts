@@ -25,7 +25,7 @@ export type ScaleType =
   | 'pow'
   | 'time'
   | 'utc'
-  ;
+  | (string & Record<never, never>);
 
 export type ScaleDomain = [number, number] | [Date, Date];
 
@@ -136,9 +136,9 @@ const scales = {
 };
 
 export function scaleTransform<T>(options: ScaleOptions): Scale<T> {
+  // @ts-expect-error scale type lookup
   const scale = scales[options.type];
   if (!scale) throw new Error(`Unrecognized scale type: ${options.type}`);
-  // @ts-expect-error suppress error, revisit later?
   return { ...options, ...scale(options) };
 }
 
