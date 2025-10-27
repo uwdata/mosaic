@@ -2,6 +2,7 @@ import type { ExprValue } from '../types.js';
 import { asNode } from '../util/ast.js';
 import { fn } from '../util/function.js';
 import { interval } from './interval.js';
+import { literal } from './literal.js';
 
 /**
  * Given a date/time value, return the milliseconds since the UNIX epoch.
@@ -47,4 +48,15 @@ export function dateMonthDay(expr: ExprValue) {
  */
 export function dateDay(expr: ExprValue) {
   return fn('make_date', 2012, 1, fn('day', expr));
+}
+
+/**
+ * Convert a timestamp to the specified time zone.
+ * See https://duckdb.org/docs/stable/sql/data_types/timezones for
+ * supported time zone identifiers.
+ * @param tz The time zone identifier string.
+ * @param expr The timestamp expression to convert.
+ */
+export function timezone(tz: string, expr: ExprValue) {
+  return fn('timezone', literal(tz), expr);
 }
