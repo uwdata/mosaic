@@ -31,8 +31,8 @@ describe('Binning transforms', () => {
     });
 
     it('handles degenerate span', () => {
-      expect(`${binHistogram('foo', [1, 1])}`).toBe('"foo"');
-      expect(`${binHistogram('foo', [1, 1], { offset: 1 })}`).toBe('(1 + "foo")');
+      expect(`${binHistogram('foo', [1, 1])}`).toBe('floor("foo")');
+      expect(`${binHistogram('foo', [1, 1], { offset: 1 })}`).toBe('(1 + floor("foo"))');
     });
   });
 
