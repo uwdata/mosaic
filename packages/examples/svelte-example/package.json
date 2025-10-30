@@ -1,7 +1,7 @@
 {
   "name": "mosaic-svelte-example",
   "private": true,
-  "version": "0.21.0",
+  "version": "0.21.1",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -17,8 +17,8 @@
     "vite": "^7.1.5"
   },
   "dependencies": {
-    "@uwdata/mosaic-core": "^0.21.0",
-    "@uwdata/mosaic-sql": "^0.21.0",
-    "@uwdata/vgplot": "^0.21.0"
+    "@uwdata/mosaic-core": "^0.21.1",
+    "@uwdata/mosaic-sql": "^0.21.1",
+    "@uwdata/vgplot": "^0.21.1"
   }
 }

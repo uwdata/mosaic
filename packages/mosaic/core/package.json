@@ -1,6 +1,6 @@
 {
   "name": "@uwdata/mosaic-core",
-  "version": "0.21.0",
+  "version": "0.21.1",
   "description": "Scalable and extensible linked data views.",
   "keywords": [
     "mosaic",
@@ -34,9 +34,9 @@
   "dependencies": {
     "@duckdb/duckdb-wasm": "1.30.0",
     "@uwdata/flechette": "^2.2.5",
-    "@uwdata/mosaic-sql": "^0.21.0"
+    "@uwdata/mosaic-sql": "^0.21.1"
   },
   "devDependencies": {
-    "@uwdata/mosaic-duckdb": "^0.21.0"
+    "@uwdata/mosaic-duckdb": "^0.21.1"
   }
 }
