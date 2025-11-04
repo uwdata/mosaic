@@ -34,7 +34,7 @@
     "prebuild": "npm run clean",
     "build": "npm run build:types && npm run build:umd",
     "build:types": "tsc --build",
-    "build:umd": "../../../node_modules/.bin/vite build",
+    "build:umd": "vite build",
     "lint": "eslint src test",
     "test": "vitest run",
     "prepublishOnly": "npm run test && npm run lint && npm run build"
