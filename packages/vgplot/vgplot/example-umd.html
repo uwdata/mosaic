@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>vgplot UMD Example</title>
+</head>
+<body>
+  <h1>vgplot UMD Build Example</h1>
+  <div id="app"></div>
+
+  <!-- Load vgplot from UMD bundle -->
+  <script src="dist/umd/vgplot.umd.js"></script>
+
+  <script>
+    // vgplot is now available as a global variable
+    console.log('vgplot loaded:', vgplot);
+
+    // You can now use vgplot methods
+    // For example: vgplot.coordinator(), vgplot.plot(), etc.
+
+    // Example usage (uncomment and modify as needed):
+    // const coordinator = vgplot.coordinator();
+    // document.getElementById('app').innerHTML = '<p>vgplot loaded successfully!</p>';
+  </script>
+</body>
+</html>

@@ -18,6 +18,8 @@
     "types": "./dist/src/index.d.ts",
     "default": "./src/index.js"
   },
+  "unpkg": "./dist/umd/vgplot.umd.js",
+  "jsdelivr": "./dist/umd/vgplot.umd.js",
   "files": [
     "dist",
     "!dist/tsconfig.tsbuildinfo",
@@ -30,9 +32,12 @@
   "scripts": {
     "clean": "rimraf dist && mkdir dist",
     "prebuild": "npm run clean",
+    "build": "npm run build:types && npm run build:umd",
+    "build:types": "tsc --build",
+    "build:umd": "../../../node_modules/.bin/vite build",
     "lint": "eslint src test",
     "test": "vitest run",
-    "prepublishOnly": "npm run test && npm run lint && tsc --build"
+    "prepublishOnly": "npm run test && npm run lint && npm run build"
   },
   "dependencies": {
     "@uwdata/mosaic-core": "^0.21.1",
