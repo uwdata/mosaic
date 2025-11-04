@@ -1,0 +1,266 @@
+---
+title: "Getting Started with vgplotr"
+format: html
+---
+
+## Introduction
+
+vgplotr brings the power of Mosaic and DuckDB to R, enabling you to create interactive, database-driven visualizations that work seamlessly in Quarto documents.
+
+## Basic Example: mtcars
+
+Let's start with a simple histogram using the built-in `mtcars` dataset.
+
+### Load the package
+
+```{r}
+library(vgplotr)
+```
+
+### Simple Histogram
+
+First, we need to load the mtcars data into DuckDB. In vgplotr, data tables are loaded using SQL exec statements:
+
+```{r}
+spec <- mosaic_spec(
+  # Load mtcars into DuckDB
+  list(
+    type = "exec",
+    sql = "CREATE TABLE IF NOT EXISTS mtcars AS SELECT * FROM read_csv_auto('mtcars.csv')"
+  ),
+
+  # Create the plot
+  plot(
+    rectY(
+      from("mtcars"),
+      list(
+        x = bin("mpg"),
+        y = count(),
+        fill = "steelblue"
+      )
+    ),
+    width = 640,
+    height = 400
+  )
+)
+
+vgplot(spec)
+```
+
+**Note**: The above example assumes you have a `mtcars.csv` file. For a working example without external files, we can use DuckDB's ability to create data inline:
+
+```{r}
+# Create data directly in DuckDB
+spec <- mosaic_spec(
+  list(
+    type = "exec",
+    sql = "CREATE TABLE IF NOT EXISTS test_data AS
+      SELECT
+        floor(random() * 100) as value,
+        ['A', 'B', 'C'][1 + floor(random() * 3)] as category
+      FROM range(1000)"
+  ),
+
+  plot(
+    rectY(
+      from("test_data"),
+      list(
+        x = bin("value"),
+        y = count(),
+        fill = "steelblue",
+        inset = 0.5
+      )
+    ),
+    width = 640,
+    height = 400
+  )
+)
+
+vgplot(spec)
+```
+
+## Interactive Brushing
+
+Now let's add interactivity with a brush selection:
+
+```{r}
+# Create a selection
+brush <- Selection$crossfilter()
+
+# Create data
+spec <- mosaic_spec(
+  list(
+    type = "exec",
+    sql = "CREATE TABLE IF NOT EXISTS test_data AS
+      SELECT
+        floor(random() * 100) as x_value,
+        floor(random() * 100) as y_value
+      FROM range(1000)"
+  ),
+
+  # Create plot with brush
+  plot(
+    rectY(
+      from("test_data", filterBy = brush),
+      list(
+        x = bin("x_value"),
+        y = count(),
+        fill = "steelblue",
+        inset = 0.5
+      )
+    ),
+    intervalX(as = brush),  # Add the brush interactor
+    xDomain(Fixed),         # Keep x-axis fixed
+    width = 640,
+    height = 400
+  )
+)
+
+vgplot(spec)
+```
+
+Try clicking and dragging on the histogram to select a range!
+
+## Linked Views
+
+The real power comes from linking multiple views:
+
+```{r}
+# Create crossfilter selection
+brush <- Selection$crossfilter()
+
+# Helper function
+make_histogram <- function(column, title = column) {
+  plot(
+    rectY(
+      from("test_data", filterBy = brush),
+      list(
+        x = bin(column),
+        y = count(),
+        fill = "steelblue",
+        inset = 0.5
+      )
+    ),
+    intervalX(as = brush),
+    xDomain(Fixed),
+    width = 600,
+    height = 200
+  )
+}
+
+# Create data with multiple columns
+spec <- mosaic_spec(
+  list(
+    type = "exec",
+    sql = "CREATE TABLE IF NOT EXISTS test_data AS
+      SELECT
+        floor(random() * 100) as x_value,
+        floor(random() * 100) as y_value,
+        floor(random() * 50) as z_value
+      FROM range(1000)"
+  ),
+
+  # Stack plots vertically
+  vconcat(
+    make_histogram("x_value"),
+    make_histogram("y_value"),
+    make_histogram("z_value")
+  )
+)
+
+vgplot(spec)
+```
+
+Now try brushing on any histogram - the other two will update to show only the selected data!
+
+## Using Real Data from URLs
+
+One of the most powerful features is loading data directly from URLs:
+
+```{r}
+spec <- mosaic_spec(
+  list(
+    type = "exec",
+    sql = "CREATE TABLE IF NOT EXISTS gaia AS
+      SELECT * FROM 'https://uwdata.github.io/mosaic-datasets/data/gaia-mini.parquet'
+      LIMIT 10000"  -- Limit rows for faster demo
+  ),
+
+  plot(
+    rectY(
+      from("gaia"),
+      list(
+        x = bin("phot_g_mean_mag"),
+        y = count(),
+        fill = "steelblue"
+      )
+    ),
+    width = 640,
+    height = 400
+  )
+)
+
+vgplot(spec)
+```
+
+This loads star data from the Gaia spacecraft directly from a Parquet file hosted online!
+
+## Next Steps
+
+- Check out the [flights demo](flights-demo.qmd) for a more complex example
+- Read the [README](../README.md) for full API documentation
+- Explore [Mosaic examples](https://uwdata.github.io/mosaic/examples/) for inspiration
+- Learn [DuckDB SQL](https://duckdb.org/docs/sql/introduction) for data transformations
+
+## Tips
+
+1. **Data Loading**: Always create your tables with `CREATE TABLE IF NOT EXISTS` in the spec
+2. **Fixed Domains**: Use `xDomain(Fixed)` and `yDomain(Fixed)` to prevent axes from jumping during interaction
+3. **Crossfilter**: Use `Selection$crossfilter()` for most interactive use cases
+4. **Performance**: DuckDB can handle millions of rows, but start small while developing
+5. **File Formats**: Parquet is fastest; DuckDB can also read CSV, JSON, and more
+
+## Common Patterns
+
+### Pattern 1: Histogram with Brushing
+```{r eval=FALSE}
+brush <- Selection$crossfilter()
+
+mosaic_spec(
+  list(type = "exec", sql = "CREATE TABLE data AS ..."),
+  plot(
+    rectY(from("data", filterBy = brush), list(x = bin("column"), y = count())),
+    intervalX(as = brush),
+    xDomain(Fixed)
+  )
+)
+```
+
+### Pattern 2: Multiple Linked Charts
+```{r eval=FALSE}
+brush <- Selection$crossfilter()
+
+make_chart <- function(col) {
+  plot(
+    rectY(from("data", filterBy = brush), list(x = bin(col), y = count())),
+    intervalX(as = brush),
+    xDomain(Fixed)
+  )
+}
+
+mosaic_spec(
+  list(type = "exec", sql = "CREATE TABLE data AS ..."),
+  vconcat(make_chart("col1"), make_chart("col2"), make_chart("col3"))
+)
+```
+
+### Pattern 3: Load from URL
+```{r eval=FALSE}
+mosaic_spec(
+  list(
+    type = "exec",
+    sql = "CREATE TABLE data AS SELECT * FROM 'https://example.com/data.parquet'"
+  ),
+  plot(...)
+)
+```

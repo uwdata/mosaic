@@ -1,0 +1,238 @@
+---
+title: "Interactive Flight Data Visualization"
+subtitle: "Using vgplotr with DuckDB and Crossfilter"
+format:
+  html:
+    code-fold: false
+    toc: true
+---
+
+## Introduction
+
+This demo shows how to create interactive, linked histograms using the vgplotr package. The visualization loads 10 million flight records from a remote Parquet file and enables crossfilter brushing across three linked charts.
+
+This is a direct R translation of the [Mosaic flights example](https://uwdata.github.io/mosaic/examples/flights-10m.html).
+
+## Setup
+
+```{r}
+#| message: false
+library(vgplotr)
+```
+
+## Creating the Visualization
+
+### Step 1: Define the Selection
+
+We create a crossfilter selection that will link all three histograms:
+
+```{r}
+brush <- Selection$crossfilter()
+```
+
+### Step 2: Helper Function for Plots
+
+We define a helper function that creates a binned histogram filtered by the brush selection:
+
+```{r}
+make_plot <- function(column) {
+  plot(
+    # The histogram mark
+    rectY(
+      from("flights10m", filterBy = brush),
+      list(
+        x = bin(column),
+        y = count(),
+        fill = "steelblue",
+        inset = 0.5
+      )
+    ),
+    # The interactive brush
+    intervalX(as = brush),
+    # Keep x-axis fixed during updates
+    xDomain(Fixed),
+    marginLeft = 75,
+    width = 600,
+    height = 200
+  )
+}
+```
+
+### Step 3: Load Data and Create Dashboard
+
+Now we create the complete specification:
+
+1. Load the flight data from a remote Parquet file
+2. Create three linked histograms showing delay, time, and distance distributions
+
+```{r}
+#| label: flights-dashboard
+#| fig-height: 8
+
+spec <- mosaic_spec(
+  # Load the data using DuckDB SQL
+  list(
+    type = "exec",
+    sql = "CREATE TABLE IF NOT EXISTS flights10m AS
+      SELECT
+        GREATEST(-60, LEAST(ARR_DELAY, 180))::DOUBLE AS delay,
+        DISTANCE AS distance,
+        DEP_TIME AS time
+      FROM 'https://pub-1da360b43ceb401c809f68ca37c7f8a4.r2.dev/data/flights-10m.parquet'"
+  ),
+
+  # Create the linked visualization
+  vconcat(
+    make_plot("delay"),
+    make_plot("time"),
+    make_plot("distance")
+  )
+)
+
+vgplot(spec)
+```
+
+## How It Works
+
+### Interactive Crossfilter
+
+Try clicking and dragging in any of the three histograms:
+
+- **Single chart**: Brushing one chart filters the data shown in the other two
+- **Multiple brushes**: You can create separate brushes in each chart - they intersect (AND logic)
+- **Clear selection**: Double-click to clear a brush
+- **Dynamic updates**: All charts update reactively as you interact
+
+### DuckDB WASM
+
+The data processing happens entirely in your browser using DuckDB WASM:
+
+1. **Data Loading**: The 10M row Parquet file is loaded directly from a URL
+2. **SQL Transforms**: The `CREATE TABLE` statement processes and transforms the data
+3. **Query Execution**: As you brush, DuckDB executes aggregation queries
+4. **Performance**: DuckDB can efficiently aggregate millions of rows in milliseconds
+
+### Mosaic Coordinator
+
+The Mosaic coordinator manages:
+
+- **Selection State**: Tracks which intervals are selected in each chart
+- **Cross-filtering**: Coordinates filter predicates across all charts
+- **Reactive Updates**: Triggers re-queries when selections change
+- **Query Optimization**: Caches and optimizes queries for performance
+
+## Customization
+
+### Different Binning
+
+You can customize the bin size:
+
+```{r}
+#| eval: false
+
+plot(
+  rectY(
+    from("flights10m"),
+    list(x = bin("delay", step = 10), y = count())
+  )
+)
+```
+
+### Different Colors
+
+Use custom colors and styling:
+
+```{r}
+#| eval: false
+
+plot(
+  rectY(
+    from("flights10m"),
+    list(
+      x = bin("delay"),
+      y = count(),
+      fill = "#ff6b6b",  # Custom color
+      stroke = "#c92a2a",
+      inset = 1
+    )
+  )
+)
+```
+
+### Different Selection Types
+
+Try different selection types:
+
+```{r}
+#| eval: false
+
+# Single selection (radio button behavior)
+single <- Selection$single()
+
+# Union selection (additive brushing)
+union <- Selection$union()
+
+# Intersect selection (AND logic)
+intersect <- Selection$intersect()
+```
+
+## Data Sources
+
+vgplotr with DuckDB supports many data formats:
+
+### Parquet Files
+```{r}
+#| eval: false
+
+list(
+  type = "exec",
+  sql = "CREATE TABLE data AS
+    SELECT * FROM 'https://example.com/data.parquet'"
+)
+```
+
+### CSV Files
+```{r}
+#| eval: false
+
+list(
+  type = "exec",
+  sql = "CREATE TABLE data AS
+    SELECT * FROM 'https://example.com/data.csv'"
+)
+```
+
+### Multiple Files with Globs
+```{r}
+#| eval: false
+
+list(
+  type = "exec",
+  sql = "CREATE TABLE data AS
+    SELECT * FROM 'https://example.com/data/*.parquet'"
+)
+```
+
+### Direct URLs
+```{r}
+#| eval: false
+
+list(
+  type = "exec",
+  sql = "CREATE TABLE data AS
+    SELECT * FROM read_parquet('s3://bucket/data.parquet')"
+)
+```
+
+## Next Steps
+
+- Explore more [mark types](https://uwdata.github.io/mosaic/api/vgplot/marks.html)
+- Learn about [SQL data transformations](https://duckdb.org/docs/sql/introduction)
+- Check out more [Mosaic examples](https://uwdata.github.io/mosaic/examples/)
+- Read the [vgplotr documentation](../README.md)
+
+## Session Info
+
+```{r}
+sessionInfo()
+```

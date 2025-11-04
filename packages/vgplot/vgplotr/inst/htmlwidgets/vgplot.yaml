@@ -1,0 +1,6 @@
+dependencies:
+  - name: vgplot
+    version: 0.1.0
+    src: htmlwidgets
+    script: vgplot.js
+    all_files: true

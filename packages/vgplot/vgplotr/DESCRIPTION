@@ -1,0 +1,28 @@
+Package: vgplotr
+Type: Package
+Title: Interactive Visualizations with Mosaic and DuckDB
+Version: 0.1.0
+Authors@R: c(
+    person("UW Interactive Data Lab", role = c("aut", "cre"), email = "idl@cs.washington.edu")
+    )
+Description: Create interactive, database-driven visualizations using the Mosaic
+    framework. Provides an R interface to vgplot, a visualization grammar inspired
+    by ggplot2 and Vega-Lite, with full DuckDB integration for scalable data processing.
+    Works seamlessly in Quarto documents, RMarkdown, and Shiny applications.
+License: BSD_3_clause + file LICENSE
+Encoding: UTF-8
+LazyData: true
+Roxygen: list(markdown = TRUE)
+RoxygenNote: 7.2.0
+Imports:
+    htmlwidgets (>= 1.5.4),
+    jsonlite,
+    rlang
+Suggests:
+    duckdb,
+    knitr,
+    rmarkdown,
+    testthat (>= 3.0.0)
+VignetteBuilder: knitr
+URL: https://github.com/uwdata/mosaic
+BugReports: https://github.com/uwdata/mosaic/issues

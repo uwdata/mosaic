@@ -1,0 +1,21 @@
+{
+  "name": "vgplotr",
+  "version": "0.1.0",
+  "private": true,
+  "description": "R htmlwidget for Mosaic vgplot",
+  "type": "module",
+  "scripts": {
+    "clean": "rimraf inst/htmlwidgets/vgplot.js inst/htmlwidgets/lib",
+    "build": "node build.js",
+    "dev": "node build.js --watch"
+  },
+  "dependencies": {
+    "@duckdb/duckdb-wasm": "^1.30.0",
+    "@uwdata/mosaic-core": "^0.21.1",
+    "@uwdata/mosaic-spec": "^0.21.1",
+    "@uwdata/mosaic-sql": "^0.21.1"
+  },
+  "devDependencies": {
+    "esbuild": "^0.25.11"
+  }
+}
