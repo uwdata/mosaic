@@ -1,7 +1,3 @@
-/**
- * @typedef {import('./spec/Spec.js').Spec} Spec A Mosaic declarative specification.
- */
-
 export { astToDOM, InstantiateContext } from "./ast-to-dom.js";
 export { astToESM, CodegenContext } from "./ast-to-esm.js";
 export { parseSpec } from "./parse-spec.js";
