@@ -24,7 +24,7 @@
     "uuid": "^13.0.0"
   },
   "devDependencies": {
-    "anywidget": "0.9.18",
-    "esbuild": "^0.25.11"
+    "anywidget": "0.9.21",
+    "esbuild": "^0.27.0"
   }
 }
