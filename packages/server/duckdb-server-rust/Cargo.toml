@@ -35,7 +35,7 @@ tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 
 [dev-dependencies]
-criterion = {version = "0.7", features=["async_futures", "html_reports"]}
+criterion = {version = "0.8", features=["async_futures", "html_reports"]}
 http-body-util = "0.1"
 tower = { version = "0.5", features = ["util"] }
 
