@@ -5,6 +5,7 @@ import { lruCache, voidCache } from './util/cache.js';
 import { PriorityQueue } from './util/priority-queue.js';
 import { QueryResult, QueryState } from './util/query-result.js';
 import { voidLogger } from './util/void-logger.js';
+import { createEventClients } from "./devtools.js"
 
 export const Priority = Object.freeze({ High: 0, Normal: 1, Low: 2 });
 
@@ -19,6 +20,7 @@ export class QueryManager {
   public pendingResults: QueryResult[];
   private maxConcurrentRequests: number;
   private pendingExec: boolean;
+  private queryEventClient;
 
   constructor(maxConcurrentRequests: number = 32) {
     this.queue = new PriorityQueue(3);
@@ -30,6 +32,9 @@ export class QueryManager {
     this.pendingResults = [];
     this.maxConcurrentRequests = maxConcurrentRequests;
     this.pendingExec = false;
+
+    const { queryEventClient } = createEventClients()
+    this.queryEventClient = queryEventClient
   }
 
   next(): void {
@@ -97,6 +102,14 @@ export class QueryManager {
         this._logger.debug('Query', { type, sql, ...options });
       }
 
+      // Emit 'queries:start' event
+      this.queryEventClient.emit('start', {
+        query: sql!,
+        materialized: true,
+        clientId: '1',
+        timestamp: Date.now(),
+      });
+
       // @ts-expect-error type may be exec | json | arrow
       const promise = this.db!.query({ type, sql: sql!, ...options });
       if (cache) this.clientCache!.set(sql!, promise);
@@ -104,6 +117,50 @@ export class QueryManager {
       const data = await promise;
 
       if (cache) this.clientCache!.set(sql!, data);
+
+      // Emit 'queries:end' event
+      let numRows = 0;
+      let numBytes = 0;
+      let exemplarRows: Record<string, unknown>[] = [];
+      if (type !== 'exec' && data !== null) {
+        if (Array.isArray(data)) {
+          numRows = data.length;
+          exemplarRows = data.slice(0, 10);
+          try {
+            numBytes = JSON.stringify(data).length;
+          } catch {
+            numBytes = 0;
+          }
+        } else if (typeof data === 'object' && data !== null) {
+          // Try to extract rows from known result shapes
+          if ('rows' in data && Array.isArray(data.rows)) {
+            numRows = data.rows.length;
+            exemplarRows = data.rows.slice(0, 10);
+            try {
+              numBytes = JSON.stringify(data.rows).length;
+            } catch {
+              numBytes = 0;
+            }
+          } else {
+            try {
+              numBytes = JSON.stringify(data).length;
+            } catch {
+              numBytes = 0;
+            }
+          }
+        }
+      }
+
+      this.queryEventClient.emit('end', {
+        query: sql!,
+        materialized: true,
+        clientId: '1',
+        latencyMs: performance.now() - t0,
+        numRows,
+        numBytes,
+        exemplarRows,
+        timestamp: Date.now(),
+      });
 
       this._logger.debug(`Request: ${(performance.now() - t0).toFixed(1)}`);
       result.ready(type === 'exec' ? null : data);

@@ -1,8 +1,10 @@
-import { DuckDBWASMConnector, RestConnector, SocketConnector } from '@uwdata/mosaic-core';
+import { DuckDBWASMConnector, RestConnector, SocketConnector, initializeDevtools } from '@uwdata/mosaic-core';
 import { createAPIContext } from '@uwdata/vgplot';
 
 export { parseSpec, astToDOM, astToESM } from '@uwdata/mosaic-spec';
 export const vg = createAPIContext();
+
+initializeDevtools(document)
 
 // make API accessible for console debugging
 Object.assign(self, { vg });

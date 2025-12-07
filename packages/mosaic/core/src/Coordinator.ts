@@ -11,6 +11,7 @@ import { type MosaicClient } from './MosaicClient.js';
 import { type SelectionClause } from './SelectionClause.js';
 import { MaybeArray } from '@uwdata/mosaic-sql';
 import { Table } from '@uwdata/flechette';
+import { createEventClients } from './devtools.js';
 
 interface FilterGroupEntry {
   selection: Selection;
@@ -50,6 +51,7 @@ export class Coordinator {
   public clients = new Set<MosaicClient>;
   public filterGroups = new Map<Selection, FilterGroupEntry>;
   protected _logger: Logger = voidLogger();
+  private clientEventClient;
 
   /**
    * @param db Database connector. Defaults to a web socket connection.
@@ -84,6 +86,9 @@ export class Coordinator {
     this.logger(logger);
     this.clear();
     this.preaggregator = new PreAggregator(this, preagg);
+
+    const { clientEventClient } = createEventClients()
+    this.clientEventClient = clientEventClient
   }
 
   /**
@@ -291,6 +296,23 @@ export class Coordinator {
 
     // connect filter selection
     connectSelection(this, client.filterBy!, client);
+
+    this.clientEventClient.emit("state", {
+      clients: Array.from(this.clients).map((client) => ({
+        clientId: client.id, // Not sure why isn't a part of the type here
+        connected: true,
+        // lastQuery: client.lastQuery ?? client._lastQuery,
+        // lastLatencyMs: client.lastLatencyMs ?? client.latencyMs,
+        // lastNumRows: client.lastNumRows,
+        // lastNumBytes: client.lastNumBytes,
+        // lastExemplarRows: client.lastExemplarRows
+      })),
+      coordinatorState: {
+        numFilterGroups: this.filterGroups?.size ?? 0
+      },
+      numConnectedClients: this.clients?.size ?? 0,
+      timestamp: Date.now()
+    })
   }
 
   /**
