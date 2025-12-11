@@ -1,5 +1,5 @@
 use anyhow::Result;
-use axum_server::tls_rustls::RustlsConfig;
+use axum_server_dual_protocol::axum_server::tls_rustls::RustlsConfig;
 use clap::Parser;
 use listenfd::ListenFd;
 use std::net::TcpListener;
