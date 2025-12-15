@@ -131,22 +131,24 @@ export class QueryManager {
           } catch {
             numBytes = 0;
           }
+        } else if (
+          typeof data === 'object' &&
+          data !== null &&
+          Array.isArray((data as { rows?: unknown[] }).rows)
+        ) {
+          const rows = (data as { rows: Record<string, unknown>[] }).rows;
+          numRows = rows.length;
+          exemplarRows = rows.slice(0, 10);
+          try {
+            numBytes = JSON.stringify(rows).length;
+          } catch {
+            numBytes = 0;
+          }
         } else if (typeof data === 'object' && data !== null) {
-          // Try to extract rows from known result shapes
-          if ('rows' in data && Array.isArray(data.rows)) {
-            numRows = data.rows.length;
-            exemplarRows = data.rows.slice(0, 10);
-            try {
-              numBytes = JSON.stringify(data.rows).length;
-            } catch {
-              numBytes = 0;
-            }
-          } else {
-            try {
-              numBytes = JSON.stringify(data).length;
-            } catch {
-              numBytes = 0;
-            }
+          try {
+            numBytes = JSON.stringify(data).length;
+          } catch {
+            numBytes = 0;
           }
         }
       }

@@ -302,11 +302,11 @@ export class Coordinator {
         // @ts-expect-error - client id exists, just is not typed here
         clientId: client.id, // Not sure why isn't a part of the type here
         connected: true,
-        lastQuery: client.lastQuery ?? client._lastQuery,
-        lastLatencyMs: client.lastLatencyMs ?? client.latencyMs,
-        lastNumRows: client.lastNumRows,
-        lastNumBytes: client.lastNumBytes,
-        lastExemplarRows: client.lastExemplarRows
+        // lastQuery: client.lastQuery ?? client._lastQuery, 
+        // lastLatencyMs: client.lastLatencyMs ?? client.latencyMs,
+        // lastNumRows: client.lastNumRows,
+        // lastNumBytes: client.lastNumBytes,
+        // lastExemplarRows: client.lastExemplarRows
       })),
       coordinatorState: {
         numFilterGroups: this.filterGroups?.size ?? 0
