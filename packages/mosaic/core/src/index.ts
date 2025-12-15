@@ -1,7 +1,7 @@
 export { MosaicClient } from './MosaicClient.js';
 export { makeClient } from './make-client.js';
 export { Coordinator, coordinator } from './Coordinator.js';
-export { initializeDevtools, createEventClients } from './devtools.js';
+export { queryEvents, clientEvents } from './events.js';
 export { Selection, isSelection } from './Selection.js';
 export { Param, isParam } from './Param.js';
 export { Priority } from './QueryManager.js';

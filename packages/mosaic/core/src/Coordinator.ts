@@ -11,7 +11,7 @@ import { type MosaicClient } from './MosaicClient.js';
 import { type SelectionClause } from './SelectionClause.js';
 import { MaybeArray } from '@uwdata/mosaic-sql';
 import { Table } from '@uwdata/flechette';
-import { createEventClients } from './devtools.js';
+import { clientEvents } from './events.js';
 
 interface FilterGroupEntry {
   selection: Selection;
@@ -29,9 +29,7 @@ let _instance: Coordinator;
  * @param instance The coordinator instance to set
  * @returns The coordinator instance
  */
-export function coordinator(
-  instance?: Coordinator
-): Coordinator {
+export function coordinator(instance?: Coordinator): Coordinator {
   if (instance) {
     _instance = instance;
   } else if (_instance == null) {
@@ -48,10 +46,9 @@ export function coordinator(
 export class Coordinator {
   public manager: QueryManager;
   public preaggregator: PreAggregator;
-  public clients = new Set<MosaicClient>;
-  public filterGroups = new Map<Selection, FilterGroupEntry>;
+  public clients = new Set<MosaicClient>();
+  public filterGroups = new Map<Selection, FilterGroupEntry>();
   protected _logger: Logger = voidLogger();
-  private clientEventClient;
 
   /**
    * @param db Database connector. Defaults to a web socket connection.
@@ -86,9 +83,6 @@ export class Coordinator {
     this.logger(logger);
     this.clear();
     this.preaggregator = new PreAggregator(this, preagg);
-
-    const { clientEventClient } = createEventClients()
-    this.clientEventClient = clientEventClient
   }
 
   /**
@@ -297,12 +291,12 @@ export class Coordinator {
     // connect filter selection
     connectSelection(this, client.filterBy!, client);
 
-    this.clientEventClient.emit("state", {
+    clientEvents.emit('state', {
       clients: Array.from(this.clients).map((client) => ({
         // @ts-expect-error - client id exists, just is not typed here
         clientId: client.id, // Not sure why isn't a part of the type here
-        connected: true,
-        // lastQuery: client.lastQuery ?? client._lastQuery, 
+        connected: true
+        // lastQuery: client.lastQuery ?? client._lastQuery,
         // lastLatencyMs: client.lastLatencyMs ?? client.latencyMs,
         // lastNumRows: client.lastNumRows,
         // lastNumBytes: client.lastNumBytes,
@@ -313,7 +307,7 @@ export class Coordinator {
       },
       numConnectedClients: this.clients?.size ?? 0,
       timestamp: Date.now()
-    })
+    });
   }
 
   /**

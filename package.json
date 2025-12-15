@@ -50,7 +50,8 @@
     "packages/mosaic/*",
     "packages/server/*",
     "packages/vgplot/*",
-    "packages/examples/*"
+    "packages/examples/*",
+    "packages/devtools"
   ],
   "dependencies": {
     "@tanstack/devtools": "^0.8.2"

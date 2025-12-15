@@ -1,13 +1,12 @@
 {
-  "name": "@uwdata/mosaic-core",
+  "name": "@uwdata/mosaic-devtools",
   "version": "0.21.1",
-  "description": "Scalable and extensible linked data views.",
+  "description": "Devtools for Mosaic - debugging and monitoring tools.",
   "keywords": [
     "mosaic",
-    "query",
-    "duckdb",
-    "data",
-    "interface"
+    "devtools",
+    "debugging",
+    "monitoring"
   ],
   "license": "BSD-3-Clause",
   "author": "Jeffrey Heer (https://idl.uw.edu)",
@@ -27,17 +26,12 @@
   },
   "scripts": {
     "clean": "rimraf dist && mkdir dist",
-    "lint": "eslint src test",
-    "test": "vitest run",
-    "prepublishOnly": "npm run test && npm run lint && tsc --build"
+    "lint": "eslint src",
+    "prepublishOnly": "npm run lint && tsc --build"
   },
   "dependencies": {
-    "@duckdb/duckdb-wasm": "1.30.0",
-    "@uwdata/flechette": "^2.2.6",
-    "@uwdata/mosaic-sql": "^0.21.1"
-  },
-  "devDependencies": {
-    "@tanstack/devtools-vite": "^0.3.11",
-    "@uwdata/mosaic-duckdb": "^0.21.1"
+    "@tanstack/devtools": "^0.8.2",
+    "@uwdata/mosaic-core": "^0.21.1"
   }
 }
+

@@ -5,7 +5,7 @@ import { lruCache, voidCache } from './util/cache.js';
 import { PriorityQueue } from './util/priority-queue.js';
 import { QueryResult, QueryState } from './util/query-result.js';
 import { voidLogger } from './util/void-logger.js';
-import { createEventClients } from "./devtools.js"
+import { queryEvents } from './events.js';
 
 export const Priority = Object.freeze({ High: 0, Normal: 1, Low: 2 });
 
@@ -20,7 +20,6 @@ export class QueryManager {
   public pendingResults: QueryResult[];
   private maxConcurrentRequests: number;
   private pendingExec: boolean;
-  private queryEventClient;
 
   constructor(maxConcurrentRequests: number = 32) {
     this.queue = new PriorityQueue(3);
@@ -32,9 +31,6 @@ export class QueryManager {
     this.pendingResults = [];
     this.maxConcurrentRequests = maxConcurrentRequests;
     this.pendingExec = false;
-
-    const { queryEventClient } = createEventClients()
-    this.queryEventClient = queryEventClient
   }
 
   next(): void {
@@ -102,12 +98,12 @@ export class QueryManager {
         this._logger.debug('Query', { type, sql, ...options });
       }
 
-      // Emit 'queries:start' event
-      this.queryEventClient.emit('start', {
+      // Emit 'start' event
+      queryEvents.emit('start', {
         query: sql!,
         materialized: true,
         clientId: '1',
-        timestamp: Date.now(),
+        timestamp: Date.now()
       });
 
       // @ts-expect-error type may be exec | json | arrow
@@ -153,7 +149,7 @@ export class QueryManager {
         }
       }
 
-      this.queryEventClient.emit('end', {
+      queryEvents.emit('end', {
         query: sql!,
         materialized: true,
         clientId: '1',
@@ -161,7 +157,7 @@ export class QueryManager {
         numRows,
         numBytes,
         exemplarRows,
-        timestamp: Date.now(),
+        timestamp: Date.now()
       });
 
       this._logger.debug(`Request: ${(performance.now() - t0).toFixed(1)}`);

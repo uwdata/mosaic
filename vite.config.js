@@ -15,6 +15,7 @@ export default {
       '@uwdata/mosaic-spec': path.resolve(__dirname, './packages/vgplot/spec/src/index.ts'),
       '@uwdata/mosaic-inputs': path.resolve(__dirname, './packages/vgplot/inputs/src/index.js'),
       '@uwdata/mosaic-plot': path.resolve(__dirname, './packages/vgplot/plot/src/index.js'),
+      '@uwdata/mosaic-devtools': path.resolve(__dirname, './packages/devtools/src/index.js'),
       '@tanstack/devtools': path.resolve(__dirname, './node_modules/@tanstack/devtools/dist/index.js'),
     }
   },

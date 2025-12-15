@@ -1,10 +1,15 @@
-import { DuckDBWASMConnector, RestConnector, SocketConnector, initializeDevtools } from '@uwdata/mosaic-core';
+import {
+  DuckDBWASMConnector,
+  RestConnector,
+  SocketConnector
+} from '@uwdata/mosaic-core';
+import { initializeDevtools } from '@uwdata/mosaic-devtools';
 import { createAPIContext } from '@uwdata/vgplot';
 
 export { parseSpec, astToDOM, astToESM } from '@uwdata/mosaic-spec';
 export const vg = createAPIContext();
 
-initializeDevtools(document)
+initializeDevtools(document);
 
 // make API accessible for console debugging
 Object.assign(self, { vg });
@@ -42,9 +47,11 @@ export async function setDatabaseConnector(type) {
       connector = new RestConnector({ uri: 'https://localhost:3000/' });
       break;
     case 'wasm':
-      connector = wasm || (wasm = new DuckDBWASMConnector({
-        config: { filesystem: { forceFullHTTPReads: true } }
-      }));
+      connector =
+        wasm ||
+        (wasm = new DuckDBWASMConnector({
+          config: { filesystem: { forceFullHTTPReads: true } }
+        }));
       break;
     default:
       throw new Error(`Unrecognized connector type: ${type}`);
