@@ -62,7 +62,7 @@ jobs:
           cd packages/server/duckdb-server
 
           uv build
-          uv run --group dev mypy
+          uv run --group dev ty check
           uv run --group dev pytest --cov-report=term-missing --color=yes --cov=pkg
       
       - name: Build and test widget
@@ -74,7 +74,7 @@ jobs:
           mkdir -p mosaic_widget/static && touch mosaic_widget/static/index.js mosaic_widget/static/index.css
 
           uv build
-          uv run --group dev mypy
+          uv run --group test ty check
           uv run --group test pytest --cov-report=term-missing --color=yes --cov=mosaic_widget
 
   rust:

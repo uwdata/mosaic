@@ -27,10 +27,10 @@ artifacts = [
 [dependency-groups]
 dev = [
   "jupyterlab",
-  "mypy",
   "pandas",
   "pyyaml",
   "ruff",
+  "ty",
   "watchfiles",
 ]
 test = [
@@ -46,9 +46,3 @@ test = [
 [tool.hatch.version]
 path = "package.json"
 pattern = "\"version\": \"(?P<version>.+?)\""
-
-# https://mypy.readthedocs.io/en/stable/config_file.html
-[tool.mypy]
-files = "mosaic_widget/**/*.py"
-strict = false
-ignore_missing_imports = true

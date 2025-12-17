@@ -2,8 +2,7 @@ import logging
 from hashlib import sha256
 import duckdb
 
-import pyarrow
-import pyarrow.lib
+import pyarrow as pa
 
 logger = logging.getLogger(__name__)
 
@@ -28,15 +27,13 @@ def retrieve(cache, query, get):
     return result
 
 
-def get_arrow(
-    con: duckdb.DuckDBPyConnection, sql: str
-) -> pyarrow.lib.RecordBatchReader:
+def get_arrow(con: duckdb.DuckDBPyConnection, sql: str) -> pa.RecordBatchReader:
     return con.query(sql).arrow()
 
 
-def arrow_to_bytes(reader: pyarrow.lib.RecordBatchReader):
-    sink = pyarrow.BufferOutputStream()
-    with pyarrow.ipc.new_stream(sink, reader.schema) as writer:
+def arrow_to_bytes(reader: pa.RecordBatchReader):
+    sink = pa.BufferOutputStream()
+    with pa.ipc.new_stream(sink, reader.schema) as writer:
         for batch in reader:
             writer.write(batch)
     return sink.getvalue().to_pybytes()

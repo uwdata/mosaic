@@ -18,13 +18,13 @@ class Handler:
     def done(self):
         raise Exception("NotImplementedException")
 
-    def arrow(self, _buffer):
+    def arrow(self, buffer):
         raise Exception("NotImplementedException")
 
-    def json(self, _data):
+    def json(self, data):
         raise Exception("NotImplementedException")
 
-    def error(self, _error):
+    def error(self, error):
         raise Exception("NotImplementedException")
 
 
