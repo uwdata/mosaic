@@ -68,13 +68,13 @@ class MosaicWidget(anywidget.AnyWidget):
             self.con.register(name, frame_to_duckdb_registrable(df))
         self.on_msg(self._handle_custom_msg)
 
-    def _handle_custom_msg(self, data: dict, buffers: list):
-        logger.debug(f"{data=}, {buffers=}")
+    def _handle_custom_msg(self, content: dict, buffers: list) -> None:
+        logger.debug(f"{content=}, {buffers=}")
         start = time.time()
 
-        uuid = data["uuid"]
-        sql = data["sql"]
-        command = data["type"]
+        uuid = content["uuid"]
+        sql = content["sql"]
+        command = content["type"]
 
         try:
             if command == "arrow":
