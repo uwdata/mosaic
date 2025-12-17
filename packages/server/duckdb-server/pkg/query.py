@@ -27,9 +27,7 @@ def retrieve(cache, query, get):
     return result
 
 
-def get_arrow(
-    con: duckdb.DuckDBPyConnection, sql: str
-) -> pa.RecordBatchReader:
+def get_arrow(con: duckdb.DuckDBPyConnection, sql: str) -> pa.RecordBatchReader:
     return con.query(sql).arrow()
 
 
