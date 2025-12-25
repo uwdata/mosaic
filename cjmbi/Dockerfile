@@ -3,6 +3,12 @@ FROM node:20-alpine AS builder
 
 WORKDIR /app
 
+# Build argument for Mosaic server URL
+ARG VITE_MOSAIC_SERVER_URL=http://localhost:3001
+
+# Set environment variable for build
+ENV VITE_MOSAIC_SERVER_URL=$VITE_MOSAIC_SERVER_URL
+
 # Copy package files
 COPY package.json package-lock.json ./
 

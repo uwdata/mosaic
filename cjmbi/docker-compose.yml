@@ -1,14 +1,44 @@
 version: '3.8'
 
 services:
+  # Mosaic DuckDB Server - backend for data processing
+  mosaic-server:
+    build:
+      context: ..
+      dockerfile: cjmbi/docker/Dockerfile.mosaic-server
+    container_name: mosaic-server
+    ports:
+      - "3001:3000"
+    volumes:
+      - mosaic-data:/data
+    environment:
+      - MOSAIC_DATA_DIR=/data
+    restart: unless-stopped
+    networks:
+      - mosaic-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+  # CJMBI Frontend - visual dashboard builder
   cjmbi:
     build:
       context: .
       dockerfile: Dockerfile
+      args:
+        - VITE_MOSAIC_SERVER_URL=http://mosaic-server:3000
     container_name: cjmbi
     ports:
       - "3000:80"
+    depends_on:
+      mosaic-server:
+        condition: service_healthy
     restart: unless-stopped
+    networks:
+      - mosaic-network
     healthcheck:
       test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost/health"]
       interval: 30s
@@ -26,6 +56,19 @@ services:
       - /app/node_modules
     ports:
       - "5173:5173"
+    environment:
+      - VITE_MOSAIC_SERVER_URL=http://mosaic-server:3000
     command: sh -c "npm install && npm run dev -- --host 0.0.0.0"
+    depends_on:
+      - mosaic-server
+    networks:
+      - mosaic-network
     profiles:
       - dev
+
+networks:
+  mosaic-network:
+    driver: bridge
+
+volumes:
+  mosaic-data:
