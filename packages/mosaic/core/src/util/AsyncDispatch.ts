@@ -86,10 +86,7 @@ export abstract class Dispatch<T> {
    * Cancel all un-emitted event values for the given event type.
    * @param _type The event type.
    */
-  cancel(_type: string): void {
-    // eslint-disable-line @typescript-eslint/no-unused-vars
-    // Default implementation - subclasses can override if needed
-  }
+  cancel(_type: string): void {}
 
   /**
    * Emit an event value to listeners for the given event type.
