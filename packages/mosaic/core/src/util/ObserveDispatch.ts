@@ -16,7 +16,7 @@ export class ObserveDispatch<T> extends Dispatch<T> {
    * @param callback The event handler callback function to add.
    * @returns This ObserveDispatch instance for method chaining.
    */
-  subscribe(type: string, callback: EventCallback<T>): this {
+  observe(type: string, callback: EventCallback<T>): this {
     this.addEventListener(type, callback);
     return this;
   }
@@ -28,7 +28,7 @@ export class ObserveDispatch<T> extends Dispatch<T> {
    * @param callback The event handler callback function to remove.
    * @returns This ObserveDispatch instance for method chaining.
    */
-  unsubscribe(type: string, callback: EventCallback<T>): this {
+  unobserve(type: string, callback: EventCallback<T>): this {
     this.removeEventListener(type, callback);
     return this;
   }
