@@ -5,6 +5,7 @@ import { lruCache, voidCache } from './util/cache.js';
 import { PriorityQueue } from './util/priority-queue.js';
 import { QueryResult, QueryState } from './util/query-result.js';
 import { voidLogger } from './util/void-logger.js';
+import { EventBus, EventType } from './EventBus.js';
 
 export const Priority = Object.freeze({ High: 0, Normal: 1, Low: 2 });
 
@@ -13,23 +14,23 @@ export class QueryManager {
   private db: Connector | null;
   private clientCache: Cache | null;
   private _logger: Logger;
-  private _logQueries: boolean;
   private _consolidate: ReturnType<typeof consolidator> | null;
   /** Requests pending with the query manager. */
   public pendingResults: QueryResult[];
   private maxConcurrentRequests: number;
   private pendingExec: boolean;
+  public eventBus?: EventBus;
 
-  constructor(maxConcurrentRequests: number = 32) {
+  constructor(maxConcurrentRequests: number = 32, eventBus?: EventBus) {
     this.queue = new PriorityQueue(3);
     this.db = null;
     this.clientCache = null;
     this._logger = voidLogger();
-    this._logQueries = false;
     this._consolidate = null;
     this.pendingResults = [];
     this.maxConcurrentRequests = maxConcurrentRequests;
     this.pendingExec = false;
+    this.eventBus = eventBus;
   }
 
   next(): void {
@@ -77,8 +78,19 @@ export class QueryManager {
    */
   async submit(request: QueryRequest, result: QueryResult): Promise<void> {
     try {
-      const { query, type, cache = false, options } = request;
+      const { query, type, cache = false, options, clientId } = request;
       const sql = query ? `${query}` : null;
+
+      // emit QueryStart
+      // this `if` check is our version of the `logQueries` flag
+      if (this.eventBus) {
+        this.eventBus.emit(EventType.QueryStart, {
+          query: sql || '',
+          materialized: cache,
+          clientId,
+          timestamp: Date.now()
+        });
+      }
 
       // check query cache
       if (cache) {
@@ -87,13 +99,22 @@ export class QueryManager {
           const data = await cached;
           this._logger.debug('Cache');
           result.ready(data);
+          // emit QueryEnd for cached
+          if (this.eventBus) {
+            this.eventBus.emit(EventType.QueryEnd, {
+              query: sql || '',
+              materialized: cache,
+              clientId,
+              timestamp: Date.now()
+            });
+          }
           return;
         }
       }
 
       // issue query, potentially cache result
       const t0 = performance.now();
-      if (this._logQueries) {
+      if (this.eventBus) {
         this._logger.debug('Query', { type, sql, ...options });
       }
 
@@ -107,7 +128,22 @@ export class QueryManager {
 
       this._logger.debug(`Request: ${(performance.now() - t0).toFixed(1)}`);
       result.ready(type === 'exec' ? null : data);
+
+      if (this.eventBus) {
+        this.eventBus.emit(EventType.QueryEnd, {
+          query: sql || '',
+          materialized: cache,
+          clientId,
+          timestamp: Date.now()
+        });
+      }
     } catch (err) {
+      if (this.eventBus) {
+        this.eventBus.emit(EventType.Error, {
+          message: err,
+          timestamp: Date.now()
+        });
+      }
       result.reject(err);
     }
   }
@@ -134,17 +170,6 @@ export class QueryManager {
   logger(value: Logger): Logger;
   logger(value?: Logger): Logger {
     return value ? (this._logger = value) : this._logger;
-  }
-
-  /**
-   * Get or set if queries should be logged.
-   * @param value Whether to log queries
-   * @returns Current logging state
-   */
-  logQueries(): boolean;
-  logQueries(value: boolean): boolean;
-  logQueries(value?: boolean): boolean {
-    return value !== undefined ? this._logQueries = !!value : this._logQueries;
   }
 
   /**
