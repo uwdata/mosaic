@@ -1,0 +1,119 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --header-height: 48px;
+  --panel-width: 280px;
+  --bottom-panel-height: 200px;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html, body, #root {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: 'Inter', system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #d4d4d8;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #a1a1aa;
+}
+
+/* Panel styles */
+@layer components {
+  .panel {
+    @apply bg-white border-surface-200;
+  }
+
+  .panel-header {
+    @apply px-3 py-2 border-b border-surface-200 font-medium text-sm text-surface-700;
+  }
+
+  .panel-content {
+    @apply p-3;
+  }
+
+  .btn {
+    @apply px-3 py-1.5 rounded-md text-sm font-medium transition-colors duration-150;
+  }
+
+  .btn-primary {
+    @apply bg-mosaic-500 text-white hover:bg-mosaic-600 active:bg-mosaic-700;
+  }
+
+  .btn-secondary {
+    @apply bg-surface-100 text-surface-700 hover:bg-surface-200 active:bg-surface-300;
+  }
+
+  .btn-ghost {
+    @apply text-surface-600 hover:bg-surface-100 active:bg-surface-200;
+  }
+
+  .input {
+    @apply w-full px-3 py-1.5 text-sm border border-surface-300 rounded-md 
+           focus:outline-none focus:ring-2 focus:ring-mosaic-500 focus:border-transparent
+           placeholder:text-surface-400;
+  }
+
+  .select {
+    @apply w-full px-3 py-1.5 text-sm border border-surface-300 rounded-md 
+           focus:outline-none focus:ring-2 focus:ring-mosaic-500 focus:border-transparent
+           bg-white cursor-pointer;
+  }
+
+  .label {
+    @apply block text-xs font-medium text-surface-600 mb-1;
+  }
+
+  .widget-card {
+    @apply bg-white rounded-lg border border-surface-200 shadow-sm 
+           hover:shadow-md hover:border-mosaic-300 transition-all duration-150 cursor-pointer;
+  }
+
+  .widget-card-selected {
+    @apply ring-2 ring-mosaic-500 border-mosaic-500;
+  }
+}
+
+/* Grid overlay for canvas */
+.grid-overlay {
+  background-image: 
+    linear-gradient(to right, #e4e4e7 1px, transparent 1px),
+    linear-gradient(to bottom, #e4e4e7 1px, transparent 1px);
+  background-size: 40px 40px;
+}
+
+/* Drag and drop styles */
+.dragging {
+  opacity: 0.5;
+}
+
+.drop-target {
+  @apply ring-2 ring-mosaic-400;
+  outline: 2px dashed #38bdf8;
+  outline-offset: 2px;
+}
