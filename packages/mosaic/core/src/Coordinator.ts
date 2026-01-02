@@ -11,6 +11,7 @@ import { type MosaicClient } from './MosaicClient.js';
 import { type SelectionClause } from './SelectionClause.js';
 import { MaybeArray } from '@uwdata/mosaic-sql';
 import { Table } from '@uwdata/flechette';
+import { EventBus, EventType } from './EventBus.js';
 
 interface FilterGroupEntry {
   selection: Selection;
@@ -50,6 +51,7 @@ export class Coordinator {
   public clients = new Set<MosaicClient>;
   public filterGroups = new Map<Selection, FilterGroupEntry>;
   protected _logger: Logger = voidLogger();
+  public eventBus: EventBus;
 
   /**
    * @param db Database connector. Defaults to a web socket connection.
@@ -77,7 +79,9 @@ export class Coordinator {
       consolidate = true,
       preagg = {}
     } = options;
+    this.eventBus = new EventBus();
     this.manager = manager;
+    this.manager.eventBus = this.eventBus;
     this.manager.cache(cache);
     this.manager.consolidate(consolidate);
     this.databaseConnector(db);
@@ -126,6 +130,11 @@ export class Coordinator {
     if (arguments.length) {
       this._logger = logger || voidLogger();
       this.manager.logger(this._logger);
+      // subscribe logger to events
+      this.eventBus.observe(EventType.QueryStart, (event) => this._logger.info('Query started:', event));
+      this.eventBus.observe(EventType.QueryEnd, (event) => this._logger.info('Query ended:', event));
+      this.eventBus.observe(EventType.ClientConnect, (event) => this._logger.info('Client connected:', event));
+      this.eventBus.observe(EventType.Error, (event) => this._logger.error('Error:', event.message));
     }
     return this._logger!;
   }
@@ -195,6 +204,7 @@ export class Coordinator {
       cache?: boolean;
       persist?: boolean;
       priority?: number;
+      clientId?: string;
       [key: string]: unknown;
     } = {}
   ): QueryResult<any> {
@@ -202,9 +212,10 @@ export class Coordinator {
       type = 'arrow',
       cache = true,
       priority = Priority.Normal,
+      clientId,
       ...otherOptions
     } = options;
-    return this.manager.request({ type, query, cache, options: otherOptions }, priority);
+    return this.manager.request({ type, query, cache, options: otherOptions, clientId }, priority);
   }
 
   /**
@@ -246,12 +257,12 @@ export class Coordinator {
     priority: number = Priority.Normal
   ): Promise<unknown> {
     client.queryPending();
-    return client._pending = this.query(query, { priority })
+    return client._pending = this.query(query, { priority, clientId: (client as any).id })
       .then(
         data => client.queryResult(data).update(),
-        err => { this._logger?.error(err); client.queryError(err); }
+        err => { this.eventBus.emit(EventType.Error, { message: err, timestamp: Date.now() }); client.queryError(err); }
       )
-      .catch(err => this._logger?.error(err));
+      .catch(err => { this.eventBus.emit(EventType.Error, { message: err, timestamp: Date.now() }); });
   }
 
   /**
@@ -279,6 +290,17 @@ export class Coordinator {
     if (clients?.has(client)) {
       throw new Error('Client already connected.');
     }
+
+    // assign client id if not present
+    if (!(client as any).id) {
+      (client as any).id = `client-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    }
+
+    // emit ClientConnect
+    this.eventBus.emit(EventType.ClientConnect, {
+      clientId: (client as any).id,
+      timestamp: Date.now()
+    });
 
     // add client to client set
     clients?.add(client);
