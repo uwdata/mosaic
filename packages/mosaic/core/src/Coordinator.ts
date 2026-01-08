@@ -205,7 +205,6 @@ export class Coordinator {
       cache?: boolean;
       persist?: boolean;
       priority?: number;
-      clientId?: string;
       [key: string]: unknown;
     } = {}
   ): QueryResult<any> {
@@ -213,10 +212,9 @@ export class Coordinator {
       type = 'arrow',
       cache = true,
       priority = Priority.Normal,
-      clientId,
       ...otherOptions
     } = options;
-    return this.manager.request({ type, query, cache, options: otherOptions, clientId }, priority);
+    return this.manager.request({ type, query, cache, options: otherOptions }, priority);
   }
 
   /**
@@ -258,7 +256,7 @@ export class Coordinator {
     priority: number = Priority.Normal
   ): Promise<unknown> {
     client.queryPending();
-    return client._pending = this.query(query, { priority, clientId: (client as any).id })
+    return client._pending = this.query(query, { priority })
       .then(
         data => client.queryResult(data).update(),
         err => { this.eventBus.emit(EventType.Error, { message: err }); client.queryError(err); }
@@ -292,14 +290,9 @@ export class Coordinator {
       throw new Error('Client already connected.');
     }
 
-    // assign client id if not present
-    if (!(client as any).id) {
-      (client as any).id = `client-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-    }
-
     // emit ClientConnect
     this.eventBus.emit(EventType.ClientConnect, {
-      clientId: (client as any).id
+      // additional arguments for later -- for comprehensive client data
     });
 
     // add client to client set

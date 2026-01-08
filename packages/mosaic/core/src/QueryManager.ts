@@ -78,7 +78,7 @@ export class QueryManager {
    */
   async submit(request: QueryRequest, result: QueryResult): Promise<void> {
     try {
-      const { query, type, cache = false, options, clientId } = request;
+      const { query, type, cache = false, options } = request;
       const sql = query ? `${query}` : null;
 
       // emit QueryStart
@@ -87,7 +87,6 @@ export class QueryManager {
         this.eventBus.emit(EventType.QueryStart, {
           query: sql || '',
           materialized: cache,
-          clientId,
         });
       }
 
@@ -103,7 +102,6 @@ export class QueryManager {
             this.eventBus.emit(EventType.QueryEnd, {
               query: sql || '',
               materialized: cache,
-              clientId,
             });
           }
           return;
@@ -131,7 +129,6 @@ export class QueryManager {
         this.eventBus.emit(EventType.QueryEnd, {
           query: sql || '',
           materialized: cache,
-          clientId,
         });
       }
     } catch (err) {

@@ -7,7 +7,6 @@ export interface QueryRequest {
   query: string | Query | DescribeQuery;
   cache?: boolean;
   options?: Record<string, unknown>;
-  clientId?: string;
 }
 
 /** Type for an entry within a query manager. */
