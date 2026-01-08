@@ -131,16 +131,6 @@ export class AsyncDispatch<T> extends Dispatch<T> {
   }
 
   /**
-   * Remove an event listener callback for the provided event type.
-   * @param type The event type.
-   * @param callback The event handler
-   *  callback function to remove.
-   */
-  override removeEventListener(type: string, callback: EventCallback<T>): void {
-    super.removeEventListener(type, callback);
-  }
-
-  /**
    * Cancel all un-emitted event values for the given event type.
    * @param type The event type.
    */

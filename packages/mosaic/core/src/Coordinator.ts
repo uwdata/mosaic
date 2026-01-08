@@ -130,6 +130,7 @@ export class Coordinator {
     if (arguments.length) {
       this._logger = logger || voidLogger();
       this.manager.logger(this._logger);
+       
       // subscribe logger to events
       this.eventBus.observe(EventType.QueryStart, (event) => this._logger.info('Query started:', event));
       this.eventBus.observe(EventType.QueryEnd, (event) => this._logger.info('Query ended:', event));
@@ -260,9 +261,9 @@ export class Coordinator {
     return client._pending = this.query(query, { priority, clientId: (client as any).id })
       .then(
         data => client.queryResult(data).update(),
-        err => { this.eventBus.emit(EventType.Error, { message: err, timestamp: Date.now() }); client.queryError(err); }
+        err => { this.eventBus.emit(EventType.Error, { message: err }); client.queryError(err); }
       )
-      .catch(err => { this.eventBus.emit(EventType.Error, { message: err, timestamp: Date.now() }); });
+      .catch(err => { this.eventBus.emit(EventType.Error, { message: err }); });
   }
 
   /**
@@ -298,8 +299,7 @@ export class Coordinator {
 
     // emit ClientConnect
     this.eventBus.emit(EventType.ClientConnect, {
-      clientId: (client as any).id,
-      timestamp: Date.now()
+      clientId: (client as any).id
     });
 
     // add client to client set

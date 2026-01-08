@@ -88,7 +88,6 @@ export class QueryManager {
           query: sql || '',
           materialized: cache,
           clientId,
-          timestamp: Date.now()
         });
       }
 
@@ -105,7 +104,6 @@ export class QueryManager {
               query: sql || '',
               materialized: cache,
               clientId,
-              timestamp: Date.now()
             });
           }
           return;
@@ -134,14 +132,12 @@ export class QueryManager {
           query: sql || '',
           materialized: cache,
           clientId,
-          timestamp: Date.now()
         });
       }
     } catch (err) {
       if (this.eventBus) {
         this.eventBus.emit(EventType.Error, {
           message: err,
-          timestamp: Date.now()
         });
       }
       result.reject(err);

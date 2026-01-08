@@ -7,29 +7,29 @@ export enum EventType {
   ClientStateChange = 'client-state-change',
   Error = 'error'
 }
+export interface MosaicEvent {
+  timestamp: number;
+  // Extend later with more fields
+}
 
-export interface QueryStartEvent {
+export interface QueryStartEvent extends MosaicEvent {
   query: string;
   materialized: boolean;
   clientId?: string;
-  timestamp: number;
 }
 
-export interface QueryEndEvent {
+export interface QueryEndEvent extends MosaicEvent {
   query: string;
   materialized: boolean;
   clientId?: string;
-  timestamp: number;
 }
 
-export interface ClientConnectEvent {
+export interface ClientConnectEvent extends MosaicEvent {
   clientId: string;
-  timestamp: number;
 }
 
-export interface ErrorEvent {
+export interface ErrorEvent extends MosaicEvent {
   message: unknown;
-  timestamp: number;
 }
 
 export class EventBus {
@@ -44,6 +44,8 @@ export class EventBus {
   }
 
   emit(type: EventType, value: any): void {
-    this.dispatch.emit(type, value);
+    // Provides extensibility over ObservableDispatch to add fields,
+    // additional logic relevant to Mosaic
+    this.dispatch.emit(type, { ...value, timestamp: Date.now() });
   }
 }
