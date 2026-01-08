@@ -19,6 +19,7 @@
     "clean": "lerna run clean",
     "lint": "lerna run lint",
     "test": "tsc --build && lerna run schema && vitest run",
+    "write": "prettier --write '**/*.{js,ts,json,yaml}'",
     "server": "cd packages/server/duckdb-server && npm run dev",
     "server:rust": "cd packages/server/duckdb-server-rust && cargo run",
     "server:node": "nodemon packages/server/duckdb/bin/run-server.js",
