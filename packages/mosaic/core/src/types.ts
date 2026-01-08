@@ -15,7 +15,6 @@ export interface QueryRequest {
   query: MaybeArray<QueryType>;
   cache?: boolean;
   options?: Record<string, unknown>;
-  clientId?: string;
 }
 
 /** Type for an entry within a query manager. */

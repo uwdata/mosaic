@@ -15,17 +15,15 @@ export interface MosaicEvent {
 export interface QueryStartEvent extends MosaicEvent {
   query: string;
   materialized: boolean;
-  clientId?: string;
 }
 
 export interface QueryEndEvent extends MosaicEvent {
   query: string;
   materialized: boolean;
-  clientId?: string;
 }
 
 export interface ClientConnectEvent extends MosaicEvent {
-  clientId: string;
+  clientId?: string
 }
 
 export interface ErrorEvent extends MosaicEvent {
