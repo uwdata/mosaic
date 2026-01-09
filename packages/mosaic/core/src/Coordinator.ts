@@ -11,7 +11,8 @@ import { type MosaicClient } from './MosaicClient.js';
 import { type SelectionClause } from './SelectionClause.js';
 import { MaybeArray } from '@uwdata/mosaic-sql';
 import { Table } from '@uwdata/flechette';
-import { EventBus, EventType } from './EventBus.js';
+import { EventType } from './Events.js';
+import { ObserveDispatch } from './util/ObserveDispatch.js';
 
 interface FilterGroupEntry {
   selection: Selection;
@@ -51,7 +52,7 @@ export class Coordinator {
   public clients = new Set<MosaicClient>;
   public filterGroups = new Map<Selection, FilterGroupEntry>;
   protected _logger: Logger = voidLogger();
-  public eventBus: EventBus;
+  public eventBus: ObserveDispatch<any>; // temporary measures until we finalize event types
 
   /**
    * @param db Database connector. Defaults to a web socket connection.
@@ -79,7 +80,7 @@ export class Coordinator {
       consolidate = true,
       preagg = {}
     } = options;
-    this.eventBus = new EventBus();
+    this.eventBus = new ObserveDispatch();
     this.manager = manager;
     this.manager.eventBus = this.eventBus;
     this.manager.cache(cache);
