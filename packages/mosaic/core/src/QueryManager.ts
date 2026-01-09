@@ -5,7 +5,8 @@ import { lruCache, voidCache } from './util/cache.js';
 import { PriorityQueue } from './util/priority-queue.js';
 import { QueryResult, QueryState } from './util/query-result.js';
 import { voidLogger } from './util/void-logger.js';
-import { EventBus, EventType } from './EventBus.js';
+import { EventType } from './Events.js';
+import { ObserveDispatch } from './util/ObserveDispatch.js';
 
 export const Priority = Object.freeze({ High: 0, Normal: 1, Low: 2 });
 
@@ -19,9 +20,9 @@ export class QueryManager {
   public pendingResults: QueryResult[];
   private maxConcurrentRequests: number;
   private pendingExec: boolean;
-  public eventBus?: EventBus;
+  public eventBus?;
 
-  constructor(maxConcurrentRequests: number = 32, eventBus?: EventBus) {
+  constructor(maxConcurrentRequests: number = 32, eventBus?: ObserveDispatch<unknown>) {
     this.queue = new PriorityQueue(3);
     this.db = null;
     this.clientCache = null;
