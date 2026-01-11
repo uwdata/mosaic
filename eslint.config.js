@@ -1,6 +1,7 @@
 import js from '@eslint/js';
 import tseslint from 'typescript-eslint';
 import globals from 'globals';
+import eslintConfigPrettier from 'eslint-config-prettier/flat';
 
 /** @type {import('@types/eslint').Linter.Config[]} */
 export default tseslint.config(
@@ -27,5 +28,6 @@ export default tseslint.config(
       "@typescript-eslint/no-this-alias": "warn",
       "@typescript-eslint/ban-ts-comment": "warn"
     },
-  }
+  },
+  eslintConfigPrettier
 );
