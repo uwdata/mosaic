@@ -10,7 +10,7 @@ export const CSV_DATA = 'csv';
 export const JSON_DATA = 'json';
 export const SPATIAL_DATA = 'spatial';
 
-// @ts-ignore
+// @ts-expect-error
 const dataFormats = new Map([
   [TABLE_DATA, parseTableData],
   [PARQUET_DATA, parseParquetData],
@@ -54,25 +54,25 @@ function fileExtension(file) {
 }
 
 function parseTableData(name, spec, ctx) {
-  // eslint-disable-next-line no-unused-vars
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const { query, type, ...options } = spec;
   return new TableDataNode(name, query, parseOptions(options, ctx));
 }
 
 function parseParquetData(name, spec, ctx) {
-  // eslint-disable-next-line no-unused-vars
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const { file, type, ...options } = spec;
   return new ParquetDataNode(name, file, parseOptions(options, ctx));
 }
 
 function parseCSVData(name, spec, ctx) {
-  // eslint-disable-next-line no-unused-vars
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const { file, type, ...options } = spec;
   return new CSVDataNode(name, file, parseOptions(options, ctx));
 }
 
 function parseJSONData(name, spec, ctx) {
-  // eslint-disable-next-line no-unused-vars
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const { data, file, type, ...options } = spec;
   const opt = parseOptions(options, ctx);
   return data
@@ -81,7 +81,7 @@ function parseJSONData(name, spec, ctx) {
 }
 
 function parseSpatialData(name, spec, ctx) {
-  // eslint-disable-next-line no-unused-vars
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const { file, type, ...options } = spec;
   return new SpatialDataNode(name, file, parseOptions(options, ctx));
 }

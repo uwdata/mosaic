@@ -12,7 +12,8 @@ export class ParamRefNode extends ASTNode {
     return ctx.activeParams?.get(this.name);
   }
 
-  codegen(ctx) { // eslint-disable-line no-unused-vars
+  // eslint-disable-next-line
+  codegen(ctx) { // no-unused-vars
     return toParamRef(this.name);
   }
 

@@ -29,7 +29,6 @@ export function astToESM(ast, options = {}) {
     importsCode.push(
       isString(methods)
         ? `import ${methods} from "${pkg}";`
-        // @ts-ignore
         : `import { ${methods.join(', ')} } from "${pkg}";`
     );
   }
@@ -142,7 +141,7 @@ export class CodegenContext {
     if (!this.imports.has(pkg)) {
       this.imports.set(pkg, [method]);
     } else {
-      // @ts-ignore
+      // @ts-expect-error
       this.imports.get(pkg).push(method);
     }
   }

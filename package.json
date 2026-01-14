@@ -21,7 +21,6 @@
     "test": "tsc --build && lerna run schema && vitest run",
     "format": "prettier --write '**/*.{js,ts,tsx,json,css,md}'",
     "lint:fix": "eslint '**/*.{js,ts,tsx}' --fix",
-    "format:check": "prettier --check '**/*.{js,ts,tsx,json,css,md}'",
     "server": "cd packages/server/duckdb-server && npm run dev",
     "server:rust": "cd packages/server/duckdb-server-rust && cargo run",
     "server:node": "nodemon packages/server/duckdb/bin/run-server.js",

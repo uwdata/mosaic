@@ -83,8 +83,10 @@ export class AsyncDispatch<T> {
    *  function, or null if all unemitted event values should be filtered.
    */
   emitQueueFilter(
-    _type: string, // eslint-disable-line @typescript-eslint/no-unused-vars
-    _value: unknown // eslint-disable-line @typescript-eslint/no-unused-vars
+    // eslint-disable-next-line
+    _type: string, // @typescript-eslint/no-unused-vars
+    // eslint-disable-next-line
+    _value: unknown // @typescript-eslint/no-unused-vars
   ): ((value: unknown) => boolean | null) | null {
     // removes all pending items
     return null;
