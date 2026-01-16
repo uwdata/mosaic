@@ -9,7 +9,7 @@
     "preview": "vite preview"
   },
   "devDependencies": {
-    "vite": "^7.2.4"
+    "vite": "^7.3.1"
   },
   "dependencies": {
     "@uwdata/mosaic-core": "^0.21.1",
@@ -17,6 +17,6 @@
     "@uwdata/vgplot": "^0.21.1",
     "vega": "^6.2.0",
     "vega-embed": "^7.1.0",
-    "vega-lite": "^6.4.1"
+    "vega-lite": "^6.4.2"
   }
 }
