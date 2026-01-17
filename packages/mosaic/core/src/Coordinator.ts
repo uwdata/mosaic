@@ -11,7 +11,7 @@ import { type MosaicClient } from './MosaicClient.js';
 import { type SelectionClause } from './SelectionClause.js';
 import { MaybeArray } from '@uwdata/mosaic-sql';
 import { Table } from '@uwdata/flechette';
-import { EventType } from './Events.js';
+import { EventType, MosaicEvent, MosaicEvents } from './Events.js';
 import { ObserveDispatch } from './util/ObserveDispatch.js';
 
 interface FilterGroupEntry {
@@ -52,7 +52,7 @@ export class Coordinator {
   public clients = new Set<MosaicClient>;
   public filterGroups = new Map<Selection, FilterGroupEntry>;
   protected _logger: Logger = voidLogger();
-  public eventBus: ObserveDispatch<any>; // temporary measures until we finalize event types
+  public eventBus: ObserveDispatch<Omit<MosaicEvents, keyof MosaicEvent>>;
 
   /**
    * @param db Database connector. Defaults to a web socket connection.
@@ -136,7 +136,7 @@ export class Coordinator {
       this.eventBus.observe(EventType.QueryStart, (event) => this._logger.info('Query started:', event));
       this.eventBus.observe(EventType.QueryEnd, (event) => this._logger.info('Query ended:', event));
       this.eventBus.observe(EventType.ClientConnect, (event) => this._logger.info('Client connected:', event));
-      this.eventBus.observe(EventType.Error, (event) => this._logger.error('Error:', event.message));
+      this.eventBus.observe(EventType.Error, (event) => this._logger.error('Error:', (event as ErrorEvent).message));
     }
     return this._logger!;
   }
