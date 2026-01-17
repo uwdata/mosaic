@@ -44,7 +44,7 @@ export class ObserveDispatch<T> extends Dispatch<T> {
   override emit(type: string, value: T): void {
     const callbacks = this._callbacks.get(type);
     if (callbacks && callbacks.size > 0) {
-      const event = this.willEmit(type, value);
+      const event = this.willEmit(type, { ...value, timestamp: new Date() });
       // Execute all callbacks synchronously
       for (const callback of callbacks) {
         callback(event);
