@@ -154,7 +154,16 @@
   }
 
   function setQueryLog() {
-    vg.coordinator().manager.logQueries(qlogToggle.checked);
+    const bus = vg.coordinator().eventBus;
+    
+    bus.observe("QueryStart", (event) =>
+      console.info("Query started:", event),
+    );
+    bus.observe("QueryEnd", (event) => console.info("Query ended:", event));
+    bus.observe("ClientConnect", (event) =>
+      console.info("Client connected:", event),
+    );
+    bus.observe("Error", (event) => console.error("Error:", event));
   }
 
   function setCache() {
