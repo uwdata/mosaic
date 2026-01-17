@@ -2,10 +2,9 @@
 import { SocketConnector } from './connectors/socket.js';
 import { type Connector } from './connectors/Connector.js';
 import { PreAggregator, type PreAggregateOptions } from './preagg/PreAggregator.js';
-import { voidLogger } from './util/void-logger.js';
 import { QueryManager, Priority } from './QueryManager.js';
 import { type Selection } from './Selection.js';
-import { type Logger, type QueryType } from './types.js';
+import { type QueryType } from './types.js';
 import { type QueryResult } from './util/query-result.js';
 import { type MosaicClient } from './MosaicClient.js';
 import { type SelectionClause } from './SelectionClause.js';
@@ -51,13 +50,11 @@ export class Coordinator {
   public preaggregator: PreAggregator;
   public clients = new Set<MosaicClient>;
   public filterGroups = new Map<Selection, FilterGroupEntry>;
-  protected _logger: Logger = voidLogger();
   public eventBus: ObserveDispatch<Omit<MosaicEvents, keyof MosaicEvent>>;
 
   /**
    * @param db Database connector. Defaults to a web socket connection.
    * @param options Coordinator options.
-   * @param options.logger The logger to use, defaults to `console`.
    * @param options.manager The query manager to use.
    * @param options.cache Boolean flag to enable/disable query caching.
    * @param options.consolidate Boolean flag to enable/disable query consolidation.
@@ -66,7 +63,6 @@ export class Coordinator {
   constructor(
     db: Connector = new SocketConnector(),
     options: {
-      logger?: Logger | null;
       manager?: QueryManager;
       cache?: boolean;
       consolidate?: boolean;
@@ -74,7 +70,6 @@ export class Coordinator {
     } = {}
   ) {
     const {
-      logger = console,
       manager = new QueryManager(),
       cache = true,
       consolidate = true,
@@ -86,7 +81,6 @@ export class Coordinator {
     this.manager.cache(cache);
     this.manager.consolidate(consolidate);
     this.databaseConnector(db);
-    this.logger(logger);
     this.clear();
     this.preaggregator = new PreAggregator(this, preagg);
   }
@@ -121,26 +115,7 @@ export class Coordinator {
       ? this.manager.connector(db)
       : this.manager.connector();
   }
-
-  /**
-   * Get or set the logger.
-   * @param logger The logger to use.
-   * @returns The current logger
-   */
-  logger(logger?: Logger | null): Logger {
-    if (arguments.length) {
-      this._logger = logger || voidLogger();
-      this.manager.logger(this._logger);
-       
-      // subscribe logger to events
-      this.eventBus.observe(EventType.QueryStart, (event) => this._logger.info('Query started:', event));
-      this.eventBus.observe(EventType.QueryEnd, (event) => this._logger.info('Query ended:', event));
-      this.eventBus.observe(EventType.ClientConnect, (event) => this._logger.info('Client connected:', event));
-      this.eventBus.observe(EventType.Error, (event) => this._logger.error('Error:', (event as ErrorEvent).message));
-    }
-    return this._logger!;
-  }
-
+      
   // -- Query Management ----
 
   /**
