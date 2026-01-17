@@ -5,6 +5,7 @@ import type { Selection } from '../Selection.js';
 import type { BinMethod, ClauseSource, IntervalMetadata, SelectionClause } from '../SelectionClause.js';
 import { fnv_hash } from '../util/hash.js';
 import { preaggColumns, PreAggColumnsResult } from './preagg-columns.js';
+import { EventType } from '../Events.js';
 
 const Skip = { skip: true, result: null };
 
@@ -215,7 +216,7 @@ export class PreAggregator {
         createSchema(schema),
         createTable(info.table, info.create, { temp: false })
       ]);
-      info.result.catch((e: Error) => mc.logger().error(e));
+      info.result.catch((e: Error) => mc.eventBus.emit(EventType.Error, {message: e}));
     }
 
     entries.set(client, info);

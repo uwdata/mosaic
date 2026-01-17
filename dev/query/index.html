@@ -73,6 +73,21 @@
     }
     enable();
   });
+
+  function setQueryLog() {
+    const bus = vg.coordinator().eventBus;
+
+    bus.observe("query-start", (event) =>
+      console.info("Query started:", event),
+    );
+    bus.observe("query-end", (event) => console.info("Query ended:", event));
+    bus.observe("client-connect", (event) =>
+      console.info("Client connected:", event),
+    );
+    bus.observe("error", (event) => console.error("Error:", event));
+  }
+
+  setQueryLog()
 </script>
   </body>
 </html>
