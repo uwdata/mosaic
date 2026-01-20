@@ -5,10 +5,6 @@ import { Dispatch, EventCallback } from "./AsyncDispatch.js";
  * without queuing or Promise handling. Suitable for simple observer patterns.
  */
 export class ObserveDispatch<T> extends Dispatch<T> {
-  constructor() {
-    super();
-  }
-
   /**
    * Subscribe to events of the given type. Essentially
    * a shorthand/wrapper for addEventListener().

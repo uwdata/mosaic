@@ -266,11 +266,6 @@ export class Coordinator {
       throw new Error('Client already connected.');
     }
 
-    // emit ClientConnect
-    this.eventBus.emit(EventType.ClientConnect, {
-      // additional arguments for later -- for comprehensive client data
-    });
-
     // add client to client set
     clients?.add(client);
 

@@ -33,7 +33,7 @@ export interface ClientConnectEvent extends MosaicEvent {
 }
 
 export interface ErrorEvent extends MosaicEvent {
-  message: unknown;
+  message: string;
 }
 
 export type MosaicEvents =
