@@ -40,7 +40,6 @@ export function filteredExtent(filter, column) {
 
   [filter].flat().forEach(p => walk(p, (node) => {
     if (node instanceof BetweenOpNode && `${node.expr}` === column) {
-      // @ts-ignore
       const extent = (node.extent ?? []).map(v => v?.value ?? v);
       if (lo == null || extent[0] < lo) lo = extent[0];
       if (hi == null || extent[1] > hi) hi = extent[1];

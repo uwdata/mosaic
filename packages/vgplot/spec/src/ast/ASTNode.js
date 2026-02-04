@@ -14,8 +14,8 @@ export class ASTNode {
    * @param {import('../ast-to-dom.js').InstantiateContext} ctx The instantiation context.
    * @returns {*} The instantiated value of this node.
    */
-  instantiate(ctx) { // eslint-disable-line no-unused-vars
-    // @ts-ignore
+   // eslint-disable-next-line
+   instantiate(ctx) { // no-unused-vars
     throw Error('instantiate not implemented');
   }
 
@@ -24,8 +24,9 @@ export class ASTNode {
    * @param {import('../ast-to-esm.js').CodegenContext} ctx The code generator context.
    * @returns {string|void} The generated ESM code for the node.
    */
-  codegen(ctx) { // eslint-disable-line no-unused-vars
-    // @ts-ignore
+   // eslint-disable-next-line
+   codegen(ctx) { // no-unused-vars
+    // @ts-expect-error
     return Error('codegen not implemented');
   }
 
@@ -33,7 +34,6 @@ export class ASTNode {
    * @returns {*} This AST node in JSON specification format.
    */
   toJSON() {
-    // @ts-ignore
     return Error('toJSON not implemented');
   }
 }

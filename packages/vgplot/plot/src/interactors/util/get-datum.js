@@ -9,7 +9,7 @@ export function getDatum(el) {
   if (el.tagName === 'a') {
     el = el.children[0];
   }
-  // @ts-ignore
+  // @ts-expect-error
   const data = el.__data__;
   return Array.isArray(data) ? data[0] : data;
 }

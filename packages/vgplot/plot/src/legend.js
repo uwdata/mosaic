@@ -159,7 +159,7 @@ function findField(marks, channel) {
 // generate a spatial scale to brush within color or opacity ramps
 function spatialScale(sourceScale, width) {
   // separate out reusable parts of the scale definition
-  // eslint-disable-next-line no-unused-vars
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const { apply, invert, interpolate, ...rest } = sourceScale;
 
   // extract basic source scale type

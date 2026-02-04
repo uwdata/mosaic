@@ -5,7 +5,7 @@
  */
 export function patchScreenCTM() {
   /** @type {SVGGraphicsElement} */
-  // @ts-ignore
+  // @ts-expect-error
   const node = this;
   const getScreenCTM = node.getScreenCTM;
   let memo;
