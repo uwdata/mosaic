@@ -1,4 +1,4 @@
-type EventCallback<T = unknown> = (value: T) => void | Promise<unknown>;
+export type EventCallback<T = unknown> = (value: T) => void | Promise<unknown>;
 
 interface DispatchEntry<T = unknown> {
   callbacks: Set<EventCallback<T>>;
@@ -12,16 +12,12 @@ interface QueueNode<T = unknown> {
 }
 
 /**
- * Event dispatcher supporting asynchronous updates. If an event handler
- * callback returns a Promise, the dispatcher waits for all such Promises
- * to settle before dispatching future events of the same type.
+ * Abstract base class for event dispatchers.
+ * Provides common event listener management and lifecycle methods.
  */
-export class AsyncDispatch<T> {
-  _callbacks: Map<string, DispatchEntry<T>>;
+export abstract class Dispatch<T> {
+  protected _callbacks: Map<string, Set<EventCallback<T>>>;
 
-  /**
-   * Create a new asynchronous dispatcher instance.
-   */
   constructor() {
     this._callbacks = new Map();
   }
@@ -35,14 +31,10 @@ export class AsyncDispatch<T> {
    */
   addEventListener(type: string, callback: EventCallback<T>): void {
     if (!this._callbacks.has(type)) {
-      this._callbacks.set(type, {
-        callbacks: new Set<EventCallback<T>>(),
-        pending: null,
-        queue: new DispatchQueue<T>()
-      });
+      this._callbacks.set(type, new Set<EventCallback<T>>());
     }
-    const entry = this._callbacks.get(type)!;
-    entry.callbacks.add(callback);
+    const callbacks = this._callbacks.get(type)!;
+    callbacks.add(callback);
   }
 
   /**
@@ -52,9 +44,9 @@ export class AsyncDispatch<T> {
    *  callback function to remove.
    */
   removeEventListener(type: string, callback: EventCallback<T>): void {
-    const entry = this._callbacks.get(type);
-    if (entry) {
-      entry.callbacks.delete(callback);
+    const callbacks = this._callbacks.get(type);
+    if (callbacks) {
+      callbacks.delete(callback);
     }
   }
 
@@ -73,14 +65,14 @@ export class AsyncDispatch<T> {
 
   /**
    * Lifecycle method that returns a filter function for updating the
-   * queue of unemitted event values prior to enqueueing a new value.
+   * queue of un-emitted event values prior to enqueueing a new value.
    * This default implementation simply returns null, indicating that
-   * unknown other unemitted event values should be dropped (that is, all
+   * unknown other un-emitted event values should be dropped (that is, all
    * queued events are filtered).
    * @param type The event type.
    * @param value The new event value that will be enqueued.
    * @returns A dispatch queue filter
-   *  function, or null if all unemitted event values should be filtered.
+   *  function, or null if all un-emitted event values should be filtered.
    */
   emitQueueFilter(
     _type: string, // eslint-disable-line @typescript-eslint/no-unused-vars
@@ -91,11 +83,59 @@ export class AsyncDispatch<T> {
   }
 
   /**
-   * Cancel all unemitted event values for the given event type.
+   * Cancel all un-emitted event values for the given event type.
+   * @param _type The event type.
+   */
+  cancel(_type: string): void {}
+
+  /**
+   * Emit an event value to listeners for the given event type.
+   * @param type The event type.
+   * @param value The event value.
+   */
+  abstract emit(type: string, value: T): void;
+}
+
+/**
+ * Event dispatcher supporting asynchronous updates. If an event handler
+ * callback returns a Promise, the dispatcher waits for all such Promises
+ * to settle before dispatching future events of the same type.
+ */
+export class AsyncDispatch<T> extends Dispatch<T> {
+  private _entries: Map<string, DispatchEntry<T>>;
+
+  /**
+   * Create a new asynchronous dispatcher instance.
+   */
+  constructor() {
+    super();
+    this._entries = new Map();
+  }
+
+  /**
+   * Add an event listener callback for the provided event type.
+   * @param type The event type.
+   * @param callback The event handler
+   *  callback function to add. If the callback has already been
+   *  added for the event type, this method has no effect.
+   */
+  override addEventListener(type: string, callback: EventCallback<T>): void {
+    super.addEventListener(type, callback);
+    if (!this._entries.has(type)) {
+      this._entries.set(type, {
+        callbacks: this._callbacks.get(type)!,
+        pending: null,
+        queue: new DispatchQueue<T>(),
+      });
+    }
+  }
+
+  /**
+   * Cancel all un-emitted event values for the given event type.
    * @param type The event type.
    */
-  cancel(type: string): void {
-    const entry = this._callbacks.get(type);
+  override cancel(type: string): void {
+    const entry = this._entries.get(type);
     entry?.queue.clear();
   }
 
@@ -107,7 +147,7 @@ export class AsyncDispatch<T> {
    * @returns A pending event promise.
    */
   async pending(type: string): Promise<void> {
-    await this._callbacks.get(type)?.pending;
+    await this._entries.get(type)?.pending;
   }
 
   /**
@@ -115,12 +155,19 @@ export class AsyncDispatch<T> {
    * If a previous emit has not yet resolved, the event value
    * will be queued to be emitted later.
    * The actual event value given to listeners will be the result
-   * of passing the input value through the emitValue() method.
+   * of passing the input value through the willEmit() method.
    * @param type The event type.
    * @param value The event value.
    */
-  emit(type: string, value: T): void {
-    const entry = this._callbacks.get(type) || {} as DispatchEntry<T>;
+  override emit(type: string, value: T): void {
+    if (!this._entries.has(type)) {
+      this._entries.set(type, {
+        callbacks: this._callbacks.get(type) || new Set<EventCallback<T>>(),
+        pending: null,
+        queue: new DispatchQueue<T>(),
+      });
+    }
+    const entry = this._entries.get(type)!;
     if (entry.pending) {
       // an earlier emit is still processing
       // enqueue the current update, possibly filtering other pending updates
@@ -131,7 +178,7 @@ export class AsyncDispatch<T> {
       if (callbacks?.size) {
         // broadcast update to callbacks, which may return promises
         // wait until promises resolve, then process pending updates
-        const callbackValues = Array.from(callbacks, cb => cb(event));
+        const callbackValues = Array.from(callbacks, (cb) => cb(event));
         entry.pending = Promise.allSettled(callbackValues).then(() => {
           entry.pending = null;
           if (!queue.isEmpty()) {
@@ -144,7 +191,7 @@ export class AsyncDispatch<T> {
 }
 
 /**
- * Queue for managing unemitted event values.
+ * Queue for managing un-emitted event values.
  */
 export class DispatchQueue<T = unknown> {
   next: QueueNode<T> | null = null;
