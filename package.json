@@ -44,11 +44,5 @@
     "vitepress": "1.6.4",
     "vitest": "^4.0.17",
     "yaml": "^2.8.2"
-  },
-  "workspaces": [
-    "packages/mosaic/*",
-    "packages/server/*",
-    "packages/vgplot/*",
-    "packages/examples/*"
-  ]
+  }
 }
