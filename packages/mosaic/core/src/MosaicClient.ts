@@ -128,8 +128,8 @@ export class MosaicClient {
    * @param filter The filtering criteria to apply in the query.
    * @returns The client query
    */
-   // eslint-disable-next-line
-   query(filter?: FilterExpr | null): ClientQuery { // @typescript-eslint/no-unused-vars
+   // @typeescript-eslint/no-unused-vars
+   query(filter?: FilterExpr | null): ClientQuery {
     return null;
   }
 

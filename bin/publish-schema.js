@@ -6,8 +6,7 @@ import { copyFile, readFile, symlink, unlink } from 'node:fs/promises';
 async function link(schemaFile, linkFile) {
   try {
     await unlink(linkFile);
-    // eslint-disable-next-line
-  } catch (err) { // @typescript-eslint/no-unused-vars
+  } catch (_err) {
     // file may not have existed
   }
   await symlink(schemaFile, linkFile);
