@@ -9,7 +9,9 @@
     "type": "git",
     "url": "https://github.com/uwdata/mosaic.git"
   },
+  "packageManager": "pnpm@10.5.2",
   "scripts": {
+    "preinstall": "npx only-allow pnpm",
     "docs:dev": "vitepress dev docs",
     "docs:build": "vitepress build docs",
     "docs:examples": "node bin/prepare-examples.js",
