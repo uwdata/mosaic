@@ -156,14 +156,15 @@
   function setQueryLog() {
     const bus = vg.coordinator().eventBus;
     
-    bus.observe("QueryStart", (event) =>
+    bus.observe("query-start", (event) =>
       console.info("Query started:", event),
     );
-    bus.observe("QueryEnd", (event) => console.info("Query ended:", event));
-    bus.observe("ClientConnect", (event) =>
+    bus.observe("query-end", (event) => console.info("Query ended:", event));
+    bus.observe("client-connect", (event) =>
       console.info("Client connected:", event),
     );
-    bus.observe("Error", (event) => console.error("Error:", event));
+    bus.observe("warning", (event) => console.warn("Warning:", event));
+    bus.observe("error", (event) => console.error("Error:", event));
   }
 
   function setCache() {

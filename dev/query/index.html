@@ -77,6 +77,7 @@
     bus.observe("client-connect", (event) =>
       console.info("Client connected:", event),
     );
+    bus.observe("warning", (event) => console.warn("Warning:", event));
     bus.observe("error", (event) => console.error("Error:", event));
   }
 

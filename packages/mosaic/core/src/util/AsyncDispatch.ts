@@ -65,9 +65,9 @@ export abstract class Dispatch<T> {
 
   /**
    * Lifecycle method that returns a filter function for updating the
-   * queue of un-emitted event values prior to enqueueing a new value.
+   * queue of unemitted event values prior to enqueueing a new value.
    * This default implementation simply returns null, indicating that
-   * unknown other un-emitted event values should be dropped (that is, all
+   * unknown other unemitted event values should be dropped (that is, all
    * queued events are filtered).
    * @param type The event type.
    * @param value The new event value that will be enqueued.
@@ -178,7 +178,7 @@ export class AsyncDispatch<T> extends Dispatch<T> {
       if (callbacks?.size) {
         // broadcast update to callbacks, which may return promises
         // wait until promises resolve, then process pending updates
-        const callbackValues = Array.from(callbacks, (cb) => cb(event));
+        const callbackValues = Array.from(callbacks, cb => cb(event));
         entry.pending = Promise.allSettled(callbackValues).then(() => {
           entry.pending = null;
           if (!queue.isEmpty()) {
