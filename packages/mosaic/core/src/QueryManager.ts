@@ -51,7 +51,7 @@ export class QueryManager {
         if (result.state === QueryState.ready) {
           result.fulfill();
         } else if (result.state === QueryState.done) {
-          this.eventBus?.emit(EventType.Error, { message: 'Found resolved query in pending results.' });
+          this.eventBus?.emit(EventType.Warning, { message: 'Found resolved query in pending results.' });
         }
       }
       if (request.type === 'exec') this.pendingExec = false;
