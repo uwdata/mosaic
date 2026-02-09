@@ -19,6 +19,7 @@ export class QueryManager {
   public pendingResults: QueryResult[];
   private maxConcurrentRequests: number;
   private pendingExec: boolean;
+  private streamGen = new Map<string, number>();
 
   constructor(maxConcurrentRequests: number = 32) {
     this.queue = new PriorityQueue(3);
@@ -103,6 +104,14 @@ export class QueryManager {
 
       const data = await promise;
 
+      if (request.stream && request.latest) {
+        if (request.streamGen !== this.streamGen.get(request.stream)) {
+          this._logger.debug('Suppressing stale result', { stream: request.stream, gen: request.streamGen });
+          result.reject('Stale');
+          return;
+        }
+      }
+
       if (cache) this.clientCache!.set(sql!, data);
 
       this._logger.debug(`Request: ${(performance.now() - t0).toFixed(1)}`);
@@ -179,6 +188,27 @@ export class QueryManager {
   request(request: QueryRequest, priority: number = Priority.Normal): QueryResult {
     const result = new QueryResult();
     const entry = { request, result };
+
+    if (request.stream && request.latest) {
+      // Latest-Only Scheduling:
+      // 1. Increment generation counter for this stream.
+      // 2. Prune any older queued requests for the same stream.
+      // 3. Mark request with generationID so stale results can be suppressed.
+      // Note: Inflight requests on the server are NOT cancelled.
+      const gen = (this.streamGen.get(request.stream) ?? 0) + 1;
+      this.streamGen.set(request.stream, gen);
+      request.streamGen = gen;
+
+      this.queue.remove(entry => {
+        const req = entry.request;
+        if (req.stream === request.stream && req.latest) {
+          entry.result.reject('Stale');
+          return true;
+        }
+        return false;
+      });
+    }
+
     if (this._consolidate) {
       this._consolidate.add(entry, priority);
     } else {
