@@ -7,6 +7,9 @@ export interface QueryRequest {
   query: string | Query | DescribeQuery;
   cache?: boolean;
   options?: Record<string, unknown>;
+  stream?: string;
+  latest?: boolean;
+  streamGen?: number;
 }
 
 /** Type for an entry within a query manager. */
