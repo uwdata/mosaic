@@ -15,4 +15,5 @@ Density plots of penguin bill depths, grouped by species. The normalize paramete
 <<< @/public/specs/esm/density-groups.js [JavaScript]
 <<< @/public/specs/yaml/density-groups.yaml [YAML]
 <<< @/public/specs/json/density-groups.json [JSON]
+<!-- <<< @/public/specs/python/density-groups.py [Python] -->
 :::

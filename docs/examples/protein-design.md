@@ -40,4 +40,5 @@ promising protein designs and assess the effects of process parameters.
 <<< @/public/specs/esm/protein-design.js [JavaScript]
 <<< @/public/specs/yaml/protein-design.yaml [YAML]
 <<< @/public/specs/json/protein-design.json [JSON]
+<!-- <<< @/public/specs/python/protein-design.py [Python] -->
 :::

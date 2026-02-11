@@ -15,4 +15,5 @@ Two scatter plots with `dot` marks: one with stroked symbols, the other filled. 
 <<< @/public/specs/esm/symbols.js [JavaScript]
 <<< @/public/specs/yaml/symbols.yaml [YAML]
 <<< @/public/specs/json/symbols.json [JSON]
+<<< @/public/specs/python/symbols.py [Python]
 :::

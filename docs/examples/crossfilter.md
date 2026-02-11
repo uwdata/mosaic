@@ -13,4 +13,5 @@
 <<< @/public/specs/esm/crossfilter.js [JavaScript]
 <<< @/public/specs/yaml/crossfilter.yaml [YAML]
 <<< @/public/specs/json/crossfilter.json [JSON]
+<<< @/public/specs/python/crossfilter.py [Python]
 :::

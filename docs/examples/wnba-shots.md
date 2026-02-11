@@ -18,4 +18,5 @@ Every field goal attempt in the 2023 WNBA regular season. Shots are grouped into
 <<< @/public/specs/esm/wnba-shots.js [JavaScript]
 <<< @/public/specs/yaml/wnba-shots.yaml [YAML]
 <<< @/public/specs/json/wnba-shots.json [JSON]
+<<< @/public/specs/python/wnba-shots.py [Python]
 :::

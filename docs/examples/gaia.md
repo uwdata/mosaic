@@ -20,4 +20,5 @@ _You may need to wait a few seconds for the dataset to load._
 <<< @/public/specs/esm/gaia.js [JavaScript]
 <<< @/public/specs/yaml/gaia.yaml [YAML]
 <<< @/public/specs/json/gaia.json [JSON]
+<<< @/public/specs/python/gaia.py [Python]
 :::

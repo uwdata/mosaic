@@ -15,4 +15,5 @@ Historical monthly temperatures in Seattle, WA. The gray range shows the minimum
 <<< @/public/specs/esm/seattle-temp.js [JavaScript]
 <<< @/public/specs/yaml/seattle-temp.yaml [YAML]
 <<< @/public/specs/json/seattle-temp.json [JSON]
+<<< @/public/specs/python/seattle-temp.py [Python]
 :::

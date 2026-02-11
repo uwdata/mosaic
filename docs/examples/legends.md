@@ -15,4 +15,5 @@ Tests for different legend types and configurations. We test both legends define
 <<< @/public/specs/esm/legends.js [JavaScript]
 <<< @/public/specs/yaml/legends.yaml [YAML]
 <<< @/public/specs/json/legends.json [JSON]
+<<< @/public/specs/python/legends.py [Python]
 :::

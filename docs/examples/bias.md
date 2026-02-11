@@ -15,4 +15,5 @@ Dynamically adjust queried values by adding a Param value. The SQL expression is
 <<< @/public/specs/esm/bias.js [JavaScript]
 <<< @/public/specs/yaml/bias.yaml [YAML]
 <<< @/public/specs/json/bias.json [JSON]
+<<< @/public/specs/python/bias.py [Python]
 :::

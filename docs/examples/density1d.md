@@ -15,4 +15,5 @@ Density plots (`densityY` mark) for over 200,000 flights, created using kernel d
 <<< @/public/specs/esm/density1d.js [JavaScript]
 <<< @/public/specs/yaml/density1d.yaml [YAML]
 <<< @/public/specs/json/density1d.json [JSON]
+<<< @/public/specs/python/density1d.py [Python]
 :::

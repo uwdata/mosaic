@@ -15,4 +15,5 @@ A 2D `density` plot in which circle size indicates the point density. The data i
 <<< @/public/specs/esm/density2d.js [JavaScript]
 <<< @/public/specs/yaml/density2d.yaml [YAML]
 <<< @/public/specs/json/density2d.json [JSON]
+<<< @/public/specs/python/density2d.py [Python]
 :::

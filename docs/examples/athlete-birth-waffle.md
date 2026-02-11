@@ -17,4 +17,5 @@ Waffle chart counting Olympic athletes based on which half-decade they were born
 <<< @/public/specs/esm/athlete-birth-waffle.js [JavaScript]
 <<< @/public/specs/yaml/athlete-birth-waffle.yaml [YAML]
 <<< @/public/specs/json/athlete-birth-waffle.json [JSON]
+<!-- <<< @/public/specs/python/athlete-birth-waffle.py [Python] -->
 :::
