@@ -1,292 +1,238 @@
-import { SpecNode } from "./ast/SpecNode.js";
+import { camelCaseToSnake } from './util.js';
 
 /**
- * Generate Python code for a Mosaic spec AST.
- * @param {SpecNode} ast Mosaic AST root node.
- * @param {object} [options] Code generation options.
- * @returns {string} Generated Python code using the mosaic-spec classes.
+ * Generate Python code for a Mosaic spec AST using the vgplot Python DSL.
+ * Preamble:  import json; import mosaic.vgplot as vg
+ * Final var: spec
  */
-export function astToPython(ast, options = {}) {
-  // WHAT DOES THE BELOW DO?
-  const ctx = new PythonCodegenContext(options);
-  const { root, data, params } = ast; 
-  if (ast.meta && ast.meta.title === "Airline Travelers") {
-    console.log("HERE",ast);
+export function astToPython(ast) {
+  const ctx = new PyGen();
+  const json = ast.toJSON();
+  const { meta, config, data = {}, params = {}, plotDefaults, ...view } = json;
+
+  ctx.emit('import json');
+  ctx.emit('import mosaic.vgplot as vg');
+  ctx.blank();
+
+  if (meta) {
+    ctx.emit(
+      `meta = vg.meta(${joinArgs({ title: meta.title, description: meta.description, credit: meta.credit })})`
+    );
   }
-  const generateMetaCode = (meta) => {
-    const metaProps = [];
-    
-    if (meta.title) metaProps.push(`title="${meta.title}"`);
-    if (meta.description) metaProps.push(`description="${meta.description.replace(/\n/g, "\\n")}"`); // Escape newlines
-    if (meta.credit) metaProps.push(`credit="${meta.credit}"`);
 
-    return `${metaProps.join(", \n")}`; 
-  };
-
-  const generateDataCode = (data) => {
-    const dataProps = [];
-  
-    for (const [name, dataNode] of Object.entries(data || {})) {
-      let dataNodeProps = [];
-      let dataType = "";
-  
-      const methodMapping = {
-        loadParquet: "DataParquet",
-        loadJSON: "DataJSON",
-        loadCSV: "DataCSV",
-        loadArray: "DataArray",
-        loadTable: "DataTable",  // Ensure this is in the mapping
-        loadFile: "DataFile",
-        loadJSONObjects: "DataJSONObjects",
-        loadQuery: "DataQuery",
-        loadSpatial: "DataSpatial"
-      };
-  
-      // Process properties of dataNode
-      for (const [key, value] of Object.entries(dataNode)) {
-        if (key !== "options" && key !== "type" && key !== "method" && key !== "name" && value !== null && value !== undefined) {
-          if (key === "format") {
-            dataType = value;
-            dataNodeProps.push(`type="${value}"`);
-          } else {
-            dataNodeProps.push(`${key}="${value}"`);
-          }
-        }
-      }
-  
-      // Check if method exists in the mapping, otherwise default to DataTable
-      const dataMethod = dataNode.method ? methodMapping[dataNode.method] : "DataTable"; // Fallback to DataTable
-  
-      // Generate the data code
-      dataProps.push(`${name} = DataDefinition(${dataMethod}(${dataNodeProps.join(", ")}))`);
-    }
-  
-    return dataProps.join(", \n");
-  };
-  
-
-
-  const formatChannel = (value) => {
-    if (typeof value === "string" && value.startsWith("$")) return value;
-    if (typeof value === "string") return `ChannelValueSpec(ChannelValue("${value}"))`;
-    if (typeof value === "number") return value.toString();
-    if (!value || typeof value !== "object") return "None";
-
-    if (value.dateMonthDay) return `ChannelValueSpec(ChannelValue(dateMonthDay="${value.dateMonthDay}"))`;
-    if (value.count !== undefined) return `ChannelValueSpec(ChannelValue(count="${value.count}"))`;
-    if (value.avg) return `ChannelValueSpec(ChannelValue(avg="${value.avg}"))`;
-    if (value.sql) return `ChannelValueSpec(ChannelValue(sql="${value.sql}"))`;
-    if (value.format) return `{"format": ${JSON.stringify(value.format)}}`;
-
-    return `ChannelValueSpec(ChannelValue(${JSON.stringify(value)}))`;
-  };
-
-  const generateParamsCode = (params) => {
-    let paramStr = [];
-    for (const [name, param] of Object.entries(params || {})) {
-        if (param.type === "selection") {
-            paramStr.push(`${name}=ParamDefinition(Selection("${param.select}"))`);
-        } else if (param.type === "param") {
-            // Ensure param.value is an array
-            if (Array.isArray(param.value)) {
-                const valueStrs = param.value.map(val => {
-                    // Handle objects by JSON.stringify()
-                    return typeof val === 'object' 
-                        ? `ParamLiteral(${JSON.stringify(val)})` 
-                        : `ParamLiteral("${val}")`;
-                });
-                paramStr.push(`${name}=ParamDefinition(${valueStrs.join(", ")})`);
-            }
-            // If param.value is a single value, treat it as an array with one element
-            else if (param.value !== undefined) {
-                // Handle objects by JSON.stringify()
-                paramStr.push(`${name}=ParamDefinition(ParamLiteral(${typeof param.value === 'string' ? `"${param.value}"` : param.value}))`);
-            } 
-        }
-    }
-    return paramStr.join(",\n");
-  };
-
-  const generateVConcatCode = (node) => {
-    if (!node || !node.children || node.children.length === 0) {
-      //console.warn("Invalid or missing 'children' in node:", node);
-      return "VConcat([])";
-    }
-    return `VConcat([Component(HConcat(${node.children.map(child => generateHConcatCode(child)).join(", ")}))])`;
-  };
-
-  const generateHConcatCode = (node) => {
-    // Check for valid children
-
-    if (!Array.isArray(node.children)) { 
-      //console.warn("Invalid or missing 'children' in node:", node);
-      return generatePlotCode(node);
-    }
-    return `${node.children.map(child => generatePlotCode(child)).join(", ")}`;
-  };
-
- 
-
-  const generatePlotCode = (plot) => {
-    if (!plot) {
-      //console.warn("Invalid plot:", plot);
-      return "Plot()";
-    }
-    
-    // const plotMarks = [];
-    
-    // //Handle plot marks
-    // if (plot.children) {
-    //   for (const mark of plot.children) {
-    //     console.log("Generating plot mark CODE for:", mark);
-    //     plotMarks.push(generatePlotMarkCode(mark));
-    //   }
-    // }
-
-    // Handle plot attributes
-    const capitalizedPlotName = plot.name
-    ? plot.name.charAt(0).toUpperCase() + plot.name.slice(1)
-    : "";
-  const attributes = [];
-  let componentString = ""; // this will hold the inner component structure
-
-  if (plot.type === "input") {
-    for (const [key, value] of Object.entries(plot)) {
-      if (key === "plot") continue;
-
-      if (key === "name") {
-        attributes.push(`input="${value}"`);
-      }
-
-      if (key === "options") {
-        for (const [optKey, optValue] of Object.entries(value)) {
-          if (optKey === "options") {
-            for (const [optKey2, optValue2] of Object.entries(optValue)) {
-              if (optKey2 === "as") {
-                attributes.push(`as_=${JSON.stringify(optValue2)}`);
-              } else {
-                attributes.push(`${optKey2}=${JSON.stringify(optValue2)}`);
-              }
-            }
-          }
-        }
-      }
-    }
-    componentString = `${capitalizedPlotName}(\n${attributes.map(line => "    " + line).join(",\n")}\n)`;
-  } else if (plot.type === "mark") {
-    const plotMark = generatePlotMarkCode(plot, capitalizedPlotName);
-    attributes.push(plotMark);
-    componentString = `\n${attributes.map(line => "    " + line).join(",\n")}\n`;
+  // data
+  if (Object.keys(data).length) {
+    const entries = Object.entries(data).map(
+      ([name, def]) => `${ctx.ident(name)}=${emitDataDef(def)}`
+    );
+    ctx.emit('data = vg.data(');
+    ctx.indent();
+    ctx.emit(entries.join(',\n'));
+    ctx.dedent();
+    ctx.emit(')');
   } else {
-    for (const [key, value] of Object.entries(plot)) {
-      if (key === "name") {
-        attributes.push(`name="${value}"`);
-      } else if (key !== "children" && key !== "type") {
-        const componentType = plot.type
-          ? plot.type.charAt(0).toUpperCase() + plot.type.slice(1)
-          : "";
-        attributes.push(`${componentType}(${plot.type}=${JSON.stringify(value)})`);
-      }
-    }
-    componentString = `\n${attributes.map(line => "    " + line).join(",\n")}\n`;
-    }
+    ctx.emit('data = {}');
+  }
+  ctx.blank();
 
-    return `Component(${componentString})`;
-  };
+  // view / layout / plot
+  ctx.emit(`view = ${emitComponent(view, ctx, 0)}`);
+  ctx.blank();
 
-  const generatePlotMarkCode = (plot, capitalizedPlotName) => {
-    const attributes = [];
-      for (const [key, value] of Object.entries(plot)) {
-        if (key === "name") {
-          attributes.push(`mark="${value}"`)
-        } else if (key == "options") {
-          for (const [optKey, optValue] of Object.entries(value)) {
-            if (optKey === "options") {
-              for (const [optKey2, optValue2] of Object.entries(optValue)) {
-                attributes.push(`${optKey2}=${JSON.stringify(optValue2)}`);
-              }
-              continue;
-            }
-          }
-        } else if (key === "mark") {
-          attributes.push(`data=PlotMarkData(PlotFrom(from_="${value}"))`);
-        } else if (key === "data") {
-          attributes.push(`${key}=${JSON.stringify(value)}`);
-        }
-      }
-    
-      
-    return `PlotMark(${capitalizedPlotName}(${attributes.join(", ")}))`;
-  };
+  const specArgs = [];
+  if (meta) specArgs.push('meta=meta');
+  if (Object.keys(data).length) specArgs.push('data=data');
+  if (Object.keys(params).length) specArgs.push(`params=${literal(params)}`);
+  if (plotDefaults) specArgs.push(`plotDefaults=${literal(plotDefaults)}`);
+  if (config) specArgs.push(`config=${literal(config)}`);
+  specArgs.push('view=view');
+  ctx.emit(`spec = vg.spec(${specArgs.join(', ')})`);
+  ctx.blank();
+  ctx.emit('if __name__ == "__main__":');
+  ctx.indent();
+  ctx.emit('print(json.dumps(spec.to_dict(), sort_keys=True))');
+  ctx.dedent();
 
-  // const formatChannelValue = (value) => {
-  //   if (typeof value === "string") {
-  //     if (value.startsWith("$")) return `ParamRef("${value}")`;
-  //     return `ChannelValue("${value}")`;
-  //   }
-  //   if (typeof value === "object") {
-  //     if (value.dateMonthDay) return `{"dateMonthDay": "${value.dateMonthDay}"}`;
-  //     if (value.count !== undefined) return `{"count": ${value.count === "" ? "None" : `"${value.count}"`}}`;
-  //   }
-  //   return `ChannelValue(${JSON.stringify(value)})`;
-  // };
-
-  const generateRootCode = (root) => {
-    if (root.type === 'vconcat') {
-      return `"vconcat": ${generateVConcatCode(root)}`;
-    } else if (root.type === 'hconcat') {
-      return `"hconcat": ${generateHConcatCode(root)}`;
-    }
-    else {
-      return `"plot": [ ${generateHConcatCode(root)}]`;
-    }
-     
-  };
-  
-  const specCode = `Spec({
-    ${ast.meta ? `"meta": Meta(\n    ${generateMetaCode(ast.meta)}\n),` : ''}
-    ${ast.data && Object.keys(ast.data).length ? `"data": Data(\n    ${generateDataCode(ast.data)}\n),` : ''}
-    ${ast.params && Object.keys(ast.params).length ? `"params": Params(\n    ${generateParamsCode(ast.params)}\n),` : ''}
-    ${ast.root ? generateRootCode(ast.root) : ''};
-  })`;
-  
-  
-
-  const imports = ctx.getImports();
-
-  return `${imports}\n${specCode}`;
+  return ctx.toString();
 }
 
-class PythonCodegenContext {
-  constructor(options = {}) {
+function emitComponent(node, ctx, depth = 0) {
+  if (!node || typeof node !== 'object') return literal(node);
+  if (Array.isArray(node)) {
+    const body = node.map(n => indentLine(emitComponent(n, ctx, depth + 1), depth + 1)).join(',\n');
+    return '[\n' + body + '\n' + '    '.repeat(depth) + ']';
+  }
+
+  if (node.vconcat) {
+    const body = node.vconcat.map(n => indentLine(emitComponent(n, ctx, depth + 1), depth + 1)).join(',\n');
+  return `vg.vconcat(\n${body}\n${'    '.repeat(depth)})`;
+  }
+  if (node.hconcat) {
+    const body = node.hconcat.map(n => indentLine(emitComponent(n, ctx, depth + 1), depth + 1)).join(',\n');
+    return `vg.hconcat(\n${body}\n${'    '.repeat(depth)})`;
+  }
+  if (node.input) {
+    return emitInput(node);
+  }
+  if (node.plot) {
+    return emitPlotObject(node, depth);
+  }
+  return literal(node);
+}
+
+function emitPlotObject(view, depth) {
+  const items = [];
+  for (const mark of view.plot || []) {
+    items.push(emitMark(mark));
+  }
+  for (const [k, v] of Object.entries(view)) {
+    if (k === 'plot') continue;
+    items.push(emitDirective(k, v));
+  }
+  const body = items.map(s => indentLine(s, depth + 1)).join(',\n');
+  return `vg.plot(\n${body}\n${'    '.repeat(depth)})`;
+}
+
+function emitDataDef(def) {
+  const { type, file, query } = def;
+  if (type === 'parquet' && file) return `vg.parquet(${literal(file)})`;
+  if (type === 'table' && query) return `vg.table(${literal(query)})`;
+  return literal(def);
+}
+
+function emitMark(mark) {
+  const { mark: name, data, ...enc } = mark;
+  const fn = markMap[name];
+  const args = [];
+  if (data !== undefined) args.push(`data=${emitDataRef(data)}`);
+  for (const [k, v] of Object.entries(enc)) {
+    const arg = camelCaseToSnake(k);
+    args.push(`${arg}=${literal(v)}`);
+  }
+  if (fn) {
+    return `vg.${fn}(${args.join(', ')})`;
+  }
+  const argStr = args.join(', ');
+  return argStr.length ? `vg.mark(${literal(name)}, ${argStr})` : `vg.mark(${literal(name)})`;
+}
+
+function emitDirective(key, value) {
+  if (key === 'margins' && value && typeof value === 'object') {
+    const parts = Object.entries(value).map(([k, v]) => `${camelCaseToSnake(k)}=${literal(v)}`);
+    return `vg.margins(${parts.join(', ')})`;
+  }
+  const mapped = directiveMap[key];
+  if (mapped) return `vg.${mapped}(${literal(value)})`;
+  return literal({ [key]: value });
+}
+
+function emitInput(node) {
+  const kind = node.input;
+  const opts = { ...node };
+  delete opts.input;
+  const args = Object.entries(opts).map(([k, v]) => `${inputArgName(k)}=${literal(v)}`);
+  if (kind === 'slider') return `vg.slider(${args.join(', ')})`;
+  if (kind === 'select') return `vg.select(${args.join(', ')})`;
+  if (kind === 'checkbox') return `vg.checkbox(${args.join(', ')})`;
+  return `vg.input(${literal(kind)}${args.length ? ', ' + args.join(', ') : ''})`;
+}
+
+function inputArgName(key) {
+  if (key === 'as') return 'as_';
+  return camelCaseToSnake(key);
+}
+
+function emitDataRef(data) {
+  if (Array.isArray(data)) return literal(data);
+  if (data && typeof data === 'object' && data.from) {
+    return `vg.from_(${literal(data.from)})`;
+  }
+  return literal(data);
+}
+
+function literal(v) {
+  if (v === null || v === undefined) return 'None';
+  if (typeof v === 'boolean') return v ? 'True' : 'False';
+  if (typeof v === 'number') return String(v);
+  if (typeof v === 'string') return JSON.stringify(v);
+  if (Array.isArray(v)) {
+    if (!v.length) return '[]';
+    const items = v.map(x => '    ' + literal(x)).join(',\n');
+    return '[\n' + items + '\n]';
+  }
+  if (typeof v === 'object') {
+    const entries = Object.entries(v).map(
+      ([k, val]) => `    ${JSON.stringify(k)}: ${literal(val)}`
+    );
+    if (!entries.length) return '{}';
+    return '{\n' + entries.join(',\n') + '\n}';
+  }
+  return 'None';
+}
+
+function joinArgs(obj) {
+  return Object.entries(obj)
+    .filter(([, v]) => v !== undefined && v !== null)
+    .map(([k, v]) => `${k}=${literal(v)}`)
+    .join(', ');
+}
+
+function indentLine(str, depth) {
+  return '    '.repeat(depth) + str;
+}
+
+class PyGen {
+  constructor() {
+    this.lines = [];
     this.depth = 0;
-    this.options = options;
-    this.imports = [];  // Ensure it's an array from the start
+    this.identMap = new Map();
   }
-
-  indent() {
-    this.depth += 1;
+  emit(line) {
+    this.lines.push(this.tab() + line);
   }
-
-  undent() {
-    this.depth -= 1;
-  }
-
-  tab() {
-    return "    ".repeat(this.depth);
-  }
-
-  // Ensure getImports always returns a valid string
-  getImports() {
-    // If there are no imports, return an empty string instead of calling join on undefined
-    if (this.imports.length === 0) {
-      return ''; 
+  blank() {
+    if (this.lines.length === 0 || this.lines[this.lines.length - 1] !== '') {
+      this.lines.push('');
     }
-    return this.imports.join("\n");
   }
-
-  addImport(pkg) {
-    this.imports.push(pkg);  // Adds an import to the list
+  indent() { this.depth += 1; }
+  dedent() { this.depth = Math.max(0, this.depth - 1); }
+  tab() { return '    '.repeat(this.depth); }
+  toString() { return this.lines.join('\n'); }
+  ident(name) {
+    if (this.identMap.has(name)) return this.identMap.get(name);
+    const safe = name.replace(/[^A-Za-z0-9_]/g, '_').replace(/^([0-9])/, '_$1');
+    this.identMap.set(name, safe);
+    return safe;
   }
 }
 
+const markMap = {
+  ruleY: 'rule_y',
+  ruleX: 'rule_x',
+  lineY: 'line_y',
+  lineX: 'line_x',
+  barY: 'bar_y',
+  barX: 'bar_x',
+  areaY: 'area_y',
+  areaX: 'area_x',
+  dot: 'dot',
+  text: 'text',
+  density: 'density'
+};
+
+const directiveMap = {
+  yGrid: 'y_grid',
+  xGrid: 'x_grid',
+  yLabel: 'y_label',
+  xLabel: 'x_label',
+  yTickFormat: 'y_tick_format',
+  xAxis: 'x_axis',
+  yAxis: 'y_axis',
+  xLabelAnchor: 'x_label_anchor',
+  yLabelAnchor: 'y_label_anchor',
+  rRange: 'r_range',
+  width: 'width',
+  height: 'height',
+  margins: 'margins'
+};

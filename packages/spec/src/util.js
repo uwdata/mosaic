@@ -53,3 +53,10 @@ export function isoparse(string, fallback) {
   if (!re.test(string += '')) return fallback;
   return new Date(string);
 }
+
+export function camelCaseToSnake(name) {
+  if (!name) return '';
+  return name
+    .replace(/([a-z0-9])([A-Z])/g, '$1_$2')
+    .toLowerCase();
+}
