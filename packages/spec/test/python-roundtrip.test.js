@@ -35,13 +35,17 @@ async function runPython(code) {
   return JSON.parse(stdout);
 }
 
-describe('Python codegen round-trip', () => {
-  it.each(['airline-travelers', 'density2d'])('matches canonical JSON fixture for %s', async (name) => {
-    const yamlSpec = await loadYAML(name);
-    const ast = parseSpec(yamlSpec);
-    const pyCode = astToPython(ast);
-    const generated = await runPython(pyCode);
-    const fixture = await loadJSONFixture(name);
-    expect(generated).toEqual(fixture);
-  }, 120000);
+describe('Python codegen round-trip (all YAML specs)', () => {
+  it('matches canonical JSON fixture for every YAML spec', async () => {
+    const files = (await readdir(YAML_DIR)).filter(f => f.endsWith('.yaml'));
+    for (const file of files) {
+      const name = file.replace(/\.yaml$/, '');
+      const yamlSpec = await loadYAML(name);
+      const ast = parseSpec(yamlSpec);
+      const pyCode = astToPython(ast);
+      const generated = await runPython(pyCode);
+      const fixture = await loadJSONFixture(name);
+      expect(generated).toEqual(fixture);
+    }
+  }, 180000);
 });
