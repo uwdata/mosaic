@@ -15,9 +15,16 @@ export function astToPython(ast) {
   ctx.blank();
 
   if (meta) {
-    ctx.emit(
-      `meta = vg.meta(${joinArgs({ title: meta.title, description: meta.description, credit: meta.credit })})`
-    );
+    const keys = Object.keys(meta);
+    const simple = ['title', 'description', 'credit'];
+    const onlySimple = keys.every(k => simple.includes(k));
+    if (onlySimple) {
+      ctx.emit(
+        `meta = vg.meta(${joinArgs({ title: meta.title, description: meta.description, credit: meta.credit })})`
+      );
+    } else {
+      ctx.emit(`meta = ${literal(meta)}`);
+    }
   }
 
   // data
@@ -83,7 +90,11 @@ function emitComponent(node, ctx, depth = 0) {
 function emitPlotObject(view, depth) {
   const items = [];
   for (const mark of view.plot || []) {
-    items.push(emitMark(mark));
+    if (!mark.mark) {
+      items.push(literal(mark));
+    } else {
+      items.push(emitMark(mark));
+    }
   }
   for (const [k, v] of Object.entries(view)) {
     if (k === 'plot') continue;
@@ -95,8 +106,9 @@ function emitPlotObject(view, depth) {
 
 function emitDataDef(def) {
   const { type, file, query } = def;
-  if (type === 'parquet' && file) return `vg.parquet(${literal(file)})`;
-  if (type === 'table' && query) return `vg.table(${literal(query)})`;
+  const keys = Object.keys(def);
+  if (type === 'parquet' && file && keys.length === 2) return `vg.parquet(${literal(file)})`;
+  if (type === 'table' && query && keys.length === 2) return `vg.table(${literal(query)})`;
   return literal(def);
 }
 
@@ -106,7 +118,7 @@ function emitMark(mark) {
   const args = [];
   if (data !== undefined) args.push(`data=${emitDataRef(data)}`);
   for (const [k, v] of Object.entries(enc)) {
-    const arg = camelCaseToSnake(k);
+    const arg = argName(k);
     args.push(`${arg}=${literal(v)}`);
   }
   if (fn) {
@@ -123,7 +135,7 @@ function emitDirective(key, value) {
   }
   const mapped = directiveMap[key];
   if (mapped) return `vg.${mapped}(${literal(value)})`;
-  return literal({ [key]: value });
+  return `vg.directive(${literal(key)}, ${literal(value)})`;
 }
 
 function emitInput(node) {
@@ -139,13 +151,22 @@ function emitInput(node) {
 
 function inputArgName(key) {
   if (key === 'as') return 'as_';
+  if (key === 'from') return 'from_';
+  return camelCaseToSnake(key);
+}
+
+function argName(key) {
+  if (key === 'as') return 'as_';
+  if (key === 'from') return 'from_';
   return camelCaseToSnake(key);
 }
 
 function emitDataRef(data) {
   if (Array.isArray(data)) return literal(data);
   if (data && typeof data === 'object' && data.from) {
-    return `vg.from_(${literal(data.from)})`;
+    const keys = Object.keys(data);
+    if (keys.length === 1) return `vg.from_(${literal(data.from)})`;
+    return literal(data);
   }
   return literal(data);
 }
@@ -227,11 +248,16 @@ const directiveMap = {
   yLabel: 'y_label',
   xLabel: 'x_label',
   yTickFormat: 'y_tick_format',
+  xTickFormat: 'x_tick_format',
   xAxis: 'x_axis',
   yAxis: 'y_axis',
   xLabelAnchor: 'x_label_anchor',
   yLabelAnchor: 'y_label_anchor',
   rRange: 'r_range',
+  colorDomain: 'color_domain',
+  colorScale: 'color_scale',
+  xTickSize: 'x_tick_size',
+  yTickSize: 'y_tick_size',
   width: 'width',
   height: 'height',
   margins: 'margins'
