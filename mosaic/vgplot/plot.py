@@ -50,7 +50,6 @@ def encode_value(v: Any) -> Any:
         return v.to_dict()
     if isinstance(v, Mark):
         return v.to_dict()
-    # passthrough if already a dict-like spec fragment
     if isinstance(v, list):
         return [encode_value(x) for x in v]
     if isinstance(v, dict):
@@ -68,25 +67,29 @@ def plot(*items: Union[Mark, Directive]) -> Dict[str, Any]:
             k, v = item.to_kv()
             directives[k] = v
         elif isinstance(item, dict):
-            # treat as a mark-like dict (already structured)
+            # Treat dicts as already-structured mark entries.
             marks.append(item)
         else:
             raise TypeError(f"Unsupported plot item: {item}")
     root: Dict[str, Any] = {"plot": marks}
-    root.update(omit_none(directives))
+    root.update(directives)
     return root
+
+
+def directive(key: str, value: Any) -> Directive:
+    return Directive(key, value)
 
 
 def mark(name: str, data: Any = None, **enc: Any) -> Mark:
     return Mark(name, data=data, enc=enc)
 
 
-def rule_y(data: Any) -> Mark:
-    return Mark("ruleY", data=data, enc={})
+def rule_y(data: Any = None, **enc: Any) -> Mark:
+    return Mark("ruleY", data=data, enc=enc)
 
 
-def rule_x(data: Any) -> Mark:
-    return Mark("ruleX", data=data, enc={})
+def rule_x(data: Any = None, **enc: Any) -> Mark:
+    return Mark("ruleX", data=data, enc=enc)
 
 
 def line_y(data: Any = None, **enc: Any) -> Mark:
@@ -137,6 +140,10 @@ def y_tick_format(value: str) -> Directive:
     return Directive("y_tick_format", value)
 
 
+def x_tick_format(value: str) -> Directive:
+    return Directive("x_tick_format", value)
+
+
 def x_axis(value: Any) -> Directive:
     return Directive("x_axis", value)
 
@@ -165,6 +172,14 @@ def r_range(value: Any) -> Directive:
     return Directive("r_range", value)
 
 
+def color_domain(value: Any) -> Directive:
+    return Directive("color_domain", value)
+
+
+def color_scale(value: Any) -> Directive:
+    return Directive("color_scale", value)
+
+
 def width(value: int) -> Directive:
     return Directive("width", value)
 
@@ -178,6 +193,14 @@ def margins(top: int = None, right: int = None, bottom: int = None, left: int = 
         "margins",
         omit_none({"top": top, "right": right, "bottom": bottom, "left": left, **kwargs}),
     )
+
+
+def x_tick_size(value: Any) -> Directive:
+    return Directive("x_tick_size", value)
+
+
+def y_tick_size(value: Any) -> Directive:
+    return Directive("y_tick_size", value)
 
 
 # Layout helpers
@@ -204,13 +227,13 @@ def input(kind: str, **opts: Any) -> Dict[str, Any]:
     return payload
 
 
-def slider(label: str, as_: str, min: Any, max: Any, step: Any = None, value: Any = None) -> Dict[str, Any]:
-    return input("slider", label=label, as_=as_, min=min, max=max, step=step, value=value)
+def slider(label: str, as_: str, min: Any = None, max: Any = None, step: Any = None, value: Any = None, **opts: Any) -> Dict[str, Any]:
+    return input("slider", label=label, as_=as_, min=min, max=max, step=step, value=value, **opts)
 
 
-def select(label: str, as_: str, options: Any, multiple: bool = False, value: Any = None) -> Dict[str, Any]:
-    return input("select", label=label, as_=as_, options=options, multiple=multiple, value=value)
+def select(label: str, as_: str, options: Any, multiple: bool = False, value: Any = None, **opts: Any) -> Dict[str, Any]:
+    return input("select", label=label, as_=as_, options=options, multiple=multiple, value=value, **opts)
 
 
-def checkbox(label: str, as_: str, value: bool = False) -> Dict[str, Any]:
-    return input("checkbox", label=label, as_=as_, value=value)
+def checkbox(label: str, as_: str, value: bool = False, **opts: Any) -> Dict[str, Any]:
+    return input("checkbox", label=label, as_=as_, value=value, **opts)
