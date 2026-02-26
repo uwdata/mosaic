@@ -244,7 +244,7 @@ const markMap = {
   dot: 'dot',
   text: 'text',
   density: 'density',
-  // Common marks previously falling through to vg.mark(...)
+  // added more
   frame: 'frame',
   rectY: 'rect_y',
   rectX: 'rect_x',
@@ -299,7 +299,7 @@ const directiveMap = {
   width: 'width',
   height: 'height',
   margins: 'margins',
-  // Common directives previously falling through to vg.directive(...)
+  //added more
   colorScheme: 'color_scheme',
   colorRange: 'color_range',
   xDomain: 'x_domain',
