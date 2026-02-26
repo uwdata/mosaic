@@ -92,3 +92,29 @@ __all__ = [
     "checkbox",
     "input",
 ]
+
+
+def __getattr__(name: str):
+    """Dynamic mark/directive factory for names not explicitly exported.
+
+    Allows any snake_case mark or directive to be used without an explicit
+    function definition, e.g.::
+    """
+    if name.startswith("_"):
+        raise AttributeError(name)
+
+    from .plot import Directive, Mark
+    from .util import camelize
+
+    camel = camelize(name)
+
+    def _factory(*args, data=None, **kwargs):
+        if len(args) == 1 and data is None and not kwargs:
+            # Single positional arg to directive
+            return Directive(camel, args[0])
+        # otherwise creates a mark
+        return Mark(camel, data=data, enc=kwargs if kwargs else None)
+
+    _factory.__name__ = name
+    _factory.__qualname__ = f"vgplot.{name}"
+    return _factory
