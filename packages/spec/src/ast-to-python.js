@@ -34,7 +34,10 @@ export function astToPython(ast) {
     );
     ctx.emit('data = vg.data(');
     ctx.indent();
-    ctx.emit(entries.join(',\n'));
+    entries.forEach((entry, i) => {
+      const suffix = i < entries.length - 1 ? ',' : '';
+      ctx.emit(`${entry}${suffix}`);
+    });
     ctx.dedent();
     ctx.emit(')');
   } else {
@@ -202,7 +205,8 @@ function joinArgs(obj) {
 }
 
 function indentLine(str, depth) {
-  return '    '.repeat(depth) + str;
+  const pad = '    '.repeat(depth);
+  return str.split('\n').map(line => pad + line).join('\n');
 }
 
 class PyGen {
