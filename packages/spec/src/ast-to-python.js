@@ -124,10 +124,8 @@ function emitMark(mark) {
   if (fn) {
     return `vg.${fn}(${args.join(', ')})`;
   }
-  // Fallback: use snake_case name directly (caught by __getattr__ on the Python side)
-  const snakeName = camelCaseToSnake(name); //thinking about this
   const argStr = args.join(', ');
-  return argStr.length ? `vg.${snakeName}(${argStr})` : `vg.${snakeName}()`; //thinking about this
+  return argStr.length ? `vg.mark(${literal(name)}, ${argStr})` : `vg.mark(${literal(name)})`;
 }
 
 function emitDirective(key, value) {
@@ -137,7 +135,7 @@ function emitDirective(key, value) {
   }
   const mapped = directiveMap[key];
   if (mapped) return `vg.${mapped}(${literal(value)})`;
-  return `vg.${camelCaseToSnake(key)}(${literal(value)})`; //thinking about this
+  return `vg.directive(${literal(key)}, ${literal(value)})`;
 }
 
 function emitInput(node) {
@@ -231,7 +229,6 @@ class PyGen {
 }
 
 const markMap = {
-  // Existing
   ruleY: 'rule_y',
   ruleX: 'rule_x',
   lineY: 'line_y',
@@ -242,40 +239,7 @@ const markMap = {
   areaX: 'area_x',
   dot: 'dot',
   text: 'text',
-  //additions
-  density: 'density',
-  frame: 'frame',
-  rectY: 'rect_y',
-  rectX: 'rect_x',
-  rect: 'rect',
-  geo: 'geo',
-  raster: 'raster',
-  contour: 'contour',
-  heatmap: 'heatmap',
-  hexbin: 'hexbin',
-  hexgrid: 'hexgrid',
-  regressionY: 'regression_y',
-  denseLine: 'dense_line',
-  densityY: 'density_y',
-  densityX: 'density_x',
-  sphere: 'sphere',
-  voronoi: 'voronoi',
-  hull: 'hull',
-  delaunayMesh: 'delaunay_mesh',
-  line: 'line',
-  image: 'image',
-  arrow: 'arrow',
-  vector: 'vector',
-  tickX: 'tick_x',
-  tickY: 'tick_y',
-  textX: 'text_x',
-  waffleY: 'waffle_y',
-  axisX: 'axis_x',
-  axisY: 'axis_y',
-  axisFy: 'axis_fy',
-  gridX: 'grid_x',
-  gridY: 'grid_y',
-  errorbarX: 'errorbar_x',
+  density: 'density'
 };
 
 const directiveMap = {
@@ -296,32 +260,5 @@ const directiveMap = {
   yTickSize: 'y_tick_size',
   width: 'width',
   height: 'height',
-  //additions
-  margins: 'margins',
-  colorScheme: 'color_scheme',
-  colorRange: 'color_range',
-  xDomain: 'x_domain',
-  yDomain: 'y_domain',
-  xReverse: 'x_reverse',
-  yReverse: 'y_reverse',
-  xZero: 'x_zero',
-  yZero: 'y_zero',
-  xNice: 'x_nice',
-  yNice: 'y_nice',
-  xClamp: 'x_clamp',
-  yClamp: 'y_clamp',
-  marginLeft: 'margin_left',
-  marginRight: 'margin_right',
-  marginTop: 'margin_top',
-  marginBottom: 'margin_bottom',
-  inset: 'inset',
-  opacityDomain: 'opacity_domain',
-  opacityScale: 'opacity_scale',
-  opacityRange: 'opacity_range',
-  rDomain: 'r_domain',
-  colorLabel: 'color_label',
-  xTickRotate: 'x_tick_rotate',
-  yTickRotate: 'y_tick_rotate',
-  facetGrid: 'facet_grid',
-  xyDomain: 'xy_domain',
+  margins: 'margins'
 };
