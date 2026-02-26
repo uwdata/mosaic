@@ -92,3 +92,37 @@ __all__ = [
     "checkbox",
     "input",
 ]
+
+
+def __getattr__(name: str):
+    """Dynamic mark/directive factory for names not explicitly exported.
+
+    Allows any snake_case mark or directive to be used without an explicit
+    function definition, e.g.::
+
+        vg.voronoi(data=vg.from_("t"), x="a", y="b")   # → Mark
+        vg.color_scheme("blues")                          # → Directive
+        vg.frame()                                        # → Mark (no args)
+
+    Heuristic:
+    - One positional arg, no keyword args  → Directive(camelName, value)
+    - Everything else (including no args)  → Mark(camelName, ...)
+    """
+    if name.startswith("_"):
+        raise AttributeError(name)
+
+    from .plot import Directive, Mark
+    from .util import camelize
+
+    camel = camelize(name)
+
+    def _factory(*args, data=None, **kwargs):
+        if len(args) == 1 and data is None and not kwargs:
+            # Single positional arg → directive:  vg.color_scheme("blues")
+            return Directive(camel, args[0])
+        # Otherwise → mark:  vg.voronoi(data=..., x=...) or vg.frame()
+        return Mark(camel, data=data, enc=kwargs if kwargs else None)
+
+    _factory.__name__ = name
+    _factory.__qualname__ = f"vgplot.{name}"
+    return _factory
