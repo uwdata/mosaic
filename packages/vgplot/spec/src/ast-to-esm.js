@@ -141,7 +141,7 @@ export class CodegenContext {
     if (!this.imports.has(pkg)) {
       this.imports.set(pkg, [method]);
     } else {
-      // @ts-expect-error
+      // @ts-expect-error Map.get() may return undefined, but has() check above guarantees it exists
       this.imports.get(pkg).push(method);
     }
   }

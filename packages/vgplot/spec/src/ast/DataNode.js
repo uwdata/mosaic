@@ -10,7 +10,7 @@ export const CSV_DATA = 'csv';
 export const JSON_DATA = 'json';
 export const SPATIAL_DATA = 'spatial';
 
-// @ts-expect-error
+// @ts-expect-error Map entries have heterogeneous function value types
 const dataFormats = new Map([
   [TABLE_DATA, parseTableData],
   [PARQUET_DATA, parseParquetData],
@@ -54,25 +54,21 @@ function fileExtension(file) {
 }
 
 function parseTableData(name, spec, ctx) {
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const { query, type, ...options } = spec;
   return new TableDataNode(name, query, parseOptions(options, ctx));
 }
 
 function parseParquetData(name, spec, ctx) {
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const { file, type, ...options } = spec;
   return new ParquetDataNode(name, file, parseOptions(options, ctx));
 }
 
 function parseCSVData(name, spec, ctx) {
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const { file, type, ...options } = spec;
   return new CSVDataNode(name, file, parseOptions(options, ctx));
 }
 
 function parseJSONData(name, spec, ctx) {
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const { data, file, type, ...options } = spec;
   const opt = parseOptions(options, ctx);
   return data
@@ -81,7 +77,6 @@ function parseJSONData(name, spec, ctx) {
 }
 
 function parseSpatialData(name, spec, ctx) {
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const { file, type, ...options } = spec;
   return new SpatialDataNode(name, file, parseOptions(options, ctx));
 }
@@ -200,7 +195,7 @@ export class FileDataNode extends QueryDataNode {
   instantiateQuery(ctx) {
     const { name, method, file, options } = this;
     const url = resolveFileURL(file, ctx.baseURL);
-    const opt = options?.instantiate(ctx)
+    const opt = options?.instantiate(ctx);
     return ctx.api[method](name, url, opt);
   }
 
@@ -271,9 +266,7 @@ export class LiteralJSONDataNode extends QueryDataNode {
   codegenQuery(ctx) {
     const { name, data, options } = this;
     const opt = options ? ',' + options.codegen(ctx) : '';
-    const d = '[\n    '
-      + data.map(d => JSON.stringify(d)).join(',\n    ')
-      + '\n  ]';
+    const d = '[\n    ' + data.map(d => JSON.stringify(d)).join(',\n    ') + '\n  ]';
     return `${ctx.ns()}loadObjects("${name}", ${d}${opt})`;
   }
 

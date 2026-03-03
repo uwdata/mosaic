@@ -9,7 +9,7 @@ export function getDatum(el) {
   if (el.tagName === 'a') {
     el = el.children[0];
   }
-  // @ts-expect-error
+  // @ts-expect-error -- __data__ is a non-standard property set by the rendering runtime
   const data = el.__data__;
   return Array.isArray(data) ? data[0] : data;
 }

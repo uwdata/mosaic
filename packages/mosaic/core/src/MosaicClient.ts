@@ -128,8 +128,7 @@ export class MosaicClient {
    * @param filter The filtering criteria to apply in the query.
    * @returns The client query
    */
-   // @typeescript-eslint/no-unused-vars
-   query(filter?: FilterExpr | null): ClientQuery {
+   query(_filter?: FilterExpr | null): ClientQuery {
     return null;
   }
 
@@ -146,8 +145,7 @@ export class MosaicClient {
    * @param data The query result.
    * @returns this
    */
-   // eslint-disable-next-line
-   queryResult(data: unknown): this {
+   queryResult(_data: unknown): this {
     return this;
   }
 
@@ -156,8 +154,7 @@ export class MosaicClient {
    * @param error
    * @returns this
    */
-   // eslint-disable-next-line
-   queryError(error: Error): this { // @typescript-eslint/no-unused-vars
+   queryError(_error: Error): this {
     // do nothing, the coordinator logs the error
     return this;
   }
