@@ -20,18 +20,25 @@ jobs:
     steps:
       - uses: actions/checkout@v6
 
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: "10.5.2"
+
       - name: Setup node
         uses: actions/setup-node@v6
         with:
           node-version: "22.x"
-          cache: "npm"
+          cache: "pnpm"
+          cache-dependency-path: |
+            pnpm-lock.yaml
 
       - name: Install Node dependencies
-        run: npm ci
+        run: pnpm install --frozen-lockfile
 
-      - run: npm run lint
-      - run: npm run build
-      - run: npm run test
+      - run: pnpm run lint
+      - run: pnpm run build
+      - run: pnpm run test
 
   python:
     name: Test in Python
