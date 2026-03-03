@@ -5,7 +5,7 @@
  */
 export function patchScreenCTM() {
   /** @type {SVGGraphicsElement} */
-  // @ts-ignore
+  // @ts-expect-error `this` is an untyped SVGElement from the patched method
   const node = this;
   const getScreenCTM = node.getScreenCTM;
   let memo;

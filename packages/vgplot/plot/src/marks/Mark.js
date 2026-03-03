@@ -253,7 +253,6 @@ export function markQuery(channels, table, skip = []) {
  * @returns {object[]}
  */
 export function markPlotSpec(type, detail, channels, data, options = {}) {
-  // @ts-ignore
   const { numRows: length, values, columns } = data ?? {};
 
   // populate plot specification options

@@ -1,6 +1,7 @@
 import js from '@eslint/js';
 import tseslint from 'typescript-eslint';
 import globals from 'globals';
+import eslintConfigPrettier from 'eslint-config-prettier/flat';
 
 /** @type {import('@types/eslint').Linter.Config[]} */
 export default tseslint.config(
@@ -21,11 +22,24 @@ export default tseslint.config(
     },
     rules: {
       "no-unexpected-multiline": "off",
+      "no-unused-vars": "off",
       "@typescript-eslint/no-explicit-any": "warn",
-      "@typescript-eslint/no-unused-vars": "warn",
+      "@typescript-eslint/no-unused-vars": [
+        "error",
+        {
+          args: "all",
+          argsIgnorePattern: "^_",
+          caughtErrors: "all",
+          caughtErrorsIgnorePattern: "^_",
+          destructuredArrayIgnorePattern: "^_",
+          varsIgnorePattern: "^_",
+          ignoreRestSiblings: true
+        }
+      ],
       "@typescript-eslint/no-unused-expressions": "warn",
       "@typescript-eslint/no-this-alias": "warn",
       "@typescript-eslint/ban-ts-comment": "warn"
     },
-  }
+  },
+  eslintConfigPrettier
 );

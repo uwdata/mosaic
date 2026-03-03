@@ -9,7 +9,6 @@ const OPTIONS_ONLY_MARKS = new Set([
   'graticule'
 ]);
 
-// @ts-ignore
 const SELECT_TRANSFORMS = new Map([
   ['first', Plot.selectFirst],
   ['last', Plot.selectLast],

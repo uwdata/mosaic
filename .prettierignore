@@ -1,0 +1,6 @@
+# Schema files
+specs/**
+docs/public/specs/**
+docs/public/schema/**
+packages/vgplot/spec/dist/mosaic-schema.json
+

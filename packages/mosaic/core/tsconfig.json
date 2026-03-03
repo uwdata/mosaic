@@ -3,7 +3,7 @@
   "include": ["src/**/*"],
   "compilerOptions": {
     "outDir": "dist",
-    "strict": true
+    "strict": true,
   },
-  "references": [{ "path": "../sql" }]
+  "references": [{ "path": "../sql" }],
 }

@@ -67,7 +67,7 @@ export class AsyncDispatch<T> {
    * @param value The event value.
    * @returns The (possibly transformed) event value to emit.
    */
-  willEmit(type: string, value: T): T {
+  willEmit(_type: string, value: T): T {
     return value;
   }
 
@@ -83,8 +83,8 @@ export class AsyncDispatch<T> {
    *  function, or null if all unemitted event values should be filtered.
    */
   emitQueueFilter(
-    _type: string, // eslint-disable-line @typescript-eslint/no-unused-vars
-    _value: unknown // eslint-disable-line @typescript-eslint/no-unused-vars
+    _type: string, 
+    _value: unknown
   ): ((value: unknown) => boolean | null) | null {
     // removes all pending items
     return null;

@@ -3,10 +3,10 @@ import { isNode } from '@uwdata/mosaic-sql';
 function extractField(field) {
   if (isNode(field)) {
     if (field.type === 'COLUMN_REF') {
-      // @ts-ignore
+      // @ts-expect-error `column` is not declared on the base SQL AST node type
       return field.column;
     } else if (field.type === 'AGGREGATE') {
-      // @ts-ignore
+      // @ts-expect-error `args` is not declared on the base SQL AST node type
       return field.args[0] ?? field;
     }
   }
