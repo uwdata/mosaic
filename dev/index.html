@@ -60,6 +60,7 @@
         <option value="walmart-openings">Walmart Openings</option>
         <option value="weather">Seattle Weather</option>
         <option value="wind-map">Wind Map</option>
+        <option value="window-frame">Window Frame</option>
         <option value="wnba-shots">WNBA Shot Chart</option>
       </select>
     </span>
@@ -110,7 +111,7 @@
   <div id="view"></div>
 <script type="module">
   import yaml from '../node_modules/yaml/browser/index.js';
-  import { astToDOM, astToESM, clear, parseSpec, setDatabaseConnector, vg } from './setup.js';
+  import { astToDOM, astToESM, clear, parseSpec, setDatabaseConnector, vg } from './setup.ts';
 
   const view = document.querySelector('#view');
   const connectorMenu = document.querySelector('#connectors');

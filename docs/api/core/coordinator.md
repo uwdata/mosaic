@@ -48,7 +48,7 @@ Disconnect the [_client_](./client) from the coordinator and remove all update h
 
 Get or set the coordinator's logger.
 The logger defaults to the standard JavaScript `console`.
-A logger instance must support `log`, `info`, `warn`, and `error` mehthods.
+A logger instance must support `log`, `info`, `warn`, and `error` methods.
 If set to `null`, logging will be suppressed.
 
 ## clear

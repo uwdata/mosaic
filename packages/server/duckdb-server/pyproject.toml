@@ -1,0 +1,41 @@
+[project]
+name = "duckdb-server"
+description = "A DuckDB server for Mosaic"
+dynamic = ["version"]
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+  "diskcache",
+  "duckdb>=1.4.1",
+  "pandas",
+  "pyarrow",
+  "socketify",
+  "ujson"
+]
+
+[project.scripts]
+duckdb-server = "pkg.__main__:serve"
+
+[project.urls]
+homepage = "https://github.com/uwdata/mosaic"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[dependency-groups]
+dev = [
+  "pytest-cov",
+  "pytest",
+  "ruff",
+  "types-ujson",
+  "watchdog",
+  "ty",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["pkg"]
+
+[tool.hatch.version]
+path = "package.json"
+pattern = "\"version\": \"(?P<version>.+?)\""

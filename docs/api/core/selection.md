@@ -29,7 +29,7 @@ Create a new Selection instance with an intersect (conjunction) resolution strat
 
 The _options_ object may include:
 - A Boolean _cross_ flag (default `false`) indicating cross-filtered resolution. If true, selection clauses will not be applied to the clients they are associated with.
-- An _empty_ flag (default `false`) indicates whether a selection without any clauses should not select an empty set with no records (`true`) or select all records (`false`).
+- An _empty_ flag (default `false`) indicates whether a selection without any clauses should select an empty set with no records (`true`) or select all records (`false`).
 - An _include_ option (default `[]`) indicating one or more selections whose clauses should be included as part of this selection. The option value can be either a single `Selection` instance or an array of `Selection` instances.
 
 ## Selection.union
@@ -40,7 +40,7 @@ Create a new Selection instance with a union (disjunction) resolution strategy.
 
 The _options_ object may include:
 - A Boolean _cross_ flag (default `false`) indicating cross-filtered resolution. If true, selection clauses will not be applied to the clients they are associated with.
-- An _empty_ flag (default `false`) indicates whether a selection without any clauses should not select an empty set with no records (`true`) or select all records (`false`).
+- An _empty_ flag (default `false`) indicates whether a selection without any clauses should select an empty set with no records (`true`) or select all records (`false`).
 - An _include_ option (default `[]`) indicating one or more selections whose clauses should be included as part of this selection. The option value can be either a single `Selection` instance or an array of `Selection` instances.
 
 ## Selection.single
@@ -51,7 +51,7 @@ Create a new Selection instance with a singular resolution strategy that keeps o
 
 The _options_ object may include:
 - A Boolean _cross_ flag (default `false`) indicating cross-filtered resolution. If true, selection clauses will not be applied to the clients they are associated with.
-- An _empty_ flag (default `false`) indicates whether a selection without any clauses should not select an empty set with no records (`true`) or select all records (`false`).
+- An _empty_ flag (default `false`) indicates whether a selection without any clauses should select an empty set with no records (`true`) or select all records (`false`).
 - An _include_ option (default `[]`) indicating one or more selections whose clauses should be included as part of this selection. The option value can be either a single `Selection` instance or an array of `Selection` instances.
 
 ## Selection.crossfilter

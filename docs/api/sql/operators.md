@@ -105,3 +105,27 @@ Equivalent to `NOT(lo <= expression AND expression <= hi)`.
 `isIn(expression, values)`
 
 Returns an expression testing if the input _expression_ matches any of the entries in the _values_ array. Maps to `expression IN (...values)`.
+
+## listContains
+
+`listContains(expression, value)`
+
+Returns an expression testing if the input _value_ exists in the _expression_ list. Maps to `list_contains(expression, value)`.
+
+## listHasAny
+
+`listHasAny(expression, values)`
+
+Returns an expression testing if any of the input _values_ exist in the _expression_ list. Maps to `list_has_any(expression, values)`.
+
+## listHasAll
+
+`listHasAll(expression, values)`
+
+Returns an expression testing if all the input _values_ exist in the _expression_ list. Maps to `list_has_all(expression, values)`.
+
+## unnest
+
+`unnest(expression)`
+
+Returns an expression that unnests the _expression_ list or struct. Maps to `UNNEST(expression)`.

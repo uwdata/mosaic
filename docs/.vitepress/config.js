@@ -1,10 +1,14 @@
 import { defineConfig } from 'vitepress'
+import viteConfig from '../../vite.config.js';
 
 // https://vitepress.dev/reference/site-config
 export default defineConfig({
   title: 'Mosaic',
   description: 'Scalable, interactive data visualization',
   base: '/mosaic/',
+  vite: {
+    resolve: viteConfig.resolve
+  },
   themeConfig: {
     // https://vitepress.dev/reference/default-theme-config
     logo: {

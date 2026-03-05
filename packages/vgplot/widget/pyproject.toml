@@ -1,0 +1,48 @@
+[project]
+name = "mosaic-widget"
+description = "A Jupyter widget for Mosaic"
+dynamic = ["version"]
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+  "anywidget>=0.9.8",
+  "duckdb>=1.4.1",
+  "narwhals>=2.8.0",
+  "pyarrow",
+]
+
+[project.urls]
+homepage = "https://github.com/uwdata/mosaic"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build]
+only-packages = true
+artifacts = [
+  "mosaic_widget/static/"
+]
+
+[dependency-groups]
+dev = [
+  "jupyterlab",
+  "pandas",
+  "pyyaml",
+  "ruff",
+  "ty",
+  "watchfiles",
+]
+test = [
+  "dask",
+  "ibis-framework",
+  "modin",
+  "polars",
+  "pyarrow-hotfix",
+  "pytest-cov",
+  "pytest",
+]
+
+[tool.hatch.version]
+path = "package.json"
+pattern = "\"version\": \"(?P<version>.+?)\""

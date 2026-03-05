@@ -1,0 +1,30 @@
+{
+  "name": "mosaic-widget",
+  "version": "0.21.1",
+  "private": true,
+  "license": "BSD-3-Clause",
+  "author": "Dominik Moritz (https://www.domoritz.de)",
+  "type": "module",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/uwdata/mosaic.git"
+  },
+  "scripts": {
+    "clean": "rimraf mosaic_widget/static",
+    "build": "esbuild --bundle --format=esm --outdir=mosaic_widget/static src/index.js",
+    "dev": "npm run build -- --watch",
+    "test": "tsc --build",
+    "lint": "eslint src",
+    "prerelease": "npm run test && npm run lint && uv run ruff check && uv run ruff format --check && npm run build",
+    "release": "uv build && uvx twine upload --skip-existing ../../../dist/mosaic_widget*"
+  },
+  "dependencies": {
+    "@uwdata/mosaic-core": "^0.21.1",
+    "@uwdata/mosaic-spec": "^0.21.1",
+    "uuid": "^13.0.0"
+  },
+  "devDependencies": {
+    "anywidget": "0.9.21",
+    "esbuild": "^0.27.2"
+  }
+}

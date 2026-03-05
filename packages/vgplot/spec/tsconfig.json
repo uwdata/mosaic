@@ -1,0 +1,13 @@
+{
+  "extends": "../../../tsconfig.base.json",
+  "include": ["src/**/*"],
+  "compilerOptions": {
+    "emitDeclarationOnly": true,
+    "outDir": "dist"
+  },
+  "references": [
+    { "path": "../../mosaic/core" },
+    { "path": "../../mosaic/sql" },
+    { "path": "../vgplot" }
+  ]
+}

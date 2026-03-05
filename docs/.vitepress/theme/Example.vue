@@ -33,7 +33,11 @@ export default {
     try {
       init();
       const api = createAPIContext({ extensions: { loadSpatial } });
-      const baseURL = location.origin + import.meta.env.BASE_URL;
+      // we use cloudflare hosting of datasets to avoid GitHub pages limitations
+      // in particular, Firefox range requests on GitHub pages leads to errors
+      // to instead load data from the same domain as the docs, use this:
+      //   location.origin + import.meta.env.BASE_URL;
+      const baseURL = 'https://pub-1da360b43ceb401c809f68ca37c7f8a4.r2.dev/';
       const text = await fetch(withBase(this.spec)).then(r => r.text());
       const spec = yaml.parse(text);
       const view = await astToDOM(parseSpec(spec), { api, baseURL });

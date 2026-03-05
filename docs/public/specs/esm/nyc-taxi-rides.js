@@ -2,7 +2,7 @@ import * as vg from "@uwdata/vgplot";
 
 await vg.coordinator().exec([
   vg.loadExtension("spatial"),
-  vg.loadParquet("rides", "https://idl.uw.edu/mosaic-datasets/data/nyc-rides-2010.parquet", {
+  vg.loadParquet("rides", "https://pub-1da360b43ceb401c809f68ca37c7f8a4.r2.dev/data/nyc-rides-2010.parquet", {
   select: [
   "pickup_datetime::TIMESTAMP AS datetime",
   "ST_Transform(ST_Point(pickup_latitude, pickup_longitude), 'EPSG:4326', 'ESRI:102718') AS pick",

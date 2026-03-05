@@ -6,7 +6,7 @@ import { copyFile, readFile, symlink, unlink } from 'node:fs/promises';
 async function link(schemaFile, linkFile) {
   try {
     await unlink(linkFile);
-  } catch (err) { // eslint-disable-line no-unused-vars
+  } catch (err) { // eslint-disable-line @typescript-eslint/no-unused-vars
     // file may not have existed
   }
   await symlink(schemaFile, linkFile);
@@ -14,7 +14,7 @@ async function link(schemaFile, linkFile) {
 }
 
 // directories
-const packageDir = join('packages', 'spec');
+const packageDir = join('packages', 'vgplot', 'spec');
 const publishDir = join('docs', 'public', 'schema');
 
 // get schema version number

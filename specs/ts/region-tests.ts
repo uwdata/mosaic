@@ -72,6 +72,8 @@ export const spec : Spec = {
       "marginLeft": 24,
       "xLabel": null,
       "xTicks": 10,
+      "xLine": true,
+      "yLine": true,
       "yLabel": "Unemployment (%)",
       "yGrid": true,
       "marginRight": 0

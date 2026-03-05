@@ -2,6 +2,7 @@
 .mosaic
 .duckdb
 .ipynb_checkpoints
+.idea
 dev/specs
 docs/.vitepress/cache
 docs/.vitepress/dist
@@ -14,6 +15,7 @@ node_modules
 **/.mypy_cache
 **/.coverage
 **/.venv
+**/tsconfig.tsbuildinfo
 transitionFolder
 
 # Virtual environment

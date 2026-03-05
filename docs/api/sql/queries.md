@@ -47,14 +47,23 @@ The following static methods create a new `SelectQuery` and invoke the correspon
 
 - `Query.select()`: See the [`select`](#select) method below.
 - `Query.from()`: See the [`from`](#from) method below.
-- `Query.with()`: See the [`with`](#with) method below.
 
 In addition, the following static methods take multiple queries as input and return `SetOperation` instances:
 
 - `Query.union(...queries)`: Union results with de-duplication of rows.
+- `Query.unionByName(...queries)`: Union results with de-duplication of rows, combining rows from different tables by name, instead of by position.
 - `Query.unionAll(...queries)`: Union results with no de-duplication of rows.
+- `Query.unionAllByName(...queries)`: Union results with no de-duplication of rows, combining rows from different tables by name, instead of by position.
 - `Query.intersect(...queries)`: Query for distinct rows that are output by both the left and right input queries.
+- `Query.intersectAll(...queries)`: Query for all rows that are output by both the left and right input queries using bag semantics, so duplicates are returned.
 - `Query.except(...queries)`: Query for distinct rows from the left input query that aren't output by the right input query.
+- `Query.exceptAll(...queries)`: Query for all rows from the left input query that aren't output by the right input query using bag semantics, so duplicates are returned.
+
+Common table expressions can be applied via static method
+
+- `Query.with()`: See the [`with`](#with) method below.
+
+Each of the methods described above can also be utilized in conjunction with a WITH clause. For example, `Query.with().select()` results in a `SelectQuery`, whereas `Query.with().union()` will produce a `SetOperation`.
 
 To instead create a query for metadata (column names and types), pass a query to the static `describe` method:
 
@@ -94,10 +103,10 @@ The _tables_ may be table name strings, queries or subquery expressions, and map
 
 ## with
 
-`query.with(...expressions)`
+`Query.with(...expressions)`
 
-Provide a set of named subqueries in the form of [common table expressions](https://duckdb.org/docs/sql/query_syntax/with.html) and return this query instance.
-The input _expressions_ should consist of one or more maps (as JavaScript `object` values) from subquery names to query expressions.
+Provide a set of named subqueries in the form of [common table expressions (CTEs)](https://duckdb.org/docs/sql/query_syntax/with.html) and return this query instance.
+The input _expressions_ should consist of one or more maps (as JavaScript `object` values) from subquery names to query expressions and/or CTE instances produced by the `cte` method.
 
 ## distinct
 
@@ -155,19 +164,19 @@ This method is additive: any previously defined filter criteria will still remai
 
 ## orderby
 
-`SelectQuery.orderby(...expressions)`
+`Query.orderby(...expressions)`
 
 Update the query to additionally order results by the provided _expressions_ and return this query instance.
 This method is additive: any previously defined sort criteria will still remain.
 
 ## limit
 
-`SelectQuery.limit(rows)`
+`Query.limit(rows)`
 
 Update the query to limit results to the specified number of _rows_ and return this query instance.
 
 ## offset
 
-`SelectQuery.offset(rows)`
+`Query.offset(rows)`
 
 Update the query to offset the results by the specified number of _rows_ and return this query instance.
