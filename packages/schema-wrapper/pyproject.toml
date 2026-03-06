@@ -27,6 +27,9 @@ dev = [
     "mosaic-widget"
 ]
 
+[tool.uv.sources]
+"mosaic-widget" = { workspace = true }
+
 [tool.hatch.build.targets.wheel]
 packages = ["src"]
 
