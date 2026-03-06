@@ -8,6 +8,10 @@ members = [
 # https://github.com/charliermarsh/ruff
 [tool.ruff]
 extend-include = ["*.ipynb"]
+extend-exclude = [
+    "specs/python",
+    "docs/public/specs/python",
+]
 
 [tool.ruff.lint]
 pydocstyle = { convention = "numpy" }
