@@ -1,4 +1,28 @@
-from generated_classes import *
+from schema_wrapper.generated_classes import (
+    BarX,
+    ChannelValue,
+    ChannelValueSpec,
+    Component,
+    Dot,
+    Fixed,
+    HConcat,
+    Highlight,
+    IntervalX,
+    ParamDefinition,
+    ParamLiteral,
+    ParamRef,
+    ParamValue,
+    Params,
+    Plot,
+    PlotFrom,
+    PlotInteractor,
+    PlotLegend,
+    PlotMark,
+    PlotMarkData,
+    Selection,
+    Spec,
+    VConcat,
+)
 
 spec = Spec(
     {

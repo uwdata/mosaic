@@ -21,7 +21,6 @@ from .plot import (
     x_axis,
     y_axis,
     x_label,
-    y_label,
     x_label_anchor,
     y_label_anchor,
     r_range,

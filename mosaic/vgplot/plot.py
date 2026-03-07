@@ -156,10 +156,6 @@ def x_label(value: str) -> Directive:
     return Directive("x_label", value)
 
 
-def y_label(value: str) -> Directive:
-    return Directive("y_label", value)
-
-
 def x_label_anchor(value: str) -> Directive:
     return Directive("x_label_anchor", value)
 
@@ -188,10 +184,18 @@ def height(value: int) -> Directive:
     return Directive("height", value)
 
 
-def margins(top: int = None, right: int = None, bottom: int = None, left: int = None, **kwargs: Any) -> Directive:
+def margins(
+    top: int = None,
+    right: int = None,
+    bottom: int = None,
+    left: int = None,
+    **kwargs: Any,
+) -> Directive:
     return Directive(
         "margins",
-        omit_none({"top": top, "right": right, "bottom": bottom, "left": left, **kwargs}),
+        omit_none(
+            {"top": top, "right": right, "bottom": bottom, "left": left, **kwargs}
+        ),
     )
 
 
@@ -227,12 +231,37 @@ def input(kind: str, **opts: Any) -> Dict[str, Any]:
     return payload
 
 
-def slider(label: str, as_: str, min: Any = None, max: Any = None, step: Any = None, value: Any = None, **opts: Any) -> Dict[str, Any]:
-    return input("slider", label=label, as_=as_, min=min, max=max, step=step, value=value, **opts)
+def slider(
+    label: str,
+    as_: str,
+    min: Any = None,
+    max: Any = None,
+    step: Any = None,
+    value: Any = None,
+    **opts: Any,
+) -> Dict[str, Any]:
+    return input(
+        "slider", label=label, as_=as_, min=min, max=max, step=step, value=value, **opts
+    )
 
 
-def select(label: str, as_: str, options: Any, multiple: bool = False, value: Any = None, **opts: Any) -> Dict[str, Any]:
-    return input("select", label=label, as_=as_, options=options, multiple=multiple, value=value, **opts)
+def select(
+    label: str,
+    as_: str,
+    options: Any,
+    multiple: bool = False,
+    value: Any = None,
+    **opts: Any,
+) -> Dict[str, Any]:
+    return input(
+        "select",
+        label=label,
+        as_=as_,
+        options=options,
+        multiple=multiple,
+        value=value,
+        **opts,
+    )
 
 
 def checkbox(label: str, as_: str, value: bool = False, **opts: Any) -> Dict[str, Any]:

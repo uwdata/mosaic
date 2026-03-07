@@ -10,7 +10,9 @@ class SchemaBase:
 
         for field, value in vars(self).items():
             if field == "additional_params":
-                additional_parameter_dict = {k: _todict(v, keep_none_values) for k, v in value.items()}
+                additional_parameter_dict = {
+                    k: _todict(v, keep_none_values) for k, v in value.items()
+                }
                 # The dictionaries shouldn't have any overlapping keys
                 class_dictionary.update(additional_parameter_dict)
                 continue
@@ -21,9 +23,9 @@ class SchemaBase:
             val_as_dict = str(value)  # Default value
 
             if isinstance(value, dict):
-                #if len(value.keys()) == 1:
+                # if len(value.keys()) == 1:
                 #    val_as_dict = _todict(list(value.values())[0], keep_none_values)
-                #else:
+                # else:
                 val_as_dict = {
                     revert_validation(k): _todict(v, keep_none_values)
                     for k, v in value.items()
@@ -38,7 +40,9 @@ class SchemaBase:
             elif hasattr(value, "__dict__"):
                 val_as_dict = value.__dict__
                 if len(val_as_dict.keys()) == 1:
-                    val_as_dict = _todict(list(val_as_dict.values())[0], keep_none_values)
+                    val_as_dict = _todict(
+                        list(val_as_dict.values())[0], keep_none_values
+                    )
                 else:
                     val_as_dict = {
                         revert_validation(k): _todict(v, keep_none_values)
@@ -55,13 +59,20 @@ class SchemaBase:
 
         if not class_dictionary:
             return None
-        elif (
-            len(list(class_dictionary.values())) == 1
-        ):
+        elif len(list(class_dictionary.values())) == 1:
             if list(class_dictionary.keys())[0] == "value":
                 if self.__class__.__name__ == "Component":
-                    if self.value.__class__.__name__ in ["VConcat", "HConcat", "HSpace", "VSpace"]:
-                        return {self.value.__class__.__name__.lower(): class_dictionary["value"]}
+                    if self.value.__class__.__name__ in [
+                        "VConcat",
+                        "HConcat",
+                        "HSpace",
+                        "VSpace",
+                    ]:
+                        return {
+                            self.value.__class__.__name__.lower(): class_dictionary[
+                                "value"
+                            ]
+                        }
 
                 return class_dictionary["value"]
             elif list(class_dictionary.keys())[0] == "vconcat":

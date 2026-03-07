@@ -4,32 +4,19 @@ from __future__ import annotations
 
 import keyword
 import re
-import subprocess
-import textwrap
-import urllib
-from html import unescape
-from itertools import chain
-from operator import itemgetter
 import sys
+import urllib
+from types import ModuleType
+
 import narwhals.stable.v1 as nw
 from typing import (
-    TYPE_CHECKING,
     Any,
     Final,
     Iterable,
-    Iterator,
-    Literal,
-    Sequence,
-    overload,
 )
 
-if TYPE_CHECKING:
-    from pathlib import Path
-    from typing_extensions import LiteralString
-
-    from mistune import BlockState
-
 EXCLUDE_KEYS: Final = ("definitions", "title", "description", "$schema", "id")
+_OptionalModule = ModuleType | None
 
 jsonschema_to_python_types = {
     "string": "str",
@@ -115,7 +102,7 @@ def get_key_by_value(dictionary, target_value):
             return key
 
 
-def get_dependencies(data) -> List[str]:
+def get_dependencies(data) -> list[str]:
     dependencies = []
 
     if isinstance(data, dict):
@@ -149,7 +136,7 @@ class UndefinedType:
 
     __instance = None
 
-    def __new__(cls, *args, **kwargs) -> Self:
+    def __new__(cls, *args, **kwargs) -> "UndefinedType":
         if not isinstance(cls.__instance, cls):
             cls.__instance = object.__new__(cls, *args, **kwargs)
         return cls.__instance
@@ -161,9 +148,7 @@ class UndefinedType:
 Undefined = UndefinedType()
 
 
-def _is_iterable(
-    obj: Any, *, exclude: type | tuple[type, ...] = (str, bytes)
-) -> TypeIs[Iterable[Any]]:
+def _is_iterable(obj: Any, *, exclude: type | tuple[type, ...] = (str, bytes)) -> bool:
     return not isinstance(obj, exclude) and isinstance(obj, Iterable)
 
 

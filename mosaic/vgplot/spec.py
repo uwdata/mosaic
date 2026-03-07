@@ -23,7 +23,9 @@ class Meta:
         )
 
 
-def meta(title: str | None = None, description: str | None = None, credit: str | None = None) -> Meta:
+def meta(
+    title: str | None = None, description: str | None = None, credit: str | None = None
+) -> Meta:
     return Meta(title=title, description=description, credit=credit)
 
 
@@ -67,5 +69,22 @@ class Spec:
         return json.dumps(self.to_dict(), **kwargs)
 
 
-def spec(*, meta: Meta | Dict[str, Any] | None = None, data: Dict[str, Any] | None = None, params: Dict[str, Any] | None = None, plotDefaults: Dict[str, Any] | None = None, config: Dict[str, Any] | None = None, view: Dict[str, Any] | None = None, **extra: Any) -> Spec:
-    return Spec(meta=meta, data=data, params=params, plotDefaults=plotDefaults, config=config, view=view, **extra)
+def spec(
+    *,
+    meta: Meta | Dict[str, Any] | None = None,
+    data: Dict[str, Any] | None = None,
+    params: Dict[str, Any] | None = None,
+    plotDefaults: Dict[str, Any] | None = None,
+    config: Dict[str, Any] | None = None,
+    view: Dict[str, Any] | None = None,
+    **extra: Any,
+) -> Spec:
+    return Spec(
+        meta=meta,
+        data=data,
+        params=params,
+        plotDefaults=plotDefaults,
+        config=config,
+        view=view,
+        **extra,
+    )

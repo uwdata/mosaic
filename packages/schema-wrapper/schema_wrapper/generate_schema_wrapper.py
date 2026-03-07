@@ -103,7 +103,6 @@ def generate_class(class_name: str, class_schema: Dict[str, Any]) -> str:
         valid_prop = get_valid_identifier(prop)
         valid_properties[valid_prop] = prop_schema
 
-    
     for prop, prop_schema in valid_properties.items():
         type_hint = get_type_hint(prop_schema)
 
@@ -194,10 +193,10 @@ def get_type_hint(type_schema: Dict[str, Any]) -> str:
         return get_type_union(types)
     elif "$ref" in type_schema:
         ref_class_name = get_valid_identifier(type_schema["$ref"].split("/")[-1])
-        #if (
+        # if (
         #    ref_class_name not in KNOWN_PRIMITIVES.values()
         #    and ref_class_name not in IMPORTS["schema_wrapper.generated_classes"]
-        #):
+        # ):
         #    IMPORTS["schema_wrapper.generated_classes"].append(ref_class_name)
         return f'"{ref_class_name}"'
     return "Any"

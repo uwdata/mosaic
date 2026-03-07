@@ -56,7 +56,9 @@ def test_round_trip(example_name):
       - assert generated == original
     """
     if example_name in SKIP_ROUNDTRIP:
-        pytest.skip("Known python-new fixture drift; strict round-trip pending regeneration")
+        pytest.skip(
+            "Known python-new fixture drift; strict round-trip pending regeneration"
+        )
 
     json_path = JSON_DIR / f"{example_name}.json"
     assert json_path.exists(), f"Missing JSON example: {json_path}"
@@ -66,7 +68,9 @@ def test_round_trip(example_name):
     assert py_path.exists(), f"Missing Python example: {py_path}"
 
     module = import_module_from_path(py_path)
-    assert hasattr(module, "spec"), f"`{py_path.name}` must define a top-level `spec` variable"
+    assert hasattr(module, "spec"), (
+        f"`{py_path.name}` must define a top-level `spec` variable"
+    )
     generated = spec_to_dict(module.spec)
 
     assert generated == original, (

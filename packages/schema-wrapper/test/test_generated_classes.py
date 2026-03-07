@@ -1,6 +1,25 @@
 import pytest
 from schema_wrapper.utils import _todict
-from schema_wrapper.generated_classes import *
+from schema_wrapper.generated_classes import (
+    AggregateExpression,
+    AggregateTransform,
+    Argmax,
+    Argmin,
+    Avg,
+    BrushStyles,
+    ChannelValue,
+    ChannelValueSpec,
+    DataCSV,
+    DataSpatial,
+    DataTable,
+    Dot,
+    LineY,
+    ParamRef,
+    Plot,
+    PlotFrom,
+    PlotMark,
+    TransformField,
+)
 
 
 @pytest.fixture
@@ -31,7 +50,7 @@ def test_aggregate_transform():
 
     # Test with boolean value
     agg_transform = AggregateTransform(Avg(avg=True))
-    assert agg_transform.value.avg == True
+    assert agg_transform.value.avg is True
 
 
 def test_data_classes(sample_data):
@@ -40,7 +59,7 @@ def test_data_classes(sample_data):
     assert csv_data.file == "data.csv"
     assert csv_data.type == "csv"
     assert csv_data.delimiter == ","
-    assert csv_data.temp == True
+    assert csv_data.temp is True
 
     # Test Spatial data
     spatial_data = DataSpatial(**sample_data["spatial_data"])
@@ -78,7 +97,7 @@ def test_argmin_argmax():
     # Test Argmin
     argmin = Argmin([1.0, 2.0], distinct=True, orderby="date")
     assert argmin.argmin == [1.0, 2.0]
-    assert argmin.distinct == True
+    assert argmin.distinct is True
     assert argmin.orderby == "date"
     assert isinstance(argmin.argmin, list)
     assert all(isinstance(item, (float, bool, str)) for item in argmin.argmin)
@@ -86,12 +105,12 @@ def test_argmin_argmax():
     # Test Argmax
     argmax = Argmax("value", distinct=True, orderby="date")
     assert argmax.argmax == "value"
-    assert argmax.distinct == True
+    assert argmax.distinct is True
     assert argmax.orderby == "date"
 
 
 def test_composite():
-    argmax = Argmax(
+    Argmax(
         [5, 6, True, 0.5],
         False,
         TransformField("test"),
