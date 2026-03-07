@@ -566,6 +566,19 @@ def test_athlete_birth_waffle_spec():
             },
         ],
     }
+    waffle_mark = Rect(
+        data=PlotMarkData(PlotFrom(from_="athletes")),
+        mark="waffleY",
+        rx=ParamRef("$radius"),
+        x=ChannelValueSpec({"sql": '5 * floor(year("date_of_birth") / 5)'}),
+        y=ChannelValueSpec({"count": ""}),
+    )
+    # Waffle-specific fields are currently not part of Rect's constructor
+    # signature in generated classes, so we attach them directly.
+    waffle_mark.unit = ParamRef("$unit")
+    waffle_mark.round = ParamRef("$round")
+    waffle_mark.gap = ParamRef("$gap")
+
     python_spec = Spec(
         {
             "meta": Meta(
@@ -630,22 +643,7 @@ def test_athlete_birth_waffle_spec():
                     Component(
                         Plot(
                             plot=[
-                                PlotMark(
-                                    Rect(
-                                        data=PlotMarkData(PlotFrom(from_="athletes")),
-                                        mark="waffleY",
-                                        unit=ParamRef("$unit"),
-                                        round=ParamRef("$round"),
-                                        gap=ParamRef("$gap"),
-                                        rx=ParamRef("$radius"),
-                                        x=ChannelValueSpec(
-                                            {
-                                                "sql": '5 * floor(year("date_of_birth") / 5)'
-                                            }
-                                        ),
-                                        y=ChannelValueSpec({"count": ""}),
-                                    )
-                                )
+                                PlotMark(waffle_mark)
                             ],
                             xLabel=None,
                             xTickSize=0,
