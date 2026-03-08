@@ -642,9 +642,7 @@ def test_athlete_birth_waffle_spec():
                     Component(VSpace(vspace=10)),
                     Component(
                         Plot(
-                            plot=[
-                                PlotMark(waffle_mark)
-                            ],
+                            plot=[PlotMark(waffle_mark)],
                             xLabel=None,
                             xTickSize=0,
                             xTickFormat="d",
