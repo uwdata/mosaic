@@ -6,7 +6,7 @@ import { camelCaseToSnake } from './util.js';
  * Final var: spec
  */
 export function astToPython(ast) {
-  const ctx = new PyGen();
+  const ctx = new PythonCodegenContext();
   const json = ast.toJSON();
   const { meta, config, data = {}, params = {}, plotDefaults, ...view } = json;
 
@@ -101,6 +101,7 @@ function emitPlotObject(view, depth) {
   }
   for (const [k, v] of Object.entries(view)) {
     if (k === 'plot') continue;
+    if (v === undefined) continue;
     items.push(emitDirective(k, v));
   }
   const body = items.map(s => indentLine(s, depth + 1)).join(',\n');
@@ -121,6 +122,7 @@ function emitMark(mark) {
   const args = [];
   if (data !== undefined) args.push(`data=${emitDataRef(data)}`);
   for (const [k, v] of Object.entries(enc)) {
+    if (v === undefined) continue;
     const arg = argName(k);
     args.push(`${arg}=${literal(v)}`);
   }
@@ -148,7 +150,9 @@ function emitInput(node) {
   const kind = node.input;
   const opts = { ...node };
   delete opts.input;
-  const args = Object.entries(opts).map(([k, v]) => `${inputArgName(k)}=${literal(v)}`);
+  const args = Object.entries(opts)
+    .filter(([, v]) => v !== undefined)
+    .map(([k, v]) => `${inputArgName(k)}=${literal(v)}`);
   if (kind === 'slider') return `vg.slider(${args.join(', ')})`;
   if (kind === 'select') return `vg.select(${args.join(', ')})`;
   if (kind === 'checkbox') return `vg.checkbox(${args.join(', ')})`;
@@ -188,9 +192,11 @@ function literal(v) {
     return '[\n' + items + '\n]';
   }
   if (typeof v === 'object') {
-    const entries = Object.entries(v).map(
+    const entries = Object.entries(v)
+      .filter(([, val]) => val !== undefined)
+      .map(
       ([k, val]) => `    ${JSON.stringify(k)}: ${literal(val)}`
-    );
+      );
     if (!entries.length) return '{}';
     return '{\n' + entries.join(',\n') + '\n}';
   }
@@ -209,7 +215,7 @@ function indentLine(str, depth) {
   return str.split('\n').map(line => pad + line).join('\n');
 }
 
-class PyGen {
+export class PythonCodegenContext {
   constructor() {
     this.lines = [];
     this.depth = 0;

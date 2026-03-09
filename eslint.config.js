@@ -21,7 +21,6 @@ export default tseslint.config(
     },
     rules: {
       "no-unexpected-multiline": "off",
-      "jsdoc/no-undefined-types": 1,
       "@typescript-eslint/no-explicit-any": "warn",
       "@typescript-eslint/no-unused-vars": "warn",
       "@typescript-eslint/no-unused-expressions": "warn",
