@@ -31,9 +31,6 @@ export class ObserveDispatch<T> extends Dispatch<T> {
 
   /**
    * Emit an event value to listeners for the given event type.
-   * Events are dispatched *synchronously* to all registered callbacks.
-   * This is different from the AsyncDispatch class, which use queues to
-   * manage un-emitted event values.
    * @param type The event type.
    * @param value The event value.
    */
