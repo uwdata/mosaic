@@ -154,7 +154,7 @@
   }
 
   function setQueryLog() {
-    const bus = vg.coordinator().eventBus;
+    const bus = coordinator().eventBus;
     
     bus.observe("query-start", (event) =>
       console.info("Query started:", event),
@@ -168,15 +168,15 @@
   }
 
   function setCache() {
-    vg.coordinator().manager.cache(cacheToggle.checked);
+    coordinator().manager.cache(cacheToggle.checked);
   }
 
   function setConsolidate() {
-    vg.coordinator().manager.consolidate(consolidateToggle.checked);
+    coordinator().manager.consolidate(consolidateToggle.checked);
   }
 
   function setPreAggregate() {
-    vg.coordinator().preaggregator.enabled = preaggToggle.checked;
+    coordinator().preaggregator.enabled = preaggToggle.checked;
   }
 
   function reload() {
