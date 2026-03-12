@@ -1,6 +1,6 @@
 /** @import { SelectQuery } from '@uwdata/mosaic-sql' */
 import { isParam, MosaicClient, queryFieldInfo, toDataColumns } from '@uwdata/mosaic-core';
-import { Query, collectParams, column, isAggregateExpression, isColumnParam, isColumnRef, isNode, isParamLike } from '@uwdata/mosaic-sql';
+import { Query, collectParams, column, isAggregateExpression, isColumnParam, isColumnRef, isNode, isParamLike, unnest } from '@uwdata/mosaic-sql';
 import { isColor } from './util/is-color.js';
 import { isConstantOption } from './util/is-constant-option.js';
 import { isSymbol } from './util/is-symbol.js';
@@ -104,6 +104,13 @@ export class Mark extends MosaicClient {
     return table ? (isParam(table) ? table.value : table) : null;
   }
 
+  isUnnested(field) {
+    const { unnest } = this.source?.options || {};
+    if (!unnest) return false;
+    const unnested = Array.isArray(unnest) ? unnest : [unnest];
+    return unnested.includes(field?.column || field);
+  }
+
   hasOwnData() {
     return this.source == null || isDataArray(this.source);
   }
@@ -160,6 +167,19 @@ export class Mark extends MosaicClient {
    */
   query(filter = []) {
     if (this.hasOwnData()) return null;
+    const unnestOption = this.source?.options?.unnest;
+    if (unnestOption) {
+      // wrap unnested fields in UNNEST() so DuckDB expands array values
+      const unnestFields = Array.isArray(unnestOption) ? unnestOption : [unnestOption];
+      const channels = this.channels.map(c => {
+        const fieldName = c.field?.column ?? c.field;
+        if (c.field && unnestFields.includes(fieldName)) {
+          return { ...c, field: unnest(c.field) };
+        }
+        return c;
+      });
+      return markQuery(channels, this.sourceTable()).where(filter);
+    }
     return markQuery(this.channels, this.sourceTable()).where(filter);
   }
 

@@ -1,5 +1,5 @@
 /** @import { ClauseSource } from '@uwdata/mosaic-core' */
-import { clausePoints } from '@uwdata/mosaic-core';
+import { clauseList, clausePoints } from '@uwdata/mosaic-core';
 import { getDatum } from './util/get-datum.js';
 import { neq, neqSome } from './util/neq.js';
 
@@ -42,10 +42,16 @@ export class Toggle {
 
   clause(value) {
     const { fields, mark } = this;
-    return clausePoints(fields, value, {
-      source: /** @type {ClauseSource} */(this),
-      clients: this.peers ? mark.plot.markSet : new Set().add(mark)
-    });
+    const clients = this.peers ? mark.plot.markSet : new Set().add(mark);
+    const source = /** @type {ClauseSource} */(this);
+
+    // if the field is unnested, use clauseList to generate list_has_any() predicate
+    if (fields.length === 1 && mark.isUnnested(fields[0])) {
+      const v = value?.length ? value.map(v => v[0]) : undefined;
+      return clauseList(fields[0], v, { source, clients });
+    }
+
+    return clausePoints(fields, value, { source, clients });
   }
 
   init(svg, selector, accessor) {

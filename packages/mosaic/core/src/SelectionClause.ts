@@ -352,6 +352,10 @@ export function clauseList(
   }
 ): SelectionClause {
   const listFn = listMatch === 'all' ? listHasAll : listHasAny;
-  const predicate = value !== undefined ? listFn(field, literal(value)) : null;
+  const predicate = value != null
+    ? Array.isArray(value)
+      ? listFn(field, value as ExprValue[])
+      : listFn(field, literal(value))
+    : null;
   return { source, clients, value, predicate };
 }
