@@ -17,4 +17,5 @@ The `voronoi` mark shows the regions closest to each point. It is [constructed f
 <<< @/public/specs/esm/voronoi.js [JavaScript]
 <<< @/public/specs/yaml/voronoi.yaml [YAML]
 <<< @/public/specs/json/voronoi.json [JSON]
+<<< @/public/specs/python/voronoi.py [Python]
 :::

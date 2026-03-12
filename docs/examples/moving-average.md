@@ -17,4 +17,5 @@ This plot shows daily reported COVID-19 cases from March 3 (day 1) to May 5, 202
 <<< @/public/specs/esm/moving-average.js [JavaScript]
 <<< @/public/specs/yaml/moving-average.yaml [YAML]
 <<< @/public/specs/json/moving-average.json [JSON]
+<<< @/public/specs/python/moving-average.py [Python]
 :::

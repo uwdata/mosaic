@@ -21,4 +21,5 @@ _You may need to wait a few seconds for the dataset to load._
 <<< @/public/specs/esm/nyc-taxi-rides.js [JavaScript]
 <<< @/public/specs/yaml/nyc-taxi-rides.yaml [YAML]
 <<< @/public/specs/json/nyc-taxi-rides.json [JSON]
+<<< @/public/specs/python/nyc-taxi-rides.py [Python]
 :::

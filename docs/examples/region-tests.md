@@ -12,5 +12,5 @@
 ::: code-group
 <<< @/public/specs/esm/region-tests.js [JavaScript]
 <<< @/public/specs/yaml/region-tests.yaml [YAML]
-<<< @/public/specs/json/region-tests.json [JSON]
+<!-- <<< @/public/specs/json/region-tests.json [JSON] -->
 :::

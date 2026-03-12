@@ -11,6 +11,7 @@ For example, here is a line chart of historical Apple stock prices:
 <<< @/public/specs/esm/line.js [JavaScript]
 <<< @/public/specs/yaml/line.yaml [YAML]
 <<< @/public/specs/json/line.json [JSON]
+<<< @/public/specs/python/line.py [Python]
 :::
 
 ::: warning

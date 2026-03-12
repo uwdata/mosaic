@@ -15,4 +15,5 @@ What is the return on investment for different days? Hover over the chart to nor
 <<< @/public/specs/esm/normalize.js [JavaScript]
 <<< @/public/specs/yaml/normalize.yaml [YAML]
 <<< @/public/specs/json/normalize.json [JSON]
+<<< @/public/specs/python/normalize.py [Python]
 :::

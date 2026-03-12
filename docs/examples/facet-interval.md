@@ -17,4 +17,5 @@ A faceted plot with 2D interval selections.
 <<< @/public/specs/esm/facet-interval.js [JavaScript]
 <<< @/public/specs/yaml/facet-interval.yaml [YAML]
 <<< @/public/specs/json/facet-interval.json [JSON]
+<!-- <<< @/public/specs/python/facet-interval.py [Python] -->
 :::

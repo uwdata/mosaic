@@ -17,4 +17,5 @@ A raster visualization of the 1955 [Great Britain aeromagnetic survey](https://w
 <<< @/public/specs/esm/aeromagnetic-survey.js [JavaScript]
 <<< @/public/specs/yaml/aeromagnetic-survey.yaml [YAML]
 <<< @/public/specs/json/aeromagnetic-survey.json [JSON]
+<<< @/public/specs/python/aeromagnetic-survey.py [Python]
 :::
