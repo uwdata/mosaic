@@ -5,9 +5,9 @@ from pathlib import Path
 import graphlib
 from schema_wrapper.utils import get_valid_identifier, get_dependencies
 
-sys.path.insert(0, str(Path.cwd()))
 
-SCHEMA_VERSION: Final = "v0.10.0"
+
+SCHEMA_VERSION: Final = "v0.21.1"
 KNOWN_PRIMITIVES = {
     "string": "str",
     "boolean": "bool",
@@ -38,8 +38,6 @@ def generate_additional_properties_class(
     class_def = f"class {class_name}(SchemaBase):\n    def __init__(self, **kwargs):\n"
     properties_object = class_schema.get("additionalProperties", {})
     correct_type = get_type_hint(properties_object)
-    # if correct_type not in KNOWN_PRIMITIVES.values():
-    # correct_type = f'"{correct_type}"'
     class_def += (
         """        for key, value in kwargs.items():
             if not isinstance(value, """
@@ -86,9 +84,6 @@ def generate_class(class_name: str, class_schema: Dict[str, Any]) -> str:
     # Extract properties and required fields
     properties = class_schema.get("properties", {})
     required = class_schema.get("required", [])
-    # print(class_name)
-    # if class_name == "Params":
-    #    print(class_schema)
     additional_properties = class_schema.get("additionalProperties")
 
     class_def = f"class {class_name}(SchemaBase):\n"
@@ -193,11 +188,6 @@ def get_type_hint(type_schema: Dict[str, Any]) -> str:
         return get_type_union(types)
     elif "$ref" in type_schema:
         ref_class_name = get_valid_identifier(type_schema["$ref"].split("/")[-1])
-        # if (
-        #    ref_class_name not in KNOWN_PRIMITIVES.values()
-        #    and ref_class_name not in IMPORTS["schema_wrapper.generated_classes"]
-        # ):
-        #    IMPORTS["schema_wrapper.generated_classes"].append(ref_class_name)
         return f'"{ref_class_name}"'
     return "Any"
 
@@ -253,6 +243,5 @@ def main():
     generate_schema_wrapper(schema_path, output_file)
 
 
-# Main execution
 if __name__ == "__main__":
     main()
