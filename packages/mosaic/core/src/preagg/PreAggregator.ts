@@ -6,6 +6,7 @@ import type { BinMethod, ClauseSource, IntervalMetadata, SelectionClause } from 
 import { Query as QueryBuilder, and, asNode, ceil, collectColumns, createTable, float64, floor, isBetween, int32, mul, round, scaleTransform, sub, isSelectQuery, isAggregateExpression, ColumnNameRefNode } from '@uwdata/mosaic-sql';
 import { preaggColumns, PreAggColumnsResult } from './preagg-columns.js';
 import { fnv_hash } from '../util/hash.js';
+import { EventType } from '../Events.js';
 
 const Skip = { skip: true, result: null };
 
@@ -216,7 +217,7 @@ export class PreAggregator {
         `CREATE SCHEMA IF NOT EXISTS ${schema}`,
         createTable(info.table, info.create, { temp: false })
       ]);
-      info.result.catch((e: Error) => mc.logger().error(e));
+      info.result.catch((e: Error) => mc.eventBus.emit(EventType.Error, {message: e}));
     }
 
     entries.set(client, info);

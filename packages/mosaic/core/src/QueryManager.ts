@@ -1,10 +1,11 @@
 import type { Connector } from './connectors/Connector.js';
-import type { Cache, Logger, QueryEntry, QueryRequest } from './types.js';
+import type { Cache, QueryEntry, QueryRequest } from './types.js';
 import { consolidator } from './QueryConsolidator.js';
 import { lruCache, voidCache } from './util/cache.js';
 import { PriorityQueue } from './util/priority-queue.js';
 import { QueryResult, QueryState } from './util/query-result.js';
-import { voidLogger } from './util/void-logger.js';
+import { EventType, MosaicEvent, MosaicEvents } from './Events.js';
+import { ObserveDispatch } from './util/ObserveDispatch.js';
 
 export const Priority = Object.freeze({ High: 0, Normal: 1, Low: 2 });
 
@@ -12,24 +13,22 @@ export class QueryManager {
   private queue: PriorityQueue<QueryEntry>;
   private db: Connector | null;
   private clientCache: Cache | null;
-  private _logger: Logger;
-  private _logQueries: boolean;
   private _consolidate: ReturnType<typeof consolidator> | null;
   /** Requests pending with the query manager. */
   public pendingResults: QueryResult[];
   private maxConcurrentRequests: number;
   private pendingExec: boolean;
+  public eventBus?;
 
-  constructor(maxConcurrentRequests: number = 32) {
+  constructor(maxConcurrentRequests: number = 32, eventBus?: ObserveDispatch<Omit<MosaicEvents, keyof MosaicEvent>>) {
     this.queue = new PriorityQueue(3);
     this.db = null;
     this.clientCache = null;
-    this._logger = voidLogger();
-    this._logQueries = false;
     this._consolidate = null;
     this.pendingResults = [];
     this.maxConcurrentRequests = maxConcurrentRequests;
     this.pendingExec = false;
+    this.eventBus = eventBus;
   }
 
   next(): void {
@@ -52,7 +51,7 @@ export class QueryManager {
         if (result.state === QueryState.ready) {
           result.fulfill();
         } else if (result.state === QueryState.done) {
-          this._logger.warn('Found resolved query in pending results.');
+          this.eventBus?.emit(EventType.Error, { message: 'Found resolved query in pending results.' });
         }
       }
       if (request.type === 'exec') this.pendingExec = false;
@@ -80,22 +79,27 @@ export class QueryManager {
       const { query, type, cache = false, options } = request;
       const sql = query ? `${query}` : null;
 
+      this.eventBus?.emit(EventType.QueryStart, {
+        query: sql || '',
+        materialized: cache,
+      });
+
       // check query cache
       if (cache) {
         const cached = this.clientCache!.get(sql!);
         if (cached) {
-          const data = await cached;
-          this._logger.debug('Cache');
+          const data = cached;
           result.ready(data);
+          this.eventBus?.emit(EventType.QueryEnd, {
+            query: sql || '',
+            materialized: cache,
+          });
           return;
         }
       }
 
       // issue query, potentially cache result
       const t0 = performance.now();
-      if (this._logQueries) {
-        this._logger.debug('Query', { type, sql, ...options });
-      }
 
       // @ts-expect-error type may be exec | json | arrow
       const promise = this.db!.query({ type, sql: sql!, ...options });
@@ -105,9 +109,16 @@ export class QueryManager {
 
       if (cache) this.clientCache!.set(sql!, data);
 
-      this._logger.debug(`Request: ${(performance.now() - t0).toFixed(1)}`);
       result.ready(type === 'exec' ? null : data);
+
+      this.eventBus?.emit(EventType.QueryEnd, {
+        query: sql || '',
+        materialized: cache,
+      });
     } catch (err) {
+      this.eventBus?.emit(EventType.Error, {
+        message: err,
+      });
       result.reject(err);
     }
   }
@@ -123,28 +134,6 @@ export class QueryManager {
     return value !== undefined
       ? (this.clientCache = value === true ? lruCache() : (value || voidCache()))
       : this.clientCache;
-  }
-
-  /**
-   * Get or set the current logger.
-   * @param value Logger to set
-   * @returns Current logger
-   */
-  logger(): Logger;
-  logger(value: Logger): Logger;
-  logger(value?: Logger): Logger {
-    return value ? (this._logger = value) : this._logger;
-  }
-
-  /**
-   * Get or set if queries should be logged.
-   * @param value Whether to log queries
-   * @returns Current logging state
-   */
-  logQueries(): boolean;
-  logQueries(value: boolean): boolean;
-  logQueries(value?: boolean): boolean {
-    return value !== undefined ? this._logQueries = !!value : this._logQueries;
   }
 
   /**
