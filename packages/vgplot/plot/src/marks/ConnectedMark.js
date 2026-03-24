@@ -11,34 +11,47 @@ export class ConnectedMark extends Mark {
     this.dim = dim;
   }
 
+  optimizationInfo() {
+    const { plot, dim, source } = this;
+    
+    const ortho = dim === 'x' ? 'y' : 'x';
+    const value = this.channelField(ortho, { exact: true })?.as;
+    const { as, type, count, min, max, column } = this.channelField(dim);
+    const isContinuous = type === 'date' || type === 'number';
+    const size = dim === 'x' ? plot.innerWidth() : plot.innerHeight();
+    const optimize = source.options?.optimize ?? (count / size) > 10;
+
+    return optimize && isContinuous && value
+      ? { as, column, max, min, size, value }
+      : null;
+  }
+
+  get filterStable() {
+    return !this.optimizationInfo();
+  }
+
   /**
    * Return a query specifying the data needed by this Mark client.
    * @param {*} [filter] The filtering criteria to apply in the query.
    * @returns {*} The client query
    */
   query(filter = []) {
-    const { plot, dim, source } = this;
-    let optimize = source.options?.optimize;
+    const { dim } = this;
     const q = super.query(filter);
     if (!dim) return q;
+    const info = this.optimizationInfo();
 
-    const ortho = dim === 'x' ? 'y' : 'x';
-    const value = this.channelField(ortho, { exact: true })?.as;
-    const { field, as, type, count, min, max } = this.channelField(dim);
-    const isContinuous = type === 'date' || type === 'number';
-
-    const size = dim === 'x' ? plot.innerWidth() : plot.innerHeight();
-    optimize ??= (count / size) > 10; // threshold for applying M4
-
-    if (optimize && isContinuous && value) {
+    if (info) {
       // TODO: handle stacked data
-      const [lo, hi] = filteredExtent(filter, field) || [min, max];
+      const { as, column, max, min, size, value } = info;
+      const [lo, hi] = filteredExtent(filter, column) || [min, max];
       const [expr] = binExpr(this, dim, size, [lo, hi], 1, as);
       const cols = q._select
         .map(c => c.alias)
         .filter(c => c !== as && c !== value);
       return m4(q, expr, as, value, cols);
     } else {
+      const { as } = this.channelField(dim);
       return q.orderby(as);
     }
   }
