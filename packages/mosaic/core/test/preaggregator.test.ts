@@ -27,7 +27,7 @@ async function run(measure): Promise<[number, boolean]> {
   const mc = await setup(loadQuery);
   const sel = Selection.single({ cross: true });
 
-  return new Promise((resolve) => {
+  return new Promise((resolve, reject) => {
     let iter = 0;
     const client = new TestClient(null, sel, {
       query(filter = []) {
@@ -43,6 +43,10 @@ async function run(measure): Promise<[number, boolean]> {
           ]);
         }
         ++iter;
+      },
+      queryError(err: Error) {
+        console.error("QUERY ERROR", err);
+        reject(err);
       }
     });
     mc.connect(client);
