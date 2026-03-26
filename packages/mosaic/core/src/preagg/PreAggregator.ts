@@ -1,4 +1,4 @@
-import { ExprNode, ScaleOptions, SelectQuery, Query, ExprValue, MaybeArray, FunctionNode, BetweenOpNode, AndNode } from '@uwdata/mosaic-sql';
+import { ExprNode, ScaleOptions, SelectQuery, Query, ExprValue, MaybeArray, FunctionNode, BetweenOpNode, AndNode, TableRefNode } from '@uwdata/mosaic-sql';
 import type { Coordinator } from '../Coordinator.js';
 import type { MosaicClient } from '../MosaicClient.js';
 import type { Selection } from '../Selection.js';
@@ -25,7 +25,7 @@ interface ActiveColumnsResult {
 }
 
 interface PreAggregateInfoOptions {
-  table: string;
+  table: TableRefNode;
   create: string;
   active: ActiveColumnsResult;
   select: SelectQuery;
@@ -358,7 +358,7 @@ function preaggregateInfo(
   // generate creation query string and hash id
   const create = query.toString();
   const id = (fnv_hash(create) >>> 0).toString(16);
-  const table = `${schema}.preagg_${id}`;
+  const table = new TableRefNode([schema, `preagg_${id}`]);
 
   // generate preaggregate select query
   const select = QueryBuilder
@@ -420,7 +420,7 @@ function isAggregateQuery(query: SelectQuery): boolean {
  */
 export class PreAggregateInfo {
   /** The name of the materialized view. */
-  table: string;
+  table: TableRefNode;
   /** The SQL query used to generate the materialized view. */
   create: string;
   /** A result promise returned for the materialized view creation query. */
