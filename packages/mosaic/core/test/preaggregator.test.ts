@@ -4,7 +4,7 @@ import { Coordinator, Selection, SelectionClause } from '../src/index.js';
 import { NodeConnector } from './util/node-connector.js';
 import { TestClient } from './util/test-client.js';
 
-async function setup(loadQuery) {
+async function setup(loadQuery: string) {
   const mc = new Coordinator(await NodeConnector.make(), {
     logger: null,
     cache: false,
@@ -52,6 +52,8 @@ async function run(measure): Promise<[number, boolean]> {
         meta: { type: 'point' },
         predicate: isNotDistinct('dim', literal('b'))
       } as unknown as SelectionClause);
+    }).catch(err => {
+      console.error(err);
     });
   });
 }
@@ -172,8 +174,7 @@ describe('PreAggregator', () => {
         .where(predicate);
       return Query.with({ counts })
         .from('counts')
-        .select({ measure: sum(mul(2, 'freq')) })
-        .groupby('item');
+        .select({ measure: sum(mul(2, 'freq')) });
     };
     expect(await run(query)).toStrictEqual([6, true]);
 

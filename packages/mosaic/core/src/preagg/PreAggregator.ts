@@ -333,13 +333,13 @@ function preaggregateInfo(
   preaggCols: PreAggColumnsResult,
   schema: string
 ): PreAggregateInfo {
-  const { group, output, preagg } = preaggCols;
+  const { dims, groupby, output, preagg } = preaggCols;
   const { columns } = active;
 
   // build materialized view construction query
   const query = clientQuery
-    .setSelect({ ...preagg, ...columns })
-    .groupby(Object.keys(columns!));
+    .setSelect({ ...groupby, ...preagg, ...columns })
+    .groupby(Object.keys(columns ?? {}));
 
   // ensure active clause columns are selected by subqueries
   const [subq] = query.subqueries;
@@ -362,9 +362,9 @@ function preaggregateInfo(
 
   // generate preaggregate select query
   const select = QueryBuilder
-    .select(group, output)
+    .select(dims, output)
     .from(table)
-    .groupby(group)
+    .groupby(dims, Object.keys(groupby))
     .having(having)
     .orderby(order);
 
