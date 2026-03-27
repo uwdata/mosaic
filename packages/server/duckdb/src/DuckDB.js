@@ -41,7 +41,7 @@ export class DuckDB {
 
   exec(sql) {
     return new Promise((resolve, reject) => {
-      this.con.exec(sql, (err) => {
+      this.con.exec(String(sql), (err) => {
         if (err) {
           reject(err);
         } else {

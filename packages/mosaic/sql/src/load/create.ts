@@ -1,8 +1,6 @@
 import { CreateQuery, type CreateTableOptions, CreateSchemaQuery, type CreateSchemaOptions, type Query } from "../ast/query.js";
 import type { TableRefNode } from "../ast/table-ref.js";
 
-export type { CreateTableOptions, CreateSchemaOptions };
-
 export function createTable(name: string | TableRefNode, query: string | Query, options: CreateTableOptions = {}) {
   return new CreateQuery(name, query, options);
 }
