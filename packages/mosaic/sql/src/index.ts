@@ -21,7 +21,7 @@ export { LogicalOpNode, AndNode, OrNode } from './ast/logical-op.js';
 export { SQLNode, ExprNode, isNode } from './ast/node.js';
 export { OrderByNode } from './ast/order-by.js';
 export { ParamNode } from './ast/param.js';
-export { CreateQuery, type CreateTableOptions, DescribeQuery, Query, SelectQuery, SetOperation, isCreateQuery, isDescribeQuery, isQuery, isSelectQuery } from './ast/query.js';
+export { CreateQuery, type CreateTableOptions, CreateSchemaQuery, type CreateSchemaOptions, DescribeQuery, Query, SelectQuery, SetOperation, isCreateQuery, isCreateSchemaQuery, isDescribeQuery, isQuery, isSelectQuery } from './ast/query.js';
 export { SampleClauseNode } from './ast/sample.js';
 export { ScalarSubqueryNode } from './ast/subquery.js';
 export { SelectClauseNode } from './ast/select.js';

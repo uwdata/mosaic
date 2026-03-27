@@ -1,6 +1,6 @@
 import type { FilterExpr, FromExpr, GroupByExpr, MaybeArray, OrderByExpr, SelectExpr, WithExpr } from '../types.js';
 import type { SampleMethod } from './sample.js';
-import { CREATE_QUERY, DESCRIBE_QUERY, SELECT_QUERY, SET_OPERATION } from '../constants.js';
+import { CREATE_QUERY, CREATE_SCHEMA_QUERY, DESCRIBE_QUERY, SELECT_QUERY, SET_OPERATION } from '../constants.js';
 import { asNode, asVerbatim, maybeTableRef } from '../util/ast.js';
 import { exprList, nodeList } from '../util/function.js';
 import { unquote } from '../util/string.js';
@@ -44,6 +44,14 @@ export function isDescribeQuery(value: unknown): value is DescribeQuery {
  */
 export function isCreateQuery(value: unknown): value is CreateQuery {
   return value instanceof CreateQuery;
+}
+
+/**
+ * Check if a value is a create schema query.
+ * @param value The value to check.
+ */
+export function isCreateSchemaQuery(value: unknown): value is CreateSchemaQuery {
+  return value instanceof CreateSchemaQuery;
 }
 
 export class Query extends ExprNode {
@@ -492,16 +500,11 @@ export interface CreateTableOptions {
 }
 
 export class CreateQuery extends SQLNode {
-  /** The table or view name. */
-  readonly name: string | TableRefNode;
-  /** The source query. */
-  readonly query: string | Query;
-  /** Whether to use OR REPLACE. */
-  readonly replace: boolean;
-  /** Whether to create a TEMP table/view. */
-  readonly temp: boolean;
-  /** Whether to create a VIEW instead of a TABLE. */
-  readonly view: boolean;
+  _name: string | TableRefNode;
+  _query: string | Query;
+  _replace: boolean;
+  _temp: boolean;
+  _view: boolean;
 
   /**
    * Instantiate a create query.
@@ -515,11 +518,11 @@ export class CreateQuery extends SQLNode {
     { replace = false, temp = false, view = false }: CreateTableOptions = {}
   ) {
     super(CREATE_QUERY);
-    this.name = name;
-    this.query = query;
-    this.replace = replace;
-    this.temp = temp;
-    this.view = view;
+    this._name = name;
+    this._query = query;
+    this._replace = replace;
+    this._temp = temp;
+    this._view = view;
   }
 
   /**
@@ -527,10 +530,43 @@ export class CreateQuery extends SQLNode {
    */
   clone(): this {
     // @ts-expect-error creates create query
-    return new CreateQuery(this.name, this.query, {
-      replace: this.replace,
-      temp: this.temp,
-      view: this.view
+    return new CreateQuery(this._name, this._query, {
+      replace: this._replace,
+      temp: this._temp,
+      view: this._view
+    });
+  }
+}
+
+export interface CreateSchemaOptions {
+  strict?: boolean;
+}
+
+export class CreateSchemaQuery extends SQLNode {
+  _name: string | TableRefNode;
+  _strict: boolean;
+
+  /**
+   * Instantiate a create schema query.
+   * @param name The schema name.
+   * @param options Create schema options.
+   */
+  constructor(
+    name: string | TableRefNode,
+    { strict = false }: CreateSchemaOptions = {}
+  ) {
+    super(CREATE_SCHEMA_QUERY);
+    this._name = name;
+    this._strict = strict;
+  }
+
+  /**
+   * Clone this create schema query.
+   */
+  clone(): this {
+    // @ts-expect-error creates create schema query
+    return new CreateSchemaQuery(this._name, {
+      strict: this._strict
     });
   }
 }

@@ -26,7 +26,7 @@ interface ActiveColumnsResult {
 
 interface PreAggregateInfoOptions {
   table: TableRefNode;
-  create: string;
+  create: SelectQuery;
   active: ActiveColumnsResult;
   select: SelectQuery;
 }
@@ -355,9 +355,9 @@ function preaggregateInfo(
   query._having = [];
   query._orderby = [];
 
-  // generate creation query string and hash id
-  const create = query.toString();
-  const id = (fnv_hash(create) >>> 0).toString(16);
+  // generate creation query and hash id
+  const create = query;
+  const id = (fnv_hash(create.toString()) >>> 0).toString(16);
   const table = new TableRefNode([schema, `preagg_${id}`]);
 
   // generate preaggregate select query
@@ -422,7 +422,7 @@ export class PreAggregateInfo {
   /** The name of the materialized view. */
   table: TableRefNode;
   /** The SQL query used to generate the materialized view. */
-  create: string;
+  create: SelectQuery;
   /** A result promise returned for the materialized view creation query. */
   result: Promise<unknown> | null;
   /** Definitions and predicate function for the active columns,

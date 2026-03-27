@@ -1,4 +1,4 @@
-import type { CreateQuery, DescribeQuery, ExprNode, MaybeArray, Query } from '@uwdata/mosaic-sql';
+import type { CreateQuery, CreateSchemaQuery, DescribeQuery, ExprNode, MaybeArray, Query } from '@uwdata/mosaic-sql';
 import type { QueryResult } from './util/query-result.js';
 
 /** Query type accepted by a coordinator. */
@@ -6,6 +6,7 @@ export type QueryType =
   | string
   | Query
   | CreateQuery
+  | CreateSchemaQuery
   | DescribeQuery;
 
 /** Type for a query request. */

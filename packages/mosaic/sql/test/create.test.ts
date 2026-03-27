@@ -1,5 +1,5 @@
 import { expect, describe, it } from 'vitest';
-import { createSchema, createTable, CreateQuery, isCreateQuery, Query } from '../src/index.js';
+import { createSchema, createTable, CreateQuery, CreateSchemaQuery, isCreateQuery, isCreateSchemaQuery, Query } from '../src/index.js';
 
 describe('CreateQuery', () => {
   it('is identifiable via isCreateQuery', () => {
@@ -10,27 +10,27 @@ describe('CreateQuery', () => {
 
   it('exposes name, query, and options', () => {
     const q = createTable('table', 'SELECT 1', { temp: true, view: true });
-    expect(q.name).toBe('table');
-    expect(q.query).toBe('SELECT 1');
-    expect(q.temp).toBe(true);
-    expect(q.view).toBe(true);
-    expect(q.replace).toBe(false);
+    expect(q._name).toBe('table');
+    expect(q._query).toBe('SELECT 1');
+    expect(q._temp).toBe(true);
+    expect(q._view).toBe(true);
+    expect(q._replace).toBe(false);
   });
 
   it('accepts a Query node as query', () => {
     const select = Query.select('*').from('t');
     const q = new CreateQuery('table', select);
     expect(isCreateQuery(q)).toBe(true);
-    expect(q.query).toBe(select);
+    expect(q._query).toBe(select);
   });
 
   it('is cloneable', () => {
     const q = createTable('table', 'SELECT 1', { temp: true });
     const c = q.clone();
     expect(c).not.toBe(q);
-    expect(c.name).toBe(q.name);
-    expect(c.query).toBe(q.query);
-    expect(c.temp).toBe(q.temp);
+    expect(c._name).toBe(q._name);
+    expect(c._query).toBe(q._query);
+    expect(c._temp).toBe(q._temp);
   });
 });
 
@@ -80,15 +80,37 @@ describe('createTable toString', () => {
   });
 });
 
-describe('createSchema', () => {
+describe('CreateSchemaQuery', () => {
+  it('is identifiable via isCreateSchemaQuery', () => {
+    const q = createSchema('s1');
+    expect(q).toBeInstanceOf(CreateSchemaQuery);
+    expect(isCreateSchemaQuery(q)).toBe(true);
+  });
+
+  it('exposes name and options', () => {
+    const q = createSchema('s1', { strict: true });
+    expect(q._name).toBe('s1');
+    expect(q._strict).toBe(true);
+  });
+
+  it('is cloneable', () => {
+    const q = createSchema('s1', { strict: true });
+    const c = q.clone();
+    expect(c).not.toBe(q);
+    expect(c._name).toBe(q._name);
+    expect(c._strict).toBe(q._strict);
+  });
+});
+
+describe('createSchema toString', () => {
   it('creates a strict schema', () => {
-    expect(createSchema('s1', { strict: true })).toBe(
+    expect(createSchema('s1', { strict: true }).toString()).toBe(
       `CREATE SCHEMA "s1"`
     );
   });
 
   it('creates a schema if it does not exist', () => {
-    expect(createSchema('s1')).toBe(
+    expect(createSchema('s1').toString()).toBe(
       `CREATE SCHEMA IF NOT EXISTS "s1"`
     );
   });
