@@ -11,6 +11,7 @@ import {
   CollateNode,
   ColumnParamNode,
   ColumnRefNode,
+  CreateQuery,
   FragmentNode,
   FromClauseNode,
   FunctionNode,
@@ -104,6 +105,18 @@ export class DuckDBCodeGenerator extends SQLCodeGenerator {
     const tref = table ? `${this.toString(table)}.` : '';
     const id = column === '*' ? '*' : quoteIdentifier(column);
     return `${tref}${id}`;
+  }
+
+  visitCreateQuery(node: CreateQuery): string {
+    const { name, query, replace, temp, view } = node;
+    const tname = typeof name === 'string' ? quoteIdentifier(name) : this.toString(name);
+    const qstr = typeof query === 'string' ? query : this.toString(query);
+    return 'CREATE'
+      + (replace ? ' OR REPLACE ' : ' ')
+      + (temp ? 'TEMP ' : '')
+      + (view ? 'VIEW' : 'TABLE')
+      + (replace ? ' ' : ' IF NOT EXISTS ')
+      + tname + ' AS ' + qstr;
   }
 
   visitDescribeQuery(node: DescribeQuery): string {

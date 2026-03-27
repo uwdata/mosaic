@@ -11,6 +11,7 @@ import type {
   CollateNode,
   ColumnParamNode,
   ColumnRefNode,
+  CreateQuery,
   FragmentNode,
   FromClauseNode,
   FunctionNode,
@@ -50,6 +51,7 @@ import {
   COLLATE,
   COLUMN_PARAM,
   COLUMN_REF,
+  CREATE_QUERY,
   DESCRIBE_QUERY,
   EXPRESSION,
   FRAGMENT,
@@ -123,6 +125,7 @@ export abstract class SQLCodeGenerator {
       case COLLATE: return this.visitCollate;
       case COLUMN_PARAM: return this.visitColumnParam;
       case COLUMN_REF: return this.visitColumnRef;
+      case CREATE_QUERY: return this.visitCreateQuery;
       case DESCRIBE_QUERY: return this.visitDescribeQuery;
       case EXPRESSION: return this.visitExpression;
       case FRAGMENT: return this.visitFragment;
@@ -178,6 +181,7 @@ export abstract class SQLCodeGenerator {
   abstract visitCollate(node: CollateNode): string;
   abstract visitColumnParam(node: ColumnParamNode): string;
   abstract visitColumnRef(node: ColumnRefNode): string;
+  abstract visitCreateQuery(node: CreateQuery): string;
   abstract visitDescribeQuery(node: DescribeQuery): string;
   abstract visitExpression(node: ExprNode): string;
   abstract visitFragment(node: FragmentNode): string;
