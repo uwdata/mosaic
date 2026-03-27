@@ -100,6 +100,7 @@ function entryGroups(entries: GroupEntry[], cache: Cache): QueryGroup[] {
  * @returns a key string
  */
 function consolidationKey(query: MaybeArray<QueryType>, cache: Cache): string {
+  if (Array.isArray(query)) return query.map(q => consolidationKey(q, cache)).join(';\n');
   const sql = `${query}`;
   if (isSelectQuery(query) && !cache.get(sql)) {
     if (
