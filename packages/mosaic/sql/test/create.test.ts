@@ -10,8 +10,7 @@ describe('CreateQuery', () => {
 
   it('exposes name, query, and options', () => {
     const q = createTable('table', 'SELECT 1', { temp: true, view: true });
-    expect(q.name).toBe('table');
-    expect(q.query).toBe('SELECT 1');
+    expect(q.name.name).toBe('table');
     expect(q.temp).toBe(true);
     expect(q.view).toBe(true);
     expect(q.replace).toBe(false);
@@ -88,7 +87,7 @@ describe('CreateSchemaQuery', () => {
 
   it('exposes name and options', () => {
     const q = createSchema('s1', { strict: true });
-    expect(q.name).toBe('s1');
+    expect(q.name.name).toBe('s1');
     expect(q.strict).toBe(true);
   });
 

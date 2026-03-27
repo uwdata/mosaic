@@ -1,7 +1,7 @@
 import type { FilterExpr, FromExpr, GroupByExpr, MaybeArray, OrderByExpr, SelectExpr, WithExpr } from '../types.js';
 import type { SampleMethod } from './sample.js';
 import { CREATE_QUERY, CREATE_SCHEMA_QUERY, DESCRIBE_QUERY, SELECT_QUERY, SET_OPERATION } from '../constants.js';
-import { asNode, asVerbatim, maybeTableRef } from '../util/ast.js';
+import { asNode, asTableRef, asVerbatim, maybeTableRef } from '../util/ast.js';
 import { exprList, nodeList } from '../util/function.js';
 import { unquote } from '../util/string.js';
 import { isArray, isString } from '../util/type-check.js';
@@ -11,6 +11,7 @@ import { ExprNode, SQLNode, isNode } from './node.js';
 import { SampleClauseNode } from './sample.js';
 import { SelectClauseNode } from './select.js';
 import { isTableRef, TableRefNode } from './table-ref.js';
+import { VerbatimNode } from './verbatim.js';
 import { WindowClauseNode, type WindowDefNode } from './window.js';
 import { WithClauseNode } from './with.js';
 
@@ -501,9 +502,9 @@ export interface CreateTableOptions {
 
 export class CreateQuery extends SQLNode {
   /** The table or view name. */
-  readonly name: string | TableRefNode;
+  readonly name: TableRefNode;
   /** The source query. */
-  readonly query: string | Query;
+  readonly query: SQLNode;
   /** Whether to use OR REPLACE. */
   readonly replace: boolean;
   /** Whether to create a TEMP table/view. */
@@ -523,8 +524,8 @@ export class CreateQuery extends SQLNode {
     { replace = false, temp = false, view = false }: CreateTableOptions = {}
   ) {
     super(CREATE_QUERY);
-    this.name = name;
-    this.query = query;
+    this.name = asTableRef(name)!;
+    this.query = isString(query) ? new VerbatimNode(query) : query;
     this.replace = replace;
     this.temp = temp;
     this.view = view;
@@ -537,7 +538,7 @@ export interface CreateSchemaOptions {
 
 export class CreateSchemaQuery extends SQLNode {
   /** The schema name. */
-  readonly name: string | TableRefNode;
+  readonly name: TableRefNode;
   /** Whether to error if the schema already exists. */
   readonly strict: boolean;
 
@@ -551,7 +552,7 @@ export class CreateSchemaQuery extends SQLNode {
     { strict = false }: CreateSchemaOptions = {}
   ) {
     super(CREATE_SCHEMA_QUERY);
-    this.name = name;
+    this.name = asTableRef(name)!;
     this.strict = strict;
   }
 }

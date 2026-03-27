@@ -1,5 +1,5 @@
-import { CreateQuery, type CreateTableOptions, CreateSchemaQuery, type CreateSchemaOptions, Query } from "../ast/query.js";
-import { TableRefNode } from "../ast/table-ref.js";
+import { CreateQuery, type CreateTableOptions, CreateSchemaQuery, type CreateSchemaOptions, type Query } from "../ast/query.js";
+import type { TableRefNode } from "../ast/table-ref.js";
 
 export type { CreateTableOptions, CreateSchemaOptions };
 
