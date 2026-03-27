@@ -500,11 +500,16 @@ export interface CreateTableOptions {
 }
 
 export class CreateQuery extends SQLNode {
-  _name: string | TableRefNode;
-  _query: string | Query;
-  _replace: boolean;
-  _temp: boolean;
-  _view: boolean;
+  /** The table or view name. */
+  readonly name: string | TableRefNode;
+  /** The source query. */
+  readonly query: string | Query;
+  /** Whether to use OR REPLACE. */
+  readonly replace: boolean;
+  /** Whether to create a TEMP table/view. */
+  readonly temp: boolean;
+  /** Whether to create a VIEW instead of a TABLE. */
+  readonly view: boolean;
 
   /**
    * Instantiate a create query.
@@ -518,23 +523,11 @@ export class CreateQuery extends SQLNode {
     { replace = false, temp = false, view = false }: CreateTableOptions = {}
   ) {
     super(CREATE_QUERY);
-    this._name = name;
-    this._query = query;
-    this._replace = replace;
-    this._temp = temp;
-    this._view = view;
-  }
-
-  /**
-   * Clone this create query.
-   */
-  clone(): this {
-    // @ts-expect-error creates create query
-    return new CreateQuery(this._name, this._query, {
-      replace: this._replace,
-      temp: this._temp,
-      view: this._view
-    });
+    this.name = name;
+    this.query = query;
+    this.replace = replace;
+    this.temp = temp;
+    this.view = view;
   }
 }
 
@@ -543,8 +536,10 @@ export interface CreateSchemaOptions {
 }
 
 export class CreateSchemaQuery extends SQLNode {
-  _name: string | TableRefNode;
-  _strict: boolean;
+  /** The schema name. */
+  readonly name: string | TableRefNode;
+  /** Whether to error if the schema already exists. */
+  readonly strict: boolean;
 
   /**
    * Instantiate a create schema query.
@@ -556,18 +551,8 @@ export class CreateSchemaQuery extends SQLNode {
     { strict = false }: CreateSchemaOptions = {}
   ) {
     super(CREATE_SCHEMA_QUERY);
-    this._name = name;
-    this._strict = strict;
-  }
-
-  /**
-   * Clone this create schema query.
-   */
-  clone(): this {
-    // @ts-expect-error creates create schema query
-    return new CreateSchemaQuery(this._name, {
-      strict: this._strict
-    });
+    this.name = name;
+    this.strict = strict;
   }
 }
 

@@ -10,27 +10,27 @@ describe('CreateQuery', () => {
 
   it('exposes name, query, and options', () => {
     const q = createTable('table', 'SELECT 1', { temp: true, view: true });
-    expect(q._name).toBe('table');
-    expect(q._query).toBe('SELECT 1');
-    expect(q._temp).toBe(true);
-    expect(q._view).toBe(true);
-    expect(q._replace).toBe(false);
+    expect(q.name).toBe('table');
+    expect(q.query).toBe('SELECT 1');
+    expect(q.temp).toBe(true);
+    expect(q.view).toBe(true);
+    expect(q.replace).toBe(false);
   });
 
   it('accepts a Query node as query', () => {
     const select = Query.select('*').from('t');
     const q = new CreateQuery('table', select);
     expect(isCreateQuery(q)).toBe(true);
-    expect(q._query).toBe(select);
+    expect(q.query).toBe(select);
   });
 
   it('is cloneable', () => {
     const q = createTable('table', 'SELECT 1', { temp: true });
     const c = q.clone();
     expect(c).not.toBe(q);
-    expect(c._name).toBe(q._name);
-    expect(c._query).toBe(q._query);
-    expect(c._temp).toBe(q._temp);
+    expect(c.name).toBe(q.name);
+    expect(c.query).toBe(q.query);
+    expect(c.temp).toBe(q.temp);
   });
 });
 
@@ -72,8 +72,7 @@ describe('createTable toString', () => {
   });
 
   it('generates SQL with a Query node as source', () => {
-    const select = Query.select('*').from('t');
-    const q = new CreateQuery('result', select, { temp: true });
+    const q = createTable('result', Query.select('*').from('t'), { temp: true });
     expect(q.toString()).toBe(
       `CREATE TEMP TABLE IF NOT EXISTS "result" AS SELECT * FROM "t"`
     );
@@ -89,16 +88,16 @@ describe('CreateSchemaQuery', () => {
 
   it('exposes name and options', () => {
     const q = createSchema('s1', { strict: true });
-    expect(q._name).toBe('s1');
-    expect(q._strict).toBe(true);
+    expect(q.name).toBe('s1');
+    expect(q.strict).toBe(true);
   });
 
   it('is cloneable', () => {
     const q = createSchema('s1', { strict: true });
     const c = q.clone();
     expect(c).not.toBe(q);
-    expect(c._name).toBe(q._name);
-    expect(c._strict).toBe(q._strict);
+    expect(c.name).toBe(q.name);
+    expect(c.strict).toBe(q.strict);
   });
 });
 

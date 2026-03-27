@@ -109,23 +109,23 @@ export class DuckDBCodeGenerator extends SQLCodeGenerator {
   }
 
   visitCreateQuery(node: CreateQuery): string {
-    const { _name, _query, _replace, _temp, _view } = node;
-    const name = typeof _name === 'string' ? quoteIdentifier(_name) : this.toString(_name);
-    const query = typeof _query === 'string' ? _query : this.toString(_query);
+    const { name, query, replace, temp, view } = node;
+    const tname = typeof name === 'string' ? quoteIdentifier(name) : this.toString(name);
+    const qstr = typeof query === 'string' ? query : this.toString(query);
     return 'CREATE'
-      + (_replace ? ' OR REPLACE ' : ' ')
-      + (_temp ? 'TEMP ' : '')
-      + (_view ? 'VIEW' : 'TABLE')
-      + (_replace ? ' ' : ' IF NOT EXISTS ')
-      + name + ' AS ' + query;
+      + (replace ? ' OR REPLACE ' : ' ')
+      + (temp ? 'TEMP ' : '')
+      + (view ? 'VIEW' : 'TABLE')
+      + (replace ? ' ' : ' IF NOT EXISTS ')
+      + tname + ' AS ' + qstr;
   }
 
   visitCreateSchemaQuery(node: CreateSchemaQuery): string {
-    const { _name, _strict } = node;
-    const name = typeof _name === 'string' ? quoteIdentifier(_name) : this.toString(_name);
+    const { name, strict } = node;
+    const sname = typeof name === 'string' ? quoteIdentifier(name) : this.toString(name);
     return 'CREATE SCHEMA '
-      + (_strict ? '' : 'IF NOT EXISTS ')
-      + name;
+      + (strict ? '' : 'IF NOT EXISTS ')
+      + sname;
   }
 
   visitDescribeQuery(node: DescribeQuery): string {
