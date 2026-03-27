@@ -1,4 +1,4 @@
-import { ExprNode, ScaleOptions, SelectQuery, Query, ExprValue, MaybeArray, FunctionNode, BetweenOpNode, AndNode, TableRefNode } from '@uwdata/mosaic-sql';
+import { ExprNode, ScaleOptions, SelectQuery, Query, ExprValue, MaybeArray, FunctionNode, BetweenOpNode, AndNode, TableRefNode, createSchema } from '@uwdata/mosaic-sql';
 import type { Coordinator } from '../Coordinator.js';
 import type { MosaicClient } from '../MosaicClient.js';
 import type { Selection } from '../Selection.js';
@@ -213,7 +213,7 @@ export class PreAggregator {
         active, preaggCols, schema
       );
       info.result = mc.exec([
-        `CREATE SCHEMA IF NOT EXISTS ${schema}`,
+        createSchema(schema),
         createTable(info.table, info.create, { temp: false })
       ]);
       info.result.catch((e: Error) => mc.logger().error(e));
