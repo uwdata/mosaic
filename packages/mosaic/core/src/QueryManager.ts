@@ -2,14 +2,15 @@ import type { Connector } from './connectors/Connector.js';
 import type { Cache, Logger, QueryEntry, QueryRequest } from './types.js';
 import { consolidator } from './QueryConsolidator.js';
 import { lruCache, voidCache } from './util/cache.js';
-import { PriorityQueue } from './util/priority-queue.js';
 import { QueryResult, QueryState } from './util/query-result.js';
 import { voidLogger } from './util/void-logger.js';
+import { FromClauseNode, isQuery, isSelectQuery, isDescribeQuery, walk, isTableRef } from '@uwdata/mosaic-sql';
+import { DependencyGraph } from './util/dependency-graph.js';
 
 export const Priority = Object.freeze({ High: 0, Normal: 1, Low: 2 });
 
 export class QueryManager {
-  private queue: PriorityQueue<QueryEntry>;
+  private graph: DependencyGraph<QueryEntry>;
   private db: Connector | null;
   private clientCache: Cache | null;
   private _logger: Logger;
@@ -17,11 +18,10 @@ export class QueryManager {
   private _consolidate: ReturnType<typeof consolidator> | null;
   /** Requests pending with the query manager. */
   public pendingResults: QueryResult[];
-  private maxConcurrentRequests: number;
-  private pendingExec: boolean;
+  private maxConcurrentRequests: number; 
 
   constructor(maxConcurrentRequests: number = 32) {
-    this.queue = new PriorityQueue(3);
+    this.graph = new DependencyGraph<QueryEntry>(3);
     this.db = null;
     this.clientCache = null;
     this._logger = voidLogger();
@@ -29,35 +29,61 @@ export class QueryManager {
     this._consolidate = null;
     this.pendingResults = [];
     this.maxConcurrentRequests = maxConcurrentRequests;
-    this.pendingExec = false;
   }
 
-  next(): void {
-    if (this.queue.isEmpty() || this.pendingResults.length > this.maxConcurrentRequests || this.pendingExec) {
-      return;
+  readTables(query: QueryRequest['query']): Set<string> {
+    const tables = new Set<string>
+    const q = isDescribeQuery(query) ? query.query : query;
+
+   if (isQuery(q)) {                                    
+      walk(q, node => { if (isTableRef(node))
+        tables.add(node.name.toLowerCase()); });               
     }
+    return tables
+  }
+  // TODO: Write isdependency function to check for dependency, 
+  // everything depends on exec, exec never depends on arrow/json
+  isDependency(a: QueryRequest, b: QueryRequest): boolean {
+    if (b.type !== 'exec') return false;
+    return true;
+  }
 
-    const entry = this.queue.next();
-    if (!entry) return;
+  // if the arrow/json/exec quer3y depends on any table from a pending exec query
+  //  if query depends on pending exec table
+  next(): void {
+    while (this.graph.hasReady() && this.pendingResults.length < this.maxConcurrentRequests) {    
 
-    const { request, result } = entry;
+      const node = this.graph.popReady();
+      if (!node) return;
 
-    this.pendingResults.push(result);
-    if (request.type === 'exec') this.pendingExec = true;
+      const entry = node.item
+      if (!entry) return;
 
-    this.submit(request, result).finally(() => {
-      // return from the queue all requests that are ready
-      while (this.pendingResults.length && this.pendingResults[0].state !== QueryState.pending) {
-        const result = this.pendingResults.shift()!;
-        if (result.state === QueryState.ready) {
-          result.fulfill();
-        } else if (result.state === QueryState.done) {
-          this._logger.warn('Found resolved query in pending results.');
-        }
+      const { request, result } = entry;
+      this.pendingResults.push(result);
+      console.log('Query', {
+        type: request.type,
+        pending: this.pendingResults.length
+      });
+      if (request.type === 'exec') {
+        console.log('exec query type: ', typeof request.query);
       }
-      if (request.type === 'exec') this.pendingExec = false;
-      this.next();
-    });
+      this.submit(request, result).finally(() => {
+        // return from the queue all requests that are ready
+
+        // optimize this later keep them between clients, maybe 
+        while (this.pendingResults.length && this.pendingResults[0].state !== QueryState.pending) {
+          const result = this.pendingResults.shift()!;
+          if (result.state === QueryState.ready) {
+            result.fulfill();
+          } else if (result.state === QueryState.done) {
+            this._logger.warn('Found resolved query in pending results.');
+          }
+        }
+        this.graph.markDone(node.id)
+        this.next();
+      });
+    }
   }
 
   /**
@@ -66,7 +92,16 @@ export class QueryManager {
    * @param priority The query priority, defaults to `Priority.Normal`.
    */
   enqueue(entry: QueryEntry, priority: number = Priority.Normal): void {
-    this.queue.insert(entry, priority);
+    const dependencies: number[] = [];
+    const { request, result } = entry
+    for (const [id, node] of this.graph.items())  {
+
+      if (this.isDependency(request, node.item.request)) {
+        dependencies.push(id)
+      }
+    }
+
+    this.graph.add(entry, { priority, deps: dependencies })
     this.next();
   }
 
@@ -190,14 +225,11 @@ export class QueryManager {
   cancel(requests: QueryResult[]): void {
     const set = new Set(requests);
     if (set.size) {
-      this.queue.remove(({ result }) => {
-        if (set.has(result)) {
-          result.reject('Canceled');
-          return true;
-        }
-        return false;
-      });
-
+      const removed = this.graph.removeWhere(node => set.has(node.item.result));
+      for (const node of removed) {
+        node.item.result.reject('Canceled');
+      }
+    
       for (const result of this.pendingResults) {
         if (set.has(result)) {
           result.reject('Canceled');
@@ -205,15 +237,12 @@ export class QueryManager {
       }
     }
   }
+  
 
   clear(): void {
-    this.queue.remove(({ result }) => {
-      result.reject('Cleared');
-      return true;
-    });
-
-    for (const result of this.pendingResults) {
-      result.reject('Cleared');
+    const removed = this.graph.clear();
+    for (const node of removed) {
+      node.item.result.reject('Cleared');
     }
     this.pendingResults = [];
   }
