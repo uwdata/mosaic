@@ -1,10 +1,18 @@
-import type { DescribeQuery, ExprNode, Query } from '@uwdata/mosaic-sql';
+import type { CreateQuery, CreateSchemaQuery, DescribeQuery, ExprNode, MaybeArray, Query } from '@uwdata/mosaic-sql';
 import type { QueryResult } from './util/query-result.js';
+
+/** Query type accepted by a coordinator. */
+export type QueryType =
+  | string
+  | Query
+  | CreateQuery
+  | CreateSchemaQuery
+  | DescribeQuery;
 
 /** Type for a query request. */
 export interface QueryRequest {
   type: 'exec' | 'json' | 'arrow';
-  query: string | Query | DescribeQuery;
+  query: MaybeArray<QueryType>;
   cache?: boolean;
   options?: Record<string, unknown>;
 }
@@ -14,12 +22,6 @@ export interface QueryEntry {
   request: QueryRequest;
   result: QueryResult;
 }
-
-/** Query type accepted by a coordinator. */
-export type QueryType =
-  | string
-  | Query
-  | DescribeQuery;
 
 /** String indicating a JavaScript data type. */
 export type JSType =
