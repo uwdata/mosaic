@@ -1,3 +1,7 @@
+import { readFile, unlink } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { randomBytes } from 'node:crypto';
 import { DuckDBInstance } from '@duckdb/node-api';
 
 const TEMP_DIR = '.duckdb';
@@ -29,8 +33,8 @@ export class DuckDB {
   }
 
   close() {
-    this.con.closeSync();
-    this.db.closeSync();
+    this.con?.closeSync();
+    this.db?.closeSync();
   }
 
   async prepare(sql) {
@@ -53,19 +57,33 @@ export class DuckDB {
 
   async arrowBuffer(sql) {
     await this._init;
+    // to_arrow_ipc returns a table of Arrow IPC chunks as blobs
     const reader = await this.con.runAndReadAll(
       `SELECT * FROM to_arrow_ipc((${sql}))`
     );
     const chunks = /** @type {Uint8Array[]} */ (reader.getColumnsJS()[0]);
-    const len = chunks.reduce((a, b) => a + (b ? b.length : 0), 0);
+    if (!chunks?.length) {
+      // Empty result: to_arrow_ipc omits the schema message for empty queries,
+      // so fall back to COPY which produces a valid Arrow IPC file with schema.
+      return this._arrowCopy(sql);
+    }
+    const len = chunks.reduce((a, b) => a + b.length, 0);
     const buf = new Uint8Array(len);
     for (let i = 0, offset = 0; i < chunks.length; i++) {
-      if (chunks[i]) {
-        buf.set(chunks[i], offset);
-        offset += chunks[i].length;
-      }
+      buf.set(chunks[i], offset);
+      offset += chunks[i].length;
     }
     return buf;
+  }
+
+  async _arrowCopy(sql) {
+    const file = join(tmpdir(), `mosaic_${randomBytes(8).toString('hex')}.arrow`);
+    try {
+      await this.con.run(`COPY (${sql}) TO '${file}' (FORMAT 'arrow')`);
+      return new Uint8Array(await readFile(file));
+    } finally {
+      await unlink(file).catch(() => {});
+    }
   }
 }
 
