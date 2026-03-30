@@ -92,7 +92,7 @@ function entryGroups(entries: GroupEntry[], cache: Cache): QueryGroup[] {
 
 /**
  * Generate a key string for query consolidation.
- * Queries with matching keys are consolidation-compatible.
+ * Queries with matching keys are conosolidation-compatible.
  * If a query is found in the cache, it is exempted from consolidation,
  * which is indicated by returning the precise query SQL as the key.
  * @param query The input query.
