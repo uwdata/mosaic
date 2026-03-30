@@ -9,7 +9,7 @@
     "type": "git",
     "url": "https://github.com/uwdata/mosaic.git"
   },
-  "packageManager": "pnpm@10.24.0",
+  "packageManager": "pnpm@10.33.0",
   "scripts": {
     "preinstall": "npx only-allow pnpm",
     "docs:dev": "vitepress dev docs",
@@ -42,10 +42,10 @@
     "rimraf": "^6.1.3",
     "timezone-mock": "^1.4.2",
     "typescript": "^5.9.3",
-    "vite": "^8.0.2",
-    "typescript-eslint": "^8.57.2",
+    "vite": "^8.0.3",
+    "typescript-eslint": "^8.58.0",
     "vitepress": "1.6.4",
-    "vitest": "^4.1.1",
+    "vitest": "^4.1.2",
     "yaml": "^2.8.3"
   },
   "workspaces": [
