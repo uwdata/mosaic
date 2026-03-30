@@ -26,10 +26,7 @@ export class DuckDB {
   async _initialize(path, config, initStatements) {
     this.db = await DuckDBInstance.create(path, config);
     this.con = await this.db.connect();
-    const stmts = initStatements.split(';').map(s => s.trim()).filter(Boolean);
-    for (const sql of stmts) {
-      await this.con.run(sql);
-    }
+    await this.con.run(initStatements);
   }
 
   close() {
