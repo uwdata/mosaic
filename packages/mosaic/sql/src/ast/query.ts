@@ -1,7 +1,7 @@
 import type { FilterExpr, FromExpr, GroupByExpr, MaybeArray, OrderByExpr, SelectExpr, WithExpr } from '../types.js';
 import type { SampleMethod } from './sample.js';
-import { DESCRIBE_QUERY, SELECT_QUERY, SET_OPERATION } from '../constants.js';
-import { asNode, asVerbatim, maybeTableRef } from '../util/ast.js';
+import { CREATE_QUERY, CREATE_SCHEMA_QUERY, DESCRIBE_QUERY, SELECT_QUERY, SET_OPERATION } from '../constants.js';
+import { asNode, asTableRef, asVerbatim, maybeTableRef } from '../util/ast.js';
 import { exprList, nodeList } from '../util/function.js';
 import { unquote } from '../util/string.js';
 import { isArray, isString } from '../util/type-check.js';
@@ -10,7 +10,8 @@ import { FromClauseNode, FromNode } from './from.js';
 import { ExprNode, SQLNode, isNode } from './node.js';
 import { SampleClauseNode } from './sample.js';
 import { SelectClauseNode } from './select.js';
-import { isTableRef } from './table-ref.js';
+import { isTableRef, TableRefNode } from './table-ref.js';
+import { VerbatimNode } from './verbatim.js';
 import { WindowClauseNode, type WindowDefNode } from './window.js';
 import { WithClauseNode } from './with.js';
 
@@ -36,6 +37,22 @@ export function isSelectQuery(value: unknown): value is SelectQuery {
  */
 export function isDescribeQuery(value: unknown): value is DescribeQuery {
   return value instanceof DescribeQuery;
+}
+
+/**
+ * Check if a value is a create query.
+ * @param value The value to check.
+ */
+export function isCreateQuery(value: unknown): value is CreateQuery {
+  return value instanceof CreateQuery;
+}
+
+/**
+ * Check if a value is a create schema query.
+ * @param value The value to check.
+ */
+export function isCreateSchemaQuery(value: unknown): value is CreateSchemaQuery {
+  return value instanceof CreateSchemaQuery;
 }
 
 export class Query extends ExprNode {
@@ -474,6 +491,69 @@ export class DescribeQuery extends SQLNode {
   clone(): this {
     // @ts-expect-error creates describe query
     return new DescribeQuery(this.query.clone());
+  }
+}
+
+export interface CreateTableOptions {
+  replace?: boolean;
+  temp?: boolean;
+  view?: boolean;
+}
+
+export class CreateQuery extends SQLNode {
+  /** The table or view name. */
+  readonly name: TableRefNode;
+  /** The source query. */
+  readonly query: SQLNode;
+  /** Whether to use OR REPLACE. */
+  readonly replace: boolean;
+  /** Whether to create a TEMP table/view. */
+  readonly temp: boolean;
+  /** Whether to create a VIEW instead of a TABLE. */
+  readonly view: boolean;
+
+  /**
+   * Instantiate a create query.
+   * @param name The table or view name.
+   * @param query The source query.
+   * @param options Create options.
+   */
+  constructor(
+    name: string | TableRefNode,
+    query: string | Query,
+    { replace = false, temp = false, view = false }: CreateTableOptions = {}
+  ) {
+    super(CREATE_QUERY);
+    this.name = asTableRef(name)!;
+    this.query = isString(query) ? new VerbatimNode(query) : query;
+    this.replace = replace;
+    this.temp = temp;
+    this.view = view;
+  }
+}
+
+export interface CreateSchemaOptions {
+  strict?: boolean;
+}
+
+export class CreateSchemaQuery extends SQLNode {
+  /** The schema name. */
+  readonly name: TableRefNode;
+  /** Whether to error if the schema already exists. */
+  readonly strict: boolean;
+
+  /**
+   * Instantiate a create schema query.
+   * @param name The schema name.
+   * @param options Create schema options.
+   */
+  constructor(
+    name: string | TableRefNode,
+    { strict = false }: CreateSchemaOptions = {}
+  ) {
+    super(CREATE_SCHEMA_QUERY);
+    this.name = asTableRef(name)!;
+    this.strict = strict;
   }
 }
 
