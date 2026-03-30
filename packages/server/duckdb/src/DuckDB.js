@@ -99,23 +99,25 @@ export class DuckDB {
     if (!chunks?.length) {
       // Empty result: to_arrow_ipc omits the schema for empty queries,
       // so fall back to COPY which produces valid Arrow IPC with schema.
-      return this._arrowCopy(sql);
+      return arrowCopy(this.con, sql);
     }
     return chunks;
   }
 
-  /**
-   * @param {string} sql
-   * @returns {Promise<Uint8Array[]>}
-   */
-  async _arrowCopy(sql) {
-    const file = join(tmpdir(), `mosaic_${randomBytes(8).toString('hex')}.arrow`);
-    try {
-      await this.con.run(`COPY (${sql}) TO '${file}' (FORMAT 'arrow')`);
-      return [new Uint8Array(await readFile(file))];
-    } finally {
-      await unlink(file).catch(() => {});
-    }
+}
+
+/**
+ * @param {DuckDBConnection} con
+ * @param {string} sql
+ * @returns {Promise<Uint8Array[]>}
+ */
+async function arrowCopy(con, sql) {
+  const file = join(tmpdir(), `mosaic_${randomBytes(8).toString('hex')}.arrow`);
+  try {
+    await con.run(`COPY (${sql}) TO '${file}' (FORMAT 'arrow')`);
+    return [new Uint8Array(await readFile(file))];
+  } finally {
+    await unlink(file).catch(() => {});
   }
 }
 
