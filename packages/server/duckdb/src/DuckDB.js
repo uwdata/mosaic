@@ -54,8 +54,6 @@ export class DuckDB {
 
   async arrowBuffer(sql) {
     await this._init;
-    // to_arrow_ipc returns IPC stream chunks as blobs;
-    // flechette's tableFromIPC accepts Uint8Array[] directly
     const reader = await this.con.runAndReadAll(
       `SELECT * FROM to_arrow_ipc((${sql}))`
     );
