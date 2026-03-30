@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import path from 'path'
+import { tableFromIPC } from '@uwdata/flechette';
 import { db } from './db.js';
 import { loadArrow, loadJSON } from '../src/index.js';
 
@@ -17,7 +18,9 @@ describe('DuckDB', () => {
     it('returns arrow ipc buffers', async () => {
       const buf = await db.arrowBuffer('SELECT * FROM penguins');
       expect(buf).toBeInstanceOf(Uint8Array);
-      expect(buf.length).toBeGreaterThan(0);
+      const table = tableFromIPC(buf);
+      expect(table.numRows).toBe(342);
+      expect(table.numCols).toBe(7);
     });
   });
 

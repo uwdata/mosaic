@@ -39,8 +39,9 @@
     "prepublishOnly": "npm run test && npm run lint && tsc --build"
   },
   "dependencies": {
+    "@duckdb/node-api": "~1.5.0-r.1",
+    "@uwdata/flechette": "^2.3.0",
     "@uwdata/mosaic-sql": "^0.22.0",
-    "@duckdb/node-api": "~1.4.4-r.3",
     "ws": "^8.19.0"
   }
 }

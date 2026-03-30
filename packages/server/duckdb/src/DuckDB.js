@@ -1,13 +1,11 @@
 import { DuckDBInstance } from '@duckdb/node-api';
-import { mergeBuffers } from './merge-buffers.js';
+import { tableFromArrays, tableToIPC } from '@uwdata/flechette';
 
 const TEMP_DIR = '.duckdb';
 
 const DEFAULT_INIT_STATEMENTS = [
   `PRAGMA temp_directory='${TEMP_DIR}'`,
-  `INSTALL nanoarrow FROM community`,
   `INSTALL httpfs`,
-  `LOAD nanoarrow`,
   `LOAD httpfs`
 ].join(';\n');
 
@@ -54,11 +52,9 @@ export class DuckDB {
 
   async arrowBuffer(sql) {
     await this._init;
-    const reader = await this.con.runAndReadAll(
-      `SELECT * FROM to_arrow_ipc((${sql}))`
-    );
-    const columns = reader.getColumnsJS();
-    return mergeBuffers(columns[0]);
+    const reader = await this.con.runAndReadAll(sql);
+    const columns = reader.getColumnsObjectJS();
+    return tableToIPC(tableFromArrays(columns), {});
   }
 }
 
@@ -72,26 +68,19 @@ export class DuckDBStatement {
   }
 
   async run(params) {
-    if (params?.length) this.statement.bind(params);
+    if (params?.length) await this.statement.bind(params);
     await this.statement.run();
   }
 
   async exec(params) {
-    if (params?.length) this.statement.bind(params);
+    if (params?.length) await this.statement.bind(params);
     await this.statement.run();
     return this;
   }
 
   async query(params) {
-    if (params?.length) this.statement.bind(params);
+    if (params?.length) await this.statement.bind(params);
     const reader = await this.statement.runAndReadAll();
     return reader.getRowObjectsJson();
-  }
-
-  async arrowBuffer(params) {
-    if (params?.length) this.statement.bind(params);
-    const reader = await this.statement.runAndReadAll();
-    const columns = reader.getColumnsJS();
-    return mergeBuffers(columns[0]);
   }
 }
