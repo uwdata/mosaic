@@ -70,7 +70,7 @@ export class DuckDB {
     const file = join(tmpdir(), `mosaic_${randomBytes(8).toString('hex')}.arrow`);
     try {
       await this.con.run(`COPY (${sql}) TO '${file}' (FORMAT 'arrow')`);
-      return new Uint8Array(await readFile(file));
+      return [new Uint8Array(await readFile(file))];
     } finally {
       await unlink(file).catch(() => {});
     }
