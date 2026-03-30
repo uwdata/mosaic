@@ -15,12 +15,12 @@
     "dev": "pnpm run build -- --watch",
     "test": "tsc --build",
     "lint": "eslint src",
-    "prerelease": "pnpm run test && pnpm run lint && uv run ruff check && uv run ruff format --check && npm run build",
+    "prerelease": "pnpm run test && pnpm run lint && uv run ruff check && uv run ruff format --check && pnpm run build",
     "release": "uv build && uvx twine upload --skip-existing ../../../dist/mosaic_widget*"
   },
   "dependencies": {
-    "@uwdata/mosaic-core": "^0.22.0",
-    "@uwdata/mosaic-spec": "^0.22.0",
+    "@uwdata/mosaic-core": "workspace:^0.22.0",
+    "@uwdata/mosaic-spec": "workspace:^0.22.0",
     "uuid": "^13.0.0"
   },
   "devDependencies": {
