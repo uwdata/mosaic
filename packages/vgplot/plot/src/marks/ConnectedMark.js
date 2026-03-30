@@ -2,7 +2,6 @@ import { m4 } from '@uwdata/mosaic-sql';
 import { binExpr } from './util/bin-expr.js';
 import { filteredExtent } from './util/extent.js';
 import { Mark } from './Mark.js';
-const { ceil } = Math;
 
 export class ConnectedMark extends Mark {
   constructor(type, source, encodings) {
@@ -29,8 +28,7 @@ export class ConnectedMark extends Mark {
     const isContinuous = type === 'date' || type === 'number';
 
     const plot_size = dim === 'x' ? plot.innerWidth() : plot.innerHeight();
-    const size = ceil(plot_size * (globalThis.devicePixelRatio || 1))
-    // const size = plot_size
+    const size = Math.ceil(plot_size * (globalThis.devicePixelRatio || 1))
 
     optimize ??= (count / size) > 10; // threshold for applying M4
 
