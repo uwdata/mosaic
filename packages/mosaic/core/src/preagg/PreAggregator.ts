@@ -1,4 +1,4 @@
-import { ExprNode, ScaleOptions, SelectQuery, Query, ExprValue, MaybeArray, FunctionNode, BetweenOpNode, AndNode } from '@uwdata/mosaic-sql';
+import { ExprNode, ScaleOptions, SelectQuery, Query, ExprValue, MaybeArray, FunctionNode, BetweenOpNode, AndNode, TableRefNode } from '@uwdata/mosaic-sql';
 import type { Coordinator } from '../Coordinator.js';
 import type { MosaicClient } from '../MosaicClient.js';
 import type { Selection } from '../Selection.js';
@@ -25,7 +25,7 @@ interface ActiveColumnsResult {
 }
 
 interface PreAggregateInfoOptions {
-  table: string;
+  table: TableRefNode;
   create: string;
   active: ActiveColumnsResult;
   select: SelectQuery;
@@ -333,13 +333,13 @@ function preaggregateInfo(
   preaggCols: PreAggColumnsResult,
   schema: string
 ): PreAggregateInfo {
-  const { group, output, preagg } = preaggCols;
+  const { dims, groupby, output, preagg } = preaggCols;
   const { columns } = active;
 
   // build materialized view construction query
   const query = clientQuery
-    .setSelect({ ...preagg, ...columns })
-    .groupby(Object.keys(columns!));
+    .setSelect({ ...groupby, ...preagg, ...columns })
+    .groupby(Object.keys(columns ?? {}));
 
   // ensure active clause columns are selected by subqueries
   const [subq] = query.subqueries;
@@ -358,13 +358,13 @@ function preaggregateInfo(
   // generate creation query string and hash id
   const create = query.toString();
   const id = (fnv_hash(create) >>> 0).toString(16);
-  const table = `${schema}.preagg_${id}`;
+  const table = new TableRefNode([schema, `preagg_${id}`]);
 
   // generate preaggregate select query
   const select = QueryBuilder
-    .select(group, output)
+    .select(dims, output)
     .from(table)
-    .groupby(group)
+    .groupby(dims, Object.keys(groupby))
     .having(having)
     .orderby(order);
 
@@ -420,7 +420,7 @@ function isAggregateQuery(query: SelectQuery): boolean {
  */
 export class PreAggregateInfo {
   /** The name of the materialized view. */
-  table: string;
+  table: TableRefNode;
   /** The SQL query used to generate the materialized view. */
   create: string;
   /** A result promise returned for the materialized view creation query. */
