@@ -1,4 +1,5 @@
-import { createTable, CreateTableOptions } from './create.js';
+import { type CreateTableOptions } from '../ast/query.js';
+import { createTable } from './create.js';
 import { sqlFrom } from './sql-from.js';
 
 type Options =

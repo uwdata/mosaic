@@ -1,7 +1,19 @@
 # Data Loading
 
 SQL data loading utilities.
-These methods generate queries that load data into DuckDB.
+These methods generate queries that create tables and load data into DuckDB.
+
+## createTable
+
+`createTable(name, query, options)`
+
+Create a `CREATE TABLE` or `CREATE VIEW` query. The _options_ object supports _replace_ (use `OR REPLACE`), _temp_ (temporary table/view), and _view_ (create a view instead of a table).
+
+## createSchema
+
+`createSchema(name, options)`
+
+Create a `CREATE SCHEMA` query. Set _strict_ to `true` to omit `IF NOT EXISTS`.
 
 ## loadExtension
 

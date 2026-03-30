@@ -1,4 +1,4 @@
-import type { ExprNode, Query, SelectQuery } from '@uwdata/mosaic-sql';
+import type { ExprNode, MaybeArray, Query, SelectQuery } from '@uwdata/mosaic-sql';
 import type { Table } from '@uwdata/flechette';
 import { isAggregateExpression, isColumnRef, isDescribeQuery, isSelectQuery } from '@uwdata/mosaic-sql';
 import { QueryResult } from './util/query-result.js';
@@ -92,14 +92,15 @@ function entryGroups(entries: GroupEntry[], cache: Cache): QueryGroup[] {
 
 /**
  * Generate a key string for query consolidation.
- * Queries with matching keys are consolidation-compatible.
+ * Queries with matching keys are conosolidation-compatible.
  * If a query is found in the cache, it is exempted from consolidation,
  * which is indicated by returning the precise query SQL as the key.
  * @param query The input query.
  * @param cache The query cache (sql -> data).
  * @returns a key string
  */
-function consolidationKey(query: QueryType, cache: Cache): string {
+function consolidationKey(query: MaybeArray<QueryType>, cache: Cache): string {
+  if (Array.isArray(query)) return query.map(q => consolidationKey(q, cache)).join(';\n');
   const sql = `${query}`;
   if (isSelectQuery(query) && !cache.get(sql)) {
     if (
