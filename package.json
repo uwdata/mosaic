@@ -54,7 +54,7 @@
     "packages/vgplot/*",
     "packages/examples/*"
   ],
-  "volta": {
-    "node": "22.22.2"
+  "pnpm": {
+    "onlyBuiltDependencies": ["duckdb"]
   }
 }
