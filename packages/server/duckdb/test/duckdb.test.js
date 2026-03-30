@@ -22,6 +22,19 @@ describe('DuckDB', () => {
       expect(table.numRows).toBe(342);
       expect(table.numCols).toBe(7);
     });
+
+    it('handles empty results', async () => {
+      const result = await db.arrowBuffer('SELECT * FROM penguins WHERE 1 = 0');
+      const table = tableFromIPC(result);
+      expect(table.numRows).toBe(0);
+      expect(table.numCols).toBe(7);
+    });
+
+    it('handles DESC queries', async () => {
+      const result = await db.arrowBuffer('DESC SELECT * FROM penguins');
+      const table = tableFromIPC(result);
+      expect(table.numRows).toBe(7);
+    });
   });
 
   describe('loadArrow', () => {
