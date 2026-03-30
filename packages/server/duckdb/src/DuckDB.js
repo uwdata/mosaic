@@ -1,4 +1,4 @@
-import duckdb from 'duckdb';
+import { DuckDBInstance } from '@duckdb/node-api';
 import { mergeBuffers } from './merge-buffers.js';
 
 const TEMP_DIR = '.duckdb';
@@ -17,62 +17,48 @@ export class DuckDB {
     config = {},
     initStatements = DEFAULT_INIT_STATEMENTS
   ) {
-    this.db = new duckdb.Database(path, config);
-    this.con = this.db.connect();
-    // store initialization promise so that we can wait for it
-    this._init = this.exec(initStatements);
+    this._init = this._initialize(path, config, initStatements);
+  }
+
+  async _initialize(path, config, initStatements) {
+    this.db = await DuckDBInstance.create(path, config);
+    this.con = await this.db.connect();
+    const stmts = initStatements.split(';').map(s => s.trim()).filter(Boolean);
+    for (const sql of stmts) {
+      await this.con.run(sql);
+    }
   }
 
   close() {
-    return new Promise((resolve, reject) => {
-      this.db.close((err) => {
-        if (err) {
-          reject(err);
-        } else {
-          resolve(this);
-        }
-      });
-    });
+    this.con.closeSync();
+    this.db.closeSync();
   }
 
-  prepare(sql) {
-    return new DuckDBStatement(this.con.prepare(sql));
+  async prepare(sql) {
+    await this._init;
+    const stmt = await this.con.prepare(sql);
+    return new DuckDBStatement(stmt);
   }
 
-  exec(sql) {
-    return new Promise((resolve, reject) => {
-      this.con.exec(sql, (err) => {
-        if (err) {
-          reject(err);
-        } else {
-          resolve(this);
-        }
-      });
-    });
+  async exec(sql) {
+    await this._init;
+    await this.con.run(sql);
+    return this;
   }
 
-  query(sql) {
-    return new Promise((resolve, reject) => {
-      this.con.all(sql, (err, result) => {
-        if (err) {
-          reject(err);
-        } else {
-          resolve(result);
-        }
-      });
-    });
+  async query(sql) {
+    await this._init;
+    const reader = await this.con.runAndReadAll(sql);
+    return reader.getRowObjectsJson();
   }
 
-  arrowBuffer(sql) {
-    return new Promise((resolve, reject) => {
-      this.con.arrowIPCAll(sql, (err, result) => {
-        if (err) {
-          reject(err);
-        } else {
-          resolve(mergeBuffers(result));
-        }
-      });
-    });
+  async arrowBuffer(sql) {
+    await this._init;
+    const reader = await this.con.runAndReadAll(
+      `SELECT * FROM to_arrow_ipc((${sql}))`
+    );
+    const columns = reader.getColumnsJS();
+    return mergeBuffers(columns[0]);
   }
 }
 
@@ -82,46 +68,30 @@ export class DuckDBStatement {
   }
 
   finalize() {
-    this.statement.finalize();
+    this.statement.destroySync();
   }
 
-  run(params) {
-    this.statement.run(...params);
+  async run(params) {
+    if (params?.length) this.statement.bind(params);
+    await this.statement.run();
   }
 
-  exec(params) {
-    return new Promise((resolve, reject) => {
-      this.statement.run(...params, (err) => {
-        if (err) {
-          reject(err);
-        } else {
-          resolve(this);
-        }
-      });
-    });
+  async exec(params) {
+    if (params?.length) this.statement.bind(params);
+    await this.statement.run();
+    return this;
   }
 
-  query(params) {
-    return new Promise((resolve, reject) => {
-      this.statement.all(...params, (err, result) => {
-        if (err) {
-          reject(err);
-        } else {
-          resolve(result);
-        }
-      });
-    });
+  async query(params) {
+    if (params?.length) this.statement.bind(params);
+    const reader = await this.statement.runAndReadAll();
+    return reader.getRowObjectsJson();
   }
 
-  arrowBuffer(params) {
-    return new Promise((resolve, reject) => {
-      this.statement.arrowIPCAll(...params, (err, result) => {
-        if (err) {
-          reject(err);
-        } else {
-          resolve(mergeBuffers(result));
-        }
-      });
-    });
+  async arrowBuffer(params) {
+    if (params?.length) this.statement.bind(params);
+    const reader = await this.statement.runAndReadAll();
+    const columns = reader.getColumnsJS();
+    return mergeBuffers(columns[0]);
   }
 }

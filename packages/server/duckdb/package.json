@@ -40,7 +40,7 @@
   },
   "dependencies": {
     "@uwdata/mosaic-sql": "^0.22.0",
-    "duckdb": "~1.4.4",
+    "@duckdb/node-api": "~1.4.4-r.3",
     "ws": "^8.19.0"
   }
 }
