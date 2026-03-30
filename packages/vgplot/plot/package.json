@@ -27,10 +27,10 @@
   },
   "scripts": {
     "clean": "rimraf dist && mkdir dist",
-    "prebuild": "npm run clean",
+    "prebuild": "pnpm run clean",
     "lint": "eslint src test",
     "test": "vitest run",
-    "prepublishOnly": "npm run test && npm run lint && tsc --build"
+    "prepublishOnly": "pnpm run test && pnpm run lint && tsc --build"
   },
   "dependencies": {
     "@observablehq/plot": "^0.6.17",

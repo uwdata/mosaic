@@ -21,14 +21,14 @@
     "clean": "lerna run clean",
     "lint": "lerna run lint",
     "test": "tsc --build && lerna run schema && vitest run",
-    "server": "cd packages/server/duckdb-server && npm run dev",
+    "server": "cd packages/server/duckdb-server && pnpm run dev",
     "server:rust": "cd packages/server/duckdb-server-rust && cargo run",
     "server:node": "nodemon packages/server/duckdb/bin/run-server.js",
     "dev": "vite",
-    "release": "npm run test && npm run lint && lerna publish && npm run release:python",
-    "release:python": "npm run release:server && npm run release:widget",
-    "release:server": "cd packages/server/duckdb-server && npm run release",
-    "release:widget": "cd packages/vgplot/widget && npm run release"
+    "release": "pnpm run test && pnpm run lint && lerna publish && pnpm run release:python",
+    "release:python": "pnpm run release:server && pnpm run release:widget",
+    "release:server": "cd packages/server/duckdb-server && pnpm run release",
+    "release:widget": "cd packages/vgplot/widget && pnpm run release"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
