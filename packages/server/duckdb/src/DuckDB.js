@@ -1,11 +1,12 @@
 import { DuckDBInstance } from '@duckdb/node-api';
-import { tableFromArrays, tableToIPC } from '@uwdata/flechette';
 
 const TEMP_DIR = '.duckdb';
 
 const DEFAULT_INIT_STATEMENTS = [
   `PRAGMA temp_directory='${TEMP_DIR}'`,
+  `INSTALL nanoarrow FROM community`,
   `INSTALL httpfs`,
+  `LOAD nanoarrow`,
   `LOAD httpfs`
 ].join(';\n');
 
@@ -52,9 +53,19 @@ export class DuckDB {
 
   async arrowBuffer(sql) {
     await this._init;
-    const reader = await this.con.runAndReadAll(sql);
-    const columns = reader.getColumnsObjectJS();
-    return tableToIPC(tableFromArrays(columns), {});
+    const reader = await this.con.runAndReadAll(
+      `SELECT * FROM to_arrow_ipc((${sql}))`
+    );
+    const chunks = /** @type {Uint8Array[]} */ (reader.getColumnsJS()[0]);
+    const len = chunks.reduce((a, b) => a + (b ? b.length : 0), 0);
+    const buf = new Uint8Array(len);
+    for (let i = 0, offset = 0; i < chunks.length; i++) {
+      if (chunks[i]) {
+        buf.set(chunks[i], offset);
+        offset += chunks[i].length;
+      }
+    }
+    return buf;
   }
 }
 
