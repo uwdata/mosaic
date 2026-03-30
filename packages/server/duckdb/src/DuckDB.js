@@ -42,7 +42,7 @@ export class DuckDB {
 
   async exec(sql) {
     await this._init;
-    await this.con.run(sql);
+    await this.con.run(String(sql));
     return this;
   }
 
@@ -54,23 +54,18 @@ export class DuckDB {
 
   async arrowBuffer(sql) {
     await this._init;
-    // to_arrow_ipc returns a table of Arrow IPC chunks as blobs
+    // to_arrow_ipc returns IPC stream chunks as blobs;
+    // flechette's tableFromIPC accepts Uint8Array[] directly
     const reader = await this.con.runAndReadAll(
       `SELECT * FROM to_arrow_ipc((${sql}))`
     );
     const chunks = /** @type {Uint8Array[]} */ (reader.getColumnsJS()[0]);
     if (!chunks?.length) {
-      // Empty result: to_arrow_ipc omits the schema message for empty queries,
-      // so fall back to COPY which produces a valid Arrow IPC file with schema.
+      // Empty result: to_arrow_ipc omits the schema for empty queries,
+      // so fall back to COPY which produces valid Arrow IPC with schema.
       return this._arrowCopy(sql);
     }
-    const len = chunks.reduce((a, b) => a + b.length, 0);
-    const buf = new Uint8Array(len);
-    for (let i = 0, offset = 0; i < chunks.length; i++) {
-      buf.set(chunks[i], offset);
-      offset += chunks[i].length;
-    }
-    return buf;
+    return chunks;
   }
 
   async _arrowCopy(sql) {

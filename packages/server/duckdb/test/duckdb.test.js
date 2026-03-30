@@ -16,9 +16,9 @@ describe('DuckDB', () => {
 
   describe('arrowBuffer', () => {
     it('returns arrow ipc buffers', async () => {
-      const buf = await db.arrowBuffer('SELECT * FROM penguins');
-      expect(buf).toBeInstanceOf(Uint8Array);
-      const table = tableFromIPC(buf);
+      const chunks = await db.arrowBuffer('SELECT * FROM penguins');
+      expect(Array.isArray(chunks)).toBe(true);
+      const table = tableFromIPC(chunks);
       expect(table.numRows).toBe(342);
       expect(table.numCols).toBe(7);
     });
