@@ -21,4 +21,5 @@ output.on('error', (error) => {
 });
 
 // write arrow bytes to output
-output.end(buf);
+for (const chunk of buf) output.write(chunk);
+output.end();

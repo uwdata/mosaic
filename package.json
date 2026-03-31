@@ -53,8 +53,5 @@
     "packages/server/*",
     "packages/vgplot/*",
     "packages/examples/*"
-  ],
-  "pnpm": {
-    "onlyBuiltDependencies": ["duckdb"]
-  }
+  ]
 }

@@ -64,4 +64,4 @@ Execute the provided _sql_ query and return a Promise that resolves to the query
 `db.prepare(sql)`
 
 Return a new prepared statement for the given _sql_ query, which may contain `?` wildcard characters.
-The resulting prepared statement instance exposes `exec(params)`, `query(params)` and `arrowBuffer(params)` methods that accept parameter values for query wildcards.
+The resulting prepared statement instance exposes `exec(params)` and `query(params)` methods that accept parameter values for query wildcards.

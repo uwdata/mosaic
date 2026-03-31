@@ -39,8 +39,8 @@
     "prepublishOnly": "pnpm run test && pnpm run lint && tsc --build"
   },
   "dependencies": {
+    "@duckdb/node-api": "~1.4.4-r.3",
     "@uwdata/mosaic-sql": "workspace:^0.22.0",
-    "duckdb": "~1.4.4",
     "ws": "^8.20.0"
   },
   "devDependencies": {

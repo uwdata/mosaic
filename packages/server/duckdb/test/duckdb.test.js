@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import path from 'path'
+import { tableFromIPC } from '@uwdata/flechette';
 import { db } from './db.js';
 import { loadArrow, loadJSON } from '../src/index.js';
 
@@ -15,8 +16,23 @@ describe('DuckDB', () => {
 
   describe('arrowBuffer', () => {
     it('returns arrow ipc buffers', async () => {
-      const buf = await db.arrowBuffer('SELECT * FROM penguins');
-      expect(buf.length).toBe(22316);
+      const chunks = await db.arrowBuffer('SELECT * FROM penguins');
+      expect(Array.isArray(chunks)).toBe(true);
+      const table = tableFromIPC(chunks);
+      expect(table.numRows).toBe(342);
+      expect(table.numCols).toBe(7);
+    });
+
+    it('handles empty results', async () => {
+      const result = await db.arrowBuffer('SELECT * FROM penguins WHERE 1 = 0');
+      expect(Array.isArray(result)).toBe(true);
+      expect(result.length).toBe(0);
+    });
+
+    it('handles DESC queries', async () => {
+      const result = await db.arrowBuffer('DESC SELECT * FROM penguins');
+      const table = tableFromIPC(result);
+      expect(table.numRows).toBe(7);
     });
   });
 
@@ -25,7 +41,7 @@ describe('DuckDB', () => {
       await loadArrow(db, 'arrow', await db.arrowBuffer('SELECT * FROM penguins'));
       const res = await db.query('SELECT count()::INTEGER AS count FROM arrow');
       expect(res[0]?.count).toBe(342);
-      await db.exec('DROP VIEW arrow');
+      await db.exec('DROP TABLE arrow');
     });
   });
 
