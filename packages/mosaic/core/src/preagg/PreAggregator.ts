@@ -6,6 +6,7 @@ import type { BinMethod, ClauseSource, IntervalMetadata, SelectionClause } from 
 import { Query as QueryBuilder, and, asNode, ceil, collectColumns, createTable, float64, floor, isBetween, int32, mul, round, scaleTransform, sub, isSelectQuery, isAggregateExpression, ColumnNameRefNode } from '@uwdata/mosaic-sql';
 import { preaggColumns, PreAggColumnsResult } from './preagg-columns.js';
 import { fnv_hash } from '../util/hash.js';
+import { ErrorEvent, EventType } from '../Events.js';
 
 const Skip = { skip: true, result: null };
 
@@ -62,10 +63,10 @@ export class PreAggregator {
    * @param coordinator A Mosaic coordinator.
    * @param options Pre-aggregation options.
    */
-  constructor(coordinator: Coordinator, {
-    schema = 'mosaic',
-    enabled = true
-  }: PreAggregateOptions = {}) {
+  constructor(
+    coordinator: Coordinator,
+    { schema = "mosaic", enabled = true }: PreAggregateOptions = {},
+  ) {
     this.entries = new Map();
     this.active = null;
     this.mc = coordinator;
@@ -216,7 +217,12 @@ export class PreAggregator {
         createSchema(schema),
         createTable(info.table, info.create, { temp: false })
       ]);
-      info.result.catch((e: Error) => mc.logger().error(e));
+      info.result.catch((e: Error) =>
+        mc.eventBus.emit(
+          EventType.Error,
+          new ErrorEvent({ message: e.message }),
+        ),
+      );
     }
 
     entries.set(client, info);
@@ -268,15 +274,19 @@ function activeColumns(clause: SelectionClause): ActiveColumnsResult {
       } else {
         // selection clause predicate has type AndNode<BetweenOpNode>
         // multiple interval selection
-        predicate = (p?: ExprNode) => p
-          ? and((p as AndNode<BetweenOpNode>).clauses.map(
-              (c, i) => isBetween(`active${i}`, c.extent?.map(bins[i]!))
-            ))
-          : [];
+        predicate = (p?: ExprNode) =>
+          p
+            ? and(
+                (p as AndNode<BetweenOpNode>).clauses.map((c, i) =>
+                  isBetween(`active${i}`, c.extent?.map(bins[i]!)),
+                ),
+              )
+            : [];
         columns = Object.fromEntries(
-          (clausePred as AndNode<BetweenOpNode>).clauses.map(
-            (p, i) => [`active${i}`, bins[i]!(p.expr)]
-          )
+          (clausePred as AndNode<BetweenOpNode>).clauses.map((p, i) => [
+            `active${i}`,
+            bins[i]!(p.expr),
+          ]),
         );
       }
     }
@@ -299,24 +309,22 @@ const BIN: Record<string, (expr: ExprValue) => FunctionNode> = { ceil, round };
 function binInterval(
   scale: ScaleOptions,
   pixelSize: number,
-  bin?: BinMethod
+  bin?: BinMethod,
 ): ((value: ExprValue) => ExprNode) | undefined {
   const { type, domain, range, apply, sqlApply } = scaleTransform(scale)!;
   if (!apply) return; // unsupported scale type
   const binFn = BIN[`${bin}`.toLowerCase()] || floor;
-  const dom = domain!.map(x => Number(x));
+  const dom = domain!.map((x) => Number(x));
   const lo = apply(Math.min(...dom));
   const hi = apply(Math.max(...dom));
-  const s = (type === 'identity'
-    ? 1
-    : Math.abs(range![1] - range![0]) / (hi - lo)) / pixelSize;
-  const scalar = s === 1
-    ? (x: ExprValue) => x
-    : (x: ExprValue) => mul(float64(s), x);
-  const diff = lo === 0
-    ? (x: ExprValue) => x
-    : (x: ExprValue) => sub(x, float64(lo));
-  return value => int32(binFn(scalar(diff(sqlApply(value)))));
+  const s =
+    (type === "identity" ? 1 : Math.abs(range![1] - range![0]) / (hi - lo)) /
+    pixelSize;
+  const scalar =
+    s === 1 ? (x: ExprValue) => x : (x: ExprValue) => mul(float64(s), x);
+  const diff =
+    lo === 0 ? (x: ExprValue) => x : (x: ExprValue) => sub(x, float64(lo));
+  return (value) => int32(binFn(scalar(diff(sqlApply(value)))));
 }
 
 /**
@@ -331,7 +339,7 @@ function preaggregateInfo(
   clientQuery: SelectQuery,
   active: ActiveColumnsResult,
   preaggCols: PreAggColumnsResult,
-  schema: string
+  schema: string,
 ): PreAggregateInfo {
   const { dims, groupby, output, preagg } = preaggCols;
   const { columns } = active;
@@ -344,8 +352,9 @@ function preaggregateInfo(
   // ensure active clause columns are selected by subqueries
   const [subq] = query.subqueries;
   if (subq) {
-    const cols = Object.values(columns!)
-      .flatMap(c => collectColumns(c).map(c => c.column));
+    const cols = Object.values(columns!).flatMap((c) =>
+      collectColumns(c).map((c) => c.column),
+    );
     subqueryPushdown(subq, cols);
   }
 
@@ -361,8 +370,7 @@ function preaggregateInfo(
   const table = new TableRefNode([schema, `preagg_${id}`]);
 
   // generate preaggregate select query
-  const select = QueryBuilder
-    .select(dims, output)
+  const select = QueryBuilder.select(dims, output)
     .from(table)
     .groupby(dims, Object.keys(groupby))
     .having(having)
@@ -392,9 +400,11 @@ function subqueryPushdown(query: Query, cols: string[]): void {
         // if an aggregation query, we need to push to groupby as well
         // we also deduplicate as the column may already be present
         const set = new Set(
-          q._groupby.flatMap(x => x instanceof ColumnNameRefNode ? [x.name] : [])
+          q._groupby.flatMap((x) =>
+            x instanceof ColumnNameRefNode ? [x.name] : [],
+          ),
         );
-        q.groupby(cols.filter(c => !set.has(c)));
+        q.groupby(cols.filter((c) => !set.has(c)));
       }
     }
     q.subqueries.forEach(pushdown);

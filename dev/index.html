@@ -155,19 +155,29 @@
   }
 
   function setQueryLog() {
-    vg.coordinator().manager.logQueries(qlogToggle.checked);
+    const bus = coordinator().eventBus;
+    
+    bus.observe("query-start", (event) =>
+      console.info("Query started:", event),
+    );
+    bus.observe("query-end", (event) => console.info("Query ended:", event));
+    bus.observe("client-connect", (event) =>
+      console.info("Client connected:", event),
+    );
+    bus.observe("warning", (event) => console.warn("Warning:", event));
+    bus.observe("error", (event) => console.error("Error:", event));
   }
 
   function setCache() {
-    vg.coordinator().manager.cache(cacheToggle.checked);
+    coordinator().manager.cache(cacheToggle.checked);
   }
 
   function setConsolidate() {
-    vg.coordinator().manager.consolidate(consolidateToggle.checked);
+    coordinator().manager.consolidate(consolidateToggle.checked);
   }
 
   function setPreAggregate() {
-    vg.coordinator().preaggregator.enabled = preaggToggle.checked;
+    coordinator().preaggregator.enabled = preaggToggle.checked;
   }
 
   function reload() {
