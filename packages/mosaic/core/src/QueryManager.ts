@@ -1,11 +1,18 @@
-import type { Connector } from './connectors/Connector.js';
-import type { Cache, QueryEntry, QueryRequest } from './types.js';
-import { consolidator } from './QueryConsolidator.js';
-import { lruCache, voidCache } from './util/cache.js';
-import { PriorityQueue } from './util/priority-queue.js';
-import { QueryResult, QueryState } from './util/query-result.js';
-import { EventType, MosaicEvent, MosaicEvents } from './Events.js';
-import { ObserveDispatch } from './util/ObserveDispatch.js';
+import type { Connector } from "./connectors/Connector.js";
+import type { Cache, QueryEntry, QueryRequest } from "./types.js";
+import { consolidator } from "./QueryConsolidator.js";
+import { lruCache, voidCache } from "./util/cache.js";
+import { PriorityQueue } from "./util/priority-queue.js";
+import { QueryResult, QueryState } from "./util/query-result.js";
+import {
+  ErrorEvent,
+  EventType,
+  MosaicEventMap,
+  QueryEndEvent,
+  QueryStartEvent,
+  WarningEvent,
+} from "./Events.js";
+import { ObserveDispatch } from "./util/ObserveDispatch.js";
 
 export const Priority = Object.freeze({ High: 0, Normal: 1, Low: 2 });
 
@@ -18,9 +25,12 @@ export class QueryManager {
   public pendingResults: QueryResult[];
   private maxConcurrentRequests: number;
   private pendingExec: boolean;
-  public eventBus?;
+  public eventBus?: ObserveDispatch<MosaicEventMap>;
 
-  constructor(maxConcurrentRequests: number = 32, eventBus?: ObserveDispatch<Omit<MosaicEvents, keyof MosaicEvent>>) {
+  constructor(
+    maxConcurrentRequests: number = 32,
+    eventBus?: ObserveDispatch<MosaicEventMap>,
+  ) {
     this.queue = new PriorityQueue(3);
     this.db = null;
     this.clientCache = null;
@@ -32,7 +42,11 @@ export class QueryManager {
   }
 
   next(): void {
-    if (this.queue.isEmpty() || this.pendingResults.length > this.maxConcurrentRequests || this.pendingExec) {
+    if (
+      this.queue.isEmpty() ||
+      this.pendingResults.length > this.maxConcurrentRequests ||
+      this.pendingExec
+    ) {
       return;
     }
 
@@ -42,19 +56,27 @@ export class QueryManager {
     const { request, result } = entry;
 
     this.pendingResults.push(result);
-    if (request.type === 'exec') this.pendingExec = true;
+    if (request.type === "exec") this.pendingExec = true;
 
     this.submit(request, result).finally(() => {
       // return from the queue all requests that are ready
-      while (this.pendingResults.length && this.pendingResults[0].state !== QueryState.pending) {
+      while (
+        this.pendingResults.length &&
+        this.pendingResults[0].state !== QueryState.pending
+      ) {
         const result = this.pendingResults.shift()!;
         if (result.state === QueryState.ready) {
           result.fulfill();
         } else if (result.state === QueryState.done) {
-          this.eventBus?.emit(EventType.Warning, { message: 'Found resolved query in pending results.' });
+          this.eventBus?.emit(
+            EventType.Warning,
+            new WarningEvent({
+              message: "Found resolved query in pending results.",
+            }),
+          );
         }
       }
-      if (request.type === 'exec') this.pendingExec = false;
+      if (request.type === "exec") this.pendingExec = false;
       this.next();
     });
   }
@@ -78,11 +100,15 @@ export class QueryManager {
     try {
       const { query, type, cache = false, options } = request;
       const sql = query ? `${query}` : null;
+      const queryText = sql || "";
 
-      this.eventBus?.emit(EventType.QueryStart, {
-        query: sql || '',
-        materialized: cache,
-      });
+      this.eventBus?.emit(
+        EventType.QueryStart,
+        new QueryStartEvent({
+          query: queryText,
+          materialized: cache,
+        }),
+      );
 
       // check query cache
       if (cache) {
@@ -90,10 +116,13 @@ export class QueryManager {
         if (cached) {
           const data = cached;
           result.ready(data);
-          this.eventBus?.emit(EventType.QueryEnd, {
-            query: sql || '',
-            materialized: cache,
-          });
+          this.eventBus?.emit(
+            EventType.QueryEnd,
+            new QueryEndEvent({
+              query: queryText,
+              materialized: cache,
+            }),
+          );
           return;
         }
       }
@@ -111,14 +140,20 @@ export class QueryManager {
 
       result.ready(type === 'exec' ? null : data);
 
-      this.eventBus?.emit(EventType.QueryEnd, {
-        query: sql || '',
-        materialized: cache,
-      });
+      this.eventBus?.emit(
+        EventType.QueryEnd,
+        new QueryEndEvent({
+          query: queryText,
+          materialized: cache,
+        }),
+      );
     } catch (err) {
-      this.eventBus?.emit(EventType.Error, {
-        message: err,
-      });
+      this.eventBus?.emit(
+        EventType.Error,
+        new ErrorEvent({
+          message: err instanceof Error ? err.message : String(err),
+        }),
+      );
       result.reject(err);
     }
   }
@@ -132,7 +167,7 @@ export class QueryManager {
   cache(value: Cache | boolean): Cache;
   cache(value?: Cache | boolean): Cache | null {
     return value !== undefined
-      ? (this.clientCache = value === true ? lruCache() : (value || voidCache()))
+      ? (this.clientCache = value === true ? lruCache() : value || voidCache())
       : this.clientCache;
   }
 
@@ -153,7 +188,10 @@ export class QueryManager {
    */
   consolidate(flag: boolean): void {
     if (flag && !this._consolidate) {
-      this._consolidate = consolidator(this.enqueue.bind(this), this.clientCache!);
+      this._consolidate = consolidator(
+        this.enqueue.bind(this),
+        this.clientCache!,
+      );
     } else if (!flag && this._consolidate) {
       this._consolidate = null;
     }

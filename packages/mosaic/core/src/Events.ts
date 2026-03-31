@@ -2,43 +2,83 @@ export enum EventType {
   QueryStart = "query-start",
   QueryEnd = "query-end",
   ClientConnect = "client-connect",
-  ClientStateChange = "client-state-change",
   Warning = "warning",
   Error = "error",
-} 
-
-export type EventMap = {
-  [EventType.QueryStart]: Omit<QueryStartEvent, keyof MosaicEvent>;
-  [EventType.QueryEnd]: Omit<QueryEndEvent, keyof MosaicEvent>;
-  [EventType.ClientConnect]: Omit<ClientConnectEvent, keyof MosaicEvent>;
-  [EventType.Warning]: Omit<WarningEvent, keyof MosaicEvent>;
-  [EventType.Error]: Omit<ErrorEvent, keyof MosaicEvent>;
-};
-
-export interface MosaicEvent {
-  timestamp: number;
 }
 
-export interface QueryStartEvent extends MosaicEvent {
+export abstract class MosaicEvent<T extends EventType = EventType> {
+  readonly type: T;
+  readonly timestamp: number;
+
+  protected constructor(type: T, timestamp: number = Date.now()) {
+    this.type = type;
+    this.timestamp = timestamp;
+  }
+}
+
+export interface QueryLifecycleEventInit {
   query: string;
   materialized: boolean;
+  timestamp?: number;
 }
 
-export interface QueryEndEvent extends MosaicEvent {
-  query: string;
-  materialized: boolean;
+export class QueryStartEvent extends MosaicEvent<EventType.QueryStart> {
+  readonly query: string;
+  readonly materialized: boolean;
+
+  constructor({ query, materialized, timestamp }: QueryLifecycleEventInit) {
+    super(EventType.QueryStart, timestamp);
+    this.query = query;
+    this.materialized = materialized;
+  }
 }
 
-export interface ClientConnectEvent extends MosaicEvent {
+export class QueryEndEvent extends MosaicEvent<EventType.QueryEnd> {
+  readonly query: string;
+  readonly materialized: boolean;
+
+  constructor({ query, materialized, timestamp }: QueryLifecycleEventInit) {
+    super(EventType.QueryEnd, timestamp);
+    this.query = query;
+    this.materialized = materialized;
+  }
+}
+
+export interface ClientConnectEventInit {
   clientId?: string;
+  timestamp?: number;
 }
 
-export interface WarningEvent extends MosaicEvent {
-  message: string;
+export class ClientConnectEvent extends MosaicEvent<EventType.ClientConnect> {
+  readonly clientId?: string;
+
+  constructor({ clientId, timestamp }: ClientConnectEventInit = {}) {
+    super(EventType.ClientConnect, timestamp);
+    this.clientId = clientId;
+  }
 }
 
-export interface ErrorEvent extends MosaicEvent {
+export interface MessageEventInit {
   message: string;
+  timestamp?: number;
+}
+
+export class WarningEvent extends MosaicEvent<EventType.Warning> {
+  readonly message: string;
+
+  constructor({ message, timestamp }: MessageEventInit) {
+    super(EventType.Warning, timestamp);
+    this.message = message;
+  }
+}
+
+export class ErrorEvent extends MosaicEvent<EventType.Error> {
+  readonly message: string;
+
+  constructor({ message, timestamp }: MessageEventInit) {
+    super(EventType.Error, timestamp);
+    this.message = message;
+  }
 }
 
 export type MosaicEvents =
@@ -47,3 +87,11 @@ export type MosaicEvents =
   | ClientConnectEvent
   | WarningEvent
   | ErrorEvent;
+
+export type MosaicEventMap = {
+  [EventType.QueryStart]: QueryStartEvent;
+  [EventType.QueryEnd]: QueryEndEvent;
+  [EventType.ClientConnect]: ClientConnectEvent;
+  [EventType.Warning]: WarningEvent;
+  [EventType.Error]: ErrorEvent;
+};

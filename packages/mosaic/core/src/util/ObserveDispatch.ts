@@ -1,47 +1,55 @@
 import { Dispatch, EventCallback } from "./AsyncDispatch.js";
 
+type EventMap = Record<string, unknown>;
+type EventKey<E extends EventMap> = Extract<keyof E, string>;
+
 /**
- * Synchronous event dispatcher that pushes events directly to callbacks
- * without queuing or Promise handling. Suitable for simple observer patterns.
+ * Synchronous event dispatcher that pushes pre-built events directly
+ * to callbacks without queueing or Promise handling.
  */
-export class ObserveDispatch<T> extends Dispatch<T> {
+export class ObserveDispatch<E extends EventMap> extends Dispatch<
+  E[EventKey<E>]
+> {
   /**
-   * Subscribe to events of the given type. Essentially
-   * a shorthand/wrapper for addEventListener().
+   * Subscribe to events of the given type.
+   * Shorthand for addEventListener().
    * @param type The event type.
    * @param callback The event handler callback function to add.
    * @returns This ObserveDispatch instance for method chaining.
    */
-  observe(type: string, callback: EventCallback<T>): this {
-    this.addEventListener(type, callback);
+  observe<K extends EventKey<E>>(type: K, callback: EventCallback<E[K]>): this {
+    this.addEventListener(type, callback as EventCallback<E[EventKey<E>]>);
     return this;
   }
 
   /**
-   * Unsubscribe from events of the given type. Essentially
-   * a shorthand/wrapper for removeEventListener().
+   * Unsubscribe from events of the given type.
+   * Shorthand for removeEventListener().
    * @param type The event type.
    * @param callback The event handler callback function to remove.
    * @returns This ObserveDispatch instance for method chaining.
    */
-  unobserve(type: string, callback: EventCallback<T>): this {
-    this.removeEventListener(type, callback);
+  unobserve<K extends EventKey<E>>(
+    type: K,
+    callback: EventCallback<E[K]>,
+  ): this {
+    this.removeEventListener(type, callback as EventCallback<E[EventKey<E>]>);
     return this;
   }
 
   /**
-   * Emit an event value to listeners for the given event type.
+   * Emit an already-constructed event value to listeners for the given event type.
    * @param type The event type.
-   * @param value The event value.
+   * @param value The complete event object.
    */
-  override emit(type: string, value: T): void {
+  emit<K extends EventKey<E>>(type: K, value: E[K]): void;
+  override emit(type: string, value: E[EventKey<E>]): void {
     const callbacks = this._callbacks.get(type);
-    if (callbacks && callbacks.size > 0) {
-      const event = this.willEmit(type, { ...value, timestamp: new Date() });
-      // Execute all callbacks synchronously
-      for (const callback of callbacks) {
-        callback(event);
-      }
+    if (!callbacks?.size) return;
+
+    const event = this.willEmit(type, value);
+    for (const callback of callbacks) {
+      callback(event);
     }
   }
 }
