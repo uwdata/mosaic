@@ -1,7 +1,3 @@
-import { readFile, unlink } from 'node:fs/promises';
-import { tmpdir } from 'node:os';
-import { join } from 'node:path';
-import { randomBytes } from 'node:crypto';
 import { DuckDBInstance } from '@duckdb/node-api';
 
 /** @import { DuckDBConnection, DuckDBPreparedStatement, DuckDBValue, Json } from '@duckdb/node-api' */
@@ -92,30 +88,9 @@ export class DuckDB {
     const reader = await this.con.runAndReadAll(
       `SELECT * FROM to_arrow_ipc((${sql}))`
     );
-    const chunks = /** @type {Uint8Array[]} */ (reader.getColumnsJS()[0]);
-    if (!chunks?.length) {
-      // Empty result: to_arrow_ipc omits the schema for empty queries,
-      // so fall back to COPY which produces valid Arrow IPC with schema.
-      return arrowCopy(this.con, sql);
-    }
-    return chunks;
+    return /** @type {Uint8Array[]} */ (reader.getColumnsJS()[0]) ?? [];
   }
 
-}
-
-/**
- * @param {DuckDBConnection} con
- * @param {string} sql
- * @returns {Promise<Uint8Array[]>}
- */
-async function arrowCopy(con, sql) {
-  const file = join(tmpdir(), `mosaic_${randomBytes(8).toString('hex')}.arrow`);
-  try {
-    await con.run(`COPY (${sql}) TO '${file}' (FORMAT 'arrow')`);
-    return [new Uint8Array(await readFile(file))];
-  } finally {
-    await unlink(file).catch(() => {});
-  }
 }
 
 export class DuckDBStatement {

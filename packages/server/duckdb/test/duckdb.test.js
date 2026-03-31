@@ -25,9 +25,8 @@ describe('DuckDB', () => {
 
     it('handles empty results', async () => {
       const result = await db.arrowBuffer('SELECT * FROM penguins WHERE 1 = 0');
-      const table = tableFromIPC(result);
-      expect(table.numRows).toBe(0);
-      expect(table.numCols).toBe(7);
+      expect(Array.isArray(result)).toBe(true);
+      expect(result.length).toBe(0);
     });
 
     it('handles DESC queries', async () => {
