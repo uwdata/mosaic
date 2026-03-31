@@ -4,10 +4,7 @@ import { join } from 'node:path';
 import { randomBytes } from 'node:crypto';
 import { DuckDBInstance } from '@duckdb/node-api';
 
-/** @typedef {import('@duckdb/node-api').DuckDBConnection} DuckDBConnection */
-/** @typedef {import('@duckdb/node-api').DuckDBPreparedStatement} DuckDBPreparedStatement */
-/** @typedef {import('@duckdb/node-api').DuckDBValue} DuckDBValue */
-/** @typedef {import('@duckdb/node-api').Json} Json */
+/** @import { DuckDBConnection, DuckDBPreparedStatement, DuckDBValue, Json } from '@duckdb/node-api' */
 
 const TEMP_DIR = '.duckdb';
 
