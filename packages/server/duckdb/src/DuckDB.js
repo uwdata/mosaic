@@ -1,5 +1,6 @@
-import duckdb from 'duckdb';
-import { mergeBuffers } from './merge-buffers.js';
+import { DuckDBInstance } from '@duckdb/node-api';
+
+/** @import { DuckDBConnection, DuckDBPreparedStatement, DuckDBValue, Json } from '@duckdb/node-api' */
 
 const TEMP_DIR = '.duckdb';
 
@@ -12,116 +13,122 @@ const DEFAULT_INIT_STATEMENTS = [
 ].join(';\n');
 
 export class DuckDB {
+  /** @type {Promise<void>} */
+  _init;
+  /** @type {DuckDBInstance | undefined} */
+  db;
+  /** @type {DuckDBConnection | undefined} */
+  con;
+
+  /**
+   * @param {string} path
+   * @param {Record<string, string>} config
+   * @param {string} initStatements
+   */
   constructor(
     path = ':memory:',
     config = {},
     initStatements = DEFAULT_INIT_STATEMENTS
   ) {
-    this.db = new duckdb.Database(path, config);
-    this.con = this.db.connect();
-    // store initialization promise so that we can wait for it
-    this._init = this.exec(initStatements);
+    this._init = this._initialize(path, config, initStatements);
+  }
+
+  /**
+   * @param {string} path
+   * @param {Record<string, string>} config
+   * @param {string} initStatements
+   */
+  async _initialize(path, config, initStatements) {
+    this.db = await DuckDBInstance.create(path, config);
+    this.con = await this.db.connect();
+    await this.con.run(initStatements);
   }
 
   close() {
-    return new Promise((resolve, reject) => {
-      this.db.close((err) => {
-        if (err) {
-          reject(err);
-        } else {
-          resolve(this);
-        }
-      });
-    });
+    this.con?.closeSync();
+    this.db?.closeSync();
   }
 
-  prepare(sql) {
-    return new DuckDBStatement(this.con.prepare(sql));
+  /**
+   * @param {string} sql
+   * @returns {Promise<DuckDBStatement>}
+   */
+  async prepare(sql) {
+    await this._init;
+    const stmt = await this.con.prepare(sql);
+    return new DuckDBStatement(stmt);
   }
 
-  exec(sql) {
-    return new Promise((resolve, reject) => {
-      this.con.exec(String(sql), (err) => {
-        if (err) {
-          reject(err);
-        } else {
-          resolve(this);
-        }
-      });
-    });
+  /**
+   * @param {string | { toString(): string }} sql
+   * @returns {Promise<this>}
+   */
+  async exec(sql) {
+    await this._init;
+    await this.con.run(String(sql));
+    return this;
   }
 
-  query(sql) {
-    return new Promise((resolve, reject) => {
-      this.con.all(sql, (err, result) => {
-        if (err) {
-          reject(err);
-        } else {
-          resolve(result);
-        }
-      });
-    });
+  /**
+   * @param {string} sql
+   * @returns {Promise<Record<string, Json>[]>}
+   */
+  async query(sql) {
+    await this._init;
+    const reader = await this.con.runAndReadAll(sql);
+    return reader.getRowObjectsJson();
   }
 
-  arrowBuffer(sql) {
-    return new Promise((resolve, reject) => {
-      this.con.arrowIPCAll(sql, (err, result) => {
-        if (err) {
-          reject(err);
-        } else {
-          resolve(mergeBuffers(result));
-        }
-      });
-    });
+  /**
+   * @param {string} sql
+   * @returns {Promise<Uint8Array[]>}
+   */
+  async arrowBuffer(sql) {
+    await this._init;
+    const reader = await this.con.runAndReadAll(
+      `SELECT * FROM to_arrow_ipc((${sql}))`
+    );
+    return /** @type {Uint8Array[]} */ (reader.getColumnsJS()[0]) ?? [];
   }
+
 }
 
 export class DuckDBStatement {
+  /** @type {DuckDBPreparedStatement} */
+  statement;
+
+  /** @param {DuckDBPreparedStatement} statement */
   constructor(statement) {
     this.statement = statement;
   }
 
   finalize() {
-    this.statement.finalize();
+    this.statement.destroySync();
   }
 
-  run(params) {
-    this.statement.run(...params);
+  /** @param {DuckDBValue[]} [params] */
+  async run(params) {
+    if (params?.length) this.statement.bind(params);
+    await this.statement.run();
   }
 
-  exec(params) {
-    return new Promise((resolve, reject) => {
-      this.statement.run(...params, (err) => {
-        if (err) {
-          reject(err);
-        } else {
-          resolve(this);
-        }
-      });
-    });
+  /**
+   * @param {DuckDBValue[]} [params]
+   * @returns {Promise<this>}
+   */
+  async exec(params) {
+    if (params?.length) this.statement.bind(params);
+    await this.statement.run();
+    return this;
   }
 
-  query(params) {
-    return new Promise((resolve, reject) => {
-      this.statement.all(...params, (err, result) => {
-        if (err) {
-          reject(err);
-        } else {
-          resolve(result);
-        }
-      });
-    });
-  }
-
-  arrowBuffer(params) {
-    return new Promise((resolve, reject) => {
-      this.statement.arrowIPCAll(...params, (err, result) => {
-        if (err) {
-          reject(err);
-        } else {
-          resolve(mergeBuffers(result));
-        }
-      });
-    });
+  /**
+   * @param {DuckDBValue[]} [params]
+   * @returns {Promise<Record<string, Json>[]>}
+   */
+  async query(params) {
+    if (params?.length) this.statement.bind(params);
+    const reader = await this.statement.runAndReadAll();
+    return reader.getRowObjectsJson();
   }
 }
