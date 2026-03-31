@@ -1,6 +1,6 @@
 import { Query } from '@uwdata/mosaic-sql';
-import { describe, it, expect } from 'vitest';
-import { clausePoint, type Connector, Coordinator, coordinator, type JSONQueryRequest, makeClient, Selection } from '../src/index.js';
+import { describe, it, expect, vi } from 'vitest';
+import { clausePoint, type Connector, Coordinator, coordinator, type JSONQueryRequest, makeClient, observeLogger, Selection } from '../src/index.js';
 import { QueryResult, QueryState } from '../src/util/query-result.js';
 
 async function wait() {
@@ -37,7 +37,7 @@ describe('coordinator', () => {
       },
     } as unknown as Connector;
 
-    const coord = new Coordinator(connector, { logger: null });
+    const coord = new Coordinator(connector);
 
     const r0 = coord.query('SELECT 0');
     const r1 = coord.query('SELECT 1');
@@ -54,7 +54,6 @@ describe('coordinator', () => {
     expect(coord.manager.pendingResults).toHaveLength(4);
 
     // resolve promises in reverse order
-
     promises.at(3)!.fulfill(0);
     await wait();
 
@@ -98,7 +97,7 @@ describe('coordinator', () => {
     // Mock the connector
     const connector = {
       async query(req: JSONQueryRequest) {
-        const index = req.sql.includes("WHERE") ? 1 : 0;
+        const index = req.sql.includes('WHERE') ? 1 : 0;
         events.push(`CONNECT ${index}`);
         return { index };
       },
@@ -106,7 +105,6 @@ describe('coordinator', () => {
 
     // disable cache to ensure routing through connector
     const coord = new Coordinator(connector, {
-      logger: null,
       cache: false,
       preagg: { enabled: false }
     });
@@ -120,16 +118,16 @@ describe('coordinator', () => {
       async prepare() {
         await wait(); // force wait
         prepared = true;
-        events.push("PREPARE");
+        events.push('PREPARE');
       },
       query(filter = []) {
         events.push(`QUERY ${prepared}`);
-        return Query.select("*").from("foo").where(filter);
+        return Query.select('*').from('foo').where(filter);
       }
     });
 
     // fire selection update
-    filterBy.update(clausePoint("foo", 1, { source: {} }));
+    filterBy.update(clausePoint('foo', 1, { source: {} }));
 
     // await initial query, then selection update
     await client.pending;
@@ -139,11 +137,57 @@ describe('coordinator', () => {
     // query calls should come post-initialization
     // all queries should include filter clause
     expect(events).toStrictEqual([
-      "PREPARE",
-      "QUERY true",
-      "CONNECT 1",
-      "QUERY true",
-      "CONNECT 1",
+      'PREPARE',
+      'QUERY true',
+      'CONNECT 1',
+      'QUERY true',
+      'CONNECT 1',
     ]);
+  });
+
+  it('observeLogger reproduces old-style query logging and supports unsubscribe', async () => {
+    const connector = {
+      async query() {
+        return [{ value: 1 }];
+      },
+    } as unknown as Connector;
+
+    const coord = new Coordinator(connector, {
+      cache: false,
+      consolidate: false,
+      preagg: { enabled: false },
+    });
+
+    const logger = {
+      debug: vi.fn(),
+      info: vi.fn(),
+      log: vi.fn(),
+      warn: vi.fn(),
+      error: vi.fn(),
+      group: vi.fn(),
+      groupCollapsed: vi.fn(),
+      groupEnd: vi.fn(),
+    };
+
+    const unobserve = observeLogger(coord, logger);
+
+    await coord.query('SELECT 1', { cache: false });
+
+    expect(logger.groupCollapsed).toHaveBeenCalledTimes(1);
+    expect(logger.groupCollapsed).toHaveBeenCalledWith('query SELECT 1');
+
+    expect(logger.log).toHaveBeenCalledTimes(1);
+    expect(logger.log).toHaveBeenCalledWith('SELECT 1', expect.any(String));
+
+    expect(logger.groupEnd).toHaveBeenCalledTimes(1);
+
+    unobserve();
+
+    await coord.query('SELECT 1', { cache: false });
+
+    // no additional logger calls after unsubscribe
+    expect(logger.groupCollapsed).toHaveBeenCalledTimes(1);
+    expect(logger.log).toHaveBeenCalledTimes(1);
+    expect(logger.groupEnd).toHaveBeenCalledTimes(1);
   });
 });

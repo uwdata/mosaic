@@ -157,7 +157,7 @@
 
   function setQueryLog() {
     const bus = coordinator().eventBus;
-    
+
     bus.observe("query-start", (event) =>
       console.info("Query started:", event),
     );
