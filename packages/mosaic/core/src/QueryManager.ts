@@ -99,7 +99,7 @@ export class QueryManager {
   async submit(request: QueryRequest, result: QueryResult): Promise<void> {
     try {
       const { query, type, cache = false, options } = request;
-      const sql = query ? `${query}` : null;
+      const sql = Array.isArray(query) ? query.filter(x => x).join(';\n') : query ? String(query) : null;
       const queryText = sql || "";
 
       this.eventBus?.emit(

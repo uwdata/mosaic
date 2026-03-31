@@ -138,8 +138,8 @@ export class Coordinator {
     options: { priority?: number } = {},
   ): QueryResult {
     const { priority = Priority.Normal } = options;
-    query = Array.isArray(query) ? query.filter((x) => x).join(";\n") : query;
-    return this.manager.request({ type: "exec", query }, priority);
+    query = Array.isArray(query) ? query.filter(x => x).join(';\n') : query;
+    return this.manager.request({ type: 'exec', query }, priority);
   }
 
   /**
@@ -399,9 +399,8 @@ function updateSelection(
       // skip due to cross-filtering
       if (info?.skip || (!info && !filter)) return;
 
-      // @ts-expect-error FIXME
-      const query = info?.query(active.predicate) ?? client.query(filter);
-      return mc.updateClient(client, query);
-    }),
-  );
+     // @ts-expect-error FIXME
+     const query = info?.query(active.predicate) ?? client.query(filter);
+     return mc.updateClient(client, query);
+   }));
 }

@@ -1,46 +1,12 @@
-import {
-  ExprNode,
-  ScaleOptions,
-  SelectQuery,
-  Query,
-  ExprValue,
-  MaybeArray,
-  FunctionNode,
-  BetweenOpNode,
-  AndNode,
-  TableRefNode,
-} from "@uwdata/mosaic-sql";
-import type { Coordinator } from "../Coordinator.js";
-import type { MosaicClient } from "../MosaicClient.js";
-import type { Selection } from "../Selection.js";
-import type {
-  BinMethod,
-  ClauseSource,
-  IntervalMetadata,
-  SelectionClause,
-} from "../SelectionClause.js";
-import {
-  Query as QueryBuilder,
-  and,
-  asNode,
-  ceil,
-  collectColumns,
-  createTable,
-  float64,
-  floor,
-  isBetween,
-  int32,
-  mul,
-  round,
-  scaleTransform,
-  sub,
-  isSelectQuery,
-  isAggregateExpression,
-  ColumnNameRefNode,
-} from "@uwdata/mosaic-sql";
-import { preaggColumns, PreAggColumnsResult } from "./preagg-columns.js";
-import { fnv_hash } from "../util/hash.js";
-import { ErrorEvent, EventType } from "../Events.js";
+import { ExprNode, ScaleOptions, SelectQuery, Query, ExprValue, MaybeArray, FunctionNode, BetweenOpNode, AndNode, TableRefNode, createSchema } from '@uwdata/mosaic-sql';
+import type { Coordinator } from '../Coordinator.js';
+import type { MosaicClient } from '../MosaicClient.js';
+import type { Selection } from '../Selection.js';
+import type { BinMethod, ClauseSource, IntervalMetadata, SelectionClause } from '../SelectionClause.js';
+import { Query as QueryBuilder, and, asNode, ceil, collectColumns, createTable, float64, floor, isBetween, int32, mul, round, scaleTransform, sub, isSelectQuery, isAggregateExpression, ColumnNameRefNode } from '@uwdata/mosaic-sql';
+import { preaggColumns, PreAggColumnsResult } from './preagg-columns.js';
+import { fnv_hash } from '../util/hash.js';
+import { ErrorEvent, EventType } from '../Events.js';
 
 const Skip = { skip: true, result: null };
 
@@ -61,7 +27,7 @@ interface ActiveColumnsResult {
 
 interface PreAggregateInfoOptions {
   table: TableRefNode;
-  create: string;
+  create: SelectQuery;
   active: ActiveColumnsResult;
   select: SelectQuery;
 }
@@ -248,7 +214,7 @@ export class PreAggregator {
         active, preaggCols, schema
       );
       info.result = mc.exec([
-        `CREATE SCHEMA IF NOT EXISTS ${schema}`,
+        createSchema(schema),
         createTable(info.table, info.create, { temp: false })
       ]);
       info.result.catch((e: Error) =>
@@ -398,9 +364,9 @@ function preaggregateInfo(
   query._having = [];
   query._orderby = [];
 
-  // generate creation query string and hash id
-  const create = query.toString();
-  const id = (fnv_hash(create) >>> 0).toString(16);
+  // generate creation query and hash id
+  const create = query;
+  const id = (fnv_hash(create.toString()) >>> 0).toString(16);
   const table = new TableRefNode([schema, `preagg_${id}`]);
 
   // generate preaggregate select query
@@ -466,7 +432,7 @@ export class PreAggregateInfo {
   /** The name of the materialized view. */
   table: TableRefNode;
   /** The SQL query used to generate the materialized view. */
-  create: string;
+  create: SelectQuery;
   /** A result promise returned for the materialized view creation query. */
   result: Promise<unknown> | null;
   /** Definitions and predicate function for the active columns,
