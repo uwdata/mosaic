@@ -276,7 +276,7 @@ def build_and_start_go(port: int) -> subprocess.Popen | None:
 def build_and_start_python(port: int) -> subprocess.Popen | None:
     py_dir = SERVER_DIR / "duckdb-server"
     if port != 3000:
-        print(f"  WARNING: Python server does not support custom ports, using 3000")
+        print("  WARNING: Python server does not support custom ports, using 3000")
     print("  Starting Python server ...")
     return subprocess.Popen(
         ["uv", "run", "duckdb-server"],
@@ -296,7 +296,7 @@ def build_and_start_node(port: int) -> subprocess.Popen | None:
         return None
 
     if port != 3000:
-        print(f"  WARNING: Node server does not support custom ports, using 3000")
+        print("  WARNING: Node server does not support custom ports, using 3000")
     print("  Starting Node server ...")
     return subprocess.Popen(
         ["node", str(node_dir / "bin" / "run-server.js")],
@@ -327,9 +327,14 @@ def detect_servers() -> list[str]:
 # Benchmark runner
 # ---------------------------------------------------------------------------
 
+# Results: {transport: {label: median_ms}}
+ServerResults = dict[str, dict[str, float]]
+
+
 def run_benchmarks(host: str, port: int, iterations: int, warmup: int,
-                   run_http: bool, run_ws: bool) -> None:
+                   run_http: bool, run_ws: bool) -> ServerResults:
     ws_url = f"ws://{host}:{port}"
+    results: ServerResults = {}
 
     # Check server
     print(f"Checking server at http://{host}:{port} ...")
@@ -337,7 +342,7 @@ def run_benchmarks(host: str, port: int, iterations: int, warmup: int,
         http_post(host, port, {"type": "json", "sql": "SELECT 1"})
     except Exception as e:
         print(f"ERROR: No server responding at http://{host}:{port}: {e}")
-        return
+        return results
     print("Server is up.\n")
 
     # Load data
@@ -355,16 +360,20 @@ def run_benchmarks(host: str, port: int, iterations: int, warmup: int,
 
     # HTTP benchmarks
     if run_http:
+        http_results: dict[str, float] = {}
         print("--- HTTP POST ---\n")
         print_header()
         for name, qtype, sql in BENCHMARKS:
             label = f"{name} [{qtype}]"
             timings, size = bench_http(host, port, qtype, sql, iterations, warmup)
             print_row(label, timings, size)
+            http_results[label] = statistics.median(timings)
+        results["http"] = http_results
         print()
 
     # WebSocket benchmarks
     if run_ws:
+        ws_results: dict[str, float] = {}
         print("--- WebSocket ---\n")
         print_header()
         for name, qtype, sql in BENCHMARKS:
@@ -373,6 +382,64 @@ def run_benchmarks(host: str, port: int, iterations: int, warmup: int,
                 bench_ws(ws_url, qtype, sql, iterations, warmup)
             )
             print_row(label, timings, size)
+            ws_results[label] = statistics.median(timings)
+        results["ws"] = ws_results
+        print()
+
+    return results
+
+
+def print_comparison(all_results: dict[str, ServerResults]) -> None:
+    """Print a side-by-side comparison of all servers."""
+    servers = list(all_results.keys())
+    if len(servers) < 2:
+        return
+
+    # Collect which transports were benchmarked
+    transports: set[str] = set()
+    for sr in all_results.values():
+        transports.update(sr.keys())
+
+    for transport in sorted(transports):
+        transport_label = "HTTP POST" if transport == "http" else "WebSocket"
+
+        # Only include servers that have results for this transport
+        active = [s for s in servers if transport in all_results[s]]
+        if len(active) < 2:
+            continue
+
+        labels = list(all_results[active[0]][transport].keys())
+
+        # Each server gets two sub-columns: median ms + relative
+        # e.g.  "  rust          go            python        node"
+        #       "  0.69 (1.14x)  0.56 (0.93x)  0.60 (0.99x) 0.61 (1.01x)"
+        sub_w = 14  # width per server column
+        label_w = 34
+
+        header = f"  {'QUERY':<{label_w}s}" + "".join(f" {s:>{sub_w}s}" for s in active)
+        units  = f"  {'':<{label_w}s}" + "".join(f" {'ms (rel)':>{sub_w}s}" for _ in active)
+        sep = "  " + "-" * (label_w + (sub_w + 1) * len(active))
+
+        print(f"=== Comparison: {transport_label} (median ms) ===\n")
+        print(header)
+        print(units)
+        print(sep)
+
+        for label in labels:
+            vals = [all_results[s][transport].get(label) for s in active]
+            valid = [v for v in vals if v is not None]
+            baseline = statistics.median(valid) if valid else 1.0
+
+            row = f"  {label:<{label_w}s}"
+            for v in vals:
+                if v is not None and baseline > 0:
+                    rel = v / baseline
+                    cell = f"{v:.2f} ({rel:.2f}x)"
+                    row += f" {cell:>{sub_w}s}"
+                else:
+                    row += f" {'—':>{sub_w}s}"
+            print(row)
+
         print()
 
 
@@ -421,6 +488,8 @@ def main():
     print("=" * 60)
     print()
 
+    all_results: dict[str, ServerResults] = {}
+
     for server in servers:
         print("-" * 60)
         print(f"  Server: {server}")
@@ -443,11 +512,15 @@ def main():
                 continue
             print("  Server is ready.\n")
 
-            run_benchmarks(host, port, args.iterations, args.warmup, run_http, run_ws)
+            results = run_benchmarks(host, port, args.iterations, args.warmup, run_http, run_ws)
+            if results:
+                all_results[server] = results
         finally:
             stop_server(proc)
 
         print()
+
+    print_comparison(all_results)
 
     print("=" * 60)
     print("  All benchmarks complete.")
