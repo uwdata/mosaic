@@ -9,9 +9,10 @@ pub fn get_key(sql: &str, command: &Command) -> String {
     use sha2::{Digest, Sha256};
     let mut hasher = Sha256::new();
     hasher.update(sql);
+    let hash: String = hasher.finalize().iter().map(|b| format!("{b:02x}")).collect();
     format!(
-        "{:x}.{}",
-        hasher.finalize(),
+        "{}.{}",
+        hash,
         to_value(command).unwrap().as_str().unwrap()
     )
 }
