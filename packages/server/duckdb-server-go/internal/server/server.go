@@ -251,8 +251,8 @@ func (s *Server) execCommand(ctx context.Context, params QueryParams, allowedSch
 		return nil, false, err
 	}
 
-	// useCache is true by default, unless explicitly set to false
-	useCache := true
+	// useCache is false by default, unless explicitly set to true
+	useCache := false
 	if params.Persist != nil {
 		useCache = *params.Persist
 	}
