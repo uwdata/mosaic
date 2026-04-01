@@ -33,9 +33,8 @@ import argparse
 import asyncio
 import http.client
 import json
-import os
+import math
 import shutil
-import signal
 import statistics
 import subprocess
 import sys
@@ -109,7 +108,10 @@ def http_post(host: str, port: int, payload: dict) -> bytes:
             "Connection": "close",
         })
         resp = conn.getresponse()
-        return resp.read()
+        data = resp.read()
+        if resp.status != 200:
+            raise RuntimeError(f"HTTP {resp.status}: {data[:200]}")
+        return data
     finally:
         conn.close()
 
@@ -196,8 +198,8 @@ def print_row(name: str, timings: list[float], resp_size: int):
     s = sorted(timings)
     n = len(s)
     mn = s[0]
-    med = s[n // 2]
-    p95 = s[int(n * 0.95)]
+    med = statistics.median(s)
+    p95 = s[math.ceil(n * 0.95) - 1]
     avg = statistics.mean(s)
     print(ROW_FMT.format(name, fmt_bytes(resp_size), mn, med, p95, avg))
 
@@ -273,6 +275,8 @@ def build_and_start_go(port: int) -> subprocess.Popen | None:
 
 def build_and_start_python(port: int) -> subprocess.Popen | None:
     py_dir = SERVER_DIR / "duckdb-server"
+    if port != 3000:
+        print(f"  WARNING: Python server does not support custom ports, using 3000")
     print("  Starting Python server ...")
     return subprocess.Popen(
         ["uv", "run", "duckdb-server"],
@@ -291,6 +295,8 @@ def build_and_start_node(port: int) -> subprocess.Popen | None:
         print(f"  Install failed:\n{result.stderr}")
         return None
 
+    if port != 3000:
+        print(f"  WARNING: Node server does not support custom ports, using 3000")
     print("  Starting Node server ...")
     return subprocess.Popen(
         ["node", str(node_dir / "bin" / "run-server.js")],
@@ -382,9 +388,13 @@ def main():
     parser.add_argument("-s", "--servers",
                         help="Comma-separated list of servers (rust,go,python,node). "
                              "If omitted, auto-detects available runtimes.")
-    parser.add_argument("--ws-only", action="store_true", help="WebSocket only")
-    parser.add_argument("--http-only", action="store_true", help="HTTP only")
+    transport = parser.add_mutually_exclusive_group()
+    transport.add_argument("--ws-only", action="store_true", help="WebSocket only")
+    transport.add_argument("--http-only", action="store_true", help="HTTP only")
     args = parser.parse_args()
+
+    if args.iterations < 1:
+        parser.error("--iterations must be >= 1")
 
     host = "localhost"
     port = args.port
