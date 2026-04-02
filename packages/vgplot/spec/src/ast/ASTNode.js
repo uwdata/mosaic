@@ -14,10 +14,9 @@ export class ASTNode {
    * @param {import('../ast-to-dom.js').InstantiateContext} ctx The instantiation context.
    * @returns {*} The instantiated value of this node.
    */
-  instantiate(ctx) {
-     
+  instantiate(ctx) { // eslint-disable-line no-unused-vars
     // @ts-ignore
-    throw Error("instantiate not implemented");
+    throw Error('instantiate not implemented');
   }
 
   /**
@@ -25,10 +24,9 @@ export class ASTNode {
    * @param {import('../ast-to-esm.js').CodegenContext} ctx The code generator context.
    * @returns {string|void} The generated ESM code for the node.
    */
-  codegen(ctx) {
-     
+  codegen(ctx) { // eslint-disable-line no-unused-vars
     // @ts-ignore
-    return Error("codegen not implemented");
+    return Error('codegen not implemented');
   }
 
   /**
@@ -36,7 +34,7 @@ export class ASTNode {
    */
   toJSON() {
     // @ts-ignore
-    return Error("toJSON not implemented");
+    return Error('toJSON not implemented');
   }
 
   /**
@@ -44,8 +42,7 @@ export class ASTNode {
    * @param {import('../ast-to-python.js').PythonCodegenContext} ctx The Python code generator context.
    * @returns {string} The generated Python code for the node.
    */
-  toPython(ctx) {
-     
+  toPython(ctx) { // eslint-disable-line no-unused-vars
     // @ts-ignore
     // Default implementation: convert to JSON and return as Python dict literal
     return JSON.stringify(this.toJSON());
