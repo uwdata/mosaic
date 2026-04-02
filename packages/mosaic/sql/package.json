@@ -27,6 +27,6 @@
     "clean": "rimraf dist && mkdir dist",
     "lint": "eslint src test",
     "test": "vitest run",
-    "prepublishOnly": "npm run test && npm run lint && tsc --build"
+    "prepublishOnly": "pnpm run test && pnpm run lint && tsc --build"
   }
 }

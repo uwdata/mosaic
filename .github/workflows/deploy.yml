@@ -31,18 +31,18 @@ jobs:
       - uses: actions/setup-node@v6
         with:
           node-version: "22.x"
-          cache: "npm"
+          cache: "pnpm"
 
       - name: Install Node dependencies
-        run: npm ci
+        run: pnpm ci
 
       - name: Build
-        run: npm run docs:build
+        run: pnpm run docs:build
 
-      - uses: actions/configure-pages@v6
+      - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v4
         with:
           path: docs/.vitepress/dist
       - name: Deploy
         id: deployment
-        uses: actions/deploy-pages@v5
+        uses: actions/deploy-pages@v4

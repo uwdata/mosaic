@@ -67,19 +67,19 @@ This repository contains a set of related packages, spanning the core Mosaic arc
 To build and develop Mosaic locally:
 
 * Clone [https://github.com/uwdata/mosaic](https://github.com/uwdata/mosaic).
-* Run `npm i` to install dependencies.
-* Run `npm test` to run the test suite.
-* Run `npm run build` to build client-side bundles.
+* Run `pnpm i` to install dependencies.
+* Run `pnpm test` to run the test suite.
+* Run `pnpm build` to build client-side bundles.
 * Run `uv build --all-packages` to build the Python packages.
 
 To run local interactive examples:
 
-* Run `npm run dev` to launch a local web server and view examples. By default, the examples use DuckDB-WASM in the browser. For greater performance, launch and connect to a local DuckDB server as described below.
+* Run `pnpm dev` to launch a local web server and view examples. By default, the examples use DuckDB-WASM in the browser. We recommend using Firefox since it remembers the selected dropdown across browser reloads. For greater performance, launch and connect to a local DuckDB server as described below.
 
 To launch a local DuckDB server:
 
 * Install [uv](https://docs.astral.sh/uv/), if not already present.
-* Run `npm run server` to launch the [`duckdb-server`](https://github.com/uwdata/mosaic/tree/main/packages/server/duckdb-server). This runs the server in development mode, so the server will restart if you change its code.
+* Run `pnpm server` to launch the [`duckdb-server`](https://github.com/uwdata/mosaic/tree/main/packages/server/duckdb-server). This runs the server in development mode, so the server will restart if you change its code.
 
 To use Mosaic with DuckDB Python in Jupyter Notebooks:
 
