@@ -74,7 +74,7 @@ To build and develop Mosaic locally:
 
 To run local interactive examples:
 
-* Run `pnpm dev` to launch a local web server and view examples. By default, the examples use DuckDB-WASM in the browser. For greater performance, launch and connect to a local DuckDB server as described below.
+* Run `pnpm dev` to launch a local web server and view examples. By default, the examples use DuckDB-WASM in the browser. We recommend using Firefox since it remembers the selected dropdown across browser reloads. For greater performance, launch and connect to a local DuckDB server as described below.
 
 To launch a local DuckDB server:
 
