@@ -66,47 +66,78 @@ BENCHMARKS: list[tuple[str, str, str]] = [
     # -- tiny results --
     ("scalar", "arrow", "SELECT 1 AS x"),
     ("aggregate: count", "arrow", "SELECT count(*) AS cnt FROM flights"),
-    ("aggregate: min/max", "json", "SELECT min(delay) AS lo, max(delay) AS hi FROM flights"),
-    ("filtered aggregate", "arrow",
-     "SELECT count(*) AS cnt, avg(delay) AS mean_delay FROM flights WHERE distance > 1000 AND delay > 0"),
-    ("group-by small: species", "json",
-     "SELECT species, count(*) AS cnt, avg(body_mass) AS mean_mass FROM penguins GROUP BY species"),
+    (
+        "aggregate: min/max",
+        "json",
+        "SELECT min(delay) AS lo, max(delay) AS hi FROM flights",
+    ),
+    (
+        "filtered aggregate",
+        "arrow",
+        "SELECT count(*) AS cnt, avg(delay) AS mean_delay FROM flights WHERE distance > 1000 AND delay > 0",
+    ),
+    (
+        "group-by small: species",
+        "json",
+        "SELECT species, count(*) AS cnt, avg(body_mass) AS mean_mass FROM penguins GROUP BY species",
+    ),
     # -- histogram / binning (medium results) --
-    ("histogram: delay bins", "arrow",
-     "SELECT (10 * floor(delay / 10.0)) AS bin, count(*) AS cnt FROM flights WHERE delay BETWEEN -60 AND 180 GROUP BY bin ORDER BY bin"),
-    ("group-by: distance stats", "json",
-     "SELECT distance, count(*) AS cnt, avg(delay) AS mean_delay, min(delay) AS lo, max(delay) AS hi FROM flights GROUP BY distance ORDER BY cnt DESC"),
-    ("2d-bin: heatmap", "arrow",
-     "SELECT floor(time / 100.0) AS time_bin, (20 * floor(delay / 20.0)) AS delay_bin, count(*) AS cnt FROM flights WHERE delay BETWEEN -60 AND 180 GROUP BY time_bin, delay_bin"),
+    (
+        "histogram: delay bins",
+        "arrow",
+        "SELECT (10 * floor(delay / 10.0)) AS bin, count(*) AS cnt FROM flights WHERE delay BETWEEN -60 AND 180 GROUP BY bin ORDER BY bin",
+    ),
+    (
+        "group-by: distance stats",
+        "json",
+        "SELECT distance, count(*) AS cnt, avg(delay) AS mean_delay, min(delay) AS lo, max(delay) AS hi FROM flights GROUP BY distance ORDER BY cnt DESC",
+    ),
+    (
+        "2d-bin: heatmap",
+        "arrow",
+        "SELECT floor(time / 100.0) AS time_bin, (20 * floor(delay / 20.0)) AS delay_bin, count(*) AS cnt FROM flights WHERE delay BETWEEN -60 AND 180 GROUP BY time_bin, delay_bin",
+    ),
     # -- larger results --
     ("scan: 1k rows", "arrow", "SELECT * FROM flights LIMIT 1000"),
     ("scan: 10k rows", "arrow", "SELECT * FROM flights LIMIT 10000"),
     ("full table: athletes", "arrow", "SELECT * FROM athletes"),
     # -- complex / realistic --
-    ("M4-style: time-series", "arrow",
-     "WITH input AS MATERIALIZED (SELECT time, delay FROM flights WHERE distance > 500) "
-     "SELECT min(time) AS x, arg_min(delay, time) AS y FROM input GROUP BY floor(time / 50.0) "
-     "UNION ALL "
-     "SELECT max(time) AS x, arg_max(delay, time) AS y FROM input GROUP BY floor(time / 50.0) "
-     "ORDER BY x"),
-    ("CTE + window: running avg", "arrow",
-     "WITH by_dist AS (SELECT distance, count(*) AS cnt, avg(delay) AS mean_delay FROM flights GROUP BY distance) "
-     "SELECT distance, cnt, avg(cnt) OVER (ORDER BY distance ROWS BETWEEN 2 PRECEDING AND CURRENT ROW) AS rolling_avg "
-     "FROM by_dist ORDER BY distance"),
+    (
+        "M4-style: time-series",
+        "arrow",
+        "WITH input AS MATERIALIZED (SELECT time, delay FROM flights WHERE distance > 500) "
+        "SELECT min(time) AS x, arg_min(delay, time) AS y FROM input GROUP BY floor(time / 50.0) "
+        "UNION ALL "
+        "SELECT max(time) AS x, arg_max(delay, time) AS y FROM input GROUP BY floor(time / 50.0) "
+        "ORDER BY x",
+    ),
+    (
+        "CTE + window: running avg",
+        "arrow",
+        "WITH by_dist AS (SELECT distance, count(*) AS cnt, avg(delay) AS mean_delay FROM flights GROUP BY distance) "
+        "SELECT distance, cnt, avg(cnt) OVER (ORDER BY distance ROWS BETWEEN 2 PRECEDING AND CURRENT ROW) AS rolling_avg "
+        "FROM by_dist ORDER BY distance",
+    ),
 ]
 
 # ---------------------------------------------------------------------------
 # HTTP helpers
 # ---------------------------------------------------------------------------
 
+
 def http_post(host: str, port: int, payload: dict) -> bytes:
     body = json.dumps(payload).encode()
     conn = http.client.HTTPConnection(host, port, timeout=30)
     try:
-        conn.request("POST", "/", body=body, headers={
-            "Content-Type": "application/json",
-            "Connection": "close",
-        })
+        conn.request(
+            "POST",
+            "/",
+            body=body,
+            headers={
+                "Content-Type": "application/json",
+                "Connection": "close",
+            },
+        )
         resp = conn.getresponse()
         data = resp.read()
         if resp.status != 200:
@@ -125,7 +156,12 @@ def http_query(host: str, port: int, qtype: str, sql: str) -> bytes:
 
 
 def bench_http(
-    host: str, port: int, qtype: str, sql: str, n: int, warmup: int,
+    host: str,
+    port: int,
+    qtype: str,
+    sql: str,
+    n: int,
+    warmup: int,
 ) -> tuple[list[float], int]:
     """Returns (timings_ms, response_bytes)."""
     resp_size = 0
@@ -147,6 +183,7 @@ def bench_http(
 # WebSocket helpers
 # ---------------------------------------------------------------------------
 
+
 async def ws_query(ws, qtype: str, sql: str) -> bytes:
     await ws.send(json.dumps({"type": qtype, "sql": sql, "persist": False}))
     resp = await ws.recv()
@@ -154,7 +191,11 @@ async def ws_query(ws, qtype: str, sql: str) -> bytes:
 
 
 async def bench_ws(
-    uri: str, qtype: str, sql: str, n: int, warmup: int,
+    uri: str,
+    qtype: str,
+    sql: str,
+    n: int,
+    warmup: int,
 ) -> tuple[list[float], int]:
     """Returns (timings_ms, response_bytes) over a single persistent connection."""
     resp_size = 0
@@ -177,6 +218,7 @@ async def bench_ws(
 # Reporting
 # ---------------------------------------------------------------------------
 
+
 def fmt_bytes(n: int) -> str:
     if n < 1024:
         return f"{n}B"
@@ -186,7 +228,8 @@ def fmt_bytes(n: int) -> str:
 
 
 HEADER_FMT = "  {:<40s} {:>6s} {:>8s} {:>8s} {:>8s} {:>8s}"
-ROW_FMT    = "  {:<40s} {:>6s} {:>8.2f} {:>8.2f} {:>8.2f} {:>8.2f}"
+ROW_FMT = "  {:<40s} {:>6s} {:>8.2f} {:>8.2f} {:>8.2f} {:>8.2f}"
+
 
 def print_header():
     print(HEADER_FMT.format("QUERY", "SIZE", "MIN", "MEDIAN", "P95", "MEAN"))
@@ -207,6 +250,7 @@ def print_row(name: str, timings: list[float], resp_size: int):
 # ---------------------------------------------------------------------------
 # Server management
 # ---------------------------------------------------------------------------
+
 
 def has_cmd(name: str) -> bool:
     return shutil.which(name) is not None
@@ -237,7 +281,9 @@ def build_and_start_rust(port: int) -> subprocess.Popen | None:
     print("  Building Rust server (release) ...")
     result = subprocess.run(
         ["cargo", "build", "--release"],
-        cwd=rust_dir, capture_output=True, text=True,
+        cwd=rust_dir,
+        capture_output=True,
+        text=True,
     )
     if result.returncode != 0:
         print(f"  Build failed:\n{result.stderr}")
@@ -251,7 +297,8 @@ def build_and_start_rust(port: int) -> subprocess.Popen | None:
     print("  Starting Rust server ...")
     return subprocess.Popen(
         [str(binary), "--port", str(port)],
-        stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
     )
 
 
@@ -260,7 +307,9 @@ def build_and_start_go(port: int) -> subprocess.Popen | None:
     print("  Building Go server ...")
     result = subprocess.run(
         ["go", "build", "-tags=duckdb_arrow", "-o", "./duckdb-server-go", "."],
-        cwd=go_dir, capture_output=True, text=True,
+        cwd=go_dir,
+        capture_output=True,
+        text=True,
     )
     if result.returncode != 0:
         print(f"  Build failed:\n{result.stderr}")
@@ -269,7 +318,8 @@ def build_and_start_go(port: int) -> subprocess.Popen | None:
     print("  Starting Go server ...")
     return subprocess.Popen(
         [str(go_dir / "duckdb-server-go"), f"-port={port}"],
-        stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
     )
 
 
@@ -280,7 +330,9 @@ def build_and_start_python(port: int) -> subprocess.Popen | None:
     print("  Starting Python server ...")
     return subprocess.Popen(
         ["uv", "run", "duckdb-server"],
-        cwd=py_dir, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+        cwd=py_dir,
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
     )
 
 
@@ -289,7 +341,9 @@ def build_and_start_node(port: int) -> subprocess.Popen | None:
     print("  Installing Node dependencies ...")
     result = subprocess.run(
         ["npm", "install", "--ignore-scripts"],
-        cwd=node_dir, capture_output=True, text=True,
+        cwd=node_dir,
+        capture_output=True,
+        text=True,
     )
     if result.returncode != 0:
         print(f"  Install failed:\n{result.stderr}")
@@ -300,7 +354,8 @@ def build_and_start_node(port: int) -> subprocess.Popen | None:
     print("  Starting Node server ...")
     return subprocess.Popen(
         ["node", str(node_dir / "bin" / "run-server.js")],
-        stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
     )
 
 
@@ -331,8 +386,9 @@ def detect_servers() -> list[str]:
 ServerResults = dict[str, dict[str, float]]
 
 
-def run_benchmarks(host: str, port: int, iterations: int, warmup: int,
-                   run_http: bool, run_ws: bool) -> ServerResults:
+def run_benchmarks(
+    host: str, port: int, iterations: int, warmup: int, run_http: bool, run_ws: bool
+) -> ServerResults:
     ws_url = f"ws://{host}:{port}"
     results: ServerResults = {}
 
@@ -417,7 +473,9 @@ def print_comparison(all_results: dict[str, ServerResults]) -> None:
         label_w = 34
 
         header = f"  {'QUERY':<{label_w}s}" + "".join(f" {s:>{sub_w}s}" for s in active)
-        units  = f"  {'':<{label_w}s}" + "".join(f" {'ms (rel)':>{sub_w}s}" for _ in active)
+        units = f"  {'':<{label_w}s}" + "".join(
+            f" {'ms (rel)':>{sub_w}s}" for _ in active
+        )
         sep = "  " + "-" * (label_w + (sub_w + 1) * len(active))
 
         print(f"=== Comparison: {transport_label} (median ms) ===\n")
@@ -447,14 +505,18 @@ def print_comparison(all_results: dict[str, ServerResults]) -> None:
 # Main
 # ---------------------------------------------------------------------------
 
+
 def main():
     parser = argparse.ArgumentParser(description="Mosaic Server Benchmark")
     parser.add_argument("-p", "--port", type=int, default=3000)
     parser.add_argument("-n", "--iterations", type=int, default=100)
     parser.add_argument("-w", "--warmup", type=int, default=5)
-    parser.add_argument("-s", "--servers",
-                        help="Comma-separated list of servers (rust,go,python,node). "
-                             "If omitted, auto-detects available runtimes.")
+    parser.add_argument(
+        "-s",
+        "--servers",
+        help="Comma-separated list of servers (rust,go,python,node). "
+        "If omitted, auto-detects available runtimes.",
+    )
     transport = parser.add_mutually_exclusive_group()
     transport.add_argument("--ws-only", action="store_true", help="WebSocket only")
     transport.add_argument("--http-only", action="store_true", help="HTTP only")
@@ -512,7 +574,9 @@ def main():
                 continue
             print("  Server is ready.\n")
 
-            results = run_benchmarks(host, port, args.iterations, args.warmup, run_http, run_ws)
+            results = run_benchmarks(
+                host, port, args.iterations, args.warmup, run_http, run_ws
+            )
             if results:
                 all_results[server] = results
         finally:
