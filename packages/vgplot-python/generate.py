@@ -1,6 +1,6 @@
 # /// script
 # dependencies = [
-#     "schema_wrapper @ file:///${PROJECT_ROOT}/"
+#     "vgplot @ file:///${PROJECT_ROOT}/"
 # ]
 # ///
 

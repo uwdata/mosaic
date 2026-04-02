@@ -1,5 +1,5 @@
 [project]
-name = "schema-wrapper"
+name = "vgplot"
 version = "0.1.0"
 description = "Schema wrapper classes for Mosaic"
 readme = "README.md"
@@ -11,6 +11,9 @@ dependencies = [
 
 [project.urls]
 homepage = "https://github.com/uwdata/mosaic"
+
+[project.scripts]
+generate-schema-wrapper = "schema_wrapper.generate_schema_wrapper:main"
 
 [build-system]
 requires = ["hatchling"]
@@ -31,7 +34,7 @@ dev = [
 "mosaic-widget" = { workspace = true }
 
 [tool.hatch.build.targets.wheel]
-packages = ["src"]
+packages = ["api", "schema_wrapper"]
 
 # https://mypy.readthedocs.io/en/stable/config_file.html
 [tool.mypy]
