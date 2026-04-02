@@ -153,7 +153,6 @@ export class Coordinator {
     options: { priority?: number } = {}
   ): QueryResult {
     const { priority = Priority.Normal } = options;
-    query = Array.isArray(query) ? query.filter(x => x).join(';\n') : query;
     return this.manager.request({ type: 'exec', query }, priority);
   }
 
