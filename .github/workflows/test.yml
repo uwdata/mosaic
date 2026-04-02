@@ -79,7 +79,7 @@ jobs:
 
       - name: Build and test Schema Wrapper
         run: |
-          cd packages/schema-wrapper
+          cd packages/vgplot-python
 
           uv run --group dev pytest test/ --cov=schema_wrapper --cov-report=term-missing
 

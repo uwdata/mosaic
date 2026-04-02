@@ -34,4 +34,4 @@ __pycache__/
 .coverage
 
 # Python API Generated classes
-packages/schema_wrapper/generated_classes.py
+packages/vgplot-python/schema_wrapper/generated_classes.py
