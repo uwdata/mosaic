@@ -28,13 +28,19 @@ jobs:
         with:
           fetch-depth: 0
 
-      - uses: actions/setup-node@v6
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Setup node
+        uses: actions/setup-node@v6
         with:
           node-version: "22.x"
           cache: "pnpm"
+          cache-dependency-path: |
+            pnpm-lock.yaml
 
       - name: Install Node dependencies
-        run: pnpm ci
+        run: pnpm install --frozen-lockfile
 
       - name: Build
         run: pnpm run docs:build
