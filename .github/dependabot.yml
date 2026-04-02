@@ -9,7 +9,7 @@ updates:
         patterns:
           - "*"
 
-  - package-ecosystem: pnpm
+  - package-ecosystem: npm
     directory: "/"
     schedule:
       interval: monthly
@@ -54,4 +54,3 @@ updates:
       gomod:
         patterns:
           - "*"
-
