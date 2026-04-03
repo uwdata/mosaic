@@ -1,4 +1,6 @@
 """Expose the Python vgplot API from the source tree."""
+# ruff: noqa: E402,F401,F403
+
 
 from __future__ import annotations
 
@@ -10,5 +12,5 @@ PACKAGE_ROOT = Path(__file__).resolve().parents[2] / "packages" / "python-api"
 if str(PACKAGE_ROOT) not in sys.path:
     sys.path.insert(0, str(PACKAGE_ROOT))
 
-from vgplot import *  # noqa: F401,F403
+from vgplot import * 
 from vgplot import __all__, __getattr__

@@ -12,7 +12,6 @@ from schema_wrapper.generated_classes import (
     DataCSV,
     DataSpatial,
     DataTable,
-    Dot,
     LineY,
     ParamRef,
     Plot,
