@@ -41,6 +41,7 @@ export function preaggColumns(client: MosaicClient): PreAggColumnsResult | null 
   const groupby: Record<string, ExprNode> = {};
   for (const expr of q._groupby) {
     // ignore integer index, as expr will be in select clause
+    // we will harvest that expr as a dimension below
     if (expr.type !== "LITERAL") {
       const alias = isColumnRef(expr) ? expr.column : `${expr}`;
       groupby[alias] = expr;
