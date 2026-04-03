@@ -1,10 +1,10 @@
 import { describe, it, expect } from 'vitest';
-import { Query, add, argmax, argmin, avg, corr, count, covarPop, covariance, geomean, gt, isNotDistinct, literal, loadObjects, max, min, mul, product, regrAvgX, regrAvgY, regrCount, regrIntercept, regrR2, regrSXX, regrSXY, regrSYY, regrSlope, stddev, stddevPop, sum, varPop, variance } from '@uwdata/mosaic-sql';
+import { Query, add, argmax, argmin, avg, corr, count, covarPop, covariance, desc, geomean, gt, isNotDistinct, literal, loadObjects, max, min, mul, product, regrAvgX, regrAvgY, regrCount, regrIntercept, regrR2, regrSXX, regrSXY, regrSYY, regrSlope, stddev, stddevPop, sum, varPop, variance } from '@uwdata/mosaic-sql';
 import { Coordinator, Selection, SelectionClause } from '../src/index.js';
 import { NodeConnector } from './util/node-connector.js';
 import { TestClient } from './util/test-client.js';
 
-async function setup(loadQuery) {
+async function setup(loadQuery: string) {
   const mc = new Coordinator(await NodeConnector.make(), {
     logger: null,
     cache: false,
@@ -27,7 +27,7 @@ async function run(measure): Promise<[number, boolean]> {
   const mc = await setup(loadQuery);
   const sel = Selection.single({ cross: true });
 
-  return new Promise((resolve) => {
+  return new Promise((resolve, reject) => {
     let iter = 0;
     const client = new TestClient(null, sel, {
       query(filter = []) {
@@ -43,6 +43,10 @@ async function run(measure): Promise<[number, boolean]> {
           ]);
         }
         ++iter;
+      },
+      queryError(err: Error) {
+        console.error("QUERY ERROR", err);
+        reject(err);
       }
     });
     mc.connect(client);
@@ -52,6 +56,8 @@ async function run(measure): Promise<[number, boolean]> {
         meta: { type: 'point' },
         predicate: isNotDistinct('dim', literal('b'))
       } as unknown as SelectionClause);
+    }).catch(err => {
+      console.error(err);
     });
   });
 }
@@ -172,8 +178,7 @@ describe('PreAggregator', () => {
         .where(predicate);
       return Query.with({ counts })
         .from('counts')
-        .select({ measure: sum(mul(2, 'freq')) })
-        .groupby('item');
+        .select({ measure: sum(mul(2, 'freq')) });
     };
     expect(await run(query)).toStrictEqual([6, true]);
 
@@ -186,5 +191,16 @@ describe('PreAggregator', () => {
         .select({ measure: add(1, sum('freq')) });
     };
     expect(await run(queryNoGroup)).toStrictEqual([4, true]);
+  });
+
+  it('supports queries with column index references', async () => {
+    const query = (predicate = []) => {
+      return Query.from('testData')
+        .select({ measure: avg("x"), dim: "dim" })
+        .groupby(literal(2))
+        .where(predicate)
+        .orderby(desc(literal(1)))
+    };
+    expect(await run(query)).toStrictEqual([3.5, true]);
   });
 });

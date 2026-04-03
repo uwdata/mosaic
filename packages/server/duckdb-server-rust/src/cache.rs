@@ -10,8 +10,8 @@ pub fn get_key(sql: &str, command: &Command) -> String {
     let mut hasher = Sha256::new();
     hasher.update(sql);
     format!(
-        "{:x}.{}",
-        hasher.finalize(),
+        "{}.{}",
+        hex::encode(hasher.finalize()),
         to_value(command).unwrap().as_str().unwrap()
     )
 }

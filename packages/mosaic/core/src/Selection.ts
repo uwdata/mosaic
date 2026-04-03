@@ -214,9 +214,9 @@ export class Selection extends Param<SelectionClauseArray> {
   reset(clauses?: SelectionClause[]): this {
     clauses ??= this._resolved;
     clauses.forEach(c => c.source?.reset?.());
-    this._resolved = this._resolved.filter(c => clauses!.includes(c));
+    this._resolved = this._resolved.filter(c => !clauses!.includes(c));
     this._relay.forEach(sel => sel.reset(clauses));
-    return super.update(this._resolved = []);
+    return super.update(this._resolved);
   }
 
   /**

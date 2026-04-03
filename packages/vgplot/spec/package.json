@@ -1,6 +1,6 @@
 {
   "name": "@uwdata/mosaic-spec",
-  "version": "0.20.1",
+  "version": "0.23.0",
   "description": "Declarative specification of Mosaic-powered applications.",
   "keywords": [
     "mosaic",
@@ -14,7 +14,7 @@
   "type": "module",
   "exports": {
     "types": "./dist/src/index.d.ts",
-    "default": "./src/index.js"
+    "default": "./dist/src/index.js"
   },
   "files": [
     "dist",
@@ -27,21 +27,21 @@
   },
   "scripts": {
     "clean": "rimraf dist && mkdir dist",
-    "prebuild": "npm run clean",
-    "build": "npm run schema",
+    "prebuild": "pnpm run clean",
+    "build": "pnpm run schema",
     "lint": "eslint src test",
     "preschema": "tsc --build",
     "schema": "ts-json-schema-generator -f tsconfig.json -p src/spec/Spec.ts -t Spec --no-type-check --no-ref-encode --functions hide > dist/mosaic-schema.json",
-    "test": "npm run schema && vitest run",
+    "test": "pnpm run schema && vitest run",
     "test:visual": "playwright test test/visual.test.js",
-    "test:visual:update": "npm run test:visual -- --update-snapshots",
-    "version": "cd ../../.. && npm run docs:schema",
-    "prepublishOnly": "npm run test && npm run lint && npm run build"
+    "test:visual:update": "pnpm run test:visual -- --update-snapshots",
+    "version": "cd ../../.. && pnpm run docs:schema",
+    "prepublishOnly": "pnpm run test && pnpm run lint && pnpm run build"
   },
   "dependencies": {
-    "@uwdata/mosaic-core": "^0.20.1",
-    "@uwdata/mosaic-sql": "^0.20.1",
-    "@uwdata/vgplot": "^0.20.1",
-    "ts-json-schema-generator": "^2.4.0"
+    "@uwdata/mosaic-core": "workspace:^0.23.0",
+    "@uwdata/mosaic-sql": "workspace:^0.23.0",
+    "@uwdata/vgplot": "workspace:^0.23.0",
+    "ts-json-schema-generator": "^2.9.0"
   }
 }

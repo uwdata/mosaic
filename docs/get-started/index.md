@@ -44,19 +44,19 @@ To run Mosaic examples on a local DuckDB server or work on Mosaic development, m
 
 ### Installation
 
-For local installation you should have `npm` and `node` version 18 or higher.
+For local installation you should have `pnpm` and `node` version 18 or higher.
 
 - Clone https://github.com/uwdata/mosaic.
-- Run `npm i` to install dependencies.
-- Run `npm test` to run the test suite.
+- Run `pnpm i` to install dependencies.
+- Run `pnpm test` to run the test suite.
 
 ### Run Examples
 
 After installation, you can run examples locally, using either DuckDB-WASM or a DuckDB server to load and process data.
 
-* Run `npm run dev` to launch a local web server and view examples. By default, the examples use DuckDB-WASM in the browser. The `socket` and `rest` connectors will only work if a local DuckDB server is running. For greater performance, launch and connect to a local DuckDB server as described below below.
+* Run `pnpm dev` to launch a local web server and view examples. By default, the examples use DuckDB-WASM in the browser. The `socket` and `rest` connectors will only work if a local DuckDB server is running. For greater performance, launch and connect to a local DuckDB server as described below below.
 
 To launch a local DuckDB server:
 
 * Install [hatch](https://hatch.pypa.io/latest/install/), if not already present.
-* Run `npm run server` to launch the [`duckdb-server`](/server/). This runs the server in development mode, so the server will restart if you change its code.
+* Run `pnpm server` to launch the [`duckdb-server`](/server/). This runs the server in development mode, so the server will restart if you change its code.

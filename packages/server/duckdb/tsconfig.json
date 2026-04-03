@@ -3,7 +3,8 @@
   "include": ["src/**/*"],
   "compilerOptions": {
     "emitDeclarationOnly": true,
-    "outDir": "dist"
+    "outDir": "dist",
+    "types": ["node"]
   },
   "references": [{ "path": "../../mosaic/sql" }]
 }

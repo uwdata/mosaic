@@ -68,20 +68,21 @@ class MosaicWidget(anywidget.AnyWidget):
             self.con.register(name, frame_to_duckdb_registrable(df))
         self.on_msg(self._handle_custom_msg)
 
-    def _handle_custom_msg(self, data: dict, buffers: list):
-        logger.debug(f"{data=}, {buffers=}")
+    def _handle_custom_msg(self, content: dict, buffers: list) -> None:
+        logger.debug(f"{content=}, {buffers=}")
         start = time.time()
 
-        uuid = data["uuid"]
-        sql = data["sql"]
-        command = data["type"]
+        uuid = content["uuid"]
+        sql = content["sql"]
+        command = content["type"]
 
         try:
             if command == "arrow":
                 result = self.con.query(sql).arrow()
                 sink = pa.BufferOutputStream()
                 with pa.ipc.new_stream(sink, result.schema) as writer:
-                    writer.write(result)
+                    for batch in result:
+                        writer.write(batch)
                 buf = sink.getvalue()
 
                 self.send({"type": "arrow", "uuid": uuid}, buffers=[buf.to_pybytes()])

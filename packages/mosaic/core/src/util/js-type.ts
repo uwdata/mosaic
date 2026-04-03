@@ -26,6 +26,7 @@ export function jsType(type: string): JSType {
     case 'TIMESTAMPTZ':
     case 'TIMESTAMP WITH TIME ZONE':
     case 'TIME':
+    case 'TIMESTAMP_MS':
     case 'TIMESTAMP_NS':
       return 'date';
     case 'BOOLEAN':

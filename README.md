@@ -41,7 +41,7 @@ This repository contains a set of related packages, spanning the core Mosaic arc
 
 ### vgplot Libraries (`packages/vgplot`)
 
-**vgplot** is a visualization grammaer API that demonstrates the features and performance of the Mosaic architecture. It includes a layered grammar of interactive graphics alongside table and input widget components. For convenience, the `vgplot` package re-exports much of the `mosaic-core`, `mosaic-sql`, `mosaic-plot`, and `mosaic-inputs` packages. For most vgplot applications, it is sufficient to either import `@uwdata/vgplot` alone or in conjunction with `@uwdata/mosaic-spec`.
+**vgplot** is a visualization grammar API that demonstrates the features and performance of the Mosaic architecture. It includes a layered grammar of interactive graphics alongside table and input widget components. For convenience, the `vgplot` package re-exports much of the `mosaic-core`, `mosaic-sql`, `mosaic-plot`, and `mosaic-inputs` packages. For most vgplot applications, it is sufficient to either import `@uwdata/vgplot` alone or in conjunction with `@uwdata/mosaic-spec`.
 
 * [`vgplot`](https://github.com/uwdata/mosaic/tree/main/packages/vgplot/vgplot): A visualization grammar API for building interactive Mosaic-powered visualizations and dashboards. This package provides convenient, composable methods that combine multiple Mosaic packages (core, inputs, plot, etc.) in an integrated API. This API re-exports much of the `mosaic-core`, `mosaic-sql`, `mosaic-plot`, and `mosaic-inputs` packages, enabling use in a stand-alone fashion.
 * [`mosaic-inputs`](https://github.com/uwdata/mosaic/tree/main/packages/vgplot/inputs): Standalone data-driven components such as input menus, text search boxes, and sortable, load-on-scroll data tables.
@@ -59,7 +59,7 @@ This repository contains a set of related packages, spanning the core Mosaic arc
 ### Examples (`packages/examples`)
 
 * [`vanilla-example`](https://github.com/uwdata/mosaic/tree/main/packages/examples/vanilla-example): A basic example demonstrating how to deploy Mosaic in a website.
-* [`svelte-example`](https://github.com/uwdata/mosaic/tree/main/packages/examples/svelte-example): An example application that demonstrates  howto create Mosaic components within web frameworks such as Svelte and React.
+* [`svelte-example`](https://github.com/uwdata/mosaic/tree/main/packages/examples/svelte-example): An example application that demonstrates how to create Mosaic components within web frameworks such as Svelte and React.
 * [`vega-example`](https://github.com/uwdata/mosaic/tree/main/packages/examples/vega-example): A proof-of-concept example integrating Vega-Lite with Mosaic for data management and cross-view linking.
 
 ## Build and Usage Instructions
@@ -67,19 +67,19 @@ This repository contains a set of related packages, spanning the core Mosaic arc
 To build and develop Mosaic locally:
 
 * Clone [https://github.com/uwdata/mosaic](https://github.com/uwdata/mosaic).
-* Run `npm i` to install dependencies.
-* Run `npm test` to run the test suite.
-* Run `npm run build` to build client-side bundles.
+* Run `pnpm i` to install dependencies.
+* Run `pnpm test` to run the test suite.
+* Run `pnpm build` to build client-side bundles.
 * Run `uv build --all-packages` to build the Python packages.
 
 To run local interactive examples:
 
-* Run `npm run dev` to launch a local web server and view examples. By default, the examples use DuckDB-WASM in the browser. For greater performance, launch and connect to a local DuckDB server as described below.
+* Run `pnpm dev` to launch a local web server and view examples. By default, the examples use DuckDB-WASM in the browser. We recommend using Firefox since it remembers the selected dropdown across browser reloads. For greater performance, launch and connect to a local DuckDB server as described below.
 
 To launch a local DuckDB server:
 
 * Install [uv](https://docs.astral.sh/uv/), if not already present.
-* Run `npm run server` to launch the [`duckdb-server`](https://github.com/uwdata/mosaic/tree/main/packages/server/duckdb-server). This runs the server in development mode, so the server will restart if you change its code.
+* Run `pnpm server` to launch the [`duckdb-server`](https://github.com/uwdata/mosaic/tree/main/packages/server/duckdb-server). This runs the server in development mode, so the server will restart if you change its code.
 
 To use Mosaic with DuckDB Python in Jupyter Notebooks:
 

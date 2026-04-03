@@ -133,7 +133,8 @@ function httpResponse(res) {
   return {
     arrow(data) {
       res.setHeader('Content-Type', 'application/vnd.apache.arrow.stream');
-      res.end(data);
+      for (const chunk of data) res.write(chunk);
+      res.end();
     },
     json(data) {
       res.setHeader('Content-Type', 'application/json');
@@ -157,7 +158,7 @@ export function socketResponse(ws) {
 
   return {
     arrow(data) {
-      ws.send(data, BINARY);
+      ws.send(Buffer.concat(data), BINARY);
     },
     json(data) {
       ws.send(JSON.stringify(data), STRING);

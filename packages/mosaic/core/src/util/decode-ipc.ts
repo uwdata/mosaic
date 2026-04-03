@@ -11,7 +11,7 @@ import { tableFromIPC } from '@uwdata/flechette';
  * @returns A table instance.
  */
 export function decodeIPC(
-  data: ArrayBufferLike | Uint8Array,
+  data: ArrayBufferLike | Uint8Array | Uint8Array[],
   options: ExtractionOptions = { useDate: true }
 ): Table {
   return tableFromIPC(data, options);

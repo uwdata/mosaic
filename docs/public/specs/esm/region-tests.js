@@ -31,6 +31,8 @@ export default vg.vconcat(
     vg.marginLeft(24),
     vg.xLabel(null),
     vg.xTicks(10),
+    vg.xLine(true),
+    vg.yLine(true),
     vg.yLabel("Unemployment (%)"),
     vg.yGrid(true),
     vg.marginRight(0)

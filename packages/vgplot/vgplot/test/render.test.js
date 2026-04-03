@@ -2,7 +2,6 @@ import { beforeEach, afterEach, expect, describe, it } from 'vitest';
 import { resolve } from 'node:path';
 import { Coordinator } from '@uwdata/mosaic-core';
 import { JSDOM } from 'jsdom';
-import { nodeConnector } from './util/node-connector.js';
 import { createAPIContext } from '../src/index.js';
 import { clientsReady } from './util/clients-ready.js';
 import { NodeConnector } from '../../../mosaic/core/test/util/node-connector.js';

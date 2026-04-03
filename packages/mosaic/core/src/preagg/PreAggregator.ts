@@ -1,4 +1,4 @@
-import { ExprNode, ScaleOptions, SelectQuery, Query, ExprValue, MaybeArray, FunctionNode, BetweenOpNode, AndNode } from '@uwdata/mosaic-sql';
+import { ExprNode, ScaleOptions, SelectQuery, Query, ExprValue, MaybeArray, FunctionNode, BetweenOpNode, AndNode, TableRefNode, createSchema, SelectClauseNode, LiteralNode, OrderByNode } from '@uwdata/mosaic-sql';
 import type { Coordinator } from '../Coordinator.js';
 import type { MosaicClient } from '../MosaicClient.js';
 import type { Selection } from '../Selection.js';
@@ -25,8 +25,8 @@ interface ActiveColumnsResult {
 }
 
 interface PreAggregateInfoOptions {
-  table: string;
-  create: string;
+  table: TableRefNode;
+  create: SelectQuery;
   active: ActiveColumnsResult;
   select: SelectQuery;
 }
@@ -213,7 +213,7 @@ export class PreAggregator {
         active, preaggCols, schema
       );
       info.result = mc.exec([
-        `CREATE SCHEMA IF NOT EXISTS ${schema}`,
+        createSchema(schema),
         createTable(info.table, info.create, { temp: false })
       ]);
       info.result.catch((e: Error) => mc.logger().error(e));
@@ -328,18 +328,24 @@ function binInterval(
  * @returns Pre-aggregation information.
  */
 function preaggregateInfo(
-  clientQuery: SelectQuery,
+  query: SelectQuery,
   active: ActiveColumnsResult,
   preaggCols: PreAggColumnsResult,
   schema: string
 ): PreAggregateInfo {
-  const { group, output, preagg } = preaggCols;
+  const { dims, groupby, output, preagg } = preaggCols;
   const { columns } = active;
 
+  // push any having or orderby criteria to output queries
+  // note: mutates the construction query
+  const { _select, _having, _orderby } = query;
+  query._having = [];
+  query._orderby = [];
+
   // build materialized view construction query
-  const query = clientQuery
-    .setSelect({ ...preagg, ...columns })
-    .groupby(Object.keys(columns!));
+  query
+    .setSelect({ ...groupby, ...preagg, ...columns })
+    .setGroupby(Object.keys(groupby), Object.keys(columns ?? {}));
 
   // ensure active clause columns are selected by subqueries
   const [subq] = query.subqueries;
@@ -349,26 +355,48 @@ function preaggregateInfo(
     subqueryPushdown(subq, cols);
   }
 
-  // push any having or orderby criteria to output queries
-  const having = query._having;
-  const order = query._orderby;
-  query._having = [];
-  query._orderby = [];
-
-  // generate creation query string and hash id
-  const create = query.toString();
-  const id = (fnv_hash(create) >>> 0).toString(16);
-  const table = `${schema}.preagg_${id}`;
+  // generate creation query and hash id
+  const create = query;
+  const id = (fnv_hash(create.toString()) >>> 0).toString(16);
+  const table = new TableRefNode([schema, `preagg_${id}`]);
 
   // generate preaggregate select query
   const select = QueryBuilder
-    .select(group, output)
+    .select(dims, output)
     .from(table)
-    .groupby(group)
-    .having(having)
-    .orderby(order);
+    .groupby(dims, Object.keys(groupby))
+    .having(_having)
+    .orderby(replaceIndices(_orderby, _select));
 
   return new PreAggregateInfo({ table, create, active, select });
+}
+
+/**
+ * Replace column index references with named column expressions.
+ * @param exprs A list of expressions to check and potentially replace.
+ * @param select Select clauses from the query.
+ */
+function replaceIndices(exprs: ExprNode[], select: SelectClauseNode[]) {
+  return exprs.flatMap(expr => {
+    if (expr.type === "ORDER_BY") {
+      const e = (expr as OrderByNode).expr;
+      if (e.type === "LITERAL") {
+        const ref = select[(e as LiteralNode).value as number - 1];
+        if (ref) {
+          const cloned = expr.clone();
+          // @ts-expect-error assign to cloned order by node
+          cloned.expr = asNode(ref.alias);
+          return cloned
+        } else {
+          return [];
+        }
+      }
+    } else if (expr.type === "LITERAL") {
+      const ref = select[(expr as LiteralNode).value as number - 1];
+      return ref ? asNode(ref.alias) : [];
+    }
+    return expr;
+  });
 }
 
 /**
@@ -420,9 +448,9 @@ function isAggregateQuery(query: SelectQuery): boolean {
  */
 export class PreAggregateInfo {
   /** The name of the materialized view. */
-  table: string;
+  table: TableRefNode;
   /** The SQL query used to generate the materialized view. */
-  create: string;
+  create: SelectQuery;
   /** A result promise returned for the materialized view creation query. */
   result: Promise<unknown> | null;
   /** Definitions and predicate function for the active columns,

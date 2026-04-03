@@ -5,6 +5,7 @@ from functools import partial
 
 import ujson
 from socketify import App, CompressOptions, OpCode
+import duckdb
 
 from pkg.query import get_arrow_bytes, get_json, retrieve
 
@@ -17,13 +18,13 @@ class Handler:
     def done(self):
         raise Exception("NotImplementedException")
 
-    def arrow(self, _buffer):
+    def arrow(self, buffer):
         raise Exception("NotImplementedException")
 
-    def json(self, _data):
+    def json(self, data):
         raise Exception("NotImplementedException")
 
-    def error(self, _error):
+    def error(self, error):
         raise Exception("NotImplementedException")
 
 
@@ -72,7 +73,7 @@ class HTTPHandler(Handler):
         self.res.end(str(error))
 
 
-def handle_query(handler: Handler, con, cache, query):
+def handle_query(handler: Handler, con: duckdb.DuckDBPyConnection, cache, query):
     logger.debug(f"{query=}")
 
     start = time.time()

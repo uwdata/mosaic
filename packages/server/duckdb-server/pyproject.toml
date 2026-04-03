@@ -6,7 +6,7 @@ readme = "README.md"
 requires-python = ">=3.10"
 dependencies = [
   "diskcache",
-  "duckdb>=1.3.1",
+  "duckdb>=1.4.1",
   "pandas",
   "pyarrow",
   "socketify",
@@ -25,12 +25,12 @@ build-backend = "hatchling.build"
 
 [dependency-groups]
 dev = [
-  "mypy",
   "pytest-cov",
   "pytest",
   "ruff",
   "types-ujson",
   "watchdog",
+  "ty",
 ]
 
 [tool.hatch.build.targets.wheel]
@@ -39,9 +39,3 @@ packages = ["pkg"]
 [tool.hatch.version]
 path = "package.json"
 pattern = "\"version\": \"(?P<version>.+?)\""
-
-# https://mypy.readthedocs.io/en/stable/config_file.html
-[tool.mypy]
-files = "pkg/**/*.py"
-strict = false
-ignore_missing_imports = true

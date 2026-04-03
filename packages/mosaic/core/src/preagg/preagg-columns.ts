@@ -1,10 +1,11 @@
 import type { AggregateNode, ColumnRefNode, ExprNode, Query, SelectQuery } from '@uwdata/mosaic-sql';
 import type { MosaicClient } from '../MosaicClient.js';
-import { collectAggregates, FromClauseNode, isAggregateExpression, isSelectQuery, isTableRef, rewrite, sql } from '@uwdata/mosaic-sql';
+import { collectAggregates, FromClauseNode, isAggregateExpression, isColumnRef, isSelectQuery, isTableRef, rewrite, sql } from '@uwdata/mosaic-sql';
 import { sufficientStatistics } from './sufficient-statistics.js';
 
 export interface PreAggColumnsResult {
-  group: string[];
+  dims: string[];
+  groupby: Record<string, ExprNode>;
   preagg: Record<string, ExprNode>;
   output: Record<string, ExprNode>;
 }
@@ -34,7 +35,18 @@ export function preaggColumns(client: MosaicClient): PreAggColumnsResult | null 
   const aggrs = new Map<AggregateNode, ExprNode>();
   const preagg: Record<string, ExprNode> = {};
   const output: Record<string, ExprNode> = {};
-  const group: string[] = []; // list of grouping dimension columns
+  const dims: string[] = []; // selected grouping dimensions
+
+  // groupby entries, these may or may not be selected
+  const groupby: Record<string, ExprNode> = {};
+  for (const expr of q._groupby) {
+    // ignore integer index, as expr will be in select clause
+    // we will harvest that expr as a dimension below
+    if (expr.type !== "LITERAL") {
+      const alias = isColumnRef(expr) ? expr.column : `${expr}`;
+      groupby[alias] = expr;
+    }
+  }
 
   // generate a scalar subquery for a global average
   const avg = (ref: ColumnRefNode) => {
@@ -52,8 +64,8 @@ export function preaggColumns(client: MosaicClient): PreAggColumnsResult | null 
     const nodes = collectAggregates(expr!);
     if (nodes.length === 0) {
       // if no aggregates, expr is a groupby dimension
-      group.push(alias);
-      preagg[alias] = expr!;
+      dims.push(alias);
+      preagg[alias] = expr;
     } else {
       for (const node of nodes) {
         // bail if distinct aggregate
@@ -74,7 +86,12 @@ export function preaggColumns(client: MosaicClient): PreAggColumnsResult | null 
   // bail if the query has no aggregates
   if (!aggrs.size) return null;
 
-  return { group, preagg, output };
+  return {
+    dims,
+    groupby,
+    preagg,
+    output
+  };
 }
 
 /**

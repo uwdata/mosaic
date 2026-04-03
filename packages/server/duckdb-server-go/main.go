@@ -11,7 +11,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/marcboeker/go-duckdb/v2"
+	"github.com/duckdb/duckdb-go/v2"
 
 	"github.com/uwdata/mosaic/packages/server/duckdb-server-go/internal/query"
 	"github.com/uwdata/mosaic/packages/server/duckdb-server-go/internal/server"

@@ -37,7 +37,6 @@ export class RestConnector implements Connector {
     const req = fetch(this._uri, {
       method: 'POST',
       mode: 'cors',
-      cache: 'no-cache',
       credentials: 'omit',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(query)
