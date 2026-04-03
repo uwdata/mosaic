@@ -5,7 +5,6 @@ import graphlib
 from schema_wrapper.utils import get_valid_identifier, get_dependencies
 
 
-
 SCHEMA_VERSION: Final = "v0.21.1"
 KNOWN_PRIMITIVES = {
     "string": "str",
