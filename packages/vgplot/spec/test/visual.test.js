@@ -3,9 +3,20 @@ import { readFile, readdir } from 'node:fs/promises';
 import { join } from 'node:path';
 
 const specsDir = join(import.meta.dirname, '../../../../specs/json');
+
+// Skip specs with very large remote datasets that can OOM the DuckDB server.
+const skip = new Set([
+  'flights-10m',
+  'gaia',
+  'linear-regression-10m',
+  'nyc-taxi-rides',
+  'observable-latency',
+]);
+
 const specFiles = (await readdir(specsDir))
   .filter(f => f.endsWith('.json'))
   .map(f => f.replace('.json', ''))
+  .filter(f => !skip.has(f))
   .sort();
 
 test.describe('Visual regression tests for JSON specs', () => {
