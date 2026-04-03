@@ -20,7 +20,7 @@
     "build": "tsc --build && lerna run build",
     "clean": "lerna run clean",
     "lint": "lerna run lint",
-    "test": "tsc --build && lerna run schema && vitest run",
+    "test": "tsc --build && lerna run schema && vitest run && pnpm -F mosaic-widget test",
     "server": "cd packages/server/duckdb-server && pnpm run dev",
     "server:rust": "cd packages/server/duckdb-server-rust && cargo run",
     "server:node": "nodemon packages/server/duckdb/bin/run-server.js",

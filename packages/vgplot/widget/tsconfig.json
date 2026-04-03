@@ -1,6 +1,6 @@
 {
   "extends": "../../../tsconfig.base.json",
-  "files": ["src/index.js"],
+  "files": ["src/index.js", "src/global.d.ts"],
   "compilerOptions": {
     "noEmit": true,
   },
