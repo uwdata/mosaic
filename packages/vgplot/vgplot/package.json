@@ -1,6 +1,6 @@
 {
   "name": "@uwdata/vgplot",
-  "version": "0.22.0",
+  "version": "0.23.0",
   "description": "An API for interactive Mosaic-powered visualizations and dashboards.",
   "keywords": [
     "data",
@@ -35,9 +35,9 @@
     "prepublishOnly": "pnpm run test && pnpm run lint && tsc --build"
   },
   "dependencies": {
-    "@uwdata/mosaic-core": "workspace:^0.22.0",
-    "@uwdata/mosaic-inputs": "workspace:^0.22.0",
-    "@uwdata/mosaic-plot": "workspace:^0.22.0",
-    "@uwdata/mosaic-sql": "workspace:^0.22.0"
+    "@uwdata/mosaic-core": "workspace:^0.23.0",
+    "@uwdata/mosaic-inputs": "workspace:^0.23.0",
+    "@uwdata/mosaic-plot": "workspace:^0.23.0",
+    "@uwdata/mosaic-sql": "workspace:^0.23.0"
   }
 }
