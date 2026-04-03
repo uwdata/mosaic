@@ -2,7 +2,8 @@
 
 A `Plot` is defined using a set of directives that specify [_attributes_](./attributes), graphical [_marks_](./marks), [_interactors_](./interactors), and [_legends_](./legends).
 
-``` js
+::: code-group
+``` js [Javascript]
 plot(
   width(500), // attribute
   rectY(from("table"), { x1: "u", x2: "v", y: "w", fill: "c" }), // mark
@@ -10,6 +11,18 @@ plot(
   colorLegend() // legend
 )
 ```
+``` python [Python]
+import mosaic.vgplot as vg
+
+vg.plot(
+    vg.width(500),  # attribute
+    vg.rect_y(data=vg.from_("table"), x1="u", x2="v", y="w", fill="c"),  # mark
+    vg.interval_x(as_=selection),  # interactor
+    vg.color_legend(),  # legend
+)
+```
+:::
+
 
 ## plot
 
