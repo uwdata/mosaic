@@ -1,27 +1,46 @@
-from mosaic import *
-from mosaic.spec import *
-from mosaic.generated_classes import *
-from typing import Dict, Any, Union
+import json
+import vgplot as vg
 
-
-earthquakes = DataSource(
-    type="parquet",
-    file="data/earthquakes.parquet",
-    where=""
-)
-land = DataSource(
-    type="spatial",
-    file="data/countries-110m.json",
-    where=""
+meta = vg.meta(title="Earthquakes Globe", description="A rotatable globe of earthquake activity. To show land masses, this example loads and parses TopoJSON data in the database. Requires the DuckDB `spatial` extension.\n", credit="Adapted from an [Observable Plot example](https://observablehq.com/@observablehq/plot-earthquake-globe).")
+data = vg.data(
+    earthquakes=vg.parquet("data/earthquakes.parquet"),
+    land={
+    "type": "spatial",
+    "file": "data/countries-110m.json",
+    "layer": "land"
+}
 )
 
-spec = Plot(
-    plot=[
-        PlotMark(Geo(mark="geo", data=PlotFrom(from_="land"), fill=ChannelValueSpec(ChannelValue("currentColor")), fillOpacity=0.2)),
-        PlotMark(Sphere(mark="sphere")),
-        PlotMark(Dot(mark="dot", data=PlotFrom(from_="earthquakes"), x=ChannelValueSpec(ChannelValue("longitude")), y=ChannelValueSpec(ChannelValue("latitude")), fill=ChannelValueSpec(ChannelValue("red")), stroke=ChannelValueSpec(ChannelValue("red")), fillOpacity=0.2, r=ChannelValueSpec(ChannelValue(sql="POW(10, magnitude)"))))
-    ],
-    width=None,
-    height=None,
-    margin=10
+view = vg.vconcat(
+    vg.hconcat(
+            vg.slider(label="Longitude", as_="$longitude", min=-180, max=180, step=1),
+            vg.slider(label="Latitude", as_="$latitude", min=-90, max=90, step=1)
+        ),
+    vg.plot(
+            vg.geo(data=vg.from_("land"), geometry={
+                "geojson": "geom"
+            }, fill="currentColor", fill_opacity=0.2),
+            vg.sphere(),
+            vg.dot(data=vg.from_("earthquakes"), x="longitude", y="latitude", r={
+                "sql": "POW(10, magnitude)"
+            }, stroke="red", fill="red", fill_opacity=0.2),
+            vg.margin(10),
+            vg.style("overflow: visible;"),
+            vg.projection_type("orthographic"),
+            vg.projection_rotate("$rotate")
+        )
 )
+
+params = {
+    "longitude": -180,
+    "latitude": -30,
+    "rotate": [
+    "$longitude",
+    "$latitude"
+]
+}
+
+spec = vg.spec(meta=meta, data=data, params=params, view=view)
+
+if __name__ == "__main__":
+    print(json.dumps(spec.to_dict(), sort_keys=True))

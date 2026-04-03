@@ -1,5 +1,5 @@
 import json
-import mosaic.vgplot as vg
+import vgplot as vg
 
 meta = vg.meta(title="Cross-Filter Flights (10M)", description="Histograms showing arrival delay, departure time, and distance flown for 10 million flights.\nOnce loaded, automatic pre-aggregation optimizations enable efficient cross-filtered selections.\n\n_You may need to wait a few seconds for the dataset to load._\n")
 data = vg.data(
@@ -66,11 +66,13 @@ view = vg.vconcat(
         )
 )
 
-spec = vg.spec(meta=meta, data=data, params={
+params = {
     "brush": {
     "select": "crossfilter"
 }
-}, view=view)
+}
+
+spec = vg.spec(meta=meta, data=data, params=params, view=view)
 
 if __name__ == "__main__":
     print(json.dumps(spec.to_dict(), sort_keys=True))

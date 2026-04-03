@@ -1,21 +1,87 @@
-from mosaic import *
-from mosaic.spec import *
-from mosaic.generated_classes import *
-from typing import Dict, Any, Union
+import json
+import vgplot as vg
 
-
-penguins = DataSource(
-    type="parquet",
-    file="data/penguins.parquet",
-    where=""
+meta = vg.meta(title="Pan & Zoom", description="Linked panning and zooming across plots: drag to pan, scroll to zoom. `panZoom` interactors update a set of bound selections, one per unique axis.\n")
+data = vg.data(
+    penguins=vg.parquet("data/penguins.parquet")
 )
 
-spec = Plot(
-    plot=[
-        PlotMark(Frame(mark="frame")),
-        PlotMark(Dot(mark="dot", data=PlotFrom(from_="penguins"), x=ChannelValueSpec(ChannelValue("bill_length")), y=ChannelValueSpec(ChannelValue("bill_depth")), fill=ChannelValueSpec(ChannelValue("species")), r=2)),
-        PlotMark()
-    ],
-    width=320,
-    height=240
+view = vg.hconcat(
+    vg.vconcat(
+            vg.plot(
+                        vg.frame(),
+                        vg.dot(data=vg.from_("penguins"), x="bill_length", y="bill_depth", fill="species", r=2, clip=True),
+                        {
+                            "select": "panZoom",
+                            "x": "$xs",
+                            "y": "$ys"
+                        },
+                        vg.width(320),
+                        vg.height(240)
+                    ),
+            {
+                "vspace": 10
+            },
+            vg.plot(
+                        vg.frame(),
+                        vg.dot(data=vg.from_("penguins"), x="bill_length", y="flipper_length", fill="species", r=2, clip=True),
+                        {
+                            "select": "panZoom",
+                            "x": "$xs",
+                            "y": "$zs"
+                        },
+                        vg.width(320),
+                        vg.height(240)
+                    )
+        ),
+    {
+        "hspace": 10
+    },
+    vg.vconcat(
+            vg.plot(
+                        vg.frame(),
+                        vg.dot(data=vg.from_("penguins"), x="body_mass", y="bill_depth", fill="species", r=2, clip=True),
+                        {
+                            "select": "panZoom",
+                            "x": "$ws",
+                            "y": "$ys"
+                        },
+                        vg.width(320),
+                        vg.height(240)
+                    ),
+            {
+                "vspace": 10
+            },
+            vg.plot(
+                        vg.frame(),
+                        vg.dot(data=vg.from_("penguins"), x="body_mass", y="flipper_length", fill="species", r=2, clip=True),
+                        {
+                            "select": "panZoom",
+                            "x": "$ws",
+                            "y": "$zs"
+                        },
+                        vg.width(320),
+                        vg.height(240)
+                    )
+        )
 )
+
+params = {
+    "xs": {
+    "select": "intersect"
+},
+    "ys": {
+    "select": "intersect"
+},
+    "zs": {
+    "select": "intersect"
+},
+    "ws": {
+    "select": "intersect"
+}
+}
+
+spec = vg.spec(meta=meta, data=data, params=params, view=view)
+
+if __name__ == "__main__":
+    print(json.dumps(spec.to_dict(), sort_keys=True))

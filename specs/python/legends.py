@@ -1,5 +1,5 @@
 import json
-import mosaic.vgplot as vg
+import vgplot as vg
 
 meta = vg.meta(title="Legends", description="Tests for different legend types and configurations. We test both legends defined within plots (with a zero-size frame) and external legends that reference a named plot.\n")
 data = {}
@@ -262,7 +262,7 @@ view = vg.vconcat(
         )
 )
 
-spec = vg.spec(meta=meta, params={
+params = {
     "toggle": {
     "select": "single"
 },
@@ -276,7 +276,9 @@ spec = vg.spec(meta=meta, params={
     "bop",
     "doh"
 ]
-}, plotDefaults={
+}
+
+spec = vg.spec(meta=meta, params=params, plotDefaults={
     "margin": 0,
     "width": 0,
     "height": 20

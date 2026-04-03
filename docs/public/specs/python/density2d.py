@@ -1,20 +1,39 @@
-from mosaic import *
-from mosaic.spec import *
-from mosaic.generated_classes import *
-from typing import Dict, Any, Union
+import json
+import vgplot as vg
 
-
-penguins = DataSource(
-    type="parquet",
-    file="data/penguins.parquet",
-    where=""
+meta = vg.meta(title="Density 2D", description="A 2D `density` plot in which circle size indicates the point density. The data is divided by fill color into three sets of densities. To change the amount of smoothing, use the slider to set the kernel bandwidth.\n")
+data = vg.data(
+    penguins=vg.parquet("data/penguins.parquet")
 )
 
-spec = Plot(
-    plot=[
-        PlotMark(Density(mark="density", data=PlotFrom(from_="penguins"), x=ChannelValueSpec(ChannelValue("bill_length")), y=ChannelValueSpec(ChannelValue("bill_depth")), fill=ChannelValueSpec(ChannelValue("species")), fillOpacity=0.5, r=ChannelValueSpec(ChannelValue("density")))),
-        PlotMark(Dot(mark="dot", data=PlotFrom(from_="penguins"), x=ChannelValueSpec(ChannelValue("bill_length")), y=ChannelValueSpec(ChannelValue("bill_depth")), fill=ChannelValueSpec(ChannelValue("currentColor")), r=1))
-    ],
-    width=700,
-    height=480
+view = vg.vconcat(
+    vg.hconcat(
+            vg.slider(label="Bandwidth (σ)", as_="$bandwidth", min=1, max=100),
+            vg.slider(label="Bins", as_="$bins", min=10, max=60)
+        ),
+    vg.plot(
+            vg.density(data=vg.from_("penguins"), x="bill_length", y="bill_depth", r="density", fill="species", fill_opacity=0.5, width="$bins", height="$bins", bandwidth="$bandwidth"),
+            vg.dot(data=vg.from_("penguins"), x="bill_length", y="bill_depth", fill="currentColor", r=1),
+            vg.r_range([
+                0,
+                16
+            ]),
+            vg.x_axis("bottom"),
+            vg.x_label_anchor("center"),
+            vg.y_axis("right"),
+            vg.y_label_anchor("center"),
+            vg.margins(top=5, bottom=30, left=5, right=50),
+            vg.width(700),
+            vg.height(480)
+        )
 )
+
+params = {
+    "bandwidth": 20,
+    "bins": 20
+}
+
+spec = vg.spec(meta=meta, data=data, params=params, view=view)
+
+if __name__ == "__main__":
+    print(json.dumps(spec.to_dict(), sort_keys=True))

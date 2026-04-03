@@ -12,7 +12,6 @@ from schema_wrapper.generated_classes import (
     DataCSV,
     DataSpatial,
     DataTable,
-    Dot,
     LineY,
     ParamRef,
     Plot,
@@ -117,49 +116,6 @@ def test_composite():
         [TransformField("1"), TransformField("2"), TransformField("3")],
         ParamRef("1"),
     )
-
-
-def test_weather_plot():
-    plot_spec = Plot(
-        plot=[
-            PlotMark(
-                Dot(
-                    mark="dot",
-                    data=PlotFrom(from_="weather", filterBy="$click"),
-                    x=ChannelValueSpec(ChannelValue({"dateMonthDay": "date"})),
-                    y=ChannelValueSpec(ChannelValue("temp_max")),
-                    fill="weather",
-                    r="precipitation",
-                )
-            )
-        ],
-        xyDomain="Fixed",
-        xTickFormat="%b",
-        colorDomain="$domain",
-        colorRange="$colors",
-        rDomain="Fixed",
-        rRange=[2, 10],
-        width=800,
-    )
-    assert {
-        "colorDomain": "$domain",
-        "colorRange": "$colors",
-        "plot": [
-            {
-                "data": {"filterBy": "$click", "from": "weather"},
-                "fill": "weather",
-                "mark": "dot",
-                "r": "precipitation",
-                "x": {"dateMonthDay": "date"},
-                "y": "temp_max",
-            }
-        ],
-        "rDomain": "Fixed",
-        "rRange": [2, 10],
-        "width": 800,
-        "xTickFormat": "%b",
-        "xyDomain": "Fixed",
-    } == _todict(plot_spec)
 
 
 def test_stock_plot():

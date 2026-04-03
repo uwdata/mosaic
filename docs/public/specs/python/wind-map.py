@@ -1,19 +1,64 @@
-from mosaic import *
-from mosaic.spec import *
-from mosaic.generated_classes import *
-from typing import Dict, Any, Union
+import json
+import vgplot as vg
 
-
-wind = DataSource(
-    type="parquet",
-    file="data/wind.parquet",
-    where=""
+meta = vg.meta(title="Wind Map", description="`vector` marks on a grid show both direction and intensity—here, the speed of winds. Expressions for `rotate`, `length`, and `stroke` values are evaluated in the database. Both the legend and map support interactive selections to highlight values.\n", credit="Adapted from an [Observable Plot example](https://observablehq.com/@observablehq/plot-wind-map).")
+data = vg.data(
+    wind={
+    "type": "parquet",
+    "file": "data/wind.parquet",
+    "select": [
+    "*",
+    "row_number() over () as id"
+]
+}
 )
 
-spec = Plot(
-    plot=[
-        PlotMark(Vector(mark="vector", data=PlotFrom(from_="wind"), x=ChannelValueSpec(ChannelValue("longitude")), y=ChannelValueSpec(ChannelValue("latitude")), stroke=ChannelValueSpec(ChannelValue(sql="sqrt(u * u + v * v)")), rotate=ChannelValueSpec(ChannelValue(sql="degrees(atan2(u, v))")), length=ChannelValueSpec(ChannelValue(sql="$length * sqrt(u * u + v * v)"))))
-    ],
-    width=680,
-    height=None
+view = vg.vconcat(
+    {
+        "legend": "color",
+        "for": "wind-map",
+        "label": "Speed (m/s)",
+        "as": "$selected"
+    },
+    vg.plot(
+            vg.vector(data=vg.from_("wind"), x="longitude", y="latitude", rotate={
+                "sql": "degrees(atan2(u, v))"
+            }, length={
+                "sql": "$length * sqrt(u * u + v * v)"
+            }, stroke={
+                "sql": "sqrt(u * u + v * v)"
+            }, channels={
+                "id": "id"
+            }),
+            {
+                "select": "region",
+                "as": "$selected",
+                "channels": [
+                "id"
+            ]
+            },
+            {
+                "select": "highlight",
+                "by": "$selected"
+            },
+            vg.name("wind-map"),
+            vg.length_scale("identity"),
+            vg.color_zero(True),
+            vg.inset(10),
+            vg.aspect_ratio(1),
+            vg.width(680)
+        ),
+    vg.slider(min=1, max=7, step=0.1, as_="$length", label="Vector Length")
 )
+
+params = {
+    "selected": {
+    "select": "union"
+},
+    "length": 2
+}
+
+spec = vg.spec(meta=meta, data=data, params=params, view=view)
+
+if __name__ == "__main__":
+    print(json.dumps(spec.to_dict(), sort_keys=True))

@@ -1,5 +1,5 @@
 import json
-import mosaic.vgplot as vg
+import vgplot as vg
 
 meta = vg.meta(title="Pan & Zoom", description="Linked panning and zooming across plots: drag to pan, scroll to zoom. `panZoom` interactors update a set of bound selections, one per unique axis.\n")
 data = vg.data(
@@ -66,7 +66,7 @@ view = vg.hconcat(
         )
 )
 
-spec = vg.spec(meta=meta, data=data, params={
+params = {
     "xs": {
     "select": "intersect"
 },
@@ -79,7 +79,9 @@ spec = vg.spec(meta=meta, data=data, params={
     "ws": {
     "select": "intersect"
 }
-}, view=view)
+}
+
+spec = vg.spec(meta=meta, data=data, params=params, view=view)
 
 if __name__ == "__main__":
     print(json.dumps(spec.to_dict(), sort_keys=True))

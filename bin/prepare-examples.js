@@ -7,7 +7,9 @@ import {
   writeFile,
   mkdir,
 } from 'node:fs/promises';
-import { parseSpec, astToESM, astToPython } from '@uwdata/mosaic-spec';
+import { parseSpec } from '../packages/vgplot/spec/src/parse-spec.js';
+import { astToESM } from '../packages/vgplot/spec/src/ast-to-esm.js';
+import { astToPython } from '../packages/vgplot/spec/src/ast-to-python.js';
 import { parse } from 'yaml';
 
 // This script prepares all Mosaic example specifications
@@ -118,6 +120,7 @@ ${credit ? `\n**Credit**: ${credit}\n` : ''}
 <<< @/public/specs/esm/${spec}.js [JavaScript]
 <<< @/public/specs/yaml/${spec}.yaml [YAML]
 <<< @/public/specs/json/${spec}.json [JSON]
+<<< @/public/specs/python/${spec}.py [Python]
 :::
 `;
 }

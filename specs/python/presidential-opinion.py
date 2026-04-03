@@ -1,5 +1,5 @@
 import json
-import mosaic.vgplot as vg
+import vgplot as vg
 
 meta = vg.meta(title="Presidential Opinion", description="Opinion poll data on historical U.S. presidents. Image marks are used to show presidential pictures. The dropdown menu toggles the opinion metric shown.\n", credit="Adapted from an [Observable Plot example](https://observablehq.com/@observablehq/plot-image-medals).")
 data = vg.data(
@@ -33,9 +33,11 @@ view = vg.vconcat(
     ], as_="$sign")
 )
 
-spec = vg.spec(meta=meta, data=data, params={
+params = {
     "sign": 1
-}, view=view)
+}
+
+spec = vg.spec(meta=meta, data=data, params=params, view=view)
 
 if __name__ == "__main__":
     print(json.dumps(spec.to_dict(), sort_keys=True))

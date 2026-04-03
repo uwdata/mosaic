@@ -1,19 +1,27 @@
-from mosaic import *
-from mosaic.spec import *
-from mosaic.generated_classes import *
-from typing import Dict, Any, Union
+import json
+import vgplot as vg
 
-
-walk = DataSource(
-    type="parquet",
-    file="data/random-walk.parquet",
-    where=""
+meta = vg.meta(title="Bias Parameter", description="Dynamically adjust queried values by adding a Param value. The SQL expression is re-computed in the database upon updates.\n")
+data = vg.data(
+    walk=vg.parquet("data/random-walk.parquet")
 )
 
-spec = Plot(
-    plot=[
-        PlotMark(AreaY(mark="areaY", data=PlotFrom(from_="walk"), x=ChannelValueSpec(ChannelValue("t")), y=ChannelValueSpec(ChannelValue(sql="v + $point")), fill=ChannelValueSpec(ChannelValue("steelblue"))))
-    ],
-    width=680,
-    height=200
+view = vg.vconcat(
+    vg.slider(label="Bias", as_="$point", min=0, max=1000, step=1),
+    vg.plot(
+            vg.area_y(data=vg.from_("walk"), x="t", y={
+                "sql": "v + $point"
+            }, fill="steelblue"),
+            vg.width(680),
+            vg.height(200)
+        )
 )
+
+params = {
+    "point": 0
+}
+
+spec = vg.spec(meta=meta, data=data, params=params, view=view)
+
+if __name__ == "__main__":
+    print(json.dumps(spec.to_dict(), sort_keys=True))

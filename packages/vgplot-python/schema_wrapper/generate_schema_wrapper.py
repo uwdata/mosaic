@@ -1,10 +1,8 @@
 import json
 from typing import Any, Dict, List, Final
-import sys
 from pathlib import Path
 import graphlib
 from schema_wrapper.utils import get_valid_identifier, get_dependencies
-
 
 
 SCHEMA_VERSION: Final = "v0.21.1"

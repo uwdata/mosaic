@@ -1,5 +1,5 @@
 import json
-import mosaic.vgplot as vg
+import vgplot as vg
 
 meta = vg.meta(title="Scatter Plot Matrix (SPLOM)", description="A scatter plot matrix enables inspection of pairwise bivariate distributions. Do points cluster or separate in some dimensions but not others? Select a region to highlight corresponding points across all plots.\n")
 data = vg.data(
@@ -249,11 +249,13 @@ view = vg.vconcat(
         )
 )
 
-spec = vg.spec(meta=meta, data=data, params={
+params = {
     "brush": {
     "select": "single"
 }
-}, plotDefaults={
+}
+
+spec = vg.spec(meta=meta, data=data, params=params, plotDefaults={
     "xTicks": 3,
     "yTicks": 4,
     "xDomain": "Fixed",
