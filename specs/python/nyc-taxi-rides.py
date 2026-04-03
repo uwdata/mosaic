@@ -1,5 +1,5 @@
 import json
-import mosaic.vgplot as vg
+import vgplot as vg
 
 meta = vg.meta(title="NYC Taxi Rides", description="Pickup and dropoff points for 1M NYC taxi rides on Jan 1-3, 2010.\nThis example projects lon/lat coordinates in the database upon load.\nSelect a region in one plot to filter the other.\nWhat spatial patterns can you find?\nRequires the DuckDB `spatial` extension.\n\n_You may need to wait a few seconds for the dataset to load._\n")
 data = vg.data(
@@ -101,11 +101,13 @@ view = vg.vconcat(
         )
 )
 
-spec = vg.spec(meta=meta, data=data, params={
+params = {
     "filter": {
     "select": "crossfilter"
 }
-}, config={
+}
+
+spec = vg.spec(meta=meta, data=data, params=params, config={
     "extensions": "spatial"
 }, view=view)
 

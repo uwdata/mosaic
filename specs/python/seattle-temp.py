@@ -1,5 +1,5 @@
 import json
-import mosaic.vgplot as vg
+import vgplot as vg
 
 meta = vg.meta(title="Seattle Temperatures", description="Historical monthly temperatures in Seattle, WA. The gray range shows the minimum and maximum recorded temperatures. The blue range shows the average lows and highs.\n")
 data = vg.data(

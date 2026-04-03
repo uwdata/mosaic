@@ -1,27 +1,33 @@
-from mosaic import *
-from mosaic.spec import *
-from mosaic.generated_classes import *
-from typing import Dict, Any, Union
+import json
+import vgplot as vg
 
+meta = vg.meta(title="U.S. Counties", description="A map of U.S. counties. County name tooltips are anchored to invisible centroid dot marks. Requires the DuckDB `spatial` extension.\n")
+data = vg.data(
+    counties={
+    "type": "spatial",
+    "file": "data/us-counties-10m.json",
+    "layer": "counties"
+},
+    states={
+    "type": "spatial",
+    "file": "data/us-counties-10m.json",
+    "layer": "states"
+}
+)
 
-counties = DataSource(
-    type="spatial",
-    file="data/us-counties-10m.json",
-    where=""
-)
-states = DataSource(
-    type="spatial",
-    file="data/us-counties-10m.json",
-    where=""
+view = vg.plot(
+    vg.geo(data=vg.from_("counties"), stroke="currentColor", stroke_width=0.25),
+    vg.geo(data=vg.from_("states"), stroke="currentColor", stroke_width=1),
+    vg.dot(data=vg.from_("counties"), x={
+        "centroidX": "geom"
+    }, y={
+        "centroidY": "geom"
+    }, r=2, fill="transparent", tip=True, title="name"),
+    vg.margin(0),
+    vg.projection_type("albers")
 )
 
-spec = Plot(
-    plot=[
-        PlotMark(Geo(mark="geo", data=PlotFrom(from_="counties"), stroke=ChannelValueSpec(ChannelValue("currentColor")), strokeWidth=0.25)),
-        PlotMark(Geo(mark="geo", data=PlotFrom(from_="states"), stroke=ChannelValueSpec(ChannelValue("currentColor")), strokeWidth=1)),
-        PlotMark(Dot(mark="dot", data=PlotFrom(from_="counties"), x=ChannelValueSpec(ChannelValue({"centroidX":"geom"})), y=ChannelValueSpec(ChannelValue({"centroidY":"geom"})), fill=ChannelValueSpec(ChannelValue("transparent")), r=2, tip=None, title=ChannelValueSpec(ChannelValue("name"))))
-    ],
-    width=None,
-    height=None,
-    margin=0
-)
+spec = vg.spec(meta=meta, data=data, view=view)
+
+if __name__ == "__main__":
+    print(json.dumps(spec.to_dict(), sort_keys=True))

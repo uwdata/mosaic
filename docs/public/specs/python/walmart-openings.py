@@ -1,33 +1,36 @@
-from mosaic import *
-from mosaic.spec import *
-from mosaic.generated_classes import *
-from typing import Dict, Any, Union
+import json
+import vgplot as vg
 
-
-states = DataSource(
-    type="spatial",
-    file="data/us-counties-10m.json",
-    where=""
-)
-nation = DataSource(
-    type="spatial",
-    file="data/us-counties-10m.json",
-    where=""
-)
-walmarts = DataSource(
-    type="parquet",
-    file="data/walmarts.parquet",
-    where=""
+meta = vg.meta(title="Walmart Openings", description="Maps showing Walmart store openings per decade. Requires the DuckDB `spatial` extension.\n", credit="Adapted from an [Observable Plot example](https://observablehq.com/@observablehq/plot-map-large-multiples).")
+data = vg.data(
+    states={
+    "type": "spatial",
+    "file": "data/us-counties-10m.json",
+    "layer": "states"
+},
+    nation={
+    "type": "spatial",
+    "file": "data/us-counties-10m.json",
+    "layer": "nation"
+},
+    walmarts=vg.parquet("data/walmarts.parquet")
 )
 
-spec = Plot(
-    plot=[
-        PlotMark(Geo(mark="geo", data=PlotFrom(from_="states"), stroke=ChannelValueSpec(ChannelValue("#aaa")), strokeWidth=1)),
-        PlotMark(Geo(mark="geo", data=PlotFrom(from_="nation"), stroke=ChannelValueSpec(ChannelValue("currentColor")))),
-        PlotMark(Dot(mark="dot", data=PlotFrom(from_="walmarts"), x=ChannelValueSpec(ChannelValue("longitude")), y=ChannelValueSpec(ChannelValue("latitude")), fill=ChannelValueSpec(ChannelValue("blue")), r=1.5)),
-        PlotMark(AxisFy(mark="axisFy", frameAnchor="top", dy=30, tickFormat="d"))
-    ],
-    width=None,
-    height=None,
-    margin=0
+view = vg.vconcat(
+    vg.plot(
+            vg.geo(data=vg.from_("states"), stroke="#aaa", stroke_width=1),
+            vg.geo(data=vg.from_("nation"), stroke="currentColor"),
+            vg.dot(data=vg.from_("walmarts"), x="longitude", y="latitude", fy={
+                "sql": "10 * decade(date)"
+            }, r=1.5, fill="blue"),
+            vg.axis_fy(frame_anchor="top", dy=30, tick_format="d"),
+            vg.margin(0),
+            vg.fy_label(None),
+            vg.projection_type("albers")
+        )
 )
+
+spec = vg.spec(meta=meta, data=data, view=view)
+
+if __name__ == "__main__":
+    print(json.dumps(spec.to_dict(), sort_keys=True))

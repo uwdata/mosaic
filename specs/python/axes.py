@@ -1,5 +1,5 @@
 import json
-import mosaic.vgplot as vg
+import vgplot as vg
 
 meta = vg.meta(title="Axes & Gridlines", description="Customized axis and gridline marks can be used in addition to standard scale attributes such as `xAxis`, `yGrid`, etc. Just add data!\n")
 data = {}

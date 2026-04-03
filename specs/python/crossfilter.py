@@ -1,5 +1,5 @@
 import json
-import mosaic.vgplot as vg
+import vgplot as vg
 
 data = vg.data(
     flights=vg.parquet("data/flights-200k.parquet")
@@ -46,11 +46,13 @@ view = vg.vconcat(
         )
 )
 
-spec = vg.spec(data=data, params={
+params = {
     "brush": {
     "select": "crossfilter"
 }
-}, view=view)
+}
+
+spec = vg.spec(data=data, params=params, view=view)
 
 if __name__ == "__main__":
     print(json.dumps(spec.to_dict(), sort_keys=True))

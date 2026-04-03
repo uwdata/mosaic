@@ -1,19 +1,40 @@
-from mosaic import *
-from mosaic.spec import *
-from mosaic.generated_classes import *
-from typing import Dict, Any, Union
+import json
+import vgplot as vg
 
-
-athletes = DataSource(
-    type="parquet",
-    file="data/athletes.parquet",
-    where=""
+meta = vg.meta(title="Sorted Bars", description="Sort and limit an aggregate bar chart of gold medals by country.\n")
+data = vg.data(
+    athletes=vg.parquet("data/athletes.parquet")
 )
 
-spec = Plot(
-    plot=[
-        PlotMark(BarX(mark="barX", data=PlotFrom(from_="athletes", filterBy=$query), x=ChannelValueSpec(ChannelValue({"sum":"gold"})), y=ChannelValueSpec(ChannelValue("nationality")), fill=ChannelValueSpec(ChannelValue("steelblue"))))
-    ],
-    width=None,
-    height=None
+view = vg.vconcat(
+    vg.input("menu", label="Sport", as_="$query", from_="athletes", column="sport", value="aquatics"),
+    {
+        "vspace": 10
+    },
+    vg.plot(
+            vg.bar_x(data={
+                "from": "athletes",
+                "filterBy": "$query"
+            }, x={
+                "sum": "gold"
+            }, y="nationality", fill="steelblue", sort={
+                "y": "-x",
+                "limit": 10
+            }),
+            vg.x_label("Gold Medals"),
+            vg.y_label("Nationality"),
+            vg.y_label_anchor("top"),
+            vg.margin_top(15)
+        )
 )
+
+params = {
+    "query": {
+    "select": "intersect"
+}
+}
+
+spec = vg.spec(meta=meta, data=data, params=params, view=view)
+
+if __name__ == "__main__":
+    print(json.dumps(spec.to_dict(), sort_keys=True))

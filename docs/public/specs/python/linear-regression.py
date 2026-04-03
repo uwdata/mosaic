@@ -1,21 +1,36 @@
-from mosaic import *
-from mosaic.spec import *
-from mosaic.generated_classes import *
-from typing import Dict, Any, Union
+import json
+import vgplot as vg
 
-
-athletes = DataSource(
-    type="parquet",
-    file="data/athletes.parquet",
-    where=""
+meta = vg.meta(title="Linear Regression", description="A linear regression plot predicting athletes' heights based on their weights. Regression computation is performed in the database. The area around a regression line shows a 95% confidence interval. Select a region to view regression results for a data subset.\n")
+data = vg.data(
+    athletes=vg.parquet("data/athletes.parquet")
 )
 
-spec = Plot(
-    plot=[
-        PlotMark(Dot(mark="dot", data=PlotFrom(from_="athletes"), x=ChannelValueSpec(ChannelValue("weight")), y=ChannelValueSpec(ChannelValue("height")), fill=ChannelValueSpec(ChannelValue("sex")), r=2)),
-        PlotMark(RegressionY(mark="regressionY", data=PlotFrom(from_="athletes", filterBy=$query), x=ChannelValueSpec(ChannelValue("weight")), y=ChannelValueSpec(ChannelValue("height")), stroke=ChannelValueSpec(ChannelValue("sex")))),
-        PlotMark()
-    ],
-    width=None,
-    height=None
+view = vg.plot(
+    vg.dot(data=vg.from_("athletes"), x="weight", y="height", fill="sex", r=2, opacity=0.05),
+    vg.regression_y(data={
+        "from": "athletes",
+        "filterBy": "$query"
+    }, x="weight", y="height", stroke="sex"),
+    {
+        "select": "intervalXY",
+        "as": "$query",
+        "brush": {
+        "fillOpacity": 0,
+        "stroke": "currentColor"
+    }
+    },
+    vg.xy_domain("Fixed"),
+    vg.color_domain("Fixed")
 )
+
+params = {
+    "query": {
+    "select": "intersect"
+}
+}
+
+spec = vg.spec(meta=meta, data=data, params=params, view=view)
+
+if __name__ == "__main__":
+    print(json.dumps(spec.to_dict(), sort_keys=True))

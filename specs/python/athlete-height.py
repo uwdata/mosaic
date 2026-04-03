@@ -1,5 +1,5 @@
 import json
-import mosaic.vgplot as vg
+import vgplot as vg
 
 meta = vg.meta(title="Athlete Height Intervals", description="Confidence intervals of Olympic athlete heights, in meters. Data are batched into groups of 10 samples per sport. Use the samples slider to see how the intervals update as the sample size increases (as in [online aggregation](https://en.wikipedia.org/wiki/Online_aggregation)). For each sport, the numbers on the right show the maximum number of athletes in the full dataset.\n")
 data = vg.data(
@@ -50,12 +50,14 @@ view = vg.hconcat(
         )
 )
 
-spec = vg.spec(meta=meta, data=data, params={
+params = {
     "ci": 0.95,
     "query": {
     "select": "single"
 }
-}, view=view)
+}
+
+spec = vg.spec(meta=meta, data=data, params=params, view=view)
 
 if __name__ == "__main__":
     print(json.dumps(spec.to_dict(), sort_keys=True))

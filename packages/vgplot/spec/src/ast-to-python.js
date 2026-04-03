@@ -49,10 +49,15 @@ export function astToPython(ast) {
   ctx.emit(`view = ${emitComponent(view, ctx, 0)}`);
   ctx.blank();
 
+  if (Object.keys(params).length) {
+    ctx.emit(`params = ${literal(params)}`);
+    ctx.blank();
+  }
+
   const specArgs = [];
   if (meta) specArgs.push('meta=meta');
   if (Object.keys(data).length) specArgs.push('data=data');
-  if (Object.keys(params).length) specArgs.push(`params=${literal(params)}`);
+  if (Object.keys(params).length) specArgs.push('params=params');
   if (plotDefaults) specArgs.push(`plotDefaults=${literal(plotDefaults)}`);
   if (config) specArgs.push(`config=${literal(config)}`);
   specArgs.push('view=view');

@@ -1,5 +1,5 @@
 import json
-import mosaic.vgplot as vg
+import vgplot as vg
 
 meta = vg.meta(title="Olympic Athletes", description="An interactive dashboard of athlete statistics. The menus and searchbox filter the display and are automatically populated by backing data columns.\n")
 data = vg.data(
@@ -64,7 +64,7 @@ view = vg.hconcat(
         )
 )
 
-spec = vg.spec(meta=meta, data=data, params={
+params = {
     "category": {
     "select": "intersect"
 },
@@ -78,7 +78,9 @@ spec = vg.spec(meta=meta, data=data, params={
     "select": "intersect",
     "empty": True
 }
-}, view=view)
+}
+
+spec = vg.spec(meta=meta, data=data, params=params, view=view)
 
 if __name__ == "__main__":
     print(json.dumps(spec.to_dict(), sort_keys=True))

@@ -1,5 +1,5 @@
 import json
-import mosaic.vgplot as vg
+import vgplot as vg
 
 meta = vg.meta(title="Observable Latency", description="Web request latency on Observable.com.\nEach pixel in the heatmap shows the most common route (URL pattern) at a given response latency within a time interval.\nUse the bar chart of most-requested routes to filter the heatmap and isolate specific patterns.\nOr, select a range in the heatmap to show the corresponding most-requested routes.\n\n_You may need to wait a few seconds for the dataset to load._\n", credit="Adapted from an [Observable Framework example](https://observablehq.com/framework/examples/api/).")
 data = vg.data(
@@ -82,14 +82,16 @@ view = vg.vconcat(
         )
 )
 
-spec = vg.spec(meta=meta, data=data, params={
+params = {
     "filter": {
     "select": "crossfilter"
 },
     "highlight": {
     "select": "intersect"
 }
-}, view=view)
+}
+
+spec = vg.spec(meta=meta, data=data, params=params, view=view)
 
 if __name__ == "__main__":
     print(json.dumps(spec.to_dict(), sort_keys=True))

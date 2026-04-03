@@ -1,5 +1,5 @@
 import json
-import mosaic.vgplot as vg
+import vgplot as vg
 
 meta = vg.meta(title="Population Change Arrows", description="An `arrow` connects the positions in 1980 and 2015 of each city on this population × inequality chart. Color encodes variation.\n", credit="Adapted from an [Observable Plot example](https://observablehq.com/@observablehq/plot-arrow-variation-chart).")
 data = vg.data(
@@ -33,9 +33,11 @@ view = vg.vconcat(
     ], as_="$bend")
 )
 
-spec = vg.spec(meta=meta, data=data, params={
+params = {
     "bend": True
-}, view=view)
+}
+
+spec = vg.spec(meta=meta, data=data, params=params, view=view)
 
 if __name__ == "__main__":
     print(json.dumps(spec.to_dict(), sort_keys=True))

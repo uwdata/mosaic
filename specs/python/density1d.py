@@ -1,5 +1,5 @@
 import json
-import mosaic.vgplot as vg
+import vgplot as vg
 
 meta = vg.meta(title="Density 1D", description="Density plots (`densityY` mark) for over 200,000 flights, created using kernel density estimation. Binning is performned in-database, subsequent smoothing in-browser. The distance density uses a log-scaled domain. To change the amount of smoothing, use the slider to set the kernel bandwidth.\n")
 data = vg.data(
@@ -41,12 +41,14 @@ view = vg.vconcat(
         )
 )
 
-spec = vg.spec(meta=meta, data=data, params={
+params = {
     "brush": {
     "select": "crossfilter"
 },
     "bandwidth": 20
-}, view=view)
+}
+
+spec = vg.spec(meta=meta, data=data, params=params, view=view)
 
 if __name__ == "__main__":
     print(json.dumps(spec.to_dict(), sort_keys=True))

@@ -1,20 +1,58 @@
-from mosaic import *
-from mosaic.spec import *
-from mosaic.generated_classes import *
-from typing import Dict, Any, Union
+import json
+import vgplot as vg
 
-
-flights = DataSource(
-    type="parquet",
-    file="data/flights-200k.parquet",
-    where=""
+data = vg.data(
+    flights=vg.parquet("data/flights-200k.parquet")
 )
 
-spec = Plot(
-    plot=[
-        PlotMark(RectY(mark="rectY", data=PlotFrom(from_="flights", filterBy=$brush), x=ChannelValueSpec(ChannelValue({"bin":"delay"})), y=ChannelValueSpec(ChannelValue(count="")), fill=ChannelValueSpec(ChannelValue("steelblue")))),
-        PlotMark()
-    ],
-    width=None,
-    height=200
+view = vg.vconcat(
+    vg.plot(
+            vg.rect_y(data={
+                "from": "flights",
+                "filterBy": "$brush"
+            }, x={
+                "bin": "delay"
+            }, y={
+                "count": ""
+            }, fill="steelblue", inset_left=0.5, inset_right=0.5),
+            {
+                "select": "intervalX",
+                "as": "$brush"
+            },
+            vg.x_domain("Fixed"),
+            vg.x_label("Arrival Delay (min)"),
+            vg.x_label_anchor("center"),
+            vg.y_tick_format("s"),
+            vg.height(200)
+        ),
+    vg.plot(
+            vg.rect_y(data={
+                "from": "flights",
+                "filterBy": "$brush"
+            }, x={
+                "bin": "time"
+            }, y={
+                "count": ""
+            }, fill="steelblue", inset_left=0.5, inset_right=0.5),
+            {
+                "select": "intervalX",
+                "as": "$brush"
+            },
+            vg.x_domain("Fixed"),
+            vg.x_label("Departure Time (hour)"),
+            vg.x_label_anchor("center"),
+            vg.y_tick_format("s"),
+            vg.height(200)
+        )
 )
+
+params = {
+    "brush": {
+    "select": "crossfilter"
+}
+}
+
+spec = vg.spec(data=data, params=params, view=view)
+
+if __name__ == "__main__":
+    print(json.dumps(spec.to_dict(), sort_keys=True))

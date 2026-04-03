@@ -1,20 +1,78 @@
-from mosaic import *
-from mosaic.spec import *
-from mosaic.generated_classes import *
-from typing import Dict, Any, Union
+import json
+import vgplot as vg
 
-
-flights = DataSource(
-    type="parquet",
-    file="data/flights-200k.parquet",
-    where=""
+meta = vg.meta(title="Cross-Filter Flights (200k)", description="Histograms showing arrival delay, departure time, and distance flown for over 200,000 flights. Select a histogram region to cross-filter the charts. Each plot uses an `intervalX` interactor to populate a shared Selection with `crossfilter` resolution.\n")
+data = vg.data(
+    flights=vg.parquet("data/flights-200k.parquet")
 )
 
-spec = Plot(
-    plot=[
-        PlotMark(RectY(mark="rectY", data=PlotFrom(from_="flights", filterBy=$brush), x=ChannelValueSpec(ChannelValue({"bin":"delay"})), y=ChannelValueSpec(ChannelValue(count="")), fill=ChannelValueSpec(ChannelValue("steelblue")))),
-        PlotMark()
-    ],
-    width=600,
-    height=200
+view = vg.vconcat(
+    vg.plot(
+            vg.rect_y(data={
+                "from": "flights",
+                "filterBy": "$brush"
+            }, x={
+                "bin": "delay"
+            }, y={
+                "count": ""
+            }, fill="steelblue", inset_left=0.5, inset_right=0.5),
+            {
+                "select": "intervalX",
+                "as": "$brush"
+            },
+            vg.x_domain("Fixed"),
+            vg.x_label("Arrival Delay (min)"),
+            vg.y_tick_format("s"),
+            vg.width(600),
+            vg.height(200)
+        ),
+    vg.plot(
+            vg.rect_y(data={
+                "from": "flights",
+                "filterBy": "$brush"
+            }, x={
+                "bin": "time"
+            }, y={
+                "count": ""
+            }, fill="steelblue", inset_left=0.5, inset_right=0.5),
+            {
+                "select": "intervalX",
+                "as": "$brush"
+            },
+            vg.x_domain("Fixed"),
+            vg.x_label("Departure Time (hour)"),
+            vg.y_tick_format("s"),
+            vg.width(600),
+            vg.height(200)
+        ),
+    vg.plot(
+            vg.rect_y(data={
+                "from": "flights",
+                "filterBy": "$brush"
+            }, x={
+                "bin": "distance"
+            }, y={
+                "count": ""
+            }, fill="steelblue", inset_left=0.5, inset_right=0.5),
+            {
+                "select": "intervalX",
+                "as": "$brush"
+            },
+            vg.x_domain("Fixed"),
+            vg.x_label("Flight Distance (miles)"),
+            vg.y_tick_format("s"),
+            vg.width(600),
+            vg.height(200)
+        )
 )
+
+params = {
+    "brush": {
+    "select": "crossfilter"
+}
+}
+
+spec = vg.spec(meta=meta, data=data, params=params, view=view)
+
+if __name__ == "__main__":
+    print(json.dumps(spec.to_dict(), sort_keys=True))

@@ -1,5 +1,5 @@
 import json
-import mosaic.vgplot as vg
+import vgplot as vg
 
 meta = vg.meta(title="Mark Types", description="A subset of supported mark types.\n\n- Row 1: `barY`, `lineY`, `text`, `tickY`, `areaY`\n- Row 2: `regressionY`, `hexbin`, `contour`, `heatmap`, `denseLine`\n")
 data = vg.data(
