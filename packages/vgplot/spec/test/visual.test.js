@@ -39,9 +39,28 @@ test.describe('Visual regression tests for JSON specs', () => {
         <body>
           <div id="container"></div>
           <script type="module">
+            import { MosaicClient } from '/packages/mosaic/core/src/index.js';
             import { DuckDBWASMConnector } from '/packages/mosaic/core/src/index.js';
+            import { Plot } from '/packages/vgplot/plot/src/index.js';
             import { parseSpec, astToDOM } from '/packages/vgplot/spec/src/index.js';
             import { createAPIContext } from '/packages/vgplot/vgplot/src/index.js';
+
+            function clientsReady(el) {
+              const clients = [];
+              const queue = [el];
+              while (queue.length) {
+                const node = queue.shift();
+                const value = node.value;
+                if (value instanceof MosaicClient) {
+                  clients.push(value);
+                } else if (value instanceof Plot) {
+                  clients.push(...value.marks);
+                } else {
+                  queue.push(...node.children);
+                }
+              }
+              return Promise.allSettled(clients.map(c => c.pending));
+            }
 
             async function renderSpec() {
               const vg = createAPIContext();
@@ -57,6 +76,7 @@ test.describe('Visual regression tests for JSON specs', () => {
               });
 
               document.getElementById('container').appendChild(element);
+              await clientsReady(element);
               document.body.setAttribute('data-render-complete', 'true');
             }
 
@@ -70,8 +90,8 @@ test.describe('Visual regression tests for JSON specs', () => {
         document.body.hasAttribute('data-render-complete')
       );
 
-      await page.waitForTimeout(1000);  // give mosaic some time to render
-      await expect(page).toHaveScreenshot(`${specName}.png`, { maxDiffPixelRatio: 0.05 });
+      const container = page.locator('#container');
+      await expect(container).toHaveScreenshot(`${specName}.png`, { maxDiffPixelRatio: 0.05 });
     });
   }
 });

@@ -58,25 +58,29 @@ const spec = parse(yaml); // parse yaml to JS objects
 const ast = parseSpec(spec);
 ```
 
-## Developers
+## Visual Tests
 
-To rebuild the playwright snapshots, use docker. On macOS 26+, you can use
+Visual tests use Playwright to render each JSON spec and compare screenshots against stored snapshots. Snapshots must be generated inside a Docker container that matches CI so they are pixel-identical across machines.
+
+Run tests (compare against existing snapshots):
+
+```sh
+bin/visual-test.sh
+```
+
+Update snapshots:
+
+```sh
+bin/visual-test.sh --update
+```
+
+The script uses Docker by default. On macOS you can use the lightweight [Container](https://github.com/nicklockwood/Container) runtime instead:
 
 ```sh
 brew install --cask container
 container system start
+CONTAINER_RUNTIME=container bin/visual-test.sh --update
+container system stop
 ```
 
-Then run this at the Mosaic repo root level.
-
-```sh
-container run --rm -it \
-  -v $(pwd):/workspace \
-  -w /workspace \
-  mcr.microsoft.com/playwright:v1.55.1-noble \
-  bash -c "npm i && npm run test:visual:update -w @uwdata/mosaic-spec"
-```
-
-Run `container system stop` when you are done.
-
-Alternatively, you can remove the snapshots and download them from GitHub. At the end of the `browser` action, the snapshots will be uploaded as an artifact.
+Alternatively, you can download updated snapshots from the `playwright-test-results` artifact uploaded by the `browser` CI job.

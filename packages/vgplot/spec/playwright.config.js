@@ -1,4 +1,4 @@
-import { defineConfig, devices } from '@playwright/test';
+import { defineConfig } from '@playwright/test';
 
 export default defineConfig({
   // Run all tests in parallel.
@@ -12,12 +12,8 @@ export default defineConfig({
 
   testMatch: '**/visual*.test.js',
 
-  use: {
-    viewport: { height: 1280, width: 720 },
-  },
-
   webServer: {
-    command: 'npx vite --port 5173 --host --config vite.config.docker.js',
+    command: 'pnpm exec vite --port 5173 --host --config vite.config.docker.js',
     port: 5173,
     reuseExistingServer: true,
     cwd: '../../../',
