@@ -63,6 +63,7 @@ jobs:
       - name: Install Node dependencies
         run: pnpm install --frozen-lockfile
 
+      - run: pnpm run build
       - run: pnpm -F @uwdata/mosaic-spec test:visual
 
       - name: Upload Playwright results

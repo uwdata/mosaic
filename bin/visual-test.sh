@@ -18,7 +18,7 @@ ARGS+=("$@")
 
 RUNTIME="${CONTAINER_RUNTIME:-docker}"
 
-CMD="corepack enable && pnpm install --frozen-lockfile && pnpm -F @uwdata/mosaic-spec test:visual"
+CMD="corepack enable && pnpm install --frozen-lockfile && pnpm run build && pnpm -F @uwdata/mosaic-spec test:visual"
 for arg in "${ARGS[@]}"; do
   CMD+=" $(printf '%q' "$arg")"
 done
