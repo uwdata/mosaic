@@ -1,21 +1,25 @@
 import { defineConfig } from '@playwright/test';
 
 export default defineConfig({
-  // Run all tests in parallel.
-  fullyParallel: true,
+  workers: 1,
 
   // Retry on CI only.
   retries: process.env.CI ? 2 : 0,
 
-  // Opt out of parallel tests on CI.
-  workers: process.env.CI ? 1 : undefined,
-
   testMatch: '**/visual*.test.js',
 
-  webServer: {
-    command: 'pnpm exec vite --port 5173 --host --config vite.config.docker.js',
-    port: 5173,
-    reuseExistingServer: true,
-    cwd: '../../../',
-  },
+  webServer: [
+    {
+      command: 'pnpm exec vite --port 5173 --host --config vite.config.docker.js',
+      port: 5173,
+      reuseExistingServer: true,
+      cwd: '../../../',
+    },
+    {
+      command: 'node packages/server/duckdb/bin/run-server.js',
+      port: 3000,
+      reuseExistingServer: true,
+      cwd: '../../../',
+    },
+  ],
 });
