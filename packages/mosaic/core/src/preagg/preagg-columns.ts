@@ -35,7 +35,6 @@ export function preaggColumns(client: MosaicClient): PreAggColumnsResult | null 
   const aggrs = new Map<AggregateNode, ExprNode>();
   const preagg: Record<string, ExprNode> = {};
   const output: Record<string, ExprNode> = {};
-  const dims: string[] = []; // selected grouping dimensions
 
   // groupby entries, these may or may not be selected
   const groupby: Record<string, ExprNode> = {};
@@ -47,6 +46,9 @@ export function preaggColumns(client: MosaicClient): PreAggColumnsResult | null 
       groupby[alias] = expr;
     }
   }
+
+  // all group by dimensions, including selected ones.
+  const dims: Set<string> = new Set(Object.keys(groupby));
 
   // generate a scalar subquery for a global average
   const avg = (ref: ColumnRefNode) => {
@@ -64,7 +66,7 @@ export function preaggColumns(client: MosaicClient): PreAggColumnsResult | null 
     const nodes = collectAggregates(expr!);
     if (nodes.length === 0) {
       // if no aggregates, expr is a groupby dimension
-      dims.push(alias);
+      dims.add(alias);
       preagg[alias] = expr;
     } else {
       for (const node of nodes) {
@@ -87,7 +89,7 @@ export function preaggColumns(client: MosaicClient): PreAggColumnsResult | null 
   if (!aggrs.size) return null;
 
   return {
-    dims,
+    dims: Array.from(dims),
     groupby,
     preagg,
     output
