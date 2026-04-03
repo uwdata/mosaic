@@ -39,8 +39,6 @@ class Mark:
             payload["data"] = encode_value(self.data)
         if self.enc:
             for k, v in self.enc.items():
-                if v is None:
-                    continue
                 payload[camelize(k)] = encode_value(v)
         return payload
 
