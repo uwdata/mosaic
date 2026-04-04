@@ -38,6 +38,43 @@ jobs:
       - run: pnpm run build
       - run: pnpm run test
 
+  browser:
+    name: Test in Browser
+
+    runs-on: ubuntu-latest
+    container:
+      image: mcr.microsoft.com/playwright:v1.59.1-noble
+      options: --user 1001
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v5
+
+      - name: Setup node
+        uses: actions/setup-node@v6
+        with:
+          node-version: "22.x"
+          cache: "pnpm"
+          cache-dependency-path: |
+            pnpm-lock.yaml
+
+      - name: Install Node dependencies
+        run: pnpm install --frozen-lockfile
+
+      - run: pnpm run build
+      - run: pnpm -F @uwdata/mosaic-spec test:visual
+
+      - name: Upload Playwright results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: playwright-test-results
+          path: |
+            packages/vgplot/spec/test-results/
+            packages/vgplot/spec/test/visual.test.js-snapshots/
+
   python:
     name: Test in Python
 

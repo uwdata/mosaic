@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <style>
+    body { margin: 0; padding: 20px; font-family: system-ui; background: white; }
+    #container { display: inline-block; }
+  </style>
+</head>
+<body>
+  <div id="container"></div>
+  <script type="module">
+    import { RestConnector } from '/packages/mosaic/core/src/index.js';
+    import { parseSpec, astToDOM } from '/packages/vgplot/spec/src/index.js';
+    import { createAPIContext } from '/packages/vgplot/vgplot/src/index.js';
+
+    window.__renderSpec = async function(specData) {
+      const vg = createAPIContext();
+      const connector = new RestConnector();
+      const coordinator = vg.coordinator();
+      coordinator.databaseConnector(connector);
+
+      const ast = parseSpec(specData);
+      const { element } = await astToDOM(ast, {
+        api: vg,
+        baseURL: window.location.origin + '/'
+      });
+
+      document.getElementById('container').appendChild(element);
+
+      await Promise.allSettled(
+        Array.from(coordinator.clients, c => c.pending)
+      );
+    };
+  </script>
+</body>
+</html>

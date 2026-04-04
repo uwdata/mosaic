@@ -57,3 +57,30 @@ const spec = parse(yaml); // parse yaml to JS objects
 // parse specification to internal AST (abstract syntax tree)
 const ast = parseSpec(spec);
 ```
+
+## Visual Tests
+
+Visual tests use Playwright to render each JSON spec and compare screenshots against stored snapshots. Snapshots must be generated inside a Docker container that matches CI so they are pixel-identical across machines.
+
+Run tests (compare against existing snapshots):
+
+```sh
+bin/visual-test.sh
+```
+
+Update snapshots:
+
+```sh
+bin/visual-test.sh --update
+```
+
+The script uses Docker by default. On macOS you can use the lightweight [Container](https://github.com/nicklockwood/Container) runtime instead:
+
+```sh
+brew install --cask container
+container system start
+CONTAINER_RUNTIME=container bin/visual-test.sh --update
+container system stop
+```
+
+Alternatively, you can download updated snapshots from the `playwright-test-results` artifact uploaded by the `browser` CI job.
