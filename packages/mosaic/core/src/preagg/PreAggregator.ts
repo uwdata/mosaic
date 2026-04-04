@@ -345,7 +345,7 @@ function preaggregateInfo(
   // build materialized view construction query
   query
     .setSelect({ ...groupby, ...preagg, ...columns })
-    .setGroupby(Object.keys(groupby), Object.keys(columns ?? {}));
+    .setGroupby(dims, Object.keys(columns ?? {}));
 
   // ensure active clause columns are selected by subqueries
   const [subq] = query.subqueries;
@@ -364,7 +364,7 @@ function preaggregateInfo(
   const select = QueryBuilder
     .select(dims, output)
     .from(table)
-    .groupby(dims, Object.keys(groupby))
+    .groupby(dims)
     .having(_having)
     .orderby(replaceIndices(_orderby, _select));
 
