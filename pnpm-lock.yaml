@@ -60,13 +60,13 @@ importers:
   packages/examples/svelte-example:
     dependencies:
       '@uwdata/mosaic-core':
-        specifier: workspace:^0.23.0
+        specifier: workspace:^0.23.1
         version: link:../../mosaic/core
       '@uwdata/mosaic-sql':
         specifier: workspace:^0.23.0
         version: link:../../mosaic/sql
       '@uwdata/vgplot':
-        specifier: workspace:^0.23.0
+        specifier: workspace:^0.23.1
         version: link:../../vgplot/vgplot
     devDependencies:
       '@sveltejs/vite-plugin-svelte':
@@ -91,13 +91,13 @@ importers:
   packages/examples/vanilla-example:
     dependencies:
       '@uwdata/mosaic-core':
-        specifier: workspace:^0.23.0
+        specifier: workspace:^0.23.1
         version: link:../../mosaic/core
       '@uwdata/mosaic-sql':
         specifier: workspace:^0.23.0
         version: link:../../mosaic/sql
       '@uwdata/vgplot':
-        specifier: workspace:^0.23.0
+        specifier: workspace:^0.23.1
         version: link:../../vgplot/vgplot
     devDependencies:
       vite:
@@ -107,13 +107,13 @@ importers:
   packages/examples/vega-example:
     dependencies:
       '@uwdata/mosaic-core':
-        specifier: workspace:^0.23.0
+        specifier: workspace:^0.23.1
         version: link:../../mosaic/core
       '@uwdata/mosaic-sql':
         specifier: workspace:^0.23.0
         version: link:../../mosaic/sql
       '@uwdata/vgplot':
-        specifier: workspace:^0.23.0
+        specifier: workspace:^0.23.1
         version: link:../../vgplot/vgplot
       vega:
         specifier: ^6.2.0
@@ -171,7 +171,7 @@ importers:
   packages/vgplot/inputs:
     dependencies:
       '@uwdata/mosaic-core':
-        specifier: workspace:^0.23.0
+        specifier: workspace:^0.23.1
         version: link:../../mosaic/core
       '@uwdata/mosaic-sql':
         specifier: workspace:^0.23.0
@@ -186,7 +186,7 @@ importers:
         specifier: ^2.3.0
         version: 2.3.0
       '@uwdata/mosaic-core':
-        specifier: workspace:^0.23.0
+        specifier: workspace:^0.23.1
         version: link:../../mosaic/core
       '@uwdata/mosaic-sql':
         specifier: workspace:^0.23.0
@@ -198,13 +198,13 @@ importers:
   packages/vgplot/spec:
     dependencies:
       '@uwdata/mosaic-core':
-        specifier: workspace:^0.23.0
+        specifier: workspace:^0.23.1
         version: link:../../mosaic/core
       '@uwdata/mosaic-sql':
         specifier: workspace:^0.23.0
         version: link:../../mosaic/sql
       '@uwdata/vgplot':
-        specifier: workspace:^0.23.0
+        specifier: workspace:^0.23.1
         version: link:../vgplot
       ts-json-schema-generator:
         specifier: ^2.9.0
@@ -213,13 +213,13 @@ importers:
   packages/vgplot/vgplot:
     dependencies:
       '@uwdata/mosaic-core':
-        specifier: workspace:^0.23.0
+        specifier: workspace:^0.23.1
         version: link:../../mosaic/core
       '@uwdata/mosaic-inputs':
-        specifier: workspace:^0.23.0
+        specifier: workspace:^0.23.1
         version: link:../inputs
       '@uwdata/mosaic-plot':
-        specifier: workspace:^0.23.0
+        specifier: workspace:^0.23.1
         version: link:../plot
       '@uwdata/mosaic-sql':
         specifier: workspace:^0.23.0
@@ -228,10 +228,10 @@ importers:
   packages/vgplot/widget:
     dependencies:
       '@uwdata/mosaic-core':
-        specifier: workspace:^0.23.0
+        specifier: workspace:^0.23.1
         version: link:../../mosaic/core
       '@uwdata/mosaic-spec':
-        specifier: workspace:^0.23.0
+        specifier: workspace:^0.23.1
         version: link:../spec
       uuid:
         specifier: ^13.0.0
