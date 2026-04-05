@@ -39,12 +39,12 @@
     "prepublishOnly": "pnpm run test && pnpm run lint && tsc --build"
   },
   "dependencies": {
-    "@duckdb/node-api": "~1.4.4-r.3",
+    "@duckdb/node-api": "~1.5.1-r.1",
     "@uwdata/mosaic-sql": "workspace:^0.23.0",
     "ws": "^8.20.0"
   },
   "devDependencies": {
-    "@types/node": "^25.5.0",
+    "@types/node": "^25.5.2",
     "@uwdata/flechette": "^2.3.0"
   }
 }
