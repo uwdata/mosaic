@@ -28,16 +28,22 @@ jobs:
         with:
           fetch-depth: 0
 
-      - uses: actions/setup-node@v6
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v5
+
+      - name: Setup node
+        uses: actions/setup-node@v6
         with:
           node-version: "22.x"
-          cache: "npm"
+          cache: "pnpm"
+          cache-dependency-path: |
+            pnpm-lock.yaml
 
       - name: Install Node dependencies
-        run: npm ci
+        run: pnpm install --frozen-lockfile
 
       - name: Build
-        run: npm run docs:build
+        run: pnpm run docs:build
 
       - uses: actions/configure-pages@v6
       - uses: actions/upload-pages-artifact@v4

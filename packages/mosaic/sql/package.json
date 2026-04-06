@@ -1,6 +1,6 @@
 {
   "name": "@uwdata/mosaic-sql",
-  "version": "0.22.0",
+  "version": "0.23.0",
   "description": "SQL query construction and analysis.",
   "keywords": [
     "sql",
@@ -27,6 +27,6 @@
     "clean": "rimraf dist && mkdir dist",
     "lint": "eslint src test",
     "test": "vitest run",
-    "prepublishOnly": "npm run test && npm run lint && tsc --build"
+    "prepublishOnly": "pnpm run test && pnpm run lint && tsc --build"
   }
 }

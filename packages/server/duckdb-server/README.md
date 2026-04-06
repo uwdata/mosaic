@@ -22,7 +22,7 @@ We use [uv](https://docs.astral.sh/uv/) to manage our development setup.
 
 Start the server with `uv run duckdb-server`. The server will not restart when the code changes.
 
-Start the server in development with `npm run dev`. The server restarts when you change the code.
+Start the server in development with `pnpm dev`. The server restarts when you change the code.
 
 Run `uv run ruff check --fix` and `uv run ruff format` to lint the code.
 

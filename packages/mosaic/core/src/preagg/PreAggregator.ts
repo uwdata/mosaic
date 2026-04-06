@@ -1,4 +1,4 @@
-import { ExprNode, ScaleOptions, SelectQuery, Query, ExprValue, MaybeArray, FunctionNode, BetweenOpNode, AndNode, TableRefNode, createSchema } from '@uwdata/mosaic-sql';
+import { ExprNode, ScaleOptions, SelectQuery, Query, ExprValue, MaybeArray, FunctionNode, BetweenOpNode, AndNode, TableRefNode, createSchema, SelectClauseNode, LiteralNode, OrderByNode } from '@uwdata/mosaic-sql';
 import type { Coordinator } from '../Coordinator.js';
 import type { MosaicClient } from '../MosaicClient.js';
 import type { Selection } from '../Selection.js';
@@ -328,7 +328,7 @@ function binInterval(
  * @returns Pre-aggregation information.
  */
 function preaggregateInfo(
-  clientQuery: SelectQuery,
+  query: SelectQuery,
   active: ActiveColumnsResult,
   preaggCols: PreAggColumnsResult,
   schema: string
@@ -336,10 +336,16 @@ function preaggregateInfo(
   const { dims, groupby, output, preagg } = preaggCols;
   const { columns } = active;
 
+  // push any having or orderby criteria to output queries
+  // note: mutates the construction query
+  const { _select, _having, _orderby } = query;
+  query._having = [];
+  query._orderby = [];
+
   // build materialized view construction query
-  const query = clientQuery
+  query
     .setSelect({ ...groupby, ...preagg, ...columns })
-    .groupby(Object.keys(columns ?? {}));
+    .setGroupby(dims, Object.keys(columns ?? {}));
 
   // ensure active clause columns are selected by subqueries
   const [subq] = query.subqueries;
@@ -348,12 +354,6 @@ function preaggregateInfo(
       .flatMap(c => collectColumns(c).map(c => c.column));
     subqueryPushdown(subq, cols);
   }
-
-  // push any having or orderby criteria to output queries
-  const having = query._having;
-  const order = query._orderby;
-  query._having = [];
-  query._orderby = [];
 
   // generate creation query and hash id
   const create = query;
@@ -364,11 +364,39 @@ function preaggregateInfo(
   const select = QueryBuilder
     .select(dims, output)
     .from(table)
-    .groupby(dims, Object.keys(groupby))
-    .having(having)
-    .orderby(order);
+    .groupby(dims)
+    .having(_having)
+    .orderby(replaceIndices(_orderby, _select));
 
   return new PreAggregateInfo({ table, create, active, select });
+}
+
+/**
+ * Replace column index references with named column expressions.
+ * @param exprs A list of expressions to check and potentially replace.
+ * @param select Select clauses from the query.
+ */
+function replaceIndices(exprs: ExprNode[], select: SelectClauseNode[]) {
+  return exprs.flatMap(expr => {
+    if (expr.type === "ORDER_BY") {
+      const e = (expr as OrderByNode).expr;
+      if (e.type === "LITERAL") {
+        const ref = select[(e as LiteralNode).value as number - 1];
+        if (ref) {
+          const cloned = expr.clone();
+          // @ts-expect-error assign to cloned order by node
+          cloned.expr = asNode(ref.alias);
+          return cloned
+        } else {
+          return [];
+        }
+      }
+    } else if (expr.type === "LITERAL") {
+      const ref = select[(expr as LiteralNode).value as number - 1];
+      return ref ? asNode(ref.alias) : [];
+    }
+    return expr;
+  });
 }
 
 /**

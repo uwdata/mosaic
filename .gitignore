@@ -16,6 +16,7 @@ node_modules
 **/.coverage
 **/.venv
 **/tsconfig.tsbuildinfo
+packages/server/duckdb-server-go/duckdb-server-go
 transitionFolder
 
 # Virtual environment

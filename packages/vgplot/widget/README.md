@@ -12,7 +12,7 @@ We use [uv](https://docs.astral.sh/uv/) to manage our development setup.
 
 You can start Jupyter with `ANYWIDGET_HMR=1 uv run jupyter lab --notebook-dir=../../../dev/notebooks`.
 
-Run `npm run build` to build the widget JavaScript code. If you want to live edit the widget code, run `npm run dev` in a separate terminal.
+Run `pnpm build` to build the widget JavaScript code. If you want to live edit the widget code, run `pnpm dev` in a separate terminal.
 
 Run `uv run ruff check --fix` and `uv run ruff format` to lint the code.
 

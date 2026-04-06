@@ -1,0 +1,5 @@
+packages:
+  - "packages/mosaic/*"
+  - "packages/server/*"
+  - "packages/vgplot/*"
+  - "packages/examples/*"

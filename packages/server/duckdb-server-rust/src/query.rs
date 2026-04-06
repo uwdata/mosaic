@@ -9,7 +9,7 @@ pub async fn handle(state: &AppState, params: QueryParams) -> Result<QueryRespon
     match command {
         Some(Command::Arrow) => {
             if let Some(sql) = params.sql.as_deref() {
-                let persist = params.persist.unwrap_or(true);
+                let persist = params.persist.unwrap_or(false);
                 let buffer = retrieve(&state.cache, sql, &Command::Arrow, persist, || {
                     state.db.get_arrow(sql)
                 })
@@ -29,7 +29,7 @@ pub async fn handle(state: &AppState, params: QueryParams) -> Result<QueryRespon
         }
         Some(Command::Json) => {
             if let Some(sql) = params.sql.as_deref() {
-                let persist = params.persist.unwrap_or(true);
+                let persist = params.persist.unwrap_or(false);
                 let json: Vec<u8> = retrieve(&state.cache, sql, &Command::Json, persist, || {
                     state.db.get_json(sql)
                 })
