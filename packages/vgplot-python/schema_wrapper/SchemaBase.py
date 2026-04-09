@@ -23,9 +23,6 @@ class SchemaBase:
             val_as_dict = str(value)  # Default value
 
             if isinstance(value, dict):
-                # if len(value.keys()) == 1:
-                #    val_as_dict = _todict(list(value.values())[0], keep_none_values)
-                # else:
                 val_as_dict = {
                     revert_validation(k): _todict(v, keep_none_values)
                     for k, v in value.items()
