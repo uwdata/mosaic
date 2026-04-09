@@ -32,12 +32,10 @@ export class MosaicClient {
   _pending: Promise<unknown>;
   _enabled: boolean;
   /**
-   * Initialization state. One of:
-   *  - `0` uninitialized
-   *  - `-1` preparing
-   *  - `1` initialized
+   * Initialization state. One of `0` (uninitialized), `-1` (preparing),
+   * or `1` (initialized).
    */
-  _initialized: number;
+  _initialized: -1 | 0 | 1;
   _request: Query | boolean | null;
 
   /**
