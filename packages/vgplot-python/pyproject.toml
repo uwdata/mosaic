@@ -1,6 +1,6 @@
 [project]
 name = "vgplot"
-version = "0.1.0"
+dynamic = ["version"]
 description = "Schema wrapper classes for Mosaic"
 readme = "README.md"
 requires-python = ">=3.9"
@@ -21,17 +21,21 @@ build-backend = "hatchling.build"
 
 [dependency-groups]
 dev = [
-    "jupyterlab>=4.2.5",
-    "mypy>=1.11.1",
-    "pytest>=7.4.4",
+    "jupyterlab",
+    "mypy",
+    "pytest",
     "pytest-cov",
-    "ruff>=0.6.1",
+    "ruff",
     "pandas",
     "mosaic-widget"
 ]
 
 [tool.uv.sources]
 "mosaic-widget" = { workspace = true }
+
+[tool.hatch.version]
+path = "package.json"
+pattern = "\"version\": \"(?P<version>.+?)\""
 
 [tool.hatch.build.targets.wheel]
 packages = ["api", "schema_wrapper"]
