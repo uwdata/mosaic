@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { SocketConnector } from './connectors/socket.js';
 import { type Connector } from './connectors/Connector.js';
-import { PreAggregator, type PreAggregateOptions } from './preagg/PreAggregator.js';
+import { PreAggregator, type PreAggregateInfo, type PreAggregateOptions } from './preagg/PreAggregator.js';
 import { voidLogger } from './util/void-logger.js';
 import { QueryManager, Priority } from './QueryManager.js';
 import { type Selection } from './Selection.js';
@@ -381,16 +381,22 @@ function updateSelection(
   const { preaggregator, filterGroups } = mc;
   const { clients } = filterGroups!.get(selection)!;
   const { active } = selection;
-  return Promise.allSettled(Array.from(clients, (client: MosaicClient) => {
+  return Promise.allSettled(Array.from(clients, async (client: MosaicClient) => {
+    // if client is not enabled, register a request for later
     if (!client.enabled) return client.requestQuery();
+
+    // if client is initializing, wait for it to complete
+    if (!client.initialized) await client.pending;
+
+    // check if we can handle selection update via preaggregation
     const info = preaggregator.request(client, selection, active);
     const filter = info ? null : selection.predicate(client);
 
     // skip due to cross-filtering
     if (info?.skip || (!info && !filter)) return;
 
-    // @ts-expect-error FIXME
-    const query = info?.query(active.predicate) ?? client.query(filter);
+    // generate and issue update query    
+    const query = (info as PreAggregateInfo)?.query(active.predicate!) ?? client.query(filter);
     return mc.updateClient(client, query);
   }));
 }

@@ -31,7 +31,13 @@ export class MosaicClient {
   _coordinator: Coordinator | null;
   _pending: Promise<unknown>;
   _enabled: boolean;
-  _initialized: boolean;
+  /**
+   * Initialization state. One of:
+   *  - `0` uninitialized
+   *  - `-1` preparing
+   *  - `1` initialized
+   */
+  _initialized: number;
   _request: Query | boolean | null;
 
   /**
@@ -46,7 +52,7 @@ export class MosaicClient {
     this._coordinator = null;
     this._pending = Promise.resolve();
     this._enabled = true;
-    this._initialized = false;
+    this._initialized = 0;
     this._request = null;
   }
 
@@ -69,6 +75,14 @@ export class MosaicClient {
    */
   get enabled(): boolean {
     return this._enabled;
+  }
+
+  /**
+   * Return this client's initialization state:
+   * `true` if initialization is complete, `false` otherwise.
+   */
+  get initialized(): boolean {
+    return this._initialized > 0;
   }
 
   /**
@@ -203,11 +217,14 @@ export class MosaicClient {
   initialize(): void {
     if (!this._enabled) {
       // clear flag so we initialize when enabled again
-      this._initialized = false;
+      this._initialized = 0;
     } else if (this._coordinator) {
       // if connected, let's initialize
-      this._initialized = true;
-      this._pending = this.prepare().then(() => this.requestQuery());
+      this._initialized = -1;
+      this._pending = this.prepare().then(() => {
+        this._initialized = 1;
+        return this.requestQuery();
+      });
     }
   }
 
