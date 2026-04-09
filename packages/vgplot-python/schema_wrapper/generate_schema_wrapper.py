@@ -1,11 +1,12 @@
 import json
-from typing import Any, Dict, List, Final
+from typing import Any, Dict, List
 from pathlib import Path
+from importlib.metadata import version
 import graphlib
 from schema_wrapper.utils import get_valid_identifier, get_dependencies
 
 
-SCHEMA_VERSION: Final = "v0.21.1"
+SCHEMA_VERSION = "v" + version("vgplot")
 KNOWN_PRIMITIVES = {
     "string": "str",
     "boolean": "bool",
