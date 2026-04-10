@@ -1,6 +1,6 @@
 {
   "name": "@uwdata/mosaic-spec",
-  "version": "0.24.0",
+  "version": "0.24.1",
   "description": "Declarative specification of Mosaic-powered applications.",
   "keywords": [
     "mosaic",
