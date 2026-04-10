@@ -1,6 +1,6 @@
 {
   "name": "@uwdata/mosaic-spec",
-  "version": "0.23.1",
+  "version": "0.24.0",
   "description": "Declarative specification of Mosaic-powered applications.",
   "keywords": [
     "mosaic",
@@ -37,9 +37,9 @@
     "prepublishOnly": "pnpm run test && pnpm run lint && pnpm run build"
   },
   "dependencies": {
-    "@uwdata/mosaic-core": "workspace:^0.23.1",
-    "@uwdata/mosaic-sql": "workspace:^0.23.0",
-    "@uwdata/vgplot": "workspace:^0.23.1",
+    "@uwdata/mosaic-core": "workspace:^0.24.0",
+    "@uwdata/mosaic-sql": "workspace:^0.24.0",
+    "@uwdata/vgplot": "workspace:^0.24.0",
     "ts-json-schema-generator": "^2.9.0"
   }
 }

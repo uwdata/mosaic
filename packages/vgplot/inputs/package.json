@@ -1,6 +1,6 @@
 {
   "name": "@uwdata/mosaic-inputs",
-  "version": "0.23.1",
+  "version": "0.24.0",
   "description": "Mosaic input components.",
   "keywords": [
     "inputs",
@@ -30,7 +30,7 @@
     "prepublishOnly": "pnpm run test && pnpm run lint && tsc --build"
   },
   "dependencies": {
-    "@uwdata/mosaic-core": "workspace:^0.23.1",
-    "@uwdata/mosaic-sql": "workspace:^0.23.0"
+    "@uwdata/mosaic-core": "workspace:^0.24.0",
+    "@uwdata/mosaic-sql": "workspace:^0.24.0"
   }
 }
