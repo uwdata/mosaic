@@ -19,8 +19,8 @@
     "release": "uv build && uvx twine upload --skip-existing ../../../dist/mosaic_widget*"
   },
   "dependencies": {
-    "@uwdata/mosaic-core": "workspace:^0.24.0",
-    "@uwdata/mosaic-spec": "workspace:^0.24.0",
+    "@uwdata/mosaic-core": "workspace:^",
+    "@uwdata/mosaic-spec": "workspace:^",
     "uuid": "^13.0.0"
   },
   "devDependencies": {
