@@ -15,7 +15,7 @@ describe('Query', () => {
     expect(
       Query
         .select('foo', 'bar', 'baz')
-        .from(asTableRef('data'))
+        .from(asTableRef('data')!)
         .toString()
     ).toBe(query);
 
@@ -572,4 +572,19 @@ describe('Query', () => {
     );
     expect(Query.describe(u).toString()).toBe(`DESC ${u}`);
   });
+
+  it('is cloneable', () => {
+    const q = Query
+      .with({
+        cte: Query.select('foo', 'bar', 'baz').from('source')
+      })
+      .select('foo')
+      .from('cte')
+      .groupby('bar')
+      .orderby('baz')
+      .limit(10);
+    const c = q.clone();
+    expect(c).not.toBe(q);
+    expect(c.toString()).toBe(q.toString());
+  })
 });

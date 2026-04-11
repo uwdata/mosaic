@@ -217,6 +217,15 @@ export class Query extends ExprNode {
   }
 
   /**
+   * Set ORDER BY expressions, replacing any prior expressions.
+   * @param expr Expressions to add.
+   */
+  setOrderby(...expr: OrderByExpr[]): this {
+    this._orderby = [];
+    return this.orderby(...expr);
+  }
+
+  /**
    * Set the query result LIMIT as a percentage value.
    * @param value The limit percentage value.
    */
@@ -452,11 +461,17 @@ export class SelectQuery extends Query {
    * Add WINDOW definitions.
    * @param expr Window definitions to add.
    */
-  window(...expr: (Record<string, WindowDefNode> | null)[]): this {
+  window(...expr: (Record<string, WindowDefNode> | WindowClauseNode | WindowClauseNode[] | null)[]): this {
     const list: WindowClauseNode[] = [];
     expr.flat().forEach(e => {
-      if (e != null) for (const name in e) {
-        list.push(new WindowClauseNode(unquote(name)!, e[name]));
+      if (e == null) {
+        return;
+      } else if (e instanceof WindowClauseNode) {
+        list.push(e);
+      } else {
+        for (const name in e) {
+          list.push(new WindowClauseNode(unquote(name)!, e[name]));
+        }
       }
     });
     this._window = this._window.concat(list);
