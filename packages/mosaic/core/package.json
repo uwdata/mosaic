@@ -33,7 +33,7 @@
   },
   "dependencies": {
     "@duckdb/duckdb-wasm": "1.33.1-dev42.0",
-    "@uwdata/flechette": "^2.3.0",
+    "@uwdata/flechette": "^2.4.0",
     "@uwdata/mosaic-sql": "workspace:^"
   },
   "devDependencies": {
