@@ -34,7 +34,7 @@
   },
   "dependencies": {
     "@observablehq/plot": "^0.6.17",
-    "@uwdata/flechette": "^2.3.0",
+    "@uwdata/flechette": "^2.4.0",
     "@uwdata/mosaic-core": "workspace:^",
     "@uwdata/mosaic-sql": "workspace:^",
     "d3": "^7.9.0"
