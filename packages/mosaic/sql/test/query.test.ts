@@ -427,7 +427,7 @@ describe('Query', () => {
       Query
         .select('*')
         .from(new FromClauseNode(
-          asTableRef('foo'), 'foo', new SampleClauseNode(10, true)
+          asTableRef('foo')!, 'foo', new SampleClauseNode(10, true)
         ))
         .toString()
     ).toBe('SELECT * FROM "foo" TABLESAMPLE (10%)');
@@ -455,6 +455,7 @@ describe('Query', () => {
       Query
         .select({ lead: lead('foo').over('win') })
         .from('data')
+        // @ts-expect-error raw sql
         .window({ win: sql`(ORDER BY "foo" ASC)` })
         .toString()
     ).toBe('SELECT lead("foo") OVER "win" AS "lead" FROM "data" WINDOW "win" AS (ORDER BY "foo" ASC)');
