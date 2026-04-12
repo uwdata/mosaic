@@ -1,10 +1,11 @@
 import { describe, it, expect } from 'vitest';
+import type { CreateQuery, ExprNode, FilterExpr } from "@uwdata/mosaic-sql";
 import { Query, add, argmax, argmin, avg, corr, count, covarPop, covariance, desc, geomean, gt, isNotDistinct, literal, loadObjects, max, min, mul, product, regrAvgX, regrAvgY, regrCount, regrIntercept, regrR2, regrSXX, regrSXY, regrSYY, regrSlope, stddev, stddevPop, sum, varPop, variance } from '@uwdata/mosaic-sql';
 import { Coordinator, Selection, SelectionClause } from '../src/index.js';
 import { NodeConnector } from './util/node-connector.js';
 import { TestClient } from './util/test-client.js';
 
-async function setup(loadQuery: string) {
+async function setup(loadQuery: CreateQuery) {
   const mc = new Coordinator(await NodeConnector.make(), {
     logger: null,
     cache: false,
@@ -15,14 +16,15 @@ async function setup(loadQuery: string) {
 }
 
 type Datum = { measure: number };
+type RunMeasure = ExprNode | ((predicate?: FilterExpr) => Query);
 
-async function run(measure): Promise<[number, boolean]> {
+async function run(measure: RunMeasure): Promise<[number, boolean]> {
   const loadQuery = loadObjects('testData', [
-    { dim: 'a', x: 1, y: 9 },
-    { dim: 'a', x: 2, y: 8 },
-    { dim: 'b', x: 3, y: 7 },
-    { dim: 'b', x: 4, y: 6 },
-    { dim: 'b', x: null, y: null }
+    { dim: 'a', order: 1, x: 1, y: 9 },
+    { dim: 'a', order: 2, x: 2, y: 8 },
+    { dim: 'b', order: 1, x: 3, y: 7 },
+    { dim: 'b', order: 2, x: 4, y: 6 },
+    { dim: 'b', order: 3, x: null, y: null }
   ]);
   const mc = await setup(loadQuery);
   const sel = Selection.single({ cross: true });
@@ -39,7 +41,7 @@ async function run(measure): Promise<[number, boolean]> {
         if (iter) {
           resolve([
             (Array.from(data as Iterable<Datum>))[0].measure, // query result
-            !!mc.preaggregator.entries.get(this) // optimized?
+            !!mc.preaggregator.entries.get(client) // optimized?
           ]);
         }
         ++iter;
@@ -69,7 +71,7 @@ describe('PreAggregator', () => {
   });
 
   it('supports empty count aggregate', async () => {
-    const query = (predicate = []) => {
+    const query = (predicate: FilterExpr = []) => {
       return Query.from('testData')
         .select({ measure: count() })
         .where(predicate, false);
@@ -171,7 +173,7 @@ describe('PreAggregator', () => {
   });
 
   it('supports subqueries with aggregates', async () => {
-    const query = (predicate = []) => {
+    const query = (predicate: FilterExpr = []) => {
       const counts = Query.from('testData')
         .select({ item: 'x', freq: count() })
         .groupby('x')
@@ -182,7 +184,7 @@ describe('PreAggregator', () => {
     };
     expect(await run(query)).toStrictEqual([6, true]);
 
-    const queryNoGroup = (predicate = []) => {
+    const queryNoGroup = (predicate: FilterExpr = []) => {
       const counts = Query.from('testData')
         .select({ freq: count() })
         .where(predicate);
@@ -194,7 +196,7 @@ describe('PreAggregator', () => {
   });
 
   it('supports queries with column index references', async () => {
-    const query = (predicate = []) => {
+    const query = (predicate: FilterExpr = []) => {
       return Query.from('testData')
         .select({ measure: avg("x"), dim: "dim" })
         .groupby(literal(2))
@@ -202,5 +204,16 @@ describe('PreAggregator', () => {
         .orderby(desc(literal(1)))
     };
     expect(await run(query)).toStrictEqual([3.5, true]);
+  });
+
+  it('supports queries with window functions with aggregate inputs', async () => {
+    const query = (predicate: FilterExpr = []) => {
+      return Query.from('testData')
+        .select({ measure: sum(sum('y')).orderby('order') })
+        .groupby('dim', 'order')
+        .where(predicate)
+        .qualify(gt('measure', 7));
+    };
+    expect(await run(query)).toStrictEqual([13, true]);
   });
 });

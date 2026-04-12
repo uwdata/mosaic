@@ -1,5 +1,5 @@
 import { expect, describe, it } from 'vitest';
-import { abs, add, asVerbatim, collectColumns, collectParams, column, count, isAggregateExpression, sql } from '../src/index.js';
+import { abs, add, asVerbatim, collectColumns, collectParams, column, count, isAggregateExpression, sql, sum } from '../src/index.js';
 import { stubParam } from './util/stub-param.js';
 
 describe('Visitor functions', () => {
@@ -39,5 +39,7 @@ describe('Visitor functions', () => {
     expect(isAggregateExpression(asVerbatim('count(*) OVER (ORDER BY a)'))).toBe(0);
     expect(isAggregateExpression(sql`count(*) OVER (ORDER BY a)`)).toBe(0);
     expect(isAggregateExpression(sql`count(${column('a')}) OVER (ORDER BY a)`)).toBe(0);
+
+    expect(isAggregateExpression(sum(sum('foo')).orderby('a'))).toBe(1);
   });
 });
