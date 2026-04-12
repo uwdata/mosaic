@@ -27,8 +27,8 @@ export class ConnectedMark extends Mark {
     const { field, as, type, count, min, max } = this.channelField(dim);
     const isContinuous = type === 'date' || type === 'number';
 
-    const plot_size = dim === 'x' ? plot.innerWidth() : plot.innerHeight();
-    const size = Math.ceil(plot_size * (globalThis.devicePixelRatio || 1))
+    const plotSize = dim === 'x' ? plot.innerWidth() : plot.innerHeight();
+    const size = Math.ceil(plotSize * (globalThis.devicePixelRatio || 1))
 
     optimize ??= (count / size) > 10; // threshold for applying M4
 
