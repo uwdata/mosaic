@@ -1,7 +1,7 @@
 {
   "name": "mosaic-vega-example",
   "private": true,
-  "version": "0.23.1",
+  "version": "0.24.2",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -9,12 +9,12 @@
     "preview": "vite preview"
   },
   "devDependencies": {
-    "vite": "^8.0.3"
+    "vite": "^8.0.8"
   },
   "dependencies": {
-    "@uwdata/mosaic-core": "workspace:^0.23.1",
-    "@uwdata/mosaic-sql": "workspace:^0.23.0",
-    "@uwdata/vgplot": "workspace:^0.23.1",
+    "@uwdata/mosaic-core": "workspace:^",
+    "@uwdata/mosaic-sql": "workspace:^",
+    "@uwdata/vgplot": "workspace:^",
     "vega": "^6.2.0",
     "vega-embed": "^7.1.0",
     "vega-lite": "^6.4.2"

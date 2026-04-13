@@ -45,7 +45,7 @@ import {
   isNode,
   isQuery,
   isTableRef
-} from '../../index.js';
+} from '../../ast/index.js';
 import { quoteIdentifier } from '../../util/string.js';
 import { literalToSQL } from '../../ast/literal.js';
 import { SQLCodeGenerator } from './sql.js';

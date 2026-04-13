@@ -8,6 +8,9 @@ function extractField(field) {
     } else if (field.type === 'AGGREGATE') {
       // @ts-ignore
       return field.args[0] ?? field;
+    } else if (field.type === 'CUSTOM' && "column" in field) {
+      // handle custom transforms (like bin) that expose a column
+      return field.column;
     }
   }
   return field;

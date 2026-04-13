@@ -15,7 +15,7 @@ describe('Query', () => {
     expect(
       Query
         .select('foo', 'bar', 'baz')
-        .from(asTableRef('data'))
+        .from(asTableRef('data')!)
         .toString()
     ).toBe(query);
 
@@ -427,7 +427,7 @@ describe('Query', () => {
       Query
         .select('*')
         .from(new FromClauseNode(
-          asTableRef('foo'), 'foo', new SampleClauseNode(10, true)
+          asTableRef('foo')!, 'foo', new SampleClauseNode(10, true)
         ))
         .toString()
     ).toBe('SELECT * FROM "foo" TABLESAMPLE (10%)');
@@ -455,6 +455,7 @@ describe('Query', () => {
       Query
         .select({ lead: lead('foo').over('win') })
         .from('data')
+        // @ts-expect-error raw sql
         .window({ win: sql`(ORDER BY "foo" ASC)` })
         .toString()
     ).toBe('SELECT lead("foo") OVER "win" AS "lead" FROM "data" WINDOW "win" AS (ORDER BY "foo" ASC)');
@@ -572,4 +573,19 @@ describe('Query', () => {
     );
     expect(Query.describe(u).toString()).toBe(`DESC ${u}`);
   });
+
+  it('is cloneable', () => {
+    const q = Query
+      .with({
+        cte: Query.select('foo', 'bar', 'baz').from('source')
+      })
+      .select('foo')
+      .from('cte')
+      .groupby('bar')
+      .orderby('baz')
+      .limit(10);
+    const c = q.clone();
+    expect(c).not.toBe(q);
+    expect(c.toString()).toBe(q.toString());
+  })
 });

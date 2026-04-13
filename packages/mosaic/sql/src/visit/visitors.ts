@@ -31,11 +31,10 @@ function hasVerbatimAggregate(s: string) {
  */
 export function isAggregateExpression(root: SQLNode) {
   let agg = 0;
-  walk(root, (node) => {
+  walk(root, (node, parent) => {
     switch (node.type) {
-      case WINDOW:
-        return -1; // aggs can't include windows
       case AGGREGATE:
+        if (parent?.type === WINDOW) break;
         agg |= 1;
         return -1;
       case FRAGMENT:
@@ -65,8 +64,8 @@ export function isAggregateExpression(root: SQLNode) {
  */
 export function collectAggregates(root: SQLNode) {
   const aggs = new Set<AggregateNode>();
-  walk(root, (node) => {
-    if (node.type === AGGREGATE) {
+  walk(root, (node, parent) => {
+    if (node.type === AGGREGATE && parent?.type !== WINDOW) {
       aggs.add(node as AggregateNode);
     }
   });

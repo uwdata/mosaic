@@ -1,7 +1,7 @@
 {
   "name": "mosaic-svelte-example",
   "private": true,
-  "version": "0.23.1",
+  "version": "0.24.2",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -11,14 +11,14 @@
   "devDependencies": {
     "@sveltejs/vite-plugin-svelte": "^7.0.0",
     "@vitejs/plugin-react": "^6.0.1",
-    "react": "^19.2.4",
-    "react-dom": "^19.2.4",
-    "svelte": "^5.55.1",
-    "vite": "^8.0.3"
+    "react": "^19.2.5",
+    "react-dom": "^19.2.5",
+    "svelte": "^5.55.3",
+    "vite": "^8.0.8"
   },
   "dependencies": {
-    "@uwdata/mosaic-core": "workspace:^0.23.1",
-    "@uwdata/mosaic-sql": "workspace:^0.23.0",
-    "@uwdata/vgplot": "workspace:^0.23.1"
+    "@uwdata/mosaic-core": "workspace:^",
+    "@uwdata/mosaic-sql": "workspace:^",
+    "@uwdata/vgplot": "workspace:^"
   }
 }

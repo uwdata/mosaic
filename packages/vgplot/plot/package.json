@@ -1,6 +1,6 @@
 {
   "name": "@uwdata/mosaic-plot",
-  "version": "0.23.1",
+  "version": "0.24.2",
   "description": "A Mosaic-powered plotting framework based on Observable Plot.",
   "keywords": [
     "data",
@@ -34,9 +34,9 @@
   },
   "dependencies": {
     "@observablehq/plot": "^0.6.17",
-    "@uwdata/flechette": "^2.3.0",
-    "@uwdata/mosaic-core": "workspace:^0.23.1",
-    "@uwdata/mosaic-sql": "workspace:^0.23.0",
+    "@uwdata/flechette": "^2.4.0",
+    "@uwdata/mosaic-core": "workspace:^",
+    "@uwdata/mosaic-sql": "workspace:^",
     "d3": "^7.9.0"
   }
 }

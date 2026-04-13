@@ -1,11 +1,10 @@
-import { ExprNode, ScaleOptions, SelectQuery, Query, ExprValue, MaybeArray, FunctionNode, BetweenOpNode, AndNode, TableRefNode, createSchema, SelectClauseNode, LiteralNode, OrderByNode } from '@uwdata/mosaic-sql';
+import { ExprNode, ScaleOptions, SelectQuery, Query, ExprValue, MaybeArray, FunctionNode, BetweenOpNode, AndNode, TableRefNode, createSchema, SelectClauseNode, LiteralNode, OrderByNode, and, asNode, ceil, collectColumns, createTable, float64, floor, isBetween, int32, mul, round, scaleTransform, sub, isSelectQuery, isAggregateExpression, ColumnNameRefNode } from '@uwdata/mosaic-sql';
 import type { Coordinator } from '../Coordinator.js';
 import type { MosaicClient } from '../MosaicClient.js';
 import type { Selection } from '../Selection.js';
 import type { BinMethod, ClauseSource, IntervalMetadata, SelectionClause } from '../SelectionClause.js';
-import { Query as QueryBuilder, and, asNode, ceil, collectColumns, createTable, float64, floor, isBetween, int32, mul, round, scaleTransform, sub, isSelectQuery, isAggregateExpression, ColumnNameRefNode } from '@uwdata/mosaic-sql';
-import { preaggColumns, PreAggColumnsResult } from './preagg-columns.js';
 import { fnv_hash } from '../util/hash.js';
+import { preaggColumns, PreAggColumnsResult } from './preagg-columns.js';
 
 const Skip = { skip: true, result: null };
 
@@ -334,39 +333,39 @@ function preaggregateInfo(
   schema: string
 ): PreAggregateInfo {
   const { dims, groupby, output, preagg } = preaggCols;
-  const { columns } = active;
-
-  // push any having or orderby criteria to output queries
-  // note: mutates the construction query
-  const { _select, _having, _orderby } = query;
-  query._having = [];
-  query._orderby = [];
+  const { columns = {} } = active;
 
   // build materialized view construction query
-  query
-    .setSelect({ ...groupby, ...preagg, ...columns })
-    .setGroupby(dims, Object.keys(columns ?? {}));
+  const create = Query
+    .from(query._from)
+    .with(query._with)
+    .sample(query._sample)
+    .where(query._where)
+    .select({ ...groupby, ...preagg, ...columns })
+    .groupby(dims, Object.keys(columns));
 
   // ensure active clause columns are selected by subqueries
-  const [subq] = query.subqueries;
+  const [subq] = create.subqueries;
   if (subq) {
-    const cols = Object.values(columns!)
+    const cols = Object.values(columns)
       .flatMap(c => collectColumns(c).map(c => c.column));
     subqueryPushdown(subq, cols);
   }
 
-  // generate creation query and hash id
-  const create = query;
+  // generate preagg table name using creation query hash
   const id = (fnv_hash(create.toString()) >>> 0).toString(16);
   const table = new TableRefNode([schema, `preagg_${id}`]);
 
-  // generate preaggregate select query
-  const select = QueryBuilder
-    .select(dims, output)
-    .from(table)
-    .groupby(dims)
-    .having(_having)
-    .orderby(replaceIndices(_orderby, _select));
+  // generate preaggregate select query from original query
+  // replace select, from, groupby; sanitize orderby; remove CTEs, where
+  const select = query.clone()
+    .setSelect(dims, output)
+    .setFrom(table)
+    .setGroupby(dims)
+    .setOrderby(replaceIndices(query._orderby, query._select))
+    .sample(null);
+  select._with = [];
+  select.setWhere();
 
   return new PreAggregateInfo({ table, create, active, select });
 }
