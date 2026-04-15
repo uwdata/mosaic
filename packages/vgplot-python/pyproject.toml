@@ -1,7 +1,7 @@
 [project]
 name = "vgplot"
 dynamic = ["version"]
-description = "Schema wrapper classes for Mosaic"
+description = "Spec classes for Mosaic"
 readme = "README.md"
 requires-python = ">=3.9"
 dependencies = [
@@ -13,7 +13,7 @@ dependencies = [
 homepage = "https://github.com/uwdata/mosaic"
 
 [project.scripts]
-generate-schema-wrapper = "schema_wrapper.generate_schema_wrapper:main"
+generate-spec-classes = "spec_classes.generate_spec_classes:main"
 
 [build-system]
 requires = ["hatchling"]
@@ -38,7 +38,7 @@ path = "package.json"
 pattern = "\"version\": \"(?P<version>.+?)\""
 
 [tool.hatch.build.targets.wheel]
-packages = ["api", "schema_wrapper"]
+packages = ["api", "spec_classes"]
 
 # https://mypy.readthedocs.io/en/stable/config_file.html
 [tool.mypy]

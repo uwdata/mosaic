@@ -2,7 +2,7 @@
 
 ## Generate the API from the JSON schama
 
-`uv run generate-schema-wrapper`.
+`uv run generate-spec-classes`.
 
 ## Run Tests
 

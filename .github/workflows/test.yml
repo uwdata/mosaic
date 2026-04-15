@@ -86,12 +86,12 @@ jobs:
           uv run --group test ty check
           uv run --group test pytest --cov-report=term-missing --color=yes --cov=mosaic_widget
 
-      - name: Build and test Schema Wrapper
+      - name: Build and test Spec Classes
         run: |
           cd packages/vgplot-python
 
-          uv run generate-schema-wrapper
-          uv run --group dev pytest test/ --cov=schema_wrapper --cov-report=term-missing
+          uv run generate-spec-classes
+          uv run --group dev pytest test/ --cov=spec_classes --cov-report=term-missing
 
   rust:
     name: Test in Rust

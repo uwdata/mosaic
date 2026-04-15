@@ -3,7 +3,7 @@ from typing import Any, Dict, List
 from pathlib import Path
 from importlib.metadata import version
 import graphlib
-from schema_wrapper.utils import get_valid_identifier, get_dependencies
+from spec_classes.utils import get_valid_identifier, get_dependencies
 
 
 SCHEMA_VERSION = "v" + version("vgplot")
@@ -15,9 +15,9 @@ KNOWN_PRIMITIVES = {
 }
 IMPORTS = {
     "typing": ["List", "Dict", "Any", "Union"],
-    "schema_wrapper.SchemaBase": ["SchemaBase"],
-    "schema_wrapper.utils": ["revert_validation"],
-    "schema_wrapper.generated_classes": [],
+    "spec_classes.SchemaBase": ["SchemaBase"],
+    "spec_classes.utils": ["revert_validation"],
+    "spec_classes.generated_classes": [],
 }
 
 
@@ -197,8 +197,8 @@ def load_schema(schema_path: Path) -> dict:
         return json.load(f)
 
 
-def generate_schema_wrapper(schema_file: Path, output_file: Path) -> str:
-    """Generate a schema wrapper for the given schema file."""
+def generate_spec_classes(schema_file: Path, output_file: Path) -> str:
+    """Generate spec classes for the given schema file."""
     rootschema = load_schema(schema_file)
 
     rootschema_definitions = rootschema.get("definitions", {})
@@ -238,8 +238,8 @@ def main():
         / "schema"
         / f"{SCHEMA_VERSION}.json"
     )
-    output_file = current_file_path.parent / "schema_wrapper" / "generated_classes.py"
-    generate_schema_wrapper(schema_path, output_file)
+    output_file = current_file_path.parent / "spec_classes" / "generated_classes.py"
+    generate_spec_classes(schema_path, output_file)
 
 
 if __name__ == "__main__":
