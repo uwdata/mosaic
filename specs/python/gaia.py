@@ -8,76 +8,11 @@ data = vg.data(
 
 view = vg.hconcat(
     vg.vconcat(
-            vg.plot(
-                        vg.raster(data={
-                            "from": "gaia",
-                            "filterBy": "$brush"
-                        }, x="u", y="v", fill="density", bandwidth="$bandwidth", pixel_size="$pixelSize"),
-                        {
-                            "select": "intervalXY",
-                            "pixelSize": 2,
-                            "as": "$brush"
-                        },
-                        vg.xy_domain("Fixed"),
-                        vg.color_scale("$scaleType"),
-                        vg.color_scheme("viridis"),
-                        vg.width(440),
-                        vg.height(250),
-                        vg.margin_left(25),
-                        vg.margin_top(20),
-                        vg.margin_right(1)
-                    ),
-            vg.hconcat(
-                        vg.plot(
-                                        vg.rect_y(data={
-                                            "from": "gaia",
-                                            "filterBy": "$brush"
-                                        }, x={
-                                            "bin": "phot_g_mean_mag"
-                                        }, y={
-                                            "count": ""
-                                        }, fill="steelblue", inset=0.5),
-                                        {
-                                            "select": "intervalX",
-                                            "as": "$brush"
-                                        },
-                                        vg.x_domain("Fixed"),
-                                        vg.y_scale("$scaleType"),
-                                        vg.y_grid(True),
-                                        vg.width(220),
-                                        vg.height(120),
-                                        vg.margin_left(65)
-                                    ),
-                        vg.plot(
-                                        vg.rect_y(data={
-                                            "from": "gaia",
-                                            "filterBy": "$brush"
-                                        }, x={
-                                            "bin": "parallax"
-                                        }, y={
-                                            "count": ""
-                                        }, fill="steelblue", inset=0.5),
-                                        {
-                                            "select": "intervalX",
-                                            "as": "$brush"
-                                        },
-                                        vg.x_domain("Fixed"),
-                                        vg.y_scale("$scaleType"),
-                                        vg.y_grid(True),
-                                        vg.width(220),
-                                        vg.height(120),
-                                        vg.margin_left(65)
-                                    )
-                    )
-        ),
-    {
-        "hspace": 10
-    },
-    vg.plot(
+        vg.plot(
             vg.raster(data={
                 "from": "gaia",
                 "filterBy": "$brush"
-            }, x="bp_rp", y="phot_g_mean_mag", fill="density", bandwidth="$bandwidth", pixel_size="$pixelSize"),
+            }, x="u", y="v", fill="density", bandwidth="$bandwidth", pixel_size="$pixelSize"),
             {
                 "select": "intervalXY",
                 "pixelSize": 2,
@@ -86,19 +21,84 @@ view = vg.hconcat(
             vg.xy_domain("Fixed"),
             vg.color_scale("$scaleType"),
             vg.color_scheme("viridis"),
-            vg.y_reverse(True),
-            vg.width(230),
-            vg.height(370),
+            vg.width(440),
+            vg.height(250),
             vg.margin_left(25),
             vg.margin_top(20),
             vg.margin_right(1)
+        ),
+        vg.hconcat(
+            vg.plot(
+                vg.rect_y(data={
+                    "from": "gaia",
+                    "filterBy": "$brush"
+                }, x={
+                    "bin": "phot_g_mean_mag"
+                }, y={
+                    "count": ""
+                }, fill="steelblue", inset=0.5),
+                {
+                    "select": "intervalX",
+                    "as": "$brush"
+                },
+                vg.x_domain("Fixed"),
+                vg.y_scale("$scaleType"),
+                vg.y_grid(True),
+                vg.width(220),
+                vg.height(120),
+                vg.margin_left(65)
+            ),
+            vg.plot(
+                vg.rect_y(data={
+                    "from": "gaia",
+                    "filterBy": "$brush"
+                }, x={
+                    "bin": "parallax"
+                }, y={
+                    "count": ""
+                }, fill="steelblue", inset=0.5),
+                {
+                    "select": "intervalX",
+                    "as": "$brush"
+                },
+                vg.x_domain("Fixed"),
+                vg.y_scale("$scaleType"),
+                vg.y_grid(True),
+                vg.width(220),
+                vg.height(120),
+                vg.margin_left(65)
+            )
         )
+    ),
+    {
+        "hspace": 10
+    },
+    vg.plot(
+        vg.raster(data={
+            "from": "gaia",
+            "filterBy": "$brush"
+        }, x="bp_rp", y="phot_g_mean_mag", fill="density", bandwidth="$bandwidth", pixel_size="$pixelSize"),
+        {
+            "select": "intervalXY",
+            "pixelSize": 2,
+            "as": "$brush"
+        },
+        vg.xy_domain("Fixed"),
+        vg.color_scale("$scaleType"),
+        vg.color_scheme("viridis"),
+        vg.y_reverse(True),
+        vg.width(230),
+        vg.height(370),
+        vg.margin_left(25),
+        vg.margin_top(20),
+        vg.margin_right(1)
+    )
 )
 
 params = {
     "brush": {
-    "select": "crossfilter"
-},
+        "select": "crossfilter"
+    },
     "bandwidth": 0,
     "pixelSize": 2,
     "scaleType": "sqrt"

@@ -8,39 +8,39 @@ data = vg.data(
 
 view = vg.vconcat(
     vg.plot(
-            vg.voronoi(data=vg.from_("penguins"), x="bill_length", y="bill_depth", stroke="white", stroke_width=1, stroke_opacity=0.5, fill="species", fill_opacity=0.2),
-            vg.hull(data=vg.from_("penguins"), x="bill_length", y="bill_depth", stroke="species", stroke_opacity="$hull", stroke_width=1.5),
-            vg.delaunay_mesh(data=vg.from_("penguins"), x="bill_length", y="bill_depth", z="species", stroke="species", stroke_opacity="$mesh", stroke_width=1),
-            vg.dot(data=vg.from_("penguins"), x="bill_length", y="bill_depth", fill="species", r=2),
-            vg.frame(),
-            vg.inset(10),
-            vg.width(680)
-        ),
+        vg.voronoi(data=vg.from_("penguins"), x="bill_length", y="bill_depth", stroke="white", stroke_width=1, stroke_opacity=0.5, fill="species", fill_opacity=0.2),
+        vg.hull(data=vg.from_("penguins"), x="bill_length", y="bill_depth", stroke="species", stroke_opacity="$hull", stroke_width=1.5),
+        vg.delaunay_mesh(data=vg.from_("penguins"), x="bill_length", y="bill_depth", z="species", stroke="species", stroke_opacity="$mesh", stroke_width=1),
+        vg.dot(data=vg.from_("penguins"), x="bill_length", y="bill_depth", fill="species", r=2),
+        vg.frame(),
+        vg.inset(10),
+        vg.width(680)
+    ),
     vg.hconcat(
-            vg.input("menu", label="Delaunay Mesh", options=[
-                {
+        vg.input("menu", label="Delaunay Mesh", options=[
+            {
                 "value": 0,
                 "label": "Hide"
             },
-                {
+            {
                 "value": 0.5,
                 "label": "Show"
             }
-            ], as_="$mesh"),
+        ], as_="$mesh"),
+        {
+            "hspace": 5
+        },
+        vg.input("menu", label="Convex Hull", options=[
             {
-                "hspace": 5
-            },
-            vg.input("menu", label="Convex Hull", options=[
-                {
                 "value": 0,
                 "label": "Hide"
             },
-                {
+            {
                 "value": 1,
                 "label": "Show"
             }
-            ], as_="$hull")
-        )
+        ], as_="$hull")
+    )
 )
 
 params = {

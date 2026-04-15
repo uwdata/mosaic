@@ -7,9 +7,9 @@ data = vg.data(
     "type": "parquet",
     "file": "data/wind.parquet",
     "select": [
-    "*",
-    "row_number() over () as id"
-]
+        "*",
+        "row_number() over () as id"
+    ]
 }
 )
 
@@ -21,40 +21,40 @@ view = vg.vconcat(
         "as": "$selected"
     },
     vg.plot(
-            vg.vector(data=vg.from_("wind"), x="longitude", y="latitude", rotate={
-                "sql": "degrees(atan2(u, v))"
-            }, length={
-                "sql": "$length * sqrt(u * u + v * v)"
-            }, stroke={
-                "sql": "sqrt(u * u + v * v)"
-            }, channels={
-                "id": "id"
-            }),
-            {
-                "select": "region",
-                "as": "$selected",
-                "channels": [
+        vg.vector(data=vg.from_("wind"), x="longitude", y="latitude", rotate={
+            "sql": "degrees(atan2(u, v))"
+        }, length={
+            "sql": "$length * sqrt(u * u + v * v)"
+        }, stroke={
+            "sql": "sqrt(u * u + v * v)"
+        }, channels={
+            "id": "id"
+        }),
+        {
+            "select": "region",
+            "as": "$selected",
+            "channels": [
                 "id"
             ]
-            },
-            {
-                "select": "highlight",
-                "by": "$selected"
-            },
-            vg.name("wind-map"),
-            vg.length_scale("identity"),
-            vg.color_zero(True),
-            vg.inset(10),
-            vg.aspect_ratio(1),
-            vg.width(680)
-        ),
+        },
+        {
+            "select": "highlight",
+            "by": "$selected"
+        },
+        vg.name("wind-map"),
+        vg.length_scale("identity"),
+        vg.color_zero(True),
+        vg.inset(10),
+        vg.aspect_ratio(1),
+        vg.width(680)
+    ),
     vg.slider(min=1, max=7, step=0.1, as_="$length", label="Vector Length")
 )
 
 params = {
     "selected": {
-    "select": "union"
-},
+        "select": "union"
+    },
     "length": 2
 }
 

@@ -8,35 +8,35 @@ data = vg.data(
 
 view = vg.vconcat(
     vg.hconcat(
-            vg.input("menu", label="Normalize", as_="$normalize", options=[
-                "none",
-                "sum",
-                "max"
-            ]),
-            vg.input("menu", label="Stack", as_="$stack", options=[
-                False,
-                True
-            ]),
-            vg.input("menu", label="Offset", as_="$offset", options=[
-                {
+        vg.input("menu", label="Normalize", as_="$normalize", options=[
+            "none",
+            "sum",
+            "max"
+        ]),
+        vg.input("menu", label="Stack", as_="$stack", options=[
+            False,
+            True
+        ]),
+        vg.input("menu", label="Offset", as_="$offset", options=[
+            {
                 "label": "none",
                 "value": None
             },
-                {
+            {
                 "label": "normalize",
                 "value": "normalize"
             },
-                {
+            {
                 "label": "center",
                 "value": "center"
             }
-            ])
-        ),
+        ])
+    ),
     vg.plot(
-            vg.density_y(data=vg.from_("penguins"), x="bill_depth", fill="species", fill_opacity=0.4, bandwidth="$bandwidth", normalize="$normalize", stack="$stack", offset="$offset"),
-            vg.margin_left(50),
-            vg.height(200)
-        )
+        vg.density_y(data=vg.from_("penguins"), x="bill_depth", fill="species", fill_opacity=0.4, bandwidth="$bandwidth", normalize="$normalize", stack="$stack", offset="$offset"),
+        vg.margin_left(50),
+        vg.height(200)
+    )
 )
 
 params = {

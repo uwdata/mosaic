@@ -8,87 +8,87 @@ data = vg.data(
 
 view = vg.vconcat(
     vg.plot(
-            vg.frame(fill="black"),
-            vg.raster(data={
-                "from": "latency",
-                "filterBy": "$filter"
-            }, x="time", y="latency", fill={
-                "argmax": [
+        vg.frame(fill="black"),
+        vg.raster(data={
+            "from": "latency",
+            "filterBy": "$filter"
+        }, x="time", y="latency", fill={
+            "argmax": [
                 "route",
                 "count"
             ]
-            }, fill_opacity={
-                "sum": "count"
-            }, width=2016, height=500, image_rendering="pixelated"),
-            {
-                "select": "intervalXY",
-                "as": "$filter"
-            },
-            vg.color_domain("Fixed"),
-            vg.color_scheme("observable10"),
-            vg.opacity_domain([
-                0,
-                25
-            ]),
-            vg.opacity_clamp(True),
-            vg.y_scale("log"),
-            vg.y_label("↑ Duration (ms)"),
-            vg.y_domain([
-                0.5,
-                10000
-            ]),
-            vg.y_tick_format("s"),
-            vg.x_scale("utc"),
-            vg.x_label(None),
-            vg.x_domain([
-                1706227200000,
-                1706832000000
-            ]),
-            vg.width(680),
-            vg.height(300),
-            vg.margins(left=35, top=20, bottom=30, right=20)
-        ),
+        }, fill_opacity={
+            "sum": "count"
+        }, width=2016, height=500, image_rendering="pixelated"),
+        {
+            "select": "intervalXY",
+            "as": "$filter"
+        },
+        vg.color_domain("Fixed"),
+        vg.color_scheme("observable10"),
+        vg.opacity_domain([
+            0,
+            25
+        ]),
+        vg.opacity_clamp(True),
+        vg.y_scale("log"),
+        vg.y_label("↑ Duration (ms)"),
+        vg.y_domain([
+            0.5,
+            10000
+        ]),
+        vg.y_tick_format("s"),
+        vg.x_scale("utc"),
+        vg.x_label(None),
+        vg.x_domain([
+            1706227200000,
+            1706832000000
+        ]),
+        vg.width(680),
+        vg.height(300),
+        vg.margins(left=35, top=20, bottom=30, right=20)
+    ),
     vg.plot(
-            vg.bar_x(data={
-                "from": "latency",
-                "filterBy": "$filter"
-            }, x={
-                "sum": "count"
-            }, y="route", fill="route", sort={
-                "y": "-x",
-                "limit": 15
-            }),
-            {
-                "select": "toggleY",
-                "as": "$filter"
-            },
-            {
-                "select": "toggleY",
-                "as": "$highlight"
-            },
-            {
-                "select": "highlight",
-                "by": "$highlight"
-            },
-            vg.color_domain("Fixed"),
-            vg.x_label("Routes by Total Requests"),
-            vg.x_tick_format("s"),
-            vg.y_label(None),
-            vg.width(680),
-            vg.height(300),
-            vg.margin_top(5),
-            vg.margin_left(220),
-            vg.margin_bottom(35)
-        )
+        vg.bar_x(data={
+            "from": "latency",
+            "filterBy": "$filter"
+        }, x={
+            "sum": "count"
+        }, y="route", fill="route", sort={
+            "y": "-x",
+            "limit": 15
+        }),
+        {
+            "select": "toggleY",
+            "as": "$filter"
+        },
+        {
+            "select": "toggleY",
+            "as": "$highlight"
+        },
+        {
+            "select": "highlight",
+            "by": "$highlight"
+        },
+        vg.color_domain("Fixed"),
+        vg.x_label("Routes by Total Requests"),
+        vg.x_tick_format("s"),
+        vg.y_label(None),
+        vg.width(680),
+        vg.height(300),
+        vg.margin_top(5),
+        vg.margin_left(220),
+        vg.margin_bottom(35)
+    )
 )
 
 params = {
     "filter": {
-    "select": "crossfilter"
-},
+        "select": "crossfilter"
+    },
     "highlight": {
-    "select": "intersect"
-}
+        "select": "intersect"
+    }
 }
 
 spec = vg.spec(meta=meta, data=data, params=params, view=view)

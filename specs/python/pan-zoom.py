@@ -8,77 +8,77 @@ data = vg.data(
 
 view = vg.hconcat(
     vg.vconcat(
-            vg.plot(
-                        vg.frame(),
-                        vg.dot(data=vg.from_("penguins"), x="bill_length", y="bill_depth", fill="species", r=2, clip=True),
-                        {
-                            "select": "panZoom",
-                            "x": "$xs",
-                            "y": "$ys"
-                        },
-                        vg.width(320),
-                        vg.height(240)
-                    ),
+        vg.plot(
+            vg.frame(),
+            vg.dot(data=vg.from_("penguins"), x="bill_length", y="bill_depth", fill="species", r=2, clip=True),
             {
-                "vspace": 10
+                "select": "panZoom",
+                "x": "$xs",
+                "y": "$ys"
             },
-            vg.plot(
-                        vg.frame(),
-                        vg.dot(data=vg.from_("penguins"), x="bill_length", y="flipper_length", fill="species", r=2, clip=True),
-                        {
-                            "select": "panZoom",
-                            "x": "$xs",
-                            "y": "$zs"
-                        },
-                        vg.width(320),
-                        vg.height(240)
-                    )
+            vg.width(320),
+            vg.height(240)
         ),
+        {
+            "vspace": 10
+        },
+        vg.plot(
+            vg.frame(),
+            vg.dot(data=vg.from_("penguins"), x="bill_length", y="flipper_length", fill="species", r=2, clip=True),
+            {
+                "select": "panZoom",
+                "x": "$xs",
+                "y": "$zs"
+            },
+            vg.width(320),
+            vg.height(240)
+        )
+    ),
     {
         "hspace": 10
     },
     vg.vconcat(
-            vg.plot(
-                        vg.frame(),
-                        vg.dot(data=vg.from_("penguins"), x="body_mass", y="bill_depth", fill="species", r=2, clip=True),
-                        {
-                            "select": "panZoom",
-                            "x": "$ws",
-                            "y": "$ys"
-                        },
-                        vg.width(320),
-                        vg.height(240)
-                    ),
+        vg.plot(
+            vg.frame(),
+            vg.dot(data=vg.from_("penguins"), x="body_mass", y="bill_depth", fill="species", r=2, clip=True),
             {
-                "vspace": 10
+                "select": "panZoom",
+                "x": "$ws",
+                "y": "$ys"
             },
-            vg.plot(
-                        vg.frame(),
-                        vg.dot(data=vg.from_("penguins"), x="body_mass", y="flipper_length", fill="species", r=2, clip=True),
-                        {
-                            "select": "panZoom",
-                            "x": "$ws",
-                            "y": "$zs"
-                        },
-                        vg.width(320),
-                        vg.height(240)
-                    )
+            vg.width(320),
+            vg.height(240)
+        ),
+        {
+            "vspace": 10
+        },
+        vg.plot(
+            vg.frame(),
+            vg.dot(data=vg.from_("penguins"), x="body_mass", y="flipper_length", fill="species", r=2, clip=True),
+            {
+                "select": "panZoom",
+                "x": "$ws",
+                "y": "$zs"
+            },
+            vg.width(320),
+            vg.height(240)
         )
+    )
 )
 
 params = {
     "xs": {
-    "select": "intersect"
-},
+        "select": "intersect"
+    },
     "ys": {
-    "select": "intersect"
-},
+        "select": "intersect"
+    },
     "zs": {
-    "select": "intersect"
-},
+        "select": "intersect"
+    },
     "ws": {
-    "select": "intersect"
-}
+        "select": "intersect"
+    }
 }
 
 spec = vg.spec(meta=meta, data=data, params=params, view=view)

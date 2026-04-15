@@ -12,26 +12,26 @@ view = vg.vconcat(
         "vspace": 10
     },
     vg.plot(
-            vg.bar_x(data={
-                "from": "athletes",
-                "filterBy": "$query"
-            }, x={
-                "sum": "gold"
-            }, y="nationality", fill="steelblue", sort={
-                "y": "-x",
-                "limit": 10
-            }),
-            vg.x_label("Gold Medals"),
-            vg.y_label("Nationality"),
-            vg.y_label_anchor("top"),
-            vg.margin_top(15)
-        )
+        vg.bar_x(data={
+            "from": "athletes",
+            "filterBy": "$query"
+        }, x={
+            "sum": "gold"
+        }, y="nationality", fill="steelblue", sort={
+            "y": "-x",
+            "limit": 10
+        }),
+        vg.x_label("Gold Medals"),
+        vg.y_label("Nationality"),
+        vg.y_label_anchor("top"),
+        vg.margin_top(15)
+    )
 )
 
 params = {
     "query": {
-    "select": "intersect"
-}
+        "select": "intersect"
+    }
 }
 
 spec = vg.spec(meta=meta, data=data, params=params, view=view)

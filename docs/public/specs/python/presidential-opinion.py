@@ -8,28 +8,28 @@ data = vg.data(
 
 view = vg.vconcat(
     vg.plot(
-            vg.rule_y(data=[
-                0
-            ]),
-            vg.image(data=vg.from_("presidents"), x="First Inauguration Date", y={
-                "sql": "\"Very Favorable %\" + \"Somewhat Favorable %\" + $sign * (\"Very Unfavorable %\" + \"Somewhat Unfavorable %\")"
-            }, src="Portrait URL", r=20, preserve_aspect_ratio="xMidYMin slice", title="Name"),
-            vg.x_inset(20),
-            vg.x_label("First inauguration date →"),
-            vg.y_inset_top(4),
-            vg.y_grid(True),
-            vg.y_label("↑ Opinion (%)"),
-            vg.y_tick_format("+f")
-        ),
+        vg.rule_y(data=[
+            0
+        ]),
+        vg.image(data=vg.from_("presidents"), x="First Inauguration Date", y={
+            "sql": "\"Very Favorable %\" + \"Somewhat Favorable %\" + $sign * (\"Very Unfavorable %\" + \"Somewhat Unfavorable %\")"
+        }, src="Portrait URL", r=20, preserve_aspect_ratio="xMidYMin slice", title="Name"),
+        vg.x_inset(20),
+        vg.x_label("First inauguration date →"),
+        vg.y_inset_top(4),
+        vg.y_grid(True),
+        vg.y_label("↑ Opinion (%)"),
+        vg.y_tick_format("+f")
+    ),
     vg.input("menu", label="Opinion Metric", options=[
         {
-        "label": "Any Opinion",
-        "value": 1
-    },
+            "label": "Any Opinion",
+            "value": 1
+        },
         {
-        "label": "Net Favorability",
-        "value": -1
-    }
+            "label": "Net Favorability",
+            "value": -1
+        }
     ], as_="$sign")
 )
 

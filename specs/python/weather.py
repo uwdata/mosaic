@@ -8,93 +8,93 @@ data = vg.data(
 
 view = vg.vconcat(
     vg.hconcat(
-            vg.plot(
-                        vg.dot(data={
-                            "from": "weather",
-                            "filterBy": "$click"
-                        }, x={
-                            "dateMonthDay": "date"
-                        }, y="temp_max", fill="weather", r="precipitation", fill_opacity=0.7),
-                        {
-                            "select": "intervalX",
-                            "as": "$range",
-                            "brush": {
-                            "fill": "none",
-                            "stroke": "#888"
-                        }
-                        },
-                        {
-                            "select": "highlight",
-                            "by": "$range",
-                            "fill": "#ccc",
-                            "fillOpacity": 0.2
-                        },
-                        {
-                            "legend": "color",
-                            "as": "$click",
-                            "columns": 1
-                        },
-                        vg.xy_domain("Fixed"),
-                        vg.x_tick_format("%b"),
-                        vg.color_domain("$domain"),
-                        vg.color_range("$colors"),
-                        vg.r_domain("Fixed"),
-                        vg.r_range([
-                            2,
-                            10
-                        ]),
-                        vg.width(680),
-                        vg.height(300)
-                    )
-        ),
-    vg.plot(
-            vg.bar_x(data=vg.from_("weather"), x={
-                "count": ""
-            }, y="weather", fill="#ccc", fill_opacity=0.2),
-            vg.bar_x(data={
+        vg.plot(
+            vg.dot(data={
                 "from": "weather",
-                "filterBy": "$range"
+                "filterBy": "$click"
             }, x={
-                "count": ""
-            }, y="weather", fill="weather"),
+                "dateMonthDay": "date"
+            }, y="temp_max", fill="weather", r="precipitation", fill_opacity=0.7),
             {
-                "select": "toggleY",
-                "as": "$click"
+                "select": "intervalX",
+                "as": "$range",
+                "brush": {
+                    "fill": "none",
+                    "stroke": "#888"
+                }
             },
             {
                 "select": "highlight",
-                "by": "$click"
+                "by": "$range",
+                "fill": "#ccc",
+                "fillOpacity": 0.2
             },
-            vg.x_domain("Fixed"),
-            vg.y_domain("$domain"),
-            vg.y_label(None),
+            {
+                "legend": "color",
+                "as": "$click",
+                "columns": 1
+            },
+            vg.xy_domain("Fixed"),
+            vg.x_tick_format("%b"),
             vg.color_domain("$domain"),
             vg.color_range("$colors"),
-            vg.width(680)
+            vg.r_domain("Fixed"),
+            vg.r_range([
+                2,
+                10
+            ]),
+            vg.width(680),
+            vg.height(300)
         )
+    ),
+    vg.plot(
+        vg.bar_x(data=vg.from_("weather"), x={
+            "count": ""
+        }, y="weather", fill="#ccc", fill_opacity=0.2),
+        vg.bar_x(data={
+            "from": "weather",
+            "filterBy": "$range"
+        }, x={
+            "count": ""
+        }, y="weather", fill="weather"),
+        {
+            "select": "toggleY",
+            "as": "$click"
+        },
+        {
+            "select": "highlight",
+            "by": "$click"
+        },
+        vg.x_domain("Fixed"),
+        vg.y_domain("$domain"),
+        vg.y_label(None),
+        vg.color_domain("$domain"),
+        vg.color_range("$colors"),
+        vg.width(680)
+    )
 )
 
 params = {
     "click": {
-    "select": "single"
-},
+        "select": "single"
+    },
     "domain": [
-    "sun",
-    "fog",
-    "drizzle",
-    "rain",
-    "snow"
-],
+        "sun",
+        "fog",
+        "drizzle",
+        "rain",
+        "snow"
+    ],
     "colors": [
-    "#e7ba52",
-    "#a7a7a7",
-    "#aec7e8",
-    "#1f77b4",
-    "#9467bd"
-],
+        "#e7ba52",
+        "#a7a7a7",
+        "#aec7e8",
+        "#1f77b4",
+        "#9467bd"
+    ],
     "range": {
-    "select": "intersect"
-}
+        "select": "intersect"
+    }
 }
 
 spec = vg.spec(meta=meta, data=data, params=params, view=view)

@@ -36,8 +36,8 @@ view = vg.plot(
 
 params = {
     "point": {
-    "date": "2013-05-13"
-}
+        "date": "2013-05-13"
+    }
 }
 
 spec = vg.spec(meta=meta, data=data, params=params, view=view)

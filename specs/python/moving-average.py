@@ -8,57 +8,57 @@ data = vg.data(
 
 view = vg.vconcat(
     vg.plot(
-            vg.rect_y(data=vg.from_("cases"), x1="day", x2={
-                "sql": "day + 1"
-            }, inset=1, y="cases", fill="steelblue"),
-            vg.line_y(data=vg.from_("cases"), x={
-                "sql": "day + 0.5"
-            }, y={
-                "avg": "cases",
-                "orderby": "day",
-                "rows": "$frame"
-            }, curve="monotone-x", stroke="currentColor"),
-            vg.x_label("day"),
-            vg.width(680),
-            vg.height(300)
-        ),
+        vg.rect_y(data=vg.from_("cases"), x1="day", x2={
+            "sql": "day + 1"
+        }, inset=1, y="cases", fill="steelblue"),
+        vg.line_y(data=vg.from_("cases"), x={
+            "sql": "day + 0.5"
+        }, y={
+            "avg": "cases",
+            "orderby": "day",
+            "rows": "$frame"
+        }, curve="monotone-x", stroke="currentColor"),
+        vg.x_label("day"),
+        vg.width(680),
+        vg.height(300)
+    ),
     vg.input("menu", label="Window Frame", as_="$frame", options=[
         {
-        "label": "7-day moving average, with prior 6 days: [-6, 0]",
-        "value": [
-        -6,
-        0
-    ]
-    },
+            "label": "7-day moving average, with prior 6 days: [-6, 0]",
+            "value": [
+                -6,
+                0
+            ]
+        },
         {
-        "label": "7-day moving average, centered at current day: [-3, 3]",
-        "value": [
-        -3,
-        3
-    ]
-    },
+            "label": "7-day moving average, centered at current day: [-3, 3]",
+            "value": [
+                -3,
+                3
+            ]
+        },
         {
-        "label": "Moving average, with all prior days [-∞, 0]",
-        "value": [
-        None,
-        0
-    ]
-    },
+            "label": "Moving average, with all prior days [-∞, 0]",
+            "value": [
+                None,
+                0
+            ]
+        },
         {
-        "label": "Global average [-∞, +∞]",
-        "value": [
-        None,
-        None
-    ]
-    }
+            "label": "Global average [-∞, +∞]",
+            "value": [
+                None,
+                None
+            ]
+        }
     ])
 )
 
 params = {
     "frame": [
-    -6,
-    0
-]
+        -6,
+        0
+    ]
 }
 
 spec = vg.spec(meta=meta, data=data, params=params, view=view)

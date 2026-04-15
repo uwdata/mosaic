@@ -9,12 +9,12 @@ data = vg.data(
 view = vg.vconcat(
     vg.slider(label="Bias", as_="$point", min=0, max=1000, step=1),
     vg.plot(
-            vg.area_y(data=vg.from_("walk"), x="t", y={
-                "sql": "v + $point"
-            }, fill="steelblue"),
-            vg.width(680),
-            vg.height(200)
-        )
+        vg.area_y(data=vg.from_("walk"), x="t", y={
+            "sql": "v + $point"
+        }, fill="steelblue"),
+        vg.width(680),
+        vg.height(200)
+    )
 )
 
 params = {

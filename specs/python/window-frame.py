@@ -15,25 +15,25 @@ view = vg.plot(
         "avg": "Close",
         "orderby": "Date",
         "range": [
-        {
-        "days": 15
-    },
-        {
-        "days": 15
-    }
-    ]
+            {
+                "days": 15
+            },
+            {
+                "days": 15
+            }
+        ]
     }),
     vg.line_y(data=vg.from_("aapl"), stroke="firebrick", x="Date", y={
         "avg": "Close",
         "orderby": "Date",
         "range": [
-        {
-        "months": 3
-    },
-        {
-        "months": 3
-    }
-    ]
+            {
+                "months": 3
+            },
+            {
+                "months": 3
+            }
+        ]
     }),
     vg.y_label("Close"),
     vg.width(680),

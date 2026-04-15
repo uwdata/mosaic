@@ -17,8 +17,8 @@ view = vg.plot(
     {
         "select": "nearestX",
         "channels": [
-        "z"
-    ],
+            "z"
+        ],
         "as": "$curr"
     },
     {
@@ -38,8 +38,8 @@ view = vg.plot(
 
 params = {
     "curr": {
-    "select": "intersect"
-}
+        "select": "intersect"
+    }
 }
 
 spec = vg.spec(meta=meta, data=data, params=params, view=view)

@@ -16,9 +16,9 @@ view = vg.plot(
         "select": "intervalXY",
         "as": "$query",
         "brush": {
-        "fillOpacity": 0,
-        "stroke": "currentColor"
-    }
+            "fillOpacity": 0,
+            "stroke": "currentColor"
+        }
     },
     vg.xy_domain("Fixed"),
     vg.color_domain("Fixed")
@@ -26,8 +26,8 @@ view = vg.plot(
 
 params = {
     "query": {
-    "select": "intersect"
-}
+        "select": "intersect"
+    }
 }
 
 spec = vg.spec(meta=meta, data=data, params=params, view=view)

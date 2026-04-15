@@ -19,16 +19,16 @@ view = vg.vconcat(
         "label": "Unemployment (%)"
     },
     vg.plot(
-            vg.geo(data=vg.from_("combined"), fill="rate", title={
-                "sql": "concat(rate, '%')"
-            }),
-            vg.name("county-map"),
-            vg.margin(0),
-            vg.color_scale("quantile"),
-            vg.color_n(9),
-            vg.color_scheme("blues"),
-            vg.projection_type("albers-usa")
-        )
+        vg.geo(data=vg.from_("combined"), fill="rate", title={
+            "sql": "concat(rate, '%')"
+        }),
+        vg.name("county-map"),
+        vg.margin(0),
+        vg.color_scale("quantile"),
+        vg.color_n(9),
+        vg.color_scheme("blues"),
+        vg.projection_type("albers-usa")
+    )
 )
 
 spec = vg.spec(meta=meta, data=data, view=view)

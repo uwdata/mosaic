@@ -8,29 +8,29 @@ data = vg.data(
 
 view = vg.vconcat(
     vg.plot(
-            vg.area_y(data=vg.from_("walk"), x="t", y="v", fill="steelblue"),
-            {
-                "select": "intervalX",
-                "as": "$brush"
-            },
-            vg.width(680),
-            vg.height(200)
-        ),
+        vg.area_y(data=vg.from_("walk"), x="t", y="v", fill="steelblue"),
+        {
+            "select": "intervalX",
+            "as": "$brush"
+        },
+        vg.width(680),
+        vg.height(200)
+    ),
     vg.plot(
-            vg.area_y(data={
-                "from": "walk",
-                "filterBy": "$brush"
-            }, x="t", y="v", fill="steelblue"),
-            vg.y_domain("Fixed"),
-            vg.width(680),
-            vg.height(200)
-        )
+        vg.area_y(data={
+            "from": "walk",
+            "filterBy": "$brush"
+        }, x="t", y="v", fill="steelblue"),
+        vg.y_domain("Fixed"),
+        vg.width(680),
+        vg.height(200)
+    )
 )
 
 params = {
     "brush": {
-    "select": "intersect"
-}
+        "select": "intersect"
+    }
 }
 
 spec = vg.spec(meta=meta, data=data, params=params, view=view)

@@ -8,27 +8,27 @@ data = vg.data(
 
 view = vg.vconcat(
     vg.hconcat(
-            vg.input("menu", label="Interpolation Method", options=[
-                "none",
-                "nearest",
-                "barycentric",
-                "random-walk"
-            ], as_="$interp"),
-            {
-                "hspace": "1em"
-            },
-            vg.slider(label="Blur", min=0, max=100, as_="$blur")
-        ),
+        vg.input("menu", label="Interpolation Method", options=[
+            "none",
+            "nearest",
+            "barycentric",
+            "random-walk"
+        ], as_="$interp"),
+        {
+            "hspace": "1em"
+        },
+        vg.slider(label="Blur", min=0, max=100, as_="$blur")
+    ),
     {
         "vspace": "1em"
     },
     vg.plot(
-            vg.raster(data=vg.from_("ca55"), x="LONGITUDE", y="LATITUDE", fill={
-                "max": "MAG_IGRF90"
-            }, interpolate="$interp", bandwidth="$blur"),
-            vg.color_scale("diverging"),
-            vg.color_domain("Fixed")
-        )
+        vg.raster(data=vg.from_("ca55"), x="LONGITUDE", y="LATITUDE", fill={
+            "max": "MAG_IGRF90"
+        }, interpolate="$interp", bandwidth="$blur"),
+        vg.color_scale("diverging"),
+        vg.color_domain("Fixed")
+    )
 )
 
 params = {

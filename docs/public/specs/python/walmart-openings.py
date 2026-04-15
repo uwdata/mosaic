@@ -18,16 +18,16 @@ data = vg.data(
 
 view = vg.vconcat(
     vg.plot(
-            vg.geo(data=vg.from_("states"), stroke="#aaa", stroke_width=1),
-            vg.geo(data=vg.from_("nation"), stroke="currentColor"),
-            vg.dot(data=vg.from_("walmarts"), x="longitude", y="latitude", fy={
-                "sql": "10 * decade(date)"
-            }, r=1.5, fill="blue"),
-            vg.axis_fy(frame_anchor="top", dy=30, tick_format="d"),
-            vg.margin(0),
-            vg.fy_label(None),
-            vg.projection_type("albers")
-        )
+        vg.geo(data=vg.from_("states"), stroke="#aaa", stroke_width=1),
+        vg.geo(data=vg.from_("nation"), stroke="currentColor"),
+        vg.dot(data=vg.from_("walmarts"), x="longitude", y="latitude", fy={
+            "sql": "10 * decade(date)"
+        }, r=1.5, fill="blue"),
+        vg.axis_fy(frame_anchor="top", dy=30, tick_format="d"),
+        vg.margin(0),
+        vg.fy_label(None),
+        vg.projection_type("albers")
+    )
 )
 
 spec = vg.spec(meta=meta, data=data, view=view)

@@ -46,7 +46,7 @@ export function astToPython(ast) {
   ctx.blank();
 
   // view / layout / plot
-  ctx.emit(`view = ${emitComponent(view, ctx, 0)}`);
+  ctx.emit(`view = ${emitComponent(view, ctx)}`);
   ctx.blank();
 
   if (Object.keys(params).length) {
@@ -71,31 +71,31 @@ export function astToPython(ast) {
   return ctx.toString();
 }
 
-function emitComponent(node, ctx, depth = 0) {
+function emitComponent(node, ctx) {
   if (!node || typeof node !== 'object') return literal(node);
   if (Array.isArray(node)) {
-    const body = node.map(n => indentLine(emitComponent(n, ctx, depth + 1), depth + 1)).join(',\n');
-    return '[\n' + body + '\n' + '    '.repeat(depth) + ']';
+    const body = node.map(n => indentLine(emitComponent(n, ctx), 1)).join(',\n');
+    return '[\n' + body + '\n]';
   }
 
   if (node.vconcat) {
-    const body = node.vconcat.map(n => indentLine(emitComponent(n, ctx, depth + 1), depth + 1)).join(',\n');
-  return `vg.vconcat(\n${body}\n${'    '.repeat(depth)})`;
+    const body = node.vconcat.map(n => indentLine(emitComponent(n, ctx), 1)).join(',\n');
+    return `vg.vconcat(\n${body}\n)`;
   }
   if (node.hconcat) {
-    const body = node.hconcat.map(n => indentLine(emitComponent(n, ctx, depth + 1), depth + 1)).join(',\n');
-    return `vg.hconcat(\n${body}\n${'    '.repeat(depth)})`;
+    const body = node.hconcat.map(n => indentLine(emitComponent(n, ctx), 1)).join(',\n');
+    return `vg.hconcat(\n${body}\n)`;
   }
   if (node.input) {
     return emitInput(node);
   }
   if (node.plot) {
-    return emitPlotObject(node, depth);
+    return emitPlotObject(node);
   }
   return literal(node);
 }
 
-function emitPlotObject(view, depth) {
+function emitPlotObject(view) {
   const items = [];
   for (const mark of view.plot || []) {
     if (!mark.mark) {
@@ -109,8 +109,8 @@ function emitPlotObject(view, depth) {
     if (v === undefined) continue;
     items.push(emitDirective(k, v));
   }
-  const body = items.map(s => indentLine(s, depth + 1)).join(',\n');
-  return `vg.plot(\n${body}\n${'    '.repeat(depth)})`;
+  const body = items.map(s => indentLine(s, 1)).join(',\n');
+  return `vg.plot(\n${body}\n)`;
 }
 
 function emitDataDef(def) {
@@ -186,24 +186,24 @@ function emitDataRef(data) {
   return literal(data);
 }
 
-function literal(v) {
+function literal(v, depth = 0) {
   if (v === null || v === undefined) return 'None';
   if (typeof v === 'boolean') return v ? 'True' : 'False';
   if (typeof v === 'number') return String(v);
   if (typeof v === 'string') return JSON.stringify(v);
+  const pad = '    '.repeat(depth + 1);
+  const closePad = '    '.repeat(depth);
   if (Array.isArray(v)) {
     if (!v.length) return '[]';
-    const items = v.map(x => '    ' + literal(x)).join(',\n');
-    return '[\n' + items + '\n]';
+    const items = v.map(x => pad + literal(x, depth + 1)).join(',\n');
+    return '[\n' + items + '\n' + closePad + ']';
   }
   if (typeof v === 'object') {
     const entries = Object.entries(v)
       .filter(([, val]) => val !== undefined)
-      .map(
-      ([k, val]) => `    ${JSON.stringify(k)}: ${literal(val)}`
-      );
+      .map(([k, val]) => `${pad}${JSON.stringify(k)}: ${literal(val, depth + 1)}`);
     if (!entries.length) return '{}';
-    return '{\n' + entries.join(',\n') + '\n}';
+    return '{\n' + entries.join(',\n') + '\n' + closePad + '}';
   }
   return 'None';
 }

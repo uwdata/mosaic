@@ -8,36 +8,36 @@ data = vg.data(
 
 view = vg.hconcat(
     vg.plot(
-            vg.frame(),
-            vg.dot(data=vg.from_("penguins"), x="bill_length", y="bill_depth", fill="#aaa", r=1),
-            vg.dot(data=vg.from_("penguins"), x="bill_length", y="bill_depth", fill="species", fx="sex", fy="species"),
-            {
-                "select": "intervalXY",
-                "as": "$sel",
-                "brush": {
+        vg.frame(),
+        vg.dot(data=vg.from_("penguins"), x="bill_length", y="bill_depth", fill="#aaa", r=1),
+        vg.dot(data=vg.from_("penguins"), x="bill_length", y="bill_depth", fill="species", fx="sex", fy="species"),
+        {
+            "select": "intervalXY",
+            "as": "$sel",
+            "brush": {
                 "stroke": "transparent"
             }
-            },
-            {
-                "select": "highlight",
-                "by": "$sel"
-            },
-            vg.name("plot"),
-            vg.grid(True),
-            vg.margin_right(60),
-            vg.x_domain("Fixed"),
-            vg.y_domain("Fixed"),
-            vg.fx_domain("Fixed"),
-            vg.fy_domain("Fixed"),
-            vg.fx_label(None),
-            vg.fy_label(None)
-        )
+        },
+        {
+            "select": "highlight",
+            "by": "$sel"
+        },
+        vg.name("plot"),
+        vg.grid(True),
+        vg.margin_right(60),
+        vg.x_domain("Fixed"),
+        vg.y_domain("Fixed"),
+        vg.fx_domain("Fixed"),
+        vg.fy_domain("Fixed"),
+        vg.fx_label(None),
+        vg.fy_label(None)
+    )
 )
 
 params = {
     "sel": {
-    "select": "intersect"
-}
+        "select": "intersect"
+    }
 }
 
 spec = vg.spec(meta=meta, data=data, params=params, view=view)

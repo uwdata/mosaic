@@ -12,59 +12,59 @@ data = vg.data(
 view = vg.vconcat(
     vg.input("menu", label="Sample", as_="$data", options=[
         {
-        "value": "flights10m",
-        "label": "Full Data"
-    },
+            "value": "flights10m",
+            "label": "Full Data"
+        },
         {
-        "value": "flights10p",
-        "label": "10% Sample"
-    },
+            "value": "flights10p",
+            "label": "10% Sample"
+        },
         {
-        "value": "flights5p",
-        "label": "5% Sample"
-    },
+            "value": "flights5p",
+            "label": "5% Sample"
+        },
         {
-        "value": "flights1p",
-        "label": "1% Sample"
-    }
+            "value": "flights1p",
+            "label": "1% Sample"
+        }
     ]),
     {
         "vspace": 10
     },
     vg.plot(
-            vg.raster(data=vg.from_("$data"), x="time", y="delay", pixel_size=4, pad=0, image_rendering="pixelated"),
-            vg.regression_y(data=vg.from_("$data"), x="time", y="delay", stroke="gray"),
-            vg.regression_y(data={
-                "from": "$data",
-                "filterBy": "$query"
-            }, x="time", y="delay", stroke="firebrick"),
-            {
-                "select": "intervalXY",
-                "as": "$query",
-                "brush": {
+        vg.raster(data=vg.from_("$data"), x="time", y="delay", pixel_size=4, pad=0, image_rendering="pixelated"),
+        vg.regression_y(data=vg.from_("$data"), x="time", y="delay", stroke="gray"),
+        vg.regression_y(data={
+            "from": "$data",
+            "filterBy": "$query"
+        }, x="time", y="delay", stroke="firebrick"),
+        {
+            "select": "intervalXY",
+            "as": "$query",
+            "brush": {
                 "fillOpacity": 0,
                 "stroke": "currentColor"
             }
-            },
-            vg.x_domain([
-                0,
-                24
-            ]),
-            vg.y_domain([
-                -60,
-                180
-            ]),
-            vg.color_scale("symlog"),
-            vg.color_scheme("blues"),
-            vg.color_domain("Fixed")
-        )
+        },
+        vg.x_domain([
+            0,
+            24
+        ]),
+        vg.y_domain([
+            -60,
+            180
+        ]),
+        vg.color_scale("symlog"),
+        vg.color_scheme("blues"),
+        vg.color_domain("Fixed")
+    )
 )
 
 params = {
     "data": "flights10m",
     "query": {
-    "select": "intersect"
-}
+        "select": "intersect"
+    }
 }
 
 spec = vg.spec(meta=meta, data=data, params=params, view=view)

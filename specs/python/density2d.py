@@ -8,24 +8,24 @@ data = vg.data(
 
 view = vg.vconcat(
     vg.hconcat(
-            vg.slider(label="Bandwidth (σ)", as_="$bandwidth", min=1, max=100),
-            vg.slider(label="Bins", as_="$bins", min=10, max=60)
-        ),
+        vg.slider(label="Bandwidth (σ)", as_="$bandwidth", min=1, max=100),
+        vg.slider(label="Bins", as_="$bins", min=10, max=60)
+    ),
     vg.plot(
-            vg.density(data=vg.from_("penguins"), x="bill_length", y="bill_depth", r="density", fill="species", fill_opacity=0.5, width="$bins", height="$bins", bandwidth="$bandwidth"),
-            vg.dot(data=vg.from_("penguins"), x="bill_length", y="bill_depth", fill="currentColor", r=1),
-            vg.r_range([
-                0,
-                16
-            ]),
-            vg.x_axis("bottom"),
-            vg.x_label_anchor("center"),
-            vg.y_axis("right"),
-            vg.y_label_anchor("center"),
-            vg.margins(top=5, bottom=30, left=5, right=50),
-            vg.width(700),
-            vg.height(480)
-        )
+        vg.density(data=vg.from_("penguins"), x="bill_length", y="bill_depth", r="density", fill="species", fill_opacity=0.5, width="$bins", height="$bins", bandwidth="$bandwidth"),
+        vg.dot(data=vg.from_("penguins"), x="bill_length", y="bill_depth", fill="currentColor", r=1),
+        vg.r_range([
+            0,
+            16
+        ]),
+        vg.x_axis("bottom"),
+        vg.x_label_anchor("center"),
+        vg.y_axis("right"),
+        vg.y_label_anchor("center"),
+        vg.margins(top=5, bottom=30, left=5, right=50),
+        vg.width(700),
+        vg.height(480)
+    )
 )
 
 params = {

@@ -8,68 +8,68 @@ data = vg.data(
 
 view = vg.vconcat(
     vg.plot(
-            vg.rect_y(data={
-                "from": "flights",
-                "filterBy": "$brush"
-            }, x={
-                "bin": "delay"
-            }, y={
-                "count": ""
-            }, fill="steelblue", inset_left=0.5, inset_right=0.5),
-            {
-                "select": "intervalX",
-                "as": "$brush"
-            },
-            vg.x_domain("Fixed"),
-            vg.x_label("Arrival Delay (min)"),
-            vg.y_tick_format("s"),
-            vg.width(600),
-            vg.height(200)
-        ),
+        vg.rect_y(data={
+            "from": "flights",
+            "filterBy": "$brush"
+        }, x={
+            "bin": "delay"
+        }, y={
+            "count": ""
+        }, fill="steelblue", inset_left=0.5, inset_right=0.5),
+        {
+            "select": "intervalX",
+            "as": "$brush"
+        },
+        vg.x_domain("Fixed"),
+        vg.x_label("Arrival Delay (min)"),
+        vg.y_tick_format("s"),
+        vg.width(600),
+        vg.height(200)
+    ),
     vg.plot(
-            vg.rect_y(data={
-                "from": "flights",
-                "filterBy": "$brush"
-            }, x={
-                "bin": "time"
-            }, y={
-                "count": ""
-            }, fill="steelblue", inset_left=0.5, inset_right=0.5),
-            {
-                "select": "intervalX",
-                "as": "$brush"
-            },
-            vg.x_domain("Fixed"),
-            vg.x_label("Departure Time (hour)"),
-            vg.y_tick_format("s"),
-            vg.width(600),
-            vg.height(200)
-        ),
+        vg.rect_y(data={
+            "from": "flights",
+            "filterBy": "$brush"
+        }, x={
+            "bin": "time"
+        }, y={
+            "count": ""
+        }, fill="steelblue", inset_left=0.5, inset_right=0.5),
+        {
+            "select": "intervalX",
+            "as": "$brush"
+        },
+        vg.x_domain("Fixed"),
+        vg.x_label("Departure Time (hour)"),
+        vg.y_tick_format("s"),
+        vg.width(600),
+        vg.height(200)
+    ),
     vg.plot(
-            vg.rect_y(data={
-                "from": "flights",
-                "filterBy": "$brush"
-            }, x={
-                "bin": "distance"
-            }, y={
-                "count": ""
-            }, fill="steelblue", inset_left=0.5, inset_right=0.5),
-            {
-                "select": "intervalX",
-                "as": "$brush"
-            },
-            vg.x_domain("Fixed"),
-            vg.x_label("Flight Distance (miles)"),
-            vg.y_tick_format("s"),
-            vg.width(600),
-            vg.height(200)
-        )
+        vg.rect_y(data={
+            "from": "flights",
+            "filterBy": "$brush"
+        }, x={
+            "bin": "distance"
+        }, y={
+            "count": ""
+        }, fill="steelblue", inset_left=0.5, inset_right=0.5),
+        {
+            "select": "intervalX",
+            "as": "$brush"
+        },
+        vg.x_domain("Fixed"),
+        vg.x_label("Flight Distance (miles)"),
+        vg.y_tick_format("s"),
+        vg.width(600),
+        vg.height(200)
+    )
 )
 
 params = {
     "brush": {
-    "select": "crossfilter"
-}
+        "select": "crossfilter"
+    }
 }
 
 spec = vg.spec(meta=meta, data=data, params=params, view=view)
