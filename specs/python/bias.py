@@ -1,4 +1,3 @@
-import json
 import vgplot as vg
 
 meta = vg.meta(title="Bias Parameter", description="Dynamically adjust queried values by adding a Param value. The SQL expression is re-computed in the database upon updates.\n")
@@ -22,6 +21,3 @@ params = {
 }
 
 spec = vg.spec(meta=meta, data=data, params=params, view=view)
-
-if __name__ == "__main__":
-    print(json.dumps(spec.to_dict(), sort_keys=True))

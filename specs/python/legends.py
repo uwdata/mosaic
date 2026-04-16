@@ -1,4 +1,3 @@
-import json
 import vgplot as vg
 
 meta = vg.meta(title="Legends", description="Tests for different legend types and configurations. We test both legends defined within plots (with a zero-size frame) and external legends that reference a named plot.\n")
@@ -283,6 +282,3 @@ spec = vg.spec(meta=meta, params=params, plotDefaults={
     "width": 0,
     "height": 20
 }, view=view)
-
-if __name__ == "__main__":
-    print(json.dumps(spec.to_dict(), sort_keys=True))

@@ -1,4 +1,3 @@
-import json
 import vgplot as vg
 
 meta = vg.meta(title="Seattle Temperatures", description="Historical monthly temperatures in Seattle, WA. The gray range shows the minimum and maximum recorded temperatures. The blue range shows the average lows and highs.\n")
@@ -31,6 +30,3 @@ view = vg.plot(
 )
 
 spec = vg.spec(meta=meta, data=data, view=view)
-
-if __name__ == "__main__":
-    print(json.dumps(spec.to_dict(), sort_keys=True))

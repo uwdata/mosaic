@@ -1,4 +1,3 @@
-import json
 import vgplot as vg
 
 meta = vg.meta(title="Cross-Filter Flights (200k)", description="Histograms showing arrival delay, departure time, and distance flown for over 200,000 flights. Select a histogram region to cross-filter the charts. Each plot uses an `intervalX` interactor to populate a shared Selection with `crossfilter` resolution.\n")
@@ -73,6 +72,3 @@ params = {
 }
 
 spec = vg.spec(meta=meta, data=data, params=params, view=view)
-
-if __name__ == "__main__":
-    print(json.dumps(spec.to_dict(), sort_keys=True))

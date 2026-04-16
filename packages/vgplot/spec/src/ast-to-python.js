@@ -2,7 +2,7 @@ import { camelCaseToSnake } from './util.js';
 
 /**
  * Generate Python code for a Mosaic spec AST using the vgplot Python DSL.
- * Preamble:  import json; import vgplot as vg
+ * Preamble:  import vgplot as vg
  * Final var: spec
  */
 export function astToPython(ast) {
@@ -10,7 +10,6 @@ export function astToPython(ast) {
   const json = ast.toJSON();
   const { meta, config, data = {}, params = {}, plotDefaults, ...view } = json;
 
-  ctx.emit('import json');
   ctx.emit('import vgplot as vg');
   ctx.blank();
 
@@ -62,11 +61,6 @@ export function astToPython(ast) {
   if (config) specArgs.push(`config=${literal(config)}`);
   specArgs.push('view=view');
   ctx.emit(`spec = vg.spec(${specArgs.join(', ')})`);
-  ctx.blank();
-  ctx.emit('if __name__ == "__main__":');
-  ctx.indent();
-  ctx.emit('print(json.dumps(spec.to_dict(), sort_keys=True))');
-  ctx.dedent();
 
   return ctx.toString();
 }

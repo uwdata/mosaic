@@ -1,4 +1,3 @@
-import json
 import vgplot as vg
 
 meta = vg.meta(title="Density Groups", description="Density plots of penguin bill depths, grouped by species. The normalize parameter supports different forms of comparison, controlling if an individual density estimate is scaled by total point mass or normalized by the sum or max of the point mass. The stack and offset parameters control stacking of density areas.\n")
@@ -47,6 +46,3 @@ params = {
 }
 
 spec = vg.spec(meta=meta, data=data, params=params, view=view)
-
-if __name__ == "__main__":
-    print(json.dumps(spec.to_dict(), sort_keys=True))

@@ -1,4 +1,3 @@
-import json
 import vgplot as vg
 
 meta = vg.meta(title="Airline Travelers", description="A labeled line chart comparing airport travelers in 2019 and 2020.", credit="Adapted from an [Observable Plot example](https://observablehq.com/@observablehq/plot-labeled-line-chart).")
@@ -25,6 +24,3 @@ view = vg.plot(
 )
 
 spec = vg.spec(meta=meta, data=data, view=view)
-
-if __name__ == "__main__":
-    print(json.dumps(spec.to_dict(), sort_keys=True))

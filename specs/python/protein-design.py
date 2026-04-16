@@ -1,4 +1,3 @@
-import json
 import vgplot as vg
 
 meta = vg.meta(title="Protein Design Explorer", description="Explore synthesized proteins generated via\n[RFDiffusion](https://www.bakerlab.org/2023/07/11/diffusion-model-for-protein-design/).\n\"Minibinders\" are small proteins that bind to a specific protein target.\nWhen designing a minibinder, a researcher inputs the structure of the\ntarget protein and other parameters into the AI diffusion model. Often, a\nsingle, promising (parent) _version_ can be run through the model again to\nproduce additional, similar designs to better sample the design space.\n\nThe pipeline generates tens of thousands of protein designs. The metric\n_pAE_ (predicted alignment error) measures how accurate a model was at\npredicting the minibinder shape, whereas _pLDDT_ (predicted local distance\ndifference test) measures a model's confidence in minibinder structure\nprediction. For _pAE_ lower is better, for _pLDDT_ higher is better.\n\nAdditional parameters include _partial t_ to set the time steps used by\nthe model, _noise_ to create more diversity of designs, _gradient decay\nfunction_ and _gradient scale_ to guide prioritizing different positions\nat different time points, and _movement_ to denote whether the minibinder\nwas left in its original position (\"og\") or moved to a desirable position\n(\"moved\").\n\nThe dashboard below enables exploration of the results to identify\npromising protein designs and assess the effects of process parameters.\n", credit="Adapted from a [UW CSE 512](https://courses.cs.washington.edu/courses/cse512/24sp/) project by Christina Savvides, Alexander Shida, Riti Biswas, and Nora McNamara-Bordewick. Data from the [UW Institute for Protein Design](https://www.ipd.uw.edu/).\n")
@@ -142,6 +141,3 @@ params = {
 }
 
 spec = vg.spec(meta=meta, data=data, params=params, view=view)
-
-if __name__ == "__main__":
-    print(json.dumps(spec.to_dict(), sort_keys=True))

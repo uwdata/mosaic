@@ -1,4 +1,3 @@
-import json
 import vgplot as vg
 
 meta = vg.meta(title="Gaia Star Catalog", description="A 5M row sample of the 1.8B element Gaia star catalog.\nA `raster` sky map reveals our Milky Way galaxy. Select high parallax stars in the histogram to reveal a\n[Hertzsprung-Russel diagram](https://en.wikipedia.org/wiki/Hertzsprung%E2%80%93Russell_diagram)\nin the plot of stellar color vs. magnitude on the right.\n\n_You may need to wait a few seconds for the dataset to load._\n")
@@ -105,6 +104,3 @@ params = {
 }
 
 spec = vg.spec(meta=meta, data=data, params=params, view=view)
-
-if __name__ == "__main__":
-    print(json.dumps(spec.to_dict(), sort_keys=True))

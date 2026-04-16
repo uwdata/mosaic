@@ -1,4 +1,3 @@
-import json
 import vgplot as vg
 
 meta = vg.meta(title="Contour Plot", description="Here `heatmap` and `contour` marks visualize the density of data points in a scatter plot of penguin measurments. Setting the `fill` color to `\"species\"` subdivides the data into three sets of densities.\n")
@@ -31,6 +30,3 @@ params = {
 }
 
 spec = vg.spec(meta=meta, data=data, params=params, view=view)
-
-if __name__ == "__main__":
-    print(json.dumps(spec.to_dict(), sort_keys=True))

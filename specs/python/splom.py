@@ -1,4 +1,3 @@
-import json
 import vgplot as vg
 
 meta = vg.meta(title="Scatter Plot Matrix (SPLOM)", description="A scatter plot matrix enables inspection of pairwise bivariate distributions. Do points cluster or separate in some dimensions but not others? Select a region to highlight corresponding points across all plots.\n")
@@ -274,6 +273,3 @@ spec = vg.spec(meta=meta, data=data, params=params, plotDefaults={
     "width": 150,
     "height": 150
 }, view=view)
-
-if __name__ == "__main__":
-    print(json.dumps(spec.to_dict(), sort_keys=True))

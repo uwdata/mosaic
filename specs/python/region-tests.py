@@ -1,4 +1,3 @@
-import json
 import vgplot as vg
 
 meta = {
@@ -113,6 +112,3 @@ params = {
 }
 
 spec = vg.spec(meta=meta, data=data, params=params, view=view)
-
-if __name__ == "__main__":
-    print(json.dumps(spec.to_dict(), sort_keys=True))

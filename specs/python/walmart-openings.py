@@ -1,4 +1,3 @@
-import json
 import vgplot as vg
 
 meta = vg.meta(title="Walmart Openings", description="Maps showing Walmart store openings per decade. Requires the DuckDB `spatial` extension.\n", credit="Adapted from an [Observable Plot example](https://observablehq.com/@observablehq/plot-map-large-multiples).")
@@ -31,6 +30,3 @@ view = vg.vconcat(
 )
 
 spec = vg.spec(meta=meta, data=data, view=view)
-
-if __name__ == "__main__":
-    print(json.dumps(spec.to_dict(), sort_keys=True))

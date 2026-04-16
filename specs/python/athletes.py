@@ -1,4 +1,3 @@
-import json
 import vgplot as vg
 
 meta = vg.meta(title="Olympic Athletes", description="An interactive dashboard of athlete statistics. The menus and searchbox filter the display and are automatically populated by backing data columns.\n")
@@ -81,6 +80,3 @@ params = {
 }
 
 spec = vg.spec(meta=meta, data=data, params=params, view=view)
-
-if __name__ == "__main__":
-    print(json.dumps(spec.to_dict(), sort_keys=True))

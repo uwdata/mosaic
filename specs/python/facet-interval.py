@@ -1,4 +1,3 @@
-import json
 import vgplot as vg
 
 meta = vg.meta(title="Faceted Interval Selections", description="A faceted plot with 2D interval selections.", credit="Adapted from https://observablehq.com/@observablehq/plot-non-faceted-marks")
@@ -41,6 +40,3 @@ params = {
 }
 
 spec = vg.spec(meta=meta, data=data, params=params, view=view)
-
-if __name__ == "__main__":
-    print(json.dumps(spec.to_dict(), sort_keys=True))
