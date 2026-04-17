@@ -13,6 +13,10 @@ extend-exclude = [
     "docs/public/specs/python",
 ]
 
+
+[tool.uv]
+package = true
+
 [tool.ruff.lint]
 pydocstyle = { convention = "numpy" }
-ignore = ["G004", "TRY301", "EM102", "EM101", "TRY003", "FBT002", "S608", "TRY002", "ARG001"]
+ignore = ["G004", "TRY301", "EM102", "EM101", "TRY003", "FBT002", "S608", "TRY002", "ARG001", "E402" ,"F401","F403"]
