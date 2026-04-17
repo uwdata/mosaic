@@ -1,15 +1,16 @@
-import json
 import vgplot as vg
 
 data = vg.data(
     flights=vg.parquet("data/flights-200k.parquet")
 )
 
+brush = vg.Selection.crossfilter()
+
 view = vg.vconcat(
     vg.plot(
         vg.rect_y(data={
             "from": "flights",
-            "filterBy": "$brush"
+            "filterBy": brush
         }, x={
             "bin": "delay"
         }, y={
@@ -17,7 +18,7 @@ view = vg.vconcat(
         }, fill="steelblue", inset_left=0.5, inset_right=0.5),
         {
             "select": "intervalX",
-            "as": "$brush"
+            "as": brush
         },
         vg.x_domain("Fixed"),
         vg.x_label("Arrival Delay (min)"),
@@ -28,7 +29,7 @@ view = vg.vconcat(
     vg.plot(
         vg.rect_y(data={
             "from": "flights",
-            "filterBy": "$brush"
+            "filterBy": brush
         }, x={
             "bin": "time"
         }, y={
@@ -36,7 +37,7 @@ view = vg.vconcat(
         }, fill="steelblue", inset_left=0.5, inset_right=0.5),
         {
             "select": "intervalX",
-            "as": "$brush"
+            "as": brush
         },
         vg.x_domain("Fixed"),
         vg.x_label("Departure Time (hour)"),
@@ -46,13 +47,4 @@ view = vg.vconcat(
     )
 )
 
-params = {
-    "brush": {
-        "select": "crossfilter"
-    }
-}
-
-spec = vg.spec(data=data, params=params, view=view)
-
-if __name__ == "__main__":
-    print(json.dumps(spec.to_dict(), sort_keys=True))
+spec = vg.spec(data=data, params={"brush": brush}, view=view)

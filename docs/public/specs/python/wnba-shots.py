@@ -1,4 +1,3 @@
-import json
 import vgplot as vg
 
 meta = vg.meta(title="WNBA Shot Chart", description="Every field goal attempt in the 2023 WNBA regular season. Shots are grouped into hexagonal bins, with color indicating shot potency (average score) and size indicating the total count of shots per location. The menu filters isolate shots by team or athlete.\n", credit="Data from [Wehoop](https://wehoop.sportsdataverse.org/). Design inspired by [Kirk Goldsberry](https://en.wikipedia.org/wiki/Kirk_Goldsberry) and a [UW CSE 512](https://courses.cs.washington.edu/courses/cse512/24sp/) project by Mackenzie Pitts and Madeline Brown.\n")
@@ -11,21 +10,22 @@ data = vg.data(
     court=vg.parquet("data/wnba-half-court.parquet")
 )
 
+filter = vg.Selection.crossfilter()
+binWidth = vg.Param.value(18)
+
 view = vg.vconcat(
     vg.hconcat(
-        vg.input("menu", from_="shots", column="team_name", as_="$filter", label="Team"),
-        vg.input("menu", from_="shots", column="athlete_name", filter_by="$filter", as_="$filter", label="Athlete")
+        vg.input("menu", from_="shots", column="team_name", as_=filter, label="Team"),
+        vg.input("menu", from_="shots", column="athlete_name", filter_by=filter, as_=filter, label="Athlete")
     ),
-    {
-        "vspace": 5
-    },
+    vg.vspace(5),
     vg.plot(
         vg.frame(stroke_opacity=0.5),
-        vg.hexgrid(bin_width="$binWidth", stroke_opacity=0.05),
+        vg.hexgrid(bin_width=binWidth, stroke_opacity=0.05),
         vg.hexbin(data={
             "from": "shots",
-            "filterBy": "$filter"
-        }, bin_width="$binWidth", x="x_position", y="y_position", fill={
+            "filterBy": filter
+        }, bin_width=binWidth, x="x_position", y="y_position", fill={
             "avg": "score_value"
         }, r={
             "count": ""
@@ -67,14 +67,4 @@ view = vg.vconcat(
     }
 )
 
-params = {
-    "filter": {
-        "select": "crossfilter"
-    },
-    "binWidth": 18
-}
-
-spec = vg.spec(meta=meta, data=data, params=params, view=view)
-
-if __name__ == "__main__":
-    print(json.dumps(spec.to_dict(), sort_keys=True))
+spec = vg.spec(meta=meta, data=data, params={"filter": filter, "binWidth": binWidth}, view=view)

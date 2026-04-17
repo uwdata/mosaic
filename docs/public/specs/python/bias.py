@@ -1,4 +1,3 @@
-import json
 import vgplot as vg
 
 meta = vg.meta(title="Bias Parameter", description="Dynamically adjust queried values by adding a Param value. The SQL expression is re-computed in the database upon updates.\n")
@@ -6,8 +5,10 @@ data = vg.data(
     walk=vg.parquet("data/random-walk.parquet")
 )
 
+point = vg.Param.value(0)
+
 view = vg.vconcat(
-    vg.slider(label="Bias", as_="$point", min=0, max=1000, step=1),
+    vg.slider(label="Bias", as_=point, min=0, max=1000, step=1),
     vg.plot(
         vg.area_y(data=vg.from_("walk"), x="t", y={
             "sql": "v + $point"
@@ -17,11 +18,4 @@ view = vg.vconcat(
     )
 )
 
-params = {
-    "point": 0
-}
-
-spec = vg.spec(meta=meta, data=data, params=params, view=view)
-
-if __name__ == "__main__":
-    print(json.dumps(spec.to_dict(), sort_keys=True))
+spec = vg.spec(meta=meta, data=data, params={"point": point}, view=view)

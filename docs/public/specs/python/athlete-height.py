@@ -1,4 +1,3 @@
-import json
 import vgplot as vg
 
 meta = vg.meta(title="Athlete Height Intervals", description="Confidence intervals of Olympic athlete heights, in meters. Data are batched into groups of 10 samples per sport. Use the samples slider to see how the intervals update as the sample size increases (as in [online aggregation](https://en.wikipedia.org/wiki/Online_aggregation)). For each sport, the numbers on the right show the maximum number of athletes in the full dataset.\n")
@@ -14,17 +13,20 @@ data = vg.data(
 }
 )
 
+ci = vg.Param.value(0.95)
+query = vg.Selection.single()
+
 view = vg.hconcat(
     vg.vconcat(
         vg.hconcat(
-            vg.slider(select="interval", as_="$query", column="batch", from_="athletesBatched", step=10, value=20, label="Max Samples"),
-            vg.slider(as_="$ci", min=0.5, max=0.999, step=0.001, label="Conf. Level")
+            vg.slider(select="interval", as_=query, column="batch", from_="athletesBatched", step=10, value=20, label="Max Samples"),
+            vg.slider(as_=ci, min=0.5, max=0.999, step=0.001, label="Conf. Level")
         ),
         vg.plot(
             vg.errorbar_x(data={
                 "from": "athletesBatched",
-                "filterBy": "$query"
-            }, ci="$ci", x="height", y="sport", stroke="sex", stroke_width=1, marker="tick", sort={
+                "filterBy": query
+            }, ci=ci, x="height", y="sport", stroke="sex", stroke_width=1, marker="tick", sort={
                 "y": "-x"
             }),
             vg.text(data=vg.from_("athletesBatched"), frame_anchor="right", font_size=8, fill="#999", dx=25, text={
@@ -50,14 +52,4 @@ view = vg.hconcat(
     )
 )
 
-params = {
-    "ci": 0.95,
-    "query": {
-        "select": "single"
-    }
-}
-
-spec = vg.spec(meta=meta, data=data, params=params, view=view)
-
-if __name__ == "__main__":
-    print(json.dumps(spec.to_dict(), sort_keys=True))
+spec = vg.spec(meta=meta, data=data, params={"ci": ci, "query": query}, view=view)

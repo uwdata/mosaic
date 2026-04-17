@@ -5,6 +5,8 @@ data = vg.data(
     presidents=vg.parquet("data/us-president-favorability.parquet")
 )
 
+sign = vg.Param.value(1)
+
 view = vg.vconcat(
     vg.plot(
         vg.rule_y(data=[
@@ -29,11 +31,7 @@ view = vg.vconcat(
             "label": "Net Favorability",
             "value": -1
         }
-    ], as_="$sign")
+    ], as_=sign)
 )
 
-params = {
-    "sign": 1
-}
-
-spec = vg.spec(meta=meta, data=data, params=params, view=view)
+spec = vg.spec(meta=meta, data=data, params={"sign": sign}, view=view)

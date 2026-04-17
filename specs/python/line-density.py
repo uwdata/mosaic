@@ -14,25 +14,29 @@ data = vg.data(
 }
 )
 
+brush = vg.Selection.intersect()
+bandwidth = vg.Param.value(0)
+pixelSize = vg.Param.value(2)
+schemeColor = vg.Param.value("pubugn")
+scaleColor = vg.Param.value("sqrt")
+
 view = vg.vconcat(
     vg.hconcat(
-        vg.slider(label="Bandwidth (σ)", as_="$bandwidth", min=0, max=10, step=0.1),
-        vg.input("menu", label="Pixel Size", as_="$pixelSize", options=[
+        vg.slider(label="Bandwidth (σ)", as_=bandwidth, min=0, max=10, step=0.1),
+        vg.input("menu", label="Pixel Size", as_=pixelSize, options=[
             0.5,
             1,
             2
         ])
     ),
-    {
-        "vspace": 10
-    },
+    vg.vspace(10),
     vg.plot(
         vg.dense_line(data={
             "from": "stocks_after_2006",
-            "filterBy": "$brush"
-        }, x="Date", y="Close", z="Symbol", fill="density", bandwidth="$bandwidth", pixel_size="$pixelSize"),
-        vg.color_scheme("$schemeColor"),
-        vg.color_scale("$scaleColor"),
+            "filterBy": brush
+        }, x="Date", y="Close", z="Symbol", fill="density", bandwidth=bandwidth, pixel_size=pixelSize),
+        vg.color_scheme(schemeColor),
+        vg.color_scale(scaleColor),
         vg.y_label("Close (Normalized) ↑"),
         vg.y_nice(True),
         vg.margins(left=30, top=20, right=0),
@@ -40,13 +44,13 @@ view = vg.vconcat(
         vg.height(240)
     ),
     vg.plot(
-        vg.dense_line(data=vg.from_("stocks_after_2006"), x="Date", y="Close", z="Symbol", fill="density", normalize=False, bandwidth="$bandwidth", pixel_size="$pixelSize"),
+        vg.dense_line(data=vg.from_("stocks_after_2006"), x="Date", y="Close", z="Symbol", fill="density", normalize=False, bandwidth=bandwidth, pixel_size=pixelSize),
         {
             "select": "intervalXY",
-            "as": "$brush"
+            "as": brush
         },
-        vg.color_scheme("$schemeColor"),
-        vg.color_scale("$scaleColor"),
+        vg.color_scheme(schemeColor),
+        vg.color_scale(scaleColor),
         vg.y_label("Close (Unnormalized) ↑"),
         vg.y_nice(True),
         vg.margins(left=30, top=20, right=0),
@@ -55,14 +59,4 @@ view = vg.vconcat(
     )
 )
 
-params = {
-    "brush": {
-        "select": "intersect"
-    },
-    "bandwidth": 0,
-    "pixelSize": 2,
-    "schemeColor": "pubugn",
-    "scaleColor": "sqrt"
-}
-
-spec = vg.spec(meta=meta, data=data, params=params, view=view)
+spec = vg.spec(meta=meta, data=data, params={"brush": brush, "bandwidth": bandwidth, "pixelSize": pixelSize, "schemeColor": schemeColor, "scaleColor": scaleColor}, view=view)

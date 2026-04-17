@@ -5,9 +5,14 @@ data = vg.data(
     athletes=vg.parquet("data/athletes.parquet")
 )
 
+unit = vg.Param.value(10)
+round = vg.Param.value(False)
+gap = vg.Param.value(1)
+radius = vg.Param.value(0)
+
 view = vg.vconcat(
     vg.hconcat(
-        vg.input("menu", as_="$unit", options=[
+        vg.input("menu", as_=unit, options=[
             1,
             2,
             5,
@@ -16,11 +21,11 @@ view = vg.vconcat(
             50,
             100
         ], label="Unit"),
-        vg.input("menu", as_="$round", options=[
+        vg.input("menu", as_=round, options=[
             True,
             False
         ], label="Round"),
-        vg.input("menu", as_="$gap", options=[
+        vg.input("menu", as_=gap, options=[
             0,
             1,
             2,
@@ -28,13 +33,11 @@ view = vg.vconcat(
             4,
             5
         ], label="Gap"),
-        vg.slider(as_="$radius", min=0, max=10, step=0.1, label="Radius")
+        vg.slider(as_=radius, min=0, max=10, step=0.1, label="Radius")
     ),
-    {
-        "vspace": 10
-    },
+    vg.vspace(10),
     vg.plot(
-        vg.waffle_y(data=vg.from_("athletes"), unit="$unit", round="$round", gap="$gap", rx="$radius", x={
+        vg.waffle_y(data=vg.from_("athletes"), unit=unit, round=round, gap=gap, rx=radius, x={
             "sql": "5 * floor(year(\"date_of_birth\") / 5)"
         }, y={
             "count": ""
@@ -45,11 +48,4 @@ view = vg.vconcat(
     )
 )
 
-params = {
-    "unit": 10,
-    "round": False,
-    "gap": 1,
-    "radius": 0
-}
-
-spec = vg.spec(meta=meta, data=data, params=params, view=view)
+spec = vg.spec(meta=meta, data=data, params={"unit": unit, "round": round, "gap": gap, "radius": radius}, view=view)

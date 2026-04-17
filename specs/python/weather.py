@@ -5,18 +5,23 @@ data = vg.data(
     weather=vg.parquet("data/seattle-weather.parquet")
 )
 
+click = vg.Selection.single()
+domain = vg.Param.array(["sun", "fog", "drizzle", "rain", "snow"])
+colors = vg.Param.array(["#e7ba52", "#a7a7a7", "#aec7e8", "#1f77b4", "#9467bd"])
+range = vg.Selection.intersect()
+
 view = vg.vconcat(
     vg.hconcat(
         vg.plot(
             vg.dot(data={
                 "from": "weather",
-                "filterBy": "$click"
+                "filterBy": click
             }, x={
                 "dateMonthDay": "date"
             }, y="temp_max", fill="weather", r="precipitation", fill_opacity=0.7),
             {
                 "select": "intervalX",
-                "as": "$range",
+                "as": range,
                 "brush": {
                     "fill": "none",
                     "stroke": "#888"
@@ -24,19 +29,19 @@ view = vg.vconcat(
             },
             {
                 "select": "highlight",
-                "by": "$range",
+                "by": range,
                 "fill": "#ccc",
                 "fillOpacity": 0.2
             },
             {
                 "legend": "color",
-                "as": "$click",
+                "as": click,
                 "columns": 1
             },
             vg.xy_domain("Fixed"),
             vg.x_tick_format("%b"),
-            vg.color_domain("$domain"),
-            vg.color_range("$colors"),
+            vg.color_domain(domain),
+            vg.color_range(colors),
             vg.r_domain("Fixed"),
             vg.r_range([
                 2,
@@ -52,48 +57,25 @@ view = vg.vconcat(
         }, y="weather", fill="#ccc", fill_opacity=0.2),
         vg.bar_x(data={
             "from": "weather",
-            "filterBy": "$range"
+            "filterBy": range
         }, x={
             "count": ""
         }, y="weather", fill="weather"),
         {
             "select": "toggleY",
-            "as": "$click"
+            "as": click
         },
         {
             "select": "highlight",
-            "by": "$click"
+            "by": click
         },
         vg.x_domain("Fixed"),
-        vg.y_domain("$domain"),
+        vg.y_domain(domain),
         vg.y_label(None),
-        vg.color_domain("$domain"),
-        vg.color_range("$colors"),
+        vg.color_domain(domain),
+        vg.color_range(colors),
         vg.width(680)
     )
 )
 
-params = {
-    "click": {
-        "select": "single"
-    },
-    "domain": [
-        "sun",
-        "fog",
-        "drizzle",
-        "rain",
-        "snow"
-    ],
-    "colors": [
-        "#e7ba52",
-        "#a7a7a7",
-        "#aec7e8",
-        "#1f77b4",
-        "#9467bd"
-    ],
-    "range": {
-        "select": "intersect"
-    }
-}
-
-spec = vg.spec(meta=meta, data=data, params=params, view=view)
+spec = vg.spec(meta=meta, data=data, params={"click": click, "domain": domain, "colors": colors, "range": range}, view=view)

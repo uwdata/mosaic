@@ -12,12 +12,15 @@ data = vg.data(
 }
 )
 
+selected = vg.Selection.union()
+length = vg.Param.value(2)
+
 view = vg.vconcat(
     {
         "legend": "color",
         "for": "wind-map",
         "label": "Speed (m/s)",
-        "as": "$selected"
+        "as": selected
     },
     vg.plot(
         vg.vector(data=vg.from_("wind"), x="longitude", y="latitude", rotate={
@@ -31,14 +34,14 @@ view = vg.vconcat(
         }),
         {
             "select": "region",
-            "as": "$selected",
+            "as": selected,
             "channels": [
                 "id"
             ]
         },
         {
             "select": "highlight",
-            "by": "$selected"
+            "by": selected
         },
         vg.name("wind-map"),
         vg.length_scale("identity"),
@@ -47,14 +50,7 @@ view = vg.vconcat(
         vg.aspect_ratio(1),
         vg.width(680)
     ),
-    vg.slider(min=1, max=7, step=0.1, as_="$length", label="Vector Length")
+    vg.slider(min=1, max=7, step=0.1, as_=length, label="Vector Length")
 )
 
-params = {
-    "selected": {
-        "select": "union"
-    },
-    "length": 2
-}
-
-spec = vg.spec(meta=meta, data=data, params=params, view=view)
+spec = vg.spec(meta=meta, data=data, params={"selected": selected, "length": length}, view=view)

@@ -5,11 +5,14 @@ data = vg.data(
     penguins=vg.parquet("data/penguins.parquet")
 )
 
+mesh = vg.Param.value(0)
+hull = vg.Param.value(0)
+
 view = vg.vconcat(
     vg.plot(
         vg.voronoi(data=vg.from_("penguins"), x="bill_length", y="bill_depth", stroke="white", stroke_width=1, stroke_opacity=0.5, fill="species", fill_opacity=0.2),
-        vg.hull(data=vg.from_("penguins"), x="bill_length", y="bill_depth", stroke="species", stroke_opacity="$hull", stroke_width=1.5),
-        vg.delaunay_mesh(data=vg.from_("penguins"), x="bill_length", y="bill_depth", z="species", stroke="species", stroke_opacity="$mesh", stroke_width=1),
+        vg.hull(data=vg.from_("penguins"), x="bill_length", y="bill_depth", stroke="species", stroke_opacity=hull, stroke_width=1.5),
+        vg.delaunay_mesh(data=vg.from_("penguins"), x="bill_length", y="bill_depth", z="species", stroke="species", stroke_opacity=mesh, stroke_width=1),
         vg.dot(data=vg.from_("penguins"), x="bill_length", y="bill_depth", fill="species", r=2),
         vg.frame(),
         vg.inset(10),
@@ -25,10 +28,8 @@ view = vg.vconcat(
                 "value": 0.5,
                 "label": "Show"
             }
-        ], as_="$mesh"),
-        {
-            "hspace": 5
-        },
+        ], as_=mesh),
+        vg.hspace(5),
         vg.input("menu", label="Convex Hull", options=[
             {
                 "value": 0,
@@ -38,13 +39,8 @@ view = vg.vconcat(
                 "value": 1,
                 "label": "Show"
             }
-        ], as_="$hull")
+        ], as_=hull)
     )
 )
 
-params = {
-    "mesh": 0,
-    "hull": 0
-}
-
-spec = vg.spec(meta=meta, data=data, params=params, view=view)
+spec = vg.spec(meta=meta, data=data, params={"mesh": mesh, "hull": hull}, view=view)

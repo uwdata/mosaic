@@ -5,6 +5,8 @@ data = vg.data(
     penguins=vg.parquet("data/penguins.parquet")
 )
 
+sel = vg.Selection.intersect()
+
 view = vg.hconcat(
     vg.plot(
         vg.frame(),
@@ -12,14 +14,14 @@ view = vg.hconcat(
         vg.dot(data=vg.from_("penguins"), x="bill_length", y="bill_depth", fill="species", fx="sex", fy="species"),
         {
             "select": "intervalXY",
-            "as": "$sel",
+            "as": sel,
             "brush": {
                 "stroke": "transparent"
             }
         },
         {
             "select": "highlight",
-            "by": "$sel"
+            "by": sel
         },
         vg.name("plot"),
         vg.grid(True),
@@ -33,10 +35,4 @@ view = vg.hconcat(
     )
 )
 
-params = {
-    "sel": {
-        "select": "intersect"
-    }
-}
-
-spec = vg.spec(meta=meta, data=data, params=params, view=view)
+spec = vg.spec(meta=meta, data=data, params={"sel": sel}, view=view)

@@ -1,10 +1,11 @@
-import json
 import vgplot as vg
 
 meta = vg.meta(title="Population Change Arrows", description="An `arrow` connects the positions in 1980 and 2015 of each city on this population × inequality chart. Color encodes variation.\n", credit="Adapted from an [Observable Plot example](https://observablehq.com/@observablehq/plot-arrow-variation-chart).")
 data = vg.data(
     metros=vg.parquet("data/metros.parquet")
 )
+
+bend = vg.Param.value(True)
 
 view = vg.vconcat(
     {
@@ -13,7 +14,7 @@ view = vg.vconcat(
         "label": "Change in inequality from 1980 to 2015"
     },
     vg.plot(
-        vg.arrow(data=vg.from_("metros"), x1="POP_1980", y1="R90_10_1980", x2="POP_2015", y2="R90_10_2015", bend="$bend", stroke={
+        vg.arrow(data=vg.from_("metros"), x1="POP_1980", y1="R90_10_1980", x2="POP_2015", y2="R90_10_2015", bend=bend, stroke={
             "sql": "R90_10_2015 - R90_10_1980"
         }),
         vg.text(data=vg.from_("metros"), x="POP_2015", y="R90_10_2015", filter="highlight", text="nyt_display", fill="currentColor", dy=-6),
@@ -30,14 +31,7 @@ view = vg.vconcat(
     vg.input("menu", label="Bend Arrows?", options=[
         True,
         False
-    ], as_="$bend")
+    ], as_=bend)
 )
 
-params = {
-    "bend": True
-}
-
-spec = vg.spec(meta=meta, data=data, params=params, view=view)
-
-if __name__ == "__main__":
-    print(json.dumps(spec.to_dict(), sort_keys=True))
+spec = vg.spec(meta=meta, data=data, params={"bend": bend}, view=view)

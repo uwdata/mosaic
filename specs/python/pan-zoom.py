@@ -5,6 +5,11 @@ data = vg.data(
     penguins=vg.parquet("data/penguins.parquet")
 )
 
+xs = vg.Selection.intersect()
+ys = vg.Selection.intersect()
+zs = vg.Selection.intersect()
+ws = vg.Selection.intersect()
+
 view = vg.hconcat(
     vg.vconcat(
         vg.plot(
@@ -12,52 +17,46 @@ view = vg.hconcat(
             vg.dot(data=vg.from_("penguins"), x="bill_length", y="bill_depth", fill="species", r=2, clip=True),
             {
                 "select": "panZoom",
-                "x": "$xs",
-                "y": "$ys"
+                "x": xs,
+                "y": ys
             },
             vg.width(320),
             vg.height(240)
         ),
-        {
-            "vspace": 10
-        },
+        vg.vspace(10),
         vg.plot(
             vg.frame(),
             vg.dot(data=vg.from_("penguins"), x="bill_length", y="flipper_length", fill="species", r=2, clip=True),
             {
                 "select": "panZoom",
-                "x": "$xs",
-                "y": "$zs"
+                "x": xs,
+                "y": zs
             },
             vg.width(320),
             vg.height(240)
         )
     ),
-    {
-        "hspace": 10
-    },
+    vg.hspace(10),
     vg.vconcat(
         vg.plot(
             vg.frame(),
             vg.dot(data=vg.from_("penguins"), x="body_mass", y="bill_depth", fill="species", r=2, clip=True),
             {
                 "select": "panZoom",
-                "x": "$ws",
-                "y": "$ys"
+                "x": ws,
+                "y": ys
             },
             vg.width(320),
             vg.height(240)
         ),
-        {
-            "vspace": 10
-        },
+        vg.vspace(10),
         vg.plot(
             vg.frame(),
             vg.dot(data=vg.from_("penguins"), x="body_mass", y="flipper_length", fill="species", r=2, clip=True),
             {
                 "select": "panZoom",
-                "x": "$ws",
-                "y": "$zs"
+                "x": ws,
+                "y": zs
             },
             vg.width(320),
             vg.height(240)
@@ -65,19 +64,4 @@ view = vg.hconcat(
     )
 )
 
-params = {
-    "xs": {
-        "select": "intersect"
-    },
-    "ys": {
-        "select": "intersect"
-    },
-    "zs": {
-        "select": "intersect"
-    },
-    "ws": {
-        "select": "intersect"
-    }
-}
-
-spec = vg.spec(meta=meta, data=data, params=params, view=view)
+spec = vg.spec(meta=meta, data=data, params={"xs": xs, "ys": ys, "zs": zs, "ws": ws}, view=view)

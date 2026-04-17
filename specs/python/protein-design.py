@@ -5,21 +5,25 @@ data = vg.data(
     proteins=vg.parquet("data/protein-design.parquet")
 )
 
+query = vg.Selection.crossfilter()
+point = vg.Selection.intersect(empty=True)
+plddt_domain = vg.Param.array([67, 94.5])
+pae_domain = vg.Param.array([5, 29])
+scheme = vg.Param.value("observable10")
+
 view = vg.vconcat(
     vg.hconcat(
-        vg.input("menu", from_="proteins", column="partial_t", label="Partial t", as_="$query"),
-        vg.input("menu", from_="proteins", column="noise", label="Noise", as_="$query"),
-        vg.input("menu", from_="proteins", column="gradient_decay_function", label="Gradient Decay", as_="$query"),
-        vg.input("menu", from_="proteins", column="gradient_scale", label="Gradient Scale", as_="$query")
+        vg.input("menu", from_="proteins", column="partial_t", label="Partial t", as_=query),
+        vg.input("menu", from_="proteins", column="noise", label="Noise", as_=query),
+        vg.input("menu", from_="proteins", column="gradient_decay_function", label="Gradient Decay", as_=query),
+        vg.input("menu", from_="proteins", column="gradient_scale", label="Gradient Scale", as_=query)
     ),
-    {
-        "vspace": "1.5em"
-    },
+    vg.vspace("1.5em"),
     vg.hconcat(
         vg.plot(
             vg.rect_y(data={
                 "from": "proteins",
-                "filterBy": "$query"
+                "filterBy": query
             }, x={
                 "bin": "plddt_total",
                 "steps": 60
@@ -30,22 +34,20 @@ view = vg.vconcat(
             vg.height(55),
             vg.x_axis(None),
             vg.y_axis(None),
-            vg.x_domain("$plddt_domain"),
+            vg.x_domain(plddt_domain),
             vg.color_domain("Fixed"),
-            vg.color_scheme("$scheme"),
+            vg.color_scheme(scheme),
             vg.margin_left(40),
             vg.margin_right(0),
             vg.margin_top(0),
             vg.margin_bottom(0)
         ),
-        {
-            "hspace": 5
-        },
+        vg.hspace(5),
         {
             "legend": "color",
             "for": "scatter",
             "columns": 1,
-            "as": "$query"
+            "as": query
         }
     ),
     vg.hconcat(
@@ -53,11 +55,11 @@ view = vg.vconcat(
             vg.frame(stroke="#ccc"),
             vg.raster(data={
                 "from": "proteins",
-                "filterBy": "$query"
+                "filterBy": query
             }, x="plddt_total", y="pae_interaction", fill="version", pad=0),
             {
                 "select": "intervalXY",
-                "as": "$query",
+                "as": query,
                 "brush": {
                     "stroke": "currentColor",
                     "fill": "transparent"
@@ -65,7 +67,7 @@ view = vg.vconcat(
             },
             vg.dot(data={
                 "from": "proteins",
-                "filterBy": "$point"
+                "filterBy": point
             }, x="plddt_total", y="pae_interaction", fill="version", stroke="currentColor", stroke_width=0.5),
             vg.name("scatter"),
             vg.opacity_domain([
@@ -74,9 +76,9 @@ view = vg.vconcat(
             ]),
             vg.opacity_clamp(True),
             vg.color_domain("Fixed"),
-            vg.color_scheme("$scheme"),
-            vg.x_domain("$plddt_domain"),
-            vg.y_domain("$pae_domain"),
+            vg.color_scheme(scheme),
+            vg.x_domain(plddt_domain),
+            vg.y_domain(pae_domain),
             vg.x_label_anchor("center"),
             vg.y_label_anchor("center"),
             vg.margin_top(0),
@@ -88,7 +90,7 @@ view = vg.vconcat(
         vg.plot(
             vg.rect_x(data={
                 "from": "proteins",
-                "filterBy": "$query"
+                "filterBy": query
             }, x={
                 "count": ""
             }, y={
@@ -102,15 +104,13 @@ view = vg.vconcat(
             vg.margin_top(0),
             vg.margin_left(0),
             vg.margin_right(0),
-            vg.y_domain("$pae_domain"),
+            vg.y_domain(pae_domain),
             vg.color_domain("Fixed"),
-            vg.color_scheme("$scheme")
+            vg.color_scheme(scheme)
         )
     ),
-    {
-        "vspace": "1em"
-    },
-    vg.input("table", as_="$point", filter_by="$query", from_="proteins", columns=[
+    vg.vspace("1em"),
+    vg.input("table", as_=point, filter_by=query, from_="proteins", columns=[
         "version",
         "pae_interaction",
         "plddt_total",
@@ -121,23 +121,4 @@ view = vg.vconcat(
     ], width=680, height=215)
 )
 
-params = {
-    "query": {
-        "select": "crossfilter"
-    },
-    "point": {
-        "select": "intersect",
-        "empty": True
-    },
-    "plddt_domain": [
-        67,
-        94.5
-    ],
-    "pae_domain": [
-        5,
-        29
-    ],
-    "scheme": "observable10"
-}
-
-spec = vg.spec(meta=meta, data=data, params=params, view=view)
+spec = vg.spec(meta=meta, data=data, params={"query": query, "point": point, "plddt_domain": plddt_domain, "pae_domain": pae_domain, "scheme": scheme}, view=view)

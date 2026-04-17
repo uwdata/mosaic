@@ -5,6 +5,8 @@ data = vg.data(
     metros=vg.parquet("data/metros.parquet")
 )
 
+bend = vg.Param.value(True)
+
 view = vg.vconcat(
     {
         "legend": "color",
@@ -12,7 +14,7 @@ view = vg.vconcat(
         "label": "Change in inequality from 1980 to 2015"
     },
     vg.plot(
-        vg.arrow(data=vg.from_("metros"), x1="POP_1980", y1="R90_10_1980", x2="POP_2015", y2="R90_10_2015", bend="$bend", stroke={
+        vg.arrow(data=vg.from_("metros"), x1="POP_1980", y1="R90_10_1980", x2="POP_2015", y2="R90_10_2015", bend=bend, stroke={
             "sql": "R90_10_2015 - R90_10_1980"
         }),
         vg.text(data=vg.from_("metros"), x="POP_2015", y="R90_10_2015", filter="highlight", text="nyt_display", fill="currentColor", dy=-6),
@@ -29,11 +31,7 @@ view = vg.vconcat(
     vg.input("menu", label="Bend Arrows?", options=[
         True,
         False
-    ], as_="$bend")
+    ], as_=bend)
 )
 
-params = {
-    "bend": True
-}
-
-spec = vg.spec(meta=meta, data=data, params=params, view=view)
+spec = vg.spec(meta=meta, data=data, params={"bend": bend}, view=view)

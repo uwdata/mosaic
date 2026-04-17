@@ -5,12 +5,14 @@ data = vg.data(
     walk=vg.parquet("data/random-walk.parquet")
 )
 
+brush = vg.Selection.intersect()
+
 view = vg.vconcat(
     vg.plot(
         vg.area_y(data=vg.from_("walk"), x="t", y="v", fill="steelblue"),
         {
             "select": "intervalX",
-            "as": "$brush"
+            "as": brush
         },
         vg.width(680),
         vg.height(200)
@@ -18,7 +20,7 @@ view = vg.vconcat(
     vg.plot(
         vg.area_y(data={
             "from": "walk",
-            "filterBy": "$brush"
+            "filterBy": brush
         }, x="t", y="v", fill="steelblue"),
         vg.y_domain("Fixed"),
         vg.width(680),
@@ -26,10 +28,4 @@ view = vg.vconcat(
     )
 )
 
-params = {
-    "brush": {
-        "select": "intersect"
-    }
-}
-
-spec = vg.spec(meta=meta, data=data, params=params, view=view)
+spec = vg.spec(meta=meta, data=data, params={"brush": brush}, view=view)

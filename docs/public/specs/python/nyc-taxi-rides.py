@@ -1,4 +1,3 @@
-import json
 import vgplot as vg
 
 meta = vg.meta(title="NYC Taxi Rides", description="Pickup and dropoff points for 1M NYC taxi rides on Jan 1-3, 2010.\nThis example projects lon/lat coordinates in the database upon load.\nSelect a region in one plot to filter the other.\nWhat spatial patterns can you find?\nRequires the DuckDB `spatial` extension.\n\n_You may need to wait a few seconds for the dataset to load._\n")
@@ -15,16 +14,18 @@ data = vg.data(
     trips=vg.table("SELECT\n  (HOUR(datetime) + MINUTE(datetime)/60) AS time,\n  ST_X(pick) AS px, ST_Y(pick) AS py,\n  ST_X(drop) AS dx, ST_Y(drop) AS dy\nFROM rides")
 )
 
+filter = vg.Selection.crossfilter()
+
 view = vg.vconcat(
     vg.hconcat(
         vg.plot(
             vg.raster(data={
                 "from": "trips",
-                "filterBy": "$filter"
+                "filterBy": filter
             }, x="px", y="py", bandwidth=0),
             {
                 "select": "intervalXY",
-                "as": "$filter"
+                "as": filter
             },
             vg.text(data=[
                 {
@@ -47,17 +48,15 @@ view = vg.vconcat(
             vg.color_scale("symlog"),
             vg.color_scheme("blues")
         ),
-        {
-            "hspace": 10
-        },
+        vg.hspace(10),
         vg.plot(
             vg.raster(data={
                 "from": "trips",
-                "filterBy": "$filter"
+                "filterBy": filter
             }, x="dx", y="dy", bandwidth=0),
             {
                 "select": "intervalXY",
-                "as": "$filter"
+                "as": filter
             },
             vg.text(data=[
                 {
@@ -81,9 +80,7 @@ view = vg.vconcat(
             vg.color_scheme("oranges")
         )
     ),
-    {
-        "vspace": 10
-    },
+    vg.vspace(10),
     vg.plot(
         vg.rect_y(data=vg.from_("trips"), x={
             "bin": "time"
@@ -92,7 +89,7 @@ view = vg.vconcat(
         }, fill="steelblue", inset=0.5),
         {
             "select": "intervalX",
-            "as": "$filter"
+            "as": filter
         },
         vg.y_tick_format("s"),
         vg.x_label("Pickup Hour →"),
@@ -101,15 +98,6 @@ view = vg.vconcat(
     )
 )
 
-params = {
-    "filter": {
-        "select": "crossfilter"
-    }
-}
-
-spec = vg.spec(meta=meta, data=data, params=params, config={
+spec = vg.spec(meta=meta, data=data, params={"filter": filter}, config={
     "extensions": "spatial"
 }, view=view)
-
-if __name__ == "__main__":
-    print(json.dumps(spec.to_dict(), sort_keys=True))

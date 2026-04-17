@@ -1,4 +1,3 @@
-import json
 import vgplot as vg
 
 meta = vg.meta(title="Cross-Filter Flights (200k)", description="Histograms showing arrival delay, departure time, and distance flown for over 200,000 flights. Select a histogram region to cross-filter the charts. Each plot uses an `intervalX` interactor to populate a shared Selection with `crossfilter` resolution.\n")
@@ -6,11 +5,13 @@ data = vg.data(
     flights=vg.parquet("data/flights-200k.parquet")
 )
 
+brush = vg.Selection.crossfilter()
+
 view = vg.vconcat(
     vg.plot(
         vg.rect_y(data={
             "from": "flights",
-            "filterBy": "$brush"
+            "filterBy": brush
         }, x={
             "bin": "delay"
         }, y={
@@ -18,7 +19,7 @@ view = vg.vconcat(
         }, fill="steelblue", inset_left=0.5, inset_right=0.5),
         {
             "select": "intervalX",
-            "as": "$brush"
+            "as": brush
         },
         vg.x_domain("Fixed"),
         vg.x_label("Arrival Delay (min)"),
@@ -29,7 +30,7 @@ view = vg.vconcat(
     vg.plot(
         vg.rect_y(data={
             "from": "flights",
-            "filterBy": "$brush"
+            "filterBy": brush
         }, x={
             "bin": "time"
         }, y={
@@ -37,7 +38,7 @@ view = vg.vconcat(
         }, fill="steelblue", inset_left=0.5, inset_right=0.5),
         {
             "select": "intervalX",
-            "as": "$brush"
+            "as": brush
         },
         vg.x_domain("Fixed"),
         vg.x_label("Departure Time (hour)"),
@@ -48,7 +49,7 @@ view = vg.vconcat(
     vg.plot(
         vg.rect_y(data={
             "from": "flights",
-            "filterBy": "$brush"
+            "filterBy": brush
         }, x={
             "bin": "distance"
         }, y={
@@ -56,7 +57,7 @@ view = vg.vconcat(
         }, fill="steelblue", inset_left=0.5, inset_right=0.5),
         {
             "select": "intervalX",
-            "as": "$brush"
+            "as": brush
         },
         vg.x_domain("Fixed"),
         vg.x_label("Flight Distance (miles)"),
@@ -66,13 +67,4 @@ view = vg.vconcat(
     )
 )
 
-params = {
-    "brush": {
-        "select": "crossfilter"
-    }
-}
-
-spec = vg.spec(meta=meta, data=data, params=params, view=view)
-
-if __name__ == "__main__":
-    print(json.dumps(spec.to_dict(), sort_keys=True))
+spec = vg.spec(meta=meta, data=data, params={"brush": brush}, view=view)

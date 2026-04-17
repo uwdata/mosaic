@@ -5,14 +5,17 @@ data = vg.data(
     penguins=vg.parquet("data/penguins.parquet")
 )
 
+bandwidth = vg.Param.value(40)
+thresholds = vg.Param.value(10)
+
 view = vg.vconcat(
     vg.hconcat(
-        vg.slider(label="Bandwidth (σ)", as_="$bandwidth", min=1, max=100),
-        vg.slider(label="Thresholds", as_="$thresholds", min=2, max=20)
+        vg.slider(label="Bandwidth (σ)", as_=bandwidth, min=1, max=100),
+        vg.slider(label="Thresholds", as_=thresholds, min=2, max=20)
     ),
     vg.plot(
-        vg.heatmap(data=vg.from_("penguins"), x="bill_length", y="bill_depth", fill="species", bandwidth="$bandwidth"),
-        vg.contour(data=vg.from_("penguins"), x="bill_length", y="bill_depth", stroke="species", bandwidth="$bandwidth", thresholds="$thresholds"),
+        vg.heatmap(data=vg.from_("penguins"), x="bill_length", y="bill_depth", fill="species", bandwidth=bandwidth),
+        vg.contour(data=vg.from_("penguins"), x="bill_length", y="bill_depth", stroke="species", bandwidth=bandwidth, thresholds=thresholds),
         vg.dot(data=vg.from_("penguins"), x="bill_length", y="bill_depth", fill="currentColor", r=1),
         vg.x_axis("bottom"),
         vg.x_label_anchor("center"),
@@ -24,9 +27,4 @@ view = vg.vconcat(
     )
 )
 
-params = {
-    "bandwidth": 40,
-    "thresholds": 10
-}
-
-spec = vg.spec(meta=meta, data=data, params=params, view=view)
+spec = vg.spec(meta=meta, data=data, params={"bandwidth": bandwidth, "thresholds": thresholds}, view=view)

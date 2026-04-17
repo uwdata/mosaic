@@ -5,6 +5,8 @@ data = vg.data(
     cases=vg.parquet("data/berlin-covid.parquet")
 )
 
+frame = vg.Param.array([-6, 0])
+
 view = vg.vconcat(
     vg.plot(
         vg.rect_y(data=vg.from_("cases"), x1="day", x2={
@@ -15,13 +17,13 @@ view = vg.vconcat(
         }, y={
             "avg": "cases",
             "orderby": "day",
-            "rows": "$frame"
+            "rows": frame
         }, curve="monotone-x", stroke="currentColor"),
         vg.x_label("day"),
         vg.width(680),
         vg.height(300)
     ),
-    vg.input("menu", label="Window Frame", as_="$frame", options=[
+    vg.input("menu", label="Window Frame", as_=frame, options=[
         {
             "label": "7-day moving average, with prior 6 days: [-6, 0]",
             "value": [
@@ -53,11 +55,4 @@ view = vg.vconcat(
     ])
 )
 
-params = {
-    "frame": [
-        -6,
-        0
-    ]
-}
-
-spec = vg.spec(meta=meta, data=data, params=params, view=view)
+spec = vg.spec(meta=meta, data=data, params={"frame": frame}, view=view)

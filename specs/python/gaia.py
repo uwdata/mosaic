@@ -5,20 +5,25 @@ data = vg.data(
     gaia=vg.table("-- compute u and v with natural earth projection\nWITH prep AS (\n  SELECT\n    radians((-l + 540) % 360 - 180) AS lambda,\n    radians(b) AS phi,\n    asin(sqrt(3)/2 * sin(phi)) AS t,\n    t^2 AS t2,\n    t2^3 AS t6,\n    *\n  FROM 'https://pub-1da360b43ceb401c809f68ca37c7f8a4.r2.dev/data/gaia-5m.parquet'\n  WHERE parallax BETWEEN -5 AND 20 AND phot_g_mean_mag IS NOT NULL AND bp_rp IS NOT NULL\n)\nSELECT\n  (1.340264 * \"lambda\" * cos(t)) / (sqrt(3)/2 * (1.340264 + (-0.081106 * 3 * t2) + (t6 * (0.000893 * 7 + 0.003796 * 9 * t2)))) AS u,\n  t * (1.340264 + (-0.081106 * t2) + (t6 * (0.000893 + 0.003796 * t2))) AS v,\n  * EXCLUDE('t', 't2', 't6')\nFROM prep")
 )
 
+brush = vg.Selection.crossfilter()
+bandwidth = vg.Param.value(0)
+pixelSize = vg.Param.value(2)
+scaleType = vg.Param.value("sqrt")
+
 view = vg.hconcat(
     vg.vconcat(
         vg.plot(
             vg.raster(data={
                 "from": "gaia",
-                "filterBy": "$brush"
-            }, x="u", y="v", fill="density", bandwidth="$bandwidth", pixel_size="$pixelSize"),
+                "filterBy": brush
+            }, x="u", y="v", fill="density", bandwidth=bandwidth, pixel_size=pixelSize),
             {
                 "select": "intervalXY",
                 "pixelSize": 2,
-                "as": "$brush"
+                "as": brush
             },
             vg.xy_domain("Fixed"),
-            vg.color_scale("$scaleType"),
+            vg.color_scale(scaleType),
             vg.color_scheme("viridis"),
             vg.width(440),
             vg.height(250),
@@ -30,7 +35,7 @@ view = vg.hconcat(
             vg.plot(
                 vg.rect_y(data={
                     "from": "gaia",
-                    "filterBy": "$brush"
+                    "filterBy": brush
                 }, x={
                     "bin": "phot_g_mean_mag"
                 }, y={
@@ -38,10 +43,10 @@ view = vg.hconcat(
                 }, fill="steelblue", inset=0.5),
                 {
                     "select": "intervalX",
-                    "as": "$brush"
+                    "as": brush
                 },
                 vg.x_domain("Fixed"),
-                vg.y_scale("$scaleType"),
+                vg.y_scale(scaleType),
                 vg.y_grid(True),
                 vg.width(220),
                 vg.height(120),
@@ -50,7 +55,7 @@ view = vg.hconcat(
             vg.plot(
                 vg.rect_y(data={
                     "from": "gaia",
-                    "filterBy": "$brush"
+                    "filterBy": brush
                 }, x={
                     "bin": "parallax"
                 }, y={
@@ -58,10 +63,10 @@ view = vg.hconcat(
                 }, fill="steelblue", inset=0.5),
                 {
                     "select": "intervalX",
-                    "as": "$brush"
+                    "as": brush
                 },
                 vg.x_domain("Fixed"),
-                vg.y_scale("$scaleType"),
+                vg.y_scale(scaleType),
                 vg.y_grid(True),
                 vg.width(220),
                 vg.height(120),
@@ -69,21 +74,19 @@ view = vg.hconcat(
             )
         )
     ),
-    {
-        "hspace": 10
-    },
+    vg.hspace(10),
     vg.plot(
         vg.raster(data={
             "from": "gaia",
-            "filterBy": "$brush"
-        }, x="bp_rp", y="phot_g_mean_mag", fill="density", bandwidth="$bandwidth", pixel_size="$pixelSize"),
+            "filterBy": brush
+        }, x="bp_rp", y="phot_g_mean_mag", fill="density", bandwidth=bandwidth, pixel_size=pixelSize),
         {
             "select": "intervalXY",
             "pixelSize": 2,
-            "as": "$brush"
+            "as": brush
         },
         vg.xy_domain("Fixed"),
-        vg.color_scale("$scaleType"),
+        vg.color_scale(scaleType),
         vg.color_scheme("viridis"),
         vg.y_reverse(True),
         vg.width(230),
@@ -94,13 +97,4 @@ view = vg.hconcat(
     )
 )
 
-params = {
-    "brush": {
-        "select": "crossfilter"
-    },
-    "bandwidth": 0,
-    "pixelSize": 2,
-    "scaleType": "sqrt"
-}
-
-spec = vg.spec(meta=meta, data=data, params=params, view=view)
+spec = vg.spec(meta=meta, data=data, params={"brush": brush, "bandwidth": bandwidth, "pixelSize": pixelSize, "scaleType": scaleType}, view=view)

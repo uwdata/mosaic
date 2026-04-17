@@ -5,6 +5,9 @@ data = vg.data(
     ca55=vg.parquet("data/ca55-south.parquet")
 )
 
+interp = vg.Param.value("random-walk")
+blur = vg.Param.value(0)
+
 view = vg.vconcat(
     vg.hconcat(
         vg.input("menu", label="Interpolation Method", options=[
@@ -12,27 +15,18 @@ view = vg.vconcat(
             "nearest",
             "barycentric",
             "random-walk"
-        ], as_="$interp"),
-        {
-            "hspace": "1em"
-        },
-        vg.slider(label="Blur", min=0, max=100, as_="$blur")
+        ], as_=interp),
+        vg.hspace("1em"),
+        vg.slider(label="Blur", min=0, max=100, as_=blur)
     ),
-    {
-        "vspace": "1em"
-    },
+    vg.vspace("1em"),
     vg.plot(
         vg.raster(data=vg.from_("ca55"), x="LONGITUDE", y="LATITUDE", fill={
             "max": "MAG_IGRF90"
-        }, interpolate="$interp", bandwidth="$blur"),
+        }, interpolate=interp, bandwidth=blur),
         vg.color_scale("diverging"),
         vg.color_domain("Fixed")
     )
 )
 
-params = {
-    "interp": "random-walk",
-    "blur": 0
-}
-
-spec = vg.spec(meta=meta, data=data, params=params, view=view)
+spec = vg.spec(meta=meta, data=data, params={"interp": interp, "blur": blur}, view=view)

@@ -1,5 +1,13 @@
 import { camelCaseToSnake } from './util.js';
 
+const PYTHON_KEYWORDS = new Set([
+  'False', 'None', 'True', 'and', 'as', 'assert', 'async', 'await',
+  'break', 'class', 'continue', 'def', 'del', 'elif', 'else', 'except',
+  'finally', 'for', 'from', 'global', 'if', 'import', 'in', 'is',
+  'lambda', 'nonlocal', 'not', 'or', 'pass', 'raise', 'return', 'try',
+  'type', 'while', 'with', 'yield',
+]);
+
 /**
  * Generate Python code for a Mosaic spec AST using the vgplot Python DSL.
  * Preamble:  import vgplot as vg
@@ -44,25 +52,48 @@ export function astToPython(ast) {
   }
   ctx.blank();
 
+  // params - emitted before view so variables are in scope
+  const paramEntries = Object.entries(params);
+  if (paramEntries.length) {
+    for (const [name, def] of paramEntries) {
+      ctx.emit(emitParamDef(ctx.ident(name), def));
+    }
+    ctx.blank();
+  }
+
   // view / layout / plot
   ctx.emit(`view = ${emitComponent(view, ctx)}`);
   ctx.blank();
 
-  if (Object.keys(params).length) {
-    ctx.emit(`params = ${literal(params)}`);
-    ctx.blank();
-  }
-
   const specArgs = [];
   if (meta) specArgs.push('meta=meta');
   if (Object.keys(data).length) specArgs.push('data=data');
-  if (Object.keys(params).length) specArgs.push('params=params');
+  if (paramEntries.length) {
+    const dictItems = paramEntries.map(([name]) => `"${name}": ${ctx.ident(name)}`);
+    specArgs.push(`params={${dictItems.join(', ')}}`);
+  }
   if (plotDefaults) specArgs.push(`plotDefaults=${literal(plotDefaults)}`);
   if (config) specArgs.push(`config=${literal(config)}`);
   specArgs.push('view=view');
   ctx.emit(`spec = vg.spec(${specArgs.join(', ')})`);
 
   return ctx.toString();
+}
+
+function emitParamDef(name, def) {
+  if (def === null || def === undefined) return `${name} = vg.Param.value(None)`;
+  if (typeof def !== 'object') return `${name} = vg.Param.value(${literal(def)})`;
+  if (Array.isArray(def)) {
+    return `${name} = vg.Param.array([${def.map(v => literal(v)).join(', ')}])`;
+  }
+  const { select, ...opts } = def;
+  if (select) {
+    const optArgs = Object.entries(opts)
+      .filter(([, v]) => v !== undefined)
+      .map(([k, v]) => `${camelCaseToSnake(k)}=${literal(v)}`);
+    return `${name} = vg.Selection.${camelCaseToSnake(select)}(${optArgs.join(', ')})`;
+  }
+  return `${name} = vg.Param.value(${literal(def)})`;
 }
 
 function emitComponent(node, ctx) {
@@ -80,6 +111,8 @@ function emitComponent(node, ctx) {
     const body = node.hconcat.map(n => indentLine(emitComponent(n, ctx), 1)).join(',\n');
     return `vg.hconcat(\n${body}\n)`;
   }
+  if (node.vspace !== undefined) return `vg.vspace(${literal(node.vspace)})`;
+  if (node.hspace !== undefined) return `vg.hspace(${literal(node.hspace)})`;
   if (node.input) {
     return emitInput(node);
   }
@@ -184,7 +217,11 @@ function literal(v, depth = 0) {
   if (v === null || v === undefined) return 'None';
   if (typeof v === 'boolean') return v ? 'True' : 'False';
   if (typeof v === 'number') return String(v);
-  if (typeof v === 'string') return JSON.stringify(v);
+  if (typeof v === 'string') {
+    // param reference like "$brush" → emit as the variable name
+    if (/^\$[A-Za-z_][A-Za-z0-9_]*$/.test(v)) return v.slice(1);
+    return JSON.stringify(v);
+  }
   const pad = '    '.repeat(depth + 1);
   const closePad = '    '.repeat(depth);
   if (Array.isArray(v)) {
@@ -234,7 +271,8 @@ export class PythonCodegenContext {
   toString() { return this.lines.join('\n'); }
   ident(name) {
     if (this.identMap.has(name)) return this.identMap.get(name);
-    const safe = name.replace(/[^A-Za-z0-9_]/g, '_').replace(/^([0-9])/, '_$1');
+    let safe = name.replace(/[^A-Za-z0-9_]/g, '_').replace(/^([0-9])/, '_$1');
+    if (PYTHON_KEYWORDS.has(safe)) safe += '_';
     this.identMap.set(name, safe);
     return safe;
   }

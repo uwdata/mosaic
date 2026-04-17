@@ -5,16 +5,17 @@ data = vg.data(
     flights=vg.parquet("data/flights-200k.parquet")
 )
 
+scale = vg.Param.value("log")
+query = vg.Selection.intersect()
+
 view = vg.vconcat(
     vg.hconcat(
-        vg.input("menu", label="Color Scale", as_="$scale", options=[
+        vg.input("menu", label="Color Scale", as_=scale, options=[
             "log",
             "linear",
             "sqrt"
         ]),
-        {
-            "hspace": 10
-        },
+        vg.hspace(10),
         {
             "legend": "color",
             "for": "hexbins"
@@ -29,7 +30,7 @@ view = vg.vconcat(
             }, fill="steelblue", inset=0.5),
             {
                 "select": "intervalX",
-                "as": "$query"
+                "as": query
             },
             vg.margins(left=5, right=5, top=30, bottom=0),
             vg.x_domain("Fixed"),
@@ -39,22 +40,20 @@ view = vg.vconcat(
             vg.width(605),
             vg.height(70)
         ),
-        {
-            "hspace": 80
-        }
+        vg.hspace(80)
     ),
     vg.hconcat(
         vg.plot(
             vg.hexbin(data={
                 "from": "flights",
-                "filterBy": "$query"
+                "filterBy": query
             }, x="time", y="delay", fill={
                 "count": ""
             }, bin_width=10),
             vg.hexgrid(bin_width=10),
             vg.name("hexbins"),
             vg.color_scheme("ylgnbu"),
-            vg.color_scale("$scale"),
+            vg.color_scale(scale),
             vg.margins(left=5, right=0, top=0, bottom=5),
             vg.x_axis(None),
             vg.y_axis(None),
@@ -70,7 +69,7 @@ view = vg.vconcat(
             }, fill="steelblue", inset=0.5),
             {
                 "select": "intervalY",
-                "as": "$query"
+                "as": query
             },
             vg.margins(left=0, right=50, top=4, bottom=5),
             vg.y_domain([
@@ -86,11 +85,4 @@ view = vg.vconcat(
     )
 )
 
-params = {
-    "scale": "log",
-    "query": {
-        "select": "intersect"
-    }
-}
-
-spec = vg.spec(meta=meta, data=data, params=params, view=view)
+spec = vg.spec(meta=meta, data=data, params={"scale": scale, "query": query}, view=view)

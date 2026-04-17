@@ -5,6 +5,9 @@ data = vg.data(
     penguins=vg.parquet("data/penguins.parquet")
 )
 
+x = vg.Param.value("body_mass")
+y = vg.Param.value("flipper_length")
+
 view = vg.vconcat(
     vg.hconcat(
         vg.input("menu", label="Y", options=[
@@ -12,23 +15,21 @@ view = vg.vconcat(
             "flipper_length",
             "bill_depth",
             "bill_length"
-        ], as_="$y"),
+        ], as_=y),
         vg.input("menu", label="X", options=[
             "body_mass",
             "flipper_length",
             "bill_depth",
             "bill_length"
-        ], as_="$x")
+        ], as_=x)
     ),
-    {
-        "vspace": 10
-    },
+    vg.vspace(10),
     vg.hconcat(
         vg.plot(
             vg.dot(data=vg.from_("penguins"), x={
-                "column": "$x"
+                "column": x
             }, y={
-                "column": "$y"
+                "column": y
             }, stroke="species", symbol="species"),
             vg.name("stroked"),
             vg.grid(True),
@@ -41,15 +42,13 @@ view = vg.vconcat(
             "columns": 1
         }
     ),
-    {
-        "vspace": 20
-    },
+    vg.vspace(20),
     vg.hconcat(
         vg.plot(
             vg.dot(data=vg.from_("penguins"), x={
-                "column": "$x"
+                "column": x
             }, y={
-                "column": "$y"
+                "column": y
             }, fill="species", symbol="species"),
             vg.name("filled"),
             vg.grid(True),
@@ -64,9 +63,4 @@ view = vg.vconcat(
     )
 )
 
-params = {
-    "x": "body_mass",
-    "y": "flipper_length"
-}
-
-spec = vg.spec(meta=meta, data=data, params=params, view=view)
+spec = vg.spec(meta=meta, data=data, params={"x": x, "y": y}, view=view)

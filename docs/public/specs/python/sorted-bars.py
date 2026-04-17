@@ -1,4 +1,3 @@
-import json
 import vgplot as vg
 
 meta = vg.meta(title="Sorted Bars", description="Sort and limit an aggregate bar chart of gold medals by country.\n")
@@ -6,15 +5,15 @@ data = vg.data(
     athletes=vg.parquet("data/athletes.parquet")
 )
 
+query = vg.Selection.intersect()
+
 view = vg.vconcat(
-    vg.input("menu", label="Sport", as_="$query", from_="athletes", column="sport", value="aquatics"),
-    {
-        "vspace": 10
-    },
+    vg.input("menu", label="Sport", as_=query, from_="athletes", column="sport", value="aquatics"),
+    vg.vspace(10),
     vg.plot(
         vg.bar_x(data={
             "from": "athletes",
-            "filterBy": "$query"
+            "filterBy": query
         }, x={
             "sum": "gold"
         }, y="nationality", fill="steelblue", sort={
@@ -28,13 +27,4 @@ view = vg.vconcat(
     )
 )
 
-params = {
-    "query": {
-        "select": "intersect"
-    }
-}
-
-spec = vg.spec(meta=meta, data=data, params=params, view=view)
-
-if __name__ == "__main__":
-    print(json.dumps(spec.to_dict(), sort_keys=True))
+spec = vg.spec(meta=meta, data=data, params={"query": query}, view=view)

@@ -5,6 +5,8 @@ data = vg.data(
     penguins=vg.parquet("data/penguins.parquet")
 )
 
+brush = vg.Selection.single()
+
 view = vg.vconcat(
     vg.hconcat(
         vg.plot(
@@ -12,11 +14,11 @@ view = vg.vconcat(
             vg.dot(data=vg.from_("penguins"), x="bill_length", y="body_mass", fill="species", r=2),
             {
                 "select": "intervalXY",
-                "as": "$brush"
+                "as": brush
             },
             {
                 "select": "highlight",
-                "by": "$brush",
+                "by": brush,
                 "opacity": 0.1
             },
             vg.y_axis("left"),
@@ -28,11 +30,11 @@ view = vg.vconcat(
             vg.dot(data=vg.from_("penguins"), x="bill_depth", y="body_mass", fill="species", r=2),
             {
                 "select": "intervalXY",
-                "as": "$brush"
+                "as": brush
             },
             {
                 "select": "highlight",
-                "by": "$brush",
+                "by": brush,
                 "opacity": 0.1
             }
         ),
@@ -41,11 +43,11 @@ view = vg.vconcat(
             vg.dot(data=vg.from_("penguins"), x="flipper_length", y="body_mass", fill="species", r=2),
             {
                 "select": "intervalXY",
-                "as": "$brush"
+                "as": brush
             },
             {
                 "select": "highlight",
-                "by": "$brush",
+                "by": brush,
                 "opacity": 0.1
             }
         ),
@@ -54,11 +56,11 @@ view = vg.vconcat(
             vg.dot(data=vg.from_("penguins"), x="body_mass", y="body_mass", fill="species", r=2),
             {
                 "select": "intervalXY",
-                "as": "$brush"
+                "as": brush
             },
             {
                 "select": "highlight",
-                "by": "$brush",
+                "by": brush,
                 "opacity": 0.1
             }
         )
@@ -69,11 +71,11 @@ view = vg.vconcat(
             vg.dot(data=vg.from_("penguins"), x="bill_length", y="flipper_length", fill="species", r=2),
             {
                 "select": "intervalXY",
-                "as": "$brush"
+                "as": brush
             },
             {
                 "select": "highlight",
-                "by": "$brush",
+                "by": brush,
                 "opacity": 0.1
             },
             vg.y_axis("left"),
@@ -85,11 +87,11 @@ view = vg.vconcat(
             vg.dot(data=vg.from_("penguins"), x="bill_depth", y="flipper_length", fill="species", r=2),
             {
                 "select": "intervalXY",
-                "as": "$brush"
+                "as": brush
             },
             {
                 "select": "highlight",
-                "by": "$brush",
+                "by": brush,
                 "opacity": 0.1
             }
         ),
@@ -98,11 +100,11 @@ view = vg.vconcat(
             vg.dot(data=vg.from_("penguins"), x="flipper_length", y="flipper_length", fill="species", r=2),
             {
                 "select": "intervalXY",
-                "as": "$brush"
+                "as": brush
             },
             {
                 "select": "highlight",
-                "by": "$brush",
+                "by": brush,
                 "opacity": 0.1
             }
         ),
@@ -111,11 +113,11 @@ view = vg.vconcat(
             vg.dot(data=vg.from_("penguins"), x="body_mass", y="flipper_length", fill="species", r=2),
             {
                 "select": "intervalXY",
-                "as": "$brush"
+                "as": brush
             },
             {
                 "select": "highlight",
-                "by": "$brush",
+                "by": brush,
                 "opacity": 0.1
             }
         )
@@ -126,11 +128,11 @@ view = vg.vconcat(
             vg.dot(data=vg.from_("penguins"), x="bill_length", y="bill_depth", fill="species", r=2),
             {
                 "select": "intervalXY",
-                "as": "$brush"
+                "as": brush
             },
             {
                 "select": "highlight",
-                "by": "$brush",
+                "by": brush,
                 "opacity": 0.1
             },
             vg.y_axis("left"),
@@ -142,11 +144,11 @@ view = vg.vconcat(
             vg.dot(data=vg.from_("penguins"), x="bill_depth", y="bill_depth", fill="species", r=2),
             {
                 "select": "intervalXY",
-                "as": "$brush"
+                "as": brush
             },
             {
                 "select": "highlight",
-                "by": "$brush",
+                "by": brush,
                 "opacity": 0.1
             }
         ),
@@ -155,11 +157,11 @@ view = vg.vconcat(
             vg.dot(data=vg.from_("penguins"), x="flipper_length", y="bill_depth", fill="species", r=2),
             {
                 "select": "intervalXY",
-                "as": "$brush"
+                "as": brush
             },
             {
                 "select": "highlight",
-                "by": "$brush",
+                "by": brush,
                 "opacity": 0.1
             }
         ),
@@ -168,11 +170,11 @@ view = vg.vconcat(
             vg.dot(data=vg.from_("penguins"), x="body_mass", y="bill_depth", fill="species", r=2),
             {
                 "select": "intervalXY",
-                "as": "$brush"
+                "as": brush
             },
             {
                 "select": "highlight",
-                "by": "$brush",
+                "by": brush,
                 "opacity": 0.1
             }
         )
@@ -183,11 +185,11 @@ view = vg.vconcat(
             vg.dot(data=vg.from_("penguins"), x="bill_length", y="bill_length", fill="species", r=2),
             {
                 "select": "intervalXY",
-                "as": "$brush"
+                "as": brush
             },
             {
                 "select": "highlight",
-                "by": "$brush",
+                "by": brush,
                 "opacity": 0.1
             },
             vg.y_axis("left"),
@@ -202,11 +204,11 @@ view = vg.vconcat(
             vg.dot(data=vg.from_("penguins"), x="bill_depth", y="bill_length", fill="species", r=2),
             {
                 "select": "intervalXY",
-                "as": "$brush"
+                "as": brush
             },
             {
                 "select": "highlight",
-                "by": "$brush",
+                "by": brush,
                 "opacity": 0.1
             },
             vg.x_axis("bottom"),
@@ -218,11 +220,11 @@ view = vg.vconcat(
             vg.dot(data=vg.from_("penguins"), x="flipper_length", y="bill_length", fill="species", r=2),
             {
                 "select": "intervalXY",
-                "as": "$brush"
+                "as": brush
             },
             {
                 "select": "highlight",
-                "by": "$brush",
+                "by": brush,
                 "opacity": 0.1
             },
             vg.x_axis("bottom"),
@@ -234,11 +236,11 @@ view = vg.vconcat(
             vg.dot(data=vg.from_("penguins"), x="body_mass", y="bill_length", fill="species", r=2),
             {
                 "select": "intervalXY",
-                "as": "$brush"
+                "as": brush
             },
             {
                 "select": "highlight",
-                "by": "$brush",
+                "by": brush,
                 "opacity": 0.1
             },
             vg.x_axis("bottom"),
@@ -248,13 +250,7 @@ view = vg.vconcat(
     )
 )
 
-params = {
-    "brush": {
-        "select": "single"
-    }
-}
-
-spec = vg.spec(meta=meta, data=data, params=params, plotDefaults={
+spec = vg.spec(meta=meta, data=data, params={"brush": brush}, plotDefaults={
     "xTicks": 3,
     "yTicks": 4,
     "xDomain": "Fixed",

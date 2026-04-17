@@ -1,4 +1,3 @@
-import json
 import vgplot as vg
 
 meta = vg.meta(title="U.S. Unemployment", description="A choropleth map of unemployment rates for U.S. counties. Requires the DuckDB `spatial` extension.\n", credit="Adapted from an [Observable Plot example](https://observablehq.com/@observablehq/plot-us-choropleth).")
@@ -32,6 +31,3 @@ view = vg.vconcat(
 )
 
 spec = vg.spec(meta=meta, data=data, view=view)
-
-if __name__ == "__main__":
-    print(json.dumps(spec.to_dict(), sort_keys=True))

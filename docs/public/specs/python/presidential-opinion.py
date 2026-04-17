@@ -1,10 +1,11 @@
-import json
 import vgplot as vg
 
 meta = vg.meta(title="Presidential Opinion", description="Opinion poll data on historical U.S. presidents. Image marks are used to show presidential pictures. The dropdown menu toggles the opinion metric shown.\n", credit="Adapted from an [Observable Plot example](https://observablehq.com/@observablehq/plot-image-medals).")
 data = vg.data(
     presidents=vg.parquet("data/us-president-favorability.parquet")
 )
+
+sign = vg.Param.value(1)
 
 view = vg.vconcat(
     vg.plot(
@@ -30,14 +31,7 @@ view = vg.vconcat(
             "label": "Net Favorability",
             "value": -1
         }
-    ], as_="$sign")
+    ], as_=sign)
 )
 
-params = {
-    "sign": 1
-}
-
-spec = vg.spec(meta=meta, data=data, params=params, view=view)
-
-if __name__ == "__main__":
-    print(json.dumps(spec.to_dict(), sort_keys=True))
+spec = vg.spec(meta=meta, data=data, params={"sign": sign}, view=view)

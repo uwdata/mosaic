@@ -1,4 +1,3 @@
-import json
 import vgplot as vg
 
 meta = vg.meta(title="Linear Regression 10M", description="A linear regression plot predicting flight arrival delay based on the time of departure, over 10 million flight records. Regression computation is performed in the database, with optimized selection updates using pre-aggregated materialized views. The area around a regression line shows a 95% confidence interval. Select a region to view regression results for a data subset.\n")
@@ -9,8 +8,11 @@ data = vg.data(
     flights1p=vg.table("SELECT * FROM flights10m USING SAMPLE 1%")
 )
 
+data = vg.Param.value("flights10m")
+query = vg.Selection.intersect()
+
 view = vg.vconcat(
-    vg.input("menu", label="Sample", as_="$data", options=[
+    vg.input("menu", label="Sample", as_=data, options=[
         {
             "value": "flights10m",
             "label": "Full Data"
@@ -28,19 +30,17 @@ view = vg.vconcat(
             "label": "1% Sample"
         }
     ]),
-    {
-        "vspace": 10
-    },
+    vg.vspace(10),
     vg.plot(
-        vg.raster(data=vg.from_("$data"), x="time", y="delay", pixel_size=4, pad=0, image_rendering="pixelated"),
-        vg.regression_y(data=vg.from_("$data"), x="time", y="delay", stroke="gray"),
+        vg.raster(data=vg.from_(data), x="time", y="delay", pixel_size=4, pad=0, image_rendering="pixelated"),
+        vg.regression_y(data=vg.from_(data), x="time", y="delay", stroke="gray"),
         vg.regression_y(data={
-            "from": "$data",
-            "filterBy": "$query"
+            "from": data,
+            "filterBy": query
         }, x="time", y="delay", stroke="firebrick"),
         {
             "select": "intervalXY",
-            "as": "$query",
+            "as": query,
             "brush": {
                 "fillOpacity": 0,
                 "stroke": "currentColor"
@@ -60,14 +60,4 @@ view = vg.vconcat(
     )
 )
 
-params = {
-    "data": "flights10m",
-    "query": {
-        "select": "intersect"
-    }
-}
-
-spec = vg.spec(meta=meta, data=data, params=params, view=view)
-
-if __name__ == "__main__":
-    print(json.dumps(spec.to_dict(), sort_keys=True))
+spec = vg.spec(meta=meta, data=data, params={"data": data, "query": query}, view=view)

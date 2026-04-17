@@ -3,26 +3,28 @@ import vgplot as vg
 meta = vg.meta(title="Legends", description="Tests for different legend types and configurations. We test both legends defined within plots (with a zero-size frame) and external legends that reference a named plot.\n")
 data = {}
 
+toggle = vg.Selection.single()
+interval = vg.Selection.intersect()
+domain = vg.Param.array(["foo", "bar", "baz", "bop", "doh"])
+
 view = vg.vconcat(
     vg.hconcat(
         vg.plot(
             {
                 "legend": "color",
                 "label": "Color Swatch",
-                "as": "$toggle"
+                "as": toggle
             },
             vg.name("color-categorical"),
             vg.color_scale("categorical"),
-            vg.color_domain("$domain")
+            vg.color_domain(domain)
         ),
-        {
-            "hspace": 35
-        },
+        vg.hspace(35),
         {
             "legend": "color",
             "for": "color-categorical",
             "label": "Color Swatch (External)",
-            "as": "$toggle"
+            "as": toggle
         }
     ),
     vg.hconcat(
@@ -30,30 +32,26 @@ view = vg.vconcat(
             {
                 "legend": "symbol",
                 "label": "Symbol Swatch",
-                "as": "$toggle"
+                "as": toggle
             },
             vg.name("symbol-categorical"),
-            vg.symbol_domain("$domain")
+            vg.symbol_domain(domain)
         ),
-        {
-            "hspace": 35
-        },
+        vg.hspace(35),
         {
             "legend": "symbol",
             "for": "symbol-categorical",
             "label": "Symbol Swatch (External)",
-            "as": "$toggle"
+            "as": toggle
         }
     ),
-    {
-        "vspace": "1em"
-    },
+    vg.vspace("1em"),
     vg.hconcat(
         vg.plot(
             {
                 "legend": "opacity",
                 "label": "Opacity Ramp",
-                "as": "$interval"
+                "as": interval
             },
             vg.name("opacity-linear"),
             vg.opacity_domain([
@@ -61,14 +59,12 @@ view = vg.vconcat(
                 100
             ])
         ),
-        {
-            "hspace": 30
-        },
+        vg.hspace(30),
         {
             "legend": "opacity",
             "for": "opacity-linear",
             "label": "Opacity Ramp (External)",
-            "as": "$interval"
+            "as": interval
         }
     ),
     vg.hconcat(
@@ -82,23 +78,19 @@ view = vg.vconcat(
                 100
             ])
         ),
-        {
-            "hspace": 30
-        },
+        vg.hspace(30),
         {
             "legend": "opacity",
             "for": "opacity-linear-no-label"
         }
     ),
-    {
-        "vspace": "1em"
-    },
+    vg.vspace("1em"),
     vg.hconcat(
         vg.plot(
             {
                 "legend": "color",
                 "label": "Linear Color Ramp",
-                "as": "$interval"
+                "as": interval
             },
             vg.name("color-linear"),
             vg.color_domain([
@@ -106,14 +98,12 @@ view = vg.vconcat(
                 100
             ])
         ),
-        {
-            "hspace": 30
-        },
+        vg.hspace(30),
         {
             "legend": "color",
             "for": "color-linear",
             "label": "Linear Color Ramp (External)",
-            "as": "$interval"
+            "as": interval
         }
     ),
     vg.hconcat(
@@ -127,23 +117,19 @@ view = vg.vconcat(
                 100
             ])
         ),
-        {
-            "hspace": 30
-        },
+        vg.hspace(30),
         {
             "legend": "color",
             "for": "color-linear-no-label"
         }
     ),
-    {
-        "vspace": "1em"
-    },
+    vg.vspace("1em"),
     vg.hconcat(
         vg.plot(
             {
                 "legend": "color",
                 "label": "Logarithmic Color Ramp",
-                "as": "$interval"
+                "as": interval
             },
             vg.name("color-log"),
             vg.color_scale("log"),
@@ -152,14 +138,12 @@ view = vg.vconcat(
                 100
             ])
         ),
-        {
-            "hspace": 30
-        },
+        vg.hspace(30),
         {
             "legend": "color",
             "for": "color-log",
             "label": "Logarithmic Color Ramp (External)",
-            "as": "$interval"
+            "as": interval
         }
     ),
     vg.hconcat(
@@ -167,7 +151,7 @@ view = vg.vconcat(
             {
                 "legend": "color",
                 "label": "Diverging Color Ramp",
-                "as": "$interval"
+                "as": interval
             },
             vg.name("color-diverging"),
             vg.color_scale("diverging"),
@@ -177,14 +161,12 @@ view = vg.vconcat(
             ]),
             vg.color_constant(20)
         ),
-        {
-            "hspace": 30
-        },
+        vg.hspace(30),
         {
             "legend": "color",
             "for": "color-diverging",
             "label": "Diverging Color Ramp (External)",
-            "as": "$interval"
+            "as": interval
         }
     ),
     vg.hconcat(
@@ -192,7 +174,7 @@ view = vg.vconcat(
             {
                 "legend": "color",
                 "label": "Diverging Symlog Color Ramp",
-                "as": "$interval"
+                "as": interval
             },
             vg.name("color-diverging-symlog"),
             vg.color_scale("diverging-symlog"),
@@ -202,14 +184,12 @@ view = vg.vconcat(
             ]),
             vg.color_constant(20)
         ),
-        {
-            "hspace": 30
-        },
+        vg.hspace(30),
         {
             "legend": "color",
             "for": "color-diverging-symlog",
             "label": "Diverging Symlog Color Ramp (External)",
-            "as": "$interval"
+            "as": interval
         }
     ),
     vg.hconcat(
@@ -225,9 +205,7 @@ view = vg.vconcat(
                 100
             ])
         ),
-        {
-            "hspace": 30
-        },
+        vg.hspace(30),
         {
             "legend": "color",
             "for": "color-quantize",
@@ -250,9 +228,7 @@ view = vg.vconcat(
                 80
             ])
         ),
-        {
-            "hspace": 30
-        },
+        vg.hspace(30),
         {
             "legend": "color",
             "for": "color-threshold",
@@ -261,23 +237,7 @@ view = vg.vconcat(
     )
 )
 
-params = {
-    "toggle": {
-        "select": "single"
-    },
-    "interval": {
-        "select": "intersect"
-    },
-    "domain": [
-        "foo",
-        "bar",
-        "baz",
-        "bop",
-        "doh"
-    ]
-}
-
-spec = vg.spec(meta=meta, params=params, plotDefaults={
+spec = vg.spec(meta=meta, params={"toggle": toggle, "interval": interval, "domain": domain}, plotDefaults={
     "margin": 0,
     "width": 0,
     "height": 20

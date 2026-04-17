@@ -5,6 +5,8 @@ data = vg.data(
     bls_unemp=vg.parquet("data/bls-metro-unemployment.parquet")
 )
 
+curr = vg.Selection.intersect()
+
 view = vg.plot(
     vg.rule_y(data=[
         0
@@ -18,11 +20,11 @@ view = vg.plot(
         "channels": [
             "z"
         ],
-        "as": "$curr"
+        "as": curr
     },
     {
         "select": "highlight",
-        "by": "$curr"
+        "by": curr
     },
     vg.dot(data=vg.from_("bls_unemp"), x="date", y="unemployment", z="division", r=2, fill="currentColor", select="nearestX"),
     vg.text(data=vg.from_("bls_unemp"), x="date", y="unemployment", text="division", fill="currentColor", dy=-8, select="nearestX"),
@@ -35,10 +37,4 @@ view = vg.plot(
     vg.width(680)
 )
 
-params = {
-    "curr": {
-        "select": "intersect"
-    }
-}
-
-spec = vg.spec(meta=meta, data=data, params=params, view=view)
+spec = vg.spec(meta=meta, data=data, params={"curr": curr}, view=view)

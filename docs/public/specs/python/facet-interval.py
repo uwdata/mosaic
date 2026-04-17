@@ -1,10 +1,11 @@
-import json
 import vgplot as vg
 
 meta = vg.meta(title="Faceted Interval Selections", description="A faceted plot with 2D interval selections.", credit="Adapted from https://observablehq.com/@observablehq/plot-non-faceted-marks")
 data = vg.data(
     penguins=vg.parquet("data/penguins.parquet")
 )
+
+sel = vg.Selection.intersect()
 
 view = vg.hconcat(
     vg.plot(
@@ -13,14 +14,14 @@ view = vg.hconcat(
         vg.dot(data=vg.from_("penguins"), x="bill_length", y="bill_depth", fill="species", fx="sex", fy="species"),
         {
             "select": "intervalXY",
-            "as": "$sel",
+            "as": sel,
             "brush": {
                 "stroke": "transparent"
             }
         },
         {
             "select": "highlight",
-            "by": "$sel"
+            "by": sel
         },
         vg.name("plot"),
         vg.grid(True),
@@ -34,13 +35,4 @@ view = vg.hconcat(
     )
 )
 
-params = {
-    "sel": {
-        "select": "intersect"
-    }
-}
-
-spec = vg.spec(meta=meta, data=data, params=params, view=view)
-
-if __name__ == "__main__":
-    print(json.dumps(spec.to_dict(), sort_keys=True))
+spec = vg.spec(meta=meta, data=data, params={"sel": sel}, view=view)

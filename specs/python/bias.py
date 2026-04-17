@@ -5,8 +5,10 @@ data = vg.data(
     walk=vg.parquet("data/random-walk.parquet")
 )
 
+point = vg.Param.value(0)
+
 view = vg.vconcat(
-    vg.slider(label="Bias", as_="$point", min=0, max=1000, step=1),
+    vg.slider(label="Bias", as_=point, min=0, max=1000, step=1),
     vg.plot(
         vg.area_y(data=vg.from_("walk"), x="t", y={
             "sql": "v + $point"
@@ -16,8 +18,4 @@ view = vg.vconcat(
     )
 )
 
-params = {
-    "point": 0
-}
-
-spec = vg.spec(meta=meta, data=data, params=params, view=view)
+spec = vg.spec(meta=meta, data=data, params={"point": point}, view=view)

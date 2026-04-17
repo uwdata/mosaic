@@ -13,17 +13,20 @@ data = vg.data(
 }
 )
 
+ci = vg.Param.value(0.95)
+query = vg.Selection.single()
+
 view = vg.hconcat(
     vg.vconcat(
         vg.hconcat(
-            vg.slider(select="interval", as_="$query", column="batch", from_="athletesBatched", step=10, value=20, label="Max Samples"),
-            vg.slider(as_="$ci", min=0.5, max=0.999, step=0.001, label="Conf. Level")
+            vg.slider(select="interval", as_=query, column="batch", from_="athletesBatched", step=10, value=20, label="Max Samples"),
+            vg.slider(as_=ci, min=0.5, max=0.999, step=0.001, label="Conf. Level")
         ),
         vg.plot(
             vg.errorbar_x(data={
                 "from": "athletesBatched",
-                "filterBy": "$query"
-            }, ci="$ci", x="height", y="sport", stroke="sex", stroke_width=1, marker="tick", sort={
+                "filterBy": query
+            }, ci=ci, x="height", y="sport", stroke="sex", stroke_width=1, marker="tick", sort={
                 "y": "-x"
             }),
             vg.text(data=vg.from_("athletesBatched"), frame_anchor="right", font_size=8, fill="#999", dx=25, text={
@@ -49,11 +52,4 @@ view = vg.hconcat(
     )
 )
 
-params = {
-    "ci": 0.95,
-    "query": {
-        "select": "single"
-    }
-}
-
-spec = vg.spec(meta=meta, data=data, params=params, view=view)
+spec = vg.spec(meta=meta, data=data, params={"ci": ci, "query": query}, view=view)

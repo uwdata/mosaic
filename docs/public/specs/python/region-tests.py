@@ -1,4 +1,3 @@
-import json
 import vgplot as vg
 
 meta = {
@@ -23,6 +22,10 @@ data = vg.data(
 }
 )
 
+series = vg.Selection.single()
+quakes = vg.Selection.single()
+counties = vg.Selection.single()
+
 view = vg.vconcat(
     vg.plot(
         vg.rule_y(data=[
@@ -37,11 +40,11 @@ view = vg.vconcat(
             "channels": [
                 "z"
             ],
-            "as": "$series"
+            "as": series
         },
         {
             "select": "highlight",
-            "by": "$series"
+            "by": series
         },
         vg.margin_left(24),
         vg.x_label(None),
@@ -52,9 +55,7 @@ view = vg.vconcat(
         vg.y_grid(True),
         vg.margin_right(0)
     ),
-    {
-        "vspace": 10
-    },
+    vg.vspace(10),
     vg.plot(
         vg.geo(data=vg.from_("world"), fill="currentColor", fill_opacity=0.2),
         vg.sphere(stroke_width=0.5),
@@ -68,18 +69,16 @@ view = vg.vconcat(
             "channels": [
                 "id"
             ],
-            "as": "$quakes"
+            "as": quakes
         },
         {
             "select": "highlight",
-            "by": "$quakes"
+            "by": quakes
         },
         vg.margin(2),
         vg.projection_type("equirectangular")
     ),
-    {
-        "vspace": 10
-    },
+    vg.vspace(10),
     vg.plot(
         vg.geo(data=vg.from_("counties"), channels={
             "id": "id"
@@ -89,30 +88,15 @@ view = vg.vconcat(
             "channels": [
                 "id"
             ],
-            "as": "$counties"
+            "as": counties
         },
         {
             "select": "highlight",
-            "by": "$counties"
+            "by": counties
         },
         vg.margin(0),
         vg.projection_type("albers")
     )
 )
 
-params = {
-    "series": {
-        "select": "single"
-    },
-    "quakes": {
-        "select": "single"
-    },
-    "counties": {
-        "select": "single"
-    }
-}
-
-spec = vg.spec(meta=meta, data=data, params=params, view=view)
-
-if __name__ == "__main__":
-    print(json.dumps(spec.to_dict(), sort_keys=True))
+spec = vg.spec(meta=meta, data=data, params={"series": series, "quakes": quakes, "counties": counties}, view=view)
