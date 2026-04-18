@@ -1,17 +1,132 @@
-# Mosaic Python API
+# vgplot
 
-## Generate the API from the JSON schama
+[![PyPI](https://img.shields.io/pypi/v/vgplot.svg)](https://pypi.org/project/vgplot/)
 
-`uv run generate-spec-classes`.
+A Python DSL for authoring [Mosaic](https://uwdata.github.io/mosaic/) visualizations. Build declarative, interactive plots backed by DuckDB — in Jupyter notebooks, as YAML/JSON specs, or as part of a data pipeline.
 
-## Run Tests
+`vgplot` produces Mosaic specification objects that can be rendered with [`mosaic-widget`](https://pypi.org/project/mosaic-widget/) in JupyterLab or exported to JSON/YAML for use in the browser.
 
-`uv run pytest -v`
+## Installation
 
-## Run the ruff formatter
+```bash
+pip install vgplot
+```
 
-`uv run ruff format` and `uv run ruff check`.
+To render visualizations in Jupyter, also install the widget:
 
-## Test notebook
+```bash
+pip install mosaic-widget
+```
 
-`uv run jupyter lab` and then open `example.ipynb`.
+## Usage
+
+Build a spec with `import vgplot as vg`, then pass it to a `MosaicWidget`:
+
+```python
+import vgplot as vg
+from mosaic_widget import MosaicWidget
+
+data = vg.data(
+    penguins=vg.parquet("data/penguins.parquet")
+)
+
+view = vg.plot(
+    vg.dot(data=vg.from_("penguins"), x="bill_length", y="bill_depth", fill="species", r=2),
+    vg.color_domain("Fixed"),
+    vg.width(640),
+    vg.height(400),
+)
+
+spec = vg.spec(data=data, view=view)
+MosaicWidget(spec.to_dict())
+```
+
+### Interactive selections
+
+Params and selections are first-class objects. Declare them before the view so they can be referenced by multiple marks or interactors:
+
+```python
+import vgplot as vg
+from mosaic_widget import MosaicWidget
+
+data = vg.data(
+    flights=vg.parquet("data/flights-200k.parquet")
+)
+
+brush = vg.Selection.crossfilter()
+
+view = vg.vconcat(
+    vg.plot(
+        vg.rect_y(data={"from": "flights", "filterBy": brush},
+                  x={"bin": "delay"}, y={"count": ""},
+                  fill="steelblue", inset_left=0.5, inset_right=0.5),
+        {"select": "intervalX", "as": brush},
+        vg.x_domain("Fixed"),
+        vg.x_label("Arrival Delay (min)"),
+        vg.height(200),
+    ),
+    vg.plot(
+        vg.rect_y(data={"from": "flights", "filterBy": brush},
+                  x={"bin": "time"}, y={"count": ""},
+                  fill="steelblue", inset_left=0.5, inset_right=0.5),
+        {"select": "intervalX", "as": brush},
+        vg.x_domain("Fixed"),
+        vg.x_label("Departure Time (hour)"),
+        vg.height(200),
+    ),
+)
+
+spec = vg.spec(data=data, params={"brush": brush}, view=view)
+MosaicWidget(spec.to_dict())
+```
+
+### Scalar params and input widgets
+
+Use `vg.Param.value()` for scalar parameters bound to input controls:
+
+```python
+import vgplot as vg
+from mosaic_widget import MosaicWidget
+
+data = vg.data(walk=vg.parquet("data/random-walk.parquet"))
+
+point = vg.Param.value(0)
+
+view = vg.vconcat(
+    vg.slider(label="Bias", as_=point, min=0, max=1000, step=1),
+    vg.plot(
+        vg.area_y(data=vg.from_("walk"), x="t", y={"sql": "v + $point"}, fill="steelblue"),
+        vg.width(680),
+        vg.height(200),
+    ),
+)
+
+spec = vg.spec(data=data, params={"point": point}, view=view)
+MosaicWidget(spec.to_dict())
+```
+
+## Key concepts
+
+| Concept | Python API |
+|---|---|
+| Load data | `vg.parquet(path)`, `vg.table(query)` |
+| Mark | `vg.dot(...)`, `vg.bar_y(...)`, `vg.area_y(...)`, `vg.line_y(...)`, … |
+| Plot attributes | `vg.width(n)`, `vg.height(n)`, `vg.x_label("…")`, `vg.color_scheme("…")`, … |
+| Layout | `vg.vconcat(...)`, `vg.hconcat(...)`, `vg.vspace(n)`, `vg.hspace(n)` |
+| Crossfilter selection | `vg.Selection.crossfilter()` |
+| Intersect / union selection | `vg.Selection.intersect()`, `vg.Selection.union()` |
+| Scalar param | `vg.Param.value(initial)` |
+| Input widgets | `vg.slider(...)`, `vg.select(...)`, `vg.checkbox(...)` |
+| Reference a dataset | `vg.from_("table_name")` |
+| Assemble | `vg.spec(meta=…, data=…, params=…, view=…)` |
+
+Any mark or directive not listed above is also accessible by its snake_case name via `__getattr__`, so `vg.regression_y(...)` and `vg.x_tick_rotate(45)` work without explicit exports.
+
+## Exporting specs
+
+`Spec.to_dict()` returns a plain Python dictionary compatible with `mosaic-widget`. `Spec.to_json()` returns a JSON string:
+
+```python
+import json
+print(spec.to_json(indent=2))
+```
