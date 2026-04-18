@@ -1,12 +1,12 @@
 import vgplot as vg
 
-data = vg.data(
+_data = vg.data(
     flights=vg.parquet("data/flights-200k.parquet")
 )
 
 brush = vg.Selection.crossfilter()
 
-view = vg.vconcat(
+_view = vg.vconcat(
     vg.plot(
         vg.rect_y(data={
             "from": "flights",
@@ -47,4 +47,4 @@ view = vg.vconcat(
     )
 )
 
-spec = vg.spec(data=data, params={"brush": brush}, view=view)
+spec = vg.spec(data=_data, params={"brush": brush}, view=_view)

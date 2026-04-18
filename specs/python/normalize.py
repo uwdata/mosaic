@@ -1,7 +1,7 @@
 import vgplot as vg
 
-meta = vg.meta(title="Normalized Stock Prices", description="What is the return on investment for different days? Hover over the chart to normalize the stock prices for the percentage return on a given day. A `nearestX` interactor selects the nearest date, and parameterized expressions reactively update in response.\n")
-data = vg.data(
+_meta = vg.meta(title="Normalized Stock Prices", description="What is the return on investment for different days? Hover over the chart to normalize the stock prices for the percentage return on a given day. A `nearestX` interactor selects the nearest date, and parameterized expressions reactively update in response.\n")
+_data = vg.data(
     stocks=vg.parquet("data/stocks.parquet"),
     labels=vg.table("SELECT MAX(Date) as Date, ARGMAX(Close, Date) AS Close, Symbol FROM stocks GROUP BY Symbol")
 )
@@ -10,7 +10,7 @@ point = vg.Param.value({
     "date": "2013-05-13"
 })
 
-view = vg.plot(
+_view = vg.plot(
     vg.rule_x(x=point),
     vg.text_x(x=point, text=point, frame_anchor="top", line_anchor="bottom", dy=-7),
     vg.text(data=vg.from_("labels"), x="Date", y={
@@ -37,4 +37,4 @@ view = vg.plot(
     vg.margin_right(35)
 )
 
-spec = vg.spec(meta=meta, data=data, params={"point": point}, view=view)
+spec = vg.spec(meta=_meta, data=_data, params={"point": point}, view=_view)

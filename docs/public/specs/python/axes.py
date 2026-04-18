@@ -1,9 +1,9 @@
 import vgplot as vg
 
-meta = vg.meta(title="Axes & Gridlines", description="Customized axis and gridline marks can be used in addition to standard scale attributes such as `xAxis`, `yGrid`, etc. Just add data!\n")
-data = {}
+_meta = vg.meta(title="Axes & Gridlines", description="Customized axis and gridline marks can be used in addition to standard scale attributes such as `xAxis`, `yGrid`, etc. Just add data!\n")
+_data = {}
 
-view = vg.plot(
+_view = vg.plot(
     vg.grid_y(stroke_dasharray="0.75 2", stroke_opacity=1),
     vg.axis_y(anchor="left", tick_size=0, dx=38, dy=-4, line_anchor="bottom"),
     vg.axis_y(anchor="right", tick_size=0, tick_padding=5, label="y-axis", label_anchor="center"),
@@ -26,4 +26,4 @@ view = vg.plot(
     vg.width(680)
 )
 
-spec = vg.spec(meta=meta, view=view)
+spec = vg.spec(meta=_meta, view=_view)

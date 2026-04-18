@@ -1,13 +1,13 @@
 import vgplot as vg
 
-meta = vg.meta(title="Sorted Bars", description="Sort and limit an aggregate bar chart of gold medals by country.\n")
-data = vg.data(
+_meta = vg.meta(title="Sorted Bars", description="Sort and limit an aggregate bar chart of gold medals by country.\n")
+_data = vg.data(
     athletes=vg.parquet("data/athletes.parquet")
 )
 
 query = vg.Selection.intersect()
 
-view = vg.vconcat(
+_view = vg.vconcat(
     vg.input("menu", label="Sport", as_=query, from_="athletes", column="sport", value="aquatics"),
     vg.vspace(10),
     vg.plot(
@@ -27,4 +27,4 @@ view = vg.vconcat(
     )
 )
 
-spec = vg.spec(meta=meta, data=data, params={"query": query}, view=view)
+spec = vg.spec(meta=_meta, data=_data, params={"query": query}, view=_view)

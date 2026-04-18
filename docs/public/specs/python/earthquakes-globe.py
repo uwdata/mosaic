@@ -1,7 +1,7 @@
 import vgplot as vg
 
-meta = vg.meta(title="Earthquakes Globe", description="A rotatable globe of earthquake activity. To show land masses, this example loads and parses TopoJSON data in the database. Requires the DuckDB `spatial` extension.\n", credit="Adapted from an [Observable Plot example](https://observablehq.com/@observablehq/plot-earthquake-globe).")
-data = vg.data(
+_meta = vg.meta(title="Earthquakes Globe", description="A rotatable globe of earthquake activity. To show land masses, this example loads and parses TopoJSON data in the database. Requires the DuckDB `spatial` extension.\n", credit="Adapted from an [Observable Plot example](https://observablehq.com/@observablehq/plot-earthquake-globe).")
+_data = vg.data(
     earthquakes=vg.parquet("data/earthquakes.parquet"),
     land={
     "type": "spatial",
@@ -14,7 +14,7 @@ longitude = vg.Param.value(-180)
 latitude = vg.Param.value(-30)
 rotate = vg.Param.array([longitude, latitude])
 
-view = vg.vconcat(
+_view = vg.vconcat(
     vg.hconcat(
         vg.slider(label="Longitude", as_=longitude, min=-180, max=180, step=1),
         vg.slider(label="Latitude", as_=latitude, min=-90, max=90, step=1)
@@ -34,4 +34,4 @@ view = vg.vconcat(
     )
 )
 
-spec = vg.spec(meta=meta, data=data, params={"longitude": longitude, "latitude": latitude, "rotate": rotate}, view=view)
+spec = vg.spec(meta=_meta, data=_data, params={"longitude": longitude, "latitude": latitude, "rotate": rotate}, view=_view)

@@ -1,7 +1,7 @@
 import vgplot as vg
 
-meta = vg.meta(title="Athlete Birth Waffle", description="Waffle chart counting Olympic athletes based on which half-decade they were born. The inputs enable adjustment of waffle mark design options.\n", credit="Adapted from an [Observable Plot example](https://observablehq.com/@observablehq/plot-waffle-unit).")
-data = vg.data(
+_meta = vg.meta(title="Athlete Birth Waffle", description="Waffle chart counting Olympic athletes based on which half-decade they were born. The inputs enable adjustment of waffle mark design options.\n", credit="Adapted from an [Observable Plot example](https://observablehq.com/@observablehq/plot-waffle-unit).")
+_data = vg.data(
     athletes=vg.parquet("data/athletes.parquet")
 )
 
@@ -10,7 +10,7 @@ round = vg.Param.value(False)
 gap = vg.Param.value(1)
 radius = vg.Param.value(0)
 
-view = vg.vconcat(
+_view = vg.vconcat(
     vg.hconcat(
         vg.input("menu", as_=unit, options=[
             1,
@@ -48,4 +48,4 @@ view = vg.vconcat(
     )
 )
 
-spec = vg.spec(meta=meta, data=data, params={"unit": unit, "round": round, "gap": gap, "radius": radius}, view=view)
+spec = vg.spec(meta=_meta, data=_data, params={"unit": unit, "round": round, "gap": gap, "radius": radius}, view=_view)

@@ -1,7 +1,7 @@
 import vgplot as vg
 
-meta = vg.meta(title="Earthquakes Feed", description="Earthquake data from the USGS live feed. To show land masses, this example loads and parses TopoJSON data in the database. Requires the DuckDB `spatial` extension.\n", credit="Adapted from an [Observable Plot example](https://observablehq.com/@observablehq/plot-live-earthquake-map).")
-data = vg.data(
+_meta = vg.meta(title="Earthquakes Feed", description="Earthquake data from the USGS live feed. To show land masses, this example loads and parses TopoJSON data in the database. Requires the DuckDB `spatial` extension.\n", credit="Adapted from an [Observable Plot example](https://observablehq.com/@observablehq/plot-live-earthquake-map).")
+_data = vg.data(
     feed={
     "type": "spatial",
     "file": "data/usgs-feed.geojson"
@@ -13,7 +13,7 @@ data = vg.data(
 }
 )
 
-view = vg.plot(
+_view = vg.plot(
     vg.geo(data=vg.from_("world"), fill="currentColor", fill_opacity=0.2),
     vg.sphere(stroke_width=0.5),
     vg.geo(data=vg.from_("feed"), r={
@@ -23,4 +23,4 @@ view = vg.plot(
     vg.projection_type("equirectangular")
 )
 
-spec = vg.spec(meta=meta, data=data, view=view)
+spec = vg.spec(meta=_meta, data=_data, view=_view)

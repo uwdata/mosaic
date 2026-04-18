@@ -1,7 +1,7 @@
 import vgplot as vg
 
-meta = vg.meta(title="Wind Map", description="`vector` marks on a grid show both direction and intensity—here, the speed of winds. Expressions for `rotate`, `length`, and `stroke` values are evaluated in the database. Both the legend and map support interactive selections to highlight values.\n", credit="Adapted from an [Observable Plot example](https://observablehq.com/@observablehq/plot-wind-map).")
-data = vg.data(
+_meta = vg.meta(title="Wind Map", description="`vector` marks on a grid show both direction and intensity—here, the speed of winds. Expressions for `rotate`, `length`, and `stroke` values are evaluated in the database. Both the legend and map support interactive selections to highlight values.\n", credit="Adapted from an [Observable Plot example](https://observablehq.com/@observablehq/plot-wind-map).")
+_data = vg.data(
     wind={
     "type": "parquet",
     "file": "data/wind.parquet",
@@ -15,7 +15,7 @@ data = vg.data(
 selected = vg.Selection.union()
 length = vg.Param.value(2)
 
-view = vg.vconcat(
+_view = vg.vconcat(
     {
         "legend": "color",
         "for": "wind-map",
@@ -53,4 +53,4 @@ view = vg.vconcat(
     vg.slider(min=1, max=7, step=0.1, as_=length, label="Vector Length")
 )
 
-spec = vg.spec(meta=meta, data=data, params={"selected": selected, "length": length}, view=view)
+spec = vg.spec(meta=_meta, data=_data, params={"selected": selected, "length": length}, view=_view)

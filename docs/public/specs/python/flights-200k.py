@@ -1,13 +1,13 @@
 import vgplot as vg
 
-meta = vg.meta(title="Cross-Filter Flights (200k)", description="Histograms showing arrival delay, departure time, and distance flown for over 200,000 flights. Select a histogram region to cross-filter the charts. Each plot uses an `intervalX` interactor to populate a shared Selection with `crossfilter` resolution.\n")
-data = vg.data(
+_meta = vg.meta(title="Cross-Filter Flights (200k)", description="Histograms showing arrival delay, departure time, and distance flown for over 200,000 flights. Select a histogram region to cross-filter the charts. Each plot uses an `intervalX` interactor to populate a shared Selection with `crossfilter` resolution.\n")
+_data = vg.data(
     flights=vg.parquet("data/flights-200k.parquet")
 )
 
 brush = vg.Selection.crossfilter()
 
-view = vg.vconcat(
+_view = vg.vconcat(
     vg.plot(
         vg.rect_y(data={
             "from": "flights",
@@ -67,4 +67,4 @@ view = vg.vconcat(
     )
 )
 
-spec = vg.spec(meta=meta, data=data, params={"brush": brush}, view=view)
+spec = vg.spec(meta=_meta, data=_data, params={"brush": brush}, view=_view)

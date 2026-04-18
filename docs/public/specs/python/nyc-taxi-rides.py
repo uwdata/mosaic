@@ -1,7 +1,7 @@
 import vgplot as vg
 
-meta = vg.meta(title="NYC Taxi Rides", description="Pickup and dropoff points for 1M NYC taxi rides on Jan 1-3, 2010.\nThis example projects lon/lat coordinates in the database upon load.\nSelect a region in one plot to filter the other.\nWhat spatial patterns can you find?\nRequires the DuckDB `spatial` extension.\n\n_You may need to wait a few seconds for the dataset to load._\n")
-data = vg.data(
+_meta = vg.meta(title="NYC Taxi Rides", description="Pickup and dropoff points for 1M NYC taxi rides on Jan 1-3, 2010.\nThis example projects lon/lat coordinates in the database upon load.\nSelect a region in one plot to filter the other.\nWhat spatial patterns can you find?\nRequires the DuckDB `spatial` extension.\n\n_You may need to wait a few seconds for the dataset to load._\n")
+_data = vg.data(
     rides={
     "type": "parquet",
     "file": "https://pub-1da360b43ceb401c809f68ca37c7f8a4.r2.dev/data/nyc-rides-2010.parquet",
@@ -16,7 +16,7 @@ data = vg.data(
 
 filter = vg.Selection.crossfilter()
 
-view = vg.vconcat(
+_view = vg.vconcat(
     vg.hconcat(
         vg.plot(
             vg.raster(data={
@@ -98,6 +98,6 @@ view = vg.vconcat(
     )
 )
 
-spec = vg.spec(meta=meta, data=data, params={"filter": filter}, config={
+spec = vg.spec(meta=_meta, data=_data, params={"filter": filter}, config={
     "extensions": "spatial"
-}, view=view)
+}, view=_view)

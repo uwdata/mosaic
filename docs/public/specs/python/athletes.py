@@ -1,7 +1,7 @@
 import vgplot as vg
 
-meta = vg.meta(title="Olympic Athletes", description="An interactive dashboard of athlete statistics. The menus and searchbox filter the display and are automatically populated by backing data columns.\n")
-data = vg.data(
+_meta = vg.meta(title="Olympic Athletes", description="An interactive dashboard of athlete statistics. The menus and searchbox filter the display and are automatically populated by backing data columns.\n")
+_data = vg.data(
     athletes=vg.parquet("data/athletes.parquet")
 )
 
@@ -11,7 +11,7 @@ query = vg.Selection.intersect(include=[
 ])
 hover = vg.Selection.intersect(empty=True)
 
-view = vg.hconcat(
+_view = vg.hconcat(
     vg.vconcat(
         vg.hconcat(
             vg.input("menu", label="Sport", as_=category, from_="athletes", column="sport"),
@@ -65,4 +65,4 @@ view = vg.hconcat(
     )
 )
 
-spec = vg.spec(meta=meta, data=data, params={"category": category, "query": query, "hover": hover}, view=view)
+spec = vg.spec(meta=_meta, data=_data, params={"category": category, "query": query, "hover": hover}, view=_view)

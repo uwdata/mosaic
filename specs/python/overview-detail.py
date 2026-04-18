@@ -1,13 +1,13 @@
 import vgplot as vg
 
-meta = vg.meta(title="Overview + Detail", description="Select the top \"overview\" series to zoom the \"focus\" view below. An `intervalX` interactor updates a selection that filters the focus view. The `line` and `area` marks can apply [M4](https://observablehq.com/@uwdata/m4-scalable-time-series-visualization) optimization to reduce the number of data points returned: rather than draw all points, a dramatically smaller subset can still faithfully represent these area charts.\n")
-data = vg.data(
+_meta = vg.meta(title="Overview + Detail", description="Select the top \"overview\" series to zoom the \"focus\" view below. An `intervalX` interactor updates a selection that filters the focus view. The `line` and `area` marks can apply [M4](https://observablehq.com/@uwdata/m4-scalable-time-series-visualization) optimization to reduce the number of data points returned: rather than draw all points, a dramatically smaller subset can still faithfully represent these area charts.\n")
+_data = vg.data(
     walk=vg.parquet("data/random-walk.parquet")
 )
 
 brush = vg.Selection.intersect()
 
-view = vg.vconcat(
+_view = vg.vconcat(
     vg.plot(
         vg.area_y(data=vg.from_("walk"), x="t", y="v", fill="steelblue"),
         {
@@ -28,4 +28,4 @@ view = vg.vconcat(
     )
 )
 
-spec = vg.spec(meta=meta, data=data, params={"brush": brush}, view=view)
+spec = vg.spec(meta=_meta, data=_data, params={"brush": brush}, view=_view)

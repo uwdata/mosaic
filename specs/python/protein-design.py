@@ -1,7 +1,7 @@
 import vgplot as vg
 
-meta = vg.meta(title="Protein Design Explorer", description="Explore synthesized proteins generated via\n[RFDiffusion](https://www.bakerlab.org/2023/07/11/diffusion-model-for-protein-design/).\n\"Minibinders\" are small proteins that bind to a specific protein target.\nWhen designing a minibinder, a researcher inputs the structure of the\ntarget protein and other parameters into the AI diffusion model. Often, a\nsingle, promising (parent) _version_ can be run through the model again to\nproduce additional, similar designs to better sample the design space.\n\nThe pipeline generates tens of thousands of protein designs. The metric\n_pAE_ (predicted alignment error) measures how accurate a model was at\npredicting the minibinder shape, whereas _pLDDT_ (predicted local distance\ndifference test) measures a model's confidence in minibinder structure\nprediction. For _pAE_ lower is better, for _pLDDT_ higher is better.\n\nAdditional parameters include _partial t_ to set the time steps used by\nthe model, _noise_ to create more diversity of designs, _gradient decay\nfunction_ and _gradient scale_ to guide prioritizing different positions\nat different time points, and _movement_ to denote whether the minibinder\nwas left in its original position (\"og\") or moved to a desirable position\n(\"moved\").\n\nThe dashboard below enables exploration of the results to identify\npromising protein designs and assess the effects of process parameters.\n", credit="Adapted from a [UW CSE 512](https://courses.cs.washington.edu/courses/cse512/24sp/) project by Christina Savvides, Alexander Shida, Riti Biswas, and Nora McNamara-Bordewick. Data from the [UW Institute for Protein Design](https://www.ipd.uw.edu/).\n")
-data = vg.data(
+_meta = vg.meta(title="Protein Design Explorer", description="Explore synthesized proteins generated via\n[RFDiffusion](https://www.bakerlab.org/2023/07/11/diffusion-model-for-protein-design/).\n\"Minibinders\" are small proteins that bind to a specific protein target.\nWhen designing a minibinder, a researcher inputs the structure of the\ntarget protein and other parameters into the AI diffusion model. Often, a\nsingle, promising (parent) _version_ can be run through the model again to\nproduce additional, similar designs to better sample the design space.\n\nThe pipeline generates tens of thousands of protein designs. The metric\n_pAE_ (predicted alignment error) measures how accurate a model was at\npredicting the minibinder shape, whereas _pLDDT_ (predicted local distance\ndifference test) measures a model's confidence in minibinder structure\nprediction. For _pAE_ lower is better, for _pLDDT_ higher is better.\n\nAdditional parameters include _partial t_ to set the time steps used by\nthe model, _noise_ to create more diversity of designs, _gradient decay\nfunction_ and _gradient scale_ to guide prioritizing different positions\nat different time points, and _movement_ to denote whether the minibinder\nwas left in its original position (\"og\") or moved to a desirable position\n(\"moved\").\n\nThe dashboard below enables exploration of the results to identify\npromising protein designs and assess the effects of process parameters.\n", credit="Adapted from a [UW CSE 512](https://courses.cs.washington.edu/courses/cse512/24sp/) project by Christina Savvides, Alexander Shida, Riti Biswas, and Nora McNamara-Bordewick. Data from the [UW Institute for Protein Design](https://www.ipd.uw.edu/).\n")
+_data = vg.data(
     proteins=vg.parquet("data/protein-design.parquet")
 )
 
@@ -11,7 +11,7 @@ plddt_domain = vg.Param.array([67, 94.5])
 pae_domain = vg.Param.array([5, 29])
 scheme = vg.Param.value("observable10")
 
-view = vg.vconcat(
+_view = vg.vconcat(
     vg.hconcat(
         vg.input("menu", from_="proteins", column="partial_t", label="Partial t", as_=query),
         vg.input("menu", from_="proteins", column="noise", label="Noise", as_=query),
@@ -121,4 +121,4 @@ view = vg.vconcat(
     ], width=680, height=215)
 )
 
-spec = vg.spec(meta=meta, data=data, params={"query": query, "point": point, "plddt_domain": plddt_domain, "pae_domain": pae_domain, "scheme": scheme}, view=view)
+spec = vg.spec(meta=_meta, data=_data, params={"query": query, "point": point, "plddt_domain": plddt_domain, "pae_domain": pae_domain, "scheme": scheme}, view=_view)

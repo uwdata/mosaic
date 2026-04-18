@@ -1,7 +1,7 @@
 import vgplot as vg
 
-meta = vg.meta(title="Mark Types", description="A subset of supported mark types.\n\n- Row 1: `barY`, `lineY`, `text`, `tickY`, `areaY`\n- Row 2: `regressionY`, `hexbin`, `contour`, `heatmap`, `denseLine`\n")
-data = vg.data(
+_meta = vg.meta(title="Mark Types", description="A subset of supported mark types.\n\n- Row 1: `barY`, `lineY`, `text`, `tickY`, `areaY`\n- Row 2: `regressionY`, `hexbin`, `contour`, `heatmap`, `denseLine`\n")
+_data = vg.data(
     md={
     "type": "json",
     "data": [
@@ -49,7 +49,7 @@ data = vg.data(
 }
 )
 
-view = vg.vconcat(
+_view = vg.vconcat(
     vg.hconcat(
         vg.plot(
             vg.bar_y(data=vg.from_("md"), x="u", y="v", fill="steelblue")
@@ -113,7 +113,7 @@ view = vg.vconcat(
     )
 )
 
-spec = vg.spec(meta=meta, data=data, plotDefaults={
+spec = vg.spec(meta=_meta, data=_data, plotDefaults={
     "xAxis": None,
     "yAxis": None,
     "margins": {
@@ -128,4 +128,4 @@ spec = vg.spec(meta=meta, data=data, plotDefaults={
         0,
         9
     ]
-}, view=view)
+}, view=_view)

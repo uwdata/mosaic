@@ -1,10 +1,10 @@
 import vgplot as vg
 
-meta = {
+_meta = {
     "title": "Region Interactor Tests",
     "descriptions": "Varied plots using region interactors to highlight selected values.\n"
 }
-data = vg.data(
+_data = vg.data(
     bls_unemp=vg.parquet("data/bls-metro-unemployment.parquet"),
     feed={
     "type": "spatial",
@@ -26,7 +26,7 @@ series = vg.Selection.single()
 quakes = vg.Selection.single()
 counties = vg.Selection.single()
 
-view = vg.vconcat(
+_view = vg.vconcat(
     vg.plot(
         vg.rule_y(data=[
             0
@@ -99,4 +99,4 @@ view = vg.vconcat(
     )
 )
 
-spec = vg.spec(meta=meta, data=data, params={"series": series, "quakes": quakes, "counties": counties}, view=view)
+spec = vg.spec(meta=_meta, data=_data, params={"series": series, "quakes": quakes, "counties": counties}, view=_view)

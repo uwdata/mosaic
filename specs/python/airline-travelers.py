@@ -1,12 +1,12 @@
 import vgplot as vg
 
-meta = vg.meta(title="Airline Travelers", description="A labeled line chart comparing airport travelers in 2019 and 2020.", credit="Adapted from an [Observable Plot example](https://observablehq.com/@observablehq/plot-labeled-line-chart).")
-data = vg.data(
+_meta = vg.meta(title="Airline Travelers", description="A labeled line chart comparing airport travelers in 2019 and 2020.", credit="Adapted from an [Observable Plot example](https://observablehq.com/@observablehq/plot-labeled-line-chart).")
+_data = vg.data(
     travelers=vg.parquet("data/travelers.parquet"),
     endpoint=vg.table("SELECT * FROM travelers ORDER BY date DESC LIMIT 1")
 )
 
-view = vg.plot(
+_view = vg.plot(
     vg.rule_y(data=[
         0
     ]),
@@ -23,4 +23,4 @@ view = vg.plot(
     vg.y_tick_format("s")
 )
 
-spec = vg.spec(meta=meta, data=data, view=view)
+spec = vg.spec(meta=_meta, data=_data, view=_view)

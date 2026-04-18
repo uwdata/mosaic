@@ -1,7 +1,7 @@
 import vgplot as vg
 
-meta = vg.meta(title="Line Density", description="The `denseLine` mark shows the densities of line series, here for a collection of stock prices. The top plot normalizes by arc length to remove the vertical artifacts visible in the unnormalized plot below. Select a region in the lower plot to zoom the upper plot. The bandwidth slider smooths the data, while the pixel size menu adjusts the raster resolution.\n")
-data = vg.data(
+_meta = vg.meta(title="Line Density", description="The `denseLine` mark shows the densities of line series, here for a collection of stock prices. The top plot normalizes by arc length to remove the vertical artifacts visible in the unnormalized plot below. Select a region in the lower plot to zoom the upper plot. The bandwidth slider smooths the data, while the pixel size menu adjusts the raster resolution.\n")
+_data = vg.data(
     stocks_after_2006={
     "type": "parquet",
     "file": "data/stocks_after_2006.parquet",
@@ -20,7 +20,7 @@ pixelSize = vg.Param.value(2)
 schemeColor = vg.Param.value("pubugn")
 scaleColor = vg.Param.value("sqrt")
 
-view = vg.vconcat(
+_view = vg.vconcat(
     vg.hconcat(
         vg.slider(label="Bandwidth (σ)", as_=bandwidth, min=0, max=10, step=0.1),
         vg.input("menu", label="Pixel Size", as_=pixelSize, options=[
@@ -59,4 +59,4 @@ view = vg.vconcat(
     )
 )
 
-spec = vg.spec(meta=meta, data=data, params={"brush": brush, "bandwidth": bandwidth, "pixelSize": pixelSize, "schemeColor": schemeColor, "scaleColor": scaleColor}, view=view)
+spec = vg.spec(meta=_meta, data=_data, params={"brush": brush, "bandwidth": bandwidth, "pixelSize": pixelSize, "schemeColor": schemeColor, "scaleColor": scaleColor}, view=_view)

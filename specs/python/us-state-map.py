@@ -1,7 +1,7 @@
 import vgplot as vg
 
-meta = vg.meta(title="U.S. States", description="A map of U.S. states overlaid with computed centroids. Requires the DuckDB `spatial` extension.\n", credit="Adapted from an [Observable Plot example](https://observablehq.com/@observablehq/plot-state-centroids).")
-data = vg.data(
+_meta = vg.meta(title="U.S. States", description="A map of U.S. states overlaid with computed centroids. Requires the DuckDB `spatial` extension.\n", credit="Adapted from an [Observable Plot example](https://observablehq.com/@observablehq/plot-state-centroids).")
+_data = vg.data(
     states={
     "type": "spatial",
     "file": "data/us-counties-10m.json",
@@ -9,7 +9,7 @@ data = vg.data(
 }
 )
 
-view = vg.plot(
+_view = vg.plot(
     vg.geo(data=vg.from_("states"), stroke="currentColor", stroke_width=1),
     vg.dot(data=vg.from_("states"), x={
         "centroidX": "geom"
@@ -20,4 +20,4 @@ view = vg.plot(
     vg.projection_type("albers")
 )
 
-spec = vg.spec(meta=meta, data=data, view=view)
+spec = vg.spec(meta=_meta, data=_data, view=_view)

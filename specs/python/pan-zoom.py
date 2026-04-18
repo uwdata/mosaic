@@ -1,7 +1,7 @@
 import vgplot as vg
 
-meta = vg.meta(title="Pan & Zoom", description="Linked panning and zooming across plots: drag to pan, scroll to zoom. `panZoom` interactors update a set of bound selections, one per unique axis.\n")
-data = vg.data(
+_meta = vg.meta(title="Pan & Zoom", description="Linked panning and zooming across plots: drag to pan, scroll to zoom. `panZoom` interactors update a set of bound selections, one per unique axis.\n")
+_data = vg.data(
     penguins=vg.parquet("data/penguins.parquet")
 )
 
@@ -10,7 +10,7 @@ ys = vg.Selection.intersect()
 zs = vg.Selection.intersect()
 ws = vg.Selection.intersect()
 
-view = vg.hconcat(
+_view = vg.hconcat(
     vg.vconcat(
         vg.plot(
             vg.frame(),
@@ -64,4 +64,4 @@ view = vg.hconcat(
     )
 )
 
-spec = vg.spec(meta=meta, data=data, params={"xs": xs, "ys": ys, "zs": zs, "ws": ws}, view=view)
+spec = vg.spec(meta=_meta, data=_data, params={"xs": xs, "ys": ys, "zs": zs, "ws": ws}, view=_view)

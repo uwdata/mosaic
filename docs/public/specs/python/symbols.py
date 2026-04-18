@@ -1,14 +1,14 @@
 import vgplot as vg
 
-meta = vg.meta(title="Symbol Plots", description="Two scatter plots with `dot` marks: one with stroked symbols, the other filled. Drop-down menus control which data table columns are plotted.\n")
-data = vg.data(
+_meta = vg.meta(title="Symbol Plots", description="Two scatter plots with `dot` marks: one with stroked symbols, the other filled. Drop-down menus control which data table columns are plotted.\n")
+_data = vg.data(
     penguins=vg.parquet("data/penguins.parquet")
 )
 
 x = vg.Param.value("body_mass")
 y = vg.Param.value("flipper_length")
 
-view = vg.vconcat(
+_view = vg.vconcat(
     vg.hconcat(
         vg.input("menu", label="Y", options=[
             "body_mass",
@@ -63,4 +63,4 @@ view = vg.vconcat(
     )
 )
 
-spec = vg.spec(meta=meta, data=data, params={"x": x, "y": y}, view=view)
+spec = vg.spec(meta=_meta, data=_data, params={"x": x, "y": y}, view=_view)

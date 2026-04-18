@@ -1,7 +1,7 @@
 import vgplot as vg
 
-meta = vg.meta(title="Density Groups", description="Density plots of penguin bill depths, grouped by species. The normalize parameter supports different forms of comparison, controlling if an individual density estimate is scaled by total point mass or normalized by the sum or max of the point mass. The stack and offset parameters control stacking of density areas.\n")
-data = vg.data(
+_meta = vg.meta(title="Density Groups", description="Density plots of penguin bill depths, grouped by species. The normalize parameter supports different forms of comparison, controlling if an individual density estimate is scaled by total point mass or normalized by the sum or max of the point mass. The stack and offset parameters control stacking of density areas.\n")
+_data = vg.data(
     penguins=vg.parquet("data/penguins.parquet")
 )
 
@@ -10,7 +10,7 @@ normalize = vg.Param.value("none")
 stack = vg.Param.value(False)
 offset = vg.Param.value(None)
 
-view = vg.vconcat(
+_view = vg.vconcat(
     vg.hconcat(
         vg.input("menu", label="Normalize", as_=normalize, options=[
             "none",
@@ -43,4 +43,4 @@ view = vg.vconcat(
     )
 )
 
-spec = vg.spec(meta=meta, data=data, params={"bandwidth": bandwidth, "normalize": normalize, "stack": stack, "offset": offset}, view=view)
+spec = vg.spec(meta=_meta, data=_data, params={"bandwidth": bandwidth, "normalize": normalize, "stack": stack, "offset": offset}, view=_view)

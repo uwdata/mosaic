@@ -1,13 +1,13 @@
 import vgplot as vg
 
-meta = vg.meta(title="Cross-Filter Flights (10M)", description="Histograms showing arrival delay, departure time, and distance flown for 10 million flights.\nOnce loaded, automatic pre-aggregation optimizations enable efficient cross-filtered selections.\n\n_You may need to wait a few seconds for the dataset to load._\n")
-data = vg.data(
+_meta = vg.meta(title="Cross-Filter Flights (10M)", description="Histograms showing arrival delay, departure time, and distance flown for 10 million flights.\nOnce loaded, automatic pre-aggregation optimizations enable efficient cross-filtered selections.\n\n_You may need to wait a few seconds for the dataset to load._\n")
+_data = vg.data(
     flights10m=vg.table("SELECT GREATEST(-60, LEAST(ARR_DELAY, 180))::DOUBLE AS delay, DISTANCE AS distance, DEP_TIME AS time FROM 'https://pub-1da360b43ceb401c809f68ca37c7f8a4.r2.dev/data/flights-10m.parquet'")
 )
 
 brush = vg.Selection.crossfilter()
 
-view = vg.vconcat(
+_view = vg.vconcat(
     vg.plot(
         vg.rect_y(data={
             "from": "flights10m",
@@ -67,4 +67,4 @@ view = vg.vconcat(
     )
 )
 
-spec = vg.spec(meta=meta, data=data, params={"brush": brush}, view=view)
+spec = vg.spec(meta=_meta, data=_data, params={"brush": brush}, view=_view)

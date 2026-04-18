@@ -1,6 +1,6 @@
 import vgplot as vg
 
-data = vg.data(
+_data = vg.data(
     aapl={
     "type": "parquet",
     "file": "data/stocks.parquet",
@@ -8,7 +8,7 @@ data = vg.data(
 }
 )
 
-view = vg.plot(
+_view = vg.plot(
     vg.line_y(data=vg.from_("aapl"), stroke="#ccc", x="Date", y="Close"),
     vg.line_y(data=vg.from_("aapl"), stroke="black", x="Date", y={
         "avg": "Close",
@@ -39,4 +39,4 @@ view = vg.plot(
     vg.height(200)
 )
 
-spec = vg.spec(data=data, view=view)
+spec = vg.spec(data=_data, view=_view)

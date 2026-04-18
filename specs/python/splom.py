@@ -1,13 +1,13 @@
 import vgplot as vg
 
-meta = vg.meta(title="Scatter Plot Matrix (SPLOM)", description="A scatter plot matrix enables inspection of pairwise bivariate distributions. Do points cluster or separate in some dimensions but not others? Select a region to highlight corresponding points across all plots.\n")
-data = vg.data(
+_meta = vg.meta(title="Scatter Plot Matrix (SPLOM)", description="A scatter plot matrix enables inspection of pairwise bivariate distributions. Do points cluster or separate in some dimensions but not others? Select a region to highlight corresponding points across all plots.\n")
+_data = vg.data(
     penguins=vg.parquet("data/penguins.parquet")
 )
 
 brush = vg.Selection.single()
 
-view = vg.vconcat(
+_view = vg.vconcat(
     vg.hconcat(
         vg.plot(
             vg.frame(stroke="#ccc"),
@@ -250,7 +250,7 @@ view = vg.vconcat(
     )
 )
 
-spec = vg.spec(meta=meta, data=data, params={"brush": brush}, plotDefaults={
+spec = vg.spec(meta=_meta, data=_data, params={"brush": brush}, plotDefaults={
     "xTicks": 3,
     "yTicks": 4,
     "xDomain": "Fixed",
@@ -268,4 +268,4 @@ spec = vg.spec(meta=meta, data=data, params={"brush": brush}, plotDefaults={
     "yTickFormat": "s",
     "width": 150,
     "height": 150
-}, view=view)
+}, view=_view)

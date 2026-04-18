@@ -1,13 +1,13 @@
 import vgplot as vg
 
-meta = vg.meta(title="Legends", description="Tests for different legend types and configurations. We test both legends defined within plots (with a zero-size frame) and external legends that reference a named plot.\n")
-data = {}
+_meta = vg.meta(title="Legends", description="Tests for different legend types and configurations. We test both legends defined within plots (with a zero-size frame) and external legends that reference a named plot.\n")
+_data = {}
 
 toggle = vg.Selection.single()
 interval = vg.Selection.intersect()
 domain = vg.Param.array(["foo", "bar", "baz", "bop", "doh"])
 
-view = vg.vconcat(
+_view = vg.vconcat(
     vg.hconcat(
         vg.plot(
             {
@@ -237,8 +237,8 @@ view = vg.vconcat(
     )
 )
 
-spec = vg.spec(meta=meta, params={"toggle": toggle, "interval": interval, "domain": domain}, plotDefaults={
+spec = vg.spec(meta=_meta, params={"toggle": toggle, "interval": interval, "domain": domain}, plotDefaults={
     "margin": 0,
     "width": 0,
     "height": 20
-}, view=view)
+}, view=_view)

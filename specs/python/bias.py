@@ -1,13 +1,13 @@
 import vgplot as vg
 
-meta = vg.meta(title="Bias Parameter", description="Dynamically adjust queried values by adding a Param value. The SQL expression is re-computed in the database upon updates.\n")
-data = vg.data(
+_meta = vg.meta(title="Bias Parameter", description="Dynamically adjust queried values by adding a Param value. The SQL expression is re-computed in the database upon updates.\n")
+_data = vg.data(
     walk=vg.parquet("data/random-walk.parquet")
 )
 
 point = vg.Param.value(0)
 
-view = vg.vconcat(
+_view = vg.vconcat(
     vg.slider(label="Bias", as_=point, min=0, max=1000, step=1),
     vg.plot(
         vg.area_y(data=vg.from_("walk"), x="t", y={
@@ -18,4 +18,4 @@ view = vg.vconcat(
     )
 )
 
-spec = vg.spec(meta=meta, data=data, params={"point": point}, view=view)
+spec = vg.spec(meta=_meta, data=_data, params={"point": point}, view=_view)

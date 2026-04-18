@@ -1,14 +1,14 @@
 import vgplot as vg
 
-meta = vg.meta(title="Flights Hexbin", description="Hexagonal bins show the density of over 200,000 flights by departure time and arrival delay. Select regions in the marginal histograms to filter the density display.\n")
-data = vg.data(
+_meta = vg.meta(title="Flights Hexbin", description="Hexagonal bins show the density of over 200,000 flights by departure time and arrival delay. Select regions in the marginal histograms to filter the density display.\n")
+_data = vg.data(
     flights=vg.parquet("data/flights-200k.parquet")
 )
 
 scale = vg.Param.value("log")
 query = vg.Selection.intersect()
 
-view = vg.vconcat(
+_view = vg.vconcat(
     vg.hconcat(
         vg.input("menu", label="Color Scale", as_=scale, options=[
             "log",
@@ -85,4 +85,4 @@ view = vg.vconcat(
     )
 )
 
-spec = vg.spec(meta=meta, data=data, params={"scale": scale, "query": query}, view=view)
+spec = vg.spec(meta=_meta, data=_data, params={"scale": scale, "query": query}, view=_view)

@@ -1,13 +1,13 @@
 import vgplot as vg
 
-meta = vg.meta(title="Population Change Arrows", description="An `arrow` connects the positions in 1980 and 2015 of each city on this population × inequality chart. Color encodes variation.\n", credit="Adapted from an [Observable Plot example](https://observablehq.com/@observablehq/plot-arrow-variation-chart).")
-data = vg.data(
+_meta = vg.meta(title="Population Change Arrows", description="An `arrow` connects the positions in 1980 and 2015 of each city on this population × inequality chart. Color encodes variation.\n", credit="Adapted from an [Observable Plot example](https://observablehq.com/@observablehq/plot-arrow-variation-chart).")
+_data = vg.data(
     metros=vg.parquet("data/metros.parquet")
 )
 
 bend = vg.Param.value(True)
 
-view = vg.vconcat(
+_view = vg.vconcat(
     {
         "legend": "color",
         "for": "arrows",
@@ -34,4 +34,4 @@ view = vg.vconcat(
     ], as_=bend)
 )
 
-spec = vg.spec(meta=meta, data=data, params={"bend": bend}, view=view)
+spec = vg.spec(meta=_meta, data=_data, params={"bend": bend}, view=_view)

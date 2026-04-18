@@ -1,7 +1,7 @@
 import vgplot as vg
 
-meta = vg.meta(title="Triangle Wave", description="A test specification to compare M4 optimized and unoptimized line charts.\n")
-data = vg.data(
+_meta = vg.meta(title="Triangle Wave", description="A test specification to compare M4 optimized and unoptimized line charts.\n")
+_data = vg.data(
     wave={
     "type": "csv",
     "file": "data/triangle-wave-day.csv"
@@ -10,7 +10,7 @@ data = vg.data(
 
 brush = vg.Selection.intersect()
 
-view = vg.vconcat(
+_view = vg.vconcat(
     vg.plot(
         vg.line_y(data=vg.from_("wave"), x="time_stamp", y="power", z=None, stroke="time_stamp"),
         {
@@ -48,4 +48,4 @@ view = vg.vconcat(
     )
 )
 
-spec = vg.spec(meta=meta, data=data, params={"brush": brush}, view=view)
+spec = vg.spec(meta=_meta, data=_data, params={"brush": brush}, view=_view)

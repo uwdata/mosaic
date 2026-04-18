@@ -1,13 +1,13 @@
 import vgplot as vg
 
-meta = vg.meta(title="Presidential Opinion", description="Opinion poll data on historical U.S. presidents. Image marks are used to show presidential pictures. The dropdown menu toggles the opinion metric shown.\n", credit="Adapted from an [Observable Plot example](https://observablehq.com/@observablehq/plot-image-medals).")
-data = vg.data(
+_meta = vg.meta(title="Presidential Opinion", description="Opinion poll data on historical U.S. presidents. Image marks are used to show presidential pictures. The dropdown menu toggles the opinion metric shown.\n", credit="Adapted from an [Observable Plot example](https://observablehq.com/@observablehq/plot-image-medals).")
+_data = vg.data(
     presidents=vg.parquet("data/us-president-favorability.parquet")
 )
 
 sign = vg.Param.value(1)
 
-view = vg.vconcat(
+_view = vg.vconcat(
     vg.plot(
         vg.rule_y(data=[
             0
@@ -34,4 +34,4 @@ view = vg.vconcat(
     ], as_=sign)
 )
 
-spec = vg.spec(meta=meta, data=data, params={"sign": sign}, view=view)
+spec = vg.spec(meta=_meta, data=_data, params={"sign": sign}, view=_view)

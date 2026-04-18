@@ -1,7 +1,7 @@
 import vgplot as vg
 
-meta = vg.meta(title="Seattle Weather", description="An interactive view of Seattle's weather, including maximum temperature, amount of precipitation, and type of weather. By dragging on the scatter plot, you can see the proportion of days in that range that have sun, fog, drizzle, rain, or snow.\n", credit="Based on a [Vega-Lite/Altair example](https://vega.github.io/vega-lite/examples/interactive_seattle_weather.html) by Jake Vanderplas.")
-data = vg.data(
+_meta = vg.meta(title="Seattle Weather", description="An interactive view of Seattle's weather, including maximum temperature, amount of precipitation, and type of weather. By dragging on the scatter plot, you can see the proportion of days in that range that have sun, fog, drizzle, rain, or snow.\n", credit="Based on a [Vega-Lite/Altair example](https://vega.github.io/vega-lite/examples/interactive_seattle_weather.html) by Jake Vanderplas.")
+_data = vg.data(
     weather=vg.parquet("data/seattle-weather.parquet")
 )
 
@@ -10,7 +10,7 @@ domain = vg.Param.array(["sun", "fog", "drizzle", "rain", "snow"])
 colors = vg.Param.array(["#e7ba52", "#a7a7a7", "#aec7e8", "#1f77b4", "#9467bd"])
 range = vg.Selection.intersect()
 
-view = vg.vconcat(
+_view = vg.vconcat(
     vg.hconcat(
         vg.plot(
             vg.dot(data={
@@ -78,4 +78,4 @@ view = vg.vconcat(
     )
 )
 
-spec = vg.spec(meta=meta, data=data, params={"click": click, "domain": domain, "colors": colors, "range": range}, view=view)
+spec = vg.spec(meta=_meta, data=_data, params={"click": click, "domain": domain, "colors": colors, "range": range}, view=_view)

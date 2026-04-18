@@ -1,14 +1,14 @@
 import vgplot as vg
 
-meta = vg.meta(title="Flights Density", description="Density `heatmap` and `contour` lines for 200,000+ flights by departure hour and arrival delay. The sliders adjust the smoothing (bandwidth) and number of contour thresholds.\n")
-data = vg.data(
+_meta = vg.meta(title="Flights Density", description="Density `heatmap` and `contour` lines for 200,000+ flights by departure hour and arrival delay. The sliders adjust the smoothing (bandwidth) and number of contour thresholds.\n")
+_data = vg.data(
     flights=vg.parquet("data/flights-200k.parquet")
 )
 
 bandwidth = vg.Param.value(7)
 thresholds = vg.Param.value(10)
 
-view = vg.vconcat(
+_view = vg.vconcat(
     vg.hconcat(
         vg.slider(label="Bandwidth (σ)", as_=bandwidth, min=1, max=100),
         vg.slider(label="Thresholds", as_=thresholds, min=2, max=20)
@@ -31,4 +31,4 @@ view = vg.vconcat(
     )
 )
 
-spec = vg.spec(meta=meta, data=data, params={"bandwidth": bandwidth, "thresholds": thresholds}, view=view)
+spec = vg.spec(meta=_meta, data=_data, params={"bandwidth": bandwidth, "thresholds": thresholds}, view=_view)
