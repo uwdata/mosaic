@@ -5,6 +5,8 @@ from dataclasses import dataclass
 from typing import Any, Dict, Optional
 
 from .util import omit_none
+from .params import _ParamBase
+from .plot import _encode_component
 
 
 @dataclass
@@ -50,6 +52,22 @@ class Spec:
         self.extra = extra
 
     def to_dict(self) -> Dict[str, Any]:
+        # Build a reverse lookup: id(param_object) -> param_name, so that
+        # _ParamBase instances appearing in the view resolve to "$name" refs.
+        param_names: Dict[int, str] = {}
+        serialized_params: Dict[str, Any] = {}
+        # First pass: register all param objects so nested refs can resolve
+        for name, p in (self.params or {}).items():
+            if isinstance(p, _ParamBase):
+                param_names[id(p)] = name
+
+        # Second pass: serialize with cross-references resolved
+        for name, p in (self.params or {}).items():
+            if isinstance(p, _ParamBase):
+                serialized_params[name] = p.param_def(param_names=param_names)
+            else:
+                serialized_params[name] = p
+
         base: Dict[str, Any] = {}
         if self.meta:
             base["meta"] = self.meta
@@ -57,11 +75,11 @@ class Spec:
             base["config"] = self.config
         if self.data:
             base["data"] = self.data
-        if self.params:
-            base["params"] = self.params
+        if serialized_params:
+            base["params"] = serialized_params
         if self.plotDefaults:
             base["plotDefaults"] = self.plotDefaults
-        base.update(self.view)
+        base.update(_encode_component(self.view, param_names))
         base.update(omit_none(self.extra))
         return base
 

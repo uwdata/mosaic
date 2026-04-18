@@ -4,6 +4,7 @@ from dataclasses import dataclass
 from typing import Any, Dict, List, Optional, Union
 
 from .util import camelize, omit_none
+from .params import _ParamBase
 
 
 class FromRef:
@@ -33,40 +34,44 @@ class Mark:
     data: Optional[Any] = None
     enc: Optional[Dict[str, Any]] = None
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self, param_names: Dict[str, str] | None = None) -> Dict[str, Any]:
         payload: Dict[str, Any] = {"mark": self.mark}
         if self.data is not None:
-            payload["data"] = encode_value(self.data)
+            payload["data"] = encode_value(self.data, param_names)
         if self.enc:
             for k, v in self.enc.items():
-                payload[camelize(k)] = encode_value(v)
+                payload[camelize(k)] = encode_value(v, param_names)
         return payload
 
 
-def encode_value(v: Any) -> Any:
+def encode_value(v: Any, param_names: Dict[str, str] | None = None) -> Any:
+    if isinstance(v, _ParamBase):
+        # Resolve to "$name" ref using the reverse lookup table
+        if param_names and id(v) in param_names:
+            return f"${param_names[id(v)]}"
+        return v
     if isinstance(v, FromRef):
         return v.to_dict()
     if isinstance(v, Mark):
         return v.to_dict()
     if isinstance(v, list):
-        return [encode_value(x) for x in v]
+        return [encode_value(x, param_names) for x in v]
     if isinstance(v, dict):
-        return {k: encode_value(val) for k, val in v.items()}
+        return {k: encode_value(val, param_names) for k, val in v.items()}
     return v
 
 
-def plot(*items: Union[Mark, Directive]) -> Dict[str, Any]:
+def plot(*items: Union[Mark, Directive], param_names: Dict[str, str] | None = None) -> Dict[str, Any]:
     marks: List[Dict[str, Any]] = []
     directives: Dict[str, Any] = {}
     for item in items:
         if isinstance(item, Mark):
-            marks.append(item.to_dict())
+            marks.append(item.to_dict(param_names))
         elif isinstance(item, Directive):
             k, v = item.to_kv()
-            directives[k] = v
+            directives[k] = encode_value(v, param_names)
         elif isinstance(item, dict):
-            # Treat dicts as already-structured mark entries.
-            marks.append(item)
+            marks.append({k: encode_value(v, param_names) for k, v in item.items()})
         else:
             raise TypeError(f"Unsupported plot item: {item}")
     root: Dict[str, Any] = {"plot": marks}
@@ -205,13 +210,25 @@ def y_tick_size(value: Any) -> Directive:
     return Directive("y_tick_size", value)
 
 
+def _encode_component(item: Any, param_names: Dict[str, str] | None) -> Any:
+    if isinstance(item, dict) and "plot" in item:
+        # re-encode an already-built plot dict so param refs resolve
+        marks = [
+            ({k: encode_value(v, param_names) for k, v in m.items()} if isinstance(m, dict) else m)
+            for m in item["plot"]
+        ]
+        rest = {k: encode_value(v, param_names) for k, v in item.items() if k != "plot"}
+        return {"plot": marks, **rest}
+    return encode_value(item, param_names)
+
+
 # Layout helpers
-def vconcat(*items: Any) -> Dict[str, Any]:
-    return {"vconcat": [encode_value(i) for i in items]}
+def vconcat(*items: Any, param_names: Dict[str, str] | None = None) -> Dict[str, Any]:
+    return {"vconcat": [_encode_component(i, param_names) for i in items]}
 
 
-def hconcat(*items: Any) -> Dict[str, Any]:
-    return {"hconcat": [encode_value(i) for i in items]}
+def hconcat(*items: Any, param_names: Dict[str, str] | None = None) -> Dict[str, Any]:
+    return {"hconcat": [_encode_component(i, param_names) for i in items]}
 
 
 def hspace(px: int) -> Dict[str, Any]:

@@ -1,5 +1,6 @@
 from .spec import meta, spec, Spec
 from .data import parquet, table, data
+from .params import Param, Selection
 from .plot import (
     plot,
     from_,
@@ -50,6 +51,8 @@ __all__ = [
     "parquet",
     "table",
     "data",
+    "Param",
+    "Selection",
     "plot",
     "from_",
     "mark",

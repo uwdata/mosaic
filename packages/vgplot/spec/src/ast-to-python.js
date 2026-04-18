@@ -27,10 +27,10 @@ export function astToPython(ast) {
     const onlySimple = keys.every(k => simple.includes(k));
     if (onlySimple) {
       ctx.emit(
-        `meta = vg.meta(${joinArgs({ title: meta.title, description: meta.description, credit: meta.credit })})`
+        `_meta = vg.meta(${joinArgs({ title: meta.title, description: meta.description, credit: meta.credit })})`
       );
     } else {
-      ctx.emit(`meta = ${literal(meta)}`);
+      ctx.emit(`_meta = ${literal(meta)}`);
     }
   }
 
@@ -39,7 +39,7 @@ export function astToPython(ast) {
     const entries = Object.entries(data).map(
       ([name, def]) => `${ctx.ident(name)}=${emitDataDef(def)}`
     );
-    ctx.emit('data = vg.data(');
+    ctx.emit('_data = vg.data(');
     ctx.indent();
     entries.forEach((entry, i) => {
       const suffix = i < entries.length - 1 ? ',' : '';
@@ -48,7 +48,7 @@ export function astToPython(ast) {
     ctx.dedent();
     ctx.emit(')');
   } else {
-    ctx.emit('data = {}');
+    ctx.emit('_data = {}');
   }
   ctx.blank();
 
@@ -62,19 +62,19 @@ export function astToPython(ast) {
   }
 
   // view / layout / plot
-  ctx.emit(`view = ${emitComponent(view, ctx)}`);
+  ctx.emit(`_view = ${emitComponent(view, ctx)}`);
   ctx.blank();
 
   const specArgs = [];
-  if (meta) specArgs.push('meta=meta');
-  if (Object.keys(data).length) specArgs.push('data=data');
+  if (meta) specArgs.push('meta=_meta');
+  if (Object.keys(data).length) specArgs.push('data=_data');
   if (paramEntries.length) {
     const dictItems = paramEntries.map(([name]) => `"${name}": ${ctx.ident(name)}`);
     specArgs.push(`params={${dictItems.join(', ')}}`);
   }
   if (plotDefaults) specArgs.push(`plotDefaults=${literal(plotDefaults)}`);
   if (config) specArgs.push(`config=${literal(config)}`);
-  specArgs.push('view=view');
+  specArgs.push('view=_view');
   ctx.emit(`spec = vg.spec(${specArgs.join(', ')})`);
 
   return ctx.toString();
@@ -111,30 +111,31 @@ function emitComponent(node, ctx) {
     const body = node.hconcat.map(n => indentLine(emitComponent(n, ctx), 1)).join(',\n');
     return `vg.hconcat(\n${body}\n)`;
   }
-  if (node.vspace !== undefined) return `vg.vspace(${literal(node.vspace)})`;
-  if (node.hspace !== undefined) return `vg.hspace(${literal(node.hspace)})`;
+  if (node.vspace !== undefined) return `vg.vspace(${literal(node.vspace, 0, ctx)})`;
+  if (node.hspace !== undefined) return `vg.hspace(${literal(node.hspace, 0, ctx)})`;
   if (node.input) {
-    return emitInput(node);
+    return emitInput(node, ctx);
   }
   if (node.plot) {
-    return emitPlotObject(node);
+    return emitPlotObject(node, ctx);
   }
-  return literal(node);
+  return literal(node, 0, ctx);
 }
 
-function emitPlotObject(view) {
+/** @param {PythonCodegenContext} ctx */
+function emitPlotObject(view, ctx) {
   const items = [];
   for (const mark of view.plot || []) {
     if (!mark.mark) {
-      items.push(literal(mark));
+      items.push(literal(mark, 0, ctx));
     } else {
-      items.push(emitMark(mark));
+      items.push(emitMark(mark, ctx));
     }
   }
   for (const [k, v] of Object.entries(view)) {
     if (k === 'plot') continue;
     if (v === undefined) continue;
-    items.push(emitDirective(k, v));
+    items.push(emitDirective(k, v, ctx));
   }
   const body = items.map(s => indentLine(s, 1)).join(',\n');
   return `vg.plot(\n${body}\n)`;
@@ -148,15 +149,16 @@ function emitDataDef(def) {
   return literal(def);
 }
 
-function emitMark(mark) {
+/** @param {PythonCodegenContext} ctx */
+function emitMark(mark, ctx) {
   const { mark: name, data, ...enc } = mark;
   const fn = markMap[name];
   const args = [];
-  if (data !== undefined) args.push(`data=${emitDataRef(data)}`);
+  if (data !== undefined) args.push(`data=${emitDataRef(data, ctx)}`);
   for (const [k, v] of Object.entries(enc)) {
     if (v === undefined) continue;
     const arg = argName(k);
-    args.push(`${arg}=${literal(v)}`);
+    args.push(`${arg}=${literal(v, 0, ctx)}`);
   }
   if (fn) {
     return `vg.${fn}(${args.join(', ')})`;
@@ -167,28 +169,30 @@ function emitMark(mark) {
   return argStr.length ? `vg.${snakeName}(${argStr})` : `vg.${snakeName}()`;
 }
 
-function emitDirective(key, value) {
+/** @param {PythonCodegenContext} ctx */
+function emitDirective(key, value, ctx) {
   if (key === 'margins' && value && typeof value === 'object') {
-    const parts = Object.entries(value).map(([k, v]) => `${camelCaseToSnake(k)}=${literal(v)}`);
+    const parts = Object.entries(value).map(([k, v]) => `${camelCaseToSnake(k)}=${literal(v, 0, ctx)}`);
     return `vg.margins(${parts.join(', ')})`;
   }
   const mapped = directiveMap[key];
-  if (mapped) return `vg.${mapped}(${literal(value)})`;
+  if (mapped) return `vg.${mapped}(${literal(value, 0, ctx)})`;
   // Fallback: use snake_case key directly (caught by __getattr__ on the Python side)
-  return `vg.${camelCaseToSnake(key)}(${literal(value)})`;
+  return `vg.${camelCaseToSnake(key)}(${literal(value, 0, ctx)})`;
 }
 
-function emitInput(node) {
+/** @param {PythonCodegenContext} ctx */
+function emitInput(node, ctx) {
   const kind = node.input;
   const opts = { ...node };
   delete opts.input;
   const args = Object.entries(opts)
     .filter(([, v]) => v !== undefined)
-    .map(([k, v]) => `${inputArgName(k)}=${literal(v)}`);
+    .map(([k, v]) => `${inputArgName(k)}=${literal(v, 0, ctx)}`);
   if (kind === 'slider') return `vg.slider(${args.join(', ')})`;
   if (kind === 'select') return `vg.select(${args.join(', ')})`;
   if (kind === 'checkbox') return `vg.checkbox(${args.join(', ')})`;
-  return `vg.input(${literal(kind)}${args.length ? ', ' + args.join(', ') : ''})`;
+  return `vg.input(${literal(kind, 0, ctx)}${args.length ? ', ' + args.join(', ') : ''})`;
 }
 
 function inputArgName(key) {
@@ -203,36 +207,38 @@ function argName(key) {
   return camelCaseToSnake(key);
 }
 
-function emitDataRef(data) {
-  if (Array.isArray(data)) return literal(data);
+function emitDataRef(data, ctx) {
+  if (Array.isArray(data)) return literal(data, 0, ctx);
   if (data && typeof data === 'object' && data.from) {
     const keys = Object.keys(data);
-    if (keys.length === 1) return `vg.from_(${literal(data.from)})`;
-    return literal(data);
+    if (keys.length === 1) return `vg.from_(${literal(data.from, 0, ctx)})`;
+    return literal(data, 0, ctx);
   }
-  return literal(data);
+  return literal(data, 0, ctx);
 }
 
-function literal(v, depth = 0) {
+function literal(v, depth = 0, ctx = null) {
   if (v === null || v === undefined) return 'None';
   if (typeof v === 'boolean') return v ? 'True' : 'False';
   if (typeof v === 'number') return String(v);
   if (typeof v === 'string') {
-    // param reference like "$brush" → emit as the variable name
-    if (/^\$[A-Za-z_][A-Za-z0-9_]*$/.test(v)) return v.slice(1);
+    // param reference like "$brush" → emit as the (possibly renamed) variable
+    if (/^\$[A-Za-z_][A-Za-z0-9_]*$/.test(v)) {
+      return ctx ? ctx.ident(v.slice(1)) : v.slice(1);
+    }
     return JSON.stringify(v);
   }
   const pad = '    '.repeat(depth + 1);
   const closePad = '    '.repeat(depth);
   if (Array.isArray(v)) {
     if (!v.length) return '[]';
-    const items = v.map(x => pad + literal(x, depth + 1)).join(',\n');
+    const items = v.map(x => pad + literal(x, depth + 1, ctx)).join(',\n');
     return '[\n' + items + '\n' + closePad + ']';
   }
   if (typeof v === 'object') {
     const entries = Object.entries(v)
       .filter(([, val]) => val !== undefined)
-      .map(([k, val]) => `${pad}${JSON.stringify(k)}: ${literal(val, depth + 1)}`);
+      .map(([k, val]) => `${pad}${JSON.stringify(k)}: ${literal(val, depth + 1, ctx)}`);
     if (!entries.length) return '{}';
     return '{\n' + entries.join(',\n') + '\n' + closePad + '}';
   }
