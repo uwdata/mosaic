@@ -2,12 +2,53 @@
 title: Mosaic vgplot
 ---
 <script setup>
-  import { ref } from 'vue';
+  import { ref, onMounted, onUnmounted } from 'vue';
   import { coordinator } from '@uwdata/vgplot';
 
   coordinator().clear();
 
+  /** @type {import('vue').Ref<'js' | 'python'>} */
   const language = ref('js');
+
+  function parseLang(search) {
+    const q = new URLSearchParams(search || '').get('lang');
+    if (q === 'python') return 'python';
+    return 'js';
+  }
+
+  function applyLangToUrl(lang) {
+    if (typeof window === 'undefined') return;
+    const url = new URL(window.location.href);
+    url.searchParams.set('lang', lang);
+    const next = url.pathname + url.search + url.hash;
+    const cur =
+      window.location.pathname + window.location.search + window.location.hash;
+    if (next !== cur) {
+      history.replaceState(history.state, '', next);
+    }
+  }
+
+  function setLanguage(lang) {
+    language.value = lang;
+    applyLangToUrl(lang);
+  }
+
+  function onPopState() {
+    language.value = parseLang(window.location.search);
+  }
+
+  onMounted(() => {
+    const search = window.location.search;
+    language.value = parseLang(search);
+    if (!new URLSearchParams(search).has('lang')) {
+      applyLangToUrl(language.value);
+    }
+    window.addEventListener('popstate', onPopState);
+  });
+
+  onUnmounted(() => {
+    window.removeEventListener('popstate', onPopState);
+  });
 </script>
 
 <div class="vgplot-toggle" role="tablist" aria-label="Mosaic vgplot language">
@@ -16,7 +57,7 @@ title: Mosaic vgplot
     type="button"
     :aria-selected="language === 'js'"
     :class="{ active: language === 'js' }"
-    @click="language = 'js'"
+    @click="setLanguage('js')"
   >
     JS
   </button>
@@ -25,13 +66,13 @@ title: Mosaic vgplot
     type="button"
     :aria-selected="language === 'python'"
     :class="{ active: language === 'python' }"
-    @click="language = 'python'"
+    @click="setLanguage('python')"
   >
     Python
   </button>
 </div>
 
-<h1>{{ language === 'js' ? 'Mosaic vgplot' : 'Mosaic vgplot (Python)' }}</h1>
+<h1>{{ language === 'js' ? 'Mosaic vgplot in Javascript' : 'Mosaic vgplot in Python' }}</h1>
 
 <template v-if="language === 'js'">
 A grammar of interactive graphics in which graphical marks are Mosaic clients.
@@ -200,7 +241,8 @@ To ensure spacing, the `vspace` and `hspace` helpers add padding between element
 </template>
 
 <template v-else>
-Mosaic vgplot is a grammar of interactive graphics: each mark is a Mosaic client that queries data through the coordinator. In Python, `import mosaic.vgplot as vg` gives you composable helpers for plots, attributes, marks, interactors, legends, and layout. Names use **snake_case**; Python keywords are escaped with a trailing underscore (`from_`, `as_`, `for_`).
+
+Mosaic vgplot is a grammar of interactive graphics: each mark is a Mosaic client that queries data through the coordinator. In Python, `import mosaic.vgplot as vg` gives you composable helpers for plots, attributes, marks, interactors, legends, and layout. Names use **`snake_case`**; Python keywords are escaped with a trailing underscore (`from_`, `as_`, `for_`).
 
 The interactive figure below is driven by the same [declarative specification](/spec/) used across Mosaic (YAML in the docs site). In notebooks you usually pass an equivalent structure as a dict—built with `vg.*` helpers, loaded from YAML/JSON, or produced by your own tooling—to [`MosaicWidget`](/jupyter/) as `spec`.
 
@@ -220,7 +262,7 @@ Each plot uses [Observable Plot](https://observablehq.com/plot/)–style _channe
 
 
 ``` python
-import mosaic.vgplot as vg
+from mosaic.vgplot import line_y, width, height
 
 vg.plot(
     vg.line_y(data=vg.from_("aapl"), x="Date", y="Close"),
