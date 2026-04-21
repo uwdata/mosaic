@@ -9,11 +9,11 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 MOSAIC_SRC = ROOT / "mosaic"
+VGPLOT_PYTHON = ROOT / "packages" / "vgplot-python"
 
-if str(ROOT) not in sys.path:
-    sys.path.insert(0, str(ROOT))
-if str(MOSAIC_SRC) not in sys.path:
-    sys.path.insert(0, str(MOSAIC_SRC))
+for p in (VGPLOT_PYTHON, MOSAIC_SRC, ROOT):
+    if str(p) not in sys.path:
+        sys.path.insert(0, str(p))
 
 
 def main() -> int:
