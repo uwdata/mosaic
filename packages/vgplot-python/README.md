@@ -2,9 +2,9 @@
 
 [![PyPI](https://img.shields.io/pypi/v/vgplot.svg)](https://pypi.org/project/vgplot/)
 
-A Python DSL for authoring [Mosaic](https://uwdata.github.io/mosaic/) visualizations. Build declarative, interactive plots backed by DuckDB — in Jupyter notebooks, as YAML/JSON specs, or as part of a data pipeline.
+A Python API for authoring [Mosaic](https://uwdata.github.io/mosaic/) visualizations. Build declarative, interactive plots backed by DuckDB — in Jupyter notebooks, as JSON specs, or as part of a data pipeline.
 
-`vgplot` produces Mosaic specification objects that can be rendered with [`mosaic-widget`](https://pypi.org/project/mosaic-widget/) in JupyterLab or exported to JSON/YAML for use in the browser.
+`vgplot` produces Mosaic specification objects that can be rendered with [`mosaic-widget`](https://pypi.org/project/mosaic-widget/) in JupyterLab or exported to JSON for use in the browser.
 
 ## Installation
 
@@ -26,18 +26,15 @@ Build a spec with `import vgplot as vg`, then pass it to a `MosaicWidget`:
 import vgplot as vg
 from mosaic_widget import MosaicWidget
 
-data = vg.data(
-    penguins=vg.parquet("data/penguins.parquet")
-)
+_data = vg.data(athletes=vg.parquet("data/athletes.parquet"))
 
-view = vg.plot(
-    vg.dot(data=vg.from_("penguins"), x="bill_length", y="bill_depth", fill="species", r=2),
-    vg.color_domain("Fixed"),
-    vg.width(640),
+_view = vg.plot(
+    vg.dot(data=vg.from_("athletes"), x="weight", y="height", fill="steelblue", opacity=0.5),
+    vg.width(600),
     vg.height(400),
 )
 
-spec = vg.spec(data=data, view=view)
+spec = vg.spec(data=_data, view=_view)
 MosaicWidget(spec.to_dict())
 ```
 
@@ -49,13 +46,11 @@ Params and selections are first-class objects. Declare them before the view so t
 import vgplot as vg
 from mosaic_widget import MosaicWidget
 
-data = vg.data(
-    flights=vg.parquet("data/flights-200k.parquet")
-)
+_data = vg.data(flights=vg.parquet("data/flights-200k.parquet"))
 
 brush = vg.Selection.crossfilter()
 
-view = vg.vconcat(
+_view = vg.vconcat(
     vg.plot(
         vg.rect_y(data={"from": "flights", "filterBy": brush},
                   x={"bin": "delay"}, y={"count": ""},
@@ -76,7 +71,7 @@ view = vg.vconcat(
     ),
 )
 
-spec = vg.spec(data=data, params={"brush": brush}, view=view)
+spec = vg.spec(data=_data, params={"brush": brush}, view=_view)
 MosaicWidget(spec.to_dict())
 ```
 
@@ -88,11 +83,11 @@ Use `vg.Param.value()` for scalar parameters bound to input controls:
 import vgplot as vg
 from mosaic_widget import MosaicWidget
 
-data = vg.data(walk=vg.parquet("data/random-walk.parquet"))
+_data = vg.data(walk=vg.parquet("data/random-walk.parquet"))
 
 point = vg.Param.value(0)
 
-view = vg.vconcat(
+_view = vg.vconcat(
     vg.slider(label="Bias", as_=point, min=0, max=1000, step=1),
     vg.plot(
         vg.area_y(data=vg.from_("walk"), x="t", y={"sql": "v + $point"}, fill="steelblue"),
@@ -101,7 +96,7 @@ view = vg.vconcat(
     ),
 )
 
-spec = vg.spec(data=data, params={"point": point}, view=view)
+spec = vg.spec(data=_data, params={"point": point}, view=_view)
 MosaicWidget(spec.to_dict())
 ```
 
@@ -122,11 +117,12 @@ MosaicWidget(spec.to_dict())
 
 Any mark or directive not listed above is also accessible by its snake_case name via `__getattr__`, so `vg.regression_y(...)` and `vg.x_tick_rotate(45)` work without explicit exports.
 
+Option names match the [vgplot API reference](https://uwdata.github.io/mosaic/api/), but in snake_case. For example, `xDomain` → `x_domain`, `colorScheme` → `color_scheme`.
+
 ## Exporting specs
 
 `Spec.to_dict()` returns a plain Python dictionary compatible with `mosaic-widget`. `Spec.to_json()` returns a JSON string:
 
 ```python
-import json
 print(spec.to_json(indent=2))
 ```
