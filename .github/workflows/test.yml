@@ -81,7 +81,15 @@ jobs:
           uv build
           uv run --group test ty check
           uv run --group test pytest --cov-report=term-missing --color=yes --cov=mosaic_widget
-          
+
+      - name: Build and test Spec Classes
+        run: |
+          cd packages/vgplot-python
+
+          uv run generate-spec-classes
+          uv run --group dev pytest test/ --cov=spec_classes --cov-report=term-missing --color=yes
+
+
   rust:
     name: Test in Rust
 
