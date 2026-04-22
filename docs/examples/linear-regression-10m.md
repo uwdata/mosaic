@@ -15,4 +15,5 @@ A linear regression plot predicting flight arrival delay based on the time of de
 <<< @/public/specs/esm/linear-regression-10m.js [JavaScript]
 <<< @/public/specs/yaml/linear-regression-10m.yaml [YAML]
 <<< @/public/specs/json/linear-regression-10m.json [JSON]
+<<< @/public/specs/python/linear-regression-10m.py [Python]
 :::

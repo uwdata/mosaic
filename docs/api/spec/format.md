@@ -10,6 +10,7 @@ To generate a running application from a parsed spec, use [`astToDOM`](parser-ge
 <<< @/public/specs/yaml/bias.yaml [YAML]
 <<< @/public/specs/json/bias.json [JSON]
 <<< @/public/specs/esm/bias.js [JavaScript]
+<<< @/public/specs/python/bias.py [Python]
 :::
 
 ::: tip

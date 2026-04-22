@@ -1,3 +1,76 @@
+---
+title: Interactors
+---
+<script setup>
+  import { ref, onMounted, onUnmounted } from 'vue';
+
+  /** @type {import('vue').Ref<'js' | 'python'>} */
+  const language = ref('js');
+
+  function parseLang(search) {
+    const q = new URLSearchParams(search || '').get('lang');
+    if (q === 'python') return 'python';
+    return 'js';
+  }
+
+  function applyLangToUrl(lang) {
+    if (typeof window === 'undefined') return;
+    const url = new URL(window.location.href);
+    url.searchParams.set('lang', lang);
+    const next = url.pathname + url.search + url.hash;
+    const cur =
+      window.location.pathname + window.location.search + window.location.hash;
+    if (next !== cur) {
+      history.replaceState(history.state, '', next);
+    }
+  }
+
+  function setLanguage(lang) {
+    language.value = lang;
+    applyLangToUrl(lang);
+  }
+
+  function onPopState() {
+    language.value = parseLang(window.location.search);
+  }
+
+  onMounted(() => {
+    const search = window.location.search;
+    language.value = parseLang(search);
+    if (!new URLSearchParams(search).has('lang')) {
+      applyLangToUrl(language.value);
+    }
+    window.addEventListener('popstate', onPopState);
+  });
+
+  onUnmounted(() => {
+    window.removeEventListener('popstate', onPopState);
+  });
+</script>
+
+<div class="vgplot-toggle" role="tablist" aria-label="Interactors documentation language">
+  <button
+    role="tab"
+    type="button"
+    :aria-selected="language === 'js'"
+    :class="{ active: language === 'js' }"
+    @click="setLanguage('js')"
+  >
+    JS
+  </button>
+  <button
+    role="tab"
+    type="button"
+    :aria-selected="language === 'python'"
+    :class="{ active: language === 'python' }"
+    @click="setLanguage('python')"
+  >
+    Python
+  </button>
+</div>
+
+<template v-if="language === 'js'">
+
 # Interactors
 
 Interactors imbue plots with interactive behavior, such as selecting or highlighting values, and panning or zooming the display.
@@ -186,3 +259,200 @@ Unselected values are deemphasized.
 
 - _by_: The [Selection](../core/selection) driving the highlighting.
 - _channels_: An optional object of channel/value mappings that defines what CSS styles to apply to deemphasized items. The default value is to set the `opacity` channel to `0.2`.
+
+
+</template>
+
+<template v-else>
+
+# Interactors
+
+Interactors imbue plots with interactive behavior, such as selecting or highlighting values, and panning or zooming the display.
+
+To determine which fields (database columns) an interactor should select, an interactor defaults to looking at the corresponding encoding channels for the most recently added mark.
+Alternatively, interactors accept options that explicitly indicate which data fields should be selected.
+
+## toggle
+
+`toggle(options)`
+
+Select individual data values by clicking / shift-clicking points. The supported _options_ are:
+
+- _as_: The [Selection](../core/selection) to populate with filter predicates.
+- _channels_: An array of encoding channels (e.g., `"x"`, `"y"`, `"color"`) indicating the data values to select.
+- _peers_: A Boolean-flag (default `true`) indicating if all marks in the current plot should be considered "peers" in the clients set used to perform cross-filtering. A peer mark will be exempt from filtering. Set this to false if you are using a cross-filtered selection but want to filter across marks within the same plot.
+
+### toggle_x
+
+`toggle_x(options)`
+
+A shorthand for a [`toggle`](#toggle) interactor over the `"x"` encoding channel only.
+
+### toggle_y
+
+`toggle_y(options)`
+
+A shorthand for a [`toggle`](#toggle) interactor over the `"y"` encoding channel only.
+
+
+### toggle_color
+
+`toggle_color(options)`
+
+A shorthand for a [`toggle`](#toggle) interactor over the `"color"` encoding channel only.
+
+## nearest
+
+Select the nearest value to the current cursor position.
+
+### nearest_x
+
+`nearest_x(options)`
+
+Select the nearest value along the x dimension. The supported _options_ are:
+
+- _as_: The [Selection](../core/selection) to populate with filter predicates.
+- _field_: The field to select. If not specified, the field backing the `"x"` encoding channel of the most recently added mark is used.
+
+### nearest_y
+
+`nearest_y(options)`
+
+Select the nearest value along the y dimension. The supported _options_ are:
+
+- _as_: The [Selection](../core/selection) to populate with filter predicates.
+- _field_: The field to select. If not specified, the field backing the `"x"` encoding channel of the most recently added mark is used.
+
+## region
+
+`region(options)`
+
+Select point values from elements within a rectangular region.
+Unlike `interval` interactors (which select a domain value range along an axis), the `region` interactor generates clauses for values extracted from the selected set of on-screen elements. This interactor functions similar to `toggle`, but uses a rectangular selection region rather than click / tap interactions.
+
+To select non-visualized data fields, use the plot `channels` property to define additional named channels, which can then be included in this interactor's _channels_ option.
+
+- _as_: The [Selection](../core/selection) to populate with filter predicates. A clause of the form `(field = value1) OR (field = value2) ...` is added for the currently selected values.
+- _channels_: An array of encoding channels (e.g., `"x"`, `"y"`, `"color"`) indicating the data values to select. A sub-clause will be included for each channel.
+- _peers_: A Boolean-flag (default `true`) indicating if all marks in the current plot should be considered "peers" in the clients set used to perform cross-filtering. A peer mark will be exempt from filtering. Set this to false if you are using a cross-filtered selection but want to filter across marks within the same plot.
+- _brush_: An optional object of CSS style attribute-value pairs for the selection brush (SVG `rect`) element.
+
+## interval
+
+Select all values within an interval range.
+
+### interval_x
+
+`interval_x(options)`
+
+Select a 1D interval range along the x dimension. The supported _options_ are:
+
+- _as_: The [Selection](../core/selection) to populate with filter predicates.
+- _field_: The field to select. If not specified, the field backing the `"x"` encoding channel of the most recently added mark is used.
+- _pixel_size_: The size of an interactive "pixel" (default 1). If set larger, the interval brush will "snap" to a grid larger than visible pixels. In some cases this can be helpful to improve scalability to large data by reducing interactive resolution.
+- _peers_: A Boolean-flag (default `true`) indicating if all marks in the current plot should be considered "peers" in the clients set used to perform cross-filtering. A peer mark will be exempt from filtering. Set this to false if you are using a cross-filtered selection but want to filter across marks within the same plot.
+- _brush_: An optional object of CSS style attribute-value pairs for the selection brush (SVG `rect`) element.
+
+### interval_y
+
+`interval_y(options)`
+
+Select a 1D interval range along the y dimension. The supported _options_ are:
+
+- _as_: The [Selection](../core/selection) to populate with filter predicates.
+- _field_: The field to select. If not specified, the field backing the `"y"` encoding channel of the most recently added mark is used.
+- _pixel_size_: The size of an interactive "pixel" (default 1). If set larger, the interval brush will "snap" to a grid larger than visible pixels. In some cases this can be helpful to improve scalability to large data by reducing interactive resolution.
+- _peers_: A Boolean-flag (default `true`) indicating if all marks in the current plot should be considered "peers" in the clients set used to perform cross-filtering. A peer mark will be exempt from filtering. Set this to false if you are using a cross-filtered selection but want to filter across marks within the same plot.
+- _brush_: An optional object of CSS style attribute-value pairs for the selection brush (SVG `rect`) element.
+
+### interval_xy
+
+`interval_xy(options)`
+
+Select a 2D interval range along the x and y dimensions. The supported _options_ are:
+
+- _as_: The [Selection](../core/selection) to populate with filter predicates.
+- _xfield_: The x field to select. If not specified, the field backing the `"x"` encoding channel of the most recently added mark is used.
+- _yfield_: The y field to select. If not specified, the field backing the `"y"` encoding channel of the most recently added mark is used.
+- _pixel_size_: The size of an interactive "pixel" (default 1). If set larger, the interval brush will "snap" to a grid larger than visible pixels. In some cases this can be helpful to improve scalability to large data by reducing interactive resolution.
+- _peers_: A Boolean-flag (default `true`) indicating if all marks in the current plot should be considered "peers" in the clients set used to perform cross-filtering. A peer mark will be exempt from filtering. Set this to false if you are using a cross-filtered selection but want to filter across marks within the same plot.
+- _brush_: An optional object of CSS style attribute-value pairs for the selection brush (SVG `rect`) element.
+
+## pan & zoom
+
+Pan or zoom a plot.
+To pan, click and drag within a plot.
+To zoom, scroll within in a plot.
+
+Panning and zooming is implemented by changing the `x` and/or `y` scale domains and re-rendering the plot in response.
+
+Pan/zoom interactors will automatically update the plot `xDomain` and `yDomain` attributes.
+For linked panning and zooming across plot, first define your own selections and pass them as options.
+You can additionally use such selections to have the pan/zoom state filter other marks.
+
+All pan/zoom directives share the same possible _options_:
+
+- _x_: The [Selection](../core/selection) over the `x` encoding channel domain. If unspecified, a new selection instance is used.
+- _y_: The [Selection](../core/selection) over the `y` encoding channel domain. If unspecified, a new selection instance is used.
+- _xfield_: The x field to select. If not specified, the field backing the `"x"` encoding channel of the most recently added mark is used.
+- _yfield_: The y field to select. If not specified, the field backing the `"y"` encoding channel of the most recently added mark is used.
+
+### pan
+
+`pan(options)`
+
+Pan the plot in either the `x` or `y` dimension.
+Do not perform zooming.
+The supported _options_ are listed above.
+
+### pan_x
+
+`pan_x(options)`
+
+Pan the plot in the `x` dimension only.
+Do not perform zooming.
+The supported _options_ are listed above.
+
+### pan_y
+
+`pan_y(options)`
+
+Pan the plot in the `y` dimension only.
+Do not perform zooming.
+The supported _options_ are listed above.
+
+### pan_zoom
+
+`pan_zoom(options)`
+
+Pan or zoom the plot in either the `x` or `y` dimension.
+The supported _options_ are listed above.
+
+### pan_zoom_x
+
+`pan_zoom_x(options)`
+
+Pan or zoom the plot in the `x` dimension only.
+The supported _options_ are listed above.
+
+### pan_zoom_y
+
+`pan_zoom_y(options)`
+
+Pan or zoom the plot in the `y` dimension only.
+The supported _options_ are listed above.
+
+
+## highlight
+
+`highlight(options)`
+
+Highlight individual visualized data points based on a [Selection](../core/selection).
+Selected values keep their normal appearance.
+Unselected values are deemphasized.
+
+- _by_: The [Selection](../core/selection) driving the highlighting.
+- _channels_: An optional object of channel/value mappings that defines what CSS styles to apply to deemphasized items. The default value is to set the `opacity` channel to `0.2`.
+
+
+</template>

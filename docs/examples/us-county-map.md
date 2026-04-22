@@ -15,4 +15,5 @@ A map of U.S. counties. County name tooltips are anchored to invisible centroid 
 <<< @/public/specs/esm/us-county-map.js [JavaScript]
 <<< @/public/specs/yaml/us-county-map.yaml [YAML]
 <<< @/public/specs/json/us-county-map.json [JSON]
+<<< @/public/specs/python/us-county-map.py [Python]
 :::

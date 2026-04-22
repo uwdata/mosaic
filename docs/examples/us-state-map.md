@@ -17,4 +17,5 @@ A map of U.S. states overlaid with computed centroids. Requires the DuckDB `spat
 <<< @/public/specs/esm/us-state-map.js [JavaScript]
 <<< @/public/specs/yaml/us-state-map.yaml [YAML]
 <<< @/public/specs/json/us-state-map.json [JSON]
+<<< @/public/specs/python/us-state-map.py [Python]
 :::

@@ -1,7 +1,15 @@
 #!/usr/bin/env node
 import { basename, extname, join, resolve } from 'node:path';
-import { copyFile, readdir, readFile, writeFile } from 'node:fs/promises';
-import { parseSpec, astToESM } from '@uwdata/mosaic-spec';
+import {
+  copyFile,
+  readdir,
+  readFile,
+  writeFile,
+  mkdir,
+} from 'node:fs/promises';
+import { parseSpec } from '../packages/vgplot/spec/src/parse-spec.js';
+import { astToESM } from '../packages/vgplot/spec/src/ast-to-esm.js';
+import { astToPython } from '../packages/vgplot/spec/src/ast-to-python.js';
 import { parse } from 'yaml';
 
 // This script prepares all Mosaic example specifications
@@ -15,12 +23,14 @@ const specDir = join('specs', 'yaml');
 const esmTestDir = join('specs', 'esm');
 const jsonTestDir = join('specs', 'json');
 const tsTestDir = join('specs', 'ts');
+const pythonTestDir = join('specs', 'python');
 
 const docsDir = 'docs';
 const yamlDocsDir = join(docsDir, 'public', 'specs', 'yaml');
 const jsonDocsDir = join(docsDir, 'public', 'specs', 'json');
 const esmDocsDir = join(docsDir, 'public', 'specs', 'esm');
 const exampleDir = join(docsDir, 'examples');
+const pythonDocsDir = join(docsDir, 'public', 'specs', 'python');
 
 const specToTS = spec => {
   return `import { Spec } from '@uwdata/mosaic-spec';
@@ -28,6 +38,12 @@ const specToTS = spec => {
 export const spec : Spec = ${JSON.stringify(spec, 0, 2)};
 `;
 }
+
+// Create directories if they don't exist
+await Promise.all([
+  mkdir(pythonTestDir, { recursive: true }),
+  mkdir(pythonDocsDir, { recursive: true }),
+]).catch(console.error);
 
 const files = await Promise.allSettled((await readdir(specDir))
   .filter(name => extname(name) === '.yaml')
@@ -69,7 +85,11 @@ const files = await Promise.allSettled((await readdir(specDir))
         writeFile(
           resolve(exampleDir, `${base}.md`),
           examplePage(base, spec.meta)
-        )
+        ),
+        // write Python spec to tests
+        writeFile(resolve(pythonTestDir, `${base}.py`), astToPython(ast)),
+        // write Python spec to docs
+        writeFile(resolve(pythonDocsDir, `${base}.py`), astToPython(ast)),
       ]);
     } catch (err) {
       console.error(err);
@@ -78,14 +98,6 @@ const files = await Promise.allSettled((await readdir(specDir))
     return base;
   })
 );
-
-// output successfully written examples
-console.log(JSON.stringify(
-  files
-    .filter(x => x.status === 'fulfilled')
-    .map(x => x.value),
-  0, 2
-));
 
 // output unsuccessful example errors
 files
@@ -108,6 +120,7 @@ ${credit ? `\n**Credit**: ${credit}\n` : ''}
 <<< @/public/specs/esm/${spec}.js [JavaScript]
 <<< @/public/specs/yaml/${spec}.yaml [YAML]
 <<< @/public/specs/json/${spec}.json [JSON]
+<<< @/public/specs/python/${spec}.py [Python]
 :::
 `;
 }

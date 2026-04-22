@@ -15,4 +15,5 @@ A linear regression plot predicting athletes' heights based on their weights. Re
 <<< @/public/specs/esm/linear-regression.js [JavaScript]
 <<< @/public/specs/yaml/linear-regression.yaml [YAML]
 <<< @/public/specs/json/linear-regression.json [JSON]
+<<< @/public/specs/python/linear-regression.py [Python]
 :::
