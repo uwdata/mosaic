@@ -99,8 +99,11 @@ class Spec:
         display(widget)
 
 
+_VIEW_KEYS = {"plot", "vconcat", "hconcat", "hspace", "vspace", "input"}
+
+
 def spec(
-    *,
+    *args: Any,
     meta: Meta | Dict[str, Any] | None = None,
     data: Dict[str, Any] | None = None,
     params: Dict[str, Any] | None = None,
@@ -109,6 +112,13 @@ def spec(
     view: Dict[str, Any] | None = None,
     **extra: Any,
 ) -> Spec:
+    for arg in args:
+        if isinstance(arg, Meta):
+            meta = arg
+        elif isinstance(arg, dict) and _VIEW_KEYS.intersection(arg):
+            view = arg
+        elif isinstance(arg, dict):
+            data = arg
     return Spec(
         meta=meta,
         data=data,

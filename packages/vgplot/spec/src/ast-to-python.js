@@ -65,17 +65,18 @@ export function astToPython(ast) {
   ctx.emit(`_view = ${emitComponent(view, ctx)}`);
   ctx.blank();
 
-  const specArgs = [];
-  if (meta) specArgs.push('meta=_meta');
-  if (Object.keys(data).length) specArgs.push('data=_data');
+  const positional = [];
+  const kwargs = [];
+  if (meta) positional.push('_meta');
+  if (Object.keys(data).length) positional.push('_data');
+  positional.push('_view');
   if (paramEntries.length) {
     const dictItems = paramEntries.map(([name]) => `"${name}": ${ctx.ident(name)}`);
-    specArgs.push(`params={${dictItems.join(', ')}}`);
+    kwargs.push(`params={${dictItems.join(', ')}}`);
   }
-  if (plotDefaults) specArgs.push(`plotDefaults=${literal(plotDefaults)}`);
-  if (config) specArgs.push(`config=${literal(config)}`);
-  specArgs.push('view=_view');
-  ctx.emit(`spec = vg.spec(${specArgs.join(', ')})`);
+  if (plotDefaults) kwargs.push(`plotDefaults=${literal(plotDefaults)}`);
+  if (config) kwargs.push(`config=${literal(config)}`);
+  ctx.emit(`spec = vg.spec(${[...positional, ...kwargs].join(', ')})`);
 
   return ctx.toString();
 }
