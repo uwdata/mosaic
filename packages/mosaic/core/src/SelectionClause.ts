@@ -1,5 +1,6 @@
 import { isMosaicClient, MosaicClient } from './MosaicClient.js';
-import { type ExprNode, type ExprValue, type ScaleOptions, type ScaleDomain, and, contains, isBetween, isIn, isNotDistinct, literal, or, prefix, regexp_matches, suffix, listHasAny, listHasAll, lower } from '@uwdata/mosaic-sql';
+import type { ExprNode, ExprValue, ScaleOptions, ScaleDomain } from '@uwdata/mosaic-sql';
+import { and, contains, isBetween, isInDistinct, isNotDistinct, listHasAll, listHasAny, literal, lower, or, prefix, regexp_matches, suffix } from '@uwdata/mosaic-sql';
 
 /**
  * Selection clause metadata to guide possible query optimizations.
@@ -119,7 +120,7 @@ export function clausePoint(
   }: PointOptions
 ): SelectionClause {
   const predicate: ExprNode | null = value !== undefined
-    ? isIn(field, [literal(value)])
+    ? isInDistinct(field, [literal(value)])
     : null;
   return {
     meta: { type: 'point' },
@@ -153,7 +154,7 @@ export function clausePoints(
   let predicate: ExprNode | null = null;
   if (value?.length) {
     const clauses = value.length && fields.length === 1
-      ? [isIn(fields[0], value.map(v => literal(v[0])))]
+      ? [isInDistinct(fields[0], value.map(v => literal(v[0])))]
       : value.map(v => and(v.map((_, i) => isNotDistinct(fields[i], literal(_)))));
     predicate = value.length === 0 ? literal(false)
       : clauses.length > 1 ? or(clauses)
