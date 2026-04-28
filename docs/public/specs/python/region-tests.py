@@ -1,9 +1,6 @@
 import vgplot as vg
 
-_meta = {
-    "title": "Region Interactor Tests",
-    "descriptions": "Varied plots using region interactors to highlight selected values.\n"
-}
+_meta = vg.meta(title="Region Interactor Tests", descriptions="Varied plots using region interactors to highlight selected values.\n")
 _data = vg.data(
     bls_unemp=vg.parquet("data/bls-metro-unemployment.parquet"),
     feed={
@@ -99,4 +96,4 @@ _view = vg.vconcat(
     )
 )
 
-spec = vg.spec(meta=_meta, data=_data, params={"series": series, "quakes": quakes, "counties": counties}, view=_view)
+spec = vg.spec(_meta, _data, _view, params={"series": series, "quakes": quakes, "counties": counties})

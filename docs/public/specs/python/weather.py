@@ -78,4 +78,4 @@ _view = vg.vconcat(
     )
 )
 
-spec = vg.spec(meta=_meta, data=_data, params={"click": click, "domain": domain, "colors": colors, "range": range}, view=_view)
+spec = vg.spec(_meta, _data, _view, params={"click": click, "domain": domain, "colors": colors, "range": range})

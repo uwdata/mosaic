@@ -121,4 +121,4 @@ _view = vg.vconcat(
     ], width=680, height=215)
 )
 
-spec = vg.spec(meta=_meta, data=_data, params={"query": query, "point": point, "plddt_domain": plddt_domain, "pae_domain": pae_domain, "scheme": scheme}, view=_view)
+spec = vg.spec(_meta, _data, _view, params={"query": query, "point": point, "plddt_domain": plddt_domain, "pae_domain": pae_domain, "scheme": scheme})

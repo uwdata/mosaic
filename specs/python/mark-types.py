@@ -113,7 +113,7 @@ _view = vg.vconcat(
     )
 )
 
-spec = vg.spec(meta=_meta, data=_data, plotDefaults={
+spec = vg.spec(_meta, _data, _view, plotDefaults={
     "xAxis": None,
     "yAxis": None,
     "margins": {
@@ -128,4 +128,4 @@ spec = vg.spec(meta=_meta, data=_data, plotDefaults={
         0,
         9
     ]
-}, view=_view)
+})

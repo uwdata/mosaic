@@ -53,4 +53,4 @@ _view = vg.vconcat(
     vg.slider(min=1, max=7, step=0.1, as_=length, label="Vector Length")
 )
 
-spec = vg.spec(meta=_meta, data=_data, params={"selected": selected, "length": length}, view=_view)
+spec = vg.spec(_meta, _data, _view, params={"selected": selected, "length": length})

@@ -98,6 +98,6 @@ _view = vg.vconcat(
     )
 )
 
-spec = vg.spec(meta=_meta, data=_data, params={"filter": filter}, config={
+spec = vg.spec(_meta, _data, _view, params={"filter": filter}, config={
     "extensions": "spatial"
-}, view=_view)
+})

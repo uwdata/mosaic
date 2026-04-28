@@ -25,4 +25,4 @@ _view = vg.plot(
     vg.color_domain("Fixed")
 )
 
-spec = vg.spec(meta=_meta, data=_data, params={"query": query}, view=_view)
+spec = vg.spec(_meta, _data, _view, params={"query": query})

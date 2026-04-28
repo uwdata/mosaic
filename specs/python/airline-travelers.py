@@ -23,4 +23,4 @@ _view = vg.plot(
     vg.y_tick_format("s")
 )
 
-spec = vg.spec(meta=_meta, data=_data, view=_view)
+spec = vg.spec(_meta, _data, _view)

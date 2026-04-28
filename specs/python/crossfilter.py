@@ -47,4 +47,4 @@ _view = vg.vconcat(
     )
 )
 
-spec = vg.spec(data=_data, params={"brush": brush}, view=_view)
+spec = vg.spec(_data, _view, params={"brush": brush})

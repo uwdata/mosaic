@@ -250,7 +250,7 @@ _view = vg.vconcat(
     )
 )
 
-spec = vg.spec(meta=_meta, data=_data, params={"brush": brush}, plotDefaults={
+spec = vg.spec(_meta, _data, _view, params={"brush": brush}, plotDefaults={
     "xTicks": 3,
     "yTicks": 4,
     "xDomain": "Fixed",
@@ -268,4 +268,4 @@ spec = vg.spec(meta=_meta, data=_data, params={"brush": brush}, plotDefaults={
     "yTickFormat": "s",
     "width": 150,
     "height": 150
-}, view=_view)
+})

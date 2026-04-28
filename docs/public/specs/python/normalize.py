@@ -37,4 +37,4 @@ _view = vg.plot(
     vg.margin_right(35)
 )
 
-spec = vg.spec(meta=_meta, data=_data, params={"point": point}, view=_view)
+spec = vg.spec(_meta, _data, _view, params={"point": point})

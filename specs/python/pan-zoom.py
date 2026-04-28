@@ -64,4 +64,4 @@ _view = vg.hconcat(
     )
 )
 
-spec = vg.spec(meta=_meta, data=_data, params={"xs": xs, "ys": ys, "zs": zs, "ws": ws}, view=_view)
+spec = vg.spec(_meta, _data, _view, params={"xs": xs, "ys": ys, "zs": zs, "ws": ws})

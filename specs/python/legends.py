@@ -237,8 +237,8 @@ _view = vg.vconcat(
     )
 )
 
-spec = vg.spec(meta=_meta, params={"toggle": toggle, "interval": interval, "domain": domain}, plotDefaults={
+spec = vg.spec(_meta, _view, params={"toggle": toggle, "interval": interval, "domain": domain}, plotDefaults={
     "margin": 0,
     "width": 0,
     "height": 20
-}, view=_view)
+})

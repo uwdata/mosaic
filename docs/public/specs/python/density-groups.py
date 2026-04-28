@@ -43,4 +43,4 @@ _view = vg.vconcat(
     )
 )
 
-spec = vg.spec(meta=_meta, data=_data, params={"bandwidth": bandwidth, "normalize": normalize, "stack": stack, "offset": offset}, view=_view)
+spec = vg.spec(_meta, _data, _view, params={"bandwidth": bandwidth, "normalize": normalize, "stack": stack, "offset": offset})

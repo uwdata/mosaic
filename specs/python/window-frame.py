@@ -39,4 +39,4 @@ _view = vg.plot(
     vg.height(200)
 )
 
-spec = vg.spec(data=_data, view=_view)
+spec = vg.spec(_data, _view)

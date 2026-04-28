@@ -37,4 +37,4 @@ _view = vg.plot(
     vg.width(680)
 )
 
-spec = vg.spec(meta=_meta, data=_data, params={"curr": curr}, view=_view)
+spec = vg.spec(_meta, _data, _view, params={"curr": curr})

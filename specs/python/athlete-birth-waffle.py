@@ -48,4 +48,4 @@ _view = vg.vconcat(
     )
 )
 
-spec = vg.spec(meta=_meta, data=_data, params={"unit": unit, "round": round, "gap": gap, "radius": radius}, view=_view)
+spec = vg.spec(_meta, _data, _view, params={"unit": unit, "round": round, "gap": gap, "radius": radius})

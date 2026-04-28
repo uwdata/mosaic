@@ -52,4 +52,4 @@ _view = vg.hconcat(
     )
 )
 
-spec = vg.spec(meta=_meta, data=_data, params={"ci": ci, "query": query}, view=_view)
+spec = vg.spec(_meta, _data, _view, params={"ci": ci, "query": query})

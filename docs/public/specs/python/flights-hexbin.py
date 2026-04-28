@@ -85,4 +85,4 @@ _view = vg.vconcat(
     )
 )
 
-spec = vg.spec(meta=_meta, data=_data, params={"scale": scale, "query": query}, view=_view)
+spec = vg.spec(_meta, _data, _view, params={"scale": scale, "query": query})
