@@ -1,34 +1,57 @@
 from __future__ import annotations
 
+import inspect
 import json
-from dataclasses import dataclass
-from typing import Any, Dict, Optional
+from typing import Any, Dict
 
 from .util import omit_none
 from .params import _ParamBase
 from .plot import _encode_component
 
 
-@dataclass
+def _collect_params(node: Any) -> list[_ParamBase]:
+    """Recursively collect all _ParamBase instances in a view tree."""
+    if isinstance(node, _ParamBase):
+        return [node]
+    if isinstance(node, dict):
+        found = []
+        for v in node.values():
+            found.extend(_collect_params(v))
+        return found
+    if isinstance(node, list):
+        found = []
+        for item in node:
+            found.extend(_collect_params(item))
+        return found
+    return []
+
+
 class Meta:
-    title: Optional[str] = None
-    description: Optional[str] = None
-    credit: Optional[str] = None
+    def __init__(
+        self,
+        title: str | None = None,
+        description: str | None = None,
+        credit: str | None = None,
+        **extra: Any,
+    ) -> None:
+        self.title = title
+        self.description = description
+        self.credit = credit
+        self.extra = extra
 
     def to_dict(self) -> Dict[str, Any]:
         return omit_none(
-            {
-                "title": self.title,
-                "description": self.description,
-                "credit": self.credit,
-            }
+            {"title": self.title, "description": self.description, "credit": self.credit, **self.extra}
         )
 
 
 def meta(
-    title: str | None = None, description: str | None = None, credit: str | None = None
+    title: str | None = None,
+    description: str | None = None,
+    credit: str | None = None,
+    **extra: Any,
 ) -> Meta:
-    return Meta(title=title, description=description, credit=credit)
+    return Meta(title=title, description=description, credit=credit, **extra)
 
 
 class Spec:
@@ -56,13 +79,28 @@ class Spec:
         # _ParamBase instances appearing in the view resolve to "$name" refs.
         param_names: Dict[int, str] = {}
         serialized_params: Dict[str, Any] = {}
-        # First pass: register all param objects so nested refs can resolve
+        # First pass: register all named params
         for name, p in (self.params or {}).items():
             if isinstance(p, _ParamBase):
                 param_names[id(p)] = name
 
-        # Second pass: serialize with cross-references resolved
-        for name, p in (self.params or {}).items():
+        # Second pass: auto-name any _ParamBase in the view not yet registered
+        counter = 0
+        for obj in _collect_params(self.view):
+            if id(obj) not in param_names:
+                param_names[id(obj)] = f"_param{counter}"
+                counter += 1
+
+        # Third pass: serialize all known params
+        all_params = dict(self.params or {})
+        for obj_id, name in param_names.items():
+            if name not in all_params:
+                # find the object to serialize it
+                for obj in _collect_params(self.view):
+                    if id(obj) == obj_id:
+                        all_params[name] = obj
+                        break
+        for name, p in all_params.items():
             if isinstance(p, _ParamBase):
                 serialized_params[name] = p.param_def(param_names=param_names)
             else:
@@ -119,6 +157,13 @@ def spec(
             view = arg
         elif isinstance(arg, dict):
             data = arg
+    if params is None:
+        caller = inspect.currentframe().f_back
+        params = {
+            name: val
+            for name, val in caller.f_locals.items()
+            if isinstance(val, _ParamBase)
+        } or None
     return Spec(
         meta=meta,
         data=data,

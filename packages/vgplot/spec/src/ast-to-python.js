@@ -22,16 +22,7 @@ export function astToPython(ast) {
   ctx.blank();
 
   if (meta) {
-    const keys = Object.keys(meta);
-    const simple = ['title', 'description', 'credit'];
-    const onlySimple = keys.every(k => simple.includes(k));
-    if (onlySimple) {
-      ctx.emit(
-        `_meta = vg.meta(${joinArgs({ title: meta.title, description: meta.description, credit: meta.credit })})`
-      );
-    } else {
-      ctx.emit(`_meta = ${literal(meta)}`);
-    }
+    ctx.emit(`_meta = vg.meta(${joinArgs(meta)})`);
   }
 
   // data
