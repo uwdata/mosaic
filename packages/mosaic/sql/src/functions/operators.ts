@@ -1,4 +1,7 @@
+
+import type { LiteralNode } from '../ast/literal.js';
 import type { ExprValue, ExprVarArgs } from '../types.js';
+import { LITERAL } from '../constants.js';
 import { BetweenOpNode, Extent, NotBetweenOpNode } from '../ast/between-op.js';
 import { BinaryOpNode } from '../ast/binary-op.js';
 import { InOpNode } from '../ast/in-op.js';
@@ -6,6 +9,7 @@ import { AndNode, OrNode } from '../ast/logical-op.js';
 import { UnaryOpNode, UnaryPostfixOpNode } from '../ast/unary-op.js';
 import { asNode } from '../util/ast.js';
 import { nodeList } from '../util/function.js';
+import { literal } from './literal.js';
 
 function unaryOp(op: string, expr: unknown) {
   return new UnaryOpNode(op, asNode(expr));
@@ -269,4 +273,21 @@ export function isNotBetween(expr: ExprValue, extent?: ExprValue[] | null) {
  */
 export function isIn(expr: ExprValue, values: ExprValue[]) {
   return new InOpNode(asNode(expr), values.map(asNode));
+}
+
+/**
+ * Null-safe set inclusion. Unlike the IN operator, the returned expression
+ * can test for included NULL values. When a NULL literal is included in the
+ * set values, it is checked explcity via `OR expr IS NULL`.
+ * @param expr The expression to test.
+ * @param values The included values.
+ */
+export function isInDistinct(expr: ExprValue, values: ExprValue[]) {
+  const test = asNode(expr);
+  const nodes = values.map(asNode)
+    .filter(node => !(node.type === LITERAL && (node as LiteralNode).value == null));
+  const inOp = isIn(test, nodes);
+  return nodes.length === values.length ? inOp
+    : nodes.length === 0 ? (values.length === 0 ? literal(false) : isNull(test))
+    : or(inOp, isNull(test));
 }

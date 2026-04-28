@@ -1,5 +1,5 @@
 import { expect, describe, it } from 'vitest';
-import { add, and, column, div, eq, gt, gte, idiv, isBetween, isDistinct, isNotBetween, isNotDistinct, isNotNull, isNull, lt, lte, mod, mul, neq, not, or, pow, sub } from '../src/index.js';
+import { add, and, column, div, eq, gt, gte, idiv, isBetween, isDistinct, isIn, isInDistinct, isNotBetween, isNotDistinct, isNotNull, isNull, literal, lt, lte, mod, mul, neq, not, or, pow, sub } from '../src/index.js';
 
 describe('Logical operators', () => {
   it('include AND expressions', () => {
@@ -103,6 +103,23 @@ describe('Binary operators', () => {
   it('include IS NOT DISTINCT FROM comparisons', () => {
     expect(String(isNotDistinct(column('foo'), null))).toBe('("foo" IS NOT DISTINCT FROM NULL)');
     expect(String(isNotDistinct('foo', null))).toBe('("foo" IS NOT DISTINCT FROM NULL)');
+  });
+});
+
+describe('Set inclusion operators', () => {
+  it('include IN operator', () => {
+    const set = [literal('a'), literal('b'), literal('c')];
+    expect(String(isIn(column('foo'), set))).toBe(`("foo" IN ('a', 'b', 'c'))`);
+    expect(String(isIn('foo', set))).toBe(`("foo" IN ('a', 'b', 'c'))`);
+  });
+  it('include null-safe IN test', () => {
+    const set = [literal('a'), literal('b'), literal('c')];
+    expect(String(isInDistinct(column('foo'), set))).toBe(`("foo" IN ('a', 'b', 'c'))`);
+    expect(String(isInDistinct('foo', set))).toBe(`("foo" IN ('a', 'b', 'c'))`);
+    expect(String(isInDistinct(column('foo'), [...set, literal(null)]))).toBe(`(("foo" IN ('a', 'b', 'c')) OR ("foo" IS NULL))`);
+    expect(String(isInDistinct('foo', [...set, null]))).toBe(`(("foo" IN ('a', 'b', 'c')) OR ("foo" IS NULL))`);
+    expect(String(isInDistinct(column('foo'), [literal(null)]))).toBe(`("foo" IS NULL)`);
+    expect(String(isInDistinct('foo', [null]))).toBe(`("foo" IS NULL)`);
   });
 });
 
