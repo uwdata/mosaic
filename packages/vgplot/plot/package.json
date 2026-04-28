@@ -1,6 +1,6 @@
 {
   "name": "@uwdata/mosaic-plot",
-  "version": "0.24.2",
+  "version": "0.24.3",
   "description": "A Mosaic-powered plotting framework based on Observable Plot.",
   "keywords": [
     "data",
