@@ -81,7 +81,7 @@ jobs:
           uv build
           uv run --group test ty check
           uv run --group test pytest --cov-report=term-missing --color=yes --cov=mosaic_widget
-
+          
   rust:
     name: Test in Rust
 

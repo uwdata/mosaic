@@ -17,3 +17,22 @@ node_modules
 **/.venv
 **/tsconfig.tsbuildinfo
 packages/server/duckdb-server-go/duckdb-server-go
+transitionFolder
+
+# Virtual environment
+venv/
+.env/
+
+# Conda environment
+conda-env/
+
+# Python cache
+__pycache__/
+*.pyc
+
+# Test cache
+.pytest_cache/
+.coverage
+
+# Python API Generated classes
+packages/vgplot-python/schema_wrapper/generated_classes.py

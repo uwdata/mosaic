@@ -15,4 +15,5 @@ A sortable, "infinite scroll" `table` view over a backing database table. Click 
 <<< @/public/specs/esm/table.js [JavaScript]
 <<< @/public/specs/yaml/table.yaml [YAML]
 <<< @/public/specs/json/table.json [JSON]
+<<< @/public/specs/python/table.py [Python]
 :::

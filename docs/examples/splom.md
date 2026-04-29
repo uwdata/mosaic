@@ -15,4 +15,5 @@ A scatter plot matrix enables inspection of pairwise bivariate distributions. Do
 <<< @/public/specs/esm/splom.js [JavaScript]
 <<< @/public/specs/yaml/splom.yaml [YAML]
 <<< @/public/specs/json/splom.json [JSON]
+<<< @/public/specs/python/splom.py [Python]
 :::

@@ -1,0 +1,47 @@
+[project]
+name = "vgplot"
+dynamic = ["version"]
+description = "Spec classes for Mosaic"
+readme = "README.md"
+requires-python = ">=3.9"
+dependencies = [
+    "pyyaml",
+    "narwhals"
+]
+
+[project.urls]
+homepage = "https://github.com/uwdata/mosaic"
+
+[project.scripts]
+generate-spec-classes = "spec_classes.generate_spec_classes:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[dependency-groups]
+dev = [
+    "jupyterlab",
+    "mypy",
+    "pytest",
+    "pytest-cov",
+    "ruff",
+    "pandas",
+    "mosaic-widget"
+]
+
+[tool.uv.sources]
+"mosaic-widget" = { workspace = true }
+
+[tool.hatch.version]
+path = "package.json"
+pattern = "\"version\": \"(?P<version>.+?)\""
+
+[tool.hatch.build.targets.wheel]
+packages = ["api", "spec_classes"]
+
+# https://mypy.readthedocs.io/en/stable/config_file.html
+[tool.mypy]
+files = "src/**/*.py"
+strict = false
+ignore_missing_imports = true

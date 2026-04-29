@@ -11,5 +11,9 @@
       "docs/public/specs/json/*"
     ],
     "url": "./packages/spec/dist/mosaic-schema.json"
-  }]
+  }],
+  "python.analysis.extraPaths": [
+    ".",
+    "packages/vgplot-python"
+  ]
 }

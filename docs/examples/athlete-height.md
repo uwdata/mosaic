@@ -15,4 +15,5 @@ Confidence intervals of Olympic athlete heights, in meters. Data are batched int
 <<< @/public/specs/esm/athlete-height.js [JavaScript]
 <<< @/public/specs/yaml/athlete-height.yaml [YAML]
 <<< @/public/specs/json/athlete-height.json [JSON]
+<<< @/public/specs/python/athlete-height.py [Python]
 :::

@@ -15,4 +15,5 @@ A test specification to compare M4 optimized and unoptimized line charts.
 <<< @/public/specs/esm/triangle-wave.js [JavaScript]
 <<< @/public/specs/yaml/triangle-wave.yaml [YAML]
 <<< @/public/specs/json/triangle-wave.json [JSON]
+<<< @/public/specs/python/triangle-wave.py [Python]
 :::

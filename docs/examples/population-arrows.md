@@ -17,4 +17,5 @@ An `arrow` connects the positions in 1980 and 2015 of each city on this populati
 <<< @/public/specs/esm/population-arrows.js [JavaScript]
 <<< @/public/specs/yaml/population-arrows.yaml [YAML]
 <<< @/public/specs/json/population-arrows.json [JSON]
+<<< @/public/specs/python/population-arrows.py [Python]
 :::
