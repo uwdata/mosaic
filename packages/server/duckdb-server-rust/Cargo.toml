@@ -20,11 +20,11 @@ axum = { version = "0.8", features = ["http1", "http2", "ws", "json", "tokio", "
 axum-server = { version = "0.8", features = ["tls-rustls"] }
 axum-server-dual-protocol = "0.7"
 clap = { version = "4.6", features = ["derive"] }
-duckdb = { version = "1.10501", features = ["bundled", "json", "parquet", "url", "r2d2"] }
+duckdb = { version = "1.10502", features = ["bundled", "json", "parquet", "url", "r2d2"] }
 futures = "0.3"
 hex = "0.4"
 listenfd = "1.0"
-lru = "0.16"
+lru = "0.18"
 r2d2 = "0.8"
 regex = "1.12"
 serde = { version = "1.0", features = ["derive"] }
