@@ -32,7 +32,7 @@
     "prepublishOnly": "pnpm run test && pnpm run lint && tsc --build"
   },
   "dependencies": {
-    "@duckdb/duckdb-wasm": "1.33.1-dev42.0",
+    "@duckdb/duckdb-wasm": "1.33.1-dev45.0",
     "@uwdata/flechette": "^2.4.0",
     "@uwdata/mosaic-sql": "workspace:^"
   },
