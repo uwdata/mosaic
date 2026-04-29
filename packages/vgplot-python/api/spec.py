@@ -124,15 +124,20 @@ class Spec:
     def to_json(self, **kwargs: Any) -> str:
         return json.dumps(self.to_dict(), **kwargs)
 
+    def _repr_mimebundle_(self, **kwargs):
+        try:
+            from mosaic_widget import MosaicWidget
+        except ImportError:
+            return {"text/plain": repr(self)}
+        widget = MosaicWidget(self.to_dict())
+        return widget._repr_mimebundle_(**kwargs)
+
     def show(self, con=None, data=None):
         try:
             from mosaic_widget import MosaicWidget
-        except ImportError as e:
-            raise ImportError("pip install mosaic-widget") from e
-        try:
             from IPython.display import display
         except ImportError as e:
-            raise ImportError("IPython is required for display") from e
+            raise ImportError("pip install mosaic-widget") from e
         widget = MosaicWidget(self.to_dict(), con=con, data=data)
         display(widget)
 
