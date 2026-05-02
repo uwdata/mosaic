@@ -1,5 +1,5 @@
 import { expect, describe, it } from 'vitest';
-import { column, InSubqueryNode, Query, ScalarSubqueryNode } from '../src/index.js';
+import { column, InOpNode, Query, ScalarSubqueryNode } from '../src/index.js';
 
 describe('Scalar subqueries', () => {
   it('are supported', () => {
@@ -8,7 +8,7 @@ describe('Scalar subqueries', () => {
   });
   it('can be tested for inclusion', () => {
     const subq = new ScalarSubqueryNode(Query.select("value").from("foo").limit(3));
-    const test = new InSubqueryNode(column("expr"), subq);
+    const test = new InOpNode(column("expr"), subq);
     expect(String(subq)).toBe('(SELECT "value" FROM "foo" LIMIT 3)');
     expect(String(test)).toBe('("expr" IN (SELECT "value" FROM "foo" LIMIT 3))');
   });

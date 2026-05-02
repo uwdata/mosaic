@@ -4,6 +4,7 @@ export const TABLE_REF = 'TABLE_REF';
 export const LITERAL = 'LITERAL';
 export const INTERVAL = 'INTERVAL';
 export const LIST = 'LIST';
+export const TUPLE = 'TUPLE';
 export const UNNEST = 'UNNEST';
 
 export const ORDER_BY = 'ORDER_BY';
@@ -46,6 +47,4 @@ export const DESCRIBE_QUERY = 'DESCRIBE_QUERY';
 export const SET_OPERATION = 'SET_OPERATION';
 export const CREATE_QUERY = 'CREATE_QUERY';
 export const CREATE_SCHEMA_QUERY = 'CREATE_SCHEMA_QUERY';
-
 export const SCALAR_SUBQUERY = 'SCALAR_SUBQUERY';
-export const IN_SUBQUERY = 'IN_SUBQUERY';

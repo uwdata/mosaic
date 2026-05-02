@@ -17,7 +17,6 @@ import type {
   FromClauseNode,
   FunctionNode,
   InOpNode,
-  InSubqueryNode,
   IntervalNode,
   JoinNode,
   ListNode,
@@ -32,6 +31,7 @@ import type {
   SelectClauseNode,
   ScalarSubqueryNode,
   TableRefNode,
+  TupleNode,
   UnaryOpNode,
   UnaryPostfixOpNode,
   UnnestNode,
@@ -61,7 +61,6 @@ import {
   FROM_CLAUSE,
   FUNCTION,
   IN_OPERATOR,
-  IN_SUBQUERY,
   INTERVAL,
   JOIN_CLAUSE,
   LIST,
@@ -76,6 +75,7 @@ import {
   SELECT_QUERY,
   SET_OPERATION,
   TABLE_REF,
+  TUPLE,
   UNARY_OPERATOR,
   UNARY_POSTFIX_OPERATOR,
   UNNEST,
@@ -137,7 +137,6 @@ export abstract class SQLCodeGenerator {
       case FROM_CLAUSE: return this.visitFromClause;
       case FUNCTION: return this.visitFunction;
       case IN_OPERATOR: return this.visitIn;
-      case IN_SUBQUERY: return this.visitInSubquery;
       case INTERVAL: return this.visitInterval;
       case JOIN_CLAUSE: return this.visitJoinClause;
       case LIST: return this.visitList;
@@ -152,6 +151,7 @@ export abstract class SQLCodeGenerator {
       case SELECT_QUERY: return this.visitSelectQuery;
       case SET_OPERATION: return this.visitSetOperation;
       case TABLE_REF: return this.visitTableRef;
+      case TUPLE: return this.visitTuple;
       case UNARY_OPERATOR: return this.visitUnary;
       case UNARY_POSTFIX_OPERATOR: return this.visitUnaryPostfix;
       case UNNEST: return this.visitUnnest;
@@ -195,7 +195,6 @@ export abstract class SQLCodeGenerator {
   abstract visitFromClause(node: FromClauseNode): string;
   abstract visitFunction(node: FunctionNode): string;
   abstract visitIn(node: InOpNode): string;
-  abstract visitInSubquery(node: InSubqueryNode): string;
   abstract visitInterval(node: IntervalNode): string;
   abstract visitJoinClause(node: JoinNode): string;
   abstract visitList(node: ListNode): string;
@@ -210,6 +209,7 @@ export abstract class SQLCodeGenerator {
   abstract visitSelectQuery(node: SelectQuery): string;
   abstract visitSetOperation(node: SetOperation): string;
   abstract visitTableRef(node: TableRefNode): string;
+  abstract visitTuple(node: TupleNode): string;
   abstract visitUnary(node: UnaryOpNode): string;
   abstract visitUnaryPostfix(node: UnaryPostfixOpNode): string;
   abstract visitUnnest(node: UnnestNode): string;

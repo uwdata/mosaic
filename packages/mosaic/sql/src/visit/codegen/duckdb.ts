@@ -31,6 +31,7 @@ import {
   SelectClauseNode,
   ScalarSubqueryNode,
   TableRefNode,
+  TupleNode,
   UnaryOpNode,
   UnaryPostfixOpNode,
   UnnestNode,
@@ -44,8 +45,7 @@ import {
   WithClauseNode,
   isNode,
   isQuery,
-  isTableRef,
-  InSubqueryNode
+  isTableRef
 } from '../../ast/index.js';
 import { quoteIdentifier } from '../../util/string.js';
 import { literalToSQL } from '../../ast/literal.js';
@@ -160,12 +160,7 @@ export class DuckDBCodeGenerator extends SQLCodeGenerator {
 
   visitIn(node: InOpNode): string {
     const { expr, values } = node;
-    return `(${this.toString(expr)} IN (${this.mapToString(values).join(', ')}))`;
-  }
-
-  visitInSubquery(node: InSubqueryNode): string {
-    const { expr, subquery } = node;
-    return `(${this.toString(expr)} IN ${this.toString(subquery)})`;
+    return `(${this.toString(expr)} IN ${this.toString(values)})`;
   }
 
   visitInterval(node: IntervalNode): string {
@@ -345,6 +340,11 @@ export class DuckDBCodeGenerator extends SQLCodeGenerator {
   visitTableRef(node: TableRefNode): string {
     const { table } = node;
     return table.map((t: string) => quoteIdentifier(t)).join('.');
+  }
+
+  visitTuple(node: TupleNode): string {
+    const { values } = node;
+    return `(${this.mapToString(values).join(', ')})`;
   }
 
   visitUnary(node: UnaryOpNode): string {
