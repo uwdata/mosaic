@@ -10,6 +10,7 @@ import { UnaryOpNode, UnaryPostfixOpNode } from '../ast/unary-op.js';
 import { asNode } from '../util/ast.js';
 import { nodeList } from '../util/function.js';
 import { literal } from './literal.js';
+import { TupleNode } from '../ast/tuple.js';
 
 function unaryOp(op: string, expr: unknown) {
   return new UnaryOpNode(op, asNode(expr));
@@ -272,7 +273,7 @@ export function isNotBetween(expr: ExprValue, extent?: ExprValue[] | null) {
  * @param values The included values.
  */
 export function isIn(expr: ExprValue, values: ExprValue[]) {
-  return new InOpNode(asNode(expr), values.map(asNode));
+  return new InOpNode(asNode(expr), new TupleNode(values.map(asNode)));
 }
 
 /**
