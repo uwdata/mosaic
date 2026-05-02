@@ -44,7 +44,8 @@ import {
   WithClauseNode,
   isNode,
   isQuery,
-  isTableRef
+  isTableRef,
+  InSubqueryNode
 } from '../../ast/index.js';
 import { quoteIdentifier } from '../../util/string.js';
 import { literalToSQL } from '../../ast/literal.js';
@@ -160,6 +161,11 @@ export class DuckDBCodeGenerator extends SQLCodeGenerator {
   visitIn(node: InOpNode): string {
     const { expr, values } = node;
     return `(${this.toString(expr)} IN (${this.mapToString(values).join(', ')}))`;
+  }
+
+  visitInSubquery(node: InSubqueryNode): string {
+    const { expr, subquery } = node;
+    return `(${this.toString(expr)} IN ${this.toString(subquery)})`;
   }
 
   visitInterval(node: IntervalNode): string {

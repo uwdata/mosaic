@@ -10,6 +10,7 @@ export { FragmentNode } from './fragment.js';
 export { FromClauseNode } from './from.js';
 export { FunctionNode } from './function.js';
 export { InOpNode } from './in-op.js';
+export { InSubqueryNode } from './in-subquery.js';
 export { IntervalNode } from './interval.js';
 export { JoinNode, type JoinType, type JoinVariant } from './join.js';
 export { ListNode } from './list.js';

@@ -17,6 +17,7 @@ import type {
   FromClauseNode,
   FunctionNode,
   InOpNode,
+  InSubqueryNode,
   IntervalNode,
   JoinNode,
   ListNode,
@@ -42,7 +43,7 @@ import type {
   WindowFrameNode,
   WindowFrameExprNode,
   WithClauseNode
-} from '../../index.js';
+} from '../../ast/index.js';
 import {
   AGGREGATE,
   BETWEEN_OPERATOR,
@@ -60,6 +61,7 @@ import {
   FROM_CLAUSE,
   FUNCTION,
   IN_OPERATOR,
+  IN_SUBQUERY,
   INTERVAL,
   JOIN_CLAUSE,
   LIST,
@@ -135,6 +137,7 @@ export abstract class SQLCodeGenerator {
       case FROM_CLAUSE: return this.visitFromClause;
       case FUNCTION: return this.visitFunction;
       case IN_OPERATOR: return this.visitIn;
+      case IN_SUBQUERY: return this.visitInSubquery;
       case INTERVAL: return this.visitInterval;
       case JOIN_CLAUSE: return this.visitJoinClause;
       case LIST: return this.visitList;
@@ -192,6 +195,7 @@ export abstract class SQLCodeGenerator {
   abstract visitFromClause(node: FromClauseNode): string;
   abstract visitFunction(node: FunctionNode): string;
   abstract visitIn(node: InOpNode): string;
+  abstract visitInSubquery(node: InSubqueryNode): string;
   abstract visitInterval(node: IntervalNode): string;
   abstract visitJoinClause(node: JoinNode): string;
   abstract visitList(node: ListNode): string;
