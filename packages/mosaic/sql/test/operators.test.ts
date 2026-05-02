@@ -1,5 +1,5 @@
 import { expect, describe, it } from 'vitest';
-import { add, and, column, div, eq, gt, gte, idiv, isBetween, isDistinct, isIn, isInDistinct, isNotBetween, isNotDistinct, isNotNull, isNull, literal, lt, lte, mod, mul, neq, not, or, pow, sub } from '../src/index.js';
+import { add, and, column, div, eq, gt, gte, idiv, InOpNode, isBetween, isDistinct, isIn, isInDistinct, isNotBetween, isNotDistinct, isNotNull, isNull, ListNode, literal, lt, lte, mod, mul, neq, not, or, pow, sub } from '../src/index.js';
 
 describe('Logical operators', () => {
   it('include AND expressions', () => {
@@ -111,6 +111,11 @@ describe('Set inclusion operators', () => {
     const set = [literal('a'), literal('b'), literal('c')];
     expect(String(isIn(column('foo'), set))).toBe(`("foo" IN ('a', 'b', 'c'))`);
     expect(String(isIn('foo', set))).toBe(`("foo" IN ('a', 'b', 'c'))`);
+  });
+  it('include IN with list values', () => {
+    const values = new ListNode([literal('a'), literal('b'), literal('c')]);
+    const test = new InOpNode(column("foo"), values);
+    expect(String(test)).toBe(`("foo" IN ['a', 'b', 'c'])`);
   });
   it('include null-safe IN test', () => {
     const set = [literal('a'), literal('b'), literal('c')];
