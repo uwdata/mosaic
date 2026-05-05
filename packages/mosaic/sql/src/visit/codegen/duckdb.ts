@@ -24,6 +24,7 @@ import {
   LogicalOpNode,
   OrderByNode,
   ParamNode,
+  PivotQuery,
   DescribeQuery,
   SelectQuery,
   SetOperation,
@@ -221,6 +222,12 @@ export class DuckDBCodeGenerator extends SQLCodeGenerator {
     const { param } = node;
     // Get the current value from the parameter and format it as a literal
     return literalToSQL(param.value);
+  }
+
+  visitPivotQuery(node: PivotQuery): string {
+    const { source } = node;
+    const ref = isQuery(source) ? `(${this.toString(source)})` : this.toString(source);
+    return `PIVOT ${ref}`;
   }
 
   visitSampleClause(node: SampleClauseNode): string {

@@ -1,6 +1,6 @@
 import type { FilterExpr, FromExpr, GroupByExpr, MaybeArray, OrderByExpr, SelectExpr, WithExpr } from '../types.js';
 import type { SampleMethod } from './sample.js';
-import { CREATE_QUERY, CREATE_SCHEMA_QUERY, DESCRIBE_QUERY, SELECT_QUERY, SET_OPERATION } from '../constants.js';
+import { CREATE_QUERY, CREATE_SCHEMA_QUERY, DESCRIBE_QUERY, PIVOT_QUERY, SELECT_QUERY, SET_OPERATION } from '../constants.js';
 import { asNode, asTableRef, asVerbatim, maybeTableRef } from '../util/ast.js';
 import { exprList, nodeList } from '../util/function.js';
 import { unquote } from '../util/string.js';
@@ -29,6 +29,14 @@ export function isQuery(value: unknown): value is Query {
  */
 export function isSelectQuery(value: unknown): value is SelectQuery {
   return value instanceof SelectQuery;
+}
+
+/**
+ * Check if a value is a pivot query.
+ * @param value The value to check.
+ */
+export function isPivotQuery(value: unknown): value is PivotQuery {
+  return value instanceof PivotQuery;
 }
 
 /**
@@ -78,6 +86,14 @@ export class Query extends ExprNode {
    */
   static from(...expr: FromExpr[]) {
     return new SelectQuery().from(...expr);
+  }
+
+  /**
+   * Create a new pivot query over the given source.
+   * @param source The source relation to pivot.
+   */
+  static pivot(source: PivotSource) {
+    return new PivotQuery(source);
   }
 
   /**
@@ -252,6 +268,49 @@ export class Query extends ExprNode {
   offset(value: number | ExprNode): this {
     this._offset = asNode(value);
     return this;
+  }
+}
+
+export type PivotSource = string | string[] | SQLNode;
+
+export class PivotQuery extends Query {
+  /** The relation to pivot. */
+  readonly source: SQLNode;
+
+  /**
+   * Instantiate a new pivot query.
+   * @param source The source relation to pivot.
+   */
+  constructor(source: PivotSource) {
+    super(PIVOT_QUERY);
+    this.source = maybeTableRef(source);
+  }
+
+  /**
+   * Add a pointer to the query for which this query is a CTE.
+   * @param query The query for which this query is a CTE.
+   */
+  setCteFor(query: Query | null): void {
+    super.setCteFor(query);
+    if (isQuery(this.source)) {
+      this.source.setCteFor(query);
+    }
+  }
+
+  /**
+   * Return a list of subqueries.
+   */
+  get subqueries(): Query[] {
+    return isQuery(this.source) ? [this.source] : [];
+  }
+
+  /**
+   * Clone this pivot query.
+   */
+  clone(): this {
+    const { source, ...rest } = this;
+    // @ts-expect-error creates pivot query
+    return Object.assign(new PivotQuery(source), rest);
   }
 }
 
@@ -642,6 +701,14 @@ class WithClause {
    */
   from(...expr: FromExpr[]) {
     return Query.from(...expr).with(...this._with);
+  }
+
+  /**
+   * Create a new pivot query over the given source.
+   * @param source The source relation to pivot.
+   */
+  pivot(source: PivotSource) {
+    return Query.pivot(source).with(...this._with);
   }
 
   /**
