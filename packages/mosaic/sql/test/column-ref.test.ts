@@ -1,5 +1,5 @@
 import { expect, describe, it } from 'vitest';
-import { column, asNode, ColumnRefNode, TableRefNode, deepClone, ColumnNameRefNode } from '../src/index.js';
+import { column, asNode, ColumnRefNode, TableRefNode, deepClone, ColumnNameRefNode, parseColumnRef } from '../src/index.js';
 
 describe('Column references', () => {
   it('serialize to SQL', () => {
@@ -32,6 +32,16 @@ describe('Column references', () => {
     const node2 = asNode('tab.foo');
     expect(node2).toBeInstanceOf(ColumnRefNode);
     expect(String(node2)).toBe(`"tab.foo"`);
+  });
+
+  it('are created from strings by parseColumnRef', () => {
+    const node = parseColumnRef('foo');
+    expect(node).toBeInstanceOf(ColumnRefNode);
+    expect(String(node)).toBe(`"foo"`);
+
+    const node2 = parseColumnRef('tab.foo');
+    expect(node2).toBeInstanceOf(ColumnRefNode);
+    expect(String(node2)).toBe(`"tab"."foo"`);
   });
 
   it('clone successfully', () => {
