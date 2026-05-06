@@ -86,3 +86,4 @@ export type FilterExpr = MaybeArray<string | boolean | ExprNode>;
 export type GroupByExpr = MaybeArray<string | ExprNode>;
 export type OrderByExpr = MaybeArray<string | ExprNode>;
 export type PivotOnExpr = MaybeArray<string | ExprNode>;
+export type PivotInExpr = ExprValue;

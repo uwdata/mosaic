@@ -2,12 +2,14 @@ import { expect, describe, it } from 'vitest';
 import {
   add,
   column,
+  deepClone,
   FromClauseNode,
   isColumnRef,
   isPivotQuery,
   isQuery,
   isSelectQuery,
   isTableRef,
+  literal,
   PivotQuery,
   Query,
   sql
@@ -82,6 +84,71 @@ describe('PivotQuery', () => {
     expect(query.toString()).toBe('PIVOT "sales" ON ("year" + 1)');
   });
 
+  it('adds IN values as SQL literals', () => {
+    const query = Query.pivot('sales').on('year').in(2020, 2021);
+
+    expect(query._in.map(String)).toEqual(['2020', '2021']);
+    expect(query.toString()).toBe('PIVOT "sales" ON "year" IN (2020, 2021)');
+  });
+
+  it('renders string IN values as SQL string literals', () => {
+    const query = Query.pivot('sales').on('quarter').in('Q1', 'Q2');
+
+    expect(query._in.map(String)).toEqual([`'Q1'`, `'Q2'`]);
+    expect(query.toString()).toBe(`PIVOT "sales" ON "quarter" IN ('Q1', 'Q2')`);
+  });
+
+  it('preserves existing AST expression inputs for IN values', () => {
+    const expr = literal('Q1');
+    const query = Query.pivot('sales').on('quarter').in(expr);
+
+    expect(query._in).toEqual([expr]);
+    expect(query.toString()).toBe(`PIVOT "sales" ON "quarter" IN ('Q1')`);
+  });
+
+  it('appends IN values from repeated calls in caller-supplied order', () => {
+    const query = Query.pivot('sales').on('year').in(2020).in(2021, 2022);
+
+    expect(query._in.map(String)).toEqual(['2020', '2021', '2022']);
+    expect(query.toString()).toBe('PIVOT "sales" ON "year" IN (2020, 2021, 2022)');
+  });
+
+  it('keeps existing SQL output shape when no IN values are provided', () => {
+    expect(Query.pivot('sales').toString()).toBe('PIVOT "sales"');
+    expect(Query.pivot('sales').on('year').toString()).toBe('PIVOT "sales" ON "year"');
+  });
+
+  it('rejects empty IN calls', () => {
+    const query = Query.pivot('sales').on('year');
+
+    expect(() => (query.in as (...expr: unknown[]) => PivotQuery)()).toThrow(
+      'PivotQuery.in requires at least one value.'
+    );
+    expect(query.toString()).toBe('PIVOT "sales" ON "year"');
+  });
+
+  it('clones IN values without aliasing mutable clause arrays', () => {
+    const query = Query.pivot('sales').on('year').in(2020);
+    const clone = query.clone();
+
+    query.on('quarter').in(2021);
+
+    expect(clone.toString()).toBe('PIVOT "sales" ON "year" IN (2020)');
+    expect(clone._on).not.toBe(query._on);
+    expect(clone._in).not.toBe(query._in);
+  });
+
+  it('deep clones pivot ON and IN expression nodes', () => {
+    const query = Query.pivot('sales').on(add(column('year'), 1)).in(literal('Q1'));
+    const clone = deepClone(query);
+
+    expect(clone.toString()).toBe(query.toString());
+    expect(clone._on).not.toBe(query._on);
+    expect(clone._in).not.toBe(query._in);
+    expect(clone._on[0]).not.toBe(query._on[0]);
+    expect(clone._in[0]).not.toBe(query._in[0]);
+  });
+
   it('can be used as a select query source', () => {
     const pivot = Query.pivot('sales');
     const query = Query.select('*').from({ p: pivot });
@@ -102,5 +169,16 @@ describe('PivotQuery', () => {
     expect(source).toBeInstanceOf(FromClauseNode);
     expect((source as FromClauseNode).expr).toBe(pivot);
     expect(query.toString()).toBe('SELECT * FROM (PIVOT "sales" ON "year") AS "p"');
+  });
+
+  it('can be used as a select query source with IN values', () => {
+    const pivot = Query.pivot('sales').on('year').in(2020, 2021);
+    const query = Query.select('*').from({ p: pivot });
+    const [source] = query._from;
+
+    expect(isSelectQuery(query)).toBe(true);
+    expect(source).toBeInstanceOf(FromClauseNode);
+    expect((source as FromClauseNode).expr).toBe(pivot);
+    expect(query.toString()).toBe('SELECT * FROM (PIVOT "sales" ON "year" IN (2020, 2021)) AS "p"');
   });
 });

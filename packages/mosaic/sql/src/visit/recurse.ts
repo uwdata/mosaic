@@ -63,7 +63,7 @@ export const recurse: Record<string, string[]> = {
   [NOT_BETWEEN_OPERATOR]: ['expr', 'extent'],
   [ORDER_BY]: ['expr'],
   [PARAM]: ['value'],
-  [PIVOT_QUERY]: ['_with', 'source', '_orderby'],
+  [PIVOT_QUERY]: ['_with', 'source', '_on', '_in', '_orderby'],
   [SCALAR_SUBQUERY]: ['subquery'],
   [SELECT_CLAUSE]: ['expr'],
   [SELECT_QUERY]: ['_with', '_select', '_from', '_where', '_sample', '_groupby', '_having', '_window', '_qualify', '_orderby'],

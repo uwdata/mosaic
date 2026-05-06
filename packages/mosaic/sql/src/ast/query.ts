@@ -1,7 +1,7 @@
-import type { FilterExpr, FromExpr, GroupByExpr, MaybeArray, OrderByExpr, PivotOnExpr, SelectExpr, WithExpr } from '../types.js';
+import type { FilterExpr, FromExpr, GroupByExpr, MaybeArray, OrderByExpr, PivotInExpr, PivotOnExpr, SelectExpr, WithExpr } from '../types.js';
 import type { SampleMethod } from './sample.js';
 import { CREATE_QUERY, CREATE_SCHEMA_QUERY, DESCRIBE_QUERY, PIVOT_QUERY, SELECT_QUERY, SET_OPERATION } from '../constants.js';
-import { asNode, asTableRef, asVerbatim, maybeTableRef } from '../util/ast.js';
+import { asLiteral, asNode, asTableRef, asVerbatim, maybeTableRef } from '../util/ast.js';
 import { exprList, nodeList } from '../util/function.js';
 import { unquote } from '../util/string.js';
 import { isArray, isString } from '../util/type-check.js';
@@ -278,6 +278,8 @@ export class PivotQuery extends Query {
   readonly source: SQLNode;
   /** The expressions whose values determine pivot output columns. */
   _on: ExprNode[] = [];
+  /** The literal values that constrain and order pivot output columns. */
+  _in: ExprNode[] = [];
 
   /**
    * Instantiate a new pivot query.
@@ -316,12 +318,28 @@ export class PivotQuery extends Query {
   }
 
   /**
+   * Add IN values to constrain and order pivot output columns.
+   * @param expr Values to add.
+   */
+  in(...expr: [PivotInExpr, ...PivotInExpr[]]): this {
+    const list = expr.flat().map(asLiteral);
+    if (list.length === 0) {
+      throw new Error('PivotQuery.in requires at least one value.');
+    }
+    this._in = this._in.concat(list);
+    return this;
+  }
+
+  /**
    * Clone this pivot query.
    */
   clone(): this {
     const { source, ...rest } = this;
     // @ts-expect-error creates pivot query
-    return Object.assign(new PivotQuery(source), rest);
+    return Object.assign(new PivotQuery(source), rest, {
+      _on: this._on.slice(),
+      _in: this._in.slice()
+    });
   }
 }
 
