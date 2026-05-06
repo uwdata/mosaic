@@ -1,10 +1,10 @@
-import type { FilterExpr, FromExpr, GroupByExpr, MaybeArray, OrderByExpr, PivotInExpr, PivotOnExpr, SelectExpr, WithExpr } from '../types.js';
+import type { FilterExpr, FromExpr, GroupByExpr, MaybeArray, OrderByExpr, PivotInExpr, PivotOnExpr, PivotUsingEntry, PivotUsingExpr, SelectExpr, WithExpr } from '../types.js';
 import type { SampleMethod } from './sample.js';
 import { CREATE_QUERY, CREATE_SCHEMA_QUERY, DESCRIBE_QUERY, PIVOT_QUERY, SELECT_QUERY, SET_OPERATION } from '../constants.js';
 import { asLiteral, asNode, asTableRef, asVerbatim, maybeTableRef } from '../util/ast.js';
 import { exprList, nodeList } from '../util/function.js';
 import { unquote } from '../util/string.js';
-import { isArray, isString } from '../util/type-check.js';
+import { isArray, isParamLike, isString } from '../util/type-check.js';
 import { isColumnRef } from './column-ref.js';
 import { FromClauseNode, FromNode } from './from.js';
 import { ExprNode, SQLNode, isNode } from './node.js';
@@ -280,6 +280,8 @@ export class PivotQuery extends Query {
   _on: ExprNode[] = [];
   /** The literal values that constrain and order pivot output columns. */
   _in: ExprNode[] = [];
+  /** The aggregate expressions used to populate pivot output cells. */
+  _using: SelectClauseNode[] = [];
 
   /**
    * Instantiate a new pivot query.
@@ -331,6 +333,42 @@ export class PivotQuery extends Query {
   }
 
   /**
+   * Add USING expressions.
+   * @param expr Aggregate cell expressions to add.
+   */
+  using(...expr: [PivotUsingExpr, ...PivotUsingExpr[]]): this {
+    const list: SelectClauseNode[] = [];
+
+    const add = (v: unknown, as?: string) => {
+      if (v != null) {
+        list.push(new SelectClauseNode(asNode(v), as ? unquote(as)! : ''));
+      }
+    };
+
+    const visit = (e: PivotUsingEntry) => {
+      if (e == null) return;
+      else if (
+        isString(e)
+        || isNode(e)
+        || isParamLike(e)
+        || e instanceof Date
+        || typeof e !== 'object'
+      ) {
+        add(e);
+      } else {
+        for (const alias in e) add(e[alias], alias);
+      }
+    };
+
+    expr.forEach(e => isArray(e) ? e.forEach(visit) : visit(e));
+    if (list.length === 0) {
+      throw new Error('PivotQuery.using requires at least one expression.');
+    }
+    this._using = this._using.concat(list);
+    return this;
+  }
+
+  /**
    * Clone this pivot query.
    */
   clone(): this {
@@ -338,7 +376,8 @@ export class PivotQuery extends Query {
     // @ts-expect-error creates pivot query
     return Object.assign(new PivotQuery(source), rest, {
       _on: this._on.slice(),
-      _in: this._in.slice()
+      _in: this._in.slice(),
+      _using: this._using.slice()
     });
   }
 }

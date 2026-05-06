@@ -12,7 +12,8 @@ import {
   literal,
   PivotQuery,
   Query,
-  sql
+  sql,
+  sum
 } from '../src/index.js';
 
 describe('PivotQuery', () => {
@@ -113,6 +114,37 @@ describe('PivotQuery', () => {
     expect(query.toString()).toBe('PIVOT "sales" ON "year" IN (2020, 2021, 2022)');
   });
 
+  it('adds an unaliased USING aggregate expression', () => {
+    const query = Query.pivot('sales').on('year').using(sum('amount'));
+
+    expect(query._using).toHaveLength(1);
+    expect(query._using[0].alias).toBe('');
+    expect(`${query._using[0].expr}`).toBe('sum("amount")');
+    expect(query.toString()).toBe('PIVOT "sales" ON "year" USING sum("amount")');
+  });
+
+  it('adds an aliased USING aggregate expression', () => {
+    const query = Query.pivot('sales').on('year').using({ total: sum('amount') });
+
+    expect(query._using).toHaveLength(1);
+    expect(query._using[0].alias).toBe('total');
+    expect(`${query._using[0].expr}`).toBe('sum("amount")');
+    expect(query.toString()).toBe('PIVOT "sales" ON "year" USING sum("amount") AS "total"');
+  });
+
+  it('adds multiple USING expressions in caller-supplied order', () => {
+    const query = Query
+      .pivot('sales')
+      .on('year')
+      .using(sum('amount'), { total_units: sum('units') })
+      .using({ total_cost: sum('cost') });
+
+    expect(query._using.map(node => node.alias)).toEqual(['', 'total_units', 'total_cost']);
+    expect(query.toString()).toBe(
+      'PIVOT "sales" ON "year" USING sum("amount"), sum("units") AS "total_units", sum("cost") AS "total_cost"'
+    );
+  });
+
   it('keeps existing SQL output shape when no IN values are provided', () => {
     expect(Query.pivot('sales').toString()).toBe('PIVOT "sales"');
     expect(Query.pivot('sales').on('year').toString()).toBe('PIVOT "sales" ON "year"');
@@ -138,6 +170,16 @@ describe('PivotQuery', () => {
     expect(clone._in).not.toBe(query._in);
   });
 
+  it('clones USING expressions without aliasing mutable clause arrays', () => {
+    const query = Query.pivot('sales').on('year').using(sum('amount'));
+    const clone = query.clone();
+
+    query.using({ total_units: sum('units') });
+
+    expect(clone.toString()).toBe('PIVOT "sales" ON "year" USING sum("amount")');
+    expect(clone._using).not.toBe(query._using);
+  });
+
   it('deep clones pivot ON and IN expression nodes', () => {
     const query = Query.pivot('sales').on(add(column('year'), 1)).in(literal('Q1'));
     const clone = deepClone(query);
@@ -147,6 +189,16 @@ describe('PivotQuery', () => {
     expect(clone._in).not.toBe(query._in);
     expect(clone._on[0]).not.toBe(query._on[0]);
     expect(clone._in[0]).not.toBe(query._in[0]);
+  });
+
+  it('deep clones pivot USING expression nodes', () => {
+    const query = Query.pivot('sales').using(sum('amount'));
+    const clone = deepClone(query);
+
+    expect(clone.toString()).toBe(query.toString());
+    expect(clone._using).not.toBe(query._using);
+    expect(clone._using[0]).not.toBe(query._using[0]);
+    expect(clone._using[0].expr).not.toBe(query._using[0].expr);
   });
 
   it('can be used as a select query source', () => {
@@ -180,5 +232,14 @@ describe('PivotQuery', () => {
     expect(source).toBeInstanceOf(FromClauseNode);
     expect((source as FromClauseNode).expr).toBe(pivot);
     expect(query.toString()).toBe('SELECT * FROM (PIVOT "sales" ON "year" IN (2020, 2021)) AS "p"');
+  });
+
+  it('can be used as a select query source with USING expressions', () => {
+    const pivot = Query.pivot('sales').on('year').in(2020, 2021).using({ total: sum('amount') });
+    const query = Query.select('*').from({ p: pivot });
+
+    expect(query.toString()).toBe(
+      'SELECT * FROM (PIVOT "sales" ON "year" IN (2020, 2021) USING sum("amount") AS "total") AS "p"'
+    );
   });
 });
