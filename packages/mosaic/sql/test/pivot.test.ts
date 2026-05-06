@@ -1,6 +1,9 @@
 import { expect, describe, it } from 'vitest';
 import {
+  add,
+  column,
   FromClauseNode,
+  isColumnRef,
   isPivotQuery,
   isQuery,
   isSelectQuery,
@@ -41,6 +44,44 @@ describe('PivotQuery', () => {
     expect(query.source).toBe(source);
   });
 
+  it('adds ON expressions from string column names', () => {
+    const query = Query.pivot('sales').on('year');
+
+    expect(query._on).toHaveLength(1);
+    expect(isColumnRef(query._on[0])).toBe(true);
+    expect(`${query._on[0]}`).toBe('"year"');
+    expect(query.toString()).toBe('PIVOT "sales" ON "year"');
+  });
+
+  it('adds multiple ON expressions in caller-supplied order', () => {
+    const query = Query.pivot('sales').on('year', 'quarter');
+
+    expect(query._on.map(String)).toEqual(['"year"', '"quarter"']);
+    expect(query.toString()).toBe('PIVOT "sales" ON "year", "quarter"');
+  });
+
+  it('adds array ON expressions in caller-supplied order', () => {
+    const query = Query.pivot('sales').on(['year', 'quarter']);
+
+    expect(query._on.map(String)).toEqual(['"year"', '"quarter"']);
+    expect(query.toString()).toBe('PIVOT "sales" ON "year", "quarter"');
+  });
+
+  it('appends ON expressions from repeated calls', () => {
+    const query = Query.pivot('sales').on('year').on('quarter');
+
+    expect(query._on.map(String)).toEqual(['"year"', '"quarter"']);
+    expect(query.toString()).toBe('PIVOT "sales" ON "year", "quarter"');
+  });
+
+  it('preserves existing AST expression inputs for ON expressions', () => {
+    const expr = add(column('year'), 1);
+    const query = Query.pivot('sales').on(expr);
+
+    expect(query._on).toEqual([expr]);
+    expect(query.toString()).toBe('PIVOT "sales" ON ("year" + 1)');
+  });
+
   it('can be used as a select query source', () => {
     const pivot = Query.pivot('sales');
     const query = Query.select('*').from({ p: pivot });
@@ -50,5 +91,16 @@ describe('PivotQuery', () => {
     expect(source).toBeInstanceOf(FromClauseNode);
     expect((source as FromClauseNode).expr).toBe(pivot);
     expect(query.toString()).toBe('SELECT * FROM (PIVOT "sales") AS "p"');
+  });
+
+  it('can be used as a select query source with pivot clauses', () => {
+    const pivot = Query.pivot('sales').on('year');
+    const query = Query.select('*').from({ p: pivot });
+    const [source] = query._from;
+
+    expect(isSelectQuery(query)).toBe(true);
+    expect(source).toBeInstanceOf(FromClauseNode);
+    expect((source as FromClauseNode).expr).toBe(pivot);
+    expect(query.toString()).toBe('SELECT * FROM (PIVOT "sales" ON "year") AS "p"');
   });
 });

@@ -1,4 +1,4 @@
-import type { FilterExpr, FromExpr, GroupByExpr, MaybeArray, OrderByExpr, SelectExpr, WithExpr } from '../types.js';
+import type { FilterExpr, FromExpr, GroupByExpr, MaybeArray, OrderByExpr, PivotOnExpr, SelectExpr, WithExpr } from '../types.js';
 import type { SampleMethod } from './sample.js';
 import { CREATE_QUERY, CREATE_SCHEMA_QUERY, DESCRIBE_QUERY, PIVOT_QUERY, SELECT_QUERY, SET_OPERATION } from '../constants.js';
 import { asNode, asTableRef, asVerbatim, maybeTableRef } from '../util/ast.js';
@@ -276,6 +276,8 @@ export type PivotSource = string | string[] | SQLNode;
 export class PivotQuery extends Query {
   /** The relation to pivot. */
   readonly source: SQLNode;
+  /** The expressions whose values determine pivot output columns. */
+  _on: ExprNode[] = [];
 
   /**
    * Instantiate a new pivot query.
@@ -302,6 +304,15 @@ export class PivotQuery extends Query {
    */
   get subqueries(): Query[] {
     return isQuery(this.source) ? [this.source] : [];
+  }
+
+  /**
+   * Add ON expressions.
+   * @param expr Expressions to add.
+   */
+  on(...expr: PivotOnExpr[]): this {
+    this._on = this._on.concat(nodeList(expr));
+    return this;
   }
 
   /**
