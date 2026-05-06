@@ -145,6 +145,57 @@ describe('PivotQuery', () => {
     );
   });
 
+  it('adds GROUP BY expressions from string column names', () => {
+    const query = Query.pivot('sales').on('year').using(sum('amount')).groupby('region');
+
+    expect(query._groupby).toHaveLength(1);
+    expect(isColumnRef(query._groupby[0])).toBe(true);
+    expect(`${query._groupby[0]}`).toBe('"region"');
+    expect(query.toString()).toBe('PIVOT "sales" ON "year" USING sum("amount") GROUP BY "region"');
+  });
+
+  it('preserves existing AST expression inputs for GROUP BY expressions', () => {
+    const expr = add(column('year'), 1);
+    const query = Query.pivot('sales').on('quarter').using(sum('amount')).groupby(expr);
+
+    expect(query._groupby).toEqual([expr]);
+    expect(query.toString()).toBe('PIVOT "sales" ON "quarter" USING sum("amount") GROUP BY ("year" + 1)');
+  });
+
+  it('adds multiple GROUP BY expressions in caller-supplied order', () => {
+    const query = Query.pivot('sales').on('year').using(sum('amount')).groupby('region', 'segment');
+
+    expect(query._groupby.map(String)).toEqual(['"region"', '"segment"']);
+    expect(query.toString()).toBe(
+      'PIVOT "sales" ON "year" USING sum("amount") GROUP BY "region", "segment"'
+    );
+  });
+
+  it('adds array GROUP BY expressions in caller-supplied order', () => {
+    const query = Query.pivot('sales').on('year').using(sum('amount')).groupby(['region', 'segment']);
+
+    expect(query._groupby.map(String)).toEqual(['"region"', '"segment"']);
+    expect(query.toString()).toBe(
+      'PIVOT "sales" ON "year" USING sum("amount") GROUP BY "region", "segment"'
+    );
+  });
+
+  it('appends GROUP BY expressions from repeated calls', () => {
+    const query = Query.pivot('sales').on('year').using(sum('amount')).groupby('region').groupby('segment');
+
+    expect(query._groupby.map(String)).toEqual(['"region"', '"segment"']);
+    expect(query.toString()).toBe(
+      'PIVOT "sales" ON "year" USING sum("amount") GROUP BY "region", "segment"'
+    );
+  });
+
+  it('sets GROUP BY expressions by replacing prior pivot groups', () => {
+    const query = Query.pivot('sales').on('year').using(sum('amount')).groupby('region').setGroupby('segment');
+
+    expect(query._groupby.map(String)).toEqual(['"segment"']);
+    expect(query.toString()).toBe('PIVOT "sales" ON "year" USING sum("amount") GROUP BY "segment"');
+  });
+
   it('keeps existing SQL output shape when no IN values are provided', () => {
     expect(Query.pivot('sales').toString()).toBe('PIVOT "sales"');
     expect(Query.pivot('sales').on('year').toString()).toBe('PIVOT "sales" ON "year"');
@@ -180,6 +231,16 @@ describe('PivotQuery', () => {
     expect(clone._using).not.toBe(query._using);
   });
 
+  it('clones GROUP BY expressions without aliasing mutable clause arrays', () => {
+    const query = Query.pivot('sales').on('year').using(sum('amount')).groupby('region');
+    const clone = query.clone();
+
+    query.groupby('segment');
+
+    expect(clone.toString()).toBe('PIVOT "sales" ON "year" USING sum("amount") GROUP BY "region"');
+    expect(clone._groupby).not.toBe(query._groupby);
+  });
+
   it('deep clones pivot ON and IN expression nodes', () => {
     const query = Query.pivot('sales').on(add(column('year'), 1)).in(literal('Q1'));
     const clone = deepClone(query);
@@ -199,6 +260,15 @@ describe('PivotQuery', () => {
     expect(clone._using).not.toBe(query._using);
     expect(clone._using[0]).not.toBe(query._using[0]);
     expect(clone._using[0].expr).not.toBe(query._using[0].expr);
+  });
+
+  it('deep clones pivot GROUP BY expression nodes', () => {
+    const query = Query.pivot('sales').groupby(add(column('year'), 1));
+    const clone = deepClone(query);
+
+    expect(clone.toString()).toBe(query.toString());
+    expect(clone._groupby).not.toBe(query._groupby);
+    expect(clone._groupby[0]).not.toBe(query._groupby[0]);
   });
 
   it('can be used as a select query source', () => {
@@ -240,6 +310,15 @@ describe('PivotQuery', () => {
 
     expect(query.toString()).toBe(
       'SELECT * FROM (PIVOT "sales" ON "year" IN (2020, 2021) USING sum("amount") AS "total") AS "p"'
+    );
+  });
+
+  it('can be used as a select query source with GROUP BY expressions', () => {
+    const pivot = Query.pivot('sales').on('year').using({ total: sum('amount') }).groupby('region');
+    const query = Query.select('*').from({ p: pivot });
+
+    expect(query.toString()).toBe(
+      'SELECT * FROM (PIVOT "sales" ON "year" USING sum("amount") AS "total" GROUP BY "region") AS "p"'
     );
   });
 });

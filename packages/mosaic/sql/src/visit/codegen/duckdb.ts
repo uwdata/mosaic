@@ -225,12 +225,13 @@ export class DuckDBCodeGenerator extends SQLCodeGenerator {
   }
 
   visitPivotQuery(node: PivotQuery): string {
-    const { source, _on, _in, _using } = node;
+    const { source, _on, _in, _using, _groupby } = node;
     const ref = isQuery(source) ? `(${this.toString(source)})` : this.toString(source);
     const on = _on.length ? ` ON ${this.mapToString(_on).join(', ')}` : '';
     const values = _in.length ? ` IN (${this.mapToString(_in).join(', ')})` : '';
     const using = _using.length ? ` USING ${this.mapToString(_using).join(', ')}` : '';
-    return `PIVOT ${ref}${on}${values}${using}`;
+    const groupby = _groupby.length ? ` GROUP BY ${this.mapToString(_groupby).join(', ')}` : '';
+    return `PIVOT ${ref}${on}${values}${using}${groupby}`;
   }
 
   visitSampleClause(node: SampleClauseNode): string {

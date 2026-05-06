@@ -282,6 +282,8 @@ export class PivotQuery extends Query {
   _in: ExprNode[] = [];
   /** The aggregate expressions used to populate pivot output cells. */
   _using: SelectClauseNode[] = [];
+  /** The expressions that define pivot row groups. */
+  _groupby: ExprNode[] = [];
 
   /**
    * Instantiate a new pivot query.
@@ -369,6 +371,24 @@ export class PivotQuery extends Query {
   }
 
   /**
+   * Add GROUP BY expressions.
+   * @param expr Expressions to add.
+   */
+  groupby(...expr: GroupByExpr[]): this {
+    this._groupby = this._groupby.concat(nodeList(expr));
+    return this;
+  }
+
+  /**
+   * Set GROUP BY expressions, replacing any prior expressions.
+   * @param expr Expressions to add.
+   */
+  setGroupby(...expr: GroupByExpr[]): this {
+    this._groupby = [];
+    return this.groupby(...expr);
+  }
+
+  /**
    * Clone this pivot query.
    */
   clone(): this {
@@ -377,7 +397,8 @@ export class PivotQuery extends Query {
     return Object.assign(new PivotQuery(source), rest, {
       _on: this._on.slice(),
       _in: this._in.slice(),
-      _using: this._using.slice()
+      _using: this._using.slice(),
+      _groupby: this._groupby.slice()
     });
   }
 }
