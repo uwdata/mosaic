@@ -28,6 +28,10 @@ describe('Column references', () => {
     const node = asNode('foo');
     expect(node).toBeInstanceOf(ColumnRefNode);
     expect(String(node)).toBe(`"foo"`);
+
+    const node2 = asNode('tab.foo');
+    expect(node2).toBeInstanceOf(ColumnRefNode);
+    expect(String(node2)).toBe(`"tab.foo"`);
   });
 
   it('clone successfully', () => {

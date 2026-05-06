@@ -48,7 +48,7 @@ export { lineDensity } from './transforms/line-density.js';
 export { m4 } from './transforms/m4.js';
 export { scaleTransform, type Scale, type ScaleDomain, type ScaleOptions, type ScaleTransform, type ScaleType } from './transforms/scales.js';
 
-export { asLiteral, asNode, asTableRef, asVerbatim, over } from './util/ast.js';
+export { asLiteral, asNode, asTableRef, asVerbatim, parseColumnRef, parseTableRef, over } from './util/ast.js';
 export { isParamLike } from './util/type-check.js';
 
 export { binSpec, binStep, type BinOptions } from './transforms/util/bin-step.js';
