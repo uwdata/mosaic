@@ -1,5 +1,5 @@
 import { expect, describe, it } from 'vitest';
-import { asNode, asTableRef, column, desc, gt, lt, max, min, sql, Query, sum, lead, over, cte, add, FromClauseNode, SampleClauseNode, frameRows, div, mul } from '../src/index.js';
+import { asTableRef, column, desc, gt, lt, max, min, sql, Query, sum, lead, over, cte, add, FromClauseNode, SampleClauseNode, frameRows, div, mul } from '../src/index.js';
 
 describe('Query', () => {
   it('selects column name strings', () => {
@@ -442,8 +442,8 @@ describe('Query', () => {
     expect(
       Query
         .select({
-          foo: asNode('a.foo'),
-          bar: asNode('b.bar')
+          foo: column('foo', 'a'),
+          bar: column('bar', 'b')
         })
         .from({ a: 'data1', b: 'data2' })
         .toString()
