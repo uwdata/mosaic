@@ -1,5 +1,5 @@
 import { expect, describe, it } from 'vitest';
-import { asTableRef, deepClone, TableRefNode } from '../src/index.js';
+import { asTableRef, deepClone, parseTableRef, TableRefNode } from '../src/index.js';
 
 describe('Table references', () => {
   it('serialize to SQL', () => {
@@ -11,8 +11,14 @@ describe('Table references', () => {
 
   it('are created by asTableRef', () => {
     expect(asTableRef('foo')?.table).toStrictEqual(['foo']);
-    expect(asTableRef('foo.bar')?.table).toStrictEqual(['foo', 'bar']);
-    expect(asTableRef('foo.bar.baz')?.table).toStrictEqual(['foo', 'bar', 'baz']);
+    expect(asTableRef('foo.bar')?.table).toStrictEqual(['foo.bar']);
+    expect(asTableRef('foo.bar.baz')?.table).toStrictEqual(['foo.bar.baz']);
+  });
+
+  it('are created by parseTableRef', () => {
+    expect(parseTableRef('foo')?.table).toStrictEqual(['foo']);
+    expect(parseTableRef('foo.bar')?.table).toStrictEqual(['foo', 'bar']);
+    expect(parseTableRef('foo.bar.baz')?.table).toStrictEqual(['foo', 'bar', 'baz']);
   });
 
   it('clone successfully', () => {
