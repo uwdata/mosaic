@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-# Run visual tests in a Docker container matching the CI environment.
+# Run visual tests in a Docker container matching the CI environment. This script is designed for local testing.
+#
 # Usage: bin/visual-test.sh [--update] [playwright args...]
 #   --update           Update snapshots instead of comparing against them.
 #   -g "axes|bias"     Pass extra args to playwright (e.g. grep filter).
