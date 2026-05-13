@@ -201,6 +201,31 @@ describe('PivotQuery', () => {
     expect(Query.pivot('sales').on('year').toString()).toBe('PIVOT "sales" ON "year"');
   });
 
+  it('renders common table expressions from with-pivot helpers', () => {
+    const source = Query.select('*').from('raw_sales');
+    const pivot = Query
+      .with({ sales: source })
+      .pivot('sales')
+      .on('year')
+      .using(sum('amount'));
+
+    expect(pivot.toString()).toBe(
+      'WITH "sales" AS (SELECT * FROM "raw_sales") PIVOT "sales" ON "year" USING sum("amount")'
+    );
+  });
+
+  it('renders common table expressions added directly to pivot queries', () => {
+    const pivot = Query
+      .pivot('sales')
+      .with({ sales: Query.select('*').from('raw_sales') })
+      .on('year')
+      .using(sum('amount'));
+
+    expect(pivot.toString()).toBe(
+      'WITH "sales" AS (SELECT * FROM "raw_sales") PIVOT "sales" ON "year" USING sum("amount")'
+    );
+  });
+
   it('rejects empty IN calls', () => {
     const query = Query.pivot('sales').on('year');
 
@@ -239,6 +264,18 @@ describe('PivotQuery', () => {
 
     expect(clone.toString()).toBe('PIVOT "sales" ON "year" USING sum("amount") GROUP BY "region"');
     expect(clone._groupby).not.toBe(query._groupby);
+  });
+
+  it('clones inherited clause arrays without aliasing mutable state', () => {
+    const query = Query
+      .pivot('sales')
+      .with({ sales: Query.select('*').from('raw_sales') })
+      .orderby('year');
+    const clone = query.clone();
+
+    expect(clone.toString()).toBe(query.toString());
+    expect(clone._with).not.toBe(query._with);
+    expect(clone._orderby).not.toBe(query._orderby);
   });
 
   it('deep clones pivot ON and IN expression nodes', () => {

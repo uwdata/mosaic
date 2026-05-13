@@ -395,10 +395,12 @@ export class PivotQuery extends Query {
     const { source, ...rest } = this;
     // @ts-expect-error creates pivot query
     return Object.assign(new PivotQuery(source), rest, {
+      _with: this._with.slice(),
       _on: this._on.slice(),
       _in: this._in.slice(),
       _using: this._using.slice(),
-      _groupby: this._groupby.slice()
+      _groupby: this._groupby.slice(),
+      _orderby: this._orderby.slice()
     });
   }
 }
