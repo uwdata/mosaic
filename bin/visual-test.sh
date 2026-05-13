@@ -4,9 +4,9 @@
 #   --update           Update snapshots instead of comparing against them.
 #   -g "axes|bias"     Pass extra args to playwright (e.g. grep filter).
 
-set -euo pipefail
+set -eo pipefail
 
-IMAGE="mcr.microsoft.com/playwright:v1.59.1-noble"
+IMAGE="mcr.microsoft.com/playwright:v1.60.0-noble"
 REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 
 ARGS=()
