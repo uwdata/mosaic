@@ -113,7 +113,7 @@
   <div id="view"></div>
 <script type="module">
   import yaml from '../node_modules/yaml/browser/index.js';
-  import { astToDOM, astToESM, clear, parseSpec, setDatabaseConnector, vg } from './setup.ts';
+  import { astToDOM, astToESM, clear, observeLogger, parseSpec, setDatabaseConnector, vg } from './setup.ts';
 
   const view = document.querySelector('#view');
   const connectorMenu = document.querySelector('#connectors');
@@ -124,6 +124,7 @@
   const consolidateToggle = document.querySelector('#consolidate');
   const preaggToggle = document.querySelector('#preagg');
   const preaggState = document.querySelector('#preagg-state');
+  let unobserveQueryLog;
 
   connectorMenu.addEventListener('change', setConnector);
   exampleMenu.addEventListener('change', reload);
@@ -156,29 +157,22 @@
   }
 
   function setQueryLog() {
-    const bus = coordinator().eventBus;
-
-    bus.observe("query-start", (event) =>
-      console.info("Query started:", event),
-    );
-    bus.observe("query-end", (event) => console.info("Query ended:", event));
-    bus.observe("client-connect", (event) =>
-      console.info("Client connected:", event),
-    );
-    bus.observe("warning", (event) => console.warn("Warning:", event));
-    bus.observe("error", (event) => console.error("Error:", event));
+    unobserveQueryLog?.();
+    unobserveQueryLog = qlogToggle.checked
+      ? observeLogger(vg.coordinator(), console)
+      : undefined;
   }
 
   function setCache() {
-    coordinator().manager.cache(cacheToggle.checked);
+    vg.coordinator().manager.cache(cacheToggle.checked);
   }
 
   function setConsolidate() {
-    coordinator().manager.consolidate(consolidateToggle.checked);
+    vg.coordinator().manager.consolidate(consolidateToggle.checked);
   }
 
   function setPreAggregate() {
-    coordinator().preaggregator.enabled = preaggToggle.checked;
+    vg.coordinator().preaggregator.enabled = preaggToggle.checked;
   }
 
   function reload() {
