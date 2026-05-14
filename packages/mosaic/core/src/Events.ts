@@ -1,7 +1,6 @@
 export enum EventType {
   QueryStart = "query-start",
   QueryEnd = "query-end",
-  ClientConnect = "client-connect",
   Warning = "warning",
   Error = "error",
 }
@@ -44,20 +43,6 @@ export class QueryEndEvent extends MosaicEvent<EventType.QueryEnd> {
   }
 }
 
-export interface ClientConnectEventInit {
-  clientId?: string;
-  timestamp?: number;
-}
-
-export class ClientConnectEvent extends MosaicEvent<EventType.ClientConnect> {
-  readonly clientId?: string;
-
-  constructor({ clientId, timestamp }: ClientConnectEventInit = {}) {
-    super(EventType.ClientConnect, timestamp);
-    this.clientId = clientId;
-  }
-}
-
 export interface MessageEventInit {
   message: string;
   timestamp?: number;
@@ -84,14 +69,12 @@ export class ErrorEvent extends MosaicEvent<EventType.Error> {
 export type MosaicEvents =
   | QueryStartEvent
   | QueryEndEvent
-  | ClientConnectEvent
   | WarningEvent
   | ErrorEvent;
 
 export type MosaicEventMap = {
   [EventType.QueryStart]: QueryStartEvent;
   [EventType.QueryEnd]: QueryEndEvent;
-  [EventType.ClientConnect]: ClientConnectEvent;
   [EventType.Warning]: WarningEvent;
   [EventType.Error]: ErrorEvent;
 };
