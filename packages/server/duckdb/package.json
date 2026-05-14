@@ -41,10 +41,10 @@
   "dependencies": {
     "@duckdb/node-api": "~1.5.2-r.1",
     "@uwdata/mosaic-sql": "workspace:^",
-    "ws": "^8.20.0"
+    "ws": "^8.20.1"
   },
   "devDependencies": {
-    "@types/node": "^25.6.0",
-    "@uwdata/flechette": "^2.4.0"
+    "@types/node": "^25.7.0",
+    "@uwdata/flechette": "^2.5.0"
   }
 }
