@@ -19,12 +19,15 @@ ARGS+=("$@")
 
 RUNTIME="${CONTAINER_RUNTIME:-docker}"
 
-CMD="corepack enable && pnpm install --frozen-lockfile && pnpm run build && pnpm -F @uwdata/mosaic-spec test:visual"
+CMD="mkdir -p /tmp/bin && corepack enable --install-directory=/tmp/bin && export PATH=/tmp/bin:\$PATH && pnpm install --frozen-lockfile && pnpm run build && pnpm -F @uwdata/mosaic-spec test:visual"
 for arg in "${ARGS[@]}"; do
   CMD+=" $(printf '%q' "$arg")"
 done
 
-exec "$RUNTIME" run --rm -it \
+exec "$RUNTIME" run --rm \
+  --user "$(id -u):$(id -g)" \
+  --memory 8g \
+  -e HOME=/tmp \
   -e COREPACK_ENABLE_AUTO_PIN=0 \
   -e COREPACK_ENABLE_DOWNLOAD_PROMPT=0 \
   -v "$REPO_ROOT":/workspace \
