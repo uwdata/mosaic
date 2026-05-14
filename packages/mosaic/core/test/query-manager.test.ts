@@ -65,7 +65,8 @@ describe("QueryManager", () => {
 
   it("emits typed QueryStart and QueryEnd events with type and timestamp", async () => {
     const eventBus = new ObserveDispatch<MosaicEventMap>();
-    const queryManager = new QueryManager(32, eventBus);
+    const queryManager = new QueryManager();
+    queryManager.setEventBus(eventBus);
 
     const starts: MosaicQueryStartEvent[] = [];
     const ends: MosaicQueryEndEvent[] = [];
@@ -114,7 +115,8 @@ describe("QueryManager", () => {
 
   it("emits QueryStart and QueryEnd for cached requests", async () => {
     const eventBus = new ObserveDispatch<MosaicEventMap>();
-    const queryManager = new QueryManager(32, eventBus);
+    const queryManager = new QueryManager();
+    queryManager.setEventBus(eventBus);
 
     const starts: MosaicQueryStartEvent[] = [];
     const ends: MosaicQueryEndEvent[] = [];

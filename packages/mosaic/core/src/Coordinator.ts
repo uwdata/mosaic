@@ -53,7 +53,7 @@ export class Coordinator {
   public preaggregator: PreAggregator;
   public clients = new Set<MosaicClient>();
   public filterGroups = new Map<Selection, FilterGroupEntry>();
-  public eventBus: ObserveDispatch<MosaicEventMap>;
+  public readonly eventBus: ObserveDispatch<MosaicEventMap>;
   protected _logger: Logger | null = null;
   private _unobserveLogger: () => void = () => {};
 
@@ -85,7 +85,7 @@ export class Coordinator {
     } = options;
     this.eventBus = new ObserveDispatch<MosaicEventMap>();
     this.manager = manager;
-    this.manager.eventBus = this.eventBus;
+    this.manager.setEventBus(this.eventBus);
     this.manager.cache(cache);
     this.manager.consolidate(consolidate);
     this.databaseConnector(db);

@@ -25,12 +25,9 @@ export class QueryManager {
   public pendingResults: QueryResult[];
   private maxConcurrentRequests: number;
   private pendingExec: boolean;
-  public eventBus?: ObserveDispatch<MosaicEventMap>;
+  private _eventBus: ObserveDispatch<MosaicEventMap> | null;
 
-  constructor(
-    maxConcurrentRequests: number = 32,
-    eventBus?: ObserveDispatch<MosaicEventMap>,
-  ) {
+  constructor(maxConcurrentRequests: number = 32) {
     this.queue = new PriorityQueue(3);
     this.db = null;
     this.clientCache = null;
@@ -38,7 +35,14 @@ export class QueryManager {
     this.pendingResults = [];
     this.maxConcurrentRequests = maxConcurrentRequests;
     this.pendingExec = false;
-    this.eventBus = eventBus;
+    this._eventBus = null;
+  }
+
+  /**
+   * @internal Wire query lifecycle events to the owning coordinator.
+   */
+  setEventBus(eventBus: ObserveDispatch<MosaicEventMap>): void {
+    this._eventBus = eventBus;
   }
 
   next(): void {
@@ -68,7 +72,7 @@ export class QueryManager {
         if (result.state === QueryState.ready) {
           result.fulfill();
         } else if (result.state === QueryState.done) {
-          this.eventBus?.emit(
+          this._eventBus?.emit(
             EventType.Warning,
             new MosaicWarningEvent({
               message: "Found resolved query in pending results.",
@@ -106,7 +110,7 @@ export class QueryManager {
           : null;
       const queryText = sql || "";
 
-      this.eventBus?.emit(
+      this._eventBus?.emit(
         EventType.QueryStart,
         new MosaicQueryStartEvent({
           query: queryText,
@@ -120,7 +124,7 @@ export class QueryManager {
         if (cached) {
           const data = await cached;
           result.ready(data);
-          this.eventBus?.emit(
+          this._eventBus?.emit(
             EventType.QueryEnd,
             new MosaicQueryEndEvent({
               query: queryText,
@@ -141,7 +145,7 @@ export class QueryManager {
 
       result.ready(type === 'exec' ? null : data);
 
-      this.eventBus?.emit(
+      this._eventBus?.emit(
         EventType.QueryEnd,
         new MosaicQueryEndEvent({
           query: queryText,
@@ -149,7 +153,7 @@ export class QueryManager {
         }),
       );
     } catch (err) {
-      this.eventBus?.emit(
+      this._eventBus?.emit(
         EventType.Error,
         new MosaicErrorEvent({
           message: err instanceof Error ? err.message : String(err),

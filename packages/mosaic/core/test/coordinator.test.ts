@@ -1,6 +1,7 @@
 import { Query } from '@uwdata/mosaic-sql';
 import { describe, it, expect, vi } from 'vitest';
-import { clausePoint, type Connector, Coordinator, coordinator, type JSONQueryRequest, type Logger, makeClient, observeLogger, Selection } from '../src/index.js';
+import { clausePoint, type Connector, Coordinator, coordinator, EventType, type JSONQueryRequest, type Logger, makeClient, type MosaicQueryStartEvent, observeLogger, Selection } from '../src/index.js';
+import { QueryManager } from '../src/QueryManager.js';
 import { QueryResult, QueryState } from '../src/util/query-result.js';
 
 async function wait() {
@@ -193,6 +194,34 @@ describe('coordinator', () => {
     expect(logger.groupCollapsed).toHaveBeenCalledTimes(1);
     expect(logger.log).toHaveBeenCalledTimes(1);
     expect(logger.groupEnd).toHaveBeenCalledTimes(1);
+  });
+
+  it('wires custom query managers to the coordinator event bus', async () => {
+    const connector = {
+      async query() {
+        return [{ value: 1 }];
+      },
+    } as unknown as Connector;
+
+    const manager = new QueryManager();
+    const coord = new Coordinator(connector, {
+      cache: false,
+      consolidate: false,
+      logger: null,
+      manager,
+      preagg: { enabled: false },
+    });
+    const starts: MosaicQueryStartEvent[] = [];
+
+    coord.eventBus.addEventListener(EventType.QueryStart, (event) => {
+      starts.push(event);
+    });
+
+    await coord.query('SELECT 1', { cache: false });
+
+    expect(coord.manager).toBe(manager);
+    expect(starts).toHaveLength(1);
+    expect(starts[0]?.query).toBe('SELECT 1');
   });
 
   it('supports legacy coordinator logger configuration through the event bus', async () => {
