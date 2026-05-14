@@ -26,6 +26,7 @@ export class QueryManager {
   private maxConcurrentRequests: number;
   private pendingExec: boolean;
   private _eventBus: ObserveDispatch<MosaicEventMap> | null;
+  private _nextQueryId: number;
 
   constructor(maxConcurrentRequests: number = 32) {
     this.queue = new PriorityQueue(3);
@@ -36,6 +37,7 @@ export class QueryManager {
     this.maxConcurrentRequests = maxConcurrentRequests;
     this.pendingExec = false;
     this._eventBus = null;
+    this._nextQueryId = 1;
   }
 
   /**
@@ -101,6 +103,10 @@ export class QueryManager {
    * @param result The query result.
    */
   async submit(request: QueryRequest, result: QueryResult): Promise<void> {
+    let queryId: number | undefined;
+    let queryText = "";
+    let materialized = false;
+
     try {
       const { query, type, cache = false, options } = request;
       const sql = Array.isArray(query)
@@ -108,13 +114,16 @@ export class QueryManager {
         : query
           ? String(query)
           : null;
-      const queryText = sql || "";
+      queryId = this._nextQueryId++;
+      queryText = sql || "";
+      materialized = cache;
 
       this._eventBus?.emit(
         EventType.QueryStart,
         new MosaicQueryStartEvent({
+          queryId,
           query: queryText,
-          materialized: cache,
+          materialized,
         }),
       );
 
@@ -127,8 +136,10 @@ export class QueryManager {
           this._eventBus?.emit(
             EventType.QueryEnd,
             new MosaicQueryEndEvent({
+              queryId,
               query: queryText,
-              materialized: cache,
+              materialized,
+              status: "success",
             }),
           );
           return;
@@ -148,8 +159,10 @@ export class QueryManager {
       this._eventBus?.emit(
         EventType.QueryEnd,
         new MosaicQueryEndEvent({
+          queryId,
           query: queryText,
-          materialized: cache,
+          materialized,
+          status: "success",
         }),
       );
     } catch (err) {
@@ -157,8 +170,20 @@ export class QueryManager {
         EventType.Error,
         new MosaicErrorEvent({
           message: err instanceof Error ? err.message : String(err),
+          queryId,
         }),
       );
+      if (queryId != null) {
+        this._eventBus?.emit(
+          EventType.QueryEnd,
+          new MosaicQueryEndEvent({
+            queryId,
+            query: queryText,
+            materialized,
+            status: "error",
+          }),
+        );
+      }
       result.reject(err);
     }
   }

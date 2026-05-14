@@ -196,6 +196,33 @@ describe('coordinator', () => {
     expect(logger.groupEnd).toHaveBeenCalledTimes(1);
   });
 
+  it('observeLogger closes query groups for failed queries', async () => {
+    const connector = {
+      async query() {
+        throw new Error('boom');
+      },
+    } as unknown as Connector;
+
+    const coord = new Coordinator(connector, {
+      cache: false,
+      consolidate: false,
+      preagg: { enabled: false },
+    });
+
+    const logger = createLogger();
+    observeLogger(coord, logger);
+
+    await expect(coord.query('SELECT fail', { cache: false })).rejects.toThrow('boom');
+
+    expect(logger.groupCollapsed).toHaveBeenCalledTimes(1);
+    expect(logger.groupCollapsed).toHaveBeenCalledWith('query SELECT fail');
+    expect(logger.error).toHaveBeenCalledTimes(1);
+    expect(logger.error).toHaveBeenCalledWith('boom');
+    expect(logger.log).toHaveBeenCalledTimes(1);
+    expect(logger.log).toHaveBeenCalledWith('SELECT fail', expect.any(String));
+    expect(logger.groupEnd).toHaveBeenCalledTimes(1);
+  });
+
   it('wires custom query managers to the coordinator event bus', async () => {
     const connector = {
       async query() {

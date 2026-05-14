@@ -28,28 +28,23 @@ export function observeLogger(
 ): () => void {
   if (!logger) return () => {};
 
-  // Track start times by query text; use a stack per query to support overlap.
-  const starts = new Map<string, number[]>();
+  const starts = new Map<number, number>();
 
   const onQueryStart = (event: MosaicQueryStartEvent): void => {
-    const key = event.query;
-    const stack = starts.get(key) ?? [];
-    stack.push(now());
-    starts.set(key, stack);
+    starts.set(event.queryId, now());
 
-    logger.groupCollapsed(`query ${key}`);
+    logger.groupCollapsed(`query ${event.query}`);
   };
 
   const onQueryEnd = (event: MosaicQueryEndEvent): void => {
-    const key = event.query;
-    const stack = starts.get(key);
-    const t0 = stack?.pop();
+    const t0 = starts.get(event.queryId);
+    starts.delete(event.queryId);
     const elapsed = t0 == null ? undefined : (now() - t0).toFixed(1);
 
     if (elapsed != null) {
-      logger.log(key, elapsed);
+      logger.log(event.query, elapsed);
     } else {
-      logger.log(key);
+      logger.log(event.query);
     }
 
     logger.groupEnd();
