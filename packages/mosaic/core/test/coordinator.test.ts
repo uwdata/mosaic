@@ -1,10 +1,23 @@
 import { Query } from '@uwdata/mosaic-sql';
 import { describe, it, expect, vi } from 'vitest';
-import { clausePoint, type Connector, Coordinator, coordinator, type JSONQueryRequest, makeClient, observeLogger, Selection } from '../src/index.js';
+import { clausePoint, type Connector, Coordinator, coordinator, type JSONQueryRequest, type Logger, makeClient, observeLogger, Selection } from '../src/index.js';
 import { QueryResult, QueryState } from '../src/util/query-result.js';
 
 async function wait() {
   return new Promise<void>(resolve => setTimeout(resolve, 0));
+}
+
+function createLogger(): Logger {
+  return {
+    debug: vi.fn(),
+    info: vi.fn(),
+    log: vi.fn(),
+    warn: vi.fn(),
+    error: vi.fn(),
+    group: vi.fn(),
+    groupCollapsed: vi.fn(),
+    groupEnd: vi.fn(),
+  };
 }
 
 describe('coordinator', () => {
@@ -158,16 +171,7 @@ describe('coordinator', () => {
       preagg: { enabled: false },
     });
 
-    const logger = {
-      debug: vi.fn(),
-      info: vi.fn(),
-      log: vi.fn(),
-      warn: vi.fn(),
-      error: vi.fn(),
-      group: vi.fn(),
-      groupCollapsed: vi.fn(),
-      groupEnd: vi.fn(),
-    };
+    const logger = createLogger();
 
     const unobserve = observeLogger(coord, logger);
 
@@ -189,5 +193,49 @@ describe('coordinator', () => {
     expect(logger.groupCollapsed).toHaveBeenCalledTimes(1);
     expect(logger.log).toHaveBeenCalledTimes(1);
     expect(logger.groupEnd).toHaveBeenCalledTimes(1);
+  });
+
+  it('supports legacy coordinator logger configuration through the event bus', async () => {
+    const connector = {
+      async query() {
+        return [{ value: 1 }];
+      },
+    } as unknown as Connector;
+
+    const logger = createLogger();
+    const coord = new Coordinator(connector, {
+      cache: false,
+      consolidate: false,
+      logger,
+      preagg: { enabled: false },
+    });
+
+    expect(coord.logger()).toBe(logger);
+
+    await coord.query('SELECT 1', { cache: false });
+
+    expect(logger.groupCollapsed).toHaveBeenCalledTimes(1);
+    expect(logger.log).toHaveBeenCalledTimes(1);
+    expect(logger.groupEnd).toHaveBeenCalledTimes(1);
+
+    const nextLogger = createLogger();
+    expect(coord.logger(nextLogger)).toBe(nextLogger);
+
+    await coord.query('SELECT 2', { cache: false });
+
+    expect(logger.groupCollapsed).toHaveBeenCalledTimes(1);
+    expect(logger.log).toHaveBeenCalledTimes(1);
+    expect(logger.groupEnd).toHaveBeenCalledTimes(1);
+    expect(nextLogger.groupCollapsed).toHaveBeenCalledTimes(1);
+    expect(nextLogger.log).toHaveBeenCalledTimes(1);
+    expect(nextLogger.groupEnd).toHaveBeenCalledTimes(1);
+
+    expect(coord.logger(null)).toBeNull();
+
+    await coord.query('SELECT 3', { cache: false });
+
+    expect(nextLogger.groupCollapsed).toHaveBeenCalledTimes(1);
+    expect(nextLogger.log).toHaveBeenCalledTimes(1);
+    expect(nextLogger.groupEnd).toHaveBeenCalledTimes(1);
   });
 });
