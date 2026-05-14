@@ -63,15 +63,15 @@ export function observeLogger(
     logger.error(event.message);
   };
 
-  coordinator.eventBus.observe(EventType.QueryStart, onQueryStart);
-  coordinator.eventBus.observe(EventType.QueryEnd, onQueryEnd);
-  coordinator.eventBus.observe(EventType.Warning, onWarning);
-  coordinator.eventBus.observe(EventType.Error, onError);
+  coordinator.eventBus.addEventListener(EventType.QueryStart, onQueryStart);
+  coordinator.eventBus.addEventListener(EventType.QueryEnd, onQueryEnd);
+  coordinator.eventBus.addEventListener(EventType.Warning, onWarning);
+  coordinator.eventBus.addEventListener(EventType.Error, onError);
 
   return () => {
-    coordinator.eventBus.unobserve(EventType.QueryStart, onQueryStart);
-    coordinator.eventBus.unobserve(EventType.QueryEnd, onQueryEnd);
-    coordinator.eventBus.unobserve(EventType.Warning, onWarning);
-    coordinator.eventBus.unobserve(EventType.Error, onError);
+    coordinator.eventBus.removeEventListener(EventType.QueryStart, onQueryStart);
+    coordinator.eventBus.removeEventListener(EventType.QueryEnd, onQueryEnd);
+    coordinator.eventBus.removeEventListener(EventType.Warning, onWarning);
+    coordinator.eventBus.removeEventListener(EventType.Error, onError);
   };
 }

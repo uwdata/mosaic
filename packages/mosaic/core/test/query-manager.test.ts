@@ -70,10 +70,10 @@ describe("QueryManager", () => {
     const starts: MosaicQueryStartEvent[] = [];
     const ends: MosaicQueryEndEvent[] = [];
 
-    eventBus.observe(EventType.QueryStart, (event) => {
+    eventBus.addEventListener(EventType.QueryStart, (event) => {
       starts.push(event);
     });
-    eventBus.observe(EventType.QueryEnd, (event) => {
+    eventBus.addEventListener(EventType.QueryEnd, (event) => {
       ends.push(event);
     });
 
@@ -120,10 +120,10 @@ describe("QueryManager", () => {
     const ends: MosaicQueryEndEvent[] = [];
     let queryCalls = 0;
 
-    eventBus.observe(EventType.QueryStart, (event) => {
+    eventBus.addEventListener(EventType.QueryStart, (event) => {
       starts.push(event);
     });
-    eventBus.observe(EventType.QueryEnd, (event) => {
+    eventBus.addEventListener(EventType.QueryEnd, (event) => {
       ends.push(event);
     });
 

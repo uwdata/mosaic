@@ -11,30 +11,35 @@ export class ObserveDispatch<E extends EventMap> extends Dispatch<
   E[EventKey<E>]
 > {
   /**
-   * Subscribe to events of the given type.
-   * Shorthand for addEventListener().
+   * Add an event listener callback for the provided event type.
    * @param type The event type.
    * @param callback The event handler callback function to add.
-   * @returns This ObserveDispatch instance for method chaining.
    */
-  observe<K extends EventKey<E>>(type: K, callback: EventCallback<E[K]>): this {
-    this.addEventListener(type, callback as EventCallback<E[EventKey<E>]>);
-    return this;
+  addEventListener<K extends EventKey<E>>(
+    type: K,
+    callback: EventCallback<E[K]>,
+  ): void;
+  override addEventListener(
+    type: string,
+    callback: EventCallback<E[EventKey<E>]>,
+  ): void {
+    super.addEventListener(type, callback);
   }
 
   /**
-   * Unsubscribe from events of the given type.
-   * Shorthand for removeEventListener().
+   * Remove an event listener callback for the provided event type.
    * @param type The event type.
    * @param callback The event handler callback function to remove.
-   * @returns This ObserveDispatch instance for method chaining.
    */
-  unobserve<K extends EventKey<E>>(
+  removeEventListener<K extends EventKey<E>>(
     type: K,
     callback: EventCallback<E[K]>,
-  ): this {
-    this.removeEventListener(type, callback as EventCallback<E[EventKey<E>]>);
-    return this;
+  ): void;
+  override removeEventListener(
+    type: string,
+    callback: EventCallback<E[EventKey<E>]>,
+  ): void {
+    super.removeEventListener(type, callback);
   }
 
   /**
