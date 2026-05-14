@@ -197,9 +197,10 @@ describe('coordinator', () => {
   });
 
   it('observeLogger closes query groups for failed queries', async () => {
+    const error = new Error('boom');
     const connector = {
       async query() {
-        throw new Error('boom');
+        throw error;
       },
     } as unknown as Connector;
 
@@ -217,7 +218,7 @@ describe('coordinator', () => {
     expect(logger.groupCollapsed).toHaveBeenCalledTimes(1);
     expect(logger.groupCollapsed).toHaveBeenCalledWith('query SELECT fail');
     expect(logger.error).toHaveBeenCalledTimes(1);
-    expect(logger.error).toHaveBeenCalledWith('boom');
+    expect(logger.error).toHaveBeenCalledWith(error);
     expect(logger.log).toHaveBeenCalledTimes(1);
     expect(logger.log).toHaveBeenCalledWith('SELECT fail', expect.any(String));
     expect(logger.groupEnd).toHaveBeenCalledTimes(1);

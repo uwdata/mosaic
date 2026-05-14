@@ -268,6 +268,7 @@ export class Coordinator {
             EventType.Error,
             new MosaicErrorEvent({
               message: err instanceof Error ? err.message : String(err),
+              error: err,
             }),
           );
           client.queryError(err);
@@ -278,6 +279,7 @@ export class Coordinator {
           EventType.Error,
           new MosaicErrorEvent({
             message: err instanceof Error ? err.message : String(err),
+            error: err,
           }),
         );
       }));

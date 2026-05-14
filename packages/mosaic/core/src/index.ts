@@ -48,6 +48,7 @@ export * from './types.js';
 export type * from './connectors/Connector.js';
 export type {
   MosaicEvent,
+  MosaicErrorEventInit,
   MosaicEventMap,
   MosaicMessageEventInit,
   QueryLifecycleEventInit

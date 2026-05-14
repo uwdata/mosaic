@@ -197,9 +197,11 @@ describe("QueryManager", () => {
       ends.push(event);
     });
 
+    const error = new Error("boom");
+
     queryManager.connector({
       query: async () => {
-        throw new Error("boom");
+        throw error;
       },
     });
 
@@ -214,6 +216,7 @@ describe("QueryManager", () => {
     expect(ends).toHaveLength(1);
 
     expect(errors[0].message).toBe("boom");
+    expect(errors[0].error).toBe(error);
     expect(errors[0].queryId).toBe(starts[0].queryId);
 
     expect(ends[0].query).toBe("SELECT fail");

@@ -219,7 +219,7 @@ export class PreAggregator {
       info.result.catch((e: Error) =>
         mc.eventBus.emit(
           EventType.Error,
-          new MosaicErrorEvent({ message: e.message }),
+          new MosaicErrorEvent({ message: e.message, error: e }),
         ),
       );
     }

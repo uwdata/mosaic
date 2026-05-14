@@ -62,6 +62,10 @@ export interface MosaicMessageEventInit {
   timestamp?: number;
 }
 
+export interface MosaicErrorEventInit extends MosaicMessageEventInit {
+  error?: unknown;
+}
+
 export class MosaicWarningEvent extends MosaicEventBase<EventType.Warning> {
   readonly message: string;
   readonly queryId?: number;
@@ -76,11 +80,13 @@ export class MosaicWarningEvent extends MosaicEventBase<EventType.Warning> {
 export class MosaicErrorEvent extends MosaicEventBase<EventType.Error> {
   readonly message: string;
   readonly queryId?: number;
+  readonly error?: unknown;
 
-  constructor({ message, queryId, timestamp }: MosaicMessageEventInit) {
+  constructor({ message, queryId, error, timestamp }: MosaicErrorEventInit) {
     super(EventType.Error, timestamp);
     this.message = message;
     this.queryId = queryId;
+    this.error = error;
   }
 }
 

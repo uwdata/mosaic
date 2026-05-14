@@ -55,7 +55,7 @@ export function observeLogger(
   };
 
   const onError = (event: MosaicErrorEvent): void => {
-    logger.error(event.message);
+    logger.error(event.error ?? event.message);
   };
 
   coordinator.eventBus.addEventListener(EventType.QueryStart, onQueryStart);

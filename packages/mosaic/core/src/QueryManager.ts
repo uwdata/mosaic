@@ -170,6 +170,7 @@ export class QueryManager {
         EventType.Error,
         new MosaicErrorEvent({
           message: err instanceof Error ? err.message : String(err),
+          error: err,
           queryId,
         }),
       );
