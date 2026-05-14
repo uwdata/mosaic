@@ -2,10 +2,10 @@ import type { Coordinator } from "./Coordinator.js";
 import type { Logger } from "./types.js";
 import {
   EventType,
-  type ErrorEvent,
-  type QueryEndEvent,
-  type QueryStartEvent,
-  type WarningEvent,
+  type MosaicErrorEvent,
+  type MosaicQueryEndEvent,
+  type MosaicQueryStartEvent,
+  type MosaicWarningEvent,
 } from "./Events.js";
 
 function now(): number {
@@ -31,7 +31,7 @@ export function observeLogger(
   // Track start times by query text; use a stack per query to support overlap.
   const starts = new Map<string, number[]>();
 
-  const onQueryStart = (event: QueryStartEvent): void => {
+  const onQueryStart = (event: MosaicQueryStartEvent): void => {
     const key = event.query;
     const stack = starts.get(key) ?? [];
     stack.push(now());
@@ -40,7 +40,7 @@ export function observeLogger(
     logger.groupCollapsed(`query ${key}`);
   };
 
-  const onQueryEnd = (event: QueryEndEvent): void => {
+  const onQueryEnd = (event: MosaicQueryEndEvent): void => {
     const key = event.query;
     const stack = starts.get(key);
     const t0 = stack?.pop();
@@ -55,11 +55,11 @@ export function observeLogger(
     logger.groupEnd();
   };
 
-  const onWarning = (event: WarningEvent): void => {
+  const onWarning = (event: MosaicWarningEvent): void => {
     logger.warn(event.message);
   };
 
-  const onError = (event: ErrorEvent): void => {
+  const onError = (event: MosaicErrorEvent): void => {
     logger.error(event.message);
   };
 

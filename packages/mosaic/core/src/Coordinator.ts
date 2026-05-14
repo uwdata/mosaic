@@ -14,7 +14,7 @@ import { type MosaicClient } from "./MosaicClient.js";
 import { type SelectionClause } from "./SelectionClause.js";
 import { MaybeArray } from "@uwdata/mosaic-sql";
 import { Table } from "@uwdata/flechette";
-import { ErrorEvent, EventType, type MosaicEventMap } from "./Events.js";
+import { EventType, MosaicErrorEvent, type MosaicEventMap } from "./Events.js";
 import { ObserveDispatch } from "./util/ObserveDispatch.js";
 
 interface FilterGroupEntry {
@@ -241,7 +241,7 @@ export class Coordinator {
         (err) => {
           this.eventBus.emit(
             EventType.Error,
-            new ErrorEvent({
+            new MosaicErrorEvent({
               message: err instanceof Error ? err.message : String(err),
             }),
           );
@@ -251,7 +251,7 @@ export class Coordinator {
       .catch((err) => {
         this.eventBus.emit(
           EventType.Error,
-          new ErrorEvent({
+          new MosaicErrorEvent({
             message: err instanceof Error ? err.message : String(err),
           }),
         );

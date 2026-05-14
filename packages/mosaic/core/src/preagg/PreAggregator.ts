@@ -5,7 +5,7 @@ import type { Selection } from '../Selection.js';
 import type { BinMethod, ClauseSource, IntervalMetadata, SelectionClause } from '../SelectionClause.js';
 import { fnv_hash } from '../util/hash.js';
 import { preaggColumns, PreAggColumnsResult } from './preagg-columns.js';
-import { ErrorEvent, EventType } from '../Events.js';
+import { EventType, MosaicErrorEvent } from '../Events.js';
 
 const Skip = { skip: true, result: null };
 
@@ -219,7 +219,7 @@ export class PreAggregator {
       info.result.catch((e: Error) =>
         mc.eventBus.emit(
           EventType.Error,
-          new ErrorEvent({ message: e.message }),
+          new MosaicErrorEvent({ message: e.message }),
         ),
       );
     }

@@ -6,8 +6,8 @@ import { ObserveDispatch } from "../src/util/ObserveDispatch.js";
 import {
   EventType,
   type MosaicEventMap,
-  QueryStartEvent,
-  QueryEndEvent,
+  MosaicQueryStartEvent,
+  MosaicQueryEndEvent,
 } from "../src/Events.js";
 
 describe("QueryManager", () => {
@@ -67,8 +67,8 @@ describe("QueryManager", () => {
     const eventBus = new ObserveDispatch<MosaicEventMap>();
     const queryManager = new QueryManager(32, eventBus);
 
-    const starts: QueryStartEvent[] = [];
-    const ends: QueryEndEvent[] = [];
+    const starts: MosaicQueryStartEvent[] = [];
+    const ends: MosaicQueryEndEvent[] = [];
 
     eventBus.observe(EventType.QueryStart, (event) => {
       starts.push(event);
@@ -96,8 +96,8 @@ describe("QueryManager", () => {
     const start = starts[0];
     const end = ends[0];
 
-    expect(start).toBeInstanceOf(QueryStartEvent);
-    expect(end).toBeInstanceOf(QueryEndEvent);
+    expect(start).toBeInstanceOf(MosaicQueryStartEvent);
+    expect(end).toBeInstanceOf(MosaicQueryEndEvent);
 
     expect(start.type).toBe(EventType.QueryStart);
     expect(end.type).toBe(EventType.QueryEnd);
@@ -116,8 +116,8 @@ describe("QueryManager", () => {
     const eventBus = new ObserveDispatch<MosaicEventMap>();
     const queryManager = new QueryManager(32, eventBus);
 
-    const starts: QueryStartEvent[] = [];
-    const ends: QueryEndEvent[] = [];
+    const starts: MosaicQueryStartEvent[] = [];
+    const ends: MosaicQueryEndEvent[] = [];
     let queryCalls = 0;
 
     eventBus.observe(EventType.QueryStart, (event) => {

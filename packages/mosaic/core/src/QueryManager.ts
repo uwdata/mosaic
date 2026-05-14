@@ -5,12 +5,12 @@ import { lruCache, voidCache } from "./util/cache.js";
 import { PriorityQueue } from "./util/priority-queue.js";
 import { QueryResult, QueryState } from "./util/query-result.js";
 import {
-  ErrorEvent,
   EventType,
-  MosaicEventMap,
-  QueryEndEvent,
-  QueryStartEvent,
-  WarningEvent,
+  MosaicErrorEvent,
+  type MosaicEventMap,
+  MosaicQueryEndEvent,
+  MosaicQueryStartEvent,
+  MosaicWarningEvent,
 } from "./Events.js";
 import { ObserveDispatch } from "./util/ObserveDispatch.js";
 
@@ -70,7 +70,7 @@ export class QueryManager {
         } else if (result.state === QueryState.done) {
           this.eventBus?.emit(
             EventType.Warning,
-            new WarningEvent({
+            new MosaicWarningEvent({
               message: "Found resolved query in pending results.",
             }),
           );
@@ -108,7 +108,7 @@ export class QueryManager {
 
       this.eventBus?.emit(
         EventType.QueryStart,
-        new QueryStartEvent({
+        new MosaicQueryStartEvent({
           query: queryText,
           materialized: cache,
         }),
@@ -122,7 +122,7 @@ export class QueryManager {
           result.ready(data);
           this.eventBus?.emit(
             EventType.QueryEnd,
-            new QueryEndEvent({
+            new MosaicQueryEndEvent({
               query: queryText,
               materialized: cache,
             }),
@@ -143,7 +143,7 @@ export class QueryManager {
 
       this.eventBus?.emit(
         EventType.QueryEnd,
-        new QueryEndEvent({
+        new MosaicQueryEndEvent({
           query: queryText,
           materialized: cache,
         }),
@@ -151,7 +151,7 @@ export class QueryManager {
     } catch (err) {
       this.eventBus?.emit(
         EventType.Error,
-        new ErrorEvent({
+        new MosaicErrorEvent({
           message: err instanceof Error ? err.message : String(err),
         }),
       );

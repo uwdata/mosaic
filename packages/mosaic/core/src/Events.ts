@@ -5,7 +5,7 @@ export enum EventType {
   Error = "error",
 }
 
-export abstract class MosaicEvent<T extends EventType = EventType> {
+abstract class MosaicEventBase<T extends EventType = EventType> {
   readonly type: T;
   readonly timestamp: number;
 
@@ -21,7 +21,7 @@ export interface QueryLifecycleEventInit {
   timestamp?: number;
 }
 
-export class QueryStartEvent extends MosaicEvent<EventType.QueryStart> {
+export class MosaicQueryStartEvent extends MosaicEventBase<EventType.QueryStart> {
   readonly query: string;
   readonly materialized: boolean;
 
@@ -32,7 +32,7 @@ export class QueryStartEvent extends MosaicEvent<EventType.QueryStart> {
   }
 }
 
-export class QueryEndEvent extends MosaicEvent<EventType.QueryEnd> {
+export class MosaicQueryEndEvent extends MosaicEventBase<EventType.QueryEnd> {
   readonly query: string;
   readonly materialized: boolean;
 
@@ -43,38 +43,38 @@ export class QueryEndEvent extends MosaicEvent<EventType.QueryEnd> {
   }
 }
 
-export interface MessageEventInit {
+export interface MosaicMessageEventInit {
   message: string;
   timestamp?: number;
 }
 
-export class WarningEvent extends MosaicEvent<EventType.Warning> {
+export class MosaicWarningEvent extends MosaicEventBase<EventType.Warning> {
   readonly message: string;
 
-  constructor({ message, timestamp }: MessageEventInit) {
+  constructor({ message, timestamp }: MosaicMessageEventInit) {
     super(EventType.Warning, timestamp);
     this.message = message;
   }
 }
 
-export class ErrorEvent extends MosaicEvent<EventType.Error> {
+export class MosaicErrorEvent extends MosaicEventBase<EventType.Error> {
   readonly message: string;
 
-  constructor({ message, timestamp }: MessageEventInit) {
+  constructor({ message, timestamp }: MosaicMessageEventInit) {
     super(EventType.Error, timestamp);
     this.message = message;
   }
 }
 
-export type MosaicEvents =
-  | QueryStartEvent
-  | QueryEndEvent
-  | WarningEvent
-  | ErrorEvent;
+export type MosaicEvent =
+  | MosaicQueryStartEvent
+  | MosaicQueryEndEvent
+  | MosaicWarningEvent
+  | MosaicErrorEvent;
 
 export type MosaicEventMap = {
-  [EventType.QueryStart]: QueryStartEvent;
-  [EventType.QueryEnd]: QueryEndEvent;
-  [EventType.Warning]: WarningEvent;
-  [EventType.Error]: ErrorEvent;
+  [EventType.QueryStart]: MosaicQueryStartEvent;
+  [EventType.QueryEnd]: MosaicQueryEndEvent;
+  [EventType.Warning]: MosaicWarningEvent;
+  [EventType.Error]: MosaicErrorEvent;
 };
