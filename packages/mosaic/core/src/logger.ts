@@ -8,12 +8,6 @@ import {
   type MosaicWarningEvent,
 } from "./Events.js";
 
-function now(): number {
-  return typeof performance !== "undefined" && typeof performance.now === "function"
-    ? performance.now()
-    : Date.now();
-}
-
 /**
  * Observe coordinator events and log them in a way that mirrors prior
  * coordinator-internal logging behavior.
@@ -31,15 +25,16 @@ export function observeLogger(
   const starts = new Map<number, number>();
 
   const onQueryStart = (event: MosaicQueryStartEvent): void => {
-    starts.set(event.queryId, now());
+    starts.set(event.queryId, event.timestamp);
 
     logger.groupCollapsed(`query ${event.query}`);
   };
 
   const onQueryEnd = (event: MosaicQueryEndEvent): void => {
     const t0 = starts.get(event.queryId);
+    const openedGroup = t0 != null;
     starts.delete(event.queryId);
-    const elapsed = t0 == null ? undefined : (now() - t0).toFixed(1);
+    const elapsed = t0 == null ? undefined : (event.timestamp - t0).toFixed(1);
 
     if (elapsed != null) {
       logger.log(event.query, elapsed);
@@ -47,7 +42,7 @@ export function observeLogger(
       logger.log(event.query);
     }
 
-    logger.groupEnd();
+    if (openedGroup) logger.groupEnd();
   };
 
   const onWarning = (event: MosaicWarningEvent): void => {
@@ -68,5 +63,6 @@ export function observeLogger(
     coordinator.eventBus.removeEventListener(EventType.QueryEnd, onQueryEnd);
     coordinator.eventBus.removeEventListener(EventType.Warning, onWarning);
     coordinator.eventBus.removeEventListener(EventType.Error, onError);
+    starts.clear();
   };
 }
