@@ -85,7 +85,7 @@ export class Coordinator {
     } = options;
     this.eventBus = new ObserveDispatch<MosaicEventMap>();
     this.manager = manager;
-    this.manager.setEventBus(this.eventBus);
+    this.manager.attachEventBus(this.eventBus);
     this.manager.cache(cache);
     this.manager.consolidate(consolidate);
     this.databaseConnector(db);

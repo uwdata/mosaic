@@ -41,9 +41,14 @@ export class QueryManager {
   }
 
   /**
-   * @internal Wire query lifecycle events to the owning coordinator.
+   * @internal Attach query lifecycle events to the owning coordinator's bus.
+   * Query managers do not own their own observable event surface; the
+   * coordinator attaches its bus once during construction.
    */
-  setEventBus(eventBus: ObserveDispatch<MosaicEventMap>): void {
+  attachEventBus(eventBus: ObserveDispatch<MosaicEventMap>): void {
+    if (this._eventBus && this._eventBus !== eventBus) {
+      throw new Error("QueryManager event bus is already attached.");
+    }
     this._eventBus = eventBus;
   }
 

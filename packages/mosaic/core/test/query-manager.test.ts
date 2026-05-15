@@ -67,7 +67,7 @@ describe("QueryManager", () => {
   it("emits typed QueryStart and QueryEnd events with type and timestamp", async () => {
     const eventBus = new ObserveDispatch<MosaicEventMap>();
     const queryManager = new QueryManager();
-    queryManager.setEventBus(eventBus);
+    queryManager.attachEventBus(eventBus);
 
     const starts: MosaicQueryStartEvent[] = [];
     const ends: MosaicQueryEndEvent[] = [];
@@ -120,7 +120,7 @@ describe("QueryManager", () => {
   it("emits QueryStart and QueryEnd for cached requests", async () => {
     const eventBus = new ObserveDispatch<MosaicEventMap>();
     const queryManager = new QueryManager();
-    queryManager.setEventBus(eventBus);
+    queryManager.attachEventBus(eventBus);
 
     const starts: MosaicQueryStartEvent[] = [];
     const ends: MosaicQueryEndEvent[] = [];
@@ -181,7 +181,7 @@ describe("QueryManager", () => {
   it("emits QueryEnd with error status when a query fails", async () => {
     const eventBus = new ObserveDispatch<MosaicEventMap>();
     const queryManager = new QueryManager();
-    queryManager.setEventBus(eventBus);
+    queryManager.attachEventBus(eventBus);
 
     const starts: MosaicQueryStartEvent[] = [];
     const errors: MosaicErrorEvent[] = [];
@@ -223,5 +223,17 @@ describe("QueryManager", () => {
     expect(ends[0].materialized).toBe(false);
     expect(ends[0].queryId).toBe(starts[0].queryId);
     expect(ends[0].status).toBe("error");
+  });
+
+  it("treats event bus attachment as one-time coordinator wiring", () => {
+    const eventBus = new ObserveDispatch<MosaicEventMap>();
+    const otherBus = new ObserveDispatch<MosaicEventMap>();
+    const queryManager = new QueryManager();
+
+    queryManager.attachEventBus(eventBus);
+    expect(() => queryManager.attachEventBus(eventBus)).not.toThrow();
+    expect(() => queryManager.attachEventBus(otherBus)).toThrow(
+      "QueryManager event bus is already attached.",
+    );
   });
 });
