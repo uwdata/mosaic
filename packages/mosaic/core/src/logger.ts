@@ -39,6 +39,7 @@ export function observeLogger(
     if (elapsed != null) {
       logger.log(event.query, elapsed);
     } else {
+      // Surface unmatched terminal events without closing a group this observer did not open.
       logger.log(event.query);
     }
 
