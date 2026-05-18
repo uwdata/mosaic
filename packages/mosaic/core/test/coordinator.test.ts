@@ -51,7 +51,7 @@ describe('coordinator', () => {
       },
     } as unknown as Connector;
 
-    const coord = new Coordinator(connector);
+    const coord = new Coordinator(connector, { logger: null });
 
     const r0 = coord.query('SELECT 0');
     const r1 = coord.query('SELECT 1');
