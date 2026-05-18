@@ -1,4 +1,4 @@
-import { Dispatch, EventCallback } from "./AsyncDispatch.js";
+import { Dispatch, EventCallback } from './AsyncDispatch.js';
 
 type EventMap = Record<string, unknown>;
 type EventKey<E extends EventMap> = Extract<keyof E, string>;

@@ -1,9 +1,9 @@
-import type { Connector } from "./connectors/Connector.js";
-import type { Cache, QueryEntry, QueryRequest } from "./types.js";
-import { consolidator } from "./QueryConsolidator.js";
-import { lruCache, voidCache } from "./util/cache.js";
-import { PriorityQueue } from "./util/priority-queue.js";
-import { QueryResult, QueryState } from "./util/query-result.js";
+import type { Connector } from './connectors/Connector.js';
+import type { Cache, QueryEntry, QueryRequest } from './types.js';
+import { consolidator } from './QueryConsolidator.js';
+import { lruCache, voidCache } from './util/cache.js';
+import { PriorityQueue } from './util/priority-queue.js';
+import { QueryResult, QueryState } from './util/query-result.js';
 import {
   EventType,
   MosaicErrorEvent,
@@ -11,8 +11,8 @@ import {
   MosaicQueryEndEvent,
   MosaicQueryStartEvent,
   MosaicWarningEvent,
-} from "./Events.js";
-import { ObserveDispatch } from "./util/ObserveDispatch.js";
+} from './Events.js';
+import { ObserveDispatch } from './util/ObserveDispatch.js';
 
 export const Priority = Object.freeze({ High: 0, Normal: 1, Low: 2 });
 
@@ -47,7 +47,7 @@ export class QueryManager {
    */
   attachEventBus(eventBus: ObserveDispatch<MosaicEventMap>): void {
     if (this._eventBus && this._eventBus !== eventBus) {
-      throw new Error("QueryManager event bus is already attached.");
+      throw new Error('QueryManager event bus is already attached.');
     }
     this._eventBus = eventBus;
   }
@@ -67,7 +67,7 @@ export class QueryManager {
     const { request, result } = entry;
 
     this.pendingResults.push(result);
-    if (request.type === "exec") this.pendingExec = true;
+    if (request.type === 'exec') this.pendingExec = true;
 
     this.submit(request, result).finally(() => {
       // return from the queue all requests that are ready
@@ -82,12 +82,12 @@ export class QueryManager {
           this._eventBus?.emit(
             EventType.Warning,
             new MosaicWarningEvent({
-              message: "Found resolved query in pending results.",
+              message: 'Found resolved query in pending results.',
             }),
           );
         }
       }
-      if (request.type === "exec") this.pendingExec = false;
+      if (request.type === 'exec') this.pendingExec = false;
       this.next();
     });
   }
@@ -109,18 +109,18 @@ export class QueryManager {
    */
   async submit(request: QueryRequest, result: QueryResult): Promise<void> {
     let queryId: number | undefined;
-    let queryText = "";
+    let queryText = '';
     let materialized = false;
 
     try {
       const { query, type, cache = false, options } = request;
       const sql = Array.isArray(query)
-        ? query.filter((x) => x).join(";\n")
+        ? query.filter((x) => x).join(';\n')
         : query
           ? String(query)
           : null;
       queryId = this._nextQueryId++;
-      queryText = sql || "";
+      queryText = sql || '';
       materialized = cache;
 
       this._eventBus?.emit(
@@ -144,7 +144,7 @@ export class QueryManager {
               queryId,
               query: queryText,
               materialized,
-              status: "success",
+              status: 'success',
             }),
           );
           return;
@@ -167,7 +167,7 @@ export class QueryManager {
           queryId,
           query: queryText,
           materialized,
-          status: "success",
+          status: 'success',
         }),
       );
     } catch (err) {
@@ -186,7 +186,7 @@ export class QueryManager {
             queryId,
             query: queryText,
             materialized,
-            status: "error",
+            status: 'error',
           }),
         );
       }

@@ -1,12 +1,12 @@
-import type { Coordinator } from "./Coordinator.js";
-import type { Logger } from "./types.js";
+import type { Coordinator } from './Coordinator.js';
+import type { Logger } from './types.js';
 import {
   EventType,
   type MosaicErrorEvent,
   type MosaicQueryEndEvent,
   type MosaicQueryStartEvent,
   type MosaicWarningEvent,
-} from "./Events.js";
+} from './Events.js';
 
 /**
  * Observe coordinator events and log them in a way that mirrors prior

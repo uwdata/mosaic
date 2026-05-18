@@ -1,8 +1,8 @@
 export enum EventType {
-  QueryStart = "query-start",
-  QueryEnd = "query-end",
-  Warning = "warning",
-  Error = "error",
+  QueryStart = 'query-start',
+  QueryEnd = 'query-end',
+  Warning = 'warning',
+  Error = 'error',
 }
 
 abstract class MosaicEventBase<T extends EventType = EventType> {
@@ -22,7 +22,7 @@ export interface QueryLifecycleEventInit {
   timestamp?: number;
 }
 
-export type QueryEndStatus = "success" | "error";
+export type QueryEndStatus = 'success' | 'error';
 
 export interface QueryEndEventInit extends QueryLifecycleEventInit {
   status: QueryEndStatus;

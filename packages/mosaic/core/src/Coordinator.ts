@@ -1,22 +1,22 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { SocketConnector } from "./connectors/socket.js";
-import { type Connector } from "./connectors/Connector.js";
+import { SocketConnector } from './connectors/socket.js';
+import { type Connector } from './connectors/Connector.js';
 import {
   PreAggregator,
   type PreAggregateInfo,
   type PreAggregateOptions,
-} from "./preagg/PreAggregator.js";
-import { QueryManager, Priority } from "./QueryManager.js";
-import { type Selection } from "./Selection.js";
-import { type Logger, type QueryType } from "./types.js";
-import { type QueryResult } from "./util/query-result.js";
-import { type MosaicClient } from "./MosaicClient.js";
-import { type SelectionClause } from "./SelectionClause.js";
-import { MaybeArray } from "@uwdata/mosaic-sql";
-import { Table } from "@uwdata/flechette";
-import { EventType, MosaicErrorEvent, type MosaicEventMap } from "./Events.js";
-import { ObserveDispatch } from "./util/ObserveDispatch.js";
-import { observeLogger } from "./logger.js";
+} from './preagg/PreAggregator.js';
+import { QueryManager, Priority } from './QueryManager.js';
+import { type Selection } from './Selection.js';
+import { type Logger, type QueryType } from './types.js';
+import { type QueryResult } from './util/query-result.js';
+import { type MosaicClient } from './MosaicClient.js';
+import { type SelectionClause } from './SelectionClause.js';
+import { MaybeArray } from '@uwdata/mosaic-sql';
+import { Table } from '@uwdata/flechette';
+import { EventType, MosaicErrorEvent, type MosaicEventMap } from './Events.js';
+import { ObserveDispatch } from './util/ObserveDispatch.js';
+import { observeLogger } from './logger.js';
 
 interface FilterGroupEntry {
   selection: Selection;
@@ -164,7 +164,7 @@ export class Coordinator {
     options: { priority?: number } = {},
   ): QueryResult {
     const { priority = Priority.Normal } = options;
-    return this.manager.request({ type: "exec", query }, priority);
+    return this.manager.request({ type: 'exec', query }, priority);
   }
 
   /**
@@ -181,7 +181,7 @@ export class Coordinator {
   query(
     query: QueryType,
     options?: {
-      type?: "arrow";
+      type?: 'arrow';
       cache?: boolean;
       persist?: boolean;
       priority?: number;
@@ -191,7 +191,7 @@ export class Coordinator {
   query(
     query: QueryType,
     options?: {
-      type?: "json";
+      type?: 'json';
       cache?: boolean;
       persist?: boolean;
       priority?: number;
@@ -201,7 +201,7 @@ export class Coordinator {
   query(
     query: QueryType,
     options: {
-      type?: "arrow" | "json";
+      type?: 'arrow' | 'json';
       cache?: boolean;
       persist?: boolean;
       priority?: number;
@@ -209,7 +209,7 @@ export class Coordinator {
     } = {},
   ): QueryResult<any> {
     const {
-      type = "arrow",
+      type = 'arrow',
       cache = true,
       priority = Priority.Normal,
       ...otherOptions
@@ -230,11 +230,11 @@ export class Coordinator {
    */
   prefetch(
     query: QueryType,
-    options?: { type?: "arrow"; [key: string]: unknown },
+    options?: { type?: 'arrow'; [key: string]: unknown },
   ): QueryResult<Table>;
   prefetch(
     query: QueryType,
-    options?: { type?: "json"; [key: string]: unknown },
+    options?: { type?: 'json'; [key: string]: unknown },
   ): QueryResult<unknown>;
   prefetch(query: QueryType, options: any = {}): QueryResult<any> {
     return this.query(query, {
@@ -311,7 +311,7 @@ export class Coordinator {
     const { clients } = this;
 
     if (clients?.has(client)) {
-      throw new Error("Client already connected.");
+      throw new Error('Client already connected.');
     }
 
     // add client to client set
@@ -364,16 +364,16 @@ function connectSelection(
     const value = () => updateSelection(mc, selection);
 
     // @ts-expect-error todo: update selection dispatch types
-    selection.addEventListener("activate", activate);
-    selection.addEventListener("value", value);
+    selection.addEventListener('activate', activate);
+    selection.addEventListener('value', value);
 
     entry = {
       selection,
       clients: new Set(),
       disconnect() {
         // @ts-expect-error todo: update selection dispatch types
-        selection.removeEventListener("activate", activate);
-        selection.removeEventListener("value", value);
+        selection.removeEventListener('activate', activate);
+        selection.removeEventListener('value', value);
       },
     };
     mc.filterGroups?.set(selection, entry);

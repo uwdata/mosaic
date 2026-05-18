@@ -1,32 +1,32 @@
-import { describe, it, expect } from "vitest";
-import { QueryManager } from "../src/QueryManager.js";
-import { QueryResult } from "../src/util/query-result.js";
-import type { QueryRequest } from "../src/types.js";
-import { ObserveDispatch } from "../src/util/ObserveDispatch.js";
+import { describe, it, expect } from 'vitest';
+import { QueryManager } from '../src/QueryManager.js';
+import { QueryResult } from '../src/util/query-result.js';
+import type { QueryRequest } from '../src/types.js';
+import { ObserveDispatch } from '../src/util/ObserveDispatch.js';
 import {
   EventType,
   type MosaicEventMap,
   MosaicErrorEvent,
   MosaicQueryStartEvent,
   MosaicQueryEndEvent,
-} from "../src/Events.js";
+} from '../src/Events.js';
 
-describe("QueryManager", () => {
-  it("should run a simple query", async () => {
+describe('QueryManager', () => {
+  it('should run a simple query', async () => {
     const queryManager = new QueryManager();
 
     // Mock the connector
     queryManager.connector({
       // @ts-expect-error assumes type value
       query: async ({ sql }) => {
-        expect(sql).toBe("SELECT 1");
+        expect(sql).toBe('SELECT 1');
         return [{ column: 1 }];
       },
     });
 
     const request: QueryRequest = {
-      type: "arrow",
-      query: "SELECT 1",
+      type: 'arrow',
+      query: 'SELECT 1',
     };
 
     const result = queryManager.request(request);
@@ -36,26 +36,26 @@ describe("QueryManager", () => {
     expect(data).toEqual([{ column: 1 }]);
   });
 
-  it("should not run a query when there is a pending exec", async () => {
+  it('should not run a query when there is a pending exec', async () => {
     const queryManager = new QueryManager();
 
     // Mock the connector
     queryManager.connector({
       // @ts-expect-error assumes type value
       query: ({ sql }) => {
-        expect(sql).toBe("CREATE TABLE test (id INT)");
+        expect(sql).toBe('CREATE TABLE test (id INT)');
         return new Promise(() => {});
       },
     });
 
     const request1: QueryRequest = {
-      type: "exec",
-      query: "CREATE TABLE test (id INT)",
+      type: 'exec',
+      query: 'CREATE TABLE test (id INT)',
     };
 
     const request2: QueryRequest = {
-      type: "arrow",
-      query: "SELECT * FROM test",
+      type: 'arrow',
+      query: 'SELECT * FROM test',
     };
 
     queryManager.request(request1);
@@ -64,7 +64,7 @@ describe("QueryManager", () => {
     expect(queryManager.pendingResults).toHaveLength(1);
   });
 
-  it("emits typed QueryStart and QueryEnd events with type and timestamp", async () => {
+  it('emits typed QueryStart and QueryEnd events with type and timestamp', async () => {
     const eventBus = new ObserveDispatch<MosaicEventMap>();
     const queryManager = new QueryManager();
     queryManager.attachEventBus(eventBus);
@@ -85,8 +85,8 @@ describe("QueryManager", () => {
     });
 
     const result = queryManager.request({
-      type: "arrow",
-      query: "SELECT 42",
+      type: 'arrow',
+      query: 'SELECT 42',
       cache: false,
     });
 
@@ -104,20 +104,20 @@ describe("QueryManager", () => {
     expect(start.type).toBe(EventType.QueryStart);
     expect(end.type).toBe(EventType.QueryEnd);
 
-    expect(typeof start.timestamp).toBe("number");
-    expect(typeof end.timestamp).toBe("number");
+    expect(typeof start.timestamp).toBe('number');
+    expect(typeof end.timestamp).toBe('number');
 
-    expect(start.query).toBe("SELECT 42");
-    expect(end.query).toBe("SELECT 42");
+    expect(start.query).toBe('SELECT 42');
+    expect(end.query).toBe('SELECT 42');
     expect(start.queryId).toBe(1);
     expect(end.queryId).toBe(start.queryId);
 
     expect(start.materialized).toBe(false);
     expect(end.materialized).toBe(false);
-    expect(end.status).toBe("success");
+    expect(end.status).toBe('success');
   });
 
-  it("emits QueryStart and QueryEnd for cached requests", async () => {
+  it('emits QueryStart and QueryEnd for cached requests', async () => {
     const eventBus = new ObserveDispatch<MosaicEventMap>();
     const queryManager = new QueryManager();
     queryManager.attachEventBus(eventBus);
@@ -144,14 +144,14 @@ describe("QueryManager", () => {
     queryManager.cache(true);
 
     await queryManager.request({
-      type: "arrow",
-      query: "SELECT 1",
+      type: 'arrow',
+      query: 'SELECT 1',
       cache: true,
     });
 
     await queryManager.request({
-      type: "arrow",
-      query: "SELECT 1",
+      type: 'arrow',
+      query: 'SELECT 1',
       cache: true,
     });
 
@@ -161,24 +161,24 @@ describe("QueryManager", () => {
 
     for (const event of starts) {
       expect(event.type).toBe(EventType.QueryStart);
-      expect(typeof event.timestamp).toBe("number");
-      expect(event.query).toBe("SELECT 1");
+      expect(typeof event.timestamp).toBe('number');
+      expect(event.query).toBe('SELECT 1');
       expect(event.materialized).toBe(true);
     }
 
     for (const event of ends) {
       expect(event.type).toBe(EventType.QueryEnd);
-      expect(typeof event.timestamp).toBe("number");
-      expect(event.query).toBe("SELECT 1");
+      expect(typeof event.timestamp).toBe('number');
+      expect(event.query).toBe('SELECT 1');
       expect(event.materialized).toBe(true);
-      expect(event.status).toBe("success");
+      expect(event.status).toBe('success');
     }
 
     expect(starts.map((event) => event.queryId)).toEqual([1, 2]);
     expect(ends.map((event) => event.queryId)).toEqual([1, 2]);
   });
 
-  it("emits QueryEnd with error status when a query fails", async () => {
+  it('emits QueryEnd with error status when a query fails', async () => {
     const eventBus = new ObserveDispatch<MosaicEventMap>();
     const queryManager = new QueryManager();
     queryManager.attachEventBus(eventBus);
@@ -197,7 +197,7 @@ describe("QueryManager", () => {
       ends.push(event);
     });
 
-    const error = new Error("boom");
+    const error = new Error('boom');
 
     queryManager.connector({
       query: async () => {
@@ -206,26 +206,26 @@ describe("QueryManager", () => {
     });
 
     await expect(queryManager.request({
-      type: "arrow",
-      query: "SELECT fail",
+      type: 'arrow',
+      query: 'SELECT fail',
       cache: false,
-    })).rejects.toThrow("boom");
+    })).rejects.toThrow('boom');
 
     expect(starts).toHaveLength(1);
     expect(errors).toHaveLength(1);
     expect(ends).toHaveLength(1);
 
-    expect(errors[0].message).toBe("boom");
+    expect(errors[0].message).toBe('boom');
     expect(errors[0].error).toBe(error);
     expect(errors[0].queryId).toBe(starts[0].queryId);
 
-    expect(ends[0].query).toBe("SELECT fail");
+    expect(ends[0].query).toBe('SELECT fail');
     expect(ends[0].materialized).toBe(false);
     expect(ends[0].queryId).toBe(starts[0].queryId);
-    expect(ends[0].status).toBe("error");
+    expect(ends[0].status).toBe('error');
   });
 
-  it("treats event bus attachment as one-time coordinator wiring", () => {
+  it('treats event bus attachment as one-time coordinator wiring', () => {
     const eventBus = new ObserveDispatch<MosaicEventMap>();
     const otherBus = new ObserveDispatch<MosaicEventMap>();
     const queryManager = new QueryManager();
@@ -233,7 +233,7 @@ describe("QueryManager", () => {
     queryManager.attachEventBus(eventBus);
     expect(() => queryManager.attachEventBus(eventBus)).not.toThrow();
     expect(() => queryManager.attachEventBus(otherBus)).toThrow(
-      "QueryManager event bus is already attached.",
+      'QueryManager event bus is already attached.',
     );
   });
 });
