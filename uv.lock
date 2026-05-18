@@ -2964,7 +2964,7 @@ wheels = [
 
 [[package]]
 name = "vgplot"
-source = { editable = "packages/vgplot-python" }
+source = { editable = "packages/vgplot/python" }
 dependencies = [
     { name = "narwhals" },
     { name = "pyyaml" },

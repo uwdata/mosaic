@@ -14,6 +14,6 @@
   }],
   "python.analysis.extraPaths": [
     ".",
-    "packages/vgplot-python"
+    "packages/vgplot/python"
   ]
 }
