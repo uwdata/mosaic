@@ -16,7 +16,7 @@ export { asof_join, cross_join, join, positional_join } from './functions/join.j
 export { list, listContains, listHasAll, listHasAny } from './functions/list.js';
 export { literal, verbatim } from './functions/literal.js';
 export { abs, ceil, exp, floor, greatest, isFinite, isInfinite, isNaN, least, ln, log, round, sign, sqrt, trunc } from './functions/numeric.js';
-export { and, or, not, isNull, isNotNull, bitNot, bitAnd, bitOr, bitLeft, bitRight, add, sub, mul, div, idiv, mod, pow, eq, neq, lt, gt, lte, gte, isDistinct, isNotDistinct, isBetween, isNotBetween, isIn } from './functions/operators.js';
+export { and, or, not, isNull, isNotNull, bitNot, bitAnd, bitOr, bitLeft, bitRight, add, sub, mul, div, idiv, mod, pow, eq, neq, lt, gt, lte, gte, isDistinct, isNotDistinct, isBetween, isNotBetween, isIn, isInDistinct } from './functions/operators.js';
 export { asc, desc } from './functions/order-by.js';
 export { geojson, x, y, centroid, centroidX, centroidY } from './functions/spatial.js';
 export { sql } from './functions/sql-template-tag.js';
@@ -48,7 +48,7 @@ export { lineDensity } from './transforms/line-density.js';
 export { m4 } from './transforms/m4.js';
 export { scaleTransform, type Scale, type ScaleDomain, type ScaleOptions, type ScaleTransform, type ScaleType } from './transforms/scales.js';
 
-export { asLiteral, asNode, asTableRef, asVerbatim, over } from './util/ast.js';
+export { asLiteral, asNode, asTableRef, asVerbatim, parseColumnRef, parseTableRef, over } from './util/ast.js';
 export { isParamLike } from './util/type-check.js';
 
 export { binSpec, binStep, type BinOptions } from './transforms/util/bin-step.js';

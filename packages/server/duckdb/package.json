@@ -1,6 +1,6 @@
 {
   "name": "@uwdata/mosaic-duckdb",
-  "version": "0.24.2",
+  "version": "0.26.0",
   "description": "A Promise-based DuckDB API and Node.js data server.",
   "keywords": [
     "duckdb",
@@ -39,12 +39,12 @@
     "prepublishOnly": "pnpm run test && pnpm run lint && tsc --build"
   },
   "dependencies": {
-    "@duckdb/node-api": "~1.5.1-r.2",
+    "@duckdb/node-api": "~1.5.2-r.1",
     "@uwdata/mosaic-sql": "workspace:^",
-    "ws": "^8.20.0"
+    "ws": "^8.20.1"
   },
   "devDependencies": {
-    "@types/node": "^25.6.0",
-    "@uwdata/flechette": "^2.4.0"
+    "@types/node": "^25.7.0",
+    "@uwdata/flechette": "^2.5.0"
   }
 }

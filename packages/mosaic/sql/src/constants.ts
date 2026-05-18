@@ -4,6 +4,7 @@ export const TABLE_REF = 'TABLE_REF';
 export const LITERAL = 'LITERAL';
 export const INTERVAL = 'INTERVAL';
 export const LIST = 'LIST';
+export const TUPLE = 'TUPLE';
 export const UNNEST = 'UNNEST';
 
 export const ORDER_BY = 'ORDER_BY';

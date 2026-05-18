@@ -23,6 +23,7 @@ export { SampleClauseNode } from './sample.js';
 export { ScalarSubqueryNode } from './subquery.js';
 export { SelectClauseNode } from './select.js';
 export { TableRefNode, isTableRef } from './table-ref.js';
+export { TupleNode } from './tuple.js';
 export { UnaryOpNode, UnaryPostfixOpNode } from './unary-op.js';
 export { UnnestNode } from './unnest.js';
 export { VerbatimNode } from './verbatim.js';

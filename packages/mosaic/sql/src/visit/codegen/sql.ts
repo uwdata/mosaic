@@ -31,6 +31,7 @@ import type {
   SelectClauseNode,
   ScalarSubqueryNode,
   TableRefNode,
+  TupleNode,
   UnaryOpNode,
   UnaryPostfixOpNode,
   UnnestNode,
@@ -42,7 +43,7 @@ import type {
   WindowFrameNode,
   WindowFrameExprNode,
   WithClauseNode
-} from '../../index.js';
+} from '../../ast/index.js';
 import {
   AGGREGATE,
   BETWEEN_OPERATOR,
@@ -74,6 +75,7 @@ import {
   SELECT_QUERY,
   SET_OPERATION,
   TABLE_REF,
+  TUPLE,
   UNARY_OPERATOR,
   UNARY_POSTFIX_OPERATOR,
   UNNEST,
@@ -149,6 +151,7 @@ export abstract class SQLCodeGenerator {
       case SELECT_QUERY: return this.visitSelectQuery;
       case SET_OPERATION: return this.visitSetOperation;
       case TABLE_REF: return this.visitTableRef;
+      case TUPLE: return this.visitTuple;
       case UNARY_OPERATOR: return this.visitUnary;
       case UNARY_POSTFIX_OPERATOR: return this.visitUnaryPostfix;
       case UNNEST: return this.visitUnnest;
@@ -206,6 +209,7 @@ export abstract class SQLCodeGenerator {
   abstract visitSelectQuery(node: SelectQuery): string;
   abstract visitSetOperation(node: SetOperation): string;
   abstract visitTableRef(node: TableRefNode): string;
+  abstract visitTuple(node: TupleNode): string;
   abstract visitUnary(node: UnaryOpNode): string;
   abstract visitUnaryPostfix(node: UnaryPostfixOpNode): string;
   abstract visitUnnest(node: UnnestNode): string;

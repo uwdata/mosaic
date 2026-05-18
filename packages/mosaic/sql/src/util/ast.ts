@@ -17,9 +17,7 @@ import { isArray, isParamLike, isString } from './type-check.js';
  * @param value The value to interpret as a SQL AST node.
  */
 export function asNode(value: unknown): ExprNode {
-  return isString(value)
-    ? parseColumnRef(value)
-    : asLiteral(value);
+  return isString(value) ? column(value) : asLiteral(value);
 }
 
 /**
@@ -48,10 +46,9 @@ export function asLiteral(value: unknown): ExprNode {
 }
 
 /**
- * Interpret a value as a table reference AST node. String values are parsed
- * assuming dot ('.') delimiters (as in `schema.table`). Array values are
- * interpreted as pre-parsed name paths (as in `['schema', 'table']`). Any
- * other values are left as-is.
+ * Interpret a value as a table reference AST node. String values are
+ * used as-is as a single table name. Array values are interpreted as name
+ * paths (as in `['schema', 'table']`). Any other values are left as-is.
  * @param value The value to interpret as a table reference AST node.
  */
 export function asTableRef(value?: string | string[] | TableRefNode): TableRefNode | undefined {
@@ -60,9 +57,8 @@ export function asTableRef(value?: string | string[] | TableRefNode): TableRefNo
 
 /**
  * Try to interpret a value as a table reference AST node. String values are
- * parsed assuming dot ('.') delimiters (as in `schema.table`). Array values
- * are interpreted as pre-parsed name paths (as in `['schema', 'table']`). Any
- * other values are left as-is.
+ * used as-is as a single table name. Array values are interpreted as name
+ * paths (as in `['schema', 'table']`). Any other values are left as-is.
  * @param value The value to interpret as a table reference.
  */
 export function maybeTableRef(value: string | string[] | SQLNode): SQLNode {
@@ -70,7 +66,7 @@ export function maybeTableRef(value: string | string[] | SQLNode): SQLNode {
 }
 
 function getTableRef<T>(value?: string | string[] | T): TableRefNode | T | undefined {
-  return isString(value) ? parseTableRef(value)
+  return isString(value) ? tableRef(value)
     : isArray(value) ? tableRef(value)!
     : value;
 }
