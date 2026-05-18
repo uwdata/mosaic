@@ -41,7 +41,12 @@ class Meta:
 
     def to_dict(self) -> Dict[str, Any]:
         return omit_none(
-            {"title": self.title, "description": self.description, "credit": self.credit, **self.extra}
+            {
+                "title": self.title,
+                "description": self.description,
+                "credit": self.credit,
+                **self.extra,
+            }
         )
 
 
