@@ -5,6 +5,7 @@ from typing import Any, Dict, List, Optional, Union
 
 from .util import camelize, omit_none
 from .params import _ParamBase
+from .data import DataDef
 
 
 class FromRef:
@@ -55,7 +56,11 @@ class Mark:
         return payload
 
 
-def encode_value(v: Any, param_names: Dict[str, str] | None = None) -> Any:
+def encode_value(v: Any, param_names: Dict[str, str] | None = None, data_names: Dict[int, str] | None = None) -> Any:
+    if isinstance(v, DataDef):
+        if data_names and id(v) in data_names:
+            return {"from": data_names[id(v)]}
+        return v
     if isinstance(v, _ParamBase):
         # Resolve to "$name" ref using the reverse lookup table
         if param_names and id(v) in param_names:
@@ -66,9 +71,9 @@ def encode_value(v: Any, param_names: Dict[str, str] | None = None) -> Any:
     if isinstance(v, Mark):
         return v.to_dict()
     if isinstance(v, list):
-        return [encode_value(x, param_names) for x in v]
+        return [encode_value(x, param_names, data_names) for x in v]
     if isinstance(v, dict):
-        return {k: encode_value(val, param_names) for k, val in v.items()}
+        return {k: encode_value(val, param_names, data_names) for k, val in v.items()}
     return v
 
 
@@ -224,20 +229,20 @@ def y_tick_size(value: Any) -> Directive:
     return Directive("y_tick_size", value)
 
 
-def _encode_component(item: Any, param_names: Dict[str, str] | None) -> Any:
+def _encode_component(item: Any, param_names: Dict[str, str] | None, data_names: Dict[int, str] | None = None) -> Any:
     if isinstance(item, dict) and "plot" in item:
         # re-encode an already-built plot dict so param refs resolve
         marks = [
             (
-                {k: encode_value(v, param_names) for k, v in m.items()}
+                {k: encode_value(v, param_names, data_names) for k, v in m.items()}
                 if isinstance(m, dict)
                 else m
             )
             for m in item["plot"]
         ]
-        rest = {k: encode_value(v, param_names) for k, v in item.items() if k != "plot"}
+        rest = {k: encode_value(v, param_names, data_names) for k, v in item.items() if k != "plot"}
         return {"plot": marks, **rest}
-    return encode_value(item, param_names)
+    return encode_value(item, param_names, data_names)
 
 
 # Layout helpers

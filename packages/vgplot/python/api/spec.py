@@ -6,6 +6,7 @@ from typing import Any, Dict
 
 from .util import omit_none
 from .params import _ParamBase
+from .data import DataDef
 from .plot import _encode_component
 
 
@@ -22,6 +23,23 @@ def _collect_params(node: Any) -> list[_ParamBase]:
         found = []
         for item in node:
             found.extend(_collect_params(item))
+        return found
+    return []
+
+
+def _collect_datadefs(node: Any) -> list[DataDef]:
+    """Recursively collect all DataDef instances in a view tree."""
+    if isinstance(node, DataDef):
+        return [node]
+    if isinstance(node, dict):
+        found = []
+        for v in node.values():
+            found.extend(_collect_datadefs(v))
+        return found
+    if isinstance(node, list):
+        found = []
+        for item in node:
+            found.extend(_collect_datadefs(item))
         return found
     return []
 
@@ -65,6 +83,7 @@ class Spec:
         *,
         meta: Meta | Dict[str, Any] | None = None,
         data: Dict[str, Any] | None = None,
+        data_names: Dict[int, str] | None = None,
         params: Dict[str, Any] | None = None,
         plotDefaults: Dict[str, Any] | None = None,
         config: Dict[str, Any] | None = None,
@@ -73,6 +92,7 @@ class Spec:
     ) -> None:
         self.meta = meta.to_dict() if hasattr(meta, "to_dict") else meta
         self.data = data
+        self.data_names = data_names or {}
         self.params = params
         self.plotDefaults = plotDefaults
         self.config = config
@@ -111,18 +131,30 @@ class Spec:
             else:
                 serialized_params[name] = p
 
+        # Build data_names lookup and auto-register any unnamed DataDefs in the view
+        data_names = dict(self.data_names)
+        extra_data: Dict[str, Any] = {}
+        counter = 0
+        for obj in _collect_datadefs(self.view):
+            if id(obj) not in data_names:
+                auto_name = f"_data{counter}"
+                data_names[id(obj)] = auto_name
+                extra_data[auto_name] = obj.to_dict()
+                counter += 1
+        merged_data = {**(self.data or {}), **extra_data} or None
+
         base: Dict[str, Any] = {}
         if self.meta:
             base["meta"] = self.meta
         if self.config:
             base["config"] = self.config
-        if self.data:
-            base["data"] = self.data
+        if merged_data:
+            base["data"] = merged_data
         if serialized_params:
             base["params"] = serialized_params
         if self.plotDefaults:
             base["plotDefaults"] = self.plotDefaults
-        base.update(_encode_component(self.view, param_names))
+        base.update(_encode_component(self.view, param_names, data_names))
         base.update(omit_none(self.extra))
         return base
 
@@ -167,11 +199,35 @@ def spec(
             view = arg
         elif isinstance(arg, dict):
             data = arg
+    caller = inspect.currentframe().f_back
+    caller_locals = caller.f_locals
+
+    # Auto-detect meta: prefer a local named "meta", fall back to any Meta instance
+    if meta is None:
+        candidate = caller_locals.get('meta')
+        if isinstance(candidate, Meta):
+            meta = candidate
+        else:
+            for val in caller_locals.values():
+                if isinstance(val, Meta):
+                    meta = val
+                    break
+
+    # Auto-detect view: prefer a local named "view", fall back to any view-keyed dict
+    if view is None:
+        candidate = caller_locals.get('view')
+        if isinstance(candidate, dict) and _VIEW_KEYS.intersection(candidate):
+            view = candidate
+        else:
+            for val in caller_locals.values():
+                if isinstance(val, dict) and _VIEW_KEYS.intersection(val):
+                    view = val
+                    break
+
     if params is None:
-        caller = inspect.currentframe().f_back
         params = {
             name: val
-            for name, val in caller.f_locals.items()
+            for name, val in caller_locals.items()
             if isinstance(val, _ParamBase)
         } or None
     _RESERVED = {"data", "meta", "view"}
@@ -182,9 +238,21 @@ def spec(
             f"Param name(s) {names} conflict with vg.spec() variable names. "
             f"Rename them (e.g. 'data' → 'sample', 'view' → 'layout')."
         )
+    # Auto-collect DataDef variables from caller's locals; merge with any
+    # explicit data dict (explicit takes precedence on name collision).
+    auto_defs = {
+        name: val
+        for name, val in caller_locals.items()
+        if isinstance(val, DataDef)
+    }
+    data_names: Dict[int, str] = {id(val): name for name, val in auto_defs.items()}
+    if auto_defs:
+        auto_data = {name: val.to_dict() for name, val in auto_defs.items()}
+        data = {**auto_data, **(data or {})}
     return Spec(
         meta=meta,
         data=data,
+        data_names=data_names,
         params=params,
         plotDefaults=plotDefaults,
         config=config,

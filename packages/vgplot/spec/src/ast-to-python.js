@@ -27,17 +27,9 @@ export function astToPython(ast) {
 
   // data
   if (Object.keys(data).length) {
-    const entries = Object.entries(data).map(
-      ([name, def]) => `${ctx.ident(name)}=${emitDataDef(def)}`
-    );
-    ctx.emit('data = vg.data(');
-    ctx.indent();
-    entries.forEach((entry, i) => {
-      const suffix = i < entries.length - 1 ? ',' : '';
-      ctx.emit(`${entry}${suffix}`);
-    });
-    ctx.dedent();
-    ctx.emit(')');
+    for (const [name, def] of Object.entries(data)) {
+      ctx.emit(`${ctx.ident(name)} = ${emitDataDef(def)}`);
+    }
     ctx.blank();
   }
 
@@ -54,14 +46,10 @@ export function astToPython(ast) {
   ctx.emit(`view = ${emitComponent(view, ctx)}`);
   ctx.blank();
 
-  const positional = [];
   const kwargs = [];
-  if (meta) positional.push('meta');
-  if (Object.keys(data).length) positional.push('data');
-  positional.push('view');
   if (plotDefaults) kwargs.push(`plotDefaults=${literal(plotDefaults)}`);
   if (config) kwargs.push(`config=${literal(config)}`);
-  ctx.emit(`spec = vg.spec(${[...positional, ...kwargs].join(', ')})`);
+  ctx.emit(`spec = vg.spec(${kwargs.join(', ')})`);
 
   return ctx.toString();
 }
@@ -217,17 +205,24 @@ function emitMark(mark, ctx) {
   const { mark: name, data, ...enc } = mark;
   const args = [];
   if (data !== undefined) {
-    let dataRef = data;
-    const dataOpts = [];
-    if (data && typeof data === 'object' && data.from) {
-      const { from: fromVal, ...rest } = data;
-      dataRef = { from: fromVal };
-      for (const [k, v] of Object.entries(rest)) {
-        dataOpts.push(`${camelCaseToSnake(k)}=${literal(v, 0, ctx)}`);
+    if (data && typeof data === 'object' && data.from &&
+        typeof data.from === 'string' && !data.from.startsWith('$') &&
+        Object.keys(data).length === 1) {
+      // Simple dataset name → positional variable reference
+      args.push(ctx.ident(data.from));
+    } else {
+      let dataRef = data;
+      const dataOpts = [];
+      if (data && typeof data === 'object' && data.from) {
+        const { from: fromVal, ...rest } = data;
+        dataRef = { from: fromVal };
+        for (const [k, v] of Object.entries(rest)) {
+          dataOpts.push(`${camelCaseToSnake(k)}=${literal(v, 0, ctx)}`);
+        }
       }
+      args.push(`data=${emitDataRef(dataRef, ctx)}`);
+      args.push(...dataOpts);
     }
-    args.push(`data=${emitDataRef(dataRef, ctx)}`);
-    args.push(...dataOpts);
   }
   for (const [k, v] of Object.entries(enc)) {
     if (v === undefined) continue;
