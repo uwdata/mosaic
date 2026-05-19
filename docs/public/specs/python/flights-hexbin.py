@@ -1,9 +1,10 @@
 import vgplot as vg
 
-meta = vg.meta(title="Flights Hexbin", description="Hexagonal bins show the density of over 200,000 flights by departure time and arrival delay. Select regions in the marginal histograms to filter the density display.\n")
-data = vg.data(
-    flights=vg.parquet("data/flights-200k.parquet")
+meta = vg.meta(
+    title="Flights Hexbin",
+    description="Hexagonal bins show the density of over 200,000 flights by departure time and arrival delay. Select regions in the marginal histograms to filter the density display.\n",
 )
+data = vg.data(flights=vg.parquet("data/flights-200k.parquet"))
 
 scale = vg.param("log")
 query = vg.selection.intersect()
@@ -12,11 +13,17 @@ view = vg.vconcat(
     vg.hconcat(
         vg.menu(label="Color Scale", bind=scale, options=["log", "linear", "sqrt"]),
         vg.hspace(10),
-        vg.color_legend(plot="hexbins")
+        vg.color_legend(plot="hexbins"),
     ),
     vg.hconcat(
         vg.plot(
-            vg.rect_y(data="flights", x=vg.bin("time"), y=vg.count(), fill="steelblue", inset=0.5),
+            vg.rect_y(
+                data="flights",
+                x=vg.bin("time"),
+                y=vg.count(),
+                fill="steelblue",
+                inset=0.5,
+            ),
             vg.interval_x(bind=query),
             vg.margins(left=5, right=5, top=30, bottom=0),
             vg.x_domain("Fixed"),
@@ -24,13 +31,20 @@ view = vg.vconcat(
             vg.y_axis(None),
             vg.x_label_anchor("center"),
             vg.width(605),
-            vg.height(70)
+            vg.height(70),
         ),
-        vg.hspace(80)
+        vg.hspace(80),
     ),
     vg.hconcat(
         vg.plot(
-            vg.hexbin(data="flights", filter_by=query, x="time", y="delay", fill=vg.count(), bin_width=10),
+            vg.hexbin(
+                data="flights",
+                filter_by=query,
+                x="time",
+                y="delay",
+                fill=vg.count(),
+                bin_width=10,
+            ),
             vg.hexgrid(bin_width=10),
             vg.name("hexbins"),
             vg.color_scheme("ylgnbu"),
@@ -40,10 +54,16 @@ view = vg.vconcat(
             vg.y_axis(None),
             vg.xy_domain("Fixed"),
             vg.width(600),
-            vg.height(455)
+            vg.height(455),
         ),
         vg.plot(
-            vg.rect_x(data="flights", x=vg.count(), y=vg.bin("delay"), fill="steelblue", inset=0.5),
+            vg.rect_x(
+                data="flights",
+                x=vg.count(),
+                y=vg.bin("delay"),
+                fill="steelblue",
+                inset=0.5,
+            ),
             vg.interval_y(bind=query),
             vg.margins(left=0, right=50, top=4, bottom=5),
             vg.y_domain([-60, 180]),
@@ -51,9 +71,9 @@ view = vg.vconcat(
             vg.y_axis("right"),
             vg.y_label_anchor("center"),
             vg.width(80),
-            vg.height(455)
-        )
-    )
+            vg.height(455),
+        ),
+    ),
 )
 
 spec = vg.spec(meta, data, view)

@@ -1,9 +1,10 @@
 import vgplot as vg
 
-meta = vg.meta(title="Sortable Table", description="A sortable, \"infinite scroll\" `table` view over a backing database table. Click column headers to sort, or command-click to reset the order. Data is queried as needed as the table is sorted or scrolled.\n")
-data = vg.data(
-    flights=vg.parquet("data/flights-200k.parquet")
+meta = vg.meta(
+    title="Sortable Table",
+    description='A sortable, "infinite scroll" `table` view over a backing database table. Click column headers to sort, or command-click to reset the order. Data is queried as needed as the table is sorted or scrolled.\n',
 )
+data = vg.data(flights=vg.parquet("data/flights-200k.parquet"))
 
 view = vg.table_input(source="flights", height=300)
 

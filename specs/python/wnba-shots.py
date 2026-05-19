@@ -1,9 +1,16 @@
 import vgplot as vg
 
-meta = vg.meta(title="WNBA Shot Chart", description="Every field goal attempt in the 2023 WNBA regular season. Shots are grouped into hexagonal bins, with color indicating shot potency (average score) and size indicating the total count of shots per location. The menu filters isolate shots by team or athlete.\n", credit="Data from [Wehoop](https://wehoop.sportsdataverse.org/). Design inspired by [Kirk Goldsberry](https://en.wikipedia.org/wiki/Kirk_Goldsberry) and a [UW CSE 512](https://courses.cs.washington.edu/courses/cse512/24sp/) project by Mackenzie Pitts and Madeline Brown.\n")
+meta = vg.meta(
+    title="WNBA Shot Chart",
+    description="Every field goal attempt in the 2023 WNBA regular season. Shots are grouped into hexagonal bins, with color indicating shot potency (average score) and size indicating the total count of shots per location. The menu filters isolate shots by team or athlete.\n",
+    credit="Data from [Wehoop](https://wehoop.sportsdataverse.org/). Design inspired by [Kirk Goldsberry](https://en.wikipedia.org/wiki/Kirk_Goldsberry) and a [UW CSE 512](https://courses.cs.washington.edu/courses/cse512/24sp/) project by Mackenzie Pitts and Madeline Brown.\n",
+)
 data = vg.data(
-    shots=vg.parquet("data/wnba-shots-2023.parquet", where="NOT starts_with(type, 'Free Throw') AND season_type = 2"),
-    court=vg.parquet("data/wnba-half-court.parquet")
+    shots=vg.parquet(
+        "data/wnba-shots-2023.parquet",
+        where="NOT starts_with(type, 'Free Throw') AND season_type = 2",
+    ),
+    court=vg.parquet("data/wnba-half-court.parquet"),
 )
 
 filter = vg.selection.crossfilter()
@@ -12,19 +19,31 @@ binWidth = vg.param(18)
 view = vg.vconcat(
     vg.hconcat(
         vg.menu(source="shots", column="team_name", bind=filter, label="Team"),
-        vg.menu(source="shots", column="athlete_name", filter_by=filter, bind=filter, label="Athlete")
+        vg.menu(
+            source="shots",
+            column="athlete_name",
+            filter_by=filter,
+            bind=filter,
+            label="Athlete",
+        ),
     ),
     vg.vspace(5),
     vg.plot(
         vg.frame(stroke_opacity=0.5),
         vg.hexgrid(bin_width=binWidth, stroke_opacity=0.05),
-        vg.hexbin(data="shots", filter_by=filter, bin_width=binWidth, x="x_position", y="y_position", fill=vg.avg("score_value"), r=vg.count(), tip={
-            "format": {
-                "x": False,
-                "y": False
-            }
-        }),
-        vg.line(data="court", stroke_linecap="butt", stroke_opacity=0.5, x="x", y="y", z="z"),
+        vg.hexbin(
+            data="shots",
+            filter_by=filter,
+            bin_width=binWidth,
+            x="x_position",
+            y="y_position",
+            fill=vg.avg("score_value"),
+            r=vg.count(),
+            tip={"format": {"x": False, "y": False}},
+        ),
+        vg.line(
+            data="court", stroke_linecap="butt", stroke_opacity=0.5, x="x", y="y", z="z"
+        ),
         vg.name("shot-chart"),
         vg.x_axis(None),
         vg.y_axis(None),
@@ -39,9 +58,9 @@ view = vg.vconcat(
         vg.r_range([3, 9]),
         vg.r_label("Shot Count"),
         vg.aspect_ratio(1),
-        vg.width(510)
+        vg.width(510),
     ),
-    vg.color_legend(plot="shot-chart")
+    vg.color_legend(plot="shot-chart"),
 )
 
 spec = vg.spec(meta, data, view)
