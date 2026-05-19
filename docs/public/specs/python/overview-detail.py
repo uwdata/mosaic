@@ -4,13 +4,13 @@ meta = vg.meta(
     title="Overview + Detail",
     description='Select the top "overview" series to zoom the "focus" view below. An `intervalX` interactor updates a selection that filters the focus view. The `line` and `area` marks can apply [M4](https://observablehq.com/@uwdata/m4-scalable-time-series-visualization) optimization to reduce the number of data points returned: rather than draw all points, a dramatically smaller subset can still faithfully represent these area charts.\n',
 )
-data = vg.data(walk=vg.parquet("data/random-walk.parquet"))
+walk = vg.parquet("data/random-walk.parquet")
 
 brush = vg.selection.intersect()
 
 view = vg.vconcat(
     vg.plot(
-        vg.area_y(data="walk", x="t", y="v", fill="steelblue"),
+        vg.area_y(walk, x="t", y="v", fill="steelblue"),
         vg.interval_x(bind=brush),
         vg.width(680),
         vg.height(200),
@@ -23,4 +23,4 @@ view = vg.vconcat(
     ),
 )
 
-spec = vg.spec(meta, data, view)
+spec = vg.spec()

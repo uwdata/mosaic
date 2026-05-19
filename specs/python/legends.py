@@ -141,4 +141,4 @@ view = vg.vconcat(
     ),
 )
 
-spec = vg.spec(meta, view, plotDefaults={"margin": 0, "width": 0, "height": 20})
+spec = vg.spec(plotDefaults={"margin": 0, "width": 0, "height": 20})

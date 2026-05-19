@@ -5,7 +5,7 @@ meta = vg.meta(
     description="This line chart shows the unemployment rate of various U.S. metro divisions from 2000 through 2013. On hover, the closest data point to the pointer and its associated series is highlighted. Highlighting of series is performed using `nearestX` and `highlight` interactors. Point and text annotations instead use the mark `select` filter option.\n",
     credit="Adapted from a [D3 example](https://observablehq.com/@d3/multi-line-chart/2). Data from the [Bureau of Labor Statistics](https://www.bls.gov/).\n",
 )
-data = vg.data(bls_unemp=vg.parquet("data/bls-metro-unemployment.parquet"))
+bls_unemp = vg.parquet("data/bls-metro-unemployment.parquet")
 
 curr = vg.selection.intersect()
 
@@ -24,7 +24,7 @@ view = vg.plot(
     vg.nearest_x(channels=["z"], bind=curr),
     vg.highlight(by=curr),
     vg.dot(
-        data="bls_unemp",
+        bls_unemp,
         x="date",
         y="unemployment",
         z="division",
@@ -33,7 +33,7 @@ view = vg.plot(
         select="nearestX",
     ),
     vg.text(
-        data="bls_unemp",
+        bls_unemp,
         x="date",
         y="unemployment",
         text="division",
@@ -50,4 +50,4 @@ view = vg.plot(
     vg.width(680),
 )
 
-spec = vg.spec(meta, data, view)
+spec = vg.spec()

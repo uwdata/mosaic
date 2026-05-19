@@ -4,7 +4,7 @@ meta = vg.meta(
     title="Density Groups",
     description="Density plots of penguin bill depths, grouped by species. The normalize parameter supports different forms of comparison, controlling if an individual density estimate is scaled by total point mass or normalized by the sum or max of the point mass. The stack and offset parameters control stacking of density areas.\n",
 )
-data = vg.data(penguins=vg.parquet("data/penguins.parquet"))
+penguins = vg.parquet("data/penguins.parquet")
 
 bandwidth = vg.param(20)
 normalize = vg.param("none")
@@ -23,7 +23,7 @@ view = vg.vconcat(
     ),
     vg.plot(
         vg.density_y(
-            data="penguins",
+            penguins,
             x="bill_depth",
             fill="species",
             fill_opacity=0.4,
@@ -37,4 +37,4 @@ view = vg.vconcat(
     ),
 )
 
-spec = vg.spec(meta, data, view)
+spec = vg.spec()

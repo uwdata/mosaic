@@ -5,10 +5,8 @@ meta = vg.meta(
     description="A rotatable globe of earthquake activity. To show land masses, this example loads and parses TopoJSON data in the database. Requires the DuckDB `spatial` extension.\n",
     credit="Adapted from an [Observable Plot example](https://observablehq.com/@observablehq/plot-earthquake-globe).",
 )
-data = vg.data(
-    earthquakes=vg.parquet("data/earthquakes.parquet"),
-    land=vg.spatial("data/countries-110m.json", layer="land"),
-)
+earthquakes = vg.parquet("data/earthquakes.parquet")
+land = vg.spatial("data/countries-110m.json", layer="land")
 
 longitude = vg.param(-180)
 latitude = vg.param(-30)
@@ -21,14 +19,11 @@ view = vg.vconcat(
     ),
     vg.plot(
         vg.geo(
-            data="land",
-            geometry=vg.geojson("geom"),
-            fill="currentColor",
-            fill_opacity=0.2,
+            land, geometry=vg.geojson("geom"), fill="currentColor", fill_opacity=0.2
         ),
         vg.sphere(),
         vg.dot(
-            data="earthquakes",
+            earthquakes,
             x="longitude",
             y="latitude",
             r=vg.sql("POW(10, magnitude)"),
@@ -43,4 +38,4 @@ view = vg.vconcat(
     ),
 )
 
-spec = vg.spec(meta, data, view)
+spec = vg.spec()

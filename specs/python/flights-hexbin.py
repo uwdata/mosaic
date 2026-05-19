@@ -4,7 +4,7 @@ meta = vg.meta(
     title="Flights Hexbin",
     description="Hexagonal bins show the density of over 200,000 flights by departure time and arrival delay. Select regions in the marginal histograms to filter the density display.\n",
 )
-data = vg.data(flights=vg.parquet("data/flights-200k.parquet"))
+flights = vg.parquet("data/flights-200k.parquet")
 
 scale = vg.param("log")
 query = vg.selection.intersect()
@@ -18,11 +18,7 @@ view = vg.vconcat(
     vg.hconcat(
         vg.plot(
             vg.rect_y(
-                data="flights",
-                x=vg.bin("time"),
-                y=vg.count(),
-                fill="steelblue",
-                inset=0.5,
+                flights, x=vg.bin("time"), y=vg.count(), fill="steelblue", inset=0.5
             ),
             vg.interval_x(bind=query),
             vg.margins(left=5, right=5, top=30, bottom=0),
@@ -58,11 +54,7 @@ view = vg.vconcat(
         ),
         vg.plot(
             vg.rect_x(
-                data="flights",
-                x=vg.count(),
-                y=vg.bin("delay"),
-                fill="steelblue",
-                inset=0.5,
+                flights, x=vg.count(), y=vg.bin("delay"), fill="steelblue", inset=0.5
             ),
             vg.interval_y(bind=query),
             vg.margins(left=0, right=50, top=4, bottom=5),
@@ -76,4 +68,4 @@ view = vg.vconcat(
     ),
 )
 
-spec = vg.spec(meta, data, view)
+spec = vg.spec()

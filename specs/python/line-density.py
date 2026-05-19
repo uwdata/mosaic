@@ -4,12 +4,10 @@ meta = vg.meta(
     title="Line Density",
     description="The `denseLine` mark shows the densities of line series, here for a collection of stock prices. The top plot normalizes by arc length to remove the vertical artifacts visible in the unnormalized plot below. Select a region in the lower plot to zoom the upper plot. The bandwidth slider smooths the data, while the pixel size menu adjusts the raster resolution.\n",
 )
-data = vg.data(
-    stocks_after_2006=vg.parquet(
-        "data/stocks_after_2006.parquet",
-        select=["Symbol", "Close", "Date"],
-        where="Close < 100",
-    )
+stocks_after_2006 = vg.parquet(
+    "data/stocks_after_2006.parquet",
+    select=["Symbol", "Close", "Date"],
+    where="Close < 100",
 )
 
 brush = vg.selection.intersect()
@@ -45,7 +43,7 @@ view = vg.vconcat(
     ),
     vg.plot(
         vg.dense_line(
-            data="stocks_after_2006",
+            stocks_after_2006,
             x="Date",
             y="Close",
             z="Symbol",
@@ -65,4 +63,4 @@ view = vg.vconcat(
     ),
 )
 
-spec = vg.spec(meta, data, view)
+spec = vg.spec()

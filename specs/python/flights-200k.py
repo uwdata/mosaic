@@ -4,7 +4,7 @@ meta = vg.meta(
     title="Cross-Filter Flights (200k)",
     description="Histograms showing arrival delay, departure time, and distance flown for over 200,000 flights. Select a histogram region to cross-filter the charts. Each plot uses an `intervalX` interactor to populate a shared Selection with `crossfilter` resolution.\n",
 )
-data = vg.data(flights=vg.parquet("data/flights-200k.parquet"))
+flights = vg.parquet("data/flights-200k.parquet")
 
 brush = vg.selection.crossfilter()
 
@@ -62,4 +62,4 @@ view = vg.vconcat(
     ),
 )
 
-spec = vg.spec(meta, data, view)
+spec = vg.spec()

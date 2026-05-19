@@ -4,18 +4,16 @@ meta = vg.meta(
     title="NYC Taxi Rides",
     description="Pickup and dropoff points for 1M NYC taxi rides on Jan 1-3, 2010.\nThis example projects lon/lat coordinates in the database upon load.\nSelect a region in one plot to filter the other.\nWhat spatial patterns can you find?\nRequires the DuckDB `spatial` extension.\n\n_You may need to wait a few seconds for the dataset to load._\n",
 )
-data = vg.data(
-    rides=vg.parquet(
-        "https://pub-1da360b43ceb401c809f68ca37c7f8a4.r2.dev/data/nyc-rides-2010.parquet",
-        select=[
-            "pickup_datetime::TIMESTAMP AS datetime",
-            "ST_Transform(ST_Point(pickup_latitude, pickup_longitude), 'EPSG:4326', 'ESRI:102718') AS pick",
-            "ST_Transform(ST_Point(dropoff_latitude, dropoff_longitude), 'EPSG:4326', 'ESRI:102718') AS drop",
-        ],
-    ),
-    trips=vg.table(
-        "SELECT\n  (HOUR(datetime) + MINUTE(datetime)/60) AS time,\n  ST_X(pick) AS px, ST_Y(pick) AS py,\n  ST_X(drop) AS dx, ST_Y(drop) AS dy\nFROM rides"
-    ),
+rides = vg.parquet(
+    "https://pub-1da360b43ceb401c809f68ca37c7f8a4.r2.dev/data/nyc-rides-2010.parquet",
+    select=[
+        "pickup_datetime::TIMESTAMP AS datetime",
+        "ST_Transform(ST_Point(pickup_latitude, pickup_longitude), 'EPSG:4326', 'ESRI:102718') AS pick",
+        "ST_Transform(ST_Point(dropoff_latitude, dropoff_longitude), 'EPSG:4326', 'ESRI:102718') AS drop",
+    ],
+)
+trips = vg.table(
+    "SELECT\n  (HOUR(datetime) + MINUTE(datetime)/60) AS time,\n  ST_X(pick) AS px, ST_Y(pick) AS py,\n  ST_X(drop) AS dx, ST_Y(drop) AS dy\nFROM rides"
 )
 
 filter = vg.selection.crossfilter()
@@ -70,9 +68,7 @@ view = vg.vconcat(
     ),
     vg.vspace(10),
     vg.plot(
-        vg.rect_y(
-            data="trips", x=vg.bin("time"), y=vg.count(), fill="steelblue", inset=0.5
-        ),
+        vg.rect_y(trips, x=vg.bin("time"), y=vg.count(), fill="steelblue", inset=0.5),
         vg.interval_x(bind=filter),
         vg.y_tick_format("s"),
         vg.x_label("Pickup Hour →"),
@@ -81,4 +77,4 @@ view = vg.vconcat(
     ),
 )
 
-spec = vg.spec(meta, data, view, config={"extensions": "spatial"})
+spec = vg.spec(config={"extensions": "spatial"})

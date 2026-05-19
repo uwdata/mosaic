@@ -4,13 +4,13 @@ meta = vg.meta(
     title="Triangle Wave",
     description="A test specification to compare M4 optimized and unoptimized line charts.\n",
 )
-data = vg.data(wave=vg.csv("data/triangle-wave-day.csv"))
+wave = vg.csv("data/triangle-wave-day.csv")
 
 brush = vg.selection.intersect()
 
 view = vg.vconcat(
     vg.plot(
-        vg.line_y(data="wave", x="time_stamp", y="power", z=None, stroke="time_stamp"),
+        vg.line_y(wave, x="time_stamp", y="power", z=None, stroke="time_stamp"),
         vg.interval_x(bind=brush),
         vg.x_label(None),
         vg.width(680),
@@ -51,4 +51,4 @@ view = vg.vconcat(
     ),
 )
 
-spec = vg.spec(meta, data, view)
+spec = vg.spec()

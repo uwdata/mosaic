@@ -4,7 +4,7 @@ meta = vg.meta(
     title="Olympic Athletes",
     description="An interactive dashboard of athlete statistics. The menus and searchbox filter the display and are automatically populated by backing data columns.\n",
 )
-data = vg.data(athletes=vg.parquet("data/athletes.parquet"))
+athletes = vg.parquet("data/athletes.parquet")
 
 category = vg.selection.intersect()
 query = vg.selection.intersect(include=[category])
@@ -75,4 +75,4 @@ view = vg.hconcat(
     )
 )
 
-spec = vg.spec(meta, data, view)
+spec = vg.spec()

@@ -4,7 +4,7 @@ meta = vg.meta(
     title="Contour Plot",
     description='Here `heatmap` and `contour` marks visualize the density of data points in a scatter plot of penguin measurments. Setting the `fill` color to `"species"` subdivides the data into three sets of densities.\n',
 )
-data = vg.data(penguins=vg.parquet("data/penguins.parquet"))
+penguins = vg.parquet("data/penguins.parquet")
 
 bandwidth = vg.param(40)
 thresholds = vg.param(10)
@@ -16,23 +16,21 @@ view = vg.vconcat(
     ),
     vg.plot(
         vg.heatmap(
-            data="penguins",
+            penguins,
             x="bill_length",
             y="bill_depth",
             fill="species",
             bandwidth=bandwidth,
         ),
         vg.contour(
-            data="penguins",
+            penguins,
             x="bill_length",
             y="bill_depth",
             stroke="species",
             bandwidth=bandwidth,
             thresholds=thresholds,
         ),
-        vg.dot(
-            data="penguins", x="bill_length", y="bill_depth", fill="currentColor", r=1
-        ),
+        vg.dot(penguins, x="bill_length", y="bill_depth", fill="currentColor", r=1),
         vg.x_axis("bottom"),
         vg.x_label_anchor("center"),
         vg.y_axis("right"),
@@ -43,4 +41,4 @@ view = vg.vconcat(
     ),
 )
 
-spec = vg.spec(meta, data, view)
+spec = vg.spec()

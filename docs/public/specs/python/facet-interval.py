@@ -5,16 +5,16 @@ meta = vg.meta(
     description="A faceted plot with 2D interval selections.",
     credit="Adapted from https://observablehq.com/@observablehq/plot-non-faceted-marks",
 )
-data = vg.data(penguins=vg.parquet("data/penguins.parquet"))
+penguins = vg.parquet("data/penguins.parquet")
 
 sel = vg.selection.intersect()
 
 view = vg.hconcat(
     vg.plot(
         vg.frame(),
-        vg.dot(data="penguins", x="bill_length", y="bill_depth", fill="#aaa", r=1),
+        vg.dot(penguins, x="bill_length", y="bill_depth", fill="#aaa", r=1),
         vg.dot(
-            data="penguins",
+            penguins,
             x="bill_length",
             y="bill_depth",
             fill="species",
@@ -35,4 +35,4 @@ view = vg.hconcat(
     )
 )
 
-spec = vg.spec(meta, data, view)
+spec = vg.spec()

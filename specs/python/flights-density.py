@@ -4,7 +4,7 @@ meta = vg.meta(
     title="Flights Density",
     description="Density `heatmap` and `contour` lines for 200,000+ flights by departure hour and arrival delay. The sliders adjust the smoothing (bandwidth) and number of contour thresholds.\n",
 )
-data = vg.data(flights=vg.parquet("data/flights-200k.parquet"))
+flights = vg.parquet("data/flights-200k.parquet")
 
 bandwidth = vg.param(7)
 thresholds = vg.param(10)
@@ -15,11 +15,9 @@ view = vg.vconcat(
         vg.slider(label="Thresholds", bind=thresholds, min=2, max=20),
     ),
     vg.plot(
-        vg.heatmap(
-            data="flights", x="time", y="delay", fill="density", bandwidth=bandwidth
-        ),
+        vg.heatmap(flights, x="time", y="delay", fill="density", bandwidth=bandwidth),
         vg.contour(
-            data="flights",
+            flights,
             x="time",
             y="delay",
             stroke="white",
@@ -42,4 +40,4 @@ view = vg.vconcat(
     ),
 )
 
-spec = vg.spec(meta, data, view)
+spec = vg.spec()

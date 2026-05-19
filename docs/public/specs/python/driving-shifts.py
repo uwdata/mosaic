@@ -5,12 +5,12 @@ meta = vg.meta(
     description="A connected scatter plot of miles driven vs. gas prices.",
     credit="Adapted from an [Observable Plot example](https://observablehq.com/@observablehq/plot-connected-scatterplot), which in turn adapts Hannah Fairfield's [New York Times article](http://www.nytimes.com/imagepages/2010/05/02/business/02metrics.html).\n",
 )
-data = vg.data(driving=vg.parquet("data/driving.parquet"))
+driving = vg.parquet("data/driving.parquet")
 
 view = vg.plot(
-    vg.line(data="driving", x="miles", y="gas", curve="catmull-rom", marker=True),
+    vg.line(driving, x="miles", y="gas", curve="catmull-rom", marker=True),
     vg.text(
-        data="driving",
+        driving,
         x="miles",
         y="gas",
         text=vg.sql("year::VARCHAR"),
@@ -24,4 +24,4 @@ view = vg.plot(
     vg.y_label("Cost of gasoline ($ per gallon)"),
 )
 
-spec = vg.spec(meta, data, view)
+spec = vg.spec()

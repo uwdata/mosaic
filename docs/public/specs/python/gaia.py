@@ -4,10 +4,8 @@ meta = vg.meta(
     title="Gaia Star Catalog",
     description="A 5M row sample of the 1.8B element Gaia star catalog.\nA `raster` sky map reveals our Milky Way galaxy. Select high parallax stars in the histogram to reveal a\n[Hertzsprung-Russel diagram](https://en.wikipedia.org/wiki/Hertzsprung%E2%80%93Russell_diagram)\nin the plot of stellar color vs. magnitude on the right.\n\n_You may need to wait a few seconds for the dataset to load._\n",
 )
-data = vg.data(
-    gaia=vg.table(
-        "-- compute u and v with natural earth projection\nWITH prep AS (\n  SELECT\n    radians((-l + 540) % 360 - 180) AS lambda,\n    radians(b) AS phi,\n    asin(sqrt(3)/2 * sin(phi)) AS t,\n    t^2 AS t2,\n    t2^3 AS t6,\n    *\n  FROM 'https://pub-1da360b43ceb401c809f68ca37c7f8a4.r2.dev/data/gaia-5m.parquet'\n  WHERE parallax BETWEEN -5 AND 20 AND phot_g_mean_mag IS NOT NULL AND bp_rp IS NOT NULL\n)\nSELECT\n  (1.340264 * \"lambda\" * cos(t)) / (sqrt(3)/2 * (1.340264 + (-0.081106 * 3 * t2) + (t6 * (0.000893 * 7 + 0.003796 * 9 * t2)))) AS u,\n  t * (1.340264 + (-0.081106 * t2) + (t6 * (0.000893 + 0.003796 * t2))) AS v,\n  * EXCLUDE('t', 't2', 't6')\nFROM prep"
-    )
+gaia = vg.table(
+    "-- compute u and v with natural earth projection\nWITH prep AS (\n  SELECT\n    radians((-l + 540) % 360 - 180) AS lambda,\n    radians(b) AS phi,\n    asin(sqrt(3)/2 * sin(phi)) AS t,\n    t^2 AS t2,\n    t2^3 AS t6,\n    *\n  FROM 'https://pub-1da360b43ceb401c809f68ca37c7f8a4.r2.dev/data/gaia-5m.parquet'\n  WHERE parallax BETWEEN -5 AND 20 AND phot_g_mean_mag IS NOT NULL AND bp_rp IS NOT NULL\n)\nSELECT\n  (1.340264 * \"lambda\" * cos(t)) / (sqrt(3)/2 * (1.340264 + (-0.081106 * 3 * t2) + (t6 * (0.000893 * 7 + 0.003796 * 9 * t2)))) AS u,\n  t * (1.340264 + (-0.081106 * t2) + (t6 * (0.000893 + 0.003796 * t2))) AS v,\n  * EXCLUDE('t', 't2', 't6')\nFROM prep"
 )
 
 brush = vg.selection.crossfilter()
@@ -98,4 +96,4 @@ view = vg.hconcat(
     ),
 )
 
-spec = vg.spec(meta, data, view)
+spec = vg.spec()

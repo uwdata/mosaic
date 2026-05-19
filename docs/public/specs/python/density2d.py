@@ -4,7 +4,7 @@ meta = vg.meta(
     title="Density 2D",
     description="A 2D `density` plot in which circle size indicates the point density. The data is divided by fill color into three sets of densities. To change the amount of smoothing, use the slider to set the kernel bandwidth.\n",
 )
-data = vg.data(penguins=vg.parquet("data/penguins.parquet"))
+penguins = vg.parquet("data/penguins.parquet")
 
 bandwidth = vg.param(20)
 bins = vg.param(20)
@@ -16,7 +16,7 @@ view = vg.vconcat(
     ),
     vg.plot(
         vg.density(
-            data="penguins",
+            penguins,
             x="bill_length",
             y="bill_depth",
             r="density",
@@ -26,9 +26,7 @@ view = vg.vconcat(
             height=bins,
             bandwidth=bandwidth,
         ),
-        vg.dot(
-            data="penguins", x="bill_length", y="bill_depth", fill="currentColor", r=1
-        ),
+        vg.dot(penguins, x="bill_length", y="bill_depth", fill="currentColor", r=1),
         vg.r_range([0, 16]),
         vg.x_axis("bottom"),
         vg.x_label_anchor("center"),
@@ -40,4 +38,4 @@ view = vg.vconcat(
     ),
 )
 
-spec = vg.spec(meta, data, view)
+spec = vg.spec()

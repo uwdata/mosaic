@@ -4,7 +4,7 @@ meta = vg.meta(
     title="Symbol Plots",
     description="Two scatter plots with `dot` marks: one with stroked symbols, the other filled. Drop-down menus control which data table columns are plotted.\n",
 )
-data = vg.data(penguins=vg.parquet("data/penguins.parquet"))
+penguins = vg.parquet("data/penguins.parquet")
 
 x = vg.param("body_mass")
 y = vg.param("flipper_length")
@@ -26,7 +26,7 @@ view = vg.vconcat(
     vg.hconcat(
         vg.plot(
             vg.dot(
-                data="penguins",
+                penguins,
                 x=vg.column(x),
                 y=vg.column(y),
                 stroke="species",
@@ -43,7 +43,7 @@ view = vg.vconcat(
     vg.hconcat(
         vg.plot(
             vg.dot(
-                data="penguins",
+                penguins,
                 x=vg.column(x),
                 y=vg.column(y),
                 fill="species",
@@ -58,4 +58,4 @@ view = vg.vconcat(
     ),
 )
 
-spec = vg.spec(meta, data, view)
+spec = vg.spec()

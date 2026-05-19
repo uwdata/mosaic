@@ -4,7 +4,7 @@ meta = vg.meta(
     title="Sorted Bars",
     description="Sort and limit an aggregate bar chart of gold medals by country.\n",
 )
-data = vg.data(athletes=vg.parquet("data/athletes.parquet"))
+athletes = vg.parquet("data/athletes.parquet")
 
 query = vg.selection.intersect()
 
@@ -29,4 +29,4 @@ view = vg.vconcat(
     ),
 )
 
-spec = vg.spec(meta, data, view)
+spec = vg.spec()

@@ -1,6 +1,6 @@
 import vgplot as vg
 
-data = vg.data(flights=vg.parquet("data/flights-200k.parquet"))
+flights = vg.parquet("data/flights-200k.parquet")
 
 brush = vg.selection.crossfilter()
 
@@ -41,4 +41,4 @@ view = vg.vconcat(
     ),
 )
 
-spec = vg.spec(data, view)
+spec = vg.spec()

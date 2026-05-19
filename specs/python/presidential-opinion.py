@@ -5,7 +5,7 @@ meta = vg.meta(
     description="Opinion poll data on historical U.S. presidents. Image marks are used to show presidential pictures. The dropdown menu toggles the opinion metric shown.\n",
     credit="Adapted from an [Observable Plot example](https://observablehq.com/@observablehq/plot-image-medals).",
 )
-data = vg.data(presidents=vg.parquet("data/us-president-favorability.parquet"))
+presidents = vg.parquet("data/us-president-favorability.parquet")
 
 sign = vg.param(1)
 
@@ -13,7 +13,7 @@ view = vg.vconcat(
     vg.plot(
         vg.rule_y(data=[0]),
         vg.image(
-            data="presidents",
+            presidents,
             x="First Inauguration Date",
             y=vg.sql(
                 '"Very Favorable %" + "Somewhat Favorable %" + $sign * ("Very Unfavorable %" + "Somewhat Unfavorable %")'
@@ -40,4 +40,4 @@ view = vg.vconcat(
     ),
 )
 
-spec = vg.spec(meta, data, view)
+spec = vg.spec()

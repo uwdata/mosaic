@@ -5,18 +5,16 @@ meta = vg.meta(
     description="A choropleth map of unemployment rates for U.S. counties. Requires the DuckDB `spatial` extension.\n",
     credit="Adapted from an [Observable Plot example](https://observablehq.com/@observablehq/plot-us-choropleth).",
 )
-data = vg.data(
-    counties=vg.spatial("data/us-counties-10m.json", layer="counties"),
-    rates=vg.parquet("data/us-county-unemployment.parquet"),
-    combined=vg.table(
-        "SELECT a.geom AS geom, b.rate AS rate FROM counties AS a, rates AS b WHERE a.id = b.id"
-    ),
+counties = vg.spatial("data/us-counties-10m.json", layer="counties")
+rates = vg.parquet("data/us-county-unemployment.parquet")
+combined = vg.table(
+    "SELECT a.geom AS geom, b.rate AS rate FROM counties AS a, rates AS b WHERE a.id = b.id"
 )
 
 view = vg.vconcat(
     vg.color_legend(plot="county-map", label="Unemployment (%)"),
     vg.plot(
-        vg.geo(data="combined", fill="rate", title=vg.sql("concat(rate, '%')")),
+        vg.geo(combined, fill="rate", title=vg.sql("concat(rate, '%')")),
         vg.name("county-map"),
         vg.margin(0),
         vg.color_scale("quantile"),
@@ -26,4 +24,4 @@ view = vg.vconcat(
     ),
 )
 
-spec = vg.spec(meta, data, view)
+spec = vg.spec()

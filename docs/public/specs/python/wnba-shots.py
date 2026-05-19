@@ -5,13 +5,11 @@ meta = vg.meta(
     description="Every field goal attempt in the 2023 WNBA regular season. Shots are grouped into hexagonal bins, with color indicating shot potency (average score) and size indicating the total count of shots per location. The menu filters isolate shots by team or athlete.\n",
     credit="Data from [Wehoop](https://wehoop.sportsdataverse.org/). Design inspired by [Kirk Goldsberry](https://en.wikipedia.org/wiki/Kirk_Goldsberry) and a [UW CSE 512](https://courses.cs.washington.edu/courses/cse512/24sp/) project by Mackenzie Pitts and Madeline Brown.\n",
 )
-data = vg.data(
-    shots=vg.parquet(
-        "data/wnba-shots-2023.parquet",
-        where="NOT starts_with(type, 'Free Throw') AND season_type = 2",
-    ),
-    court=vg.parquet("data/wnba-half-court.parquet"),
+shots = vg.parquet(
+    "data/wnba-shots-2023.parquet",
+    where="NOT starts_with(type, 'Free Throw') AND season_type = 2",
 )
+court = vg.parquet("data/wnba-half-court.parquet")
 
 filter = vg.selection.crossfilter()
 binWidth = vg.param(18)
@@ -41,9 +39,7 @@ view = vg.vconcat(
             r=vg.count(),
             tip={"format": {"x": False, "y": False}},
         ),
-        vg.line(
-            data="court", stroke_linecap="butt", stroke_opacity=0.5, x="x", y="y", z="z"
-        ),
+        vg.line(court, stroke_linecap="butt", stroke_opacity=0.5, x="x", y="y", z="z"),
         vg.name("shot-chart"),
         vg.x_axis(None),
         vg.y_axis(None),
@@ -63,4 +59,4 @@ view = vg.vconcat(
     vg.color_legend(plot="shot-chart"),
 )
 
-spec = vg.spec(meta, data, view)
+spec = vg.spec()

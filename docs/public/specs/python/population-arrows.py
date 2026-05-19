@@ -5,7 +5,7 @@ meta = vg.meta(
     description="An `arrow` connects the positions in 1980 and 2015 of each city on this population × inequality chart. Color encodes variation.\n",
     credit="Adapted from an [Observable Plot example](https://observablehq.com/@observablehq/plot-arrow-variation-chart).",
 )
-data = vg.data(metros=vg.parquet("data/metros.parquet"))
+metros = vg.parquet("data/metros.parquet")
 
 bend = vg.param(True)
 
@@ -13,7 +13,7 @@ view = vg.vconcat(
     vg.color_legend(plot="arrows", label="Change in inequality from 1980 to 2015"),
     vg.plot(
         vg.arrow(
-            data="metros",
+            metros,
             x1="POP_1980",
             y1="R90_10_1980",
             x2="POP_2015",
@@ -22,7 +22,7 @@ view = vg.vconcat(
             stroke=vg.sql("R90_10_2015 - R90_10_1980"),
         ),
         vg.text(
-            data="metros",
+            metros,
             x="POP_2015",
             y="R90_10_2015",
             filter="highlight",
@@ -43,4 +43,4 @@ view = vg.vconcat(
     vg.menu(label="Bend Arrows?", options=[True, False], bind=bend),
 )
 
-spec = vg.spec(meta, data, view)
+spec = vg.spec()

@@ -4,7 +4,7 @@ meta = vg.meta(
     title="Pan & Zoom",
     description="Linked panning and zooming across plots: drag to pan, scroll to zoom. `panZoom` interactors update a set of bound selections, one per unique axis.\n",
 )
-data = vg.data(penguins=vg.parquet("data/penguins.parquet"))
+penguins = vg.parquet("data/penguins.parquet")
 
 xs = vg.selection.intersect()
 ys = vg.selection.intersect()
@@ -16,7 +16,7 @@ view = vg.hconcat(
         vg.plot(
             vg.frame(),
             vg.dot(
-                data="penguins",
+                penguins,
                 x="bill_length",
                 y="bill_depth",
                 fill="species",
@@ -31,7 +31,7 @@ view = vg.hconcat(
         vg.plot(
             vg.frame(),
             vg.dot(
-                data="penguins",
+                penguins,
                 x="bill_length",
                 y="flipper_length",
                 fill="species",
@@ -48,12 +48,7 @@ view = vg.hconcat(
         vg.plot(
             vg.frame(),
             vg.dot(
-                data="penguins",
-                x="body_mass",
-                y="bill_depth",
-                fill="species",
-                r=2,
-                clip=True,
+                penguins, x="body_mass", y="bill_depth", fill="species", r=2, clip=True
             ),
             vg.pan_zoom(x=ws, y=ys),
             vg.width(320),
@@ -63,7 +58,7 @@ view = vg.hconcat(
         vg.plot(
             vg.frame(),
             vg.dot(
-                data="penguins",
+                penguins,
                 x="body_mass",
                 y="flipper_length",
                 fill="species",
@@ -77,4 +72,4 @@ view = vg.hconcat(
     ),
 )
 
-spec = vg.spec(meta, data, view)
+spec = vg.spec()

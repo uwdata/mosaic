@@ -5,7 +5,7 @@ meta = vg.meta(
     description="An interactive view of Seattle's weather, including maximum temperature, amount of precipitation, and type of weather. By dragging on the scatter plot, you can see the proportion of days in that range that have sun, fog, drizzle, rain, or snow.\n",
     credit="Based on a [Vega-Lite/Altair example](https://vega.github.io/vega-lite/examples/interactive_seattle_weather.html) by Jake Vanderplas.",
 )
-data = vg.data(weather=vg.parquet("data/seattle-weather.parquet"))
+weather = vg.parquet("data/seattle-weather.parquet")
 
 click = vg.selection.single()
 domain = vg.param(["sun", "fog", "drizzle", "rain", "snow"])
@@ -38,9 +38,7 @@ view = vg.vconcat(
         )
     ),
     vg.plot(
-        vg.bar_x(
-            data="weather", x=vg.count(), y="weather", fill="#ccc", fill_opacity=0.2
-        ),
+        vg.bar_x(weather, x=vg.count(), y="weather", fill="#ccc", fill_opacity=0.2),
         vg.bar_x(
             data="weather", filter_by=range, x=vg.count(), y="weather", fill="weather"
         ),
@@ -55,4 +53,4 @@ view = vg.vconcat(
     ),
 )
 
-spec = vg.spec(meta, data, view)
+spec = vg.spec()

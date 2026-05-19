@@ -4,7 +4,7 @@ meta = vg.meta(
     title="Scatter Plot Matrix (SPLOM)",
     description="A scatter plot matrix enables inspection of pairwise bivariate distributions. Do points cluster or separate in some dimensions but not others? Select a region to highlight corresponding points across all plots.\n",
 )
-data = vg.data(penguins=vg.parquet("data/penguins.parquet"))
+penguins = vg.parquet("data/penguins.parquet")
 
 brush = vg.selection.single()
 
@@ -12,9 +12,7 @@ view = vg.vconcat(
     vg.hconcat(
         vg.plot(
             vg.frame(stroke="#ccc"),
-            vg.dot(
-                data="penguins", x="bill_length", y="body_mass", fill="species", r=2
-            ),
+            vg.dot(penguins, x="bill_length", y="body_mass", fill="species", r=2),
             vg.interval_xy(bind=brush),
             vg.highlight(by=brush, opacity=0.1),
             vg.y_axis("left"),
@@ -23,21 +21,19 @@ view = vg.vconcat(
         ),
         vg.plot(
             vg.frame(stroke="#ccc"),
-            vg.dot(data="penguins", x="bill_depth", y="body_mass", fill="species", r=2),
+            vg.dot(penguins, x="bill_depth", y="body_mass", fill="species", r=2),
             vg.interval_xy(bind=brush),
             vg.highlight(by=brush, opacity=0.1),
         ),
         vg.plot(
             vg.frame(stroke="#ccc"),
-            vg.dot(
-                data="penguins", x="flipper_length", y="body_mass", fill="species", r=2
-            ),
+            vg.dot(penguins, x="flipper_length", y="body_mass", fill="species", r=2),
             vg.interval_xy(bind=brush),
             vg.highlight(by=brush, opacity=0.1),
         ),
         vg.plot(
             vg.frame(stroke="#ccc"),
-            vg.dot(data="penguins", x="body_mass", y="body_mass", fill="species", r=2),
+            vg.dot(penguins, x="body_mass", y="body_mass", fill="species", r=2),
             vg.interval_xy(bind=brush),
             vg.highlight(by=brush, opacity=0.1),
         ),
@@ -45,13 +41,7 @@ view = vg.vconcat(
     vg.hconcat(
         vg.plot(
             vg.frame(stroke="#ccc"),
-            vg.dot(
-                data="penguins",
-                x="bill_length",
-                y="flipper_length",
-                fill="species",
-                r=2,
-            ),
+            vg.dot(penguins, x="bill_length", y="flipper_length", fill="species", r=2),
             vg.interval_xy(bind=brush),
             vg.highlight(by=brush, opacity=0.1),
             vg.y_axis("left"),
@@ -60,29 +50,21 @@ view = vg.vconcat(
         ),
         vg.plot(
             vg.frame(stroke="#ccc"),
-            vg.dot(
-                data="penguins", x="bill_depth", y="flipper_length", fill="species", r=2
-            ),
+            vg.dot(penguins, x="bill_depth", y="flipper_length", fill="species", r=2),
             vg.interval_xy(bind=brush),
             vg.highlight(by=brush, opacity=0.1),
         ),
         vg.plot(
             vg.frame(stroke="#ccc"),
             vg.dot(
-                data="penguins",
-                x="flipper_length",
-                y="flipper_length",
-                fill="species",
-                r=2,
+                penguins, x="flipper_length", y="flipper_length", fill="species", r=2
             ),
             vg.interval_xy(bind=brush),
             vg.highlight(by=brush, opacity=0.1),
         ),
         vg.plot(
             vg.frame(stroke="#ccc"),
-            vg.dot(
-                data="penguins", x="body_mass", y="flipper_length", fill="species", r=2
-            ),
+            vg.dot(penguins, x="body_mass", y="flipper_length", fill="species", r=2),
             vg.interval_xy(bind=brush),
             vg.highlight(by=brush, opacity=0.1),
         ),
@@ -90,9 +72,7 @@ view = vg.vconcat(
     vg.hconcat(
         vg.plot(
             vg.frame(stroke="#ccc"),
-            vg.dot(
-                data="penguins", x="bill_length", y="bill_depth", fill="species", r=2
-            ),
+            vg.dot(penguins, x="bill_length", y="bill_depth", fill="species", r=2),
             vg.interval_xy(bind=brush),
             vg.highlight(by=brush, opacity=0.1),
             vg.y_axis("left"),
@@ -101,23 +81,19 @@ view = vg.vconcat(
         ),
         vg.plot(
             vg.frame(stroke="#ccc"),
-            vg.dot(
-                data="penguins", x="bill_depth", y="bill_depth", fill="species", r=2
-            ),
+            vg.dot(penguins, x="bill_depth", y="bill_depth", fill="species", r=2),
             vg.interval_xy(bind=brush),
             vg.highlight(by=brush, opacity=0.1),
         ),
         vg.plot(
             vg.frame(stroke="#ccc"),
-            vg.dot(
-                data="penguins", x="flipper_length", y="bill_depth", fill="species", r=2
-            ),
+            vg.dot(penguins, x="flipper_length", y="bill_depth", fill="species", r=2),
             vg.interval_xy(bind=brush),
             vg.highlight(by=brush, opacity=0.1),
         ),
         vg.plot(
             vg.frame(stroke="#ccc"),
-            vg.dot(data="penguins", x="body_mass", y="bill_depth", fill="species", r=2),
+            vg.dot(penguins, x="body_mass", y="bill_depth", fill="species", r=2),
             vg.interval_xy(bind=brush),
             vg.highlight(by=brush, opacity=0.1),
         ),
@@ -125,9 +101,7 @@ view = vg.vconcat(
     vg.hconcat(
         vg.plot(
             vg.frame(stroke="#ccc"),
-            vg.dot(
-                data="penguins", x="bill_length", y="bill_length", fill="species", r=2
-            ),
+            vg.dot(penguins, x="bill_length", y="bill_length", fill="species", r=2),
             vg.interval_xy(bind=brush),
             vg.highlight(by=brush, opacity=0.1),
             vg.y_axis("left"),
@@ -139,9 +113,7 @@ view = vg.vconcat(
         ),
         vg.plot(
             vg.frame(stroke="#ccc"),
-            vg.dot(
-                data="penguins", x="bill_depth", y="bill_length", fill="species", r=2
-            ),
+            vg.dot(penguins, x="bill_depth", y="bill_length", fill="species", r=2),
             vg.interval_xy(bind=brush),
             vg.highlight(by=brush, opacity=0.1),
             vg.x_axis("bottom"),
@@ -150,13 +122,7 @@ view = vg.vconcat(
         ),
         vg.plot(
             vg.frame(stroke="#ccc"),
-            vg.dot(
-                data="penguins",
-                x="flipper_length",
-                y="bill_length",
-                fill="species",
-                r=2,
-            ),
+            vg.dot(penguins, x="flipper_length", y="bill_length", fill="species", r=2),
             vg.interval_xy(bind=brush),
             vg.highlight(by=brush, opacity=0.1),
             vg.x_axis("bottom"),
@@ -165,9 +131,7 @@ view = vg.vconcat(
         ),
         vg.plot(
             vg.frame(stroke="#ccc"),
-            vg.dot(
-                data="penguins", x="body_mass", y="bill_length", fill="species", r=2
-            ),
+            vg.dot(penguins, x="body_mass", y="bill_length", fill="species", r=2),
             vg.interval_xy(bind=brush),
             vg.highlight(by=brush, opacity=0.1),
             vg.x_axis("bottom"),
@@ -178,9 +142,6 @@ view = vg.vconcat(
 )
 
 spec = vg.spec(
-    meta,
-    data,
-    view,
     plotDefaults={
         "xTicks": 3,
         "yTicks": 4,
@@ -199,5 +160,5 @@ spec = vg.spec(
         "yTickFormat": "s",
         "width": 150,
         "height": 150,
-    },
+    }
 )

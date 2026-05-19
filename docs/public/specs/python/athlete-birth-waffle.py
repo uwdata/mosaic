@@ -5,7 +5,7 @@ meta = vg.meta(
     description="Waffle chart counting Olympic athletes based on which half-decade they were born. The inputs enable adjustment of waffle mark design options.\n",
     credit="Adapted from an [Observable Plot example](https://observablehq.com/@observablehq/plot-waffle-unit).",
 )
-data = vg.data(athletes=vg.parquet("data/athletes.parquet"))
+athletes = vg.parquet("data/athletes.parquet")
 
 unit = vg.param(10)
 round = vg.param(False)
@@ -22,7 +22,7 @@ view = vg.vconcat(
     vg.vspace(10),
     vg.plot(
         vg.waffle_y(
-            data="athletes",
+            athletes,
             unit=unit,
             round=round,
             gap=gap,
@@ -36,4 +36,4 @@ view = vg.vconcat(
     ),
 )
 
-spec = vg.spec(meta, data, view)
+spec = vg.spec()

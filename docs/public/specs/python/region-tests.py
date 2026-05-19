@@ -4,12 +4,10 @@ meta = vg.meta(
     title="Region Interactor Tests",
     descriptions="Varied plots using region interactors to highlight selected values.\n",
 )
-data = vg.data(
-    bls_unemp=vg.parquet("data/bls-metro-unemployment.parquet"),
-    feed=vg.spatial("data/usgs-feed.geojson"),
-    world=vg.spatial("data/countries-110m.json", layer="land"),
-    counties=vg.spatial("data/us-counties-10m.json", layer="counties"),
-)
+bls_unemp = vg.parquet("data/bls-metro-unemployment.parquet")
+feed = vg.spatial("data/usgs-feed.geojson")
+world = vg.spatial("data/countries-110m.json", layer="land")
+counties = vg.spatial("data/us-counties-10m.json", layer="counties")
 
 series = vg.selection.single()
 quakes = vg.selection.single()
@@ -41,10 +39,10 @@ view = vg.vconcat(
     ),
     vg.vspace(10),
     vg.plot(
-        vg.geo(data="world", fill="currentColor", fill_opacity=0.2),
+        vg.geo(world, fill="currentColor", fill_opacity=0.2),
         vg.sphere(stroke_width=0.5),
         vg.geo(
-            data="feed",
+            feed,
             channels=vg.channels(id="id"),
             r=vg.sql("POW(10, mag)"),
             stroke="red",
@@ -62,7 +60,7 @@ view = vg.vconcat(
     vg.vspace(10),
     vg.plot(
         vg.geo(
-            data="counties",
+            counties,
             channels=vg.channels(id="id"),
             stroke="currentColor",
             stroke_width=0.25,
@@ -74,4 +72,4 @@ view = vg.vconcat(
     ),
 )
 
-spec = vg.spec(meta, data, view)
+spec = vg.spec()

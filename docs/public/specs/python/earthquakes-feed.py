@@ -5,16 +5,14 @@ meta = vg.meta(
     description="Earthquake data from the USGS live feed. To show land masses, this example loads and parses TopoJSON data in the database. Requires the DuckDB `spatial` extension.\n",
     credit="Adapted from an [Observable Plot example](https://observablehq.com/@observablehq/plot-live-earthquake-map).",
 )
-data = vg.data(
-    feed=vg.spatial("data/usgs-feed.geojson"),
-    world=vg.spatial("data/countries-110m.json", layer="land"),
-)
+feed = vg.spatial("data/usgs-feed.geojson")
+world = vg.spatial("data/countries-110m.json", layer="land")
 
 view = vg.plot(
-    vg.geo(data="world", fill="currentColor", fill_opacity=0.2),
+    vg.geo(world, fill="currentColor", fill_opacity=0.2),
     vg.sphere(stroke_width=0.5),
     vg.geo(
-        data="feed",
+        feed,
         r=vg.sql("POW(10, mag)"),
         stroke="red",
         fill="red",
@@ -27,4 +25,4 @@ view = vg.plot(
     vg.projection_type("equirectangular"),
 )
 
-spec = vg.spec(meta, data, view)
+spec = vg.spec()
