@@ -21,8 +21,11 @@ IMPORTS = {
 }
 
 
+GENERATED_HEADER = "# Auto-generated — do not edit manually.\n# To regenerate: uv run generate-schema\n"
+
+
 def generate_import_string(imports: Dict[str, List[str]]) -> str:
-    import_string = ""
+    import_string = GENERATED_HEADER
     for source, cur_imports in imports.items():
         if cur_imports:
             import_string += f"from {source} import {', '.join(cur_imports)}\n"

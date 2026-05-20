@@ -1,3 +1,5 @@
+# Auto-generated — do not edit manually.
+# To regenerate: uv run generate-schema
 from typing import List, Dict, Any, Union
 from schema.SchemaBase import SchemaBase
 
