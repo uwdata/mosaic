@@ -1,4 +1,13 @@
 #!/usr/bin/env node
+// Prepares all Mosaic example specifications from YAML source files in specs/yaml/.
+// WARNING: overwrites existing test case data and docs!
+//
+// Output:
+//   - Parsed AST JSON, ESM, TypeScript, and Python written to /specs
+//   - YAML, non-parsed JSON, ESM, and Python copied to /docs/public/specs
+//   - Example Markdown pages written to /docs/examples
+//
+// Run: node bin/prepare-examples.js  (or: npm run docs:examples)
 import { basename, extname, join, resolve } from 'node:path';
 import {
   copyFile,
@@ -11,13 +20,6 @@ import { parseSpec } from '../packages/vgplot/spec/src/parse-spec.js';
 import { astToESM } from '../packages/vgplot/spec/src/ast-to-esm.js';
 import { astToPython } from '../packages/vgplot/spec/src/ast-to-python.js';
 import { parse } from 'yaml';
-
-// This script prepares all Mosaic example specifications
-// ...AND WILL OVERWRITE EXISTING TEST CASE DATA AND DOCS!
-
-// - Parsed AST JSON and ESM code written to /specs
-// - YAML, non-parsed JSON, and ESM code written to /docs/public/specs
-// - Example Markdown pages written to /docs/examples
 
 const specDir = join('specs', 'yaml');
 const esmTestDir = join('specs', 'esm');

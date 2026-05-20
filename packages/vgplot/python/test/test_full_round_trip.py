@@ -1,3 +1,9 @@
+# Tests that every generated Python spec (specs/python/*.py) round-trips
+# correctly: running the file produces JSON identical to the reference fixture
+# in specs/json/. Also checks that Python, JSON, and ESM example sets stay
+# in sync (same filenames).
+#
+# Run: pytest packages/vgplot/python/test/test_full_round_trip.py
 import json
 import os
 import subprocess

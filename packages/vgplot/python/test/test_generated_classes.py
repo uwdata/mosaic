@@ -1,3 +1,8 @@
+# Tests the typed Python classes generated from the Mosaic JSON schema
+# (schema/schema_types.py). Verifies that each class serialises correctly
+# via _todict and that required/optional fields behave as expected.
+#
+# Run: pytest packages/vgplot/python/test/test_generated_classes.py
 import pytest
 from schema.utils import _todict
 from schema.schema_types import (
