@@ -13,7 +13,7 @@ dependencies = [
 homepage = "https://github.com/uwdata/mosaic"
 
 [project.scripts]
-generate-spec-classes = "spec_classes.generate_spec_classes:main"
+generate-schema = "schema.generate_schema:main"
 
 [build-system]
 requires = ["hatchling"]
@@ -38,7 +38,7 @@ path = "package.json"
 pattern = "\"version\": \"(?P<version>.+?)\""
 
 [tool.hatch.build.targets.wheel]
-packages = ["api", "spec_classes"]
+packages = ["api", "schema"]
 
 # https://mypy.readthedocs.io/en/stable/config_file.html
 [tool.mypy]

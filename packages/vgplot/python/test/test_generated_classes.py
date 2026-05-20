@@ -1,6 +1,6 @@
 import pytest
-from spec_classes.utils import _todict
-from spec_classes.generated_classes import (
+from schema.utils import _todict
+from schema.schema_types import (
     AggregateExpression,
     AggregateTransform,
     Argmax,

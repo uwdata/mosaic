@@ -1,5 +1,5 @@
 from typing import List, Dict, Any, Union
-from spec_classes.SchemaBase import SchemaBase
+from schema.SchemaBase import SchemaBase
 
 
 class AggregateExpression(SchemaBase):

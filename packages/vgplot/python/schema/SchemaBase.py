@@ -1,4 +1,4 @@
-from spec_classes.utils import _todict, revert_validation
+from schema.utils import _todict, revert_validation
 
 
 class SchemaBase:

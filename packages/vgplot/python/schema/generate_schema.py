@@ -3,7 +3,7 @@ from typing import Any, Dict, List
 from pathlib import Path
 from importlib.metadata import version
 import graphlib
-from spec_classes.utils import get_valid_identifier, get_dependencies
+from schema.utils import get_valid_identifier, get_dependencies
 
 
 SCHEMA_VERSION = "v" + version("vgplot")
@@ -15,9 +15,9 @@ KNOWN_PRIMITIVES = {
 }
 IMPORTS = {
     "typing": ["List", "Dict", "Any", "Union"],
-    "spec_classes.SchemaBase": ["SchemaBase"],
-    "spec_classes.utils": ["revert_validation"],
-    "spec_classes.generated_classes": [],
+    "schema.SchemaBase": ["SchemaBase"],
+    "schema.utils": ["revert_validation"],
+    "schema.schema_types": [],
 }
 
 
@@ -197,7 +197,7 @@ def load_schema(schema_path: Path) -> dict:
         return json.load(f)
 
 
-def generate_spec_classes(schema_file: Path, output_file: Path) -> str:
+def generate_schema(schema_file: Path, output_file: Path) -> str:
     """Generate spec classes for the given schema file."""
     rootschema = load_schema(schema_file)
 
@@ -238,8 +238,8 @@ def main():
         / "schema"
         / f"{SCHEMA_VERSION}.json"
     )
-    output_file = current_file_path.parent / "spec_classes" / "generated_classes.py"
-    generate_spec_classes(schema_path, output_file)
+    output_file = current_file_path.parent / "schema" / "schema_types.py"
+    generate_schema(schema_path, output_file)
 
 
 if __name__ == "__main__":
