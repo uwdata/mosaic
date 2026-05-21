@@ -239,6 +239,46 @@ describe('PivotQuery', () => {
     );
   });
 
+  it('renders LIMIT and OFFSET clauses added to pivot queries', () => {
+    const pivot = Query
+      .pivot('sales')
+      .on('year')
+      .using(sum('amount'))
+      .groupby('region')
+      .orderby('region')
+      .limit(10)
+      .offset(20);
+
+    expect(pivot.toString()).toBe(
+      'PIVOT "sales" ON "year" USING sum("amount") GROUP BY "region" ORDER BY "region" LIMIT 10 OFFSET 20'
+    );
+  });
+
+  it('renders expression-valued LIMIT and OFFSET clauses added to pivot queries', () => {
+    const pivot = Query
+      .pivot('sales')
+      .on('year')
+      .using(sum('amount'))
+      .limit(add(5, 5))
+      .offset(add(10, 10));
+
+    expect(pivot.toString()).toBe(
+      'PIVOT "sales" ON "year" USING sum("amount") LIMIT (5 + 5) OFFSET (10 + 10)'
+    );
+  });
+
+  it('renders percentage LIMIT clauses added to pivot queries', () => {
+    const pivot = Query
+      .pivot('sales')
+      .on('year')
+      .using(sum('amount'))
+      .limitPercent(10);
+
+    expect(pivot.toString()).toBe(
+      'PIVOT "sales" ON "year" USING sum("amount") LIMIT 10%'
+    );
+  });
+
   it('rejects empty IN calls', () => {
     const query = Query.pivot('sales').on('year');
 
@@ -283,7 +323,9 @@ describe('PivotQuery', () => {
     const query = Query
       .pivot('sales')
       .with({ sales: Query.select('*').from('raw_sales') })
-      .orderby('year');
+      .orderby('year')
+      .limit(10)
+      .offset(20);
     const clone = query.clone();
 
     expect(clone.toString()).toBe(query.toString());

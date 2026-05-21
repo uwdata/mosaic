@@ -225,7 +225,10 @@ export class DuckDBCodeGenerator extends SQLCodeGenerator {
   }
 
   visitPivotQuery(node: PivotQuery): string {
-    const { source, _with, _on, _in, _using, _groupby, _orderby } = node;
+    const {
+      source, _with, _on, _in, _using, _groupby, _orderby,
+      _limitPerc, _limit, _offset
+    } = node;
     const sql = [];
 
     if (_with.length) sql.push(`WITH ${this.mapToString(_with).join(', ')}`);
@@ -238,6 +241,10 @@ export class DuckDBCodeGenerator extends SQLCodeGenerator {
     sql.push(`PIVOT ${ref}${on}${values}${using}${groupby}`);
 
     if (_orderby.length) sql.push(`ORDER BY ${this.mapToString(_orderby).join(', ')}`);
+
+    if (_limit) sql.push(`LIMIT ${this.toString(_limit)}${_limitPerc ? '%' : ''}`);
+
+    if (_offset != null) sql.push(`OFFSET ${this.toString(_offset)}`);
 
     return sql.join(' ');
   }

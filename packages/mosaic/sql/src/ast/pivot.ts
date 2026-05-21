@@ -145,7 +145,10 @@ export class PivotQuery extends Query {
       _in: this._in.slice(),
       _using: this._using.slice(),
       _groupby: this._groupby.slice(),
-      _orderby: this._orderby.slice()
+      _orderby: this._orderby.slice(),
+      _limitPerc: this._limitPerc,
+      _limit: this._limit,
+      _offset: this._offset
     });
   }
 }
