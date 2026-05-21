@@ -25,6 +25,7 @@ import {
   OrderByNode,
   ParamNode,
   PivotQuery,
+  Query,
   DescribeQuery,
   SelectQuery,
   SetOperation,
@@ -224,29 +225,67 @@ export class DuckDBCodeGenerator extends SQLCodeGenerator {
     return literalToSQL(param.value);
   }
 
-  visitPivotQuery(node: PivotQuery): string {
-    const {
-      source, _with, _on, _in, _using, _groupby, _orderby,
-      _limitPerc, _limit, _offset
-    } = node;
-    const sql = [];
+  private visitQuery(node: Query, body: string[]): string {
+    const { _with, _orderby, _limitPerc, _limit, _offset } = node;
 
-    if (_with.length) sql.push(`WITH ${this.mapToString(_with).join(', ')}`);
+    const sql: string[] = [];
 
-    const ref = isQuery(source) ? `(${this.toString(source)})` : this.toString(source);
-    const on = _on.length ? ` ON ${this.mapToString(_on).join(', ')}` : '';
-    const values = _in.length ? ` IN (${this.mapToString(_in).join(', ')})` : '';
-    const using = _using.length ? ` USING ${this.mapToString(_using).join(', ')}` : '';
-    const groupby = _groupby.length ? ` GROUP BY ${this.mapToString(_groupby).join(', ')}` : '';
-    sql.push(`PIVOT ${ref}${on}${values}${using}${groupby}`);
+    // WITH
+    if (_with.length) {
+      sql.push(`WITH ${this.mapToString(_with).join(', ')}`);
+    }
 
-    if (_orderby.length) sql.push(`ORDER BY ${this.mapToString(_orderby).join(', ')}`);
+    // QUERY BODY
+    sql.push(...body);
 
-    if (_limit) sql.push(`LIMIT ${this.toString(_limit)}${_limitPerc ? '%' : ''}`);
+    // ORDER BY
+    if (_orderby.length) {
+      sql.push(`ORDER BY ${this.mapToString(_orderby).join(', ')}`);
+    }
 
-    if (_offset != null) sql.push(`OFFSET ${this.toString(_offset)}`);
+    // LIMIT
+    if (_limit != null) {
+      sql.push(`LIMIT ${this.toString(_limit)}${_limitPerc ? '%' : ''}`);
+    }
+
+    // OFFSET
+    if (_offset != null) {
+      sql.push(`OFFSET ${this.toString(_offset)}`);
+    }
 
     return sql.join(' ');
+  }
+
+  visitPivotQuery(node: PivotQuery): string {
+    const { source, _on, _in, _using, _groupby } = node;
+
+    const ref = isQuery(source) ? `(${this.toString(source)})` : this.toString(source);
+    const sql: string[] = [];
+
+    // PIVOT
+    sql.push(`PIVOT ${ref}`);
+
+    // ON
+    if (_on.length) {
+      sql.push(`ON ${this.mapToString(_on).join(', ')}`);
+    }
+
+    // IN
+    if (_in.length) {
+      sql.push(`IN (${this.mapToString(_in).join(', ')})`);
+    }
+
+    // USING
+    if (_using.length) {
+      sql.push(`USING ${this.mapToString(_using).join(', ')}`);
+    }
+
+    // GROUP BY
+    if (_groupby.length) {
+      sql.push(`GROUP BY ${this.mapToString(_groupby).join(', ')}`);
+    }
+
+    return this.visitQuery(node, sql);
   }
 
   visitSampleClause(node: SampleClauseNode): string {
@@ -270,17 +309,11 @@ export class DuckDBCodeGenerator extends SQLCodeGenerator {
 
   visitSelectQuery(node: SelectQuery): string {
     const {
-      _with, _select, _distinct, _from, _sample, _where,
-      _groupby, _having, _window, _qualify, _orderby,
-      _limitPerc, _limit, _offset
+      _select, _distinct, _from, _sample, _where,
+      _groupby, _having, _window, _qualify
     } = node;
 
-    const sql = [];
-
-    // WITH
-    if (_with.length) {
-      sql.push(`WITH ${this.mapToString(_with).join(', ')}`);
-    }
+    const sql: string[] = [];
 
     // SELECT
     sql.push(`SELECT${_distinct ? ' DISTINCT' : ''} ${this.mapToString(_select).join(', ')}`);
@@ -323,44 +356,12 @@ export class DuckDBCodeGenerator extends SQLCodeGenerator {
       if (clauses) sql.push(`QUALIFY ${clauses}`);
     }
 
-    // ORDER BY
-    if (_orderby.length) {
-      sql.push(`ORDER BY ${this.mapToString(_orderby).join(', ')}`);
-    }
-
-    // LIMIT
-    if (_limit) {
-      sql.push(`LIMIT ${this.toString(_limit)}${_limitPerc ? '%' : ''}`);
-    }
-
-    // OFFSET
-    if (_offset != null) {
-      sql.push(`OFFSET ${this.toString(_offset)}`);
-    }
-
-    return sql.join(' ');
+    return this.visitQuery(node, sql);
   }
 
   visitSetOperation(node: SetOperation): string {
-    const { op, queries, _with, _orderby, _limitPerc, _limit, _offset } = node;
-    const sql = [];
-
-    // WITH
-    if (_with.length) sql.push(`WITH ${this.mapToString(_with).join(', ')}`);
-
-    // SUBQUERIES
-    sql.push(queries.join(` ${op} `));
-
-    // ORDER BY
-    if (_orderby.length) sql.push(`ORDER BY ${this.mapToString(_orderby).join(', ')}`);
-
-    // LIMIT
-    if (_limit) sql.push(`LIMIT ${this.toString(_limit)}${_limitPerc ? '%' : ''}`);
-
-    // OFFSET
-    if (_offset) sql.push(`OFFSET ${this.toString(_offset)}`);
-
-    return sql.join(' ');
+    const { op, queries } = node;
+    return this.visitQuery(node, [this.mapToString(queries).join(` ${op} `)]);
   }
 
   visitTableRef(node: TableRefNode): string {
