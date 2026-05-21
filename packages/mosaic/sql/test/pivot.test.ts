@@ -226,6 +226,19 @@ describe('PivotQuery', () => {
     );
   });
 
+  it('renders ORDER BY clauses added to pivot queries', () => {
+    const pivot = Query
+      .pivot('sales')
+      .on('year')
+      .using(sum('amount'))
+      .groupby('region')
+      .orderby('year');
+
+    expect(pivot.toString()).toBe(
+      'PIVOT "sales" ON "year" USING sum("amount") GROUP BY "region" ORDER BY "year"'
+    );
+  });
+
   it('rejects empty IN calls', () => {
     const query = Query.pivot('sales').on('year');
 
