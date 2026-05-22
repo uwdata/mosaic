@@ -38,6 +38,11 @@ jobs:
       - run: pnpm run build
       - run: pnpm run test
 
+      - name: Verify generated spec outputs do not change
+        run: |
+          pnpm run docs:examples
+          git diff --exit-code -- specs/esm specs/json specs/ts docs/public/specs docs/examples
+
   browser:
     name: Test in Browser
 
