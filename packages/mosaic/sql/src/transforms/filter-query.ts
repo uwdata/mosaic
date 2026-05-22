@@ -1,3 +1,4 @@
+import { SCALAR_SUBQUERY } from '../constants.js';
 import type { FilterExpr } from '../types.js';
 import { FromClauseNode } from '../ast/from.js';
 import { isSelectQuery, type Query } from '../ast/query.js';
@@ -8,7 +9,8 @@ import { walk } from '../visit/walk.js';
 
 /**
  * Perform filter pushdown on a query: clones the given query and adds a
- * WHERE clause for the specified base table.
+ * WHERE clause for the specified base table. Ignores scalar subqueries,
+ * but will recurse into CTEs, joins, and other subqueries.
  * @param query The query to clone and extend.
  * @param table The base table as a table name or table reference node.
  * @param filter The filter predicate expression to add.
@@ -21,7 +23,9 @@ export function filterPushdown(
   const clone = deepClone(query);
   const tableRef = asTableRef(table)!;
   walk(clone, (node) => {
-    if (
+    if (node.type === SCALAR_SUBQUERY) {
+      return 1; // don't recurse
+    } else if (
       isSelectQuery(node) &&
       node._from.length === 1 &&
       node._from[0] instanceof FromClauseNode &&
