@@ -14,6 +14,9 @@ importers:
       '@playwright/test':
         specifier: ^1.60.0
         version: 1.60.0
+      '@uwdata/mosaic-spec':
+        specifier: workspace:*
+        version: link:packages/vgplot/spec
       ajv:
         specifier: ^8.20.0
         version: 8.20.0
