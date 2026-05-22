@@ -2,8 +2,8 @@ import { type AggregateNode, aggregateNames } from '../ast/aggregate.js';
 import type { ColumnRefNode } from '../ast/column-ref.js';
 import type { SQLNode } from '../ast/node.js';
 import type { ParamNode } from '../ast/param.js';
+import { AGGREGATE, COLUMN_PARAM, COLUMN_REF, FRAGMENT, PARAM, SCALAR_SUBQUERY, VERBATIM, WINDOW } from '../constants.js';
 import type { ParamLike } from '../types.js';
-import { AGGREGATE, COLUMN_PARAM, COLUMN_REF, FRAGMENT, PARAM, VERBATIM, WINDOW } from '../constants.js';
 import { walk } from './walk.js';
 
 // regexp to match valid aggregate function names
@@ -53,6 +53,8 @@ export function isAggregateExpression(root: SQLNode) {
         }
         return 1; // don't recurse
       }
+      case SCALAR_SUBQUERY:
+        return 1; // don't recurse
     }
   });
   return agg;
@@ -67,6 +69,8 @@ export function collectAggregates(root: SQLNode) {
   walk(root, (node, parent) => {
     if (node.type === AGGREGATE && parent?.type !== WINDOW) {
       aggs.add(node as AggregateNode);
+    } else if (node.type === SCALAR_SUBQUERY) {
+      return 1; // don't recurse
     }
   });
   return Array.from(aggs);
