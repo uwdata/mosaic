@@ -1,5 +1,5 @@
 import type { FilterExpr, FromExpr, GroupByExpr, MaybeArray, OrderByExpr, SelectExpr, WithExpr } from '../types.js';
-import type { PivotQuery, PivotSource } from './pivot.js';
+import { PivotQuery, type PivotSource } from './pivot.js';
 import type { SampleMethod } from './sample.js';
 import { CREATE_QUERY, CREATE_SCHEMA_QUERY, DESCRIBE_QUERY, SELECT_QUERY, SET_OPERATION } from '../constants.js';
 import { asNode, asTableRef, asVerbatim, maybeTableRef } from '../util/ast.js';
@@ -15,15 +15,6 @@ import { isTableRef, TableRefNode } from './table-ref.js';
 import { VerbatimNode } from './verbatim.js';
 import { WindowClauseNode, type WindowDefNode } from './window.js';
 import { WithClauseNode } from './with.js';
-
-// PivotQuery lives in pivot.ts to keep this module focused on the shared query
-// API. It registers this factory to avoid a runtime import cycle: PivotQuery
-// extends Query, while Query.pivot needs to construct a PivotQuery.
-let createPivotQuery: ((source: PivotSource) => PivotQuery) | undefined;
-
-export function setPivotQueryFactory(factory: (source: PivotSource) => PivotQuery): void {
-  createPivotQuery = factory;
-}
 
 /**
  * Check if a value is a selection query or set operation.
@@ -95,10 +86,7 @@ export class Query extends ExprNode {
    * @param source The source relation to pivot.
    */
   static pivot(source: PivotSource) {
-    if (!createPivotQuery) {
-      throw new Error('PivotQuery factory has not been registered.');
-    }
-    return createPivotQuery(source);
+    return new PivotQuery(source);
   }
 
   /**

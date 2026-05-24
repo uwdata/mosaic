@@ -5,7 +5,7 @@ import { nodeList } from '../util/function.js';
 import { unquote } from '../util/string.js';
 import { isArray, isParamLike, isString } from '../util/type-check.js';
 import { ExprNode, SQLNode, isNode } from './node.js';
-import { Query, isQuery, setPivotQueryFactory } from './query.js';
+import { Query, isQuery } from './query.js';
 import { SelectClauseNode } from './select.js';
 
 export type PivotSource = string | string[] | SQLNode;
@@ -152,5 +152,3 @@ export class PivotQuery extends Query {
     });
   }
 }
-
-setPivotQueryFactory(source => new PivotQuery(source));
