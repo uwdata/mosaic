@@ -1,9 +1,5 @@
 import vgplot as vg
 
-meta = vg.meta(
-    title="Flights Density",
-    description="Density `heatmap` and `contour` lines for 200,000+ flights by departure hour and arrival delay. The sliders adjust the smoothing (bandwidth) and number of contour thresholds.\n",
-)
 flights = vg.parquet("data/flights-200k.parquet")
 
 bandwidth = vg.param(7)

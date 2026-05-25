@@ -1,9 +1,5 @@
 import vgplot as vg
 
-meta = vg.meta(
-    title="Area Sine Wave",
-    description="A test specification to compare M4 optimized and unoptimized area charts over a dense dual-tone sine wave.\n",
-)
 wave = vg.csv("data/m4-area-sine.csv")
 
 brush = vg.selection.intersect()

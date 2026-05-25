@@ -1,9 +1,5 @@
 import vgplot as vg
 
-meta = vg.meta(
-    title="Region Interactor Tests",
-    descriptions="Varied plots using region interactors to highlight selected values.\n",
-)
 bls_unemp = vg.parquet("data/bls-metro-unemployment.parquet")
 feed = vg.spatial("data/usgs-feed.geojson")
 world = vg.spatial("data/countries-110m.json", layer="land")

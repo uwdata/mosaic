@@ -1,10 +1,5 @@
 import vgplot as vg
 
-meta = vg.meta(
-    title="Presidential Opinion",
-    description="Opinion poll data on historical U.S. presidents. Image marks are used to show presidential pictures. The dropdown menu toggles the opinion metric shown.\n",
-    credit="Adapted from an [Observable Plot example](https://observablehq.com/@observablehq/plot-image-medals).",
-)
 presidents = vg.parquet("data/us-president-favorability.parquet")
 
 sign = vg.param(1)

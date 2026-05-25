@@ -1,9 +1,5 @@
 import vgplot as vg
 
-meta = vg.meta(
-    title="Seattle Temperatures",
-    description="Historical monthly temperatures in Seattle, WA. The gray range shows the minimum and maximum recorded temperatures. The blue range shows the average lows and highs.\n",
-)
 weather = vg.parquet("data/seattle-weather.parquet")
 
 view = vg.plot(

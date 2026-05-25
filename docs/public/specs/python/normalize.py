@@ -1,9 +1,5 @@
 import vgplot as vg
 
-meta = vg.meta(
-    title="Normalized Stock Prices",
-    description="What is the return on investment for different days? Hover over the chart to normalize the stock prices for the percentage return on a given day. A `nearestX` interactor selects the nearest date, and parameterized expressions reactively update in response.\n",
-)
 stocks = vg.parquet("data/stocks.parquet")
 labels = vg.table(
     "SELECT MAX(Date) as Date, ARGMAX(Close, Date) AS Close, Symbol FROM stocks GROUP BY Symbol"

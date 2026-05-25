@@ -1,10 +1,5 @@
 import vgplot as vg
 
-meta = vg.meta(
-    title="Walmart Openings",
-    description="Maps showing Walmart store openings per decade. Requires the DuckDB `spatial` extension.\n",
-    credit="Adapted from an [Observable Plot example](https://observablehq.com/@observablehq/plot-map-large-multiples).",
-)
 states = vg.spatial("data/us-counties-10m.json", layer="states")
 nation = vg.spatial("data/us-counties-10m.json", layer="nation")
 walmarts = vg.parquet("data/walmarts.parquet")

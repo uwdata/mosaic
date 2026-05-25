@@ -1,9 +1,5 @@
 import vgplot as vg
 
-meta = vg.meta(
-    title="Pan & Zoom",
-    description="Linked panning and zooming across plots: drag to pan, scroll to zoom. `panZoom` interactors update a set of bound selections, one per unique axis.\n",
-)
 penguins = vg.parquet("data/penguins.parquet")
 
 xs = vg.selection.intersect()

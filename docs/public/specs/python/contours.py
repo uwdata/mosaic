@@ -1,9 +1,5 @@
 import vgplot as vg
 
-meta = vg.meta(
-    title="Contour Plot",
-    description='Here `heatmap` and `contour` marks visualize the density of data points in a scatter plot of penguin measurments. Setting the `fill` color to `"species"` subdivides the data into three sets of densities.\n',
-)
 penguins = vg.parquet("data/penguins.parquet")
 
 bandwidth = vg.param(40)

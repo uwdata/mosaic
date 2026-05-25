@@ -1,9 +1,5 @@
 import vgplot as vg
 
-meta = vg.meta(
-    title="Legends",
-    description="Tests for different legend types and configurations. We test both legends defined within plots (with a zero-size frame) and external legends that reference a named plot.\n",
-)
 toggle = vg.selection.single()
 interval = vg.selection.intersect()
 domain = vg.param(["foo", "bar", "baz", "bop", "doh"])

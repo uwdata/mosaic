@@ -1,10 +1,5 @@
 import vgplot as vg
 
-meta = vg.meta(
-    title="Wind Map",
-    description="`vector` marks on a grid show both direction and intensity—here, the speed of winds. Expressions for `rotate`, `length`, and `stroke` values are evaluated in the database. Both the legend and map support interactive selections to highlight values.\n",
-    credit="Adapted from an [Observable Plot example](https://observablehq.com/@observablehq/plot-wind-map).",
-)
 wind = vg.parquet("data/wind.parquet", select=["*", "row_number() over () as id"])
 
 selected = vg.selection.union()

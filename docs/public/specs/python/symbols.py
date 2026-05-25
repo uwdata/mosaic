@@ -1,9 +1,5 @@
 import vgplot as vg
 
-meta = vg.meta(
-    title="Symbol Plots",
-    description="Two scatter plots with `dot` marks: one with stroked symbols, the other filled. Drop-down menus control which data table columns are plotted.\n",
-)
 penguins = vg.parquet("data/penguins.parquet")
 
 x = vg.param("body_mass")

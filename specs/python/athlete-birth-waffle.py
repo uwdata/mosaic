@@ -1,10 +1,5 @@
 import vgplot as vg
 
-meta = vg.meta(
-    title="Athlete Birth Waffle",
-    description="Waffle chart counting Olympic athletes based on which half-decade they were born. The inputs enable adjustment of waffle mark design options.\n",
-    credit="Adapted from an [Observable Plot example](https://observablehq.com/@observablehq/plot-waffle-unit).",
-)
 athletes = vg.parquet("data/athletes.parquet")
 
 unit = vg.param(10)

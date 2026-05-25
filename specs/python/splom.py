@@ -1,9 +1,5 @@
 import vgplot as vg
 
-meta = vg.meta(
-    title="Scatter Plot Matrix (SPLOM)",
-    description="A scatter plot matrix enables inspection of pairwise bivariate distributions. Do points cluster or separate in some dimensions but not others? Select a region to highlight corresponding points across all plots.\n",
-)
 penguins = vg.parquet("data/penguins.parquet")
 
 brush = vg.selection.single()

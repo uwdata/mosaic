@@ -1,10 +1,5 @@
 import vgplot as vg
 
-meta = vg.meta(
-    title="Observable Latency",
-    description="Web request latency on Observable.com.\nEach pixel in the heatmap shows the most common route (URL pattern) at a given response latency within a time interval.\nUse the bar chart of most-requested routes to filter the heatmap and isolate specific patterns.\nOr, select a range in the heatmap to show the corresponding most-requested routes.\n\n_You may need to wait a few seconds for the dataset to load._\n",
-    credit="Adapted from an [Observable Framework example](https://observablehq.com/framework/examples/api/).",
-)
 latency = vg.parquet(
     "https://pub-1da360b43ceb401c809f68ca37c7f8a4.r2.dev/data/observable-latency.parquet"
 )

@@ -1,9 +1,5 @@
 import vgplot as vg
 
-meta = vg.meta(
-    title="Sorted Bars",
-    description="Sort and limit an aggregate bar chart of gold medals by country.\n",
-)
 athletes = vg.parquet("data/athletes.parquet")
 
 query = vg.selection.intersect()

@@ -1,10 +1,5 @@
 import vgplot as vg
 
-meta = vg.meta(
-    title="Driving Shifts into Reverse",
-    description="A connected scatter plot of miles driven vs. gas prices.",
-    credit="Adapted from an [Observable Plot example](https://observablehq.com/@observablehq/plot-connected-scatterplot), which in turn adapts Hannah Fairfield's [New York Times article](http://www.nytimes.com/imagepages/2010/05/02/business/02metrics.html).\n",
-)
 driving = vg.parquet("data/driving.parquet")
 
 view = vg.plot(

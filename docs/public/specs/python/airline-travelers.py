@@ -1,10 +1,5 @@
 import vgplot as vg
 
-meta = vg.meta(
-    title="Airline Travelers",
-    description="A labeled line chart comparing airport travelers in 2019 and 2020.",
-    credit="Adapted from an [Observable Plot example](https://observablehq.com/@observablehq/plot-labeled-line-chart).",
-)
 travelers = vg.parquet("data/travelers.parquet")
 endpoint = vg.table("SELECT * FROM travelers ORDER BY date DESC LIMIT 1")
 

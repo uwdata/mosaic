@@ -1,9 +1,5 @@
 import vgplot as vg
 
-meta = vg.meta(
-    title="Density 2D",
-    description="A 2D `density` plot in which circle size indicates the point density. The data is divided by fill color into three sets of densities. To change the amount of smoothing, use the slider to set the kernel bandwidth.\n",
-)
 penguins = vg.parquet("data/penguins.parquet")
 
 bandwidth = vg.param(20)

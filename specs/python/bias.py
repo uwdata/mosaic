@@ -1,9 +1,5 @@
 import vgplot as vg
 
-meta = vg.meta(
-    title="Bias Parameter",
-    description="Dynamically adjust queried values by adding a Param value. The SQL expression is re-computed in the database upon updates.\n",
-)
 walk = vg.parquet("data/random-walk.parquet")
 
 point = vg.param(0)

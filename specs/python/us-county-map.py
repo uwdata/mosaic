@@ -1,9 +1,5 @@
 import vgplot as vg
 
-meta = vg.meta(
-    title="U.S. Counties",
-    description="A map of U.S. counties. County name tooltips are anchored to invisible centroid dot marks. Requires the DuckDB `spatial` extension.\n",
-)
 counties = vg.spatial("data/us-counties-10m.json", layer="counties")
 states = vg.spatial("data/us-counties-10m.json", layer="states")
 

@@ -1,9 +1,5 @@
 import vgplot as vg
 
-meta = vg.meta(
-    title="Olympic Athletes",
-    description="An interactive dashboard of athlete statistics. The menus and searchbox filter the display and are automatically populated by backing data columns.\n",
-)
 athletes = vg.parquet("data/athletes.parquet")
 
 category = vg.selection.intersect()

@@ -1,9 +1,5 @@
 import vgplot as vg
 
-meta = vg.meta(
-    title="Triangle Wave",
-    description="A test specification to compare M4 optimized and unoptimized line charts.\n",
-)
 wave = vg.csv("data/triangle-wave-day.csv")
 
 brush = vg.selection.intersect()
