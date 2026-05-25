@@ -21,10 +21,6 @@ export function astToPython(ast) {
   ctx.emit('import vgplot as vg');
   ctx.blank();
 
-  if (meta) {
-    ctx.emit(`meta = vg.meta(${joinArgs(meta)})`);
-  }
-
   // data
   if (Object.keys(data).length) {
     for (const [name, def] of Object.entries(data)) {
@@ -339,12 +335,6 @@ function literal(v, depth = 0, ctx = null) {
   return 'None';
 }
 
-function joinArgs(obj) {
-  return Object.entries(obj)
-    .filter(([, v]) => v !== undefined && v !== null)
-    .map(([k, v]) => `${k}=${literal(v)}`)
-    .join(', ');
-}
 
 function indentLine(str, depth) {
   const pad = '    '.repeat(depth);
