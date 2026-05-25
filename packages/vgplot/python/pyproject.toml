@@ -39,7 +39,6 @@ pattern = "\"version\": \"(?P<version>.+?)\""
 
 [tool.hatch.build.targets.wheel]
 packages = ["api", "schema"]
-sources = {"api" = "vgplot"}
 
 # https://mypy.readthedocs.io/en/stable/config_file.html
 [tool.mypy]

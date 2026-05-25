@@ -5,10 +5,10 @@
 # `import vgplot` fails because there is no `vgplot` module or subdirectory on
 # that path.
 #
-# The published wheel remaps `api/` → `vgplot/` via hatchling's `sources`
-# config in pyproject.toml, so this shim is not needed there. It is only
-# required locally until uv supports hatchling's virtual editable mode (which
-# would apply source remapping at import time and make this file unnecessary).
+# Ideally, hatchling's `sources` option would remap `api/` → `vgplot/` in both
+# the wheel and the editable install. However, editable installs do not support
+# prefix renaming (https://github.com/pfmoore/editables/issues/20), so this
+# shim is the current workaround for local development.
 
 from api import *  # noqa: F401, F403
 from api import __all__
