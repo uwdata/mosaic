@@ -80,3 +80,29 @@ widget.observe(handle_change, names=["params"])
 
 widgets.VBox([widget, output])
 ```
+
+## Reading the Filtered Data
+
+After the user interacts with the widget, you can read the current SQL state and the filtered rows directly from Python:
+
+```python
+widget.sql     # 'SELECT * FROM "weather" WHERE ("weather" = \'sun\')'
+widget.data()  # pandas DataFrame of the currently filtered rows
+```
+
+`widget.sql` builds a `SELECT * FROM <table>` statement and combines every active selection predicate from `params` with `AND`. The source table and its `filterBy` selections are discovered from the spec's mark `data: { from, filterBy }` blocks.
+
+For specs that reference more than one source table, name the table explicitly:
+
+```python
+widget.data("weather")
+```
+
+To limit which selections are applied, pass `filter_by` with a selection name or a list of names:
+
+```python
+widget.data("weather", filter_by="range")
+widget.data("weather", filter_by=["click", "range"])
+```
+
+If you need a different return type, run the SQL yourself on the widget's DuckDB connection: `widget.con.query(widget.sql).pl()` for Polars, `.arrow()` for an Arrow table, and so on.
