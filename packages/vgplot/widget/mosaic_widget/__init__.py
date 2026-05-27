@@ -4,7 +4,6 @@ import logging
 import pathlib
 import re
 import time
-from collections.abc import Sequence
 from typing import TYPE_CHECKING
 
 import anywidget
@@ -114,7 +113,7 @@ class MosaicWidget(anywidget.AnyWidget):
             logger.info(f"DONE. Query {uuid} took {total} ms.\n{sql}")
 
     @property
-    def sql(self) -> str:
+    def sql(self):
         """SQL for the current interactive state of the (single) source table.
 
         Combines the live selection ``predicate`` strings on ``params`` into a
@@ -122,14 +121,9 @@ class MosaicWidget(anywidget.AnyWidget):
         ``ValueError`` if the spec has zero or more than one source table; pass
         a table name to :meth:`data` instead in the multi-table case.
         """
-        return self._build_sql(self._resolve_table(None))
+        return self._build_sql(self._resolve_table(None), filter_by=None)
 
-    def data(
-        self,
-        table: str | None = None,
-        *,
-        filter_by: str | Sequence[str] | None = None,
-    ) -> "pd.DataFrame":
+    def data(self, table=None, *, filter_by=None):
         """Return the currently filtered rows for ``table`` as a DataFrame.
 
         Args:
@@ -144,7 +138,7 @@ class MosaicWidget(anywidget.AnyWidget):
         resolved = self._resolve_table(table)
         return self.con.query(self._build_sql(resolved, filter_by=filter_by)).df()
 
-    def _resolve_table(self, table: str | None) -> str:
+    def _resolve_table(self, table):
         tables = collect_table_filters(self.spec)
         if table is not None:
             if table not in tables and table not in self._registered_tables:
@@ -166,17 +160,13 @@ class MosaicWidget(anywidget.AnyWidget):
             )
         return next(iter(tables))
 
-    def _build_sql(
-        self,
-        table: str,
-        filter_by: str | Sequence[str] | None = None,
-    ) -> str:
+    def _build_sql(self, table, filter_by=None):
         if not _IDENTIFIER_RE.match(table):
             raise ValueError(
                 f"Invalid table name {table!r}; expected a simple identifier."
             )
         if filter_by is None:
-            names: Sequence[str] = collect_table_filters(self.spec).get(table, [])
+            names = collect_table_filters(self.spec).get(table, [])
         elif isinstance(filter_by, str):
             names = [filter_by]
         else:
