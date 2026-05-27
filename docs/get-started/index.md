@@ -38,6 +38,13 @@ In the future we hope to also support a Python API, not unlike [Vega Altair](htt
 Mosaic-powered visualizations can be in deployed dashboards or data apps published with [Observable Framework](https://observablehq.com/framework/).
 For guidance on deploying Mosaic and using DuckDB to prepare data, see the [Mosaic + Framework example site](https://uwdata.github.io/mosaic-framework-example).
 
+## Use with LLMs
+
+The documentation is also available in an LLM-friendly plain-text format following the [llms.txt convention](https://llmstxt.org/). Point an AI assistant at these files, or paste their contents into a chat, to give it context about Mosaic:
+
+- [`llms.txt`](/llms.txt) — an index of the documentation with links to each page.
+- [`llms-full.txt`](/llms-full.txt) — the full documentation concatenated into a single file.
+
 ## Run and develop locally
 
 To run Mosaic examples on a local DuckDB server or work on Mosaic development, make a local clone of the [Mosaic GitHub repository](https://github.com/uwdata/mosaic).
