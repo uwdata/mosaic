@@ -24,6 +24,7 @@ import type {
   LogicalOpNode,
   OrderByNode,
   ParamNode,
+  PivotQuery,
   DescribeQuery,
   SelectQuery,
   SetOperation,
@@ -69,6 +70,7 @@ import {
   NOT_BETWEEN_OPERATOR,
   ORDER_BY,
   PARAM,
+  PIVOT_QUERY,
   SAMPLE_CLAUSE,
   SCALAR_SUBQUERY,
   SELECT_CLAUSE,
@@ -145,6 +147,7 @@ export abstract class SQLCodeGenerator {
       case NOT_BETWEEN_OPERATOR: return this.visitNotBetween;
       case ORDER_BY: return this.visitOrderBy;
       case PARAM: return this.visitParam;
+      case PIVOT_QUERY: return this.visitPivotQuery;
       case SAMPLE_CLAUSE: return this.visitSampleClause;
       case SCALAR_SUBQUERY: return this.visitScalarSubquery;
       case SELECT_CLAUSE: return this.visitSelectClause;
@@ -203,6 +206,7 @@ export abstract class SQLCodeGenerator {
   abstract visitNotBetween(node: NotBetweenOpNode): string;
   abstract visitOrderBy(node: OrderByNode): string;
   abstract visitParam(node: ParamNode): string;
+  abstract visitPivotQuery(node: PivotQuery): string;
   abstract visitSampleClause(node: SampleClauseNode): string;
   abstract visitScalarSubquery(node: ScalarSubqueryNode): string;
   abstract visitSelectClause(node: SelectClauseNode): string;
