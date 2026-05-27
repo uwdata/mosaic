@@ -1,4 +1,5 @@
 import { defineConfig } from 'vitepress'
+import llmstxt from 'vitepress-plugin-llms'
 import viteConfig from '../../vite.config.js';
 
 // https://vitepress.dev/reference/site-config
@@ -7,7 +8,12 @@ export default defineConfig({
   description: 'Scalable, interactive data visualization',
   base: '/mosaic/',
   vite: {
-    resolve: viteConfig.resolve
+    resolve: viteConfig.resolve,
+    plugins: [
+      llmstxt({
+        description: 'Scalable, interactive data visualization'
+      })
+    ]
   },
   themeConfig: {
     // https://vitepress.dev/reference/default-theme-config
