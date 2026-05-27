@@ -6,24 +6,19 @@ and by combining the live ``predicate`` strings on the ``params`` traitlet
 into a SQL ``WHERE`` clause.
 """
 
-from __future__ import annotations
 
-from collections.abc import Iterable, Mapping
-from typing import Any
-
-
-def _param_name(value: Any) -> str | None:
+def _param_name(value):
     """Return the param name for a ``$name`` reference, else None."""
-    if isinstance(value, str) and value.startswith("$") and len(value) > 1:
+    if isinstance(value, str) and value[:1] == "$" and len(value) > 1:
         return value[1:]
     return None
 
 
-def _is_literal_table(value: Any) -> bool:
+def _is_literal_table(value):
     return isinstance(value, str) and not value.startswith("$")
 
 
-def collect_table_filters(spec: Mapping[str, Any]) -> dict[str, list[str]]:
+def collect_table_filters(spec):
     """Walk a Mosaic spec and map each source table to its ``filterBy`` selections.
 
     Mark ``data`` blocks of the form ``{"from": "<table>", "filterBy": "$sel"}``
@@ -33,24 +28,20 @@ def collect_table_filters(spec: Mapping[str, Any]) -> dict[str, list[str]]:
 
     Selection names appear in document order and are de-duplicated.
     """
-    result: dict[str, list[str]] = {}
+    result = {}
 
-    def add_filter(table: str, filter_by: Any) -> None:
-        names = result.setdefault(table, [])
-        candidates = filter_by if isinstance(filter_by, list) else [filter_by]
-        for entry in candidates:
-            name = _param_name(entry)
-            if name is not None and name not in names:
-                names.append(name)
-
-    def visit(node: Any) -> None:
-        if isinstance(node, Mapping):
+    def visit(node):
+        if isinstance(node, dict):
             data = node.get("data")
-            if isinstance(data, Mapping) and _is_literal_table(data.get("from")):
+            if isinstance(data, dict) and _is_literal_table(data.get("from")):
                 table = data["from"]
-                result.setdefault(table, [])
-                if "filterBy" in data:
-                    add_filter(table, data["filterBy"])
+                names = result.setdefault(table, [])
+                filter_by = data.get("filterBy")
+                candidates = filter_by if isinstance(filter_by, list) else [filter_by]
+                for entry in candidates:
+                    name = _param_name(entry)
+                    if name is not None and name not in names:
+                        names.append(name)
             for value in node.values():
                 visit(value)
         elif isinstance(node, list):
@@ -61,9 +52,7 @@ def collect_table_filters(spec: Mapping[str, Any]) -> dict[str, list[str]]:
     return result
 
 
-def resolve_predicates(
-    params: Mapping[str, Any], selection_names: Iterable[str]
-) -> list[str]:
+def resolve_predicates(params, selection_names):
     """Collect non-empty ``predicate`` strings for the given selection names.
 
     Names without a corresponding entry in ``params``, or whose entry lacks a
@@ -71,10 +60,10 @@ def resolve_predicates(
     skipped. The order of the returned list matches the order of
     ``selection_names``.
     """
-    predicates: list[str] = []
+    predicates = []
     for name in selection_names:
         entry = params.get(name)
-        if not isinstance(entry, Mapping):
+        if not isinstance(entry, dict):
             continue
         predicate = entry.get("predicate")
         if isinstance(predicate, str) and predicate.strip():
