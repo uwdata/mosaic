@@ -7,13 +7,13 @@ flights10p = vg.table("SELECT * FROM flights10m USING SAMPLE 10%")
 flights5p = vg.table("SELECT * FROM flights10m USING SAMPLE 5%")
 flights1p = vg.table("SELECT * FROM flights10m USING SAMPLE 1%")
 
-sample = vg.param("flights10m")
+data = vg.param("flights10m")
 query = vg.selection.intersect()
 
 view = vg.vconcat(
     vg.menu(
         label="Sample",
-        bind=sample,
+        bind=data,
         options=[
             vg.option("Full Data", value="flights10m"),
             vg.option("10% Sample", value="flights10p"),
@@ -24,16 +24,16 @@ view = vg.vconcat(
     vg.vspace(10),
     vg.plot(
         vg.raster(
-            data=sample,
+            data=data,
             x="time",
             y="delay",
             pixel_size=4,
             pad=0,
             image_rendering="pixelated",
         ),
-        vg.regression_y(data=sample, x="time", y="delay", stroke="gray"),
+        vg.regression_y(data=data, x="time", y="delay", stroke="gray"),
         vg.regression_y(
-            data=sample, filter_by=query, x="time", y="delay", stroke="firebrick"
+            data=data, filter_by=query, x="time", y="delay", stroke="firebrick"
         ),
         vg.interval_xy(
             bind=query, brush=vg.brush(fill_opacity=0, stroke="currentColor")

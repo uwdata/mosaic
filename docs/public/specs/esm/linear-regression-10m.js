@@ -7,13 +7,13 @@ await vg.coordinator().exec([
   `CREATE TABLE IF NOT EXISTS "flights1p" AS SELECT * FROM flights10m USING SAMPLE 1%`
 ]);
 
-const $sample = vg.Param.value("flights10m");
+const $data = vg.Param.value("flights10m");
 const $query = vg.Selection.intersect();
 
 export default vg.vconcat(
   vg.menu({
     label: "Sample",
-    as: $sample,
+    as: $data,
     options: [
     {value: "flights10m", label: "Full Data"},
     {value: "flights10p", label: "10% Sample"},
@@ -24,15 +24,15 @@ export default vg.vconcat(
   vg.vspace(10),
   vg.plot(
     vg.raster(
-      vg.from($sample),
+      vg.from($data),
       {x: "time", y: "delay", pixelSize: 4, pad: 0, imageRendering: "pixelated"}
     ),
     vg.regressionY(
-      vg.from($sample),
+      vg.from($data),
       {x: "time", y: "delay", stroke: "gray"}
     ),
     vg.regressionY(
-      vg.from($sample, {filterBy: $query}),
+      vg.from($data, {filterBy: $query}),
       {x: "time", y: "delay", stroke: "firebrick"}
     ),
     vg.intervalXY({as: $query, brush: {fillOpacity: 0, stroke: "currentColor"}}),

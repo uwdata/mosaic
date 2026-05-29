@@ -17,11 +17,11 @@ data:
   flights5p: SELECT * FROM flights10m USING SAMPLE 5%
   flights1p: SELECT * FROM flights10m USING SAMPLE 1%
 params:
-  sample: flights10m
+  data: flights10m
 vconcat:
 - input: menu
   label: Sample
-  as: $sample
+  as: $data
   options:
     - { value: flights10m, label: Full Data }
     - { value: flights10p, label: 10% Sample }
@@ -30,19 +30,19 @@ vconcat:
 - vspace: 10
 - plot:
   - mark: raster
-    data: { from: $sample }
+    data: { from: $data }
     x: time
     y: delay
     pixelSize: 4
     pad: 0
     imageRendering: pixelated
   - mark: regressionY
-    data: { from: $sample }
+    data: { from: $data }
     x: time
     y: delay
     stroke: gray
   - mark: regressionY
-    data: { from: $sample, filterBy: $query }
+    data: { from: $data, filterBy: $query }
     x: time
     y: delay
     stroke: firebrick

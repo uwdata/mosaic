@@ -22,7 +22,7 @@
     }
   },
   "params": {
-    "sample": "flights10m",
+    "data": "flights10m",
     "query": {
       "select": "intersect"
     }
@@ -31,7 +31,7 @@
     {
       "input": "menu",
       "label": "Sample",
-      "as": "$sample",
+      "as": "$data",
       "options": [
         {
           "value": "flights10m",
@@ -59,7 +59,7 @@
         {
           "mark": "raster",
           "data": {
-            "from": "$sample"
+            "from": "$data"
           },
           "x": "time",
           "y": "delay",
@@ -70,7 +70,7 @@
         {
           "mark": "regressionY",
           "data": {
-            "from": "$sample"
+            "from": "$data"
           },
           "x": "time",
           "y": "delay",
@@ -79,7 +79,7 @@
         {
           "mark": "regressionY",
           "data": {
-            "from": "$sample",
+            "from": "$data",
             "filterBy": "$query"
           },
           "x": "time",
