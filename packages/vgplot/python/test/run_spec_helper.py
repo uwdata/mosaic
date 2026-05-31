@@ -7,7 +7,7 @@ import runpy
 import sys
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parents[2]
+ROOT = Path(__file__).resolve().parents[4]
 MOSAIC_SRC = ROOT / "mosaic"
 VGPLOT_PYTHON = ROOT / "packages" / "vgplot-python"
 

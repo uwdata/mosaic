@@ -19,7 +19,7 @@ SPEC_DIR = ROOT / "specs"
 JSON_DIR = SPEC_DIR / "json"
 ESM_DIR = SPEC_DIR / "esm"
 PYTHON_DIR = SPEC_DIR / "python"
-RUNNER = ROOT / "tests" / "tools" / "run_spec_file.py"
+RUNNER = Path(__file__).resolve().parent / "run_spec_helper.py"
 
 
 def load_json_fixture(name: str) -> dict:
