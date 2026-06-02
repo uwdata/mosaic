@@ -204,7 +204,7 @@ def spec(
 
     # Auto-detect meta: prefer a local named "meta", fall back to any Meta instance
     if meta is None:
-        candidate = caller_locals.get('meta')
+        candidate = caller_locals.get("meta")
         if isinstance(candidate, Meta):
             meta = candidate
         else:
@@ -215,7 +215,7 @@ def spec(
 
     # Auto-detect view: prefer a local named "view", fall back to any view-keyed dict
     if view is None:
-        candidate = caller_locals.get('view')
+        candidate = caller_locals.get("view")
         if isinstance(candidate, dict) and _VIEW_KEYS.intersection(candidate):
             view = candidate
         else:
@@ -241,9 +241,7 @@ def spec(
     # Auto-collect DataDef variables from caller's locals; merge with any
     # explicit data dict (explicit takes precedence on name collision).
     auto_defs = {
-        name: val
-        for name, val in caller_locals.items()
-        if isinstance(val, DataDef)
+        name: val for name, val in caller_locals.items() if isinstance(val, DataDef)
     }
     data_names: Dict[int, str] = {id(val): name for name, val in auto_defs.items()}
     if auto_defs:
