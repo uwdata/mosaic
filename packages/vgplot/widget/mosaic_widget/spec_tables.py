@@ -26,7 +26,7 @@ def collect_table_filters(spec):
     ``filterBy`` still appear in the result with an empty list. Dynamic ``from``
     values that are param references (``"$tableParam"``) are skipped.
 
-    Selection names appear in document order and are de-duplicated.
+    Selection names are de-duplicated and returned in sorted order.
     """
     result = {}
 
@@ -35,13 +35,13 @@ def collect_table_filters(spec):
             data = node.get("data")
             if isinstance(data, dict) and _is_literal_table(data.get("from")):
                 table = data["from"]
-                names = result.setdefault(table, [])
+                names = result.setdefault(table, set())
                 filter_by = data.get("filterBy")
                 candidates = filter_by if isinstance(filter_by, list) else [filter_by]
                 for entry in candidates:
                     name = _param_name(entry)
-                    if name is not None and name not in names:
-                        names.append(name)
+                    if name is not None:
+                        names.add(name)
             for value in node.values():
                 visit(value)
         elif isinstance(node, list):
