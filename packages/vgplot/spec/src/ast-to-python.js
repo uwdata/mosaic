@@ -256,12 +256,10 @@ function emitInput(node, ctx) {
   const args = Object.entries(opts)
     .filter(([, v]) => v !== undefined)
     .map(([k, v]) => `${inputArgName(k)}=${emitInputValue(k, v, ctx)}`);
-  if (kind === 'slider') return `vg.slider(${args.join(', ')})`;
-  if (kind === 'select') return `vg.select(${args.join(', ')})`;
-  if (kind === 'checkbox') return `vg.checkbox(${args.join(', ')})`;
-  if (kind === 'menu') return `vg.menu(${args.join(', ')})`;
-  if (kind === 'search') return `vg.search(${args.join(', ')})`;
-  if (kind === 'table') return `vg.table_input(${args.join(', ')})`;
+  const rename = { table: 'table_input' };
+  const fn = rename[kind] ?? kind;
+  const namedInputs = ['slider', 'select', 'checkbox', 'menu', 'search', 'table'];
+  if (namedInputs.includes(kind)) return `vg.${fn}(${args.join(', ')})`;
   return `vg.input(${literal(kind, 0, ctx)}${args.length ? ', ' + args.join(', ') : ''})`;
 }
 
