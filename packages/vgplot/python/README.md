@@ -111,7 +111,7 @@ spec.show()
 | Input widgets | `vg.slider(...)`, `vg.menu(...)`, `vg.select(...)`, `vg.checkbox(...)` |
 | Named data reference | `vg.source("table_name")` |
 | Assemble | `vg.spec()` — auto-detects view, params, and data from local variables |
-| Render | `spec.show()` |
+| Render | `spec.show()` or `spec` as last cell expression in Jupyter |
 
 Option names match the [vgplot API reference](https://uwdata.github.io/mosaic/api/), but in snake_case. For example, `xDomain` → `x_domain`, `colorScheme` → `color_scheme`, `filterBy` → `filter_by`.
 
