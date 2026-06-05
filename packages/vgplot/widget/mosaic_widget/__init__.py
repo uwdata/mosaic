@@ -106,36 +106,33 @@ class MosaicWidget(anywidget.AnyWidget):
 
     @property
     def sql(self):
-        """SQL for the current interactive state of the (single) source table.
-
-        Combines the live selection ``predicate`` strings on ``params`` into a
-        ``WHERE`` clause for the table referenced by the spec. Raises a
-        ``ValueError`` if the spec has zero or more than one source table; pass
-        a table name to :meth:`data` instead in the multi-table case.
+        """
+        The SQL query that reflects the current selection state, useful for inspection or logging.
         """
         return self._build_sql(self._resolve_table(None), filter_by=None)
 
     def data(self, table=None, *, filter_by=None):
-        """Return the currently filtered rows for ``table`` as a DuckDB relation.
-
-        The result is the lazy DuckDB relation produced by running
-        :attr:`sql`. The caller chooses how to materialize it, e.g. ``.df()``
-        for pandas, ``.pl()`` for Polars, ``.arrow()`` for an Arrow table, or
-        ``.fetchall()`` for Python tuples.
+        """
+        Query the source table filtered by the current selection state.
 
         Args:
-            table: Source table name. Defaults to the unique table discovered
-                in the spec; required when the spec references multiple
-                tables.
-            filter_by: Optional selection name or sequence of names to limit
-                which selection predicates are applied. By default all
-                selections used as ``filterBy`` on ``table`` in the spec are
-                combined with ``AND``.
+            table (str, optional): The table to query. Required when the spec references
+                multiple tables; inferred automatically when there is only one.
+            filter_by (str or list, optional): Param name(s) to filter by. Defaults to
+                all params associated with the resolved table in the spec.
+
+        Returns:
+            A DuckDB relation for the filtered table.
         """
         resolved = self._resolve_table(table)
         return self.con.query(self._build_sql(resolved, filter_by=filter_by))
 
     def _resolve_table(self, table):
+        """
+        Resolve a table name against the spec and registered data.
+        When table is None and the spec references exactly one table, that table is
+        returned automatically. Raises ValueError if the table is ambiguous or unknown.
+        """
         tables = collect_table_filters(self.spec)
         if table is not None:
             if table not in tables and table not in self._registered_tables:

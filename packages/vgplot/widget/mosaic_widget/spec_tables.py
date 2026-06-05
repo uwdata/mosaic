@@ -1,14 +1,8 @@
-"""Helpers for extracting table/selection relationships from a Mosaic spec.
-
-These helpers power ``MosaicWidget.sql`` and ``MosaicWidget.data()`` by
-discovering which selections are used as ``filterBy`` on which source tables
-and by combining the live ``predicate`` strings on the ``params`` traitlet
-into a SQL ``WHERE`` clause.
+"""Helpers for .sql and .data() methods.
 """
 
 
 def _param_name(value):
-    """Return the param name for a ``$name`` reference, else None."""
     if isinstance(value, str) and value[:1] == "$" and len(value) > 1:
         return value[1:]
     return None
@@ -19,14 +13,9 @@ def _is_literal_table(value):
 
 
 def collect_table_filters(spec):
-    """Walk a Mosaic spec and map each source table to its ``filterBy`` selections.
-
-    Mark ``data`` blocks of the form ``{"from": "<table>", "filterBy": "$sel"}``
-    contribute a ``table -> [selection]`` entry. Tables referenced without a
-    ``filterBy`` still appear in the result with an empty list. Dynamic ``from``
-    values that are param references (``"$tableParam"``) are skipped.
-
-    Selection names are de-duplicated and returned in sorted order.
+    """
+    Walk the spec and return a mapping of table names to the param names
+    that filter them, used to build the WHERE clause in .sql and .data().
     """
     result = {}
 
@@ -53,12 +42,9 @@ def collect_table_filters(spec):
     return result
 
 def resolve_predicates(params, selection_names):
-    """Collect non-empty ``predicate`` strings for the given selection names.
-
-    Names without a corresponding entry in ``params``, or whose entry lacks a
-    predicate (e.g. a plain Param rather than a Selection), are silently
-    skipped. The order of the returned list matches the order of
-    ``selection_names``.
+    """
+    Return the active SQL predicate strings for the given param names,
+    skipping any that are missing or blank.
     """
     predicates = []
     for name in selection_names:
