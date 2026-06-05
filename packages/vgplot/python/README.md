@@ -20,22 +20,23 @@ pip install mosaic-widget
 
 ## Usage
 
-Build a spec with `import vgplot as vg`, then pass it to a `MosaicWidget`:
+### File-based data
+
+Load data from a file using `vg.parquet()`, `vg.csv()`, or `vg.table()`, pass it directly to a mark, then call `vg.spec()` and `spec.show()`:
 
 ```python
 import vgplot as vg
-from mosaic_widget import MosaicWidget
 
-_data = vg.data(athletes=vg.parquet("data/athletes.parquet"))
+athletes = vg.parquet("data/athletes.parquet")
 
-_view = vg.plot(
-    vg.dot(data=vg.from_("athletes"), x="weight", y="height", fill="steelblue", opacity=0.5),
+view = vg.plot(
+    vg.dot(athletes, x="weight", y="height", fill="sex", opacity=0.5),
     vg.width(600),
     vg.height(400),
 )
 
-spec = vg.spec(data=_data, view=_view)
-MosaicWidget(spec.to_dict())
+spec = vg.spec()
+spec.show()
 ```
 
 ### Interactive selections
@@ -44,84 +45,81 @@ Params and selections are first-class objects. Declare them before the view so t
 
 ```python
 import vgplot as vg
-from mosaic_widget import MosaicWidget
 
-_data = vg.data(flights=vg.parquet("data/flights-200k.parquet"))
+flights = vg.parquet("data/flights-200k.parquet")
+brush = vg.selection.crossfilter()
 
-brush = vg.Selection.crossfilter()
-
-_view = vg.vconcat(
+view = vg.vconcat(
     vg.plot(
-        vg.rect_y(data={"from": "flights", "filterBy": brush},
-                  x={"bin": "delay"}, y={"count": ""},
-                  fill="steelblue", inset_left=0.5, inset_right=0.5),
-        {"select": "intervalX", "as": brush},
+        vg.rect_y(flights, x=vg.bin("delay"), y=vg.count(),
+                  filter_by=brush, fill="steelblue",
+                  inset_left=0.5, inset_right=0.5),
+        vg.interval_x(bind=brush),
         vg.x_domain("Fixed"),
         vg.x_label("Arrival Delay (min)"),
         vg.height(200),
     ),
     vg.plot(
-        vg.rect_y(data={"from": "flights", "filterBy": brush},
-                  x={"bin": "time"}, y={"count": ""},
-                  fill="steelblue", inset_left=0.5, inset_right=0.5),
-        {"select": "intervalX", "as": brush},
+        vg.rect_y(flights, x=vg.bin("time"), y=vg.count(),
+                  filter_by=brush, fill="steelblue",
+                  inset_left=0.5, inset_right=0.5),
+        vg.interval_x(bind=brush),
         vg.x_domain("Fixed"),
         vg.x_label("Departure Time (hour)"),
         vg.height(200),
     ),
 )
 
-spec = vg.spec(data=_data, params={"brush": brush}, view=_view)
-MosaicWidget(spec.to_dict())
+spec = vg.spec()
+spec.show()
 ```
 
 ### Scalar params and input widgets
 
-Use `vg.Param.value()` for scalar parameters bound to input controls:
+Use `vg.param()` for scalar parameters bound to input controls:
 
 ```python
 import vgplot as vg
-from mosaic_widget import MosaicWidget
 
-_data = vg.data(walk=vg.parquet("data/random-walk.parquet"))
+walk = vg.parquet("data/random-walk.parquet")
+bias = vg.param(0)
 
-point = vg.Param.value(0)
-
-_view = vg.vconcat(
-    vg.slider(label="Bias", as_=point, min=0, max=1000, step=1),
+view = vg.vconcat(
+    vg.slider(label="Bias", bind=bias, min=0, max=1000, step=1),
     vg.plot(
-        vg.area_y(data=vg.from_("walk"), x="t", y={"sql": "v + $point"}, fill="steelblue"),
+        vg.area_y(walk, x="t", y=vg.sql("v + $bias")),
         vg.width(680),
         vg.height(200),
     ),
 )
 
-spec = vg.spec(data=_data, params={"point": point}, view=_view)
-MosaicWidget(spec.to_dict())
+spec = vg.spec()
+spec.show()
 ```
 
 ## Key concepts
 
 | Concept | Python API |
 |---|---|
-| Load data | `vg.parquet(path)`, `vg.table(query)` |
+| File-based data | `vg.parquet(path)`, `vg.csv(path)`, `vg.table(query)` |
 | Mark | `vg.dot(...)`, `vg.bar_y(...)`, `vg.area_y(...)`, `vg.line_y(...)`, … |
 | Plot attributes | `vg.width(n)`, `vg.height(n)`, `vg.x_label("…")`, `vg.color_scheme("…")`, … |
 | Layout | `vg.vconcat(...)`, `vg.hconcat(...)`, `vg.vspace(n)`, `vg.hspace(n)` |
-| Crossfilter selection | `vg.Selection.crossfilter()` |
-| Intersect / union selection | `vg.Selection.intersect()`, `vg.Selection.union()` |
-| Scalar param | `vg.Param.value(initial)` |
-| Input widgets | `vg.slider(...)`, `vg.select(...)`, `vg.checkbox(...)` |
-| Reference a dataset | `vg.from_("table_name")` |
-| Assemble | `vg.spec(meta=…, data=…, params=…, view=…)` |
+| Crossfilter selection | `vg.selection.crossfilter()` |
+| Intersect / union selection | `vg.selection.intersect()`, `vg.selection.union()` |
+| Scalar param | `vg.param(value)` |
+| Input widgets | `vg.slider(...)`, `vg.menu(...)`, `vg.select(...)`, `vg.checkbox(...)` |
+| Named data reference | `vg.source("table_name")` |
+| Assemble | `vg.spec()` — auto-detects view, params, and data from local variables |
+| Render | `spec.show()` |
 
-Any mark or directive not listed above is also accessible by its snake_case name via `__getattr__`, so `vg.regression_y(...)` and `vg.x_tick_rotate(45)` work without explicit exports.
+Option names match the [vgplot API reference](https://uwdata.github.io/mosaic/api/), but in snake_case. For example, `xDomain` → `x_domain`, `colorScheme` → `color_scheme`, `filterBy` → `filter_by`.
 
-Option names match the [vgplot API reference](https://uwdata.github.io/mosaic/api/), but in snake_case. For example, `xDomain` → `x_domain`, `colorScheme` → `color_scheme`.
+Any mark or directive not listed above is also accessible by its snake_case name — `vg.regression_y(...)` and `vg.x_tick_rotate(45)` work without explicit exports.
 
 ## Exporting specs
 
-`Spec.to_dict()` returns a plain Python dictionary compatible with `mosaic-widget`. `Spec.to_json()` returns a JSON string:
+`Spec.to_dict()` returns a plain Python dictionary. `Spec.to_json()` returns a JSON string:
 
 ```python
 print(spec.to_json(indent=2))
