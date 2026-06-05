@@ -15,7 +15,6 @@ from mosaic_widget.frame_interop import frame_to_duckdb_registrable
 from mosaic_widget.spec_tables import collect_table_filters, resolve_predicates
 
 if TYPE_CHECKING:
-    import pandas as pd
     from narwhals.typing import IntoFrame
 
 
@@ -124,7 +123,12 @@ class MosaicWidget(anywidget.AnyWidget):
         return self._build_sql(self._resolve_table(None), filter_by=None)
 
     def data(self, table=None, *, filter_by=None):
-        """Return the currently filtered rows for ``table`` as a DataFrame.
+        """Return the currently filtered rows for ``table`` as a DuckDB relation.
+
+        The result is the lazy DuckDB relation produced by running
+        :attr:`sql`. The caller chooses how to materialize it, e.g. ``.df()``
+        for pandas, ``.pl()`` for Polars, ``.arrow()`` for an Arrow table, or
+        ``.fetchall()`` for Python tuples.
 
         Args:
             table: Source table name. Defaults to the unique table discovered
@@ -136,7 +140,7 @@ class MosaicWidget(anywidget.AnyWidget):
                 combined with ``AND``.
         """
         resolved = self._resolve_table(table)
-        return self.con.query(self._build_sql(resolved, filter_by=filter_by)).df()
+        return self.con.query(self._build_sql(resolved, filter_by=filter_by))
 
     def _resolve_table(self, table):
         tables = collect_table_filters(self.spec)

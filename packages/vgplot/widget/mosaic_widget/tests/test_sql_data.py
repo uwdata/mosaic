@@ -1,4 +1,6 @@
+import duckdb
 import pandas as pd
+import pyarrow as pa
 import pytest
 
 from mosaic_widget import MosaicWidget
@@ -116,6 +118,27 @@ def test_sql_combines_predicates_with_and(
     assert " AND " in sql
 
 
+def test_data_returns_duckdb_relation(
+    weather_spec: dict, weather_frame: pd.DataFrame
+) -> None:
+    widget = MosaicWidget(spec=weather_spec, data={"weather": weather_frame})
+    relation = widget.data()
+    assert isinstance(relation, duckdb.DuckDBPyRelation)
+    assert hasattr(relation, "df")
+    assert hasattr(relation, "pl")
+    assert hasattr(relation, "arrow")
+
+
+def test_data_sql_matches_widget_sql(
+    weather_spec: dict, weather_frame: pd.DataFrame
+) -> None:
+    widget = MosaicWidget(spec=weather_spec, data={"weather": weather_frame})
+    widget.params = {
+        "click": {"value": "sun", "predicate": "\"weather\" = 'sun'"},
+    }
+    assert widget.data().sql == widget.sql
+
+
 def test_data_returns_filtered_dataframe(
     weather_spec: dict, weather_frame: pd.DataFrame
 ) -> None:
@@ -123,9 +146,37 @@ def test_data_returns_filtered_dataframe(
     widget.params = {
         "click": {"value": "sun", "predicate": "\"weather\" = 'sun'"},
     }
-    result = widget.data()
+    result = widget.data().df()
     assert isinstance(result, pd.DataFrame)
     assert sorted(result["weather"].tolist()) == ["sun", "sun"]
+
+
+def test_data_arrow(weather_spec: dict, weather_frame: pd.DataFrame) -> None:
+    widget = MosaicWidget(spec=weather_spec, data={"weather": weather_frame})
+    widget.params = {
+        "click": {"value": "sun", "predicate": "\"weather\" = 'sun'"},
+    }
+    table = widget.data().arrow()
+    assert isinstance(table, pa.Table)
+    assert table.num_rows == 2
+
+
+def test_data_polars(weather_spec: dict, weather_frame: pd.DataFrame) -> None:
+    pl = pytest.importorskip("polars")
+    widget = MosaicWidget(spec=weather_spec, data={"weather": weather_frame})
+    widget.params = {
+        "range": {"value": [1, 3], "predicate": '"x" BETWEEN 1 AND 3'},
+    }
+    result = widget.data(filter_by="range").pl()
+    assert isinstance(result, pl.DataFrame)
+    assert sorted(result["x"].to_list()) == [1, 2, 3]
+
+
+def test_data_fetchall(weather_spec: dict, weather_frame: pd.DataFrame) -> None:
+    widget = MosaicWidget(spec=weather_spec, data={"weather": weather_frame})
+    rows = widget.data().fetchall()
+    assert len(rows) == 5
+    assert all(isinstance(row, tuple) for row in rows)
 
 
 def test_data_filter_by_subset(weather_spec: dict, weather_frame: pd.DataFrame) -> None:
@@ -134,13 +185,13 @@ def test_data_filter_by_subset(weather_spec: dict, weather_frame: pd.DataFrame) 
         "click": {"value": "sun", "predicate": "\"weather\" = 'sun'"},
         "range": {"value": [1, 3], "predicate": '"x" BETWEEN 1 AND 3'},
     }
-    result = widget.data(filter_by="range")
+    result = widget.data(filter_by="range").df()
     assert sorted(result["x"].tolist()) == [1, 2, 3]
 
 
 def test_data_explicit_table(weather_spec: dict, weather_frame: pd.DataFrame) -> None:
     widget = MosaicWidget(spec=weather_spec, data={"weather": weather_frame})
-    result = widget.data("weather")
+    result = widget.data("weather").df()
     assert len(result) == 5
 
 
