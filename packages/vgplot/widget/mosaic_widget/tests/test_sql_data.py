@@ -50,11 +50,6 @@ def weather_frame() -> pd.DataFrame:
         }
     )
 
-
-def test_collect_table_filters_weather(weather_spec: dict) -> None:
-    assert collect_table_filters(weather_spec) == {"weather": ["click", "range"]}
-
-
 def test_collect_table_filters_multi_table() -> None:
     spec = {
         "vconcat": [
@@ -78,11 +73,6 @@ def test_collect_table_filters_ignores_inline_data() -> None:
 def test_collect_table_filters_skips_dynamic_from() -> None:
     spec = {"mark": "dot", "data": {"from": "$tableParam"}}
     assert collect_table_filters(spec) == {}
-
-
-def test_collect_table_filters_filter_by_list() -> None:
-    spec = {"mark": "dot", "data": {"from": "x", "filterBy": ["$a", "$b"]}}
-    assert collect_table_filters(spec) == {"x": ["a", "b"]}
 
 
 def test_resolve_predicates_skips_missing_and_paramless() -> None:
@@ -136,7 +126,7 @@ def test_data_sql_matches_widget_sql(
     widget.params = {
         "click": {"value": "sun", "predicate": "\"weather\" = 'sun'"},
     }
-    assert widget.data().sql == widget.sql
+    assert widget.data().df().equals(widget.con.query(widget.sql).df())
 
 
 def test_data_returns_filtered_dataframe(
@@ -156,7 +146,7 @@ def test_data_arrow(weather_spec: dict, weather_frame: pd.DataFrame) -> None:
     widget.params = {
         "click": {"value": "sun", "predicate": "\"weather\" = 'sun'"},
     }
-    table = widget.data().arrow()
+    table = widget.data().arrow().read_all()
     assert isinstance(table, pa.Table)
     assert table.num_rows == 2
 

@@ -4,7 +4,6 @@ import logging
 import pathlib
 import re
 import time
-from typing import TYPE_CHECKING
 
 import anywidget
 import duckdb
@@ -14,16 +13,10 @@ import traitlets
 from mosaic_widget.frame_interop import frame_to_duckdb_registrable
 from mosaic_widget.spec_tables import collect_table_filters, resolve_predicates
 
-if TYPE_CHECKING:
-    from narwhals.typing import IntoFrame
-
-
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
 
 SLOW_QUERY_THRESHOLD = 5000
-
-_IDENTIFIER_RE = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
 
 
 class MosaicWidget(anywidget.AnyWidget):
@@ -165,10 +158,6 @@ class MosaicWidget(anywidget.AnyWidget):
         return next(iter(tables))
 
     def _build_sql(self, table, filter_by=None):
-        if not _IDENTIFIER_RE.match(table):
-            raise ValueError(
-                f"Invalid table name {table!r}; expected a simple identifier."
-            )
         if filter_by is None:
             names = collect_table_filters(self.spec).get(table, [])
         elif isinstance(filter_by, str):

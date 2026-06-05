@@ -49,8 +49,8 @@ def collect_table_filters(spec):
                 visit(item)
 
     visit(spec)
+    result = {table: list(names) for table, names in result.items()}
     return result
-
 
 def resolve_predicates(params, selection_names):
     """Collect non-empty ``predicate`` strings for the given selection names.
