@@ -21,20 +21,23 @@ export function filterPushdown(
   filter: FilterExpr
 ) {
   const clone = deepClone(query);
-  const tableRef = asTableRef(table)!;
-  walk(clone, (node) => {
-    if (node.type === SCALAR_SUBQUERY) {
-      return 1; // don't recurse
-    } else if (
-      isSelectQuery(node) &&
-      node._from.length === 1 &&
-      node._from[0] instanceof FromClauseNode &&
-      isTableRef(node._from[0].expr) &&
-      arrayEquals(node._from[0].expr.table, tableRef.table)
-    ) {
-      node.where(filter);
-    }
-  });
+  const tableRef = asTableRef(table);
+  if (tableRef) {
+    walk(clone, (node) => {
+      if (node.type === SCALAR_SUBQUERY) {
+        return 1; // don't recurse
+      } else if (isSelectQuery(node)) {
+        for (const source of node._from) {
+          if (source instanceof FromClauseNode &&
+            isTableRef(source.expr) &&
+            arrayEquals(source.expr.table, tableRef.table)
+          ) {
+            node.where(filter);
+          }
+        }
+      }
+    });
+  }
   return clone;
 }
 

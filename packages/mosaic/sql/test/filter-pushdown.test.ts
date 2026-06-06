@@ -1,5 +1,5 @@
 import { expect, describe, it } from 'vitest';
-import { count, div, filterPushdown, gt, Query, ScalarSubqueryNode } from '../src/index.js';
+import { column, count, div, eq, filterPushdown, FromClauseNode, gt, Query, ScalarSubqueryNode, TableRefNode } from '../src/index.js';
 
 describe('filterPushdown', () => {
   it('updates queries', () => {
@@ -20,6 +20,18 @@ describe('filterPushdown', () => {
       .select('v').from('c');
     const f = filterPushdown(q, 'table', gt('x', 2));
     expect(String(f)).toBe('WITH "c" AS (SELECT "x" AS "v" FROM "table" WHERE ("x" > 2)) SELECT "v" FROM "c"');
+  });
+
+  it('updates implicit joins', () => {
+    const q = Query
+      .select('a', 'b', column('v', 'O'))
+      .from(
+        new FromClauseNode(new TableRefNode('table'), 'T'),
+        new FromClauseNode(new TableRefNode('other'), 'O'),
+      )
+      .where(eq(column('id', 'T'), column('id', 'O')));
+    const f = filterPushdown(q, 'table', gt('x', 2));
+    expect(String(f)).toBe('SELECT "a", "b", "O"."v" AS "v" FROM "table" AS "T", "other" AS "O" WHERE ("T"."id" = "O"."id") AND ("x" > 2)');
   });
 
   it('skips scalar subqueries', () => {
