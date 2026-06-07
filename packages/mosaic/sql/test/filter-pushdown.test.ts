@@ -20,6 +20,12 @@ describe('filterPushdown', () => {
     expect(String(f)).toMatchInlineSnapshot(`"WITH "_table" AS (SELECT * FROM "table" WHERE ("x" > 2)) SELECT "v" FROM "_table" AS "table""`);
   });
 
+  it('avoids namespace collisions', () => {
+    const q = Query.select('v').from('table', '_table');
+    const f = filterPushdown(q, 'table', gt('x', 2));
+    expect(String(f)).toMatchInlineSnapshot(`"WITH "__table" AS (SELECT * FROM "table" WHERE ("x" > 2)) SELECT "v" FROM "__table" AS "table", "_table""`);
+  });
+
   it('updates FROM subqueries', () => {
     const q = Query.select('v').from(Query.select({ v: 'x' }).from('table'));
     const f = filterPushdown(q, 'table', gt('x', 2));
