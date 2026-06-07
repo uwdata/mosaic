@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import type { CreateQuery, ExprNode, FilterExpr } from "@uwdata/mosaic-sql";
-import { Query, add, argmax, argmin, avg, corr, count, covarPop, covariance, desc, geomean, gt, isNotDistinct, literal, loadObjects, max, min, mul, product, regrAvgX, regrAvgY, regrCount, regrIntercept, regrR2, regrSXX, regrSXY, regrSYY, regrSlope, stddev, stddevPop, sum, varPop, variance } from '@uwdata/mosaic-sql';
+import { Query, add, argmax, argmin, avg, corr, count, covarPop, covariance, desc, filterPushdown, geomean, gt, isNotDistinct, literal, loadObjects, max, min, mul, product, regrAvgX, regrAvgY, regrCount, regrIntercept, regrR2, regrSXX, regrSXY, regrSYY, regrSlope, stddev, stddevPop, sum, varPop, variance } from '@uwdata/mosaic-sql';
 import { Coordinator, Selection, SelectionClause } from '../src/index.js';
 import { NodeConnector } from './util/node-connector.js';
 import { TestClient } from './util/test-client.js';
@@ -215,5 +215,15 @@ describe('PreAggregator', () => {
         .qualify(gt('measure', 7));
     };
     expect(await run(query)).toStrictEqual([13, true]);
+  });
+
+  it('supports queries with filter pushdown applied', async () => {
+    const query = (predicate: FilterExpr = []) => {
+      const q = Query.from('testData')
+        .select({ measure: avg("x"), dim: "dim" })
+        .groupby("dim");
+      return predicate ? filterPushdown(q, 'testData', predicate) : q;
+    };
+    expect(await run(query)).toStrictEqual([3.5, true]);
   });
 });
