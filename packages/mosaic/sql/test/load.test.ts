@@ -1,6 +1,11 @@
 import { expect, describe, it } from 'vitest';
 import { loadCSV } from '../src/index.js';
 
+// NOTE: These statements are intentionally NOT run through the DuckDB
+// validation helper. loadCSV emits `read_csv('data.csv', ...)`, and binding the
+// statement (even via EXPLAIN) requires the referenced file to exist on disk.
+// Since these are string-shape tests over a non-existent fixture file, DuckDB
+// would reject them with an IO/Catalog error unrelated to SQL correctness.
 describe('loadCSV', () => {
   it('accepts query options', () => {
     const base = {

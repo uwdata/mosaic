@@ -3,57 +3,57 @@ import { contains, literal, length, lower, prefix, regexp_matches, suffix, upper
 import { columns } from './util/columns.js';
 
 describe('String functions', () => {
-  it('include regexp_matches', () => {
+  it('include regexp_matches', async () => {
     const expr = regexp_matches('foo', literal('(an)*'))
-    expect(String(expr)).toBe(`regexp_matches("foo", '(an)*')`);
+    await expect(expr).toBeValidExpr(`regexp_matches("foo", '(an)*')`, 'strings');
     expect(expr.name).toBe('regexp_matches');
     expect(expr.args.length).toBe(2);
     expect(columns(expr)).toStrictEqual(['foo']);
   });
 
-  it('include contains', () => {
+  it('include contains', async () => {
     const expr = contains('foo', literal('oo'))
-    expect(String(expr)).toBe(`contains("foo", 'oo')`);
+    await expect(expr).toBeValidExpr(`contains("foo", 'oo')`, 'strings');
     expect(expr.name).toBe('contains');
     expect(expr.args.length).toBe(2);
     expect(columns(expr)).toStrictEqual(['foo']);
   });
 
-  it('include prefix', () => {
+  it('include prefix', async () => {
     const expr = prefix('foo', literal('fo'))
-    expect(String(expr)).toBe(`starts_with("foo", 'fo')`);
+    await expect(expr).toBeValidExpr(`starts_with("foo", 'fo')`, 'strings');
     expect(expr.name).toBe('starts_with');
     expect(expr.args.length).toBe(2);
     expect(columns(expr)).toStrictEqual(['foo']);
   });
 
-  it('include suffix', () => {
+  it('include suffix', async () => {
     const expr = suffix('foo', literal('oo'))
-    expect(String(expr)).toBe(`ends_with("foo", 'oo')`);
+    await expect(expr).toBeValidExpr(`ends_with("foo", 'oo')`, 'strings');
     expect(expr.name).toBe('ends_with');
     expect(expr.args.length).toBe(2);
     expect(columns(expr)).toStrictEqual(['foo']);
   });
 
-  it('include lower', () => {
+  it('include lower', async () => {
     const expr = lower('foo')
-    expect(String(expr)).toBe(`lower("foo")`);
+    await expect(expr).toBeValidExpr(`lower("foo")`, 'strings');
     expect(expr.name).toBe('lower');
     expect(expr.args.length).toBe(1);
     expect(columns(expr)).toStrictEqual(['foo']);
   });
 
-  it('include upper', () => {
+  it('include upper', async () => {
     const expr = upper('foo')
-    expect(String(expr)).toBe(`upper("foo")`);
+    await expect(expr).toBeValidExpr(`upper("foo")`, 'strings');
     expect(expr.name).toBe('upper');
     expect(expr.args.length).toBe(1);
     expect(columns(expr)).toStrictEqual(['foo']);
   });
 
-  it('include length', () => {
+  it('include length', async () => {
     const expr = length('foo')
-    expect(String(expr)).toBe(`length("foo")`);
+    await expect(expr).toBeValidExpr(`length("foo")`, 'strings');
     expect(expr.name).toBe('length');
     expect(expr.args.length).toBe(1);
     expect(columns(expr)).toStrictEqual(['foo']);

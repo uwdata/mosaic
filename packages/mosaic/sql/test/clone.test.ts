@@ -1,8 +1,9 @@
 import { expect, describe, it } from 'vitest';
 import { add, deepClone, literal, neq, Query, SQLNode, sum, walk } from '../src/index.js';
+import { validateQuery } from './util/validate.js';
 
 describe('deepClone', () => {
-  it('performs deep clone', () => {
+  it('performs deep clone', async () => {
     const q = Query.select({ v: add(1, sum('foo')) })
       .from('tab')
       .groupby('cat')
@@ -11,6 +12,8 @@ describe('deepClone', () => {
 
     expect(c).not.toBe(q);
     expect(String(c)).toBe(String(q));
+    await validateQuery(q);
+    await validateQuery(c);
 
     const qNodes: SQLNode[] = [];
     const cNodes: SQLNode[] = [];

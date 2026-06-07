@@ -1,6 +1,7 @@
 import { expect, describe, it } from 'vitest';
 import { abs, add, asVerbatim, collectAggregates, collectColumns, collectParams, column, count, div, isAggregateExpression, Query, ScalarSubqueryNode, sql, sum } from '../src/index.js';
 import { stubParam } from './util/stub-param.js';
+import { validateQuery } from './util/validate.js';
 
 describe('Visitor functions', () => {
   it('include column collection', () => {
@@ -25,15 +26,20 @@ describe('Visitor functions', () => {
     expect(collectParams(expr2)).toStrictEqual([]);
   });
 
-  it('include aggregate collection', () => {
-    expect(collectAggregates(Query.select({
+  it('include aggregate collection', async () => {
+    const aggQuery = Query.select({
       count: count(),
       sum: sum('foo'),
       mix: add(sum('foo'), sum('bar'))
-    }).from('table'))).toHaveLength(4);
-    expect(collectAggregates(Query.select({
+    }).from('table');
+    expect(collectAggregates(aggQuery)).toHaveLength(4);
+    await validateQuery(aggQuery);
+
+    const normQuery = Query.select({
       norm: div(1, new ScalarSubqueryNode(Query.select({ count: count() }).from('table')))
-    }).from('table'))).toHaveLength(0);
+    }).from('table');
+    expect(collectAggregates(normQuery)).toHaveLength(0);
+    await validateQuery(normQuery);
   });
 
   it('include aggregate function detection', () => {

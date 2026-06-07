@@ -1,12 +1,18 @@
 import { expect, describe, it } from 'vitest';
 import { asTableRef, deepClone, parseTableRef, TableRefNode } from '../src/index.js';
+import { validateQuery } from './util/validate.js';
 
 describe('Table references', () => {
-  it('serialize to SQL', () => {
+  it('serialize to SQL', async () => {
     expect(String(new TableRefNode('foo'))).toBe(`"foo"`);
+    await validateQuery(`SELECT * FROM ${new TableRefNode('foo')}`);
     expect(String(new TableRefNode(['foo']))).toBe(`"foo"`);
+    await validateQuery(`SELECT * FROM ${new TableRefNode(['foo'])}`);
     expect(String(new TableRefNode(['foo', 'bar']))).toBe(`"foo"."bar"`);
     expect(String(new TableRefNode(['foo', 'bar', 'baz']))).toBe(`"foo"."bar"."baz"`);
+    // Not validated: multi-part names denote schema/catalog-qualified tables
+    // ("foo"."bar", "foo"."bar"."baz") that do not exist in the fixture; this
+    // test only covers identifier serialization.
   });
 
   it('are created by asTableRef', () => {
