@@ -37,17 +37,20 @@ describe('filterPushdown', () => {
       .with({ c: Query.select({ v: 'x' }).from('table') })
       .select('v').from('c');
     const f = filterPushdown(q, 'table', gt('x', 2));
-    expect(String(f)).toMatchInlineSnapshot(`"WITH "c" AS (SELECT "x" AS "v" FROM "_table" AS "table"), "_table" AS (SELECT * FROM "table" WHERE ("x" > 2)) SELECT "v" FROM "c""`);
+    expect(String(f)).toMatchInlineSnapshot(`"WITH "_table" AS (SELECT * FROM "table" WHERE ("x" > 2)), "c" AS (SELECT "x" AS "v" FROM "_table" AS "table") SELECT "v" FROM "c""`);
   });
 
   it('updates self joins', () => {
     const q = Query
       .select('*')
       .from(
-        cross_join('table', 'table')
+        cross_join(
+          new FromClauseNode(new TableRefNode('table'), 'T1'),
+          new FromClauseNode(new TableRefNode('table'), 'T2')
+        )
       );
     const f = filterPushdown(q, 'table', gt('x', 2));
-    expect(String(f)).toMatchInlineSnapshot(`"WITH "_table" AS (SELECT * FROM "table" WHERE ("x" > 2)) SELECT * FROM "_table" CROSS JOIN "_table""`);
+    expect(String(f)).toMatchInlineSnapshot(`"WITH "_table" AS (SELECT * FROM "table" WHERE ("x" > 2)) SELECT * FROM "_table" AS "T1" CROSS JOIN "_table" AS "T2""`);
   });
 
   it('updates explicit joins', () => {

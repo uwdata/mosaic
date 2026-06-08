@@ -5,14 +5,16 @@ import { isTableRef, type TableRefNode } from '../ast/table-ref.js';
 import { asTableRef } from '../util/ast.js';
 import { deepClone } from '../visit/clone.js';
 import { walk } from '../visit/walk.js';
+import { WithClauseNode } from '../ast/with.js';
 
 /**
- * Perform filter pushdown on a query: clones the given query and adds a
- * WHERE clause for the specified base table. Ignores scalar subqueries,
- * but will recurse into CTEs, joins, and FROM subqueries.
+ * Perform filter pushdown on a query: clone a query and push a filter into
+ * the given base table via a CTE, so every reference to the table sees the
+ * filtered rows. Skips scalar subqueries.
  * @param query The query to clone and extend.
  * @param table The base table as a table name or table reference node.
- * @param filter The filter predicate expression to add.
+ * @param filter The filter predicate expression to add. May only reference
+ *  columns of the table, not aliases assigned elsewhere in the query.
  */
 export function filterPushdown(
   query: Query,
@@ -53,9 +55,13 @@ export function filterPushdown(
     }
   });
 
-  return clone.with({
-    [filteredName]: Query.select("*").from(tableRef).where(filter)
-  });
+  // add filtered table as CTE node
+  const cte = new WithClauseNode(
+    filteredName,
+    Query.select("*").from(tableRef).where(filter)
+  );
+  clone._with = [cte, ...clone._with];
+  return clone;
 }
 
 /**
