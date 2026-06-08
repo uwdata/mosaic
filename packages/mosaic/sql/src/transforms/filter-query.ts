@@ -38,7 +38,7 @@ export function filterPushdown(
     // filtered table not present in query, nothing to do
     return clone;
   }
-  let filteredName = `_${tableRef?.name}`;
+  let filteredName = `_${tableRef.name}`;
   while (names.has(filteredName)) {
     filteredName = `_${filteredName}`;
   }
