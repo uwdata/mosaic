@@ -67,7 +67,7 @@ document.appendChild(
 
 </template>
 
-<template v-else>
+<template v-else-if="language === 'python'">
 
 # API Context
 
@@ -103,3 +103,5 @@ spec = vg.spec(data=data, view=view)
 Adjust `data` and marks to match your pipeline; the important piece is composing `view` with `vg.plot` / layout helpers and wrapping with `vg.spec`.
 
 </template>
+
+<LangError v-else :language="language" />

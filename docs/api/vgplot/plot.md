@@ -25,7 +25,7 @@ plot(
 
 </template>
 
-<template v-else>
+<template v-else-if="language === 'python'">
 
 ``` python
 import mosaic.vgplot as vg
@@ -40,6 +40,8 @@ vg.plot(
 
 </template>
 
+<LangError v-else :language="language" />
+
 ## plot
 
 <template v-if="language === 'js'">
@@ -50,13 +52,15 @@ Create a new `Plot` instance based on the provided _directives_ and return the c
 
 </template>
 
-<template v-else>
+<template v-else-if="language === 'python'">
 
 `vg.plot(...directives)`
 
 Build a plot specification from the provided _directives_ for use with Mosaic widgets or other consumers.
 
 </template>
+
+<LangError v-else :language="language" />
 
 ## Plot {#plot-class}
 
@@ -173,7 +177,7 @@ The _include_ flag (default `true`) indicates if the legend should be included w
 Called by [legend directives](./legends).
 </template>
 
-<template v-else>
+<template v-else-if="language === 'python'">
 
 `new Plot(element)`
 
@@ -285,3 +289,5 @@ Add a _legend_ associated with this plot.
 The _include_ flag (default `true`) indicates if the legend should be included within the same container element as the plot.
 Called by [legend directives](./legends).
 </template>
+
+<LangError v-else :language="language" />

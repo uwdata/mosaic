@@ -1,6 +1,7 @@
 import DefaultTheme from 'vitepress/theme';
 import Example from './Example.vue';
 import LangToggle from './LangToggle.vue';
+import LangError from './LangError.vue';
 import Layout from "./Layout.vue";
 import './custom.css';
 
@@ -22,6 +23,7 @@ export default {
   enhanceApp(ctx) {
     ctx.app.component('Example', Example);
     ctx.app.component('LangToggle', LangToggle);
+    ctx.app.component('LangError', LangError);
 
     if (typeof window === 'undefined') return;
 

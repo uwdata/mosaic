@@ -202,7 +202,7 @@ Unselected values are deemphasized.
 
 </template>
 
-<template v-else>
+<template v-else-if="language === 'python'">
 
 # Interactors
 
@@ -395,3 +395,5 @@ Unselected values are deemphasized.
 
 
 </template>
+
+<LangError v-else :language="language" />

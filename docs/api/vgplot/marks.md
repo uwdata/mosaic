@@ -288,7 +288,7 @@ For supported options, see the [Observable Plot `vector` documentation](https://
 
 </template>
 
-<template v-else>
+<template v-else-if="language === 'python'">
 
 # Marks
 
@@ -568,3 +568,5 @@ For supported options, see the [Observable Plot `vector` documentation](https://
 
 
 </template>
+
+<LangError v-else :language="language" />

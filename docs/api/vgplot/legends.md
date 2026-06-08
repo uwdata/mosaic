@@ -64,7 +64,7 @@ If invoked with the _for_ option in a standalone fashion, returns a Web element 
 
 </template>
 
-<template v-else>
+<template v-else-if="language === 'python'">
 
 # Legends
 
@@ -101,3 +101,5 @@ Create a legend for the plot `opacity` scale. Options match the JavaScript [`opa
 Create a legend for the plot `symbol` scale. Options match the JavaScript [`symbolLegend`](#symbollegend) case (`_for_`, `_as_`, plus Observable Plot legend options).
 
 </template>
+
+<LangError v-else :language="language" />

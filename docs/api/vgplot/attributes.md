@@ -19,11 +19,13 @@ In addition to value arrays, scale domain attributes accept the `Fixed` symbol.
 
 </template>
 
-<template v-else>
+<template v-else-if="language === 'python'">
 
 In addition to value arrays, scale domain attributes accept the string `"Fixed"` for a fixed domain (for example `vg.x_domain("Fixed")`).
 
 </template>
+
+<LangError v-else :language="language" />
 
 This setting indicates that the scale domain should first be determined by the data, but should then be held fixed across subsequent data updates.
 A fixed domain will remain stable, preventing "jumps" in a display that might hamper interpretation of changes.
@@ -46,7 +48,7 @@ plot(
 
 </template>
 
-<template v-else>
+<template v-else-if="language === 'python'">
 
 Attributes are passed as directives to `vg.plot`, together with marks, interactors, and legends:
 
@@ -63,6 +65,8 @@ vg.plot(
 ```
 
 </template>
+
+<LangError v-else :language="language" />
 
 ## Plot Attributes
 
@@ -284,7 +288,7 @@ Interval interactors are not currently supported when cartographic projections a
 
 </template>
 
-<template v-else>
+<template v-else-if="language === 'python'">
 
 - `name(value)`: Set a globally unique name by which to refer to the plot.
 - `style(value)`: Set CSS styles to apply to the plot output.
@@ -501,3 +505,5 @@ Interval interactors are not currently supported when cartographic projections a
 :::
 
 </template>
+
+<LangError v-else :language="language" />

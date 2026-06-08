@@ -44,7 +44,7 @@ If _size_ is a number it is interpreted as a pixel value, otherwise it will be i
 
 </template>
 
-<template v-else>
+<template v-else-if="language === 'python'">
 
 # Layout
 
@@ -77,3 +77,5 @@ Add horizontal space between elements.
 If _size_ is a number it is interpreted as a pixel value, otherwise it will be interpreted as a [CSS dimension](https://developer.mozilla.org/en-US/docs/Web/CSS/dimension).
 
 </template>
+
+<LangError v-else :language="language" />

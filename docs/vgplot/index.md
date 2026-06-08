@@ -180,7 +180,7 @@ To ensure spacing, the `vspace` and `hspace` helpers add padding between element
 [Layout API Reference](/api/vgplot/layout)
 </template>
 
-<template v-else>
+<template v-else-if="language === 'python'">
 
 Mosaic vgplot is a grammar of interactive graphics: each mark is a Mosaic client that queries data through the coordinator. In Python, `import mosaic.vgplot as vg` gives you composable helpers for plots, attributes, marks, interactors, legends, and layout. Names use **`snake_case`**; Python keywords are escaped with a trailing underscore (`from_`, `as_`, `for_`).
 
@@ -290,6 +290,8 @@ Full apps often call `vg.spec(meta=..., data=..., params=..., view=...)` so the 
 - [Specification format reference](/api/spec/format) — schema-oriented description of top-level keys and marks.
 - [vgplot under **API Reference**](/api/) — detailed plot, mark, interactor, and layout pages. Option names there appear in **camelCase** (e.g. `lineY`, `xDomain`); in Python, use **snake_case** (`line_y`, `x_domain`).
 </template>
+
+<LangError v-else :language="language" />
 
 <style scoped>
 .vgplot-toggle {
