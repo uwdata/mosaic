@@ -38,21 +38,17 @@ const columnDefs = Object.entries(COLUMNS)
   .map(([name, type]) => `"${name}" ${type}`)
   .join(', ');
 
-let dbPromise: Promise<DuckDB> | undefined;
-
-function getDB(): Promise<DuckDB> {
-  if (!dbPromise) {
-    dbPromise = (async () => {
-      const db = new DuckDB();
-      await db._init;
-      for (const table of TABLES) {
-        await db.exec(`CREATE TABLE ${table} (${columnDefs})`);
-      }
-      return db;
-    })();
+async function createDB(): Promise<DuckDB> {
+  const db = new DuckDB();
+  await db._init;
+  for (const table of TABLES) {
+    await db.exec(`CREATE TABLE ${table} (${columnDefs})`);
   }
-  return dbPromise;
+  return db;
 }
+
+let dbPromise: Promise<DuckDB> | undefined;
+const getDB = (): Promise<DuckDB> => (dbPromise ??= createDB());
 
 /**
  * Validate a complete SQL statement against DuckDB's parser + binder.
