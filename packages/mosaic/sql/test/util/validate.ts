@@ -33,7 +33,6 @@ const COLUMNS: Record<string, string> = {
   flag1: 'BOOLEAN', flag2: 'BOOLEAN'
 };
 
-/** Fixture table names. Two identical tables, for joins and set operations. */
 const TABLES = ['t1', 't2'];
 
 const columnDefs = Object.entries(COLUMNS)
@@ -42,7 +41,6 @@ const columnDefs = Object.entries(COLUMNS)
 
 let dbPromise: Promise<DuckDB> | undefined;
 
-/** Lazily initialize the shared in-memory DuckDB with the fixture schema. */
 function getDB(): Promise<DuckDB> {
   if (!dbPromise) {
     dbPromise = (async () => {

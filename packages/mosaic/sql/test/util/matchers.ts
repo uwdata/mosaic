@@ -1,25 +1,36 @@
 import { expect } from 'vitest';
 import { validateExpr, validateQuery } from './validate.js';
+import type {
+  ExprNode, Query, CreateQuery, CreateSchemaQuery, DescribeQuery
+} from '../../src/index.js';
 
-interface ValidatingMatchers<R = unknown> {
+type SqlStatement = Query | CreateQuery | CreateSchemaQuery | DescribeQuery;
+
+interface ValidatingMatchers<T> {
   /**
    * Assert the SQL expression serializes to `expected` and binds against
    * DuckDB's parser + binder.
    */
-  toBeValidExpr(expected: string): Promise<R>;
+  // Query extends ExprNode, so SqlStatement is checked first to keep queries
+  // out of toBeValidExpr.
+  toBeValidExpr: [T] extends [SqlStatement]
+    ? never
+    : [T] extends [ExprNode]
+      ? (expected: string) => Promise<void>
+      : never;
   /**
    * Assert the SQL query serializes to `expected` and binds against DuckDB's
    * parser + binder.
    */
-  toBeValidQuery(expected: string): Promise<R>;
+  toBeValidQuery: [T] extends [SqlStatement]
+    ? (expected: string) => Promise<void>
+    : never;
 }
 
 declare module 'vitest' {
   // T = any matches Vitest's own Assertion declaration so the interfaces merge.
   // eslint-disable-next-line @typescript-eslint/no-empty-object-type, @typescript-eslint/no-explicit-any
   interface Assertion<T = any> extends ValidatingMatchers<T> {}
-  // eslint-disable-next-line @typescript-eslint/no-empty-object-type
-  interface AsymmetricMatchersContaining extends ValidatingMatchers {}
 }
 
 expect.extend({
