@@ -12,8 +12,7 @@ import { DuckDB } from '@uwdata/mosaic-duckdb';
  *
  * Two identical tables, `t1` and `t2` (`t2` exists for joins and set
  * operations). Every column name encodes its type, and each name maps to
- * exactly one type, so any expression binds unambiguously — to write a test,
- * pick a column of the type you need:
+ * exactly one type.
  *
  * | column           | type        |
  * | ---------------- | ----------- |
