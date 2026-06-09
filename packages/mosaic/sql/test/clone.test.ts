@@ -4,10 +4,10 @@ import { validateQuery } from './util/validate.js';
 
 describe('deepClone', () => {
   it('performs deep clone', async () => {
-    const q = Query.select({ v: add(1, sum('foo')) })
-      .from('tab')
-      .groupby('cat')
-      .where(neq('cat', literal('meow')));
+    const q = Query.select({ v: add(1, sum('num1')) })
+      .from('t1')
+      .groupby('txt1')
+      .where(neq('txt1', literal('meow')));
     const c = deepClone(q);
 
     expect(c).not.toBe(q);

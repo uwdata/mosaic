@@ -5,42 +5,41 @@ import { columns } from "./util/columns";
 
 describe("Unnest functions", () => {
   it("include unnest", async () => {
-    const expr = unnest("foo", false, 0);
-    await expect(expr).toBeValidExpr(`UNNEST("foo")`, "lists");
-    expect(expr.expr.toString()).toBe('"foo"');
+    const expr = unnest("lst2", false, 0);
+    await expect(expr).toBeValidExpr(`UNNEST("lst2")`);
+    expect(expr.expr.toString()).toBe('"lst2"');
     expect(expr.recursive).toBe(false);
     expect(expr.maxDepth).toBe(0);
-    expect(columns(expr)).toStrictEqual(["foo"]);
+    expect(columns(expr)).toStrictEqual(["lst2"]);
   });
 
   it("include unnest, recursive", async () => {
-    const expr = unnest("foo", true, 0);
-    await expect(expr).toBeValidExpr(`UNNEST("foo", recursive := true)`, "lists");
-    expect(expr.expr.toString()).toBe('"foo"');
+    const expr = unnest("lst2", true, 0);
+    await expect(expr).toBeValidExpr(`UNNEST("lst2", recursive := true)`);
+    expect(expr.expr.toString()).toBe('"lst2"');
     expect(expr.recursive).toBe(true);
     expect(expr.maxDepth).toBe(0);
-    expect(columns(expr)).toStrictEqual(["foo"]);
+    expect(columns(expr)).toStrictEqual(["lst2"]);
   });
 
   it("include unnest, maxDepth", async () => {
-    const expr = unnest("foo", false, 5);
-    await expect(expr).toBeValidExpr(`UNNEST("foo", max_depth := 5)`, "lists");
-    expect(expr.expr.toString()).toBe('"foo"');
+    const expr = unnest("lst2", false, 5);
+    await expect(expr).toBeValidExpr(`UNNEST("lst2", max_depth := 5)`);
+    expect(expr.expr.toString()).toBe('"lst2"');
     expect(expr.recursive).toBe(false);
     expect(expr.maxDepth).toBe(5);
-    expect(columns(expr)).toStrictEqual(["foo"]);
+    expect(columns(expr)).toStrictEqual(["lst2"]);
   });
 
   it("include unnest, recursive, maxDepth", async () => {
-    const expr = unnest("foo", true, 5);
+    const expr = unnest("lst2", true, 5);
     await expect(expr).toBeValidExpr(
-      `UNNEST("foo", recursive := true, max_depth := 5)`,
-      "lists",
+      `UNNEST("lst2", recursive := true, max_depth := 5)`,
     );
-    expect(expr.expr.toString()).toBe('"foo"');
+    expect(expr.expr.toString()).toBe('"lst2"');
     expect(expr.recursive).toBe(true);
     expect(expr.maxDepth).toBe(5);
-    expect(columns(expr)).toStrictEqual(["foo"]);
+    expect(columns(expr)).toStrictEqual(["lst2"]);
   });
 
   it("include unnest, hardcoded list, recursive, maxDepth", async () => {

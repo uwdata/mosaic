@@ -4,10 +4,10 @@ import { validateQuery } from './util/validate.js';
 
 describe('Table references', () => {
   it('serialize to SQL', async () => {
-    expect(String(new TableRefNode('foo'))).toBe(`"foo"`);
-    await validateQuery(`SELECT * FROM ${new TableRefNode('foo')}`);
-    expect(String(new TableRefNode(['foo']))).toBe(`"foo"`);
-    await validateQuery(`SELECT * FROM ${new TableRefNode(['foo'])}`);
+    expect(String(new TableRefNode('t1'))).toBe(`"t1"`);
+    await validateQuery(`SELECT * FROM ${new TableRefNode('t1')}`);
+    expect(String(new TableRefNode(['t1']))).toBe(`"t1"`);
+    await validateQuery(`SELECT * FROM ${new TableRefNode(['t1'])}`);
     expect(String(new TableRefNode(['foo', 'bar']))).toBe(`"foo"."bar"`);
     expect(String(new TableRefNode(['foo', 'bar', 'baz']))).toBe(`"foo"."bar"."baz"`);
     // Not validated: multi-part names denote schema/catalog-qualified tables

@@ -17,7 +17,7 @@ describe('CreateQuery', () => {
   });
 
   it('accepts a Query node as query', () => {
-    const select = Query.select('*').from('t');
+    const select = Query.select('*').from('t1');
     const q = new CreateQuery('table', select);
     expect(isCreateQuery(q)).toBe(true);
     expect(q.query).toBe(select);
@@ -73,9 +73,9 @@ describe('createTable toString', () => {
   });
 
   it('generates SQL with a Query node as source', async () => {
-    const q = createTable('result', Query.select('*').from('t'), { temp: true });
+    const q = createTable('result', Query.select('*').from('t1'), { temp: true });
     await expect(q).toBeValidQuery(
-      `CREATE TEMP TABLE IF NOT EXISTS "result" AS SELECT * FROM "t"`
+      `CREATE TEMP TABLE IF NOT EXISTS "result" AS SELECT * FROM "t1"`
     );
   });
 });

@@ -29,15 +29,15 @@ describe('Visitor functions', () => {
   it('include aggregate collection', async () => {
     const aggQuery = Query.select({
       count: count(),
-      sum: sum('foo'),
-      mix: add(sum('foo'), sum('bar'))
-    }).from('table');
+      sum: sum('num1'),
+      mix: add(sum('num1'), sum('num2'))
+    }).from('t1');
     expect(collectAggregates(aggQuery)).toHaveLength(4);
     await validateQuery(aggQuery);
 
     const normQuery = Query.select({
-      norm: div(1, new ScalarSubqueryNode(Query.select({ count: count() }).from('table')))
-    }).from('table');
+      norm: div(1, new ScalarSubqueryNode(Query.select({ count: count() }).from('t1')))
+    }).from('t1');
     expect(collectAggregates(normQuery)).toHaveLength(0);
     await validateQuery(normQuery);
   });

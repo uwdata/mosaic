@@ -3,234 +3,234 @@ import { asTableRef, column, desc, gt, lt, max, min, sql, Query, sum, lead, over
 
 describe('Query', () => {
   it('selects column name strings', async () => {
-    const query = 'SELECT "foo", "bar", "baz" FROM "data"';
+    const query = 'SELECT "num1", "num2", "num3" FROM "t1"';
 
     await expect(
       Query
-        .select('foo', 'bar', 'baz')
-        .from('data')
+        .select('num1', 'num2', 'num3')
+        .from('t1')
     ).toBeValidQuery(query);
 
     expect(
       Query
-        .select('foo', 'bar', 'baz')
-        .from(asTableRef('data')!)
+        .select('num1', 'num2', 'num3')
+        .from(asTableRef('t1')!)
         .toString()
     ).toBe(query);
 
     expect(
       Query
-        .select(['foo', 'bar', 'baz'])
-        .from('data')
+        .select(['num1', 'num2', 'num3'])
+        .from('t1')
         .toString()
     ).toBe(query);
 
     expect(
       Query
-        .select({ foo: 'foo', bar: 'bar', baz: 'baz' })
-        .from('data')
+        .select({ num1: 'num1', num2: 'num2', num3: 'num3' })
+        .from('t1')
         .toString()
     ).toBe(query);
 
     expect(
       Query
-        .select('foo')
-        .select('bar')
-        .select('baz')
-        .from('data')
+        .select('num1')
+        .select('num2')
+        .select('num3')
+        .from('t1')
         .toString()
     ).toBe(query);
   });
 
   it('selects column ref objects', async () => {
-    const foo = column('foo');
-    const bar = column('bar');
-    const baz = column('baz');
+    const foo = column('num1');
+    const bar = column('num2');
+    const baz = column('num3');
     await expect(
       Query
         .select(foo, bar, baz)
-        .from('data')
-    ).toBeValidQuery('SELECT "foo", "bar", "baz" FROM "data"');
+        .from('t1')
+    ).toBeValidQuery('SELECT "num1", "num2", "num3" FROM "t1"');
 
     expect(
       Query
         .select([foo, bar, baz])
-        .from('data')
+        .from('t1')
         .toString()
-    ).toBe('SELECT "foo", "bar", "baz" FROM "data"');
+    ).toBe('SELECT "num1", "num2", "num3" FROM "t1"');
 
     expect(
       Query
-        .select({ foo, bar, baz })
-        .from('data')
+        .select({ num1: foo, num2: bar, num3: baz })
+        .from('t1')
         .toString()
-    ).toBe('SELECT "foo", "bar", "baz" FROM "data"');
+    ).toBe('SELECT "num1", "num2", "num3" FROM "t1"');
 
     expect(
       Query
         .select(foo)
         .select(bar)
         .select(baz)
-        .from('data')
+        .from('t1')
         .toString()
-    ).toBe('SELECT "foo", "bar", "baz" FROM "data"');
+    ).toBe('SELECT "num1", "num2", "num3" FROM "t1"');
   });
 
   it('selects only the most recent reference', async () => {
-    const query = 'SELECT "baz", "foo" + 1 AS "bar" FROM "data"';
+    const query = 'SELECT "num3", "num1" + 1 AS "num2" FROM "t1"';
 
     await expect(
       Query
-        .select('foo', 'bar', 'baz')
-        .select({ bar: sql`"foo" + 1`, foo: null })
-        .from('data')
+        .select('num1', 'num2', 'num3')
+        .select({ num2: sql`"num1" + 1`, num1: null })
+        .from('t1')
     ).toBeValidQuery(query);
   });
 
   it('selects distinct columns', async () => {
     await expect(
       Query
-        .select('foo', 'bar', 'baz')
+        .select('num1', 'num2', 'num3')
         .distinct()
-        .from('data')
-    ).toBeValidQuery('SELECT DISTINCT "foo", "bar", "baz" FROM "data"');
+        .from('t1')
+    ).toBeValidQuery('SELECT DISTINCT "num1", "num2", "num3" FROM "t1"');
   });
 
   it('selects with limit and offset modifiers', async () => {
     await expect(
       Query
         .select('*')
-        .from('data')
+        .from('t1')
         .limit(10)
         .offset(20)
-    ).toBeValidQuery('SELECT * FROM "data" LIMIT 10 OFFSET 20');
+    ).toBeValidQuery('SELECT * FROM "t1" LIMIT 10 OFFSET 20');
 
     await expect(
       Query
         .select('*')
-        .from('data')
+        .from('t1')
         .limit(div(10, 2))
         .offset(mul(5, 4))
-    ).toBeValidQuery('SELECT * FROM "data" LIMIT (10 / 2) OFFSET (5 * 4)');
+    ).toBeValidQuery('SELECT * FROM "t1" LIMIT (10 / 2) OFFSET (5 * 4)');
 
     await expect(
       Query
         .select('*')
-        .from('data')
+        .from('t1')
         .limitPercent(div(10, 2))
-    ).toBeValidQuery('SELECT * FROM "data" LIMIT (10 / 2)%');
+    ).toBeValidQuery('SELECT * FROM "t1" LIMIT (10 / 2)%');
 
     await expect(
       Query
         .select('*')
-        .from('data')
+        .from('t1')
         .limitPercent(10)
-    ).toBeValidQuery('SELECT * FROM "data" LIMIT 10%');
+    ).toBeValidQuery('SELECT * FROM "t1" LIMIT 10%');
   });
 
   it('selects aggregates', async () => {
-    const foo = column('foo');
+    const foo = column('num1');
 
     await expect(
       Query
-        .select({ min: min('foo'), max: max('foo') })
-        .from('data')
-    ).toBeValidQuery('SELECT min("foo") AS "min", max("foo") AS "max" FROM "data"');
+        .select({ min: min('num1'), max: max('num1') })
+        .from('t1')
+    ).toBeValidQuery('SELECT min("num1") AS "min", max("num1") AS "max" FROM "t1"');
 
     expect(
       Query
         .select({ min: min(foo), max: max(foo) })
-        .from('data')
+        .from('t1')
         .toString()
-    ).toBe('SELECT min("foo") AS "min", max("foo") AS "max" FROM "data"');
+    ).toBe('SELECT min("num1") AS "min", max("num1") AS "max" FROM "t1"');
 
     await expect(
       Query
-        .select({ min: min('foo').where(gt('bar', 5)) })
-        .from('data')
-    ).toBeValidQuery('SELECT min("foo") FILTER (WHERE ("bar" > 5)) AS "min" FROM "data"');
+        .select({ min: min('num1').where(gt('num2', 5)) })
+        .from('t1')
+    ).toBeValidQuery('SELECT min("num1") FILTER (WHERE ("num2" > 5)) AS "min" FROM "t1"');
   });
 
   it('selects windowed aggregates', async () => {
-    const foo = column('foo');
+    const foo = column('num1');
 
     await expect(
       Query
-        .select({ csum: sum('foo').window() })
-        .from('data')
-    ).toBeValidQuery('SELECT sum("foo") OVER () AS "csum" FROM "data"');
+        .select({ csum: sum('num1').window() })
+        .from('t1')
+    ).toBeValidQuery('SELECT sum("num1") OVER () AS "csum" FROM "t1"');
 
     expect(
       Query
         .select({ csum: sum(foo).window() })
-        .from('data')
+        .from('t1')
         .toString()
-    ).toBe('SELECT sum("foo") OVER () AS "csum" FROM "data"');
+    ).toBe('SELECT sum("num1") OVER () AS "csum" FROM "t1"');
 
     expect(
       Query
-        .select({ csum: sum(foo).partitionby('baz') })
-        .from('data')
+        .select({ csum: sum(foo).partitionby('num3') })
+        .from('t1')
         .toString()
-    ).toBe('SELECT sum("foo") OVER (PARTITION BY "baz") AS "csum" FROM "data"');
+    ).toBe('SELECT sum("num1") OVER (PARTITION BY "num3") AS "csum" FROM "t1"');
 
     expect(
       Query
-        .select({ csum: sum(foo).orderby('bop') })
-        .from('data')
+        .select({ csum: sum(foo).orderby('int1') })
+        .from('t1')
         .toString()
-    ).toBe('SELECT sum("foo") OVER (ORDER BY "bop") AS "csum" FROM "data"');
+    ).toBe('SELECT sum("num1") OVER (ORDER BY "int1") AS "csum" FROM "t1"');
 
     await expect(
       Query
-        .select({ csum: sum(foo).partitionby('baz').orderby('bop') })
-        .from('data')
-    ).toBeValidQuery('SELECT sum("foo") OVER (PARTITION BY "baz" ORDER BY "bop") AS "csum" FROM "data"');
+        .select({ csum: sum(foo).partitionby('num3').orderby('int1') })
+        .from('t1')
+    ).toBeValidQuery('SELECT sum("num1") OVER (PARTITION BY "num3" ORDER BY "int1") AS "csum" FROM "t1"');
 
     await expect(
       Query
         .select({ csum: sum(foo).frame(frameRows([null, 0])) })
-        .from('data')
-    ).toBeValidQuery('SELECT sum("foo") OVER (ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) AS "csum" FROM "data"');
+        .from('t1')
+    ).toBeValidQuery('SELECT sum("num1") OVER (ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) AS "csum" FROM "t1"');
   });
 
   it('selects grouped aggregates', async () => {
-    const foo = column('foo');
-    const bar = column('bar');
-    const baz = column('baz');
+    const foo = column('num1');
+    const bar = column('num2');
+    const baz = column('num3');
 
     const query = [
-      'SELECT min("foo") AS "min", max("foo") AS "max", "bar", "baz"',
-      'FROM "data"',
-      'GROUP BY "bar", "baz"'
+      'SELECT min("num1") AS "min", max("num1") AS "max", "num2", "num3"',
+      'FROM "t1"',
+      'GROUP BY "num2", "num3"'
     ].join(' ');
     await expect(
       Query
-        .select({ min: min('foo'), max: max('foo'), bar: 'bar', baz: 'baz' })
-        .from('data')
-        .groupby('bar', 'baz')
+        .select({ min: min('num1'), max: max('num1'), num2: 'num2', num3: 'num3' })
+        .from('t1')
+        .groupby('num2', 'num3')
     ).toBeValidQuery(query);
 
     expect(
       Query
-        .select({ min: min(foo), max: max(foo), bar: bar, baz: baz })
-        .from('data')
+        .select({ min: min(foo), max: max(foo), num2: bar, num3: baz })
+        .from('t1')
         .groupby(bar, baz)
         .toString()
     ).toBe(query);
 
     expect(
       Query
-        .select({ min: min(foo), max: max(foo), bar, baz })
-        .from('data')
+        .select({ min: min(foo), max: max(foo), num2: bar, num3: baz })
+        .from('t1')
         .groupby([bar, baz])
         .toString()
     ).toBe(query);
 
     expect(
       Query
-        .select({ min: min(foo), max: max(foo), bar, baz })
-        .from('data')
+        .select({ min: min(foo), max: max(foo), num2: bar, num3: baz })
+        .from('t1')
         .groupby(bar)
         .groupby(baz)
         .toString()
@@ -238,27 +238,27 @@ describe('Query', () => {
   });
 
   it('selects filtered aggregates', async () => {
-    const foo = column('foo');
-    const bar = column('bar');
+    const foo = column('num1');
+    const bar = column('num2');
 
     const query = [
-      'SELECT min("foo") AS "min", "bar"',
-      'FROM "data"',
-      'GROUP BY "bar"',
+      'SELECT min("num1") AS "min", "num2"',
+      'FROM "t1"',
+      'GROUP BY "num2"',
       'HAVING ("min" > 50) AND ("min" < 100)'
     ].join(' ');
     await expect(
       Query
-        .select({ min: min(foo), bar })
-        .from('data')
+        .select({ min: min(foo), num2: bar })
+        .from('t1')
         .groupby(bar)
         .having(gt('min', 50), lt('min', 100))
     ).toBeValidQuery(query);
 
     expect(
       Query
-        .select({ min: min(foo), bar })
-        .from('data')
+        .select({ min: min(foo), num2: bar })
+        .from('t1')
         .groupby(bar)
         .having([gt('min', 50), lt('min', 100)])
         .toString()
@@ -266,8 +266,8 @@ describe('Query', () => {
 
     expect(
       Query
-        .select({ min: min(foo), bar })
-        .from('data')
+        .select({ min: min(foo), num2: bar })
+        .from('t1')
         .groupby(bar)
         .having(gt('min', 50))
         .having(lt('min', 100))
@@ -276,8 +276,8 @@ describe('Query', () => {
 
     expect(
       Query
-        .select({ min: min(foo), bar })
-        .from('data')
+        .select({ min: min(foo), num2: bar })
+        .from('t1')
         .groupby(bar)
         .having(sql`("min" > 50) AND ("min" < 100)`)
         .toString()
@@ -285,25 +285,25 @@ describe('Query', () => {
   });
 
   it('selects filtered rows', async () => {
-    const foo = column('foo');
-    const bar = column('bar');
+    const foo = column('num1');
+    const bar = column('num2');
 
     const query = [
-      'SELECT "foo"',
-      'FROM "data"',
-      'WHERE ("bar" > 50) AND ("bar" < 100)'
+      'SELECT "num1"',
+      'FROM "t1"',
+      'WHERE ("num2" > 50) AND ("num2" < 100)'
     ].join(' ');
     await expect(
       Query
         .select(foo)
-        .from('data')
+        .from('t1')
         .where(gt(bar, 50), lt(bar, 100))
     ).toBeValidQuery(query);
 
     expect(
       Query
         .select(foo)
-        .from('data')
+        .from('t1')
         .where([gt(bar, 50), lt(bar, 100)])
         .toString()
     ).toBe(query);
@@ -311,7 +311,7 @@ describe('Query', () => {
     expect(
       Query
         .select(foo)
-        .from('data')
+        .from('t1')
         .where(gt(bar, 50))
         .where(lt(bar, 100))
         .toString()
@@ -320,32 +320,32 @@ describe('Query', () => {
     expect(
       Query
         .select(foo)
-        .from('data')
-        .where(sql`("bar" > 50) AND ("bar" < 100)`)
+        .from('t1')
+        .where(sql`("num2" > 50) AND ("num2" < 100)`)
         .toString()
     ).toBe(query);
   });
 
   it('selects ordered rows', async () => {
-    const bar = column('bar');
-    const baz = column('baz');
+    const bar = column('num2');
+    const baz = column('num3');
 
     const query = [
       'SELECT *',
-      'FROM "data"',
-      'ORDER BY "bar", "baz" DESC'
+      'FROM "t1"',
+      'ORDER BY "num2", "num3" DESC'
     ].join(' ');
     await expect(
       Query
         .select('*')
-        .from('data')
+        .from('t1')
         .orderby(bar, desc(baz))
     ).toBeValidQuery(query);
 
     expect(
       Query
         .select('*')
-        .from('data')
+        .from('t1')
         .orderby([bar, desc(baz)])
         .toString()
     ).toBe(query);
@@ -353,7 +353,7 @@ describe('Query', () => {
     expect(
       Query
         .select('*')
-        .from('data')
+        .from('t1')
         .orderby(bar)
         .orderby(desc(baz))
         .toString()
@@ -362,8 +362,8 @@ describe('Query', () => {
     expect(
       Query
         .select('*')
-        .from('data')
-        .orderby(sql`"bar", "baz" DESC`)
+        .from('t1')
+        .orderby(sql`"num2", "num3" DESC`)
         .toString()
     ).toBe(query);
   });
@@ -372,112 +372,112 @@ describe('Query', () => {
     await expect(
       Query
         .select('*')
-        .from('data')
+        .from('t1')
         .sample(10)
-    ).toBeValidQuery('SELECT * FROM "data" USING SAMPLE (10 ROWS)');
+    ).toBeValidQuery('SELECT * FROM "t1" USING SAMPLE (10 ROWS)');
 
     await expect(
       Query
         .select('*')
-        .from('data')
+        .from('t1')
         .sample(0.3)
-    ).toBeValidQuery('SELECT * FROM "data" USING SAMPLE (30%)');
+    ).toBeValidQuery('SELECT * FROM "t1" USING SAMPLE (30%)');
 
     await expect(
       Query
         .select('*')
-        .from('data')
+        .from('t1')
         .sample(0.1, 'bernoulli')
-    ).toBeValidQuery('SELECT * FROM "data" USING SAMPLE bernoulli (10%)');
+    ).toBeValidQuery('SELECT * FROM "t1" USING SAMPLE bernoulli (10%)');
 
     await expect(
       Query
         .select('*')
-        .from('data')
+        .from('t1')
         .sample(0.1, 'bernoulli', 12345)
-    ).toBeValidQuery('SELECT * FROM "data" USING SAMPLE bernoulli (10%) REPEATABLE (12345)');
+    ).toBeValidQuery('SELECT * FROM "t1" USING SAMPLE bernoulli (10%) REPEATABLE (12345)');
 
     await expect(
       Query
         .select('*')
         .from(new FromClauseNode(
-          asTableRef('foo')!, 'foo', new SampleClauseNode(10, true)
+          asTableRef('t1')!, 't1', new SampleClauseNode(10, true)
         ))
-    ).toBeValidQuery('SELECT * FROM "foo" TABLESAMPLE (10%)');
+    ).toBeValidQuery('SELECT * FROM "t1" TABLESAMPLE (10%)');
   });
 
   it('selects from multiple relations', async () => {
     const query = [
-      'SELECT "a"."foo" AS "foo", "b"."bar" AS "bar"',
-      'FROM "data1" AS "a", "data2" AS "b"'
+      'SELECT "a"."num1" AS "num1", "b"."num2" AS "num2"',
+      'FROM "t1" AS "a", "t2" AS "b"'
     ].join(' ');
     await expect(
       Query
         .select({
-          foo: column('foo', 'a'),
-          bar: column('bar', 'b')
+          num1: column('num1', 'a'),
+          num2: column('num2', 'b')
         })
-        .from({ a: 'data1', b: 'data2' })
+        .from({ a: 't1', b: 't2' })
     ).toBeValidQuery(query);
   });
 
   it('selects over windows', async () => {
     await expect(
       Query
-        .select({ lead: lead('foo').over('win') })
-        .from('data')
+        .select({ lead: lead('num1').over('win') })
+        .from('t1')
         // @ts-expect-error raw sql
-        .window({ win: sql`(ORDER BY "foo" ASC)` })
-    ).toBeValidQuery('SELECT lead("foo") OVER "win" AS "lead" FROM "data" WINDOW "win" AS (ORDER BY "foo" ASC)');
+        .window({ win: sql`(ORDER BY "num1" ASC)` })
+    ).toBeValidQuery('SELECT lead("num1") OVER "win" AS "lead" FROM "t1" WINDOW "win" AS (ORDER BY "num1" ASC)');
 
     await expect(
       Query
-        .select({ lead: lead('foo').over('win') })
-        .from('data')
-        .window({ win: over().orderby('foo') })
-    ).toBeValidQuery('SELECT lead("foo") OVER "win" AS "lead" FROM "data" WINDOW "win" AS (ORDER BY "foo")');
+        .select({ lead: lead('num1').over('win') })
+        .from('t1')
+        .window({ win: over().orderby('num1') })
+    ).toBeValidQuery('SELECT lead("num1") OVER "win" AS "lead" FROM "t1" WINDOW "win" AS (ORDER BY "num1")');
 
     await expect(
       Query
-        .select({ lead: lead('foo').over('win') })
-        .from('data')
-        .window({ win: over().orderby(desc('foo')) })
-    ).toBeValidQuery('SELECT lead("foo") OVER "win" AS "lead" FROM "data" WINDOW "win" AS (ORDER BY "foo" DESC)');
+        .select({ lead: lead('num1').over('win') })
+        .from('t1')
+        .window({ win: over().orderby(desc('num1')) })
+    ).toBeValidQuery('SELECT lead("num1") OVER "win" AS "lead" FROM "t1" WINDOW "win" AS (ORDER BY "num1" DESC)');
   });
 
   it('selects from subqueries', async () => {
     await expect(
       Query
-        .select('foo', 'bar')
-        .from(Query.select('*').from('data'))
-    ).toBeValidQuery('SELECT "foo", "bar" FROM (SELECT * FROM "data")');
+        .select('num1', 'num2')
+        .from(Query.select('*').from('t1'))
+    ).toBeValidQuery('SELECT "num1", "num2" FROM (SELECT * FROM "t1")');
 
     await expect(
       Query
-        .select('foo', 'bar')
-        .from({ a: Query.select('*').from('data') })
-    ).toBeValidQuery('SELECT "foo", "bar" FROM (SELECT * FROM "data") AS "a"');
+        .select('num1', 'num2')
+        .from({ a: Query.select('*').from('t1') })
+    ).toBeValidQuery('SELECT "num1", "num2" FROM (SELECT * FROM "t1") AS "a"');
   });
 
   it('selects with common table expressions', async () => {
     await expect(
       Query
-        .with({ a: Query.select('*').from('data') })
-        .select('foo', 'bar')
+        .with({ a: Query.select('*').from('t1') })
+        .select('num1', 'num2')
         .from('a')
-    ).toBeValidQuery('WITH "a" AS (SELECT * FROM "data") SELECT "foo", "bar" FROM "a"');
+    ).toBeValidQuery('WITH "a" AS (SELECT * FROM "t1") SELECT "num1", "num2" FROM "a"');
 
     await expect(
       Query
         .with({
-          a: Query.select('foo').from('data1'),
-          b: Query.select('bar').from('data2')
+          a: Query.select('num1').from('t1'),
+          b: Query.select('num2').from('t2')
         })
         .select('*')
         .from('a', 'b')
     ).toBeValidQuery([
-      'WITH "a" AS (SELECT "foo" FROM "data1"),',
-           '"b" AS (SELECT "bar" FROM "data2")',
+      'WITH "a" AS (SELECT "num1" FROM "t1"),',
+           '"b" AS (SELECT "num2" FROM "t2")',
       'SELECT * FROM "a", "b"'
     ].join(' '));
 
@@ -497,8 +497,8 @@ describe('Query', () => {
 
   it('performs set operations', async () => {
     const q = [
-      Query.select('foo', 'bar', 'baz').from('data1'),
-      Query.select('foo', 'bar', 'baz').from('data2')
+      Query.select('num1', 'num2', 'num3').from('t1'),
+      Query.select('num1', 'num2', 'num3').from('t2')
     ];
     await expect(Query.union(q)).toBeValidQuery(q.join(' UNION '));
     expect(Query.union(...q).toString()).toBe(q.join(' UNION '));
@@ -527,26 +527,26 @@ describe('Query', () => {
 
   it('renders set operation query modifiers', async () => {
     const q = [
-      Query.select('foo', 'bar', 'baz').from('data1'),
-      Query.select('foo', 'bar', 'baz').from('data2')
+      Query.select('num1', 'num2', 'num3').from('t1'),
+      Query.select('num1', 'num2', 'num3').from('t2')
     ];
 
     await expect(
       Query
         .unionAll(...q)
-        .orderby('foo')
+        .orderby('num1')
         .limit(0)
         .offset(0)
-    ).toBeValidQuery(`${q.join(' UNION ALL ')} ORDER BY "foo" LIMIT 0 OFFSET 0`);
+    ).toBeValidQuery(`${q.join(' UNION ALL ')} ORDER BY "num1" LIMIT 0 OFFSET 0`);
   });
 
   it('supports describe queries', async () => {
-    const q = Query.select('foo', 'bar').from('data');
+    const q = Query.select('num1', 'num2').from('t1');
     await expect(Query.describe(q)).toBeValidQuery(`DESC ${q}`);
 
     const u = Query.unionAll(
-      Query.select('foo', 'bar').from('data1'),
-      Query.select('foo', 'bar').from('data2')
+      Query.select('num1', 'num2').from('t1'),
+      Query.select('num1', 'num2').from('t2')
     );
     await expect(Query.describe(u)).toBeValidQuery(`DESC ${u}`);
   });
@@ -554,18 +554,18 @@ describe('Query', () => {
   it('is cloneable', async () => {
     const q = Query
       .with({
-        cte: Query.select('foo', 'bar', 'baz').from('source')
+        cte: Query.select('num1', 'num2', 'num3').from('t1')
       })
-      .select('foo')
+      .select('num1')
       .from('cte')
-      .groupby('bar')
-      .orderby('baz')
+      .groupby('num2')
+      .orderby('num3')
       .limit(10);
     const c = q.clone();
     expect(c).not.toBe(q);
     expect(c.toString()).toBe(q.toString());
-    // Not validated: this query selects "foo" while grouping by "bar" without an
-    // aggregate, which DuckDB's binder rejects ("foo" must appear in GROUP BY).
+    // Not validated: this query selects "num1" while grouping by "num2" without an
+    // aggregate, which DuckDB's binder rejects ("num1" must appear in GROUP BY).
     // The query is only an illustrative fixture for testing clone(); its SQL is
     // intentionally not semantically valid.
     // await validateQuery(q);

@@ -1,12 +1,12 @@
 import { expect } from 'vitest';
-import { validateExpr, validateQuery, type FixtureTable } from './validate.js';
+import { validateExpr, validateQuery } from './validate.js';
 
 interface ValidatingMatchers<R = unknown> {
   /**
    * Assert the SQL expression serializes to `expected` and binds against
-   * DuckDB's parser + binder (using the given fixture `table`).
+   * DuckDB's parser + binder.
    */
-  toBeValidExpr(expected: string, table?: FixtureTable): Promise<R>;
+  toBeValidExpr(expected: string): Promise<R>;
   /**
    * Assert the SQL query serializes to `expected` and binds against DuckDB's
    * parser + binder.
@@ -23,7 +23,7 @@ declare module 'vitest' {
 }
 
 expect.extend({
-  async toBeValidExpr(received, expected: string, table?: FixtureTable) {
+  async toBeValidExpr(received, expected: string) {
     const text = String(received);
     if (text !== expected) {
       return {
@@ -35,7 +35,7 @@ expect.extend({
       };
     }
     try {
-      await validateExpr(received, table);
+      await validateExpr(received);
     } catch (err) {
       return {
         pass: false,

@@ -11,85 +11,85 @@ function validateJoin(clause: { toString(): string }) {
 describe('Join functions', () => {
   it('include join', async () => {
     // natural joins
-    expect(String(join('A', 'B'))).toBe('"A" NATURAL JOIN "B"');
-    await validateJoin(join('A', 'B'));
-    expect(String(join('A', 'B', { type: 'INNER' }))).toBe('"A" NATURAL JOIN "B"');
-    expect(String(join('A', 'B', { type: 'RIGHT' }))).toBe('"A" NATURAL RIGHT JOIN "B"');
-    await validateJoin(join('A', 'B', { type: 'RIGHT' }));
-    expect(String(join('A', 'B', { type: 'FULL' }))).toBe('"A" NATURAL FULL JOIN "B"');
-    await validateJoin(join('A', 'B', { type: 'FULL' }));
-    expect(String(join('A', 'B', { type: 'LEFT' }))).toBe('"A" NATURAL LEFT JOIN "B"');
-    await validateJoin(join('A', 'B', { type: 'LEFT' }));
-    expect(String(join('A', 'B', { type: 'SEMI' }))).toBe('"A" NATURAL SEMI JOIN "B"');
-    await validateJoin(join('A', 'B', { type: 'SEMI' }));
-    expect(String(join('A', 'B', { type: 'ANTI' }))).toBe('"A" NATURAL ANTI JOIN "B"');
-    await validateJoin(join('A', 'B', { type: 'ANTI' }));
+    expect(String(join('t1', 't2'))).toBe('"t1" NATURAL JOIN "t2"');
+    await validateJoin(join('t1', 't2'));
+    expect(String(join('t1', 't2', { type: 'INNER' }))).toBe('"t1" NATURAL JOIN "t2"');
+    expect(String(join('t1', 't2', { type: 'RIGHT' }))).toBe('"t1" NATURAL RIGHT JOIN "t2"');
+    await validateJoin(join('t1', 't2', { type: 'RIGHT' }));
+    expect(String(join('t1', 't2', { type: 'FULL' }))).toBe('"t1" NATURAL FULL JOIN "t2"');
+    await validateJoin(join('t1', 't2', { type: 'FULL' }));
+    expect(String(join('t1', 't2', { type: 'LEFT' }))).toBe('"t1" NATURAL LEFT JOIN "t2"');
+    await validateJoin(join('t1', 't2', { type: 'LEFT' }));
+    expect(String(join('t1', 't2', { type: 'SEMI' }))).toBe('"t1" NATURAL SEMI JOIN "t2"');
+    await validateJoin(join('t1', 't2', { type: 'SEMI' }));
+    expect(String(join('t1', 't2', { type: 'ANTI' }))).toBe('"t1" NATURAL ANTI JOIN "t2"');
+    await validateJoin(join('t1', 't2', { type: 'ANTI' }));
 
     // regular joins
-    const on = eq(column('foo', 'A'), column('bar', 'B'));
-    expect(String(join('A', 'B', { on }))).toBe('"A" JOIN "B" ON ("A"."foo" = "B"."bar")');
-    await validateJoin(join('A', 'B', { on }));
-    expect(String(join('A', 'B', { type: 'INNER', on }))).toBe('"A" JOIN "B" ON ("A"."foo" = "B"."bar")');
-    expect(String(join('A', 'B', { type: 'RIGHT', on }))).toBe('"A" RIGHT JOIN "B" ON ("A"."foo" = "B"."bar")');
-    await validateJoin(join('A', 'B', { type: 'RIGHT', on }));
-    expect(String(join('A', 'B', { type: 'LEFT', on }))).toBe('"A" LEFT JOIN "B" ON ("A"."foo" = "B"."bar")');
-    expect(String(join('A', 'B', { type: 'FULL', on }))).toBe('"A" FULL JOIN "B" ON ("A"."foo" = "B"."bar")');
-    expect(String(join('A', 'B', { type: 'SEMI', on }))).toBe('"A" SEMI JOIN "B" ON ("A"."foo" = "B"."bar")');
-    await validateJoin(join('A', 'B', { type: 'SEMI', on }));
-    expect(String(join('A', 'B', { type: 'ANTI', on }))).toBe('"A" ANTI JOIN "B" ON ("A"."foo" = "B"."bar")');
-    const using = ['id'];
-    expect(String(join('A', 'B', { using }))).toBe('"A" JOIN "B" USING ("id")');
-    await validateJoin(join('A', 'B', { using }));
-    expect(String(join('A', 'B', { type: 'INNER', using }))).toBe('"A" JOIN "B" USING ("id")');
-    expect(String(join('A', 'B', { type: 'RIGHT', using }))).toBe('"A" RIGHT JOIN "B" USING ("id")');
-    await validateJoin(join('A', 'B', { type: 'RIGHT', using }));
-    expect(String(join('A', 'B', { type: 'LEFT', using }))).toBe('"A" LEFT JOIN "B" USING ("id")');
-    expect(String(join('A', 'B', { type: 'FULL', using }))).toBe('"A" FULL JOIN "B" USING ("id")');
-    expect(String(join('A', 'B', { type: 'SEMI', using }))).toBe('"A" SEMI JOIN "B" USING ("id")');
-    expect(String(join('A', 'B', { type: 'ANTI', using }))).toBe('"A" ANTI JOIN "B" USING ("id")');
+    const on = eq(column('num1', 't1'), column('num2', 't2'));
+    expect(String(join('t1', 't2', { on }))).toBe('"t1" JOIN "t2" ON ("t1"."num1" = "t2"."num2")');
+    await validateJoin(join('t1', 't2', { on }));
+    expect(String(join('t1', 't2', { type: 'INNER', on }))).toBe('"t1" JOIN "t2" ON ("t1"."num1" = "t2"."num2")');
+    expect(String(join('t1', 't2', { type: 'RIGHT', on }))).toBe('"t1" RIGHT JOIN "t2" ON ("t1"."num1" = "t2"."num2")');
+    await validateJoin(join('t1', 't2', { type: 'RIGHT', on }));
+    expect(String(join('t1', 't2', { type: 'LEFT', on }))).toBe('"t1" LEFT JOIN "t2" ON ("t1"."num1" = "t2"."num2")');
+    expect(String(join('t1', 't2', { type: 'FULL', on }))).toBe('"t1" FULL JOIN "t2" ON ("t1"."num1" = "t2"."num2")');
+    expect(String(join('t1', 't2', { type: 'SEMI', on }))).toBe('"t1" SEMI JOIN "t2" ON ("t1"."num1" = "t2"."num2")');
+    await validateJoin(join('t1', 't2', { type: 'SEMI', on }));
+    expect(String(join('t1', 't2', { type: 'ANTI', on }))).toBe('"t1" ANTI JOIN "t2" ON ("t1"."num1" = "t2"."num2")');
+    const using = ['num1'];
+    expect(String(join('t1', 't2', { using }))).toBe('"t1" JOIN "t2" USING ("num1")');
+    await validateJoin(join('t1', 't2', { using }));
+    expect(String(join('t1', 't2', { type: 'INNER', using }))).toBe('"t1" JOIN "t2" USING ("num1")');
+    expect(String(join('t1', 't2', { type: 'RIGHT', using }))).toBe('"t1" RIGHT JOIN "t2" USING ("num1")');
+    await validateJoin(join('t1', 't2', { type: 'RIGHT', using }));
+    expect(String(join('t1', 't2', { type: 'LEFT', using }))).toBe('"t1" LEFT JOIN "t2" USING ("num1")');
+    expect(String(join('t1', 't2', { type: 'FULL', using }))).toBe('"t1" FULL JOIN "t2" USING ("num1")');
+    expect(String(join('t1', 't2', { type: 'SEMI', using }))).toBe('"t1" SEMI JOIN "t2" USING ("num1")');
+    expect(String(join('t1', 't2', { type: 'ANTI', using }))).toBe('"t1" ANTI JOIN "t2" USING ("num1")');
 
     // handles from clauses
-    const X = from('A').as('X');
-    const Y = from('B').as('Y');
-    expect(String(join(X, Y, { using }))).toBe('"A" AS "X" JOIN "B" AS "Y" USING ("id")');
+    const X = from('t1').as('X');
+    const Y = from('t2').as('Y');
+    expect(String(join(X, Y, { using }))).toBe('"t1" AS "X" JOIN "t2" AS "Y" USING ("num1")');
     await validateJoin(join(X, Y, { using }));
-    expect(String(join(X, Y, { on: eq(column('id', 'X'), column('id', 'Y')) })))
-      .toBe('"A" AS "X" JOIN "B" AS "Y" ON ("X"."id" = "Y"."id")');
-    await validateJoin(join(X, Y, { on: eq(column('id', 'X'), column('id', 'Y')) }));
+    expect(String(join(X, Y, { on: eq(column('num1', 'X'), column('num1', 'Y')) })))
+      .toBe('"t1" AS "X" JOIN "t2" AS "Y" ON ("X"."num1" = "Y"."num1")');
+    await validateJoin(join(X, Y, { on: eq(column('num1', 'X'), column('num1', 'Y')) }));
 
     // throw on double condition
-    expect(() => join('A', 'B', { on, using })).toThrow();
+    expect(() => join('t1', 't2', { on, using })).toThrow();
   });
 
   it('include cross_join', async () => {
-    expect(String(cross_join('A', 'B'))).toBe('"A" CROSS JOIN "B"');
-    await validateJoin(cross_join('A', 'B'));
+    expect(String(cross_join('t1', 't2'))).toBe('"t1" CROSS JOIN "t2"');
+    await validateJoin(cross_join('t1', 't2'));
   });
 
   it('include positional_join', async () => {
-    expect(String(positional_join('A', 'B'))).toBe('"A" POSITIONAL JOIN "B"');
-    await validateJoin(positional_join('A', 'B'));
+    expect(String(positional_join('t1', 't2'))).toBe('"t1" POSITIONAL JOIN "t2"');
+    await validateJoin(positional_join('t1', 't2'));
   });
 
   it('include asof_join', async () => {
-    const using = ['id', 'when'];
-    expect(String(asof_join('A', 'B', { using }))).toBe('"A" ASOF JOIN "B" USING ("id", "when")');
-    await validateJoin(asof_join('A', 'B', { using }));
-    expect(String(asof_join('A', 'B', { type: 'INNER', using }))).toBe('"A" ASOF JOIN "B" USING ("id", "when")');
-    expect(String(asof_join('A', 'B', { type: 'RIGHT', using }))).toBe('"A" ASOF RIGHT JOIN "B" USING ("id", "when")');
-    await validateJoin(asof_join('A', 'B', { type: 'RIGHT', using }));
-    expect(String(asof_join('A', 'B', { type: 'LEFT', using }))).toBe('"A" ASOF LEFT JOIN "B" USING ("id", "when")');
-    expect(String(asof_join('A', 'B', { type: 'FULL', using }))).toBe('"A" ASOF FULL JOIN "B" USING ("id", "when")');
-    expect(String(asof_join('A', 'B', { type: 'SEMI', using }))).toBe('"A" ASOF SEMI JOIN "B" USING ("id", "when")');
-    expect(String(asof_join('A', 'B', { type: 'ANTI', using }))).toBe('"A" ASOF ANTI JOIN "B" USING ("id", "when")');
+    const using = ['num1', 'num2'];
+    expect(String(asof_join('t1', 't2', { using }))).toBe('"t1" ASOF JOIN "t2" USING ("num1", "num2")');
+    await validateJoin(asof_join('t1', 't2', { using }));
+    expect(String(asof_join('t1', 't2', { type: 'INNER', using }))).toBe('"t1" ASOF JOIN "t2" USING ("num1", "num2")');
+    expect(String(asof_join('t1', 't2', { type: 'RIGHT', using }))).toBe('"t1" ASOF RIGHT JOIN "t2" USING ("num1", "num2")');
+    await validateJoin(asof_join('t1', 't2', { type: 'RIGHT', using }));
+    expect(String(asof_join('t1', 't2', { type: 'LEFT', using }))).toBe('"t1" ASOF LEFT JOIN "t2" USING ("num1", "num2")');
+    expect(String(asof_join('t1', 't2', { type: 'FULL', using }))).toBe('"t1" ASOF FULL JOIN "t2" USING ("num1", "num2")');
+    expect(String(asof_join('t1', 't2', { type: 'SEMI', using }))).toBe('"t1" ASOF SEMI JOIN "t2" USING ("num1", "num2")');
+    expect(String(asof_join('t1', 't2', { type: 'ANTI', using }))).toBe('"t1" ASOF ANTI JOIN "t2" USING ("num1", "num2")');
 
     // throw on missing condition
-    expect(() => asof_join('A', 'B', { type: 'RIGHT' })).toThrow();
+    expect(() => asof_join('t1', 't2', { type: 'RIGHT' })).toThrow();
   });
 
   it('are walkable', () => {
     expect(() => walk(
-      join('A', 'B'),
+      join('t1', 't2'),
       (x) => {
         if (x.type !== JOIN_CLAUSE && x.type !== TABLE_REF) {
           throw new Error('Unexpected node type.');
