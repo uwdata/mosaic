@@ -40,7 +40,6 @@ const columnDefs = Object.entries(COLUMNS)
 
 async function createDB(): Promise<DuckDB> {
   const db = new DuckDB();
-  await db._init;
   for (const table of TABLES) {
     await db.exec(`CREATE TABLE ${table} (${columnDefs})`);
   }
@@ -71,5 +70,5 @@ export async function validateExpr(
   expr: string | { toString(): string }
 ): Promise<void> {
   const db = await getDB();
-  await db.prepare(`SELECT ${expr} FROM t1`);
+  await db.exec(`EXPLAIN SELECT ${expr} FROM t1`);
 }
