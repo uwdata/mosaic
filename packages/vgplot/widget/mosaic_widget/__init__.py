@@ -36,7 +36,7 @@ class MosaicWidget(anywidget.AnyWidget):
         self,
         spec: dict | None = None,
         con: duckdb.DuckDBPyConnection | None = None,
-        data: dict[str, "IntoFrame"] | None = None,
+        data: dict | None = None,
         *args,
         **kwargs,
     ):
