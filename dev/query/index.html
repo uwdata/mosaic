@@ -29,7 +29,7 @@
     <br/>
     <div id="output"></div>
 <script type="module">
-  import { setDatabaseConnector, vg } from '../setup.js';
+  import { observeLogger, setDatabaseConnector, vg } from '../setup.js';
   const tableName = 'query_result';
 
   const input = document.querySelector('#input');
@@ -73,6 +73,8 @@
     }
     enable();
   });
+
+  observeLogger(vg.coordinator(), console);
 </script>
   </body>
 </html>
