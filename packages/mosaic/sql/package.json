@@ -28,5 +28,8 @@
     "lint": "eslint src test",
     "test": "vitest run",
     "prepublishOnly": "pnpm run test && pnpm run lint && tsc --build"
+  },
+  "devDependencies": {
+    "@uwdata/mosaic-duckdb": "workspace:^"
   }
 }

@@ -1,9 +1,16 @@
 import { expect, describe, it } from 'vitest';
 import { Query, cte } from '../src/index.js';
+import { validateQuery } from './util/validate.js';
 
 describe('cte', () => {
-  it('creates a common table expression', () => {
+  it('creates a common table expression', async () => {
     const q = Query.select({ x: 42 });
+
+    // A CTE fragment is not a standalone statement; validate it wrapped in a
+    // WITH ... SELECT to exercise the generated SQL through the binder.
+    await validateQuery(`WITH ${cte('foo', q, false)} SELECT * FROM "foo"`);
+    await validateQuery(`WITH ${cte('foo', q, true)} SELECT * FROM "foo"`);
+    await validateQuery(`WITH ${cte('foo', q)} SELECT * FROM "foo"`);
 
     const x = cte('foo', q, false);
     expect(x.name).toBe('foo');
