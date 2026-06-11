@@ -15,4 +15,5 @@ Customized axis and gridline marks can be used in addition to standard scale att
 <<< @/public/specs/esm/axes.js [JavaScript]
 <<< @/public/specs/yaml/axes.yaml [YAML]
 <<< @/public/specs/json/axes.json [JSON]
+<<< @/public/specs/python/axes.py [Python]
 :::

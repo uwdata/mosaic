@@ -17,4 +17,5 @@ A rotatable globe of earthquake activity. To show land masses, this example load
 <<< @/public/specs/esm/earthquakes-globe.js [JavaScript]
 <<< @/public/specs/yaml/earthquakes-globe.yaml [YAML]
 <<< @/public/specs/json/earthquakes-globe.json [JSON]
+<<< @/public/specs/python/earthquakes-globe.py [Python]
 :::
