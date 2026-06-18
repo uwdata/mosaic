@@ -34,6 +34,4 @@ __pycache__/
 .pytest_cache/
 .coverage
 
-# Python API Generated classes
-packages/vgplot-python/schema_wrapper/generated_classes.py
 .pnpm-store

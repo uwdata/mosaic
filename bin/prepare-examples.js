@@ -33,6 +33,8 @@ const esmDocsDir = join(docsDir, 'public', 'specs', 'esm');
 const exampleDir = join(docsDir, 'examples');
 const pythonDocsDir = join(docsDir, 'public', 'specs', 'python');
 
+let hadFailure = false;
+
 const specToTS = spec => {
   return `import { Spec } from '@uwdata/mosaic-spec';
 
@@ -87,6 +89,7 @@ const files = await Promise.allSettled((await readdir(specDir))
         writeFile(resolve(pythonDocsDir, `${base}.py`), astToPython(ast)),
       ]);
     } catch (err) {
+      hadFailure = true;
       console.error(err);
     }
 
@@ -105,7 +108,15 @@ console.log(JSON.stringify(
 // output unsuccessful example errors
 files
   .filter(x => x.status === 'rejected')
-  .forEach(x => console.error(x.reason));
+  .forEach(x => {
+    hadFailure = true;
+    console.error(x.reason);
+  });
+
+// exit non-zero if any spec failed to generate
+if (hadFailure) {
+  process.exit(1);
+}
 
 function examplePage(spec, { title = spec, description, credit } = {}) {
   return `<script setup>
