@@ -121,14 +121,11 @@ class Spec:
                 counter += 1
 
         # Third pass: serialize all known params
+        view_params = {id(obj): obj for obj in _collect_params(self.view)}
         all_params = dict(self.params or {})
         for obj_id, name in param_names.items():
-            if name not in all_params:
-                # find the object to serialize it
-                for obj in _collect_params(self.view):
-                    if id(obj) == obj_id:
-                        all_params[name] = obj
-                        break
+            if name not in all_params and obj_id in view_params:
+                all_params[name] = view_params[obj_id]
         for name, p in all_params.items():
             if isinstance(p, _ParamBase):
                 serialized_params[name] = p.param_def(param_names=param_names)
