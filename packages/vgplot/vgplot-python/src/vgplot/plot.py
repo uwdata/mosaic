@@ -36,7 +36,7 @@ class Mark:
     data: Optional[Any] = None
     enc: Optional[Dict[str, Any]] = None
 
-    def to_dict(self, param_names: Dict[str, str] | None = None) -> Dict[str, Any]:
+    def to_dict(self, param_names: Dict[int, str] | None = None) -> Dict[str, Any]:
         payload: Dict[str, Any] = {"mark": self.mark}
         enc = dict(self.enc or {})
         _DATA_OPTS = {"filter_by": "filterBy", "optimize": "optimize"}
@@ -58,7 +58,7 @@ class Mark:
 
 def encode_value(
     v: Any,
-    param_names: Dict[str, str] | None = None,
+    param_names: Dict[int, str] | None = None,
     data_names: Dict[int, str] | None = None,
 ) -> Any:
     if isinstance(v, DataDef):
@@ -82,7 +82,7 @@ def encode_value(
 
 
 def plot(
-    *items: Union[Mark, Directive], param_names: Dict[str, str] | None = None
+    *items: Union[Mark, Directive], param_names: Dict[int, str] | None = None
 ) -> Dict[str, Any]:
     marks: List[Dict[str, Any]] = []
     directives: Dict[str, Any] = {}
@@ -235,7 +235,7 @@ def y_tick_size(value: Any) -> Directive:
 
 def _encode_component(
     item: Any,
-    param_names: Dict[str, str] | None,
+    param_names: Dict[int, str] | None,
     data_names: Dict[int, str] | None = None,
 ) -> Any:
     if isinstance(item, dict) and "plot" in item:
@@ -258,11 +258,11 @@ def _encode_component(
 
 
 # Layout helpers
-def vconcat(*items: Any, param_names: Dict[str, str] | None = None) -> Dict[str, Any]:
+def vconcat(*items: Any, param_names: Dict[int, str] | None = None) -> Dict[str, Any]:
     return {"vconcat": [_encode_component(i, param_names) for i in items]}
 
 
-def hconcat(*items: Any, param_names: Dict[str, str] | None = None) -> Dict[str, Any]:
+def hconcat(*items: Any, param_names: Dict[int, str] | None = None) -> Dict[str, Any]:
     return {"hconcat": [_encode_component(i, param_names) for i in items]}
 
 
