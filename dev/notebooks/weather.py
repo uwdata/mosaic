@@ -57,7 +57,11 @@ def _(click, colors, domain, range, vg, weather):
         vg.plot(
             vg.bar_x(weather, x=vg.count(), y="weather", fill="#ccc", fill_opacity=0.2),
             vg.bar_x(
-                data="weather", filter_by=range, x=vg.count(), y="weather", fill="weather"
+                data="weather",
+                filter_by=range,
+                x=vg.count(),
+                y="weather",
+                fill="weather",
             ),
             vg.toggle_y(bind=click),
             vg.highlight(by=click),
