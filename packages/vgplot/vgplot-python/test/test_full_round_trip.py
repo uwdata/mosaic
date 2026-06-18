@@ -49,36 +49,12 @@ ESM_EXAMPLES = sorted(path.stem for path in ESM_DIR.glob("*.js"))
 PYTHON_EXAMPLES = sorted(path.stem for path in PYTHON_DIR.glob("*.py"))
 
 
-# Specs that do not round-trip yet due to known Python API limitations.
-# strict=True so these flip to failures (alerting us) once they are fixed.
-KNOWN_FAILURES = {
-    "region-tests": (
-        "a data def and a param share the name 'counties', which collapse to a "
-        "single Python variable in the generated spec"
-    ),
-    "linear-regression-10m": (
-        "spec defines a param named 'data', which collides with the reserved "
-        "vg.spec() keyword argument"
-    ),
-}
-
-
-def _example_param(name: str):
-    if name in KNOWN_FAILURES:
-        return pytest.param(
-            name, marks=pytest.mark.xfail(reason=KNOWN_FAILURES[name], strict=True)
-        )
-    return name
-
-
 def test_generated_examples_stay_in_sync():
     assert PYTHON_EXAMPLES == JSON_EXAMPLES
     assert ESM_EXAMPLES == JSON_EXAMPLES
 
 
-@pytest.mark.parametrize(
-    "example_name", [_example_param(n) for n in PYTHON_EXAMPLES]
-)
+@pytest.mark.parametrize("example_name", PYTHON_EXAMPLES)
 def test_python_round_trip(example_name: str):
     generated = run_spec_file_with_exec(PYTHON_DIR / f"{example_name}.py")
     original = load_json_fixture(example_name)
