@@ -33,3 +33,12 @@ class TestDynamicFactory:
 
     def test_no_args_is_a_mark(self):
         assert isinstance(vg.some_custom_mark(), Mark)
+
+
+class TestDataHelpers:
+    def test_json_inline_data(self):
+        d = vg.json([{"a": 1}, {"a": 2}])
+        assert d.to_dict() == {"type": "json", "data": [{"a": 1}, {"a": 2}]}
+
+    def test_json_file(self):
+        assert vg.json(file="x.json").to_dict() == {"type": "json", "file": "x.json"}

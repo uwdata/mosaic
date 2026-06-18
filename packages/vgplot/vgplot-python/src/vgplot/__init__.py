@@ -1,5 +1,5 @@
 from .spec import meta, spec, Spec
-from .data import parquet, csv, spatial, table, data
+from .data import parquet, csv, spatial, table, json, data
 from .params import param, selection
 from .encodings import (
     sql,
@@ -327,6 +327,7 @@ __all__ = [
     "csv",
     "spatial",
     "table",
+    "json",
     "data",
     # params
     "param",

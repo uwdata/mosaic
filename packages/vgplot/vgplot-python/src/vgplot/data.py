@@ -38,6 +38,16 @@ def table(query: str) -> DataDef:
     return DataDef({"type": "table", "query": query})
 
 
+def json(data: Any = None, file: str | None = None, **kwargs: Any) -> DataDef:
+    payload: Dict[str, Any] = {"type": "json"}
+    if file is not None:
+        payload["file"] = file
+    if data is not None:
+        payload["data"] = data
+    payload.update(kwargs)
+    return DataDef(payload)
+
+
 def data(**named_defs: DataDef) -> Dict[str, Any]:
     out: Dict[str, Any] = {}
     for k, v in named_defs.items():

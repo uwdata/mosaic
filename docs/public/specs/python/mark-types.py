@@ -1,8 +1,7 @@
 import vgplot as vg
 
-md = {
-    "type": "json",
-    "data": [
+md = vg.json(
+    [
         {"i": 0, "u": "A", "v": 2},
         {"i": 1, "u": "B", "v": 8},
         {"i": 2, "u": "C", "v": 3},
@@ -11,8 +10,8 @@ md = {
         {"i": 5, "u": "F", "v": 4},
         {"i": 6, "u": "G", "v": 6},
         {"i": 7, "u": "H", "v": 1},
-    ],
-}
+    ]
+)
 
 view = vg.vconcat(
     vg.hconcat(

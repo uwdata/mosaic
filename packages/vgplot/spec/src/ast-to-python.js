@@ -156,6 +156,16 @@ function emitDataDef(def) {
     return `vg.spatial(${[...args, ...extra].join(', ')})`;
   }
   if (type === 'table' && query && !Object.keys(rest).length) return `vg.table(${literal(query)})`;
+  if (type === 'json') {
+    const { data: inlineData, ...more } = rest;
+    const args = [];
+    if (inlineData !== undefined) args.push(literal(inlineData));
+    if (file) args.push(`file=${literal(file)}`);
+    for (const [k, v] of Object.entries(more)) {
+      args.push(`${camelCaseToSnake(k)}=${literal(v)}`);
+    }
+    return `vg.json(${args.join(', ')})`;
+  }
   return literal(def);
 }
 
