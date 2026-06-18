@@ -2,9 +2,9 @@
 
 [![PyPI](https://img.shields.io/pypi/v/vgplot.svg)](https://pypi.org/project/vgplot/)
 
-A Python API for authoring [Mosaic](https://uwdata.github.io/mosaic/) visualizations. Build declarative, interactive plots backed by DuckDB — in Jupyter notebooks, as JSON specs, or as part of a data pipeline.
+A Python API for authoring [Mosaic](https://uwdata.github.io/mosaic/) visualizations. Build declarative, interactive plots backed by DuckDB — in notebooks, as JSON specs, or as part of a data pipeline.
 
-`vgplot` produces Mosaic specification objects that can be rendered with [`mosaic-widget`](https://pypi.org/project/mosaic-widget/) in JupyterLab or exported to JSON for use in the browser.
+`vgplot` produces Mosaic specification objects that can be rendered with [`mosaic-widget`](https://pypi.org/project/mosaic-widget/) or exported to JSON for use in a browser.
 
 ## Installation
 
@@ -12,7 +12,7 @@ A Python API for authoring [Mosaic](https://uwdata.github.io/mosaic/) visualizat
 pip install vgplot
 ```
 
-To render visualizations in Jupyter, also install the widget:
+To render visualizations in the widget, install the widget:
 
 ```bash
 pip install mosaic-widget
@@ -111,7 +111,7 @@ spec.show()
 | Input widgets | `vg.slider(...)`, `vg.menu(...)`, `vg.select(...)`, `vg.checkbox(...)` |
 | Named data reference | `vg.source("table_name")` |
 | Assemble | `vg.spec()` — auto-detects view, params, and data from local variables |
-| Render | `spec.show()` or `spec` as last cell expression in Jupyter |
+| Render | `spec.show()` or `spec` as last cell expression computational notebooks |
 
 Option names match the [vgplot API reference](https://uwdata.github.io/mosaic/api/), but in snake_case. For example, `xDomain` → `x_domain`, `colorScheme` → `color_scheme`, `filterBy` → `filter_by`.
 
