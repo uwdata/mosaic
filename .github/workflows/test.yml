@@ -38,6 +38,14 @@ jobs:
       - run: pnpm run build
       - run: pnpm run test
 
+      - uses: astral-sh/setup-uv@v7
+        with:
+          version: ">=0.11.0"
+          enable-cache: true
+          cache-dependency-glob: |
+            uv.lock
+            **/pyproject.toml
+
       - name: Verify generated spec outputs do not change
         run: |
           pnpm run docs:examples
@@ -90,7 +98,7 @@ jobs:
 
       - uses: astral-sh/setup-uv@v7
         with:
-          version: ">=0.5.0"
+          version: ">=0.11.0"
           enable-cache: true
           cache-dependency-glob: |
             uv.lock
@@ -123,7 +131,7 @@ jobs:
           uv build
           uv run --group test ty check
           uv run --group test pytest --cov-report=term-missing --color=yes --cov=mosaic_widget
-          
+
   rust:
     name: Test in Rust
 
