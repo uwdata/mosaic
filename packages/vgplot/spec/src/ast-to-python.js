@@ -314,7 +314,12 @@ function emitDataRef(data, ctx) {
 function literal(v, depth = 0, ctx = null) {
   if (v === null || v === undefined) return 'None';
   if (typeof v === 'boolean') return v ? 'True' : 'False';
-  if (typeof v === 'number') return String(v);
+  if (typeof v === 'number') {
+    if (Number.isNaN(v)) return "float('nan')";
+    if (v === Infinity) return "float('inf')";
+    if (v === -Infinity) return "float('-inf')";
+    return String(v);
+  }
   if (typeof v === 'string') {
     if (/^\$[A-Za-z_][A-Za-z0-9_]*$/.test(v)) {
       return ctx ? ctx.ident(v.slice(1)) : v.slice(1);
