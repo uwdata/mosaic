@@ -40,9 +40,7 @@ def run_spec_file_with_exec(path: Path) -> dict:
     if spec is None:
         raise AssertionError(f"`{path.name}` must define a top-level `spec` variable")
     if not hasattr(spec, "to_dict"):
-        raise AssertionError(
-            f"`spec` in `{path.name}` does not expose to_dict()"
-        )
+        raise AssertionError(f"`spec` in `{path.name}` does not expose to_dict()")
     return spec.to_dict()
 
 
