@@ -49,7 +49,7 @@ jobs:
       - name: Verify generated spec outputs do not change
         run: |
           pnpm run docs:examples
-          git diff --exit-code -- specs/esm specs/json specs/ts docs/public/specs docs/examples
+          git diff --exit-code -- specs/esm specs/json specs/ts specs/python docs/public/specs docs/examples
 
   browser:
     name: Test in Browser
@@ -131,6 +131,13 @@ jobs:
           uv build
           uv run --group test ty check
           uv run --group test pytest --cov-report=term-missing --color=yes --cov=mosaic_widget
+
+      - name: Build and test vgplot
+        run: |
+          cd packages/vgplot/vgplot-python
+
+          uv build
+          uv run --group dev pytest --color=yes
 
   rust:
     name: Test in Rust
