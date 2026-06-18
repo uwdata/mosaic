@@ -73,12 +73,6 @@ def _(click, colors, domain, range, vg, weather):
 
 
 @app.cell
-def _(vg):
-    spec = vg.spec()
-    return
-
-
-@app.cell
 def _(view):
     view
     return
