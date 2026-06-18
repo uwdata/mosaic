@@ -14,6 +14,15 @@ describe('astToPython literals', () => {
     expect(code).not.toMatch(/vg\.param\((NaN|Infinity|-Infinity)\)/);
   });
 
+  it('escapes keyword-named kwargs via dict unpacking', () => {
+    const code = astToPython(
+      ast({ plot: [{ mark: 'dot', channels: { class: 'c', id: 'i' } }] })
+    );
+    // `class=...` is a SyntaxError; emit **{'class': ...} instead.
+    expect(code).toContain('**{"class": "c"}');
+    expect(code).toContain('id="i"');
+  });
+
   it('emits ordinary numbers unchanged', () => {
     const code = astToPython(ast({ params: { a: 42, b: 1.5, c: -3 } }));
     expect(code).toContain('a = vg.param(42)');

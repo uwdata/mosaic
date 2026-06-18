@@ -8,6 +8,26 @@ const PYTHON_KEYWORDS = new Set([
   'type', 'while', 'with', 'yield',
 ]);
 
+// Keywords that cannot appear as a bare keyword-argument name. `type` is a
+// builtin, not a reserved word, so it stays valid as a kwarg.
+const PYTHON_KWARG_UNSAFE = new Set(
+  [...PYTHON_KEYWORDS].filter(k => k !== 'type')
+);
+
+/** Format `name=value`, falling back to **{'name': value} for keyword names. */
+function kwarg(name, valueStr) {
+  return PYTHON_KWARG_UNSAFE.has(name)
+    ? `**{${JSON.stringify(name)}: ${valueStr}}`
+    : `${name}=${valueStr}`;
+}
+
+/** Build snake_cased, keyword-safe kwargs for an options object. */
+function buildArgs(opts, ctx, keyMap = null) {
+  return Object.entries(opts)
+    .filter(([, v]) => v !== undefined)
+    .map(([k, v]) => kwarg((keyMap && keyMap[k]) || camelCaseToSnake(k), literal(v, 0, ctx)));
+}
+
 /**
  * Generate Python code for a Mosaic spec AST using the vgplot Python DSL.
  * Preamble:  import vgplot as vg
@@ -58,9 +78,7 @@ function emitParamDef(name, def, ctx) {
   }
   const { select, ...opts } = def;
   if (select) {
-    const optArgs = Object.entries(opts)
-      .filter(([, v]) => v !== undefined)
-      .map(([k, v]) => `${camelCaseToSnake(k)}=${literal(v, 0, ctx)}`);
+    const optArgs = buildArgs(opts, ctx);
     return `${name} = vg.selection.${camelCaseToSnake(select)}(${optArgs.join(', ')})`;
   }
   return `${name} = vg.param(${literal(def, 0, ctx)})`;
@@ -100,11 +118,9 @@ function emitInteractor(node, ctx) {
     .map(([k, v]) => {
       const pyKey = INTERACTOR_KEY_MAP[k] || camelCaseToSnake(k);
       if (k === 'brush' && v && typeof v === 'object' && !Array.isArray(v)) {
-        const brushArgs = Object.entries(v)
-          .map(([bk, bv]) => `${camelCaseToSnake(bk)}=${literal(bv, 0, ctx)}`).join(', ');
-        return `${pyKey}=vg.brush(${brushArgs})`;
+        return kwarg(pyKey, `vg.brush(${buildArgs(v, ctx).join(', ')})`);
       }
-      return `${pyKey}=${literal(v, 0, ctx)}`;
+      return kwarg(pyKey, literal(v, 0, ctx));
     });
   return `vg.${camelCaseToSnake(select)}(${args.join(', ')})`;
 }
@@ -112,9 +128,7 @@ function emitInteractor(node, ctx) {
 /** @param {PythonCodegenContext} ctx */
 function emitLegend(node, ctx) {
   const { legend, ...opts } = node;
-  const args = Object.entries(opts)
-    .filter(([, v]) => v !== undefined)
-    .map(([k, v]) => `${LEGEND_KEY_MAP[k] || camelCaseToSnake(k)}=${literal(v, 0, ctx)}`);
+  const args = buildArgs(opts, ctx, LEGEND_KEY_MAP);
   return `vg.${camelCaseToSnake(legend)}_legend(${args.join(', ')})`;
 }
 
@@ -138,22 +152,20 @@ function emitPlotObject(view, ctx) {
 function emitDataDef(def, ctx) {
   const { type, file, query, ...rest } = def;
   if ((type === 'parquet' || (!type && file && file.endsWith('.parquet'))) && file) {
-    const extra = Object.entries(rest)
-      .map(([k, v]) => `${camelCaseToSnake(k)}=${literal(v, 0, ctx)}`).join(', ');
+    const extra = buildArgs(rest, ctx).join(', ');
     return extra ? `vg.parquet(${literal(file, 0, ctx)}, ${extra})` : `vg.parquet(${literal(file, 0, ctx)})`;
   }
   if ((type === 'csv' || (!type && file && file.endsWith('.csv'))) && file) {
-    const extra = Object.entries(rest)
-      .map(([k, v]) => `${camelCaseToSnake(k)}=${literal(v, 0, ctx)}`).join(', ');
+    const extra = buildArgs(rest, ctx).join(', ');
     return extra ? `vg.csv(${literal(file, 0, ctx)}, ${extra})` : `vg.csv(${literal(file, 0, ctx)})`;
   }
   if (type === 'spatial' && file) {
     const args = [literal(file, 0, ctx)];
     if (rest.layer !== undefined) args.push(`layer=${literal(rest.layer, 0, ctx)}`);
-    const extra = Object.entries(rest)
-      .filter(([k]) => k !== 'layer')
-      .map(([k, v]) => `${camelCaseToSnake(k)}=${literal(v, 0, ctx)}`);
-    return `vg.spatial(${[...args, ...extra].join(', ')})`;
+    for (const [k, v] of Object.entries(rest)) {
+      if (k !== 'layer') args.push(kwarg(camelCaseToSnake(k), literal(v, 0, ctx)));
+    }
+    return `vg.spatial(${args.join(', ')})`;
   }
   if (type === 'table' && query && !Object.keys(rest).length) return `vg.table(${literal(query, 0, ctx)})`;
   if (type === 'json') {
@@ -161,9 +173,7 @@ function emitDataDef(def, ctx) {
     const args = [];
     if (inlineData !== undefined) args.push(literal(inlineData, 0, ctx));
     if (file) args.push(`file=${literal(file, 0, ctx)}`);
-    for (const [k, v] of Object.entries(more)) {
-      args.push(`${camelCaseToSnake(k)}=${literal(v, 0, ctx)}`);
-    }
+    args.push(...buildArgs(more, ctx));
     return `vg.json(${args.join(', ')})`;
   }
   return literal(def, 0, ctx);
@@ -193,7 +203,7 @@ function emitEncoding(v, ctx) {
     const args = [literal(col, 0, ctx),
       ...Object.entries(opts)
         .filter(([, val]) => val !== null && val !== undefined)
-        .map(([k, val]) => `${camelCaseToSnake(k)}=${literal(val, 0, ctx)}`)];
+        .map(([k, val]) => kwarg(camelCaseToSnake(k), literal(val, 0, ctx)))];
     return `vg.${key}(${args.join(', ')})`;
   }
   if (keys.length === 1 && ENCODING_SIMPLE.has(key)) {
@@ -223,7 +233,7 @@ function emitMark(mark, ctx) {
         const { from: fromVal, ...rest } = data;
         dataRef = { from: fromVal };
         for (const [k, v] of Object.entries(rest)) {
-          dataOpts.push(`${camelCaseToSnake(k)}=${literal(v, 0, ctx)}`);
+          dataOpts.push(kwarg(camelCaseToSnake(k), literal(v, 0, ctx)));
         }
       }
       args.push(`data=${emitDataRef(dataRef, ctx)}`);
@@ -233,15 +243,13 @@ function emitMark(mark, ctx) {
   for (const [k, v] of Object.entries(enc)) {
     if (v === undefined) continue;
     if (k === 'sort' && v && typeof v === 'object' && !Array.isArray(v)) {
-      const sortArgs = Object.entries(v)
-        .map(([sk, sv]) => `${camelCaseToSnake(sk)}=${literal(sv, 0, ctx)}`).join(', ');
-      args.push(`sort=vg.sort(${sortArgs})`);
+      args.push(`sort=vg.sort(${buildArgs(v, ctx).join(', ')})`);
     } else if (k === 'channels' && v && typeof v === 'object' && !Array.isArray(v)) {
       const chanArgs = Object.entries(v)
-        .map(([ck, cv]) => `${ck}=${literal(cv, 0, ctx)}`).join(', ');
+        .map(([ck, cv]) => kwarg(ck, literal(cv, 0, ctx))).join(', ');
       args.push(`channels=vg.channels(${chanArgs})`);
     } else {
-      args.push(`${camelCaseToSnake(k)}=${emitEncoding(v, ctx)}`);
+      args.push(kwarg(camelCaseToSnake(k), emitEncoding(v, ctx)));
     }
   }
   const snakeName = camelCaseToSnake(name);
@@ -252,8 +260,7 @@ function emitMark(mark, ctx) {
 /** @param {PythonCodegenContext} ctx */
 function emitDirective(key, value, ctx) {
   if (key === 'margins' && value && typeof value === 'object') {
-    const parts = Object.entries(value).map(([k, v]) => `${camelCaseToSnake(k)}=${literal(v, 0, ctx)}`);
-    return `vg.margins(${parts.join(', ')})`;
+    return `vg.margins(${buildArgs(value, ctx).join(', ')})`;
   }
   return `vg.${camelCaseToSnake(key)}(${literal(value, 0, ctx)})`;
 }
@@ -265,7 +272,7 @@ function emitInput(node, ctx) {
   delete opts.input;
   const args = Object.entries(opts)
     .filter(([, v]) => v !== undefined)
-    .map(([k, v]) => `${inputArgName(k)}=${emitInputValue(k, v, ctx)}`);
+    .map(([k, v]) => kwarg(inputArgName(k), emitInputValue(k, v, ctx)));
   const rename = { table: 'table_input' };
   const fn = rename[kind] ?? kind;
   const namedInputs = ['slider', 'select', 'checkbox', 'menu', 'search', 'table'];
@@ -304,8 +311,7 @@ function emitDataRef(data, ctx) {
   if (data && typeof data === 'object' && data.from) {
     const { from: name, ...rest } = data;
     if (!Object.keys(rest).length) return literal(name, 0, ctx);
-    const extraArgs = Object.entries(rest)
-      .map(([k, v]) => `${camelCaseToSnake(k)}=${literal(v, 0, ctx)}`);
+    const extraArgs = buildArgs(rest, ctx);
     return `vg.source(${[literal(name, 0, ctx), ...extraArgs].join(', ')})`;
   }
   return literal(data, 0, ctx);
