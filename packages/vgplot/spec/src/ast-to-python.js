@@ -24,7 +24,7 @@ export function astToPython(ast) {
   // data
   if (Object.keys(data).length) {
     for (const [name, def] of Object.entries(data)) {
-      ctx.emit(`${ctx.ident(name)} = ${emitDataDef(def)}`);
+      ctx.emit(`${ctx.ident(name)} = ${emitDataDef(def, ctx)}`);
     }
     ctx.blank();
   }
@@ -33,7 +33,7 @@ export function astToPython(ast) {
   const paramEntries = Object.entries(params);
   if (paramEntries.length) {
     for (const [name, def] of paramEntries) {
-      ctx.emit(emitParamDef(ctx.ident(name), def));
+      ctx.emit(emitParamDef(ctx.ident(name), def, ctx));
     }
     ctx.blank();
   }
@@ -50,20 +50,20 @@ export function astToPython(ast) {
   return ctx.toString();
 }
 
-function emitParamDef(name, def) {
+function emitParamDef(name, def, ctx) {
   if (def === null || def === undefined) return `${name} = vg.param(None)`;
-  if (typeof def !== 'object') return `${name} = vg.param(${literal(def)})`;
+  if (typeof def !== 'object') return `${name} = vg.param(${literal(def, 0, ctx)})`;
   if (Array.isArray(def)) {
-    return `${name} = vg.param([${def.map(v => literal(v)).join(', ')}])`;
+    return `${name} = vg.param([${def.map(v => literal(v, 0, ctx)).join(', ')}])`;
   }
   const { select, ...opts } = def;
   if (select) {
     const optArgs = Object.entries(opts)
       .filter(([, v]) => v !== undefined)
-      .map(([k, v]) => `${camelCaseToSnake(k)}=${literal(v)}`);
+      .map(([k, v]) => `${camelCaseToSnake(k)}=${literal(v, 0, ctx)}`);
     return `${name} = vg.selection.${camelCaseToSnake(select)}(${optArgs.join(', ')})`;
   }
-  return `${name} = vg.param(${literal(def)})`;
+  return `${name} = vg.param(${literal(def, 0, ctx)})`;
 }
 
 /** @param {PythonCodegenContext} ctx */
@@ -135,38 +135,38 @@ function emitPlotObject(view, ctx) {
   return `vg.plot(\n${body}\n)`;
 }
 
-function emitDataDef(def) {
+function emitDataDef(def, ctx) {
   const { type, file, query, ...rest } = def;
   if ((type === 'parquet' || (!type && file && file.endsWith('.parquet'))) && file) {
     const extra = Object.entries(rest)
-      .map(([k, v]) => `${camelCaseToSnake(k)}=${literal(v)}`).join(', ');
-    return extra ? `vg.parquet(${literal(file)}, ${extra})` : `vg.parquet(${literal(file)})`;
+      .map(([k, v]) => `${camelCaseToSnake(k)}=${literal(v, 0, ctx)}`).join(', ');
+    return extra ? `vg.parquet(${literal(file, 0, ctx)}, ${extra})` : `vg.parquet(${literal(file, 0, ctx)})`;
   }
   if ((type === 'csv' || (!type && file && file.endsWith('.csv'))) && file) {
     const extra = Object.entries(rest)
-      .map(([k, v]) => `${camelCaseToSnake(k)}=${literal(v)}`).join(', ');
-    return extra ? `vg.csv(${literal(file)}, ${extra})` : `vg.csv(${literal(file)})`;
+      .map(([k, v]) => `${camelCaseToSnake(k)}=${literal(v, 0, ctx)}`).join(', ');
+    return extra ? `vg.csv(${literal(file, 0, ctx)}, ${extra})` : `vg.csv(${literal(file, 0, ctx)})`;
   }
   if (type === 'spatial' && file) {
-    const args = [literal(file)];
-    if (rest.layer !== undefined) args.push(`layer=${literal(rest.layer)}`);
+    const args = [literal(file, 0, ctx)];
+    if (rest.layer !== undefined) args.push(`layer=${literal(rest.layer, 0, ctx)}`);
     const extra = Object.entries(rest)
       .filter(([k]) => k !== 'layer')
-      .map(([k, v]) => `${camelCaseToSnake(k)}=${literal(v)}`);
+      .map(([k, v]) => `${camelCaseToSnake(k)}=${literal(v, 0, ctx)}`);
     return `vg.spatial(${[...args, ...extra].join(', ')})`;
   }
-  if (type === 'table' && query && !Object.keys(rest).length) return `vg.table(${literal(query)})`;
+  if (type === 'table' && query && !Object.keys(rest).length) return `vg.table(${literal(query, 0, ctx)})`;
   if (type === 'json') {
     const { data: inlineData, ...more } = rest;
     const args = [];
-    if (inlineData !== undefined) args.push(literal(inlineData));
-    if (file) args.push(`file=${literal(file)}`);
+    if (inlineData !== undefined) args.push(literal(inlineData, 0, ctx));
+    if (file) args.push(`file=${literal(file, 0, ctx)}`);
     for (const [k, v] of Object.entries(more)) {
-      args.push(`${camelCaseToSnake(k)}=${literal(v)}`);
+      args.push(`${camelCaseToSnake(k)}=${literal(v, 0, ctx)}`);
     }
     return `vg.json(${args.join(', ')})`;
   }
-  return literal(def);
+  return literal(def, 0, ctx);
 }
 
 const ENCODING_SIMPLE = new Set([
