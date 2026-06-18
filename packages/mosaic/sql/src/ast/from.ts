@@ -14,19 +14,23 @@ export class FromClauseNode extends FromNode {
   readonly expr: SQLNode;
   /** The output name. */
   readonly alias?: string;
+  /** The column names aliases. */
+  readonly columnNames?: string[];
   /** The table sample. */
   readonly sample?: SampleClauseNode;
 
   /**
-   * Instantiate a from node.
+   * Instantiate a from clause node.
    * @param expr The from expression.
    * @param alias The output name.
    * @param sample The table sample.
+   * @param columnNames The column names aliases (if any).
    */
-  constructor(expr: SQLNode, alias?: string, sample?: SampleClauseNode) {
+  constructor(expr: SQLNode, alias?: string, sample?: SampleClauseNode, columnNames: string[] = []) {
     super(FROM_CLAUSE);
     this.expr = expr;
     this.alias = alias;
+    this.columnNames = columnNames;
     this.sample = sample;
   }
 
@@ -35,6 +39,6 @@ export class FromClauseNode extends FromNode {
    * @param string alias
    */
   as(alias: string) {
-    return new FromClauseNode(this.expr, alias, this.sample);
+    return new FromClauseNode(this.expr, alias, this.sample, this.columnNames);
   }
 }
