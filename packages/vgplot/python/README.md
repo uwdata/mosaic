@@ -122,5 +122,8 @@ Any mark or directive not listed above is also accessible by its snake_case name
 `Spec.to_dict()` returns a plain Python dictionary. `Spec.to_json()` returns a JSON string:
 
 ```python
+from pprint import pprint
+
+pprint(spec.to_dict())
 print(spec.to_json(indent=2))
 ```
