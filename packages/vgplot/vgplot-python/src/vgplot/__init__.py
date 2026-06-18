@@ -663,9 +663,19 @@ def __getattr__(name: str):
 
     def _factory(*args, data=None, **kwargs):
         if len(args) == 1 and data is None and not kwargs:
-            # Single positional arg to directive
+            # Single positional arg, no encodings: treat as a directive value.
             return Directive(camel, args[0])
-        # otherwise creates a mark
+        # Otherwise it is a mark; a leading positional arg is the data source.
+        if args:
+            if len(args) > 1:
+                raise TypeError(
+                    f"vg.{name}() takes at most one positional (data) argument"
+                )
+            if data is not None:
+                raise TypeError(
+                    f"vg.{name}() got data both positionally and by keyword"
+                )
+            data = args[0]
         return Mark(camel, data=data, enc=kwargs if kwargs else None)
 
     _factory.__name__ = name
