@@ -109,10 +109,14 @@ class Spec:
             if isinstance(p, _ParamBase):
                 param_names[id(p)] = name
 
-        # Second pass: auto-name any _ParamBase in the view not yet registered
+        # Second pass: auto-name any _ParamBase in the view not yet registered,
+        # skipping names already taken by explicit params.
+        used = set(param_names.values()) | set(self.params or {})
         counter = 0
         for obj in _collect_params(self.view):
             if id(obj) not in param_names:
+                while f"_param{counter}" in used:
+                    counter += 1
                 param_names[id(obj)] = f"_param{counter}"
                 counter += 1
 
@@ -134,9 +138,12 @@ class Spec:
         # Build data_names lookup and auto-register any unnamed DataDefs in the view
         data_names = dict(self.data_names)
         extra_data: Dict[str, Any] = {}
+        used = set(data_names.values()) | set(self.data or {})
         counter = 0
         for obj in _collect_datadefs(self.view):
             if id(obj) not in data_names:
+                while f"_data{counter}" in used:
+                    counter += 1
                 auto_name = f"_data{counter}"
                 data_names[id(obj)] = auto_name
                 extra_data[auto_name] = obj.to_dict()

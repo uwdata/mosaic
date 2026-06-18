@@ -42,3 +42,18 @@ class TestDataHelpers:
 
     def test_json_file(self):
         assert vg.json(file="x.json").to_dict() == {"type": "json", "file": "x.json"}
+
+
+class TestAutoNaming:
+    def test_auto_param_name_skips_explicit_name(self):
+        from vgplot.spec import Spec
+
+        named = vg.param(1)
+        unnamed = vg.param(2)
+        view = vg.plot(vg.dot("t", x=unnamed))
+        # The explicit param already occupies "_param0"; the in-view param must
+        # not collide with it.
+        d = Spec(params={"_param0": named}, view=view).to_dict()
+        assert d["params"]["_param0"] == 1
+        assert d["params"]["_param1"] == 2
+        assert d["plot"][0]["x"] == "$_param1"
