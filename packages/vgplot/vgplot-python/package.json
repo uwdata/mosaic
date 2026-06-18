@@ -1,5 +1,9 @@
 {
   "name": "vgplot-python",
   "version": "0.23.1",
-  "private": true
+  "private": true,
+  "scripts": {
+    "prerelease": "uv run ruff check && uv run ruff format --check",
+    "release": "uv build && uvx twine upload --skip-existing ../../../dist/vgplot*"
+  }
 }
