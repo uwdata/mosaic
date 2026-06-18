@@ -35,8 +35,7 @@ path = "package.json"
 pattern = "\"version\": \"(?P<version>.+?)\""
 
 [tool.hatch.build.targets.wheel]
-packages = ["api"]
-sources = {"api" = "vgplot"}
+packages = ["src/vgplot"]
 
 # https://mypy.readthedocs.io/en/stable/config_file.html
 [tool.mypy]

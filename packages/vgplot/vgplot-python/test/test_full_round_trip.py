@@ -3,7 +3,7 @@
 # in specs/json/. Also checks that Python, JSON, and ESM example sets stay
 # in sync (same filenames).
 #
-# Run: pytest packages/vgplot/python/test/test_full_round_trip.py
+# Run: pytest packages/vgplot/vgplot-python/test/test_full_round_trip.py
 import json
 import os
 import subprocess
@@ -12,9 +12,7 @@ from pathlib import Path
 
 import pytest
 
-# This test lives in: .../packages/vgplot-python/test/test_full_round_trip.py
-
-ROOT = Path(__file__).resolve().parents[3]
+ROOT = Path(__file__).resolve().parents[4]  # mosaic project root
 SPEC_DIR = ROOT / "specs"
 JSON_DIR = SPEC_DIR / "json"
 ESM_DIR = SPEC_DIR / "esm"
@@ -39,7 +37,8 @@ def run_subprocess(command: list[str], **kwargs) -> str:
 
 def run_python_spec(spec_path: Path) -> dict:
     env = os.environ.copy()
-    env["PYTHONPATH"] = str(ROOT) + os.pathsep + env.get("PYTHONPATH", "")
+    vgplot_src = ROOT / "packages" / "vgplot" / "vgplot-python" / "src"
+    env["PYTHONPATH"] = str(vgplot_src) + os.pathsep + str(ROOT) + os.pathsep + env.get("PYTHONPATH", "")
 
     stdout = run_subprocess(
         [sys.executable, str(RUNNER), str(spec_path)],
