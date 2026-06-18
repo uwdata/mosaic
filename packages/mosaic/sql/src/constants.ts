@@ -43,6 +43,7 @@ export const JOIN_CLAUSE = 'JOIN_CLAUSE';
 export const SAMPLE_CLAUSE = 'SAMPLE_CLAUSE';
 
 export const SELECT_QUERY = 'SELECT_QUERY';
+export const PIVOT_QUERY = 'PIVOT_QUERY';
 export const DESCRIBE_QUERY = 'DESCRIBE_QUERY';
 export const SET_OPERATION = 'SET_OPERATION';
 export const CREATE_QUERY = 'CREATE_QUERY';

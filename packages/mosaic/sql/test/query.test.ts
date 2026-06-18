@@ -563,6 +563,22 @@ describe('Query', () => {
     expect(Query.exceptAll(...q).toString()).toBe(q.join(' EXCEPT ALL '));
   });
 
+  it('renders set operation query modifiers', () => {
+    const q = [
+      Query.select('foo', 'bar', 'baz').from('data1'),
+      Query.select('foo', 'bar', 'baz').from('data2')
+    ];
+
+    expect(
+      Query
+        .unionAll(...q)
+        .orderby('foo')
+        .limit(0)
+        .offset(0)
+        .toString()
+    ).toBe(`${q.join(' UNION ALL ')} ORDER BY "foo" LIMIT 0 OFFSET 0`);
+  });
+
   it('supports describe queries', () => {
     const q = Query.select('foo', 'bar').from('data');
     expect(Query.describe(q).toString()).toBe(`DESC ${q}`);
