@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import inspect
 import json
 from typing import Any, Dict
 
@@ -203,58 +202,9 @@ def spec(
             view = arg
         elif isinstance(arg, dict):
             data = arg
-    caller = inspect.currentframe().f_back
-    caller_locals = caller.f_locals
-
-    # Auto-detect meta: prefer a local named "meta", fall back to any Meta instance
-    if meta is None:
-        candidate = caller_locals.get("meta")
-        if isinstance(candidate, Meta):
-            meta = candidate
-        else:
-            for val in caller_locals.values():
-                if isinstance(val, Meta):
-                    meta = val
-                    break
-
-    # Auto-detect view: prefer a local named "view", fall back to any view-keyed dict
-    if view is None:
-        candidate = caller_locals.get("view")
-        if isinstance(candidate, dict) and _VIEW_KEYS.intersection(candidate):
-            view = candidate
-        else:
-            for val in caller_locals.values():
-                if isinstance(val, dict) and _VIEW_KEYS.intersection(val):
-                    view = val
-                    break
-
-    if params is None:
-        params = {
-            name: val
-            for name, val in caller_locals.items()
-            if isinstance(val, _ParamBase)
-        } or None
-    _RESERVED = {"data", "meta", "view"}
-    conflicts = _RESERVED.intersection(params or {})
-    if conflicts:
-        names = ", ".join(f'"{n}"' for n in sorted(conflicts))
-        raise ValueError(
-            f"Param name(s) {names} conflict with vg.spec() variable names. "
-            f"Rename them (e.g. 'data' → 'sample', 'view' → 'layout')."
-        )
-    # Auto-collect DataDef variables from caller's locals; merge with any
-    # explicit data dict (explicit takes precedence on name collision).
-    auto_defs = {
-        name: val for name, val in caller_locals.items() if isinstance(val, DataDef)
-    }
-    data_names: Dict[int, str] = {id(val): name for name, val in auto_defs.items()}
-    if auto_defs:
-        auto_data = {name: val.to_dict() for name, val in auto_defs.items()}
-        data = {**auto_data, **(data or {})}
     return Spec(
         meta=meta,
         data=data,
-        data_names=data_names,
         params=params,
         plotDefaults=plotDefaults,
         config=config,

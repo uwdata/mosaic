@@ -19,4 +19,4 @@ view = vg.plot(
     vg.projection_type("albers"),
 )
 
-spec = vg.spec()
+spec = vg.spec(view)

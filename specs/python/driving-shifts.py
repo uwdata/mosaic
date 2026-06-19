@@ -19,4 +19,4 @@ view = vg.plot(
     vg.y_label("Cost of gasoline ($ per gallon)"),
 )
 
-spec = vg.spec()
+spec = vg.spec(view)

@@ -29,4 +29,4 @@ view = vg.vconcat(
     vg.slider(min=1, max=7, step=0.1, bind=length, label="Vector Length"),
 )
 
-spec = vg.spec()
+spec = vg.spec(view)

@@ -20,4 +20,4 @@ view = vg.plot(
     vg.projection_type("equirectangular"),
 )
 
-spec = vg.spec()
+spec = vg.spec(view)

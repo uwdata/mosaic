@@ -92,4 +92,4 @@ view = vg.hconcat(
     ),
 )
 
-spec = vg.spec()
+spec = vg.spec(view)

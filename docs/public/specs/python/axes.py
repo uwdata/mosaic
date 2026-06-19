@@ -21,4 +21,4 @@ view = vg.plot(
     vg.width(680),
 )
 
-spec = vg.spec()
+spec = vg.spec(view)
