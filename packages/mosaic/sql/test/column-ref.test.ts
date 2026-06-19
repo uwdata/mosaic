@@ -7,12 +7,10 @@ describe('Column references', () => {
     await expect(new ColumnNameRefNode('num1')).toBeValidExpr(`"num1"`);
     expect(String(new ColumnNameRefNode('num1', new TableRefNode('t1')))).toBe(`"t1"."num1"`);
     await validateQuery(`SELECT ${new ColumnNameRefNode('num1', new TableRefNode('t1'))} FROM "t1"`);
-    expect(String(new ColumnNameRefNode('num1', new TableRefNode(['baz', 'bar'])))).toBe(`"baz"."bar"."num1"`);
-    // Not validated: a 3-part name "baz"."bar"."foo" is a catalog.schema.column
-    // reference that the binder cannot resolve against the fixture schema.
+    expect(String(new ColumnNameRefNode('num1', new TableRefNode(['main', 't1'])))).toBe(`"main"."t1"."num1"`);
+    await validateQuery(`SELECT ${new ColumnNameRefNode('num1', new TableRefNode(['main', 't1']))} FROM "t1"`);
     expect(String(new ColumnNameRefNode('avg("col")'))).toBe(`"avg(""col"")"`);
-    // Not validated: references a column literally named avg("col"), absent from
-    // the fixture; this test only covers identifier-escaping in serialization.
+    // Serialization only: tests identifier-escaping for a column named avg("col").
   });
 
   it('are created from column', async () => {
@@ -39,8 +37,7 @@ describe('Column references', () => {
     const node2 = asNode('tab.num1');
     expect(node2).toBeInstanceOf(ColumnRefNode);
     expect(String(node2)).toBe(`"tab.num1"`);
-    // Not validated: asNode keeps "tab.foo" as a single column name, which does
-    // not exist in the fixture (this is the documented non-parsing behavior).
+    // Serialization only: asNode keeps "tab.num1" as one literal column name (non-parsing).
   });
 
   it('are created from strings by parseColumnRef', async () => {

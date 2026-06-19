@@ -198,8 +198,7 @@ describe('PivotQuery', () => {
 
   it('keeps existing SQL output shape when no IN values are provided', async () => {
     expect(Query.pivot('t1').toString()).toBe('PIVOT "t1"');
-    // Not validated: DuckDB's parser rejects a bare `PIVOT <table>` with no ON
-    // clause ("syntax error at end of input"), so this output is not executable.
+    // Serialization only: a bare PIVOT with no ON clause is not executable.
     await expect(Query.pivot('t1').on('int1')).toBeValidQuery('PIVOT "t1" ON "int1"');
   });
 
@@ -366,19 +365,6 @@ describe('PivotQuery', () => {
   });
 
   it('can be used as a select query source', async () => {
-    const pivot = Query.pivot('t1');
-    const query = Query.select('*').from({ p: pivot });
-    const [source] = query._from;
-
-    expect(isSelectQuery(query)).toBe(true);
-    expect(source).toBeInstanceOf(FromClauseNode);
-    expect((source as FromClauseNode).expr).toBe(pivot);
-    expect(query.toString()).toBe('SELECT * FROM (PIVOT "t1") AS "p"');
-    // Not validated: a subquery `(PIVOT <table>)` with no ON clause is rejected
-    // by DuckDB's parser ("syntax error at or near \")\"").
-  });
-
-  it('can be used as a select query source with pivot clauses', async () => {
     const pivot = Query.pivot('t1').on('int1');
     const query = Query.select('*').from({ p: pivot });
     const [source] = query._from;

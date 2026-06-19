@@ -101,8 +101,8 @@ describe('Window functions', () => {
       + 'ORDER BY "num1", "num2" DESC '
       + 'ROWS BETWEEN CURRENT ROW AND UNBOUNDED FOLLOWING)'
     );
-    // Not validated: references a base window "base" that would need a WINDOW
-    // clause declaration to bind; this test covers the OVER (...) serialization.
+    // A base window reference must be declared in a WINDOW clause to bind.
+    await validateQuery(`SELECT ${expr} FROM "t1" WINDOW "base" AS ()`);
   });
 
   it('support parameterized expressions', async () => {

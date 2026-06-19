@@ -567,22 +567,22 @@ describe('Query', () => {
   });
 
   it('is cloneable', async () => {
+    const sql =
+      'WITH "cte" AS (SELECT "num1", "num2", "num3" FROM "t1") '
+      + 'SELECT "num1" FROM "cte" GROUP BY "num1" ORDER BY "num1" LIMIT 10';
     const q = Query
       .with({
         cte: Query.select('num1', 'num2', 'num3').from('t1')
       })
       .select('num1')
       .from('cte')
-      .groupby('num2')
-      .orderby('num3')
+      .groupby('num1')
+      .orderby('num1')
       .limit(10);
     const c = q.clone();
     expect(c).not.toBe(q);
     expect(c.toString()).toBe(q.toString());
-    // Not validated: this query selects "num1" while grouping by "num2" without an
-    // aggregate, which DuckDB's binder rejects ("num1" must appear in GROUP BY).
-    // The query is only an illustrative fixture for testing clone(); its SQL is
-    // intentionally not semantically valid.
-    // await validateQuery(q);
+    await expect(q).toBeValidQuery(sql);
+    await expect(c).toBeValidQuery(sql);
   })
 });

@@ -8,11 +8,10 @@ describe('Table references', () => {
     await validateQuery(`SELECT * FROM ${new TableRefNode('t1')}`);
     expect(String(new TableRefNode(['t1']))).toBe(`"t1"`);
     await validateQuery(`SELECT * FROM ${new TableRefNode(['t1'])}`);
-    expect(String(new TableRefNode(['foo', 'bar']))).toBe(`"foo"."bar"`);
-    expect(String(new TableRefNode(['foo', 'bar', 'baz']))).toBe(`"foo"."bar"."baz"`);
-    // Not validated: multi-part names denote schema/catalog-qualified tables
-    // ("foo"."bar", "foo"."bar"."baz") that do not exist in the fixture; this
-    // test only covers identifier serialization.
+    expect(String(new TableRefNode(['main', 't1']))).toBe(`"main"."t1"`);
+    await validateQuery(`SELECT * FROM ${new TableRefNode(['main', 't1'])}`);
+    expect(String(new TableRefNode(['memory', 'main', 't1']))).toBe(`"memory"."main"."t1"`);
+    await validateQuery(`SELECT * FROM ${new TableRefNode(['memory', 'main', 't1'])}`);
   });
 
   it('are created by asTableRef', () => {
