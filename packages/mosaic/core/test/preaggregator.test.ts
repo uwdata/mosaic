@@ -217,6 +217,28 @@ describe('PreAggregator', () => {
     expect(await run(query)).toStrictEqual([13, true]);
   });
 
+  it('supports queries with having clause', async () => {
+    const query = (predicate: FilterExpr = []) => {
+      return Query.from('testData')
+        .select({ measure: sum('y') })
+        .groupby('dim')
+        .where(predicate)
+        .having(gt(avg('x'), 2));
+    };
+    expect(await run(query)).toStrictEqual([13, true]);
+  });
+
+  it('supports queries with qualify clause containing an aggregate', async () => {
+    const query = (predicate: FilterExpr = []) => {
+      return Query.from('testData')
+        .select({ measure: sum(sum('y')).orderby('order') })
+        .groupby('dim', 'order')
+        .where(predicate)
+        .qualify(gt('measure', 7), gt(avg('x'), 0));
+    };
+    expect(await run(query)).toStrictEqual([13, true]);
+  });
+
   it('supports queries with filter pushdown applied', async () => {
     const query = (predicate: FilterExpr = []) => {
       // include a non-selective clause to ensure that we always have
