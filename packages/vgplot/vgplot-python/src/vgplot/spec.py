@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import inspect
 import json
 from typing import Any, Dict
 
@@ -85,15 +86,25 @@ class Spec:
         data_names: Dict[int, str] | None = None,
         params: Dict[str, Any] | None = None,
         plotDefaults: Dict[str, Any] | None = None,
+        plot_defaults: Dict[str, Any] | None = None,
         config: Dict[str, Any] | None = None,
         view: Dict[str, Any] | None = None,
         **extra: Any,
     ) -> None:
         self.meta = meta.to_dict() if hasattr(meta, "to_dict") else meta
-        self.data = data
-        self.data_names = data_names or {}
+        # Serialize any DataDef values in data and build id→name mapping
+        resolved_data: Dict[str, Any] = {}
+        resolved_data_names: Dict[int, str] = dict(data_names or {})
+        for name, val in (data or {}).items():
+            if isinstance(val, DataDef):
+                resolved_data_names[id(val)] = name
+                resolved_data[name] = val.to_dict()
+            else:
+                resolved_data[name] = val
+        self.data = resolved_data or None
+        self.data_names = resolved_data_names
         self.params = params
-        self.plotDefaults = plotDefaults
+        self.plotDefaults = plotDefaults or plot_defaults
         self.config = config
         self.view = view or {}
         self.extra = extra
@@ -191,6 +202,7 @@ def spec(
     data: Dict[str, Any] | None = None,
     params: Dict[str, Any] | None = None,
     plotDefaults: Dict[str, Any] | None = None,
+    plot_defaults: Dict[str, Any] | None = None,
     config: Dict[str, Any] | None = None,
     view: Dict[str, Any] | None = None,
     **extra: Any,
@@ -202,11 +214,36 @@ def spec(
             view = arg
         elif isinstance(arg, dict):
             data = arg
+
+    # Inspect caller frame to discover DataDef and _ParamBase objects by variable name.
+    caller_locals = inspect.currentframe().f_back.f_locals  # type: ignore[union-attr]
+
+    # Collect DataDef objects not already covered by the explicit data= argument.
+    explicit_ids = {id(v) for v in (data or {}).values() if isinstance(v, DataDef)}
+    frame_data: Dict[str, Any] = {
+        name: obj
+        for name, obj in caller_locals.items()
+        if isinstance(obj, DataDef)
+        and not name.startswith("_")
+        and id(obj) not in explicit_ids
+    }
+    merged_data = {**(data or {}), **frame_data} or None
+
+    # Collect _ParamBase objects when params were not passed explicitly.
+    if params is None:
+        frame_params: Dict[str, Any] = {
+            name: obj
+            for name, obj in caller_locals.items()
+            if isinstance(obj, _ParamBase) and not name.startswith("_")
+        }
+        params = frame_params or None
+
     return Spec(
         meta=meta,
-        data=data,
+        data=merged_data,
         params=params,
         plotDefaults=plotDefaults,
+        plot_defaults=plot_defaults,
         config=config,
         view=view,
         **extra,

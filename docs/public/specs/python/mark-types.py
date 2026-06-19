@@ -60,12 +60,13 @@ view = vg.vconcat(
 )
 
 spec = vg.spec(
-    plotDefaults={
+    view,
+    plot_defaults={
         "xAxis": None,
         "yAxis": None,
         "margins": {"left": 5, "top": 5, "right": 5, "bottom": 5},
         "width": 160,
         "height": 100,
         "yDomain": [0, 9],
-    }
+    },
 )

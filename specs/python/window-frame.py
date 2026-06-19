@@ -8,13 +8,27 @@ view = vg.plot(
         aapl,
         stroke="black",
         x="Date",
-        y=vg.avg("Close", orderby="Date", range=[{"days": 15}, {"days": 15}]),
+        y=vg.avg(
+            "Close",
+            orderby="Date",
+            range=[
+                {"days": 15},
+                {"days": 15},
+            ],
+        ),
     ),
     vg.line_y(
         aapl,
         stroke="firebrick",
         x="Date",
-        y=vg.avg("Close", orderby="Date", range=[{"months": 3}, {"months": 3}]),
+        y=vg.avg(
+            "Close",
+            orderby="Date",
+            range=[
+                {"months": 3},
+                {"months": 3},
+            ],
+        ),
     ),
     vg.y_label("Close"),
     vg.width(680),

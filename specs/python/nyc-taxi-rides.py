@@ -20,7 +20,9 @@ view = vg.vconcat(
             vg.raster(data="trips", filter_by=filter, x="px", y="py", bandwidth=0),
             vg.interval_xy(bind=filter),
             vg.text(
-                data=[{"label": "Taxi Pickups"}],
+                data=[
+                    {"label": "Taxi Pickups"},
+                ],
                 dx=10,
                 dy=10,
                 text="label",
@@ -43,7 +45,9 @@ view = vg.vconcat(
             vg.raster(data="trips", filter_by=filter, x="dx", y="dy", bandwidth=0),
             vg.interval_xy(bind=filter),
             vg.text(
-                data=[{"label": "Taxi Dropoffs"}],
+                data=[
+                    {"label": "Taxi Dropoffs"},
+                ],
                 dx=10,
                 dy=10,
                 text="label",
@@ -73,4 +77,4 @@ view = vg.vconcat(
     ),
 )
 
-spec = vg.spec(config={"extensions": "spatial"})
+spec = vg.spec(view, config={"extensions": "spatial"})

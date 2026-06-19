@@ -38,34 +38,50 @@ export function astToPython(ast) {
   const json = ast.toJSON();
   const { meta, config, data = {}, params = {}, plotDefaults, ...view } = json;
 
+  // Pre-compute data variable names - suffix with _data when a param has the same name
+  const paramNameSet = new Set(Object.keys(params));
+  for (const name of Object.keys(data)) {
+    let safe = name.replace(/[^A-Za-z0-9_]/g, '_').replace(/^([0-9])/, '_$1');
+    if (PYTHON_KEYWORDS.has(safe)) safe += '_';
+    ctx.dataVarMap.set(name, paramNameSet.has(name) ? safe + '_data' : safe);
+  }
+
   ctx.emit('import vgplot as vg');
   ctx.blank();
 
-  // data
-  if (Object.keys(data).length) {
-    for (const [name, def] of Object.entries(data)) {
-      ctx.emit(`${ctx.ident(name)} = ${emitDataDef(def, ctx)}`);
-    }
-    ctx.blank();
+  // data - emit one variable per named dataset
+  const dataEntries = Object.entries(data);
+  for (const [name, def] of dataEntries) {
+    ctx.emit(`${ctx.dataVar(name)} = ${emitDataDef(def)}`);
   }
+  if (dataEntries.length) ctx.blank();
 
   // params - emitted before view so variables are in scope
   const paramEntries = Object.entries(params);
-  if (paramEntries.length) {
-    for (const [name, def] of paramEntries) {
-      ctx.emit(emitParamDef(ctx.ident(name), def, ctx));
-    }
-    ctx.blank();
+  for (const [name, def] of paramEntries) {
+    ctx.emit(emitParamDef(ctx.ident(name), def));
   }
+  if (paramEntries.length) ctx.blank();
 
   // view / layout / plot
   ctx.emit(`view = ${emitComponent(view, ctx)}`);
   ctx.blank();
 
-  const kwargs = [];
-  if (plotDefaults) kwargs.push(`plotDefaults=${literal(plotDefaults)}`);
-  if (config) kwargs.push(`config=${literal(config)}`);
-  ctx.emit(`spec = vg.spec(${kwargs.join(', ')})`);
+  // spec call - pass all top-level fields explicitly so vg.spec() is self-contained
+  const specArgs = ['view'];
+
+  // Only pass data= for entries whose Python variable was renamed to avoid a param name clash.
+  // All other data sources and params are discovered automatically via frame inspection in spec().
+  const renamedData = dataEntries.filter(([name]) => ctx.dataVar(name) !== ctx.ident(name));
+  if (renamedData.length) {
+    const dataKwargs = renamedData.map(([name]) => `${JSON.stringify(name)}: ${ctx.dataVar(name)}`);
+    specArgs.push(`data={${dataKwargs.join(', ')}}`);
+  }
+
+  if (plotDefaults) specArgs.push(`plot_defaults=${literal(plotDefaults)}`);
+  if (config) specArgs.push(`config=${literal(config)}`);
+
+  ctx.emit(`spec = vg.spec(${specArgs.join(', ')})`);
 
   return ctx.toString();
 }
@@ -224,8 +240,8 @@ function emitMark(mark, ctx) {
     if (data && typeof data === 'object' && data.from &&
         typeof data.from === 'string' && !data.from.startsWith('$') &&
         Object.keys(data).length === 1) {
-      // Simple dataset name → positional variable reference
-      args.push(ctx.ident(data.from));
+      // Simple dataset name -> positional variable reference
+      args.push(ctx.dataVar(data.from));
     } else {
       let dataRef = data;
       const dataOpts = [];
@@ -330,19 +346,22 @@ function literal(v, depth = 0, ctx = null) {
     if (/^\$[A-Za-z_][A-Za-z0-9_]*$/.test(v)) {
       return ctx ? ctx.ident(v.slice(1)) : v.slice(1);
     }
+    // Prefer single quotes when the string contains double quotes (avoids escape sequences)
+    if (v.includes('"') && !v.includes("'")) return `'${v}'`;
     return JSON.stringify(v);
   }
   const pad = '    '.repeat(depth + 1);
   const closePad = '    '.repeat(depth);
   if (Array.isArray(v)) {
     if (!v.length) return '[]';
+    // Treat all strings as primitive (including $param refs which resolve to short idents)
     const isPrimitive = x => x === null || typeof x === 'boolean' || typeof x === 'number' ||
-      (typeof x === 'string' && !/^\$/.test(x));
+      typeof x === 'string';
     if (v.length <= 6 && v.every(isPrimitive)) {
       return '[' + v.map(x => literal(x, 0, ctx)).join(', ') + ']';
     }
     const items = v.map(x => pad + literal(x, depth + 1, ctx)).join(',\n');
-    return '[\n' + items + '\n' + closePad + ']';
+    return '[\n' + items + ',\n' + closePad + ']';
   }
   if (typeof v === 'object') {
     const entries = Object.entries(v)
@@ -365,6 +384,7 @@ export class PythonCodegenContext {
     this.lines = [];
     this.depth = 0;
     this.identMap = new Map();
+    this.dataVarMap = new Map(); // originalDataName -> pythonVarName
   }
   emit(line) { this.lines.push(this.tab() + line); }
   blank() {
@@ -375,12 +395,16 @@ export class PythonCodegenContext {
   indent() { this.depth += 1; }
   dedent() { this.depth = Math.max(0, this.depth - 1); }
   tab() { return '    '.repeat(this.depth); }
-  toString() { return this.lines.join('\n'); }
+  toString() { return this.lines.join('\n') + '\n'; }
   ident(name) {
     if (this.identMap.has(name)) return this.identMap.get(name);
     let safe = name.replace(/[^A-Za-z0-9_]/g, '_').replace(/^([0-9])/, '_$1');
     if (PYTHON_KEYWORDS.has(safe)) safe += '_';
     this.identMap.set(name, safe);
     return safe;
+  }
+  /** Python variable name for a data source (avoids clash with same-named params). */
+  dataVar(name) {
+    return this.dataVarMap.get(name) ?? this.ident(name);
   }
 }

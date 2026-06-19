@@ -59,7 +59,9 @@ def test_python_round_trip(example_name: str):
     generated = run_spec_file_with_exec(PYTHON_DIR / f"{example_name}.py")
     original = load_json_fixture(example_name)
 
+    # meta is documentation-only and not emitted by the Python DSL
     original.pop("meta", None)
+    generated.pop("meta", None)
 
     assert generated == original, (
         f"Round-trip Python mismatch for '{example_name}'.\n"
