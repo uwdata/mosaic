@@ -234,18 +234,11 @@ describe('PivotQuery', () => {
       .on('int1')
       .using(sum('num1'))
       .groupby('txt1')
-      .orderby('int1');
+      .orderby('txt1');
 
-    expect(pivot.toString()).toBe(
-      'PIVOT "t1" ON "int1" USING sum("num1") GROUP BY "txt1" ORDER BY "int1"'
+    await expect(pivot).toBeValidQuery(
+      'PIVOT "t1" ON "int1" USING sum("num1") GROUP BY "txt1" ORDER BY "txt1"'
     );
-    // NOTE: DuckDB rejects this generated SQL with
-    //   Binder Error: Referenced column "int1" not found in FROM clause!
-    // After PIVOT ... ON "int1" ... GROUP BY "txt1", the column "int1" is
-    // pivoted away and is no longer a valid ORDER BY target. This is a real
-    // discrepancy in the generated SQL (see report). Per task instructions we do
-    // not modify src/; leaving this validation as a documented skip.
-    // await validateQuery(pivot);
   });
 
   it('renders LIMIT and OFFSET clauses added to pivot queries', async () => {

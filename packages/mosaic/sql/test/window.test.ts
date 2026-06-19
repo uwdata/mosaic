@@ -61,11 +61,14 @@ describe('Window functions', () => {
     await validateExpr(first_value('num1').frame(frameRange([2, 0])).orderby('num1'));
     expect(String(first_value('num1').frame(frameRange([2, currentRow()]))))
       .toBe('first_value("num1") OVER (RANGE BETWEEN 2 PRECEDING AND CURRENT ROW)');
-    expect(String(first_value('num1').frame(frameRows([preceding(days(3)), following(days(2))]))))
-      .toBe('first_value("num1") OVER (ROWS BETWEEN INTERVAL 3 DAYS PRECEDING AND INTERVAL 2 DAYS FOLLOWING)');
-    // Not validated: an interval-valued ROWS frame requires a RANGE frame over a
-    // temporal ORDER BY column in DuckDB; the generated SQL pairs INTERVAL bounds
-    // with ROWS, which DuckDB rejects. This is the string the API emits today.
+    expect(String(first_value('num1').frame(frameRange([preceding(days(3)), following(days(2))]))))
+      .toBe('first_value("num1") OVER (RANGE BETWEEN INTERVAL 3 DAYS PRECEDING AND INTERVAL 2 DAYS FOLLOWING)');
+    // Interval offsets require a temporal ORDER BY column.
+    await validateExpr(
+      first_value('num1')
+        .frame(frameRange([preceding(days(3)), following(days(2))]))
+        .orderby('ts1')
+    );
   });
 
   it('support groups frame', async () => {
