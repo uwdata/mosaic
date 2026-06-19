@@ -1,5 +1,5 @@
 import { expect, describe, it } from 'vitest';
-import { asTableRef, column, desc, gt, lt, max, min, sql, Query, sum, lead, over, cte, add, FromClauseNode, SampleClauseNode, frameRows, div, mul } from '../src/index.js';
+import { asTableRef, column, desc, gt, lt, max, min, sql, Query, sum, lead, over, cte, add, FromClauseNode, SampleClauseNode, frameRows, div, mul, unnest, list } from '../src/index.js';
 
 describe('Query', () => {
   it('selects column name strings', async () => {
@@ -419,6 +419,21 @@ describe('Query', () => {
         })
         .from({ a: 't1', b: 't2' })
     ).toBeValidQuery(query);
+  });
+
+  it('selects from unnested relation', async () => {
+    await expect(
+      Query
+        .select({ type: column('type', 'u') })
+        .from(
+          new FromClauseNode(
+            unnest(list(['Gold', 'Silver', 'Bronze'])),
+            'u',
+            undefined,
+            ['type']
+          )
+        )
+    ).toBeValidQuery(`SELECT "u"."type" AS "type" FROM UNNEST(['Gold', 'Silver', 'Bronze']) AS "u"("type")`);
   });
 
   it('selects over windows', async () => {
