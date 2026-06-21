@@ -1,5 +1,7 @@
 name: Release
 
+run-name: Release ${{ inputs.exact_version || inputs.bump }}
+
 on:
   workflow_dispatch:
     inputs:
@@ -115,6 +117,7 @@ jobs:
           VERSION="$(node -p "require('./lerna.json').version")"
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
           echo "tag=v$VERSION" >> "$GITHUB_OUTPUT"
+          echo "## Released v$VERSION" >> "$GITHUB_STEP_SUMMARY"
 
       - name: Publish to npm
         run: pnpm exec lerna publish from-git --yes
