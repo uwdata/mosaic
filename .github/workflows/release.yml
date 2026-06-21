@@ -156,7 +156,7 @@ jobs:
           uv build --package duckdb-server --out-dir dist-py
           cd packages/vgplot/widget && uv build --out-dir "$GITHUB_WORKSPACE/dist-py"
 
-      - name: Publish to PyPI (Trusted Publishing)
+      - name: Publish to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
           packages-dir: dist-py/
