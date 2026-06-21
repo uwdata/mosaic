@@ -29,7 +29,7 @@
     "clean": "rimraf dist && mkdir dist",
     "lint": "eslint src test",
     "test": "vitest run",
-    "prepublishOnly": "pnpm run test && pnpm run lint && tsc --build"
+    "prepublishOnly": "tsc --build"
   },
   "dependencies": {
     "@duckdb/duckdb-wasm": "1.33.1-dev45.0",

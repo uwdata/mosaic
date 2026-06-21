@@ -30,7 +30,7 @@
     "prebuild": "pnpm run clean",
     "lint": "eslint src test",
     "test": "vitest run",
-    "prepublishOnly": "pnpm run test && pnpm run lint && tsc --build"
+    "prepublishOnly": "tsc --build"
   },
   "dependencies": {
     "@observablehq/plot": "^0.6.17",

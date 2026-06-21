@@ -50,9 +50,39 @@ jobs:
           done
           [ "$ok" = "1" ] || { echo "::error::Required test jobs did not pass for this commit." >&2; exit 1; }
 
+  prepare:
+    name: Resolve version
+    needs: verify-ci
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.resolve.outputs.version }}
+    steps:
+      - uses: actions/checkout@v6
+      - name: Resolve version
+        id: resolve
+        env:
+          BUMP: ${{ inputs.bump }}
+          EXACT: ${{ inputs.exact_version }}
+        run: |
+          next=$(node -e '
+            const cur = require("./lerna.json").version;
+            const { EXACT, BUMP } = process.env;
+            let next = EXACT;
+            if (!next) {
+              const p = cur.split("-")[0].split(".").map(Number);
+              next = BUMP === "major" ? (p[0]+1)+".0.0"
+                   : BUMP === "minor" ? p[0]+"."+(p[1]+1)+".0"
+                   : p[0]+"."+p[1]+"."+(p[2]+1);
+            }
+            process.stdout.write(next);
+          ')
+          echo "version=$next" >> "$GITHUB_OUTPUT"
+          echo "## Planned release: \`v$next\` (current: \`v$(node -p "require('./lerna.json').version")\`)" >> "$GITHUB_STEP_SUMMARY"
+          echo "Planned release: v$next"
+
   release:
     name: Release
-    needs: verify-ci
+    needs: [verify-ci, prepare]
     runs-on: ubuntu-latest
     environment: release
 
@@ -107,9 +137,7 @@ jobs:
       - name: Bump version, tag, and push
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          VERSION_ARG="${{ inputs.exact_version != '' && inputs.exact_version || inputs.bump }}"
-          pnpm exec lerna version "$VERSION_ARG" --yes
+        run: pnpm exec lerna version "${{ needs.prepare.outputs.version }}" --yes
 
       - name: Capture released version
         id: version

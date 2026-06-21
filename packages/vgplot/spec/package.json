@@ -36,7 +36,7 @@
     "test:visual": "playwright test test/visual.test.js",
     "test:visual:update": "pnpm run test:visual -- --update-snapshots",
     "version": "cd ../../.. && pnpm run docs:schema",
-    "prepublishOnly": "pnpm run test && pnpm run lint && pnpm run build"
+    "prepublishOnly": "pnpm run build"
   },
   "dependencies": {
     "@uwdata/mosaic-core": "workspace:^",

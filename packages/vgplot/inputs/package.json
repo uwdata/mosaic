@@ -27,7 +27,7 @@
     "prebuild": "pnpm run clean",
     "lint": "eslint src test",
     "test": "vitest run",
-    "prepublishOnly": "pnpm run test && pnpm run lint && tsc --build"
+    "prepublishOnly": "tsc --build"
   },
   "dependencies": {
     "@uwdata/mosaic-core": "workspace:^",
