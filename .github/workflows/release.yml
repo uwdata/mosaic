@@ -94,6 +94,9 @@ jobs:
       - name: Install Node dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Build
+        run: pnpm run build
+
       - name: Configure git
         run: |
           git config user.name "github-actions[bot]"
@@ -112,9 +115,6 @@ jobs:
           VERSION="$(node -p "require('./lerna.json').version")"
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
           echo "tag=v$VERSION" >> "$GITHUB_OUTPUT"
-
-      - name: Build
-        run: pnpm run build
 
       - name: Publish to npm
         run: pnpm exec lerna publish from-git --yes
