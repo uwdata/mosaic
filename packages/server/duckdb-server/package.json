@@ -3,8 +3,6 @@
   "version": "0.27.0",
   "private": true,
   "scripts": {
-    "dev": "uv run watchmedo auto-restart --pattern '*.py' --recursive --signal SIGTERM uv run duckdb-server",
-    "prerelease": "uv run pytest && uv run ruff check && uv run ruff format --check",
-    "release": "uv build && uvx twine upload --skip-existing ../../../dist/duckdb_server*"
+    "dev": "uv run watchmedo auto-restart --pattern '*.py' --recursive --signal SIGTERM uv run duckdb-server"
   }
 }

@@ -14,9 +14,7 @@
     "build": "esbuild --bundle --format=esm --outdir=mosaic_widget/static src/index.js",
     "dev": "pnpm run build -- --watch",
     "test": "tsc --build",
-    "lint": "eslint src",
-    "prerelease": "pnpm run test && pnpm run lint && uv run ruff check && uv run ruff format --check && pnpm run build",
-    "release": "uv build && uvx twine upload --skip-existing ../../../dist/mosaic_widget*"
+    "lint": "eslint src"
   },
   "dependencies": {
     "@uwdata/mosaic-core": "workspace:^",
