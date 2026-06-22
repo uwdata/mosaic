@@ -233,6 +233,10 @@ importers:
       '@uwdata/mosaic-sql':
         specifier: workspace:^
         version: link:../../mosaic/sql
+    devDependencies:
+      '@uwdata/mosaic-duckdb':
+        specifier: workspace:^
+        version: link:../../server/duckdb
 
   packages/vgplot/widget:
     dependencies:

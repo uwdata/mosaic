@@ -28,6 +28,7 @@
   "scripts": {
     "clean": "rimraf dist && mkdir dist",
     "lint": "eslint src test",
+    "typecheck": "tsc -p test/tsconfig.json",
     "test": "vitest run",
     "prepublishOnly": "tsc --build"
   },

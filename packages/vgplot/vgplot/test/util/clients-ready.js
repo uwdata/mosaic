@@ -8,6 +8,7 @@ import { Plot } from '@uwdata/mosaic-plot';
  */
 function extractClients(el) {
   const clients = [];
+  /** @type {any[]} */
   const queue = [el];
   while (queue.length) {
     const node = queue.shift();

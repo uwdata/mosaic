@@ -1,4 +1,5 @@
 import { describe, it, expect } from 'vitest';
+import type { Table } from '@uwdata/flechette';
 import { Query, count } from '@uwdata/mosaic-sql';
 import { NodeConnector } from './util/node-connector.js';
 import { Coordinator, MosaicClient, Selection, clauseInterval } from '../src/index.js';
@@ -29,7 +30,7 @@ describe('MosaicClient', () => {
     class TestClient extends MosaicClient {
       private tableName: string;
       private columnName: string;
-      private pendingResult: QueryResult;
+      private pendingResult!: QueryResult;
 
       constructor(tableName: string, columnName: string, filterBy?: Selection) {
         super(filterBy);
@@ -49,7 +50,7 @@ describe('MosaicClient', () => {
         pending.push(this.pendingResult);
         return this;
       }
-      queryResult(data) {
+      queryResult(data: Table<{ key: number; value: number }>) {
         // fulfill pending promise with sorted data
         this.pendingResult.fulfill(
           data.toArray().sort((a, b) => a.key - b.key)
@@ -140,7 +141,7 @@ describe('MosaicClient', () => {
       constructor() { super(undefined); this.enabled = false; }
       async prepare() { prepared = true; }
       query() { queried = true; return Query.select({ foo: 1 }); }
-      queryResult(data) { result = data; return this; }
+      queryResult(data: unknown) { result = data; return this; }
     }
 
     // client is disabled, lifecycle methods should defer
