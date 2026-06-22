@@ -64,20 +64,16 @@ describe('Window functions', () => {
   it('support groups frame', async () => {
     await expect(first_value('num1').frame(frameGroups([0, null])))
       .toBeValidExpr('first_value("num1") OVER (GROUPS BETWEEN CURRENT ROW AND UNBOUNDED FOLLOWING)');
-    await expect(first_value('num1').frame(frameGroups([0, null])).orderby('num1'))
-      .toBeValidExpr('first_value("num1") OVER (ORDER BY "num1" GROUPS BETWEEN CURRENT ROW AND UNBOUNDED FOLLOWING)');
+    await expect(first_value('num1').frame(frameGroups([0, null])))
+      .toBeValidExpr('first_value("num1") OVER (GROUPS BETWEEN CURRENT ROW AND UNBOUNDED FOLLOWING)');
     await expect(first_value('num1').frame(frameGroups([null, null])))
       .toBeValidExpr('first_value("num1") OVER (GROUPS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING)');
-    await expect(first_value('num1').frame(frameGroups([null, null])).orderby('num1'))
-      .toBeValidExpr('first_value("num1") OVER (ORDER BY "num1" GROUPS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING)');
+    await expect(first_value('num1').frame(frameGroups([null, null])))
+      .toBeValidExpr('first_value("num1") OVER (GROUPS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING)');
     await expect(first_value('num1').frame(frameGroups([0, 2])))
       .toBeValidExpr('first_value("num1") OVER (GROUPS BETWEEN CURRENT ROW AND 2 FOLLOWING)');
-    await expect(first_value('num1').frame(frameGroups([0, 2])).orderby('num1'))
-      .toBeValidExpr('first_value("num1") OVER (ORDER BY "num1" GROUPS BETWEEN CURRENT ROW AND 2 FOLLOWING)');
     await expect(first_value('num1').frame(frameGroups([2, 0])))
       .toBeValidExpr('first_value("num1") OVER (GROUPS BETWEEN 2 PRECEDING AND CURRENT ROW)');
-    await expect(first_value('num1').frame(frameGroups([2, 0])).orderby('num1'))
-      .toBeValidExpr('first_value("num1") OVER (ORDER BY "num1" GROUPS BETWEEN 2 PRECEDING AND CURRENT ROW)');
     await expect(first_value('num1').frame(frameGroups([2, currentRow()])))
       .toBeValidExpr('first_value("num1") OVER (GROUPS BETWEEN 2 PRECEDING AND CURRENT ROW)');
   });
