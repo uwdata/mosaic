@@ -99,19 +99,19 @@ describe('PivotQuery', () => {
     await expect(query).toBeValidQuery(`PIVOT "t1" ON "txt1" IN ('Q1', 'Q2')`);
   });
 
-  it('preserves existing AST expression inputs for IN values', () => {
+  it('preserves existing AST expression inputs for IN values', async () => {
     const expr = literal('Q1');
     const query = Query.pivot('t1').on('txt1').in(expr);
 
     expect(query._in).toEqual([expr]);
-    expect(query.toString()).toBe(`PIVOT "t1" ON "txt1" IN ('Q1')`);
+    await expect(query).toBeValidQuery(`PIVOT "t1" ON "txt1" IN ('Q1')`);
   });
 
-  it('appends IN values from repeated calls in caller-supplied order', () => {
+  it('appends IN values from repeated calls in caller-supplied order', async () => {
     const query = Query.pivot('t1').on('int1').in(2020).in(2021, 2022);
 
     expect(query._in.map(String)).toEqual(['2020', '2021', '2022']);
-    expect(query.toString()).toBe('PIVOT "t1" ON "int1" IN (2020, 2021, 2022)');
+    await expect(query).toBeValidQuery('PIVOT "t1" ON "int1" IN (2020, 2021, 2022)');
   });
 
   it('adds an unaliased USING aggregate expression', async () => {

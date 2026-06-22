@@ -4,10 +4,8 @@ import { column, asNode, ColumnRefNode, TableRefNode, deepClone, ColumnNameRefNo
 describe('Column references', () => {
   it('serialize to SQL', async () => {
     await expect(new ColumnNameRefNode('num1')).toBeValidExpr(`"num1"`);
-    expect(String(new ColumnNameRefNode('num1', new TableRefNode('t1')))).toBe(`"t1"."num1"`);
-    await expect(`SELECT ${new ColumnNameRefNode('num1', new TableRefNode('t1'))} FROM "t1"`).toBeValidQuery(`SELECT "t1"."num1" FROM "t1"`);
-    expect(String(new ColumnNameRefNode('num1', new TableRefNode(['main', 't1'])))).toBe(`"main"."t1"."num1"`);
-    await expect(`SELECT ${new ColumnNameRefNode('num1', new TableRefNode(['main', 't1']))} FROM "t1"`).toBeValidQuery(`SELECT "main"."t1"."num1" FROM "t1"`);
+    await expect(new ColumnNameRefNode('num1', new TableRefNode('t1'))).toBeValidExpr(`"t1"."num1"`);
+    await expect(new ColumnNameRefNode('num1', new TableRefNode(['main', 't1']))).toBeValidExpr(`"main"."t1"."num1"`);
     expect(String(new ColumnNameRefNode('avg("col")'))).toBe(`"avg(""col"")"`);
     // Serialization only: tests identifier-escaping for a column named avg("col").
   });
@@ -24,8 +22,7 @@ describe('Column references', () => {
     expect(barfoo.column).toBe(`num1`);
     expect(barfoo.table).toBeInstanceOf(TableRefNode);
     expect(barfoo.table?.table).toStrictEqual([`t1`]);
-    expect(String(barfoo)).toBe(`"t1"."num1"`);
-    expect(`SELECT ${barfoo} FROM "t1"`).toBeValidQuery(`SELECT "t1"."num1" FROM "t1"`)
+    await expect(barfoo).toBeValidExpr(`"t1"."num1"`);
   });
 
   it('are created from strings by asNode', async () => {
@@ -46,8 +43,7 @@ describe('Column references', () => {
 
     const node2 = parseColumnRef('t1.num1');
     expect(node2).toBeInstanceOf(ColumnRefNode);
-    expect(String(node2)).toBe(`"t1"."num1"`);
-    expect(`SELECT ${node2} FROM "t1"`).toBeValidQuery(`SELECT "t1"."num1" FROM "t1"`)
+    await expect(node2).toBeValidExpr(`"t1"."num1"`);
   });
 
   it('clone successfully', () => {
