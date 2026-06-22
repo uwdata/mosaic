@@ -558,7 +558,7 @@ describe('Query', () => {
       .limit(10);
     const c = q.clone();
     expect(c).not.toBe(q);
-    expect(c.toString()).toBe(q.toString());
+    expect(String(c)).toBe(String(q));
     await expect(q).toBeValidQuery(sql);
     await expect(c).toBeValidQuery(sql);
   })

@@ -11,24 +11,20 @@ interface ValidatingMatchers<T> {
    * Assert the SQL expression serializes to `expected` and binds against
    * DuckDB's parser + binder.
    */
-  // Raw strings are accepted as-is; otherwise Query extends ExprNode, so
-  // SqlStatement is checked first to keep queries out of toBeValidExpr.
-  toBeValidExpr: [T] extends [string]
-    ? (expected: string) => Promise<void>
-    : [T] extends [SqlStatement]
-      ? never
-      : [T] extends [ExprNode]
-        ? (expected: string) => Promise<void>
-        : never;
+  // Query extends ExprNode, so SqlStatement is checked first to keep queries
+  // out of toBeValidExpr.
+  toBeValidExpr: [T] extends [SqlStatement]
+    ? never
+    : [T] extends [ExprNode]
+      ? (expected: string) => Promise<void>
+      : never;
   /**
    * Assert the SQL query serializes to `expected` and binds against DuckDB's
    * parser + binder.
    */
-  toBeValidQuery: [T] extends [string]
+  toBeValidQuery: [T] extends [SqlStatement]
     ? (expected: string) => Promise<void>
-    : [T] extends [SqlStatement]
-      ? (expected: string) => Promise<void>
-      : never;
+    : never;
 }
 
 declare module 'vitest' {

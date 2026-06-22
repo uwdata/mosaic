@@ -3,6 +3,7 @@ import { stubParam } from './util/stub-param.js';
 import { column, cume_dist, days, dense_rank, desc, first_value, following, frameGroups, frameRange, frameRows, isParamLike, lag, last_value, lead, nth_value, ntile, percent_rank, preceding, rank, row_number } from '../src/index.js';
 import { columns } from './util/columns.js';
 import { currentRow } from '../src/functions/window-frame.js';
+import { validateQuery } from './util/validate.js';
 
 describe('Window functions', () => {
   it('include accessible metadata', async () => {
@@ -17,7 +18,7 @@ describe('Window functions', () => {
     expect(expr.func.name).toBe('cume_dist');
     expect(expr.def.name).toBe('win');
     expect(String(expr)).toBe('cume_dist() OVER "win"');
-    await expect(`SELECT ${expr} FROM "t1" WINDOW "win" AS ()`).toBeValidQuery(`SELECT cume_dist() OVER "win" FROM "t1" WINDOW "win" AS ()`);
+    await validateQuery(`SELECT ${expr} FROM "t1" WINDOW "win" AS ()`)
   });
 
   it('support partition by', async () => {
@@ -94,8 +95,7 @@ describe('Window functions', () => {
       + 'ROWS BETWEEN CURRENT ROW AND UNBOUNDED FOLLOWING)'
     );
     // A base window reference must be declared in a WINDOW clause to bind.
-    await expect(`SELECT ${expr} FROM "t1" WINDOW "base" AS ()`)
-      .toBeValidQuery(`SELECT cume_dist() OVER ("base" PARTITION BY "num1", "num2" ORDER BY "num1", "num2" DESC ROWS BETWEEN CURRENT ROW AND UNBOUNDED FOLLOWING) FROM "t1" WINDOW "base" AS ()`);
+    await validateQuery(`SELECT ${expr} FROM "t1" WINDOW "base" AS ()`);
   });
 
   it('support parameterized expressions', async () => {

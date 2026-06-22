@@ -2,10 +2,13 @@ import { expect, describe, it } from 'vitest';
 import { columns } from './util/columns.js';
 import { stubParam } from './util/stub-param.js';
 import { asc, column, desc, isParamLike } from '../src/index.js';
+import { validateQuery } from './util/validate.js';
 
 /** Validate an ORDER BY fragment by wrapping it in a SELECT. */
 async function validateOrderBy(expr: { toString(): string }, expected: string) {
-  await expect(`SELECT * FROM t1 ORDER BY ${expr}`).toBeValidQuery(`SELECT * FROM t1 ORDER BY ${expected}`);
+  const query = `SELECT * FROM t1 ORDER BY ${expr}`;
+  expect(query).toBe(`SELECT * FROM t1 ORDER BY ${expected}`);
+  await validateQuery(query)
 }
 
 describe('asc', () => {

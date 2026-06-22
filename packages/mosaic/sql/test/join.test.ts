@@ -1,10 +1,13 @@
 import { expect, describe, it } from 'vitest';
 import { asof_join, column, cross_join, eq, from, join, JoinNode, positional_join, walk } from '../src/index.js';
 import { JOIN_CLAUSE, TABLE_REF } from '../src/constants.js';
+import { validateQuery } from './util/validate.js';
 
 /** Validate a join clause fragment by wrapping it in a SELECT. */
 async function validateJoin(clause: JoinNode, expected: string) {
-  await expect(`SELECT * FROM ${clause}`).toBeValidQuery(`SELECT * FROM ${expected}`);
+  const query = `SELECT * FROM ${clause}`;
+  expect(query).toBe(`SELECT * FROM ${expected}`);
+  await validateQuery(query);
 }
 
 describe('Join functions', () => {
