@@ -34,8 +34,6 @@ describe('CreateQuery', () => {
 });
 
 describe('createTable toString', () => {
-  // CREATE statements are validated via EXPLAIN, which binds the statement
-  // (and its SELECT source) without actually creating any objects.
   it('creates a table', async () => {
     await expect(createTable('table', 'SELECT 1')).toBeValidQuery(
       `CREATE TABLE IF NOT EXISTS "table" AS SELECT 1`
