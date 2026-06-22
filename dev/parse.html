@@ -15,7 +15,8 @@
     const t0 = Date.now();
     const result = await db.query({
       type: 'json',
-      sql: `SELECT json_serialize_sql($$${query}$$, skip_empty:=true, skip_null:=true) AS ast`
+      sql: 'SELECT json_serialize_sql($1, skip_empty:=true, skip_null:=true) AS ast',
+      params: [query]
     });
     const ast = JSON.parse(result[0].ast);
     ast._time = Date.now() - t0;
