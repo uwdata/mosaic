@@ -7,11 +7,11 @@ describe('Binning transforms', () => {
       await expect(binHistogram('num1', [0, 100], { steps: 10 }))
         .toBeValidExpr('(10 * floor(("num1" / (10)::DOUBLE)))');
 
-      expect(`${binHistogram('num1', [0, 100], { step: 10 })}`)
-        .toBe('(10 * floor(("num1" / (10)::DOUBLE)))');
+      await expect(binHistogram('num1', [0, 100], { step: 10 }))
+        .toBeValidExpr('(10 * floor(("num1" / (10)::DOUBLE)))');
 
-      expect(`${binHistogram('num1', [0, 95], { step: 10 })}`)
-        .toBe('(10 * floor(("num1" / (10)::DOUBLE)))');
+      await expect(binHistogram('num1', [0, 95], { step: 10 }))
+        .toBeValidExpr('(10 * floor(("num1" / (10)::DOUBLE)))');
 
       await expect(binHistogram('num1', [50, 100], { step: 5 }))
         .toBeValidExpr('(50 + (5 * floor((("num1" - 50) / (5)::DOUBLE))))');
@@ -48,17 +48,17 @@ describe('Binning transforms', () => {
       await expect(binDate('ts1', years, { interval: 'month', step: 6 }))
         .toBeValidExpr('time_bucket(INTERVAL 6 month, "ts1")');
 
-      expect(`${binDate('ts1', months, { interval: 'month', step: 1 })}`)
-        .toBe('time_bucket(INTERVAL 1 month, "ts1")');
+      await expect(binDate('ts1', months, { interval: 'month', step: 1 }))
+        .toBeValidExpr('time_bucket(INTERVAL 1 month, "ts1")');
 
-      expect(`${binDate('ts1', months, { interval: 'month', step: 3 })}`)
-        .toBe('time_bucket(INTERVAL 3 month, "ts1")');
+      await expect(binDate('ts1', months, { interval: 'month', step: 3 }))
+        .toBeValidExpr('time_bucket(INTERVAL 3 month, "ts1")');
 
       await expect(binDate('ts1', days, { interval: 'day', step: 2 }))
         .toBeValidExpr('time_bucket(INTERVAL 2 day, "ts1")');
 
-      expect(`${binDate('ts1', days, { interval: 'hour', step: 12 })}`)
-        .toBe('time_bucket(INTERVAL 12 hour, "ts1")');
+      await expect(binDate('ts1', days, { interval: 'hour', step: 12 }))
+        .toBeValidExpr('time_bucket(INTERVAL 12 hour, "ts1")');
 
       await expect(binDate('ts1', [10, 20], { interval: 'millisecond', step: 10 }))
         .toBeValidExpr('time_bucket(INTERVAL 10 millisecond, "ts1")');
@@ -71,23 +71,23 @@ describe('Binning transforms', () => {
       await expect(binDate('ts1', years, { steps: 11 }))
         .toBeValidExpr('time_bucket(INTERVAL 1 year, "ts1")');
 
-      expect(`${binDate('ts1', years, { steps: 30 })}`)
-        .toBe('time_bucket(INTERVAL 3 month, "ts1")');
+      await expect(binDate('ts1', years, { steps: 30 }))
+        .toBeValidExpr('time_bucket(INTERVAL 3 month, "ts1")');
 
-      expect(`${binDate('ts1', months, { steps: 25 })}`)
-        .toBe('time_bucket(INTERVAL 1 month, "ts1")');
+      await expect(binDate('ts1', months, { steps: 25 }))
+        .toBeValidExpr('time_bucket(INTERVAL 1 month, "ts1")');
 
-      expect(`${binDate('ts1', months, { steps: 100 })}`)
-        .toBe('time_bucket(INTERVAL 7 day, "ts1")');
+      await expect(binDate('ts1', months, { steps: 100 }))
+        .toBeValidExpr('time_bucket(INTERVAL 7 day, "ts1")');
 
-      expect(`${binDate('ts1', days, { steps: 10 })}`)
-        .toBe('time_bucket(INTERVAL 1 day, "ts1")');
+      await expect(binDate('ts1', days, { steps: 10 }))
+        .toBeValidExpr('time_bucket(INTERVAL 1 day, "ts1")');
 
-      expect(`${binDate('ts1', days, { steps: 20 })}`)
-        .toBe('time_bucket(INTERVAL 12 hour, "ts1")');
+      await expect(binDate('ts1', days, { steps: 20 }))
+        .toBeValidExpr('time_bucket(INTERVAL 12 hour, "ts1")');
 
-      expect(`${binDate('ts1', [10, 20], { steps: 10 })}`)
-        .toBe('time_bucket(INTERVAL 1 millisecond, "ts1")');
+      await expect(binDate('ts1', [10, 20], { steps: 10 }))
+        .toBeValidExpr('time_bucket(INTERVAL 1 millisecond, "ts1")');
 
       await expect(binDate('ts1', [0.1, 0.2], { steps: 10 }))
         .toBeValidExpr('time_bucket(INTERVAL 10 microsecond, "ts1")');
@@ -97,20 +97,20 @@ describe('Binning transforms', () => {
       await expect(binDate('ts1', years))
         .toBeValidExpr('time_bucket(INTERVAL 3 month, "ts1")');
 
-      expect(`${binDate('ts1', months)}`)
-        .toBe('time_bucket(INTERVAL 1 month, "ts1")');
+      await expect(binDate('ts1', months))
+        .toBeValidExpr('time_bucket(INTERVAL 1 month, "ts1")');
 
-      expect(`${binDate('ts1', days)}`)
-        .toBe('time_bucket(INTERVAL 6 hour, "ts1")');
+      await expect(binDate('ts1', days))
+        .toBeValidExpr('time_bucket(INTERVAL 6 hour, "ts1")');
 
-      expect(`${binDate('ts1', [1e7, 2e7])}`)
-        .toBe('time_bucket(INTERVAL 5 minute, "ts1")');
+      await expect(binDate('ts1', [1e7, 2e7]))
+        .toBeValidExpr('time_bucket(INTERVAL 5 minute, "ts1")');
 
-      expect(`${binDate('ts1', [1e5, 2e5])}`)
-        .toBe('time_bucket(INTERVAL 5 second, "ts1")');
+      await expect(binDate('ts1', [1e5, 2e5]))
+        .toBeValidExpr('time_bucket(INTERVAL 5 second, "ts1")');
 
-      expect(`${binDate('ts1', [0, 100])}`)
-        .toBe('time_bucket(INTERVAL 5 millisecond, "ts1")');
+      await expect(binDate('ts1', [0, 100]))
+        .toBeValidExpr('time_bucket(INTERVAL 5 millisecond, "ts1")');
 
       await expect(binDate('ts1', [0, 0.1]))
         .toBeValidExpr('time_bucket(INTERVAL 5 microsecond, "ts1")');

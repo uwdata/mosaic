@@ -2,7 +2,6 @@ import { expect, describe, it } from 'vitest';
 import { stubParam } from './util/stub-param.js';
 import { column, cume_dist, days, dense_rank, desc, first_value, following, frameGroups, frameRange, frameRows, isParamLike, lag, last_value, lead, nth_value, ntile, percent_rank, preceding, rank, row_number } from '../src/index.js';
 import { columns } from './util/columns.js';
-import { validateExpr, validateQuery } from './util/validate.js';
 import { currentRow } from '../src/functions/window-frame.js';
 
 describe('Window functions', () => {
@@ -10,7 +9,7 @@ describe('Window functions', () => {
     const expr = lead('num1');
     expect(expr.func.name).toBe('lead');
     expect(columns(expr)).toStrictEqual(['num1']);
-    await validateExpr(expr);
+    await expect(expr).toBeValidExpr('lead("num1") OVER ()');
   });
 
   it('support named window definition', async () => {
@@ -18,8 +17,7 @@ describe('Window functions', () => {
     expect(expr.func.name).toBe('cume_dist');
     expect(expr.def.name).toBe('win');
     expect(String(expr)).toBe('cume_dist() OVER "win"');
-    // A named window reference must be declared in a WINDOW clause to bind.
-    await validateQuery(`SELECT ${expr} FROM "t1" WINDOW "win" AS ()`);
+    await expect(`SELECT ${expr} FROM "t1" WINDOW "win" AS ()`).toBeValidQuery(`SELECT cume_dist() OVER "win" FROM "t1" WINDOW "win" AS ()`);
   });
 
   it('support partition by', async () => {
@@ -41,8 +39,8 @@ describe('Window functions', () => {
       .toBeValidExpr('first_value("num1") OVER (ROWS BETWEEN CURRENT ROW AND 2 FOLLOWING)');
     await expect(first_value('num1').frame(frameRows([2, 0])))
       .toBeValidExpr('first_value("num1") OVER (ROWS BETWEEN 2 PRECEDING AND CURRENT ROW)');
-    expect(String(first_value('num1').frame(frameRows([2, currentRow()]))))
-      .toBe('first_value("num1") OVER (ROWS BETWEEN 2 PRECEDING AND CURRENT ROW)');
+    await expect(first_value('num1').frame(frameRows([2, currentRow()])))
+      .toBeValidExpr('first_value("num1") OVER (ROWS BETWEEN 2 PRECEDING AND CURRENT ROW)');
     await expect(first_value('num1').frame(frameRows([preceding(2), following(3)])))
       .toBeValidExpr('first_value("num1") OVER (ROWS BETWEEN 2 PRECEDING AND 3 FOLLOWING)');
   });
@@ -52,41 +50,35 @@ describe('Window functions', () => {
       .toBeValidExpr('first_value("num1") OVER (RANGE BETWEEN CURRENT ROW AND UNBOUNDED FOLLOWING)');
     await expect(first_value('num1').frame(frameRange([null, null])))
       .toBeValidExpr('first_value("num1") OVER (RANGE BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING)');
-    expect(String(first_value('num1').frame(frameRange([0, 2]))))
-      .toBe('first_value("num1") OVER (RANGE BETWEEN CURRENT ROW AND 2 FOLLOWING)');
-    // RANGE offsets require an ORDER BY column; add one for validation.
-    await validateExpr(first_value('num1').frame(frameRange([0, 2])).orderby('num1'));
-    expect(String(first_value('num1').frame(frameRange([2, 0]))))
-      .toBe('first_value("num1") OVER (RANGE BETWEEN 2 PRECEDING AND CURRENT ROW)');
-    await validateExpr(first_value('num1').frame(frameRange([2, 0])).orderby('num1'));
-    expect(String(first_value('num1').frame(frameRange([2, currentRow()]))))
-      .toBe('first_value("num1") OVER (RANGE BETWEEN 2 PRECEDING AND CURRENT ROW)');
-    expect(String(first_value('num1').frame(frameRange([preceding(days(3)), following(days(2))]))))
-      .toBe('first_value("num1") OVER (RANGE BETWEEN INTERVAL 3 DAYS PRECEDING AND INTERVAL 2 DAYS FOLLOWING)');
-    // Interval offsets require a temporal ORDER BY column.
-    await validateExpr(
-      first_value('num1')
-        .frame(frameRange([preceding(days(3)), following(days(2))]))
-        .orderby('ts1')
-    );
+    await expect(first_value('num1').frame(frameRange([0, 2])).orderby('num1'))
+      .toBeValidExpr('first_value("num1") OVER (ORDER BY "num1" RANGE BETWEEN CURRENT ROW AND 2 FOLLOWING)');
+    await expect(first_value('num1').frame(frameRange([2, 0])).orderby('num1'))
+      .toBeValidExpr('first_value("num1") OVER (ORDER BY "num1" RANGE BETWEEN 2 PRECEDING AND CURRENT ROW)');
+    await expect(first_value('num1').frame(frameRange([2, currentRow()])).orderby('num1'))
+      .toBeValidExpr('first_value("num1") OVER (ORDER BY "num1" RANGE BETWEEN 2 PRECEDING AND CURRENT ROW)');
+    await expect(first_value('num1').frame(frameRange([preceding(days(3)), following(days(2))])).orderby('ts1'))
+      .toBeValidExpr('first_value("num1") OVER (ORDER BY "ts1" RANGE BETWEEN INTERVAL 3 DAYS PRECEDING AND INTERVAL 2 DAYS FOLLOWING)');
   });
 
   it('support groups frame', async () => {
-    expect(String(first_value('num1').frame(frameGroups([0, null]))))
-      .toBe('first_value("num1") OVER (GROUPS BETWEEN CURRENT ROW AND UNBOUNDED FOLLOWING)');
-    // GROUPS frames require an ORDER BY column; add one for validation.
-    await validateExpr(first_value('num1').frame(frameGroups([0, null])).orderby('num1'));
-    expect(String(first_value('num1').frame(frameGroups([null, null]))))
-      .toBe('first_value("num1") OVER (GROUPS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING)');
-    await validateExpr(first_value('num1').frame(frameGroups([null, null])).orderby('num1'));
-    expect(String(first_value('num1').frame(frameGroups([0, 2]))))
-      .toBe('first_value("num1") OVER (GROUPS BETWEEN CURRENT ROW AND 2 FOLLOWING)');
-    await validateExpr(first_value('num1').frame(frameGroups([0, 2])).orderby('num1'));
-    expect(String(first_value('num1').frame(frameGroups([2, 0]))))
-      .toBe('first_value("num1") OVER (GROUPS BETWEEN 2 PRECEDING AND CURRENT ROW)');
-    await validateExpr(first_value('num1').frame(frameGroups([2, 0])).orderby('num1'));
-    expect(String(first_value('num1').frame(frameGroups([2, currentRow()]))))
-      .toBe('first_value("num1") OVER (GROUPS BETWEEN 2 PRECEDING AND CURRENT ROW)');
+    await expect(first_value('num1').frame(frameGroups([0, null])))
+      .toBeValidExpr('first_value("num1") OVER (GROUPS BETWEEN CURRENT ROW AND UNBOUNDED FOLLOWING)');
+    await expect(first_value('num1').frame(frameGroups([0, null])).orderby('num1'))
+      .toBeValidExpr('first_value("num1") OVER (ORDER BY "num1" GROUPS BETWEEN CURRENT ROW AND UNBOUNDED FOLLOWING)');
+    await expect(first_value('num1').frame(frameGroups([null, null])))
+      .toBeValidExpr('first_value("num1") OVER (GROUPS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING)');
+    await expect(first_value('num1').frame(frameGroups([null, null])).orderby('num1'))
+      .toBeValidExpr('first_value("num1") OVER (ORDER BY "num1" GROUPS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING)');
+    await expect(first_value('num1').frame(frameGroups([0, 2])))
+      .toBeValidExpr('first_value("num1") OVER (GROUPS BETWEEN CURRENT ROW AND 2 FOLLOWING)');
+    await expect(first_value('num1').frame(frameGroups([0, 2])).orderby('num1'))
+      .toBeValidExpr('first_value("num1") OVER (ORDER BY "num1" GROUPS BETWEEN CURRENT ROW AND 2 FOLLOWING)');
+    await expect(first_value('num1').frame(frameGroups([2, 0])))
+      .toBeValidExpr('first_value("num1") OVER (GROUPS BETWEEN 2 PRECEDING AND CURRENT ROW)');
+    await expect(first_value('num1').frame(frameGroups([2, 0])).orderby('num1'))
+      .toBeValidExpr('first_value("num1") OVER (ORDER BY "num1" GROUPS BETWEEN 2 PRECEDING AND CURRENT ROW)');
+    await expect(first_value('num1').frame(frameGroups([2, currentRow()])))
+      .toBeValidExpr('first_value("num1") OVER (GROUPS BETWEEN 2 PRECEDING AND CURRENT ROW)');
   });
 
   it('support window name, partition by, order by, and frame', async () => {
@@ -102,7 +94,8 @@ describe('Window functions', () => {
       + 'ROWS BETWEEN CURRENT ROW AND UNBOUNDED FOLLOWING)'
     );
     // A base window reference must be declared in a WINDOW clause to bind.
-    await validateQuery(`SELECT ${expr} FROM "t1" WINDOW "base" AS ()`);
+    await expect(`SELECT ${expr} FROM "t1" WINDOW "base" AS ()`)
+      .toBeValidQuery(`SELECT cume_dist() OVER ("base" PARTITION BY "num1", "num2" ORDER BY "num1", "num2" DESC ROWS BETWEEN CURRENT ROW AND UNBOUNDED FOLLOWING) FROM "t1" WINDOW "base" AS ()`);
   });
 
   it('support parameterized expressions', async () => {

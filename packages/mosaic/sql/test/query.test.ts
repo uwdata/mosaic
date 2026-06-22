@@ -11,35 +11,31 @@ describe('Query', () => {
         .from('t1')
     ).toBeValidQuery(query);
 
-    expect(
+    await expect(
       Query
         .select('num1', 'num2', 'num3')
         .from(asTableRef('t1')!)
-        .toString()
-    ).toBe(query);
+    ).toBeValidQuery(query);
 
-    expect(
+    await expect(
       Query
         .select(['num1', 'num2', 'num3'])
         .from('t1')
-        .toString()
-    ).toBe(query);
+    ).toBeValidQuery(query);
 
-    expect(
+    await expect(
       Query
         .select({ num1: 'num1', num2: 'num2', num3: 'num3' })
         .from('t1')
-        .toString()
-    ).toBe(query);
+    ).toBeValidQuery(query);
 
-    expect(
+    await expect(
       Query
         .select('num1')
         .select('num2')
         .select('num3')
         .from('t1')
-        .toString()
-    ).toBe(query);
+    ).toBeValidQuery(query);
   });
 
   it('selects column ref objects', async () => {
@@ -52,28 +48,25 @@ describe('Query', () => {
         .from('t1')
     ).toBeValidQuery('SELECT "num1", "num2", "num3" FROM "t1"');
 
-    expect(
+    await expect(
       Query
         .select([foo, bar, baz])
         .from('t1')
-        .toString()
-    ).toBe('SELECT "num1", "num2", "num3" FROM "t1"');
+    ).toBeValidQuery('SELECT "num1", "num2", "num3" FROM "t1"');
 
-    expect(
+    await expect(
       Query
         .select({ num1: foo, num2: bar, num3: baz })
         .from('t1')
-        .toString()
-    ).toBe('SELECT "num1", "num2", "num3" FROM "t1"');
+    ).toBeValidQuery('SELECT "num1", "num2", "num3" FROM "t1"');
 
-    expect(
+    await expect(
       Query
         .select(foo)
         .select(bar)
         .select(baz)
         .from('t1')
-        .toString()
-    ).toBe('SELECT "num1", "num2", "num3" FROM "t1"');
+    ).toBeValidQuery('SELECT "num1", "num2", "num3" FROM "t1"');
   });
 
   it('selects only the most recent reference', async () => {
@@ -137,12 +130,11 @@ describe('Query', () => {
         .from('t1')
     ).toBeValidQuery('SELECT min("num1") AS "min", max("num1") AS "max" FROM "t1"');
 
-    expect(
+    await expect(
       Query
         .select({ min: min(foo), max: max(foo) })
         .from('t1')
-        .toString()
-    ).toBe('SELECT min("num1") AS "min", max("num1") AS "max" FROM "t1"');
+    ).toBeValidQuery('SELECT min("num1") AS "min", max("num1") AS "max" FROM "t1"');
 
     await expect(
       Query
@@ -160,26 +152,23 @@ describe('Query', () => {
         .from('t1')
     ).toBeValidQuery('SELECT sum("num1") OVER () AS "csum" FROM "t1"');
 
-    expect(
+    await expect(
       Query
         .select({ csum: sum(foo).window() })
         .from('t1')
-        .toString()
-    ).toBe('SELECT sum("num1") OVER () AS "csum" FROM "t1"');
+    ).toBeValidQuery('SELECT sum("num1") OVER () AS "csum" FROM "t1"');
 
-    expect(
+    await expect(
       Query
         .select({ csum: sum(foo).partitionby('num3') })
         .from('t1')
-        .toString()
-    ).toBe('SELECT sum("num1") OVER (PARTITION BY "num3") AS "csum" FROM "t1"');
+    ).toBeValidQuery('SELECT sum("num1") OVER (PARTITION BY "num3") AS "csum" FROM "t1"');
 
-    expect(
+    await expect(
       Query
         .select({ csum: sum(foo).orderby('int1') })
         .from('t1')
-        .toString()
-    ).toBe('SELECT sum("num1") OVER (ORDER BY "int1") AS "csum" FROM "t1"');
+    ).toBeValidQuery('SELECT sum("num1") OVER (ORDER BY "int1") AS "csum" FROM "t1"');
 
     await expect(
       Query
@@ -211,30 +200,27 @@ describe('Query', () => {
         .groupby('num2', 'num3')
     ).toBeValidQuery(query);
 
-    expect(
+    await expect(
       Query
         .select({ min: min(foo), max: max(foo), num2: bar, num3: baz })
         .from('t1')
         .groupby(bar, baz)
-        .toString()
-    ).toBe(query);
+    ).toBeValidQuery(query);
 
-    expect(
+    await expect(
       Query
         .select({ min: min(foo), max: max(foo), num2: bar, num3: baz })
         .from('t1')
         .groupby([bar, baz])
-        .toString()
-    ).toBe(query);
+    ).toBeValidQuery(query);
 
-    expect(
+    await expect(
       Query
         .select({ min: min(foo), max: max(foo), num2: bar, num3: baz })
         .from('t1')
         .groupby(bar)
         .groupby(baz)
-        .toString()
-    ).toBe(query);
+    ).toBeValidQuery(query);
   });
 
   it('selects filtered aggregates', async () => {
@@ -255,33 +241,30 @@ describe('Query', () => {
         .having(gt('min', 50), lt('min', 100))
     ).toBeValidQuery(query);
 
-    expect(
+    await expect(
       Query
         .select({ min: min(foo), num2: bar })
         .from('t1')
         .groupby(bar)
         .having([gt('min', 50), lt('min', 100)])
-        .toString()
-    ).toBe(query);
+    ).toBeValidQuery(query);
 
-    expect(
+    await expect(
       Query
         .select({ min: min(foo), num2: bar })
         .from('t1')
         .groupby(bar)
         .having(gt('min', 50))
         .having(lt('min', 100))
-        .toString()
-    ).toBe(query);
+    ).toBeValidQuery(query);
 
-    expect(
+    await expect(
       Query
         .select({ min: min(foo), num2: bar })
         .from('t1')
         .groupby(bar)
         .having(sql`("min" > 50) AND ("min" < 100)`)
-        .toString()
-    ).toBe(query);
+    ).toBeValidQuery(query);
   });
 
   it('selects filtered rows', async () => {
@@ -300,30 +283,27 @@ describe('Query', () => {
         .where(gt(bar, 50), lt(bar, 100))
     ).toBeValidQuery(query);
 
-    expect(
+    await expect(
       Query
         .select(foo)
         .from('t1')
         .where([gt(bar, 50), lt(bar, 100)])
-        .toString()
-    ).toBe(query);
+    ).toBeValidQuery(query);
 
-    expect(
+    await expect(
       Query
         .select(foo)
         .from('t1')
         .where(gt(bar, 50))
         .where(lt(bar, 100))
-        .toString()
-    ).toBe(query);
+    ).toBeValidQuery(query);
 
-    expect(
+    await expect(
       Query
         .select(foo)
         .from('t1')
         .where(sql`("num2" > 50) AND ("num2" < 100)`)
-        .toString()
-    ).toBe(query);
+    ).toBeValidQuery(query);
   });
 
   it('selects ordered rows', async () => {
@@ -342,30 +322,27 @@ describe('Query', () => {
         .orderby(bar, desc(baz))
     ).toBeValidQuery(query);
 
-    expect(
+    await expect(
       Query
         .select('*')
         .from('t1')
         .orderby([bar, desc(baz)])
-        .toString()
-    ).toBe(query);
+    ).toBeValidQuery(query);
 
-    expect(
+    await expect(
       Query
         .select('*')
         .from('t1')
         .orderby(bar)
         .orderby(desc(baz))
-        .toString()
-    ).toBe(query);
+    ).toBeValidQuery(query);
 
-    expect(
+    await expect(
       Query
         .select('*')
         .from('t1')
         .orderby(sql`"num2", "num3" DESC`)
-        .toString()
-    ).toBe(query);
+    ).toBeValidQuery(query);
   });
 
   it('selects sampled rows', async () => {
@@ -516,28 +493,28 @@ describe('Query', () => {
       Query.select('num1', 'num2', 'num3').from('t2')
     ];
     await expect(Query.union(q)).toBeValidQuery(q.join(' UNION '));
-    expect(Query.union(...q).toString()).toBe(q.join(' UNION '));
+    await expect(Query.union(...q)).toBeValidQuery(q.join(' UNION '));
 
     await expect(Query.unionByName(q)).toBeValidQuery(q.join(' UNION BY NAME '));
-    expect(Query.unionByName(...q).toString()).toBe(q.join(' UNION BY NAME '));
+    await expect(Query.unionByName(...q)).toBeValidQuery(q.join(' UNION BY NAME '));
 
     await expect(Query.unionAll(q)).toBeValidQuery(q.join(' UNION ALL '));
-    expect(Query.unionAll(...q).toString()).toBe(q.join(' UNION ALL '));
+    await expect(Query.unionAll(...q)).toBeValidQuery(q.join(' UNION ALL '));
 
     await expect(Query.unionAllByName(q)).toBeValidQuery(q.join(' UNION ALL BY NAME '));
-    expect(Query.unionAllByName(...q).toString()).toBe(q.join(' UNION ALL BY NAME '));
+    await expect(Query.unionAllByName(...q)).toBeValidQuery(q.join(' UNION ALL BY NAME '));
 
     await expect(Query.intersect(q)).toBeValidQuery(q.join(' INTERSECT '));
-    expect(Query.intersect(...q).toString()).toBe(q.join(' INTERSECT '));
+    await expect(Query.intersect(...q)).toBeValidQuery(q.join(' INTERSECT '));
 
     await expect(Query.intersectAll(q)).toBeValidQuery(q.join(' INTERSECT ALL '));
-    expect(Query.intersectAll(...q).toString()).toBe(q.join(' INTERSECT ALL '));
+    await expect(Query.intersectAll(...q)).toBeValidQuery(q.join(' INTERSECT ALL '));
 
     await expect(Query.except(q)).toBeValidQuery(q.join(' EXCEPT '));
-    expect(Query.except(...q).toString()).toBe(q.join(' EXCEPT '));
+    await expect(Query.except(...q)).toBeValidQuery(q.join(' EXCEPT '));
 
     await expect(Query.exceptAll(q)).toBeValidQuery(q.join(' EXCEPT ALL '));
-    expect(Query.exceptAll(...q).toString()).toBe(q.join(' EXCEPT ALL '));
+    await expect(Query.exceptAll(...q)).toBeValidQuery(q.join(' EXCEPT ALL '));
   });
 
   it('renders set operation query modifiers', async () => {

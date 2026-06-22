@@ -1,7 +1,7 @@
 import { expect, describe, it } from "vitest";
 import { unnest } from "../src/functions/unnest.js";
 import { list } from "../src/functions/list.js";
-import { columns } from "./util/columns";
+import { columns } from "./util/columns.js";
 
 describe("Unnest functions", () => {
   it("include unnest", async () => {

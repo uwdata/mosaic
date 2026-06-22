@@ -5,7 +5,7 @@ import {
   listContains,
   listHasAll,
   listHasAny,
-} from "../src/functions/list";
+} from "../src/functions/list.js";
 
 describe("List functions", () => {
   it("include listContains", async () => {

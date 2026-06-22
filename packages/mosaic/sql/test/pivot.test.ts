@@ -37,7 +37,7 @@ describe('PivotQuery', () => {
     const query = Query.pivot('t1');
 
     expect(isTableRef(query.source)).toBe(true);
-    expect(`${query.source}`).toBe('"t1"');
+    expect(String(query.source)).toBe('"t1"');
   });
 
   it('accepts existing SQL nodes as pivot sources', () => {
@@ -52,37 +52,37 @@ describe('PivotQuery', () => {
 
     expect(query._on).toHaveLength(1);
     expect(isColumnRef(query._on[0])).toBe(true);
-    expect(`${query._on[0]}`).toBe('"int1"');
+    expect(String(query._on[0])).toBe('"int1"');
     await expect(query).toBeValidQuery('PIVOT "t1" ON "int1"');
   });
 
-  it('adds multiple ON expressions in caller-supplied order', () => {
+  it('adds multiple ON expressions in caller-supplied order', async () => {
     const query = Query.pivot('t1').on('int1', 'txt1');
 
     expect(query._on.map(String)).toEqual(['"int1"', '"txt1"']);
-    expect(query.toString()).toBe('PIVOT "t1" ON "int1", "txt1"');
+    await expect(query).toBeValidQuery('PIVOT "t1" ON "int1", "txt1"');
   });
 
-  it('adds array ON expressions in caller-supplied order', () => {
+  it('adds array ON expressions in caller-supplied order', async () => {
     const query = Query.pivot('t1').on(['int1', 'txt1']);
 
     expect(query._on.map(String)).toEqual(['"int1"', '"txt1"']);
-    expect(query.toString()).toBe('PIVOT "t1" ON "int1", "txt1"');
+    await expect(query).toBeValidQuery('PIVOT "t1" ON "int1", "txt1"');
   });
 
-  it('appends ON expressions from repeated calls', () => {
+  it('appends ON expressions from repeated calls', async () => {
     const query = Query.pivot('t1').on('int1').on('txt1');
 
     expect(query._on.map(String)).toEqual(['"int1"', '"txt1"']);
-    expect(query.toString()).toBe('PIVOT "t1" ON "int1", "txt1"');
+    await expect(query).toBeValidQuery('PIVOT "t1" ON "int1", "txt1"');
   });
 
-  it('preserves existing AST expression inputs for ON expressions', () => {
+  it('preserves existing AST expression inputs for ON expressions', async () => {
     const expr = add(column('int1'), 1);
     const query = Query.pivot('t1').on(expr);
 
     expect(query._on).toEqual([expr]);
-    expect(query.toString()).toBe('PIVOT "t1" ON ("int1" + 1)');
+    await expect(query).toBeValidQuery('PIVOT "t1" ON ("int1" + 1)');
   });
 
   it('adds IN values as SQL literals', async () => {
@@ -159,45 +159,46 @@ describe('PivotQuery', () => {
     const query = Query.pivot('t1').on('txt1').using(sum('num1')).groupby(expr);
 
     expect(query._groupby).toEqual([expr]);
-    expect(query.toString()).toBe('PIVOT "t1" ON "txt1" USING sum("num1") GROUP BY ("int1" + 1)');
+    expect(String(query)).toBe('PIVOT "t1" ON "txt1" USING sum("num1") GROUP BY ("int1" + 1)');
+    // Serialization only: GROUP BY does not support expressions in DuckDB
   });
 
-  it('adds multiple GROUP BY expressions in caller-supplied order', () => {
+  it('adds multiple GROUP BY expressions in caller-supplied order', async () => {
     const query = Query.pivot('t1').on('int1').using(sum('num1')).groupby('txt1', 'txt2');
 
     expect(query._groupby.map(String)).toEqual(['"txt1"', '"txt2"']);
-    expect(query.toString()).toBe(
+    await expect(query).toBeValidQuery(
       'PIVOT "t1" ON "int1" USING sum("num1") GROUP BY "txt1", "txt2"'
     );
   });
 
-  it('adds array GROUP BY expressions in caller-supplied order', () => {
+  it('adds array GROUP BY expressions in caller-supplied order', async () => {
     const query = Query.pivot('t1').on('int1').using(sum('num1')).groupby(['txt1', 'txt2']);
 
     expect(query._groupby.map(String)).toEqual(['"txt1"', '"txt2"']);
-    expect(query.toString()).toBe(
+    await expect(query).toBeValidQuery(
       'PIVOT "t1" ON "int1" USING sum("num1") GROUP BY "txt1", "txt2"'
     );
   });
 
-  it('appends GROUP BY expressions from repeated calls', () => {
+  it('appends GROUP BY expressions from repeated calls', async () => {
     const query = Query.pivot('t1').on('int1').using(sum('num1')).groupby('txt1').groupby('txt2');
 
     expect(query._groupby.map(String)).toEqual(['"txt1"', '"txt2"']);
-    expect(query.toString()).toBe(
+    await expect(query).toBeValidQuery(
       'PIVOT "t1" ON "int1" USING sum("num1") GROUP BY "txt1", "txt2"'
     );
   });
 
-  it('sets GROUP BY expressions by replacing prior pivot groups', () => {
+  it('sets GROUP BY expressions by replacing prior pivot groups', async () => {
     const query = Query.pivot('t1').on('int1').using(sum('num1')).groupby('txt1').setGroupby('txt2');
 
     expect(query._groupby.map(String)).toEqual(['"txt2"']);
-    expect(query.toString()).toBe('PIVOT "t1" ON "int1" USING sum("num1") GROUP BY "txt2"');
+    await expect(query).toBeValidQuery('PIVOT "t1" ON "int1" USING sum("num1") GROUP BY "txt2"');
   });
 
   it('keeps existing SQL output shape when no IN values are provided', async () => {
-    expect(Query.pivot('t1').toString()).toBe('PIVOT "t1"');
+    expect(String(Query.pivot('t1'))).toBe('PIVOT "t1"');
     // Serialization only: a bare PIVOT with no ON clause is not executable.
     await expect(Query.pivot('t1').on('int1')).toBeValidQuery('PIVOT "t1" ON "int1"');
   });
@@ -280,43 +281,43 @@ describe('PivotQuery', () => {
     );
   });
 
-  it('rejects empty IN calls', () => {
+  it('rejects empty IN calls', async () => {
     const query = Query.pivot('t1').on('int1');
 
     expect(() => (query.in as (...expr: unknown[]) => PivotQuery)()).toThrow(
       'PivotQuery.in requires at least one value.'
     );
-    expect(query.toString()).toBe('PIVOT "t1" ON "int1"');
+    await expect(query).toBeValidQuery('PIVOT "t1" ON "int1"');
   });
 
-  it('clones IN values without aliasing mutable clause arrays', () => {
+  it('clones IN values without aliasing mutable clause arrays', async () => {
     const query = Query.pivot('t1').on('int1').in(2020);
     const clone = query.clone();
 
     query.on('txt1').in(2021);
 
-    expect(clone.toString()).toBe('PIVOT "t1" ON "int1" IN (2020)');
+    await expect(clone).toBeValidQuery('PIVOT "t1" ON "int1" IN (2020)');
     expect(clone._on).not.toBe(query._on);
     expect(clone._in).not.toBe(query._in);
   });
 
-  it('clones USING expressions without aliasing mutable clause arrays', () => {
+  it('clones USING expressions without aliasing mutable clause arrays', async () => {
     const query = Query.pivot('t1').on('int1').using(sum('num1'));
     const clone = query.clone();
 
     query.using({ total_units: sum('num2') });
 
-    expect(clone.toString()).toBe('PIVOT "t1" ON "int1" USING sum("num1")');
+    await expect(clone).toBeValidQuery('PIVOT "t1" ON "int1" USING sum("num1")');
     expect(clone._using).not.toBe(query._using);
   });
 
-  it('clones GROUP BY expressions without aliasing mutable clause arrays', () => {
+  it('clones GROUP BY expressions without aliasing mutable clause arrays', async() => {
     const query = Query.pivot('t1').on('int1').using(sum('num1')).groupby('txt1');
     const clone = query.clone();
 
     query.groupby('txt2');
 
-    expect(clone.toString()).toBe('PIVOT "t1" ON "int1" USING sum("num1") GROUP BY "txt1"');
+    await expect(clone).toBeValidQuery('PIVOT "t1" ON "int1" USING sum("num1") GROUP BY "txt1"');
     expect(clone._groupby).not.toBe(query._groupby);
   });
 
@@ -329,7 +330,7 @@ describe('PivotQuery', () => {
       .offset(20);
     const clone = query.clone();
 
-    expect(clone.toString()).toBe(query.toString());
+    expect(String(clone)).toBe(String(query));
     expect(clone._with).not.toBe(query._with);
     expect(clone._orderby).not.toBe(query._orderby);
   });
@@ -338,7 +339,7 @@ describe('PivotQuery', () => {
     const query = Query.pivot('t1').on(add(column('int1'), 1)).in(literal('Q1'));
     const clone = deepClone(query);
 
-    expect(clone.toString()).toBe(query.toString());
+    expect(String(clone)).toBe(String(query));
     expect(clone._on).not.toBe(query._on);
     expect(clone._in).not.toBe(query._in);
     expect(clone._on[0]).not.toBe(query._on[0]);
@@ -349,7 +350,7 @@ describe('PivotQuery', () => {
     const query = Query.pivot('t1').using(sum('num1'));
     const clone = deepClone(query);
 
-    expect(clone.toString()).toBe(query.toString());
+    expect(String(clone)).toBe(String(query));
     expect(clone._using).not.toBe(query._using);
     expect(clone._using[0]).not.toBe(query._using[0]);
     expect(clone._using[0].expr).not.toBe(query._using[0].expr);
@@ -359,7 +360,7 @@ describe('PivotQuery', () => {
     const query = Query.pivot('t1').groupby(add(column('int1'), 1));
     const clone = deepClone(query);
 
-    expect(clone.toString()).toBe(query.toString());
+    expect(String(clone)).toBe(String(query));
     expect(clone._groupby).not.toBe(query._groupby);
     expect(clone._groupby[0]).not.toBe(query._groupby[0]);
   });
