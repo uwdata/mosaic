@@ -1,6 +1,6 @@
 {
   "name": "mosaic-widget",
-  "version": "0.27.0",
+  "version": "0.28.1",
   "private": true,
   "license": "BSD-3-Clause",
   "author": "Dominik Moritz (https://www.domoritz.de)",
@@ -14,17 +14,15 @@
     "build": "esbuild --bundle --format=esm --outdir=mosaic_widget/static src/index.js",
     "dev": "pnpm run build -- --watch",
     "test": "tsc --build",
-    "lint": "eslint src",
-    "prerelease": "pnpm run test && pnpm run lint && uv run ruff check && uv run ruff format --check && pnpm run build",
-    "release": "uv build && uvx twine upload --skip-existing ../../../dist/mosaic_widget*"
+    "lint": "eslint src"
   },
   "dependencies": {
     "@uwdata/mosaic-core": "workspace:^",
     "@uwdata/mosaic-spec": "workspace:^",
-    "uuid": "^14.0.0"
+    "uuid": "^14.0.1"
   },
   "devDependencies": {
     "anywidget": "~0.11.0",
-    "esbuild": "^0.28.0"
+    "esbuild": "^0.28.1"
   }
 }

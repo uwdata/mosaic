@@ -1,6 +1,6 @@
 {
   "name": "@uwdata/mosaic-sql",
-  "version": "0.27.0",
+  "version": "0.28.1",
   "description": "SQL query construction and analysis.",
   "keywords": [
     "sql",
@@ -27,7 +27,7 @@
     "clean": "rimraf dist && mkdir dist",
     "lint": "eslint src test",
     "test": "vitest run",
-    "prepublishOnly": "pnpm run test && pnpm run lint && tsc --build"
+    "prepublishOnly": "tsc --build"
   },
   "devDependencies": {
     "@uwdata/mosaic-duckdb": "workspace:^"

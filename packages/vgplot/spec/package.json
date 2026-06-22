@@ -1,6 +1,6 @@
 {
   "name": "@uwdata/mosaic-spec",
-  "version": "0.27.0",
+  "version": "0.28.1",
   "description": "Declarative specification of Mosaic-powered applications.",
   "keywords": [
     "mosaic",
@@ -36,7 +36,7 @@
     "test:visual": "playwright test test/visual.test.js",
     "test:visual:update": "pnpm run test:visual -- --update-snapshots",
     "version": "cd ../../.. && pnpm run docs:schema",
-    "prepublishOnly": "pnpm run test && pnpm run lint && pnpm run build"
+    "prepublishOnly": "pnpm run build"
   },
   "dependencies": {
     "@uwdata/mosaic-core": "workspace:^",

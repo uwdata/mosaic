@@ -332,7 +332,7 @@ function preaggregateInfo(
   preaggCols: PreAggColumnsResult,
   schema: string
 ): PreAggregateInfo {
-  const { dims, groupby, output, preagg } = preaggCols;
+  const { dims, groupby, having, output, preagg, qualify } = preaggCols;
   const { columns = {} } = active;
 
   // build materialized view construction query
@@ -362,6 +362,8 @@ function preaggregateInfo(
     .setSelect(dims, output)
     .setFrom(table)
     .setGroupby(dims)
+    .setHaving(having)
+    .setQualify(qualify)
     .setOrderby(replaceIndices(query._orderby, query._select))
     .sample(null);
   select._with = [];

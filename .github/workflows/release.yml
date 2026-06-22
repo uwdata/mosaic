@@ -1,0 +1,168 @@
+name: Release
+
+run-name: Release ${{ inputs.exact_version || inputs.bump }}
+
+on:
+  workflow_dispatch:
+    inputs:
+      bump:
+        description: "Semver bump (ignored if an exact version is given)"
+        type: choice
+        default: patch
+        options:
+          - patch
+          - minor
+          - major
+      exact_version:
+        description: "Exact version, e.g. 1.2.3 (overrides bump; leave blank to use bump)"
+        required: false
+        default: ""
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+jobs:
+  verify-ci:
+    name: Verify CI passed
+    runs-on: ubuntu-latest
+    permissions:
+      actions: read
+    steps:
+      - name: Require Node, Browser, and Python tests to have passed on this commit
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          run_id=$(gh api \
+            "repos/${{ github.repository }}/actions/workflows/test.yml/runs?head_sha=${{ github.sha }}&status=completed" \
+            --jq '.workflow_runs[0].id // empty')
+          if [ -z "$run_id" ]; then
+            echo "::error::No completed Test run for ${{ github.sha }}. Wait for CI on main to finish, then re-run." >&2
+            exit 1
+          fi
+          jobs=$(gh api "repos/${{ github.repository }}/actions/runs/$run_id/jobs")
+          # rust and go jobs are intentionally not required for a JS/Python release
+          ok=1
+          for job in "Test in Node" "Test in Browser" "Test in Python"; do
+            conclusion=$(echo "$jobs" | jq -r ".jobs[] | select(.name==\"$job\") | .conclusion")
+            echo "$job: ${conclusion:-missing}"
+            [ "$conclusion" = "success" ] || ok=0
+          done
+          [ "$ok" = "1" ] || { echo "::error::Required test jobs did not pass for this commit." >&2; exit 1; }
+
+  prepare:
+    name: Resolve version
+    needs: verify-ci
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.resolve.outputs.version }}
+    steps:
+      - uses: actions/checkout@v6
+      - name: Resolve version
+        id: resolve
+        env:
+          BUMP: ${{ inputs.bump }}
+          EXACT: ${{ inputs.exact_version }}
+        run: |
+          next=$(node -e '
+            const cur = require("./lerna.json").version;
+            const { EXACT, BUMP } = process.env;
+            let next = EXACT;
+            if (!next) {
+              const p = cur.split("-")[0].split(".").map(Number);
+              next = BUMP === "major" ? (p[0]+1)+".0.0"
+                   : BUMP === "minor" ? p[0]+"."+(p[1]+1)+".0"
+                   : p[0]+"."+p[1]+"."+(p[2]+1);
+            }
+            process.stdout.write(next);
+          ')
+          echo "version=$next" >> "$GITHUB_OUTPUT"
+          echo "## Planned release: \`v$next\` (current: \`v$(node -p "require('./lerna.json').version")\`)" >> "$GITHUB_STEP_SUMMARY"
+          echo "Planned release: v$next"
+
+  release:
+    name: Release
+    needs: [verify-ci, prepare]
+    runs-on: ubuntu-latest
+    environment: release
+
+    permissions:
+      contents: write
+      id-token: write
+
+    steps:
+      - name: Mint app token (for pushing to protected main)
+        uses: actions/create-github-app-token@v3
+        id: app-token
+        with:
+          app-id: ${{ secrets.RELEASE_APP_ID }}
+          private-key: ${{ secrets.RELEASE_APP_PRIVATE_KEY }}
+
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+          token: ${{ steps.app-token.outputs.token }}
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v6
+
+      - name: Setup node
+        uses: actions/setup-node@v6
+        with:
+          # 24.x for npm >= 11.5.1, required by OIDC trusted publishing
+          node-version: "24.x"
+          cache: "pnpm"
+          cache-dependency-path: |
+            pnpm-lock.yaml
+
+      - uses: astral-sh/setup-uv@v7
+        with:
+          version: ">=0.5.0"
+          enable-cache: true
+          cache-dependency-glob: |
+            uv.lock
+            **/pyproject.toml
+
+      - name: Install Node dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build
+        run: pnpm run build
+
+      - name: Configure git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+      - name: Bump version, tag, and push
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: pnpm exec lerna version "${{ needs.prepare.outputs.version }}" --yes
+
+      - name: Capture released version
+        id: version
+        run: |
+          VERSION="$(node -p "require('./lerna.json').version")"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "tag=v$VERSION" >> "$GITHUB_OUTPUT"
+          echo "## Released v$VERSION" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Publish to npm
+        run: pnpm exec lerna publish from-git --yes
+
+      - name: Build Python packages
+        run: |
+          rm -rf dist-py
+          uv build --package duckdb-server --out-dir dist-py
+          cd packages/vgplot/widget && uv build --out-dir "$GITHUB_WORKSPACE/dist-py"
+
+      - name: Publish to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          packages-dir: dist-py/
+          skip-existing: true
+
+      - name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh release create "${{ steps.version.outputs.tag }}" --generate-notes --title "${{ steps.version.outputs.tag }}"

@@ -8,6 +8,8 @@ export interface PreAggColumnsResult {
   groupby: Record<string, ExprNode>;
   preagg: Record<string, ExprNode>;
   output: Record<string, ExprNode>;
+  having: ExprNode[];
+  qualify: ExprNode[];
 }
 
 /**
@@ -57,43 +59,80 @@ export function preaggColumns(client: MosaicClient): PreAggColumnsResult | null 
     return sql`(SELECT avg(${expr ?? ref}) FROM "${from}")`;
   };
 
-  // iterate over select clauses and analyze expressions
-  for (const { alias, expr } of q._select) {
-    // bail if there is an aggregate we can't analyze
-    // a value > 1 indicates an aggregate in verbatim text
-    if (isAggregateExpression(expr!) > 1) return null;
-
-    const nodes = collectAggregates(expr!);
-    if (nodes.length === 0) {
-      // if no aggregates, expr is a groupby dimension
-      dims.add(alias);
-      preagg[alias] = expr;
-    } else {
-      for (const node of nodes) {
-        // bail if distinct aggregate
-        if (node.isDistinct) return null;
-
-        // bail if aggregate function is unsupported
-        // otherwise add output aggregate to rewrite map
-        const agg = sufficientStatistics(node, preagg, avg);
-        if (!agg) return null;
-        aggrs.set(node, agg);
+  try {
+    // iterate over select clauses and analyze expressions
+    for (const { alias, expr } of q._select) {
+      const result = analyzeExpression(expr, aggrs, preagg, avg);
+      if (result) {
+        // rewrite original select clause to use preaggregates
+        output[alias] = result;
+      } else {
+        // if no aggregates, expr is a groupby dimension
+        dims.add(alias);
+        preagg[alias] = expr;
       }
-
-      // rewrite original select clause to use preaggregates
-      output[alias] = rewrite(expr!, aggrs)!;
     }
+
+    // bail if select clause has no aggregates
+    if (!aggrs.size) return null;
+
+    // analyze any having expressions
+    const having = q._having
+      .map(expr => analyzeExpression(expr, aggrs, preagg, avg) ?? expr);
+
+    // analyze any qualify expressions
+    const qualify = q._qualify
+      .map(expr => analyzeExpression(expr, aggrs, preagg, avg) ?? expr);
+
+    // bail if the query has no aggregates
+    if (!aggrs.size) return null;
+
+    return {
+      dims: Array.from(dims),
+      groupby,
+      preagg,
+      output,
+      having,
+      qualify
+    };
+  } catch {
+    // bail if unsupported aggregate was encountered
+    return null;
   }
+}
 
-  // bail if the query has no aggregates
-  if (!aggrs.size) return null;
+/**
+ * Analyzes an expression and returns a rewritten expression if preaggregation
+ * optimization is supported. Returns undefined if the expressions does not
+ * contain any aggregates. Throws if the expression contains an unsupported
+ * or non-optimizable aggregate.
+ */
+function analyzeExpression(
+  expr: ExprNode,
+  aggrs: Map<AggregateNode, ExprNode>,
+  preagg: Record<string, ExprNode>,
+  avg: (ref: ColumnRefNode) => ExprNode
+) {
+  // bail if there is an aggregate we can't analyze
+  // a value > 1 indicates an aggregate in verbatim text
+  if (isAggregateExpression(expr!) > 1) throw new Error();
 
-  return {
-    dims: Array.from(dims),
-    groupby,
-    preagg,
-    output
-  };
+  const nodes = collectAggregates(expr!);
+  if (nodes.length) {
+    for (const node of nodes) {
+      // bail if distinct aggregate
+      if (node.isDistinct) throw new Error();
+
+      // bail if aggregate function is unsupported
+      // otherwise add output aggregate to rewrite map
+      const agg = sufficientStatistics(node, preagg, avg);
+      if (!agg) throw new Error();
+      aggrs.set(node, agg);
+    }
+
+    // rewrite original expression to use preaggregates
+    return rewrite(expr!, aggrs)!;
+  }
 }
 
 /**
