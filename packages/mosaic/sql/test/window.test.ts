@@ -64,10 +64,6 @@ describe('Window functions', () => {
   it('support groups frame', async () => {
     await expect(first_value('num1').frame(frameGroups([0, null])))
       .toBeValidExpr('first_value("num1") OVER (GROUPS BETWEEN CURRENT ROW AND UNBOUNDED FOLLOWING)');
-    await expect(first_value('num1').frame(frameGroups([0, null])))
-      .toBeValidExpr('first_value("num1") OVER (GROUPS BETWEEN CURRENT ROW AND UNBOUNDED FOLLOWING)');
-    await expect(first_value('num1').frame(frameGroups([null, null])))
-      .toBeValidExpr('first_value("num1") OVER (GROUPS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING)');
     await expect(first_value('num1').frame(frameGroups([null, null])))
       .toBeValidExpr('first_value("num1") OVER (GROUPS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING)');
     await expect(first_value('num1').frame(frameGroups([0, 2])))
