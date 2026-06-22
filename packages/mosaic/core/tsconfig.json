@@ -5,5 +5,5 @@
     "outDir": "dist",
     "strict": true
   },
-  "references": [{ "path": "../sql" }]
+  "references": [{ "path": "../sql" }, { "path": "../../server/duckdb" }]
 }

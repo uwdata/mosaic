@@ -40,8 +40,5 @@
     "@uwdata/mosaic-inputs": "workspace:^",
     "@uwdata/mosaic-plot": "workspace:^",
     "@uwdata/mosaic-sql": "workspace:^"
-  },
-  "devDependencies": {
-    "@uwdata/mosaic-duckdb": "workspace:^"
   }
 }

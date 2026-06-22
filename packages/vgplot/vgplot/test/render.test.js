@@ -4,7 +4,7 @@ import { Coordinator } from '@uwdata/mosaic-core';
 import { JSDOM } from 'jsdom';
 import { createAPIContext } from '../src/index.js';
 import { clientsReady } from './util/clients-ready.js';
-import { NodeConnector } from './util/node-connector.js';
+import { NodeConnector } from '@uwdata/mosaic-core/node-connector';
 
 const cwd = import.meta.dirname;
 
