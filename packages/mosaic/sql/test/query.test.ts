@@ -1,5 +1,6 @@
 import { expect, describe, it } from 'vitest';
 import { asTableRef, column, desc, gt, lt, max, min, sql, Query, sum, lead, over, cte, add, FromClauseNode, SampleClauseNode, frameRows, div, mul, unnest, list } from '../src/index.js';
+import { validateQuery } from './util/validate.js';
 
 describe('Query', () => {
   it('selects column name strings', async () => {
@@ -544,9 +545,6 @@ describe('Query', () => {
   });
 
   it('is cloneable', async () => {
-    const sql =
-      'WITH "cte" AS (SELECT "num1", "num2", "num3" FROM "t1") '
-      + 'SELECT "num1" FROM "cte" GROUP BY "num1" ORDER BY "num1" LIMIT 10';
     const q = Query
       .with({
         cte: Query.select('num1', 'num2', 'num3').from('t1')
@@ -559,7 +557,7 @@ describe('Query', () => {
     const c = q.clone();
     expect(c).not.toBe(q);
     expect(String(c)).toBe(String(q));
-    await expect(q).toBeValidQuery(sql);
-    await expect(c).toBeValidQuery(sql);
+    await validateQuery(c);
+    await validateQuery(q);
   })
 });

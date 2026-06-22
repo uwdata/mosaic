@@ -11,20 +11,20 @@ describe('cte', () => {
     expect(x.query).toBe(q);
     expect(x.materialized).toBe(false);
     expect(String(x)).toBe(`"foo" AS NOT MATERIALIZED (${q})`);
-    validateQuery(`WITH ${x} SELECT * FROM "foo"`);
+    await validateQuery(`WITH ${x} SELECT * FROM "foo"`);
 
     const y = cte('foo', q, true);
     expect(y.name).toBe('foo');
     expect(y.query).toBe(q);
     expect(y.materialized).toBe(true);
     expect(String(y)).toBe(`"foo" AS MATERIALIZED (${q})`);
-    validateQuery(`WITH ${y} SELECT * FROM "foo"`)
+    await validateQuery(`WITH ${y} SELECT * FROM "foo"`);
 
     const z = cte('foo', q);
     expect(z.name).toBe('foo');
     expect(z.query).toBe(q);
     expect(z.materialized).toBe(null);
     expect(String(z)).toBe(`"foo" AS (${q})`);
-    validateQuery(`WITH ${z} SELECT * FROM "foo"`)
+    await validateQuery(`WITH ${z} SELECT * FROM "foo"`);
   });
 });
