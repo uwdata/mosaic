@@ -57,10 +57,6 @@ view = vg.vconcat(
             vg.x_domain([-1, 8]),
         ),
     ),
-)
-
-spec = vg.spec(
-    view,
     plot_defaults={
         "xAxis": None,
         "yAxis": None,
@@ -70,3 +66,5 @@ spec = vg.spec(
         "yDomain": [0, 9],
     },
 )
+
+view

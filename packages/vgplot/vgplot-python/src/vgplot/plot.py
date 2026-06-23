@@ -82,8 +82,12 @@ def encode_value(
 
 
 def plot(
-    *items: Union[Mark, Directive], param_names: Dict[int, str] | None = None
-) -> Dict[str, Any]:
+    *items: Union[Mark, Directive],
+    param_names: Dict[int, str] | None = None,
+    **kwargs: Any,
+) -> Any:
+    from .spec import View
+
     marks: List[Dict[str, Any]] = []
     directives: Dict[str, Any] = {}
     for item in items:
@@ -98,7 +102,7 @@ def plot(
             raise TypeError(f"Unsupported plot item: {item}")
     root: Dict[str, Any] = {"plot": marks}
     root.update(directives)
-    return root
+    return View(root, **kwargs)
 
 
 def directive(key: str, value: Any) -> Directive:
@@ -238,6 +242,10 @@ def _encode_component(
     param_names: Dict[int, str] | None,
     data_names: Dict[int, str] | None = None,
 ) -> Any:
+    from .spec import View
+
+    if isinstance(item, View):
+        item = item._view
     if isinstance(item, dict) and "plot" in item:
         # re-encode an already-built plot dict so param refs resolve
         marks = [
@@ -258,20 +266,36 @@ def _encode_component(
 
 
 # Layout helpers
-def vconcat(*items: Any, param_names: Dict[int, str] | None = None) -> Dict[str, Any]:
-    return {"vconcat": [_encode_component(i, param_names) for i in items]}
+def vconcat(
+    *items: Any, param_names: Dict[int, str] | None = None, **kwargs: Any
+) -> Any:
+    from .spec import View
+
+    return View(
+        {"vconcat": [_encode_component(i, param_names) for i in items]}, **kwargs
+    )
 
 
-def hconcat(*items: Any, param_names: Dict[int, str] | None = None) -> Dict[str, Any]:
-    return {"hconcat": [_encode_component(i, param_names) for i in items]}
+def hconcat(
+    *items: Any, param_names: Dict[int, str] | None = None, **kwargs: Any
+) -> Any:
+    from .spec import View
+
+    return View(
+        {"hconcat": [_encode_component(i, param_names) for i in items]}, **kwargs
+    )
 
 
-def hspace(px: int) -> Dict[str, Any]:
-    return {"hspace": px}
+def hspace(px: int) -> Any:
+    from .spec import View
+
+    return View({"hspace": px})
 
 
-def vspace(px: int) -> Dict[str, Any]:
-    return {"vspace": px}
+def vspace(px: int) -> Any:
+    from .spec import View
+
+    return View({"vspace": px})
 
 
 _MISSING = object()
@@ -489,7 +513,9 @@ def symbol_legend(
 _INPUT_ALIASES = {"bind": "as", "source": "from"}
 
 
-def input(kind: str, **opts: Any) -> Dict[str, Any]:
+def input(kind: str, **opts: Any) -> Any:
+    from .spec import View
+
     payload = {"input": kind}
     for k, v in opts.items():
         if v is None:
@@ -502,7 +528,7 @@ def input(kind: str, **opts: Any) -> Dict[str, Any]:
         ):
             v = [{"label": i, "value": i} if not isinstance(i, dict) else i for i in v]
         payload[key] = v
-    return payload
+    return View(payload)
 
 
 def slider(

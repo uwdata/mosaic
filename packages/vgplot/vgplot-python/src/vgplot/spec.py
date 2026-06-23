@@ -193,6 +193,82 @@ class Spec:
         display(widget)
 
 
+class View:
+    """
+    A composable view returned by plot(), vconcat(), hconcat() etc.
+    Behaves like Spec but discovers data and params from the caller's
+    frame at display/export time rather than at construction time.
+    """
+
+    def __init__(
+        self,
+        view: Dict[str, Any],
+        *,
+        data: Dict[str, Any] | None = None,
+        plotDefaults: Dict[str, Any] | None = None,
+        plot_defaults: Dict[str, Any] | None = None,
+        config: Dict[str, Any] | None = None,
+        **extra: Any,
+    ) -> None:
+        self._view = view
+        self._data = data  # explicit overrides for renamed data variables
+        self._plotDefaults = plotDefaults or plot_defaults
+        self._config = config
+        self._extra = extra
+
+    def _build_spec(self, caller_locals: Dict[str, Any]) -> Spec:
+        explicit_ids = {
+            id(v) for v in (self._data or {}).values() if isinstance(v, DataDef)
+        }
+        frame_data: Dict[str, Any] = {
+            name: obj
+            for name, obj in caller_locals.items()
+            if isinstance(obj, DataDef)
+            and not name.startswith("_")
+            and id(obj) not in explicit_ids
+        }
+        merged_data = {**(self._data or {}), **frame_data} or None
+        frame_params: Dict[str, Any] = {
+            name: obj
+            for name, obj in caller_locals.items()
+            if isinstance(obj, _ParamBase) and not name.startswith("_")
+        }
+        return Spec(
+            data=merged_data,
+            params=frame_params or None,
+            plotDefaults=self._plotDefaults,
+            config=self._config,
+            view=self._view,
+            **self._extra,
+        )
+
+    def to_dict(self, _context: Dict[str, Any] | None = None) -> Dict[str, Any]:
+        locals_ = (
+            _context if _context is not None else inspect.currentframe().f_back.f_locals
+        )  # type: ignore[union-attr]
+        return self._build_spec(locals_).to_dict()
+
+    def to_json(self, _context: Dict[str, Any] | None = None, **kwargs: Any) -> str:
+        locals_ = (
+            _context if _context is not None else inspect.currentframe().f_back.f_locals
+        )  # type: ignore[union-attr]
+        return self._build_spec(locals_).to_json(**kwargs)
+
+    def show(self, con: Any = None, data: Any = None) -> None:
+        caller_locals = inspect.currentframe().f_back.f_locals  # type: ignore[union-attr]
+        self._build_spec(caller_locals).show(con=con, data=data)
+
+    def _repr_mimebundle_(self, **kwargs: Any):
+        # Walk up frames to find the one where this View object lives
+        frame = inspect.currentframe().f_back
+        while frame is not None:
+            if any(v is self for v in frame.f_locals.values()):
+                break
+            frame = frame.f_back
+        locals_ = frame.f_locals if frame is not None else {}
+        return self._build_spec(locals_)._repr_mimebundle_(**kwargs)
+
+
 _VIEW_KEYS = {"plot", "vconcat", "hconcat", "hspace", "vspace", "input"}
 
 

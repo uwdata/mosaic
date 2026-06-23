@@ -135,6 +135,7 @@ view = vg.vconcat(
             plot="color-threshold", label="Threshold Color Ramp (External)"
         ),
     ),
+    plot_defaults={"margin": 0, "width": 0, "height": 20},
 )
 
-spec = vg.spec(view, plot_defaults={"margin": 0, "width": 0, "height": 20})
+view

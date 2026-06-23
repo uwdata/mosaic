@@ -13,4 +13,4 @@ view = vg.vconcat(
     ),
 )
 
-spec = vg.spec(view)
+view

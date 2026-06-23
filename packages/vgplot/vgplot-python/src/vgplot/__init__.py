@@ -1,4 +1,4 @@
-from .spec import meta, spec, Spec
+from .spec import meta, spec, Spec, View
 from .data import parquet, csv, spatial, table, json, data
 from .params import param, selection
 from .encodings import (
@@ -322,6 +322,7 @@ __all__ = [
     "meta",
     "spec",
     "Spec",
+    "View",
     # data
     "parquet",
     "csv",
