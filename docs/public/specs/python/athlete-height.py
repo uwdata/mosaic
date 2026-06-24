@@ -57,4 +57,3 @@ view = vg.hconcat(
         vg.color_legend(plot="heights"),
     )
 )
-

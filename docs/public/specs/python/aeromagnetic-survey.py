@@ -29,4 +29,3 @@ view = vg.vconcat(
         vg.color_domain("Fixed"),
     ),
 )
-

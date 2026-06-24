@@ -16,4 +16,3 @@ view = vg.plot(
     vg.margin(0),
     vg.projection_type("albers"),
 )
-

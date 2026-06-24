@@ -34,4 +34,3 @@ view = vg.plot(
     vg.width(680),
     vg.height(200),
 )
-

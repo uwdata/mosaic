@@ -30,4 +30,3 @@ view = vg.vconcat(
         vg.x_tick_format("d"),
     ),
 )
-

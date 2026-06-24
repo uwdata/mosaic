@@ -77,4 +77,3 @@ view = vg.vconcat(
     ),
     config={"extensions": "spatial"},
 )
-

@@ -24,4 +24,3 @@ view = vg.vconcat(
         vg.margin_top(15),
     ),
 )
-

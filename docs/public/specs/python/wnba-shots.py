@@ -53,4 +53,3 @@ view = vg.vconcat(
     ),
     vg.color_legend(plot="shot-chart"),
 )
-

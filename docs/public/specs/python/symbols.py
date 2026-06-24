@@ -53,4 +53,3 @@ view = vg.vconcat(
         vg.symbol_legend(plot="filled", columns=1),
     ),
 )
-

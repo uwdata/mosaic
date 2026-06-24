@@ -47,4 +47,3 @@ view = vg.vconcat(
         vg.width(680),
     ),
 )
-

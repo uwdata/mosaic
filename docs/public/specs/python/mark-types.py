@@ -66,4 +66,3 @@ view = vg.vconcat(
         "yDomain": [0, 9],
     },
 )
-

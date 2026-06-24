@@ -29,4 +29,3 @@ view = vg.hconcat(
         vg.fy_label(None),
     )
 )
-
