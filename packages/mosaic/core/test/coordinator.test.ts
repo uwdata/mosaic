@@ -1,10 +1,24 @@
 import { Query } from '@uwdata/mosaic-sql';
-import { describe, it, expect } from 'vitest';
-import { clausePoint, type Connector, Coordinator, coordinator, type JSONQueryRequest, makeClient, Selection } from '../src/index.js';
+import { describe, it, expect, vi } from 'vitest';
+import { clausePoint, type Connector, Coordinator, coordinator, EventType, type JSONQueryRequest, type Logger, makeClient, MosaicQueryEndEvent, MosaicQueryStartEvent, observeLogger, Selection } from '../src/index.js';
+import { QueryManager } from '../src/QueryManager.js';
 import { QueryResult, QueryState } from '../src/util/query-result.js';
 
 async function wait() {
   return new Promise<void>(resolve => setTimeout(resolve, 0));
+}
+
+function createLogger(): Logger {
+  return {
+    debug: vi.fn(),
+    info: vi.fn(),
+    log: vi.fn(),
+    warn: vi.fn(),
+    error: vi.fn(),
+    group: vi.fn(),
+    groupCollapsed: vi.fn(),
+    groupEnd: vi.fn(),
+  };
 }
 
 describe('coordinator', () => {
@@ -54,7 +68,6 @@ describe('coordinator', () => {
     expect(coord.manager.pendingResults).toHaveLength(4);
 
     // resolve promises in reverse order
-
     promises.at(3)!.fulfill(0);
     await wait();
 
@@ -98,7 +111,7 @@ describe('coordinator', () => {
     // Mock the connector
     const connector = {
       async query(req: JSONQueryRequest) {
-        const index = req.sql.includes("WHERE") ? 1 : 0;
+        const index = req.sql.includes('WHERE') ? 1 : 0;
         events.push(`CONNECT ${index}`);
         return { index };
       },
@@ -106,7 +119,6 @@ describe('coordinator', () => {
 
     // disable cache to ensure routing through connector
     const coord = new Coordinator(connector, {
-      logger: null,
       cache: false,
       preagg: { enabled: false }
     });
@@ -120,16 +132,16 @@ describe('coordinator', () => {
       async prepare() {
         await wait(); // force wait
         prepared = true;
-        events.push("PREPARE");
+        events.push('PREPARE');
       },
       query(filter = []) {
         events.push(`QUERY ${prepared}`);
-        return Query.select("*").from("foo").where(filter);
+        return Query.select('*').from('foo').where(filter);
       }
     });
 
     // fire selection update
-    filterBy.update(clausePoint("foo", 1, { source: {} }));
+    filterBy.update(clausePoint('foo', 1, { source: {} }));
 
     // await initial query, then selection update
     await client.pending;
@@ -139,11 +151,263 @@ describe('coordinator', () => {
     // query calls should come post-initialization
     // all queries should include filter clause
     expect(events).toStrictEqual([
-      "PREPARE",
-      "QUERY true",
-      "CONNECT 1",
-      "QUERY true",
-      "CONNECT 1",
+      'PREPARE',
+      'QUERY true',
+      'CONNECT 1',
+      'QUERY true',
+      'CONNECT 1',
     ]);
+  });
+
+  it('observeLogger reproduces old-style query logging and supports unsubscribe', async () => {
+    const connector = {
+      async query() {
+        return [{ value: 1 }];
+      },
+    } as unknown as Connector;
+
+    const coord = new Coordinator(connector, {
+      cache: false,
+      consolidate: false,
+      preagg: { enabled: false },
+    });
+
+    const logger = createLogger();
+
+    const unobserve = observeLogger(coord, logger);
+
+    await coord.query('SELECT 1', { cache: false });
+
+    expect(logger.groupCollapsed).toHaveBeenCalledTimes(1);
+    expect(logger.groupCollapsed).toHaveBeenCalledWith('query SELECT 1');
+
+    expect(logger.log).toHaveBeenCalledTimes(1);
+    expect(logger.log).toHaveBeenCalledWith('SELECT 1', expect.any(String));
+
+    expect(logger.groupEnd).toHaveBeenCalledTimes(1);
+
+    unobserve();
+
+    await coord.query('SELECT 1', { cache: false });
+
+    // no additional logger calls after unsubscribe
+    expect(logger.groupCollapsed).toHaveBeenCalledTimes(1);
+    expect(logger.log).toHaveBeenCalledTimes(1);
+    expect(logger.groupEnd).toHaveBeenCalledTimes(1);
+  });
+
+  it('observeLogger closes query groups for failed queries', async () => {
+    const error = new Error('boom');
+    const connector = {
+      async query() {
+        throw error;
+      },
+    } as unknown as Connector;
+
+    const coord = new Coordinator(connector, {
+      cache: false,
+      consolidate: false,
+      preagg: { enabled: false },
+    });
+
+    const logger = createLogger();
+    observeLogger(coord, logger);
+
+    await expect(coord.query('SELECT fail', { cache: false })).rejects.toThrow('boom');
+
+    expect(logger.groupCollapsed).toHaveBeenCalledTimes(1);
+    expect(logger.groupCollapsed).toHaveBeenCalledWith('query SELECT fail');
+    expect(logger.error).toHaveBeenCalledTimes(1);
+    expect(logger.error).toHaveBeenCalledWith(error);
+    expect(logger.log).toHaveBeenCalledTimes(1);
+    expect(logger.log).toHaveBeenCalledWith('SELECT fail', expect.any(String));
+    expect(logger.groupEnd).toHaveBeenCalledTimes(1);
+  });
+
+  it('observeLogger derives elapsed time from query event timestamps', () => {
+    const connector = {
+      async query() {
+        return [{ value: 1 }];
+      },
+    } as unknown as Connector;
+
+    const coord = new Coordinator(connector, {
+      cache: false,
+      consolidate: false,
+      logger: null,
+      preagg: { enabled: false },
+    });
+    const logger = createLogger();
+    observeLogger(coord, logger);
+
+    coord.eventBus.emit(
+      EventType.QueryStart,
+      new MosaicQueryStartEvent({
+        queryId: 1,
+        query: 'SELECT timed',
+        materialized: false,
+        timestamp: 100,
+      }),
+    );
+    coord.eventBus.emit(
+      EventType.QueryEnd,
+      new MosaicQueryEndEvent({
+        queryId: 1,
+        query: 'SELECT timed',
+        materialized: false,
+        status: 'success',
+        timestamp: 123.45,
+      }),
+    );
+
+    expect(logger.log).toHaveBeenCalledWith('SELECT timed', '23.5');
+    expect(logger.groupEnd).toHaveBeenCalledTimes(1);
+  });
+
+  it('observeLogger does not close a group for unmatched query end events', () => {
+    const connector = {
+      async query() {
+        return [{ value: 1 }];
+      },
+    } as unknown as Connector;
+
+    const coord = new Coordinator(connector, {
+      cache: false,
+      consolidate: false,
+      logger: null,
+      preagg: { enabled: false },
+    });
+    const logger = createLogger();
+    observeLogger(coord, logger);
+
+    coord.eventBus.emit(
+      EventType.QueryEnd,
+      new MosaicQueryEndEvent({
+        queryId: 1,
+        query: 'SELECT unmatched',
+        materialized: false,
+        status: 'success',
+      }),
+    );
+
+    expect(logger.log).toHaveBeenCalledWith('SELECT unmatched');
+    expect(logger.groupEnd).not.toHaveBeenCalled();
+  });
+
+  it('observeLogger clears in-flight query state on unsubscribe', () => {
+    const connector = {
+      async query() {
+        return [{ value: 1 }];
+      },
+    } as unknown as Connector;
+
+    const coord = new Coordinator(connector, {
+      cache: false,
+      consolidate: false,
+      logger: null,
+      preagg: { enabled: false },
+    });
+    const logger = createLogger();
+    const unobserve = observeLogger(coord, logger);
+
+    coord.eventBus.emit(
+      EventType.QueryStart,
+      new MosaicQueryStartEvent({
+        queryId: 1,
+        query: 'SELECT in_flight',
+        materialized: false,
+        timestamp: 100,
+      }),
+    );
+
+    unobserve();
+    observeLogger(coord, logger);
+
+    coord.eventBus.emit(
+      EventType.QueryEnd,
+      new MosaicQueryEndEvent({
+        queryId: 1,
+        query: 'SELECT in_flight',
+        materialized: false,
+        status: 'success',
+        timestamp: 200,
+      }),
+    );
+
+    expect(logger.groupCollapsed).toHaveBeenCalledTimes(1);
+    expect(logger.log).toHaveBeenCalledWith('SELECT in_flight');
+    expect(logger.groupEnd).not.toHaveBeenCalled();
+  });
+
+  it('wires custom query managers to the coordinator event bus', async () => {
+    const connector = {
+      async query() {
+        return [{ value: 1 }];
+      },
+    } as unknown as Connector;
+
+    const manager = new QueryManager();
+    const coord = new Coordinator(connector, {
+      cache: false,
+      consolidate: false,
+      logger: null,
+      manager,
+      preagg: { enabled: false },
+    });
+    const starts: MosaicQueryStartEvent[] = [];
+
+    coord.eventBus.addEventListener(EventType.QueryStart, (event) => {
+      starts.push(event);
+    });
+
+    await coord.query('SELECT 1', { cache: false });
+
+    expect(coord.manager).toBe(manager);
+    expect(starts).toHaveLength(1);
+    expect(starts[0]?.query).toBe('SELECT 1');
+  });
+
+  it('supports legacy coordinator logger configuration through the event bus', async () => {
+    const connector = {
+      async query() {
+        return [{ value: 1 }];
+      },
+    } as unknown as Connector;
+
+    const logger = createLogger();
+    const coord = new Coordinator(connector, {
+      cache: false,
+      consolidate: false,
+      logger,
+      preagg: { enabled: false },
+    });
+
+    expect(coord.logger()).toBe(logger);
+
+    await coord.query('SELECT 1', { cache: false });
+
+    expect(logger.groupCollapsed).toHaveBeenCalledTimes(1);
+    expect(logger.log).toHaveBeenCalledTimes(1);
+    expect(logger.groupEnd).toHaveBeenCalledTimes(1);
+
+    const nextLogger = createLogger();
+    expect(coord.logger(nextLogger)).toBe(nextLogger);
+
+    await coord.query('SELECT 2', { cache: false });
+
+    expect(logger.groupCollapsed).toHaveBeenCalledTimes(1);
+    expect(logger.log).toHaveBeenCalledTimes(1);
+    expect(logger.groupEnd).toHaveBeenCalledTimes(1);
+    expect(nextLogger.groupCollapsed).toHaveBeenCalledTimes(1);
+    expect(nextLogger.log).toHaveBeenCalledTimes(1);
+    expect(nextLogger.groupEnd).toHaveBeenCalledTimes(1);
+
+    expect(coord.logger(null)).toBeNull();
+
+    await coord.query('SELECT 3', { cache: false });
+
+    expect(nextLogger.groupCollapsed).toHaveBeenCalledTimes(1);
+    expect(nextLogger.log).toHaveBeenCalledTimes(1);
+    expect(nextLogger.groupEnd).toHaveBeenCalledTimes(1);
   });
 });

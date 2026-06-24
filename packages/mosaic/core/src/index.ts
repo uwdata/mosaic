@@ -1,6 +1,14 @@
 export { MosaicClient } from './MosaicClient.js';
 export { makeClient } from './make-client.js';
 export { Coordinator, coordinator } from './Coordinator.js';
+export { observeLogger } from './logger.js';
+export {
+  EventType,
+  MosaicErrorEvent,
+  MosaicQueryEndEvent,
+  MosaicQueryStartEvent,
+  MosaicWarningEvent,
+} from './Events.js';
 export { Selection, isSelection } from './Selection.js';
 export { Param, isParam } from './Param.js';
 export { Priority } from './QueryManager.js';
@@ -38,5 +46,12 @@ export type { QueryResult } from './util/query-result.js';
 export * from './types.js';
 
 export type * from './connectors/Connector.js';
+export type {
+  MosaicEvent,
+  MosaicErrorEventInit,
+  MosaicEventMap,
+  MosaicMessageEventInit,
+  QueryLifecycleEventInit
+} from './Events.js';
 export type * from './Selection.js';
 export type * from './SelectionClause.js';
