@@ -17,6 +17,7 @@ concurrency:
 
 jobs:
   deploy:
+    if: github.repository == 'uwdata/mosaic'
     runs-on: ubuntu-latest
 
     environment:
