@@ -2,8 +2,8 @@ import { expect, describe, it } from 'vitest';
 import { TupleNode, literal } from '../src/index.js';
 
 describe('Tuple', () => {
-  it('renders a parenthesized list of values', () => {
+  it('renders a parenthesized list of values', async () => {
     const tuple = new TupleNode([literal(1), literal(2), literal(3)]);
-    expect(String(tuple)).toBe('(1, 2, 3)');
+    await expect(tuple).toBeValidExpr('(1, 2, 3)');
   });
 });

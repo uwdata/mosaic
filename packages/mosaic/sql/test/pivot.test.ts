@@ -18,7 +18,7 @@ import {
 
 describe('PivotQuery', () => {
   it('constructs a pivot query from a table name', () => {
-    const query = Query.pivot('sales');
+    const query = Query.pivot('t1');
 
     expect(query).toBeInstanceOf(PivotQuery);
     expect(query.type).toBe('PIVOT_QUERY');
@@ -27,317 +27,319 @@ describe('PivotQuery', () => {
   });
 
   it('identifies only pivot queries with the pivot type guard', () => {
-    expect(isPivotQuery(Query.pivot('sales'))).toBe(true);
-    expect(isPivotQuery(Query.select('*').from('sales'))).toBe(false);
+    expect(isPivotQuery(Query.pivot('t1'))).toBe(true);
+    expect(isPivotQuery(Query.select('*').from('t1'))).toBe(false);
     expect(isPivotQuery(null)).toBe(false);
     expect(isPivotQuery({ type: 'PIVOT_QUERY' })).toBe(false);
   });
 
   it('stores table name sources as SQL AST nodes', () => {
-    const query = Query.pivot('sales');
+    const query = Query.pivot('t1');
 
     expect(isTableRef(query.source)).toBe(true);
-    expect(`${query.source}`).toBe('"sales"');
+    expect(String(query.source)).toBe('"t1"');
   });
 
   it('accepts existing SQL nodes as pivot sources', () => {
-    const source = sql`SELECT * FROM sales`;
+    const source = sql`SELECT * FROM t1`;
     const query = Query.pivot(source);
 
     expect(query.source).toBe(source);
   });
 
-  it('adds ON expressions from string column names', () => {
-    const query = Query.pivot('sales').on('year');
+  it('adds ON expressions from string column names', async () => {
+    const query = Query.pivot('t1').on('int1');
 
     expect(query._on).toHaveLength(1);
     expect(isColumnRef(query._on[0])).toBe(true);
-    expect(`${query._on[0]}`).toBe('"year"');
-    expect(query.toString()).toBe('PIVOT "sales" ON "year"');
+    expect(String(query._on[0])).toBe('"int1"');
+    await expect(query).toBeValidQuery('PIVOT "t1" ON "int1"');
   });
 
-  it('adds multiple ON expressions in caller-supplied order', () => {
-    const query = Query.pivot('sales').on('year', 'quarter');
+  it('adds multiple ON expressions in caller-supplied order', async () => {
+    const query = Query.pivot('t1').on('int1', 'txt1');
 
-    expect(query._on.map(String)).toEqual(['"year"', '"quarter"']);
-    expect(query.toString()).toBe('PIVOT "sales" ON "year", "quarter"');
+    expect(query._on.map(String)).toEqual(['"int1"', '"txt1"']);
+    await expect(query).toBeValidQuery('PIVOT "t1" ON "int1", "txt1"');
   });
 
-  it('adds array ON expressions in caller-supplied order', () => {
-    const query = Query.pivot('sales').on(['year', 'quarter']);
+  it('adds array ON expressions in caller-supplied order', async () => {
+    const query = Query.pivot('t1').on(['int1', 'txt1']);
 
-    expect(query._on.map(String)).toEqual(['"year"', '"quarter"']);
-    expect(query.toString()).toBe('PIVOT "sales" ON "year", "quarter"');
+    expect(query._on.map(String)).toEqual(['"int1"', '"txt1"']);
+    await expect(query).toBeValidQuery('PIVOT "t1" ON "int1", "txt1"');
   });
 
-  it('appends ON expressions from repeated calls', () => {
-    const query = Query.pivot('sales').on('year').on('quarter');
+  it('appends ON expressions from repeated calls', async () => {
+    const query = Query.pivot('t1').on('int1').on('txt1');
 
-    expect(query._on.map(String)).toEqual(['"year"', '"quarter"']);
-    expect(query.toString()).toBe('PIVOT "sales" ON "year", "quarter"');
+    expect(query._on.map(String)).toEqual(['"int1"', '"txt1"']);
+    await expect(query).toBeValidQuery('PIVOT "t1" ON "int1", "txt1"');
   });
 
-  it('preserves existing AST expression inputs for ON expressions', () => {
-    const expr = add(column('year'), 1);
-    const query = Query.pivot('sales').on(expr);
+  it('preserves existing AST expression inputs for ON expressions', async () => {
+    const expr = add(column('int1'), 1);
+    const query = Query.pivot('t1').on(expr);
 
     expect(query._on).toEqual([expr]);
-    expect(query.toString()).toBe('PIVOT "sales" ON ("year" + 1)');
+    await expect(query).toBeValidQuery('PIVOT "t1" ON ("int1" + 1)');
   });
 
-  it('adds IN values as SQL literals', () => {
-    const query = Query.pivot('sales').on('year').in(2020, 2021);
+  it('adds IN values as SQL literals', async () => {
+    const query = Query.pivot('t1').on('int1').in(2020, 2021);
 
     expect(query._in.map(String)).toEqual(['2020', '2021']);
-    expect(query.toString()).toBe('PIVOT "sales" ON "year" IN (2020, 2021)');
+    await expect(query).toBeValidQuery('PIVOT "t1" ON "int1" IN (2020, 2021)');
   });
 
-  it('renders string IN values as SQL string literals', () => {
-    const query = Query.pivot('sales').on('quarter').in('Q1', 'Q2');
+  it('renders string IN values as SQL string literals', async () => {
+    const query = Query.pivot('t1').on('txt1').in('Q1', 'Q2');
 
     expect(query._in.map(String)).toEqual([`'Q1'`, `'Q2'`]);
-    expect(query.toString()).toBe(`PIVOT "sales" ON "quarter" IN ('Q1', 'Q2')`);
+    await expect(query).toBeValidQuery(`PIVOT "t1" ON "txt1" IN ('Q1', 'Q2')`);
   });
 
-  it('preserves existing AST expression inputs for IN values', () => {
+  it('preserves existing AST expression inputs for IN values', async () => {
     const expr = literal('Q1');
-    const query = Query.pivot('sales').on('quarter').in(expr);
+    const query = Query.pivot('t1').on('txt1').in(expr);
 
     expect(query._in).toEqual([expr]);
-    expect(query.toString()).toBe(`PIVOT "sales" ON "quarter" IN ('Q1')`);
+    await expect(query).toBeValidQuery(`PIVOT "t1" ON "txt1" IN ('Q1')`);
   });
 
-  it('appends IN values from repeated calls in caller-supplied order', () => {
-    const query = Query.pivot('sales').on('year').in(2020).in(2021, 2022);
+  it('appends IN values from repeated calls in caller-supplied order', async () => {
+    const query = Query.pivot('t1').on('int1').in(2020).in(2021, 2022);
 
     expect(query._in.map(String)).toEqual(['2020', '2021', '2022']);
-    expect(query.toString()).toBe('PIVOT "sales" ON "year" IN (2020, 2021, 2022)');
+    await expect(query).toBeValidQuery('PIVOT "t1" ON "int1" IN (2020, 2021, 2022)');
   });
 
-  it('adds an unaliased USING aggregate expression', () => {
-    const query = Query.pivot('sales').on('year').using(sum('amount'));
+  it('adds an unaliased USING aggregate expression', async () => {
+    const query = Query.pivot('t1').on('int1').using(sum('num1'));
 
     expect(query._using).toHaveLength(1);
     expect(query._using[0].alias).toBe('');
-    expect(`${query._using[0].expr}`).toBe('sum("amount")');
-    expect(query.toString()).toBe('PIVOT "sales" ON "year" USING sum("amount")');
+    expect(`${query._using[0].expr}`).toBe('sum("num1")');
+    await expect(query).toBeValidQuery('PIVOT "t1" ON "int1" USING sum("num1")');
   });
 
-  it('adds an aliased USING aggregate expression', () => {
-    const query = Query.pivot('sales').on('year').using({ total: sum('amount') });
+  it('adds an aliased USING aggregate expression', async () => {
+    const query = Query.pivot('t1').on('int1').using({ total: sum('num1') });
 
     expect(query._using).toHaveLength(1);
     expect(query._using[0].alias).toBe('total');
-    expect(`${query._using[0].expr}`).toBe('sum("amount")');
-    expect(query.toString()).toBe('PIVOT "sales" ON "year" USING sum("amount") AS "total"');
+    expect(`${query._using[0].expr}`).toBe('sum("num1")');
+    await expect(query).toBeValidQuery('PIVOT "t1" ON "int1" USING sum("num1") AS "total"');
   });
 
-  it('adds multiple USING expressions in caller-supplied order', () => {
+  it('adds multiple USING expressions in caller-supplied order', async () => {
     const query = Query
-      .pivot('sales')
-      .on('year')
-      .using(sum('amount'), { total_units: sum('units') })
-      .using({ total_cost: sum('cost') });
+      .pivot('t1')
+      .on('int1')
+      .using(sum('num1'), { total_units: sum('num2') })
+      .using({ total_cost: sum('num3') });
 
     expect(query._using.map(node => node.alias)).toEqual(['', 'total_units', 'total_cost']);
-    expect(query.toString()).toBe(
-      'PIVOT "sales" ON "year" USING sum("amount"), sum("units") AS "total_units", sum("cost") AS "total_cost"'
+    await expect(query).toBeValidQuery(
+      'PIVOT "t1" ON "int1" USING sum("num1"), sum("num2") AS "total_units", sum("num3") AS "total_cost"'
     );
   });
 
-  it('adds GROUP BY expressions from string column names', () => {
-    const query = Query.pivot('sales').on('year').using(sum('amount')).groupby('region');
+  it('adds GROUP BY expressions from string column names', async () => {
+    const query = Query.pivot('t1').on('int1').using(sum('num1')).groupby('txt1');
 
     expect(query._groupby).toHaveLength(1);
     expect(isColumnRef(query._groupby[0])).toBe(true);
-    expect(`${query._groupby[0]}`).toBe('"region"');
-    expect(query.toString()).toBe('PIVOT "sales" ON "year" USING sum("amount") GROUP BY "region"');
+    expect(`${query._groupby[0]}`).toBe('"txt1"');
+    await expect(query).toBeValidQuery('PIVOT "t1" ON "int1" USING sum("num1") GROUP BY "txt1"');
   });
 
   it('preserves existing AST expression inputs for GROUP BY expressions', () => {
-    const expr = add(column('year'), 1);
-    const query = Query.pivot('sales').on('quarter').using(sum('amount')).groupby(expr);
+    const expr = add(column('int1'), 1);
+    const query = Query.pivot('t1').on('txt1').using(sum('num1')).groupby(expr);
 
     expect(query._groupby).toEqual([expr]);
-    expect(query.toString()).toBe('PIVOT "sales" ON "quarter" USING sum("amount") GROUP BY ("year" + 1)');
+    expect(String(query)).toBe('PIVOT "t1" ON "txt1" USING sum("num1") GROUP BY ("int1" + 1)');
+    // Serialization only: GROUP BY does not support expressions in DuckDB
   });
 
-  it('adds multiple GROUP BY expressions in caller-supplied order', () => {
-    const query = Query.pivot('sales').on('year').using(sum('amount')).groupby('region', 'segment');
+  it('adds multiple GROUP BY expressions in caller-supplied order', async () => {
+    const query = Query.pivot('t1').on('int1').using(sum('num1')).groupby('txt1', 'txt2');
 
-    expect(query._groupby.map(String)).toEqual(['"region"', '"segment"']);
-    expect(query.toString()).toBe(
-      'PIVOT "sales" ON "year" USING sum("amount") GROUP BY "region", "segment"'
+    expect(query._groupby.map(String)).toEqual(['"txt1"', '"txt2"']);
+    await expect(query).toBeValidQuery(
+      'PIVOT "t1" ON "int1" USING sum("num1") GROUP BY "txt1", "txt2"'
     );
   });
 
-  it('adds array GROUP BY expressions in caller-supplied order', () => {
-    const query = Query.pivot('sales').on('year').using(sum('amount')).groupby(['region', 'segment']);
+  it('adds array GROUP BY expressions in caller-supplied order', async () => {
+    const query = Query.pivot('t1').on('int1').using(sum('num1')).groupby(['txt1', 'txt2']);
 
-    expect(query._groupby.map(String)).toEqual(['"region"', '"segment"']);
-    expect(query.toString()).toBe(
-      'PIVOT "sales" ON "year" USING sum("amount") GROUP BY "region", "segment"'
+    expect(query._groupby.map(String)).toEqual(['"txt1"', '"txt2"']);
+    await expect(query).toBeValidQuery(
+      'PIVOT "t1" ON "int1" USING sum("num1") GROUP BY "txt1", "txt2"'
     );
   });
 
-  it('appends GROUP BY expressions from repeated calls', () => {
-    const query = Query.pivot('sales').on('year').using(sum('amount')).groupby('region').groupby('segment');
+  it('appends GROUP BY expressions from repeated calls', async () => {
+    const query = Query.pivot('t1').on('int1').using(sum('num1')).groupby('txt1').groupby('txt2');
 
-    expect(query._groupby.map(String)).toEqual(['"region"', '"segment"']);
-    expect(query.toString()).toBe(
-      'PIVOT "sales" ON "year" USING sum("amount") GROUP BY "region", "segment"'
+    expect(query._groupby.map(String)).toEqual(['"txt1"', '"txt2"']);
+    await expect(query).toBeValidQuery(
+      'PIVOT "t1" ON "int1" USING sum("num1") GROUP BY "txt1", "txt2"'
     );
   });
 
-  it('sets GROUP BY expressions by replacing prior pivot groups', () => {
-    const query = Query.pivot('sales').on('year').using(sum('amount')).groupby('region').setGroupby('segment');
+  it('sets GROUP BY expressions by replacing prior pivot groups', async () => {
+    const query = Query.pivot('t1').on('int1').using(sum('num1')).groupby('txt1').setGroupby('txt2');
 
-    expect(query._groupby.map(String)).toEqual(['"segment"']);
-    expect(query.toString()).toBe('PIVOT "sales" ON "year" USING sum("amount") GROUP BY "segment"');
+    expect(query._groupby.map(String)).toEqual(['"txt2"']);
+    await expect(query).toBeValidQuery('PIVOT "t1" ON "int1" USING sum("num1") GROUP BY "txt2"');
   });
 
-  it('keeps existing SQL output shape when no IN values are provided', () => {
-    expect(Query.pivot('sales').toString()).toBe('PIVOT "sales"');
-    expect(Query.pivot('sales').on('year').toString()).toBe('PIVOT "sales" ON "year"');
+  it('keeps existing SQL output shape when no IN values are provided', async () => {
+    expect(String(Query.pivot('t1'))).toBe('PIVOT "t1"');
+    // Serialization only: a bare PIVOT with no ON clause is not executable.
+    await expect(Query.pivot('t1').on('int1')).toBeValidQuery('PIVOT "t1" ON "int1"');
   });
 
-  it('renders common table expressions from with-pivot helpers', () => {
-    const source = Query.select('*').from('raw_sales');
+  it('renders common table expressions from with-pivot helpers', async () => {
+    const source = Query.select('*').from('t1');
     const pivot = Query
       .with({ sales: source })
       .pivot('sales')
-      .on('year')
-      .using(sum('amount'));
+      .on('int1')
+      .using(sum('num1'));
 
-    expect(pivot.toString()).toBe(
-      'WITH "sales" AS (SELECT * FROM "raw_sales") PIVOT "sales" ON "year" USING sum("amount")'
+    await expect(pivot).toBeValidQuery(
+      'WITH "sales" AS (SELECT * FROM "t1") PIVOT "sales" ON "int1" USING sum("num1")'
     );
   });
 
-  it('renders common table expressions added directly to pivot queries', () => {
+  it('renders common table expressions added directly to pivot queries', async () => {
     const pivot = Query
       .pivot('sales')
-      .with({ sales: Query.select('*').from('raw_sales') })
-      .on('year')
-      .using(sum('amount'));
+      .with({ sales: Query.select('*').from('t1') })
+      .on('int1')
+      .using(sum('num1'));
 
-    expect(pivot.toString()).toBe(
-      'WITH "sales" AS (SELECT * FROM "raw_sales") PIVOT "sales" ON "year" USING sum("amount")'
+    await expect(pivot).toBeValidQuery(
+      'WITH "sales" AS (SELECT * FROM "t1") PIVOT "sales" ON "int1" USING sum("num1")'
     );
   });
 
-  it('renders ORDER BY clauses added to pivot queries', () => {
+  it('renders ORDER BY clauses added to pivot queries', async () => {
     const pivot = Query
-      .pivot('sales')
-      .on('year')
-      .using(sum('amount'))
-      .groupby('region')
-      .orderby('year');
+      .pivot('t1')
+      .on('int1')
+      .using(sum('num1'))
+      .groupby('txt1')
+      .orderby('txt1');
 
-    expect(pivot.toString()).toBe(
-      'PIVOT "sales" ON "year" USING sum("amount") GROUP BY "region" ORDER BY "year"'
+    await expect(pivot).toBeValidQuery(
+      'PIVOT "t1" ON "int1" USING sum("num1") GROUP BY "txt1" ORDER BY "txt1"'
     );
   });
 
-  it('renders LIMIT and OFFSET clauses added to pivot queries', () => {
+  it('renders LIMIT and OFFSET clauses added to pivot queries', async () => {
     const pivot = Query
-      .pivot('sales')
-      .on('year')
-      .using(sum('amount'))
-      .groupby('region')
-      .orderby('region')
+      .pivot('t1')
+      .on('int1')
+      .using(sum('num1'))
+      .groupby('txt1')
+      .orderby('txt1')
       .limit(10)
       .offset(20);
 
-    expect(pivot.toString()).toBe(
-      'PIVOT "sales" ON "year" USING sum("amount") GROUP BY "region" ORDER BY "region" LIMIT 10 OFFSET 20'
+    await expect(pivot).toBeValidQuery(
+      'PIVOT "t1" ON "int1" USING sum("num1") GROUP BY "txt1" ORDER BY "txt1" LIMIT 10 OFFSET 20'
     );
   });
 
-  it('renders expression-valued LIMIT and OFFSET clauses added to pivot queries', () => {
+  it('renders expression-valued LIMIT and OFFSET clauses added to pivot queries', async () => {
     const pivot = Query
-      .pivot('sales')
-      .on('year')
-      .using(sum('amount'))
+      .pivot('t1')
+      .on('int1')
+      .using(sum('num1'))
       .limit(add(5, 5))
       .offset(add(10, 10));
 
-    expect(pivot.toString()).toBe(
-      'PIVOT "sales" ON "year" USING sum("amount") LIMIT (5 + 5) OFFSET (10 + 10)'
+    await expect(pivot).toBeValidQuery(
+      'PIVOT "t1" ON "int1" USING sum("num1") LIMIT (5 + 5) OFFSET (10 + 10)'
     );
   });
 
-  it('renders percentage LIMIT clauses added to pivot queries', () => {
+  it('renders percentage LIMIT clauses added to pivot queries', async () => {
     const pivot = Query
-      .pivot('sales')
-      .on('year')
-      .using(sum('amount'))
+      .pivot('t1')
+      .on('int1')
+      .using(sum('num1'))
       .limitPercent(10);
 
-    expect(pivot.toString()).toBe(
-      'PIVOT "sales" ON "year" USING sum("amount") LIMIT 10%'
+    await expect(pivot).toBeValidQuery(
+      'PIVOT "t1" ON "int1" USING sum("num1") LIMIT 10%'
     );
   });
 
-  it('rejects empty IN calls', () => {
-    const query = Query.pivot('sales').on('year');
+  it('rejects empty IN calls', async () => {
+    const query = Query.pivot('t1').on('int1');
 
     expect(() => (query.in as (...expr: unknown[]) => PivotQuery)()).toThrow(
       'PivotQuery.in requires at least one value.'
     );
-    expect(query.toString()).toBe('PIVOT "sales" ON "year"');
+    await expect(query).toBeValidQuery('PIVOT "t1" ON "int1"');
   });
 
-  it('clones IN values without aliasing mutable clause arrays', () => {
-    const query = Query.pivot('sales').on('year').in(2020);
+  it('clones IN values without aliasing mutable clause arrays', async () => {
+    const query = Query.pivot('t1').on('int1').in(2020);
     const clone = query.clone();
 
-    query.on('quarter').in(2021);
+    query.on('txt1').in(2021);
 
-    expect(clone.toString()).toBe('PIVOT "sales" ON "year" IN (2020)');
+    await expect(clone).toBeValidQuery('PIVOT "t1" ON "int1" IN (2020)');
     expect(clone._on).not.toBe(query._on);
     expect(clone._in).not.toBe(query._in);
   });
 
-  it('clones USING expressions without aliasing mutable clause arrays', () => {
-    const query = Query.pivot('sales').on('year').using(sum('amount'));
+  it('clones USING expressions without aliasing mutable clause arrays', async () => {
+    const query = Query.pivot('t1').on('int1').using(sum('num1'));
     const clone = query.clone();
 
-    query.using({ total_units: sum('units') });
+    query.using({ total_units: sum('num2') });
 
-    expect(clone.toString()).toBe('PIVOT "sales" ON "year" USING sum("amount")');
+    await expect(clone).toBeValidQuery('PIVOT "t1" ON "int1" USING sum("num1")');
     expect(clone._using).not.toBe(query._using);
   });
 
-  it('clones GROUP BY expressions without aliasing mutable clause arrays', () => {
-    const query = Query.pivot('sales').on('year').using(sum('amount')).groupby('region');
+  it('clones GROUP BY expressions without aliasing mutable clause arrays', async() => {
+    const query = Query.pivot('t1').on('int1').using(sum('num1')).groupby('txt1');
     const clone = query.clone();
 
-    query.groupby('segment');
+    query.groupby('txt2');
 
-    expect(clone.toString()).toBe('PIVOT "sales" ON "year" USING sum("amount") GROUP BY "region"');
+    await expect(clone).toBeValidQuery('PIVOT "t1" ON "int1" USING sum("num1") GROUP BY "txt1"');
     expect(clone._groupby).not.toBe(query._groupby);
   });
 
   it('clones inherited clause arrays without aliasing mutable state', () => {
     const query = Query
       .pivot('sales')
-      .with({ sales: Query.select('*').from('raw_sales') })
-      .orderby('year')
+      .with({ sales: Query.select('*').from('t1') })
+      .orderby('int1')
       .limit(10)
       .offset(20);
     const clone = query.clone();
 
-    expect(clone.toString()).toBe(query.toString());
+    expect(String(clone)).toBe(String(query));
     expect(clone._with).not.toBe(query._with);
     expect(clone._orderby).not.toBe(query._orderby);
   });
 
   it('deep clones pivot ON and IN expression nodes', () => {
-    const query = Query.pivot('sales').on(add(column('year'), 1)).in(literal('Q1'));
+    const query = Query.pivot('t1').on(add(column('int1'), 1)).in(literal('Q1'));
     const clone = deepClone(query);
 
-    expect(clone.toString()).toBe(query.toString());
+    expect(String(clone)).toBe(String(query));
     expect(clone._on).not.toBe(query._on);
     expect(clone._in).not.toBe(query._in);
     expect(clone._on[0]).not.toBe(query._on[0]);
@@ -345,72 +347,61 @@ describe('PivotQuery', () => {
   });
 
   it('deep clones pivot USING expression nodes', () => {
-    const query = Query.pivot('sales').using(sum('amount'));
+    const query = Query.pivot('t1').using(sum('num1'));
     const clone = deepClone(query);
 
-    expect(clone.toString()).toBe(query.toString());
+    expect(String(clone)).toBe(String(query));
     expect(clone._using).not.toBe(query._using);
     expect(clone._using[0]).not.toBe(query._using[0]);
     expect(clone._using[0].expr).not.toBe(query._using[0].expr);
   });
 
   it('deep clones pivot GROUP BY expression nodes', () => {
-    const query = Query.pivot('sales').groupby(add(column('year'), 1));
+    const query = Query.pivot('t1').groupby(add(column('int1'), 1));
     const clone = deepClone(query);
 
-    expect(clone.toString()).toBe(query.toString());
+    expect(String(clone)).toBe(String(query));
     expect(clone._groupby).not.toBe(query._groupby);
     expect(clone._groupby[0]).not.toBe(query._groupby[0]);
   });
 
-  it('can be used as a select query source', () => {
-    const pivot = Query.pivot('sales');
+  it('can be used as a select query source', async () => {
+    const pivot = Query.pivot('t1').on('int1');
     const query = Query.select('*').from({ p: pivot });
     const [source] = query._from;
 
     expect(isSelectQuery(query)).toBe(true);
     expect(source).toBeInstanceOf(FromClauseNode);
     expect((source as FromClauseNode).expr).toBe(pivot);
-    expect(query.toString()).toBe('SELECT * FROM (PIVOT "sales") AS "p"');
+    await expect(query).toBeValidQuery('SELECT * FROM (PIVOT "t1" ON "int1") AS "p"');
   });
 
-  it('can be used as a select query source with pivot clauses', () => {
-    const pivot = Query.pivot('sales').on('year');
+  it('can be used as a select query source with IN values', async () => {
+    const pivot = Query.pivot('t1').on('int1').in(2020, 2021);
     const query = Query.select('*').from({ p: pivot });
     const [source] = query._from;
 
     expect(isSelectQuery(query)).toBe(true);
     expect(source).toBeInstanceOf(FromClauseNode);
     expect((source as FromClauseNode).expr).toBe(pivot);
-    expect(query.toString()).toBe('SELECT * FROM (PIVOT "sales" ON "year") AS "p"');
+    await expect(query).toBeValidQuery('SELECT * FROM (PIVOT "t1" ON "int1" IN (2020, 2021)) AS "p"');
   });
 
-  it('can be used as a select query source with IN values', () => {
-    const pivot = Query.pivot('sales').on('year').in(2020, 2021);
-    const query = Query.select('*').from({ p: pivot });
-    const [source] = query._from;
-
-    expect(isSelectQuery(query)).toBe(true);
-    expect(source).toBeInstanceOf(FromClauseNode);
-    expect((source as FromClauseNode).expr).toBe(pivot);
-    expect(query.toString()).toBe('SELECT * FROM (PIVOT "sales" ON "year" IN (2020, 2021)) AS "p"');
-  });
-
-  it('can be used as a select query source with USING expressions', () => {
-    const pivot = Query.pivot('sales').on('year').in(2020, 2021).using({ total: sum('amount') });
+  it('can be used as a select query source with USING expressions', async () => {
+    const pivot = Query.pivot('t1').on('int1').in(2020, 2021).using({ total: sum('num1') });
     const query = Query.select('*').from({ p: pivot });
 
-    expect(query.toString()).toBe(
-      'SELECT * FROM (PIVOT "sales" ON "year" IN (2020, 2021) USING sum("amount") AS "total") AS "p"'
+    await expect(query).toBeValidQuery(
+      'SELECT * FROM (PIVOT "t1" ON "int1" IN (2020, 2021) USING sum("num1") AS "total") AS "p"'
     );
   });
 
-  it('can be used as a select query source with GROUP BY expressions', () => {
-    const pivot = Query.pivot('sales').on('year').using({ total: sum('amount') }).groupby('region');
+  it('can be used as a select query source with GROUP BY expressions', async () => {
+    const pivot = Query.pivot('t1').on('int1').using({ total: sum('num1') }).groupby('txt1');
     const query = Query.select('*').from({ p: pivot });
 
-    expect(query.toString()).toBe(
-      'SELECT * FROM (PIVOT "sales" ON "year" USING sum("amount") AS "total" GROUP BY "region") AS "p"'
+    await expect(query).toBeValidQuery(
+      'SELECT * FROM (PIVOT "t1" ON "int1" USING sum("num1") AS "total" GROUP BY "txt1") AS "p"'
     );
   });
 });
