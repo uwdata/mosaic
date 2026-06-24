@@ -60,5 +60,3 @@ view = vg.vconcat(
         vg.margin_bottom(35),
     ),
 )
-
-spec = vg.spec(view)

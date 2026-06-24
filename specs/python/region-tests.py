@@ -3,11 +3,11 @@ import vgplot as vg
 bls_unemp = vg.parquet("data/bls-metro-unemployment.parquet")
 feed = vg.spatial("data/usgs-feed.geojson")
 world = vg.spatial("data/countries-110m.json", layer="land")
-counties_data = vg.spatial("data/us-counties-10m.json", layer="counties")
+counties = vg.spatial("data/us-counties-10m.json", layer="counties")
 
 series = vg.selection.single()
 quakes = vg.selection.single()
-counties = vg.selection.single()
+counties_filter = vg.selection.single()
 
 view = vg.vconcat(
     vg.plot(
@@ -56,16 +56,14 @@ view = vg.vconcat(
     vg.vspace(10),
     vg.plot(
         vg.geo(
-            counties_data,
+            counties,
             channels=vg.channels(id="id"),
             stroke="currentColor",
             stroke_width=0.25,
         ),
-        vg.region(channels=["id"], bind=counties),
-        vg.highlight(by=counties),
+        vg.region(channels=["id"], bind=counties_filter),
+        vg.highlight(by=counties_filter),
         vg.margin(0),
         vg.projection_type("albers"),
     ),
 )
-
-spec = vg.spec(view, data={"counties": counties_data})

@@ -50,7 +50,6 @@ jobs:
         run: |
           pnpm run docs:examples
           git diff --exit-code -- specs/esm specs/json specs/ts specs/python docs/public/specs docs/examples
-          git diff --exit-code -- specs/esm specs/json specs/ts specs/python docs/public/specs docs/examples
 
   browser:
     name: Test in Browser

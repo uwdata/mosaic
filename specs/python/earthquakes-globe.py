@@ -32,5 +32,3 @@ view = vg.vconcat(
         vg.projection_rotate(rotate),
     ),
 )
-
-spec = vg.spec(view)

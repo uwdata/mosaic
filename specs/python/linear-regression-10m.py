@@ -45,5 +45,3 @@ view = vg.vconcat(
         vg.color_domain("Fixed"),
     ),
 )
-
-spec = vg.spec(view)

@@ -91,5 +91,3 @@ view = vg.hconcat(
         vg.margin_right(1),
     ),
 )
-
-spec = vg.spec(view)

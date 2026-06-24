@@ -135,10 +135,6 @@ view = vg.vconcat(
             vg.margin_bottom(35),
         ),
     ),
-)
-
-spec = vg.spec(
-    view,
     plot_defaults={
         "xTicks": 3,
         "yTicks": 4,
@@ -159,3 +155,5 @@ spec = vg.spec(
         "height": 150,
     },
 )
+
+view

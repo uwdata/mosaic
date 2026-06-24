@@ -36,12 +36,15 @@ def run_spec_file_with_exec(path: Path) -> dict:
     code = compile(path.read_text(encoding="utf-8"), str(path), "exec")
     exec(code, namespace)
 
-    spec = namespace.get("spec")
-    if spec is None:
-        raise AssertionError(f"`{path.name}` must define a top-level `spec` variable")
-    if not hasattr(spec, "to_dict"):
-        raise AssertionError(f"`spec` in `{path.name}` does not expose to_dict()")
-    return spec.to_dict()
+    view = namespace.get("view")
+    if view is None:
+        raise AssertionError(f"`{path.name}` must define a top-level `view` variable")
+    if not hasattr(view, "to_dict"):
+        raise AssertionError(f"`view` in `{path.name}` does not expose to_dict()")
+    # Execute to_dict() within the spec namespace so frame inspection finds the right variables
+    namespace["__view__"] = view
+    exec("__result__ = __view__.to_dict()", namespace)
+    return namespace["__result__"]
 
 
 JSON_EXAMPLES = sorted(path.stem for path in JSON_DIR.glob("*.json"))

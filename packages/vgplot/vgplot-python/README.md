@@ -4,7 +4,7 @@
 
 A Python API for authoring [Mosaic](https://uwdata.github.io/mosaic/) visualizations. Build declarative, interactive plots backed by DuckDB — in notebooks, as JSON specs, or as part of a data pipeline.
 
-`vgplot` produces Mosaic specification objects that can be rendered with [`mosaic-widget`](https://pypi.org/project/mosaic-widget/) or exported to JSON for use in a browser.
+`vgplot` produces Mosaic `View` objects that can be rendered with [`mosaic-widget`](https://pypi.org/project/mosaic-widget/) or exported to JSON for use in a browser. Data sources and parameters defined as local variables are automatically discovered at render time.
 
 ## Installation
 
@@ -22,7 +22,7 @@ pip install mosaic-widget
 
 ### File-based data
 
-Load data from a file using `vg.parquet()`, `vg.csv()`, or `vg.table()`, pass it directly to a mark, then call `vg.spec()` and `spec.show()`:
+Load data from a file using `vg.parquet()`, `vg.csv()`, or `vg.table()`, pass it directly to a mark, then call `view.show()` or `view`:
 
 ```python
 import vgplot as vg
@@ -35,8 +35,7 @@ view = vg.plot(
     vg.height(400),
 )
 
-spec = vg.spec()
-spec.show()
+view
 ```
 
 ### Interactive selections
@@ -70,8 +69,7 @@ view = vg.vconcat(
     ),
 )
 
-spec = vg.spec()
-spec.show()
+view
 ```
 
 ### Scalar params and input widgets
@@ -93,25 +91,26 @@ view = vg.vconcat(
     ),
 )
 
-spec = vg.spec()
-spec.show()
+view
 ```
 
 ## Key concepts
 
 | Concept | Python API |
 |---|---|
-| File-based data | `vg.parquet(path)`, `vg.csv(path)`, `vg.table(query)` |
+| File-based data | `vg.parquet(path)`, `vg.csv(path)`, `vg.spatial(path)`, `vg.table(query)` |
 | Mark | `vg.dot(...)`, `vg.bar_y(...)`, `vg.area_y(...)`, `vg.line_y(...)`, … |
+| Aggregation / transform | `vg.count()`, `vg.bin("col")`, `vg.avg("col")`, `vg.sum("col")`, … |
+| SQL expression | `vg.sql("expr")` — use `$param` to interpolate a param, e.g. `vg.sql("v + $bias")` |
 | Plot attributes | `vg.width(n)`, `vg.height(n)`, `vg.x_label("…")`, `vg.color_scheme("…")`, … |
+| Interactor | `vg.interval_x(...)`, `vg.interval_xy(...)`, `vg.region(...)`, `vg.highlight(...)`, … |
 | Layout | `vg.vconcat(...)`, `vg.hconcat(...)`, `vg.vspace(n)`, `vg.hspace(n)` |
 | Crossfilter selection | `vg.selection.crossfilter()` |
 | Intersect / union selection | `vg.selection.intersect()`, `vg.selection.union()` |
 | Scalar param | `vg.param(value)` |
 | Input widgets | `vg.slider(...)`, `vg.menu(...)`, `vg.select(...)`, `vg.checkbox(...)` |
 | Named data reference | `vg.source("table_name")` |
-| Assemble | `vg.spec()` — auto-detects view, params, and data from local variables |
-| Render | `spec.show()` or `spec` as last cell expression computational notebooks |
+| Render | `view.show()` or `view` as last cell expression in notebooks |
 
 Option names match the [vgplot API reference](https://uwdata.github.io/mosaic/api/), but in snake_case. For example, `xDomain` → `x_domain`, `colorScheme` → `color_scheme`, `filterBy` → `filter_by`.
 
@@ -119,11 +118,11 @@ Any mark or directive not listed above is also accessible by its snake_case name
 
 ## Exporting specs
 
-`Spec.to_dict()` returns a plain Python dictionary. `Spec.to_json()` returns a JSON string:
+`view.to_dict()` returns a plain Python dictionary. `view.to_json()` returns a JSON string:
 
 ```python
 from pprint import pprint
 
-pprint(spec.to_dict())
-print(spec.to_json(indent=2))
+pprint(view.to_dict())
+print(view.to_json(indent=2))
 ```

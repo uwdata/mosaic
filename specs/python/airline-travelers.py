@@ -21,5 +21,3 @@ view = vg.plot(
     vg.y_label("↑ Travelers per day"),
     vg.y_tick_format("s"),
 )
-
-spec = vg.spec(view)

@@ -70,5 +70,3 @@ view = vg.hconcat(
         ),
     )
 )
-
-spec = vg.spec(view)

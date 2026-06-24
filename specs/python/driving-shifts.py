@@ -18,5 +18,3 @@ view = vg.plot(
     vg.x_label("Miles driven (per person-year)"),
     vg.y_label("Cost of gasoline ($ per gallon)"),
 )
-
-spec = vg.spec(view)

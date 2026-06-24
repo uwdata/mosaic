@@ -36,7 +36,8 @@ function buildArgs(opts, ctx, keyMap = null) {
 export function astToPython(ast) {
   const ctx = new PythonCodegenContext();
   const json = ast.toJSON();
-  const { meta, config, data = {}, params = {}, plotDefaults, ...view } = json;
+  const { config, data = {}, params = {}, plotDefaults, ...view } = json;
+  delete view.meta;
 
   // Pre-compute data variable names - suffix with _data when a param has the same name
   const paramNameSet = new Set(Object.keys(params));
@@ -63,25 +64,17 @@ export function astToPython(ast) {
   }
   if (paramEntries.length) ctx.blank();
 
-  // view / layout / plot
-  ctx.emit(`view = ${emitComponent(view, ctx)}`);
-  ctx.blank();
-
-  // spec call - pass all top-level fields explicitly so vg.spec() is self-contained
-  const specArgs = ['view'];
-
+  // view / layout / plot — pass plotDefaults, renamed data, and config as kwargs on the outermost call
+  const topKwargs = [];
   // Only pass data= for entries whose Python variable was renamed to avoid a param name clash.
-  // All other data sources and params are discovered automatically via frame inspection in spec().
   const renamedData = dataEntries.filter(([name]) => ctx.dataVar(name) !== ctx.ident(name));
   if (renamedData.length) {
     const dataKwargs = renamedData.map(([name]) => `${JSON.stringify(name)}: ${ctx.dataVar(name)}`);
-    specArgs.push(`data={${dataKwargs.join(', ')}}`);
+    topKwargs.push(`data={${dataKwargs.join(', ')}}`);
   }
-
-  if (plotDefaults) specArgs.push(`plot_defaults=${literal(plotDefaults)}`);
-  if (config) specArgs.push(`config=${literal(config)}`);
-
-  ctx.emit(`spec = vg.spec(${specArgs.join(', ')})`);
+  if (plotDefaults) topKwargs.push(`plot_defaults=${literal(plotDefaults)}`);
+  if (config) topKwargs.push(`config=${literal(config)}`);
+  ctx.emit(`view = ${emitComponent(view, ctx, topKwargs)}`);
 
   return ctx.toString();
 }
@@ -100,26 +93,29 @@ function emitParamDef(name, def, ctx) {
   return `${name} = vg.param(${literal(def, 0, ctx)})`;
 }
 
-/** @param {PythonCodegenContext} ctx */
-function emitComponent(node, ctx) {
+/** @param {PythonCodegenContext} ctx @param {string[]} topKwargs */
+function emitComponent(node, ctx, topKwargs = []) {
   if (!node || typeof node !== 'object') return literal(node);
   if (Array.isArray(node)) {
     const body = node.map(n => indentLine(emitComponent(n, ctx), 1)).join(',\n');
     return '[\n' + body + '\n]';
   }
+  const kwargSuffix = topKwargs.length
+    ? ',\n' + topKwargs.map(k => indentLine(k, 1)).join(',\n')
+    : '';
   if (node.vconcat) {
     const body = node.vconcat.map(n => indentLine(emitComponent(n, ctx), 1)).join(',\n');
-    return `vg.vconcat(\n${body}\n)`;
+    return `vg.vconcat(\n${body}${kwargSuffix}\n)`;
   }
   if (node.hconcat) {
     const body = node.hconcat.map(n => indentLine(emitComponent(n, ctx), 1)).join(',\n');
-    return `vg.hconcat(\n${body}\n)`;
+    return `vg.hconcat(\n${body}${kwargSuffix}\n)`;
   }
   if (node.vspace !== undefined) return `vg.vspace(${literal(node.vspace, 0, ctx)})`;
   if (node.hspace !== undefined) return `vg.hspace(${literal(node.hspace, 0, ctx)})`;
   if (node.input) return emitInput(node, ctx);
   if (node.legend) return emitLegend(node, ctx);
-  if (node.plot) return emitPlotObject(node, ctx);
+  if (node.plot) return emitPlotObject(node, ctx, topKwargs);
   return literal(node, 0, ctx);
 }
 
@@ -148,8 +144,8 @@ function emitLegend(node, ctx) {
   return `vg.${camelCaseToSnake(legend)}_legend(${args.join(', ')})`;
 }
 
-/** @param {PythonCodegenContext} ctx */
-function emitPlotObject(view, ctx) {
+/** @param {PythonCodegenContext} ctx @param {string[]} topKwargs */
+function emitPlotObject(view, ctx, topKwargs = []) {
   const items = [];
   for (const mark of view.plot || []) {
     if (mark.mark) items.push(emitMark(mark, ctx));
@@ -161,6 +157,7 @@ function emitPlotObject(view, ctx) {
     if (k === 'plot' || v === undefined) continue;
     items.push(emitDirective(k, v, ctx));
   }
+  items.push(...topKwargs);
   const body = items.map(s => indentLine(s, 1)).join(',\n');
   return `vg.plot(\n${body}\n)`;
 }
@@ -385,6 +382,7 @@ export class PythonCodegenContext {
     this.depth = 0;
     this.identMap = new Map();
     this.dataVarMap = new Map(); // originalDataName -> pythonVarName
+    this.defaultAttrsVar = ''; // variable name for shared plot default attributes
   }
   emit(line) { this.lines.push(this.tab() + line); }
   blank() {

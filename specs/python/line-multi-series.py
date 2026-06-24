@@ -44,5 +44,3 @@ view = vg.plot(
     vg.style("overflow: visible;"),
     vg.width(680),
 )
-
-spec = vg.spec(view)

@@ -22,5 +22,3 @@ view = vg.vconcat(
         vg.projection_type("albers"),
     )
 )
-
-spec = vg.spec(view)

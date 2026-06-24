@@ -14,4 +14,4 @@ view = vg.plot(
     vg.color_domain("Fixed"),
 )
 
-spec = vg.spec(view)
+view

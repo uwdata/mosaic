@@ -34,5 +34,3 @@ view = vg.vconcat(
         bind=sign,
     ),
 )
-
-spec = vg.spec(view)

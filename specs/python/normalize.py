@@ -40,5 +40,3 @@ view = vg.plot(
     vg.height(400),
     vg.margin_right(35),
 )
-
-spec = vg.spec(view)

@@ -29,5 +29,3 @@ view = vg.hconcat(
         vg.fy_label(None),
     )
 )
-
-spec = vg.spec(view)

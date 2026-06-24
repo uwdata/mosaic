@@ -75,6 +75,7 @@ view = vg.vconcat(
         vg.width(680),
         vg.height(100),
     ),
+    config={"extensions": "spatial"},
 )
 
-spec = vg.spec(view, config={"extensions": "spatial"})
+view

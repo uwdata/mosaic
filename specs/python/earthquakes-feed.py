@@ -19,5 +19,3 @@ view = vg.plot(
     vg.margin(2),
     vg.projection_type("equirectangular"),
 )
-
-spec = vg.spec(view)

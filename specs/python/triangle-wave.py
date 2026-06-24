@@ -46,5 +46,3 @@ view = vg.vconcat(
         vg.height(150),
     ),
 )
-
-spec = vg.spec(view)
