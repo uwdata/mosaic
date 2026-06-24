@@ -5,7 +5,7 @@ import { Priority } from '../src/QueryManager.js';
 import { voidCache } from '../src/util/cache.js';
 
 describe('QueryConsolidation', () => {
-  async function getConsolidatedQueries(...qs) {
+  async function getConsolidatedQueries(...qs: unknown[]) {
     const consolidated: string[] = [];
     const c = consolidator(q => consolidated.push(q.request.query.toString()), voidCache());
     for(const q of qs) {
