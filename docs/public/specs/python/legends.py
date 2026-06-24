@@ -138,4 +138,3 @@ view = vg.vconcat(
     plot_defaults={"margin": 0, "width": 0, "height": 20},
 )
 
-view

@@ -14,4 +14,3 @@ view = vg.plot(
     vg.color_domain("Fixed"),
 )
 
-view

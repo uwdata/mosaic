@@ -41,4 +41,3 @@ view = vg.plot(
     vg.margin_right(35),
 )
 
-view

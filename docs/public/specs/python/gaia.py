@@ -92,4 +92,3 @@ view = vg.hconcat(
     ),
 )
 
-view

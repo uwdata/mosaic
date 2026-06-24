@@ -30,4 +30,3 @@ view = vg.hconcat(
     )
 )
 
-view

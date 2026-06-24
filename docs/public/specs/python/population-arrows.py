@@ -38,4 +38,3 @@ view = vg.vconcat(
     vg.menu(label="Bend Arrows?", options=[True, False], bind=bend),
 )
 
-view

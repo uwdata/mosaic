@@ -28,4 +28,3 @@ view = vg.plot(
     vg.height(300),
 )
 
-view

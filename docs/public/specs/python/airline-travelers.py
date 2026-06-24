@@ -22,4 +22,3 @@ view = vg.plot(
     vg.y_tick_format("s"),
 )
 
-view

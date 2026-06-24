@@ -20,4 +20,3 @@ view = vg.plot(
     vg.projection_type("equirectangular"),
 )
 
-view
