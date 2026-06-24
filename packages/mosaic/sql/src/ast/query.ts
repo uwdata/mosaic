@@ -467,6 +467,15 @@ export class SelectQuery extends Query {
   }
 
   /**
+   * Set HAVING expressions, replacing any prior expressions.
+   * @param expr Expressions to add.
+   */
+  setHaving(...expr: FilterExpr[]): this {
+    this._having = [];
+    return this.having(...expr);
+  }
+
+  /**
    * Add WINDOW definitions.
    * @param expr Window definitions to add.
    */
@@ -494,6 +503,15 @@ export class SelectQuery extends Query {
   qualify(...expr: FilterExpr[]): this {
     this._qualify = this._qualify.concat(exprList(expr, asVerbatim));
     return this;
+  }
+
+  /**
+   * Set QUALIFY expressions, replacing any prior expressions.
+   * @param expr Expressions to add.
+   */
+  setQualify(...expr: FilterExpr[]): this {
+    this._qualify = [];
+    return this.qualify(...expr);
   }
 }
 
