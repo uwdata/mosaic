@@ -229,7 +229,8 @@ export default defineConfig({
           collapsed: true,
           items: [
             { text: 'Specification Format', link: '/api/spec/format' },
-            { text: 'Parser & Generators', link: '/api/spec/parser-generators' }
+            { text: 'Parser & Generators', link: '/api/spec/parser-generators' },
+            { text: 'Schema Reference', link: '/api/spec/schema-reference' }
           ]
         },
         {

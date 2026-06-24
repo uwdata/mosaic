@@ -67,3 +67,9 @@ To launch a local DuckDB server:
 
 * Install [hatch](https://hatch.pypa.io/latest/install/), if not already present.
 * Run `pnpm server` to launch the [`duckdb-server`](/server/). This runs the server in development mode, so the server will restart if you change its code.
+
+<llm-only>
+Common Mistakes:
+
+Hallucination of functions and wrong inputs are a very common mistake. Make sure to reference the schema reference for input information and valid functions.
+<\llm-only>
