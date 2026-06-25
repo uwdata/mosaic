@@ -132,9 +132,12 @@ jobs:
           uv run --group test ty check
           uv run --group test pytest --cov-report=term-missing --color=yes --cov=mosaic_widget
 
-      - name: Test vgplot Python round-trips
+      - name: Build and test vgplot Python
         run: |
-          uv run --package vgplot pytest packages/vgplot/vgplot-python/test/test_full_round_trip.py --color=yes
+          cd packages/vgplot/vgplot-python
+
+          uv build
+          uv run --group dev pytest --cov-report=term-missing --color=yes --cov=vgplot
           
   rust:
     name: Test in Rust
