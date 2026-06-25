@@ -35,10 +35,10 @@ path = "package.json"
 pattern = "\"version\": \"(?P<version>.+?)\""
 
 [tool.hatch.build.targets.wheel]
-packages = ["src/vgplot"]
+packages = ["vgplot"]
 
 # https://mypy.readthedocs.io/en/stable/config_file.html
 [tool.mypy]
-files = "src/**/*.py"
+files = "vgplot/**/*.py"
 strict = false
 ignore_missing_imports = true

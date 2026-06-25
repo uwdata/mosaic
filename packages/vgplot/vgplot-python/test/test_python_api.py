@@ -4,8 +4,8 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[4]
-VGPLOT_SRC = ROOT / "packages" / "vgplot" / "vgplot-python" / "src"
-for p in (VGPLOT_SRC, ROOT):
+VGPLOT_PKG = ROOT / "packages" / "vgplot" / "vgplot-python"
+for p in (VGPLOT_PKG, ROOT):
     if str(p) not in sys.path:
         sys.path.insert(0, str(p))
 

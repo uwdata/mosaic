@@ -16,9 +16,9 @@ JSON_DIR = SPEC_DIR / "json"
 ESM_DIR = SPEC_DIR / "esm"
 PYTHON_DIR = SPEC_DIR / "python"
 
-VGPLOT_SRC = ROOT / "packages" / "vgplot" / "vgplot-python" / "src"
+VGPLOT_PKG = ROOT / "packages" / "vgplot" / "vgplot-python"
 
-for p in (VGPLOT_SRC, ROOT):
+for p in (VGPLOT_PKG, ROOT):
     if str(p) not in sys.path:
         sys.path.insert(0, str(p))
 
