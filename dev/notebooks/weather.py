@@ -33,7 +33,7 @@ def _(click, colors, domain, range, vg, weather):
         vg.hconcat(
             vg.plot(
                 vg.dot(
-                    data="weather",
+                    weather,
                     filter_by=click,
                     x=vg.date_month_day("date"),
                     y="temp_max",
@@ -41,7 +41,9 @@ def _(click, colors, domain, range, vg, weather):
                     r="precipitation",
                     fill_opacity=0.7,
                 ),
-                vg.interval_x(bind=range, brush=vg.brush(fill="none", stroke="#888")),
+                vg.interval_x(
+                    bind=range, brush=vg.brush(fill="none", stroke="#888")
+                ),
                 vg.highlight(by=range, fill="#ccc", fill_opacity=0.2),
                 vg.color_legend(bind=click, columns=1),
                 vg.xy_domain("Fixed"),
@@ -55,9 +57,11 @@ def _(click, colors, domain, range, vg, weather):
             )
         ),
         vg.plot(
-            vg.bar_x(weather, x=vg.count(), y="weather", fill="#ccc", fill_opacity=0.2),
             vg.bar_x(
-                data="weather",
+                weather, x=vg.count(), y="weather", fill="#ccc", fill_opacity=0.2
+            ),
+            vg.bar_x(
+                weather,
                 filter_by=range,
                 x=vg.count(),
                 y="weather",
@@ -74,12 +78,6 @@ def _(click, colors, domain, range, vg, weather):
         ),
     )
     return (view,)
-
-
-@app.cell
-def _(view):
-    view
-    return
 
 
 @app.cell
