@@ -310,6 +310,9 @@ function emitInputValue(key, v, ctx) {
     });
     return '[' + items.join(', ') + ']';
   }
+  if (key === 'from' && typeof v === 'string' && ctx.dataVarMap.has(v)) {
+    return ctx.dataVar(v);
+  }
   return literal(v, 0, ctx);
 }
 
@@ -323,9 +326,10 @@ function emitDataRef(data, ctx) {
   if (Array.isArray(data)) return literal(data, 0, ctx);
   if (data && typeof data === 'object' && data.from) {
     const { from: name, ...rest } = data;
-    if (!Object.keys(rest).length) return literal(name, 0, ctx);
+    const nameRef = ctx.dataVarMap.has(name) ? ctx.dataVar(name) : literal(name, 0, ctx);
+    if (!Object.keys(rest).length) return nameRef;
     const extraArgs = buildArgs(rest, ctx);
-    return `vg.source(${[literal(name, 0, ctx), ...extraArgs].join(', ')})`;
+    return `vg.source(${[nameRef, ...extraArgs].join(', ')})`;
   }
   return literal(data, 0, ctx);
 }

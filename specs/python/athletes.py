@@ -9,13 +9,13 @@ hover = vg.selection.intersect(empty=True)
 view = vg.hconcat(
     vg.vconcat(
         vg.hconcat(
-            vg.menu(label="Sport", bind=category, source="athletes", column="sport"),
-            vg.menu(label="Sex", bind=category, source="athletes", column="sex"),
+            vg.menu(label="Sport", bind=category, source=athletes, column="sport"),
+            vg.menu(label="Sex", bind=category, source=athletes, column="sex"),
             vg.search(
                 label="Name",
                 filter_by=category,
                 bind=query,
-                source="athletes",
+                source=athletes,
                 column="name",
                 type="contains",
             ),
@@ -23,7 +23,7 @@ view = vg.hconcat(
         vg.vspace(10),
         vg.plot(
             vg.dot(
-                data="athletes",
+                data=athletes,
                 filter_by=query,
                 x="weight",
                 y="height",
@@ -32,11 +32,11 @@ view = vg.hconcat(
                 opacity=0.1,
             ),
             vg.regression_y(
-                data="athletes", filter_by=query, x="weight", y="height", stroke="sex"
+                data=athletes, filter_by=query, x="weight", y="height", stroke="sex"
             ),
             vg.interval_xy(bind=query, brush=vg.brush(fill_opacity=0, stroke="black")),
             vg.dot(
-                data="athletes",
+                data=athletes,
                 filter_by=hover,
                 x="weight",
                 y="height",
@@ -53,7 +53,7 @@ view = vg.hconcat(
         ),
         vg.vspace(5),
         vg.table_input(
-            source="athletes",
+            source=athletes,
             max_width=570,
             height=250,
             filter_by=query,

@@ -6,5 +6,5 @@ weatherByYear = vg.table(
 )
 
 view = vg.table_input(
-    source="weatherByYear", align={"year": "left"}, width={"year": 80}, height=180
+    source=weatherByYear, align={"year": "left"}, width={"year": 80}, height=180
 )

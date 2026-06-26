@@ -46,6 +46,8 @@ class Mark:
                 data_dict: Any = {"from": self.data}
             elif isinstance(self.data, FromRef):
                 data_dict = dict(self.data.to_dict())
+            elif isinstance(self.data, DataDef):
+                data_dict = {"from": self.data}
             else:
                 data_dict = self.data
             if data_opts and isinstance(data_dict, dict):
@@ -63,7 +65,7 @@ def encode_value(
 ) -> Any:
     if isinstance(v, DataDef):
         if data_names and id(v) in data_names:
-            return {"from": data_names[id(v)]}
+            return data_names[id(v)]
         return v
     if isinstance(v, _ParamBase):
         # Resolve to "$name" ref using the reverse lookup table

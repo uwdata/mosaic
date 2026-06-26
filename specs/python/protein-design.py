@@ -10,26 +10,23 @@ scheme = vg.param("observable10")
 
 view = vg.vconcat(
     vg.hconcat(
-        vg.menu(source="proteins", column="partial_t", label="Partial t", bind=query),
-        vg.menu(source="proteins", column="noise", label="Noise", bind=query),
+        vg.menu(source=proteins, column="partial_t", label="Partial t", bind=query),
+        vg.menu(source=proteins, column="noise", label="Noise", bind=query),
         vg.menu(
-            source="proteins",
+            source=proteins,
             column="gradient_decay_function",
             label="Gradient Decay",
             bind=query,
         ),
         vg.menu(
-            source="proteins",
-            column="gradient_scale",
-            label="Gradient Scale",
-            bind=query,
+            source=proteins, column="gradient_scale", label="Gradient Scale", bind=query
         ),
     ),
     vg.vspace("1.5em"),
     vg.hconcat(
         vg.plot(
             vg.rect_y(
-                data="proteins",
+                data=proteins,
                 filter_by=query,
                 x=vg.bin("plddt_total", steps=60),
                 y=vg.count(),
@@ -59,7 +56,7 @@ view = vg.vconcat(
         vg.plot(
             vg.frame(stroke="#ccc"),
             vg.raster(
-                data="proteins",
+                data=proteins,
                 filter_by=query,
                 x="plddt_total",
                 y="pae_interaction",
@@ -70,7 +67,7 @@ view = vg.vconcat(
                 bind=query, brush=vg.brush(stroke="currentColor", fill="transparent")
             ),
             vg.dot(
-                data="proteins",
+                data=proteins,
                 filter_by=point,
                 x="plddt_total",
                 y="pae_interaction",
@@ -95,7 +92,7 @@ view = vg.vconcat(
         ),
         vg.plot(
             vg.rect_x(
-                data="proteins",
+                data=proteins,
                 filter_by=query,
                 x=vg.count(),
                 y=vg.bin("pae_interaction", steps=60),
@@ -122,7 +119,7 @@ view = vg.vconcat(
     vg.table_input(
         bind=point,
         filter_by=query,
-        source="proteins",
+        source=proteins,
         columns=[
             "version",
             "pae_interaction",

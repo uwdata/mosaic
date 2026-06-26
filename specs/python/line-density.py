@@ -20,7 +20,7 @@ view = vg.vconcat(
     vg.vspace(10),
     vg.plot(
         vg.dense_line(
-            data="stocks_after_2006",
+            data=stocks_after_2006,
             filter_by=brush,
             x="Date",
             y="Close",

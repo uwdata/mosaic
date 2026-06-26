@@ -15,7 +15,7 @@ view = vg.vconcat(
     vg.vspace(5),
     vg.plot(
         vg.line_y(
-            data="wave",
+            data=wave,
             filter_by=brush,
             x="time_stamp",
             y="power",
@@ -31,7 +31,7 @@ view = vg.vconcat(
     vg.vspace(5),
     vg.plot(
         vg.line_y(
-            data="wave",
+            data=wave,
             filter_by=brush,
             optimize=False,
             x="time_stamp",

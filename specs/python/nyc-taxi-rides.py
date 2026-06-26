@@ -17,7 +17,7 @@ filter = vg.selection.crossfilter()
 view = vg.vconcat(
     vg.hconcat(
         vg.plot(
-            vg.raster(data="trips", filter_by=filter, x="px", y="py", bandwidth=0),
+            vg.raster(data=trips, filter_by=filter, x="px", y="py", bandwidth=0),
             vg.interval_xy(bind=filter),
             vg.text(
                 data=[
@@ -42,7 +42,7 @@ view = vg.vconcat(
         ),
         vg.hspace(10),
         vg.plot(
-            vg.raster(data="trips", filter_by=filter, x="dx", y="dy", bandwidth=0),
+            vg.raster(data=trips, filter_by=filter, x="dx", y="dy", bandwidth=0),
             vg.interval_xy(bind=filter),
             vg.text(
                 data=[

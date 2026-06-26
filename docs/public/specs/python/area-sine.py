@@ -6,7 +6,7 @@ brush = vg.selection.intersect()
 
 view = vg.vconcat(
     vg.plot(
-        vg.area_y(data="wave", filter_by=brush, x="time_stamp", y="power"),
+        vg.area_y(data=wave, filter_by=brush, x="time_stamp", y="power"),
         vg.y_domain("Fixed"),
         vg.color_domain("Fixed"),
         vg.x_label(None),
@@ -16,7 +16,7 @@ view = vg.vconcat(
     vg.vspace(5),
     vg.plot(
         vg.area_y(
-            data="wave", filter_by=brush, optimize=False, x="time_stamp", y="power"
+            data=wave, filter_by=brush, optimize=False, x="time_stamp", y="power"
         ),
         vg.y_domain("Fixed"),
         vg.color_domain("Fixed"),
@@ -26,7 +26,7 @@ view = vg.vconcat(
     ),
     vg.vspace(10),
     vg.plot(
-        vg.area_y(data="wave", optimize=False, x="time_stamp", y="power"),
+        vg.area_y(data=wave, optimize=False, x="time_stamp", y="power"),
         vg.interval_x(bind=brush),
         vg.y_domain("Fixed"),
         vg.width(680),

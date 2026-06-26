@@ -13,7 +13,7 @@ view = vg.hconcat(
     vg.vconcat(
         vg.plot(
             vg.raster(
-                data="gaia",
+                data=gaia,
                 filter_by=brush,
                 x="u",
                 y="v",
@@ -34,7 +34,7 @@ view = vg.hconcat(
         vg.hconcat(
             vg.plot(
                 vg.rect_y(
-                    data="gaia",
+                    data=gaia,
                     filter_by=brush,
                     x=vg.bin("phot_g_mean_mag"),
                     y=vg.count(),
@@ -51,7 +51,7 @@ view = vg.hconcat(
             ),
             vg.plot(
                 vg.rect_y(
-                    data="gaia",
+                    data=gaia,
                     filter_by=brush,
                     x=vg.bin("parallax"),
                     y=vg.count(),
@@ -71,7 +71,7 @@ view = vg.hconcat(
     vg.hspace(10),
     vg.plot(
         vg.raster(
-            data="gaia",
+            data=gaia,
             filter_by=brush,
             x="bp_rp",
             y="phot_g_mean_mag",

@@ -9,7 +9,7 @@ brush = vg.selection.crossfilter()
 view = vg.vconcat(
     vg.plot(
         vg.rect_y(
-            data="flights10m",
+            data=flights10m,
             filter_by=brush,
             x=vg.bin("delay"),
             y=vg.count(),
@@ -26,7 +26,7 @@ view = vg.vconcat(
     ),
     vg.plot(
         vg.rect_y(
-            data="flights10m",
+            data=flights10m,
             filter_by=brush,
             x=vg.bin("time"),
             y=vg.count(),
@@ -43,7 +43,7 @@ view = vg.vconcat(
     ),
     vg.plot(
         vg.rect_y(
-            data="flights10m",
+            data=flights10m,
             filter_by=brush,
             x=vg.bin("distance"),
             y=vg.count(),

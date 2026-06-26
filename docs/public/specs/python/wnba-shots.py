@@ -11,9 +11,9 @@ binWidth = vg.param(18)
 
 view = vg.vconcat(
     vg.hconcat(
-        vg.menu(source="shots", column="team_name", bind=filter, label="Team"),
+        vg.menu(source=shots, column="team_name", bind=filter, label="Team"),
         vg.menu(
-            source="shots",
+            source=shots,
             column="athlete_name",
             filter_by=filter,
             bind=filter,
@@ -25,7 +25,7 @@ view = vg.vconcat(
         vg.frame(stroke_opacity=0.5),
         vg.hexgrid(bin_width=binWidth, stroke_opacity=0.05),
         vg.hexbin(
-            data="shots",
+            data=shots,
             filter_by=filter,
             bin_width=binWidth,
             x="x_position",

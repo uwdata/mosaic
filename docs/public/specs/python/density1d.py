@@ -9,7 +9,7 @@ view = vg.vconcat(
     vg.slider(label="Bandwidth (σ)", bind=bandwidth, min=0.1, max=100, step=0.1),
     vg.plot(
         vg.density_y(
-            data="flights",
+            data=flights,
             filter_by=brush,
             x="delay",
             fill="#888",
@@ -25,7 +25,7 @@ view = vg.vconcat(
     ),
     vg.plot(
         vg.density_y(
-            data="flights",
+            data=flights,
             filter_by=brush,
             x="distance",
             fill="#888",

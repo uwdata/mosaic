@@ -6,12 +6,12 @@ query = vg.selection.intersect()
 
 view = vg.vconcat(
     vg.menu(
-        label="Sport", bind=query, source="athletes", column="sport", value="aquatics"
+        label="Sport", bind=query, source=athletes, column="sport", value="aquatics"
     ),
     vg.vspace(10),
     vg.plot(
         vg.bar_x(
-            data="athletes",
+            data=athletes,
             filter_by=query,
             x=vg.sum("gold"),
             y="nationality",

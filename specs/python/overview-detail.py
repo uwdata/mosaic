@@ -12,7 +12,7 @@ view = vg.vconcat(
         vg.height(200),
     ),
     vg.plot(
-        vg.area_y(data="walk", filter_by=brush, x="t", y="v", fill="steelblue"),
+        vg.area_y(data=walk, filter_by=brush, x="t", y="v", fill="steelblue"),
         vg.y_domain("Fixed"),
         vg.width(680),
         vg.height(200),

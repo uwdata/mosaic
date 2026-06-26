@@ -11,7 +11,7 @@ view = vg.vconcat(
     vg.hconcat(
         vg.plot(
             vg.dot(
-                data="weather",
+                data=weather,
                 filter_by=click,
                 x=vg.date_month_day("date"),
                 y="temp_max",
@@ -35,7 +35,7 @@ view = vg.vconcat(
     vg.plot(
         vg.bar_x(weather, x=vg.count(), y="weather", fill="#ccc", fill_opacity=0.2),
         vg.bar_x(
-            data="weather", filter_by=range, x=vg.count(), y="weather", fill="weather"
+            data=weather, filter_by=range, x=vg.count(), y="weather", fill="weather"
         ),
         vg.toggle_y(bind=click),
         vg.highlight(by=click),

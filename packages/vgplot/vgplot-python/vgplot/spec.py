@@ -14,6 +14,8 @@ def _collect_params(node: Any) -> list[_ParamBase]:
     """Recursively collect all _ParamBase instances in a view tree."""
     if isinstance(node, _ParamBase):
         return [node]
+    if isinstance(node, View):
+        return _collect_params(node._view)
     if isinstance(node, dict):
         found = []
         for v in node.values():
@@ -31,6 +33,8 @@ def _collect_datadefs(node: Any) -> list[DataDef]:
     """Recursively collect all DataDef instances in a view tree."""
     if isinstance(node, DataDef):
         return [node]
+    if isinstance(node, View):
+        return _collect_datadefs(node._view)
     if isinstance(node, dict):
         found = []
         for v in node.values():
