@@ -1,0 +1,93 @@
+import vgplot as vg
+
+gaia = vg.table(
+    "-- compute u and v with natural earth projection\nWITH prep AS (\n  SELECT\n    radians((-l + 540) % 360 - 180) AS lambda,\n    radians(b) AS phi,\n    asin(sqrt(3)/2 * sin(phi)) AS t,\n    t^2 AS t2,\n    t2^3 AS t6,\n    *\n  FROM 'https://pub-1da360b43ceb401c809f68ca37c7f8a4.r2.dev/data/gaia-5m.parquet'\n  WHERE parallax BETWEEN -5 AND 20 AND phot_g_mean_mag IS NOT NULL AND bp_rp IS NOT NULL\n)\nSELECT\n  (1.340264 * \"lambda\" * cos(t)) / (sqrt(3)/2 * (1.340264 + (-0.081106 * 3 * t2) + (t6 * (0.000893 * 7 + 0.003796 * 9 * t2)))) AS u,\n  t * (1.340264 + (-0.081106 * t2) + (t6 * (0.000893 + 0.003796 * t2))) AS v,\n  * EXCLUDE('t', 't2', 't6')\nFROM prep"
+)
+
+brush = vg.selection.crossfilter()
+bandwidth = vg.param(0)
+pixelSize = vg.param(2)
+scaleType = vg.param("sqrt")
+
+view = vg.hconcat(
+    vg.vconcat(
+        vg.plot(
+            vg.raster(
+                data=gaia,
+                filter_by=brush,
+                x="u",
+                y="v",
+                fill="density",
+                bandwidth=bandwidth,
+                pixel_size=pixelSize,
+            ),
+            vg.interval_xy(pixel_size=2, bind=brush),
+            vg.xy_domain("Fixed"),
+            vg.color_scale(scaleType),
+            vg.color_scheme("viridis"),
+            vg.width(440),
+            vg.height(250),
+            vg.margin_left(25),
+            vg.margin_top(20),
+            vg.margin_right(1),
+        ),
+        vg.hconcat(
+            vg.plot(
+                vg.rect_y(
+                    data=gaia,
+                    filter_by=brush,
+                    x=vg.bin("phot_g_mean_mag"),
+                    y=vg.count(),
+                    fill="steelblue",
+                    inset=0.5,
+                ),
+                vg.interval_x(bind=brush),
+                vg.x_domain("Fixed"),
+                vg.y_scale(scaleType),
+                vg.y_grid(True),
+                vg.width(220),
+                vg.height(120),
+                vg.margin_left(65),
+            ),
+            vg.plot(
+                vg.rect_y(
+                    data=gaia,
+                    filter_by=brush,
+                    x=vg.bin("parallax"),
+                    y=vg.count(),
+                    fill="steelblue",
+                    inset=0.5,
+                ),
+                vg.interval_x(bind=brush),
+                vg.x_domain("Fixed"),
+                vg.y_scale(scaleType),
+                vg.y_grid(True),
+                vg.width(220),
+                vg.height(120),
+                vg.margin_left(65),
+            ),
+        ),
+    ),
+    vg.hspace(10),
+    vg.plot(
+        vg.raster(
+            data=gaia,
+            filter_by=brush,
+            x="bp_rp",
+            y="phot_g_mean_mag",
+            fill="density",
+            bandwidth=bandwidth,
+            pixel_size=pixelSize,
+        ),
+        vg.interval_xy(pixel_size=2, bind=brush),
+        vg.xy_domain("Fixed"),
+        vg.color_scale(scaleType),
+        vg.color_scheme("viridis"),
+        vg.y_reverse(True),
+        vg.width(230),
+        vg.height(370),
+        vg.margin_left(25),
+        vg.margin_top(20),
+        vg.margin_right(1),
+    ),
+)

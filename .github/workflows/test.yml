@@ -38,10 +38,18 @@ jobs:
       - run: pnpm run build
       - run: pnpm run test
 
+      - uses: astral-sh/setup-uv@v7
+        with:
+          version: ">=0.11.0"
+          enable-cache: true
+          cache-dependency-glob: |
+            uv.lock
+            **/pyproject.toml
+
       - name: Verify generated spec outputs do not change
         run: |
           pnpm run docs:examples
-          git diff --exit-code -- specs/esm specs/json specs/ts docs/public/specs docs/examples
+          git diff --exit-code -- specs/esm specs/json specs/ts specs/python docs/public/specs docs/examples
 
   browser:
     name: Test in Browser
@@ -90,7 +98,7 @@ jobs:
 
       - uses: astral-sh/setup-uv@v7
         with:
-          version: ">=0.5.0"
+          version: ">=0.11.0"
           enable-cache: true
           cache-dependency-glob: |
             uv.lock
@@ -124,6 +132,13 @@ jobs:
           uv run --group test ty check
           uv run --group test pytest --cov-report=term-missing --color=yes --cov=mosaic_widget
 
+      - name: Build and test vgplot Python
+        run: |
+          cd packages/vgplot/vgplot-python
+
+          uv build
+          uv run --group dev pytest --cov-report=term-missing --color=yes --cov=vgplot
+          
   rust:
     name: Test in Rust
 

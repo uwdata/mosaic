@@ -18,4 +18,5 @@ A subset of supported mark types.
 <<< @/public/specs/esm/mark-types.js [JavaScript]
 <<< @/public/specs/yaml/mark-types.yaml [YAML]
 <<< @/public/specs/json/mark-types.json [JSON]
+<<< @/public/specs/python/mark-types.py [Python]
 :::

@@ -1,26 +1,39 @@
 #!/usr/bin/env node
+// Prepares all Mosaic example specifications from YAML source files in specs/yaml/.
+// WARNING: overwrites existing test case data and docs!
+//
+// Output:
+//   - Parsed AST JSON, ESM, TypeScript, and Python written to /specs
+//   - YAML, non-parsed JSON, ESM, and Python copied to /docs/public/specs
+//   - Example Markdown pages written to /docs/examples
+//
+// Run: node bin/prepare-examples.js  (or: npm run docs:examples)
 import { basename, extname, join, resolve } from 'node:path';
-import { copyFile, readdir, readFile, writeFile } from 'node:fs/promises';
-import { parseSpec, astToESM } from '@uwdata/mosaic-spec';
+import {
+  copyFile,
+  readdir,
+  readFile,
+  writeFile,
+} from 'node:fs/promises';
+import { parseSpec } from '../packages/vgplot/spec/src/parse-spec.js';
+import { astToESM } from '../packages/vgplot/spec/src/ast-to-esm.js';
+import { astToPython } from '../packages/vgplot/spec/src/ast-to-python.js';
 import { parse } from 'yaml';
-
-// This script prepares all Mosaic example specifications
-// ...AND WILL OVERWRITE EXISTING TEST CASE DATA AND DOCS!
-
-// - Parsed AST JSON and ESM code written to /specs
-// - YAML, non-parsed JSON, and ESM code written to /docs/public/specs
-// - Example Markdown pages written to /docs/examples
 
 const specDir = join('specs', 'yaml');
 const esmTestDir = join('specs', 'esm');
 const jsonTestDir = join('specs', 'json');
 const tsTestDir = join('specs', 'ts');
+const pythonTestDir = join('specs', 'python');
 
 const docsDir = 'docs';
 const yamlDocsDir = join(docsDir, 'public', 'specs', 'yaml');
 const jsonDocsDir = join(docsDir, 'public', 'specs', 'json');
 const esmDocsDir = join(docsDir, 'public', 'specs', 'esm');
 const exampleDir = join(docsDir, 'examples');
+const pythonDocsDir = join(docsDir, 'public', 'specs', 'python');
+
+let hadFailure = false;
 
 const specToTS = spec => {
   return `import { Spec } from '@uwdata/mosaic-spec';
@@ -69,9 +82,14 @@ const files = await Promise.allSettled((await readdir(specDir))
         writeFile(
           resolve(exampleDir, `${base}.md`),
           examplePage(base, spec.meta)
-        )
+        ),
+        // write Python spec to tests
+        writeFile(resolve(pythonTestDir, `${base}.py`), astToPython(ast)),
+        // write Python spec to docs
+        writeFile(resolve(pythonDocsDir, `${base}.py`), astToPython(ast)),
       ]);
     } catch (err) {
+      hadFailure = true;
       console.error(err);
     }
 
@@ -90,7 +108,15 @@ console.log(JSON.stringify(
 // output unsuccessful example errors
 files
   .filter(x => x.status === 'rejected')
-  .forEach(x => console.error(x.reason));
+  .forEach(x => {
+    hadFailure = true;
+    console.error(x.reason);
+  });
+
+// exit non-zero if any spec failed to generate
+if (hadFailure) {
+  process.exit(1);
+}
 
 function examplePage(spec, { title = spec, description, credit } = {}) {
   return `<script setup>
@@ -108,6 +134,7 @@ ${credit ? `\n**Credit**: ${credit}\n` : ''}
 <<< @/public/specs/esm/${spec}.js [JavaScript]
 <<< @/public/specs/yaml/${spec}.yaml [YAML]
 <<< @/public/specs/json/${spec}.json [JSON]
+<<< @/public/specs/python/${spec}.py [Python]
 :::
 `;
 }

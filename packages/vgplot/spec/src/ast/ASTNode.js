@@ -36,4 +36,15 @@ export class ASTNode {
     // @ts-ignore
     return Error('toJSON not implemented');
   }
+
+  /**
+   * Generate Python code for this AST node.
+   * @param {import('../ast-to-python.js').PythonCodegenContext} ctx The Python code generator context.
+   * @returns {string} The generated Python code for the node.
+   */
+  toPython(ctx) { // eslint-disable-line no-unused-vars
+    // @ts-ignore
+    // Default implementation: convert to JSON and return as Python dict literal
+    return JSON.stringify(this.toJSON());
+  }
 }
