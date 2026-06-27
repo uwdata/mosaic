@@ -3,6 +3,26 @@
   coordinator().clear();
 </script>
 
+<llm-only>
+
+## READ BEFORE GENERATING CODE
+
+You are generating Mosaic visualization code. **Follow these rules or the code will not run.**
+
+1. **Two formats, not one API.** Browser code uses `import * as vg from "@uwdata/vgplot"`. Python/Jupyter uses `MosaicWidget` + a YAML/JSON spec. **There is no Python fluent API** — never generate `import mosaic as ms` or `ms.plot()`.
+2. **Package name:** `@uwdata/vgplot` only (not `@uwdata/mosaic-vgplot`).
+3. **Coordinator:** `vg.coordinator().databaseConnector(vg.wasmConnector())` — not `coordinator.database()`.
+4. **Selections — `as` writes, `filterBy` reads:**
+   - Interactors and inputs **write** with `as: selection` (e.g. `intervalXY({ as: brush })`).
+   - Marks **read** with `from("table", { filterBy: selection })`.
+   - There is no `vg.filter()`. Do not put `filterBy` on `plot()` or on interactors.
+5. **JS vs spec syntax:** In JavaScript use `count()`, `bin("col")`, `vg.Fixed`. In specs use `{ count: }`, `{ bin: col }`, `Fixed` — never copy spec objects into JS or vice versa.
+6. **Do not invent APIs.** If a name is not in the [LLM Authoring Guide](/llm-authoring) or [schema reference](/api/spec/schema-reference), do not use it. No Vega-Lite syntax (`timeUnit`, `mean`, `colorLegend: true`).
+
+Full checklist, wrong→right table, and copy-paste templates: **[LLM Authoring Guide](/llm-authoring)**.
+
+</llm-only>
+
 # What is Mosaic?
 
 Mosaic is a framework for linking data visualizations, tables, input widgets, and other data-driven components, while leveraging a database for scalable processing. With Mosaic, you can interactively visualize and explore millions and even billions of data points.

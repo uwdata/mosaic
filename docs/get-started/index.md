@@ -70,7 +70,5 @@ To launch a local DuckDB server:
 
 <llm-only>
 
-### Common Mistakes:
-
-Hallucination of functions and wrong inputs are a very common mistake. Make sure to reference the schema reference and spec-to-js when in doubt.
+Before generating code, read the [LLM Authoring Guide](/llm-authoring). Key rules: `@uwdata/vgplot` only; no Python fluent API; selections use `as` on interactors and `filterBy` on `from()`; no `vg.filter()`.
 </llm-only>

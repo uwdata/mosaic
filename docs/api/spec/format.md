@@ -96,7 +96,7 @@ To refer to a param or selection later in the specification, use a `$`-prefixed 
   "singleSelection": { "select": "single" },
   "unionSelection": { "select": "union" },
   "intersectSelection": { "select": "intersect" },
-  "crossfilterSelection": { "select": "crossfiltter" }
+  "crossfilterSelection": { "select": "crossfilter" }
 }
 ```
 

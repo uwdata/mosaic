@@ -1,3 +1,7 @@
+---
+description: Maps JSON/YAML spec syntax to the JavaScript API. Read the LLM Authoring Guide first for common mistakes and invalid APIs.
+---
+
 # Spec Format vs JavaScript API
 
 Mosaic supports two ways to author vgplot visualizations:
@@ -209,13 +213,32 @@ vg.vconcat(
 
 ## Common mistakes
 
-Most errors when translating Mosaic docs into JavaScript come from mixing **spec format** with the **JS API**.
+::: warning Read this first
+The full checklist, invalid-API table, and canonical examples are in the **[LLM Authoring Guide](/llm-authoring)**. That page is included at the top of `llms.txt` and is the first section in the documentation index for code generation.
+:::
 
-- **`{ count: null }` in JavaScript** — valid in JSON/YAML specs only. In JS use `count()`, `sum("col")`, `bin("col")`, etc.
-- **`filterBy` on `plot()`** — `filterBy` belongs on `from(table, { filterBy: selection })`, not as a plot option.
-- **`"Fixed"` strings in JavaScript** — spec attributes like `"colorDomain": "Fixed"` map to `colorDomain(Fixed)` using the exported sentinel, not a string.
+Most errors come from **mixing spec format with the JavaScript API**, **inventing APIs**, or **wiring selections incorrectly**.
+
+### Selection wiring
+
+- **`intervalXY({ filterBy: brush })`** — wrong. Interactors **write** with `as`: `intervalXY({ as: brush })`.
+- **`vg.filter(brush)`** — does not exist. Marks **read** with `from("table", { filterBy: brush })`.
+- **`filterBy` on `plot()`** — wrong. Put `filterBy` on `from()`, not on `plot()`.
+
+### Spec vs JavaScript syntax
+
+- **`{ count: null }` or `{ count: true }` in JavaScript** — use `count()` in JS; in specs use `{ count: }` or `{ count: null }`, not `true`.
+- **`"Fixed"` strings in JavaScript** — use the `Fixed` sentinel: `xDomain(Fixed)`, not `"Fixed"`.
 - **SQL expressions as plain strings** — in specs use `{ "sql": "v + $param" }`; in JS use `` sql`v + ${param}` ``.
-- **Bare filenames with DuckDB-WASM** — paths like `"data.csv"` fail in the browser. Pass a full HTTP URL and set `forceFullHTTPReads: true` on the WASM connector:
+- **Vega-Lite / Altair syntax in specs** — `timeUnit`, `mean`, `colorLegend: true` are not Mosaic. Use `{ dateMonth: date }`, `{ avg: col }`, `- legend: color`.
+
+### Python
+
+- **No fluent Python API** — do not generate `import mosaic as ms` or `ms.plot()`. Use [`MosaicWidget`](/jupyter/) with a YAML/JSON spec.
+
+### DuckDB-WASM and environment
+
+- **Bare filenames with DuckDB-WASM** — paths like `"data.csv"` fail in the browser. Pass a full HTTP URL and set `forceFullHTTPReads: true`:
 
   ```js
   vg.coordinator().databaseConnector(vg.wasmConnector({
@@ -226,9 +249,10 @@ Most errors when translating Mosaic docs into JavaScript come from mixing **spec
   );
   ```
 
-- **Running browser code with Node** — vgplot with `wasmConnector()` requires a browser (or bundler such as Vite). Use [`MosaicWidget`](/jupyter/) for Python/Jupyter instead.
+- **Wrong package or coordinator** — `@uwdata/vgplot`, not `@uwdata/mosaic-vgplot`; `databaseConnector()`, not `database()`.
+- **Running browser code with Node** — vgplot with `wasmConnector()` requires a browser (or bundler such as Vite).
 
-When in doubt, check the [schema reference](/api/spec/schema-reference) for spec syntax.
+When in doubt, check the [LLM Authoring Guide](/llm-authoring) and [schema reference](/api/spec/schema-reference).
 
 ## When to use which format
 
