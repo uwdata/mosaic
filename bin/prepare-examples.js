@@ -54,6 +54,7 @@ const files = await Promise.allSettled((await readdir(specDir))
     const spec = parse(text);
     const ast = parseSpec(spec);
     const code = astToESM(ast);
+    const python = astToPython(ast);
 
     try {
       await Promise.all([
@@ -84,9 +85,9 @@ const files = await Promise.allSettled((await readdir(specDir))
           examplePage(base, spec.meta)
         ),
         // write Python spec to tests
-        writeFile(resolve(pythonTestDir, `${base}.py`), astToPython(ast)),
+        writeFile(resolve(pythonTestDir, `${base}.py`), python),
         // write Python spec to docs
-        writeFile(resolve(pythonDocsDir, `${base}.py`), astToPython(ast)),
+        writeFile(resolve(pythonDocsDir, `${base}.py`), python),
       ]);
     } catch (err) {
       hadFailure = true;
