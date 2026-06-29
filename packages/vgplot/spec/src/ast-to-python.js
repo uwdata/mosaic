@@ -192,6 +192,7 @@ function emitDataDef(def, ctx) {
   return literal(def, 0, ctx);
 }
 
+// Keep in sync with the JS/Python API surface — new encodings need entries here.
 const ENCODING_SIMPLE = new Set([
   'count', 'min', 'max', 'median',
   'dateMonth', 'dateMonthDay', 'centroidX', 'centroidY',
@@ -288,6 +289,7 @@ function emitInput(node, ctx) {
     .map(([k, v]) => kwarg(inputArgName(k), emitInputValue(k, v, ctx)));
   const rename = { table: 'table_input' };
   const fn = rename[kind] ?? kind;
+  // Keep in sync with the Python vgplot input helpers.
   const namedInputs = ['slider', 'select', 'checkbox', 'menu', 'search', 'table'];
   if (namedInputs.includes(kind)) return `vg.${fn}(${args.join(', ')})`;
   return `vg.input(${literal(kind, 0, ctx)}${args.length ? ', ' + args.join(', ') : ''})`;

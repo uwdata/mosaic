@@ -12,7 +12,7 @@ function applyLangFromURL() {
   if (!lang) return;
   requestAnimationFrame(() => {
     document.querySelectorAll('.vp-code-group .tabs label').forEach(label => {
-      if (label.textContent.trim() === lang) label.click();
+      if (label.textContent.trim().toLowerCase() === lang.toLowerCase()) label.click();
     });
   });
 }
@@ -34,8 +34,8 @@ export default {
       const label = e.target.closest('.vp-code-group .tabs label');
       if (!label) return;
       const url = new URL(window.location.href);
-      const lang = label.textContent.trim();
-      if (lang === 'JavaScript') {
+      const lang = label.textContent.trim().toLowerCase();
+      if (lang === 'javascript') {
         url.searchParams.delete(LANG_PARAM);
       } else {
         url.searchParams.set(LANG_PARAM, lang);
