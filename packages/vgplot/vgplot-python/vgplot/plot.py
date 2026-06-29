@@ -78,7 +78,7 @@ def encode_value(
     if isinstance(v, FromRef):
         return v.to_dict()
     if isinstance(v, Mark):
-        return v.to_dict()
+        return v.to_dict(param_names)
     if isinstance(v, list):
         return [encode_value(x, param_names, data_names) for x in v]
     if isinstance(v, dict):
@@ -544,7 +544,7 @@ def slider(
     step: Any = None,
     value: Any = None,
     **opts: Any,
-) -> Dict[str, Any]:
+) -> Any:
     return input(
         "slider",
         label=label,
@@ -564,7 +564,7 @@ def select(
     multiple: bool = False,
     value: Any = None,
     **opts: Any,
-) -> Dict[str, Any]:
+) -> Any:
     return input(
         "select",
         label=label,
@@ -576,7 +576,7 @@ def select(
     )
 
 
-def checkbox(label: str, bind: Any, value: bool = False, **opts: Any) -> Dict[str, Any]:
+def checkbox(label: str, bind: Any, value: bool = False, **opts: Any) -> Any:
     return input("checkbox", label=label, bind=bind, value=value, **opts)
 
 
@@ -589,7 +589,7 @@ def menu(
     column: Any = None,
     filter_by: Any = None,
     **opts: Any,
-) -> Dict[str, Any]:
+) -> Any:
     return input(
         "menu",
         label=label,
@@ -611,7 +611,7 @@ def search(
     filter_by: Any = None,
     type: Any = None,
     **opts: Any,
-) -> Dict[str, Any]:
+) -> Any:
     return input(
         "search",
         label=label,
@@ -635,7 +635,7 @@ def table_input(
     row_batch: Any = None,
     align: Any = None,
     **opts: Any,
-) -> Dict[str, Any]:
+) -> Any:
     return input(
         "table",
         source=source,
