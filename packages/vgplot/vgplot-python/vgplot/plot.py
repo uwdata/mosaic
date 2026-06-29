@@ -52,7 +52,10 @@ class Mark:
                 data_dict = self.data
             if data_opts and isinstance(data_dict, dict):
                 data_dict = {**data_dict, **data_opts}
+                data_opts = {}
             payload["data"] = encode_value(data_dict, param_names)
+        for key, val in data_opts.items():
+            payload[key] = encode_value(val, param_names)
         for k, v in enc.items():
             payload[camelize(k)] = encode_value(v, param_names)
         return payload

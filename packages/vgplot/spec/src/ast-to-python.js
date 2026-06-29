@@ -53,14 +53,14 @@ export function astToPython(ast) {
   // data - emit one variable per named dataset
   const dataEntries = Object.entries(data);
   for (const [name, def] of dataEntries) {
-    ctx.emit(`${ctx.dataVar(name)} = ${emitDataDef(def)}`);
+    ctx.emit(`${ctx.dataVar(name)} = ${emitDataDef(def, ctx)}`);
   }
   if (dataEntries.length) ctx.blank();
 
   // params - emitted before view so variables are in scope
   const paramEntries = Object.entries(params);
   for (const [name, def] of paramEntries) {
-    ctx.emit(emitParamDef(ctx.ident(name), def));
+    ctx.emit(emitParamDef(ctx.ident(name), def, ctx));
   }
   if (paramEntries.length) ctx.blank();
 
