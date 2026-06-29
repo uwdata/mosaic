@@ -5,9 +5,7 @@ export function useLang() {
 
   function parseLang(search) {
     const q = new URLSearchParams(search || '').get('lang');
-    if (q === 'python') return 'python';
-    if (q === null || q === 'js') return 'js';
-    return q;
+    return q === 'python' ? 'python' : 'js';
   }
 
   function applyLangToUrl(lang) {
