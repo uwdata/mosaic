@@ -7,7 +7,7 @@
 //   - YAML, non-parsed JSON, ESM, and Python copied to /docs/public/specs
 //   - Example Markdown pages written to /docs/examples
 //
-// Run: node bin/prepare-examples.js  (or: npm run docs:examples)
+// Run: npm run docs:examples
 import { basename, extname, join, resolve } from 'node:path';
 import {
   copyFile,
