@@ -48,7 +48,7 @@ If _size_ is a number it is interpreted as a pixel value, otherwise it will be i
 
 # Layout
 
-Layout helpers for composing views when building Mosaic specs with `mosaic.vgplot`.
+Layout helpers for composing views when building Mosaic specs with `vgplot`.
 
 ## vconcat
 

@@ -27,5 +27,5 @@ view = vg.hconcat(
         vg.fy_domain("Fixed"),
         vg.fx_label(None),
         vg.fy_label(None),
-    )
+    ),
 )

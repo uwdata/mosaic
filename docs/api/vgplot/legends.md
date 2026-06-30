@@ -69,7 +69,7 @@ If invoked with the _for_ option in a standalone fashion, returns a Web element 
 # Legends
 
 Legends visualize color and symbol scales to aid chart interpretation.
-Legend directives from `mosaic.vgplot` compose into the plot spec like other directives.
+Legend directives from `vgplot` compose into the plot spec like other directives.
 
 ::: warning
 At present only discrete legends can be used as interactors.

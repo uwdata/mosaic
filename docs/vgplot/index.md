@@ -12,9 +12,10 @@ title: Mosaic vgplot
 
 <LangToggle :model-value="language" aria-label="Mosaic vgplot language" @update:model-value="setLanguage" />
 
-<h1>{{ language === 'js' ? 'Mosaic vgplot in Javascript' : 'Mosaic vgplot in Python' }}</h1>
+<h1>{{ language === 'js' ? 'Mosaic vgplot in JavaScript' : 'Mosaic vgplot in Python' }}</h1>
 
 <template v-if="language === 'js'">
+
 A grammar of interactive graphics in which graphical marks are Mosaic clients.
 
 <Example spec="/specs/yaml/mark-types.yaml" />
@@ -27,9 +28,13 @@ vgplot calls Observable Plot to render SVG output.
 This page provides an overview of vgplot.
 Skip to the [examples](/examples/) to dive right in.
 
+<div v-if="language === 'js'">
+
 ::: tip
 `vgplot` re-exports much of the `mosaic-core`, `mosaic-sql`, `mosaic-plot`, and `mosaic-inputs` packages. For many applications, it is sufficient to import `@uwdata/vgplot` alone.
 :::
+
+</div>
 
 ## Plots
 
@@ -182,14 +187,18 @@ To ensure spacing, the `vspace` and `hspace` helpers add padding between element
 
 <template v-else-if="language === 'python'">
 
-Mosaic vgplot is a grammar of interactive graphics: each mark is a Mosaic client that queries data through the coordinator. In Python, `import mosaic.vgplot as vg` gives you composable helpers for plots, attributes, marks, interactors, legends, and layout. Names use **`snake_case`**; Python keywords are escaped with a trailing underscore (`from_`, `as_`, `for_`).
+Mosaic vgplot is a grammar of interactive graphics: each mark is a Mosaic client that queries data through the coordinator.
 
-The interactive figure below is driven by the same [declarative specification](/spec/) used across Mosaic (YAML in the docs site). In notebooks you usually pass an equivalent structure as a dict—built with `vg.*` helpers, loaded from YAML/JSON, or produced by your own tooling—to [`MosaicWidget`](/jupyter/) as `spec`.
+<Example spec="/specs/yaml/mark-types.yaml" />
+
+In Python, `import vgplot as vg` gives you composable helpers for plots, attributes, marks, interactors, legends, and layout. Names use **`snake_case`**; Python keywords are escaped with a trailing underscore (`from_`, `as_`, `for_`).
+
+The interactive figure above is driven by the same [declarative specification](/spec/) used across Mosaic (YAML in the docs site). In notebooks you usually pass an equivalent structure as a dict—built with `vg.*` helpers, loaded from YAML/JSON, or produced by your own tooling—to [`MosaicWidget`](/jupyter/) as `spec`.
 
 More copy-paste examples live under [Examples](/examples/) (open the **Python** tab on each page).
 
 ::: tip
-The fastest path in Jupyter is often YAML or JSON plus `MosaicWidget(spec=..., data=...)`. Use `mosaic.vgplot` when you want to assemble or adjust specs in code. Option names match the [specification format](/api/spec/format); builder helpers line up with those names in snake_case.
+The fastest path in Jupyter is often YAML or JSON plus `MosaicWidget(spec=..., data=...)`. Use `vgplot` when you want to assemble or adjust specs in code. Option names match the [specification format](/api/spec/format); builder helpers line up with those names in snake_case.
 :::
 
 ## Plots
@@ -202,10 +211,10 @@ Each plot uses [Observable Plot](https://observablehq.com/plot/)–style _channe
 
 
 ``` python
-from mosaic.vgplot import line_y, width, height
+import vgplot as vg
 
 vg.plot(
-    vg.line_y(data=vg.from_("aapl"), x="Date", y="Close"),
+    vg.line_y(data=vg.source("aapl"), x="Date", y="Close"),
     vg.width(680),
     vg.height(200)
 )
@@ -214,7 +223,7 @@ vg.plot(
 
 This chart uses three directives:
 
-1. A `line_y` mark with `data=vg.from_("aapl")`.
+1. A `line_y` mark with `data=vg.source("aapl")`.
 2. `vg.width(680)`.
 3. `vg.height(200)`.
 
@@ -230,7 +239,7 @@ _Attributes_ set plot-level options: size, margins, and scales (`x_domain`, `col
 
 ## Marks
 
-_Marks_ are layers backed by Mosaic queries. They usually take `data=vg.from_("table")` plus channel options. Fields may be columns, SQL fragments, or param strings.
+_Marks_ are layers backed by Mosaic queries. They usually take `data=vg.source("table")` plus channel options. Fields may be columns, SQL fragments, or param strings.
 
 You can pass static rows instead of `from_` for annotations; that path skips the database and does not participate in linked filtering.
 

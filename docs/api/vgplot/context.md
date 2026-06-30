@@ -71,7 +71,7 @@ document.appendChild(
 
 # API Context
 
-The [`createAPIContext`](#createapicontext) pattern below is for **embedding Mosaic in the browser** with the JavaScript `vgplot` package. In **Python**, you usually build a declarative view with [`mosaic.vgplot`](https://pypi.org/project/vgplot/), combine [`data`](https://pypi.org/project/vgplot/) sources, and pass the result to [`vg.spec`](https://pypi.org/project/vgplot/) for [`mosaic-widget`](https://pypi.org/project/mosaic-widget/) or export—rather than calling `createAPIContext` in the page runtime.
+The [`createAPIContext`](#createapicontext) pattern below is for **embedding Mosaic in the browser** with the JavaScript `vgplot` package. In **Python**, you usually build a declarative view with [`vgplot`](https://pypi.org/project/vgplot/), combine [`data`](https://pypi.org/project/vgplot/) sources, and pass the result to [`vg.spec`](https://pypi.org/project/vgplot/) for [`mosaic-widget`](https://pypi.org/project/mosaic-widget/) or export—rather than calling `createAPIContext` in the page runtime.
 
 Coordinators, connectors, and named plot maps are still part of how Mosaic executes a spec in the widget or browser; the Python layer focuses on authoring that spec.
 
@@ -86,12 +86,12 @@ In JavaScript, `createAPIContext(options)` returns an object whose methods mirro
 ### Example (Python)
 
 ```python
-import mosaic.vgplot as vg
+import vgplot as vg
 
 data = vg.data(d=vg.parquet("data.parquet"))
 view = vg.vconcat(
     vg.plot(
-        vg.dot(data=vg.from_("d"), x="a", y="b", r=2),
+        vg.dot(data=vg.source("d"), x="a", y="b", r=2),
         vg.width(400),
         vg.height(240),
     ),

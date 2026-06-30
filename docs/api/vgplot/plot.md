@@ -28,11 +28,11 @@ plot(
 <template v-else-if="language === 'python'">
 
 ``` python
-import mosaic.vgplot as vg
+import vgplot as vg
 
 vg.plot(
     vg.width(500),  # attribute
-    vg.rect_y(data=vg.from_("table"), x1="u", x2="v", y="w", fill="c"),  # mark
+    vg.rect_y(data=vg.source("table"), x1="u", x2="v", y="w", fill="c"),  # mark
     vg.interval_x(as_=selection),  # interactor
     vg.color_legend(),  # legend
 )

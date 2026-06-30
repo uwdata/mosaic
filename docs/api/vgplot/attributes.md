@@ -53,7 +53,7 @@ plot(
 Attributes are passed as directives to `vg.plot`, together with marks, interactors, and legends:
 
 ``` python
-import mosaic.vgplot as vg
+import vgplot as vg
 
 vg.plot(
     vg.width(640),

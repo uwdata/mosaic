@@ -30,7 +30,7 @@ view = vg.vconcat(
             vg.r_range([2, 10]),
             vg.width(680),
             vg.height(300),
-        )
+        ),
     ),
     vg.plot(
         vg.bar_x(weather, x=vg.count(), y="weather", fill="#ccc", fill_opacity=0.2),

@@ -98,18 +98,18 @@ function emitComponent(node, ctx, topKwargs = []) {
   if (!node || typeof node !== 'object') return literal(node);
   if (Array.isArray(node)) {
     const body = node.map(n => indentLine(emitComponent(n, ctx), 1)).join(',\n');
-    return '[\n' + body + '\n]';
+    return node.length ? '[\n' + body + ',\n]' : '[]';
   }
   const kwargSuffix = topKwargs.length
     ? ',\n' + topKwargs.map(k => indentLine(k, 1)).join(',\n')
     : '';
   if (node.vconcat) {
     const body = node.vconcat.map(n => indentLine(emitComponent(n, ctx), 1)).join(',\n');
-    return `vg.vconcat(\n${body}${kwargSuffix}\n)`;
+    return `vg.vconcat(\n${body}${kwargSuffix},\n)`;
   }
   if (node.hconcat) {
     const body = node.hconcat.map(n => indentLine(emitComponent(n, ctx), 1)).join(',\n');
-    return `vg.hconcat(\n${body}${kwargSuffix}\n)`;
+    return `vg.hconcat(\n${body}${kwargSuffix},\n)`;
   }
   if (node.vspace !== undefined) return `vg.vspace(${literal(node.vspace, 0, ctx)})`;
   if (node.hspace !== undefined) return `vg.hspace(${literal(node.hspace, 0, ctx)})`;
@@ -159,7 +159,7 @@ function emitPlotObject(view, ctx, topKwargs = []) {
   }
   items.push(...topKwargs);
   const body = items.map(s => indentLine(s, 1)).join(',\n');
-  return `vg.plot(\n${body}\n)`;
+  return items.length ? `vg.plot(\n${body},\n)` : 'vg.plot()';
 }
 
 function emitDataDef(def, ctx) {

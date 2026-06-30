@@ -293,16 +293,16 @@ For supported options, see the [Observable Plot `vector` documentation](https://
 # Marks
 
 Marks are graphical elements that visualize data through encoding _channels_ such as _x_ and _y_ position, _fill_ color, and _r_ (radius) size.
-Marks are added to a [`Plot`](./plot) using mark directives from `mosaic.vgplot` (for example `vg.bar_y(...)`).
+Marks are added to a [`Plot`](./plot) using mark directives from `vgplot` (for example `vg.bar_y(...)`).
 
 Most mark functions take a _data_ source and an _options_ object that specifies encoding channels or constant values.
-To visualize data from a backing database, use `vg.from_("table")` as the data argument. Interactive filtering is typically expressed via `filter_by` / selection wiring in the spec (see the [Python vgplot README](https://pypi.org/project/vgplot/)).
+To visualize data from a backing database, use `vg.source("table")` as the data argument. Interactive filtering is typically expressed via `filter_by` / selection wiring in the spec (see the [Python vgplot README](https://pypi.org/project/vgplot/)).
 
 ``` python
-import mosaic.vgplot as vg
+import vgplot as vg
 
 vg.plot(
-    vg.bar_y(vg.from_("data"), x="a", y="b", fill="steelblue", opacity=0.5),
+    vg.bar_y(vg.source("data"), x="a", y="b", fill="steelblue", opacity=0.5),
 )
 ```
 

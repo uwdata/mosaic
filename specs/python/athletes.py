@@ -68,5 +68,5 @@ view = vg.hconcat(
                 "sport": 100,
             },
         ),
-    )
+    ),
 )

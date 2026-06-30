@@ -15,7 +15,9 @@ md = vg.json(
 
 view = vg.vconcat(
     vg.hconcat(
-        vg.plot(vg.bar_y(md, x="u", y="v", fill="steelblue")),
+        vg.plot(
+            vg.bar_y(md, x="u", y="v", fill="steelblue"),
+        ),
         vg.plot(
             vg.line_y(
                 md,
@@ -24,11 +26,17 @@ view = vg.vconcat(
                 stroke="steelblue",
                 curve="monotone-x",
                 marker="circle",
-            )
+            ),
         ),
-        vg.plot(vg.text(md, x="u", y="v", text="u", fill="steelblue")),
-        vg.plot(vg.tick_y(md, x="u", y="v", stroke="steelblue")),
-        vg.plot(vg.area_y(md, x="u", y="v", fill="steelblue")),
+        vg.plot(
+            vg.text(md, x="u", y="v", text="u", fill="steelblue"),
+        ),
+        vg.plot(
+            vg.tick_y(md, x="u", y="v", stroke="steelblue"),
+        ),
+        vg.plot(
+            vg.area_y(md, x="u", y="v", fill="steelblue"),
+        ),
     ),
     vg.hconcat(
         vg.plot(
