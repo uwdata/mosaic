@@ -1,7 +1,7 @@
 [project]
 name = "vgplot"
 dynamic = ["version"]
-description = "Spec classes for Mosaic"
+description = "A Python API for authoring Mosaic vgplot visualizations"
 readme = "README.md"
 requires-python = ">=3.9"
 dependencies = [

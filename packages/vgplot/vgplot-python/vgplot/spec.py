@@ -249,6 +249,13 @@ def spec(
     view: Dict[str, Any] | None = None,
     **extra: Any,
 ) -> Spec:
+    """Assemble a Spec from a view plus data sources and params.
+
+    A positional dict holding a view key (plot/vconcat/hconcat/...) is used as
+    the view; any other positional dict is used as data. DataDef and param
+    objects bound to local variables in the caller are discovered automatically
+    by name unless passed explicitly via data= or params=.
+    """
     for arg in args:
         if isinstance(arg, dict) and _VIEW_KEYS.intersection(arg):
             view = arg
