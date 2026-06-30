@@ -41,9 +41,7 @@ def _(click, colors, domain, range, vg, weather):
                     r="precipitation",
                     fill_opacity=0.7,
                 ),
-                vg.interval_x(
-                    bind=range, brush=vg.brush(fill="none", stroke="#888")
-                ),
+                vg.interval_x(bind=range, brush=vg.brush(fill="none", stroke="#888")),
                 vg.highlight(by=range, fill="#ccc", fill_opacity=0.2),
                 vg.color_legend(bind=click, columns=1),
                 vg.xy_domain("Fixed"),
@@ -57,9 +55,7 @@ def _(click, colors, domain, range, vg, weather):
             )
         ),
         vg.plot(
-            vg.bar_x(
-                weather, x=vg.count(), y="weather", fill="#ccc", fill_opacity=0.2
-            ),
+            vg.bar_x(weather, x=vg.count(), y="weather", fill="#ccc", fill_opacity=0.2),
             vg.bar_x(
                 weather,
                 filter_by=range,

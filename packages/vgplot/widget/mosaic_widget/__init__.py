@@ -62,7 +62,9 @@ class MosaicWidget(anywidget.AnyWidget):
         elif not isinstance(spec, dict):
             to_dict = getattr(spec, "to_dict", None)
             if not callable(to_dict):
-                raise TypeError(f"spec must be a dict or have a to_dict() method, got {type(spec)}")
+                raise TypeError(
+                    f"spec must be a dict or have a to_dict() method, got {type(spec)}"
+                )
             caller_locals = inspect.currentframe().f_back.f_locals
             try:
                 spec = to_dict(_context=caller_locals)
