@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import inspect
 import logging
 import pathlib
 import time
@@ -58,6 +59,15 @@ class MosaicWidget(anywidget.AnyWidget):
             data = {}
         if spec is None:
             spec = {}
+        elif not isinstance(spec, dict):
+            to_dict = getattr(spec, "to_dict", None)
+            if not callable(to_dict):
+                raise TypeError(f"spec must be a dict or have a to_dict() method, got {type(spec)}")
+            caller_locals = inspect.currentframe().f_back.f_locals
+            try:
+                spec = to_dict(_context=caller_locals)
+            except TypeError:
+                spec = to_dict()
         if con is None:
             con = duckdb.connect()
 
