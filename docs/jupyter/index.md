@@ -80,3 +80,36 @@ widget.observe(handle_change, names=["params"])
 
 widgets.VBox([widget, output])
 ```
+
+## Reading the Filtered Data
+
+After the user interacts with the widget, you can read the current SQL state and the filtered rows directly from Python:
+
+```python
+widget.sql            # 'SELECT * FROM "weather" WHERE ("weather" = \'sun\')'
+widget.data().df()    # pandas DataFrame of the currently filtered rows
+```
+
+`widget.sql` builds a `SELECT * FROM <table>` statement and combines every active selection predicate from `params` with `AND`. The source table and its `filterBy` selections are discovered from the spec's mark `data: { from, filterBy }` blocks.
+
+`widget.data()` returns the lazy [DuckDB relation](https://duckdb.org/docs/api/python/relational_api) for that SQL. You choose how to materialize it, so you are not locked into any one dataframe library:
+
+```python
+widget.data().df()        # pandas DataFrame
+widget.data().pl()        # Polars DataFrame
+widget.data().arrow()     # Arrow table
+widget.data().fetchall()  # list of tuples
+```
+
+For specs that reference more than one source table, name the table explicitly:
+
+```python
+widget.data("weather").df()
+```
+
+To limit which selections are applied, pass `filter_by` with a selection name or a list of names:
+
+```python
+widget.data("weather", filter_by="range").df()
+widget.data("weather", filter_by=["click", "range"]).df()
+```
