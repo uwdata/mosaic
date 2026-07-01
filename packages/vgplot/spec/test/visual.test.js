@@ -25,8 +25,8 @@ test.describe('Visual regression tests for JSON specs', () => {
       const specData = JSON.parse(await readFile(join(specsDir, `${specName}.json`), 'utf8'));
 
       await page.goto('http://localhost:5173/packages/vgplot/spec/test/visual-harness.html');
-      await page.waitForFunction(() => typeof window.__renderSpec === 'function');
-      await page.evaluate(spec => window.__renderSpec(spec), specData);
+      await page.waitForFunction(() => typeof (/** @type {any} */ (window)).__renderSpec === 'function');
+      await page.evaluate(spec => (/** @type {any} */ (window)).__renderSpec(spec), specData);
 
       const container = page.locator('#container');
       await expect(container).toHaveScreenshot(`${specName}.png`, { maxDiffPixelRatio: 0.05 });
