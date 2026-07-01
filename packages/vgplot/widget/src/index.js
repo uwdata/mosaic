@@ -61,7 +61,7 @@ export default {
     async function updateSpec() {
       const spec = getSpec();
       reset();
-      logger.log('Setting spec:', spec);
+      logger?.log('Setting spec:', spec);
       const dom = await instantiateSpec(spec);
       view.el.replaceChildren(dom.element);
 
@@ -101,27 +101,27 @@ export default {
     view.model.on('change:preagg_schema', () => configureCoordinator());
 
     view.model.on('msg:custom', (msg, buffers) => {
-      logger.group(`query ${msg.uuid}`);
-      logger.log('received message', msg, buffers);
+      logger?.group(`query ${msg.uuid}`);
+      logger?.log('received message', msg, buffers);
 
       const query = openQueries.get(msg.uuid);
       openQueries.delete(msg.uuid);
 
-      logger.log(query.query.sql, (performance.now() - query.startTime).toFixed(1));
+      logger?.log(query.query.sql, (performance.now() - query.startTime).toFixed(1));
 
       if (msg.error) {
         query.reject(msg.error);
-        logger.error(msg.error);
+        logger?.error(msg.error);
       } else {
         switch (msg.type) {
           case 'arrow': {
             const table = decodeIPC(buffers[0].buffer);
-            logger.log('table', table);
+            logger?.log('table', table);
             query.resolve(table);
             break;
           }
           case 'json': {
-            logger.log('json', msg.result);
+            logger?.log('json', msg.result);
             query.resolve(msg.result);
             break;
           }
@@ -131,7 +131,7 @@ export default {
           }
         }
       }
-      logger.groupEnd();
+      logger?.groupEnd();
     });
 
     coordinator().databaseConnector(connector);
