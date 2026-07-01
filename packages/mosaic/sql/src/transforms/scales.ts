@@ -88,7 +88,7 @@ function scaleSymlog({ constant = 1 } = {}): ScaleTransform<number> {
   const _ = +constant;
   return {
     apply: x => Math.sign(x) * Math.log1p(Math.abs(x)),
-    invert: x => Math.sign(x) * Math.exp(Math.abs(x) - _),
+    invert: x => Math.sign(x) * (Math.exp(Math.abs(x)) - _),
     sqlApply: c => (c = asNode(c), mul(sign(c), ln(add(_, abs(c))))),
     sqlInvert: c => mul(sign(c), sub(exp(abs(c)), _))
   };
