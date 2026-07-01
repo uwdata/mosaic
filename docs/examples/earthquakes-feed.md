@@ -17,4 +17,5 @@ Earthquake data from the USGS live feed. To show land masses, this example loads
 <<< @/public/specs/esm/earthquakes-feed.js [JavaScript]
 <<< @/public/specs/yaml/earthquakes-feed.yaml [YAML]
 <<< @/public/specs/json/earthquakes-feed.json [JSON]
+<<< @/public/specs/python/earthquakes-feed.py [Python]
 :::

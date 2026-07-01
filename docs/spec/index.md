@@ -7,7 +7,7 @@
 
 The `mosaic-spec` package enables declarative specification of Mosaic applications as JSON or YAML files. The package provides a specification parser, as well as generators to create either running applications or JavaScript code.
 
-For example, below is an example of a declarative specification, in either YAML or equivalent JSON, for a simple line chart. The JavaScript tab shows the code generated from the parsed specification.
+For example, below is an example of a declarative specification, in either YAML or equivalent JSON, for a simple line chart. The JavaScript and Python tabs show equivalent code that builds the same specification using the [`vgplot`](/vgplot/) API in each language.
 
 <Example spec="/specs/yaml/line.yaml" />
 
@@ -15,9 +15,10 @@ For example, below is an example of a declarative specification, in either YAML 
 <<< @/public/specs/yaml/line.yaml [YAML]
 <<< @/public/specs/json/line.json [JSON]
 <<< @/public/specs/esm/line.js [JavaScript]
+<<< @/public/specs/python/line.py [Python]
 :::
 
-Using a declarative specification, we can describe an application in a standard file format, enabling portability across platforms. For example, the [Mosaic Jupyter widget](/jupyter/) uses this format to pass visualization and dashboard definitions from Python to the browser.
+Using a declarative specification, we can describe an application in a standard file format, enabling portability across platforms. The same spec can be authored as YAML/JSON or built programmatically with the `vgplot` API in either JavaScript or Python (see the [Python API](/vgplot/?lang=python)). For example, the [Mosaic Jupyter widget](/jupyter/) uses this format to pass visualization and dashboard definitions from Python to the browser.
 
 ::: tip
 The [TypeScript types in the `@uwdata/mosaic-spec` package](https://github.com/uwdata/mosaic/tree/main/packages/vgplot/spec/src/spec) provide comprehensive documentation of Mosaic declarative specifications.
@@ -33,6 +34,7 @@ Here is a slightly more complicated example, in which a dynamic `Param` value is
 <<< @/public/specs/yaml/bias.yaml [YAML]
 <<< @/public/specs/json/bias.json [JSON]
 <<< @/public/specs/esm/bias.js [JavaScript]
+<<< @/public/specs/python/bias.py [Python]
 :::
 
 The example above includes descriptive metadata, `data` and `params` definitions, and nested components: an input `slider` and `plot` are positioned using a `vconcat` layout. The `plot` uses a SQL expression that includes a `Param` reference (`$point`) to define a dynamic `y` encoding channel.
@@ -55,6 +57,6 @@ The `parseSpec()` method parses a specification in JSON format into an _abstract
 
 Given a parsed AST, the generator method `astToDOM()` instantiates a running web application, returning Mosaic-backed Document Object Model (DOM) elements that can be added to a web page.
 
-Meanwhile, the `astToESM()` method instead generates JavaScript code, in the form of an ECMAScript Module (ESM), that uses the `vgplot` API. The code listed in the examples above was generated using this method.
+Meanwhile, the `astToESM()` method instead generates JavaScript code, in the form of an ECMAScript Module (ESM), that uses the `vgplot` API. The JavaScript code listed in the examples above was generated using this method, and `astToPython()` similarly generates equivalent Python code for the [`vgplot` Python API](/vgplot/?lang=python).
 
 For more, see the [Specification Parser & Generators Reference](/api/spec/parser-generators).

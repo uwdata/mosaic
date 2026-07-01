@@ -2,7 +2,7 @@
 
 Both individual plots and interactive dashboards can be defined using declarative specifications in either [JSON](https://en.wikipedia.org/wiki/JSON) or [YAML](https://en.wikipedia.org/wiki/YAML) format.
 
-The code below shows an example specification in both YAML and JSON formats, as well as corresponding JavaScript code produced by [`astToESM`](parser-generators#asttoesm).
+The code below shows an example specification in both YAML and JSON formats, as well as corresponding JavaScript and Python code produced by [`astToESM`](parser-generators#asttoesm).
 To parse a JSON specification use [`parseSpec`](parser-generators##parsespec).
 To generate a running application from a parsed spec, use [`astToDOM`](parser-generators#asttodom).
 
@@ -10,6 +10,7 @@ To generate a running application from a parsed spec, use [`astToDOM`](parser-ge
 <<< @/public/specs/yaml/bias.yaml [YAML]
 <<< @/public/specs/json/bias.json [JSON]
 <<< @/public/specs/esm/bias.js [JavaScript]
+<<< @/public/specs/python/bias.py [Python]
 :::
 
 ::: tip

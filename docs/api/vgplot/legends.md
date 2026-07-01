@@ -1,3 +1,15 @@
+---
+title: Legends
+---
+<script setup>
+  import { useLang } from '../../.vitepress/theme/useLang.js';
+  const { language, setLanguage } = useLang();
+</script>
+
+<LangToggle :model-value="language" aria-label="Legends documentation language" @update:model-value="setLanguage" />
+
+<template v-if="language === 'js'">
+
 # Legends
 
 Legends visualize color and symbol scales to aid chart interpretation.
@@ -7,7 +19,6 @@ Legends can also serve as [interactors](./interactors) that filter or highlight 
 At present only discrete legends can be used as interactors.
 We plan to add support for interval selections over continuous color ramps in the future.
 :::
-
 
 ## colorLegend
 
@@ -50,3 +61,45 @@ Create a new legend for a plot's `symbol` scale. The following _options_ are sup
 If invoked as a directive within a plot definition, the _for_ option should not be used, and the legend will be included as part of the plot itself.
 
 If invoked with the _for_ option in a standalone fashion, returns a Web element containing the legend only.
+
+</template>
+
+<template v-else-if="language === 'python'">
+
+# Legends
+
+Legends visualize color and symbol scales to aid chart interpretation.
+Legend directives from `vgplot` compose into the plot spec like other directives.
+
+::: warning
+At present only discrete legends can be used as interactors.
+We plan to add support for interval selections over continuous color ramps in the future.
+:::
+
+## color_legend
+
+`vg.color_legend(...)`
+
+Create a legend for the plot `color` scale (`vg.color_legend(**options)`). The following _options_ are supported:
+
+- _for_: A string indicating the [name](./attributes) of the corresponding plot (when building a standalone legend element).
+- _as_: A [Selection](../core/selection) updated by interactions with this legend.
+- Additional options forwarded to Observable Plot legend options when the spec is rendered.
+
+Inside `vg.plot(...)`, omit _for_ so the legend belongs to that plot.
+
+## opacity_legend
+
+`vg.opacity_legend(...)`
+
+Create a legend for the plot `opacity` scale. Options match the JavaScript [`opacityLegend`](#opacitylegend) case (`_for_`, `_as_`, plus Observable Plot legend options).
+
+## symbol_legend
+
+`vg.symbol_legend(...)`
+
+Create a legend for the plot `symbol` scale. Options match the JavaScript [`symbolLegend`](#symbollegend) case (`_for_`, `_as_`, plus Observable Plot legend options).
+
+</template>
+
+<LangError v-else :language="language" />
