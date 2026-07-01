@@ -14,7 +14,7 @@ exclude = [
 
 [dependencies]
 anyhow = "1.0"
-arrow = { version = "58.3", default-features = true, features = ["chrono-tz"] }
+arrow = { version = "59.0", default-features = true, features = ["chrono-tz"] }
 async-trait = "0.1"
 axum = { version = "0.8", features = ["http1", "http2", "ws", "json", "tokio", "tracing", "macros"] }
 axum-server = { version = "0.8", features = ["tls-rustls"] }
@@ -31,7 +31,7 @@ serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 sha2 = "0.11"
 tokio = { version = "1", features = ["full"] }
-tower-http = { version = "0.6", features = ["cors", "compression-full", "trace"] }
+tower-http = { version = "0.7", features = ["cors", "compression-full", "trace"] }
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 
