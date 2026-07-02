@@ -91,7 +91,7 @@ import vgplot as vg
 data = vg.data(d=vg.parquet("data.parquet"))
 view = vg.vconcat(
     vg.plot(
-        vg.dot(data=vg.source("d"), x="a", y="b", r=2),
+        vg.dot(vg.source("d"), x="a", y="b", r=2),
         vg.width(400),
         vg.height(240),
     ),

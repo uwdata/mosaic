@@ -296,7 +296,7 @@ Marks are graphical elements that visualize data through encoding _channels_ suc
 Marks are added to a [`Plot`](./plot) using mark directives from `vgplot` (for example `vg.bar_y(...)`).
 
 Most mark functions take a _data_ source and an _options_ object that specifies encoding channels or constant values.
-To visualize data from a backing database, use `vg.source("table")` as the data argument. Interactive filtering is typically expressed via `filter_by` / selection wiring in the spec (see the [Python vgplot README](https://pypi.org/project/vgplot/)).
+To visualize data from a backing database, pass a `DataDef` object (from `vg.parquet()`, `vg.csv()`, etc.) or a `vg.source("table")` reference as the first positional argument. Interactive filtering is expressed via the `filter_by` keyword (see the [Python vgplot README](https://pypi.org/project/vgplot/) for details on selection wiring).
 
 ``` python
 import vgplot as vg
@@ -311,7 +311,7 @@ Data is drawn from the `"data"` table, with the column `"a"` mapped to an ordina
 The _fill_ option is the constant CSS color `"steelblue"` and the _opacity_ is a constant `0.5`.
 For encoding channels, strings are interpreted as column names _unless_ they match a reserved constant for that key, such as a CSS color name for the _fill_ or _stroke_ options.
 
-If an explicit array of data values is provided instead of a backing `from_` table reference, vgplot will visualize that data without issuing any queries to the database. This functionality is particularly useful for adding manual annotations, such as custom rules or text labels.
+If an explicit array of data values is provided instead of a database-backed source, vgplot will visualize that data without issuing any queries to the database. This functionality is particularly useful for adding manual annotations, such as custom rules or text labels.
 
 Marks that only add reference lines or shapes (e.g., [`frame`](#frame), [`axis_x`](#axis), [`grid_y`](#grid), [`hexgrid`](#hexgrid), [`graticule`](#geo), [`sphere`](#geo)) do not require corresponding data, and take only _options_.
 

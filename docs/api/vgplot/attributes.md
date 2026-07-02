@@ -282,9 +282,13 @@ For more on projections, see the [Observable Plot projection documentation](http
 - `projectionInsetBottom(value)`: Set the inset from the bottom edge of the frame (defaults to `projectionInset`).
 - `projectionClip(value)`: Set the projection clipping method. One of: `"frame"` or `true` (default) to clip to the extent of the frame (including margins but not insets), a number to clip to a great circle of the given radius in degrees centered around the origin, or `null` or `false` to disable clipping.
 
+<div v-if="language === 'js'">
+
 ::: warning
 Interval interactors are not currently supported when cartographic projections are used.
 :::
+
+</div>
 
 </template>
 
@@ -500,9 +504,13 @@ For more on projections, see the [Observable Plot projection documentation](http
 - `projection_inset_bottom(value)`: Set the inset from the bottom edge of the frame (defaults to `projection_inset`).
 - `projection_clip(value)`: Set the projection clipping method. One of: `"frame"` or `true` (default) to clip to the extent of the frame (including margins but not insets), a number to clip to a great circle of the given radius in degrees centered around the origin, or `null` or `false` to disable clipping.
 
+<div v-if="language === 'python'">
+
 ::: warning
 Interval interactors are not currently supported when cartographic projections are used.
 :::
+
+</div>
 
 </template>
 
