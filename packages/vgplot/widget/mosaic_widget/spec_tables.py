@@ -1,5 +1,4 @@
-"""Helpers for .sql and .data() methods.
-"""
+"""Helpers for .sql and .data() methods."""
 
 
 def _param_name(value):
@@ -40,6 +39,7 @@ def collect_table_filters(spec):
     visit(spec)
     result = {table: list(names) for table, names in result.items()}
     return result
+
 
 def resolve_predicates(params, selection_names):
     """

@@ -50,6 +50,7 @@ def weather_frame() -> pd.DataFrame:
         }
     )
 
+
 def test_collect_table_filters_multi_table() -> None:
     spec = {
         "vconcat": [
