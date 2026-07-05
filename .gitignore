@@ -27,12 +27,7 @@ venv/
 conda-env/
 
 # Python cache
-__pycache__/
 *.pyc
-
-# Test cache
-.pytest_cache/
-.coverage
 
 .pnpm-store
 dev/notebooks/__marimo__

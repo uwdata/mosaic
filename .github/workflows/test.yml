@@ -138,7 +138,7 @@ jobs:
 
           uv build
           uv run --group dev pytest --cov-report=term-missing --color=yes --cov=vgplot
-          
+
   rust:
     name: Test in Rust
 
