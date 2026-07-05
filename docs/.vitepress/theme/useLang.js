@@ -1,11 +1,30 @@
 import { ref, onMounted, onUnmounted } from 'vue';
 
+const STORAGE_KEY = 'mosaic-docs-lang';
+
 export function useLang() {
   const language = ref('js');
 
   function parseLang(search) {
     const q = new URLSearchParams(search || '').get('lang');
     return q === 'python' ? 'python' : 'js';
+  }
+
+  function storedLang() {
+    try {
+      const v = sessionStorage.getItem(STORAGE_KEY);
+      return v === 'python' ? 'python' : v === 'js' ? 'js' : null;
+    } catch {
+      return null;
+    }
+  }
+
+  function storeLang(lang) {
+    try {
+      sessionStorage.setItem(STORAGE_KEY, lang);
+    } catch {
+      // storage may be unavailable (private mode, disabled cookies)
+    }
   }
 
   function applyLangToUrl(lang) {
@@ -21,6 +40,7 @@ export function useLang() {
 
   function setLanguage(lang) {
     language.value = lang;
+    storeLang(lang);
     applyLangToUrl(lang);
   }
 
@@ -30,10 +50,12 @@ export function useLang() {
 
   onMounted(() => {
     const search = window.location.search;
-    language.value = parseLang(search);
-    if (!new URLSearchParams(search).has('lang')) {
-      applyLangToUrl(language.value);
-    }
+    // An explicit ?lang= wins (e.g. shared links); otherwise use the stored preference.
+    language.value = new URLSearchParams(search).has('lang')
+      ? parseLang(search)
+      : storedLang() ?? 'js';
+    storeLang(language.value);
+    applyLangToUrl(language.value);
     window.addEventListener('popstate', onPopState);
   });
 
