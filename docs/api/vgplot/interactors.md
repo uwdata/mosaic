@@ -127,12 +127,12 @@ Select a 2D interval range along the x and y dimensions. The supported _options_
 
 Pan or zoom a plot.
 To pan, click and drag within a plot.
-To zoom, scroll within in a plot.
+To zoom, scroll within a plot.
 
 Panning and zooming is implemented by changing the `x` and/or `y` scale domains and re-rendering the plot in response.
 
 Pan/zoom interactors will automatically update the plot `xDomain` and `yDomain` attributes.
-For linked panning and zooming across plot, first define your own selections and pass them as options.
+For linked panning and zooming across plots, first define your own selections and pass them as options.
 You can additionally use such selections to have the pan/zoom state filter other marks.
 
 All pan/zoom directives share the same possible _options_:
@@ -321,12 +321,12 @@ Select a 2D interval range along the x and y dimensions. The supported _options_
 
 Pan or zoom a plot.
 To pan, click and drag within a plot.
-To zoom, scroll within in a plot.
+To zoom, scroll within a plot.
 
 Panning and zooming is implemented by changing the `x` and/or `y` scale domains and re-rendering the plot in response.
 
 Pan/zoom interactors will automatically update the plot `xDomain` and `yDomain` attributes.
-For linked panning and zooming across plot, first define your own selections and pass them as options.
+For linked panning and zooming across plots, first define your own selections and pass them as options.
 You can additionally use such selections to have the pan/zoom state filter other marks.
 
 All pan/zoom directives share the same possible _options_:

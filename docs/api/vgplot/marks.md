@@ -159,11 +159,11 @@ For supported options, see the [Observable Plot `frame` documentation](https://o
 ## Geo
 
 The `geo` mark draws geographic features—polygons, lines, points, and other geometry—often as thematic maps.
-Input data can be provided directly an array of GeoJSON features or geographic data can be loaded and queried directly in DuckDB using the `spatial` extension.
+Input data can be provided directly as an array of GeoJSON features or geographic data can be loaded and queried directly in DuckDB using the `spatial` extension.
 
 The _geometry_ option indicates the column name containing GeoJSON features or GeoJSON geometry objects.
 If _geometry_ is not specified, the mark will interpret input objects as GeoJSON when data is passed in directly.
-When querying geometry from a DuckDB table, the _geometry_ option will default to `'geom'` (the default name for geometry data loaded using the `spatial` extension's `ST_Read` function) and will be automatically converted to GeoJSON format in the databse using the `ST_asGeoJSON` function.
+When querying geometry from a DuckDB table, the _geometry_ option will default to `'geom'` (the default name for geometry data loaded using the `spatial` extension's `ST_Read` function) and will be automatically converted to GeoJSON format in the database using the `ST_asGeoJSON` function.
 If the _geometry_ option is specified, automatic conversion of DuckDB query results is _not_ performed; this enables more fine-grained control, but may require explicit conversion of data to GeoJSON format using `ST_asGeoJSON` (or equivalently using Mosaic's `geojson()` SQL helper).
 
 The `sphere` and `graticule` marks (which do not accept input data) include the sphere of the Earth and global reference lines, respectively.
@@ -258,7 +258,7 @@ The supported _options_ are:
 
 ## Rect
 
-The `rect` mark, with `rectX` and `rectY` variants, draws draws axis-aligned rectangles defined by _x1_, _y1_, _x2_, and _y2_.
+The `rect` mark, with `rectX` and `rectY` variants, draws axis-aligned rectangles defined by _x1_, _y1_, _x2_, and _y2_.
 For supported options, see the [Observable Plot `rect` documentation](https://observablehq.com/plot/marks/rect).
 
 ## Rule
@@ -440,11 +440,11 @@ For supported options, see the [Observable Plot `frame` documentation](https://o
 ## Geo
 
 The `geo` mark draws geographic features—polygons, lines, points, and other geometry—often as thematic maps.
-Input data can be provided directly an array of GeoJSON features or geographic data can be loaded and queried directly in DuckDB using the `spatial` extension.
+Input data can be provided directly as an array of GeoJSON features or geographic data can be loaded and queried directly in DuckDB using the `spatial` extension.
 
 The _geometry_ option indicates the column name containing GeoJSON features or GeoJSON geometry objects.
 If _geometry_ is not specified, the mark will interpret input objects as GeoJSON when data is passed in directly.
-When querying geometry from a DuckDB table, the _geometry_ option will default to `'geom'` (the default name for geometry data loaded using the `spatial` extension's `ST_Read` function) and will be automatically converted to GeoJSON format in the databse using the `ST_asGeoJSON` function.
+When querying geometry from a DuckDB table, the _geometry_ option will default to `'geom'` (the default name for geometry data loaded using the `spatial` extension's `ST_Read` function) and will be automatically converted to GeoJSON format in the database using the `ST_asGeoJSON` function.
 If the _geometry_ option is specified, automatic conversion of DuckDB query results is _not_ performed; this enables more fine-grained control, but may require explicit conversion of data to GeoJSON format using `ST_asGeoJSON` (or equivalently using Mosaic's `geojson()` SQL helper).
 
 The `sphere` and `graticule` marks (which do not accept input data) include the sphere of the Earth and global reference lines, respectively.
@@ -539,7 +539,7 @@ The supported _options_ are:
 
 ## Rect
 
-The `rect` mark, with `rect_x` and `rect_y` variants, draws draws axis-aligned rectangles defined by _x1_, _y1_, _x2_, and _y2_.
+The `rect` mark, with `rect_x` and `rect_y` variants, draws axis-aligned rectangles defined by _x1_, _y1_, _x2_, and _y2_.
 For supported options, see the [Observable Plot `rect` documentation](https://observablehq.com/plot/marks/rect).
 
 ## Rule
