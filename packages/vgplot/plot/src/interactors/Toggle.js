@@ -1,5 +1,5 @@
 /** @import { ClauseSource } from '@uwdata/mosaic-core' */
-import { clausePoints } from '@uwdata/mosaic-core';
+import { clauseList, clausePoints } from '@uwdata/mosaic-core';
 import { getDatum } from './util/get-datum.js';
 import { neq, neqSome } from './util/neq.js';
 
@@ -15,12 +15,14 @@ export class Toggle {
   constructor(mark, {
     selection,
     channels,
-    peers = true
+    peers = true,
+    listMatch
   }) {
     this.mark = mark;
     this.value = null;
     this.selection = selection;
     this.peers = peers;
+    this.listMatch = listMatch;
     const fields = this.fields = [];
     const as = this.as = [];
     channels.forEach(c => {
@@ -42,10 +44,17 @@ export class Toggle {
 
   clause(value) {
     const { fields, mark } = this;
-    return clausePoints(fields, value, {
-      source: /** @type {ClauseSource} */(this),
-      clients: this.peers ? mark.plot.markSet : new Set().add(mark)
-    });
+    const clients = this.peers ? mark.plot.markSet : new Set().add(mark);
+    const opt = { source: /** @type {ClauseSource} */(this), clients };
+
+    // Unnested (array-valued) fields use a list-membership predicate so values
+    // are quoted correctly; `listMatch` selects list_has_any vs list_has_all.
+    if (fields.length === 1 && mark.isUnnested(fields[0])) {
+      const list = value?.length ? value.map(v => v[0]) : undefined;
+      return clauseList(fields[0], list, { ...opt, listMatch: this.listMatch });
+    }
+
+    return clausePoints(fields, value, opt);
   }
 
   init(svg, selector, accessor) {

@@ -353,6 +353,12 @@ export function clauseList(
   }
 ): SelectionClause {
   const listFn = listMatch === 'all' ? listHasAll : listHasAny;
-  const predicate = value !== undefined ? listFn(field, literal(value)) : null;
+  // Empty/undefined clears the selection; arrays pass through directly to be
+  // quoted as a list (literal() would coerce them to an unquoted string).
+  const predicate = value === undefined || (Array.isArray(value) && value.length === 0)
+    ? null
+    : Array.isArray(value)
+      ? listFn(field, value as ExprValue[])
+      : listFn(field, literal(value));
   return { source, clients, value, predicate };
 }
