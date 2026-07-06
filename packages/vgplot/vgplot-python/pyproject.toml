@@ -3,7 +3,7 @@ name = "vgplot"
 dynamic = ["version"]
 description = "A Python API for authoring Mosaic vgplot visualizations"
 readme = "README.md"
-requires-python = ">=3.9"
+requires-python = ">=3.10"
 dependencies = []
 
 [project.urls]
