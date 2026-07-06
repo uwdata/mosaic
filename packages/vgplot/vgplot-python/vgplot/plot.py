@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any, Dict, List, Optional, Union
+from typing import Any
 
 from .util import camelize, omit_none
 from .params import _ParamBase
@@ -13,7 +13,7 @@ class FromRef:
         self.name = name
         self.opts = {camelize(k): v for k, v in opts.items() if v is not None}
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return {"from": self.name, **self.opts}
 
 
@@ -33,11 +33,11 @@ class Directive:
 @dataclass
 class Mark:
     mark: str
-    data: Optional[Any] = None
-    enc: Optional[Dict[str, Any]] = None
+    data: Any | None = None
+    enc: dict[str, Any] | None = None
 
-    def to_dict(self, param_names: Dict[int, str] | None = None) -> Dict[str, Any]:
-        payload: Dict[str, Any] = {"mark": self.mark}
+    def to_dict(self, param_names: dict[int, str] | None = None) -> dict[str, Any]:
+        payload: dict[str, Any] = {"mark": self.mark}
         enc = dict(self.enc or {})
         _DATA_OPTS = {"filter_by": "filterBy", "optimize": "optimize"}
         data_opts = {out: enc.pop(key) for key, out in _DATA_OPTS.items() if key in enc}
@@ -63,8 +63,8 @@ class Mark:
 
 def encode_value(
     v: Any,
-    param_names: Dict[int, str] | None = None,
-    data_names: Dict[int, str] | None = None,
+    param_names: dict[int, str] | None = None,
+    data_names: dict[int, str] | None = None,
 ) -> Any:
     if isinstance(v, DataDef):
         if data_names and id(v) in data_names:
@@ -87,14 +87,14 @@ def encode_value(
 
 
 def plot(
-    *items: Union[Mark, Directive],
-    param_names: Dict[int, str] | None = None,
+    *items: Mark | Directive,
+    param_names: dict[int, str] | None = None,
     **kwargs: Any,
 ) -> Any:
     from .spec import View
 
-    marks: List[Dict[str, Any]] = []
-    directives: Dict[str, Any] = {}
+    marks: list[dict[str, Any]] = []
+    directives: dict[str, Any] = {}
     for item in items:
         if isinstance(item, Mark):
             marks.append(item.to_dict(param_names))
@@ -105,7 +105,7 @@ def plot(
             marks.append({k: encode_value(v, param_names) for k, v in item.items()})
         else:
             raise TypeError(f"Unsupported plot item: {item}")
-    root: Dict[str, Any] = {"plot": marks}
+    root: dict[str, Any] = {"plot": marks}
     root.update(directives)
     return View(root, **kwargs)
 
@@ -122,10 +122,10 @@ def mark(name: str, data: Any = None, **enc: Any) -> Mark:
 
 
 def margins(
-    top: Optional[int] = None,
-    right: Optional[int] = None,
-    bottom: Optional[int] = None,
-    left: Optional[int] = None,
+    top: int | None = None,
+    right: int | None = None,
+    bottom: int | None = None,
+    left: int | None = None,
     **kwargs: Any,
 ) -> Directive:
     return Directive(
@@ -138,8 +138,8 @@ def margins(
 
 def _encode_component(
     item: Any,
-    param_names: Dict[int, str] | None,
-    data_names: Dict[int, str] | None = None,
+    param_names: dict[int, str] | None,
+    data_names: dict[int, str] | None = None,
 ) -> Any:
     from .spec import View
 
@@ -166,7 +166,7 @@ def _encode_component(
 
 # Layout helpers
 def vconcat(
-    *items: Any, param_names: Dict[int, str] | None = None, **kwargs: Any
+    *items: Any, param_names: dict[int, str] | None = None, **kwargs: Any
 ) -> Any:
     from .spec import View
 
@@ -176,7 +176,7 @@ def vconcat(
 
 
 def hconcat(
-    *items: Any, param_names: Dict[int, str] | None = None, **kwargs: Any
+    *items: Any, param_names: dict[int, str] | None = None, **kwargs: Any
 ) -> Any:
     from .spec import View
 
@@ -200,20 +200,20 @@ def vspace(px: int) -> Any:
 _MISSING = object()
 
 
-def option(label: Any, value: Any = _MISSING) -> Dict[str, Any]:
+def option(label: Any, value: Any = _MISSING) -> dict[str, Any]:
     return {"label": label, "value": label if value is _MISSING else value}
 
 
-def brush(**kwargs: Any) -> Dict[str, Any]:
+def brush(**kwargs: Any) -> dict[str, Any]:
     return {camelize(k): v for k, v in kwargs.items() if v is not None}
 
 
-def sort(**kwargs: Any) -> Dict[str, Any]:
+def sort(**kwargs: Any) -> dict[str, Any]:
     return {k: v for k, v in kwargs.items() if v is not None}
 
 
 # Interactor helpers
-def _interactor(select: str, **opts: Any) -> Dict[str, Any]:
+def _interactor(select: str, **opts: Any) -> dict[str, Any]:
     return omit_none({"select": select, **opts})
 
 
@@ -223,7 +223,7 @@ def interval_x(
     pixel_size: Any = None,
     peers: Any = None,
     brush: Any = None,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     return _interactor(
         "intervalX",
         **{
@@ -242,7 +242,7 @@ def interval_y(
     pixel_size: Any = None,
     peers: Any = None,
     brush: Any = None,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     return _interactor(
         "intervalY",
         **{
@@ -262,7 +262,7 @@ def interval_xy(
     pixel_size: Any = None,
     peers: Any = None,
     brush: Any = None,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     return _interactor(
         "intervalXY",
         **{
@@ -276,43 +276,43 @@ def interval_xy(
     )
 
 
-def toggle(bind: Any = None, channels: Any = None, peers: Any = None) -> Dict[str, Any]:
+def toggle(bind: Any = None, channels: Any = None, peers: Any = None) -> dict[str, Any]:
     return _interactor("toggle", **{"as": bind, "channels": channels, "peers": peers})
 
 
-def toggle_x(bind: Any = None, peers: Any = None) -> Dict[str, Any]:
+def toggle_x(bind: Any = None, peers: Any = None) -> dict[str, Any]:
     return _interactor("toggleX", **{"as": bind, "peers": peers})
 
 
-def toggle_y(bind: Any = None, peers: Any = None) -> Dict[str, Any]:
+def toggle_y(bind: Any = None, peers: Any = None) -> dict[str, Any]:
     return _interactor("toggleY", **{"as": bind, "peers": peers})
 
 
-def toggle_color(bind: Any = None, peers: Any = None) -> Dict[str, Any]:
+def toggle_color(bind: Any = None, peers: Any = None) -> dict[str, Any]:
     return _interactor("toggleColor", **{"as": bind, "peers": peers})
 
 
 def nearest_x(
     bind: Any = None, field: Any = None, channels: Any = None
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     return _interactor("nearestX", **{"as": bind, "field": field, "channels": channels})
 
 
 def nearest_y(
     bind: Any = None, field: Any = None, channels: Any = None
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     return _interactor("nearestY", **{"as": bind, "field": field, "channels": channels})
 
 
 def region(
     bind: Any = None, channels: Any = None, peers: Any = None, brush: Any = None
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     return _interactor(
         "region", **{"as": bind, "channels": channels, "peers": peers, "brush": brush}
     )
 
 
-def highlight(by: Any = None, channels: Any = None, **kwargs: Any) -> Dict[str, Any]:
+def highlight(by: Any = None, channels: Any = None, **kwargs: Any) -> dict[str, Any]:
     return omit_none(
         {
             "select": "highlight",
@@ -325,29 +325,29 @@ def highlight(by: Any = None, channels: Any = None, **kwargs: Any) -> Dict[str, 
 
 def pan(
     x: Any = None, y: Any = None, xfield: Any = None, yfield: Any = None
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     return _interactor("pan", x=x, y=y, xfield=xfield, yfield=yfield)
 
 
-def pan_x(x: Any = None, xfield: Any = None) -> Dict[str, Any]:
+def pan_x(x: Any = None, xfield: Any = None) -> dict[str, Any]:
     return _interactor("panX", x=x, xfield=xfield)
 
 
-def pan_y(y: Any = None, yfield: Any = None) -> Dict[str, Any]:
+def pan_y(y: Any = None, yfield: Any = None) -> dict[str, Any]:
     return _interactor("panY", y=y, yfield=yfield)
 
 
 def pan_zoom(
     x: Any = None, y: Any = None, xfield: Any = None, yfield: Any = None
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     return _interactor("panZoom", x=x, y=y, xfield=xfield, yfield=yfield)
 
 
-def pan_zoom_x(x: Any = None, xfield: Any = None) -> Dict[str, Any]:
+def pan_zoom_x(x: Any = None, xfield: Any = None) -> dict[str, Any]:
     return _interactor("panZoomX", x=x, xfield=xfield)
 
 
-def pan_zoom_y(y: Any = None, yfield: Any = None) -> Dict[str, Any]:
+def pan_zoom_y(y: Any = None, yfield: Any = None) -> dict[str, Any]:
     return _interactor("panZoomY", y=y, yfield=yfield)
 
 
@@ -359,7 +359,7 @@ def _legend(
     label: Any = None,
     columns: Any = None,
     **kwargs: Any,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     return omit_none(
         {
             "legend": kind,
@@ -378,7 +378,7 @@ def color_legend(
     label: Any = None,
     columns: Any = None,
     **kwargs: Any,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     return _legend(
         "color", plot=plot, bind=bind, label=label, columns=columns, **kwargs
     )
@@ -390,7 +390,7 @@ def opacity_legend(
     label: Any = None,
     columns: Any = None,
     **kwargs: Any,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     return _legend(
         "opacity", plot=plot, bind=bind, label=label, columns=columns, **kwargs
     )
@@ -402,7 +402,7 @@ def symbol_legend(
     label: Any = None,
     columns: Any = None,
     **kwargs: Any,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     return _legend(
         "symbol", plot=plot, bind=bind, label=label, columns=columns, **kwargs
     )

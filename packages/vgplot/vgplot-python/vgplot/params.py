@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import Any
 
 
-def _resolve(v: Any, param_names: "dict[int, str] | None") -> Any:
+def _resolve(v: Any, param_names: dict[int, str] | None) -> Any:
     """Recursively resolve _ParamBase objects to "$name" ref strings."""
     if param_names is None:
         return v
@@ -36,7 +36,7 @@ class ParamArray(_ParamBase):
     def __init__(self, values: list) -> None:
         self._values = list(values)
 
-    def param_def(self, param_names: "dict[int, str] | None" = None) -> Any:
+    def param_def(self, param_names: dict[int, str] | None = None) -> Any:
         return [_resolve(v, param_names) for v in self._values]
 
     def __repr__(self) -> str:
@@ -48,7 +48,7 @@ class SelectionDef(_ParamBase):
         self._select = select
         self._opts = {k: v for k, v in opts.items() if v is not None}
 
-    def param_def(self, param_names: "dict[int, str] | None" = None) -> Any:
+    def param_def(self, param_names: dict[int, str] | None = None) -> Any:
         d: dict = {"select": self._select}
         d.update(_resolve(self._opts, param_names))
         return d
@@ -58,7 +58,7 @@ class SelectionDef(_ParamBase):
         return f"selection.{self._select}({opts})"
 
 
-def param(value: Any = None) -> "_ParamBase":
+def param(value: Any = None) -> _ParamBase:
     if isinstance(value, list):
         return ParamArray(value)
     return ParamValue(value)

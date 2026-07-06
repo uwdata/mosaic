@@ -1,4 +1,4 @@
-from typing import Any, Dict
+from typing import Any
 
 
 def camelize(key: str) -> str:
@@ -9,6 +9,6 @@ def camelize(key: str) -> str:
     return parts[0] + "".join(p[:1].upper() + p[1:] for p in parts[1:])
 
 
-def omit_none(d: Dict[str, Any]) -> Dict[str, Any]:
+def omit_none(d: dict[str, Any]) -> dict[str, Any]:
     """Return a copy without None values."""
     return {k: v for k, v in d.items() if v is not None}

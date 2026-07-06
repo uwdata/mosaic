@@ -1,19 +1,19 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any, Dict
+from typing import Any
 
 
 @dataclass
 class DataDef:
-    payload: Dict[str, Any]
+    payload: dict[str, Any]
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return self.payload
 
 
 def parquet(file: str, select: Any = None, where: Any = None, **kwargs: Any) -> DataDef:
-    payload: Dict[str, Any] = {"type": "parquet", "file": file}
+    payload: dict[str, Any] = {"type": "parquet", "file": file}
     if select is not None:
         payload["select"] = select
     if where is not None:
@@ -27,7 +27,7 @@ def csv(file: str, **kwargs: Any) -> DataDef:
 
 
 def spatial(file: str, layer: str | None = None, **kwargs: Any) -> DataDef:
-    payload: Dict[str, Any] = {"type": "spatial", "file": file}
+    payload: dict[str, Any] = {"type": "spatial", "file": file}
     if layer is not None:
         payload["layer"] = layer
     payload.update(kwargs)
@@ -39,7 +39,7 @@ def table(query: str) -> DataDef:
 
 
 def json(data: Any = None, file: str | None = None, **kwargs: Any) -> DataDef:
-    payload: Dict[str, Any] = {"type": "json"}
+    payload: dict[str, Any] = {"type": "json"}
     if file is not None:
         payload["file"] = file
     if data is not None:
@@ -48,8 +48,8 @@ def json(data: Any = None, file: str | None = None, **kwargs: Any) -> DataDef:
     return DataDef(payload)
 
 
-def data(**named_defs: DataDef) -> Dict[str, Any]:
-    out: Dict[str, Any] = {}
+def data(**named_defs: DataDef) -> dict[str, Any]:
+    out: dict[str, Any] = {}
     for k, v in named_defs.items():
         out[k] = v.to_dict() if hasattr(v, "to_dict") else v
     return out
