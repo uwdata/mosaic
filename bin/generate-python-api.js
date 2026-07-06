@@ -75,7 +75,15 @@ function generateMarks(defs) {
   marks.sort((a, b) => a.mark.localeCompare(b.mark));
 
   const out = [HEADER, 'from typing import Any', '', 'from ..plot import Mark',
-    'from ._types import UNSET, ChannelValue, MarkData', '', ''];
+    'from ._types import UNSET, ChannelValue, MarkData', '', '',
+    'def _mark(name: str, args: dict[str, Any]) -> Mark:',
+    '    args = dict(args)',
+    '    data = args.pop("data")',
+    '    options = args.pop("options")',
+    '    enc = {k: v for k, v in args.items() if v is not UNSET}',
+    '    enc.update(options)',
+    '    return Mark(name, data=data, enc=enc or None)',
+    '', ''];
   const names = [];
   for (const { mark, props: propsObj, description } of marks) {
     const fn = ident(mark);
@@ -85,10 +93,7 @@ function generateMarks(defs) {
     const props = Object.keys(propsObj)
       .filter(p => p !== 'mark' && p !== 'data' && /^[A-Za-z][A-Za-z0-9]*$/.test(p));
     const params = props.map(p => `    ${ident(p)}: ChannelValue = UNSET,`);
-    // enc entries keyed by the exact schema (camelCase) name; runtime camelize is idempotent.
-    const encPairs = props.map(p => `        (${JSON.stringify(p)}, ${ident(p)}),`);
-    const extra = docline(description, '');
-    const doc = extra ? `The ${mark} mark. ${extra}` : `The ${mark} mark.`;
+    const doc = docline(description, `The ${mark} mark.`);
     out.push(
       `def ${fn}(`,
       '    data: MarkData = None,',
@@ -97,14 +102,7 @@ function generateMarks(defs) {
       '    **options: Any,',
       ') -> Mark:',
       `    """${doc}"""`,
-      '    enc: dict[str, Any] = dict(options)',
-      '    for _key, _val in (',
-      ...encPairs,
-      '    ):',
-      // Preserve explicitly-passed None (e.g. z=None); only drop unpassed params.
-      '        if _val is not UNSET:',
-      '            enc[_key] = _val',
-      `    return Mark(${JSON.stringify(mark)}, data=data, enc=enc or None)`,
+      `    return _mark(${JSON.stringify(mark)}, locals())`,
       '', '',
     );
   }

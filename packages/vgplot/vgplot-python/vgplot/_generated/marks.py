@@ -7,6 +7,15 @@ from ..plot import Mark
 from ._types import UNSET, ChannelValue, MarkData
 
 
+def _mark(name: str, args: dict[str, Any]) -> Mark:
+    args = dict(args)
+    data = args.pop("data")
+    options = args.pop("options")
+    enc = {k: v for k, v in args.items() if v is not UNSET}
+    enc.update(options)
+    return Mark(name, data=data, enc=enc or None)
+
+
 def area(
     data: MarkData = None,
     *,
@@ -61,62 +70,8 @@ def area(
     z: ChannelValue = UNSET,
     **options: Any,
 ) -> Mark:
-    """The area mark. The area mark."""
-    enc: dict[str, Any] = dict(options)
-    for _key, _val in (
-        ("ariaDescription", aria_description),
-        ("ariaHidden", aria_hidden),
-        ("ariaLabel", aria_label),
-        ("channels", channels),
-        ("clip", clip),
-        ("curve", curve),
-        ("dx", dx),
-        ("dy", dy),
-        ("facet", facet),
-        ("facetAnchor", facet_anchor),
-        ("fill", fill),
-        ("fillOpacity", fill_opacity),
-        ("filter", filter),
-        ("fx", fx),
-        ("fy", fy),
-        ("href", href),
-        ("imageFilter", image_filter),
-        ("margin", margin),
-        ("marginBottom", margin_bottom),
-        ("marginLeft", margin_left),
-        ("marginRight", margin_right),
-        ("marginTop", margin_top),
-        ("mixBlendMode", mix_blend_mode),
-        ("offset", offset),
-        ("opacity", opacity),
-        ("order", order),
-        ("paintOrder", paint_order),
-        ("pointerEvents", pointer_events),
-        ("reverse", reverse),
-        ("select", select),
-        ("shapeRendering", shape_rendering),
-        ("sort", sort),
-        ("stroke", stroke),
-        ("strokeDasharray", stroke_dasharray),
-        ("strokeDashoffset", stroke_dashoffset),
-        ("strokeLinecap", stroke_linecap),
-        ("strokeLinejoin", stroke_linejoin),
-        ("strokeMiterlimit", stroke_miterlimit),
-        ("strokeOpacity", stroke_opacity),
-        ("strokeWidth", stroke_width),
-        ("target", target),
-        ("tension", tension),
-        ("tip", tip),
-        ("title", title),
-        ("x1", x1),
-        ("x2", x2),
-        ("y1", y1),
-        ("y2", y2),
-        ("z", z),
-    ):
-        if _val is not UNSET:
-            enc[_key] = _val
-    return Mark("area", data=data, enc=enc or None)
+    """The area mark."""
+    return _mark("area", locals())
 
 
 def area_x(
@@ -173,62 +128,8 @@ def area_x(
     z: ChannelValue = UNSET,
     **options: Any,
 ) -> Mark:
-    """The areaX mark. The areaX mark."""
-    enc: dict[str, Any] = dict(options)
-    for _key, _val in (
-        ("ariaDescription", aria_description),
-        ("ariaHidden", aria_hidden),
-        ("ariaLabel", aria_label),
-        ("channels", channels),
-        ("clip", clip),
-        ("curve", curve),
-        ("dx", dx),
-        ("dy", dy),
-        ("facet", facet),
-        ("facetAnchor", facet_anchor),
-        ("fill", fill),
-        ("fillOpacity", fill_opacity),
-        ("filter", filter),
-        ("fx", fx),
-        ("fy", fy),
-        ("href", href),
-        ("imageFilter", image_filter),
-        ("margin", margin),
-        ("marginBottom", margin_bottom),
-        ("marginLeft", margin_left),
-        ("marginRight", margin_right),
-        ("marginTop", margin_top),
-        ("mixBlendMode", mix_blend_mode),
-        ("offset", offset),
-        ("opacity", opacity),
-        ("order", order),
-        ("paintOrder", paint_order),
-        ("pointerEvents", pointer_events),
-        ("reverse", reverse),
-        ("select", select),
-        ("shapeRendering", shape_rendering),
-        ("sort", sort),
-        ("stroke", stroke),
-        ("strokeDasharray", stroke_dasharray),
-        ("strokeDashoffset", stroke_dashoffset),
-        ("strokeLinecap", stroke_linecap),
-        ("strokeLinejoin", stroke_linejoin),
-        ("strokeMiterlimit", stroke_miterlimit),
-        ("strokeOpacity", stroke_opacity),
-        ("strokeWidth", stroke_width),
-        ("target", target),
-        ("tension", tension),
-        ("tip", tip),
-        ("title", title),
-        ("x", x),
-        ("x1", x1),
-        ("x2", x2),
-        ("y", y),
-        ("z", z),
-    ):
-        if _val is not UNSET:
-            enc[_key] = _val
-    return Mark("areaX", data=data, enc=enc or None)
+    """The areaX mark."""
+    return _mark("areaX", locals())
 
 
 def area_y(
@@ -285,62 +186,8 @@ def area_y(
     z: ChannelValue = UNSET,
     **options: Any,
 ) -> Mark:
-    """The areaY mark. The areaY mark."""
-    enc: dict[str, Any] = dict(options)
-    for _key, _val in (
-        ("ariaDescription", aria_description),
-        ("ariaHidden", aria_hidden),
-        ("ariaLabel", aria_label),
-        ("channels", channels),
-        ("clip", clip),
-        ("curve", curve),
-        ("dx", dx),
-        ("dy", dy),
-        ("facet", facet),
-        ("facetAnchor", facet_anchor),
-        ("fill", fill),
-        ("fillOpacity", fill_opacity),
-        ("filter", filter),
-        ("fx", fx),
-        ("fy", fy),
-        ("href", href),
-        ("imageFilter", image_filter),
-        ("margin", margin),
-        ("marginBottom", margin_bottom),
-        ("marginLeft", margin_left),
-        ("marginRight", margin_right),
-        ("marginTop", margin_top),
-        ("mixBlendMode", mix_blend_mode),
-        ("offset", offset),
-        ("opacity", opacity),
-        ("order", order),
-        ("paintOrder", paint_order),
-        ("pointerEvents", pointer_events),
-        ("reverse", reverse),
-        ("select", select),
-        ("shapeRendering", shape_rendering),
-        ("sort", sort),
-        ("stroke", stroke),
-        ("strokeDasharray", stroke_dasharray),
-        ("strokeDashoffset", stroke_dashoffset),
-        ("strokeLinecap", stroke_linecap),
-        ("strokeLinejoin", stroke_linejoin),
-        ("strokeMiterlimit", stroke_miterlimit),
-        ("strokeOpacity", stroke_opacity),
-        ("strokeWidth", stroke_width),
-        ("target", target),
-        ("tension", tension),
-        ("tip", tip),
-        ("title", title),
-        ("x", x),
-        ("y", y),
-        ("y1", y1),
-        ("y2", y2),
-        ("z", z),
-    ):
-        if _val is not UNSET:
-            enc[_key] = _val
-    return Mark("areaY", data=data, enc=enc or None)
+    """The areaY mark."""
+    return _mark("areaY", locals())
 
 
 def arrow(
@@ -401,66 +248,8 @@ def arrow(
     y2: ChannelValue = UNSET,
     **options: Any,
 ) -> Mark:
-    """The arrow mark. The arrow mark."""
-    enc: dict[str, Any] = dict(options)
-    for _key, _val in (
-        ("ariaDescription", aria_description),
-        ("ariaHidden", aria_hidden),
-        ("ariaLabel", aria_label),
-        ("bend", bend),
-        ("channels", channels),
-        ("clip", clip),
-        ("dx", dx),
-        ("dy", dy),
-        ("facet", facet),
-        ("facetAnchor", facet_anchor),
-        ("fill", fill),
-        ("fillOpacity", fill_opacity),
-        ("filter", filter),
-        ("fx", fx),
-        ("fy", fy),
-        ("headAngle", head_angle),
-        ("headLength", head_length),
-        ("href", href),
-        ("imageFilter", image_filter),
-        ("inset", inset),
-        ("insetEnd", inset_end),
-        ("insetStart", inset_start),
-        ("margin", margin),
-        ("marginBottom", margin_bottom),
-        ("marginLeft", margin_left),
-        ("marginRight", margin_right),
-        ("marginTop", margin_top),
-        ("mixBlendMode", mix_blend_mode),
-        ("opacity", opacity),
-        ("paintOrder", paint_order),
-        ("pointerEvents", pointer_events),
-        ("reverse", reverse),
-        ("select", select),
-        ("shapeRendering", shape_rendering),
-        ("sort", sort),
-        ("stroke", stroke),
-        ("strokeDasharray", stroke_dasharray),
-        ("strokeDashoffset", stroke_dashoffset),
-        ("strokeLinecap", stroke_linecap),
-        ("strokeLinejoin", stroke_linejoin),
-        ("strokeMiterlimit", stroke_miterlimit),
-        ("strokeOpacity", stroke_opacity),
-        ("strokeWidth", stroke_width),
-        ("sweep", sweep),
-        ("target", target),
-        ("tip", tip),
-        ("title", title),
-        ("x", x),
-        ("x1", x1),
-        ("x2", x2),
-        ("y", y),
-        ("y1", y1),
-        ("y2", y2),
-    ):
-        if _val is not UNSET:
-            enc[_key] = _val
-    return Mark("arrow", data=data, enc=enc or None)
+    """The arrow mark."""
+    return _mark("arrow", locals())
 
 
 def axis_fx(
@@ -548,93 +337,8 @@ def axis_fx(
     z: ChannelValue = UNSET,
     **options: Any,
 ) -> Mark:
-    """The axisFx mark. The axisFx mark."""
-    enc: dict[str, Any] = dict(options)
-    for _key, _val in (
-        ("anchor", anchor),
-        ("ariaDescription", aria_description),
-        ("ariaHidden", aria_hidden),
-        ("ariaLabel", aria_label),
-        ("channels", channels),
-        ("clip", clip),
-        ("color", color),
-        ("dx", dx),
-        ("dy", dy),
-        ("facet", facet),
-        ("facetAnchor", facet_anchor),
-        ("fill", fill),
-        ("fillOpacity", fill_opacity),
-        ("filter", filter),
-        ("fontFamily", font_family),
-        ("fontSize", font_size),
-        ("fontStyle", font_style),
-        ("fontVariant", font_variant),
-        ("fontWeight", font_weight),
-        ("frameAnchor", frame_anchor),
-        ("fx", fx),
-        ("fy", fy),
-        ("href", href),
-        ("imageFilter", image_filter),
-        ("inset", inset),
-        ("insetBottom", inset_bottom),
-        ("insetTop", inset_top),
-        ("interval", interval),
-        ("label", label),
-        ("labelAnchor", label_anchor),
-        ("labelArrow", label_arrow),
-        ("labelOffset", label_offset),
-        ("lineAnchor", line_anchor),
-        ("lineHeight", line_height),
-        ("lineWidth", line_width),
-        ("margin", margin),
-        ("marginBottom", margin_bottom),
-        ("marginLeft", margin_left),
-        ("marginRight", margin_right),
-        ("marginTop", margin_top),
-        ("marker", marker),
-        ("markerEnd", marker_end),
-        ("markerMid", marker_mid),
-        ("markerStart", marker_start),
-        ("mixBlendMode", mix_blend_mode),
-        ("monospace", monospace),
-        ("opacity", opacity),
-        ("paintOrder", paint_order),
-        ("pointerEvents", pointer_events),
-        ("reverse", reverse),
-        ("rotate", rotate),
-        ("select", select),
-        ("shapeRendering", shape_rendering),
-        ("sort", sort),
-        ("stroke", stroke),
-        ("strokeDasharray", stroke_dasharray),
-        ("strokeDashoffset", stroke_dashoffset),
-        ("strokeLinecap", stroke_linecap),
-        ("strokeLinejoin", stroke_linejoin),
-        ("strokeMiterlimit", stroke_miterlimit),
-        ("strokeOpacity", stroke_opacity),
-        ("strokeWidth", stroke_width),
-        ("target", target),
-        ("text", text),
-        ("textAnchor", text_anchor),
-        ("textOverflow", text_overflow),
-        ("textStroke", text_stroke),
-        ("textStrokeOpacity", text_stroke_opacity),
-        ("textStrokeWidth", text_stroke_width),
-        ("tickFormat", tick_format),
-        ("tickPadding", tick_padding),
-        ("tickRotate", tick_rotate),
-        ("tickSize", tick_size),
-        ("tickSpacing", tick_spacing),
-        ("ticks", ticks),
-        ("tip", tip),
-        ("title", title),
-        ("x", x),
-        ("y", y),
-        ("z", z),
-    ):
-        if _val is not UNSET:
-            enc[_key] = _val
-    return Mark("axisFx", data=data, enc=enc or None)
+    """The axisFx mark."""
+    return _mark("axisFx", locals())
 
 
 def axis_fy(
@@ -722,93 +426,8 @@ def axis_fy(
     z: ChannelValue = UNSET,
     **options: Any,
 ) -> Mark:
-    """The axisFy mark. The axisFy mark."""
-    enc: dict[str, Any] = dict(options)
-    for _key, _val in (
-        ("anchor", anchor),
-        ("ariaDescription", aria_description),
-        ("ariaHidden", aria_hidden),
-        ("ariaLabel", aria_label),
-        ("channels", channels),
-        ("clip", clip),
-        ("color", color),
-        ("dx", dx),
-        ("dy", dy),
-        ("facet", facet),
-        ("facetAnchor", facet_anchor),
-        ("fill", fill),
-        ("fillOpacity", fill_opacity),
-        ("filter", filter),
-        ("fontFamily", font_family),
-        ("fontSize", font_size),
-        ("fontStyle", font_style),
-        ("fontVariant", font_variant),
-        ("fontWeight", font_weight),
-        ("frameAnchor", frame_anchor),
-        ("fx", fx),
-        ("fy", fy),
-        ("href", href),
-        ("imageFilter", image_filter),
-        ("inset", inset),
-        ("insetLeft", inset_left),
-        ("insetRight", inset_right),
-        ("interval", interval),
-        ("label", label),
-        ("labelAnchor", label_anchor),
-        ("labelArrow", label_arrow),
-        ("labelOffset", label_offset),
-        ("lineAnchor", line_anchor),
-        ("lineHeight", line_height),
-        ("lineWidth", line_width),
-        ("margin", margin),
-        ("marginBottom", margin_bottom),
-        ("marginLeft", margin_left),
-        ("marginRight", margin_right),
-        ("marginTop", margin_top),
-        ("marker", marker),
-        ("markerEnd", marker_end),
-        ("markerMid", marker_mid),
-        ("markerStart", marker_start),
-        ("mixBlendMode", mix_blend_mode),
-        ("monospace", monospace),
-        ("opacity", opacity),
-        ("paintOrder", paint_order),
-        ("pointerEvents", pointer_events),
-        ("reverse", reverse),
-        ("rotate", rotate),
-        ("select", select),
-        ("shapeRendering", shape_rendering),
-        ("sort", sort),
-        ("stroke", stroke),
-        ("strokeDasharray", stroke_dasharray),
-        ("strokeDashoffset", stroke_dashoffset),
-        ("strokeLinecap", stroke_linecap),
-        ("strokeLinejoin", stroke_linejoin),
-        ("strokeMiterlimit", stroke_miterlimit),
-        ("strokeOpacity", stroke_opacity),
-        ("strokeWidth", stroke_width),
-        ("target", target),
-        ("text", text),
-        ("textAnchor", text_anchor),
-        ("textOverflow", text_overflow),
-        ("textStroke", text_stroke),
-        ("textStrokeOpacity", text_stroke_opacity),
-        ("textStrokeWidth", text_stroke_width),
-        ("tickFormat", tick_format),
-        ("tickPadding", tick_padding),
-        ("tickRotate", tick_rotate),
-        ("tickSize", tick_size),
-        ("tickSpacing", tick_spacing),
-        ("ticks", ticks),
-        ("tip", tip),
-        ("title", title),
-        ("x", x),
-        ("y", y),
-        ("z", z),
-    ):
-        if _val is not UNSET:
-            enc[_key] = _val
-    return Mark("axisFy", data=data, enc=enc or None)
+    """The axisFy mark."""
+    return _mark("axisFy", locals())
 
 
 def axis_x(
@@ -896,93 +515,8 @@ def axis_x(
     z: ChannelValue = UNSET,
     **options: Any,
 ) -> Mark:
-    """The axisX mark. The axisX mark."""
-    enc: dict[str, Any] = dict(options)
-    for _key, _val in (
-        ("anchor", anchor),
-        ("ariaDescription", aria_description),
-        ("ariaHidden", aria_hidden),
-        ("ariaLabel", aria_label),
-        ("channels", channels),
-        ("clip", clip),
-        ("color", color),
-        ("dx", dx),
-        ("dy", dy),
-        ("facet", facet),
-        ("facetAnchor", facet_anchor),
-        ("fill", fill),
-        ("fillOpacity", fill_opacity),
-        ("filter", filter),
-        ("fontFamily", font_family),
-        ("fontSize", font_size),
-        ("fontStyle", font_style),
-        ("fontVariant", font_variant),
-        ("fontWeight", font_weight),
-        ("frameAnchor", frame_anchor),
-        ("fx", fx),
-        ("fy", fy),
-        ("href", href),
-        ("imageFilter", image_filter),
-        ("inset", inset),
-        ("insetBottom", inset_bottom),
-        ("insetTop", inset_top),
-        ("interval", interval),
-        ("label", label),
-        ("labelAnchor", label_anchor),
-        ("labelArrow", label_arrow),
-        ("labelOffset", label_offset),
-        ("lineAnchor", line_anchor),
-        ("lineHeight", line_height),
-        ("lineWidth", line_width),
-        ("margin", margin),
-        ("marginBottom", margin_bottom),
-        ("marginLeft", margin_left),
-        ("marginRight", margin_right),
-        ("marginTop", margin_top),
-        ("marker", marker),
-        ("markerEnd", marker_end),
-        ("markerMid", marker_mid),
-        ("markerStart", marker_start),
-        ("mixBlendMode", mix_blend_mode),
-        ("monospace", monospace),
-        ("opacity", opacity),
-        ("paintOrder", paint_order),
-        ("pointerEvents", pointer_events),
-        ("reverse", reverse),
-        ("rotate", rotate),
-        ("select", select),
-        ("shapeRendering", shape_rendering),
-        ("sort", sort),
-        ("stroke", stroke),
-        ("strokeDasharray", stroke_dasharray),
-        ("strokeDashoffset", stroke_dashoffset),
-        ("strokeLinecap", stroke_linecap),
-        ("strokeLinejoin", stroke_linejoin),
-        ("strokeMiterlimit", stroke_miterlimit),
-        ("strokeOpacity", stroke_opacity),
-        ("strokeWidth", stroke_width),
-        ("target", target),
-        ("text", text),
-        ("textAnchor", text_anchor),
-        ("textOverflow", text_overflow),
-        ("textStroke", text_stroke),
-        ("textStrokeOpacity", text_stroke_opacity),
-        ("textStrokeWidth", text_stroke_width),
-        ("tickFormat", tick_format),
-        ("tickPadding", tick_padding),
-        ("tickRotate", tick_rotate),
-        ("tickSize", tick_size),
-        ("tickSpacing", tick_spacing),
-        ("ticks", ticks),
-        ("tip", tip),
-        ("title", title),
-        ("x", x),
-        ("y", y),
-        ("z", z),
-    ):
-        if _val is not UNSET:
-            enc[_key] = _val
-    return Mark("axisX", data=data, enc=enc or None)
+    """The axisX mark."""
+    return _mark("axisX", locals())
 
 
 def axis_y(
@@ -1070,93 +604,8 @@ def axis_y(
     z: ChannelValue = UNSET,
     **options: Any,
 ) -> Mark:
-    """The axisY mark. The axisY mark."""
-    enc: dict[str, Any] = dict(options)
-    for _key, _val in (
-        ("anchor", anchor),
-        ("ariaDescription", aria_description),
-        ("ariaHidden", aria_hidden),
-        ("ariaLabel", aria_label),
-        ("channels", channels),
-        ("clip", clip),
-        ("color", color),
-        ("dx", dx),
-        ("dy", dy),
-        ("facet", facet),
-        ("facetAnchor", facet_anchor),
-        ("fill", fill),
-        ("fillOpacity", fill_opacity),
-        ("filter", filter),
-        ("fontFamily", font_family),
-        ("fontSize", font_size),
-        ("fontStyle", font_style),
-        ("fontVariant", font_variant),
-        ("fontWeight", font_weight),
-        ("frameAnchor", frame_anchor),
-        ("fx", fx),
-        ("fy", fy),
-        ("href", href),
-        ("imageFilter", image_filter),
-        ("inset", inset),
-        ("insetLeft", inset_left),
-        ("insetRight", inset_right),
-        ("interval", interval),
-        ("label", label),
-        ("labelAnchor", label_anchor),
-        ("labelArrow", label_arrow),
-        ("labelOffset", label_offset),
-        ("lineAnchor", line_anchor),
-        ("lineHeight", line_height),
-        ("lineWidth", line_width),
-        ("margin", margin),
-        ("marginBottom", margin_bottom),
-        ("marginLeft", margin_left),
-        ("marginRight", margin_right),
-        ("marginTop", margin_top),
-        ("marker", marker),
-        ("markerEnd", marker_end),
-        ("markerMid", marker_mid),
-        ("markerStart", marker_start),
-        ("mixBlendMode", mix_blend_mode),
-        ("monospace", monospace),
-        ("opacity", opacity),
-        ("paintOrder", paint_order),
-        ("pointerEvents", pointer_events),
-        ("reverse", reverse),
-        ("rotate", rotate),
-        ("select", select),
-        ("shapeRendering", shape_rendering),
-        ("sort", sort),
-        ("stroke", stroke),
-        ("strokeDasharray", stroke_dasharray),
-        ("strokeDashoffset", stroke_dashoffset),
-        ("strokeLinecap", stroke_linecap),
-        ("strokeLinejoin", stroke_linejoin),
-        ("strokeMiterlimit", stroke_miterlimit),
-        ("strokeOpacity", stroke_opacity),
-        ("strokeWidth", stroke_width),
-        ("target", target),
-        ("text", text),
-        ("textAnchor", text_anchor),
-        ("textOverflow", text_overflow),
-        ("textStroke", text_stroke),
-        ("textStrokeOpacity", text_stroke_opacity),
-        ("textStrokeWidth", text_stroke_width),
-        ("tickFormat", tick_format),
-        ("tickPadding", tick_padding),
-        ("tickRotate", tick_rotate),
-        ("tickSize", tick_size),
-        ("tickSpacing", tick_spacing),
-        ("ticks", ticks),
-        ("tip", tip),
-        ("title", title),
-        ("x", x),
-        ("y", y),
-        ("z", z),
-    ):
-        if _val is not UNSET:
-            enc[_key] = _val
-    return Mark("axisY", data=data, enc=enc or None)
+    """The axisY mark."""
+    return _mark("axisY", locals())
 
 
 def bar_x(
@@ -1219,68 +668,8 @@ def bar_x(
     z: ChannelValue = UNSET,
     **options: Any,
 ) -> Mark:
-    """The barX mark. The barX mark."""
-    enc: dict[str, Any] = dict(options)
-    for _key, _val in (
-        ("ariaDescription", aria_description),
-        ("ariaHidden", aria_hidden),
-        ("ariaLabel", aria_label),
-        ("channels", channels),
-        ("clip", clip),
-        ("dx", dx),
-        ("dy", dy),
-        ("facet", facet),
-        ("facetAnchor", facet_anchor),
-        ("fill", fill),
-        ("fillOpacity", fill_opacity),
-        ("filter", filter),
-        ("fx", fx),
-        ("fy", fy),
-        ("href", href),
-        ("imageFilter", image_filter),
-        ("inset", inset),
-        ("insetBottom", inset_bottom),
-        ("insetLeft", inset_left),
-        ("insetRight", inset_right),
-        ("insetTop", inset_top),
-        ("interval", interval),
-        ("margin", margin),
-        ("marginBottom", margin_bottom),
-        ("marginLeft", margin_left),
-        ("marginRight", margin_right),
-        ("marginTop", margin_top),
-        ("mixBlendMode", mix_blend_mode),
-        ("offset", offset),
-        ("opacity", opacity),
-        ("order", order),
-        ("paintOrder", paint_order),
-        ("pointerEvents", pointer_events),
-        ("reverse", reverse),
-        ("rx", rx),
-        ("ry", ry),
-        ("select", select),
-        ("shapeRendering", shape_rendering),
-        ("sort", sort),
-        ("stroke", stroke),
-        ("strokeDasharray", stroke_dasharray),
-        ("strokeDashoffset", stroke_dashoffset),
-        ("strokeLinecap", stroke_linecap),
-        ("strokeLinejoin", stroke_linejoin),
-        ("strokeMiterlimit", stroke_miterlimit),
-        ("strokeOpacity", stroke_opacity),
-        ("strokeWidth", stroke_width),
-        ("target", target),
-        ("tip", tip),
-        ("title", title),
-        ("x", x),
-        ("x1", x1),
-        ("x2", x2),
-        ("y", y),
-        ("z", z),
-    ):
-        if _val is not UNSET:
-            enc[_key] = _val
-    return Mark("barX", data=data, enc=enc or None)
+    """The barX mark."""
+    return _mark("barX", locals())
 
 
 def bar_y(
@@ -1343,68 +732,8 @@ def bar_y(
     z: ChannelValue = UNSET,
     **options: Any,
 ) -> Mark:
-    """The barY mark. The barY mark."""
-    enc: dict[str, Any] = dict(options)
-    for _key, _val in (
-        ("ariaDescription", aria_description),
-        ("ariaHidden", aria_hidden),
-        ("ariaLabel", aria_label),
-        ("channels", channels),
-        ("clip", clip),
-        ("dx", dx),
-        ("dy", dy),
-        ("facet", facet),
-        ("facetAnchor", facet_anchor),
-        ("fill", fill),
-        ("fillOpacity", fill_opacity),
-        ("filter", filter),
-        ("fx", fx),
-        ("fy", fy),
-        ("href", href),
-        ("imageFilter", image_filter),
-        ("inset", inset),
-        ("insetBottom", inset_bottom),
-        ("insetLeft", inset_left),
-        ("insetRight", inset_right),
-        ("insetTop", inset_top),
-        ("interval", interval),
-        ("margin", margin),
-        ("marginBottom", margin_bottom),
-        ("marginLeft", margin_left),
-        ("marginRight", margin_right),
-        ("marginTop", margin_top),
-        ("mixBlendMode", mix_blend_mode),
-        ("offset", offset),
-        ("opacity", opacity),
-        ("order", order),
-        ("paintOrder", paint_order),
-        ("pointerEvents", pointer_events),
-        ("reverse", reverse),
-        ("rx", rx),
-        ("ry", ry),
-        ("select", select),
-        ("shapeRendering", shape_rendering),
-        ("sort", sort),
-        ("stroke", stroke),
-        ("strokeDasharray", stroke_dasharray),
-        ("strokeDashoffset", stroke_dashoffset),
-        ("strokeLinecap", stroke_linecap),
-        ("strokeLinejoin", stroke_linejoin),
-        ("strokeMiterlimit", stroke_miterlimit),
-        ("strokeOpacity", stroke_opacity),
-        ("strokeWidth", stroke_width),
-        ("target", target),
-        ("tip", tip),
-        ("title", title),
-        ("x", x),
-        ("y", y),
-        ("y1", y1),
-        ("y2", y2),
-        ("z", z),
-    ):
-        if _val is not UNSET:
-            enc[_key] = _val
-    return Mark("barY", data=data, enc=enc or None)
+    """The barY mark."""
+    return _mark("barY", locals())
 
 
 def cell(
@@ -1461,62 +790,8 @@ def cell(
     y: ChannelValue = UNSET,
     **options: Any,
 ) -> Mark:
-    """The cell mark. The cell mark."""
-    enc: dict[str, Any] = dict(options)
-    for _key, _val in (
-        ("ariaDescription", aria_description),
-        ("ariaHidden", aria_hidden),
-        ("ariaLabel", aria_label),
-        ("channels", channels),
-        ("clip", clip),
-        ("dx", dx),
-        ("dy", dy),
-        ("facet", facet),
-        ("facetAnchor", facet_anchor),
-        ("fill", fill),
-        ("fillOpacity", fill_opacity),
-        ("filter", filter),
-        ("fx", fx),
-        ("fy", fy),
-        ("href", href),
-        ("imageFilter", image_filter),
-        ("inset", inset),
-        ("insetBottom", inset_bottom),
-        ("insetLeft", inset_left),
-        ("insetRight", inset_right),
-        ("insetTop", inset_top),
-        ("margin", margin),
-        ("marginBottom", margin_bottom),
-        ("marginLeft", margin_left),
-        ("marginRight", margin_right),
-        ("marginTop", margin_top),
-        ("mixBlendMode", mix_blend_mode),
-        ("opacity", opacity),
-        ("paintOrder", paint_order),
-        ("pointerEvents", pointer_events),
-        ("reverse", reverse),
-        ("rx", rx),
-        ("ry", ry),
-        ("select", select),
-        ("shapeRendering", shape_rendering),
-        ("sort", sort),
-        ("stroke", stroke),
-        ("strokeDasharray", stroke_dasharray),
-        ("strokeDashoffset", stroke_dashoffset),
-        ("strokeLinecap", stroke_linecap),
-        ("strokeLinejoin", stroke_linejoin),
-        ("strokeMiterlimit", stroke_miterlimit),
-        ("strokeOpacity", stroke_opacity),
-        ("strokeWidth", stroke_width),
-        ("target", target),
-        ("tip", tip),
-        ("title", title),
-        ("x", x),
-        ("y", y),
-    ):
-        if _val is not UNSET:
-            enc[_key] = _val
-    return Mark("cell", data=data, enc=enc or None)
+    """The cell mark."""
+    return _mark("cell", locals())
 
 
 def cell_x(
@@ -1573,62 +848,8 @@ def cell_x(
     y: ChannelValue = UNSET,
     **options: Any,
 ) -> Mark:
-    """The cellX mark. The cellX mark."""
-    enc: dict[str, Any] = dict(options)
-    for _key, _val in (
-        ("ariaDescription", aria_description),
-        ("ariaHidden", aria_hidden),
-        ("ariaLabel", aria_label),
-        ("channels", channels),
-        ("clip", clip),
-        ("dx", dx),
-        ("dy", dy),
-        ("facet", facet),
-        ("facetAnchor", facet_anchor),
-        ("fill", fill),
-        ("fillOpacity", fill_opacity),
-        ("filter", filter),
-        ("fx", fx),
-        ("fy", fy),
-        ("href", href),
-        ("imageFilter", image_filter),
-        ("inset", inset),
-        ("insetBottom", inset_bottom),
-        ("insetLeft", inset_left),
-        ("insetRight", inset_right),
-        ("insetTop", inset_top),
-        ("margin", margin),
-        ("marginBottom", margin_bottom),
-        ("marginLeft", margin_left),
-        ("marginRight", margin_right),
-        ("marginTop", margin_top),
-        ("mixBlendMode", mix_blend_mode),
-        ("opacity", opacity),
-        ("paintOrder", paint_order),
-        ("pointerEvents", pointer_events),
-        ("reverse", reverse),
-        ("rx", rx),
-        ("ry", ry),
-        ("select", select),
-        ("shapeRendering", shape_rendering),
-        ("sort", sort),
-        ("stroke", stroke),
-        ("strokeDasharray", stroke_dasharray),
-        ("strokeDashoffset", stroke_dashoffset),
-        ("strokeLinecap", stroke_linecap),
-        ("strokeLinejoin", stroke_linejoin),
-        ("strokeMiterlimit", stroke_miterlimit),
-        ("strokeOpacity", stroke_opacity),
-        ("strokeWidth", stroke_width),
-        ("target", target),
-        ("tip", tip),
-        ("title", title),
-        ("x", x),
-        ("y", y),
-    ):
-        if _val is not UNSET:
-            enc[_key] = _val
-    return Mark("cellX", data=data, enc=enc or None)
+    """The cellX mark."""
+    return _mark("cellX", locals())
 
 
 def cell_y(
@@ -1685,62 +906,8 @@ def cell_y(
     y: ChannelValue = UNSET,
     **options: Any,
 ) -> Mark:
-    """The cellY mark. The cellY mark."""
-    enc: dict[str, Any] = dict(options)
-    for _key, _val in (
-        ("ariaDescription", aria_description),
-        ("ariaHidden", aria_hidden),
-        ("ariaLabel", aria_label),
-        ("channels", channels),
-        ("clip", clip),
-        ("dx", dx),
-        ("dy", dy),
-        ("facet", facet),
-        ("facetAnchor", facet_anchor),
-        ("fill", fill),
-        ("fillOpacity", fill_opacity),
-        ("filter", filter),
-        ("fx", fx),
-        ("fy", fy),
-        ("href", href),
-        ("imageFilter", image_filter),
-        ("inset", inset),
-        ("insetBottom", inset_bottom),
-        ("insetLeft", inset_left),
-        ("insetRight", inset_right),
-        ("insetTop", inset_top),
-        ("margin", margin),
-        ("marginBottom", margin_bottom),
-        ("marginLeft", margin_left),
-        ("marginRight", margin_right),
-        ("marginTop", margin_top),
-        ("mixBlendMode", mix_blend_mode),
-        ("opacity", opacity),
-        ("paintOrder", paint_order),
-        ("pointerEvents", pointer_events),
-        ("reverse", reverse),
-        ("rx", rx),
-        ("ry", ry),
-        ("select", select),
-        ("shapeRendering", shape_rendering),
-        ("sort", sort),
-        ("stroke", stroke),
-        ("strokeDasharray", stroke_dasharray),
-        ("strokeDashoffset", stroke_dashoffset),
-        ("strokeLinecap", stroke_linecap),
-        ("strokeLinejoin", stroke_linejoin),
-        ("strokeMiterlimit", stroke_miterlimit),
-        ("strokeOpacity", stroke_opacity),
-        ("strokeWidth", stroke_width),
-        ("target", target),
-        ("tip", tip),
-        ("title", title),
-        ("x", x),
-        ("y", y),
-    ):
-        if _val is not UNSET:
-            enc[_key] = _val
-    return Mark("cellY", data=data, enc=enc or None)
+    """The cellY mark."""
+    return _mark("cellY", locals())
 
 
 def circle(
@@ -1795,60 +962,8 @@ def circle(
     z: ChannelValue = UNSET,
     **options: Any,
 ) -> Mark:
-    """The circle mark. The circle mark."""
-    enc: dict[str, Any] = dict(options)
-    for _key, _val in (
-        ("ariaDescription", aria_description),
-        ("ariaHidden", aria_hidden),
-        ("ariaLabel", aria_label),
-        ("channels", channels),
-        ("clip", clip),
-        ("dx", dx),
-        ("dy", dy),
-        ("facet", facet),
-        ("facetAnchor", facet_anchor),
-        ("fill", fill),
-        ("fillOpacity", fill_opacity),
-        ("filter", filter),
-        ("frameAnchor", frame_anchor),
-        ("fx", fx),
-        ("fy", fy),
-        ("href", href),
-        ("imageFilter", image_filter),
-        ("margin", margin),
-        ("marginBottom", margin_bottom),
-        ("marginLeft", margin_left),
-        ("marginRight", margin_right),
-        ("marginTop", margin_top),
-        ("mixBlendMode", mix_blend_mode),
-        ("opacity", opacity),
-        ("paintOrder", paint_order),
-        ("pointerEvents", pointer_events),
-        ("r", r),
-        ("reverse", reverse),
-        ("rotate", rotate),
-        ("select", select),
-        ("shapeRendering", shape_rendering),
-        ("sort", sort),
-        ("stroke", stroke),
-        ("strokeDasharray", stroke_dasharray),
-        ("strokeDashoffset", stroke_dashoffset),
-        ("strokeLinecap", stroke_linecap),
-        ("strokeLinejoin", stroke_linejoin),
-        ("strokeMiterlimit", stroke_miterlimit),
-        ("strokeOpacity", stroke_opacity),
-        ("strokeWidth", stroke_width),
-        ("symbol", symbol),
-        ("target", target),
-        ("tip", tip),
-        ("title", title),
-        ("x", x),
-        ("y", y),
-        ("z", z),
-    ):
-        if _val is not UNSET:
-            enc[_key] = _val
-    return Mark("circle", data=data, enc=enc or None)
+    """The circle mark."""
+    return _mark("circle", locals())
 
 
 def contour(
@@ -1905,62 +1020,8 @@ def contour(
     y: ChannelValue = UNSET,
     **options: Any,
 ) -> Mark:
-    """The contour mark. The contour mark."""
-    enc: dict[str, Any] = dict(options)
-    for _key, _val in (
-        ("ariaDescription", aria_description),
-        ("ariaHidden", aria_hidden),
-        ("ariaLabel", aria_label),
-        ("bandwidth", bandwidth),
-        ("channels", channels),
-        ("clip", clip),
-        ("dx", dx),
-        ("dy", dy),
-        ("facet", facet),
-        ("facetAnchor", facet_anchor),
-        ("fill", fill),
-        ("fillOpacity", fill_opacity),
-        ("filter", filter),
-        ("fx", fx),
-        ("fy", fy),
-        ("height", height),
-        ("href", href),
-        ("imageFilter", image_filter),
-        ("interpolate", interpolate),
-        ("margin", margin),
-        ("marginBottom", margin_bottom),
-        ("marginLeft", margin_left),
-        ("marginRight", margin_right),
-        ("marginTop", margin_top),
-        ("mixBlendMode", mix_blend_mode),
-        ("opacity", opacity),
-        ("pad", pad),
-        ("paintOrder", paint_order),
-        ("pixelSize", pixel_size),
-        ("pointerEvents", pointer_events),
-        ("reverse", reverse),
-        ("select", select),
-        ("shapeRendering", shape_rendering),
-        ("sort", sort),
-        ("stroke", stroke),
-        ("strokeDasharray", stroke_dasharray),
-        ("strokeDashoffset", stroke_dashoffset),
-        ("strokeLinecap", stroke_linecap),
-        ("strokeLinejoin", stroke_linejoin),
-        ("strokeMiterlimit", stroke_miterlimit),
-        ("strokeOpacity", stroke_opacity),
-        ("strokeWidth", stroke_width),
-        ("target", target),
-        ("thresholds", thresholds),
-        ("tip", tip),
-        ("title", title),
-        ("width", width),
-        ("x", x),
-        ("y", y),
-    ):
-        if _val is not UNSET:
-            enc[_key] = _val
-    return Mark("contour", data=data, enc=enc or None)
+    """The contour mark."""
+    return _mark("contour", locals())
 
 
 def delaunay_link(
@@ -2017,62 +1078,8 @@ def delaunay_link(
     z: ChannelValue = UNSET,
     **options: Any,
 ) -> Mark:
-    """The delaunayLink mark. The delaunayLink mark."""
-    enc: dict[str, Any] = dict(options)
-    for _key, _val in (
-        ("ariaDescription", aria_description),
-        ("ariaHidden", aria_hidden),
-        ("ariaLabel", aria_label),
-        ("channels", channels),
-        ("clip", clip),
-        ("curve", curve),
-        ("dx", dx),
-        ("dy", dy),
-        ("facet", facet),
-        ("facetAnchor", facet_anchor),
-        ("fill", fill),
-        ("fillOpacity", fill_opacity),
-        ("filter", filter),
-        ("fx", fx),
-        ("fy", fy),
-        ("href", href),
-        ("imageFilter", image_filter),
-        ("margin", margin),
-        ("marginBottom", margin_bottom),
-        ("marginLeft", margin_left),
-        ("marginRight", margin_right),
-        ("marginTop", margin_top),
-        ("marker", marker),
-        ("markerEnd", marker_end),
-        ("markerMid", marker_mid),
-        ("markerStart", marker_start),
-        ("mixBlendMode", mix_blend_mode),
-        ("opacity", opacity),
-        ("paintOrder", paint_order),
-        ("pointerEvents", pointer_events),
-        ("reverse", reverse),
-        ("select", select),
-        ("shapeRendering", shape_rendering),
-        ("sort", sort),
-        ("stroke", stroke),
-        ("strokeDasharray", stroke_dasharray),
-        ("strokeDashoffset", stroke_dashoffset),
-        ("strokeLinecap", stroke_linecap),
-        ("strokeLinejoin", stroke_linejoin),
-        ("strokeMiterlimit", stroke_miterlimit),
-        ("strokeOpacity", stroke_opacity),
-        ("strokeWidth", stroke_width),
-        ("target", target),
-        ("tension", tension),
-        ("tip", tip),
-        ("title", title),
-        ("x", x),
-        ("y", y),
-        ("z", z),
-    ):
-        if _val is not UNSET:
-            enc[_key] = _val
-    return Mark("delaunayLink", data=data, enc=enc or None)
+    """The delaunayLink mark."""
+    return _mark("delaunayLink", locals())
 
 
 def delaunay_mesh(
@@ -2129,62 +1136,8 @@ def delaunay_mesh(
     z: ChannelValue = UNSET,
     **options: Any,
 ) -> Mark:
-    """The delaunayMesh mark. The delaunayMesh mark."""
-    enc: dict[str, Any] = dict(options)
-    for _key, _val in (
-        ("ariaDescription", aria_description),
-        ("ariaHidden", aria_hidden),
-        ("ariaLabel", aria_label),
-        ("channels", channels),
-        ("clip", clip),
-        ("curve", curve),
-        ("dx", dx),
-        ("dy", dy),
-        ("facet", facet),
-        ("facetAnchor", facet_anchor),
-        ("fill", fill),
-        ("fillOpacity", fill_opacity),
-        ("filter", filter),
-        ("fx", fx),
-        ("fy", fy),
-        ("href", href),
-        ("imageFilter", image_filter),
-        ("margin", margin),
-        ("marginBottom", margin_bottom),
-        ("marginLeft", margin_left),
-        ("marginRight", margin_right),
-        ("marginTop", margin_top),
-        ("marker", marker),
-        ("markerEnd", marker_end),
-        ("markerMid", marker_mid),
-        ("markerStart", marker_start),
-        ("mixBlendMode", mix_blend_mode),
-        ("opacity", opacity),
-        ("paintOrder", paint_order),
-        ("pointerEvents", pointer_events),
-        ("reverse", reverse),
-        ("select", select),
-        ("shapeRendering", shape_rendering),
-        ("sort", sort),
-        ("stroke", stroke),
-        ("strokeDasharray", stroke_dasharray),
-        ("strokeDashoffset", stroke_dashoffset),
-        ("strokeLinecap", stroke_linecap),
-        ("strokeLinejoin", stroke_linejoin),
-        ("strokeMiterlimit", stroke_miterlimit),
-        ("strokeOpacity", stroke_opacity),
-        ("strokeWidth", stroke_width),
-        ("target", target),
-        ("tension", tension),
-        ("tip", tip),
-        ("title", title),
-        ("x", x),
-        ("y", y),
-        ("z", z),
-    ):
-        if _val is not UNSET:
-            enc[_key] = _val
-    return Mark("delaunayMesh", data=data, enc=enc or None)
+    """The delaunayMesh mark."""
+    return _mark("delaunayMesh", locals())
 
 
 def dense_line(
@@ -2243,64 +1196,8 @@ def dense_line(
     z: ChannelValue = UNSET,
     **options: Any,
 ) -> Mark:
-    """The denseLine mark. The denseLine mark."""
-    enc: dict[str, Any] = dict(options)
-    for _key, _val in (
-        ("ariaDescription", aria_description),
-        ("ariaHidden", aria_hidden),
-        ("ariaLabel", aria_label),
-        ("bandwidth", bandwidth),
-        ("channels", channels),
-        ("clip", clip),
-        ("dx", dx),
-        ("dy", dy),
-        ("facet", facet),
-        ("facetAnchor", facet_anchor),
-        ("fill", fill),
-        ("fillOpacity", fill_opacity),
-        ("filter", filter),
-        ("fx", fx),
-        ("fy", fy),
-        ("height", height),
-        ("href", href),
-        ("imageFilter", image_filter),
-        ("imageRendering", image_rendering),
-        ("interpolate", interpolate),
-        ("margin", margin),
-        ("marginBottom", margin_bottom),
-        ("marginLeft", margin_left),
-        ("marginRight", margin_right),
-        ("marginTop", margin_top),
-        ("mixBlendMode", mix_blend_mode),
-        ("normalize", normalize),
-        ("opacity", opacity),
-        ("pad", pad),
-        ("paintOrder", paint_order),
-        ("pixelSize", pixel_size),
-        ("pointerEvents", pointer_events),
-        ("reverse", reverse),
-        ("select", select),
-        ("shapeRendering", shape_rendering),
-        ("sort", sort),
-        ("stroke", stroke),
-        ("strokeDasharray", stroke_dasharray),
-        ("strokeDashoffset", stroke_dashoffset),
-        ("strokeLinecap", stroke_linecap),
-        ("strokeLinejoin", stroke_linejoin),
-        ("strokeMiterlimit", stroke_miterlimit),
-        ("strokeOpacity", stroke_opacity),
-        ("strokeWidth", stroke_width),
-        ("target", target),
-        ("tip", tip),
-        ("title", title),
-        ("width", width),
-        ("x", x),
-        ("y", y),
-        ("z", z),
-    ):
-        if _val is not UNSET:
-            enc[_key] = _val
-    return Mark("denseLine", data=data, enc=enc or None)
+    """The denseLine mark."""
+    return _mark("denseLine", locals())
 
 
 def density(
@@ -2372,77 +1269,8 @@ def density(
     z: ChannelValue = UNSET,
     **options: Any,
 ) -> Mark:
-    """The density mark. The density mark for 2D densities."""
-    enc: dict[str, Any] = dict(options)
-    for _key, _val in (
-        ("ariaDescription", aria_description),
-        ("ariaHidden", aria_hidden),
-        ("ariaLabel", aria_label),
-        ("bandwidth", bandwidth),
-        ("channels", channels),
-        ("clip", clip),
-        ("dx", dx),
-        ("dy", dy),
-        ("facet", facet),
-        ("facetAnchor", facet_anchor),
-        ("fill", fill),
-        ("fillOpacity", fill_opacity),
-        ("filter", filter),
-        ("fontFamily", font_family),
-        ("fontSize", font_size),
-        ("fontStyle", font_style),
-        ("fontVariant", font_variant),
-        ("fontWeight", font_weight),
-        ("frameAnchor", frame_anchor),
-        ("fx", fx),
-        ("fy", fy),
-        ("height", height),
-        ("href", href),
-        ("imageFilter", image_filter),
-        ("interpolate", interpolate),
-        ("lineHeight", line_height),
-        ("lineWidth", line_width),
-        ("margin", margin),
-        ("marginBottom", margin_bottom),
-        ("marginLeft", margin_left),
-        ("marginRight", margin_right),
-        ("marginTop", margin_top),
-        ("mixBlendMode", mix_blend_mode),
-        ("monospace", monospace),
-        ("opacity", opacity),
-        ("pad", pad),
-        ("paintOrder", paint_order),
-        ("pixelSize", pixel_size),
-        ("pointerEvents", pointer_events),
-        ("r", r),
-        ("reverse", reverse),
-        ("rotate", rotate),
-        ("select", select),
-        ("shapeRendering", shape_rendering),
-        ("sort", sort),
-        ("stroke", stroke),
-        ("strokeDasharray", stroke_dasharray),
-        ("strokeDashoffset", stroke_dashoffset),
-        ("strokeLinecap", stroke_linecap),
-        ("strokeLinejoin", stroke_linejoin),
-        ("strokeMiterlimit", stroke_miterlimit),
-        ("strokeOpacity", stroke_opacity),
-        ("strokeWidth", stroke_width),
-        ("symbol", symbol),
-        ("target", target),
-        ("textAnchor", text_anchor),
-        ("textOverflow", text_overflow),
-        ("tip", tip),
-        ("title", title),
-        ("type", type_),
-        ("width", width),
-        ("x", x),
-        ("y", y),
-        ("z", z),
-    ):
-        if _val is not UNSET:
-            enc[_key] = _val
-    return Mark("density", data=data, enc=enc or None)
+    """The density mark for 2D densities."""
+    return _mark("density", locals())
 
 
 def density_x(
@@ -2521,84 +1349,8 @@ def density_x(
     text_overflow: ChannelValue = UNSET,
     **options: Any,
 ) -> Mark:
-    """The densityX mark. The densityX mark."""
-    enc: dict[str, Any] = dict(options)
-    for _key, _val in (
-        ("ariaDescription", aria_description),
-        ("ariaHidden", aria_hidden),
-        ("ariaLabel", aria_label),
-        ("bandwidth", bandwidth),
-        ("bins", bins),
-        ("channels", channels),
-        ("clip", clip),
-        ("curve", curve),
-        ("dx", dx),
-        ("dy", dy),
-        ("facet", facet),
-        ("facetAnchor", facet_anchor),
-        ("fill", fill),
-        ("fillOpacity", fill_opacity),
-        ("filter", filter),
-        ("fx", fx),
-        ("fy", fy),
-        ("href", href),
-        ("imageFilter", image_filter),
-        ("margin", margin),
-        ("marginBottom", margin_bottom),
-        ("marginLeft", margin_left),
-        ("marginRight", margin_right),
-        ("marginTop", margin_top),
-        ("mixBlendMode", mix_blend_mode),
-        ("normalize", normalize),
-        ("offset", offset),
-        ("opacity", opacity),
-        ("order", order),
-        ("paintOrder", paint_order),
-        ("pointerEvents", pointer_events),
-        ("reverse", reverse),
-        ("select", select),
-        ("shapeRendering", shape_rendering),
-        ("sort", sort),
-        ("stack", stack),
-        ("stroke", stroke),
-        ("strokeDasharray", stroke_dasharray),
-        ("strokeDashoffset", stroke_dashoffset),
-        ("strokeLinecap", stroke_linecap),
-        ("strokeLinejoin", stroke_linejoin),
-        ("strokeMiterlimit", stroke_miterlimit),
-        ("strokeOpacity", stroke_opacity),
-        ("strokeWidth", stroke_width),
-        ("target", target),
-        ("tension", tension),
-        ("tip", tip),
-        ("title", title),
-        ("type", type_),
-        ("y", y),
-        ("z", z),
-        ("marker", marker),
-        ("markerEnd", marker_end),
-        ("markerMid", marker_mid),
-        ("markerStart", marker_start),
-        ("frameAnchor", frame_anchor),
-        ("r", r),
-        ("rotate", rotate),
-        ("symbol", symbol),
-        ("fontFamily", font_family),
-        ("fontSize", font_size),
-        ("fontStyle", font_style),
-        ("fontVariant", font_variant),
-        ("fontWeight", font_weight),
-        ("lineAnchor", line_anchor),
-        ("lineHeight", line_height),
-        ("lineWidth", line_width),
-        ("monospace", monospace),
-        ("text", text),
-        ("textAnchor", text_anchor),
-        ("textOverflow", text_overflow),
-    ):
-        if _val is not UNSET:
-            enc[_key] = _val
-    return Mark("densityX", data=data, enc=enc or None)
+    """The densityX mark."""
+    return _mark("densityX", locals())
 
 
 def density_y(
@@ -2677,84 +1429,8 @@ def density_y(
     text_overflow: ChannelValue = UNSET,
     **options: Any,
 ) -> Mark:
-    """The densityY mark. The densityY mark."""
-    enc: dict[str, Any] = dict(options)
-    for _key, _val in (
-        ("ariaDescription", aria_description),
-        ("ariaHidden", aria_hidden),
-        ("ariaLabel", aria_label),
-        ("bandwidth", bandwidth),
-        ("bins", bins),
-        ("channels", channels),
-        ("clip", clip),
-        ("curve", curve),
-        ("dx", dx),
-        ("dy", dy),
-        ("facet", facet),
-        ("facetAnchor", facet_anchor),
-        ("fill", fill),
-        ("fillOpacity", fill_opacity),
-        ("filter", filter),
-        ("fx", fx),
-        ("fy", fy),
-        ("href", href),
-        ("imageFilter", image_filter),
-        ("margin", margin),
-        ("marginBottom", margin_bottom),
-        ("marginLeft", margin_left),
-        ("marginRight", margin_right),
-        ("marginTop", margin_top),
-        ("mixBlendMode", mix_blend_mode),
-        ("normalize", normalize),
-        ("offset", offset),
-        ("opacity", opacity),
-        ("order", order),
-        ("paintOrder", paint_order),
-        ("pointerEvents", pointer_events),
-        ("reverse", reverse),
-        ("select", select),
-        ("shapeRendering", shape_rendering),
-        ("sort", sort),
-        ("stack", stack),
-        ("stroke", stroke),
-        ("strokeDasharray", stroke_dasharray),
-        ("strokeDashoffset", stroke_dashoffset),
-        ("strokeLinecap", stroke_linecap),
-        ("strokeLinejoin", stroke_linejoin),
-        ("strokeMiterlimit", stroke_miterlimit),
-        ("strokeOpacity", stroke_opacity),
-        ("strokeWidth", stroke_width),
-        ("target", target),
-        ("tension", tension),
-        ("tip", tip),
-        ("title", title),
-        ("type", type_),
-        ("x", x),
-        ("z", z),
-        ("marker", marker),
-        ("markerEnd", marker_end),
-        ("markerMid", marker_mid),
-        ("markerStart", marker_start),
-        ("frameAnchor", frame_anchor),
-        ("r", r),
-        ("rotate", rotate),
-        ("symbol", symbol),
-        ("fontFamily", font_family),
-        ("fontSize", font_size),
-        ("fontStyle", font_style),
-        ("fontVariant", font_variant),
-        ("fontWeight", font_weight),
-        ("lineAnchor", line_anchor),
-        ("lineHeight", line_height),
-        ("lineWidth", line_width),
-        ("monospace", monospace),
-        ("text", text),
-        ("textAnchor", text_anchor),
-        ("textOverflow", text_overflow),
-    ):
-        if _val is not UNSET:
-            enc[_key] = _val
-    return Mark("densityY", data=data, enc=enc or None)
+    """The densityY mark."""
+    return _mark("densityY", locals())
 
 
 def dot(
@@ -2809,60 +1485,8 @@ def dot(
     z: ChannelValue = UNSET,
     **options: Any,
 ) -> Mark:
-    """The dot mark. The dot mark."""
-    enc: dict[str, Any] = dict(options)
-    for _key, _val in (
-        ("ariaDescription", aria_description),
-        ("ariaHidden", aria_hidden),
-        ("ariaLabel", aria_label),
-        ("channels", channels),
-        ("clip", clip),
-        ("dx", dx),
-        ("dy", dy),
-        ("facet", facet),
-        ("facetAnchor", facet_anchor),
-        ("fill", fill),
-        ("fillOpacity", fill_opacity),
-        ("filter", filter),
-        ("frameAnchor", frame_anchor),
-        ("fx", fx),
-        ("fy", fy),
-        ("href", href),
-        ("imageFilter", image_filter),
-        ("margin", margin),
-        ("marginBottom", margin_bottom),
-        ("marginLeft", margin_left),
-        ("marginRight", margin_right),
-        ("marginTop", margin_top),
-        ("mixBlendMode", mix_blend_mode),
-        ("opacity", opacity),
-        ("paintOrder", paint_order),
-        ("pointerEvents", pointer_events),
-        ("r", r),
-        ("reverse", reverse),
-        ("rotate", rotate),
-        ("select", select),
-        ("shapeRendering", shape_rendering),
-        ("sort", sort),
-        ("stroke", stroke),
-        ("strokeDasharray", stroke_dasharray),
-        ("strokeDashoffset", stroke_dashoffset),
-        ("strokeLinecap", stroke_linecap),
-        ("strokeLinejoin", stroke_linejoin),
-        ("strokeMiterlimit", stroke_miterlimit),
-        ("strokeOpacity", stroke_opacity),
-        ("strokeWidth", stroke_width),
-        ("symbol", symbol),
-        ("target", target),
-        ("tip", tip),
-        ("title", title),
-        ("x", x),
-        ("y", y),
-        ("z", z),
-    ):
-        if _val is not UNSET:
-            enc[_key] = _val
-    return Mark("dot", data=data, enc=enc or None)
+    """The dot mark."""
+    return _mark("dot", locals())
 
 
 def dot_x(
@@ -2918,61 +1542,8 @@ def dot_x(
     z: ChannelValue = UNSET,
     **options: Any,
 ) -> Mark:
-    """The dotX mark. The dotX mark."""
-    enc: dict[str, Any] = dict(options)
-    for _key, _val in (
-        ("ariaDescription", aria_description),
-        ("ariaHidden", aria_hidden),
-        ("ariaLabel", aria_label),
-        ("channels", channels),
-        ("clip", clip),
-        ("dx", dx),
-        ("dy", dy),
-        ("facet", facet),
-        ("facetAnchor", facet_anchor),
-        ("fill", fill),
-        ("fillOpacity", fill_opacity),
-        ("filter", filter),
-        ("frameAnchor", frame_anchor),
-        ("fx", fx),
-        ("fy", fy),
-        ("href", href),
-        ("imageFilter", image_filter),
-        ("interval", interval),
-        ("margin", margin),
-        ("marginBottom", margin_bottom),
-        ("marginLeft", margin_left),
-        ("marginRight", margin_right),
-        ("marginTop", margin_top),
-        ("mixBlendMode", mix_blend_mode),
-        ("opacity", opacity),
-        ("paintOrder", paint_order),
-        ("pointerEvents", pointer_events),
-        ("r", r),
-        ("reverse", reverse),
-        ("rotate", rotate),
-        ("select", select),
-        ("shapeRendering", shape_rendering),
-        ("sort", sort),
-        ("stroke", stroke),
-        ("strokeDasharray", stroke_dasharray),
-        ("strokeDashoffset", stroke_dashoffset),
-        ("strokeLinecap", stroke_linecap),
-        ("strokeLinejoin", stroke_linejoin),
-        ("strokeMiterlimit", stroke_miterlimit),
-        ("strokeOpacity", stroke_opacity),
-        ("strokeWidth", stroke_width),
-        ("symbol", symbol),
-        ("target", target),
-        ("tip", tip),
-        ("title", title),
-        ("x", x),
-        ("y", y),
-        ("z", z),
-    ):
-        if _val is not UNSET:
-            enc[_key] = _val
-    return Mark("dotX", data=data, enc=enc or None)
+    """The dotX mark."""
+    return _mark("dotX", locals())
 
 
 def dot_y(
@@ -3028,61 +1599,8 @@ def dot_y(
     z: ChannelValue = UNSET,
     **options: Any,
 ) -> Mark:
-    """The dotY mark. The dotY mark."""
-    enc: dict[str, Any] = dict(options)
-    for _key, _val in (
-        ("ariaDescription", aria_description),
-        ("ariaHidden", aria_hidden),
-        ("ariaLabel", aria_label),
-        ("channels", channels),
-        ("clip", clip),
-        ("dx", dx),
-        ("dy", dy),
-        ("facet", facet),
-        ("facetAnchor", facet_anchor),
-        ("fill", fill),
-        ("fillOpacity", fill_opacity),
-        ("filter", filter),
-        ("frameAnchor", frame_anchor),
-        ("fx", fx),
-        ("fy", fy),
-        ("href", href),
-        ("imageFilter", image_filter),
-        ("interval", interval),
-        ("margin", margin),
-        ("marginBottom", margin_bottom),
-        ("marginLeft", margin_left),
-        ("marginRight", margin_right),
-        ("marginTop", margin_top),
-        ("mixBlendMode", mix_blend_mode),
-        ("opacity", opacity),
-        ("paintOrder", paint_order),
-        ("pointerEvents", pointer_events),
-        ("r", r),
-        ("reverse", reverse),
-        ("rotate", rotate),
-        ("select", select),
-        ("shapeRendering", shape_rendering),
-        ("sort", sort),
-        ("stroke", stroke),
-        ("strokeDasharray", stroke_dasharray),
-        ("strokeDashoffset", stroke_dashoffset),
-        ("strokeLinecap", stroke_linecap),
-        ("strokeLinejoin", stroke_linejoin),
-        ("strokeMiterlimit", stroke_miterlimit),
-        ("strokeOpacity", stroke_opacity),
-        ("strokeWidth", stroke_width),
-        ("symbol", symbol),
-        ("target", target),
-        ("tip", tip),
-        ("title", title),
-        ("x", x),
-        ("y", y),
-        ("z", z),
-    ):
-        if _val is not UNSET:
-            enc[_key] = _val
-    return Mark("dotY", data=data, enc=enc or None)
+    """The dotY mark."""
+    return _mark("dotY", locals())
 
 
 def errorbar_x(
@@ -3138,61 +1656,8 @@ def errorbar_x(
     z: ChannelValue = UNSET,
     **options: Any,
 ) -> Mark:
-    """The errorbarX mark. The errorbarX mark."""
-    enc: dict[str, Any] = dict(options)
-    for _key, _val in (
-        ("ariaDescription", aria_description),
-        ("ariaHidden", aria_hidden),
-        ("ariaLabel", aria_label),
-        ("channels", channels),
-        ("ci", ci),
-        ("clip", clip),
-        ("dx", dx),
-        ("dy", dy),
-        ("facet", facet),
-        ("facetAnchor", facet_anchor),
-        ("fill", fill),
-        ("fillOpacity", fill_opacity),
-        ("filter", filter),
-        ("fx", fx),
-        ("fy", fy),
-        ("href", href),
-        ("imageFilter", image_filter),
-        ("margin", margin),
-        ("marginBottom", margin_bottom),
-        ("marginLeft", margin_left),
-        ("marginRight", margin_right),
-        ("marginTop", margin_top),
-        ("marker", marker),
-        ("markerEnd", marker_end),
-        ("markerMid", marker_mid),
-        ("markerStart", marker_start),
-        ("mixBlendMode", mix_blend_mode),
-        ("opacity", opacity),
-        ("paintOrder", paint_order),
-        ("pointerEvents", pointer_events),
-        ("reverse", reverse),
-        ("select", select),
-        ("shapeRendering", shape_rendering),
-        ("sort", sort),
-        ("stroke", stroke),
-        ("strokeDasharray", stroke_dasharray),
-        ("strokeDashoffset", stroke_dashoffset),
-        ("strokeLinecap", stroke_linecap),
-        ("strokeLinejoin", stroke_linejoin),
-        ("strokeMiterlimit", stroke_miterlimit),
-        ("strokeOpacity", stroke_opacity),
-        ("strokeWidth", stroke_width),
-        ("target", target),
-        ("tip", tip),
-        ("title", title),
-        ("x", x),
-        ("y", y),
-        ("z", z),
-    ):
-        if _val is not UNSET:
-            enc[_key] = _val
-    return Mark("errorbarX", data=data, enc=enc or None)
+    """The errorbarX mark."""
+    return _mark("errorbarX", locals())
 
 
 def errorbar_y(
@@ -3248,61 +1713,8 @@ def errorbar_y(
     z: ChannelValue = UNSET,
     **options: Any,
 ) -> Mark:
-    """The errorbarY mark. The errorbarY mark."""
-    enc: dict[str, Any] = dict(options)
-    for _key, _val in (
-        ("ariaDescription", aria_description),
-        ("ariaHidden", aria_hidden),
-        ("ariaLabel", aria_label),
-        ("channels", channels),
-        ("ci", ci),
-        ("clip", clip),
-        ("dx", dx),
-        ("dy", dy),
-        ("facet", facet),
-        ("facetAnchor", facet_anchor),
-        ("fill", fill),
-        ("fillOpacity", fill_opacity),
-        ("filter", filter),
-        ("fx", fx),
-        ("fy", fy),
-        ("href", href),
-        ("imageFilter", image_filter),
-        ("margin", margin),
-        ("marginBottom", margin_bottom),
-        ("marginLeft", margin_left),
-        ("marginRight", margin_right),
-        ("marginTop", margin_top),
-        ("marker", marker),
-        ("markerEnd", marker_end),
-        ("markerMid", marker_mid),
-        ("markerStart", marker_start),
-        ("mixBlendMode", mix_blend_mode),
-        ("opacity", opacity),
-        ("paintOrder", paint_order),
-        ("pointerEvents", pointer_events),
-        ("reverse", reverse),
-        ("select", select),
-        ("shapeRendering", shape_rendering),
-        ("sort", sort),
-        ("stroke", stroke),
-        ("strokeDasharray", stroke_dasharray),
-        ("strokeDashoffset", stroke_dashoffset),
-        ("strokeLinecap", stroke_linecap),
-        ("strokeLinejoin", stroke_linejoin),
-        ("strokeMiterlimit", stroke_miterlimit),
-        ("strokeOpacity", stroke_opacity),
-        ("strokeWidth", stroke_width),
-        ("target", target),
-        ("tip", tip),
-        ("title", title),
-        ("x", x),
-        ("y", y),
-        ("z", z),
-    ):
-        if _val is not UNSET:
-            enc[_key] = _val
-    return Mark("errorbarY", data=data, enc=enc or None)
+    """The errorbarY mark."""
+    return _mark("errorbarY", locals())
 
 
 def frame(
@@ -3358,61 +1770,8 @@ def frame(
     title: ChannelValue = UNSET,
     **options: Any,
 ) -> Mark:
-    """The frame mark. The frame mark."""
-    enc: dict[str, Any] = dict(options)
-    for _key, _val in (
-        ("anchor", anchor),
-        ("ariaDescription", aria_description),
-        ("ariaHidden", aria_hidden),
-        ("ariaLabel", aria_label),
-        ("channels", channels),
-        ("clip", clip),
-        ("dx", dx),
-        ("dy", dy),
-        ("facet", facet),
-        ("facetAnchor", facet_anchor),
-        ("fill", fill),
-        ("fillOpacity", fill_opacity),
-        ("filter", filter),
-        ("fx", fx),
-        ("fy", fy),
-        ("href", href),
-        ("imageFilter", image_filter),
-        ("inset", inset),
-        ("insetBottom", inset_bottom),
-        ("insetLeft", inset_left),
-        ("insetRight", inset_right),
-        ("insetTop", inset_top),
-        ("margin", margin),
-        ("marginBottom", margin_bottom),
-        ("marginLeft", margin_left),
-        ("marginRight", margin_right),
-        ("marginTop", margin_top),
-        ("mixBlendMode", mix_blend_mode),
-        ("opacity", opacity),
-        ("paintOrder", paint_order),
-        ("pointerEvents", pointer_events),
-        ("reverse", reverse),
-        ("rx", rx),
-        ("ry", ry),
-        ("select", select),
-        ("shapeRendering", shape_rendering),
-        ("sort", sort),
-        ("stroke", stroke),
-        ("strokeDasharray", stroke_dasharray),
-        ("strokeDashoffset", stroke_dashoffset),
-        ("strokeLinecap", stroke_linecap),
-        ("strokeLinejoin", stroke_linejoin),
-        ("strokeMiterlimit", stroke_miterlimit),
-        ("strokeOpacity", stroke_opacity),
-        ("strokeWidth", stroke_width),
-        ("target", target),
-        ("tip", tip),
-        ("title", title),
-    ):
-        if _val is not UNSET:
-            enc[_key] = _val
-    return Mark("frame", data=data, enc=enc or None)
+    """The frame mark."""
+    return _mark("frame", locals())
 
 
 def geo(
@@ -3462,55 +1821,8 @@ def geo(
     title: ChannelValue = UNSET,
     **options: Any,
 ) -> Mark:
-    """The geo mark. The geo mark."""
-    enc: dict[str, Any] = dict(options)
-    for _key, _val in (
-        ("ariaDescription", aria_description),
-        ("ariaHidden", aria_hidden),
-        ("ariaLabel", aria_label),
-        ("channels", channels),
-        ("clip", clip),
-        ("dx", dx),
-        ("dy", dy),
-        ("facet", facet),
-        ("facetAnchor", facet_anchor),
-        ("fill", fill),
-        ("fillOpacity", fill_opacity),
-        ("filter", filter),
-        ("fx", fx),
-        ("fy", fy),
-        ("geometry", geometry),
-        ("href", href),
-        ("imageFilter", image_filter),
-        ("margin", margin),
-        ("marginBottom", margin_bottom),
-        ("marginLeft", margin_left),
-        ("marginRight", margin_right),
-        ("marginTop", margin_top),
-        ("mixBlendMode", mix_blend_mode),
-        ("opacity", opacity),
-        ("paintOrder", paint_order),
-        ("pointerEvents", pointer_events),
-        ("r", r),
-        ("reverse", reverse),
-        ("select", select),
-        ("shapeRendering", shape_rendering),
-        ("sort", sort),
-        ("stroke", stroke),
-        ("strokeDasharray", stroke_dasharray),
-        ("strokeDashoffset", stroke_dashoffset),
-        ("strokeLinecap", stroke_linecap),
-        ("strokeLinejoin", stroke_linejoin),
-        ("strokeMiterlimit", stroke_miterlimit),
-        ("strokeOpacity", stroke_opacity),
-        ("strokeWidth", stroke_width),
-        ("target", target),
-        ("tip", tip),
-        ("title", title),
-    ):
-        if _val is not UNSET:
-            enc[_key] = _val
-    return Mark("geo", data=data, enc=enc or None)
+    """The geo mark."""
+    return _mark("geo", locals())
 
 
 def graticule(
@@ -3558,53 +1870,8 @@ def graticule(
     title: ChannelValue = UNSET,
     **options: Any,
 ) -> Mark:
-    """The graticule mark. The graticule mark."""
-    enc: dict[str, Any] = dict(options)
-    for _key, _val in (
-        ("ariaDescription", aria_description),
-        ("ariaHidden", aria_hidden),
-        ("ariaLabel", aria_label),
-        ("channels", channels),
-        ("clip", clip),
-        ("dx", dx),
-        ("dy", dy),
-        ("facet", facet),
-        ("facetAnchor", facet_anchor),
-        ("fill", fill),
-        ("fillOpacity", fill_opacity),
-        ("filter", filter),
-        ("fx", fx),
-        ("fy", fy),
-        ("href", href),
-        ("imageFilter", image_filter),
-        ("margin", margin),
-        ("marginBottom", margin_bottom),
-        ("marginLeft", margin_left),
-        ("marginRight", margin_right),
-        ("marginTop", margin_top),
-        ("mixBlendMode", mix_blend_mode),
-        ("opacity", opacity),
-        ("paintOrder", paint_order),
-        ("pointerEvents", pointer_events),
-        ("reverse", reverse),
-        ("select", select),
-        ("shapeRendering", shape_rendering),
-        ("sort", sort),
-        ("stroke", stroke),
-        ("strokeDasharray", stroke_dasharray),
-        ("strokeDashoffset", stroke_dashoffset),
-        ("strokeLinecap", stroke_linecap),
-        ("strokeLinejoin", stroke_linejoin),
-        ("strokeMiterlimit", stroke_miterlimit),
-        ("strokeOpacity", stroke_opacity),
-        ("strokeWidth", stroke_width),
-        ("target", target),
-        ("tip", tip),
-        ("title", title),
-    ):
-        if _val is not UNSET:
-            enc[_key] = _val
-    return Mark("graticule", data=data, enc=enc or None)
+    """The graticule mark."""
+    return _mark("graticule", locals())
 
 
 def grid_fx(
@@ -3668,69 +1935,8 @@ def grid_fx(
     y2: ChannelValue = UNSET,
     **options: Any,
 ) -> Mark:
-    """The gridFx mark. The gridFx mark."""
-    enc: dict[str, Any] = dict(options)
-    for _key, _val in (
-        ("anchor", anchor),
-        ("ariaDescription", aria_description),
-        ("ariaHidden", aria_hidden),
-        ("ariaLabel", aria_label),
-        ("channels", channels),
-        ("clip", clip),
-        ("color", color),
-        ("dx", dx),
-        ("dy", dy),
-        ("facet", facet),
-        ("facetAnchor", facet_anchor),
-        ("fill", fill),
-        ("fillOpacity", fill_opacity),
-        ("filter", filter),
-        ("fx", fx),
-        ("fy", fy),
-        ("href", href),
-        ("imageFilter", image_filter),
-        ("inset", inset),
-        ("insetBottom", inset_bottom),
-        ("insetTop", inset_top),
-        ("interval", interval),
-        ("margin", margin),
-        ("marginBottom", margin_bottom),
-        ("marginLeft", margin_left),
-        ("marginRight", margin_right),
-        ("marginTop", margin_top),
-        ("marker", marker),
-        ("markerEnd", marker_end),
-        ("markerMid", marker_mid),
-        ("markerStart", marker_start),
-        ("mixBlendMode", mix_blend_mode),
-        ("opacity", opacity),
-        ("paintOrder", paint_order),
-        ("pointerEvents", pointer_events),
-        ("reverse", reverse),
-        ("select", select),
-        ("shapeRendering", shape_rendering),
-        ("sort", sort),
-        ("stroke", stroke),
-        ("strokeDasharray", stroke_dasharray),
-        ("strokeDashoffset", stroke_dashoffset),
-        ("strokeLinecap", stroke_linecap),
-        ("strokeLinejoin", stroke_linejoin),
-        ("strokeMiterlimit", stroke_miterlimit),
-        ("strokeOpacity", stroke_opacity),
-        ("strokeWidth", stroke_width),
-        ("target", target),
-        ("tickSpacing", tick_spacing),
-        ("ticks", ticks),
-        ("tip", tip),
-        ("title", title),
-        ("x", x),
-        ("y", y),
-        ("y1", y1),
-        ("y2", y2),
-    ):
-        if _val is not UNSET:
-            enc[_key] = _val
-    return Mark("gridFx", data=data, enc=enc or None)
+    """The gridFx mark."""
+    return _mark("gridFx", locals())
 
 
 def grid_fy(
@@ -3794,69 +2000,8 @@ def grid_fy(
     y: ChannelValue = UNSET,
     **options: Any,
 ) -> Mark:
-    """The gridFy mark. The gridFy mark."""
-    enc: dict[str, Any] = dict(options)
-    for _key, _val in (
-        ("anchor", anchor),
-        ("ariaDescription", aria_description),
-        ("ariaHidden", aria_hidden),
-        ("ariaLabel", aria_label),
-        ("channels", channels),
-        ("clip", clip),
-        ("color", color),
-        ("dx", dx),
-        ("dy", dy),
-        ("facet", facet),
-        ("facetAnchor", facet_anchor),
-        ("fill", fill),
-        ("fillOpacity", fill_opacity),
-        ("filter", filter),
-        ("fx", fx),
-        ("fy", fy),
-        ("href", href),
-        ("imageFilter", image_filter),
-        ("inset", inset),
-        ("insetLeft", inset_left),
-        ("insetRight", inset_right),
-        ("interval", interval),
-        ("margin", margin),
-        ("marginBottom", margin_bottom),
-        ("marginLeft", margin_left),
-        ("marginRight", margin_right),
-        ("marginTop", margin_top),
-        ("marker", marker),
-        ("markerEnd", marker_end),
-        ("markerMid", marker_mid),
-        ("markerStart", marker_start),
-        ("mixBlendMode", mix_blend_mode),
-        ("opacity", opacity),
-        ("paintOrder", paint_order),
-        ("pointerEvents", pointer_events),
-        ("reverse", reverse),
-        ("select", select),
-        ("shapeRendering", shape_rendering),
-        ("sort", sort),
-        ("stroke", stroke),
-        ("strokeDasharray", stroke_dasharray),
-        ("strokeDashoffset", stroke_dashoffset),
-        ("strokeLinecap", stroke_linecap),
-        ("strokeLinejoin", stroke_linejoin),
-        ("strokeMiterlimit", stroke_miterlimit),
-        ("strokeOpacity", stroke_opacity),
-        ("strokeWidth", stroke_width),
-        ("target", target),
-        ("tickSpacing", tick_spacing),
-        ("ticks", ticks),
-        ("tip", tip),
-        ("title", title),
-        ("x", x),
-        ("x1", x1),
-        ("x2", x2),
-        ("y", y),
-    ):
-        if _val is not UNSET:
-            enc[_key] = _val
-    return Mark("gridFy", data=data, enc=enc or None)
+    """The gridFy mark."""
+    return _mark("gridFy", locals())
 
 
 def grid_x(
@@ -3920,69 +2065,8 @@ def grid_x(
     y2: ChannelValue = UNSET,
     **options: Any,
 ) -> Mark:
-    """The gridX mark. The gridX mark."""
-    enc: dict[str, Any] = dict(options)
-    for _key, _val in (
-        ("anchor", anchor),
-        ("ariaDescription", aria_description),
-        ("ariaHidden", aria_hidden),
-        ("ariaLabel", aria_label),
-        ("channels", channels),
-        ("clip", clip),
-        ("color", color),
-        ("dx", dx),
-        ("dy", dy),
-        ("facet", facet),
-        ("facetAnchor", facet_anchor),
-        ("fill", fill),
-        ("fillOpacity", fill_opacity),
-        ("filter", filter),
-        ("fx", fx),
-        ("fy", fy),
-        ("href", href),
-        ("imageFilter", image_filter),
-        ("inset", inset),
-        ("insetBottom", inset_bottom),
-        ("insetTop", inset_top),
-        ("interval", interval),
-        ("margin", margin),
-        ("marginBottom", margin_bottom),
-        ("marginLeft", margin_left),
-        ("marginRight", margin_right),
-        ("marginTop", margin_top),
-        ("marker", marker),
-        ("markerEnd", marker_end),
-        ("markerMid", marker_mid),
-        ("markerStart", marker_start),
-        ("mixBlendMode", mix_blend_mode),
-        ("opacity", opacity),
-        ("paintOrder", paint_order),
-        ("pointerEvents", pointer_events),
-        ("reverse", reverse),
-        ("select", select),
-        ("shapeRendering", shape_rendering),
-        ("sort", sort),
-        ("stroke", stroke),
-        ("strokeDasharray", stroke_dasharray),
-        ("strokeDashoffset", stroke_dashoffset),
-        ("strokeLinecap", stroke_linecap),
-        ("strokeLinejoin", stroke_linejoin),
-        ("strokeMiterlimit", stroke_miterlimit),
-        ("strokeOpacity", stroke_opacity),
-        ("strokeWidth", stroke_width),
-        ("target", target),
-        ("tickSpacing", tick_spacing),
-        ("ticks", ticks),
-        ("tip", tip),
-        ("title", title),
-        ("x", x),
-        ("y", y),
-        ("y1", y1),
-        ("y2", y2),
-    ):
-        if _val is not UNSET:
-            enc[_key] = _val
-    return Mark("gridX", data=data, enc=enc or None)
+    """The gridX mark."""
+    return _mark("gridX", locals())
 
 
 def grid_y(
@@ -4046,69 +2130,8 @@ def grid_y(
     y: ChannelValue = UNSET,
     **options: Any,
 ) -> Mark:
-    """The gridY mark. The gridY mark."""
-    enc: dict[str, Any] = dict(options)
-    for _key, _val in (
-        ("anchor", anchor),
-        ("ariaDescription", aria_description),
-        ("ariaHidden", aria_hidden),
-        ("ariaLabel", aria_label),
-        ("channels", channels),
-        ("clip", clip),
-        ("color", color),
-        ("dx", dx),
-        ("dy", dy),
-        ("facet", facet),
-        ("facetAnchor", facet_anchor),
-        ("fill", fill),
-        ("fillOpacity", fill_opacity),
-        ("filter", filter),
-        ("fx", fx),
-        ("fy", fy),
-        ("href", href),
-        ("imageFilter", image_filter),
-        ("inset", inset),
-        ("insetLeft", inset_left),
-        ("insetRight", inset_right),
-        ("interval", interval),
-        ("margin", margin),
-        ("marginBottom", margin_bottom),
-        ("marginLeft", margin_left),
-        ("marginRight", margin_right),
-        ("marginTop", margin_top),
-        ("marker", marker),
-        ("markerEnd", marker_end),
-        ("markerMid", marker_mid),
-        ("markerStart", marker_start),
-        ("mixBlendMode", mix_blend_mode),
-        ("opacity", opacity),
-        ("paintOrder", paint_order),
-        ("pointerEvents", pointer_events),
-        ("reverse", reverse),
-        ("select", select),
-        ("shapeRendering", shape_rendering),
-        ("sort", sort),
-        ("stroke", stroke),
-        ("strokeDasharray", stroke_dasharray),
-        ("strokeDashoffset", stroke_dashoffset),
-        ("strokeLinecap", stroke_linecap),
-        ("strokeLinejoin", stroke_linejoin),
-        ("strokeMiterlimit", stroke_miterlimit),
-        ("strokeOpacity", stroke_opacity),
-        ("strokeWidth", stroke_width),
-        ("target", target),
-        ("tickSpacing", tick_spacing),
-        ("ticks", ticks),
-        ("tip", tip),
-        ("title", title),
-        ("x", x),
-        ("x1", x1),
-        ("x2", x2),
-        ("y", y),
-    ):
-        if _val is not UNSET:
-            enc[_key] = _val
-    return Mark("gridY", data=data, enc=enc or None)
+    """The gridY mark."""
+    return _mark("gridY", locals())
 
 
 def heatmap(
@@ -4165,62 +2188,8 @@ def heatmap(
     y: ChannelValue = UNSET,
     **options: Any,
 ) -> Mark:
-    """The heatmap mark. The heatmap mark."""
-    enc: dict[str, Any] = dict(options)
-    for _key, _val in (
-        ("ariaDescription", aria_description),
-        ("ariaHidden", aria_hidden),
-        ("ariaLabel", aria_label),
-        ("bandwidth", bandwidth),
-        ("channels", channels),
-        ("clip", clip),
-        ("dx", dx),
-        ("dy", dy),
-        ("facet", facet),
-        ("facetAnchor", facet_anchor),
-        ("fill", fill),
-        ("fillOpacity", fill_opacity),
-        ("filter", filter),
-        ("fx", fx),
-        ("fy", fy),
-        ("height", height),
-        ("href", href),
-        ("imageFilter", image_filter),
-        ("imageRendering", image_rendering),
-        ("interpolate", interpolate),
-        ("margin", margin),
-        ("marginBottom", margin_bottom),
-        ("marginLeft", margin_left),
-        ("marginRight", margin_right),
-        ("marginTop", margin_top),
-        ("mixBlendMode", mix_blend_mode),
-        ("opacity", opacity),
-        ("pad", pad),
-        ("paintOrder", paint_order),
-        ("pixelSize", pixel_size),
-        ("pointerEvents", pointer_events),
-        ("reverse", reverse),
-        ("select", select),
-        ("shapeRendering", shape_rendering),
-        ("sort", sort),
-        ("stroke", stroke),
-        ("strokeDasharray", stroke_dasharray),
-        ("strokeDashoffset", stroke_dashoffset),
-        ("strokeLinecap", stroke_linecap),
-        ("strokeLinejoin", stroke_linejoin),
-        ("strokeMiterlimit", stroke_miterlimit),
-        ("strokeOpacity", stroke_opacity),
-        ("strokeWidth", stroke_width),
-        ("target", target),
-        ("tip", tip),
-        ("title", title),
-        ("width", width),
-        ("x", x),
-        ("y", y),
-    ):
-        if _val is not UNSET:
-            enc[_key] = _val
-    return Mark("heatmap", data=data, enc=enc or None)
+    """The heatmap mark."""
+    return _mark("heatmap", locals())
 
 
 def hexagon(
@@ -4275,60 +2244,8 @@ def hexagon(
     z: ChannelValue = UNSET,
     **options: Any,
 ) -> Mark:
-    """The hexagon mark. The hexagon mark."""
-    enc: dict[str, Any] = dict(options)
-    for _key, _val in (
-        ("ariaDescription", aria_description),
-        ("ariaHidden", aria_hidden),
-        ("ariaLabel", aria_label),
-        ("channels", channels),
-        ("clip", clip),
-        ("dx", dx),
-        ("dy", dy),
-        ("facet", facet),
-        ("facetAnchor", facet_anchor),
-        ("fill", fill),
-        ("fillOpacity", fill_opacity),
-        ("filter", filter),
-        ("frameAnchor", frame_anchor),
-        ("fx", fx),
-        ("fy", fy),
-        ("href", href),
-        ("imageFilter", image_filter),
-        ("margin", margin),
-        ("marginBottom", margin_bottom),
-        ("marginLeft", margin_left),
-        ("marginRight", margin_right),
-        ("marginTop", margin_top),
-        ("mixBlendMode", mix_blend_mode),
-        ("opacity", opacity),
-        ("paintOrder", paint_order),
-        ("pointerEvents", pointer_events),
-        ("r", r),
-        ("reverse", reverse),
-        ("rotate", rotate),
-        ("select", select),
-        ("shapeRendering", shape_rendering),
-        ("sort", sort),
-        ("stroke", stroke),
-        ("strokeDasharray", stroke_dasharray),
-        ("strokeDashoffset", stroke_dashoffset),
-        ("strokeLinecap", stroke_linecap),
-        ("strokeLinejoin", stroke_linejoin),
-        ("strokeMiterlimit", stroke_miterlimit),
-        ("strokeOpacity", stroke_opacity),
-        ("strokeWidth", stroke_width),
-        ("symbol", symbol),
-        ("target", target),
-        ("tip", tip),
-        ("title", title),
-        ("x", x),
-        ("y", y),
-        ("z", z),
-    ):
-        if _val is not UNSET:
-            enc[_key] = _val
-    return Mark("hexagon", data=data, enc=enc or None)
+    """The hexagon mark."""
+    return _mark("hexagon", locals())
 
 
 def hexbin(
@@ -4395,72 +2312,8 @@ def hexbin(
     z: ChannelValue = UNSET,
     **options: Any,
 ) -> Mark:
-    """The hexbin mark. The hexbin mark."""
-    enc: dict[str, Any] = dict(options)
-    for _key, _val in (
-        ("ariaDescription", aria_description),
-        ("ariaHidden", aria_hidden),
-        ("ariaLabel", aria_label),
-        ("binWidth", bin_width),
-        ("channels", channels),
-        ("clip", clip),
-        ("dx", dx),
-        ("dy", dy),
-        ("facet", facet),
-        ("facetAnchor", facet_anchor),
-        ("fill", fill),
-        ("fillOpacity", fill_opacity),
-        ("filter", filter),
-        ("fontFamily", font_family),
-        ("fontSize", font_size),
-        ("fontStyle", font_style),
-        ("fontVariant", font_variant),
-        ("fontWeight", font_weight),
-        ("frameAnchor", frame_anchor),
-        ("fx", fx),
-        ("fy", fy),
-        ("href", href),
-        ("imageFilter", image_filter),
-        ("lineHeight", line_height),
-        ("lineWidth", line_width),
-        ("margin", margin),
-        ("marginBottom", margin_bottom),
-        ("marginLeft", margin_left),
-        ("marginRight", margin_right),
-        ("marginTop", margin_top),
-        ("mixBlendMode", mix_blend_mode),
-        ("monospace", monospace),
-        ("opacity", opacity),
-        ("paintOrder", paint_order),
-        ("pointerEvents", pointer_events),
-        ("r", r),
-        ("reverse", reverse),
-        ("rotate", rotate),
-        ("select", select),
-        ("shapeRendering", shape_rendering),
-        ("sort", sort),
-        ("stroke", stroke),
-        ("strokeDasharray", stroke_dasharray),
-        ("strokeDashoffset", stroke_dashoffset),
-        ("strokeLinecap", stroke_linecap),
-        ("strokeLinejoin", stroke_linejoin),
-        ("strokeMiterlimit", stroke_miterlimit),
-        ("strokeOpacity", stroke_opacity),
-        ("strokeWidth", stroke_width),
-        ("symbol", symbol),
-        ("target", target),
-        ("textAnchor", text_anchor),
-        ("textOverflow", text_overflow),
-        ("tip", tip),
-        ("title", title),
-        ("type", type_),
-        ("x", x),
-        ("y", y),
-        ("z", z),
-    ):
-        if _val is not UNSET:
-            enc[_key] = _val
-    return Mark("hexbin", data=data, enc=enc or None)
+    """The hexbin mark."""
+    return _mark("hexbin", locals())
 
 
 def hexgrid(
@@ -4509,54 +2362,8 @@ def hexgrid(
     title: ChannelValue = UNSET,
     **options: Any,
 ) -> Mark:
-    """The hexgrid mark. The hexgrid mark."""
-    enc: dict[str, Any] = dict(options)
-    for _key, _val in (
-        ("ariaDescription", aria_description),
-        ("ariaHidden", aria_hidden),
-        ("ariaLabel", aria_label),
-        ("binWidth", bin_width),
-        ("channels", channels),
-        ("clip", clip),
-        ("dx", dx),
-        ("dy", dy),
-        ("facet", facet),
-        ("facetAnchor", facet_anchor),
-        ("fill", fill),
-        ("fillOpacity", fill_opacity),
-        ("filter", filter),
-        ("fx", fx),
-        ("fy", fy),
-        ("href", href),
-        ("imageFilter", image_filter),
-        ("margin", margin),
-        ("marginBottom", margin_bottom),
-        ("marginLeft", margin_left),
-        ("marginRight", margin_right),
-        ("marginTop", margin_top),
-        ("mixBlendMode", mix_blend_mode),
-        ("opacity", opacity),
-        ("paintOrder", paint_order),
-        ("pointerEvents", pointer_events),
-        ("reverse", reverse),
-        ("select", select),
-        ("shapeRendering", shape_rendering),
-        ("sort", sort),
-        ("stroke", stroke),
-        ("strokeDasharray", stroke_dasharray),
-        ("strokeDashoffset", stroke_dashoffset),
-        ("strokeLinecap", stroke_linecap),
-        ("strokeLinejoin", stroke_linejoin),
-        ("strokeMiterlimit", stroke_miterlimit),
-        ("strokeOpacity", stroke_opacity),
-        ("strokeWidth", stroke_width),
-        ("target", target),
-        ("tip", tip),
-        ("title", title),
-    ):
-        if _val is not UNSET:
-            enc[_key] = _val
-    return Mark("hexgrid", data=data, enc=enc or None)
+    """The hexgrid mark."""
+    return _mark("hexgrid", locals())
 
 
 def hull(
@@ -4613,62 +2420,8 @@ def hull(
     z: ChannelValue = UNSET,
     **options: Any,
 ) -> Mark:
-    """The hull mark. The hull mark."""
-    enc: dict[str, Any] = dict(options)
-    for _key, _val in (
-        ("ariaDescription", aria_description),
-        ("ariaHidden", aria_hidden),
-        ("ariaLabel", aria_label),
-        ("channels", channels),
-        ("clip", clip),
-        ("curve", curve),
-        ("dx", dx),
-        ("dy", dy),
-        ("facet", facet),
-        ("facetAnchor", facet_anchor),
-        ("fill", fill),
-        ("fillOpacity", fill_opacity),
-        ("filter", filter),
-        ("fx", fx),
-        ("fy", fy),
-        ("href", href),
-        ("imageFilter", image_filter),
-        ("margin", margin),
-        ("marginBottom", margin_bottom),
-        ("marginLeft", margin_left),
-        ("marginRight", margin_right),
-        ("marginTop", margin_top),
-        ("marker", marker),
-        ("markerEnd", marker_end),
-        ("markerMid", marker_mid),
-        ("markerStart", marker_start),
-        ("mixBlendMode", mix_blend_mode),
-        ("opacity", opacity),
-        ("paintOrder", paint_order),
-        ("pointerEvents", pointer_events),
-        ("reverse", reverse),
-        ("select", select),
-        ("shapeRendering", shape_rendering),
-        ("sort", sort),
-        ("stroke", stroke),
-        ("strokeDasharray", stroke_dasharray),
-        ("strokeDashoffset", stroke_dashoffset),
-        ("strokeLinecap", stroke_linecap),
-        ("strokeLinejoin", stroke_linejoin),
-        ("strokeMiterlimit", stroke_miterlimit),
-        ("strokeOpacity", stroke_opacity),
-        ("strokeWidth", stroke_width),
-        ("target", target),
-        ("tension", tension),
-        ("tip", tip),
-        ("title", title),
-        ("x", x),
-        ("y", y),
-        ("z", z),
-    ):
-        if _val is not UNSET:
-            enc[_key] = _val
-    return Mark("hull", data=data, enc=enc or None)
+    """The hull mark."""
+    return _mark("hull", locals())
 
 
 def image(
@@ -4728,63 +2481,7 @@ def image(
     **options: Any,
 ) -> Mark:
     """The image mark."""
-    enc: dict[str, Any] = dict(options)
-    for _key, _val in (
-        ("ariaDescription", aria_description),
-        ("ariaHidden", aria_hidden),
-        ("ariaLabel", aria_label),
-        ("channels", channels),
-        ("clip", clip),
-        ("crossOrigin", cross_origin),
-        ("dx", dx),
-        ("dy", dy),
-        ("facet", facet),
-        ("facetAnchor", facet_anchor),
-        ("fill", fill),
-        ("fillOpacity", fill_opacity),
-        ("filter", filter),
-        ("frameAnchor", frame_anchor),
-        ("fx", fx),
-        ("fy", fy),
-        ("height", height),
-        ("href", href),
-        ("imageFilter", image_filter),
-        ("imageRendering", image_rendering),
-        ("margin", margin),
-        ("marginBottom", margin_bottom),
-        ("marginLeft", margin_left),
-        ("marginRight", margin_right),
-        ("marginTop", margin_top),
-        ("mixBlendMode", mix_blend_mode),
-        ("opacity", opacity),
-        ("paintOrder", paint_order),
-        ("pointerEvents", pointer_events),
-        ("preserveAspectRatio", preserve_aspect_ratio),
-        ("r", r),
-        ("reverse", reverse),
-        ("rotate", rotate),
-        ("select", select),
-        ("shapeRendering", shape_rendering),
-        ("sort", sort),
-        ("src", src),
-        ("stroke", stroke),
-        ("strokeDasharray", stroke_dasharray),
-        ("strokeDashoffset", stroke_dashoffset),
-        ("strokeLinecap", stroke_linecap),
-        ("strokeLinejoin", stroke_linejoin),
-        ("strokeMiterlimit", stroke_miterlimit),
-        ("strokeOpacity", stroke_opacity),
-        ("strokeWidth", stroke_width),
-        ("target", target),
-        ("tip", tip),
-        ("title", title),
-        ("width", width),
-        ("x", x),
-        ("y", y),
-    ):
-        if _val is not UNSET:
-            enc[_key] = _val
-    return Mark("image", data=data, enc=enc or None)
+    return _mark("image", locals())
 
 
 def line(
@@ -4841,62 +2538,8 @@ def line(
     z: ChannelValue = UNSET,
     **options: Any,
 ) -> Mark:
-    """The line mark. The line mark."""
-    enc: dict[str, Any] = dict(options)
-    for _key, _val in (
-        ("ariaDescription", aria_description),
-        ("ariaHidden", aria_hidden),
-        ("ariaLabel", aria_label),
-        ("channels", channels),
-        ("clip", clip),
-        ("curve", curve),
-        ("dx", dx),
-        ("dy", dy),
-        ("facet", facet),
-        ("facetAnchor", facet_anchor),
-        ("fill", fill),
-        ("fillOpacity", fill_opacity),
-        ("filter", filter),
-        ("fx", fx),
-        ("fy", fy),
-        ("href", href),
-        ("imageFilter", image_filter),
-        ("margin", margin),
-        ("marginBottom", margin_bottom),
-        ("marginLeft", margin_left),
-        ("marginRight", margin_right),
-        ("marginTop", margin_top),
-        ("marker", marker),
-        ("markerEnd", marker_end),
-        ("markerMid", marker_mid),
-        ("markerStart", marker_start),
-        ("mixBlendMode", mix_blend_mode),
-        ("opacity", opacity),
-        ("paintOrder", paint_order),
-        ("pointerEvents", pointer_events),
-        ("reverse", reverse),
-        ("select", select),
-        ("shapeRendering", shape_rendering),
-        ("sort", sort),
-        ("stroke", stroke),
-        ("strokeDasharray", stroke_dasharray),
-        ("strokeDashoffset", stroke_dashoffset),
-        ("strokeLinecap", stroke_linecap),
-        ("strokeLinejoin", stroke_linejoin),
-        ("strokeMiterlimit", stroke_miterlimit),
-        ("strokeOpacity", stroke_opacity),
-        ("strokeWidth", stroke_width),
-        ("target", target),
-        ("tension", tension),
-        ("tip", tip),
-        ("title", title),
-        ("x", x),
-        ("y", y),
-        ("z", z),
-    ):
-        if _val is not UNSET:
-            enc[_key] = _val
-    return Mark("line", data=data, enc=enc or None)
+    """The line mark."""
+    return _mark("line", locals())
 
 
 def line_x(
@@ -4953,62 +2596,8 @@ def line_x(
     z: ChannelValue = UNSET,
     **options: Any,
 ) -> Mark:
-    """The lineX mark. The lineX mark."""
-    enc: dict[str, Any] = dict(options)
-    for _key, _val in (
-        ("ariaDescription", aria_description),
-        ("ariaHidden", aria_hidden),
-        ("ariaLabel", aria_label),
-        ("channels", channels),
-        ("clip", clip),
-        ("curve", curve),
-        ("dx", dx),
-        ("dy", dy),
-        ("facet", facet),
-        ("facetAnchor", facet_anchor),
-        ("fill", fill),
-        ("fillOpacity", fill_opacity),
-        ("filter", filter),
-        ("fx", fx),
-        ("fy", fy),
-        ("href", href),
-        ("imageFilter", image_filter),
-        ("margin", margin),
-        ("marginBottom", margin_bottom),
-        ("marginLeft", margin_left),
-        ("marginRight", margin_right),
-        ("marginTop", margin_top),
-        ("marker", marker),
-        ("markerEnd", marker_end),
-        ("markerMid", marker_mid),
-        ("markerStart", marker_start),
-        ("mixBlendMode", mix_blend_mode),
-        ("opacity", opacity),
-        ("paintOrder", paint_order),
-        ("pointerEvents", pointer_events),
-        ("reverse", reverse),
-        ("select", select),
-        ("shapeRendering", shape_rendering),
-        ("sort", sort),
-        ("stroke", stroke),
-        ("strokeDasharray", stroke_dasharray),
-        ("strokeDashoffset", stroke_dashoffset),
-        ("strokeLinecap", stroke_linecap),
-        ("strokeLinejoin", stroke_linejoin),
-        ("strokeMiterlimit", stroke_miterlimit),
-        ("strokeOpacity", stroke_opacity),
-        ("strokeWidth", stroke_width),
-        ("target", target),
-        ("tension", tension),
-        ("tip", tip),
-        ("title", title),
-        ("x", x),
-        ("y", y),
-        ("z", z),
-    ):
-        if _val is not UNSET:
-            enc[_key] = _val
-    return Mark("lineX", data=data, enc=enc or None)
+    """The lineX mark."""
+    return _mark("lineX", locals())
 
 
 def line_y(
@@ -5065,62 +2654,8 @@ def line_y(
     z: ChannelValue = UNSET,
     **options: Any,
 ) -> Mark:
-    """The lineY mark. The lineY mark."""
-    enc: dict[str, Any] = dict(options)
-    for _key, _val in (
-        ("ariaDescription", aria_description),
-        ("ariaHidden", aria_hidden),
-        ("ariaLabel", aria_label),
-        ("channels", channels),
-        ("clip", clip),
-        ("curve", curve),
-        ("dx", dx),
-        ("dy", dy),
-        ("facet", facet),
-        ("facetAnchor", facet_anchor),
-        ("fill", fill),
-        ("fillOpacity", fill_opacity),
-        ("filter", filter),
-        ("fx", fx),
-        ("fy", fy),
-        ("href", href),
-        ("imageFilter", image_filter),
-        ("margin", margin),
-        ("marginBottom", margin_bottom),
-        ("marginLeft", margin_left),
-        ("marginRight", margin_right),
-        ("marginTop", margin_top),
-        ("marker", marker),
-        ("markerEnd", marker_end),
-        ("markerMid", marker_mid),
-        ("markerStart", marker_start),
-        ("mixBlendMode", mix_blend_mode),
-        ("opacity", opacity),
-        ("paintOrder", paint_order),
-        ("pointerEvents", pointer_events),
-        ("reverse", reverse),
-        ("select", select),
-        ("shapeRendering", shape_rendering),
-        ("sort", sort),
-        ("stroke", stroke),
-        ("strokeDasharray", stroke_dasharray),
-        ("strokeDashoffset", stroke_dashoffset),
-        ("strokeLinecap", stroke_linecap),
-        ("strokeLinejoin", stroke_linejoin),
-        ("strokeMiterlimit", stroke_miterlimit),
-        ("strokeOpacity", stroke_opacity),
-        ("strokeWidth", stroke_width),
-        ("target", target),
-        ("tension", tension),
-        ("tip", tip),
-        ("title", title),
-        ("x", x),
-        ("y", y),
-        ("z", z),
-    ):
-        if _val is not UNSET:
-            enc[_key] = _val
-    return Mark("lineY", data=data, enc=enc or None)
+    """The lineY mark."""
+    return _mark("lineY", locals())
 
 
 def link(
@@ -5180,65 +2715,8 @@ def link(
     y2: ChannelValue = UNSET,
     **options: Any,
 ) -> Mark:
-    """The link mark. The link mark."""
-    enc: dict[str, Any] = dict(options)
-    for _key, _val in (
-        ("ariaDescription", aria_description),
-        ("ariaHidden", aria_hidden),
-        ("ariaLabel", aria_label),
-        ("channels", channels),
-        ("clip", clip),
-        ("curve", curve),
-        ("dx", dx),
-        ("dy", dy),
-        ("facet", facet),
-        ("facetAnchor", facet_anchor),
-        ("fill", fill),
-        ("fillOpacity", fill_opacity),
-        ("filter", filter),
-        ("fx", fx),
-        ("fy", fy),
-        ("href", href),
-        ("imageFilter", image_filter),
-        ("margin", margin),
-        ("marginBottom", margin_bottom),
-        ("marginLeft", margin_left),
-        ("marginRight", margin_right),
-        ("marginTop", margin_top),
-        ("marker", marker),
-        ("markerEnd", marker_end),
-        ("markerMid", marker_mid),
-        ("markerStart", marker_start),
-        ("mixBlendMode", mix_blend_mode),
-        ("opacity", opacity),
-        ("paintOrder", paint_order),
-        ("pointerEvents", pointer_events),
-        ("reverse", reverse),
-        ("select", select),
-        ("shapeRendering", shape_rendering),
-        ("sort", sort),
-        ("stroke", stroke),
-        ("strokeDasharray", stroke_dasharray),
-        ("strokeDashoffset", stroke_dashoffset),
-        ("strokeLinecap", stroke_linecap),
-        ("strokeLinejoin", stroke_linejoin),
-        ("strokeMiterlimit", stroke_miterlimit),
-        ("strokeOpacity", stroke_opacity),
-        ("strokeWidth", stroke_width),
-        ("target", target),
-        ("tension", tension),
-        ("tip", tip),
-        ("title", title),
-        ("x", x),
-        ("x1", x1),
-        ("x2", x2),
-        ("y", y),
-        ("y1", y1),
-        ("y2", y2),
-    ):
-        if _val is not UNSET:
-            enc[_key] = _val
-    return Mark("link", data=data, enc=enc or None)
+    """The link mark."""
+    return _mark("link", locals())
 
 
 def raster(
@@ -5295,62 +2773,8 @@ def raster(
     y: ChannelValue = UNSET,
     **options: Any,
 ) -> Mark:
-    """The raster mark. The raster mark."""
-    enc: dict[str, Any] = dict(options)
-    for _key, _val in (
-        ("ariaDescription", aria_description),
-        ("ariaHidden", aria_hidden),
-        ("ariaLabel", aria_label),
-        ("bandwidth", bandwidth),
-        ("channels", channels),
-        ("clip", clip),
-        ("dx", dx),
-        ("dy", dy),
-        ("facet", facet),
-        ("facetAnchor", facet_anchor),
-        ("fill", fill),
-        ("fillOpacity", fill_opacity),
-        ("filter", filter),
-        ("fx", fx),
-        ("fy", fy),
-        ("height", height),
-        ("href", href),
-        ("imageFilter", image_filter),
-        ("imageRendering", image_rendering),
-        ("interpolate", interpolate),
-        ("margin", margin),
-        ("marginBottom", margin_bottom),
-        ("marginLeft", margin_left),
-        ("marginRight", margin_right),
-        ("marginTop", margin_top),
-        ("mixBlendMode", mix_blend_mode),
-        ("opacity", opacity),
-        ("pad", pad),
-        ("paintOrder", paint_order),
-        ("pixelSize", pixel_size),
-        ("pointerEvents", pointer_events),
-        ("reverse", reverse),
-        ("select", select),
-        ("shapeRendering", shape_rendering),
-        ("sort", sort),
-        ("stroke", stroke),
-        ("strokeDasharray", stroke_dasharray),
-        ("strokeDashoffset", stroke_dashoffset),
-        ("strokeLinecap", stroke_linecap),
-        ("strokeLinejoin", stroke_linejoin),
-        ("strokeMiterlimit", stroke_miterlimit),
-        ("strokeOpacity", stroke_opacity),
-        ("strokeWidth", stroke_width),
-        ("target", target),
-        ("tip", tip),
-        ("title", title),
-        ("width", width),
-        ("x", x),
-        ("y", y),
-    ):
-        if _val is not UNSET:
-            enc[_key] = _val
-    return Mark("raster", data=data, enc=enc or None)
+    """The raster mark."""
+    return _mark("raster", locals())
 
 
 def raster_tile(
@@ -5408,63 +2832,8 @@ def raster_tile(
     y: ChannelValue = UNSET,
     **options: Any,
 ) -> Mark:
-    """The rasterTile mark. The rasterTile mark."""
-    enc: dict[str, Any] = dict(options)
-    for _key, _val in (
-        ("ariaDescription", aria_description),
-        ("ariaHidden", aria_hidden),
-        ("ariaLabel", aria_label),
-        ("bandwidth", bandwidth),
-        ("channels", channels),
-        ("clip", clip),
-        ("dx", dx),
-        ("dy", dy),
-        ("facet", facet),
-        ("facetAnchor", facet_anchor),
-        ("fill", fill),
-        ("fillOpacity", fill_opacity),
-        ("filter", filter),
-        ("fx", fx),
-        ("fy", fy),
-        ("height", height),
-        ("href", href),
-        ("imageFilter", image_filter),
-        ("imageRendering", image_rendering),
-        ("interpolate", interpolate),
-        ("margin", margin),
-        ("marginBottom", margin_bottom),
-        ("marginLeft", margin_left),
-        ("marginRight", margin_right),
-        ("marginTop", margin_top),
-        ("mixBlendMode", mix_blend_mode),
-        ("opacity", opacity),
-        ("origin", origin),
-        ("pad", pad),
-        ("paintOrder", paint_order),
-        ("pixelSize", pixel_size),
-        ("pointerEvents", pointer_events),
-        ("reverse", reverse),
-        ("select", select),
-        ("shapeRendering", shape_rendering),
-        ("sort", sort),
-        ("stroke", stroke),
-        ("strokeDasharray", stroke_dasharray),
-        ("strokeDashoffset", stroke_dashoffset),
-        ("strokeLinecap", stroke_linecap),
-        ("strokeLinejoin", stroke_linejoin),
-        ("strokeMiterlimit", stroke_miterlimit),
-        ("strokeOpacity", stroke_opacity),
-        ("strokeWidth", stroke_width),
-        ("target", target),
-        ("tip", tip),
-        ("title", title),
-        ("width", width),
-        ("x", x),
-        ("y", y),
-    ):
-        if _val is not UNSET:
-            enc[_key] = _val
-    return Mark("rasterTile", data=data, enc=enc or None)
+    """The rasterTile mark."""
+    return _mark("rasterTile", locals())
 
 
 def rect(
@@ -5529,70 +2898,8 @@ def rect(
     z: ChannelValue = UNSET,
     **options: Any,
 ) -> Mark:
-    """The rect mark. The rect mark."""
-    enc: dict[str, Any] = dict(options)
-    for _key, _val in (
-        ("ariaDescription", aria_description),
-        ("ariaHidden", aria_hidden),
-        ("ariaLabel", aria_label),
-        ("channels", channels),
-        ("clip", clip),
-        ("dx", dx),
-        ("dy", dy),
-        ("facet", facet),
-        ("facetAnchor", facet_anchor),
-        ("fill", fill),
-        ("fillOpacity", fill_opacity),
-        ("filter", filter),
-        ("fx", fx),
-        ("fy", fy),
-        ("href", href),
-        ("imageFilter", image_filter),
-        ("inset", inset),
-        ("insetBottom", inset_bottom),
-        ("insetLeft", inset_left),
-        ("insetRight", inset_right),
-        ("insetTop", inset_top),
-        ("interval", interval),
-        ("margin", margin),
-        ("marginBottom", margin_bottom),
-        ("marginLeft", margin_left),
-        ("marginRight", margin_right),
-        ("marginTop", margin_top),
-        ("mixBlendMode", mix_blend_mode),
-        ("offset", offset),
-        ("opacity", opacity),
-        ("order", order),
-        ("paintOrder", paint_order),
-        ("pointerEvents", pointer_events),
-        ("reverse", reverse),
-        ("rx", rx),
-        ("ry", ry),
-        ("select", select),
-        ("shapeRendering", shape_rendering),
-        ("sort", sort),
-        ("stroke", stroke),
-        ("strokeDasharray", stroke_dasharray),
-        ("strokeDashoffset", stroke_dashoffset),
-        ("strokeLinecap", stroke_linecap),
-        ("strokeLinejoin", stroke_linejoin),
-        ("strokeMiterlimit", stroke_miterlimit),
-        ("strokeOpacity", stroke_opacity),
-        ("strokeWidth", stroke_width),
-        ("target", target),
-        ("tip", tip),
-        ("title", title),
-        ("x", x),
-        ("x1", x1),
-        ("x2", x2),
-        ("y", y),
-        ("y1", y1),
-        ("y2", y2),
-        ("z", z),
-    ):
-        if _val is not UNSET:
-            enc[_key] = _val
-    return Mark("rect", data=data, enc=enc or None)
+    """The rect mark."""
+    return _mark("rect", locals())
 
 
 def rect_x(
@@ -5657,70 +2964,8 @@ def rect_x(
     z: ChannelValue = UNSET,
     **options: Any,
 ) -> Mark:
-    """The rectX mark. The rectX mark."""
-    enc: dict[str, Any] = dict(options)
-    for _key, _val in (
-        ("ariaDescription", aria_description),
-        ("ariaHidden", aria_hidden),
-        ("ariaLabel", aria_label),
-        ("channels", channels),
-        ("clip", clip),
-        ("dx", dx),
-        ("dy", dy),
-        ("facet", facet),
-        ("facetAnchor", facet_anchor),
-        ("fill", fill),
-        ("fillOpacity", fill_opacity),
-        ("filter", filter),
-        ("fx", fx),
-        ("fy", fy),
-        ("href", href),
-        ("imageFilter", image_filter),
-        ("inset", inset),
-        ("insetBottom", inset_bottom),
-        ("insetLeft", inset_left),
-        ("insetRight", inset_right),
-        ("insetTop", inset_top),
-        ("interval", interval),
-        ("margin", margin),
-        ("marginBottom", margin_bottom),
-        ("marginLeft", margin_left),
-        ("marginRight", margin_right),
-        ("marginTop", margin_top),
-        ("mixBlendMode", mix_blend_mode),
-        ("offset", offset),
-        ("opacity", opacity),
-        ("order", order),
-        ("paintOrder", paint_order),
-        ("pointerEvents", pointer_events),
-        ("reverse", reverse),
-        ("rx", rx),
-        ("ry", ry),
-        ("select", select),
-        ("shapeRendering", shape_rendering),
-        ("sort", sort),
-        ("stroke", stroke),
-        ("strokeDasharray", stroke_dasharray),
-        ("strokeDashoffset", stroke_dashoffset),
-        ("strokeLinecap", stroke_linecap),
-        ("strokeLinejoin", stroke_linejoin),
-        ("strokeMiterlimit", stroke_miterlimit),
-        ("strokeOpacity", stroke_opacity),
-        ("strokeWidth", stroke_width),
-        ("target", target),
-        ("tip", tip),
-        ("title", title),
-        ("x", x),
-        ("x1", x1),
-        ("x2", x2),
-        ("y", y),
-        ("y1", y1),
-        ("y2", y2),
-        ("z", z),
-    ):
-        if _val is not UNSET:
-            enc[_key] = _val
-    return Mark("rectX", data=data, enc=enc or None)
+    """The rectX mark."""
+    return _mark("rectX", locals())
 
 
 def rect_y(
@@ -5785,70 +3030,8 @@ def rect_y(
     z: ChannelValue = UNSET,
     **options: Any,
 ) -> Mark:
-    """The rectY mark. The rectY mark."""
-    enc: dict[str, Any] = dict(options)
-    for _key, _val in (
-        ("ariaDescription", aria_description),
-        ("ariaHidden", aria_hidden),
-        ("ariaLabel", aria_label),
-        ("channels", channels),
-        ("clip", clip),
-        ("dx", dx),
-        ("dy", dy),
-        ("facet", facet),
-        ("facetAnchor", facet_anchor),
-        ("fill", fill),
-        ("fillOpacity", fill_opacity),
-        ("filter", filter),
-        ("fx", fx),
-        ("fy", fy),
-        ("href", href),
-        ("imageFilter", image_filter),
-        ("inset", inset),
-        ("insetBottom", inset_bottom),
-        ("insetLeft", inset_left),
-        ("insetRight", inset_right),
-        ("insetTop", inset_top),
-        ("interval", interval),
-        ("margin", margin),
-        ("marginBottom", margin_bottom),
-        ("marginLeft", margin_left),
-        ("marginRight", margin_right),
-        ("marginTop", margin_top),
-        ("mixBlendMode", mix_blend_mode),
-        ("offset", offset),
-        ("opacity", opacity),
-        ("order", order),
-        ("paintOrder", paint_order),
-        ("pointerEvents", pointer_events),
-        ("reverse", reverse),
-        ("rx", rx),
-        ("ry", ry),
-        ("select", select),
-        ("shapeRendering", shape_rendering),
-        ("sort", sort),
-        ("stroke", stroke),
-        ("strokeDasharray", stroke_dasharray),
-        ("strokeDashoffset", stroke_dashoffset),
-        ("strokeLinecap", stroke_linecap),
-        ("strokeLinejoin", stroke_linejoin),
-        ("strokeMiterlimit", stroke_miterlimit),
-        ("strokeOpacity", stroke_opacity),
-        ("strokeWidth", stroke_width),
-        ("target", target),
-        ("tip", tip),
-        ("title", title),
-        ("x", x),
-        ("x1", x1),
-        ("x2", x2),
-        ("y", y),
-        ("y1", y1),
-        ("y2", y2),
-        ("z", z),
-    ):
-        if _val is not UNSET:
-            enc[_key] = _val
-    return Mark("rectY", data=data, enc=enc or None)
+    """The rectY mark."""
+    return _mark("rectY", locals())
 
 
 def regression_y(
@@ -5901,58 +3084,8 @@ def regression_y(
     z: ChannelValue = UNSET,
     **options: Any,
 ) -> Mark:
-    """The regressionY mark. The regressionY mark."""
-    enc: dict[str, Any] = dict(options)
-    for _key, _val in (
-        ("ariaDescription", aria_description),
-        ("ariaHidden", aria_hidden),
-        ("ariaLabel", aria_label),
-        ("channels", channels),
-        ("ci", ci),
-        ("clip", clip),
-        ("dx", dx),
-        ("dy", dy),
-        ("facet", facet),
-        ("facetAnchor", facet_anchor),
-        ("fill", fill),
-        ("fillOpacity", fill_opacity),
-        ("filter", filter),
-        ("fx", fx),
-        ("fy", fy),
-        ("href", href),
-        ("imageFilter", image_filter),
-        ("margin", margin),
-        ("marginBottom", margin_bottom),
-        ("marginLeft", margin_left),
-        ("marginRight", margin_right),
-        ("marginTop", margin_top),
-        ("mixBlendMode", mix_blend_mode),
-        ("opacity", opacity),
-        ("paintOrder", paint_order),
-        ("pointerEvents", pointer_events),
-        ("precision", precision),
-        ("reverse", reverse),
-        ("select", select),
-        ("shapeRendering", shape_rendering),
-        ("sort", sort),
-        ("stroke", stroke),
-        ("strokeDasharray", stroke_dasharray),
-        ("strokeDashoffset", stroke_dashoffset),
-        ("strokeLinecap", stroke_linecap),
-        ("strokeLinejoin", stroke_linejoin),
-        ("strokeMiterlimit", stroke_miterlimit),
-        ("strokeOpacity", stroke_opacity),
-        ("strokeWidth", stroke_width),
-        ("target", target),
-        ("tip", tip),
-        ("title", title),
-        ("x", x),
-        ("y", y),
-        ("z", z),
-    ):
-        if _val is not UNSET:
-            enc[_key] = _val
-    return Mark("regressionY", data=data, enc=enc or None)
+    """The regressionY mark."""
+    return _mark("regressionY", locals())
 
 
 def rule_x(
@@ -6012,65 +3145,8 @@ def rule_x(
     y2: ChannelValue = UNSET,
     **options: Any,
 ) -> Mark:
-    """The ruleX mark. The ruleX mark."""
-    enc: dict[str, Any] = dict(options)
-    for _key, _val in (
-        ("ariaDescription", aria_description),
-        ("ariaHidden", aria_hidden),
-        ("ariaLabel", aria_label),
-        ("channels", channels),
-        ("clip", clip),
-        ("dx", dx),
-        ("dy", dy),
-        ("facet", facet),
-        ("facetAnchor", facet_anchor),
-        ("fill", fill),
-        ("fillOpacity", fill_opacity),
-        ("filter", filter),
-        ("fx", fx),
-        ("fy", fy),
-        ("href", href),
-        ("imageFilter", image_filter),
-        ("inset", inset),
-        ("insetBottom", inset_bottom),
-        ("insetTop", inset_top),
-        ("interval", interval),
-        ("margin", margin),
-        ("marginBottom", margin_bottom),
-        ("marginLeft", margin_left),
-        ("marginRight", margin_right),
-        ("marginTop", margin_top),
-        ("marker", marker),
-        ("markerEnd", marker_end),
-        ("markerMid", marker_mid),
-        ("markerStart", marker_start),
-        ("mixBlendMode", mix_blend_mode),
-        ("opacity", opacity),
-        ("paintOrder", paint_order),
-        ("pointerEvents", pointer_events),
-        ("reverse", reverse),
-        ("select", select),
-        ("shapeRendering", shape_rendering),
-        ("sort", sort),
-        ("stroke", stroke),
-        ("strokeDasharray", stroke_dasharray),
-        ("strokeDashoffset", stroke_dashoffset),
-        ("strokeLinecap", stroke_linecap),
-        ("strokeLinejoin", stroke_linejoin),
-        ("strokeMiterlimit", stroke_miterlimit),
-        ("strokeOpacity", stroke_opacity),
-        ("strokeWidth", stroke_width),
-        ("target", target),
-        ("tip", tip),
-        ("title", title),
-        ("x", x),
-        ("y", y),
-        ("y1", y1),
-        ("y2", y2),
-    ):
-        if _val is not UNSET:
-            enc[_key] = _val
-    return Mark("ruleX", data=data, enc=enc or None)
+    """The ruleX mark."""
+    return _mark("ruleX", locals())
 
 
 def rule_y(
@@ -6130,65 +3206,8 @@ def rule_y(
     y2: ChannelValue = UNSET,
     **options: Any,
 ) -> Mark:
-    """The ruleY mark. The ruleY mark."""
-    enc: dict[str, Any] = dict(options)
-    for _key, _val in (
-        ("ariaDescription", aria_description),
-        ("ariaHidden", aria_hidden),
-        ("ariaLabel", aria_label),
-        ("channels", channels),
-        ("clip", clip),
-        ("dx", dx),
-        ("dy", dy),
-        ("facet", facet),
-        ("facetAnchor", facet_anchor),
-        ("fill", fill),
-        ("fillOpacity", fill_opacity),
-        ("filter", filter),
-        ("fx", fx),
-        ("fy", fy),
-        ("href", href),
-        ("imageFilter", image_filter),
-        ("inset", inset),
-        ("insetBottom", inset_bottom),
-        ("insetTop", inset_top),
-        ("interval", interval),
-        ("margin", margin),
-        ("marginBottom", margin_bottom),
-        ("marginLeft", margin_left),
-        ("marginRight", margin_right),
-        ("marginTop", margin_top),
-        ("marker", marker),
-        ("markerEnd", marker_end),
-        ("markerMid", marker_mid),
-        ("markerStart", marker_start),
-        ("mixBlendMode", mix_blend_mode),
-        ("opacity", opacity),
-        ("paintOrder", paint_order),
-        ("pointerEvents", pointer_events),
-        ("reverse", reverse),
-        ("select", select),
-        ("shapeRendering", shape_rendering),
-        ("sort", sort),
-        ("stroke", stroke),
-        ("strokeDasharray", stroke_dasharray),
-        ("strokeDashoffset", stroke_dashoffset),
-        ("strokeLinecap", stroke_linecap),
-        ("strokeLinejoin", stroke_linejoin),
-        ("strokeMiterlimit", stroke_miterlimit),
-        ("strokeOpacity", stroke_opacity),
-        ("strokeWidth", stroke_width),
-        ("target", target),
-        ("tip", tip),
-        ("title", title),
-        ("x", x),
-        ("y", y),
-        ("y1", y1),
-        ("y2", y2),
-    ):
-        if _val is not UNSET:
-            enc[_key] = _val
-    return Mark("ruleY", data=data, enc=enc or None)
+    """The ruleY mark."""
+    return _mark("ruleY", locals())
 
 
 def sphere(
@@ -6236,53 +3255,8 @@ def sphere(
     title: ChannelValue = UNSET,
     **options: Any,
 ) -> Mark:
-    """The sphere mark. The sphere mark."""
-    enc: dict[str, Any] = dict(options)
-    for _key, _val in (
-        ("ariaDescription", aria_description),
-        ("ariaHidden", aria_hidden),
-        ("ariaLabel", aria_label),
-        ("channels", channels),
-        ("clip", clip),
-        ("dx", dx),
-        ("dy", dy),
-        ("facet", facet),
-        ("facetAnchor", facet_anchor),
-        ("fill", fill),
-        ("fillOpacity", fill_opacity),
-        ("filter", filter),
-        ("fx", fx),
-        ("fy", fy),
-        ("href", href),
-        ("imageFilter", image_filter),
-        ("margin", margin),
-        ("marginBottom", margin_bottom),
-        ("marginLeft", margin_left),
-        ("marginRight", margin_right),
-        ("marginTop", margin_top),
-        ("mixBlendMode", mix_blend_mode),
-        ("opacity", opacity),
-        ("paintOrder", paint_order),
-        ("pointerEvents", pointer_events),
-        ("reverse", reverse),
-        ("select", select),
-        ("shapeRendering", shape_rendering),
-        ("sort", sort),
-        ("stroke", stroke),
-        ("strokeDasharray", stroke_dasharray),
-        ("strokeDashoffset", stroke_dashoffset),
-        ("strokeLinecap", stroke_linecap),
-        ("strokeLinejoin", stroke_linejoin),
-        ("strokeMiterlimit", stroke_miterlimit),
-        ("strokeOpacity", stroke_opacity),
-        ("strokeWidth", stroke_width),
-        ("target", target),
-        ("tip", tip),
-        ("title", title),
-    ):
-        if _val is not UNSET:
-            enc[_key] = _val
-    return Mark("sphere", data=data, enc=enc or None)
+    """The sphere mark."""
+    return _mark("sphere", locals())
 
 
 def spike(
@@ -6338,61 +3312,8 @@ def spike(
     y: ChannelValue = UNSET,
     **options: Any,
 ) -> Mark:
-    """The spike mark. The spike mark."""
-    enc: dict[str, Any] = dict(options)
-    for _key, _val in (
-        ("anchor", anchor),
-        ("ariaDescription", aria_description),
-        ("ariaHidden", aria_hidden),
-        ("ariaLabel", aria_label),
-        ("channels", channels),
-        ("clip", clip),
-        ("dx", dx),
-        ("dy", dy),
-        ("facet", facet),
-        ("facetAnchor", facet_anchor),
-        ("fill", fill),
-        ("fillOpacity", fill_opacity),
-        ("filter", filter),
-        ("frameAnchor", frame_anchor),
-        ("fx", fx),
-        ("fy", fy),
-        ("href", href),
-        ("imageFilter", image_filter),
-        ("length", length),
-        ("margin", margin),
-        ("marginBottom", margin_bottom),
-        ("marginLeft", margin_left),
-        ("marginRight", margin_right),
-        ("marginTop", margin_top),
-        ("mixBlendMode", mix_blend_mode),
-        ("opacity", opacity),
-        ("paintOrder", paint_order),
-        ("pointerEvents", pointer_events),
-        ("r", r),
-        ("reverse", reverse),
-        ("rotate", rotate),
-        ("select", select),
-        ("shape", shape),
-        ("shapeRendering", shape_rendering),
-        ("sort", sort),
-        ("stroke", stroke),
-        ("strokeDasharray", stroke_dasharray),
-        ("strokeDashoffset", stroke_dashoffset),
-        ("strokeLinecap", stroke_linecap),
-        ("strokeLinejoin", stroke_linejoin),
-        ("strokeMiterlimit", stroke_miterlimit),
-        ("strokeOpacity", stroke_opacity),
-        ("strokeWidth", stroke_width),
-        ("target", target),
-        ("tip", tip),
-        ("title", title),
-        ("x", x),
-        ("y", y),
-    ):
-        if _val is not UNSET:
-            enc[_key] = _val
-    return Mark("spike", data=data, enc=enc or None)
+    """The spike mark."""
+    return _mark("spike", locals())
 
 
 def text(
@@ -6457,70 +3378,8 @@ def text(
     z: ChannelValue = UNSET,
     **options: Any,
 ) -> Mark:
-    """The text mark. The text mark."""
-    enc: dict[str, Any] = dict(options)
-    for _key, _val in (
-        ("ariaDescription", aria_description),
-        ("ariaHidden", aria_hidden),
-        ("ariaLabel", aria_label),
-        ("channels", channels),
-        ("clip", clip),
-        ("dx", dx),
-        ("dy", dy),
-        ("facet", facet),
-        ("facetAnchor", facet_anchor),
-        ("fill", fill),
-        ("fillOpacity", fill_opacity),
-        ("filter", filter),
-        ("fontFamily", font_family),
-        ("fontSize", font_size),
-        ("fontStyle", font_style),
-        ("fontVariant", font_variant),
-        ("fontWeight", font_weight),
-        ("frameAnchor", frame_anchor),
-        ("fx", fx),
-        ("fy", fy),
-        ("href", href),
-        ("imageFilter", image_filter),
-        ("lineAnchor", line_anchor),
-        ("lineHeight", line_height),
-        ("lineWidth", line_width),
-        ("margin", margin),
-        ("marginBottom", margin_bottom),
-        ("marginLeft", margin_left),
-        ("marginRight", margin_right),
-        ("marginTop", margin_top),
-        ("mixBlendMode", mix_blend_mode),
-        ("monospace", monospace),
-        ("opacity", opacity),
-        ("paintOrder", paint_order),
-        ("pointerEvents", pointer_events),
-        ("reverse", reverse),
-        ("rotate", rotate),
-        ("select", select),
-        ("shapeRendering", shape_rendering),
-        ("sort", sort),
-        ("stroke", stroke),
-        ("strokeDasharray", stroke_dasharray),
-        ("strokeDashoffset", stroke_dashoffset),
-        ("strokeLinecap", stroke_linecap),
-        ("strokeLinejoin", stroke_linejoin),
-        ("strokeMiterlimit", stroke_miterlimit),
-        ("strokeOpacity", stroke_opacity),
-        ("strokeWidth", stroke_width),
-        ("target", target),
-        ("text", text),
-        ("textAnchor", text_anchor),
-        ("textOverflow", text_overflow),
-        ("tip", tip),
-        ("title", title),
-        ("x", x),
-        ("y", y),
-        ("z", z),
-    ):
-        if _val is not UNSET:
-            enc[_key] = _val
-    return Mark("text", data=data, enc=enc or None)
+    """The text mark."""
+    return _mark("text", locals())
 
 
 def text_x(
@@ -6586,71 +3445,8 @@ def text_x(
     z: ChannelValue = UNSET,
     **options: Any,
 ) -> Mark:
-    """The textX mark. The textX mark."""
-    enc: dict[str, Any] = dict(options)
-    for _key, _val in (
-        ("ariaDescription", aria_description),
-        ("ariaHidden", aria_hidden),
-        ("ariaLabel", aria_label),
-        ("channels", channels),
-        ("clip", clip),
-        ("dx", dx),
-        ("dy", dy),
-        ("facet", facet),
-        ("facetAnchor", facet_anchor),
-        ("fill", fill),
-        ("fillOpacity", fill_opacity),
-        ("filter", filter),
-        ("fontFamily", font_family),
-        ("fontSize", font_size),
-        ("fontStyle", font_style),
-        ("fontVariant", font_variant),
-        ("fontWeight", font_weight),
-        ("frameAnchor", frame_anchor),
-        ("fx", fx),
-        ("fy", fy),
-        ("href", href),
-        ("imageFilter", image_filter),
-        ("interval", interval),
-        ("lineAnchor", line_anchor),
-        ("lineHeight", line_height),
-        ("lineWidth", line_width),
-        ("margin", margin),
-        ("marginBottom", margin_bottom),
-        ("marginLeft", margin_left),
-        ("marginRight", margin_right),
-        ("marginTop", margin_top),
-        ("mixBlendMode", mix_blend_mode),
-        ("monospace", monospace),
-        ("opacity", opacity),
-        ("paintOrder", paint_order),
-        ("pointerEvents", pointer_events),
-        ("reverse", reverse),
-        ("rotate", rotate),
-        ("select", select),
-        ("shapeRendering", shape_rendering),
-        ("sort", sort),
-        ("stroke", stroke),
-        ("strokeDasharray", stroke_dasharray),
-        ("strokeDashoffset", stroke_dashoffset),
-        ("strokeLinecap", stroke_linecap),
-        ("strokeLinejoin", stroke_linejoin),
-        ("strokeMiterlimit", stroke_miterlimit),
-        ("strokeOpacity", stroke_opacity),
-        ("strokeWidth", stroke_width),
-        ("target", target),
-        ("text", text),
-        ("textAnchor", text_anchor),
-        ("textOverflow", text_overflow),
-        ("tip", tip),
-        ("title", title),
-        ("x", x),
-        ("y", y),
-        ("z", z),
-    ):
-        if _val is not UNSET:
-            enc[_key] = _val
-    return Mark("textX", data=data, enc=enc or None)
+    """The textX mark."""
+    return _mark("textX", locals())
 
 
 def text_y(
@@ -6716,71 +3512,8 @@ def text_y(
     z: ChannelValue = UNSET,
     **options: Any,
 ) -> Mark:
-    """The textY mark. The textY mark."""
-    enc: dict[str, Any] = dict(options)
-    for _key, _val in (
-        ("ariaDescription", aria_description),
-        ("ariaHidden", aria_hidden),
-        ("ariaLabel", aria_label),
-        ("channels", channels),
-        ("clip", clip),
-        ("dx", dx),
-        ("dy", dy),
-        ("facet", facet),
-        ("facetAnchor", facet_anchor),
-        ("fill", fill),
-        ("fillOpacity", fill_opacity),
-        ("filter", filter),
-        ("fontFamily", font_family),
-        ("fontSize", font_size),
-        ("fontStyle", font_style),
-        ("fontVariant", font_variant),
-        ("fontWeight", font_weight),
-        ("frameAnchor", frame_anchor),
-        ("fx", fx),
-        ("fy", fy),
-        ("href", href),
-        ("imageFilter", image_filter),
-        ("interval", interval),
-        ("lineAnchor", line_anchor),
-        ("lineHeight", line_height),
-        ("lineWidth", line_width),
-        ("margin", margin),
-        ("marginBottom", margin_bottom),
-        ("marginLeft", margin_left),
-        ("marginRight", margin_right),
-        ("marginTop", margin_top),
-        ("mixBlendMode", mix_blend_mode),
-        ("monospace", monospace),
-        ("opacity", opacity),
-        ("paintOrder", paint_order),
-        ("pointerEvents", pointer_events),
-        ("reverse", reverse),
-        ("rotate", rotate),
-        ("select", select),
-        ("shapeRendering", shape_rendering),
-        ("sort", sort),
-        ("stroke", stroke),
-        ("strokeDasharray", stroke_dasharray),
-        ("strokeDashoffset", stroke_dashoffset),
-        ("strokeLinecap", stroke_linecap),
-        ("strokeLinejoin", stroke_linejoin),
-        ("strokeMiterlimit", stroke_miterlimit),
-        ("strokeOpacity", stroke_opacity),
-        ("strokeWidth", stroke_width),
-        ("target", target),
-        ("text", text),
-        ("textAnchor", text_anchor),
-        ("textOverflow", text_overflow),
-        ("tip", tip),
-        ("title", title),
-        ("x", x),
-        ("y", y),
-        ("z", z),
-    ):
-        if _val is not UNSET:
-            enc[_key] = _val
-    return Mark("textY", data=data, enc=enc or None)
+    """The textY mark."""
+    return _mark("textY", locals())
 
 
 def tick_x(
@@ -6837,62 +3570,8 @@ def tick_x(
     y: ChannelValue = UNSET,
     **options: Any,
 ) -> Mark:
-    """The tickX mark. The tickX mark."""
-    enc: dict[str, Any] = dict(options)
-    for _key, _val in (
-        ("ariaDescription", aria_description),
-        ("ariaHidden", aria_hidden),
-        ("ariaLabel", aria_label),
-        ("channels", channels),
-        ("clip", clip),
-        ("dx", dx),
-        ("dy", dy),
-        ("facet", facet),
-        ("facetAnchor", facet_anchor),
-        ("fill", fill),
-        ("fillOpacity", fill_opacity),
-        ("filter", filter),
-        ("fx", fx),
-        ("fy", fy),
-        ("href", href),
-        ("imageFilter", image_filter),
-        ("inset", inset),
-        ("insetBottom", inset_bottom),
-        ("insetTop", inset_top),
-        ("margin", margin),
-        ("marginBottom", margin_bottom),
-        ("marginLeft", margin_left),
-        ("marginRight", margin_right),
-        ("marginTop", margin_top),
-        ("marker", marker),
-        ("markerEnd", marker_end),
-        ("markerMid", marker_mid),
-        ("markerStart", marker_start),
-        ("mixBlendMode", mix_blend_mode),
-        ("opacity", opacity),
-        ("paintOrder", paint_order),
-        ("pointerEvents", pointer_events),
-        ("reverse", reverse),
-        ("select", select),
-        ("shapeRendering", shape_rendering),
-        ("sort", sort),
-        ("stroke", stroke),
-        ("strokeDasharray", stroke_dasharray),
-        ("strokeDashoffset", stroke_dashoffset),
-        ("strokeLinecap", stroke_linecap),
-        ("strokeLinejoin", stroke_linejoin),
-        ("strokeMiterlimit", stroke_miterlimit),
-        ("strokeOpacity", stroke_opacity),
-        ("strokeWidth", stroke_width),
-        ("target", target),
-        ("tip", tip),
-        ("title", title),
-        ("x", x),
-        ("y", y),
-    ):
-        if _val is not UNSET:
-            enc[_key] = _val
-    return Mark("tickX", data=data, enc=enc or None)
+    """The tickX mark."""
+    return _mark("tickX", locals())
 
 
 def tick_y(
@@ -6949,62 +3628,8 @@ def tick_y(
     y: ChannelValue = UNSET,
     **options: Any,
 ) -> Mark:
-    """The tickY mark. The tickY mark."""
-    enc: dict[str, Any] = dict(options)
-    for _key, _val in (
-        ("ariaDescription", aria_description),
-        ("ariaHidden", aria_hidden),
-        ("ariaLabel", aria_label),
-        ("channels", channels),
-        ("clip", clip),
-        ("dx", dx),
-        ("dy", dy),
-        ("facet", facet),
-        ("facetAnchor", facet_anchor),
-        ("fill", fill),
-        ("fillOpacity", fill_opacity),
-        ("filter", filter),
-        ("fx", fx),
-        ("fy", fy),
-        ("href", href),
-        ("imageFilter", image_filter),
-        ("inset", inset),
-        ("insetLeft", inset_left),
-        ("insetRight", inset_right),
-        ("margin", margin),
-        ("marginBottom", margin_bottom),
-        ("marginLeft", margin_left),
-        ("marginRight", margin_right),
-        ("marginTop", margin_top),
-        ("marker", marker),
-        ("markerEnd", marker_end),
-        ("markerMid", marker_mid),
-        ("markerStart", marker_start),
-        ("mixBlendMode", mix_blend_mode),
-        ("opacity", opacity),
-        ("paintOrder", paint_order),
-        ("pointerEvents", pointer_events),
-        ("reverse", reverse),
-        ("select", select),
-        ("shapeRendering", shape_rendering),
-        ("sort", sort),
-        ("stroke", stroke),
-        ("strokeDasharray", stroke_dasharray),
-        ("strokeDashoffset", stroke_dashoffset),
-        ("strokeLinecap", stroke_linecap),
-        ("strokeLinejoin", stroke_linejoin),
-        ("strokeMiterlimit", stroke_miterlimit),
-        ("strokeOpacity", stroke_opacity),
-        ("strokeWidth", stroke_width),
-        ("target", target),
-        ("tip", tip),
-        ("title", title),
-        ("x", x),
-        ("y", y),
-    ):
-        if _val is not UNSET:
-            enc[_key] = _val
-    return Mark("tickY", data=data, enc=enc or None)
+    """The tickY mark."""
+    return _mark("tickY", locals())
 
 
 def vector(
@@ -7060,61 +3685,8 @@ def vector(
     y: ChannelValue = UNSET,
     **options: Any,
 ) -> Mark:
-    """The vector mark. The vector mark."""
-    enc: dict[str, Any] = dict(options)
-    for _key, _val in (
-        ("anchor", anchor),
-        ("ariaDescription", aria_description),
-        ("ariaHidden", aria_hidden),
-        ("ariaLabel", aria_label),
-        ("channels", channels),
-        ("clip", clip),
-        ("dx", dx),
-        ("dy", dy),
-        ("facet", facet),
-        ("facetAnchor", facet_anchor),
-        ("fill", fill),
-        ("fillOpacity", fill_opacity),
-        ("filter", filter),
-        ("frameAnchor", frame_anchor),
-        ("fx", fx),
-        ("fy", fy),
-        ("href", href),
-        ("imageFilter", image_filter),
-        ("length", length),
-        ("margin", margin),
-        ("marginBottom", margin_bottom),
-        ("marginLeft", margin_left),
-        ("marginRight", margin_right),
-        ("marginTop", margin_top),
-        ("mixBlendMode", mix_blend_mode),
-        ("opacity", opacity),
-        ("paintOrder", paint_order),
-        ("pointerEvents", pointer_events),
-        ("r", r),
-        ("reverse", reverse),
-        ("rotate", rotate),
-        ("select", select),
-        ("shape", shape),
-        ("shapeRendering", shape_rendering),
-        ("sort", sort),
-        ("stroke", stroke),
-        ("strokeDasharray", stroke_dasharray),
-        ("strokeDashoffset", stroke_dashoffset),
-        ("strokeLinecap", stroke_linecap),
-        ("strokeLinejoin", stroke_linejoin),
-        ("strokeMiterlimit", stroke_miterlimit),
-        ("strokeOpacity", stroke_opacity),
-        ("strokeWidth", stroke_width),
-        ("target", target),
-        ("tip", tip),
-        ("title", title),
-        ("x", x),
-        ("y", y),
-    ):
-        if _val is not UNSET:
-            enc[_key] = _val
-    return Mark("vector", data=data, enc=enc or None)
+    """The vector mark."""
+    return _mark("vector", locals())
 
 
 def vector_x(
@@ -7170,61 +3742,8 @@ def vector_x(
     y: ChannelValue = UNSET,
     **options: Any,
 ) -> Mark:
-    """The vectorX mark. The vectorX mark."""
-    enc: dict[str, Any] = dict(options)
-    for _key, _val in (
-        ("anchor", anchor),
-        ("ariaDescription", aria_description),
-        ("ariaHidden", aria_hidden),
-        ("ariaLabel", aria_label),
-        ("channels", channels),
-        ("clip", clip),
-        ("dx", dx),
-        ("dy", dy),
-        ("facet", facet),
-        ("facetAnchor", facet_anchor),
-        ("fill", fill),
-        ("fillOpacity", fill_opacity),
-        ("filter", filter),
-        ("frameAnchor", frame_anchor),
-        ("fx", fx),
-        ("fy", fy),
-        ("href", href),
-        ("imageFilter", image_filter),
-        ("length", length),
-        ("margin", margin),
-        ("marginBottom", margin_bottom),
-        ("marginLeft", margin_left),
-        ("marginRight", margin_right),
-        ("marginTop", margin_top),
-        ("mixBlendMode", mix_blend_mode),
-        ("opacity", opacity),
-        ("paintOrder", paint_order),
-        ("pointerEvents", pointer_events),
-        ("r", r),
-        ("reverse", reverse),
-        ("rotate", rotate),
-        ("select", select),
-        ("shape", shape),
-        ("shapeRendering", shape_rendering),
-        ("sort", sort),
-        ("stroke", stroke),
-        ("strokeDasharray", stroke_dasharray),
-        ("strokeDashoffset", stroke_dashoffset),
-        ("strokeLinecap", stroke_linecap),
-        ("strokeLinejoin", stroke_linejoin),
-        ("strokeMiterlimit", stroke_miterlimit),
-        ("strokeOpacity", stroke_opacity),
-        ("strokeWidth", stroke_width),
-        ("target", target),
-        ("tip", tip),
-        ("title", title),
-        ("x", x),
-        ("y", y),
-    ):
-        if _val is not UNSET:
-            enc[_key] = _val
-    return Mark("vectorX", data=data, enc=enc or None)
+    """The vectorX mark."""
+    return _mark("vectorX", locals())
 
 
 def vector_y(
@@ -7280,61 +3799,8 @@ def vector_y(
     y: ChannelValue = UNSET,
     **options: Any,
 ) -> Mark:
-    """The vectorY mark. The vectorY mark."""
-    enc: dict[str, Any] = dict(options)
-    for _key, _val in (
-        ("anchor", anchor),
-        ("ariaDescription", aria_description),
-        ("ariaHidden", aria_hidden),
-        ("ariaLabel", aria_label),
-        ("channels", channels),
-        ("clip", clip),
-        ("dx", dx),
-        ("dy", dy),
-        ("facet", facet),
-        ("facetAnchor", facet_anchor),
-        ("fill", fill),
-        ("fillOpacity", fill_opacity),
-        ("filter", filter),
-        ("frameAnchor", frame_anchor),
-        ("fx", fx),
-        ("fy", fy),
-        ("href", href),
-        ("imageFilter", image_filter),
-        ("length", length),
-        ("margin", margin),
-        ("marginBottom", margin_bottom),
-        ("marginLeft", margin_left),
-        ("marginRight", margin_right),
-        ("marginTop", margin_top),
-        ("mixBlendMode", mix_blend_mode),
-        ("opacity", opacity),
-        ("paintOrder", paint_order),
-        ("pointerEvents", pointer_events),
-        ("r", r),
-        ("reverse", reverse),
-        ("rotate", rotate),
-        ("select", select),
-        ("shape", shape),
-        ("shapeRendering", shape_rendering),
-        ("sort", sort),
-        ("stroke", stroke),
-        ("strokeDasharray", stroke_dasharray),
-        ("strokeDashoffset", stroke_dashoffset),
-        ("strokeLinecap", stroke_linecap),
-        ("strokeLinejoin", stroke_linejoin),
-        ("strokeMiterlimit", stroke_miterlimit),
-        ("strokeOpacity", stroke_opacity),
-        ("strokeWidth", stroke_width),
-        ("target", target),
-        ("tip", tip),
-        ("title", title),
-        ("x", x),
-        ("y", y),
-    ):
-        if _val is not UNSET:
-            enc[_key] = _val
-    return Mark("vectorY", data=data, enc=enc or None)
+    """The vectorY mark."""
+    return _mark("vectorY", locals())
 
 
 def voronoi(
@@ -7391,62 +3857,8 @@ def voronoi(
     z: ChannelValue = UNSET,
     **options: Any,
 ) -> Mark:
-    """The voronoi mark. The voronoi mark."""
-    enc: dict[str, Any] = dict(options)
-    for _key, _val in (
-        ("ariaDescription", aria_description),
-        ("ariaHidden", aria_hidden),
-        ("ariaLabel", aria_label),
-        ("channels", channels),
-        ("clip", clip),
-        ("curve", curve),
-        ("dx", dx),
-        ("dy", dy),
-        ("facet", facet),
-        ("facetAnchor", facet_anchor),
-        ("fill", fill),
-        ("fillOpacity", fill_opacity),
-        ("filter", filter),
-        ("fx", fx),
-        ("fy", fy),
-        ("href", href),
-        ("imageFilter", image_filter),
-        ("margin", margin),
-        ("marginBottom", margin_bottom),
-        ("marginLeft", margin_left),
-        ("marginRight", margin_right),
-        ("marginTop", margin_top),
-        ("marker", marker),
-        ("markerEnd", marker_end),
-        ("markerMid", marker_mid),
-        ("markerStart", marker_start),
-        ("mixBlendMode", mix_blend_mode),
-        ("opacity", opacity),
-        ("paintOrder", paint_order),
-        ("pointerEvents", pointer_events),
-        ("reverse", reverse),
-        ("select", select),
-        ("shapeRendering", shape_rendering),
-        ("sort", sort),
-        ("stroke", stroke),
-        ("strokeDasharray", stroke_dasharray),
-        ("strokeDashoffset", stroke_dashoffset),
-        ("strokeLinecap", stroke_linecap),
-        ("strokeLinejoin", stroke_linejoin),
-        ("strokeMiterlimit", stroke_miterlimit),
-        ("strokeOpacity", stroke_opacity),
-        ("strokeWidth", stroke_width),
-        ("target", target),
-        ("tension", tension),
-        ("tip", tip),
-        ("title", title),
-        ("x", x),
-        ("y", y),
-        ("z", z),
-    ):
-        if _val is not UNSET:
-            enc[_key] = _val
-    return Mark("voronoi", data=data, enc=enc or None)
+    """The voronoi mark."""
+    return _mark("voronoi", locals())
 
 
 def voronoi_mesh(
@@ -7503,62 +3915,8 @@ def voronoi_mesh(
     z: ChannelValue = UNSET,
     **options: Any,
 ) -> Mark:
-    """The voronoiMesh mark. The voronoiMesh mark."""
-    enc: dict[str, Any] = dict(options)
-    for _key, _val in (
-        ("ariaDescription", aria_description),
-        ("ariaHidden", aria_hidden),
-        ("ariaLabel", aria_label),
-        ("channels", channels),
-        ("clip", clip),
-        ("curve", curve),
-        ("dx", dx),
-        ("dy", dy),
-        ("facet", facet),
-        ("facetAnchor", facet_anchor),
-        ("fill", fill),
-        ("fillOpacity", fill_opacity),
-        ("filter", filter),
-        ("fx", fx),
-        ("fy", fy),
-        ("href", href),
-        ("imageFilter", image_filter),
-        ("margin", margin),
-        ("marginBottom", margin_bottom),
-        ("marginLeft", margin_left),
-        ("marginRight", margin_right),
-        ("marginTop", margin_top),
-        ("marker", marker),
-        ("markerEnd", marker_end),
-        ("markerMid", marker_mid),
-        ("markerStart", marker_start),
-        ("mixBlendMode", mix_blend_mode),
-        ("opacity", opacity),
-        ("paintOrder", paint_order),
-        ("pointerEvents", pointer_events),
-        ("reverse", reverse),
-        ("select", select),
-        ("shapeRendering", shape_rendering),
-        ("sort", sort),
-        ("stroke", stroke),
-        ("strokeDasharray", stroke_dasharray),
-        ("strokeDashoffset", stroke_dashoffset),
-        ("strokeLinecap", stroke_linecap),
-        ("strokeLinejoin", stroke_linejoin),
-        ("strokeMiterlimit", stroke_miterlimit),
-        ("strokeOpacity", stroke_opacity),
-        ("strokeWidth", stroke_width),
-        ("target", target),
-        ("tension", tension),
-        ("tip", tip),
-        ("title", title),
-        ("x", x),
-        ("y", y),
-        ("z", z),
-    ):
-        if _val is not UNSET:
-            enc[_key] = _val
-    return Mark("voronoiMesh", data=data, enc=enc or None)
+    """The voronoiMesh mark."""
+    return _mark("voronoiMesh", locals())
 
 
 def waffle_x(
@@ -7625,72 +3983,8 @@ def waffle_x(
     z: ChannelValue = UNSET,
     **options: Any,
 ) -> Mark:
-    """The waffleX mark. The waffleX mark."""
-    enc: dict[str, Any] = dict(options)
-    for _key, _val in (
-        ("ariaDescription", aria_description),
-        ("ariaHidden", aria_hidden),
-        ("ariaLabel", aria_label),
-        ("channels", channels),
-        ("clip", clip),
-        ("dx", dx),
-        ("dy", dy),
-        ("facet", facet),
-        ("facetAnchor", facet_anchor),
-        ("fill", fill),
-        ("fillOpacity", fill_opacity),
-        ("filter", filter),
-        ("fx", fx),
-        ("fy", fy),
-        ("gap", gap),
-        ("href", href),
-        ("imageFilter", image_filter),
-        ("inset", inset),
-        ("insetBottom", inset_bottom),
-        ("insetLeft", inset_left),
-        ("insetRight", inset_right),
-        ("insetTop", inset_top),
-        ("interval", interval),
-        ("margin", margin),
-        ("marginBottom", margin_bottom),
-        ("marginLeft", margin_left),
-        ("marginRight", margin_right),
-        ("marginTop", margin_top),
-        ("mixBlendMode", mix_blend_mode),
-        ("multiple", multiple),
-        ("offset", offset),
-        ("opacity", opacity),
-        ("order", order),
-        ("paintOrder", paint_order),
-        ("pointerEvents", pointer_events),
-        ("reverse", reverse),
-        ("round", round),
-        ("rx", rx),
-        ("ry", ry),
-        ("select", select),
-        ("shapeRendering", shape_rendering),
-        ("sort", sort),
-        ("stroke", stroke),
-        ("strokeDasharray", stroke_dasharray),
-        ("strokeDashoffset", stroke_dashoffset),
-        ("strokeLinecap", stroke_linecap),
-        ("strokeLinejoin", stroke_linejoin),
-        ("strokeMiterlimit", stroke_miterlimit),
-        ("strokeOpacity", stroke_opacity),
-        ("strokeWidth", stroke_width),
-        ("target", target),
-        ("tip", tip),
-        ("title", title),
-        ("unit", unit),
-        ("x", x),
-        ("x1", x1),
-        ("x2", x2),
-        ("y", y),
-        ("z", z),
-    ):
-        if _val is not UNSET:
-            enc[_key] = _val
-    return Mark("waffleX", data=data, enc=enc or None)
+    """The waffleX mark."""
+    return _mark("waffleX", locals())
 
 
 def waffle_y(
@@ -7757,72 +4051,8 @@ def waffle_y(
     z: ChannelValue = UNSET,
     **options: Any,
 ) -> Mark:
-    """The waffleY mark. The waffleY mark."""
-    enc: dict[str, Any] = dict(options)
-    for _key, _val in (
-        ("ariaDescription", aria_description),
-        ("ariaHidden", aria_hidden),
-        ("ariaLabel", aria_label),
-        ("channels", channels),
-        ("clip", clip),
-        ("dx", dx),
-        ("dy", dy),
-        ("facet", facet),
-        ("facetAnchor", facet_anchor),
-        ("fill", fill),
-        ("fillOpacity", fill_opacity),
-        ("filter", filter),
-        ("fx", fx),
-        ("fy", fy),
-        ("gap", gap),
-        ("href", href),
-        ("imageFilter", image_filter),
-        ("inset", inset),
-        ("insetBottom", inset_bottom),
-        ("insetLeft", inset_left),
-        ("insetRight", inset_right),
-        ("insetTop", inset_top),
-        ("interval", interval),
-        ("margin", margin),
-        ("marginBottom", margin_bottom),
-        ("marginLeft", margin_left),
-        ("marginRight", margin_right),
-        ("marginTop", margin_top),
-        ("mixBlendMode", mix_blend_mode),
-        ("multiple", multiple),
-        ("offset", offset),
-        ("opacity", opacity),
-        ("order", order),
-        ("paintOrder", paint_order),
-        ("pointerEvents", pointer_events),
-        ("reverse", reverse),
-        ("round", round),
-        ("rx", rx),
-        ("ry", ry),
-        ("select", select),
-        ("shapeRendering", shape_rendering),
-        ("sort", sort),
-        ("stroke", stroke),
-        ("strokeDasharray", stroke_dasharray),
-        ("strokeDashoffset", stroke_dashoffset),
-        ("strokeLinecap", stroke_linecap),
-        ("strokeLinejoin", stroke_linejoin),
-        ("strokeMiterlimit", stroke_miterlimit),
-        ("strokeOpacity", stroke_opacity),
-        ("strokeWidth", stroke_width),
-        ("target", target),
-        ("tip", tip),
-        ("title", title),
-        ("unit", unit),
-        ("x", x),
-        ("y", y),
-        ("y1", y1),
-        ("y2", y2),
-        ("z", z),
-    ):
-        if _val is not UNSET:
-            enc[_key] = _val
-    return Mark("waffleY", data=data, enc=enc or None)
+    """The waffleY mark."""
+    return _mark("waffleY", locals())
 
 
 __all__ = [
