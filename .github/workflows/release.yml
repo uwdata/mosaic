@@ -152,14 +152,15 @@ jobs:
 
       - name: Build Python packages
         run: |
-          rm -rf dist-py
-          uv build --package duckdb-server --out-dir dist-py
-          cd packages/vgplot/widget && uv build --out-dir "$GITHUB_WORKSPACE/dist-py"
+          rm -rf dist
+          uv build --package duckdb-server
+          uv build --package mosaic-widget
+          uv build --package vgplot
 
       - name: Publish to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
-          packages-dir: dist-py/
+          packages-dir: dist/
           skip-existing: true
 
       - name: Create GitHub Release
