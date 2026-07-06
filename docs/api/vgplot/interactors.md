@@ -54,7 +54,7 @@ Select the nearest value along the x dimension. The supported _options_ are:
 Select the nearest value along the y dimension. The supported _options_ are:
 
 - _as_: The [Selection](../core/selection) to populate with filter predicates.
-- _field_: The field to select. If not specified, the field backing the `"x"` encoding channel of the most recently added mark is used.
+- _field_: The field to select. If not specified, the field backing the `"y"` encoding channel of the most recently added mark is used.
 
 ## region
 
