@@ -25,12 +25,25 @@ def _snake(name: str) -> str:
     return re.sub(r"([a-z0-9])([A-Z])", r"\1_\2", name).lower()
 
 
+def _const(node: dict, key: str):
+    prop = node.get("properties", {}).get(key)
+    return prop["const"] if isinstance(prop, dict) and "const" in prop else None
+
+
 def _consts(defs: dict, key: str) -> set[str]:
+    """Const values for `key`, including intersection defs (anyOf/allOf) whose
+    branches all agree on a single const (e.g. the densityX mark)."""
     out = set()
     for d in defs.values():
-        prop = d.get("properties", {}).get(key)
-        if isinstance(prop, dict) and "const" in prop:
-            out.add(prop["const"])
+        c = _const(d, key)
+        if c is not None:
+            out.add(c)
+            continue
+        branch_consts = {
+            _const(b, key) for b in (d.get("anyOf") or d.get("allOf") or [])
+        } - {None}
+        if len(branch_consts) == 1:
+            out |= branch_consts
     return out
 
 

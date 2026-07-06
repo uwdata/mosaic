@@ -47,26 +47,47 @@ function isBooleanAttr(def) {
   return opts.some(o => o.type === 'boolean');
 }
 
+/** Extract a mark's const name and unioned channel properties from a def,
+ * handling both flat defs and `anyOf`/`allOf` intersection defs (e.g. densityX). */
+function markInfo(def) {
+  if (def.properties?.mark?.const) {
+    return { mark: def.properties.mark.const, props: def.properties, description: def.description };
+  }
+  // Union the branches of an intersection def (e.g. densityX). Only a single-mark
+  // def qualifies; skip union defs like `Spec` whose branches span many marks.
+  const branches = def.anyOf || def.allOf || [];
+  const consts = new Set();
+  const props = {};
+  for (const b of branches) {
+    const c = b.properties?.mark?.const;
+    if (c) { consts.add(c); Object.assign(props, b.properties); }
+  }
+  if (consts.size !== 1) return null;
+  return { mark: [...consts][0], props, description: def.description };
+}
+
 function generateMarks(defs) {
   const marks = [];
   for (const d of Object.values(defs)) {
-    const c = d.properties?.mark?.const;
-    if (typeof c === 'string') marks.push({ mark: c, def: d });
+    const info = markInfo(d);
+    if (info) marks.push(info);
   }
   marks.sort((a, b) => a.mark.localeCompare(b.mark));
 
   const out = [HEADER, 'from typing import Any', '', 'from ..plot import Mark',
     'from ._types import UNSET, ChannelValue, MarkData', '', ''];
   const names = [];
-  for (const { mark, def } of marks) {
+  for (const { mark, props: propsObj, description } of marks) {
     const fn = ident(mark);
     names.push(fn);
-    // Channel/option properties: everything except the `mark` const and `data`.
-    const props = Object.keys(def.properties).filter(p => p !== 'mark' && p !== 'data');
+    // Channel/option properties: everything except the `mark` const, `data`,
+    // and any non-identifier keys (e.g. a stray `$schema`).
+    const props = Object.keys(propsObj)
+      .filter(p => p !== 'mark' && p !== 'data' && /^[A-Za-z][A-Za-z0-9]*$/.test(p));
     const params = props.map(p => `    ${ident(p)}: ChannelValue = UNSET,`);
     // enc entries keyed by the exact schema (camelCase) name; runtime camelize is idempotent.
     const encPairs = props.map(p => `        (${JSON.stringify(p)}, ${ident(p)}),`);
-    const extra = docline(def.description, '');
+    const extra = docline(description, '');
     const doc = extra ? `The ${mark} mark. ${extra}` : `The ${mark} mark.`;
     out.push(
       `def ${fn}(`,
