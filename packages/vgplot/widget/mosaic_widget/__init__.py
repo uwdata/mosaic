@@ -4,7 +4,7 @@ import inspect
 import logging
 import pathlib
 import time
-from typing import TYPE_CHECKING, Any, Protocol
+from typing import TYPE_CHECKING, Protocol
 
 import anywidget
 import duckdb
@@ -24,7 +24,7 @@ SLOW_QUERY_THRESHOLD = 5000
 
 
 class SupportsToDict(Protocol):
-    def to_dict(self) -> dict[str, Any]: ...
+    def to_dict(self) -> dict: ...
 
 
 class MosaicWidget(anywidget.AnyWidget):
@@ -42,7 +42,7 @@ class MosaicWidget(anywidget.AnyWidget):
 
     def __init__(
         self,
-        spec: dict[str, Any] | SupportsToDict | None = None,
+        spec: dict | SupportsToDict | None = None,
         con: duckdb.DuckDBPyConnection | None = None,
         data: dict[str, "IntoFrame"] | None = None,
         *args,
