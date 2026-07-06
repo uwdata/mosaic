@@ -220,10 +220,10 @@ def height(value: int) -> Directive:
 
 
 def margins(
-    top: int = None,
-    right: int = None,
-    bottom: int = None,
-    left: int = None,
+    top: Optional[int] = None,
+    right: Optional[int] = None,
+    bottom: Optional[int] = None,
+    left: Optional[int] = None,
     **kwargs: Any,
 ) -> Directive:
     return Directive(

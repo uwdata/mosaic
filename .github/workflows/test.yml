@@ -137,6 +137,7 @@ jobs:
           cd packages/vgplot/vgplot-python
 
           uv build
+          uv run --group dev ty check
           uv run --group dev pytest --cov-report=term-missing --color=yes --cov=vgplot
 
   rust:

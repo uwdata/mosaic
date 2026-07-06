@@ -4,10 +4,7 @@ dynamic = ["version"]
 description = "A Python API for authoring Mosaic vgplot visualizations"
 readme = "README.md"
 requires-python = ">=3.9"
-dependencies = [
-    "pyyaml",
-    "narwhals"
-]
+dependencies = []
 
 [project.urls]
 homepage = "https://github.com/uwdata/mosaic"
@@ -18,13 +15,11 @@ build-backend = "hatchling.build"
 
 [dependency-groups]
 dev = [
-    "jupyterlab",
-    "mypy",
+    "mosaic-widget",
     "pytest",
     "pytest-cov",
     "ruff",
-    "pandas",
-    "mosaic-widget"
+    "ty",
 ]
 
 [tool.uv.sources]
@@ -36,9 +31,3 @@ pattern = "\"version\": \"(?P<version>.+?)\""
 
 [tool.hatch.build.targets.wheel]
 packages = ["vgplot"]
-
-# https://mypy.readthedocs.io/en/stable/config_file.html
-[tool.mypy]
-files = "vgplot/**/*.py"
-strict = false
-ignore_missing_imports = true

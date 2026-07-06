@@ -10,6 +10,18 @@ from .data import DataDef
 from .plot import _encode_component
 
 
+def _caller_locals() -> Dict[str, Any]:
+    """Local variables of the caller of the method invoking this helper.
+
+    Returns an empty mapping when the frame is unavailable (e.g. on Python
+    implementations without ``sys._getframe`` support).
+    """
+    frame = inspect.currentframe()
+    method = frame.f_back if frame is not None else None
+    caller = method.f_back if method is not None else None
+    return caller.f_locals if caller is not None else {}
+
+
 def _collect_params(node: Any) -> list[_ParamBase]:
     """Recursively collect all _ParamBase instances in a view tree."""
     if isinstance(node, _ParamBase):
@@ -210,24 +222,20 @@ class View:
         )
 
     def to_dict(self, _context: Dict[str, Any] | None = None) -> Dict[str, Any]:
-        locals_ = (
-            _context if _context is not None else inspect.currentframe().f_back.f_locals
-        )  # type: ignore[union-attr]
+        locals_ = _context if _context is not None else _caller_locals()
         return self._build_spec(locals_).to_dict()
 
     def to_json(self, _context: Dict[str, Any] | None = None, **kwargs: Any) -> str:
-        locals_ = (
-            _context if _context is not None else inspect.currentframe().f_back.f_locals
-        )  # type: ignore[union-attr]
+        locals_ = _context if _context is not None else _caller_locals()
         return self._build_spec(locals_).to_json(**kwargs)
 
     def show(self, con: Any = None, data: Any = None) -> None:
-        caller_locals = inspect.currentframe().f_back.f_locals  # type: ignore[union-attr]
-        self._build_spec(caller_locals).show(con=con, data=data)
+        self._build_spec(_caller_locals()).show(con=con, data=data)
 
     def _repr_mimebundle_(self, **kwargs: Any):
         # Walk up frames to find the one where this View object lives
-        frame = inspect.currentframe().f_back
+        frame = inspect.currentframe()
+        frame = frame.f_back if frame is not None else None
         while frame is not None:
             if any(v is self for v in frame.f_locals.values()):
                 break
@@ -263,7 +271,7 @@ def spec(
             data = arg
 
     # Inspect caller frame to discover DataDef and _ParamBase objects by variable name.
-    caller_locals = inspect.currentframe().f_back.f_locals  # type: ignore[union-attr]
+    caller_locals = _caller_locals()
 
     # Collect DataDef objects not already covered by the explicit data= argument.
     explicit_ids = {id(v) for v in (data or {}).values() if isinstance(v, DataDef)}

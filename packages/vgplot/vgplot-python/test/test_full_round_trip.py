@@ -7,6 +7,7 @@
 import json
 import sys
 from pathlib import Path
+from typing import Any
 
 import pytest
 
@@ -28,7 +29,7 @@ def load_json_fixture(name: str) -> dict:
 
 
 def run_spec_file_with_exec(path: Path) -> dict:
-    namespace: dict[str, object] = {
+    namespace: dict[str, Any] = {
         "__name__": "__spec_exec__",
         "__file__": str(path),
         "__builtins__": __builtins__,
