@@ -44,7 +44,7 @@ class MosaicWidget(anywidget.AnyWidget):
         self,
         spec: dict | SupportsToDict | None = None,
         con: duckdb.DuckDBPyConnection | None = None,
-        data: dict[str, "IntoFrame"] | None = None,
+        data: dict[str, IntoFrame] | None = None,
         *args,
         **kwargs,
     ):

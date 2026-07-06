@@ -21,20 +21,7 @@ dev = [
     "ruff",
     "ty",
 ]
-[tool.ruff]
-fix = true
 
-[tool.ruff.lint]
-extend-select = [
-    "FA",  # https://docs.astral.sh/ruff/rules/#flake8-future-annotations-fa
-    "TC",  # https://docs.astral.sh/ruff/rules/#flake8-type-checking-tc
-    "UP",  # https://docs.astral.sh/ruff/rules/#pyupgrade-up
-]
-extend-safe-fixes = [
-    "FA",
-    "TC",
-    "UP",
-]
 [tool.uv.sources]
 "mosaic-widget" = { workspace = true }
 
