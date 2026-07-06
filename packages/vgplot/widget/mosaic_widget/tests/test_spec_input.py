@@ -45,4 +45,5 @@ def test_spec_object_without_context_falls_back():
 
 def test_object_without_to_dict_raises():
     with pytest.raises(TypeError, match="to_dict"):
-        MosaicWidget(object())
+        # An object without to_dict() is intentionally invalid input.
+        MosaicWidget(object())  # ty: ignore[invalid-argument-type]
