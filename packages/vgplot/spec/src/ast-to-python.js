@@ -1,25 +1,13 @@
 import { camelCaseToSnake } from './util.js';
-
-const PYTHON_KEYWORDS = new Set([
-  'False', 'None', 'True', 'and', 'as', 'assert', 'async', 'await',
-  'break', 'class', 'continue', 'def', 'del', 'elif', 'else', 'except',
-  'finally', 'for', 'from', 'global', 'if', 'import', 'in', 'is',
-  'lambda', 'nonlocal', 'not', 'or', 'pass', 'raise', 'return', 'try',
-  'type', 'while', 'with', 'yield',
-]);
-
-// Keywords that cannot appear as a bare keyword-argument name. `type` is a
-// builtin, not a reserved word, so it stays valid as a kwarg.
-const PYTHON_KWARG_UNSAFE = new Set(
-  [...PYTHON_KEYWORDS].filter(k => k !== 'type')
-);
-
-/** Format `name=value`, falling back to **{'name': value} for keyword names. */
-function kwarg(name, valueStr) {
-  return PYTHON_KWARG_UNSAFE.has(name)
-    ? `**{${JSON.stringify(name)}: ${valueStr}}`
-    : `${name}=${valueStr}`;
-}
+import {
+  PYTHON_KEYWORDS,
+  kwarg,
+  INTERACTOR_KEY_MAP,
+  LEGEND_KEY_MAP,
+  inputArgName,
+  literal,
+  indentLine,
+} from './python-codegen.js';
 
 /** Build snake_cased, keyword-safe kwargs for an options object. */
 function buildArgs(opts, ctx, keyMap = null) {
@@ -118,9 +106,6 @@ function emitComponent(node, ctx, topKwargs = []) {
   if (node.plot) return emitPlotObject(node, ctx, topKwargs);
   return literal(node, 0, ctx);
 }
-
-const INTERACTOR_KEY_MAP = { as: 'bind', pixelSize: 'pixel_size' };
-const LEGEND_KEY_MAP = { as: 'bind', for: 'plot' };
 
 /** @param {PythonCodegenContext} ctx */
 function emitInteractor(node, ctx) {
@@ -318,12 +303,6 @@ function emitInputValue(key, v, ctx) {
   return literal(v, 0, ctx);
 }
 
-function inputArgName(key) {
-  if (key === 'as') return 'bind';
-  if (key === 'from') return 'source';
-  return camelCaseToSnake(key);
-}
-
 function emitDataRef(data, ctx) {
   if (Array.isArray(data)) return literal(data, 0, ctx);
   if (data && typeof data === 'object' && data.from) {
@@ -334,52 +313,6 @@ function emitDataRef(data, ctx) {
     return `vg.source(${[nameRef, ...extraArgs].join(', ')})`;
   }
   return literal(data, 0, ctx);
-}
-
-function literal(v, depth = 0, ctx = null) {
-  if (v === null || v === undefined) return 'None';
-  if (typeof v === 'boolean') return v ? 'True' : 'False';
-  if (typeof v === 'number') {
-    if (Number.isNaN(v)) return "float('nan')";
-    if (v === Infinity) return "float('inf')";
-    if (v === -Infinity) return "float('-inf')";
-    return String(v);
-  }
-  if (typeof v === 'string') {
-    if (/^\$[A-Za-z_][A-Za-z0-9_]*$/.test(v)) {
-      return ctx ? ctx.ident(v.slice(1)) : v.slice(1);
-    }
-    // Prefer single quotes when the string contains double quotes (avoids escape sequences)
-    if (v.includes('"') && !v.includes("'")) return `'${v}'`;
-    return JSON.stringify(v);
-  }
-  const pad = '    '.repeat(depth + 1);
-  const closePad = '    '.repeat(depth);
-  if (Array.isArray(v)) {
-    if (!v.length) return '[]';
-    // Treat all strings as primitive (including $param refs which resolve to short idents)
-    const isPrimitive = x => x === null || typeof x === 'boolean' || typeof x === 'number' ||
-      typeof x === 'string';
-    if (v.length <= 6 && v.every(isPrimitive)) {
-      return '[' + v.map(x => literal(x, 0, ctx)).join(', ') + ']';
-    }
-    const items = v.map(x => pad + literal(x, depth + 1, ctx)).join(',\n');
-    return '[\n' + items + ',\n' + closePad + ']';
-  }
-  if (typeof v === 'object') {
-    const entries = Object.entries(v)
-      .filter(([, val]) => val !== undefined)
-      .map(([k, val]) => `${pad}${JSON.stringify(k)}: ${literal(val, depth + 1, ctx)}`);
-    if (!entries.length) return '{}';
-    return '{\n' + entries.join(',\n') + '\n' + closePad + '}';
-  }
-  return 'None';
-}
-
-
-function indentLine(str, depth) {
-  const pad = '    '.repeat(depth);
-  return str.split('\n').map(line => pad + line).join('\n');
 }
 
 export class PythonCodegenContext {

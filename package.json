@@ -17,6 +17,7 @@
     "docs:examples": "node bin/prepare-examples.js && uv run ruff format",
     "docs:preview": "vitepress preview docs",
     "docs:schema": "node bin/publish-schema.js && bin/push-schema.sh",
+    "generate:python-api": "pnpm -F @uwdata/mosaic-spec run schema && node bin/generate-python-api.js && uv run ruff format packages/vgplot/vgplot-python/vgplot/_generated",
     "build": "tsc --build && lerna run build",
     "clean": "lerna run clean",
     "lint": "lerna run lint",

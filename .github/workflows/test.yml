@@ -51,6 +51,11 @@ jobs:
           pnpm run docs:examples
           git diff --exit-code -- specs/esm specs/json specs/ts specs/python docs/public/specs docs/examples
 
+      - name: Verify generated Python API does not change
+        run: |
+          pnpm run generate:python-api
+          git diff --exit-code -- packages/vgplot/vgplot-python/vgplot/_generated
+
   browser:
     name: Test in Browser
 

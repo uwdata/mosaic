@@ -3,6 +3,8 @@
 import sys
 from pathlib import Path
 
+import pytest
+
 ROOT = Path(__file__).resolve().parents[4]
 VGPLOT_PKG = ROOT / "packages" / "vgplot" / "vgplot-python"
 for p in (VGPLOT_PKG, ROOT):
@@ -10,16 +12,16 @@ for p in (VGPLOT_PKG, ROOT):
         sys.path.insert(0, str(p))
 
 import vgplot as vg  # noqa: E402
-from vgplot.plot import Directive, Mark  # noqa: E402
+from vgplot.plot import Mark  # noqa: E402
 
 
-class TestDynamicFactory:
-    """The __getattr__ fallback that builds marks/directives for names that
-    have no explicit helper (e.g. waffleY)."""
+class TestGeneratedMarks:
+    """Marks are generated from the schema; there is no dynamic fallback, so
+    unknown names fail loudly rather than being silently fabricated."""
 
     def test_positional_data_with_encodings_is_kept(self):
-        # Regression: a leading positional arg used to be dropped when the
-        # call also had keyword encodings, silently losing the mark's data.
+        # A leading positional arg is the data source even when the call also
+        # has keyword encodings.
         mark = vg.waffle_y("athletes", x="a", y={"count": ""})
         assert isinstance(mark, Mark)
         d = mark.to_dict()
@@ -27,12 +29,18 @@ class TestDynamicFactory:
         assert d["data"] == {"from": "athletes"}
         assert d["x"] == "a"
 
-    def test_single_positional_no_encodings_is_directive(self):
-        out = vg.some_custom_directive([0, 10])
-        assert isinstance(out, Directive)
+    def test_explicit_none_channel_is_preserved(self):
+        # Passing a channel explicitly as None keeps it in the output (distinct
+        # from not passing it at all).
+        assert vg.line_y("t", x="a", z=None).to_dict()["z"] is None
+        assert "z" not in vg.line_y("t", x="a").to_dict()
 
-    def test_no_args_is_a_mark(self):
-        assert isinstance(vg.some_custom_mark(), Mark)
+    def test_unknown_name_raises(self):
+        # No __getattr__ fallback: a missing or mis-typed API name is an error.
+        with pytest.raises(AttributeError):
+            vg.some_custom_mark  # ty: ignore[unresolved-attribute]
+        with pytest.raises(AttributeError):
+            vg.definitely_not_a_real_directive  # ty: ignore[unresolved-attribute]
 
 
 class TestDataHelpers:
