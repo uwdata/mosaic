@@ -241,7 +241,7 @@ This chart uses three directives:
 
 _Attributes_ set plot-level options: size, margins, and scales (`x_domain`, `color_range`, `y_tick_format`, …) via helpers such as `vg.x_domain(...)`, `vg.color_range(...)`, `vg.y_tick_format(...)`. Param references like `"$point"` tie encodings to widget state.
 
-**`Fixed`** domains (e.g. `vg.x_domain(vg.Fixed)`) compute an initial domain from data, then freeze it so filtered views do not rescale in a distracting way.
+**`"Fixed"`** domains (e.g. `vg.x_domain("Fixed")`) compute an initial domain from data, then freeze it so filtered views do not rescale in a distracting way.
 
 [Attributes reference](/api/vgplot/attributes)
 

@@ -260,7 +260,7 @@ Select the nearest value along the x dimension. The supported _options_ are:
 Select the nearest value along the y dimension. The supported _options_ are:
 
 - _bind_: The [Selection](../core/selection) to populate with filter predicates.
-- _field_: The field to select. If not specified, the field backing the `"x"` encoding channel of the most recently added mark is used.
+- _field_: The field to select. If not specified, the field backing the `"y"` encoding channel of the most recently added mark is used.
 
 ## region
 
@@ -325,7 +325,7 @@ To zoom, scroll within a plot.
 
 Panning and zooming is implemented by changing the `x` and/or `y` scale domains and re-rendering the plot in response.
 
-Pan/zoom interactors will automatically update the plot `xDomain` and `yDomain` attributes.
+Pan/zoom interactors will automatically update the plot `x_domain` and `y_domain` attributes.
 For linked panning and zooming across plots, first define your own selections and pass them as options.
 You can additionally use such selections to have the pan/zoom state filter other marks.
 

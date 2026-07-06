@@ -323,7 +323,7 @@ The [`bar_y`](#bar) mark above assumes a discrete (ordinal) _x_ axis and will pr
 
 An `area` mark, with `area_x` and `area_y` variants.
 When feasible, the `area_x` and `area_y` marks will perform [M4 optimization](https://observablehq.com/@uwdata/m4-scalable-time-series-visualization) to limit the number of sample points returned from the database.
-Use `{"from": "data", "optimize": false}` as the mark `data` argument to disable this behavior.
+Use `vg.source("data", optimize=False)` as the mark `data` argument to disable this behavior.
 For supported options, see the [Observable Plot `area` documentation](https://observablehq.com/plot/marks/area).
 
 ## Arrow
@@ -491,7 +491,7 @@ For supported options, see the [Observable Plot `image` documentation](https://o
 
 A `line` mark, with `line_x` and `line_y` variants.
 When feasible, the `line_x` and `line_y` marks will perform [M4 optimization](https://observablehq.com/@uwdata/m4-scalable-time-series-visualization) to limit the number of sample points returned from the database.
-Use `{"from": "data", "optimize": false}` as the mark `data` argument to disable this behavior.
+Use `vg.source("data", optimize=False)` as the mark `data` argument to disable this behavior.
 For supported options, see the [Observable Plot `line` documentation](https://observablehq.com/plot/marks/line).
 
 ## Regression
