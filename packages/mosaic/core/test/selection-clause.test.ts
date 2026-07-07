@@ -4,12 +4,10 @@ import { clauseList } from '../src/index.js';
 describe('clauseList', () => {
   const source = {};
 
-  // Regression tests for https://github.com/uwdata/mosaic/issues/977: list
-  // values must be emitted as a quoted SQL list, not an unquoted string.
+  // Regression tests for https://github.com/uwdata/mosaic/issues/977.
 
   it('quotes list values that contain spaces', () => {
-    // Previously this produced list_has_any("tags", Drafting Lines) with the
-    // value unquoted, which triggered a DuckDB Parser Error at the space.
+    // previously unquoted, which triggered a DuckDB Parser Error at the space
     const clause = clauseList('tags', ['Drafting Lines'], { source });
     expect(String(clause.predicate)).toBe(
       `list_has_any("tags", ['Drafting Lines'])`
@@ -17,8 +15,7 @@ describe('clauseList', () => {
   });
 
   it('quotes single-word list values as literals, not identifiers', () => {
-    // Previously produced: list_has_any("tags", Markers) -> Binder Error
-    // (DuckDB interpreted the bare word as a column reference)
+    // previously produced a bare word, which DuckDB read as a Binder Error
     const clause = clauseList('tags', ['Markers'], { source });
     expect(String(clause.predicate)).toBe(`list_has_any("tags", ['Markers'])`);
   });
@@ -45,8 +42,7 @@ describe('clauseList', () => {
   });
 
   it('produces a null predicate for an empty array (clears selection)', () => {
-    // An empty list must clear the selection rather than filter out every
-    // row (a list_has_any check against an empty list would match nothing).
+    // an empty list must clear the selection, not filter out every row
     expect(clauseList('tags', [], { source }).predicate).toBe(null);
   });
 });
