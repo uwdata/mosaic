@@ -353,8 +353,7 @@ export function clauseList(
   }
 ): SelectionClause {
   const listFn = listMatch === 'all' ? listHasAll : listHasAny;
-  // Empty/undefined clears the selection; arrays pass through directly to be
-  // quoted as a list (literal() would coerce them to an unquoted string).
+  // arrays pass through directly so they are quoted as a list, not stringified
   const predicate = value === undefined || (Array.isArray(value) && value.length === 0)
     ? null
     : Array.isArray(value)

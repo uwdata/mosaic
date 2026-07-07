@@ -33,8 +33,7 @@ export class Nearest {
     const { clients, fields, mark } = this;
     const opt = { source: /** @type {ClauseSource} */(this), clients };
     if (fields.length === 1) {
-      // Unnested (array-valued) field: use a list-membership predicate so the
-      // value is quoted as a list element; `listMatch` selects any vs all.
+      // unnested field: use a list-membership predicate instead of point equality
       if (mark.isUnnested(fields[0])) {
         const list = value != null ? [value[0]] : undefined;
         return clauseList(fields[0], list, { ...opt, listMatch: this.listMatch });

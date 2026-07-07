@@ -47,8 +47,7 @@ export class Toggle {
     const clients = this.peers ? mark.plot.markSet : new Set().add(mark);
     const opt = { source: /** @type {ClauseSource} */(this), clients };
 
-    // Unnested (array-valued) fields use a list-membership predicate so values
-    // are quoted correctly; `listMatch` selects list_has_any vs list_has_all.
+    // unnested fields use a list-membership predicate instead of point equality
     if (fields.length === 1 && mark.isUnnested(fields[0])) {
       const list = value?.length ? value.map(v => v[0]) : undefined;
       return clauseList(fields[0], list, { ...opt, listMatch: this.listMatch });

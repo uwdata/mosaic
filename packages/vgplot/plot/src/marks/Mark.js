@@ -10,8 +10,7 @@ const isColorChannel = channel => channel === 'stroke' || channel === 'fill';
 const isOpacityChannel = channel => /opacity$/i.test(channel);
 const isSymbolChannel = channel => channel === 'symbol';
 
-// Column name if a field is a plain column reference (or name string), else
-// null — avoids matching expression nodes that merely expose a `.column`.
+// column name for a plain column reference or name string, else null
 const unnestableColumn = field =>
   isColumnRef(field) ? field.column
     : typeof field === 'string' ? field
@@ -112,8 +111,7 @@ export class Mark extends MosaicClient {
   }
 
   /**
-   * The source field names to unnest (expand array values into individual
-   * rows), as declared by the source `unnest` option. Normalized to an array.
+   * The source field names to unnest, as declared by the `unnest` option.
    * @returns {string[]}
    */
   get unnestFields() {
@@ -122,8 +120,7 @@ export class Mark extends MosaicClient {
   }
 
   /**
-   * Check if the given field is unnested by this mark's source. Only plain
-   * column references (or column-name strings) are eligible.
+   * Check if the given field is unnested by this mark's source.
    * @param {*} field A field reference or column name.
    * @returns {boolean}
    */
@@ -189,8 +186,7 @@ export class Mark extends MosaicClient {
   query(filter = []) {
     if (this.hasOwnData()) return null;
     const { unnestFields } = this;
-    // wrap unnested column fields in UNNEST() so DuckDB expands array values
-    // into individual rows (otherwise arrays render as a single combined value)
+    // wrap unnested column fields in UNNEST() so arrays expand into rows
     const channels = unnestFields.length === 0
       ? this.channels
       : this.channels.map(c => {
