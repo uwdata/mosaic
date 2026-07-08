@@ -186,13 +186,13 @@ def hconcat(
     )
 
 
-def hspace(px: int) -> Any:
+def hspace(px: int | str) -> Any:
     from .spec import View
 
     return View({"hspace": px})
 
 
-def vspace(px: int) -> Any:
+def vspace(px: int | str) -> Any:
     from .spec import View
 
     return View({"vspace": px})
