@@ -48,7 +48,7 @@ def _consts(defs: dict, key: str) -> set[str]:
 
 
 def test_schema_surface_is_exported():
-    defs = json.loads(SCHEMA.read_text())["definitions"]
+    defs = json.loads(SCHEMA.read_text("utf-8"))["definitions"]
     names = (
         _consts(defs, "mark")
         | _consts(defs, "select")
