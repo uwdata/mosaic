@@ -35,7 +35,7 @@ class TestGeneratedMarks:
         assert vg.line_y("t", x="a", z=None).to_dict()["z"] is None
         assert "z" not in vg.line_y("t", x="a").to_dict()
 
-    def test_unknown_name_raises(self):
+    def test_unknown_name_raises(self) -> None:
         # No __getattr__ fallback: a missing or mis-typed API name is an error.
         with pytest.raises(AttributeError):
             vg.some_custom_mark  # pyright: ignore[reportAttributeAccessIssue] # ty: ignore[unresolved-attribute]
