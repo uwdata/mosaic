@@ -134,4 +134,4 @@ __all__ = [
     "toggle_y",
     "vconcat",
     "vspace",
-] + list(_generated_all)
+] + list(_generated_all)  # pyright: ignore[reportUnsupportedDunderAll]

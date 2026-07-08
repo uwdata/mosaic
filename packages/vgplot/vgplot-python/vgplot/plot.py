@@ -102,7 +102,7 @@ def plot(
             k, v = item.to_kv()
             directives[k] = encode_value(v, param_names)
         elif isinstance(item, dict):
-            marks.append({k: encode_value(v, param_names) for k, v in item.items()})
+            marks.append({k: encode_value(v, param_names) for k, v in item.items()})  # pyright: ignore[reportGeneralTypeIssues]
         else:
             raise TypeError(f"Unsupported plot item: {item}")
     root: dict[str, Any] = {"plot": marks}
@@ -426,7 +426,7 @@ def input(kind: str, **opts: Any) -> Any:
             and any(isinstance(i, dict) for i in v)
         ):
             v = [{"label": i, "value": i} if not isinstance(i, dict) else i for i in v]
-        payload[key] = v
+        payload[key] = v  # pyright: ignore[reportArgumentType]
     return View(payload)
 
 
