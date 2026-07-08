@@ -416,7 +416,7 @@ _INPUT_ALIASES = {"bind": "as", "source": "from"}
 def input(kind: str, **opts: Any) -> Any:
     from .spec import View
 
-    payload = {"input": kind}
+    payload: dict[str, Any] = {"input": kind}
     for k, v in opts.items():
         if v is None:
             continue
@@ -427,7 +427,7 @@ def input(kind: str, **opts: Any) -> Any:
             and any(isinstance(i, dict) for i in v)
         ):
             v = [{"label": i, "value": i} if not isinstance(i, dict) else i for i in v]
-        payload[key] = v  # pyright: ignore[reportArgumentType]
+        payload[key] = v
     return View(payload)
 
 
