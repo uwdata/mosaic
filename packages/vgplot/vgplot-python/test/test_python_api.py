@@ -38,9 +38,9 @@ class TestGeneratedMarks:
     def test_unknown_name_raises(self):
         # No __getattr__ fallback: a missing or mis-typed API name is an error.
         with pytest.raises(AttributeError):
-            vg.some_custom_mark  # ty: ignore[unresolved-attribute]
+            vg.some_custom_mark  # pyright: ignore[reportAttributeAccessIssue] # ty: ignore[unresolved-attribute]
         with pytest.raises(AttributeError):
-            vg.definitely_not_a_real_directive  # ty: ignore[unresolved-attribute]
+            vg.definitely_not_a_real_directive  # pyright: ignore[reportAttributeAccessIssue] # ty: ignore[unresolved-attribute]
 
 
 class TestDataHelpers:
