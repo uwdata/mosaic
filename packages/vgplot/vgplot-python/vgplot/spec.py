@@ -119,7 +119,7 @@ class Spec:
                 all_params[name] = view_params[obj_id]
         for name, p in all_params.items():
             if isinstance(p, _ParamBase):
-                serialized_params[name] = p.param_def(param_names=param_names)  # pyright: ignore[reportAttributeAccessIssue]
+                serialized_params[name] = p.param_def(param_names=param_names)
             else:
                 serialized_params[name] = p
 
