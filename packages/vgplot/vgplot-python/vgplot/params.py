@@ -20,7 +20,7 @@ def _resolve(v: Any, param_names: dict[int, str] | None) -> Any:
 class _ParamBase:
     """Base for Param and Selection instances used as param ref tokens."""
 
-    def param_def(self, param_names: dict[int, str] | None = None) -> Any:
+    def param_def(self, *, param_names: dict[int, str] | None = None) -> Any:
         raise NotImplementedError
 
 
@@ -28,7 +28,7 @@ class ParamValue(_ParamBase):
     def __init__(self, value: Any = None) -> None:
         self._value = value
 
-    def param_def(self, **_: Any) -> Any:
+    def param_def(self, *, param_names: dict[int, str] | None = None) -> Any:
         return self._value
 
     def __repr__(self) -> str:
@@ -39,7 +39,7 @@ class ParamArray(_ParamBase):
     def __init__(self, values: list) -> None:
         self._values = list(values)
 
-    def param_def(self, param_names: dict[int, str] | None = None) -> Any:
+    def param_def(self, *, param_names: dict[int, str] | None = None) -> Any:
         return [_resolve(v, param_names) for v in self._values]
 
     def __repr__(self) -> str:
@@ -51,7 +51,7 @@ class SelectionDef(_ParamBase):
         self._select = select
         self._opts = {k: v for k, v in opts.items() if v is not None}
 
-    def param_def(self, param_names: dict[int, str] | None = None) -> Any:
+    def param_def(self, *, param_names: dict[int, str] | None = None) -> Any:
         d: dict = {"select": self._select}
         d.update(_resolve(self._opts, param_names))
         return d
