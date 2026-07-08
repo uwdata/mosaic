@@ -38,19 +38,9 @@ export function preaggColumns(client: MosaicClient): PreAggColumnsResult | null 
   const preagg: Record<string, ExprNode> = {};
   const output: Record<string, ExprNode> = {};
 
-  // groupby entries, these may or may not be selected
-  const groupby: Record<string, ExprNode> = {};
-  for (const expr of q._groupby) {
-    // ignore integer index, as expr will be in select clause
-    // we will harvest that expr as a dimension below
-    if (expr.type !== "LITERAL") {
-      const alias = isColumnRef(expr) ? expr.column : `${expr}`;
-      groupby[alias] = expr;
-    }
-  }
-
   // all group by dimensions, including selected ones.
-  const dims: Set<string> = new Set(Object.keys(groupby));
+  const dims: string[] = [];
+  const dimsLower = new Set<string>(); // case-insensitive
 
   // generate a scalar subquery for a global average
   const avg = (ref: ColumnRefNode) => {
@@ -68,7 +58,8 @@ export function preaggColumns(client: MosaicClient): PreAggColumnsResult | null 
         output[alias] = result;
       } else {
         // if no aggregates, expr is a groupby dimension
-        dims.add(alias);
+        dimsLower.add(alias.toLowerCase());
+        dims.push(alias);
         preagg[alias] = expr;
       }
     }
@@ -87,8 +78,25 @@ export function preaggColumns(client: MosaicClient): PreAggColumnsResult | null 
     // bail if the query has no aggregates
     if (!aggrs.size) return null;
 
+    // add groupby entries, which may or may not be selected
+    const groupby: Record<string, ExprNode> = {};
+    for (const expr of q._groupby) {
+      // ignore integer index, as expr was in select clause
+      // so we harvested that expr as a dimension above
+      if (expr.type !== "LITERAL") {
+        // if column ref, do not duplicate given case-insensitive match
+        const alias = !isColumnRef(expr) ? `${expr}`
+          : dimsLower.has(expr.column.toLowerCase()) ? undefined
+          : expr.column;
+        if (alias) {
+          groupby[alias] = expr;
+          dims.push(alias);
+        }
+      }
+    }
+
     return {
-      dims: Array.from(dims),
+      dims,
       groupby,
       preagg,
       output,
@@ -103,7 +111,7 @@ export function preaggColumns(client: MosaicClient): PreAggColumnsResult | null 
 
 /**
  * Analyzes an expression and returns a rewritten expression if preaggregation
- * optimization is supported. Returns undefined if the expressions does not
+ * optimization is supported. Returns undefined if the expression does not
  * contain any aggregates. Throws if the expression contains an unsupported
  * or non-optimizable aggregate.
  */
