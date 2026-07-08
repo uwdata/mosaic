@@ -20,6 +20,9 @@ def _resolve(v: Any, param_names: dict[int, str] | None) -> Any:
 class _ParamBase:
     """Base for Param and Selection instances used as param ref tokens."""
 
+    def param_def(self, param_names: dict[int, str] | None = None) -> Any:
+        raise NotImplementedError
+
 
 class ParamValue(_ParamBase):
     def __init__(self, value: Any = None) -> None:
