@@ -31,3 +31,7 @@ pattern = "\"version\": \"(?P<version>.+?)\""
 
 [tool.hatch.build.targets.wheel]
 packages = ["vgplot"]
+
+[tool.pyright]
+ignore = ["../**/.venv/"]  # Do not display diagnostics in external source code
+typeCheckingMode = "standard"
