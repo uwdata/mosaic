@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from collections.abc import Mapping
 from dataclasses import dataclass
 from typing import Any
 
@@ -87,7 +88,7 @@ def encode_value(
 
 
 def plot(
-    *items: Mark | Directive,
+    *items: Mark | Directive | Mapping[str, Any],
     param_names: dict[int, str] | None = None,
     **kwargs: Any,
 ) -> Any:
@@ -101,8 +102,8 @@ def plot(
         elif isinstance(item, Directive):
             k, v = item.to_kv()
             directives[k] = encode_value(v, param_names)
-        elif isinstance(item, dict):
-            marks.append({k: encode_value(v, param_names) for k, v in item.items()})  # pyright: ignore[reportGeneralTypeIssues]
+        elif isinstance(item, (dict, Mapping)):
+            marks.append({k: encode_value(v, param_names) for k, v in item.items()})
         else:
             raise TypeError(f"Unsupported plot item: {item}")
     root: dict[str, Any] = {"plot": marks}
