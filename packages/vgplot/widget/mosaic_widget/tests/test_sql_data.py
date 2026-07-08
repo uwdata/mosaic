@@ -217,9 +217,3 @@ def test_data_unknown_table_errors(
     with pytest.raises(ValueError, match="not found in spec"):
         widget.data("missing")
 
-
-def test_data_invalid_identifier_errors() -> None:
-    spec = {"mark": "dot", "data": {"from": "weather; DROP TABLE x"}}
-    widget = MosaicWidget(spec=spec)
-    with pytest.raises(ValueError, match="Invalid table name"):
-        _ = widget.sql

@@ -16,7 +16,7 @@ def collect_table_filters(spec):
     Walk the spec and return a mapping of table names to the param names
     that filter them, used to build the WHERE clause in .sql and .data().
     """
-    result = {}
+    result: dict[str, set[str]] = {}
 
     def visit(node):
         if isinstance(node, dict):
@@ -37,8 +37,7 @@ def collect_table_filters(spec):
                 visit(item)
 
     visit(spec)
-    result = {table: list(names) for table, names in result.items()}
-    return result
+    return {table: list(names) for table, names in result.items()}
 
 
 def resolve_predicates(params, selection_names):
