@@ -26,7 +26,7 @@ regeneration, so the generated code always matches the schema.
 
 ## Adding a new mark or attribute
 
-Add it on the JS side (`Spec.ts`), then run `pnpm run generate:python-api`.
+Add it on the JS side ([`Spec.ts`]), then run `pnpm run generate:python-api`.
 Nothing in the Python package needs hand-editing — there is no dynamic
 fallback, so a name that is missing from the generated API raises
 `AttributeError` (and is flagged by type checkers) rather than silently
