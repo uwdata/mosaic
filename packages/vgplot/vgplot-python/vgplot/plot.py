@@ -186,16 +186,16 @@ def hconcat(
     )
 
 
-def hspace(px: int | str) -> Any:
+def hspace(value: int | str) -> Any:
     from .spec import View
 
-    return View({"hspace": px})
+    return View({"hspace": value})
 
 
-def vspace(px: int | str) -> Any:
+def vspace(value: int | str) -> Any:
     from .spec import View
 
-    return View({"vspace": px})
+    return View({"vspace": value})
 
 
 _MISSING = object()
