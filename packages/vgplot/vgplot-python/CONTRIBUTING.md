@@ -1,12 +1,14 @@
 # Contributing to the vgplot Python API
 
 Most of the API — every **mark** and **plot attribute** — is generated from the
-Mosaic JSON schema, which is itself generated from the JavaScript spec
-(`packages/vgplot/spec/src/spec/Spec.ts`). The JS API is the source of truth.
+Mosaic JSON schema, which is itself generated from the JavaScript spec ([`Spec.ts`]). 
+The JS API is the source of truth.
 
 Hand-written (not generated): the runtime core (`plot.py`, `spec.py`), data
 sources (`data.py`), params (`params.py`), SQL encodings (`encodings.py`), and
 the interactor / input / legend helpers.
+
+[`Spec.ts`]: ../../../packages/vgplot/spec/src/spec/Spec.ts
 
 ## Regenerating the API
 
