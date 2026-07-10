@@ -1,5 +1,3 @@
-# DO NOT EDIT. Generated from the Mosaic JSON schema by bin/generate-python-api.js.
-# Regenerate with: pnpm run generate:python-api
 from typing import Any
 
 # Permissive value aliases. Channels/attributes accept column names, constants,
@@ -7,6 +5,7 @@ from typing import Any
 ChannelValue = Any
 AttrValue = Any
 MarkData = Any
+TransformArg = Any
 
 
 class _Unset:

@@ -3,8 +3,8 @@
 
 from typing import Any
 
+from .._types import UNSET, ChannelValue, MarkData
 from ..plot import Mark
-from ._types import UNSET, ChannelValue, MarkData
 
 
 def _mark(name: str, args: dict[str, Any]) -> Mark:

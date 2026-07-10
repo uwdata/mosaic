@@ -1,7 +1,7 @@
-// Generate the mechanical part of the vgplot Python API (marks + plot
-// attributes) from the Mosaic JSON schema, the source of truth produced by the
-// JS build (`pnpm run schema`). Interactors, inputs, legends, data sources,
-// params, SQL encodings, and the runtime core stay hand-written.
+// Generate the mechanical part of the vgplot Python API (marks, plot
+// attributes, and encoding transforms) from the Mosaic JSON schema, the source
+// of truth produced by the JS build (`pnpm run schema`). Interactors, inputs,
+// legends, data sources, params, and the runtime core stay hand-written.
 //
 // Run: node bin/generate-python-api.js   (or: pnpm run generate:python-api)
 import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
@@ -74,8 +74,8 @@ function generateMarks(defs) {
   }
   marks.sort((a, b) => a.mark.localeCompare(b.mark));
 
-  const out = [HEADER, 'from typing import Any', '', 'from ..plot import Mark',
-    'from ._types import UNSET, ChannelValue, MarkData', '', '',
+  const out = [HEADER, 'from typing import Any', '', 'from .._types import UNSET, ChannelValue, MarkData',
+    'from ..plot import Mark', '', '',
     'def _mark(name: str, args: dict[str, Any]) -> Mark:',
     '    args = dict(args)',
     '    data = args.pop("data")',
@@ -118,7 +118,7 @@ function generateAttributes(defs) {
     .filter(a => !EXCLUDE_ATTRS.has(a))
     .sort((a, b) => a.localeCompare(b));
 
-  const out = [HEADER, 'from ..plot import Directive', 'from ._types import AttrValue', '', ''];
+  const out = [HEADER, 'from .._types import AttrValue', 'from ..plot import Directive', '', ''];
   const names = [];
   for (const attr of attrs) {
     const fn = ident(attr);
@@ -140,35 +140,95 @@ function generateAttributes(defs) {
   return names;
 }
 
-function writeTypes() {
-  writeFileSync(resolve(OUT_DIR, '_types.py'), HEADER +
-    'from typing import Any\n\n' +
-    '# Permissive value aliases. Channels/attributes accept column names, constants,\n' +
-    '# $param references, and SQL expressions; kept broad to avoid false type errors.\n' +
-    'ChannelValue = Any\n' +
-    'AttrValue = Any\n' +
-    'MarkData = Any\n\n\n' +
-    'class _Unset:\n' +
-    '    """Sentinel for mark channels that were not passed (distinct from None)."""\n\n' +
-    '    def __repr__(self) -> str:\n' +
-    '        return "UNSET"\n\n\n' +
-    'UNSET: Any = _Unset()\n');
+// Python parameter names for transforms that take more than a single column.
+const TRANSFORM_ARGS = {
+  argmax: ['col', 'by'],
+  argmin: ['col', 'by'],
+  quantile: ['col', 'p'],
+  lag: ['col', 'offset', 'default'],
+  lead: ['col', 'offset', 'default'],
+  nth_value: ['col', 'offset'],
+  ntile: ['buckets'],
+};
+
+/** Positional-argument range [min, max] admitted by a transform key schema. */
+function argRange(sch) {
+  if (sch.type === 'array') return [sch.minItems ?? 0, sch.maxItems ?? sch.minItems ?? 0];
+  if (sch.type === 'null') return [0, 0];
+  if (sch.anyOf) {
+    const rs = sch.anyOf.map(argRange);
+    return [Math.min(...rs.map(r => r[0])), Math.max(...rs.map(r => r[1]))];
+  }
+  return [1, 1]; // scalar argument (string/number/boolean/param ref)
+}
+
+function generateEncodings(defs) {
+  const seen = new Set();
+  const transforms = [];
+  for (const kind of ['ColumnTransform', 'AggregateTransform', 'WindowTransform']) {
+    for (const { $ref } of defs[kind].anyOf) {
+      const name = $ref.split('/').pop();
+      const def = defs[name];
+      const key = def.required?.[0];
+      if (!key || !def.properties?.[key]) throw new Error(`No transform key for ${name}`);
+      if (seen.has(key)) {
+        console.warn(`Skipping ${name}: duplicate transform key "${key}"`);
+        continue;
+      }
+      seen.add(key);
+      transforms.push({ key, prop: def.properties[key] });
+    }
+  }
+  transforms.sort((a, b) => a.key.localeCompare(b.key));
+
+  const out = [HEADER, 'from typing import Any', '', 'from .._types import UNSET, TransformArg', '', '',
+    'def _transform(name: str, args: tuple[Any, ...], options: dict[str, Any]) -> dict[str, Any]:',
+    '    vals = [a for a in args if a is not UNSET]',
+    '    value: Any = vals[0] if len(vals) == 1 else vals or ""',
+    '    return {name: value, **options}',
+    '', ''];
+  const names = [];
+  for (const { key, prop } of transforms) {
+    const fn = ident(key);
+    names.push(fn);
+    const [min, max] = argRange(prop);
+    const args = (TRANSFORM_ARGS[key] ?? ['col']).slice(0, max);
+    while (args.length < max) args.push(`arg${args.length + 1}`);
+    const params = args.map((a, i) => `${a}: TransformArg${i < min ? '' : ' = UNSET'}`);
+    const body = max === 0
+      ? `    return {${JSON.stringify(key)}: None, **options}`
+      : `    return _transform(${JSON.stringify(key)}, (${args.join(', ')}${args.length === 1 ? ',' : ''}), options)`;
+    out.push(
+      `def ${fn}(${[...params, '**options: Any'].join(', ')}) -> dict[str, Any]:`,
+      `    """${docline(prop.description, `The ${key} transform.`)}"""`,
+      body,
+      '', '',
+    );
+  }
+  out.push(`__all__ = [\n${names.map(n => `    ${JSON.stringify(n)},`).join('\n')}\n]`, '');
+  writeFileSync(resolve(OUT_DIR, 'encodings.py'), out.join('\n').replace(/\n{3,}/g, '\n\n\n'));
+  return names;
 }
 
 function writeInit() {
   writeFileSync(resolve(OUT_DIR, '__init__.py'), HEADER +
     'from .attributes import *  # noqa: F403\n' +
+    'from .encodings import *  # noqa: F403\n' +
     'from .marks import *  # noqa: F403\n' +
     'from .attributes import __all__ as _attr_all\n' +
+    'from .encodings import __all__ as _enc_all\n' +
     'from .marks import __all__ as _mark_all\n\n' +
-    '__all__ = [*_mark_all, *_attr_all]\n');
+    '__all__ = [*_mark_all, *_attr_all, *_enc_all]\n');
 }
 
 const schema = JSON.parse(readFileSync(SCHEMA, 'utf8'));
 const defs = schema.definitions || schema.$defs;
 mkdirSync(OUT_DIR, { recursive: true });
-writeTypes();
 const markNames = generateMarks(defs);
 const attrNames = generateAttributes(defs);
+const encNames = generateEncodings(defs);
 writeInit();
-console.log(`Generated ${markNames.length} marks + ${attrNames.length} attributes -> vgplot/_generated/`);
+const all = [...markNames, ...attrNames, ...encNames];
+const dupes = all.filter((n, i) => all.indexOf(n) !== i);
+if (dupes.length) throw new Error(`Name collisions in generated API: ${dupes.join(', ')}`);
+console.log(`Generated ${markNames.length} marks + ${attrNames.length} attributes + ${encNames.length} encodings -> vgplot/_generated/`);
