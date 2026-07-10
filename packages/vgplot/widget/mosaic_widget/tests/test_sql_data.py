@@ -4,27 +4,18 @@ import pyarrow as pa
 import pytest
 
 from mosaic_widget import MosaicWidget
-from mosaic_widget.spec_tables import (
-    collect_table_filters,
-    resolve_predicates,
-)
 
 
 @pytest.fixture
 def weather_spec() -> dict:
     return {
-        "data": {"weather": {"file": "weather.parquet"}},
         "params": {"click": {"select": "single"}},
         "vconcat": [
             {
-                "hconcat": [
+                "plot": [
                     {
-                        "plot": [
-                            {
-                                "mark": "dot",
-                                "data": {"from": "weather", "filterBy": "$click"},
-                            },
-                        ],
+                        "mark": "dot",
+                        "data": {"from": "weather", "filterBy": "$click"},
                     },
                 ],
             },
@@ -51,53 +42,16 @@ def weather_frame() -> pd.DataFrame:
     )
 
 
-def test_collect_table_filters_multi_table() -> None:
-    spec = {
-        "vconcat": [
-            {"mark": "dot", "data": {"from": "a", "filterBy": "$s1"}},
-            {"mark": "dot", "data": {"from": "b", "filterBy": "$s2"}},
-        ],
-    }
-    assert collect_table_filters(spec) == {"a": ["s1"], "b": ["s2"]}
+@pytest.fixture
+def widget(weather_spec: dict, weather_frame: pd.DataFrame) -> MosaicWidget:
+    return MosaicWidget(spec=weather_spec, data={"weather": weather_frame})
 
 
-def test_collect_table_filters_no_filter() -> None:
-    spec = {"mark": "dot", "data": {"from": "x"}}
-    assert collect_table_filters(spec) == {"x": []}
-
-
-def test_collect_table_filters_ignores_inline_data() -> None:
-    spec = {"mark": "dot", "data": [{"x": 1}, {"x": 2}]}
-    assert collect_table_filters(spec) == {}
-
-
-def test_collect_table_filters_skips_dynamic_from() -> None:
-    spec = {"mark": "dot", "data": {"from": "$tableParam"}}
-    assert collect_table_filters(spec) == {}
-
-
-def test_resolve_predicates_skips_missing_and_paramless() -> None:
-    params = {
-        "click": {"value": None, "predicate": "x = 1"},
-        "range": {"value": 5},
-    }
-    assert resolve_predicates(params, ["click", "range", "other"]) == ["x = 1"]
-
-
-def test_resolve_predicates_empty_predicate_skipped() -> None:
-    params = {"click": {"value": None, "predicate": "   "}}
-    assert resolve_predicates(params, ["click"]) == []
-
-
-def test_sql_no_predicates(weather_spec: dict, weather_frame: pd.DataFrame) -> None:
-    widget = MosaicWidget(spec=weather_spec, data={"weather": weather_frame})
+def test_sql_no_predicates(widget: MosaicWidget) -> None:
     assert widget.sql == 'SELECT * FROM "weather"'
 
 
-def test_sql_combines_predicates_with_and(
-    weather_spec: dict, weather_frame: pd.DataFrame
-) -> None:
-    widget = MosaicWidget(spec=weather_spec, data={"weather": weather_frame})
+def test_sql_combines_predicates_with_and(widget: MosaicWidget) -> None:
     widget.params = {
         "click": {"value": "sun", "predicate": "\"weather\" = 'sun'"},
         "range": {"value": [1, 3], "predicate": '"x" BETWEEN 1 AND 3'},
@@ -109,31 +63,57 @@ def test_sql_combines_predicates_with_and(
     assert " AND " in sql
 
 
-def test_data_returns_duckdb_relation(
-    weather_spec: dict, weather_frame: pd.DataFrame
-) -> None:
-    widget = MosaicWidget(spec=weather_spec, data={"weather": weather_frame})
+def test_sql_skips_empty_predicates_and_plain_params(widget: MosaicWidget) -> None:
+    widget.params = {
+        "click": {"value": None, "predicate": ""},
+        "brush": {"value": None, "predicate": "   "},
+        "query": {"value": "sun"},
+        "range": {"value": [1, 3], "predicate": '"x" BETWEEN 1 AND 3'},
+    }
+    assert widget.sql == 'SELECT * FROM "weather" WHERE ("x" BETWEEN 1 AND 3)'
+
+
+def test_sql_infers_table_from_spec_data(weather_frame: pd.DataFrame) -> None:
+    con = duckdb.connect()
+    con.register("weather", weather_frame)
+    spec = {
+        "data": {"weather": {"file": "weather.parquet"}},
+        "plot": [{"mark": "dot", "data": {"from": "weather"}}],
+    }
+    widget = MosaicWidget(spec=spec, con=con)
+    assert widget.sql == 'SELECT * FROM "weather"'
+
+
+def test_sql_none_when_no_tables() -> None:
+    widget = MosaicWidget(spec={})
+    with pytest.warns(UserWarning, match="No source tables"):
+        assert widget.sql is None
+
+
+def test_sql_none_when_multiple_tables() -> None:
+    widget = MosaicWidget(
+        data={
+            "a": pd.DataFrame({"v": [1, 2]}),
+            "b": pd.DataFrame({"v": [3, 4]}),
+        },
+    )
+    with pytest.warns(UserWarning, match="Multiple source tables"):
+        assert widget.sql is None
+
+
+def test_data_returns_duckdb_relation(widget: MosaicWidget) -> None:
     relation = widget.data()
     assert isinstance(relation, duckdb.DuckDBPyRelation)
-    assert hasattr(relation, "df")
-    assert hasattr(relation, "pl")
-    assert hasattr(relation, "arrow")
 
 
-def test_data_sql_matches_widget_sql(
-    weather_spec: dict, weather_frame: pd.DataFrame
-) -> None:
-    widget = MosaicWidget(spec=weather_spec, data={"weather": weather_frame})
+def test_data_sql_matches_widget_sql(widget: MosaicWidget) -> None:
     widget.params = {
         "click": {"value": "sun", "predicate": "\"weather\" = 'sun'"},
     }
     assert widget.data().df().equals(widget.con.query(widget.sql).df())
 
 
-def test_data_returns_filtered_dataframe(
-    weather_spec: dict, weather_frame: pd.DataFrame
-) -> None:
-    widget = MosaicWidget(spec=weather_spec, data={"weather": weather_frame})
+def test_data_returns_filtered_dataframe(widget: MosaicWidget) -> None:
     widget.params = {
         "click": {"value": "sun", "predicate": "\"weather\" = 'sun'"},
     }
@@ -142,8 +122,7 @@ def test_data_returns_filtered_dataframe(
     assert sorted(result["weather"].tolist()) == ["sun", "sun"]
 
 
-def test_data_arrow(weather_spec: dict, weather_frame: pd.DataFrame) -> None:
-    widget = MosaicWidget(spec=weather_spec, data={"weather": weather_frame})
+def test_data_arrow(widget: MosaicWidget) -> None:
     widget.params = {
         "click": {"value": "sun", "predicate": "\"weather\" = 'sun'"},
     }
@@ -152,9 +131,8 @@ def test_data_arrow(weather_spec: dict, weather_frame: pd.DataFrame) -> None:
     assert table.num_rows == 2
 
 
-def test_data_polars(weather_spec: dict, weather_frame: pd.DataFrame) -> None:
+def test_data_polars(widget: MosaicWidget) -> None:
     pl = pytest.importorskip("polars")
-    widget = MosaicWidget(spec=weather_spec, data={"weather": weather_frame})
     widget.params = {
         "range": {"value": [1, 3], "predicate": '"x" BETWEEN 1 AND 3'},
     }
@@ -163,15 +141,13 @@ def test_data_polars(weather_spec: dict, weather_frame: pd.DataFrame) -> None:
     assert sorted(result["x"].to_list()) == [1, 2, 3]
 
 
-def test_data_fetchall(weather_spec: dict, weather_frame: pd.DataFrame) -> None:
-    widget = MosaicWidget(spec=weather_spec, data={"weather": weather_frame})
+def test_data_fetchall(widget: MosaicWidget) -> None:
     rows = widget.data().fetchall()
     assert len(rows) == 5
     assert all(isinstance(row, tuple) for row in rows)
 
 
-def test_data_filter_by_subset(weather_spec: dict, weather_frame: pd.DataFrame) -> None:
-    widget = MosaicWidget(spec=weather_spec, data={"weather": weather_frame})
+def test_data_filter_by_subset(widget: MosaicWidget) -> None:
     widget.params = {
         "click": {"value": "sun", "predicate": "\"weather\" = 'sun'"},
         "range": {"value": [1, 3], "predicate": '"x" BETWEEN 1 AND 3'},
@@ -180,40 +156,45 @@ def test_data_filter_by_subset(weather_spec: dict, weather_frame: pd.DataFrame) 
     assert sorted(result["x"].tolist()) == [1, 2, 3]
 
 
-def test_data_explicit_table(weather_spec: dict, weather_frame: pd.DataFrame) -> None:
-    widget = MosaicWidget(spec=weather_spec, data={"weather": weather_frame})
+def test_data_filter_by_accepts_dollar_prefix(widget: MosaicWidget) -> None:
+    widget.params = {
+        "click": {"value": "sun", "predicate": "\"weather\" = 'sun'"},
+        "range": {"value": [1, 3], "predicate": '"x" BETWEEN 1 AND 3'},
+    }
+    result = widget.data(filter_by=["$range"]).df()
+    assert sorted(result["x"].tolist()) == [1, 2, 3]
+
+
+def test_data_filter_by_unknown_errors(widget: MosaicWidget) -> None:
+    with pytest.raises(ValueError, match="Unknown selection"):
+        widget.data(filter_by="missing")
+
+
+def test_data_explicit_table(widget: MosaicWidget) -> None:
     result = widget.data("weather").df()
     assert len(result) == 5
 
 
-def test_sql_multi_table_errors() -> None:
-    spec = {
-        "vconcat": [
-            {"mark": "dot", "data": {"from": "a"}},
-            {"mark": "dot", "data": {"from": "b"}},
-        ],
-    }
+def test_data_explicit_table_not_registered() -> None:
+    con = duckdb.connect()
+    con.execute("CREATE TABLE extras AS SELECT * FROM (VALUES (1), (2)) t(v)")
+    widget = MosaicWidget(con=con)
+    assert len(widget.data("extras").df()) == 2
+
+
+def test_data_multiple_tables_requires_table_argument() -> None:
     widget = MosaicWidget(
-        spec=spec,
         data={
             "a": pd.DataFrame({"v": [1, 2]}),
             "b": pd.DataFrame({"v": [3, 4]}),
         },
     )
-    with pytest.raises(ValueError, match="multiple source tables"):
-        _ = widget.sql
+    with pytest.raises(ValueError, match="Multiple source tables"):
+        widget.data()
+    assert widget.data("b").df()["v"].tolist() == [3, 4]
 
 
-def test_sql_no_tables_errors() -> None:
+def test_data_no_tables_requires_table_argument() -> None:
     widget = MosaicWidget(spec={})
     with pytest.raises(ValueError, match="No source tables"):
-        _ = widget.sql
-
-
-def test_data_unknown_table_errors(
-    weather_spec: dict, weather_frame: pd.DataFrame
-) -> None:
-    widget = MosaicWidget(spec=weather_spec, data={"weather": weather_frame})
-    with pytest.raises(ValueError, match="not found in spec"):
-        widget.data("missing")
-
+        widget.data()

@@ -90,7 +90,7 @@ widget.sql            # 'SELECT * FROM "weather" WHERE ("weather" = \'sun\')'
 widget.data().df()    # pandas DataFrame of the currently filtered rows
 ```
 
-`widget.sql` builds a `SELECT * FROM <table>` statement and combines every active selection predicate from `params` with `AND`. The source table and its `filterBy` selections are discovered from the spec's mark `data: { from, filterBy }` blocks.
+`widget.sql` builds a `SELECT * FROM <table>` statement and combines every active selection predicate from `params` with `AND`. The table is inferred when the widget knows exactly one: the entries of the spec's top-level `data` block plus the frames passed to the `data` constructor argument.
 
 `widget.data()` returns the lazy [DuckDB relation](https://duckdb.org/docs/api/python/relational_api) for that SQL. You choose how to materialize it, so you are not locked into any one dataframe library:
 
@@ -101,15 +101,18 @@ widget.data().arrow()     # Arrow table
 widget.data().fetchall()  # list of tuples
 ```
 
-For specs that reference more than one source table, name the table explicitly:
+When the widget knows more than one table, name the one to query explicitly (in that case `widget.sql` is `None`; get the SQL for a specific table from the relation instead):
 
 ```python
 widget.data("weather").df()
+widget.data("weather").sql_query()
 ```
 
-To limit which selections are applied, pass `filter_by` with a selection name or a list of names:
+By default every active selection is applied. To limit which selections are used, pass `filter_by` with a selection name or a list of names:
 
 ```python
 widget.data("weather", filter_by="range").df()
 widget.data("weather", filter_by=["click", "range"]).df()
 ```
+
+Note that each predicate is the full resolution of its selection, so `widget.data()` returns the table filtered by *everything*. Cross-filtered charts, which are exempt from their own selection, may show more rows than `widget.data()` returns.

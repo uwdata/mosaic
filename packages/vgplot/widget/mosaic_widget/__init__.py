@@ -3,6 +3,8 @@ from __future__ import annotations
 import logging
 import pathlib
 import time
+import warnings
+from typing import TYPE_CHECKING
 
 import anywidget
 import duckdb
@@ -10,7 +12,10 @@ import pyarrow as pa
 import traitlets
 
 from mosaic_widget.frame_interop import frame_to_duckdb_registrable
-from mosaic_widget.spec_tables import collect_table_filters, resolve_predicates
+
+if TYPE_CHECKING:
+    from narwhals.typing import IntoFrame
+
 
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
@@ -35,7 +40,7 @@ class MosaicWidget(anywidget.AnyWidget):
         self,
         spec: dict | None = None,
         con: duckdb.DuckDBPyConnection | None = None,
-        data: dict | None = None,
+        data: dict[str, "IntoFrame"] | None = None,
         *args,
         **kwargs,
     ):
@@ -104,65 +109,82 @@ class MosaicWidget(anywidget.AnyWidget):
             logger.info(f"DONE. Query {uuid} took {total} ms.\n{sql}")
 
     @property
-    def sql(self):
+    def sql(self) -> str | None:
         """
-        The SQL query that reflects the current selection state, useful for inspection or logging.
-        """
-        return self._build_sql(self._resolve_table(None), filter_by=None)
+        The SQL query that reflects the current selection state.
 
-    def data(self, table=None, *, filter_by=None):
+        Returns None (with a warning) when the source table cannot be inferred,
+        i.e. when the widget knows zero or multiple tables. In that case use
+        `widget.data(table).sql_query()` to get the SQL for a specific table.
         """
-        Query the source table filtered by the current selection state.
+        try:
+            table = self._resolve_table(None)
+        except ValueError as err:
+            warnings.warn(f"{err} widget.sql is None.", stacklevel=2)
+            return None
+        return self._build_sql(table, filter_by=None)
+
+    def data(
+        self, table: str | None = None, *, filter_by: str | list[str] | None = None
+    ) -> duckdb.DuckDBPyRelation:
+        """
+        Query a source table filtered by the current selection state.
 
         Args:
-            table (str, optional): The table to query. Required when the spec references
-                multiple tables; inferred automatically when there is only one.
-            filter_by (str or list, optional): Param name(s) to filter by. Defaults to
-                all params associated with the resolved table in the spec.
+            table (str, optional): The table to query. Required when the widget
+                knows more than one table; inferred when there is exactly one
+                (from the spec's top-level `data` entries and the frames
+                registered via the `data` constructor argument).
+            filter_by (str or list, optional): Selection name(s) to filter by,
+                with or without the leading "$". Defaults to all active
+                selections.
 
         Returns:
-            A DuckDB relation for the filtered table.
+            A lazy DuckDB relation for the filtered table. Materialize it with
+            `.df()` (pandas), `.pl()` (polars), `.arrow()`, or `.fetchall()`.
         """
-        resolved = self._resolve_table(table)
-        return self.con.query(self._build_sql(resolved, filter_by=filter_by))
+        return self.con.query(self._build_sql(self._resolve_table(table), filter_by))
 
-    def _resolve_table(self, table):
-        """
-        Resolve a table name against the spec and registered data.
-        When table is None and the spec references exactly one table, that table is
-        returned automatically. Raises ValueError if the table is ambiguous or unknown.
-        """
-        tables = collect_table_filters(self.spec)
+    def _known_tables(self) -> set[str]:
+        spec_data = self.spec.get("data")
+        declared = set(spec_data) if isinstance(spec_data, dict) else set()
+        return declared | self._registered_tables
+
+    def _resolve_table(self, table: str | None) -> str:
         if table is not None:
-            if table not in tables and table not in self._registered_tables:
-                known = sorted(set(tables) | self._registered_tables)
-                raise ValueError(
-                    f"Table {table!r} not found in spec or registered data; "
-                    f"known tables: {known or 'none'}"
-                )
             return table
+        tables = self._known_tables()
+        if len(tables) == 1:
+            return next(iter(tables))
         if not tables:
             raise ValueError(
-                "No source tables found in spec; pass a table name to "
-                "widget.data(table)."
+                "No source tables known; pass a table name to widget.data(table)."
             )
-        if len(tables) > 1:
-            raise ValueError(
-                f"Spec references multiple source tables: {sorted(tables)}. "
-                "Pass a table name to widget.data(table)."
-            )
-        return next(iter(tables))
+        raise ValueError(
+            f"Multiple source tables: {sorted(tables)}. "
+            "Pass a table name to widget.data(table)."
+        )
 
-    def _build_sql(self, table, filter_by=None):
+    def _build_sql(self, table: str, filter_by: str | list[str] | None) -> str:
         if filter_by is None:
-            names = collect_table_filters(self.spec).get(table, [])
-        elif isinstance(filter_by, str):
-            names = [filter_by]
+            names = list(self.params)
         else:
-            names = list(filter_by)
-        predicates = resolve_predicates(self.params, names)
-        base = f'SELECT * FROM "{table}"'
+            names = [filter_by] if isinstance(filter_by, str) else list(filter_by)
+            names = [name.removeprefix("$") for name in names]
+            unknown = sorted(set(names) - set(self.params))
+            if unknown:
+                raise ValueError(
+                    f"Unknown selection(s) {unknown}; "
+                    f"available params: {sorted(self.params)}"
+                )
+        predicates = []
+        for name in names:
+            entry = self.params.get(name)
+            predicate = entry.get("predicate") if isinstance(entry, dict) else None
+            if isinstance(predicate, str) and predicate.strip():
+                predicates.append(predicate)
+        quoted = '"' + table.replace('"', '""') + '"'
+        base = f"SELECT * FROM {quoted}"
         if not predicates:
             return base
-        where = " AND ".join(f"({p})" for p in predicates)
-        return f"{base} WHERE {where}"
+        return f"{base} WHERE {' AND '.join(f'({p})' for p in predicates)}"
