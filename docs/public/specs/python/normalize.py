@@ -1,3 +1,5 @@
+from datetime import date
+
 import vgplot as vg
 
 stocks = vg.parquet("data/stocks.parquet")
@@ -5,7 +7,7 @@ labels = vg.table(
     "SELECT MAX(Date) as Date, ARGMAX(Close, Date) AS Close, Symbol FROM stocks GROUP BY Symbol"
 )
 
-point = vg.param({"date": "2013-05-13"})
+point = vg.param(date(2013, 5, 13))
 
 view = vg.plot(
     vg.rule_x(x=point),

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from datetime import date
 from typing import Any
 
 
@@ -29,6 +30,8 @@ class ParamValue(_ParamBase):
         self._value = value
 
     def param_def(self, *, param_names: dict[int, str] | None = None) -> Any:
+        if isinstance(self._value, date):
+            return {"date": self._value.isoformat()}
         return self._value
 
     def __repr__(self) -> str:

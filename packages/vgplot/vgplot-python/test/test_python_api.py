@@ -52,6 +52,20 @@ class TestDataHelpers:
         assert vg.json(file="x.json").to_dict() == {"type": "json", "file": "x.json"}
 
 
+class TestParams:
+    def test_date_param(self):
+        from datetime import date
+
+        assert vg.param(date(2013, 5, 13)).param_def() == {"date": "2013-05-13"}
+
+    def test_datetime_param(self):
+        from datetime import datetime
+
+        assert vg.param(datetime(2013, 5, 13, 10, 30)).param_def() == {
+            "date": "2013-05-13T10:30:00"
+        }
+
+
 class TestAutoNaming:
     def test_auto_param_name_skips_explicit_name(self):
         from vgplot.spec import Spec

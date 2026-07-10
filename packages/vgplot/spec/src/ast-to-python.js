@@ -35,6 +35,10 @@ export function astToPython(ast) {
     ctx.dataVarMap.set(name, paramNameSet.has(name) ? safe + '_data' : safe);
   }
 
+  if (Object.values(params).some(dateParamParts)) {
+    ctx.emit('from datetime import date');
+    ctx.blank();
+  }
   ctx.emit('import vgplot as vg');
   ctx.blank();
 
@@ -67,12 +71,24 @@ export function astToPython(ast) {
   return ctx.toString();
 }
 
+/** Year/month/day parts of a date-valued param def ({date: 'YYYY-MM-DD'}), or null. */
+function dateParamParts(def) {
+  if (def && typeof def === 'object' && !Array.isArray(def) &&
+      Object.keys(def).length === 1 && typeof def.date === 'string') {
+    const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(def.date);
+    if (m) return m.slice(1).map(Number);
+  }
+  return null;
+}
+
 function emitParamDef(name, def, ctx) {
   if (def === null || def === undefined) return `${name} = vg.param(None)`;
   if (typeof def !== 'object') return `${name} = vg.param(${literal(def, 0, ctx)})`;
   if (Array.isArray(def)) {
     return `${name} = vg.param([${def.map(v => literal(v, 0, ctx)).join(', ')}])`;
   }
+  const parts = dateParamParts(def);
+  if (parts) return `${name} = vg.param(date(${parts.join(', ')}))`;
   const { select, ...opts } = def;
   if (select) {
     const optArgs = buildArgs(opts, ctx);
