@@ -17,4 +17,5 @@ A labeled line chart comparing airport travelers in 2019 and 2020.
 <<< @/public/specs/esm/airline-travelers.js [JavaScript]
 <<< @/public/specs/yaml/airline-travelers.yaml [YAML]
 <<< @/public/specs/json/airline-travelers.json [JSON]
+<<< @/public/specs/python/airline-travelers.py [Python]
 :::

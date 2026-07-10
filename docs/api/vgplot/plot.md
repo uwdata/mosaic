@@ -1,6 +1,18 @@
+---
+title: Plot
+---
+<script setup>
+  import { useLang } from '../../.vitepress/theme/useLang.js';
+  const { language, setLanguage } = useLang();
+</script>
+
+<LangToggle :model-value="language" aria-label="Plot documentation language" @update:model-value="setLanguage" />
+
 # Plot {#plot-page}
 
 A `Plot` is defined using a set of directives that specify [_attributes_](./attributes), graphical [_marks_](./marks), [_interactors_](./interactors), and [_legends_](./legends).
+
+<template v-if="language === 'js'">
 
 ``` js
 plot(
@@ -11,13 +23,48 @@ plot(
 )
 ```
 
+</template>
+
+<template v-else-if="language === 'python'">
+
+``` python
+import vgplot as vg
+
+vg.plot(
+    vg.width(500),  # attribute
+    vg.rect_y(vg.source("table"), x1="u", x2="v", y="w", fill="c"),  # mark
+    vg.interval_x(bind=selection),  # interactor
+    vg.color_legend(),  # legend
+)
+```
+
+</template>
+
+<LangError v-else :language="language" />
+
 ## plot
+
+<template v-if="language === 'js'">
 
 `plot(...directives)`
 
 Create a new `Plot` instance based on the provided _directives_ and return the corresponding HTML element.
 
+</template>
+
+<template v-else-if="language === 'python'">
+
+`vg.plot(...directives)`
+
+Build a plot specification from the provided _directives_ for use with Mosaic widgets or other consumers.
+
+</template>
+
+<LangError v-else :language="language" />
+
 ## Plot {#plot-class}
+
+<template v-if="language === 'js'">
 
 `new Plot(element)`
 
@@ -128,3 +175,12 @@ Called by [interactor directives](./interactors).
 Add a _legend_ associated with this plot.
 The _include_ flag (default `true`) indicates if the legend should be included within the same container element as the plot.
 Called by [legend directives](./legends).
+</template>
+
+<template v-else-if="language === 'python'">
+
+The `Plot` class is a JavaScript runtime concept for embedding plots in the browser. In Python, [`vg.plot(...)`](#plot) returns a serializable specification rather than a live plot object, so there is no `Plot` class or instance methods.
+
+</template>
+
+<LangError v-else :language="language" />

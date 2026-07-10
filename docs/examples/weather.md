@@ -17,4 +17,5 @@ An interactive view of Seattle's weather, including maximum temperature, amount 
 <<< @/public/specs/esm/weather.js [JavaScript]
 <<< @/public/specs/yaml/weather.yaml [YAML]
 <<< @/public/specs/json/weather.json [JSON]
+<<< @/public/specs/python/weather.py [Python]
 :::

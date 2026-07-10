@@ -415,7 +415,7 @@ export interface Lead extends WindowOptions {
    * argument, default `null`). Both offset and default are evaluated with
    * respect to the current row.
    */
-  lag: Arg3Opt;
+  lead: Arg3Opt;
 }
 
 /** A first_value window transform. */

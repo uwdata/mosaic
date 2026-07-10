@@ -58,6 +58,18 @@ export default {
       coordinator().clear();
     }
 
+    /**
+     * Serialize a selection's resolved predicate — a single expression or an
+     * implicitly conjunctive array — to a SQL string.
+     * @param {import('@uwdata/mosaic-core').Selection} selection
+     * @returns {string}
+     */
+    function predicateSQL(selection) {
+      const predicate = selection.predicate(undefined) ?? [];
+      const parts = (Array.isArray(predicate) ? predicate : [predicate]).map(String);
+      return parts.length > 1 ? parts.map(s => `(${s})`).join(' AND ') : (parts[0] ?? '');
+    }
+
     async function updateSpec() {
       const spec = getSpec();
       reset();
@@ -71,7 +83,7 @@ export default {
       for (const [name, param] of dom.params) {
         params[name] = {
           value: param.value,
-          ...(isSelection(param) ? { predicate: String(param.predicate(undefined)) } : {}),
+          ...(isSelection(param) ? { predicate: predicateSQL(param) } : {}),
         };
 
         param.addEventListener('value', (value) => {
@@ -79,7 +91,7 @@ export default {
             ...params,
             [name]: {
               value,
-              ...(isSelection(param) ? { predicate: String(param.predicate(undefined)) } : {})
+              ...(isSelection(param) ? { predicate: predicateSQL(param) } : {})
             }
           })
           view.model.set('params', params);
