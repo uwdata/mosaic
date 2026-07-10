@@ -198,7 +198,7 @@ const ENCODING_SIMPLE = new Set([
   'count', 'min', 'max', 'median',
   'dateMonth', 'dateMonthDay', 'centroidX', 'centroidY',
 ]);
-const ENCODING_WITH_OPTS = new Set(['avg', 'mean', 'sum', 'bin']);
+const ENCODING_WITH_OPTS = new Set(['avg', 'sum', 'bin']);
 
 /**
  * @param {any} v

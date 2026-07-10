@@ -1,7 +1,7 @@
 from .spec import spec, Spec, View
 from .data import parquet, csv, spatial, table, json, data
 from .params import param, selection
-from .encodings import sql, mean, channels
+from .encodings import sql, channels
 from .plot import (
     plot,
     source,
@@ -66,7 +66,6 @@ __all__ = [
     "json",
     "margins",
     "mark",
-    "mean",
     "menu",
     "nearest_x",
     "nearest_y",

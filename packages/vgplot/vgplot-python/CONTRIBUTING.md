@@ -7,8 +7,8 @@ spec ([`Spec.ts`]). The JS API is the source of truth.
 
 Hand-written (not generated): the runtime core (`plot.py`, `spec.py`), data
 sources (`data.py`), params (`params.py`), the shared value types
-(`_types.py`), the `sql()` / `mean()` / `channels()` helpers (`encodings.py`),
-and the interactor / input / legend helpers.
+(`_types.py`), the `sql()` / `channels()` helpers (`encodings.py`), and the
+interactor / input / legend helpers.
 
 [`Spec.ts`]: ../../../packages/vgplot/spec/src/spec/Spec.ts
 
