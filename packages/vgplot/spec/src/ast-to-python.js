@@ -1,4 +1,5 @@
 import { camelCaseToSnake } from './util.js';
+import { TRANSFORM_KEYS } from './generated/transform-keys.js';
 import {
   PYTHON_KEYWORDS,
   kwarg,
@@ -193,14 +194,10 @@ function emitDataDef(def, ctx) {
   return literal(def, 0, ctx);
 }
 
-// Keep in sync with the JS/Python API surface — new encodings need entries here.
-const ENCODING_SIMPLE = new Set([
-  'count', 'min', 'max', 'median',
-  'dateMonth', 'dateMonthDay', 'centroidX', 'centroidY',
-]);
-const ENCODING_WITH_OPTS = new Set(['avg', 'sum', 'bin']);
-
 /**
+ * Emit a channel value: a transform dict becomes a call to the corresponding
+ * generated vgplot function (positional transform args + option kwargs);
+ * anything else is a literal.
  * @param {any} v
  * @param {PythonCodegenContext} ctx
  */
@@ -210,25 +207,14 @@ function emitEncoding(v, ctx) {
   if (!keys.length) return literal(v, 0, ctx);
   const key = keys[0];
   if (key === 'sql' && keys.length === 1) return `vg.sql(${literal(v.sql, 0, ctx)})`;
-  if ((key === 'argmax' || key === 'argmin') && Array.isArray(v[key])) {
-    return `vg.${key}(${v[key].map(x => literal(x, 0, ctx)).join(', ')})`;
-  }
-  if (ENCODING_WITH_OPTS.has(key)) {
-    const { [key]: col, ...opts } = v;
-    const args = [literal(col, 0, ctx),
-      ...Object.entries(opts)
-        .filter(([, val]) => val !== null && val !== undefined)
-        .map(([k, val]) => kwarg(camelCaseToSnake(k), literal(val, 0, ctx)))];
-    return `vg.${key}(${args.join(', ')})`;
-  }
-  if (keys.length === 1 && ENCODING_SIMPLE.has(key)) {
-    const val = v[key];
-    const fn = camelCaseToSnake(key);
-    return (val === '' || val == null) ? `vg.${fn}()` : `vg.${fn}(${literal(val, 0, ctx)})`;
-  }
-  if (key === 'column' && keys.length === 1) return `vg.column(${literal(v.column, 0, ctx)})`;
-  if (key === 'geojson' && keys.length === 1) return `vg.geojson(${literal(v.geojson, 0, ctx)})`;
-  return literal(v, 0, ctx);
+  if (!TRANSFORM_KEYS.has(key)) return literal(v, 0, ctx);
+  const { [key]: val, ...opts } = v;
+  const args = (val === '' || val == null) ? []
+    : (Array.isArray(val) ? val : [val]).map(x => literal(x, 0, ctx));
+  args.push(...Object.entries(opts)
+    .filter(([, o]) => o !== null && o !== undefined)
+    .map(([k, o]) => kwarg(camelCaseToSnake(k), literal(o, 0, ctx))));
+  return `vg.${camelCaseToSnake(key)}(${args.join(', ')})`;
 }
 
 /** @param {PythonCodegenContext} ctx */

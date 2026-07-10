@@ -54,7 +54,7 @@ jobs:
       - name: Verify generated Python API does not change
         run: |
           pnpm run generate:python-api
-          git diff --exit-code -- packages/vgplot/vgplot-python/vgplot/_generated
+          git diff --exit-code -- packages/vgplot/vgplot-python/vgplot/_generated packages/vgplot/spec/src/generated
 
   browser:
     name: Test in Browser

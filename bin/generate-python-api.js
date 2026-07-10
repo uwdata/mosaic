@@ -14,6 +14,7 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = resolve(__dirname, '..');
 const SCHEMA = resolve(ROOT, 'packages/vgplot/spec/dist/mosaic-schema.json');
 const OUT_DIR = resolve(ROOT, 'packages/vgplot/vgplot-python/vgplot/_generated');
+const SPEC_GEN_DIR = resolve(ROOT, 'packages/vgplot/spec/src/generated');
 
 // Attributes handled by special hand-written helpers (not simple value directives).
 const EXCLUDE_ATTRS = new Set(['margins']);
@@ -207,6 +208,16 @@ function generateEncodings(defs) {
   }
   out.push(`__all__ = [\n${names.map(n => `    ${JSON.stringify(n)},`).join('\n')}\n]`, '');
   writeFileSync(resolve(OUT_DIR, 'encodings.py'), out.join('\n').replace(/\n{3,}/g, '\n\n\n'));
+
+  // Shared artifact for ast-to-python.js: the transform keys that have a
+  // generated Python function, so the spec emitter needs no hand-kept list.
+  writeFileSync(resolve(SPEC_GEN_DIR, 'transform-keys.js'),
+    '// DO NOT EDIT. Generated from the Mosaic JSON schema by bin/generate-python-api.js.\n' +
+    '// Regenerate with: pnpm run generate:python-api\n\n' +
+    '/** Transform keys with a generated vgplot Python API function. */\n' +
+    'export const TRANSFORM_KEYS = new Set([\n' +
+    transforms.map(({ key }) => `  '${key}',`).join('\n') +
+    '\n]);\n');
   return names;
 }
 
@@ -224,6 +235,7 @@ function writeInit() {
 const schema = JSON.parse(readFileSync(SCHEMA, 'utf8'));
 const defs = schema.definitions || schema.$defs;
 mkdirSync(OUT_DIR, { recursive: true });
+mkdirSync(SPEC_GEN_DIR, { recursive: true });
 const markNames = generateMarks(defs);
 const attrNames = generateAttributes(defs);
 const encNames = generateEncodings(defs);
