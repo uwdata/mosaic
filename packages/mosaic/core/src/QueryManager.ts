@@ -1,10 +1,18 @@
 import type { Connector } from './connectors/Connector.js';
-import type { Cache, Logger, QueryEntry, QueryRequest } from './types.js';
+import type { Cache, QueryEntry, QueryRequest } from './types.js';
 import { consolidator } from './QueryConsolidator.js';
 import { lruCache, voidCache } from './util/cache.js';
 import { PriorityQueue } from './util/priority-queue.js';
 import { QueryResult, QueryState } from './util/query-result.js';
-import { voidLogger } from './util/void-logger.js';
+import {
+  EventType,
+  MosaicErrorEvent,
+  type MosaicEventMap,
+  MosaicQueryEndEvent,
+  MosaicQueryStartEvent,
+  MosaicWarningEvent,
+} from './Events.js';
+import { ObserveDispatch } from './util/ObserveDispatch.js';
 
 export const Priority = Object.freeze({ High: 0, Normal: 1, Low: 2 });
 
@@ -12,28 +20,44 @@ export class QueryManager {
   private queue: PriorityQueue<QueryEntry>;
   private db: Connector | null;
   private clientCache: Cache | null;
-  private _logger: Logger;
-  private _logQueries: boolean;
   private _consolidate: ReturnType<typeof consolidator> | null;
   /** Requests pending with the query manager. */
   public pendingResults: QueryResult[];
   private maxConcurrentRequests: number;
   private pendingExec: boolean;
+  private _eventBus: ObserveDispatch<MosaicEventMap> | null;
+  private _nextQueryId: number;
 
   constructor(maxConcurrentRequests: number = 32) {
     this.queue = new PriorityQueue(3);
     this.db = null;
     this.clientCache = null;
-    this._logger = voidLogger();
-    this._logQueries = false;
     this._consolidate = null;
     this.pendingResults = [];
     this.maxConcurrentRequests = maxConcurrentRequests;
     this.pendingExec = false;
+    this._eventBus = null;
+    this._nextQueryId = 1;
+  }
+
+  /**
+   * @internal Attach query lifecycle events to the owning coordinator's bus.
+   * Query managers do not own their own observable event surface; the
+   * coordinator attaches its bus once during construction.
+   */
+  attachEventBus(eventBus: ObserveDispatch<MosaicEventMap>): void {
+    if (this._eventBus && this._eventBus !== eventBus) {
+      throw new Error('QueryManager event bus is already attached.');
+    }
+    this._eventBus = eventBus;
   }
 
   next(): void {
-    if (this.queue.isEmpty() || this.pendingResults.length > this.maxConcurrentRequests || this.pendingExec) {
+    if (
+      this.queue.isEmpty() ||
+      this.pendingResults.length > this.maxConcurrentRequests ||
+      this.pendingExec
+    ) {
       return;
     }
 
@@ -47,12 +71,20 @@ export class QueryManager {
 
     this.submit(request, result).finally(() => {
       // return from the queue all requests that are ready
-      while (this.pendingResults.length && this.pendingResults[0].state !== QueryState.pending) {
+      while (
+        this.pendingResults.length &&
+        this.pendingResults[0].state !== QueryState.pending
+      ) {
         const result = this.pendingResults.shift()!;
         if (result.state === QueryState.ready) {
           result.fulfill();
         } else if (result.state === QueryState.done) {
-          this._logger.warn('Found resolved query in pending results.');
+          this._eventBus?.emit(
+            EventType.Warning,
+            new MosaicWarningEvent({
+              message: 'Found resolved query in pending results.',
+            }),
+          );
         }
       }
       if (request.type === 'exec') this.pendingExec = false;
@@ -76,25 +108,47 @@ export class QueryManager {
    * @param result The query result.
    */
   async submit(request: QueryRequest, result: QueryResult): Promise<void> {
+    let queryId: number | undefined;
+    let queryText = '';
+    let materialized = false;
+
     try {
       const { query, type, cache = false, options } = request;
-      const sql = Array.isArray(query) ? query.filter(x => x).join(';\n') : query ? String(query) : null;
+      const sql = Array.isArray(query)
+        ? query.filter((x) => x).join(';\n')
+        : query
+          ? String(query)
+          : null;
+      queryId = this._nextQueryId++;
+      queryText = sql || '';
+      materialized = cache;
+
+      this._eventBus?.emit(
+        EventType.QueryStart,
+        new MosaicQueryStartEvent({
+          queryId,
+          query: queryText,
+          materialized,
+        }),
+      );
 
       // check query cache
       if (cache) {
         const cached = this.clientCache!.get(sql!);
         if (cached) {
           const data = await cached;
-          this._logger.debug('Cache');
           result.ready(data);
+          this._eventBus?.emit(
+            EventType.QueryEnd,
+            new MosaicQueryEndEvent({
+              queryId,
+              query: queryText,
+              materialized,
+              status: 'success',
+            }),
+          );
           return;
         }
-      }
-
-      // issue query, potentially cache result
-      const t0 = performance.now();
-      if (this._logQueries) {
-        this._logger.debug('Query', { type, sql, ...options });
       }
 
       // @ts-expect-error type may be exec | json | arrow
@@ -105,9 +159,37 @@ export class QueryManager {
 
       if (cache) this.clientCache!.set(sql!, data);
 
-      this._logger.debug(`Request: ${(performance.now() - t0).toFixed(1)}`);
       result.ready(type === 'exec' ? null : data);
+
+      this._eventBus?.emit(
+        EventType.QueryEnd,
+        new MosaicQueryEndEvent({
+          queryId,
+          query: queryText,
+          materialized,
+          status: 'success',
+        }),
+      );
     } catch (err) {
+      this._eventBus?.emit(
+        EventType.Error,
+        new MosaicErrorEvent({
+          message: err instanceof Error ? err.message : String(err),
+          error: err,
+          queryId,
+        }),
+      );
+      if (queryId != null) {
+        this._eventBus?.emit(
+          EventType.QueryEnd,
+          new MosaicQueryEndEvent({
+            queryId,
+            query: queryText,
+            materialized,
+            status: 'error',
+          }),
+        );
+      }
       result.reject(err);
     }
   }
@@ -121,30 +203,8 @@ export class QueryManager {
   cache(value: Cache | boolean): Cache;
   cache(value?: Cache | boolean): Cache | null {
     return value !== undefined
-      ? (this.clientCache = value === true ? lruCache() : (value || voidCache()))
+      ? (this.clientCache = value === true ? lruCache() : value || voidCache())
       : this.clientCache;
-  }
-
-  /**
-   * Get or set the current logger.
-   * @param value Logger to set
-   * @returns Current logger
-   */
-  logger(): Logger;
-  logger(value: Logger): Logger;
-  logger(value?: Logger): Logger {
-    return value ? (this._logger = value) : this._logger;
-  }
-
-  /**
-   * Get or set if queries should be logged.
-   * @param value Whether to log queries
-   * @returns Current logging state
-   */
-  logQueries(): boolean;
-  logQueries(value: boolean): boolean;
-  logQueries(value?: boolean): boolean {
-    return value !== undefined ? this._logQueries = !!value : this._logQueries;
   }
 
   /**
@@ -164,7 +224,10 @@ export class QueryManager {
    */
   consolidate(flag: boolean): void {
     if (flag && !this._consolidate) {
-      this._consolidate = consolidator(this.enqueue.bind(this), this.clientCache!);
+      this._consolidate = consolidator(
+        this.enqueue.bind(this),
+        this.clientCache!,
+      );
     } else if (!flag && this._consolidate) {
       this._consolidate = null;
     }

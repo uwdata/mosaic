@@ -244,7 +244,6 @@ export class Selection extends Param<SelectionClauseArray> {
    * @returns A dispatch queue filter function. For non-value events,
    *  returns a function that always returns null (no filtering).
    */
-  // @ts-expect-error selection and param use differing value types
   emitQueueFilter(
     type: string,
     value: SelectionClauseArray
