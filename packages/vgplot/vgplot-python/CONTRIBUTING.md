@@ -18,11 +18,14 @@ After any change to the vgplot spec types (or the generator), regenerate:
 pnpm run generate:python-api
 ```
 
-This rebuilds the schema, runs `bin/generate-python-api.js`, and formats the
-output into `vgplot/_generated/`. Commit the regenerated files.
+This rebuilds the schema, runs [`bin/generate-python-api.js`], and formats the
+output into [`vgplot/_generated/`]. Commit the regenerated files.
 
-CI fails if the committed `vgplot/_generated/` output does not match a fresh
+CI fails if the committed [`vgplot/_generated/`] output does not match a fresh
 regeneration, so the generated code always matches the schema.
+
+[`bin/generate-python-api.js`]: ../../../bin/generate-python-api.js
+[`vgplot/_generated/`]: ./vgplot/_generated/__init__.py
 
 ## Adding a new mark or attribute
 
