@@ -1,11 +1,22 @@
+from collections.abc import Sequence
+from datetime import date
 from typing import Any
 
-# Permissive value aliases. Channels/attributes accept column names, constants,
-# $param references, and SQL expressions; kept broad to avoid false type errors.
-ChannelValue = Any
-AttrValue = Any
-MarkData = Any
-TransformArg = Any
+from .data import DataDef
+from .params import _ParamBase
+from .plot import FromRef
+
+# Value unions: wide enough for column names, constants, param references,
+# dates, and transform dicts; narrow enough that passing a Mark or View
+# where a value belongs is a type error.
+ChannelValue = (
+    str | float | bool | date | dict[str, Any] | Sequence[Any] | _ParamBase | None
+)
+AttrValue = (
+    str | float | bool | date | dict[str, Any] | Sequence[Any] | _ParamBase | None
+)
+MarkData = str | FromRef | DataDef | dict[str, Any] | Sequence[Any] | _ParamBase | None
+TransformArg = str | float | bool | _ParamBase
 
 
 class _Unset:

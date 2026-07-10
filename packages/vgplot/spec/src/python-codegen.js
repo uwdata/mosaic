@@ -53,8 +53,8 @@ export function literal(v, depth = 0, ctx = null) {
     return String(v);
   }
   if (typeof v === 'string') {
-    if (/^\$[A-Za-z_][A-Za-z0-9_]*$/.test(v)) {
-      return ctx ? ctx.ident(v.slice(1)) : v.slice(1);
+    if (ctx && /^\$[A-Za-z_][A-Za-z0-9_]*$/.test(v)) {
+      return ctx.ident(v.slice(1));
     }
     // Prefer single quotes when the string contains double quotes (avoids escape sequences)
     if (v.includes('"') && !v.includes("'")) return `'${v}'`;

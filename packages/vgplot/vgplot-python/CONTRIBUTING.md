@@ -1,12 +1,14 @@
 # Contributing to the vgplot Python API
 
-Most of the API — every **mark** and **plot attribute** — is generated from the
-Mosaic JSON schema, which is itself generated from the JavaScript spec ([`Spec.ts`]). 
-The JS API is the source of truth.
+Most of the API — every **mark**, **plot attribute**, and **encoding
+transform** (aggregates, window functions, column transforms) — is generated
+from the Mosaic JSON schema, which is itself generated from the JavaScript
+spec ([`Spec.ts`]). The JS API is the source of truth.
 
 Hand-written (not generated): the runtime core (`plot.py`, `spec.py`), data
-sources (`data.py`), params (`params.py`), SQL encodings (`encodings.py`), and
-the interactor / input / legend helpers.
+sources (`data.py`), params (`params.py`), the shared value types
+(`_types.py`), the `sql()` / `mean()` / `channels()` helpers (`encodings.py`),
+and the interactor / input / legend helpers.
 
 [`Spec.ts`]: ../../../packages/vgplot/spec/src/spec/Spec.ts
 
@@ -27,7 +29,7 @@ regeneration, so the generated code always matches the schema.
 [`bin/generate-python-api.js`]: ../../../bin/generate-python-api.js
 [`vgplot/_generated/`]: ./vgplot/_generated/__init__.py
 
-## Adding a new mark or attribute
+## Adding a new mark, attribute, or transform
 
 Add it on the JS side ([`Spec.ts`]), then run `pnpm run generate:python-api`.
 Nothing in the Python package needs hand-editing — there is no dynamic
