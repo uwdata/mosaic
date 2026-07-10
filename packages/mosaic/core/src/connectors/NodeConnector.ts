@@ -11,6 +11,7 @@ import type {
 
 /**
  * A Mosaic Connector backed by an in-process Node.js DuckDB instance.
+ * Requires the optional peer dependency `@uwdata/mosaic-duckdb`.
  */
 export class NodeConnector implements Connector {
   protected _db: DuckDB;

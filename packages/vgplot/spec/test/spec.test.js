@@ -10,9 +10,7 @@ const validator = new Ajv({
   allowUnionTypes: true,
   verbose: true
 });
-// ajv-formats is a CJS module that exports a function; node16 resolution
-// types it as a namespace, so cast to call it.
-(/** @type {any} */ (addFormats))(validator);
+addFormats.default(validator);
 const schema = await loadJSONSchema();
 const validate = validator.compile(schema);
 
