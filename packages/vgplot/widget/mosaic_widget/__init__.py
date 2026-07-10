@@ -40,7 +40,7 @@ class MosaicWidget(anywidget.AnyWidget):
         self,
         spec: dict | None = None,
         con: duckdb.DuckDBPyConnection | None = None,
-        data: dict[str, "IntoFrame"] | None = None,
+        data: dict[str, IntoFrame] | None = None,
         *args,
         **kwargs,
     ):
@@ -145,15 +145,10 @@ class MosaicWidget(anywidget.AnyWidget):
         """
         return self.con.query(self._build_sql(self._resolve_table(table), filter_by))
 
-    def _known_tables(self) -> set[str]:
-        spec_data = self.spec.get("data")
-        declared = set(spec_data) if isinstance(spec_data, dict) else set()
-        return declared | self._registered_tables
-
     def _resolve_table(self, table: str | None) -> str:
         if table is not None:
             return table
-        tables = self._known_tables()
+        tables = set(self.spec.get("data") or ()) | self._registered_tables
         if len(tables) == 1:
             return next(iter(tables))
         if not tables:
@@ -169,22 +164,21 @@ class MosaicWidget(anywidget.AnyWidget):
         if filter_by is None:
             names = list(self.params)
         else:
-            names = [filter_by] if isinstance(filter_by, str) else list(filter_by)
-            names = [name.removeprefix("$") for name in names]
-            unknown = sorted(set(names) - set(self.params))
-            if unknown:
+            names = [
+                name.removeprefix("$")
+                for name in ([filter_by] if isinstance(filter_by, str) else filter_by)
+            ]
+            if unknown := sorted(set(names) - set(self.params)):
                 raise ValueError(
                     f"Unknown selection(s) {unknown}; "
                     f"available params: {sorted(self.params)}"
                 )
-        predicates = []
-        for name in names:
-            entry = self.params.get(name)
-            predicate = entry.get("predicate") if isinstance(entry, dict) else None
-            if isinstance(predicate, str) and predicate.strip():
-                predicates.append(predicate)
-        quoted = '"' + table.replace('"', '""') + '"'
-        base = f"SELECT * FROM {quoted}"
+        predicates = [
+            predicate
+            for name in names
+            if (predicate := self.params[name].get("predicate", "")).strip()
+        ]
+        base = f'SELECT * FROM "{table}"'
         if not predicates:
             return base
         return f"{base} WHERE {' AND '.join(f'({p})' for p in predicates)}"

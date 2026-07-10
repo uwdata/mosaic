@@ -59,18 +59,14 @@ export default {
     }
 
     /**
-     * Serialize a selection's resolved predicate to a SQL string.
-     * The resolver may return a single expression or an implicitly
-     * conjunctive array of expressions.
+     * Serialize a selection's resolved predicate — a single expression or an
+     * implicitly conjunctive array — to a SQL string.
      * @param {import('@uwdata/mosaic-core').Selection} selection
      * @returns {string}
      */
     function predicateSQL(selection) {
-      const predicate = selection.predicate(undefined);
-      const parts = (Array.isArray(predicate) ? predicate : [predicate])
-        .filter(p => p != null)
-        .map(String)
-        .filter(s => s.trim());
+      const predicate = selection.predicate(undefined) ?? [];
+      const parts = (Array.isArray(predicate) ? predicate : [predicate]).map(String);
       return parts.length > 1 ? parts.map(s => `(${s})`).join(' AND ') : (parts[0] ?? '');
     }
 
