@@ -134,20 +134,20 @@ widgets.VBox([widget, output])
 
 ## Reading the Filtered Data
 
-After the user interacts with the widget, you can read the current SQL state and the filtered rows directly from Python:
+After the user interacts with the widget, you can read the current selections as SQL and fetch the filtered rows directly from Python:
 
 ```python
 widget.sql            # 'SELECT * FROM "weather" WHERE ("weather" = \'sun\')'
 widget.data().df()    # pandas DataFrame of the currently filtered rows
 ```
 
-`widget.sql` combines every active selection predicate from `params` with `AND`. `widget.data()` returns the lazy [DuckDB relation](https://duckdb.org/docs/api/python/relational_api) for that query; materialize it with `.df()` (pandas), `.pl()` (Polars), `.arrow()`, or `.fetchall()`.
+`widget.sql` combines the active selection predicates from `params` with `AND`. `widget.data()` returns the lazy [DuckDB relation](https://duckdb.org/docs/api/python/relational_api) for that query; materialize it with `.df()` (pandas), `.pl()` (Polars), `.arrow()`, or `.fetchall()`.
 
-The source table is inferred when the widget knows exactly one. When it knows more, `widget.sql` is `None` and you name the table explicitly. To apply only specific selections instead of all of them, pass `filter_by` with a selection name or a list of names:
+The source table is inferred when only one is known, from the spec's `data` entries and the `data` constructor argument. If there are several, `widget.sql` is `None` and you pass the table to query to `widget.data()`. By default all selections are applied; pass `filter_by` (a selection name or list of names) to apply a subset:
 
 ```python
-widget.data("weather").df()
-widget.data("weather", filter_by="range").df()
+widget.data("weather").df()                     # explicit source table
+widget.data("weather", filter_by="range").df()  # apply only the "range" selection
 ```
 
-Note that `widget.data()` applies every selection, while a cross-filtered chart is exempt from its own — so a chart may show more rows than `widget.data()` returns.
+Note that in a cross-filtered view each chart is *not* filtered by its own selection, while `widget.data()` applies all of them — so a chart may show more rows than `widget.data()` returns.
