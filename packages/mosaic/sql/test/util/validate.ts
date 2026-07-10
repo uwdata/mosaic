@@ -6,7 +6,7 @@ import { DuckDB } from '@uwdata/mosaic-duckdb';
  * These run generated SQL through DuckDB's parser + binder so that invalid SQL,
  * which string-equality assertions would happily accept, fails the test. A
  * single in-memory DuckDB instance is shared across the whole test run; each
- * assertion costs only a `prepare` (expressions) or `EXPLAIN` (queries) call.
+ * assertion costs only an `EXPLAIN` call.
  *
  * ## Fixture schema
  *

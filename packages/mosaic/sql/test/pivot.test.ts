@@ -160,7 +160,7 @@ describe('PivotQuery', () => {
 
     expect(query._groupby).toEqual([expr]);
     expect(String(query)).toBe('PIVOT "t1" ON "txt1" USING sum("num1") GROUP BY ("int1" + 1)');
-    // Serialization only: GROUP BY does not support expressions in DuckDB
+    // Serialization only: PIVOT's GROUP BY does not support expressions in DuckDB.
   });
 
   it('adds multiple GROUP BY expressions in caller-supplied order', async () => {
@@ -366,6 +366,10 @@ describe('PivotQuery', () => {
   });
 
   it('can be used as a select query source', async () => {
+    const bare = Query.pivot('t1');
+    expect(String(Query.select('*').from({ p: bare }))).toBe('SELECT * FROM (PIVOT "t1") AS "p"');
+    // Serialization only: a bare PIVOT with no ON clause is not executable.
+
     const pivot = Query.pivot('t1').on('int1');
     const query = Query.select('*').from({ p: pivot });
     const [source] = query._from;
