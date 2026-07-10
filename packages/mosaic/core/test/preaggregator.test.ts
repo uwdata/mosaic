@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import type { CreateQuery, ExprNode, FilterExpr } from "@uwdata/mosaic-sql";
 import { Query, add, argmax, argmin, avg, corr, count, covarPop, covariance, desc, filterPushdown, geomean, gt, isNotDistinct, literal, loadObjects, max, min, mul, neq, product, regrAvgX, regrAvgY, regrCount, regrIntercept, regrR2, regrSXX, regrSXY, regrSYY, regrSlope, stddev, stddevPop, sum, upper, varPop, variance } from '@uwdata/mosaic-sql';
 import { Coordinator, Selection, SelectionClause } from '../src/index.js';
+import { preaggColumns } from '../src/preagg/preagg-columns.js';
 import { NodeConnector } from './util/node-connector.js';
 import { TestClient } from './util/test-client.js';
 
@@ -273,5 +274,44 @@ describe('PreAggregator', () => {
         .orderby(desc("measure"))
     };
     expect(await run(query)).toStrictEqual([3.5, true]);
+  });
+
+  it('supports case-insensitive collisions among groupby dimensions', async () => {
+    const query = (predicate: FilterExpr = []) => {
+      return Query.from('testData')
+        .select({ measure: avg('x') })
+        .groupby("cat", "CAT")
+        .where(predicate)
+        .orderby(desc("measure"))
+    };
+    expect(await run(query)).toStrictEqual([3.5, true]);
+  });
+
+  it('supports duplicate groupby dimensions', async () => {
+    const query = (predicate: FilterExpr = []) => {
+      return Query.from('testData')
+        .select({ measure: avg('x') })
+        .groupby("cat", "cat")
+        .where(predicate)
+        .orderby(desc("measure"))
+    };
+    expect(await run(query)).toStrictEqual([3.5, true]);
+  });
+
+  it('dedupes case-insensitive collisions among groupby dimensions', () => {
+    const query = Query.from('testData')
+      .select({ measure: avg('x') })
+      .groupby('cat', 'CAT');
+    const cols = preaggColumns(new TestClient(query));
+    expect(cols?.dims).toStrictEqual(['cat']);
+    expect(Object.keys(cols?.groupby ?? {})).toStrictEqual(['cat']);
+  });
+
+  it('dedupes duplicate groupby dimensions', () => {
+    const query = Query.from('testData')
+      .select({ measure: avg('x') })
+      .groupby('cat', 'cat');
+    const cols = preaggColumns(new TestClient(query));
+    expect(cols?.dims).toStrictEqual(['cat']);
   });
 });

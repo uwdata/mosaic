@@ -84,11 +84,11 @@ export function preaggColumns(client: MosaicClient): PreAggColumnsResult | null 
       // ignore integer index, as expr was in select clause
       // so we harvested that expr as a dimension above
       if (expr.type !== "LITERAL") {
-        // if column ref, do not duplicate given case-insensitive match
-        const alias = !isColumnRef(expr) ? `${expr}`
-          : dimsLower.has(expr.column.toLowerCase()) ? undefined
-          : expr.column;
-        if (alias) {
+        // skip duplicates, as column names are case-insensitive in DuckDB
+        const alias = isColumnRef(expr) ? expr.column : `${expr}`;
+        const key = alias.toLowerCase();
+        if (!dimsLower.has(key)) {
+          dimsLower.add(key);
           groupby[alias] = expr;
           dims.push(alias);
         }
