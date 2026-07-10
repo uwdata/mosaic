@@ -75,9 +75,6 @@ export function preaggColumns(client: MosaicClient): PreAggColumnsResult | null 
     const qualify = q._qualify
       .map(expr => analyzeExpression(expr, aggrs, preagg, avg) ?? expr);
 
-    // bail if the query has no aggregates
-    if (!aggrs.size) return null;
-
     // add groupby entries, which may or may not be selected
     const groupby: Record<string, ExprNode> = {};
     for (const expr of q._groupby) {
