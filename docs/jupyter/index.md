@@ -33,7 +33,58 @@ A widget has a `spec` traitlet that can be used to set the Mosaic specification.
 
 ## Example
 
-In this example, we create a Mosaic plot over the Seattle weather dataset. This will render the [an interactive view of Seattle’s weather, including maximum temperature, amount of precipitation, and type of weather](/examples/weather.html). You can try a live example on [Google Colab](https://colab.research.google.com/drive/1Txy6L_of8_lJFImKEkhUCqZX70yKpYnv#scrollTo=leuzblN47K-T&line=1&uniqifier=1).
+In this example, we create a Mosaic plot over the Seattle weather dataset. This will render [an interactive view of Seattle’s weather, including maximum temperature, amount of precipitation, and type of weather](/examples/weather.html). You can try a live example on [Google Colab](https://colab.research.google.com/drive/1Txy6L_of8_lJFImKEkhUCqZX70yKpYnv#scrollTo=leuzblN47K-T&line=1&uniqifier=1).
+
+### Building a spec with the vgplot Python API
+
+The [`vgplot` Python API](/vgplot/?lang=python) lets you build the specification programmatically instead of loading a YAML/JSON file. Define a data source as a local variable (e.g. `vg.csv(...)` or `vg.parquet(...)`) and pass it directly to a mark — `view` discovers it by name, so the resulting spec is self-contained and can be passed straight to `MosaicWidget`:
+
+```python
+import vgplot as vg
+
+from mosaic_widget import MosaicWidget
+
+weather = vg.csv("https://uwdata.github.io/mosaic-datasets/data/seattle-weather.csv")
+
+view = vg.plot(
+    vg.dot(
+        weather,
+        x=vg.date_month_day("date"),
+        y="temp_max",
+        fill="weather",
+        r="precipitation",
+        fill_opacity=0.7,
+    ),
+    vg.x_tick_format("%b"),
+    vg.width(680),
+    vg.height(300),
+)
+
+MosaicWidget(view)
+```
+
+To plot an existing Pandas or Polars DataFrame instead, register it with the widget under a table name and reference it from a mark with `vg.source("name")`:
+
+```python
+import pandas as pd
+import vgplot as vg
+
+from mosaic_widget import MosaicWidget
+
+weather = pd.read_csv("https://uwdata.github.io/mosaic-datasets/data/seattle-weather.csv", parse_dates=["date"])
+
+view = vg.plot(
+    vg.dot(vg.source("weather"), x=vg.date_month_day("date"), y="temp_max", fill="weather"),
+    vg.x_tick_format("%b"),
+    vg.width(680),
+)
+
+MosaicWidget(view, data={"weather": weather})
+```
+
+### Loading a YAML/JSON spec
+
+Alternatively, load an existing declarative specification and pass it to the widget as a dictionary:
 
 ```python
 import pandas as pd

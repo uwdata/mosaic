@@ -1,37 +1,7 @@
 // Initialize default visitor
 import './init.js';
 
-export { AggregateNode, aggregateNames, isAggregateFunction } from './ast/aggregate.js';
-export { BetweenOpNode, NotBetweenOpNode } from './ast/between-op.js'
-export { BinaryOpNode } from './ast/binary-op.js';
-export { CaseNode, WhenNode } from './ast/case.js';
-export { CastNode } from './ast/cast.js';
-export { CollateNode } from './ast/collate.js';
-export { ColumnParamNode, isColumnParam } from './ast/column-param.js';
-export { ColumnRefNode, ColumnNameRefNode, isColumnRef } from './ast/column-ref.js';
-export { FragmentNode } from './ast/fragment.js';
-export { FromClauseNode } from './ast/from.js';
-export { FunctionNode } from './ast/function.js';
-export { InOpNode } from './ast/in-op.js';
-export { IntervalNode } from './ast/interval.js';
-export { JoinNode, type JoinType, type JoinVariant } from './ast/join.js';
-export { ListNode } from './ast/list.js';
-export { LiteralNode } from './ast/literal.js';
-export { LogicalOpNode, AndNode, OrNode } from './ast/logical-op.js';
-export { SQLNode, ExprNode, isNode } from './ast/node.js';
-export { OrderByNode } from './ast/order-by.js';
-export { ParamNode } from './ast/param.js';
-export { CreateQuery, type CreateTableOptions, CreateSchemaQuery, type CreateSchemaOptions, DescribeQuery, Query, SelectQuery, SetOperation, isCreateQuery, isCreateSchemaQuery, isDescribeQuery, isQuery, isSelectQuery } from './ast/query.js';
-export { SampleClauseNode } from './ast/sample.js';
-export { ScalarSubqueryNode } from './ast/subquery.js';
-export { SelectClauseNode } from './ast/select.js';
-export { TableRefNode, isTableRef } from './ast/table-ref.js';
-export { UnaryOpNode, UnaryPostfixOpNode } from './ast/unary-op.js';
-export { UnnestNode } from './ast/unnest.js';
-export { VerbatimNode } from './ast/verbatim.js';
-export { WindowClauseNode, WindowDefNode, WindowFunctionNode, WindowNode } from './ast/window.js';
-export { WindowFrameNode, WindowFrameExprNode, type FrameExclude, type FrameExtent, type FrameScope, type FrameType, type FrameValue } from './ast/window-frame.js';
-export { WithClauseNode } from './ast/with.js';
+export * from './ast/index.js';
 
 export { argmax, argmin, arrayAgg, avg, corr, count, covariance, covarPop, entropy, first, geomean, kurtosis, mad, max, median, min, mode, last, product, quantile, regrAvgX, regrAvgY, regrCount, regrIntercept, regrR2, regrSXX, regrSXY, regrSYY, regrSlope, skewness, stddev, stddevPop, stringAgg, sum, variance, varPop } from './functions/aggregate.js';
 export { cond } from './functions/case.js';
@@ -46,7 +16,7 @@ export { asof_join, cross_join, join, positional_join } from './functions/join.j
 export { list, listContains, listHasAll, listHasAny } from './functions/list.js';
 export { literal, verbatim } from './functions/literal.js';
 export { abs, ceil, exp, floor, greatest, isFinite, isInfinite, isNaN, least, ln, log, round, sign, sqrt, trunc } from './functions/numeric.js';
-export { and, or, not, isNull, isNotNull, bitNot, bitAnd, bitOr, bitLeft, bitRight, add, sub, mul, div, idiv, mod, pow, eq, neq, lt, gt, lte, gte, isDistinct, isNotDistinct, isBetween, isNotBetween, isIn } from './functions/operators.js';
+export { and, or, not, isNull, isNotNull, bitNot, bitAnd, bitOr, bitLeft, bitRight, add, sub, mul, div, idiv, mod, pow, eq, neq, lt, gt, lte, gte, isDistinct, isNotDistinct, isBetween, isNotBetween, isIn, isInDistinct } from './functions/operators.js';
 export { asc, desc } from './functions/order-by.js';
 export { geojson, x, y, centroid, centroidX, centroidY } from './functions/spatial.js';
 export { sql } from './functions/sql-template-tag.js';
@@ -78,7 +48,7 @@ export { lineDensity } from './transforms/line-density.js';
 export { m4 } from './transforms/m4.js';
 export { scaleTransform, type Scale, type ScaleDomain, type ScaleOptions, type ScaleTransform, type ScaleType } from './transforms/scales.js';
 
-export { asLiteral, asNode, asTableRef, asVerbatim, over } from './util/ast.js';
+export { asLiteral, asNode, asTableRef, asVerbatim, parseColumnRef, parseTableRef, over } from './util/ast.js';
 export { isParamLike } from './util/type-check.js';
 
 export { binSpec, binStep, type BinOptions } from './transforms/util/bin-step.js';

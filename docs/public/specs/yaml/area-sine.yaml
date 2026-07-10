@@ -1,0 +1,40 @@
+meta:
+  title: Area Sine Wave
+  description: >
+    A test specification to compare M4 optimized and unoptimized area charts
+    over a dense dual-tone sine wave.
+data:
+  wave: { file: data/m4-area-sine.csv }
+vconcat:
+- plot:
+  - mark: areaY
+    data: { from: wave, filterBy: $brush }
+    x: time_stamp
+    y: power
+  yDomain: Fixed
+  colorDomain: Fixed
+  xLabel: null
+  width: 680
+  height: 180
+- vspace: 5
+- plot:
+  - mark: areaY
+    data: { from: wave, filterBy: $brush, optimize: false }
+    x: time_stamp
+    y: power
+  yDomain: Fixed
+  colorDomain: Fixed
+  xLabel: null
+  width: 680
+  height: 180
+- vspace: 10
+- plot:
+  - mark: areaY
+    data: { from: wave, optimize: false }
+    x: time_stamp
+    y: power
+  - select: intervalX
+    as: $brush
+  yDomain: Fixed
+  width: 680
+  height: 90

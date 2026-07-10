@@ -24,6 +24,7 @@ import type {
   LogicalOpNode,
   OrderByNode,
   ParamNode,
+  PivotQuery,
   DescribeQuery,
   SelectQuery,
   SetOperation,
@@ -31,6 +32,7 @@ import type {
   SelectClauseNode,
   ScalarSubqueryNode,
   TableRefNode,
+  TupleNode,
   UnaryOpNode,
   UnaryPostfixOpNode,
   UnnestNode,
@@ -42,7 +44,7 @@ import type {
   WindowFrameNode,
   WindowFrameExprNode,
   WithClauseNode
-} from '../../index.js';
+} from '../../ast/index.js';
 import {
   AGGREGATE,
   BETWEEN_OPERATOR,
@@ -68,12 +70,14 @@ import {
   NOT_BETWEEN_OPERATOR,
   ORDER_BY,
   PARAM,
+  PIVOT_QUERY,
   SAMPLE_CLAUSE,
   SCALAR_SUBQUERY,
   SELECT_CLAUSE,
   SELECT_QUERY,
   SET_OPERATION,
   TABLE_REF,
+  TUPLE,
   UNARY_OPERATOR,
   UNARY_POSTFIX_OPERATOR,
   UNNEST,
@@ -143,12 +147,14 @@ export abstract class SQLCodeGenerator {
       case NOT_BETWEEN_OPERATOR: return this.visitNotBetween;
       case ORDER_BY: return this.visitOrderBy;
       case PARAM: return this.visitParam;
+      case PIVOT_QUERY: return this.visitPivotQuery;
       case SAMPLE_CLAUSE: return this.visitSampleClause;
       case SCALAR_SUBQUERY: return this.visitScalarSubquery;
       case SELECT_CLAUSE: return this.visitSelectClause;
       case SELECT_QUERY: return this.visitSelectQuery;
       case SET_OPERATION: return this.visitSetOperation;
       case TABLE_REF: return this.visitTableRef;
+      case TUPLE: return this.visitTuple;
       case UNARY_OPERATOR: return this.visitUnary;
       case UNARY_POSTFIX_OPERATOR: return this.visitUnaryPostfix;
       case UNNEST: return this.visitUnnest;
@@ -200,12 +206,14 @@ export abstract class SQLCodeGenerator {
   abstract visitNotBetween(node: NotBetweenOpNode): string;
   abstract visitOrderBy(node: OrderByNode): string;
   abstract visitParam(node: ParamNode): string;
+  abstract visitPivotQuery(node: PivotQuery): string;
   abstract visitSampleClause(node: SampleClauseNode): string;
   abstract visitScalarSubquery(node: ScalarSubqueryNode): string;
   abstract visitSelectClause(node: SelectClauseNode): string;
   abstract visitSelectQuery(node: SelectQuery): string;
   abstract visitSetOperation(node: SetOperation): string;
   abstract visitTableRef(node: TableRefNode): string;
+  abstract visitTuple(node: TupleNode): string;
   abstract visitUnary(node: UnaryOpNode): string;
   abstract visitUnaryPostfix(node: UnaryPostfixOpNode): string;
   abstract visitUnnest(node: UnnestNode): string;

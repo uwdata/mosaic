@@ -18,10 +18,10 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       - name: Setup pnpm
-        uses: pnpm/action-setup@v5
+        uses: pnpm/action-setup@v6
 
       - name: Setup node
         uses: actions/setup-node@v6
@@ -38,17 +38,72 @@ jobs:
       - run: pnpm run build
       - run: pnpm run test
 
+      - uses: astral-sh/setup-uv@v7
+        with:
+          version: ">=0.11.0"
+          enable-cache: true
+          cache-dependency-glob: |
+            uv.lock
+            **/pyproject.toml
+
+      - name: Verify generated spec outputs do not change
+        run: |
+          pnpm run docs:examples
+          git diff --exit-code -- specs/esm specs/json specs/ts specs/python docs/public/specs docs/examples
+
+      - name: Verify generated Python API does not change
+        run: |
+          pnpm run generate:python-api
+          git diff --exit-code -- packages/vgplot/vgplot-python/vgplot/_generated packages/vgplot/spec/src/generated
+
+  browser:
+    name: Test in Browser
+
+    runs-on: ubuntu-latest
+    container:
+      image: mcr.microsoft.com/playwright:v1.61.0-noble
+      options: --user 1001
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v6
+
+      - name: Setup node
+        uses: actions/setup-node@v6
+        with:
+          node-version: "22.x"
+          cache: "pnpm"
+          cache-dependency-path: |
+            pnpm-lock.yaml
+
+      - name: Install Node dependencies
+        run: pnpm install --frozen-lockfile
+
+      - run: pnpm run build
+      - run: pnpm -F @uwdata/mosaic-spec test:visual
+
+      - name: Upload Playwright results
+        uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: playwright-test-results
+          path: |
+            packages/vgplot/spec/test-results/
+            packages/vgplot/spec/test/visual.test.js-snapshots/
+
   python:
     name: Test in Python
 
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       - uses: astral-sh/setup-uv@v7
         with:
-          version: ">=0.5.0"
+          version: ">=0.11.0"
           enable-cache: true
           cache-dependency-glob: |
             uv.lock
@@ -82,13 +137,22 @@ jobs:
           uv run --group test ty check
           uv run --group test pytest --cov-report=term-missing --color=yes --cov=mosaic_widget
 
+      - name: Build and test vgplot Python
+        run: |
+          cd packages/vgplot/vgplot-python
+
+          uv build
+          uv run --group dev ty check
+          uv run --group dev ty check ../../../specs/python
+          uv run --group dev pytest --cov-report=term-missing --color=yes --cov=vgplot
+
   rust:
     name: Test in Rust
 
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - name: Setup Rust
         uses: actions-rust-lang/setup-rust-toolchain@v1
         with:
@@ -110,7 +174,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       - name: Setup Go
         uses: actions/setup-go@v6

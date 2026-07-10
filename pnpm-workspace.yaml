@@ -3,3 +3,6 @@ packages:
   - "packages/server/*"
   - "packages/vgplot/*"
   - "packages/examples/*"
+allowBuilds:
+  esbuild: false
+  nx: false

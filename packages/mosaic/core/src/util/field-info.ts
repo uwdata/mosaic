@@ -57,16 +57,31 @@ export async function queryFieldInfo(mc: Coordinator, fields: FieldInfoRequest[]
  * @returns Promise resolving to field information.
  */
 async function getFieldInfo(mc: Coordinator, { table, column, stats }: FieldInfoRequest): Promise<FieldInfo> {
+  const isAggregate = isNode(column) && isAggregateExpression(column);
+
   // generate and issue a query for field metadata info
   // use GROUP BY ALL to differentiate & consolidate aggregates
   const q = Query
     .from({ source: table })
-    .select({ column })
-    .groupby(isNode(column) && isAggregateExpression(column) ? sql`ALL` : []);
+    .select({ column }, isAggregate ? '*' : {})
+    .groupby(isAggregate ? sql`ALL` : []);
 
-  const [desc] = Array.from(
-    await mc.query(Query.describe(q))
-  ) as ColumnDescription[];
+  let desc: ColumnDescription;
+  try {
+    [desc] = Array.from(
+      await mc.query(Query.describe(q))
+    ) as ColumnDescription[];
+  } catch {
+    // provide dummy description node upon query failure
+    // this handles true aggregates within window functions
+    // DuckDB fails to handle these when using GROUP BY ALL
+    desc = {
+      column_name: 'column',
+      column_type: 'DOUBLE',
+      null: 'YES'
+    };
+  }
+
   const info: FieldInfo = {
     table,
     column: `${column}`,

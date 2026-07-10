@@ -1,5 +1,5 @@
 import { expect, describe, it } from 'vitest';
-import { abs, add, asVerbatim, collectColumns, collectParams, column, count, isAggregateExpression, sql } from '../src/index.js';
+import { abs, add, asVerbatim, collectAggregates, collectColumns, collectParams, column, count, div, isAggregateExpression, Query, ScalarSubqueryNode, sql, sum } from '../src/index.js';
 import { stubParam } from './util/stub-param.js';
 
 describe('Visitor functions', () => {
@@ -25,12 +25,25 @@ describe('Visitor functions', () => {
     expect(collectParams(expr2)).toStrictEqual([]);
   });
 
+  it('include aggregate collection', () => {
+    expect(collectAggregates(Query.select({
+      count: count(),
+      sum: sum('foo'),
+      mix: add(sum('foo'), sum('bar'))
+    }).from('table'))).toHaveLength(4);
+    expect(collectAggregates(Query.select({
+      norm: div(1, new ScalarSubqueryNode(Query.select({ count: count() }).from('table')))
+    }).from('table'))).toHaveLength(0);
+  });
+
   it('include aggregate function detection', () => {
     expect(isAggregateExpression(column('a'))).toBe(0);
     expect(isAggregateExpression(add(1, 2))).toBe(0);
     expect(isAggregateExpression(abs(-1))).toBe(0);
 
     expect(isAggregateExpression(count())).toBe(1);
+    expect(isAggregateExpression(sum(sum('foo')).orderby('a'))).toBe(1);
+
     expect(isAggregateExpression(asVerbatim('count(*)'))).toBe(2);
     expect(isAggregateExpression(sql`count(*)`)).toBe(2);
     expect(isAggregateExpression(sql`count(${column('a')})`)).toBe(2);
@@ -38,6 +51,6 @@ describe('Visitor functions', () => {
     expect(isAggregateExpression(count().orderby('a'))).toBe(0);
     expect(isAggregateExpression(asVerbatim('count(*) OVER (ORDER BY a)'))).toBe(0);
     expect(isAggregateExpression(sql`count(*) OVER (ORDER BY a)`)).toBe(0);
-    expect(isAggregateExpression(sql`count(${column('a')}) OVER (ORDER BY a)`)).toBe(0);
+    expect(isAggregateExpression(sql`count(${column('a')}) OVER (ORDER BY a)`)).toBe(0);    
   });
 });

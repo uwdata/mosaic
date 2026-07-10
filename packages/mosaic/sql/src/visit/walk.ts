@@ -15,7 +15,7 @@ export type VisitorResult = boolean | number | null | undefined | void;
 /**
  * SQL AST traversal callback function.
  */
-export type VisitorCallback = (node: SQLNode) => VisitorResult;
+export type VisitorCallback = (node: SQLNode, parent?: SQLNode) => VisitorResult;
 
 /**
  * Perform a traversal of a SQL expression AST.
@@ -23,8 +23,17 @@ export type VisitorCallback = (node: SQLNode) => VisitorResult;
  * @param visit Visitor callback function.
  */
 export function walk(node: unknown, visit: VisitorCallback): VisitorResult {
+  return _walk(node, undefined, visit);
+}
+
+/**
+ * Perform a traversal of a SQL expression AST.
+ * @param node Root node for AST traversal.
+ * @param visit Visitor callback function.
+ */
+function _walk(node: unknown, parent: SQLNode | undefined, visit: VisitorCallback): VisitorResult {
   if (!isNode(node)) return;
-  const result = visit(node);
+  const result = visit(node, parent);
   if (result) return result;
 
   const props = recurse[node.type];
@@ -35,11 +44,11 @@ export function walk(node: unknown, visit: VisitorCallback): VisitorResult {
     if (Array.isArray(value)) {
       const m = value.length;
       for (let j = 0; j < m; ++j) {
-        if (value[j] && Number(walk(value[j], visit)) < 0) {
+        if (value[j] && Number(_walk(value[j], node, visit)) < 0) {
           return result;
         }
       }
-    } else if (value && Number(walk(value, visit)) < 0) {
+    } else if (value && Number(_walk(value, node, visit)) < 0) {
       return -1;
     }
   }

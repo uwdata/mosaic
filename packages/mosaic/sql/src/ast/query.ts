@@ -1,4 +1,5 @@
 import type { FilterExpr, FromExpr, GroupByExpr, MaybeArray, OrderByExpr, SelectExpr, WithExpr } from '../types.js';
+import { PivotQuery, type PivotSource } from './pivot.js';
 import type { SampleMethod } from './sample.js';
 import { CREATE_QUERY, CREATE_SCHEMA_QUERY, DESCRIBE_QUERY, SELECT_QUERY, SET_OPERATION } from '../constants.js';
 import { asNode, asTableRef, asVerbatim, maybeTableRef } from '../util/ast.js';
@@ -78,6 +79,14 @@ export class Query extends ExprNode {
    */
   static from(...expr: FromExpr[]) {
     return new SelectQuery().from(...expr);
+  }
+
+  /**
+   * Create a new pivot query over the given source.
+   * @param source The source relation to pivot.
+   */
+  static pivot(source: PivotSource) {
+    return new PivotQuery(source);
   }
 
   /**
@@ -214,6 +223,15 @@ export class Query extends ExprNode {
   orderby(...expr: OrderByExpr[]): this {
     this._orderby = this._orderby.concat(nodeList(expr));
     return this;
+  }
+
+  /**
+   * Set ORDER BY expressions, replacing any prior expressions.
+   * @param expr Expressions to add.
+   */
+  setOrderby(...expr: OrderByExpr[]): this {
+    this._orderby = [];
+    return this.orderby(...expr);
   }
 
   /**
@@ -449,14 +467,29 @@ export class SelectQuery extends Query {
   }
 
   /**
+   * Set HAVING expressions, replacing any prior expressions.
+   * @param expr Expressions to add.
+   */
+  setHaving(...expr: FilterExpr[]): this {
+    this._having = [];
+    return this.having(...expr);
+  }
+
+  /**
    * Add WINDOW definitions.
    * @param expr Window definitions to add.
    */
-  window(...expr: (Record<string, WindowDefNode> | null)[]): this {
+  window(...expr: (Record<string, WindowDefNode> | WindowClauseNode | WindowClauseNode[] | null)[]): this {
     const list: WindowClauseNode[] = [];
     expr.flat().forEach(e => {
-      if (e != null) for (const name in e) {
-        list.push(new WindowClauseNode(unquote(name)!, e[name]));
+      if (e == null) {
+        return;
+      } else if (e instanceof WindowClauseNode) {
+        list.push(e);
+      } else {
+        for (const name in e) {
+          list.push(new WindowClauseNode(unquote(name)!, e[name]));
+        }
       }
     });
     this._window = this._window.concat(list);
@@ -470,6 +503,15 @@ export class SelectQuery extends Query {
   qualify(...expr: FilterExpr[]): this {
     this._qualify = this._qualify.concat(exprList(expr, asVerbatim));
     return this;
+  }
+
+  /**
+   * Set QUALIFY expressions, replacing any prior expressions.
+   * @param expr Expressions to add.
+   */
+  setQualify(...expr: FilterExpr[]): this {
+    this._qualify = [];
+    return this.qualify(...expr);
   }
 }
 
@@ -627,6 +669,14 @@ class WithClause {
    */
   from(...expr: FromExpr[]) {
     return Query.from(...expr).with(...this._with);
+  }
+
+  /**
+   * Create a new pivot query over the given source.
+   * @param source The source relation to pivot.
+   */
+  pivot(source: PivotSource) {
+    return Query.pivot(source).with(...this._with);
   }
 
   /**
