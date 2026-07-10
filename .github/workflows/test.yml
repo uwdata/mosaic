@@ -143,6 +143,7 @@ jobs:
 
           uv build
           uv run --group dev ty check
+          uv run --group dev ty check ../../../specs/python
           uv run --group dev pytest --cov-report=term-missing --color=yes --cov=vgplot
 
   rust:
