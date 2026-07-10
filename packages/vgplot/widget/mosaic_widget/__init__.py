@@ -131,9 +131,10 @@ class MosaicWidget(anywidget.AnyWidget):
         """
         The SQL query that reflects the current selection state.
 
-        Returns None (with a warning) when the source table cannot be inferred,
-        i.e. when the widget knows zero or multiple tables. In that case use
-        `widget.data(table).sql_query()` to get the SQL for a specific table.
+        Returns None (with a warning) when the spec's `data` entries and the
+        registered data frames do not name exactly one source table. In that
+        case use `widget.data(table).sql_query()` to get the SQL for a
+        specific table.
         """
         try:
             table = self._resolve_table(None)
@@ -149,10 +150,10 @@ class MosaicWidget(anywidget.AnyWidget):
         Query a source table filtered by the current selection state.
 
         Args:
-            table (str, optional): The table to query. Required when the widget
-                knows more than one table; inferred when there is exactly one
-                (from the spec's top-level `data` entries and the frames
-                registered via the `data` constructor argument).
+            table (str, optional): The table to query. Inferred when the
+                spec's top-level `data` entries and the frames registered via
+                the `data` constructor argument name exactly one table;
+                required otherwise.
             filter_by (str or list, optional): Selection name(s) to filter by,
                 with or without the leading "$". Defaults to all active
                 selections.
@@ -171,7 +172,8 @@ class MosaicWidget(anywidget.AnyWidget):
             return next(iter(tables))
         if not tables:
             raise ValueError(
-                "No source tables known; pass a table name to widget.data(table)."
+                "No source tables in the spec or registered data; "
+                "pass a table name to widget.data(table)."
             )
         raise ValueError(
             f"Multiple source tables: {sorted(tables)}. "

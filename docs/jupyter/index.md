@@ -143,11 +143,11 @@ widget.data().df()    # pandas DataFrame of the currently filtered rows
 
 `widget.sql` combines the active selection predicates from `params` with `AND`. `widget.data()` returns the lazy [DuckDB relation](https://duckdb.org/docs/api/python/relational_api) for that query; materialize it with `.df()` (pandas), `.pl()` (Polars), `.arrow()`, or `.fetchall()`.
 
-The source table is inferred when only one is known, from the spec's `data` entries and the `data` constructor argument. If there are several, `widget.sql` is `None` and you pass the table to query to `widget.data()`. By default all selections are applied; pass `filter_by` (a selection name or list of names) to apply a subset:
+`widget.data()` infers the source table from the spec's `data` entries and the `data` constructor argument. If those name more than one table, pass the table explicitly (`widget.sql` returns `None` in that case). The query applies every selection; pass `filter_by` with a selection name or a list of names to apply a subset:
 
 ```python
 widget.data("weather").df()                     # explicit source table
 widget.data("weather", filter_by="range").df()  # apply only the "range" selection
 ```
 
-Note that in a cross-filtered view each chart is *not* filtered by its own selection, while `widget.data()` applies all of them — so a chart may show more rows than `widget.data()` returns.
+Note that in a cross-filtered view each chart skips its own selection, but `widget.data()` applies all of them, so a chart may show more rows than `widget.data()` returns.
