@@ -1,7 +1,8 @@
 [tool.uv.workspace]
 members = [
     "packages/server/duckdb-server",
-    "packages/vgplot/widget"
+    "packages/vgplot/widget",
+    "packages/vgplot/vgplot-python"
 ]
 
 # https://github.com/charliermarsh/ruff
@@ -10,4 +11,15 @@ extend-include = ["*.ipynb"]
 
 [tool.ruff.lint]
 pydocstyle = { convention = "numpy" }
+extend-select = [
+    "FA",  # https://docs.astral.sh/ruff/rules/#flake8-future-annotations-fa
+    "TC",  # https://docs.astral.sh/ruff/rules/#flake8-type-checking-tc
+    "UP",  # https://docs.astral.sh/ruff/rules/#pyupgrade-up
+]
+extend-safe-fixes = ["FA", "TC", "UP"]
 ignore = ["G004", "TRY301", "EM102", "EM101", "TRY003", "FBT002", "S608", "TRY002", "ARG001"]
+
+[dependency-groups]
+dev = [
+    "marimo>=0.23.9",
+]

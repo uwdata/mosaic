@@ -18,4 +18,5 @@ A connected scatter plot of miles driven vs. gas prices.
 <<< @/public/specs/esm/driving-shifts.js [JavaScript]
 <<< @/public/specs/yaml/driving-shifts.yaml [YAML]
 <<< @/public/specs/json/driving-shifts.json [JSON]
+<<< @/public/specs/python/driving-shifts.py [Python]
 :::

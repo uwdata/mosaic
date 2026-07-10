@@ -41,12 +41,17 @@ To learn more about the anatomy of a query, take a look at the [DuckDB Select st
 ## Query
 
 The top-level `Query` class, along with its concrete `SelectQuery` and `SetOperation` subclasses, provide structured representations of SQL queries.
+The `Query.pivot()` static method additionally returns `PivotQuery` instances for DuckDB simplified `PIVOT` queries.
 Upon string coercion, these objects produce a complete SQL query string.
 
 The following static methods create a new `SelectQuery` and invoke the corresponding method:
 
 - `Query.select()`: See the [`select`](#select) method below.
 - `Query.from()`: See the [`from`](#from) method below.
+
+The following static method creates a new `PivotQuery`:
+
+- `Query.pivot(source)`: See the [`PivotQuery`](#pivotquery) section below.
 
 In addition, the following static methods take multiple queries as input and return `SetOperation` instances:
 
@@ -68,6 +73,77 @@ Each of the methods described above can also be utilized in conjunction with a W
 To instead create a query for metadata (column names and types), pass a query to the static `describe` method:
 
 - `Query.describe(query)`: Request a description of the columns that a query will produce, with one row per selected column.
+
+## PivotQuery
+
+`Query.pivot(source)`
+
+Create a DuckDB [`PIVOT`](https://duckdb.org/docs/sql/statements/pivot.html#simplified-pivot-syntax) query using simplified syntax over _source_ and return a `PivotQuery`.
+The _source_ may be a table name string, a table name path such as `["schema", "table"]`, or a SQL node such as a query or [`sql`](./expressions#sql) expression.
+Use `PivotQuery` methods to add `ON`, `IN`, `USING`, and `GROUP BY` clauses.
+
+``` js
+import { Query, sum } from "@uwdata/mosaic-sql";
+
+// PIVOT "sales" ON "year" IN (2020, 2021) USING sum("amount") AS "total" GROUP BY "region"
+Query
+  .pivot("sales")
+  .on("year")
+  .in(2020, 2021)
+  .using({ total: sum("amount") })
+  .groupby("region")
+```
+
+This method produces DuckDB's simplified `PIVOT` syntax, not the SQL-standard `SELECT ... FROM dataset PIVOT (...)` form.
+DuckDB expects at least one of the `ON`, `USING`, or `GROUP BY` clauses when executing a `PIVOT`.
+A `PivotQuery` also supports the shared `Query` methods `with`, `orderby`, `setOrderby`, `limit`, `limitPercent`, and `offset`, and may be passed to `from` as a subquery.
+
+### on
+
+`PivotQuery.on(...expressions)`
+
+Add `ON` expressions whose values determine pivot output columns and return this query instance.
+The _expressions_ may be column name strings, [`column`](./expressions#column) references, or other SQL expressions.
+This method is additive: any previously defined `ON` expressions will still remain.
+
+### in
+
+`PivotQuery.in(...values)`
+
+Add `IN` values associated with the `ON` clause and return this query instance.
+The values constrain and order pivot output columns, and are only meaningful when an `ON` clause is present.
+Non-node values are rendered as SQL literals, so string values become SQL string literals. At least one value is required.
+This method is additive: any previously defined `IN` values will still remain.
+
+### using
+
+`PivotQuery.using(...expressions)`
+
+Add `USING` aggregate expressions that populate pivot output cells and return this query instance.
+The _expressions_ may be aggregate expressions or maps from aliases to aggregate expressions.
+At least one expression is required when calling `using`.
+If `using` is not called, the `USING` clause is omitted and DuckDB defaults to `count(*)`.
+This method is additive: any previously defined `USING` expressions will still remain.
+
+### groupby
+
+`PivotQuery.groupby(...expressions)`
+
+Add `GROUP BY` expressions that define pivot row groups and return this query instance.
+DuckDB's simplified `PIVOT` expects column names in `GROUP BY`.
+This method is additive: any previously defined `GROUP BY` expressions will still remain.
+
+### setGroupby
+
+`PivotQuery.setGroupby(...expressions)`
+
+Set `GROUP BY` expressions, replacing any prior pivot group by criteria, and return this query instance.
+
+## isPivotQuery
+
+`isPivotQuery(value)`
+
+Return true if _value_ is a `PivotQuery` instance.
 
 ## clone
 

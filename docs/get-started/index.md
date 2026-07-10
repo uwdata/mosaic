@@ -30,8 +30,7 @@ const chart = vg.plot(
 
 ## Use in Python + Jupyter
 
-To create scalable visualizations within Jupyter notebooks, you can use [Mosaic vgplot](/vgplot/) specifications in either YAML or JSON format. See the [Jupyter widget](/jupyter/) docs for more.
-In the future we hope to also support a Python API, not unlike [Vega Altair](https://altair-viz.github.io/).
+Mosaic ships a Python API for building interactive visualizations in Jupyter and marimo notebooks. See [Mosaic vgplot in Python](/vgplot/?lang=python) and the [Jupyter widget](/jupyter/) docs to get started.
 
 ## Deploy in Observable Framework
 

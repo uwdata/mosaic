@@ -34,6 +34,20 @@ Query
   .offset(/* offset number of rows */)
 ```
 
+Use `pivot()` to create DuckDB [`PIVOT`](https://duckdb.org/docs/sql/statements/pivot.html#simplified-pivot-syntax) queries using simplified syntax:
+
+``` js
+import { Query, sum } from "@uwdata/mosaic-sql";
+
+// PIVOT "sales" ON "year" IN (2020, 2021) USING sum("amount") AS "total" GROUP BY "region"
+Query
+  .pivot("sales")
+  .on("year")
+  .in(2020, 2021)
+  .using({ total: sum("amount") })
+  .groupby("region")
+```
+
 [Query API Reference](/api/sql/queries)
 
 ## Operators

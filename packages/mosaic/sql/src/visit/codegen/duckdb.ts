@@ -147,11 +147,19 @@ export class DuckDBCodeGenerator extends SQLCodeGenerator {
   }
 
   visitFromClause(node: FromClauseNode): string {
-    const { expr, alias, sample } = node;
+    const { expr, alias, columnNames, sample } = node;
     const ref = isQuery(expr) ? `(${this.toString(expr)})` : `${this.toString(expr)}`;
-    const from = alias && !(isTableRef(expr) && expr.table?.join('.') === alias)
-      ? `${ref} AS ${quoteIdentifier(alias)}`
-      : `${ref}`;
+
+    let from: string;
+    if (alias && (columnNames?.length || !(isTableRef(expr) && expr.table?.join('.') === alias))) {
+      const names = columnNames?.length
+        ? `(${columnNames.map(v => quoteIdentifier(v)).join(', ')})`
+        : '';
+      from = `${ref} AS ${quoteIdentifier(alias)}${names}`;
+    } else {
+      from = `${ref}`;
+    }
+
     return `${from}${sample ? ` TABLESAMPLE ${this.toString(sample)}` : ''}`;
   }
 

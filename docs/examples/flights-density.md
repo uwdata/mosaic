@@ -15,4 +15,5 @@ Density `heatmap` and `contour` lines for 200,000+ flights by departure hour and
 <<< @/public/specs/esm/flights-density.js [JavaScript]
 <<< @/public/specs/yaml/flights-density.yaml [YAML]
 <<< @/public/specs/json/flights-density.json [JSON]
+<<< @/public/specs/python/flights-density.py [Python]
 :::
