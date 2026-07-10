@@ -2,7 +2,7 @@ import { expect, describe, it } from 'vitest';
 import { column, InOpNode, Query, ScalarSubqueryNode } from '../src/index.js';
 import { validateQuery } from './util/validate.js';
 
-describe('Scalar subqueries', async () => {
+describe('Scalar subqueries', () => {
   it('are supported', async () => {
     const subq = new ScalarSubqueryNode(Query.select("*").from("t1"));
     expect(String(subq)).toBe('(SELECT * FROM "t1")');
