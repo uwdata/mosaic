@@ -15,4 +15,5 @@ Select the top "overview" series to zoom the "focus" view below. An `intervalX` 
 <<< @/public/specs/esm/overview-detail.js [JavaScript]
 <<< @/public/specs/yaml/overview-detail.yaml [YAML]
 <<< @/public/specs/json/overview-detail.json [JSON]
+<<< @/public/specs/python/overview-detail.py [Python]
 :::

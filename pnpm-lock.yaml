@@ -234,6 +234,8 @@ importers:
         specifier: workspace:^
         version: link:../../mosaic/sql
 
+  packages/vgplot/vgplot-python: {}
+
   packages/vgplot/widget:
     dependencies:
       '@uwdata/mosaic-core':

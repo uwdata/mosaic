@@ -15,4 +15,5 @@ An interactive dashboard of athlete statistics. The menus and searchbox filter t
 <<< @/public/specs/esm/athletes.js [JavaScript]
 <<< @/public/specs/yaml/athletes.yaml [YAML]
 <<< @/public/specs/json/athletes.json [JSON]
+<<< @/public/specs/python/athletes.py [Python]
 :::

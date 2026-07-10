@@ -71,6 +71,7 @@ To build and develop Mosaic locally:
 * Run `pnpm test` to run the test suite.
 * Run `pnpm build` to build client-side bundles.
 * Run `uv build --all-packages` to build the Python packages.
+* Run `uv sync` to install Python packages into `.venv` for local development (required for IDE import resolution in VS Code).
 
 To run local interactive examples:
 

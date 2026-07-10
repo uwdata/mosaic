@@ -15,4 +15,5 @@ The `denseLine` mark shows the densities of line series, here for a collection o
 <<< @/public/specs/esm/line-density.js [JavaScript]
 <<< @/public/specs/yaml/line-density.yaml [YAML]
 <<< @/public/specs/json/line-density.json [JSON]
+<<< @/public/specs/python/line-density.py [Python]
 :::

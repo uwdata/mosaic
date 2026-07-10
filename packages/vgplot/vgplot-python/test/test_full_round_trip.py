@@ -1,0 +1,74 @@
+# Tests that every generated Python spec (specs/python/*.py) round-trips
+# correctly: running the file produces JSON identical to the reference fixture
+# in specs/json/. Also checks that Python, JSON, and ESM example sets stay
+# in sync (same filenames).
+#
+# Run: pytest packages/vgplot/vgplot-python/test/test_full_round_trip.py
+import json
+import sys
+from pathlib import Path
+from typing import Any
+
+import pytest
+
+ROOT = Path(__file__).resolve().parents[4]  # mosaic project root
+SPEC_DIR = ROOT / "specs"
+JSON_DIR = SPEC_DIR / "json"
+ESM_DIR = SPEC_DIR / "esm"
+PYTHON_DIR = SPEC_DIR / "python"
+
+VGPLOT_PKG = ROOT / "packages" / "vgplot" / "vgplot-python"
+
+for p in (VGPLOT_PKG, ROOT):
+    if str(p) not in sys.path:
+        sys.path.insert(0, str(p))
+
+
+def load_json_fixture(name: str) -> dict:
+    return json.loads((JSON_DIR / f"{name}.json").read_text(encoding="utf-8"))
+
+
+def run_spec_file_with_exec(path: Path) -> dict:
+    namespace: dict[str, Any] = {
+        "__name__": "__spec_exec__",
+        "__file__": str(path),
+        "__builtins__": __builtins__,
+    }
+    code = compile(path.read_text(encoding="utf-8"), str(path), "exec")
+    exec(code, namespace)
+
+    view = namespace.get("view")
+    if view is None:
+        raise AssertionError(f"`{path.name}` must define a top-level `view` variable")
+    if not hasattr(view, "to_dict"):
+        raise AssertionError(f"`view` in `{path.name}` does not expose to_dict()")
+    # Execute to_dict() within the spec namespace so frame inspection finds the right variables
+    namespace["__view__"] = view
+    exec("__result__ = __view__.to_dict()", namespace)
+    return namespace["__result__"]
+
+
+JSON_EXAMPLES = sorted(path.stem for path in JSON_DIR.glob("*.json"))
+ESM_EXAMPLES = sorted(path.stem for path in ESM_DIR.glob("*.js"))
+PYTHON_EXAMPLES = sorted(path.stem for path in PYTHON_DIR.glob("*.py"))
+
+
+def test_generated_examples_stay_in_sync():
+    assert PYTHON_EXAMPLES == JSON_EXAMPLES
+    assert ESM_EXAMPLES == JSON_EXAMPLES
+
+
+@pytest.mark.parametrize("example_name", PYTHON_EXAMPLES)
+def test_python_round_trip(example_name: str):
+    generated = run_spec_file_with_exec(PYTHON_DIR / f"{example_name}.py")
+    original = load_json_fixture(example_name)
+
+    # meta is documentation-only and not emitted by the Python DSL
+    original.pop("meta", None)
+    generated.pop("meta", None)
+
+    assert generated == original, (
+        f"Round-trip Python mismatch for '{example_name}'.\n"
+        f"> original:  {original}\n"
+        f"> generated: {generated}"
+    )

@@ -1,9 +1,10 @@
 from __future__ import annotations
 
+import inspect
 import logging
 import pathlib
 import time
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Protocol
 
 import anywidget
 import duckdb
@@ -22,6 +23,10 @@ logger.addHandler(logging.NullHandler())
 SLOW_QUERY_THRESHOLD = 5000
 
 
+class SupportsToDict(Protocol):
+    def to_dict(self) -> dict: ...
+
+
 class MosaicWidget(anywidget.AnyWidget):
     _esm = pathlib.Path(__file__).parent / "static" / "index.js"
     _css = pathlib.Path(__file__).parent / "static" / "index.css"
@@ -37,16 +42,17 @@ class MosaicWidget(anywidget.AnyWidget):
 
     def __init__(
         self,
-        spec: dict | None = None,
+        spec: dict | SupportsToDict | None = None,
         con: duckdb.DuckDBPyConnection | None = None,
-        data: dict[str, "IntoFrame"] | None = None,
+        data: dict[str, IntoFrame] | None = None,
         *args,
         **kwargs,
     ):
         """Create a Mosaic widget.
 
         Args:
-            spec (dict, optional): The initial Mosaic specification. Defaults to {}.
+            spec (dict or object with a to_dict() method, optional): The initial
+                Mosaic specification. Defaults to {}.
             con (connection, optional): A DuckDB connection.
                 Defaults to duckdb.connect().
             data (dict, optional): DataFrames/Arrow objects to "register" with DuckDB.
@@ -58,6 +64,18 @@ class MosaicWidget(anywidget.AnyWidget):
             data = {}
         if spec is None:
             spec = {}
+        elif not isinstance(spec, dict):
+            to_dict = getattr(spec, "to_dict", None)
+            if not callable(to_dict):
+                raise TypeError(
+                    f"spec must be a dict or have a to_dict() method, got {type(spec)}"
+                )
+            frame = inspect.currentframe()
+            caller_locals = frame.f_back.f_locals if frame and frame.f_back else {}
+            try:
+                spec = to_dict(_context=caller_locals)
+            except TypeError:
+                spec = to_dict()
         if con is None:
             con = duckdb.connect()
 
