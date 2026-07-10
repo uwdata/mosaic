@@ -13,11 +13,9 @@ export default defineConfig({
       llmstxt({
         description: 'An extensible framework for linking databases and interactive views, for scalable data visualization and exploration.',
         details: [
-          'Mosaic is a framework for linking data visualizations, tables, input widgets, and other data-driven components, while leveraging a database (DuckDB) for scalable processing. With Mosaic, you can interactively visualize and explore millions and even billions of data points.',
+          'Mosaic is a framework for linking data visualizations, tables, input widgets, and other data-driven components, while leveraging a database (DuckDB, server-side or in-browser via WebAssembly) for scalable processing of millions or even billions of data points. Components are linked through reactive params and selections that enable cross-filtering and other coordinated interactions.',
           '',
-          'Interface components (Mosaic clients) publish their data needs as queries managed by a central coordinator, which optimizes queries before issuing them to a backing data source such as DuckDB (server-side or in-browser via WebAssembly). Components are linked through reactive params and selections that enable cross-filtering and other coordinated interactions.',
-          '',
-          'Key packages: mosaic-core (client-coordinator architecture), mosaic-sql (SQL query builder), mosaic-inputs (menus, sliders, tables), vgplot (a grammar of interactive graphics), mosaic-spec (declarative JSON/YAML specifications), and duckdb-server (a DuckDB server backend).'
+          'Key packages: mosaic-core (client-coordinator architecture), mosaic-sql (SQL query builder), mosaic-inputs (menus, sliders, tables), vgplot (a grammar of interactive graphics built on Mosaic; optional — any component can be a Mosaic client), and mosaic-spec (a declarative JSON/YAML format for vgplot plots and dashboards).'
         ].join('\n')
       })
     ]

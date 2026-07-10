@@ -34,7 +34,7 @@ The production build also generates [LLM-friendly](https://llmstxt.org/) `llms.t
 
 ## Generated files
 
-Some files are generated and verified by CI, so don't edit them by hand. Change the source and regenerate instead, then commit the regenerated files together with your change:
+Some files are generated, so don't edit them by hand. Change the source and regenerate instead, then commit the regenerated files together with your change (CI fails if the committed files don't match a fresh regeneration):
 
 * Example specs under `specs/` and `docs/public/specs`: run `pnpm docs:examples`.
 * The generated Python vgplot API: run `pnpm generate:python-api` (see the [vgplot-python contributing guide](packages/vgplot/vgplot-python/CONTRIBUTING.md)).
