@@ -1,25 +1,15 @@
 from __future__ import annotations
 
-# ruff: noqa: A002
 import sys
 import typing
+
+# ruff: noqa: A002
+from contextlib import suppress
 from importlib.util import find_spec
 from typing import TYPE_CHECKING, Any, ClassVar
 
 
-def _sentinel_backport_pre_typing_extensions_4_16() -> Any:  # noqa: C901
-    # TODO @dangotbanned: Try inlining `_caller` and always using `1`?
-    def _caller(depth: int = 1, default: str = "__main__") -> str | None:
-        try:
-            return sys._getframemodulename(depth + 1) or default  # ty: ignore[unresolved-attribute]
-        except AttributeError:  # For platforms without _getframemodulename()
-            pass
-        try:
-            return sys._getframe(depth + 1).f_globals.get("__name__", default)
-        except (AttributeError, ValueError):  # For platforms without _getframe()
-            pass
-        return None
-
+def _sentinel_backport_pre_typing_extensions_4_16() -> Any:
     class _sentinel_backport:
         """Create a unique sentinel object.
 
@@ -29,10 +19,16 @@ def _sentinel_backport_pre_typing_extensions_4_16() -> Any:  # noqa: C901
         def __init__(self, name: str, /, *, repr: str | None = None) -> None:
             self.__name__: str = name
             self._repr: str = repr if repr is not None else name
-            # For pickling as a singleton (blocks using `__slots__`)
-
             # TODO @dangotbanned: Figure out why they didn;t use the `"__main__"` default here?
-            self.__module__ = _caller()  # pyright: ignore[reportAttributeAccessIssue] # ty: ignore[invalid-assignment]
+            module: str | None = None
+            if hasattr(sys, "_getframemodulename"):
+                module = sys._getframemodulename(1) or "__main__"
+            elif hasattr(sys, "_getframe"):
+                with suppress(ValueError):
+                    module = sys._getframe(1).f_globals.get("__name__", "__main__")
+
+            # For pickling as a singleton
+            self.__module__ = module  # pyright: ignore[reportAttributeAccessIssue] # ty: ignore[invalid-assignment]
 
         __init_subclass__: ClassVar[None] = None
 
