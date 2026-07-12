@@ -1,0 +1,84 @@
+from __future__ import annotations
+
+import copy
+from typing import TYPE_CHECKING, Any, Union, get_type_hints
+
+import pytest
+
+if TYPE_CHECKING:
+    # NOTE: Don't move this into a runtime import (yet)
+    from vgplot._types import UNSET
+
+
+def _import_unset() -> UNSET:  # pyright: ignore[reportInvalidTypeForm]
+    # NOTE: A regular import would add:
+    # - `vgplot._types` to `sys.modules`
+    # - `UNSET` to `globals`
+    # And we can't use `importlib.reload`, since that would create a new object
+    from vgplot._types import UNSET
+
+    return UNSET
+
+
+def test_unset_identity() -> None:
+    unset_1 = _import_unset()
+    unset_2 = _import_unset()
+    assert unset_1 is unset_2
+
+
+def test_unset_repr() -> None:
+    assert repr(_import_unset()) == "UNSET"
+
+
+@pytest.mark.xfail(reason="TODO: replace `UNSET` with `sentinel` backport")
+def test_unset_pickle() -> None:
+    import pickle
+
+    unset = _import_unset()
+    assert pickle.loads(pickle.dumps(unset)) is unset  # noqa: S301
+
+
+@pytest.mark.xfail(
+    raises=TypeError, reason="TODO: replace `UNSET` with `sentinel` backport"
+)
+def test_unset_type_expression_union() -> None:
+    # Adapted from https://github.com/python/typing_extensions/blob/83400e979b8e3b0b647f9a6a57f0275230e5f19f/src/test_typing_extensions.py#L9694-L9701
+    unset = _import_unset()
+
+    def func1(a: int | unset = unset) -> None: ...  # pyright: ignore[reportInvalidTypeForm]
+    def func2(a: unset | int = unset) -> None: ...  # pyright: ignore[reportInvalidTypeForm]
+
+    assert get_type_hints(func1, localns=locals())["a"] is Union[int, unset]  # noqa: UP007
+    assert get_type_hints(func2, localns=locals())["a"] is Union[unset, int]  # noqa: UP007
+
+
+@pytest.mark.xfail(reason="TODO: replace `UNSET` with `sentinel` backport")
+def test_unset_copy_identity() -> None:
+    # Adapted from https://github.com/python/typing_extensions/blob/83400e979b8e3b0b647f9a6a57f0275230e5f19f/src/test_typing_extensions.py#L9711-L9713
+    unset = _import_unset()
+    assert unset is copy.copy(unset)
+    assert unset is copy.deepcopy(unset)
+
+
+@pytest.mark.xfail(
+    raises=TypeError, reason="TODO: replace `UNSET` with `sentinel` backport"
+)
+def test_unset_union_identity() -> None:
+    unset = _import_unset()
+    assert (unset | unset) is unset
+
+
+if TYPE_CHECKING:
+    # NOTE: All of these will be valid with `sentinel`
+    from typing_extensions import assert_type
+
+    def typing_unset(
+        a: UNSET,  # pyright: ignore[reportInvalidTypeForm]
+        b: str | UNSET,  # pyright: ignore[reportInvalidTypeForm]
+        c: Any | UNSET,  # pyright: ignore[reportInvalidTypeForm]
+        d: int | None | UNSET = UNSET,  # pyright: ignore[reportInvalidTypeForm]
+    ) -> None:
+        assert_type(a, UNSET)  # pyright: ignore[reportInvalidTypeForm]
+        assert_type(b, str | UNSET)  # pyright: ignore[reportInvalidTypeForm]
+        assert_type(c, Any | UNSET)  # pyright: ignore[reportInvalidTypeForm]
+        assert_type(d, int | None | UNSET)  # pyright: ignore[reportInvalidTypeForm]
