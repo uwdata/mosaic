@@ -37,14 +37,13 @@ def test_unset_pickle() -> None:
 
 def test_unset_type_expression_union() -> None:
     # Adapted from https://github.com/python/typing_extensions/blob/83400e979b8e3b0b647f9a6a57f0275230e5f19f/src/test_typing_extensions.py#L9694-L9701
-    unset = _import_unset()
+    from vgplot._types import UNSET
 
-    # TODO @dangotbanned: Use a non-dynamic import, pyright is right to complain
-    def func1(a: int | unset = unset) -> None: ...  # pyright: ignore[reportInvalidTypeForm]
-    def func2(a: unset | int = unset) -> None: ...  # pyright: ignore[reportInvalidTypeForm]
+    def func1(a: int | UNSET = UNSET) -> None: ...
+    def func2(a: UNSET | int = UNSET) -> None: ...
 
-    assert get_type_hints(func1, localns=locals())["a"] is Union[int, unset]  # noqa: UP007
-    assert get_type_hints(func2, localns=locals())["a"] is Union[unset, int]  # noqa: UP007
+    assert get_type_hints(func1, localns=locals())["a"] is Union[int, UNSET]  # noqa: UP007
+    assert get_type_hints(func2, localns=locals())["a"] is Union[UNSET, int]  # noqa: UP007
 
 
 def test_unset_copy_identity() -> None:
@@ -60,7 +59,6 @@ def test_unset_union_identity() -> None:
 
 
 if TYPE_CHECKING:
-    # NOTE: All of these will be valid with `sentinel`
     from typing_extensions import assert_type
 
     def typing_unset(
