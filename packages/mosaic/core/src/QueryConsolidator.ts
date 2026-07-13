@@ -1,8 +1,9 @@
-import type { ExprNode, LiteralNode, MaybeArray, Query, SelectClauseNode, SelectQuery, SQLNode } from '@uwdata/mosaic-sql';
 import type { Table } from '@uwdata/flechette';
+import type { ExprNode, LiteralNode, MaybeArray, Query, SelectClauseNode, SelectQuery, SQLNode } from '@uwdata/mosaic-sql';
 import { isAggregateExpression, isColumnRef, isDescribeQuery, isSelectQuery } from '@uwdata/mosaic-sql';
-import { QueryResult } from './util/query-result.js';
 import type { Cache, QueryEntry, QueryType } from './types.js';
+import { resolvePositional } from './util/positional.js';
+import { QueryResult } from './util/query-result.js';
 
 interface GroupEntry {
   entry: QueryEntry;
@@ -138,8 +139,7 @@ function consolidationKey(query: MaybeArray<QueryType>, cache: Cache): string {
       const exprs = groupby
         .map(e => {
           const expr = (isColumnRef(e) && map[e.column])
-            || positionalReference(e, select)
-            || e;
+            || (resolvePositional(e, select)?.expr ?? e);
           return { sql: `${expr}`, expr }
         })
         .sort((a, b) => a.sql < b.sql ? -1 : a.sql > b.sql ? 1 : 0);
@@ -156,22 +156,6 @@ function consolidationKey(query: MaybeArray<QueryType>, cache: Cache): string {
   } else {
     // if we can't analyze the query, return the full SQL string
     return sql;
-  }
-}
-
-/**
- * Resolve a positional (1-based index) reference to a select clause entry.
- * Returns the corresponding select expression if found, otherwise returns
- * undefined.
- * @param node The SQL node to check
- * @param select An array of select clause nodes.
- */
-function positionalReference(node: SQLNode, select: SelectClauseNode[]) {
-  if (node.type === "LITERAL") {
-    const index = (node as LiteralNode).value;
-    if (typeof index === "number") {
-      return select[index - 1].expr;
-    }
   }
 }
 
