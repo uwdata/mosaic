@@ -4,6 +4,7 @@ import type { MosaicClient } from '../MosaicClient.js';
 import type { Selection } from '../Selection.js';
 import type { BinMethod, ClauseSource, IntervalMetadata, SelectionClause } from '../SelectionClause.js';
 import { fnv_hash } from '../util/hash.js';
+import { resolvePositional } from '../util/positional.js';
 import { preaggColumns, PreAggColumnsResult } from './preagg-columns.js';
 
 const Skip = { skip: true, result: null };
@@ -332,7 +333,7 @@ function preaggregateInfo(
   preaggCols: PreAggColumnsResult,
   schema: string
 ): PreAggregateInfo {
-  const { dims, groupby, having, output, preagg, qualify } = preaggCols;
+  const { groupby, having, output, preagg, qualify } = preaggCols;
   const { columns = {} } = active;
 
   // build materialized view construction query
@@ -341,8 +342,8 @@ function preaggregateInfo(
     .with(query._with)
     .sample(query._sample)
     .where(query._where)
-    .select({ ...groupby, ...preagg, ...columns })
-    .groupby(dims, Object.keys(columns));
+    .select({ ...preagg, ...columns })
+    .groupby(groupby, Object.keys(columns));
 
   // ensure active clause columns are selected by subqueries
   const [subq] = create.subqueries;
@@ -359,9 +360,9 @@ function preaggregateInfo(
   // generate preaggregate select query from original query
   // replace select, from, groupby; sanitize orderby; remove CTEs, where
   const select = query.clone()
-    .setSelect(dims, output)
+    .setSelect(output)
     .setFrom(table)
-    .setGroupby(dims)
+    .setGroupby(groupby)
     .setHaving(having)
     .setQualify(qualify)
     .setOrderby(replaceIndices(query._orderby, query._select))
@@ -381,20 +382,16 @@ function replaceIndices(exprs: ExprNode[], select: SelectClauseNode[]) {
   return exprs.flatMap(expr => {
     if (expr.type === "ORDER_BY") {
       const e = (expr as OrderByNode).expr;
-      if (e.type === "LITERAL") {
-        const ref = select[(e as LiteralNode).value as number - 1];
-        if (ref) {
-          const cloned = expr.clone();
-          // @ts-expect-error assign to cloned order by node
-          cloned.expr = asNode(ref.alias);
-          return cloned
-        } else {
-          return [];
-        }
+      const ref = resolvePositional(e, select);
+      if (ref) {
+        const cloned = expr.clone();
+        // @ts-expect-error assign to cloned order by node
+        cloned.expr = asNode(ref.alias);
+        return cloned;
       }
-    } else if (expr.type === "LITERAL") {
-      const ref = select[(expr as LiteralNode).value as number - 1];
-      return ref ? asNode(ref.alias) : [];
+    } else {
+      const ref = resolvePositional(expr, select);
+      if (ref) return asNode(ref.alias);
     }
     return expr;
   });
