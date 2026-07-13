@@ -1,6 +1,6 @@
 import { isMosaicClient, MosaicClient } from './MosaicClient.js';
 import type { ExprNode, ExprValue, ScaleOptions, ScaleDomain } from '@uwdata/mosaic-sql';
-import { and, contains, isBetween, isInDistinct, isNotDistinct, listHasAll, listHasAny, literal, lower, or, prefix, regexp_matches, suffix } from '@uwdata/mosaic-sql';
+import { and, asNode, contains, isBetween, isInDistinct, isNotDistinct, listHasAll, listHasAny, literal, lower, or, prefix, regexp_matches, suffix } from '@uwdata/mosaic-sql';
 
 /**
  * Selection clause metadata to guide possible query optimizations.
@@ -78,6 +78,12 @@ export interface SelectionClause {
    */
   clients?: Set<MosaicClient>;
   /**
+   * The input expressions that this clause filters over. All field
+   * references within the *predicate* should be strictly equal to
+   * these field expression node instances.
+   */
+  fields: ExprNode[];
+  /**
    * A selected value associated with this clause. For example, for a 1D
    * interval selection clause the value may be a [lo, hi] array.
    */
@@ -119,6 +125,7 @@ export function clausePoint(
     clients = isMosaicClient(source) ? new Set([source]) : undefined
   }: PointOptions
 ): SelectionClause {
+  field = asNode(field);
   const predicate: ExprNode | null = value !== undefined
     ? isInDistinct(field, [literal(value)])
     : null;
@@ -126,6 +133,7 @@ export function clausePoint(
     meta: { type: 'point' },
     source,
     clients,
+    fields: [field],
     value,
     predicate
   };
@@ -151,6 +159,7 @@ export function clausePoints(
     clients = isMosaicClient(source) ? new Set([source]) : undefined
   }: PointOptions
 ): SelectionClause {
+  fields = fields.map(f => asNode(f));
   let predicate: ExprNode | null = null;
   if (value?.length) {
     const clauses = value.length && fields.length === 1
@@ -164,6 +173,7 @@ export function clausePoints(
     meta: { type: 'point' },
     source,
     clients,
+    fields: fields as ExprNode[],
     value,
     predicate
   };
@@ -202,6 +212,7 @@ export function clauseInterval(
     pixelSize = 1
   }: IntervalOptions & { scale?: ScaleOptions }
 ): SelectionClause {
+  field = asNode(field);
   const predicate = value != null ? isBetween(field, value) : null;
   const meta: IntervalMetadata = {
     type: 'interval',
@@ -209,7 +220,7 @@ export function clauseInterval(
     bin,
     pixelSize
   };
-  return { meta, source, clients, value, predicate };
+  return { meta, source, clients, fields: [field], value, predicate };
 }
 
 /**
@@ -238,6 +249,7 @@ export function clauseIntervals(
     pixelSize = 1
   }: IntervalOptions & { scales?: ScaleOptions[] }
 ): SelectionClause {
+  fields = fields.map(f => asNode(f));
   const predicate = value != null
     ? and(fields.map((f, i) => isBetween(f, value[i])))
     : null;
@@ -247,7 +259,14 @@ export function clauseIntervals(
     bin,
     pixelSize
   };
-  return { meta, source, clients, value, predicate };
+  return {
+    meta,
+    source,
+    clients,
+    fields: fields as ExprNode[],
+    value,
+    predicate
+  };
 }
 
 const identity = (x: string | ExprNode) => x;
@@ -287,11 +306,12 @@ export function clauseMatch(
     caseSensitive = false
   }: MatchOptions
 ): SelectionClause {
+  field = asNode(field);
   const fn = MATCH_METHODS[method as keyof typeof MATCH_METHODS];
   const transform = caseSensitive ? identity: lower;
   const predicate = value ? fn(transform(field), transform(literal(value))) : null;
   const meta: MatchMetadata = { type: 'match', method };
-  return { meta, source, clients, value, predicate };
+  return { meta, source, clients, fields: [field], value, predicate };
 }
 
 /**
@@ -317,6 +337,7 @@ export function clauseMatchAny(
     caseSensitive = false
   }: MatchOptions
 ): SelectionClause {
+  fields = fields.map(f => asNode(f));
   value = value || null;
   const fn = MATCH_METHODS[method];
   const transform = caseSensitive ? identity : lower;
@@ -325,7 +346,14 @@ export function clauseMatchAny(
     ? or(fields.flatMap(field => value ? fn(transform(field), query) : []))
     : null;
   const meta: MatchMetadata = { type: 'match', method };
-  return { meta, source, clients, value, predicate };
+  return {
+    meta,
+    source,
+    clients,
+    fields: fields as ExprNode[],
+    value,
+    predicate
+  };
 }
 
 /**
@@ -352,7 +380,8 @@ export function clauseList(
     listMatch?: 'any' | 'all';
   }
 ): SelectionClause {
+  field = asNode(field);
   const listFn = listMatch === 'all' ? listHasAll : listHasAny;
   const predicate = value !== undefined ? listFn(field, literal(value)) : null;
-  return { source, clients, value, predicate };
+  return { source, clients, fields: [field], value, predicate };
 }

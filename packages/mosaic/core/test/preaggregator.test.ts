@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import type { CreateQuery, ExprNode, FilterExpr } from "@uwdata/mosaic-sql";
-import { Query, add, argmax, argmin, avg, corr, count, covarPop, covariance, desc, filterPushdown, geomean, gt, isNotDistinct, literal, loadObjects, max, min, mul, neq, product, regrAvgX, regrAvgY, regrCount, regrIntercept, regrR2, regrSXX, regrSXY, regrSYY, regrSlope, stddev, stddevPop, sum, upper, varPop, variance } from '@uwdata/mosaic-sql';
+import { Query, add, argmax, argmin, asNode, avg, corr, count, covarPop, covariance, desc, filterPushdown, geomean, gt, isNotDistinct, literal, loadObjects, max, min, mul, neq, product, regrAvgX, regrAvgY, regrCount, regrIntercept, regrR2, regrSXX, regrSXY, regrSYY, regrSlope, stddev, stddevPop, sum, upper, varPop, variance } from '@uwdata/mosaic-sql';
 import { Coordinator, Selection, SelectionClause } from '../src/index.js';
 import { preaggColumns } from '../src/preagg/preagg-columns.js';
 import { NodeConnector } from './util/node-connector.js';
@@ -55,10 +55,12 @@ async function run(measure: RunMeasure): Promise<[number, boolean]> {
     });
     mc.connect(client);
     client.pending.then(() => {
+      const dim = asNode('dim');
       sel.update({
         source: 'test',
         meta: { type: 'point' },
-        predicate: isNotDistinct('dim', literal('b'))
+        fields: [dim],
+        predicate: isNotDistinct(dim, literal('b'))
       } as unknown as SelectionClause);
     }).catch(err => {
       console.error(err);

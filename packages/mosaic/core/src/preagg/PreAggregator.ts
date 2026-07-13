@@ -1,4 +1,4 @@
-import { ExprNode, ScaleOptions, SelectQuery, Query, ExprValue, MaybeArray, FunctionNode, BetweenOpNode, AndNode, TableRefNode, createSchema, SelectClauseNode, LiteralNode, OrderByNode, and, asNode, ceil, collectColumns, createTable, float64, floor, isBetween, int32, mul, round, scaleTransform, sub, isSelectQuery, isAggregateExpression, ColumnNameRefNode } from '@uwdata/mosaic-sql';
+import { ExprNode, ScaleOptions, SelectQuery, Query, ExprValue, MaybeArray, FunctionNode, TableRefNode, createSchema, SelectClauseNode, OrderByNode, and, asNode, ceil, collectColumns, createTable, float64, floor, isBetween, int32, mul, round, scaleTransform, sub, isSelectQuery, isAggregateExpression, ColumnNameRefNode, rewrite } from '@uwdata/mosaic-sql';
 import type { Coordinator } from '../Coordinator.js';
 import type { MosaicClient } from '../MosaicClient.js';
 import type { Selection } from '../Selection.js';
@@ -16,7 +16,7 @@ export interface PreAggregateOptions {
   enabled?: boolean;
 }
 
-type ActivePredicate = (p?: ExprNode) => MaybeArray<ExprNode> | undefined;
+type ActivePredicate = (clause?: SelectionClause) => MaybeArray<ExprNode>;
 
 interface ActiveColumnsResult {
   source: ClauseSource | null;
@@ -233,56 +233,57 @@ export class PreAggregator {
  * @param clause The active selection clause to analyze.
  */
 function activeColumns(clause: SelectionClause): ActiveColumnsResult {
-  const { source, meta } = clause;
-  const clausePred = clause.predicate;
-  const clauseCols = collectColumns(clausePred!).map(c => c.column);
-  let predicate: ActivePredicate | undefined;
-  let columns: Record<string, ExprNode> | undefined;
-
-  if (!meta || !clauseCols) {
-    return { source: null, columns, predicate };
+  const { fields, meta, source } = clause;
+  if (!meta || !fields?.length) {
+    // bail if no metadata or fields to work with
+    return { source: null, columns: undefined, predicate: undefined };
   }
 
-  switch (meta.type) {
-    case 'point':
-      predicate = x => x;
-      columns = Object.fromEntries(
-        clauseCols.map(col => [`${col}`, asNode(col)])
-      );
-      break;
-    case 'interval': {
-      const { scales, bin, pixelSize = 1 } = (meta as IntervalMetadata);
-      if (!scales) break;
+  const columns: Record<string, ExprNode> = {};
+  let predicate: ActivePredicate | undefined;
 
-      // determine pixel-level binning
-      const bins = scales.map((s: ScaleOptions) => binInterval(s, pixelSize, bin));
-      if (bins.some(b => !b)) {
-        // bail if a scale type is unsupported
-      } else if (bins.length === 1) {
-        // selection clause predicate has type BetweenOpNode
+  if (meta.type === 'point') {
+    fields.forEach((f, i) => { columns[`active${i}`] = f; });
+    predicate = (clause?: SelectionClause) => {
+      if (!clause?.predicate) return [];
+      const map = new Map<ExprNode, ExprNode>(
+        clause.fields.map((f, i) => [f, asNode(`active${i}`)])
+      );
+      return rewrite(clause.predicate, map)!;
+    };
+  } else if (meta.type === 'interval') {
+    // apply pixel-level binning, bail if a scale type is unsupported
+    const { scales, bin, pixelSize = 1 } = meta as IntervalMetadata;
+    const bins = scales?.map((s: ScaleOptions) => binInterval(s, pixelSize, bin));
+    if (bins?.every(b => b != null)) {
+      fields.forEach((f, i) => { columns[`active${i}`] = bins[i](f); });
+      if (bins.length === 1) {
         // single interval selection
-        predicate = (p?: ExprNode) => p
-          ? isBetween('active0', (p as BetweenOpNode).extent?.map(bins[0]!))
-          : [];
-        columns = { active0: bins[0]!((clausePred as BetweenOpNode).expr) };
+        // selection clause predicate has type BetweenOpNode
+        predicate = (clause?: SelectionClause) => {
+          if (!clause?.predicate) return [];
+          const v = clause.value as number[];
+          return isBetween('active0', v.map(bins[0]));
+        };
       } else {
-        // selection clause predicate has type AndNode<BetweenOpNode>
         // multiple interval selection
-        predicate = (p?: ExprNode) => p
-          ? and((p as AndNode<BetweenOpNode>).clauses.map(
-              (c, i) => isBetween(`active${i}`, c.extent?.map(bins[i]!))
-            ))
-          : [];
-        columns = Object.fromEntries(
-          (clausePred as AndNode<BetweenOpNode>).clauses.map(
-            (p, i) => [`active${i}`, bins[i]!(p.expr)]
-          )
-        );
+        // selection clause predicate has type AndNode<BetweenOpNode>
+        predicate = (clause?: SelectionClause) => {
+          if (!clause?.predicate) return [];
+          const v = clause.value as number[][];
+          return and(
+            fields.map((_, i) => isBetween(`active${i}`, v[i].map(bins[i])))
+          );
+        };
       }
     }
   }
 
-  return { source: columns ? source : null, columns, predicate };
+  if (predicate) {
+    return { source, columns, predicate };
+  } else {
+    return { source: null, columns: undefined, predicate };
+  }
 }
 
 const BIN: Record<string, (expr: ExprValue) => FunctionNode> = { ceil, round };
@@ -475,10 +476,11 @@ export class PreAggregateInfo {
 
   /**
    * Generate a materialized view query for the given predicate.
-   * @param predicate The current active clause predicate.
+   * @param clause The current selection clause.
    * @returns A materialized view query.
    */
-  query(predicate: ExprNode): SelectQuery {
-    return this.select.clone().where(this.active.predicate!(predicate)!);
+  query(clause: SelectionClause): SelectQuery {
+    const filter = this.active.predicate?.(clause) ?? [];
+    return this.select.clone().where(filter);
   }
 }
