@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import Ajv from 'ajv';
-import ajvFormats from 'ajv-formats';
+import { Ajv } from 'ajv';
+import addFormats from 'ajv-formats';
 import { specs, loadJSON, loadJSONSchema, loadESM } from './load-specs.js';
 import { astToESM, parseSpec } from '../src/index.js';
 
@@ -10,7 +10,7 @@ const validator = new Ajv({
   allowUnionTypes: true,
   verbose: true
 });
-ajvFormats(validator);
+addFormats.default(validator);
 const schema = await loadJSONSchema();
 const validate = validator.compile(schema);
 
@@ -31,15 +31,14 @@ for (const [name, spec] of specs) {
     });
     it(`produces json output`, async () => {
       const ast = parseSpec(spec);
-      const json = JSON.stringify(ast.toJSON(), 0, 2);
+      const json = JSON.stringify(ast.toJSON(), null, 2);
       expect(json).toBe(await loadJSON(name));
     });
     it(`round trips json parsing`, () => {
       const ast = parseSpec(spec);
       const json = ast.toJSON();
-      expect(JSON.stringify(json)).toBe(
-        JSON.stringify(parseSpec(json).toJSON()),
-        `${name} did not round trip unchanged`
+      expect(JSON.stringify(json), `${name} did not round trip unchanged`).toBe(
+        JSON.stringify(parseSpec(json).toJSON())
       );
     });
     it(`passes JSON schema validation`, () => {
