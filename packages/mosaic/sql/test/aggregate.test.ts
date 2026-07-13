@@ -4,166 +4,166 @@ import { argmax, argmin, arrayAgg, avg, column, corr, count, covariance, covarPo
 
 describe('Aggregate functions', () => {
   it('include accessible metadata', () => {
-    const expr = sum('foo');
+    const expr = sum('num1');
     expect(expr.name).toBe('sum');
-    expect(columns(expr)).toStrictEqual(['foo']);
+    expect(columns(expr)).toStrictEqual(['num1']);
   });
 
-  it('support distinct', () => {
-    const expr = count('foo').distinct();
+  it('support distinct', async () => {
+    const expr = count('num1').distinct();
     expect(expr.name).toBe('count');
     expect(expr.isDistinct).toBe(true);
-    expect(String(expr)).toBe('count(DISTINCT "foo")');
+    await expect(expr).toBeValidExpr('count(DISTINCT "num1")');
   });
 
-  it('support filter', () => {
-    const foo = column('foo');
-    expect(String(avg(foo).where(gt(foo, 5))))
-      .toBe('avg("foo") FILTER (WHERE ("foo" > 5))');
+  it('support filter', async () => {
+    const foo = column('num1');
+    await expect(avg(foo).where(gt(foo, 5)))
+      .toBeValidExpr('avg("num1") FILTER (WHERE ("num1" > 5))');
   });
 
-  it('include arg_max', () => {
-    expect(String(argmax('foo', 'bar'))).toBe('arg_max("foo", "bar")');
+  it('include arg_max', async () => {
+    await expect(argmax('num1', 'num2')).toBeValidExpr('arg_max("num1", "num2")');
   });
 
-  it('include arg_min', () => {
-    expect(String(argmin('foo', 'bar'))).toBe('arg_min("foo", "bar")');
+  it('include arg_min', async () => {
+    await expect(argmin('num1', 'num2')).toBeValidExpr('arg_min("num1", "num2")');
   });
 
-  it('include array_agg', () => {
-    expect(String(arrayAgg('foo'))).toBe('array_agg("foo")');
+  it('include array_agg', async () => {
+    await expect(arrayAgg('num1')).toBeValidExpr('array_agg("num1")');
   });
 
-  it('include avg', () => {
-    expect(String(avg('foo'))).toBe('avg("foo")');
+  it('include avg', async () => {
+    await expect(avg('num1')).toBeValidExpr('avg("num1")');
   });
 
-  it('include corr', () => {
-    expect(String(corr('foo', 'bar'))).toBe('corr("foo", "bar")');
+  it('include corr', async () => {
+    await expect(corr('num1', 'num2')).toBeValidExpr('corr("num1", "num2")');
   });
 
-  it('include count', () => {
-    expect(String(count())).toBe('count(*)');
-    expect(String(count('foo'))).toBe('count("foo")');
+  it('include count', async () => {
+    await expect(count()).toBeValidExpr('count(*)');
+    await expect(count('num1')).toBeValidExpr('count("num1")');
   });
 
-  it('include covar_pop', () => {
-    expect(String(covarPop('foo', 'bar'))).toBe('covar_pop("foo", "bar")');
+  it('include covar_pop', async () => {
+    await expect(covarPop('num1', 'num2')).toBeValidExpr('covar_pop("num1", "num2")');
   });
 
-  it('include covar_samp', () => {
-    expect(String(covariance('foo', 'bar'))).toBe('covar_samp("foo", "bar")');
+  it('include covar_samp', async () => {
+    await expect(covariance('num1', 'num2')).toBeValidExpr('covar_samp("num1", "num2")');
   });
 
-  it('include entropy', () => {
-    expect(String(entropy('foo'))).toBe('entropy("foo")');
+  it('include entropy', async () => {
+    await expect(entropy('num1')).toBeValidExpr('entropy("num1")');
   });
 
-  it('include first', () => {
-    expect(String(first('foo'))).toBe('first("foo")');
+  it('include first', async () => {
+    await expect(first('num1')).toBeValidExpr('first("num1")');
   });
 
-  it('include geomean', () => {
-    expect(String(geomean('foo'))).toBe('geomean("foo")');
+  it('include geomean', async () => {
+    await expect(geomean('num1')).toBeValidExpr('geomean("num1")');
   });
 
-  it('include kurtosis', () => {
-    expect(String(kurtosis('foo'))).toBe('kurtosis("foo")');
+  it('include kurtosis', async () => {
+    await expect(kurtosis('num1')).toBeValidExpr('kurtosis("num1")');
   });
 
-  it('include mad', () => {
-    expect(String(mad('foo'))).toBe('mad("foo")');
+  it('include mad', async () => {
+    await expect(mad('num1')).toBeValidExpr('mad("num1")');
   });
 
-  it('include max', () => {
-    expect(String(max('foo'))).toBe('max("foo")');
+  it('include max', async () => {
+    await expect(max('num1')).toBeValidExpr('max("num1")');
   });
 
-  it('include median', () => {
-    expect(String(median('foo'))).toBe('median("foo")');
+  it('include median', async () => {
+    await expect(median('num1')).toBeValidExpr('median("num1")');
   });
 
-  it('include min', () => {
-    expect(String(min('foo'))).toBe('min("foo")');
+  it('include min', async () => {
+    await expect(min('num1')).toBeValidExpr('min("num1")');
   });
 
-  it('include mode', () => {
-    expect(String(mode('foo'))).toBe('mode("foo")');
+  it('include mode', async () => {
+    await expect(mode('num1')).toBeValidExpr('mode("num1")');
   });
 
-  it('include last', () => {
-    expect(String(last('foo'))).toBe('last("foo")');
+  it('include last', async () => {
+    await expect(last('num1')).toBeValidExpr('last("num1")');
   });
 
-  it('include product', () => {
-    expect(String(product('foo'))).toBe('product("foo")');
+  it('include product', async () => {
+    await expect(product('num1')).toBeValidExpr('product("num1")');
   });
 
-  it('include quantile', () => {
-    expect(String(quantile('foo', 0.25))).toBe('quantile("foo", 0.25)');
+  it('include quantile', async () => {
+    await expect(quantile('num1', 0.25)).toBeValidExpr('quantile("num1", 0.25)');
   });
 
-  it('include regr_avgx', () => {
-    expect(String(regrAvgX('x', 'y'))).toBe('regr_avgx("x", "y")');
+  it('include regr_avgx', async () => {
+    await expect(regrAvgX('num1', 'num2')).toBeValidExpr('regr_avgx("num1", "num2")');
   });
 
-  it('include regr_avgy', () => {
-    expect(String(regrAvgY('x', 'y'))).toBe('regr_avgy("x", "y")');
+  it('include regr_avgy', async () => {
+    await expect(regrAvgY('num1', 'num2')).toBeValidExpr('regr_avgy("num1", "num2")');
   });
 
-  it('include regr_count', () => {
-    expect(String(regrCount('x', 'y'))).toBe('regr_count("x", "y")');
+  it('include regr_count', async () => {
+    await expect(regrCount('num1', 'num2')).toBeValidExpr('regr_count("num1", "num2")');
   });
 
-  it('include regr_intercept', () => {
-    expect(String(regrIntercept('x', 'y'))).toBe('regr_intercept("x", "y")');
+  it('include regr_intercept', async () => {
+    await expect(regrIntercept('num1', 'num2')).toBeValidExpr('regr_intercept("num1", "num2")');
   });
 
-  it('include regr_r2', () => {
-    expect(String(regrR2('x', 'y'))).toBe('regr_r2("x", "y")');
+  it('include regr_r2', async () => {
+    await expect(regrR2('num1', 'num2')).toBeValidExpr('regr_r2("num1", "num2")');
   });
 
-  it('include regr_sxx', () => {
-    expect(String(regrSXX('x', 'y'))).toBe('regr_sxx("x", "y")');
+  it('include regr_sxx', async () => {
+    await expect(regrSXX('num1', 'num2')).toBeValidExpr('regr_sxx("num1", "num2")');
   });
 
-  it('include regr_sxy', () => {
-    expect(String(regrSXY('x', 'y'))).toBe('regr_sxy("x", "y")');
+  it('include regr_sxy', async () => {
+    await expect(regrSXY('num1', 'num2')).toBeValidExpr('regr_sxy("num1", "num2")');
   });
 
-  it('include regr_syy', () => {
-    expect(String(regrSYY('x', 'y'))).toBe('regr_syy("x", "y")');
+  it('include regr_syy', async () => {
+    await expect(regrSYY('num1', 'num2')).toBeValidExpr('regr_syy("num1", "num2")');
   });
 
-  it('include regr_slope', () => {
-    expect(String(regrSlope('x', 'y'))).toBe('regr_slope("x", "y")');
+  it('include regr_slope', async () => {
+    await expect(regrSlope('num1', 'num2')).toBeValidExpr('regr_slope("num1", "num2")');
   });
 
-  it('include skewness', () => {
-    expect(String(skewness('foo'))).toBe('skewness("foo")');
+  it('include skewness', async () => {
+    await expect(skewness('num1')).toBeValidExpr('skewness("num1")');
   });
 
-  it('include stddev', () => {
-    expect(String(stddev('foo'))).toBe('stddev("foo")');
+  it('include stddev', async () => {
+    await expect(stddev('num1')).toBeValidExpr('stddev("num1")');
   });
 
-  it('include stddev_pop', () => {
-    expect(String(stddevPop('foo'))).toBe('stddev_pop("foo")');
+  it('include stddev_pop', async () => {
+    await expect(stddevPop('num1')).toBeValidExpr('stddev_pop("num1")');
   });
 
-  it('include string_agg', () => {
-    expect(String(stringAgg('foo'))).toBe('string_agg("foo")');
+  it('include string_agg', async () => {
+    await expect(stringAgg('num1')).toBeValidExpr('string_agg("num1")');
   });
 
-  it('include sum', () => {
-    expect(String(sum('foo'))).toBe('sum("foo")');
+  it('include sum', async () => {
+    await expect(sum('num1')).toBeValidExpr('sum("num1")');
   });
 
-  it('include var_samp', () => {
-    expect(String(variance('foo'))).toBe('var_samp("foo")');
+  it('include var_samp', async () => {
+    await expect(variance('num1')).toBeValidExpr('var_samp("num1")');
   });
 
-  it('include var_pop', () => {
-    expect(String(varPop('foo'))).toBe('var_pop("foo")');
+  it('include var_pop', async () => {
+    await expect(varPop('num1')).toBeValidExpr('var_pop("num1")');
   });
 });

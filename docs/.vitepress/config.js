@@ -1,5 +1,36 @@
 import { defineConfig } from 'vitepress'
+import llmstxt from 'vitepress-plugin-llms'
 import viteConfig from '../../vite.config.js';
+
+/**
+ * Derives llm-only/llm-exclude markers for vitepress-plugin-llms from the
+ * JS/Python language toggle convention (LangToggle + v-if="language === ...").
+ * The LLM output gets labeled language sections instead of toggle markup;
+ * pages need no extra syntax. Must run before the llmstxt() plugin.
+ */
+function langToggleLLMMarkers() {
+  return {
+    name: 'lang-toggle-llm-markers',
+    enforce: 'pre',
+    transform(content, id) {
+      if (!id.endsWith('.md') || !content.includes('<LangToggle')) return null;
+      const marker = (text) => `<llm-only>\n\n**(${text})**\n\n</llm-only>`;
+      let lang = null;
+      return content.replace(
+        /^(?:<template v-(?:else-)?if="language === '(js|python)'">|<\/template>|<Lang(?:Toggle|Error)[^>]*\/>)$/gm,
+        (line, open) => {
+          if (line.startsWith('<Lang')) return `<llm-exclude>\n\n${line}\n\n</llm-exclude>`;
+          if (open) {
+            lang = open === 'js' ? 'JavaScript' : 'Python';
+            return `${line}\n\n${marker(`begin ${lang} API`)}`;
+          }
+          const closing = lang;
+          lang = null;
+          return closing ? `${marker(`end ${closing} API`)}\n\n${line}` : line;
+        });
+    }
+  }
+}
 
 // https://vitepress.dev/reference/site-config
 export default defineConfig({
@@ -7,7 +38,18 @@ export default defineConfig({
   description: 'Scalable, interactive data visualization',
   base: '/mosaic/',
   vite: {
-    resolve: viteConfig.resolve
+    resolve: viteConfig.resolve,
+    plugins: [
+      langToggleLLMMarkers(),
+      llmstxt({
+        description: 'An extensible framework for linking databases and interactive views, for scalable data visualization and exploration.',
+        details: [
+          'Mosaic is a framework for linking data visualizations, tables, input widgets, and other data-driven components, while leveraging a database (DuckDB, server-side or in-browser via WebAssembly) for scalable processing of millions or even billions of data points. Components are linked through reactive params and selections that enable cross-filtering and other coordinated interactions.',
+          '',
+          'Key packages: mosaic-core (client-coordinator architecture), mosaic-sql (SQL query builder), mosaic-inputs (menus, sliders, tables), vgplot (a grammar of interactive graphics built on Mosaic; optional — any component can be a Mosaic client), and mosaic-spec (a declarative JSON/YAML format for vgplot plots and dashboards).'
+        ].join('\n')
+      })
+    ]
   },
   themeConfig: {
     // https://vitepress.dev/reference/default-theme-config
