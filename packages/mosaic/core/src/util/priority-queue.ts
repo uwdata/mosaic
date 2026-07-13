@@ -61,14 +61,17 @@ export class PriorityQueue<T = unknown> {
   remove(test: (item: T) => boolean): void {
     for (const list of this.queue) {
       let { head, tail } = list;
-      for (let prev: ListNode<T> | null = null, curr = head; curr; prev = curr, curr = curr.next) {
+      let prev: ListNode<T> | null = null;
+      for (let curr = head; curr; curr = curr.next) {
         if (test(curr.item)) {
           if (curr === head) {
             head = curr.next;
           } else {
             prev!.next = curr.next;
           }
-          if (curr === tail) tail = prev || head;
+          if (curr === tail) tail = prev;
+        } else {
+          prev = curr;
         }
       }
       list.head = head;
