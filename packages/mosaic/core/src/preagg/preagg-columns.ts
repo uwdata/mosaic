@@ -1,14 +1,20 @@
+import { asNode, collectAggregates, FromClauseNode, isAggregateExpression, isColumnRef, isSelectQuery, isTableRef, rewrite, sql } from '@uwdata/mosaic-sql';
 import type { AggregateNode, ColumnRefNode, ExprNode, Query, SelectQuery } from '@uwdata/mosaic-sql';
 import type { MosaicClient } from '../MosaicClient.js';
-import { collectAggregates, FromClauseNode, isAggregateExpression, isColumnRef, isSelectQuery, isTableRef, rewrite, sql } from '@uwdata/mosaic-sql';
+import { resolvePositional } from '../util/positional.js';
 import { sufficientStatistics } from './sufficient-statistics.js';
 
+// result of determining columns for preaggregation optimization
 export interface PreAggColumnsResult {
-  dims: string[];
-  groupby: Record<string, ExprNode>;
+  // Columns to include in a created preaggregate table
   preagg: Record<string, ExprNode>;
+  // Output columns for selection update queries
   output: Record<string, ExprNode>;
+  // Group by dimension aliases
+  groupby: string[]
+  // HAVING clause expressions, potentially rewritten for preaggregation
   having: ExprNode[];
+  // QUALIFY clause expressions, potentially rewritten for preaggregation
   qualify: ExprNode[];
 }
 
@@ -34,33 +40,33 @@ export function preaggColumns(client: MosaicClient): PreAggColumnsResult | null 
   });
   if (typeof from !== 'string') return null;
 
-  const aggrs = new Map<AggregateNode, ExprNode>();
-  const preagg: Record<string, ExprNode> = {};
-  const output: Record<string, ExprNode> = {};
-
-  // all group by dimensions, including selected ones.
-  const dims: string[] = [];
-  const dimsLower = new Set<string>(); // case-insensitive
-
   // generate a scalar subquery for a global average
+  // this may be used to mean-center data in preaggregate calculations
   const avg = (ref: ColumnRefNode) => {
     const name = ref.column;
     const expr = getBase(q, q => q._select.find(c => c.alias === name)?.expr);
     return sql`(SELECT avg(${expr ?? ref}) FROM "${from}")`;
   };
 
+  const aggrs = new Map<AggregateNode, ExprNode>();
+  const preagg: Record<string, ExprNode> = {}; // alias -> expr
+  const output: Record<string, ExprNode> = {}; // alias -> expr
+  const groupby: Record<string, string> = {}; // lower case alias -> alias
+
   try {
+    const select = q._select;
+
     // iterate over select clauses and analyze expressions
-    for (const { alias, expr } of q._select) {
+    for (const { alias, expr } of select) {
       const result = analyzeExpression(expr, aggrs, preagg, avg);
       if (result) {
         // rewrite original select clause to use preaggregates
         output[alias] = result;
       } else {
-        // if no aggregates, expr is a groupby dimension
-        dimsLower.add(alias.toLowerCase());
-        dims.push(alias);
+        // include non-aggregates in preagg table and update results
         preagg[alias] = expr;
+        output[alias] = asNode(alias);
+        groupby[alias.toLowerCase()] = alias;
       }
     }
 
@@ -75,26 +81,21 @@ export function preaggColumns(client: MosaicClient): PreAggColumnsResult | null 
     const qualify = q._qualify
       .map(expr => analyzeExpression(expr, aggrs, preagg, avg) ?? expr);
 
-    // add groupby entries, which may or may not be selected
-    const groupby: Record<string, ExprNode> = {};
-    for (const expr of q._groupby) {
-      // ignore integer index, as expr was in select clause
-      // so we harvested that expr as a dimension above
-      if (expr.type !== "LITERAL") {
-        // skip duplicates, as column names are case-insensitive in DuckDB
-        const alias = isColumnRef(expr) ? expr.column : `${expr}`;
-        const key = alias.toLowerCase();
-        if (!dimsLower.has(key)) {
-          dimsLower.add(key);
-          groupby[alias] = expr;
-          dims.push(alias);
-        }
+    // add groupby entries; these may or may not be selected
+    let id = 0;
+    for (let expr of q._groupby) {
+      expr = resolvePositional(expr, select)?.expr ?? expr;
+      const alias = isColumnRef(expr) ? expr.column : `__groupby_${++id}`;
+      const key = alias.toLowerCase();
+      if (!groupby[key]) {
+        // add non-selected groupby term
+        preagg[alias] = expr;
+        groupby[key] = alias;
       }
     }
 
     return {
-      dims,
-      groupby,
+      groupby: Object.values(groupby),
       preagg,
       output,
       having,

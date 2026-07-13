@@ -303,8 +303,7 @@ describe('PreAggregator', () => {
       .select({ measure: avg('x') })
       .groupby('cat', 'CAT');
     const cols = preaggColumns(new TestClient(query));
-    expect(cols?.dims).toStrictEqual(['cat']);
-    expect(Object.keys(cols?.groupby ?? {})).toStrictEqual(['cat']);
+    expect(cols?.groupby).toStrictEqual(['cat']);
   });
 
   it('dedupes duplicate groupby dimensions', () => {
@@ -312,6 +311,6 @@ describe('PreAggregator', () => {
       .select({ measure: avg('x') })
       .groupby('cat', 'cat');
     const cols = preaggColumns(new TestClient(query));
-    expect(cols?.dims).toStrictEqual(['cat']);
+    expect(cols?.groupby).toStrictEqual(['cat']);
   });
 });
