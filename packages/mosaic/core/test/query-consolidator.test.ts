@@ -69,7 +69,19 @@ describe('QueryConsolidation', () => {
         .toString(),
     ]);
   });
-  
+
+  it('should consolidate grouped aggregated queries with positional reference first', async () => {
+    const q1 = Query.from({ source: 'table' }).select({ a: 'bar', b: 'bar', c: count() }).groupby(literal(2));
+    const q2 = Query.from({ source: 'table' }).select({ b: 'bar', c: sum('foo') }).groupby('bar');
+    const consolidated = await getConsolidatedQueries(q1, q2);
+    expect(consolidated).toEqual([
+      Query.from({ source: 'table' })
+        .select({ col0: 'bar', col1: count(), col2: sum('foo') })
+        .groupby('col0')
+        .toString(),
+    ]);
+  });
+
   it('should not consolidate non-grouped aggregated and non-aggregated queries', async () => {
     const q1 = Query.from({ source: 'table' }).select({ c: 'x' });
     const q2 = Query.from({ source: 'table' }).select({ c: count() });

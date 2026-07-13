@@ -132,7 +132,7 @@ function consolidationKey(query: MaybeArray<QueryType>, cache: Cache): string {
     const select = query._select;
     if (groupby.length) {
       // build expression lookup map (alias -> expr)
-      const map: Record<string, ExprNode> = {}; 
+      const map: Record<string, ExprNode> = {};
       select.forEach(({ alias, expr }) => map[alias] = expr);
 
       // sorted group by expression list
@@ -232,12 +232,19 @@ function consolidatedQuery(group: QueryGroup): Query {
   const query = (group[0].entry.request.query as SelectQuery).clone();
 
   // update group by statement as needed
+  // group by may reference select clauses by alias or by position;
+  // both must be remapped to the consolidated column names
   const groupby = query._groupby;
   if (groupby.length) {
     const map: Record<string, string> = {};
     group.maps[0].forEach(([name, as]) => map[as] = name);
+    const select = query._select;
     query.setGroupby(
-      groupby.map((e: ExprNode) => (isColumnRef(e) && map[e.column]) || e)
+      groupby.map((e: ExprNode) => {
+        const alias = isColumnRef(e) ? e.column
+          : resolvePositional(e, select)?.alias;
+        return (alias && map[alias]) || e;
+      })
     );
   }
 
