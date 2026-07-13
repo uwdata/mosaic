@@ -157,7 +157,11 @@ importers:
         specifier: workspace:^
         version: link:../../server/duckdb
 
-  packages/mosaic/sql: {}
+  packages/mosaic/sql:
+    devDependencies:
+      '@uwdata/mosaic-duckdb':
+        specifier: workspace:^
+        version: link:../../server/duckdb
 
   packages/server/duckdb:
     dependencies:
