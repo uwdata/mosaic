@@ -1,5 +1,5 @@
 import type { Table } from '@uwdata/flechette';
-import type { ExprNode, LiteralNode, MaybeArray, Query, SelectClauseNode, SelectQuery, SQLNode } from '@uwdata/mosaic-sql';
+import type { ExprNode, MaybeArray, Query, SelectQuery } from '@uwdata/mosaic-sql';
 import { isAggregateExpression, isColumnRef, isDescribeQuery, isSelectQuery } from '@uwdata/mosaic-sql';
 import type { Cache, QueryEntry, QueryType } from './types.js';
 import { resolvePositional } from './util/positional.js';
