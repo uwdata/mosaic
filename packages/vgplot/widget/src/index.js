@@ -70,8 +70,13 @@ export default {
       return parts.length > 1 ? parts.map(s => `(${s})`).join(' AND ') : (parts[0] ?? '');
     }
 
+    let appliedSpecJSON;
+
     async function updateSpec() {
       const spec = getSpec();
+      const specJSON = JSON.stringify(spec);
+      if (specJSON === appliedSpecJSON) return;
+      appliedSpecJSON = specJSON;
       reset();
       logger.log('Setting spec:', spec);
       const dom = await instantiateSpec(spec);

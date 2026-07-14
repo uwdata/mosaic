@@ -184,8 +184,10 @@ export class MosaicClient {
    */
   requestQuery(query?: Query): Promise<unknown> | null {
     if (this._enabled) {
+      // no-op if a concurrent teardown disconnected the coordinator mid-flight
+      if (!this._coordinator) return null;
       const q = query || this.query(this.filterBy?.predicate(this));
-      return this._coordinator!.requestQuery(this, q);
+      return this._coordinator.requestQuery(this, q);
     } else {
       this._request = query ?? true;
       return null;
