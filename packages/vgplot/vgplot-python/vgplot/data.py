@@ -16,7 +16,9 @@ class DataDef:
 
 def is_frame(obj: Any) -> bool:
     """True if `obj` is a dataframe-like object (pandas/polars/Arrow/...)."""
-    if obj is None or isinstance(obj, (str, bytes, int, float, bool, dict, list, tuple)):
+    if obj is None or isinstance(
+        obj, (str, bytes, int, float, bool, dict, list, tuple)
+    ):
         return False
     try:
         nw.from_native(obj)

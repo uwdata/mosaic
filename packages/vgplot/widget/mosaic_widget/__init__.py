@@ -46,7 +46,11 @@ def _register_frame_data(spec: dict, data: dict) -> dict:
             data.setdefault(name, value)
         else:
             kept[name] = value
-    return {**spec, "data": kept} if kept else {k: v for k, v in spec.items() if k != "data"}
+    return (
+        {**spec, "data": kept}
+        if kept
+        else {k: v for k, v in spec.items() if k != "data"}
+    )
 
 
 class MosaicWidget(anywidget.AnyWidget):

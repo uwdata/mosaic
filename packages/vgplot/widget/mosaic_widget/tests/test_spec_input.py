@@ -91,7 +91,9 @@ def test_frame_in_data_section_is_registered(frame_fixture, request):
 
 def test_serializable_data_entries_are_kept(pandas_frame):
     file_def = {"type": "csv", "file": "athletes.csv"}
-    widget = MosaicWidget(FrameDataSpec({"weather": pandas_frame, "athletes": file_def}))
+    widget = MosaicWidget(
+        FrameDataSpec({"weather": pandas_frame, "athletes": file_def})
+    )
 
     # File-backed data stays in the spec; only the in-memory frame is registered.
     assert widget.spec["data"] == {"athletes": file_def}
