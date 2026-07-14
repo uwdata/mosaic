@@ -102,8 +102,20 @@ export interface SelectionClause {
   meta?: ClauseMetadata;
 }
 
+/**
+ * Options for point-type selection clauses.
+ */
 interface PointOptions {
+  /**
+   * A unique identifier (according to object equality) for the source
+   * component that generated this clause. In many cases, this is a
+   * reference to the originating component itself.
+   */
   source: ClauseSource;
+  /**
+   * A set of Mosaic clients associated with this clause that should not
+   * be updated when this clause is applied in a cross-filtering context.
+   */
   clients?: Set<MosaicClient>;
 }
 
@@ -179,11 +191,31 @@ export function clausePoints(
   };
 }
 
-/** Interval selection clause options. */
+/**
+ * Options for interval-type selection clauses.
+ */
 interface IntervalOptions {
+  /**
+   * A unique identifier (according to object equality) for the source
+   * component that generated this clause. In many cases, this is a
+   * reference to the originating component itself.
+   */
   source: ClauseSource;
+  /**
+   * A set of Mosaic clients associated with this clause that should not
+   * be updated when this clause is applied in a cross-filtering context.
+   */
   clients?: Set<MosaicClient>;
+  /**
+   * A hint for the binning method to use when discretizing the
+   * interval domain. If unspecified, the default is `'floor'`.
+   */
   bin?: BinMethod;
+  /**
+   * The interactive pixel size used by the generating component.
+   * Values larger than one indicate intervals that "snap-to" values
+   * greater than a single pixel. If unspecified, assumed to be `1`.
+   */
   pixelSize?: number;
 }
 
@@ -276,11 +308,28 @@ const MATCH_METHODS = { contains, prefix, suffix, regexp: regexp_matches };
 /** Text search matching methods. */
 export type MatchMethod = keyof typeof MATCH_METHODS;
 
-/** Text matching selection clause options. */
+/**
+ * Options for match-type selection clauses.
+ */
 export interface MatchOptions {
+  /**
+   * A unique identifier (according to object equality) for the source
+   * component that generated this clause. In many cases, this is a
+   * reference to the originating component itself.
+   */
   source: ClauseSource;
+  /**
+   * A set of Mosaic clients associated with this clause that should not
+   * be updated when this clause is applied in a cross-filtering context.
+   */
   clients?: Set<MosaicClient>;
+  /**
+   * The text matching method to use, default `'contains'`.
+   */
   method?: MatchMethod;
+  /**
+   * Flag for case sensitive matching, default `false`.
+   */
   caseSensitive?: boolean;
 }
 
@@ -384,4 +433,16 @@ export function clauseList(
   const listFn = listMatch === 'all' ? listHasAll : listHasAny;
   const predicate = value !== undefined ? listFn(field, literal(value)) : null;
   return { source, clients, fields: [field], value, predicate };
+}
+
+/**
+ * Generate an empty selection clause for a clause source. This clause
+ * will clear any predicates associated with the source.
+ * @param source The clause source to clear.
+ * @returns The generated selection clause.
+ */
+export function clauseNone(
+  source: ClauseSource
+): SelectionClause {
+  return { source, fields: [], value: null, predicate: null };
 }
