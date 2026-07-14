@@ -31,6 +31,7 @@
     "clean": "rimraf dist && mkdir dist",
     "prebuild": "pnpm run clean",
     "lint": "eslint src test",
+    "typecheck": "tsc -p test/tsconfig.json",
     "test": "vitest run",
     "prepublishOnly": "tsc --build"
   },

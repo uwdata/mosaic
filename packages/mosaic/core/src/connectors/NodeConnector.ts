@@ -1,10 +1,18 @@
-
 import type { ExtractionOptions, Table } from '@uwdata/flechette';
 import { DuckDB } from '@uwdata/mosaic-duckdb';
-import type { ArrowQueryRequest, Connector, ExecQueryRequest, JSONQueryRequest } from '../../src/index.js';
-import { decodeIPC } from '../../src/util/decode-ipc.js';
-import { ConnectorQueryRequest } from '../../src/connectors/Connector.js';
+import { decodeIPC } from '../util/decode-ipc.js';
+import type {
+  ArrowQueryRequest,
+  Connector,
+  ConnectorQueryRequest,
+  ExecQueryRequest,
+  JSONQueryRequest
+} from './Connector.js';
 
+/**
+ * A Mosaic Connector backed by an in-process Node.js DuckDB instance.
+ * Requires the optional peer dependency `@uwdata/mosaic-duckdb`.
+ */
 export class NodeConnector implements Connector {
   protected _db: DuckDB;
   protected _ipc?: ExtractionOptions;
