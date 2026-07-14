@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { Query, count, sum } from '@uwdata/mosaic-sql';
+import { Query, count, literal, sum } from '@uwdata/mosaic-sql';
 import { consolidator } from '../src/QueryConsolidator.js';
 import { Priority } from '../src/QueryManager.js';
 import { voidCache } from '../src/util/cache.js';
@@ -31,6 +31,54 @@ describe('QueryConsolidation', () => {
     const consolidated = await getConsolidatedQueries(q1, q2);
     expect(consolidated).toEqual([
       Query.from({ source: 'table' }).select({ col0: 'x', col1: 'y' }).toString(),
+    ]);
+  });
+
+  it('should consolidate grouped aggregated queries', async () => {
+    const q1 = Query.from({ source: 'table' }).select({ c: count() }).groupby('bar');
+    const q2 = Query.from({ source: 'table' }).select({ c: sum('foo') }).groupby('bar');
+    const consolidated = await getConsolidatedQueries(q1, q2);
+    expect(consolidated).toEqual([
+      Query.from({ source: 'table' })
+        .select({ col0: count(), col1: sum('foo') })
+        .groupby('bar')
+        .toString(),
+    ]);
+  });
+
+  it('should consolidate grouped aggregated queries with different group by orders', async () => {
+    const q1 = Query.from({ source: 'table' }).select({ c: count() }).groupby('bar', 'baz');
+    const q2 = Query.from({ source: 'table' }).select({ c: sum('foo') }).groupby('baz', 'bar');
+    const consolidated = await getConsolidatedQueries(q1, q2);
+    expect(consolidated).toEqual([
+      Query.from({ source: 'table' })
+        .select({ col0: count(), col1: sum('foo') })
+        .groupby('bar', 'baz')
+        .toString(),
+    ]);
+  });
+
+  it('should consolidate grouped aggregated queries with positional reference', async () => {
+    const q1 = Query.from({ source: 'table' }).select({ b: 'bar', c: count() }).groupby('bar');
+    const q2 = Query.from({ source: 'table' }).select({ b: 'bar', c: sum('foo') }).groupby(literal(1));
+    const consolidated = await getConsolidatedQueries(q1, q2);
+    expect(consolidated).toEqual([
+      Query.from({ source: 'table' })
+        .select({ col0: 'bar', col1: count(), col2: sum('foo') })
+        .groupby('bar')
+        .toString(),
+    ]);
+  });
+
+  it('should consolidate grouped aggregated queries with positional reference first', async () => {
+    const q1 = Query.from({ source: 'table' }).select({ a: 'bar', b: 'bar', c: count() }).groupby(literal(2));
+    const q2 = Query.from({ source: 'table' }).select({ b: 'bar', c: sum('foo') }).groupby('bar');
+    const consolidated = await getConsolidatedQueries(q1, q2);
+    expect(consolidated).toEqual([
+      Query.from({ source: 'table' })
+        .select({ col0: 'bar', col1: count(), col2: sum('foo') })
+        .groupby('col0')
+        .toString(),
     ]);
   });
 

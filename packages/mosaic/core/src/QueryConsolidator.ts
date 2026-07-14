@@ -1,8 +1,9 @@
-import type { ExprNode, MaybeArray, Query, SelectQuery } from '@uwdata/mosaic-sql';
 import type { Table } from '@uwdata/flechette';
+import type { ExprNode, MaybeArray, Query, SelectQuery } from '@uwdata/mosaic-sql';
 import { isAggregateExpression, isColumnRef, isDescribeQuery, isSelectQuery } from '@uwdata/mosaic-sql';
-import { QueryResult } from './util/query-result.js';
 import type { Cache, QueryEntry, QueryType } from './types.js';
+import { resolvePositional } from './util/positional.js';
+import { QueryResult } from './util/query-result.js';
 
 interface GroupEntry {
   entry: QueryEntry;
@@ -100,8 +101,15 @@ function entryGroups(entries: GroupEntry[], cache: Cache): QueryGroup[] {
  * @returns a key string
  */
 function consolidationKey(query: MaybeArray<QueryType>, cache: Cache): string {
-  if (Array.isArray(query)) return query.map(q => consolidationKey(q, cache)).join(';\n');
+  // collapse query array into a single key, preventing consolidation
+  if (Array.isArray(query)) {
+    return query.map(q => consolidationKey(q, cache)).join(';\n');
+  }
+
+  // the sql string is the default key
   const sql = `${query}`;
+
+  // attempt to consolidate non-cached select queries
   if (isSelectQuery(query) && !cache.get(sql)) {
     if (
       query._where.length || query._qualify.length || query._having.length ||
@@ -116,24 +124,37 @@ function consolidationKey(query: MaybeArray<QueryType>, cache: Cache): string {
     const q = query.clone().setSelect('*');
 
     // check group by criteria for compatibility
-    // queries may refer to *derived* columns as group by criteria
-    // we resolve these against the true grouping expressions
+    // 1. queries may refer to *derived* columns as group by criteria;
+    //    we resolve these against the true grouping expressions
+    // 2. queries may refer to select clauses using a positional index;
+    //    we need to resolve these as well
     const groupby = query._groupby;
+    const select = query._select;
     if (groupby.length) {
-      const map: Record<string, ExprNode> = {}; // expression map (alias -> expr)
-      query._select.forEach(({ alias, expr }) => map[alias] = expr);
-      q.setGroupby(groupby.map(e => (isColumnRef(e) && map[e.column]) || e));
+      // build expression lookup map (alias -> expr)
+      const map: Record<string, ExprNode> = {};
+      select.forEach(({ alias, expr }) => map[alias] = expr);
+
+      // sorted group by expression list
+      const exprs = groupby
+        .map(e => {
+          const expr = (isColumnRef(e) && map[e.column])
+            || (resolvePositional(e, select)?.expr ?? e);
+          return { sql: `${expr}`, expr }
+        })
+        .sort((a, b) => a.sql < b.sql ? -1 : a.sql > b.sql ? 1 : 0);
+      q.setGroupby(exprs.map(e => e.expr));
     }
-    else if (query._select.some(e => isAggregateExpression(e.expr!))) {
+    else if (select.some(e => isAggregateExpression(e.expr!))) {
       // if query is an ungrouped aggregate, add an explicit groupby to
       // prevent improper consolidation with non-aggregate queries
       q.setGroupby('ALL');
     }
 
-    // key is just the transformed query as SQL
+    // the consolidation key is the transformed SQL query string
     return `${q}`;
   } else {
-    // can not analyze query, simply return as string
+    // if we can't analyze the query, return the full SQL string
     return sql;
   }
 }
@@ -211,12 +232,19 @@ function consolidatedQuery(group: QueryGroup): Query {
   const query = (group[0].entry.request.query as SelectQuery).clone();
 
   // update group by statement as needed
+  // group by may reference select clauses by alias or by position;
+  // both must be remapped to the consolidated column names
   const groupby = query._groupby;
   if (groupby.length) {
     const map: Record<string, string> = {};
     group.maps[0].forEach(([name, as]) => map[as] = name);
+    const select = query._select;
     query.setGroupby(
-      groupby.map((e: ExprNode) => (isColumnRef(e) && map[e.column]) || e)
+      groupby.map((e: ExprNode) => {
+        const alias = isColumnRef(e) ? e.column
+          : resolvePositional(e, select)?.alias;
+        return (alias && map[alias]) || e;
+      })
     );
   }
 
