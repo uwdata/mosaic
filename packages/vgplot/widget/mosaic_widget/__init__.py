@@ -32,14 +32,18 @@ class MosaicWidget(anywidget.AnyWidget):
     _esm = pathlib.Path(__file__).parent / "static" / "index.js"
     _css = pathlib.Path(__file__).parent / "static" / "index.css"
 
+    # echo_update=False: hosts that round-trip full model state (e.g. marimo)
+    # otherwise re-send these back to the frontend on every interaction, forcing a
+    # full dashboard teardown. Normal kernel->frontend sync is unaffected.
+
     # The Mosaic specification
-    spec = traitlets.Dict({}).tag(sync=True)
+    spec = traitlets.Dict({}).tag(sync=True, echo_update=False)
 
     # The current params indexed by name
-    params = traitlets.Dict({}).tag(sync=True)
+    params = traitlets.Dict({}).tag(sync=True, echo_update=False)
 
     # Where pre-aggregated materialized views should be created
-    preagg_schema = traitlets.Unicode().tag(sync=True)
+    preagg_schema = traitlets.Unicode().tag(sync=True, echo_update=False)
 
     def __init__(
         self,
