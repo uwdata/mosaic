@@ -6,7 +6,7 @@ from typing import Any
 
 from .util import omit_none
 from .params import _ParamBase
-from .data import DataDef
+from .data import DataDef, is_frame
 from .plot import _encode_component
 
 
@@ -41,23 +41,32 @@ def _collect_params(node: Any) -> list[_ParamBase]:
     return []
 
 
-def _collect_datadefs(node: Any) -> list[DataDef]:
-    """Recursively collect all DataDef instances in a view tree."""
-    if isinstance(node, DataDef):
+def _collect_data_sources(node: Any) -> list[Any]:
+    """Recursively collect all data sources (DataDefs and DataFrames) in a view tree."""
+    if isinstance(node, DataDef) or is_frame(node):
         return [node]
     if isinstance(node, View):
-        return _collect_datadefs(node._view)
+        return _collect_data_sources(node._view)
     if isinstance(node, dict):
         found = []
         for v in node.values():
-            found.extend(_collect_datadefs(v))
+            found.extend(_collect_data_sources(v))
         return found
     if isinstance(node, list):
         found = []
         for item in node:
-            found.extend(_collect_datadefs(item))
+            found.extend(_collect_data_sources(item))
         return found
     return []
+
+
+def _frame_data_names(caller_locals: dict[str, Any]) -> dict[int, str]:
+    """Map id→name for DataFrames bound to non-underscore caller variables."""
+    return {
+        id(obj): name
+        for name, obj in caller_locals.items()
+        if is_frame(obj) and not name.startswith("_")
+    }
 
 
 class Spec:
@@ -123,19 +132,22 @@ class Spec:
             else:
                 serialized_params[name] = p
 
-        # Build data_names lookup and auto-register any unnamed DataDefs in the view
         data_names = dict(self.data_names)
         extra_data: dict[str, Any] = {}
         used = set(data_names.values()) | set(self.data or {})
         counter = 0
-        for obj in _collect_datadefs(self.view):
-            if id(obj) not in data_names:
+        for obj in _collect_data_sources(self.view):
+            name = data_names.get(id(obj))
+            if name is None:
                 while f"_data{counter}" in used:
                     counter += 1
-                auto_name = f"_data{counter}"
-                data_names[id(obj)] = auto_name
-                extra_data[auto_name] = obj.to_dict()
+                name = f"_data{counter}"
                 counter += 1
+                data_names[id(obj)] = name
+                used.add(name)
+            if name in (self.data or {}) or name in extra_data:
+                continue
+            extra_data[name] = obj.to_dict() if isinstance(obj, DataDef) else obj
         merged_data = {**(self.data or {}), **extra_data} or None
 
         base: dict[str, Any] = {}
@@ -214,6 +226,7 @@ class View:
         }
         return Spec(
             data=merged_data,
+            data_names=_frame_data_names(caller_locals) or None,
             params=frame_params or None,
             plotDefaults=self._plotDefaults,
             config=self._config,
@@ -295,6 +308,7 @@ def spec(
 
     return Spec(
         data=merged_data,
+        data_names=_frame_data_names(caller_locals) or None,
         params=params,
         plotDefaults=plotDefaults,
         plot_defaults=plot_defaults,

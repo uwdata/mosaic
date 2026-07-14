@@ -79,3 +79,32 @@ class TestAutoNaming:
         assert d["params"]["_param0"] == 1
         assert d["params"]["_param1"] == 2
         assert d["plot"][0]["x"] == "$_param1"
+
+
+class TestDataFrames:
+    """A DataFrame passed directly to a mark is discovered by variable name,
+    referenced as a table, and carried in the spec's data section for the host
+    (e.g. the widget) to register."""
+
+    def test_frame_is_referenced_and_named_after_variable(self):
+        import pyarrow as pa
+
+        weather = pa.table({"a": [1, 2, 3]})
+        view = vg.plot(vg.dot(weather, x="a"))
+        d = view.to_dict()
+
+        assert d["plot"][0]["data"] == {"from": "weather"}
+        assert d["data"]["weather"] is weather
+
+    def test_frame_and_datadef_share_the_data_section(self):
+        import pyarrow as pa
+
+        weather = pa.table({"a": [1]})
+        athletes = vg.csv("athletes.csv")
+        view = vg.plot(vg.dot(weather, x="a"), vg.dot(athletes, x="a"))
+        d = view.to_dict()
+
+        assert d["plot"][0]["data"] == {"from": "weather"}
+        assert d["plot"][1]["data"] == {"from": "athletes"}
+        assert d["data"]["weather"] is weather
+        assert d["data"]["athletes"] == {"type": "csv", "file": "athletes.csv"}

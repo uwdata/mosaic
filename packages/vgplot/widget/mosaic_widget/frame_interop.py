@@ -6,6 +6,18 @@ logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
 
 
+# Mirror of vgplot.data.is_frame; duplicated to avoid a widget→vgplot dependency.
+def is_registrable_frame(obj: object) -> bool:
+    """Return True if `obj` is a dataframe-like object that DuckDB can register."""
+    if obj is None or isinstance(obj, (str, bytes, int, float, bool, dict, list, tuple)):
+        return False
+    try:
+        nw.from_native(obj)  # ty: ignore[no-matching-overload]
+    except TypeError:
+        return False
+    return True
+
+
 def _is_frame_native_to_duckdb(frame: IntoFrame) -> bool:
     """Check if a frame is natively supported by DuckDB to be registered as a virtual table with zero-copy guarantees."""
 

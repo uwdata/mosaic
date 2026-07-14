@@ -28,6 +28,7 @@ artifacts = [
 dev = [
   "jupyterlab",
   "pandas",
+  "polars",
   "pyyaml",
   "ruff",
   "ty",
