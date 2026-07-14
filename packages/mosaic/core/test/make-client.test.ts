@@ -29,6 +29,7 @@ describe("makeClient", () => {
       source: client,
       clients: new Set([client]),
       predicate: null,
+      fields: [],
       value: null
     });
 

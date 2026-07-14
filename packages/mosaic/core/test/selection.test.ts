@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { clausePoint, Selection } from "../src/index.js";
+import { clauseNone, clausePoint, Selection } from "../src/index.js";
 
 describe("Selection", () => {
   it("can be reset", () => {
@@ -8,9 +8,22 @@ describe("Selection", () => {
     selection.update(clause);
 
     expect(selection.clauses[0]).toEqual(clause);
+    expect(selection.clauses.active).toBe(clause);
     expect(selection.clauses).toHaveLength(1);
     selection.reset();
     expect(selection.clauses).toEqual([]);
+  });
+
+  it("clears clauses with empty predicates", () => {
+    const selection = new Selection();
+    const source = {};
+    selection.update(clausePoint("column", 5, { source }));
+    expect(selection.clauses).toHaveLength(1);
+
+    const clause = clauseNone(source);
+    selection.update(clause);
+    expect(selection.clauses.active).toBe(clause);
+    expect(selection.clauses).toHaveLength(0);
   });
 
   it("relays reset downstream ", () => {
