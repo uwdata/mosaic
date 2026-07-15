@@ -61,7 +61,11 @@ def _collect_data_sources(node: Any) -> list[Any]:
 
 
 def _frame_data_names(caller_locals: dict[str, Any]) -> dict[int, str]:
-    """Map id→name for DataFrames bound to non-underscore caller variables."""
+    """Map id→name for DataFrames bound to non-underscore caller variables.
+
+    A frame bound to several variables resolves to just one name (the last),
+    which becomes its registered table name.
+    """
     return {
         id(obj): name
         for name, obj in caller_locals.items()
