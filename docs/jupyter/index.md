@@ -37,14 +37,18 @@ In this example, we create a Mosaic plot over the Seattle weather dataset. This 
 
 ### Building a spec with the vgplot Python API
 
-The [`vgplot` Python API](/vgplot/?lang=python) lets you build the specification programmatically instead of loading a YAML/JSON file. Define a data source as a local variable (e.g. `vg.csv(...)` or `vg.parquet(...)`) and pass it directly to a mark — `view` discovers it by name, so the resulting spec is self-contained and can be passed straight to `MosaicWidget`:
+The [`vgplot` Python API](/vgplot/?lang=python) lets you build the specification programmatically instead of loading a YAML/JSON file. Load your data — a Polars or Pandas DataFrame (`pl.read_csv`), or a file source with `vg.csv(...)` / `vg.parquet(...)` — assign it to a variable, and pass that variable straight to a mark. It's picked up by its variable name (an in-memory DataFrame is registered as a table, a file source is inlined), so you can hand the view straight to `MosaicWidget` with no separate `data` argument:
 
 ```python
+import polars as pl
 import vgplot as vg
 
 from mosaic_widget import MosaicWidget
 
-weather = vg.csv("https://uwdata.github.io/mosaic-datasets/data/seattle-weather.csv")
+weather = pl.read_csv(
+    "https://uwdata.github.io/mosaic-datasets/data/seattle-weather.csv",
+    try_parse_dates=True,
+)
 
 view = vg.plot(
     vg.dot(
@@ -63,63 +67,64 @@ view = vg.plot(
 MosaicWidget(view)
 ```
 
-To plot an existing Pandas or Polars DataFrame instead, register it with the widget under a table name and reference it from a mark with `vg.source("name")`:
-
-```python
-import pandas as pd
-import vgplot as vg
-
-from mosaic_widget import MosaicWidget
-
-weather = pd.read_csv("https://uwdata.github.io/mosaic-datasets/data/seattle-weather.csv", parse_dates=["date"])
-
-view = vg.plot(
-    vg.dot(vg.source("weather"), x=vg.date_month_day("date"), y="temp_max", fill="weather"),
-    vg.x_tick_format("%b"),
-    vg.width(680),
-)
-
-MosaicWidget(view, data={"weather": weather})
-```
+To register the data yourself instead, pass `data={"weather": weather}` to `MosaicWidget` and reference the table from a mark with `vg.source("weather")`.
 
 ### Loading a YAML/JSON spec
 
 Alternatively, load an existing declarative specification and pass it to the widget as a dictionary:
 
 ```python
-import pandas as pd
+import polars as pl
 import yaml
 
 from mosaic_widget import MosaicWidget
 
-weather = pd.read_csv("https://uwdata.github.io/mosaic-datasets/data/seattle-weather.csv", parse_dates=["date"])
+weather = pl.read_csv(
+    "https://uwdata.github.io/mosaic-datasets/data/seattle-weather.csv",
+    try_parse_dates=True,
+)
 
-# Load weather spec, remove data key to ensure load from Pandas
+# Load weather spec, remove data key to ensure load from the DataFrame
 with open("weather.yaml") as f:
     spec = yaml.safe_load(f)
     spec.pop("data")
 
-MosaicWidget(spec, data = {"weather": weather})
+MosaicWidget(spec, data={"weather": weather})
 ```
 
-To listen to changes of the `params`, you can add call `observe` on the widget created with `MosaicWidget`. In the following example, we show the params in an output widget.
+### Listening to parameter changes
+
+A widget's `params` traitlet updates automatically as the user interacts with the plot. Call `observe` on the widget to react to those changes. Here we build the spec with the vgplot API, add an interval selection to brush over, and print the params into an output widget:
 
 ```python
 from pprint import pprint
+
 import ipywidgets as widgets
-import pandas as pd
-import yaml
+import polars as pl
+import vgplot as vg
 
 from mosaic_widget import MosaicWidget
 
-weather = pd.read_csv("https://uwdata.github.io/mosaic-datasets/data/seattle-weather.csv", parse_dates=["date"])
+weather = pl.read_csv(
+    "https://uwdata.github.io/mosaic-datasets/data/seattle-weather.csv",
+    try_parse_dates=True,
+)
 
-# Load weather spec, remove data key to ensure load from Pandas
-with open("weather.yaml") as f:
-    spec = yaml.safe_load(f)
-    spec.pop("data")
+brush = vg.selection.intersect()
 
-widget = MosaicWidget(spec, data = {"weather": weather})
+view = vg.plot(
+    vg.dot(
+        weather,
+        x=vg.date_month_day("date"),
+        y="temp_max",
+        fill="weather",
+        select=vg.interval_x(bind=brush),
+    ),
+    vg.x_tick_format("%b"),
+    vg.width(680),
+)
+
+widget = MosaicWidget(view)
 
 output = widgets.Output()
 

@@ -1541,6 +1541,7 @@ dependencies = [
 dev = [
     { name = "jupyterlab" },
     { name = "pandas" },
+    { name = "polars" },
     { name = "pyyaml" },
     { name = "ruff" },
     { name = "ty" },
@@ -1568,6 +1569,7 @@ requires-dist = [
 dev = [
     { name = "jupyterlab" },
     { name = "pandas" },
+    { name = "polars" },
     { name = "pyyaml" },
     { name = "ruff" },
     { name = "ty" },
@@ -3297,6 +3299,9 @@ wheels = [
 [[package]]
 name = "vgplot"
 source = { editable = "packages/vgplot/vgplot-python" }
+dependencies = [
+    { name = "narwhals" },
+]
 
 [package.dev-dependencies]
 dev = [
@@ -3308,6 +3313,7 @@ dev = [
 ]
 
 [package.metadata]
+requires-dist = [{ name = "narwhals", specifier = ">=2.8.0" }]
 
 [package.metadata.requires-dev]
 dev = [

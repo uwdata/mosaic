@@ -6,7 +6,7 @@ from typing import Any
 
 from .util import camelize, omit_none
 from .params import _ParamBase
-from .data import DataDef
+from .data import DataDef, is_frame
 
 
 class FromRef:
@@ -47,7 +47,7 @@ class Mark:
                 data_dict: Any = {"from": self.data}
             elif isinstance(self.data, FromRef):
                 data_dict = dict(self.data.to_dict())
-            elif isinstance(self.data, DataDef):
+            elif isinstance(self.data, DataDef) or is_frame(self.data):
                 data_dict = {"from": self.data}
             else:
                 data_dict = self.data
@@ -84,6 +84,10 @@ def encode_value(
         return [encode_value(x, param_names, data_names) for x in v]
     if isinstance(v, dict):
         return {k: encode_value(val, param_names, data_names) for k, val in v.items()}
+    if is_frame(v):
+        if data_names and id(v) in data_names:
+            return data_names[id(v)]
+        return v
     return v
 
 
