@@ -61,7 +61,7 @@ def _collect_data_sources(node: Any) -> list[Any]:
 
 
 def _frame_data_names(caller_locals: dict[str, Any]) -> dict[int, str]:
-    """Map id→name for DataFrames bound to non-underscore caller variables.
+    """Map id->name for DataFrames bound to non-underscore caller variables.
 
     A frame bound to several variables resolves to just one name (the last),
     which becomes its registered table name.
@@ -86,7 +86,7 @@ class Spec:
         view: dict[str, Any] | None = None,
         **extra: Any,
     ) -> None:
-        # Serialize any DataDef values in data and build id→name mapping
+        # Serialize any DataDef values in data and build id->name mapping
         resolved_data: dict[str, Any] = {}
         resolved_data_names: dict[int, str] = dict(data_names or {})
         for name, val in (data or {}).items():

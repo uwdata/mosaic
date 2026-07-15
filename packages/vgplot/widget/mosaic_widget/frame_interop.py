@@ -6,7 +6,7 @@ logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
 
 
-# Mirror of vgplot.data.is_frame; duplicated to avoid a widget→vgplot dependency.
+# Mirror of vgplot.data.is_frame; duplicated to avoid a widget->vgplot dependency.
 def is_registrable_frame(obj: object) -> bool:
     """Return True if `obj` is a dataframe-like object that DuckDB can register."""
     if obj is None or isinstance(
