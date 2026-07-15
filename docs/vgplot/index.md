@@ -3,10 +3,18 @@ title: Mosaic vgplot
 ---
 <script setup>
   import { coordinator } from '@uwdata/vgplot';
+  import { useLang } from '../.vitepress/theme/useLang.js';
+
   coordinator().clear();
+
+  const { language, setLanguage } = useLang();
 </script>
 
-# vgplot: An Interactive Grammar of Graphics
+<LangToggle :model-value="language" aria-label="Mosaic vgplot language" @update:model-value="setLanguage" />
+
+<h1>{{ language === 'js' ? 'Mosaic vgplot in JavaScript' : 'Mosaic vgplot in Python' }}</h1>
+
+<template v-if="language === 'js'">
 
 A grammar of interactive graphics in which graphical marks are Mosaic clients.
 
@@ -20,9 +28,13 @@ vgplot calls Observable Plot to render SVG output.
 This page provides an overview of vgplot.
 Skip to the [examples](/examples/) to dive right in.
 
+<div v-if="language === 'js'">
+
 ::: tip
 `vgplot` re-exports much of the `mosaic-core`, `mosaic-sql`, `mosaic-plot`, and `mosaic-inputs` packages. For many applications, it is sufficient to import `@uwdata/vgplot` alone.
 :::
+
+</div>
 
 ## Plots
 
@@ -38,7 +50,7 @@ Plots are rendered to SVG output by marshalling a specification and passing it t
 
 ::: code-group
 ``` js [JavaScript]
-import { plot, line, from, width, height } from "@uwdata/vgplot";
+import { plot, lineY, from, width, height } from "@uwdata/vgplot";
 plot(
   lineY(from("aapl"), { x: "Date", y: "Close" }),
   width(680),
@@ -87,9 +99,13 @@ Marks support dual modes of operation: if an explicit array of data values is pr
 
 [Marks API Reference](/api/vgplot/marks)
 
+<div v-if="language === 'js'">
+
 ::: warning
 Interactive filtering is not supported if you bypass the database and pass data directly to a mark.
 :::
+
+</div>
 
 ### Basic Marks
 
@@ -171,3 +187,158 @@ Layout helpers can be used with plots, inputs, and arbitrary Web content such as
 To ensure spacing, the `vspace` and `hspace` helpers add padding between elements in a layout.
 
 [Layout API Reference](/api/vgplot/layout)
+</template>
+
+<template v-else-if="language === 'python'">
+
+A grammar of interactive graphics in which graphical marks are Mosaic clients.
+
+<Example spec="/specs/yaml/mark-types.yaml" />
+
+In Python, `import vgplot as vg` gives you composable helpers for plots, attributes, marks, interactors, legends, and layout. Names use **`snake_case`**. Key Python-specific conventions: use `vg.source("table")` (not `from_`) to reference a named database table; interactors take `bind=` (not `as=`) for their selection; legends take `plot=` (not `for`) to reference a named plot.
+
+The interactive figure above is driven by the same [declarative specification](/spec/) used across Mosaic (YAML in the docs site). In notebooks you usually pass an equivalent structure as a dict—built with `vg.*` helpers, loaded from YAML/JSON, or produced by your own tooling—to [`MosaicWidget`](/jupyter/) as `spec`.
+
+More copy-paste examples live under [Examples](/examples/) (open the **Python** tab on each page).
+
+<div v-if="language === 'python'">
+
+::: tip
+The fastest path in Jupyter is often YAML or JSON plus `MosaicWidget(spec=..., data=...)`. Use `vgplot` when you want to assemble or adjust specs in code. Option names match the [specification format](/api/spec/format); builder helpers line up with those names in snake_case.
+:::
+
+</div>
+
+## Plots
+
+`vg.plot` takes a sequence of directives: [attributes](#attributes), [marks](#marks), [interactors](#interactors), and [legends](#legends).
+
+Each plot uses [Observable Plot](https://observablehq.com/plot/)–style _channels_ (`x`, `y`, `fill`, `opacity`, …) and optional faceting scales `fx` and `fy`. The widget renders charts in the browser as SVG.
+
+<Example spec="/specs/yaml/line.yaml" />
+
+
+``` python
+import vgplot as vg
+
+vg.plot(
+    vg.line_y(vg.source("aapl"), x="Date", y="Close"),
+    vg.width(680),
+    vg.height(200)
+)
+```
+
+
+This chart uses three directives:
+
+1. A `line_y` mark with `vg.source("aapl")`.
+2. `vg.width(680)`.
+3. `vg.height(200)`.
+
+[Plot reference](/api/vgplot/plot)
+
+## Attributes
+
+_Attributes_ set plot-level options: size, margins, and scales (`x_domain`, `color_range`, `y_tick_format`, …) via helpers such as `vg.x_domain(...)`, `vg.color_range(...)`, `vg.y_tick_format(...)`. Param references like `"$point"` tie encodings to widget state.
+
+**`"Fixed"`** domains (e.g. `vg.x_domain("Fixed")`) compute an initial domain from data, then freeze it so filtered views do not rescale in a distracting way.
+
+[Attributes reference](/api/vgplot/attributes)
+
+## Marks
+
+_Marks_ are layers backed by Mosaic queries. They usually take a `vg.source("table")` reference (or a `DataDef` from `vg.parquet()`, `vg.csv()`, etc.) as the first argument, plus channel options. Fields may be columns, SQL fragments, or param strings.
+
+You can pass static rows instead of a database source for annotations; that path skips the database and does not participate in linked filtering.
+
+[Marks reference](/api/vgplot/marks)
+
+<div v-if="language === 'python'">
+
+::: warning
+Interactive filtering requires data that flows through the coordinator (via `vg.source()` / registered tables), not ad hoc Python lists alone.
+:::
+
+</div>
+
+### Basic marks
+
+Primitives include `dot`, `bar`, `rect`, `cell`, `text`, `tick`, and `rule`, consistent with Observable Plot. Oriented variants appear as `bar_x`, `bar_y`, `rect_x`, `rect_y`, and so on—the YAML `mark` string (e.g. `barY`) corresponds to `vg.bar_y(...)`.
+
+Query planning walks channels to build `SELECT`, adds `GROUP BY` when aggregates appear, and applies `WHERE` for active selections.
+
+### Connected marks
+
+`area` and `line` marks connect ordered samples (`vg.area_y`, `vg.line_y`, …). Large series can use M4-style pixel-aware downsampling so draw cost stays bounded.
+
+`regression_y` computes fits and optional intervals in the database, then draws the line and band.
+
+### Geography and geometry
+
+`geo` draws GeoJSON geometry, either inlined or loaded through DuckDB (including the `spatial` extension).
+
+### Density marks
+
+`density_y` is 1D KDE. `density`, `contour`, `heatmap`, and `raster` cover 2D surfaces; `hexbin` aggregates hex cells in SQL; `dense_line` estimates density along polylines. Bandwidth and smoothing options follow the declarative spec.
+
+## Interactors
+
+_Interactors_ connect pointer input to [_selections_](/core/#selections). Helpers include `toggle`, `toggle_color`, `toggle_x`, `toggle_y`, `nearest_x`, `nearest_y`, `interval_x`, `interval_y`, `interval_xy` (with `pixel_size` where applicable), `pan_zoom`, and `highlight`.
+
+Wiring `pan_zoom` selections into `x_domain` / `y_domain` (or equivalent scale bindings) implements pan and zoom.
+
+[Interactors reference](/api/vgplot/interactors)
+
+## Legends
+
+Legends attach inside `vg.plot` or as separate elements. Naming a plot lets another legend reuse its scales, e.g. `vg.color_legend(plot="my_plot")`.
+
+Discrete color legends can drive the same toggle-style selection behavior as point interactors.
+
+[Legends reference](/api/vgplot/legends)
+
+## Layout
+
+`vg.vconcat`, `vg.hconcat`, `vg.vspace`, and `vg.hspace` compose plots, [inputs](/inputs/), and spacing. The runtime lays out children with flexbox.
+
+Full apps often call `vg.spec(meta=..., data=..., params=..., view=...)` so the result is a single top-level spec object (the same shape as JSON/YAML on disk).
+
+[Layout reference](/api/vgplot/layout)
+
+## Related documentation
+
+- [Mosaic spec](/spec/) — portable JSON/YAML format shared by Python and the docs examples.
+- [Specification format reference](/api/spec/format) — schema-oriented description of top-level keys and marks.
+- [vgplot under **API Reference**](/api/) — detailed plot, mark, interactor, and layout pages. Option names there appear in **camelCase** (e.g. `lineY`, `xDomain`); in Python, use **snake_case** (`line_y`, `x_domain`).
+</template>
+
+<LangError v-else :language="language" />
+
+<style scoped>
+.vgplot-toggle {
+  display: inline-flex;
+  gap: 0.25rem;
+  margin-bottom: 1rem;
+  padding: 0.25rem;
+  border: 1px solid var(--vp-c-divider);
+  border-radius: 999px;
+  background: var(--vp-c-bg-soft);
+}
+
+.vgplot-toggle button {
+  border: 0;
+  border-radius: 999px;
+  padding: 0.35rem 0.8rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--vp-c-text-2);
+  background: transparent;
+  cursor: pointer;
+}
+
+.vgplot-toggle button.active {
+  color: var(--vp-c-text-1);
+  background: var(--vp-c-bg);
+  box-shadow: inset 0 0 0 1px var(--vp-c-divider);
+}
+</style>

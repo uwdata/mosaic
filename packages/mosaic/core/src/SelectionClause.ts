@@ -1,6 +1,6 @@
 import { isMosaicClient, MosaicClient } from './MosaicClient.js';
 import type { ExprNode, ExprValue, ScaleOptions, ScaleDomain } from '@uwdata/mosaic-sql';
-import { and, contains, isBetween, isInDistinct, isNotDistinct, listHasAll, listHasAny, literal, lower, or, prefix, regexp_matches, suffix } from '@uwdata/mosaic-sql';
+import { and, asNode, contains, isBetween, isInDistinct, isNotDistinct, listHasAll, listHasAny, literal, lower, or, prefix, regexp_matches, suffix } from '@uwdata/mosaic-sql';
 
 /**
  * Selection clause metadata to guide possible query optimizations.
@@ -78,6 +78,12 @@ export interface SelectionClause {
    */
   clients?: Set<MosaicClient>;
   /**
+   * The input expressions that this clause filters over. All field
+   * references within the *predicate* should be strictly equal to
+   * these field expression node instances.
+   */
+  fields: ExprNode[];
+  /**
    * A selected value associated with this clause. For example, for a 1D
    * interval selection clause the value may be a [lo, hi] array.
    */
@@ -96,8 +102,20 @@ export interface SelectionClause {
   meta?: ClauseMetadata;
 }
 
+/**
+ * Options for point-type selection clauses.
+ */
 interface PointOptions {
+  /**
+   * A unique identifier (according to object equality) for the source
+   * component that generated this clause. In many cases, this is a
+   * reference to the originating component itself.
+   */
   source: ClauseSource;
+  /**
+   * A set of Mosaic clients associated with this clause that should not
+   * be updated when this clause is applied in a cross-filtering context.
+   */
   clients?: Set<MosaicClient>;
 }
 
@@ -119,6 +137,7 @@ export function clausePoint(
     clients = isMosaicClient(source) ? new Set([source]) : undefined
   }: PointOptions
 ): SelectionClause {
+  field = asNode(field);
   const predicate: ExprNode | null = value !== undefined
     ? isInDistinct(field, [literal(value)])
     : null;
@@ -126,6 +145,7 @@ export function clausePoint(
     meta: { type: 'point' },
     source,
     clients,
+    fields: [field],
     value,
     predicate
   };
@@ -151,6 +171,7 @@ export function clausePoints(
     clients = isMosaicClient(source) ? new Set([source]) : undefined
   }: PointOptions
 ): SelectionClause {
+  fields = fields.map(f => asNode(f));
   let predicate: ExprNode | null = null;
   if (value?.length) {
     const clauses = value.length && fields.length === 1
@@ -164,16 +185,37 @@ export function clausePoints(
     meta: { type: 'point' },
     source,
     clients,
+    fields: fields as ExprNode[],
     value,
     predicate
   };
 }
 
-/** Interval selection clause options. */
+/**
+ * Options for interval-type selection clauses.
+ */
 interface IntervalOptions {
+  /**
+   * A unique identifier (according to object equality) for the source
+   * component that generated this clause. In many cases, this is a
+   * reference to the originating component itself.
+   */
   source: ClauseSource;
+  /**
+   * A set of Mosaic clients associated with this clause that should not
+   * be updated when this clause is applied in a cross-filtering context.
+   */
   clients?: Set<MosaicClient>;
+  /**
+   * A hint for the binning method to use when discretizing the
+   * interval domain. If unspecified, the default is `'floor'`.
+   */
   bin?: BinMethod;
+  /**
+   * The interactive pixel size used by the generating component.
+   * Values larger than one indicate intervals that "snap-to" values
+   * greater than a single pixel. If unspecified, assumed to be `1`.
+   */
   pixelSize?: number;
 }
 
@@ -202,6 +244,7 @@ export function clauseInterval(
     pixelSize = 1
   }: IntervalOptions & { scale?: ScaleOptions }
 ): SelectionClause {
+  field = asNode(field);
   const predicate = value != null ? isBetween(field, value) : null;
   const meta: IntervalMetadata = {
     type: 'interval',
@@ -209,7 +252,7 @@ export function clauseInterval(
     bin,
     pixelSize
   };
-  return { meta, source, clients, value, predicate };
+  return { meta, source, clients, fields: [field], value, predicate };
 }
 
 /**
@@ -238,6 +281,7 @@ export function clauseIntervals(
     pixelSize = 1
   }: IntervalOptions & { scales?: ScaleOptions[] }
 ): SelectionClause {
+  fields = fields.map(f => asNode(f));
   const predicate = value != null
     ? and(fields.map((f, i) => isBetween(f, value[i])))
     : null;
@@ -247,7 +291,14 @@ export function clauseIntervals(
     bin,
     pixelSize
   };
-  return { meta, source, clients, value, predicate };
+  return {
+    meta,
+    source,
+    clients,
+    fields: fields as ExprNode[],
+    value,
+    predicate
+  };
 }
 
 const identity = (x: string | ExprNode) => x;
@@ -257,11 +308,28 @@ const MATCH_METHODS = { contains, prefix, suffix, regexp: regexp_matches };
 /** Text search matching methods. */
 export type MatchMethod = keyof typeof MATCH_METHODS;
 
-/** Text matching selection clause options. */
+/**
+ * Options for match-type selection clauses.
+ */
 export interface MatchOptions {
+  /**
+   * A unique identifier (according to object equality) for the source
+   * component that generated this clause. In many cases, this is a
+   * reference to the originating component itself.
+   */
   source: ClauseSource;
+  /**
+   * A set of Mosaic clients associated with this clause that should not
+   * be updated when this clause is applied in a cross-filtering context.
+   */
   clients?: Set<MosaicClient>;
+  /**
+   * The text matching method to use, default `'contains'`.
+   */
   method?: MatchMethod;
+  /**
+   * Flag for case sensitive matching, default `false`.
+   */
   caseSensitive?: boolean;
 }
 
@@ -287,11 +355,12 @@ export function clauseMatch(
     caseSensitive = false
   }: MatchOptions
 ): SelectionClause {
+  field = asNode(field);
   const fn = MATCH_METHODS[method as keyof typeof MATCH_METHODS];
   const transform = caseSensitive ? identity: lower;
   const predicate = value ? fn(transform(field), transform(literal(value))) : null;
   const meta: MatchMetadata = { type: 'match', method };
-  return { meta, source, clients, value, predicate };
+  return { meta, source, clients, fields: [field], value, predicate };
 }
 
 /**
@@ -317,6 +386,7 @@ export function clauseMatchAny(
     caseSensitive = false
   }: MatchOptions
 ): SelectionClause {
+  fields = fields.map(f => asNode(f));
   value = value || null;
   const fn = MATCH_METHODS[method];
   const transform = caseSensitive ? identity : lower;
@@ -325,7 +395,14 @@ export function clauseMatchAny(
     ? or(fields.flatMap(field => value ? fn(transform(field), query) : []))
     : null;
   const meta: MatchMetadata = { type: 'match', method };
-  return { meta, source, clients, value, predicate };
+  return {
+    meta,
+    source,
+    clients,
+    fields: fields as ExprNode[],
+    value,
+    predicate
+  };
 }
 
 /**
@@ -352,6 +429,7 @@ export function clauseList(
     listMatch?: 'any' | 'all';
   }
 ): SelectionClause {
+  field = asNode(field);
   const listFn = listMatch === 'all' ? listHasAll : listHasAny;
   // arrays pass through directly so they are quoted as a list, not stringified
   const predicate = value === undefined || (Array.isArray(value) && value.length === 0)
@@ -359,5 +437,17 @@ export function clauseList(
     : Array.isArray(value)
       ? listFn(field, value as ExprValue[])
       : listFn(field, literal(value));
-  return { source, clients, value, predicate };
+  return { source, clients, fields: [field], value, predicate };
+}
+
+/**
+ * Generate an empty selection clause for a clause source. This clause
+ * will clear any predicates associated with the source.
+ * @param source The clause source to clear.
+ * @returns The generated selection clause.
+ */
+export function clauseNone(
+  source: ClauseSource
+): SelectionClause {
+  return { source, fields: [], value: null, predicate: null };
 }

@@ -15,4 +15,5 @@ A test specification to compare M4 optimized and unoptimized area charts over a 
 <<< @/public/specs/esm/area-sine.js [JavaScript]
 <<< @/public/specs/yaml/area-sine.yaml [YAML]
 <<< @/public/specs/json/area-sine.json [JSON]
+<<< @/public/specs/python/area-sine.py [Python]
 :::

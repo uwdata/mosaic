@@ -1,4 +1,10 @@
+---
+title: API Context
+---
+
 # API Context
+
+The API context is a concept of the JavaScript `vgplot` package for embedding Mosaic in the browser. The Python package instead authors declarative specifications, so it has no equivalent.
 
 All `vgplot` methods are invoked within a surrounding _context_ of evaluation. A context consists of all API methods, a [coordinator](../core/coordinator), a map of [named plots](#namedplots).
 

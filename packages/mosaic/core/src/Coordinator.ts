@@ -396,7 +396,7 @@ function updateSelection(
     if (info?.skip || (!info && !filter)) return;
 
     // generate and issue update query    
-    const query = (info as PreAggregateInfo)?.query(active.predicate!) ?? client.query(filter);
+    const query = (info as PreAggregateInfo)?.query(active) ?? client.query(filter);
     return mc.updateClient(client, query);
   }));
 }

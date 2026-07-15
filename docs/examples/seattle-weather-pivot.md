@@ -15,4 +15,5 @@ A DuckDB `PIVOT` query reshapes Seattle's daily weather observations into a cros
 <<< @/public/specs/esm/seattle-weather-pivot.js [JavaScript]
 <<< @/public/specs/yaml/seattle-weather-pivot.yaml [YAML]
 <<< @/public/specs/json/seattle-weather-pivot.json [JSON]
+<<< @/public/specs/python/seattle-weather-pivot.py [Python]
 :::
