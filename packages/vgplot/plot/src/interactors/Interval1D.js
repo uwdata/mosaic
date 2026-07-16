@@ -8,9 +8,14 @@ import { sanitizeStyles } from './util/sanitize-styles.js';
 
 /**
  * @import {Activatable} from '@uwdata/mosaic-core'
+ * @import { InteractorMark } from '../marks/Mark.js'
  * @implements {Activatable}
  */
 export class Interval1D {
+  /**
+   * @param {InteractorMark} mark The mark to interact with.
+   * @param {*} options The interactor options.
+   */
   constructor(mark, {
     channel,
     selection,
