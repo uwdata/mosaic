@@ -6,15 +6,16 @@ app = marimo.App(width="medium")
 
 @app.cell
 def _():
+    import polars as pl
     import vgplot as vg
     from mosaic_widget import MosaicWidget
 
-    return MosaicWidget, vg
+    return MosaicWidget, pl, vg
 
 
 @app.cell
-def _(vg):
-    weather = vg.parquet("../../data/seattle-weather.parquet")
+def _(pl):
+    weather = pl.read_csv("../../data/seattle-weather.csv", try_parse_dates=True)
     return (weather,)
 
 
@@ -28,7 +29,7 @@ def _(vg):
 
 
 @app.cell
-def _(click, colors, domain, range, vg, weather):
+def _(MosaicWidget, click, colors, domain, range, vg, weather):
     view = vg.vconcat(
         vg.hconcat(
             vg.plot(
@@ -73,12 +74,13 @@ def _(click, colors, domain, range, vg, weather):
             vg.width(680),
         ),
     )
-    return (view,)
+    widget = MosaicWidget(view)
+    return (widget,)
 
 
 @app.cell
-def _(MosaicWidget, view):
-    MosaicWidget(view)
+def _(widget):
+    widget
     return
 
 

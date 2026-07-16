@@ -1,6 +1,6 @@
 {
   "name": "@uwdata/mosaic-core",
-  "version": "0.28.1",
+  "version": "0.29.1",
   "description": "Scalable and extensible linked data views.",
   "keywords": [
     "mosaic",
@@ -13,8 +13,14 @@
   "author": "Jeffrey Heer (https://idl.uw.edu)",
   "type": "module",
   "exports": {
-    "types": "./dist/src/index.d.ts",
-    "default": "./dist/src/index.js"
+    ".": {
+      "types": "./dist/src/index.d.ts",
+      "default": "./dist/src/index.js"
+    },
+    "./node-connector": {
+      "types": "./dist/src/connectors/NodeConnector.d.ts",
+      "default": "./dist/src/connectors/NodeConnector.js"
+    }
   },
   "files": [
     "dist",
@@ -28,6 +34,7 @@
   "scripts": {
     "clean": "rimraf dist && mkdir dist",
     "lint": "eslint src test",
+    "typecheck": "tsc -p test/tsconfig.json",
     "test": "vitest run",
     "prepublishOnly": "tsc --build"
   },
@@ -38,5 +45,13 @@
   },
   "devDependencies": {
     "@uwdata/mosaic-duckdb": "workspace:^"
+  },
+  "peerDependencies": {
+    "@uwdata/mosaic-duckdb": "workspace:^"
+  },
+  "peerDependenciesMeta": {
+    "@uwdata/mosaic-duckdb": {
+      "optional": true
+    }
   }
 }

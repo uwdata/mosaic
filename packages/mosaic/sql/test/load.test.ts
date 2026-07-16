@@ -1,6 +1,8 @@
 import { expect, describe, it } from 'vitest';
 import { loadCSV } from '../src/index.js';
 
+// Serialization only: read_csv binds against the named file, which does not
+// exist in the fixture database.
 describe('loadCSV', () => {
   it('accepts query options', () => {
     const base = {

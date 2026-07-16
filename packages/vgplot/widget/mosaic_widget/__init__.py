@@ -12,7 +12,10 @@ import duckdb
 import pyarrow as pa
 import traitlets
 
-from mosaic_widget.frame_interop import frame_to_duckdb_registrable
+from mosaic_widget.frame_interop import (
+    frame_to_duckdb_registrable,
+    is_registrable_frame,
+)
 
 if TYPE_CHECKING:
     from narwhals.typing import IntoFrame
@@ -28,18 +31,44 @@ class SupportsToDict(Protocol):
     def to_dict(self) -> dict: ...
 
 
+def _register_frame_data(spec: dict, data: dict) -> dict:
+    """Move in-memory DataFrames out of the spec's data section into `data`.
+
+    The spec is synced to the frontend as JSON and cannot carry live frames, so
+    hand them to DuckDB registration instead.
+    """
+    spec_data = spec.get("data")
+    if not isinstance(spec_data, dict):
+        return spec
+    kept = {}
+    for name, value in spec_data.items():
+        if is_registrable_frame(value):
+            data.setdefault(name, value)
+        else:
+            kept[name] = value
+    return (
+        {**spec, "data": kept}
+        if kept
+        else {k: v for k, v in spec.items() if k != "data"}
+    )
+
+
 class MosaicWidget(anywidget.AnyWidget):
     _esm = pathlib.Path(__file__).parent / "static" / "index.js"
     _css = pathlib.Path(__file__).parent / "static" / "index.css"
 
+    # echo_update=False: hosts that round-trip full model state (e.g. marimo)
+    # otherwise re-send these back to the frontend on every interaction, forcing a
+    # full dashboard teardown. Normal kernel->frontend sync is unaffected.
+
     # The Mosaic specification
-    spec = traitlets.Dict({}).tag(sync=True)
+    spec = traitlets.Dict({}).tag(sync=True, echo_update=False)
 
     # The current params indexed by name
-    params = traitlets.Dict({}).tag(sync=True)
+    params = traitlets.Dict({}).tag(sync=True, echo_update=False)
 
     # Where pre-aggregated materialized views should be created
-    preagg_schema = traitlets.Unicode().tag(sync=True)
+    preagg_schema = traitlets.Unicode().tag(sync=True, echo_update=False)
 
     def __init__(
         self,
@@ -63,6 +92,8 @@ class MosaicWidget(anywidget.AnyWidget):
         """
         if data is None:
             data = {}
+        frame = inspect.currentframe()
+        caller_locals = frame.f_back.f_locals if frame and frame.f_back else {}
         if spec is None:
             spec = {}
         elif not isinstance(spec, dict):
@@ -71,12 +102,11 @@ class MosaicWidget(anywidget.AnyWidget):
                 raise TypeError(
                     f"spec must be a dict or have a to_dict() method, got {type(spec)}"
                 )
-            frame = inspect.currentframe()
-            caller_locals = frame.f_back.f_locals if frame and frame.f_back else {}
             try:
                 spec = to_dict(_context=caller_locals)
             except TypeError:
                 spec = to_dict()
+        spec = _register_frame_data(spec, data)
         if con is None:
             con = duckdb.connect()
 
