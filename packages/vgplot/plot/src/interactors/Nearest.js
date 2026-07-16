@@ -1,4 +1,5 @@
 /** @import { ClauseSource } from '@uwdata/mosaic-core' */
+/** @import { InteractorMark } from '../marks/Mark.js' */
 import { clauseList, clausePoint, clausePoints, isSelection } from '@uwdata/mosaic-core';
 import { select, pointer, min } from 'd3';
 import { getField } from './util/get-field.js';
@@ -8,6 +9,10 @@ import { getField } from './util/get-field.js';
  * @implements {Activatable}
  */
 export class Nearest {
+  /**
+   * @param {InteractorMark} mark The mark to interact with.
+   * @param {*} options The interactor options.
+   */
   constructor(mark, {
     selection,
     pointer,
@@ -49,7 +54,7 @@ export class Nearest {
     // eslint-disable-next-line @typescript-eslint/no-this-alias
     const that = this;
     const { mark, channels, selection, maxRadius } = this;
-    const { data: { columns } } = mark;
+    const columns = mark.data && 'columns' in mark.data ? mark.data.columns : {};
     const keys = channels.map(c => mark.channelField(c).as);
     const param = !isSelection(selection);
 
