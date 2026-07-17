@@ -137,7 +137,11 @@ function interactorMark(legend) {
   const field = legend.field ?? findField(plot.marks, channel) ?? 'value';
   if (field) {
     const f = { field };
-    return { plot, channelField: c => channel === c ? f : undefined };
+    return {
+      plot,
+      channelField: c => channel === c ? f : undefined,
+      isUnnested: () => false
+    };
   }
 }
 
