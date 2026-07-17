@@ -4,14 +4,14 @@ import type { Table } from '@uwdata/flechette';
 /**
  * An Array or TypedArray
  */
-type Arrayish = Array<unknown> | Int8Array | Uint8Array | Uint8ClampedArray
+export type Arrayish = Array<unknown> | Int8Array | Uint8Array | Uint8ClampedArray
   | Int16Array | Uint16Array | Int32Array | Uint32Array
   | Float32Array | Float64Array;
 
 /**
  * Data columns structure with either named columns or values array
  */
-type DataColumns =
+export type DataColumns =
   | { numRows: number; columns: Record<string, Arrayish> }
   | { numRows: number; values: Arrayish };
 
