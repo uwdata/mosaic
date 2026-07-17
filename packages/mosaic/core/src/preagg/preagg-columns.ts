@@ -12,6 +12,8 @@ export interface PreAggColumnsResult {
   output: Record<string, ExprNode>;
   // Group by dimension aliases
   groupby: string[]
+  // ORDER BY clause expressions, potentially rewritten for preaggregation
+  orderby: ExprNode[];
   // HAVING clause expressions, potentially rewritten for preaggregation
   having: ExprNode[];
   // QUALIFY clause expressions, potentially rewritten for preaggregation
@@ -73,6 +75,10 @@ export function preaggColumns(client: MosaicClient): PreAggColumnsResult | null 
     // bail if select clause has no aggregates
     if (!aggrs.size) return null;
 
+    // analyze any orderby expressions
+    const orderby = q._orderby
+      .map(expr => analyzeExpression(expr, aggrs, preagg, avg) ?? expr);
+
     // analyze any having expressions
     const having = q._having
       .map(expr => analyzeExpression(expr, aggrs, preagg, avg) ?? expr);
@@ -96,6 +102,7 @@ export function preaggColumns(client: MosaicClient): PreAggColumnsResult | null 
 
     return {
       groupby: Object.values(groupby),
+      orderby,
       preagg,
       output,
       having,
