@@ -223,6 +223,17 @@ describe('PreAggregator', () => {
     expect(await run(query)).toStrictEqual([3.5, true]);
   });
 
+  it('supports queries with aggregate order by expressions', async () => {
+    const query = (predicate: FilterExpr = []) => {
+      return Query.from('testData')
+        .select({ measure: avg('x'), dim: 'dim' })
+        .groupby('dim')
+        .where(predicate)
+        .orderby(sum('y'))
+    };
+    expect(await run(query)).toStrictEqual([3.5, true]);
+  });
+
   it('supports queries with window functions with aggregate inputs', async () => {
     const query = (predicate: FilterExpr = []) => {
       return Query.from('testData')
