@@ -19,7 +19,7 @@ def _sentinel_backport_pre_typing_extensions_4_16() -> Any:
         def __init__(self, name: str, /, *, repr: str | None = None) -> None:
             self.__name__: str = name
             self._repr: str = repr if repr is not None else name
-            # TODO @dangotbanned: Figure out why they didn;t use the `"__main__"` default here?
+            # TODO @dangotbanned: Figure out why they didn't use the `"__main__"` default here?
             module: str | None = None
             if hasattr(sys, "_getframemodulename"):
                 module = sys._getframemodulename(1) or "__main__"
