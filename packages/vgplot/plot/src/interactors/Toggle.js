@@ -1,4 +1,5 @@
 /** @import { ClauseSource } from '@uwdata/mosaic-core' */
+/** @import { InteractorMark } from '../marks/Mark.js' */
 import { clauseList, clausePoints } from '@uwdata/mosaic-core';
 import { getDatum } from './util/get-datum.js';
 import { neq, neqSome } from './util/neq.js';
@@ -9,7 +10,7 @@ import { neq, neqSome } from './util/neq.js';
  */
 export class Toggle {
   /**
-   * @param {*} mark The mark to interact with.
+   * @param {InteractorMark} mark The mark to interact with.
    * @param {*} options The interactor options.
    */
   constructor(mark, {
@@ -58,7 +59,7 @@ export class Toggle {
 
   init(svg, selector, accessor) {
     const { mark, as, selection } = this;
-    const { data: { columns = {} } = {} } = mark;
+    const columns = mark.data && 'columns' in mark.data ? mark.data.columns : {};
     accessor ??= target => as.map(name => columns[name][getDatum(target)]);
 
     selector ??= `[data-index="${mark.index}"]`;
