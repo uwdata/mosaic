@@ -1,18 +1,9 @@
 # Unit tests for the vgplot Python API, covering behaviors that the
 # generated-spec round-trip suite does not exercise directly.
-import sys
-from pathlib import Path
-
 import pytest
 
-ROOT = Path(__file__).resolve().parents[4]
-VGPLOT_PKG = ROOT / "packages" / "vgplot" / "vgplot-python"
-for p in (VGPLOT_PKG, ROOT):
-    if str(p) not in sys.path:
-        sys.path.insert(0, str(p))
-
-import vgplot as vg  # noqa: E402
-from vgplot.plot import Mark  # noqa: E402
+import vgplot as vg
+from vgplot.plot import Mark
 
 
 class TestGeneratedMarks:
