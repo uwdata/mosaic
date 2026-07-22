@@ -2,6 +2,7 @@ import { FilterExpr, type Query } from '@uwdata/mosaic-sql';
 import { type Coordinator } from './Coordinator.js';
 import { type Selection } from './Selection.js';
 import { throttle } from './util/throttle.js';
+import { QueryError } from './util/query-error.js';
 
 export type ClientQuery = Query | string | null;
 
@@ -166,7 +167,7 @@ export class MosaicClient {
    * @param error
    * @returns this
    */
-  queryError(error: Error): this { // eslint-disable-line @typescript-eslint/no-unused-vars
+  queryError(error: QueryError): this { // eslint-disable-line @typescript-eslint/no-unused-vars
     // do nothing, the coordinator logs the error
     return this;
   }
