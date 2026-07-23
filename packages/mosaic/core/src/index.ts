@@ -35,6 +35,7 @@ export type { Arrayish, DataColumns } from './util/to-data-columns.js';
 export { queryFieldInfo } from './util/field-info.js';
 export { jsType } from './util/js-type.js';
 export { isActivatable } from './util/is-activatable.js';
+export { QueryError } from './util/query-error.js';
 export type { QueryResult } from './util/query-result.js';
 
 export * from './types.js';
