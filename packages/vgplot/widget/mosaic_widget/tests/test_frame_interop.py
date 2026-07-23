@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import logging
-from pathlib import Path
 from typing import TYPE_CHECKING
 
 import narwhals as nw
@@ -17,9 +16,7 @@ if TYPE_CHECKING:
 
     from .conftest import EagerAllowed, LazyOnly, NativeLazyFrame
 
-# NOTE: Revert this before pushing, fix in another PR
-ROOT = Path(__file__).parent.parent.parent.parent.parent.parent
-CSV_PATH = (ROOT / "data/seattle-weather.csv").as_posix()
+CSV_PATH = "../../../data/seattle-weather.csv"
 
 
 # TODO @dangotbanned: Add doc, explain why (avoiding multiple csv readers)
