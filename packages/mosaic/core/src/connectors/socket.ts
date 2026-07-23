@@ -1,6 +1,6 @@
 import type { ExtractionOptions, Table } from '@uwdata/flechette';
 import type { ArrowQueryRequest, Connector, ExecQueryRequest, JSONQueryRequest, ConnectorQueryRequest } from './Connector.js';
-import { decodeIPC } from '../util/decode-ipc.js';
+import { annotateByteLength, decodeIPC } from '../util/decode-ipc.js';
 
 interface SocketOptions {
   uri?: string;
@@ -90,8 +90,15 @@ export class SocketConnector implements Connector {
           // process result
           if (typeof data === 'string') {
             const json = JSON.parse(data);
-            // eslint-disable-next-line @typescript-eslint/no-unused-expressions
-            json.error ? reject(json.error) : resolve(json);
+            if (json.error) {
+              reject(json.error);
+            } else {
+              // JSON payload: annotating the bytesize
+              if (json && typeof json === 'object') {
+                annotateByteLength(json, data.length);
+              }
+              resolve(json);
+            }
           } else if (query.type === 'exec') {
             resolve();
           } else if (query.type === 'arrow') {
