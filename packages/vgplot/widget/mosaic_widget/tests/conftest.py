@@ -30,14 +30,6 @@ DataFrameConstructor: TypeAlias = Callable[[Data], NwDataFrame]
 """A constructor for a [`narwhals.DataFrame`][]."""
 
 
-@pytest.fixture(scope="session")
-def pd_dataframe() -> type[pd.DataFrame]:
-    pytest.importorskip("pandas")
-    import pandas as pd
-
-    return pd.DataFrame
-
-
 # TODO @dangotbanned: Fix `modin` warnings
 # - `from_dict`
 # - `attrs` False positive caused by `if hasattr(df, "attrs")` in https://github.com/apache/arrow/pull/47147
