@@ -19,6 +19,9 @@ extend-select = [
 extend-safe-fixes = ["FA", "TC", "UP"]
 ignore = ["G004", "TRY301", "EM102", "EM101", "TRY003", "FBT002", "S608", "TRY002", "ARG001"]
 
+[tool.pytest]
+strict_xfail = true
+
 [dependency-groups]
 dev = [
     "marimo>=0.23.9",
