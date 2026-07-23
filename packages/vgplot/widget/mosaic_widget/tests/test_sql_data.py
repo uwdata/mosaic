@@ -11,14 +11,6 @@ if TYPE_CHECKING:
     import pandas as pd
 
 
-@pytest.fixture(scope="module")
-def pd_dataframe() -> type[pd.DataFrame]:
-    pytest.importorskip("pandas")
-    import pandas as pd
-
-    return pd.DataFrame
-
-
 @pytest.fixture
 def weather_frame(pd_dataframe: type[pd.DataFrame]) -> pd.DataFrame:
     return pd_dataframe(
