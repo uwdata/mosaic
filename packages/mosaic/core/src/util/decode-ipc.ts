@@ -7,9 +7,6 @@ import { tableFromIPC } from '@uwdata/flechette';
  *
  * The returned Table is annotated with a non-enumerable `byteLength`
  * property that reports the exact size (in bytes) of the input IPC data.
- * This lets byte-budgeted caches (e.g. `lruCache({ maxBytes })`) size an
- * Arrow result precisely without estimating. The property is non-enumerable
- * so it does not appear in iteration, JSON serialization, or object spreads.
  *
  * @param data Arrow IPC bytes.
  * @param options Arrow IPC extraction options.
@@ -42,4 +39,23 @@ function ipcByteSize(data: ArrayBufferLike | Uint8Array | Uint8Array[]): number 
     return total;
   }
   return (data as ArrayBufferLike | Uint8Array).byteLength ?? 0;
+}
+
+/**
+ * Attach a `byteLength` property to a cached value. Used by the
+ * connectors to annotate JSON record arrays.
+ *
+ * @param value The value to annotate. Must be a non-null object.
+ * @param bytes The exact byte size to record. Ignored if not positive.
+ */
+export function annotateByteLength<T extends object>(value: T, bytes: number): T {
+  if (bytes > 0) {
+    Object.defineProperty(value, 'byteLength', {
+      value: bytes,
+      enumerable: false,
+      writable: false,
+      configurable: true
+    });
+  }
+  return value;
 }

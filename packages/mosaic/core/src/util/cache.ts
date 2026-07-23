@@ -19,13 +19,11 @@ export function voidCache(): Cache {
 }
 
 /**
- * Create a new cache that uses an LRU eviction policy, capped by the total
- * observed byte size of its entries rather than by entry count. Eviction is
- * synchronous: on every `set` that pushes the cache past `maxBytes`, the
- * evict pass runs inline (dropping any TTL-expired entries and the single
- * least-recently-used entry) and repeats until the cache fits under budget.
- * There is no deferral to `requestIdleCallback`, so `maxBytes` is enforced
- * as a hard cap rather than a soft target.
+ * Create a new cache that uses an LRU eviction policy, capped by the
+ * total memory usage. Eviction is synchronous: on every `set` that 
+ * pushes the cache past `maxBytes`, the
+ * evict pass runs immediately (dropping any TTL-expired entries and the single
+ * LRU query) until the cache fits according to the memory requirement.
  *
  * @param options Cache options.
  * @param options.maxBytes Maximum total observed bytes across all entries.
@@ -33,7 +31,7 @@ export function voidCache(): Cache {
  * @returns An LRU cache implementation.
  */
 export function lruCache({
-  maxBytes = 32 * 1024 * 1024, // 32 MB
+  maxBytes = 32 * 1024 * 1024, // 32 MB of allocated default memory
   ttl = 3 * 60 * 60 * 1000 // 3 hours
 }: {
   maxBytes?: number;
@@ -41,7 +39,11 @@ export function lruCache({
 } = {}): Cache {
   let cache = new Map<string, CacheEntry>();
   let totalBytes = 0;
-
+  /**
+   * Looks through our LRU cache and removes any expired queries and the current LRU query.
+   * Opts for a "naive" O(n) lookthrough to get and eliminate expired queries and the LRU.
+   * While this is computationally expensive, it makes the code less complex.
+   */
   function evict(): void {
     const expire = performance.now() - ttl;
     let lruKey: string | null = null;
@@ -50,20 +52,17 @@ export function lruCache({
     for (const [key, entry] of cache) {
       const { last } = entry;
 
-      // least recently used entry seen so far
       if (last < lruLast) {
         lruKey = key;
         lruLast = last;
       }
 
-      // remove if time since last access exceeds ttl
       if (expire > last) {
         totalBytes -= entry.size;
         cache.delete(key);
       }
     }
 
-    // remove lru entry
     if (lruKey) {
       const lru = cache.get(lruKey);
       if (lru) totalBytes -= lru.size;
@@ -81,14 +80,12 @@ export function lruCache({
     },
     set(key: string, value: unknown): unknown {
       const size = byteSize(value);
-      // Update in place — refund the prior entry's bytes before recounting.
       const prior = cache.get(key);
       if (prior) totalBytes -= prior.size;
       cache.set(key, { last: performance.now(), size, value });
       totalBytes += size;
-      // Enforce the budget inline. The loop guard on cache.size prevents an
-      // infinite loop if a single entry is larger than maxBytes on its own
-      // (evict() would remove it, cache goes empty, we stop).
+      // The loop guard on cache.size prevents an
+      // infinite loop if a single entry is larger than maxBytes on its own.
       while (totalBytes > maxBytes && cache.size > 0) evict();
       return value;
     },
@@ -100,9 +97,9 @@ export function lruCache({
 }
 
 /**
- * Best-effort byte size for a cached value. Exact for strings, ArrayBuffers,
- * and typed arrays; approximated via JSON.stringify for plain objects; 0
- * when nothing sensible can be measured.
+ * Byte size for a cached value. Mosaic connectors produce a bytesize to use reliably. Unannotated shapes return 0, treating them as
+ * free. This should not be of concern since every query that is stored in the cache goes through the respective connectors that have an 
+ * annotated bytesize.
  */
 function byteSize(value: unknown): number {
   if (value == null) return 0;
@@ -112,11 +109,6 @@ function byteSize(value: unknown): number {
   if (typeof value === 'object') {
     const bl = (value as { byteLength?: unknown }).byteLength;
     if (typeof bl === 'number') return bl;
-    try {
-      return JSON.stringify(value).length * 2;
-    } catch {
-      return 0;
-    }
   }
   return 0;
 }

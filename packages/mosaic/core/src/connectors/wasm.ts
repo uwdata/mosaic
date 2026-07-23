@@ -1,7 +1,7 @@
 import type { ExtractionOptions, Table } from '@uwdata/flechette';
 import type { ArrowQueryRequest, Connector, ExecQueryRequest, ConnectorQueryRequest } from './Connector.js';
 import * as duckdb from '@duckdb/duckdb-wasm';
-import { decodeIPC } from '../util/decode-ipc.js';
+import { annotateByteLength, decodeIPC } from '../util/decode-ipc.js';
 
 interface DuckDBWASMOptions {
   /** Flag to enable logging. */
@@ -78,6 +78,8 @@ export class DuckDBWASMConnector implements Connector {
     const { type, sql } = query;
     const con = await this.getConnection();
     const result = await getArrowIPC(con, sql);
+    if (type === 'exec') return undefined;
+    if (type === 'arrow') return decodeIPC(result, this._ipc);
     return type === 'exec' ? undefined : decodeIPC(result, this._ipc);
   }
 }
