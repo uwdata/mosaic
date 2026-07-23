@@ -1,11 +1,13 @@
 import logging
+from pathlib import Path
 
 import pytest
 from narwhals.typing import IntoFrame
 
 from mosaic_widget.frame_interop import frame_to_duckdb_registrable
 
-CSV_PATH = "../../../data/seattle-weather.csv"
+ROOT = Path(__file__).parent.parent.parent.parent.parent.parent
+CSV_PATH = (ROOT / "data/seattle-weather.csv").as_posix()
 
 
 @pytest.fixture
