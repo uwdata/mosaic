@@ -93,7 +93,7 @@ function generateMarks(defs) {
     // and any non-identifier keys (e.g. a stray `$schema`).
     const props = Object.keys(propsObj)
       .filter(p => p !== 'mark' && p !== 'data' && /^[A-Za-z][A-Za-z0-9]*$/.test(p));
-    const params = props.map(p => `    ${ident(p)}: ChannelValue = UNSET,`);
+    const params = props.map(p => `    ${ident(p)}: ChannelValue | UNSET = UNSET,`);
     const doc = docline(description, `The ${mark} mark.`);
     out.push(
       `def ${fn}(`,
@@ -195,7 +195,7 @@ function generateEncodings(defs) {
     const [min, max] = argRange(prop);
     const args = (TRANSFORM_ARGS[key] ?? ['col']).slice(0, max);
     while (args.length < max) args.push(`arg${args.length + 1}`);
-    const params = args.map((a, i) => `${a}: TransformArg${i < min ? '' : ' = UNSET'}`);
+    const params = args.map((a, i) => `${a}: TransformArg${i < min ? '' : ' | UNSET = UNSET'}`);
     const body = max === 0
       ? `    return {${JSON.stringify(key)}: None, **options}`
       : `    return _transform(${JSON.stringify(key)}, (${args.join(', ')}${args.length === 1 ? ',' : ''}), options)`;

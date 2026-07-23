@@ -54,7 +54,7 @@ def column(col: TransformArg, **options: Any) -> dict[str, Any]:
     return _transform("column", (col,), options)
 
 
-def count(col: TransformArg = UNSET, **options: Any) -> dict[str, Any]:
+def count(col: TransformArg | UNSET = UNSET, **options: Any) -> dict[str, Any]:
     """Compute the count of records in an aggregation group."""
     return _transform("count", (col,), options)
 
@@ -101,8 +101,8 @@ def geojson(col: TransformArg, **options: Any) -> dict[str, Any]:
 
 def lag(
     col: TransformArg,
-    offset: TransformArg = UNSET,
-    default: TransformArg = UNSET,
+    offset: TransformArg | UNSET = UNSET,
+    default: TransformArg | UNSET = UNSET,
     **options: Any,
 ) -> dict[str, Any]:
     """Compute lagging values in a column."""
@@ -121,8 +121,8 @@ def last_value(col: TransformArg, **options: Any) -> dict[str, Any]:
 
 def lead(
     col: TransformArg,
-    offset: TransformArg = UNSET,
-    default: TransformArg = UNSET,
+    offset: TransformArg | UNSET = UNSET,
+    default: TransformArg | UNSET = UNSET,
     **options: Any,
 ) -> dict[str, Any]:
     """Compute leading values in a column."""
@@ -150,7 +150,7 @@ def mode(col: TransformArg, **options: Any) -> dict[str, Any]:
 
 
 def nth_value(
-    col: TransformArg, offset: TransformArg = UNSET, **options: Any
+    col: TransformArg, offset: TransformArg | UNSET = UNSET, **options: Any
 ) -> dict[str, Any]:
     """Get the nth value of the given column in the current window frame, counting from one."""
     return _transform("nth_value", (col, offset), options)
