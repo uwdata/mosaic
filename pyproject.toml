@@ -22,6 +22,19 @@ ignore = ["G004", "TRY301", "EM102", "EM101", "TRY003", "FBT002", "S608", "TRY00
 [tool.pytest]
 strict_xfail = true
 
+[tool.pyright]
+include = [
+    "packages/server/duckdb-server/**/*.py",
+    "packages/vgplot/widget/**/*.py",
+    "packages/vgplot/vgplot-python/**/*.py",
+    "dev/notebooks/weather.py",
+    "specs/python/*.py",
+]
+ignore = ["**/.venv/", "../../../**/*typeshed*"]  # Do not display diagnostics in external source code
+typeCheckingMode = "standard"
+reportUnnecessaryTypeIgnoreComment = "error"
+reportUnusedExpression = "none" # covered by ruff
+
 [dependency-groups]
 dev = [
     "marimo>=0.23.9",
