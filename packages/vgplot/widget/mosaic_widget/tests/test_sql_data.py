@@ -1,13 +1,27 @@
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
 import duckdb
-import pandas as pd
 import pytest
 
 from mosaic_widget import MosaicWidget
 
+if TYPE_CHECKING:
+    import pandas as pd
+
+
+@pytest.fixture(scope="module")
+def pd_dataframe() -> type[pd.DataFrame]:
+    pytest.importorskip("pandas")
+    import pandas as pd
+
+    return pd.DataFrame
+
 
 @pytest.fixture
-def weather_frame() -> pd.DataFrame:
-    return pd.DataFrame(
+def weather_frame(pd_dataframe: type[pd.DataFrame]) -> pd.DataFrame:
+    return pd_dataframe(
         {
             "x": [1, 2, 3, 4, 5],
             "weather": ["sun", "rain", "sun", "fog", "rain"],
@@ -76,17 +90,20 @@ def test_data_filter_by_unknown_errors(widget: MosaicWidget) -> None:
 
 
 def test_data_explicit_table_not_registered() -> None:
+    pytest.importorskip("pandas")
     con = duckdb.connect()
     con.execute("CREATE TABLE extras AS SELECT * FROM (VALUES (1), (2)) t(v)")
     widget = MosaicWidget(con=con)
     assert len(widget.data("extras").df()) == 2
 
 
-def test_data_multiple_tables_requires_table_argument() -> None:
+def test_data_multiple_tables_requires_table_argument(
+    pd_dataframe: type[pd.DataFrame],
+) -> None:
     widget = MosaicWidget(
         data={
-            "a": pd.DataFrame({"v": [1, 2]}),
-            "b": pd.DataFrame({"v": [3, 4]}),
+            "a": pd_dataframe({"v": [1, 2]}),
+            "b": pd_dataframe({"v": [3, 4]}),
         },
     )
     with pytest.raises(ValueError, match="Multiple source tables"):
