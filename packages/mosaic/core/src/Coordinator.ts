@@ -402,13 +402,13 @@ function updateSelection(
 
     if (info) {
       // skip due to cross-filtering
-      if (info?.skip) return;
+      if (info.skip) return;
       // generate and issue preaggregate update query
-      const query = (info as PreAggregateInfo)?.query(active);
+      const query = (info as PreAggregateInfo).query(active);
       const result = await mc.updateClient(client, query);
-      // if preaggregation fails, fall through to standard query
-      // this safeguards against any preagg bugs
       if (!(result instanceof QueryError)) return;
+      // if preaggregate update fails, fall through to standard query
+      // this safeguards against potential preagg bugs
     }
 
     // generate and issue standard query
