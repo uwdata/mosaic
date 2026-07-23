@@ -1,31 +1,29 @@
+from __future__ import annotations
+
 import logging
 import sys
 import time
 from functools import partial
+from typing import TYPE_CHECKING, Any, Protocol
 
 import ujson
 from socketify import App, CompressOptions, OpCode
-import duckdb
 
 from pkg.query import get_arrow_bytes, get_json, retrieve
+
+if TYPE_CHECKING:
+    import duckdb
 
 logger = logging.getLogger(__name__)
 
 SLOW_QUERY_THRESHOLD = 5000
 
 
-class Handler:
-    def done(self):
-        raise Exception("NotImplementedException")
-
-    def arrow(self, buffer):
-        raise Exception("NotImplementedException")
-
-    def json(self, data):
-        raise Exception("NotImplementedException")
-
-    def error(self, error):
-        raise Exception("NotImplementedException")
+class Handler(Protocol):
+    def done(self) -> None: ...
+    def arrow(self, buffer: Any) -> None: ...
+    def json(self, data: Any) -> None: ...
+    def error(self, error: Any) -> None: ...
 
 
 class SocketHandler(Handler):
@@ -36,19 +34,19 @@ class SocketHandler(Handler):
         if not ok:
             logger.warning(f"WebSocket backpressure: {self.ws.get_buffered_amount()}")
 
-    def done(self):  # pyright: ignore[reportIncompatibleMethodOverride]
+    def done(self):
         ok = self.ws.send({}, OpCode.TEXT)
         self.check(ok)
 
-    def arrow(self, buffer):  # pyright: ignore[reportIncompatibleMethodOverride]
+    def arrow(self, buffer):
         ok = self.ws.send(buffer, OpCode.BINARY)
         self.check(ok)
 
-    def json(self, data):  # pyright: ignore[reportIncompatibleMethodOverride]
+    def json(self, data):
         ok = self.ws.send(data, OpCode.TEXT)
         self.check(ok)
 
-    def error(self, error):  # pyright: ignore[reportIncompatibleMethodOverride]
+    def error(self, error):
         ok = self.ws.send({"error": str(error)}, OpCode.TEXT)
         self.check(ok)
 
@@ -57,18 +55,18 @@ class HTTPHandler(Handler):
     def __init__(self, res):
         self.res = res
 
-    def done(self):  # pyright: ignore[reportIncompatibleMethodOverride]
+    def done(self):
         self.res.end("")
 
-    def arrow(self, buffer):  # pyright: ignore[reportIncompatibleMethodOverride]
+    def arrow(self, buffer):
         self.res.write_header("Content-Type", "application/octet-stream")
         self.res.end(buffer)
 
-    def json(self, data):  # pyright: ignore[reportIncompatibleMethodOverride]
+    def json(self, data):
         self.res.write_header("Content-Type", "application/json")
         self.res.end(data)
 
-    def error(self, error):  # pyright: ignore[reportIncompatibleMethodOverride]
+    def error(self, error):
         self.res.write_status(500)
         self.res.end(str(error))
 
