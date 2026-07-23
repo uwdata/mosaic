@@ -24,7 +24,7 @@ export interface MakeClientOptions {
   /** Called by the coordinator to inform the client that a query is pending. */
   queryPending?: () => void;
   /** Called by the coordinator to report a query execution error. */
-  queryError?: (error: Error) => void;
+  queryError?: (error: QueryError) => void;
 }
 
 /**
