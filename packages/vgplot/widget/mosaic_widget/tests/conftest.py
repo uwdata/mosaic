@@ -1,13 +1,15 @@
 from __future__ import annotations
 
+import enum
 from collections.abc import Callable, Mapping, Sequence
 from functools import partial
 from importlib.util import find_spec
-from typing import TYPE_CHECKING, Any, Final, Literal, TypeAlias
+from typing import TYPE_CHECKING, Any, Final, Generic, TypeAlias, TypeVar
 
 import narwhals as nw
 import pytest
 from narwhals import Implementation as Impl
+from narwhals.typing import EagerAllowed, LazyAllowed
 from pytest import FixtureRequest as Request
 
 if TYPE_CHECKING:
@@ -18,7 +20,6 @@ if TYPE_CHECKING:
     import pandas as pd
     import polars as pl
     import pyarrow as pa
-    from narwhals.typing import EagerAllowed, LazyAllowed
 
     NativeDataFrame: TypeAlias = pa.Table | pd.DataFrame | pl.DataFrame | mpd.DataFrame
     NativeLazyFrame: TypeAlias = (
@@ -35,45 +36,76 @@ NwDataFrame: TypeAlias = nw.DataFrame["NativeDataFrame"]
 DataFrameConstructor: TypeAlias = Callable[[Data], NwDataFrame]
 """A constructor for a [`narwhals.DataFrame`][]."""
 
-LazyOnly: TypeAlias = Literal[Impl.IBIS, Impl.DUCKDB, Impl.DASK]
 
-_EAGER: Final[Mapping[str, EagerAllowed]] = {
-    "polars": Impl.POLARS,
-    "pyarrow": Impl.PYARROW,
-    "pandas": Impl.PANDAS,
-    "modin.pandas": Impl.MODIN,
-}
-_LAZY: Final[Mapping[str, LazyAllowed]] = {
-    "polars": Impl.POLARS,
-    "ibis": Impl.IBIS,
-    "duckdb": Impl.DUCKDB,
-    "dask.dataframe": Impl.DASK,
-}
+class Warn(enum.Flag):
+    COPY = enum.auto()
+    MATERIALIZE = enum.auto()
+    ALL = COPY | MATERIALIZE
+
+
+_LAZY: Final = frozenset[LazyAllowed]().union(
+    *((i, i.value) for i in (Impl.POLARS, Impl.IBIS, Impl.DUCKDB, Impl.DASK))
+)
+
+_BackendT = TypeVar("_BackendT", bound=EagerAllowed | LazyAllowed, covariant=True)
+
+
+class Backend(Generic[_BackendT]):
+    """Wrapper around a Narwhals [`backend`][narwhals.typing.IntoBackend]."""
+
+    __slots__ = ("requires", "value", "warn")
+
+    def __init__(
+        self, value: _BackendT, requires: str = "", warn: Warn = Warn(0)
+    ) -> None:
+        self.value: _BackendT = value
+        """Argument for `backend` in Narwhals constructors."""
+        self.requires: str = requires or str(value)
+        """Package that must be available for this backend."""
+        self.warn: Warn = warn
+        """Warnings expected on registration."""
+
+    def __repr__(self) -> str:
+        return str(self.value)
+
+    def is_available(self) -> bool:
+        return bool(find_spec(self.requires))
+
+    def is_lazy_allowed(self) -> bool:
+        return self.value in _LAZY
+
+    def is_eager_allowed(self) -> bool:
+        return self.value not in (_LAZY - {Impl.POLARS, "polars"})
+
+
+_BACKENDS: Final = (
+    Backend("polars"),
+    Backend("pyarrow"),
+    Backend("pandas"),
+    Backend("modin", "modin.pandas", Warn.COPY),
+    Backend("ibis", warn=Warn.ALL),
+    Backend("duckdb", warn=Warn.ALL),
+    Backend("dask", "dask.dataframe", Warn.ALL),
+)
 
 
 @pytest.fixture(
-    scope="session", params=tuple(v for k, v in _EAGER.items() if find_spec(k))
+    scope="session",
+    params=tuple(b for b in _BACKENDS if b.is_eager_allowed() and b.is_available()),
+    ids=str,
 )
-def eager(request: Request) -> EagerAllowed:
-    backend: EagerAllowed = request.param
-    return backend
-
-
-# TODO @dangotbanned: Either use this somewhere or remove
-@pytest.fixture(
-    scope="session", params=tuple(v for k, v in _LAZY.items() if find_spec(k))
-)
-def lazy(request: Request) -> LazyAllowed:
-    backend: LazyAllowed = request.param
+def eager(request: Request) -> Backend[EagerAllowed]:
+    backend: Backend[EagerAllowed] = request.param
     return backend
 
 
 @pytest.fixture(
     scope="session",
-    params=tuple(v for k, v in _LAZY.items() if v is not Impl.POLARS and find_spec(k)),
+    params=tuple(b for b in _BACKENDS if b.is_lazy_allowed() and b.is_available()),
+    ids=str,
 )
-def lazy_only(request: Request) -> LazyOnly:
-    backend: LazyOnly = request.param
+def lazy(request: Request) -> Backend[LazyAllowed]:
+    backend: Backend[LazyAllowed] = request.param
     return backend
 
 
@@ -81,5 +113,5 @@ def lazy_only(request: Request) -> LazyOnly:
 # - `from_dict`
 # - `attrs` False positive caused by `if hasattr(df, "attrs")` in https://github.com/apache/arrow/pull/47147
 @pytest.fixture(scope="session")
-def nw_dataframe(eager: EagerAllowed) -> DataFrameConstructor:
-    return partial(nw.DataFrame.from_dict, backend=eager)
+def nw_dataframe(eager: Backend[EagerAllowed]) -> DataFrameConstructor:
+    return partial(nw.DataFrame.from_dict, backend=eager.value)

@@ -5,73 +5,68 @@ from typing import TYPE_CHECKING
 
 import narwhals as nw
 import pytest
-from narwhals import Implementation as Impl
 
 from mosaic_widget.frame_interop import frame_to_duckdb_registrable
 
+from .conftest import Warn
+
 if TYPE_CHECKING:
-    from collections.abc import Mapping
-
     import pyarrow as pa
+    from pytest import LogCaptureFixture as LogCapture
 
-    from .conftest import EagerAllowed, LazyOnly, NativeLazyFrame
+    from .conftest import Backend, EagerAllowed, LazyAllowed, NativeLazyFrame
 
 CSV_PATH = "../../../data/seattle-weather.csv"
 
 
-# TODO @dangotbanned: Add doc, explain why (avoiding multiple csv readers)
 @pytest.fixture(scope="module")
-def seattle_weather() -> nw.DataFrame[pa.Table]:
+def pyarrow_frame() -> nw.DataFrame[pa.Table]:
+    # NOTE: `pyarrow` is the single source because:
+    # - All other backends support it natively
+    # - `read_csv` infers temporal columns by default
+    # - `seattle-weather.csv` contains a `date`-typed column
+    #   - but numpy-based type systems will use `datetime`
+    #   - `pandas` can understand `date` iff it is backed by pyarrow
     return nw.read_csv(CSV_PATH, backend="pyarrow")
 
 
 @pytest.fixture
-def caplog(caplog: pytest.LogCaptureFixture) -> pytest.LogCaptureFixture:
+def caplog(caplog: LogCapture) -> LogCapture:
     caplog.set_level(logging.WARNING)
     return caplog
 
 
-def zero_copy_warning_emitted(caplog: pytest.LogCaptureFixture) -> bool:
-    return any(
-        "This may not be a zero-copy operation" in record.message
-        for record in caplog.records
-    )
-
-
-def materializing_lazy_frame_warning_emitted(caplog: pytest.LogCaptureFixture) -> bool:
-    return any(
-        "Materializing lazy frame" in record.message for record in caplog.records
-    )
+def check_warns(caplog: LogCapture, warn: Warn) -> None:
+    copy = "This may not be a zero-copy operation"
+    materialize = "Materializing lazy frame"
+    warn_copy = any(copy in msg for msg in caplog.messages)
+    warn_materialize = any(materialize in msg for msg in caplog.messages)
+    match warn:
+        case Warn.ALL:
+            assert warn_copy and warn_materialize
+        case Warn.COPY:
+            assert warn_copy and not warn_materialize
+        case Warn.MATERIALIZE:
+            assert not warn_copy and warn_materialize
+        case _:
+            assert not (warn_copy or warn_materialize)
 
 
 def test_frame_to_duckdb_registrable_eager(
-    seattle_weather: nw.DataFrame[pa.Table],
-    eager: EagerAllowed,
-    caplog: pytest.LogCaptureFixture,
+    pyarrow_frame: nw.DataFrame[pa.Table],
+    eager: Backend[EagerAllowed],
+    caplog: LogCapture,
 ) -> None:
-    zero_copy: Mapping[EagerAllowed, bool] = {
-        Impl.POLARS: True,
-        Impl.PYARROW: True,
-        Impl.PANDAS: True,
-        Impl.MODIN: False,
-    }
-    frame = nw.from_arrow(seattle_weather, backend=eager).to_native()
-    should_warn = not (zero_copy[eager])
+    frame = nw.from_arrow(pyarrow_frame, backend=eager.value).to_native()
     assert frame_to_duckdb_registrable(frame) is not None
-
-    # Converting non-native eager frames should warn about potential non-zero-copy operations but not about materializing lazy frames
-    assert not materializing_lazy_frame_warning_emitted(caplog)
-    assert zero_copy_warning_emitted(caplog) == should_warn
+    check_warns(caplog, eager.warn)
 
 
 def test_frame_to_duckdb_registrable_lazy(
-    seattle_weather: nw.DataFrame[pa.Table],
-    lazy_only: LazyOnly,
-    caplog: pytest.LogCaptureFixture,
+    pyarrow_frame: nw.DataFrame[pa.Table],
+    lazy: Backend[LazyAllowed],
+    caplog: LogCapture,
 ) -> None:
-    frame: NativeLazyFrame = seattle_weather.lazy(lazy_only).to_native()
+    frame: NativeLazyFrame = pyarrow_frame.lazy(lazy.value).to_native()
     assert frame_to_duckdb_registrable(frame) is not None
-
-    # Converting lazy frames should warn both about materializing and potential non-zero-copy operations
-    assert materializing_lazy_frame_warning_emitted(caplog)
-    assert zero_copy_warning_emitted(caplog)
+    check_warns(caplog, lazy.warn)
