@@ -166,6 +166,8 @@ export class Coordinator {
    * @param options.cache If true, cache the query result client-side within the QueryManager.
    * @param options.persist If true, request the database server to persist a cached query server-side.
    * @param options.priority The query priority, defaults to `Priority.Normal`.
+   * @param options.stream Stream ID for grouping related requests (e.g., 'brush').
+   * @param options.latest If true, keeps only the most recent pending request for the stream ID. Older queued requests are pruned.
    * @returns A query result promise.
    */
   query(
@@ -175,6 +177,8 @@ export class Coordinator {
       cache?: boolean;
       persist?: boolean;
       priority?: number;
+      stream?: string;
+      latest?: boolean;
       [key: string]: unknown;
     }
   ): QueryResult<Table>;
@@ -185,6 +189,8 @@ export class Coordinator {
       cache?: boolean;
       persist?: boolean;
       priority?: number;
+      stream?: string;
+      latest?: boolean;
       [key: string]: unknown;
     }
   ): QueryResult<unknown>;
@@ -195,6 +201,8 @@ export class Coordinator {
       cache?: boolean;
       persist?: boolean;
       priority?: number;
+      stream?: string;
+      latest?: boolean;
       [key: string]: unknown;
     } = {}
   ): QueryResult<any> {
@@ -202,9 +210,11 @@ export class Coordinator {
       type = 'arrow',
       cache = true,
       priority = Priority.Normal,
+      stream,
+      latest,
       ...otherOptions
     } = options;
-    return this.manager.request({ type, query, cache, options: otherOptions }, priority);
+    return this.manager.request({ type, query, cache, stream, latest, options: otherOptions }, priority);
   }
 
   /**
@@ -217,11 +227,11 @@ export class Coordinator {
    */
   prefetch(
     query: QueryType,
-    options?: { type?: 'arrow'; [key: string]: unknown }
+    options?: { type?: 'arrow';[key: string]: unknown }
   ): QueryResult<Table>
   prefetch(
     query: QueryType,
-    options?: { type?: 'json'; [key: string]: unknown }
+    options?: { type?: 'json';[key: string]: unknown }
   ): QueryResult<unknown>
   prefetch(
     query: QueryType,
