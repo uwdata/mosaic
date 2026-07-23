@@ -251,7 +251,6 @@ export class Coordinator {
         data => client.queryResult(data).update(),
         err => {
           const e = new QueryError(err, query);
-          console.warn(`${e}`);
           this._logger?.error(e);
           client.queryError(e);
           return e;
