@@ -21,7 +21,9 @@ ignore = ["G004", "TRY301", "EM102", "EM101", "TRY003", "FBT002", "S608", "TRY00
 
 [tool.pytest]
 strict_xfail = true
-env = ["MODIN_ENGINE=python"]
+
+[tool.pytest_env]
+MODIN_ENGINE = "python"
 
 [dependency-groups]
 dev = [
