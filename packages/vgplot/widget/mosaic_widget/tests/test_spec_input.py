@@ -46,7 +46,7 @@ def test_spec_object_without_context_falls_back():
 def test_object_without_to_dict_raises():
     with pytest.raises(TypeError, match="to_dict"):
         # An object without to_dict() is intentionally invalid input.
-        MosaicWidget(object())  # ty: ignore[invalid-argument-type]
+        MosaicWidget(object())  # pyright: ignore[reportArgumentType] # ty: ignore[invalid-argument-type]
 
 
 class FrameDataSpec:

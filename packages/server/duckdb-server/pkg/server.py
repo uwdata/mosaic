@@ -36,19 +36,19 @@ class SocketHandler(Handler):
         if not ok:
             logger.warning(f"WebSocket backpressure: {self.ws.get_buffered_amount()}")
 
-    def done(self):
+    def done(self):  # pyright: ignore[reportIncompatibleMethodOverride]
         ok = self.ws.send({}, OpCode.TEXT)
         self.check(ok)
 
-    def arrow(self, buffer):
+    def arrow(self, buffer):  # pyright: ignore[reportIncompatibleMethodOverride]
         ok = self.ws.send(buffer, OpCode.BINARY)
         self.check(ok)
 
-    def json(self, data):
+    def json(self, data):  # pyright: ignore[reportIncompatibleMethodOverride]
         ok = self.ws.send(data, OpCode.TEXT)
         self.check(ok)
 
-    def error(self, error):
+    def error(self, error):  # pyright: ignore[reportIncompatibleMethodOverride]
         ok = self.ws.send({"error": str(error)}, OpCode.TEXT)
         self.check(ok)
 
@@ -57,18 +57,18 @@ class HTTPHandler(Handler):
     def __init__(self, res):
         self.res = res
 
-    def done(self):
+    def done(self):  # pyright: ignore[reportIncompatibleMethodOverride]
         self.res.end("")
 
-    def arrow(self, buffer):
+    def arrow(self, buffer):  # pyright: ignore[reportIncompatibleMethodOverride]
         self.res.write_header("Content-Type", "application/octet-stream")
         self.res.end(buffer)
 
-    def json(self, data):
+    def json(self, data):  # pyright: ignore[reportIncompatibleMethodOverride]
         self.res.write_header("Content-Type", "application/json")
         self.res.end(data)
 
-    def error(self, error):
+    def error(self, error):  # pyright: ignore[reportIncompatibleMethodOverride]
         self.res.write_status(500)
         self.res.end(str(error))
 

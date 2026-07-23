@@ -13,7 +13,7 @@ def is_registrable_frame(obj: object) -> bool:
     ):
         return False
     try:
-        nw.from_native(obj)  # ty: ignore[no-matching-overload]
+        nw.from_native(obj)  # pyright: ignore[reportArgumentType, reportCallIssue] # ty: ignore[no-matching-overload]
     except TypeError:
         return False
     return True

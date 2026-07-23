@@ -103,10 +103,10 @@ class MosaicWidget(anywidget.AnyWidget):
                     f"spec must be a dict or have a to_dict() method, got {type(spec)}"
                 )
             try:
-                spec = to_dict(_context=caller_locals)
+                spec = to_dict(_context=caller_locals)  # pyright: ignore[reportAssignmentType]
             except TypeError:
-                spec = to_dict()
-        spec = _register_frame_data(spec, data)
+                spec = to_dict()  # pyright: ignore[reportAssignmentType]
+        spec = _register_frame_data(spec, data)  # pyright: ignore[reportArgumentType]
         if con is None:
             con = duckdb.connect()
 
