@@ -74,7 +74,7 @@ describe('filterPushdown', () => {
       );
     const f = filterPushdown(q, 't1', gt('num2', 2));
     await expect(f).toBeValidQuery(
-      'WITH "_t1" AS (SELECT * FROM "t1" WHERE ("num2" > 2)) SELECT * FROM "_t1" JOIN "t2" USING ("num3")'
+      'WITH "_t1" AS (SELECT * FROM "t1" WHERE ("num2" > 2)) SELECT * FROM "_t1" AS "t1" JOIN "t2" USING ("num3")'
     );
   });
 
@@ -89,6 +89,45 @@ describe('filterPushdown', () => {
     const f = filterPushdown(q, 't1', gt('num2', 2));
     await expect(f).toBeValidQuery(
       'WITH "_t1" AS (SELECT * FROM "t1" WHERE ("num2" > 2)) SELECT "T"."num1" AS "num1", "T"."num2" AS "num2", "O"."num3" AS "num3" FROM "_t1" AS "T", "t2" AS "O" WHERE ("T"."num3" = "O"."num3")'
+    );
+  });
+
+  it('preserves columns qualified by the base table name', async () => {
+    const q = Query.select(column('num1', 't1')).from('t1');
+    const f = filterPushdown(q, 't1', gt('num2', 2));
+    await expect(f).toBeValidQuery(
+      'WITH "_t1" AS (SELECT * FROM "t1" WHERE ("num2" > 2)) SELECT "t1"."num1" AS "num1" FROM "_t1" AS "t1"'
+    );
+  });
+
+  it('preserves qualified columns over joined tables', async () => {
+    const q = Query
+      .select(column('num1', 't1'))
+      .from(join('t1', 't2'));
+    const f = filterPushdown(q, 't1', gt('num2', 2));
+    await expect(f).toBeValidQuery(
+      'WITH "_t1" AS (SELECT * FROM "t1" WHERE ("num2" > 2)) SELECT "t1"."num1" AS "num1" FROM "_t1" AS "t1" NATURAL JOIN "t2"'
+    );
+  });
+
+  it('preserves qualified columns over unaliased from clauses', async () => {
+    const q = Query
+      .select(column('num1', 't1'))
+      .from(new FromClauseNode(new TableRefNode('t1')));
+    const f = filterPushdown(q, 't1', gt('num2', 2));
+    await expect(f).toBeValidQuery(
+      'WITH "_t1" AS (SELECT * FROM "t1" WHERE ("num2" > 2)) SELECT "t1"."num1" AS "num1" FROM "_t1" AS "t1"'
+    );
+  });
+
+  it('preserves qualified columns in filter criteria', async () => {
+    const q = Query
+      .select('*')
+      .from('t1')
+      .where(eq(column('num1', 't1'), 1));
+    const f = filterPushdown(q, 't1', gt('num2', 2));
+    await expect(f).toBeValidQuery(
+      'WITH "_t1" AS (SELECT * FROM "t1" WHERE ("num2" > 2)) SELECT * FROM "_t1" AS "t1" WHERE ("t1"."num1" = 1)'
     );
   });
 

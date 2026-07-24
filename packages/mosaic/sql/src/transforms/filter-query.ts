@@ -1,5 +1,7 @@
-import { SCALAR_SUBQUERY } from '../constants.js';
+import { COLUMN_PARAM, COLUMN_REF, SCALAR_SUBQUERY } from '../constants.js';
 import type { FilterExpr } from '../types.js';
+import { FromClauseNode } from '../ast/from.js';
+import { JoinNode } from '../ast/join.js';
 import { Query } from '../ast/query.js';
 import { isTableRef, type TableRefNode } from '../ast/table-ref.js';
 import { asTableRef } from '../util/ast.js';
@@ -45,13 +47,37 @@ export function filterPushdown(
     filteredName = `_${filteredName}`;
   }
 
-  // rewrite table references to use filtered data
-  walk(clone, (node) => {
+  // rewrite table references to use filtered data, keeping the visible name
+  const visibleName = tableRef.name;
+  walk(clone, (node, parent) => {
     if (node.type === SCALAR_SUBQUERY) {
       return 1; // don't recurse
-    } else if (isTableRef(node) && arrayEquals(node.table, tableRef.table)) {
-      // @ts-expect-error set read-only property
-      node.table = [filteredName];
+    }
+    if (!isTableRef(node) || !arrayEquals(node.table, tableRef.table)) {
+      return;
+    }
+    if (parent?.type === COLUMN_REF || parent?.type === COLUMN_PARAM) {
+      return; // qualifiers bind to the visible name, so leave them as-is
+    }
+
+    // @ts-expect-error set read-only property
+    node.table = [filteredName];
+
+    if (parent instanceof FromClauseNode) {
+      if (!parent.alias) {
+        // @ts-expect-error set read-only property
+        parent.alias = visibleName;
+      }
+    } else if (parent instanceof JoinNode) {
+      // bare join operands have no alias, so wrap to preserve the name
+      const wrapped = new FromClauseNode(node, visibleName);
+      if (parent.left === node) {
+        // @ts-expect-error set read-only property
+        parent.left = wrapped;
+      } else if (parent.right === node) {
+        // @ts-expect-error set read-only property
+        parent.right = wrapped;
+      }
     }
   });
 
