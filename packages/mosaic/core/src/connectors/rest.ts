@@ -64,6 +64,5 @@ export class RestConnector implements Connector {
  * @returns The byte length of `s` when encoded as UTF-8.
  */
 function utf8Bytes(s: string): number {
-  const byteSize = new TextEncoder().encode(s).length;
-  return byteSize;
+  return new TextEncoder().encode(s).length;
 }
