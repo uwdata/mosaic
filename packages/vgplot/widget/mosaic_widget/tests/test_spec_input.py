@@ -1,3 +1,7 @@
+from __future__ import annotations
+
+from typing import Any
+
 import pytest
 
 from mosaic_widget import MosaicWidget
@@ -56,10 +60,10 @@ class FrameDataSpec:
     marks reference them by name. The widget's job is to register the frames.
     """
 
-    def __init__(self, data):
+    def __init__(self, data: dict[str, Any]):
         self._data = data
 
-    def to_dict(self, _context=None):
+    def to_dict(self, *, _context=None):
         marks = [{"mark": "dot", "data": {"from": name}} for name in self._data]
         return {"plot": marks, "data": dict(self._data)}
 
