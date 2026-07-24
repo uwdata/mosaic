@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import logging
+from pathlib import Path
 from typing import TYPE_CHECKING
 
 import narwhals as nw
@@ -16,7 +17,8 @@ if TYPE_CHECKING:
 
     from .conftest import Backend, EagerAllowed, LazyAllowed, NativeLazyFrame
 
-CSV_PATH = "../../../data/seattle-weather.csv"
+ROOT = Path(__file__).parent.parent.parent.parent.parent.parent
+CSV_PATH = (ROOT / "data/seattle-weather.csv").as_posix()
 
 
 @pytest.fixture(scope="module")
