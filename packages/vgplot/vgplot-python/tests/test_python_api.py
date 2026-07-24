@@ -101,7 +101,6 @@ class TestDataFrames:
         assert d["plot"][1]["data"] == {"from": "athletes"}
         assert d["data"]["weather"] is weather
         assert d["data"]["athletes"] == {"type": "csv", "file": "athletes.csv"}
-        vg.params
 
 
 if TYPE_CHECKING:
