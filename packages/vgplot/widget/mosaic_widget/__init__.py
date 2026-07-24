@@ -5,7 +5,7 @@ import logging
 import pathlib
 import time
 import warnings
-from typing import TYPE_CHECKING, Protocol
+from typing import TYPE_CHECKING, Any, Protocol
 
 import anywidget
 import duckdb
@@ -19,7 +19,7 @@ from mosaic_widget.frame_interop import (
 
 if TYPE_CHECKING:
     from narwhals.typing import IntoFrame
-
+    from typing_extensions import TypeIs
 
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
@@ -28,7 +28,12 @@ SLOW_QUERY_THRESHOLD = 5000
 
 
 class SupportsToDict(Protocol):
-    def to_dict(self) -> dict: ...
+    def to_dict(self, *, _context: dict[str, Any] | None = None) -> dict[str, Any]: ...
+
+
+def _has_to_dict(obj: Any) -> TypeIs[SupportsToDict]:
+    _sentinel = object()
+    return inspect.getattr_static(obj, "to_dict", _sentinel) is not _sentinel
 
 
 def _register_frame_data(spec: dict, data: dict) -> dict:
@@ -72,12 +77,12 @@ class MosaicWidget(anywidget.AnyWidget):
 
     def __init__(
         self,
-        spec: dict | SupportsToDict | None = None,
+        spec: dict[str, Any] | SupportsToDict | None = None,
         con: duckdb.DuckDBPyConnection | None = None,
         data: dict[str, IntoFrame] | None = None,
         *args,
         **kwargs,
-    ):
+    ) -> None:
         """Create a Mosaic widget.
 
         Args:
@@ -97,15 +102,15 @@ class MosaicWidget(anywidget.AnyWidget):
         if spec is None:
             spec = {}
         elif not isinstance(spec, dict):
-            to_dict = getattr(spec, "to_dict", None)
-            if not callable(to_dict):
-                raise TypeError(
+            if not _has_to_dict(spec):
+                msg = (
                     f"spec must be a dict or have a to_dict() method, got {type(spec)}"
                 )
+                raise TypeError(msg)
             try:
-                spec = to_dict(_context=caller_locals)  # pyright: ignore[reportAssignmentType]
+                spec = spec.to_dict(_context=caller_locals)
             except TypeError:
-                spec = to_dict()  # pyright: ignore[reportAssignmentType]
+                spec = spec.to_dict()
         spec = _register_frame_data(spec, data)  # pyright: ignore[reportArgumentType]
         if con is None:
             con = duckdb.connect()
