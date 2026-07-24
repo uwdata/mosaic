@@ -36,7 +36,7 @@ def _has_to_dict(obj: Any) -> TypeIs[SupportsToDict]:
     return inspect.getattr_static(obj, "to_dict", _sentinel) is not _sentinel
 
 
-def _register_frame_data(spec: dict, data: dict) -> dict:
+def _register_frame_data(spec: dict[str, Any], data: dict[str, Any]) -> dict[str, Any]:
     """Move in-memory DataFrames out of the spec's data section into `data`.
 
     The spec is synced to the frontend as JSON and cannot carry live frames, so
@@ -111,7 +111,7 @@ class MosaicWidget(anywidget.AnyWidget):
                 spec = spec.to_dict(_context=caller_locals)
             except TypeError:
                 spec = spec.to_dict()
-        spec = _register_frame_data(spec, data)  # pyright: ignore[reportArgumentType]
+        spec = _register_frame_data(spec, data)
         if con is None:
             con = duckdb.connect()
 
