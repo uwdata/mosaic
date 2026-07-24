@@ -100,23 +100,23 @@ class MosaicWidget(anywidget.AnyWidget):
         frame = inspect.currentframe()
         caller_locals = frame.f_back.f_locals if frame and frame.f_back else {}
         if spec is None:
-            spec = {}
-        elif not isinstance(spec, dict):
-            if not _has_to_dict(spec):
-                msg = (
-                    f"spec must be a dict or have a to_dict() method, got {type(spec)}"
-                )
-                raise TypeError(msg)
+            spec_: dict[str, Any] = {}
+        elif _has_to_dict(spec):
             try:
-                spec = spec.to_dict(_context=caller_locals)
+                spec_ = spec.to_dict(_context=caller_locals)
             except TypeError:
-                spec = spec.to_dict()
-        spec = _register_frame_data(spec, data)
+                spec_ = spec.to_dict()
+        elif isinstance(spec, dict):
+            spec_ = spec
+        else:
+            msg = f"spec must be a dict or have a to_dict() method, got {type(spec)}"
+            raise TypeError(msg)
+        spec_ = _register_frame_data(spec_, data)
         if con is None:
             con = duckdb.connect()
 
         super().__init__(*args, **kwargs)
-        self.spec = spec
+        self.spec = spec_
         self.con = con
         self._registered_tables: set[str] = set()
         for name, df in data.items():

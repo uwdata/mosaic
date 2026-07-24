@@ -44,7 +44,7 @@ def test_spec_object_with_context_receives_caller_locals():
 
 # NOTE: Reporting a diagnostic is correct, because the implementation accepts this object by catching a `TypeError`
 def test_spec_object_without_context_falls_back() -> None:
-    widget = MosaicWidget(SpecWithoutContext())  # pyright: ignore[reportArgumentType]
+    widget = MosaicWidget(SpecWithoutContext())  # pyright: ignore[reportArgumentType]  # ty:ignore[invalid-argument-type]
     assert widget.spec == {"plot": [], "seen": "plain"}
 
 
