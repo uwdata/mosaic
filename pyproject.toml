@@ -25,7 +25,7 @@ strict_xfail = true
 [tool.pyright]
 include = [
     "packages/server/duckdb-server/**/*.py",
-    "packages/vgplot/widget/**/*.py",
+    "packages/vgplot/widget/mosaic_widget/**/*.py",
     "packages/vgplot/vgplot-python/**/*.py",
     "dev/notebooks/weather.py",
     "specs/python/*.py",
