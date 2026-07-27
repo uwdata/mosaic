@@ -1,3 +1,7 @@
+from __future__ import annotations
+
+from typing import Any
+
 import pytest
 
 from mosaic_widget import MosaicWidget
@@ -38,15 +42,16 @@ def test_spec_object_with_context_receives_caller_locals():
     assert any(v is marker for v in spec_obj.received_context.values())
 
 
-def test_spec_object_without_context_falls_back():
-    widget = MosaicWidget(SpecWithoutContext())
+# NOTE: Reporting a diagnostic is correct, because the implementation accepts this object by catching a `TypeError`
+def test_spec_object_without_context_falls_back() -> None:
+    widget = MosaicWidget(SpecWithoutContext())  # pyright: ignore[reportArgumentType]  # ty:ignore[invalid-argument-type]
     assert widget.spec == {"plot": [], "seen": "plain"}
 
 
 def test_object_without_to_dict_raises():
     with pytest.raises(TypeError, match="to_dict"):
         # An object without to_dict() is intentionally invalid input.
-        MosaicWidget(object())  # ty: ignore[invalid-argument-type]
+        MosaicWidget(object())  # pyright: ignore[reportArgumentType] # ty: ignore[invalid-argument-type]
 
 
 class FrameDataSpec:
@@ -56,10 +61,10 @@ class FrameDataSpec:
     marks reference them by name. The widget's job is to register the frames.
     """
 
-    def __init__(self, data):
+    def __init__(self, data: dict[str, Any]):
         self._data = data
 
-    def to_dict(self, _context=None):
+    def to_dict(self, *, _context=None):
         marks = [{"mark": "dot", "data": {"from": name}} for name in self._data]
         return {"plot": marks, "data": dict(self._data)}
 

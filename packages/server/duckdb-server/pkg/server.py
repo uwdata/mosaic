@@ -1,31 +1,29 @@
+from __future__ import annotations
+
 import logging
 import sys
 import time
 from functools import partial
+from typing import TYPE_CHECKING, Any, Protocol
 
 import ujson
 from socketify import App, CompressOptions, OpCode
-import duckdb
 
 from pkg.query import get_arrow_bytes, get_json, retrieve
+
+if TYPE_CHECKING:
+    import duckdb
 
 logger = logging.getLogger(__name__)
 
 SLOW_QUERY_THRESHOLD = 5000
 
 
-class Handler:
-    def done(self):
-        raise Exception("NotImplementedException")
-
-    def arrow(self, buffer):
-        raise Exception("NotImplementedException")
-
-    def json(self, data):
-        raise Exception("NotImplementedException")
-
-    def error(self, error):
-        raise Exception("NotImplementedException")
+class Handler(Protocol):
+    def done(self) -> None: ...
+    def arrow(self, buffer: Any) -> None: ...
+    def json(self, data: Any) -> None: ...
+    def error(self, error: Any) -> None: ...
 
 
 class SocketHandler(Handler):
