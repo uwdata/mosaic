@@ -1,5 +1,5 @@
 import { expect, describe, it } from 'vitest';
-import { column, count, cross_join, div, eq, filterPushdown, FromClauseNode, gt, join, Query, ScalarSubqueryNode, TableRefNode } from '../src/index.js';
+import { column, count, cross_join, div, eq, filterPushdown, FromClauseNode, gt, join, Query, ScalarSubqueryNode, sum, TableRefNode } from '../src/index.js';
 
 describe('filterPushdown', () => {
   it('does nothing given empty filter', async () => {
@@ -92,21 +92,22 @@ describe('filterPushdown', () => {
     );
   });
 
-  it('preserves columns qualified by the base table name', async () => {
-    const q = Query.select(column('num1', 't1')).from('t1');
+  it('updates pivot queries', async () => {
+    const q = Query.pivot('t1').on('num1').using(sum('num2'));
     const f = filterPushdown(q, 't1', gt('num2', 2));
     await expect(f).toBeValidQuery(
-      'WITH "_t1" AS (SELECT * FROM "t1" WHERE ("num2" > 2)) SELECT "t1"."num1" AS "num1" FROM "_t1" AS "t1"'
+      'WITH "_t1" AS (SELECT * FROM "t1" WHERE ("num2" > 2)) PIVOT "_t1" ON "num1" USING sum("num2")'
     );
   });
 
-  it('preserves qualified columns over joined tables', async () => {
+  it('preserves columns qualified by the base table name', async () => {
     const q = Query
       .select(column('num1', 't1'))
-      .from(join('t1', 't2'));
+      .from('t1')
+      .where(eq(column('num1', 't1'), 1));
     const f = filterPushdown(q, 't1', gt('num2', 2));
     await expect(f).toBeValidQuery(
-      'WITH "_t1" AS (SELECT * FROM "t1" WHERE ("num2" > 2)) SELECT "t1"."num1" AS "num1" FROM "_t1" AS "t1" NATURAL JOIN "t2"'
+      'WITH "_t1" AS (SELECT * FROM "t1" WHERE ("num2" > 2)) SELECT "t1"."num1" AS "num1" FROM "_t1" AS "t1" WHERE ("t1"."num1" = 1)'
     );
   });
 
@@ -129,17 +130,6 @@ describe('filterPushdown', () => {
     const f = filterPushdown(q, 't1', gt('num2', 2));
     await expect(f).toBeValidQuery(
       'WITH "_t1" AS (SELECT * FROM "t1" WHERE ("num2" > 2)) SELECT "t1"."num1" AS "num1" FROM "_t1" AS "t1" JOIN "t2" ON ("t1"."num3" = "t2"."num3")'
-    );
-  });
-
-  it('preserves qualified columns in filter criteria', async () => {
-    const q = Query
-      .select('*')
-      .from('t1')
-      .where(eq(column('num1', 't1'), 1));
-    const f = filterPushdown(q, 't1', gt('num2', 2));
-    await expect(f).toBeValidQuery(
-      'WITH "_t1" AS (SELECT * FROM "t1" WHERE ("num2" > 2)) SELECT * FROM "_t1" AS "t1" WHERE ("t1"."num1" = 1)'
     );
   });
 

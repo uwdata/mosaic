@@ -1,5 +1,6 @@
-import { COLUMN_PARAM, COLUMN_REF, SCALAR_SUBQUERY } from '../constants.js';
+import { SCALAR_SUBQUERY } from '../constants.js';
 import type { FilterExpr } from '../types.js';
+import { ColumnRefNode } from '../ast/column-ref.js';
 import { FromClauseNode } from '../ast/from.js';
 import { JoinNode } from '../ast/join.js';
 import { Query } from '../ast/query.js';
@@ -47,37 +48,31 @@ export function filterPushdown(
     filteredName = `_${filteredName}`;
   }
 
-  // rewrite table references to use filtered data, keeping the visible name
+  // rename table refs to the filtered CTE, keeping each source visible
+  // under its original name so that column qualifiers still bind
   const visibleName = tableRef.name;
   walk(clone, (node, parent) => {
     if (node.type === SCALAR_SUBQUERY) {
       return 1; // don't recurse
     }
     if (!isTableRef(node) || !arrayEquals(node.table, tableRef.table)) {
-      return;
+      return; // not a reference to the filtered table
     }
-    if (parent?.type === COLUMN_REF || parent?.type === COLUMN_PARAM) {
-      return; // qualifiers bind to the visible name, so leave them as-is
+    if (parent instanceof ColumnRefNode) {
+      return; // column qualifiers keep binding to the visible name
     }
-
     // @ts-expect-error set read-only property
     node.table = [filteredName];
-
     if (parent instanceof FromClauseNode) {
       if (!parent.alias) {
         // @ts-expect-error set read-only property
         parent.alias = visibleName;
       }
     } else if (parent instanceof JoinNode) {
-      // bare join operands have no alias, so wrap to preserve the name
-      const wrapped = new FromClauseNode(node, visibleName);
-      if (parent.left === node) {
-        // @ts-expect-error set read-only property
-        parent.left = wrapped;
-      } else if (parent.right === node) {
-        // @ts-expect-error set read-only property
-        parent.right = wrapped;
-      }
+      // a bare join operand can not carry an alias, so wrap it in one
+      const side = parent.left === node ? 'left' : 'right';
+      // @ts-expect-error set read-only property
+      parent[side] = new FromClauseNode(node, visibleName);
     }
   });
 
