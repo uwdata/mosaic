@@ -1,6 +1,7 @@
 import type { ExtractionOptions, Table } from '@uwdata/flechette';
 import type { ArrowQueryRequest, Connector, ExecQueryRequest, JSONQueryRequest, ConnectorQueryRequest } from './Connector.js';
-import { annotateByteLength, decodeIPC } from '../util/decode-ipc.js';
+import { decodeIPC } from '../util/decode-ipc.js';
+import { annotateByteLength } from '../util/cache.js';
 
 interface RestOptions {
   uri?: string;
@@ -52,8 +53,8 @@ export class RestConnector implements Connector {
     if (query.type === 'arrow') return decodeIPC(await res.arrayBuffer(), this._ipc);
     
     const text = await res.text();
-    //This allows for an exact size measurement by using TextEncoder to read length
-    return annotateByteLength(JSON.parse(text), utf8Bytes(text));
+    const size = Number(res.headers.get('content-length')) || utf8Bytes(text);
+    return annotateByteLength(JSON.parse(text), size);
   }
 }
 

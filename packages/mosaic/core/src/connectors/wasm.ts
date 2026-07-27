@@ -1,7 +1,8 @@
 import type { ExtractionOptions, Table } from '@uwdata/flechette';
 import type { ArrowQueryRequest, Connector, ExecQueryRequest, JSONQueryRequest, ConnectorQueryRequest } from './Connector.js';
 import * as duckdb from '@duckdb/duckdb-wasm';
-import { annotateByteLength, decodeIPC } from '../util/decode-ipc.js';
+import { decodeIPC } from '../util/decode-ipc.js';
+import { annotateByteLength } from '../util/cache.js';
 
 interface DuckDBWASMOptions {
   /** Flag to enable logging. */
