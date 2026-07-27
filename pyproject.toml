@@ -25,6 +25,19 @@ strict_xfail = true
 [tool.pytest_env]
 MODIN_ENGINE = "python"
 
+[tool.pyright]
+include = [
+    "packages/server/duckdb-server/**/*.py",
+    "packages/vgplot/widget/mosaic_widget/**/*.py",
+    "packages/vgplot/vgplot-python/**/*.py",
+    "dev/notebooks/weather.py",
+    "specs/python/*.py",
+]
+ignore = ["**/.venv/", "../../../**/*typeshed*"]  # Do not display diagnostics in external source code
+typeCheckingMode = "standard"
+reportUnnecessaryTypeIgnoreComment = "error"
+reportUnusedExpression = "none" # covered by ruff
+
 [dependency-groups]
 dev = [
     "marimo>=0.23.9",
