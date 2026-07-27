@@ -56,7 +56,8 @@ export function lruCache({
         lruKey = key;
         lruLast = last;
       }
-
+      
+      //Removing expired queries since they likely will not be used again.
       if (expire > last) {
         totalBytes -= entry.size;
         cache.delete(key);
@@ -79,7 +80,7 @@ export function lruCache({
       }
     },
     set(key: string, value: unknown): unknown {
-      const size = byteSize(value);
+      const size = (value as { byteLength?: number } | null)?.byteLength ?? 0;
       const prior = cache.get(key);
       if (prior) totalBytes -= prior.size;
       cache.set(key, { last: performance.now(), size, value });
@@ -97,18 +98,26 @@ export function lruCache({
 }
 
 /**
- * Byte size for a cached value. Mosaic connectors produce a bytesize to use reliably. Unannotated shapes return 0, treating them as
- * free. This should not be of concern since every query that is stored in the cache goes through the respective connectors that have an 
- * annotated bytesize.
+ * Attach a non-enumerable `byteLength` property to a cached value so that
+ * caches can estimate size.
+ * Called by the connectors on JSON payloads and by `decodeIPC` on Arrow
+ * Tables.
+ *
+ * The property is non-enumerable so it does not appear in iteration,
+ * spread, or JSON serialization of the value.
+ *
+ * @param value The value to annotate. Must be a non-null object.
+ * @param bytes The byte size to record. Ignored if not positive.
+ * @returns The annotated value.
  */
-function byteSize(value: unknown): number {
-  if (value == null) return 0;
-  if (typeof value === 'string') return value.length * 2; // UTF-16 in JS
-  if (value instanceof ArrayBuffer) return value.byteLength;
-  if (ArrayBuffer.isView(value)) return value.byteLength;
-  if (typeof value === 'object') {
-    const bl = (value as { byteLength?: unknown }).byteLength;
-    if (typeof bl === 'number') return bl;
+export function annotateByteLength<T extends object>(value: T, bytes: number): T {
+  if (bytes > 0) {
+    Object.defineProperty(value, 'byteLength', {
+      value: bytes,
+      enumerable: false,
+      writable: false,
+      configurable: true
+    });
   }
-  return 0;
+  return value;
 }

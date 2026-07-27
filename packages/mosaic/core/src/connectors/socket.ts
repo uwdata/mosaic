@@ -1,6 +1,7 @@
 import type { ExtractionOptions, Table } from '@uwdata/flechette';
 import type { ArrowQueryRequest, Connector, ExecQueryRequest, ConnectorQueryRequest } from './Connector.js';
-import { annotateByteLength, decodeIPC } from '../util/decode-ipc.js';
+import { decodeIPC } from '../util/decode-ipc.js';
+import { annotateByteLength } from '../util/cache.js';
 
 interface SocketOptions {
   uri?: string;
