@@ -120,6 +120,18 @@ describe('filterPushdown', () => {
     );
   });
 
+  it('preserves qualified columns in join conditions', async () => {
+    const q = Query
+      .select(column('num1', 't1'))
+      .from(join('t1', 't2', {
+        on: eq(column('num3', 't1'), column('num3', 't2'))
+      }));
+    const f = filterPushdown(q, 't1', gt('num2', 2));
+    await expect(f).toBeValidQuery(
+      'WITH "_t1" AS (SELECT * FROM "t1" WHERE ("num2" > 2)) SELECT "t1"."num1" AS "num1" FROM "_t1" AS "t1" JOIN "t2" ON ("t1"."num3" = "t2"."num3")'
+    );
+  });
+
   it('preserves qualified columns in filter criteria', async () => {
     const q = Query
       .select('*')
