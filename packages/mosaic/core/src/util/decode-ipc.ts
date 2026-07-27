@@ -7,7 +7,7 @@ import { annotateByteLength } from './cache.js';
  * The default options map date and timestamp values to JS Date objects.
  *
  * The returned Table is annotated with a non-enumerable `byteLength`
- * property (via `annotateByteLength`) that reports the exact size (in
+ * property (via `annotateByteLength`) that reports the approximate size (in
  * bytes) of the input IPC data.
  *
  * @param data Arrow IPC bytes.
