@@ -50,18 +50,30 @@ brush = vg.selection.crossfilter()
 
 view = vg.vconcat(
     vg.plot(
-        vg.rect_y(flights, x=vg.bin("delay"), y=vg.count(),
-                  filter_by=brush, fill="steelblue",
-                  inset_left=0.5, inset_right=0.5),
+        vg.rect_y(
+            flights,
+            x=vg.bin("delay"),
+            y=vg.count(),
+            filter_by=brush,
+            fill="steelblue",
+            inset_left=0.5,
+            inset_right=0.5,
+        ),
         vg.interval_x(bind=brush),
         vg.x_domain("Fixed"),
         vg.x_label("Arrival Delay (min)"),
         vg.height(200),
     ),
     vg.plot(
-        vg.rect_y(flights, x=vg.bin("time"), y=vg.count(),
-                  filter_by=brush, fill="steelblue",
-                  inset_left=0.5, inset_right=0.5),
+        vg.rect_y(
+            flights,
+            x=vg.bin("time"),
+            y=vg.count(),
+            filter_by=brush,
+            fill="steelblue",
+            inset_left=0.5,
+            inset_right=0.5,
+        ),
         vg.interval_x(bind=brush),
         vg.x_domain("Fixed"),
         vg.x_label("Departure Time (hour)"),
@@ -85,9 +97,7 @@ bias = vg.param(0)
 view = vg.vconcat(
     vg.slider(label="Bias", bind=bias, min=0, max=1000, step=1),
     vg.plot(
-        vg.area_y(walk, x="t", y=vg.sql("v + $bias")),
-        vg.width(680),
-        vg.height(200),
+        vg.area_y(walk, x="t", y=vg.sql("v + $bias")), vg.width(680), vg.height(200)
     ),
 )
 
