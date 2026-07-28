@@ -2,3 +2,7 @@
 
 /packages/server/duckdb-server-rust/ @domoritz
 /packages/server/duckdb-server-go/ @derekperkins
+/packages/server/duckdb-server/ @dangotbanned @domoritz
+/packages/vgplot/widget/ @dangotbanned @domoritz
+/packages/vgplot/vgplot-python/ @dangotbanned @domoritz
+/pyproject.toml @dangotbanned @domoritz

@@ -57,7 +57,7 @@ export const recurse: Record<string, string[]> = {
   [FROM_CLAUSE]: ['expr'],
   [FUNCTION]: ['args'],
   [IN_OPERATOR]: ['expr', 'values'],
-  [JOIN_CLAUSE]: ['left', 'right', 'on', 'using', 'sample'],
+  [JOIN_CLAUSE]: ['left', 'right', 'condition', 'using', 'sample'],
   [LIST]: ['values'],
   [LOGICAL_OPERATOR]: ['clauses'],
   [NOT_BETWEEN_OPERATOR]: ['expr', 'extent'],
