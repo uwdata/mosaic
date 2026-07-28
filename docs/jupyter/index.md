@@ -128,9 +128,11 @@ widget = MosaicWidget(view)
 
 output = widgets.Output()
 
+
 @output.capture(clear_output=True)
 def handle_change(change):
     pprint(change.new)
+
 
 widget.observe(handle_change, names=["params"])
 
@@ -142,8 +144,8 @@ widgets.VBox([widget, output])
 After the user interacts with the widget, you can read the current selections as SQL and fetch the filtered rows directly from Python:
 
 ```python
-widget.sql            # 'SELECT * FROM "weather" WHERE ("weather" = \'sun\')'
-widget.data().df()    # pandas DataFrame of the currently filtered rows
+widget.sql  # 'SELECT * FROM "weather" WHERE ("weather" = \'sun\')'
+widget.data().df()  # pandas DataFrame of the currently filtered rows
 ```
 
 `widget.sql` combines the active selection predicates from `params` with `AND`. `widget.data()` returns the lazy [DuckDB relation](https://duckdb.org/docs/api/python/relational_api) for that query; materialize it with `.df()` (pandas), `.pl()` (Polars), `.arrow()`, or `.fetchall()`.
@@ -151,7 +153,7 @@ widget.data().df()    # pandas DataFrame of the currently filtered rows
 `widget.data()` infers the source table from the spec's `data` entries and the `data` constructor argument. If those name more than one table, pass the table explicitly (`widget.sql` returns `None` in that case). The query applies every selection; pass `filter_by` with a selection name or a list of names to apply a subset:
 
 ```python
-widget.data("weather").df()                     # explicit source table
+widget.data("weather").df()  # explicit source table
 widget.data("weather", filter_by="range").df()  # apply only the "range" selection
 ```
 

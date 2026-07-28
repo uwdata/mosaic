@@ -49,6 +49,8 @@ _LAZY: Final = frozenset[LazyAllowed]().union(
 
 _BackendT = TypeVar("_BackendT", bound=EagerAllowed | LazyAllowed, covariant=True)
 
+_NO_WARNING = Warn(0)
+
 
 class Backend(Generic[_BackendT]):
     """Wrapper around a Narwhals [`backend`][narwhals.typing.IntoBackend]."""
@@ -56,7 +58,7 @@ class Backend(Generic[_BackendT]):
     __slots__ = ("requires", "value", "warn")
 
     def __init__(
-        self, value: _BackendT, requires: str = "", warn: Warn = Warn(0)
+        self, value: _BackendT, requires: str = "", warn: Warn = _NO_WARNING
     ) -> None:
         self.value: _BackendT = value
         """Argument for `backend` in Narwhals constructors."""
