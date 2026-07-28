@@ -46,6 +46,9 @@ ignore = [
 [tool.pytest]
 strict_xfail = true
 
+[tool.pytest_env]
+MODIN_ENGINE = "python"
+
 [tool.pyright]
 include = [
     "packages/server/duckdb-server/**/*.py",

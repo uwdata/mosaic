@@ -1,5 +1,5 @@
 import { expect, describe, it } from 'vitest';
-import { abs, add, asVerbatim, collectAggregates, collectColumns, collectParams, column, count, div, isAggregateExpression, Query, ScalarSubqueryNode, sql, sum } from '../src/index.js';
+import { abs, add, asVerbatim, collectAggregates, collectColumns, collectParams, column, count, div, eq, isAggregateExpression, join, Query, ScalarSubqueryNode, sql, sum } from '../src/index.js';
 import { stubParam } from './util/stub-param.js';
 import { validateQuery } from './util/validate.js';
 
@@ -24,6 +24,23 @@ describe('Visitor functions', () => {
 
     const expr2 = sql`(${'a'} + ${'b'}) ${'a'}`;
     expect(collectParams(expr2)).toStrictEqual([]);
+  });
+
+  it('include columns inside a join condition', () => {
+    const q = Query.select('*').from(
+      join('t1', 't2', { on: eq(column('a', 't1'), column('b', 't2')) })
+    );
+    const cols = collectColumns(q).map(c => c.column);
+    expect(cols).toContain('a');
+    expect(cols).toContain('b');
+  });
+
+  it('include params inside a join condition', () => {
+    const p = stubParam(1);
+    const q = Query.select('*').from(
+      join('t1', 't2', { on: eq(column('a', 't1'), p) })
+    );
+    expect(collectParams(q)).toStrictEqual([p]);
   });
 
   it('include aggregate collection', async () => {

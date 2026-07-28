@@ -80,6 +80,7 @@ class TestDataFrames:
     (e.g. the widget) to register."""
 
     def test_frame_is_referenced_and_named_after_variable(self):
+        pytest.importorskip("pyarrow")
         import pyarrow as pa
 
         weather = pa.table({"a": [1, 2, 3]})
@@ -90,6 +91,7 @@ class TestDataFrames:
         assert d["data"]["weather"] is weather
 
     def test_frame_and_datadef_share_the_data_section(self):
+        pytest.importorskip("pyarrow")
         import pyarrow as pa
 
         weather = pa.table({"a": [1]})
