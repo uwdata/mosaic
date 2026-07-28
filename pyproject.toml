@@ -17,7 +17,31 @@ extend-select = [
     "UP",  # https://docs.astral.sh/ruff/rules/#pyupgrade-up
 ]
 extend-safe-fixes = ["FA", "TC", "UP"]
-ignore = ["G004", "TRY301", "EM102", "EM101", "TRY003", "FBT002", "S608", "TRY002", "ARG001"]
+ignore = [
+    "G004", 
+    "TRY301", 
+    "EM102", 
+    "EM101", 
+    "TRY003", 
+    "FBT002", 
+    "S608", 
+    "TRY002", 
+    "ARG001", 
+    # NOTE: ruff>=0.16
+    "CPY001",
+    "I001",
+    "LOG009",
+    "B018", 
+    "PLR1711", 
+    "ISC004",
+    "BLE001",
+    "PLW1510",
+    "RUF100",
+    "S102",
+    "DTZ001",
+    "PLE0604",
+    "RUF022"
+]
 
 [tool.pytest]
 strict_xfail = true
