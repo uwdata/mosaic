@@ -40,7 +40,8 @@ ignore = [
     "S102",
     "DTZ001",
     "PLE0604",
-    "RUF022"
+    "RUF022", 
+    "PLC0105",
 ]
 
 [tool.pytest]
