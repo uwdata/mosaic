@@ -57,18 +57,8 @@ export class RestConnector implements Connector {
     }
 
     const text = await res.text();
-    const size = Number(res.headers.get('content-length')) || utf8Bytes(text);
-    const records = annotateByteLength(JSON.parse(text), size);
+    const records = annotateByteLength(JSON.parse(text), text.length);
     assertCacheable(records, 'RestConnector json');
     return records;
   }
-}
-
-/**
- * Helper function to find size of a stringified JSON response.
- * @param s The stringified response.
- * @returns The byte length of `s` when encoded as UTF-8.
- */
-function utf8Bytes(s: string): number {
-  return new TextEncoder().encode(s).length;
 }
