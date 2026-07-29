@@ -1,7 +1,7 @@
 import type { ExtractionOptions, Table } from '@uwdata/flechette';
 import type { ArrowQueryRequest, Connector, ExecQueryRequest, JSONQueryRequest, ConnectorQueryRequest } from './Connector.js';
 import { decodeIPC } from '../util/decode-ipc.js';
-import { annotateByteLength } from '../util/cache.js';
+import { annotateByteLength, assertCacheable } from '../util/cache.js';
 
 interface RestOptions {
   uri?: string;
@@ -50,11 +50,17 @@ export class RestConnector implements Connector {
     }
 
     if (query.type === 'exec') return req;
-    if (query.type === 'arrow') return decodeIPC(await res.arrayBuffer(), this._ipc);
-    
+    if (query.type === 'arrow') {
+      const table = decodeIPC(await res.arrayBuffer(), this._ipc);
+      assertCacheable(table, 'RestConnector arrow');
+      return table;
+    }
+
     const text = await res.text();
     const size = Number(res.headers.get('content-length')) || utf8Bytes(text);
-    return annotateByteLength(JSON.parse(text), size);
+    const records = annotateByteLength(JSON.parse(text), size);
+    assertCacheable(records, 'RestConnector json');
+    return records;
   }
 }
 

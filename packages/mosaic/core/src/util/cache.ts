@@ -1,5 +1,9 @@
 import type { Cache } from '../types.js';
 
+const requestIdle = typeof requestIdleCallback !== 'undefined'
+  ? requestIdleCallback
+  : setTimeout;
+
 interface CacheEntry<T = unknown> {
   last: number;
   size: number;
@@ -14,16 +18,16 @@ export function voidCache(): Cache {
   return {
     get: () => undefined,
     set: (key, value) => value,
+    delete: () => {},
     clear: () => {}
   };
 }
 
 /**
  * Create a new cache that uses an LRU eviction policy, capped by the
- * total memory usage. Eviction is synchronous: on every `set` that 
- * pushes the cache past `maxBytes`, the
- * evict pass runs immediately (dropping any TTL-expired entries and the single
- * LRU query) until the cache fits according to the memory requirement.
+ * total memory usage. Eviction is deferred to browser idle time via
+ * `requestIdleCallback`. Each eviction pass drops any TTL-expired entries and
+ * the single least-recently-used entry.
  *
  * @param options Cache options.
  * @param options.maxBytes Maximum total observed bytes across all entries.
@@ -41,8 +45,6 @@ export function lruCache({
   let totalBytes = 0;
   /**
    * Looks through our LRU cache and removes any expired queries and the current LRU query.
-   * Opts for a "naive" O(n) lookthrough to get and eliminate expired queries and the LRU.
-   * While this is computationally expensive, it makes the code less complex.
    */
   function evict(): void {
     const expire = performance.now() - ttl;
@@ -83,12 +85,23 @@ export function lruCache({
       const size = (value as { byteLength?: number } | null)?.byteLength ?? 0;
       const prior = cache.get(key);
       if (prior) totalBytes -= prior.size;
+
+      if (size > maxBytes) {
+        if (prior) cache.delete(key);
+        return value;
+      }
+
       cache.set(key, { last: performance.now(), size, value });
       totalBytes += size;
-      // The loop guard on cache.size prevents an
-      // infinite loop if a single entry is larger than maxBytes on its own.
-      while (totalBytes > maxBytes && cache.size > 0) evict();
+      if (totalBytes > maxBytes) requestIdle(evict);
       return value;
+    },
+    delete(key: string): void {
+      const entry = cache.get(key);
+      if (entry) {
+        totalBytes -= entry.size;
+        cache.delete(key);
+      }
     },
     clear(): void {
       cache = new Map();
@@ -120,4 +133,38 @@ export function annotateByteLength<T extends object>(value: T, bytes: number): T
     });
   }
   return value;
+}
+
+/**
+ * Enforce the cache-value contract.
+ *
+ * A value handed to the cache must be one of the following:
+ *   - a Promise,
+ *   - null/undefined,
+ *   - an object annotated with byteLength > 0.
+ *
+ * Any other shape will throw on violation.
+ *
+ * @param value The value about to be returned from a connector.
+ * @param context Short label identifying the call site (e.g.
+ *   `"DuckDBWASMConnector arrow"`) — included in the error message.
+ */
+export function assertCacheable(value: unknown, context: string): void {
+  if (value != null && typeof (value as { then?: unknown }).then === 'function') {
+    return;
+  }
+  if (value == null) return;
+  if (typeof value !== 'object') {
+    throw new Error(
+      `[${context}] cache contract violation: expected an annotated object, got ${typeof value}.`
+    );
+  }
+  const size = (value as { byteLength?: unknown }).byteLength;
+  if (typeof size !== 'number' || size <= 0) {
+    throw new Error(
+      `[${context}] cache contract violation: value must have byteLength > 0 ` +
+      `to be cacheable (got byteLength=${String(size)}). ` +
+      `Annotate with annotateByteLength before returning.`
+    );
+  }
 }
