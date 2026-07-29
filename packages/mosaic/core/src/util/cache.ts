@@ -120,11 +120,13 @@ export function lruCache({
  * spread, or JSON serialization of the value.
  *
  * @param value The value to annotate. Must be a non-null object.
- * @param bytes The byte size to record. Ignored if not positive.
+ * @param bytes The byte size to record. Zero is valid — an empty query
+ *  result is still a cacheable value. Negative and non-finite values are
+ *  ignored.
  * @returns The annotated value.
  */
 export function annotateByteLength<T extends object>(value: T, bytes: number): T {
-  if (bytes > 0) {
+  if (Number.isFinite(bytes) && bytes >= 0) {
     Object.defineProperty(value, 'byteLength', {
       value: bytes,
       enumerable: false,
@@ -142,8 +144,11 @@ export function annotateByteLength<T extends object>(value: T, bytes: number): T
  *   - a Promise (transient — will be replaced by resolved data),
  *   - null/undefined (exec results, tiny by definition),
  *   - a primitive,
- *   - an object annotated with byteLength > 0.
+ *   - an object annotated with a non-negative `byteLength`.
  *
+ * Zero is a valid size: an empty query result is still a cacheable value.
+ * A missing annotation is the actual error case — it would leave the entry
+ * unaccounted for in the cache's byte budget.
  *
  * @param value The value about to be stored in the cache.
  * @param context Short label identifying the call site included in the error message.
@@ -156,10 +161,10 @@ export function assertCacheable(value: unknown, context: string): void {
 
   if (typeof value !== 'object') return;
   const size = (value as { byteLength?: unknown }).byteLength;
-  if (typeof size !== 'number' || size <= 0) {
+  if (typeof size !== 'number' || !Number.isFinite(size) || size < 0) {
     throw new Error(
-      `[${context}] cache contract violation: value must have byteLength > 0 ` +
-      `to be cacheable (got byteLength=${String(size)}). ` +
+      `[${context}] cache contract violation: value must have a non-negative ` +
+      `byteLength to be cacheable (got byteLength=${String(size)}). ` +
       `Annotate with annotateByteLength before returning.`
     );
   }
