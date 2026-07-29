@@ -82,7 +82,6 @@ export function lruCache({
       }
     },
     set(key: string, value: unknown): unknown {
-      assertCacheable(value, 'lruCache.set');
       const size = (value as { byteLength?: number } | null)?.byteLength ?? 0;
       const prior = cache.get(key);
       if (prior) totalBytes -= prior.size;
