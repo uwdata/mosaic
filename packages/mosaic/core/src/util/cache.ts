@@ -82,6 +82,7 @@ export function lruCache({
       }
     },
     set(key: string, value: unknown): unknown {
+      assertCacheable(value, 'lruCache.set');
       const size = (value as { byteLength?: number } | null)?.byteLength ?? 0;
       const prior = cache.get(key);
       if (prior) totalBytes -= prior.size;
@@ -139,26 +140,22 @@ export function annotateByteLength<T extends object>(value: T, bytes: number): T
  * Enforce the cache-value contract.
  *
  * A value handed to the cache must be one of the following:
- *   - a Promise,
- *   - null/undefined,
+ *   - a Promise (transient — will be replaced by resolved data),
+ *   - null/undefined (exec results, tiny by definition),
+ *   - a primitive,
  *   - an object annotated with byteLength > 0.
  *
- * Any other shape will throw on violation.
  *
- * @param value The value about to be returned from a connector.
- * @param context Short label identifying the call site (e.g.
- *   `"DuckDBWASMConnector arrow"`) — included in the error message.
+ * @param value The value about to be stored in the cache.
+ * @param context Short label identifying the call site included in the error message.
  */
 export function assertCacheable(value: unknown, context: string): void {
   if (value != null && typeof (value as { then?: unknown }).then === 'function') {
     return;
   }
   if (value == null) return;
-  if (typeof value !== 'object') {
-    throw new Error(
-      `[${context}] cache contract violation: expected an annotated object, got ${typeof value}.`
-    );
-  }
+
+  if (typeof value !== 'object') return;
   const size = (value as { byteLength?: unknown }).byteLength;
   if (typeof size !== 'number' || size <= 0) {
     throw new Error(
