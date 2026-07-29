@@ -57,7 +57,7 @@ export function lruCache({
         lruLast = last;
       }
       
-      //Removing expired queries since they likely will not be used again.
+      // remove expired queries since they likely will not be used again
       if (expire > last) {
         totalBytes -= entry.size;
         cache.delete(key);
