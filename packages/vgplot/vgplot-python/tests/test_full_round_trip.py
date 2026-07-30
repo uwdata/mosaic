@@ -3,25 +3,17 @@
 # in specs/json/. Also checks that Python, JSON, and ESM example sets stay
 # in sync (same filenames).
 #
-# Run: pytest packages/vgplot/vgplot-python/test/test_full_round_trip.py
+# Run: pytest packages/vgplot/vgplot-python/tests/test_full_round_trip.py
 import json
-import sys
 from pathlib import Path
 from typing import Any
 
 import pytest
 
-ROOT = Path(__file__).resolve().parents[4]  # mosaic project root
-SPEC_DIR = ROOT / "specs"
+SPEC_DIR = Path(__file__).resolve().parents[4] / "specs"
 JSON_DIR = SPEC_DIR / "json"
 ESM_DIR = SPEC_DIR / "esm"
 PYTHON_DIR = SPEC_DIR / "python"
-
-VGPLOT_PKG = ROOT / "packages" / "vgplot" / "vgplot-python"
-
-for p in (VGPLOT_PKG, ROOT):
-    if str(p) not in sys.path:
-        sys.path.insert(0, str(p))
 
 
 def load_json_fixture(name: str) -> dict:

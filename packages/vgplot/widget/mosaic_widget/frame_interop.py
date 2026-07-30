@@ -1,24 +1,32 @@
+from __future__ import annotations
+
 import logging
+from typing import TYPE_CHECKING, Any, TypeAlias
+
 import narwhals as nw
-from narwhals.typing import IntoFrame
+from narwhals.dependencies import is_into_dataframe, is_into_lazyframe
+
+if TYPE_CHECKING:
+    from narwhals.typing import IntoDataFrame, IntoLazyFrame
+    from typing_extensions import TypeIs
+
+    IntoFrame: TypeAlias = IntoDataFrame | IntoLazyFrame
 
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
 
 
-def is_registrable_frame(obj: object) -> bool:
+_NON_FRAME_TYPES = (str, bytes, int, float, bool, dict, list, tuple, type(None))
+
+
+def is_registrable_frame(obj: Any) -> TypeIs[IntoFrame]:
     """Return True if `obj` is a dataframe-like object that DuckDB can register."""
-    if obj is None or isinstance(
-        obj, (str, bytes, int, float, bool, dict, list, tuple)
-    ):
-        return False
-    try:
-        nw.from_native(obj)  # ty: ignore[no-matching-overload]
-    except TypeError:
-        return False
-    return True
+    return not isinstance(obj, _NON_FRAME_TYPES) and (
+        is_into_dataframe(obj) or is_into_lazyframe(obj)
+    )
 
 
+# TODO @dangotbanned: Replace with Narwhals
 def _is_frame_native_to_duckdb(frame: IntoFrame) -> bool:
     """Check if a frame is natively supported by DuckDB to be registered as a virtual table with zero-copy guarantees."""
 
@@ -29,6 +37,7 @@ def _is_frame_native_to_duckdb(frame: IntoFrame) -> bool:
     return frame_backend in backends_with_native_virtual_table_support
 
 
+# TODO @dangotbanned: Avoid materializing `DuckDBPyRelation`
 def frame_to_duckdb_registrable(frame: IntoFrame) -> object:
     """Converts a native dataframe(-like) object to a DuckDB-registrable object.
 

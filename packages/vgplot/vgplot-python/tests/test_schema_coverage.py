@@ -4,16 +4,11 @@
 # schema addition that was never generated or hand-added.
 import json
 import re
-import sys
 from pathlib import Path
 
+import vgplot as vg
+
 ROOT = Path(__file__).resolve().parents[4]
-for p in (ROOT / "packages" / "vgplot" / "vgplot-python", ROOT):
-    if str(p) not in sys.path:
-        sys.path.insert(0, str(p))
-
-import vgplot as vg  # noqa: E402
-
 SCHEMA = ROOT / "docs" / "public" / "schema" / "latest.json"
 
 # Schema names whose Python export is renamed or intentionally absent.

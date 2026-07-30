@@ -11,6 +11,7 @@ import { type MosaicClient } from './MosaicClient.js';
 import { type SelectionClause } from './SelectionClause.js';
 import { MaybeArray } from '@uwdata/mosaic-sql';
 import { Table } from '@uwdata/flechette';
+import { QueryError } from './util/query-error.js';
 
 interface FilterGroupEntry {
   selection: Selection;
@@ -248,7 +249,12 @@ export class Coordinator {
     return client._pending = this.query(query, { priority })
       .then(
         data => client.queryResult(data).update(),
-        err => { this._logger?.error(err); client.queryError(err); }
+        err => {
+          const e = new QueryError(err, query);
+          this._logger?.error(e);
+          client.queryError(e);
+          return e;
+        }
       )
       .catch(err => this._logger?.error(err));
   }
@@ -383,20 +389,32 @@ function updateSelection(
   const { active } = selection;
   return Promise.allSettled(Array.from(clients, async (client: MosaicClient) => {
     // if client is not enabled, register a request for later
-    if (!client.enabled) return client.requestQuery();
+    if (!client.enabled) {
+      await client.requestQuery();
+      return;
+    }
 
     // if client is initializing, wait for it to complete
     if (!client.initialized) await client.pending;
 
     // check if we can handle selection update via preaggregation
     const info = preaggregator.request(client, selection, active);
-    const filter = info ? null : selection.predicate(client);
 
+    if (info) {
+      // skip due to cross-filtering
+      if (info.skip) return;
+      // generate and issue preaggregate update query
+      const query = (info as PreAggregateInfo).query(active);
+      const result = await mc.updateClient(client, query);
+      if (!(result instanceof QueryError)) return;
+      // if preaggregate update fails, fall through to standard query
+      // this safeguards against potential preagg bugs
+    }
+
+    // generate and issue standard query
+    const filter = selection.predicate(client);
     // skip due to cross-filtering
-    if (info?.skip || (!info && !filter)) return;
-
-    // generate and issue update query    
-    const query = (info as PreAggregateInfo)?.query(active) ?? client.query(filter);
-    return mc.updateClient(client, query);
+    if (!filter) return; 
+    await mc.updateClient(client, client.query(filter)!);
   }));
 }

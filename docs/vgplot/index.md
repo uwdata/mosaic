@@ -222,9 +222,7 @@ Each plot uses [Observable Plot](https://observablehq.com/plot/)–style _channe
 import vgplot as vg
 
 vg.plot(
-    vg.line_y(vg.source("aapl"), x="Date", y="Close"),
-    vg.width(680),
-    vg.height(200)
+    vg.line_y(vg.source("aapl"), x="Date", y="Close"), vg.width(680), vg.height(200)
 )
 ```
 

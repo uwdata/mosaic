@@ -1,18 +1,11 @@
 # Unit tests for the vgplot Python API, covering behaviors that the
 # generated-spec round-trip suite does not exercise directly.
-import sys
-from pathlib import Path
+from typing import TYPE_CHECKING
 
 import pytest
 
-ROOT = Path(__file__).resolve().parents[4]
-VGPLOT_PKG = ROOT / "packages" / "vgplot" / "vgplot-python"
-for p in (VGPLOT_PKG, ROOT):
-    if str(p) not in sys.path:
-        sys.path.insert(0, str(p))
-
-import vgplot as vg  # noqa: E402
-from vgplot.plot import Mark  # noqa: E402
+import vgplot as vg
+from vgplot.plot import Mark
 
 
 class TestGeneratedMarks:
@@ -87,6 +80,7 @@ class TestDataFrames:
     (e.g. the widget) to register."""
 
     def test_frame_is_referenced_and_named_after_variable(self):
+        pytest.importorskip("pyarrow")
         import pyarrow as pa
 
         weather = pa.table({"a": [1, 2, 3]})
@@ -97,6 +91,7 @@ class TestDataFrames:
         assert d["data"]["weather"] is weather
 
     def test_frame_and_datadef_share_the_data_section(self):
+        pytest.importorskip("pyarrow")
         import pyarrow as pa
 
         weather = pa.table({"a": [1]})
@@ -108,3 +103,17 @@ class TestDataFrames:
         assert d["plot"][1]["data"] == {"from": "athletes"}
         assert d["data"]["weather"] is weather
         assert d["data"]["athletes"] == {"type": "csv", "file": "athletes.csv"}
+
+
+if TYPE_CHECKING:
+
+    def typing_dunder_all() -> None:
+        # Ok
+        vg.arrow
+        vg.errorbar_x
+        vg.mark
+
+        # TODO @dangotbanned: Get pyright to error on these
+        # Error (`_generated` modules)
+        vg.attributes  # ty: ignore[unresolved-attribute]
+        vg.marks  # ty: ignore[unresolved-attribute]
