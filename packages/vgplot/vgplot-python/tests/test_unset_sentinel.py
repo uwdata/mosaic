@@ -42,8 +42,8 @@ def test_unset_type_expression_union() -> None:
     def func1(a: int | UNSET = UNSET) -> None: ...
     def func2(a: UNSET | int = UNSET) -> None: ...
 
-    assert get_type_hints(func1, localns=locals())["a"] is Union[int, UNSET]  # noqa: UP007
-    assert get_type_hints(func2, localns=locals())["a"] is Union[UNSET, int]  # noqa: UP007
+    assert get_type_hints(func1, localns=locals())["a"] == Union[int, UNSET]  # noqa: UP007
+    assert get_type_hints(func2, localns=locals())["a"] == Union[UNSET, int]  # noqa: UP007
 
 
 def test_unset_copy_identity() -> None:
