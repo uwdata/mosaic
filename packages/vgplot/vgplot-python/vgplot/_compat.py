@@ -1,3 +1,20 @@
+"""Backwards compatibility for features not available at our [requires-python][1].
+
+Import from here to avoid introducing runtime dependency on [typing_extensions][2].
+
+[1]: https://packaging.python.org/en/latest/specifications/pyproject-toml/#requires-python
+[2]: https://github.com/python/typing_extensions
+
+## sentinel
+[`sentinel`][3] was introduced in `3.15` (see [PEP 661][4]).
+
+We can remove the backport after [3.15 end-of-life][5].
+
+[3]: https://docs.python.org/3.15/library/functions.html#sentinel
+[4]: https://peps.python.org/pep-0661/
+[5]: https://peps.python.org/pep-0790/#lifespan
+"""
+
 from __future__ import annotations
 
 import sys
@@ -54,7 +71,9 @@ def _sentinel_backport_pre_typing_extensions_4_16() -> Any:
 
 
 def _sentinel_backport_pre_py_3_15() -> Any:
-    """Return a [PEP 661](https://peps.python.org/pep-0661/)-compatible [`sentinel`](https://docs.python.org/3.15/library/functions.html#sentinel) factory.
+    """Return a [PEP 661]-compatible [`sentinel`](https://docs.python.org/3.15/library/functions.html#sentinel) factory.
+
+    [PEP 661]: https://peps.python.org/pep-0661/
 
     ## Notes
     - Does not depend on `typing_extensions`, but will use it if a suitable version is available
