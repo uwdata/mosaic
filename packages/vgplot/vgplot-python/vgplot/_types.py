@@ -2,6 +2,8 @@ from collections.abc import Sequence
 from datetime import date
 from typing import Any
 
+from vgplot._compat import sentinel
+
 from .data import DataDef
 from .params import _ParamBase
 from .plot import FromRef
@@ -18,12 +20,5 @@ AttrValue = (
 MarkData = str | FromRef | DataDef | dict[str, Any] | Sequence[Any] | _ParamBase | None
 TransformArg = str | float | bool | _ParamBase
 
-
-class _Unset:
-    """Sentinel for mark channels that were not passed (distinct from None)."""
-
-    def __repr__(self) -> str:
-        return "UNSET"
-
-
-UNSET: Any = _Unset()
+UNSET = sentinel("UNSET")
+"""Sentinel for mark channels that were not passed (distinct from None)."""
