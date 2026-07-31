@@ -151,7 +151,7 @@ export class DuckDBCodeGenerator extends SQLCodeGenerator {
     const ref = isQuery(expr) ? `(${this.toString(expr)})` : `${this.toString(expr)}`;
 
     let from: string;
-    if (alias && (columnNames?.length || !(isTableRef(expr) && expr.table?.join('.') === alias))) {
+    if (alias && (columnNames?.length || !(isTableRef(expr) && expr.name === alias))) {
       const names = columnNames?.length
         ? `(${columnNames.map(v => quoteIdentifier(v)).join(', ')})`
         : '';

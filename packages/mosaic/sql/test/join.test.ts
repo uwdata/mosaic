@@ -1,6 +1,6 @@
 import { expect, describe, it } from 'vitest';
 import { asof_join, column, cross_join, eq, from, join, JoinNode, positional_join, walk } from '../src/index.js';
-import { JOIN_CLAUSE, TABLE_REF } from '../src/constants.js';
+import { FROM_CLAUSE, JOIN_CLAUSE, TABLE_REF } from '../src/constants.js';
 import { validateQuery } from './util/validate.js';
 
 /** Validate a join clause fragment by wrapping it in a SELECT. */
@@ -40,6 +40,9 @@ describe('Join functions', () => {
     await validateJoin(join('t1', 't2', { type: 'SEMI', using }), '"t1" SEMI JOIN "t2" USING ("num1")');
     await validateJoin(join('t1', 't2', { type: 'ANTI', using }), '"t1" ANTI JOIN "t2" USING ("num1")');
 
+    // redundant aliases on schema-qualified operands are not serialized
+    expect(String(join(['s', 't1'], 't2'))).toBe('"s"."t1" NATURAL JOIN "t2"');
+
     // handles from clauses
     const X = from('t1').as('X');
     const Y = from('t2').as('Y');
@@ -76,7 +79,7 @@ describe('Join functions', () => {
     expect(() => walk(
       join('t1', 't2'),
       (x) => {
-        if (x.type !== JOIN_CLAUSE && x.type !== TABLE_REF) {
+        if (x.type !== JOIN_CLAUSE && x.type !== FROM_CLAUSE && x.type !== TABLE_REF) {
           throw new Error('Unexpected node type.');
         }
       }

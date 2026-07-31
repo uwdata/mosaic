@@ -2,7 +2,6 @@ import { SCALAR_SUBQUERY } from '../constants.js';
 import type { FilterExpr } from '../types.js';
 import { ColumnRefNode } from '../ast/column-ref.js';
 import { FromClauseNode } from '../ast/from.js';
-import { JoinNode } from '../ast/join.js';
 import { Query } from '../ast/query.js';
 import { isTableRef, type TableRefNode } from '../ast/table-ref.js';
 import { asTableRef } from '../util/ast.js';
@@ -63,16 +62,9 @@ export function filterPushdown(
     }
     // @ts-expect-error set read-only property
     node.table = [filteredName];
-    if (parent instanceof FromClauseNode) {
-      if (!parent.alias) {
-        // @ts-expect-error set read-only property
-        parent.alias = visibleName;
-      }
-    } else if (parent instanceof JoinNode) {
-      // a bare join operand can not carry an alias, so wrap it in one
-      const side = parent.left === node ? 'left' : 'right';
+    if (parent instanceof FromClauseNode && !parent.alias) {
       // @ts-expect-error set read-only property
-      parent[side] = new FromClauseNode(node, visibleName);
+      parent.alias = visibleName;
     }
   });
 
