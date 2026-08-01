@@ -120,9 +120,7 @@ export function lruCache({
  * spread, or JSON serialization of the value.
  *
  * @param value The value to annotate. Must be a non-null object.
- * @param bytes The byte size to record. Zero is valid — an empty query
- *  result is still a cacheable value. Negative and non-finite values are
- *  ignored.
+ * @param bytes The byte size to record. 
  * @returns The annotated value.
  */
 export function annotateByteLength<T extends object>(value: T, bytes: number): T {
@@ -145,10 +143,6 @@ export function annotateByteLength<T extends object>(value: T, bytes: number): T
  *   - null/undefined (exec results, tiny by definition),
  *   - a primitive,
  *   - an object annotated with a non-negative `byteLength`.
- *
- * Zero is a valid size: an empty query result is still a cacheable value.
- * A missing annotation is the actual error case — it would leave the entry
- * unaccounted for in the cache's byte budget.
  *
  * @param value The value about to be stored in the cache.
  * @param context Short label identifying the call site included in the error message.
