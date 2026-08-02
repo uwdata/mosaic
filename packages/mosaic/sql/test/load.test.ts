@@ -77,4 +77,12 @@ describe('loadObjects', () => {
       `CREATE TABLE IF NOT EXISTS "events" AS (SELECT 1 AS "id", {'x': 140.2, 'y': 22.8} AS "pos")`
     );
   });
+
+  it('escapes double quotes in column names', async () => {
+    await expect(loadObjects('responses', [
+      { 'rating ("1-5")': 4, comment: 'ok' }
+    ])).toBeValidQuery(
+      `CREATE TABLE IF NOT EXISTS "responses" AS (SELECT 4 AS "rating (""1-5"")", 'ok' AS "comment")`
+    );
+  });
 });
