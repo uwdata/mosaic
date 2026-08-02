@@ -1,13 +1,13 @@
 import { describe, it, expect } from 'vitest';
 import type { CreateQuery, ExprNode, FilterExpr } from "@uwdata/mosaic-sql";
-import { Query, add, argmax, argmin, avg, corr, count, covarPop, covariance, desc, filterPushdown, geomean, gt, literal, loadObjects, max, min, mul, neq, product, regrAvgX, regrAvgY, regrCount, regrIntercept, regrR2, regrSXX, regrSXY, regrSYY, regrSlope, sql, stddev, stddevPop, sum, upper, varPop, variance } from '@uwdata/mosaic-sql';
+import { Query, add, argmax, argmin, asTableRef, avg, corr, count, covarPop, covariance, desc, filterPushdown, geomean, gt, literal, loadObjects, max, min, mul, neq, product, regrAvgX, regrAvgY, regrCount, regrIntercept, regrR2, regrSXX, regrSXY, regrSYY, regrSlope, sql, stddev, stddevPop, sum, upper, varPop, variance } from '@uwdata/mosaic-sql';
 import { clausePoint, Coordinator, Selection, SelectionClause } from '../src/index.js';
 import type { PreAggregateInfo } from '../src/preagg/PreAggregator.js';
 import { preaggColumns } from '../src/preagg/preagg-columns.js';
 import { NodeConnector } from '../src/connectors/NodeConnector.js';
 import { TestClient } from './util/test-client.js';
 
-async function setup(loadQuery: CreateQuery) {
+async function setup(loadQuery: CreateQuery | string) {
   const mc = new Coordinator(await NodeConnector.make(), {
     logger: null,
     cache: false,
@@ -32,11 +32,16 @@ const loadQuery = loadObjects('testData', [
  * Query the test dataset with the given measure, filtered by the clause.
  * @param measure The aggregate measure or query function for the client.
  * @param clause The selection clause to apply.
+ * @param load The query to load the test dataset.
  * @returns The measure value, the pre-aggregation entry (if any),
  *  and the coordinator.
  */
-async function runQuery(measure: RunMeasure, clause: SelectionClause) {
-  const mc = await setup(loadQuery);
+async function runQuery(
+  measure: RunMeasure,
+  clause: SelectionClause,
+  load: CreateQuery | string = loadQuery
+) {
+  const mc = await setup(load);
   const sel = Selection.single({ cross: true });
 
   return new Promise<{ value: number, info?: PreAggregateInfo, mc: Coordinator }>((resolve, reject) => {
@@ -265,6 +270,24 @@ describe('PreAggregator', () => {
         .qualify(gt('measure', 7), gt(avg('x'), 0));
     };
     expect(await run(query)).toStrictEqual([13, true]);
+  });
+
+  it('supports schema-qualified base tables', async () => {
+    const load = `CREATE SCHEMA s; CREATE TABLE s.data AS
+      SELECT * FROM (VALUES ('a', 1), ('b', 3), ('b', 4)) t(dim, x)`;
+    const query = (predicate: FilterExpr = []) => {
+      return Query.from(asTableRef(['s', 'data'])!)
+        .select({ measure: stddev('x') })
+        .where(predicate);
+    };
+    const clause = clausePoint('dim', 'b', { source: {} });
+    const { value, info, mc } = await runQuery(query, clause, load);
+    expect(value).toBe(Math.sqrt(0.5));
+
+    // the materialized view must exist; a create query that fails to bind
+    // is otherwise masked by the coordinator's fallback to standard queries
+    const rows = await mc.query(Query.from(info!.table).select({ n: count() }));
+    expect(rows.get(0).n).toBe(2);
   });
 
   it('supports queries with filter pushdown applied', async () => {

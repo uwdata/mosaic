@@ -38,7 +38,7 @@ export function preaggColumns(client: MosaicClient): PreAggColumnsResult | null 
   const from = getBase(q, q => {
     const node = q._from[0];
     const ref = node instanceof FromClauseNode && node.expr;
-    return isTableRef(ref) ? ref.name : ref;
+    return isTableRef(ref) ? String(ref) : ref;
   });
   if (typeof from !== 'string') return null;
 
@@ -47,7 +47,7 @@ export function preaggColumns(client: MosaicClient): PreAggColumnsResult | null 
   const avg = (ref: ColumnRefNode) => {
     const name = ref.column;
     const expr = getBase(q, q => q._select.find(c => c.alias === name)?.expr);
-    return sql`(SELECT avg(${expr ?? ref}) FROM "${from}")`;
+    return sql`(SELECT avg(${expr ?? ref}) FROM ${from})`;
   };
 
   const aggrs = new Map<AggregateNode, ExprNode>();
