@@ -36,7 +36,7 @@ export function literalToSQL(value: unknown) {
           ? `DATE '${y}-${m+1}-${d}'` // utc date
           : `epoch_ms(${ts})`; // timestamp
       } else if (value instanceof RegExp) {
-        return `'${value.source}'`;
+        return `'${value.source.replaceAll(`'`, `''`)}'`;
       } else {
         // otherwise rely on string coercion
         return `${value}`;

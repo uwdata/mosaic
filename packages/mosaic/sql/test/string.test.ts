@@ -11,6 +11,11 @@ describe('String functions', () => {
     expect(columns(expr)).toStrictEqual(['txt1']);
   });
 
+  it('include regexp_matches with a RegExp literal containing a quote', async () => {
+    const expr = regexp_matches('txt1', literal(/don't|can't/));
+    await expect(expr).toBeValidExpr(`regexp_matches("txt1", 'don''t|can''t')`);
+  });
+
   it('include contains', async () => {
     const expr = contains('txt1', literal('oo'))
     await expect(expr).toBeValidExpr(`contains("txt1", 'oo')`);
