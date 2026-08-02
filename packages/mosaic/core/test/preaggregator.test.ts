@@ -391,6 +391,26 @@ describe('PreAggregator', () => {
     expect(rows.get(0).n).toBe(2);
   });
 
+  it('skips expression-valued selection fields over subqueries', async () => {
+    const size = sql`CASE WHEN "x" > 2 THEN 'big' ELSE 'small' END`;
+    const clause = clausePoint(size, 'big', { source: {} });
+    const query = (predicate: FilterExpr = []) => {
+      const counts = Query.from('testData')
+        .select({ order: 'order', freq: count() })
+        .groupby('order')
+        .where(predicate);
+      return Query.with({ counts })
+        .from('counts')
+        .select({ measure: sum('freq') });
+    };
+
+    // column references within verbatim SQL text can not be pushed
+    // down to subqueries, so expect the non-optimized route
+    const { value, info } = await runQuery(query, clause);
+    expect(value).toBe(2);
+    expect(info).toBeFalsy();
+  });
+
   it('supports case-insensitive collisions among groupby dimensions', async () => {
     const query = (predicate: FilterExpr = []) => {
       return Query.from('testData')
