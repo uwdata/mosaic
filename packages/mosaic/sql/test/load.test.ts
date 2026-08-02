@@ -1,6 +1,10 @@
 import { expect, describe, it } from 'vitest';
 import { loadCSV, loadObjects } from '../src/index.js';
 
+// Resolve a fixture file path without node imports, which lack typings here.
+const dataFile = (name: string) =>
+  decodeURIComponent(new URL(`data/${name}`, import.meta.url).pathname);
+
 // Serialization only: read_csv binds against the named file, which does not
 // exist in the fixture database.
 describe('loadCSV', () => {
@@ -35,6 +39,21 @@ describe('loadCSV', () => {
     };
     expect(loadCSV('table', 'data.csv', opt).toString()).toBe(
       `CREATE TABLE IF NOT EXISTS "table" AS SELECT * FROM read_csv('data.csv', auto_detect=false, sample_size=-1, all_varchar=true, columns={'line': 'VARCHAR'}, force_not_null=['line'], new_line='\\n', header=false, skip=2)`
+    );
+  });
+
+  // read_csv binds only if the file exists, hence on-disk fixtures
+  it('escapes single quotes in file paths', async () => {
+    const file = dataFile(`john's data.csv`);
+    await expect(loadCSV('data', file)).toBeValidQuery(
+      `CREATE TABLE IF NOT EXISTS "data" AS SELECT * FROM read_csv('${file.replaceAll(`'`, `''`)}', auto_detect=true, sample_size=-1)`
+    );
+  });
+
+  it('escapes single quotes in string options', async () => {
+    const file = dataFile('quoted.csv');
+    await expect(loadCSV('data2', file, { quote: `'` })).toBeValidQuery(
+      `CREATE TABLE IF NOT EXISTS "data2" AS SELECT * FROM read_csv('${file}', auto_detect=true, sample_size=-1, quote='''')`
     );
   });
 });
