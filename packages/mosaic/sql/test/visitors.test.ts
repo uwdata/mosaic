@@ -1,5 +1,6 @@
 import { expect, describe, it } from 'vitest';
 import { abs, add, asVerbatim, collectAggregates, collectColumns, collectParams, column, count, div, eq, isAggregateExpression, join, Query, ScalarSubqueryNode, sql, sum } from '../src/index.js';
+import type { ExprNode } from '../src/index.js';
 import { stubParam } from './util/stub-param.js';
 import { validateQuery } from './util/validate.js';
 
@@ -74,6 +75,39 @@ describe('Visitor functions', () => {
     expect(isAggregateExpression(count().orderby('a'))).toBe(0);
     expect(isAggregateExpression(asVerbatim('count(*) OVER (ORDER BY a)'))).toBe(0);
     expect(isAggregateExpression(sql`count(*) OVER (ORDER BY a)`)).toBe(0);
-    expect(isAggregateExpression(sql`count(${column('a')}) OVER (ORDER BY a)`)).toBe(0);    
+    expect(isAggregateExpression(sql`count(${column('a')}) OVER (ORDER BY a)`)).toBe(0);
   });
+});
+
+describe('Verbatim aggregate detection', () => {
+  // mirrors vgplot markQuery: fields not detected as aggregates
+  // become GROUP BY dimensions
+  function markStyleQuery(fields: Record<string, ExprNode>) {
+    const q = Query.from('t1').select(fields);
+    const entries = Object.entries(fields);
+    const dims = entries
+      .filter(([, field]) => !isAggregateExpression(field))
+      .map(([as]) => as);
+    if (dims.length < entries.length) q.groupby(dims);
+    return q;
+  }
+
+  const exprs = [
+    'arg_max_nulls_last(txt1, num1)',
+    'arg_min_nulls_last(txt1, num1)',
+    'argmax(txt1, num1)',
+    'argmin(txt1, num1)',
+    'count_if(flag1)',
+    "group_concat(txt1, ', ')",
+    "listagg(txt1, ', ')",
+    'sem(num1)'
+  ];
+
+  for (const expr of exprs) {
+    const name = expr.slice(0, expr.indexOf('('));
+    it(`covers ${name}`, async () => {
+      await expect(markStyleQuery({ y: asVerbatim(expr), x: count() }))
+        .toBeValidQuery(`SELECT ${expr} AS "y", count(*) AS "x" FROM "t1"`);
+    });
+  }
 });
