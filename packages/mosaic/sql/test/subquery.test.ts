@@ -34,6 +34,24 @@ describe('Scalar subqueries', () => {
       'SELECT "num1" FROM "t1" WHERE ("num1" > (SELECT avg("num1") AS "a" FROM "t1"))'
     );
   });
+  it('wrap set operations used as operator operands', async () => {
+    const u = Query
+      .union(
+        Query.select('num1').from('t1'),
+        Query.select('num1').from('t2')
+      )
+      .limit(1);
+    await expect(
+      Query.select('num1').from('t1').where(gt('num1', u))
+    ).toBeValidQuery(
+      'SELECT "num1" FROM "t1" WHERE ("num1" > (SELECT "num1" FROM "t1" UNION SELECT "num1" FROM "t2" LIMIT 1))'
+    );
+  });
+  it('wrap pivot queries used as expressions', () => {
+    // structural only: DuckDB rejects multi-column pivots as scalar subqueries
+    const q = Query.select({ p: Query.pivot('t1') }).from('t1');
+    expect(String(q)).toBe('SELECT (PIVOT "t1") AS "p" FROM "t1"');
+  });
   it('wrap queries used in select lists', async () => {
     await expect(
       Query
