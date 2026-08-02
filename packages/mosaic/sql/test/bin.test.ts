@@ -43,84 +43,94 @@ describe('Binning transforms', () => {
 
     it('supports explicit time intervals', async () => {
       await expect(binDate('ts1', years, { interval: 'year', step: 2 }))
-        .toBeValidExpr('time_bucket(INTERVAL 2 year, "ts1")');
+        .toBeValidExpr(`time_bucket(INTERVAL '2 year', "ts1")`);
 
       await expect(binDate('ts1', years, { interval: 'month', step: 6 }))
-        .toBeValidExpr('time_bucket(INTERVAL 6 month, "ts1")');
+        .toBeValidExpr(`time_bucket(INTERVAL '6 month', "ts1")`);
 
       await expect(binDate('ts1', months, { interval: 'month', step: 1 }))
-        .toBeValidExpr('time_bucket(INTERVAL 1 month, "ts1")');
+        .toBeValidExpr(`time_bucket(INTERVAL '1 month', "ts1")`);
 
       await expect(binDate('ts1', months, { interval: 'month', step: 3 }))
-        .toBeValidExpr('time_bucket(INTERVAL 3 month, "ts1")');
+        .toBeValidExpr(`time_bucket(INTERVAL '3 month', "ts1")`);
 
       await expect(binDate('ts1', days, { interval: 'day', step: 2 }))
-        .toBeValidExpr('time_bucket(INTERVAL 2 day, "ts1")');
+        .toBeValidExpr(`time_bucket(INTERVAL '2 day', "ts1")`);
 
       await expect(binDate('ts1', days, { interval: 'hour', step: 12 }))
-        .toBeValidExpr('time_bucket(INTERVAL 12 hour, "ts1")');
+        .toBeValidExpr(`time_bucket(INTERVAL '12 hour', "ts1")`);
 
       await expect(binDate('ts1', [10, 20], { interval: 'millisecond', step: 10 }))
-        .toBeValidExpr('time_bucket(INTERVAL 10 millisecond, "ts1")');
+        .toBeValidExpr(`time_bucket(INTERVAL '10 millisecond', "ts1")`);
 
       await expect(binDate('ts1', [0.1, 0.2], { interval: 'microsecond', step: 10 }))
-        .toBeValidExpr('time_bucket(INTERVAL 10 microsecond, "ts1")');
+        .toBeValidExpr(`time_bucket(INTERVAL '10 microsecond', "ts1")`);
     });
 
     it('infers time intervals with steps', async () => {
       await expect(binDate('ts1', years, { steps: 11 }))
-        .toBeValidExpr('time_bucket(INTERVAL 1 year, "ts1")');
+        .toBeValidExpr(`time_bucket(INTERVAL '1 year', "ts1")`);
 
       await expect(binDate('ts1', years, { steps: 30 }))
-        .toBeValidExpr('time_bucket(INTERVAL 3 month, "ts1")');
+        .toBeValidExpr(`time_bucket(INTERVAL '3 month', "ts1")`);
 
       await expect(binDate('ts1', months, { steps: 25 }))
-        .toBeValidExpr('time_bucket(INTERVAL 1 month, "ts1")');
+        .toBeValidExpr(`time_bucket(INTERVAL '1 month', "ts1")`);
 
       await expect(binDate('ts1', months, { steps: 100 }))
-        .toBeValidExpr('time_bucket(INTERVAL 7 day, "ts1")');
+        .toBeValidExpr(`time_bucket(INTERVAL '7 day', "ts1")`);
 
       await expect(binDate('ts1', days, { steps: 10 }))
-        .toBeValidExpr('time_bucket(INTERVAL 1 day, "ts1")');
+        .toBeValidExpr(`time_bucket(INTERVAL '1 day', "ts1")`);
 
       await expect(binDate('ts1', days, { steps: 20 }))
-        .toBeValidExpr('time_bucket(INTERVAL 12 hour, "ts1")');
+        .toBeValidExpr(`time_bucket(INTERVAL '12 hour', "ts1")`);
 
       await expect(binDate('ts1', [10, 20], { steps: 10 }))
-        .toBeValidExpr('time_bucket(INTERVAL 1 millisecond, "ts1")');
+        .toBeValidExpr(`time_bucket(INTERVAL '1 millisecond', "ts1")`);
 
       await expect(binDate('ts1', [0.1, 0.2], { steps: 10 }))
-        .toBeValidExpr('time_bucket(INTERVAL 10 microsecond, "ts1")');
+        .toBeValidExpr(`time_bucket(INTERVAL '10 microsecond', "ts1")`);
     });
 
     it('infers time intervals', async () => {
       await expect(binDate('ts1', years))
-        .toBeValidExpr('time_bucket(INTERVAL 3 month, "ts1")');
+        .toBeValidExpr(`time_bucket(INTERVAL '3 month', "ts1")`);
 
       await expect(binDate('ts1', months))
-        .toBeValidExpr('time_bucket(INTERVAL 1 month, "ts1")');
+        .toBeValidExpr(`time_bucket(INTERVAL '1 month', "ts1")`);
 
       await expect(binDate('ts1', days))
-        .toBeValidExpr('time_bucket(INTERVAL 6 hour, "ts1")');
+        .toBeValidExpr(`time_bucket(INTERVAL '6 hour', "ts1")`);
 
       await expect(binDate('ts1', [1e7, 2e7]))
-        .toBeValidExpr('time_bucket(INTERVAL 5 minute, "ts1")');
+        .toBeValidExpr(`time_bucket(INTERVAL '5 minute', "ts1")`);
 
       await expect(binDate('ts1', [1e5, 2e5]))
-        .toBeValidExpr('time_bucket(INTERVAL 5 second, "ts1")');
+        .toBeValidExpr(`time_bucket(INTERVAL '5 second', "ts1")`);
 
       await expect(binDate('ts1', [0, 100]))
-        .toBeValidExpr('time_bucket(INTERVAL 5 millisecond, "ts1")');
+        .toBeValidExpr(`time_bucket(INTERVAL '5 millisecond', "ts1")`);
 
       await expect(binDate('ts1', [0, 0.1]))
-        .toBeValidExpr('time_bucket(INTERVAL 5 microsecond, "ts1")');
+        .toBeValidExpr(`time_bucket(INTERVAL '5 microsecond', "ts1")`);
     });
 
     it('handles degenerate span', async () => {
       await expect(binDate('ts1', [1, 1]))
-        .toBeValidExpr('time_bucket(INTERVAL 1 day, "ts1")');
+        .toBeValidExpr(`time_bucket(INTERVAL '1 day', "ts1")`);
       await expect(binDate('ts1', [1, 1], { offset: 1 }))
-        .toBeValidExpr('(time_bucket(INTERVAL 1 day, "ts1") + INTERVAL 1 day)');
+        .toBeValidExpr(`(time_bucket(INTERVAL '1 day', "ts1") + INTERVAL '1 day')`);
+    });
+
+    it('supports negative offsets', async () => {
+      await expect(binDate('ts1', days, { interval: 'day', offset: -1 }))
+        .toBeValidExpr(`(time_bucket(INTERVAL '1 day', "ts1") + INTERVAL '-1 day')`);
+    });
+
+    it('supports fractional steps', async () => {
+      await expect(binDate('ts1', days, { interval: 'day', step: 0.5 }))
+        .toBeValidExpr(`time_bucket(INTERVAL '0.5 day', "ts1")`);
     });
   });
 });
