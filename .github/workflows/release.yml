@@ -107,7 +107,7 @@ jobs:
         uses: pnpm/action-setup@v6
 
       - name: Setup node
-        uses: actions/setup-node@v6
+        uses: actions/setup-node@v7
         with:
           # 24.x for npm >= 11.5.1, required by OIDC trusted publishing
           node-version: "24.x"
