@@ -1,8 +1,11 @@
 import type { ColumnRefNode } from '../ast/column-ref.js';
 import type { TableRefNode } from '../ast/table-ref.js';
+import type { Query } from '../ast/query.js';
 import { FromClauseNode, FromNode } from '../ast/from.js';
 import { ExprNode, type SQLNode } from '../ast/node.js';
 import { ParamNode } from '../ast/param.js';
+import { ScalarSubqueryNode } from '../ast/subquery.js';
+import { PIVOT_QUERY, SELECT_QUERY, SET_OPERATION } from '../constants.js';
 import { WindowDefNode } from '../ast/window.js';
 import { column } from '../functions/column.js';
 import { literal, verbatim } from '../functions/literal.js';
@@ -37,13 +40,29 @@ export function asVerbatim(value: unknown): ExprNode {
 /**
  * Interpret a value as a literal AST node. All other primitive values
  * are interpreted as SQL literals. Dynamic parameters are interpreted
- * as param AST nodes, while existing AST nodes are left as-is.
+ * as param AST nodes, while existing AST nodes are left as-is, except
+ * for queries, which are wrapped as scalar subqueries.
  * @param value The value to interpret as a literal AST node.
  */
 export function asLiteral(value: unknown): ExprNode {
-  return value instanceof ExprNode ? value
+  return isQueryNode(value) ? new ScalarSubqueryNode(value)
+    : value instanceof ExprNode ? value
     : isParamLike(value) ? new ParamNode(value)
     : literal(value);
+}
+
+/**
+ * Check if a value is a query AST node. Tests node type strings rather
+ * than using `isQuery`, as importing the `Query` class here would create
+ * a circular module dependency.
+ * @param value The value to check.
+ */
+function isQueryNode(value: unknown): value is Query {
+  return value instanceof ExprNode && (
+    value.type === SELECT_QUERY ||
+    value.type === SET_OPERATION ||
+    value.type === PIVOT_QUERY
+  );
 }
 
 /**

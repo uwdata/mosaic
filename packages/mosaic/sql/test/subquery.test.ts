@@ -1,5 +1,5 @@
 import { expect, describe, it } from 'vitest';
-import { column, InOpNode, Query, ScalarSubqueryNode } from '../src/index.js';
+import { avg, column, eq, gt, InOpNode, max, Query, ScalarSubqueryNode } from '../src/index.js';
 import { validateQuery } from './util/validate.js';
 
 describe('Scalar subqueries', () => {
@@ -15,5 +15,32 @@ describe('Scalar subqueries', () => {
     expect(String(subq)).toBe('(SELECT "num1" FROM "t1" LIMIT 3)');
     expect(String(test)).toBe('("num1" IN (SELECT "num1" FROM "t1" LIMIT 3))');
     await validateQuery(`SELECT ${test} FROM "t1"`)
+  });
+  it('wrap queries used as operator operands', async () => {
+    await expect(
+      Query
+        .select('num1')
+        .from('t1')
+        .where(eq(column('num1'), Query.select({ m: max('num1') }).from('t1')))
+    ).toBeValidQuery(
+      'SELECT "num1" FROM "t1" WHERE ("num1" = (SELECT max("num1") AS "m" FROM "t1"))'
+    );
+    await expect(
+      Query
+        .select('num1')
+        .from('t1')
+        .where(gt('num1', Query.select({ a: avg('num1') }).from('t1')))
+    ).toBeValidQuery(
+      'SELECT "num1" FROM "t1" WHERE ("num1" > (SELECT avg("num1") AS "a" FROM "t1"))'
+    );
+  });
+  it('wrap queries used in select lists', async () => {
+    await expect(
+      Query
+        .select({ m: Query.select({ a: avg('num1') }).from('t1') })
+        .from('t1')
+    ).toBeValidQuery(
+      'SELECT (SELECT avg("num1") AS "a" FROM "t1") AS "m" FROM "t1"'
+    );
   });
 });
