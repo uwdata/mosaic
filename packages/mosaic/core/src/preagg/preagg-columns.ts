@@ -69,6 +69,9 @@ export function preaggColumns(client: MosaicClient): PreAggColumnsResult | null 
         // rewrite original select clause to use preaggregates
         output[alias] = result;
       } else {
+        // bail if expression contains a window function, as
+        // window values cannot serve as groupby dimensions
+        if (hasWindow(expr)) return null;
         // include non-aggregates in preagg table and update results
         preagg[alias] = expr;
         output[alias] = asNode(alias);

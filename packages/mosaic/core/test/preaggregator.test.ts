@@ -294,6 +294,17 @@ describe('PreAggregator', () => {
     expect(await run(query)).toStrictEqual([13, true]);
   });
 
+  it('does not support window functions without aggregate inputs', async () => {
+    // should handle query, but through non-optimized route
+    const query = (predicate: FilterExpr = []) => {
+      return Query.from('testData')
+        .select({ measure: avg('x'), rn: row_number().orderby('dim'), dim: 'dim' })
+        .groupby('dim')
+        .where(predicate);
+    };
+    expect(await run(query)).toStrictEqual([3.5, false]);
+  });
+
   it('supports queries with having clause', async () => {
     const query = (predicate: FilterExpr = []) => {
       return Query.from('testData')
