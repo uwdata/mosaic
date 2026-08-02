@@ -14,6 +14,9 @@ const aggrRegExp = new RegExp(`^(${aggregateNames.join('|')})$`);
 // function call tokens will have a pattern like "name(".
 const funcRegExp = /(\\'|\\"|"(?:\\"|[^"])*"|'(?:\\'|[^'])*'|\w+\()/g;
 
+// regexp to match window function calls with inline or named definitions
+const windowRegExp = /\)\s*over(\s*\(|\s+[\w"])/;
+
 function hasVerbatimAggregate(s: string) {
   return s
     .split(funcRegExp)
@@ -46,7 +49,7 @@ export function isAggregateExpression(root: SQLNode) {
         if (sub >= 0) s = s.slice(0, sub);
 
         // exit if expression includes windowing
-        if (s.includes(') over ')) return -1;
+        if (windowRegExp.test(s)) return -1;
         if (hasVerbatimAggregate(s)) {
           agg |= 2;
           return -1;
