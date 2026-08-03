@@ -7,7 +7,7 @@
 
 set -eo pipefail
 
-IMAGE="mcr.microsoft.com/playwright:v1.60.0-noble"
+IMAGE="mcr.microsoft.com/playwright:v1.62.1-noble"
 REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 
 ARGS=()
