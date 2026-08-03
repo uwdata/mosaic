@@ -47,12 +47,21 @@ mkcert localhost # create localhost.pem and localhost-key.pem
 ### Multi-Tenant Access Control
 
 `schema-match-headers` isn't part of the mosaic server API, but is provided here as an example of how to have
-multiple users / customers share the same DuckDB server instance while keeping their data isolated.
+multiple users / customers share the same DuckDB server instance while restricting table queries to tenant schemas.
 
-1. **Client side**: set `preagg.schema` when calling `new Coordinator` ([docs](https://idl.uw.edu/mosaic/api/core/coordinator.html#constructor)) to
-   something like a tenant id, user id, or organization id. If you want results to be shared across users, you should
-   use tenant ids or organization ids, not user ids. Mosaic will use that value as the schema name for any temporary
-   tables with pre-aggregated data. Note that any of your own queries for preloading data will also need to use that schema name.
+1. **Client side**: Give each tenant a dedicated pre-aggregation schema when constructing and registering its coordinator
+   ([docs](https://idl.uw.edu/mosaic/api/core/coordinator.html#constructor)):
+
+   ```js
+   const mc = new Coordinator(connector, {
+     preagg: { enabled: false, schema: tenantSchema }
+   });
+   coordinator(mc);
+   ```
+
+   The schema name is part of the tenant authorization policy and must not be shared by mutually untrusted tenants. It
+   must be one of the schema names supplied by the trusted headers described below. If results should be shared across
+   users, use a tenant id or organization id rather than a user id.
 2. **Authentication**: This implementation assumes that there is some authentication mechanism in place that sets the
    trusted authentication headers in the request. The server will use these headers to determine which schema
    to use for the query. This might be a server-side cookie sent through with mosaic requests, or a header set on outbound
@@ -61,6 +70,22 @@ multiple users / customers share the same DuckDB server instance while keeping t
    you trust to match against schema names. Inbound requests will be checked for these headers, and if they are present,
    the server will allow access to any schemas that match the header values. If no headers are present, and `--schema-match-headers`
    is set, the server will return a 401 Unauthorized error.
+
+_Note:_ Schema matching authorizes schema references in submitted SQL; it does not isolate the shared DuckDB process,
+filesystem, network, extensions, or credentials. It assumes a single catalog; attached catalogs are outside this policy
+boundary, and explicitly catalog-qualified table, `SHOW`, and function references are rejected. The function blocklist
+applies only to explicit function calls. Schema matching does not restrict catalog metadata returned by functions such as
+`duckdb_tables()` and `pragma_table_info()`. If metadata is sensitive, add the exact metadata-function names exposed by the
+deployment to `--function-blocklist`; wildcard patterns such as `duckdb_*` are not supported, and the list must be reviewed
+when DuckDB or its extensions change. To restrict file-reading functions, also enable schema matching so DuckDB replacement
+scans such as `FROM 'data.parquet'` are rejected as unqualified table references. These controls are not a sandbox: run the
+server with access only to external resources that are safe for every tenant.
+
+If either `--schema-match-headers` or `--function-blocklist` is configured, `json` and `arrow` requests are limited to
+statements DuckDB can serialize for validation; unsupported forms such as `PRAGMA` and `SET` are rejected, with HTTP
+requests receiving a 400 response. All `exec` requests are also rejected until full-statement authorization is supported.
+This includes every `Coordinator.exec(...)` call, such as data loading, preloading, and DDL/DML. Mosaic pre-aggregation
+also uses `exec` to create schemas and tables, so set `preagg: { enabled: false }` in this mode.
 
 ## API
 
