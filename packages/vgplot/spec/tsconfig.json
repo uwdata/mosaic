@@ -5,8 +5,8 @@
     "outDir": "dist"
   },
   "references": [
-    { "path": "../../mosaic/core/tsconfig.json" },
-    { "path": "../../mosaic/sql/tsconfig.json" },
-    { "path": "../vgplot/tsconfig.json" }
+    { "path": "../../mosaic/core" },
+    { "path": "../../mosaic/sql" },
+    { "path": "../vgplot" }
   ]
 }

@@ -6,7 +6,7 @@
     "outDir": "dist"
   },
   "references": [
-    { "path": "../../mosaic/core/tsconfig.json" },
-    { "path": "../../mosaic/sql/tsconfig.json" }
+    { "path": "../../mosaic/core" },
+    { "path": "../../mosaic/sql" }
   ]
 }
