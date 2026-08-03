@@ -99,6 +99,83 @@ func TestDB_FunctionBlocklist(t *testing.T) {
 	}
 }
 
+func TestDB_CacheValidatesSchemas(t *testing.T) {
+	tests := []struct {
+		name   string
+		format string
+	}{
+		{name: "JSON", format: "json"},
+		{name: "Arrow", format: "arrow"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			db := setupTestDB(t)
+			ctx := context.Background()
+
+			err := db.Exec(ctx, `
+				CREATE SCHEMA tenant_a;
+				CREATE TABLE tenant_a.secret (value VARCHAR);
+				INSERT INTO tenant_a.secret VALUES ('tenant-a-only')
+			`)
+			require.NoError(t, err)
+
+			const query = "SELECT * FROM tenant_a.secret"
+			if tt.format == "arrow" {
+				_, fromCache, err := db.QueryArrow(ctx, query, []string{"tenant_a"}, true)
+				require.NoError(t, err)
+				assert.False(t, fromCache)
+
+				_, fromCache, err = db.QueryArrow(ctx, query, []string{"tenant_b"}, true)
+				require.ErrorContains(t, err, "unauthorized access to schema")
+				assert.False(t, fromCache)
+
+				_, fromCache, err = db.QueryArrow(ctx, query, []string{"tenant_a"}, true)
+				require.NoError(t, err)
+				assert.True(t, fromCache)
+			} else {
+				_, fromCache, err := db.QueryJSON(ctx, query, []string{"tenant_a"}, true)
+				require.NoError(t, err)
+				assert.False(t, fromCache)
+
+				_, fromCache, err = db.QueryJSON(ctx, query, []string{"tenant_b"}, true)
+				require.ErrorContains(t, err, "unauthorized access to schema")
+				assert.False(t, fromCache)
+
+				_, fromCache, err = db.QueryJSON(ctx, query, []string{"tenant_a"}, true)
+				require.NoError(t, err)
+				assert.True(t, fromCache)
+			}
+		})
+	}
+}
+
+func TestDB_CacheSeparatesFormats(t *testing.T) {
+	db := setupTestDB(t)
+	ctx := context.Background()
+	const query = "SELECT 42 AS answer"
+
+	jsonData, fromCache, err := db.QueryJSON(ctx, query, nil, true)
+	require.NoError(t, err)
+	assert.False(t, fromCache)
+	assert.True(t, json.Valid(jsonData))
+
+	arrowData, fromCache, err := db.QueryArrow(ctx, query, nil, true)
+	require.NoError(t, err)
+	assert.False(t, fromCache)
+	assert.False(t, json.Valid(arrowData))
+
+	cachedJSON, fromCache, err := db.QueryJSON(ctx, query, nil, true)
+	require.NoError(t, err)
+	assert.True(t, fromCache)
+	assert.Equal(t, jsonData, cachedJSON)
+
+	cachedArrow, fromCache, err := db.QueryArrow(ctx, query, nil, true)
+	require.NoError(t, err)
+	assert.True(t, fromCache)
+	assert.Equal(t, arrowData, cachedArrow)
+}
+
 func TestDB_Exec(t *testing.T) {
 	db := setupTestDB(t)
 	ctx := context.Background()
