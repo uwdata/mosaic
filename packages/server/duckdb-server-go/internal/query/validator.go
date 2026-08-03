@@ -64,9 +64,8 @@ func (e ErrorDetails) Is(target error) bool {
 
 // ValidateSQL validates the given SQL query using the provided validators
 func (db *DB) ValidateSQL(ctx context.Context, sql string, validators ...Validator) error {
-	// Use json_serialize_sql to parse the SQL and extract schema references
-	// serializeSQL := fmt.Sprintf("SELECT json_serialize_sql(%s) as ast", quoteLiteral(sql))
-	serializeSQL := fmt.Sprintf("SELECT json_serialize_sql(%s, skip_default := true, skip_empty := true, skip_null := true) as ast", quoteLiteral(sql))
+	// Qualify the built-in to prevent database macros from shadowing validation.
+	serializeSQL := fmt.Sprintf("SELECT system.main.json_serialize_sql(%s, skip_default := true, skip_empty := true, skip_null := true) as ast", quoteLiteral(sql))
 
 	var m map[string]any
 
@@ -88,8 +87,13 @@ func (db *DB) ValidateSQL(ctx context.Context, sql string, validators ...Validat
 		}
 	}
 
+	statements, ok := m["statements"].([]any)
+	if !ok {
+		return errors.New("invalid SQL parser response: missing or invalid statements")
+	}
+
 	// Extract all schema references, including tables without an explicit schema reference, from the AST
-	for _, stmt := range m["statements"].([]any) {
+	for _, stmt := range statements {
 		stmtMap, ok := stmt.(map[string]any)
 		if !ok {
 			return fmt.Errorf("invalid statement format: %v", stmt)

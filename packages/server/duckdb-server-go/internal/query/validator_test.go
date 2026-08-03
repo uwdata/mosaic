@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestErrorDetails(t *testing.T) {
@@ -236,6 +237,26 @@ func TestDB_ValidateSQL(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestDB_ValidateSQLIgnoresShadowingSerializerMacro(t *testing.T) {
+	db := setupTestDB(t)
+	require.NoError(t, db.Exec(t.Context(), `
+		CREATE MACRO json_serialize_sql(
+			sql_text,
+			skip_default := true,
+			skip_empty := true,
+			skip_null := true
+		) AS {'error': false, 'statements': []}
+	`))
+
+	err := db.ValidateSQL(
+		t.Context(),
+		"SELECT * FROM tenant_b.secret",
+		newBaseTableValidator([]string{"tenant_a"}),
+	)
+	require.ErrorIs(t, err, ErrAccessDenied)
+	require.EqualError(t, err, "query: access denied: unauthorized access to schema 'tenant_b'")
 }
 
 func TestBaseTableValidatorErrors(t *testing.T) {
