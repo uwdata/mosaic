@@ -5,7 +5,7 @@
     "noEmit": true,
   },
   "references": [
-    { "path": "../../mosaic/core" },
-    { "path": "../spec" }
+    { "path": "../../mosaic/core/tsconfig.json" },
+    { "path": "../spec/tsconfig.json" }
   ]
 }
