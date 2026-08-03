@@ -99,6 +99,27 @@ func TestDB_FunctionBlocklist(t *testing.T) {
 	}
 }
 
+func TestDB_FunctionBlocklistHandlesUnsupportedStatements(t *testing.T) {
+	db := setupTestDB(t, WithFunctionBlocklist([]string{"range"}))
+	ctx := context.Background()
+
+	t.Run("JSON", func(t *testing.T) {
+		_, _, err := db.QueryJSON(ctx, "PRAGMA version", nil, false)
+		require.ErrorIs(t, err, ErrUnsupportedStatement)
+		require.ErrorContains(t, err, "query: validation failed: query: not implemented: Only SELECT statements can be serialized to json")
+		require.NotContains(t, err.Error(), "()")
+		require.NotContains(t, err.Error(), " at :")
+	})
+
+	t.Run("Arrow", func(t *testing.T) {
+		_, _, err := db.QueryArrow(ctx, "PRAGMA version", nil, false)
+		require.ErrorIs(t, err, ErrUnsupportedStatement)
+		require.ErrorContains(t, err, "query: validation failed: query: not implemented: Only SELECT statements can be serialized to json")
+		require.NotContains(t, err.Error(), "()")
+		require.NotContains(t, err.Error(), " at :")
+	})
+}
+
 func TestDB_CacheValidatesSchemas(t *testing.T) {
 	tests := []struct {
 		name   string

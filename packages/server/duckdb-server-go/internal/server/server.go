@@ -30,6 +30,12 @@ type QueryParams struct {
 	Name    *string  `json:"name"`
 }
 
+type queryParamsError string
+
+func (e queryParamsError) Error() string {
+	return string(e)
+}
+
 type Server struct {
 	*http.ServeMux
 
@@ -203,7 +209,21 @@ func (s *Server) handleHTTP(w http.ResponseWriter, r *http.Request) {
 
 	data, cacheHit, err := s.execCommand(r.Context(), params, allowedSchemas)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		status := http.StatusInternalServerError
+		var (
+			errorDetails query.ErrorDetails
+			paramsError  queryParamsError
+		)
+		switch {
+		case errors.Is(err, query.ErrExecWithValidation),
+			errors.Is(err, query.ErrUnsupportedStatement),
+			errors.As(err, &errorDetails),
+			errors.As(err, &paramsError):
+			status = http.StatusBadRequest
+		case errors.Is(err, query.ErrAccessDenied):
+			status = http.StatusForbidden
+		}
+		http.Error(w, err.Error(), status)
 		return
 	}
 
@@ -279,19 +299,19 @@ func (s *Server) execCommand(ctx context.Context, params QueryParams, allowedSch
 func (p QueryParams) Validate(logger *slog.Logger) error {
 	if p.Type == nil || *p.Type == "" {
 		logger.Error("server: missing required 'type' parameter")
-		return errors.New("missing required 'type' parameter")
+		return queryParamsError("missing required 'type' parameter")
 	}
 
 	switch *p.Type {
 	case CommandArrow, CommandExec, CommandJSON:
 	default:
 		logger.Error("server: invalid 'type' parameter", "type", *p.Type)
-		return errors.New("invalid 'type' parameter: " + string(*p.Type))
+		return queryParamsError("invalid 'type' parameter: " + string(*p.Type))
 	}
 
 	if p.SQL == nil || *p.SQL == "" {
 		logger.Error("server: missing required 'sql' parameter")
-		return errors.New("missing required 'sql' parameter")
+		return queryParamsError("missing required 'sql' parameter")
 	}
 
 	return nil

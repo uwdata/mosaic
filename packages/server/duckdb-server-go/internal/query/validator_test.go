@@ -6,6 +6,20 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+func TestErrorDetails(t *testing.T) {
+	t.Run("all fields", func(t *testing.T) {
+		err := ErrorDetails{Type: "parser", Subtype: "syntax", Position: "line 1", Message: "invalid SQL"}
+		assert.EqualError(t, err, "query: parser (syntax) at line 1: invalid SQL")
+		assert.NotErrorIs(t, err, ErrUnsupportedStatement)
+	})
+
+	t.Run("sparse unsupported statement", func(t *testing.T) {
+		err := ErrorDetails{Type: "not implemented", Message: "Only SELECT statements can be serialized to json!"}
+		assert.EqualError(t, err, "query: not implemented: Only SELECT statements can be serialized to json!")
+		assert.ErrorIs(t, err, ErrUnsupportedStatement)
+	})
+}
+
 func TestDB_ValidateSQL(t *testing.T) {
 	tests := []struct {
 		name              string
