@@ -8,6 +8,12 @@ import (
 	"strings"
 )
 
+var (
+	ErrAccessDenied = errors.New("query: access denied")
+
+	ErrUnsupportedStatement = errors.New("query: unsupported statement")
+)
+
 type Validator interface {
 	// CheckNode is called once for each node in the AST
 	// - node: the current node being processed
@@ -36,7 +42,24 @@ type ErrorDetails struct {
 }
 
 func (e ErrorDetails) Error() string {
-	return fmt.Sprintf("query: %s (%s) at %s: %s", e.Type, e.Subtype, e.Position, e.Message)
+	details := "query"
+	if e.Type != "" {
+		details += ": " + e.Type
+	}
+	if e.Subtype != "" {
+		details += " (" + e.Subtype + ")"
+	}
+	if e.Position != "" {
+		details += " at " + e.Position
+	}
+	if e.Message != "" {
+		details += ": " + e.Message
+	}
+	return details
+}
+
+func (e ErrorDetails) Is(target error) bool {
+	return target == ErrUnsupportedStatement && strings.EqualFold(e.Type, "not implemented")
 }
 
 // ValidateSQL validates the given SQL query using the provided validators
@@ -52,12 +75,16 @@ func (db *DB) ValidateSQL(ctx context.Context, sql string, validators ...Validat
 		return fmt.Errorf("failed to parse SQL query: %w", err)
 	}
 
-	if m["error"].(bool) {
+	parseError, ok := m["error"].(bool)
+	if !ok {
+		return errors.New("invalid SQL parser response: missing error status")
+	}
+	if parseError {
 		return ErrorDetails{
-			Type:     m["error_type"].(string),
-			Subtype:  m["error_subtype"].(string),
-			Message:  m["error_message"].(string),
-			Position: m["position"].(string),
+			Type:     stringField(m, "error_type"),
+			Subtype:  stringField(m, "error_subtype"),
+			Message:  stringField(m, "error_message"),
+			Position: stringField(m, "position"),
 		}
 	}
 
@@ -83,6 +110,11 @@ func (db *DB) ValidateSQL(ctx context.Context, sql string, validators ...Validat
 	}
 
 	return errors.Join(combinedErrs...)
+}
+
+func stringField(m map[string]any, key string) string {
+	value, _ := m[key].(string)
+	return value
 }
 
 // quoteLiteral properly escapes a string for use as a SQL string literal
@@ -193,12 +225,12 @@ func (v *baseTableValidator) Validate() []error {
 			if ok {
 				continue // empty schemas are allowed if they are CTEs
 			} else {
-				errs = append(errs, fmt.Errorf("access denied: unauthorized access to table '%v' with empty schema", baseTable.TableName))
+				errs = append(errs, fmt.Errorf("%w: unauthorized access to table '%v' with empty schema", ErrAccessDenied, baseTable.TableName))
 			}
 		}
 
 		if !slices.Contains(v.allowedSchemas, baseTable.SchemaName) {
-			errs = append(errs, fmt.Errorf("access denied: unauthorized access to schema '%v'", baseTable))
+			errs = append(errs, fmt.Errorf("%w: unauthorized access to schema '%v'", ErrAccessDenied, baseTable))
 		}
 	}
 
@@ -238,7 +270,7 @@ func (v *functionBlocklistValidator) CheckNode(node map[string]any, _ []string) 
 	}
 
 	if slices.Contains(v.blockedFunctions, functionNameStr) {
-		v.errs = append(v.errs, fmt.Errorf("query: access denied: use of function '%s' is not allowed", functionNameStr))
+		v.errs = append(v.errs, fmt.Errorf("%w: use of function '%s' is not allowed", ErrAccessDenied, functionNameStr))
 	}
 }
 

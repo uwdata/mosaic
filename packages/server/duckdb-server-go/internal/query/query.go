@@ -215,7 +215,7 @@ func (db *DB) validateQuery(ctx context.Context, query string, allowedSchemas []
 
 	err := db.ValidateSQL(ctx, query, validators...)
 	if err != nil {
-		return fmt.Errorf("query: validation failed for query: %w", err)
+		return fmt.Errorf("query: validation failed: %w", err)
 	}
 
 	return nil
