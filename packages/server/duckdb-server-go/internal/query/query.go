@@ -222,6 +222,11 @@ func (db *DB) validateQuery(ctx context.Context, query string, allowedSchemas []
 }
 
 func (db *DB) QueryJSON(ctx context.Context, query string, allowedSchemas []string, useCache bool) (json.RawMessage, bool, error) {
+	err := db.validateQuery(ctx, query, allowedSchemas)
+	if err != nil {
+		return nil, false, err
+	}
+
 	var key uint64
 	var data []byte
 
@@ -234,7 +239,7 @@ func (db *DB) QueryJSON(ctx context.Context, query string, allowedSchemas []stri
 
 	var buf bytes.Buffer
 
-	err := db.WriteJSON(ctx, query, allowedSchemas, &buf)
+	err = db.writeJSON(ctx, query, &buf)
 	if err != nil {
 		return nil, false, err
 	}
@@ -252,6 +257,12 @@ func (db *DB) WriteJSON(ctx context.Context, query string, allowedSchemas []stri
 		return err
 	}
 
+	return db.writeJSON(ctx, query, w)
+}
+
+// SECURITY: writeJSON executes without policy validation. Call it only after validateQuery succeeds for the same query
+// and request-scoped allowed schemas.
+func (db *DB) writeJSON(ctx context.Context, query string, w io.Writer) error {
 	arrow, err := db.getArrowConn(ctx)
 	if err != nil {
 		return err
@@ -300,11 +311,16 @@ func (db *DB) WriteJSON(ctx context.Context, query string, allowedSchemas []stri
 }
 
 func (db *DB) QueryArrow(ctx context.Context, query string, allowedSchemas []string, useCache bool) ([]byte, bool, error) {
+	err := db.validateQuery(ctx, query, allowedSchemas)
+	if err != nil {
+		return nil, false, err
+	}
+
 	var key uint64
 	var data []byte
 
 	if useCache && db.cache != nil {
-		key, data = db.cacheGet("j", query)
+		key, data = db.cacheGet("a", query)
 		if data != nil {
 			return data, true, nil
 		}
@@ -312,7 +328,7 @@ func (db *DB) QueryArrow(ctx context.Context, query string, allowedSchemas []str
 
 	var buf bytes.Buffer
 
-	err := db.WriteArrow(ctx, query, allowedSchemas, &buf)
+	err = db.writeArrow(ctx, query, &buf)
 	if err != nil {
 		return nil, false, err
 	}
@@ -330,6 +346,12 @@ func (db *DB) WriteArrow(ctx context.Context, query string, allowedSchemas []str
 		return err
 	}
 
+	return db.writeArrow(ctx, query, w)
+}
+
+// SECURITY: writeArrow executes without policy validation. Call it only after validateQuery succeeds for the same query
+// and request-scoped allowed schemas.
+func (db *DB) writeArrow(ctx context.Context, query string, w io.Writer) error {
 	arrow, err := db.getArrowConn(ctx)
 	if err != nil {
 		return err
