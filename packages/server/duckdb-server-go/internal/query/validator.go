@@ -173,9 +173,18 @@ func newBaseTableValidator(allowedSchemas []string) Validator {
 }
 
 func (v *baseTableValidator) CheckNode(node map[string]any, keyStack []string) {
+	if class, exists := node["class"]; exists && (class == "FUNCTION" || class == "WINDOW") {
+		v.rejectCatalogReference(node, "catalog")
+	}
+
 	val, exists := node["type"]
-	if exists && val == "BASE_TABLE" {
-		v.handleBaseTable(node)
+	if exists {
+		switch val {
+		case "BASE_TABLE":
+			v.handleBaseTable(node)
+		case "SHOW_REF":
+			v.handleShowRef(node)
+		}
 	}
 
 	if len(keyStack) >= 2 && keyStack[len(keyStack)-2] == "cte_map" && keyStack[len(keyStack)-1] == "map" {
@@ -189,7 +198,38 @@ func (v *baseTableValidator) CheckNode(node map[string]any, keyStack []string) {
 	}
 }
 
+func (v *baseTableValidator) handleShowRef(showRef map[string]any) {
+	if v.rejectCatalogReference(showRef, "catalog_name") {
+		return
+	}
+
+	// DESCRIBE statements contain a nested query whose base tables are validated separately.
+	if _, exists := showRef["query"]; exists {
+		return
+	}
+
+	schemaName, exists := showRef["schema_name"]
+	if !exists {
+		v.errs = append(v.errs, fmt.Errorf("%w: SHOW statement requires an explicit authorized schema", ErrAccessDenied))
+		return
+	}
+
+	schemaNameStr, ok := schemaName.(string)
+	if !ok {
+		v.errs = append(v.errs, fmt.Errorf("invalid 'schema_name' in show reference, expected string: %v", schemaName))
+		return
+	}
+	schemaNameStr = strings.TrimPrefix(schemaNameStr, "schema_name:")
+	if !slices.Contains(v.allowedSchemas, schemaNameStr) {
+		v.errs = append(v.errs, fmt.Errorf("%w: unauthorized access to schema '%s'", ErrAccessDenied, schemaNameStr))
+	}
+}
+
 func (v *baseTableValidator) handleBaseTable(baseTable map[string]any) {
+	if v.rejectCatalogReference(baseTable, "catalog_name") {
+		return
+	}
+
 	var schemaNameStr string
 	schemaName, exists := baseTable["schema_name"]
 	if exists {
@@ -215,8 +255,24 @@ func (v *baseTableValidator) handleBaseTable(baseTable map[string]any) {
 	}] = struct{}{}
 }
 
+func (v *baseTableValidator) rejectCatalogReference(ref map[string]any, field string) bool {
+	catalogName, exists := ref[field]
+	if !exists {
+		return false
+	}
+
+	catalogNameStr, ok := catalogName.(string)
+	if !ok {
+		v.errs = append(v.errs, fmt.Errorf("invalid '%s', expected string: %v", field, catalogName))
+		return true
+	}
+	catalogNameStr = strings.TrimPrefix(catalogNameStr, field+":")
+	v.errs = append(v.errs, fmt.Errorf("%w: access to catalog '%s' is not allowed", ErrAccessDenied, catalogNameStr))
+	return true
+}
+
 func (v *baseTableValidator) Validate() []error {
-	var errs []error
+	errs := append([]error(nil), v.errs...)
 
 	// Check if all referenced schemas are allowed
 	for baseTable := range v.baseTables {
@@ -224,13 +280,13 @@ func (v *baseTableValidator) Validate() []error {
 			_, ok := v.baseTables[tableRef{TableName: baseTable.TableName, IsCTE: true}]
 			if ok {
 				continue // empty schemas are allowed if they are CTEs
-			} else {
-				errs = append(errs, fmt.Errorf("%w: unauthorized access to table '%v' with empty schema", ErrAccessDenied, baseTable.TableName))
 			}
+			errs = append(errs, fmt.Errorf("%w: unauthorized access to table '%s' with empty schema", ErrAccessDenied, baseTable.TableName))
+			continue
 		}
 
 		if !slices.Contains(v.allowedSchemas, baseTable.SchemaName) {
-			errs = append(errs, fmt.Errorf("%w: unauthorized access to schema '%v'", ErrAccessDenied, baseTable))
+			errs = append(errs, fmt.Errorf("%w: unauthorized access to schema '%s'", ErrAccessDenied, baseTable.SchemaName))
 		}
 	}
 
@@ -268,6 +324,7 @@ func (v *functionBlocklistValidator) CheckNode(node map[string]any, _ []string) 
 		v.errs = append(v.errs, fmt.Errorf("query: invalid 'function_name' in function, expected string: %v", functionName))
 		return
 	}
+	functionNameStr = strings.ToLower(functionNameStr)
 
 	if slices.Contains(v.blockedFunctions, functionNameStr) {
 		v.errs = append(v.errs, fmt.Errorf("%w: use of function '%s' is not allowed", ErrAccessDenied, functionNameStr))

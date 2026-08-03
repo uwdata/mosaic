@@ -160,3 +160,13 @@ func TestHandleHTTPQueryParamsErrors(t *testing.T) {
 		})
 	}
 }
+
+func TestGetAllowedSchemasTrimsHeaderNames(t *testing.T) {
+	req := httptest.NewRequest(http.MethodGet, "/", nil)
+	req.Header.Set("X-Tenant-Id", "tenant_a")
+	req.Header.Set("Verified-User-Id", "user_a")
+
+	got := getAllowedSchemas(req, []string{" X-Tenant-Id ", "\tVerified-User-Id "})
+	require.Equal(t, []string{"tenant_a", "user_a"}, got)
+	require.Empty(t, getAllowedSchemas(req, []string{" "}))
+}

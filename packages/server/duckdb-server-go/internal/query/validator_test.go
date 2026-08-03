@@ -237,3 +237,99 @@ func TestDB_ValidateSQL(t *testing.T) {
 		})
 	}
 }
+
+func TestBaseTableValidatorErrors(t *testing.T) {
+	db := setupTestDB(t)
+
+	t.Run("disallowed schema", func(t *testing.T) {
+		err := db.ValidateSQL(t.Context(), "SELECT * FROM tenant_b.secret", newBaseTableValidator([]string{"tenant_a"}))
+		assert.ErrorIs(t, err, ErrAccessDenied)
+		assert.EqualError(t, err, "query: access denied: unauthorized access to schema 'tenant_b'")
+	})
+
+	t.Run("unqualified table", func(t *testing.T) {
+		err := db.ValidateSQL(t.Context(), "SELECT * FROM secret", newBaseTableValidator([]string{"tenant_a"}))
+		assert.ErrorIs(t, err, ErrAccessDenied)
+		assert.EqualError(t, err, "query: access denied: unauthorized access to table 'secret' with empty schema")
+	})
+}
+
+func TestBaseTableValidatorShowStatements(t *testing.T) {
+	db := setupTestDB(t)
+
+	tests := []struct {
+		name    string
+		sql     string
+		wantErr string
+	}{
+		{
+			name:    "disallowed schema",
+			sql:     "SHOW TABLES FROM tenant_b",
+			wantErr: "query: access denied: unauthorized access to schema 'tenant_b'",
+		},
+		{
+			name: "allowed schema",
+			sql:  "SHOW TABLES FROM tenant_a",
+		},
+		{
+			name:    "all schemas",
+			sql:     "SHOW ALL TABLES",
+			wantErr: "query: access denied: SHOW statement requires an explicit authorized schema",
+		},
+		{
+			name:    "describe disallowed table",
+			sql:     "DESCRIBE tenant_b.secret",
+			wantErr: "query: access denied: unauthorized access to schema 'tenant_b'",
+		},
+		{
+			name: "describe expression",
+			sql:  "DESCRIBE SELECT 1",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := db.ValidateSQL(t.Context(), tt.sql, newBaseTableValidator([]string{"tenant_a"}))
+			if tt.wantErr == "" {
+				assert.NoError(t, err)
+				return
+			}
+			assert.ErrorIs(t, err, ErrAccessDenied)
+			assert.EqualError(t, err, tt.wantErr)
+		})
+	}
+}
+
+func TestBaseTableValidatorRejectsCatalogReferences(t *testing.T) {
+	db := setupTestDB(t)
+
+	tests := []string{
+		"SELECT * FROM otherdb.tenant_a.secret",
+		"SHOW TABLES FROM otherdb.tenant_a",
+		"DESCRIBE otherdb.tenant_a.secret",
+		"SELECT * FROM otherdb.tenant_a.fn()",
+		"SELECT otherdb.tenant_a.fn() OVER ()",
+	}
+
+	for _, sql := range tests {
+		t.Run(sql, func(t *testing.T) {
+			err := db.ValidateSQL(t.Context(), sql, newBaseTableValidator([]string{"tenant_a"}))
+			assert.ErrorIs(t, err, ErrAccessDenied)
+			assert.EqualError(t, err, "query: access denied: access to catalog 'otherdb' is not allowed")
+		})
+	}
+}
+
+func TestFunctionBlocklistValidatorNormalizesFunctionNames(t *testing.T) {
+	validator := newFunctionBlocklistValidator([]string{"md5"})
+	validator.CheckNode(map[string]any{
+		"class":         "FUNCTION",
+		"function_name": "MD5",
+	}, nil)
+
+	errs := validator.Validate()
+	if assert.Len(t, errs, 1) {
+		assert.ErrorIs(t, errs[0], ErrAccessDenied)
+		assert.EqualError(t, errs[0], "query: access denied: use of function 'md5' is not allowed")
+	}
+}
