@@ -6,6 +6,7 @@ import (
 	"database/sql"
 	"database/sql/driver"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"hash/maphash"
 	"io"
@@ -19,6 +20,8 @@ import (
 	"golang.org/x/sync/semaphore"
 )
 
+var ErrExecWithValidation = errors.New("query: exec command is disabled when schema or function validation is active")
+
 type DB struct {
 	db *sql.DB
 
@@ -30,7 +33,8 @@ type DB struct {
 	cache     *otter.Cache[uint64, []byte]
 	cacheSeed maphash.Seed
 
-	logger *slog.Logger
+	functionBlocklist []string
+	logger            *slog.Logger
 }
 
 // New creates a new DB instance using the provided DuckDB connector, opening a sql.DB and arrow connection.
@@ -86,7 +90,8 @@ func New(ctx context.Context, connector *duckdb.Connector, opts ...OptionFunc) (
 		cache:     cache,
 		cacheSeed: maphash.MakeSeed(), // Initialize the cache seed for consistent hashing
 
-		logger: o.Logger,
+		functionBlocklist: append([]string(nil), o.FunctionBlocklist...),
+		logger:            o.Logger,
 	}, nil
 }
 
@@ -184,9 +189,33 @@ func (db *DB) Close() {
 }
 
 func (db *DB) Exec(ctx context.Context, query string) error {
+	if len(db.functionBlocklist) > 0 {
+		return ErrExecWithValidation
+	}
+
 	_, err := db.db.ExecContext(ctx, query)
 	if err != nil {
 		return fmt.Errorf("query: failed to execute query: %w", err)
+	}
+
+	return nil
+}
+
+func (db *DB) validateQuery(ctx context.Context, query string, allowedSchemas []string) error {
+	validators := make([]Validator, 0, 2)
+	if len(allowedSchemas) > 0 {
+		validators = append(validators, newBaseTableValidator(allowedSchemas))
+	}
+	if len(db.functionBlocklist) > 0 {
+		validators = append(validators, newFunctionBlocklistValidator(db.functionBlocklist))
+	}
+	if len(validators) == 0 {
+		return nil
+	}
+
+	err := db.ValidateSQL(ctx, query, validators...)
+	if err != nil {
+		return fmt.Errorf("query: validation failed for query: %w", err)
 	}
 
 	return nil
@@ -218,12 +247,9 @@ func (db *DB) QueryJSON(ctx context.Context, query string, allowedSchemas []stri
 }
 
 func (db *DB) WriteJSON(ctx context.Context, query string, allowedSchemas []string, w io.Writer) error {
-	if len(allowedSchemas) > 0 {
-		btValidator := newBaseTableValidator(allowedSchemas)
-		err := db.ValidateSQL(ctx, query, btValidator)
-		if err != nil {
-			return fmt.Errorf("query: validation failed for query: %w", err)
-		}
+	err := db.validateQuery(ctx, query, allowedSchemas)
+	if err != nil {
+		return err
 	}
 
 	arrow, err := db.getArrowConn(ctx)
@@ -299,12 +325,9 @@ func (db *DB) QueryArrow(ctx context.Context, query string, allowedSchemas []str
 }
 
 func (db *DB) WriteArrow(ctx context.Context, query string, allowedSchemas []string, w io.Writer) error {
-	if len(allowedSchemas) > 0 {
-		btValidator := newBaseTableValidator(allowedSchemas)
-		err := db.ValidateSQL(ctx, query, btValidator)
-		if err != nil {
-			return fmt.Errorf("query: validation failed for query: %w", err)
-		}
+	err := db.validateQuery(ctx, query, allowedSchemas)
+	if err != nil {
+		return err
 	}
 
 	arrow, err := db.getArrowConn(ctx)

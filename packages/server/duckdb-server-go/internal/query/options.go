@@ -2,6 +2,7 @@ package query
 
 import (
 	"log/slog"
+	"strings"
 	"time"
 )
 
@@ -65,8 +66,12 @@ func WithLogger(logger *slog.Logger) OptionFunc {
 
 func WithFunctionBlocklist(blockedFunctions []string) OptionFunc {
 	return func(opts *Options) error {
-		if len(blockedFunctions) > 0 {
-			opts.FunctionBlocklist = blockedFunctions
+		opts.FunctionBlocklist = make([]string, 0, len(blockedFunctions))
+		for _, function := range blockedFunctions {
+			function = strings.ToLower(strings.TrimSpace(function))
+			if function != "" {
+				opts.FunctionBlocklist = append(opts.FunctionBlocklist, function)
+			}
 		}
 		return nil
 	}

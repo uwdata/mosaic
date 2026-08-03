@@ -13,7 +13,7 @@ import (
 )
 
 // setupTestDB creates a new in-memory DuckDB instance for testing
-func setupTestDB(t *testing.T) *DB {
+func setupTestDB(t *testing.T, opts ...OptionFunc) *DB {
 	t.Helper()
 
 	ctx := context.Background()
@@ -27,7 +27,8 @@ func setupTestDB(t *testing.T) *DB {
 		Level: slog.LevelError, // Only show errors during tests
 	}))
 
-	db, err := New(ctx, connector, WithLogger(logger))
+	opts = append([]OptionFunc{WithLogger(logger)}, opts...)
+	db, err := New(ctx, connector, opts...)
 	require.NoError(t, err)
 
 	// Clean up when test completes
@@ -40,6 +41,62 @@ func setupTestDB(t *testing.T) *DB {
 	})
 
 	return db
+}
+
+func TestDB_FunctionBlocklist(t *testing.T) {
+	db := setupTestDB(t, WithFunctionBlocklist([]string{" RANGE ", "MD5", "SUM", "ROW_NUMBER"}))
+	ctx := context.Background()
+
+	tests := []struct {
+		name     string
+		function string
+		query    string
+		format   string
+	}{
+		{
+			name:     "JSON table function",
+			function: "range",
+			query:    "SELECT * FROM range(3)",
+			format:   "json",
+		},
+		{
+			name:     "JSON scalar function",
+			function: "md5",
+			query:    "SELECT md5('mosaic')",
+			format:   "json",
+		},
+		{
+			name:     "JSON window aggregate",
+			function: "sum",
+			query:    "SELECT sum(i) OVER () FROM (VALUES (1), (2), (3)) t(i)",
+			format:   "json",
+		},
+		{
+			name:     "JSON window function",
+			function: "row_number",
+			query:    "SELECT row_number() OVER ()",
+			format:   "json",
+		},
+		{
+			name:     "Arrow table function",
+			function: "range",
+			query:    "SELECT * FROM range(3)",
+			format:   "arrow",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var err error
+			if tt.format == "arrow" {
+				_, _, err = db.QueryArrow(ctx, tt.query, nil, false)
+			} else {
+				_, _, err = db.QueryJSON(ctx, tt.query, nil, false)
+			}
+
+			require.ErrorContains(t, err, "use of function '"+tt.function+"' is not allowed")
+		})
+	}
 }
 
 func TestDB_Exec(t *testing.T) {
@@ -63,6 +120,14 @@ func TestDB_Exec(t *testing.T) {
 		err := db.Exec(ctx, "INVALID SQL STATEMENT")
 		assert.Error(t, err)
 		assert.Contains(t, err.Error(), "query: failed to execute query")
+	})
+
+	t.Run("function validation rejects exec", func(t *testing.T) {
+		db := setupTestDB(t, WithFunctionBlocklist([]string{"range"}))
+
+		err := db.Exec(ctx, "SELECT 1")
+		require.ErrorIs(t, err, ErrExecWithValidation)
+		assert.EqualError(t, err, "query: exec command is disabled when schema or function validation is active")
 	})
 }
 
