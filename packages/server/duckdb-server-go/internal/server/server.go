@@ -321,7 +321,7 @@ func getAllowedSchemas(req *http.Request, schemaMatchHeaders []string) []string 
 	var allowedSchemas []string
 
 	for _, matchHeader := range schemaMatchHeaders {
-		allowedSchema := req.Header.Get(matchHeader)
+		allowedSchema := req.Header.Get(strings.TrimSpace(matchHeader))
 		if allowedSchema != "" {
 			allowedSchemas = append(allowedSchemas, allowedSchema)
 		}
