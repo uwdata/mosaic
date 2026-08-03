@@ -259,6 +259,9 @@ func (s *Server) execCommand(ctx context.Context, params QueryParams, allowedSch
 
 	switch *params.Type {
 	case CommandExec:
+		if len(s.schemaMatchHeaders) > 0 {
+			return nil, false, query.ErrExecWithValidation
+		}
 		return nil, false, s.db.Exec(ctx, *params.SQL) // No data to return for exec command
 
 	case CommandArrow:

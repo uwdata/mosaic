@@ -205,7 +205,7 @@ func (v *baseTableValidator) Validate() []error {
 	return errs
 }
 
-// functionBlocklistValidator validates that the SQL query only accesses schemas that match request headers
+// functionBlocklistValidator validates that the SQL query does not use blocked functions.
 type functionBlocklistValidator struct {
 	blockedFunctions []string
 	errs             []error
@@ -217,24 +217,12 @@ func newFunctionBlocklistValidator(blockedFunctions []string) Validator {
 	}
 }
 
-func (v *functionBlocklistValidator) CheckNode(node map[string]any, keyStack []string) {
-	if len(keyStack) > 0 && keyStack[len(keyStack)-1] != "function" {
-		return
-	}
-
+func (v *functionBlocklistValidator) CheckNode(node map[string]any, _ []string) {
 	class, exists := node["class"]
 	if !exists {
 		return
 	}
-	if class != "FUNCTION" {
-		return
-	}
-
-	typeVal, exists := node["type"]
-	if !exists {
-		return
-	}
-	if typeVal != "FUNCTION" {
+	if class != "FUNCTION" && class != "WINDOW" {
 		return
 	}
 
