@@ -13,8 +13,8 @@ import (
 
 	"github.com/duckdb/duckdb-go/v2"
 
-	"github.com/uwdata/mosaic/packages/server/duckdb-server-go/internal/query"
-	"github.com/uwdata/mosaic/packages/server/duckdb-server-go/internal/server"
+	"github.com/uwdata/mosaic/packages/server/duckdb-server-go/pkg/query"
+	"github.com/uwdata/mosaic/packages/server/duckdb-server-go/pkg/server"
 )
 
 func main() {
