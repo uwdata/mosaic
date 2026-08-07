@@ -9,7 +9,7 @@ import (
 	"github.com/duckdb/duckdb-go/v2"
 	"github.com/stretchr/testify/require"
 
-	"github.com/uwdata/mosaic/packages/server/duckdb-server-go/internal/query"
+	"github.com/uwdata/mosaic/packages/server/duckdb-server-go/pkg/query"
 )
 
 func setupTestDB(t *testing.T, opts ...query.OptionFunc) *query.DB {
