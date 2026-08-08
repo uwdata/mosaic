@@ -115,6 +115,7 @@ func main() {
 		logger.Error("main: error creating server", "error", err)
 		return
 	}
+	logger.Warn("DuckDB Server permits all HTTP and WebSocket origins for compatibility; enforce an outer origin or CSRF policy before exposing it to untrusted browsers")
 
 	config := map[string]interface{}{
 		"database":             *dbPath,

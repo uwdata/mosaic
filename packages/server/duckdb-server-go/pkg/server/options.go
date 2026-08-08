@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"net/http"
 	"path"
 	"reflect"
 	"strings"
@@ -16,7 +17,8 @@ var (
 )
 
 // CORSOptions configures cross-origin HTTP access. Its zero value grants no
-// cross-origin CORS permissions.
+// cross-origin CORS permissions and protects actual command requests with
+// net/http CrossOriginProtection. AllowAllOrigins disables that protection.
 type CORSOptions struct {
 	// AllowedOrigins lists the exact scheme://host[:port] origins allowed to
 	// access the server.
@@ -54,11 +56,15 @@ type config struct {
 	authorizer         Authorizer
 	schemaMatchHeaders []string
 	cors               CORSOptions
+	corsProtection     *http.CrossOriginProtection
 	websocket          WebSocketOptions
 }
 
 func defaultConfig() config {
-	return config{logger: slog.Default()}
+	return config{
+		logger:         slog.Default(),
+		corsProtection: http.NewCrossOriginProtection(),
+	}
 }
 
 // Option configures the handler returned by New. Implementations are provided
@@ -151,6 +157,12 @@ func WithCORS(options CORSOptions) Option {
 			}
 			origins[i] = strings.ToLower(origin)
 		}
+		protection := http.NewCrossOriginProtection()
+		for _, origin := range origins {
+			if err := protection.AddTrustedOrigin(origin); err != nil {
+				return fmt.Errorf("server: invalid CORS allowed origin %q: %w", origin, err)
+			}
+		}
 		headers, err := copyNonEmpty("CORS allowed header", options.AllowedHeaders, true)
 		if err != nil {
 			return err
@@ -160,6 +172,11 @@ func WithCORS(options CORSOptions) Option {
 		configured.AllowedOrigins = origins
 		configured.AllowedHeaders = headers
 		cfg.cors = configured
+		if options.AllowAllOrigins {
+			cfg.corsProtection = nil
+		} else {
+			cfg.corsProtection = protection
+		}
 		return nil
 	})
 }

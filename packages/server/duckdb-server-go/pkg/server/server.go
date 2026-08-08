@@ -76,7 +76,7 @@ func newHandler(db commandExecutor, cfg config) *handler {
 		websocketOptions:   cfg.websocket,
 	}
 
-	s.httpHandler = newCORSHandler(cfg.cors, http.HandlerFunc(s.handleHTTP))
+	s.httpHandler = newCORSHandler(cfg.cors, cfg.corsProtection, http.HandlerFunc(s.handleHTTP))
 
 	return s
 }

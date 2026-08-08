@@ -11,7 +11,7 @@ import (
 
 var corsAllowedMethods = []string{http.MethodGet, http.MethodPost}
 
-func newCORSHandler(options CORSOptions, next http.Handler) http.Handler {
+func newCORSHandler(options CORSOptions, protection *http.CrossOriginProtection, next http.Handler) http.Handler {
 	allowedHeaders := options.AllowedHeaders
 	switch {
 	case options.AllowAllHeaders:
@@ -45,13 +45,31 @@ func newCORSHandler(options CORSOptions, next http.Handler) http.Handler {
 
 	inner := rscors.New(corsOptions).Handler(next)
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.Method == http.MethodOptions && r.Header.Get("Access-Control-Request-Method") == "" {
-			w.Header().Add("Vary", "Origin, Access-Control-Request-Method, Access-Control-Request-Headers")
+		preflight := r.Method == http.MethodOptions && r.Header.Get("Access-Control-Request-Method") != ""
+		if r.Method == http.MethodOptions && !preflight {
+			w.Header().Add("Vary", "Origin, Sec-Fetch-Site, Access-Control-Request-Method, Access-Control-Request-Headers")
 			w.WriteHeader(http.StatusOK)
 			return
 		}
+		if !preflight && protection != nil {
+			w.Header().Add("Vary", "Sec-Fetch-Site")
+			if !crossOriginAllowed(protection, r) {
+				w.Header().Add("Vary", "Origin")
+				http.Error(w, "origin not allowed", http.StatusForbidden)
+				return
+			}
+		}
 		inner.ServeHTTP(w, r)
 	})
+}
+
+func crossOriginAllowed(protection *http.CrossOriginProtection, r *http.Request) bool {
+	request := new(http.Request)
+	*request = *r
+	// CrossOriginProtection exempts safe methods, but Mosaic's GET API can
+	// execute commands.
+	request.Method = http.MethodPost
+	return protection.Check(request) == nil
 }
 
 func isHTTPOrigin(origin string) bool {

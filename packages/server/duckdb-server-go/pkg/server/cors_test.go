@@ -179,7 +179,7 @@ func newTestCORSHandler(t *testing.T, options CORSOptions, next http.Handler) ht
 	t.Helper()
 	cfg, err := applyOptions([]Option{WithCORS(options)})
 	require.NoError(t, err)
-	return newCORSHandler(cfg.cors, next)
+	return newCORSHandler(cfg.cors, nil, next)
 }
 
 func newPreflight(origin, method, headers string) *http.Request {

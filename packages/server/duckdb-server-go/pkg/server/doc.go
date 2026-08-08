@@ -16,9 +16,13 @@
 // implementation may consult current expiry or revocation state instead of
 // caching an allow decision.
 //
-// CORS preflight is handled inside the returned handler. Authentication
-// middleware wrapped around it must decide whether to pass OPTIONS requests
-// through.
+// CORS preflight is handled inside the returned handler. Unless
+// CORSOptions.AllowAllOrigins is set, actual HTTP commands are checked with
+// net/http CrossOriginProtection before authorization or execution.
+// Authentication middleware wrapped around the handler must decide whether to
+// pass OPTIONS requests through. Because GET requests can execute commands,
+// cookie-backed deployments must keep this protection enabled or apply an
+// equivalent outer CSRF policy.
 //
 // Command authorization controls submitted SQL only. It does not isolate the
 // shared process, filesystem, network, extensions, catalogs, or credentials.
