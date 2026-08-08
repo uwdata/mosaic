@@ -37,6 +37,11 @@ You can customize the server behavior with the following command-line flags:
 
 By default, the server will look for `localhost.pem` and `localhost-key.pem` in the current directory to enable HTTPS if the `--cert` and `--key` flags are not provided.
 
+For compatibility, the installed binary permits all HTTP and WebSocket origins. A cross-site page can therefore submit
+commands, including side-effecting `exec` commands over GET, to a running server. Do not expose the binary to untrusted
+browsers or cookie credentials without an outer proxy that enforces an origin or CSRF policy. Programs embedding
+`pkg/server` instead receive safe zero-value origin defaults and can configure exact allowed origins.
+
 Create certificates for localhost with [mkcert](https://github.com/FiloSottile/mkcert)
 
 ```sh

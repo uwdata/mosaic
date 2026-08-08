@@ -101,7 +101,21 @@ func main() {
 	}
 	defer db.Close()
 
-	s := server.New(db, schemaMatchHeaders, logger)
+	s, err := server.New(db,
+		server.WithSchemaMatchHeaders(schemaMatchHeaders...),
+		server.WithLogger(logger),
+		server.WithCORS(server.CORSOptions{
+			AllowAllOrigins: true,
+			AllowAllHeaders: true,
+			MaxAge:          30 * 24 * time.Hour,
+		}),
+		server.WithWebSocket(server.WebSocketOptions{AllowAllOrigins: true}),
+	)
+	if err != nil {
+		logger.Error("main: error creating server", "error", err)
+		return
+	}
+	logger.Warn("DuckDB Server permits all HTTP and WebSocket origins for compatibility; enforce an outer origin or CSRF policy before exposing it to untrusted browsers")
 
 	config := map[string]interface{}{
 		"database":             *dbPath,
