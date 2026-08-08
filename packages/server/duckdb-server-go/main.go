@@ -13,6 +13,7 @@ import (
 
 	"github.com/duckdb/duckdb-go/v2"
 
+	"github.com/uwdata/mosaic/packages/server/duckdb-server-go/pkg/extensions"
 	"github.com/uwdata/mosaic/packages/server/duckdb-server-go/pkg/query"
 	"github.com/uwdata/mosaic/packages/server/duckdb-server-go/pkg/server"
 )
@@ -28,7 +29,7 @@ func main() {
 	certFile := flag.String("cert", "", "Path to TLS certificate file (optional, enables HTTPS)")
 	keyFile := flag.String("key", "", "Path to TLS private key file (optional, enables HTTPS)")
 	schemaMatchHeadersStr := flag.String("schema-match-headers", "", "Comma-separated list of headers to match against schema names for multi-tenant access control (e.g., \"X-Tenant-Id,verified-user-id\")")
-	extensionsStr := flag.String("load-extensions", "", "Comma-separated list of extensions to install and load at startup. Use a pipe after the extension name to specify the repository. Unspecified repositories will default to 'core'. (e.g. mysql_scanner,netquack|community,aws|core_nightly")
+	extensionsStr := flag.String("load-extensions", "", "Comma-separated list of extensions to install and load at startup. Use a pipe after the extension name to specify the repository. Unspecified repositories use DuckDB's default. (e.g. mysql_scanner,netquack|community,aws|core_nightly")
 	functionBlocklistStr := flag.String("function-blocklist", "", "Comma-separated list of functions to block, useful for blocking functions that may pose security or performance risks. (e.g., 'bigquery_query,read_parquet')")
 	flag.Parse()
 
@@ -49,6 +50,11 @@ func main() {
 		Level: logLevel,
 	}))
 
+	if err := extensions.Validate(*extensionsStr); err != nil {
+		logger.Error("main: invalid load-extensions", "error", err, "load-extensions", *extensionsStr)
+		return
+	}
+
 	// If no certificate files are specified, check for default localhost certificates
 	if *certFile == "" && *keyFile == "" {
 		// Check if localhost.pem and localhost-key.pem exist in the current directory
@@ -61,8 +67,9 @@ func main() {
 		}
 	}
 
-	// Create DuckDB connector for Arrow support
-	connector, err := duckdb.NewConnector(*dbPath, extensionLoader(ctx, extensionsStr, logger))
+	connector, err := duckdb.NewConnector(*dbPath, func(execer driver.ExecerContext) error {
+		return extensions.ParseAndInstall(ctx, execer, *extensionsStr)
+	})
 	if err != nil {
 		logger.Error("main: error creating duckdb connector", "error", err)
 		return
@@ -143,50 +150,5 @@ func main() {
 	if err != nil {
 		logger.Error("main: error running HTTP server", "error", err)
 		return
-	}
-}
-
-func extensionLoader(ctx context.Context, extensionsStr *string, logger *slog.Logger) func(execer driver.ExecerContext) error {
-	return func(execer driver.ExecerContext) error {
-		if extensionsStr == nil || *extensionsStr == "" {
-			return nil
-		}
-
-		extensions := strings.Split(*extensionsStr, ",")
-		for _, extension := range extensions {
-			name, repo, _ := strings.Cut(extension, "|")
-			name = strings.TrimSpace(name)
-			repo = strings.TrimSpace(repo)
-
-			switch repo {
-			case "":
-				repo = "core" // default repository
-				fallthrough
-
-			case "core", "core_nightly", "community", "local_build_debug", "local_build_release":
-				// built-in repositories (https://duckdb.org/docs/stable/extensions/installing_extensions), no action needed
-
-			default:
-				// If the repository is not one of the built-in ones, we assume it's a custom repository, accessed as a
-				// URL or a local file path. We need to ensure it is properly quoted.
-				repo = strings.TrimPrefix(repo, "'")
-				repo = strings.TrimSuffix(repo, "'")
-				repo = "'" + repo + "'"
-			}
-
-			_, err := execer.ExecContext(ctx, fmt.Sprintf("INSTALL %s FROM %s", name, repo), nil)
-			if err != nil {
-				logger.Error("main: error installing extension", "name", name, "repository", repo, "error", err, "load-extensions", *extensionsStr)
-				return fmt.Errorf("failed to install extension %s from %s: %w", name, repo, err)
-			}
-
-			_, err = execer.ExecContext(ctx, fmt.Sprintf("LOAD %s", name), nil)
-			if err != nil {
-				logger.Error("main: error loading extension", "name", name, "repository", repo, "error", err, "load-extensions", *extensionsStr)
-				return fmt.Errorf("failed to load extension %s: %w", name, err)
-			}
-		}
-
-		return nil
 	}
 }
