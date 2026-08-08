@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"database/sql/driver"
 	"flag"
 	"fmt"
 	"log/slog"
@@ -12,7 +13,7 @@ import (
 
 	"github.com/duckdb/duckdb-go/v2"
 
-	"github.com/uwdata/mosaic/packages/server/duckdb-server-go/pkg/extension"
+	"github.com/uwdata/mosaic/packages/server/duckdb-server-go/pkg/extensions"
 	"github.com/uwdata/mosaic/packages/server/duckdb-server-go/pkg/query"
 	"github.com/uwdata/mosaic/packages/server/duckdb-server-go/pkg/server"
 )
@@ -28,7 +29,7 @@ func main() {
 	certFile := flag.String("cert", "", "Path to TLS certificate file (optional, enables HTTPS)")
 	keyFile := flag.String("key", "", "Path to TLS private key file (optional, enables HTTPS)")
 	schemaMatchHeadersStr := flag.String("schema-match-headers", "", "Comma-separated list of headers to match against schema names for multi-tenant access control (e.g., \"X-Tenant-Id,verified-user-id\")")
-	extensionsStr := flag.String("load-extensions", "", "Comma-separated list of extensions to install and load at startup. Use a pipe after the extension name to specify the repository. Unspecified repositories will default to 'core'. (e.g. mysql_scanner,netquack|community,aws|core_nightly")
+	extensionsStr := flag.String("load-extensions", "", "Comma-separated list of extensions to install and load at startup. Use a pipe after the extension name to specify the repository. Unspecified repositories use DuckDB's default. (e.g. mysql_scanner,netquack|community,aws|core_nightly")
 	functionBlocklistStr := flag.String("function-blocklist", "", "Comma-separated list of functions to block, useful for blocking functions that may pose security or performance risks. (e.g., 'bigquery_query,read_parquet')")
 	flag.Parse()
 
@@ -49,18 +50,6 @@ func main() {
 		Level: logLevel,
 	}))
 
-	extensionSpecs, err := extension.Parse(*extensionsStr)
-	if err != nil {
-		logger.Error("main: invalid load-extensions", "error", err, "load-extensions", *extensionsStr)
-		return
-	}
-
-	extensionInitializer, err := extension.NewInitializer(ctx, extensionSpecs...)
-	if err != nil {
-		logger.Error("main: error creating extension initializer", "error", err, "load-extensions", *extensionsStr)
-		return
-	}
-
 	// If no certificate files are specified, check for default localhost certificates
 	if *certFile == "" && *keyFile == "" {
 		// Check if localhost.pem and localhost-key.pem exist in the current directory
@@ -73,8 +62,9 @@ func main() {
 		}
 	}
 
-	// Create DuckDB connector for Arrow support
-	connector, err := duckdb.NewConnector(*dbPath, extensionInitializer)
+	connector, err := duckdb.NewConnector(*dbPath, func(execer driver.ExecerContext) error {
+		return extensions.ParseAndInstall(ctx, execer, *extensionsStr)
+	})
 	if err != nil {
 		logger.Error("main: error creating duckdb connector", "error", err)
 		return

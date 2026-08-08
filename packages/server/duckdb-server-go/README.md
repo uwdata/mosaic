@@ -32,7 +32,7 @@ You can customize the server behavior with the following command-line flags:
 -   `--cert <path>`: Path to a TLS certificate file to enable HTTPS.
 -   `--key <path>`: Path to a TLS private key file to enable HTTPS.
 -   `--schema-match-headers`: Comma-separated list of headers to match against schema names for multi-tenant access control (e.g., `X-Tenant-Id,verified-user-id`).
--   `--load-extensions`: Comma-separated list of extensions to install and load at startup. Use a pipe after the extension name to specify the repository. Unspecified repositories will default to 'core'. (e.g. `mysql_scanner,netquack|community,aws|core_nightly`
+-   `--load-extensions`: Comma-separated list of extensions to install and load at startup. Use a pipe after the extension name to specify the repository. Unspecified repositories use DuckDB's default. (e.g. `mysql_scanner,netquack|community,aws|core_nightly`
 -   `--function-blocklist`: Comma-separated list of functions to block, useful for blocking functions that may pose security or performance risks. (e.g., 'bigquery_query,read_parquet')`
 
 By default, the server will look for `localhost.pem` and `localhost-key.pem` in the current directory to enable HTTPS if the `--cert` and `--key` flags are not provided.
@@ -46,34 +46,28 @@ mkcert localhost # create localhost.pem and localhost-key.pem
 
 ### Programmatic Extension Initialization
 
-The `pkg/extension` package accepts the same extension strings as `--load-extensions`, while keeping flag parsing and
+The `pkg/extensions` package accepts the same extension strings as `--load-extensions`, while keeping flag parsing and
 logging out of the reusable API:
 
 ```go
 import (
 	"context"
 	"database/sql"
+	"database/sql/driver"
 
 	"github.com/duckdb/duckdb-go/v2"
-	"github.com/uwdata/mosaic/packages/server/duckdb-server-go/pkg/extension"
+	"github.com/uwdata/mosaic/packages/server/duckdb-server-go/pkg/extensions"
 )
 
 func openDB(connectorCtx context.Context) (*sql.DB, error) {
-	specs, err := extension.Parse(
+	values := []string{
 		"httpfs",
 		"netquack|community",
 		"aws|core_nightly",
-	)
-	if err != nil {
-		return nil, err
 	}
-
-	initializer, err := extension.NewInitializer(connectorCtx, specs...)
-	if err != nil {
-		return nil, err
-	}
-
-	connector, err := duckdb.NewConnector(":memory:", initializer)
+	connector, err := duckdb.NewConnector(":memory:", func(execer driver.ExecerContext) error {
+		return extensions.ParseAndInstall(connectorCtx, execer, values...)
+	})
 	if err != nil {
 		return nil, err
 	}
@@ -87,21 +81,39 @@ func openDB(connectorCtx context.Context) (*sql.DB, error) {
 }
 ```
 
-`duckdb.NewConnector` is lazy: creating it does not invoke the initializer. `PingContext`, the first query, or an
-explicit `Connect` forces the first physical connection and therefore verifies extension initialization before the
-application reports itself ready. The initializer context is reused for every connection, so it must be a long-lived
+`duckdb.NewConnector` is lazy: creating it does not invoke the callback. `PingContext`, the first query, or an explicit
+`Connect` forces the first physical connection and therefore verifies extension initialization before the application
+reports itself ready. The callback reuses `connectorCtx` for every connection, so it must be a long-lived
 connector-lifetime context rather than a request context.
 
-Structured specs also support extensions that are already installed and standalone extension files:
+For explicit lifecycle control, call the helpers directly from the connector callback:
 
 ```go
-specs := []extension.Spec{
-	extension.LoadInstalled("httpfs"),
-	extension.InstallAndLoad("custom_scanner", extension.Repository("/srv/duckdb/repository")),
-	extension.LoadFile("/opt/duckdb/custom_reader.duckdb_extension"),
-	extension.InstallAndLoadFile("/opt/duckdb/custom_writer.duckdb_extension"),
-	extension.InstallAndLoad("netquack", extension.Community),
-}
+connector, err := duckdb.NewConnector(":memory:", func(execer driver.ExecerContext) error {
+	if err := extensions.LoadInstalled(connectorCtx, execer, "httpfs"); err != nil {
+		return err
+	}
+	if err := extensions.InstallAndLoad(
+		connectorCtx,
+		execer,
+		"custom_scanner",
+		"/srv/duckdb/repository",
+	); err != nil {
+		return err
+	}
+	if err := extensions.LoadFile(
+		connectorCtx,
+		execer,
+		"/opt/duckdb/custom_reader.duckdb_extension",
+	); err != nil {
+		return err
+	}
+	return extensions.InstallAndLoadFile(
+		connectorCtx,
+		execer,
+		"/opt/duckdb/custom_writer.duckdb_extension",
+	)
+})
 ```
 
 A custom repository path names a directory laid out as a DuckDB extension repository; it is not the path of a single
@@ -111,24 +123,23 @@ extensions are provisioned before server startup. `LoadFile` loads the source pa
 `InstallAndLoadFile` first copies the file into DuckDB's extension directory, then loads the installed extension name
 DuckDB derives from the filename (`custom_writer.duckdb_extension` becomes `custom_writer`), so the source path is only
 needed while installation runs. Bare relative filenames are emitted with a `./` prefix so DuckDB treats them as files
-rather than extension names.
+rather than extension names. Likewise, prefix a bare relative repository directory with `./` to distinguish it from a
+DuckDB repository name.
 
-`Parse` only interprets the command-line grammar. It trims surrounding whitespace around entries, names, and
-repositories and rejects blank entries or extra repository delimiters. Structured values are literal because whitespace
-can be part of a valid path; callers reading them from YAML, environment variables, or similar configuration should
-normalize them before constructing a `Spec` if that is their desired policy.
+`ParseAndInstall` trims surrounding command-line grammar whitespace, rejects blank entries or extra repository
+delimiters, and executes entries immediately. Extension and repository semantics are left to DuckDB. Values passed to
+helper functions are literal because whitespace can be part of a valid path; callers reading them from YAML,
+environment variables, or similar configuration should normalize them if that is their desired policy.
 
-The initializer checks only structural API mistakes, such as setting both `Name` and `Path`. It safely quotes extension
-names, file paths, and custom repositories, then delegates extension names, aliases, repositories, file compatibility,
-and repeated or conflicting specifications to DuckDB. Specifications are executed in caller order without
-deduplication, so DuckDB's own errors remain the source of truth.
+The package safely quotes extension names, file paths, and custom repositories, then delegates extension names, aliases,
+repositories, file compatibility, and repeated or conflicting entries to DuckDB. Entries are executed in caller order
+without deduplication, so DuckDB's own errors remain the source of truth.
 
-DuckDB applies `LOAD` to each physical connection, so the initializer intentionally repeats the complete ordered spec
-list whenever the connector creates one. Install-and-load specs repeat `INSTALL` as well; DuckDB decides whether an
-installed artifact can be reused, while each connection still receives its own `LOAD`. The first failed `INSTALL` or
-`LOAD` stops initialization and returns a contextual error, so that connection is not created. A later connection
-retries from the beginning. The example server's extension inventory query provides this preflight before HTTP serving
-starts.
+DuckDB applies `LOAD` to each physical connection, so the connector callback repeats its complete ordered work whenever
+the connector creates one. Install-and-load calls repeat `INSTALL` as well; DuckDB decides whether an installed artifact
+can be reused, while each connection still receives its own `LOAD`. The first failed `INSTALL` or `LOAD` stops the
+callback and returns a contextual error, so that connection is not created. A later connection retries from the
+beginning. The example server's extension inventory query provides this preflight before HTTP serving starts.
 
 Extensions are trusted native code that run with the server process's privileges. Load only trusted repositories and
 files. DuckDB signature verification is an important safeguard where it applies; allowing unsigned extensions removes
