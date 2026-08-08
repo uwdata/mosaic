@@ -1,6 +1,9 @@
 package server
 
 import (
+	"context"
+	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -29,12 +32,35 @@ func setupTestDB(t *testing.T, opts ...query.OptionFunc) *query.DB {
 	return db
 }
 
-func mustHandler(t *testing.T, db *query.DB, opts ...Option) *handler {
+func mustHandler(t *testing.T, executor commandExecutor, opts ...Option) *handler {
 	t.Helper()
 
 	cfg, err := applyOptions(opts)
 	require.NoError(t, err)
-	return newHandler(db, cfg)
+	return newHandler(executor, cfg)
+}
+
+type failOnCallExecutor struct {
+	testing.TB
+}
+
+func (e failOnCallExecutor) Exec(context.Context, string) error {
+	return e.fail("Exec")
+}
+
+func (e failOnCallExecutor) QueryArrow(context.Context, string, []string, bool) ([]byte, bool, error) {
+	return nil, false, e.fail("QueryArrow")
+}
+
+func (e failOnCallExecutor) QueryJSON(context.Context, string, []string, bool) (json.RawMessage, bool, error) {
+	return nil, false, e.fail("QueryJSON")
+}
+
+func (e failOnCallExecutor) fail(method string) error {
+	e.Helper()
+	err := fmt.Errorf("unexpected command executor call: %s", method)
+	e.Error(err)
+	return err
 }
 
 func TestExecCommandHonorsSchemaPolicy(t *testing.T) {
@@ -45,11 +71,11 @@ func TestExecCommandHonorsSchemaPolicy(t *testing.T) {
 	params := queryParams{Type: &command, SQL: &sql}
 
 	s := mustHandler(t, db, WithSchemaMatchHeaders("X-Tenant"))
-	_, err := s.execCommand(t.Context(), params, nil)
+	_, err := s.execCommand(t.Context(), params, nil, nil)
 	require.ErrorIs(t, err, query.ErrExecWithValidation)
 
 	s = mustHandler(t, db)
-	_, err = s.execCommand(t.Context(), params, nil)
+	_, err = s.execCommand(t.Context(), params, nil, nil)
 	require.NoError(t, err)
 }
 

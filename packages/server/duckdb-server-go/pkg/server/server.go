@@ -15,14 +15,6 @@ import (
 	"github.com/uwdata/mosaic/packages/server/duckdb-server-go/pkg/query"
 )
 
-type CommandType string
-
-const (
-	CommandArrow CommandType = "arrow"
-	CommandExec  CommandType = "exec"
-	CommandJSON  CommandType = "json"
-)
-
 type queryParams struct {
 	Type    *CommandType `json:"type"`
 	SQL     *string      `json:"sql"`
@@ -50,13 +42,15 @@ func (e queryParamsError) Error() string {
 }
 
 type handler struct {
-	db                 *query.DB
+	db                 commandExecutor
 	schemaMatchHeaders []string
 	logger             *slog.Logger
+	authorizer         Authorizer
 	httpHandler        http.Handler
 }
 
-// New constructs a Mosaic HTTP and WebSocket handler backed by db.
+// New constructs a Mosaic HTTP and WebSocket handler backed by db. Omitting
+// WithAuthorizer preserves unrestricted command behavior.
 func New(db *query.DB, opts ...Option) (http.Handler, error) {
 	if db == nil {
 		return nil, errors.New("server: database is required")
@@ -70,11 +64,12 @@ func New(db *query.DB, opts ...Option) (http.Handler, error) {
 	return newHandler(db, cfg), nil
 }
 
-func newHandler(db *query.DB, cfg config) *handler {
+func newHandler(db commandExecutor, cfg config) *handler {
 	s := &handler{
 		db:                 db,
 		schemaMatchHeaders: cfg.schemaMatchHeaders,
 		logger:             cfg.logger,
+		authorizer:         cfg.authorizer,
 	}
 
 	s.httpHandler = corsMiddleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -91,6 +86,27 @@ func newHandler(db *query.DB, cfg config) *handler {
 
 func (s *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	s.httpHandler.ServeHTTP(w, r)
+}
+
+func (s *handler) commandAuthorizer(r *http.Request) (CommandAuthorizer, error) {
+	if s.authorizer == nil {
+		return nil, nil
+	}
+
+	authorize, err := s.authorizer.AuthorizeRequest(r)
+	if err != nil {
+		return nil, &authorizationError{err: err}
+	}
+	if authorize == nil {
+		return nil, &authorizationError{err: errNoCommandAuthorizer}
+	}
+
+	return authorize, nil
+}
+
+func (s *handler) writeHTTPError(w http.ResponseWriter, err error) {
+	response := s.classifyAndLogError(err)
+	http.Error(w, response.message, response.status)
 }
 
 func corsMiddleware(next http.Handler) http.Handler {
@@ -118,6 +134,12 @@ func (s *handler) handleWebSocket(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	authorize, err := s.commandAuthorizer(r)
+	if err != nil {
+		s.writeHTTPError(w, err)
+		return
+	}
+
 	conn, err := websocket.Accept(w, r, &websocket.AcceptOptions{
 		InsecureSkipVerify: true,
 		CompressionMode:    websocket.CompressionContextTakeover,
@@ -127,6 +149,9 @@ func (s *handler) handleWebSocket(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	ctx, cancel := context.WithCancel(r.Context())
+	defer cancel()
+
 	defer func() {
 		err = conn.Close(websocket.StatusInternalError, "connection closed")
 		if err != nil {
@@ -135,7 +160,7 @@ func (s *handler) handleWebSocket(w http.ResponseWriter, r *http.Request) {
 	}()
 
 	for {
-		err = s.handleWebSocketMessage(r.Context(), conn, allowedSchemas)
+		err = s.handleWebSocketMessage(ctx, conn, allowedSchemas, authorize)
 		if err != nil {
 			s.logger.Error("server: websocket error, breaking connection", "error", err)
 			break
@@ -145,16 +170,20 @@ func (s *handler) handleWebSocket(w http.ResponseWriter, r *http.Request) {
 
 // A returned error closes the connection. Command errors are written to the
 // client and return nil so the session survives them.
-func (s *handler) handleWebSocketMessage(ctx context.Context, conn *websocket.Conn, allowedSchemas []string) error {
+func (s *handler) handleWebSocketMessage(ctx context.Context, conn *websocket.Conn, allowedSchemas []string, authorize CommandAuthorizer) error {
 	var params queryParams
 	err := wsjson.Read(ctx, conn, &params)
 	if err != nil {
 		return fmt.Errorf("failed to read websocket message: %w", err)
 	}
 
-	response, err := s.execCommand(context.TODO(), params, allowedSchemas)
+	response, err := s.execCommand(ctx, params, allowedSchemas, authorize)
 	if err != nil {
-		writeErr := wsjson.Write(ctx, conn, map[string]string{"error": err.Error()})
+		errResponse := s.classifyAndLogError(err)
+		writeErr := wsjson.Write(ctx, conn, map[string]string{
+			"error": errResponse.message,
+			"code":  errResponse.code,
+		})
 		if writeErr != nil {
 			return fmt.Errorf("server: failed to write error response: %w", writeErr)
 		}
@@ -178,6 +207,12 @@ func (s *handler) handleHTTP(w http.ResponseWriter, r *http.Request) {
 	if len(s.schemaMatchHeaders) > 0 && len(allowedSchemas) == 0 {
 		s.logger.Error("server: no allowed schemas found in request headers", "headers", s.schemaMatchHeaders)
 		http.Error(w, "no allowed schemas found in request headers", http.StatusUnauthorized)
+		return
+	}
+
+	authorize, err := s.commandAuthorizer(r)
+	if err != nil {
+		s.writeHTTPError(w, err)
 		return
 	}
 
@@ -212,23 +247,9 @@ func (s *handler) handleHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	response, err := s.execCommand(r.Context(), params, allowedSchemas)
+	response, err := s.execCommand(r.Context(), params, allowedSchemas, authorize)
 	if err != nil {
-		status := http.StatusInternalServerError
-		var (
-			errorDetails query.ErrorDetails
-			paramsError  queryParamsError
-		)
-		switch {
-		case errors.Is(err, query.ErrExecWithValidation),
-			errors.Is(err, query.ErrUnsupportedStatement),
-			errors.As(err, &errorDetails),
-			errors.As(err, &paramsError):
-			status = http.StatusBadRequest
-		case errors.Is(err, query.ErrAccessDenied):
-			status = http.StatusForbidden
-		}
-		http.Error(w, err.Error(), status)
+		s.writeHTTPError(w, err)
 		return
 	}
 
@@ -246,33 +267,40 @@ func (s *handler) handleHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (s *handler) execCommand(ctx context.Context, params queryParams, allowedSchemas []string) (commandResponse, error) {
+func (s *handler) execCommand(ctx context.Context, params queryParams, allowedSchemas []string, authorize CommandAuthorizer) (commandResponse, error) {
 	if err := params.Validate(s.logger); err != nil {
 		return commandResponse{}, err
 	}
 	response := commandResponses[*params.Type]
 	var err error
 
+	command := newCommand(*params.Type, *params.SQL)
+	if authorize != nil {
+		if err = authorize(ctx, command); err != nil {
+			return commandResponse{}, &authorizationError{err: err}
+		}
+	}
+
 	useCache := false
 	if params.Persist != nil {
 		useCache = *params.Persist
 	}
 
-	switch *params.Type {
+	switch command.Type() {
 	case CommandExec:
 		if len(s.schemaMatchHeaders) > 0 {
 			return commandResponse{}, query.ErrExecWithValidation
 		}
-		err = s.db.Exec(ctx, *params.SQL)
+		err = s.db.Exec(ctx, command.SQL())
 
 	case CommandArrow:
-		response.data, response.cacheHit, err = s.db.QueryArrow(ctx, *params.SQL, allowedSchemas, useCache)
+		response.data, response.cacheHit, err = s.db.QueryArrow(ctx, command.SQL(), allowedSchemas, useCache)
 
 	case CommandJSON:
-		response.data, response.cacheHit, err = s.db.QueryJSON(ctx, *params.SQL, allowedSchemas, useCache)
+		response.data, response.cacheHit, err = s.db.QueryJSON(ctx, command.SQL(), allowedSchemas, useCache)
 
 	default:
-		return commandResponse{}, fmt.Errorf("server: no executor for command type %q", *params.Type)
+		return commandResponse{}, fmt.Errorf("server: no executor for command type %q", command.Type())
 	}
 
 	return response, err

@@ -4,12 +4,17 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"reflect"
 )
 
-var errNilOption = errors.New("server: option must not be nil")
+var (
+	errNilOption     = errors.New("server: option must not be nil")
+	errNilAuthorizer = errors.New("server: authorizer must not be nil")
+)
 
 type config struct {
 	logger             *slog.Logger
+	authorizer         Authorizer
 	schemaMatchHeaders []string
 }
 
@@ -55,6 +60,28 @@ func WithLogger(logger *slog.Logger) Option {
 		cfg.logger = configured
 		return nil
 	})
+}
+
+// WithAuthorizer configures per-request and per-command authorization. A nil
+// Authorizer is invalid; omit this option to preserve unrestricted behavior.
+func WithAuthorizer(authorizer Authorizer) Option {
+	return optionFunc(func(cfg *config) error {
+		if authorizer == nil || isNilValue(authorizer) {
+			return errNilAuthorizer
+		}
+		cfg.authorizer = authorizer
+		return nil
+	})
+}
+
+func isNilValue(value any) bool {
+	v := reflect.ValueOf(value)
+	switch v.Kind() {
+	case reflect.Chan, reflect.Func, reflect.Interface, reflect.Map, reflect.Pointer, reflect.Slice:
+		return v.IsNil()
+	default:
+		return false
+	}
 }
 
 // WithSchemaMatchHeaders configures the transitional request headers used to
