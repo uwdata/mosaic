@@ -16,6 +16,10 @@
 // implementation may consult current expiry or revocation state instead of
 // caching an allow decision.
 //
+// CORS preflight is handled inside the returned handler. Authentication
+// middleware wrapped around it must decide whether to pass OPTIONS requests
+// through.
+//
 // Command authorization controls submitted SQL only. It does not isolate the
 // shared process, filesystem, network, extensions, catalogs, or credentials.
 package server

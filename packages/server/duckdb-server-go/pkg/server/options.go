@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"log/slog"
 	"reflect"
+	"strings"
+	"time"
 )
 
 var (
@@ -12,10 +14,32 @@ var (
 	errNilAuthorizer = errors.New("server: authorizer must not be nil")
 )
 
+// CORSOptions configures cross-origin HTTP access. Its zero value grants no
+// cross-origin CORS permissions.
+type CORSOptions struct {
+	// AllowedOrigins lists the exact scheme://host[:port] origins allowed to
+	// access the server.
+	AllowedOrigins []string
+	// AllowedHeaders lists the request headers allowed in a preflight request.
+	// The zero value permits Accept and Content-Type for the JSON API.
+	AllowedHeaders []string
+	// AllowCredentials permits credentialed requests from AllowedOrigins.
+	AllowCredentials bool
+	// AllowAllOrigins explicitly allows every origin. It cannot be combined
+	// with AllowedOrigins or AllowCredentials.
+	AllowAllOrigins bool
+	// AllowAllHeaders explicitly allows every requested header. It cannot be
+	// combined with AllowedHeaders.
+	AllowAllHeaders bool
+	// MaxAge controls how long browsers may cache a successful preflight.
+	MaxAge time.Duration
+}
+
 type config struct {
 	logger             *slog.Logger
 	authorizer         Authorizer
 	schemaMatchHeaders []string
+	cors               CORSOptions
 }
 
 func defaultConfig() config {
@@ -84,6 +108,47 @@ func isNilValue(value any) bool {
 	}
 }
 
+// WithCORS configures cross-origin HTTP access.
+func WithCORS(options CORSOptions) Option {
+	options.AllowedOrigins = append([]string(nil), options.AllowedOrigins...)
+	options.AllowedHeaders = append([]string(nil), options.AllowedHeaders...)
+	return optionFunc(func(cfg *config) error {
+		if options.AllowAllOrigins && len(options.AllowedOrigins) != 0 {
+			return errors.New("server: CORS AllowAllOrigins cannot be combined with AllowedOrigins")
+		}
+		if options.AllowAllOrigins && options.AllowCredentials {
+			return errors.New("server: CORS AllowAllOrigins cannot be combined with AllowCredentials")
+		}
+		if options.AllowAllHeaders && len(options.AllowedHeaders) != 0 {
+			return errors.New("server: CORS AllowAllHeaders cannot be combined with AllowedHeaders")
+		}
+		if options.MaxAge < 0 {
+			return errors.New("server: CORS MaxAge must not be negative")
+		}
+
+		origins, err := copyNonEmpty("CORS allowed origin", options.AllowedOrigins, true)
+		if err != nil {
+			return err
+		}
+		for i, origin := range origins {
+			if !isHTTPOrigin(origin) {
+				return fmt.Errorf("server: invalid CORS allowed origin %q", origin)
+			}
+			origins[i] = strings.ToLower(origin)
+		}
+		headers, err := copyNonEmpty("CORS allowed header", options.AllowedHeaders, true)
+		if err != nil {
+			return err
+		}
+
+		configured := options
+		configured.AllowedOrigins = origins
+		configured.AllowedHeaders = headers
+		cfg.cors = configured
+		return nil
+	})
+}
+
 // WithSchemaMatchHeaders configures the transitional request headers used to
 // derive allowed schema names.
 func WithSchemaMatchHeaders(headers ...string) Option {
@@ -92,4 +157,24 @@ func WithSchemaMatchHeaders(headers ...string) Option {
 		cfg.schemaMatchHeaders = append([]string(nil), headers...)
 		return nil
 	})
+}
+
+func copyNonEmpty(name string, values []string, rejectWildcard bool) ([]string, error) {
+	if len(values) == 0 {
+		return nil, nil
+	}
+
+	copied := make([]string, len(values))
+	for i, value := range values {
+		value = strings.TrimSpace(value)
+		if value == "" {
+			return nil, fmt.Errorf("server: %s at index %d must not be empty", name, i)
+		}
+		if rejectWildcard && value == "*" {
+			return nil, fmt.Errorf("server: %s must not be %q; use the explicit AllowAll option", name, value)
+		}
+		copied[i] = value
+	}
+
+	return copied, nil
 }

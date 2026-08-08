@@ -104,6 +104,11 @@ func main() {
 	s, err := server.New(db,
 		server.WithSchemaMatchHeaders(schemaMatchHeaders...),
 		server.WithLogger(logger),
+		server.WithCORS(server.CORSOptions{
+			AllowAllOrigins: true,
+			AllowAllHeaders: true,
+			MaxAge:          30 * 24 * time.Hour,
+		}),
 	)
 	if err != nil {
 		logger.Error("main: error creating server", "error", err)

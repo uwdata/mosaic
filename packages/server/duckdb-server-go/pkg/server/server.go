@@ -72,19 +72,18 @@ func newHandler(db commandExecutor, cfg config) *handler {
 		authorizer:         cfg.authorizer,
 	}
 
-	s.httpHandler = corsMiddleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if strings.ToLower(r.Header.Get("Connection")) == "upgrade" &&
-			strings.ToLower(r.Header.Get("Upgrade")) == "websocket" {
-			s.handleWebSocket(w, r)
-		} else {
-			s.handleHTTP(w, r)
-		}
-	}))
+	s.httpHandler = newCORSHandler(cfg.cors, http.HandlerFunc(s.handleHTTP))
 
 	return s
 }
 
 func (s *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	if strings.EqualFold(r.Header.Get("Connection"), "upgrade") &&
+		strings.EqualFold(r.Header.Get("Upgrade"), "websocket") {
+		s.handleWebSocket(w, r)
+		return
+	}
+
 	s.httpHandler.ServeHTTP(w, r)
 }
 
@@ -107,23 +106,6 @@ func (s *handler) commandAuthorizer(r *http.Request) (CommandAuthorizer, error) 
 func (s *handler) writeHTTPError(w http.ResponseWriter, err error) {
 	response := s.classifyAndLogError(err)
 	http.Error(w, response.message, response.status)
-}
-
-func corsMiddleware(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Access-Control-Allow-Origin", "*")
-		w.Header().Set("Access-Control-Request-Method", "*")
-		w.Header().Set("Access-Control-Allow-Methods", "OPTIONS, POST, GET")
-		w.Header().Set("Access-Control-Allow-Headers", "*")
-		w.Header().Set("Access-Control-Max-Age", "2592000")
-
-		if r.Method == "OPTIONS" {
-			w.WriteHeader(http.StatusOK)
-			return
-		}
-
-		next.ServeHTTP(w, r)
-	})
 }
 
 func (s *handler) handleWebSocket(w http.ResponseWriter, r *http.Request) {
