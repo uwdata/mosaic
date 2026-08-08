@@ -130,6 +130,8 @@ DuckDB repository name.
 delimiters, and executes entries immediately. Extension and repository semantics are left to DuckDB. Values passed to
 helper functions are literal because whitespace can be part of a valid path; callers reading them from YAML,
 environment variables, or similar configuration should normalize them if that is their desired policy.
+Call `Validate` first when malformed grammar should be reported before the connector opens; the example server does so
+for `--load-extensions`.
 
 The package safely quotes extension names, file paths, and custom repositories, then delegates extension names, aliases,
 repositories, file compatibility, and repeated or conflicting entries to DuckDB. Entries are executed in caller order

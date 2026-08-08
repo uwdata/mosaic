@@ -92,6 +92,21 @@ func TestParseAndInstall(t *testing.T) {
 	}
 }
 
+func TestValidate(t *testing.T) {
+	t.Parallel()
+
+	if err := extensions.Validate(""); err != nil {
+		t.Fatalf("Validate(empty) error = %v", err)
+	}
+	if err := extensions.Validate("spatial", "h3|community"); err != nil {
+		t.Fatalf("Validate() error = %v", err)
+	}
+	err := extensions.Validate("spatial,")
+	if !errors.Is(err, extensions.ErrInvalidInput) {
+		t.Fatalf("Validate() error = %v, want ErrInvalidInput", err)
+	}
+}
+
 func TestParseAndInstallRejectsMalformedInput(t *testing.T) {
 	t.Parallel()
 

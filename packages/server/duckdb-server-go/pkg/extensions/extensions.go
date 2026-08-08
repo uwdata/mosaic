@@ -22,6 +22,12 @@ type extension struct {
 	repository string
 }
 
+// Validate reports command-line grammar errors before a connection is opened.
+func Validate(values ...string) error {
+	_, err := parse(values...)
+	return err
+}
+
 // ParseAndInstall accepts the command-line grammar name|repository,name2 and
 // installs and loads each entry in order. Each argument may contain comma-
 // separated entries, so a []string can be expanded directly. An omitted

@@ -50,6 +50,11 @@ func main() {
 		Level: logLevel,
 	}))
 
+	if err := extensions.Validate(*extensionsStr); err != nil {
+		logger.Error("main: invalid load-extensions", "error", err, "load-extensions", *extensionsStr)
+		return
+	}
+
 	// If no certificate files are specified, check for default localhost certificates
 	if *certFile == "" && *keyFile == "" {
 		// Check if localhost.pem and localhost-key.pem exist in the current directory
@@ -124,8 +129,8 @@ func main() {
 	fmt.Println("DuckDB Server Extensions:")
 	fmt.Printf("%-20s | %-8s | %-20s | %-20s\n", "name", "version", "repository", "install_mode")
 	fmt.Println("-------------------- | -------- | -------------------- | --------------------")
-	for _, ext := range extensions {
-		fmt.Printf("%-20s | %-8s | %-20s | %-20s\n", ext.Name, ext.Version, ext.Repository, ext.InstallMode)
+	for _, extension := range extensions {
+		fmt.Printf("%-20s | %-8s | %-20s | %-20s\n", extension.Name, extension.Version, extension.Repository, extension.InstallMode)
 	}
 	fmt.Println("-------------------- | -------- | -------------------- | --------------------")
 
