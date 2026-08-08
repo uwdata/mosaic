@@ -5,7 +5,6 @@ import (
 	"database/sql/driver"
 	"errors"
 	"reflect"
-	"runtime"
 	"strings"
 	"sync"
 	"testing"
@@ -101,12 +100,19 @@ func TestParse(t *testing.T) {
 			want:   []extension.Spec{extension.InstallAndLoad("spatial", extension.Core)},
 		},
 		{
-			name:   "comma grammar",
-			values: []string{"spatial, h3|community, aws | core_nightly"},
+			name: "comma grammar",
+			values: []string{
+				"spatial, h3|community, aws | core_nightly, json|core, custom|https://example.test/extensions",
+			},
 			want: []extension.Spec{
 				extension.InstallAndLoad("spatial", extension.Core),
 				extension.InstallAndLoad("h3", extension.Community),
 				extension.InstallAndLoad("aws", extension.CoreNightly),
+				extension.InstallAndLoad("json", extension.Core),
+				extension.InstallAndLoad(
+					"custom",
+					extension.Repository("https://example.test/extensions"),
+				),
 			},
 		},
 		{
@@ -123,6 +129,13 @@ func TestParse(t *testing.T) {
 			values: []string{"custom| /opt/duckdb repository "},
 			want: []extension.Spec{
 				extension.InstallAndLoad("custom", extension.Repository("/opt/duckdb repository")),
+			},
+		},
+		{
+			name:   "semantic values are preserved for DuckDB",
+			values: []string{"custom'; DROP TABLE secrets; --|Core"},
+			want: []extension.Spec{
+				extension.InstallAndLoad("custom'; DROP TABLE secrets; --", extension.Repository("Core")),
 			},
 		},
 	}
@@ -160,37 +173,6 @@ func TestParseRejectsMalformedInput(t *testing.T) {
 			values:      []string{"spatial|core|community"},
 			wantMessage: "more than one repository delimiter",
 		},
-		{
-			name:        "unsafe identifier",
-			values:      []string{"spatial;DROP TABLE secrets"},
-			wantMessage: "not a safe DuckDB identifier",
-		},
-		{name: "single quoted name", values: []string{"'spatial'"}, wantMessage: "outer SQL quote wrappers"},
-		{
-			name:        "single quoted repository",
-			values:      []string{"spatial|'core'"},
-			wantMessage: "outer SQL quote wrappers",
-		},
-		{
-			name:        "double quoted repository",
-			values:      []string{"spatial|\"core\""},
-			wantMessage: "outer SQL quote wrappers",
-		},
-		{
-			name:        "repository control character",
-			values:      []string{"spatial|https://example.test/\nrepo"},
-			wantMessage: "control character",
-		},
-		{
-			name:        "conflicting name",
-			values:      []string{"spatial|core,SPATIAL|community"},
-			wantMessage: "conflicts with input 1 entry 1 target",
-		},
-		{
-			name:        "mis-cased built-in repository",
-			values:      []string{"spatial|Core"},
-			wantMessage: "matches built-in repository \"core\" but must use canonical casing",
-		},
 	}
 
 	for _, test := range tests {
@@ -210,37 +192,14 @@ func TestParseRejectsMalformedInput(t *testing.T) {
 func TestParseErrorCoordinates(t *testing.T) {
 	t.Parallel()
 
-	tests := []struct {
-		name   string
-		values []string
-		want   []string
-	}{
-		{
-			name:   "validation",
-			values: []string{"spatial", "h3,sp-atial"},
-			want:   []string{"input 2 entry 2", "not a safe DuckDB identifier"},
-		},
-		{
-			name:   "conflict",
-			values: []string{"spatial", "h3,SPATIAL|community"},
-			want:   []string{"input 2 entry 2", "input 1 entry 1", "target \"SPATIAL\""},
-		},
+	_, err := extension.Parse("spatial", "h3,aws|core|community")
+	if !errors.Is(err, extension.ErrInvalidSpec) {
+		t.Fatalf("Parse() error = %v, want ErrInvalidSpec", err)
 	}
-
-	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
-			t.Parallel()
-
-			_, err := extension.Parse(test.values...)
-			if !errors.Is(err, extension.ErrInvalidSpec) {
-				t.Fatalf("Parse() error = %v, want ErrInvalidSpec", err)
-			}
-			for _, want := range test.want {
-				if !strings.Contains(err.Error(), want) {
-					t.Errorf("Parse() error = %q, want substring %q", err, want)
-				}
-			}
-		})
+	for _, want := range []string{"input 2 entry 2", "more than one repository delimiter"} {
+		if !strings.Contains(err.Error(), want) {
+			t.Errorf("Parse() error = %q, want substring %q", err, want)
+		}
 	}
 }
 
@@ -260,7 +219,6 @@ func TestInitializerStatements(t *testing.T) {
 		extension.LoadInstalled("preinstalled"),
 		extension.InstallAndLoadFile("/opt/O'Brien/custom.duckdb_extension"),
 		extension.InstallAndLoadFile("/opt/HTTPS.v2.duckdb_extension"),
-		extension.InstallAndLoadFile("/opt/Ä.duckdb_extension"),
 		extension.InstallAndLoadFile("/opt/.duckdb_extension"),
 		extension.LoadFile("/opt/preinstalled.duckdb_extension"),
 	}
@@ -271,7 +229,7 @@ func TestInitializerStatements(t *testing.T) {
 	}
 
 	// Mutating caller-owned specifications after construction must not change
-	// the precompiled statement plan.
+	// the initializer's captured specifications.
 	specs[0] = extension.LoadInstalled("mutated")
 
 	execer := &recordingExecer{}
@@ -280,29 +238,27 @@ func TestInitializerStatements(t *testing.T) {
 	}
 
 	wantQueries := []string{
-		"INSTALL default_repo FROM core",
-		"LOAD default_repo",
-		"INSTALL core_repo FROM core",
-		"LOAD core_repo",
-		"INSTALL nightly_repo FROM core_nightly",
-		"LOAD nightly_repo",
-		"INSTALL community_repo FROM community",
-		"LOAD community_repo",
-		"INSTALL debug_repo FROM local_build_debug",
-		"LOAD debug_repo",
-		"INSTALL release_repo FROM local_build_release",
-		"LOAD release_repo",
-		"INSTALL custom_repo FROM 'https://example.test/O''Brien repo'",
-		"LOAD custom_repo",
-		"INSTALL case_sensitive_custom FROM './Core'",
-		"LOAD case_sensitive_custom",
-		"LOAD preinstalled",
+		"INSTALL 'default_repo' FROM core",
+		"LOAD 'default_repo'",
+		"INSTALL 'core_repo' FROM core",
+		"LOAD 'core_repo'",
+		"INSTALL 'nightly_repo' FROM core_nightly",
+		"LOAD 'nightly_repo'",
+		"INSTALL 'community_repo' FROM community",
+		"LOAD 'community_repo'",
+		"INSTALL 'debug_repo' FROM local_build_debug",
+		"LOAD 'debug_repo'",
+		"INSTALL 'release_repo' FROM local_build_release",
+		"LOAD 'release_repo'",
+		"INSTALL 'custom_repo' FROM 'https://example.test/O''Brien repo'",
+		"LOAD 'custom_repo'",
+		"INSTALL 'case_sensitive_custom' FROM './Core'",
+		"LOAD 'case_sensitive_custom'",
+		"LOAD 'preinstalled'",
 		"INSTALL '/opt/O''Brien/custom.duckdb_extension'",
 		"LOAD 'custom'",
 		"INSTALL '/opt/HTTPS.v2.duckdb_extension'",
-		"LOAD 'httpfs'",
-		"INSTALL '/opt/Ä.duckdb_extension'",
-		"LOAD 'Ä'",
+		"LOAD 'HTTPS'",
 		"INSTALL '/opt/.duckdb_extension'",
 		"LOAD 'duckdb_extension'",
 		"LOAD '/opt/preinstalled.duckdb_extension'",
@@ -322,40 +278,6 @@ func TestInitializerStatements(t *testing.T) {
 		if call.args != nil {
 			t.Errorf("call %d args = %#v, want nil", index+1, call.args)
 		}
-	}
-}
-
-func TestInstallAndLoadFileUsesHostPathSemantics(t *testing.T) {
-	t.Parallel()
-
-	const path = `C:\tmp\Foo.Bar.duckdb_extension`
-	initializer, err := extension.NewInitializer(
-		context.Background(),
-		extension.InstallAndLoadFile(path),
-	)
-	if runtime.GOOS != "windows" {
-		if !errors.Is(err, extension.ErrInvalidSpec) {
-			t.Fatalf("NewInitializer() error = %v, want ErrInvalidSpec", err)
-		}
-		if !strings.Contains(err.Error(), "cannot load by name") {
-			t.Fatalf("NewInitializer() error = %q, want host-path diagnostic", err)
-		}
-		return
-	}
-	if err != nil {
-		t.Fatalf("NewInitializer() error = %v", err)
-	}
-
-	execer := &recordingExecer{}
-	if err := initializer(execer); err != nil {
-		t.Fatalf("Initializer() error = %v", err)
-	}
-	want := []string{
-		`INSTALL 'C:\tmp\Foo.Bar.duckdb_extension'`,
-		"LOAD 'foo'",
-	}
-	if got := queries(execer.snapshot()); !reflect.DeepEqual(got, want) {
-		t.Fatalf("queries = %#v, want %#v", got, want)
 	}
 }
 
@@ -439,28 +361,25 @@ func TestInitializerRepeatsForEveryConnection(t *testing.T) {
 	}
 
 	want := []string{
-		"INSTALL spatial FROM core",
-		"LOAD spatial",
-		"INSTALL spatial FROM core",
-		"LOAD spatial",
+		"INSTALL 'spatial' FROM core",
+		"LOAD 'spatial'",
+		"INSTALL 'spatial' FROM core",
+		"LOAD 'spatial'",
 	}
 	if got := queries(execer.snapshot()); !reflect.DeepEqual(got, want) {
 		t.Fatalf("queries = %#v, want %#v", got, want)
 	}
 }
 
-func TestInitializerCollapsesEquivalentDuplicates(t *testing.T) {
+func TestInitializerPreservesOrderAndDuplicates(t *testing.T) {
 	t.Parallel()
 
-	specs, err := extension.Parse("httpfs,HTTPFS")
+	specs, err := extension.Parse("httpfs,HTTPFS,spatial|core,SPATIAL|community")
 	if err != nil {
 		t.Fatalf("Parse() error = %v", err)
 	}
 	specs = append(
 		specs,
-		extension.InstallAndLoad("httpfs", ""),
-		extension.InstallAndLoad("sqlite", extension.Core),
-		extension.InstallAndLoad("sqlite_scanner", extension.Core),
 		extension.LoadFile("/opt/custom.duckdb_extension"),
 		extension.LoadFile("/opt/custom.duckdb_extension"),
 	)
@@ -475,10 +394,15 @@ func TestInitializerCollapsesEquivalentDuplicates(t *testing.T) {
 		t.Fatalf("Initializer() error = %v", err)
 	}
 	want := []string{
-		"INSTALL httpfs FROM core",
-		"LOAD httpfs",
-		"INSTALL sqlite FROM core",
-		"LOAD sqlite",
+		"INSTALL 'httpfs' FROM core",
+		"LOAD 'httpfs'",
+		"INSTALL 'HTTPFS' FROM core",
+		"LOAD 'HTTPFS'",
+		"INSTALL 'spatial' FROM core",
+		"LOAD 'spatial'",
+		"INSTALL 'SPATIAL' FROM community",
+		"LOAD 'SPATIAL'",
+		"LOAD '/opt/custom.duckdb_extension'",
 		"LOAD '/opt/custom.duckdb_extension'",
 	}
 	if got := queries(execer.snapshot()); !reflect.DeepEqual(got, want) {
@@ -486,13 +410,23 @@ func TestInitializerCollapsesEquivalentDuplicates(t *testing.T) {
 	}
 }
 
-func TestProgrammaticPathsAndRepositoriesAreLiteral(t *testing.T) {
+func TestInitializerQuotesDuckDBValues(t *testing.T) {
 	t.Parallel()
+
+	specs, err := extension.Parse("custom'; DROP TABLE secrets; --| /srv/O'Brien; ATTACH 'evil.db ")
+	if err != nil {
+		t.Fatalf("Parse() error = %v", err)
+	}
+	specs = append(
+		specs,
+		extension.InstallAndLoad("literal", extension.Repository(" /srv/repository ")),
+		extension.LoadFile(" /opt/O'Brien; DROP TABLE secrets.duckdb_extension "),
+		extension.InstallAndLoadFile("/opt/O'Brien'; DROP TABLE secrets.duckdb_extension"),
+	)
 
 	initializer, err := extension.NewInitializer(
 		context.Background(),
-		extension.InstallAndLoad("custom", extension.Repository(" /srv/repository ")),
-		extension.LoadFile(" /opt/custom.duckdb_extension "),
+		specs...,
 	)
 	if err != nil {
 		t.Fatalf("NewInitializer() error = %v", err)
@@ -503,9 +437,39 @@ func TestProgrammaticPathsAndRepositoriesAreLiteral(t *testing.T) {
 		t.Fatalf("Initializer() error = %v", err)
 	}
 	want := []string{
-		"INSTALL custom FROM ' /srv/repository '",
-		"LOAD custom",
-		"LOAD ' /opt/custom.duckdb_extension '",
+		"INSTALL 'custom''; DROP TABLE secrets; --' FROM '/srv/O''Brien; ATTACH ''evil.db'",
+		"LOAD 'custom''; DROP TABLE secrets; --'",
+		"INSTALL 'literal' FROM ' /srv/repository '",
+		"LOAD 'literal'",
+		"LOAD ' /opt/O''Brien; DROP TABLE secrets.duckdb_extension '",
+		"INSTALL '/opt/O''Brien''; DROP TABLE secrets.duckdb_extension'",
+		"LOAD 'O''Brien''; DROP TABLE secrets'",
+	}
+	if got := queries(execer.snapshot()); !reflect.DeepEqual(got, want) {
+		t.Fatalf("queries = %#v, want %#v", got, want)
+	}
+}
+
+func TestFileConstructorsDisambiguateBarePaths(t *testing.T) {
+	t.Parallel()
+
+	initializer, err := extension.NewInitializer(
+		context.Background(),
+		extension.LoadFile("reader"),
+		extension.InstallAndLoadFile("writer"),
+	)
+	if err != nil {
+		t.Fatalf("NewInitializer() error = %v", err)
+	}
+
+	execer := &recordingExecer{}
+	if err := initializer(execer); err != nil {
+		t.Fatalf("Initializer() error = %v", err)
+	}
+	want := []string{
+		"LOAD './reader'",
+		"INSTALL './writer'",
+		"LOAD 'writer'",
 	}
 	if got := queries(execer.snapshot()); !reflect.DeepEqual(got, want) {
 		t.Fatalf("queries = %#v, want %#v", got, want)
@@ -535,7 +499,7 @@ func TestInitializerIsSafeForConcurrentUse(t *testing.T) {
 				errorsCh <- err
 				return
 			}
-			want := []string{"INSTALL spatial FROM core", "LOAD spatial"}
+			want := []string{"INSTALL 'spatial' FROM core", "LOAD 'spatial'"}
 			if got := queries(execer.snapshot()); !reflect.DeepEqual(got, want) {
 				errorsCh <- errors.New("unexpected query plan")
 			}
@@ -570,42 +534,9 @@ func TestNewInitializerRejectsInvalidSpecifications(t *testing.T) {
 			wantMessage: "invalid mode 99",
 		},
 		{
-			name:        "unsafe identifier",
-			specs:       []extension.Spec{{Name: "spatial-name"}},
-			wantMessage: "not a safe DuckDB identifier",
-		},
-		{
-			name:        "quoted identifier",
-			specs:       []extension.Spec{{Name: "'spatial'"}},
-			wantMessage: "outer SQL quote wrappers",
-		},
-		{
-			name:        "control in name",
-			specs:       []extension.Spec{{Name: "spatial\n"}},
-			wantMessage: "control character",
-		},
-		{
 			name:        "blank custom repository",
 			specs:       []extension.Spec{{Name: "spatial", Repository: " "}},
 			wantMessage: "repository is blank",
-		},
-		{
-			name:        "quoted repository",
-			specs:       []extension.Spec{{Name: "spatial", Repository: "'core'"}},
-			wantMessage: "outer SQL quote wrappers",
-		},
-		{
-			name:        "control in repository",
-			specs:       []extension.Spec{{Name: "spatial", Repository: "https://repo\n"}},
-			wantMessage: "control character",
-		},
-		{
-			name: "invalid UTF-8 repository",
-			specs: []extension.Spec{{
-				Name:       "spatial",
-				Repository: extension.Repository(string([]byte{0xff})),
-			}},
-			wantMessage: "invalid UTF-8",
 		},
 		{
 			name: "repository in load-only mode",
@@ -620,58 +551,6 @@ func TestNewInitializerRejectsInvalidSpecifications(t *testing.T) {
 			name:        "repository with file",
 			specs:       []extension.Spec{{Path: "/tmp/spatial", Repository: extension.Core}},
 			wantMessage: "repository cannot be set for a direct extension file",
-		},
-		{
-			name:        "quoted path",
-			specs:       []extension.Spec{{Path: "'/tmp/spatial'"}},
-			wantMessage: "outer SQL quote wrappers",
-		},
-		{
-			name:        "control in path",
-			specs:       []extension.Spec{{Path: "/tmp/spatial\n"}},
-			wantMessage: "control character",
-		},
-		{
-			name:        "path without installed name",
-			specs:       []extension.Spec{extension.InstallAndLoadFile("/tmp/...")},
-			wantMessage: "path does not contain an extension name",
-		},
-		{
-			name:        "mis-cased built-in repository",
-			specs:       []extension.Spec{extension.InstallAndLoad("spatial", "COMMUNITY")},
-			wantMessage: "matches built-in repository \"community\" but must use canonical casing",
-		},
-		{
-			name: "duplicate named target",
-			specs: []extension.Spec{
-				extension.InstallAndLoad("spatial", extension.Core),
-				extension.LoadInstalled("SPATIAL"),
-			},
-			wantMessage: "conflicts with specification 1 target",
-		},
-		{
-			name: "duplicate file target",
-			specs: []extension.Spec{
-				extension.InstallAndLoadFile("/tmp/spatial"),
-				extension.LoadFile("/tmp/spatial"),
-			},
-			wantMessage: "conflicts with specification 1 target",
-		},
-		{
-			name: "different repositories",
-			specs: []extension.Spec{
-				extension.InstallAndLoad("spatial", extension.Core),
-				extension.InstallAndLoad("SPATIAL", extension.Community),
-			},
-			wantMessage: "conflicts with specification 1 target",
-		},
-		{
-			name: "aliased file and named target",
-			specs: []extension.Spec{
-				extension.InstallAndLoadFile("/tmp/sqlite.duckdb_extension"),
-				extension.InstallAndLoad("sqlite_scanner", extension.Community),
-			},
-			wantMessage: "conflicts with specification 1 target",
 		},
 	}
 

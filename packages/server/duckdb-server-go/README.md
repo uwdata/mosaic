@@ -110,18 +110,25 @@ and loads an extension that is already present in DuckDB's extension directory, 
 extensions are provisioned before server startup. `LoadFile` loads the source path directly on every connection.
 `InstallAndLoadFile` first copies the file into DuckDB's extension directory, then loads the installed extension name
 DuckDB derives from the filename (`custom_writer.duckdb_extension` becomes `custom_writer`), so the source path is only
-needed while installation runs.
+needed while installation runs. Bare relative filenames are emitted with a `./` prefix so DuckDB treats them as files
+rather than extension names.
 
-`Parse` treats surrounding whitespace as command-line grammar and trims it around entries, names, and repositories.
-Structured `Repository` and `Path` values are literal because whitespace can be part of a valid path; callers reading
-those values from YAML, environment variables, or similar configuration should normalize them before constructing a
-`Spec` if that is their desired policy.
+`Parse` only interprets the command-line grammar. It trims surrounding whitespace around entries, names, and
+repositories and rejects blank entries or extra repository delimiters. Structured values are literal because whitespace
+can be part of a valid path; callers reading them from YAML, environment variables, or similar configuration should
+normalize them before constructing a `Spec` if that is their desired policy.
+
+The initializer checks only structural API mistakes, such as setting both `Name` and `Path`. It safely quotes extension
+names, file paths, and custom repositories, then delegates extension names, aliases, repositories, file compatibility,
+and repeated or conflicting specifications to DuckDB. Specifications are executed in caller order without
+deduplication, so DuckDB's own errors remain the source of truth.
 
 DuckDB applies `LOAD` to each physical connection, so the initializer intentionally repeats the complete ordered spec
-list whenever the connector creates one. Install-and-load specs repeat `INSTALL` as well; DuckDB can reuse its installed
-artifact, while each connection still receives its own `LOAD`. The first failed `INSTALL` or `LOAD` stops initialization
-and returns a contextual error, so that connection is not created. A later connection retries from the beginning. The
-example server's extension inventory query provides this preflight before HTTP serving starts.
+list whenever the connector creates one. Install-and-load specs repeat `INSTALL` as well; DuckDB decides whether an
+installed artifact can be reused, while each connection still receives its own `LOAD`. The first failed `INSTALL` or
+`LOAD` stops initialization and returns a contextual error, so that connection is not created. A later connection
+retries from the beginning. The example server's extension inventory query provides this preflight before HTTP serving
+starts.
 
 Extensions are trusted native code that run with the server process's privileges. Load only trusted repositories and
 files. DuckDB signature verification is an important safeguard where it applies; allowing unsigned extensions removes
