@@ -6,6 +6,8 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/coder/websocket"
+	"github.com/coder/websocket/wsjson"
 	"github.com/duckdb/duckdb-go/v2"
 	"github.com/stretchr/testify/require"
 
@@ -35,12 +37,46 @@ func TestExecCommandHonorsSchemaPolicy(t *testing.T) {
 	params := QueryParams{Type: &command, SQL: &sql}
 
 	s := New(db, []string{"X-Tenant"}, nil)
-	_, _, err := s.execCommand(t.Context(), params, nil)
+	_, err := s.execCommand(t.Context(), params, nil)
 	require.ErrorIs(t, err, query.ErrExecWithValidation)
 
 	s = New(db, nil, nil)
-	_, _, err = s.execCommand(t.Context(), params, nil)
+	_, err = s.execCommand(t.Context(), params, nil)
 	require.NoError(t, err)
+}
+
+func TestArrowResponseFraming(t *testing.T) {
+	db := setupTestDB(t)
+	handler := New(db, nil, nil)
+	body := `{"type":"arrow","sql":"SELECT 1","persist":true}`
+
+	req := httptest.NewRequest(http.MethodPost, "/", strings.NewReader(body))
+	res := httptest.NewRecorder()
+	handler.ServeHTTP(res, req)
+	require.Equal(t, http.StatusOK, res.Code)
+	require.Equal(t, "application/vnd.apache.arrow.stream", res.Header().Get("Content-Type"))
+	require.NotEmpty(t, res.Body.Bytes())
+
+	req = httptest.NewRequest(http.MethodPost, "/", strings.NewReader(body))
+	res = httptest.NewRecorder()
+	handler.ServeHTTP(res, req)
+	require.Equal(t, "mosaic-duckdb-go; hit", res.Header().Get("Cache-Status"))
+
+	server := httptest.NewServer(handler)
+	t.Cleanup(server.Close)
+	conn, _, err := websocket.Dial(t.Context(), "ws"+strings.TrimPrefix(server.URL, "http"), nil)
+	require.NoError(t, err)
+	defer func() { require.NoError(t, conn.CloseNow()) }()
+
+	require.NoError(t, wsjson.Write(t.Context(), conn, map[string]any{
+		"type":    CommandArrow,
+		"sql":     "SELECT 1",
+		"persist": true,
+	}))
+	messageType, payload, err := conn.Read(t.Context())
+	require.NoError(t, err)
+	require.Equal(t, websocket.MessageBinary, messageType)
+	require.NotEmpty(t, payload)
 }
 
 func TestHandleHTTPPolicyErrors(t *testing.T) {

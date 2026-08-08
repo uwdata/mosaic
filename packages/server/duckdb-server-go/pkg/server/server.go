@@ -30,6 +30,19 @@ type QueryParams struct {
 	Name    *string  `json:"name"`
 }
 
+type commandResponse struct {
+	data        []byte
+	cacheHit    bool
+	contentType string
+	wsMessage   websocket.MessageType
+}
+
+var commandResponses = map[Command]commandResponse{
+	CommandExec:  {wsMessage: websocket.MessageText},
+	CommandArrow: {contentType: "application/vnd.apache.arrow.stream", wsMessage: websocket.MessageBinary},
+	CommandJSON:  {contentType: "application/json", wsMessage: websocket.MessageText},
+}
+
 type queryParamsError string
 
 func (e queryParamsError) Error() string {
@@ -121,7 +134,8 @@ func (s *Server) handleWebSocket(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// only return an error if you want to close the connection, which we do on any write errors, but not on command errors
+// A returned error closes the connection. Command errors are written to the
+// client and return nil so the session survives them.
 func (s *Server) handleWebSocketMessage(ctx context.Context, conn *websocket.Conn, allowedSchemas []string) error {
 	var params QueryParams
 	err := wsjson.Read(ctx, conn, &params)
@@ -129,7 +143,7 @@ func (s *Server) handleWebSocketMessage(ctx context.Context, conn *websocket.Con
 		return fmt.Errorf("failed to read websocket message: %w", err)
 	}
 
-	data, _, err := s.execCommand(context.TODO(), params, allowedSchemas)
+	response, err := s.execCommand(context.TODO(), params, allowedSchemas)
 	if err != nil {
 		writeErr := wsjson.Write(ctx, conn, map[string]string{"error": err.Error()})
 		if writeErr != nil {
@@ -139,28 +153,12 @@ func (s *Server) handleWebSocketMessage(ctx context.Context, conn *websocket.Con
 		return nil
 	}
 
-	switch *params.Type {
-	case CommandExec:
-		err = conn.Write(ctx, websocket.MessageText, []byte("{}"))
-		if err != nil {
-			return fmt.Errorf("server: failed to write exec response: %w", err)
-		}
-
-	case CommandArrow:
-		err = conn.Write(ctx, websocket.MessageBinary, data)
-		if err != nil {
-			return fmt.Errorf("server: failed to write arrow response: %w", err)
-		}
-
-	case CommandJSON:
-		err = conn.Write(ctx, websocket.MessageText, data)
-		if err != nil {
-			return fmt.Errorf("server: failed to write json response: %w", err)
-		}
-
-	default:
-		// should have been caught by validation
-		panic("server: unknown command type:" + *params.Type)
+	payload := response.data
+	if response.contentType == "" {
+		payload = []byte("{}")
+	}
+	if err = conn.Write(ctx, response.wsMessage, payload); err != nil {
+		return fmt.Errorf("server: failed to write response: %w", err)
 	}
 
 	return nil
@@ -175,8 +173,6 @@ func (s *Server) handleHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var params QueryParams
-
-	// we support both POST and GET methods for the same endpoint
 
 	switch r.Method {
 	case http.MethodPost:
@@ -207,7 +203,7 @@ func (s *Server) handleHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	data, cacheHit, err := s.execCommand(r.Context(), params, allowedSchemas)
+	response, err := s.execCommand(r.Context(), params, allowedSchemas)
 	if err != nil {
 		status := http.StatusInternalServerError
 		var (
@@ -227,51 +223,27 @@ func (s *Server) handleHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	switch *params.Type {
-	case CommandExec:
+	if response.contentType == "" {
 		w.WriteHeader(http.StatusOK)
-
-	case CommandArrow:
-		w.Header().Set("Content-Type", "application/vnd.apache.arrow.stream")
-		if cacheHit {
-			w.Header().Set("Cache-Status", "mosaic-duckdb-go; hit")
-		}
-
-		_, err = w.Write(data)
-		if err != nil {
-			s.logger.Error("server: failed to write Arrow data", "error", err)
-			return
-		}
-
 		return
+	}
 
-	case CommandJSON:
-		w.Header().Set("Content-Type", "application/json")
-		if cacheHit {
-			w.Header().Set("Cache-Status", "mosaic-duckdb-go; hit")
-		}
-
-		_, err = w.Write(data)
-		if err != nil {
-			s.logger.Error("server: failed to write JSON data", "error", err)
-			return
-		}
-
-		return
-
-	default:
-		// should have been caught by validation
-		panic("server: unknown command type:" + *params.Type)
+	w.Header().Set("Content-Type", response.contentType)
+	if response.cacheHit {
+		w.Header().Set("Cache-Status", "mosaic-duckdb-go; hit")
+	}
+	if _, err = w.Write(response.data); err != nil {
+		s.logger.Error("server: failed to write response", "error", err, "content_type", response.contentType)
 	}
 }
 
-func (s *Server) execCommand(ctx context.Context, params QueryParams, allowedSchemas []string) ([]byte, bool, error) {
-	err := params.Validate(s.logger)
-	if err != nil {
-		return nil, false, err
+func (s *Server) execCommand(ctx context.Context, params QueryParams, allowedSchemas []string) (commandResponse, error) {
+	if err := params.Validate(s.logger); err != nil {
+		return commandResponse{}, err
 	}
+	response := commandResponses[*params.Type]
+	var err error
 
-	// useCache is false by default, unless explicitly set to true
 	useCache := false
 	if params.Persist != nil {
 		useCache = *params.Persist
@@ -280,20 +252,21 @@ func (s *Server) execCommand(ctx context.Context, params QueryParams, allowedSch
 	switch *params.Type {
 	case CommandExec:
 		if len(s.schemaMatchHeaders) > 0 {
-			return nil, false, query.ErrExecWithValidation
+			return commandResponse{}, query.ErrExecWithValidation
 		}
-		return nil, false, s.db.Exec(ctx, *params.SQL) // No data to return for exec command
+		err = s.db.Exec(ctx, *params.SQL)
 
 	case CommandArrow:
-		return s.db.QueryArrow(ctx, *params.SQL, allowedSchemas, useCache)
+		response.data, response.cacheHit, err = s.db.QueryArrow(ctx, *params.SQL, allowedSchemas, useCache)
 
 	case CommandJSON:
-		return s.db.QueryJSON(ctx, *params.SQL, allowedSchemas, useCache)
+		response.data, response.cacheHit, err = s.db.QueryJSON(ctx, *params.SQL, allowedSchemas, useCache)
 
 	default:
-		// should have been caught by validation
-		panic("server: unknown command type:" + *params.Type)
+		return commandResponse{}, fmt.Errorf("server: no executor for command type %q", *params.Type)
 	}
+
+	return response, err
 }
 
 func (p QueryParams) Validate(logger *slog.Logger) error {
@@ -302,9 +275,7 @@ func (p QueryParams) Validate(logger *slog.Logger) error {
 		return queryParamsError("missing required 'type' parameter")
 	}
 
-	switch *p.Type {
-	case CommandArrow, CommandExec, CommandJSON:
-	default:
+	if _, ok := commandResponses[*p.Type]; !ok {
 		logger.Error("server: invalid 'type' parameter", "type", *p.Type)
 		return queryParamsError("invalid 'type' parameter: " + string(*p.Type))
 	}
