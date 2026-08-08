@@ -106,7 +106,16 @@ specs := []extension.Spec{
 
 A custom repository path names a directory laid out as a DuckDB extension repository; it is not the path of a single
 `.duckdb_extension` file. Use `LoadFile` or `InstallAndLoadFile` for a standalone file. `LoadInstalled` skips installation
-and loads an extension that is already present in DuckDB's extension directory.
+and loads an extension that is already present in DuckDB's extension directory, which supports images or hosts where
+extensions are provisioned before server startup. `LoadFile` loads the source path directly on every connection.
+`InstallAndLoadFile` first copies the file into DuckDB's extension directory, then loads the installed extension name
+DuckDB derives from the filename (`custom_writer.duckdb_extension` becomes `custom_writer`), so the source path is only
+needed while installation runs.
+
+`Parse` treats surrounding whitespace as command-line grammar and trims it around entries, names, and repositories.
+Structured `Repository` and `Path` values are literal because whitespace can be part of a valid path; callers reading
+those values from YAML, environment variables, or similar configuration should normalize them before constructing a
+`Spec` if that is their desired policy.
 
 DuckDB applies `LOAD` to each physical connection, so the initializer intentionally repeats the complete ordered spec
 list whenever the connector creates one. Install-and-load specs repeat `INSTALL` as well; DuckDB can reuse its installed

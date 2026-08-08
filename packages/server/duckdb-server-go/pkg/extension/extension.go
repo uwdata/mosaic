@@ -11,9 +11,19 @@ import (
 	"database/sql/driver"
 	"errors"
 	"fmt"
+	"path/filepath"
 	"strings"
 	"unicode"
 	"unicode/utf8"
+)
+
+var (
+	// ErrInvalidSpec identifies extension grammar and specification errors.
+	ErrInvalidSpec = errors.New("extension: invalid specification")
+	// ErrInstall identifies a failed DuckDB INSTALL statement.
+	ErrInstall = errors.New("extension: install failed")
+	// ErrLoad identifies a failed DuckDB LOAD statement.
+	ErrLoad = errors.New("extension: load failed")
 )
 
 // Repository identifies a DuckDB extension repository. Values other than the
@@ -48,7 +58,8 @@ const (
 
 // Spec describes one DuckDB extension. Exactly one of Name and Path must be
 // set. Repository applies only to named extensions in ModeInstallAndLoad; its
-// zero value selects Core.
+// zero value selects Core. Parse trims grammar whitespace, while Repository and
+// Path values supplied programmatically are used literally.
 type Spec struct {
 	Name       string
 	Repository Repository
@@ -78,8 +89,8 @@ func LoadInstalled(name string) Spec {
 	}
 }
 
-// InstallAndLoadFile returns a specification that installs and loads a direct
-// DuckDB extension file.
+// InstallAndLoadFile returns a specification that installs a DuckDB extension
+// file and loads it by the installed name DuckDB derives from the filename.
 func InstallAndLoadFile(path string) Spec {
 	return Spec{
 		Path: path,
@@ -87,8 +98,8 @@ func InstallAndLoadFile(path string) Spec {
 	}
 }
 
-// LoadFile returns a specification that loads a direct DuckDB extension file
-// without installing it first.
+// LoadFile returns a specification that loads a DuckDB extension directly from
+// path without installing it first.
 func LoadFile(path string) Spec {
 	return Spec{
 		Path: path,
@@ -99,66 +110,85 @@ func LoadFile(path string) Spec {
 // Parse parses named extensions using the command-line grammar
 // "name|repository,name2". Each argument may contain one or more comma-
 // separated specifications, which permits callers to pass a []string with
-// Parse(values...). A missing repository selects Core. Parse() and Parse("")
-// return no specifications.
+// Parse(values...). Surrounding grammar whitespace is trimmed. A missing
+// repository selects Core. Parse() and Parse("") return no specifications.
 func Parse(values ...string) ([]Spec, error) {
 	if len(values) == 0 || (len(values) == 1 && values[0] == "") {
 		return nil, nil
 	}
 
 	var specs []Spec
+	var origins []specOrigin
+	builder := newPlanBuilder(len(values))
 	for valueIndex, value := range values {
 		for entryIndex, raw := range strings.Split(value, ",") {
 			entry := strings.TrimSpace(raw)
 			if entry == "" {
-				return nil, fmt.Errorf(
-					"extension input %d entry %d is blank",
-					valueIndex+1,
-					entryIndex+1,
-				)
+				return nil, parseEntryError(valueIndex, entryIndex, errors.New("entry is blank"))
 			}
 
 			if strings.Count(entry, "|") > 1 {
-				return nil, fmt.Errorf(
-					"extension input %d entry %d has more than one repository delimiter",
-					valueIndex+1,
-					entryIndex+1,
+				return nil, parseEntryError(
+					valueIndex,
+					entryIndex,
+					errors.New("entry has more than one repository delimiter"),
 				)
 			}
 
 			name, repository, hasRepository := strings.Cut(entry, "|")
 			name = strings.TrimSpace(name)
 			if name == "" {
-				return nil, fmt.Errorf(
-					"extension input %d entry %d has a blank name",
-					valueIndex+1,
-					entryIndex+1,
-				)
+				return nil, parseEntryError(valueIndex, entryIndex, errors.New("name is blank"))
 			}
 
-			if !hasRepository {
-				specs = append(specs, InstallAndLoad(name, Core))
-				continue
+			if hasRepository {
+				repository = strings.TrimSpace(repository)
+				if repository == "" {
+					return nil, parseEntryError(valueIndex, entryIndex, errors.New("repository is blank"))
+				}
+			} else {
+				repository = string(Core)
 			}
 
-			repository = strings.TrimSpace(repository)
-			if repository == "" {
-				return nil, fmt.Errorf(
-					"extension input %d entry %d has a blank repository",
-					valueIndex+1,
-					entryIndex+1,
-				)
+			spec := InstallAndLoad(name, Repository(repository))
+			if err := builder.add(spec, len(specs)); err != nil {
+				var conflict *targetConflictError
+				if errors.As(err, &conflict) {
+					previous := origins[conflict.previous]
+					return nil, fmt.Errorf(
+						"%w: input %d entry %d conflicts with input %d entry %d target %q",
+						ErrInvalidSpec,
+						valueIndex+1,
+						entryIndex+1,
+						previous.value+1,
+						previous.entry+1,
+						conflict.target,
+					)
+				}
+				return nil, parseEntryError(valueIndex, entryIndex, err)
 			}
 
-			specs = append(specs, InstallAndLoad(name, Repository(repository)))
+			specs = append(specs, spec)
+			origins = append(origins, specOrigin{value: valueIndex, entry: entryIndex})
 		}
 	}
 
-	if _, err := compile(specs); err != nil {
-		return nil, err
-	}
-
 	return specs, nil
+}
+
+type specOrigin struct {
+	value int
+	entry int
+}
+
+func parseEntryError(valueIndex, entryIndex int, err error) error {
+	return fmt.Errorf(
+		"%w: input %d entry %d: %v",
+		ErrInvalidSpec,
+		valueIndex+1,
+		entryIndex+1,
+		err,
+	)
 }
 
 // NewInitializer validates specs and returns an immutable, reentrant
@@ -195,7 +225,7 @@ func NewInitializer(ctx context.Context, specs ...Spec) (Initializer, error) {
 
 type command struct {
 	sql        string
-	phase      string
+	operation  error
 	target     string
 	repository string
 	file       bool
@@ -204,53 +234,123 @@ type command struct {
 func (c command) wrap(err error) error {
 	if c.repository != "" {
 		return fmt.Errorf(
-			"extension %q from repository %q: %s: %w",
+			"%w for %q from repository %q: %w",
+			c.operation,
 			c.target,
 			c.repository,
-			c.phase,
 			err,
 		)
 	}
 	if c.file {
-		return fmt.Errorf("extension file %q: %s: %w", c.target, c.phase, err)
+		return fmt.Errorf("%w for file %q: %w", c.operation, c.target, err)
 	}
-	return fmt.Errorf("extension %q: %s: %w", c.target, c.phase, err)
+	return fmt.Errorf("%w for %q: %w", c.operation, c.target, err)
+}
+
+type specIdentity struct {
+	mode       Mode
+	name       string
+	path       string
+	repository Repository
+}
+
+type target struct {
+	key   string
+	label string
+}
+
+type compiledSpec struct {
+	commands []command
+	identity specIdentity
+	targets  []target
+}
+
+type seenTarget struct {
+	identity specIdentity
+	index    int
+}
+
+type planBuilder struct {
+	commands []command
+	seen     map[string]seenTarget
+}
+
+func newPlanBuilder(capacity int) *planBuilder {
+	return &planBuilder{
+		commands: make([]command, 0, capacity*2),
+		seen:     make(map[string]seenTarget, capacity),
+	}
+}
+
+func (b *planBuilder) add(spec Spec, index int) error {
+	compiled, err := compileSpec(spec)
+	if err != nil {
+		return err
+	}
+
+	duplicate := false
+	for _, target := range compiled.targets {
+		previous, ok := b.seen[target.key]
+		if !ok {
+			continue
+		}
+		if previous.identity != compiled.identity {
+			return &targetConflictError{
+				previous: previous.index,
+				target:   target.label,
+			}
+		}
+		duplicate = true
+	}
+	if duplicate {
+		return nil
+	}
+
+	for _, target := range compiled.targets {
+		b.seen[target.key] = seenTarget{identity: compiled.identity, index: index}
+	}
+	b.commands = append(b.commands, compiled.commands...)
+	return nil
+}
+
+type targetConflictError struct {
+	previous int
+	target   string
+}
+
+func (e *targetConflictError) Error() string {
+	return fmt.Sprintf("conflicts with previous specification target %q", e.target)
 }
 
 func compile(specs []Spec) ([]command, error) {
-	commands := make([]command, 0, len(specs)*2)
-	seen := make(map[string]int, len(specs))
-
+	builder := newPlanBuilder(len(specs))
 	for index, spec := range specs {
-		compiled, key, err := compileSpec(spec)
-		if err != nil {
-			return nil, fmt.Errorf("extension specification %d: %w", index+1, err)
+		if err := builder.add(spec, index); err != nil {
+			var conflict *targetConflictError
+			if errors.As(err, &conflict) {
+				return nil, fmt.Errorf(
+					"%w: specification %d conflicts with specification %d target %q",
+					ErrInvalidSpec,
+					index+1,
+					conflict.previous+1,
+					conflict.target,
+				)
+			}
+			return nil, fmt.Errorf("%w: specification %d: %v", ErrInvalidSpec, index+1, err)
 		}
-
-		if previous, ok := seen[key]; ok {
-			return nil, fmt.Errorf(
-				"extension specification %d duplicates specification %d target %q",
-				index+1,
-				previous+1,
-				specTarget(spec),
-			)
-		}
-		seen[key] = index
-		commands = append(commands, compiled...)
 	}
-
-	return commands, nil
+	return builder.commands, nil
 }
 
-func compileSpec(spec Spec) ([]command, string, error) {
+func compileSpec(spec Spec) (compiledSpec, error) {
 	if spec.Mode != ModeInstallAndLoad && spec.Mode != ModeLoadOnly {
-		return nil, "", fmt.Errorf("invalid mode %d", spec.Mode)
+		return compiledSpec{}, fmt.Errorf("invalid mode %d", spec.Mode)
 	}
 
 	hasName := spec.Name != ""
 	hasPath := spec.Path != ""
 	if hasName == hasPath {
-		return nil, "", errors.New("exactly one of Name and Path must be set")
+		return compiledSpec{}, errors.New("exactly one of Name and Path must be set")
 	}
 
 	if hasName {
@@ -259,27 +359,32 @@ func compileSpec(spec Spec) ([]command, string, error) {
 	return compileFile(spec)
 }
 
-func compileNamed(spec Spec) ([]command, string, error) {
+func compileNamed(spec Spec) (compiledSpec, error) {
 	if strings.TrimSpace(spec.Name) == "" {
-		return nil, "", errors.New("name is blank")
+		return compiledSpec{}, errors.New("name is blank")
 	}
 	if err := validateValue("name", spec.Name); err != nil {
-		return nil, "", err
+		return compiledSpec{}, err
 	}
 	if !validIdentifier(spec.Name) {
-		return nil, "", fmt.Errorf("name %q is not a safe DuckDB identifier", spec.Name)
+		return compiledSpec{}, fmt.Errorf("name %q is not a safe DuckDB identifier", spec.Name)
 	}
 
-	key := "name:" + strings.ToLower(spec.Name)
+	name := canonicalExtensionName(spec.Name)
+	targets := []target{{key: "name:" + name, label: spec.Name}}
 	if spec.Mode == ModeLoadOnly {
 		if spec.Repository != "" {
-			return nil, "", errors.New("repository cannot be set in load-only mode")
+			return compiledSpec{}, errors.New("repository cannot be set in load-only mode")
 		}
-		return []command{{
-			sql:    "LOAD " + spec.Name,
-			phase:  "LOAD",
-			target: spec.Name,
-		}}, key, nil
+		return compiledSpec{
+			commands: []command{{
+				sql:       "LOAD " + spec.Name,
+				operation: ErrLoad,
+				target:    spec.Name,
+			}},
+			identity: specIdentity{mode: spec.Mode, name: name},
+			targets:  targets,
+		}, nil
 	}
 
 	repository := spec.Repository
@@ -287,14 +392,22 @@ func compileNamed(spec Spec) ([]command, string, error) {
 		repository = Core
 	}
 	if strings.TrimSpace(string(repository)) == "" {
-		return nil, "", errors.New("repository is blank")
+		return compiledSpec{}, errors.New("repository is blank")
 	}
 	if err := validateValue("repository", string(repository)); err != nil {
-		return nil, "", err
+		return compiledSpec{}, err
 	}
 
 	repositorySQL := string(repository)
 	if !isBuiltIn(repository) {
+		if builtIn := caseInsensitiveBuiltIn(repository); builtIn != "" {
+			return compiledSpec{}, fmt.Errorf(
+				"repository %q matches built-in repository %q but must use canonical casing; use %q for a custom path",
+				repository,
+				builtIn,
+				"./"+string(repository),
+			)
+		}
 		repositorySQL = quote(string(repository))
 	}
 
@@ -304,43 +417,124 @@ func compileNamed(spec Spec) ([]command, string, error) {
 	}
 	install := metadata
 	install.sql = "INSTALL " + spec.Name + " FROM " + repositorySQL
-	install.phase = "INSTALL"
+	install.operation = ErrInstall
 	load := metadata
 	load.sql = "LOAD " + spec.Name
-	load.phase = "LOAD"
+	load.operation = ErrLoad
 
-	return []command{install, load}, key, nil
+	return compiledSpec{
+		commands: []command{install, load},
+		identity: specIdentity{
+			mode:       spec.Mode,
+			name:       name,
+			repository: repository,
+		},
+		targets: targets,
+	}, nil
 }
 
-func compileFile(spec Spec) ([]command, string, error) {
+func compileFile(spec Spec) (compiledSpec, error) {
 	if spec.Repository != "" {
-		return nil, "", errors.New("repository cannot be set for a direct extension file")
+		return compiledSpec{}, errors.New("repository cannot be set for a direct extension file")
 	}
 	if strings.TrimSpace(spec.Path) == "" {
-		return nil, "", errors.New("path is blank")
+		return compiledSpec{}, errors.New("path is blank")
 	}
 	if err := validateValue("path", spec.Path); err != nil {
-		return nil, "", err
+		return compiledSpec{}, err
 	}
 
 	pathSQL := quote(spec.Path)
-	metadata := command{
-		target: spec.Path,
-		file:   true,
-	}
-	load := metadata
-	load.sql = "LOAD " + pathSQL
-	load.phase = "LOAD"
-
-	key := "path:" + spec.Path
+	pathTarget := target{key: "path:" + spec.Path, label: spec.Path}
 	if spec.Mode == ModeLoadOnly {
-		return []command{load}, key, nil
+		return compiledSpec{
+			commands: []command{{
+				sql:       "LOAD " + pathSQL,
+				operation: ErrLoad,
+				target:    spec.Path,
+				file:      true,
+			}},
+			identity: specIdentity{mode: spec.Mode, path: spec.Path},
+			targets:  []target{pathTarget},
+		}, nil
 	}
 
-	install := metadata
-	install.sql = "INSTALL " + pathSQL
-	install.phase = "INSTALL"
-	return []command{install, load}, key, nil
+	name, err := installedExtensionName(spec.Path)
+	if err != nil {
+		return compiledSpec{}, err
+	}
+	return compiledSpec{
+		commands: []command{
+			{
+				sql:       "INSTALL " + pathSQL,
+				operation: ErrInstall,
+				target:    spec.Path,
+				file:      true,
+			},
+			{
+				sql:       "LOAD " + quote(name),
+				operation: ErrLoad,
+				target:    name,
+			},
+		},
+		identity: specIdentity{mode: spec.Mode, name: name, path: spec.Path},
+		targets: []target{
+			pathTarget,
+			{key: "name:" + name, label: name},
+		},
+	}, nil
+}
+
+func installedExtensionName(extensionPath string) (string, error) {
+	base := asciiLower(filepath.Base(extensionPath))
+	var name string
+	for _, segment := range strings.Split(base, ".") {
+		if segment != "" {
+			name = segment
+			break
+		}
+	}
+	if name == "" {
+		return "", errors.New("path does not contain an extension name")
+	}
+	if strings.ContainsAny(name, `/\`) {
+		return "", fmt.Errorf("path derives extension name %q that DuckDB cannot load by name", name)
+	}
+	return canonicalExtensionName(name), nil
+}
+
+// canonicalExtensionName mirrors DuckDB's aliases for the pinned DuckDB
+// release so duplicate detection uses the same installed target names.
+func canonicalExtensionName(name string) string {
+	name = asciiLower(name)
+	switch name {
+	case "http", "https", "s3":
+		return "httpfs"
+	case "md":
+		return "motherduck"
+	case "mysql":
+		return "mysql_scanner"
+	case "odbc":
+		return "odbc_scanner"
+	case "postgres":
+		return "postgres_scanner"
+	case "sqlite", "sqlite3":
+		return "sqlite_scanner"
+	case "uc_catalog":
+		return "unity_catalog"
+	default:
+		return name
+	}
+}
+
+func asciiLower(value string) string {
+	result := []byte(value)
+	for index, char := range result {
+		if char >= 'A' && char <= 'Z' {
+			result[index] = char + ('a' - 'A')
+		}
+	}
+	return string(result)
 }
 
 func validateValue(kind, value string) error {
@@ -387,6 +581,23 @@ func isBuiltIn(repository Repository) bool {
 	}
 }
 
+func caseInsensitiveBuiltIn(repository Repository) Repository {
+	switch strings.ToLower(string(repository)) {
+	case string(Core):
+		return Core
+	case string(CoreNightly):
+		return CoreNightly
+	case string(Community):
+		return Community
+	case string(LocalBuildDebug):
+		return LocalBuildDebug
+	case string(LocalBuildRelease):
+		return LocalBuildRelease
+	default:
+		return ""
+	}
+}
+
 func quote(value string) string {
 	return "'" + strings.ReplaceAll(value, "'", "''") + "'"
 }
@@ -398,11 +609,4 @@ func hasOuterQuoteWrapper(value string) bool {
 	first := value[0]
 	last := value[len(value)-1]
 	return (first == '\'' && last == '\'') || (first == '"' && last == '"')
-}
-
-func specTarget(spec Spec) string {
-	if spec.Name != "" {
-		return spec.Name
-	}
-	return spec.Path
 }
