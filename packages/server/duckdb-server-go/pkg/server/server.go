@@ -15,19 +15,19 @@ import (
 	"github.com/uwdata/mosaic/packages/server/duckdb-server-go/pkg/query"
 )
 
-type Command string
+type CommandType string
 
 const (
-	CommandArrow Command = "arrow"
-	CommandExec  Command = "exec"
-	CommandJSON  Command = "json"
+	CommandArrow CommandType = "arrow"
+	CommandExec  CommandType = "exec"
+	CommandJSON  CommandType = "json"
 )
 
-type QueryParams struct {
-	Type    *Command `json:"type"`
-	SQL     *string  `json:"sql"`
-	Persist *bool    `json:"persist"`
-	Name    *string  `json:"name"`
+type queryParams struct {
+	Type    *CommandType `json:"type"`
+	SQL     *string      `json:"sql"`
+	Persist *bool        `json:"persist"`
+	Name    *string      `json:"name"`
 }
 
 type commandResponse struct {
@@ -37,7 +37,7 @@ type commandResponse struct {
 	wsMessage   websocket.MessageType
 }
 
-var commandResponses = map[Command]commandResponse{
+var commandResponses = map[CommandType]commandResponse{
 	CommandExec:  {wsMessage: websocket.MessageText},
 	CommandArrow: {contentType: "application/vnd.apache.arrow.stream", wsMessage: websocket.MessageBinary},
 	CommandJSON:  {contentType: "application/json", wsMessage: websocket.MessageText},
@@ -49,39 +49,48 @@ func (e queryParamsError) Error() string {
 	return string(e)
 }
 
-type Server struct {
-	*http.ServeMux
-
+type handler struct {
 	db                 *query.DB
-	schemaMatchHeaders []string // list of headers to match against schema names for multi-tenant access control
-
-	logger *slog.Logger
+	schemaMatchHeaders []string
+	logger             *slog.Logger
+	httpHandler        http.Handler
 }
 
-func New(db *query.DB, schemaMatchHeaders []string, logger *slog.Logger) *Server {
-	mux := http.NewServeMux()
-
-	if logger == nil {
-		logger = slog.Default()
+// New constructs a Mosaic HTTP and WebSocket handler backed by db.
+func New(db *query.DB, opts ...Option) (http.Handler, error) {
+	if db == nil {
+		return nil, errors.New("server: database is required")
 	}
 
-	s := &Server{
-		ServeMux:           mux,
+	cfg, err := applyOptions(opts)
+	if err != nil {
+		return nil, err
+	}
+
+	return newHandler(db, cfg), nil
+}
+
+func newHandler(db *query.DB, cfg config) *handler {
+	s := &handler{
 		db:                 db,
-		schemaMatchHeaders: schemaMatchHeaders,
-		logger:             logger,
+		schemaMatchHeaders: cfg.schemaMatchHeaders,
+		logger:             cfg.logger,
 	}
 
-	mux.Handle("/", corsMiddleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	s.httpHandler = corsMiddleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if strings.ToLower(r.Header.Get("Connection")) == "upgrade" &&
 			strings.ToLower(r.Header.Get("Upgrade")) == "websocket" {
 			s.handleWebSocket(w, r)
 		} else {
 			s.handleHTTP(w, r)
 		}
-	})))
+	}))
 
 	return s
+}
+
+func (s *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	s.httpHandler.ServeHTTP(w, r)
 }
 
 func corsMiddleware(next http.Handler) http.Handler {
@@ -101,7 +110,7 @@ func corsMiddleware(next http.Handler) http.Handler {
 	})
 }
 
-func (s *Server) handleWebSocket(w http.ResponseWriter, r *http.Request) {
+func (s *handler) handleWebSocket(w http.ResponseWriter, r *http.Request) {
 	allowedSchemas := getAllowedSchemas(r, s.schemaMatchHeaders)
 	if len(s.schemaMatchHeaders) > 0 && len(allowedSchemas) == 0 {
 		s.logger.Error("server: no allowed schemas found in request headers", "headers", s.schemaMatchHeaders)
@@ -136,8 +145,8 @@ func (s *Server) handleWebSocket(w http.ResponseWriter, r *http.Request) {
 
 // A returned error closes the connection. Command errors are written to the
 // client and return nil so the session survives them.
-func (s *Server) handleWebSocketMessage(ctx context.Context, conn *websocket.Conn, allowedSchemas []string) error {
-	var params QueryParams
+func (s *handler) handleWebSocketMessage(ctx context.Context, conn *websocket.Conn, allowedSchemas []string) error {
+	var params queryParams
 	err := wsjson.Read(ctx, conn, &params)
 	if err != nil {
 		return fmt.Errorf("failed to read websocket message: %w", err)
@@ -164,7 +173,7 @@ func (s *Server) handleWebSocketMessage(ctx context.Context, conn *websocket.Con
 	return nil
 }
 
-func (s *Server) handleHTTP(w http.ResponseWriter, r *http.Request) {
+func (s *handler) handleHTTP(w http.ResponseWriter, r *http.Request) {
 	allowedSchemas := getAllowedSchemas(r, s.schemaMatchHeaders)
 	if len(s.schemaMatchHeaders) > 0 && len(allowedSchemas) == 0 {
 		s.logger.Error("server: no allowed schemas found in request headers", "headers", s.schemaMatchHeaders)
@@ -172,7 +181,7 @@ func (s *Server) handleHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var params QueryParams
+	var params queryParams
 
 	switch r.Method {
 	case http.MethodPost:
@@ -189,7 +198,7 @@ func (s *Server) handleHTTP(w http.ResponseWriter, r *http.Request) {
 		sqlQuery := q.Get("sql")
 
 		if queryType != "" {
-			cmd := Command(queryType)
+			cmd := CommandType(queryType)
 			params.Type = &cmd
 		}
 
@@ -237,7 +246,7 @@ func (s *Server) handleHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (s *Server) execCommand(ctx context.Context, params QueryParams, allowedSchemas []string) (commandResponse, error) {
+func (s *handler) execCommand(ctx context.Context, params queryParams, allowedSchemas []string) (commandResponse, error) {
 	if err := params.Validate(s.logger); err != nil {
 		return commandResponse{}, err
 	}
@@ -269,7 +278,7 @@ func (s *Server) execCommand(ctx context.Context, params QueryParams, allowedSch
 	return response, err
 }
 
-func (p QueryParams) Validate(logger *slog.Logger) error {
+func (p queryParams) Validate(logger *slog.Logger) error {
 	if p.Type == nil || *p.Type == "" {
 		logger.Error("server: missing required 'type' parameter")
 		return queryParamsError("missing required 'type' parameter")

@@ -101,7 +101,14 @@ func main() {
 	}
 	defer db.Close()
 
-	s := server.New(db, schemaMatchHeaders, logger)
+	s, err := server.New(db,
+		server.WithSchemaMatchHeaders(schemaMatchHeaders...),
+		server.WithLogger(logger),
+	)
+	if err != nil {
+		logger.Error("main: error creating server", "error", err)
+		return
+	}
 
 	config := map[string]interface{}{
 		"database":             *dbPath,
