@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"path"
 	"reflect"
 	"strings"
 	"time"
@@ -35,11 +36,25 @@ type CORSOptions struct {
 	MaxAge time.Duration
 }
 
+// WebSocketOptions configures cross-origin WebSocket access. Its zero value
+// retains the default same-host origin check.
+type WebSocketOptions struct {
+	// AllowedOrigins lists additional authorized origin host patterns. Patterns
+	// use path.Match syntax and are matched case-insensitively. A pattern that
+	// contains "://" is matched against scheme://host; other patterns are
+	// matched against the origin host.
+	AllowedOrigins []string
+	// AllowAllOrigins explicitly disables WebSocket origin verification. It
+	// cannot be combined with AllowedOrigins.
+	AllowAllOrigins bool
+}
+
 type config struct {
 	logger             *slog.Logger
 	authorizer         Authorizer
 	schemaMatchHeaders []string
 	cors               CORSOptions
+	websocket          WebSocketOptions
 }
 
 func defaultConfig() config {
@@ -145,6 +160,31 @@ func WithCORS(options CORSOptions) Option {
 		configured.AllowedOrigins = origins
 		configured.AllowedHeaders = headers
 		cfg.cors = configured
+		return nil
+	})
+}
+
+// WithWebSocket configures cross-origin WebSocket access.
+func WithWebSocket(options WebSocketOptions) Option {
+	options.AllowedOrigins = append([]string(nil), options.AllowedOrigins...)
+	return optionFunc(func(cfg *config) error {
+		if options.AllowAllOrigins && len(options.AllowedOrigins) != 0 {
+			return errors.New("server: WebSocket AllowAllOrigins cannot be combined with AllowedOrigins")
+		}
+
+		origins, err := copyNonEmpty("WebSocket allowed origin", options.AllowedOrigins, true)
+		if err != nil {
+			return err
+		}
+		for _, origin := range origins {
+			if _, err := path.Match(origin, ""); err != nil {
+				return fmt.Errorf("server: invalid WebSocket allowed origin %q: %w", origin, err)
+			}
+		}
+
+		configured := options
+		configured.AllowedOrigins = origins
+		cfg.websocket = configured
 		return nil
 	})
 }

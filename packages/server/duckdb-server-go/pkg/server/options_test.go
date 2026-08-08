@@ -48,6 +48,33 @@ func TestWithCORSNormalizesAndCopiesConfiguration(t *testing.T) {
 	require.Equal(t, []string{"Content-Type"}, cfg.cors.AllowedHeaders)
 }
 
+func TestWithWebSocketRejectsInvalidConfiguration(t *testing.T) {
+	tests := []Option{
+		WithWebSocket(WebSocketOptions{AllowedOrigins: []string{"["}}),
+		WithWebSocket(WebSocketOptions{AllowedOrigins: []string{"*"}}),
+		WithWebSocket(WebSocketOptions{AllowedOrigins: []string{" "}}),
+		WithWebSocket(WebSocketOptions{
+			AllowedOrigins:  []string{"app.example"},
+			AllowAllOrigins: true,
+		}),
+	}
+
+	for _, option := range tests {
+		_, err := applyOptions([]Option{option})
+		require.Error(t, err)
+	}
+}
+
+func TestWithWebSocketCopiesConfiguration(t *testing.T) {
+	origins := []string{" *.Example "}
+	option := WithWebSocket(WebSocketOptions{AllowedOrigins: origins})
+	origins[0] = "changed.example"
+
+	cfg, err := applyOptions([]Option{option})
+	require.NoError(t, err)
+	require.Equal(t, []string{"*.Example"}, cfg.websocket.AllowedOrigins)
+}
+
 func TestWithSchemaMatchHeadersCopiesConfiguration(t *testing.T) {
 	headers := []string{" X-Tenant "}
 	option := WithSchemaMatchHeaders(headers...)

@@ -109,6 +109,7 @@ func main() {
 			AllowAllHeaders: true,
 			MaxAge:          30 * 24 * time.Hour,
 		}),
+		server.WithWebSocket(server.WebSocketOptions{AllowAllOrigins: true}),
 	)
 	if err != nil {
 		logger.Error("main: error creating server", "error", err)

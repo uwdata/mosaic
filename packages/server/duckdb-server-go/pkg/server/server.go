@@ -7,6 +7,8 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
+	"net/url"
+	"path"
 	"strings"
 
 	"github.com/coder/websocket"
@@ -47,6 +49,7 @@ type handler struct {
 	logger             *slog.Logger
 	authorizer         Authorizer
 	httpHandler        http.Handler
+	websocketOptions   WebSocketOptions
 }
 
 // New constructs a Mosaic HTTP and WebSocket handler backed by db. Omitting
@@ -70,6 +73,7 @@ func newHandler(db commandExecutor, cfg config) *handler {
 		schemaMatchHeaders: cfg.schemaMatchHeaders,
 		logger:             cfg.logger,
 		authorizer:         cfg.authorizer,
+		websocketOptions:   cfg.websocket,
 	}
 
 	s.httpHandler = newCORSHandler(cfg.cors, http.HandlerFunc(s.handleHTTP))
@@ -109,6 +113,11 @@ func (s *handler) writeHTTPError(w http.ResponseWriter, err error) {
 }
 
 func (s *handler) handleWebSocket(w http.ResponseWriter, r *http.Request) {
+	if !webSocketOriginAllowed(r, s.websocketOptions) {
+		http.Error(w, http.StatusText(http.StatusForbidden), http.StatusForbidden)
+		return
+	}
+
 	allowedSchemas := getAllowedSchemas(r, s.schemaMatchHeaders)
 	if len(s.schemaMatchHeaders) > 0 && len(allowedSchemas) == 0 {
 		s.logger.Error("server: no allowed schemas found in request headers", "headers", s.schemaMatchHeaders)
@@ -123,7 +132,8 @@ func (s *handler) handleWebSocket(w http.ResponseWriter, r *http.Request) {
 	}
 
 	conn, err := websocket.Accept(w, r, &websocket.AcceptOptions{
-		InsecureSkipVerify: true,
+		InsecureSkipVerify: s.websocketOptions.AllowAllOrigins,
+		OriginPatterns:     s.websocketOptions.AllowedOrigins,
 		CompressionMode:    websocket.CompressionContextTakeover,
 	})
 	if err != nil {
@@ -148,6 +158,40 @@ func (s *handler) handleWebSocket(w http.ResponseWriter, r *http.Request) {
 			break
 		}
 	}
+}
+
+// Reject origins before authorization so a handshake that websocket.Accept
+// would reject cannot invoke application logic. Accept repeats the check.
+func webSocketOriginAllowed(r *http.Request, options WebSocketOptions) bool {
+	if options.AllowAllOrigins {
+		return true
+	}
+
+	origin := r.Header.Get("Origin")
+	if origin == "" {
+		return true
+	}
+
+	u, err := url.Parse(origin)
+	if err != nil {
+		return false
+	}
+	if strings.EqualFold(r.Host, u.Host) {
+		return true
+	}
+
+	for _, pattern := range options.AllowedOrigins {
+		target := u.Host
+		if strings.Contains(pattern, "://") {
+			target = u.Scheme + "://" + u.Host
+		}
+		matched, err := path.Match(strings.ToLower(pattern), strings.ToLower(target))
+		if err == nil && matched {
+			return true
+		}
+	}
+
+	return false
 }
 
 // A returned error closes the connection. Command errors are written to the
