@@ -44,6 +44,80 @@ mkcert -install # Install mkcert CA
 mkcert localhost # create localhost.pem and localhost-key.pem
 ```
 
+### Programmatic Extension Initialization
+
+The `pkg/extension` package accepts the same extension strings as `--load-extensions`, while keeping flag parsing and
+logging out of the reusable API:
+
+```go
+import (
+	"context"
+	"database/sql"
+
+	"github.com/duckdb/duckdb-go/v2"
+	"github.com/uwdata/mosaic/packages/server/duckdb-server-go/pkg/extension"
+)
+
+func openDB(connectorCtx context.Context) (*sql.DB, error) {
+	specs, err := extension.Parse(
+		"httpfs",
+		"netquack|community",
+		"aws|core_nightly",
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	initializer, err := extension.NewInitializer(connectorCtx, specs...)
+	if err != nil {
+		return nil, err
+	}
+
+	connector, err := duckdb.NewConnector(":memory:", initializer)
+	if err != nil {
+		return nil, err
+	}
+
+	db := sql.OpenDB(connector)
+	if err := db.PingContext(connectorCtx); err != nil {
+		_ = db.Close()
+		return nil, err
+	}
+	return db, nil
+}
+```
+
+`duckdb.NewConnector` is lazy: creating it does not invoke the initializer. `PingContext`, the first query, or an
+explicit `Connect` forces the first physical connection and therefore verifies extension initialization before the
+application reports itself ready. The initializer context is reused for every connection, so it must be a long-lived
+connector-lifetime context rather than a request context.
+
+Structured specs also support extensions that are already installed and standalone extension files:
+
+```go
+specs := []extension.Spec{
+	extension.LoadInstalled("httpfs"),
+	extension.InstallAndLoad("custom_scanner", extension.Repository("/srv/duckdb/repository")),
+	extension.LoadFile("/opt/duckdb/custom_reader.duckdb_extension"),
+	extension.InstallAndLoadFile("/opt/duckdb/custom_writer.duckdb_extension"),
+	extension.InstallAndLoad("netquack", extension.Community),
+}
+```
+
+A custom repository path names a directory laid out as a DuckDB extension repository; it is not the path of a single
+`.duckdb_extension` file. Use `LoadFile` or `InstallAndLoadFile` for a standalone file. `LoadInstalled` skips installation
+and loads an extension that is already present in DuckDB's extension directory.
+
+DuckDB applies `LOAD` to each physical connection, so the initializer intentionally repeats the complete ordered spec
+list whenever the connector creates one. Install-and-load specs repeat `INSTALL` as well; DuckDB can reuse its installed
+artifact, while each connection still receives its own `LOAD`. The first failed `INSTALL` or `LOAD` stops initialization
+and returns a contextual error, so that connection is not created. A later connection retries from the beginning. The
+example server's extension inventory query provides this preflight before HTTP serving starts.
+
+Extensions are trusted native code that run with the server process's privileges. Load only trusted repositories and
+files. DuckDB signature verification is an important safeguard where it applies; allowing unsigned extensions removes
+that safeguard. Local binaries must also match the DuckDB version, extension ABI, operating system, and architecture.
+
 ### Multi-Tenant Access Control
 
 `schema-match-headers` isn't part of the mosaic server API, but is provided here as an example of how to have
