@@ -148,7 +148,7 @@ jobs:
           echo "## Released v$VERSION" >> "$GITHUB_STEP_SUMMARY"
 
       - name: Publish to npm
-        run: pnpm exec lerna publish from-git --yes
+        run: pnpm publish -r --access public --no-git-checks
 
       - name: Build Python packages
         run: |
