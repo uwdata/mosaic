@@ -184,7 +184,7 @@ def bench_http(
 # ---------------------------------------------------------------------------
 
 
-async def ws_query(ws, qtype: str, sql: str) -> bytes:
+async def ws_query(ws: websockets.ClientConnection, qtype: str, sql: str) -> bytes:
     await ws.send(json.dumps({"type": qtype, "sql": sql, "persist": False}))
     resp = await ws.recv()
     return resp if isinstance(resp, bytes) else resp.encode()

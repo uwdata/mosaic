@@ -16,7 +16,7 @@ class SpecWithContext:
     def __init__(self) -> None:
         self.received_context = None
 
-    def to_dict(self, _context=None):
+    def to_dict(self, _context: dict[str, Any] | None = None) -> dict[str, Any]:
         self.received_context = _context
         return {"plot": [], "seen": "context"}
 
@@ -24,7 +24,7 @@ class SpecWithContext:
 class SpecWithoutContext:
     """Stand-in for a vgplot Spec: to_dict() takes no _context argument."""
 
-    def to_dict(self):
+    def to_dict(self) -> dict[str, Any]:
         return {"plot": [], "seen": "plain"}
 
 
@@ -67,7 +67,7 @@ class FrameDataSpec:
     def __init__(self, data: dict[str, Any]) -> None:
         self._data = data
 
-    def to_dict(self, *, _context=None):
+    def to_dict(self, *, _context: dict[str, Any] | None = None) -> dict[str, Any]:
         marks = [{"mark": "dot", "data": {"from": name}} for name in self._data]
         return {"plot": marks, "data": dict(self._data)}
 

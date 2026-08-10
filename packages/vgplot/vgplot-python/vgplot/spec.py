@@ -2,12 +2,18 @@ from __future__ import annotations
 
 import inspect
 import json
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
-from .util import omit_none
-from .params import _ParamBase
 from .data import DataDef, is_frame
+from .params import _ParamBase
 from .plot import _encode_component
+from .util import omit_none
+
+if TYPE_CHECKING:
+    from duckdb import DuckDBPyConnection
+    from narwhals.typing import IntoFrame
+
+    from vgplot._types import Mimebundle
 
 
 def _caller_locals() -> dict[str, Any]:
@@ -170,7 +176,7 @@ class Spec:
     def to_json(self, **kwargs: Any) -> str:
         return json.dumps(self.to_dict(), **kwargs)
 
-    def _repr_mimebundle_(self, **kwargs):
+    def _repr_mimebundle_(self, **kwargs: Any) -> Mimebundle:
         try:
             from mosaic_widget import MosaicWidget
         except ImportError:
@@ -178,10 +184,14 @@ class Spec:
         widget = MosaicWidget(self.to_dict())
         return widget._repr_mimebundle_(**kwargs)
 
-    def show(self, con=None, data=None) -> None:
+    def show(
+        self,
+        con: DuckDBPyConnection | None = None,
+        data: dict[str, IntoFrame] | None = None,
+    ) -> None:
         try:
-            from mosaic_widget import MosaicWidget
             from IPython.display import display
+            from mosaic_widget import MosaicWidget
         except ImportError as e:
             raise ImportError("pip install mosaic-widget") from e
         widget = MosaicWidget(self.to_dict(), con=con, data=data)
@@ -249,7 +259,7 @@ class View:
     def show(self, con: Any = None, data: Any = None) -> None:
         self._build_spec(_caller_locals()).show(con=con, data=data)
 
-    def _repr_mimebundle_(self, **kwargs: Any):
+    def _repr_mimebundle_(self, **kwargs: Any) -> Mimebundle:
         # Walk up frames to find the one where this View object lives
         frame = inspect.currentframe()
         frame = frame.f_back if frame is not None else None

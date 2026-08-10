@@ -27,7 +27,7 @@ class Directive:
     key: str
     value: Any
 
-    def to_kv(self):
+    def to_kv(self) -> tuple[str, Any]:
         return camelize(self.key), self.value
 
 

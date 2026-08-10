@@ -1,9 +1,18 @@
+from __future__ import annotations
+
 import logging
 from hashlib import sha256
-import duckdb
+from typing import TYPE_CHECKING, Any, TypeVar
 
 import pyarrow as pa
 
+if TYPE_CHECKING:
+    from collections.abc import Callable
+
+    import duckdb
+    from diskcache import Cache
+
+R = TypeVar("R", bound=str | bytes | None)
 logger = logging.getLogger(__name__)
 
 
@@ -11,27 +20,28 @@ def get_key(sql: str, command: str) -> str:
     return f"{sha256(sql.encode('utf-8')).hexdigest()}.{command}"
 
 
-def retrieve(cache, query, get):
+# TODO @dangotbanned: Both of these will blow up at runtime
+def retrieve(cache: Cache, query: dict[str, str | Any], get: Callable[[str], R]) -> R:
     sql = query.get("sql")
     command = query.get("type")
 
-    key = get_key(sql, command)
+    key = get_key(sql, command)  # ty: ignore[invalid-argument-type] # pyright: ignore[reportArgumentType]
     result = cache.get(key)
 
     if result:
         logger.debug("Cache hit")
     else:
-        result = get(sql)
+        result = get(sql)  # ty: ignore[invalid-argument-type] # pyright: ignore[reportArgumentType]
         if query.get("persist", False):
             cache[key] = result
-    return result
+    return result  # pyright: ignore[reportReturnType]
 
 
 def get_arrow(con: duckdb.DuckDBPyConnection, sql: str) -> pa.RecordBatchReader:
     return con.query(sql).arrow()
 
 
-def arrow_to_bytes(reader: pa.RecordBatchReader):
+def arrow_to_bytes(reader: pa.RecordBatchReader) -> bytes:
     sink = pa.BufferOutputStream()
     with pa.ipc.new_stream(sink, reader.schema) as writer:
         for batch in reader:
@@ -39,10 +49,10 @@ def arrow_to_bytes(reader: pa.RecordBatchReader):
     return sink.getvalue().to_pybytes()
 
 
-def get_arrow_bytes(con: duckdb.DuckDBPyConnection, sql: str):
+def get_arrow_bytes(con: duckdb.DuckDBPyConnection, sql: str) -> bytes:
     return arrow_to_bytes(get_arrow(con, sql))
 
 
-def get_json(con: duckdb.DuckDBPyConnection, sql: str):
+def get_json(con: duckdb.DuckDBPyConnection, sql: str) -> str | None:
     result = con.query(sql).df()
     return result.to_json(orient="records")

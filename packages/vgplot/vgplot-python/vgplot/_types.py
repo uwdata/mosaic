@@ -1,6 +1,8 @@
+from __future__ import annotations
+
 from collections.abc import Sequence
 from datetime import date
-from typing import Any
+from typing import Any, TypeAlias
 
 from vgplot._compat import sentinel
 
@@ -22,3 +24,5 @@ TransformArg = str | float | bool | _ParamBase
 
 UNSET = sentinel("UNSET")
 """Sentinel for mark channels that were not passed (distinct from None)."""
+
+Mimebundle: TypeAlias = dict[str, str] | tuple[dict[str, Any], dict[str, Any]] | None
