@@ -4,10 +4,10 @@ import inspect
 import json
 from typing import Any
 
-from .util import omit_none
-from .params import _ParamBase
 from .data import DataDef, is_frame
+from .params import _ParamBase
 from .plot import _encode_component
+from .util import omit_none
 
 
 def _caller_locals() -> dict[str, Any]:
@@ -83,7 +83,7 @@ class Spec:
         plotDefaults: dict[str, Any] | None = None,
         plot_defaults: dict[str, Any] | None = None,
         config: dict[str, Any] | None = None,
-        view: dict[str, Any] | None = None,
+        view: dict[str, Any] | View | None = None,
         **extra: Any,
     ) -> None:
         # Serialize any DataDef values in data and build id->name mapping
@@ -180,8 +180,8 @@ class Spec:
 
     def show(self, con=None, data=None):
         try:
-            from mosaic_widget import MosaicWidget
             from IPython.display import display
+            from mosaic_widget import MosaicWidget
         except ImportError as e:
             raise ImportError("pip install mosaic-widget") from e
         widget = MosaicWidget(self.to_dict(), con=con, data=data)
@@ -271,7 +271,7 @@ def spec(
     plotDefaults: dict[str, Any] | None = None,
     plot_defaults: dict[str, Any] | None = None,
     config: dict[str, Any] | None = None,
-    view: dict[str, Any] | None = None,
+    view: dict[str, Any] | View | None = None,
     **extra: Any,
 ) -> Spec:
     """Assemble a Spec from a view plus data sources and params.
