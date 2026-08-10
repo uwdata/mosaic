@@ -3,6 +3,7 @@
 from typing import TYPE_CHECKING
 
 import pytest
+
 import vgplot as vg
 from vgplot.plot import Mark
 
