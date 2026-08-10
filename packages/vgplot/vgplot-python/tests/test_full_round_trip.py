@@ -16,12 +16,12 @@ ESM_DIR = SPEC_DIR / "esm"
 PYTHON_DIR = SPEC_DIR / "python"
 
 
-def load_json_fixture(name: str) -> dict:  # ty: ignore[missing-type-argument]
+def load_json_fixture(name: str) -> dict[str, Any]:
     return json.loads((JSON_DIR / f"{name}.json").read_text(encoding="utf-8"))
 
 
-def run_spec_file_with_exec(path: Path) -> dict:  # ty: ignore[missing-type-argument]
-    namespace: dict[str, Any] = {
+def run_spec_file_with_exec(path: Path) -> dict[str, Any]:
+    namespace = {
         "__name__": "__spec_exec__",
         "__file__": str(path),
         "__builtins__": __builtins__,

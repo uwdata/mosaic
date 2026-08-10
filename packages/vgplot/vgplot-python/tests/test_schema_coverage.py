@@ -5,6 +5,7 @@
 import json
 import re
 from pathlib import Path
+from typing import Any
 
 import vgplot as vg
 
@@ -20,12 +21,12 @@ def _snake(name: str) -> str:
     return re.sub(r"([a-z0-9])([A-Z])", r"\1_\2", name).lower()
 
 
-def _const(node: dict, key: str):  # ty: ignore[missing-type-argument]
+def _const(node: dict[str, dict[str, dict[str, Any]]], key: str) -> str | None:
     prop = node.get("properties", {}).get(key)
     return prop["const"] if isinstance(prop, dict) and "const" in prop else None
 
 
-def _consts(defs: dict, key: str) -> set[str]:  # ty: ignore[missing-type-argument]
+def _consts(defs: dict[str, dict[str, dict[str, Any]]], key: str) -> set[str]:
     """Const values for `key`, including intersection defs (anyOf/allOf) whose
     branches all agree on a single const (e.g. the densityX mark)."""
     out = set()
@@ -34,16 +35,20 @@ def _consts(defs: dict, key: str) -> set[str]:  # ty: ignore[missing-type-argume
         if c is not None:
             out.add(c)
             continue
+        # NOTE @dangotbanned: I have no idea what this code is doing
         branch_consts = {
-            _const(b, key) for b in (d.get("anyOf") or d.get("allOf") or [])
+            _const(b, key)  # ty: ignore[invalid-argument-type] # pyright: ignore[reportArgumentType]
+            for b in (d.get("anyOf") or d.get("allOf") or [])
         } - {None}
         if len(branch_consts) == 1:
-            out |= branch_consts
+            out |= branch_consts  # ty: ignore[unsupported-operator]
     return out
 
 
 def test_schema_surface_is_exported():
-    defs = json.loads(SCHEMA.read_text("utf-8"))["definitions"]
+    defs: dict[str, dict[str, dict[str, Any]]] = json.loads(SCHEMA.read_text("utf-8"))[
+        "definitions"
+    ]
     names = (
         _consts(defs, "mark")
         | _consts(defs, "select")

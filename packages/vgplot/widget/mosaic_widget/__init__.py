@@ -19,7 +19,7 @@ from mosaic_widget.frame_interop import (
 
 if TYPE_CHECKING:
     from narwhals.typing import IntoFrame
-    from typing_extensions import TypeIs
+    from typing_extensions import Buffer, TypeIs
 
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
@@ -124,7 +124,9 @@ class MosaicWidget(anywidget.AnyWidget):
             self._registered_tables.add(name)
         self.on_msg(self._handle_custom_msg)
 
-    def _handle_custom_msg(self, content: dict, buffers: list) -> None:  # ty: ignore[missing-type-argument]
+    def _handle_custom_msg(
+        self, content: dict[str, str | Any], buffers: list[bytes | Buffer]
+    ) -> None:
         logger.debug(f"{content=}, {buffers=}")
         start = time.time()
 
