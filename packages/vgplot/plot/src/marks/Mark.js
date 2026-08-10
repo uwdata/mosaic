@@ -251,7 +251,7 @@ export class Mark extends MosaicClient {
  * Checks if a constant value or a data field is needed.
  * Also avoids misinterpretation of data values as color names.
  * @param {*} c a visual encoding channel spec
- * @param {object} columns named data column arrays
+ * @param {object} [columns] named data column arrays
  * @returns the Plot channel option
  */
 export function channelOption(c, columns) {
