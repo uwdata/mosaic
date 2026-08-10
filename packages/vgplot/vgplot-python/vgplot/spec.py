@@ -178,7 +178,7 @@ class Spec:
         widget = MosaicWidget(self.to_dict())
         return widget._repr_mimebundle_(**kwargs)
 
-    def show(self, con=None, data=None):
+    def show(self, con=None, data=None) -> None:
         try:
             from mosaic_widget import MosaicWidget
             from IPython.display import display

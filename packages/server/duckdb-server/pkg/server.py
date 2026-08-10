@@ -27,51 +27,53 @@ class Handler(Protocol):
 
 
 class SocketHandler(Handler):
-    def __init__(self, ws):
+    def __init__(self, ws) -> None:
         self.ws = ws
 
-    def check(self, ok):
+    def check(self, ok) -> None:
         if not ok:
             logger.warning(f"WebSocket backpressure: {self.ws.get_buffered_amount()}")
 
-    def done(self):
+    def done(self) -> None:
         ok = self.ws.send({}, OpCode.TEXT)
         self.check(ok)
 
-    def arrow(self, buffer):
+    def arrow(self, buffer) -> None:
         ok = self.ws.send(buffer, OpCode.BINARY)
         self.check(ok)
 
-    def json(self, data):
+    def json(self, data) -> None:
         ok = self.ws.send(data, OpCode.TEXT)
         self.check(ok)
 
-    def error(self, error):
+    def error(self, error) -> None:
         ok = self.ws.send({"error": str(error)}, OpCode.TEXT)
         self.check(ok)
 
 
 class HTTPHandler(Handler):
-    def __init__(self, res):
+    def __init__(self, res) -> None:
         self.res = res
 
-    def done(self):
+    def done(self) -> None:
         self.res.end("")
 
-    def arrow(self, buffer):
+    def arrow(self, buffer) -> None:
         self.res.write_header("Content-Type", "application/octet-stream")
         self.res.end(buffer)
 
-    def json(self, data):
+    def json(self, data) -> None:
         self.res.write_header("Content-Type", "application/json")
         self.res.end(data)
 
-    def error(self, error):
+    def error(self, error) -> None:
         self.res.write_status(500)
         self.res.end(str(error))
 
 
-def handle_query(handler: Handler, con: duckdb.DuckDBPyConnection, cache, query):
+def handle_query(
+    handler: Handler, con: duckdb.DuckDBPyConnection, cache, query
+) -> None:
     logger.debug(f"{query=}")
 
     start = time.time()
@@ -102,14 +104,14 @@ def handle_query(handler: Handler, con: duckdb.DuckDBPyConnection, cache, query)
         logger.info(f"DONE. Query took {total} ms.\n{sql}")
 
 
-def on_error(error, res, req):
+def on_error(error, res, req) -> None:
     logger.error(str(error))
     if res is not None:
         res.write_status(500)
         res.end(f"Error {error}")
 
 
-def server(con, cache):
+def server(con, cache) -> None:
     # SSL server
     # app = App(AppOptions(key_file_name="./localhost-key.pem", cert_file_name="./localhost.pem"))
     app = App()

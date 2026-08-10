@@ -80,8 +80,8 @@ class MosaicWidget(anywidget.AnyWidget):
         spec: dict[str, Any] | SupportsToDict | None = None,
         con: duckdb.DuckDBPyConnection | None = None,
         data: dict[str, IntoFrame] | None = None,
-        *args,
-        **kwargs,
+        *args: Any,
+        **kwargs: Any,
     ) -> None:
         """Create a Mosaic widget.
 

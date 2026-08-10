@@ -45,7 +45,7 @@ def _consts(defs: dict[str, dict[str, dict[str, Any]]], key: str) -> set[str]:
     return out
 
 
-def test_schema_surface_is_exported():
+def test_schema_surface_is_exported() -> None:
     defs: dict[str, dict[str, dict[str, Any]]] = json.loads(SCHEMA.read_text("utf-8"))[
         "definitions"
     ]

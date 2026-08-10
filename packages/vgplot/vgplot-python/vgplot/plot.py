@@ -4,13 +4,13 @@ from collections.abc import Mapping
 from dataclasses import dataclass
 from typing import Any
 
-from .util import camelize, omit_none
-from .params import _ParamBase
 from .data import DataDef, is_frame
+from .params import _ParamBase
+from .util import camelize, omit_none
 
 
 class FromRef:
-    def __init__(self, name: str, **opts: Any):
+    def __init__(self, name: str, **opts: Any) -> None:
         self.name = name
         self.opts = {camelize(k): v for k, v in opts.items() if v is not None}
 

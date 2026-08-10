@@ -231,13 +231,13 @@ HEADER_FMT = "  {:<40s} {:>6s} {:>8s} {:>8s} {:>8s} {:>8s}"
 ROW_FMT = "  {:<40s} {:>6s} {:>8.2f} {:>8.2f} {:>8.2f} {:>8.2f}"
 
 
-def print_header():
+def print_header() -> None:
     print(HEADER_FMT.format("QUERY", "SIZE", "MIN", "MEDIAN", "P95", "MEAN"))
     print(HEADER_FMT.format("", "", "(ms)", "(ms)", "(ms)", "(ms)"))
     print("  " + "-" * 82)
 
 
-def print_row(name: str, timings: list[float], resp_size: int):
+def print_row(name: str, timings: list[float], resp_size: int) -> None:
     s = sorted(timings)
     n = len(s)
     mn = s[0]
@@ -506,7 +506,7 @@ def print_comparison(all_results: dict[str, ServerResults]) -> None:
 # ---------------------------------------------------------------------------
 
 
-def main():
+def main() -> None:
     parser = argparse.ArgumentParser(description="Mosaic Server Benchmark")
     parser.add_argument("-p", "--port", type=int, default=3000)
     parser.add_argument("-n", "--iterations", type=int, default=100)
