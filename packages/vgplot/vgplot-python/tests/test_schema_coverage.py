@@ -20,12 +20,12 @@ def _snake(name: str) -> str:
     return re.sub(r"([a-z0-9])([A-Z])", r"\1_\2", name).lower()
 
 
-def _const(node: dict, key: str):
+def _const(node: dict, key: str):  # ty: ignore[missing-type-argument]
     prop = node.get("properties", {}).get(key)
     return prop["const"] if isinstance(prop, dict) and "const" in prop else None
 
 
-def _consts(defs: dict, key: str) -> set[str]:
+def _consts(defs: dict, key: str) -> set[str]:  # ty: ignore[missing-type-argument]
     """Const values for `key`, including intersection defs (anyOf/allOf) whose
     branches all agree on a single const (e.g. the densityX mark)."""
     out = set()

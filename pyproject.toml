@@ -63,6 +63,10 @@ typeCheckingMode = "standard"
 reportUnnecessaryTypeIgnoreComment = "error"
 reportUnusedExpression = "none" # covered by ruff
 
+[tool.ty.rules]
+missing-type-argument = "error"
+possibly-unresolved-reference = "warn"
+
 [dependency-groups]
 dev = [
     "marimo>=0.23.9",

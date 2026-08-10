@@ -124,7 +124,7 @@ class MosaicWidget(anywidget.AnyWidget):
             self._registered_tables.add(name)
         self.on_msg(self._handle_custom_msg)
 
-    def _handle_custom_msg(self, content: dict, buffers: list) -> None:
+    def _handle_custom_msg(self, content: dict, buffers: list) -> None:  # ty: ignore[missing-type-argument]
         logger.debug(f"{content=}, {buffers=}")
         start = time.time()
 

@@ -39,7 +39,7 @@ class ParamValue(_ParamBase):
 
 
 class ParamArray(_ParamBase):
-    def __init__(self, values: list) -> None:
+    def __init__(self, values: list) -> None:  # ty: ignore[missing-type-argument]
         self._values = list(values)
 
     def param_def(self, *, param_names: dict[int, str] | None = None) -> Any:
@@ -55,7 +55,7 @@ class SelectionDef(_ParamBase):
         self._opts = {k: v for k, v in opts.items() if v is not None}
 
     def param_def(self, *, param_names: dict[int, str] | None = None) -> Any:
-        d: dict = {"select": self._select}
+        d: dict = {"select": self._select}  # ty: ignore[missing-type-argument]
         d.update(_resolve(self._opts, param_names))
         return d
 
