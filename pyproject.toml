@@ -15,8 +15,10 @@ extend-select = [
     "FA",  # https://docs.astral.sh/ruff/rules/#flake8-future-annotations-fa
     "TC",  # https://docs.astral.sh/ruff/rules/#flake8-type-checking-tc
     "UP",  # https://docs.astral.sh/ruff/rules/#pyupgrade-up
+    "ANN", 
+    "PYI",
 ]
-extend-safe-fixes = ["FA", "TC", "UP"]
+extend-safe-fixes = ["FA", "TC", "UP", "ANN201", "ANN204"]
 ignore = [
     "G004", 
     "TRY301", 
@@ -42,7 +44,13 @@ ignore = [
     "PLE0604",
     "RUF022", 
     "PLC0105",
+    # NOTE: https://docs.astral.sh/ty/coming-from-mypy-or-pyright/#recommended-configuration
+    "ANN401",
 ]
+
+[tool.ruff.lint.per-file-ignores]
+"**/*.ipynb" = ["ANN"]
+"dev/notebooks/*" = ["ANN"]
 
 [tool.pytest]
 strict_xfail = true
