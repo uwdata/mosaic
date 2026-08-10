@@ -14,13 +14,12 @@ import { v4 as uuidv4 } from 'uuid';
  * @property {Params} params The current params.
  */
 
+/** @type {import('anywidget/types').AnyWidget<Model>} */
 export default {
-  /** @type {import('anywidget/types').Initialize<Model>} */
   initialize(view) {
     view.model.set('preagg_schema', coordinator().preaggregator.schema);
   },
 
-  /** @type {import('anywidget/types').Render<Model>} */
   render(view) {
     view.el.classList.add('mosaic-widget');
     const getSpec = () => view.model.get('spec');
