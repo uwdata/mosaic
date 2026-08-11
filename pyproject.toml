@@ -47,7 +47,6 @@ ignore = [
     "missing-copyright-notice",
     "any-type",
     # NOTE: ruff>=0.16
-    "unsorted-imports",
     "undocumented-warn",
     "useless-expression", 
     "blind-except",
@@ -59,7 +58,7 @@ ignore = [
 
 [tool.ruff.lint.per-file-ignores]
 "**/*.ipynb" = ["ANN"]
-"dev/notebooks/*" = ["ANN", "N", "useless-return"]
+"dev/notebooks/*" = ["ANN", "N", "useless-return", "unsorted-imports"]
 "**/*sentinel*.py" = ["suspicious-pickle-usage"]
 "packages/vgplot/vgplot-python/vgplot/_compat.py" = ["N"]
 "**tests/**/*.py" = ["magic-value-comparison"]

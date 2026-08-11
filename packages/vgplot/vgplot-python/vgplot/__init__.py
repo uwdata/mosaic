@@ -1,50 +1,50 @@
-from .spec import spec, Spec, View
-from .data import parquet, csv, spatial, table, json, data
+from ._generated import *  # noqa: F403
+from ._generated import __all__ as _generated_all
+from .data import csv, data, json, parquet, spatial, table
+from .encodings import channels, sql
 from .params import param, selection
-from .encodings import sql, channels
 from .plot import (
-    plot,
-    source,
-    mark,
-    directive,
-    margins,
-    vconcat,
-    hconcat,
-    vspace,
-    hspace,
-    slider,
-    select,
-    checkbox,
-    menu,
-    search,
-    table_input,
-    input,
-    option,
     brush,
-    sort,
+    checkbox,
+    color_legend,
+    directive,
+    hconcat,
+    highlight,
+    hspace,
+    input,
     interval_x,
-    interval_y,
     interval_xy,
-    toggle,
-    toggle_x,
-    toggle_y,
-    toggle_color,
+    interval_y,
+    margins,
+    mark,
+    menu,
     nearest_x,
     nearest_y,
-    region,
-    highlight,
+    opacity_legend,
+    option,
     pan,
     pan_x,
     pan_y,
     pan_zoom,
     pan_zoom_x,
     pan_zoom_y,
-    color_legend,
-    opacity_legend,
+    plot,
+    region,
+    search,
+    select,
+    slider,
+    sort,
+    source,
     symbol_legend,
+    table_input,
+    toggle,
+    toggle_color,
+    toggle_x,
+    toggle_y,
+    vconcat,
+    vspace,
 )
-from ._generated import *  # noqa: F403
-from ._generated import __all__ as _generated_all
+from .spec import Spec, View, spec
 
 __all__ = [
     "Spec",
