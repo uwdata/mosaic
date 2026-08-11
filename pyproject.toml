@@ -48,13 +48,12 @@ ignore = [
     "type-name-incorrect-variance",
     "missing-copyright-notice",
     "any-type",
+    "non-lowercase-variable-in-function",
     # NOTE: ruff>=0.16
     "undocumented-warn", # (#1093)
     "useless-expression", 
     "blind-except",
     "exec-builtin",
-    # This PR
-    "non-lowercase-variable-in-function",
 ]
 
 [tool.ruff.lint.per-file-ignores]
