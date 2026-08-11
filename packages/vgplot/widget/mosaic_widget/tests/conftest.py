@@ -86,7 +86,7 @@ _BACKENDS: Final = (
     Backend("pandas"),
     Backend("modin", "modin.pandas", Warn.COPY),
     Backend("ibis", warn=Warn.ALL),
-    Backend("duckdb", warn=Warn.ALL),
+    Backend("duckdb"),
     Backend("dask", "dask.dataframe", Warn.ALL),
 )
 

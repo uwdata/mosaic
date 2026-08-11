@@ -1,9 +1,10 @@
 from __future__ import annotations
 
 import logging
-from typing import TYPE_CHECKING, Any, TypeAlias
+from typing import TYPE_CHECKING, Any, Final, TypeAlias
 
 import narwhals as nw
+from narwhals import Implementation as impl
 from narwhals.dependencies import is_into_dataframe, is_into_lazyframe
 
 if TYPE_CHECKING:
@@ -18,23 +19,14 @@ logger.addHandler(logging.NullHandler())
 
 _NON_FRAME_TYPES = (str, bytes, int, float, bool, dict, list, tuple, type(None))
 
+_DUCKDB_NATIVE: Final = frozenset((impl.DUCKDB, impl.PANDAS, impl.POLARS, impl.PYARROW))
+
 
 def is_registrable_frame(obj: Any) -> TypeIs[IntoFrame]:
     """Return True if `obj` is a dataframe-like object that DuckDB can register."""
     return not isinstance(obj, _NON_FRAME_TYPES) and (
         is_into_dataframe(obj) or is_into_lazyframe(obj)
     )
-
-
-# TODO @dangotbanned: Replace with Narwhals
-def _is_frame_native_to_duckdb(frame: IntoFrame) -> bool:
-    """Check if a frame is natively supported by DuckDB to be registered as a virtual table with zero-copy guarantees."""
-
-    # "<class '{module_path}'>" -> "{module_path}" via slicing
-    module_path = str(type(frame))[8:-2]
-    frame_backend = module_path.split(".")[0]
-    backends_with_native_virtual_table_support = {"pandas", "polars", "pyarrow"}
-    return frame_backend in backends_with_native_virtual_table_support
 
 
 # TODO @dangotbanned: Avoid materializing `DuckDBPyRelation`
@@ -47,12 +39,11 @@ def frame_to_duckdb_registrable(frame: IntoFrame) -> object:
 
     If the passed `frame` is a lazy frame, it is materialized.
     """
-    if _is_frame_native_to_duckdb(frame):
-        return frame
-
+    nw_frame = nw.from_native(frame)
+    if nw_frame.implementation in _DUCKDB_NATIVE:
+        return nw_frame.to_native()
     # If frame is not natively registrable to DuckDB, we convert it to an Arrow table via Narwhals.
     # Based on the backend-specific implementation, this may or may not be zero-copy.
-    nw_frame = nw.from_native(frame)
     logger.warning(
         f"Converting {type(frame)} to Arrow table for DuckDB registration. This may not be a zero-copy operation."
     )
@@ -60,6 +51,5 @@ def frame_to_duckdb_registrable(frame: IntoFrame) -> object:
     # Some backends like Ibis, PySpark, etc. have lazy-only Narwhals support, so we must materialize them
     if isinstance(nw_frame, nw.LazyFrame):
         logger.warning("Materializing lazy frame")
-        nw_frame = nw_frame.collect()
-
+        return nw_frame.collect(impl.PYARROW)
     return nw_frame.to_arrow()
