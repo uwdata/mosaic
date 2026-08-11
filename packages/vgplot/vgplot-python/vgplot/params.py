@@ -39,10 +39,10 @@ class ParamValue(_ParamBase):
 
 
 class ParamArray(_ParamBase):
-    def __init__(self, values: list) -> None:
-        self._values = list(values)
+    def __init__(self, values: list[Any]) -> None:
+        self._values: list[Any] = list(values)
 
-    def param_def(self, *, param_names: dict[int, str] | None = None) -> Any:
+    def param_def(self, *, param_names: dict[int, str] | None = None) -> list[Any]:
         return [_resolve(v, param_names) for v in self._values]
 
     def __repr__(self) -> str:
@@ -54,8 +54,8 @@ class SelectionDef(_ParamBase):
         self._select = select
         self._opts = {k: v for k, v in opts.items() if v is not None}
 
-    def param_def(self, *, param_names: dict[int, str] | None = None) -> Any:
-        d: dict = {"select": self._select}
+    def param_def(self, *, param_names: dict[int, str] | None = None) -> dict[str, Any]:
+        d: dict[str, Any] = {"select": self._select}
         d.update(_resolve(self._opts, param_names))
         return d
 

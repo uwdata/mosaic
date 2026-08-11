@@ -13,6 +13,14 @@ from pkg.query import get_arrow_bytes, get_json, retrieve
 
 if TYPE_CHECKING:
     import duckdb
+    from diskcache import Cache
+    from duckdb import DuckDBPyConnection as Con
+    from socketify import Request as Req
+    from socketify import Response as Res
+    from socketify import SendStatus as Status
+    from socketify import WebSocket as Ws
+
+    from pkg.query import _QueryParams
 
 logger = logging.getLogger(__name__)
 
@@ -21,57 +29,62 @@ SLOW_QUERY_THRESHOLD = 5000
 
 class Handler(Protocol):
     def done(self) -> None: ...
-    def arrow(self, buffer: Any) -> None: ...
+    def arrow(self, buffer: bytes) -> None: ...
     def json(self, data: Any) -> None: ...
     def error(self, error: Any) -> None: ...
 
 
 class SocketHandler(Handler):
-    def __init__(self, ws):
-        self.ws = ws
+    def __init__(self, ws: Ws) -> None:
+        self.ws: Ws = ws
 
-    def check(self, ok):
+    def check(self, ok: Ws | Status | None) -> None:
         if not ok:
             logger.warning(f"WebSocket backpressure: {self.ws.get_buffered_amount()}")
 
-    def done(self):
+    def done(self) -> None:
         ok = self.ws.send({}, OpCode.TEXT)
         self.check(ok)
 
-    def arrow(self, buffer):
+    def arrow(self, buffer: bytes) -> None:
         ok = self.ws.send(buffer, OpCode.BINARY)
         self.check(ok)
 
-    def json(self, data):
+    def json(self, data: Any) -> None:
         ok = self.ws.send(data, OpCode.TEXT)
         self.check(ok)
 
-    def error(self, error):
+    def error(self, error: object) -> None:
         ok = self.ws.send({"error": str(error)}, OpCode.TEXT)
         self.check(ok)
 
 
 class HTTPHandler(Handler):
-    def __init__(self, res):
+    def __init__(self, res: Res) -> None:
         self.res = res
 
-    def done(self):
+    def done(self) -> None:
         self.res.end("")
 
-    def arrow(self, buffer):
+    def arrow(self, buffer: bytes) -> None:
         self.res.write_header("Content-Type", "application/octet-stream")
         self.res.end(buffer)
 
-    def json(self, data):
+    def json(self, data: Any) -> None:
         self.res.write_header("Content-Type", "application/json")
         self.res.end(data)
 
-    def error(self, error):
+    def error(self, error: object) -> None:
         self.res.write_status(500)
         self.res.end(str(error))
 
 
-def handle_query(handler: Handler, con: duckdb.DuckDBPyConnection, cache, query):
+def handle_query(
+    handler: Handler,
+    con: duckdb.DuckDBPyConnection,
+    cache: Cache,
+    query: _QueryParams,
+) -> None:
     logger.debug(f"{query=}")
 
     start = time.time()
@@ -102,14 +115,14 @@ def handle_query(handler: Handler, con: duckdb.DuckDBPyConnection, cache, query)
         logger.info(f"DONE. Query took {total} ms.\n{sql}")
 
 
-def on_error(error, res, req):
+def on_error(error: object, res: Res, req: Req) -> None:
     logger.error(str(error))
     if res is not None:
         res.write_status(500)
         res.end(f"Error {error}")
 
 
-def server(con, cache):
+def server(con: Con, cache: Cache) -> None:
     # SSL server
     # app = App(AppOptions(key_file_name="./localhost-key.pem", cert_file_name="./localhost.pem"))
     app = App()
@@ -117,11 +130,11 @@ def server(con, cache):
     # faster serialization than standard json
     app.json_serializer(ujson)
 
-    def ws_message(ws, message, opcode):
+    def ws_message(ws: Ws, message: str | bytes | bytearray, opcode: OpCode) -> None:
         handler = SocketHandler(ws)
 
         try:
-            query = ujson.loads(message)
+            query: _QueryParams = ujson.loads(message)
         except Exception as e:
             logger.exception("Error reading message from WebSocket")
             handler.error(e)
@@ -129,7 +142,7 @@ def server(con, cache):
 
         handle_query(handler, con, cache, query)
 
-    async def http_handler(res, req):
+    async def http_handler(res: Res, req: Req) -> None:
         res.write_header("Access-Control-Allow-Origin", "*")
         res.write_header("Access-Control-Request-Method", "*")
         res.write_header("Access-Control-Allow-Methods", "OPTIONS, POST, GET")
@@ -139,15 +152,19 @@ def server(con, cache):
         method = req.get_method()
 
         handler = HTTPHandler(res)
-
+        data: _QueryParams
         if method == "OPTIONS":
             handler.done()
         elif method == "GET":
-            data = ujson.loads(req.get_query("query"))
+            message: str | bytes | bytearray = req.get_query("query")  # pyright: ignore[reportAssignmentType]
+            data = ujson.loads(message)
             handle_query(handler, con, cache, data)
         elif method == "POST":
-            data = await res.get_json()
-            handle_query(handler, con, cache, data)
+            maybe_data: _QueryParams | None = await res.get_json()
+            if maybe_data:
+                handle_query(handler, con, cache, maybe_data)
+            else:
+                raise NotImplementedError
 
     app.ws(
         "/*",

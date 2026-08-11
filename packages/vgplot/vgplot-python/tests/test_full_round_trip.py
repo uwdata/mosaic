@@ -16,12 +16,12 @@ ESM_DIR = SPEC_DIR / "esm"
 PYTHON_DIR = SPEC_DIR / "python"
 
 
-def load_json_fixture(name: str) -> dict:
+def load_json_fixture(name: str) -> dict[str, Any]:
     return json.loads((JSON_DIR / f"{name}.json").read_text(encoding="utf-8"))
 
 
-def run_spec_file_with_exec(path: Path) -> dict:
-    namespace: dict[str, Any] = {
+def run_spec_file_with_exec(path: Path) -> dict[str, Any]:
+    namespace = {
         "__name__": "__spec_exec__",
         "__file__": str(path),
         "__builtins__": __builtins__,
@@ -45,13 +45,13 @@ ESM_EXAMPLES = sorted(path.stem for path in ESM_DIR.glob("*.js"))
 PYTHON_EXAMPLES = sorted(path.stem for path in PYTHON_DIR.glob("*.py"))
 
 
-def test_generated_examples_stay_in_sync():
+def test_generated_examples_stay_in_sync() -> None:
     assert PYTHON_EXAMPLES == JSON_EXAMPLES
     assert ESM_EXAMPLES == JSON_EXAMPLES
 
 
 @pytest.mark.parametrize("example_name", PYTHON_EXAMPLES)
-def test_python_round_trip(example_name: str):
+def test_python_round_trip(example_name: str) -> None:
     generated = run_spec_file_with_exec(PYTHON_DIR / f"{example_name}.py")
     original = load_json_fixture(example_name)
 
