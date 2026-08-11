@@ -14,7 +14,7 @@ class SpecWithContext:
     """Stand-in for a vgplot View: to_dict() accepts the caller frame locals."""
 
     def __init__(self) -> None:
-        self.received_context = None
+        self.received_context: dict[str, Any] | None = None
 
     def to_dict(self, _context: dict[str, Any] | None = None) -> dict[str, Any]:
         self.received_context = _context
@@ -65,7 +65,7 @@ class FrameDataSpec:
     """
 
     def __init__(self, data: dict[str, Any]) -> None:
-        self._data = data
+        self._data: dict[str, Any] = data
 
     def to_dict(self, *, _context: dict[str, Any] | None = None) -> dict[str, Any]:
         marks = [{"mark": "dot", "data": {"from": name}} for name in self._data]
