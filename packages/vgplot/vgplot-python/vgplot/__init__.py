@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from ._generated import *  # noqa: F403
 from ._generated import __all__ as _generated_all
 from .data import csv, data, json, parquet, spatial, table

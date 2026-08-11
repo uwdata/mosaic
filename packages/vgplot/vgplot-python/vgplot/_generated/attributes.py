@@ -1,8 +1,14 @@
 # DO NOT EDIT. Generated from the Mosaic JSON schema by bin/generate-python-api.js.
 # Regenerate with: pnpm run generate:python-api
 
-from .._types import AttrValue
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
 from ..plot import Directive
+
+if TYPE_CHECKING:
+    from .._types import AttrValue
 
 
 def align(value: AttrValue) -> Directive:

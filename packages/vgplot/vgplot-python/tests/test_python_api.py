@@ -1,5 +1,7 @@
 # Unit tests for the vgplot Python API, covering behaviors that the
 # generated-spec round-trip suite does not exercise directly.
+from __future__ import annotations
+
 from typing import TYPE_CHECKING
 
 import pytest

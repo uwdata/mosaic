@@ -1,5 +1,7 @@
 # DO NOT EDIT. Generated from the Mosaic JSON schema by bin/generate-python-api.js.
 # Regenerate with: pnpm run generate:python-api
+from __future__ import annotations
+
 from .attributes import *  # noqa: F403
 from .attributes import __all__ as _attr_all
 from .encodings import *  # noqa: F403

@@ -13,7 +13,8 @@ fix = true
 [tool.ruff.lint]
 preview = true
 explicit-preview-rules = true
-pydocstyle = { convention = "numpy" }
+pydocstyle.convention = "numpy"
+isort.required-imports = ["from __future__ import annotations"]
 extend-select = [
     "FA",  # https://docs.astral.sh/ruff/rules/#flake8-future-annotations-fa
     "TC",  # https://docs.astral.sh/ruff/rules/#flake8-type-checking-tc
@@ -24,7 +25,8 @@ extend-select = [
     "suspicious-pickle-usage",
     "magic-value-comparison",
     "N",
-    "collapsible-else-if"
+    "collapsible-else-if",
+    "missing-required-import",
 ]
 extend-safe-fixes = [
     "FA", 
@@ -58,13 +60,15 @@ ignore = [
 
 [tool.ruff.lint.per-file-ignores]
 "**/*.ipynb" = ["ANN"]
-"dev/notebooks/*" = ["ANN", "N", "useless-return", "unsorted-imports"]
+"dev/notebooks/*" = ["ANN", "N", "useless-return", "unsorted-imports", "missing-required-import"]
 "**/*sentinel*.py" = ["suspicious-pickle-usage"]
 "packages/vgplot/vgplot-python/vgplot/_compat.py" = ["N"]
 "**tests/**/*.py" = ["magic-value-comparison"]
 
-# TODO @dangotbanned: Fix in codegen
-"**/specs/python/*.py" = ["mixed-case-variable-in-global-scope"]
+"**/specs/python/*.py" = [
+    "mixed-case-variable-in-global-scope", # TODO @dangotbanned: Fix in codegen
+    "missing-required-import",
+]
 
 [tool.pytest]
 strict_xfail = true

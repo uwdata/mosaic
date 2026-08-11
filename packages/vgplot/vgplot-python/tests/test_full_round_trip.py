@@ -4,6 +4,8 @@
 # in sync (same filenames).
 #
 # Run: pytest packages/vgplot/vgplot-python/tests/test_full_round_trip.py
+from __future__ import annotations
+
 import json
 from pathlib import Path
 from typing import Any

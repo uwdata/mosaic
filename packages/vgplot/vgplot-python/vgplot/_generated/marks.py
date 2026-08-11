@@ -1,6 +1,8 @@
 # DO NOT EDIT. Generated from the Mosaic JSON schema by bin/generate-python-api.js.
 # Regenerate with: pnpm run generate:python-api
 
+from __future__ import annotations
+
 from typing import Any
 
 from .._types import UNSET, ChannelValue, MarkData
