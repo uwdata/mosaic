@@ -54,7 +54,6 @@ ignore = [
     "subprocess-run-without-check",
     "exec-builtin",
     "call-datetime-without-tzinfo",
-    "invalid-all-object",
     # This PR
     "non-lowercase-variable-in-function",
 ]
