@@ -16,18 +16,18 @@ explicit-preview-rules = true
 pydocstyle.convention = "numpy"
 isort.required-imports = ["from __future__ import annotations"]
 extend-select = [
-    "FA",  # https://docs.astral.sh/ruff/rules/#flake8-future-annotations-fa
-    "TC",  # https://docs.astral.sh/ruff/rules/#flake8-type-checking-tc
-    "UP",  # https://docs.astral.sh/ruff/rules/#pyupgrade-up
-    "ANN", 
-    "PYI",
+    "FA",   # https://docs.astral.sh/ruff/rules/#flake8-future-annotations-fa
+    "TC",   # https://docs.astral.sh/ruff/rules/#flake8-type-checking-tc
+    "UP",   # https://docs.astral.sh/ruff/rules/#pyupgrade-up
+    "ANN",  # https://docs.astral.sh/ruff/rules/#flake8-annotations-ann
+    "PYI",  # https://docs.astral.sh/ruff/rules/#flake8-pyi-pyi
+    "N",    # https://docs.astral.sh/ruff/rules/#pep8-naming-n
+    "EM",   # https://docs.astral.sh/ruff/rules/#flake8-errmsg-em
     "undefined-local-with-import-star",
     "suspicious-pickle-usage",
     "magic-value-comparison",
-    "N",
     "collapsible-else-if",
     "missing-required-import",
-    "EM", # https://docs.astral.sh/ruff/rules/#flake8-errmsg-em
 ]
 extend-safe-fixes = [
     "FA", 
