@@ -29,7 +29,7 @@ def run_spec_file_with_exec(path: Path) -> dict[str, Any]:
         "__builtins__": __builtins__,
     }
     code = compile(path.read_text(encoding="utf-8"), str(path), "exec")
-    exec(code, namespace)
+    exec(code, namespace)  # ruff: ignore[exec-builtin]
 
     view = namespace.get("view")
     if view is None:
@@ -38,7 +38,7 @@ def run_spec_file_with_exec(path: Path) -> dict[str, Any]:
         raise AssertionError(f"`view` in `{path.name}` does not expose to_dict()")
     # Execute to_dict() within the spec namespace so frame inspection finds the right variables
     namespace["__view__"] = view
-    exec("__result__ = __view__.to_dict()", namespace)
+    exec("__result__ = __view__.to_dict()", namespace)  # ruff: ignore[exec-builtin]
     return namespace["__result__"]
 
 

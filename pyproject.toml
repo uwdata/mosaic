@@ -52,7 +52,6 @@ ignore = [
     # NOTE: ruff>=0.16
     "undocumented-warn", # (#1093)
     "useless-expression", 
-    "exec-builtin",
 ]
 
 [tool.ruff.lint.per-file-ignores]
