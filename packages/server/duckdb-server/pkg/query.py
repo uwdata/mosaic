@@ -30,7 +30,6 @@ def get_key(sql: str, command: str) -> str:
     return f"{sha256(sql.encode('utf-8')).hexdigest()}.{command}"
 
 
-# TODO @dangotbanned: Both of these will blow up at runtime
 def retrieve(cache: Cache, query: _QueryParams, get: Callable[[str], R]) -> R:
     sql = query.get("sql")
     command = query.get("type")
