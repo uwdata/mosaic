@@ -49,13 +49,11 @@ ignore = [
     "missing-copyright-notice",
     "any-type",
     "non-lowercase-variable-in-function",
-    # NOTE: ruff>=0.16
-    "useless-expression", 
 ]
 
 [tool.ruff.lint.per-file-ignores]
 "**/*.ipynb" = ["ANN"]
-"dev/notebooks/*" = ["ANN", "N", "useless-return", "unsorted-imports", "missing-required-import"]
+"dev/notebooks/*" = ["ANN", "N", "useless-return", "unsorted-imports", "missing-required-import", "useless-expression"]
 "**/*sentinel*.py" = ["suspicious-pickle-usage"]
 "packages/vgplot/vgplot-python/vgplot/_compat.py" = ["N"]
 "**tests/**/*.py" = ["magic-value-comparison"]

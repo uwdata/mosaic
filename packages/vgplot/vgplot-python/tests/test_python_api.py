@@ -32,9 +32,9 @@ class TestGeneratedMarks:
     def test_unknown_name_raises(self) -> None:
         # No __getattr__ fallback: a missing or mis-typed API name is an error.
         with pytest.raises(AttributeError):
-            vg.some_custom_mark  # pyright: ignore[reportAttributeAccessIssue] # ty: ignore[unresolved-attribute]
+            _ = vg.some_custom_mark  # pyright: ignore[reportAttributeAccessIssue] # ty: ignore[unresolved-attribute]
         with pytest.raises(AttributeError):
-            vg.definitely_not_a_real_directive  # pyright: ignore[reportAttributeAccessIssue] # ty: ignore[unresolved-attribute]
+            _ = vg.definitely_not_a_real_directive  # pyright: ignore[reportAttributeAccessIssue] # ty: ignore[unresolved-attribute]
 
 
 class TestDataHelpers:
@@ -110,11 +110,11 @@ if TYPE_CHECKING:
 
     def typing_dunder_all() -> None:
         # Ok
-        vg.arrow
-        vg.errorbar_x
-        vg.mark
+        _ = vg.arrow
+        _ = vg.errorbar_x
+        _ = vg.mark
 
         # TODO @dangotbanned: Get pyright to error on these
         # Error (`_generated` modules)
-        vg.attributes  # ty: ignore[unresolved-attribute]
-        vg.marks  # ty: ignore[unresolved-attribute]
+        _ = vg.attributes  # ty: ignore[unresolved-attribute]
+        _ = vg.marks  # ty: ignore[unresolved-attribute]
