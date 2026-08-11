@@ -16,14 +16,12 @@ if TYPE_CHECKING:
 
     from typing_extensions import TypedDict
 
-    class SchemaObject(TypedDict, closed=True):
+    class Schema(TypedDict, closed=True, total=False):
         properties: dict[str, dict[str, Any]]
+        anyOf: Sequence[Schema]
 
-    class SchemaUnion(TypedDict, closed=True):
-        anyOf: Sequence[SchemaObject]
-
-    class Definitions(TypedDict, extra_items=SchemaObject | SchemaUnion):
-        PlotAttributes: SchemaObject
+    class Definitions(TypedDict, extra_items=Schema):
+        PlotAttributes: Schema
 
 
 ROOT = Path(__file__).resolve().parents[4]
@@ -38,25 +36,19 @@ def _snake(name: str) -> str:
     return re.sub(r"([a-z0-9])([A-Z])", r"\1_\2", name).lower()
 
 
-def _const(node: SchemaObject, key: str) -> str | None:
-    return node.get("properties", {}).get(key, {}).get("const")
-
 
 def _consts(defs: Definitions, key: str) -> set[str]:
-    """Const values for `key`, including intersection defs (anyOf/allOf) whose
-    branches all agree on a single const (e.g. the densityX mark)."""
     out: set[str] = set()
     for d in defs.values():
-        if "properties" in d:
-            c = _const(d, key)  # pyright: ignore[reportArgumentType]
-            if c is not None:
-                out.add(c)
-                continue
-
-        if "anyOf" in d:
-            for b in d["anyOf"]:  # pyright: ignore[reportGeneralTypeIssues]
-                if const := _const(b, key):
-                    out.add(const)
+        if (p := d.get("properties")) and (c := p.get(key, {}).get("const")):
+            out.add(c)
+        elif u := d.get("anyOf"):
+            out.update(
+                c
+                for member in u
+                if (p := member.get("properties"))
+                and (c := p.get(key, {}).get("const"))
+            )
     return out
 
 
@@ -66,7 +58,7 @@ def test_schema_surface_is_exported() -> None:
         _consts(defs, "mark")
         | _consts(defs, "select")
         | _consts(defs, "input")
-        | set(defs["PlotAttributes"]["properties"])
+        | set(defs["PlotAttributes"].get("properties", ()))
     ) - IGNORE
 
     exported = set(vg.__all__)
