@@ -20,36 +20,42 @@ extend-select = [
     "UP",  # https://docs.astral.sh/ruff/rules/#pyupgrade-up
     "ANN", 
     "PYI",
-    "F403",
+    "undefined-local-with-import-star",
     "suspicious-pickle-usage",
     "magic-value-comparison",
     "N",
-    "PLR5501"
+    "collapsible-else-if"
 ]
-extend-safe-fixes = ["FA", "TC", "UP", "ANN201", "ANN204"]
+extend-safe-fixes = [
+    "FA", 
+    "TC", 
+    "UP", 
+    "missing-return-type-undocumented-public-function", 
+    "missing-return-type-special-method",
+]
 ignore = [
-    "G004", 
-    "TRY301", 
-    "EM102", 
-    "EM101", 
-    "TRY003", 
-    "FBT002", 
-    "S608", 
-    "TRY002", 
-    "ARG001", 
+    "logging-f-string", 
+    "raise-within-try", 
+    "f-string-in-exception", 
+    "raw-string-in-exception", 
+    "raise-vanilla-args", 
+    "boolean-default-value-positional-argument", 
+    "hardcoded-sql-expression", 
+    "raise-vanilla-class", 
+    "unused-function-argument", 
     # NOTE: ruff>=0.16
-    "CPY001",
-    "I001",
-    "LOG009",
-    "B018", 
-    "BLE001",
-    "PLW1510",
-    "S102",
-    "DTZ001",
-    "PLE0604",
-    "PLC0105",
+    "missing-copyright-notice",
+    "unsorted-imports",
+    "undocumented-warn",
+    "useless-expression", 
+    "blind-except",
+    "subprocess-run-without-check",
+    "exec-builtin",
+    "call-datetime-without-tzinfo",
+    "invalid-all-object",
+    "type-name-incorrect-variance",
     # NOTE: https://docs.astral.sh/ty/coming-from-mypy-or-pyright/#recommended-configuration
-    "ANN401",
+    "any-type",
     # This PR
     "non-lowercase-variable-in-function",
 ]
