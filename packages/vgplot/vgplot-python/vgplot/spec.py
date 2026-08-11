@@ -89,7 +89,7 @@ class Spec:
         plotDefaults: dict[str, Any] | None = None,
         plot_defaults: dict[str, Any] | None = None,
         config: dict[str, Any] | None = None,
-        view: dict[str, Any] | None = None,
+        view: dict[str, Any] | View | None = None,
         **extra: Any,
     ) -> None:
         # Serialize any DataDef values in data and build id->name mapping
@@ -281,7 +281,7 @@ def spec(
     plotDefaults: dict[str, Any] | None = None,
     plot_defaults: dict[str, Any] | None = None,
     config: dict[str, Any] | None = None,
-    view: dict[str, Any] | None = None,
+    view: dict[str, Any] | View | None = None,
     **extra: Any,
 ) -> Spec:
     """Assemble a Spec from a view plus data sources and params.

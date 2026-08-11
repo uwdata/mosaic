@@ -2,11 +2,14 @@ from __future__ import annotations
 
 from collections.abc import Mapping
 from dataclasses import dataclass
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from .data import DataDef, is_frame
 from .params import _ParamBase
 from .util import camelize, omit_none
+
+if TYPE_CHECKING:
+    from vgplot.spec import View
 
 
 class FromRef:
@@ -95,7 +98,7 @@ def plot(
     *items: Mark | Directive | Mapping[str, Any],
     param_names: dict[int, str] | None = None,
     **kwargs: Any,
-) -> Any:
+) -> View:
     from .spec import View
 
     marks: list[dict[str, Any]] = []
@@ -172,7 +175,7 @@ def _encode_component(
 # Layout helpers
 def vconcat(
     *items: Any, param_names: dict[int, str] | None = None, **kwargs: Any
-) -> Any:
+) -> View:
     from .spec import View
 
     return View(
@@ -182,7 +185,7 @@ def vconcat(
 
 def hconcat(
     *items: Any, param_names: dict[int, str] | None = None, **kwargs: Any
-) -> Any:
+) -> View:
     from .spec import View
 
     return View(
@@ -190,13 +193,13 @@ def hconcat(
     )
 
 
-def hspace(value: int | str) -> Any:
+def hspace(value: int | str) -> View:
     from .spec import View
 
     return View({"hspace": value})
 
 
-def vspace(value: int | str) -> Any:
+def vspace(value: int | str) -> View:
     from .spec import View
 
     return View({"vspace": value})
@@ -417,7 +420,7 @@ def symbol_legend(
 _INPUT_ALIASES = {"bind": "as", "source": "from"}
 
 
-def input(kind: str, **opts: Any) -> Any:
+def input(kind: str, **opts: Any) -> View:
     from .spec import View
 
     payload: dict[str, Any] = {"input": kind}
@@ -443,7 +446,7 @@ def slider(
     step: Any = None,
     value: Any = None,
     **opts: Any,
-) -> Any:
+) -> View:
     return input(
         "slider",
         label=label,
@@ -463,7 +466,7 @@ def select(
     multiple: bool = False,
     value: Any = None,
     **opts: Any,
-) -> Any:
+) -> View:
     return input(
         "select",
         label=label,
@@ -475,7 +478,7 @@ def select(
     )
 
 
-def checkbox(label: str, bind: Any, value: bool = False, **opts: Any) -> Any:
+def checkbox(label: str, bind: Any, value: bool = False, **opts: Any) -> View:
     return input("checkbox", label=label, bind=bind, value=value, **opts)
 
 
@@ -488,7 +491,7 @@ def menu(
     column: Any = None,
     filter_by: Any = None,
     **opts: Any,
-) -> Any:
+) -> View:
     return input(
         "menu",
         label=label,
@@ -510,7 +513,7 @@ def search(
     filter_by: Any = None,
     type: Any = None,
     **opts: Any,
-) -> Any:
+) -> View:
     return input(
         "search",
         label=label,
@@ -534,7 +537,7 @@ def table_input(
     row_batch: Any = None,
     align: Any = None,
     **opts: Any,
-) -> Any:
+) -> View:
     return input(
         "table",
         source=source,
