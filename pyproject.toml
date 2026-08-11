@@ -27,6 +27,7 @@ extend-select = [
     "N",
     "collapsible-else-if",
     "missing-required-import",
+    "EM", # https://docs.astral.sh/ruff/rules/#flake8-errmsg-em
 ]
 extend-safe-fixes = [
     "FA", 
@@ -34,12 +35,12 @@ extend-safe-fixes = [
     "UP", 
     "missing-return-type-undocumented-public-function", 
     "missing-return-type-special-method",
+    "f-string-in-exception", 
+    "raw-string-in-exception",
 ]
 ignore = [
     "logging-f-string", 
     "raise-within-try", 
-    "f-string-in-exception", 
-    "raw-string-in-exception", 
     "raise-vanilla-args", 
     "boolean-default-value-positional-argument", 
     "hardcoded-sql-expression", 

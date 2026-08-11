@@ -145,7 +145,8 @@ def http_post(host: str, port: int, payload: dict) -> bytes:
         resp = conn.getresponse()
         data = resp.read()
         if resp.status != 200:  # ruff: ignore[magic-value-comparison]
-            raise RuntimeError(f"HTTP {resp.status}: {data[:200]}")
+            msg = f"HTTP {resp.status}: {data[:200]}"
+            raise RuntimeError(msg)
         return data
     finally:
         conn.close()

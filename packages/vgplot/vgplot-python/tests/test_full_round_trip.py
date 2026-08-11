@@ -33,9 +33,11 @@ def run_spec_file_with_exec(path: Path) -> dict[str, Any]:
 
     view = namespace.get("view")
     if view is None:
-        raise AssertionError(f"`{path.name}` must define a top-level `view` variable")
+        msg = f"`{path.name}` must define a top-level `view` variable"
+        raise AssertionError(msg)
     if not hasattr(view, "to_dict"):
-        raise AssertionError(f"`view` in `{path.name}` does not expose to_dict()")
+        msg = f"`view` in `{path.name}` does not expose to_dict()"
+        raise AssertionError(msg)
     # Execute to_dict() within the spec namespace so frame inspection finds the right variables
     namespace["__view__"] = view
     exec("__result__ = __view__.to_dict()", namespace)  # ruff: ignore[exec-builtin]

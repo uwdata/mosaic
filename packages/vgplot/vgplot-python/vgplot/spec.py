@@ -193,7 +193,8 @@ class Spec:
             from IPython.display import display
             from mosaic_widget import MosaicWidget
         except ImportError as e:
-            raise ImportError("pip install mosaic-widget") from e
+            msg = "pip install mosaic-widget"
+            raise ImportError(msg) from e
         widget = MosaicWidget(self.to_dict(), con=con, data=data)
         display(widget)
 

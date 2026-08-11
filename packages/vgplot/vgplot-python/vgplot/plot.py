@@ -112,7 +112,8 @@ def plot(
         elif isinstance(item, (dict, Mapping)):
             marks.append({k: encode_value(v, param_names) for k, v in item.items()})
         else:
-            raise TypeError(f"Unsupported plot item: {item}")
+            msg = f"Unsupported plot item: {item}"
+            raise TypeError(msg)
     root: dict[str, Any] = {"plot": marks}
     root.update(directives)
     return View(root, **kwargs)
