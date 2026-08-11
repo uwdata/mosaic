@@ -36,8 +36,7 @@ def _snake(name: str) -> str:
     return re.sub(r"([a-z0-9])([A-Z])", r"\1_\2", name).lower()
 
 
-
-def _consts(defs: Definitions, key: str) -> set[str]:
+def get_discriminator_values(defs: Definitions, key: str) -> set[str]:
     out: set[str] = set()
     for d in defs.values():
         if (p := d.get("properties")) and (c := p.get(key, {}).get("const")):
@@ -55,9 +54,9 @@ def _consts(defs: Definitions, key: str) -> set[str]:
 def test_schema_surface_is_exported() -> None:
     defs: Definitions = json.loads(SCHEMA.read_text("utf-8"))["definitions"]
     names = (
-        _consts(defs, "mark")
-        | _consts(defs, "select")
-        | _consts(defs, "input")
+        get_discriminator_values(defs, "mark")
+        | get_discriminator_values(defs, "select")
+        | get_discriminator_values(defs, "input")
         | set(defs["PlotAttributes"].get("properties", ()))
     ) - IGNORE
 
