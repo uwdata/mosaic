@@ -265,7 +265,7 @@ def wait_for_server(host: str, port: int, timeout: int = 30) -> bool:
         try:
             http_post(host, port, {"type": "json", "sql": "SELECT 1"})
             return True
-        except Exception:
+        except Exception:  # ruff: ignore[blind-except]
             time.sleep(1)
     return False
 
@@ -403,7 +403,7 @@ def run_benchmarks(
     print(f"Checking server at http://{host}:{port} ...")
     try:
         http_post(host, port, {"type": "json", "sql": "SELECT 1"})
-    except Exception as e:
+    except Exception as e:  # ruff: ignore[blind-except]
         print(f"ERROR: No server responding at http://{host}:{port}: {e}")
         return results
     print("Server is up.\n")
