@@ -47,7 +47,7 @@ ignore = [
     "missing-copyright-notice",
     "any-type",
     # NOTE: ruff>=0.16
-    "undocumented-warn",
+    "undocumented-warn", # (#1093)
     "useless-expression", 
     "blind-except",
     "subprocess-run-without-check",
