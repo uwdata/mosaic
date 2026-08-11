@@ -52,7 +52,6 @@ ignore = [
     "undocumented-warn", # (#1093)
     "useless-expression", 
     "blind-except",
-    "subprocess-run-without-check",
     "exec-builtin",
     # This PR
     "non-lowercase-variable-in-function",

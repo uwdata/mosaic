@@ -288,6 +288,7 @@ def build_and_start_rust(port: int) -> subprocess.Popen | None:
         cwd=rust_dir,
         capture_output=True,
         text=True,
+        check=False,
     )
     if result.returncode != 0:
         print(f"  Build failed:\n{result.stderr}")
@@ -314,6 +315,7 @@ def build_and_start_go(port: int) -> subprocess.Popen | None:
         cwd=go_dir,
         capture_output=True,
         text=True,
+        check=False,
     )
     if result.returncode != 0:
         print(f"  Build failed:\n{result.stderr}")
@@ -348,6 +350,7 @@ def build_and_start_node(port: int) -> subprocess.Popen | None:
         cwd=node_dir,
         capture_output=True,
         text=True,
+        check=False,
     )
     if result.returncode != 0:
         print(f"  Install failed:\n{result.stderr}")
