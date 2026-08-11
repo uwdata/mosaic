@@ -247,6 +247,6 @@ __all__ = [
     "stddev",
     "stddev_pop",
     "sum",
-    "variance",
     "var_pop",
+    "variance",
 ]

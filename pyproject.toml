@@ -8,6 +8,7 @@ members = [
 # https://github.com/charliermarsh/ruff
 [tool.ruff]
 extend-include = ["*.ipynb"]
+fix = true
 
 [tool.ruff.lint]
 preview = true
@@ -48,7 +49,6 @@ ignore = [
     "S102",
     "DTZ001",
     "PLE0604",
-    "RUF022", 
     "PLC0105",
     # NOTE: https://docs.astral.sh/ty/coming-from-mypy-or-pyright/#recommended-configuration
     "ANN401",
