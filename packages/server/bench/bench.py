@@ -140,7 +140,7 @@ def http_post(host: str, port: int, payload: dict) -> bytes:
         )
         resp = conn.getresponse()
         data = resp.read()
-        if resp.status != 200:
+        if resp.status != 200:  # ruff: ignore[magic-value-comparison]
             raise RuntimeError(f"HTTP {resp.status}: {data[:200]}")
         return data
     finally:
@@ -220,7 +220,7 @@ async def bench_ws(
 
 
 def fmt_bytes(n: int) -> str:
-    if n < 1024:
+    if n < 1024:  # ruff: ignore[magic-value-comparison]
         return f"{n}B"
     if n < 1024 * 1024:
         return f"{n / 1024:.1f}K"
@@ -325,7 +325,7 @@ def build_and_start_go(port: int) -> subprocess.Popen | None:
 
 def build_and_start_python(port: int) -> subprocess.Popen | None:
     py_dir = SERVER_DIR / "duckdb-server"
-    if port != 3000:
+    if port != 3000:  # ruff: ignore[magic-value-comparison]
         print("  WARNING: Python server does not support custom ports, using 3000")
     print("  Starting Python server ...")
     return subprocess.Popen(
@@ -349,7 +349,7 @@ def build_and_start_node(port: int) -> subprocess.Popen | None:
         print(f"  Install failed:\n{result.stderr}")
         return None
 
-    if port != 3000:
+    if port != 3000:  # ruff: ignore[magic-value-comparison]
         print("  WARNING: Node server does not support custom ports, using 3000")
     print("  Starting Node server ...")
     return subprocess.Popen(
@@ -448,7 +448,7 @@ def run_benchmarks(
 def print_comparison(all_results: dict[str, ServerResults]) -> None:
     """Print a side-by-side comparison of all servers."""
     servers = list(all_results.keys())
-    if len(servers) < 2:
+    if len(servers) < 2:  # ruff: ignore[magic-value-comparison]
         return
 
     # Collect which transports were benchmarked
@@ -461,7 +461,7 @@ def print_comparison(all_results: dict[str, ServerResults]) -> None:
 
         # Only include servers that have results for this transport
         active = [s for s in servers if transport in all_results[s]]
-        if len(active) < 2:
+        if len(active) < 2:  # ruff: ignore[magic-value-comparison]
             continue
 
         labels = list(all_results[active[0]][transport].keys())

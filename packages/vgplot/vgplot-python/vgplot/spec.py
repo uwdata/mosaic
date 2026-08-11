@@ -86,7 +86,7 @@ class Spec:
         data: dict[str, Any] | None = None,
         data_names: dict[int, str] | None = None,
         params: dict[str, Any] | None = None,
-        plotDefaults: dict[str, Any] | None = None,
+        plotDefaults: dict[str, Any] | None = None,  # ruff: ignore[invalid-argument-name]
         plot_defaults: dict[str, Any] | None = None,
         config: dict[str, Any] | None = None,
         view: dict[str, Any] | View | None = None,
@@ -210,7 +210,7 @@ class View:
         view: dict[str, Any],
         *,
         data: dict[str, Any] | None = None,
-        plotDefaults: dict[str, Any] | None = None,
+        plotDefaults: dict[str, Any] | None = None,  # ruff: ignore[invalid-argument-name]
         plot_defaults: dict[str, Any] | None = None,
         config: dict[str, Any] | None = None,
         **extra: Any,
@@ -278,7 +278,7 @@ def spec(
     *args: Any,
     data: dict[str, Any] | None = None,
     params: dict[str, Any] | None = None,
-    plotDefaults: dict[str, Any] | None = None,
+    plotDefaults: dict[str, Any] | None = None,  # ruff: ignore[invalid-argument-name]
     plot_defaults: dict[str, Any] | None = None,
     config: dict[str, Any] | None = None,
     view: dict[str, Any] | View | None = None,

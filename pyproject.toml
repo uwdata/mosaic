@@ -10,6 +10,8 @@ members = [
 extend-include = ["*.ipynb"]
 
 [tool.ruff.lint]
+preview = true
+explicit-preview-rules = true
 pydocstyle = { convention = "numpy" }
 extend-select = [
     "FA",  # https://docs.astral.sh/ruff/rules/#flake8-future-annotations-fa
@@ -17,6 +19,12 @@ extend-select = [
     "UP",  # https://docs.astral.sh/ruff/rules/#pyupgrade-up
     "ANN", 
     "PYI",
+    "F401", 
+    "F403",
+    "suspicious-pickle-usage",
+    "magic-value-comparison",
+    "N",
+    "PLR5501"
 ]
 extend-safe-fixes = ["FA", "TC", "UP", "ANN201", "ANN204"]
 ignore = [
@@ -38,7 +46,6 @@ ignore = [
     "ISC004",
     "BLE001",
     "PLW1510",
-    "RUF100",
     "S102",
     "DTZ001",
     "PLE0604",
@@ -46,11 +53,19 @@ ignore = [
     "PLC0105",
     # NOTE: https://docs.astral.sh/ty/coming-from-mypy-or-pyright/#recommended-configuration
     "ANN401",
+    # This PR
+    "non-lowercase-variable-in-function",
 ]
 
 [tool.ruff.lint.per-file-ignores]
 "**/*.ipynb" = ["ANN"]
-"dev/notebooks/*" = ["ANN"]
+"dev/notebooks/*" = ["ANN", "N"]
+"**/*sentinel*.py" = ["suspicious-pickle-usage"]
+"packages/vgplot/vgplot-python/vgplot/_compat.py" = ["N"]
+"**tests/**/*.py" = ["magic-value-comparison"]
+
+# TODO @dangotbanned: Fix in codegen
+"**/specs/python/*.py" = ["mixed-case-variable-in-global-scope"]
 
 [tool.pytest]
 strict_xfail = true

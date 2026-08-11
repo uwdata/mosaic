@@ -11,7 +11,7 @@ logging.basicConfig(stream=sys.stdout, level=logging.DEBUG)
 
 
 def serve() -> None:
-    db_path = sys.argv[1] if len(sys.argv) >= 2 else ":memory:"  # noqa: PLR2004
+    db_path = sys.argv[1] if len(sys.argv) >= 2 else ":memory:"  # ruff: ignore[magic-value-comparison]
 
     logger.info(f"Using DuckDB {db_path}")
 

@@ -32,7 +32,7 @@ def test_unset_pickle() -> None:
     import pickle
 
     unset = _import_unset()
-    assert pickle.loads(pickle.dumps(unset)) is unset  # noqa: S301
+    assert pickle.loads(pickle.dumps(unset)) is unset
 
 
 def test_unset_type_expression_union() -> None:

@@ -43,7 +43,7 @@ from .plot import (
     opacity_legend,
     symbol_legend,
 )
-from ._generated import *  # noqa: F401, F403
+from ._generated import *  # noqa: F403
 from ._generated import __all__ as _generated_all
 
 __all__ = [
