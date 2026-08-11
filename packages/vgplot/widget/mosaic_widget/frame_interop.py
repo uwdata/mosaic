@@ -29,7 +29,6 @@ def is_registrable_frame(obj: Any) -> TypeIs[IntoFrame]:
     )
 
 
-# TODO @dangotbanned: Avoid materializing `DuckDBPyRelation`
 def frame_to_duckdb_registrable(frame: IntoFrame) -> object:
     """Converts a native dataframe(-like) object to a DuckDB-registrable object.
 
