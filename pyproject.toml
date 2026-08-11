@@ -42,9 +42,11 @@ ignore = [
     "boolean-default-value-positional-argument", 
     "hardcoded-sql-expression", 
     "raise-vanilla-class", 
-    "unused-function-argument", 
-    # NOTE: ruff>=0.16
+    "unused-function-argument",
+    "type-name-incorrect-variance",
     "missing-copyright-notice",
+    "any-type",
+    # NOTE: ruff>=0.16
     "unsorted-imports",
     "undocumented-warn",
     "useless-expression", 
@@ -53,9 +55,6 @@ ignore = [
     "exec-builtin",
     "call-datetime-without-tzinfo",
     "invalid-all-object",
-    "type-name-incorrect-variance",
-    # NOTE: https://docs.astral.sh/ty/coming-from-mypy-or-pyright/#recommended-configuration
-    "any-type",
     # This PR
     "non-lowercase-variable-in-function",
 ]
