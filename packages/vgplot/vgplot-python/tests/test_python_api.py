@@ -53,7 +53,7 @@ class TestParams:
     def test_datetime_param(self) -> None:
         from datetime import datetime
 
-        assert vg.param(datetime(2013, 5, 13, 10, 30)).param_def() == {
+        assert vg.param(datetime(2013, 5, 13, 10, 30)).param_def() == {  # ruff: ignore[call-datetime-without-tzinfo]
             "date": "2013-05-13T10:30:00"
         }
 
