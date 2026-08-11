@@ -30,17 +30,15 @@ func TestParseAndInstall(t *testing.T) {
 		{
 			name: "comma grammar",
 			values: []string{
-				"spatial, h3|community, aws | core_nightly, custom|https://example.test/extensions",
+				"spatial, h3|community, aws | core_nightly",
 			},
 			want: []string{
 				"INSTALL 'spatial'",
 				"LOAD 'spatial'",
-				"INSTALL 'h3' FROM community",
+				"INSTALL 'h3' FROM \"community\"",
 				"LOAD 'h3'",
-				"INSTALL 'aws' FROM core_nightly",
+				"INSTALL 'aws' FROM \"core_nightly\"",
 				"LOAD 'aws'",
-				"INSTALL 'custom' FROM 'https://example.test/extensions'",
-				"LOAD 'custom'",
 			},
 		},
 		{
@@ -49,25 +47,25 @@ func TestParseAndInstall(t *testing.T) {
 			want: []string{
 				"INSTALL 'spatial'",
 				"LOAD 'spatial'",
-				"INSTALL 'h3' FROM community",
+				"INSTALL 'h3' FROM \"community\"",
 				"LOAD 'h3'",
-				"INSTALL 'aws' FROM core_nightly",
+				"INSTALL 'aws' FROM \"core_nightly\"",
 				"LOAD 'aws'",
 			},
 		},
 		{
-			name:   "custom local repository",
-			values: []string{"custom| /opt/duckdb repository "},
+			name:   "repository alias is an identifier",
+			values: []string{"custom| duckdb extensions "},
 			want: []string{
-				"INSTALL 'custom' FROM '/opt/duckdb repository'",
+				"INSTALL 'custom' FROM \"duckdb extensions\"",
 				"LOAD 'custom'",
 			},
 		},
 		{
 			name:   "semantic values are left to DuckDB",
-			values: []string{"custom'; DROP TABLE secrets; --|Core"},
+			values: []string{"custom'; DROP TABLE secrets; --|repo\"; DROP TABLE secrets; --"},
 			want: []string{
-				"INSTALL 'custom''; DROP TABLE secrets; --' FROM Core",
+				"INSTALL 'custom''; DROP TABLE secrets; --' FROM \"repo\"\"; DROP TABLE secrets; --\"",
 				"LOAD 'custom''; DROP TABLE secrets; --'",
 			},
 		},
@@ -178,18 +176,15 @@ func TestDirectOperations(t *testing.T) {
 	if err := extensions.InstallAndLoad(ctx, execer, "future_repo", "future7"); err != nil {
 		t.Fatalf("InstallAndLoad() error = %v", err)
 	}
-	if err := extensions.InstallAndLoad(
+	if err := extensions.InstallAndLoadFromCustomRepository(
 		ctx,
 		execer,
 		"custom_repo",
 		"https://example.test/O'Brien repo",
 	); err != nil {
-		t.Fatalf("InstallAndLoad() error = %v", err)
+		t.Fatalf("InstallAndLoadFromCustomRepository() error = %v", err)
 	}
 	if err := extensions.InstallAndLoad(ctx, execer, "case_sensitive_repo", "Core"); err != nil {
-		t.Fatalf("InstallAndLoad() error = %v", err)
-	}
-	if err := extensions.InstallAndLoad(ctx, execer, "relative_custom_repo", "./Core"); err != nil {
 		t.Fatalf("InstallAndLoad() error = %v", err)
 	}
 	if err := extensions.LoadInstalled(ctx, execer, "preinstalled"); err != nil {
@@ -215,14 +210,12 @@ func TestDirectOperations(t *testing.T) {
 	wantQueries := []string{
 		"INSTALL 'default_repo'",
 		"LOAD 'default_repo'",
-		"INSTALL 'future_repo' FROM future7",
+		"INSTALL 'future_repo' FROM \"future7\"",
 		"LOAD 'future_repo'",
 		"INSTALL 'custom_repo' FROM 'https://example.test/O''Brien repo'",
 		"LOAD 'custom_repo'",
-		"INSTALL 'case_sensitive_repo' FROM Core",
+		"INSTALL 'case_sensitive_repo' FROM \"Core\"",
 		"LOAD 'case_sensitive_repo'",
-		"INSTALL 'relative_custom_repo' FROM './Core'",
-		"LOAD 'relative_custom_repo'",
 		"LOAD 'preinstalled'",
 		"INSTALL '/opt/O''Brien/custom.duckdb_extension'",
 		"LOAD 'custom'",
@@ -336,9 +329,9 @@ func TestParseAndInstallRepeatsEachInvocation(t *testing.T) {
 	}
 
 	want := []string{
-		"INSTALL 'spatial' FROM core",
+		"INSTALL 'spatial' FROM \"core\"",
 		"LOAD 'spatial'",
-		"INSTALL 'spatial' FROM core",
+		"INSTALL 'spatial' FROM \"core\"",
 		"LOAD 'spatial'",
 	}
 	if got := queries(execer.snapshot()); !reflect.DeepEqual(got, want) {
@@ -363,9 +356,9 @@ func TestParseAndInstallPreservesOrderAndDuplicates(t *testing.T) {
 		"LOAD 'httpfs'",
 		"INSTALL 'HTTPFS'",
 		"LOAD 'HTTPFS'",
-		"INSTALL 'spatial' FROM core",
+		"INSTALL 'spatial' FROM \"core\"",
 		"LOAD 'spatial'",
-		"INSTALL 'SPATIAL' FROM community",
+		"INSTALL 'SPATIAL' FROM \"community\"",
 		"LOAD 'SPATIAL'",
 		"INSTALL 'httpfs'",
 		"LOAD 'httpfs'",
@@ -384,12 +377,20 @@ func TestDirectOperationsQuoteDuckDBValues(t *testing.T) {
 		ctx,
 		execer,
 		"custom'; DROP TABLE secrets; --",
-		"/srv/O'Brien; ATTACH 'evil.db",
+		"repo\"; DROP TABLE secrets; --",
 	); err != nil {
 		t.Fatalf("InstallAndLoad() error = %v", err)
 	}
-	if err := extensions.InstallAndLoad(ctx, execer, "literal", " /srv/repository "); err != nil {
+	if err := extensions.InstallAndLoad(ctx, execer, "literal", " alias name "); err != nil {
 		t.Fatalf("InstallAndLoad() error = %v", err)
+	}
+	if err := extensions.InstallAndLoadFromCustomRepository(
+		ctx,
+		execer,
+		"remote",
+		"/srv/O'Brien; ATTACH 'evil.db",
+	); err != nil {
+		t.Fatalf("InstallAndLoadFromCustomRepository() error = %v", err)
 	}
 	if err := extensions.LoadFile(
 		ctx,
@@ -407,10 +408,12 @@ func TestDirectOperationsQuoteDuckDBValues(t *testing.T) {
 	}
 
 	want := []string{
-		"INSTALL 'custom''; DROP TABLE secrets; --' FROM '/srv/O''Brien; ATTACH ''evil.db'",
+		"INSTALL 'custom''; DROP TABLE secrets; --' FROM \"repo\"\"; DROP TABLE secrets; --\"",
 		"LOAD 'custom''; DROP TABLE secrets; --'",
-		"INSTALL 'literal' FROM ' /srv/repository '",
+		"INSTALL 'literal' FROM \" alias name \"",
 		"LOAD 'literal'",
+		"INSTALL 'remote' FROM '/srv/O''Brien; ATTACH ''evil.db'",
+		"LOAD 'remote'",
 		"LOAD ' /opt/O''Brien; DROP TABLE secrets.duckdb_extension '",
 		"INSTALL '/opt/O''Brien''; DROP TABLE secrets.duckdb_extension'",
 		"LOAD 'O''Brien''; DROP TABLE secrets'",
@@ -464,7 +467,7 @@ func TestParseAndInstallIsSafeForConcurrentUse(t *testing.T) {
 				errorsCh <- err
 				return
 			}
-			want := []string{"INSTALL 'spatial' FROM core", "LOAD 'spatial'"}
+			want := []string{"INSTALL 'spatial' FROM \"core\"", "LOAD 'spatial'"}
 			if got := queries(execer.snapshot()); !reflect.DeepEqual(got, want) {
 				errorsCh <- errors.New("unexpected statements")
 			}
@@ -503,6 +506,17 @@ func TestOperationsValidateDependencies(t *testing.T) {
 			name: "install and load",
 			call: func(ctx context.Context, execer driver.ExecerContext) error {
 				return extensions.InstallAndLoad(ctx, execer, "spatial", "")
+			},
+		},
+		{
+			name: "install and load from custom repository",
+			call: func(ctx context.Context, execer driver.ExecerContext) error {
+				return extensions.InstallAndLoadFromCustomRepository(
+					ctx,
+					execer,
+					"spatial",
+					"https://example.test/extensions",
+				)
 			},
 		},
 		{

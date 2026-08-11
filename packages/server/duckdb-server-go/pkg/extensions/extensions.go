@@ -30,8 +30,8 @@ func Validate(values ...string) error {
 
 // ParseAndInstall accepts the command-line grammar name|repository,name2 and
 // installs and loads each entry in order. Each argument may contain comma-
-// separated entries, so a []string can be expanded directly. An omitted
-// repository uses DuckDB's default.
+// separated entries, so a []string can be expanded directly. Repository values
+// are DuckDB aliases; an omitted repository uses DuckDB's default.
 func ParseAndInstall(
 	ctx context.Context,
 	execer driver.ExecerContext,
@@ -105,11 +105,36 @@ func parseEntryError(valueIndex, entryIndex int, err error) error {
 }
 
 // InstallAndLoad uses DuckDB's default repository when repository is empty.
+// Otherwise, repository is a DuckDB repository alias.
 func InstallAndLoad(
 	ctx context.Context,
 	execer driver.ExecerContext,
 	name string,
 	repository string,
+) error {
+	repositorySQL := ""
+	if repository != "" {
+		repositorySQL = quoteIdentifier(repository)
+	}
+	return installAndLoad(ctx, execer, name, repository, repositorySQL)
+}
+
+// InstallAndLoadFromCustomRepository installs from a repository URL or path.
+func InstallAndLoadFromCustomRepository(
+	ctx context.Context,
+	execer driver.ExecerContext,
+	name string,
+	repository string,
+) error {
+	return installAndLoad(ctx, execer, name, repository, quote(repository))
+}
+
+func installAndLoad(
+	ctx context.Context,
+	execer driver.ExecerContext,
+	name string,
+	repository string,
+	repositorySQL string,
 ) error {
 	if err := validate(ctx, execer); err != nil {
 		return err
@@ -117,8 +142,8 @@ func InstallAndLoad(
 
 	nameSQL := quote(name)
 	query := "INSTALL " + nameSQL
-	if repository != "" {
-		query += " FROM " + repositorySQL(repository)
+	if repositorySQL != "" {
+		query += " FROM " + repositorySQL
 	}
 	if _, err := execer.ExecContext(ctx, query, nil); err != nil {
 		return namedError(ErrInstall, name, repository, err)
@@ -208,27 +233,8 @@ func filePath(path string) string {
 	return "./" + path
 }
 
-// DuckDB distinguishes repository names from paths by SQL token type. A bare
-// relative repository path therefore needs an explicit ./ prefix.
-func repositorySQL(repository string) string {
-	if repositoryIdentifier(repository) {
-		return repository
-	}
-	return quote(repository)
-}
-
-func repositoryIdentifier(repository string) bool {
-	for index := 0; index < len(repository); index++ {
-		char := repository[index]
-		if char == '_' || char >= 'a' && char <= 'z' || char >= 'A' && char <= 'Z' {
-			continue
-		}
-		if index > 0 && char >= '0' && char <= '9' {
-			continue
-		}
-		return false
-	}
-	return repository != ""
+func quoteIdentifier(value string) string {
+	return `"` + strings.ReplaceAll(value, `"`, `""`) + `"`
 }
 
 func quote(value string) string {
