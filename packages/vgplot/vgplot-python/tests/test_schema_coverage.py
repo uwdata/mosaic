@@ -2,12 +2,29 @@
 # input in the Mosaic JSON schema (the source of truth). Marks and attributes
 # are generated; interactors and inputs are hand-written. This guards against a
 # schema addition that was never generated or hand-added.
+from __future__ import annotations
+
 import json
 import re
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import vgplot as vg
+
+if TYPE_CHECKING:
+    from collections.abc import Sequence
+
+    from typing_extensions import TypedDict
+
+    class SchemaObject(TypedDict, closed=True):
+        properties: dict[str, dict[str, Any]]
+
+    class SchemaUnion(TypedDict, closed=True):
+        anyOf: Sequence[SchemaObject]
+
+    class Definitions(TypedDict, extra_items=SchemaObject | SchemaUnion):
+        PlotAttributes: SchemaObject
+
 
 ROOT = Path(__file__).resolve().parents[4]
 SCHEMA = ROOT / "docs" / "public" / "schema" / "latest.json"
@@ -21,34 +38,30 @@ def _snake(name: str) -> str:
     return re.sub(r"([a-z0-9])([A-Z])", r"\1_\2", name).lower()
 
 
-def _const(node: dict[str, dict[str, dict[str, Any]]], key: str) -> str | None:
-    prop = node.get("properties", {}).get(key)
-    return prop["const"] if isinstance(prop, dict) and "const" in prop else None
+def _const(node: SchemaObject, key: str) -> str | None:
+    return node.get("properties", {}).get(key, {}).get("const")
 
 
-def _consts(defs: dict[str, dict[str, dict[str, Any]]], key: str) -> set[str]:
+def _consts(defs: Definitions, key: str) -> set[str]:
     """Const values for `key`, including intersection defs (anyOf/allOf) whose
     branches all agree on a single const (e.g. the densityX mark)."""
-    out = set()
+    out: set[str] = set()
     for d in defs.values():
-        c = _const(d, key)
-        if c is not None:
-            out.add(c)
-            continue
-        # NOTE @dangotbanned: I have no idea what this code is doing
-        branch_consts = {
-            _const(b, key)  # ty: ignore[invalid-argument-type] # pyright: ignore[reportArgumentType]
-            for b in (d.get("anyOf") or d.get("allOf") or [])
-        } - {None}
-        if len(branch_consts) == 1:
-            out |= branch_consts  # ty: ignore[unsupported-operator]
+        if "properties" in d:
+            c = _const(d, key)  # pyright: ignore[reportArgumentType]
+            if c is not None:
+                out.add(c)
+                continue
+
+        if "anyOf" in d:
+            for b in d["anyOf"]:  # pyright: ignore[reportGeneralTypeIssues]
+                if const := _const(b, key):
+                    out.add(const)
     return out
 
 
 def test_schema_surface_is_exported() -> None:
-    defs: dict[str, dict[str, dict[str, Any]]] = json.loads(SCHEMA.read_text("utf-8"))[
-        "definitions"
-    ]
+    defs: Definitions = json.loads(SCHEMA.read_text("utf-8"))["definitions"]
     names = (
         _consts(defs, "mark")
         | _consts(defs, "select")
