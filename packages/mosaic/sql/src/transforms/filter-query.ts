@@ -14,7 +14,9 @@ import { WithClauseNode } from '../ast/with.js';
  * the given base table via a CTE, so every reference to the table sees the
  * filtered rows. Skips scalar subqueries.
  * @param query The query to clone and extend.
- * @param table The base table as a table name or table reference node.
+ * @param table The base table as a table name or table reference node. The
+ *  query is matched on the full table path, including any database or schema
+ *  namespaces, so a query over `s.t1` is not filtered by a bare `t1`.
  * @param filter The filter predicate expression to add. May only reference
  *  columns of the table, not aliases assigned elsewhere in the query.
  */
@@ -31,15 +33,20 @@ export function filterPushdown(
     return clone;
   }
 
-  // determine unique name for filtered CTE
+  // collect referenced table paths (to test for the filtered table) and
+  // visible names (to avoid collisions with the filtered CTE name)
+  const paths = new Set<string>();
   const names = new Set<string>();
   walk(clone, (node) => {
     if (isTableRef(node)) {
+      paths.add(pathKey(node.table));
       names.add(node.name);
     }
   });
-  if (!names.has(tableRef.name)) {
-    // filtered table not present in query, nothing to do
+  if (!paths.has(pathKey(tableRef.table))) {
+    // filtered table not present in query, nothing to do. This must match on
+    // the full path, like the rewrite below: a query over "s"."t1" does not
+    // reference a bare "t1", and vice versa.
     return clone;
   }
   let filteredName = `_${tableRef.name}`;
@@ -58,7 +65,14 @@ export function filterPushdown(
       return; // not a reference to the filtered table
     }
     if (parent instanceof ColumnRefNode) {
-      return; // column qualifiers keep binding to the visible name
+      if (node.table.length > 1) {
+        // a multi-part qualifier names a catalog location, which a CTE can
+        // never occupy, so it can not be kept visible: rewrite it to the
+        // visible name the filtered source is aliased to
+        // @ts-expect-error set read-only property
+        node.table = [visibleName];
+      }
+      return; // single-part qualifiers keep binding to the visible name
     }
     // @ts-expect-error set read-only property
     node.table = [filteredName];
@@ -86,6 +100,10 @@ export function filterPushdown(
  */
 export function filterQuery(query: Query, table: string | TableRefNode) {
   return (filter: FilterExpr) => filterPushdown(query, table, filter);
+}
+
+function pathKey(table: string[]) {
+  return JSON.stringify(table);
 }
 
 function arrayEquals(a: unknown[], b: unknown[]) {

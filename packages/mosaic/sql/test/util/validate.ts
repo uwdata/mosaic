@@ -11,8 +11,9 @@ import { DuckDB } from '@uwdata/mosaic-duckdb';
  * ## Fixture schema
  *
  * Two identical tables, `t1` and `t2` (`t2` exists for joins and set
- * operations). Every column name encodes its type, and each name maps to
- * exactly one type.
+ * operations), plus a copy of each in the `s` schema (`s.t1` and `s.t2` exist
+ * for schema-qualified table references). Every column name encodes its type,
+ * and each name maps to exactly one type.
  *
  * | column           | type        |
  * | ---------------- | ----------- |
@@ -34,6 +35,8 @@ const COLUMNS: Record<string, string> = {
 
 const TABLES = ['t1', 't2'];
 
+const SCHEMAS = ['s'];
+
 const columnDefs = Object.entries(COLUMNS)
   .map(([name, type]) => `"${name}" ${type}`)
   .join(', ');
@@ -42,6 +45,12 @@ async function createDB(): Promise<DuckDB> {
   const db = new DuckDB();
   for (const table of TABLES) {
     await db.exec(`CREATE TABLE ${table} (${columnDefs})`);
+  }
+  for (const schema of SCHEMAS) {
+    await db.exec(`CREATE SCHEMA ${schema}`);
+    for (const table of TABLES) {
+      await db.exec(`CREATE TABLE ${schema}.${table} (${columnDefs})`);
+    }
   }
   return db;
 }

@@ -141,4 +141,72 @@ describe('filterPushdown', () => {
       'WITH "_t1" AS (SELECT * FROM "t1" WHERE ("num2" > 2)) SELECT ("num1" / (SELECT count(*) AS "count" FROM "t1")) AS "norm" FROM "_t1" AS "t1"'
     );
   });
+
+  it('updates schema-qualified tables', async () => {
+    const t1 = new TableRefNode(['s', 't1']);
+    const q = Query.select(column('num1', t1)).from(t1);
+    const f = filterPushdown(q, t1, gt('num2', 2));
+    await expect(f).toBeValidQuery(
+      'WITH "_t1" AS (SELECT * FROM "s"."t1" WHERE ("num2" > 2)) SELECT "t1"."num1" AS "num1" FROM "_t1" AS "t1"'
+    );
+  });
+
+  it('updates catalog-qualified tables', async () => {
+    // "memory" is the catalog name of DuckDB's default in-memory database
+    const t1 = new TableRefNode(['memory', 's', 't1']);
+    const q = Query.select(column('num1', t1)).from(t1);
+    const f = filterPushdown(q, t1, gt('num2', 2));
+    await expect(f).toBeValidQuery(
+      'WITH "_t1" AS (SELECT * FROM "memory"."s"."t1" WHERE ("num2" > 2)) SELECT "t1"."num1" AS "num1" FROM "_t1" AS "t1"'
+    );
+  });
+
+  it('updates schema-qualified tables in joins', async () => {
+    const t1 = new TableRefNode(['s', 't1']);
+    const t2 = new TableRefNode(['s', 't2']);
+    const q = Query
+      .select(column('num1', t1))
+      .from(join(t1, t2, {
+        on: eq(column('num3', t1), column('num3', t2))
+      }));
+    const f = filterPushdown(q, t1, gt('num2', 2));
+    await expect(f).toBeValidQuery(
+      'WITH "_t1" AS (SELECT * FROM "s"."t1" WHERE ("num2" > 2)) SELECT "t1"."num1" AS "num1" FROM "_t1" AS "t1" JOIN "s"."t2" ON ("t1"."num3" = "s"."t2"."num3")'
+    );
+  });
+
+  it('updates schema-qualified tables in subqueries', async () => {
+    const t1 = new TableRefNode(['s', 't1']);
+    const q = Query
+      .select('v')
+      .from(Query.select({ v: column('num2', t1) }).from(t1));
+    const f = filterPushdown(q, t1, gt('num2', 2));
+    await expect(f).toBeValidQuery(
+      'WITH "_t1" AS (SELECT * FROM "s"."t1" WHERE ("num2" > 2)) SELECT "v" FROM (SELECT "t1"."num2" AS "v" FROM "_t1" AS "t1")'
+    );
+  });
+
+  it('skips schema-qualified tables in scalar subqueries', async () => {
+    const t1 = new TableRefNode(['s', 't1']);
+    const sub = new ScalarSubqueryNode(
+      Query.select({ count: count(column('num1', t1)) }).from(t1)
+    );
+    const q = Query.select({ norm: div(column('num1', t1), sub) }).from(t1);
+    const f = filterPushdown(q, t1, gt('num2', 2));
+    await expect(f).toBeValidQuery(
+      'WITH "_t1" AS (SELECT * FROM "s"."t1" WHERE ("num2" > 2)) SELECT ("t1"."num1" / (SELECT count("s"."t1"."num1") AS "count" FROM "s"."t1")) AS "norm" FROM "_t1" AS "t1"'
+    );
+  });
+
+  it('does nothing given a table name that matches a different path', async () => {
+    const q = Query.select('num1').from(new TableRefNode(['s', 't1']));
+    const f = filterPushdown(q, 't1', gt('num2', 2));
+    await expect(f).toBeValidQuery('SELECT "num1" FROM "s"."t1"');
+  });
+
+  it('does nothing given a table path that matches a different name', async () => {
+    const q = Query.select('num1').from('t1');
+    const f = filterPushdown(q, new TableRefNode(['s', 't1']), gt('num2', 2));
+    await expect(f).toBeValidQuery('SELECT "num1" FROM "t1"');
+  });
 });
