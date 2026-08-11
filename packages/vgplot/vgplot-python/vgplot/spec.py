@@ -13,7 +13,7 @@ if TYPE_CHECKING:
     from duckdb import DuckDBPyConnection
     from narwhals.typing import IntoFrame
 
-    from vgplot._types import Mimebundle
+    from vgplot._types import MimeBundle
 
 
 def _caller_locals() -> dict[str, Any]:
@@ -176,7 +176,7 @@ class Spec:
     def to_json(self, **kwargs: Any) -> str:
         return json.dumps(self.to_dict(), **kwargs)
 
-    def _repr_mimebundle_(self, **kwargs: Any) -> Mimebundle:
+    def _repr_mimebundle_(self, **kwargs: Any) -> MimeBundle:
         try:
             from mosaic_widget import MosaicWidget
         except ImportError:
@@ -259,7 +259,7 @@ class View:
     def show(self, con: Any = None, data: Any = None) -> None:
         self._build_spec(_caller_locals()).show(con=con, data=data)
 
-    def _repr_mimebundle_(self, **kwargs: Any) -> Mimebundle:
+    def _repr_mimebundle_(self, **kwargs: Any) -> MimeBundle:
         # Walk up frames to find the one where this View object lives
         frame = inspect.currentframe()
         frame = frame.f_back if frame is not None else None

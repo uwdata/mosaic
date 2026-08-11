@@ -25,4 +25,4 @@ TransformArg = str | float | bool | _ParamBase
 UNSET = sentinel("UNSET")
 """Sentinel for mark channels that were not passed (distinct from None)."""
 
-Mimebundle: TypeAlias = dict[str, str] | tuple[dict[str, Any], dict[str, Any]] | None
+MimeBundle: TypeAlias = dict[str, str] | tuple[dict[str, Any], dict[str, Any]] | None
