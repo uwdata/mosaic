@@ -39,3 +39,6 @@ packages = ["pkg"]
 [tool.hatch.version]
 path = "package.json"
 pattern = "\"version\": \"(?P<version>.+?)\""
+
+[tool.ty.src]
+include = ["pkg"]

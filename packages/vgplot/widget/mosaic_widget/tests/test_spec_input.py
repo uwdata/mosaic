@@ -13,10 +13,10 @@ if TYPE_CHECKING:
 class SpecWithContext:
     """Stand-in for a vgplot View: to_dict() accepts the caller frame locals."""
 
-    def __init__(self):
-        self.received_context = None
+    def __init__(self) -> None:
+        self.received_context: dict[str, Any] | None = None
 
-    def to_dict(self, _context=None):
+    def to_dict(self, _context: dict[str, Any] | None = None) -> dict[str, Any]:
         self.received_context = _context
         return {"plot": [], "seen": "context"}
 
@@ -24,17 +24,17 @@ class SpecWithContext:
 class SpecWithoutContext:
     """Stand-in for a vgplot Spec: to_dict() takes no _context argument."""
 
-    def to_dict(self):
+    def to_dict(self) -> dict[str, Any]:
         return {"plot": [], "seen": "plain"}
 
 
-def test_dict_spec_is_used_as_is():
+def test_dict_spec_is_used_as_is() -> None:
     spec = {"plot": [{"mark": "dot"}]}
     widget = MosaicWidget(spec)
     assert widget.spec == spec
 
 
-def test_spec_object_with_context_receives_caller_locals():
+def test_spec_object_with_context_receives_caller_locals() -> None:
     marker = object()  # noqa: F841 -- discoverable in the caller frame
     spec_obj = SpecWithContext()
     widget = MosaicWidget(spec_obj)
@@ -51,7 +51,7 @@ def test_spec_object_without_context_falls_back() -> None:
     assert widget.spec == {"plot": [], "seen": "plain"}
 
 
-def test_object_without_to_dict_raises():
+def test_object_without_to_dict_raises() -> None:
     with pytest.raises(TypeError, match="to_dict"):
         # An object without to_dict() is intentionally invalid input.
         MosaicWidget(object())  # pyright: ignore[reportArgumentType] # ty: ignore[invalid-argument-type]
@@ -64,10 +64,10 @@ class FrameDataSpec:
     marks reference them by name. The widget's job is to register the frames.
     """
 
-    def __init__(self, data: dict[str, Any]):
-        self._data = data
+    def __init__(self, data: dict[str, Any]) -> None:
+        self._data: dict[str, Any] = data
 
-    def to_dict(self, *, _context=None):
+    def to_dict(self, *, _context: dict[str, Any] | None = None) -> dict[str, Any]:
         marks = [{"mark": "dot", "data": {"from": name}} for name in self._data]
         return {"plot": marks, "data": dict(self._data)}
 

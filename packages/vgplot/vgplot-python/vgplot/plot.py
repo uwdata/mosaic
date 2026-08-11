@@ -13,7 +13,7 @@ if TYPE_CHECKING:
 
 
 class FromRef:
-    def __init__(self, name: str, **opts: Any):
+    def __init__(self, name: str, **opts: Any) -> None:
         self.name = name
         self.opts = {camelize(k): v for k, v in opts.items() if v is not None}
 
@@ -30,7 +30,7 @@ class Directive:
     key: str
     value: Any
 
-    def to_kv(self):
+    def to_kv(self) -> tuple[str, Any]:
         return camelize(self.key), self.value
 
 

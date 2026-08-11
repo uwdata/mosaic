@@ -2,11 +2,27 @@
 # input in the Mosaic JSON schema (the source of truth). Marks and attributes
 # are generated; interactors and inputs are hand-written. This guards against a
 # schema addition that was never generated or hand-added.
+from __future__ import annotations
+
 import json
 import re
 from pathlib import Path
+from typing import TYPE_CHECKING, Any
 
 import vgplot as vg
+
+if TYPE_CHECKING:
+    from collections.abc import Sequence
+
+    from typing_extensions import TypedDict
+
+    class Schema(TypedDict, closed=True, total=False):
+        properties: dict[str, dict[str, Any]]
+        anyOf: Sequence[Schema]
+
+    class Definitions(TypedDict, extra_items=Schema):
+        PlotAttributes: Schema
+
 
 ROOT = Path(__file__).resolve().parents[4]
 SCHEMA = ROOT / "docs" / "public" / "schema" / "latest.json"
@@ -20,35 +36,28 @@ def _snake(name: str) -> str:
     return re.sub(r"([a-z0-9])([A-Z])", r"\1_\2", name).lower()
 
 
-def _const(node: dict, key: str):
-    prop = node.get("properties", {}).get(key)
-    return prop["const"] if isinstance(prop, dict) and "const" in prop else None
-
-
-def _consts(defs: dict, key: str) -> set[str]:
-    """Const values for `key`, including intersection defs (anyOf/allOf) whose
-    branches all agree on a single const (e.g. the densityX mark)."""
-    out = set()
+def get_discriminator_values(defs: Definitions, key: str) -> set[str]:
+    out: set[str] = set()
     for d in defs.values():
-        c = _const(d, key)
-        if c is not None:
+        if (p := d.get("properties")) and (c := p.get(key, {}).get("const")):
             out.add(c)
-            continue
-        branch_consts = {
-            _const(b, key) for b in (d.get("anyOf") or d.get("allOf") or [])
-        } - {None}
-        if len(branch_consts) == 1:
-            out |= branch_consts
+        elif u := d.get("anyOf"):
+            out.update(
+                c
+                for member in u
+                if (p := member.get("properties"))
+                and (c := p.get(key, {}).get("const"))
+            )
     return out
 
 
-def test_schema_surface_is_exported():
-    defs = json.loads(SCHEMA.read_text("utf-8"))["definitions"]
+def test_schema_surface_is_exported() -> None:
+    defs: Definitions = json.loads(SCHEMA.read_text("utf-8"))["definitions"]
     names = (
-        _consts(defs, "mark")
-        | _consts(defs, "select")
-        | _consts(defs, "input")
-        | set(defs["PlotAttributes"]["properties"])
+        get_discriminator_values(defs, "mark")
+        | get_discriminator_values(defs, "select")
+        | get_discriminator_values(defs, "input")
+        | set(defs["PlotAttributes"].get("properties", ()))
     ) - IGNORE
 
     exported = set(vg.__all__)

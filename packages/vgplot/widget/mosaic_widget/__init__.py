@@ -5,7 +5,7 @@ import logging
 import pathlib
 import time
 import warnings
-from typing import TYPE_CHECKING, Any, Protocol
+from typing import TYPE_CHECKING, Any, Literal, Protocol, TypedDict
 
 import anywidget
 import duckdb
@@ -19,12 +19,19 @@ from mosaic_widget.frame_interop import (
 
 if TYPE_CHECKING:
     from narwhals.typing import IntoFrame
-    from typing_extensions import TypeIs
+    from typing_extensions import Buffer, NotRequired, TypeIs
 
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
 
 SLOW_QUERY_THRESHOLD = 5000
+
+
+class _QueryParams(TypedDict):
+    type: Literal["arrow", "exec", "json"]
+    sql: str
+    uuid: str  # name
+    persist: NotRequired[bool]
 
 
 class SupportsToDict(Protocol):
@@ -80,8 +87,8 @@ class MosaicWidget(anywidget.AnyWidget):
         spec: dict[str, Any] | SupportsToDict | None = None,
         con: duckdb.DuckDBPyConnection | None = None,
         data: dict[str, IntoFrame] | None = None,
-        *args,
-        **kwargs,
+        *args: Any,
+        **kwargs: Any,
     ) -> None:
         """Create a Mosaic widget.
 
@@ -124,7 +131,9 @@ class MosaicWidget(anywidget.AnyWidget):
             self._registered_tables.add(name)
         self.on_msg(self._handle_custom_msg)
 
-    def _handle_custom_msg(self, content: dict, buffers: list) -> None:
+    def _handle_custom_msg(
+        self, content: _QueryParams, buffers: list[bytes | Buffer]
+    ) -> None:
         logger.debug(f"{content=}, {buffers=}")
         start = time.time()
 
