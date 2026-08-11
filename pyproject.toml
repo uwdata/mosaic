@@ -50,7 +50,6 @@ ignore = [
     "any-type",
     "non-lowercase-variable-in-function",
     # NOTE: ruff>=0.16
-    "undocumented-warn", # (#1093)
     "useless-expression", 
 ]
 
