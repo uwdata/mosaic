@@ -20,6 +20,7 @@ if TYPE_CHECKING:
     from socketify import SendStatus as Status
     from socketify import WebSocket as Ws
 
+    from pkg.query import _QueryParams
 
 logger = logging.getLogger(__name__)
 
@@ -82,7 +83,7 @@ def handle_query(
     handler: Handler,
     con: duckdb.DuckDBPyConnection,
     cache: Cache,
-    query: dict[str, str | Any],
+    query: _QueryParams,
 ) -> None:
     logger.debug(f"{query=}")
 
@@ -133,7 +134,7 @@ def server(con: Con, cache: Cache) -> None:
         handler = SocketHandler(ws)
 
         try:
-            query = ujson.loads(message)
+            query: _QueryParams = ujson.loads(message)
         except Exception as e:
             logger.exception("Error reading message from WebSocket")
             handler.error(e)
@@ -151,15 +152,19 @@ def server(con: Con, cache: Cache) -> None:
         method = req.get_method()
 
         handler = HTTPHandler(res)
-
+        data: _QueryParams
         if method == "OPTIONS":
             handler.done()
         elif method == "GET":
-            data = ujson.loads(req.get_query("query"))  # pyright: ignore[reportArgumentType]
+            message: str | bytes | bytearray = req.get_query("query")  # pyright: ignore[reportAssignmentType]
+            data = ujson.loads(message)
             handle_query(handler, con, cache, data)
         elif method == "POST":
-            data = (await res.get_json()) or {}
-            handle_query(handler, con, cache, data)
+            maybe_data: _QueryParams | None = await res.get_json()
+            if maybe_data:
+                handle_query(handler, con, cache, maybe_data)
+            else:
+                raise NotImplementedError
 
     app.ws(
         "/*",
