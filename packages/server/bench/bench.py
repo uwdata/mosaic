@@ -105,18 +105,22 @@ BENCHMARKS: list[tuple[str, str, str]] = [
     (
         "M4-style: time-series",
         "arrow",
-        "WITH input AS MATERIALIZED (SELECT time, delay FROM flights WHERE distance > 500) "
-        "SELECT min(time) AS x, arg_min(delay, time) AS y FROM input GROUP BY floor(time / 50.0) "
-        "UNION ALL "
-        "SELECT max(time) AS x, arg_max(delay, time) AS y FROM input GROUP BY floor(time / 50.0) "
-        "ORDER BY x",
+        (
+            "WITH input AS MATERIALIZED (SELECT time, delay FROM flights WHERE distance > 500) "
+            "SELECT min(time) AS x, arg_min(delay, time) AS y FROM input GROUP BY floor(time / 50.0) "
+            "UNION ALL "
+            "SELECT max(time) AS x, arg_max(delay, time) AS y FROM input GROUP BY floor(time / 50.0) "
+            "ORDER BY x"
+        ),
     ),
     (
         "CTE + window: running avg",
         "arrow",
-        "WITH by_dist AS (SELECT distance, count(*) AS cnt, avg(delay) AS mean_delay FROM flights GROUP BY distance) "
-        "SELECT distance, cnt, avg(cnt) OVER (ORDER BY distance ROWS BETWEEN 2 PRECEDING AND CURRENT ROW) AS rolling_avg "
-        "FROM by_dist ORDER BY distance",
+        (
+            "WITH by_dist AS (SELECT distance, count(*) AS cnt, avg(delay) AS mean_delay FROM flights GROUP BY distance) "
+            "SELECT distance, cnt, avg(cnt) OVER (ORDER BY distance ROWS BETWEEN 2 PRECEDING AND CURRENT ROW) AS rolling_avg "
+            "FROM by_dist ORDER BY distance"
+        ),
     ),
 ]
 
