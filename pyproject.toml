@@ -19,7 +19,6 @@ extend-select = [
     "UP",  # https://docs.astral.sh/ruff/rules/#pyupgrade-up
     "ANN", 
     "PYI",
-    "F401", 
     "F403",
     "suspicious-pickle-usage",
     "magic-value-comparison",
