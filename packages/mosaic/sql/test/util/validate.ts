@@ -63,6 +63,16 @@ export async function validateQuery(
 }
 
 /**
+ * Run a SQL query against the fixture database and return the result rows.
+ */
+export async function queryFixture(
+  sql: string
+): Promise<Record<string, unknown>[]> {
+  const db = await getDB();
+  return db.query(sql);
+}
+
+/**
  * Validate an expression fragment by wrapping it in a SELECT against the `t1`
  * fixture table. Resolves if valid, rejects with the DuckDB error otherwise.
  */
