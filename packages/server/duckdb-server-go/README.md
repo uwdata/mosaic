@@ -34,6 +34,9 @@ You can customize the server behavior with the following command-line flags:
 -   `--load-extensions`: Comma-separated list of extensions to install and load at startup. Use a pipe after the extension name to specify a DuckDB repository alias. Unspecified repositories use DuckDB's default (e.g. `mysql_scanner,netquack|community,aws|core_nightly`).
 -   `--function-blocklist`: Comma-separated list of exact function names to block, useful for blocking functions that may pose security or performance risks (e.g. `bigquery_query,read_parquet`).
 -   `--function-allowlist`: Comma-separated list of exact function names to add to the reviewed defaults. Names are matched case-insensitively, repeated flags accumulate names, and an explicitly empty value enables only the defaults.
+-   `--security-profile`: DuckDB external-resource profile: `compat`, `catalog-only`, or `local-files`. Defaults to `compat`.
+-   `--allowed-directory`: Existing local directory available under `local-files`. Repeat the flag for multiple directories.
+-   `--allowed-path`: Existing local file available under `local-files`. Repeat the flag for multiple files.
 
 By default, the server will look for `localhost.pem` and `localhost-key.pem` in the current directory to enable HTTPS if the `--cert` and `--key` flags are not provided.
 
@@ -148,7 +151,55 @@ Application fields are untrusted: combine them with authenticated identity, as s
 `WithMaxMessageBytes(n)` requires a positive byte limit for entire POST bodies and decompressed WebSocket messages, applied after request authorization and before decoding. Defaults are unbounded POST bodies and 32 KiB WebSocket messages. Exceeding the limit returns HTTP 413 or closes the WebSocket with code 1009. Request authorizers reading the body must enforce their own limits and restore it.
 
 POST and WebSocket messages require one complete command object with optional surrounding whitespace; trailing data is rejected. Protocol decoding failures return HTTP 400 or close the WebSocket with code 1007. Validation and authorization errors leave a healthy WebSocket session open.
+### DuckDB Security Profiles
 
+The installed binary provides three common external-resource configurations:
+
+| Profile | DuckDB resources | Extension behavior | Intended use |
+| --- | --- | --- | --- |
+| `compat` | Preserves DuckDB's current defaults. | Preserves `--load-extensions` and automatic loading. | Trusted local and backwards-compatible deployments. |
+| `catalog-only` | Disables external access outside DuckDB's primary-database internals. | Disables automatic installation and loading; rejects `--load-extensions`. | Queries over an in-memory or local primary catalog. |
+| `local-files` | Adds explicit local files or directories to `catalog-only`. | Same as `catalog-only`. | Catalog queries that also need reviewed local datasets. |
+
+For example:
+
+```sh
+# Preserve the existing behavior.
+duckdb-server-go --security-profile=compat --load-extensions=httpfs
+
+# Use only the primary catalog and a reviewed set of SQL functions.
+duckdb-server-go \
+  --database=/srv/mosaic/catalog.duckdb \
+  --security-profile=catalog-only \
+  --function-allowlist=
+
+# Add one dataset tree and one exact file.
+duckdb-server-go \
+  --security-profile=local-files \
+  --allowed-directory=/srv/mosaic/datasets \
+  --allowed-path=/srv/mosaic/reference.parquet
+```
+
+Both local-file flags are repeatable, and every target must exist at startup. Paths are made absolute, existing symlinks
+are resolved, and URI and network-share paths are rejected. A directory grants DuckDB read and write access throughout
+that tree, including `COPY` and `ATTACH`; an exact path is also a read/write capability, not a read-only grant. Use
+server-owned roots that other processes cannot mutate. DuckDB resolves stable symlink targets, but an in-process setting
+cannot eliminate filesystem races involving later symlink, mount, or path changes; use operating-system or container
+isolation for that boundary.
+
+The two strict profiles apply DuckDB's [security settings](https://duckdb.org/docs/current/operations_manual/securing_duckdb/overview)
+to disable external access and the external file cache, automatic extension installation and loading, community,
+unsigned, and metadata-mismatched extensions, persistent-secret storage, unredacted secret output, and temporary-file
+spilling. They leave no configuration-lock exceptions and lock the resulting settings before the query layer starts.
+Disabling spill files means memory-heavy queries fail instead of writing temporary data. Statically linked and core
+extensions remain available, so these settings are not an extension-free sandbox.
+
+DuckDB automatically retains access to a file-backed primary database and its WAL, checkpoint, and recovery files when
+external access is disabled. SQL functions such as `read_blob` may therefore read the primary database file itself.
+Combine a strict profile with a function allowlist when that distinction matters. The profiles do not add authentication,
+origin checks, per-user isolation, SQL-function policy, or CPU and memory limits, and they do not replace filesystem and
+network restrictions on the server process. They are implemented for the single connector owned by this binary; programs
+embedding `pkg/query` must configure and lock their DuckDB instance before serving requests.
 ### Function Policies
 
 Use an allowlist when the server should accept only reviewed functions and operators. An explicitly empty value enables
