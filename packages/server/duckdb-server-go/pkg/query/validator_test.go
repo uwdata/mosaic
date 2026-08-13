@@ -405,6 +405,18 @@ func TestFunctionAllowlistValidator(t *testing.T) {
 			wantErr: "query: access denied: qualified function 'otherdb.main.md5' is not allowed",
 		},
 		{
+			name:      "rejects qualified normalized function name",
+			allowlist: []string{"count_star"},
+			query:     "SELECT main.count(*)",
+			node: map[string]any{
+				"class":          "FUNCTION",
+				"schema":         "main",
+				"function_name":  "count_star",
+				"query_location": 7,
+			},
+			wantErr: "query: access denied: qualified function 'main.count_star' is not allowed",
+		},
+		{
 			name:      "allows parser-generated qualified helper",
 			allowlist: []string{"list_value"},
 			query:     "SELECT [1, 2]",
@@ -413,6 +425,17 @@ func TestFunctionAllowlistValidator(t *testing.T) {
 				"schema":         "main",
 				"function_name":  "list_value",
 				"query_location": 7,
+			},
+		},
+		{
+			name:      "allows parser helper over qualified column",
+			allowlist: []string{"list_value"},
+			query:     "SELECT [main.x] FROM (SELECT 1 AS x) AS main",
+			node: map[string]any{
+				"class":          "FUNCTION",
+				"schema":         "main",
+				"function_name":  "list_value",
+				"query_location": 8,
 			},
 		},
 		{

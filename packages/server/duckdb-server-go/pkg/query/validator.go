@@ -430,22 +430,25 @@ func isExplicitQualifiedFunction(node map[string]any, query string, parts []stri
 		return true
 	}
 
-	for i, part := range parts {
+	for _, part := range parts[:len(parts)-1] {
 		location = skipSQLTrivia(query, location)
 		identifier, next, ok := scanSQLIdentifier(query, location)
 		if !ok || !strings.EqualFold(identifier, part) {
 			return false
 		}
 		location = skipSQLTrivia(query, next)
-		if i == len(parts)-1 {
-			return true
-		}
 		if location >= len(query) || query[location] != '.' {
 			return false
 		}
 		location++
 	}
-	return false
+	location = skipSQLTrivia(query, location)
+	_, next, ok := scanSQLIdentifier(query, location)
+	if !ok {
+		return false
+	}
+	location = skipSQLTrivia(query, next)
+	return location < len(query) && query[location] == '('
 }
 
 func skipSQLTrivia(query string, offset int) int {
