@@ -55,10 +55,10 @@ func TestResolveSecurityProfile(t *testing.T) {
 			assert.Equal(t, securityProfile(strings.ToLower(strings.TrimSpace(tt.profile))), got.name)
 			if got.name == securityProfileCompat {
 				assert.Equal(t, ":memory:?threads=2", got.databaseDSN)
-				assert.Nil(t, got.initializer)
+				assert.Nil(t, got.newConnectionInitializer())
 			} else {
 				assertSecurityProfileDSN(t, got.databaseDSN)
-				assert.NotNil(t, got.initializer)
+				assert.NotNil(t, got.newConnectionInitializer())
 			}
 		})
 	}
@@ -74,7 +74,7 @@ func TestResolveSecurityProfileCanonicalizesAndDeduplicatesPaths(t *testing.T) {
 	canonical, err := filepath.EvalSymlinks(directory)
 	require.NoError(t, err)
 	require.Equal(t, []string{canonical}, got.allowedDirectories)
-	assert.Equal(t, []string{canonical}, got.initializer.allowedDirectories)
+	assert.Equal(t, []string{canonical}, got.newConnectionInitializer().allowedDirectories)
 }
 
 func TestResolveSecurityProfileRejectsOwnedDatabaseSettings(t *testing.T) {
@@ -129,15 +129,13 @@ func TestResolveSecurityProfileRejectsRemoteDatabasePaths(t *testing.T) {
 }
 
 func TestSecurityProfileInitializerStatements(t *testing.T) {
-	profile := resolvedSecurityProfile{
-		initializer: &securityProfileInitializer{
-			allowedDirectories: []string{"/srv/O'Brien"},
-			allowedPaths:       []string{"/srv/data.parquet"},
-		},
+	initializer := &securityProfileInitializer{
+		allowedDirectories: []string{"/srv/O'Brien"},
+		allowedPaths:       []string{"/srv/data.parquet"},
 	}
 	execer := newRecordingExecer()
 
-	require.NoError(t, profile.initializeConnection(t.Context(), execer))
+	require.NoError(t, initializer.initializeConnection(t.Context(), execer))
 	require.Equal(t, []string{
 		"SET temp_directory = ''",
 		"SET allowed_directories = ['/srv/O''Brien']",
@@ -146,28 +144,28 @@ func TestSecurityProfileInitializerStatements(t *testing.T) {
 		"SET lock_configuration = true",
 	}, execer.snapshot())
 
-	require.NoError(t, profile.initializeConnection(t.Context(), execer))
+	require.NoError(t, initializer.initializeConnection(t.Context(), execer))
 	require.Len(t, execer.snapshot(), 5)
 }
 
 func TestSecurityProfileInitializerCachesFailure(t *testing.T) {
 	sentinel := errors.New("unavailable")
-	profile := resolvedSecurityProfile{initializer: &securityProfileInitializer{}}
+	initializer := &securityProfileInitializer{}
 	execer := newRecordingExecer()
 	execer.failAt = 4
 	execer.failErr = sentinel
 
-	err := profile.initializeConnection(t.Context(), execer)
+	err := initializer.initializeConnection(t.Context(), execer)
 	require.ErrorIs(t, err, sentinel)
 	require.ErrorContains(t, err, "failed to set lock_configuration")
 
-	err = profile.initializeConnection(t.Context(), newRecordingExecer())
+	err = initializer.initializeConnection(t.Context(), newRecordingExecer())
 	require.ErrorIs(t, err, sentinel)
 	assert.Len(t, execer.snapshot(), 5)
 }
 
 func TestSecurityProfileInitializerIsConcurrent(t *testing.T) {
-	profile := resolvedSecurityProfile{initializer: &securityProfileInitializer{}}
+	initializer := &securityProfileInitializer{}
 	execer := newRecordingExecer()
 
 	const count = 32
@@ -177,7 +175,7 @@ func TestSecurityProfileInitializerIsConcurrent(t *testing.T) {
 		wait.Add(1)
 		go func() {
 			defer wait.Done()
-			errs <- profile.initializeConnection(t.Context(), execer)
+			errs <- initializer.initializeConnection(t.Context(), execer)
 		}()
 	}
 	wait.Wait()
@@ -186,6 +184,20 @@ func TestSecurityProfileInitializerIsConcurrent(t *testing.T) {
 		require.NoError(t, err)
 	}
 	assert.Len(t, execer.snapshot(), 5)
+}
+
+func TestSecurityProfileCreatesIndependentInitializers(t *testing.T) {
+	profile := resolvedSecurityProfile{name: securityProfileCatalogOnly}
+	first := profile.newConnectionInitializer()
+	second := profile.newConnectionInitializer()
+	firstExecer := newRecordingExecer()
+	secondExecer := newRecordingExecer()
+
+	require.NoError(t, first.initializeConnection(t.Context(), firstExecer))
+	require.NoError(t, first.initializeConnection(t.Context(), firstExecer))
+	require.NoError(t, second.initializeConnection(t.Context(), secondExecer))
+	assert.Len(t, firstExecer.snapshot(), 5)
+	assert.Len(t, secondExecer.snapshot(), 5)
 }
 
 func assertSecurityProfileDSN(t *testing.T, dsn string) {
@@ -204,11 +216,11 @@ func assertSecurityProfileDSN(t *testing.T, dsn string) {
 }
 
 func TestSecurityProfileInitializerValidatesDependencies(t *testing.T) {
-	profile := resolvedSecurityProfile{initializer: &securityProfileInitializer{}}
+	initializer := &securityProfileInitializer{}
 	var nilContext context.Context
 	var nilExecer driver.ExecerContext
-	require.EqualError(t, profile.initializeConnection(nilContext, newRecordingExecer()), "security profile: nil context")
-	require.EqualError(t, profile.initializeConnection(t.Context(), nilExecer), "security profile: nil execer")
+	require.EqualError(t, initializer.initializeConnection(nilContext, newRecordingExecer()), "security profile: nil context")
+	require.EqualError(t, initializer.initializeConnection(t.Context(), nilExecer), "security profile: nil execer")
 }
 
 type recordingExecer struct {

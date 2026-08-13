@@ -90,11 +90,17 @@ func run() int {
 		}
 	}
 
+	securityInitializer := security.newConnectionInitializer()
 	connector, err := duckdb.NewConnector(security.databaseDSN, func(execer driver.ExecerContext) error {
-		if err := security.initializeConnection(ctx, execer); err != nil {
+		if securityInitializer != nil {
+			if err := securityInitializer.initializeConnection(ctx, execer); err != nil {
+				return err
+			}
+		}
+		if err := extensions.ParseAndInstall(ctx, execer, *extensionsStr); err != nil {
 			return err
 		}
-		return extensions.ParseAndInstall(ctx, execer, *extensionsStr)
+		return nil
 	})
 	if err != nil {
 		logger.Error("main: error creating duckdb connector", "error", err)
@@ -106,7 +112,7 @@ func run() int {
 			logger.Error("main: error closing duckdb connector", "error", err)
 		}
 	}()
-	if security.initializer != nil {
+	if securityInitializer != nil {
 		conn, err := connector.Connect(ctx)
 		if err != nil {
 			logger.Error("main: error initializing DuckDB security profile", "error", err)
