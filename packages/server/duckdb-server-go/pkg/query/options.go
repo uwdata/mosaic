@@ -25,6 +25,10 @@ type Options struct {
 	// FunctionBlocklist is a list of function names that are not allowed to be used in queries.
 	// This is useful for blocking functions that may pose security or performance risks.
 	FunctionBlocklist []string
+
+	// FunctionAllowlist is a list of function names that are allowed to be used in queries.
+	// Names are matched exactly and case-insensitively. A non-nil empty list rejects all function calls.
+	FunctionAllowlist []string
 }
 
 type OptionFunc func(*Options) error
@@ -66,13 +70,30 @@ func WithLogger(logger *slog.Logger) OptionFunc {
 
 func WithFunctionBlocklist(blockedFunctions []string) OptionFunc {
 	return func(opts *Options) error {
-		opts.FunctionBlocklist = make([]string, 0, len(blockedFunctions))
-		for _, function := range blockedFunctions {
-			function = strings.ToLower(strings.TrimSpace(function))
-			if function != "" {
-				opts.FunctionBlocklist = append(opts.FunctionBlocklist, function)
-			}
-		}
+		opts.FunctionBlocklist = normalizeFunctionNames(blockedFunctions)
 		return nil
 	}
+}
+
+func WithFunctionAllowlist(allowedFunctions []string) OptionFunc {
+	return func(opts *Options) error {
+		opts.FunctionAllowlist = normalizeFunctionNames(allowedFunctions)
+		return nil
+	}
+}
+
+func normalizeFunctionNames(functions []string) []string {
+	normalized := make([]string, 0, len(functions))
+	seen := make(map[string]struct{}, len(functions))
+	for _, function := range functions {
+		function = strings.ToLower(strings.TrimSpace(function))
+		if function != "" {
+			if _, ok := seen[function]; ok {
+				continue
+			}
+			seen[function] = struct{}{}
+			normalized = append(normalized, function)
+		}
+	}
+	return normalized
 }

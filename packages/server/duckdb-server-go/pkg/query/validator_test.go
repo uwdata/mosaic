@@ -354,3 +354,57 @@ func TestFunctionBlocklistValidatorNormalizesFunctionNames(t *testing.T) {
 		assert.EqualError(t, errs[0], "query: access denied: use of function 'md5' is not allowed")
 	}
 }
+
+func TestFunctionAllowlistValidator(t *testing.T) {
+	tests := []struct {
+		name      string
+		allowlist []string
+		node      map[string]any
+		wantErr   string
+	}{
+		{
+			name:      "allows case-insensitive exact name",
+			allowlist: []string{"md5"},
+			node:      map[string]any{"class": "FUNCTION", "function_name": "MD5"},
+		},
+		{
+			name:      "allows operator",
+			allowlist: []string{"+"},
+			node:      map[string]any{"class": "FUNCTION", "function_name": "+"},
+		},
+		{
+			name:      "rejects name not listed",
+			allowlist: []string{"md"},
+			node:      map[string]any{"class": "FUNCTION", "function_name": "MD5"},
+			wantErr:   "query: access denied: function 'md5' is not in the allowlist",
+		},
+		{
+			name:      "rejects missing function name",
+			allowlist: []string{"md5"},
+			node:      map[string]any{"class": "FUNCTION"},
+			wantErr:   "query: invalid function node: missing 'function_name'",
+		},
+		{
+			name:      "rejects invalid function name",
+			allowlist: []string{"md5"},
+			node:      map[string]any{"class": "WINDOW", "function_name": 42},
+			wantErr:   "query: invalid 'function_name' in function, expected string: 42",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			validator := newFunctionAllowlistValidator(tt.allowlist)
+			validator.CheckNode(tt.node, nil)
+
+			errs := validator.Validate()
+			if tt.wantErr == "" {
+				assert.Empty(t, errs)
+				return
+			}
+			if assert.Len(t, errs, 1) {
+				assert.EqualError(t, errs[0], tt.wantErr)
+			}
+		})
+	}
+}

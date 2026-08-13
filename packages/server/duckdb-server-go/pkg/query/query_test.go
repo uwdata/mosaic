@@ -99,6 +99,80 @@ func TestDB_FunctionBlocklist(t *testing.T) {
 	}
 }
 
+func TestDB_FunctionAllowlist(t *testing.T) {
+	ctx := context.Background()
+
+	t.Run("allows exact case-insensitive function names", func(t *testing.T) {
+		db := setupTestDB(t, WithFunctionAllowlist([]string{" MD5 ", "ROW_NUMBER", "RANGE", "+"}))
+
+		tests := []struct {
+			name   string
+			query  string
+			format string
+		}{
+			{name: "scalar function", query: "SELECT md5('mosaic')", format: "json"},
+			{name: "window function", query: "SELECT row_number() OVER ()", format: "json"},
+			{name: "operator", query: "SELECT 1 + 2", format: "json"},
+			{name: "Arrow table function", query: "SELECT * FROM range(3)", format: "arrow"},
+		}
+
+		for _, tt := range tests {
+			t.Run(tt.name, func(t *testing.T) {
+				var err error
+				if tt.format == "arrow" {
+					_, _, err = db.QueryArrow(ctx, tt.query, nil, false)
+				} else {
+					_, _, err = db.QueryJSON(ctx, tt.query, nil, false)
+				}
+				require.NoError(t, err)
+			})
+		}
+	})
+
+	t.Run("rejects a function that is not listed", func(t *testing.T) {
+		db := setupTestDB(t, WithFunctionAllowlist([]string{"md"}))
+
+		_, _, err := db.QueryJSON(ctx, "SELECT md5('mosaic')", nil, false)
+		require.ErrorIs(t, err, ErrAccessDenied)
+		require.ErrorContains(t, err, "function 'md5' is not in the allowlist")
+	})
+
+	t.Run("rejects nested functions that are not listed", func(t *testing.T) {
+		db := setupTestDB(t, WithFunctionAllowlist([]string{"md5"}))
+
+		_, _, err := db.QueryJSON(ctx, "SELECT md5(lower('mosaic'))", nil, false)
+		require.ErrorIs(t, err, ErrAccessDenied)
+		require.ErrorContains(t, err, "function 'lower' is not in the allowlist")
+	})
+
+	t.Run("rejects parser helpers that are not listed", func(t *testing.T) {
+		db := setupTestDB(t, WithFunctionAllowlist([]string{"read_parquet"}))
+
+		_, _, err := db.QueryJSON(ctx, "SELECT * FROM read_parquet(['local.parquet'])", nil, false)
+		require.ErrorIs(t, err, ErrAccessDenied)
+		require.ErrorContains(t, err, "function 'list_value' is not in the allowlist")
+	})
+
+	t.Run("explicit empty allows function-free queries", func(t *testing.T) {
+		db := setupTestDB(t, WithFunctionAllowlist(nil))
+
+		_, _, err := db.QueryJSON(ctx, "SELECT 1", nil, false)
+		require.NoError(t, err)
+
+		_, _, err = db.QueryJSON(ctx, "SELECT 1 + 2", nil, false)
+		require.ErrorIs(t, err, ErrAccessDenied)
+		require.ErrorContains(t, err, "function '+' is not in the allowlist")
+	})
+}
+
+func TestDB_FunctionAllowlistHandlesUnsupportedStatements(t *testing.T) {
+	db := setupTestDB(t, WithFunctionAllowlist(nil))
+
+	_, _, err := db.QueryJSON(t.Context(), "PRAGMA version", nil, false)
+	require.ErrorIs(t, err, ErrUnsupportedStatement)
+	require.ErrorContains(t, err, "query: validation failed: query: not implemented: Only SELECT statements can be serialized to json")
+}
+
 func TestDB_FunctionBlocklistHandlesUnsupportedStatements(t *testing.T) {
 	db := setupTestDB(t, WithFunctionBlocklist([]string{"range"}))
 	ctx := context.Background()
@@ -222,6 +296,14 @@ func TestDB_Exec(t *testing.T) {
 
 	t.Run("function validation rejects exec", func(t *testing.T) {
 		db := setupTestDB(t, WithFunctionBlocklist([]string{"range"}))
+
+		err := db.Exec(ctx, "SELECT 1")
+		require.ErrorIs(t, err, ErrExecWithValidation)
+		assert.EqualError(t, err, "query: exec command is disabled when schema or function validation is active")
+	})
+
+	t.Run("empty function allowlist rejects exec", func(t *testing.T) {
+		db := setupTestDB(t, WithFunctionAllowlist(nil))
 
 		err := db.Exec(ctx, "SELECT 1")
 		require.ErrorIs(t, err, ErrExecWithValidation)

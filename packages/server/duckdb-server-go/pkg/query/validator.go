@@ -338,3 +338,42 @@ func (v *functionBlocklistValidator) CheckNode(node map[string]any, _ []string) 
 func (v *functionBlocklistValidator) Validate() []error {
 	return v.errs
 }
+
+type functionAllowlistValidator struct {
+	allowedFunctions []string
+	errs             []error
+}
+
+func newFunctionAllowlistValidator(allowedFunctions []string) Validator {
+	return &functionAllowlistValidator{
+		allowedFunctions: allowedFunctions,
+	}
+}
+
+func (v *functionAllowlistValidator) CheckNode(node map[string]any, _ []string) {
+	class, exists := node["class"]
+	if !exists || (class != "FUNCTION" && class != "WINDOW") {
+		return
+	}
+
+	functionName, exists := node["function_name"]
+	if !exists {
+		v.errs = append(v.errs, errors.New("query: invalid function node: missing 'function_name'"))
+		return
+	}
+
+	functionNameStr, ok := functionName.(string)
+	if !ok {
+		v.errs = append(v.errs, fmt.Errorf("query: invalid 'function_name' in function, expected string: %v", functionName))
+		return
+	}
+	functionNameStr = strings.ToLower(functionNameStr)
+
+	if !slices.Contains(v.allowedFunctions, functionNameStr) {
+		v.errs = append(v.errs, fmt.Errorf("%w: function '%s' is not in the allowlist", ErrAccessDenied, functionNameStr))
+	}
+}
+
+func (v *functionAllowlistValidator) Validate() []error {
+	return v.errs
+}
