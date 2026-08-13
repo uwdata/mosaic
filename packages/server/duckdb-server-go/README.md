@@ -33,7 +33,8 @@ You can customize the server behavior with the following command-line flags:
 -   `--key <path>`: Path to a TLS private key file to enable HTTPS.
 -   `--schema-match-headers`: Comma-separated list of headers to match against schema names for multi-tenant access control (e.g., `X-Tenant-Id,verified-user-id`).
 -   `--load-extensions`: Comma-separated list of extensions to install and load at startup. Use a pipe after the extension name to specify a DuckDB repository alias. Unspecified repositories use DuckDB's default (e.g. `mysql_scanner,netquack|community,aws|core_nightly`).
--   `--function-blocklist`: Comma-separated list of functions to block, useful for blocking functions that may pose security or performance risks. (e.g., 'bigquery_query,read_parquet')`
+-   `--function-blocklist`: Comma-separated list of exact function names to block, useful for blocking functions that may pose security or performance risks (e.g. `bigquery_query,read_parquet`).
+-   `--function-allowlist`: Comma-separated list of exact function names to allow. Names are matched case-insensitively; an explicitly empty value rejects all functions.
 
 By default, the server will look for `localhost.pem` and `localhost-key.pem` in the current directory to enable HTTPS if the `--cert` and `--key` flags are not provided.
 
@@ -79,6 +80,34 @@ errors are logged and returned as sanitized 500 responses. Authorization can all
 and exact SQL, but cannot rewrite SQL or sandbox the shared process, filesystem, network, extensions, catalogs, or
 credentials.
 
+### Function Policies
+
+Use an allowlist when the server should accept only a reviewed set of functions and operators:
+
+```sh
+duckdb-server-go --function-allowlist='sum,avg,count_star,+'
+```
+
+Programs embedding `pkg/query` can apply the same policy with
+`query.WithFunctionAllowlist([]string{"sum", "avg", "count_star", "+"})`. Names are trimmed, deduplicated, and matched
+exactly and case-insensitively. Operators such as `+` and parser helpers such as `list_value` are function nodes in
+DuckDB's JSON syntax tree, so applications must include every function name their generated SQL uses. Omitting the
+option preserves unrestricted function behavior; a non-nil empty list denies all function calls. An allowlist and a
+non-empty blocklist cannot be combined.
+
+This is a syntactic policy over the SQL submitted to the server. It does not bind functions, inspect argument meaning,
+expand views or macros, recursively authorize SQL strings accepted by `query` or `json_execute_serialized_sql`, or
+resolve strings passed to `query_table`. Allowing `read_parquet`, for example, permits the explicit function name for
+both local and remote arguments. File replacement scans such as `FROM 'gcs://bucket/data.parquet'` appear as table
+references rather than function calls and are not covered by the function policy.
+
+DuckDB does not expose a supported function catalog annotation for path, URI, or SQL-string arguments. As of DuckDB
+1.5.5, its [internal extension-prefix table](https://github.com/duckdb/duckdb/blob/v1.5.5/src/include/duckdb/main/extension_entries.hpp#L1264-L1306)
+maps `http`, `https`, `s3`, `s3a`, `s3n`, `gcs`, `gs`, `r2`, and `hf` to `httpfs`, while `azure`, `az`, and `abfss` map
+to the Azure extension. This list is version-specific and extensions can add other resource mechanisms. Treat it as a
+review checklist, not a complete authorization boundary; restrict the DuckDB process's filesystem, credentials, and
+network independently.
+
 ### Multi-Tenant Access Control
 
 `schema-match-headers` isn't part of the mosaic server API, but is provided here as an example of how to have
@@ -108,19 +137,19 @@ multiple users / customers share the same DuckDB server instance while restricti
 
 _Note:_ Schema matching authorizes schema references in submitted SQL; it does not isolate the shared DuckDB process,
 filesystem, network, extensions, or credentials. It assumes a single catalog; attached catalogs are outside this policy
-boundary, and explicitly catalog-qualified table, `SHOW`, and function references are rejected. The function blocklist
-applies only to explicit function calls. Schema matching does not restrict catalog metadata returned by functions such as
-`duckdb_tables()` and `pragma_table_info()`. If metadata is sensitive, add the exact metadata-function names exposed by the
-deployment to `--function-blocklist`; wildcard patterns such as `duckdb_*` are not supported, and the list must be reviewed
+boundary, and explicitly catalog-qualified table, `SHOW`, and function references are rejected. Function allowlists and
+blocklists apply only to explicit function calls. Schema matching does not restrict catalog metadata returned by functions
+such as `duckdb_tables()` and `pragma_table_info()`. If metadata is sensitive, allow or block the exact metadata-function
+names exposed by the deployment; wildcard patterns such as `duckdb_*` are not supported, and the policy must be reviewed
 when DuckDB or its extensions change. To restrict file-reading functions, also enable schema matching so DuckDB replacement
 scans such as `FROM 'data.parquet'` are rejected as unqualified table references. These controls are not a sandbox: run the
 server with access only to external resources that are safe for every tenant.
 
-If either `--schema-match-headers` or `--function-blocklist` is configured, `json` and `arrow` requests are limited to
-statements DuckDB can serialize for validation; unsupported forms such as `PRAGMA` and `SET` are rejected, with HTTP
-requests receiving a 400 response. All `exec` requests are also rejected until full-statement authorization is supported.
-This includes every `Coordinator.exec(...)` call, such as data loading, preloading, and DDL/DML. Mosaic pre-aggregation
-also uses `exec` to create schemas and tables, so set `preagg: { enabled: false }` in this mode.
+If `--schema-match-headers`, `--function-blocklist`, or `--function-allowlist` is configured, `json` and `arrow` requests
+are limited to statements DuckDB can serialize for validation; unsupported forms such as `PRAGMA` and `SET` are rejected,
+with HTTP requests receiving a 400 response. All `exec` requests are also rejected until full-statement authorization is
+supported. This includes every `Coordinator.exec(...)` call, such as data loading, preloading, and DDL/DML. Mosaic
+pre-aggregation also uses `exec` to create schemas and tables, so set `preagg: { enabled: false }` in this mode.
 
 ## API
 
