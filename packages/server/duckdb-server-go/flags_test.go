@@ -28,3 +28,11 @@ func TestOptionalCommaListFlagPreservesExplicitEmpty(t *testing.T) {
 	assert.Empty(t, flag.values)
 	assert.Empty(t, flag.String())
 }
+
+func TestRepeatedStringFlag(t *testing.T) {
+	var flag repeatedStringFlag
+
+	require.NoError(t, flag.Set("/srv/data,2026"))
+	require.NoError(t, flag.Set("/srv/other"))
+	assert.Equal(t, []string{"/srv/data,2026", "/srv/other"}, flag.values)
+}
