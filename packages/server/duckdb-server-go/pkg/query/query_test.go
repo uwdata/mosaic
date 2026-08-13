@@ -145,6 +145,14 @@ func TestDB_FunctionAllowlist(t *testing.T) {
 		require.ErrorContains(t, err, "function 'lower' is not in the allowlist")
 	})
 
+	t.Run("rejects qualified allowed functions", func(t *testing.T) {
+		db := setupTestDB(t, WithFunctionAllowlist([]string{"md5"}))
+
+		_, _, err := db.QueryJSON(ctx, "SELECT main.md5('mosaic')", nil, false)
+		require.ErrorIs(t, err, ErrAccessDenied)
+		require.ErrorContains(t, err, "qualified function 'main.md5' is not allowed")
+	})
+
 	t.Run("rejects parser helpers that are not listed", func(t *testing.T) {
 		db := setupTestDB(t, WithFunctionAllowlist([]string{"read_parquet"}))
 

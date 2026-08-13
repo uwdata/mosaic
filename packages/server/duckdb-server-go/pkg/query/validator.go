@@ -5,7 +5,10 @@ import (
 	"errors"
 	"fmt"
 	"slices"
+	"strconv"
 	"strings"
+	"unicode"
+	"unicode/utf8"
 )
 
 var (
@@ -341,12 +344,16 @@ func (v *functionBlocklistValidator) Validate() []error {
 
 type functionAllowlistValidator struct {
 	allowedFunctions []string
+	query            string
+	reportedErrors   map[string]struct{}
 	errs             []error
 }
 
-func newFunctionAllowlistValidator(allowedFunctions []string) Validator {
+func newFunctionAllowlistValidator(allowedFunctions []string, query string) Validator {
 	return &functionAllowlistValidator{
 		allowedFunctions: allowedFunctions,
+		query:            query,
+		reportedErrors:   make(map[string]struct{}),
 	}
 }
 
@@ -369,9 +376,158 @@ func (v *functionAllowlistValidator) CheckNode(node map[string]any, _ []string) 
 	}
 	functionNameStr = strings.ToLower(functionNameStr)
 
-	if !slices.Contains(v.allowedFunctions, functionNameStr) {
-		v.errs = append(v.errs, fmt.Errorf("%w: function '%s' is not in the allowlist", ErrAccessDenied, functionNameStr))
+	qualifiedName, qualified, err := qualifiedFunctionName(node, functionNameStr, v.query)
+	if err != nil {
+		v.errs = append(v.errs, err)
+		return
 	}
+	if qualified {
+		v.rejectOnce(
+			"qualified:"+qualifiedName,
+			fmt.Errorf("%w: qualified function '%s' is not allowed", ErrAccessDenied, qualifiedName),
+		)
+		return
+	}
+
+	if !slices.Contains(v.allowedFunctions, functionNameStr) {
+		v.rejectOnce(
+			"function:"+functionNameStr,
+			fmt.Errorf("%w: function '%s' is not in the allowlist", ErrAccessDenied, functionNameStr),
+		)
+	}
+}
+
+func qualifiedFunctionName(node map[string]any, functionName, query string) (string, bool, error) {
+	parts := make([]string, 0, 3)
+	for _, field := range []string{"catalog", "schema"} {
+		value, exists := node[field]
+		if !exists {
+			continue
+		}
+		valueStr, ok := value.(string)
+		if !ok {
+			return "", false, fmt.Errorf("query: invalid '%s' in function, expected string: %v", field, value)
+		}
+		parts = append(parts, strings.ToLower(valueStr))
+	}
+	if len(parts) == 0 {
+		return functionName, false, nil
+	}
+	parts = append(parts, functionName)
+	if !isExplicitQualifiedFunction(node, query, parts) {
+		return functionName, false, nil
+	}
+	return strings.Join(parts, "."), true, nil
+}
+
+func isExplicitQualifiedFunction(node map[string]any, query string, parts []string) bool {
+	rawLocation, exists := node["query_location"]
+	if !exists || query == "" {
+		return true
+	}
+	location, err := strconv.Atoi(fmt.Sprint(rawLocation))
+	if err != nil || location < 0 || location >= len(query) {
+		return true
+	}
+
+	for i, part := range parts {
+		location = skipSQLTrivia(query, location)
+		identifier, next, ok := scanSQLIdentifier(query, location)
+		if !ok || !strings.EqualFold(identifier, part) {
+			return false
+		}
+		location = skipSQLTrivia(query, next)
+		if i == len(parts)-1 {
+			return true
+		}
+		if location >= len(query) || query[location] != '.' {
+			return false
+		}
+		location++
+	}
+	return false
+}
+
+func skipSQLTrivia(query string, offset int) int {
+	for offset < len(query) {
+		r, size := utf8.DecodeRuneInString(query[offset:])
+		if unicode.IsSpace(r) {
+			offset += size
+			continue
+		}
+		if strings.HasPrefix(query[offset:], "--") {
+			if end := strings.IndexByte(query[offset:], '\n'); end >= 0 {
+				offset += end + 1
+				continue
+			}
+			return len(query)
+		}
+		if strings.HasPrefix(query[offset:], "/*") {
+			depth := 1
+			offset += 2
+			for offset < len(query) && depth > 0 {
+				switch {
+				case strings.HasPrefix(query[offset:], "/*"):
+					depth++
+					offset += 2
+				case strings.HasPrefix(query[offset:], "*/"):
+					depth--
+					offset += 2
+				default:
+					_, size := utf8.DecodeRuneInString(query[offset:])
+					offset += size
+				}
+			}
+			if depth == 0 {
+				continue
+			}
+			return len(query)
+		}
+		break
+	}
+	return offset
+}
+
+func scanSQLIdentifier(query string, offset int) (string, int, bool) {
+	if offset >= len(query) {
+		return "", offset, false
+	}
+	if query[offset] == '"' {
+		var identifier strings.Builder
+		for offset++; offset < len(query); {
+			if query[offset] != '"' {
+				r, size := utf8.DecodeRuneInString(query[offset:])
+				identifier.WriteRune(r)
+				offset += size
+				continue
+			}
+			if offset+1 < len(query) && query[offset+1] == '"' {
+				identifier.WriteByte('"')
+				offset += 2
+				continue
+			}
+			return identifier.String(), offset + 1, true
+		}
+		return "", offset, false
+	}
+
+	start := offset
+	for offset < len(query) {
+		r, size := utf8.DecodeRuneInString(query[offset:])
+		if !unicode.IsLetter(r) && !unicode.IsDigit(r) && r != '_' && r != '$' {
+			break
+		}
+		offset += size
+	}
+	return query[start:offset], offset, offset > start
+}
+
+func (v *functionAllowlistValidator) rejectOnce(key string, err error) {
+	if _, exists := v.reportedErrors[key]; exists {
+		return
+	}
+	v.reportedErrors[key] = struct{}{}
+	v.errs = append(v.errs, err)
 }
 
 func (v *functionAllowlistValidator) Validate() []error {

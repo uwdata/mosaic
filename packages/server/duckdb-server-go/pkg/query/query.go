@@ -221,7 +221,7 @@ func (db *DB) validateQuery(ctx context.Context, query string, allowedSchemas []
 		validators = append(validators, newFunctionBlocklistValidator(db.functionBlocklist))
 	}
 	if db.functionAllowlistConfigured {
-		validators = append(validators, newFunctionAllowlistValidator(db.functionAllowlist))
+		validators = append(validators, newFunctionAllowlistValidator(db.functionAllowlist, query))
 	}
 	if len(validators) == 0 {
 		return nil
