@@ -25,7 +25,6 @@ type resolvedSecurityProfile struct {
 	databaseDSN        string
 	allowedDirectories []string
 	allowedPaths       []string
-	initializer        *securityProfileInitializer
 }
 
 type duckDBSetting struct {
@@ -97,13 +96,7 @@ func resolveSecurityProfile(
 		return resolved, errors.New("local-files requires at least one allowed-directory or allowed-path")
 	}
 
-	settings := append([]duckDBSetting(nil), strictProfileSettings...)
-	resolved.initializer = &securityProfileInitializer{}
-	if profile == securityProfileLocalFiles {
-		resolved.initializer.allowedDirectories = append([]string(nil), resolved.allowedDirectories...)
-		resolved.initializer.allowedPaths = append([]string(nil), resolved.allowedPaths...)
-	}
-	resolved.databaseDSN, err = addDuckDBSettings(databaseDSN, settings)
+	resolved.databaseDSN, err = addDuckDBSettings(databaseDSN, strictProfileSettings)
 	if err != nil {
 		return resolved, err
 	}
@@ -117,24 +110,31 @@ type securityProfileInitializer struct {
 	allowedPaths       []string
 }
 
-func (p resolvedSecurityProfile) initializeConnection(
+func (p resolvedSecurityProfile) newConnectionInitializer() *securityProfileInitializer {
+	if p.name == securityProfileCompat {
+		return nil
+	}
+	return &securityProfileInitializer{
+		allowedDirectories: append([]string(nil), p.allowedDirectories...),
+		allowedPaths:       append([]string(nil), p.allowedPaths...),
+	}
+}
+
+func (p *securityProfileInitializer) initializeConnection(
 	ctx context.Context,
 	execer driver.ExecerContext,
 ) error {
-	if p.initializer == nil {
-		return nil
-	}
 	if ctx == nil {
 		return errors.New("security profile: nil context")
 	}
 	if execer == nil {
 		return errors.New("security profile: nil execer")
 	}
-	p.initializer.once.Do(func() {
+	p.once.Do(func() {
 		settings := []duckDBSetting{
 			{name: "temp_directory", value: "''"},
-			{name: "allowed_directories", value: duckDBStringList(p.initializer.allowedDirectories)},
-			{name: "allowed_paths", value: duckDBStringList(p.initializer.allowedPaths)},
+			{name: "allowed_directories", value: duckDBStringList(p.allowedDirectories)},
+			{name: "allowed_paths", value: duckDBStringList(p.allowedPaths)},
 			{name: "enable_external_access", value: "false"},
 			{name: "lock_configuration", value: "true"},
 		}
@@ -145,12 +145,12 @@ func (p resolvedSecurityProfile) initializeConnection(
 				nil,
 			)
 			if err != nil {
-				p.initializer.err = fmt.Errorf("failed to set %s: %w", setting.name, err)
+				p.err = fmt.Errorf("failed to set %s: %w", setting.name, err)
 				return
 			}
 		}
 	})
-	return p.initializer.err
+	return p.err
 }
 
 func validateLocalDatabaseDSN(databaseDSN string) error {

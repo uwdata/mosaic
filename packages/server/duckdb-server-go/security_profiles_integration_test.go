@@ -100,6 +100,22 @@ func TestCatalogOnlySecurityProfile(t *testing.T) {
 	assert.NoFileExists(t, outsideDatabase)
 }
 
+func TestCatalogOnlyProfileInitializesDistinctConnectors(t *testing.T) {
+	profile, err := resolveSecurityProfile("catalog-only", ":memory:", "", nil, nil)
+	require.NoError(t, err)
+
+	for range 2 {
+		connector, err := newProfileConnector(t.Context(), profile)
+		require.NoError(t, err)
+		db := sql.OpenDB(connector)
+		require.NoError(t, db.PingContext(t.Context()))
+		assertLockedProfileSettings(t, db)
+		assertQueryError(t, db, t.Context(), "SELECT count(*) FROM read_text('/etc/hosts')")
+		require.NoError(t, db.Close())
+		require.NoError(t, connector.Close())
+	}
+}
+
 func TestCatalogOnlyProfilePersistsPrimaryDatabase(t *testing.T) {
 	databasePath := filepath.Join(t.TempDir(), "catalog.duckdb")
 	profile, err := resolveSecurityProfile("catalog-only", databasePath, "", nil, nil)
@@ -455,8 +471,12 @@ func openProfileDB(t *testing.T, profile resolvedSecurityProfile) *sql.DB {
 }
 
 func newProfileConnector(ctx context.Context, profile resolvedSecurityProfile) (*duckdb.Connector, error) {
+	initializer := profile.newConnectionInitializer()
 	return duckdb.NewConnector(profile.databaseDSN, func(execer driver.ExecerContext) error {
-		return profile.initializeConnection(ctx, execer)
+		if initializer == nil {
+			return nil
+		}
+		return initializer.initializeConnection(ctx, execer)
 	})
 }
 
