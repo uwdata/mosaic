@@ -37,6 +37,11 @@ You can customize the server behavior with the following command-line flags:
 
 By default, the server will look for `localhost.pem` and `localhost-key.pem` in the current directory to enable HTTPS if the `--cert` and `--key` flags are not provided.
 
+For compatibility, the installed binary permits all HTTP and WebSocket origins. A cross-site page can therefore submit
+commands, including side-effecting `exec` commands over GET, to a running server. Do not expose the binary to untrusted
+browsers or cookie credentials without an outer proxy that enforces an origin or CSRF policy. Programs embedding
+`pkg/server` instead receive safe zero-value origin defaults and can configure exact allowed origins.
+
 Create certificates for localhost with [mkcert](https://github.com/FiloSottile/mkcert)
 
 ```sh
@@ -58,6 +63,21 @@ Repository suffixes are DuckDB aliases. Use `InstallAndLoadFromCustomRepository`
 `LoadInstalled`, `LoadFile`, or `InstallAndLoadFile` for pre-provisioned extensions. The callback runs for every physical
 connection; use a long-lived context and call `PingContext` before serving to force initialization. The first failure
 aborts the connection. Extensions are trusted native code, so load only trusted repositories and files.
+
+### Programmatic Authorization
+
+Programs embedding `pkg/server` should authenticate with standard HTTP middleware around the handler returned by
+`server.New`, then use `server.WithAuthorizer` only for command-aware policy. `AuthorizeRequest` runs once before POST
+decoding or WebSocket upgrade and returns a `CommandAuthorizer` called for every decoded command, including each
+WebSocket message, before policy validation, cache lookup, or execution. If it reads `r.Body`, it must restore it; both
+authorizers must be concurrency-safe. Outer middleware must decide whether CORS preflight `OPTIONS` requests may reach
+the server.
+
+Omitting `WithAuthorizer` preserves unrestricted behavior; a configured authorizer that fails or returns nil fails
+closed. `ErrUnauthenticated`, `ErrPermissionDenied`, and `ErrInvalidCommand` map to HTTP 401, 403, and 400; unexpected
+errors are logged and returned as sanitized 500 responses. Authorization can allow or deny the normalized command type
+and exact SQL, but cannot rewrite SQL or sandbox the shared process, filesystem, network, extensions, catalogs, or
+credentials.
 
 ### Multi-Tenant Access Control
 
