@@ -19,6 +19,9 @@ comment. If code needs explaining, the fix is usually better naming or structure
 over obvious blocks; "// Step 1 / Step 2" narration; explanations of language or
 library features; a comment on every field or match arm.
 
+**Do not add comments to code you didn't otherwise change.** If you're editing a
+function, don't take the opportunity to document the rest of it.
+
 ## Commit messages
 
 Subject: use Conventional Commits: `type: description` or
