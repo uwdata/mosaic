@@ -4,7 +4,7 @@ import logging
 from typing import TYPE_CHECKING, Any, Final, TypeAlias
 
 import narwhals as nw
-from narwhals import Implementation as impl
+from narwhals import Implementation as Impl
 from narwhals.dependencies import is_into_dataframe, is_into_lazyframe
 
 if TYPE_CHECKING:
@@ -19,7 +19,7 @@ logger.addHandler(logging.NullHandler())
 
 _NON_FRAME_TYPES = (str, bytes, int, float, bool, dict, list, tuple, type(None))
 
-_DUCKDB_NATIVE: Final = frozenset((impl.DUCKDB, impl.PANDAS, impl.POLARS, impl.PYARROW))
+_DUCKDB_NATIVE: Final = frozenset((Impl.DUCKDB, Impl.PANDAS, Impl.POLARS, Impl.PYARROW))
 
 
 def is_registrable_frame(obj: Any) -> TypeIs[IntoFrame]:
@@ -50,5 +50,5 @@ def frame_to_duckdb_registrable(frame: IntoFrame) -> object:
     # Some backends like Ibis, PySpark, etc. have lazy-only Narwhals support, so we must materialize them
     if isinstance(nw_frame, nw.LazyFrame):
         logger.warning("Materializing lazy frame")
-        return nw_frame.collect(impl.PYARROW)
+        return nw_frame.collect(Impl.PYARROW)
     return nw_frame.to_arrow()
