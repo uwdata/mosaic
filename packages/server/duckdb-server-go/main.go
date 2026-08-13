@@ -31,6 +31,8 @@ func main() {
 	schemaMatchHeadersStr := flag.String("schema-match-headers", "", "Comma-separated list of headers to match against schema names for multi-tenant access control (e.g., \"X-Tenant-Id,verified-user-id\")")
 	extensionsStr := flag.String("load-extensions", "", "Comma-separated list of extensions to install and load at startup. Use a pipe after the extension name to specify a DuckDB repository alias. Unspecified repositories use DuckDB's default (e.g. mysql_scanner,netquack|community,aws|core_nightly).")
 	functionBlocklistStr := flag.String("function-blocklist", "", "Comma-separated list of functions to block, useful for blocking functions that may pose security or performance risks. (e.g., 'bigquery_query,read_parquet')")
+	var functionAllowlist optionalCommaListFlag
+	flag.Var(&functionAllowlist, "function-allowlist", "Comma-separated list of functions to allow. Exact names are matched case-insensitively; an explicitly empty value rejects all functions.")
 	flag.Parse()
 
 	var schemaMatchHeaders []string
@@ -87,14 +89,19 @@ func main() {
 		return
 	}
 
-	db, err := query.New(ctx, connector,
+	queryOptions := []query.OptionFunc{
 		query.WithMaxConnections(*poolSize),
 		query.WithMaxCacheEntries(*maxCacheEntries),
 		query.WithMaxCacheBytes(*maxCacheBytes),
 		query.WithTTL(ttl),
 		query.WithLogger(logger),
 		query.WithFunctionBlocklist(functionBlocklist),
-	)
+	}
+	if functionAllowlist.set {
+		queryOptions = append(queryOptions, query.WithFunctionAllowlist(functionAllowlist.values))
+	}
+
+	db, err := query.New(ctx, connector, queryOptions...)
 	if err != nil {
 		logger.Error("main: error creating query DB", "error", err)
 		return
@@ -129,6 +136,9 @@ func main() {
 		"ttl":                  ttl,
 		"max_cache_bytes":      *maxCacheBytes,
 		"load_extensions":      *extensionsStr,
+		"function_blocklist":   *functionBlocklistStr,
+		"function_allowlist":   functionAllowlist.String(),
+		"allowlist_configured": functionAllowlist.set,
 	}
 	logger.Info("DuckDB Server configuration", "config", config)
 
