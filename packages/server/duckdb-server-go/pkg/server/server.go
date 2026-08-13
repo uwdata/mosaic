@@ -7,8 +7,6 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
-	"net/url"
-	"path"
 	"strings"
 
 	"github.com/coder/websocket"
@@ -41,6 +39,14 @@ type queryParamsError string
 
 func (e queryParamsError) Error() string {
 	return string(e)
+}
+
+// commandExecutor is private so the server package does not expose query's
+// current schema-policy plumbing as a supported extension point.
+type commandExecutor interface {
+	Exec(context.Context, string) error
+	QueryArrow(context.Context, string, []string, bool) ([]byte, bool, error)
+	QueryJSON(context.Context, string, []string, bool) (json.RawMessage, bool, error)
 }
 
 type handler struct {
@@ -158,40 +164,6 @@ func (s *handler) handleWebSocket(w http.ResponseWriter, r *http.Request) {
 			break
 		}
 	}
-}
-
-// Reject origins before authorization so a handshake that websocket.Accept
-// would reject cannot invoke application logic. Accept repeats the check.
-func webSocketOriginAllowed(r *http.Request, options WebSocketOptions) bool {
-	if options.AllowAllOrigins {
-		return true
-	}
-
-	origin := r.Header.Get("Origin")
-	if origin == "" {
-		return true
-	}
-
-	u, err := url.Parse(origin)
-	if err != nil {
-		return false
-	}
-	if strings.EqualFold(r.Host, u.Host) {
-		return true
-	}
-
-	for _, pattern := range options.AllowedOrigins {
-		target := u.Host
-		if strings.Contains(pattern, "://") {
-			target = u.Scheme + "://" + u.Host
-		}
-		matched, err := path.Match(strings.ToLower(pattern), strings.ToLower(target))
-		if err == nil && matched {
-			return true
-		}
-	}
-
-	return false
 }
 
 // A returned error closes the connection. Command errors are written to the

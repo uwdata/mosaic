@@ -8,6 +8,7 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/coder/websocket"
 	"github.com/coder/websocket/wsjson"
@@ -61,6 +62,30 @@ func (e failOnCallExecutor) fail(method string) error {
 	err := fmt.Errorf("unexpected command executor call: %s", method)
 	e.Error(err)
 	return err
+}
+
+type webSocketTestServer struct {
+	ctx     context.Context
+	httpURL string
+	url     string
+}
+
+func newWebSocketTestServer(t *testing.T, handler http.Handler) *webSocketTestServer {
+	t.Helper()
+
+	server := httptest.NewServer(handler)
+	t.Cleanup(server.Close)
+	ctx, cancel := context.WithTimeout(t.Context(), 5*time.Second)
+	t.Cleanup(cancel)
+	return &webSocketTestServer{
+		ctx:     ctx,
+		httpURL: server.URL,
+		url:     "ws" + strings.TrimPrefix(server.URL, "http"),
+	}
+}
+
+func (s *webSocketTestServer) dial(options *websocket.DialOptions) (*websocket.Conn, *http.Response, error) {
+	return websocket.Dial(s.ctx, s.url, options)
 }
 
 func TestExecCommandHonorsSchemaPolicy(t *testing.T) {

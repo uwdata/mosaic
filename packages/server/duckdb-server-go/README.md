@@ -152,6 +152,21 @@ Extensions are trusted native code that run with the server process's privileges
 files. DuckDB signature verification is an important safeguard where it applies; allowing unsigned extensions removes
 that safeguard. Local binaries must also match the DuckDB version, extension ABI, operating system, and architecture.
 
+### Programmatic Authorization
+
+Programs embedding `pkg/server` should authenticate with standard HTTP middleware around the handler returned by
+`server.New`, then use `server.WithAuthorizer` only for command-aware policy. `AuthorizeRequest` runs once before POST
+decoding or WebSocket upgrade and returns a `CommandAuthorizer` called for every decoded command, including each
+WebSocket message, before policy validation, cache lookup, or execution. If it reads `r.Body`, it must restore it; both
+authorizers must be concurrency-safe. Outer middleware must decide whether CORS preflight `OPTIONS` requests may reach
+the server.
+
+Omitting `WithAuthorizer` preserves unrestricted behavior; a configured authorizer that fails or returns nil fails
+closed. `ErrUnauthenticated`, `ErrPermissionDenied`, and `ErrInvalidCommand` map to HTTP 401, 403, and 400; unexpected
+errors are logged and returned as sanitized 500 responses. Authorization can allow or deny the normalized command type
+and exact SQL, but cannot rewrite SQL or sandbox the shared process, filesystem, network, extensions, catalogs, or
+credentials.
+
 ### Multi-Tenant Access Control
 
 `schema-match-headers` isn't part of the mosaic server API, but is provided here as an example of how to have

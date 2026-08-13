@@ -67,8 +67,6 @@ func defaultConfig() config {
 	}
 }
 
-// Option configures the handler returned by New. Implementations are provided
-// by this package so invalid configuration can be rejected consistently.
 type Option interface {
 	apply(*config) error
 }
@@ -95,7 +93,6 @@ func applyOptions(opts []Option) (config, error) {
 	return cfg, nil
 }
 
-// WithLogger configures the server logger. A nil logger uses slog.Default.
 func WithLogger(logger *slog.Logger) Option {
 	return optionFunc(func(cfg *config) error {
 		configured := logger
@@ -107,8 +104,6 @@ func WithLogger(logger *slog.Logger) Option {
 	})
 }
 
-// WithAuthorizer configures per-request and per-command authorization. A nil
-// Authorizer is invalid; omit this option to preserve unrestricted behavior.
 func WithAuthorizer(authorizer Authorizer) Option {
 	return optionFunc(func(cfg *config) error {
 		if authorizer == nil || isNilValue(authorizer) {
@@ -129,7 +124,6 @@ func isNilValue(value any) bool {
 	}
 }
 
-// WithCORS configures cross-origin HTTP access.
 func WithCORS(options CORSOptions) Option {
 	options.AllowedOrigins = append([]string(nil), options.AllowedOrigins...)
 	options.AllowedHeaders = append([]string(nil), options.AllowedHeaders...)
@@ -181,7 +175,6 @@ func WithCORS(options CORSOptions) Option {
 	})
 }
 
-// WithWebSocket configures cross-origin WebSocket access.
 func WithWebSocket(options WebSocketOptions) Option {
 	options.AllowedOrigins = append([]string(nil), options.AllowedOrigins...)
 	return optionFunc(func(cfg *config) error {
@@ -206,8 +199,6 @@ func WithWebSocket(options WebSocketOptions) Option {
 	})
 }
 
-// WithSchemaMatchHeaders configures the transitional request headers used to
-// derive allowed schema names.
 func WithSchemaMatchHeaders(headers ...string) Option {
 	headers = append([]string(nil), headers...)
 	return optionFunc(func(cfg *config) error {

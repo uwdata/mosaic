@@ -3,6 +3,7 @@ package server
 import (
 	"net/http"
 	"net/url"
+	"path"
 	"strings"
 	"time"
 
@@ -82,4 +83,38 @@ func isHTTPOrigin(origin string) bool {
 		u.RawQuery == "" &&
 		u.Fragment == "" &&
 		!u.ForceQuery
+}
+
+// Reject origins before authorization so a handshake that websocket.Accept
+// would reject cannot invoke application logic. Accept repeats the check.
+func webSocketOriginAllowed(r *http.Request, options WebSocketOptions) bool {
+	if options.AllowAllOrigins {
+		return true
+	}
+
+	origin := r.Header.Get("Origin")
+	if origin == "" {
+		return true
+	}
+
+	u, err := url.Parse(origin)
+	if err != nil {
+		return false
+	}
+	if strings.EqualFold(r.Host, u.Host) {
+		return true
+	}
+
+	for _, pattern := range options.AllowedOrigins {
+		target := u.Host
+		if strings.Contains(pattern, "://") {
+			target = u.Scheme + "://" + u.Host
+		}
+		matched, err := path.Match(strings.ToLower(pattern), strings.ToLower(target))
+		if err == nil && matched {
+			return true
+		}
+	}
+
+	return false
 }
