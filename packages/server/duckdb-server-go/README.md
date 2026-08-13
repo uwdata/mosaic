@@ -123,15 +123,18 @@ The two strict profiles apply DuckDB's [security settings](https://duckdb.org/do
 to disable external access and the external file cache, automatic extension installation and loading, community,
 unsigned, and metadata-mismatched extensions, persistent-secret storage, unredacted secret output, and temporary-file
 spilling. They leave no configuration-lock exceptions and lock the resulting settings before the query layer starts.
-Disabling spill files means memory-heavy queries fail instead of writing temporary data. Statically linked and core
-extensions remain available, so these settings are not an extension-free sandbox.
+Disabling spill files means memory-heavy queries fail instead of writing temporary data. Under `local-files`, repeated
+scans of allowed Parquet files may be slower because DuckDB does not retain their blocks in its in-memory external-file
+cache. Statically linked and core extensions remain available, so these settings are not an extension-free sandbox.
 
-DuckDB automatically retains access to a file-backed primary database and its WAL, checkpoint, and recovery files when
-external access is disabled. SQL functions such as `read_blob` may therefore read the primary database file itself.
-Combine a strict profile with a function allowlist when that distinction matters. The profiles do not add authentication,
-origin checks, per-user isolation, SQL-function policy, or CPU and memory limits, and they do not replace filesystem and
-network restrictions on the server process. They are implemented for the single connector owned by this binary; programs
-embedding `pkg/query` must configure and lock their DuckDB instance before serving requests.
+With the bundled DuckDB 1.5.5, the implicit grant for a file-backed primary database consists of the database file and
+the exact sidecar paths `<database>.wal`, `<database>.wal.checkpoint`, and `<database>.wal.recovery`; it does not include
+the containing directory. The `local-files` profile separately adds its configured grants. SQL functions such as
+`read_blob` may therefore read the implicitly granted files when they exist. Combine a strict profile with a function
+allowlist when that distinction matters. The profiles do not add authentication, origin checks, per-user isolation,
+SQL-function policy, or CPU and memory limits, and they do not replace filesystem and network restrictions on the server
+process. They are implemented for the single connector owned by this binary; programs embedding `pkg/query` must
+configure and lock their DuckDB instance before serving requests.
 
 ### Function Policies
 
