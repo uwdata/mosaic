@@ -18,3 +18,16 @@ func (f *optionalCommaListFlag) Set(value string) error {
 func (f *optionalCommaListFlag) String() string {
 	return strings.Join(f.values, ",")
 }
+
+type repeatedStringFlag struct {
+	values []string
+}
+
+func (f *repeatedStringFlag) Set(value string) error {
+	f.values = append(f.values, value)
+	return nil
+}
+
+func (f *repeatedStringFlag) String() string {
+	return strings.Join(f.values, ",")
+}
