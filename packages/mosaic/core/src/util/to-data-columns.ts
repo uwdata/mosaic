@@ -15,6 +15,13 @@ type DataColumns =
   | { numRows: number; columns: Record<string, Arrayish> }
   | { numRows: number; values: Arrayish };
 
+type ArrowLikeTable = {
+  numRows: number;
+  schema?: { fields?: { name: string }[] };
+  toColumns?: () => Record<string, Arrayish>;
+  getChild: (name: string) => { toArray: () => Arrayish } | null;
+};
+
 /**
  * Convert input data to a set of column arrays.
  * @param data The input data.
@@ -36,8 +43,16 @@ export function toDataColumns(data: unknown): DataColumns {
  * @returns An object with named column arrays.
  */
 function arrowToColumns(data: Table): DataColumns {
-  const { numRows } = data;
-  return { numRows, columns: data.toColumns() as Record<string, Arrayish> };
+  const table = data as unknown as ArrowLikeTable;
+  const { numRows } = table;
+  if (typeof table.toColumns === 'function') {
+    return { numRows, columns: table.toColumns() };
+  }
+  const columns: Record<string, Arrayish> = {};
+  for (const field of table.schema?.fields ?? []) {
+    columns[field.name] = table.getChild(field.name)?.toArray() ?? [];
+  }
+  return { numRows, columns };
 }
 
 /**
