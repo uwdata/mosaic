@@ -11,6 +11,12 @@ export const Min = 'min';
 export const Distinct = 'distinct';
 export const Stats = { Count, Nulls, Max, Min, Distinct };
 
+const UNKNOWN_COLUMN: ColumnDescription = {
+  column_name: 'column',
+  column_type: 'DOUBLE',
+  null: 'YES'
+};
+
 const statMap: Record<Stat, (column: FieldRef) => AggregateNode> = {
   [Count]: count,
   [Distinct]: column => count(column).distinct(),
@@ -66,21 +72,18 @@ async function getFieldInfo(mc: Coordinator, { table, column, stats }: FieldInfo
     .select({ column }, isAggregate ? '*' : {})
     .groupby(isAggregate ? sql`ALL` : []);
 
-  let desc: ColumnDescription;
+  let desc: ColumnDescription | undefined;
   try {
     [desc] = Array.from(
       await mc.query(Query.describe(q))
     ) as ColumnDescription[];
   } catch {
-    // provide dummy description node upon query failure
-    // this handles true aggregates within window functions
-    // DuckDB fails to handle these when using GROUP BY ALL
-    desc = {
-      column_name: 'column',
-      column_type: 'DOUBLE',
-      null: 'YES'
-    };
+    // fall back to the dummy description below
   }
+
+  // a query failure or an empty result both leave the column undescribed
+  // DuckDB fails to handle when using GROUP BY ALL
+  desc ??= UNKNOWN_COLUMN;
 
   const info: FieldInfo = {
     table,
