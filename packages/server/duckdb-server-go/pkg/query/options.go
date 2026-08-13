@@ -75,6 +75,8 @@ func WithFunctionBlocklist(blockedFunctions []string) OptionFunc {
 	}
 }
 
+// WithFunctionAllowlist allows only the named functions in submitted queries.
+// Passing nil or an empty slice denies all function calls; omitting the option leaves function calls unrestricted.
 func WithFunctionAllowlist(allowedFunctions []string) OptionFunc {
 	return func(opts *Options) error {
 		opts.FunctionAllowlist = normalizeFunctionNames(allowedFunctions)

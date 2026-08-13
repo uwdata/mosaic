@@ -34,7 +34,7 @@ You can customize the server behavior with the following command-line flags:
 -   `--schema-match-headers`: Comma-separated list of headers to match against schema names for multi-tenant access control (e.g., `X-Tenant-Id,verified-user-id`).
 -   `--load-extensions`: Comma-separated list of extensions to install and load at startup. Use a pipe after the extension name to specify a DuckDB repository alias. Unspecified repositories use DuckDB's default (e.g. `mysql_scanner,netquack|community,aws|core_nightly`).
 -   `--function-blocklist`: Comma-separated list of exact function names to block, useful for blocking functions that may pose security or performance risks (e.g. `bigquery_query,read_parquet`).
--   `--function-allowlist`: Comma-separated list of exact function names to allow. Names are matched case-insensitively; an explicitly empty value rejects all functions.
+-   `--function-allowlist`: Comma-separated list of exact function names to allow. Names are matched case-insensitively, repeated flags accumulate names, and `--function-allowlist=` rejects all functions when no names are supplied.
 
 By default, the server will look for `localhost.pem` and `localhost-key.pem` in the current directory to enable HTTPS if the `--cert` and `--key` flags are not provided.
 
@@ -93,16 +93,21 @@ Programs embedding `pkg/query` can apply the same policy with
 exactly and case-insensitively. Operators such as `+` and parser helpers such as `list_value` are function nodes in
 DuckDB's JSON syntax tree, so applications must include every function name their generated SQL uses. Omitting the
 option preserves unrestricted function behavior; a non-nil empty list denies all function calls. An allowlist and a
-non-empty blocklist cannot be combined.
+non-empty blocklist cannot be combined. Explicit schema- or catalog-qualified calls are rejected even when the unqualified
+name is allowed. DuckDB adds `main` qualifiers to helper nodes synthesized for syntax such as list literals, so the
+validator uses source locations to distinguish those nodes from written qualifiers.
 
 This is a syntactic policy over the SQL submitted to the server. It does not bind functions, inspect argument meaning,
 expand views or macros, recursively authorize SQL strings accepted by `query` or `json_execute_serialized_sql`, or
-resolve strings passed to `query_table`. Allowing `read_parquet`, for example, permits the explicit function name for
-both local and remote arguments. File replacement scans such as `FROM 'gcs://bucket/data.parquet'` appear as table
-references rather than function calls and are not covered by the function policy.
+resolve strings passed to `query_table`. An unqualified allowed name can still bind to a same-name macro on DuckDB's
+search path, so the catalog must remain trusted and immutable to query clients. Allowing `read_parquet`, for example,
+permits the explicit function name for both local and remote arguments. File replacement scans such as
+`FROM 'gcs://bucket/data.parquet'` appear as table references rather than function calls and are not covered by the
+function policy. To reject these unqualified table references syntactically, also configure `--schema-match-headers`
+with trusted schema headers as described in [Multi-Tenant Access Control](#multi-tenant-access-control).
 
 DuckDB does not expose a supported function catalog annotation for path, URI, or SQL-string arguments. As of DuckDB
-1.5.5, its [internal extension-prefix table](https://github.com/duckdb/duckdb/blob/v1.5.5/src/include/duckdb/main/extension_entries.hpp#L1264-L1306)
+1.5.5, its [internal extension-prefix table](https://github.com/duckdb/duckdb/blob/v1.5.5/src/include/duckdb/main/extension_entries.hpp#L1277-L1280)
 maps `http`, `https`, `s3`, `s3a`, `s3n`, `gcs`, `gs`, `r2`, and `hf` to `httpfs`, while `azure`, `az`, and `abfss` map
 to the Azure extension. This list is version-specific and extensions can add other resource mechanisms. Treat it as a
 review checklist, not a complete authorization boundary; restrict the DuckDB process's filesystem, credentials, and
