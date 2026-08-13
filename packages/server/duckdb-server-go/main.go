@@ -19,6 +19,10 @@ import (
 )
 
 func main() {
+	os.Exit(run())
+}
+
+func run() int {
 	dbPath := flag.String("database", ":memory:", "Path of database file (e.g., \"database.db\". \":memory:\" for in-memory database)")
 	address := flag.String("address", "localhost", "HTTP Address")
 	port := flag.String("port", "3000", "HTTP Port")
@@ -54,7 +58,7 @@ func main() {
 
 	if err := extensions.Validate(*extensionsStr); err != nil {
 		logger.Error("main: invalid load-extensions", "error", err, "load-extensions", *extensionsStr)
-		return
+		return 1
 	}
 
 	// If no certificate files are specified, check for default localhost certificates
@@ -74,7 +78,7 @@ func main() {
 	})
 	if err != nil {
 		logger.Error("main: error creating duckdb connector", "error", err)
-		return
+		return 1
 	}
 	defer func() {
 		err = connector.Close()
@@ -86,7 +90,7 @@ func main() {
 	ttl, err := time.ParseDuration(*ttlStr)
 	if err != nil {
 		logger.Error("main: invalid cache-ttl", "error", err)
-		return
+		return 1
 	}
 
 	queryOptions := []query.OptionFunc{
@@ -104,7 +108,7 @@ func main() {
 	db, err := query.New(ctx, connector, queryOptions...)
 	if err != nil {
 		logger.Error("main: error creating query DB", "error", err)
-		return
+		return 1
 	}
 	defer db.Close()
 
@@ -120,7 +124,7 @@ func main() {
 	)
 	if err != nil {
 		logger.Error("main: error creating server", "error", err)
-		return
+		return 1
 	}
 	logger.Warn("DuckDB Server permits all HTTP and WebSocket origins for compatibility; enforce an outer origin or CSRF policy before exposing it to untrusted browsers")
 
@@ -145,7 +149,7 @@ func main() {
 	extensions, err := db.GetExtensions(ctx)
 	if err != nil {
 		logger.Error("main: error getting extensions", "error", err)
-		return
+		return 1
 	}
 
 	logger.Info("DuckDB Server Extensions", "extensions", extensions)
@@ -173,6 +177,7 @@ func main() {
 	}
 	if err != nil {
 		logger.Error("main: error running HTTP server", "error", err)
-		return
+		return 1
 	}
+	return 0
 }
