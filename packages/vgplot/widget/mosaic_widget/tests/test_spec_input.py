@@ -35,7 +35,7 @@ def test_dict_spec_is_used_as_is() -> None:
 
 
 def test_spec_object_with_context_receives_caller_locals() -> None:
-    marker = object()  # noqa: F841 -- discoverable in the caller frame
+    marker = object()
     spec_obj = SpecWithContext()
     widget = MosaicWidget(spec_obj)
 

@@ -19,8 +19,6 @@ from __future__ import annotations
 
 import sys
 import typing
-
-# ruff: noqa: A002
 from contextlib import suppress
 from importlib.util import find_spec
 from typing import TYPE_CHECKING, Any, ClassVar
@@ -92,8 +90,8 @@ def _sentinel_backport_pre_py_3_15() -> Any:
 
 if TYPE_CHECKING:
     # Was renamed in https://github.com/python/typing_extensions/releases/tag/4.16.0
-    from typing_extensions import Sentinel as sentinel  # noqa: N813
-else:  # noqa: PLR5501
+    from typing_extensions import Sentinel as sentinel
+else:  # ruff: ignore[collapsible-else-if]
     if sys.version_info >= (3, 15):
         from builtins import sentinel
     else:
