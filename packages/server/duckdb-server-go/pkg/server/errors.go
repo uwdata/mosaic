@@ -1,6 +1,7 @@
 package server
 
 import (
+	"context"
 	"errors"
 	"net/http"
 
@@ -75,6 +76,9 @@ func (s *handler) classifyAndLogError(err error) errorResponse {
 
 	var authErr *authorizationError
 	if errors.As(err, &authErr) {
+		if errors.Is(authErr, context.Canceled) || errors.Is(authErr, context.DeadlineExceeded) {
+			return response
+		}
 		s.logger.Error("server: authorization failed", "error", authErr.err)
 	}
 

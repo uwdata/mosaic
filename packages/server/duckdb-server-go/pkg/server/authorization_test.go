@@ -300,6 +300,18 @@ func TestHTTPCommandAuthorizationStatusMapping(t *testing.T) {
 			wantBody:   "authorization failed",
 			secret:     "super-secret-token",
 		},
+		{
+			name:       "canceled request is not logged",
+			authErr:    context.Canceled,
+			wantStatus: http.StatusInternalServerError,
+			wantBody:   "authorization failed",
+		},
+		{
+			name:       "expired deadline is not logged",
+			authErr:    context.DeadlineExceeded,
+			wantStatus: http.StatusInternalServerError,
+			wantBody:   "authorization failed",
+		},
 	}
 
 	for _, tt := range tests {
@@ -626,6 +638,18 @@ func TestWebSocketCommandAuthorizationErrorMapping(t *testing.T) {
 			wantCode:    "internal_error",
 			wantMessage: "authorization failed",
 			secret:      "command-secret",
+		},
+		{
+			name:        "canceled request is not logged",
+			err:         context.Canceled,
+			wantCode:    "internal_error",
+			wantMessage: "authorization failed",
+		},
+		{
+			name:        "expired deadline is not logged",
+			err:         context.DeadlineExceeded,
+			wantCode:    "internal_error",
+			wantMessage: "authorization failed",
 		},
 	}
 
