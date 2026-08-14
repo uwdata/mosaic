@@ -22,11 +22,11 @@ query.WithRemoteURILiteralRejection()
 
 The option rejects recognized remote URI literals in DuckDB replacement scans and
 [reviewed function path arguments](https://github.com/uwdata/mosaic/tree/main/packages/server/duckdb-server-go/pkg/functionset/remoteread),
-including literal lists and literals within path expressions. It uses DuckDB 1.5.5's prefixes: `http://`, `https://`,
-`s3://`, `s3a://`, `s3n://`, `gcs://`, `gs://`, `r2://`, `hf://`, `azure://`, `az://`, and `abfss://`. Unrelated string
-literals remain unaffected. Ordinary local paths remain usable unless the path string itself contains a recognized marker.
-Trusted connector initialization can load extensions and attach remote catalogs before serving queries; subsequent queries
-against those catalogs remain usable.
+including literal lists and literals within path expressions. Matching is case-insensitive and uses DuckDB 1.5.5's
+prefixes: `http://`, `https://`, `s3://`, `s3a://`, `s3n://`, `gcs://`, `gs://`, `r2://`, `hf://`, `azure://`, `az://`,
+and `abfss://`. Unrelated string literals remain unaffected. Ordinary local paths remain usable unless the path string
+itself contains a recognized marker. Trusted connector initialization can load extensions and attach remote catalogs
+before serving queries; subsequent queries against those catalogs remain usable.
 
 DuckDB's serialized AST cannot distinguish a replacement-scan string from a quoted table or CTE identifier, so URI-shaped
 identifiers are rejected too. This check is best-effort, not a network sandbox. Split or computed strings, macros, views,

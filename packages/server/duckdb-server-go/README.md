@@ -174,8 +174,8 @@ checks literal lists and every decoded string literal within a path expression, 
 such as `WHERE url = 'https://example.com'` remain unaffected. Ordinary local paths without a recognized marker remain
 usable; a local path string containing one of the markers is intentionally rejected.
 
-Matching is case-sensitive and rejects a literal if it contains any prefix from DuckDB 1.5.5's
-[extension-prefix map](https://github.com/duckdb/duckdb/blob/v1.5.5/src/include/duckdb/main/extension_entries.hpp#L1264-L1269):
+Matching is case-insensitive and rejects a literal if it contains any prefix from DuckDB 1.5.5's
+[extension-prefix map](https://github.com/duckdb/duckdb/blob/v1.5.5/src/include/duckdb/main/extension_entries.hpp#L1275-L1280):
 
 ```text
 http://  https://  s3://  s3a://  s3n://  gcs://

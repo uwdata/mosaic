@@ -9,7 +9,7 @@ import (
 	"github.com/uwdata/mosaic/packages/server/duckdb-server-go/pkg/functionset/remoteread"
 )
 
-// Source: https://github.com/duckdb/duckdb/blob/v1.5.5/src/include/duckdb/main/extension_entries.hpp#L1264-L1269
+// Source: https://github.com/duckdb/duckdb/blob/v1.5.5/src/include/duckdb/main/extension_entries.hpp#L1275-L1280
 var remoteURIPrefixes = [...]string{
 	"http://",
 	"https://",
@@ -125,6 +125,7 @@ func (v *remoteURILiteralValidator) Validate() []error {
 }
 
 func findRemoteURIPrefix(value string) (string, bool) {
+	value = strings.ToLower(value)
 	for _, prefix := range remoteURIPrefixes {
 		if strings.Contains(value, prefix) {
 			return prefix, true

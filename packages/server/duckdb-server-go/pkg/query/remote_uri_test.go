@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -21,13 +22,15 @@ func TestRemoteURILiteralValidatorRecognizesPinnedPrefixes(t *testing.T) {
 
 	for _, prefix := range remoteURIPrefixes {
 		t.Run(prefix, func(t *testing.T) {
-			sql := fmt.Sprintf("SELECT * FROM read_parquet('%sbucket/file.parquet')", prefix)
-			err := db.ValidateSQL(t.Context(), sql, newRemoteURILiteralValidator())
-			require.ErrorIs(t, err, ErrAccessDenied)
-			assert.EqualError(t, err, fmt.Sprintf(
-				"query: access denied: remote URI prefix '%s' is not allowed in path argument to function 'read_parquet'",
-				prefix,
-			))
+			for _, literalPrefix := range []string{prefix, strings.ToUpper(prefix)} {
+				sql := fmt.Sprintf("SELECT * FROM read_parquet('%sbucket/file.parquet')", literalPrefix)
+				err := db.ValidateSQL(t.Context(), sql, newRemoteURILiteralValidator())
+				require.ErrorIs(t, err, ErrAccessDenied)
+				assert.EqualError(t, err, fmt.Sprintf(
+					"query: access denied: remote URI prefix '%s' is not allowed in path argument to function 'read_parquet'",
+					prefix,
+				))
+			}
 		})
 	}
 }
@@ -110,8 +113,9 @@ func TestRemoteURILiteralValidatorPathArguments(t *testing.T) {
 			sql:  "SELECT histogram('https://example.com')",
 		},
 		{
-			name: "case-sensitive prefix",
-			sql:  "SELECT * FROM read_parquet('HTTPS://example.com/file.parquet')",
+			name:       "mixed-case prefix",
+			sql:        "SELECT * FROM read_parquet('HtTpS://example.com/file.parquet')",
+			wantPrefix: "https://",
 		},
 		{
 			name: "prefix split between literals",
@@ -171,6 +175,11 @@ func TestRemoteURILiteralValidatorReplacementScans(t *testing.T) {
 		{
 			name:    "prefix within base table literal",
 			sql:     "SELECT * FROM 'mirror-https://example.com/file.parquet'",
+			wantErr: true,
+		},
+		{
+			name:    "mixed-case remote path",
+			sql:     "SELECT * FROM 'GCS://bucket/file.parquet'",
 			wantErr: true,
 		},
 		{
