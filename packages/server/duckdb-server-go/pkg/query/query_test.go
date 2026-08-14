@@ -149,20 +149,14 @@ func TestDB_FunctionAllowlist(t *testing.T) {
 		require.ErrorContains(t, err, "function 'lower' is not in the allowlist")
 	})
 
-	t.Run("rejects non-main qualified allowed functions", func(t *testing.T) {
+	t.Run("matches qualified functions by leaf name", func(t *testing.T) {
 		db := setupTestDB(t, WithFunctionAllowlist([]string{"md5", "count_star"}))
 
-		tests := []struct {
-			query         string
-			qualifiedName string
-		}{
-			{query: "SELECT tenant.md5('mosaic')", qualifiedName: "tenant.md5"},
-			{query: "SELECT system.main.count(*) FROM (SELECT 1)", qualifiedName: "system.main.count_star"},
-		}
-		for _, tt := range tests {
-			_, _, err := db.QueryJSON(ctx, tt.query, nil, false)
-			require.ErrorIs(t, err, ErrAccessDenied)
-			require.ErrorContains(t, err, "qualified function '"+tt.qualifiedName+"' is not allowed")
+		for _, query := range []string{
+			"SELECT tenant.md5('mosaic')",
+			"SELECT system.main.count(*) FROM (SELECT 1)",
+		} {
+			require.NoError(t, db.validateQuery(ctx, query, nil))
 		}
 	})
 

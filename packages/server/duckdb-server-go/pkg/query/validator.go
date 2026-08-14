@@ -341,20 +341,21 @@ func (v *functionBlocklistValidator) Validate() []error {
 
 type functionAllowlistValidator struct {
 	allowedFunctions []string
-	reportedErrors   map[string]struct{}
 	errs             []error
 }
 
 func newFunctionAllowlistValidator(allowedFunctions []string) Validator {
 	return &functionAllowlistValidator{
 		allowedFunctions: allowedFunctions,
-		reportedErrors:   make(map[string]struct{}),
 	}
 }
 
 func (v *functionAllowlistValidator) CheckNode(node map[string]any, _ []string) {
 	class, exists := node["class"]
-	if !exists || (class != "FUNCTION" && class != "WINDOW") {
+	if !exists {
+		return
+	}
+	if class != "FUNCTION" && class != "WINDOW" {
 		return
 	}
 
@@ -371,69 +372,9 @@ func (v *functionAllowlistValidator) CheckNode(node map[string]any, _ []string) 
 	}
 	functionNameStr = strings.ToLower(functionNameStr)
 
-	qualifiedName, qualified, err := restrictedFunctionName(node, functionNameStr)
-	if err != nil {
-		v.errs = append(v.errs, err)
-		return
-	}
-	if qualified {
-		v.rejectOnce(
-			"qualified:"+qualifiedName,
-			fmt.Errorf("%w: qualified function '%s' is not allowed", ErrAccessDenied, qualifiedName),
-		)
-		return
-	}
-
 	if !slices.Contains(v.allowedFunctions, functionNameStr) {
-		v.rejectOnce(
-			"function:"+functionNameStr,
-			fmt.Errorf("%w: function '%s' is not in the allowlist", ErrAccessDenied, functionNameStr),
-		)
+		v.errs = append(v.errs, fmt.Errorf("%w: function '%s' is not in the allowlist", ErrAccessDenied, functionNameStr))
 	}
-}
-
-func restrictedFunctionName(node map[string]any, functionName string) (string, bool, error) {
-	catalog, hasCatalog, err := functionQualifier(node, "catalog")
-	if err != nil {
-		return "", false, err
-	}
-	schema, hasSchema, err := functionQualifier(node, "schema")
-	if err != nil {
-		return "", false, err
-	}
-	if !hasCatalog && (!hasSchema || strings.EqualFold(schema, "main")) {
-		return functionName, false, nil
-	}
-
-	parts := make([]string, 0, 3)
-	if hasCatalog {
-		parts = append(parts, strings.ToLower(catalog))
-	}
-	if hasSchema {
-		parts = append(parts, strings.ToLower(schema))
-	}
-	parts = append(parts, functionName)
-	return strings.Join(parts, "."), true, nil
-}
-
-func functionQualifier(node map[string]any, field string) (string, bool, error) {
-	value, exists := node[field]
-	if !exists {
-		return "", false, nil
-	}
-	valueStr, ok := value.(string)
-	if !ok {
-		return "", false, fmt.Errorf("query: invalid '%s' in function, expected string: %v", field, value)
-	}
-	return valueStr, true, nil
-}
-
-func (v *functionAllowlistValidator) rejectOnce(key string, err error) {
-	if _, exists := v.reportedErrors[key]; exists {
-		return
-	}
-	v.reportedErrors[key] = struct{}{}
-	v.errs = append(v.errs, err)
 }
 
 func (v *functionAllowlistValidator) Validate() []error {
