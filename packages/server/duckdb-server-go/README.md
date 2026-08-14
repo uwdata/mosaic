@@ -140,6 +140,12 @@ function calls and are not covered by the function policy. To reject these unqua
 also configure `--schema-match-headers` with trusted schema headers as described in
 [Multi-Tenant Access Control](#multi-tenant-access-control).
 
+Views and tables in attached catalogs also serialize as `BASE_TABLE` references, so function validation does not inspect
+the scans they resolve to during binding. This can be used deliberately to expose pre-provisioned remote datasets while
+leaving `read_parquet`, `iceberg_scan`, and similar reader functions out of the allowlist. Clients can query those table
+references but cannot call the excluded readers directly; catalog integrity and the DuckDB process's filesystem and
+network access remain the security boundary.
+
 DuckDB does not expose a supported function catalog annotation for path, URI, or SQL-string arguments. As of DuckDB
 1.5.5, its [internal extension-prefix table](https://github.com/duckdb/duckdb/blob/v1.5.5/src/include/duckdb/main/extension_entries.hpp#L1277-L1280)
 maps `http`, `https`, `s3`, `s3a`, `s3n`, `gcs`, `gs`, `r2`, and `hf` to `httpfs`, while `azure`, `az`, and `abfss` map
