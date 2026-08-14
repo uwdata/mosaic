@@ -190,9 +190,15 @@ func TestDB_FunctionAllowlist(t *testing.T) {
 			"SELECT 1 + 2",
 			"SELECT sum(i), count(*) FROM (VALUES (1), (2)) t(i)",
 			"SELECT geomean(i) FROM (VALUES (1), (2)) t(i)",
+			"SELECT weighted_avg(i, w) FROM (VALUES (1, 2), (2, 1)) t(i, w)",
 			"SELECT row_number() OVER ()",
 			"SELECT lower('MOSAIC')",
 			"SELECT [1, 2]",
+			"SELECT list_sum([1, 2]), list_histogram([1, 2]), array_append([1], 2)",
+			"SELECT date_add(DATE '2020-01-01', INTERVAL 1 DAY), days_in_month(DATE '2020-02-01')",
+			"SELECT split_part('a,b', ',', 2), fdiv(5, 2), fmod(5, 2), round_even(2.5, 0)",
+			"SELECT json_group_array(i), json_group_object(i, i) FROM (VALUES (1), (2)) t(i)",
+			"SELECT strptime('2020-01-01', '%Y-%m-%d')",
 			"SELECT * FROM range(3)",
 		} {
 			_, _, err := db.QueryJSON(ctx, query, nil, false)
@@ -216,9 +222,12 @@ func TestDB_FunctionAllowlist(t *testing.T) {
 			query    string
 		}{
 			{function: "query", query: "SELECT * FROM query('SELECT 1')"},
+			{function: "ago", query: "SELECT ago(INTERVAL 1 DAY)"},
+			{function: "list_aggr", query: "SELECT list_aggr([1, 2], 'sum')"},
 			{function: "list_aggregate", query: "SELECT list_aggregate([1, 2], 'sum')"},
 			{function: "read_parquet", query: "SELECT * FROM read_parquet('missing.parquet')"},
 			{function: "getenv", query: "SELECT getenv('HOME')"},
+			{function: "pg_sleep", query: "SELECT pg_sleep(0)"},
 			{function: "sleep_ms", query: "SELECT sleep_ms(1)"},
 			{function: "random", query: "SELECT random()"},
 			{function: "getenv", query: "SELECT list_transform(['HOME'], x -> getenv(x))"},

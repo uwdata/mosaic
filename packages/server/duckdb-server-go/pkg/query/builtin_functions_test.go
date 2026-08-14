@@ -112,9 +112,126 @@ func TestDefaultFunctionsMatchDuckDBCatalog(t *testing.T) {
 	require.NoError(t, rows.Err())
 
 	macros := map[string]struct{}{
-		"geomean":        {},
-		"geometric_mean": {},
-		"nullif":         {},
+		"array_append":               {},
+		"array_pop_back":             {},
+		"array_pop_front":            {},
+		"array_prepend":              {},
+		"array_push_back":            {},
+		"array_push_front":           {},
+		"array_reverse":              {},
+		"array_to_string":            {},
+		"date_add":                   {},
+		"days_in_month":              {},
+		"fdiv":                       {},
+		"fmod":                       {},
+		"generate_subscripts":        {},
+		"geomean":                    {},
+		"geometric_mean":             {},
+		"json":                       {},
+		"json_group_array":           {},
+		"json_group_object":          {},
+		"json_group_structure":       {},
+		"list_any_value":             {},
+		"list_append":                {},
+		"list_approx_count_distinct": {},
+		"list_avg":                   {},
+		"list_bit_and":               {},
+		"list_bit_or":                {},
+		"list_bit_xor":               {},
+		"list_bool_and":              {},
+		"list_bool_or":               {},
+		"list_count":                 {},
+		"list_entropy":               {},
+		"list_first":                 {},
+		"list_histogram":             {},
+		"list_kurtosis":              {},
+		"list_kurtosis_pop":          {},
+		"list_last":                  {},
+		"list_mad":                   {},
+		"list_max":                   {},
+		"list_median":                {},
+		"list_min":                   {},
+		"list_mode":                  {},
+		"list_prepend":               {},
+		"list_product":               {},
+		"list_reverse":               {},
+		"list_sem":                   {},
+		"list_skewness":              {},
+		"list_stddev_pop":            {},
+		"list_stddev_samp":           {},
+		"list_string_agg":            {},
+		"list_sum":                   {},
+		"list_var_pop":               {},
+		"list_var_samp":              {},
+		"map_contains_entry":         {},
+		"map_contains_value":         {},
+		"md5_number_lower":           {},
+		"md5_number_upper":           {},
+		"nullif":                     {},
+		"regexp_split_to_table":      {},
+		"round_even":                 {},
+		"roundbankers":               {},
+		"split_part":                 {},
+		"wavg":                       {},
+		"weighted_avg":               {},
+	}
+	excludedMacros := map[string]struct{}{
+		"ago":                                {},
+		"array_to_string_comma_default":      {},
+		"col_description":                    {},
+		"current_catalog":                    {},
+		"current_database":                   {},
+		"current_query":                      {},
+		"current_role":                       {},
+		"current_schema":                     {},
+		"current_schemas":                    {},
+		"current_user":                       {},
+		"format_pg_type":                     {},
+		"format_type":                        {},
+		"get_block_size":                     {},
+		"has_any_column_privilege":           {},
+		"has_column_privilege":               {},
+		"has_database_privilege":             {},
+		"has_foreign_data_wrapper_privilege": {},
+		"has_function_privilege":             {},
+		"has_language_privilege":             {},
+		"has_schema_privilege":               {},
+		"has_sequence_privilege":             {},
+		"has_server_privilege":               {},
+		"has_table_privilege":                {},
+		"has_tablespace_privilege":           {},
+		"inet_client_addr":                   {},
+		"inet_client_port":                   {},
+		"inet_server_addr":                   {},
+		"inet_server_port":                   {},
+		"map_to_pg_oid":                      {},
+		"obj_description":                    {},
+		"pg_collation_is_visible":            {},
+		"pg_conf_load_time":                  {},
+		"pg_conversion_is_visible":           {},
+		"pg_function_is_visible":             {},
+		"pg_get_constraintdef":               {},
+		"pg_get_expr":                        {},
+		"pg_get_viewdef":                     {},
+		"pg_has_role":                        {},
+		"pg_is_other_temp_schema":            {},
+		"pg_my_temp_schema":                  {},
+		"pg_opclass_is_visible":              {},
+		"pg_operator_is_visible":             {},
+		"pg_opfamily_is_visible":             {},
+		"pg_postmaster_start_time":           {},
+		"pg_size_pretty":                     {},
+		"pg_sleep":                           {},
+		"pg_table_is_visible":                {},
+		"pg_ts_config_is_visible":            {},
+		"pg_ts_dict_is_visible":              {},
+		"pg_ts_parser_is_visible":            {},
+		"pg_ts_template_is_visible":          {},
+		"pg_type_is_visible":                 {},
+		"pg_typeof":                          {},
+		"session_user":                       {},
+		"shobj_description":                  {},
+		"user":                               {},
 	}
 	collisions := map[string][]string{
 		"generate_series": {"scalar", "table"},
@@ -178,6 +295,25 @@ func TestDefaultFunctionsMatchDuckDBCatalog(t *testing.T) {
 			assert.Equal(t, "macro", entry.functionType, name)
 		}
 	}
+	defaults := DefaultFunctions()
+	for name, entries := range catalog {
+		isMacro := false
+		for _, entry := range entries {
+			isMacro = isMacro || entry.functionType == "macro"
+		}
+		if !isMacro {
+			continue
+		}
+
+		_, included := macros[name]
+		_, excluded := excludedMacros[name]
+		assert.NotEqual(t, included, excluded, "macro %q must have exactly one policy decision", name)
+		assert.Equal(t, included, slices.Contains(defaults, name), "macro %q has the wrong default policy", name)
+	}
+	for name := range excludedMacros {
+		require.NotEmpty(t, catalog[name], name)
+		assert.NotContains(t, defaults, name)
+	}
 	for name, wantTypes := range collisions {
 		gotTypes := make([]string, 0, len(catalog[name]))
 		for _, entry := range catalog[name] {
@@ -219,6 +355,7 @@ func TestDefaultFunctionsUnion(t *testing.T) {
 
 	for _, function := range []string{
 		"aggregate",
+		"ago",
 		"current_setting",
 		"duckdb_tables",
 		"getenv",
@@ -227,7 +364,9 @@ func TestDefaultFunctionsUnion(t *testing.T) {
 		"json_deserialize_sql",
 		"json_execute_serialized_sql",
 		"list_aggregate",
+		"list_aggr",
 		"nextval",
+		"pg_sleep",
 		"query",
 		"query_table",
 		"random",

@@ -107,7 +107,17 @@ side-effect-free scalar functions, and non-I/O table generators. The package exp
 `BuiltinOperators`, `BuiltinAggregates`, `BuiltinWindows`, `BuiltinSyntaxHelpers`, `BuiltinTableGenerators`, and
 `CommonScalarFunctions`; each returns a fresh list that can also be appended to `Include` or `Exclude`. These inventories
 were reviewed against DuckDB 1.5.5 and must be reviewed when DuckDB is upgraded. Newly introduced and extension-provided
-function names are not admitted automatically.
+function names are not admitted automatically. The defaults include reviewed fixed-expression macros, such as the
+`list_sum` wrapper whose aggregate target is hardcoded; client-controlled dispatch through `list_aggregate` remains
+excluded.
+
+For query-only Mosaic geo rendering over geometry data already present in DuckDB, load the spatial extension and add
+`--function-allowlist=st_x,st_y,st_centroid,st_asgeojson`. Mosaic's `loadSpatial`/`vg.spatial` loader still uses `ST_Read`
+through `Coordinator.exec`, and all `exec` requests are rejected while a function policy is configured.
+
+Current-time function names are intentionally omitted because clients can request persistent results whose cache key is
+only the SQL text and output format, with no expiration by default. This does not block keyword forms such as
+`CURRENT_DATE` and `CURRENT_TIMESTAMP`, which DuckDB serializes as column references rather than function calls.
 
 `Include` and `Exclude` names are trimmed, deduplicated, and matched exactly and case-insensitively; exclusions take
 precedence. Set `DisableDefaults: true` for an exact-only policy. With defaults disabled and no included names, all
