@@ -38,12 +38,13 @@ var inventoryGroups = [...]inventoryGroup{
 var inventory = mergeInventories(inventoryGroups[:])
 
 // Lookup returns the reviewed path arguments for a function name.
+// The returned slices alias package state and must not be mutated.
 func Lookup(name string) (PathArguments, bool) {
 	arguments, ok := inventory[strings.ToLower(strings.TrimSpace(name))]
 	if !ok {
 		return PathArguments{}, false
 	}
-	return cloneArguments(arguments), true
+	return arguments, true
 }
 
 // FunctionNames returns the sorted reviewed function names.
@@ -70,15 +71,8 @@ func mergeInventories(groups []inventoryGroup) map[string]PathArguments {
 			if _, ok := functions[name]; ok {
 				panic("duplicate remote-read function: " + name)
 			}
-			functions[name] = cloneArguments(arguments)
+			functions[name] = arguments
 		}
 	}
 	return functions
-}
-
-func cloneArguments(arguments PathArguments) PathArguments {
-	return PathArguments{
-		Positional: slices.Clone(arguments.Positional),
-		Named:      slices.Clone(arguments.Named),
-	}
 }

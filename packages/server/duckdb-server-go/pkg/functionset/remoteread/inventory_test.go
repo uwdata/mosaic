@@ -124,19 +124,7 @@ func TestLookupNormalizesName(t *testing.T) {
 	}
 }
 
-func TestResultsAreDefensiveCopies(t *testing.T) {
-	arguments, ok := Lookup("st_read")
-	if !ok {
-		t.Fatal("Lookup(st_read) not found")
-	}
-	arguments.Positional[0] = 9
-	arguments.Named[0] = "mutated"
-
-	got, ok := Lookup("st_read")
-	if !ok || !reflect.DeepEqual(got, positionalPath(0, "sibling_files")) {
-		t.Fatalf("Lookup(st_read) = %#v, %v", got, ok)
-	}
-
+func TestFunctionNamesReturnsCopy(t *testing.T) {
 	names := FunctionNames()
 	names[0] = "mutated"
 	if got := FunctionNames(); !reflect.DeepEqual(got, expectedFunctionNames) {
