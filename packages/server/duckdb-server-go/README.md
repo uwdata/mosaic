@@ -98,7 +98,7 @@ Programs embedding `pkg/query` can apply the same policy and add application fun
 
 ```go
 query.WithFunctionAllowlist(query.FunctionAllowlistOptions{
-	Include: []string{"my_function"},
+	Include: append(functionset.Spatial(), "my_function"),
 })
 ```
 
@@ -110,6 +110,10 @@ were reviewed against DuckDB 1.5.5 and must be reviewed when DuckDB is upgraded.
 function names are not admitted automatically. The defaults include reviewed fixed-expression macros, such as the
 `list_sum` wrapper whose aggregate target is hardcoded; client-controlled dispatch through `list_aggregate` remains
 excluded.
+
+`functionset.Spatial()` and `functionset.Parquet()` provide opt-in inventories for the corresponding core extensions; they
+are never included in `DefaultFunctions`. These sets include resource-capable readers. They authorize function names
+only: they do not load an extension, inspect paths or URIs, or grant filesystem or network access.
 
 For query-only Mosaic geo rendering over geometry data already present in DuckDB, load the spatial extension and add
 `--function-allowlist=st_x,st_y,st_centroid,st_asgeojson`. Mosaic's `loadSpatial`/`vg.spatial` loader still uses `ST_Read`

@@ -1,4 +1,5 @@
 // Package functionset provides reviewed DuckDB function-name inventories for query policies.
+// Extension sets authorize names only; they neither load extensions nor restrict function arguments.
 package functionset
 
 import (
