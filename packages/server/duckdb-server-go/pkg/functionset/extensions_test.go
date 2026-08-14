@@ -54,11 +54,7 @@ func TestCoreExtensions(t *testing.T) {
 }
 
 func TestEmptyExtensionFunctionInventories(t *testing.T) {
-	for _, extension := range CoreExtensions() {
-		if extension == Parquet || extension == Spatial {
-			continue
-		}
-
+	for _, extension := range []ExtensionFunctions{Azure, Encodings, HTTPFS} {
 		assert.NotNil(t, extension.Compute(), string(extension))
 		assert.Empty(t, extension.Compute(), string(extension))
 		assert.NotNil(t, extension.Elevated(), string(extension))
@@ -107,7 +103,7 @@ func TestExtensionFunctionInventories(t *testing.T) {
 			assertFunctionInventory(t, compute)
 			assertFunctionInventory(t, elevated)
 			assertFunctionInventory(t, all)
-			assert.Equal(t, functionNames(compute, elevated), all)
+			assert.Equal(t, extensionFunctionNames(compute, elevated), all)
 
 			for _, function := range compute {
 				assert.NotContains(t, elevated, function)

@@ -74,44 +74,125 @@ var coreExtensions = [...]ExtensionFunctions{
 }
 
 var extensionFunctionInventories = map[ExtensionFunctions]extensionFunctionInventory{
-	Autocomplete: {},
-	Avro:         {},
-	AWS:          {},
-	Azure:        {},
-	Delta:        {},
-	DuckLake:     {},
-	Encodings:    {},
-	Excel:        {},
-	FTS:          {},
-	HTTPFS:       {},
-	Iceberg:      {},
-	ICU:          {},
-	Inet:         {},
-	JSON:         {},
-	Lance:        {},
-	MotherDuck:   {},
-	MySQL:        {},
-	ODBC:         {},
+	Autocomplete: {
+		compute:  autocompleteComputeFunctions[:],
+		elevated: autocompleteElevatedFunctions[:],
+	},
+	Avro: {
+		compute:  avroComputeFunctions[:],
+		elevated: avroElevatedFunctions[:],
+	},
+	AWS: {
+		compute:  awsComputeFunctions[:],
+		elevated: awsElevatedFunctions[:],
+	},
+	Azure: {
+		compute:  azureComputeFunctions[:],
+		elevated: azureElevatedFunctions[:],
+	},
+	Delta: {
+		compute:  deltaComputeFunctions[:],
+		elevated: deltaElevatedFunctions[:],
+	},
+	DuckLake: {
+		compute:  duckLakeComputeFunctions[:],
+		elevated: duckLakeElevatedFunctions[:],
+	},
+	Encodings: {
+		compute:  encodingsComputeFunctions[:],
+		elevated: encodingsElevatedFunctions[:],
+	},
+	Excel: {
+		compute:  excelComputeFunctions[:],
+		elevated: excelElevatedFunctions[:],
+	},
+	FTS: {
+		compute:  ftsComputeFunctions[:],
+		elevated: ftsElevatedFunctions[:],
+	},
+	HTTPFS: {
+		compute:  httpfsComputeFunctions[:],
+		elevated: httpfsElevatedFunctions[:],
+	},
+	Iceberg: {
+		compute:  icebergComputeFunctions[:],
+		elevated: icebergElevatedFunctions[:],
+	},
+	ICU: {
+		compute:  icuComputeFunctions[:],
+		elevated: icuElevatedFunctions[:],
+	},
+	Inet: {
+		compute:  inetComputeFunctions[:],
+		elevated: inetElevatedFunctions[:],
+	},
+	JSON: {
+		compute:  jsonComputeFunctions[:],
+		elevated: jsonElevatedFunctions[:],
+	},
+	Lance: {
+		compute:  lanceComputeFunctions[:],
+		elevated: lanceElevatedFunctions[:],
+	},
+	MotherDuck: {
+		compute:  motherDuckComputeFunctions[:],
+		elevated: motherDuckElevatedFunctions[:],
+	},
+	MySQL: {
+		compute:  mysqlComputeFunctions[:],
+		elevated: mysqlElevatedFunctions[:],
+	},
+	ODBC: {
+		compute:  odbcComputeFunctions[:],
+		elevated: odbcElevatedFunctions[:],
+	},
 	Parquet: {
 		compute:  parquetComputeFunctions[:],
 		elevated: parquetElevatedFunctions[:],
 	},
-	Postgres: {},
-	Quack:    {},
+	Postgres: {
+		compute:  postgresComputeFunctions[:],
+		elevated: postgresElevatedFunctions[:],
+	},
+	Quack: {
+		compute:  quackComputeFunctions[:],
+		elevated: quackElevatedFunctions[:],
+	},
 	Spatial: {
 		compute:  spatialComputeFunctions[:],
 		elevated: spatialElevatedFunctions[:],
 	},
-	SQLite:       {},
-	TPCDS:        {},
-	TPCH:         {},
-	UI:           {},
-	UnityCatalog: {},
-	Vortex:       {},
-	VSS:          {},
+	SQLite: {
+		compute:  sqliteComputeFunctions[:],
+		elevated: sqliteElevatedFunctions[:],
+	},
+	TPCDS: {
+		compute:  tpcdsComputeFunctions[:],
+		elevated: tpcdsElevatedFunctions[:],
+	},
+	TPCH: {
+		compute:  tpchComputeFunctions[:],
+		elevated: tpchElevatedFunctions[:],
+	},
+	UI: {
+		compute:  uiComputeFunctions[:],
+		elevated: uiElevatedFunctions[:],
+	},
+	UnityCatalog: {
+		compute:  unityCatalogComputeFunctions[:],
+		elevated: unityCatalogElevatedFunctions[:],
+	},
+	Vortex: {
+		compute:  vortexComputeFunctions[:],
+		elevated: vortexElevatedFunctions[:],
+	},
+	VSS: {
+		compute:  vssComputeFunctions[:],
+		elevated: vssElevatedFunctions[:],
+	},
 }
 
-// Compute returns the function names admitted by the default policy.
+// Compute returns the reviewed compute-oriented function names.
 func (e ExtensionFunctions) Compute() []string {
 	return extensionFunctionNames(extensionFunctionInventories[e].compute)
 }
