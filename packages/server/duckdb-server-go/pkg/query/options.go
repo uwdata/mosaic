@@ -4,6 +4,8 @@ import (
 	"log/slog"
 	"strings"
 	"time"
+
+	"github.com/uwdata/mosaic/packages/server/duckdb-server-go/pkg/functionset"
 )
 
 type Options struct {
@@ -39,7 +41,7 @@ type FunctionAllowlistOptions struct {
 	// Exclude removes exact function names after defaults and includes are combined.
 	Exclude []string
 
-	// DisableDefaults omits the function names returned by DefaultFunctions.
+	// DisableDefaults omits the function names returned by functionset.DefaultFunctions.
 	DisableDefaults bool
 }
 
@@ -109,7 +111,7 @@ func WithFunctionAllowlist(options FunctionAllowlistOptions) OptionFunc {
 func resolveFunctionAllowlist(options FunctionAllowlistOptions) []string {
 	var functions []string
 	if !options.DisableDefaults {
-		functions = DefaultFunctions()
+		functions = functionset.DefaultFunctions()
 	}
 	functions = append(functions, options.Include...)
 

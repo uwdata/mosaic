@@ -1,4 +1,5 @@
-package query
+// Package functionset provides reviewed DuckDB function-name inventories for query policies.
+package functionset
 
 import (
 	"maps"

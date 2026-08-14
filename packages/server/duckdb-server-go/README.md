@@ -103,7 +103,7 @@ query.WithFunctionAllowlist(query.FunctionAllowlistOptions{
 ```
 
 The defaults cover ordinary local computation: built-in operators, aggregates, windows, parser syntax helpers, common
-side-effect-free scalar functions, and non-I/O table generators. The package exposes `DefaultFunctions`,
+side-effect-free scalar functions, and non-I/O table generators. `pkg/functionset` exposes `DefaultFunctions`,
 `BuiltinOperators`, `BuiltinAggregates`, `BuiltinWindows`, `BuiltinSyntaxHelpers`, `BuiltinTableGenerators`, and
 `CommonScalarFunctions`; each returns a fresh list that can also be appended to `Include` or `Exclude`. These inventories
 were reviewed against DuckDB 1.5.5 and must be reviewed when DuckDB is upgraded. Newly introduced and extension-provided

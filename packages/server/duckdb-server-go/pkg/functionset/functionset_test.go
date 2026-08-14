@@ -1,10 +1,11 @@
-package query
+package functionset
 
 import (
 	"database/sql"
 	"slices"
 	"testing"
 
+	"github.com/duckdb/duckdb-go/v2"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -83,8 +84,15 @@ func TestDefaultFunctionsMatchDuckDBCatalog(t *testing.T) {
 		stability    sql.NullString
 	}
 
-	db := setupTestDB(t)
-	rows, err := db.db.QueryContext(t.Context(), `
+	connector, err := duckdb.NewConnector(":memory:", nil)
+	require.NoError(t, err)
+	db := sql.OpenDB(connector)
+	t.Cleanup(func() {
+		require.NoError(t, db.Close())
+		require.NoError(t, connector.Close())
+	})
+
+	rows, err := db.QueryContext(t.Context(), `
 		SELECT DISTINCT
 			lower(function_name),
 			function_type,

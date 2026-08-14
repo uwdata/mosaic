@@ -1,6 +1,6 @@
 # Function allowlist inventories
 
-When changing the reviewed defaults in `pkg/query/builtin_functions.go`:
+When changing the reviewed defaults in `pkg/functionset/functionset.go`:
 
 - Treat the DuckDB release bundled by the `duckdb-go` version in `go.mod` as the source of truth. Inspect that tag's function registrations, parser rewrites, and macro bodies; use `duckdb_functions()` as a classification cross-check, not as a generated allowlist.
 - Keep names lowercase, sorted, deduplicated, and grouped by the serialized `function_name`. Audit side effects, volatility, resource I/O, dynamic SQL or dispatch, and type or macro collisions. Leave uncertain names out.
