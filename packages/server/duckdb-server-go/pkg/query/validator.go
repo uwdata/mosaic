@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"maps"
 	"slices"
 	"strings"
 )
@@ -298,9 +299,10 @@ func (v *baseTableValidator) Validate() []error {
 }
 
 type functionListValidator struct {
-	functions []string
-	allowlist bool
-	errs      []error
+	functions      []string
+	allowlist      bool
+	functionCounts map[string]int
+	errs           []error
 }
 
 func newFunctionBlocklistValidator(blockedFunctions []string) Validator {
@@ -313,8 +315,9 @@ func newFunctionAllowlistValidator(allowedFunctions []string) Validator {
 
 func newFunctionListValidator(functions []string, allowlist bool) Validator {
 	return &functionListValidator{
-		functions: functions,
-		allowlist: allowlist,
+		functions:      functions,
+		allowlist:      allowlist,
+		functionCounts: make(map[string]int),
 	}
 }
 
@@ -339,16 +342,27 @@ func (v *functionListValidator) CheckNode(node map[string]any, _ []string) {
 		return
 	}
 	functionNameStr = strings.ToLower(functionNameStr)
-
-	listed := slices.Contains(v.functions, functionNameStr)
-	switch {
-	case v.allowlist && !listed:
-		v.errs = append(v.errs, fmt.Errorf("%w: function '%s' is not in the allowlist", ErrAccessDenied, functionNameStr))
-	case !v.allowlist && listed:
-		v.errs = append(v.errs, fmt.Errorf("%w: use of function '%s' is not allowed", ErrAccessDenied, functionNameStr))
-	}
+	v.functionCounts[functionNameStr]++
 }
 
 func (v *functionListValidator) Validate() []error {
-	return v.errs
+	errs := append([]error(nil), v.errs...)
+	for _, functionName := range slices.Sorted(maps.Keys(v.functionCounts)) {
+		listed := slices.Contains(v.functions, functionName)
+		if listed == v.allowlist {
+			continue
+		}
+
+		var err error
+		if v.allowlist {
+			err = fmt.Errorf("%w: function '%s' is not in the allowlist", ErrAccessDenied, functionName)
+		} else {
+			err = fmt.Errorf("%w: use of function '%s' is not allowed", ErrAccessDenied, functionName)
+		}
+		if count := v.functionCounts[functionName]; count > 1 {
+			err = fmt.Errorf("%w (%d occurrences)", err, count)
+		}
+		errs = append(errs, err)
+	}
+	return errs
 }

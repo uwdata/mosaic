@@ -368,6 +368,57 @@ func TestFunctionBlocklistValidatorRejectsMissingFunctionName(t *testing.T) {
 	assert.EqualError(t, errs[0], "query: invalid function node: missing 'function_name'")
 }
 
+func TestFunctionListValidatorCountsViolations(t *testing.T) {
+	tests := []struct {
+		name         string
+		newValidator func([]string) Validator
+		functions    []string
+		want         []string
+	}{
+		{
+			name:         "allowlist",
+			newValidator: newFunctionAllowlistValidator,
+			functions:    []string{"sum"},
+			want: []string{
+				"query: access denied: function 'lower' is not in the allowlist",
+				"query: access denied: function 'md5' is not in the allowlist (2 occurrences)",
+			},
+		},
+		{
+			name:         "blocklist",
+			newValidator: newFunctionBlocklistValidator,
+			functions:    []string{"lower", "md5"},
+			want: []string{
+				"query: access denied: use of function 'lower' is not allowed",
+				"query: access denied: use of function 'md5' is not allowed (2 occurrences)",
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			validator := tt.newValidator(tt.functions)
+			for _, node := range []map[string]any{
+				{"class": "FUNCTION", "function_name": "MD5"},
+				{"class": "WINDOW", "function_name": "md5"},
+				{"class": "FUNCTION", "function_name": "LOWER"},
+				{"class": "FUNCTION", "function_name": "SUM"},
+			} {
+				validator.CheckNode(node, nil)
+			}
+
+			for range 2 {
+				errs := validator.Validate()
+				require.Len(t, errs, len(tt.want))
+				for i, want := range tt.want {
+					assert.ErrorIs(t, errs[i], ErrAccessDenied)
+					assert.EqualError(t, errs[i], want)
+				}
+			}
+		})
+	}
+}
+
 func TestFunctionAllowlistValidator(t *testing.T) {
 	tests := []struct {
 		name      string
