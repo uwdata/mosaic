@@ -115,6 +115,8 @@ func TestDB_FunctionAllowlist(t *testing.T) {
 			{name: "operator", query: "SELECT 1 + 2", format: "json"},
 			{name: "Arrow table function", query: "SELECT * FROM range(3)", format: "arrow"},
 			{name: "normalized function name", query: "SELECT count(*)", format: "json"},
+			{name: "main-qualified function", query: "SELECT main.md5('mosaic')", format: "json"},
+			{name: "main-qualified normalized function", query: "SELECT main.count(*) FROM (SELECT 1)", format: "json"},
 			{name: "helper over qualified column", query: "SELECT [main.x] FROM (SELECT 1 AS x) AS main", format: "json"},
 		}
 
@@ -147,16 +149,14 @@ func TestDB_FunctionAllowlist(t *testing.T) {
 		require.ErrorContains(t, err, "function 'lower' is not in the allowlist")
 	})
 
-	t.Run("rejects qualified allowed functions", func(t *testing.T) {
+	t.Run("rejects non-main qualified allowed functions", func(t *testing.T) {
 		db := setupTestDB(t, WithFunctionAllowlist([]string{"md5", "count_star"}))
 
 		tests := []struct {
 			query         string
 			qualifiedName string
 		}{
-			{query: "SELECT main.md5('mosaic')", qualifiedName: "main.md5"},
-			{query: "SELECT main.count(*) FROM (SELECT 1)", qualifiedName: "main.count_star"},
-			{query: "SELECT main.\"count\" /* call */ (*) FROM (SELECT 1)", qualifiedName: "main.count_star"},
+			{query: "SELECT tenant.md5('mosaic')", qualifiedName: "tenant.md5"},
 			{query: "SELECT system.main.count(*) FROM (SELECT 1)", qualifiedName: "system.main.count_star"},
 		}
 		for _, tt := range tests {

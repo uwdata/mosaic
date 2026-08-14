@@ -5,10 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"slices"
-	"strconv"
 	"strings"
-	"unicode"
-	"unicode/utf8"
 )
 
 var (
@@ -344,15 +341,13 @@ func (v *functionBlocklistValidator) Validate() []error {
 
 type functionAllowlistValidator struct {
 	allowedFunctions []string
-	query            string
 	reportedErrors   map[string]struct{}
 	errs             []error
 }
 
-func newFunctionAllowlistValidator(allowedFunctions []string, query string) Validator {
+func newFunctionAllowlistValidator(allowedFunctions []string) Validator {
 	return &functionAllowlistValidator{
 		allowedFunctions: allowedFunctions,
-		query:            query,
 		reportedErrors:   make(map[string]struct{}),
 	}
 }
@@ -376,7 +371,7 @@ func (v *functionAllowlistValidator) CheckNode(node map[string]any, _ []string) 
 	}
 	functionNameStr = strings.ToLower(functionNameStr)
 
-	qualifiedName, qualified, err := qualifiedFunctionName(node, functionNameStr, v.query)
+	qualifiedName, qualified, err := restrictedFunctionName(node, functionNameStr)
 	if err != nil {
 		v.errs = append(v.errs, err)
 		return
@@ -397,132 +392,40 @@ func (v *functionAllowlistValidator) CheckNode(node map[string]any, _ []string) 
 	}
 }
 
-func qualifiedFunctionName(node map[string]any, functionName, query string) (string, bool, error) {
-	parts := make([]string, 0, 3)
-	for _, field := range []string{"catalog", "schema"} {
-		value, exists := node[field]
-		if !exists {
-			continue
-		}
-		valueStr, ok := value.(string)
-		if !ok {
-			return "", false, fmt.Errorf("query: invalid '%s' in function, expected string: %v", field, value)
-		}
-		parts = append(parts, strings.ToLower(valueStr))
+func restrictedFunctionName(node map[string]any, functionName string) (string, bool, error) {
+	catalog, hasCatalog, err := functionQualifier(node, "catalog")
+	if err != nil {
+		return "", false, err
 	}
-	if len(parts) == 0 {
+	schema, hasSchema, err := functionQualifier(node, "schema")
+	if err != nil {
+		return "", false, err
+	}
+	if !hasCatalog && (!hasSchema || strings.EqualFold(schema, "main")) {
 		return functionName, false, nil
+	}
+
+	parts := make([]string, 0, 3)
+	if hasCatalog {
+		parts = append(parts, strings.ToLower(catalog))
+	}
+	if hasSchema {
+		parts = append(parts, strings.ToLower(schema))
 	}
 	parts = append(parts, functionName)
-	if !isExplicitQualifiedFunction(node, query, parts) {
-		return functionName, false, nil
-	}
 	return strings.Join(parts, "."), true, nil
 }
 
-func isExplicitQualifiedFunction(node map[string]any, query string, parts []string) bool {
-	rawLocation, exists := node["query_location"]
-	if !exists || query == "" {
-		return true
+func functionQualifier(node map[string]any, field string) (string, bool, error) {
+	value, exists := node[field]
+	if !exists {
+		return "", false, nil
 	}
-	location, err := strconv.Atoi(fmt.Sprint(rawLocation))
-	if err != nil || location < 0 || location >= len(query) {
-		return true
-	}
-
-	for _, part := range parts[:len(parts)-1] {
-		location = skipSQLTrivia(query, location)
-		identifier, next, ok := scanSQLIdentifier(query, location)
-		if !ok || !strings.EqualFold(identifier, part) {
-			return false
-		}
-		location = skipSQLTrivia(query, next)
-		if location >= len(query) || query[location] != '.' {
-			return false
-		}
-		location++
-	}
-	location = skipSQLTrivia(query, location)
-	_, next, ok := scanSQLIdentifier(query, location)
+	valueStr, ok := value.(string)
 	if !ok {
-		return false
+		return "", false, fmt.Errorf("query: invalid '%s' in function, expected string: %v", field, value)
 	}
-	location = skipSQLTrivia(query, next)
-	return location < len(query) && query[location] == '('
-}
-
-func skipSQLTrivia(query string, offset int) int {
-	for offset < len(query) {
-		r, size := utf8.DecodeRuneInString(query[offset:])
-		if unicode.IsSpace(r) {
-			offset += size
-			continue
-		}
-		if strings.HasPrefix(query[offset:], "--") {
-			if end := strings.IndexByte(query[offset:], '\n'); end >= 0 {
-				offset += end + 1
-				continue
-			}
-			return len(query)
-		}
-		if strings.HasPrefix(query[offset:], "/*") {
-			depth := 1
-			offset += 2
-			for offset < len(query) && depth > 0 {
-				switch {
-				case strings.HasPrefix(query[offset:], "/*"):
-					depth++
-					offset += 2
-				case strings.HasPrefix(query[offset:], "*/"):
-					depth--
-					offset += 2
-				default:
-					_, size := utf8.DecodeRuneInString(query[offset:])
-					offset += size
-				}
-			}
-			if depth == 0 {
-				continue
-			}
-			return len(query)
-		}
-		break
-	}
-	return offset
-}
-
-func scanSQLIdentifier(query string, offset int) (string, int, bool) {
-	if offset >= len(query) {
-		return "", offset, false
-	}
-	if query[offset] == '"' {
-		var identifier strings.Builder
-		for offset++; offset < len(query); {
-			if query[offset] != '"' {
-				r, size := utf8.DecodeRuneInString(query[offset:])
-				identifier.WriteRune(r)
-				offset += size
-				continue
-			}
-			if offset+1 < len(query) && query[offset+1] == '"' {
-				identifier.WriteByte('"')
-				offset += 2
-				continue
-			}
-			return identifier.String(), offset + 1, true
-		}
-		return "", offset, false
-	}
-
-	start := offset
-	for offset < len(query) {
-		r, size := utf8.DecodeRuneInString(query[offset:])
-		if !unicode.IsLetter(r) && !unicode.IsDigit(r) && r != '_' && r != '$' {
-			break
-		}
-		offset += size
-	}
-	return query[start:offset], offset, offset > start
+	return valueStr, true, nil
 }
 
 func (v *functionAllowlistValidator) rejectOnce(key string, err error) {

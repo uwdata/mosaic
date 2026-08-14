@@ -359,7 +359,6 @@ func TestFunctionAllowlistValidator(t *testing.T) {
 	tests := []struct {
 		name      string
 		allowlist []string
-		query     string
 		node      map[string]any
 		wantErr   string
 	}{
@@ -380,62 +379,51 @@ func TestFunctionAllowlistValidator(t *testing.T) {
 			wantErr:   "query: access denied: function 'md5' is not in the allowlist",
 		},
 		{
-			name:      "rejects schema-qualified allowed name",
+			name:      "allows main-qualified allowed name",
 			allowlist: []string{"md5"},
-			query:     "SELECT Main.MD5('x')",
 			node: map[string]any{
-				"class":          "FUNCTION",
-				"schema":         "Main",
-				"function_name":  "MD5",
-				"query_location": 7,
+				"class":         "FUNCTION",
+				"schema":        "Main",
+				"function_name": "MD5",
 			},
-			wantErr: "query: access denied: qualified function 'main.md5' is not allowed",
+		},
+		{
+			name:      "rejects non-main schema-qualified allowed name",
+			allowlist: []string{"md5"},
+			node: map[string]any{
+				"class":         "FUNCTION",
+				"schema":        "Tenant",
+				"function_name": "MD5",
+			},
+			wantErr: "query: access denied: qualified function 'tenant.md5' is not allowed",
 		},
 		{
 			name:      "rejects catalog-qualified allowed name",
 			allowlist: []string{"md5"},
-			query:     "SELECT \"OtherDB\" /* comment */ . Main.MD5('x') OVER ()",
 			node: map[string]any{
-				"class":          "WINDOW",
-				"catalog":        "OtherDB",
-				"schema":         "Main",
-				"function_name":  "MD5",
-				"query_location": 7,
+				"class":         "WINDOW",
+				"catalog":       "OtherDB",
+				"schema":        "Main",
+				"function_name": "MD5",
 			},
 			wantErr: "query: access denied: qualified function 'otherdb.main.md5' is not allowed",
 		},
 		{
-			name:      "rejects qualified normalized function name",
+			name:      "allows main-qualified normalized function name",
 			allowlist: []string{"count_star"},
-			query:     "SELECT main.count(*)",
 			node: map[string]any{
-				"class":          "FUNCTION",
-				"schema":         "main",
-				"function_name":  "count_star",
-				"query_location": 7,
+				"class":         "FUNCTION",
+				"schema":        "main",
+				"function_name": "count_star",
 			},
-			wantErr: "query: access denied: qualified function 'main.count_star' is not allowed",
 		},
 		{
 			name:      "allows parser-generated qualified helper",
 			allowlist: []string{"list_value"},
-			query:     "SELECT [1, 2]",
 			node: map[string]any{
-				"class":          "FUNCTION",
-				"schema":         "main",
-				"function_name":  "list_value",
-				"query_location": 7,
-			},
-		},
-		{
-			name:      "allows parser helper over qualified column",
-			allowlist: []string{"list_value"},
-			query:     "SELECT [main.x] FROM (SELECT 1 AS x) AS main",
-			node: map[string]any{
-				"class":          "FUNCTION",
-				"schema":         "main",
-				"function_name":  "list_value",
-				"query_location": 8,
+				"class":         "FUNCTION",
+				"schema":        "main",
+				"function_name": "list_value",
 			},
 		},
 		{
@@ -450,11 +438,17 @@ func TestFunctionAllowlistValidator(t *testing.T) {
 			node:      map[string]any{"class": "WINDOW", "function_name": 42},
 			wantErr:   "query: invalid 'function_name' in function, expected string: 42",
 		},
+		{
+			name:      "rejects invalid schema qualifier",
+			allowlist: []string{"md5"},
+			node:      map[string]any{"class": "FUNCTION", "schema": 42, "function_name": "md5"},
+			wantErr:   "query: invalid 'schema' in function, expected string: 42",
+		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			validator := newFunctionAllowlistValidator(tt.allowlist, tt.query)
+			validator := newFunctionAllowlistValidator(tt.allowlist)
 			validator.CheckNode(tt.node, nil)
 
 			errs := validator.Validate()
@@ -470,12 +464,14 @@ func TestFunctionAllowlistValidator(t *testing.T) {
 }
 
 func TestFunctionAllowlistValidatorDeduplicatesErrors(t *testing.T) {
-	validator := newFunctionAllowlistValidator([]string{"sum"}, "")
+	validator := newFunctionAllowlistValidator([]string{"sum"})
 	for _, node := range []map[string]any{
 		{"class": "FUNCTION", "function_name": "MD5"},
 		{"class": "WINDOW", "function_name": "md5"},
 		{"class": "FUNCTION", "schema": "Main", "function_name": "MD5"},
 		{"class": "FUNCTION", "schema": "main", "function_name": "md5"},
+		{"class": "FUNCTION", "schema": "Tenant", "function_name": "MD5"},
+		{"class": "FUNCTION", "schema": "tenant", "function_name": "md5"},
 		{"class": "FUNCTION", "function_name": "LOWER"},
 	} {
 		validator.CheckNode(node, nil)
@@ -484,7 +480,7 @@ func TestFunctionAllowlistValidatorDeduplicatesErrors(t *testing.T) {
 	errs := validator.Validate()
 	if assert.Len(t, errs, 3) {
 		assert.EqualError(t, errs[0], "query: access denied: function 'md5' is not in the allowlist")
-		assert.EqualError(t, errs[1], "query: access denied: qualified function 'main.md5' is not allowed")
+		assert.EqualError(t, errs[1], "query: access denied: qualified function 'tenant.md5' is not allowed")
 		assert.EqualError(t, errs[2], "query: access denied: function 'lower' is not in the allowlist")
 	}
 }
