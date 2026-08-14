@@ -254,7 +254,7 @@ func TestDefaultFunctionsMatchDuckDBCatalog(t *testing.T) {
 		"!__postfix": {},
 	}
 
-	for _, name := range DefaultFunctions() {
+	for _, name := range builtinDefaultFunctions() {
 		entries := catalog[name]
 		if len(entries) == 0 {
 			_, exempt := catalogExemptions[name]
@@ -343,6 +343,9 @@ func TestDefaultFunctionsUnion(t *testing.T) {
 		BuiltinTableGenerators(),
 		CommonScalarFunctions(),
 	}
+	for _, extension := range CoreExtensions() {
+		groups = append(groups, extension.Compute())
+	}
 
 	wantSet := make(map[string]struct{})
 	for _, group := range groups {
@@ -369,7 +372,6 @@ func TestDefaultFunctionsUnion(t *testing.T) {
 		"getenv",
 		"glob",
 		"histogram",
-		"json_deserialize_sql",
 		"json_execute_serialized_sql",
 		"list_aggregate",
 		"list_aggr",

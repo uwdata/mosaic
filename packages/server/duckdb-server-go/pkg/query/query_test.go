@@ -206,6 +206,28 @@ func TestDB_FunctionAllowlist(t *testing.T) {
 		}
 	})
 
+	t.Run("defaults classify extension functions before binding", func(t *testing.T) {
+		db := setupTestDB(t, WithFunctionAllowlist(FunctionAllowlistOptions{}))
+
+		for _, query := range []string{
+			"SELECT st_x(st_point(1, 2))",
+			"SELECT json_serialize_sql('SELECT 1')",
+			"SELECT iceberg_bucket(16, 'value')",
+		} {
+			require.NoError(t, db.validateQuery(ctx, query, nil), query)
+		}
+
+		for function, query := range map[string]string{
+			"json_execute_serialized_sql": "SELECT * FROM json_execute_serialized_sql('{}')",
+			"st_read":                     "SELECT * FROM st_read('data.geojson')",
+			"st_transform":                "SELECT st_transform(NULL, 'EPSG:4326', 'EPSG:3857')",
+		} {
+			err := db.validateQuery(ctx, query, nil)
+			require.ErrorIs(t, err, ErrAccessDenied)
+			require.ErrorContains(t, err, "function '"+function+"' is not in the allowlist")
+		}
+	})
+
 	t.Run("defaults reject unsafe name collisions", func(t *testing.T) {
 		db := setupTestDB(t, WithFunctionAllowlist(FunctionAllowlistOptions{}))
 

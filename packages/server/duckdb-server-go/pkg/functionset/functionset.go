@@ -603,8 +603,16 @@ var commonScalarFunctions = [...]string{
 	"yearweek",
 }
 
-// DefaultFunctions returns the reviewed local-compute functions enabled by a default allowlist.
+// DefaultFunctions returns the reviewed functions enabled by a default allowlist.
 func DefaultFunctions() []string {
+	groups := [][]string{builtinDefaultFunctions()}
+	for _, extension := range coreExtensions {
+		groups = append(groups, extensionFunctionInventories[extension].compute)
+	}
+	return functionNames(groups...)
+}
+
+func builtinDefaultFunctions() []string {
 	return functionNames(
 		builtinOperators[:],
 		builtinAggregates[:],

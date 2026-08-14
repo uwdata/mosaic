@@ -46,7 +46,11 @@ func TestResolveFunctionAllowlist(t *testing.T) {
 		functions := resolveFunctionAllowlist(FunctionAllowlistOptions{})
 		assert.Contains(t, functions, "+")
 		assert.Contains(t, functions, "count_star")
+		assert.Contains(t, functions, "json_serialize_sql")
+		assert.Contains(t, functions, "st_x")
 		assert.Contains(t, functions, "sum")
+		assert.NotContains(t, functions, "st_read")
+		assert.NotContains(t, functions, "st_transform")
 	})
 
 	t.Run("include and exclude", func(t *testing.T) {

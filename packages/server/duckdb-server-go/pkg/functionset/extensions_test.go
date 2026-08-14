@@ -127,6 +127,30 @@ func TestExtensionFunctionInventories(t *testing.T) {
 	}
 }
 
+func TestCoreExtensionPolicies(t *testing.T) {
+	defaults := DefaultFunctions()
+	for _, extension := range CoreExtensions() {
+		t.Run(string(extension), func(t *testing.T) {
+			compute := extension.Compute()
+			elevated := extension.Elevated()
+			all := extension.All()
+
+			assertFunctionInventory(t, compute)
+			assertFunctionInventory(t, elevated)
+			assertFunctionInventory(t, all)
+			assert.Equal(t, extensionFunctionNames(compute, elevated), all)
+
+			for _, function := range compute {
+				assert.Contains(t, defaults, function)
+				assert.NotContains(t, elevated, function)
+			}
+			for _, function := range elevated {
+				assert.NotContains(t, defaults, function)
+			}
+		})
+	}
+}
+
 func TestUnknownExtensionFunctions(t *testing.T) {
 	extension := ExtensionFunctions("unknown")
 	assert.NotNil(t, extension.Compute())
