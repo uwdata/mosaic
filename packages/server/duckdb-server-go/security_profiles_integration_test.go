@@ -264,7 +264,9 @@ func TestLocalFilesProfileComposesWithFunctionAllowlist(t *testing.T) {
 
 	connector, err := newProfileConnector(t.Context(), profile)
 	require.NoError(t, err)
-	db, err := query.New(t.Context(), connector, query.WithFunctionAllowlist([]string{"read_parquet"}))
+	db, err := query.New(t.Context(), connector, query.WithFunctionAllowlist(query.FunctionAllowlistOptions{
+		Include: []string{"read_parquet"},
+	}))
 	require.NoError(t, err)
 	t.Cleanup(func() {
 		db.Close()
