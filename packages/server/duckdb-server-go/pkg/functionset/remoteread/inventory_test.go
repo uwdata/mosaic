@@ -59,6 +59,7 @@ var expectedFunctionNames = []string{
 	"read_xlsx",
 	"shapefile_meta",
 	"sniff_csv",
+	"sql_auto_complete",
 	"sqlite_attach",
 	"sqlite_scan",
 	"st_read",

@@ -193,9 +193,10 @@ is a useful autoloading cross-check, but it is not exhaustive: the pinned Azure 
 
 Trusted initialization can still load filesystem extensions and attach remote Iceberg or other catalogs before accepting
 queries. Queries against those attached catalogs use catalog and table identifiers rather than caller-supplied URI
-literals, so they remain usable. Enabling this policy rejects all `exec` commands and rejects the known nested-SQL table
-functions `query` and `json_execute_serialized_sql` outright. `json` and `arrow` requests are limited to statements
-DuckDB can serialize for validation. Connector initialization is outside that command path.
+literals, so they remain usable. Enabling this policy rejects all `exec` commands and rejects the known nested-SQL
+binders and executors `query`, `json_execute_serialized_sql`, and `json_serialize_plan` outright. `json` and `arrow`
+requests are limited to statements DuckDB can serialize for validation. Connector initialization is outside that command
+path.
 
 DuckDB's serialized AST does not distinguish a replacement-scan string from a quoted table or CTE identifier, so a
 URI-shaped identifier is rejected too.

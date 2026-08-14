@@ -90,6 +90,11 @@ func TestRemoteURILiteralValidatorPathArguments(t *testing.T) {
 			wantPrefix: "https://",
 		},
 		{
+			name:       "autocomplete filename suggestion",
+			sql:        "SELECT * FROM sql_auto_complete('SELECT * FROM ''GCS://bucket/file', max_file_suggestion_count := 10)",
+			wantPrefix: "gcs://",
+		},
+		{
 			name: "local path",
 			sql:  "SELECT * FROM read_parquet('/var/data/file.parquet')",
 		},
@@ -100,6 +105,10 @@ func TestRemoteURILiteralValidatorPathArguments(t *testing.T) {
 		{
 			name: "local array constructor",
 			sql:  "SELECT * FROM read_parquet(ARRAY['/var/data/a.parquet', '/var/data/b.parquet'])",
+		},
+		{
+			name: "local autocomplete filename suggestion",
+			sql:  "SELECT * FROM sql_auto_complete('SELECT * FROM ''/var/data/file', max_file_suggestion_count := 10)",
 		},
 		{
 			name: "remote literal in non-path argument",
@@ -164,6 +173,11 @@ func TestRemoteURILiteralValidatorRejectsNestedSQLExecutors(t *testing.T) {
 			sql:      "SELECT * FROM query('SELECT * FROM read_parquet(''https://example.com/file.parquet'')')",
 		},
 		{
+			name:     "qualified mixed-case query",
+			function: "query",
+			sql:      "SELECT * FROM MAIN.QUERY('SELECT 42')",
+		},
+		{
 			name:     "serialized SQL with literal JSON",
 			function: "json_execute_serialized_sql",
 			sql:      "SELECT * FROM json_execute_serialized_sql('{}')",
@@ -172,6 +186,11 @@ func TestRemoteURILiteralValidatorRejectsNestedSQLExecutors(t *testing.T) {
 			name:     "serialized SQL produced from remote reader",
 			function: "json_execute_serialized_sql",
 			sql:      "SELECT * FROM json_execute_serialized_sql(json_serialize_sql('SELECT * FROM read_parquet(''https://example.com/file.parquet'')'))",
+		},
+		{
+			name:     "qualified serialized SQL",
+			function: "json_execute_serialized_sql",
+			sql:      "SELECT * FROM system.json_execute_serialized_sql('{}')",
 		},
 	}
 
@@ -193,6 +212,47 @@ func TestRemoteURILiteralValidatorAllowsScalarExecutorNames(t *testing.T) {
 	for _, sql := range []string{
 		"SELECT query('local')",
 		"SELECT json_execute_serialized_sql('local')",
+	} {
+		t.Run(sql, func(t *testing.T) {
+			assert.NoError(t, db.ValidateSQL(t.Context(), sql, newRemoteURILiteralValidator()))
+		})
+	}
+}
+
+func TestRemoteURILiteralValidatorRejectsJSONSerializePlan(t *testing.T) {
+	db := setupTestDB(t)
+
+	for _, sql := range []string{
+		"SELECT json_serialize_plan('SELECT 42')",
+		"SELECT json_serialize_plan('SELECT * FROM read_csv(''https://example.com/file.csv'')')",
+		"SELECT MaIn.JsOn_SeRiAlIzE_PlAn('SELECT 42')",
+		"SELECT system.json_serialize_plan('SELECT * FROM read_csv(''https://example.com/file.csv'')')",
+		"SELECT system.main.json_serialize_plan('SELECT 42')",
+	} {
+		t.Run(sql, func(t *testing.T) {
+			err := db.ValidateSQL(t.Context(), sql, newRemoteURILiteralValidator())
+			require.ErrorIs(t, err, ErrAccessDenied)
+			assert.EqualError(t, err, "query: access denied: nested SQL executor 'json_serialize_plan' is not allowed")
+		})
+	}
+}
+
+func TestRemoteURILiteralValidatorAllowsTableMacroNamedJSONSerializePlan(t *testing.T) {
+	db := setupTestDB(t)
+
+	assert.NoError(t, db.ValidateSQL(
+		t.Context(),
+		"SELECT * FROM json_serialize_plan('local')",
+		newRemoteURILiteralValidator(),
+	))
+}
+
+func TestRemoteURILiteralValidatorAllowsQualifiedJSONSerializePlanUDF(t *testing.T) {
+	db := setupTestDB(t)
+
+	for _, sql := range []string{
+		"SELECT tenant.json_serialize_plan('local')",
+		"SELECT other.main.json_serialize_plan('local')",
 	} {
 		t.Run(sql, func(t *testing.T) {
 			assert.NoError(t, db.ValidateSQL(t.Context(), sql, newRemoteURILiteralValidator()))
@@ -308,6 +368,45 @@ func TestDBRemoteURILiteralRejection(t *testing.T) {
 	_, _, err = db.QueryJSON(t.Context(), "SELECT * FROM query('SELECT 42')", nil, false)
 	require.ErrorIs(t, err, ErrAccessDenied)
 	assert.ErrorContains(t, err, "nested SQL executor 'query' is not allowed")
+
+	_, _, err = db.QueryJSON(
+		t.Context(),
+		"SELECT json_serialize_plan('SELECT * FROM read_csv(''https://example.com/file.csv'')')",
+		nil,
+		false,
+	)
+	require.ErrorIs(t, err, ErrAccessDenied)
+	assert.ErrorContains(t, err, "nested SQL executor 'json_serialize_plan' is not allowed")
+
+	_, _, err = db.QueryJSON(
+		t.Context(),
+		"SELECT system.json_serialize_plan('SELECT * FROM read_csv(''https://example.com/file.csv'')')",
+		nil,
+		false,
+	)
+	require.ErrorIs(t, err, ErrAccessDenied)
+	assert.ErrorContains(t, err, "nested SQL executor 'json_serialize_plan' is not allowed")
+
+	autocompleteSQL := "SELECT * FROM '" + filepath.Join(filepath.Dir(path), "loc")
+	_, _, err = db.QueryJSON(
+		t.Context(),
+		"SELECT * FROM sql_auto_complete("+quoteLiteral(autocompleteSQL)+", max_file_suggestion_count := 10)",
+		nil,
+		false,
+	)
+	require.NoError(t, err)
+
+	_, _, err = db.QueryJSON(
+		t.Context(),
+		"SELECT * FROM sql_auto_complete('SELECT * FROM ''S3://no-such-bucket/file', max_file_suggestion_count := 10)",
+		nil,
+		false,
+	)
+	require.ErrorIs(t, err, ErrAccessDenied)
+	assert.ErrorContains(t, err, "remote URI prefix 's3://' is not allowed in path argument to function 'sql_auto_complete'")
+
+	_, _, err = db.QueryJSON(t.Context(), "PRAGMA import_database('s3://bucket/export')", nil, false)
+	require.ErrorIs(t, err, ErrUnsupportedStatement)
 
 	err = db.Exec(t.Context(), "SELECT 1")
 	require.ErrorIs(t, err, ErrExecWithValidation)

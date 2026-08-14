@@ -19,6 +19,7 @@ type inventoryGroup struct {
 }
 
 var inventoryGroups = [...]inventoryGroup{
+	{name: "autocomplete", functions: autocompleteFunctions},
 	{name: "avro", functions: avroFunctions},
 	{name: "core", functions: coreFunctions},
 	{name: "delta", functions: deltaFunctions},

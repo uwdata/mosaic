@@ -13,7 +13,7 @@ filesystem sources. DuckDB's generated extension-prefix map is only an
 autoloading cross-check and omits `abfs://`, which the pinned Azure DFS
 filesystem accepts.
 
-The inventory contains 58 normalized function names reviewed against DuckDB
+The inventory contains 59 normalized function names reviewed against DuckDB
 1.5.5 at
 [`d8cdaa33`](https://github.com/duckdb/duckdb/tree/d8cdaa33fda8df955cc76ef58a280f68f4cd43fa).
 Positional indexes are zero-based among unnamed SQL arguments. Named selectors
@@ -22,6 +22,7 @@ selectors of all reviewed overloads.
 
 | Source | Selectors | Functions |
 | --- | --- | --- |
+| [Autocomplete](https://github.com/duckdb/duckdb/blob/v1.5.5/extension/autocomplete/autocomplete_extension.cpp#L389-L411) | `0` | `sql_auto_complete` |
 | [DuckDB core](https://github.com/duckdb/duckdb/tree/d8cdaa33fda8df955cc76ef58a280f68f4cd43fa/src/function/table) | `0`; `histogram` and `histogram_values` also `source` | `glob`, `histogram`, `histogram_values`, `query_table`, `read_blob`, `read_csv`, `read_csv_auto`, `read_duckdb`, `read_text`, `sniff_csv` |
 | [Parquet](https://github.com/duckdb/duckdb/tree/d8cdaa33fda8df955cc76ef58a280f68f4cd43fa/extension/parquet) | `0` | `parquet_bloom_probe`, `parquet_file_metadata`, `parquet_full_metadata`, `parquet_kv_metadata`, `parquet_metadata`, `parquet_scan`, `parquet_schema`, `read_parquet` |
 | [JSON](https://github.com/duckdb/duckdb/tree/d8cdaa33fda8df955cc76ef58a280f68f4cd43fa/extension/json) | `0` | `read_json`, `read_json_auto`, `read_json_objects`, `read_json_objects_auto`, `read_ndjson`, `read_ndjson_auto`, `read_ndjson_objects` |
@@ -40,15 +41,20 @@ selectors of all reviewed overloads.
 add-files function reads metadata from its third argument. Lance maintenance
 functions open the dataset identified by their first argument, and
 `__lance_namespace_scan` reads an HTTP endpoint. `sqlite_attach` is the legacy
-table function, not the SQL `ATTACH` statement.
+table function, not the SQL `ATTACH` statement. The autoloadable
+[`sql_auto_complete`](https://github.com/duckdb/duckdb/blob/v1.5.5/src/include/duckdb/main/extension_entries.hpp#L605)
+[registers one positional SQL-text argument and only suggestion-count named arguments](https://github.com/duckdb/duckdb/blob/v1.5.5/extension/autocomplete/autocomplete_extension.cpp#L900-L906),
+then can pass an unterminated quoted path from that text to
+[`FileSystem::ListFiles`](https://github.com/duckdb/duckdb/blob/v1.5.5/extension/autocomplete/autocomplete_extension.cpp#L389-L411).
 
 The path-selector review deliberately excludes nested-SQL functions; the query
-policy separately rejects the known core nested-SQL table functions. It also
-excludes attached-catalog functions whose arguments are catalog or table
-identifiers; Postgres, MySQL, and ODBC connection-string functions; pure write
-destinations; Lance functions whose arguments are only catalog identifiers; and
-proprietary or unpinned extension behavior. `ducklake_scan` is excluded because
-its catalog-visible argument is not used as a caller-provided path during normal
+policy separately rejects the known stock and autoloadable binders and
+executors `query`, `json_execute_serialized_sql`, and `json_serialize_plan`.
+It also excludes attached-catalog functions whose arguments are catalog or table identifiers;
+Postgres, MySQL, and ODBC connection-string functions; pure write destinations;
+Lance functions whose arguments are only catalog identifiers; and proprietary
+or unpinned extension behavior. `ducklake_scan` is excluded because its
+catalog-visible argument is not used as a caller-provided path during normal
 binding.
 
 Replacement scans are a separate query AST surface. DuckDB 1.5.5 rewrites

@@ -26,10 +26,12 @@ var remoteURIPrefixes = [...]string{
 	"abfss://",
 }
 
-var nestedSQLExecutors = [...]string{
+var nestedSQLTableExecutors = [...]string{
 	"json_execute_serialized_sql",
 	"query",
 }
+
+const nestedSQLScalarExecutor = "json_serialize_plan"
 
 type remoteURILiteralValidator struct {
 	errs []error
@@ -39,13 +41,32 @@ func newRemoteURILiteralValidator() Validator {
 	return &remoteURILiteralValidator{}
 }
 
-func (v *remoteURILiteralValidator) CheckNode(node map[string]any, _ []string) {
+func (v *remoteURILiteralValidator) CheckNode(node map[string]any, keyStack []string) {
+	if node["class"] == "FUNCTION" && (len(keyStack) == 0 || keyStack[len(keyStack)-1] != "function") {
+		v.checkScalarNestedSQLExecutor(node)
+	}
+
 	switch node["type"] {
 	case "BASE_TABLE":
 		v.checkBaseTable(node)
 	case "TABLE_FUNCTION":
 		v.checkTableFunction(node)
 	}
+}
+
+func (v *remoteURILiteralValidator) checkScalarNestedSQLExecutor(node map[string]any) {
+	functionName, ok := node["function_name"].(string)
+	if !ok || !strings.EqualFold(functionName, nestedSQLScalarExecutor) {
+		return
+	}
+	if catalog := stringField(node, "catalog"); catalog != "" && !strings.EqualFold(catalog, "system") {
+		return
+	}
+	if schema := stringField(node, "schema"); schema != "" &&
+		!strings.EqualFold(schema, "main") && !strings.EqualFold(schema, "system") {
+		return
+	}
+	v.errs = append(v.errs, fmt.Errorf("%w: nested SQL executor '%s' is not allowed", ErrAccessDenied, nestedSQLScalarExecutor))
 }
 
 func (v *remoteURILiteralValidator) checkBaseTable(node map[string]any) {
@@ -72,7 +93,7 @@ func (v *remoteURILiteralValidator) checkTableFunction(node map[string]any) {
 		return
 	}
 	functionName = strings.ToLower(functionName)
-	if slices.Contains(nestedSQLExecutors[:], functionName) {
+	if slices.Contains(nestedSQLTableExecutors[:], functionName) {
 		v.errs = append(v.errs, fmt.Errorf("%w: nested SQL executor '%s' is not allowed", ErrAccessDenied, functionName))
 		return
 	}

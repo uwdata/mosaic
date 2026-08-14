@@ -14,6 +14,11 @@ directory.
 - Include every positional and named selector that can carry a path across all
   overloads. Positional indexes are zero-based among unnamed SQL arguments;
   named selectors use DuckDB's lowercase serialized names.
+- Trace bind-time and helper I/O, including in autoloadable functions, that
+  derive a path from a larger argument, not only arguments passed directly to
+  `OpenFile`. In DuckDB 1.5.5, `sql_auto_complete` can derive a
+  filename-suggestion directory from SQL text and pass it to
+  `FileSystem::ListFiles`.
 - This is a deny-oriented sink inventory. Do not silently omit a credible but
   uncertain reader: resolve it against pinned source or include it
   conservatively and document the uncertainty in `README.md`.
@@ -23,9 +28,11 @@ directory.
 - Separately audit replacement scans and non-function read surfaces on every
   DuckDB upgrade. Document them in `README.md`; do not add them to this
   function-argument API.
-- Re-audit core nested-SQL table functions on every DuckDB upgrade. Keep the
-  query policy's rejection list and tests synchronized; do not add SQL-string
-  arguments to this path inventory.
+- Re-audit stock and autoloadable functions that bind or execute nested SQL on
+  every DuckDB upgrade, including scalar functions. Keep the query policy's
+  rejection list and tests synchronized. Keep bind/execute-only SQL-string
+  arguments out of this path inventory; include SQL text when a helper derives
+  a caller-controlled filesystem path from it.
 - Re-audit the query policy's remote prefixes against every bundled or loaded
   filesystem's `CanHandleFile` implementation, its helper predicates, and its
   scheme constants at the exact pinned extension revisions. Review HTTPFS's
