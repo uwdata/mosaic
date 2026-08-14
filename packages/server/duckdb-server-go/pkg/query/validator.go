@@ -297,60 +297,28 @@ func (v *baseTableValidator) Validate() []error {
 	return errs
 }
 
-// functionBlocklistValidator validates that the SQL query does not use blocked functions.
-type functionBlocklistValidator struct {
-	blockedFunctions []string
-	errs             []error
+type functionListValidator struct {
+	functions []string
+	allowlist bool
+	errs      []error
 }
 
 func newFunctionBlocklistValidator(blockedFunctions []string) Validator {
-	return &functionBlocklistValidator{
-		blockedFunctions: blockedFunctions,
-	}
-}
-
-func (v *functionBlocklistValidator) CheckNode(node map[string]any, _ []string) {
-	class, exists := node["class"]
-	if !exists {
-		return
-	}
-	if class != "FUNCTION" && class != "WINDOW" {
-		return
-	}
-
-	functionName, exists := node["function_name"]
-	if !exists {
-		return
-	}
-
-	functionNameStr, ok := functionName.(string)
-	if !ok {
-		v.errs = append(v.errs, fmt.Errorf("query: invalid 'function_name' in function, expected string: %v", functionName))
-		return
-	}
-	functionNameStr = strings.ToLower(functionNameStr)
-
-	if slices.Contains(v.blockedFunctions, functionNameStr) {
-		v.errs = append(v.errs, fmt.Errorf("%w: use of function '%s' is not allowed", ErrAccessDenied, functionNameStr))
-	}
-}
-
-func (v *functionBlocklistValidator) Validate() []error {
-	return v.errs
-}
-
-type functionAllowlistValidator struct {
-	allowedFunctions []string
-	errs             []error
+	return newFunctionListValidator(blockedFunctions, false)
 }
 
 func newFunctionAllowlistValidator(allowedFunctions []string) Validator {
-	return &functionAllowlistValidator{
-		allowedFunctions: allowedFunctions,
+	return newFunctionListValidator(allowedFunctions, true)
+}
+
+func newFunctionListValidator(functions []string, allowlist bool) Validator {
+	return &functionListValidator{
+		functions: functions,
+		allowlist: allowlist,
 	}
 }
 
-func (v *functionAllowlistValidator) CheckNode(node map[string]any, _ []string) {
+func (v *functionListValidator) CheckNode(node map[string]any, _ []string) {
 	class, exists := node["class"]
 	if !exists {
 		return
@@ -372,11 +340,15 @@ func (v *functionAllowlistValidator) CheckNode(node map[string]any, _ []string) 
 	}
 	functionNameStr = strings.ToLower(functionNameStr)
 
-	if !slices.Contains(v.allowedFunctions, functionNameStr) {
+	listed := slices.Contains(v.functions, functionNameStr)
+	switch {
+	case v.allowlist && !listed:
 		v.errs = append(v.errs, fmt.Errorf("%w: function '%s' is not in the allowlist", ErrAccessDenied, functionNameStr))
+	case !v.allowlist && listed:
+		v.errs = append(v.errs, fmt.Errorf("%w: use of function '%s' is not allowed", ErrAccessDenied, functionNameStr))
 	}
 }
 
-func (v *functionAllowlistValidator) Validate() []error {
+func (v *functionListValidator) Validate() []error {
 	return v.errs
 }

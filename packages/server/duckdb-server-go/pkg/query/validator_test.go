@@ -347,12 +347,25 @@ func TestFunctionBlocklistValidatorNormalizesFunctionNames(t *testing.T) {
 		"class":         "FUNCTION",
 		"function_name": "MD5",
 	}, nil)
+	validator.CheckNode(map[string]any{
+		"class":         "FUNCTION",
+		"function_name": "LOWER",
+	}, nil)
 
 	errs := validator.Validate()
 	if assert.Len(t, errs, 1) {
 		assert.ErrorIs(t, errs[0], ErrAccessDenied)
 		assert.EqualError(t, errs[0], "query: access denied: use of function 'md5' is not allowed")
 	}
+}
+
+func TestFunctionBlocklistValidatorRejectsMissingFunctionName(t *testing.T) {
+	validator := newFunctionBlocklistValidator([]string{"md5"})
+	validator.CheckNode(map[string]any{"class": "FUNCTION"}, nil)
+
+	errs := validator.Validate()
+	require.Len(t, errs, 1)
+	assert.EqualError(t, errs[0], "query: invalid function node: missing 'function_name'")
 }
 
 func TestFunctionAllowlistValidator(t *testing.T) {
