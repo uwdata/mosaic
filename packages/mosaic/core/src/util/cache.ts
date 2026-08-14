@@ -29,11 +29,7 @@ export function voidCache(): Cache {
  * `requestIdleCallback`. Each eviction pass drops any TTL-expired entries and
  * the single least-recently-used entry.
  *
- * `maxEntries` is a backstop. Some results are legitimately zero bytes —
- * an empty Arrow result, for instance — so they never move `totalBytes`
- * and can't trigger the byte-based eviction on their own. Capping the
- * entry count keeps a run of them from growing the cache without bound.
- * The default is generous enough that healthy workloads never reach it.
+ * `maxEntries` is implemented as a failsafe to cap entry count
  *
  * @param options Cache options.
  * @param options.maxBytes Maximum total observed bytes across all entries.
