@@ -25,9 +25,3 @@ Alternatively, you can install the server with `pip install duckdb-server`. Then
 ## Developer Setup
 
 To run the server from the Mosaic repository and to run the server in development mode, follow the [instructions for the duckdb-server package](https://github.com/uwdata/mosaic/blob/main/packages/server/duckdb-server/README.md).
-
-## Go Server
-
-Mosaic also provides an embeddable [DuckDB Go server](https://github.com/uwdata/mosaic/tree/main/packages/server/duckdb-server-go).
-See its README for the Go API, query authorization options, and the best-effort
-[remote URI literal policy](https://github.com/uwdata/mosaic/tree/main/packages/server/duckdb-server-go#remote-uri-literal-policy).
