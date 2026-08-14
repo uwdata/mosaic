@@ -1,6 +1,6 @@
 package functionset
 
-// These groups partition the Spatial extension pinned by DuckDB 1.5.5.
+// Source: https://github.com/duckdb/duckdb-spatial/tree/eb1e57c9d92c0f3f76eb03eaa52c315090f328cc
 var spatialComputeFunctions = [...]string{
 	"st_affine",
 	"st_area",

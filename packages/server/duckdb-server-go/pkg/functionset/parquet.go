@@ -1,6 +1,6 @@
 package functionset
 
-// These groups partition the Parquet extension bundled with DuckDB 1.5.5.
+// Source: https://github.com/duckdb/duckdb/tree/d8cdaa33fda8df955cc76ef58a280f68f4cd43fa/extension/parquet
 var parquetComputeFunctions = [...]string{
 	"variant_bytes_to_variant",
 	"variant_to_parquet_variant",
