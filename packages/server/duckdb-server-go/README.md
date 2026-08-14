@@ -98,29 +98,73 @@ Programs embedding `pkg/query` can apply the same policy and add application fun
 
 ```go
 query.WithFunctionAllowlist(query.FunctionAllowlistOptions{
-	Include: append(functionset.Spatial(), "my_function"),
+	Include: append(functionset.Spatial.Elevated(), "my_function"),
 })
 ```
 
 The defaults cover ordinary local computation: built-in operators, aggregates, windows, parser syntax helpers, common
-side-effect-free scalar functions, and non-I/O table generators. `pkg/functionset` exposes `DefaultFunctions`,
-`BuiltinOperators`, `BuiltinAggregates`, `BuiltinWindows`, `BuiltinSyntaxHelpers`, `BuiltinTableGenerators`, and
-`CommonScalarFunctions`; each returns a fresh list that can also be appended to `Include` or `Exclude`. These inventories
-were reviewed against DuckDB 1.5.5 and must be reviewed when DuckDB is upgraded. Newly introduced and extension-provided
-function names are not admitted automatically. The defaults include reviewed fixed-expression macros, such as the
-`list_sum` wrapper whose aggregate target is hardcoded; client-controlled dispatch through `list_aggregate` remains
-excluded.
+side-effect-free scalar functions, non-I/O table generators, and the compute groups of reviewed core extensions.
+`pkg/functionset` exposes fresh lists for the built-in groups and an `ExtensionFunctions` constant for each of DuckDB
+1.5.5's [core extensions](https://duckdb.org/docs/current/core_extensions/overview). `Compute()` returns names included in
+`DefaultFunctions`, `Elevated()` returns names requiring explicit admission, and `All()` returns their union.
+`CoreExtensions()` returns the 29 reviewed extension constants. With defaults enabled, appending `Spatial.Elevated()` to
+`Include` enables its full reviewed inventory; with `DisableDefaults: true`, use `Spatial.All()` instead. The command-line
+flags accept exact function names only and do not expand extension or group names; there are no extension-specific
+function-policy flags.
 
-`functionset.Spatial()` and `functionset.Parquet()` provide opt-in inventories for the corresponding core extensions; they
-are never included in `DefaultFunctions`. These sets include resource-capable readers. They authorize function names
-only: they do not load an extension, inspect paths or URIs, or grant filesystem or network access.
+The inventories were reviewed against DuckDB 1.5.5 and must be reviewed when DuckDB is upgraded. Counts are unique
+serialized names, not overloads; if any overload has elevated behavior, the whole name is elevated because the validator
+cannot distinguish signatures. An empty inventory means no reviewed function-call names, not that the extension has no
+capabilities.
 
-For query-only Mosaic geo rendering over geometry data already present in DuckDB, load the spatial extension and add
-`--function-allowlist=st_x,st_y,st_centroid,st_asgeojson`. Mosaic's `loadSpatial`/`vg.spatial` loader still uses `ST_Read`
-through `Coordinator.exec`, and all `exec` requests are rejected while a function policy is configured.
+| Extension | Compute | Elevated | Classification and status |
+| --- | ---: | ---: | --- |
+| `Autocomplete` | 1 | 3 | Parser check; completion and parser controls are elevated. |
+| `Avro` | 0 | 1 | Reader only. |
+| `AWS` | 0 | 1 | Credential and provider operation. |
+| `Azure` | 0 | 0 | Filesystem integration with no reviewed function-call names. |
+| `Delta` | 2 | 9 | Local parser/test helpers; scans, metadata I/O, and writes are elevated. |
+| `DuckLake` | 1 | 21 | Local hash helper; catalog, scan, metadata, and mutation operations are elevated. |
+| `Encodings` | 0 | 0 | CSV codec integration with no reviewed function-call names. |
+| `Excel` | 2 | 1 | Value conversion; the sheet reader is elevated. |
+| `FTS` | 1 | 2 | Text stemming; index creation and mutation are elevated. |
+| `HTTPFS` | 0 | 0 | Filesystem integration with no reviewed function-call names. |
+| `Iceberg` | 2 | 14 | Value helpers; scans, catalogs, metadata I/O, and writes are elevated. |
+| `ICU` | 179 | 7 | Deterministic collation and calendar computation; current-time names are elevated. |
+| `Inet` | 11 | 0 | IP value operations only. |
+| `JSON` | 33 | 9 | Value parsing and serialization; readers, SQL execution, and plan inspection are elevated. |
+| `Lance` | 0 | 12 | Source-pinned scans and metadata operations. |
+| `MotherDuck` | 0 | 198 | Best-effort observed proprietary runtime snapshot; all names are elevated. |
+| `MySQL` | 0 | 5 | Connector and scanner operations. |
+| `ODBC` | 0 | 11 | Connector and scanner operations. |
+| `Parquet` | 2 | 9 | `VARIANT` conversion; file, metadata, bloom, and key operations are elevated. |
+| `Postgres` | 2 | 8 | Value helpers; connector and scanner operations are elevated. |
+| `Quack` | 3 | 9 | Protocol value helpers; remote and session operations are elevated. |
+| `Spatial` | 151 | 13 | Geometry computation; readers, index/catalog access, random generation, and resource-capable transforms are elevated. |
+| `SQLite` | 0 | 3 | Connector and scanner operations. |
+| `TPCDS` | 2 | 2 | Query and answer text; data generators are elevated. |
+| `TPCH` | 2 | 2 | Query and answer text; data generators are elevated. |
+| `UI` | 0 | 4 | HTTP server lifecycle and status operations. |
+| `UnityCatalog` | 0 | 4 | Attached-catalog and checkpoint operations; the generated registry is incomplete. |
+| `Vortex` | 0 | 2 | Readers verified against the pinned nested source revision. |
+| `VSS` | 0 | 5 | Index access and management operations. |
 
-Current-time function names are intentionally omitted because clients can request persistent results whose cache key is
-only the SQL text and output format, with no expiration by default. This does not block keyword forms such as
+Most rows are pinned to public extension source. The MotherDuck row is an authentication-dependent observation of its
+`v1.5.5-2026-08-22` implementation binary, has no public implementation pin, and may drift independently; treat it as
+non-exhaustive. Generated DuckDB extension registries are also incomplete for some external extensions, so the inventories
+cross-check the exact descriptor-pinned source and runtime catalog where available.
+
+These constants authorize names only. They do not install or load extensions, inspect arguments, or grant resource
+access. A missing function can pass syntactic validation and then fail during binding; conversely, DuckDB may
+automatically install or load known extensions according to connection settings and syntax. Loading is an independent
+administrative decision, and extensions run as native code with the DuckDB process's privileges.
+
+For query-only Mosaic geo rendering over geometry data already present in DuckDB, load the Spatial extension; `ST_X`,
+`ST_Y`, `ST_Centroid`, and `ST_AsGeoJSON` are compute defaults. Mosaic's `loadSpatial`/`vg.spatial` loader still uses
+`ST_Read` through `Coordinator.exec`, and all `exec` requests are rejected while a function policy is configured.
+
+Current-time function names are intentionally omitted from defaults because clients can request persistent results whose
+cache key is only the SQL text and output format, with no expiration by default. This does not block keyword forms such as
 `CURRENT_DATE` and `CURRENT_TIMESTAMP`, which DuckDB serializes as column references rather than function calls.
 
 `Include` and `Exclude` names are trimmed, deduplicated, and matched exactly and case-insensitively; exclusions take
@@ -145,6 +189,12 @@ the scans they resolve to during binding. This can be used deliberately to expos
 leaving `read_parquet`, `iceberg_scan`, and similar reader functions out of the allowlist. Clients can query those table
 references but cannot call the excluded readers directly; catalog integrity and the DuckDB process's filesystem and
 network access remain the security boundary.
+
+Extension behavior that does not serialize as a function node is outside these inventories. This includes `ATTACH`,
+`COPY`, file replacement scans, extension loading and autoloading, settings, casts, and scans introduced while binding
+attached catalogs or views. Some `Elevated` groups record extension pragma names for completeness, but including one does
+not bypass the server's independent statement and `exec` restrictions. `All()` is the union of reviewed registered names,
+not all capabilities of the extension.
 
 DuckDB does not expose a supported function catalog annotation for path, URI, or SQL-string arguments. As of DuckDB
 1.5.5, its [internal extension-prefix table](https://github.com/duckdb/duckdb/blob/v1.5.5/src/include/duckdb/main/extension_entries.hpp#L1277-L1280)
