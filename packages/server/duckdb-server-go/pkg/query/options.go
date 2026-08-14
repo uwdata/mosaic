@@ -26,9 +26,21 @@ type Options struct {
 	// This is useful for blocking functions that may pose security or performance risks.
 	FunctionBlocklist []string
 
-	// FunctionAllowlist is a list of function names that are allowed to be used in queries.
-	// Names are matched exactly and case-insensitively. A non-nil empty list rejects all function calls.
-	FunctionAllowlist []string
+	// FunctionAllowlist configures the function names that are allowed in queries.
+	// A nil value leaves function calls unrestricted.
+	FunctionAllowlist *FunctionAllowlistOptions
+}
+
+// FunctionAllowlistOptions configures an allowlist from reviewed defaults and exact function names.
+type FunctionAllowlistOptions struct {
+	// Include adds exact function names to the allowlist.
+	Include []string
+
+	// Exclude removes exact function names after defaults and includes are combined.
+	Exclude []string
+
+	// DisableDefaults omits the function names returned by DefaultFunctions.
+	DisableDefaults bool
 }
 
 type OptionFunc func(*Options) error
@@ -75,13 +87,44 @@ func WithFunctionBlocklist(blockedFunctions []string) OptionFunc {
 	}
 }
 
-// WithFunctionAllowlist allows only the named functions in submitted queries.
-// Passing nil or an empty slice denies all function calls; omitting the option leaves function calls unrestricted.
-func WithFunctionAllowlist(allowedFunctions []string) OptionFunc {
+// WithFunctionAllowlist allows the reviewed defaults and configured function names in submitted queries.
+// Omitting the option leaves function calls unrestricted.
+func WithFunctionAllowlist(options FunctionAllowlistOptions) OptionFunc {
+	configured := FunctionAllowlistOptions{
+		Include:         append([]string(nil), options.Include...),
+		Exclude:         append([]string(nil), options.Exclude...),
+		DisableDefaults: options.DisableDefaults,
+	}
 	return func(opts *Options) error {
-		opts.FunctionAllowlist = normalizeFunctionNames(allowedFunctions)
+		value := FunctionAllowlistOptions{
+			Include:         append([]string(nil), configured.Include...),
+			Exclude:         append([]string(nil), configured.Exclude...),
+			DisableDefaults: configured.DisableDefaults,
+		}
+		opts.FunctionAllowlist = &value
 		return nil
 	}
+}
+
+func resolveFunctionAllowlist(options FunctionAllowlistOptions) []string {
+	var functions []string
+	if !options.DisableDefaults {
+		functions = DefaultFunctions()
+	}
+	functions = append(functions, options.Include...)
+
+	excluded := make(map[string]struct{}, len(options.Exclude))
+	for _, function := range normalizeFunctionNames(options.Exclude) {
+		excluded[function] = struct{}{}
+	}
+
+	resolved := make([]string, 0, len(functions))
+	for _, function := range normalizeFunctionNames(functions) {
+		if _, ok := excluded[function]; !ok {
+			resolved = append(resolved, function)
+		}
+	}
+	return resolved
 }
 
 func normalizeFunctionNames(functions []string) []string {

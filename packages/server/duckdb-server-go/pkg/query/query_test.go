@@ -103,7 +103,10 @@ func TestDB_FunctionAllowlist(t *testing.T) {
 	ctx := context.Background()
 
 	t.Run("allows exact case-insensitive function names", func(t *testing.T) {
-		db := setupTestDB(t, WithFunctionAllowlist([]string{" MD5 ", "ROW_NUMBER", "RANGE", "+", "COUNT_STAR", "LIST_VALUE"}))
+		db := setupTestDB(t, WithFunctionAllowlist(FunctionAllowlistOptions{
+			DisableDefaults: true,
+			Include:         []string{" MD5 ", "ROW_NUMBER", "RANGE", "+", "COUNT_STAR", "LIST_VALUE"},
+		}))
 
 		tests := []struct {
 			name   string
@@ -134,7 +137,10 @@ func TestDB_FunctionAllowlist(t *testing.T) {
 	})
 
 	t.Run("rejects a function that is not listed", func(t *testing.T) {
-		db := setupTestDB(t, WithFunctionAllowlist([]string{"md"}))
+		db := setupTestDB(t, WithFunctionAllowlist(FunctionAllowlistOptions{
+			DisableDefaults: true,
+			Include:         []string{"md"},
+		}))
 
 		_, _, err := db.QueryJSON(ctx, "SELECT md5('mosaic')", nil, false)
 		require.ErrorIs(t, err, ErrAccessDenied)
@@ -142,7 +148,10 @@ func TestDB_FunctionAllowlist(t *testing.T) {
 	})
 
 	t.Run("rejects nested functions that are not listed", func(t *testing.T) {
-		db := setupTestDB(t, WithFunctionAllowlist([]string{"md5"}))
+		db := setupTestDB(t, WithFunctionAllowlist(FunctionAllowlistOptions{
+			DisableDefaults: true,
+			Include:         []string{"md5"},
+		}))
 
 		_, _, err := db.QueryJSON(ctx, "SELECT md5(lower('mosaic'))", nil, false)
 		require.ErrorIs(t, err, ErrAccessDenied)
@@ -150,7 +159,10 @@ func TestDB_FunctionAllowlist(t *testing.T) {
 	})
 
 	t.Run("matches qualified functions by leaf name", func(t *testing.T) {
-		db := setupTestDB(t, WithFunctionAllowlist([]string{"md5", "count_star"}))
+		db := setupTestDB(t, WithFunctionAllowlist(FunctionAllowlistOptions{
+			DisableDefaults: true,
+			Include:         []string{"md5", "count_star"},
+		}))
 
 		for _, query := range []string{
 			"SELECT tenant.md5('mosaic')",
@@ -161,15 +173,68 @@ func TestDB_FunctionAllowlist(t *testing.T) {
 	})
 
 	t.Run("rejects parser helpers that are not listed", func(t *testing.T) {
-		db := setupTestDB(t, WithFunctionAllowlist([]string{"read_parquet"}))
+		db := setupTestDB(t, WithFunctionAllowlist(FunctionAllowlistOptions{
+			DisableDefaults: true,
+			Include:         []string{"read_parquet"},
+		}))
 
 		_, _, err := db.QueryJSON(ctx, "SELECT * FROM read_parquet(['local.parquet'])", nil, false)
 		require.ErrorIs(t, err, ErrAccessDenied)
 		require.ErrorContains(t, err, "function 'list_value' is not in the allowlist")
 	})
 
-	t.Run("explicit empty allows function-free queries", func(t *testing.T) {
-		db := setupTestDB(t, WithFunctionAllowlist(nil))
+	t.Run("defaults allow common expressions", func(t *testing.T) {
+		db := setupTestDB(t, WithFunctionAllowlist(FunctionAllowlistOptions{}))
+
+		for _, query := range []string{
+			"SELECT 1 + 2",
+			"SELECT sum(i), count(*) FROM (VALUES (1), (2)) t(i)",
+			"SELECT geomean(i) FROM (VALUES (1), (2)) t(i)",
+			"SELECT row_number() OVER ()",
+			"SELECT lower('MOSAIC')",
+			"SELECT [1, 2]",
+			"SELECT * FROM range(3)",
+		} {
+			_, _, err := db.QueryJSON(ctx, query, nil, false)
+			require.NoError(t, err, query)
+		}
+	})
+
+	t.Run("defaults reject unsafe name collisions", func(t *testing.T) {
+		db := setupTestDB(t, WithFunctionAllowlist(FunctionAllowlistOptions{}))
+
+		_, _, err := db.QueryJSON(ctx, "SELECT * FROM histogram('duckdb_tables', 'table_name')", nil, false)
+		require.ErrorIs(t, err, ErrAccessDenied)
+		require.ErrorContains(t, err, "function 'histogram' is not in the allowlist")
+	})
+
+	t.Run("defaults reject privileged functions", func(t *testing.T) {
+		db := setupTestDB(t, WithFunctionAllowlist(FunctionAllowlistOptions{}))
+
+		tests := []struct {
+			function string
+			query    string
+		}{
+			{function: "query", query: "SELECT * FROM query('SELECT 1')"},
+			{function: "list_aggregate", query: "SELECT list_aggregate([1, 2], 'sum')"},
+			{function: "read_parquet", query: "SELECT * FROM read_parquet('missing.parquet')"},
+			{function: "getenv", query: "SELECT getenv('HOME')"},
+			{function: "sleep_ms", query: "SELECT sleep_ms(1)"},
+			{function: "random", query: "SELECT random()"},
+			{function: "getenv", query: "SELECT list_transform(['HOME'], x -> getenv(x))"},
+		}
+
+		for _, tt := range tests {
+			t.Run(tt.function, func(t *testing.T) {
+				_, _, err := db.QueryJSON(ctx, tt.query, nil, false)
+				require.ErrorIs(t, err, ErrAccessDenied)
+				require.ErrorContains(t, err, "function '"+tt.function+"' is not in the allowlist")
+			})
+		}
+	})
+
+	t.Run("defaults can be disabled", func(t *testing.T) {
+		db := setupTestDB(t, WithFunctionAllowlist(FunctionAllowlistOptions{DisableDefaults: true}))
 
 		_, _, err := db.QueryJSON(ctx, "SELECT 1", nil, false)
 		require.NoError(t, err)
@@ -178,10 +243,23 @@ func TestDB_FunctionAllowlist(t *testing.T) {
 		require.ErrorIs(t, err, ErrAccessDenied)
 		require.ErrorContains(t, err, "function '+' is not in the allowlist")
 	})
+
+	t.Run("defaults can be excluded", func(t *testing.T) {
+		db := setupTestDB(t, WithFunctionAllowlist(FunctionAllowlistOptions{
+			Exclude: []string{" SUM "},
+		}))
+
+		_, _, err := db.QueryJSON(ctx, "SELECT 1 + 2", nil, false)
+		require.NoError(t, err)
+
+		_, _, err = db.QueryJSON(ctx, "SELECT sum(i) FROM (VALUES (1), (2)) t(i)", nil, false)
+		require.ErrorIs(t, err, ErrAccessDenied)
+		require.ErrorContains(t, err, "function 'sum' is not in the allowlist")
+	})
 }
 
 func TestDB_FunctionAllowlistHandlesUnsupportedStatements(t *testing.T) {
-	db := setupTestDB(t, WithFunctionAllowlist(nil))
+	db := setupTestDB(t, WithFunctionAllowlist(FunctionAllowlistOptions{}))
 
 	_, _, err := db.QueryJSON(t.Context(), "PRAGMA version", nil, false)
 	require.ErrorIs(t, err, ErrUnsupportedStatement)
@@ -317,8 +395,8 @@ func TestDB_Exec(t *testing.T) {
 		assert.EqualError(t, err, "query: exec command is disabled when schema or function validation is active")
 	})
 
-	t.Run("empty function allowlist rejects exec", func(t *testing.T) {
-		db := setupTestDB(t, WithFunctionAllowlist(nil))
+	t.Run("function allowlist rejects exec", func(t *testing.T) {
+		db := setupTestDB(t, WithFunctionAllowlist(FunctionAllowlistOptions{}))
 
 		err := db.Exec(ctx, "SELECT 1")
 		require.ErrorIs(t, err, ErrExecWithValidation)

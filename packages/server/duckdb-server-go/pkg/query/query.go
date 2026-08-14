@@ -54,10 +54,12 @@ func New(ctx context.Context, connector *duckdb.Connector, opts ...OptionFunc) (
 		}
 	}
 	o.FunctionBlocklist = normalizeFunctionNames(o.FunctionBlocklist)
-	if o.FunctionAllowlist != nil {
-		o.FunctionAllowlist = normalizeFunctionNames(o.FunctionAllowlist)
+	functionAllowlistConfigured := o.FunctionAllowlist != nil
+	var functionAllowlist []string
+	if functionAllowlistConfigured {
+		functionAllowlist = resolveFunctionAllowlist(*o.FunctionAllowlist)
 	}
-	if o.FunctionAllowlist != nil && len(o.FunctionBlocklist) > 0 {
+	if functionAllowlistConfigured && len(o.FunctionBlocklist) > 0 {
 		return nil, errors.New("query: function allowlist and blocklist cannot both be configured")
 	}
 
@@ -100,8 +102,8 @@ func New(ctx context.Context, connector *duckdb.Connector, opts ...OptionFunc) (
 		cacheSeed: maphash.MakeSeed(), // Initialize the cache seed for consistent hashing
 
 		functionBlocklist:           append([]string(nil), o.FunctionBlocklist...),
-		functionAllowlist:           append([]string(nil), o.FunctionAllowlist...),
-		functionAllowlistConfigured: o.FunctionAllowlist != nil,
+		functionAllowlist:           append([]string(nil), functionAllowlist...),
+		functionAllowlistConfigured: functionAllowlistConfigured,
 		logger:                      o.Logger,
 	}, nil
 }

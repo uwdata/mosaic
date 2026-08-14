@@ -456,7 +456,10 @@ func TestGenericAuthorizationDoesNotBypassRestrictedExec(t *testing.T) {
 	})
 
 	t.Run("function allowlist policy", func(t *testing.T) {
-		db := setupTestDB(t, query.WithFunctionAllowlist([]string{"md5"}))
+		db := setupTestDB(t, query.WithFunctionAllowlist(query.FunctionAllowlistOptions{
+			DisableDefaults: true,
+			Include:         []string{"md5"},
+		}))
 		handler, err := New(db, allow)
 		require.NoError(t, err)
 
