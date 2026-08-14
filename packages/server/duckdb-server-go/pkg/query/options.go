@@ -111,7 +111,8 @@ func WithFunctionAllowlist(options FunctionAllowlistOptions) OptionFunc {
 	}
 }
 
-// WithRemoteURILiteralRejection rejects recognized remote URI literals in reviewed path arguments and replacement scans.
+// WithRemoteURILiteralRejection enables best-effort rejection of recognized remote URI literals in reviewed path
+// arguments and replacement scans. Constructed or computed strings may evade detection.
 func WithRemoteURILiteralRejection() OptionFunc {
 	return func(opts *Options) error {
 		opts.RejectRemoteURILiterals = true

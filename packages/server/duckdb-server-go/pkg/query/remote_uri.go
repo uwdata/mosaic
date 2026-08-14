@@ -9,7 +9,7 @@ import (
 	"github.com/uwdata/mosaic/packages/server/duckdb-server-go/pkg/functionset/remoteread"
 )
 
-// Source: https://github.com/duckdb/duckdb/blob/v1.5.5/src/include/duckdb/main/extension_entries.hpp#L1275-L1280
+// Sources are the DuckDB 1.5.5-pinned filesystem handlers listed in ../functionset/remoteread/README.md.
 var remoteURIPrefixes = [...]string{
 	"http://",
 	"https://",
@@ -22,7 +22,13 @@ var remoteURIPrefixes = [...]string{
 	"hf://",
 	"azure://",
 	"az://",
+	"abfs://",
 	"abfss://",
+}
+
+var nestedSQLExecutors = [...]string{
+	"json_execute_serialized_sql",
+	"query",
 }
 
 type remoteURILiteralValidator struct {
@@ -65,8 +71,13 @@ func (v *remoteURILiteralValidator) checkTableFunction(node map[string]any) {
 		v.errs = append(v.errs, fmt.Errorf("query: invalid remote URI table function node: expected string function_name: %v", function["function_name"]))
 		return
 	}
+	functionName = strings.ToLower(functionName)
+	if slices.Contains(nestedSQLExecutors[:], functionName) {
+		v.errs = append(v.errs, fmt.Errorf("%w: nested SQL executor '%s' is not allowed", ErrAccessDenied, functionName))
+		return
+	}
 
-	pathArguments, ok := remoteread.Lookup(strings.ToLower(functionName))
+	pathArguments, ok := remoteread.Lookup(functionName)
 	if !ok {
 		return
 	}

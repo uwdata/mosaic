@@ -19,6 +19,7 @@ func TestWithRemoteURILiteralRejection(t *testing.T) {
 
 func TestRemoteURILiteralValidatorRecognizesPinnedPrefixes(t *testing.T) {
 	db := setupTestDB(t)
+	assert.Contains(t, remoteURIPrefixes, "abfs://")
 
 	for _, prefix := range remoteURIPrefixes {
 		t.Run(prefix, func(t *testing.T) {
@@ -93,6 +94,14 @@ func TestRemoteURILiteralValidatorPathArguments(t *testing.T) {
 			sql:  "SELECT * FROM read_parquet('/var/data/file.parquet')",
 		},
 		{
+			name: "local literal list",
+			sql:  "SELECT * FROM read_parquet(['/var/data/a.parquet', '/var/data/b.parquet'])",
+		},
+		{
+			name: "local array constructor",
+			sql:  "SELECT * FROM read_parquet(ARRAY['/var/data/a.parquet', '/var/data/b.parquet'])",
+		},
+		{
 			name: "remote literal in non-path argument",
 			sql:  "SELECT * FROM parquet_bloom_probe('local.parquet', 'https://example.com', 'value')",
 		},
@@ -132,6 +141,61 @@ func TestRemoteURILiteralValidatorPathArguments(t *testing.T) {
 			}
 			require.ErrorIs(t, err, ErrAccessDenied)
 			assert.ErrorContains(t, err, fmt.Sprintf("remote URI prefix '%s'", tt.wantPrefix))
+		})
+	}
+}
+
+func TestRemoteURILiteralValidatorRejectsNestedSQLExecutors(t *testing.T) {
+	db := setupTestDB(t)
+
+	tests := []struct {
+		name     string
+		function string
+		sql      string
+	}{
+		{
+			name:     "query with local SQL",
+			function: "query",
+			sql:      "SELECT * FROM query('SELECT 42')",
+		},
+		{
+			name:     "query with remote reader",
+			function: "query",
+			sql:      "SELECT * FROM query('SELECT * FROM read_parquet(''https://example.com/file.parquet'')')",
+		},
+		{
+			name:     "serialized SQL with literal JSON",
+			function: "json_execute_serialized_sql",
+			sql:      "SELECT * FROM json_execute_serialized_sql('{}')",
+		},
+		{
+			name:     "serialized SQL produced from remote reader",
+			function: "json_execute_serialized_sql",
+			sql:      "SELECT * FROM json_execute_serialized_sql(json_serialize_sql('SELECT * FROM read_parquet(''https://example.com/file.parquet'')'))",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := db.ValidateSQL(t.Context(), tt.sql, newRemoteURILiteralValidator())
+			require.ErrorIs(t, err, ErrAccessDenied)
+			assert.EqualError(t, err, fmt.Sprintf(
+				"query: access denied: nested SQL executor '%s' is not allowed",
+				tt.function,
+			))
+		})
+	}
+}
+
+func TestRemoteURILiteralValidatorAllowsScalarExecutorNames(t *testing.T) {
+	db := setupTestDB(t)
+
+	for _, sql := range []string{
+		"SELECT query('local')",
+		"SELECT json_execute_serialized_sql('local')",
+	} {
+		t.Run(sql, func(t *testing.T) {
+			assert.NoError(t, db.ValidateSQL(t.Context(), sql, newRemoteURILiteralValidator()))
 		})
 	}
 }
@@ -183,6 +247,11 @@ func TestRemoteURILiteralValidatorReplacementScans(t *testing.T) {
 			wantErr: true,
 		},
 		{
+			name:    "azure dfs remote path",
+			sql:     "SELECT * FROM 'AbFs://container/file.parquet'",
+			wantErr: true,
+		},
+		{
 			name: "local replacement scan",
 			sql:  "SELECT * FROM '/var/data/file.parquet'",
 		},
@@ -214,12 +283,19 @@ func TestRemoteURILiteralValidatorReplacementScans(t *testing.T) {
 func TestDBRemoteURILiteralRejection(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "local.csv")
 	require.NoError(t, os.WriteFile(path, []byte("value\n42\n"), 0o600))
+	secondPath := filepath.Join(t.TempDir(), "second.csv")
+	require.NoError(t, os.WriteFile(secondPath, []byte("value\n43\n"), 0o600))
 
 	db := setupTestDB(t, WithRemoteURILiteralRejection())
 
 	data, _, err := db.QueryJSON(t.Context(), "SELECT * FROM read_csv("+quoteLiteral(path)+")", nil, false)
 	require.NoError(t, err)
 	assert.JSONEq(t, `[{"value": 42}]`, string(data))
+
+	list := fmt.Sprintf("[%s, %s]", quoteLiteral(path), quoteLiteral(secondPath))
+	data, _, err = db.QueryJSON(t.Context(), "SELECT * FROM read_csv("+list+") ORDER BY value", nil, false)
+	require.NoError(t, err)
+	assert.JSONEq(t, `[{"value": 42}, {"value": 43}]`, string(data))
 
 	data, _, err = db.QueryJSON(t.Context(), "SELECT 'https://example.com' AS url WHERE url = 'https://example.com'", nil, false)
 	require.NoError(t, err)
@@ -228,6 +304,10 @@ func TestDBRemoteURILiteralRejection(t *testing.T) {
 	_, _, err = db.QueryJSON(t.Context(), "SELECT * FROM read_csv('https://example.com/file.csv')", nil, false)
 	require.ErrorIs(t, err, ErrAccessDenied)
 	assert.ErrorContains(t, err, "remote URI prefix 'https://' is not allowed in path argument to function 'read_csv'")
+
+	_, _, err = db.QueryJSON(t.Context(), "SELECT * FROM query('SELECT 42')", nil, false)
+	require.ErrorIs(t, err, ErrAccessDenied)
+	assert.ErrorContains(t, err, "nested SQL executor 'query' is not allowed")
 
 	err = db.Exec(t.Context(), "SELECT 1")
 	require.ErrorIs(t, err, ErrExecWithValidation)

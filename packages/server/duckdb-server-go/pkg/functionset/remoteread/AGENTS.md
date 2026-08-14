@@ -23,6 +23,16 @@ directory.
 - Separately audit replacement scans and non-function read surfaces on every
   DuckDB upgrade. Document them in `README.md`; do not add them to this
   function-argument API.
+- Re-audit core nested-SQL table functions on every DuckDB upgrade. Keep the
+  query policy's rejection list and tests synchronized; do not add SQL-string
+  arguments to this path inventory.
+- Re-audit the query policy's remote prefixes against every bundled or loaded
+  filesystem's `CanHandleFile` implementation, its helper predicates, and its
+  scheme constants at the exact pinned extension revisions. Review HTTPFS's
+  HTTP, S3-compatible, GCS, R2, and Hugging Face handlers and Azure's Blob and
+  DFS handlers. Treat DuckDB's generated extension-prefix map as an autoloading
+  cross-check, not an exhaustive filesystem inventory; DuckDB 1.5.5's map omits
+  `abfs://`, which its pinned Azure DFS filesystem accepts.
 - Run `go test ./pkg/functionset/remoteread` from
   `packages/server/duckdb-server-go`. The invariant tests must cover every
   inventoried name and selector.

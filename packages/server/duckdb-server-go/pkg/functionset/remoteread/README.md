@@ -5,6 +5,14 @@ caller-controlled URI or path to be read. It is intentionally only an
 inventory: the query package decides which expressions to inspect and which URI
 prefixes to reject.
 
+The query-layer prefix inventory is reviewed separately against the actual
+`CanHandleFile` routing and scheme helpers in the pinned
+[HTTPFS](https://github.com/duckdb/duckdb-httpfs/tree/827222fb45a043a7a852d1f7aae46901492a3cda/src) and
+[Azure](https://github.com/duckdb/duckdb-azure/tree/003214c96d0caa39d5c3e27a9e1976a0692c7d37/src)
+filesystem sources. DuckDB's generated extension-prefix map is only an
+autoloading cross-check and omits `abfs://`, which the pinned Azure DFS
+filesystem accepts.
+
 The inventory contains 58 normalized function names reviewed against DuckDB
 1.5.5 at
 [`d8cdaa33`](https://github.com/duckdb/duckdb/tree/d8cdaa33fda8df955cc76ef58a280f68f4cd43fa).
@@ -34,16 +42,20 @@ functions open the dataset identified by their first argument, and
 `__lance_namespace_scan` reads an HTTP endpoint. `sqlite_attach` is the legacy
 table function, not the SQL `ATTACH` statement.
 
-The review deliberately excludes nested SQL functions; attached-catalog
-functions whose arguments are catalog or table identifiers; Postgres, MySQL,
-and ODBC connection-string functions; pure write destinations; Lance functions
-whose arguments are only catalog identifiers; and proprietary or unpinned
-extension behavior. `ducklake_scan` is excluded because its catalog-visible
-argument is not used as a caller-provided path during normal binding.
+The path-selector review deliberately excludes nested-SQL functions; the query
+policy separately rejects the known core nested-SQL table functions. It also
+excludes attached-catalog functions whose arguments are catalog or table
+identifiers; Postgres, MySQL, and ODBC connection-string functions; pure write
+destinations; Lance functions whose arguments are only catalog identifiers; and
+proprietary or unpinned extension behavior. `ducklake_scan` is excluded because
+its catalog-visible argument is not used as a caller-provided path during normal
+binding.
 
 Replacement scans are a separate query AST surface. DuckDB 1.5.5 rewrites
 recognized CSV/TSV, DuckDB database, Parquet, JSON, XLSX, Spatial, and Lance
 paths to reader functions. A caller can also evade literal inspection through
-macros, views, nested SQL, extension-defined schemes, metadata that references
-remote files, or filesystem conventions such as GDAL `/vsi*` paths. This
-inventory is best-effort hardening, not a sandbox.
+constructed path expressions, macros, views, unreviewed nested-SQL executors,
+extension-defined schemes, metadata that references remote files, or filesystem
+conventions such as GDAL `/vsi*` paths. This inventory supports best-effort
+hardening against common accidental or opportunistic remote scans, not a
+sandbox.
