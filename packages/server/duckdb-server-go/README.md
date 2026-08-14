@@ -194,13 +194,6 @@ attached catalogs or views. Some `Elevated` groups record extension pragma names
 not bypass the server's independent statement and `exec` restrictions. `All()` is the union of reviewed registered names,
 not all capabilities of the extension.
 
-DuckDB does not expose a supported function catalog annotation for path, URI, or SQL-string arguments. As of DuckDB
-1.5.5, its [internal extension-prefix table](https://github.com/duckdb/duckdb/blob/v1.5.5/src/include/duckdb/main/extension_entries.hpp#L1277-L1280)
-maps `http`, `https`, `s3`, `s3a`, `s3n`, `gcs`, `gs`, `r2`, and `hf` to `httpfs`, while `azure`, `az`, and `abfss` map
-to the Azure extension. This list is version-specific and extensions can add other resource mechanisms. Treat it as a
-review checklist, not a complete authorization boundary; restrict the DuckDB process's filesystem, credentials, and
-network independently.
-
 ### Multi-Tenant Access Control
 
 `schema-match-headers` isn't part of the mosaic server API, but is provided here as an example of how to have
