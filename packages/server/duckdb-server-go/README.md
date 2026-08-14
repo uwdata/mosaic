@@ -100,20 +100,12 @@ query.WithFunctionAllowlist(query.FunctionAllowlistOptions{
 })
 ```
 
-The defaults cover ordinary local computation: built-in operators, aggregates, windows, parser syntax helpers, common
-side-effect-free scalar functions, non-I/O table generators, and the compute groups of reviewed core extensions.
-`pkg/functionset` exposes fresh lists for the built-in groups and an `ExtensionFunctions` constant for each of DuckDB
-1.5.5's [core extensions](https://duckdb.org/docs/current/core_extensions/overview). `Compute()` returns names included in
-`DefaultFunctions`, `Elevated()` returns names requiring explicit admission, and `All()` returns their union.
-`CoreExtensions()` returns the 29 reviewed extension constants. With defaults enabled, appending `Spatial.Elevated()` to
-`Include` enables its full reviewed inventory; with `DisableDefaults: true`, use `Spatial.All()` instead. The command-line
-flag accepts exact function names only and does not expand extension or group names; there are no extension-specific
-function-policy flags.
+By default, configured policies use `functionset.DefaultFunctions()`, which contains reviewed built-ins and every
+[core extension](https://duckdb.org/docs/current/core_extensions/overview)'s `Compute()` group. `Elevated()` requires
+explicit admission, and `All()` returns both groups. These Go helpers return fresh slices; the CLI accepts exact names only.
 
-The inventories were reviewed against DuckDB 1.5.5 and must be reviewed when DuckDB is upgraded. Counts are unique
-serialized names, not overloads; if any overload has elevated behavior, the whole name is elevated because the validator
-cannot distinguish signatures. An empty inventory means no reviewed function-call names, not that the extension has no
-capabilities.
+The table records unique names reviewed against DuckDB 1.5.5. A name is elevated if any overload has elevated behavior.
+An empty row means the extension has no reviewed function-call names, not that it has no other capabilities.
 
 | Extension | Compute | Elevated | Classification and status |
 | --- | ---: | ---: | --- |
@@ -147,52 +139,18 @@ capabilities.
 | `Vortex` | 0 | 2 | Readers verified against the pinned nested source revision. |
 | `VSS` | 0 | 5 | Index access and management operations. |
 
-Most rows are pinned to public extension source. The MotherDuck row is an authentication-dependent observation of its
-`v1.5.5-2026-08-22` implementation binary, has no public implementation pin, and may drift independently; treat it as
-non-exhaustive. Generated DuckDB extension registries are also incomplete for some external extensions, so the inventories
-cross-check the exact descriptor-pinned source and runtime catalog where available.
+These groups authorize names only; extension loading and file or network access are separate concerns. Validation is
+syntactic and name-only: it does not bind function identity, inspect arguments, expand macros or views, recursively inspect
+SQL strings, or cover replacement scans and attached-table binding. Keep catalogs and the search path trusted, and enforce
+resource access outside this policy.
 
-These constants authorize names only. They do not install or load extensions, inspect arguments, or grant resource
-access. A missing function can pass syntactic validation and then fail during binding; conversely, DuckDB may
-automatically install or load known extensions according to connection settings and syntax. Loading is an independent
-administrative decision, and extensions run as native code with the DuckDB process's privileges.
+In Go, `Exclude` wins over `Include`, and `DisableDefaults` creates an exact-only policy. Omitting
+`WithFunctionAllowlist` is unrestricted; configuring an exact-empty policy denies all function calls. A function
+allowlist cannot be combined with a non-empty blocklist, and any configured function policy rejects `exec` requests.
 
-For query-only Mosaic geo rendering over geometry data already present in DuckDB, load the Spatial extension; `ST_X`,
-`ST_Y`, `ST_Centroid`, and `ST_AsGeoJSON` are compute defaults. Mosaic's `loadSpatial`/`vg.spatial` loader still uses
-`ST_Read` through `Coordinator.exec`, and all `exec` requests are rejected while a function policy is configured.
-
-Current-time function names are intentionally omitted from defaults because clients can request persistent results whose
-cache key is only the SQL text and output format, with no expiration by default. This does not block keyword forms such as
-`CURRENT_DATE` and `CURRENT_TIMESTAMP`, which DuckDB serializes as column references rather than function calls.
-
-In the Go API, `Include` and `Exclude` names are trimmed, deduplicated, and matched exactly and case-insensitively;
-exclusions take precedence. Set `DisableDefaults: true` for an exact-only policy. With defaults disabled and no included
-names, all function calls are denied. Omitting `WithFunctionAllowlist` preserves unrestricted function behavior. An
-allowlist and a non-empty blocklist cannot be combined. Like the blocklist, the allowlist compares only DuckDB's serialized
-`function_name`; schema and catalog qualifiers do not affect the match. When schema matching is active, its independent
-validator still rejects catalog-qualified function calls.
-
-This is a syntactic policy over the SQL submitted to the server. It does not bind functions, inspect argument meaning,
-expand views or macros, recursively authorize SQL strings accepted by `query` or `json_execute_serialized_sql`, or
-resolve strings passed to `query_table`. An allowed name can resolve to a built-in, extension function, or same-name macro
-in any reachable schema or catalog, so all catalogs, schemas, and the search path must remain trusted and immutable to
-query clients. Allowing `read_parquet`, for example, permits the explicit function name for both local and remote
-arguments. File replacement scans such as `FROM 'gcs://bucket/data.parquet'` appear as table references rather than
-function calls and are not covered by the function policy. To reject these unqualified table references syntactically,
-also configure `--schema-match-headers` with trusted schema headers as described in
-[Multi-Tenant Access Control](#multi-tenant-access-control).
-
-Views and tables in attached catalogs also serialize as `BASE_TABLE` references, so function validation does not inspect
-the scans they resolve to during binding. This can be used deliberately to expose pre-provisioned remote datasets while
-leaving `read_parquet`, `iceberg_scan`, and similar reader functions out of the allowlist. Clients can query those table
-references but cannot call the excluded readers directly; catalog integrity and the DuckDB process's filesystem and
-network access remain the security boundary.
-
-Extension behavior that does not serialize as a function node is outside these inventories. This includes `ATTACH`,
-`COPY`, file replacement scans, extension loading and autoloading, settings, casts, and scans introduced while binding
-attached catalogs or views. Some `Elevated` groups record extension pragma names for completeness, but including one does
-not bypass the server's independent statement and `exec` restrictions. `All()` is the union of reviewed registered names,
-not all capabilities of the extension.
+Spatial compute defaults cover Mosaic rendering over existing geometry data, but the `ST_Read` loader remains elevated.
+Current-time functions are omitted from defaults because persistent cache entries do not expire by default; keyword forms
+such as `CURRENT_DATE` are not function nodes and remain outside this policy.
 
 ### Multi-Tenant Access Control
 
