@@ -34,7 +34,9 @@ You can customize the server behavior with the following command-line flags:
 -   `--schema-match-headers`: Comma-separated list of headers to match against schema names for multi-tenant access control (e.g., `X-Tenant-Id,verified-user-id`).
 -   `--load-extensions`: Comma-separated list of extensions to install and load at startup. Use a pipe after the extension name to specify a DuckDB repository alias. Unspecified repositories use DuckDB's default (e.g. `mysql_scanner,netquack|community,aws|core_nightly`).
 -   `--function-blocklist`: Comma-separated list of exact function names to block, useful for blocking functions that may pose security or performance risks (e.g. `bigquery_query,read_parquet`).
--   `--function-allowlist`: Comma-separated list of exact function names to allow. Names are matched case-insensitively, repeated flags accumulate names, and `--function-allowlist=` rejects all functions when no names are supplied.
+-   `--function-allowlist`: Comma-separated list of exact function names to add to the reviewed defaults. Names are matched case-insensitively, repeated flags accumulate names, and an explicitly empty value enables only the defaults.
+-   `--function-allowlist-exclude`: Comma-separated list of exact function names to remove from the effective allowlist.
+-   `--function-allowlist-defaults`: Whether to include the reviewed defaults. Set this to `false` for an exact-only allowlist.
 
 By default, the server will look for `localhost.pem` and `localhost-key.pem` in the current directory to enable HTTPS if the `--cert` and `--key` flags are not provided.
 
@@ -82,18 +84,35 @@ credentials.
 
 ### Function Policies
 
-Use an allowlist when the server should accept only a reviewed set of functions and operators:
+Use an allowlist when the server should accept only reviewed functions and operators. An explicitly empty value enables
+the defaults without adding application-specific names:
 
 ```sh
-duckdb-server-go --function-allowlist='sum,avg,count_star,+'
+duckdb-server-go --function-allowlist=
 ```
 
-Programs embedding `pkg/query` can apply the same policy with
-`query.WithFunctionAllowlist([]string{"sum", "avg", "count_star", "+"})`. Names are trimmed, deduplicated, and matched
-exactly and case-insensitively. Operators such as `+` and parser helpers such as `list_value` are function nodes in
-DuckDB's JSON syntax tree, so applications must include every function name their generated SQL uses. Omitting the
-option preserves unrestricted function behavior; a non-nil empty list denies all function calls. An allowlist and a
-non-empty blocklist cannot be combined. Like the blocklist, the allowlist compares only DuckDB's serialized
+Without an allowlist-related flag, the server remains unrestricted. `--function-allowlist-defaults=false` enables an
+exact-only policy; with no included names, it denies every function call.
+
+Programs embedding `pkg/query` can apply the same policy and add application functions with:
+
+```go
+query.WithFunctionAllowlist(query.FunctionAllowlistOptions{
+	Include: []string{"my_function"},
+})
+```
+
+The defaults cover ordinary local computation: built-in operators, aggregates, windows, parser syntax helpers, common
+side-effect-free scalar functions, and non-I/O table generators. The package exposes `DefaultFunctions`,
+`BuiltinOperators`, `BuiltinAggregates`, `BuiltinWindows`, `BuiltinSyntaxHelpers`, `BuiltinTableGenerators`, and
+`CommonScalarFunctions`; each returns a fresh list that can also be appended to `Include` or `Exclude`. These inventories
+were reviewed against DuckDB 1.5.5 and must be reviewed when DuckDB is upgraded. Newly introduced and extension-provided
+function names are not admitted automatically.
+
+`Include` and `Exclude` names are trimmed, deduplicated, and matched exactly and case-insensitively; exclusions take
+precedence. Set `DisableDefaults: true` for an exact-only policy. With defaults disabled and no included names, all
+function calls are denied. Omitting `WithFunctionAllowlist` preserves unrestricted function behavior. An allowlist and
+a non-empty blocklist cannot be combined. Like the blocklist, the allowlist compares only DuckDB's serialized
 `function_name`; schema and catalog qualifiers do not affect the match. When schema matching is active, its independent
 validator still rejects catalog-qualified function calls.
 
@@ -108,7 +127,7 @@ also configure `--schema-match-headers` with trusted schema headers as described
 [Multi-Tenant Access Control](#multi-tenant-access-control).
 
 DuckDB does not expose a supported function catalog annotation for path, URI, or SQL-string arguments. As of DuckDB
-1.5.5, its [internal extension-prefix table](https://github.com/duckdb/duckdb/blob/v1.5.5/src/include/duckdb/main/extension_entries.hpp#L1277-L1280)
+1.5.5, its [internal extension-prefix table](https://github.com/duckdb/duckdb/blob/v1.5.5/src/include/duckdb/main/extension_entries.hpp#L1264-L1269)
 maps `http`, `https`, `s3`, `s3a`, `s3n`, `gcs`, `gs`, `r2`, and `hf` to `httpfs`, while `azure`, `az`, and `abfss` map
 to the Azure extension. This list is version-specific and extensions can add other resource mechanisms. Treat it as a
 review checklist, not a complete authorization boundary; restrict the DuckDB process's filesystem, credentials, and
