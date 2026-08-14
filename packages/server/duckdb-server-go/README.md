@@ -90,7 +90,8 @@ duckdb-server-go --function-allowlist=
 ```
 
 Without `--function-allowlist`, the server remains unrestricted. The binary intentionally exposes only policy
-activation and exact additions; use `pkg/query` for exclusions, exact-only policies, or extension groups.
+activation and exact additions; use a custom binary embedding `pkg/query` for exclusions, exact-only policies, or
+extension groups.
 
 Programs embedding `pkg/query` can apply the same policy and add application functions with:
 
@@ -142,7 +143,8 @@ An empty row means the extension has no reviewed function-call names, not that i
 These groups authorize names only; extension loading and file or network access are separate concerns. Validation is
 syntactic and name-only: it does not bind function identity, inspect arguments, expand macros or views, recursively inspect
 SQL strings, or cover replacement scans and attached-table binding. Keep catalogs and the search path trusted, and enforce
-resource access outside this policy.
+resource access outside this policy. Pre-provisioned views and attached tables can deliberately expose curated datasets
+while reader functions remain excluded; catalog integrity and process resource controls then carry the boundary.
 
 In Go, `Exclude` wins over `Include`, and `DisableDefaults` creates an exact-only policy. Omitting
 `WithFunctionAllowlist` is unrestricted; configuring an exact-empty policy denies all function calls. A function
