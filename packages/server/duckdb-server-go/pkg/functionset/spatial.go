@@ -1,13 +1,7 @@
 package functionset
 
-// These names match the Spatial extension pinned by DuckDB 1.5.5.
-var spatialFunctions = [...]string{
-	"duckdb_proj_compiled_version",
-	"duckdb_proj_version",
-	"pragma_rtree_index_info",
-	"rtree_index_dump",
-	"rtree_index_scan",
-	"shapefile_meta",
+// These groups partition the Spatial extension pinned by DuckDB 1.5.5.
+var spatialComputeFunctions = [...]string{
 	"st_affine",
 	"st_area",
 	"st_area_spheroid",
@@ -45,7 +39,6 @@ var spatialFunctions = [...]string{
 	"st_distance_geos",
 	"st_distance_sphere",
 	"st_distance_spheroid",
-	"st_drivers",
 	"st_dump",
 	"st_dwithin",
 	"st_dwithin_geos",
@@ -64,7 +57,6 @@ var spatialFunctions = [...]string{
 	"st_force3dm",
 	"st_force3dz",
 	"st_force4d",
-	"st_generatepoints",
 	"st_geometrytype",
 	"st_geomfromgeojson",
 	"st_geomfromhexewkb",
@@ -128,10 +120,6 @@ var spatialFunctions = [...]string{
 	"st_polygon2dfromwkb",
 	"st_polygonize",
 	"st_quadkey",
-	"st_read",
-	"st_read_meta",
-	"st_readosm",
-	"st_readshp",
 	"st_reduceprecision",
 	"st_removerepeatedpoints",
 	"st_reverse",
@@ -148,7 +136,6 @@ var spatialFunctions = [...]string{
 	"st_symdifference",
 	"st_tileenvelope",
 	"st_touches",
-	"st_transform",
 	"st_translate",
 	"st_transscale",
 	"st_union",
@@ -168,8 +155,18 @@ var spatialFunctions = [...]string{
 	"st_zmin",
 }
 
-// Spatial returns function names registered by the Spatial extension pinned by DuckDB 1.5.5.
-// It includes resource-capable functions such as st_read and st_transform.
-func Spatial() []string {
-	return functionNames(spatialFunctions[:])
+var spatialElevatedFunctions = [...]string{
+	"duckdb_proj_compiled_version",
+	"duckdb_proj_version",
+	"pragma_rtree_index_info",
+	"rtree_index_dump",
+	"rtree_index_scan",
+	"shapefile_meta",
+	"st_drivers",
+	"st_generatepoints",
+	"st_read",
+	"st_read_meta",
+	"st_readosm",
+	"st_readshp",
+	"st_transform",
 }
