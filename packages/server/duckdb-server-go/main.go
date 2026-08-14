@@ -36,10 +36,7 @@ func run() int {
 	extensionsStr := flag.String("load-extensions", "", "Comma-separated list of extensions to install and load at startup. Use a pipe after the extension name to specify a DuckDB repository alias. Unspecified repositories use DuckDB's default (e.g. mysql_scanner,netquack|community,aws|core_nightly).")
 	functionBlocklistStr := flag.String("function-blocklist", "", "Comma-separated list of functions to block, useful for blocking functions that may pose security or performance risks. (e.g., 'bigquery_query,read_parquet')")
 	var functionAllowlist optionalCommaListFlag
-	flag.Var(&functionAllowlist, "function-allowlist", "Comma-separated list of functions to add to the default allowlist. Exact names are matched case-insensitively.")
-	var functionAllowlistExclude optionalCommaListFlag
-	flag.Var(&functionAllowlistExclude, "function-allowlist-exclude", "Comma-separated list of functions to remove from the effective allowlist.")
-	functionAllowlistDefaults := flag.Bool("function-allowlist-defaults", true, "Include the reviewed default functions when the function allowlist is configured.")
+	flag.Var(&functionAllowlist, "function-allowlist", "Comma-separated exact names to add to the reviewed default allowlist. An empty value enables only the defaults; names are matched case-insensitively.")
 	flag.Parse()
 
 	var schemaMatchHeaders []string
@@ -104,13 +101,10 @@ func run() int {
 		query.WithLogger(logger),
 		query.WithFunctionBlocklist(functionBlocklist),
 	}
-	functionAllowlistOptions, functionAllowlistConfigured := configureFunctionAllowlist(
-		functionAllowlist,
-		functionAllowlistExclude,
-		*functionAllowlistDefaults,
-	)
-	if functionAllowlistConfigured {
-		queryOptions = append(queryOptions, query.WithFunctionAllowlist(functionAllowlistOptions))
+	if functionAllowlist.set {
+		queryOptions = append(queryOptions, query.WithFunctionAllowlist(query.FunctionAllowlistOptions{
+			Include: functionAllowlist.values,
+		}))
 	}
 
 	db, err := query.New(ctx, connector, queryOptions...)
@@ -137,22 +131,20 @@ func run() int {
 	logger.Warn("DuckDB Server permits all HTTP and WebSocket origins for compatibility; enforce an outer origin or CSRF policy before exposing it to untrusted browsers")
 
 	config := map[string]interface{}{
-		"database":                    *dbPath,
-		"address":                     *address,
-		"port":                        *port,
-		"connection_pool_size":        *poolSize,
-		"cache_size":                  *maxCacheEntries,
-		"cert_file":                   *certFile,
-		"key_file":                    *keyFile,
-		"schema_match_headers":        *schemaMatchHeadersStr,
-		"ttl":                         ttl,
-		"max_cache_bytes":             *maxCacheBytes,
-		"load_extensions":             *extensionsStr,
-		"function_blocklist":          *functionBlocklistStr,
-		"function_allowlist":          functionAllowlist.String(),
-		"function_allowlist_exclude":  functionAllowlistExclude.String(),
-		"function_allowlist_defaults": *functionAllowlistDefaults,
-		"allowlist_configured":        functionAllowlistConfigured,
+		"database":             *dbPath,
+		"address":              *address,
+		"port":                 *port,
+		"connection_pool_size": *poolSize,
+		"cache_size":           *maxCacheEntries,
+		"cert_file":            *certFile,
+		"key_file":             *keyFile,
+		"schema_match_headers": *schemaMatchHeadersStr,
+		"ttl":                  ttl,
+		"max_cache_bytes":      *maxCacheBytes,
+		"load_extensions":      *extensionsStr,
+		"function_blocklist":   *functionBlocklistStr,
+		"function_allowlist":   functionAllowlist.String(),
+		"allowlist_configured": functionAllowlist.set,
 	}
 	logger.Info("DuckDB Server configuration", "config", config)
 
@@ -190,12 +182,4 @@ func run() int {
 		return 1
 	}
 	return 0
-}
-
-func configureFunctionAllowlist(include, exclude optionalCommaListFlag, defaults bool) (query.FunctionAllowlistOptions, bool) {
-	return query.FunctionAllowlistOptions{
-		Include:         include.values,
-		Exclude:         exclude.values,
-		DisableDefaults: !defaults,
-	}, include.set || exclude.set || !defaults
 }

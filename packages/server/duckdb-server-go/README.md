@@ -35,8 +35,6 @@ You can customize the server behavior with the following command-line flags:
 -   `--load-extensions`: Comma-separated list of extensions to install and load at startup. Use a pipe after the extension name to specify a DuckDB repository alias. Unspecified repositories use DuckDB's default (e.g. `mysql_scanner,netquack|community,aws|core_nightly`).
 -   `--function-blocklist`: Comma-separated list of exact function names to block, useful for blocking functions that may pose security or performance risks (e.g. `bigquery_query,read_parquet`).
 -   `--function-allowlist`: Comma-separated list of exact function names to add to the reviewed defaults. Names are matched case-insensitively, repeated flags accumulate names, and an explicitly empty value enables only the defaults.
--   `--function-allowlist-exclude`: Comma-separated list of exact function names to remove from the effective allowlist.
--   `--function-allowlist-defaults`: Whether to include the reviewed defaults. Set this to `false` for an exact-only allowlist.
 
 By default, the server will look for `localhost.pem` and `localhost-key.pem` in the current directory to enable HTTPS if the `--cert` and `--key` flags are not provided.
 
@@ -91,8 +89,8 @@ the defaults without adding application-specific names:
 duckdb-server-go --function-allowlist=
 ```
 
-Without an allowlist-related flag, the server remains unrestricted. `--function-allowlist-defaults=false` enables an
-exact-only policy; with no included names, it denies every function call.
+Without `--function-allowlist`, the server remains unrestricted. The binary intentionally exposes only policy
+activation and exact additions; use `pkg/query` for exclusions, exact-only policies, or extension groups.
 
 Programs embedding `pkg/query` can apply the same policy and add application functions with:
 
@@ -109,7 +107,7 @@ side-effect-free scalar functions, non-I/O table generators, and the compute gro
 `DefaultFunctions`, `Elevated()` returns names requiring explicit admission, and `All()` returns their union.
 `CoreExtensions()` returns the 29 reviewed extension constants. With defaults enabled, appending `Spatial.Elevated()` to
 `Include` enables its full reviewed inventory; with `DisableDefaults: true`, use `Spatial.All()` instead. The command-line
-flags accept exact function names only and do not expand extension or group names; there are no extension-specific
+flag accepts exact function names only and does not expand extension or group names; there are no extension-specific
 function-policy flags.
 
 The inventories were reviewed against DuckDB 1.5.5 and must be reviewed when DuckDB is upgraded. Counts are unique
@@ -167,10 +165,10 @@ Current-time function names are intentionally omitted from defaults because clie
 cache key is only the SQL text and output format, with no expiration by default. This does not block keyword forms such as
 `CURRENT_DATE` and `CURRENT_TIMESTAMP`, which DuckDB serializes as column references rather than function calls.
 
-`Include` and `Exclude` names are trimmed, deduplicated, and matched exactly and case-insensitively; exclusions take
-precedence. Set `DisableDefaults: true` for an exact-only policy. With defaults disabled and no included names, all
-function calls are denied. Omitting `WithFunctionAllowlist` preserves unrestricted function behavior. An allowlist and
-a non-empty blocklist cannot be combined. Like the blocklist, the allowlist compares only DuckDB's serialized
+In the Go API, `Include` and `Exclude` names are trimmed, deduplicated, and matched exactly and case-insensitively;
+exclusions take precedence. Set `DisableDefaults: true` for an exact-only policy. With defaults disabled and no included
+names, all function calls are denied. Omitting `WithFunctionAllowlist` preserves unrestricted function behavior. An
+allowlist and a non-empty blocklist cannot be combined. Like the blocklist, the allowlist compares only DuckDB's serialized
 `function_name`; schema and catalog qualifiers do not affect the match. When schema matching is active, its independent
 validator still rejects catalog-qualified function calls.
 
