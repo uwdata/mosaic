@@ -135,7 +135,7 @@ An empty row means the extension has no reviewed function-call names, not that i
 | `SQLite` | 0 | 3 | Connector and scanner operations. |
 | `TPCDS` | 2 | 2 | Query and answer text; data generators are elevated. |
 | `TPCH` | 2 | 2 | Query and answer text; data generators are elevated. |
-| `UI` | 0 | 4 | HTTP server lifecycle and status operations. |
+| `UI` | 0 | 5 | HTTP server lifecycle, URL, and status operations. |
 | `UnityCatalog` | 0 | 4 | Attached-catalog and checkpoint operations; the generated registry is incomplete. |
 | `Vortex` | 0 | 2 | Readers verified against the pinned nested source revision. |
 | `VSS` | 0 | 5 | Index access and management operations. |

@@ -36,7 +36,7 @@ func TestExtensionInventoryData(t *testing.T) {
 		{"sqlite", sqliteComputeFunctions[:], sqliteElevatedFunctions[:], 0, 3},
 		{"tpcds", tpcdsComputeFunctions[:], tpcdsElevatedFunctions[:], 2, 2},
 		{"tpch", tpchComputeFunctions[:], tpchElevatedFunctions[:], 2, 2},
-		{"ui", uiComputeFunctions[:], uiElevatedFunctions[:], 0, 4},
+		{"ui", uiComputeFunctions[:], uiElevatedFunctions[:], 0, 5},
 		{"unity_catalog", unityCatalogComputeFunctions[:], unityCatalogElevatedFunctions[:], 0, 4},
 		{"vortex", vortexComputeFunctions[:], vortexElevatedFunctions[:], 0, 2},
 		{"vss", vssComputeFunctions[:], vssElevatedFunctions[:], 0, 5},

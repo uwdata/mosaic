@@ -4,6 +4,7 @@ package functionset
 var uiComputeFunctions = [...]string{}
 
 var uiElevatedFunctions = [...]string{
+	"get_ui_url",
 	"start_ui",
 	"start_ui_server",
 	"stop_ui_server",
