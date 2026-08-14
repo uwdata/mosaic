@@ -37,6 +37,11 @@ func run() int {
 	functionBlocklistStr := flag.String("function-blocklist", "", "Comma-separated list of functions to block, useful for blocking functions that may pose security or performance risks. (e.g., 'bigquery_query,read_parquet')")
 	var functionAllowlist optionalCommaListFlag
 	flag.Var(&functionAllowlist, "function-allowlist", "Comma-separated exact names to add to the reviewed default allowlist. An empty value enables only the defaults; names are matched case-insensitively.")
+	securityProfileStr := flag.String("security-profile", string(securityProfileCompat), "DuckDB external-resource profile: compat, catalog-only, or local-files.")
+	var allowedDirectories repeatedStringFlag
+	flag.Var(&allowedDirectories, "allowed-directory", "Existing local directory available to DuckDB under the local-files security profile. Repeat for multiple directories.")
+	var allowedPaths repeatedStringFlag
+	flag.Var(&allowedPaths, "allowed-path", "Existing local file available to DuckDB under the local-files security profile. Repeat for multiple files.")
 	flag.Parse()
 
 	var schemaMatchHeaders []string
@@ -61,6 +66,18 @@ func run() int {
 		return 1
 	}
 
+	security, err := resolveSecurityProfile(
+		*securityProfileStr,
+		*dbPath,
+		*extensionsStr,
+		allowedDirectories.values,
+		allowedPaths.values,
+	)
+	if err != nil {
+		logger.Error("main: invalid security profile", "error", err)
+		return 1
+	}
+
 	// If no certificate files are specified, check for default localhost certificates
 	if *certFile == "" && *keyFile == "" {
 		// Check if localhost.pem and localhost-key.pem exist in the current directory
@@ -73,8 +90,17 @@ func run() int {
 		}
 	}
 
-	connector, err := duckdb.NewConnector(*dbPath, func(execer driver.ExecerContext) error {
-		return extensions.ParseAndInstall(ctx, execer, *extensionsStr)
+	securityInitializer := security.newConnectionInitializer()
+	connector, err := duckdb.NewConnector(security.databaseDSN, func(execer driver.ExecerContext) error {
+		if securityInitializer != nil {
+			if err := securityInitializer.initializeConnection(ctx, execer); err != nil {
+				return err
+			}
+		}
+		if err := extensions.ParseAndInstall(ctx, execer, *extensionsStr); err != nil {
+			return err
+		}
+		return nil
 	})
 	if err != nil {
 		logger.Error("main: error creating duckdb connector", "error", err)
@@ -86,6 +112,17 @@ func run() int {
 			logger.Error("main: error closing duckdb connector", "error", err)
 		}
 	}()
+	if securityInitializer != nil {
+		conn, err := connector.Connect(ctx)
+		if err != nil {
+			logger.Error("main: error initializing DuckDB security profile", "error", err)
+			return 1
+		}
+		if err = conn.Close(); err != nil {
+			logger.Error("main: error closing DuckDB initialization connection", "error", err)
+			return 1
+		}
+	}
 
 	ttl, err := time.ParseDuration(*ttlStr)
 	if err != nil {
@@ -145,6 +182,9 @@ func run() int {
 		"function_blocklist":   *functionBlocklistStr,
 		"function_allowlist":   functionAllowlist.String(),
 		"allowlist_configured": functionAllowlist.set,
+		"security_profile":     security.name,
+		"allowed_directories":  security.allowedDirectories,
+		"allowed_paths":        security.allowedPaths,
 	}
 	logger.Info("DuckDB Server configuration", "config", config)
 
