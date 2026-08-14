@@ -127,7 +127,7 @@ also configure `--schema-match-headers` with trusted schema headers as described
 [Multi-Tenant Access Control](#multi-tenant-access-control).
 
 DuckDB does not expose a supported function catalog annotation for path, URI, or SQL-string arguments. As of DuckDB
-1.5.5, its [internal extension-prefix table](https://github.com/duckdb/duckdb/blob/v1.5.5/src/include/duckdb/main/extension_entries.hpp#L1264-L1269)
+1.5.5, its [internal extension-prefix table](https://github.com/duckdb/duckdb/blob/v1.5.5/src/include/duckdb/main/extension_entries.hpp#L1277-L1280)
 maps `http`, `https`, `s3`, `s3a`, `s3n`, `gcs`, `gs`, `r2`, and `hf` to `httpfs`, while `azure`, `az`, and `abfss` map
 to the Azure extension. This list is version-specific and extensions can add other resource mechanisms. Treat it as a
 review checklist, not a complete authorization boundary; restrict the DuckDB process's filesystem, credentials, and
