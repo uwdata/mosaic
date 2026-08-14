@@ -455,6 +455,22 @@ func TestGenericAuthorizationDoesNotBypassRestrictedExec(t *testing.T) {
 		require.Contains(t, res.Body.String(), query.ErrExecWithValidation.Error())
 	})
 
+	t.Run("function allowlist policy", func(t *testing.T) {
+		db := setupTestDB(t, query.WithFunctionAllowlist(query.FunctionAllowlistOptions{
+			DisableDefaults: true,
+			Include:         []string{"md5"},
+		}))
+		handler, err := New(db, allow)
+		require.NoError(t, err)
+
+		req := httptest.NewRequest(http.MethodPost, "/", strings.NewReader(`{"type":"exec","sql":"SELECT 1"}`))
+		res := httptest.NewRecorder()
+		handler.ServeHTTP(res, req)
+
+		require.Equal(t, http.StatusBadRequest, res.Code, res.Body.String())
+		require.Contains(t, res.Body.String(), query.ErrExecWithValidation.Error())
+	})
+
 	t.Run("schema policy", func(t *testing.T) {
 		db := setupTestDB(t)
 		handler, err := New(db, allow, WithSchemaMatchHeaders("X-Tenant"))

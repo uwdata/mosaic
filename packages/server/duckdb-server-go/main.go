@@ -19,6 +19,10 @@ import (
 )
 
 func main() {
+	os.Exit(run())
+}
+
+func run() int {
 	dbPath := flag.String("database", ":memory:", "Path of database file (e.g., \"database.db\". \":memory:\" for in-memory database)")
 	address := flag.String("address", "localhost", "HTTP Address")
 	port := flag.String("port", "3000", "HTTP Port")
@@ -31,6 +35,8 @@ func main() {
 	schemaMatchHeadersStr := flag.String("schema-match-headers", "", "Comma-separated list of headers to match against schema names for multi-tenant access control (e.g., \"X-Tenant-Id,verified-user-id\")")
 	extensionsStr := flag.String("load-extensions", "", "Comma-separated list of extensions to install and load at startup. Use a pipe after the extension name to specify a DuckDB repository alias. Unspecified repositories use DuckDB's default (e.g. mysql_scanner,netquack|community,aws|core_nightly).")
 	functionBlocklistStr := flag.String("function-blocklist", "", "Comma-separated list of functions to block, useful for blocking functions that may pose security or performance risks. (e.g., 'bigquery_query,read_parquet')")
+	var functionAllowlist optionalCommaListFlag
+	flag.Var(&functionAllowlist, "function-allowlist", "Comma-separated exact names to add to the reviewed default allowlist. An empty value enables only the defaults; names are matched case-insensitively.")
 	flag.Parse()
 
 	var schemaMatchHeaders []string
@@ -52,7 +58,7 @@ func main() {
 
 	if err := extensions.Validate(*extensionsStr); err != nil {
 		logger.Error("main: invalid load-extensions", "error", err, "load-extensions", *extensionsStr)
-		return
+		return 1
 	}
 
 	// If no certificate files are specified, check for default localhost certificates
@@ -72,7 +78,7 @@ func main() {
 	})
 	if err != nil {
 		logger.Error("main: error creating duckdb connector", "error", err)
-		return
+		return 1
 	}
 	defer func() {
 		err = connector.Close()
@@ -84,20 +90,27 @@ func main() {
 	ttl, err := time.ParseDuration(*ttlStr)
 	if err != nil {
 		logger.Error("main: invalid cache-ttl", "error", err)
-		return
+		return 1
 	}
 
-	db, err := query.New(ctx, connector,
+	queryOptions := []query.OptionFunc{
 		query.WithMaxConnections(*poolSize),
 		query.WithMaxCacheEntries(*maxCacheEntries),
 		query.WithMaxCacheBytes(*maxCacheBytes),
 		query.WithTTL(ttl),
 		query.WithLogger(logger),
 		query.WithFunctionBlocklist(functionBlocklist),
-	)
+	}
+	if functionAllowlist.set {
+		queryOptions = append(queryOptions, query.WithFunctionAllowlist(query.FunctionAllowlistOptions{
+			Include: functionAllowlist.values,
+		}))
+	}
+
+	db, err := query.New(ctx, connector, queryOptions...)
 	if err != nil {
 		logger.Error("main: error creating query DB", "error", err)
-		return
+		return 1
 	}
 	defer db.Close()
 
@@ -113,7 +126,7 @@ func main() {
 	)
 	if err != nil {
 		logger.Error("main: error creating server", "error", err)
-		return
+		return 1
 	}
 	logger.Warn("DuckDB Server permits all HTTP and WebSocket origins for compatibility; enforce an outer origin or CSRF policy before exposing it to untrusted browsers")
 
@@ -129,13 +142,16 @@ func main() {
 		"ttl":                  ttl,
 		"max_cache_bytes":      *maxCacheBytes,
 		"load_extensions":      *extensionsStr,
+		"function_blocklist":   *functionBlocklistStr,
+		"function_allowlist":   functionAllowlist.String(),
+		"allowlist_configured": functionAllowlist.set,
 	}
 	logger.Info("DuckDB Server configuration", "config", config)
 
 	extensions, err := db.GetExtensions(ctx)
 	if err != nil {
 		logger.Error("main: error getting extensions", "error", err)
-		return
+		return 1
 	}
 
 	logger.Info("DuckDB Server Extensions", "extensions", extensions)
@@ -163,6 +179,7 @@ func main() {
 	}
 	if err != nil {
 		logger.Error("main: error running HTTP server", "error", err)
-		return
+		return 1
 	}
+	return 0
 }

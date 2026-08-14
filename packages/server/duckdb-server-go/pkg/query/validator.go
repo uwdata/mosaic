@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"maps"
 	"slices"
 	"strings"
 )
@@ -297,19 +298,30 @@ func (v *baseTableValidator) Validate() []error {
 	return errs
 }
 
-// functionBlocklistValidator validates that the SQL query does not use blocked functions.
-type functionBlocklistValidator struct {
-	blockedFunctions []string
-	errs             []error
+type functionListValidator struct {
+	functions      []string
+	allowlist      bool
+	functionCounts map[string]int
+	errs           []error
 }
 
 func newFunctionBlocklistValidator(blockedFunctions []string) Validator {
-	return &functionBlocklistValidator{
-		blockedFunctions: blockedFunctions,
+	return newFunctionListValidator(blockedFunctions, false)
+}
+
+func newFunctionAllowlistValidator(allowedFunctions []string) Validator {
+	return newFunctionListValidator(allowedFunctions, true)
+}
+
+func newFunctionListValidator(functions []string, allowlist bool) Validator {
+	return &functionListValidator{
+		functions:      functions,
+		allowlist:      allowlist,
+		functionCounts: make(map[string]int),
 	}
 }
 
-func (v *functionBlocklistValidator) CheckNode(node map[string]any, _ []string) {
+func (v *functionListValidator) CheckNode(node map[string]any, _ []string) {
 	class, exists := node["class"]
 	if !exists {
 		return
@@ -320,6 +332,7 @@ func (v *functionBlocklistValidator) CheckNode(node map[string]any, _ []string) 
 
 	functionName, exists := node["function_name"]
 	if !exists {
+		v.errs = append(v.errs, errors.New("query: invalid function node: missing 'function_name'"))
 		return
 	}
 
@@ -329,12 +342,27 @@ func (v *functionBlocklistValidator) CheckNode(node map[string]any, _ []string) 
 		return
 	}
 	functionNameStr = strings.ToLower(functionNameStr)
-
-	if slices.Contains(v.blockedFunctions, functionNameStr) {
-		v.errs = append(v.errs, fmt.Errorf("%w: use of function '%s' is not allowed", ErrAccessDenied, functionNameStr))
-	}
+	v.functionCounts[functionNameStr]++
 }
 
-func (v *functionBlocklistValidator) Validate() []error {
-	return v.errs
+func (v *functionListValidator) Validate() []error {
+	errs := append([]error(nil), v.errs...)
+	for _, functionName := range slices.Sorted(maps.Keys(v.functionCounts)) {
+		listed := slices.Contains(v.functions, functionName)
+		if listed == v.allowlist {
+			continue
+		}
+
+		var err error
+		if v.allowlist {
+			err = fmt.Errorf("%w: function '%s' is not in the allowlist", ErrAccessDenied, functionName)
+		} else {
+			err = fmt.Errorf("%w: use of function '%s' is not allowed", ErrAccessDenied, functionName)
+		}
+		if count := v.functionCounts[functionName]; count > 1 {
+			err = fmt.Errorf("%w (%d occurrences)", err, count)
+		}
+		errs = append(errs, err)
+	}
+	return errs
 }

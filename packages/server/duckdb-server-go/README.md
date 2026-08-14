@@ -33,7 +33,8 @@ You can customize the server behavior with the following command-line flags:
 -   `--key <path>`: Path to a TLS private key file to enable HTTPS.
 -   `--schema-match-headers`: Comma-separated list of headers to match against schema names for multi-tenant access control (e.g., `X-Tenant-Id,verified-user-id`).
 -   `--load-extensions`: Comma-separated list of extensions to install and load at startup. Use a pipe after the extension name to specify a DuckDB repository alias. Unspecified repositories use DuckDB's default (e.g. `mysql_scanner,netquack|community,aws|core_nightly`).
--   `--function-blocklist`: Comma-separated list of functions to block, useful for blocking functions that may pose security or performance risks. (e.g., 'bigquery_query,read_parquet')`
+-   `--function-blocklist`: Comma-separated list of exact function names to block, useful for blocking functions that may pose security or performance risks (e.g. `bigquery_query,read_parquet`).
+-   `--function-allowlist`: Comma-separated list of exact function names to add to the reviewed defaults. Names are matched case-insensitively, repeated flags accumulate names, and an explicitly empty value enables only the defaults.
 
 By default, the server will look for `localhost.pem` and `localhost-key.pem` in the current directory to enable HTTPS if the `--cert` and `--key` flags are not provided.
 
@@ -79,6 +80,80 @@ errors are logged and returned as sanitized 500 responses. Authorization can all
 and exact SQL, but cannot rewrite SQL or sandbox the shared process, filesystem, network, extensions, catalogs, or
 credentials.
 
+### Function Policies
+
+Use an allowlist when the server should accept only reviewed functions and operators. An explicitly empty value enables
+the defaults without adding application-specific names:
+
+```sh
+duckdb-server-go --function-allowlist=
+```
+
+Without `--function-allowlist`, the server remains unrestricted. The binary intentionally exposes only policy
+activation and exact additions; use a custom binary embedding `pkg/query` for exclusions, exact-only policies, or
+extension groups.
+
+Programs embedding `pkg/query` can apply the same policy and add application functions with:
+
+```go
+query.WithFunctionAllowlist(query.FunctionAllowlistOptions{
+	Include: append(functionset.Spatial.Elevated(), "my_function"),
+})
+```
+
+By default, configured policies use `functionset.DefaultFunctions()`, which contains reviewed built-ins and every
+[core extension](https://duckdb.org/docs/current/core_extensions/overview)'s `Compute()` group. `Elevated()` requires
+explicit admission, and `All()` returns both groups. These Go helpers return fresh slices; the CLI accepts exact names only.
+
+The table records unique names reviewed against DuckDB 1.5.5. A name is elevated if any overload has elevated behavior.
+An empty row means the extension has no reviewed function-call names, not that it has no other capabilities.
+
+| Extension | Compute | Elevated | Classification and status |
+| --- | ---: | ---: | --- |
+| `Autocomplete` | 1 | 3 | Parser check; completion and parser controls are elevated. |
+| `Avro` | 0 | 1 | Reader only. |
+| `AWS` | 0 | 1 | Credential and provider operation. |
+| `Azure` | 0 | 0 | Filesystem integration with no reviewed function-call names. |
+| `Delta` | 2 | 9 | Local parser/test helpers; scans, metadata I/O, and writes are elevated. |
+| `DuckLake` | 1 | 21 | Local hash helper; catalog, scan, metadata, and mutation operations are elevated. |
+| `Encodings` | 0 | 0 | CSV codec integration with no reviewed function-call names. |
+| `Excel` | 2 | 1 | Value conversion; the sheet reader is elevated. |
+| `FTS` | 1 | 2 | Text stemming; index creation and mutation are elevated. |
+| `HTTPFS` | 0 | 0 | Filesystem integration with no reviewed function-call names. |
+| `Iceberg` | 2 | 14 | Value helpers; scans, catalogs, metadata I/O, and writes are elevated. |
+| `ICU` | 179 | 7 | Deterministic collation and calendar computation; current-time names are elevated. |
+| `Inet` | 11 | 0 | IP value operations only. |
+| `JSON` | 33 | 9 | Value parsing and serialization; readers, SQL execution, and plan inspection are elevated. |
+| `Lance` | 0 | 12 | Source-pinned scans and metadata operations. |
+| `MotherDuck` | 0 | 198 | Best-effort observed proprietary runtime snapshot; all names are elevated. |
+| `MySQL` | 0 | 5 | Connector and scanner operations. |
+| `ODBC` | 0 | 11 | Connector and scanner operations. |
+| `Parquet` | 2 | 9 | `VARIANT` conversion; file, metadata, bloom, and key operations are elevated. |
+| `Postgres` | 2 | 8 | Value helpers; connector and scanner operations are elevated. |
+| `Quack` | 3 | 9 | Protocol value helpers; remote and session operations are elevated. |
+| `Spatial` | 151 | 13 | Geometry computation; readers, index/catalog access, random generation, and resource-capable transforms are elevated. |
+| `SQLite` | 0 | 3 | Connector and scanner operations. |
+| `TPCDS` | 2 | 2 | Query and answer text; data generators are elevated. |
+| `TPCH` | 2 | 2 | Query and answer text; data generators are elevated. |
+| `UI` | 0 | 5 | HTTP server lifecycle, URL, and status operations. |
+| `UnityCatalog` | 0 | 4 | Attached-catalog and checkpoint operations; the generated registry is incomplete. |
+| `Vortex` | 0 | 2 | Readers verified against the pinned nested source revision. |
+| `VSS` | 0 | 5 | Index access and management operations. |
+
+These groups authorize names only; extension loading and file or network access are separate concerns. Validation is
+syntactic and name-only: it does not bind function identity, inspect arguments, expand macros or views, recursively inspect
+SQL strings, or cover replacement scans and attached-table binding. Keep catalogs and the search path trusted, and enforce
+resource access outside this policy. Pre-provisioned views and attached tables can deliberately expose curated datasets
+while reader functions remain excluded; catalog integrity and process resource controls then carry the boundary.
+
+In Go, `Exclude` wins over `Include`, and `DisableDefaults` creates an exact-only policy. Omitting
+`WithFunctionAllowlist` is unrestricted; configuring an exact-empty policy denies all function calls. A function
+allowlist cannot be combined with a non-empty blocklist, and any configured function policy rejects `exec` requests.
+
+Spatial compute defaults cover Mosaic rendering over existing geometry data, but the `ST_Read` loader remains elevated.
+Current-time functions are omitted from defaults because persistent cache entries do not expire by default; keyword forms
+such as `CURRENT_DATE` are not function nodes and remain outside this policy.
+
 ### Multi-Tenant Access Control
 
 `schema-match-headers` isn't part of the mosaic server API, but is provided here as an example of how to have
@@ -108,19 +183,19 @@ multiple users / customers share the same DuckDB server instance while restricti
 
 _Note:_ Schema matching authorizes schema references in submitted SQL; it does not isolate the shared DuckDB process,
 filesystem, network, extensions, or credentials. It assumes a single catalog; attached catalogs are outside this policy
-boundary, and explicitly catalog-qualified table, `SHOW`, and function references are rejected. The function blocklist
-applies only to explicit function calls. Schema matching does not restrict catalog metadata returned by functions such as
-`duckdb_tables()` and `pragma_table_info()`. If metadata is sensitive, add the exact metadata-function names exposed by the
-deployment to `--function-blocklist`; wildcard patterns such as `duckdb_*` are not supported, and the list must be reviewed
+boundary, and explicitly catalog-qualified table, `SHOW`, and function references are rejected. Function allowlists and
+blocklists apply only to explicit function calls. Schema matching does not restrict catalog metadata returned by functions
+such as `duckdb_tables()` and `pragma_table_info()`. If metadata is sensitive, allow or block the exact metadata-function
+names exposed by the deployment; wildcard patterns such as `duckdb_*` are not supported, and the policy must be reviewed
 when DuckDB or its extensions change. To restrict file-reading functions, also enable schema matching so DuckDB replacement
 scans such as `FROM 'data.parquet'` are rejected as unqualified table references. These controls are not a sandbox: run the
 server with access only to external resources that are safe for every tenant.
 
-If either `--schema-match-headers` or `--function-blocklist` is configured, `json` and `arrow` requests are limited to
-statements DuckDB can serialize for validation; unsupported forms such as `PRAGMA` and `SET` are rejected, with HTTP
-requests receiving a 400 response. All `exec` requests are also rejected until full-statement authorization is supported.
-This includes every `Coordinator.exec(...)` call, such as data loading, preloading, and DDL/DML. Mosaic pre-aggregation
-also uses `exec` to create schemas and tables, so set `preagg: { enabled: false }` in this mode.
+If `--schema-match-headers`, `--function-blocklist`, or `--function-allowlist` is configured, `json` and `arrow` requests
+are limited to statements DuckDB can serialize for validation; unsupported forms such as `PRAGMA` and `SET` are rejected,
+with HTTP requests receiving a 400 response. All `exec` requests are also rejected until full-statement authorization is
+supported. This includes every `Coordinator.exec(...)` call, such as data loading, preloading, and DDL/DML. Mosaic
+pre-aggregation also uses `exec` to create schemas and tables, so set `preagg: { enabled: false }` in this mode.
 
 ## API
 

@@ -140,6 +140,21 @@ func TestArrowResponseFraming(t *testing.T) {
 }
 
 func TestHandleHTTPPolicyErrors(t *testing.T) {
+	t.Run("function outside allowlist is forbidden", func(t *testing.T) {
+		db := setupTestDB(t, query.WithFunctionAllowlist(query.FunctionAllowlistOptions{
+			DisableDefaults: true,
+			Include:         []string{"lower"},
+		}))
+		s := mustHandler(t, db)
+		req := httptest.NewRequest(http.MethodPost, "/", strings.NewReader(`{"type":"json","sql":"SELECT md5('mosaic')"}`))
+		res := httptest.NewRecorder()
+
+		s.ServeHTTP(res, req)
+
+		require.Equal(t, http.StatusForbidden, res.Code)
+		require.Contains(t, res.Body.String(), "function 'md5' is not in the allowlist")
+	})
+
 	t.Run("blocked function is forbidden", func(t *testing.T) {
 		db := setupTestDB(t, query.WithFunctionBlocklist([]string{"md5"}))
 		s := mustHandler(t, db)
