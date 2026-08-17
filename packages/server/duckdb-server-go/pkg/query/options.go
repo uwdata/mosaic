@@ -31,6 +31,9 @@ type Options struct {
 	// FunctionAllowlist configures the function names that are allowed in queries.
 	// A nil value leaves function calls unrestricted.
 	FunctionAllowlist *FunctionAllowlistOptions
+
+	// RejectRemoteURILiterals rejects recognized remote URI literals in reviewed path arguments and replacement scans.
+	RejectRemoteURILiterals bool
 }
 
 // FunctionAllowlistOptions configures an allowlist from reviewed defaults and exact function names.
@@ -104,6 +107,15 @@ func WithFunctionAllowlist(options FunctionAllowlistOptions) OptionFunc {
 			DisableDefaults: configured.DisableDefaults,
 		}
 		opts.FunctionAllowlist = &value
+		return nil
+	}
+}
+
+// WithRemoteURILiteralRejection enables best-effort rejection of recognized remote URI literals in reviewed path
+// arguments and replacement scans. Constructed or computed strings may evade detection.
+func WithRemoteURILiteralRejection() OptionFunc {
+	return func(opts *Options) error {
+		opts.RejectRemoteURILiterals = true
 		return nil
 	}
 }

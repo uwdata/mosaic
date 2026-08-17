@@ -140,11 +140,12 @@ An empty row means the extension has no reviewed function-call names, not that i
 | `Vortex` | 0 | 2 | Readers verified against the pinned nested source revision. |
 | `VSS` | 0 | 5 | Index access and management operations. |
 
-These groups authorize names only; extension loading and file or network access are separate concerns. Validation is
-syntactic and name-only: it does not bind function identity, inspect arguments, expand macros or views, recursively inspect
-SQL strings, or cover replacement scans and attached-table binding. Keep catalogs and the search path trusted, and enforce
-resource access outside this policy. Pre-provisioned views and attached tables can deliberately expose curated datasets
-while reader functions remain excluded; catalog integrity and process resource controls then carry the boundary.
+These groups authorize names only; extension loading and file or network access are separate concerns. Function-policy
+validation is syntactic and name-only: it does not bind function identity, inspect arguments, expand macros or views,
+recursively inspect SQL strings, or cover replacement scans and attached-table binding. Keep catalogs and the search path
+trusted, and enforce resource access outside this policy. Pre-provisioned views and attached tables can deliberately expose
+curated datasets while reader functions remain excluded; catalog integrity and process resource controls then carry the
+boundary.
 
 In Go, `Exclude` wins over `Include`, and `DisableDefaults` creates an exact-only policy. Omitting
 `WithFunctionAllowlist` is unrestricted; configuring an exact-empty policy denies all function calls. A function
@@ -153,6 +154,60 @@ allowlist cannot be combined with a non-empty blocklist, and any configured func
 Spatial compute defaults cover Mosaic rendering over existing geometry data, but the `ST_Read` loader remains elevated.
 Current-time functions are omitted from defaults because persistent cache entries do not expire by default; keyword forms
 such as `CURRENT_DATE` are not function nodes and remain outside this policy.
+
+### Remote URI Literal Policy
+
+Programs embedding `pkg/query` can make a best-effort to reject caller-supplied remote file locations while keeping local
+file readers enabled:
+
+```go
+db, err := query.New(ctx, connector,
+	query.WithRemoteURILiteralRejection(),
+)
+```
+
+The option rejects recognized remote URI literals in DuckDB replacement scans, such as
+`FROM 'gcs://bucket/file.parquet'`, and in the reviewed positional and named path arguments of
+[remote-read-capable functions](./pkg/functionset/remoteread/README.md). It also
+checks literal lists and every decoded string literal within a path expression, so
+`read_parquet('gcs://' || 'bucket/file.parquet')` is rejected. Only reviewed path arguments are checked; unrelated values
+such as `WHERE url = 'https://example.com'` remain unaffected. Ordinary local paths without a recognized marker remain
+usable; a local path string containing one of the markers is intentionally rejected.
+
+Matching is case-insensitive and rejects a literal if it contains any prefix reviewed against DuckDB 1.5.5's pinned
+[HTTP](https://github.com/duckdb/duckdb-httpfs/blob/827222fb45a043a7a852d1f7aae46901492a3cda/src/httpfs.cpp#L808-L810),
+[S3-compatible](https://github.com/duckdb/duckdb-httpfs/blob/827222fb45a043a7a852d1f7aae46901492a3cda/src/s3fs.cpp#L843-L848),
+[Hugging Face](https://github.com/duckdb/duckdb-httpfs/blob/827222fb45a043a7a852d1f7aae46901492a3cda/src/include/hffs.hpp#L33-L35),
+[Azure Blob](https://github.com/duckdb/duckdb-azure/blob/003214c96d0caa39d5c3e27a9e1976a0692c7d37/src/azure_blob_filesystem.cpp#L32-L36),
+and [Azure DFS](https://github.com/duckdb/duckdb-azure/blob/003214c96d0caa39d5c3e27a9e1976a0692c7d37/src/azure_dfs_filesystem.cpp#L27-L34)
+filesystem handlers:
+
+```text
+http://  https://  s3://  s3a://  s3n://  gcs://
+gs://    r2://     hf://  azure://  az://   abfs://  abfss://
+```
+
+DuckDB's generated
+[extension-prefix map](https://github.com/duckdb/duckdb/blob/v1.5.5/src/include/duckdb/main/extension_entries.hpp#L1275-L1280)
+is a useful autoloading cross-check, but it is not exhaustive: the pinned Azure DFS filesystem also accepts `abfs://`.
+
+Trusted initialization can still load filesystem extensions and attach remote Iceberg or other catalogs before accepting
+queries. Queries against those attached catalogs use catalog and table identifiers rather than caller-supplied URI
+literals, so they remain usable. Enabling this policy rejects all `exec` commands and rejects the known nested-SQL
+binders and executors `query`, `json_execute_serialized_sql`, and `json_serialize_plan` outright. `json` and `arrow`
+requests are limited to statements DuckDB can serialize for validation. Connector initialization is outside that command
+path.
+
+DuckDB's serialized AST does not distinguish a replacement-scan string from a quoted table or CTE identifier, so a
+URI-shaped identifier is rejected too.
+
+This is intentionally incomplete hardening against common accidental or opportunistic remote scans, not a filesystem or
+network sandbox. Split or otherwise computed path values can evade detection when no individual literal contains a
+complete reviewed prefix, as in `'gc' || 's://bucket/file.parquet'`. Macros and views are not expanded, and unreviewed
+extensions can define other nested-SQL executors, reader functions, or schemes. Other known gaps include GDAL virtual
+paths such as `/vsis3/`, local Iceberg or Delta metadata that refers to remote files, and SQL stored in a local SQLite
+view. Keep catalogs, extensions, and initialization SQL trusted, and restrict the server process's filesystem, network,
+and credentials independently.
 
 ### Multi-Tenant Access Control
 

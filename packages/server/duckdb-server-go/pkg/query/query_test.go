@@ -423,7 +423,7 @@ func TestDB_Exec(t *testing.T) {
 
 		err := db.Exec(ctx, "SELECT 1")
 		require.ErrorIs(t, err, ErrExecWithValidation)
-		assert.EqualError(t, err, "query: exec command is disabled when schema or function validation is active")
+		assert.EqualError(t, err, "query: exec command is disabled when query validation is active")
 	})
 
 	t.Run("function allowlist rejects exec", func(t *testing.T) {
@@ -431,7 +431,7 @@ func TestDB_Exec(t *testing.T) {
 
 		err := db.Exec(ctx, "SELECT 1")
 		require.ErrorIs(t, err, ErrExecWithValidation)
-		assert.EqualError(t, err, "query: exec command is disabled when schema or function validation is active")
+		assert.EqualError(t, err, "query: exec command is disabled when query validation is active")
 	})
 }
 

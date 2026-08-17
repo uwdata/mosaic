@@ -20,7 +20,7 @@ import (
 	"golang.org/x/sync/semaphore"
 )
 
-var ErrExecWithValidation = errors.New("query: exec command is disabled when schema or function validation is active")
+var ErrExecWithValidation = errors.New("query: exec command is disabled when query validation is active")
 
 type DB struct {
 	db *sql.DB
@@ -36,6 +36,7 @@ type DB struct {
 	functionBlocklist           []string
 	functionAllowlist           []string
 	functionAllowlistConfigured bool
+	rejectRemoteURILiterals     bool
 	logger                      *slog.Logger
 }
 
@@ -104,6 +105,7 @@ func New(ctx context.Context, connector *duckdb.Connector, opts ...OptionFunc) (
 		functionBlocklist:           append([]string(nil), o.FunctionBlocklist...),
 		functionAllowlist:           append([]string(nil), functionAllowlist...),
 		functionAllowlistConfigured: functionAllowlistConfigured,
+		rejectRemoteURILiterals:     o.RejectRemoteURILiterals,
 		logger:                      o.Logger,
 	}, nil
 }
@@ -202,7 +204,7 @@ func (db *DB) Close() {
 }
 
 func (db *DB) Exec(ctx context.Context, query string) error {
-	if len(db.functionBlocklist) > 0 || db.functionAllowlistConfigured {
+	if len(db.functionBlocklist) > 0 || db.functionAllowlistConfigured || db.rejectRemoteURILiterals {
 		return ErrExecWithValidation
 	}
 
@@ -215,7 +217,7 @@ func (db *DB) Exec(ctx context.Context, query string) error {
 }
 
 func (db *DB) validateQuery(ctx context.Context, query string, allowedSchemas []string) error {
-	validators := make([]Validator, 0, 3)
+	validators := make([]Validator, 0, 4)
 	if len(allowedSchemas) > 0 {
 		validators = append(validators, newBaseTableValidator(allowedSchemas))
 	}
@@ -224,6 +226,9 @@ func (db *DB) validateQuery(ctx context.Context, query string, allowedSchemas []
 	}
 	if db.functionAllowlistConfigured {
 		validators = append(validators, newFunctionAllowlistValidator(db.functionAllowlist))
+	}
+	if db.rejectRemoteURILiterals {
+		validators = append(validators, newRemoteURILiteralValidator())
 	}
 	if len(validators) == 0 {
 		return nil
