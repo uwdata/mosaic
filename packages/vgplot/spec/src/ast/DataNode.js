@@ -10,14 +10,15 @@ export const CSV_DATA = 'csv';
 export const JSON_DATA = 'json';
 export const SPATIAL_DATA = 'spatial';
 
-// @ts-ignore
-const dataFormats = new Map([
-  [TABLE_DATA, parseTableData],
-  [PARQUET_DATA, parseParquetData],
-  [CSV_DATA, parseCSVData],
-  [JSON_DATA, parseJSONData],
-  [SPATIAL_DATA, parseSpatialData]
-]);
+const dataFormats = new Map(
+  /** @type {[string, (name: string, spec: any, ctx: import('../parse-spec.js').ParseContext) => DataNode][]} */ ([
+    [TABLE_DATA, parseTableData],
+    [PARQUET_DATA, parseParquetData],
+    [CSV_DATA, parseCSVData],
+    [JSON_DATA, parseJSONData],
+    [SPATIAL_DATA, parseSpatialData]
+  ])
+);
 
 /**
  * Parse a data definition spec.

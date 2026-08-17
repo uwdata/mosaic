@@ -9,18 +9,19 @@ const OPTIONS_ONLY_MARKS = new Set([
   'graticule'
 ]);
 
-// @ts-ignore
-const SELECT_TRANSFORMS = new Map([
-  ['first', Plot.selectFirst],
-  ['last', Plot.selectLast],
-  ['maxX', Plot.selectMaxX],
-  ['maxY', Plot.selectMaxY],
-  ['minX', Plot.selectMinX],
-  ['minY', Plot.selectMinY],
-  ['nearest', Plot.pointer],
-  ['nearestX', Plot.pointerX],
-  ['nearestXY', Plot.pointerY]
-]);
+const SELECT_TRANSFORMS = new Map(
+  /** @type {[string, typeof Plot.selectFirst | typeof Plot.pointer][]} */ ([
+    ['first', Plot.selectFirst],
+    ['last', Plot.selectLast],
+    ['maxX', Plot.selectMaxX],
+    ['maxY', Plot.selectMaxY],
+    ['minX', Plot.selectMinX],
+    ['minY', Plot.selectMinY],
+    ['nearest', Plot.pointer],
+    ['nearestX', Plot.pointerX],
+    ['nearestXY', Plot.pointerY]
+  ])
+);
 
 // construct Plot output
 // see https://github.com/observablehq/plot

@@ -25,7 +25,7 @@ export class Plot {
     this.marks = [];
     /** @type {Set<import('./marks/Mark.js').Mark> | null} */
     this.markset = null;
-    /** @type {Map<import('@uwdata/mosaic-core').Param, import('./marks/Mark.js').Mark[]>} */
+    /** @type {Map<import('@uwdata/mosaic-core').Param<any>, import('./marks/Mark.js').Mark[]>} */
     this.params = new Map;
     /** @type {Synchronizer} */
     this.synch = new Synchronizer();
@@ -66,6 +66,9 @@ export class Plot {
     this.synch.pending(mark);
   }
 
+  /**
+   * @param {any} [mark]
+   */
   update(mark) {
     if (this.synch.ready(mark) && !this.pendingRender) {
       this.pendingRender = true;

@@ -1,7 +1,7 @@
 import { InternSet, ascending } from 'd3';
 
 /**
- * @typedef {Array | Int8Array | Uint8Array | Uint8ClampedArray
+ * @typedef {any[] | Int8Array | Uint8Array | Uint8ClampedArray
  *  | Int16Array | Uint16Array | Int32Array | Uint32Array
  *  | Float32Array | Float64Array
  * } Arrayish - an Array or TypedArray
