@@ -116,3 +116,24 @@ describe('Visitor functions', () => {
     );
   });
 });
+
+describe('Verbatim aggregate detection', () => {
+  const exprs = [
+    'arg_max_nulls_last(txt1, num1)',
+    'arg_min_nulls_last(txt1, num1)',
+    'argmax(txt1, num1)',
+    'argmin(txt1, num1)',
+    'count_if(flag1)',
+    "group_concat(txt1, ', ')",
+    "listagg(txt1, ', ')",
+    'sem(num1)'
+  ];
+
+  for (const expr of exprs) {
+    const name = expr.slice(0, expr.indexOf('('));
+    it(`covers ${name}`, async () => {
+      await expect(markStyleQuery({ y: asVerbatim(expr), x: count() }))
+        .toBeValidQuery(`SELECT ${expr} AS "y", count(*) AS "x" FROM "t1"`);
+    });
+  }
+});
