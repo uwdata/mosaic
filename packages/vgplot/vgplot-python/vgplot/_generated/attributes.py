@@ -1,8 +1,14 @@
 # DO NOT EDIT. Generated from the Mosaic JSON schema by bin/generate-python-api.js.
 # Regenerate with: pnpm run generate:python-api
 
-from .._types import AttrValue
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
 from ..plot import Directive
+
+if TYPE_CHECKING:
+    from .._types import AttrValue
 
 
 def align(value: AttrValue) -> Directive:
@@ -1130,9 +1136,9 @@ __all__ = [
     "fx_tick_format",
     "fx_tick_padding",
     "fx_tick_rotate",
-    "fx_ticks",
     "fx_tick_size",
     "fx_tick_spacing",
+    "fx_ticks",
     "fy_align",
     "fy_aria_description",
     "fy_aria_label",
@@ -1156,9 +1162,9 @@ __all__ = [
     "fy_tick_format",
     "fy_tick_padding",
     "fy_tick_rotate",
-    "fy_ticks",
     "fy_tick_size",
     "fy_tick_spacing",
+    "fy_ticks",
     "grid",
     "height",
     "inset",
@@ -1250,11 +1256,11 @@ __all__ = [
     "x_tick_format",
     "x_tick_padding",
     "x_tick_rotate",
-    "x_ticks",
     "x_tick_size",
     "x_tick_spacing",
-    "xy_domain",
+    "x_ticks",
     "x_zero",
+    "xy_domain",
     "y_align",
     "y_aria_description",
     "y_aria_label",
@@ -1286,8 +1292,8 @@ __all__ = [
     "y_tick_format",
     "y_tick_padding",
     "y_tick_rotate",
-    "y_ticks",
     "y_tick_size",
     "y_tick_spacing",
+    "y_ticks",
     "y_zero",
 ]

@@ -42,7 +42,9 @@
   "dependencies": {
     "@uwdata/mosaic-core": "workspace:^",
     "@uwdata/mosaic-sql": "workspace:^",
-    "@uwdata/vgplot": "workspace:^",
-    "ts-json-schema-generator": "^2.9.0"
+    "@uwdata/vgplot": "workspace:^"
+  },
+  "devDependencies": {
+    "ts-json-schema-generator": "3.0.0-native.0"
   }
 }

@@ -86,7 +86,7 @@ class Spec:
         data: dict[str, Any] | None = None,
         data_names: dict[int, str] | None = None,
         params: dict[str, Any] | None = None,
-        plotDefaults: dict[str, Any] | None = None,
+        plotDefaults: dict[str, Any] | None = None,  # ruff: ignore[invalid-argument-name]
         plot_defaults: dict[str, Any] | None = None,
         config: dict[str, Any] | None = None,
         view: dict[str, Any] | View | None = None,
@@ -193,7 +193,8 @@ class Spec:
             from IPython.display import display
             from mosaic_widget import MosaicWidget
         except ImportError as e:
-            raise ImportError("pip install mosaic-widget") from e
+            msg = "pip install mosaic-widget"
+            raise ImportError(msg) from e
         widget = MosaicWidget(self.to_dict(), con=con, data=data)
         display(widget)
 
@@ -210,7 +211,7 @@ class View:
         view: dict[str, Any],
         *,
         data: dict[str, Any] | None = None,
-        plotDefaults: dict[str, Any] | None = None,
+        plotDefaults: dict[str, Any] | None = None,  # ruff: ignore[invalid-argument-name]
         plot_defaults: dict[str, Any] | None = None,
         config: dict[str, Any] | None = None,
         **extra: Any,
@@ -278,7 +279,7 @@ def spec(
     *args: Any,
     data: dict[str, Any] | None = None,
     params: dict[str, Any] | None = None,
-    plotDefaults: dict[str, Any] | None = None,
+    plotDefaults: dict[str, Any] | None = None,  # ruff: ignore[invalid-argument-name]
     plot_defaults: dict[str, Any] | None = None,
     config: dict[str, Any] | None = None,
     view: dict[str, Any] | View | None = None,

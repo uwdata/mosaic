@@ -1,8 +1,20 @@
 import { expect, describe, it } from 'vitest';
-import { abs, add, asVerbatim, collectAggregates, collectColumns, collectParams, column, count, div, eq, isAggregateExpression, join, Query, ScalarSubqueryNode, sql, sum } from '../src/index.js';
+import { abs, add, asVerbatim, collectAggregates, collectColumns, collectParams, column, count, div, eq, isAggregateExpression, join, Query, ScalarSubqueryNode, sql, sum, WindowDefNode } from '../src/index.js';
 import type { ExprNode } from '../src/index.js';
 import { stubParam } from './util/stub-param.js';
 import { validateQuery } from './util/validate.js';
+
+// mirrors vgplot markQuery: fields not detected as aggregates become
+// GROUP BY dimensions
+function markStyleQuery(fields: Record<string, ExprNode>) {
+  const q = Query.from('t1').select(fields);
+  const entries = Object.entries(fields);
+  const dims = entries
+    .filter(([, f]) => !isAggregateExpression(f))
+    .map(([as]) => as);
+  if (dims.length < entries.length) q.groupby(dims);
+  return q;
+}
 
 describe('Visitor functions', () => {
   it('include column collection', () => {
@@ -77,21 +89,35 @@ describe('Visitor functions', () => {
     expect(isAggregateExpression(sql`count(*) OVER (ORDER BY a)`)).toBe(0);
     expect(isAggregateExpression(sql`count(${column('a')}) OVER (ORDER BY a)`)).toBe(0);
   });
+
+  it('include whitespace-tolerant verbatim window detection', async () => {
+    const variants: [string, ExprNode][] = [
+      ['avg(num1) OVER(PARTITION BY txt1)', sql`avg(num1) OVER(PARTITION BY txt1)`],
+      ['avg(num1)\nOVER (PARTITION BY txt1)', sql`avg(num1)\nOVER (PARTITION BY txt1)`],
+      ['avg(num1)  over (partition by txt1)', sql`avg(num1)  over (partition by txt1)`],
+      ['avg(num1) OVER (PARTITION BY txt1)', sql`avg(num1) OVER (PARTITION BY txt1)`]
+    ];
+    for (const [text, expr] of variants) {
+      expect(isAggregateExpression(expr)).toBe(0);
+      await expect(markStyleQuery({ y: expr, d: sql`txt2` })).toBeValidQuery(
+        `SELECT ${text} AS "y", txt2 AS "d" FROM "t1"`
+      );
+    }
+  });
+
+  it('include named-window verbatim window detection', async () => {
+    const expr = sql`avg(num1) OVER win`;
+    expect(isAggregateExpression(expr)).toBe(0);
+    const q = markStyleQuery({ y: expr, d: sql`txt2` })
+      .window({ win: new WindowDefNode().partitionby('txt1') });
+    await expect(q).toBeValidQuery(
+      'SELECT avg(num1) OVER win AS "y", txt2 AS "d" FROM "t1" '
+      + 'WINDOW "win" AS (PARTITION BY "txt1")'
+    );
+  });
 });
 
 describe('Verbatim aggregate detection', () => {
-  // mirrors vgplot markQuery: fields not detected as aggregates
-  // become GROUP BY dimensions
-  function markStyleQuery(fields: Record<string, ExprNode>) {
-    const q = Query.from('t1').select(fields);
-    const entries = Object.entries(fields);
-    const dims = entries
-      .filter(([, field]) => !isAggregateExpression(field))
-      .map(([as]) => as);
-    if (dims.length < entries.length) q.groupby(dims);
-    return q;
-  }
-
   const exprs = [
     'arg_max_nulls_last(txt1, num1)',
     'arg_min_nulls_last(txt1, num1)',

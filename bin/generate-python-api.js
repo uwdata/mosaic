@@ -229,7 +229,7 @@ function writeInit() {
     'from .attributes import __all__ as _attr_all\n' +
     'from .encodings import __all__ as _enc_all\n' +
     'from .marks import __all__ as _mark_all\n\n' +
-    '__all__ = [*_mark_all, *_attr_all, *_enc_all]  # pyright: ignore[reportUnsupportedDunderAll]\n');
+    '__all__ = [*_mark_all, *_attr_all, *_enc_all]  # pyright: ignore[reportUnsupportedDunderAll]  # ruff: ignore[invalid-all-object]\n');
 }
 
 const schema = JSON.parse(readFileSync(SCHEMA, 'utf8'));

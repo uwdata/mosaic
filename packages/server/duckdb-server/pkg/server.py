@@ -103,7 +103,8 @@ def handle_query(
             json = retrieve(cache, query, partial(get_json, con))
             handler.json(json)
         else:
-            raise ValueError(f"Unknown command {command}")
+            msg = f"Unknown command {command}"
+            raise ValueError(msg)
     except Exception as e:
         logger.exception("Error processing query")
         handler.error(e)

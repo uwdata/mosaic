@@ -1,11 +1,17 @@
 package server
 
 import (
+	"context"
+	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"strings"
 	"testing"
+	"time"
 
+	"github.com/coder/websocket"
+	"github.com/coder/websocket/wsjson"
 	"github.com/duckdb/duckdb-go/v2"
 	"github.com/stretchr/testify/require"
 
@@ -27,26 +33,131 @@ func setupTestDB(t *testing.T, opts ...query.OptionFunc) *query.DB {
 	return db
 }
 
+func mustHandler(t *testing.T, executor commandExecutor, opts ...Option) *handler {
+	t.Helper()
+
+	cfg, err := applyOptions(opts)
+	require.NoError(t, err)
+	return newHandler(executor, cfg)
+}
+
+type failOnCallExecutor struct {
+	testing.TB
+}
+
+func (e failOnCallExecutor) Exec(context.Context, string) error {
+	return e.fail("Exec")
+}
+
+func (e failOnCallExecutor) QueryArrow(context.Context, string, []string, bool) ([]byte, bool, error) {
+	return nil, false, e.fail("QueryArrow")
+}
+
+func (e failOnCallExecutor) QueryJSON(context.Context, string, []string, bool) (json.RawMessage, bool, error) {
+	return nil, false, e.fail("QueryJSON")
+}
+
+func (e failOnCallExecutor) fail(method string) error {
+	e.Helper()
+	err := fmt.Errorf("unexpected command executor call: %s", method)
+	e.Error(err)
+	return err
+}
+
+type webSocketTestServer struct {
+	ctx     context.Context
+	httpURL string
+	url     string
+}
+
+func newWebSocketTestServer(t *testing.T, handler http.Handler) *webSocketTestServer {
+	t.Helper()
+
+	server := httptest.NewServer(handler)
+	t.Cleanup(server.Close)
+	ctx, cancel := context.WithTimeout(t.Context(), 5*time.Second)
+	t.Cleanup(cancel)
+	return &webSocketTestServer{
+		ctx:     ctx,
+		httpURL: server.URL,
+		url:     "ws" + strings.TrimPrefix(server.URL, "http"),
+	}
+}
+
+func (s *webSocketTestServer) dial(options *websocket.DialOptions) (*websocket.Conn, *http.Response, error) {
+	return websocket.Dial(s.ctx, s.url, options)
+}
+
 func TestExecCommandHonorsSchemaPolicy(t *testing.T) {
 	db := setupTestDB(t)
 
 	command := CommandExec
 	sql := "SELECT 1"
-	params := QueryParams{Type: &command, SQL: &sql}
+	params := queryParams{Type: &command, SQL: &sql}
 
-	s := New(db, []string{"X-Tenant"}, nil)
-	_, _, err := s.execCommand(t.Context(), params, nil)
+	s := mustHandler(t, db, WithSchemaMatchHeaders("X-Tenant"))
+	_, err := s.execCommand(t.Context(), params, nil, nil)
 	require.ErrorIs(t, err, query.ErrExecWithValidation)
 
-	s = New(db, nil, nil)
-	_, _, err = s.execCommand(t.Context(), params, nil)
+	s = mustHandler(t, db)
+	_, err = s.execCommand(t.Context(), params, nil, nil)
 	require.NoError(t, err)
 }
 
+func TestArrowResponseFraming(t *testing.T) {
+	db := setupTestDB(t)
+	handler, err := New(db)
+	require.NoError(t, err)
+	body := `{"type":"arrow","sql":"SELECT 1","persist":true}`
+
+	req := httptest.NewRequest(http.MethodPost, "/", strings.NewReader(body))
+	res := httptest.NewRecorder()
+	handler.ServeHTTP(res, req)
+	require.Equal(t, http.StatusOK, res.Code)
+	require.Equal(t, "application/vnd.apache.arrow.stream", res.Header().Get("Content-Type"))
+	require.NotEmpty(t, res.Body.Bytes())
+
+	req = httptest.NewRequest(http.MethodPost, "/", strings.NewReader(body))
+	res = httptest.NewRecorder()
+	handler.ServeHTTP(res, req)
+	require.Equal(t, "mosaic-duckdb-go; hit", res.Header().Get("Cache-Status"))
+
+	server := httptest.NewServer(handler)
+	t.Cleanup(server.Close)
+	conn, _, err := websocket.Dial(t.Context(), "ws"+strings.TrimPrefix(server.URL, "http"), nil)
+	require.NoError(t, err)
+	defer func() { require.NoError(t, conn.CloseNow()) }()
+
+	require.NoError(t, wsjson.Write(t.Context(), conn, map[string]any{
+		"type":    CommandArrow,
+		"sql":     "SELECT 1",
+		"persist": true,
+	}))
+	messageType, payload, err := conn.Read(t.Context())
+	require.NoError(t, err)
+	require.Equal(t, websocket.MessageBinary, messageType)
+	require.NotEmpty(t, payload)
+}
+
 func TestHandleHTTPPolicyErrors(t *testing.T) {
+	t.Run("function outside allowlist is forbidden", func(t *testing.T) {
+		db := setupTestDB(t, query.WithFunctionAllowlist(query.FunctionAllowlistOptions{
+			DisableDefaults: true,
+			Include:         []string{"lower"},
+		}))
+		s := mustHandler(t, db)
+		req := httptest.NewRequest(http.MethodPost, "/", strings.NewReader(`{"type":"json","sql":"SELECT md5('mosaic')"}`))
+		res := httptest.NewRecorder()
+
+		s.ServeHTTP(res, req)
+
+		require.Equal(t, http.StatusForbidden, res.Code)
+		require.Contains(t, res.Body.String(), "function 'md5' is not in the allowlist")
+	})
+
 	t.Run("blocked function is forbidden", func(t *testing.T) {
 		db := setupTestDB(t, query.WithFunctionBlocklist([]string{"md5"}))
-		s := New(db, nil, nil)
+		s := mustHandler(t, db)
 		req := httptest.NewRequest(http.MethodPost, "/", strings.NewReader(`{"type":"json","sql":"SELECT md5('mosaic')"}`))
 		res := httptest.NewRecorder()
 
@@ -60,7 +171,7 @@ func TestHandleHTTPPolicyErrors(t *testing.T) {
 		db := setupTestDB(t)
 		require.NoError(t, db.Exec(t.Context(), "CREATE SCHEMA tenant_a; CREATE TABLE tenant_a.secret (value INTEGER)"))
 
-		s := New(db, []string{"X-Tenant"}, nil)
+		s := mustHandler(t, db, WithSchemaMatchHeaders("X-Tenant"))
 		req := httptest.NewRequest(http.MethodPost, "/", strings.NewReader(`{"type":"json","sql":"SELECT * FROM tenant_a.secret"}`))
 		req.Header.Set("X-Tenant", "tenant_b")
 		res := httptest.NewRecorder()
@@ -73,7 +184,7 @@ func TestHandleHTTPPolicyErrors(t *testing.T) {
 
 	t.Run("exec under schema policy is a bad request", func(t *testing.T) {
 		db := setupTestDB(t)
-		s := New(db, []string{"X-Tenant"}, nil)
+		s := mustHandler(t, db, WithSchemaMatchHeaders("X-Tenant"))
 		req := httptest.NewRequest(http.MethodPost, "/", strings.NewReader(`{"type":"exec","sql":"SELECT 1"}`))
 		req.Header.Set("X-Tenant", "tenant_a")
 		res := httptest.NewRecorder()
@@ -86,7 +197,7 @@ func TestHandleHTTPPolicyErrors(t *testing.T) {
 
 	t.Run("unsupported statement under policy is a bad request", func(t *testing.T) {
 		db := setupTestDB(t, query.WithFunctionBlocklist([]string{"md5"}))
-		s := New(db, nil, nil)
+		s := mustHandler(t, db)
 		req := httptest.NewRequest(http.MethodPost, "/", strings.NewReader(`{"type":"json","sql":"PRAGMA version"}`))
 		res := httptest.NewRecorder()
 
@@ -100,7 +211,7 @@ func TestHandleHTTPPolicyErrors(t *testing.T) {
 
 	t.Run("syntax error under policy is a bad request", func(t *testing.T) {
 		db := setupTestDB(t, query.WithFunctionBlocklist([]string{"md5"}))
-		s := New(db, nil, nil)
+		s := mustHandler(t, db)
 		req := httptest.NewRequest(http.MethodPost, "/", strings.NewReader(`{"type":"json","sql":"SELECT ("}`))
 		res := httptest.NewRecorder()
 
@@ -112,7 +223,7 @@ func TestHandleHTTPPolicyErrors(t *testing.T) {
 
 	t.Run("missing schema header is unauthorized", func(t *testing.T) {
 		db := setupTestDB(t)
-		s := New(db, []string{"X-Tenant"}, nil)
+		s := mustHandler(t, db, WithSchemaMatchHeaders("X-Tenant"))
 		req := httptest.NewRequest(http.MethodPost, "/", strings.NewReader(`{"type":"exec","sql":"SELECT 1"}`))
 		res := httptest.NewRecorder()
 
@@ -124,7 +235,7 @@ func TestHandleHTTPPolicyErrors(t *testing.T) {
 
 func TestHandleHTTPQueryParamsErrors(t *testing.T) {
 	db := setupTestDB(t)
-	s := New(db, nil, nil)
+	s := mustHandler(t, db)
 
 	tests := []struct {
 		name     string

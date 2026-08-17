@@ -66,21 +66,23 @@ async function getFieldInfo(mc: Coordinator, { table, column, stats }: FieldInfo
     .select({ column }, isAggregate ? '*' : {})
     .groupby(isAggregate ? sql`ALL` : []);
 
-  let desc: ColumnDescription;
+  let desc: ColumnDescription | undefined;
   try {
     [desc] = Array.from(
       await mc.query(Query.describe(q))
     ) as ColumnDescription[];
   } catch {
-    // provide dummy description node upon query failure
-    // this handles true aggregates within window functions
-    // DuckDB fails to handle these when using GROUP BY ALL
-    desc = {
-      column_name: 'column',
-      column_type: 'DOUBLE',
-      null: 'YES'
-    };
+    // ignore query failure, use dummy description below
   }
+
+  // provide dummy description node upon query failure or empty result
+  // this handles true aggregates within window functions
+  // DuckDB fails to handle these when using GROUP BY ALL
+  desc ??= {
+    column_name: 'column',
+    column_type: 'DOUBLE',
+    null: 'YES'
+  };
 
   const info: FieldInfo = {
     table,

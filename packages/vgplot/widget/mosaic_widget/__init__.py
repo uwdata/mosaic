@@ -159,7 +159,8 @@ class MosaicWidget(anywidget.AnyWidget):
                 json = result.to_dict(orient="records")
                 self.send({"type": "json", "uuid": uuid, "result": json})
             else:
-                raise ValueError(f"Unknown command {command}")
+                msg = f"Unknown command {command}"
+                raise ValueError(msg)
         except Exception as e:
             logger.exception("Error processing query")
             self.send({"error": str(e), "uuid": uuid})
@@ -215,14 +216,16 @@ class MosaicWidget(anywidget.AnyWidget):
         if len(tables) == 1:
             return next(iter(tables))
         if not tables:
-            raise ValueError(
+            msg = (
                 "No source tables in the spec or registered data; "
                 "pass a table name to widget.data(table)."
             )
-        raise ValueError(
+            raise ValueError(msg)
+        msg = (
             f"Multiple source tables: {sorted(tables)}. "
             "Pass a table name to widget.data(table)."
         )
+        raise ValueError(msg)
 
     def _build_sql(self, table: str, filter_by: str | list[str] | None) -> str:
         if filter_by is None:
@@ -233,10 +236,11 @@ class MosaicWidget(anywidget.AnyWidget):
                 for name in ([filter_by] if isinstance(filter_by, str) else filter_by)
             ]
             if unknown := sorted(set(names) - set(self.params)):
-                raise ValueError(
+                msg = (
                     f"Unknown selection(s) {unknown}; "
                     f"available params: {sorted(self.params)}"
                 )
+                raise ValueError(msg)
         predicates = [
             predicate
             for name in names

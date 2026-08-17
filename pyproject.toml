@@ -8,49 +8,61 @@ members = [
 # https://github.com/charliermarsh/ruff
 [tool.ruff]
 extend-include = ["*.ipynb"]
+fix = true
 
 [tool.ruff.lint]
-pydocstyle = { convention = "numpy" }
+preview = true
+explicit-preview-rules = true
+pydocstyle.convention = "numpy"
+isort.required-imports = ["from __future__ import annotations"]
 extend-select = [
-    "FA",  # https://docs.astral.sh/ruff/rules/#flake8-future-annotations-fa
-    "TC",  # https://docs.astral.sh/ruff/rules/#flake8-type-checking-tc
-    "UP",  # https://docs.astral.sh/ruff/rules/#pyupgrade-up
-    "ANN", 
-    "PYI",
+    "FA",   # https://docs.astral.sh/ruff/rules/#flake8-future-annotations-fa
+    "TC",   # https://docs.astral.sh/ruff/rules/#flake8-type-checking-tc
+    "UP",   # https://docs.astral.sh/ruff/rules/#pyupgrade-up
+    "ANN",  # https://docs.astral.sh/ruff/rules/#flake8-annotations-ann
+    "PYI",  # https://docs.astral.sh/ruff/rules/#flake8-pyi-pyi
+    "N",    # https://docs.astral.sh/ruff/rules/#pep8-naming-n
+    "EM",   # https://docs.astral.sh/ruff/rules/#flake8-errmsg-em
+    "undefined-local-with-import-star",
+    "suspicious-pickle-usage",
+    "magic-value-comparison",
+    "collapsible-else-if",
+    "missing-required-import",
 ]
-extend-safe-fixes = ["FA", "TC", "UP", "ANN201", "ANN204"]
+extend-safe-fixes = [
+    "FA", 
+    "TC", 
+    "UP", 
+    "missing-return-type-undocumented-public-function", 
+    "missing-return-type-special-method",
+    "f-string-in-exception", 
+    "raw-string-in-exception",
+]
 ignore = [
-    "G004", 
-    "TRY301", 
-    "EM102", 
-    "EM101", 
-    "TRY003", 
-    "FBT002", 
-    "S608", 
-    "TRY002", 
-    "ARG001", 
-    # NOTE: ruff>=0.16
-    "CPY001",
-    "I001",
-    "LOG009",
-    "B018", 
-    "PLR1711", 
-    "ISC004",
-    "BLE001",
-    "PLW1510",
-    "RUF100",
-    "S102",
-    "DTZ001",
-    "PLE0604",
-    "RUF022", 
-    "PLC0105",
-    # NOTE: https://docs.astral.sh/ty/coming-from-mypy-or-pyright/#recommended-configuration
-    "ANN401",
+    "logging-f-string", 
+    "raise-within-try", 
+    "raise-vanilla-args", 
+    "boolean-default-value-positional-argument", 
+    "hardcoded-sql-expression", 
+    "raise-vanilla-class", 
+    "unused-function-argument",
+    "type-name-incorrect-variance",
+    "missing-copyright-notice",
+    "any-type",
+    "non-lowercase-variable-in-function",
 ]
 
 [tool.ruff.lint.per-file-ignores]
 "**/*.ipynb" = ["ANN"]
-"dev/notebooks/*" = ["ANN"]
+"dev/notebooks/*" = ["ANN", "N", "useless-return", "unsorted-imports", "missing-required-import", "useless-expression"]
+"**/*sentinel*.py" = ["suspicious-pickle-usage"]
+"packages/vgplot/vgplot-python/vgplot/_compat.py" = ["N"]
+"**tests/**/*.py" = ["magic-value-comparison"]
+
+"**/specs/python/*.py" = [
+    "mixed-case-variable-in-global-scope", # TODO @dangotbanned: Fix in codegen
+    "missing-required-import",
+]
 
 [tool.pytest]
 strict_xfail = true

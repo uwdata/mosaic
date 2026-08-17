@@ -4,6 +4,8 @@
 # in sync (same filenames).
 #
 # Run: pytest packages/vgplot/vgplot-python/tests/test_full_round_trip.py
+from __future__ import annotations
+
 import json
 from pathlib import Path
 from typing import Any
@@ -27,16 +29,18 @@ def run_spec_file_with_exec(path: Path) -> dict[str, Any]:
         "__builtins__": __builtins__,
     }
     code = compile(path.read_text(encoding="utf-8"), str(path), "exec")
-    exec(code, namespace)
+    exec(code, namespace)  # ruff: ignore[exec-builtin]
 
     view = namespace.get("view")
     if view is None:
-        raise AssertionError(f"`{path.name}` must define a top-level `view` variable")
+        msg = f"`{path.name}` must define a top-level `view` variable"
+        raise AssertionError(msg)
     if not hasattr(view, "to_dict"):
-        raise AssertionError(f"`view` in `{path.name}` does not expose to_dict()")
+        msg = f"`view` in `{path.name}` does not expose to_dict()"
+        raise AssertionError(msg)
     # Execute to_dict() within the spec namespace so frame inspection finds the right variables
     namespace["__view__"] = view
-    exec("__result__ = __view__.to_dict()", namespace)
+    exec("__result__ = __view__.to_dict()", namespace)  # ruff: ignore[exec-builtin]
     return namespace["__result__"]
 
 

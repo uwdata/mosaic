@@ -33,8 +33,10 @@ type DB struct {
 	cache     *otter.Cache[uint64, []byte]
 	cacheSeed maphash.Seed
 
-	functionBlocklist []string
-	logger            *slog.Logger
+	functionBlocklist           []string
+	functionAllowlist           []string
+	functionAllowlistConfigured bool
+	logger                      *slog.Logger
 }
 
 // New creates a new DB instance using the provided DuckDB connector, opening a sql.DB and arrow connection.
@@ -50,6 +52,15 @@ func New(ctx context.Context, connector *duckdb.Connector, opts ...OptionFunc) (
 		if err != nil {
 			return nil, fmt.Errorf("query: failed to apply option: %w", err)
 		}
+	}
+	o.FunctionBlocklist = normalizeFunctionNames(o.FunctionBlocklist)
+	functionAllowlistConfigured := o.FunctionAllowlist != nil
+	var functionAllowlist []string
+	if functionAllowlistConfigured {
+		functionAllowlist = resolveFunctionAllowlist(*o.FunctionAllowlist)
+	}
+	if functionAllowlistConfigured && len(o.FunctionBlocklist) > 0 {
+		return nil, errors.New("query: function allowlist and blocklist cannot both be configured")
 	}
 
 	db := sql.OpenDB(connector)
@@ -90,8 +101,10 @@ func New(ctx context.Context, connector *duckdb.Connector, opts ...OptionFunc) (
 		cache:     cache,
 		cacheSeed: maphash.MakeSeed(), // Initialize the cache seed for consistent hashing
 
-		functionBlocklist: append([]string(nil), o.FunctionBlocklist...),
-		logger:            o.Logger,
+		functionBlocklist:           append([]string(nil), o.FunctionBlocklist...),
+		functionAllowlist:           append([]string(nil), functionAllowlist...),
+		functionAllowlistConfigured: functionAllowlistConfigured,
+		logger:                      o.Logger,
 	}, nil
 }
 
@@ -189,7 +202,7 @@ func (db *DB) Close() {
 }
 
 func (db *DB) Exec(ctx context.Context, query string) error {
-	if len(db.functionBlocklist) > 0 {
+	if len(db.functionBlocklist) > 0 || db.functionAllowlistConfigured {
 		return ErrExecWithValidation
 	}
 
@@ -202,12 +215,15 @@ func (db *DB) Exec(ctx context.Context, query string) error {
 }
 
 func (db *DB) validateQuery(ctx context.Context, query string, allowedSchemas []string) error {
-	validators := make([]Validator, 0, 2)
+	validators := make([]Validator, 0, 3)
 	if len(allowedSchemas) > 0 {
 		validators = append(validators, newBaseTableValidator(allowedSchemas))
 	}
 	if len(db.functionBlocklist) > 0 {
 		validators = append(validators, newFunctionBlocklistValidator(db.functionBlocklist))
+	}
+	if db.functionAllowlistConfigured {
+		validators = append(validators, newFunctionAllowlistValidator(db.functionAllowlist))
 	}
 	if len(validators) == 0 {
 		return nil

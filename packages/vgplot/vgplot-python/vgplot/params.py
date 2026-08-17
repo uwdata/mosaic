@@ -70,7 +70,7 @@ def param(value: Any = None) -> _ParamBase:
     return ParamValue(value)
 
 
-class selection:
+class selection:  # ruff: ignore[invalid-class-name]
     """Namespace for creating selection params."""
 
     @staticmethod
