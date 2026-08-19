@@ -6,6 +6,7 @@ export const INTERVAL = 'INTERVAL';
 export const LIST = 'LIST';
 export const TUPLE = 'TUPLE';
 export const UNNEST = 'UNNEST';
+export const VALUES = 'VALUES';
 
 export const ORDER_BY = 'ORDER_BY';
 export const CAST = 'CAST';

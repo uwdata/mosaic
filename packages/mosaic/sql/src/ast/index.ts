@@ -27,6 +27,7 @@ export { TableRefNode, isTableRef } from './table-ref.js';
 export { TupleNode } from './tuple.js';
 export { UnaryOpNode, UnaryPostfixOpNode } from './unary-op.js';
 export { UnnestNode } from './unnest.js';
+export { ValuesNode } from './values.js';
 export { VerbatimNode } from './verbatim.js';
 export { WindowClauseNode, WindowDefNode, WindowFunctionNode, WindowNode } from './window.js';
 export { WindowFrameNode, WindowFrameExprNode, type FrameExclude, type FrameExtent, type FrameScope, type FrameType, type FrameValue } from './window-frame.js';

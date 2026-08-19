@@ -36,6 +36,7 @@ import type {
   UnaryOpNode,
   UnaryPostfixOpNode,
   UnnestNode,
+  ValuesNode,
   VerbatimNode,
   WindowNode,
   WindowClauseNode,
@@ -81,6 +82,7 @@ import {
   UNARY_OPERATOR,
   UNARY_POSTFIX_OPERATOR,
   UNNEST,
+  VALUES,
   VERBATIM,
   WHEN,
   WINDOW,
@@ -158,6 +160,7 @@ export abstract class SQLCodeGenerator {
       case UNARY_OPERATOR: return this.visitUnary;
       case UNARY_POSTFIX_OPERATOR: return this.visitUnaryPostfix;
       case UNNEST: return this.visitUnnest;
+      case VALUES: return this.visitValues;
       case VERBATIM: return this.visitVerbatim;
       case WHEN: return this.visitWhen;
       case WINDOW: return this.visitWindow;
@@ -217,6 +220,7 @@ export abstract class SQLCodeGenerator {
   abstract visitUnary(node: UnaryOpNode): string;
   abstract visitUnaryPostfix(node: UnaryPostfixOpNode): string;
   abstract visitUnnest(node: UnnestNode): string;
+  abstract visitValues(node: ValuesNode): string;
   abstract visitVerbatim(node: VerbatimNode): string;
   abstract visitWhen(node: WhenNode): string;
   abstract visitWindow(node: WindowNode): string;

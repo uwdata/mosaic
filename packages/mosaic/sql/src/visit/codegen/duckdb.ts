@@ -37,6 +37,7 @@ import {
   UnaryOpNode,
   UnaryPostfixOpNode,
   UnnestNode,
+  ValuesNode,
   VerbatimNode,
   WindowNode,
   WindowClauseNode,
@@ -406,6 +407,11 @@ export class DuckDBCodeGenerator extends SQLCodeGenerator {
     return `UNNEST(${args.join(', ')})`;
   }
 
+  visitValues(node: ValuesNode): string {
+    const { values } = node;
+    return `VALUES ${this.mapToString(values).join(', ')}`;
+  }
+
   visitVerbatim(node: VerbatimNode): string {
     const { value } = node;
     return value;
@@ -466,11 +472,14 @@ export class DuckDBCodeGenerator extends SQLCodeGenerator {
   }
 
   visitWithClause(node: WithClauseNode): string {
-    const { name, query, materialized } = node;
+    const { name, query, materialized, columnNames } = node;
+    const aliases = columnNames?.length
+      ? `(${columnNames.map(v => quoteIdentifier(v)).join(', ')})`
+      : '';
     const mat = materialized === true ? 'MATERIALIZED '
       : materialized === false ? 'NOT MATERIALIZED '
       : '';
-    return `${quoteIdentifier(name)} AS ${mat}(${this.toString(query)})`;
+    return `${quoteIdentifier(name)}${aliases} AS ${mat}(${this.toString(query)})`;
   }
 }
 
