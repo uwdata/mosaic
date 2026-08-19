@@ -1,5 +1,5 @@
 import { expect, describe, it } from 'vitest';
-import { Query, cte } from '../src/index.js';
+import { Query, cte, values } from '../src/index.js';
 import { validateQuery } from './util/validate.js';
 
 describe('cte', () => {
@@ -26,5 +26,16 @@ describe('cte', () => {
     expect(z.materialized).toBe(null);
     expect(String(z)).toBe(`"foo" AS (${q})`);
     await validateQuery(`WITH ${z} SELECT * FROM "foo"`);
+  });
+
+  it('supports column name aliases', async () => {
+    const q = Query.select('*').from({ t: values([[42], [67]]) });
+    const x = cte('nums', q, null, ['value']);
+    expect(x.name).toBe('nums');
+    expect(x.query).toBe(q);
+    expect(x.materialized).toBe(null);
+    expect(x.columnNames).toStrictEqual(['value']);
+    expect(String(x)).toBe(`"nums"("value") AS (${q})`);
+    await validateQuery(`WITH ${x} SELECT * FROM "nums"`);
   });
 });

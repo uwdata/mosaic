@@ -13,7 +13,8 @@ import { WithClauseNode } from '../ast/with.js';
 export function cte(
   name: string,
   query: Query,
-  materialized: boolean | null = null
+  materialized: boolean | null = null,
+  columnNames?: string[]
 ) {
-  return new WithClauseNode(name, query, materialized);
+  return new WithClauseNode(name, query, materialized, columnNames);
 }

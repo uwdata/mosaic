@@ -1,9 +1,19 @@
 import { expect, describe, it } from 'vitest';
-import { TupleNode, literal } from '../src/index.js';
+import { TupleNode, literal, tuple } from '../src/index.js';
 
-describe('Tuple', () => {
-  it('renders a parenthesized list of values', async () => {
-    const tuple = new TupleNode([literal(1), literal(2), literal(3)]);
-    await expect(tuple).toBeValidExpr('(1, 2, 3)');
+describe('tuple', () => {
+  it('ast node renders a parenthesized list of values', async () => {
+    const t = new TupleNode([literal(1), literal(2), literal(3)]);
+    await expect(t).toBeValidExpr('(1, 2, 3)');
+  });
+
+  it('function accepts expression node values', async () => {
+    const t = tuple([literal(1), literal(2), literal(3)]);
+    await expect(t).toBeValidExpr('(1, 2, 3)');
+  });
+
+  it('function accepts literal values', async () => {
+    const t = tuple(['a', 'b', 'c'])
+    await expect(t).toBeValidExpr(`('a', 'b', 'c')`);
   });
 });
