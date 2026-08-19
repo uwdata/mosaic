@@ -7,7 +7,11 @@ import { fnv_hash } from '../util/hash.js';
 import { resolvePositional } from '../util/positional.js';
 import { preaggColumns, PreAggColumnsResult } from './preagg-columns.js';
 
-const Skip = { skip: true, result: null };
+/**
+ * Dummy preaggregate info object that indicates a view should be skipped
+ * (not filtered) as it is a source of a cross-filtering operation.
+ */
+const Skip = Object.freeze({ skip: true });
 
 export interface PreAggregateOptions {
   /** Database schema (namespace) in which to write pre-aggregated materialized views (default 'mosaic'). */
@@ -208,15 +212,20 @@ export class PreAggregator {
     } else {
       // generate materialized view table
       const filter = selection.remove(source).predicate(client);
-      info = preaggregateInfo(
+      const _info = preaggregateInfo(
         client.query(filter) as SelectQuery,
         active, preaggCols, schema
       );
-      info.result = mc.exec([
+      _info.result = mc.exec([
         createSchema(schema),
-        createTable(info.table, info.create, { temp: false })
+        createTable(_info.table, _info.create, { temp: false })
       ]);
-      info.result.catch((e: Error) => mc.logger().error(e));
+      // if create query fails, log and mark as failed
+      _info.result.catch((e: Error) => {
+        mc.logger().error(e);
+        _info.result = null; // indicates lack of view
+      });
+      info = _info;
     }
 
     entries.set(client, info);
@@ -450,15 +459,22 @@ export class PreAggregateInfo {
   table: TableRefNode;
   /** The SQL query used to generate the materialized view. */
   create: SelectQuery;
-  /** A result promise returned for the materialized view creation query. */
+  /**
+   * A result promise returned for the materialized view creation query.
+   * Null values indicate that a creation query failed and there is no view.
+   */
   result: Promise<unknown> | null;
-  /** Definitions and predicate function for the active columns,
-   * which are dynamically filtered by the active clause. */
+  /**
+   * Definitions and predicate function for the active columns,
+   * which are dynamically filtered by the active clause.
+   */
   active: ActiveColumnsResult;
   /** Select query (sans where clause) for materialized views. */
   select: SelectQuery;
-  /** Boolean flag indicating a client that should be skipped.
-   * This value is always false for a created materialized view. */
+  /**
+   * Boolean flag indicating a client that should be skipped.
+   * This value is always false for a created materialized view.
+   */
   skip: boolean;
 
   /**
@@ -468,7 +484,7 @@ export class PreAggregateInfo {
   constructor({ table, create, active, select }: PreAggregateInfoOptions) {
     this.table = table;
     this.create = create;
-    this.result = null;
+    this.result = null; // set subsequently in request method
     this.active = active;
     this.select = select;
     this.skip = false;

@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { SocketConnector } from './connectors/socket.js';
 import { type Connector } from './connectors/Connector.js';
-import { PreAggregator, type PreAggregateInfo, type PreAggregateOptions } from './preagg/PreAggregator.js';
+import { PreAggregator, type PreAggregateOptions } from './preagg/PreAggregator.js';
 import { voidLogger } from './util/void-logger.js';
 import { QueryManager, Priority } from './QueryManager.js';
 import { type Selection } from './Selection.js';
@@ -400,11 +400,14 @@ function updateSelection(
     // check if we can handle selection update via preaggregation
     const info = preaggregator.request(client, selection, active);
 
-    if (info) {
+    if (info?.skip) {
       // skip due to cross-filtering
-      if (info.skip) return;
+      return;
+    }
+
+    if (info?.result) {  
       // generate and issue preaggregate update query
-      const query = (info as PreAggregateInfo).query(active);
+      const query = info.query(active);
       const result = await mc.updateClient(client, query);
       if (!(result instanceof QueryError)) return;
       // if preaggregate update fails, fall through to standard query
