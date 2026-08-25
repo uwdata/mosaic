@@ -40,8 +40,9 @@ def frame_to_duckdb_registrable(frame: IntoFrame) -> object:
     if nw_frame.implementation in _DUCKDB_NATIVE:
         return nw_frame.to_native()
     msg = f"'{type(frame).__module__}.{type(frame).__name__}' to Arrow table for DuckDB registration."
+    category, stacklevel = PerformanceWarning, 4
     if isinstance(nw_frame, nw.LazyFrame):
-        warn(f"Materializing {msg}", PerformanceWarning)
+        warn(f"Materializing {msg}", category, stacklevel)
         return nw_frame.collect(Impl.PYARROW)
-    warn(f"Converting {msg}", PerformanceWarning)
+    warn(f"Converting {msg}", category, stacklevel)
     return nw_frame.to_arrow()
