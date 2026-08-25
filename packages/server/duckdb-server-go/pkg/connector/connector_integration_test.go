@@ -147,6 +147,8 @@ func TestPolicyFinalizationRestoresMutableSettings(t *testing.T) {
 		Policy: CatalogOnly(),
 		Bootstrap: func(ctx context.Context, execer driver.ExecerContext) error {
 			for _, statement := range []string{
+				"SET allow_persistent_secrets = true",
+				"SET allow_extensions_metadata_mismatch = true",
 				"SET allowed_configs = ['enable_external_access', 'temp_directory']",
 				"SET autoinstall_known_extensions = true",
 				"SET autoload_known_extensions = true",

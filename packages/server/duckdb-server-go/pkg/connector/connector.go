@@ -184,14 +184,14 @@ func resolveResourcePolicy(
 
 	directories, err := canonicalLocalPaths(policy.allowedDirectories, true)
 	if err != nil {
-		return "", nil, fmt.Errorf("connector: invalid allowed directory: %w", err)
+		return "", nil, fmt.Errorf("invalid allowed directory: %w", err)
 	}
 	paths, err := canonicalLocalPaths(policy.allowedPaths, false)
 	if err != nil {
-		return "", nil, fmt.Errorf("connector: invalid allowed path: %w", err)
+		return "", nil, fmt.Errorf("invalid allowed path: %w", err)
 	}
 	if policy.requireFiles && len(directories) == 0 && len(paths) == 0 {
-		return "", nil, errors.New("connector: local-files policy requires at least one allowed directory or path")
+		return "", nil, errors.New("local-files policy requires at least one allowed directory or path")
 	}
 
 	dsn, err := addDuckDBSettings(databaseDSN, strictPolicySettings)
@@ -207,6 +207,8 @@ func resolveResourcePolicy(
 func (p *resolvedResourcePolicy) finalize(ctx context.Context, execer driver.ExecerContext) error {
 	// DuckDB rejects path and temp grants after external access is disabled.
 	settings := []duckDBSetting{
+		{name: "allow_persistent_secrets", value: "false"},
+		{name: "allow_extensions_metadata_mismatch", value: "false"},
 		{name: "allowed_configs", value: "[]"},
 		{name: "autoinstall_known_extensions", value: "false"},
 		{name: "autoload_known_extensions", value: "false"},
@@ -231,14 +233,14 @@ func validateLocalDatabaseDSN(databaseDSN string) error {
 		return nil
 	}
 	if isNetworkPath(database) {
-		return fmt.Errorf("connector: database path %q is not a local filesystem path", database)
+		return fmt.Errorf("database path %q is not a local filesystem path", database)
 	}
 	parsed, err := url.Parse(database)
 	if err != nil {
-		return fmt.Errorf("connector: invalid database path %q: %w", database, err)
+		return fmt.Errorf("invalid database path %q: %w", database, err)
 	}
 	if parsed.Scheme != "" || parsed.Host != "" {
-		return fmt.Errorf("connector: database path %q is not a local filesystem path", database)
+		return fmt.Errorf("database path %q is not a local filesystem path", database)
 	}
 	return nil
 }
@@ -259,7 +261,7 @@ func addDuckDBSettings(databaseDSN string, settings []duckDBSetting) (string, er
 	database, rawQuery, _ := strings.Cut(databaseDSN, "?")
 	query, err := url.ParseQuery(rawQuery)
 	if err != nil {
-		return "", fmt.Errorf("connector: invalid database configuration: %w", err)
+		return "", fmt.Errorf("invalid database configuration: %w", err)
 	}
 	for _, setting := range settings {
 		query.Set(setting.name, setting.value)
@@ -323,7 +325,7 @@ func rejectPolicySettings(databaseDSN string) error {
 	_, rawQuery, _ := strings.Cut(databaseDSN, "?")
 	query, err := url.ParseQuery(rawQuery)
 	if err != nil {
-		return fmt.Errorf("connector: invalid database configuration: %w", err)
+		return fmt.Errorf("invalid database configuration: %w", err)
 	}
 	settings := []string{
 		"allowed_directories",
@@ -338,7 +340,7 @@ func rejectPolicySettings(databaseDSN string) error {
 	for existing := range query {
 		for _, setting := range settings {
 			if strings.EqualFold(existing, setting) {
-				return fmt.Errorf("connector: database configuration %q is owned by the resource policy", existing)
+				return fmt.Errorf("database configuration %q is owned by the resource policy", existing)
 			}
 		}
 	}
