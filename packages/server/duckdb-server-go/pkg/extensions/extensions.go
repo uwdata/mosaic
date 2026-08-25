@@ -1,5 +1,4 @@
-// Package extensions provides operations for DuckDB connection initializers,
-// which run once for every physical connection.
+// Package extensions provides trusted DuckDB extension installation and loading operations.
 package extensions
 
 import (

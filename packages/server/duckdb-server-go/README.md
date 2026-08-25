@@ -53,20 +53,45 @@ mkcert -install # Install mkcert CA
 mkcert localhost # create localhost.pem and localhost-key.pem
 ```
 
-### Programmatic Extension Initialization
+### Programmatic Connector Startup
 
-Use `pkg/extensions` from a DuckDB connector callback:
+Use `pkg/connector` to complete trusted DuckDB initialization before constructing `pkg/query` or accepting requests.
+For an unlocked connector, `Bootstrap` can install and load extensions with the existing command-line grammar:
 
 ```go
-connector, err := duckdb.NewConnector(":memory:", func(execer driver.ExecerContext) error {
-	return extensions.ParseAndInstall(connectorCtx, execer, "httpfs", "netquack|community")
+duckdbConnector, err := connector.Open(ctx, connector.Config{
+	DSN: ":memory:",
+	Bootstrap: func(ctx context.Context, execer driver.ExecerContext) error {
+		return extensions.ParseAndInstall(ctx, execer, "httpfs", "netquack|community")
+	},
 })
 ```
 
-Repository suffixes are DuckDB aliases. Use `InstallAndLoadFromCustomRepository` for repository URLs or paths, and
-`LoadInstalled`, `LoadFile`, or `InstallAndLoadFile` for pre-provisioned extensions. The callback runs for every physical
-connection; use a long-lived context and call `PingContext` before serving to force initialization. The first failure
-aborts the connection. Extensions are trusted native code, so load only trusted repositories and files.
+For a locked connector, provision trusted extensions separately and load them before the resource policy is finalized:
+
+```go
+duckdbConnector, err := connector.Open(ctx, connector.Config{
+	DSN: "/srv/mosaic/catalog.duckdb",
+	Bootstrap: func(ctx context.Context, execer driver.ExecerContext) error {
+		return extensions.LoadInstalled(ctx, execer, "spatial")
+	},
+	Policy: connector.LocalFiles(connector.LocalFilesOptions{
+		AllowedDirectories: []string{"/srv/mosaic/datasets"},
+	}),
+})
+```
+
+`Bootstrap` runs exactly once before external access is disabled and the configuration is locked. `Open` eagerly creates
+and closes an initial physical connection, so bootstrap or policy failures are returned before the connector can reach the
+query or server layers. `InitializeConnection`, when configured, instead runs after bootstrap and policy finalization for
+every physical connection; it can perform only operations permitted by the finalized policy.
+
+Repository suffixes accepted by `ParseAndInstall` are DuckDB aliases. Use `InstallAndLoadFromCustomRepository` for
+repository URLs or paths, and `LoadInstalled`, `LoadFile`, or `InstallAndLoadFile` for provisioned extensions. Installing
+at process startup may require network and filesystem access, so production locked deployments should normally provision
+extensions in their image and call `LoadInstalled` or `LoadFile`. A plugin that requires ongoing external I/O is
+incompatible with `CatalogOnly` and `LocalFiles` unless all of its I/O fits the local grants and DuckDB filesystem policy.
+Extensions are trusted native code and can bypass DuckDB's abstractions, so load only trusted repositories and files.
 
 ### Programmatic Authorization
 
@@ -87,7 +112,7 @@ credentials.
 
 The installed binary provides three common external-resource configurations:
 
-| Profile | DuckDB resources | Extension behavior | Intended use |
+| Profile | DuckDB resources | Binary extension behavior | Intended use |
 | --- | --- | --- | --- |
 | `compat` | Preserves DuckDB's current defaults. | Preserves `--load-extensions` and automatic loading. | Trusted local and backwards-compatible deployments. |
 | `catalog-only` | Disables external access outside DuckDB's primary-database internals. | Disables automatic installation and loading; rejects `--load-extensions`. | Queries over an in-memory or local primary catalog. |
@@ -133,8 +158,8 @@ the containing directory. The `local-files` profile separately adds its configur
 `read_blob` may therefore read the implicitly granted files when they exist. Combine a strict profile with a function
 allowlist when that distinction matters. The profiles do not add authentication, origin checks, per-user isolation,
 SQL-function policy, or CPU and memory limits, and they do not replace filesystem and network restrictions on the server
-process. They are implemented for the single connector owned by this binary; programs embedding `pkg/query` must
-configure and lock their DuckDB instance before serving requests.
+process. Programs embedding `pkg/query` can apply the same startup sequence with `connector.CatalogOnly()` or
+`connector.LocalFiles(...)`; the installed binary is a thin command-line adapter over those policies.
 
 ### Function Policies
 

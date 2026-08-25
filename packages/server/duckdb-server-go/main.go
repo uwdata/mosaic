@@ -11,8 +11,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/duckdb/duckdb-go/v2"
-
+	"github.com/uwdata/mosaic/packages/server/duckdb-server-go/pkg/connector"
 	"github.com/uwdata/mosaic/packages/server/duckdb-server-go/pkg/extensions"
 	"github.com/uwdata/mosaic/packages/server/duckdb-server-go/pkg/query"
 	"github.com/uwdata/mosaic/packages/server/duckdb-server-go/pkg/server"
@@ -68,7 +67,6 @@ func run() int {
 
 	security, err := resolveSecurityProfile(
 		*securityProfileStr,
-		*dbPath,
 		*extensionsStr,
 		allowedDirectories.values,
 		allowedPaths.values,
@@ -90,39 +88,23 @@ func run() int {
 		}
 	}
 
-	securityInitializer := security.newConnectionInitializer()
-	connector, err := duckdb.NewConnector(security.databaseDSN, func(execer driver.ExecerContext) error {
-		if securityInitializer != nil {
-			if err := securityInitializer.initializeConnection(ctx, execer); err != nil {
-				return err
-			}
-		}
-		if err := extensions.ParseAndInstall(ctx, execer, *extensionsStr); err != nil {
-			return err
-		}
-		return nil
+	duckdbConnector, err := connector.Open(ctx, connector.Config{
+		DSN:    *dbPath,
+		Policy: security.policy,
+		Bootstrap: func(ctx context.Context, execer driver.ExecerContext) error {
+			return extensions.ParseAndInstall(ctx, execer, *extensionsStr)
+		},
 	})
 	if err != nil {
 		logger.Error("main: error creating duckdb connector", "error", err)
 		return 1
 	}
 	defer func() {
-		err = connector.Close()
+		err = duckdbConnector.Close()
 		if err != nil {
 			logger.Error("main: error closing duckdb connector", "error", err)
 		}
 	}()
-	if securityInitializer != nil {
-		conn, err := connector.Connect(ctx)
-		if err != nil {
-			logger.Error("main: error initializing DuckDB security profile", "error", err)
-			return 1
-		}
-		if err = conn.Close(); err != nil {
-			logger.Error("main: error closing DuckDB initialization connection", "error", err)
-			return 1
-		}
-	}
 
 	ttl, err := time.ParseDuration(*ttlStr)
 	if err != nil {
@@ -144,7 +126,7 @@ func run() int {
 		}))
 	}
 
-	db, err := query.New(ctx, connector, queryOptions...)
+	db, err := query.New(ctx, duckdbConnector, queryOptions...)
 	if err != nil {
 		logger.Error("main: error creating query DB", "error", err)
 		return 1
@@ -183,8 +165,8 @@ func run() int {
 		"function_allowlist":   functionAllowlist.String(),
 		"allowlist_configured": functionAllowlist.set,
 		"security_profile":     security.name,
-		"allowed_directories":  security.allowedDirectories,
-		"allowed_paths":        security.allowedPaths,
+		"allowed_directories":  allowedDirectories.values,
+		"allowed_paths":        allowedPaths.values,
 	}
 	logger.Info("DuckDB Server configuration", "config", config)
 
