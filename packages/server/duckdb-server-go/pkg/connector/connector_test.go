@@ -142,6 +142,10 @@ func TestStartupInitializerOrder(t *testing.T) {
 	require.NoError(t, startup.initialize(execer))
 	require.Equal(t, []string{
 		"BOOTSTRAP",
+		"SET allowed_configs = []",
+		"SET autoinstall_known_extensions = false",
+		"SET autoload_known_extensions = false",
+		"SET enable_external_file_cache = false",
 		"SET temp_directory = ''",
 		"SET allowed_directories = ['/srv/O''Brien']",
 		"SET allowed_paths = ['/srv/data.parquet']",
@@ -150,13 +154,13 @@ func TestStartupInitializerOrder(t *testing.T) {
 	}, execer.snapshot())
 
 	require.NoError(t, startup.initialize(execer))
-	assert.Len(t, execer.snapshot(), 6)
+	assert.Len(t, execer.snapshot(), 10)
 }
 
 func TestStartupInitializerCachesFailure(t *testing.T) {
 	sentinel := errors.New("unavailable")
 	execer := newRecordingExecer()
-	execer.failAt = 5
+	execer.failAt = 9
 	execer.failErr = sentinel
 	startup := startupInitializer{
 		ctx: t.Context(),
@@ -172,7 +176,7 @@ func TestStartupInitializerCachesFailure(t *testing.T) {
 	require.ErrorContains(t, err, "failed to set lock_configuration")
 	err = startup.initialize(newRecordingExecer())
 	require.ErrorIs(t, err, sentinel)
-	assert.Len(t, execer.snapshot(), 6)
+	assert.Len(t, execer.snapshot(), 10)
 }
 
 func TestStartupInitializerIsConcurrent(t *testing.T) {
@@ -194,7 +198,7 @@ func TestStartupInitializerIsConcurrent(t *testing.T) {
 	for err := range errs {
 		require.NoError(t, err)
 	}
-	assert.Len(t, execer.snapshot(), 5)
+	assert.Len(t, execer.snapshot(), 9)
 }
 
 func TestStartupInitializerValidatesExecer(t *testing.T) {
@@ -207,7 +211,18 @@ func TestOpenRejectsNilContext(t *testing.T) {
 	var ctx context.Context
 	duckdbConnector, err := Open(ctx, Config{DSN: ":memory:"})
 	require.Nil(t, duckdbConnector)
-	require.EqualError(t, err, "connector: nil context")
+	require.ErrorIs(t, err, ErrInvalidConfig)
+	require.EqualError(t, err, "connector: invalid configuration: nil context")
+}
+
+func TestOpenClassifiesInvalidPolicy(t *testing.T) {
+	duckdbConnector, err := Open(t.Context(), Config{
+		DSN:    ":memory:",
+		Policy: LocalFiles(LocalFilesOptions{}),
+	})
+	require.Nil(t, duckdbConnector)
+	require.ErrorIs(t, err, ErrInvalidConfig)
+	require.ErrorContains(t, err, "requires at least one allowed directory or path")
 }
 
 func assertSecurityPolicyDSN(t *testing.T, dsn string) {

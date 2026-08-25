@@ -15,6 +15,13 @@ import (
 	"github.com/duckdb/duckdb-go/v2"
 )
 
+var (
+	// ErrInvalidConfig indicates that connector configuration was rejected before DuckDB startup.
+	ErrInvalidConfig = errors.New("connector: invalid configuration")
+	// ErrStartup indicates that DuckDB bootstrap or connection initialization failed.
+	ErrStartup = errors.New("connector: startup failed")
+)
+
 // Initializer performs trusted DuckDB initialization.
 type Initializer func(context.Context, driver.ExecerContext) error
 
@@ -25,6 +32,8 @@ type Config struct {
 
 	// Bootstrap runs exactly once before Policy is finalized. It may load trusted
 	// extensions, create secrets, or attach catalogs that the locked server needs.
+	// ATTACH grants the database and its sidecars for the connector lifetime;
+	// DETACH does not revoke those paths.
 	Bootstrap Initializer
 
 	// InitializeConnection runs for every physical connection after Bootstrap
@@ -51,7 +60,7 @@ type ResourcePolicy struct {
 	requireFiles       bool
 }
 
-// CatalogOnly disables external access outside DuckDB's primary-database internals.
+// CatalogOnly disables external access outside DuckDB's primary and bootstrap-attached database internals.
 func CatalogOnly() *ResourcePolicy {
 	return &ResourcePolicy{}
 }
@@ -66,15 +75,17 @@ func LocalFiles(options LocalFilesOptions) *ResourcePolicy {
 }
 
 // Open creates a connector, completes trusted bootstrap and policy locking, and
-// verifies the first physical connection before returning it to the caller.
+// verifies the first physical connection before returning it to the caller. A
+// file-backed database supports one live connector per process; share that
+// connector across query pools rather than calling Open again for the same path.
 func Open(ctx context.Context, config Config) (*duckdb.Connector, error) {
 	if ctx == nil {
-		return nil, errors.New("connector: nil context")
+		return nil, fmt.Errorf("%w: nil context", ErrInvalidConfig)
 	}
 
 	dsn, policy, err := resolveResourcePolicy(config.DSN, config.Policy)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("%w: %w", ErrInvalidConfig, err)
 	}
 
 	startup := startupInitializer{
@@ -90,21 +101,21 @@ func Open(ctx context.Context, config Config) (*duckdb.Connector, error) {
 		}
 		if initializeConnection != nil {
 			if err := initializeConnection(connectionCtx, execer); err != nil {
-				return fmt.Errorf("connector: initialize connection: %w", err)
+				return fmt.Errorf("%w: initialize connection: %w", ErrStartup, err)
 			}
 		}
 		return nil
 	})
 	if err != nil {
-		return nil, fmt.Errorf("connector: create: %w", err)
+		return nil, fmt.Errorf("%w: create: %w", ErrStartup, err)
 	}
 
 	conn, err := duckdbConnector.Connect(ctx)
 	if err != nil {
-		return nil, closeAfterError(duckdbConnector, fmt.Errorf("connector: initialize: %w", err))
+		return nil, closeAfterError(duckdbConnector, fmt.Errorf("%w: initialize: %w", ErrStartup, err))
 	}
 	if err := conn.Close(); err != nil {
-		return nil, closeAfterError(duckdbConnector, fmt.Errorf("connector: close initialization connection: %w", err))
+		return nil, closeAfterError(duckdbConnector, fmt.Errorf("%w: close initialization connection: %w", ErrStartup, err))
 	}
 	return duckdbConnector, nil
 }
@@ -194,7 +205,12 @@ func resolveResourcePolicy(
 }
 
 func (p *resolvedResourcePolicy) finalize(ctx context.Context, execer driver.ExecerContext) error {
+	// DuckDB rejects path and temp grants after external access is disabled.
 	settings := []duckDBSetting{
+		{name: "allowed_configs", value: "[]"},
+		{name: "autoinstall_known_extensions", value: "false"},
+		{name: "autoload_known_extensions", value: "false"},
+		{name: "enable_external_file_cache", value: "false"},
 		{name: "temp_directory", value: "''"},
 		{name: "allowed_directories", value: duckDBStringList(p.allowedDirectories)},
 		{name: "allowed_paths", value: duckDBStringList(p.allowedPaths)},

@@ -141,6 +141,59 @@ func TestCatalogOnlyBootstrapsExtensionBeforeLock(t *testing.T) {
 	assert.Equal(t, int64(1), bootstrapCalls.Load())
 }
 
+func TestPolicyFinalizationRestoresMutableSettings(t *testing.T) {
+	db := openDB(t, Config{
+		DSN:    ":memory:",
+		Policy: CatalogOnly(),
+		Bootstrap: func(ctx context.Context, execer driver.ExecerContext) error {
+			for _, statement := range []string{
+				"SET allowed_configs = ['enable_external_access', 'temp_directory']",
+				"SET autoinstall_known_extensions = true",
+				"SET autoload_known_extensions = true",
+				"SET enable_external_file_cache = true",
+			} {
+				if _, err := execer.ExecContext(ctx, statement, nil); err != nil {
+					return err
+				}
+			}
+			return nil
+		},
+	})
+
+	assertLockedProfileSettings(t, db)
+}
+
+func TestBootstrapAttachAddsPersistentDatabaseGrant(t *testing.T) {
+	directory := t.TempDir()
+	databasePath := filepath.Join(directory, "side.duckdb")
+	createDatabaseFixture(t, databasePath)
+	neighborPath := filepath.Join(directory, "neighbor.txt")
+	require.NoError(t, os.WriteFile(neighborPath, []byte("blocked"), 0o600))
+
+	db := openDB(t, Config{
+		DSN:    ":memory:",
+		Policy: CatalogOnly(),
+		Bootstrap: func(ctx context.Context, execer driver.ExecerContext) error {
+			_, err := execer.ExecContext(ctx, "ATTACH "+quoteSQL(databasePath)+" AS side (READ_ONLY)", nil)
+			return err
+		},
+	})
+	var count int
+	require.NoError(t, db.QueryRowContext(
+		t.Context(),
+		"SELECT count(*) FROM read_blob("+quoteSQL(databasePath)+")",
+	).Scan(&count))
+	assert.Positive(t, count)
+
+	_, err := db.ExecContext(t.Context(), "DETACH side")
+	require.NoError(t, err)
+	require.NoError(t, db.QueryRowContext(
+		t.Context(),
+		"SELECT count(*) FROM read_blob("+quoteSQL(databasePath)+")",
+	).Scan(&count))
+	assertQueryError(t, db, t.Context(), "SELECT count(*) FROM read_blob("+quoteSQL(neighborPath)+")")
+}
+
 func TestInitializeConnectionRunsAfterLock(t *testing.T) {
 	ctx, cancel := context.WithCancel(t.Context())
 	var initializeCalls atomic.Int64
@@ -180,6 +233,7 @@ func TestOpenReturnsBootstrapFailure(t *testing.T) {
 		},
 	})
 	require.Nil(t, duckdbConnector)
+	require.ErrorIs(t, err, ErrStartup)
 	require.ErrorIs(t, err, sentinel)
 }
 
@@ -206,6 +260,26 @@ func TestCatalogOnlyProfilePersistsPrimaryDatabase(t *testing.T) {
 	var answer int
 	require.NoError(t, db.QueryRowContext(t.Context(), "SELECT answer FROM items").Scan(&answer))
 	assert.Equal(t, 42, answer)
+}
+
+func TestFileBackedDatabaseSupportsOneLiveConnector(t *testing.T) {
+	databasePath := filepath.Join(t.TempDir(), "catalog.duckdb")
+	first, err := Open(t.Context(), Config{DSN: databasePath, Policy: CatalogOnly()})
+	require.NoError(t, err)
+	t.Cleanup(func() {
+		require.NoError(t, first.Close())
+	})
+
+	second, err := Open(t.Context(), Config{DSN: databasePath, Policy: CatalogOnly()})
+	require.Nil(t, second)
+	require.ErrorIs(t, err, ErrStartup)
+	require.ErrorContains(t, err, "configuration has been locked")
+
+	db := sql.OpenDB(first)
+	t.Cleanup(func() {
+		require.NoError(t, db.Close())
+	})
+	assertLockedProfileSettings(t, db)
 }
 
 func TestLocalFilesSecurityProfile(t *testing.T) {
