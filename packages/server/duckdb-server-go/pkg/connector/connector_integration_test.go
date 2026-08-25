@@ -1,9 +1,10 @@
-package main
+package connector
 
 import (
 	"context"
 	"database/sql"
 	"database/sql/driver"
+	"fmt"
 	"net"
 	"net/http"
 	"net/http/httptest"
@@ -19,6 +20,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"github.com/uwdata/mosaic/packages/server/duckdb-server-go/pkg/extensions"
 	"github.com/uwdata/mosaic/packages/server/duckdb-server-go/pkg/query"
 )
 
@@ -26,9 +28,7 @@ func TestCompatSecurityProfilePreservesDefaults(t *testing.T) {
 	directory := t.TempDir()
 	path := filepath.Join(directory, "data.parquet")
 	createParquetFixture(t, path)
-	profile, err := resolveSecurityProfile("compat", ":memory:", "", nil, nil)
-	require.NoError(t, err)
-	db := openProfileDB(t, profile)
+	db := openDB(t, Config{DSN: ":memory:"})
 
 	var externalAccess, configurationLocked bool
 	require.NoError(t, db.QueryRowContext(
@@ -42,7 +42,7 @@ func TestCompatSecurityProfilePreservesDefaults(t *testing.T) {
 	require.NoError(t, db.QueryRowContext(t.Context(), "SELECT answer FROM "+quoteSQL(path)).Scan(&answer))
 	assert.Equal(t, 42, answer)
 	output := filepath.Join(directory, "output.csv")
-	_, err = db.ExecContext(t.Context(), "COPY (SELECT 1) TO "+quoteSQL(output))
+	_, err := db.ExecContext(t.Context(), "COPY (SELECT 1) TO "+quoteSQL(output))
 	require.NoError(t, err)
 	assert.FileExists(t, output)
 	attached := filepath.Join(directory, "attached.duckdb")
@@ -52,14 +52,13 @@ func TestCompatSecurityProfilePreservesDefaults(t *testing.T) {
 }
 
 func TestCatalogOnlySecurityProfile(t *testing.T) {
-	profile, err := resolveSecurityProfile("catalog-only", ":memory:", "", nil, nil)
-	require.NoError(t, err)
-	db := openProfileDB(t, profile)
+	db := openDB(t, Config{DSN: ":memory:", Policy: CatalogOnly()})
 
 	assertLockedProfileSettings(t, db)
 	assertListSettingLength(t, db, "allowed_directories", 0)
 	assertListSettingLength(t, db, "allowed_paths", 0)
 
+	var err error
 	for _, statement := range []string{
 		"SET allowed_configs = ['threads']",
 		"SET allowed_directories = ['.']",
@@ -101,43 +100,108 @@ func TestCatalogOnlySecurityProfile(t *testing.T) {
 }
 
 func TestCatalogOnlyProfileInitializesDistinctConnectors(t *testing.T) {
-	profile, err := resolveSecurityProfile("catalog-only", ":memory:", "", nil, nil)
-	require.NoError(t, err)
+	policy := CatalogOnly()
 
 	for range 2 {
-		connector, err := newProfileConnector(t.Context(), profile)
+		duckdbConnector, err := Open(t.Context(), Config{DSN: ":memory:", Policy: policy})
 		require.NoError(t, err)
-		db := sql.OpenDB(connector)
+		db := sql.OpenDB(duckdbConnector)
 		require.NoError(t, db.PingContext(t.Context()))
 		assertLockedProfileSettings(t, db)
 		assertQueryError(t, db, t.Context(), "SELECT count(*) FROM read_text('/etc/hosts')")
 		require.NoError(t, db.Close())
-		require.NoError(t, connector.Close())
+		require.NoError(t, duckdbConnector.Close())
 	}
+}
+
+func TestCatalogOnlyBootstrapsExtensionBeforeLock(t *testing.T) {
+	var bootstrapCalls atomic.Int64
+	duckdbConnector, err := Open(t.Context(), Config{
+		DSN:    ":memory:",
+		Policy: CatalogOnly(),
+		Bootstrap: func(ctx context.Context, execer driver.ExecerContext) error {
+			bootstrapCalls.Add(1)
+			return extensions.LoadInstalled(ctx, execer, "autocomplete")
+		},
+	})
+	require.NoError(t, err)
+	assert.Equal(t, int64(1), bootstrapCalls.Load())
+
+	db := sql.OpenDB(duckdbConnector)
+	t.Cleanup(func() {
+		require.NoError(t, db.Close())
+		require.NoError(t, duckdbConnector.Close())
+	})
+	var suggestions int
+	require.NoError(t, db.QueryRowContext(t.Context(), "SELECT count(*) FROM sql_auto_complete('SELECT ')").Scan(&suggestions))
+	assert.Positive(t, suggestions)
+	assertLockedProfileSettings(t, db)
+	_, err = db.ExecContext(t.Context(), "LOAD httpfs")
+	require.Error(t, err)
+	assert.Equal(t, int64(1), bootstrapCalls.Load())
+}
+
+func TestInitializeConnectionRunsAfterLock(t *testing.T) {
+	ctx, cancel := context.WithCancel(t.Context())
+	var initializeCalls atomic.Int64
+	duckdbConnector, err := Open(ctx, Config{
+		DSN:    ":memory:",
+		Policy: CatalogOnly(),
+		InitializeConnection: func(ctx context.Context, execer driver.ExecerContext) error {
+			initializeCalls.Add(1)
+			if err := ctx.Err(); err != nil {
+				return err
+			}
+			if _, err := execer.ExecContext(ctx, "SET threads = 1", nil); err == nil || !strings.Contains(err.Error(), "locked") {
+				return fmt.Errorf("expected locked configuration error, got %v", err)
+			}
+			return nil
+		},
+	})
+	require.NoError(t, err)
+	assert.Equal(t, int64(1), initializeCalls.Load())
+	cancel()
+
+	db := sql.OpenDB(duckdbConnector)
+	t.Cleanup(func() {
+		require.NoError(t, db.Close())
+		require.NoError(t, duckdbConnector.Close())
+	})
+	require.NoError(t, db.PingContext(t.Context()))
+	assert.Equal(t, int64(2), initializeCalls.Load())
+}
+
+func TestOpenReturnsBootstrapFailure(t *testing.T) {
+	sentinel := fmt.Errorf("bootstrap failed")
+	duckdbConnector, err := Open(t.Context(), Config{
+		DSN: ":memory:",
+		Bootstrap: func(context.Context, driver.ExecerContext) error {
+			return sentinel
+		},
+	})
+	require.Nil(t, duckdbConnector)
+	require.ErrorIs(t, err, sentinel)
 }
 
 func TestCatalogOnlyProfilePersistsPrimaryDatabase(t *testing.T) {
 	databasePath := filepath.Join(t.TempDir(), "catalog.duckdb")
-	profile, err := resolveSecurityProfile("catalog-only", databasePath, "", nil, nil)
+	policy := CatalogOnly()
+	duckdbConnector, err := Open(t.Context(), Config{DSN: databasePath, Policy: policy})
 	require.NoError(t, err)
-	connector, err := newProfileConnector(t.Context(), profile)
-	require.NoError(t, err)
-	db := sql.OpenDB(connector)
+	db := sql.OpenDB(duckdbConnector)
 	require.NoError(t, db.PingContext(t.Context()))
 	_, err = db.ExecContext(t.Context(), "CREATE TABLE items AS SELECT 42 AS answer")
 	require.NoError(t, err)
 	require.NoError(t, db.Close())
-	require.NoError(t, connector.Close())
+	require.NoError(t, duckdbConnector.Close())
 
-	profile, err = resolveSecurityProfile("catalog-only", databasePath, "", nil, nil)
+	duckdbConnector, err = Open(t.Context(), Config{DSN: databasePath, Policy: policy})
 	require.NoError(t, err)
-	connector, err = newProfileConnector(t.Context(), profile)
-	require.NoError(t, err)
-	db = sql.OpenDB(connector)
+	db = sql.OpenDB(duckdbConnector)
 	require.NoError(t, db.PingContext(t.Context()))
 	t.Cleanup(func() {
 		require.NoError(t, db.Close())
-		require.NoError(t, connector.Close())
+		require.NoError(t, duckdbConnector.Close())
 	})
 	var answer int
 	require.NoError(t, db.QueryRowContext(t.Context(), "SELECT answer FROM items").Scan(&answer))
@@ -149,13 +213,16 @@ func TestLocalFilesSecurityProfile(t *testing.T) {
 	path := filepath.Join(directory, "allowed.parquet")
 	createParquetFixture(t, path)
 
-	profile, err := resolveSecurityProfile("local-files", ":memory:", "", []string{directory}, nil)
-	require.NoError(t, err)
-	db := openProfileDB(t, profile)
+	db := openDB(t, Config{
+		DSN: ":memory:",
+		Policy: LocalFiles(LocalFilesOptions{
+			AllowedDirectories: []string{directory},
+		}),
+	})
 	assertLockedProfileSettings(t, db)
 	assertListSettingLength(t, db, "allowed_directories", 1)
 	assertListSettingLength(t, db, "allowed_paths", 0)
-	canonicalPath := filepath.Join(profile.allowedDirectories[0], "allowed.parquet")
+	canonicalPath := filepath.Join(directory, "allowed.parquet")
 
 	var answer int
 	require.NoError(t, db.QueryRowContext(
@@ -164,12 +231,12 @@ func TestLocalFilesSecurityProfile(t *testing.T) {
 	).Scan(&answer))
 	assert.Equal(t, 42, answer)
 
-	output := filepath.Join(profile.allowedDirectories[0], "output.csv")
-	_, err = db.ExecContext(t.Context(), "COPY (SELECT 7 AS value) TO "+quoteSQL(output))
+	output := filepath.Join(directory, "output.csv")
+	_, err := db.ExecContext(t.Context(), "COPY (SELECT 7 AS value) TO "+quoteSQL(output))
 	require.NoError(t, err)
 	assert.FileExists(t, output)
 
-	attached := filepath.Join(profile.allowedDirectories[0], "attached.duckdb")
+	attached := filepath.Join(directory, "attached.duckdb")
 	_, err = db.ExecContext(t.Context(), "ATTACH "+quoteSQL(attached)+" AS attached")
 	require.NoError(t, err)
 	_, err = db.ExecContext(t.Context(), "DETACH attached")
@@ -202,15 +269,18 @@ func TestLocalFilesProfileAllowsOnlyExactPath(t *testing.T) {
 	outside := filepath.Join(directory, "outside.parquet")
 	createParquetFixture(t, outside)
 
-	profile, err := resolveSecurityProfile("local-files", ":memory:", "", nil, []string{allowed})
-	require.NoError(t, err)
-	db := openProfileDB(t, profile)
+	db := openDB(t, Config{
+		DSN: ":memory:",
+		Policy: LocalFiles(LocalFilesOptions{
+			AllowedPaths: []string{allowed},
+		}),
+	})
 	assertLockedProfileSettings(t, db)
 	assertListSettingLength(t, db, "allowed_directories", 0)
 	assertListSettingLength(t, db, "allowed_paths", 1)
 
 	var answer int
-	require.NoError(t, db.QueryRowContext(t.Context(), "SELECT answer FROM "+quoteSQL(profile.allowedPaths[0])).Scan(&answer))
+	require.NoError(t, db.QueryRowContext(t.Context(), "SELECT answer FROM "+quoteSQL(allowed)).Scan(&answer))
 	assert.Equal(t, 42, answer)
 	assertQueryError(t, db, t.Context(), "SELECT count(*) FROM "+quoteSQL(outside))
 }
@@ -227,9 +297,12 @@ func TestLocalFilesProfileRejectsSymlinkEscapes(t *testing.T) {
 	insideLink := filepath.Join(allowedDirectory, "inside-link.parquet")
 	require.NoError(t, os.Symlink(inside, insideLink))
 
-	profile, err := resolveSecurityProfile("local-files", ":memory:", "", []string{allowedDirectory}, nil)
-	require.NoError(t, err)
-	db := openProfileDB(t, profile)
+	db := openDB(t, Config{
+		DSN: ":memory:",
+		Policy: LocalFiles(LocalFilesOptions{
+			AllowedDirectories: []string{allowedDirectory},
+		}),
+	})
 	var answer int
 	require.NoError(t, db.QueryRowContext(t.Context(), "SELECT answer FROM "+quoteSQL(insideLink)).Scan(&answer))
 	assert.Equal(t, 42, answer)
@@ -241,7 +314,7 @@ func TestLocalFilesProfileRejectsSymlinkEscapes(t *testing.T) {
 	require.NoError(t, os.WriteFile(outsideOutput, []byte("sentinel"), 0o600))
 	outputLink := filepath.Join(allowedDirectory, "escape.csv")
 	require.NoError(t, os.Symlink(outsideOutput, outputLink))
-	_, err = db.ExecContext(t.Context(), "COPY (SELECT 1) TO "+quoteSQL(outputLink))
+	_, err := db.ExecContext(t.Context(), "COPY (SELECT 1) TO "+quoteSQL(outputLink))
 	require.Error(t, err)
 	content, readErr := os.ReadFile(outsideOutput)
 	require.NoError(t, readErr)
@@ -259,23 +332,25 @@ func TestLocalFilesProfileComposesWithFunctionAllowlist(t *testing.T) {
 	directory := t.TempDir()
 	path := filepath.Join(directory, "allowed.parquet")
 	createParquetFixture(t, path)
-	profile, err := resolveSecurityProfile("local-files", ":memory:", "", []string{directory}, nil)
+	duckdbConnector, err := Open(t.Context(), Config{
+		DSN: ":memory:",
+		Policy: LocalFiles(LocalFilesOptions{
+			AllowedDirectories: []string{directory},
+		}),
+	})
 	require.NoError(t, err)
-
-	connector, err := newProfileConnector(t.Context(), profile)
-	require.NoError(t, err)
-	db, err := query.New(t.Context(), connector, query.WithFunctionAllowlist(query.FunctionAllowlistOptions{
+	db, err := query.New(t.Context(), duckdbConnector, query.WithFunctionAllowlist(query.FunctionAllowlistOptions{
 		Include: []string{"read_parquet"},
 	}))
 	require.NoError(t, err)
 	t.Cleanup(func() {
 		db.Close()
-		require.NoError(t, connector.Close())
+		require.NoError(t, duckdbConnector.Close())
 	})
 
 	result, _, err := db.QueryJSON(
 		t.Context(),
-		"SELECT answer FROM read_parquet("+quoteSQL(filepath.Join(profile.allowedDirectories[0], "allowed.parquet"))+")",
+		"SELECT answer FROM read_parquet("+quoteSQL(path)+")",
 		nil,
 		false,
 	)
@@ -283,7 +358,7 @@ func TestLocalFilesProfileComposesWithFunctionAllowlist(t *testing.T) {
 	assert.JSONEq(t, `[{"answer":42}]`, string(result))
 	arrowResult, _, err := db.QueryArrow(
 		t.Context(),
-		"SELECT answer FROM read_parquet("+quoteSQL(filepath.Join(profile.allowedDirectories[0], "allowed.parquet"))+")",
+		"SELECT answer FROM read_parquet("+quoteSQL(path)+")",
 		nil,
 		false,
 	)
@@ -295,14 +370,17 @@ func TestLocalFilesProfileInitializesConcurrentConnections(t *testing.T) {
 	directory := t.TempDir()
 	path := filepath.Join(directory, "allowed.parquet")
 	createParquetFixture(t, path)
-	profile, err := resolveSecurityProfile("local-files", ":memory:", "", []string{directory}, nil)
+	duckdbConnector, err := Open(t.Context(), Config{
+		DSN: ":memory:",
+		Policy: LocalFiles(LocalFilesOptions{
+			AllowedDirectories: []string{directory},
+		}),
+	})
 	require.NoError(t, err)
-	connector, err := newProfileConnector(t.Context(), profile)
-	require.NoError(t, err)
-	db := sql.OpenDB(connector)
+	db := sql.OpenDB(duckdbConnector)
 	t.Cleanup(func() {
 		require.NoError(t, db.Close())
-		require.NoError(t, connector.Close())
+		require.NoError(t, duckdbConnector.Close())
 	})
 	db.SetMaxOpenConns(8)
 	db.SetMaxIdleConns(8)
@@ -379,9 +457,7 @@ func TestLockedProfilesRejectCommonExternalSchemes(t *testing.T) {
 	server.Start()
 	t.Cleanup(server.Close)
 
-	profile, err := resolveSecurityProfile("catalog-only", ":memory:", "", nil, nil)
-	require.NoError(t, err)
-	db := openProfileDB(t, profile)
+	db := openDB(t, Config{DSN: ":memory:", Policy: CatalogOnly()})
 
 	host := strings.TrimPrefix(server.URL, "http://")
 	paths := map[string]string{
@@ -459,27 +535,17 @@ func assertQueryError(t *testing.T, db *sql.DB, ctx context.Context, query strin
 	require.Error(t, db.QueryRowContext(ctx, query).Scan(&count))
 }
 
-func openProfileDB(t *testing.T, profile resolvedSecurityProfile) *sql.DB {
+func openDB(t *testing.T, config Config) *sql.DB {
 	t.Helper()
-	connector, err := newProfileConnector(t.Context(), profile)
+	duckdbConnector, err := Open(t.Context(), config)
 	require.NoError(t, err)
-	db := sql.OpenDB(connector)
+	db := sql.OpenDB(duckdbConnector)
 	require.NoError(t, db.PingContext(t.Context()))
 	t.Cleanup(func() {
 		require.NoError(t, db.Close())
-		require.NoError(t, connector.Close())
+		require.NoError(t, duckdbConnector.Close())
 	})
 	return db
-}
-
-func newProfileConnector(ctx context.Context, profile resolvedSecurityProfile) (*duckdb.Connector, error) {
-	initializer := profile.newConnectionInitializer()
-	return duckdb.NewConnector(profile.databaseDSN, func(execer driver.ExecerContext) error {
-		if initializer == nil {
-			return nil
-		}
-		return initializer.initializeConnection(ctx, execer)
-	})
 }
 
 func createParquetFixture(t *testing.T, path string) {
