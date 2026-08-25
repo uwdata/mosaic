@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"database/sql/driver"
+	"errors"
 	"flag"
 	"fmt"
 	"log/slog"
@@ -96,7 +97,14 @@ func run() int {
 		},
 	})
 	if err != nil {
-		logger.Error("main: error creating duckdb connector", "error", err)
+		switch {
+		case errors.Is(err, connector.ErrInvalidConfig):
+			logger.Error("main: invalid duckdb connector configuration", "error", err)
+		case errors.Is(err, connector.ErrStartup):
+			logger.Error("main: error starting duckdb connector", "error", err)
+		default:
+			logger.Error("main: error creating duckdb connector", "error", err)
+		}
 		return 1
 	}
 	defer func() {

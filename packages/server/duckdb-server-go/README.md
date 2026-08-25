@@ -86,6 +86,12 @@ and closes an initial physical connection, so bootstrap or policy failures are r
 query or server layers. `InitializeConnection`, when configured, instead runs after bootstrap and policy finalization for
 every physical connection; it can perform only operations permitted by the finalized policy.
 
+Use one live connector per file-backed database path in a process and share it across query pools. DuckDB caches the
+database instance by path, so opening a second connector while the first remains live encounters its existing
+configuration lock. An `ATTACH` during `Bootstrap` permanently grants that database file and its exact `.wal`,
+`.wal.checkpoint`, and `.wal.recovery` sidecars for the life of the connector. `DETACH` does not revoke those paths, and
+any SQL function admitted by the query layer may read them.
+
 Repository suffixes accepted by `ParseAndInstall` are DuckDB aliases. Use `InstallAndLoadFromCustomRepository` for
 repository URLs or paths, and `LoadInstalled`, `LoadFile`, or `InstallAndLoadFile` for provisioned extensions. Installing
 at process startup may require network and filesystem access, so production locked deployments should normally provision
@@ -115,7 +121,7 @@ The installed binary provides three common external-resource configurations:
 | Profile | DuckDB resources | Binary extension behavior | Intended use |
 | --- | --- | --- | --- |
 | `compat` | Preserves DuckDB's current defaults. | Preserves `--load-extensions` and automatic loading. | Trusted local and backwards-compatible deployments. |
-| `catalog-only` | Disables external access outside DuckDB's primary-database internals. | Disables automatic installation and loading; rejects `--load-extensions`. | Queries over an in-memory or local primary catalog. |
+| `catalog-only` | Disables external access outside DuckDB's primary and bootstrap-attached database internals. | Disables automatic installation and loading; rejects `--load-extensions`. | Queries over an in-memory or local primary catalog. |
 | `local-files` | Adds explicit local files or directories to `catalog-only`. | Same as `catalog-only`. | Catalog queries that also need reviewed local datasets. |
 
 For example:
@@ -152,14 +158,15 @@ Disabling spill files means memory-heavy queries fail instead of writing tempora
 scans of allowed Parquet files may be slower because DuckDB does not retain their blocks in its in-memory external-file
 cache. Statically linked and core extensions remain available, so these settings are not an extension-free sandbox.
 
-With the bundled DuckDB 1.5.5, the implicit grant for a file-backed primary database consists of the database file and
-the exact sidecar paths `<database>.wal`, `<database>.wal.checkpoint`, and `<database>.wal.recovery`; it does not include
-the containing directory. The `local-files` profile separately adds its configured grants. SQL functions such as
-`read_blob` may therefore read the implicitly granted files when they exist. Combine a strict profile with a function
-allowlist when that distinction matters. The profiles do not add authentication, origin checks, per-user isolation,
-SQL-function policy, or CPU and memory limits, and they do not replace filesystem and network restrictions on the server
-process. Programs embedding `pkg/query` can apply the same startup sequence with `connector.CatalogOnly()` or
-`connector.LocalFiles(...)`; the installed binary is a thin command-line adapter over those policies.
+With the bundled DuckDB 1.5.5, the implicit grant for a file-backed primary database and every database attached during
+`Bootstrap` consists of the database file and the exact sidecar paths `<database>.wal`, `<database>.wal.checkpoint`, and
+`<database>.wal.recovery`; it does not include the containing directory. These attachment grants persist after `DETACH`,
+and the `local-files` profile separately adds its configured grants. SQL functions such as `read_blob` may therefore read
+the implicitly granted files when they exist. Combine a strict profile with a function allowlist when that distinction
+matters. The profiles do not add authentication, origin checks, per-user isolation, SQL-function policy, or CPU and
+memory limits, and they do not replace filesystem and network restrictions on the server process. Programs embedding
+`pkg/query` can apply the same startup sequence with `connector.CatalogOnly()` or `connector.LocalFiles(...)`; the
+installed binary is a thin command-line adapter over those policies.
 
 ### Function Policies
 
