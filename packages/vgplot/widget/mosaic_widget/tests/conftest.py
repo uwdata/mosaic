@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import enum
 from collections.abc import Callable, Mapping, Sequence
+from contextlib import AbstractContextManager as ContextManager
+from contextlib import nullcontext
 from functools import partial
 from importlib.util import find_spec
 from typing import TYPE_CHECKING, Any, Final, Generic, TypeAlias, TypeVar
@@ -11,6 +13,8 @@ import pytest
 from narwhals import Implementation as Impl
 from narwhals.typing import EagerAllowed, LazyAllowed
 from pytest import FixtureRequest as Request
+
+from mosaic_widget._exceptions import PerformanceWarning
 
 if TYPE_CHECKING:
     import dask.dataframe as dd
@@ -37,10 +41,15 @@ DataFrameConstructor: TypeAlias = Callable[[Data], NwDataFrame]
 """A constructor for a [`narwhals.DataFrame`][]."""
 
 
-class Warn(enum.Flag):
-    COPY = enum.auto()
-    MATERIALIZE = enum.auto()
-    ALL = COPY | MATERIALIZE
+class Warn(enum.Enum):
+    CONVERT = "Converting"
+    MATERIALIZE = "Materializing"
+    NONE = "null"
+
+    def context(self) -> ContextManager[Any]:
+        if self is Warn.NONE:
+            return nullcontext()
+        return pytest.warns(PerformanceWarning, match=rf"^{self.value}")
 
 
 _LAZY: Final = frozenset[LazyAllowed]().union(
@@ -49,8 +58,6 @@ _LAZY: Final = frozenset[LazyAllowed]().union(
 
 _BackendT = TypeVar("_BackendT", bound=EagerAllowed | LazyAllowed, covariant=True)
 
-_NO_WARNING = Warn(0)
-
 
 class Backend(Generic[_BackendT]):
     """Wrapper around a Narwhals [`backend`][narwhals.typing.IntoBackend]."""
@@ -58,7 +65,7 @@ class Backend(Generic[_BackendT]):
     __slots__ = ("requires", "value", "warn")
 
     def __init__(
-        self, value: _BackendT, requires: str = "", warn: Warn = _NO_WARNING
+        self, value: _BackendT, requires: str = "", warn: Warn = Warn.NONE
     ) -> None:
         self.value: _BackendT = value
         """Argument for `backend` in Narwhals constructors."""
@@ -84,10 +91,10 @@ _BACKENDS: Final = (
     Backend("polars"),
     Backend("pyarrow"),
     Backend("pandas"),
-    Backend("modin", "modin.pandas", Warn.COPY),
-    Backend("ibis", warn=Warn.ALL),
+    Backend("modin", "modin.pandas", Warn.CONVERT),
+    Backend("ibis", warn=Warn.MATERIALIZE),
     Backend("duckdb"),
-    Backend("dask", "dask.dataframe", Warn.ALL),
+    Backend("dask", "dask.dataframe", Warn.MATERIALIZE),
 )
 
 

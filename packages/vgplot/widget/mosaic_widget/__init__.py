@@ -4,7 +4,6 @@ import inspect
 import logging
 import pathlib
 import time
-import warnings
 from typing import TYPE_CHECKING, Any, Literal, Protocol, TypedDict
 
 import anywidget
@@ -12,6 +11,7 @@ import duckdb
 import pyarrow as pa
 import traitlets
 
+from mosaic_widget._exceptions import warn
 from mosaic_widget.frame_interop import (
     frame_to_duckdb_registrable,
     is_registrable_frame,
@@ -167,7 +167,7 @@ class MosaicWidget(anywidget.AnyWidget):
 
         total = round((time.time() - start) * 1_000)
         if total > SLOW_QUERY_THRESHOLD:
-            logger.warning(f"DONE. Slow query {uuid} took {total} ms.\n{sql}")
+            warn(f"DONE. Slow query {uuid} took {total} ms.\n{sql}")
         else:
             logger.info(f"DONE. Query {uuid} took {total} ms.\n{sql}")
 
@@ -184,7 +184,7 @@ class MosaicWidget(anywidget.AnyWidget):
         try:
             table = self._resolve_table(None)
         except ValueError as err:
-            warnings.warn(f"{err} widget.sql is None.", stacklevel=2)
+            warn(f"{err} widget.sql is None.")
             return None
         return self._build_sql(table, filter_by=None)
 
