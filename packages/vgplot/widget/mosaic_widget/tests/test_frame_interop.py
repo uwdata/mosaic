@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import logging
 from pathlib import Path
 from typing import TYPE_CHECKING
 
@@ -9,11 +8,8 @@ import pytest
 
 from mosaic_widget.frame_interop import frame_to_duckdb_registrable
 
-from .conftest import Warn
-
 if TYPE_CHECKING:
     import pyarrow as pa
-    from pytest import LogCaptureFixture as LogCapture
 
     from .conftest import Backend, EagerAllowed, LazyAllowed, NativeLazyFrame
 
@@ -32,43 +28,17 @@ def pyarrow_frame() -> nw.DataFrame[pa.Table]:
     return nw.read_csv(CSV_PATH, backend="pyarrow")
 
 
-@pytest.fixture
-def caplog(caplog: LogCapture) -> LogCapture:
-    caplog.set_level(logging.WARNING)
-    return caplog
-
-
-def check_warns(caplog: LogCapture, warn: Warn) -> None:
-    copy = "This may not be a zero-copy operation"
-    materialize = "Materializing lazy frame"
-    warn_copy = any(copy in msg for msg in caplog.messages)
-    warn_materialize = any(materialize in msg for msg in caplog.messages)
-    match warn:
-        case Warn.ALL:
-            assert warn_copy and warn_materialize
-        case Warn.COPY:
-            assert warn_copy and not warn_materialize
-        case Warn.MATERIALIZE:
-            assert not warn_copy and warn_materialize
-        case _:
-            assert not (warn_copy or warn_materialize)
-
-
 def test_frame_to_duckdb_registrable_eager(
-    pyarrow_frame: nw.DataFrame[pa.Table],
-    eager: Backend[EagerAllowed],
-    caplog: LogCapture,
+    pyarrow_frame: nw.DataFrame[pa.Table], eager: Backend[EagerAllowed]
 ) -> None:
     frame = nw.from_arrow(pyarrow_frame, backend=eager.value).to_native()
-    assert frame_to_duckdb_registrable(frame) is not None
-    check_warns(caplog, eager.warn)
+    with eager.warn.context():
+        assert frame_to_duckdb_registrable(frame) is not None
 
 
 def test_frame_to_duckdb_registrable_lazy(
-    pyarrow_frame: nw.DataFrame[pa.Table],
-    lazy: Backend[LazyAllowed],
-    caplog: LogCapture,
+    pyarrow_frame: nw.DataFrame[pa.Table], lazy: Backend[LazyAllowed]
 ) -> None:
     frame: NativeLazyFrame = pyarrow_frame.lazy(lazy.value).to_native()
-    assert frame_to_duckdb_registrable(frame) is not None
-    check_warns(caplog, lazy.warn)
+    with lazy.warn.context():
+        assert frame_to_duckdb_registrable(frame) is not None
