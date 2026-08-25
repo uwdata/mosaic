@@ -142,6 +142,8 @@ func TestStartupInitializerOrder(t *testing.T) {
 	require.NoError(t, startup.initialize(execer))
 	require.Equal(t, []string{
 		"BOOTSTRAP",
+		"SET allow_persistent_secrets = false",
+		"SET allow_extensions_metadata_mismatch = false",
 		"SET allowed_configs = []",
 		"SET autoinstall_known_extensions = false",
 		"SET autoload_known_extensions = false",
@@ -154,13 +156,13 @@ func TestStartupInitializerOrder(t *testing.T) {
 	}, execer.snapshot())
 
 	require.NoError(t, startup.initialize(execer))
-	assert.Len(t, execer.snapshot(), 10)
+	assert.Len(t, execer.snapshot(), 12)
 }
 
 func TestStartupInitializerCachesFailure(t *testing.T) {
 	sentinel := errors.New("unavailable")
 	execer := newRecordingExecer()
-	execer.failAt = 9
+	execer.failAt = 11
 	execer.failErr = sentinel
 	startup := startupInitializer{
 		ctx: t.Context(),
@@ -176,7 +178,7 @@ func TestStartupInitializerCachesFailure(t *testing.T) {
 	require.ErrorContains(t, err, "failed to set lock_configuration")
 	err = startup.initialize(newRecordingExecer())
 	require.ErrorIs(t, err, sentinel)
-	assert.Len(t, execer.snapshot(), 10)
+	assert.Len(t, execer.snapshot(), 12)
 }
 
 func TestStartupInitializerIsConcurrent(t *testing.T) {
@@ -198,7 +200,7 @@ func TestStartupInitializerIsConcurrent(t *testing.T) {
 	for err := range errs {
 		require.NoError(t, err)
 	}
-	assert.Len(t, execer.snapshot(), 9)
+	assert.Len(t, execer.snapshot(), 11)
 }
 
 func TestStartupInitializerValidatesExecer(t *testing.T) {
@@ -222,7 +224,7 @@ func TestOpenClassifiesInvalidPolicy(t *testing.T) {
 	})
 	require.Nil(t, duckdbConnector)
 	require.ErrorIs(t, err, ErrInvalidConfig)
-	require.ErrorContains(t, err, "requires at least one allowed directory or path")
+	require.EqualError(t, err, "connector: invalid configuration: local-files policy requires at least one allowed directory or path")
 }
 
 func assertSecurityPolicyDSN(t *testing.T, dsn string) {
