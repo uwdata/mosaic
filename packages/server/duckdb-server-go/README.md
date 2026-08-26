@@ -155,7 +155,7 @@ repository URLs or paths, and `LoadInstalled`, `LoadFile`, or `InstallAndLoadFil
 at process startup may require network and filesystem access, so production locked deployments should normally provision
 extensions in their image and call `LoadInstalled` or `LoadFile`. Under the locked external-access options, DuckDB checks
 every extension binary when it is loaded and accepts only core-signed extensions, including during bootstrap. A plugin
-that requires ongoing external I/O is incompatible with the locked mode unless all of its I/O fits the local grants and
+that requires ongoing external I/O is incompatible with the locked mode unless all of its I/O fits the configured grants and
 DuckDB filesystem policy. Extensions are trusted native code with the server process's privileges and can bypass DuckDB's
 abstractions, so load only trusted repositories and files.
 
@@ -182,19 +182,23 @@ current defaults for trusted and backwards-compatible deployments.
 | Option | DuckDB resources | Extension behavior |
 | --- | --- | --- |
 | `WithCatalogOnly()` | Disables external access outside DuckDB's primary and bootstrap-attached database internals. | Disables automatic installation and loading. |
-| `WithAllowedDirectories(...)` | Applies the same restrictions and adds directory-tree grants. | Same as `WithCatalogOnly()`. |
-| `WithAllowedPaths(...)` | Applies the same restrictions and adds exact-path grants. | Same as `WithCatalogOnly()`. |
+| `WithAllowedDirectories(...)` | Applies the same restrictions and adds local directory-tree or remote URL-prefix grants. | Same as `WithCatalogOnly()`. |
+| `WithAllowedPaths(...)` | Applies the same restrictions and adds exact local or remote path grants. | Same as `WithCatalogOnly()`. |
 
 These are fixed capability options, not configurable collections of DuckDB settings. Keeping the hardening settings fixed
 preserves their guarantees; only the filesystem grants are configurable. Repeated allowed-path or allowed-directory
-options append their values.
+options append their values. Combining `WithCatalogOnly()` with either grant option is legal but redundant because each
+grant option already enables the same locked mode.
 
-Directory and path values are passed directly to DuckDB's `allowed_directories` and `allowed_paths` settings. The connector
-does not pre-validate, normalize, resolve, or require them to exist; DuckDB interprets them while opening the connector. A
-directory grants read and write access throughout that tree, including `COPY` and `ATTACH`; an exact path is also a
-read/write capability, not a read-only grant. Use server-owned roots that other processes cannot mutate. DuckDB's
-in-process settings cannot eliminate filesystem races involving later symlink, mount, or path changes; use operating-system
-or container isolation for that boundary.
+Directory and path values are passed directly to DuckDB's `allowed_directories` and `allowed_paths` settings. Blank values
+are rejected because DuckDB resolves an empty directory grant to the process working directory. Beyond that check, the
+connector does not normalize, resolve, or require values to exist; DuckDB interprets them while opening the connector.
+Values are DuckDB filesystem prefixes or paths, so a matching extension loaded during bootstrap can grant a specific HTTPS,
+S3, or other remote URL prefix while leaving other remote and local resources blocked. A local directory grants read and
+write access throughout that tree, including `COPY` and `ATTACH`; an exact local path is also a read/write capability, not a
+read-only grant. Use server-owned roots that other processes cannot mutate. DuckDB's in-process settings cannot eliminate
+filesystem races involving later symlink, mount, or path changes; use operating-system or container isolation for that
+boundary.
 
 All three options apply DuckDB's [security settings](https://duckdb.org/docs/lts/operations_manual/securing_duckdb/overview)
 to disable external access and the external file cache, automatic extension installation and loading, community,

@@ -35,14 +35,13 @@ type Option interface {
 type optionFunc func(*config) error
 
 func (f optionFunc) apply(cfg *config) error {
-	if f == nil {
-		return errors.New("option must not be nil")
-	}
 	return f(cfg)
 }
 
 // WithCatalogOnly disables extension installation and autoloading, persistent
-// secrets, temporary spill files, and external access after bootstrap.
+// secrets, temporary spill files, and external access after bootstrap, then
+// locks the configuration. Combining it with either grant option is equivalent
+// to using the grant option alone.
 func WithCatalogOnly() Option {
 	return optionFunc(func(cfg *config) error {
 		cfg.restrictExternalAccess = true
@@ -51,10 +50,15 @@ func WithCatalogOnly() Option {
 }
 
 // WithAllowedDirectories applies the same restrictions as WithCatalogOnly and
-// grants read/write access to complete directory trees. Repeated calls append.
+// grants access to DuckDB filesystem prefixes. Values may be local directory
+// trees or remote URL prefixes supported by extensions loaded during bootstrap.
+// Repeated calls append.
 func WithAllowedDirectories(directories ...string) Option {
 	values := append([]string(nil), directories...)
 	return optionFunc(func(cfg *config) error {
+		if err := validateGrantValues("allowed directory", values); err != nil {
+			return err
+		}
 		cfg.restrictExternalAccess = true
 		cfg.allowedDirectories = append(cfg.allowedDirectories, values...)
 		return nil
@@ -62,14 +66,27 @@ func WithAllowedDirectories(directories ...string) Option {
 }
 
 // WithAllowedPaths applies the same restrictions as WithCatalogOnly and grants
-// read/write access to exact paths. Repeated calls append.
+// access to exact DuckDB filesystem paths, including remote URLs supported by
+// extensions loaded during bootstrap. Repeated calls append.
 func WithAllowedPaths(paths ...string) Option {
 	values := append([]string(nil), paths...)
 	return optionFunc(func(cfg *config) error {
+		if err := validateGrantValues("allowed path", values); err != nil {
+			return err
+		}
 		cfg.restrictExternalAccess = true
 		cfg.allowedPaths = append(cfg.allowedPaths, values...)
 		return nil
 	})
+}
+
+func validateGrantValues(name string, values []string) error {
+	for i, value := range values {
+		if strings.TrimSpace(value) == "" {
+			return fmt.Errorf("%s %d must not be blank", name, i+1)
+		}
+	}
+	return nil
 }
 
 // WithBootstrapInitializer configures trusted initialization that runs exactly
@@ -128,31 +145,18 @@ func Open(ctx context.Context, dsn string, options ...Option) (*duckdb.Connector
 		dsn = addDuckDBSettings(dsn, lockedExternalAccessSettings)
 	}
 
-	bootstrapCtx := ctx
-	bootstrapInitializer := cfg.bootstrapInitializer
-	restrictExternalAccess := cfg.restrictExternalAccess
-	allowedDirectories := cfg.allowedDirectories
-	allowedPaths := cfg.allowedPaths
 	connectionCtx := context.WithoutCancel(ctx)
-	initializeConnection := cfg.connectionInitializer
 	var bootstrapOnce sync.Once
 	var bootstrapErr error
 	duckdbConnector, err := duckdb.NewConnector(dsn, func(execer driver.ExecerContext) error {
 		bootstrapOnce.Do(func() {
-			bootstrapErr = initializeBootstrap(
-				bootstrapCtx,
-				execer,
-				bootstrapInitializer,
-				restrictExternalAccess,
-				allowedDirectories,
-				allowedPaths,
-			)
+			bootstrapErr = initializeBootstrap(ctx, execer, cfg)
 		})
 		if bootstrapErr != nil {
 			return bootstrapErr
 		}
-		if initializeConnection != nil {
-			if err := initializeConnection(connectionCtx, execer); err != nil {
+		if cfg.connectionInitializer != nil {
+			if err := cfg.connectionInitializer(connectionCtx, execer); err != nil {
 				return fmt.Errorf("%w: initialize connection: %w", ErrStartup, err)
 			}
 		}
@@ -178,21 +182,18 @@ func Open(ctx context.Context, dsn string, options ...Option) (*duckdb.Connector
 func initializeBootstrap(
 	ctx context.Context,
 	execer driver.ExecerContext,
-	bootstrapInitializer Initializer,
-	restrictExternalAccess bool,
-	allowedDirectories []string,
-	allowedPaths []string,
+	cfg config,
 ) error {
 	if execer == nil {
 		return errors.New("nil execer")
 	}
-	if bootstrapInitializer != nil {
-		if err := bootstrapInitializer(ctx, execer); err != nil {
+	if cfg.bootstrapInitializer != nil {
+		if err := cfg.bootstrapInitializer(ctx, execer); err != nil {
 			return fmt.Errorf("bootstrap: %w", err)
 		}
 	}
-	if restrictExternalAccess {
-		return finalizeExternalAccess(ctx, execer, allowedDirectories, allowedPaths)
+	if cfg.restrictExternalAccess {
+		return finalizeExternalAccess(ctx, execer, cfg.allowedDirectories, cfg.allowedPaths)
 	}
 	return nil
 }
@@ -220,9 +221,18 @@ func finalizeExternalAccess(
 	allowedDirectories []string,
 	allowedPaths []string,
 ) error {
+	persistentSecrets, err := currentPersistentSecretsSetting(ctx, execer)
+	if err != nil {
+		return err
+	}
+
 	// DuckDB rejects path and temp grants after external access is disabled.
-	settings := []duckDBSetting{
-		{name: "allow_persistent_secrets", value: "false"},
+	settings := make([]duckDBSetting, 0, 11)
+	// DuckDB rejects even a same-value SET after bootstrap uses the secret manager.
+	if persistentSecrets {
+		settings = append(settings, duckDBSetting{name: "allow_persistent_secrets", value: "false"})
+	}
+	settings = append(settings, []duckDBSetting{
 		{name: "allow_extensions_metadata_mismatch", value: "false"},
 		{name: "allowed_configs", value: "[]"},
 		{name: "autoinstall_known_extensions", value: "false"},
@@ -233,13 +243,43 @@ func finalizeExternalAccess(
 		{name: "allowed_paths", value: duckDBStringList(allowedPaths)},
 		{name: "enable_external_access", value: "false"},
 		{name: "lock_configuration", value: "true"},
-	}
+	}...)
 	for _, setting := range settings {
 		if _, err := execer.ExecContext(ctx, "SET "+setting.name+" = "+setting.value, nil); err != nil {
 			return fmt.Errorf("failed to set %s: %w", setting.name, err)
 		}
 	}
 	return nil
+}
+
+func currentPersistentSecretsSetting(ctx context.Context, execer driver.ExecerContext) (bool, error) {
+	queryer, ok := execer.(driver.QueryerContext)
+	if !ok {
+		return false, errors.New("driver does not support reading allow_persistent_secrets")
+	}
+	rows, err := queryer.QueryContext(
+		ctx,
+		"SELECT current_setting('allow_persistent_secrets')::BOOLEAN",
+		nil,
+	)
+	if err != nil {
+		return false, fmt.Errorf("failed to read allow_persistent_secrets: %w", err)
+	}
+
+	values := make([]driver.Value, 1)
+	readErr := rows.Next(values)
+	closeErr := rows.Close()
+	if readErr != nil {
+		return false, fmt.Errorf("failed to read allow_persistent_secrets: %w", readErr)
+	}
+	if closeErr != nil {
+		return false, fmt.Errorf("failed to read allow_persistent_secrets: close rows: %w", closeErr)
+	}
+	value, ok := values[0].(bool)
+	if !ok {
+		return false, fmt.Errorf("failed to read allow_persistent_secrets: unexpected value %T", values[0])
+	}
+	return value, nil
 }
 
 func addDuckDBSettings(databaseDSN string, settings []duckDBSetting) string {

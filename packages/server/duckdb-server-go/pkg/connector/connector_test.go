@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql/driver"
 	"errors"
+	"io"
 	"sync"
 	"testing"
 
@@ -22,6 +23,7 @@ func TestExternalAccessOptions(t *testing.T) {
 	cfg, err := applyOptions([]Option{
 		directoryOption,
 		pathOption,
+		WithCatalogOnly(),
 		WithAllowedDirectories("other"),
 		WithAllowedPaths("other.parquet"),
 	})
@@ -29,6 +31,26 @@ func TestExternalAccessOptions(t *testing.T) {
 	assert.True(t, cfg.restrictExternalAccess)
 	assert.Equal(t, []string{"relative", `\\server\share`, "gcs://bucket/data", "other"}, cfg.allowedDirectories)
 	assert.Equal(t, []string{"missing.parquet", "other.parquet"}, cfg.allowedPaths)
+}
+
+func TestAllowedOptionsRejectBlankValues(t *testing.T) {
+	tests := []struct {
+		name   string
+		option Option
+		error  string
+	}{
+		{name: "directory", option: WithAllowedDirectories(""), error: "allowed directory 1 must not be blank"},
+		{name: "path", option: WithAllowedPaths(" \t"), error: "allowed path 1 must not be blank"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			duckdbConnector, err := Open(t.Context(), ":memory:", tt.option)
+			require.Nil(t, duckdbConnector)
+			require.ErrorIs(t, err, ErrInvalidConfig)
+			require.EqualError(t, err, "connector: invalid configuration: apply option 0: "+tt.error)
+		})
+	}
 }
 
 func TestCatalogOnlyOption(t *testing.T) {
@@ -41,19 +63,23 @@ func TestCatalogOnlyOption(t *testing.T) {
 
 func TestInitializeBootstrapOrder(t *testing.T) {
 	execer := newRecordingExecer()
+	execer.persistentSecrets = true
 	require.NoError(t, initializeBootstrap(
 		t.Context(),
 		execer,
-		func(ctx context.Context, execer driver.ExecerContext) error {
-			_, err := execer.ExecContext(ctx, "BOOTSTRAP", nil)
-			return err
+		config{
+			bootstrapInitializer: func(ctx context.Context, execer driver.ExecerContext) error {
+				_, err := execer.ExecContext(ctx, "BOOTSTRAP", nil)
+				return err
+			},
+			restrictExternalAccess: true,
+			allowedDirectories:     []string{"/srv/O'Brien"},
+			allowedPaths:           []string{"/srv/data.parquet"},
 		},
-		true,
-		[]string{"/srv/O'Brien"},
-		[]string{"/srv/data.parquet"},
 	))
 	require.Equal(t, []string{
 		"BOOTSTRAP",
+		"SELECT current_setting('allow_persistent_secrets')::BOOLEAN",
 		"SET allow_persistent_secrets = false",
 		"SET allow_extensions_metadata_mismatch = false",
 		"SET allowed_configs = []",
@@ -71,28 +97,40 @@ func TestInitializeBootstrapOrder(t *testing.T) {
 func TestInitializeBootstrapReturnsFinalizationFailure(t *testing.T) {
 	sentinel := errors.New("unavailable")
 	execer := newRecordingExecer()
-	execer.failAt = 11
+	execer.persistentSecrets = true
+	execer.failAt = 12
 	execer.failErr = sentinel
 
 	err := initializeBootstrap(
 		t.Context(),
 		execer,
-		func(ctx context.Context, execer driver.ExecerContext) error {
-			_, err := execer.ExecContext(ctx, "BOOTSTRAP", nil)
-			return err
+		config{
+			bootstrapInitializer: func(ctx context.Context, execer driver.ExecerContext) error {
+				_, err := execer.ExecContext(ctx, "BOOTSTRAP", nil)
+				return err
+			},
+			restrictExternalAccess: true,
 		},
-		true,
-		nil,
-		nil,
 	)
 	require.ErrorIs(t, err, sentinel)
 	require.ErrorContains(t, err, "failed to set lock_configuration")
-	assert.Len(t, execer.snapshot(), 12)
+	assert.Len(t, execer.snapshot(), 13)
+}
+
+func TestInitializeBootstrapSkipsUnchangedPersistentSecrets(t *testing.T) {
+	execer := newRecordingExecer()
+	require.NoError(t, initializeBootstrap(
+		t.Context(),
+		execer,
+		config{restrictExternalAccess: true},
+	))
+	assert.Contains(t, execer.snapshot(), "SELECT current_setting('allow_persistent_secrets')::BOOLEAN")
+	assert.NotContains(t, execer.snapshot(), "SET allow_persistent_secrets = false")
 }
 
 func TestInitializeBootstrapValidatesExecer(t *testing.T) {
 	var nilExecer driver.ExecerContext
-	require.EqualError(t, initializeBootstrap(t.Context(), nilExecer, nil, false, nil, nil), "nil execer")
+	require.EqualError(t, initializeBootstrap(t.Context(), nilExecer, config{}), "nil execer")
 }
 
 func TestOpenRejectsNilContext(t *testing.T) {
@@ -115,6 +153,8 @@ type recordingExecer struct {
 	queries []string
 	failAt  int
 	failErr error
+
+	persistentSecrets bool
 }
 
 func newRecordingExecer() *recordingExecer {
@@ -131,8 +171,40 @@ func (e *recordingExecer) ExecContext(_ context.Context, query string, _ []drive
 	return driver.RowsAffected(0), nil
 }
 
+func (e *recordingExecer) QueryContext(_ context.Context, query string, _ []driver.NamedValue) (driver.Rows, error) {
+	e.mu.Lock()
+	defer e.mu.Unlock()
+	e.queries = append(e.queries, query)
+	if len(e.queries)-1 == e.failAt {
+		return nil, e.failErr
+	}
+	return &singleValueRows{value: e.persistentSecrets}, nil
+}
+
 func (e *recordingExecer) snapshot() []string {
 	e.mu.Lock()
 	defer e.mu.Unlock()
 	return append([]string(nil), e.queries...)
+}
+
+type singleValueRows struct {
+	value driver.Value
+	read  bool
+}
+
+func (r *singleValueRows) Columns() []string {
+	return []string{"value"}
+}
+
+func (r *singleValueRows) Close() error {
+	return nil
+}
+
+func (r *singleValueRows) Next(dest []driver.Value) error {
+	if r.read {
+		return io.EOF
+	}
+	r.read = true
+	dest[0] = r.value
+	return nil
 }
