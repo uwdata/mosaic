@@ -14,22 +14,18 @@ import (
 )
 
 var (
-	// ErrInvalidConfig indicates that connector configuration was rejected before DuckDB startup.
 	ErrInvalidConfig = errors.New("connector: invalid configuration")
-	// ErrStartup indicates that DuckDB bootstrap or connection initialization failed.
-	ErrStartup = errors.New("connector: startup failed")
+	ErrStartup       = errors.New("connector: startup failed")
 )
 
-// Initializer performs trusted DuckDB initialization.
 type Initializer func(context.Context, driver.ExecerContext) error
 
 type config struct {
-	policy                *ResourcePolicy
+	externalAccess        *ExternalAccessPolicy
 	bootstrap             Initializer
 	connectionInitializer Initializer
 }
 
-// Option configures Open.
 type Option interface {
 	apply(*config) error
 }
@@ -43,18 +39,22 @@ func (f optionFunc) apply(cfg *config) error {
 	return f(cfg)
 }
 
-// WithResourcePolicy applies a DuckDB external-resource policy. A nil policy
-// preserves DuckDB compatibility behavior.
-func WithResourcePolicy(policy *ResourcePolicy) Option {
+// WithExternalAccessPolicy applies a fixed capability boundary after bootstrap.
+// CatalogOnly and LocalFiles disable extension installation and autoloading,
+// persistent secrets, temporary spill files, and external access except for
+// declared local file grants. Omitting this option preserves DuckDB defaults.
+func WithExternalAccessPolicy(policy *ExternalAccessPolicy) Option {
 	return optionFunc(func(cfg *config) error {
-		cfg.policy = policy
+		cfg.externalAccess = policy
 		return nil
 	})
 }
 
 // WithBootstrap configures trusted initialization that runs exactly once before
-// the resource policy is finalized. ATTACH grants the database and its sidecars
-// for the connector lifetime; DETACH does not revoke those paths.
+// external access is restricted and configuration is locked. Typical uses include
+// installing or loading extensions, attaching secondary catalogs, and one-time
+// catalog setup. ATTACH grants the database and its sidecars for the connector
+// lifetime; DETACH does not revoke those paths.
 func WithBootstrap(initializer Initializer) Option {
 	return optionFunc(func(cfg *config) error {
 		cfg.bootstrap = initializer
@@ -63,9 +63,10 @@ func WithBootstrap(initializer Initializer) Option {
 }
 
 // WithConnectionInitializer configures initialization for every physical
-// connection after bootstrap and policy finalization. The initializer receives
-// a non-canceling context derived from the context passed to Open and must be
-// safe for concurrent calls.
+// connection after bootstrap and external-access finalization. Typical uses
+// include temporary views, tables, or macros and, on unlocked connectors,
+// session defaults. The initializer receives a non-canceling context derived
+// from the context passed to Open and must be safe for concurrent calls.
 func WithConnectionInitializer(initializer Initializer) Option {
 	return optionFunc(func(cfg *config) error {
 		cfg.connectionInitializer = initializer
@@ -94,27 +95,28 @@ type LocalFilesOptions struct {
 	AllowedPaths []string
 }
 
-// ResourcePolicy is an immutable DuckDB external-resource policy.
-type ResourcePolicy struct {
+// ExternalAccessPolicy is an immutable DuckDB startup capability boundary.
+// Its hardening settings are fixed; LocalFiles only adds filesystem grants.
+type ExternalAccessPolicy struct {
 	allowedDirectories []string
 	allowedPaths       []string
 }
 
 // CatalogOnly disables external access outside DuckDB's primary and bootstrap-attached database internals.
-func CatalogOnly() *ResourcePolicy {
-	return &ResourcePolicy{}
+func CatalogOnly() *ExternalAccessPolicy {
+	return &ExternalAccessPolicy{}
 }
 
 // LocalFiles adds explicit local filesystem capabilities to CatalogOnly.
-func LocalFiles(options LocalFilesOptions) *ResourcePolicy {
-	return &ResourcePolicy{
+func LocalFiles(options LocalFilesOptions) *ExternalAccessPolicy {
+	return &ExternalAccessPolicy{
 		allowedDirectories: append([]string(nil), options.AllowedDirectories...),
 		allowedPaths:       append([]string(nil), options.AllowedPaths...),
 	}
 }
 
-// Open creates a connector, completes trusted bootstrap and policy locking, and
-// verifies the first physical connection before returning it to the caller. A
+// Open creates a connector, completes trusted bootstrap and external-access
+// locking, and verifies the first physical connection before returning it. A
 // file-backed database supports one live connector per process; share that
 // connector across query pools rather than calling Open again for the same path.
 func Open(ctx context.Context, dsn string, options ...Option) (*duckdb.Connector, error) {
@@ -126,15 +128,15 @@ func Open(ctx context.Context, dsn string, options ...Option) (*duckdb.Connector
 	if err != nil {
 		return nil, fmt.Errorf("%w: %w", ErrInvalidConfig, err)
 	}
-	policy := resolveResourcePolicy(cfg.policy)
-	if policy != nil {
-		dsn = addDuckDBSettings(dsn, strictPolicySettings)
+	externalAccess := resolveExternalAccessPolicy(cfg.externalAccess)
+	if externalAccess != nil {
+		dsn = addDuckDBSettings(dsn, lockedExternalAccessSettings)
 	}
 
 	startup := startupInitializer{
-		ctx:       ctx,
-		bootstrap: cfg.bootstrap,
-		policy:    policy,
+		ctx:            ctx,
+		bootstrap:      cfg.bootstrap,
+		externalAccess: externalAccess,
 	}
 	connectionCtx := context.WithoutCancel(ctx)
 	initializeConnection := cfg.connectionInitializer
@@ -167,11 +169,11 @@ func Open(ctx context.Context, dsn string, options ...Option) (*duckdb.Connector
 }
 
 type startupInitializer struct {
-	once      sync.Once
-	err       error
-	ctx       context.Context
-	bootstrap Initializer
-	policy    *resolvedResourcePolicy
+	once           sync.Once
+	err            error
+	ctx            context.Context
+	bootstrap      Initializer
+	externalAccess *resolvedExternalAccessPolicy
 }
 
 func (s *startupInitializer) initialize(execer driver.ExecerContext) error {
@@ -185,14 +187,14 @@ func (s *startupInitializer) initialize(execer driver.ExecerContext) error {
 				return
 			}
 		}
-		if s.policy != nil {
-			s.err = s.policy.finalize(s.ctx, execer)
+		if s.externalAccess != nil {
+			s.err = s.externalAccess.finalize(s.ctx, execer)
 		}
 	})
 	return s.err
 }
 
-type resolvedResourcePolicy struct {
+type resolvedExternalAccessPolicy struct {
 	allowedDirectories []string
 	allowedPaths       []string
 }
@@ -202,7 +204,7 @@ type duckDBSetting struct {
 	value string
 }
 
-var strictPolicySettings = []duckDBSetting{
+var lockedExternalAccessSettings = []duckDBSetting{
 	{name: "allow_persistent_secrets", value: "false"},
 	{name: "allow_community_extensions", value: "false"},
 	{name: "allow_unsigned_extensions", value: "false"},
@@ -214,17 +216,17 @@ var strictPolicySettings = []duckDBSetting{
 	{name: "enable_external_file_cache", value: "false"},
 }
 
-func resolveResourcePolicy(policy *ResourcePolicy) *resolvedResourcePolicy {
+func resolveExternalAccessPolicy(policy *ExternalAccessPolicy) *resolvedExternalAccessPolicy {
 	if policy == nil {
 		return nil
 	}
-	return &resolvedResourcePolicy{
+	return &resolvedExternalAccessPolicy{
 		allowedDirectories: append([]string(nil), policy.allowedDirectories...),
 		allowedPaths:       append([]string(nil), policy.allowedPaths...),
 	}
 }
 
-func (p *resolvedResourcePolicy) finalize(ctx context.Context, execer driver.ExecerContext) error {
+func (p *resolvedExternalAccessPolicy) finalize(ctx context.Context, execer driver.ExecerContext) error {
 	// DuckDB rejects path and temp grants after external access is disabled.
 	settings := []duckDBSetting{
 		{name: "allow_persistent_secrets", value: "false"},

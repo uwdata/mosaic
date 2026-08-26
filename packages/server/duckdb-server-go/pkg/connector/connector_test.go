@@ -11,9 +11,9 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestResolveResourcePolicy(t *testing.T) {
-	assert.Nil(t, resolveResourcePolicy(nil))
-	assert.NotNil(t, resolveResourcePolicy(CatalogOnly()))
+func TestResolveExternalAccessPolicy(t *testing.T) {
+	assert.Nil(t, resolveExternalAccessPolicy(nil))
+	assert.NotNil(t, resolveExternalAccessPolicy(CatalogOnly()))
 }
 
 func TestLocalFilesCopiesPaths(t *testing.T) {
@@ -26,7 +26,7 @@ func TestLocalFilesCopiesPaths(t *testing.T) {
 	directories[0] = "mutated"
 	paths[0] = "mutated"
 
-	resolved := resolveResourcePolicy(policy)
+	resolved := resolveExternalAccessPolicy(policy)
 	assert.Equal(t, []string{"relative", `\\server\share`, "gcs://bucket/data"}, resolved.allowedDirectories)
 	assert.Equal(t, []string{"missing.parquet"}, resolved.allowedPaths)
 }
@@ -39,7 +39,7 @@ func TestStartupInitializerOrder(t *testing.T) {
 			_, err := execer.ExecContext(ctx, "BOOTSTRAP", nil)
 			return err
 		},
-		policy: &resolvedResourcePolicy{
+		externalAccess: &resolvedExternalAccessPolicy{
 			allowedDirectories: []string{"/srv/O'Brien"},
 			allowedPaths:       []string{"/srv/data.parquet"},
 		},
@@ -76,7 +76,7 @@ func TestStartupInitializerCachesFailure(t *testing.T) {
 			_, err := execer.ExecContext(ctx, "BOOTSTRAP", nil)
 			return err
 		},
-		policy: &resolvedResourcePolicy{},
+		externalAccess: &resolvedExternalAccessPolicy{},
 	}
 
 	err := startup.initialize(execer)
@@ -88,7 +88,7 @@ func TestStartupInitializerCachesFailure(t *testing.T) {
 }
 
 func TestStartupInitializerIsConcurrent(t *testing.T) {
-	startup := startupInitializer{ctx: t.Context(), policy: &resolvedResourcePolicy{}}
+	startup := startupInitializer{ctx: t.Context(), externalAccess: &resolvedExternalAccessPolicy{}}
 	execer := newRecordingExecer()
 
 	const count = 32
