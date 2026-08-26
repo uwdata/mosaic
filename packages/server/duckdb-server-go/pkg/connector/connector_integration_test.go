@@ -54,15 +54,17 @@ func TestNoExternalAccessOptionsPreserveDefaults(t *testing.T) {
 }
 
 func TestExternalAccessOptionsOverrideDSNSettings(t *testing.T) {
+	tempDirectory := t.TempDir()
 	db := openDB(
 		t,
-		":memory:?AUTOLOAD_KNOWN_EXTENSIONS=true",
+		":memory:?AUTOLOAD_KNOWN_EXTENSIONS=true&ENABLE_EXTERNAL_FILE_CACHE=true&TEMP_DIRECTORY="+
+			url.QueryEscape(tempDirectory),
 		WithCatalogOnly(),
 	)
 	assertLockedExternalAccessSettings(t, db)
 }
 
-func TestStartupSettingsRejectDatabaseFragment(t *testing.T) {
+func TestLockedSettingsRejectDatabaseFragment(t *testing.T) {
 	duckdbConnector, err := Open(
 		t.Context(),
 		filepath.Join(t.TempDir(), "catalog#snapshot"),
@@ -70,26 +72,7 @@ func TestStartupSettingsRejectDatabaseFragment(t *testing.T) {
 	)
 	require.Nil(t, duckdbConnector)
 	require.ErrorIs(t, err, ErrInvalidConfig)
-	require.ErrorContains(t, err, "database DSN fragments cannot be combined with startup settings")
-}
-
-func TestRestrictedExternalAccessPreservesDSNPerformanceSettings(t *testing.T) {
-	tempDirectory := t.TempDir()
-	dsn := ":memory:?enable_external_file_cache=true&parquet_metadata_cache=true&temp_directory=" +
-		url.QueryEscape(tempDirectory) + "#note"
-	db := openDB(t, dsn, WithCatalogOnly())
-
-	assertBooleanSetting(t, db, "enable_external_file_cache", true)
-	assertBooleanSetting(t, db, "parquet_metadata_cache", true)
-	assertBooleanSetting(t, db, "enable_external_access", false)
-	assertBooleanSetting(t, db, "lock_configuration", true)
-	assertStringSetting(t, db, "temp_directory", tempDirectory)
-	assertListSettingLength(t, db, "allowed_directories", 1)
-
-	output := filepath.Join(tempDirectory, "output.csv")
-	_, err := db.ExecContext(t.Context(), "COPY (SELECT 1) TO "+quoteSQL(output))
-	require.NoError(t, err)
-	assert.FileExists(t, output)
+	require.ErrorContains(t, err, "database DSN fragments cannot be combined with locked settings")
 }
 
 func TestRestrictedExternalAccessAppliesPerformanceOptions(t *testing.T) {
@@ -99,6 +82,7 @@ func TestRestrictedExternalAccessAppliesPerformanceOptions(t *testing.T) {
 		":memory:?ENABLE_EXTERNAL_FILE_CACHE=false&TEMP_DIRECTORY="+url.QueryEscape(t.TempDir())+"&WORKER_THREADS=1",
 		WithCatalogOnly(),
 		WithMemoryLimit("1GB"),
+		WithSetting("worker_threads", "1"),
 		WithThreads(2),
 		WithTempDirectory(tempDirectory),
 		WithMaxTempDirectorySize("64MB"),

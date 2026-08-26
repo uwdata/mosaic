@@ -46,16 +46,16 @@ func TestSettingOptions(t *testing.T) {
 		WithParquetMetadataCache(),
 	})
 	require.NoError(t, err)
-	assert.Equal(t, map[string]duckDBSetting{
-		"enable_external_file_cache": {name: "enable_external_file_cache", value: "true"},
-		"max_temp_directory_size":    {name: "max_temp_directory_size", value: "8GB"},
-		"memory_limit":               {name: "memory_limit", value: "2GB"},
-		"temp_directory":             {name: "temp_directory", value: "/srv/spill"},
-		"threads":                    {name: "threads", value: "4"},
-	}, cfg.startupSettings)
-	assert.Equal(t, map[string]duckDBSetting{
-		"http_timeout":           {name: "http_timeout", value: "30"},
-		"parquet_metadata_cache": {name: "parquet_metadata_cache", value: "true"},
+	assert.Equal(t, []duckDBSetting{
+		{name: "http_timeout", value: "30"},
+		{name: "WORKER_THREADS", value: "8"},
+		{name: "MAX_MEMORY", value: "1GB"},
+		{name: "memory_limit", value: "2GB"},
+		{name: "threads", value: "4"},
+		{name: "temp_directory", value: "/srv/spill"},
+		{name: "max_temp_directory_size", value: "8GB"},
+		{name: "enable_external_file_cache", value: "true"},
+		{name: "parquet_metadata_cache", value: "true"},
 	}, cfg.settings)
 }
 
@@ -92,16 +92,13 @@ func TestLockedExternalAccessRejectsFixedSettings(t *testing.T) {
 
 func TestAddDuckDBSettingsOverridesCaseAndPreservesFragment(t *testing.T) {
 	dsn, err := addDuckDBSettings(
-		":memory:?WORKER_THREADS=2&MAX_MEMORY=1GB&custom=a%2Fb#note",
-		[]duckDBSetting{
-			{name: "threads", value: "4"},
-			{name: "memory_limit", value: "2GB"},
-		},
+		":memory:?AUTOLOAD_KNOWN_EXTENSIONS=true&custom=a%2Fb#note",
+		[]duckDBSetting{{name: "autoload_known_extensions", value: "false"}},
 	)
 	require.NoError(t, err)
 	assert.Equal(
 		t,
-		":memory:?memory_limit=2GB&threads=4&custom=a%2Fb#note",
+		":memory:?autoload_known_extensions=false&custom=a%2Fb#note",
 		dsn,
 	)
 }
@@ -109,37 +106,9 @@ func TestAddDuckDBSettingsOverridesCaseAndPreservesFragment(t *testing.T) {
 func TestAddDuckDBSettingsRejectsDatabaseFragment(t *testing.T) {
 	_, err := addDuckDBSettings(
 		"catalog#snapshot",
-		[]duckDBSetting{{name: "threads", value: "4"}},
+		lockedExternalAccessSettings,
 	)
-	require.EqualError(t, err, "database DSN fragments cannot be combined with startup settings")
-}
-
-func TestSettingKeyNormalizesDuckDBAliases(t *testing.T) {
-	for canonical, aliases := range map[string][]string{
-		"checkpoint_threshold": {"wal_autocheckpoint"},
-		"default_null_order":   {"null_order"},
-		"memory_limit":         {"max_memory"},
-		"profile_output":       {"profiling_output"},
-		"threads":              {"worker_threads"},
-		"username":             {"user"},
-	} {
-		for _, alias := range aliases {
-			assert.Equal(t, canonical, settingKey(alias))
-		}
-	}
-}
-
-func TestExtractDeferredDSNSettingsPreservesQueryAndFragment(t *testing.T) {
-	cfg := config{}
-	dsn, err := extractDeferredDSNSettings(
-		":memory:?threads=3&PARQUET_METADATA_CACHE=true#note",
-		&cfg,
-	)
-	require.NoError(t, err)
-	assert.Equal(t, ":memory:?threads=3#note", dsn)
-	assert.Equal(t, map[string]duckDBSetting{
-		"parquet_metadata_cache": {name: "PARQUET_METADATA_CACHE", value: "true"},
-	}, cfg.settings)
+	require.EqualError(t, err, "database DSN fragments cannot be combined with locked settings")
 }
 
 func TestAllowedOptionsRejectBlankValues(t *testing.T) {
@@ -210,15 +179,19 @@ func TestInitializeBootstrapAppliesConfiguredSettingsBeforeLock(t *testing.T) {
 		execer,
 		config{
 			restrictExternalAccess: true,
-			settings: map[string]duckDBSetting{
-				"http_timeout": {name: "http_timeout", value: "10'; ATTACH 'evil.db"},
+			settings: []duckDBSetting{
+				{name: "worker_threads", value: "1"},
+				{name: "threads", value: "2"},
+				{name: "http_timeout", value: "10'; ATTACH 'evil.db"},
 			},
 		},
 	))
 	queries := execer.snapshot()
 	require.NotEmpty(t, queries)
-	assert.Equal(t, "SET GLOBAL http_timeout = '10''; ATTACH ''evil.db'", queries[0])
-	assert.Equal(t, "SELECT current_setting('allow_persistent_secrets')::BOOLEAN", queries[1])
+	assert.Equal(t, "SET GLOBAL worker_threads = '1'", queries[0])
+	assert.Equal(t, "SET GLOBAL threads = '2'", queries[1])
+	assert.Equal(t, "SET GLOBAL http_timeout = '10''; ATTACH ''evil.db'", queries[2])
+	assert.Equal(t, "SELECT current_setting('allow_persistent_secrets')::BOOLEAN", queries[3])
 	assert.Equal(t, "SET lock_configuration = true", queries[len(queries)-1])
 }
 
