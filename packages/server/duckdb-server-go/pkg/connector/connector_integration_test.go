@@ -25,7 +25,7 @@ import (
 	"github.com/uwdata/mosaic/packages/server/duckdb-server-go/pkg/query"
 )
 
-func TestCompatSecurityProfilePreservesDefaults(t *testing.T) {
+func TestNoResourcePolicyPreservesDefaults(t *testing.T) {
 	directory := t.TempDir()
 	path := filepath.Join(directory, "data.parquet")
 	createParquetFixture(t, path)
@@ -52,48 +52,16 @@ func TestCompatSecurityProfilePreservesDefaults(t *testing.T) {
 	assert.FileExists(t, attached)
 }
 
-func TestDuckDBSettings(t *testing.T) {
-	db := openDB(
-		t,
-		":memory:?preserve_identifier_case=true",
-		WithAccessMode("read_write"),
-		WithThreads(1),
-		WithMemoryLimit("64MB"),
-		WithSetting("preserve_identifier_case", "false"),
-	)
-
-	var accessMode, memoryLimit string
-	var threads int
-	var preserveIdentifierCase bool
-	require.NoError(t, db.QueryRowContext(
-		t.Context(),
-		"SELECT current_setting('access_mode'), current_setting('threads'), current_setting('memory_limit'), current_setting('preserve_identifier_case')",
-	).Scan(&accessMode, &threads, &memoryLimit, &preserveIdentifierCase))
-	assert.Equal(t, "read_write", accessMode)
-	assert.Equal(t, 1, threads)
-	assert.NotEmpty(t, memoryLimit)
-	assert.False(t, preserveIdentifierCase)
-}
-
-func TestOpenDefersInvalidSettingsToDuckDB(t *testing.T) {
-	duckdbConnector, err := Open(t.Context(), ":memory:", WithSetting("not_a_duckdb_setting", "true"))
-	require.Nil(t, duckdbConnector)
-	require.ErrorIs(t, err, ErrStartup)
-	require.NotErrorIs(t, err, ErrInvalidConfig)
-	require.ErrorContains(t, err, "not_a_duckdb_setting")
-}
-
-func TestResourcePolicyOverridesDuckDBSettings(t *testing.T) {
+func TestResourcePolicyOverridesDSNSettings(t *testing.T) {
 	db := openDB(
 		t,
 		":memory:?autoload_known_extensions=true",
-		WithSetting("autoload_known_extensions", "true"),
 		WithResourcePolicy(CatalogOnly()),
 	)
 	assertLockedProfileSettings(t, db)
 }
 
-func TestCatalogOnlySecurityProfile(t *testing.T) {
+func TestCatalogOnlyResourcePolicy(t *testing.T) {
 	db := openDB(t, ":memory:", WithResourcePolicy(CatalogOnly()))
 
 	assertLockedProfileSettings(t, db)
@@ -358,7 +326,7 @@ func TestFileBackedDatabaseSupportsOneLiveConnector(t *testing.T) {
 	assertLockedProfileSettings(t, db)
 }
 
-func TestLocalFilesSecurityProfile(t *testing.T) {
+func TestLocalFilesResourcePolicy(t *testing.T) {
 	directory := t.TempDir()
 	path := filepath.Join(directory, "allowed.parquet")
 	createParquetFixture(t, path)

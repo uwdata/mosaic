@@ -4,8 +4,6 @@ import (
 	"context"
 	"database/sql/driver"
 	"errors"
-	"net/url"
-	"strings"
 	"sync"
 	"testing"
 
@@ -31,28 +29,6 @@ func TestLocalFilesCopiesPaths(t *testing.T) {
 	resolved := resolveResourcePolicy(policy)
 	assert.Equal(t, []string{"relative", `\\server\share`, "gcs://bucket/data"}, resolved.allowedDirectories)
 	assert.Equal(t, []string{"missing.parquet"}, resolved.allowedPaths)
-}
-
-func TestDuckDBSettingOptions(t *testing.T) {
-	cfg, err := applyOptions([]Option{
-		WithAccessMode("read_only"),
-		WithThreads(2),
-		WithMemoryLimit("1GB"),
-		WithSetting("default_null_order", "nulls_last"),
-		WithThreads(4),
-	})
-	require.NoError(t, err)
-	dsn := addDuckDBSettings(":memory:?preserve_identifier_case=false", cfg.settings)
-	database, rawQuery, found := strings.Cut(dsn, "?")
-	require.True(t, found)
-	assert.Equal(t, ":memory:", database)
-	query, err := url.ParseQuery(rawQuery)
-	require.NoError(t, err)
-	assert.Equal(t, "read_only", query.Get("access_mode"))
-	assert.Equal(t, "4", query.Get("threads"))
-	assert.Equal(t, "1GB", query.Get("memory_limit"))
-	assert.Equal(t, "nulls_last", query.Get("default_null_order"))
-	assert.Equal(t, "false", query.Get("preserve_identifier_case"))
 }
 
 func TestStartupInitializerOrder(t *testing.T) {
