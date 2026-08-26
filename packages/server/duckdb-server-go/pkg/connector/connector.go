@@ -7,7 +7,6 @@ import (
 	"errors"
 	"fmt"
 	"net/url"
-	"strconv"
 	"strings"
 	"sync"
 
@@ -28,7 +27,6 @@ type config struct {
 	policy                *ResourcePolicy
 	bootstrap             Initializer
 	connectionInitializer Initializer
-	settings              []duckDBSetting
 }
 
 // Option configures Open.
@@ -71,30 +69,6 @@ func WithBootstrap(initializer Initializer) Option {
 func WithConnectionInitializer(initializer Initializer) Option {
 	return optionFunc(func(cfg *config) error {
 		cfg.connectionInitializer = initializer
-		return nil
-	})
-}
-
-// WithAccessMode sets DuckDB's access_mode configuration.
-func WithAccessMode(accessMode string) Option {
-	return WithSetting("access_mode", accessMode)
-}
-
-// WithThreads sets DuckDB's worker thread count.
-func WithThreads(threads int) Option {
-	return WithSetting("threads", strconv.Itoa(threads))
-}
-
-// WithMemoryLimit sets DuckDB's memory limit, including its unit.
-func WithMemoryLimit(memoryLimit string) Option {
-	return WithSetting("memory_limit", memoryLimit)
-}
-
-// WithSetting sets an arbitrary global DuckDB configuration value. DuckDB
-// validates the setting name and value when Open creates the database.
-func WithSetting(name, value string) Option {
-	return optionFunc(func(cfg *config) error {
-		cfg.settings = append(cfg.settings, duckDBSetting{name: name, value: value})
 		return nil
 	})
 }
@@ -153,11 +127,9 @@ func Open(ctx context.Context, dsn string, options ...Option) (*duckdb.Connector
 		return nil, fmt.Errorf("%w: %w", ErrInvalidConfig, err)
 	}
 	policy := resolveResourcePolicy(cfg.policy)
-	settings := cfg.settings
 	if policy != nil {
-		settings = append(settings, strictPolicySettings...)
+		dsn = addDuckDBSettings(dsn, strictPolicySettings)
 	}
-	dsn = addDuckDBSettings(dsn, settings)
 
 	startup := startupInitializer{
 		ctx:       ctx,
