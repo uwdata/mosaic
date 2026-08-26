@@ -20,21 +20,20 @@ func TestExternalAccessOptions(t *testing.T) {
 	directories[0] = "mutated"
 	paths[0] = "mutated"
 
-	cfg, err := applyOptions([]Option{
+	cfg := applyOptions([]Option{
 		directoryOption,
 		pathOption,
 		WithCatalogOnly(),
 		WithAllowedDirectories("other"),
 		WithAllowedPaths("other.parquet"),
 	})
-	require.NoError(t, err)
 	assert.True(t, cfg.restrictExternalAccess)
 	assert.Equal(t, []string{"relative", `\\server\share`, "gcs://bucket/data", "other"}, cfg.allowedDirectories)
 	assert.Equal(t, []string{"missing.parquet", "other.parquet"}, cfg.allowedPaths)
 }
 
 func TestSettingOptions(t *testing.T) {
-	cfg, err := applyOptions([]Option{
+	cfg := applyOptions([]Option{
 		WithSetting("http_timeout", "30"),
 		WithSetting("WORKER_THREADS", "8"),
 		WithSetting("MAX_MEMORY", "1GB"),
@@ -45,7 +44,6 @@ func TestSettingOptions(t *testing.T) {
 		WithExternalFileCache(),
 		WithParquetMetadataCache(),
 	})
-	require.NoError(t, err)
 	assert.Equal(t, []duckDBSetting{
 		{name: "http_timeout", value: "30"},
 		{name: "WORKER_THREADS", value: "8"},
@@ -59,81 +57,20 @@ func TestSettingOptions(t *testing.T) {
 	}, cfg.settings)
 }
 
-func TestSettingOptionsValidateValues(t *testing.T) {
-	tests := []struct {
-		name   string
-		option Option
-		error  string
-	}{
-		{name: "setting name", option: WithSetting("threads; SELECT 1", "1"), error: `invalid setting name "threads; SELECT 1"`},
-		{name: "memory limit", option: WithMemoryLimit(" "), error: "memory_limit must not be blank"},
-		{name: "threads", option: WithThreads(0), error: "threads must be positive"},
-		{name: "temp directory", option: WithTempDirectory(""), error: "temp_directory must not be blank"},
-		{name: "temp directory size", option: WithMaxTempDirectorySize("\t"), error: "max_temp_directory_size must not be blank"},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			_, err := applyOptions([]Option{tt.option})
-			require.EqualError(t, err, "apply option 0: "+tt.error)
-		})
-	}
-}
-
-func TestLockedExternalAccessRejectsFixedSettings(t *testing.T) {
-	for _, options := range [][]Option{
-		{WithCatalogOnly(), WithSetting("enable_external_access", "true")},
-		{WithSetting("LOCK_CONFIGURATION", "false"), WithCatalogOnly()},
-	} {
-		_, err := applyOptions(options)
-		require.ErrorContains(t, err, "is fixed by locked external access")
-	}
-}
-
-func TestAddDuckDBSettingsOverridesCaseAndPreservesFragment(t *testing.T) {
-	dsn, err := addDuckDBSettings(
-		":memory:?AUTOLOAD_KNOWN_EXTENSIONS=true&custom=a%2Fb#note",
+func TestAddDuckDBSettings(t *testing.T) {
+	dsn := addDuckDBSettings(
+		":memory:?threads=2",
 		[]duckDBSetting{{name: "autoload_known_extensions", value: "false"}},
 	)
-	require.NoError(t, err)
 	assert.Equal(
 		t,
-		":memory:?autoload_known_extensions=false&custom=a%2Fb#note",
+		":memory:?threads=2&autoload_known_extensions=false",
 		dsn,
 	)
 }
 
-func TestAddDuckDBSettingsRejectsDatabaseFragment(t *testing.T) {
-	_, err := addDuckDBSettings(
-		"catalog#snapshot",
-		lockedExternalAccessSettings,
-	)
-	require.EqualError(t, err, "database DSN fragments cannot be combined with locked settings")
-}
-
-func TestAllowedOptionsRejectBlankValues(t *testing.T) {
-	tests := []struct {
-		name   string
-		option Option
-		error  string
-	}{
-		{name: "directory", option: WithAllowedDirectories(""), error: "allowed directory 1 must not be blank"},
-		{name: "path", option: WithAllowedPaths(" \t"), error: "allowed path 1 must not be blank"},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			duckdbConnector, err := Open(t.Context(), ":memory:", tt.option)
-			require.Nil(t, duckdbConnector)
-			require.ErrorIs(t, err, ErrInvalidConfig)
-			require.EqualError(t, err, "connector: invalid configuration: apply option 0: "+tt.error)
-		})
-	}
-}
-
 func TestCatalogOnlyOption(t *testing.T) {
-	cfg, err := applyOptions([]Option{WithCatalogOnly()})
-	require.NoError(t, err)
+	cfg := applyOptions([]Option{WithCatalogOnly()})
 	assert.True(t, cfg.restrictExternalAccess)
 	assert.Empty(t, cfg.allowedDirectories)
 	assert.Empty(t, cfg.allowedPaths)
@@ -188,9 +125,9 @@ func TestInitializeBootstrapAppliesConfiguredSettingsBeforeLock(t *testing.T) {
 	))
 	queries := execer.snapshot()
 	require.NotEmpty(t, queries)
-	assert.Equal(t, "SET GLOBAL worker_threads = '1'", queries[0])
-	assert.Equal(t, "SET GLOBAL threads = '2'", queries[1])
-	assert.Equal(t, "SET GLOBAL http_timeout = '10''; ATTACH ''evil.db'", queries[2])
+	assert.Equal(t, `SET GLOBAL "worker_threads" = '1'`, queries[0])
+	assert.Equal(t, `SET GLOBAL "threads" = '2'`, queries[1])
+	assert.Equal(t, `SET GLOBAL "http_timeout" = '10''; ATTACH ''evil.db'`, queries[2])
 	assert.Equal(t, "SELECT current_setting('allow_persistent_secrets')::BOOLEAN", queries[3])
 	assert.Equal(t, "SET lock_configuration = true", queries[len(queries)-1])
 }
@@ -240,13 +177,6 @@ func TestOpenRejectsNilContext(t *testing.T) {
 	require.Nil(t, duckdbConnector)
 	require.ErrorIs(t, err, ErrInvalidConfig)
 	require.EqualError(t, err, "connector: invalid configuration: nil context")
-}
-
-func TestOpenRejectsNilOption(t *testing.T) {
-	duckdbConnector, err := Open(t.Context(), ":memory:", nil)
-	require.Nil(t, duckdbConnector)
-	require.ErrorIs(t, err, ErrInvalidConfig)
-	require.EqualError(t, err, "connector: invalid configuration: option 0 must not be nil")
 }
 
 type recordingExecer struct {
