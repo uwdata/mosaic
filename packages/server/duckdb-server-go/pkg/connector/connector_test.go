@@ -5,8 +5,6 @@ import (
 	"database/sql/driver"
 	"errors"
 	"net/url"
-	"os"
-	"path/filepath"
 	"strings"
 	"sync"
 	"testing"
@@ -16,25 +14,13 @@ import (
 )
 
 func TestResolveResourcePolicy(t *testing.T) {
-	dsn, policy, err := resolveResourcePolicy(":memory:?threads=2", nil)
-	require.NoError(t, err)
-	assert.Equal(t, ":memory:?threads=2", dsn)
-	assert.Nil(t, policy)
-
-	dsn, policy, err = resolveResourcePolicy(":memory:?threads=2", CatalogOnly())
-	require.NoError(t, err)
-	assert.NotNil(t, policy)
-	assertSecurityPolicyDSN(t, dsn)
+	assert.Nil(t, resolveResourcePolicy(nil))
+	assert.NotNil(t, resolveResourcePolicy(CatalogOnly()))
 }
 
-func TestLocalFilesCopiesCanonicalizesAndDeduplicatesPaths(t *testing.T) {
-	directory := t.TempDir()
-	path := filepath.Join(directory, "data.parquet")
-	require.NoError(t, os.WriteFile(path, []byte("fixture"), 0o600))
-	symlink := filepath.Join(t.TempDir(), "data")
-	require.NoError(t, os.Symlink(directory, symlink))
-	directories := []string{directory, symlink}
-	paths := []string{path}
+func TestLocalFilesCopiesPaths(t *testing.T) {
+	directories := []string{"relative", `\\server\share`, "gcs://bucket/data"}
+	paths := []string{"missing.parquet"}
 	policy := LocalFiles(LocalFilesOptions{
 		AllowedDirectories: directories,
 		AllowedPaths:       paths,
@@ -42,87 +28,31 @@ func TestLocalFilesCopiesCanonicalizesAndDeduplicatesPaths(t *testing.T) {
 	directories[0] = "mutated"
 	paths[0] = "mutated"
 
-	_, resolved, err := resolveResourcePolicy(":memory:", policy)
-	require.NoError(t, err)
-	canonicalDirectory, err := filepath.EvalSymlinks(directory)
-	require.NoError(t, err)
-	canonicalPath, err := filepath.EvalSymlinks(path)
-	require.NoError(t, err)
-	assert.Equal(t, []string{canonicalDirectory}, resolved.allowedDirectories)
-	assert.Equal(t, []string{canonicalPath}, resolved.allowedPaths)
+	resolved := resolveResourcePolicy(policy)
+	assert.Equal(t, []string{"relative", `\\server\share`, "gcs://bucket/data"}, resolved.allowedDirectories)
+	assert.Equal(t, []string{"missing.parquet"}, resolved.allowedPaths)
 }
 
-func TestResolveResourcePolicyRejectsInvalidFiles(t *testing.T) {
-	directory := t.TempDir()
-	path := filepath.Join(directory, "data.parquet")
-	require.NoError(t, os.WriteFile(path, []byte("fixture"), 0o600))
-
-	tests := []struct {
-		name    string
-		options LocalFilesOptions
-		wantErr string
-	}{
-		{name: "needs files", wantErr: "requires at least one"},
-		{name: "remote directory", options: LocalFilesOptions{AllowedDirectories: []string{"gcs://bucket/data"}}, wantErr: "not a local filesystem path"},
-		{name: "directory is file", options: LocalFilesOptions{AllowedDirectories: []string{path}}, wantErr: "is not a directory"},
-		{name: "path is directory", options: LocalFilesOptions{AllowedPaths: []string{directory}}, wantErr: "is not a file"},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			_, _, err := resolveResourcePolicy(":memory:", LocalFiles(tt.options))
-			require.ErrorContains(t, err, tt.wantErr)
-		})
-	}
-}
-
-func TestResolveResourcePolicyRejectsOwnedDatabaseSettings(t *testing.T) {
-	settings := []string{
-		"allowed_directories",
-		"allowed_paths",
-		"enable_external_access",
-		"lock_configuration",
-		"temp_directory",
-	}
-	for _, setting := range strictPolicySettings {
-		settings = append(settings, setting.name)
-	}
-	for _, setting := range settings {
-		t.Run(setting, func(t *testing.T) {
-			_, _, err := resolveResourcePolicy(
-				":memory:?"+strings.ToUpper(setting)+"=true",
-				CatalogOnly(),
-			)
-			require.ErrorContains(t, err, "is owned by the resource policy")
-		})
-	}
-}
-
-func TestResolveResourcePolicyRejectsRemoteDatabasePaths(t *testing.T) {
-	for _, path := range []string{
-		"http://host/database",
-		"https://host/database",
-		"s3://bucket/database",
-		"s3a://bucket/database",
-		"s3n://bucket/database",
-		"gcs://bucket/database",
-		"gs://bucket/database",
-		"r2://bucket/database",
-		"hf://datasets/owner/database",
-		"azure://container/database",
-		"az://container/database",
-		"abfs://container@account.dfs.core.windows.net/database",
-		"abfss://container@account.dfs.core.windows.net/database",
-		"file:///tmp/database",
-		"md:database",
-		`\\server\share\database`,
-		"//server/share/database",
-	} {
-		t.Run(path, func(t *testing.T) {
-			_, _, err := resolveResourcePolicy(path, CatalogOnly())
-			require.ErrorContains(t, err, "is not a local filesystem path")
-		})
-	}
+func TestDuckDBSettingOptions(t *testing.T) {
+	cfg, err := applyOptions([]Option{
+		WithAccessMode("read_only"),
+		WithThreads(2),
+		WithMemoryLimit("1GB"),
+		WithSetting("default_null_order", "nulls_last"),
+		WithThreads(4),
+	})
+	require.NoError(t, err)
+	dsn := addDuckDBSettings(":memory:?preserve_identifier_case=false", cfg.settings)
+	database, rawQuery, found := strings.Cut(dsn, "?")
+	require.True(t, found)
+	assert.Equal(t, ":memory:", database)
+	query, err := url.ParseQuery(rawQuery)
+	require.NoError(t, err)
+	assert.Equal(t, "read_only", query.Get("access_mode"))
+	assert.Equal(t, "4", query.Get("threads"))
+	assert.Equal(t, "1GB", query.Get("memory_limit"))
+	assert.Equal(t, "nulls_last", query.Get("default_null_order"))
+	assert.Equal(t, "false", query.Get("preserve_identifier_case"))
 }
 
 func TestStartupInitializerOrder(t *testing.T) {
@@ -211,35 +141,17 @@ func TestStartupInitializerValidatesExecer(t *testing.T) {
 
 func TestOpenRejectsNilContext(t *testing.T) {
 	var ctx context.Context
-	duckdbConnector, err := Open(ctx, Config{DSN: ":memory:"})
+	duckdbConnector, err := Open(ctx, ":memory:")
 	require.Nil(t, duckdbConnector)
 	require.ErrorIs(t, err, ErrInvalidConfig)
 	require.EqualError(t, err, "connector: invalid configuration: nil context")
 }
 
-func TestOpenClassifiesInvalidPolicy(t *testing.T) {
-	duckdbConnector, err := Open(t.Context(), Config{
-		DSN:    ":memory:",
-		Policy: LocalFiles(LocalFilesOptions{}),
-	})
+func TestOpenRejectsNilOption(t *testing.T) {
+	duckdbConnector, err := Open(t.Context(), ":memory:", nil)
 	require.Nil(t, duckdbConnector)
 	require.ErrorIs(t, err, ErrInvalidConfig)
-	require.EqualError(t, err, "connector: invalid configuration: local-files policy requires at least one allowed directory or path")
-}
-
-func assertSecurityPolicyDSN(t *testing.T, dsn string) {
-	t.Helper()
-	database, rawQuery, found := strings.Cut(dsn, "?")
-	require.True(t, found)
-	assert.Equal(t, ":memory:", database)
-	query, err := url.ParseQuery(rawQuery)
-	require.NoError(t, err)
-	assert.Equal(t, "2", query.Get("threads"))
-	for _, setting := range strictPolicySettings {
-		assert.Equal(t, setting.value, query.Get(setting.name), setting.name)
-	}
-	assert.False(t, query.Has("enable_external_access"))
-	assert.False(t, query.Has("lock_configuration"))
+	require.EqualError(t, err, "connector: invalid configuration: option 0 must not be nil")
 }
 
 type recordingExecer struct {

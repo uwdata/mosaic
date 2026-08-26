@@ -23,7 +23,7 @@ func main() {
 }
 
 func run() int {
-	dbPath := flag.String("database", ":memory:", "Path of database file (e.g., \"database.db\". \":memory:\" for in-memory database)")
+	dbPath := flag.String("database", ":memory:", "DuckDB database DSN (e.g., \"database.db\" or \":memory:\")")
 	address := flag.String("address", "localhost", "HTTP Address")
 	port := flag.String("port", "3000", "HTTP Port")
 	poolSize := flag.Int("connection-pool-size", 10, "Max connection pool size")
@@ -39,9 +39,9 @@ func run() int {
 	flag.Var(&functionAllowlist, "function-allowlist", "Comma-separated exact names to add to the reviewed default allowlist. An empty value enables only the defaults; names are matched case-insensitively.")
 	securityProfileStr := flag.String("security-profile", string(securityProfileCompat), "DuckDB external-resource profile: compat, catalog-only, or local-files.")
 	var allowedDirectories repeatedStringFlag
-	flag.Var(&allowedDirectories, "allowed-directory", "Existing local directory available to DuckDB under the local-files security profile. Repeat for multiple directories.")
+	flag.Var(&allowedDirectories, "allowed-directory", "Directory or prefix available to DuckDB under the local-files security profile. Repeat for multiple values.")
 	var allowedPaths repeatedStringFlag
-	flag.Var(&allowedPaths, "allowed-path", "Existing local file available to DuckDB under the local-files security profile. Repeat for multiple files.")
+	flag.Var(&allowedPaths, "allowed-path", "Exact path available to DuckDB under the local-files security profile. Repeat for multiple values.")
 	flag.Parse()
 
 	var schemaMatchHeaders []string
@@ -89,13 +89,14 @@ func run() int {
 		}
 	}
 
-	duckdbConnector, err := connector.Open(ctx, connector.Config{
-		DSN:    *dbPath,
-		Policy: security.policy,
-		Bootstrap: func(ctx context.Context, execer driver.ExecerContext) error {
+	duckdbConnector, err := connector.Open(
+		ctx,
+		*dbPath,
+		connector.WithResourcePolicy(security.policy),
+		connector.WithBootstrap(func(ctx context.Context, execer driver.ExecerContext) error {
 			return extensions.ParseAndInstall(ctx, execer, *extensionsStr)
-		},
-	})
+		}),
+	)
 	if err != nil {
 		switch {
 		case errors.Is(err, connector.ErrInvalidConfig):

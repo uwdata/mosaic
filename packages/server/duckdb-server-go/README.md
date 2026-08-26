@@ -22,7 +22,7 @@ duckdb-server-go
 
 You can customize the server behavior with the following command-line flags:
 
--   `--database <path>`: Path to a DuckDB database file (e.g., "database.db"). Defaults to an in-memory database.
+-   `--database <dsn>`: DuckDB database DSN (e.g., `database.db` or `:memory:`). Defaults to an in-memory database.
 -   `--address <address>`: The HTTP address to listen on. Defaults to "localhost".
 -   `--port <port>`: The HTTP port to listen on. Defaults to "3000".
 -   `--connection-pool-size <size>`: The maximum size of the connection pool. Defaults to 10.
@@ -36,8 +36,8 @@ You can customize the server behavior with the following command-line flags:
 -   `--function-blocklist`: Comma-separated list of exact function names to block, useful for blocking functions that may pose security or performance risks (e.g. `bigquery_query,read_parquet`).
 -   `--function-allowlist`: Comma-separated list of exact function names to add to the reviewed defaults. Names are matched case-insensitively, repeated flags accumulate names, and an explicitly empty value enables only the defaults.
 -   `--security-profile`: DuckDB external-resource profile: `compat`, `catalog-only`, or `local-files`. Defaults to `compat`.
--   `--allowed-directory`: Existing local directory available under `local-files`. Repeat the flag for multiple directories.
--   `--allowed-path`: Existing local file available under `local-files`. Repeat the flag for multiple files.
+-   `--allowed-directory`: Directory or prefix available under `local-files`. Repeat the flag for multiple values.
+-   `--allowed-path`: Exact path available under `local-files`. Repeat the flag for multiple values.
 
 By default, the server will look for `localhost.pem` and `localhost-key.pem` in the current directory to enable HTTPS if the `--cert` and `--key` flags are not provided.
 
@@ -56,39 +56,59 @@ mkcert localhost # create localhost.pem and localhost-key.pem
 ### Programmatic Connector Startup
 
 Use `pkg/connector` to complete trusted DuckDB initialization before constructing `pkg/query` or accepting requests.
-For an unlocked connector, `Bootstrap` can install and load extensions with the existing command-line grammar:
+For an unlocked connector, `WithBootstrap` can install and load extensions with the existing command-line grammar:
 
 ```go
-duckdbConnector, err := connector.Open(ctx, connector.Config{
-	DSN: ":memory:",
-	Bootstrap: func(ctx context.Context, execer driver.ExecerContext) error {
+duckdbConnector, err := connector.Open(
+	ctx,
+	":memory:",
+	connector.WithBootstrap(func(ctx context.Context, execer driver.ExecerContext) error {
 		return extensions.ParseAndInstall(ctx, execer, "httpfs", "netquack|community")
-	},
-})
+	}),
+)
 ```
+
+Common DuckDB settings have first-class options, and `WithSetting` accepts any other global setting from DuckDB's
+[configuration reference](https://duckdb.org/docs/current/configuration/overview):
+
+```go
+duckdbConnector, err := connector.Open(
+	ctx,
+	":memory:",
+	connector.WithAccessMode("read_write"),
+	connector.WithThreads(4),
+	connector.WithMemoryLimit("4GB"),
+	connector.WithSetting("default_null_order", "nulls_last"),
+)
+```
+
+The connector passes setting names and values to DuckDB without validating them. `Open` returns DuckDB's error for an
+unknown setting, a local-scope setting, or an invalid value. Setting options override matching query parameters already
+present in the DSN; a resource policy retains ownership of its hardening settings.
 
 For a locked connector, provision trusted extensions separately and load them before the resource policy is finalized:
 
 ```go
-duckdbConnector, err := connector.Open(ctx, connector.Config{
-	DSN: "/srv/mosaic/catalog.duckdb",
-	Bootstrap: func(ctx context.Context, execer driver.ExecerContext) error {
+duckdbConnector, err := connector.Open(
+	ctx,
+	"/srv/mosaic/catalog.duckdb",
+	connector.WithBootstrap(func(ctx context.Context, execer driver.ExecerContext) error {
 		return extensions.LoadInstalled(ctx, execer, "spatial")
-	},
-	Policy: connector.LocalFiles(connector.LocalFilesOptions{
-		AllowedDirectories: []string{"/srv/mosaic/datasets"},
 	}),
-})
+	connector.WithResourcePolicy(connector.LocalFiles(connector.LocalFilesOptions{
+		AllowedDirectories: []string{"/srv/mosaic/datasets"},
+	})),
+)
 ```
 
-`Bootstrap` runs exactly once before external access is disabled and the configuration is locked. `Open` eagerly creates
-and closes an initial physical connection, so bootstrap or policy failures are returned before the connector can reach the
-query or server layers. `InitializeConnection`, when configured, instead runs after bootstrap and policy finalization for
-every physical connection; it can perform only operations permitted by the finalized policy.
+`WithBootstrap` runs its initializer exactly once before external access is disabled and the configuration is locked.
+`Open` eagerly creates and closes an initial physical connection, so bootstrap or policy failures are returned before the
+connector can reach the query or server layers. `WithConnectionInitializer` instead runs its initializer after bootstrap
+and policy finalization for every physical connection; it can perform only operations permitted by the finalized policy.
 
 Use one live connector per file-backed database path in a process and share it across query pools. DuckDB caches the
 database instance by path, so opening a second connector while the first remains live encounters its existing
-configuration lock. An `ATTACH` during `Bootstrap` permanently grants that database file and its exact `.wal`,
+configuration lock. An `ATTACH` during the bootstrap initializer permanently grants that database file and its exact `.wal`,
 `.wal.checkpoint`, and `.wal.recovery` sidecars for the life of the connector. `DETACH` does not revoke those paths, and
 any SQL function admitted by the query layer may read them.
 
@@ -122,7 +142,7 @@ The installed binary provides three common external-resource configurations:
 | --- | --- | --- | --- |
 | `compat` | Preserves DuckDB's current defaults. | Preserves `--load-extensions` and automatic loading. | Trusted local and backwards-compatible deployments. |
 | `catalog-only` | Disables external access outside DuckDB's primary and bootstrap-attached database internals. | Disables automatic installation and loading; rejects `--load-extensions`. | Queries over an in-memory or local primary catalog. |
-| `local-files` | Adds explicit local files or directories to `catalog-only`. | Same as `catalog-only`. | Catalog queries that also need reviewed local datasets. |
+| `local-files` | Adds explicit filesystem paths or prefixes to `catalog-only`. | Same as `catalog-only`. | Catalog queries that also need reviewed datasets. |
 
 For example:
 
@@ -143,12 +163,12 @@ duckdb-server-go \
   --allowed-path=/srv/mosaic/reference.parquet
 ```
 
-Both local-file flags are repeatable, and every target must exist at startup. Paths are made absolute, existing symlinks
-are resolved, and URI and network-share paths are rejected. A directory grants DuckDB read and write access throughout
-that tree, including `COPY` and `ATTACH`; an exact path is also a read/write capability, not a read-only grant. Use
-server-owned roots that other processes cannot mutate. DuckDB resolves stable symlink targets, but an in-process setting
-cannot eliminate filesystem races involving later symlink, mount, or path changes; use operating-system or container
-isolation for that boundary.
+Both local-file flags are repeatable and are passed directly to DuckDB's `allowed_directories` and `allowed_paths`
+settings. The connector does not pre-validate, normalize, resolve, or require the values to exist; DuckDB interprets them
+while opening the connector. A directory or prefix grants read and write access throughout that namespace, including
+`COPY` and `ATTACH`; an exact path is also a read/write capability, not a read-only grant. Use server-owned roots that
+other processes cannot mutate. DuckDB's in-process settings cannot eliminate filesystem races involving later symlink,
+mount, or path changes; use operating-system or container isolation for that boundary.
 
 The two strict profiles apply DuckDB's [security settings](https://duckdb.org/docs/current/operations_manual/securing_duckdb/overview)
 to disable external access and the external file cache, automatic extension installation and loading, community,
@@ -158,15 +178,17 @@ Disabling spill files means memory-heavy queries fail instead of writing tempora
 scans of allowed Parquet files may be slower because DuckDB does not retain their blocks in its in-memory external-file
 cache. Statically linked and core extensions remain available, so these settings are not an extension-free sandbox.
 
-With the bundled DuckDB 1.5.5, the implicit grant for a file-backed primary database and every database attached during
-`Bootstrap` consists of the database file and the exact sidecar paths `<database>.wal`, `<database>.wal.checkpoint`, and
-`<database>.wal.recovery`; it does not include the containing directory. These attachment grants persist after `DETACH`,
-and the `local-files` profile separately adds its configured grants. SQL functions such as `read_blob` may therefore read
-the implicitly granted files when they exist. Combine a strict profile with a function allowlist when that distinction
-matters. The profiles do not add authentication, origin checks, per-user isolation, SQL-function policy, or CPU and
-memory limits, and they do not replace filesystem and network restrictions on the server process. Programs embedding
-`pkg/query` can apply the same startup sequence with `connector.CatalogOnly()` or `connector.LocalFiles(...)`; the
-installed binary is a thin command-line adapter over those policies.
+With the bundled DuckDB 1.5.5, the implicit grant for a file-backed primary database and every database attached by a
+`WithBootstrap` initializer consists of the database file and the exact sidecar paths `<database>.wal`,
+`<database>.wal.checkpoint`, and `<database>.wal.recovery`; it does not include the containing directory. These attachment
+grants persist after `DETACH`, and the `local-files` profile separately adds its configured grants. SQL functions such as
+`read_blob` may therefore read the implicitly granted files when they exist. Combine a strict profile with a function
+allowlist when that distinction matters. The profiles do not add authentication, origin checks, per-user isolation,
+SQL-function policy, or CPU and memory limits, and they do not replace filesystem and network restrictions on the server
+process. Programs embedding `pkg/query` can apply the same startup sequence with
+`connector.WithResourcePolicy(connector.CatalogOnly())` or
+`connector.WithResourcePolicy(connector.LocalFiles(...))`; the installed binary is a thin command-line adapter over those
+policies.
 
 ### Function Policies
 
