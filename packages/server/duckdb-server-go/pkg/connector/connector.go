@@ -198,7 +198,7 @@ func initializeBootstrap(ctx context.Context, execer driver.ExecerContext, cfg c
 			return fmt.Errorf("bootstrap: %w", err)
 		}
 	}
-	if err := applyConfiguredSettings(ctx, execer, cfg.settings); err != nil {
+	if err := applyGlobalStringSettings(ctx, execer, cfg.settings); err != nil {
 		return err
 	}
 	if cfg.restrictExternalAccess {
@@ -253,10 +253,10 @@ func finalizeExternalAccess(ctx context.Context, execer driver.ExecerContext, cf
 		{name: "enable_external_access", value: "false"},
 		{name: "lock_configuration", value: "true"},
 	}...)
-	return applyDuckDBSettings(ctx, execer, settings)
+	return applySettingExpressions(ctx, execer, settings)
 }
 
-func applyDuckDBSettings(ctx context.Context, execer driver.ExecerContext, settings []duckDBSetting) error {
+func applySettingExpressions(ctx context.Context, execer driver.ExecerContext, settings []duckDBSetting) error {
 	for _, setting := range settings {
 		if _, err := execer.ExecContext(ctx, "SET "+setting.name+" = "+setting.value, nil); err != nil {
 			return fmt.Errorf("failed to set %s: %w", setting.name, err)
@@ -265,7 +265,7 @@ func applyDuckDBSettings(ctx context.Context, execer driver.ExecerContext, setti
 	return nil
 }
 
-func applyConfiguredSettings(ctx context.Context, execer driver.ExecerContext, settings []duckDBSetting) error {
+func applyGlobalStringSettings(ctx context.Context, execer driver.ExecerContext, settings []duckDBSetting) error {
 	for _, setting := range settings {
 		if _, err := execer.ExecContext(
 			ctx,
