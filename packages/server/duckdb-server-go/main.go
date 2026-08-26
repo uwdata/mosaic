@@ -11,8 +11,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/duckdb/duckdb-go/v2"
-
+	"github.com/uwdata/mosaic/packages/server/duckdb-server-go/pkg/connector"
 	"github.com/uwdata/mosaic/packages/server/duckdb-server-go/pkg/extensions"
 	"github.com/uwdata/mosaic/packages/server/duckdb-server-go/pkg/query"
 	"github.com/uwdata/mosaic/packages/server/duckdb-server-go/pkg/server"
@@ -73,15 +72,19 @@ func run() int {
 		}
 	}
 
-	connector, err := duckdb.NewConnector(*dbPath, func(execer driver.ExecerContext) error {
-		return extensions.ParseAndInstall(ctx, execer, *extensionsStr)
-	})
+	duckdbConnector, err := connector.Open(
+		ctx,
+		*dbPath,
+		connector.WithBootstrap(func(ctx context.Context, execer driver.ExecerContext) error {
+			return extensions.ParseAndInstall(ctx, execer, *extensionsStr)
+		}),
+	)
 	if err != nil {
 		logger.Error("main: error creating duckdb connector", "error", err)
 		return 1
 	}
 	defer func() {
-		err = connector.Close()
+		err = duckdbConnector.Close()
 		if err != nil {
 			logger.Error("main: error closing duckdb connector", "error", err)
 		}
@@ -107,7 +110,7 @@ func run() int {
 		}))
 	}
 
-	db, err := query.New(ctx, connector, queryOptions...)
+	db, err := query.New(ctx, duckdbConnector, queryOptions...)
 	if err != nil {
 		logger.Error("main: error creating query DB", "error", err)
 		return 1
