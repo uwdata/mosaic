@@ -53,54 +53,53 @@ mkcert localhost # create localhost.pem and localhost-key.pem
 ### Programmatic Connector Startup
 
 Use `pkg/connector` to complete trusted DuckDB initialization before constructing `pkg/query` or accepting requests.
-For an unlocked connector, `WithBootstrap` can install and load extensions with the existing extension specification
-syntax:
+For an unlocked connector, `WithBootstrapInitializer` can install and load extensions with the existing extension
+specification syntax:
 
 ```go
 duckdbConnector, err := connector.Open(
 	ctx,
 	":memory:",
-	connector.WithBootstrap(func(ctx context.Context, execer driver.ExecerContext) error {
+	connector.WithBootstrapInitializer(func(ctx context.Context, execer driver.ExecerContext) error {
 		return extensions.ParseAndInstall(ctx, execer, "httpfs", "netquack|community")
 	}),
 )
 ```
 
-For a locked connector, provision trusted extensions separately and load them before the external-access policy is
-finalized:
+For a locked connector, provision trusted extensions separately and load them before external access is disabled:
 
 ```go
 duckdbConnector, err := connector.Open(
 	ctx,
 	"/srv/mosaic/catalog.duckdb",
-	connector.WithBootstrap(func(ctx context.Context, execer driver.ExecerContext) error {
+	connector.WithBootstrapInitializer(func(ctx context.Context, execer driver.ExecerContext) error {
 		return extensions.LoadInstalled(ctx, execer, "spatial")
 	}),
-	connector.WithExternalAccessPolicy(connector.LocalFiles(connector.LocalFilesOptions{
-		AllowedDirectories: []string{"/srv/mosaic/datasets"},
-	})),
+	connector.WithAllowedDirectories("/srv/mosaic/datasets"),
 )
 ```
 
-`WithBootstrap` runs its initializer exactly once before external access is disabled and the configuration is locked.
-`Open` eagerly creates and closes an initial physical connection, so bootstrap or policy failures are returned before the
-connector can reach the query or server layers. `WithConnectionInitializer` instead runs its initializer after bootstrap
-and external-access finalization for every physical connection; it can perform only operations permitted by the finalized
-policy.
+`WithBootstrapInitializer` runs exactly once before external access is disabled and the configuration is locked. `Open`
+eagerly creates and closes an initial physical connection, so bootstrap or external-access finalization failures are
+returned before the connector can reach the query or server layers. `WithConnectionInitializer` instead runs after
+bootstrap and external-access finalization for every physical connection; it can perform only operations permitted by the
+locked configuration.
 
 Use one live connector per file-backed database path in a process and share it across query pools. DuckDB caches the
 database instance by path, so opening a second connector while the first remains live encounters its existing
-configuration lock. An `ATTACH` during the bootstrap initializer permanently grants that database file and its exact `.wal`,
-`.wal.checkpoint`, and `.wal.recovery` sidecars for the life of the connector. `DETACH` does not revoke those paths, and
-any SQL function admitted by the query layer may read them.
+configuration lock. Bootstrap can attach reviewed local or remote databases before external access is disabled; those
+catalogs remain usable afterward under any of the locked external-access options, while new external access and `ATTACH`
+operations are blocked. A local `ATTACH` permanently grants that database file and its exact `.wal`, `.wal.checkpoint`, and
+`.wal.recovery` sidecars for the life of the connector. `DETACH` does not revoke those paths, and any SQL function admitted
+by the query layer may read them.
 
 Repository suffixes accepted by `ParseAndInstall` are DuckDB aliases. Use `InstallAndLoadFromCustomRepository` for
 repository URLs or paths, and `LoadInstalled`, `LoadFile`, or `InstallAndLoadFile` for provisioned extensions. Installing
 at process startup may require network and filesystem access, so production locked deployments should normally provision
-extensions in their image and call `LoadInstalled` or `LoadFile`. Under `CatalogOnly` and `LocalFiles`, DuckDB checks every
-extension binary when it is loaded and accepts only core-signed extensions, including during bootstrap. A plugin that
-requires ongoing external I/O is incompatible with these policies unless all of its I/O fits the local grants and DuckDB
-filesystem policy. Extensions are trusted native code with the server process's privileges and can bypass DuckDB's
+extensions in their image and call `LoadInstalled` or `LoadFile`. Under the locked external-access options, DuckDB checks
+every extension binary when it is loaded and accepts only core-signed extensions, including during bootstrap. A plugin
+that requires ongoing external I/O is incompatible with the locked mode unless all of its I/O fits the local grants and
+DuckDB filesystem policy. Extensions are trusted native code with the server process's privileges and can bypass DuckDB's
 abstractions, so load only trusted repositories and files.
 
 ### Programmatic Authorization
@@ -118,43 +117,45 @@ errors are logged and returned as sanitized 500 responses. Authorization can all
 and exact SQL, but cannot rewrite SQL or sandbox the shared process, filesystem, network, extensions, catalogs, or
 credentials.
 
-### DuckDB External Access Policies
+### DuckDB External Access
 
-`pkg/connector` provides two strict external-access policies. Omitting `WithExternalAccessPolicy` preserves DuckDB's
+`pkg/connector` exposes a fixed locked external-access mode through three options. Omitting all three preserves DuckDB's
 current defaults for trusted and backwards-compatible deployments.
 
-| Policy | DuckDB resources | Extension behavior |
+| Option | DuckDB resources | Extension behavior |
 | --- | --- | --- |
-| `CatalogOnly` | Disables external access outside DuckDB's primary and bootstrap-attached database internals. | Disables automatic installation and loading. |
-| `LocalFiles` | Adds explicit filesystem paths or prefixes to `CatalogOnly`. | Same as `CatalogOnly`. |
+| `WithCatalogOnly()` | Disables external access outside DuckDB's primary and bootstrap-attached database internals. | Disables automatic installation and loading. |
+| `WithAllowedDirectories(...)` | Applies the same restrictions and adds directory-tree grants. | Same as `WithCatalogOnly()`. |
+| `WithAllowedPaths(...)` | Applies the same restrictions and adds exact-path grants. | Same as `WithCatalogOnly()`. |
 
-These are fixed capability presets, not configurable collections of DuckDB settings. Keeping the hardening settings fixed
-preserves the guarantees implied by each name; only the filesystem grants accepted by `LocalFiles` are configurable.
+These are fixed capability options, not configurable collections of DuckDB settings. Keeping the hardening settings fixed
+preserves their guarantees; only the filesystem grants are configurable. Repeated allowed-path or allowed-directory
+options append their values.
 
-`LocalFilesOptions.AllowedDirectories` and `AllowedPaths` are passed directly to DuckDB's `allowed_directories` and
-`allowed_paths` settings. The connector does not pre-validate, normalize, resolve, or require the values to exist; DuckDB
-interprets them while opening the connector. A directory or prefix grants read and write access throughout that namespace,
-including `COPY` and `ATTACH`; an exact path is also a read/write capability, not a read-only grant. Use server-owned roots
-that other processes cannot mutate. DuckDB's in-process settings cannot eliminate filesystem races involving later
-symlink, mount, or path changes; use operating-system or container isolation for that boundary.
+Directory and path values are passed directly to DuckDB's `allowed_directories` and `allowed_paths` settings. The connector
+does not pre-validate, normalize, resolve, or require them to exist; DuckDB interprets them while opening the connector. A
+directory grants read and write access throughout that tree, including `COPY` and `ATTACH`; an exact path is also a
+read/write capability, not a read-only grant. Use server-owned roots that other processes cannot mutate. DuckDB's
+in-process settings cannot eliminate filesystem races involving later symlink, mount, or path changes; use operating-system
+or container isolation for that boundary.
 
-Both policies apply DuckDB's [security settings](https://duckdb.org/docs/lts/operations_manual/securing_duckdb/overview)
+All three options apply DuckDB's [security settings](https://duckdb.org/docs/lts/operations_manual/securing_duckdb/overview)
 to disable external access and the external file cache, automatic extension installation and loading, community,
 unsigned, and metadata-mismatched extensions, persistent-secret storage, unredacted secret output, and temporary-file
 spilling. They leave no configuration-lock exceptions and lock the resulting settings before the query layer starts.
-Disabling spill files means memory-heavy queries fail instead of writing temporary data. Under `LocalFiles`, repeated
-scans of allowed Parquet files may be slower because DuckDB does not retain their blocks in its in-memory external-file
-cache. Statically linked and core extensions remain available, so these settings are not an extension-free sandbox.
+Disabling spill files means memory-heavy queries fail instead of writing temporary data. Repeated scans of allowed Parquet
+files may be slower because DuckDB does not retain their blocks in its in-memory external-file cache. Statically linked and
+core extensions remain available, so these settings are not an extension-free sandbox.
 
 With the bundled DuckDB 1.5.5, the implicit grant for a file-backed primary database and every database attached by a
-`WithBootstrap` initializer consists of the database file and the exact sidecar paths `<database>.wal`,
+`WithBootstrapInitializer` consists of the database file and the exact sidecar paths `<database>.wal`,
 `<database>.wal.checkpoint`, and `<database>.wal.recovery`; it does not include the containing directory. These attachment
-grants persist after `DETACH`, and `LocalFiles` separately adds its configured grants. SQL functions such as
-`read_blob` may therefore read the implicitly granted files when they exist. Combine a strict external-access policy with
-a function allowlist when that distinction matters. The policies do not add authentication, origin checks, per-user
-isolation, SQL-function policy, CPU and memory limits, or application-level query timeouts. Treat accepted SQL like code
-running with the server process's privileges: run as a non-root user with minimal filesystem permissions and network access,
-and use process or container resource limits.
+grants persist after `DETACH`, and the allowed-path options separately add their configured grants. SQL functions such as
+`read_blob` may therefore read the implicitly granted files when they exist. Combine locked external access with a function
+allowlist when that distinction matters. These options do not add authentication, origin checks, per-user isolation,
+SQL-function policy, CPU and memory limits, or application-level query timeouts. Treat accepted SQL like code running with
+the server process's privileges: run as a non-root user with minimal filesystem permissions and network access, and use
+process or container resource limits.
 
 ### Function Policies
 

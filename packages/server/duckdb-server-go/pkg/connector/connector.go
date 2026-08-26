@@ -21,9 +21,11 @@ var (
 type Initializer func(context.Context, driver.ExecerContext) error
 
 type config struct {
-	externalAccess        *ExternalAccessPolicy
-	bootstrap             Initializer
-	connectionInitializer Initializer
+	restrictExternalAccess bool
+	allowedDirectories     []string
+	allowedPaths           []string
+	bootstrapInitializer   Initializer
+	connectionInitializer  Initializer
 }
 
 type Option interface {
@@ -39,25 +41,47 @@ func (f optionFunc) apply(cfg *config) error {
 	return f(cfg)
 }
 
-// WithExternalAccessPolicy applies a fixed capability boundary after bootstrap.
-// CatalogOnly and LocalFiles disable extension installation and autoloading,
-// persistent secrets, temporary spill files, and external access except for
-// declared local file grants. Omitting this option preserves DuckDB defaults.
-func WithExternalAccessPolicy(policy *ExternalAccessPolicy) Option {
+// WithCatalogOnly disables extension installation and autoloading, persistent
+// secrets, temporary spill files, and external access after bootstrap.
+func WithCatalogOnly() Option {
 	return optionFunc(func(cfg *config) error {
-		cfg.externalAccess = policy
+		cfg.restrictExternalAccess = true
 		return nil
 	})
 }
 
-// WithBootstrap configures trusted initialization that runs exactly once before
-// external access is restricted and configuration is locked. Typical uses include
-// installing or loading extensions, attaching secondary catalogs, and one-time
-// catalog setup. ATTACH grants the database and its sidecars for the connector
-// lifetime; DETACH does not revoke those paths.
-func WithBootstrap(initializer Initializer) Option {
+// WithAllowedDirectories applies the same restrictions as WithCatalogOnly and
+// grants read/write access to complete directory trees. Repeated calls append.
+func WithAllowedDirectories(directories ...string) Option {
+	values := append([]string(nil), directories...)
 	return optionFunc(func(cfg *config) error {
-		cfg.bootstrap = initializer
+		cfg.restrictExternalAccess = true
+		cfg.allowedDirectories = append(cfg.allowedDirectories, values...)
+		return nil
+	})
+}
+
+// WithAllowedPaths applies the same restrictions as WithCatalogOnly and grants
+// read/write access to exact paths. Repeated calls append.
+func WithAllowedPaths(paths ...string) Option {
+	values := append([]string(nil), paths...)
+	return optionFunc(func(cfg *config) error {
+		cfg.restrictExternalAccess = true
+		cfg.allowedPaths = append(cfg.allowedPaths, values...)
+		return nil
+	})
+}
+
+// WithBootstrapInitializer configures trusted initialization that runs exactly
+// once before external access is restricted and configuration is locked. Typical
+// uses include installing or loading extensions, attaching local or remote
+// databases, and one-time catalog setup. Databases attached here remain usable
+// after restricted external access blocks new access and ATTACH operations. A
+// local ATTACH grants the database and its sidecars for the connector lifetime;
+// DETACH does not revoke those paths.
+func WithBootstrapInitializer(initializer Initializer) Option {
+	return optionFunc(func(cfg *config) error {
+		cfg.bootstrapInitializer = initializer
 		return nil
 	})
 }
@@ -87,34 +111,6 @@ func applyOptions(options []Option) (config, error) {
 	return cfg, nil
 }
 
-// LocalFilesOptions configures the filesystem capabilities of LocalFiles.
-type LocalFilesOptions struct {
-	// AllowedDirectories are read/write capabilities for complete directory trees.
-	AllowedDirectories []string
-	// AllowedPaths are read/write capabilities for exact files.
-	AllowedPaths []string
-}
-
-// ExternalAccessPolicy is an immutable DuckDB startup capability boundary.
-// Its hardening settings are fixed; LocalFiles only adds filesystem grants.
-type ExternalAccessPolicy struct {
-	allowedDirectories []string
-	allowedPaths       []string
-}
-
-// CatalogOnly disables external access outside DuckDB's primary and bootstrap-attached database internals.
-func CatalogOnly() *ExternalAccessPolicy {
-	return &ExternalAccessPolicy{}
-}
-
-// LocalFiles adds explicit local filesystem capabilities to CatalogOnly.
-func LocalFiles(options LocalFilesOptions) *ExternalAccessPolicy {
-	return &ExternalAccessPolicy{
-		allowedDirectories: append([]string(nil), options.AllowedDirectories...),
-		allowedPaths:       append([]string(nil), options.AllowedPaths...),
-	}
-}
-
 // Open creates a connector, completes trusted bootstrap and external-access
 // locking, and verifies the first physical connection before returning it. A
 // file-backed database supports one live connector per process; share that
@@ -128,21 +124,32 @@ func Open(ctx context.Context, dsn string, options ...Option) (*duckdb.Connector
 	if err != nil {
 		return nil, fmt.Errorf("%w: %w", ErrInvalidConfig, err)
 	}
-	externalAccess := resolveExternalAccessPolicy(cfg.externalAccess)
-	if externalAccess != nil {
+	if cfg.restrictExternalAccess {
 		dsn = addDuckDBSettings(dsn, lockedExternalAccessSettings)
 	}
 
-	startup := startupInitializer{
-		ctx:            ctx,
-		bootstrap:      cfg.bootstrap,
-		externalAccess: externalAccess,
-	}
+	bootstrapCtx := ctx
+	bootstrapInitializer := cfg.bootstrapInitializer
+	restrictExternalAccess := cfg.restrictExternalAccess
+	allowedDirectories := cfg.allowedDirectories
+	allowedPaths := cfg.allowedPaths
 	connectionCtx := context.WithoutCancel(ctx)
 	initializeConnection := cfg.connectionInitializer
+	var bootstrapOnce sync.Once
+	var bootstrapErr error
 	duckdbConnector, err := duckdb.NewConnector(dsn, func(execer driver.ExecerContext) error {
-		if err := startup.initialize(execer); err != nil {
-			return err
+		bootstrapOnce.Do(func() {
+			bootstrapErr = initializeBootstrap(
+				bootstrapCtx,
+				execer,
+				bootstrapInitializer,
+				restrictExternalAccess,
+				allowedDirectories,
+				allowedPaths,
+			)
+		})
+		if bootstrapErr != nil {
+			return bootstrapErr
 		}
 		if initializeConnection != nil {
 			if err := initializeConnection(connectionCtx, execer); err != nil {
@@ -168,35 +175,26 @@ func Open(ctx context.Context, dsn string, options ...Option) (*duckdb.Connector
 	return duckdbConnector, nil
 }
 
-type startupInitializer struct {
-	once           sync.Once
-	err            error
-	ctx            context.Context
-	bootstrap      Initializer
-	externalAccess *resolvedExternalAccessPolicy
-}
-
-func (s *startupInitializer) initialize(execer driver.ExecerContext) error {
+func initializeBootstrap(
+	ctx context.Context,
+	execer driver.ExecerContext,
+	bootstrapInitializer Initializer,
+	restrictExternalAccess bool,
+	allowedDirectories []string,
+	allowedPaths []string,
+) error {
 	if execer == nil {
 		return errors.New("nil execer")
 	}
-	s.once.Do(func() {
-		if s.bootstrap != nil {
-			if err := s.bootstrap(s.ctx, execer); err != nil {
-				s.err = fmt.Errorf("bootstrap: %w", err)
-				return
-			}
+	if bootstrapInitializer != nil {
+		if err := bootstrapInitializer(ctx, execer); err != nil {
+			return fmt.Errorf("bootstrap: %w", err)
 		}
-		if s.externalAccess != nil {
-			s.err = s.externalAccess.finalize(s.ctx, execer)
-		}
-	})
-	return s.err
-}
-
-type resolvedExternalAccessPolicy struct {
-	allowedDirectories []string
-	allowedPaths       []string
+	}
+	if restrictExternalAccess {
+		return finalizeExternalAccess(ctx, execer, allowedDirectories, allowedPaths)
+	}
+	return nil
 }
 
 type duckDBSetting struct {
@@ -216,17 +214,12 @@ var lockedExternalAccessSettings = []duckDBSetting{
 	{name: "enable_external_file_cache", value: "false"},
 }
 
-func resolveExternalAccessPolicy(policy *ExternalAccessPolicy) *resolvedExternalAccessPolicy {
-	if policy == nil {
-		return nil
-	}
-	return &resolvedExternalAccessPolicy{
-		allowedDirectories: append([]string(nil), policy.allowedDirectories...),
-		allowedPaths:       append([]string(nil), policy.allowedPaths...),
-	}
-}
-
-func (p *resolvedExternalAccessPolicy) finalize(ctx context.Context, execer driver.ExecerContext) error {
+func finalizeExternalAccess(
+	ctx context.Context,
+	execer driver.ExecerContext,
+	allowedDirectories []string,
+	allowedPaths []string,
+) error {
 	// DuckDB rejects path and temp grants after external access is disabled.
 	settings := []duckDBSetting{
 		{name: "allow_persistent_secrets", value: "false"},
@@ -236,8 +229,8 @@ func (p *resolvedExternalAccessPolicy) finalize(ctx context.Context, execer driv
 		{name: "autoload_known_extensions", value: "false"},
 		{name: "enable_external_file_cache", value: "false"},
 		{name: "temp_directory", value: "''"},
-		{name: "allowed_directories", value: duckDBStringList(p.allowedDirectories)},
-		{name: "allowed_paths", value: duckDBStringList(p.allowedPaths)},
+		{name: "allowed_directories", value: duckDBStringList(allowedDirectories)},
+		{name: "allowed_paths", value: duckDBStringList(allowedPaths)},
 		{name: "enable_external_access", value: "false"},
 		{name: "lock_configuration", value: "true"},
 	}

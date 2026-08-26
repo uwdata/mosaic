@@ -13,7 +13,7 @@ func ExampleOpen_unlockedExtensions() {
 	duckdbConnector, err := connector.Open(
 		ctx,
 		":memory:",
-		connector.WithBootstrap(func(ctx context.Context, execer driver.ExecerContext) error {
+		connector.WithBootstrapInitializer(func(ctx context.Context, execer driver.ExecerContext) error {
 			return extensions.ParseAndInstall(ctx, execer, "httpfs", "netquack|community")
 		}),
 	)
@@ -32,10 +32,10 @@ func ExampleOpen_lockedExtensions() {
 	duckdbConnector, err := connector.Open(
 		ctx,
 		":memory:",
-		connector.WithBootstrap(func(ctx context.Context, execer driver.ExecerContext) error {
+		connector.WithBootstrapInitializer(func(ctx context.Context, execer driver.ExecerContext) error {
 			return extensions.LoadInstalled(ctx, execer, "spatial")
 		}),
-		connector.WithExternalAccessPolicy(connector.CatalogOnly()),
+		connector.WithCatalogOnly(),
 	)
 	if err != nil {
 		panic(err)
