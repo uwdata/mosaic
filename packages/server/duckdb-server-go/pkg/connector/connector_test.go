@@ -11,41 +11,47 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestResolveExternalAccessPolicy(t *testing.T) {
-	assert.Nil(t, resolveExternalAccessPolicy(nil))
-	assert.NotNil(t, resolveExternalAccessPolicy(CatalogOnly()))
-}
-
-func TestLocalFilesCopiesPaths(t *testing.T) {
+func TestExternalAccessOptions(t *testing.T) {
 	directories := []string{"relative", `\\server\share`, "gcs://bucket/data"}
 	paths := []string{"missing.parquet"}
-	policy := LocalFiles(LocalFilesOptions{
-		AllowedDirectories: directories,
-		AllowedPaths:       paths,
-	})
+	directoryOption := WithAllowedDirectories(directories...)
+	pathOption := WithAllowedPaths(paths...)
 	directories[0] = "mutated"
 	paths[0] = "mutated"
 
-	resolved := resolveExternalAccessPolicy(policy)
-	assert.Equal(t, []string{"relative", `\\server\share`, "gcs://bucket/data"}, resolved.allowedDirectories)
-	assert.Equal(t, []string{"missing.parquet"}, resolved.allowedPaths)
+	cfg, err := applyOptions([]Option{
+		directoryOption,
+		pathOption,
+		WithAllowedDirectories("other"),
+		WithAllowedPaths("other.parquet"),
+	})
+	require.NoError(t, err)
+	assert.True(t, cfg.restrictExternalAccess)
+	assert.Equal(t, []string{"relative", `\\server\share`, "gcs://bucket/data", "other"}, cfg.allowedDirectories)
+	assert.Equal(t, []string{"missing.parquet", "other.parquet"}, cfg.allowedPaths)
 }
 
-func TestStartupInitializerOrder(t *testing.T) {
+func TestCatalogOnlyOption(t *testing.T) {
+	cfg, err := applyOptions([]Option{WithCatalogOnly()})
+	require.NoError(t, err)
+	assert.True(t, cfg.restrictExternalAccess)
+	assert.Empty(t, cfg.allowedDirectories)
+	assert.Empty(t, cfg.allowedPaths)
+}
+
+func TestInitializeBootstrapOrder(t *testing.T) {
 	execer := newRecordingExecer()
-	startup := startupInitializer{
-		ctx: t.Context(),
-		bootstrap: func(ctx context.Context, execer driver.ExecerContext) error {
+	require.NoError(t, initializeBootstrap(
+		t.Context(),
+		execer,
+		func(ctx context.Context, execer driver.ExecerContext) error {
 			_, err := execer.ExecContext(ctx, "BOOTSTRAP", nil)
 			return err
 		},
-		externalAccess: &resolvedExternalAccessPolicy{
-			allowedDirectories: []string{"/srv/O'Brien"},
-			allowedPaths:       []string{"/srv/data.parquet"},
-		},
-	}
-
-	require.NoError(t, startup.initialize(execer))
+		true,
+		[]string{"/srv/O'Brien"},
+		[]string{"/srv/data.parquet"},
+	))
 	require.Equal(t, []string{
 		"BOOTSTRAP",
 		"SET allow_persistent_secrets = false",
@@ -60,59 +66,33 @@ func TestStartupInitializerOrder(t *testing.T) {
 		"SET enable_external_access = false",
 		"SET lock_configuration = true",
 	}, execer.snapshot())
-
-	require.NoError(t, startup.initialize(execer))
-	assert.Len(t, execer.snapshot(), 12)
 }
 
-func TestStartupInitializerCachesFailure(t *testing.T) {
+func TestInitializeBootstrapReturnsFinalizationFailure(t *testing.T) {
 	sentinel := errors.New("unavailable")
 	execer := newRecordingExecer()
 	execer.failAt = 11
 	execer.failErr = sentinel
-	startup := startupInitializer{
-		ctx: t.Context(),
-		bootstrap: func(ctx context.Context, execer driver.ExecerContext) error {
+
+	err := initializeBootstrap(
+		t.Context(),
+		execer,
+		func(ctx context.Context, execer driver.ExecerContext) error {
 			_, err := execer.ExecContext(ctx, "BOOTSTRAP", nil)
 			return err
 		},
-		externalAccess: &resolvedExternalAccessPolicy{},
-	}
-
-	err := startup.initialize(execer)
+		true,
+		nil,
+		nil,
+	)
 	require.ErrorIs(t, err, sentinel)
 	require.ErrorContains(t, err, "failed to set lock_configuration")
-	err = startup.initialize(newRecordingExecer())
-	require.ErrorIs(t, err, sentinel)
 	assert.Len(t, execer.snapshot(), 12)
 }
 
-func TestStartupInitializerIsConcurrent(t *testing.T) {
-	startup := startupInitializer{ctx: t.Context(), externalAccess: &resolvedExternalAccessPolicy{}}
-	execer := newRecordingExecer()
-
-	const count = 32
-	errs := make(chan error, count)
-	var wait sync.WaitGroup
-	for range count {
-		wait.Add(1)
-		go func() {
-			defer wait.Done()
-			errs <- startup.initialize(execer)
-		}()
-	}
-	wait.Wait()
-	close(errs)
-	for err := range errs {
-		require.NoError(t, err)
-	}
-	assert.Len(t, execer.snapshot(), 11)
-}
-
-func TestStartupInitializerValidatesExecer(t *testing.T) {
-	startup := startupInitializer{ctx: t.Context()}
+func TestInitializeBootstrapValidatesExecer(t *testing.T) {
 	var nilExecer driver.ExecerContext
-	require.EqualError(t, startup.initialize(nilExecer), "nil execer")
+	require.EqualError(t, initializeBootstrap(t.Context(), nilExecer, nil, false, nil, nil), "nil execer")
 }
 
 func TestOpenRejectsNilContext(t *testing.T) {

@@ -75,7 +75,7 @@ func run() int {
 	duckdbConnector, err := connector.Open(
 		ctx,
 		*dbPath,
-		connector.WithBootstrap(func(ctx context.Context, execer driver.ExecerContext) error {
+		connector.WithBootstrapInitializer(func(ctx context.Context, execer driver.ExecerContext) error {
 			return extensions.ParseAndInstall(ctx, execer, *extensionsStr)
 		}),
 	)
