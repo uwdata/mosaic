@@ -66,7 +66,8 @@ duckdbConnector, err := connector.Open(
 )
 ```
 
-For a locked connector, provision trusted extensions separately and load them before the resource policy is finalized:
+For a locked connector, provision trusted extensions separately and load them before the external-access policy is
+finalized:
 
 ```go
 duckdbConnector, err := connector.Open(
@@ -75,7 +76,7 @@ duckdbConnector, err := connector.Open(
 	connector.WithBootstrap(func(ctx context.Context, execer driver.ExecerContext) error {
 		return extensions.LoadInstalled(ctx, execer, "spatial")
 	}),
-	connector.WithResourcePolicy(connector.LocalFiles(connector.LocalFilesOptions{
+	connector.WithExternalAccessPolicy(connector.LocalFiles(connector.LocalFilesOptions{
 		AllowedDirectories: []string{"/srv/mosaic/datasets"},
 	})),
 )
@@ -84,7 +85,8 @@ duckdbConnector, err := connector.Open(
 `WithBootstrap` runs its initializer exactly once before external access is disabled and the configuration is locked.
 `Open` eagerly creates and closes an initial physical connection, so bootstrap or policy failures are returned before the
 connector can reach the query or server layers. `WithConnectionInitializer` instead runs its initializer after bootstrap
-and policy finalization for every physical connection; it can perform only operations permitted by the finalized policy.
+and external-access finalization for every physical connection; it can perform only operations permitted by the finalized
+policy.
 
 Use one live connector per file-backed database path in a process and share it across query pools. DuckDB caches the
 database instance by path, so opening a second connector while the first remains live encounters its existing
@@ -116,15 +118,18 @@ errors are logged and returned as sanitized 500 responses. Authorization can all
 and exact SQL, but cannot rewrite SQL or sandbox the shared process, filesystem, network, extensions, catalogs, or
 credentials.
 
-### DuckDB Resource Policies
+### DuckDB External Access Policies
 
-`pkg/connector` provides two strict external-resource policies. Omitting `WithResourcePolicy` preserves DuckDB's current
-defaults for trusted and backwards-compatible deployments.
+`pkg/connector` provides two strict external-access policies. Omitting `WithExternalAccessPolicy` preserves DuckDB's
+current defaults for trusted and backwards-compatible deployments.
 
 | Policy | DuckDB resources | Extension behavior |
 | --- | --- | --- |
 | `CatalogOnly` | Disables external access outside DuckDB's primary and bootstrap-attached database internals. | Disables automatic installation and loading. |
 | `LocalFiles` | Adds explicit filesystem paths or prefixes to `CatalogOnly`. | Same as `CatalogOnly`. |
+
+These are fixed capability presets, not configurable collections of DuckDB settings. Keeping the hardening settings fixed
+preserves the guarantees implied by each name; only the filesystem grants accepted by `LocalFiles` are configurable.
 
 `LocalFilesOptions.AllowedDirectories` and `AllowedPaths` are passed directly to DuckDB's `allowed_directories` and
 `allowed_paths` settings. The connector does not pre-validate, normalize, resolve, or require the values to exist; DuckDB
@@ -145,11 +150,11 @@ With the bundled DuckDB 1.5.5, the implicit grant for a file-backed primary data
 `WithBootstrap` initializer consists of the database file and the exact sidecar paths `<database>.wal`,
 `<database>.wal.checkpoint`, and `<database>.wal.recovery`; it does not include the containing directory. These attachment
 grants persist after `DETACH`, and `LocalFiles` separately adds its configured grants. SQL functions such as
-`read_blob` may therefore read the implicitly granted files when they exist. Combine a strict policy with a function
-allowlist when that distinction matters. The policies do not add authentication, origin checks, per-user isolation,
-SQL-function policy, CPU and memory limits, or application-level query timeouts. Treat accepted SQL like code running with
-the server process's privileges: run as a non-root user with minimal filesystem permissions and network access, and use
-process or container resource limits.
+`read_blob` may therefore read the implicitly granted files when they exist. Combine a strict external-access policy with
+a function allowlist when that distinction matters. The policies do not add authentication, origin checks, per-user
+isolation, SQL-function policy, CPU and memory limits, or application-level query timeouts. Treat accepted SQL like code
+running with the server process's privileges: run as a non-root user with minimal filesystem permissions and network access,
+and use process or container resource limits.
 
 ### Function Policies
 

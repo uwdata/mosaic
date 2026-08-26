@@ -35,7 +35,7 @@ func ExampleOpen_lockedExtensions() {
 		connector.WithBootstrap(func(ctx context.Context, execer driver.ExecerContext) error {
 			return extensions.LoadInstalled(ctx, execer, "spatial")
 		}),
-		connector.WithResourcePolicy(connector.CatalogOnly()),
+		connector.WithExternalAccessPolicy(connector.CatalogOnly()),
 	)
 	if err != nil {
 		panic(err)

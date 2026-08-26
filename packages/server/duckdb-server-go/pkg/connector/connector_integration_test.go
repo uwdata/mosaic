@@ -25,7 +25,7 @@ import (
 	"github.com/uwdata/mosaic/packages/server/duckdb-server-go/pkg/query"
 )
 
-func TestNoResourcePolicyPreservesDefaults(t *testing.T) {
+func TestNoExternalAccessPolicyPreservesDefaults(t *testing.T) {
 	directory := t.TempDir()
 	path := filepath.Join(directory, "data.parquet")
 	createParquetFixture(t, path)
@@ -52,19 +52,19 @@ func TestNoResourcePolicyPreservesDefaults(t *testing.T) {
 	assert.FileExists(t, attached)
 }
 
-func TestResourcePolicyOverridesDSNSettings(t *testing.T) {
+func TestExternalAccessPolicyOverridesDSNSettings(t *testing.T) {
 	db := openDB(
 		t,
 		":memory:?autoload_known_extensions=true",
-		WithResourcePolicy(CatalogOnly()),
+		WithExternalAccessPolicy(CatalogOnly()),
 	)
-	assertLockedProfileSettings(t, db)
+	assertLockedExternalAccessSettings(t, db)
 }
 
-func TestCatalogOnlyResourcePolicy(t *testing.T) {
-	db := openDB(t, ":memory:", WithResourcePolicy(CatalogOnly()))
+func TestCatalogOnlyExternalAccessPolicy(t *testing.T) {
+	db := openDB(t, ":memory:", WithExternalAccessPolicy(CatalogOnly()))
 
-	assertLockedProfileSettings(t, db)
+	assertLockedExternalAccessSettings(t, db)
 	assertListSettingLength(t, db, "allowed_directories", 0)
 	assertListSettingLength(t, db, "allowed_paths", 0)
 
@@ -109,15 +109,15 @@ func TestCatalogOnlyResourcePolicy(t *testing.T) {
 	assert.NoFileExists(t, outsideDatabase)
 }
 
-func TestCatalogOnlyProfileInitializesDistinctConnectors(t *testing.T) {
+func TestCatalogOnlyExternalAccessPolicyInitializesDistinctConnectors(t *testing.T) {
 	policy := CatalogOnly()
 
 	for range 2 {
-		duckdbConnector, err := Open(t.Context(), ":memory:", WithResourcePolicy(policy))
+		duckdbConnector, err := Open(t.Context(), ":memory:", WithExternalAccessPolicy(policy))
 		require.NoError(t, err)
 		db := sql.OpenDB(duckdbConnector)
 		require.NoError(t, db.PingContext(t.Context()))
-		assertLockedProfileSettings(t, db)
+		assertLockedExternalAccessSettings(t, db)
 		assertQueryError(t, db, t.Context(), "SELECT count(*) FROM read_text('/etc/hosts')")
 		require.NoError(t, db.Close())
 		require.NoError(t, duckdbConnector.Close())
@@ -129,7 +129,7 @@ func TestCatalogOnlyBootstrapsExtensionBeforeLock(t *testing.T) {
 	duckdbConnector, err := Open(
 		t.Context(),
 		":memory:",
-		WithResourcePolicy(CatalogOnly()),
+		WithExternalAccessPolicy(CatalogOnly()),
 		WithBootstrap(func(ctx context.Context, execer driver.ExecerContext) error {
 			bootstrapCalls.Add(1)
 			return extensions.LoadInstalled(ctx, execer, "autocomplete")
@@ -146,7 +146,7 @@ func TestCatalogOnlyBootstrapsExtensionBeforeLock(t *testing.T) {
 	var suggestions int
 	require.NoError(t, db.QueryRowContext(t.Context(), "SELECT count(*) FROM sql_auto_complete('SELECT ')").Scan(&suggestions))
 	assert.Positive(t, suggestions)
-	assertLockedProfileSettings(t, db)
+	assertLockedExternalAccessSettings(t, db)
 	_, err = db.ExecContext(t.Context(), "LOAD httpfs")
 	require.Error(t, err)
 	assert.Equal(t, int64(1), bootstrapCalls.Load())
@@ -156,7 +156,7 @@ func TestPolicyFinalizationRestoresMutableSettings(t *testing.T) {
 	db := openDB(
 		t,
 		":memory:",
-		WithResourcePolicy(CatalogOnly()),
+		WithExternalAccessPolicy(CatalogOnly()),
 		WithBootstrap(func(ctx context.Context, execer driver.ExecerContext) error {
 			for _, statement := range []string{
 				"SET allow_persistent_secrets = true",
@@ -174,7 +174,7 @@ func TestPolicyFinalizationRestoresMutableSettings(t *testing.T) {
 		}),
 	)
 
-	assertLockedProfileSettings(t, db)
+	assertLockedExternalAccessSettings(t, db)
 }
 
 func TestBootstrapAttachAddsPersistentDatabaseGrant(t *testing.T) {
@@ -187,7 +187,7 @@ func TestBootstrapAttachAddsPersistentDatabaseGrant(t *testing.T) {
 	db := openDB(
 		t,
 		":memory:",
-		WithResourcePolicy(CatalogOnly()),
+		WithExternalAccessPolicy(CatalogOnly()),
 		WithBootstrap(func(ctx context.Context, execer driver.ExecerContext) error {
 			_, err := execer.ExecContext(ctx, "ATTACH "+quoteSQL(databasePath)+" AS side (READ_ONLY)", nil)
 			return err
@@ -215,7 +215,7 @@ func TestInitializeConnectionRunsAfterLock(t *testing.T) {
 	duckdbConnector, err := Open(
 		ctx,
 		":memory:",
-		WithResourcePolicy(CatalogOnly()),
+		WithExternalAccessPolicy(CatalogOnly()),
 		WithConnectionInitializer(func(ctx context.Context, execer driver.ExecerContext) error {
 			initializeCalls.Add(1)
 			if err := ctx.Err(); err != nil {
@@ -281,10 +281,10 @@ func TestOpenReturnsBootstrapFailure(t *testing.T) {
 	require.EqualError(t, err, "connector: startup failed: initialize: bootstrap: bootstrap failed")
 }
 
-func TestCatalogOnlyProfilePersistsPrimaryDatabase(t *testing.T) {
+func TestCatalogOnlyExternalAccessPolicyPersistsPrimaryDatabase(t *testing.T) {
 	databasePath := filepath.Join(t.TempDir(), "catalog.duckdb")
 	policy := CatalogOnly()
-	duckdbConnector, err := Open(t.Context(), databasePath, WithResourcePolicy(policy))
+	duckdbConnector, err := Open(t.Context(), databasePath, WithExternalAccessPolicy(policy))
 	require.NoError(t, err)
 	db := sql.OpenDB(duckdbConnector)
 	require.NoError(t, db.PingContext(t.Context()))
@@ -293,7 +293,7 @@ func TestCatalogOnlyProfilePersistsPrimaryDatabase(t *testing.T) {
 	require.NoError(t, db.Close())
 	require.NoError(t, duckdbConnector.Close())
 
-	duckdbConnector, err = Open(t.Context(), databasePath, WithResourcePolicy(policy))
+	duckdbConnector, err = Open(t.Context(), databasePath, WithExternalAccessPolicy(policy))
 	require.NoError(t, err)
 	db = sql.OpenDB(duckdbConnector)
 	require.NoError(t, db.PingContext(t.Context()))
@@ -308,13 +308,13 @@ func TestCatalogOnlyProfilePersistsPrimaryDatabase(t *testing.T) {
 
 func TestFileBackedDatabaseSupportsOneLiveConnector(t *testing.T) {
 	databasePath := filepath.Join(t.TempDir(), "catalog.duckdb")
-	first, err := Open(t.Context(), databasePath, WithResourcePolicy(CatalogOnly()))
+	first, err := Open(t.Context(), databasePath, WithExternalAccessPolicy(CatalogOnly()))
 	require.NoError(t, err)
 	t.Cleanup(func() {
 		require.NoError(t, first.Close())
 	})
 
-	second, err := Open(t.Context(), databasePath, WithResourcePolicy(CatalogOnly()))
+	second, err := Open(t.Context(), databasePath, WithExternalAccessPolicy(CatalogOnly()))
 	require.Nil(t, second)
 	require.ErrorIs(t, err, ErrStartup)
 	require.ErrorContains(t, err, "configuration has been locked")
@@ -323,10 +323,10 @@ func TestFileBackedDatabaseSupportsOneLiveConnector(t *testing.T) {
 	t.Cleanup(func() {
 		require.NoError(t, db.Close())
 	})
-	assertLockedProfileSettings(t, db)
+	assertLockedExternalAccessSettings(t, db)
 }
 
-func TestLocalFilesResourcePolicy(t *testing.T) {
+func TestLocalFilesExternalAccessPolicy(t *testing.T) {
 	directory := t.TempDir()
 	path := filepath.Join(directory, "allowed.parquet")
 	createParquetFixture(t, path)
@@ -334,11 +334,11 @@ func TestLocalFilesResourcePolicy(t *testing.T) {
 	db := openDB(
 		t,
 		":memory:",
-		WithResourcePolicy(LocalFiles(LocalFilesOptions{
+		WithExternalAccessPolicy(LocalFiles(LocalFilesOptions{
 			AllowedDirectories: []string{directory},
 		})),
 	)
-	assertLockedProfileSettings(t, db)
+	assertLockedExternalAccessSettings(t, db)
 	assertListSettingLength(t, db, "allowed_directories", 1)
 	assertListSettingLength(t, db, "allowed_paths", 0)
 	canonicalPath := filepath.Join(directory, "allowed.parquet")
@@ -381,7 +381,7 @@ func TestLocalFilesResourcePolicy(t *testing.T) {
 	assert.NoFileExists(t, outsideDatabase)
 }
 
-func TestLocalFilesProfileAllowsOnlyExactPath(t *testing.T) {
+func TestLocalFilesExternalAccessPolicyAllowsOnlyExactPath(t *testing.T) {
 	directory := t.TempDir()
 	allowed := filepath.Join(directory, "allowed.parquet")
 	createParquetFixture(t, allowed)
@@ -391,11 +391,11 @@ func TestLocalFilesProfileAllowsOnlyExactPath(t *testing.T) {
 	db := openDB(
 		t,
 		":memory:",
-		WithResourcePolicy(LocalFiles(LocalFilesOptions{
+		WithExternalAccessPolicy(LocalFiles(LocalFilesOptions{
 			AllowedPaths: []string{allowed},
 		})),
 	)
-	assertLockedProfileSettings(t, db)
+	assertLockedExternalAccessSettings(t, db)
 	assertListSettingLength(t, db, "allowed_directories", 0)
 	assertListSettingLength(t, db, "allowed_paths", 1)
 
@@ -405,7 +405,7 @@ func TestLocalFilesProfileAllowsOnlyExactPath(t *testing.T) {
 	assertQueryError(t, db, t.Context(), "SELECT count(*) FROM "+quoteSQL(outside))
 }
 
-func TestLocalFilesProfileRejectsSymlinkEscapes(t *testing.T) {
+func TestLocalFilesExternalAccessPolicyRejectsSymlinkEscapes(t *testing.T) {
 	allowedDirectory := t.TempDir()
 	outsideDirectory := t.TempDir()
 	outside := filepath.Join(outsideDirectory, "outside.parquet")
@@ -420,7 +420,7 @@ func TestLocalFilesProfileRejectsSymlinkEscapes(t *testing.T) {
 	db := openDB(
 		t,
 		":memory:",
-		WithResourcePolicy(LocalFiles(LocalFilesOptions{
+		WithExternalAccessPolicy(LocalFiles(LocalFilesOptions{
 			AllowedDirectories: []string{allowedDirectory},
 		})),
 	)
@@ -449,14 +449,14 @@ func TestLocalFilesProfileRejectsSymlinkEscapes(t *testing.T) {
 	require.Error(t, err)
 }
 
-func TestLocalFilesProfileComposesWithFunctionAllowlist(t *testing.T) {
+func TestLocalFilesExternalAccessPolicyComposesWithFunctionAllowlist(t *testing.T) {
 	directory := t.TempDir()
 	path := filepath.Join(directory, "allowed.parquet")
 	createParquetFixture(t, path)
 	duckdbConnector, err := Open(
 		t.Context(),
 		":memory:",
-		WithResourcePolicy(LocalFiles(LocalFilesOptions{
+		WithExternalAccessPolicy(LocalFiles(LocalFilesOptions{
 			AllowedDirectories: []string{directory},
 		})),
 	)
@@ -488,14 +488,14 @@ func TestLocalFilesProfileComposesWithFunctionAllowlist(t *testing.T) {
 	assert.NotEmpty(t, arrowResult)
 }
 
-func TestLocalFilesProfileInitializesConcurrentConnections(t *testing.T) {
+func TestLocalFilesExternalAccessPolicyInitializesConcurrentConnections(t *testing.T) {
 	directory := t.TempDir()
 	path := filepath.Join(directory, "allowed.parquet")
 	createParquetFixture(t, path)
 	duckdbConnector, err := Open(
 		t.Context(),
 		":memory:",
-		WithResourcePolicy(LocalFiles(LocalFilesOptions{
+		WithExternalAccessPolicy(LocalFiles(LocalFilesOptions{
 			AllowedDirectories: []string{directory},
 		})),
 	)
@@ -565,7 +565,7 @@ func TestLocalFilesProfileInitializesConcurrentConnections(t *testing.T) {
 	}
 }
 
-func TestLockedProfilesRejectCommonExternalSchemes(t *testing.T) {
+func TestExternalAccessPoliciesRejectCommonExternalSchemes(t *testing.T) {
 	var requests atomic.Int64
 	listener, err := net.Listen("tcp4", "127.0.0.1:0")
 	require.NoError(t, err)
@@ -580,7 +580,7 @@ func TestLockedProfilesRejectCommonExternalSchemes(t *testing.T) {
 	server.Start()
 	t.Cleanup(server.Close)
 
-	db := openDB(t, ":memory:", WithResourcePolicy(CatalogOnly()))
+	db := openDB(t, ":memory:", WithExternalAccessPolicy(CatalogOnly()))
 
 	host := strings.TrimPrefix(server.URL, "http://")
 	paths := map[string]string{
@@ -614,7 +614,7 @@ func TestLockedProfilesRejectCommonExternalSchemes(t *testing.T) {
 	assert.Zero(t, requests.Load())
 }
 
-func assertLockedProfileSettings(t *testing.T, db *sql.DB) {
+func assertLockedExternalAccessSettings(t *testing.T, db *sql.DB) {
 	t.Helper()
 	settings := map[string]string{
 		"allow_community_extensions":         "false",
