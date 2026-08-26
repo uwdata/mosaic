@@ -7,8 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"net/url"
-	"os"
-	"path/filepath"
+	"strconv"
 	"strings"
 	"sync"
 
@@ -25,24 +24,92 @@ var (
 // Initializer performs trusted DuckDB initialization.
 type Initializer func(context.Context, driver.ExecerContext) error
 
-// Config defines DuckDB startup and runtime initialization.
-type Config struct {
-	// DSN is the database path and optional DuckDB query-string configuration.
-	DSN string
+type config struct {
+	policy                *ResourcePolicy
+	bootstrap             Initializer
+	connectionInitializer Initializer
+	settings              []duckDBSetting
+}
 
-	// Bootstrap runs exactly once before Policy is finalized. It may load trusted
-	// extensions, create secrets, or attach catalogs that the locked server needs.
-	// ATTACH grants the database and its sidecars for the connector lifetime;
-	// DETACH does not revoke those paths.
-	Bootstrap Initializer
+// Option configures Open.
+type Option interface {
+	apply(*config) error
+}
 
-	// InitializeConnection runs for every physical connection after Bootstrap
-	// and Policy finalization. It receives a non-canceling context derived from
-	// the context passed to Open and must be safe for concurrent calls.
-	InitializeConnection Initializer
+type optionFunc func(*config) error
 
-	// Policy is nil for DuckDB compatibility behavior.
-	Policy *ResourcePolicy
+func (f optionFunc) apply(cfg *config) error {
+	if f == nil {
+		return errors.New("option must not be nil")
+	}
+	return f(cfg)
+}
+
+// WithResourcePolicy applies a DuckDB external-resource policy. A nil policy
+// preserves DuckDB compatibility behavior.
+func WithResourcePolicy(policy *ResourcePolicy) Option {
+	return optionFunc(func(cfg *config) error {
+		cfg.policy = policy
+		return nil
+	})
+}
+
+// WithBootstrap configures trusted initialization that runs exactly once before
+// the resource policy is finalized. ATTACH grants the database and its sidecars
+// for the connector lifetime; DETACH does not revoke those paths.
+func WithBootstrap(initializer Initializer) Option {
+	return optionFunc(func(cfg *config) error {
+		cfg.bootstrap = initializer
+		return nil
+	})
+}
+
+// WithConnectionInitializer configures initialization for every physical
+// connection after bootstrap and policy finalization. The initializer receives
+// a non-canceling context derived from the context passed to Open and must be
+// safe for concurrent calls.
+func WithConnectionInitializer(initializer Initializer) Option {
+	return optionFunc(func(cfg *config) error {
+		cfg.connectionInitializer = initializer
+		return nil
+	})
+}
+
+// WithAccessMode sets DuckDB's access_mode configuration.
+func WithAccessMode(accessMode string) Option {
+	return WithSetting("access_mode", accessMode)
+}
+
+// WithThreads sets DuckDB's worker thread count.
+func WithThreads(threads int) Option {
+	return WithSetting("threads", strconv.Itoa(threads))
+}
+
+// WithMemoryLimit sets DuckDB's memory limit, including its unit.
+func WithMemoryLimit(memoryLimit string) Option {
+	return WithSetting("memory_limit", memoryLimit)
+}
+
+// WithSetting sets an arbitrary global DuckDB configuration value. DuckDB
+// validates the setting name and value when Open creates the database.
+func WithSetting(name, value string) Option {
+	return optionFunc(func(cfg *config) error {
+		cfg.settings = append(cfg.settings, duckDBSetting{name: name, value: value})
+		return nil
+	})
+}
+
+func applyOptions(options []Option) (config, error) {
+	var cfg config
+	for i, option := range options {
+		if option == nil {
+			return cfg, fmt.Errorf("option %d must not be nil", i)
+		}
+		if err := option.apply(&cfg); err != nil {
+			return cfg, fmt.Errorf("apply option %d: %w", i, err)
+		}
+	}
+	return cfg, nil
 }
 
 // LocalFilesOptions configures the filesystem capabilities of LocalFiles.
@@ -57,7 +124,6 @@ type LocalFilesOptions struct {
 type ResourcePolicy struct {
 	allowedDirectories []string
 	allowedPaths       []string
-	requireFiles       bool
 }
 
 // CatalogOnly disables external access outside DuckDB's primary and bootstrap-attached database internals.
@@ -70,7 +136,6 @@ func LocalFiles(options LocalFilesOptions) *ResourcePolicy {
 	return &ResourcePolicy{
 		allowedDirectories: append([]string(nil), options.AllowedDirectories...),
 		allowedPaths:       append([]string(nil), options.AllowedPaths...),
-		requireFiles:       true,
 	}
 }
 
@@ -78,23 +143,29 @@ func LocalFiles(options LocalFilesOptions) *ResourcePolicy {
 // verifies the first physical connection before returning it to the caller. A
 // file-backed database supports one live connector per process; share that
 // connector across query pools rather than calling Open again for the same path.
-func Open(ctx context.Context, config Config) (*duckdb.Connector, error) {
+func Open(ctx context.Context, dsn string, options ...Option) (*duckdb.Connector, error) {
 	if ctx == nil {
 		return nil, fmt.Errorf("%w: nil context", ErrInvalidConfig)
 	}
 
-	dsn, policy, err := resolveResourcePolicy(config.DSN, config.Policy)
+	cfg, err := applyOptions(options)
 	if err != nil {
 		return nil, fmt.Errorf("%w: %w", ErrInvalidConfig, err)
 	}
+	policy := resolveResourcePolicy(cfg.policy)
+	settings := cfg.settings
+	if policy != nil {
+		settings = append(settings, strictPolicySettings...)
+	}
+	dsn = addDuckDBSettings(dsn, settings)
 
 	startup := startupInitializer{
 		ctx:       ctx,
-		bootstrap: config.Bootstrap,
+		bootstrap: cfg.bootstrap,
 		policy:    policy,
 	}
 	connectionCtx := context.WithoutCancel(ctx)
-	initializeConnection := config.InitializeConnection
+	initializeConnection := cfg.connectionInitializer
 	duckdbConnector, err := duckdb.NewConnector(dsn, func(execer driver.ExecerContext) error {
 		if err := startup.initialize(execer); err != nil {
 			return err
@@ -171,40 +242,14 @@ var strictPolicySettings = []duckDBSetting{
 	{name: "enable_external_file_cache", value: "false"},
 }
 
-func resolveResourcePolicy(
-	databaseDSN string,
-	policy *ResourcePolicy,
-) (string, *resolvedResourcePolicy, error) {
+func resolveResourcePolicy(policy *ResourcePolicy) *resolvedResourcePolicy {
 	if policy == nil {
-		return databaseDSN, nil, nil
+		return nil
 	}
-	if err := validateLocalDatabaseDSN(databaseDSN); err != nil {
-		return "", nil, err
+	return &resolvedResourcePolicy{
+		allowedDirectories: append([]string(nil), policy.allowedDirectories...),
+		allowedPaths:       append([]string(nil), policy.allowedPaths...),
 	}
-	if err := rejectPolicySettings(databaseDSN); err != nil {
-		return "", nil, err
-	}
-
-	directories, err := canonicalLocalPaths(policy.allowedDirectories, true)
-	if err != nil {
-		return "", nil, fmt.Errorf("invalid allowed directory: %w", err)
-	}
-	paths, err := canonicalLocalPaths(policy.allowedPaths, false)
-	if err != nil {
-		return "", nil, fmt.Errorf("invalid allowed path: %w", err)
-	}
-	if policy.requireFiles && len(directories) == 0 && len(paths) == 0 {
-		return "", nil, errors.New("local-files policy requires at least one allowed directory or path")
-	}
-
-	dsn, err := addDuckDBSettings(databaseDSN, strictPolicySettings)
-	if err != nil {
-		return "", nil, err
-	}
-	return dsn, &resolvedResourcePolicy{
-		allowedDirectories: directories,
-		allowedPaths:       paths,
-	}, nil
 }
 
 func (p *resolvedResourcePolicy) finalize(ctx context.Context, execer driver.ExecerContext) error {
@@ -230,90 +275,21 @@ func (p *resolvedResourcePolicy) finalize(ctx context.Context, execer driver.Exe
 	return nil
 }
 
-func validateLocalDatabaseDSN(databaseDSN string) error {
-	database, _, _ := strings.Cut(databaseDSN, "?")
-	if database == "" || database == ":memory:" || hasWindowsDrivePrefix(database) {
-		return nil
+func addDuckDBSettings(databaseDSN string, settings []duckDBSetting) string {
+	if len(settings) == 0 {
+		return databaseDSN
 	}
-	if isNetworkPath(database) {
-		return fmt.Errorf("database path %q is not a local filesystem path", database)
-	}
-	parsed, err := url.Parse(database)
-	if err != nil {
-		return fmt.Errorf("invalid database path %q: %w", database, err)
-	}
-	if parsed.Scheme != "" || parsed.Host != "" {
-		return fmt.Errorf("database path %q is not a local filesystem path", database)
-	}
-	return nil
-}
-
-func hasWindowsDrivePrefix(path string) bool {
-	if len(path) < 2 || path[1] != ':' {
-		return false
-	}
-	letter := path[0]
-	return letter >= 'a' && letter <= 'z' || letter >= 'A' && letter <= 'Z'
-}
-
-func isNetworkPath(path string) bool {
-	return strings.HasPrefix(path, `\\`) || strings.HasPrefix(path, "//")
-}
-
-func addDuckDBSettings(databaseDSN string, settings []duckDBSetting) (string, error) {
 	database, rawQuery, _ := strings.Cut(databaseDSN, "?")
-	query, err := url.ParseQuery(rawQuery)
-	if err != nil {
-		return "", fmt.Errorf("invalid database configuration: %w", err)
-	}
+	query := make(url.Values, len(settings))
 	for _, setting := range settings {
 		query.Set(setting.name, setting.value)
 	}
-	return database + "?" + query.Encode(), nil
-}
-
-func canonicalLocalPaths(values []string, directories bool) ([]string, error) {
-	paths := make([]string, 0, len(values))
-	seen := make(map[string]struct{}, len(values))
-	for _, value := range values {
-		value = strings.TrimSpace(value)
-		if value == "" {
-			return nil, errors.New("path is blank")
-		}
-		parsed, err := url.Parse(value)
-		if err != nil {
-			return nil, fmt.Errorf("%q: %w", value, err)
-		}
-		if isNetworkPath(value) || parsed.Scheme != "" && !hasWindowsDrivePrefix(value) {
-			return nil, fmt.Errorf("%q is not a local filesystem path", value)
-		}
-
-		absolute, err := filepath.Abs(value)
-		if err != nil {
-			return nil, fmt.Errorf("%q: %w", value, err)
-		}
-		absolute, err = filepath.EvalSymlinks(absolute)
-		if err != nil {
-			return nil, fmt.Errorf("%q: %w", value, err)
-		}
-		info, err := os.Stat(absolute)
-		if err != nil {
-			return nil, fmt.Errorf("%q: %w", value, err)
-		}
-		if directories != info.IsDir() {
-			kind := "file"
-			if directories {
-				kind = "directory"
-			}
-			return nil, fmt.Errorf("%q is not a %s", value, kind)
-		}
-		if _, ok := seen[absolute]; ok {
-			continue
-		}
-		seen[absolute] = struct{}{}
-		paths = append(paths, absolute)
+	configured := query.Encode()
+	if rawQuery != "" {
+		// duckdb-go uses the first value for duplicate DSN settings.
+		configured += "&" + rawQuery
 	}
-	return paths, nil
+	return database + "?" + configured
 }
 
 func duckDBStringList(values []string) string {
@@ -322,32 +298,6 @@ func duckDBStringList(values []string) string {
 		quoted[i] = "'" + strings.ReplaceAll(value, "'", "''") + "'"
 	}
 	return "[" + strings.Join(quoted, ",") + "]"
-}
-
-func rejectPolicySettings(databaseDSN string) error {
-	_, rawQuery, _ := strings.Cut(databaseDSN, "?")
-	query, err := url.ParseQuery(rawQuery)
-	if err != nil {
-		return fmt.Errorf("invalid database configuration: %w", err)
-	}
-	settings := []string{
-		"allowed_directories",
-		"allowed_paths",
-		"enable_external_access",
-		"lock_configuration",
-		"temp_directory",
-	}
-	for _, setting := range strictPolicySettings {
-		settings = append(settings, setting.name)
-	}
-	for existing := range query {
-		for _, setting := range settings {
-			if strings.EqualFold(existing, setting) {
-				return fmt.Errorf("database configuration %q is owned by the resource policy", existing)
-			}
-		}
-	}
-	return nil
 }
 
 func closeAfterError(duckdbConnector *duckdb.Connector, err error) error {

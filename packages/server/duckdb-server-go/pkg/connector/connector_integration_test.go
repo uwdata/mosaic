@@ -29,7 +29,7 @@ func TestCompatSecurityProfilePreservesDefaults(t *testing.T) {
 	directory := t.TempDir()
 	path := filepath.Join(directory, "data.parquet")
 	createParquetFixture(t, path)
-	db := openDB(t, Config{DSN: ":memory:"})
+	db := openDB(t, ":memory:")
 
 	var externalAccess, configurationLocked bool
 	require.NoError(t, db.QueryRowContext(
@@ -52,8 +52,49 @@ func TestCompatSecurityProfilePreservesDefaults(t *testing.T) {
 	assert.FileExists(t, attached)
 }
 
+func TestDuckDBSettings(t *testing.T) {
+	db := openDB(
+		t,
+		":memory:?preserve_identifier_case=true",
+		WithAccessMode("read_write"),
+		WithThreads(1),
+		WithMemoryLimit("64MB"),
+		WithSetting("preserve_identifier_case", "false"),
+	)
+
+	var accessMode, memoryLimit string
+	var threads int
+	var preserveIdentifierCase bool
+	require.NoError(t, db.QueryRowContext(
+		t.Context(),
+		"SELECT current_setting('access_mode'), current_setting('threads'), current_setting('memory_limit'), current_setting('preserve_identifier_case')",
+	).Scan(&accessMode, &threads, &memoryLimit, &preserveIdentifierCase))
+	assert.Equal(t, "read_write", accessMode)
+	assert.Equal(t, 1, threads)
+	assert.NotEmpty(t, memoryLimit)
+	assert.False(t, preserveIdentifierCase)
+}
+
+func TestOpenDefersInvalidSettingsToDuckDB(t *testing.T) {
+	duckdbConnector, err := Open(t.Context(), ":memory:", WithSetting("not_a_duckdb_setting", "true"))
+	require.Nil(t, duckdbConnector)
+	require.ErrorIs(t, err, ErrStartup)
+	require.NotErrorIs(t, err, ErrInvalidConfig)
+	require.ErrorContains(t, err, "not_a_duckdb_setting")
+}
+
+func TestResourcePolicyOverridesDuckDBSettings(t *testing.T) {
+	db := openDB(
+		t,
+		":memory:?autoload_known_extensions=true",
+		WithSetting("autoload_known_extensions", "true"),
+		WithResourcePolicy(CatalogOnly()),
+	)
+	assertLockedProfileSettings(t, db)
+}
+
 func TestCatalogOnlySecurityProfile(t *testing.T) {
-	db := openDB(t, Config{DSN: ":memory:", Policy: CatalogOnly()})
+	db := openDB(t, ":memory:", WithResourcePolicy(CatalogOnly()))
 
 	assertLockedProfileSettings(t, db)
 	assertListSettingLength(t, db, "allowed_directories", 0)
@@ -104,7 +145,7 @@ func TestCatalogOnlyProfileInitializesDistinctConnectors(t *testing.T) {
 	policy := CatalogOnly()
 
 	for range 2 {
-		duckdbConnector, err := Open(t.Context(), Config{DSN: ":memory:", Policy: policy})
+		duckdbConnector, err := Open(t.Context(), ":memory:", WithResourcePolicy(policy))
 		require.NoError(t, err)
 		db := sql.OpenDB(duckdbConnector)
 		require.NoError(t, db.PingContext(t.Context()))
@@ -117,14 +158,15 @@ func TestCatalogOnlyProfileInitializesDistinctConnectors(t *testing.T) {
 
 func TestCatalogOnlyBootstrapsExtensionBeforeLock(t *testing.T) {
 	var bootstrapCalls atomic.Int64
-	duckdbConnector, err := Open(t.Context(), Config{
-		DSN:    ":memory:",
-		Policy: CatalogOnly(),
-		Bootstrap: func(ctx context.Context, execer driver.ExecerContext) error {
+	duckdbConnector, err := Open(
+		t.Context(),
+		":memory:",
+		WithResourcePolicy(CatalogOnly()),
+		WithBootstrap(func(ctx context.Context, execer driver.ExecerContext) error {
 			bootstrapCalls.Add(1)
 			return extensions.LoadInstalled(ctx, execer, "autocomplete")
-		},
-	})
+		}),
+	)
 	require.NoError(t, err)
 	assert.Equal(t, int64(1), bootstrapCalls.Load())
 
@@ -143,10 +185,11 @@ func TestCatalogOnlyBootstrapsExtensionBeforeLock(t *testing.T) {
 }
 
 func TestPolicyFinalizationRestoresMutableSettings(t *testing.T) {
-	db := openDB(t, Config{
-		DSN:    ":memory:",
-		Policy: CatalogOnly(),
-		Bootstrap: func(ctx context.Context, execer driver.ExecerContext) error {
+	db := openDB(
+		t,
+		":memory:",
+		WithResourcePolicy(CatalogOnly()),
+		WithBootstrap(func(ctx context.Context, execer driver.ExecerContext) error {
 			for _, statement := range []string{
 				"SET allow_persistent_secrets = true",
 				"SET allow_extensions_metadata_mismatch = true",
@@ -160,8 +203,8 @@ func TestPolicyFinalizationRestoresMutableSettings(t *testing.T) {
 				}
 			}
 			return nil
-		},
-	})
+		}),
+	)
 
 	assertLockedProfileSettings(t, db)
 }
@@ -173,14 +216,15 @@ func TestBootstrapAttachAddsPersistentDatabaseGrant(t *testing.T) {
 	neighborPath := filepath.Join(directory, "neighbor.txt")
 	require.NoError(t, os.WriteFile(neighborPath, []byte("blocked"), 0o600))
 
-	db := openDB(t, Config{
-		DSN:    ":memory:",
-		Policy: CatalogOnly(),
-		Bootstrap: func(ctx context.Context, execer driver.ExecerContext) error {
+	db := openDB(
+		t,
+		":memory:",
+		WithResourcePolicy(CatalogOnly()),
+		WithBootstrap(func(ctx context.Context, execer driver.ExecerContext) error {
 			_, err := execer.ExecContext(ctx, "ATTACH "+quoteSQL(databasePath)+" AS side (READ_ONLY)", nil)
 			return err
-		},
-	})
+		}),
+	)
 	var count int
 	require.NoError(t, db.QueryRowContext(
 		t.Context(),
@@ -200,10 +244,11 @@ func TestBootstrapAttachAddsPersistentDatabaseGrant(t *testing.T) {
 func TestInitializeConnectionRunsAfterLock(t *testing.T) {
 	ctx, cancel := context.WithCancel(t.Context())
 	var initializeCalls atomic.Int64
-	duckdbConnector, err := Open(ctx, Config{
-		DSN:    ":memory:",
-		Policy: CatalogOnly(),
-		InitializeConnection: func(ctx context.Context, execer driver.ExecerContext) error {
+	duckdbConnector, err := Open(
+		ctx,
+		":memory:",
+		WithResourcePolicy(CatalogOnly()),
+		WithConnectionInitializer(func(ctx context.Context, execer driver.ExecerContext) error {
 			initializeCalls.Add(1)
 			if err := ctx.Err(); err != nil {
 				return err
@@ -212,8 +257,8 @@ func TestInitializeConnectionRunsAfterLock(t *testing.T) {
 				return fmt.Errorf("expected locked configuration error, got %v", err)
 			}
 			return nil
-		},
-	})
+		}),
+	)
 	require.NoError(t, err)
 	assert.Equal(t, int64(1), initializeCalls.Load())
 	cancel()
@@ -230,15 +275,16 @@ func TestInitializeConnectionRunsAfterLock(t *testing.T) {
 func TestInitializeConnectionFailureRetainsStartupClassification(t *testing.T) {
 	sentinel := errors.New("provisioning unavailable")
 	var initializeCalls atomic.Int64
-	duckdbConnector, err := Open(t.Context(), Config{
-		DSN: ":memory:",
-		InitializeConnection: func(context.Context, driver.ExecerContext) error {
+	duckdbConnector, err := Open(
+		t.Context(),
+		":memory:",
+		WithConnectionInitializer(func(context.Context, driver.ExecerContext) error {
 			if initializeCalls.Add(1) > 1 {
 				return sentinel
 			}
 			return nil
-		},
-	})
+		}),
+	)
 	require.NoError(t, err)
 	db := sql.OpenDB(duckdbConnector)
 	t.Cleanup(func() {
@@ -254,12 +300,13 @@ func TestInitializeConnectionFailureRetainsStartupClassification(t *testing.T) {
 
 func TestOpenReturnsBootstrapFailure(t *testing.T) {
 	sentinel := fmt.Errorf("bootstrap failed")
-	duckdbConnector, err := Open(t.Context(), Config{
-		DSN: ":memory:",
-		Bootstrap: func(context.Context, driver.ExecerContext) error {
+	duckdbConnector, err := Open(
+		t.Context(),
+		":memory:",
+		WithBootstrap(func(context.Context, driver.ExecerContext) error {
 			return sentinel
-		},
-	})
+		}),
+	)
 	require.Nil(t, duckdbConnector)
 	require.ErrorIs(t, err, ErrStartup)
 	require.ErrorIs(t, err, sentinel)
@@ -269,7 +316,7 @@ func TestOpenReturnsBootstrapFailure(t *testing.T) {
 func TestCatalogOnlyProfilePersistsPrimaryDatabase(t *testing.T) {
 	databasePath := filepath.Join(t.TempDir(), "catalog.duckdb")
 	policy := CatalogOnly()
-	duckdbConnector, err := Open(t.Context(), Config{DSN: databasePath, Policy: policy})
+	duckdbConnector, err := Open(t.Context(), databasePath, WithResourcePolicy(policy))
 	require.NoError(t, err)
 	db := sql.OpenDB(duckdbConnector)
 	require.NoError(t, db.PingContext(t.Context()))
@@ -278,7 +325,7 @@ func TestCatalogOnlyProfilePersistsPrimaryDatabase(t *testing.T) {
 	require.NoError(t, db.Close())
 	require.NoError(t, duckdbConnector.Close())
 
-	duckdbConnector, err = Open(t.Context(), Config{DSN: databasePath, Policy: policy})
+	duckdbConnector, err = Open(t.Context(), databasePath, WithResourcePolicy(policy))
 	require.NoError(t, err)
 	db = sql.OpenDB(duckdbConnector)
 	require.NoError(t, db.PingContext(t.Context()))
@@ -293,13 +340,13 @@ func TestCatalogOnlyProfilePersistsPrimaryDatabase(t *testing.T) {
 
 func TestFileBackedDatabaseSupportsOneLiveConnector(t *testing.T) {
 	databasePath := filepath.Join(t.TempDir(), "catalog.duckdb")
-	first, err := Open(t.Context(), Config{DSN: databasePath, Policy: CatalogOnly()})
+	first, err := Open(t.Context(), databasePath, WithResourcePolicy(CatalogOnly()))
 	require.NoError(t, err)
 	t.Cleanup(func() {
 		require.NoError(t, first.Close())
 	})
 
-	second, err := Open(t.Context(), Config{DSN: databasePath, Policy: CatalogOnly()})
+	second, err := Open(t.Context(), databasePath, WithResourcePolicy(CatalogOnly()))
 	require.Nil(t, second)
 	require.ErrorIs(t, err, ErrStartup)
 	require.ErrorContains(t, err, "configuration has been locked")
@@ -316,12 +363,13 @@ func TestLocalFilesSecurityProfile(t *testing.T) {
 	path := filepath.Join(directory, "allowed.parquet")
 	createParquetFixture(t, path)
 
-	db := openDB(t, Config{
-		DSN: ":memory:",
-		Policy: LocalFiles(LocalFilesOptions{
+	db := openDB(
+		t,
+		":memory:",
+		WithResourcePolicy(LocalFiles(LocalFilesOptions{
 			AllowedDirectories: []string{directory},
-		}),
-	})
+		})),
+	)
 	assertLockedProfileSettings(t, db)
 	assertListSettingLength(t, db, "allowed_directories", 1)
 	assertListSettingLength(t, db, "allowed_paths", 0)
@@ -372,12 +420,13 @@ func TestLocalFilesProfileAllowsOnlyExactPath(t *testing.T) {
 	outside := filepath.Join(directory, "outside.parquet")
 	createParquetFixture(t, outside)
 
-	db := openDB(t, Config{
-		DSN: ":memory:",
-		Policy: LocalFiles(LocalFilesOptions{
+	db := openDB(
+		t,
+		":memory:",
+		WithResourcePolicy(LocalFiles(LocalFilesOptions{
 			AllowedPaths: []string{allowed},
-		}),
-	})
+		})),
+	)
 	assertLockedProfileSettings(t, db)
 	assertListSettingLength(t, db, "allowed_directories", 0)
 	assertListSettingLength(t, db, "allowed_paths", 1)
@@ -400,12 +449,13 @@ func TestLocalFilesProfileRejectsSymlinkEscapes(t *testing.T) {
 	insideLink := filepath.Join(allowedDirectory, "inside-link.parquet")
 	require.NoError(t, os.Symlink(inside, insideLink))
 
-	db := openDB(t, Config{
-		DSN: ":memory:",
-		Policy: LocalFiles(LocalFilesOptions{
+	db := openDB(
+		t,
+		":memory:",
+		WithResourcePolicy(LocalFiles(LocalFilesOptions{
 			AllowedDirectories: []string{allowedDirectory},
-		}),
-	})
+		})),
+	)
 	var answer int
 	require.NoError(t, db.QueryRowContext(t.Context(), "SELECT answer FROM "+quoteSQL(insideLink)).Scan(&answer))
 	assert.Equal(t, 42, answer)
@@ -435,12 +485,13 @@ func TestLocalFilesProfileComposesWithFunctionAllowlist(t *testing.T) {
 	directory := t.TempDir()
 	path := filepath.Join(directory, "allowed.parquet")
 	createParquetFixture(t, path)
-	duckdbConnector, err := Open(t.Context(), Config{
-		DSN: ":memory:",
-		Policy: LocalFiles(LocalFilesOptions{
+	duckdbConnector, err := Open(
+		t.Context(),
+		":memory:",
+		WithResourcePolicy(LocalFiles(LocalFilesOptions{
 			AllowedDirectories: []string{directory},
-		}),
-	})
+		})),
+	)
 	require.NoError(t, err)
 	db, err := query.New(t.Context(), duckdbConnector, query.WithFunctionAllowlist(query.FunctionAllowlistOptions{
 		Include: []string{"read_parquet"},
@@ -473,12 +524,13 @@ func TestLocalFilesProfileInitializesConcurrentConnections(t *testing.T) {
 	directory := t.TempDir()
 	path := filepath.Join(directory, "allowed.parquet")
 	createParquetFixture(t, path)
-	duckdbConnector, err := Open(t.Context(), Config{
-		DSN: ":memory:",
-		Policy: LocalFiles(LocalFilesOptions{
+	duckdbConnector, err := Open(
+		t.Context(),
+		":memory:",
+		WithResourcePolicy(LocalFiles(LocalFilesOptions{
 			AllowedDirectories: []string{directory},
-		}),
-	})
+		})),
+	)
 	require.NoError(t, err)
 	db := sql.OpenDB(duckdbConnector)
 	t.Cleanup(func() {
@@ -560,7 +612,7 @@ func TestLockedProfilesRejectCommonExternalSchemes(t *testing.T) {
 	server.Start()
 	t.Cleanup(server.Close)
 
-	db := openDB(t, Config{DSN: ":memory:", Policy: CatalogOnly()})
+	db := openDB(t, ":memory:", WithResourcePolicy(CatalogOnly()))
 
 	host := strings.TrimPrefix(server.URL, "http://")
 	paths := map[string]string{
@@ -638,9 +690,9 @@ func assertQueryError(t *testing.T, db *sql.DB, ctx context.Context, query strin
 	require.Error(t, db.QueryRowContext(ctx, query).Scan(&count))
 }
 
-func openDB(t *testing.T, config Config) *sql.DB {
+func openDB(t *testing.T, dsn string, options ...Option) *sql.DB {
 	t.Helper()
-	duckdbConnector, err := Open(t.Context(), config)
+	duckdbConnector, err := Open(t.Context(), dsn, options...)
 	require.NoError(t, err)
 	db := sql.OpenDB(duckdbConnector)
 	require.NoError(t, db.PingContext(t.Context()))
