@@ -189,8 +189,8 @@ duckdbConnector, err := connector.Open(
 )
 ```
 
-Core startup settings may still be supplied in the DuckDB DSN. The connector leaves resource settings in the DSN to
-DuckDB-Go and applies option settings afterward. Use options for extension-defined settings that become available during
+Core startup settings may still be supplied in the DuckDB DSN, but the connector does not define their application order.
+Prefer ordered setting options for mutable configuration and extension-defined settings that become available during
 bootstrap.
 
 Use one live connector per file-backed database path in a process and share it across query pools. DuckDB caches the
@@ -237,13 +237,13 @@ current access and locking defaults for trusted and backwards-compatible deploym
 | `WithAllowedPaths(...)` | Applies the same restrictions and adds exact local or remote path grants. | Same as `WithCatalogOnly()`. |
 
 External access, extension installation and autoloading, secret exposure, filesystem grants, configuration-lock
-exceptions, and the final lock remain fixed by these options. `WithSetting` rejects attempts to change those settings in
-locked mode. Repeated allowed-path or allowed-directory options append their values. Combining `WithCatalogOnly()` with
-either grant option is legal but redundant because each grant option already enables the same locked mode.
+exceptions, and the final lock are configured by these options. Repeated allowed-path or allowed-directory options append
+their values. Combining `WithCatalogOnly()` with either grant option is legal but redundant because each grant option
+already enables the same locked mode.
 
 Directory and path values are passed directly to DuckDB's `allowed_directories` and `allowed_paths` settings. Blank values
-are rejected because DuckDB resolves an empty directory grant to the process working directory. Beyond that check, the
-connector does not normalize, resolve, or require values to exist; DuckDB interprets them while opening the connector.
+are not treated specially by the connector; DuckDB resolves an empty directory grant to the process working directory.
+The connector does not normalize, resolve, or require values to exist; DuckDB interprets them while opening the connector.
 Values are DuckDB filesystem prefixes or paths, so a matching extension loaded during bootstrap can grant a specific HTTPS,
 S3, or other remote URL prefix while leaving other remote and local resources blocked. A local directory grants read and
 write access throughout that tree, including `COPY` and `ATTACH`; an exact local path is also a read/write capability, not a
@@ -256,8 +256,7 @@ to disable external access, automatic extension installation and loading, commun
 extensions, persistent-secret storage, and unredacted secret output. They leave no configuration-lock exceptions and lock
 the resulting settings before the query layer starts. By default they also disable temporary-file spilling and the
 external-file cache. `WithSetting` or the corresponding typed option can enable those performance capabilities before the
-final lock; DSN settings alone do not override the locked defaults. DuckDB-Go cannot combine the required locked startup
-settings with a database path containing a literal `#`, so the connector rejects that combination.
+final lock.
 
 `WithTempDirectory` is also a filesystem capability: when external access is disabled, DuckDB automatically adds the
 temporary directory to `allowed_directories`. SQL can therefore read and write arbitrary files in that tree, not only

@@ -9,7 +9,6 @@ import (
 	"net"
 	"net/http"
 	"net/http/httptest"
-	"net/url"
 	"os"
 	"path/filepath"
 	"strings"
@@ -53,33 +52,11 @@ func TestNoExternalAccessOptionsPreserveDefaults(t *testing.T) {
 	assert.FileExists(t, attached)
 }
 
-func TestExternalAccessOptionsOverrideDSNSettings(t *testing.T) {
-	tempDirectory := t.TempDir()
-	db := openDB(
-		t,
-		":memory:?AUTOLOAD_KNOWN_EXTENSIONS=true&ENABLE_EXTERNAL_FILE_CACHE=true&TEMP_DIRECTORY="+
-			url.QueryEscape(tempDirectory),
-		WithCatalogOnly(),
-	)
-	assertLockedExternalAccessSettings(t, db)
-}
-
-func TestLockedSettingsRejectDatabaseFragment(t *testing.T) {
-	duckdbConnector, err := Open(
-		t.Context(),
-		filepath.Join(t.TempDir(), "catalog#snapshot"),
-		WithCatalogOnly(),
-	)
-	require.Nil(t, duckdbConnector)
-	require.ErrorIs(t, err, ErrInvalidConfig)
-	require.ErrorContains(t, err, "database DSN fragments cannot be combined with locked settings")
-}
-
 func TestRestrictedExternalAccessAppliesPerformanceOptions(t *testing.T) {
 	tempDirectory := t.TempDir()
 	db := openDB(
 		t,
-		":memory:?ENABLE_EXTERNAL_FILE_CACHE=false&TEMP_DIRECTORY="+url.QueryEscape(t.TempDir())+"&WORKER_THREADS=1",
+		":memory:",
 		WithCatalogOnly(),
 		WithMemoryLimit("1GB"),
 		WithSetting("worker_threads", "1"),
@@ -106,6 +83,12 @@ func TestRestrictedExternalAccessAppliesPerformanceOptions(t *testing.T) {
 		"SELECT value FROM duckdb_settings() WHERE name = 'max_temp_directory_size'",
 	).Scan(&maxTempDirectorySize))
 	assert.NotEqual(t, "90% of available disk space", maxTempDirectorySize)
+}
+
+func TestInvalidSettingReturnsStartupError(t *testing.T) {
+	duckdbConnector, err := Open(t.Context(), ":memory:", WithSetting("not_a_duckdb_setting", "true"))
+	require.Nil(t, duckdbConnector)
+	require.ErrorIs(t, err, ErrStartup)
 }
 
 func TestSettingAppliesAfterExtensionBootstrap(t *testing.T) {

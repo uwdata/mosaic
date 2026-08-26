@@ -47,6 +47,7 @@ func run() int {
 	if *functionBlocklistStr != "" {
 		functionBlocklist = strings.Split(*functionBlocklistStr, ",")
 	}
+	functionBlocklistConfigured := strings.TrimSpace(strings.ReplaceAll(*functionBlocklistStr, ",", "")) != ""
 
 	ctx := context.Background()
 
@@ -54,6 +55,16 @@ func run() int {
 	logger := slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{
 		Level: logLevel,
 	}))
+
+	ttl, err := time.ParseDuration(*ttlStr)
+	if err != nil {
+		logger.Error("main: invalid cache-ttl", "error", err)
+		return 1
+	}
+	if functionAllowlist.set && functionBlocklistConfigured {
+		logger.Error("main: function allowlist and blocklist cannot both be configured")
+		return 1
+	}
 
 	if err := extensions.Validate(*extensionsStr); err != nil {
 		logger.Error("main: invalid load-extensions", "error", err, "load-extensions", *extensionsStr)
@@ -89,12 +100,6 @@ func run() int {
 			logger.Error("main: error closing duckdb connector", "error", err)
 		}
 	}()
-
-	ttl, err := time.ParseDuration(*ttlStr)
-	if err != nil {
-		logger.Error("main: invalid cache-ttl", "error", err)
-		return 1
-	}
 
 	queryOptions := []query.OptionFunc{
 		query.WithMaxConnections(*poolSize),
