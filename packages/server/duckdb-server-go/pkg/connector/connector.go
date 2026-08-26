@@ -112,7 +112,10 @@ func Open(ctx context.Context, config Config) (*duckdb.Connector, error) {
 
 	conn, err := duckdbConnector.Connect(ctx)
 	if err != nil {
-		return nil, closeAfterError(duckdbConnector, fmt.Errorf("%w: initialize: %w", ErrStartup, err))
+		if !errors.Is(err, ErrStartup) {
+			err = fmt.Errorf("%w: initialize: %w", ErrStartup, err)
+		}
+		return nil, closeAfterError(duckdbConnector, err)
 	}
 	if err := conn.Close(); err != nil {
 		return nil, closeAfterError(duckdbConnector, fmt.Errorf("%w: close initialization connection: %w", ErrStartup, err))
@@ -130,12 +133,12 @@ type startupInitializer struct {
 
 func (s *startupInitializer) initialize(execer driver.ExecerContext) error {
 	if execer == nil {
-		return errors.New("connector: nil execer")
+		return errors.New("nil execer")
 	}
 	s.once.Do(func() {
 		if s.bootstrap != nil {
 			if err := s.bootstrap(s.ctx, execer); err != nil {
-				s.err = fmt.Errorf("connector: bootstrap: %w", err)
+				s.err = fmt.Errorf("bootstrap: %w", err)
 				return
 			}
 		}
@@ -221,7 +224,7 @@ func (p *resolvedResourcePolicy) finalize(ctx context.Context, execer driver.Exe
 	}
 	for _, setting := range settings {
 		if _, err := execer.ExecContext(ctx, "SET "+setting.name+" = "+setting.value, nil); err != nil {
-			return fmt.Errorf("connector: failed to set %s: %w", setting.name, err)
+			return fmt.Errorf("failed to set %s: %w", setting.name, err)
 		}
 	}
 	return nil
