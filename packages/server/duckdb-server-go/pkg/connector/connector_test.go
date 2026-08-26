@@ -206,7 +206,7 @@ func TestStartupInitializerIsConcurrent(t *testing.T) {
 func TestStartupInitializerValidatesExecer(t *testing.T) {
 	startup := startupInitializer{ctx: t.Context()}
 	var nilExecer driver.ExecerContext
-	require.EqualError(t, startup.initialize(nilExecer), "connector: nil execer")
+	require.EqualError(t, startup.initialize(nilExecer), "nil execer")
 }
 
 func TestOpenRejectsNilContext(t *testing.T) {

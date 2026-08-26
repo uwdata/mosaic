@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"database/sql/driver"
+	"errors"
 	"fmt"
 	"net"
 	"net/http"
@@ -226,6 +227,31 @@ func TestInitializeConnectionRunsAfterLock(t *testing.T) {
 	assert.Equal(t, int64(2), initializeCalls.Load())
 }
 
+func TestInitializeConnectionFailureRetainsStartupClassification(t *testing.T) {
+	sentinel := errors.New("provisioning unavailable")
+	var initializeCalls atomic.Int64
+	duckdbConnector, err := Open(t.Context(), Config{
+		DSN: ":memory:",
+		InitializeConnection: func(context.Context, driver.ExecerContext) error {
+			if initializeCalls.Add(1) > 1 {
+				return sentinel
+			}
+			return nil
+		},
+	})
+	require.NoError(t, err)
+	db := sql.OpenDB(duckdbConnector)
+	t.Cleanup(func() {
+		require.NoError(t, db.Close())
+		require.NoError(t, duckdbConnector.Close())
+	})
+
+	err = db.PingContext(t.Context())
+	require.ErrorIs(t, err, ErrStartup)
+	require.ErrorIs(t, err, sentinel)
+	assert.Equal(t, 1, strings.Count(err.Error(), ErrStartup.Error()))
+}
+
 func TestOpenReturnsBootstrapFailure(t *testing.T) {
 	sentinel := fmt.Errorf("bootstrap failed")
 	duckdbConnector, err := Open(t.Context(), Config{
@@ -237,6 +263,7 @@ func TestOpenReturnsBootstrapFailure(t *testing.T) {
 	require.Nil(t, duckdbConnector)
 	require.ErrorIs(t, err, ErrStartup)
 	require.ErrorIs(t, err, sentinel)
+	require.EqualError(t, err, "connector: startup failed: initialize: bootstrap: bootstrap failed")
 }
 
 func TestCatalogOnlyProfilePersistsPrimaryDatabase(t *testing.T) {
