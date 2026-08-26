@@ -209,6 +209,80 @@ func TestBootstrapAttachAddsPersistentDatabaseGrant(t *testing.T) {
 	assertQueryError(t, db, t.Context(), "SELECT count(*) FROM read_blob("+quoteSQL(neighborPath)+")")
 }
 
+func TestRestrictedExternalAccessSupportsReviewedRemoteResources(t *testing.T) {
+	requireHTTPFS(t)
+
+	databasePath := filepath.Join(t.TempDir(), "side.duckdb")
+	createDatabaseFixture(t, databasePath)
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case "/side.duckdb":
+			http.ServeFile(w, r, databasePath)
+		case "/allowed.csv":
+			http.ServeContent(w, r, "allowed.csv", time.Time{}, strings.NewReader("value\n42\n"))
+		default:
+			http.NotFound(w, r)
+		}
+	}))
+	t.Cleanup(server.Close)
+
+	t.Run("bootstrap attachment", func(t *testing.T) {
+		remoteDatabase := server.URL + "/side.duckdb"
+		duckdbConnector, err := Open(
+			t.Context(),
+			":memory:",
+			WithCatalogOnly(),
+			WithBootstrapInitializer(func(ctx context.Context, execer driver.ExecerContext) error {
+				if err := extensions.LoadInstalled(ctx, execer, "httpfs"); err != nil {
+					return err
+				}
+				_, err := execer.ExecContext(ctx, "ATTACH "+quoteSQL(remoteDatabase)+" AS side (READ_ONLY)", nil)
+				return err
+			}),
+		)
+		require.NoError(t, err)
+		db := sql.OpenDB(duckdbConnector)
+		t.Cleanup(func() {
+			require.NoError(t, db.Close())
+			require.NoError(t, duckdbConnector.Close())
+		})
+
+		var value int
+		require.NoError(t, db.QueryRowContext(t.Context(), "SELECT value FROM side.items").Scan(&value))
+		assert.Equal(t, 7, value)
+		assertLockedExternalAccessSettings(t, db)
+		_, err = db.ExecContext(t.Context(), "ATTACH "+quoteSQL(server.URL+"/other.duckdb")+" AS other (READ_ONLY)")
+		require.Error(t, err)
+		assertQueryError(t, db, t.Context(), "SELECT count(*) FROM read_text('/etc/hosts')")
+	})
+
+	t.Run("allowed URL prefix", func(t *testing.T) {
+		db := openDB(
+			t,
+			":memory:",
+			WithAllowedDirectories(server.URL),
+			WithBootstrapInitializer(func(ctx context.Context, execer driver.ExecerContext) error {
+				return extensions.LoadInstalled(ctx, execer, "httpfs")
+			}),
+		)
+		var value int
+		require.NoError(t, db.QueryRowContext(
+			t.Context(),
+			"SELECT value FROM read_csv("+quoteSQL(server.URL+"/allowed.csv")+")",
+		).Scan(&value))
+		assert.Equal(t, 42, value)
+
+		var ungrantedRequests atomic.Int64
+		ungranted := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+			ungrantedRequests.Add(1)
+			w.WriteHeader(http.StatusNoContent)
+		}))
+		t.Cleanup(ungranted.Close)
+		assertQueryError(t, db, t.Context(), "SELECT count(*) FROM read_csv("+quoteSQL(ungranted.URL+"/blocked.csv")+")")
+		assert.Zero(t, ungrantedRequests.Load())
+	})
+}
+
 func TestInitializeConnectionRunsAfterLock(t *testing.T) {
 	ctx, cancel := context.WithCancel(t.Context())
 	var initializeCalls atomic.Int64
@@ -680,8 +754,26 @@ func createDatabaseFixture(t *testing.T, path string) {
 	require.NoError(t, err)
 	db := sql.OpenDB(connector)
 	require.NoError(t, db.PingContext(t.Context()))
+	_, err = db.ExecContext(t.Context(), "CREATE TABLE items AS SELECT 7 AS value")
+	require.NoError(t, err)
 	require.NoError(t, db.Close())
 	require.NoError(t, connector.Close())
+}
+
+func requireHTTPFS(t *testing.T) {
+	t.Helper()
+	duckdbConnector, err := Open(
+		t.Context(),
+		":memory:",
+		WithBootstrapInitializer(func(ctx context.Context, execer driver.ExecerContext) error {
+			return extensions.InstallAndLoad(ctx, execer, "httpfs", "")
+		}),
+	)
+	if errors.Is(err, extensions.ErrInstall) || errors.Is(err, extensions.ErrLoad) {
+		t.Skipf("httpfs is unavailable: %v", err)
+	}
+	require.NoError(t, err)
+	require.NoError(t, duckdbConnector.Close())
 }
 
 type countingListener struct {
