@@ -18,7 +18,8 @@ flowchart TD
     S2 --> S3["Open initial physical connection"]
     S3 --> S4["Optional WithBootstrapInitializer<br/>runs once per connector"]
     S4 --> S5["May install or load extensions<br/>Attach local or remote catalogs<br/>Perform one-time catalog setup"]
-    S5 --> S6{"Locked external access configured?"}
+    S5 --> S5A["Apply WithSetting global settings"]
+    S5A --> S6{"Locked external access configured?"}
     S6 -- Yes --> S7["Apply path grants<br/>Disable external access<br/>Lock DuckDB configuration"]
     S6 -- No --> S8["Preserve DuckDB defaults"]
     S7 --> S9["Optional WithConnectionInitializer<br/>runs for the initial connection"]
@@ -142,6 +143,57 @@ returned before the connector can reach the query or server layers. `WithConnect
 bootstrap and external-access finalization for every physical connection; it can perform only operations permitted by the
 locked configuration.
 
+Common database-wide resource settings have typed options:
+
+```go
+duckdbConnector, err := connector.Open(
+	ctx,
+	"/srv/mosaic/catalog.duckdb",
+	connector.WithMemoryLimit("8GB"),
+	connector.WithThreads(8),
+	connector.WithTempDirectory("/srv/mosaic/spill"),
+	connector.WithMaxTempDirectorySize("64GB"),
+	connector.WithExternalFileCache(),
+	connector.WithParquetMetadataCache(),
+	connector.WithAllowedDirectories("/srv/mosaic/datasets"),
+)
+```
+
+`WithMemoryLimit` bounds DuckDB's buffer manager, not the Go process or Mosaic's encoded Arrow and JSON result cache.
+`WithThreads` sets the database-wide worker count shared by concurrent queries. Configure both together with the query
+connection-pool size. `WithMaxTempDirectorySize` has an effect only when a temporary directory is configured.
+
+`WithSetting(name, value)` covers other mutable global settings. It runs once after bootstrap, so extension-defined
+settings work when the bootstrap initializer loads the extension first, and before locking when a locked external-access
+option is present. Names are SQL identifiers and values are passed as strings for DuckDB to cast; repeated names use the
+last option. For example, a remote catalog deployment can configure `httpfs` without placing credentials in the DSN:
+
+```go
+duckdbConnector, err := connector.Open(
+	ctx,
+	":memory:",
+	connector.WithBootstrapInitializer(func(ctx context.Context, execer driver.ExecerContext) error {
+		for _, name := range []string{"httpfs", "iceberg"} {
+			if err := extensions.LoadInstalled(ctx, execer, name); err != nil {
+				return err
+			}
+		}
+		// Create scoped secrets and ATTACH reviewed Iceberg or DuckLake catalogs here.
+		return nil
+	}),
+	connector.WithSetting("http_timeout", "30"),
+	connector.WithSetting("http_retries", "5"),
+	connector.WithSetting("http_retry_wait_ms", "200"),
+)
+```
+
+Core startup settings may still be supplied in the DuckDB DSN. Typed startup options override the same DSN setting,
+including its DuckDB aliases.
+`parquet_metadata_cache` is extension-defined, so the connector removes that promoted key from the DSN and applies it
+after bootstrap. For other extension-defined settings, use `WithSetting` rather than the DSN.
+DuckDB-Go cannot combine startup settings with a database path containing a literal `#`; the connector rejects that
+combination rather than silently ignoring its startup settings.
+
 Use one live connector per file-backed database path in a process and share it across query pools. DuckDB caches the
 database instance by path, so opening a second connector while the first remains live encounters its existing
 configuration lock. Bootstrap can attach reviewed local or remote databases before external access is disabled; those
@@ -176,8 +228,8 @@ credentials.
 
 ### DuckDB External Access
 
-`pkg/connector` exposes a fixed locked external-access mode through three options. Omitting all three preserves DuckDB's
-current defaults for trusted and backwards-compatible deployments.
+`pkg/connector` exposes locked external access through three capability options. Omitting all three preserves DuckDB's
+current access and locking defaults for trusted and backwards-compatible deployments.
 
 | Option | DuckDB resources | Extension behavior |
 | --- | --- | --- |
@@ -185,10 +237,10 @@ current defaults for trusted and backwards-compatible deployments.
 | `WithAllowedDirectories(...)` | Applies the same restrictions and adds local directory-tree or remote URL-prefix grants. | Same as `WithCatalogOnly()`. |
 | `WithAllowedPaths(...)` | Applies the same restrictions and adds exact local or remote path grants. | Same as `WithCatalogOnly()`. |
 
-These are fixed capability options, not configurable collections of DuckDB settings. Keeping the hardening settings fixed
-preserves their guarantees; only the filesystem grants are configurable. Repeated allowed-path or allowed-directory
-options append their values. Combining `WithCatalogOnly()` with either grant option is legal but redundant because each
-grant option already enables the same locked mode.
+External access, extension installation and autoloading, secret exposure, filesystem grants, configuration-lock
+exceptions, and the final lock remain fixed by these options. `WithSetting` rejects attempts to change those settings in
+locked mode. Repeated allowed-path or allowed-directory options append their values. Combining `WithCatalogOnly()` with
+either grant option is legal but redundant because each grant option already enables the same locked mode.
 
 Directory and path values are passed directly to DuckDB's `allowed_directories` and `allowed_paths` settings. Blank values
 are rejected because DuckDB resolves an empty directory grant to the process working directory. Beyond that check, the
@@ -201,12 +253,29 @@ filesystem races involving later symlink, mount, or path changes; use operating-
 boundary.
 
 All three options apply DuckDB's [security settings](https://duckdb.org/docs/lts/operations_manual/securing_duckdb/overview)
-to disable external access and the external file cache, automatic extension installation and loading, community,
-unsigned, and metadata-mismatched extensions, persistent-secret storage, unredacted secret output, and temporary-file
-spilling. They leave no configuration-lock exceptions and lock the resulting settings before the query layer starts.
-Disabling spill files means memory-heavy queries fail instead of writing temporary data. Repeated scans of allowed Parquet
-files may be slower because DuckDB does not retain their blocks in its in-memory external-file cache. Statically linked and
-core extensions remain available, so these settings are not an extension-free sandbox.
+to disable external access, automatic extension installation and loading, community, unsigned, and metadata-mismatched
+extensions, persistent-secret storage, and unredacted secret output. They leave no configuration-lock exceptions and lock
+the resulting settings before the query layer starts. By default they also disable temporary-file spilling and the
+external-file cache. An explicit DSN setting, `WithSetting`, or the corresponding typed option can enable those performance
+capabilities before the final lock.
+
+`WithTempDirectory` is also a filesystem capability: when external access is disabled, DuckDB automatically adds the
+temporary directory to `allowed_directories`. SQL can therefore read and write arbitrary files in that tree, not only
+DuckDB spill blocks. Use a dedicated process-private directory. Without an explicit temporary directory, memory-heavy
+queries fail rather than spill. `WithExternalFileCache` retains external file ranges in memory; DuckDB 1.5.5 does not spill
+that cache to disk. `WithParquetMetadataCache` separately retains parsed Parquet metadata. Both help repeated scans of
+allowed remote files, but neither is Mosaic's encoded result cache.
+
+An HTTP-attached DuckDB database uses DuckDB's native `BASE_TABLE` buffer pool rather than the external-file cache.
+Evicted native database blocks are fetched again with HTTP range requests; `temp_directory` spills query intermediates but
+does not create a persistent local cache of the attached database.
+
+Iceberg and DuckLake catalog identity, endpoints, secret references, snapshot selection, and freshness controls are
+`ATTACH` options rather than global settings and belong in `WithBootstrapInitializer`. Create credentials with DuckDB's
+scoped secrets instead of DSN or setting values. Iceberg's `max_table_staleness` is a catalog attach option. DuckLake options
+such as file sizing, compaction, retention, and Parquet writer configuration are persisted catalog metadata managed with
+`ducklake_set_option`, not connector settings. Global HTTP retry settings and DuckLake runtime retry settings can use
+`WithSetting` after their extensions are loaded.
 
 With the bundled DuckDB 1.5.5, the implicit grant for a file-backed primary database and every database attached by a
 `WithBootstrapInitializer` consists of the database file and the exact sidecar paths `<database>.wal`,

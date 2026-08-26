@@ -9,6 +9,7 @@ import (
 	"net"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"os"
 	"path/filepath"
 	"strings"
@@ -55,10 +56,87 @@ func TestNoExternalAccessOptionsPreserveDefaults(t *testing.T) {
 func TestExternalAccessOptionsOverrideDSNSettings(t *testing.T) {
 	db := openDB(
 		t,
-		":memory:?autoload_known_extensions=true",
+		":memory:?AUTOLOAD_KNOWN_EXTENSIONS=true",
 		WithCatalogOnly(),
 	)
 	assertLockedExternalAccessSettings(t, db)
+}
+
+func TestStartupSettingsRejectDatabaseFragment(t *testing.T) {
+	duckdbConnector, err := Open(
+		t.Context(),
+		filepath.Join(t.TempDir(), "catalog#snapshot"),
+		WithCatalogOnly(),
+	)
+	require.Nil(t, duckdbConnector)
+	require.ErrorIs(t, err, ErrInvalidConfig)
+	require.ErrorContains(t, err, "database DSN fragments cannot be combined with startup settings")
+}
+
+func TestRestrictedExternalAccessPreservesDSNPerformanceSettings(t *testing.T) {
+	tempDirectory := t.TempDir()
+	dsn := ":memory:?enable_external_file_cache=true&parquet_metadata_cache=true&temp_directory=" +
+		url.QueryEscape(tempDirectory) + "#note"
+	db := openDB(t, dsn, WithCatalogOnly())
+
+	assertBooleanSetting(t, db, "enable_external_file_cache", true)
+	assertBooleanSetting(t, db, "parquet_metadata_cache", true)
+	assertBooleanSetting(t, db, "enable_external_access", false)
+	assertBooleanSetting(t, db, "lock_configuration", true)
+	assertStringSetting(t, db, "temp_directory", tempDirectory)
+	assertListSettingLength(t, db, "allowed_directories", 1)
+
+	output := filepath.Join(tempDirectory, "output.csv")
+	_, err := db.ExecContext(t.Context(), "COPY (SELECT 1) TO "+quoteSQL(output))
+	require.NoError(t, err)
+	assert.FileExists(t, output)
+}
+
+func TestRestrictedExternalAccessAppliesPerformanceOptions(t *testing.T) {
+	tempDirectory := t.TempDir()
+	db := openDB(
+		t,
+		":memory:?ENABLE_EXTERNAL_FILE_CACHE=false&TEMP_DIRECTORY="+url.QueryEscape(t.TempDir())+"&WORKER_THREADS=1",
+		WithCatalogOnly(),
+		WithMemoryLimit("1GB"),
+		WithThreads(2),
+		WithTempDirectory(tempDirectory),
+		WithMaxTempDirectorySize("64MB"),
+		WithExternalFileCache(),
+		WithParquetMetadataCache(),
+		WithSetting("enable_http_metadata_cache", "true"),
+	)
+
+	assertBooleanSetting(t, db, "enable_external_file_cache", true)
+	assertBooleanSetting(t, db, "parquet_metadata_cache", true)
+	assertBooleanSetting(t, db, "enable_http_metadata_cache", true)
+	assertBooleanSetting(t, db, "enable_external_access", false)
+	assertBooleanSetting(t, db, "lock_configuration", true)
+	assertStringSetting(t, db, "temp_directory", tempDirectory)
+	assertStringSetting(t, db, "threads", "2")
+	assertListSettingLength(t, db, "allowed_directories", 1)
+
+	var maxTempDirectorySize string
+	require.NoError(t, db.QueryRowContext(
+		t.Context(),
+		"SELECT value FROM duckdb_settings() WHERE name = 'max_temp_directory_size'",
+	).Scan(&maxTempDirectorySize))
+	assert.NotEqual(t, "90% of available disk space", maxTempDirectorySize)
+}
+
+func TestSettingAppliesAfterExtensionBootstrap(t *testing.T) {
+	requireHTTPFS(t)
+	db := openDB(
+		t,
+		":memory:",
+		WithCatalogOnly(),
+		WithBootstrapInitializer(func(ctx context.Context, execer driver.ExecerContext) error {
+			return extensions.LoadInstalled(ctx, execer, "httpfs")
+		}),
+		WithSetting("http_timeout", "17"),
+	)
+	assertStringSetting(t, db, "http_timeout", "17")
+	assertBooleanSetting(t, db, "lock_configuration", true)
 }
 
 func TestCatalogOnly(t *testing.T) {
@@ -704,6 +782,26 @@ func assertLockedExternalAccessSettings(t *testing.T, db *sql.DB) {
 	var tempDirectory string
 	require.NoError(t, db.QueryRowContext(t.Context(), "SELECT current_setting('temp_directory')").Scan(&tempDirectory))
 	assert.Empty(t, tempDirectory)
+}
+
+func assertBooleanSetting(t *testing.T, db *sql.DB, name string, want bool) {
+	t.Helper()
+	var got bool
+	require.NoError(t, db.QueryRowContext(
+		t.Context(),
+		"SELECT value::BOOLEAN FROM duckdb_settings() WHERE name = "+quoteSQL(name),
+	).Scan(&got))
+	assert.Equal(t, want, got, name)
+}
+
+func assertStringSetting(t *testing.T, db *sql.DB, name, want string) {
+	t.Helper()
+	var got string
+	require.NoError(t, db.QueryRowContext(
+		t.Context(),
+		"SELECT value FROM duckdb_settings() WHERE name = "+quoteSQL(name),
+	).Scan(&got))
+	assert.Equal(t, want, got, name)
 }
 
 func assertListSettingLength(t *testing.T, db *sql.DB, name string, want int) {
