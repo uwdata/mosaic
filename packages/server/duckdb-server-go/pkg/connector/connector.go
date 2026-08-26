@@ -7,7 +7,6 @@ import (
 	"errors"
 	"fmt"
 	"net/url"
-	"sort"
 	"strconv"
 	"strings"
 	"sync"
@@ -26,12 +25,9 @@ type config struct {
 	restrictExternalAccess bool
 	allowedDirectories     []string
 	allowedPaths           []string
-	startupSettings        map[string]duckDBSetting
-	settings               map[string]duckDBSetting
+	settings               []duckDBSetting
 	bootstrapInitializer   Initializer
 	connectionInitializer  Initializer
-	externalFileCacheSet   bool
-	tempDirectorySet       bool
 }
 
 type Option interface {
@@ -88,15 +84,15 @@ func WithAllowedPaths(paths ...string) Option {
 
 // WithSetting sets a mutable global DuckDB setting after trusted bootstrap and
 // before external-access finalization. Extension settings require the extension
-// to be loaded during bootstrap. Repeated names use the last value.
+// to be loaded during bootstrap. Settings are applied in option order.
 func WithSetting(name, value string) Option {
-	return settingOption(name, value, false)
+	return settingOption(name, value)
 }
 
-// WithMemoryLimit sets DuckDB's database-wide memory limit at startup. It does
-// not limit the Go process or Mosaic's encoded result cache.
+// WithMemoryLimit sets DuckDB's database-wide memory limit. It does not limit
+// the Go process or Mosaic's encoded result cache.
 func WithMemoryLimit(limit string) Option {
-	return nonBlankSettingOption("memory_limit", limit, true)
+	return nonBlankSettingOption("memory_limit", limit)
 }
 
 // WithThreads sets the total number of DuckDB worker threads.
@@ -105,62 +101,48 @@ func WithThreads(threads int) Option {
 		if threads < 1 {
 			return errors.New("threads must be positive")
 		}
-		return settingOption("threads", strconv.Itoa(threads), true).apply(cfg)
+		return settingOption("threads", strconv.Itoa(threads)).apply(cfg)
 	})
 }
 
 // WithTempDirectory enables temporary-file spilling to path. In locked mode,
 // DuckDB also grants SQL read/write access to the complete directory tree.
 func WithTempDirectory(path string) Option {
-	return nonBlankSettingOption("temp_directory", path, true)
+	return nonBlankSettingOption("temp_directory", path)
 }
 
 // WithMaxTempDirectorySize limits the disk space used for temporary files when
 // a temporary directory is configured.
 func WithMaxTempDirectorySize(limit string) Option {
-	return nonBlankSettingOption("max_temp_directory_size", limit, true)
+	return nonBlankSettingOption("max_temp_directory_size", limit)
 }
 
 // WithExternalFileCache enables DuckDB's in-memory external-file cache. DuckDB
 // 1.5.5 does not persist this cache to disk.
 func WithExternalFileCache() Option {
-	return settingOption("enable_external_file_cache", "true", true)
+	return settingOption("enable_external_file_cache", "true")
 }
 
 // WithParquetMetadataCache caches parsed Parquet metadata in memory.
 func WithParquetMetadataCache() Option {
-	return settingOption("parquet_metadata_cache", "true", false)
+	return settingOption("parquet_metadata_cache", "true")
 }
 
-func nonBlankSettingOption(name, value string, startup bool) Option {
+func nonBlankSettingOption(name, value string) Option {
 	return optionFunc(func(cfg *config) error {
 		if strings.TrimSpace(value) == "" {
 			return fmt.Errorf("%s must not be blank", name)
 		}
-		return settingOption(name, value, startup).apply(cfg)
+		return settingOption(name, value).apply(cfg)
 	})
 }
 
-func settingOption(name, value string, startup bool) Option {
+func settingOption(name, value string) Option {
 	return optionFunc(func(cfg *config) error {
 		if !validSettingName(name) {
 			return fmt.Errorf("invalid setting name %q", name)
 		}
-		key := settingKey(name)
-		setting := duckDBSetting{name: name, value: value}
-		if startup {
-			if cfg.startupSettings == nil {
-				cfg.startupSettings = make(map[string]duckDBSetting)
-			}
-			cfg.startupSettings[key] = setting
-			delete(cfg.settings, key)
-		} else {
-			if cfg.settings == nil {
-				cfg.settings = make(map[string]duckDBSetting)
-			}
-			cfg.settings[key] = setting
-			delete(cfg.startupSettings, key)
-		}
+		cfg.settings = append(cfg.settings, duckDBSetting{name: name, value: value})
 		return nil
 	})
 }
@@ -173,25 +155,6 @@ func validSettingName(name string) bool {
 		return false
 	}
 	return name != ""
-}
-
-func settingKey(name string) string {
-	switch key := strings.ToLower(name); key {
-	case "wal_autocheckpoint":
-		return "checkpoint_threshold"
-	case "null_order":
-		return "default_null_order"
-	case "max_memory":
-		return "memory_limit"
-	case "profiling_output":
-		return "profile_output"
-	case "user":
-		return "username"
-	case "worker_threads":
-		return "threads"
-	default:
-		return key
-	}
 }
 
 func validateGrantValues(name string, values []string) error {
@@ -240,9 +203,9 @@ func applyOptions(options []Option) (config, error) {
 		}
 	}
 	if cfg.restrictExternalAccess {
-		for name := range cfg.settings {
-			if _, fixed := fixedLockedSettingNames[name]; fixed {
-				return cfg, fmt.Errorf("setting %q is fixed by locked external access", name)
+		for _, setting := range cfg.settings {
+			if _, fixed := fixedLockedSettingNames[strings.ToLower(setting.name)]; fixed {
+				return cfg, fmt.Errorf("setting %q is fixed by locked external access", setting.name)
 			}
 		}
 	}
@@ -262,24 +225,8 @@ func Open(ctx context.Context, dsn string, options ...Option) (*duckdb.Connector
 	if err != nil {
 		return nil, fmt.Errorf("%w: %w", ErrInvalidConfig, err)
 	}
-	dsn, err = extractDeferredDSNSettings(dsn, &cfg)
-	if err != nil {
-		return nil, fmt.Errorf("%w: %w", ErrInvalidConfig, err)
-	}
-	if len(cfg.startupSettings) > 0 {
-		dsn, err = addDuckDBSettings(dsn, orderedSettings(cfg.startupSettings))
-		if err != nil {
-			return nil, fmt.Errorf("%w: %w", ErrInvalidConfig, err)
-		}
-	}
 	if cfg.restrictExternalAccess {
-		cfg.externalFileCacheSet = hasConfiguredSetting(dsn, cfg, "enable_external_file_cache")
-		cfg.tempDirectorySet = hasConfiguredSetting(dsn, cfg, "temp_directory")
-		settings := append([]duckDBSetting(nil), lockedExternalAccessSettings...)
-		if !cfg.externalFileCacheSet {
-			settings = append(settings, duckDBSetting{name: "enable_external_file_cache", value: "false"})
-		}
-		dsn, err = addDuckDBSettings(dsn, settings)
+		dsn, err = addDuckDBSettings(dsn, lockedExternalAccessSettings)
 		if err != nil {
 			return nil, fmt.Errorf("%w: %w", ErrInvalidConfig, err)
 		}
@@ -332,7 +279,7 @@ func initializeBootstrap(
 			return fmt.Errorf("bootstrap: %w", err)
 		}
 	}
-	if err := applyConfiguredSettings(ctx, execer, orderedSettings(cfg.settings)); err != nil {
+	if err := applyConfiguredSettings(ctx, execer, cfg.settings); err != nil {
 		return err
 	}
 	if cfg.restrictExternalAccess {
@@ -372,10 +319,6 @@ var fixedLockedSettingNames = map[string]struct{}{
 	"lock_configuration":                 {},
 }
 
-var deferredDSNSettingNames = map[string]struct{}{
-	"parquet_metadata_cache": {},
-}
-
 func finalizeExternalAccess(
 	ctx context.Context,
 	execer driver.ExecerContext,
@@ -398,10 +341,10 @@ func finalizeExternalAccess(
 		{name: "autoinstall_known_extensions", value: "false"},
 		{name: "autoload_known_extensions", value: "false"},
 	}...)
-	if !cfg.externalFileCacheSet {
+	if !hasSetting(cfg.settings, "enable_external_file_cache") {
 		settings = append(settings, duckDBSetting{name: "enable_external_file_cache", value: "false"})
 	}
-	if !cfg.tempDirectorySet {
+	if !hasSetting(cfg.settings, "temp_directory") {
 		settings = append(settings, duckDBSetting{name: "temp_directory", value: "''"})
 	}
 	settings = append(settings, []duckDBSetting{
@@ -435,77 +378,13 @@ func applyConfiguredSettings(ctx context.Context, execer driver.ExecerContext, s
 	return nil
 }
 
-func orderedSettings(settings map[string]duckDBSetting) []duckDBSetting {
-	names := make([]string, 0, len(settings))
-	for name := range settings {
-		names = append(names, name)
-	}
-	sort.Strings(names)
-	ordered := make([]duckDBSetting, 0, len(names))
-	for _, name := range names {
-		ordered = append(ordered, settings[name])
-	}
-	return ordered
-}
-
-func hasConfiguredSetting(dsn string, cfg config, name string) bool {
-	key := settingKey(name)
-	if _, ok := cfg.startupSettings[key]; ok {
-		return true
-	}
-	if _, ok := cfg.settings[key]; ok {
-		return true
-	}
-	_, rawQuery, _, _ := splitDuckDBDSN(dsn)
-	for _, part := range strings.Split(rawQuery, "&") {
-		rawName, _, _ := strings.Cut(part, "=")
-		existing, err := url.QueryUnescape(rawName)
-		if err != nil {
-			continue
-		}
-		if settingKey(existing) == key {
+func hasSetting(settings []duckDBSetting, name string) bool {
+	for _, setting := range settings {
+		if strings.EqualFold(setting.name, name) {
 			return true
 		}
 	}
 	return false
-}
-
-func extractDeferredDSNSettings(dsn string, cfg *config) (string, error) {
-	database, rawQuery, fragment, found := splitDuckDBDSN(dsn)
-	if !found || rawQuery == "" {
-		return dsn, nil
-	}
-	parts := strings.Split(rawQuery, "&")
-	remaining := make([]string, 0, len(parts))
-	removed := false
-	for _, part := range parts {
-		rawName, rawValue, _ := strings.Cut(part, "=")
-		name, err := url.QueryUnescape(rawName)
-		if err != nil {
-			remaining = append(remaining, part)
-			continue
-		}
-		key := settingKey(name)
-		if _, deferred := deferredDSNSettingNames[key]; !deferred {
-			remaining = append(remaining, part)
-			continue
-		}
-		value, err := url.QueryUnescape(rawValue)
-		if err != nil {
-			return "", fmt.Errorf("invalid database configuration: %w", err)
-		}
-		if _, configured := cfg.settings[key]; !configured {
-			if cfg.settings == nil {
-				cfg.settings = make(map[string]duckDBSetting)
-			}
-			cfg.settings[key] = duckDBSetting{name: name, value: value}
-		}
-		removed = true
-	}
-	if !removed {
-		return dsn, nil
-	}
-	return database + "?" + strings.Join(remaining, "&") + fragment, nil
 }
 
 func currentPersistentSecretsSetting(ctx context.Context, execer driver.ExecerContext) (bool, error) {
@@ -544,13 +423,13 @@ func addDuckDBSettings(databaseDSN string, settings []duckDBSetting) (string, er
 	}
 	database, rawQuery, fragment, found := splitDuckDBDSN(databaseDSN)
 	if strings.Contains(database, "#") {
-		return "", errors.New("database DSN fragments cannot be combined with startup settings")
+		return "", errors.New("database DSN fragments cannot be combined with locked settings")
 	}
 	query := make(url.Values, len(settings))
 	overridden := make(map[string]struct{}, len(settings))
 	for _, setting := range settings {
 		query.Set(setting.name, setting.value)
-		overridden[settingKey(setting.name)] = struct{}{}
+		overridden[strings.ToLower(setting.name)] = struct{}{}
 	}
 	configured := query.Encode()
 	if found && rawQuery != "" {
@@ -559,7 +438,7 @@ func addDuckDBSettings(databaseDSN string, settings []duckDBSetting) (string, er
 		for _, part := range parts {
 			rawName, _, _ := strings.Cut(part, "=")
 			name, err := url.QueryUnescape(rawName)
-			if _, override := overridden[settingKey(name)]; err != nil || !override {
+			if _, override := overridden[strings.ToLower(name)]; err != nil || !override {
 				remaining = append(remaining, part)
 			}
 		}
