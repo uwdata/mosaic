@@ -1,0 +1,38 @@
+{
+  "schema_version": 1,
+  "diagram_type": "dataflow",
+  "meta": {
+    "title": "DuckDB Go Server Startup",
+    "quality_profile": "showcase",
+    "viewBox": [1080, 850],
+    "legend": { "mode": "hidden" }
+  },
+  "stages": [
+    { "label": "Configuration" },
+    { "label": "Connector" },
+    { "label": "Verify" },
+    { "label": "Initialize Once" },
+    { "label": "Serve" }
+  ],
+  "nodes": [
+    { "id": "config", "type": "backend", "label": "CLI + Config Gate", "sublabel": "flags • policy • TLS", "stage": 0, "row": 2, "width": 148 },
+    { "id": "connector", "type": "backend", "label": "DuckDB Connector", "sublabel": "Open • DSN guardrails", "stage": 1, "row": 2, "width": 174 },
+    { "id": "verify", "type": "database", "label": "Verification Connect", "sublabel": "initial connection", "stage": 2, "row": 2, "width": 158 },
+    { "id": "bootstrap", "type": "database", "label": "Bootstrap Initializer", "sublabel": "extensions • ATTACH • catalogs", "tag": "trusted", "stage": 3, "row": 0, "width": 192 },
+    { "id": "settings", "type": "backend", "label": "Ordered Settings", "sublabel": "SET GLOBAL post-bootstrap", "stage": 3, "row": 1, "width": 170 },
+    { "id": "lock", "type": "security", "label": "Grant + Lock", "sublabel": "grants • external access off", "tag": "optional", "stage": 3, "row": 2, "width": 166 },
+    { "id": "connection_init", "type": "backend", "label": "Connection Initializer", "sublabel": "verify + each new connection", "stage": 3, "row": 3, "width": 170 },
+    { "id": "runtime", "type": "backend", "label": "Query + Server Runtime", "sublabel": "pools • cache • policy • handlers", "stage": 4, "row": 3, "width": 170 },
+    { "id": "listen", "type": "cloud", "label": "Inventory + Listener", "sublabel": "GetExtensions • bind • serve", "tag": "ready", "stage": 4, "row": 4, "width": 170 }
+  ],
+  "flows": [
+    { "from": "config", "to": "connector", "label": "configure", "classification": "validated config", "variant": "emphasis", "route": "straight", "labelAt": [208, 338] },
+    { "from": "connector", "to": "verify", "label": "connect", "classification": "eager verification", "variant": "emphasis", "route": "straight", "labelAt": [423, 338] },
+    { "from": "verify", "to": "bootstrap", "label": "initialize", "classification": "bootstrap once", "variant": "emphasis", "fromSide": "right", "toSide": "left", "via": [[629, 385], [629, 157]], "labelAt": [600, 260] },
+    { "from": "bootstrap", "to": "settings", "label": "then", "classification": "ordered initialization", "variant": "emphasis", "fromSide": "bottom", "toSide": "top", "route": "straight", "labelAt": [745, 214] },
+    { "from": "settings", "to": "lock", "label": "optional", "classification": "optional hardening", "variant": "security", "fromSide": "bottom", "toSide": "top", "route": "straight", "labelAt": [745, 328] },
+    { "from": "lock", "to": "connection_init", "label": "then", "classification": "optional per-connection setup", "variant": "security", "fromSide": "bottom", "toSide": "top", "route": "straight", "labelAt": [620, 442] },
+    { "from": "connection_init", "to": "runtime", "label": "ready", "classification": "initial connection closed", "variant": "emphasis", "route": "straight", "labelAt": [853, 452] },
+    { "from": "runtime", "to": "listen", "label": "inspect + listen", "classification": "readiness gate", "variant": "emphasis", "fromSide": "bottom", "toSide": "top", "route": "straight", "labelAt": [960, 556] }
+  ]
+}

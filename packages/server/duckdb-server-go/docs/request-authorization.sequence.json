@@ -1,0 +1,49 @@
+{
+  "schema_version": 1,
+  "diagram_type": "sequence",
+  "meta": {
+    "title": "Per-Request Authorization Chain",
+    "quality_profile": "showcase",
+    "column_fit": "spread",
+    "viewBox": [960, 820],
+    "legend": { "mode": "hidden" }
+  },
+  "participants": [
+    { "id": "client", "type": "external", "label": "Client", "sublabel": "HTTP or WebSocket" },
+    { "id": "origin", "type": "security", "label": "Origin Gate", "sublabel": "CORS / upgrade" },
+    { "id": "handler", "type": "backend", "label": "Handler", "sublabel": "schema + decode" },
+    { "id": "request_auth", "type": "security", "label": "Request Auth", "sublabel": "AuthorizeRequest" },
+    { "id": "command_auth", "type": "security", "label": "Command Auth", "sublabel": "type + exact SQL" },
+    { "id": "policy", "type": "security", "label": "SQL Policy", "sublabel": "schema • fn • URI" },
+    { "id": "cache", "type": "database", "label": "Result Cache", "sublabel": "encoded bytes" },
+    { "id": "duckdb", "type": "database", "label": "DuckDB", "sublabel": "parser + execution" }
+  ],
+  "segments": [
+    { "from": 150, "to": 335, "label": "Ingress + request authorization" },
+    { "from": 355, "to": 535, "label": "Command + SQL authorization" },
+    { "from": 555, "to": 760, "label": "Cache, execution, response" }
+  ],
+  "messages": [
+    { "id": "request", "from": "client", "to": "origin", "y": 180, "label": "request / handshake", "variant": "default" },
+    { "id": "origin_check", "from": "origin", "to": "handler", "y": 220, "label": "origin accepted", "variant": "security", "note": "HTTP actual-request protection or WebSocket origin check" },
+    { "id": "request_authorize", "from": "handler", "to": "request_auth", "y": 265, "label": "schemas + AuthorizeRequest", "variant": "security", "note": "Missing required schema headers returns 401 before command decode" },
+    { "id": "session_authorizer", "from": "request_auth", "to": "handler", "y": 305, "label": "CommandAuthorizer", "variant": "return", "note": "Once per HTTP request; once per WebSocket session" },
+    { "id": "command_authorize", "from": "handler", "to": "command_auth", "y": 385, "label": "validated type + exact SQL", "variant": "security", "note": "WebSocket invokes this for every message" },
+    { "id": "command_allowed", "from": "command_auth", "to": "handler", "y": 425, "label": "allowed", "variant": "return" },
+    { "id": "query_policy", "from": "handler", "to": "policy", "y": 470, "label": "authorize arrow / json / exec", "variant": "security", "note": "Active query policy rejects exec" },
+    { "id": "parse_sql", "from": "policy", "to": "duckdb", "y": 510, "label": "json_serialize_sql", "variant": "security", "note": "Parser-backed checks run before cache lookup" },
+    { "id": "parsed_ast", "from": "duckdb", "to": "policy", "y": 550, "label": "AST", "variant": "return" },
+    { "id": "cache_lookup", "from": "policy", "to": "cache", "y": 595, "label": "authorized SQL + format", "variant": "emphasis" },
+    { "id": "cache_miss", "from": "cache", "to": "policy", "y": 630, "label": "miss", "variant": "return" },
+    { "id": "execute", "from": "policy", "to": "duckdb", "y": 675, "label": "acquire + execute SQL", "variant": "emphasis", "note": "The pool reuses connections; a new physical connection runs the connector callback and initializer" },
+    { "id": "encoded", "from": "duckdb", "to": "handler", "y": 705, "label": "encoded Arrow / JSON", "variant": "return" },
+    { "id": "response", "from": "handler", "to": "client", "y": 735, "label": "response or classified error", "variant": "return" }
+  ],
+  "activations": [
+    { "participant": "handler", "from": 215, "to": 740, "type": "backend" },
+    { "participant": "request_auth", "from": 260, "to": 312, "type": "security" },
+    { "participant": "command_auth", "from": 380, "to": 432, "type": "security" },
+    { "participant": "policy", "from": 465, "to": 685, "type": "security" },
+    { "participant": "duckdb", "from": 505, "to": 712, "type": "database" }
+  ]
+}
