@@ -4,18 +4,32 @@ A Go-based server that runs a local DuckDB instance and support queries over Web
 
 _Note:_ This package provides a local DuckDB server. To instead use DuckDB-WASM in the browser, use the `wasmConnector` in the [`mosaic-core`](https://github.com/uwdata/mosaic/tree/main/packages/mosaic/mosaic-core) package.
 
-## Lifecycle
+## Startup
 
 Startup completes before the server accepts requests. Bootstrap and external-access finalization run once per connector,
 while the connection initializer runs for the initial verification connection and every physical connection opened later
 by the query pools.
 
-![DuckDB Go server lifecycle](docs/duckdb-go-server-lifecycle.svg)
+![DuckDB Go server startup](docs/duckdb-go-server-startup.svg)
 
-[Archify source](docs/server-lifecycle.workflow.json)
+[Archify startup source](docs/server-startup.dataflow.json)
 
-SQL policy validation runs before cache lookup and uses DuckDB's parser, so it may also open a physical SQL connection.
-Every new SQL or Arrow connection follows the same connector callback and connection-initializer sequence shown above.
+The bootstrap initializer receives the initial connection before global settings and optional external-access finalization.
+It can install or load extensions, attach reviewed local or remote catalogs, and perform other one-time catalog setup.
+
+## Request Authorization
+
+Request authorization runs once per HTTP request or WebSocket session and provides the command authorizer used for each
+decoded command. Configured schema, function, and remote-URI SQL policies use DuckDB's parser and run before cache lookup;
+active query policies reject `exec` commands. The command-line server permits all origins and request identities by default;
+embedders can supply stricter hooks.
+
+![DuckDB Go server request authorization](docs/duckdb-go-server-request-authorization.svg)
+
+[Archify request source](docs/request-authorization.sequence.json)
+
+Parser-backed validation may open a physical SQL connection. Every new SQL or Arrow connection follows the connector
+callback and connection-initializer sequence shown in the startup diagram.
 
 ## Usage
 

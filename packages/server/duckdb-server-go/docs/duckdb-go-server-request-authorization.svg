@@ -1,4 +1,4 @@
-<svg viewBox="0 0 700 520" role="img" lang="en" aria-labelledby="archify-diagram-title archify-diagram-description" data-preset="classic" data-quality-profile="showcase" style="" width="700" height="520" xmlns="http://www.w3.org/2000/svg"><style>@font-face { font-family: 'JetBrains Mono'; font-weight: 400; src: local('JetBrains Mono'), local('JetBrainsMono-Regular'); }
+<svg viewBox="0 0 960 820" role="img" lang="en" aria-labelledby="archify-diagram-title archify-diagram-description" data-preset="classic" data-quality-profile="showcase" style="" width="960" height="820" xmlns="http://www.w3.org/2000/svg"><style>@font-face { font-family: 'JetBrains Mono'; font-weight: 400; src: local('JetBrains Mono'), local('JetBrainsMono-Regular'); }
 @font-face { font-family: 'JetBrains Mono'; font-weight: 500; src: local('JetBrains Mono'), local('JetBrainsMono-Regular'); }
 @font-face { font-family: 'JetBrains Mono'; font-weight: 600; src: local('JetBrains Mono'), local('JetBrainsMono-Regular'); }
 @font-face { font-family: 'JetBrains Mono'; font-weight: 700; src: local('JetBrains Mono'), local('JetBrainsMono-Regular'); }
@@ -12,23 +12,23 @@ svg { font-family: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Consol
 [data-preset="editorial"][data-theme="dark"] { --bg: #181611; --grid: #39342a; --panel: rgba(35, 31, 24, 0.96); --panel-border: #625a4a; --lane-fill: rgba(52, 46, 35, 0.46); --lane-stroke: #726957; --text: #f4eddf; --text-muted: #b9ae9b; --text-dim: #776e60; --text-faint: #9d917e; --mask: #231f18; --frontend-fill: rgba(43, 133, 142, 0.16); --frontend-stroke: #7fc6c7; --backend-fill: rgba(63, 132, 92, 0.16); --backend-stroke: #8fc29e; --database-fill: rgba(117, 91, 141, 0.17); --database-stroke: #c0a4d0; --cloud-fill: rgba(170, 119, 49, 0.16); --cloud-stroke: #d8ad68; --security-fill: rgba(157, 69, 65, 0.17); --security-stroke: #df9085; --messagebus-fill: rgba(174, 79, 42, 0.16); --messagebus-stroke: #df946f; --external-fill: rgba(126, 115, 96, 0.18); --external-stroke: #b8ad99; --arrow: #948978; --arrow-emphasis: #dd6b3d; --toolbar-bg: rgba(35, 31, 24, 0.92); --toolbar-border: #625a4a; --toolbar-text: #eee5d5; --toolbar-hover: #302a20; --toolbar-menu-bg: #231f18; }
 [data-preset="editorial"][data-theme="light"] { --bg: #f2eee5; --grid: #d8d0c2; --panel: rgba(251, 248, 241, 0.97); --panel-border: #c4b9a6; --lane-fill: rgba(229, 221, 207, 0.42); --lane-stroke: #b8aa94; --text: #242018; --text-muted: #6f6658; --text-dim: #a09788; --text-faint: #817767; --mask: #fbf8f1; --frontend-fill: rgba(31, 117, 126, 0.09); --frontend-stroke: #287e84; --backend-fill: rgba(42, 119, 75, 0.09); --backend-stroke: #397b53; --database-fill: rgba(105, 75, 130, 0.09); --database-stroke: #765d86; --cloud-fill: rgba(157, 103, 31, 0.1); --cloud-stroke: #9a671f; --security-fill: rgba(153, 58, 52, 0.09); --security-stroke: #9e463f; --messagebus-fill: rgba(182, 70, 27, 0.09); --messagebus-stroke: #ad4b25; --external-fill: rgba(101, 91, 75, 0.09); --external-stroke: #746b5e; --arrow: #8a806f; --arrow-emphasis: #bb4c23; --toolbar-bg: rgba(251, 248, 241, 0.94); --toolbar-border: #c4b9a6; --toolbar-text: #40392f; --toolbar-hover: #fffdf8; --toolbar-menu-bg: #fbf8f1; }
 svg { width: 100%; min-width: min(900px, 100%); display: block; transform-origin: 0px 0px; transition: transform 0.18s; }
-@keyframes archify-lens-in { 
+@keyframes archify-lens-in {
   0% { opacity: 0; transform: translateY(5px) scale(0.985); }
   100% { opacity: 1; transform: translateY(0px) scale(1); }
 }
-@keyframes archify-guide-in { 
+@keyframes archify-guide-in {
   0% { opacity: 0; transform: translateY(-5px) scale(0.985); }
   100% { opacity: 1; transform: translateY(0px) scale(1); }
 }
 svg[data-chapter-handoff] [data-node-id][data-chapter-role="stay"] { opacity: 1; }
 svg[data-chapter-handoff] [data-node-id][data-chapter-role="enter"] { opacity: 0.78; }
 svg[data-chapter-handoff] [data-node-id][data-chapter-role="leave"] { opacity: 0.26; }
-@keyframes archify-chapter-anchor { 
+@keyframes archify-chapter-anchor {
   0% { opacity: 0.35; stroke-dashoffset: 8; }
   45% { opacity: 1; }
   100% { opacity: 0.72; stroke-dashoffset: 0; }
 }
-@keyframes archify-story-caption-in { 
+@keyframes archify-story-caption-in {
   0% { opacity: 0; transform: translateY(3px); }
   100% { opacity: 1; transform: translateY(0px); }
 }
@@ -202,80 +202,80 @@ svg[data-preset="blueprint"][data-animation="trace"] [data-animate="edge"] { str
 svg[data-preset="blueprint"][data-animation="trace"] [data-animate="node"] { animation-name: archify-blueprint-node-pulse; animation-duration: 3.8s; }
 svg[data-preset="editorial"][data-animation="trace"] [data-animate="edge"] { filter: none; animation-duration: 2.2s; }
 svg[data-preset="editorial"][data-animation="trace"] [data-animate="node"] { animation-name: archify-editorial-node-pulse; animation-duration: 3.5s; }
-@keyframes archify-edge-flow { 
+@keyframes archify-edge-flow {
   0% { stroke-dasharray: 10, 8; stroke-dashoffset: 54; opacity: 0.42; }
   88% { stroke-dasharray: 10, 8; stroke-dashoffset: 0; opacity: 1; }
   99.9% { stroke-dasharray: 10, 8; stroke-dashoffset: 0; opacity: 1; }
   100% { stroke-dashoffset: 0; opacity: 1; }
 }
-@keyframes archify-node-pulse { 
+@keyframes archify-node-pulse {
   0%, 72%, 100% { filter: none; stroke-width: 1.5; }
   18%, 36% { filter: drop-shadow(0 0 8px var(--arrow-emphasis)); stroke-width: 2.4; }
 }
-@keyframes archify-blueprint-node-pulse { 
+@keyframes archify-blueprint-node-pulse {
   0%, 72%, 100% { opacity: 1; filter: none; }
   18%, 36% { opacity: 0.72; filter: drop-shadow(0 0 2px var(--frontend-stroke)); }
 }
-@keyframes archify-editorial-node-pulse { 
+@keyframes archify-editorial-node-pulse {
   0%, 72%, 100% { opacity: 1; filter: none; }
   18%, 36% { opacity: 0.78; filter: drop-shadow(0 2px 2px color-mix(in srgb, var(--text) 18%, transparent)); }
 }
-@keyframes archify-signal-scan { 
+@keyframes archify-signal-scan {
   0%, 18% { opacity: 1; transform: translateX(-70%); }
   70% { opacity: 1; transform: translateX(70%); }
   100% { opacity: 0; transform: translateX(70%); }
 }
-@keyframes archify-radar-live { 
+@keyframes archify-radar-live {
   0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--backend-stroke) 52%, transparent); }
   55%, 100% { box-shadow: transparent 0px 0px 0px 0.32rem; }
 }
-@keyframes archify-guided-progress { 
+@keyframes archify-guided-progress {
   0% { transform: scaleX(var(--guided-progress-start, 0)); }
   100% { transform: scaleX(1); }
 }
-@keyframes archify-story-flow { 
+@keyframes archify-story-flow {
   100% { stroke-dashoffset: 0; }
 }
-@keyframes archify-intent-trace-flow { 
+@keyframes archify-intent-trace-flow {
   0% { opacity: 0.28; stroke-dashoffset: 0; }
   12%, 78% { opacity: 0.94; }
   100% { opacity: 0; stroke-dashoffset: -1; }
 }
-@keyframes archify-route-probe-flow { 
+@keyframes archify-route-probe-flow {
   0% { stroke-dashoffset: 0; opacity: 0.96; }
   78% { stroke-dashoffset: -1; opacity: 0.96; }
   100% { stroke-dasharray: none; stroke-dashoffset: 0; opacity: 0.58; }
 }
-@keyframes archify-route-journey-flow { 
+@keyframes archify-route-journey-flow {
   0% { opacity: 0.16; stroke-dashoffset: 0; }
   14%, 76% { opacity: 1; }
   100% { opacity: 0; stroke-dashoffset: -1; }
 }
-@keyframes archify-semantic-lens-flow { 
+@keyframes archify-semantic-lens-flow {
   0% { opacity: 0.2; stroke-dashoffset: 0; }
   12%, 78% { opacity: 0.9; }
   100% { opacity: 0; stroke-dashoffset: -1; }
 }
-@keyframes archify-relationship-pulse { 
+@keyframes archify-relationship-pulse {
   0% { opacity: 0.18; stroke-dashoffset: 0; }
   10%, 76% { opacity: 0.98; }
   100% { opacity: 0; stroke-dashoffset: -1; }
 }
-@keyframes archify-relationship-token-life { 
+@keyframes archify-relationship-token-life {
   0%, 7% { opacity: 0; }
   13%, 82% { opacity: 1; }
   100% { opacity: 0; }
 }
-@keyframes archify-story-beat-node { 
+@keyframes archify-story-beat-node {
   0% { opacity: 0.48; filter: saturate(0.6); }
   58% { opacity: 1; filter: drop-shadow(0 0 10px var(--frontend-stroke)); }
   100% { opacity: 1; filter: drop-shadow(0 0 7px var(--frontend-stroke)); }
 }
-@keyframes archify-share-cue-enter { 
+@keyframes archify-share-cue-enter {
   0% { opacity: 0; transform: translate(-50%, -0.45rem); }
   100% { opacity: 1; transform: translate(-50%, 0px); }
 }
-@keyframes archify-share-cue-pulse { 
+@keyframes archify-share-cue-pulse {
   0%, 100% { opacity: 1; transform: scale(1); }
   50% { opacity: 0.48; transform: scale(0.78); }
 }
@@ -285,8 +285,8 @@ svg[data-theme="light"] { --bg: #f8fafc; --grid: #e2e8f0; --text: #0f172a; --tex
 svg[data-theme="dark"] { --bg: #020617; --grid: #1e293b; --text: #ffffff; --text-muted: #94a3b8; --text-dim: #475569; --text-faint: #7d8da1; --panel: rgba(15, 23, 42, 0.5); --panel-border: #1e293b; --lane-fill: rgba(15, 23, 42, 0.22); --lane-stroke: #334155; --arrow: #64748b; --arrow-emphasis: #34d399; --mask: #0f172a; --frontend-fill: rgba(8, 51, 68, 0.4); --frontend-stroke: #22d3ee; --backend-fill: rgba(6, 78, 59, 0.4); --backend-stroke: #34d399; --database-fill: rgba(76, 29, 149, 0.4); --database-stroke: #a78bfa; --cloud-fill: rgba(120, 53, 15, 0.3); --cloud-stroke: #fbbf24; --security-fill: rgba(136, 19, 55, 0.4); --security-stroke: #fb7185; --messagebus-fill: rgba(251, 146, 60, 0.3); --messagebus-stroke: #fb923c; --external-fill: rgba(30, 41, 59, 0.5); --external-stroke: #94a3b8; --toolbar-bg: rgba(15, 23, 42, 0.8); --toolbar-border: #334155; --toolbar-text: #e2e8f0; --toolbar-hover: rgba(15, 23, 42, 0.95); --toolbar-menu-bg: #0f172a; }
 rect.c-bg-rect { fill: var(--bg); }
 </style><rect width="100%" height="100%" class="c-bg-rect"/>
-        <title id="archify-diagram-title">DuckDB Go Server Lifecycle</title>
-        <desc id="archify-diagram-description">A workflow diagram generated by Archify.</desc>
+        <title id="archify-diagram-title">Per-Request Authorization Chain</title>
+        <desc id="archify-diagram-description">A sequence diagram generated by Archify.</desc>
         <!-- Definitions -->
         <defs>
           <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
@@ -309,200 +309,264 @@ rect.c-bg-rect { fill: var(--bg); }
         <!-- Background Grid -->
         <rect width="100%" height="100%" fill="url(#grid)"/>
 
-        <!-- Swimlanes -->
-        <rect data-graph-role="structural-frame" data-composition-frame-kind="lane" data-composition-frame-id="lane-0" x="40" y="52" width="640" height="104" rx="10" class="c-lane" stroke-width="1"/>
-        <text x="54" y="74" class="t-dim" font-size="10" font-weight="600">01 / Server Startup</text>
+        <!-- Time Segments -->
+        <rect data-graph-role="structural-frame" data-composition-frame-kind="segment" data-composition-frame-id="0" x="48" y="150" width="864" height="185" rx="10" class="c-lane" stroke-width="1"/>
 
-        <rect data-graph-role="structural-frame" data-composition-frame-kind="lane" data-composition-frame-id="lane-1" x="40" y="176" width="640" height="104" rx="10" class="c-lane" stroke-width="1"/>
-        <text x="54" y="198" class="t-dim" font-size="10" font-weight="600">02 / Request Path</text>
+        <rect data-graph-role="structural-frame" data-composition-frame-kind="segment" data-composition-frame-id="1" x="48" y="355" width="864" height="180" rx="10" class="c-lane" stroke-width="1"/>
 
-        <rect data-graph-role="structural-frame" data-composition-frame-kind="lane" data-composition-frame-id="lane-2" x="40" y="300" width="640" height="104" rx="10" class="c-lane" stroke-width="1"/>
-        <text x="54" y="322" class="t-dim" font-size="10" font-weight="600">03 / Outcomes</text>
+        <rect data-graph-role="structural-frame" data-composition-frame-kind="segment" data-composition-frame-id="2" x="48" y="555" width="864" height="205" rx="10" class="c-lane" stroke-width="1"/>
 
-        <!-- Phase headers -->
+        <!-- Lifelines -->
+        <path d="M 105 142 L 105 755" class="a-default" stroke-width="0.8" stroke-dasharray="3,7"/>
+        <path d="M 215.28571428571428 142 L 215.28571428571428 755" class="a-default" stroke-width="0.8" stroke-dasharray="3,7"/>
+        <path d="M 325.57142857142856 142 L 325.57142857142856 755" class="a-default" stroke-width="0.8" stroke-dasharray="3,7"/>
+        <path d="M 435.8571428571429 142 L 435.8571428571429 755" class="a-default" stroke-width="0.8" stroke-dasharray="3,7"/>
+        <path d="M 546.1428571428571 142 L 546.1428571428571 755" class="a-default" stroke-width="0.8" stroke-dasharray="3,7"/>
+        <path d="M 656.4285714285714 142 L 656.4285714285714 755" class="a-default" stroke-width="0.8" stroke-dasharray="3,7"/>
+        <path d="M 766.7142857142858 142 L 766.7142857142858 755" class="a-default" stroke-width="0.8" stroke-dasharray="3,7"/>
+        <path d="M 877 142 L 877 755" class="a-default" stroke-width="0.8" stroke-dasharray="3,7"/>
 
+        <!-- Activations -->
+        <rect x="320.57142857142856" y="215" width="10" height="525" rx="3" class="c-mask"/>
+        <rect x="320.57142857142856" y="215" width="10" height="525" rx="3" class="c-backend" stroke-width="1"/>
+        <rect x="430.8571428571429" y="260" width="10" height="52" rx="3" class="c-mask"/>
+        <rect x="430.8571428571429" y="260" width="10" height="52" rx="3" class="c-security" stroke-width="1"/>
+        <rect x="541.1428571428571" y="380" width="10" height="52" rx="3" class="c-mask"/>
+        <rect x="541.1428571428571" y="380" width="10" height="52" rx="3" class="c-security" stroke-width="1"/>
+        <rect x="651.4285714285714" y="465" width="10" height="220" rx="3" class="c-mask"/>
+        <rect x="651.4285714285714" y="465" width="10" height="220" rx="3" class="c-security" stroke-width="1"/>
+        <rect x="872" y="505" width="10" height="207" rx="3" class="c-mask"/>
+        <rect x="872" y="505" width="10" height="207" rx="3" class="c-database" stroke-width="1"/>
 
-        <!-- Workflow groups -->
-
-
-        <!-- Edge paths -->
-        <path data-edge-from="config" data-edge-to="open" data-edge-key="0" data-composition-points="114,119;194,119" d="M 114 119 L 194 119" class="a-default" stroke-width="1.4" marker-end="url(#arrowhead)"/>
-        <path data-edge-from="open" data-edge-to="bootstrap" data-edge-key="1" data-composition-points="246,119;274,119" d="M 246 119 L 274 119" class="a-default" stroke-width="1.4" marker-end="url(#arrowhead)"/>
-        <path data-edge-from="bootstrap" data-edge-to="finalize" data-edge-key="2" data-composition-points="326,119;479,119" d="M 326 119 L 479 119" class="a-default" stroke-width="1.4" marker-end="url(#arrowhead)"/>
-        <path data-edge-from="finalize" data-edge-to="listen" data-edge-key="3" data-composition-points="521,119;604,119" d="M 521 119 L 604 119" class="a-default" stroke-width="1.4" marker-end="url(#arrowhead)"/>
-        <path data-edge-from="listen" data-edge-to="request" data-edge-key="4" data-composition-points="625,153;625,166;625,166;625,217" d="M 625 153 L 625 166 L 625 166 L 625 217" class="a-default" stroke-width="1.4" marker-end="url(#arrowhead)"/>
-        <path data-edge-from="request" data-edge-to="gates" data-edge-key="5" data-composition-points="599,243;521,243" d="M 599 243 L 521 243" class="a-default" stroke-width="1.4" marker-end="url(#arrowhead)"/>
-        <path data-edge-from="gates" data-edge-to="cache" data-edge-key="6" data-composition-points="479,243;451,243" d="M 479 243 L 451 243" class="a-emphasis" stroke-width="1.8" marker-end="url(#arrowhead-emphasis)"/>
-        <path data-edge-from="gates" data-edge-to="reject" data-edge-key="7" data-composition-points="500,269;500,290;500,290;500,341" d="M 500 269 L 500 290 L 500 290 L 500 341" class="a-security" stroke-width="1.4" marker-end="url(#arrowhead-security)"/>
-        <path data-edge-from="cache" data-edge-to="respond" data-edge-label="hit" data-edge-key="8" data-composition-points="430,269;430,360;114,360" d="M 430 269 L 430 360 L 114 360" class="a-emphasis" stroke-width="1.8" marker-end="url(#arrowhead-emphasis)"/>
-        <path data-edge-from="cache" data-edge-to="connection" data-edge-label="miss" data-edge-key="9" data-composition-points="409,243;326,243" d="M 409 243 L 326 243" class="a-default" stroke-width="1.4" marker-end="url(#arrowhead)"/>
-        <path data-edge-from="connection" data-edge-to="execute" data-edge-key="10" data-composition-points="274,243;246,243" d="M 274 243 L 246 243" class="a-default" stroke-width="1.4" marker-end="url(#arrowhead)"/>
-        <path data-edge-from="execute" data-edge-to="respond" data-edge-key="11" data-composition-points="220,269;220,374;114,374" d="M 220 269 L 220 374 L 114 374" class="a-default" stroke-width="1.4" marker-end="url(#arrowhead)"/>
-
-        <!-- Nodes -->
-        <g id="node-config" data-node-id="config" data-node-label="Config" tabindex="0" role="button" aria-label="Focus Config, flags, Server Startup" aria-pressed="false" data-node-kind="backend" data-node-sublabel="flags" data-node-context="Server Startup">
-          <title>Config · flags · Server Startup</title>
-          <rect x="62" y="93" width="52" height="52" rx="6" class="c-mask"/>
-          <rect x="62" y="93" width="52" height="52" rx="6" class="c-backend" stroke-width="1.5"/>
-          <g aria-hidden="true" data-semantic-sigil="backend" class="semantic-sigil s-backend" transform="translate(68 99) scale(0.6875)">
-            <path d="M6 3 3 8l3 5M10 3l3 5-3 5"/>
-          </g>
-          <text data-node-label="" x="88" y="114" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">Config</text>
-          <text x="88" y="131" class="t-muted" font-size="8" text-anchor="middle">flags</text>
+        <!-- Messages -->
+        <g data-edge-from="client" data-edge-to="origin" data-edge-label="request / handshake" data-edge-key="0" data-edge-id="request">
+          <path data-composition-edge-from="client" data-composition-edge-to="origin" data-composition-edge-id="request" data-composition-points="112,180;208.28571428571428,180" d="M 112 180 L 208.28571428571428 180" class="a-default" stroke-width="1.4" marker-end="url(#arrowhead)"/>
+        <g>
+          <rect x="104.74285714285713" y="160" width="110.8" height="16" rx="3" class="c-mask"/>
+          <text x="160.14285714285714" y="170" class="t-backend" font-size="9" text-anchor="middle">request / handshake</text>
+        </g>
         </g>
 
-        <g id="node-open" data-node-id="open" data-node-label="Open" tabindex="0" role="button" aria-label="Focus Open, connector, Server Startup" aria-pressed="false" data-node-kind="backend" data-node-sublabel="connector" data-node-context="Server Startup">
-          <title>Open · connector · Server Startup</title>
-          <rect x="194" y="93" width="52" height="52" rx="6" class="c-mask"/>
-          <rect x="194" y="93" width="52" height="52" rx="6" class="c-backend" stroke-width="1.5"/>
-          <g aria-hidden="true" data-semantic-sigil="backend" class="semantic-sigil s-backend" transform="translate(200 99) scale(0.6875)">
-            <path d="M6 3 3 8l3 5M10 3l3 5-3 5"/>
-          </g>
-          <text data-node-label="" x="220" y="114" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">Open</text>
-          <text x="220" y="131" class="t-muted" font-size="8" text-anchor="middle">connector</text>
+        <g data-edge-from="origin" data-edge-to="handler" data-edge-label="origin accepted" data-edge-key="1" data-edge-id="origin_check">
+          <path data-composition-edge-from="origin" data-composition-edge-to="handler" data-composition-edge-id="origin_check" data-composition-points="222.28571428571428,220;318.57142857142856,220" d="M 222.28571428571428 220 L 318.57142857142856 220" class="a-security" stroke-width="1.4" marker-end="url(#arrowhead-security)"/>
+        <g>
+          <rect x="225.42857142857144" y="200" width="90" height="16" rx="3" class="c-mask"/>
+          <text x="270.42857142857144" y="210" class="t-security" font-size="9" text-anchor="middle">origin accepted</text>
+        </g>
+        <text x="234.28571428571428" y="238" class="t-dim" font-size="7">HTTP actual-request protection or WebSocket origin check</text>
         </g>
 
-        <g id="node-bootstrap" data-node-id="bootstrap" data-node-label="Init" tabindex="0" role="button" aria-label="Focus Init, bootstrap, Server Startup" aria-pressed="false" data-node-kind="database" data-node-sublabel="bootstrap" data-node-tag="once" data-node-context="Server Startup">
-          <title>Init · bootstrap · Server Startup · once</title>
-          <rect x="274" y="85" width="52" height="68" rx="6" class="c-mask"/>
-          <rect x="274" y="85" width="52" height="68" rx="6" class="c-database" stroke-width="1.5"/>
-          <g aria-hidden="true" data-semantic-sigil="database" class="semantic-sigil s-database" transform="translate(280 91) scale(0.6875)">
-            <ellipse cx="8" cy="4" rx="5" ry="2"/>
-            <path d="M3 4v8c0 1.1 2.2 2 5 2s5-.9 5-2V4M3 8c0 1.1 2.2 2 5 2s5-.9 5-2"/>
-          </g>
-          <text data-node-label="" x="300" y="106" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">Init</text>
-          <text x="300" y="123" class="t-muted" font-size="8" text-anchor="middle">bootstrap</text>
-        <text x="300" y="141" class="t-database" font-size="7" text-anchor="middle">once</text>
+        <g data-edge-from="handler" data-edge-to="request_auth" data-edge-label="schemas + AuthorizeRequest" data-edge-key="2" data-edge-id="request_authorize">
+          <path data-composition-edge-from="handler" data-composition-edge-to="request_auth" data-composition-edge-id="request_authorize" data-composition-points="332.57142857142856,265;428.8571428571429,265" d="M 332.57142857142856 265 L 428.8571428571429 265" class="a-security" stroke-width="1.4" marker-end="url(#arrowhead-security)"/>
+        <g>
+          <rect x="307.1142857142857" y="245" width="147.20000000000002" height="16" rx="3" class="c-mask"/>
+          <text x="380.7142857142857" y="255" class="t-security" font-size="9" text-anchor="middle">schemas + AuthorizeRequest</text>
+        </g>
+        <text x="344.57142857142856" y="283" class="t-dim" font-size="7">Missing required schema headers returns 401 before command decode</text>
         </g>
 
-        <g id="node-finalize" data-node-id="finalize" data-node-label="Lock" tabindex="0" role="button" aria-label="Focus Lock, SET, Server Startup" aria-pressed="false" data-node-kind="security" data-node-sublabel="SET" data-node-context="Server Startup">
-          <title>Lock · SET · Server Startup</title>
-          <rect x="479" y="93" width="42" height="52" rx="6" class="c-mask"/>
-          <rect x="479" y="93" width="42" height="52" rx="6" class="c-security" stroke-width="1.5"/>
-          <g aria-hidden="true" data-semantic-sigil="security" class="semantic-sigil s-security" transform="translate(485 99) scale(0.6875)">
-            <path d="M8 2.2 13 4v3.5c0 3.1-1.8 5.4-5 6.5-3.2-1.1-5-3.4-5-6.5V4Z"/>
-            <path d="m5.8 8 1.5 1.5 3-3"/>
-          </g>
-          <text data-node-label="" x="500" y="114" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">Lock</text>
-          <text x="500" y="131" class="t-muted" font-size="8" text-anchor="middle">SET</text>
+        <g data-edge-from="request_auth" data-edge-to="handler" data-edge-label="CommandAuthorizer" data-edge-key="3" data-edge-id="session_authorizer">
+          <path data-composition-edge-from="request_auth" data-composition-edge-to="handler" data-composition-edge-id="session_authorizer" data-composition-points="428.8571428571429,305;332.57142857142856,305" d="M 428.8571428571429 305 L 332.57142857142856 305" class="a-default" stroke-width="1.4" stroke-dasharray="3,5" marker-end="url(#arrowhead)"/>
+        <g>
+          <rect x="330.51428571428573" y="285" width="100.4" height="16" rx="3" class="c-mask"/>
+          <text x="380.7142857142857" y="295" class="t-muted" font-size="9" text-anchor="middle">CommandAuthorizer</text>
+        </g>
+        <text x="344.57142857142856" y="323" class="t-dim" font-size="7">Once per HTTP request; once per WebSocket session</text>
         </g>
 
-        <g id="node-listen" data-node-id="listen" data-node-label="Serve" tabindex="0" role="button" aria-label="Focus Serve, HTTP, Server Startup" aria-pressed="false" data-node-kind="backend" data-node-sublabel="HTTP" data-node-tag="ready" data-node-context="Server Startup">
-          <title>Serve · HTTP · Server Startup · ready</title>
-          <rect x="604" y="85" width="42" height="68" rx="6" class="c-mask"/>
-          <rect x="604" y="85" width="42" height="68" rx="6" class="c-backend" stroke-width="1.5"/>
-          <g aria-hidden="true" data-semantic-sigil="backend" class="semantic-sigil s-backend" transform="translate(610 91) scale(0.6875)">
-            <path d="M6 3 3 8l3 5M10 3l3 5-3 5"/>
-          </g>
-          <text data-node-label="" x="625" y="106" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">Serve</text>
-          <text x="625" y="123" class="t-muted" font-size="8" text-anchor="middle">HTTP</text>
-        <text x="625" y="141" class="t-backend" font-size="7" text-anchor="middle">ready</text>
+        <g data-edge-from="handler" data-edge-to="command_auth" data-edge-label="validated type + exact SQL" data-edge-key="4" data-edge-id="command_authorize">
+          <path data-composition-edge-from="handler" data-composition-edge-to="command_auth" data-composition-edge-id="command_authorize" data-composition-points="332.57142857142856,385;539.1428571428571,385" d="M 332.57142857142856 385 L 539.1428571428571 385" class="a-security" stroke-width="1.4" marker-end="url(#arrowhead-security)"/>
+        <g>
+          <rect x="362.2571428571428" y="365" width="147.20000000000002" height="16" rx="3" class="c-mask"/>
+          <text x="435.85714285714283" y="375" class="t-security" font-size="9" text-anchor="middle">validated type + exact SQL</text>
+        </g>
+        <text x="344.57142857142856" y="403" class="t-dim" font-size="7">WebSocket invokes this for every message</text>
         </g>
 
-        <g id="node-request" data-node-id="request" data-node-label="Input" tabindex="0" role="button" aria-label="Focus Input, HTTP / WS, Request Path" aria-pressed="false" data-node-kind="frontend" data-node-sublabel="HTTP / WS" data-node-context="Request Path">
-          <title>Input · HTTP / WS · Request Path</title>
-          <rect x="599" y="217" width="52" height="52" rx="6" class="c-mask"/>
-          <rect x="599" y="217" width="52" height="52" rx="6" class="c-frontend" stroke-width="1.5"/>
-          <g aria-hidden="true" data-semantic-sigil="frontend" class="semantic-sigil s-frontend" transform="translate(605 223) scale(0.6875)">
-            <rect x="2" y="3" width="12" height="10" rx="2"/>
-            <path d="M2 6.5h12"/>
-            <circle cx="4.1" cy="4.8" r=".7" class="sigil-fill"/>
-            <circle cx="6.3" cy="4.8" r=".7" class="sigil-fill"/>
-          </g>
-          <text data-node-label="" x="625" y="238" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">Input</text>
-          <text x="625" y="255" class="t-muted" font-size="8" text-anchor="middle">HTTP / WS</text>
+        <g data-edge-from="command_auth" data-edge-to="handler" data-edge-label="allowed" data-edge-key="5" data-edge-id="command_allowed">
+          <path data-composition-edge-from="command_auth" data-composition-edge-to="handler" data-composition-edge-id="command_allowed" data-composition-points="539.1428571428571,425;332.57142857142856,425" d="M 539.1428571428571 425 L 332.57142857142856 425" class="a-default" stroke-width="1.4" stroke-dasharray="3,5" marker-end="url(#arrowhead)"/>
+        <g>
+          <rect x="411.65714285714284" y="405" width="48.4" height="16" rx="3" class="c-mask"/>
+          <text x="435.85714285714283" y="415" class="t-muted" font-size="9" text-anchor="middle">allowed</text>
+        </g>
         </g>
 
-        <g id="node-gates" data-node-id="gates" data-node-label="Gate" tabindex="0" role="button" aria-label="Focus Gate, auth, Request Path" aria-pressed="false" data-node-kind="security" data-node-sublabel="auth" data-node-context="Request Path">
-          <title>Gate · auth · Request Path</title>
-          <rect x="479" y="217" width="42" height="52" rx="6" class="c-mask"/>
-          <rect x="479" y="217" width="42" height="52" rx="6" class="c-security" stroke-width="1.5"/>
-          <g aria-hidden="true" data-semantic-sigil="security" class="semantic-sigil s-security" transform="translate(485 223) scale(0.6875)">
-            <path d="M8 2.2 13 4v3.5c0 3.1-1.8 5.4-5 6.5-3.2-1.1-5-3.4-5-6.5V4Z"/>
-            <path d="m5.8 8 1.5 1.5 3-3"/>
-          </g>
-          <text data-node-label="" x="500" y="238" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">Gate</text>
-          <text x="500" y="255" class="t-muted" font-size="8" text-anchor="middle">auth</text>
+        <g data-edge-from="handler" data-edge-to="policy" data-edge-label="authorize arrow / json / exec" data-edge-key="6" data-edge-id="query_policy">
+          <path data-composition-edge-from="handler" data-composition-edge-to="policy" data-composition-edge-id="query_policy" data-composition-points="332.57142857142856,470;649.4285714285714,470" d="M 332.57142857142856 470 L 649.4285714285714 470" class="a-security" stroke-width="1.4" marker-end="url(#arrowhead-security)"/>
+        <g>
+          <rect x="409.6" y="450" width="162.8" height="16" rx="3" class="c-mask"/>
+          <text x="491" y="460" class="t-security" font-size="9" text-anchor="middle">authorize arrow / json / exec</text>
+        </g>
+        <text x="344.57142857142856" y="488" class="t-dim" font-size="7">Active query policy rejects exec</text>
         </g>
 
-        <g id="node-cache" data-node-id="cache" data-node-label="Cache" tabindex="0" role="button" aria-label="Focus Cache, data, Request Path" aria-pressed="false" data-node-kind="database" data-node-sublabel="data" data-node-context="Request Path">
-          <title>Cache · data · Request Path</title>
-          <rect x="409" y="217" width="42" height="52" rx="6" class="c-mask"/>
-          <rect x="409" y="217" width="42" height="52" rx="6" class="c-database" stroke-width="1.5"/>
-          <g aria-hidden="true" data-semantic-sigil="database" class="semantic-sigil s-database" transform="translate(415 223) scale(0.6875)">
-            <ellipse cx="8" cy="4" rx="5" ry="2"/>
-            <path d="M3 4v8c0 1.1 2.2 2 5 2s5-.9 5-2V4M3 8c0 1.1 2.2 2 5 2s5-.9 5-2"/>
-          </g>
-          <text data-node-label="" x="430" y="238" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">Cache</text>
-          <text x="430" y="255" class="t-muted" font-size="8" text-anchor="middle">data</text>
+        <g data-edge-from="policy" data-edge-to="duckdb" data-edge-label="json_serialize_sql" data-edge-key="7" data-edge-id="parse_sql">
+          <path data-composition-edge-from="policy" data-composition-edge-to="duckdb" data-composition-edge-id="parse_sql" data-composition-points="663.4285714285714,510;870,510" d="M 663.4285714285714 510 L 870 510" class="a-security" stroke-width="1.4" marker-end="url(#arrowhead-security)"/>
+        <g>
+          <rect x="713.9142857142858" y="490" width="105.60000000000001" height="16" rx="3" class="c-mask"/>
+          <text x="766.7142857142858" y="500" class="t-security" font-size="9" text-anchor="middle">json_serialize_sql</text>
+        </g>
+        <text x="675.4285714285714" y="528" class="t-dim" font-size="7">Parser-backed checks run before cache lookup</text>
         </g>
 
-        <g id="node-connection" data-node-id="connection" data-node-label="Pool" tabindex="0" role="button" aria-label="Focus Pool, reuse / init, Request Path" aria-pressed="false" data-node-kind="backend" data-node-sublabel="reuse / init" data-node-context="Request Path">
-          <title>Pool · reuse / init · Request Path</title>
-          <rect x="274" y="217" width="52" height="52" rx="6" class="c-mask"/>
-          <rect x="274" y="217" width="52" height="52" rx="6" class="c-backend" stroke-width="1.5"/>
-          <g aria-hidden="true" data-semantic-sigil="backend" class="semantic-sigil s-backend" transform="translate(280 223) scale(0.6875)">
-            <path d="M6 3 3 8l3 5M10 3l3 5-3 5"/>
-          </g>
-          <text data-node-label="" x="300" y="238" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">Pool</text>
-          <text x="300" y="255" class="t-muted" font-size="6.1" text-anchor="middle">reuse / init</text>
+        <g data-edge-from="duckdb" data-edge-to="policy" data-edge-label="AST" data-edge-key="8" data-edge-id="parsed_ast">
+          <path data-composition-edge-from="duckdb" data-composition-edge-to="policy" data-composition-edge-id="parsed_ast" data-composition-points="870,550;663.4285714285714,550" d="M 870 550 L 663.4285714285714 550" class="a-default" stroke-width="1.4" stroke-dasharray="3,5" marker-end="url(#arrowhead)"/>
+        <g>
+          <rect x="749.7142857142858" y="530" width="34" height="16" rx="3" class="c-mask"/>
+          <text x="766.7142857142858" y="540" class="t-muted" font-size="9" text-anchor="middle">AST</text>
+        </g>
         </g>
 
-        <g id="node-execute" data-node-id="execute" data-node-label="Query" tabindex="0" role="button" aria-label="Focus Query, DuckDB, Request Path" aria-pressed="false" data-node-kind="database" data-node-sublabel="DuckDB" data-node-context="Request Path">
-          <title>Query · DuckDB · Request Path</title>
-          <rect x="194" y="217" width="52" height="52" rx="6" class="c-mask"/>
-          <rect x="194" y="217" width="52" height="52" rx="6" class="c-database" stroke-width="1.5"/>
-          <g aria-hidden="true" data-semantic-sigil="database" class="semantic-sigil s-database" transform="translate(200 223) scale(0.6875)">
-            <ellipse cx="8" cy="4" rx="5" ry="2"/>
-            <path d="M3 4v8c0 1.1 2.2 2 5 2s5-.9 5-2V4M3 8c0 1.1 2.2 2 5 2s5-.9 5-2"/>
-          </g>
-          <text data-node-label="" x="220" y="238" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">Query</text>
-          <text x="220" y="255" class="t-muted" font-size="8" text-anchor="middle">DuckDB</text>
+        <g data-edge-from="policy" data-edge-to="cache" data-edge-label="authorized SQL + format" data-edge-key="9" data-edge-id="cache_lookup">
+          <path data-composition-edge-from="policy" data-composition-edge-to="cache" data-composition-edge-id="cache_lookup" data-composition-points="663.4285714285714,595;759.7142857142858,595" d="M 663.4285714285714 595 L 759.7142857142858 595" class="a-emphasis" stroke-width="1.8" marker-end="url(#arrowhead-emphasis)"/>
+        <g>
+          <rect x="645.7714285714287" y="575" width="131.60000000000002" height="16" rx="3" class="c-mask"/>
+          <text x="711.5714285714287" y="585" class="t-backend" font-size="9" text-anchor="middle">authorized SQL + format</text>
+        </g>
         </g>
 
-        <g id="node-respond" data-node-id="respond" data-node-label="Reply" tabindex="0" role="button" aria-label="Focus Reply, encode, Outcomes" aria-pressed="false" data-node-kind="external" data-node-sublabel="encode" data-node-context="Outcomes">
-          <title>Reply · encode · Outcomes</title>
-          <rect x="62" y="341" width="52" height="52" rx="6" class="c-mask"/>
-          <rect x="62" y="341" width="52" height="52" rx="6" class="c-external" stroke-width="1.5"/>
-          <g aria-hidden="true" data-semantic-sigil="external" class="semantic-sigil s-external" transform="translate(68 347) scale(0.6875)">
+        <g data-edge-from="cache" data-edge-to="policy" data-edge-label="miss" data-edge-key="10" data-edge-id="cache_miss">
+          <path data-composition-edge-from="cache" data-composition-edge-to="policy" data-composition-edge-id="cache_miss" data-composition-points="759.7142857142858,630;663.4285714285714,630" d="M 759.7142857142858 630 L 663.4285714285714 630" class="a-default" stroke-width="1.4" stroke-dasharray="3,5" marker-end="url(#arrowhead)"/>
+        <g>
+          <rect x="694.5714285714287" y="610" width="34" height="16" rx="3" class="c-mask"/>
+          <text x="711.5714285714287" y="620" class="t-muted" font-size="9" text-anchor="middle">miss</text>
+        </g>
+        </g>
+
+        <g data-edge-from="policy" data-edge-to="duckdb" data-edge-label="acquire + execute SQL" data-edge-key="11" data-edge-id="execute">
+          <path data-composition-edge-from="policy" data-composition-edge-to="duckdb" data-composition-edge-id="execute" data-composition-points="663.4285714285714,675;870,675" d="M 663.4285714285714 675 L 870 675" class="a-emphasis" stroke-width="1.8" marker-end="url(#arrowhead-emphasis)"/>
+        <g>
+          <rect x="706.1142857142858" y="655" width="121.2" height="16" rx="3" class="c-mask"/>
+          <text x="766.7142857142858" y="665" class="t-backend" font-size="9" text-anchor="middle">acquire + execute SQL</text>
+        </g>
+        <text x="675.4285714285714" y="693" class="t-dim" font-size="7">The pool reuses connections; a new physical connection runs the connector callback and initializer</text>
+        </g>
+
+        <g data-edge-from="duckdb" data-edge-to="handler" data-edge-label="encoded Arrow / JSON" data-edge-key="12" data-edge-id="encoded">
+          <path data-composition-edge-from="duckdb" data-composition-edge-to="handler" data-composition-edge-id="encoded" data-composition-points="870,705;332.57142857142856,705" d="M 870 705 L 332.57142857142856 705" class="a-default" stroke-width="1.4" stroke-dasharray="3,5" marker-end="url(#arrowhead)"/>
+        <g>
+          <rect x="543.2857142857142" y="685" width="116" height="16" rx="3" class="c-mask"/>
+          <text x="601.2857142857142" y="695" class="t-muted" font-size="9" text-anchor="middle">encoded Arrow / JSON</text>
+        </g>
+        </g>
+
+        <g data-edge-from="handler" data-edge-to="client" data-edge-label="response or classified error" data-edge-key="13" data-edge-id="response">
+          <path data-composition-edge-from="handler" data-composition-edge-to="client" data-composition-edge-id="response" data-composition-points="318.57142857142856,735;112,735" d="M 318.57142857142856 735 L 112 735" class="a-default" stroke-width="1.4" stroke-dasharray="3,5" marker-end="url(#arrowhead)"/>
+        <g>
+          <rect x="136.48571428571427" y="715" width="157.6" height="16" rx="3" class="c-mask"/>
+          <text x="215.28571428571428" y="725" class="t-muted" font-size="9" text-anchor="middle">response or classified error</text>
+        </g>
+        </g>
+
+        <!-- Segment Labels -->
+        <g data-graph-role="segment-label" data-segment-id="0">
+          <rect x="56" y="128" width="175.20000000000002" height="18" rx="3" class="c-mask"/>
+          <text x="62" y="141" class="t-dim" font-size="9" font-weight="600">Ingress + request authorization</text>
+        </g>
+        <g data-graph-role="segment-label" data-segment-id="1">
+          <rect x="56" y="333" width="154.4" height="18" rx="3" class="c-mask"/>
+          <text x="62" y="346" class="t-dim" font-size="9" font-weight="600">Command + SQL authorization</text>
+        </g>
+        <g data-graph-role="segment-label" data-segment-id="2">
+          <rect x="56" y="533" width="149.20000000000002" height="18" rx="3" class="c-mask"/>
+          <text x="62" y="546" class="t-dim" font-size="9" font-weight="600">Cache, execution, response</text>
+        </g>
+
+        <!-- Participants -->
+        <g id="node-client" data-node-id="client" data-node-label="Client" tabindex="0" role="button" aria-label="Focus Client, HTTP or WebSocket, Sequence participant" aria-pressed="false" data-node-kind="external" data-node-sublabel="HTTP or WebSocket" data-node-context="Sequence participant">
+          <title>Client · HTTP or WebSocket · Sequence participant</title>
+          <rect x="62" y="72" width="86" height="54" rx="6" class="c-mask"/>
+          <rect x="62" y="72" width="86" height="54" rx="6" class="c-external" stroke-width="1.5"/>
+          <g aria-hidden="true" data-semantic-sigil="external" class="semantic-sigil s-external" transform="translate(68 78) scale(0.6875)">
             <rect x="2.5" y="5" width="8.5" height="8" rx="1.5"/>
             <path d="M8 2.5h5.5V8M13.5 2.5 7.5 8.5"/>
           </g>
-          <text data-node-label="" x="88" y="362" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">Reply</text>
-          <text x="88" y="379" class="t-muted" font-size="8" text-anchor="middle">encode</text>
+          <text data-node-label="" x="105" y="94" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">Client</text>
+          <text x="105" y="111" class="t-muted" font-size="7" text-anchor="middle">HTTP or WebSocket</text>
         </g>
 
-        <g id="node-reject" data-node-id="reject" data-node-label="Reject" tabindex="0" role="button" aria-label="Focus Reject, blocked, Outcomes" aria-pressed="false" data-node-kind="security" data-node-sublabel="blocked" data-node-context="Outcomes">
-          <title>Reject · blocked · Outcomes</title>
-          <rect x="474" y="341" width="52" height="52" rx="6" class="c-mask"/>
-          <rect x="474" y="341" width="52" height="52" rx="6" class="c-security" stroke-width="1.5"/>
-          <g aria-hidden="true" data-semantic-sigil="security" class="semantic-sigil s-security" transform="translate(480 347) scale(0.6875)">
+        <g id="node-origin" data-node-id="origin" data-node-label="Origin Gate" tabindex="0" role="button" aria-label="Focus Origin Gate, CORS / upgrade, Sequence participant" aria-pressed="false" data-node-kind="security" data-node-sublabel="CORS / upgrade" data-node-context="Sequence participant">
+          <title>Origin Gate · CORS / upgrade · Sequence participant</title>
+          <rect x="172.28571428571428" y="72" width="86" height="54" rx="6" class="c-mask"/>
+          <rect x="172.28571428571428" y="72" width="86" height="54" rx="6" class="c-security" stroke-width="1.5"/>
+          <g aria-hidden="true" data-semantic-sigil="security" class="semantic-sigil s-security" transform="translate(178.28571428571428 78) scale(0.6875)">
             <path d="M8 2.2 13 4v3.5c0 3.1-1.8 5.4-5 6.5-3.2-1.1-5-3.4-5-6.5V4Z"/>
             <path d="m5.8 8 1.5 1.5 3-3"/>
           </g>
-          <text data-node-label="" x="500" y="362" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">Reject</text>
-          <text x="500" y="379" class="t-muted" font-size="8" text-anchor="middle">blocked</text>
+          <text data-node-label="" x="215.28571428571428" y="94" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">Origin Gate</text>
+          <text x="215.28571428571428" y="111" class="t-muted" font-size="7" text-anchor="middle">CORS / upgrade</text>
         </g>
 
-        <!-- Edge labels -->
-
-
-
-
-
-
-
-
-        <g data-edge-from="cache" data-edge-to="respond" data-edge-label="hit" data-edge-key="8">
-          <rect x="257" y="340" width="30" height="14" rx="3" class="c-mask"/>
-          <text x="272" y="350" class="t-backend" font-size="8" text-anchor="middle">hit</text>
-        </g>
-        <g data-edge-from="cache" data-edge-to="connection" data-edge-label="miss" data-edge-key="9">
-          <rect x="352.5" y="223" width="30" height="14" rx="3" class="c-mask"/>
-          <text x="367.5" y="233" class="t-muted" font-size="8" text-anchor="middle">miss</text>
+        <g id="node-handler" data-node-id="handler" data-node-label="Handler" tabindex="0" role="button" aria-label="Focus Handler, schema + decode, Sequence participant" aria-pressed="false" data-node-kind="backend" data-node-sublabel="schema + decode" data-node-context="Sequence participant">
+          <title>Handler · schema + decode · Sequence participant</title>
+          <rect x="282.57142857142856" y="72" width="86" height="54" rx="6" class="c-mask"/>
+          <rect x="282.57142857142856" y="72" width="86" height="54" rx="6" class="c-backend" stroke-width="1.5"/>
+          <g aria-hidden="true" data-semantic-sigil="backend" class="semantic-sigil s-backend" transform="translate(288.57142857142856 78) scale(0.6875)">
+            <path d="M6 3 3 8l3 5M10 3l3 5-3 5"/>
+          </g>
+          <text data-node-label="" x="325.57142857142856" y="94" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">Handler</text>
+          <text x="325.57142857142856" y="111" class="t-muted" font-size="7" text-anchor="middle">schema + decode</text>
         </g>
 
+        <g id="node-request_auth" data-node-id="request_auth" data-node-label="Request Auth" tabindex="0" role="button" aria-label="Focus Request Auth, AuthorizeRequest, Sequence participant" aria-pressed="false" data-node-kind="security" data-node-sublabel="AuthorizeRequest" data-node-context="Sequence participant">
+          <title>Request Auth · AuthorizeRequest · Sequence participant</title>
+          <rect x="392.8571428571429" y="72" width="86" height="54" rx="6" class="c-mask"/>
+          <rect x="392.8571428571429" y="72" width="86" height="54" rx="6" class="c-security" stroke-width="1.5"/>
+          <g aria-hidden="true" data-semantic-sigil="security" class="semantic-sigil s-security" transform="translate(398.8571428571429 78) scale(0.6875)">
+            <path d="M8 2.2 13 4v3.5c0 3.1-1.8 5.4-5 6.5-3.2-1.1-5-3.4-5-6.5V4Z"/>
+            <path d="m5.8 8 1.5 1.5 3-3"/>
+          </g>
+          <text data-node-label="" x="435.8571428571429" y="94" class="t-primary" font-size="10.8" font-weight="600" text-anchor="middle">Request Auth</text>
+          <text x="435.8571428571429" y="111" class="t-muted" font-size="7" text-anchor="middle">AuthorizeRequest</text>
+        </g>
 
+        <g id="node-command_auth" data-node-id="command_auth" data-node-label="Command Auth" tabindex="0" role="button" aria-label="Focus Command Auth, type + exact SQL, Sequence participant" aria-pressed="false" data-node-kind="security" data-node-sublabel="type + exact SQL" data-node-context="Sequence participant">
+          <title>Command Auth · type + exact SQL · Sequence participant</title>
+          <rect x="503.1428571428571" y="72" width="86" height="54" rx="6" class="c-mask"/>
+          <rect x="503.1428571428571" y="72" width="86" height="54" rx="6" class="c-security" stroke-width="1.5"/>
+          <g aria-hidden="true" data-semantic-sigil="security" class="semantic-sigil s-security" transform="translate(509.1428571428571 78) scale(0.6875)">
+            <path d="M8 2.2 13 4v3.5c0 3.1-1.8 5.4-5 6.5-3.2-1.1-5-3.4-5-6.5V4Z"/>
+            <path d="m5.8 8 1.5 1.5 3-3"/>
+          </g>
+          <text data-node-label="" x="546.1428571428571" y="94" class="t-primary" font-size="10.8" font-weight="600" text-anchor="middle">Command Auth</text>
+          <text x="546.1428571428571" y="111" class="t-muted" font-size="7" text-anchor="middle">type + exact SQL</text>
+        </g>
+
+        <g id="node-policy" data-node-id="policy" data-node-label="SQL Policy" tabindex="0" role="button" aria-label="Focus SQL Policy, schema • fn • URI, Sequence participant" aria-pressed="false" data-node-kind="security" data-node-sublabel="schema • fn • URI" data-node-context="Sequence participant">
+          <title>SQL Policy · schema • fn • URI · Sequence participant</title>
+          <rect x="613.4285714285714" y="72" width="86" height="54" rx="6" class="c-mask"/>
+          <rect x="613.4285714285714" y="72" width="86" height="54" rx="6" class="c-security" stroke-width="1.5"/>
+          <g aria-hidden="true" data-semantic-sigil="security" class="semantic-sigil s-security" transform="translate(619.4285714285714 78) scale(0.6875)">
+            <path d="M8 2.2 13 4v3.5c0 3.1-1.8 5.4-5 6.5-3.2-1.1-5-3.4-5-6.5V4Z"/>
+            <path d="m5.8 8 1.5 1.5 3-3"/>
+          </g>
+          <text data-node-label="" x="656.4285714285714" y="94" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">SQL Policy</text>
+          <text x="656.4285714285714" y="111" class="t-muted" font-size="7" text-anchor="middle">schema • fn • URI</text>
+        </g>
+
+        <g id="node-cache" data-node-id="cache" data-node-label="Result Cache" tabindex="0" role="button" aria-label="Focus Result Cache, encoded bytes, Sequence participant" aria-pressed="false" data-node-kind="database" data-node-sublabel="encoded bytes" data-node-context="Sequence participant">
+          <title>Result Cache · encoded bytes · Sequence participant</title>
+          <rect x="723.7142857142858" y="72" width="86" height="54" rx="6" class="c-mask"/>
+          <rect x="723.7142857142858" y="72" width="86" height="54" rx="6" class="c-database" stroke-width="1.5"/>
+          <g aria-hidden="true" data-semantic-sigil="database" class="semantic-sigil s-database" transform="translate(729.7142857142858 78) scale(0.6875)">
+            <ellipse cx="8" cy="4" rx="5" ry="2"/>
+            <path d="M3 4v8c0 1.1 2.2 2 5 2s5-.9 5-2V4M3 8c0 1.1 2.2 2 5 2s5-.9 5-2"/>
+          </g>
+          <text data-node-label="" x="766.7142857142858" y="94" class="t-primary" font-size="10.8" font-weight="600" text-anchor="middle">Result Cache</text>
+          <text x="766.7142857142858" y="111" class="t-muted" font-size="7" text-anchor="middle">encoded bytes</text>
+        </g>
+
+        <g id="node-duckdb" data-node-id="duckdb" data-node-label="DuckDB" tabindex="0" role="button" aria-label="Focus DuckDB, parser + execution, Sequence participant" aria-pressed="false" data-node-kind="database" data-node-sublabel="parser + execution" data-node-context="Sequence participant">
+          <title>DuckDB · parser + execution · Sequence participant</title>
+          <rect x="834" y="72" width="86" height="54" rx="6" class="c-mask"/>
+          <rect x="834" y="72" width="86" height="54" rx="6" class="c-database" stroke-width="1.5"/>
+          <g aria-hidden="true" data-semantic-sigil="database" class="semantic-sigil s-database" transform="translate(840 78) scale(0.6875)">
+            <ellipse cx="8" cy="4" rx="5" ry="2"/>
+            <path d="M3 4v8c0 1.1 2.2 2 5 2s5-.9 5-2V4M3 8c0 1.1 2.2 2 5 2s5-.9 5-2"/>
+          </g>
+          <text data-node-label="" x="877" y="94" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">DuckDB</text>
+          <text x="877" y="111" class="t-muted" font-size="7" text-anchor="middle">parser + execution</text>
+        </g>
 
         <!-- Legend -->
 
