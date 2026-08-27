@@ -1,5 +1,6 @@
 import { expect, describe, it } from 'vitest';
-import { avg, column, eq, gt, InOpNode, max, Query, ScalarSubqueryNode } from '../src/index.js';
+import * as sql from '../src/index.js';
+import { asLiteral, avg, column, eq, gt, InOpNode, max, Query, ScalarSubqueryNode } from '../src/index.js';
 import { validateQuery } from './util/validate.js';
 
 describe('Scalar subqueries', () => {
@@ -60,5 +61,26 @@ describe('Scalar subqueries', () => {
     ).toBeValidQuery(
       'SELECT (SELECT avg("num1") AS "a" FROM "t1") AS "m" FROM "t1"'
     );
+  });
+  it('wrap every exported query subclass', () => {
+    const examples: Record<string, Query> = {
+      SelectQuery: Query.select('num1').from('t1'),
+      SetOperation: Query.union(
+        Query.select('num1').from('t1'),
+        Query.select('num1').from('t2')
+      ),
+      PivotQuery: Query.pivot('t1')
+    };
+
+    const subclasses = Object.entries(sql)
+      .filter(([, v]) => typeof v === 'function' && v.prototype instanceof Query)
+      .map(([name]) => name);
+
+    // a subclass without an example above is new and untested, not exempt
+    expect(subclasses.sort()).toStrictEqual(Object.keys(examples).sort());
+
+    for (const name of subclasses) {
+      expect(asLiteral(examples[name])).toBeInstanceOf(ScalarSubqueryNode);
+    }
   });
 });
