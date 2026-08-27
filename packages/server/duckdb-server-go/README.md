@@ -10,54 +10,9 @@ Startup completes before the server accepts requests. Bootstrap and external-acc
 while the connection initializer runs for the initial verification connection and every physical connection opened later
 by the query pools.
 
-```mermaid
-flowchart TD
-  subgraph startup["Startup"]
-    direction TB
-    S1["Parse and validate configuration"] --> S2["connector.Open"]
-    S2 --> S3["Open initial physical connection"]
-    S3 --> S4["Optional WithBootstrapInitializer<br/>runs once per connector"]
-    S4 --> S5["May install or load extensions<br/>Attach local or remote catalogs<br/>Perform one-time catalog setup"]
-    S5 --> S5A["Apply option settings"]
-    S5A --> S6{"Locked external access configured?"}
-    S6 -- Yes --> S7["Apply path grants<br/>Disable external access<br/>Lock DuckDB configuration"]
-    S6 -- No --> S8["Preserve DuckDB defaults"]
-    S7 --> S9["Optional WithConnectionInitializer<br/>runs for the initial connection"]
-    S8 --> S9
-    S9 --> S10["Close verified initial connection"]
-    S10 --> S11["query.New<br/>Configure pools, cache, and SQL policies"]
-    S11 --> S12["server.New<br/>Configure HTTP and WebSocket handling"]
-    S12 --> S13["Listen for requests"]
-  end
+![DuckDB Go server lifecycle](docs/duckdb-go-server-lifecycle.svg)
 
-  subgraph request["Each inbound request or WebSocket message"]
-    direction TB
-    R1["HTTP request or WebSocket handshake"] --> R2["Apply transport and origin checks"]
-    R2 --> R3["Extract allowed schemas<br/>Run AuthorizeRequest once per request or session"]
-    R3 --> R4["Decode one command<br/>HTTP request or WebSocket message"]
-    R4 --> R5["Validate command type and SQL presence"]
-    R5 --> R6["Run CommandAuthorizer"]
-    R6 --> R7{"Command type"}
-    R7 -- exec --> R8{"Query validation active?"}
-    R8 -- Yes --> R9["Reject exec"]
-    R8 -- No --> R13["Acquire or reuse an execution connection"]
-    R7 -- arrow or json --> R10["Validate configured schema, function,<br/>and remote URI policies"]
-    R10 --> R11{"Cached result?"}
-    R11 -- Yes --> R18["Return HTTP or WebSocket response"]
-    R11 -- No or disabled --> R13
-    R13 --> R14{"New physical connection?"}
-    R14 -- Yes --> R15["Connector callback<br/>Bootstrap is already complete"]
-    R15 --> R16["Run optional WithConnectionInitializer"]
-    R16 --> R17["Execute in DuckDB"]
-    R14 -- No --> R17
-    R17 --> R19["Encode Arrow or JSON<br/>or complete exec"]
-    R19 --> R20["Cache successful Arrow or JSON result<br/>when requested"]
-    R20 --> R18
-    R9 --> R18
-  end
-
-  S13 --> R1
-```
+[Archify source](docs/server-lifecycle.workflow.json)
 
 SQL policy validation runs before cache lookup and uses DuckDB's parser, so it may also open a physical SQL connection.
 Every new SQL or Arrow connection follows the same connector callback and connection-initializer sequence shown above.

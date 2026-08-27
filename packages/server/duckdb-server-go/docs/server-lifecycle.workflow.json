@@ -1,0 +1,50 @@
+{
+  "schema_version": 1,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "DuckDB Go Server Lifecycle",
+    "quality_profile": "showcase",
+    "viewBox": [700, 520],
+    "legend": { "mode": "hidden" }
+  },
+  "lanes": [
+    { "id": "startup_lane", "label": "Server Startup" },
+    { "id": "request_lane", "label": "Request Path" },
+    { "id": "outcome_lane", "label": "Outcomes" }
+  ],
+  "mainPath": [
+    "config",
+    "open",
+    "bootstrap",
+    "finalize",
+    "listen"
+  ],
+  "nodes": [
+    { "id": "config", "lane": "startup_lane", "col": 0, "type": "backend", "label": "Config", "sublabel": "flags", "width": 52 },
+    { "id": "open", "lane": "startup_lane", "col": 1, "type": "backend", "label": "Open", "sublabel": "connector", "width": 52 },
+    { "id": "bootstrap", "lane": "startup_lane", "col": 2, "type": "database", "label": "Init", "sublabel": "bootstrap", "tag": "once", "width": 52 },
+    { "id": "finalize", "lane": "startup_lane", "col": 4, "type": "security", "label": "Lock", "sublabel": "SET", "width": 42 },
+    { "id": "listen", "lane": "startup_lane", "col": 5, "type": "backend", "label": "Serve", "sublabel": "HTTP", "tag": "ready", "width": 42 },
+    { "id": "request", "lane": "request_lane", "col": 5, "type": "frontend", "label": "Input", "sublabel": "HTTP / WS", "width": 52 },
+    { "id": "gates", "lane": "request_lane", "col": 4, "type": "security", "label": "Gate", "sublabel": "auth", "width": 42 },
+    { "id": "cache", "lane": "request_lane", "col": 3, "type": "database", "label": "Cache", "sublabel": "data", "width": 42 },
+    { "id": "connection", "lane": "request_lane", "col": 2, "type": "backend", "label": "Pool", "sublabel": "reuse / init", "width": 52 },
+    { "id": "execute", "lane": "request_lane", "col": 1, "type": "database", "label": "Query", "sublabel": "DuckDB", "width": 52 },
+    { "id": "respond", "lane": "outcome_lane", "col": 0, "type": "external", "label": "Reply", "sublabel": "encode", "width": 52 },
+    { "id": "reject", "lane": "outcome_lane", "col": 4, "type": "security", "label": "Reject", "sublabel": "blocked", "width": 52 }
+  ],
+  "edges": [
+    { "from": "config", "to": "open" },
+    { "from": "open", "to": "bootstrap" },
+    { "from": "bootstrap", "to": "finalize" },
+    { "from": "finalize", "to": "listen" },
+    { "from": "listen", "to": "request", "route": "drop", "fromSide": "bottom", "toSide": "top" },
+    { "from": "request", "to": "gates" },
+    { "from": "gates", "to": "cache", "variant": "emphasis" },
+    { "from": "gates", "to": "reject", "variant": "security", "role": "error", "route": "drop", "fromSide": "bottom", "toSide": "top" },
+    { "from": "cache", "to": "respond", "label": "hit", "variant": "emphasis" },
+    { "from": "cache", "to": "connection", "label": "miss" },
+    { "from": "connection", "to": "execute" },
+    { "from": "execute", "to": "respond" }
+  ]
+}
