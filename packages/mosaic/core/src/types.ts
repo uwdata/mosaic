@@ -1,5 +1,7 @@
-import type { CreateQuery, CreateSchemaQuery, DescribeQuery, ExprNode, MaybeArray, Query } from '@uwdata/mosaic-sql';
+import type { CreateQuery, CreateSchemaQuery, DescribeQuery, ExprNode, JSType, MaybeArray, Query } from '@uwdata/mosaic-sql';
 import type { QueryResult } from './util/query-result.js';
+
+export type { ColumnDescription, JSType } from '@uwdata/mosaic-sql';
 
 /** Query type accepted by a coordinator. */
 export type QueryType =
@@ -22,15 +24,6 @@ export interface QueryEntry {
   request: QueryRequest;
   result: QueryResult;
 }
-
-/** String indicating a JavaScript data type. */
-export type JSType =
-  | 'number'
-  | 'date'
-  | 'boolean'
-  | 'string'
-  | 'array'
-  | 'object';
 
 /** String indicating a requested summary statistic. */
 export type Stat =
@@ -61,13 +54,6 @@ export interface FieldInfo extends Partial<Record<Stat, number>> {
   sqlType: string,
   type: JSType,
   nullable: boolean
-}
-
-/** A result row from a DESCRIBE query. */
-export interface ColumnDescription {
-  column_name: string,
-  column_type: string,
-  null: 'YES' | 'NO'
 }
 
 /**
