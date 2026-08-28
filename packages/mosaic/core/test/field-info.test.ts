@@ -1,4 +1,5 @@
 import { describe, it, expect } from 'vitest';
+import { duckDBCodeGenerator } from '@uwdata/mosaic-sql';
 import type { Coordinator, FieldInfoRequest } from '../src/index.js';
 import { queryFieldInfo } from '../src/index.js';
 
@@ -8,6 +9,9 @@ import { queryFieldInfo } from '../src/index.js';
  */
 function stubCoordinator(describe: () => unknown): Coordinator {
   return {
+    manager: {
+      codegen: () => duckDBCodeGenerator
+    },
     query: () => Promise.resolve(describe())
   } as unknown as Coordinator;
 }

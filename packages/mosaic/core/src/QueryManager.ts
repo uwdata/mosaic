@@ -5,6 +5,7 @@ import { lruCache, voidCache } from './util/cache.js';
 import { PriorityQueue } from './util/priority-queue.js';
 import { QueryResult, QueryState } from './util/query-result.js';
 import { voidLogger } from './util/void-logger.js';
+import { getDefaultVisitor, isNode, type SQLCodeGenerator } from '@uwdata/mosaic-sql';
 
 export const Priority = Object.freeze({ High: 0, Normal: 1, Low: 2 });
 
@@ -15,6 +16,7 @@ export class QueryManager {
   private _logger: Logger;
   private _logQueries: boolean;
   private _consolidate: ReturnType<typeof consolidator> | null;
+  private _codegen: SQLCodeGenerator;
   /** Requests pending with the query manager. */
   public pendingResults: QueryResult[];
   private maxConcurrentRequests: number;
@@ -27,6 +29,7 @@ export class QueryManager {
     this._logger = voidLogger();
     this._logQueries = false;
     this._consolidate = null;
+    this._codegen = getDefaultVisitor();
     this.pendingResults = [];
     this.maxConcurrentRequests = maxConcurrentRequests;
     this.pendingExec = false;
@@ -78,7 +81,10 @@ export class QueryManager {
   async submit(request: QueryRequest, result: QueryResult): Promise<void> {
     try {
       const { query, type, cache = false, options } = request;
-      const sql = Array.isArray(query) ? query.filter(x => x).join(';\n') : query ? String(query) : null;
+      const items = (Array.isArray(query) ? query : [query]).filter(x => x);
+      const sql = items.length
+        ? items.map(q => isNode(q) ? q.toString(this._codegen) : String(q)).join(';\n')
+        : null;
 
       // check query cache
       if (cache) {
@@ -156,6 +162,17 @@ export class QueryManager {
   connector(connector: Connector): Connector;
   connector(connector?: Connector): Connector | null {
     return connector ? (this.db = connector) : this.db;
+  }
+
+  /**
+   * Get or set the SQL dialect visitor used to stringify AST nodes.
+   * @param value Codegen to set
+   * @returns Current codegen
+   */
+  codegen(): SQLCodeGenerator;
+  codegen(value: SQLCodeGenerator): SQLCodeGenerator;
+  codegen(value?: SQLCodeGenerator): SQLCodeGenerator {
+    return value ? (this._codegen = value) : this._codegen;
   }
 
   /**

@@ -15,7 +15,7 @@ export { JoinNode, type JoinType, type JoinVariant } from './join.js';
 export { ListNode } from './list.js';
 export { LiteralNode } from './literal.js';
 export { LogicalOpNode, AndNode, OrNode } from './logical-op.js';
-export { SQLNode, ExprNode, isNode } from './node.js';
+export { SQLNode, ExprNode, isNode, getDefaultVisitor, setDefaultVisitor } from './node.js';
 export { OrderByNode } from './order-by.js';
 export { ParamNode } from './param.js';
 export { PivotQuery, type PivotSource, isPivotQuery } from './pivot.js';
