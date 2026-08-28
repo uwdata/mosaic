@@ -15,7 +15,7 @@ export { JoinNode, type JoinType, type JoinVariant } from './join.js';
 export { ListNode } from './list.js';
 export { LiteralNode } from './literal.js';
 export { LogicalOpNode, AndNode, OrNode } from './logical-op.js';
-export { SQLNode, ExprNode, isNode } from './node.js';
+export { SQLNode, ExprNode, isNode, getDefaultVisitor, setDefaultVisitor } from './node.js';
 export { OrderByNode } from './order-by.js';
 export { ParamNode } from './param.js';
 export { CreateQuery, type CreateTableOptions, CreateSchemaQuery, type CreateSchemaOptions, DescribeQuery, PivotQuery, type PivotSource, Query, SelectQuery, SetOperation, isCreateQuery, isCreateSchemaQuery, isDescribeQuery, isPivotQuery, isQuery, isSelectQuery } from './query.js';

@@ -18,6 +18,17 @@ export function setDefaultVisitor(visitor: SQLCodeGenerator) {
   _defaultVisitor = visitor;
 }
 
+/**
+ * Get the current default visitor.
+ * @returns The current default visitor.
+ */
+export function getDefaultVisitor(): SQLCodeGenerator {
+  if (!_defaultVisitor) {
+    throw new Error('No default visitor set.');
+  }
+  return _defaultVisitor;
+}
+
 export class SQLNode {
   /** The SQL AST node type. */
   readonly type: string;
