@@ -15,12 +15,15 @@ import {
   sql,
   sum
 } from '../src/index.js';
+import { PivotQuery as DeepPivotQuery } from '../src/ast/pivot.js';
 
 describe('PivotQuery', () => {
   it('constructs a pivot query from a table name', () => {
     const query = Query.pivot('t1');
 
     expect(query).toBeInstanceOf(PivotQuery);
+    expect(query.constructor).toBe(PivotQuery);
+    expect(PivotQuery).toBe(DeepPivotQuery);
     expect(query.type).toBe('PIVOT_QUERY');
     expect(isQuery(query)).toBe(true);
     expect(isPivotQuery(query)).toBe(true);
