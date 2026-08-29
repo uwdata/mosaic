@@ -25,7 +25,8 @@
   },
   "scripts": {
     "clean": "rimraf dist && mkdir dist",
-    "lint": "eslint src test",
+    "lint": "eslint src test && pnpm run lint:cycles",
+    "lint:cycles": "depcruise --config .dependency-cruiser.cjs --ignore-known .dependency-cruiser-known-violations.json src",
     "typecheck": "tsc -p test/tsconfig.json",
     "test": "vitest run",
     "prepublishOnly": "tsc --build"

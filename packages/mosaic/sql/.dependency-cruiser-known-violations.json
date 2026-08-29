@@ -1,0 +1,4774 @@
+[
+  {
+    "type": "cycle",
+    "from": "src/ast/aggregate.ts",
+    "to": "src/ast/node.ts",
+    "unresolvedTo": "./node.js",
+    "dependencyTypes": [
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "no-circular-runtime-dependencies"
+    },
+    "cycle": [
+      {
+        "name": "src/ast/node.ts",
+        "dependencyTypes": [
+          "local",
+          "import"
+        ]
+      },
+      {
+        "name": "src/visit/codegen/sql.ts",
+        "dependencyTypes": [
+          "local",
+          "type-only",
+          "import",
+          "pre-compilation-only"
+        ]
+      },
+      {
+        "name": "src/ast/index.ts",
+        "dependencyTypes": [
+          "local",
+          "type-only",
+          "import",
+          "pre-compilation-only"
+        ]
+      },
+      {
+        "name": "src/ast/aggregate.ts",
+        "dependencyTypes": [
+          "local",
+          "export"
+        ]
+      }
+    ]
+  },
+  {
+    "type": "cycle",
+    "from": "src/ast/aggregate.ts",
+    "to": "src/ast/window.ts",
+    "unresolvedTo": "./window.js",
+    "dependencyTypes": [
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "no-circular-runtime-dependencies"
+    },
+    "cycle": [
+      {
+        "name": "src/ast/window.ts",
+        "dependencyTypes": [
+          "local",
+          "import"
+        ]
+      },
+      {
+        "name": "src/ast/aggregate.ts",
+        "dependencyTypes": [
+          "local",
+          "type-only",
+          "import",
+          "pre-compilation-only"
+        ]
+      }
+    ]
+  },
+  {
+    "type": "cycle",
+    "from": "src/ast/aggregate.ts",
+    "to": "src/util/ast.ts",
+    "unresolvedTo": "../util/ast.js",
+    "dependencyTypes": [
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "no-circular-runtime-dependencies"
+    },
+    "cycle": [
+      {
+        "name": "src/util/ast.ts",
+        "dependencyTypes": [
+          "local",
+          "import"
+        ]
+      },
+      {
+        "name": "src/ast/column-ref.ts",
+        "dependencyTypes": [
+          "local",
+          "type-only",
+          "import",
+          "pre-compilation-only"
+        ]
+      },
+      {
+        "name": "src/ast/node.ts",
+        "dependencyTypes": [
+          "local",
+          "import"
+        ]
+      },
+      {
+        "name": "src/visit/codegen/sql.ts",
+        "dependencyTypes": [
+          "local",
+          "type-only",
+          "import",
+          "pre-compilation-only"
+        ]
+      },
+      {
+        "name": "src/ast/index.ts",
+        "dependencyTypes": [
+          "local",
+          "type-only",
+          "import",
+          "pre-compilation-only"
+        ]
+      },
+      {
+        "name": "src/ast/aggregate.ts",
+        "dependencyTypes": [
+          "local",
+          "export"
+        ]
+      }
+    ]
+  },
+  {
+    "type": "cycle",
+    "from": "src/ast/aggregate.ts",
+    "to": "src/util/function.ts",
+    "unresolvedTo": "../util/function.js",
+    "dependencyTypes": [
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "no-circular-runtime-dependencies"
+    },
+    "cycle": [
+      {
+        "name": "src/util/function.ts",
+        "dependencyTypes": [
+          "local",
+          "import"
+        ]
+      },
+      {
+        "name": "src/ast/aggregate.ts",
+        "dependencyTypes": [
+          "local",
+          "import"
+        ]
+      }
+    ]
+  },
+  {
+    "type": "cycle",
+    "from": "src/ast/aggregate.ts",
+    "to": "src/util/type-check.ts",
+    "unresolvedTo": "../util/type-check.js",
+    "dependencyTypes": [
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "no-circular-runtime-dependencies"
+    },
+    "cycle": [
+      {
+        "name": "src/util/type-check.ts",
+        "dependencyTypes": [
+          "local",
+          "import"
+        ]
+      },
+      {
+        "name": "src/types.ts",
+        "dependencyTypes": [
+          "local",
+          "type-only",
+          "import",
+          "pre-compilation-only"
+        ]
+      },
+      {
+        "name": "src/ast/column-ref.ts",
+        "dependencyTypes": [
+          "local",
+          "import",
+          "pre-compilation-only"
+        ]
+      },
+      {
+        "name": "src/ast/node.ts",
+        "dependencyTypes": [
+          "local",
+          "import"
+        ]
+      },
+      {
+        "name": "src/visit/codegen/sql.ts",
+        "dependencyTypes": [
+          "local",
+          "type-only",
+          "import",
+          "pre-compilation-only"
+        ]
+      },
+      {
+        "name": "src/ast/index.ts",
+        "dependencyTypes": [
+          "local",
+          "type-only",
+          "import",
+          "pre-compilation-only"
+        ]
+      },
+      {
+        "name": "src/ast/aggregate.ts",
+        "dependencyTypes": [
+          "local",
+          "export"
+        ]
+      }
+    ]
+  },
+  {
+    "type": "cycle",
+    "from": "src/ast/between-op.ts",
+    "to": "src/ast/node.ts",
+    "unresolvedTo": "./node.js",
+    "dependencyTypes": [
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "no-circular-runtime-dependencies"
+    },
+    "cycle": [
+      {
+        "name": "src/ast/node.ts",
+        "dependencyTypes": [
+          "local",
+          "import"
+        ]
+      },
+      {
+        "name": "src/visit/codegen/sql.ts",
+        "dependencyTypes": [
+          "local",
+          "type-only",
+          "import",
+          "pre-compilation-only"
+        ]
+      },
+      {
+        "name": "src/ast/index.ts",
+        "dependencyTypes": [
+          "local",
+          "type-only",
+          "import",
+          "pre-compilation-only"
+        ]
+      },
+      {
+        "name": "src/ast/between-op.ts",
+        "dependencyTypes": [
+          "local",
+          "export"
+        ]
+      }
+    ]
+  },
+  {
+    "type": "cycle",
+    "from": "src/ast/binary-op.ts",
+    "to": "src/ast/node.ts",
+    "unresolvedTo": "./node.js",
+    "dependencyTypes": [
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "no-circular-runtime-dependencies"
+    },
+    "cycle": [
+      {
+        "name": "src/ast/node.ts",
+        "dependencyTypes": [
+          "local",
+          "import"
+        ]
+      },
+      {
+        "name": "src/visit/codegen/sql.ts",
+        "dependencyTypes": [
+          "local",
+          "type-only",
+          "import",
+          "pre-compilation-only"
+        ]
+      },
+      {
+        "name": "src/ast/index.ts",
+        "dependencyTypes": [
+          "local",
+          "type-only",
+          "import",
+          "pre-compilation-only"
+        ]
+      },
+      {
+        "name": "src/ast/binary-op.ts",
+        "dependencyTypes": [
+          "local",
+          "export"
+        ]
+      }
+    ]
+  },
+  {
+    "type": "cycle",
+    "from": "src/ast/case.ts",
+    "to": "src/ast/node.ts",
+    "unresolvedTo": "./node.js",
+    "dependencyTypes": [
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "no-circular-runtime-dependencies"
+    },
+    "cycle": [
+      {
+        "name": "src/ast/node.ts",
+        "dependencyTypes": [
+          "local",
+          "import"
+        ]
+      },
+      {
+        "name": "src/visit/codegen/sql.ts",
+        "dependencyTypes": [
+          "local",
+          "type-only",
+          "import",
+          "pre-compilation-only"
+        ]
+      },
+      {
+        "name": "src/ast/index.ts",
+        "dependencyTypes": [
+          "local",
+          "type-only",
+          "import",
+          "pre-compilation-only"
+        ]
+      },
+      {
+        "name": "src/ast/case.ts",
+        "dependencyTypes": [
+          "local",
+          "export"
+        ]
+      }
+    ]
+  },
+  {
+    "type": "cycle",
+    "from": "src/ast/case.ts",
+    "to": "src/types.ts",
+    "unresolvedTo": "../types.js",
+    "dependencyTypes": [
+      "local",
+      "import",
+      "pre-compilation-only"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "no-circular-runtime-dependencies"
+    },
+    "cycle": [
+      {
+        "name": "src/types.ts",
+        "dependencyTypes": [
+          "local",
+          "import",
+          "pre-compilation-only"
+        ]
+      },
+      {
+        "name": "src/ast/column-ref.ts",
+        "dependencyTypes": [
+          "local",
+          "import",
+          "pre-compilation-only"
+        ]
+      },
+      {
+        "name": "src/ast/node.ts",
+        "dependencyTypes": [
+          "local",
+          "import"
+        ]
+      },
+      {
+        "name": "src/visit/codegen/sql.ts",
+        "dependencyTypes": [
+          "local",
+          "type-only",
+          "import",
+          "pre-compilation-only"
+        ]
+      },
+      {
+        "name": "src/ast/index.ts",
+        "dependencyTypes": [
+          "local",
+          "type-only",
+          "import",
+          "pre-compilation-only"
+        ]
+      },
+      {
+        "name": "src/ast/case.ts",
+        "dependencyTypes": [
+          "local",
+          "export"
+        ]
+      }
+    ]
+  },
+  {
+    "type": "cycle",
+    "from": "src/ast/case.ts",
+    "to": "src/util/ast.ts",
+    "unresolvedTo": "../util/ast.js",
+    "dependencyTypes": [
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "no-circular-runtime-dependencies"
+    },
+    "cycle": [
+      {
+        "name": "src/util/ast.ts",
+        "dependencyTypes": [
+          "local",
+          "import"
+        ]
+      },
+      {
+        "name": "src/ast/column-ref.ts",
+        "dependencyTypes": [
+          "local",
+          "type-only",
+          "import",
+          "pre-compilation-only"
+        ]
+      },
+      {
+        "name": "src/ast/node.ts",
+        "dependencyTypes": [
+          "local",
+          "import"
+        ]
+      },
+      {
+        "name": "src/visit/codegen/sql.ts",
+        "dependencyTypes": [
+          "local",
+          "type-only",
+          "import",
+          "pre-compilation-only"
+        ]
+      },
+      {
+        "name": "src/ast/index.ts",
+        "dependencyTypes": [
+          "local",
+          "type-only",
+          "import",
+          "pre-compilation-only"
+        ]
+      },
+      {
+        "name": "src/ast/case.ts",
+        "dependencyTypes": [
+          "local",
+          "export"
+        ]
+      }
+    ]
+  },
+  {
+    "type": "cycle",
+    "from": "src/ast/cast.ts",
+    "to": "src/ast/node.ts",
+    "unresolvedTo": "./node.js",
+    "dependencyTypes": [
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "no-circular-runtime-dependencies"
+    },
+    "cycle": [
+      {
+        "name": "src/ast/node.ts",
+        "dependencyTypes": [
+          "local",
+          "import"
+        ]
+      },
+      {
+        "name": "src/visit/codegen/sql.ts",
+        "dependencyTypes": [
+          "local",
+          "type-only",
+          "import",
+          "pre-compilation-only"
+        ]
+      },
+      {
+        "name": "src/ast/index.ts",
+        "dependencyTypes": [
+          "local",
+          "type-only",
+          "import",
+          "pre-compilation-only"
+        ]
+      },
+      {
+        "name": "src/ast/cast.ts",
+        "dependencyTypes": [
+          "local",
+          "export"
+        ]
+      }
+    ]
+  },
+  {
+    "type": "cycle",
+    "from": "src/ast/collate.ts",
+    "to": "src/ast/node.ts",
+    "unresolvedTo": "./node.js",
+    "dependencyTypes": [
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "no-circular-runtime-dependencies"
+    },
+    "cycle": [
+      {
+        "name": "src/ast/node.ts",
+        "dependencyTypes": [
+          "local",
+          "import"
+        ]
+      },
+      {
+        "name": "src/visit/codegen/sql.ts",
+        "dependencyTypes": [
+          "local",
+          "type-only",
+          "import",
+          "pre-compilation-only"
+        ]
+      },
+      {
+        "name": "src/ast/index.ts",
+        "dependencyTypes": [
+          "local",
+          "type-only",
+          "import",
+          "pre-compilation-only"
+        ]
+      },
+      {
+        "name": "src/ast/collate.ts",
+        "dependencyTypes": [
+          "local",
+          "export"
+        ]
+      }
+    ]
+  },
+  {
+    "type": "cycle",
+    "from": "src/ast/column-param.ts",
+    "to": "src/ast/column-ref.ts",
+    "unresolvedTo": "./column-ref.js",
+    "dependencyTypes": [
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "no-circular-runtime-dependencies"
+    },
+    "cycle": [
+      {
+        "name": "src/ast/column-ref.ts",
+        "dependencyTypes": [
+          "local",
+          "import"
+        ]
+      },
+      {
+        "name": "src/ast/node.ts",
+        "dependencyTypes": [
+          "local",
+          "import"
+        ]
+      },
+      {
+        "name": "src/visit/codegen/sql.ts",
+        "dependencyTypes": [
+          "local",
+          "type-only",
+          "import",
+          "pre-compilation-only"
+        ]
+      },
+      {
+        "name": "src/ast/index.ts",
+        "dependencyTypes": [
+          "local",
+          "type-only",
+          "import",
+          "pre-compilation-only"
+        ]
+      },
+      {
+        "name": "src/ast/column-param.ts",
+        "dependencyTypes": [
+          "local",
+          "export"
+        ]
+      }
+    ]
+  },
+  {
+    "type": "cycle",
+    "from": "src/ast/column-ref.ts",
+    "to": "src/ast/node.ts",
+    "unresolvedTo": "./node.js",
+    "dependencyTypes": [
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "no-circular-runtime-dependencies"
+    },
+    "cycle": [
+      {
+        "name": "src/ast/node.ts",
+        "dependencyTypes": [
+          "local",
+          "import"
+        ]
+      },
+      {
+        "name": "src/visit/codegen/sql.ts",
+        "dependencyTypes": [
+          "local",
+          "type-only",
+          "import",
+          "pre-compilation-only"
+        ]
+      },
+      {
+        "name": "src/ast/index.ts",
+        "dependencyTypes": [
+          "local",
+          "type-only",
+          "import",
+          "pre-compilation-only"
+        ]
+      },
+      {
+        "name": "src/ast/column-ref.ts",
+        "dependencyTypes": [
+          "local",
+          "export"
+        ]
+      }
+    ]
+  },
+  {
+    "type": "cycle",
+    "from": "src/ast/fragment.ts",
+    "to": "src/ast/node.ts",
+    "unresolvedTo": "./node.js",
+    "dependencyTypes": [
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "no-circular-runtime-dependencies"
+    },
+    "cycle": [
+      {
+        "name": "src/ast/node.ts",
+        "dependencyTypes": [
+          "local",
+          "import"
+        ]
+      },
+      {
+        "name": "src/visit/codegen/sql.ts",
+        "dependencyTypes": [
+          "local",
+          "type-only",
+          "import",
+          "pre-compilation-only"
+        ]
+      },
+      {
+        "name": "src/ast/index.ts",
+        "dependencyTypes": [
+          "local",
+          "type-only",
+          "import",
+          "pre-compilation-only"
+        ]
+      },
+      {
+        "name": "src/ast/fragment.ts",
+        "dependencyTypes": [
+          "local",
+          "export"
+        ]
+      }
+    ]
+  },
+  {
+    "type": "cycle",
+    "from": "src/ast/from.ts",
+    "to": "src/ast/node.ts",
+    "unresolvedTo": "./node.js",
+    "dependencyTypes": [
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "no-circular-runtime-dependencies"
+    },
+    "cycle": [
+      {
+        "name": "src/ast/node.ts",
+        "dependencyTypes": [
+          "local",
+          "import"
+        ]
+      },
+      {
+        "name": "src/visit/codegen/sql.ts",
+        "dependencyTypes": [
+          "local",
+          "type-only",
+          "import",
+          "pre-compilation-only"
+        ]
+      },
+      {
+        "name": "src/ast/index.ts",
+        "dependencyTypes": [
+          "local",
+          "type-only",
+          "import",
+          "pre-compilation-only"
+        ]
+      },
+      {
+        "name": "src/ast/from.ts",
+        "dependencyTypes": [
+          "local",
+          "export"
+        ]
+      }
+    ]
+  },
+  {
+    "type": "cycle",
+    "from": "src/ast/function.ts",
+    "to": "src/ast/node.ts",
+    "unresolvedTo": "./node.js",
+    "dependencyTypes": [
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "no-circular-runtime-dependencies"
+    },
+    "cycle": [
+      {
+        "name": "src/ast/node.ts",
+        "dependencyTypes": [
+          "local",
+          "import"
+        ]
+      },
+      {
+        "name": "src/visit/codegen/sql.ts",
+        "dependencyTypes": [
+          "local",
+          "type-only",
+          "import",
+          "pre-compilation-only"
+        ]
+      },
+      {
+        "name": "src/ast/index.ts",
+        "dependencyTypes": [
+          "local",
+          "type-only",
+          "import",
+          "pre-compilation-only"
+        ]
+      },
+      {
+        "name": "src/ast/function.ts",
+        "dependencyTypes": [
+          "local",
+          "export"
+        ]
+      }
+    ]
+  },
+  {
+    "type": "cycle",
+    "from": "src/ast/in-op.ts",
+    "to": "src/ast/node.ts",
+    "unresolvedTo": "./node.js",
+    "dependencyTypes": [
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "no-circular-runtime-dependencies"
+    },
+    "cycle": [
+      {
+        "name": "src/ast/node.ts",
+        "dependencyTypes": [
+          "local",
+          "import"
+        ]
+      },
+      {
+        "name": "src/visit/codegen/sql.ts",
+        "dependencyTypes": [
+          "local",
+          "type-only",
+          "import",
+          "pre-compilation-only"
+        ]
+      },
+      {
+        "name": "src/ast/index.ts",
+        "dependencyTypes": [
+          "local",
+          "type-only",
+          "import",
+          "pre-compilation-only"
+        ]
+      },
+      {
+        "name": "src/ast/in-op.ts",
+        "dependencyTypes": [
+          "local",
+          "export"
+        ]
+      }
+    ]
+  },
+  {
+    "type": "cycle",
+    "from": "src/ast/index.ts",
+    "to": "src/ast/aggregate.ts",
+    "unresolvedTo": "./aggregate.js",
+    "dependencyTypes": [
+      "local",
+      "export"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "no-circular-runtime-dependencies"
+    },
+    "cycle": [
+      {
+        "name": "src/ast/aggregate.ts",
+        "dependencyTypes": [
+          "local",
+          "export"
+        ]
+      },
+      {
+        "name": "src/types.ts",
+        "dependencyTypes": [
+          "local",
+          "type-only",
+          "import",
+          "pre-compilation-only"
+        ]
+      },
+      {
+        "name": "src/ast/column-ref.ts",
+        "dependencyTypes": [
+          "local",
+          "import",
+          "pre-compilation-only"
+        ]
+      },
+      {
+        "name": "src/ast/node.ts",
+        "dependencyTypes": [
+          "local",
+          "import"
+        ]
+      },
+      {
+        "name": "src/visit/codegen/sql.ts",
+        "dependencyTypes": [
+          "local",
+          "type-only",
+          "import",
+          "pre-compilation-only"
+        ]
+      },
+      {
+        "name": "src/ast/index.ts",
+        "dependencyTypes": [
+          "local",
+          "type-only",
+          "import",
+          "pre-compilation-only"
+        ]
+      }
+    ]
+  },
+  {
+    "type": "cycle",
+    "from": "src/ast/index.ts",
+    "to": "src/ast/in-op.ts",
+    "unresolvedTo": "./in-op.js",
+    "dependencyTypes": [
+      "local",
+      "export"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "no-circular-runtime-dependencies"
+    },
+    "cycle": [
+      {
+        "name": "src/ast/in-op.ts",
+        "dependencyTypes": [
+          "local",
+          "export"
+        ]
+      },
+      {
+        "name": "src/ast/list.ts",
+        "dependencyTypes": [
+          "local",
+          "type-only",
+          "import",
+          "pre-compilation-only"
+        ]
+      },
+      {
+        "name": "src/ast/node.ts",
+        "dependencyTypes": [
+          "local",
+          "import"
+        ]
+      },
+      {
+        "name": "src/visit/codegen/sql.ts",
+        "dependencyTypes": [
+          "local",
+          "type-only",
+          "import",
+          "pre-compilation-only"
+        ]
+      },
+      {
+        "name": "src/ast/index.ts",
+        "dependencyTypes": [
+          "local",
+          "type-only",
+          "import",
+          "pre-compilation-only"
+        ]
+      }
+    ]
+  },
+  {
+    "type": "cycle",
+    "from": "src/ast/index.ts",
+    "to": "src/ast/interval.ts",
+    "unresolvedTo": "./interval.js",
+    "dependencyTypes": [
+      "local",
+      "export"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "no-circular-runtime-dependencies"
+    },
+    "cycle": [
+      {
+        "name": "src/ast/interval.ts",
+        "dependencyTypes": [
+          "local",
+          "export"
+        ]
+      },
+      {
+        "name": "src/ast/node.ts",
+        "dependencyTypes": [
+          "local",
+          "import"
+        ]
+      },
+      {
+        "name": "src/visit/codegen/sql.ts",
+        "dependencyTypes": [
+          "local",
+          "type-only",
+          "import",
+          "pre-compilation-only"
+        ]
+      },
+      {
+        "name": "src/ast/index.ts",
+        "dependencyTypes": [
+          "local",
+          "type-only",
+          "import",
+          "pre-compilation-only"
+        ]
+      }
+    ]
+  },
+  {
+    "type": "cycle",
+    "from": "src/ast/index.ts",
+    "to": "src/ast/join.ts",
+    "unresolvedTo": "./join.js",
+    "dependencyTypes": [
+      "local",
+      "export"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "no-circular-runtime-dependencies"
+    },
+    "cycle": [
+      {
+        "name": "src/ast/join.ts",
+        "dependencyTypes": [
+          "local",
+          "export"
+        ]
+      },
+      {
+        "name": "src/ast/column-ref.ts",
+        "dependencyTypes": [
+          "local",
+          "import",
+          "pre-compilation-only"
+        ]
+      },
+      {
+        "name": "src/ast/node.ts",
+        "dependencyTypes": [
+          "local",
+          "import"
+        ]
+      },
+      {
+        "name": "src/visit/codegen/sql.ts",
+        "dependencyTypes": [
+          "local",
+          "type-only",
+          "import",
+          "pre-compilation-only"
+        ]
+      },
+      {
+        "name": "src/ast/index.ts",
+        "dependencyTypes": [
+          "local",
+          "type-only",
+          "import",
+          "pre-compilation-only"
+        ]
+      }
+    ]
+  },
+  {
+    "type": "cycle",
+    "from": "src/ast/index.ts",
+    "to": "src/ast/list.ts",
+    "unresolvedTo": "./list.js",
+    "dependencyTypes": [
+      "local",
+      "export"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "no-circular-runtime-dependencies"
+    },
+    "cycle": [
+      {
+        "name": "src/ast/list.ts",
+        "dependencyTypes": [
+          "local",
+          "export"
+        ]
+      },
+      {
+        "name": "src/ast/node.ts",
+        "dependencyTypes": [
+          "local",
+          "import"
+        ]
+      },
+      {
+        "name": "src/visit/codegen/sql.ts",
+        "dependencyTypes": [
+          "local",
+          "type-only",
+          "import",
+          "pre-compilation-only"
+        ]
+      },
+      {
+        "name": "src/ast/index.ts",
+        "dependencyTypes": [
+          "local",
+          "type-only",
+          "import",
+          "pre-compilation-only"
+        ]
+      }
+    ]
+  },
+  {
+    "type": "cycle",
+    "from": "src/ast/index.ts",
+    "to": "src/ast/literal.ts",
+    "unresolvedTo": "./literal.js",
+    "dependencyTypes": [
+      "local",
+      "export"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "no-circular-runtime-dependencies"
+    },
+    "cycle": [
+      {
+        "name": "src/ast/literal.ts",
+        "dependencyTypes": [
+          "local",
+          "export"
+        ]
+      },
+      {
+        "name": "src/ast/node.ts",
+        "dependencyTypes": [
+          "local",
+          "import"
+        ]
+      },
+      {
+        "name": "src/visit/codegen/sql.ts",
+        "dependencyTypes": [
+          "local",
+          "type-only",
+          "import",
+          "pre-compilation-only"
+        ]
+      },
+      {
+        "name": "src/ast/index.ts",
+        "dependencyTypes": [
+          "local",
+          "type-only",
+          "import",
+          "pre-compilation-only"
+        ]
+      }
+    ]
+  },
+  {
+    "type": "cycle",
+    "from": "src/ast/index.ts",
+    "to": "src/ast/logical-op.ts",
+    "unresolvedTo": "./logical-op.js",
+    "dependencyTypes": [
+      "local",
+      "export"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "no-circular-runtime-dependencies"
+    },
+    "cycle": [
+      {
+        "name": "src/ast/logical-op.ts",
+        "dependencyTypes": [
+          "local",
+          "export"
+        ]
+      },
+      {
+        "name": "src/ast/node.ts",
+        "dependencyTypes": [
+          "local",
+          "import"
+        ]
+      },
+      {
+        "name": "src/visit/codegen/sql.ts",
+        "dependencyTypes": [
+          "local",
+          "type-only",
+          "import",
+          "pre-compilation-only"
+        ]
+      },
+      {
+        "name": "src/ast/index.ts",
+        "dependencyTypes": [
+          "local",
+          "type-only",
+          "import",
+          "pre-compilation-only"
+        ]
+      }
+    ]
+  },
+  {
+    "type": "cycle",
+    "from": "src/ast/index.ts",
+    "to": "src/ast/node.ts",
+    "unresolvedTo": "./node.js",
+    "dependencyTypes": [
+      "local",
+      "export"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "no-circular-runtime-dependencies"
+    },
+    "cycle": [
+      {
+        "name": "src/ast/node.ts",
+        "dependencyTypes": [
+          "local",
+          "export"
+        ]
+      },
+      {
+        "name": "src/visit/codegen/sql.ts",
+        "dependencyTypes": [
+          "local",
+          "type-only",
+          "import",
+          "pre-compilation-only"
+        ]
+      },
+      {
+        "name": "src/ast/index.ts",
+        "dependencyTypes": [
+          "local",
+          "type-only",
+          "import",
+          "pre-compilation-only"
+        ]
+      }
+    ]
+  },
+  {
+    "type": "cycle",
+    "from": "src/ast/index.ts",
+    "to": "src/ast/order-by.ts",
+    "unresolvedTo": "./order-by.js",
+    "dependencyTypes": [
+      "local",
+      "export"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "no-circular-runtime-dependencies"
+    },
+    "cycle": [
+      {
+        "name": "src/ast/order-by.ts",
+        "dependencyTypes": [
+          "local",
+          "export"
+        ]
+      },
+      {
+        "name": "src/ast/node.ts",
+        "dependencyTypes": [
+          "local",
+          "import"
+        ]
+      },
+      {
+        "name": "src/visit/codegen/sql.ts",
+        "dependencyTypes": [
+          "local",
+          "type-only",
+          "import",
+          "pre-compilation-only"
+        ]
+      },
+      {
+        "name": "src/ast/index.ts",
+        "dependencyTypes": [
+          "local",
+          "type-only",
+          "import",
+          "pre-compilation-only"
+        ]
+      }
+    ]
+  },
+  {
+    "type": "cycle",
+    "from": "src/ast/index.ts",
+    "to": "src/ast/param.ts",
+    "unresolvedTo": "./param.js",
+    "dependencyTypes": [
+      "local",
+      "export"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "no-circular-runtime-dependencies"
+    },
+    "cycle": [
+      {
+        "name": "src/ast/param.ts",
+        "dependencyTypes": [
+          "local",
+          "export"
+        ]
+      },
+      {
+        "name": "src/types.ts",
+        "dependencyTypes": [
+          "local",
+          "type-only",
+          "import",
+          "pre-compilation-only"
+        ]
+      },
+      {
+        "name": "src/ast/column-ref.ts",
+        "dependencyTypes": [
+          "local",
+          "import",
+          "pre-compilation-only"
+        ]
+      },
+      {
+        "name": "src/ast/node.ts",
+        "dependencyTypes": [
+          "local",
+          "import"
+        ]
+      },
+      {
+        "name": "src/visit/codegen/sql.ts",
+        "dependencyTypes": [
+          "local",
+          "type-only",
+          "import",
+          "pre-compilation-only"
+        ]
+      },
+      {
+        "name": "src/ast/index.ts",
+        "dependencyTypes": [
+          "local",
+          "type-only",
+          "import",
+          "pre-compilation-only"
+        ]
+      }
+    ]
+  },
+  {
+    "type": "cycle",
+    "from": "src/ast/index.ts",
+    "to": "src/ast/query.ts",
+    "unresolvedTo": "./query.js",
+    "dependencyTypes": [
+      "local",
+      "export"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "no-circular-runtime-dependencies"
+    },
+    "cycle": [
+      {
+        "name": "src/ast/query.ts",
+        "dependencyTypes": [
+          "local",
+          "export"
+        ]
+      },
+      {
+        "name": "src/types.ts",
+        "dependencyTypes": [
+          "local",
+          "type-only",
+          "import",
+          "pre-compilation-only"
+        ]
+      },
+      {
+        "name": "src/ast/column-ref.ts",
+        "dependencyTypes": [
+          "local",
+          "import",
+          "pre-compilation-only"
+        ]
+      },
+      {
+        "name": "src/ast/node.ts",
+        "dependencyTypes": [
+          "local",
+          "import"
+        ]
+      },
+      {
+        "name": "src/visit/codegen/sql.ts",
+        "dependencyTypes": [
+          "local",
+          "type-only",
+          "import",
+          "pre-compilation-only"
+        ]
+      },
+      {
+        "name": "src/ast/index.ts",
+        "dependencyTypes": [
+          "local",
+          "type-only",
+          "import",
+          "pre-compilation-only"
+        ]
+      }
+    ]
+  },
+  {
+    "type": "cycle",
+    "from": "src/ast/index.ts",
+    "to": "src/ast/sample.ts",
+    "unresolvedTo": "./sample.js",
+    "dependencyTypes": [
+      "local",
+      "export"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "no-circular-runtime-dependencies"
+    },
+    "cycle": [
+      {
+        "name": "src/ast/sample.ts",
+        "dependencyTypes": [
+          "local",
+          "export"
+        ]
+      },
+      {
+        "name": "src/ast/node.ts",
+        "dependencyTypes": [
+          "local",
+          "import"
+        ]
+      },
+      {
+        "name": "src/visit/codegen/sql.ts",
+        "dependencyTypes": [
+          "local",
+          "type-only",
+          "import",
+          "pre-compilation-only"
+        ]
+      },
+      {
+        "name": "src/ast/index.ts",
+        "dependencyTypes": [
+          "local",
+          "type-only",
+          "import",
+          "pre-compilation-only"
+        ]
+      }
+    ]
+  },
+  {
+    "type": "cycle",
+    "from": "src/ast/index.ts",
+    "to": "src/ast/select.ts",
+    "unresolvedTo": "./select.js",
+    "dependencyTypes": [
+      "local",
+      "export"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "no-circular-runtime-dependencies"
+    },
+    "cycle": [
+      {
+        "name": "src/ast/select.ts",
+        "dependencyTypes": [
+          "local",
+          "export"
+        ]
+      },
+      {
+        "name": "src/ast/node.ts",
+        "dependencyTypes": [
+          "local",
+          "import"
+        ]
+      },
+      {
+        "name": "src/visit/codegen/sql.ts",
+        "dependencyTypes": [
+          "local",
+          "type-only",
+          "import",
+          "pre-compilation-only"
+        ]
+      },
+      {
+        "name": "src/ast/index.ts",
+        "dependencyTypes": [
+          "local",
+          "type-only",
+          "import",
+          "pre-compilation-only"
+        ]
+      }
+    ]
+  },
+  {
+    "type": "cycle",
+    "from": "src/ast/index.ts",
+    "to": "src/ast/subquery.ts",
+    "unresolvedTo": "./subquery.js",
+    "dependencyTypes": [
+      "local",
+      "export"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "no-circular-runtime-dependencies"
+    },
+    "cycle": [
+      {
+        "name": "src/ast/subquery.ts",
+        "dependencyTypes": [
+          "local",
+          "export"
+        ]
+      },
+      {
+        "name": "src/ast/node.ts",
+        "dependencyTypes": [
+          "local",
+          "import"
+        ]
+      },
+      {
+        "name": "src/visit/codegen/sql.ts",
+        "dependencyTypes": [
+          "local",
+          "type-only",
+          "import",
+          "pre-compilation-only"
+        ]
+      },
+      {
+        "name": "src/ast/index.ts",
+        "dependencyTypes": [
+          "local",
+          "type-only",
+          "import",
+          "pre-compilation-only"
+        ]
+      }
+    ]
+  },
+  {
+    "type": "cycle",
+    "from": "src/ast/index.ts",
+    "to": "src/ast/table-ref.ts",
+    "unresolvedTo": "./table-ref.js",
+    "dependencyTypes": [
+      "local",
+      "export"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "no-circular-runtime-dependencies"
+    },
+    "cycle": [
+      {
+        "name": "src/ast/table-ref.ts",
+        "dependencyTypes": [
+          "local",
+          "export"
+        ]
+      },
+      {
+        "name": "src/ast/node.ts",
+        "dependencyTypes": [
+          "local",
+          "import"
+        ]
+      },
+      {
+        "name": "src/visit/codegen/sql.ts",
+        "dependencyTypes": [
+          "local",
+          "type-only",
+          "import",
+          "pre-compilation-only"
+        ]
+      },
+      {
+        "name": "src/ast/index.ts",
+        "dependencyTypes": [
+          "local",
+          "type-only",
+          "import",
+          "pre-compilation-only"
+        ]
+      }
+    ]
+  },
+  {
+    "type": "cycle",
+    "from": "src/ast/index.ts",
+    "to": "src/ast/tuple.ts",
+    "unresolvedTo": "./tuple.js",
+    "dependencyTypes": [
+      "local",
+      "export"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "no-circular-runtime-dependencies"
+    },
+    "cycle": [
+      {
+        "name": "src/ast/tuple.ts",
+        "dependencyTypes": [
+          "local",
+          "export"
+        ]
+      },
+      {
+        "name": "src/ast/node.ts",
+        "dependencyTypes": [
+          "local",
+          "import"
+        ]
+      },
+      {
+        "name": "src/visit/codegen/sql.ts",
+        "dependencyTypes": [
+          "local",
+          "type-only",
+          "import",
+          "pre-compilation-only"
+        ]
+      },
+      {
+        "name": "src/ast/index.ts",
+        "dependencyTypes": [
+          "local",
+          "type-only",
+          "import",
+          "pre-compilation-only"
+        ]
+      }
+    ]
+  },
+  {
+    "type": "cycle",
+    "from": "src/ast/index.ts",
+    "to": "src/ast/unary-op.ts",
+    "unresolvedTo": "./unary-op.js",
+    "dependencyTypes": [
+      "local",
+      "export"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "no-circular-runtime-dependencies"
+    },
+    "cycle": [
+      {
+        "name": "src/ast/unary-op.ts",
+        "dependencyTypes": [
+          "local",
+          "export"
+        ]
+      },
+      {
+        "name": "src/ast/node.ts",
+        "dependencyTypes": [
+          "local",
+          "import"
+        ]
+      },
+      {
+        "name": "src/visit/codegen/sql.ts",
+        "dependencyTypes": [
+          "local",
+          "type-only",
+          "import",
+          "pre-compilation-only"
+        ]
+      },
+      {
+        "name": "src/ast/index.ts",
+        "dependencyTypes": [
+          "local",
+          "type-only",
+          "import",
+          "pre-compilation-only"
+        ]
+      }
+    ]
+  },
+  {
+    "type": "cycle",
+    "from": "src/ast/index.ts",
+    "to": "src/ast/unnest.ts",
+    "unresolvedTo": "./unnest.js",
+    "dependencyTypes": [
+      "local",
+      "export"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "no-circular-runtime-dependencies"
+    },
+    "cycle": [
+      {
+        "name": "src/ast/unnest.ts",
+        "dependencyTypes": [
+          "local",
+          "export"
+        ]
+      },
+      {
+        "name": "src/ast/node.ts",
+        "dependencyTypes": [
+          "local",
+          "import"
+        ]
+      },
+      {
+        "name": "src/visit/codegen/sql.ts",
+        "dependencyTypes": [
+          "local",
+          "type-only",
+          "import",
+          "pre-compilation-only"
+        ]
+      },
+      {
+        "name": "src/ast/index.ts",
+        "dependencyTypes": [
+          "local",
+          "type-only",
+          "import",
+          "pre-compilation-only"
+        ]
+      }
+    ]
+  },
+  {
+    "type": "cycle",
+    "from": "src/ast/index.ts",
+    "to": "src/ast/values.ts",
+    "unresolvedTo": "./values.js",
+    "dependencyTypes": [
+      "local",
+      "export"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "no-circular-runtime-dependencies"
+    },
+    "cycle": [
+      {
+        "name": "src/ast/values.ts",
+        "dependencyTypes": [
+          "local",
+          "export"
+        ]
+      },
+      {
+        "name": "src/ast/node.ts",
+        "dependencyTypes": [
+          "local",
+          "import"
+        ]
+      },
+      {
+        "name": "src/visit/codegen/sql.ts",
+        "dependencyTypes": [
+          "local",
+          "type-only",
+          "import",
+          "pre-compilation-only"
+        ]
+      },
+      {
+        "name": "src/ast/index.ts",
+        "dependencyTypes": [
+          "local",
+          "type-only",
+          "import",
+          "pre-compilation-only"
+        ]
+      }
+    ]
+  },
+  {
+    "type": "cycle",
+    "from": "src/ast/index.ts",
+    "to": "src/ast/verbatim.ts",
+    "unresolvedTo": "./verbatim.js",
+    "dependencyTypes": [
+      "local",
+      "export"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "no-circular-runtime-dependencies"
+    },
+    "cycle": [
+      {
+        "name": "src/ast/verbatim.ts",
+        "dependencyTypes": [
+          "local",
+          "export"
+        ]
+      },
+      {
+        "name": "src/ast/node.ts",
+        "dependencyTypes": [
+          "local",
+          "import"
+        ]
+      },
+      {
+        "name": "src/visit/codegen/sql.ts",
+        "dependencyTypes": [
+          "local",
+          "type-only",
+          "import",
+          "pre-compilation-only"
+        ]
+      },
+      {
+        "name": "src/ast/index.ts",
+        "dependencyTypes": [
+          "local",
+          "type-only",
+          "import",
+          "pre-compilation-only"
+        ]
+      }
+    ]
+  },
+  {
+    "type": "cycle",
+    "from": "src/ast/index.ts",
+    "to": "src/ast/window-frame.ts",
+    "unresolvedTo": "./window-frame.js",
+    "dependencyTypes": [
+      "local",
+      "export"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "no-circular-runtime-dependencies"
+    },
+    "cycle": [
+      {
+        "name": "src/ast/window-frame.ts",
+        "dependencyTypes": [
+          "local",
+          "export"
+        ]
+      },
+      {
+        "name": "src/types.ts",
+        "dependencyTypes": [
+          "local",
+          "type-only",
+          "import",
+          "pre-compilation-only"
+        ]
+      },
+      {
+        "name": "src/ast/column-ref.ts",
+        "dependencyTypes": [
+          "local",
+          "import",
+          "pre-compilation-only"
+        ]
+      },
+      {
+        "name": "src/ast/node.ts",
+        "dependencyTypes": [
+          "local",
+          "import"
+        ]
+      },
+      {
+        "name": "src/visit/codegen/sql.ts",
+        "dependencyTypes": [
+          "local",
+          "type-only",
+          "import",
+          "pre-compilation-only"
+        ]
+      },
+      {
+        "name": "src/ast/index.ts",
+        "dependencyTypes": [
+          "local",
+          "type-only",
+          "import",
+          "pre-compilation-only"
+        ]
+      }
+    ]
+  },
+  {
+    "type": "cycle",
+    "from": "src/ast/index.ts",
+    "to": "src/ast/window.ts",
+    "unresolvedTo": "./window.js",
+    "dependencyTypes": [
+      "local",
+      "export"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "no-circular-runtime-dependencies"
+    },
+    "cycle": [
+      {
+        "name": "src/ast/window.ts",
+        "dependencyTypes": [
+          "local",
+          "export"
+        ]
+      },
+      {
+        "name": "src/types.ts",
+        "dependencyTypes": [
+          "local",
+          "type-only",
+          "import",
+          "pre-compilation-only"
+        ]
+      },
+      {
+        "name": "src/ast/column-ref.ts",
+        "dependencyTypes": [
+          "local",
+          "import",
+          "pre-compilation-only"
+        ]
+      },
+      {
+        "name": "src/ast/node.ts",
+        "dependencyTypes": [
+          "local",
+          "import"
+        ]
+      },
+      {
+        "name": "src/visit/codegen/sql.ts",
+        "dependencyTypes": [
+          "local",
+          "type-only",
+          "import",
+          "pre-compilation-only"
+        ]
+      },
+      {
+        "name": "src/ast/index.ts",
+        "dependencyTypes": [
+          "local",
+          "type-only",
+          "import",
+          "pre-compilation-only"
+        ]
+      }
+    ]
+  },
+  {
+    "type": "cycle",
+    "from": "src/ast/index.ts",
+    "to": "src/ast/with.ts",
+    "unresolvedTo": "./with.js",
+    "dependencyTypes": [
+      "local",
+      "export"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "no-circular-runtime-dependencies"
+    },
+    "cycle": [
+      {
+        "name": "src/ast/with.ts",
+        "dependencyTypes": [
+          "local",
+          "export"
+        ]
+      },
+      {
+        "name": "src/ast/node.ts",
+        "dependencyTypes": [
+          "local",
+          "import"
+        ]
+      },
+      {
+        "name": "src/visit/codegen/sql.ts",
+        "dependencyTypes": [
+          "local",
+          "type-only",
+          "import",
+          "pre-compilation-only"
+        ]
+      },
+      {
+        "name": "src/ast/index.ts",
+        "dependencyTypes": [
+          "local",
+          "type-only",
+          "import",
+          "pre-compilation-only"
+        ]
+      }
+    ]
+  },
+  {
+    "type": "cycle",
+    "from": "src/ast/join.ts",
+    "to": "src/ast/from.ts",
+    "unresolvedTo": "./from.js",
+    "dependencyTypes": [
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "no-circular-runtime-dependencies"
+    },
+    "cycle": [
+      {
+        "name": "src/ast/from.ts",
+        "dependencyTypes": [
+          "local",
+          "import"
+        ]
+      },
+      {
+        "name": "src/ast/node.ts",
+        "dependencyTypes": [
+          "local",
+          "import"
+        ]
+      },
+      {
+        "name": "src/visit/codegen/sql.ts",
+        "dependencyTypes": [
+          "local",
+          "type-only",
+          "import",
+          "pre-compilation-only"
+        ]
+      },
+      {
+        "name": "src/ast/index.ts",
+        "dependencyTypes": [
+          "local",
+          "type-only",
+          "import",
+          "pre-compilation-only"
+        ]
+      },
+      {
+        "name": "src/ast/join.ts",
+        "dependencyTypes": [
+          "local",
+          "export"
+        ]
+      }
+    ]
+  },
+  {
+    "type": "cycle",
+    "from": "src/ast/join.ts",
+    "to": "src/ast/node.ts",
+    "unresolvedTo": "./node.js",
+    "dependencyTypes": [
+      "local",
+      "import",
+      "pre-compilation-only"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "no-circular-runtime-dependencies"
+    },
+    "cycle": [
+      {
+        "name": "src/ast/node.ts",
+        "dependencyTypes": [
+          "local",
+          "import",
+          "pre-compilation-only"
+        ]
+      },
+      {
+        "name": "src/visit/codegen/sql.ts",
+        "dependencyTypes": [
+          "local",
+          "type-only",
+          "import",
+          "pre-compilation-only"
+        ]
+      },
+      {
+        "name": "src/ast/index.ts",
+        "dependencyTypes": [
+          "local",
+          "type-only",
+          "import",
+          "pre-compilation-only"
+        ]
+      },
+      {
+        "name": "src/ast/join.ts",
+        "dependencyTypes": [
+          "local",
+          "export"
+        ]
+      }
+    ]
+  },
+  {
+    "type": "cycle",
+    "from": "src/ast/param.ts",
+    "to": "src/ast/node.ts",
+    "unresolvedTo": "./node.js",
+    "dependencyTypes": [
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "no-circular-runtime-dependencies"
+    },
+    "cycle": [
+      {
+        "name": "src/ast/node.ts",
+        "dependencyTypes": [
+          "local",
+          "import"
+        ]
+      },
+      {
+        "name": "src/visit/codegen/sql.ts",
+        "dependencyTypes": [
+          "local",
+          "type-only",
+          "import",
+          "pre-compilation-only"
+        ]
+      },
+      {
+        "name": "src/ast/index.ts",
+        "dependencyTypes": [
+          "local",
+          "type-only",
+          "import",
+          "pre-compilation-only"
+        ]
+      },
+      {
+        "name": "src/ast/param.ts",
+        "dependencyTypes": [
+          "local",
+          "export"
+        ]
+      }
+    ]
+  },
+  {
+    "type": "cycle",
+    "from": "src/ast/query.ts",
+    "to": "src/ast/column-ref.ts",
+    "unresolvedTo": "./column-ref.js",
+    "dependencyTypes": [
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "no-circular-runtime-dependencies"
+    },
+    "cycle": [
+      {
+        "name": "src/ast/column-ref.ts",
+        "dependencyTypes": [
+          "local",
+          "import"
+        ]
+      },
+      {
+        "name": "src/ast/node.ts",
+        "dependencyTypes": [
+          "local",
+          "import"
+        ]
+      },
+      {
+        "name": "src/visit/codegen/sql.ts",
+        "dependencyTypes": [
+          "local",
+          "type-only",
+          "import",
+          "pre-compilation-only"
+        ]
+      },
+      {
+        "name": "src/ast/index.ts",
+        "dependencyTypes": [
+          "local",
+          "type-only",
+          "import",
+          "pre-compilation-only"
+        ]
+      },
+      {
+        "name": "src/ast/query.ts",
+        "dependencyTypes": [
+          "local",
+          "export"
+        ]
+      }
+    ]
+  },
+  {
+    "type": "cycle",
+    "from": "src/ast/query.ts",
+    "to": "src/ast/from.ts",
+    "unresolvedTo": "./from.js",
+    "dependencyTypes": [
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "no-circular-runtime-dependencies"
+    },
+    "cycle": [
+      {
+        "name": "src/ast/from.ts",
+        "dependencyTypes": [
+          "local",
+          "import"
+        ]
+      },
+      {
+        "name": "src/ast/node.ts",
+        "dependencyTypes": [
+          "local",
+          "import"
+        ]
+      },
+      {
+        "name": "src/visit/codegen/sql.ts",
+        "dependencyTypes": [
+          "local",
+          "type-only",
+          "import",
+          "pre-compilation-only"
+        ]
+      },
+      {
+        "name": "src/ast/index.ts",
+        "dependencyTypes": [
+          "local",
+          "type-only",
+          "import",
+          "pre-compilation-only"
+        ]
+      },
+      {
+        "name": "src/ast/query.ts",
+        "dependencyTypes": [
+          "local",
+          "export"
+        ]
+      }
+    ]
+  },
+  {
+    "type": "cycle",
+    "from": "src/ast/query.ts",
+    "to": "src/ast/node.ts",
+    "unresolvedTo": "./node.js",
+    "dependencyTypes": [
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "no-circular-runtime-dependencies"
+    },
+    "cycle": [
+      {
+        "name": "src/ast/node.ts",
+        "dependencyTypes": [
+          "local",
+          "import"
+        ]
+      },
+      {
+        "name": "src/visit/codegen/sql.ts",
+        "dependencyTypes": [
+          "local",
+          "type-only",
+          "import",
+          "pre-compilation-only"
+        ]
+      },
+      {
+        "name": "src/ast/index.ts",
+        "dependencyTypes": [
+          "local",
+          "type-only",
+          "import",
+          "pre-compilation-only"
+        ]
+      },
+      {
+        "name": "src/ast/query.ts",
+        "dependencyTypes": [
+          "local",
+          "export"
+        ]
+      }
+    ]
+  },
+  {
+    "type": "cycle",
+    "from": "src/ast/query.ts",
+    "to": "src/ast/sample.ts",
+    "unresolvedTo": "./sample.js",
+    "dependencyTypes": [
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "no-circular-runtime-dependencies"
+    },
+    "cycle": [
+      {
+        "name": "src/ast/sample.ts",
+        "dependencyTypes": [
+          "local",
+          "import"
+        ]
+      },
+      {
+        "name": "src/ast/node.ts",
+        "dependencyTypes": [
+          "local",
+          "import"
+        ]
+      },
+      {
+        "name": "src/visit/codegen/sql.ts",
+        "dependencyTypes": [
+          "local",
+          "type-only",
+          "import",
+          "pre-compilation-only"
+        ]
+      },
+      {
+        "name": "src/ast/index.ts",
+        "dependencyTypes": [
+          "local",
+          "type-only",
+          "import",
+          "pre-compilation-only"
+        ]
+      },
+      {
+        "name": "src/ast/query.ts",
+        "dependencyTypes": [
+          "local",
+          "export"
+        ]
+      }
+    ]
+  },
+  {
+    "type": "cycle",
+    "from": "src/ast/query.ts",
+    "to": "src/ast/select.ts",
+    "unresolvedTo": "./select.js",
+    "dependencyTypes": [
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "no-circular-runtime-dependencies"
+    },
+    "cycle": [
+      {
+        "name": "src/ast/select.ts",
+        "dependencyTypes": [
+          "local",
+          "import"
+        ]
+      },
+      {
+        "name": "src/ast/node.ts",
+        "dependencyTypes": [
+          "local",
+          "import"
+        ]
+      },
+      {
+        "name": "src/visit/codegen/sql.ts",
+        "dependencyTypes": [
+          "local",
+          "type-only",
+          "import",
+          "pre-compilation-only"
+        ]
+      },
+      {
+        "name": "src/ast/index.ts",
+        "dependencyTypes": [
+          "local",
+          "type-only",
+          "import",
+          "pre-compilation-only"
+        ]
+      },
+      {
+        "name": "src/ast/query.ts",
+        "dependencyTypes": [
+          "local",
+          "export"
+        ]
+      }
+    ]
+  },
+  {
+    "type": "cycle",
+    "from": "src/ast/query.ts",
+    "to": "src/ast/table-ref.ts",
+    "unresolvedTo": "./table-ref.js",
+    "dependencyTypes": [
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "no-circular-runtime-dependencies"
+    },
+    "cycle": [
+      {
+        "name": "src/ast/table-ref.ts",
+        "dependencyTypes": [
+          "local",
+          "import"
+        ]
+      },
+      {
+        "name": "src/ast/node.ts",
+        "dependencyTypes": [
+          "local",
+          "import"
+        ]
+      },
+      {
+        "name": "src/visit/codegen/sql.ts",
+        "dependencyTypes": [
+          "local",
+          "type-only",
+          "import",
+          "pre-compilation-only"
+        ]
+      },
+      {
+        "name": "src/ast/index.ts",
+        "dependencyTypes": [
+          "local",
+          "type-only",
+          "import",
+          "pre-compilation-only"
+        ]
+      },
+      {
+        "name": "src/ast/query.ts",
+        "dependencyTypes": [
+          "local",
+          "export"
+        ]
+      }
+    ]
+  },
+  {
+    "type": "cycle",
+    "from": "src/ast/query.ts",
+    "to": "src/ast/verbatim.ts",
+    "unresolvedTo": "./verbatim.js",
+    "dependencyTypes": [
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "no-circular-runtime-dependencies"
+    },
+    "cycle": [
+      {
+        "name": "src/ast/verbatim.ts",
+        "dependencyTypes": [
+          "local",
+          "import"
+        ]
+      },
+      {
+        "name": "src/ast/node.ts",
+        "dependencyTypes": [
+          "local",
+          "import"
+        ]
+      },
+      {
+        "name": "src/visit/codegen/sql.ts",
+        "dependencyTypes": [
+          "local",
+          "type-only",
+          "import",
+          "pre-compilation-only"
+        ]
+      },
+      {
+        "name": "src/ast/index.ts",
+        "dependencyTypes": [
+          "local",
+          "type-only",
+          "import",
+          "pre-compilation-only"
+        ]
+      },
+      {
+        "name": "src/ast/query.ts",
+        "dependencyTypes": [
+          "local",
+          "export"
+        ]
+      }
+    ]
+  },
+  {
+    "type": "cycle",
+    "from": "src/ast/query.ts",
+    "to": "src/ast/window.ts",
+    "unresolvedTo": "./window.js",
+    "dependencyTypes": [
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "no-circular-runtime-dependencies"
+    },
+    "cycle": [
+      {
+        "name": "src/ast/window.ts",
+        "dependencyTypes": [
+          "local",
+          "import"
+        ]
+      },
+      {
+        "name": "src/types.ts",
+        "dependencyTypes": [
+          "local",
+          "type-only",
+          "import",
+          "pre-compilation-only"
+        ]
+      },
+      {
+        "name": "src/ast/query.ts",
+        "dependencyTypes": [
+          "local",
+          "import",
+          "pre-compilation-only"
+        ]
+      }
+    ]
+  },
+  {
+    "type": "cycle",
+    "from": "src/ast/query.ts",
+    "to": "src/ast/with.ts",
+    "unresolvedTo": "./with.js",
+    "dependencyTypes": [
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "no-circular-runtime-dependencies"
+    },
+    "cycle": [
+      {
+        "name": "src/ast/with.ts",
+        "dependencyTypes": [
+          "local",
+          "import"
+        ]
+      },
+      {
+        "name": "src/ast/query.ts",
+        "dependencyTypes": [
+          "local",
+          "type-only",
+          "import",
+          "pre-compilation-only"
+        ]
+      }
+    ]
+  },
+  {
+    "type": "cycle",
+    "from": "src/ast/query.ts",
+    "to": "src/util/ast.ts",
+    "unresolvedTo": "../util/ast.js",
+    "dependencyTypes": [
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "no-circular-runtime-dependencies"
+    },
+    "cycle": [
+      {
+        "name": "src/util/ast.ts",
+        "dependencyTypes": [
+          "local",
+          "import"
+        ]
+      },
+      {
+        "name": "src/ast/column-ref.ts",
+        "dependencyTypes": [
+          "local",
+          "type-only",
+          "import",
+          "pre-compilation-only"
+        ]
+      },
+      {
+        "name": "src/ast/node.ts",
+        "dependencyTypes": [
+          "local",
+          "import"
+        ]
+      },
+      {
+        "name": "src/visit/codegen/sql.ts",
+        "dependencyTypes": [
+          "local",
+          "type-only",
+          "import",
+          "pre-compilation-only"
+        ]
+      },
+      {
+        "name": "src/ast/index.ts",
+        "dependencyTypes": [
+          "local",
+          "type-only",
+          "import",
+          "pre-compilation-only"
+        ]
+      },
+      {
+        "name": "src/ast/query.ts",
+        "dependencyTypes": [
+          "local",
+          "export"
+        ]
+      }
+    ]
+  },
+  {
+    "type": "cycle",
+    "from": "src/ast/query.ts",
+    "to": "src/util/function.ts",
+    "unresolvedTo": "../util/function.js",
+    "dependencyTypes": [
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "no-circular-runtime-dependencies"
+    },
+    "cycle": [
+      {
+        "name": "src/util/function.ts",
+        "dependencyTypes": [
+          "local",
+          "import"
+        ]
+      },
+      {
+        "name": "src/ast/aggregate.ts",
+        "dependencyTypes": [
+          "local",
+          "import"
+        ]
+      },
+      {
+        "name": "src/types.ts",
+        "dependencyTypes": [
+          "local",
+          "type-only",
+          "import",
+          "pre-compilation-only"
+        ]
+      },
+      {
+        "name": "src/ast/query.ts",
+        "dependencyTypes": [
+          "local",
+          "import",
+          "pre-compilation-only"
+        ]
+      }
+    ]
+  },
+  {
+    "type": "cycle",
+    "from": "src/ast/query.ts",
+    "to": "src/util/type-check.ts",
+    "unresolvedTo": "../util/type-check.js",
+    "dependencyTypes": [
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "no-circular-runtime-dependencies"
+    },
+    "cycle": [
+      {
+        "name": "src/util/type-check.ts",
+        "dependencyTypes": [
+          "local",
+          "import"
+        ]
+      },
+      {
+        "name": "src/types.ts",
+        "dependencyTypes": [
+          "local",
+          "type-only",
+          "import",
+          "pre-compilation-only"
+        ]
+      },
+      {
+        "name": "src/ast/query.ts",
+        "dependencyTypes": [
+          "local",
+          "import",
+          "pre-compilation-only"
+        ]
+      }
+    ]
+  },
+  {
+    "type": "cycle",
+    "from": "src/ast/values.ts",
+    "to": "src/ast/tuple.ts",
+    "unresolvedTo": "./tuple.js",
+    "dependencyTypes": [
+      "local",
+      "import",
+      "pre-compilation-only"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "no-circular-runtime-dependencies"
+    },
+    "cycle": [
+      {
+        "name": "src/ast/tuple.ts",
+        "dependencyTypes": [
+          "local",
+          "import",
+          "pre-compilation-only"
+        ]
+      },
+      {
+        "name": "src/ast/node.ts",
+        "dependencyTypes": [
+          "local",
+          "import"
+        ]
+      },
+      {
+        "name": "src/visit/codegen/sql.ts",
+        "dependencyTypes": [
+          "local",
+          "type-only",
+          "import",
+          "pre-compilation-only"
+        ]
+      },
+      {
+        "name": "src/ast/index.ts",
+        "dependencyTypes": [
+          "local",
+          "type-only",
+          "import",
+          "pre-compilation-only"
+        ]
+      },
+      {
+        "name": "src/ast/values.ts",
+        "dependencyTypes": [
+          "local",
+          "export"
+        ]
+      }
+    ]
+  },
+  {
+    "type": "cycle",
+    "from": "src/ast/window-frame.ts",
+    "to": "src/ast/node.ts",
+    "unresolvedTo": "./node.js",
+    "dependencyTypes": [
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "no-circular-runtime-dependencies"
+    },
+    "cycle": [
+      {
+        "name": "src/ast/node.ts",
+        "dependencyTypes": [
+          "local",
+          "import"
+        ]
+      },
+      {
+        "name": "src/visit/codegen/sql.ts",
+        "dependencyTypes": [
+          "local",
+          "type-only",
+          "import",
+          "pre-compilation-only"
+        ]
+      },
+      {
+        "name": "src/ast/index.ts",
+        "dependencyTypes": [
+          "local",
+          "type-only",
+          "import",
+          "pre-compilation-only"
+        ]
+      },
+      {
+        "name": "src/ast/window-frame.ts",
+        "dependencyTypes": [
+          "local",
+          "export"
+        ]
+      }
+    ]
+  },
+  {
+    "type": "cycle",
+    "from": "src/ast/window-frame.ts",
+    "to": "src/ast/param.ts",
+    "unresolvedTo": "./param.js",
+    "dependencyTypes": [
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "no-circular-runtime-dependencies"
+    },
+    "cycle": [
+      {
+        "name": "src/ast/param.ts",
+        "dependencyTypes": [
+          "local",
+          "import"
+        ]
+      },
+      {
+        "name": "src/types.ts",
+        "dependencyTypes": [
+          "local",
+          "type-only",
+          "import",
+          "pre-compilation-only"
+        ]
+      },
+      {
+        "name": "src/ast/column-ref.ts",
+        "dependencyTypes": [
+          "local",
+          "import",
+          "pre-compilation-only"
+        ]
+      },
+      {
+        "name": "src/ast/node.ts",
+        "dependencyTypes": [
+          "local",
+          "import"
+        ]
+      },
+      {
+        "name": "src/visit/codegen/sql.ts",
+        "dependencyTypes": [
+          "local",
+          "type-only",
+          "import",
+          "pre-compilation-only"
+        ]
+      },
+      {
+        "name": "src/ast/index.ts",
+        "dependencyTypes": [
+          "local",
+          "type-only",
+          "import",
+          "pre-compilation-only"
+        ]
+      },
+      {
+        "name": "src/ast/window-frame.ts",
+        "dependencyTypes": [
+          "local",
+          "export"
+        ]
+      }
+    ]
+  },
+  {
+    "type": "cycle",
+    "from": "src/ast/window-frame.ts",
+    "to": "src/util/type-check.ts",
+    "unresolvedTo": "../util/type-check.js",
+    "dependencyTypes": [
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "no-circular-runtime-dependencies"
+    },
+    "cycle": [
+      {
+        "name": "src/util/type-check.ts",
+        "dependencyTypes": [
+          "local",
+          "import"
+        ]
+      },
+      {
+        "name": "src/types.ts",
+        "dependencyTypes": [
+          "local",
+          "type-only",
+          "import",
+          "pre-compilation-only"
+        ]
+      },
+      {
+        "name": "src/ast/column-ref.ts",
+        "dependencyTypes": [
+          "local",
+          "import",
+          "pre-compilation-only"
+        ]
+      },
+      {
+        "name": "src/ast/node.ts",
+        "dependencyTypes": [
+          "local",
+          "import"
+        ]
+      },
+      {
+        "name": "src/visit/codegen/sql.ts",
+        "dependencyTypes": [
+          "local",
+          "type-only",
+          "import",
+          "pre-compilation-only"
+        ]
+      },
+      {
+        "name": "src/ast/index.ts",
+        "dependencyTypes": [
+          "local",
+          "type-only",
+          "import",
+          "pre-compilation-only"
+        ]
+      },
+      {
+        "name": "src/ast/window-frame.ts",
+        "dependencyTypes": [
+          "local",
+          "export"
+        ]
+      }
+    ]
+  },
+  {
+    "type": "cycle",
+    "from": "src/ast/window.ts",
+    "to": "src/ast/node.ts",
+    "unresolvedTo": "./node.js",
+    "dependencyTypes": [
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "no-circular-runtime-dependencies"
+    },
+    "cycle": [
+      {
+        "name": "src/ast/node.ts",
+        "dependencyTypes": [
+          "local",
+          "import"
+        ]
+      },
+      {
+        "name": "src/visit/codegen/sql.ts",
+        "dependencyTypes": [
+          "local",
+          "type-only",
+          "import",
+          "pre-compilation-only"
+        ]
+      },
+      {
+        "name": "src/ast/index.ts",
+        "dependencyTypes": [
+          "local",
+          "type-only",
+          "import",
+          "pre-compilation-only"
+        ]
+      },
+      {
+        "name": "src/ast/window.ts",
+        "dependencyTypes": [
+          "local",
+          "export"
+        ]
+      }
+    ]
+  },
+  {
+    "type": "cycle",
+    "from": "src/ast/window.ts",
+    "to": "src/util/function.ts",
+    "unresolvedTo": "../util/function.js",
+    "dependencyTypes": [
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "no-circular-runtime-dependencies"
+    },
+    "cycle": [
+      {
+        "name": "src/util/function.ts",
+        "dependencyTypes": [
+          "local",
+          "import"
+        ]
+      },
+      {
+        "name": "src/ast/window.ts",
+        "dependencyTypes": [
+          "local",
+          "import"
+        ]
+      }
+    ]
+  },
+  {
+    "type": "cycle",
+    "from": "src/functions/column.ts",
+    "to": "src/ast/column-param.ts",
+    "unresolvedTo": "../ast/column-param.js",
+    "dependencyTypes": [
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "no-circular-runtime-dependencies"
+    },
+    "cycle": [
+      {
+        "name": "src/ast/column-param.ts",
+        "dependencyTypes": [
+          "local",
+          "import"
+        ]
+      },
+      {
+        "name": "src/ast/column-ref.ts",
+        "dependencyTypes": [
+          "local",
+          "import"
+        ]
+      },
+      {
+        "name": "src/ast/node.ts",
+        "dependencyTypes": [
+          "local",
+          "import"
+        ]
+      },
+      {
+        "name": "src/visit/codegen/sql.ts",
+        "dependencyTypes": [
+          "local",
+          "type-only",
+          "import",
+          "pre-compilation-only"
+        ]
+      },
+      {
+        "name": "src/ast/index.ts",
+        "dependencyTypes": [
+          "local",
+          "type-only",
+          "import",
+          "pre-compilation-only"
+        ]
+      },
+      {
+        "name": "src/ast/aggregate.ts",
+        "dependencyTypes": [
+          "local",
+          "export"
+        ]
+      },
+      {
+        "name": "src/types.ts",
+        "dependencyTypes": [
+          "local",
+          "type-only",
+          "import",
+          "pre-compilation-only"
+        ]
+      },
+      {
+        "name": "src/ast/query.ts",
+        "dependencyTypes": [
+          "local",
+          "import",
+          "pre-compilation-only"
+        ]
+      },
+      {
+        "name": "src/util/ast.ts",
+        "dependencyTypes": [
+          "local",
+          "import"
+        ]
+      },
+      {
+        "name": "src/functions/column.ts",
+        "dependencyTypes": [
+          "local",
+          "import"
+        ]
+      }
+    ]
+  },
+  {
+    "type": "cycle",
+    "from": "src/functions/column.ts",
+    "to": "src/ast/column-ref.ts",
+    "unresolvedTo": "../ast/column-ref.js",
+    "dependencyTypes": [
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "no-circular-runtime-dependencies"
+    },
+    "cycle": [
+      {
+        "name": "src/ast/column-ref.ts",
+        "dependencyTypes": [
+          "local",
+          "import"
+        ]
+      },
+      {
+        "name": "src/ast/node.ts",
+        "dependencyTypes": [
+          "local",
+          "import"
+        ]
+      },
+      {
+        "name": "src/visit/codegen/sql.ts",
+        "dependencyTypes": [
+          "local",
+          "type-only",
+          "import",
+          "pre-compilation-only"
+        ]
+      },
+      {
+        "name": "src/ast/index.ts",
+        "dependencyTypes": [
+          "local",
+          "type-only",
+          "import",
+          "pre-compilation-only"
+        ]
+      },
+      {
+        "name": "src/ast/aggregate.ts",
+        "dependencyTypes": [
+          "local",
+          "export"
+        ]
+      },
+      {
+        "name": "src/types.ts",
+        "dependencyTypes": [
+          "local",
+          "type-only",
+          "import",
+          "pre-compilation-only"
+        ]
+      },
+      {
+        "name": "src/ast/query.ts",
+        "dependencyTypes": [
+          "local",
+          "import",
+          "pre-compilation-only"
+        ]
+      },
+      {
+        "name": "src/util/ast.ts",
+        "dependencyTypes": [
+          "local",
+          "import"
+        ]
+      },
+      {
+        "name": "src/functions/column.ts",
+        "dependencyTypes": [
+          "local",
+          "import"
+        ]
+      }
+    ]
+  },
+  {
+    "type": "cycle",
+    "from": "src/functions/column.ts",
+    "to": "src/ast/param.ts",
+    "unresolvedTo": "../ast/param.js",
+    "dependencyTypes": [
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "no-circular-runtime-dependencies"
+    },
+    "cycle": [
+      {
+        "name": "src/ast/param.ts",
+        "dependencyTypes": [
+          "local",
+          "import"
+        ]
+      },
+      {
+        "name": "src/types.ts",
+        "dependencyTypes": [
+          "local",
+          "type-only",
+          "import",
+          "pre-compilation-only"
+        ]
+      },
+      {
+        "name": "src/ast/column-ref.ts",
+        "dependencyTypes": [
+          "local",
+          "import",
+          "pre-compilation-only"
+        ]
+      },
+      {
+        "name": "src/ast/node.ts",
+        "dependencyTypes": [
+          "local",
+          "import"
+        ]
+      },
+      {
+        "name": "src/visit/codegen/sql.ts",
+        "dependencyTypes": [
+          "local",
+          "type-only",
+          "import",
+          "pre-compilation-only"
+        ]
+      },
+      {
+        "name": "src/ast/index.ts",
+        "dependencyTypes": [
+          "local",
+          "type-only",
+          "import",
+          "pre-compilation-only"
+        ]
+      },
+      {
+        "name": "src/ast/aggregate.ts",
+        "dependencyTypes": [
+          "local",
+          "export"
+        ]
+      },
+      {
+        "name": "src/util/ast.ts",
+        "dependencyTypes": [
+          "local",
+          "import"
+        ]
+      },
+      {
+        "name": "src/functions/column.ts",
+        "dependencyTypes": [
+          "local",
+          "import"
+        ]
+      }
+    ]
+  },
+  {
+    "type": "cycle",
+    "from": "src/functions/column.ts",
+    "to": "src/util/ast.ts",
+    "unresolvedTo": "../util/ast.js",
+    "dependencyTypes": [
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "no-circular-runtime-dependencies"
+    },
+    "cycle": [
+      {
+        "name": "src/util/ast.ts",
+        "dependencyTypes": [
+          "local",
+          "import"
+        ]
+      },
+      {
+        "name": "src/functions/column.ts",
+        "dependencyTypes": [
+          "local",
+          "import"
+        ]
+      }
+    ]
+  },
+  {
+    "type": "cycle",
+    "from": "src/functions/column.ts",
+    "to": "src/util/type-check.ts",
+    "unresolvedTo": "../util/type-check.js",
+    "dependencyTypes": [
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "no-circular-runtime-dependencies"
+    },
+    "cycle": [
+      {
+        "name": "src/util/type-check.ts",
+        "dependencyTypes": [
+          "local",
+          "import"
+        ]
+      },
+      {
+        "name": "src/types.ts",
+        "dependencyTypes": [
+          "local",
+          "type-only",
+          "import",
+          "pre-compilation-only"
+        ]
+      },
+      {
+        "name": "src/ast/column-ref.ts",
+        "dependencyTypes": [
+          "local",
+          "import",
+          "pre-compilation-only"
+        ]
+      },
+      {
+        "name": "src/ast/node.ts",
+        "dependencyTypes": [
+          "local",
+          "import"
+        ]
+      },
+      {
+        "name": "src/visit/codegen/sql.ts",
+        "dependencyTypes": [
+          "local",
+          "type-only",
+          "import",
+          "pre-compilation-only"
+        ]
+      },
+      {
+        "name": "src/ast/index.ts",
+        "dependencyTypes": [
+          "local",
+          "type-only",
+          "import",
+          "pre-compilation-only"
+        ]
+      },
+      {
+        "name": "src/ast/aggregate.ts",
+        "dependencyTypes": [
+          "local",
+          "export"
+        ]
+      },
+      {
+        "name": "src/util/ast.ts",
+        "dependencyTypes": [
+          "local",
+          "import"
+        ]
+      },
+      {
+        "name": "src/functions/column.ts",
+        "dependencyTypes": [
+          "local",
+          "import"
+        ]
+      }
+    ]
+  },
+  {
+    "type": "cycle",
+    "from": "src/functions/literal.ts",
+    "to": "src/ast/literal.ts",
+    "unresolvedTo": "../ast/literal.js",
+    "dependencyTypes": [
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "no-circular-runtime-dependencies"
+    },
+    "cycle": [
+      {
+        "name": "src/ast/literal.ts",
+        "dependencyTypes": [
+          "local",
+          "import"
+        ]
+      },
+      {
+        "name": "src/ast/node.ts",
+        "dependencyTypes": [
+          "local",
+          "import"
+        ]
+      },
+      {
+        "name": "src/visit/codegen/sql.ts",
+        "dependencyTypes": [
+          "local",
+          "type-only",
+          "import",
+          "pre-compilation-only"
+        ]
+      },
+      {
+        "name": "src/ast/index.ts",
+        "dependencyTypes": [
+          "local",
+          "type-only",
+          "import",
+          "pre-compilation-only"
+        ]
+      },
+      {
+        "name": "src/ast/aggregate.ts",
+        "dependencyTypes": [
+          "local",
+          "export"
+        ]
+      },
+      {
+        "name": "src/types.ts",
+        "dependencyTypes": [
+          "local",
+          "type-only",
+          "import",
+          "pre-compilation-only"
+        ]
+      },
+      {
+        "name": "src/ast/query.ts",
+        "dependencyTypes": [
+          "local",
+          "import",
+          "pre-compilation-only"
+        ]
+      },
+      {
+        "name": "src/util/ast.ts",
+        "dependencyTypes": [
+          "local",
+          "import"
+        ]
+      },
+      {
+        "name": "src/functions/literal.ts",
+        "dependencyTypes": [
+          "local",
+          "import"
+        ]
+      }
+    ]
+  },
+  {
+    "type": "cycle",
+    "from": "src/functions/literal.ts",
+    "to": "src/ast/verbatim.ts",
+    "unresolvedTo": "../ast/verbatim.js",
+    "dependencyTypes": [
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "no-circular-runtime-dependencies"
+    },
+    "cycle": [
+      {
+        "name": "src/ast/verbatim.ts",
+        "dependencyTypes": [
+          "local",
+          "import"
+        ]
+      },
+      {
+        "name": "src/ast/node.ts",
+        "dependencyTypes": [
+          "local",
+          "import"
+        ]
+      },
+      {
+        "name": "src/visit/codegen/sql.ts",
+        "dependencyTypes": [
+          "local",
+          "type-only",
+          "import",
+          "pre-compilation-only"
+        ]
+      },
+      {
+        "name": "src/ast/index.ts",
+        "dependencyTypes": [
+          "local",
+          "type-only",
+          "import",
+          "pre-compilation-only"
+        ]
+      },
+      {
+        "name": "src/ast/aggregate.ts",
+        "dependencyTypes": [
+          "local",
+          "export"
+        ]
+      },
+      {
+        "name": "src/types.ts",
+        "dependencyTypes": [
+          "local",
+          "type-only",
+          "import",
+          "pre-compilation-only"
+        ]
+      },
+      {
+        "name": "src/ast/query.ts",
+        "dependencyTypes": [
+          "local",
+          "import",
+          "pre-compilation-only"
+        ]
+      },
+      {
+        "name": "src/util/ast.ts",
+        "dependencyTypes": [
+          "local",
+          "import"
+        ]
+      },
+      {
+        "name": "src/functions/literal.ts",
+        "dependencyTypes": [
+          "local",
+          "import"
+        ]
+      }
+    ]
+  },
+  {
+    "type": "cycle",
+    "from": "src/functions/table-ref.ts",
+    "to": "src/ast/table-ref.ts",
+    "unresolvedTo": "../ast/table-ref.js",
+    "dependencyTypes": [
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "no-circular-runtime-dependencies"
+    },
+    "cycle": [
+      {
+        "name": "src/ast/table-ref.ts",
+        "dependencyTypes": [
+          "local",
+          "import"
+        ]
+      },
+      {
+        "name": "src/ast/node.ts",
+        "dependencyTypes": [
+          "local",
+          "import"
+        ]
+      },
+      {
+        "name": "src/visit/codegen/sql.ts",
+        "dependencyTypes": [
+          "local",
+          "type-only",
+          "import",
+          "pre-compilation-only"
+        ]
+      },
+      {
+        "name": "src/ast/index.ts",
+        "dependencyTypes": [
+          "local",
+          "type-only",
+          "import",
+          "pre-compilation-only"
+        ]
+      },
+      {
+        "name": "src/ast/aggregate.ts",
+        "dependencyTypes": [
+          "local",
+          "export"
+        ]
+      },
+      {
+        "name": "src/types.ts",
+        "dependencyTypes": [
+          "local",
+          "type-only",
+          "import",
+          "pre-compilation-only"
+        ]
+      },
+      {
+        "name": "src/ast/query.ts",
+        "dependencyTypes": [
+          "local",
+          "import",
+          "pre-compilation-only"
+        ]
+      },
+      {
+        "name": "src/util/ast.ts",
+        "dependencyTypes": [
+          "local",
+          "import"
+        ]
+      },
+      {
+        "name": "src/functions/table-ref.ts",
+        "dependencyTypes": [
+          "local",
+          "import"
+        ]
+      }
+    ]
+  },
+  {
+    "type": "cycle",
+    "from": "src/functions/table-ref.ts",
+    "to": "src/util/function.ts",
+    "unresolvedTo": "../util/function.js",
+    "dependencyTypes": [
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "no-circular-runtime-dependencies"
+    },
+    "cycle": [
+      {
+        "name": "src/util/function.ts",
+        "dependencyTypes": [
+          "local",
+          "import"
+        ]
+      },
+      {
+        "name": "src/ast/aggregate.ts",
+        "dependencyTypes": [
+          "local",
+          "import"
+        ]
+      },
+      {
+        "name": "src/types.ts",
+        "dependencyTypes": [
+          "local",
+          "type-only",
+          "import",
+          "pre-compilation-only"
+        ]
+      },
+      {
+        "name": "src/ast/column-ref.ts",
+        "dependencyTypes": [
+          "local",
+          "import",
+          "pre-compilation-only"
+        ]
+      },
+      {
+        "name": "src/ast/node.ts",
+        "dependencyTypes": [
+          "local",
+          "import"
+        ]
+      },
+      {
+        "name": "src/visit/codegen/sql.ts",
+        "dependencyTypes": [
+          "local",
+          "type-only",
+          "import",
+          "pre-compilation-only"
+        ]
+      },
+      {
+        "name": "src/ast/index.ts",
+        "dependencyTypes": [
+          "local",
+          "type-only",
+          "import",
+          "pre-compilation-only"
+        ]
+      },
+      {
+        "name": "src/ast/case.ts",
+        "dependencyTypes": [
+          "local",
+          "export"
+        ]
+      },
+      {
+        "name": "src/util/ast.ts",
+        "dependencyTypes": [
+          "local",
+          "import"
+        ]
+      },
+      {
+        "name": "src/functions/table-ref.ts",
+        "dependencyTypes": [
+          "local",
+          "import"
+        ]
+      }
+    ]
+  },
+  {
+    "type": "cycle",
+    "from": "src/types.ts",
+    "to": "src/ast/node.ts",
+    "unresolvedTo": "./ast/node.js",
+    "dependencyTypes": [
+      "local",
+      "import",
+      "pre-compilation-only"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "no-circular-runtime-dependencies"
+    },
+    "cycle": [
+      {
+        "name": "src/ast/node.ts",
+        "dependencyTypes": [
+          "local",
+          "import",
+          "pre-compilation-only"
+        ]
+      },
+      {
+        "name": "src/visit/codegen/sql.ts",
+        "dependencyTypes": [
+          "local",
+          "type-only",
+          "import",
+          "pre-compilation-only"
+        ]
+      },
+      {
+        "name": "src/ast/index.ts",
+        "dependencyTypes": [
+          "local",
+          "type-only",
+          "import",
+          "pre-compilation-only"
+        ]
+      },
+      {
+        "name": "src/ast/aggregate.ts",
+        "dependencyTypes": [
+          "local",
+          "export"
+        ]
+      },
+      {
+        "name": "src/types.ts",
+        "dependencyTypes": [
+          "local",
+          "type-only",
+          "import",
+          "pre-compilation-only"
+        ]
+      }
+    ]
+  },
+  {
+    "type": "cycle",
+    "from": "src/types.ts",
+    "to": "src/ast/query.ts",
+    "unresolvedTo": "./ast/query.js",
+    "dependencyTypes": [
+      "local",
+      "import",
+      "pre-compilation-only"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "no-circular-runtime-dependencies"
+    },
+    "cycle": [
+      {
+        "name": "src/ast/query.ts",
+        "dependencyTypes": [
+          "local",
+          "import",
+          "pre-compilation-only"
+        ]
+      },
+      {
+        "name": "src/types.ts",
+        "dependencyTypes": [
+          "local",
+          "type-only",
+          "import",
+          "pre-compilation-only"
+        ]
+      }
+    ]
+  },
+  {
+    "type": "cycle",
+    "from": "src/types.ts",
+    "to": "src/ast/table-ref.ts",
+    "unresolvedTo": "./ast/table-ref.js",
+    "dependencyTypes": [
+      "local",
+      "import",
+      "pre-compilation-only"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "no-circular-runtime-dependencies"
+    },
+    "cycle": [
+      {
+        "name": "src/ast/table-ref.ts",
+        "dependencyTypes": [
+          "local",
+          "import",
+          "pre-compilation-only"
+        ]
+      },
+      {
+        "name": "src/ast/node.ts",
+        "dependencyTypes": [
+          "local",
+          "import"
+        ]
+      },
+      {
+        "name": "src/visit/codegen/sql.ts",
+        "dependencyTypes": [
+          "local",
+          "type-only",
+          "import",
+          "pre-compilation-only"
+        ]
+      },
+      {
+        "name": "src/ast/index.ts",
+        "dependencyTypes": [
+          "local",
+          "type-only",
+          "import",
+          "pre-compilation-only"
+        ]
+      },
+      {
+        "name": "src/ast/aggregate.ts",
+        "dependencyTypes": [
+          "local",
+          "export"
+        ]
+      },
+      {
+        "name": "src/types.ts",
+        "dependencyTypes": [
+          "local",
+          "type-only",
+          "import",
+          "pre-compilation-only"
+        ]
+      }
+    ]
+  },
+  {
+    "type": "cycle",
+    "from": "src/types.ts",
+    "to": "src/ast/with.ts",
+    "unresolvedTo": "./ast/with.js",
+    "dependencyTypes": [
+      "local",
+      "import",
+      "pre-compilation-only"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "no-circular-runtime-dependencies"
+    },
+    "cycle": [
+      {
+        "name": "src/ast/with.ts",
+        "dependencyTypes": [
+          "local",
+          "import",
+          "pre-compilation-only"
+        ]
+      },
+      {
+        "name": "src/ast/node.ts",
+        "dependencyTypes": [
+          "local",
+          "import"
+        ]
+      },
+      {
+        "name": "src/visit/codegen/sql.ts",
+        "dependencyTypes": [
+          "local",
+          "type-only",
+          "import",
+          "pre-compilation-only"
+        ]
+      },
+      {
+        "name": "src/ast/index.ts",
+        "dependencyTypes": [
+          "local",
+          "type-only",
+          "import",
+          "pre-compilation-only"
+        ]
+      },
+      {
+        "name": "src/ast/aggregate.ts",
+        "dependencyTypes": [
+          "local",
+          "export"
+        ]
+      },
+      {
+        "name": "src/types.ts",
+        "dependencyTypes": [
+          "local",
+          "type-only",
+          "import",
+          "pre-compilation-only"
+        ]
+      }
+    ]
+  },
+  {
+    "type": "cycle",
+    "from": "src/util/ast.ts",
+    "to": "src/ast/from.ts",
+    "unresolvedTo": "../ast/from.js",
+    "dependencyTypes": [
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "no-circular-runtime-dependencies"
+    },
+    "cycle": [
+      {
+        "name": "src/ast/from.ts",
+        "dependencyTypes": [
+          "local",
+          "import"
+        ]
+      },
+      {
+        "name": "src/ast/node.ts",
+        "dependencyTypes": [
+          "local",
+          "import"
+        ]
+      },
+      {
+        "name": "src/visit/codegen/sql.ts",
+        "dependencyTypes": [
+          "local",
+          "type-only",
+          "import",
+          "pre-compilation-only"
+        ]
+      },
+      {
+        "name": "src/ast/index.ts",
+        "dependencyTypes": [
+          "local",
+          "type-only",
+          "import",
+          "pre-compilation-only"
+        ]
+      },
+      {
+        "name": "src/ast/aggregate.ts",
+        "dependencyTypes": [
+          "local",
+          "export"
+        ]
+      },
+      {
+        "name": "src/util/ast.ts",
+        "dependencyTypes": [
+          "local",
+          "import"
+        ]
+      }
+    ]
+  },
+  {
+    "type": "cycle",
+    "from": "src/util/ast.ts",
+    "to": "src/ast/node.ts",
+    "unresolvedTo": "../ast/node.js",
+    "dependencyTypes": [
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "no-circular-runtime-dependencies"
+    },
+    "cycle": [
+      {
+        "name": "src/ast/node.ts",
+        "dependencyTypes": [
+          "local",
+          "import"
+        ]
+      },
+      {
+        "name": "src/visit/codegen/sql.ts",
+        "dependencyTypes": [
+          "local",
+          "type-only",
+          "import",
+          "pre-compilation-only"
+        ]
+      },
+      {
+        "name": "src/ast/index.ts",
+        "dependencyTypes": [
+          "local",
+          "type-only",
+          "import",
+          "pre-compilation-only"
+        ]
+      },
+      {
+        "name": "src/ast/aggregate.ts",
+        "dependencyTypes": [
+          "local",
+          "export"
+        ]
+      },
+      {
+        "name": "src/util/ast.ts",
+        "dependencyTypes": [
+          "local",
+          "import"
+        ]
+      }
+    ]
+  },
+  {
+    "type": "cycle",
+    "from": "src/util/ast.ts",
+    "to": "src/ast/param.ts",
+    "unresolvedTo": "../ast/param.js",
+    "dependencyTypes": [
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "no-circular-runtime-dependencies"
+    },
+    "cycle": [
+      {
+        "name": "src/ast/param.ts",
+        "dependencyTypes": [
+          "local",
+          "import"
+        ]
+      },
+      {
+        "name": "src/types.ts",
+        "dependencyTypes": [
+          "local",
+          "type-only",
+          "import",
+          "pre-compilation-only"
+        ]
+      },
+      {
+        "name": "src/ast/column-ref.ts",
+        "dependencyTypes": [
+          "local",
+          "import",
+          "pre-compilation-only"
+        ]
+      },
+      {
+        "name": "src/ast/node.ts",
+        "dependencyTypes": [
+          "local",
+          "import"
+        ]
+      },
+      {
+        "name": "src/visit/codegen/sql.ts",
+        "dependencyTypes": [
+          "local",
+          "type-only",
+          "import",
+          "pre-compilation-only"
+        ]
+      },
+      {
+        "name": "src/ast/index.ts",
+        "dependencyTypes": [
+          "local",
+          "type-only",
+          "import",
+          "pre-compilation-only"
+        ]
+      },
+      {
+        "name": "src/ast/aggregate.ts",
+        "dependencyTypes": [
+          "local",
+          "export"
+        ]
+      },
+      {
+        "name": "src/util/ast.ts",
+        "dependencyTypes": [
+          "local",
+          "import"
+        ]
+      }
+    ]
+  },
+  {
+    "type": "cycle",
+    "from": "src/util/ast.ts",
+    "to": "src/ast/window.ts",
+    "unresolvedTo": "../ast/window.js",
+    "dependencyTypes": [
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "no-circular-runtime-dependencies"
+    },
+    "cycle": [
+      {
+        "name": "src/ast/window.ts",
+        "dependencyTypes": [
+          "local",
+          "import"
+        ]
+      },
+      {
+        "name": "src/types.ts",
+        "dependencyTypes": [
+          "local",
+          "type-only",
+          "import",
+          "pre-compilation-only"
+        ]
+      },
+      {
+        "name": "src/ast/column-ref.ts",
+        "dependencyTypes": [
+          "local",
+          "import",
+          "pre-compilation-only"
+        ]
+      },
+      {
+        "name": "src/ast/node.ts",
+        "dependencyTypes": [
+          "local",
+          "import"
+        ]
+      },
+      {
+        "name": "src/visit/codegen/sql.ts",
+        "dependencyTypes": [
+          "local",
+          "type-only",
+          "import",
+          "pre-compilation-only"
+        ]
+      },
+      {
+        "name": "src/ast/index.ts",
+        "dependencyTypes": [
+          "local",
+          "type-only",
+          "import",
+          "pre-compilation-only"
+        ]
+      },
+      {
+        "name": "src/ast/aggregate.ts",
+        "dependencyTypes": [
+          "local",
+          "export"
+        ]
+      },
+      {
+        "name": "src/util/ast.ts",
+        "dependencyTypes": [
+          "local",
+          "import"
+        ]
+      }
+    ]
+  },
+  {
+    "type": "cycle",
+    "from": "src/util/ast.ts",
+    "to": "src/functions/literal.ts",
+    "unresolvedTo": "../functions/literal.js",
+    "dependencyTypes": [
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "no-circular-runtime-dependencies"
+    },
+    "cycle": [
+      {
+        "name": "src/functions/literal.ts",
+        "dependencyTypes": [
+          "local",
+          "import"
+        ]
+      },
+      {
+        "name": "src/ast/literal.ts",
+        "dependencyTypes": [
+          "local",
+          "import"
+        ]
+      },
+      {
+        "name": "src/ast/node.ts",
+        "dependencyTypes": [
+          "local",
+          "import"
+        ]
+      },
+      {
+        "name": "src/visit/codegen/sql.ts",
+        "dependencyTypes": [
+          "local",
+          "type-only",
+          "import",
+          "pre-compilation-only"
+        ]
+      },
+      {
+        "name": "src/ast/index.ts",
+        "dependencyTypes": [
+          "local",
+          "type-only",
+          "import",
+          "pre-compilation-only"
+        ]
+      },
+      {
+        "name": "src/ast/aggregate.ts",
+        "dependencyTypes": [
+          "local",
+          "export"
+        ]
+      },
+      {
+        "name": "src/util/ast.ts",
+        "dependencyTypes": [
+          "local",
+          "import"
+        ]
+      }
+    ]
+  },
+  {
+    "type": "cycle",
+    "from": "src/util/ast.ts",
+    "to": "src/functions/table-ref.ts",
+    "unresolvedTo": "../functions/table-ref.js",
+    "dependencyTypes": [
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "no-circular-runtime-dependencies"
+    },
+    "cycle": [
+      {
+        "name": "src/functions/table-ref.ts",
+        "dependencyTypes": [
+          "local",
+          "import"
+        ]
+      },
+      {
+        "name": "src/ast/table-ref.ts",
+        "dependencyTypes": [
+          "local",
+          "import"
+        ]
+      },
+      {
+        "name": "src/ast/node.ts",
+        "dependencyTypes": [
+          "local",
+          "import"
+        ]
+      },
+      {
+        "name": "src/visit/codegen/sql.ts",
+        "dependencyTypes": [
+          "local",
+          "type-only",
+          "import",
+          "pre-compilation-only"
+        ]
+      },
+      {
+        "name": "src/ast/index.ts",
+        "dependencyTypes": [
+          "local",
+          "type-only",
+          "import",
+          "pre-compilation-only"
+        ]
+      },
+      {
+        "name": "src/ast/aggregate.ts",
+        "dependencyTypes": [
+          "local",
+          "export"
+        ]
+      },
+      {
+        "name": "src/util/ast.ts",
+        "dependencyTypes": [
+          "local",
+          "import"
+        ]
+      }
+    ]
+  },
+  {
+    "type": "cycle",
+    "from": "src/util/ast.ts",
+    "to": "src/util/type-check.ts",
+    "unresolvedTo": "./type-check.js",
+    "dependencyTypes": [
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "no-circular-runtime-dependencies"
+    },
+    "cycle": [
+      {
+        "name": "src/util/type-check.ts",
+        "dependencyTypes": [
+          "local",
+          "import"
+        ]
+      },
+      {
+        "name": "src/types.ts",
+        "dependencyTypes": [
+          "local",
+          "type-only",
+          "import",
+          "pre-compilation-only"
+        ]
+      },
+      {
+        "name": "src/ast/column-ref.ts",
+        "dependencyTypes": [
+          "local",
+          "import",
+          "pre-compilation-only"
+        ]
+      },
+      {
+        "name": "src/ast/node.ts",
+        "dependencyTypes": [
+          "local",
+          "import"
+        ]
+      },
+      {
+        "name": "src/visit/codegen/sql.ts",
+        "dependencyTypes": [
+          "local",
+          "type-only",
+          "import",
+          "pre-compilation-only"
+        ]
+      },
+      {
+        "name": "src/ast/index.ts",
+        "dependencyTypes": [
+          "local",
+          "type-only",
+          "import",
+          "pre-compilation-only"
+        ]
+      },
+      {
+        "name": "src/ast/aggregate.ts",
+        "dependencyTypes": [
+          "local",
+          "export"
+        ]
+      },
+      {
+        "name": "src/util/ast.ts",
+        "dependencyTypes": [
+          "local",
+          "import"
+        ]
+      }
+    ]
+  },
+  {
+    "type": "cycle",
+    "from": "src/util/function.ts",
+    "to": "src/ast/function.ts",
+    "unresolvedTo": "../ast/function.js",
+    "dependencyTypes": [
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "no-circular-runtime-dependencies"
+    },
+    "cycle": [
+      {
+        "name": "src/ast/function.ts",
+        "dependencyTypes": [
+          "local",
+          "import"
+        ]
+      },
+      {
+        "name": "src/ast/node.ts",
+        "dependencyTypes": [
+          "local",
+          "import"
+        ]
+      },
+      {
+        "name": "src/visit/codegen/sql.ts",
+        "dependencyTypes": [
+          "local",
+          "type-only",
+          "import",
+          "pre-compilation-only"
+        ]
+      },
+      {
+        "name": "src/ast/index.ts",
+        "dependencyTypes": [
+          "local",
+          "type-only",
+          "import",
+          "pre-compilation-only"
+        ]
+      },
+      {
+        "name": "src/ast/aggregate.ts",
+        "dependencyTypes": [
+          "local",
+          "export"
+        ]
+      },
+      {
+        "name": "src/util/function.ts",
+        "dependencyTypes": [
+          "local",
+          "import"
+        ]
+      }
+    ]
+  },
+  {
+    "type": "cycle",
+    "from": "src/util/function.ts",
+    "to": "src/util/ast.ts",
+    "unresolvedTo": "./ast.js",
+    "dependencyTypes": [
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "no-circular-runtime-dependencies"
+    },
+    "cycle": [
+      {
+        "name": "src/util/ast.ts",
+        "dependencyTypes": [
+          "local",
+          "import"
+        ]
+      },
+      {
+        "name": "src/ast/column-ref.ts",
+        "dependencyTypes": [
+          "local",
+          "type-only",
+          "import",
+          "pre-compilation-only"
+        ]
+      },
+      {
+        "name": "src/ast/node.ts",
+        "dependencyTypes": [
+          "local",
+          "import"
+        ]
+      },
+      {
+        "name": "src/visit/codegen/sql.ts",
+        "dependencyTypes": [
+          "local",
+          "type-only",
+          "import",
+          "pre-compilation-only"
+        ]
+      },
+      {
+        "name": "src/ast/index.ts",
+        "dependencyTypes": [
+          "local",
+          "type-only",
+          "import",
+          "pre-compilation-only"
+        ]
+      },
+      {
+        "name": "src/ast/aggregate.ts",
+        "dependencyTypes": [
+          "local",
+          "export"
+        ]
+      },
+      {
+        "name": "src/util/function.ts",
+        "dependencyTypes": [
+          "local",
+          "import"
+        ]
+      }
+    ]
+  }
+]

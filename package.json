@@ -35,6 +35,7 @@
     "@uwdata/mosaic-spec": "workspace:*",
     "ajv": "^8.20.0",
     "ajv-formats": "^3.0.1",
+    "dependency-cruiser": "^18.2.0",
     "eslint": "^10.5.0",
     "globals": "^17.6.0",
     "jsdom": "^30.0.1",
