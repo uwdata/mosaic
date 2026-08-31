@@ -71,7 +71,7 @@ func WithAllowedPaths(paths ...string) Option {
 // setting options when order matters.
 func WithSetting(name, value string) Option {
 	return func(cfg *config) {
-		cfg.settings = append(cfg.settings, duckDBSetting{name: name, value: value})
+		cfg.settings = append(cfg.settings, duckDBSetting{name: name, value: duckDBString(value)})
 	}
 }
 
@@ -113,7 +113,7 @@ func WithParquetMetadataCache() Option {
 // once before external access is restricted and configuration is locked. Typical
 // uses include installing or loading extensions, attaching local or remote
 // databases, and one-time catalog setup. Databases attached here remain usable
-// after restricted external access blocks new access and ATTACH operations. A
+// after restricted external access blocks ungranted access and ATTACH operations. A
 // local ATTACH grants the database and its sidecars for the connector lifetime;
 // DETACH does not revoke those paths.
 func WithBootstrapInitializer(initializer Initializer) Option {
@@ -152,6 +152,7 @@ func Open(ctx context.Context, dsn string, options ...Option) (*duckdb.Connector
 
 	cfg := applyOptions(options)
 	if cfg.restrictExternalAccess {
+		// These defaults cover database opening, before initialization callbacks run.
 		dsn = addDuckDBSettings(dsn, lockedExternalAccessSettings)
 	}
 
@@ -198,7 +199,7 @@ func initializeBootstrap(ctx context.Context, execer driver.ExecerContext, cfg c
 			return fmt.Errorf("bootstrap: %w", err)
 		}
 	}
-	if err := applyGlobalStringSettings(ctx, execer, cfg.settings); err != nil {
+	if err := applySettingExpressions(ctx, execer, cfg.settings); err != nil {
 		return err
 	}
 	if cfg.restrictExternalAccess {
@@ -230,13 +231,16 @@ func finalizeExternalAccess(ctx context.Context, execer driver.ExecerContext, cf
 	}
 
 	// DuckDB rejects path and temp grants after external access is disabled.
-	settings := make([]duckDBSetting, 0, 11)
+	settings := make([]duckDBSetting, 0, 14)
 	// DuckDB rejects even a same-value SET after bootstrap uses the secret manager.
 	if persistentSecrets {
 		settings = append(settings, duckDBSetting{name: "allow_persistent_secrets", value: "false"})
 	}
 	settings = append(settings, []duckDBSetting{
+		{name: "allow_community_extensions", value: "false"},
+		{name: "allow_unsigned_extensions", value: "false"},
 		{name: "allow_extensions_metadata_mismatch", value: "false"},
+		{name: "allow_unredacted_secrets", value: "false"},
 		{name: "allowed_configs", value: "[]"},
 		{name: "autoinstall_known_extensions", value: "false"},
 		{name: "autoload_known_extensions", value: "false"},
@@ -258,18 +262,9 @@ func finalizeExternalAccess(ctx context.Context, execer driver.ExecerContext, cf
 
 func applySettingExpressions(ctx context.Context, execer driver.ExecerContext, settings []duckDBSetting) error {
 	for _, setting := range settings {
-		if _, err := execer.ExecContext(ctx, "SET "+setting.name+" = "+setting.value, nil); err != nil {
-			return fmt.Errorf("failed to set %s: %w", setting.name, err)
-		}
-	}
-	return nil
-}
-
-func applyGlobalStringSettings(ctx context.Context, execer driver.ExecerContext, settings []duckDBSetting) error {
-	for _, setting := range settings {
 		if _, err := execer.ExecContext(
 			ctx,
-			"SET GLOBAL "+duckDBIdentifier(setting.name)+" = "+duckDBString(setting.value),
+			"SET GLOBAL "+duckDBIdentifier(setting.name)+" = "+setting.value,
 			nil,
 		); err != nil {
 			return fmt.Errorf("failed to set %s: %w", setting.name, err)

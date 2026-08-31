@@ -162,10 +162,15 @@ Core startup settings may still be supplied in the DuckDB DSN, but the connector
 Prefer ordered setting options for mutable configuration and extension-defined settings that become available during
 bootstrap.
 
+Locked mode supplies security defaults through the DSN for database opening, before initialization callbacks run.
+Conflicting caller DSN values can still affect database opening and trusted bootstrap. Finalization reapplies the security
+restrictions after bootstrap and caller setting options, then locks configuration; if DuckDB refuses a required change,
+startup fails rather than returning a partially restricted connector.
+
 Use one live connector per file-backed database path in a process and share it across query pools. DuckDB caches the
 database instance by path, so opening a second connector while the first remains live encounters its existing
 configuration lock. Bootstrap can attach reviewed local or remote databases before external access is disabled; those
-catalogs remain usable afterward under any of the locked external-access options, while new external access and `ATTACH`
+catalogs remain usable afterward under any of the locked external-access options, while ungranted external access and `ATTACH`
 operations are blocked. A local `ATTACH` permanently grants that database file and its exact `.wal`, `.wal.checkpoint`, and
 `.wal.recovery` sidecars for the life of the connector. `DETACH` does not revoke those paths, and any SQL function admitted
 by the query layer may read them.
@@ -173,8 +178,8 @@ by the query layer may read them.
 Repository suffixes accepted by `ParseAndInstall` are DuckDB aliases. Use `InstallAndLoadFromCustomRepository` for
 repository URLs or paths, and `LoadInstalled`, `LoadFile`, or `InstallAndLoadFile` for provisioned extensions. Installing
 at process startup may require network and filesystem access, so production locked deployments should normally provision
-extensions in their image and call `LoadInstalled` or `LoadFile`. Under the locked external-access options, DuckDB checks
-every extension binary when it is loaded and accepts only core-signed extensions, including during bootstrap. A plugin
+extensions in their image and call `LoadInstalled` or `LoadFile`. With the default locked-mode startup settings, DuckDB checks
+every extension binary when it is loaded and accepts only core-signed extensions during bootstrap. A plugin
 that requires ongoing external I/O is incompatible with the locked mode unless all of its I/O fits the configured grants and
 DuckDB filesystem policy. Extensions are trusted native code with the server process's privileges and can bypass DuckDB's
 abstractions, so load only trusted repositories and files.

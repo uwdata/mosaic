@@ -45,15 +45,15 @@ func TestSettingOptions(t *testing.T) {
 		WithParquetMetadataCache(),
 	})
 	assert.Equal(t, []duckDBSetting{
-		{name: "http_timeout", value: "30"},
-		{name: "WORKER_THREADS", value: "8"},
-		{name: "MAX_MEMORY", value: "1GB"},
-		{name: "memory_limit", value: "2GB"},
-		{name: "threads", value: "4"},
-		{name: "temp_directory", value: "/srv/spill"},
-		{name: "max_temp_directory_size", value: "8GB"},
-		{name: "enable_external_file_cache", value: "true"},
-		{name: "parquet_metadata_cache", value: "true"},
+		{name: "http_timeout", value: "'30'"},
+		{name: "WORKER_THREADS", value: "'8'"},
+		{name: "MAX_MEMORY", value: "'1GB'"},
+		{name: "memory_limit", value: "'2GB'"},
+		{name: "threads", value: "'4'"},
+		{name: "temp_directory", value: "'/srv/spill'"},
+		{name: "max_temp_directory_size", value: "'8GB'"},
+		{name: "enable_external_file_cache", value: "'true'"},
+		{name: "parquet_metadata_cache", value: "'true'"},
 	}, cfg.settings)
 }
 
@@ -95,48 +95,52 @@ func TestInitializeBootstrapOrder(t *testing.T) {
 	require.Equal(t, []string{
 		"BOOTSTRAP",
 		"SELECT current_setting('allow_persistent_secrets')::BOOLEAN",
-		"SET allow_persistent_secrets = false",
-		"SET allow_extensions_metadata_mismatch = false",
-		"SET allowed_configs = []",
-		"SET autoinstall_known_extensions = false",
-		"SET autoload_known_extensions = false",
-		"SET enable_external_file_cache = false",
-		"SET temp_directory = ''",
-		"SET allowed_directories = ['/srv/O''Brien']",
-		"SET allowed_paths = ['/srv/data.parquet']",
-		"SET enable_external_access = false",
-		"SET lock_configuration = true",
+		`SET GLOBAL "allow_persistent_secrets" = false`,
+		`SET GLOBAL "allow_community_extensions" = false`,
+		`SET GLOBAL "allow_unsigned_extensions" = false`,
+		`SET GLOBAL "allow_extensions_metadata_mismatch" = false`,
+		`SET GLOBAL "allow_unredacted_secrets" = false`,
+		`SET GLOBAL "allowed_configs" = []`,
+		`SET GLOBAL "autoinstall_known_extensions" = false`,
+		`SET GLOBAL "autoload_known_extensions" = false`,
+		`SET GLOBAL "enable_external_file_cache" = false`,
+		`SET GLOBAL "temp_directory" = ''`,
+		`SET GLOBAL "allowed_directories" = ['/srv/O''Brien']`,
+		`SET GLOBAL "allowed_paths" = ['/srv/data.parquet']`,
+		`SET GLOBAL "enable_external_access" = false`,
+		`SET GLOBAL "lock_configuration" = true`,
 	}, execer.snapshot())
 }
 
 func TestInitializeBootstrapAppliesConfiguredSettingsBeforeLock(t *testing.T) {
 	execer := newRecordingExecer()
+	cfg := applyOptions([]Option{
+		WithCatalogOnly(),
+		WithSetting("worker_threads", "1"),
+		WithSetting("threads", "2"),
+		WithSetting("http_timeout", "10'; ATTACH 'evil.db"),
+		WithSetting(`setting"name`, "value"),
+	})
 	require.NoError(t, initializeBootstrap(
 		t.Context(),
 		execer,
-		config{
-			restrictExternalAccess: true,
-			settings: []duckDBSetting{
-				{name: "worker_threads", value: "1"},
-				{name: "threads", value: "2"},
-				{name: "http_timeout", value: "10'; ATTACH 'evil.db"},
-			},
-		},
+		cfg,
 	))
 	queries := execer.snapshot()
 	require.NotEmpty(t, queries)
 	assert.Equal(t, `SET GLOBAL "worker_threads" = '1'`, queries[0])
 	assert.Equal(t, `SET GLOBAL "threads" = '2'`, queries[1])
 	assert.Equal(t, `SET GLOBAL "http_timeout" = '10''; ATTACH ''evil.db'`, queries[2])
-	assert.Equal(t, "SELECT current_setting('allow_persistent_secrets')::BOOLEAN", queries[3])
-	assert.Equal(t, "SET lock_configuration = true", queries[len(queries)-1])
+	assert.Equal(t, `SET GLOBAL "setting""name" = 'value'`, queries[3])
+	assert.Equal(t, "SELECT current_setting('allow_persistent_secrets')::BOOLEAN", queries[4])
+	assert.Equal(t, `SET GLOBAL "lock_configuration" = true`, queries[len(queries)-1])
 }
 
 func TestInitializeBootstrapReturnsFinalizationFailure(t *testing.T) {
 	sentinel := errors.New("unavailable")
 	execer := newRecordingExecer()
 	execer.persistentSecrets = true
-	execer.failAt = 12
+	execer.failAt = 15
 	execer.failErr = sentinel
 
 	err := initializeBootstrap(
@@ -152,7 +156,7 @@ func TestInitializeBootstrapReturnsFinalizationFailure(t *testing.T) {
 	)
 	require.ErrorIs(t, err, sentinel)
 	require.ErrorContains(t, err, "failed to set lock_configuration")
-	assert.Len(t, execer.snapshot(), 13)
+	assert.Len(t, execer.snapshot(), 16)
 }
 
 func TestInitializeBootstrapSkipsUnchangedPersistentSecrets(t *testing.T) {
@@ -163,7 +167,7 @@ func TestInitializeBootstrapSkipsUnchangedPersistentSecrets(t *testing.T) {
 		config{restrictExternalAccess: true},
 	))
 	assert.Contains(t, execer.snapshot(), "SELECT current_setting('allow_persistent_secrets')::BOOLEAN")
-	assert.NotContains(t, execer.snapshot(), "SET allow_persistent_secrets = false")
+	assert.NotContains(t, execer.snapshot(), `SET GLOBAL "allow_persistent_secrets" = false`)
 }
 
 func TestInitializeBootstrapValidatesExecer(t *testing.T) {
