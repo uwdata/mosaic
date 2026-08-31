@@ -4,25 +4,6 @@ A Go-based server that runs a local DuckDB instance and support queries over Web
 
 _Note:_ This package provides a local DuckDB server. To instead use DuckDB-WASM in the browser, use the `wasmConnector` in the [`mosaic-core`](https://github.com/uwdata/mosaic/tree/main/packages/mosaic/mosaic-core) package.
 
-## Startup
-
-Bootstrap, settings, and optional external-access locking complete before serving requests. Connection initialization
-runs for every physical connection, including those opened later by query pools.
-
-![DuckDB Go server startup](docs/duckdb-go-server-startup.svg)
-
-[Archify startup source](docs/server-startup.dataflow.json)
-
-## Request Authorization
-
-Request authorization runs once per HTTP request or WebSocket session; command authorization runs for each decoded command.
-Configured SQL policies run before cache lookup and reject `exec` commands. The CLI allows all origins and identities by
-default; embedders can supply stricter hooks.
-
-![DuckDB Go server request authorization](docs/duckdb-go-server-request-authorization.svg)
-
-[Archify request source](docs/request-authorization.sequence.json)
-
 ## Usage
 
 Install the server with `go install`.
@@ -71,6 +52,10 @@ mkcert localhost # create localhost.pem and localhost-key.pem
 
 ### Programmatic Connector Startup
 
+![DuckDB Go server startup](docs/duckdb-go-server-startup.svg)
+
+[Archify startup source](docs/server-startup.dataflow.json)
+
 Use `pkg/connector` before constructing `pkg/query`. For locked deployments, provision trusted extensions ahead of startup
 and load them during bootstrap:
 
@@ -110,6 +95,10 @@ provisioned extensions. Locked-mode startup defaults accept only core-signed bin
 with process privileges, so load only trusted sources.
 
 ### Programmatic Authorization
+
+![DuckDB Go server request authorization](docs/duckdb-go-server-request-authorization.svg)
+
+[Archify request source](docs/request-authorization.sequence.json)
 
 Programs embedding `pkg/server` should authenticate with standard HTTP middleware around the handler returned by
 `server.New`, then use `server.WithAuthorizer` only for command-aware policy. `AuthorizeRequest` runs once before POST
