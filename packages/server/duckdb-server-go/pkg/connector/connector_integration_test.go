@@ -9,6 +9,7 @@ import (
 	"net"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"os"
 	"path/filepath"
 	"strings"
@@ -169,6 +170,33 @@ func TestCatalogOnlyInitializesDistinctConnectors(t *testing.T) {
 	}
 }
 
+func TestCatalogOnlyFinalizesConflictingDSNSettings(t *testing.T) {
+	for _, name := range []string{"lowercase", "uppercase", "fragment"} {
+		t.Run(name, func(t *testing.T) {
+			settings := make(url.Values)
+			for _, setting := range lockedExternalAccessSettings {
+				key := setting.name
+				if name == "uppercase" {
+					key = strings.ToUpper(key)
+				}
+				value := "true"
+				if setting.name == "allowed_configs" {
+					value = "['enable_external_access']"
+				}
+				settings.Set(key, value)
+			}
+			dsn := ":memory:?" + settings.Encode()
+			if name == "fragment" {
+				dsn += "#ignored"
+			}
+			db := openDB(t, dsn, WithCatalogOnly())
+			assertLockedExternalAccessSettings(t, db)
+			_, err := db.ExecContext(t.Context(), "SET enable_external_access = true")
+			require.ErrorContains(t, err, "configuration has been locked")
+		})
+	}
+}
+
 func TestCatalogOnlyBootstrapsExtensionBeforeLock(t *testing.T) {
 	var bootstrapCalls atomic.Int64
 	duckdbConnector, err := Open(
@@ -219,6 +247,19 @@ func TestExternalAccessFinalizationRestoresMutableSettings(t *testing.T) {
 		}),
 	)
 
+	assertLockedExternalAccessSettings(t, db)
+}
+
+func TestCatalogOnlyAllowsBootstrapSecretManagerUse(t *testing.T) {
+	db := openDB(
+		t,
+		":memory:",
+		WithCatalogOnly(),
+		WithBootstrapInitializer(func(ctx context.Context, execer driver.ExecerContext) error {
+			_, err := execer.ExecContext(ctx, "SELECT * FROM duckdb_secrets()", nil)
+			return err
+		}),
+	)
 	assertLockedExternalAccessSettings(t, db)
 }
 
