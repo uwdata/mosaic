@@ -8,12 +8,11 @@ require (
 	github.com/duckdb/duckdb-go/v2 v2.10505.0
 	github.com/maypok86/otter/v2 v2.3.0
 	github.com/rs/cors v1.11.1
-	github.com/stretchr/testify v1.11.1
+	github.com/stretchr/testify v1.12.1
 	golang.org/x/sync v0.22.0
 )
 
 require (
-	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
 	github.com/duckdb/duckdb-go-bindings v0.10505.0 // indirect
 	github.com/duckdb/duckdb-go-bindings/lib/darwin-amd64 v0.10505.0 // indirect
 	github.com/duckdb/duckdb-go-bindings/lib/darwin-arm64 v0.10505.0 // indirect
@@ -27,9 +26,8 @@ require (
 	github.com/klauspost/compress v1.19.0 // indirect
 	github.com/klauspost/cpuid/v2 v2.4.0 // indirect
 	github.com/pierrec/lz4/v4 v4.1.27 // indirect
-	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
 	github.com/zeebo/xxh3 v1.1.0 // indirect
+	go.yaml.in/yaml/v3 v3.0.5 // indirect
 	golang.org/x/exp v0.0.0-20260112195511-716be5621a96 // indirect
 	golang.org/x/sys v0.47.0 // indirect
-	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
