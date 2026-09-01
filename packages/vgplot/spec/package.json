@@ -45,6 +45,6 @@
     "@uwdata/vgplot": "workspace:^"
   },
   "devDependencies": {
-    "ts-json-schema-generator": "3.0.0-native.0"
+    "ts-json-schema-generator": "3.0.0--canary.2508.8c5da8e.0"
   }
 }
