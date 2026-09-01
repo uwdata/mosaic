@@ -227,8 +227,8 @@ importers:
         version: link:../vgplot
     devDependencies:
       ts-json-schema-generator:
-        specifier: 3.0.0--canary.2508.8c5da8e.0
-        version: 3.0.0--canary.2508.8c5da8e.0
+        specifier: 3.0.0-native.5
+        version: 3.0.0-native.5
 
   packages/vgplot/vgplot:
     dependencies:
@@ -2304,10 +2304,6 @@ packages:
     resolution: {integrity: sha512-PqMLy5+YGwhMh1wS04mVG44oqDsgyLRSKJBdOo1bnYhMKBW65gZF1dRp2OZRhiTjgUHljy99qkO7bsctLaw35Q==}
     engines: {node: '>=12.20.0'}
 
-  commander@14.0.3:
-    resolution: {integrity: sha512-H+y0Jo/T1RZ9qPP4Eh1pkcQcLRglraJaSLoyOtHxu6AapkjWVCy2Sit1QQ4x3Dng8qDlSsZEet7g5Pq06MvTgw==}
-    engines: {node: '>=20'}
-
   commander@2.20.3:
     resolution: {integrity: sha512-GpVkmM8vF2vQUkj2LvZmD35JxeJOLCwJ9cUkugyk2nuhbv3+mJvpLYYt+0+USMxE+oj+ey/lJEnhZw75x/OMcQ==}
 
@@ -4056,10 +4052,6 @@ packages:
   safe-buffer@5.2.1:
     resolution: {integrity: sha512-rp3So07KcdmmKbGvgaNxQSJr7bGVSVk5S9Eq1F+ppbRo70+YeaDxkw5Dd8NPN+GD6bjnYm2VuPuCXmpuYvmCXQ==}
 
-  safe-stable-stringify@2.5.0:
-    resolution: {integrity: sha512-b3rppTKm9T+PsVCBEOUR46GWI7fdOs00VKZ1+9c1EWDaDMvjQc6tUwuFyIprgGgTcWoVHSKrU8H31ZHA2e0RHA==}
-    engines: {node: '>=10'}
-
   safer-buffer@2.1.2:
     resolution: {integrity: sha512-YZo3K82SD7Riyi0E1EQPojLz7kpepnSQI9IyPbHHg1XXXevb5dJI7tpyN2ADxGcQbHG7vcyRHk0cbwqcQriUtg==}
 
@@ -4352,9 +4344,45 @@ packages:
     peerDependencies:
       typescript: '>=4.8.4'
 
-  ts-json-schema-generator@3.0.0--canary.2508.8c5da8e.0:
-    resolution: {integrity: sha512-UQ9TwHLASunj0RgTjbEVP8/LRfFzUhibiz5IupdC4/eLSQC/yNy28zukFs306XOh7bvX9N/fhGkOq4yFwNAXJg==}
-    engines: {node: '>=22.0.0'}
+  ts-json-schema-generator-darwin-arm64@3.0.0-native.5:
+    resolution: {integrity: sha512-BV2Qm48nusl/s+hLf3vca8jOnYw81fd4VvGrmAG8WuSoy7o45S/9GqN7kubn7SQ0j3b0HCoQbCuYT4h84PHdvw==}
+    engines: {node: '>=20'}
+    cpu: [arm64]
+    os: [darwin]
+
+  ts-json-schema-generator-darwin-x64@3.0.0-native.5:
+    resolution: {integrity: sha512-UG/eFyf4+v/aDFyqR7f3JKLgDsYJRcYdCY17fgkAwt8699Vfxy6x5Kyj5eAkXbvkK7Fk4j7DeSchgUrAV7qbKg==}
+    engines: {node: '>=20'}
+    cpu: [x64]
+    os: [darwin]
+
+  ts-json-schema-generator-linux-arm64@3.0.0-native.5:
+    resolution: {integrity: sha512-vscMt3dMncr7tWcSzKBR9z1CyhFA7gPggKRW6Y/pbI8SWK7deQzJHZkVt6MGezi41zl38NLL8/O0jr2rq2qIMA==}
+    engines: {node: '>=20'}
+    cpu: [arm64]
+    os: [linux]
+
+  ts-json-schema-generator-linux-x64@3.0.0-native.5:
+    resolution: {integrity: sha512-R2EOu+7AzRDkhJme0+p6Q+4PmF3Hwmi7Fykdb18XRjuFWq/DS/Oh2LKrWPdbYduIyAd3axS5jIaZudQJNisdHw==}
+    engines: {node: '>=20'}
+    cpu: [x64]
+    os: [linux]
+
+  ts-json-schema-generator-win32-arm64@3.0.0-native.5:
+    resolution: {integrity: sha512-K7Tdr0Mko2jmvtE/i/pZaszkn8eJHAF2oTtWeP5j24AidKXxsVQu0N5BN7JbeK1SSc8Sz0YPdHdBtuZkv/iM9g==}
+    engines: {node: '>=20'}
+    cpu: [arm64]
+    os: [win32]
+
+  ts-json-schema-generator-win32-x64@3.0.0-native.5:
+    resolution: {integrity: sha512-UjcznnMoKtHAhQXUEL79HnAmXctvWTrv/KlAJYCMlZI+SmUgF5YVmnNmAq4HzAwAoqOauxeVXGIwPHvdThdA/A==}
+    engines: {node: '>=20'}
+    cpu: [x64]
+    os: [win32]
+
+  ts-json-schema-generator@3.0.0-native.5:
+    resolution: {integrity: sha512-w92hlsJJTdzw064JAb1hfcAdprpLIEi7g2u1a2lxLqSTdMTRkrBSGGk5WBfmKEp2zlDj3vzyyuw/xdv6OM7Dpw==}
+    engines: {node: '>=20'}
     hasBin: true
 
   tsconfig-paths@4.2.0:
@@ -6749,8 +6777,6 @@ snapshots:
       table-layout: 4.1.1
       typical: 7.3.0
 
-  commander@14.0.3: {}
-
   commander@2.20.3: {}
 
   commander@7.2.0: {}
@@ -8919,8 +8945,6 @@ snapshots:
 
   safe-buffer@5.2.1: {}
 
-  safe-stable-stringify@2.5.0: {}
-
   safer-buffer@2.1.2: {}
 
   saxes@6.0.0:
@@ -9221,16 +9245,32 @@ snapshots:
     dependencies:
       typescript: '@typescript/typescript6@6.0.2'
 
-  ts-json-schema-generator@3.0.0--canary.2508.8c5da8e.0:
-    dependencies:
-      '@types/json-schema': 7.0.15
-      commander: 14.0.3
-      glob: 13.0.6
-      json5: 2.2.3
-      normalize-path: 3.0.0
-      safe-stable-stringify: 2.5.0
-      tslib: 2.8.1
-      typescript: 6.0.3
+  ts-json-schema-generator-darwin-arm64@3.0.0-native.5:
+    optional: true
+
+  ts-json-schema-generator-darwin-x64@3.0.0-native.5:
+    optional: true
+
+  ts-json-schema-generator-linux-arm64@3.0.0-native.5:
+    optional: true
+
+  ts-json-schema-generator-linux-x64@3.0.0-native.5:
+    optional: true
+
+  ts-json-schema-generator-win32-arm64@3.0.0-native.5:
+    optional: true
+
+  ts-json-schema-generator-win32-x64@3.0.0-native.5:
+    optional: true
+
+  ts-json-schema-generator@3.0.0-native.5:
+    optionalDependencies:
+      ts-json-schema-generator-darwin-arm64: 3.0.0-native.5
+      ts-json-schema-generator-darwin-x64: 3.0.0-native.5
+      ts-json-schema-generator-linux-arm64: 3.0.0-native.5
+      ts-json-schema-generator-linux-x64: 3.0.0-native.5
+      ts-json-schema-generator-win32-arm64: 3.0.0-native.5
+      ts-json-schema-generator-win32-x64: 3.0.0-native.5
 
   tsconfig-paths@4.2.0:
     dependencies:
