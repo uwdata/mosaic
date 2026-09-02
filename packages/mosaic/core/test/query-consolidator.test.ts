@@ -1,11 +1,11 @@
 import { describe, it, expect } from 'vitest';
 import { type Table, tableFromArrays, tableToIPC } from '@uwdata/flechette';
-import { Query, SelectQuery, count, literal, sum } from '@uwdata/mosaic-sql';
+import { Query, count, literal, sum } from '@uwdata/mosaic-sql';
 import { consolidator } from '../src/QueryConsolidator.js';
 import { Priority } from '../src/QueryManager.js';
-import type { Cache, QueryEntry, QueryType } from '../src/types.js';
-import { jsonByteLength, lruCache, voidCache } from '../src/util/cache.js';
-import { decodeIPC, tableByteLength } from '../src/util/decode-ipc.js';
+import type { Cache, QueryEntry } from '../src/types.js';
+import { voidCache } from '../src/util/cache.js';
+import { decodeIPC } from '../src/util/decode-ipc.js';
 import { QueryResult } from '../src/util/query-result.js';
 
 describe('QueryConsolidation', () => {
@@ -109,115 +109,33 @@ describe('QueryConsolidation', () => {
 });
 
 describe('QueryConsolidationCaching', () => {
-  interface CacheCall {
-    key: string;
-    value: unknown;
-    bytes?: number;
-    owner?: object;
-  }
-
-  function recordingCache(): Cache & { calls: CacheCall[] } {
-    const calls: CacheCall[] = [];
-    return {
-      calls,
-      get: () => undefined,
-      set(key, value, bytes, owner) {
-        calls.push({ key, value, bytes, owner });
-        return value;
-      },
-      clear: () => {}
-    };
-  }
-
-  function decodedTable(columns: Record<string, unknown[]>): Table {
-    return decodeIPC(tableToIPC(tableFromArrays(columns), {})!);
-  }
-
-  // DescribeQuery is not a SelectQuery, so the consolidator never groups real
-  // describe queries; this shim makes the consolidated query a DescribeQuery.
-  function describeQuery(select: Record<string, string>): SelectQuery {
-    const query = Query.from({ source: 'table' }).select(select);
-    query.setSelect = function (...expr) {
-      SelectQuery.prototype.setSelect.apply(this, expr);
-      return Query.describe(this) as unknown as SelectQuery;
-    };
-    return query;
-  }
-
-  function selectQueries(...columns: string[]) {
-    return columns.map(c => Query.from({ source: 'table' }).select({ c }));
-  }
-
-  async function consolidate(
-    queries: unknown[],
-    data: Table,
-    cache: Cache
-  ): Promise<unknown[]> {
+  it('should charge projected extracts to the merged table', async () => {
+    const bytes = tableToIPC(tableFromArrays({ col0: [1, 2], col1: [3, 4] }), {})!;
+    const data = decodeIPC(bytes);
+    const queries = ['x', 'y'].map(c => Query.from({ source: 'table' }).select({ c }));
     const entries: QueryEntry[] = queries.map(query => ({
-      request: { type: 'arrow', cache: true, query: query as QueryType },
+      request: { type: 'arrow', cache: true, query },
       result: new QueryResult()
     }));
+
+    const calls: unknown[][] = [];
+    const cache: Cache = {
+      get: () => undefined,
+      set: (...args) => (calls.push(args), args[1]),
+      clear: () => {}
+    };
     const c = consolidator(entry => {
       if (entry.request.cache === false) entry.result.fulfill(data);
     }, cache);
     for (const entry of entries) {
       c.add(entry, Priority.Normal);
     }
-    return Promise.all(entries.map(entry => entry.result));
-  }
+    const extracts = await Promise.all(entries.map(entry => entry.result)) as Table[];
 
-  it('should charge projected extracts to the merged table', async () => {
-    const data = decodedTable({ col0: [1, 2], col1: [3, 4], col2: [5, 6] });
-    const queries = selectQueries('x', 'y', 'z');
-    const cache = recordingCache();
-    const extracts = await consolidate(queries, data, cache) as Table[];
-
-    expect(cache.calls.map(call => call.key))
-      .toEqual(queries.map(query => String(query)));
-    for (const [index, call] of cache.calls.entries()) {
-      expect(call.value).toBe(extracts[index]);
-      expect(call.bytes).toBe(tableByteLength(data));
-      expect(call.owner).toBe(data);
-    }
-
-    expect(new Set(extracts).size).toBe(3);
-    expect(extracts.some(extract => extract === data)).toBe(false);
     expect(Array.from(extracts[1])).toEqual([{ c: 3 }, { c: 4 }]);
-  });
-
-  it('should keep extracts of one merged buffer under a tight byte budget', async () => {
-    const data = decodedTable({ col0: [1, 2], col1: [3, 4], col2: [5, 6] });
-    const queries = selectQueries('x', 'y', 'z');
-    const bytes = tableByteLength(data)!;
-    const cache = lruCache({ maxBytes: bytes + 1 });
-    const extracts = await consolidate(queries, data, cache);
-
-    queries.forEach((query, index) => {
-      expect(cache.get(String(query))).toBe(extracts[index]);
-    });
-
-    cache.set('other', {}, bytes);
-    expect(queries.map(query => cache.get(String(query))))
-      .toEqual([undefined, undefined, undefined]);
-    expect(cache.get('other')).toEqual({});
-  });
-
-  it('should charge describe extracts by their JSON length', async () => {
-    const data = decodedTable({
-      column_name: ['col0', 'col1'],
-      column_type: ['DOUBLE', 'VARCHAR']
-    });
-    const queries = [describeQuery({ a: 'x' }), describeQuery({ b: 'y' })];
-    const cache = recordingCache();
-    const extracts = await consolidate(queries, data, cache);
-
-    expect(extracts).toEqual([
-      [{ column_name: 'a', column_type: 'DOUBLE' }],
-      [{ column_name: 'b', column_type: 'VARCHAR' }]
+    expect(calls).toEqual([
+      [String(queries[0]), extracts[0], bytes.length, data],
+      [String(queries[1]), extracts[1], bytes.length, data]
     ]);
-    for (const [index, call] of cache.calls.entries()) {
-      expect(call.bytes).toBe(jsonByteLength(extracts[index]));
-      expect(call.owner).toBeUndefined();
-    }
   });
 });

@@ -3,21 +3,12 @@ import type { Cache } from '../types.js';
 interface CacheEntry {
   last: number;
   value: unknown;
-  owner?: object;
+  owner: object;
 }
 
 interface OwnerCharge {
   bytes: number;
   refs: number;
-}
-
-export function jsonByteLength(value: unknown): number {
-  if (value == null) return 0;
-  try {
-    return JSON.stringify(value).length;
-  } catch {
-    return 0;
-  }
 }
 
 /**
@@ -51,30 +42,14 @@ export function lruCache({
   let ownerCharges = new Map<object, OwnerCharge>();
   let total = 0;
 
-  function charge(owner: object, bytes: number): void {
-    const record = ownerCharges.get(owner);
-    if (record) {
-      record.refs += 1;
-    } else {
-      ownerCharges.set(owner, { bytes, refs: 1 });
-      total += bytes;
-    }
-  }
-
-  function release(owner?: object): void {
-    if (!owner) return;
-    const record = ownerCharges.get(owner)!;
-    if (--record.refs === 0) {
-      ownerCharges.delete(owner);
-      total -= record.bytes;
-    }
-  }
-
   function remove(key: string): void {
     const entry = entries.get(key);
-    if (entry) {
-      entries.delete(key);
-      release(entry.owner);
+    if (!entry) return;
+    entries.delete(key);
+    const charge = ownerCharges.get(entry.owner)!;
+    if (--charge.refs === 0) {
+      ownerCharges.delete(entry.owner);
+      total -= charge.bytes;
     }
   }
 
@@ -94,22 +69,22 @@ export function lruCache({
       entries.set(key, entry);
       return entry.value;
     },
-    set(key: string, value: unknown, bytes = 0, owner?: object): unknown {
+    set(key: string, value: unknown, bytes = 0, owner: object = {}): unknown {
       remove(key);
       if (bytes > maxBytes) return value;
 
-      const entry: CacheEntry = { last: performance.now(), value };
-      if (bytes > 0) {
-        entry.owner = owner
-          ?? (typeof value === 'object' && value !== null ? value : entry);
-        charge(entry.owner, bytes);
+      entries.set(key, { last: performance.now(), value, owner });
+      const charge = ownerCharges.get(owner);
+      if (charge) {
+        charge.refs += 1;
+      } else {
+        ownerCharges.set(owner, { bytes, refs: 1 });
+        total += bytes;
       }
-      entries.set(key, entry);
 
-      while (total > maxBytes) {
-        const oldest = entries.keys().next();
-        if (oldest.done) break;
-        remove(oldest.value);
+      for (const oldest of entries.keys()) {
+        if (total <= maxBytes) break;
+        remove(oldest);
       }
 
       return value;

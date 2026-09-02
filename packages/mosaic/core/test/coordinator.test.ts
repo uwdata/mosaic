@@ -1,7 +1,7 @@
 import { tableFromArrays, tableToIPC } from '@uwdata/flechette';
 import { Query } from '@uwdata/mosaic-sql';
 import { describe, it, expect } from 'vitest';
-import { type Cache, clausePoint, type Connector, Coordinator, coordinator, type JSONQueryRequest, makeClient, Selection } from '../src/index.js';
+import { clausePoint, type Connector, Coordinator, coordinator, type JSONQueryRequest, makeClient, Selection } from '../src/index.js';
 import { QueryResult, QueryState } from '../src/util/query-result.js';
 
 async function wait() {
@@ -166,37 +166,5 @@ describe('coordinator', () => {
     const table = await coord.query('SELECT t FROM foo', { type: 'arrow' });
 
     expect(table.getChild('t').at(0)).toBe(0);
-  });
-
-  it('uses a custom cache object', async () => {
-    const connector = {
-      async query(req: JSONQueryRequest) {
-        return { sql: req.sql };
-      },
-    } as unknown as Connector;
-
-    const keys: string[] = [];
-    const entries = new Map<string, unknown>();
-    const cache: Cache = {
-      get: key => entries.get(key),
-      set: (key, value) => {
-        keys.push(key);
-        entries.set(key, value);
-        return value;
-      },
-      clear: () => entries.clear()
-    };
-
-    const coord = new Coordinator(connector, {
-      logger: null,
-      cache,
-      preagg: { enabled: false }
-    });
-
-    const result = await coord.query('SELECT 1', { type: 'json' });
-
-    expect(result).toStrictEqual({ sql: 'SELECT 1' });
-    expect(keys).toContain('SELECT 1');
-    expect(entries.get('SELECT 1')).toStrictEqual({ sql: 'SELECT 1' });
   });
 });

@@ -2,7 +2,7 @@ import type { ExtractionOptions, Table } from '@uwdata/flechette';
 import type { Connector } from './connectors/Connector.js';
 import type { Cache, Logger, QueryEntry, QueryRequest } from './types.js';
 import { consolidator } from './QueryConsolidator.js';
-import { jsonByteLength, lruCache, voidCache } from './util/cache.js';
+import { lruCache, voidCache } from './util/cache.js';
 import { decodeIPC, tableByteLength } from './util/decode-ipc.js';
 import { PriorityQueue } from './util/priority-queue.js';
 import { QueryResult, QueryState } from './util/query-result.js';
@@ -236,6 +236,6 @@ export class QueryManager {
 
 function resultByteLength(type: QueryRequest['type'], data: unknown): number {
   return type === 'arrow' ? tableByteLength(data as Table) ?? 0
-    : type === 'json' ? jsonByteLength(data)
+    : type === 'json' ? JSON.stringify(data).length
     : 0;
 }
