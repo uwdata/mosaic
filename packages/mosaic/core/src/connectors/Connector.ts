@@ -15,14 +15,8 @@ export interface ExecQueryRequest extends ConnectorQueryRequest {
   type: 'exec';
 }
 
-export interface JSONQueryRequest extends ConnectorQueryRequest {
-  /** The query type. */
-  type: 'json';
-}
-
 export interface Connector {
   /** Issue a query and return the result. */
   query(query: ArrowQueryRequest): Promise<ArrayBuffer | Uint8Array | Uint8Array[]>;
   query(query: ExecQueryRequest): Promise<void>;
-  query(query: JSONQueryRequest): Promise<Record<string, unknown>[]>;
 }

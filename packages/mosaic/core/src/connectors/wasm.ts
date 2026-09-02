@@ -1,6 +1,5 @@
-import type { ArrowQueryRequest, Connector, ExecQueryRequest, JSONQueryRequest, ConnectorQueryRequest } from './Connector.js';
+import type { ArrowQueryRequest, Connector, ExecQueryRequest, ConnectorQueryRequest } from './Connector.js';
 import * as duckdb from '@duckdb/duckdb-wasm';
-import { decodeIPC } from '../util/decode-ipc.js';
 
 interface DuckDBWASMOptions {
   /** Flag to enable logging. */
@@ -69,14 +68,11 @@ export class DuckDBWASMConnector implements Connector {
 
   async query(query: ArrowQueryRequest): Promise<Uint8Array>;
   async query(query: ExecQueryRequest): Promise<void>;
-  async query(query: JSONQueryRequest): Promise<Record<string, unknown>[]>;
   async query(query: ConnectorQueryRequest): Promise<unknown> {
     const { type, sql } = query;
     const con = await this.getConnection();
     const result = await getArrowIPC(con, sql);
-    return type === 'exec' ? undefined
-      : type === 'arrow' ? result
-      : decodeIPC(result).toArray();
+    return type === 'exec' ? undefined : result;
   }
 }
 

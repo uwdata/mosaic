@@ -6,7 +6,7 @@ A connector instance should expose a `query(query)` method that returns a Promis
 The _query_ argument is an object that may include the following properties:
 
 - _sql_: The SQL query to evaluate.
-- _type_: The query format type, such as `"exec"` (no return value), `"arrow"`, and `"json"`.
+- _type_: The query format type, either `"exec"` (no return value) or `"arrow"`.
 - Any additional connector-specific options.
 
 For the `"arrow"` type, a connector returns the raw Arrow IPC bytes as an `ArrayBuffer`, a `Uint8Array`, or an array of `Uint8Array` chunks; the coordinator decodes them to an Arrow table.

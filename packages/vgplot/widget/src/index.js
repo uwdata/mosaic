@@ -135,11 +135,6 @@ export default {
             query.resolve(buffers[0].buffer);
             break;
           }
-          case 'json': {
-            logger.log('json', msg.result);
-            query.resolve(msg.result);
-            break;
-          }
           default: {
             query.resolve({});
             break;

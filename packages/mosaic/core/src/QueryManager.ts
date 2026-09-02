@@ -98,11 +98,10 @@ export class QueryManager {
         this._logger.debug('Query', { type, sql, ...options });
       }
 
-      // @ts-expect-error type may be exec | json | arrow
-      const response = this.db!.query({ type, sql: sql!, ...options });
-      const promise = type === 'arrow'
-        ? response.then(bytes => decodeIPC(bytes as ArrayBuffer | Uint8Array | Uint8Array[], this._ipc))
-        : response;
+      const promise = type === 'exec'
+        ? this.db!.query({ type, sql: sql!, ...options })
+        : this.db!.query({ type, sql: sql!, ...options })
+            .then(bytes => decodeIPC(bytes, this._ipc));
       if (cache) this.clientCache!.set(sql!, promise);
 
       const data = await promise;
@@ -235,7 +234,5 @@ export class QueryManager {
 }
 
 function resultByteLength(type: QueryRequest['type'], data: unknown): number {
-  return type === 'arrow' ? tableByteLength(data as Table) ?? 0
-    : type === 'json' ? JSON.stringify(data).length
-    : 0;
+  return type === 'arrow' ? tableByteLength(data as Table) ?? 0 : 0;
 }

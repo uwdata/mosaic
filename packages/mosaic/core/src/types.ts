@@ -11,7 +11,7 @@ export type QueryType =
 
 /** Type for a query request. */
 export interface QueryRequest {
-  type: 'exec' | 'json' | 'arrow';
+  type: 'exec' | 'arrow';
   query: MaybeArray<QueryType>;
   cache?: boolean;
   options?: Record<string, unknown>;

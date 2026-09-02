@@ -7,16 +7,18 @@
 <body>
 <script type="module">
   import yaml from '../node_modules/yaml/browser/index.js';
+  import { decodeIPC } from '@uwdata/mosaic-core';
   import { coordinator, setDatabaseConnector } from './setup.js';
   setDatabaseConnector('wasm');
   const db = coordinator.databaseConnector();
 
   self.parse = async function(query) {
     const t0 = Date.now();
-    const result = await db.query({
-      type: 'json',
+    const bytes = await db.query({
+      type: 'arrow',
       sql: `SELECT json_serialize_sql($$${query}$$, skip_empty:=true, skip_null:=true) AS ast`
     });
+    const result = decodeIPC(bytes).toArray();
     const ast = JSON.parse(result[0].ast);
     ast._time = Date.now() - t0;
     return ast;
