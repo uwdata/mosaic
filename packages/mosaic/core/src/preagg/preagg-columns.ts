@@ -5,6 +5,9 @@ import { resolvePositional } from '../util/positional.js';
 import { containsNode } from './contains-node.js';
 import { sufficientStatistics } from './sufficient-statistics.js';
 
+// marks a value that differs across the base queries of a set operation
+const DIVERGENT = Symbol('divergent base');
+
 // result of determining columns for preaggregation optimization
 export interface PreAggColumnsResult {
   // Columns to include in a created preaggregate table
@@ -48,7 +51,7 @@ export function preaggColumns(client: MosaicClient): PreAggColumnsResult | null 
   const avg = (ref: ColumnRefNode) => {
     const name = ref.column;
     const expr = getBase(q, q => q._select.find(c => c.alias === name)?.expr);
-    if (typeof expr === 'number') throw new Error();                // base queries disagree
+    if (expr === DIVERGENT) throw new Error();                      // base queries disagree
     if (expr && isAggregateExpression(expr)) throw new Error();     // aggregate-valued operand
     if (expr && containsNode(expr, WindowNode)) throw new Error();  // window-valued operand
     if (!expr && q.subqueries.length) throw new Error();            // unresolvable through subqueries
@@ -164,13 +167,13 @@ function analyzeExpression(
  * @param get A getter function to extract
  *  a value from a base query.
  * @returns the base query value, or
- *  `undefined` if there is no source table, or `NaN` if the
+ *  `undefined` if there is no source table, or `DIVERGENT` if the
  *  query operates over multiple source tables.
  */
 function getBase<T>(
   query: Query,
   get: (q: SelectQuery) => T
-): T | number | undefined {
+): T | typeof DIVERGENT | undefined {
   const subq = query.subqueries;
 
   // select query
@@ -183,7 +186,7 @@ function getBase<T>(
   for (let i = 1; i < subq.length; ++i) {
     const value = getBase(subq[i], get);
     if (value === undefined) continue;
-    if (value !== base) return NaN;
+    if (value !== base) return DIVERGENT;
   }
   return base;
 }
