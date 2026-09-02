@@ -1,7 +1,8 @@
-import { asNode, collectAggregates, FromClauseNode, isAggregateExpression, isColumnRef, isSelectQuery, isTableRef, rewrite, sql, walk, WindowNode } from '@uwdata/mosaic-sql';
+import { asNode, collectAggregates, FromClauseNode, isAggregateExpression, isColumnRef, isSelectQuery, isTableRef, rewrite, sql, WindowNode } from '@uwdata/mosaic-sql';
 import type { AggregateNode, ColumnRefNode, ExprNode, Query, SelectQuery } from '@uwdata/mosaic-sql';
 import type { MosaicClient } from '../MosaicClient.js';
 import { resolvePositional } from '../util/positional.js';
+import { containsNode } from './contains-node.js';
 import { sufficientStatistics } from './sufficient-statistics.js';
 
 // result of determining columns for preaggregation optimization
@@ -47,10 +48,10 @@ export function preaggColumns(client: MosaicClient): PreAggColumnsResult | null 
   const avg = (ref: ColumnRefNode) => {
     const name = ref.column;
     const expr = getBase(q, q => q._select.find(c => c.alias === name)?.expr);
-    if (typeof expr === 'number') throw new Error();            // base queries disagree
-    if (expr && isAggregateExpression(expr)) throw new Error(); // aggregate-valued operand
-    if (expr && hasWindow(expr)) throw new Error();             // window-valued operand
-    if (!expr && q.subqueries.length) throw new Error();        // unresolvable through subqueries
+    if (typeof expr === 'number') throw new Error();                // base queries disagree
+    if (expr && isAggregateExpression(expr)) throw new Error();     // aggregate-valued operand
+    if (expr && containsNode(expr, WindowNode)) throw new Error();  // window-valued operand
+    if (!expr && q.subqueries.length) throw new Error();            // unresolvable through subqueries
     return sql`(SELECT avg(${expr ?? ref}) FROM ${from})`;
   };
 
@@ -71,7 +72,7 @@ export function preaggColumns(client: MosaicClient): PreAggColumnsResult | null 
       } else {
         // bail if expression contains a window function, as
         // window values cannot serve as groupby dimensions
-        if (hasWindow(expr)) return null;
+        if (containsNode(expr, WindowNode)) return null;
         // include non-aggregates in preagg table and update results
         preagg[alias] = expr;
         output[alias] = asNode(alias);
@@ -119,21 +120,6 @@ export function preaggColumns(client: MosaicClient): PreAggColumnsResult | null 
     // bail if unsupported aggregate was encountered
     return null;
   }
-}
-
-/**
- * Test if an expression contains a window function call.
- * @param expr The expression to test.
- */
-function hasWindow(expr: ExprNode): boolean {
-  let win = false;
-  walk(expr, node => {
-    if (node instanceof WindowNode) {
-      win = true;
-      return -1; // stop traversal
-    }
-  });
-  return win;
 }
 
 /**

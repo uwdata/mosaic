@@ -1,10 +1,11 @@
-import { ExprNode, ScaleOptions, SelectQuery, Query, ExprValue, MaybeArray, FunctionNode, TableRefNode, VerbatimNode, createSchema, SelectClauseNode, OrderByNode, and, asNode, ceil, collectColumns, createTable, float64, floor, isBetween, int32, mul, round, scaleTransform, sub, isSelectQuery, isAggregateExpression, ColumnNameRefNode, rewrite, walk } from '@uwdata/mosaic-sql';
+import { ExprNode, ScaleOptions, SelectQuery, Query, ExprValue, MaybeArray, FunctionNode, TableRefNode, VerbatimNode, createSchema, SelectClauseNode, OrderByNode, and, asNode, ceil, collectColumns, createTable, float64, floor, isBetween, int32, mul, round, scaleTransform, sub, isSelectQuery, isAggregateExpression, ColumnNameRefNode, rewrite } from '@uwdata/mosaic-sql';
 import type { Coordinator } from '../Coordinator.js';
 import type { MosaicClient } from '../MosaicClient.js';
 import type { Selection } from '../Selection.js';
 import type { BinMethod, ClauseSource, IntervalMetadata, SelectionClause } from '../SelectionClause.js';
 import { fnv_hash } from '../util/hash.js';
 import { resolvePositional } from '../util/positional.js';
+import { containsNode } from './contains-node.js';
 import { preaggColumns, PreAggColumnsResult } from './preagg-columns.js';
 
 /**
@@ -363,7 +364,7 @@ function preaggregateInfo(
   // column references within it can not be identified for pushdown
   const [subq] = create.subqueries;
   if (subq) {
-    if (Object.values(columns).some(hasVerbatim)) return null;
+    if (Object.values(columns).some(c => containsNode(c, VerbatimNode))) return null;
     const cols = Object.values(columns)
       .flatMap(c => collectColumns(c).map(c => c.column));
     subqueryPushdown(subq, cols);
@@ -411,22 +412,6 @@ function replaceIndices(exprs: ExprNode[], select: SelectClauseNode[]) {
     }
     return expr;
   });
-}
-
-/**
- * Test if an expression contains verbatim SQL content.
- * @param node The expression to test.
- * @returns True if the expression contains a verbatim node.
- */
-function hasVerbatim(node: ExprNode): boolean {
-  let found = false;
-  walk(node, n => {
-    if (n instanceof VerbatimNode) {
-      found = true;
-      return -1;
-    }
-  });
-  return found;
 }
 
 /**
