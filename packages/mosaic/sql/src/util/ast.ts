@@ -17,7 +17,8 @@ import { isArray, isParamLike, isString } from './type-check.js';
  * Interpret a value as a SQL AST node. String values are assumed to be
  * column references. All other primitive values are interpreted as
  * SQL literals. Dynamic parameters are interpreted as param AST nodes,
- * while existing AST nodes are left as-is.
+ * while existing AST nodes are left as-is, except for queries, which
+ * are wrapped as scalar subqueries.
  * @param value The value to interpret as a SQL AST node.
  */
 export function asNode(value: unknown): ExprNode {
@@ -28,7 +29,8 @@ export function asNode(value: unknown): ExprNode {
  * Interpret a value as a verbatim SQL AST node. String values will be
  * passed through to queries as verbatim text. All other primitive values
  * are interpreted as SQL literals. Dynamic parameters are interpreted
- * as param AST nodes, while existing AST nodes are left as-is.
+ * as param AST nodes, while existing AST nodes are left as-is, except
+ * for queries, which are wrapped as scalar subqueries.
  * @param value The value to interpret as a verbatim AST node.
  */
 export function asVerbatim(value: unknown): ExprNode {
