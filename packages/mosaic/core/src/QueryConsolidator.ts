@@ -2,7 +2,6 @@ import type { Table } from '@uwdata/flechette';
 import type { ExprNode, MaybeArray, Query, SelectQuery } from '@uwdata/mosaic-sql';
 import { isAggregateExpression, isColumnRef, isDescribeQuery, isSelectQuery } from '@uwdata/mosaic-sql';
 import type { Cache, QueryEntry, QueryType } from './types.js';
-import { jsonByteLength } from './util/cache.js';
 import { tableByteLength } from './util/decode-ipc.js';
 import { resolvePositional } from './util/positional.js';
 import { QueryResult } from './util/query-result.js';
@@ -289,12 +288,7 @@ async function processResults(group: QueryGroup, cache: Cache): Promise<void> {
       : map ? projectResult(data, map)
       : data;
     if (request.cache) {
-      const key = String(request.query);
-      if (describe && map) {
-        cache.set(key, extract, jsonByteLength(extract));
-      } else {
-        cache.set(key, extract, bytes, data);
-      }
+      cache.set(String(request.query), extract, bytes, data);
     }
     result.fulfill(extract);
   });
