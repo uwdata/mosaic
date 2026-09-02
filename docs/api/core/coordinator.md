@@ -18,9 +18,27 @@ Get the default global coordinator instance.
 Create a new Mosaic Coordinator to manage all database communication for clients and handle selection updates. Accepts a database _connector_ and an _options_ object:
 
 * _logger_: The logger to use, defaults to `console`.
-* _cache_: Boolean flag to enable/disable query caching (default `true`).
+* _cache_: Boolean flag to enable/disable query caching, or a custom cache object with `get`, `set`, and `clear` methods (default `true`, which uses `lruCache()`). A custom cache is called as `set(key, value, bytes, owner)`, where _bytes_ is the measured size of the result (`0` if the size could not be measured) and _owner_, when present, is a source object shared by multiple entries: entries passing the same _owner_ must be charged against a size budget only once.
+* _ipc_: Arrow IPC extraction options used when decoding `"arrow"` query results. If unspecified, date and timestamp values are extracted as JavaScript `Date` objects.
 * _consolidate_ Boolean flag to enable/disable query consolidation (default `true`).
 * _preagg_: Pre-aggregation options object. The _enabled_ flag (default `true`) determines if pre-aggregation optimizations should be used when possible. The _schema_ option (default `'mosaic'`) indicates the database schema in which materialized view tables should be created for pre-aggregated data.
+
+## Query cache
+
+`lruCache(options)`
+
+Create a least-recently-used query cache with a byte budget. This is the cache the coordinator uses when the _cache_ option is `true`. Supports the following _options_:
+
+- _maxBytes_: The maximum number of bytes of query results to retain (default `33554432`, or 32 MiB). Once the budget is exceeded, the least recently used entries are evicted.
+- _ttl_: The time in milliseconds that an unused entry is retained (default `10800000`, or 3 hours). An entry older than its _ttl_ is discarded upon lookup.
+
+For `"arrow"` results the budget counts the Arrow IPC bytes returned by the connector, not the size of the decoded table; `"json"` results are measured by the length of their JSON serialization. A result larger than _maxBytes_ is passed through without being cached. Arrow results extracted from the same consolidated query share one decoded table, and so are charged against the budget only once.
+
+`voidCache()`
+
+Create a cache that retains nothing. This is the cache used when the coordinator _cache_ option is `false`.
+
+Both `lruCache` and `voidCache` are exported from `@uwdata/mosaic-core`. To use a budget other than the default, pass a cache instance as the _cache_ option: `new Coordinator(connector, { cache: lruCache({ maxBytes: 64 * 1024 * 1024 }) })`.
 
 ## databaseConnector
 

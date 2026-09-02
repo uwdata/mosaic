@@ -1,5 +1,3 @@
-import type { Table } from '@uwdata/flechette';
-
 export interface ConnectorQueryRequest {
   /** The query type. */
   type?: string;
@@ -19,6 +17,6 @@ export interface ExecQueryRequest extends ConnectorQueryRequest {
 
 export interface Connector {
   /** Issue a query and return the result. */
-  query(query: ArrowQueryRequest): Promise<Table>;
+  query(query: ArrowQueryRequest): Promise<ArrayBuffer | Uint8Array | Uint8Array[]>;
   query(query: ExecQueryRequest): Promise<void>;
 }

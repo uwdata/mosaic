@@ -1,8 +1,7 @@
-import type { ExtractionOptions, Table } from '@uwdata/flechette';
+
 import type { ArrowQueryRequest, Connector, ExecQueryRequest, ConnectorQueryRequest } from './Connector.js';
 import * as duckdb from '@duckdb/duckdb-wasm';
 import { decodeIPC } from '../util/decode-ipc.js';
-import { annotateByteLength, assertCacheable } from '../util/cache.js';
 
 interface DuckDBWASMOptions {
   /** Flag to enable logging. */
@@ -10,8 +9,6 @@ interface DuckDBWASMOptions {
 }
 
 interface DuckDBWASMConnectorOptions extends DuckDBWASMOptions {
-  /** Arrow IPC extraction options. */
-  ipc?: ExtractionOptions;
   /** Optional pre-existing DuckDB-WASM instance. */
   duckdb?: duckdb.AsyncDuckDB;
   /** Optional pre-existing DuckDB-WASM connection. */
@@ -33,7 +30,6 @@ export function wasmConnector(options: DuckDBWASMConnectorOptions = {}): DuckDBW
  * DuckDB-WASM connector.
  */
 export class DuckDBWASMConnector implements Connector {
-  private _ipc?: ExtractionOptions;
   public _options: DuckDBWASMOptions;
   public _db?: duckdb.AsyncDuckDB;
   public _con?: duckdb.AsyncDuckDBConnection;
@@ -45,8 +41,7 @@ export class DuckDBWASMConnector implements Connector {
    * @param options Connector options.
    */
   constructor(options: DuckDBWASMConnectorOptions = {}) {
-    const { ipc, duckdb, connection, config, ...opts } = options;
-    this._ipc = ipc;
+    const { duckdb, connection, config, ...opts } = options;
     this._options = opts;
     this._db = duckdb;
     this._con = connection;
@@ -73,21 +68,13 @@ export class DuckDBWASMConnector implements Connector {
     return this._con!;
   }
 
-  async query(query: ArrowQueryRequest): Promise<Table>;
+  async query(query: ArrowQueryRequest): Promise<Uint8Array>;
   async query(query: ExecQueryRequest): Promise<void>;
   async query(query: ConnectorQueryRequest): Promise<unknown> {
     const { type, sql } = query;
     const con = await this.getConnection();
     const result = await getArrowIPC(con, sql);
-    if (type === 'exec') return undefined;
-    if (type === 'arrow') {
-      const table = decodeIPC(result, this._ipc);
-      assertCacheable(table, 'DuckDBWASMConnector arrow');
-      return table;
-    }
-    const records = annotateByteLength(decodeIPC(result).toArray(), result.byteLength);
-    assertCacheable(records, 'DuckDBWASMConnector json');
-    return type === 'exec' ? undefined : decodeIPC(result, this._ipc);
+    return type === 'exec' ? undefined : result;
   }
 }
 
