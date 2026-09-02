@@ -1,5 +1,5 @@
 import { expect, describe, it } from 'vitest';
-import { loadCSV } from '../src/index.js';
+import { loadCSV, loadObjects } from '../src/index.js';
 
 // Serialization only: read_csv binds against the named file, which does not
 // exist in the fixture database.
@@ -35,6 +35,27 @@ describe('loadCSV', () => {
     };
     expect(loadCSV('table', 'data.csv', opt).toString()).toBe(
       `CREATE TABLE IF NOT EXISTS "table" AS SELECT * FROM read_csv('data.csv', auto_detect=false, sample_size=-1, all_varchar=true, columns={'line': 'VARCHAR'}, force_not_null=['line'], new_line='\\n', header=false, skip=2)`
+    );
+  });
+});
+
+describe('loadObjects', () => {
+  it('supports list-valued fields', async () => {
+    const query = loadObjects('posts', [
+      { id: 1, title: 'duckdb v1.0', tags: ['release', 'duckdb'] },
+      { id: 2, title: 'mosaic v0.18', tags: ['release', 'mosaic'] }
+    ]);
+    await expect(query).toBeValidQuery(
+      `CREATE TABLE IF NOT EXISTS "posts" AS (SELECT 1 AS "id", 'duckdb v1.0' AS "title", ['release', 'duckdb'] AS "tags") UNION ALL (SELECT 2 AS "id", 'mosaic v0.18' AS "title", ['release', 'mosaic'] AS "tags")`
+    );
+  });
+
+  it('supports struct-valued fields', async () => {
+    const query = loadObjects('events', [
+      { id: 1, pos: { x: 140.2, y: 22.8 } }
+    ]);
+    await expect(query).toBeValidQuery(
+      `CREATE TABLE IF NOT EXISTS "events" AS (SELECT 1 AS "id", {'x': 140.2, 'y': 22.8} AS "pos")`
     );
   });
 });
