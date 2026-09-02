@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import type { CreateQuery, ExprNode, FilterExpr } from "@uwdata/mosaic-sql";
-import { Query, add, argmax, argmin, asTableRef, avg, corr, count, covarPop, covariance, desc, filterPushdown, geomean, gt, literal, loadObjects, max, min, mul, neq, product, regrAvgX, regrAvgY, regrCount, regrIntercept, regrR2, regrSXX, regrSXY, regrSYY, regrSlope, sql, stddev, stddevPop, sum, upper, varPop, variance } from '@uwdata/mosaic-sql';
+import { Query, add, argmax, argmin, asTableRef, avg, corr, count, covarPop, covariance, desc, filterPushdown, geomean, gt, literal, loadObjects, max, min, mul, neq, product, regrAvgX, regrAvgY, regrCount, regrIntercept, regrR2, regrSXX, regrSXY, regrSYY, regrSlope, row_number, sql, stddev, stddevPop, sum, upper, varPop, variance } from '@uwdata/mosaic-sql';
 import { clausePoint, Coordinator, Selection, SelectionClause } from '../src/index.js';
 import type { PreAggregateInfo } from '../src/preagg/PreAggregator.js';
 import { preaggColumns } from '../src/preagg/preagg-columns.js';
@@ -215,6 +215,50 @@ describe('PreAggregator', () => {
         .select({ measure: add(1, sum('freq')) });
     };
     expect(await run(queryNoGroup)).toStrictEqual([4, true]);
+  });
+
+  it('does not support variance over a CTE aggregate column', async () => {
+    // mean-centering cannot use a CTE-derived aggregate column,
+    // so the query should run through the non-optimized route
+    const query = (predicate: FilterExpr = []) => {
+      const counts = Query.from('testData')
+        .select({ dim: 'dim', freq: count() })
+        .groupby('dim', 'order')
+        .where(predicate);
+      return Query.with({ counts })
+        .from('counts')
+        .select({ measure: variance('freq') });
+    };
+    expect(await run(query)).toStrictEqual([0, false]);
+  });
+
+  it('does not support variance over a multi-level CTE column', async () => {
+    // mean-centering cannot resolve a column defined in an intermediate
+    // CTE, so the query should run through the non-optimized route
+    const query = (predicate: FilterExpr = []) => {
+      const inner = Query.from('testData')
+        .select({ v: mul('x', 2), dim: 'dim' })
+        .where(predicate);
+      const outer = Query.from('inner_cte').select({ w: 'v', dim: 'dim' });
+      return Query.with({ inner_cte: inner, outer_cte: outer })
+        .from('outer_cte')
+        .select({ measure: variance('w') });
+    };
+    expect(await run(query)).toStrictEqual([2, false]);
+  });
+
+  it('does not support variance over a CTE window column', async () => {
+    // mean-centering cannot use a CTE-derived window column,
+    // so the query should run through the non-optimized route
+    const query = (predicate: FilterExpr = []) => {
+      const ranked = Query.from('testData')
+        .select({ rk: row_number().orderby('order'), dim: 'dim' })
+        .where(predicate);
+      return Query.with({ ranked })
+        .from('ranked')
+        .select({ measure: variance('rk') });
+    };
+    expect(await run(query)).toStrictEqual([1, false]);
   });
 
   it('supports queries with column index references', async () => {
