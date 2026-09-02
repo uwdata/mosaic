@@ -1,6 +1,4 @@
-import type { ExtractionOptions, Table } from '@uwdata/flechette';
 import { DuckDB } from '@uwdata/mosaic-duckdb';
-import { decodeIPC } from '../util/decode-ipc.js';
 import type {
   ArrowQueryRequest,
   Connector,
@@ -15,21 +13,16 @@ import type {
  */
 export class NodeConnector implements Connector {
   protected _db: DuckDB;
-  protected _ipc?: ExtractionOptions;
 
-  static async make(db?: DuckDB, ipc?: ExtractionOptions) {
-    const connector = new NodeConnector(db, ipc);
+  static async make(db?: DuckDB) {
+    const connector = new NodeConnector(db);
     // make sure initialization is complete
     await connector._db._init;
     return connector;
   }
 
-  constructor(
-    db: DuckDB = new DuckDB(),
-    ipc?: ExtractionOptions
-  ) {
+  constructor(db: DuckDB = new DuckDB()) {
     this._db = db;
-    this._ipc = ipc;
   }
 
   /**
@@ -37,7 +30,7 @@ export class NodeConnector implements Connector {
    * @param query Query object with type and SQL
    * @returns the query result
    */
-  async query(query: ArrowQueryRequest): Promise<Table>;
+  async query(query: ArrowQueryRequest): Promise<Uint8Array[]>;
   async query(query: ExecQueryRequest): Promise<void>;
   async query(query: JSONQueryRequest): Promise<Record<string, unknown>[]>;
   async query(query: ConnectorQueryRequest): Promise<unknown> {
@@ -46,7 +39,7 @@ export class NodeConnector implements Connector {
       case 'exec':
         return this._db.exec(sql);
       case 'arrow':
-        return decodeIPC(await this._db.arrowBuffer(sql), this._ipc);
+        return this._db.arrowBuffer(sql);
       default:
         return this._db.query(sql);
     }

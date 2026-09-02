@@ -1,4 +1,4 @@
-import { DuckDBWASMConnector, RestConnector, SocketConnector } from '@uwdata/mosaic-core';
+import { decodeIPC, DuckDBWASMConnector, RestConnector, SocketConnector } from '@uwdata/mosaic-core';
 import { createAPIContext } from '@uwdata/vgplot';
 
 export { parseSpec, astToDOM, astToESM } from '@uwdata/mosaic-spec';
@@ -10,11 +10,11 @@ Object.assign(self, { vg });
 // enable query interface on global this (window)
 Object.assign(self, {
   query: async (sql) => {
-    const r = await vg.coordinator().databaseConnector().query({
+    const bytes = await vg.coordinator().databaseConnector().query({
       type: 'arrow',
       sql
     });
-    return r.toArray();
+    return decodeIPC(bytes).toArray();
   }
 });
 

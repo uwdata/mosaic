@@ -1,11 +1,7 @@
-import type { ExtractionOptions, Table } from '@uwdata/flechette';
 import type { ArrowQueryRequest, Connector, ExecQueryRequest, JSONQueryRequest, ConnectorQueryRequest } from './Connector.js';
-import { decodeIPC } from '../util/decode-ipc.js';
-import { annotateByteLength, assertCacheable } from '../util/cache.js';
 
 interface SocketOptions {
   uri?: string;
-  ipc?: ExtractionOptions;
 }
 
 interface QueueItem<T = unknown> {
@@ -18,7 +14,6 @@ interface QueueItem<T = unknown> {
  * Connect to a DuckDB server over a WebSocket interface.
  * @param options Connector options.
  * @param options.uri The URI for the DuckDB REST server.
- * @param options.ipc Arrow IPC extraction options.
  * @returns A connector instance.
  */
 export function socketConnector(options?: SocketOptions) {
@@ -39,11 +34,9 @@ export class SocketConnector implements Connector {
   /**
    * @param options Connector options.
    * @param options.uri The URI for the DuckDB REST server.
-   * @param options.ipc Arrow IPC extraction options.
    */
   constructor({
-    uri = 'ws://localhost:3000/',
-    ipc = undefined,
+    uri = 'ws://localhost:3000/'
   }: SocketOptions = {}) {
     this._uri = uri;
     this._queue = [];
@@ -91,21 +84,12 @@ export class SocketConnector implements Connector {
           // process result
           if (typeof data === 'string') {
             const json = JSON.parse(data);
-            if (json.error) {
-              reject(json.error);
-            } else {
-              if (json && typeof json === 'object') {
-                annotateByteLength(json, data.length);
-              }
-              assertCacheable(json, 'SocketConnector json');
-              resolve(json);
-            }
+            // eslint-disable-next-line @typescript-eslint/no-unused-expressions
+            json.error ? reject(json.error) : resolve(json);
           } else if (query.type === 'exec') {
             resolve();
           } else if (query.type === 'arrow') {
-            const table = decodeIPC(data as Uint8Array, ipc);
-            assertCacheable(table, 'SocketConnector arrow');
-            resolve(table);
+            resolve(data);
           } else {
             throw new Error(`Unexpected socket data: ${data}`);
           }
@@ -145,7 +129,7 @@ export class SocketConnector implements Connector {
     }
   }
 
-  query(query: ArrowQueryRequest): Promise<Table>;
+  query(query: ArrowQueryRequest): Promise<ArrayBuffer>;
   query(query: ExecQueryRequest): Promise<void>;
   query(query: JSONQueryRequest): Promise<Record<string, unknown>[]>;
   query(query: ConnectorQueryRequest): Promise<unknown> {

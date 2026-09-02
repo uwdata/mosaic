@@ -1,13 +1,23 @@
 import type { Cache } from '../types.js';
 
-const requestIdle = typeof requestIdleCallback !== 'undefined'
-  ? requestIdleCallback
-  : setTimeout;
-
-interface CacheEntry<T = unknown> {
+interface CacheEntry {
   last: number;
-  size: number;
-  value: T;
+  value: unknown;
+  owner?: object;
+}
+
+interface OwnerCharge {
+  bytes: number;
+  refs: number;
+}
+
+export function jsonByteLength(value: unknown): number {
+  if (value == null) return 0;
+  try {
+    return JSON.stringify(value).length;
+  } catch {
+    return 0;
+  }
 }
 
 /**
@@ -18,153 +28,96 @@ export function voidCache(): Cache {
   return {
     get: () => undefined,
     set: (key, value) => value,
-    delete: () => {},
     clear: () => {}
   };
 }
 
 /**
- * Create a new cache that uses an LRU eviction policy, capped by the
- * total memory usage. Eviction is deferred to browser idle time via
- * `requestIdleCallback`. Each eviction pass drops any TTL-expired entries and
- * the single least-recently-used entry.
- *
- * `maxEntries` is implemented as a failsafe to cap entry count
- *
+ * Create a new cache that evicts least recently used entries once cached bytes
+ * exceed a budget.
  * @param options Cache options.
- * @param options.maxBytes Maximum total observed bytes across all entries.
- * @param options.maxEntries Maximum number of cache entries.
+ * @param options.maxBytes Maximum number of bytes to retain.
  * @param options.ttl Time-to-live for cache entries.
  * @returns An LRU cache implementation.
  */
 export function lruCache({
-  maxBytes = 32 * 1024 * 1024, // 32 MB of allocated default memory
-  maxEntries = 10_000, // backstop for entries that report zero bytes
-  ttl = 3 * 60 * 60 * 1000 // 3 hours
+  maxBytes = 32 * 1024 * 1024,
+  ttl = 3 * 60 * 60 * 1000
 }: {
   maxBytes?: number;
-  maxEntries?: number;
   ttl?: number;
 } = {}): Cache {
-  let cache = new Map<string, CacheEntry>();
-  let totalBytes = 0;
-  /**
-   * Looks through our LRU cache and removes any expired queries and the current LRU query.
-   */
-  function evict(): void {
-    const expire = performance.now() - ttl;
-    let lruKey: string | null = null;
-    let lruLast = Infinity;
+  let entries = new Map<string, CacheEntry>();
+  let ownerCharges = new Map<object, OwnerCharge>();
+  let total = 0;
 
-    for (const [key, entry] of cache) {
-      const { last } = entry;
-
-      if (last < lruLast) {
-        lruKey = key;
-        lruLast = last;
-      }
-      
-      // remove expired queries since they likely will not be used again
-      if (expire > last) {
-        totalBytes -= entry.size;
-        cache.delete(key);
-      }
+  function charge(owner: object, bytes: number): void {
+    const record = ownerCharges.get(owner);
+    if (record) {
+      record.refs += 1;
+    } else {
+      ownerCharges.set(owner, { bytes, refs: 1 });
+      total += bytes;
     }
+  }
 
-    if (lruKey) {
-      const lru = cache.get(lruKey);
-      if (lru) totalBytes -= lru.size;
-      cache.delete(lruKey);
+  function release(owner?: object): void {
+    if (!owner) return;
+    const record = ownerCharges.get(owner)!;
+    if (--record.refs === 0) {
+      ownerCharges.delete(owner);
+      total -= record.bytes;
+    }
+  }
+
+  function remove(key: string): void {
+    const entry = entries.get(key);
+    if (entry) {
+      entries.delete(key);
+      release(entry.owner);
     }
   }
 
   return {
     get(key: string): unknown {
-      const entry = cache.get(key);
-      if (entry) {
-        entry.last = performance.now();
-        return entry.value;
+      const entry = entries.get(key);
+      if (!entry) return;
+
+      const now = performance.now();
+      if (now - entry.last > ttl) {
+        remove(key);
+        return;
       }
+
+      entry.last = now;
+      entries.delete(key);
+      entries.set(key, entry);
+      return entry.value;
     },
-    set(key: string, value: unknown): unknown {
-      const size = (value as { byteLength?: number } | null)?.byteLength ?? 0;
-      const prior = cache.get(key);
-      if (prior) totalBytes -= prior.size;
+    set(key: string, value: unknown, bytes = 0, owner?: object): unknown {
+      remove(key);
+      if (bytes > maxBytes) return value;
 
-      if (size > maxBytes) {
-        if (prior) cache.delete(key);
-        return value;
+      const entry: CacheEntry = { last: performance.now(), value };
+      if (bytes > 0) {
+        entry.owner = owner
+          ?? (typeof value === 'object' && value !== null ? value : entry);
+        charge(entry.owner, bytes);
+      }
+      entries.set(key, entry);
+
+      while (total > maxBytes) {
+        const oldest = entries.keys().next();
+        if (oldest.done) break;
+        remove(oldest.value);
       }
 
-      cache.set(key, { last: performance.now(), size, value });
-      totalBytes += size;
-      if (totalBytes > maxBytes || cache.size > maxEntries) requestIdle(evict);
       return value;
     },
-    delete(key: string): void {
-      const entry = cache.get(key);
-      if (entry) {
-        totalBytes -= entry.size;
-        cache.delete(key);
-      }
-    },
     clear(): void {
-      cache = new Map();
-      totalBytes = 0;
+      entries = new Map();
+      ownerCharges = new Map();
+      total = 0;
     }
   };
-}
-
-/**
- * Attach a non-enumerable `byteLength` property to a cached value so that
- * caches can estimate size.
- * Called by the connectors on JSON payloads and by `decodeIPC` on Arrow
- * Tables.
- *
- * The property is non-enumerable so it does not appear in iteration,
- * spread, or JSON serialization of the value.
- *
- * @param value The value to annotate. Must be a non-null object.
- * @param bytes The byte size to record. 
- * @returns The annotated value.
- */
-export function annotateByteLength<T extends object>(value: T, bytes: number): T {
-  if (Number.isFinite(bytes) && bytes >= 0) {
-    Object.defineProperty(value, 'byteLength', {
-      value: bytes,
-      enumerable: false,
-      writable: false,
-      configurable: true
-    });
-  }
-  return value;
-}
-
-/**
- * Enforce the cache-value contract.
- *
- * A value handed to the cache must be one of the following:
- *   - a Promise (transient — will be replaced by resolved data),
- *   - null/undefined (exec results, tiny by definition),
- *   - a primitive,
- *   - an object annotated with a non-negative `byteLength`.
- *
- * @param value The value about to be stored in the cache.
- * @param context Short label identifying the call site included in the error message.
- */
-export function assertCacheable(value: unknown, context: string): void {
-  if (value != null && typeof (value as { then?: unknown }).then === 'function') {
-    return;
-  }
-  if (value == null) return;
-
-  if (typeof value !== 'object') return;
-  const size = (value as { byteLength?: unknown }).byteLength;
-  if (typeof size !== 'number' || !Number.isFinite(size) || size < 0) {
-    throw new Error(
-      `[${context}] cache contract violation: value must have a non-negative ` +
-      `byteLength to be cacheable (got byteLength=${String(size)}). ` +
-      `Annotate with annotateByteLength before returning.`
-    );
-  }
 }
