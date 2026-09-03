@@ -116,6 +116,56 @@ describe('coordinator', () => {
     expect(sent.at(-1)).toMatch(/^SELECT/);
   });
 
+  it('keeps at most updateWindow selection updates in flight per client', async () => {
+    const sent: string[] = [];
+    const resolvers: ((value: unknown) => void)[] = [];
+
+    // Mock the connector: hold every query until resolved by the test
+    const connector = {
+      query(req: JSONQueryRequest) {
+        sent.push(req.sql);
+        return new Promise(resolve => resolvers.push(resolve));
+      },
+    } as unknown as Connector;
+
+    const coord = new Coordinator(connector, {
+      logger: null,
+      cache: false,
+      consolidate: false,
+      preagg: { enabled: false },
+      updateWindow: 2
+    });
+    const filterBy = Selection.single();
+    const client = new TestClient(Query.from('t').select('x'), filterBy);
+    coord.connect(client);
+    await wait();
+    resolvers.shift()!([]);
+    await client.pending;
+    sent.length = 0;
+
+    // brush moves arrive as separate events
+    for (const value of [1, 2, 3, 4]) {
+      filterBy.update(clausePoint('x', value, { source: {} }));
+      await wait();
+    }
+
+    // two updates leave, the rest wait
+    expect(sent).toHaveLength(2);
+    expect(sent[0]).toContain('IN (1)');
+    expect(sent[1]).toContain('IN (2)');
+
+    // a freed slot queries the newest value only
+    resolvers.shift()!([]);
+    await wait();
+    expect(sent).toHaveLength(3);
+    expect(sent[2]).toContain('IN (4)');
+
+    resolvers.shift()!([]);
+    resolvers.shift()!([]);
+    await wait();
+    expect(sent).toHaveLength(3);
+  });
+
   it('awaits initializing clients before selection updates', async () => {
     const events: string[] = [];
 

@@ -52,6 +52,8 @@ export class Coordinator {
   public filterGroups = new Map<Selection, FilterGroupEntry>;
   protected _logger: Logger = voidLogger();
   private lastUpdate = new WeakMap<MosaicClient, Promise<unknown>>();
+  /** How many selection updates a client may have in flight. */
+  public updateWindow: number;
 
   /**
    * @param db Database connector. Defaults to a web socket connection.
@@ -61,6 +63,8 @@ export class Coordinator {
    * @param options.cache Boolean flag to enable/disable query caching.
    * @param options.consolidate Boolean flag to enable/disable query consolidation.
    * @param options.preagg Options for the Pre-aggregator.
+   * @param options.updateWindow How many selection updates a client may have
+   *  in flight. A newer selection value replaces one still waiting. Defaults to 2.
    */
   constructor(
     db: Connector = new SocketConnector(),
@@ -70,6 +74,7 @@ export class Coordinator {
       cache?: boolean;
       consolidate?: boolean;
       preagg?: PreAggregateOptions;
+      updateWindow?: number;
     } = {}
   ) {
     const {
@@ -77,8 +82,10 @@ export class Coordinator {
       manager = new QueryManager(),
       cache = true,
       consolidate = true,
-      preagg = {}
+      preagg = {},
+      updateWindow = 2
     } = options;
+    this.updateWindow = updateWindow;
     this.manager = manager;
     this.manager.cache(cache);
     this.manager.consolidate(consolidate);
@@ -381,53 +388,88 @@ function activateSelection(
   }
 }
 
+const selectionUpdates = new WeakMap<MosaicClient, { inflight: number; dirty: boolean }>();
+
 /**
- * Process an updated selection value, querying filtered data for any
- * associated clients.
+ * Process an updated selection value by updating each associated client.
  * @param mc The Mosaic coordinator.
  * @param selection A selection.
- * @returns A Promise that resolves when the update completes.
  */
-function updateSelection(
-  mc: Coordinator,
-  selection: Selection
-): Promise<PromiseSettledResult<unknown>[]> {
-  const { preaggregator, filterGroups } = mc;
-  const { clients } = filterGroups!.get(selection)!;
+function updateSelection(mc: Coordinator, selection: Selection): void {
+  const { clients } = mc.filterGroups!.get(selection)!;
+  for (const client of clients) {
+    requestSelectionUpdate(mc, selection, client);
+  }
+}
+
+/**
+ * Update a client for the current value of a selection, keeping at most
+ * `updateWindow` updates in flight. While the window is full the request
+ * is deferred, and only the newest selection value is queried once a
+ * slot frees up.
+ * @param mc The Mosaic coordinator.
+ * @param selection A selection.
+ * @param client A client filtered by the selection.
+ */
+function requestSelectionUpdate(mc: Coordinator, selection: Selection, client: MosaicClient): void {
+  let state = selectionUpdates.get(client);
+  if (!state) {
+    state = { inflight: 0, dirty: false };
+    selectionUpdates.set(client, state);
+  }
+  if (state.inflight >= mc.updateWindow) {
+    state.dirty = true;
+    return;
+  }
+  state.inflight += 1;
+  updateClientSelection(mc, selection, client).finally(() => {
+    state.inflight -= 1;
+    if (state.dirty) {
+      state.dirty = false;
+      requestSelectionUpdate(mc, selection, client);
+    }
+  });
+}
+
+/**
+ * Query filtered data for a client, using pre-aggregation when possible.
+ * @param mc The Mosaic coordinator.
+ * @param selection A selection.
+ * @param client A client filtered by the selection.
+ */
+async function updateClientSelection(mc: Coordinator, selection: Selection, client: MosaicClient): Promise<void> {
+  // if client is not enabled, register a request for later
+  if (!client.enabled) {
+    await client.requestQuery();
+    return;
+  }
+
+  // if client is initializing, wait for it to complete
+  if (!client.initialized) await client.pending;
+
+  // check if we can handle selection update via preaggregation
   const { active } = selection;
-  return Promise.allSettled(Array.from(clients, async (client: MosaicClient) => {
-    // if client is not enabled, register a request for later
-    if (!client.enabled) {
-      await client.requestQuery();
-      return;
-    }
+  const info = mc.preaggregator.request(client, selection, active);
 
-    // if client is initializing, wait for it to complete
-    if (!client.initialized) await client.pending;
-
-    // check if we can handle selection update via preaggregation
-    const info = preaggregator.request(client, selection, active);
-
-    if (info?.skip) {
-      // skip due to cross-filtering
-      return;
-    }
-
-    if (info?.result) {
-      // query the pre-aggregated table once it exists
-      const created = await info.result.then(() => true, () => false);
-      if (created) {
-        const result = await mc.updateClient(client, info.query(active));
-        if (!(result instanceof QueryError)) return;
-      }
-      // if creation or the update fails, fall through to standard query
-      // this safeguards against potential preagg bugs
-    }
-
-    // generate and issue standard query
-    const filter = selection.predicate(client);
+  if (info?.skip) {
     // skip due to cross-filtering
-    if (!filter) return; 
-    await mc.updateClient(client, client.query(filter)!);
-  }));
+    return;
+  }
+
+  if (info?.result) {
+    // query the pre-aggregated table once it exists
+    const created = await info.result.then(() => true, () => false);
+    if (created) {
+      const result = await mc.updateClient(client, info.query(active));
+      if (!(result instanceof QueryError)) return;
+    }
+    // if creation or the update fails, fall through to standard query
+    // this safeguards against potential preagg bugs
+  }
+
+  // generate and issue standard query
+  const filter = selection.predicate(client);
+  // skip due to cross-filtering
+  if (!filter) return;
+  await mc.updateClient(client, client.query(filter)!);
 }
