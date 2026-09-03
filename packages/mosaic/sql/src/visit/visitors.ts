@@ -20,6 +20,22 @@ const windowRegExp = /\)\s*over(\s*\(|\s+[\w"])/;
 // regexp to match the start of a scalar subquery
 const subqueryRegExp = /\(\s*select\b/;
 
+// paren counting does not recognize string literals, so a ')' quoted
+// inside a subquery ends that subquery early
+function stripSubqueries(s: string) {
+  for (let i = s.search(subqueryRegExp); i >= 0; i = s.search(subqueryRegExp)) {
+    let depth = 1;
+    let end = i + 1;
+    while (depth > 0 && end < s.length) {
+      const c = s[end++];
+      if (c === '(') ++depth;
+      else if (c === ')') --depth;
+    }
+    s = s.slice(0, i) + s.slice(end);
+  }
+  return s;
+}
+
 function hasVerbatimAggregate(s: string) {
   return s
     .split(funcRegExp)
@@ -45,11 +61,7 @@ export function isAggregateExpression(root: SQLNode) {
         return -1;
       case FRAGMENT:
       case VERBATIM: {
-        let s = `${node}`.toLowerCase();
-
-        // strip away scalar subquery content
-        const sub = s.search(subqueryRegExp);
-        if (sub >= 0) s = s.slice(0, sub);
+        const s = stripSubqueries(`${node}`.toLowerCase());
 
         // exit if expression includes windowing
         if (windowRegExp.test(s)) return -1;

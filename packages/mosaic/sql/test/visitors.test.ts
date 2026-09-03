@@ -140,6 +140,33 @@ describe('Visitor functions', () => {
     }
   });
 
+  it('include aggregates written after a scalar subquery', async () => {
+    const variants = [
+      '(select max(num2) from t2) + sum(num1)',
+      '(select max(num2) from t2) + (select min(num2) from t2) + sum(num1)',
+      '2 * (select max(num2) from t2) + sum(num1)',
+      '(select max(num2) from t2 where num2 > (select min(num2) from t2)) + sum(num1)',
+      '(\n  SELECT max(num2) FROM t2\n) + sum(num1)',
+      'sum(num1) + (select max(num2) from t2)',
+      'sum(num1) + (select max(num2) from t2) + count(num1)'
+    ];
+    for (const text of variants) {
+      const expr = asVerbatim(text);
+      expect(isAggregateExpression(expr)).toBe(2);
+      await expect(markStyleQuery({ y: expr, d: sql`txt2` })).toBeValidQuery(
+        `SELECT ${text} AS "y", txt2 AS "d" FROM "t1" GROUP BY "d"`
+      );
+    }
+  });
+
+  it('exclude subquery aggregates from surrounding row-level text', async () => {
+    const expr = sql`num1 + (select max(num2) from t2) * 2`;
+    expect(isAggregateExpression(expr)).toBe(0);
+    await expect(markStyleQuery({ y: expr, d: sql`txt2` })).toBeValidQuery(
+      'SELECT num1 + (select max(num2) from t2) * 2 AS "y", txt2 AS "d" FROM "t1"'
+    );
+  });
+
   it('include named-window verbatim window detection', async () => {
     const expr = sql`avg(num1) OVER win`;
     expect(isAggregateExpression(expr)).toBe(0);
