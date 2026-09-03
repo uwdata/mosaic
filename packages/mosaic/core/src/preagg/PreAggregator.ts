@@ -220,7 +220,10 @@ export class PreAggregator {
         client.query(filter) as SelectQuery,
         active, preaggCols, schema
       );
-      this.schemaReady ??= mc.exec(createSchema(schema));
+      this.schemaReady ??= mc.exec(createSchema(schema)).catch((e: Error) => {
+        this.schemaReady = null;
+        throw e;
+      });
       _info.result = this.schemaReady.then(
         () => mc.exec(createTable(_info.table, _info.create, { temp: false }))
       );
