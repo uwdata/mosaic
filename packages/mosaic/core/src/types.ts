@@ -87,6 +87,7 @@ export interface Cache {
   get(key: string): unknown;
   set(key: string, value: unknown, bytes?: number, owner?: object): unknown;
   clear(): void;
+  bytes(): number;
 }
 
 /**

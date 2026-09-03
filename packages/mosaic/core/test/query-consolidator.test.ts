@@ -122,7 +122,8 @@ describe('QueryConsolidationCaching', () => {
     const cache: Cache = {
       get: () => undefined,
       set: (...args) => (calls.push(args), args[1]),
-      clear: () => {}
+      clear: () => {},
+      bytes: () => 0
     };
     const c = consolidator(entry => {
       if (entry.request.cache === false) entry.result.fulfill(data);
