@@ -51,6 +51,7 @@ export class Coordinator {
   public clients = new Set<MosaicClient>;
   public filterGroups = new Map<Selection, FilterGroupEntry>;
   protected _logger: Logger = voidLogger();
+  private lastUpdate = new WeakMap<MosaicClient, Promise<unknown>>();
 
   /**
    * @param db Database connector. Defaults to a web socket connection.
@@ -233,8 +234,9 @@ export class Coordinator {
   // -- Client Management ----
 
   /**
-   * Update client data by submitting the given query and returning the()
-   * data (or error) to the client.
+   * Update client data by submitting the given query and returning the
+   * data (or error) to the client. A client receives results in the order
+   * its queries were issued, independent of other clients.
    * @param client A Mosaic client.
    * @param query The data query.
    * @param priority The query priority.
@@ -246,9 +248,13 @@ export class Coordinator {
     priority: number = Priority.Normal
   ): Promise<unknown> {
     client.queryPending();
-    return client._pending = this.query(query, { priority })
+    const prior = this.lastUpdate.get(client);
+    const update = this.query(query, { priority })
       .then(
-        data => client.queryResult(data).update(),
+        async data => {
+          await prior;
+          return client.queryResult(data).update();
+        },
         err => {
           const e = new QueryError(err, query);
           this._logger?.error(e);
@@ -257,6 +263,8 @@ export class Coordinator {
         }
       )
       .catch(err => this._logger?.error(err));
+    this.lastUpdate.set(client, update);
+    return client._pending = update;
   }
 
   /**
@@ -405,12 +413,14 @@ function updateSelection(
       return;
     }
 
-    if (info?.result) {  
-      // generate and issue preaggregate update query
-      const query = info.query(active);
-      const result = await mc.updateClient(client, query);
-      if (!(result instanceof QueryError)) return;
-      // if preaggregate update fails, fall through to standard query
+    if (info?.result) {
+      // query the pre-aggregated table once it exists
+      const created = await info.result.then(() => true, () => false);
+      if (created) {
+        const result = await mc.updateClient(client, info.query(active));
+        if (!(result instanceof QueryError)) return;
+      }
+      // if creation or the update fails, fall through to standard query
       // this safeguards against potential preagg bugs
     }
 
