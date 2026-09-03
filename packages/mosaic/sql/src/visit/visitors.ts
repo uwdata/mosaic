@@ -11,8 +11,8 @@ const aggrRegExp = new RegExp(`^(${aggregateNames.join('|')})$`);
 
 // regexp to tokenize sql text in order to find function calls
 // includes checks to avoid analyzing text within quoted strings
-// function call tokens will have a pattern like "name(".
-const funcRegExp = /(\\'|\\"|"(?:\\"|[^"])*"|'(?:\\'|[^'])*'|\w+\()/g;
+// function call tokens will have a pattern like "name(" or "name (".
+const funcRegExp = /(\\'|\\"|"(?:\\"|[^"])*"|'(?:\\'|[^'])*'|\w+\s*\()/g;
 
 // regexp to match window function calls with inline or named definitions
 const windowRegExp = /\)\s*over(\s*\(|\s+[\w"])/;
@@ -20,7 +20,7 @@ const windowRegExp = /\)\s*over(\s*\(|\s+[\w"])/;
 function hasVerbatimAggregate(s: string) {
   return s
     .split(funcRegExp)
-    .some(tok => tok.endsWith('(') && aggrRegExp.test(tok.slice(0, -1)));
+    .some(tok => tok.endsWith('(') && aggrRegExp.test(tok.slice(0, -1).trim()));
 }
 
 /**
