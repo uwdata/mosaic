@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { Query, TableRefNode, createTable } from '@uwdata/mosaic-sql';
 import { QueryManager } from '../src/QueryManager.js';
+import type { Connector } from '../src/connectors/Connector.js';
 import { QueryResult, QueryState } from '../src/util/query-result.js';
 import { QueryRequest } from '../src/types.js';
 
@@ -14,15 +15,16 @@ interface Submitted {
   reject: (reason?: unknown) => void;
 }
 
-function managerWithMockConnector(maxConcurrentRequests?: number) {
+function mockConnector(onQuery: (sql: string, resolve: Submitted['resolve'], reject: Submitted['reject']) => void): Connector {
+  return {
+    query: ({ sql }: { sql: string }) => new Promise<unknown>((resolve, reject) => onQuery(sql, resolve, reject))
+  } as unknown as Connector;
+}
+
+function managerWithMockConnector(maxConcurrentRequests?: number, maxConcurrentExecs?: number) {
   const submitted: Submitted[] = [];
-  const manager = new QueryManager(maxConcurrentRequests);
-  manager.connector({
-    // @ts-expect-error mock connector
-    query: ({ sql }: { sql: string }) => new Promise((resolve, reject) => {
-      submitted.push({ sql, resolve, reject });
-    })
-  });
+  const manager = new QueryManager(maxConcurrentRequests, maxConcurrentExecs);
+  manager.connector(mockConnector((sql, resolve, reject) => submitted.push({ sql, resolve, reject })));
   return { manager, submitted };
 }
 
@@ -77,8 +79,21 @@ describe('QueryManager', () => {
     expect(await read).toEqual([{ a: 1 }]);
   });
 
-  it('serializes writes to the same table and parallelizes writes to different tables', async () => {
+  it('runs execs one at a time by default', async () => {
     const { manager, submitted } = managerWithMockConnector();
+
+    manager.request({ type: 'exec', query: createTable(new TableRefNode(['t1']), Query.select('a').from('base')) });
+    manager.request({ type: 'exec', query: createTable(new TableRefNode(['t2']), Query.select('a').from('base')) });
+    manager.request({ type: 'arrow', query: Query.select('x').from('other') });
+    expect(submitted.map(s => s.sql.split(' ')[0])).toEqual(['CREATE', 'SELECT']);
+
+    submitted[0].resolve();
+    await wait();
+    expect(submitted).toHaveLength(3);
+  });
+
+  it('serializes writes to the same table and parallelizes writes to different tables', async () => {
+    const { manager, submitted } = managerWithMockConnector(32, 2);
     const create = (name: string) => manager.request({
       type: 'exec',
       query: createTable(new TableRefNode(['mosaic', name]), Query.select('a').from('base'))
@@ -137,11 +152,9 @@ describe('QueryManager', () => {
 
   it('limits the number of concurrent requests', async () => {
     const queryManager = new QueryManager(2);
-    const resolvers: ((value: unknown) => void)[] = [];
+    const resolvers: Submitted['resolve'][] = [];
 
-    queryManager.connector({
-      query: () => new Promise(resolve => resolvers.push(resolve))
-    });
+    queryManager.connector(mockConnector((_, resolve) => resolvers.push(resolve)));
 
     const results = [0, 1, 2].map(i =>
       queryManager.request({ type: 'arrow', query: `SELECT ${i}` })
@@ -156,11 +169,9 @@ describe('QueryManager', () => {
 
   it('resolves results as they complete', async () => {
     const queryManager = new QueryManager();
-    const resolvers: ((value: unknown) => void)[] = [];
+    const resolvers: Submitted['resolve'][] = [];
 
-    queryManager.connector({
-      query: () => new Promise(resolve => resolvers.push(resolve))
-    });
+    queryManager.connector(mockConnector((_, resolve) => resolvers.push(resolve)));
 
     const first = queryManager.request({ type: 'arrow', query: 'SELECT 0' });
     const second = queryManager.request({ type: 'arrow', query: 'SELECT 1' });

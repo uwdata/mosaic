@@ -32,8 +32,7 @@ export async function astToDOM(ast, options) {
     if (query) queries.push(query);
   }
 
-  // start extension and data loading; plots are created without waiting,
-  // as the coordinator holds their queries until the tables they read exist
+  // the coordinator holds each plot's queries until the tables they read exist
   const loading = Promise.all(queries.map(query => ctx.coordinator.exec(query)));
 
   // process param/selection definitions

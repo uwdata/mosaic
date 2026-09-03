@@ -64,8 +64,7 @@ export class Coordinator {
    * @param options.consolidate Boolean flag to enable/disable query consolidation.
    * @param options.preagg Options for the Pre-aggregator.
    * @param options.updateWindow How many selection updates a client may have
-   *  in flight, capped by the connector's concurrency. A newer selection value
-   *  replaces one still waiting. Defaults to 2.
+   *  in flight, capped by the connector's concurrency. Defaults to 1.
    */
   constructor(
     db: Connector = new SocketConnector(),
@@ -84,7 +83,7 @@ export class Coordinator {
       cache = true,
       consolidate = true,
       preagg = {},
-      updateWindow = 2
+      updateWindow = 1
     } = options;
     this.updateWindow = updateWindow;
     this.manager = manager;
@@ -263,7 +262,8 @@ export class Coordinator {
           await prior;
           return client.queryResult(data).update();
         },
-        err => {
+        async err => {
+          await prior;
           const e = new QueryError(err, query);
           this._logger?.error(e);
           client.queryError(e);
@@ -407,30 +407,38 @@ function updateSelection(mc: Coordinator, selection: Selection): void {
  * Update a client for the current value of a selection, keeping at most
  * `updateWindow` updates in flight. While the window is full the request
  * is deferred, and only the newest selection value is queried once a
- * slot frees up.
+ * slot frees up. A deferred update is not skipped for a cross-filter
+ * source, as the value it missed came from another source.
  * @param mc The Mosaic coordinator.
  * @param selection A selection.
  * @param client A client filtered by the selection.
+ * @param deferred Whether this update was deferred by a full window.
  */
-function requestSelectionUpdate(mc: Coordinator, selection: Selection, client: MosaicClient): void {
+function requestSelectionUpdate(mc: Coordinator, selection: Selection, client: MosaicClient, deferred = false): void {
   let state = selectionUpdates.get(client);
   if (!state) {
     state = { inflight: 0, dirty: false };
     selectionUpdates.set(client, state);
   }
-  const window = Math.min(mc.updateWindow, mc.manager.connector()?.concurrency ?? Infinity);
+  const window = Math.max(1, Math.min(mc.updateWindow, mc.manager.connector()?.concurrency ?? Infinity));
   if (state.inflight >= window) {
-    state.dirty = true;
+    const { active } = selection;
+    if (!active || !selection.skip(client, active)) state.dirty = true;
     return;
   }
   state.inflight += 1;
-  updateClientSelection(mc, selection, client).finally(() => {
-    state.inflight -= 1;
-    if (state.dirty) {
-      state.dirty = false;
-      requestSelectionUpdate(mc, selection, client);
-    }
-  });
+  const update = updateClientSelection(mc, selection, client, deferred)
+    .catch(err => mc.logger().error(err))
+    .finally(() => {
+      state.inflight -= 1;
+      if (state.dirty) {
+        state.dirty = false;
+        if (mc.filterGroups.get(selection)?.clients.has(client)) {
+          requestSelectionUpdate(mc, selection, client, true);
+        }
+      }
+    });
+  if (client.initialized) client._pending = update;
 }
 
 /**
@@ -439,7 +447,7 @@ function requestSelectionUpdate(mc: Coordinator, selection: Selection, client: M
  * @param selection A selection.
  * @param client A client filtered by the selection.
  */
-async function updateClientSelection(mc: Coordinator, selection: Selection, client: MosaicClient): Promise<void> {
+async function updateClientSelection(mc: Coordinator, selection: Selection, client: MosaicClient, noSkip = false): Promise<void> {
   // if client is not enabled, register a request for later
   if (!client.enabled) {
     await client.requestQuery();
@@ -454,11 +462,8 @@ async function updateClientSelection(mc: Coordinator, selection: Selection, clie
   const info = mc.preaggregator.request(client, selection, active);
 
   if (info?.skip) {
-    // skip due to cross-filtering
-    return;
-  }
-
-  if (info?.result) {
+    if (!noSkip) return;
+  } else if (info?.result) {
     // query the pre-aggregated table once it exists
     const created = await info.result.then(() => true, () => false);
     if (created) {
@@ -469,9 +474,7 @@ async function updateClientSelection(mc: Coordinator, selection: Selection, clie
     // this safeguards against potential preagg bugs
   }
 
-  // generate and issue standard query
-  const filter = selection.predicate(client);
-  // skip due to cross-filtering
+  const filter = selection.predicate(client, noSkip);
   if (!filter) return;
   await mc.updateClient(client, client.query(filter)!);
 }

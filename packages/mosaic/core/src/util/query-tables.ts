@@ -35,7 +35,7 @@ function collectTables(root: SQLNode): Tables {
   return unknown ? null : tables;
 }
 
-/** Union of two table sets, where null absorbs everything. */
+/** Add the tables of b to a in place, where null means every table. */
 export function union(a: Tables, b: Tables): Tables {
   if (!a || !b) return null;
   for (const t of b) a.add(t);
@@ -63,7 +63,7 @@ export function queryTables({ query, type }: QueryRequest): QueryTables {
   for (const q of Array.isArray(query) ? query : [query]) {
     if (!q) continue;
     if (isCreateQuery(q)) {
-      writes = union(writes, new Set([q.name.name.toLowerCase()]));
+      writes?.add(q.name.name.toLowerCase());
       reads = union(reads, isQuery(q.query) ? collectTables(q.query) : null);
     } else if (isDescribeQuery(q)) {
       reads = union(reads, collectTables(q.query));

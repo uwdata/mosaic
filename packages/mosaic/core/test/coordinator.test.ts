@@ -79,7 +79,7 @@ describe('coordinator', () => {
 
     // Mock the connector: hold exec requests, answer reads immediately
     const connector = {
-      query(req: JSONQueryRequest) {
+      query(req: { type?: string; sql: string }) {
         sent.push(req.sql);
         return req.type === 'exec'
           ? new Promise(resolve => execs.push(resolve))
@@ -181,7 +181,8 @@ describe('coordinator', () => {
       logger: null,
       cache: false,
       consolidate: false,
-      preagg: { enabled: false }
+      preagg: { enabled: false },
+      updateWindow: 2
     });
     const filterBy = Selection.single();
     const client = new TestClient(Query.from('t').select('x'), filterBy);
@@ -201,6 +202,103 @@ describe('coordinator', () => {
     await wait();
     expect(sent).toHaveLength(2);
     expect(sent[1]).toContain('IN (3)');
+  });
+
+  it('stops re-requesting updates for a disconnected client', async () => {
+    const sent: string[] = [];
+    const resolvers: ((value: unknown) => void)[] = [];
+    const connector = {
+      query(req: JSONQueryRequest) {
+        sent.push(req.sql);
+        return new Promise(resolve => resolvers.push(resolve));
+      },
+    } as unknown as Connector;
+    const coord = new Coordinator(connector, {
+      logger: null,
+      cache: false,
+      consolidate: false,
+      preagg: { enabled: false }
+    });
+    const filterBy = Selection.single();
+    const client = new TestClient(Query.from('t').select('x'), filterBy);
+    coord.connect(client);
+    await wait();
+    resolvers.shift()!([]);
+    await client.pending;
+    sent.length = 0;
+
+    filterBy.update(clausePoint('x', 1, { source: {} }));
+    await wait();
+    filterBy.update(clausePoint('x', 2, { source: {} }));
+    await wait();
+    coord.disconnect(client);
+    resolvers.shift()!([]);
+    await wait();
+
+    expect(sent).toHaveLength(1);
+  });
+
+  it('logs a failing selection update instead of leaving it unhandled', async () => {
+    const errors: unknown[] = [];
+    const connector = { async query() { return []; } } as unknown as Connector;
+    const coord = new Coordinator(connector, {
+      logger: { error: (e: unknown) => errors.push(e), warn() {}, info() {}, log() {}, debug() {}, group() {}, groupCollapsed() {}, groupEnd() {} },
+      cache: false,
+      consolidate: false,
+      preagg: { enabled: false }
+    });
+    const filterBy = Selection.single();
+    const client = new TestClient(Query.from('t').select('x'), filterBy);
+    coord.connect(client);
+    await client.pending;
+    client.query = () => { throw new Error('bad query'); };
+
+    filterBy.update(clausePoint('x', 1, { source: {} }));
+    await wait();
+
+    expect(errors).toHaveLength(1);
+    expect((errors[0] as Error).message).toBe('bad query');
+  });
+
+  it('does not skip a deferred update because the client became the active source', async () => {
+    const sent: string[] = [];
+    const resolvers: ((value: unknown) => void)[] = [];
+    const connector = {
+      query(req: JSONQueryRequest) {
+        sent.push(req.sql);
+        return new Promise(resolve => resolvers.push(resolve));
+      },
+    } as unknown as Connector;
+    const coord = new Coordinator(connector, {
+      logger: null,
+      cache: false,
+      consolidate: false,
+      preagg: { enabled: false }
+    });
+    const filterBy = Selection.crossfilter();
+    const a = new TestClient(Query.from('t').select('x'), filterBy);
+    const b = new TestClient(Query.from('t').select('y'), filterBy);
+    coord.connect(a);
+    coord.connect(b);
+    await wait();
+    resolvers.splice(0).forEach(resolve => resolve([]));
+    await Promise.all([a.pending, b.pending]);
+    sent.length = 0;
+
+    // a brushes twice; b's first update is in flight when the second arrives
+    filterBy.update(clausePoint('x', 1, { source: a }));
+    await wait();
+    filterBy.update(clausePoint('x', 2, { source: a }));
+    await wait();
+    // b becomes the active source before its slot frees
+    filterBy.update(clausePoint('y', 5, { source: b }));
+    await wait();
+    resolvers.splice(0).forEach(resolve => resolve([]));
+    await wait();
+
+    // b still learns about x = 2; a queries y = 5
+    expect(sent.filter(sql => sql.includes('"y"') && sql.includes('IN (2)'))).toHaveLength(1);
+    expect(sent.filter(sql => sql.includes('"x"') && sql.includes('IN (5)'))).toHaveLength(1);
   });
 
   it('awaits initializing clients before selection updates', async () => {

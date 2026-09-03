@@ -20,11 +20,17 @@ export class QueryManager {
   private _logger: Logger;
   private _logQueries: boolean;
   private _consolidate: ReturnType<typeof consolidator> | null;
-  /** Tables written by requests submitted to the connector and not yet settled. */
-  private inflight: Map<QueryResult, Tables>;
+  private inflight: Map<QueryResult, ScheduledEntry>;
   private maxConcurrentRequests: number;
+  private maxConcurrentExecs: number;
 
-  constructor(maxConcurrentRequests: number = 32) {
+  /**
+   * @param maxConcurrentRequests How many requests may be in flight at once.
+   * @param maxConcurrentExecs How many exec requests may be in flight at once.
+   *  Each exec already uses all database cores, so running several at once
+   *  delays the first result without finishing the last one sooner.
+   */
+  constructor(maxConcurrentRequests: number = 32, maxConcurrentExecs: number = 1) {
     this.queue = new PriorityQueue(3);
     this.db = null;
     this.clientCache = null;
@@ -33,43 +39,45 @@ export class QueryManager {
     this._consolidate = null;
     this.inflight = new Map();
     this.maxConcurrentRequests = maxConcurrentRequests;
-  }
-
-  /** Requests submitted to the connector and not yet settled. */
-  get pendingResults(): QueryResult[] {
-    return Array.from(this.inflight.keys());
+    this.maxConcurrentExecs = maxConcurrentExecs;
   }
 
   /**
-   * Submit queued requests to the connector, up to the concurrency limit.
-   * A request waits while an earlier request writes a table it reads or
-   * writes. Raw SQL strings have unknown tables and conflict with everything.
+   * Submit queued requests to the connector, up to the concurrency limits.
+   * A request waits while an earlier request writes a table it reads or writes.
    */
   next(): void {
     let budget = this.maxConcurrentRequests - this.inflight.size;
     if (budget <= 0 || this.queue.isEmpty()) return;
 
     let writes: Tables = new Set();
-    for (const w of this.inflight.values()) writes = union(writes, w);
+    let execs = 0;
+    for (const { request, tables } of this.inflight.values()) {
+      writes = union(writes, tables.writes);
+      if (request.type === 'exec') execs += 1;
+    }
 
     const ready: ScheduledEntry[] = [];
     this.queue.remove(entry => {
       const { tables } = entry;
+      const exec = entry.request.type === 'exec';
       const blocked = budget <= 0
+        || (exec && execs >= this.maxConcurrentExecs)
         || intersects(tables.reads, writes)
         || intersects(tables.writes, writes);
       writes = union(writes, tables.writes);
       if (!blocked) {
         ready.push(entry);
         budget -= 1;
+        if (exec) execs += 1;
       }
       return !blocked;
     });
 
-    for (const { request, result, tables } of ready) {
-      this.inflight.set(result, tables.writes);
-      this.submit(request, result).finally(() => {
-        this.inflight.delete(result);
+    for (const entry of ready) {
+      this.inflight.set(entry.result, entry);
+      this.submit(entry.request, entry.result).finally(() => {
+        this.inflight.delete(entry.result);
         this.next();
       });
     }
