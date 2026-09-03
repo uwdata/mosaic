@@ -4,19 +4,24 @@ import { consolidator } from './QueryConsolidator.js';
 import { lruCache, voidCache } from './util/cache.js';
 import { PriorityQueue } from './util/priority-queue.js';
 import { QueryResult } from './util/query-result.js';
+import { intersects, queryTables, union, type QueryTables, type Tables } from './util/query-tables.js';
 import { voidLogger } from './util/void-logger.js';
 
 export const Priority = Object.freeze({ High: 0, Normal: 1, Low: 2 });
 
+interface ScheduledEntry extends QueryEntry {
+  tables: QueryTables;
+}
+
 export class QueryManager {
-  private queue: PriorityQueue<QueryEntry>;
+  private queue: PriorityQueue<ScheduledEntry>;
   private db: Connector | null;
   private clientCache: Cache | null;
   private _logger: Logger;
   private _logQueries: boolean;
   private _consolidate: ReturnType<typeof consolidator> | null;
-  /** Requests submitted to the connector and not yet settled. */
-  public pendingResults: QueryResult[];
+  /** Tables written by requests submitted to the connector and not yet settled. */
+  private inflight: Map<QueryResult, Tables>;
   private maxConcurrentRequests: number;
 
   constructor(maxConcurrentRequests: number = 32) {
@@ -26,21 +31,45 @@ export class QueryManager {
     this._logger = voidLogger();
     this._logQueries = false;
     this._consolidate = null;
-    this.pendingResults = [];
+    this.inflight = new Map();
     this.maxConcurrentRequests = maxConcurrentRequests;
+  }
+
+  /** Requests submitted to the connector and not yet settled. */
+  get pendingResults(): QueryResult[] {
+    return Array.from(this.inflight.keys());
   }
 
   /**
    * Submit queued requests to the connector, up to the concurrency limit.
-   * Dependencies between queries are the responsibility of the issuer:
-   * await a query result before issuing queries that depend on it.
+   * A request waits while an earlier request writes a table it reads or
+   * writes. Raw SQL strings have unknown tables and conflict with everything.
    */
   next(): void {
-    while (!this.queue.isEmpty() && this.pendingResults.length < this.maxConcurrentRequests) {
-      const { request, result } = this.queue.next()!;
-      this.pendingResults.push(result);
+    let budget = this.maxConcurrentRequests - this.inflight.size;
+    if (budget <= 0 || this.queue.isEmpty()) return;
+
+    let writes: Tables = new Set();
+    for (const w of this.inflight.values()) writes = union(writes, w);
+
+    const ready: ScheduledEntry[] = [];
+    this.queue.remove(entry => {
+      const { tables } = entry;
+      const blocked = budget <= 0
+        || intersects(tables.reads, writes)
+        || intersects(tables.writes, writes);
+      writes = union(writes, tables.writes);
+      if (!blocked) {
+        ready.push(entry);
+        budget -= 1;
+      }
+      return !blocked;
+    });
+
+    for (const { request, result, tables } of ready) {
+      this.inflight.set(result, tables.writes);
       this.submit(request, result).finally(() => {
-        this.pendingResults.splice(this.pendingResults.indexOf(result), 1);
+        this.inflight.delete(result);
         this.next();
       });
     }
@@ -52,7 +81,7 @@ export class QueryManager {
    * @param priority The query priority, defaults to `Priority.Normal`.
    */
   enqueue(entry: QueryEntry, priority: number = Priority.Normal): void {
-    this.queue.insert(entry, priority);
+    this.queue.insert({ ...entry, tables: queryTables(entry.request) }, priority);
     this.next();
   }
 
@@ -184,11 +213,12 @@ export class QueryManager {
         return false;
       });
 
-      for (const result of this.pendingResults) {
+      for (const result of this.inflight.keys()) {
         if (set.has(result)) {
           result.reject('Canceled');
         }
       }
+      this.next();
     }
   }
 
@@ -198,7 +228,7 @@ export class QueryManager {
       return true;
     });
 
-    for (const result of this.pendingResults) {
+    for (const result of this.inflight.keys()) {
       result.reject('Cleared');
     }
   }
