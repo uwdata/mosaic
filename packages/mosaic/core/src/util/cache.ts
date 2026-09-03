@@ -19,7 +19,8 @@ export function voidCache(): Cache {
   return {
     get: () => undefined,
     set: (key, value) => value,
-    clear: () => {}
+    clear: () => {},
+    bytes: () => 0
   };
 }
 
@@ -93,6 +94,9 @@ export function lruCache({
       entries = new Map();
       ownerCharges = new Map();
       total = 0;
+    },
+    bytes(): number {
+      return total;
     }
   };
 }

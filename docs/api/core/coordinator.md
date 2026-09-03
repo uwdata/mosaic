@@ -32,7 +32,7 @@ Create the least-recently-used query cache the coordinator uses by default. The 
 - _maxBytes_: The maximum number of bytes to retain (default 32 MiB).
 - _ttl_: The time in milliseconds after which an unused entry is discarded (default 3 hours).
 
-A custom cache object must implement `get(key)`, `set(key, value, bytes, owner)`, and `clear()`, where entries that share an _owner_ object hold the same underlying data.
+A custom cache object must implement `get(key)`, `set(key, value, bytes, owner)`, `clear()`, and `bytes()`, where entries that share an _owner_ object hold the same underlying data and `bytes()` returns the total bytes currently charged to the cache.
 
 ## databaseConnector
 
