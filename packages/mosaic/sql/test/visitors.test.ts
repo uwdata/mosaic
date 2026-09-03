@@ -125,6 +125,21 @@ describe('Visitor functions', () => {
     expect(isAggregateExpression(sql`num1 in (1, 2)`)).toBe(0);
   });
 
+  it('include whitespace-tolerant scalar subquery stripping', async () => {
+    const variants: [string, ExprNode][] = [
+      ['num1 / (\n  SELECT max(num1) FROM t1\n)', sql`num1 / (\n  SELECT max(num1) FROM t1\n)`],
+      ['num1 / (SELECT\n  max(num1) FROM t1)', sql`num1 / (SELECT\n  max(num1) FROM t1)`],
+      ['num1 / ( select max(num1) from t1)', sql`num1 / ( select max(num1) from t1)`],
+      ['num1 / (select max(num1) from t1)', sql`num1 / (select max(num1) from t1)`]
+    ];
+    for (const [text, expr] of variants) {
+      expect(isAggregateExpression(expr)).toBe(0);
+      await expect(markStyleQuery({ y: expr, d: sql`txt2` })).toBeValidQuery(
+        `SELECT ${text} AS "y", txt2 AS "d" FROM "t1"`
+      );
+    }
+  });
+
   it('include named-window verbatim window detection', async () => {
     const expr = sql`avg(num1) OVER win`;
     expect(isAggregateExpression(expr)).toBe(0);

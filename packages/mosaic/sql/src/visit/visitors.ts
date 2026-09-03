@@ -17,6 +17,9 @@ const funcRegExp = /(\\'|\\"|"(?:\\"|[^"])*"|'(?:\\'|[^'])*'|\w+\s*\()/g;
 // regexp to match window function calls with inline or named definitions
 const windowRegExp = /\)\s*over(\s*\(|\s+[\w"])/;
 
+// regexp to match the start of a scalar subquery
+const subqueryRegExp = /\(\s*select\b/;
+
 function hasVerbatimAggregate(s: string) {
   return s
     .split(funcRegExp)
@@ -45,7 +48,7 @@ export function isAggregateExpression(root: SQLNode) {
         let s = `${node}`.toLowerCase();
 
         // strip away scalar subquery content
-        const sub = s.indexOf('(select ');
+        const sub = s.search(subqueryRegExp);
         if (sub >= 0) s = s.slice(0, sub);
 
         // exit if expression includes windowing
