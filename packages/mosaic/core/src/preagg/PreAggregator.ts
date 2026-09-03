@@ -135,10 +135,8 @@ export class PreAggregator {
    */
   dropSchema(): Promise<unknown> {
     this.clear();
-    return this.schemaReady = this.mc.exec([
-      `DROP SCHEMA IF EXISTS "${this.schema}" CASCADE`,
-      createSchema(this.schema)
-    ]);
+    this.schemaReady = null;
+    return this.mc.exec(`DROP SCHEMA IF EXISTS "${this.schema}" CASCADE`);
   }
 
   /**
