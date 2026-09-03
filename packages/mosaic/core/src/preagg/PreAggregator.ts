@@ -60,6 +60,7 @@ export class PreAggregator {
   private mc: Coordinator;
   private _schema: string;
   private _enabled: boolean;
+  private schemaReady: Promise<unknown> | null;
 
   /**
    * Create a new manager of materialized views of pre-aggregated data.
@@ -75,6 +76,7 @@ export class PreAggregator {
     this.mc = coordinator;
     this._schema = schema;
     this._enabled = enabled;
+    this.schemaReady = null;
   }
 
   /**
@@ -110,6 +112,7 @@ export class PreAggregator {
     if (this._schema !== schema) {
       this.clear();
       this._schema = schema;
+      this.schemaReady = null;
     }
   }
 
@@ -132,7 +135,10 @@ export class PreAggregator {
    */
   dropSchema(): Promise<unknown> {
     this.clear();
-    return this.mc.exec(`DROP SCHEMA IF EXISTS "${this.schema}" CASCADE`);
+    return this.schemaReady = this.mc.exec([
+      `DROP SCHEMA IF EXISTS "${this.schema}" CASCADE`,
+      createSchema(this.schema)
+    ]);
   }
 
   /**
@@ -216,10 +222,10 @@ export class PreAggregator {
         client.query(filter) as SelectQuery,
         active, preaggCols, schema
       );
-      _info.result = mc.exec([
-        createSchema(schema),
-        createTable(_info.table, _info.create, { temp: false })
-      ]);
+      this.schemaReady ??= mc.exec(createSchema(schema));
+      _info.result = this.schemaReady.then(
+        () => mc.exec(createTable(_info.table, _info.create, { temp: false }))
+      );
       // if create query fails, log and mark as failed
       _info.result.catch((e: Error) => {
         mc.logger().error(e);
