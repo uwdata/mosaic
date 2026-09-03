@@ -64,7 +64,8 @@ export class Coordinator {
    * @param options.consolidate Boolean flag to enable/disable query consolidation.
    * @param options.preagg Options for the Pre-aggregator.
    * @param options.updateWindow How many selection updates a client may have
-   *  in flight. A newer selection value replaces one still waiting. Defaults to 2.
+   *  in flight, capped by the connector's concurrency. A newer selection value
+   *  replaces one still waiting. Defaults to 2.
    */
   constructor(
     db: Connector = new SocketConnector(),
@@ -417,7 +418,8 @@ function requestSelectionUpdate(mc: Coordinator, selection: Selection, client: M
     state = { inflight: 0, dirty: false };
     selectionUpdates.set(client, state);
   }
-  if (state.inflight >= mc.updateWindow) {
+  const window = Math.min(mc.updateWindow, mc.manager.connector()?.concurrency ?? Infinity);
+  if (state.inflight >= window) {
     state.dirty = true;
     return;
   }
