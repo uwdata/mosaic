@@ -41,7 +41,7 @@ The supported _options_ are:
 // Loads file.csv into the table "table1" with default options:
 // CREATE TABLE IF NOT EXISTS table1 AS
 //   SELECT *
-//   FROM read_csv('file.csv', auto_detect=true, sample_size=-1)
+//   FROM read_csv('file.csv', auto_detect=TRUE, sample_size=-1)
 loadCSV("table1", "file.csv");
 ```
 
@@ -65,7 +65,7 @@ The supported _options_ are:
 // Loads file.json into the table "table1" with default options:
 // CREATE TABLE IF NOT EXISTS table1 AS
 //   SELECT *
-//   FROM read_json('file.json', auto_detect=true, json_format='auto')
+//   FROM read_json('file.json', auto_detect=TRUE, json_format='auto')
 loadJSON("table1", "file.json");
 ```
 
