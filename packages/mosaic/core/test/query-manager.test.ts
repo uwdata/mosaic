@@ -65,7 +65,8 @@ describe('QueryManager', () => {
     queryManager.cache({
       get: key => store.get(key),
       set: (key, value, size) => (store.set(key, value), sizes.push(size), value),
-      clear: () => store.clear()
+      clear: () => store.clear(),
+      bytes: () => 0
     });
 
     let calls = 0;
