@@ -31,6 +31,7 @@ export function socketConnector(options?: SocketOptions) {
  * requests by position.
  */
 export class SocketConnector implements Connector {
+  readonly concurrency = 1;
   private _uri: string;
   private _queue: QueueItem[];
   private _connected: boolean;
