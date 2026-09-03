@@ -100,9 +100,7 @@ describe('MosaicClient', () => {
     ]);
     pending = [];
 
-    // wait for internal selection update to complete
-    // pending data promises may resolve before selection event queue advances
-    await selection.pending('value');
+    await client2.pending;
 
     // -- UPDATE SELECTION FROM CLIENT 2 --
 
