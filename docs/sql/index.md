@@ -155,7 +155,7 @@ import { loadCSV, loadParquet } from "@uwdata/mosaic-sql";
 // Loads file.csv into the table "table1" with default options:
 // CREATE TABLE IF NOT EXISTS table1 AS
 //   SELECT *
-//   FROM read_csv('file.csv', auto_detect=true, sample_size=-1)
+//   FROM read_csv('file.csv', auto_detect=TRUE, sample_size=-1)
 const q1 = loadCSV("table1", "file.csv");
 
 // Load named columns from a parquet file, filtered upon load:
