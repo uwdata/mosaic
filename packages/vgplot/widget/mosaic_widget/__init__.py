@@ -28,7 +28,7 @@ SLOW_QUERY_THRESHOLD = 5000
 
 
 class _QueryParams(TypedDict):
-    type: Literal["arrow", "exec", "json"]
+    type: Literal["arrow", "exec"]
     sql: str
     uuid: str  # name
     persist: NotRequired[bool]
@@ -154,10 +154,6 @@ class MosaicWidget(anywidget.AnyWidget):
             elif command == "exec":
                 self.con.execute(sql)
                 self.send({"type": "exec", "uuid": uuid})
-            elif command == "json":
-                result = self.con.query(sql).df()
-                json = result.to_dict(orient="records")
-                self.send({"type": "json", "uuid": uuid, "result": json})
             else:
                 msg = f"Unknown command {command}"
                 raise ValueError(msg)
