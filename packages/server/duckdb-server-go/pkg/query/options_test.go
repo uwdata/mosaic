@@ -93,7 +93,7 @@ func TestNewNormalizesCustomFunctionOptions(t *testing.T) {
 		require.NoError(t, connector.Close())
 	})
 
-	_, _, err = db.QueryJSON(t.Context(), "SELECT md5('mosaic')", nil, false)
+	_, _, err = db.QueryArrow(t.Context(), "SELECT md5('mosaic')", nil, false)
 	require.NoError(t, err)
 }
 

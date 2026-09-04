@@ -1,6 +1,7 @@
 package server
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -10,6 +11,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/apache/arrow-go/v18/arrow/ipc"
 	"github.com/coder/websocket"
 	"github.com/coder/websocket/wsjson"
 	"github.com/duckdb/duckdb-go/v2"
@@ -53,15 +55,32 @@ func (e failOnCallExecutor) QueryArrow(context.Context, string, []string, bool) 
 	return nil, false, e.fail("QueryArrow")
 }
 
-func (e failOnCallExecutor) QueryJSON(context.Context, string, []string, bool) (json.RawMessage, bool, error) {
-	return nil, false, e.fail("QueryJSON")
-}
-
 func (e failOnCallExecutor) fail(method string) error {
 	e.Helper()
 	err := fmt.Errorf("unexpected command executor call: %s", method)
 	e.Error(err)
 	return err
+}
+
+func arrowRows(t *testing.T, data []byte) []map[string]any {
+	t.Helper()
+
+	rdr, err := ipc.NewReader(bytes.NewReader(data))
+	require.NoError(t, err)
+	defer rdr.Release()
+
+	rows := []map[string]any{}
+	for rdr.Next() {
+		batchJSON, err := rdr.RecordBatch().MarshalJSON()
+		require.NoError(t, err)
+
+		var batch []map[string]any
+		require.NoError(t, json.Unmarshal(batchJSON, &batch))
+		rows = append(rows, batch...)
+	}
+	require.NoError(t, rdr.Err())
+
+	return rows
 }
 
 type webSocketTestServer struct {
@@ -146,7 +165,7 @@ func TestHandleHTTPPolicyErrors(t *testing.T) {
 			Include:         []string{"lower"},
 		}))
 		s := mustHandler(t, db)
-		req := httptest.NewRequest(http.MethodPost, "/", strings.NewReader(`{"type":"json","sql":"SELECT md5('mosaic')"}`))
+		req := httptest.NewRequest(http.MethodPost, "/", strings.NewReader(`{"type":"arrow","sql":"SELECT md5('mosaic')"}`))
 		res := httptest.NewRecorder()
 
 		s.ServeHTTP(res, req)
@@ -158,7 +177,7 @@ func TestHandleHTTPPolicyErrors(t *testing.T) {
 	t.Run("blocked function is forbidden", func(t *testing.T) {
 		db := setupTestDB(t, query.WithFunctionBlocklist([]string{"md5"}))
 		s := mustHandler(t, db)
-		req := httptest.NewRequest(http.MethodPost, "/", strings.NewReader(`{"type":"json","sql":"SELECT md5('mosaic')"}`))
+		req := httptest.NewRequest(http.MethodPost, "/", strings.NewReader(`{"type":"arrow","sql":"SELECT md5('mosaic')"}`))
 		res := httptest.NewRecorder()
 
 		s.ServeHTTP(res, req)
@@ -172,7 +191,7 @@ func TestHandleHTTPPolicyErrors(t *testing.T) {
 		require.NoError(t, db.Exec(t.Context(), "CREATE SCHEMA tenant_a; CREATE TABLE tenant_a.secret (value INTEGER)"))
 
 		s := mustHandler(t, db, WithSchemaMatchHeaders("X-Tenant"))
-		req := httptest.NewRequest(http.MethodPost, "/", strings.NewReader(`{"type":"json","sql":"SELECT * FROM tenant_a.secret"}`))
+		req := httptest.NewRequest(http.MethodPost, "/", strings.NewReader(`{"type":"arrow","sql":"SELECT * FROM tenant_a.secret"}`))
 		req.Header.Set("X-Tenant", "tenant_b")
 		res := httptest.NewRecorder()
 
@@ -198,7 +217,7 @@ func TestHandleHTTPPolicyErrors(t *testing.T) {
 	t.Run("unsupported statement under policy is a bad request", func(t *testing.T) {
 		db := setupTestDB(t, query.WithFunctionBlocklist([]string{"md5"}))
 		s := mustHandler(t, db)
-		req := httptest.NewRequest(http.MethodPost, "/", strings.NewReader(`{"type":"json","sql":"PRAGMA version"}`))
+		req := httptest.NewRequest(http.MethodPost, "/", strings.NewReader(`{"type":"arrow","sql":"PRAGMA version"}`))
 		res := httptest.NewRecorder()
 
 		s.ServeHTTP(res, req)
@@ -212,7 +231,7 @@ func TestHandleHTTPPolicyErrors(t *testing.T) {
 	t.Run("syntax error under policy is a bad request", func(t *testing.T) {
 		db := setupTestDB(t, query.WithFunctionBlocklist([]string{"md5"}))
 		s := mustHandler(t, db)
-		req := httptest.NewRequest(http.MethodPost, "/", strings.NewReader(`{"type":"json","sql":"SELECT ("}`))
+		req := httptest.NewRequest(http.MethodPost, "/", strings.NewReader(`{"type":"arrow","sql":"SELECT ("}`))
 		res := httptest.NewRecorder()
 
 		s.ServeHTTP(res, req)
@@ -254,7 +273,7 @@ func TestHandleHTTPQueryParamsErrors(t *testing.T) {
 		},
 		{
 			name:     "missing SQL",
-			body:     `{"type":"json"}`,
+			body:     `{"type":"arrow"}`,
 			wantBody: "missing required 'sql' parameter\n",
 		},
 	}
