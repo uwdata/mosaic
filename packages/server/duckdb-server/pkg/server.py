@@ -3,28 +3,30 @@ from __future__ import annotations
 import logging
 import sys
 import time
-from functools import partial
-from typing import TYPE_CHECKING, Any, Protocol
+from typing import TYPE_CHECKING, Any, Literal, Protocol, TypedDict
 
 import ujson
 from socketify import App, CompressOptions, OpCode
 
-from pkg.query import get_arrow_bytes, get_json, retrieve
+from pkg.query import get_arrow_bytes, get_json
 
 if TYPE_CHECKING:
     import duckdb
-    from diskcache import Cache
     from duckdb import DuckDBPyConnection as Con
     from socketify import Request as Req
     from socketify import Response as Res
     from socketify import SendStatus as Status
     from socketify import WebSocket as Ws
 
-    from pkg.query import _QueryParams
-
 logger = logging.getLogger(__name__)
 
 SLOW_QUERY_THRESHOLD = 5000
+
+
+class _QueryParams(TypedDict):
+    type: Literal["arrow", "exec", "json"]
+    sql: str
+    uuid: str  # name
 
 
 class Handler(Protocol):
@@ -82,7 +84,6 @@ class HTTPHandler(Handler):
 def handle_query(
     handler: Handler,
     con: duckdb.DuckDBPyConnection,
-    cache: Cache,
     query: _QueryParams,
 ) -> None:
     logger.debug(f"{query=}")
@@ -97,10 +98,10 @@ def handle_query(
             con.execute(sql)
             handler.done()
         elif command == "arrow":
-            buffer = retrieve(cache, query, partial(get_arrow_bytes, con))
+            buffer = get_arrow_bytes(con, sql)
             handler.arrow(buffer)
         elif command == "json":
-            json = retrieve(cache, query, partial(get_json, con))
+            json = get_json(con, sql)
             handler.json(json)
         else:
             msg = f"Unknown command {command}"
@@ -123,7 +124,7 @@ def on_error(error: object, res: Res, req: Req) -> None:
         res.end(f"Error {error}")
 
 
-def server(con: Con, cache: Cache) -> None:
+def server(con: Con) -> None:
     # SSL server
     # app = App(AppOptions(key_file_name="./localhost-key.pem", cert_file_name="./localhost.pem"))
     app = App()
@@ -141,7 +142,7 @@ def server(con: Con, cache: Cache) -> None:
             handler.error(e)
             return
 
-        handle_query(handler, con, cache, query)
+        handle_query(handler, con, query)
 
     async def http_handler(res: Res, req: Req) -> None:
         res.write_header("Access-Control-Allow-Origin", "*")
@@ -159,11 +160,11 @@ def server(con: Con, cache: Cache) -> None:
         elif method == "GET":
             message: str | bytes | bytearray = req.get_query("query")  # pyright: ignore[reportAssignmentType]
             data = ujson.loads(message)
-            handle_query(handler, con, cache, data)
+            handle_query(handler, con, data)
         elif method == "POST":
             maybe_data: _QueryParams | None = await res.get_json()
             if maybe_data:
-                handle_query(handler, con, cache, maybe_data)
+                handle_query(handler, con, maybe_data)
             else:
                 raise NotImplementedError
 
