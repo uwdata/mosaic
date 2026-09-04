@@ -27,19 +27,6 @@ pub async fn handle(state: &AppState, params: QueryParams) -> Result<QueryRespon
                 Err(AppError::BadRequest)
             }
         }
-        Some(Command::Json) => {
-            if let Some(sql) = params.sql.as_deref() {
-                let persist = params.persist.unwrap_or(false);
-                let json: Vec<u8> = retrieve(&state.cache, sql, &Command::Json, persist, || {
-                    state.db.get_json(sql)
-                })
-                .await?;
-                let string = String::from_utf8(json)?;
-                Ok(QueryResponse::Json(string))
-            } else {
-                Err(AppError::BadRequest)
-            }
-        }
         None => Err(AppError::BadRequest),
     }
 }
