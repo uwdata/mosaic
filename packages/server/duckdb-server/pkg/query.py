@@ -1,49 +1,11 @@
 from __future__ import annotations
 
-import logging
-from hashlib import sha256
-from typing import TYPE_CHECKING, Literal, TypedDict, TypeVar
+from typing import TYPE_CHECKING
 
 import pyarrow as pa
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
-
     import duckdb
-    from diskcache import Cache
-    from typing_extensions import NotRequired
-
-R = TypeVar("R", bound=str | bytes | None)
-
-
-class _QueryParams(TypedDict):
-    type: Literal["arrow", "exec", "json"]
-    sql: str
-    uuid: str  # name
-    persist: NotRequired[bool]
-
-
-logger = logging.getLogger(__name__)
-
-
-def get_key(sql: str, command: str) -> str:
-    return f"{sha256(sql.encode('utf-8')).hexdigest()}.{command}"
-
-
-def retrieve(cache: Cache, query: _QueryParams, get: Callable[[str], R]) -> R:
-    sql = query.get("sql")
-    command = query.get("type")
-
-    key = get_key(sql, command)
-    result = cache.get(key)
-
-    if result:
-        logger.debug("Cache hit")
-    else:
-        result = get(sql)
-        if query.get("persist", False):
-            cache[key] = result
-    return result  # pyright: ignore[reportReturnType]
 
 
 def get_arrow(con: duckdb.DuckDBPyConnection, sql: str) -> pa.RecordBatchReader:

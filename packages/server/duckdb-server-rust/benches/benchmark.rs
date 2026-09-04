@@ -2,18 +2,13 @@ use criterion::async_executor::FuturesExecutor;
 use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion};
 use serde_json::to_value;
 use std::sync::Arc;
-use tokio::sync::Mutex;
 
-use duckdb_server::{get_key, handle, AppState, Command, ConnectionPool, QueryParams};
+use duckdb_server::{handle, AppState, Command, ConnectionPool, QueryParams};
 
 pub fn benchmark(c: &mut Criterion) {
     let db = ConnectionPool::new(":memory:", 10).unwrap();
-    let cache = lru::LruCache::new(10.try_into().unwrap());
 
-    let state = Arc::new(AppState {
-        db: Box::new(db),
-        cache: Mutex::new(cache),
-    });
+    let state = Arc::new(AppState { db: Box::new(db) });
 
     let mut group = c.benchmark_group("handle");
     for command in [Command::Arrow, Command::Json].iter() {
@@ -33,10 +28,6 @@ pub fn benchmark(c: &mut Criterion) {
         );
     }
     group.finish();
-
-    c.bench_function("get key", |b| {
-        b.iter(|| get_key("SELECT 1", &Command::Arrow))
-    });
 }
 
 criterion_group!(benches, benchmark);

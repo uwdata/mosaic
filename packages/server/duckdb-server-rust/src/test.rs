@@ -11,34 +11,19 @@ use axum::{
 use http_body_util::BodyExt;
 use serde_json::json;
 use std::sync::Arc;
-use tokio::sync::Mutex;
 use tower::ServiceExt;
 
-use crate::cache::get_key;
 use crate::db::ConnectionPool;
 use crate::interfaces::QueryParams;
 use crate::interfaces::QueryResponse;
 use crate::interfaces::{AppState, Command};
 use crate::{app, query::handle};
 
-#[test]
-fn key() {
-    let key = get_key("SELECT 1", &Command::Arrow);
-    assert_eq!(
-        key,
-        "e004ebd5b5532a4b85984a62f8ad48a81aa3460c1ca07701f386135d72cdecf5.arrow"
-    );
-}
-
 #[tokio::test]
 async fn get_json() -> Result<()> {
     let db = ConnectionPool::new(":memory:", 1)?;
-    let cache = lru::LruCache::new(10.try_into()?);
 
-    let state = Arc::new(AppState {
-        db: Box::new(db),
-        cache: Mutex::new(cache),
-    });
+    let state = Arc::new(AppState { db: Box::new(db) });
 
     let params = QueryParams {
         query_type: Some(Command::Json),
@@ -58,12 +43,8 @@ async fn get_json() -> Result<()> {
 #[tokio::test]
 async fn get_arrow() -> Result<()> {
     let db = ConnectionPool::new(":memory:", 1)?;
-    let cache = lru::LruCache::new(10.try_into()?);
 
-    let state = Arc::new(AppState {
-        db: Box::new(db),
-        cache: Mutex::new(cache),
-    });
+    let state = Arc::new(AppState { db: Box::new(db) });
 
     let params = QueryParams {
         query_type: Some(Command::Arrow),
@@ -90,7 +71,7 @@ async fn get_arrow() -> Result<()> {
 
 #[tokio::test]
 async fn select_1_get() -> Result<()> {
-    let app = app::app(None, None, None)?;
+    let app = app::app(None, None)?;
 
     let response = app
         .oneshot(
@@ -110,7 +91,7 @@ async fn select_1_get() -> Result<()> {
 
 #[tokio::test]
 async fn select_1_post() -> Result<()> {
-    let app = app::app(None, None, None)?;
+    let app = app::app(None, None)?;
 
     let response = app
         .oneshot(
@@ -134,7 +115,7 @@ async fn select_1_post() -> Result<()> {
 
 #[tokio::test]
 async fn query_arrow() -> Result<()> {
-    let app = app::app(None, None, None)?;
+    let app = app::app(None, None)?;
 
     let response = app
         .oneshot(
