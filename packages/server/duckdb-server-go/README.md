@@ -149,8 +149,8 @@ In Go, `Exclude` wins over `Include`, and `DisableDefaults` creates an exact-onl
 allowlist cannot be combined with a non-empty blocklist, and any configured function policy rejects `exec` requests.
 
 Spatial compute defaults cover Mosaic rendering over existing geometry data, but the `ST_Read` loader remains elevated.
-Current-time functions are omitted from defaults; keyword forms such as `CURRENT_DATE` are not function nodes and remain
-outside this policy.
+Current-time functions read session state and are classified as elevated, so they are omitted from defaults; keyword
+forms such as `CURRENT_DATE` are not function nodes and remain outside this policy.
 
 ### Remote URI Literal Policy
 
