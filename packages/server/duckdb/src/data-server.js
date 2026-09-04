@@ -62,7 +62,11 @@ function createSocketServer(server, handleQuery) {
 
   wss.on('connection', socket => {
     const res = socketResponse(socket);
-    socket.on('message', data => handleQuery(res, data));
+    // answer messages in the order received, so clients can match by position
+    let last = Promise.resolve();
+    socket.on('message', data => {
+      last = last.then(() => handleQuery(res, data));
+    });
   });
 }
 
