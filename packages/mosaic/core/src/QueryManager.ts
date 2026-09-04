@@ -3,61 +3,84 @@ import type { Cache, Logger, QueryEntry, QueryRequest } from './types.js';
 import { consolidator } from './QueryConsolidator.js';
 import { lruCache, voidCache } from './util/cache.js';
 import { PriorityQueue } from './util/priority-queue.js';
-import { QueryResult, QueryState } from './util/query-result.js';
+import { QueryResult } from './util/query-result.js';
+import { intersects, queryTables, union, type QueryTables, type Tables } from './util/query-tables.js';
 import { voidLogger } from './util/void-logger.js';
 
 export const Priority = Object.freeze({ High: 0, Normal: 1, Low: 2 });
 
+interface ScheduledEntry extends QueryEntry {
+  tables: QueryTables;
+}
+
 export class QueryManager {
-  private queue: PriorityQueue<QueryEntry>;
+  private queue: PriorityQueue<ScheduledEntry>;
   private db: Connector | null;
   private clientCache: Cache | null;
   private _logger: Logger;
   private _logQueries: boolean;
   private _consolidate: ReturnType<typeof consolidator> | null;
-  /** Requests pending with the query manager. */
-  public pendingResults: QueryResult[];
+  private inflight: Map<QueryResult, ScheduledEntry>;
   private maxConcurrentRequests: number;
-  private pendingExec: boolean;
+  private maxConcurrentExecs: number;
 
-  constructor(maxConcurrentRequests: number = 32) {
+  /**
+   * @param maxConcurrentRequests How many requests may be in flight at once.
+   * @param maxConcurrentExecs How many exec requests may be in flight at once.
+   *  Each exec already uses all database cores, so running several at once
+   *  delays the first result without finishing the last one sooner.
+   */
+  constructor(maxConcurrentRequests: number = 32, maxConcurrentExecs: number = 1) {
     this.queue = new PriorityQueue(3);
     this.db = null;
     this.clientCache = null;
     this._logger = voidLogger();
     this._logQueries = false;
     this._consolidate = null;
-    this.pendingResults = [];
+    this.inflight = new Map();
     this.maxConcurrentRequests = maxConcurrentRequests;
-    this.pendingExec = false;
+    this.maxConcurrentExecs = maxConcurrentExecs;
   }
 
+  /**
+   * Submit queued requests to the connector, up to the concurrency limits.
+   * A request waits while an earlier request writes a table it reads or writes.
+   */
   next(): void {
-    if (this.queue.isEmpty() || this.pendingResults.length > this.maxConcurrentRequests || this.pendingExec) {
-      return;
+    let budget = this.maxConcurrentRequests - this.inflight.size;
+    if (budget <= 0 || this.queue.isEmpty()) return;
+
+    let writes: Tables = new Set();
+    let execs = 0;
+    for (const { request, tables } of this.inflight.values()) {
+      writes = union(writes, tables.writes);
+      if (request.type === 'exec') execs += 1;
     }
 
-    const entry = this.queue.next();
-    if (!entry) return;
-
-    const { request, result } = entry;
-
-    this.pendingResults.push(result);
-    if (request.type === 'exec') this.pendingExec = true;
-
-    this.submit(request, result).finally(() => {
-      // return from the queue all requests that are ready
-      while (this.pendingResults.length && this.pendingResults[0].state !== QueryState.pending) {
-        const result = this.pendingResults.shift()!;
-        if (result.state === QueryState.ready) {
-          result.fulfill();
-        } else if (result.state === QueryState.done) {
-          this._logger.warn('Found resolved query in pending results.');
-        }
+    const ready: ScheduledEntry[] = [];
+    this.queue.remove(entry => {
+      const { tables } = entry;
+      const exec = entry.request.type === 'exec';
+      const blocked = budget <= 0
+        || (exec && execs >= this.maxConcurrentExecs)
+        || intersects(tables.reads, writes)
+        || intersects(tables.writes, writes);
+      writes = union(writes, tables.writes);
+      if (!blocked) {
+        ready.push(entry);
+        budget -= 1;
+        if (exec) execs += 1;
       }
-      if (request.type === 'exec') this.pendingExec = false;
-      this.next();
+      return !blocked;
     });
+
+    for (const entry of ready) {
+      this.inflight.set(entry.result, entry);
+      this.submit(entry.request, entry.result).finally(() => {
+        this.inflight.delete(entry.result);
+        this.next();
+      });
+    }
   }
 
   /**
@@ -66,7 +89,7 @@ export class QueryManager {
    * @param priority The query priority, defaults to `Priority.Normal`.
    */
   enqueue(entry: QueryEntry, priority: number = Priority.Normal): void {
-    this.queue.insert(entry, priority);
+    this.queue.insert({ ...entry, tables: queryTables(entry.request) }, priority);
     this.next();
   }
 
@@ -86,7 +109,7 @@ export class QueryManager {
         if (cached) {
           const data = await cached;
           this._logger.debug('Cache');
-          result.ready(data);
+          result.fulfill(data);
           return;
         }
       }
@@ -106,7 +129,7 @@ export class QueryManager {
       if (cache) this.clientCache!.set(sql!, data);
 
       this._logger.debug(`Request: ${(performance.now() - t0).toFixed(1)}`);
-      result.ready(type === 'exec' ? null : data);
+      result.fulfill(type === 'exec' ? null : data);
     } catch (err) {
       result.reject(err);
     }
@@ -198,11 +221,12 @@ export class QueryManager {
         return false;
       });
 
-      for (const result of this.pendingResults) {
+      for (const result of this.inflight.keys()) {
         if (set.has(result)) {
           result.reject('Canceled');
         }
       }
+      this.next();
     }
   }
 
@@ -212,9 +236,8 @@ export class QueryManager {
       return true;
     });
 
-    for (const result of this.pendingResults) {
+    for (const result of this.inflight.keys()) {
       result.reject('Cleared');
     }
-    this.pendingResults = [];
   }
 }

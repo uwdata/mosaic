@@ -32,6 +32,7 @@ export function wasmConnector(options: DuckDBWASMConnectorOptions = {}): DuckDBW
  * DuckDB-WASM connector.
  */
 export class DuckDBWASMConnector implements Connector {
+  readonly concurrency = 1;
   private _ipc?: ExtractionOptions;
   public _options: DuckDBWASMOptions;
   public _db?: duckdb.AsyncDuckDB;

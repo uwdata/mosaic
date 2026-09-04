@@ -1,7 +1,8 @@
-import { Query } from '@uwdata/mosaic-sql';
+import { count, Query } from '@uwdata/mosaic-sql';
 import { describe, it, expect } from 'vitest';
 import { clausePoint, type Connector, Coordinator, coordinator, type JSONQueryRequest, makeClient, Selection } from '../src/index.js';
-import { QueryResult, QueryState } from '../src/util/query-result.js';
+import { QueryResult } from '../src/util/query-result.js';
+import { TestClient } from './util/test-client.js';
 
 async function wait() {
   return new Promise<void>(resolve => setTimeout(resolve, 0));
@@ -25,7 +26,7 @@ describe('coordinator', () => {
     expect(coordinator()).toBe(mc2);
   });
 
-  it('query results returned in correct order', async () => {
+  it('applies results per client in request order', async () => {
     const promises: QueryResult[] = [];
 
     // Mock the connector
@@ -37,59 +38,267 @@ describe('coordinator', () => {
       },
     } as unknown as Connector;
 
-    const coord = new Coordinator(connector, { logger: null });
+    const coord = new Coordinator(connector, {
+      logger: null,
+      cache: false,
+      consolidate: false
+    });
+    const results: string[] = [];
+    const client = (name: string) => new TestClient(null, undefined, {
+      queryResult(data: string) {
+        results.push(name + data);
+        return this;
+      }
+    });
+    const a = client('a');
+    const b = client('b');
 
-    const r0 = coord.query('SELECT 0');
-    const r1 = coord.query('SELECT 1');
-    const r2 = coord.query('SELECT 2');
-    const r3 = coord.query('SELECT 3');
+    coord.updateClient(a, 'SELECT 0');
+    coord.updateClient(b, 'SELECT 1');
+    coord.updateClient(a, 'SELECT 2');
+    expect(promises).toHaveLength(3);
 
-    // queries have not been sent yet
-    expect(promises).toHaveLength(0);
+    // a's second result waits for its first
+    promises[2].fulfill('2');
+    await wait();
+    expect(results).toEqual([]);
 
+    // b does not wait for a
+    promises[1].fulfill('1');
+    await wait();
+    expect(results).toEqual(['b1']);
+
+    promises[0].fulfill('0');
+    await wait();
+    expect(results).toEqual(['b1', 'a0', 'a2']);
+  });
+
+  it('queries a pre-aggregated table only after it is created', async () => {
+    const sent: string[] = [];
+    const execs: ((value: unknown) => void)[] = [];
+
+    // Mock the connector: hold exec requests, answer reads immediately
+    const connector = {
+      query(req: { type?: string; sql: string }) {
+        sent.push(req.sql);
+        return req.type === 'exec'
+          ? new Promise(resolve => execs.push(resolve))
+          : Promise.resolve([]);
+      },
+    } as unknown as Connector;
+
+    const coord = new Coordinator(connector, {
+      logger: null,
+      cache: false,
+      consolidate: false
+    });
+    const filterBy = Selection.single({ cross: true });
+    const client = new TestClient(
+      Query.from('testData').select({ measure: count() }),
+      filterBy
+    );
+    coord.connect(client);
+    await client.pending;
+
+    const preagg = (sql: string) => sql.includes('"mosaic"');
+    filterBy.update(clausePoint('dim', 'b', { source: {} }));
+    await wait();
+    expect(sent.filter(preagg)).toEqual(['CREATE SCHEMA IF NOT EXISTS "mosaic"']);
+
+    execs[0](null);
+    await wait();
+    expect(sent.filter(preagg)).toHaveLength(2);
+    expect(sent.at(-1)).toMatch(/^CREATE TABLE/);
+
+    execs[1](null);
+    await wait();
+    expect(sent.filter(preagg)).toHaveLength(3);
+    expect(sent.at(-1)).toMatch(/^SELECT/);
+  });
+
+  it('keeps at most updateWindow selection updates in flight per client', async () => {
+    const sent: string[] = [];
+    const resolvers: ((value: unknown) => void)[] = [];
+
+    // Mock the connector: hold every query until resolved by the test
+    const connector = {
+      query(req: JSONQueryRequest) {
+        sent.push(req.sql);
+        return new Promise(resolve => resolvers.push(resolve));
+      },
+    } as unknown as Connector;
+
+    const coord = new Coordinator(connector, {
+      logger: null,
+      cache: false,
+      consolidate: false,
+      preagg: { enabled: false },
+      updateWindow: 2
+    });
+    const filterBy = Selection.single();
+    const client = new TestClient(Query.from('t').select('x'), filterBy);
+    coord.connect(client);
+    await wait();
+    resolvers.shift()!([]);
+    await client.pending;
+    sent.length = 0;
+
+    // brush moves arrive as separate events
+    for (const value of [1, 2, 3, 4]) {
+      filterBy.update(clausePoint('x', value, { source: {} }));
+      await wait();
+    }
+
+    // two updates leave, the rest wait
+    expect(sent).toHaveLength(2);
+    expect(sent[0]).toContain('IN (1)');
+    expect(sent[1]).toContain('IN (2)');
+
+    // a freed slot queries the newest value only
+    resolvers.shift()!([]);
+    await wait();
+    expect(sent).toHaveLength(3);
+    expect(sent[2]).toContain('IN (4)');
+
+    resolvers.shift()!([]);
+    resolvers.shift()!([]);
+    await wait();
+    expect(sent).toHaveLength(3);
+  });
+
+  it('caps the update window by the connector concurrency', async () => {
+    const sent: string[] = [];
+    const resolvers: ((value: unknown) => void)[] = [];
+    const connector = {
+      concurrency: 1,
+      query(req: JSONQueryRequest) {
+        sent.push(req.sql);
+        return new Promise(resolve => resolvers.push(resolve));
+      },
+    } as unknown as Connector;
+
+    const coord = new Coordinator(connector, {
+      logger: null,
+      cache: false,
+      consolidate: false,
+      preagg: { enabled: false },
+      updateWindow: 2
+    });
+    const filterBy = Selection.single();
+    const client = new TestClient(Query.from('t').select('x'), filterBy);
+    coord.connect(client);
+    await wait();
+    resolvers.shift()!([]);
+    await client.pending;
+    sent.length = 0;
+
+    for (const value of [1, 2, 3]) {
+      filterBy.update(clausePoint('x', value, { source: {} }));
+      await wait();
+    }
+    expect(sent).toHaveLength(1);
+
+    resolvers.shift()!([]);
+    await wait();
+    expect(sent).toHaveLength(2);
+    expect(sent[1]).toContain('IN (3)');
+  });
+
+  it('stops re-requesting updates for a disconnected client', async () => {
+    const sent: string[] = [];
+    const resolvers: ((value: unknown) => void)[] = [];
+    const connector = {
+      query(req: JSONQueryRequest) {
+        sent.push(req.sql);
+        return new Promise(resolve => resolvers.push(resolve));
+      },
+    } as unknown as Connector;
+    const coord = new Coordinator(connector, {
+      logger: null,
+      cache: false,
+      consolidate: false,
+      preagg: { enabled: false }
+    });
+    const filterBy = Selection.single();
+    const client = new TestClient(Query.from('t').select('x'), filterBy);
+    coord.connect(client);
+    await wait();
+    resolvers.shift()!([]);
+    await client.pending;
+    sent.length = 0;
+
+    filterBy.update(clausePoint('x', 1, { source: {} }));
+    await wait();
+    filterBy.update(clausePoint('x', 2, { source: {} }));
+    await wait();
+    coord.disconnect(client);
+    resolvers.shift()!([]);
     await wait();
 
-    // all queries should have been sent to the connector
-    expect(promises).toHaveLength(4);
-    expect(coord.manager.pendingResults).toHaveLength(4);
+    expect(sent).toHaveLength(1);
+  });
 
-    // resolve promises in reverse order
+  it('logs a failing selection update instead of leaving it unhandled', async () => {
+    const errors: unknown[] = [];
+    const connector = { async query() { return []; } } as unknown as Connector;
+    const coord = new Coordinator(connector, {
+      logger: { error: (e: unknown) => errors.push(e), warn() {}, info() {}, log() {}, debug() {}, group() {}, groupCollapsed() {}, groupEnd() {} },
+      cache: false,
+      consolidate: false,
+      preagg: { enabled: false }
+    });
+    const filterBy = Selection.single();
+    const client = new TestClient(Query.from('t').select('x'), filterBy);
+    coord.connect(client);
+    await client.pending;
+    client.query = () => { throw new Error('bad query'); };
 
-    promises.at(3)!.fulfill(0);
+    filterBy.update(clausePoint('x', 1, { source: {} }));
     await wait();
 
-    expect(r0.state).toEqual(QueryState.pending);
-    expect(r1.state).toEqual(QueryState.pending);
-    expect(r2.state).toEqual(QueryState.pending);
-    expect(r3.state).toEqual(QueryState.ready);
+    expect(errors).toHaveLength(1);
+    expect((errors[0] as Error).message).toBe('bad query');
+  });
 
-    promises.at(1)!.fulfill(0);
+  it('does not skip a deferred update because the client became the active source', async () => {
+    const sent: string[] = [];
+    const resolvers: ((value: unknown) => void)[] = [];
+    const connector = {
+      query(req: JSONQueryRequest) {
+        sent.push(req.sql);
+        return new Promise(resolve => resolvers.push(resolve));
+      },
+    } as unknown as Connector;
+    const coord = new Coordinator(connector, {
+      logger: null,
+      cache: false,
+      consolidate: false,
+      preagg: { enabled: false }
+    });
+    const filterBy = Selection.crossfilter();
+    const a = new TestClient(Query.from('t').select('x'), filterBy);
+    const b = new TestClient(Query.from('t').select('y'), filterBy);
+    coord.connect(a);
+    coord.connect(b);
+    await wait();
+    resolvers.splice(0).forEach(resolve => resolve([]));
+    await Promise.all([a.pending, b.pending]);
+    sent.length = 0;
+
+    // a brushes twice; b's first update is in flight when the second arrives
+    filterBy.update(clausePoint('x', 1, { source: a }));
+    await wait();
+    filterBy.update(clausePoint('x', 2, { source: a }));
+    await wait();
+    // b becomes the active source before its slot frees
+    filterBy.update(clausePoint('y', 5, { source: b }));
+    await wait();
+    resolvers.splice(0).forEach(resolve => resolve([]));
     await wait();
 
-    expect(r0.state).toEqual(QueryState.pending);
-    expect(r1.state).toEqual(QueryState.ready);
-    expect(r2.state).toEqual(QueryState.pending);
-    expect(r3.state).toEqual(QueryState.ready);
-
-    promises.at(0)!.fulfill(0);
-    await wait();
-
-    expect(coord.manager.pendingResults).toHaveLength(2);
-
-    expect(r0.state).toEqual(QueryState.done);
-    expect(r1.state).toEqual(QueryState.done);
-    expect(r2.state).toEqual(QueryState.pending);
-    expect(r3.state).toEqual(QueryState.ready);
-
-    promises.at(2)!.fulfill(0);
-    await wait();
-
-    expect(coord.manager.pendingResults).toHaveLength(0);
-
-    expect(r0.state).toEqual(QueryState.done);
-    expect(r1.state).toEqual(QueryState.done);
-    expect(r2.state).toEqual(QueryState.done);
-    expect(r3.state).toEqual(QueryState.done);
+    // b still learns about x = 2; a queries y = 5
+    expect(sent.filter(sql => sql.includes('"y"') && sql.includes('IN (2)'))).toHaveLength(1);
+    expect(sent.filter(sql => sql.includes('"x"') && sql.includes('IN (5)'))).toHaveLength(1);
   });
 
   it('awaits initializing clients before selection updates', async () => {

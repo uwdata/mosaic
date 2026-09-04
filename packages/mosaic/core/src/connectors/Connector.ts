@@ -23,6 +23,11 @@ export interface JSONQueryRequest extends ConnectorQueryRequest {
 }
 
 export interface Connector {
+  /**
+   * How many queries the backend can run at once, if bounded. The
+   * coordinator keeps no more selection updates in flight per client.
+   */
+  readonly concurrency?: number;
   /** Issue a query and return the result. */
   query(query: ArrowQueryRequest): Promise<Table>;
   query(query: ExecQueryRequest): Promise<void>;

@@ -1,6 +1,5 @@
 export const QueryState = Object.freeze({
   pending: Symbol('pending'),
-  ready: Symbol('ready'),
   error: Symbol('error'),
   done: Symbol('done')
 });
@@ -15,7 +14,6 @@ export class QueryResult<T = unknown> extends Promise<T> {
   private _resolve!: (value: T | PromiseLike<T>) => void;
   private _reject!: (reason?: unknown) => void;
   private _state: QueryStateType;
-  private _value: T | undefined;
 
   /**
    * Create a new query result Promise.
@@ -30,40 +28,16 @@ export class QueryResult<T = unknown> extends Promise<T> {
     this._resolve = resolve!;
     this._reject = reject!;
     this._state = QueryState.pending;
-    this._value = undefined;
   }
 
   /**
-   * Resolve the result Promise with a prepared value or the provided value.
-   * This method will only succeed if either a value is provided or the promise is ready.
+   * Resolve the result Promise with the provided value.
    * @param value The result value.
    * @returns This QueryResult instance.
    */
-  fulfill(value?: T): this {
-    if (this._value !== undefined) {
-      if (value !== undefined) {
-        throw Error('Promise is ready and fulfill has a provided value');
-      }
-      this._resolve(this._value);
-    } else if (value === undefined) {
-      throw Error('Promise is neither ready nor has provided value');
-    } else {
-      this._resolve(value);
-    }
-
+  fulfill(value: T): this {
     this._state = QueryState.done;
-
-    return this;
-  }
-
-  /**
-   * Prepare to resolve with the provided value.
-   * @param value The result value.
-   * @returns This QueryResult instance.
-   */
-  ready(value: T): this {
-    this._state = QueryState.ready;
-    this._value = value;
+    this._resolve(value);
     return this;
   }
 

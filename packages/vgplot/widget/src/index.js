@@ -48,6 +48,7 @@ export default {
 
     /** @type {import('@uwdata/mosaic-core').Connector} */
     const connector = {
+      concurrency: 1,
       query(query) {
         return new Promise((resolve, reject) => send(query, resolve, reject));
       },
