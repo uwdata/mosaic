@@ -1,4 +1,4 @@
-import { coordinator, decodeIPC, isSelection } from '@uwdata/mosaic-core';
+import { coordinator, isSelection } from '@uwdata/mosaic-core';
 import { parseSpec, astToDOM } from '@uwdata/mosaic-spec';
 import './style.css';
 import { v4 as uuidv4 } from 'uuid';
@@ -131,9 +131,8 @@ export default {
       } else {
         switch (msg.type) {
           case 'arrow': {
-            const table = decodeIPC(buffers[0].buffer);
-            logger.log('table', table);
-            query.resolve(table);
+            logger.log('arrow', buffers[0]);
+            query.resolve(buffers[0].buffer);
             break;
           }
           case 'json': {

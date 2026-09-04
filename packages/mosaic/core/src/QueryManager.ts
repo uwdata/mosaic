@@ -1,7 +1,9 @@
+import type { ExtractionOptions, Table } from '@uwdata/flechette';
 import type { Connector } from './connectors/Connector.js';
 import type { Cache, Logger, QueryEntry, QueryRequest } from './types.js';
 import { consolidator } from './QueryConsolidator.js';
 import { lruCache, voidCache } from './util/cache.js';
+import { decodeIPC, tableByteLength } from './util/decode-ipc.js';
 import { PriorityQueue } from './util/priority-queue.js';
 import { QueryResult, QueryState } from './util/query-result.js';
 import { voidLogger } from './util/void-logger.js';
@@ -14,6 +16,7 @@ export class QueryManager {
   private clientCache: Cache | null;
   private _logger: Logger;
   private _logQueries: boolean;
+  private _ipc?: ExtractionOptions;
   private _consolidate: ReturnType<typeof consolidator> | null;
   /** Requests pending with the query manager. */
   public pendingResults: QueryResult[];
@@ -80,7 +83,6 @@ export class QueryManager {
       const { query, type, cache = false, options } = request;
       const sql = Array.isArray(query) ? query.filter(x => x).join(';\n') : query ? String(query) : null;
 
-      // check query cache
       if (cache) {
         const cached = this.clientCache!.get(sql!);
         if (cached) {
@@ -91,19 +93,21 @@ export class QueryManager {
         }
       }
 
-      // issue query, potentially cache result
       const t0 = performance.now();
       if (this._logQueries) {
         this._logger.debug('Query', { type, sql, ...options });
       }
 
       // @ts-expect-error type may be exec | json | arrow
-      const promise = this.db!.query({ type, sql: sql!, ...options });
+      const response = this.db!.query({ type, sql: sql!, ...options });
+      const promise = type === 'arrow'
+        ? response.then(bytes => decodeIPC(bytes as ArrayBuffer | Uint8Array | Uint8Array[], this._ipc))
+        : response;
       if (cache) this.clientCache!.set(sql!, promise);
 
       const data = await promise;
 
-      if (cache) this.clientCache!.set(sql!, data);
+      if (cache) this.clientCache!.set(sql!, data, resultByteLength(type, data));
 
       this._logger.debug(`Request: ${(performance.now() - t0).toFixed(1)}`);
       result.ready(type === 'exec' ? null : data);
@@ -134,6 +138,17 @@ export class QueryManager {
   logger(value: Logger): Logger;
   logger(value?: Logger): Logger {
     return value ? (this._logger = value) : this._logger;
+  }
+
+  /**
+   * Get or set the Arrow IPC extraction options.
+   * @param value Extraction options to set
+   * @returns Current extraction options
+   */
+  ipc(): ExtractionOptions | undefined;
+  ipc(value: ExtractionOptions | undefined): ExtractionOptions | undefined;
+  ipc(value?: ExtractionOptions): ExtractionOptions | undefined {
+    return value !== undefined ? (this._ipc = value) : this._ipc;
   }
 
   /**
@@ -217,4 +232,10 @@ export class QueryManager {
     }
     this.pendingResults = [];
   }
+}
+
+function resultByteLength(type: QueryRequest['type'], data: unknown): number {
+  return type === 'arrow' ? tableByteLength(data as Table) ?? 0
+    : type === 'json' ? JSON.stringify(data).length
+    : 0;
 }

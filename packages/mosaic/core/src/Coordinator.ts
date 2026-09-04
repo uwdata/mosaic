@@ -5,12 +5,12 @@ import { PreAggregator, type PreAggregateOptions } from './preagg/PreAggregator.
 import { voidLogger } from './util/void-logger.js';
 import { QueryManager, Priority } from './QueryManager.js';
 import { type Selection } from './Selection.js';
-import { type Logger, type QueryType } from './types.js';
+import { type Cache, type Logger, type QueryType } from './types.js';
 import { type QueryResult } from './util/query-result.js';
 import { type MosaicClient } from './MosaicClient.js';
 import { type SelectionClause } from './SelectionClause.js';
 import { MaybeArray } from '@uwdata/mosaic-sql';
-import { Table } from '@uwdata/flechette';
+import { type ExtractionOptions, Table } from '@uwdata/flechette';
 import { QueryError } from './util/query-error.js';
 
 interface FilterGroupEntry {
@@ -57,7 +57,9 @@ export class Coordinator {
    * @param options Coordinator options.
    * @param options.logger The logger to use, defaults to `console`.
    * @param options.manager The query manager to use.
-   * @param options.cache Boolean flag to enable/disable query caching.
+   * @param options.cache Boolean flag to enable/disable query caching, or a
+   *  custom cache object.
+   * @param options.ipc Arrow IPC extraction options.
    * @param options.consolidate Boolean flag to enable/disable query consolidation.
    * @param options.preagg Options for the Pre-aggregator.
    */
@@ -66,7 +68,8 @@ export class Coordinator {
     options: {
       logger?: Logger | null;
       manager?: QueryManager;
-      cache?: boolean;
+      cache?: boolean | Cache;
+      ipc?: ExtractionOptions;
       consolidate?: boolean;
       preagg?: PreAggregateOptions;
     } = {}
@@ -75,11 +78,13 @@ export class Coordinator {
       logger = console,
       manager = new QueryManager(),
       cache = true,
+      ipc = undefined,
       consolidate = true,
       preagg = {}
     } = options;
     this.manager = manager;
     this.manager.cache(cache);
+    this.manager.ipc(ipc);
     this.manager.consolidate(consolidate);
     this.databaseConnector(db);
     this.logger(logger);

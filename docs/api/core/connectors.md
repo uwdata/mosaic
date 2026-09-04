@@ -9,6 +9,8 @@ The _query_ argument is an object that may include the following properties:
 - _type_: The query format type, such as `"exec"` (no return value), `"arrow"`, and `"json"`.
 - Any additional connector-specific options.
 
+For the `"arrow"` type, a connector returns the raw Arrow IPC bytes as an `ArrayBuffer`, a `Uint8Array`, or an array of `Uint8Array` chunks; the coordinator decodes them to an Arrow table.
+
 Once instantiated, register a connector with the coordinator using the [`coordinator.databaseConnector()`](coordinator#databaseconnector) method.
 
 ## socketConnector

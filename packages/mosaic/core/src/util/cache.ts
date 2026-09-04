@@ -1,12 +1,14 @@
 import type { Cache } from '../types.js';
 
-const requestIdle = typeof requestIdleCallback !== 'undefined'
-  ? requestIdleCallback
-  : setTimeout;
-
-interface CacheEntry<T = unknown> {
+interface CacheEntry {
   last: number;
-  value: T;
+  value: unknown;
+  owner: object;
+}
+
+interface OwnerCharge {
+  bytes: number;
+  refs: number;
 }
 
 /**
@@ -17,67 +19,84 @@ export function voidCache(): Cache {
   return {
     get: () => undefined,
     set: (key, value) => value,
-    clear: () => {}
+    clear: () => {},
+    bytes: () => 0
   };
 }
 
 /**
- * Create a new cache that uses an LRU eviction policy.
+ * Create a new cache that evicts least recently used entries once cached bytes
+ * exceed a budget.
  * @param options Cache options.
- * @param options.max Maximum number of cache entries.
+ * @param options.maxBytes Maximum number of bytes to retain.
  * @param options.ttl Time-to-live for cache entries.
  * @returns An LRU cache implementation.
  */
 export function lruCache({
-  max = 1000, // max entries
-  ttl = 3 * 60 * 60 * 1000 // time-to-live, default 3 hours
+  maxBytes = 32 * 1024 * 1024,
+  ttl = 3 * 60 * 60 * 1000
 }: {
-  max?: number;
+  maxBytes?: number;
   ttl?: number;
 } = {}): Cache {
-  let cache = new Map<string, CacheEntry>();
+  let entries = new Map<string, CacheEntry>();
+  let ownerCharges = new Map<object, OwnerCharge>();
+  let total = 0;
 
-  function evict(): void {
-    const expire = performance.now() - ttl;
-    let lruKey: string | null = null;
-    let lruLast = Infinity;
-
-    for (const [key, value] of cache) {
-      const { last } = value;
-
-      // least recently used entry seen so far
-      if (last < lruLast) {
-        lruKey = key;
-        lruLast = last;
-      }
-
-      // remove if time since last access exceeds ttl
-      if (expire > last) {
-        cache.delete(key);
-      }
-    }
-
-    // remove lru entry
-    if (lruKey) {
-      cache.delete(lruKey);
+  function remove(key: string): void {
+    const entry = entries.get(key);
+    if (!entry) return;
+    entries.delete(key);
+    const charge = ownerCharges.get(entry.owner)!;
+    if (--charge.refs === 0) {
+      ownerCharges.delete(entry.owner);
+      total -= charge.bytes;
     }
   }
 
   return {
     get(key: string): unknown {
-      const entry = cache.get(key);
-      if (entry) {
-        entry.last = performance.now();
-        return entry.value;
+      const entry = entries.get(key);
+      if (!entry) return;
+
+      const now = performance.now();
+      if (now - entry.last > ttl) {
+        remove(key);
+        return;
       }
+
+      entry.last = now;
+      entries.delete(key);
+      entries.set(key, entry);
+      return entry.value;
     },
-    set(key: string, value: unknown): unknown {
-      cache.set(key, { last: performance.now(), value });
-      if (cache.size > max) requestIdle(evict);
+    set(key: string, value: unknown, bytes = 0, owner: object = {}): unknown {
+      remove(key);
+      if (bytes > maxBytes) return value;
+
+      entries.set(key, { last: performance.now(), value, owner });
+      const charge = ownerCharges.get(owner);
+      if (charge) {
+        charge.refs += 1;
+      } else {
+        ownerCharges.set(owner, { bytes, refs: 1 });
+        total += bytes;
+      }
+
+      for (const oldest of entries.keys()) {
+        if (total <= maxBytes) break;
+        remove(oldest);
+      }
+
       return value;
     },
     clear(): void {
-      cache = new Map();
+      entries = new Map();
+      ownerCharges = new Map();
+      total = 0;
+    },
+    bytes(): number {
+      return total;
     }
   };
 }

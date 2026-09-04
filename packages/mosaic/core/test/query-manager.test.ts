@@ -1,3 +1,4 @@
+import { Table, tableFromArrays, tableToIPC } from '@uwdata/flechette';
 import { describe, it, expect } from 'vitest';
 import { QueryManager } from '../src/QueryManager.js';
 import { QueryResult } from '../src/util/query-result.js';
@@ -17,7 +18,7 @@ describe('QueryManager', () => {
     });
 
     const request: QueryRequest = {
-      type: 'arrow',
+      type: 'json',
       query: 'SELECT 1'
     };
 
@@ -46,7 +47,7 @@ describe('QueryManager', () => {
     };
 
     const request2: QueryRequest = {
-      type: 'arrow',
+      type: 'json',
       query: 'SELECT * FROM test'
     };
 
@@ -54,5 +55,40 @@ describe('QueryManager', () => {
     queryManager.request(request2);
 
     expect(queryManager.pendingResults).toHaveLength(1);
+  });
+
+  it('caches a decoded arrow result with its IPC byte length', async () => {
+    const bytes = tableToIPC(tableFromArrays({ a: [1, 2, 3] }), {})!;
+    const store = new Map<string, unknown>();
+    const sizes: (number | undefined)[] = [];
+    const queryManager = new QueryManager();
+    queryManager.cache({
+      get: key => store.get(key),
+      set: (key, value, size) => (store.set(key, value), sizes.push(size), value),
+      clear: () => store.clear(),
+      bytes: () => 0
+    });
+
+    let calls = 0;
+    queryManager.connector({
+      // @ts-expect-error assumes type value
+      query: async () => {
+        calls += 1;
+        return bytes;
+      }
+    });
+
+    const request: QueryRequest = {
+      type: 'arrow',
+      query: 'SELECT * FROM test',
+      cache: true
+    };
+    const first = await queryManager.request(request) as Table;
+    const second = await queryManager.request(request);
+
+    expect(first.numRows).toBe(3);
+    expect(second).toBe(first);
+    expect(calls).toBe(1);
+    expect(sizes).toEqual([undefined, bytes.length]);
   });
 });
