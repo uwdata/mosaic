@@ -16,7 +16,7 @@ interface QueueItem<T = unknown> {
 /**
  * Connect to a DuckDB server over a WebSocket interface.
  * @param options Connector options.
- * @param options.uri The URI for the DuckDB REST server.
+ * @param options.uri The URI for the DuckDB server.
  * @param options.ipc Arrow IPC extraction options.
  * @returns A connector instance.
  */
@@ -25,20 +25,22 @@ export function socketConnector(options?: SocketOptions) {
 }
 
 /**
- * DuckDB socket connector.
+ * A Mosaic connector that queries a DuckDB server over a web socket.
+ * Requests are sent as soon as the socket is open. The server answers
+ * requests in the order it receives them, so responses are matched to
+ * requests by position.
  */
 export class SocketConnector implements Connector {
   private _uri: string;
   private _queue: QueueItem[];
   private _connected: boolean;
-  private _request: QueueItem | null;
   private _ws: WebSocket | null;
   private _events: Record<string, (event?: unknown) => void>;
 
   /**
    * @param options Connector options.
-   * @param options.uri The URI for the DuckDB REST server.
-   * @param options.ipc Arrow IPC extraction options.
+   * @param options.uri The URI for the DuckDB server, defaults to `ws://localhost:3000/`.
+   * @param options.ipc Options for Arrow IPC extraction.
    */
   constructor({
     uri = 'ws://localhost:3000/',
@@ -47,7 +49,6 @@ export class SocketConnector implements Connector {
     this._uri = uri;
     this._queue = [];
     this._connected = false;
-    this._request = null;
     this._ws = null;
 
     // eslint-disable-next-line @typescript-eslint/no-this-alias
@@ -55,24 +56,18 @@ export class SocketConnector implements Connector {
     this._events = {
       open() {
         c._connected = true;
-        c.next();
+        for (const { query } of c._queue) c.send(query);
       },
 
       close() {
         c._connected = false;
-        c._request = null;
         c._ws = null;
-        while (c._queue.length) {
-          c._queue.shift()!.reject('Socket closed');
-        }
+        c.fail('Socket closed');
       },
 
       error(event: unknown) {
-        if (c._request) {
-          const { reject } = c._request;
-          c._request = null;
-          c.next();
-          reject(event);
+        if (c._queue.length) {
+          c.fail(event);
         } else {
           console.error('WebSocket error: ', event);
         }
@@ -80,27 +75,29 @@ export class SocketConnector implements Connector {
 
       message(msg: unknown) {
         const { data } = msg as { data: unknown };
-        if (c._request) {
-          const { query, resolve, reject } = c._request;
-
-          // clear state, start next request
-          c._request = null;
-          c.next();
-
-          // process result
+        const item = c._queue.shift();
+        if (!item) {
+          console.log('WebSocket message: ', data);
+          return;
+        }
+        const { query, resolve, reject } = item;
+        try {
           if (typeof data === 'string') {
             const json = JSON.parse(data);
-            // eslint-disable-next-line @typescript-eslint/no-unused-expressions
-            json.error ? reject(json.error) : resolve(json);
+            if (json.error) {
+              reject(json.error);
+            } else {
+              resolve(json);
+            }
           } else if (query.type === 'exec') {
             resolve();
           } else if (query.type === 'arrow') {
             resolve(decodeIPC(data as Uint8Array, ipc));
           } else {
-            throw new Error(`Unexpected socket data: ${data}`);
+            reject(new Error(`Unexpected socket data: ${data}`));
           }
-        } else {
-          console.log('WebSocket message: ', data);
+        } catch (err) {
+          reject(err);
         }
       }
     };
@@ -124,15 +121,18 @@ export class SocketConnector implements Connector {
     reject: (reason?: unknown) => void
   ): void {
     if (this._ws == null) this.init();
+    if (this._connected) this.send(query);
     this._queue.push({ query, resolve, reject });
-    if (this._connected && !this._request) this.next();
   }
 
-  next(): void {
-    if (this._queue.length) {
-      this._request = this._queue.shift()!;
-      this._ws!.send(JSON.stringify(this._request.query));
-    }
+  private send(query: ConnectorQueryRequest): void {
+    this._ws!.send(JSON.stringify(query));
+  }
+
+  private fail(reason: unknown): void {
+    const queue = this._queue;
+    this._queue = [];
+    for (const { reject } of queue) reject(reason);
   }
 
   query(query: ArrowQueryRequest): Promise<Table>;
