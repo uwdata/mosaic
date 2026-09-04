@@ -4,13 +4,11 @@ use axum::{
     response::{IntoResponse, Response},
 };
 use serde::{Deserialize, Serialize};
-use tokio::sync::Mutex;
 
 use crate::db::Database;
 
 pub struct AppState {
     pub db: Box<dyn Database>,
-    pub cache: Mutex<lru::LruCache<String, Vec<u8>>>,
 }
 
 #[derive(Deserialize, Serialize, Debug, Clone)]
@@ -25,7 +23,6 @@ pub enum Command {
 pub struct QueryParams {
     #[serde(rename = "type")]
     pub query_type: Option<Command>,
-    pub persist: Option<bool>,
     pub sql: Option<String>,
     pub name: Option<String>,
 }
