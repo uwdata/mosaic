@@ -8,7 +8,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"hash/maphash"
 	"io"
 	"log/slog"
 	"runtime"
@@ -16,7 +15,6 @@ import (
 
 	"github.com/apache/arrow-go/v18/arrow/ipc"
 	"github.com/duckdb/duckdb-go/v2"
-	"github.com/maypok86/otter/v2"
 	"golang.org/x/sync/semaphore"
 )
 
@@ -30,9 +28,6 @@ type DB struct {
 	connPool       *sync.Pool
 	arrowSemaphore *semaphore.Weighted
 
-	cache     *otter.Cache[uint64, []byte]
-	cacheSeed maphash.Seed
-
 	functionBlocklist           []string
 	functionAllowlist           []string
 	functionAllowlistConfigured bool
@@ -44,9 +39,8 @@ type DB struct {
 // The logger is optional; if nil, it defaults to slog.Default().
 func New(ctx context.Context, connector *duckdb.Connector, opts ...OptionFunc) (*DB, error) {
 	o := &Options{
-		MaxConnections:  10,
-		MaxCacheEntries: 1000,
-		Logger:          slog.Default(),
+		MaxConnections: 10,
+		Logger:         slog.Default(),
 	}
 	for _, opt := range opts {
 		err := opt(o)
@@ -69,38 +63,11 @@ func New(ctx context.Context, connector *duckdb.Connector, opts ...OptionFunc) (
 
 	arrowSemaphore := semaphore.NewWeighted(int64(o.MaxConnections))
 
-	// the cache can be limited either by number of entries or total size in bytes
-	// if both are set, MaxCacheBytes takes precedence
-	cacheOpts := &otter.Options[uint64, []byte]{}
-
-	switch {
-	case o.MaxCacheBytes > 0:
-		cacheOpts.MaximumWeight = uint64(o.MaxCacheBytes)
-		cacheOpts.Weigher = func(key uint64, value []byte) uint32 {
-			return uint32(len(value))
-		}
-
-	case o.MaxCacheEntries > 0:
-		cacheOpts.MaximumSize = o.MaxCacheEntries
-	}
-
-	if o.TTL > 0 {
-		cacheOpts.ExpiryCalculator = otter.ExpiryCreating[uint64, []byte](o.TTL)
-	}
-
-	cache, err := otter.New[uint64, []byte](cacheOpts)
-	if err != nil {
-		return nil, fmt.Errorf("query: failed to create cache: %w", err)
-	}
-
 	return &DB{
 		db: db,
 
 		connPool:       newArrowSyncPool(ctx, connector, o.Logger),
 		arrowSemaphore: arrowSemaphore,
-
-		cache:     cache,
-		cacheSeed: maphash.MakeSeed(), // Initialize the cache seed for consistent hashing
 
 		functionBlocklist:           append([]string(nil), o.FunctionBlocklist...),
 		functionAllowlist:           append([]string(nil), functionAllowlist...),
@@ -242,34 +209,20 @@ func (db *DB) validateQuery(ctx context.Context, query string, allowedSchemas []
 	return nil
 }
 
-func (db *DB) QueryJSON(ctx context.Context, query string, allowedSchemas []string, useCache bool) (json.RawMessage, bool, error) {
+func (db *DB) QueryJSON(ctx context.Context, query string, allowedSchemas []string) (json.RawMessage, error) {
 	err := db.validateQuery(ctx, query, allowedSchemas)
 	if err != nil {
-		return nil, false, err
-	}
-
-	var key uint64
-	var data []byte
-
-	if useCache && db.cache != nil {
-		key, data = db.cacheGet("j", query)
-		if data != nil {
-			return data, true, nil
-		}
+		return nil, err
 	}
 
 	var buf bytes.Buffer
 
 	err = db.writeJSON(ctx, query, &buf)
 	if err != nil {
-		return nil, false, err
+		return nil, err
 	}
 
-	if useCache && db.cache != nil {
-		db.cacheSet(key, buf.Bytes())
-	}
-
-	return buf.Bytes(), false, nil
+	return buf.Bytes(), nil
 }
 
 func (db *DB) WriteJSON(ctx context.Context, query string, allowedSchemas []string, w io.Writer) error {
@@ -331,34 +284,20 @@ func (db *DB) writeJSON(ctx context.Context, query string, w io.Writer) error {
 	return nil
 }
 
-func (db *DB) QueryArrow(ctx context.Context, query string, allowedSchemas []string, useCache bool) ([]byte, bool, error) {
+func (db *DB) QueryArrow(ctx context.Context, query string, allowedSchemas []string) ([]byte, error) {
 	err := db.validateQuery(ctx, query, allowedSchemas)
 	if err != nil {
-		return nil, false, err
-	}
-
-	var key uint64
-	var data []byte
-
-	if useCache && db.cache != nil {
-		key, data = db.cacheGet("a", query)
-		if data != nil {
-			return data, true, nil
-		}
+		return nil, err
 	}
 
 	var buf bytes.Buffer
 
 	err = db.writeArrow(ctx, query, &buf)
 	if err != nil {
-		return nil, false, err
+		return nil, err
 	}
 
-	if useCache && db.cache != nil {
-		db.cacheSet(key, buf.Bytes())
-	}
-
-	return buf.Bytes(), false, nil
+	return buf.Bytes(), nil
 }
 
 func (db *DB) WriteArrow(ctx context.Context, query string, allowedSchemas []string, w io.Writer) error {
@@ -404,21 +343,4 @@ func (db *DB) writeArrow(ctx context.Context, query string, w io.Writer) error {
 	}
 
 	return nil
-}
-
-// cacheGet always returns a key, and either the cached data or nil if not found
-func (db *DB) cacheGet(format, query string) (uint64, []byte) {
-	// the key has to be different based on the output data type, so we can cache arrow and json separately
-	key := maphash.String(db.cacheSeed, query+format)
-
-	entry, ok := db.cache.GetEntry(key)
-	if ok {
-		return key, entry.Value
-	}
-
-	return key, nil
-}
-
-func (db *DB) cacheSet(key uint64, data []byte) {
-	db.cache.Set(key, data)
 }
