@@ -50,22 +50,55 @@ mkcert -install # Install mkcert CA
 mkcert localhost # create localhost.pem and localhost-key.pem
 ```
 
-### Programmatic Extension Initialization
+### Programmatic Connector Startup
 
-Use `pkg/extensions` from a DuckDB connector callback:
+![DuckDB Go server startup](docs/duckdb-go-server-startup.svg)
+
+[Archify startup source](docs/server-startup.dataflow.json)
+
+Use `pkg/connector` before constructing `pkg/query`. For locked deployments, provision trusted extensions ahead of startup
+and load them during bootstrap:
 
 ```go
-connector, err := duckdb.NewConnector(":memory:", func(execer driver.ExecerContext) error {
-	return extensions.ParseAndInstall(connectorCtx, execer, "httpfs", "netquack|community")
-})
+duckdbConnector, err := connector.Open(
+	ctx,
+	"/srv/mosaic/catalog.duckdb",
+	connector.WithBootstrapInitializer(func(ctx context.Context, execer driver.ExecerContext) error {
+		return extensions.LoadInstalled(ctx, execer, "httpfs")
+	}),
+	connector.WithSetting("http_timeout", "30"),
+	connector.WithMemoryLimit("8GB"),
+	connector.WithThreads(8),
+	connector.WithTempDirectory("/srv/mosaic/spill"),
+	connector.WithMaxTempDirectorySize("64GB"),
+	connector.WithAllowedDirectories("/srv/mosaic/datasets"),
+)
 ```
 
-Repository suffixes are DuckDB aliases. Use `InstallAndLoadFromCustomRepository` for repository URLs or paths, and
-`LoadInstalled`, `LoadFile`, or `InstallAndLoadFile` for pre-provisioned extensions. The callback runs for every physical
-connection; use a long-lived context and call `PingContext` before serving to force initialization. The first failure
-aborts the connection. Extensions are trusted native code, so load only trusted repositories and files.
+`Open` verifies an initial connection and returns startup failures before serving. `WithBootstrapInitializer` runs once
+and may create secrets or attach reviewed local or remote catalogs. `WithConnectionInitializer` runs for every physical
+connection after bootstrap and optional locking, so its operations must respect the finalized policy.
+
+`WithSetting(name, value)` and typed settings run in supplied order after bootstrap and before locking. Names are SQL
+identifiers; DuckDB casts the string values. Prefer these options for mutable or extension-defined settings: DSN setting
+order is unspecified.
+
+`WithMemoryLimit` bounds DuckDB's buffer manager, not the Go process or Mosaic's result cache. `WithThreads` is shared by
+concurrent queries; tune both alongside the pool size. `WithMaxTempDirectorySize` requires a configured temporary directory.
+
+Share one live connector per file-backed database path across query pools; DuckDB caches the database and its configuration
+lock by path.
+
+For startup installation, `extensions.ParseAndInstall` accepts DuckDB repository aliases such as `netquack|community`;
+`InstallAndLoadFromCustomRepository` accepts URLs or paths. `LoadInstalled`, `LoadFile`, and `InstallAndLoadFile` support
+provisioned extensions. Locked-mode startup defaults accept only core-signed binaries. Extensions are trusted native code
+with process privileges, so load only trusted sources.
 
 ### Programmatic Authorization
+
+![DuckDB Go server request authorization](docs/duckdb-go-server-request-authorization.svg)
+
+[Archify request source](docs/request-authorization.sequence.json)
 
 Programs embedding `pkg/server` should authenticate with standard HTTP middleware around the handler returned by
 `server.New`, then use `server.WithAuthorizer` only for command-aware policy. `AuthorizeRequest` runs once before POST
@@ -79,6 +112,38 @@ closed. `ErrUnauthenticated`, `ErrPermissionDenied`, and `ErrInvalidCommand` map
 errors are logged and returned as sanitized 500 responses. Authorization can allow or deny the normalized command type
 and exact SQL, but cannot rewrite SQL or sandbox the shared process, filesystem, network, extensions, catalogs, or
 credentials.
+
+### DuckDB External Access
+
+Any of these `pkg/connector` options enables locked mode; omitting all three preserves DuckDB's defaults:
+
+- `WithCatalogOnly()`: restrict access to the primary and bootstrap-attached catalogs.
+- `WithAllowedDirectories(...)`: additionally grant local directory trees or remote URL prefixes.
+- `WithAllowedPaths(...)`: additionally grant exact local or remote paths.
+
+Grant options append across calls and already imply `WithCatalogOnly()`. Values pass directly to DuckDB without
+normalization or existence checks; an empty directory grants the working directory. Remote grants require a matching
+extension loaded during bootstrap. Local grants allow both reads and writes, including `COPY` and `ATTACH`.
+
+Locked mode applies DuckDB's [security settings](https://duckdb.org/docs/lts/operations_manual/securing_duckdb/overview):
+no ungranted external access, extension installation or autoloading, community/unsigned/metadata-mismatched extensions,
+persistent-secret storage, or unredacted secret output. Configuration is locked without exceptions. Security defaults
+apply at database opening, but caller DSN values can override them during opening and trusted bootstrap. Finalization
+reapplies the restrictions after bootstrap and caller settings; startup fails if a required restriction cannot be applied.
+
+Spilling and the external-file cache are disabled unless explicitly enabled. `WithTempDirectory` enables spilling **and
+grants SQL read/write access to the entire directory tree**; use a dedicated process-private directory. Without it,
+memory-heavy queries may fail rather than spill. `WithExternalFileCache` caches external file ranges in memory only in
+DuckDB 1.5.5; `WithParquetMetadataCache` caches parsed metadata. Neither is Mosaic's encoded result cache.
+
+Bootstrap-attached catalogs remain usable after locking. DuckDB 1.5.5 implicitly grants each local database file (including
+the primary database) and its exact `.wal`, `.wal.checkpoint`, and `.wal.recovery` sidecars, not the containing directory.
+These grants survive `DETACH`; allowed functions such as `read_blob` can read those files. Add a function allowlist when
+that distinction matters.
+
+These settings are not a sandbox: they do not provide authentication, origin checks, per-user isolation, function policy,
+or resource limits and timeouts. Use server-owned paths, a non-root process, minimal filesystem/network permissions, and
+OS or container isolation; DuckDB cannot prevent later symlink, mount, or path races or constrain trusted native extensions.
 
 ### Function Policies
 

@@ -11,8 +11,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/duckdb/duckdb-go/v2"
-
+	"github.com/uwdata/mosaic/packages/server/duckdb-server-go/pkg/connector"
 	"github.com/uwdata/mosaic/packages/server/duckdb-server-go/pkg/extensions"
 	"github.com/uwdata/mosaic/packages/server/duckdb-server-go/pkg/query"
 	"github.com/uwdata/mosaic/packages/server/duckdb-server-go/pkg/server"
@@ -48,6 +47,7 @@ func run() int {
 	if *functionBlocklistStr != "" {
 		functionBlocklist = strings.Split(*functionBlocklistStr, ",")
 	}
+	functionBlocklistConfigured := strings.TrimSpace(strings.ReplaceAll(*functionBlocklistStr, ",", "")) != ""
 
 	ctx := context.Background()
 
@@ -55,6 +55,16 @@ func run() int {
 	logger := slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{
 		Level: logLevel,
 	}))
+
+	ttl, err := time.ParseDuration(*ttlStr)
+	if err != nil {
+		logger.Error("main: invalid cache-ttl", "error", err)
+		return 1
+	}
+	if functionAllowlist.set && functionBlocklistConfigured {
+		logger.Error("main: function allowlist and blocklist cannot both be configured")
+		return 1
+	}
 
 	if err := extensions.Validate(*extensionsStr); err != nil {
 		logger.Error("main: invalid load-extensions", "error", err, "load-extensions", *extensionsStr)
@@ -73,25 +83,23 @@ func run() int {
 		}
 	}
 
-	connector, err := duckdb.NewConnector(*dbPath, func(execer driver.ExecerContext) error {
-		return extensions.ParseAndInstall(ctx, execer, *extensionsStr)
-	})
+	duckdbConnector, err := connector.Open(
+		ctx,
+		*dbPath,
+		connector.WithBootstrapInitializer(func(ctx context.Context, execer driver.ExecerContext) error {
+			return extensions.ParseAndInstall(ctx, execer, *extensionsStr)
+		}),
+	)
 	if err != nil {
 		logger.Error("main: error creating duckdb connector", "error", err)
 		return 1
 	}
 	defer func() {
-		err = connector.Close()
+		err = duckdbConnector.Close()
 		if err != nil {
 			logger.Error("main: error closing duckdb connector", "error", err)
 		}
 	}()
-
-	ttl, err := time.ParseDuration(*ttlStr)
-	if err != nil {
-		logger.Error("main: invalid cache-ttl", "error", err)
-		return 1
-	}
 
 	queryOptions := []query.OptionFunc{
 		query.WithMaxConnections(*poolSize),
@@ -107,7 +115,7 @@ func run() int {
 		}))
 	}
 
-	db, err := query.New(ctx, connector, queryOptions...)
+	db, err := query.New(ctx, duckdbConnector, queryOptions...)
 	if err != nil {
 		logger.Error("main: error creating query DB", "error", err)
 		return 1
