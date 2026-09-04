@@ -19,7 +19,7 @@ from mosaic_widget.frame_interop import (
 
 if TYPE_CHECKING:
     from narwhals.typing import IntoFrame
-    from typing_extensions import Buffer, NotRequired, TypeIs
+    from typing_extensions import Buffer, TypeIs
 
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
@@ -31,7 +31,6 @@ class _QueryParams(TypedDict):
     type: Literal["arrow", "exec", "json"]
     sql: str
     uuid: str  # name
-    persist: NotRequired[bool]
 
 
 class SupportsToDict(Protocol):
