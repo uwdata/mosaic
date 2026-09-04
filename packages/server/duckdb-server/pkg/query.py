@@ -17,7 +17,7 @@ R = TypeVar("R", bound=str | bytes | None)
 
 
 class _QueryParams(TypedDict):
-    type: Literal["arrow", "exec", "json"]
+    type: Literal["arrow", "exec"]
     sql: str
     uuid: str  # name
     persist: NotRequired[bool]
@@ -60,8 +60,3 @@ def arrow_to_bytes(reader: pa.RecordBatchReader) -> bytes:
 
 def get_arrow_bytes(con: duckdb.DuckDBPyConnection, sql: str) -> bytes:
     return arrow_to_bytes(get_arrow(con, sql))
-
-
-def get_json(con: duckdb.DuckDBPyConnection, sql: str) -> str | None:
-    result = con.query(sql).df()
-    return result.to_json(orient="records")
