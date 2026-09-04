@@ -100,8 +100,8 @@ export function queryHandler(db, queryCache) {
     }
 
     try {
-      const { sql, type = 'json' } = query;
-      console.log(`> ${type.toUpperCase()}${sql ? ` ${sql}` : ''}`);
+      const { sql, type } = query;
+      console.log(`> ${String(type).toUpperCase()}${sql ? ` ${sql}` : ''}`);
 
       // process query and return result
       switch (type) {
@@ -113,10 +113,6 @@ export function queryHandler(db, queryCache) {
         case 'arrow':
           // Apache Arrow response format
           res.arrow(await retrieve(query, sql => db.arrowBuffer(sql)));
-          break;
-        case 'json':
-          // JSON response format
-          res.json(await retrieve(query, sql => db.query(sql)));
           break;
         default:
           res.error(`Unrecognized command: ${type}`, 400);
@@ -135,10 +131,6 @@ function httpResponse(res) {
       res.setHeader('Content-Type', 'application/vnd.apache.arrow.stream');
       for (const chunk of data) res.write(chunk);
       res.end();
-    },
-    json(data) {
-      res.setHeader('Content-Type', 'application/json');
-      res.end(JSON.stringify(data));
     },
     done() {
       res.writeHead(200);
