@@ -1,8 +1,7 @@
-import type { AggregateNode } from '@uwdata/mosaic-sql';
+import type { AggregateNode, ColumnDescription } from '@uwdata/mosaic-sql';
 import { Query, asTableRef, count, isAggregateExpression, isNode, isNull, max, min, sql } from '@uwdata/mosaic-sql';
-import { jsType } from './js-type.js';
 import type { Coordinator } from '../Coordinator.js';
-import type { FieldInfoRequest, FieldInfo, Stat, FieldRef, ColumnDescription } from '../types.js';
+import type { FieldInfoRequest, FieldInfo, Stat, FieldRef } from '../types.js';
 
 export const Count = 'count';
 export const Nulls = 'nulls';
@@ -68,9 +67,9 @@ async function getFieldInfo(mc: Coordinator, { table, column, stats }: FieldInfo
 
   let desc: ColumnDescription | undefined;
   try {
-    [desc] = Array.from(
-      await mc.query(Query.describe(q))
-    ) as ColumnDescription[];
+    [desc] = mc.manager.codegen().normalizeDescribeResult(
+      Array.from(await mc.query(Query.describe(q)))
+    );
   } catch {
     // ignore query failure, use dummy description below
   }
@@ -88,7 +87,7 @@ async function getFieldInfo(mc: Coordinator, { table, column, stats }: FieldInfo
     table,
     column: `${column}`,
     sqlType: desc.column_type,
-    type: jsType(desc.column_type),
+    type: mc.manager.codegen().jsType(desc.column_type),
     nullable: desc.null === 'YES'
   };
 
@@ -112,14 +111,14 @@ async function getFieldInfo(mc: Coordinator, { table, column, stats }: FieldInfo
  * @returns Promise resolving to array of field information.
  */
 async function getTableInfo(mc: Coordinator, table: string): Promise<FieldInfo[]> {
-  const result = Array.from(
-    await mc.query(`DESC ${asTableRef(table)}`)
-  ) as ColumnDescription[];
+  const result = mc.manager.codegen().normalizeDescribeResult(
+    Array.from(await mc.query(`DESC ${asTableRef(table)}`))
+  );
   return result.map(desc => ({
     table,
     column: desc.column_name,
     sqlType: desc.column_type,
-    type: jsType(desc.column_type),
+    type: mc.manager.codegen().jsType(desc.column_type),
     nullable: desc.null === 'YES'
   }));
 }

@@ -58,6 +58,22 @@ export type WindowFunctionName =
 
 export type MaybeArray<T> = T | T[];
 
+/** String indicating a JavaScript data type. */
+export type JSType =
+  | 'number'
+  | 'date'
+  | 'boolean'
+  | 'string'
+  | 'array'
+  | 'object';
+
+/** A result row from a DESCRIBE query. */
+export interface ColumnDescription {
+  column_name: string;
+  column_type: string;
+  null: 'YES' | 'NO';
+}
+
 export type SelectEntry =
   | null
   | string
