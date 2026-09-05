@@ -5,46 +5,52 @@ describe('Interval functions', () => {
   it('includes interval', async () => {
     const expr = interval('CENTURY', 2);
     expect(expr instanceof IntervalNode).toBe(true);
-    await expect(expr).toBeValidExpr('INTERVAL 2 CENTURY');
+    await expect(expr).toBeValidExpr(`INTERVAL '2 CENTURY'`);
   });
   it('includes years', async () => {
     const expr = years(5);
     expect(expr instanceof IntervalNode).toBe(true);
-    await expect(expr).toBeValidExpr('INTERVAL 5 YEARS');
+    await expect(expr).toBeValidExpr(`INTERVAL '5 YEARS'`);
   });
   it('includes months', async () => {
     const expr = months(5);
     expect(expr instanceof IntervalNode).toBe(true);
-    await expect(expr).toBeValidExpr('INTERVAL 5 MONTHS');
+    await expect(expr).toBeValidExpr(`INTERVAL '5 MONTHS'`);
   });
   it('includes days', async () => {
     const expr = days(5);
     expect(expr instanceof IntervalNode).toBe(true);
-    await expect(expr).toBeValidExpr('INTERVAL 5 DAYS');
+    await expect(expr).toBeValidExpr(`INTERVAL '5 DAYS'`);
   });
   it('includes hours', async () => {
     const expr = hours(5);
     expect(expr instanceof IntervalNode).toBe(true);
-    await expect(expr).toBeValidExpr('INTERVAL 5 HOURS');
+    await expect(expr).toBeValidExpr(`INTERVAL '5 HOURS'`);
   });
   it('includes minutes', async () => {
     const expr = minutes(5);
     expect(expr instanceof IntervalNode).toBe(true);
-    await expect(expr).toBeValidExpr('INTERVAL 5 MINUTES');
+    await expect(expr).toBeValidExpr(`INTERVAL '5 MINUTES'`);
   });
   it('includes seconds', async () => {
     const expr = seconds(5);
     expect(expr instanceof IntervalNode).toBe(true);
-    await expect(expr).toBeValidExpr('INTERVAL 5 SECONDS');
+    await expect(expr).toBeValidExpr(`INTERVAL '5 SECONDS'`);
   });
   it('includes milliseconds', async () => {
     const expr = milliseconds(5);
     expect(expr instanceof IntervalNode).toBe(true);
-    await expect(expr).toBeValidExpr('INTERVAL 5 MILLISECONDS');
+    await expect(expr).toBeValidExpr(`INTERVAL '5 MILLISECONDS'`);
   });
   it('includes microseconds', async () => {
     const expr = microseconds(5);
     expect(expr instanceof IntervalNode).toBe(true);
-    await expect(expr).toBeValidExpr('INTERVAL 5 MICROSECONDS');
+    await expect(expr).toBeValidExpr(`INTERVAL '5 MICROSECONDS'`);
+  });
+  it('supports negative steps', async () => {
+    await expect(days(-3)).toBeValidExpr(`INTERVAL '-3 DAYS'`);
+  });
+  it('supports fractional steps', async () => {
+    await expect(days(0.5)).toBeValidExpr(`INTERVAL '0.5 DAYS'`);
   });
 });
