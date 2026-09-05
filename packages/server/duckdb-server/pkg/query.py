@@ -2,22 +2,18 @@ from __future__ import annotations
 
 import logging
 from hashlib import sha256
-from typing import TYPE_CHECKING, Literal, TypedDict, TypeVar
+from typing import TYPE_CHECKING, Literal, TypedDict
 
 import pyarrow as pa
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
-
-    import duckdb
     from diskcache import Cache
+    from duckdb import DuckDBPyConnection as Con
     from typing_extensions import NotRequired
-
-R = TypeVar("R", bound=str | bytes | None)
 
 
 class _QueryParams(TypedDict):
-    type: Literal["arrow", "exec", "json"]
+    type: Literal["arrow", "exec"]
     sql: str
     uuid: str  # name
     persist: NotRequired[bool]
@@ -26,28 +22,24 @@ class _QueryParams(TypedDict):
 logger = logging.getLogger(__name__)
 
 
-def get_key(sql: str, command: str) -> str:
+def get_key(sql: str, command: Literal["arrow"]) -> str:
     return f"{sha256(sql.encode('utf-8')).hexdigest()}.{command}"
 
 
-def retrieve(cache: Cache, query: _QueryParams, get: Callable[[str], R]) -> R:
+def get_arrow(con: Con, sql: str) -> pa.RecordBatchReader:
+    return con.query(sql).arrow()
+
+
+def retrieve(cache: Cache, query: _QueryParams, con: Con) -> bytes:
     sql = query.get("sql")
-    command = query.get("type")
-
-    key = get_key(sql, command)
-    result = cache.get(key)
-
-    if result:
+    key = get_key(sql, "arrow")
+    if isinstance((result := cache.get(key)), bytes):
         logger.debug("Cache hit")
     else:
-        result = get(sql)
+        result = arrow_to_bytes(get_arrow(con, sql))
         if query.get("persist", False):
             cache[key] = result
-    return result  # pyright: ignore[reportReturnType]
-
-
-def get_arrow(con: duckdb.DuckDBPyConnection, sql: str) -> pa.RecordBatchReader:
-    return con.query(sql).arrow()
+    return result
 
 
 def arrow_to_bytes(reader: pa.RecordBatchReader) -> bytes:
@@ -56,12 +48,3 @@ def arrow_to_bytes(reader: pa.RecordBatchReader) -> bytes:
         for batch in reader:
             writer.write(batch)
     return sink.getvalue().to_pybytes()
-
-
-def get_arrow_bytes(con: duckdb.DuckDBPyConnection, sql: str) -> bytes:
-    return arrow_to_bytes(get_arrow(con, sql))
-
-
-def get_json(con: duckdb.DuckDBPyConnection, sql: str) -> str | None:
-    result = con.query(sql).df()
-    return result.to_json(orient="records")

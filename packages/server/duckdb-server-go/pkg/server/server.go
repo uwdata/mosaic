@@ -32,7 +32,6 @@ type commandResponse struct {
 var commandResponses = map[CommandType]commandResponse{
 	CommandExec:  {wsMessage: websocket.MessageText},
 	CommandArrow: {contentType: "application/vnd.apache.arrow.stream", wsMessage: websocket.MessageBinary},
-	CommandJSON:  {contentType: "application/json", wsMessage: websocket.MessageText},
 }
 
 type queryParamsError string
@@ -46,7 +45,6 @@ func (e queryParamsError) Error() string {
 type commandExecutor interface {
 	Exec(context.Context, string) error
 	QueryArrow(context.Context, string, []string, bool) ([]byte, bool, error)
-	QueryJSON(context.Context, string, []string, bool) (json.RawMessage, bool, error)
 }
 
 type handler struct {
@@ -293,9 +291,6 @@ func (s *handler) execCommand(ctx context.Context, params queryParams, allowedSc
 
 	case CommandArrow:
 		response.data, response.cacheHit, err = s.db.QueryArrow(ctx, command.SQL(), allowedSchemas, useCache)
-
-	case CommandJSON:
-		response.data, response.cacheHit, err = s.db.QueryJSON(ctx, command.SQL(), allowedSchemas, useCache)
 
 	default:
 		return commandResponse{}, fmt.Errorf("server: no executor for command type %q", command.Type())

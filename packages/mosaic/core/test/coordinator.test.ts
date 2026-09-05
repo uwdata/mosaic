@@ -1,7 +1,7 @@
 import { tableFromArrays, tableToIPC } from '@uwdata/flechette';
 import { Query } from '@uwdata/mosaic-sql';
 import { describe, it, expect } from 'vitest';
-import { clausePoint, type Connector, Coordinator, coordinator, type JSONQueryRequest, makeClient, Selection } from '../src/index.js';
+import { type ArrowQueryRequest, clausePoint, type Connector, Coordinator, coordinator, makeClient, Selection } from '../src/index.js';
 import { QueryResult, QueryState } from '../src/util/query-result.js';
 
 async function wait() {
@@ -99,10 +99,10 @@ describe('coordinator', () => {
 
     // Mock the connector
     const connector = {
-      async query(req: JSONQueryRequest) {
+      async query(req: ArrowQueryRequest) {
         const index = req.sql.includes("WHERE") ? 1 : 0;
         events.push(`CONNECT ${index}`);
-        return { index };
+        return tableToIPC(tableFromArrays({ index: [index] }), {})!;
       },
     } as unknown as Connector;
 

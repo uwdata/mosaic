@@ -94,7 +94,7 @@ The input _query_ should produce a SQL query upon string coercion.
 
 The supported _options_ are:
 
-- _type_: The return format type. One of `"arrow"` (default) or `"json"`.
+- _type_: The return format type. Only `"arrow"` (the default) is supported.
 - _cache_: A Boolean flag (default `true`) indicating if the query result should be cached.
 - _priority_: A value indicating the query priority, one of: `Priority.High`, `Priority.Normal` (the default), or `Priority.Low`.
 

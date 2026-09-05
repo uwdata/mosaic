@@ -16,7 +16,7 @@ pub fn benchmark(c: &mut Criterion) {
     });
 
     let mut group = c.benchmark_group("handle");
-    for command in [Command::Arrow, Command::Json].iter() {
+    for command in [Command::Arrow].iter() {
         group.bench_with_input(
             BenchmarkId::from_parameter(to_value(command).unwrap().to_string()),
             command,

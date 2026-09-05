@@ -13,20 +13,20 @@ describe('QueryManager', () => {
       // @ts-expect-error assumes type value
       query: async ({ sql }) => {
         expect(sql).toBe('SELECT 1');
-        return [{ column: 1 }];
+        return tableToIPC(tableFromArrays({ column: [1] }), {})!;
       }
     });
 
     const request: QueryRequest = {
-      type: 'json',
+      type: 'arrow',
       query: 'SELECT 1'
     };
 
     const result = queryManager.request(request);
     expect(result).toBeInstanceOf(QueryResult);
 
-    const data = await result;
-    expect(data).toEqual([{ column: 1 }]);
+    const data = await result as Table;
+    expect(data.toArray()).toEqual([{ column: 1 }]);
   });
 
   it('should not run a query when there is a pending exec', async () => {
@@ -47,7 +47,7 @@ describe('QueryManager', () => {
     };
 
     const request2: QueryRequest = {
-      type: 'json',
+      type: 'arrow',
       query: 'SELECT * FROM test'
     };
 

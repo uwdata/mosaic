@@ -1,4 +1,4 @@
-import type { ArrowQueryRequest, Connector, ExecQueryRequest, JSONQueryRequest, ConnectorQueryRequest } from './Connector.js';
+import type { ArrowQueryRequest, Connector, ExecQueryRequest, ConnectorQueryRequest } from './Connector.js';
 
 interface RestOptions {
   uri?: string;
@@ -25,7 +25,6 @@ export class RestConnector implements Connector {
 
   async query(query: ArrowQueryRequest): Promise<ArrayBuffer>;
   async query(query: ExecQueryRequest): Promise<void>;
-  async query(query: JSONQueryRequest): Promise<Record<string, unknown>[]>;
   async query(query: ConnectorQueryRequest): Promise<unknown> {
     const req = fetch(this._uri, {
       method: 'POST',
@@ -41,8 +40,6 @@ export class RestConnector implements Connector {
       throw new Error(`Query failed with HTTP status ${res.status}: ${await res.text()}`);
     }
 
-    return query.type === 'exec' ? req
-      : query.type === 'arrow' ? res.arrayBuffer()
-      : res.json();
+    return query.type === 'exec' ? req : res.arrayBuffer();
   }
 }

@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { SocketConnector } from './connectors/socket.js';
 import { type Connector } from './connectors/Connector.js';
 import { PreAggregator, type PreAggregateOptions } from './preagg/PreAggregator.js';
@@ -175,41 +174,21 @@ export class Coordinator {
    */
   query(
     query: QueryType,
-    options?: {
+    options: {
       type?: 'arrow';
       cache?: boolean;
       persist?: boolean;
       priority?: number;
       [key: string]: unknown;
-    }
-  ): QueryResult<Table>;
-  query(
-    query: QueryType,
-    options?: {
-      type?: 'json';
-      cache?: boolean;
-      persist?: boolean;
-      priority?: number;
-      [key: string]: unknown;
-    }
-  ): QueryResult<unknown>;
-  query(
-    query: QueryType,
-    options: {
-      type?: 'arrow' | 'json';
-      cache?: boolean;
-      persist?: boolean;
-      priority?: number;
-      [key: string]: unknown;
     } = {}
-  ): QueryResult<any> {
+  ): QueryResult<Table> {
     const {
       type = 'arrow',
       cache = true,
       priority = Priority.Normal,
       ...otherOptions
     } = options;
-    return this.manager.request({ type, query, cache, options: otherOptions }, priority);
+    return this.manager.request({ type, query, cache, options: otherOptions }, priority) as QueryResult<Table>;
   }
 
   /**
@@ -222,16 +201,8 @@ export class Coordinator {
    */
   prefetch(
     query: QueryType,
-    options?: { type?: 'arrow'; [key: string]: unknown }
-  ): QueryResult<Table>
-  prefetch(
-    query: QueryType,
-    options?: { type?: 'json'; [key: string]: unknown }
-  ): QueryResult<unknown>
-  prefetch(
-    query: QueryType,
-    options: any = {}
-  ): QueryResult<any> {
+    options: { type?: 'arrow'; [key: string]: unknown } = {}
+  ): QueryResult<Table> {
     return this.query(query, { ...options, cache: true, priority: Priority.Low });
   }
 

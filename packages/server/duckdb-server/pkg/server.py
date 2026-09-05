@@ -3,13 +3,12 @@ from __future__ import annotations
 import logging
 import sys
 import time
-from functools import partial
 from typing import TYPE_CHECKING, Any, Protocol
 
 import ujson
 from socketify import App, CompressOptions, OpCode
 
-from pkg.query import get_arrow_bytes, get_json, retrieve
+from pkg.query import retrieve
 
 if TYPE_CHECKING:
     import duckdb
@@ -30,7 +29,6 @@ SLOW_QUERY_THRESHOLD = 5000
 class Handler(Protocol):
     def done(self) -> None: ...
     def arrow(self, buffer: bytes) -> None: ...
-    def json(self, data: Any) -> None: ...
     def error(self, error: Any) -> None: ...
 
 
@@ -50,10 +48,6 @@ class SocketHandler(Handler):
         ok = self.ws.send(buffer, OpCode.BINARY)
         self.check(ok)
 
-    def json(self, data: Any) -> None:
-        ok = self.ws.send(data, OpCode.TEXT)
-        self.check(ok)
-
     def error(self, error: object) -> None:
         ok = self.ws.send({"error": str(error)}, OpCode.TEXT)
         self.check(ok)
@@ -69,10 +63,6 @@ class HTTPHandler(Handler):
     def arrow(self, buffer: bytes) -> None:
         self.res.write_header("Content-Type", "application/octet-stream")
         self.res.end(buffer)
-
-    def json(self, data: Any) -> None:
-        self.res.write_header("Content-Type", "application/json")
-        self.res.end(data)
 
     def error(self, error: object) -> None:
         self.res.write_status(500)
@@ -97,11 +87,8 @@ def handle_query(
             con.execute(sql)
             handler.done()
         elif command == "arrow":
-            buffer = retrieve(cache, query, partial(get_arrow_bytes, con))
+            buffer = retrieve(cache, query, con)
             handler.arrow(buffer)
-        elif command == "json":
-            json = retrieve(cache, query, partial(get_json, con))
-            handler.json(json)
         else:
             msg = f"Unknown command {command}"
             raise ValueError(msg)

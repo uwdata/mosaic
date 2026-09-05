@@ -1,6 +1,6 @@
 # DuckDB Go Server
 
-A Go-based server that runs a local DuckDB instance and support queries over Web Sockets or HTTP/HTTPS, returning data in either [Apache Arrow](https://arrow.apache.org/) or JSON format.
+A Go-based server that runs a local DuckDB instance and support queries over Web Sockets or HTTP/HTTPS, returning data in [Apache Arrow](https://arrow.apache.org/) format.
 
 _Note:_ This package provides a local DuckDB server. To instead use DuckDB-WASM in the browser, use the `wasmConnector` in the [`mosaic-core`](https://github.com/uwdata/mosaic/tree/main/packages/mosaic/mosaic-core) package.
 
@@ -194,7 +194,7 @@ is a useful autoloading cross-check, but it is not exhaustive: the pinned Azure 
 Trusted initialization can still load filesystem extensions and attach remote Iceberg or other catalogs before accepting
 queries. Queries against those attached catalogs use catalog and table identifiers rather than caller-supplied URI
 literals, so they remain usable. Enabling this policy rejects all `exec` commands and rejects the known nested-SQL
-binders and executors `query`, `json_execute_serialized_sql`, and `json_serialize_plan` outright. `json` and `arrow`
+binders and executors `query`, `json_execute_serialized_sql`, and `json_serialize_plan` outright. `arrow`
 requests are limited to statements DuckDB can serialize for validation. Connector initialization is outside that command
 path.
 
@@ -246,7 +246,7 @@ when DuckDB or its extensions change. To restrict file-reading functions, also e
 scans such as `FROM 'data.parquet'` are rejected as unqualified table references. These controls are not a sandbox: run the
 server with access only to external resources that are safe for every tenant.
 
-If `--schema-match-headers`, `--function-blocklist`, or `--function-allowlist` is configured, `json` and `arrow` requests
+If `--schema-match-headers`, `--function-blocklist`, or `--function-allowlist` is configured, `arrow` requests
 are limited to statements DuckDB can serialize for validation; unsupported forms such as `PRAGMA` and `SET` are rejected,
 with HTTP requests receiving a 400 response. All `exec` requests are also rejected until full-statement authorization is
 supported. This includes every `Coordinator.exec(...)` call, such as data loading, preloading, and DDL/DML. Mosaic
@@ -254,7 +254,7 @@ pre-aggregation also uses `exec` to create schemas and tables, so set `preagg: {
 
 ## API
 
-The server supports queries via HTTP GET and POST, and WebSockets. The GET endpoint is useful for debugging. For example, you can query it with [this url](<http://localhost:3000/?query={"sql":"select 1","type":"json"}>).
+The server supports queries via HTTP GET and POST, and WebSockets. The GET endpoint is useful for debugging. For example, you can query it with [this url](<http://localhost:3000/?query={"sql":"select 1","type":"arrow"}>).
 
 Each endpoint takes a JSON object with a command in the `type`. The server supports the following commands.
 
@@ -265,10 +265,6 @@ Executes the SQL query in the `sql` field.
 ### `arrow`
 
 Executes the SQL query in the `sql` field and returns the result in Apache Arrow format.
-
-### `json`
-
-Executes the SQL query in the `sql` field and returns the result in JSON format.
 
 ## Developers
 

@@ -23,7 +23,7 @@ The following _options_ are supported:
 
 Once launched, the data server will accept HTTP POST requests containing JSON content that consists of a single object with the following properties:
 
-- _type_: The type of query. The type `"exec"` indicates that the provided query should be run with no return value. The `"arrow"` and `"json"` types indicate that a result table should be returned in the corresponding format.
+- _type_: The type of query. The type `"exec"` indicates that the provided query should be run with no return value. The `"arrow"` type indicates that the result table should be returned as Arrow IPC bytes.
 - _sql_: The SQL query string to issue to DuckDB.
 - _persist_: A Boolean flag (default `false`) indicating if the query result should be cached on the server's local file system.
 
