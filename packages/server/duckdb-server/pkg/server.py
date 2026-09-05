@@ -3,13 +3,12 @@ from __future__ import annotations
 import logging
 import sys
 import time
-from functools import partial
 from typing import TYPE_CHECKING, Any, Protocol
 
 import ujson
 from socketify import App, CompressOptions, OpCode
 
-from pkg.query import get_arrow_bytes, retrieve
+from pkg.query import retrieve
 
 if TYPE_CHECKING:
     import duckdb
@@ -88,7 +87,7 @@ def handle_query(
             con.execute(sql)
             handler.done()
         elif command == "arrow":
-            buffer = retrieve(cache, query, partial(get_arrow_bytes, con))
+            buffer = retrieve(cache, query, con)
             handler.arrow(buffer)
         else:
             msg = f"Unknown command {command}"
