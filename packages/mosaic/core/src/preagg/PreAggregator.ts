@@ -1,10 +1,11 @@
-import { ExprNode, ScaleOptions, SelectQuery, Query, ExprValue, MaybeArray, FunctionNode, TableRefNode, createSchema, SelectClauseNode, OrderByNode, and, asNode, ceil, collectColumns, createTable, float64, floor, isBetween, int32, mul, round, scaleTransform, sub, isSelectQuery, isAggregateExpression, ColumnNameRefNode, rewrite } from '@uwdata/mosaic-sql';
+import { ExprNode, ScaleOptions, SelectQuery, Query, ExprValue, MaybeArray, FunctionNode, TableRefNode, VerbatimNode, createSchema, SelectClauseNode, OrderByNode, and, asNode, ceil, collectColumns, createTable, float64, floor, isBetween, int32, mul, round, scaleTransform, sub, isSelectQuery, isAggregateExpression, ColumnNameRefNode, rewrite } from '@uwdata/mosaic-sql';
 import type { Coordinator } from '../Coordinator.js';
 import type { MosaicClient } from '../MosaicClient.js';
 import type { Selection } from '../Selection.js';
 import type { BinMethod, ClauseSource, IntervalMetadata, SelectionClause } from '../SelectionClause.js';
 import { fnv_hash } from '../util/hash.js';
 import { resolvePositional } from '../util/positional.js';
+import { containsNode } from './contains-node.js';
 import { preaggColumns, PreAggColumnsResult } from './preagg-columns.js';
 
 /**
@@ -216,15 +217,17 @@ export class PreAggregator {
         client.query(filter) as SelectQuery,
         active, preaggCols, schema
       );
-      _info.result = mc.exec([
-        createSchema(schema),
-        createTable(_info.table, _info.create, { temp: false })
-      ]);
-      // if create query fails, log and mark as failed
-      _info.result.catch((e: Error) => {
-        mc.logger().error(e);
-        _info.result = null; // indicates lack of view
-      });
+      if (_info) {
+        _info.result = mc.exec([
+          createSchema(schema),
+          createTable(_info.table, _info.create, { temp: false })
+        ]);
+        // if create query fails, log and mark as failed
+        _info.result.catch((e: Error) => {
+          mc.logger().error(e);
+          _info.result = null; // indicates lack of view
+        });
+      }
       info = _info;
     }
 
@@ -335,14 +338,15 @@ function binInterval(
  * @param active Active (selected) columns.
  * @param preaggCols Pre-aggregation columns.
  * @param schema Database schema name.
- * @returns Pre-aggregation information.
+ * @returns Pre-aggregation information, or null if active column
+ *  expressions can not be pushed down to subqueries.
  */
 function preaggregateInfo(
   query: SelectQuery,
   active: ActiveColumnsResult,
   preaggCols: PreAggColumnsResult,
   schema: string
-): PreAggregateInfo {
+): PreAggregateInfo | null {
   const { groupby, having, orderby, output, preagg, qualify } = preaggCols;
   const { columns = {} } = active;
 
@@ -356,8 +360,11 @@ function preaggregateInfo(
     .groupby(groupby, Object.keys(columns));
 
   // ensure active clause columns are selected by subqueries
+  // bail if a column expression contains verbatim SQL text, as any
+  // column references within it can not be identified for pushdown
   const [subq] = create.subqueries;
   if (subq) {
+    if (Object.values(columns).some(c => containsNode(c, VerbatimNode))) return null;
     const cols = Object.values(columns)
       .flatMap(c => collectColumns(c).map(c => c.column));
     subqueryPushdown(subq, cols);

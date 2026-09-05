@@ -1,8 +1,12 @@
-import { asNode, collectAggregates, FromClauseNode, isAggregateExpression, isColumnRef, isSelectQuery, isTableRef, rewrite, sql } from '@uwdata/mosaic-sql';
+import { asNode, collectAggregates, FromClauseNode, isAggregateExpression, isColumnRef, isSelectQuery, isTableRef, rewrite, sql, WindowNode } from '@uwdata/mosaic-sql';
 import type { AggregateNode, ColumnRefNode, ExprNode, Query, SelectQuery } from '@uwdata/mosaic-sql';
 import type { MosaicClient } from '../MosaicClient.js';
 import { resolvePositional } from '../util/positional.js';
+import { containsNode } from './contains-node.js';
 import { sufficientStatistics } from './sufficient-statistics.js';
+
+// marks a value that differs across the base queries of a set operation
+const DIVERGENT = Symbol('divergent base');
 
 // result of determining columns for preaggregation optimization
 export interface PreAggColumnsResult {
@@ -38,7 +42,7 @@ export function preaggColumns(client: MosaicClient): PreAggColumnsResult | null 
   const from = getBase(q, q => {
     const node = q._from[0];
     const ref = node instanceof FromClauseNode && node.expr;
-    return isTableRef(ref) ? ref.name : ref;
+    return isTableRef(ref) ? String(ref) : ref;
   });
   if (typeof from !== 'string') return null;
 
@@ -47,7 +51,11 @@ export function preaggColumns(client: MosaicClient): PreAggColumnsResult | null 
   const avg = (ref: ColumnRefNode) => {
     const name = ref.column;
     const expr = getBase(q, q => q._select.find(c => c.alias === name)?.expr);
-    return sql`(SELECT avg(${expr ?? ref}) FROM "${from}")`;
+    if (expr === DIVERGENT) throw new Error();                      // base queries disagree
+    if (expr && isAggregateExpression(expr)) throw new Error();     // aggregate-valued operand
+    if (expr && containsNode(expr, WindowNode)) throw new Error();  // window-valued operand
+    if (!expr && q.subqueries.length) throw new Error();            // unresolvable through subqueries
+    return sql`(SELECT avg(${expr ?? ref}) FROM ${from})`;
   };
 
   const aggrs = new Map<AggregateNode, ExprNode>();
@@ -65,6 +73,9 @@ export function preaggColumns(client: MosaicClient): PreAggColumnsResult | null 
         // rewrite original select clause to use preaggregates
         output[alias] = result;
       } else {
+        // bail if expression contains a window function, as
+        // window values cannot serve as groupby dimensions
+        if (containsNode(expr, WindowNode)) return null;
         // include non-aggregates in preagg table and update results
         preagg[alias] = expr;
         output[alias] = asNode(alias);
@@ -156,13 +167,13 @@ function analyzeExpression(
  * @param get A getter function to extract
  *  a value from a base query.
  * @returns the base query value, or
- *  `undefined` if there is no source table, or `NaN` if the
+ *  `undefined` if there is no source table, or `DIVERGENT` if the
  *  query operates over multiple source tables.
  */
 function getBase<T>(
   query: Query,
   get: (q: SelectQuery) => T
-): T | number | undefined {
+): T | typeof DIVERGENT | undefined {
   const subq = query.subqueries;
 
   // select query
@@ -175,7 +186,7 @@ function getBase<T>(
   for (let i = 1; i < subq.length; ++i) {
     const value = getBase(subq[i], get);
     if (value === undefined) continue;
-    if (value !== base) return NaN;
+    if (value !== base) return DIVERGENT;
   }
   return base;
 }
