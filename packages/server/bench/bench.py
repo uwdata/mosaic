@@ -157,7 +157,7 @@ def http_exec(host: str, port: int, sql: str) -> None:
 
 
 def http_query(host: str, port: int, qtype: str, sql: str) -> bytes:
-    return http_post(host, port, {"type": qtype, "sql": sql, "persist": False})
+    return http_post(host, port, {"type": qtype, "sql": sql})
 
 
 def bench_http(
@@ -190,7 +190,7 @@ def bench_http(
 
 
 async def ws_query(ws: websockets.ClientConnection, qtype: str, sql: str) -> bytes:
-    await ws.send(json.dumps({"type": qtype, "sql": sql, "persist": False}))
+    await ws.send(json.dumps({"type": qtype, "sql": sql}))
     resp = await ws.recv()
     return resp if isinstance(resp, bytes) else resp.encode()
 

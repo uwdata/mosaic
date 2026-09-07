@@ -87,7 +87,6 @@ The supported _options_ are:
 - _priority_: A value indicating the query priority, one of: `Priority.High`, `Priority.Normal` (the default), or `Priority.Low`.
 
 Any additional options will be passed through to the backing database.
-For example, the Mosaic [data server](../duckdb/data-server) will respect a _persist_ option to cache the result on the server's local file system.
 
 ## prefetch
 

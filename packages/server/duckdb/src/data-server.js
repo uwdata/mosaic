@@ -1,18 +1,13 @@
 import http from 'node:http';
 import url from 'node:url';
 import { WebSocketServer } from 'ws';
-import { Cache, cacheKey } from './Cache.js';
-
-const CACHE_DIR = '.mosaic/cache';
 
 export function dataServer(db, {
-  cache = true,
   rest = true,
   socket = true,
   port = 3000
 } = {}) {
-  const queryCache = cache ? new Cache({ dir: CACHE_DIR }) : null;
-  const handleQuery = queryHandler(db, queryCache);
+  const handleQuery = queryHandler(db);
   const app = createHTTPServer(handleQuery, rest);
   if (socket) createSocketServer(app, handleQuery);
 
@@ -66,26 +61,7 @@ function createSocketServer(server, handleQuery) {
   });
 }
 
-export function queryHandler(db, queryCache) {
-
-  // retrieve query result
-  async function retrieve(query, get) {
-    const { sql, type, persist } = query;
-    const key = cacheKey(sql, type);
-    let result = queryCache?.get(key);
-
-    if (result) {
-      console.log('CACHE HIT');
-    } else {
-      result = await get(sql);
-      if (persist) {
-        queryCache?.set(key, result, { persist });
-      }
-    }
-
-    return result;
-  }
-
+export function queryHandler(db) {
   // query request handler
   return async (res, data) => {
     const t0 = performance.now();
@@ -112,11 +88,11 @@ export function queryHandler(db, queryCache) {
           break;
         case 'arrow':
           // Apache Arrow response format
-          res.arrow(await retrieve(query, sql => db.arrowBuffer(sql)));
+          res.arrow(await db.arrowBuffer(sql));
           break;
         case 'json':
           // JSON response format
-          res.json(await retrieve(query, sql => db.query(sql)));
+          res.json(await db.query(sql));
           break;
         default:
           res.error(`Unrecognized command: ${type}`, 400);

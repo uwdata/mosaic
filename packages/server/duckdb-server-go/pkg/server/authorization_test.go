@@ -25,8 +25,8 @@ import (
 type spyCommandExecutor struct {
 	failOnCallExecutor
 	exec       func(context.Context, string) error
-	queryArrow func(context.Context, string, []string, bool) ([]byte, bool, error)
-	queryJSON  func(context.Context, string, []string, bool) (json.RawMessage, bool, error)
+	queryArrow func(context.Context, string, []string) ([]byte, error)
+	queryJSON  func(context.Context, string, []string) (json.RawMessage, error)
 }
 
 func (s *spyCommandExecutor) Exec(ctx context.Context, sql string) error {
@@ -36,21 +36,21 @@ func (s *spyCommandExecutor) Exec(ctx context.Context, sql string) error {
 	return s.exec(ctx, sql)
 }
 
-func (s *spyCommandExecutor) QueryArrow(ctx context.Context, sql string, schemas []string, persist bool) ([]byte, bool, error) {
+func (s *spyCommandExecutor) QueryArrow(ctx context.Context, sql string, schemas []string) ([]byte, error) {
 	if s.queryArrow == nil {
-		return s.failOnCallExecutor.QueryArrow(ctx, sql, schemas, persist)
+		return s.failOnCallExecutor.QueryArrow(ctx, sql, schemas)
 	}
-	return s.queryArrow(ctx, sql, schemas, persist)
+	return s.queryArrow(ctx, sql, schemas)
 }
 
-func (s *spyCommandExecutor) QueryJSON(ctx context.Context, sql string, schemas []string, persist bool) (json.RawMessage, bool, error) {
+func (s *spyCommandExecutor) QueryJSON(ctx context.Context, sql string, schemas []string) (json.RawMessage, error) {
 	if s.queryJSON == nil {
-		return s.failOnCallExecutor.QueryJSON(ctx, sql, schemas, persist)
+		return s.failOnCallExecutor.QueryJSON(ctx, sql, schemas)
 	}
-	return s.queryJSON(ctx, sql, schemas, persist)
+	return s.queryJSON(ctx, sql, schemas)
 }
 
-func TestCommandDenialPrecedesExecutorAndCacheBoundary(t *testing.T) {
+func TestCommandDenialPrecedesExecutor(t *testing.T) {
 	var executorCalls int
 	spy := &spyCommandExecutor{
 		failOnCallExecutor: failOnCallExecutor{t},
@@ -58,13 +58,13 @@ func TestCommandDenialPrecedesExecutorAndCacheBoundary(t *testing.T) {
 			executorCalls++
 			return nil
 		},
-		queryArrow: func(context.Context, string, []string, bool) ([]byte, bool, error) {
+		queryArrow: func(context.Context, string, []string) ([]byte, error) {
 			executorCalls++
-			return nil, false, nil
+			return nil, nil
 		},
-		queryJSON: func(context.Context, string, []string, bool) (json.RawMessage, bool, error) {
+		queryJSON: func(context.Context, string, []string) (json.RawMessage, error) {
 			executorCalls++
-			return json.RawMessage(`[]`), true, nil
+			return json.RawMessage(`[]`), nil
 		},
 	}
 
@@ -74,12 +74,12 @@ func TestCommandDenialPrecedesExecutorAndCacheBoundary(t *testing.T) {
 		}, nil
 	})))
 
-	req := httptest.NewRequest(http.MethodPost, "/", strings.NewReader(`{"type":"json","sql":"SELECT * FROM sensitive_data","persist":true}`))
+	req := httptest.NewRequest(http.MethodPost, "/", strings.NewReader(`{"type":"json","sql":"SELECT * FROM sensitive_data"}`))
 	res := httptest.NewRecorder()
 	handler.ServeHTTP(res, req)
 
 	require.Equal(t, http.StatusForbidden, res.Code, res.Body.String())
-	require.Zero(t, executorCalls, "denial must occur before query validation, cache lookup, or database execution")
+	require.Zero(t, executorCalls, "denial must occur before query validation or database execution")
 }
 
 func TestCommandAuthorizationRunsImmediatelyBeforeExecutor(t *testing.T) {
@@ -92,12 +92,11 @@ func TestCommandAuthorizationRunsImmediatelyBeforeExecutor(t *testing.T) {
 
 	spy := &spyCommandExecutor{
 		failOnCallExecutor: failOnCallExecutor{t},
-		queryJSON: func(_ context.Context, gotSQL string, schemas []string, persist bool) (json.RawMessage, bool, error) {
+		queryJSON: func(_ context.Context, gotSQL string, schemas []string) (json.RawMessage, error) {
 			appendEvent("executor")
 			require.Equal(t, sql, gotSQL)
 			require.Empty(t, schemas)
-			require.True(t, persist)
-			return json.RawMessage(`[{"value":1}]`), false, nil
+			return json.RawMessage(`[{"value":1}]`), nil
 		},
 	}
 
@@ -110,7 +109,7 @@ func TestCommandAuthorizationRunsImmediatelyBeforeExecutor(t *testing.T) {
 		}, nil
 	})))
 
-	req := httptest.NewRequest(http.MethodPost, "/", strings.NewReader(`{"type":"json","sql":"SELECT 1 AS value","persist":true}`))
+	req := httptest.NewRequest(http.MethodPost, "/", strings.NewReader(`{"type":"json","sql":"SELECT 1 AS value"}`))
 	res := httptest.NewRecorder()
 	handler.ServeHTTP(res, req)
 
@@ -126,9 +125,9 @@ func TestCanceledRequestContextReachesAuthorizationAndExecutor(t *testing.T) {
 
 	spy := &spyCommandExecutor{
 		failOnCallExecutor: failOnCallExecutor{t},
-		queryJSON: func(ctx context.Context, _ string, _ []string, _ bool) (json.RawMessage, bool, error) {
+		queryJSON: func(ctx context.Context, _ string, _ []string) (json.RawMessage, error) {
 			executorContextErr = ctx.Err()
-			return json.RawMessage(`[]`), false, nil
+			return json.RawMessage(`[]`), nil
 		},
 	}
 
@@ -160,9 +159,9 @@ func TestAuthorizerHandlesConcurrentRequests(t *testing.T) {
 	var executorCalls atomic.Int32
 	spy := &spyCommandExecutor{
 		failOnCallExecutor: failOnCallExecutor{t},
-		queryJSON: func(context.Context, string, []string, bool) (json.RawMessage, bool, error) {
+		queryJSON: func(context.Context, string, []string) (json.RawMessage, error) {
 			executorCalls.Add(1)
-			return json.RawMessage(`[]`), false, nil
+			return json.RawMessage(`[]`), nil
 		},
 	}
 

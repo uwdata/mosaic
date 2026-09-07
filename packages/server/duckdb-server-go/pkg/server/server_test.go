@@ -49,12 +49,12 @@ func (e failOnCallExecutor) Exec(context.Context, string) error {
 	return e.fail("Exec")
 }
 
-func (e failOnCallExecutor) QueryArrow(context.Context, string, []string, bool) ([]byte, bool, error) {
-	return nil, false, e.fail("QueryArrow")
+func (e failOnCallExecutor) QueryArrow(context.Context, string, []string) ([]byte, error) {
+	return nil, e.fail("QueryArrow")
 }
 
-func (e failOnCallExecutor) QueryJSON(context.Context, string, []string, bool) (json.RawMessage, bool, error) {
-	return nil, false, e.fail("QueryJSON")
+func (e failOnCallExecutor) QueryJSON(context.Context, string, []string) (json.RawMessage, error) {
+	return nil, e.fail("QueryJSON")
 }
 
 func (e failOnCallExecutor) fail(method string) error {
@@ -108,7 +108,7 @@ func TestArrowResponseFraming(t *testing.T) {
 	db := setupTestDB(t)
 	handler, err := New(db)
 	require.NoError(t, err)
-	body := `{"type":"arrow","sql":"SELECT 1","persist":true}`
+	body := `{"type":"arrow","sql":"SELECT 1"}`
 
 	req := httptest.NewRequest(http.MethodPost, "/", strings.NewReader(body))
 	res := httptest.NewRecorder()
@@ -117,11 +117,6 @@ func TestArrowResponseFraming(t *testing.T) {
 	require.Equal(t, "application/vnd.apache.arrow.stream", res.Header().Get("Content-Type"))
 	require.NotEmpty(t, res.Body.Bytes())
 
-	req = httptest.NewRequest(http.MethodPost, "/", strings.NewReader(body))
-	res = httptest.NewRecorder()
-	handler.ServeHTTP(res, req)
-	require.Equal(t, "mosaic-duckdb-go; hit", res.Header().Get("Cache-Status"))
-
 	server := httptest.NewServer(handler)
 	t.Cleanup(server.Close)
 	conn, _, err := websocket.Dial(t.Context(), "ws"+strings.TrimPrefix(server.URL, "http"), nil)
@@ -129,9 +124,8 @@ func TestArrowResponseFraming(t *testing.T) {
 	defer func() { require.NoError(t, conn.CloseNow()) }()
 
 	require.NoError(t, wsjson.Write(t.Context(), conn, map[string]any{
-		"type":    CommandArrow,
-		"sql":     "SELECT 1",
-		"persist": true,
+		"type": CommandArrow,
+		"sql":  "SELECT 1",
 	}))
 	messageType, payload, err := conn.Read(t.Context())
 	require.NoError(t, err)

@@ -348,64 +348,60 @@ func TestDBRemoteURILiteralRejection(t *testing.T) {
 
 	db := setupTestDB(t, WithRemoteURILiteralRejection())
 
-	data, _, err := db.QueryJSON(t.Context(), "SELECT * FROM read_csv("+quoteLiteral(path)+")", nil, false)
+	data, err := db.QueryJSON(t.Context(), "SELECT * FROM read_csv("+quoteLiteral(path)+")", nil)
 	require.NoError(t, err)
 	assert.JSONEq(t, `[{"value": 42}]`, string(data))
 
 	list := fmt.Sprintf("[%s, %s]", quoteLiteral(path), quoteLiteral(secondPath))
-	data, _, err = db.QueryJSON(t.Context(), "SELECT * FROM read_csv("+list+") ORDER BY value", nil, false)
+	data, err = db.QueryJSON(t.Context(), "SELECT * FROM read_csv("+list+") ORDER BY value", nil)
 	require.NoError(t, err)
 	assert.JSONEq(t, `[{"value": 42}, {"value": 43}]`, string(data))
 
-	data, _, err = db.QueryJSON(t.Context(), "SELECT 'https://example.com' AS url WHERE url = 'https://example.com'", nil, false)
+	data, err = db.QueryJSON(t.Context(), "SELECT 'https://example.com' AS url WHERE url = 'https://example.com'", nil)
 	require.NoError(t, err)
 	assert.JSONEq(t, `[{"url": "https://example.com"}]`, string(data))
 
-	_, _, err = db.QueryJSON(t.Context(), "SELECT * FROM read_csv('https://example.com/file.csv')", nil, false)
+	_, err = db.QueryJSON(t.Context(), "SELECT * FROM read_csv('https://example.com/file.csv')", nil)
 	require.ErrorIs(t, err, ErrAccessDenied)
 	assert.ErrorContains(t, err, "remote URI prefix 'https://' is not allowed in path argument to function 'read_csv'")
 
-	_, _, err = db.QueryJSON(t.Context(), "SELECT * FROM query('SELECT 42')", nil, false)
+	_, err = db.QueryJSON(t.Context(), "SELECT * FROM query('SELECT 42')", nil)
 	require.ErrorIs(t, err, ErrAccessDenied)
 	assert.ErrorContains(t, err, "nested SQL executor 'query' is not allowed")
 
-	_, _, err = db.QueryJSON(
+	_, err = db.QueryJSON(
 		t.Context(),
 		"SELECT json_serialize_plan('SELECT * FROM read_csv(''https://example.com/file.csv'')')",
 		nil,
-		false,
 	)
 	require.ErrorIs(t, err, ErrAccessDenied)
 	assert.ErrorContains(t, err, "nested SQL executor 'json_serialize_plan' is not allowed")
 
-	_, _, err = db.QueryJSON(
+	_, err = db.QueryJSON(
 		t.Context(),
 		"SELECT system.json_serialize_plan('SELECT * FROM read_csv(''https://example.com/file.csv'')')",
 		nil,
-		false,
 	)
 	require.ErrorIs(t, err, ErrAccessDenied)
 	assert.ErrorContains(t, err, "nested SQL executor 'json_serialize_plan' is not allowed")
 
 	autocompleteSQL := "SELECT * FROM '" + filepath.Join(filepath.Dir(path), "loc")
-	_, _, err = db.QueryJSON(
+	_, err = db.QueryJSON(
 		t.Context(),
 		"SELECT * FROM sql_auto_complete("+quoteLiteral(autocompleteSQL)+", max_file_suggestion_count := 10)",
 		nil,
-		false,
 	)
 	require.NoError(t, err)
 
-	_, _, err = db.QueryJSON(
+	_, err = db.QueryJSON(
 		t.Context(),
 		"SELECT * FROM sql_auto_complete('SELECT * FROM ''S3://no-such-bucket/file', max_file_suggestion_count := 10)",
 		nil,
-		false,
 	)
 	require.ErrorIs(t, err, ErrAccessDenied)
 	assert.ErrorContains(t, err, "remote URI prefix 's3://' is not allowed in path argument to function 'sql_auto_complete'")
 
-	_, _, err = db.QueryJSON(t.Context(), "PRAGMA import_database('s3://bucket/export')", nil, false)
+	_, err = db.QueryJSON(t.Context(), "PRAGMA import_database('s3://bucket/export')", nil)
 	require.ErrorIs(t, err, ErrUnsupportedStatement)
 
 	err = db.Exec(t.Context(), "SELECT 1")

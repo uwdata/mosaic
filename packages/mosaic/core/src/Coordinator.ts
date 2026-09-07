@@ -164,7 +164,6 @@ export class Coordinator {
    * @param options An options object.
    * @param options.type The query result format type.
    * @param options.cache If true, cache the query result client-side within the QueryManager.
-   * @param options.persist If true, request the database server to persist a cached query server-side.
    * @param options.priority The query priority, defaults to `Priority.Normal`.
    * @returns A query result promise.
    */
@@ -173,7 +172,6 @@ export class Coordinator {
     options?: {
       type?: 'arrow';
       cache?: boolean;
-      persist?: boolean;
       priority?: number;
       [key: string]: unknown;
     }
@@ -183,7 +181,6 @@ export class Coordinator {
     options?: {
       type?: 'json';
       cache?: boolean;
-      persist?: boolean;
       priority?: number;
       [key: string]: unknown;
     }
@@ -193,7 +190,6 @@ export class Coordinator {
     options: {
       type?: 'arrow' | 'json';
       cache?: boolean;
-      persist?: boolean;
       priority?: number;
       [key: string]: unknown;
     } = {}

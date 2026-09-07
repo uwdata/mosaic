@@ -89,9 +89,9 @@ func TestDB_FunctionBlocklist(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			var err error
 			if tt.format == "arrow" {
-				_, _, err = db.QueryArrow(ctx, tt.query, nil, false)
+				_, err = db.QueryArrow(ctx, tt.query, nil)
 			} else {
-				_, _, err = db.QueryJSON(ctx, tt.query, nil, false)
+				_, err = db.QueryJSON(ctx, tt.query, nil)
 			}
 
 			require.ErrorContains(t, err, "use of function '"+tt.function+"' is not allowed")
@@ -127,9 +127,9 @@ func TestDB_FunctionAllowlist(t *testing.T) {
 			t.Run(tt.name, func(t *testing.T) {
 				var err error
 				if tt.format == "arrow" {
-					_, _, err = db.QueryArrow(ctx, tt.query, nil, false)
+					_, err = db.QueryArrow(ctx, tt.query, nil)
 				} else {
-					_, _, err = db.QueryJSON(ctx, tt.query, nil, false)
+					_, err = db.QueryJSON(ctx, tt.query, nil)
 				}
 				require.NoError(t, err)
 			})
@@ -142,7 +142,7 @@ func TestDB_FunctionAllowlist(t *testing.T) {
 			Include:         []string{"md"},
 		}))
 
-		_, _, err := db.QueryJSON(ctx, "SELECT md5('mosaic')", nil, false)
+		_, err := db.QueryJSON(ctx, "SELECT md5('mosaic')", nil)
 		require.ErrorIs(t, err, ErrAccessDenied)
 		require.ErrorContains(t, err, "function 'md5' is not in the allowlist")
 	})
@@ -153,7 +153,7 @@ func TestDB_FunctionAllowlist(t *testing.T) {
 			Include:         []string{"md5"},
 		}))
 
-		_, _, err := db.QueryJSON(ctx, "SELECT md5(lower('mosaic'))", nil, false)
+		_, err := db.QueryJSON(ctx, "SELECT md5(lower('mosaic'))", nil)
 		require.ErrorIs(t, err, ErrAccessDenied)
 		require.ErrorContains(t, err, "function 'lower' is not in the allowlist")
 	})
@@ -178,7 +178,7 @@ func TestDB_FunctionAllowlist(t *testing.T) {
 			Include:         []string{"read_parquet"},
 		}))
 
-		_, _, err := db.QueryJSON(ctx, "SELECT * FROM read_parquet(['local.parquet'])", nil, false)
+		_, err := db.QueryJSON(ctx, "SELECT * FROM read_parquet(['local.parquet'])", nil)
 		require.ErrorIs(t, err, ErrAccessDenied)
 		require.ErrorContains(t, err, "function 'list_value' is not in the allowlist")
 	})
@@ -201,7 +201,7 @@ func TestDB_FunctionAllowlist(t *testing.T) {
 			"SELECT strptime('2020-01-01', '%Y-%m-%d')",
 			"SELECT * FROM range(3)",
 		} {
-			_, _, err := db.QueryJSON(ctx, query, nil, false)
+			_, err := db.QueryJSON(ctx, query, nil)
 			require.NoError(t, err, query)
 		}
 	})
@@ -231,7 +231,7 @@ func TestDB_FunctionAllowlist(t *testing.T) {
 	t.Run("defaults reject unsafe name collisions", func(t *testing.T) {
 		db := setupTestDB(t, WithFunctionAllowlist(FunctionAllowlistOptions{}))
 
-		_, _, err := db.QueryJSON(ctx, "SELECT * FROM histogram('duckdb_tables', 'table_name')", nil, false)
+		_, err := db.QueryJSON(ctx, "SELECT * FROM histogram('duckdb_tables', 'table_name')", nil)
 		require.ErrorIs(t, err, ErrAccessDenied)
 		require.ErrorContains(t, err, "function 'histogram' is not in the allowlist")
 	})
@@ -257,7 +257,7 @@ func TestDB_FunctionAllowlist(t *testing.T) {
 
 		for _, tt := range tests {
 			t.Run(tt.function, func(t *testing.T) {
-				_, _, err := db.QueryJSON(ctx, tt.query, nil, false)
+				_, err := db.QueryJSON(ctx, tt.query, nil)
 				require.ErrorIs(t, err, ErrAccessDenied)
 				require.ErrorContains(t, err, "function '"+tt.function+"' is not in the allowlist")
 			})
@@ -267,10 +267,10 @@ func TestDB_FunctionAllowlist(t *testing.T) {
 	t.Run("defaults can be disabled", func(t *testing.T) {
 		db := setupTestDB(t, WithFunctionAllowlist(FunctionAllowlistOptions{DisableDefaults: true}))
 
-		_, _, err := db.QueryJSON(ctx, "SELECT 1", nil, false)
+		_, err := db.QueryJSON(ctx, "SELECT 1", nil)
 		require.NoError(t, err)
 
-		_, _, err = db.QueryJSON(ctx, "SELECT 1 + 2", nil, false)
+		_, err = db.QueryJSON(ctx, "SELECT 1 + 2", nil)
 		require.ErrorIs(t, err, ErrAccessDenied)
 		require.ErrorContains(t, err, "function '+' is not in the allowlist")
 	})
@@ -280,10 +280,10 @@ func TestDB_FunctionAllowlist(t *testing.T) {
 			Exclude: []string{" SUM "},
 		}))
 
-		_, _, err := db.QueryJSON(ctx, "SELECT 1 + 2", nil, false)
+		_, err := db.QueryJSON(ctx, "SELECT 1 + 2", nil)
 		require.NoError(t, err)
 
-		_, _, err = db.QueryJSON(ctx, "SELECT sum(i) FROM (VALUES (1), (2)) t(i)", nil, false)
+		_, err = db.QueryJSON(ctx, "SELECT sum(i) FROM (VALUES (1), (2)) t(i)", nil)
 		require.ErrorIs(t, err, ErrAccessDenied)
 		require.ErrorContains(t, err, "function 'sum' is not in the allowlist")
 	})
@@ -292,7 +292,7 @@ func TestDB_FunctionAllowlist(t *testing.T) {
 func TestDB_FunctionAllowlistHandlesUnsupportedStatements(t *testing.T) {
 	db := setupTestDB(t, WithFunctionAllowlist(FunctionAllowlistOptions{}))
 
-	_, _, err := db.QueryJSON(t.Context(), "PRAGMA version", nil, false)
+	_, err := db.QueryJSON(t.Context(), "PRAGMA version", nil)
 	require.ErrorIs(t, err, ErrUnsupportedStatement)
 	require.ErrorContains(t, err, "query: validation failed: query: not implemented: Only SELECT statements can be serialized to json")
 }
@@ -302,7 +302,7 @@ func TestDB_FunctionBlocklistHandlesUnsupportedStatements(t *testing.T) {
 	ctx := context.Background()
 
 	t.Run("JSON", func(t *testing.T) {
-		_, _, err := db.QueryJSON(ctx, "PRAGMA version", nil, false)
+		_, err := db.QueryJSON(ctx, "PRAGMA version", nil)
 		require.ErrorIs(t, err, ErrUnsupportedStatement)
 		require.ErrorContains(t, err, "query: validation failed: query: not implemented: Only SELECT statements can be serialized to json")
 		require.NotContains(t, err.Error(), "()")
@@ -310,89 +310,12 @@ func TestDB_FunctionBlocklistHandlesUnsupportedStatements(t *testing.T) {
 	})
 
 	t.Run("Arrow", func(t *testing.T) {
-		_, _, err := db.QueryArrow(ctx, "PRAGMA version", nil, false)
+		_, err := db.QueryArrow(ctx, "PRAGMA version", nil)
 		require.ErrorIs(t, err, ErrUnsupportedStatement)
 		require.ErrorContains(t, err, "query: validation failed: query: not implemented: Only SELECT statements can be serialized to json")
 		require.NotContains(t, err.Error(), "()")
 		require.NotContains(t, err.Error(), " at :")
 	})
-}
-
-func TestDB_CacheValidatesSchemas(t *testing.T) {
-	tests := []struct {
-		name   string
-		format string
-	}{
-		{name: "JSON", format: "json"},
-		{name: "Arrow", format: "arrow"},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			db := setupTestDB(t)
-			ctx := context.Background()
-
-			err := db.Exec(ctx, `
-				CREATE SCHEMA tenant_a;
-				CREATE TABLE tenant_a.secret (value VARCHAR);
-				INSERT INTO tenant_a.secret VALUES ('tenant-a-only')
-			`)
-			require.NoError(t, err)
-
-			const query = "SELECT * FROM tenant_a.secret"
-			if tt.format == "arrow" {
-				_, fromCache, err := db.QueryArrow(ctx, query, []string{"tenant_a"}, true)
-				require.NoError(t, err)
-				assert.False(t, fromCache)
-
-				_, fromCache, err = db.QueryArrow(ctx, query, []string{"tenant_b"}, true)
-				require.ErrorContains(t, err, "unauthorized access to schema")
-				assert.False(t, fromCache)
-
-				_, fromCache, err = db.QueryArrow(ctx, query, []string{"tenant_a"}, true)
-				require.NoError(t, err)
-				assert.True(t, fromCache)
-			} else {
-				_, fromCache, err := db.QueryJSON(ctx, query, []string{"tenant_a"}, true)
-				require.NoError(t, err)
-				assert.False(t, fromCache)
-
-				_, fromCache, err = db.QueryJSON(ctx, query, []string{"tenant_b"}, true)
-				require.ErrorContains(t, err, "unauthorized access to schema")
-				assert.False(t, fromCache)
-
-				_, fromCache, err = db.QueryJSON(ctx, query, []string{"tenant_a"}, true)
-				require.NoError(t, err)
-				assert.True(t, fromCache)
-			}
-		})
-	}
-}
-
-func TestDB_CacheSeparatesFormats(t *testing.T) {
-	db := setupTestDB(t)
-	ctx := context.Background()
-	const query = "SELECT 42 AS answer"
-
-	jsonData, fromCache, err := db.QueryJSON(ctx, query, nil, true)
-	require.NoError(t, err)
-	assert.False(t, fromCache)
-	assert.True(t, json.Valid(jsonData))
-
-	arrowData, fromCache, err := db.QueryArrow(ctx, query, nil, true)
-	require.NoError(t, err)
-	assert.False(t, fromCache)
-	assert.False(t, json.Valid(arrowData))
-
-	cachedJSON, fromCache, err := db.QueryJSON(ctx, query, nil, true)
-	require.NoError(t, err)
-	assert.True(t, fromCache)
-	assert.Equal(t, jsonData, cachedJSON)
-
-	cachedArrow, fromCache, err := db.QueryArrow(ctx, query, nil, true)
-	require.NoError(t, err)
-	assert.True(t, fromCache)
-	assert.Equal(t, arrowData, cachedArrow)
 }
 
 func TestDB_Exec(t *testing.T) {
@@ -455,10 +378,9 @@ func TestDB_QueryJSON(t *testing.T) {
 		{"id": nil, "name": nil, "price": nil},
 	}
 
-	t.Run("simple select without cache", func(t *testing.T) {
-		gotJSON, fromCache, err := db.QueryJSON(ctx, query, nil, false)
+	t.Run("simple select", func(t *testing.T) {
+		gotJSON, err := db.QueryJSON(ctx, query, nil)
 		require.NoError(t, err)
-		assert.False(t, fromCache)
 
 		// Verify JSON structure
 		var got []map[string]any
@@ -467,36 +389,14 @@ func TestDB_QueryJSON(t *testing.T) {
 		assert.Equal(t, want, got)
 	})
 
-	t.Run("query with cache", func(t *testing.T) {
-		// First query: should not be from cache
-		gotJSON, fromCache, err := db.QueryJSON(ctx, query, nil, true)
-		require.NoError(t, err)
-		assert.False(t, fromCache)
-
-		var got []map[string]any
-		err = json.Unmarshal(gotJSON, &got)
-		require.NoError(t, err)
-		assert.Equal(t, want, got)
-
-		// Second query: should be from cache
-		gotJSON, fromCache, err = db.QueryJSON(ctx, query, nil, true)
-		require.NoError(t, err)
-		assert.True(t, fromCache)
-
-		err = json.Unmarshal(gotJSON, &got)
-		require.NoError(t, err)
-		assert.Equal(t, want, got)
-	})
-
 	t.Run("invalid query", func(t *testing.T) {
-		_, _, err := db.QueryJSON(ctx, "SELECT * FROM nonexistent_table", nil, false)
+		_, err := db.QueryJSON(ctx, "SELECT * FROM nonexistent_table", nil)
 		assert.Error(t, err)
 	})
 
 	t.Run("empty result set", func(t *testing.T) {
-		result, fromCache, err := db.QueryJSON(ctx, "SELECT * FROM products WHERE id > 100", nil, false)
+		result, err := db.QueryJSON(ctx, "SELECT * FROM products WHERE id > 100", nil)
 		require.NoError(t, err)
-		assert.False(t, fromCache)
 
 		var data []any
 		err = json.Unmarshal(result, &data)
@@ -520,24 +420,9 @@ func TestDB_QueryArrow(t *testing.T) {
 
 	want := []byte{255, 255, 255, 255, 240, 0, 0, 0, 16, 0, 0, 0, 0, 0, 10, 0, 12, 0, 10, 0, 9, 0, 4, 0, 10, 0, 0, 0, 16, 0, 0, 0, 0, 1, 4, 0, 8, 0, 8, 0, 0, 0, 4, 0, 8, 0, 0, 0, 4, 0, 0, 0, 3, 0, 0, 0, 132, 0, 0, 0, 56, 0, 0, 0, 4, 0, 0, 0, 152, 255, 255, 255, 16, 0, 0, 0, 16, 0, 0, 0, 0, 0, 10, 1, 16, 0, 0, 0, 0, 0, 0, 0, 206, 255, 255, 255, 0, 0, 2, 0, 9, 0, 0, 0, 116, 105, 109, 101, 115, 116, 97, 109, 112, 0, 0, 0, 200, 255, 255, 255, 16, 0, 0, 0, 24, 0, 0, 0, 0, 0, 3, 1, 24, 0, 0, 0, 0, 0, 0, 0, 0, 0, 6, 0, 8, 0, 6, 0, 6, 0, 0, 0, 0, 0, 2, 0, 11, 0, 0, 0, 116, 101, 109, 112, 101, 114, 97, 116, 117, 114, 101, 0, 16, 0, 20, 0, 16, 0, 15, 0, 14, 0, 8, 0, 0, 0, 4, 0, 16, 0, 0, 0, 16, 0, 0, 0, 24, 0, 0, 0, 0, 0, 2, 1, 28, 0, 0, 0, 0, 0, 0, 0, 8, 0, 12, 0, 8, 0, 7, 0, 8, 0, 0, 0, 0, 0, 0, 1, 32, 0, 0, 0, 9, 0, 0, 0, 115, 101, 110, 115, 111, 114, 95, 105, 100, 0, 0, 0, 255, 255, 255, 255, 232, 0, 0, 0, 20, 0, 0, 0, 0, 0, 0, 0, 12, 0, 22, 0, 20, 0, 19, 0, 12, 0, 4, 0, 12, 0, 0, 0, 40, 0, 0, 0, 0, 0, 0, 0, 20, 0, 0, 0, 0, 0, 0, 3, 4, 0, 10, 0, 24, 0, 12, 0, 8, 0, 4, 0, 10, 0, 0, 0, 20, 0, 0, 0, 120, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 6, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 8, 0, 0, 0, 0, 0, 0, 0, 8, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 8, 0, 0, 0, 0, 0, 0, 0, 16, 0, 0, 0, 0, 0, 0, 0, 24, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 24, 0, 0, 0, 0, 0, 0, 0, 16, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 128, 55, 64, 154, 153, 153, 153, 153, 25, 56, 64, 0, 168, 209, 229, 48, 241, 5, 0, 0, 47, 101, 233, 48, 241, 5, 0, 255, 255, 255, 255, 0, 0, 0, 0}
 
-	t.Run("query arrow without cache", func(t *testing.T) {
-		got, fromCache, err := db.QueryArrow(ctx, query, nil, false)
+	t.Run("query arrow", func(t *testing.T) {
+		got, err := db.QueryArrow(ctx, query, nil)
 		require.NoError(t, err)
 		assert.Equal(t, want, got)
-		assert.False(t, fromCache)
-	})
-
-	t.Run("query arrow with cache", func(t *testing.T) {
-		// First query
-		got, fromCache, err := db.QueryArrow(ctx, query, nil, true)
-		require.NoError(t, err)
-		assert.Equal(t, want, got)
-		assert.False(t, fromCache)
-
-		// Second query should be from cache
-		got, fromCache, err = db.QueryArrow(ctx, query, nil, true)
-		require.NoError(t, err)
-		assert.Equal(t, want, got)
-		assert.True(t, fromCache)
 	})
 }
