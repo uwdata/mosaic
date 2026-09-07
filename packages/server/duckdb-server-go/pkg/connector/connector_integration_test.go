@@ -622,19 +622,17 @@ func TestAllowedDirectoriesComposeWithFunctionAllowlist(t *testing.T) {
 		require.NoError(t, duckdbConnector.Close())
 	})
 
-	result, _, err := db.QueryJSON(
+	result, err := db.QueryJSON(
 		t.Context(),
 		"SELECT answer FROM read_parquet("+quoteSQL(path)+")",
 		nil,
-		false,
 	)
 	require.NoError(t, err)
 	assert.JSONEq(t, `[{"answer":42}]`, string(result))
-	arrowResult, _, err := db.QueryArrow(
+	arrowResult, err := db.QueryArrow(
 		t.Context(),
 		"SELECT answer FROM read_parquet("+quoteSQL(path)+")",
 		nil,
-		false,
 	)
 	require.NoError(t, err)
 	assert.NotEmpty(t, arrowResult)

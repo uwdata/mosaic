@@ -56,11 +56,6 @@ func run() int {
 		Level: logLevel,
 	}))
 
-	ttl, err := time.ParseDuration(*ttlStr)
-	if err != nil {
-		logger.Error("main: invalid cache-ttl", "error", err)
-		return 1
-	}
 	if functionAllowlist.set && functionBlocklistConfigured {
 		logger.Error("main: function allowlist and blocklist cannot both be configured")
 		return 1
