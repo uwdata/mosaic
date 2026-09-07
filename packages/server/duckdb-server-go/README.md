@@ -81,7 +81,11 @@ credentials.
 
 Custom connectors may add application fields containing arbitrary JSON values. Mosaic does not define a metadata key, schema, nesting shape, or namespace. Choose an application payload type with `Authorizer[T]` or `AuthorizerFunc[T]`; `WithAuthorizer` infers that type, while `New` and the other server options remain non-generic.
 
+To migrate an authorizer that needs no application fields, change `AuthorizerFunc(...)` to `AuthorizerFunc[struct{}](...)` and use `CommandAuthorizer[struct{}]` and `Command[struct{}]` in its signatures. The type argument on `AuthorizerFunc` is required; `WithAuthorizer(authorizer)` infers it.
+
 After decoding and validating its existing `type`, `sql`, and `name` fields, the server uses `encoding/json.Unmarshal` to decode the complete envelope into a fresh `T` for the command authorizer. `command.Payload()` returns that typed value. Your type can contain your own fields, nesting, maps, slices, and number types, or implement `UnmarshalJSON` for custom decoding. Use `struct{}` when no application fields are needed, or `json.RawMessage` to retain the JSON value, including duplicate keys, key order, escapes, and numeric spelling; normal JSON decoding skips surrounding whitespace. No application fields are converted through `float64` unless your chosen type uses that representation, such as `any`.
+
+The built-in `struct{}` type skips application decoding. A custom decoder using `DisallowUnknownFields` must account for protocol keys such as `type`, `sql`, and `name`, because it receives the whole envelope, not a metadata-only object.
 
 `command.Type()` and `command.SQL()` are authoritative for the command that executes; do not re-derive them from the application payload. Existing Go JSON decoding rules for command fields, including case-insensitive key matching and null values, remain in effect. The decoded payload belongs to the application and may be mutable; `Payload()` does not deep-copy it. Mutating it cannot rewrite the command type or SQL. Each command starts with a fresh zero `T`, without reusing decoded maps, slices, or pointers from another request or WebSocket message. Custom unmarshaler implementations are responsible for their own sharing and retention.
 
@@ -109,7 +113,7 @@ authorizer := server.AuthorizerFunc[*Fields](func(r *http.Request) (server.Comma
 })
 ```
 
-The field name and policy above are application choices. Application fields are untrusted input: real authorization must also use authenticated identity, and fields do not automatically set trusted headers, catalogs, schemas, or permissions. The compiled [`ExampleNew`](pkg/server/example_test.go) combines typed payloads with middleware-provided identity. A payload that cannot decode into `T` is rejected before the command authorizer runs, using sanitized `ErrInvalidCommand` handling: HTTP 400 or a recoverable WebSocket `bad_request`, not a session close.
+The field name and policy above are application choices. Application fields are untrusted input: real authorization must also use authenticated identity, and fields do not automatically set trusted headers, catalogs, schemas, or permissions. The compiled [`ExampleNew`](pkg/server/example_test.go) combines typed payloads with middleware-provided identity. A payload that cannot decode into `T` is rejected before the command authorizer runs, using sanitized `ErrInvalidCommand` handling: HTTP 400 or a recoverable WebSocket `bad_request`, not a session close. Decode failures log a warning with the error type and, for `json.UnmarshalTypeError`, the field, offset, and target type. Error text and payload values are not logged, since custom errors and numeric overflow errors can contain application data.
 
 Attach application fields to the final outgoing command in a connector wrapper:
 

@@ -46,6 +46,7 @@ func TestCommandTypedPayload(t *testing.T) {
 			handler := mustHandler(t, executor, WithAuthorizer(AuthorizerFunc[*applicationPayload](func(*http.Request) (CommandAuthorizer[*applicationPayload], error) {
 				return func(_ context.Context, command Command[*applicationPayload]) error {
 					fields := command.Payload()
+					require.NotNil(t, fields)
 					fields.Type = "exec"
 					fields.SQL = "DROP TABLE important"
 					commands <- command
@@ -113,6 +114,38 @@ func (p *customPayload) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
+type countedPayload int
+
+func (p *countedPayload) UnmarshalJSON([]byte) error {
+	*p++
+	return nil
+}
+
+func TestCommandDecoderRunsOncePerMessage(t *testing.T) {
+	const payload = `{"type":"json","sql":"SELECT 1"}`
+	testCommandPayload(t, http.MethodPost, payload, countedPayload(1))
+	testCommandPayload(t, http.MethodGet, "", countedPayload(0))
+	var calls atomic.Int32
+	handler := mustHandler(t, failOnCallExecutor{t}, WithAuthorizer(AuthorizerFunc[countedPayload](func(*http.Request) (CommandAuthorizer[countedPayload], error) {
+		return func(_ context.Context, command Command[countedPayload]) error {
+			calls.Add(1)
+			require.Equal(t, countedPayload(1), command.Payload())
+			return ErrPermissionDenied
+		}, nil
+	})))
+	server := newWebSocketTestServer(t, handler)
+	conn, _, err := server.dial(nil)
+	require.NoError(t, err)
+	t.Cleanup(func() { require.NoError(t, conn.CloseNow()) })
+	for range 2 {
+		require.NoError(t, conn.Write(server.ctx, websocket.MessageText, []byte(payload)))
+		var response map[string]string
+		require.NoError(t, wsjson.Read(server.ctx, conn, &response))
+		require.Equal(t, "forbidden", response["code"])
+	}
+	require.Equal(t, int32(2), calls.Load())
+}
+
 func TestCommandPayloadTypes(t *testing.T) {
 	t.Run("pointer GET", func(t *testing.T) {
 		testCommandPayload(t, http.MethodGet, "", (*applicationPayload)(nil))
@@ -172,17 +205,29 @@ func TestCommandPayloadDecodeErrors(t *testing.T) {
 func testCommandPayloadDecodeError[T any](t *testing.T, invalid, valid string) {
 	t.Helper()
 	var calls atomic.Int32
+	var logs synchronizedBuffer
 	handler := mustHandler(t, failOnCallExecutor{t}, WithAuthorizer(AuthorizerFunc[T](func(*http.Request) (CommandAuthorizer[T], error) {
 		return func(context.Context, Command[T]) error {
 			calls.Add(1)
 			return ErrPermissionDenied
 		}, nil
-	})))
+	})), WithLogger(slog.New(slog.NewJSONHandler(&logs, nil))))
 	res := httptest.NewRecorder()
 	handler.ServeHTTP(res, httptest.NewRequest(http.MethodPost, "/", strings.NewReader(invalid)))
 	require.Equal(t, http.StatusBadRequest, res.Code)
 	require.Equal(t, "Bad Request\n", res.Body.String())
 	require.Zero(t, calls.Load())
+	var diagnostic map[string]any
+	require.NoError(t, json.Unmarshal(logs.Bytes(), &diagnostic))
+	require.Equal(t, "WARN", diagnostic["level"])
+	require.Contains(t, diagnostic, "error_type")
+	require.NotContains(t, string(logs.Bytes()), "private-")
+	require.NotContains(t, string(logs.Bytes()), "18446744073709551616")
+	if diagnostic["error_type"] == "*json.UnmarshalTypeError" {
+		require.NotEmpty(t, diagnostic["field"])
+		require.NotEmpty(t, diagnostic["target_type"])
+		require.Greater(t, diagnostic["offset"], float64(0))
+	}
 
 	server := newWebSocketTestServer(t, handler)
 	conn, _, err := server.dial(nil)

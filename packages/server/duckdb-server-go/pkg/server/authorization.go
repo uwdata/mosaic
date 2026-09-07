@@ -89,8 +89,14 @@ func WithAuthorizer[T any](authorizer Authorizer[T]) Option {
 			}
 			return func(ctx context.Context, params queryParams) error {
 				var payload T
-				if params.raw != nil {
+				if _, empty := any(&payload).(*struct{}); !empty && params.raw != nil {
 					if err := json.Unmarshal(params.raw, &payload); err != nil {
+						attrs := []any{"error_type", fmt.Sprintf("%T", err)}
+						var typeErr *json.UnmarshalTypeError
+						if errors.As(err, &typeErr) {
+							attrs = append(attrs, "field", typeErr.Field, "offset", typeErr.Offset, "target_type", typeErr.Type.String())
+						}
+						cfg.logger.Warn("server: failed to decode command payload", attrs...)
 						return fmt.Errorf("%w: decode command payload: %w", ErrInvalidCommand, err)
 					}
 				}
