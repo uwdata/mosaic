@@ -2,6 +2,7 @@ package server
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"net/http"
 )
@@ -27,10 +28,11 @@ const (
 type Command struct {
 	typ CommandType
 	sql string
+	raw string
 }
 
-func newCommand(typ CommandType, sql string) Command {
-	return Command{typ: typ, sql: sql}
+func newCommand(typ CommandType, sql, raw string) Command {
+	return Command{typ: typ, sql: sql, raw: raw}
 }
 
 func (c Command) Type() CommandType {
@@ -39,6 +41,16 @@ func (c Command) Type() CommandType {
 
 func (c Command) SQL() string {
 	return c.sql
+}
+
+// Raw returns an independent copy of the complete request payload after transport
+// decoding, or nil for HTTP GET. Applications interpret their own fields; Type
+// and SQL are authoritative for the command that executes.
+func (c Command) Raw() json.RawMessage {
+	if c.raw == "" {
+		return nil
+	}
+	return json.RawMessage(c.raw)
 }
 
 // CommandAuthorizer authorizes one decoded and validated command from a request.
