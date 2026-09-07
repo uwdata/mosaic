@@ -32,13 +32,28 @@ func TestCommandWorkspaceProjectPayload(t *testing.T) {
 		WorkspaceID uint64 `json:"workspaceId"`
 		ProjectID   uint64 `json:"projectId"`
 	}
-	const message = `{"type":"json","sql":"SELECT 1","workspaceId":123,"projectId":456}`
-	want := fields{WorkspaceID: 123, ProjectID: 456}
-	t.Run("struct", func(t *testing.T) {
-		testCommandPayload(t, http.MethodPost, message, want)
+	t.Run("siblings", func(t *testing.T) {
+		const message = `{"type":"json","sql":"SELECT 1","workspaceId":123,"projectId":456}`
+		want := fields{WorkspaceID: 123, ProjectID: 456}
+		t.Run("struct", func(t *testing.T) {
+			testCommandPayload(t, http.MethodPost, message, want)
+		})
+		t.Run("pointer", func(t *testing.T) {
+			testCommandPayload(t, http.MethodPost, message, &want)
+		})
 	})
-	t.Run("pointer", func(t *testing.T) {
-		testCommandPayload(t, http.MethodPost, message, &want)
+	t.Run("nested meta", func(t *testing.T) {
+		type payload struct {
+			Meta fields `json:"meta"`
+		}
+		const message = `{"type":"json","sql":"SELECT 1","meta":{"workspaceId":123,"projectId":456}}`
+		want := payload{Meta: fields{WorkspaceID: 123, ProjectID: 456}}
+		t.Run("struct", func(t *testing.T) {
+			testCommandPayload(t, http.MethodPost, message, want)
+		})
+		t.Run("pointer", func(t *testing.T) {
+			testCommandPayload(t, http.MethodPost, message, &want)
+		})
 	})
 }
 
