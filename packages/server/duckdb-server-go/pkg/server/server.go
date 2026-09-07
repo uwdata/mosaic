@@ -20,7 +20,7 @@ type queryParams struct {
 	Type *CommandType `json:"type"`
 	SQL  *string      `json:"sql"`
 	Name *string      `json:"name"`
-	raw  string
+	raw  []byte
 }
 
 type commandResponse struct {
@@ -53,7 +53,7 @@ type handler struct {
 	db                 commandExecutor
 	schemaMatchHeaders []string
 	logger             *slog.Logger
-	authorizer         Authorizer
+	authorizer         requestAuthorizer
 	httpHandler        http.Handler
 	websocketOptions   WebSocketOptions
 	maxMessageBytes    int64
@@ -99,12 +99,12 @@ func (s *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	s.httpHandler.ServeHTTP(w, r)
 }
 
-func (s *handler) commandAuthorizer(r *http.Request) (CommandAuthorizer, error) {
+func (s *handler) commandAuthorizer(r *http.Request) (commandAuthorizer, error) {
 	if s.authorizer == nil {
 		return nil, nil
 	}
 
-	authorize, err := s.authorizer.AuthorizeRequest(r)
+	authorize, err := s.authorizer(r)
 	if err != nil {
 		return nil, &authorizationError{err: err}
 	}
@@ -174,7 +174,7 @@ func (s *handler) handleWebSocket(w http.ResponseWriter, r *http.Request) {
 
 // A returned error closes the connection. Command errors are written to the
 // client and return nil so the session survives them.
-func (s *handler) handleWebSocketMessage(ctx context.Context, conn *websocket.Conn, allowedSchemas []string, authorize CommandAuthorizer) error {
+func (s *handler) handleWebSocketMessage(ctx context.Context, conn *websocket.Conn, allowedSchemas []string, authorize commandAuthorizer) error {
 	_, raw, err := conn.Read(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to read websocket message: %w", err)
@@ -187,7 +187,7 @@ func (s *handler) handleWebSocketMessage(ctx context.Context, conn *websocket.Co
 			conn.Close(websocket.StatusInvalidFramePayloadData, "failed to unmarshal JSON"),
 		)
 	}
-	params.raw = string(raw)
+	params.raw = raw
 
 	response, err := s.execCommand(ctx, params, allowedSchemas, authorize)
 	if err != nil {
@@ -242,6 +242,7 @@ func (s *handler) handleHTTP(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			var sizeErr *http.MaxBytesError
 			if errors.As(err, &sizeErr) {
+				s.logger.Warn("server: request body exceeds message limit", "limit", sizeErr.Limit)
 				http.Error(w, http.StatusText(http.StatusRequestEntityTooLarge), http.StatusRequestEntityTooLarge)
 				return
 			}
@@ -249,7 +250,7 @@ func (s *handler) handleHTTP(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}
-		params.raw = string(raw)
+		params.raw = raw
 
 	case http.MethodGet:
 		q := r.URL.Query()
@@ -288,35 +289,34 @@ func (s *handler) handleHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (s *handler) execCommand(ctx context.Context, params queryParams, allowedSchemas []string, authorize CommandAuthorizer) (commandResponse, error) {
+func (s *handler) execCommand(ctx context.Context, params queryParams, allowedSchemas []string, authorize commandAuthorizer) (commandResponse, error) {
 	if err := params.Validate(s.logger); err != nil {
 		return commandResponse{}, err
 	}
 	response := commandResponses[*params.Type]
 	var err error
 
-	command := newCommand(*params.Type, *params.SQL, params.raw)
 	if authorize != nil {
-		if err = authorize(ctx, command); err != nil {
+		if err = authorize(ctx, params); err != nil {
 			return commandResponse{}, &authorizationError{err: err}
 		}
 	}
 
-	switch command.Type() {
+	switch *params.Type {
 	case CommandExec:
 		if len(s.schemaMatchHeaders) > 0 {
 			return commandResponse{}, query.ErrExecWithValidation
 		}
-		err = s.db.Exec(ctx, command.SQL())
+		err = s.db.Exec(ctx, *params.SQL)
 
 	case CommandArrow:
-		response.data, err = s.db.QueryArrow(ctx, command.SQL(), allowedSchemas)
+		response.data, err = s.db.QueryArrow(ctx, *params.SQL, allowedSchemas)
 
 	case CommandJSON:
-		response.data, err = s.db.QueryJSON(ctx, command.SQL(), allowedSchemas)
+		response.data, err = s.db.QueryJSON(ctx, *params.SQL, allowedSchemas)
 
 	default:
-		return commandResponse{}, fmt.Errorf("server: no executor for command type %q", command.Type())
+		return commandResponse{}, fmt.Errorf("server: no executor for command type %q", *params.Type)
 	}
 
 	return response, err

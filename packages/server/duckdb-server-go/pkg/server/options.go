@@ -53,7 +53,7 @@ type WebSocketOptions struct {
 
 type config struct {
 	logger             *slog.Logger
-	authorizer         Authorizer
+	authorizer         requestAuthorizer
 	schemaMatchHeaders []string
 	cors               CORSOptions
 	corsProtection     *http.CrossOriginProtection
@@ -101,16 +101,6 @@ func WithLogger(logger *slog.Logger) Option {
 			configured = slog.Default()
 		}
 		cfg.logger = configured
-		return nil
-	})
-}
-
-func WithAuthorizer(authorizer Authorizer) Option {
-	return optionFunc(func(cfg *config) error {
-		if authorizer == nil || isNilValue(authorizer) {
-			return errNilAuthorizer
-		}
-		cfg.authorizer = authorizer
 		return nil
 	})
 }
