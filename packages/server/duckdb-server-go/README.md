@@ -77,6 +77,46 @@ errors are logged and returned as sanitized 500 responses. Authorization can all
 and exact SQL, but cannot rewrite SQL or sandbox the shared process, filesystem, network, extensions, catalogs, or
 credentials.
 
+### Application Command Fields
+
+Custom connectors may add application fields containing arbitrary JSON values. Mosaic does not define a metadata key, schema, nesting shape, or namespace. The server decodes its existing `type`, `sql`, and `name` fields and preserves the complete envelope for the embedding application.
+
+In a `CommandAuthorizer`, `command.Raw()` returns a fresh `json.RawMessage` containing the exact POST body as presented to the handler, or the individual WebSocket payload after decoding and decompression. Whitespace, escapes, key order, duplicate keys, and number spelling are preserved. Applications can decode their fields into their own types without conversion through `float64`. Mutating the returned slice cannot change the command or later `Raw()` calls.
+
+`command.Type()` and `command.SQL()` are authoritative for the command that executes; do not re-derive them from `Raw()`. Existing Go JSON decoding rules for command fields, including case-insensitive key matching and null values, remain in effect. Application fields are untrusted input: their meaning and authorization policy belong to the embedder, and they do not automatically set trusted headers, catalogs, schemas, or permissions.
+
+For HTTP GET, `Raw()` returns nil. Inspect `r.URL.Query()` or `r.URL.RawQuery` in `AuthorizeRequest` and capture the relevant values in the returned command authorizer. The server neither synthesizes a JSON body nor rejects extra query parameters.
+
+Attach application fields to the final outgoing command in a connector wrapper:
+
+```js
+import { Coordinator, restConnector } from '@uwdata/mosaic-core';
+
+const transport = restConnector({ uri: 'http://localhost:3000/' });
+const fields = { requestTag: ['dashboard', 42], trace: 'example' };
+const connector = {
+  query({ type, sql, ...options }) {
+    return transport.query({ ...options, ...fields, type, sql });
+  }
+};
+const coordinator = new Coordinator(connector);
+```
+
+The same wrapper works with `socketConnector({ uri: 'ws://localhost:3000/' })`. Query consolidation can discard options passed to `coordinator.query`, and the SQL-keyed client cache can bypass the connector. If application fields change result or authorization scope, isolate coordinator/cache/consolidation state for each scope or disable the relevant reuse. Changing fields on a shared connector does not partition that state.
+
+Configure a limit on the entire command payload with `server.WithMaxMessageBytes(n)`, where `n` must be positive:
+
+```go
+handler, err := server.New(db,
+	server.WithAuthorizer(authorizer),
+	server.WithMaxMessageBytes(1<<20),
+)
+```
+
+The limit applies to POST bodies and decompressed WebSocket messages after request authorization and before command authorization or execution. It does not separately limit application fields. Without the option, POST bodies remain unbounded and WebSocket messages retain their existing 32 KiB limit. Oversized POST bodies receive HTTP 413; oversized WebSocket messages close the session with code 1009, including compressed messages that expand past the limit. Request authorizers that read the body must restore it and enforce any limits needed for their own reads.
+
+POST now requires one complete command object with optional surrounding JSON whitespace, matching WebSocket decoding. Trailing data and a second JSON value are rejected, whereas the previous POST decoder ignored them. JSON decoding failures return HTTP 400 or close a WebSocket with code 1007. Successfully decoded commands that fail required-field validation or authorization produce command errors; authorization denial leaves a healthy WebSocket session available for later commands. Existing SQL policy validation and restricted-`exec` enforcement still apply.
+
 ### Function Policies
 
 Use an allowlist when the server should accept only reviewed functions and operators. An explicitly empty value enables

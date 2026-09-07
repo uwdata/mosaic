@@ -16,6 +16,7 @@ import (
 	"sync/atomic"
 	"testing"
 
+	"github.com/coder/websocket"
 	"github.com/coder/websocket/wsjson"
 	"github.com/stretchr/testify/require"
 
@@ -153,21 +154,32 @@ func TestAuthorizerHandlesConcurrentRequests(t *testing.T) {
 		},
 	}
 
-	handler := mustHandler(t, spy, WithAuthorizer(AuthorizerFunc(func(*http.Request) (CommandAuthorizer, error) {
+	handler := mustHandler(t, spy, WithAuthorizer(AuthorizerFunc(func(r *http.Request) (CommandAuthorizer, error) {
 		requestCalls.Add(1)
-		return func(context.Context, Command) error {
+		expected := r.Context().Value(authorizationContextKey{}).(string)
+		return func(_ context.Context, command Command) error {
 			commandCalls.Add(1)
+			raw := command.Raw()
+			if string(raw) != expected {
+				return ErrInvalidCommand
+			}
+			clear(raw)
+			if string(command.Raw()) != expected {
+				return ErrInvalidCommand
+			}
 			return nil
 		}, nil
 	})))
 
 	statuses := make(chan int, requestCount)
 	var wg sync.WaitGroup
-	for range requestCount {
+	for i := range requestCount {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			req := httptest.NewRequest(http.MethodPost, "/", strings.NewReader(`{"type":"arrow","sql":"SELECT 1"}`))
+			body := fmt.Sprintf(`{"type":"arrow","sql":"SELECT %d","application":{"request":%d}}`, i, i)
+			ctx := context.WithValue(t.Context(), authorizationContextKey{}, body)
+			req := httptest.NewRequest(http.MethodPost, "/", strings.NewReader(body)).WithContext(ctx)
 			res := httptest.NewRecorder()
 			handler.ServeHTTP(res, req)
 			statuses <- res.Code
@@ -551,6 +563,7 @@ func TestWebSocketAuthorizesEveryMessageAndKeepsConnectionAfterDenial(t *testing
 
 	db := setupTestDB(t)
 	observations := make(chan observation, 2)
+	commands := make(chan Command, 2)
 	var requestCalls atomic.Int32
 	var commandCalls atomic.Int32
 	authorizer := AuthorizerFunc(func(r *http.Request) (CommandAuthorizer, error) {
@@ -558,6 +571,7 @@ func TestWebSocketAuthorizesEveryMessageAndKeepsConnectionAfterDenial(t *testing
 		requestIdentity := r.Context().Value(authorizationContextKey{})
 		return func(ctx context.Context, command Command) error {
 			call := commandCalls.Add(1)
+			commands <- command
 			observations <- observation{
 				requestIdentity: requestIdentity,
 				commandIdentity: ctx.Value(authorizationContextKey{}),
@@ -585,10 +599,8 @@ func TestWebSocketAuthorizesEveryMessageAndKeepsConnectionAfterDenial(t *testing
 		require.NoError(t, conn.CloseNow())
 	})
 
-	require.NoError(t, wsjson.Write(server.ctx, conn, map[string]any{
-		"type": CommandExec,
-		"sql":  deniedSQL,
-	}))
+	deniedPayload := fmt.Sprintf(`{"type":"exec","sql":%q,"label":[42,null]}`, deniedSQL)
+	require.NoError(t, conn.Write(server.ctx, websocket.MessageText, []byte(deniedPayload)))
 	var denied struct {
 		Error string `json:"error"`
 		Code  string `json:"code"`
@@ -598,16 +610,16 @@ func TestWebSocketAuthorizesEveryMessageAndKeepsConnectionAfterDenial(t *testing
 	require.Equal(t, "forbidden", denied.Code)
 
 	// A command denial is an application response, not a connection failure.
-	require.NoError(t, wsjson.Write(server.ctx, conn, map[string]any{
-		"type": CommandArrow,
-		"sql":  allowedSQL,
-	}))
+	allowedPayload := fmt.Sprintf(`{"type":"arrow","sql":%q,"label":{"value":"next"}}`, allowedSQL)
+	require.NoError(t, conn.Write(server.ctx, websocket.MessageText, []byte(allowedPayload)))
 	_, payload, err := conn.Read(server.ctx)
 	require.NoError(t, err)
 	require.Equal(t, []map[string]any{{"value": float64(9)}}, arrowRows(t, payload))
 
 	require.Equal(t, int32(1), requestCalls.Load())
 	require.Equal(t, int32(2), commandCalls.Load())
+	require.Equal(t, deniedPayload, string((<-commands).Raw()))
+	require.Equal(t, allowedPayload, string((<-commands).Raw()))
 	first := <-observations
 	second := <-observations
 	require.Equal(t, observation{

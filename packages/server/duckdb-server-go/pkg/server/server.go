@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"log/slog"
 	"net/http"
 	"strings"
@@ -19,6 +20,7 @@ type queryParams struct {
 	Type *CommandType `json:"type"`
 	SQL  *string      `json:"sql"`
 	Name *string      `json:"name"`
+	raw  string
 }
 
 type commandResponse struct {
@@ -52,6 +54,7 @@ type handler struct {
 	authorizer         Authorizer
 	httpHandler        http.Handler
 	websocketOptions   WebSocketOptions
+	maxMessageBytes    int64
 }
 
 // New constructs a Mosaic HTTP and WebSocket handler backed by db. Omitting
@@ -76,6 +79,7 @@ func newHandler(db commandExecutor, cfg config) *handler {
 		logger:             cfg.logger,
 		authorizer:         cfg.authorizer,
 		websocketOptions:   cfg.websocket,
+		maxMessageBytes:    cfg.maxMessageBytes,
 	}
 
 	s.httpHandler = newCORSHandler(cfg.cors, cfg.corsProtection, http.HandlerFunc(s.handleHTTP))
@@ -143,6 +147,10 @@ func (s *handler) handleWebSocket(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if s.maxMessageBytes > 0 {
+		conn.SetReadLimit(s.maxMessageBytes)
+	}
+
 	ctx, cancel := context.WithCancel(r.Context())
 	defer cancel()
 
@@ -165,11 +173,19 @@ func (s *handler) handleWebSocket(w http.ResponseWriter, r *http.Request) {
 // A returned error closes the connection. Command errors are written to the
 // client and return nil so the session survives them.
 func (s *handler) handleWebSocketMessage(ctx context.Context, conn *websocket.Conn, allowedSchemas []string, authorize CommandAuthorizer) error {
-	var params queryParams
-	err := wsjson.Read(ctx, conn, &params)
+	_, raw, err := conn.Read(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to read websocket message: %w", err)
 	}
+
+	var params queryParams
+	if err = json.Unmarshal(raw, &params); err != nil {
+		return errors.Join(
+			fmt.Errorf("failed to decode websocket message: %w", err),
+			conn.Close(websocket.StatusInvalidFramePayloadData, "failed to unmarshal JSON"),
+		)
+	}
+	params.raw = string(raw)
 
 	response, err := s.execCommand(ctx, params, allowedSchemas, authorize)
 	if err != nil {
@@ -214,12 +230,24 @@ func (s *handler) handleHTTP(w http.ResponseWriter, r *http.Request) {
 
 	switch r.Method {
 	case http.MethodPost:
-		err := json.NewDecoder(r.Body).Decode(&params)
+		if s.maxMessageBytes > 0 {
+			r.Body = http.MaxBytesReader(w, r.Body, s.maxMessageBytes)
+		}
+		raw, err := io.ReadAll(r.Body)
+		if err == nil {
+			err = json.Unmarshal(raw, &params)
+		}
 		if err != nil {
+			var sizeErr *http.MaxBytesError
+			if errors.As(err, &sizeErr) {
+				http.Error(w, http.StatusText(http.StatusRequestEntityTooLarge), http.StatusRequestEntityTooLarge)
+				return
+			}
 			s.logger.Error("server: failed to decode request body", "error", err)
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}
+		params.raw = string(raw)
 
 	case http.MethodGet:
 		q := r.URL.Query()
@@ -265,7 +293,7 @@ func (s *handler) execCommand(ctx context.Context, params queryParams, allowedSc
 	response := commandResponses[*params.Type]
 	var err error
 
-	command := newCommand(*params.Type, *params.SQL)
+	command := newCommand(*params.Type, *params.SQL, params.raw)
 	if authorize != nil {
 		if err = authorize(ctx, command); err != nil {
 			return commandResponse{}, &authorizationError{err: err}

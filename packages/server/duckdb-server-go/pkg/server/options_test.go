@@ -15,6 +15,13 @@ func TestNewRejectsInvalidConfiguration(t *testing.T) {
 	require.Error(t, err)
 }
 
+func TestWithMaxMessageBytesRejectsNonpositiveLimits(t *testing.T) {
+	for _, limit := range []int64{-1, 0} {
+		_, err := applyOptions([]Option{WithMaxMessageBytes(limit)})
+		require.ErrorContains(t, err, "must be positive")
+	}
+}
+
 func TestWithCORSRejectsInvalidConfiguration(t *testing.T) {
 	tests := []Option{
 		WithCORS(CORSOptions{AllowedOrigins: []string{"app.example"}}),

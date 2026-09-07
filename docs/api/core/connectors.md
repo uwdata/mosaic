@@ -11,6 +11,29 @@ The _query_ argument is an object that may include the following properties:
 
 Once instantiated, register a connector with the coordinator using the [`coordinator.databaseConnector()`](coordinator#databaseconnector) method.
 
+## Application fields
+
+A custom connector can attach application-owned fields to the final outgoing command:
+
+```js
+import { Coordinator, restConnector } from '@uwdata/mosaic-core';
+
+const transport = restConnector({ uri: 'http://localhost:3000/' });
+const fields = { requestTag: ['dashboard', 42], trace: 'example' };
+const connector = {
+  query({ type, sql, ...options }) {
+    return transport.query({ ...options, ...fields, type, sql });
+  }
+};
+const coordinator = new Coordinator(connector);
+```
+
+The same wrapper works with `socketConnector({ uri: 'ws://localhost:3000/' })`, attaching fields to each message. The field names and JSON values in this example are application choices; Mosaic defines no metadata key or schema. Existing command fields retain their protocol meaning.
+
+Attach fields in the connector because query consolidation can discard options passed to `coordinator.query`. The client cache is keyed by SQL and can bypass the connector entirely. If application fields change result or authorization scope, isolate coordinator/cache/consolidation state for each scope or disable the relevant reuse; changing fields on a shared connector does not partition that state.
+
+Programs embedding the [Go server](https://github.com/uwdata/mosaic/tree/main/packages/server/duckdb-server-go#application-command-fields) can inspect the full request payload through `Command.Raw()` in their command authorizer. Its README describes payload copies, HTTP GET behavior, and the `WithMaxMessageBytes` option.
+
 ## socketConnector
 
 `socketConnector(uri)`

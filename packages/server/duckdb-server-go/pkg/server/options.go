@@ -58,6 +58,7 @@ type config struct {
 	cors               CORSOptions
 	corsProtection     *http.CrossOriginProtection
 	websocket          WebSocketOptions
+	maxMessageBytes    int64
 }
 
 func defaultConfig() config {
@@ -110,6 +111,19 @@ func WithAuthorizer(authorizer Authorizer) Option {
 			return errNilAuthorizer
 		}
 		cfg.authorizer = authorizer
+		return nil
+	})
+}
+
+// WithMaxMessageBytes limits POST bodies and decompressed WebSocket messages to
+// n bytes, which must be positive. Omitting it leaves POST bodies unbounded and
+// retains the WebSocket library's 32 KiB limit.
+func WithMaxMessageBytes(n int64) Option {
+	return optionFunc(func(cfg *config) error {
+		if n <= 0 {
+			return errors.New("server: maximum message bytes must be positive")
+		}
+		cfg.maxMessageBytes = n
 		return nil
 	})
 }
