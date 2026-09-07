@@ -27,6 +27,21 @@ type applicationPayload struct {
 	Attributes map[string]string `json:"attributes"`
 }
 
+func TestCommandWorkspaceProjectPayload(t *testing.T) {
+	type fields struct {
+		WorkspaceID uint64 `json:"workspaceId"`
+		ProjectID   uint64 `json:"projectId"`
+	}
+	const message = `{"type":"json","sql":"SELECT 1","workspaceId":123,"projectId":456}`
+	want := fields{WorkspaceID: 123, ProjectID: 456}
+	t.Run("struct", func(t *testing.T) {
+		testCommandPayload(t, http.MethodPost, message, want)
+	})
+	t.Run("pointer", func(t *testing.T) {
+		testCommandPayload(t, http.MethodPost, message, &want)
+	})
+}
+
 func TestCommandTypedPayload(t *testing.T) {
 	payloads := []string{
 		`{"type":"json","sql":"SELECT 1","projectId":9007199254740993,"tags":["one"],"attributes":{"name":"first"},"unrelated":[false,null,1e400]}`,
@@ -171,20 +186,39 @@ func TestCommandPayloadTypes(t *testing.T) {
 
 func testCommandPayload[T any](t *testing.T, method, payload string, want T) {
 	t.Helper()
-	var calls int
-	handler := mustHandler(t, failOnCallExecutor{t}, WithAuthorizer(AuthorizerFunc[T](func(*http.Request) (CommandAuthorizer[T], error) {
-		return func(_ context.Context, command Command[T]) error {
-			calls++
-			require.Equal(t, CommandJSON, command.Type())
-			require.Equal(t, "SELECT 1", command.SQL())
-			require.Equal(t, want, command.Payload())
-			return ErrPermissionDenied
-		}, nil
-	})))
-	res := httptest.NewRecorder()
-	handler.ServeHTTP(res, httptest.NewRequest(method, "/?type=json&sql=SELECT+1", strings.NewReader(payload)))
-	require.Equal(t, http.StatusForbidden, res.Code, res.Body.String())
-	require.Equal(t, 1, calls)
+	transports := []string{"HTTP"}
+	if method == http.MethodPost {
+		transports = append(transports, "WebSocket")
+	}
+	for _, transport := range transports {
+		t.Run(transport, func(t *testing.T) {
+			var calls atomic.Int32
+			handler := mustHandler(t, failOnCallExecutor{t}, WithAuthorizer(AuthorizerFunc[T](func(*http.Request) (CommandAuthorizer[T], error) {
+				return func(_ context.Context, command Command[T]) error {
+					calls.Add(1)
+					require.Equal(t, CommandJSON, command.Type())
+					require.Equal(t, "SELECT 1", command.SQL())
+					require.Equal(t, want, command.Payload())
+					return ErrPermissionDenied
+				}, nil
+			})))
+			if transport == "HTTP" {
+				res := httptest.NewRecorder()
+				handler.ServeHTTP(res, httptest.NewRequest(method, "/?type=json&sql=SELECT+1", strings.NewReader(payload)))
+				require.Equal(t, http.StatusForbidden, res.Code, res.Body.String())
+			} else {
+				server := newWebSocketTestServer(t, handler)
+				conn, _, err := server.dial(nil)
+				require.NoError(t, err)
+				t.Cleanup(func() { require.NoError(t, conn.CloseNow()) })
+				require.NoError(t, conn.Write(server.ctx, websocket.MessageText, []byte(payload)))
+				var response map[string]string
+				require.NoError(t, wsjson.Read(server.ctx, conn, &response))
+				require.Equal(t, "forbidden", response["code"])
+			}
+			require.Equal(t, int32(1), calls.Load())
+		})
+	}
 }
 
 func TestCommandPayloadDecodeErrors(t *testing.T) {
