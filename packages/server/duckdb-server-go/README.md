@@ -79,17 +79,7 @@ credentials.
 
 ### Application Command Fields
 
-Custom connectors may add application fields containing arbitrary JSON values. Mosaic does not define a metadata key, schema, nesting shape, or namespace. Choose an application payload type with `Authorizer[T]` or `AuthorizerFunc[T]`; `WithAuthorizer` infers that type, while `New` and the other server options remain non-generic.
-
-To migrate an authorizer that needs no application fields, change `AuthorizerFunc(...)` to `AuthorizerFunc[struct{}](...)` and use `CommandAuthorizer[struct{}]` and `Command[struct{}]` in its signatures. The type argument on `AuthorizerFunc` is required; `WithAuthorizer(authorizer)` infers it.
-
-After decoding and validating its existing `type`, `sql`, and `name` fields, the server uses `encoding/json.Unmarshal` to decode the complete envelope into a fresh `T` for the command authorizer. `command.Payload()` returns that typed value. Your type can contain your own fields, nesting, maps, slices, and number types, or implement `UnmarshalJSON` for custom decoding. Use `struct{}` when no application fields are needed, or `json.RawMessage` to retain the JSON value, including duplicate keys, key order, escapes, and numeric spelling; normal JSON decoding skips surrounding whitespace. No application fields are converted through `float64` unless your chosen type uses that representation, such as `any`.
-
-The built-in `struct{}` type skips application decoding. A custom decoder using `DisallowUnknownFields` must account for protocol keys such as `type`, `sql`, and `name`, because it receives the whole envelope, not a metadata-only object.
-
-`command.Type()` and `command.SQL()` are authoritative for the command that executes; do not re-derive them from the application payload. Existing Go JSON decoding rules for command fields, including case-insensitive key matching and null values, remain in effect. The decoded payload belongs to the application and may be mutable; `Payload()` does not deep-copy it. Mutating it cannot rewrite the command type or SQL. Each command starts with a fresh zero `T`, without reusing decoded maps, slices, or pointers from another request or WebSocket message. Custom unmarshaler implementations are responsible for their own sharing and retention.
-
-For HTTP GET, the server skips payload decoding and `Payload()` returns the zero value of `T`. Choose a pointer type such as `*Fields` for an explicit nil case, and inspect `r.URL.Query()` or `r.URL.RawQuery` in `AuthorizeRequest` to capture application parameters. The server neither synthesizes a JSON body nor rejects extra query parameters.
+Application fields can be siblings of `type` and `sql` or nested, for example under `meta`. Mosaic defines no metadata schema. Choose the complete envelope's Go type with `Authorizer[T]` or `AuthorizerFunc[T]`; `command.Payload()` returns it. `WithAuthorizer` infers `T`, while `New` stays non-generic.
 
 For example, an application can limit commands to its `dashboard` project, with GET parameters as a fallback:
 
@@ -111,39 +101,24 @@ authorizer := server.AuthorizerFunc[*Fields](func(r *http.Request) (server.Comma
 		return nil
 	}, nil
 })
-```
 
-The field name and policy above are application choices. Application fields are untrusted input: real authorization must also use authenticated identity, and fields do not automatically set trusted headers, catalogs, schemas, or permissions. The compiled [`ExampleNew`](pkg/server/example_test.go) combines typed payloads with middleware-provided identity. A payload that cannot decode into `T` is rejected before the command authorizer runs, using sanitized `ErrInvalidCommand` handling: HTTP 400 or a recoverable WebSocket `bad_request`, not a session close. Decode failures log a warning with the error type and, for `json.UnmarshalTypeError`, the field, offset, and target type. Error text and payload values are not logged, since custom errors and numeric overflow errors can contain application data.
-
-Attach application fields to the final outgoing command in a connector wrapper:
-
-```js
-import { Coordinator, restConnector } from '@uwdata/mosaic-core';
-
-const transport = restConnector({ uri: 'http://localhost:3000/' });
-const fields = { project: 'dashboard', labels: ['interactive'] };
-const connector = {
-  query({ type, sql, ...options }) {
-    return transport.query({ ...options, ...fields, type, sql });
-  }
-};
-const coordinator = new Coordinator(connector);
-```
-
-The same wrapper works with `socketConnector({ uri: 'ws://localhost:3000/' })`. Query consolidation can discard options passed to `coordinator.query`, and the SQL-keyed client cache can bypass the connector. If application fields change result or authorization scope, isolate coordinator/cache/consolidation state for each scope or disable the relevant reuse. Changing fields on a shared connector does not partition that state.
-
-Configure a limit on the entire command payload with `server.WithMaxMessageBytes(n)`, where `n` must be positive:
-
-```go
 handler, err := server.New(db,
 	server.WithAuthorizer(authorizer),
 	server.WithMaxMessageBytes(1<<20),
 )
 ```
 
-The limit applies to POST bodies and decompressed WebSocket messages after request authorization and before payload decoding, command authorization, or execution. It does not separately limit application fields. Without the option, POST bodies remain unbounded and WebSocket messages retain their existing 32 KiB limit. Oversized POST bodies receive HTTP 413 and log a warning with the configured limit, without the payload; oversized WebSocket messages close the session with code 1009, including compressed messages that expand past the limit. Request authorizers that read the body must restore it and enforce any limits needed for their own reads.
+Each POST or WebSocket command decodes into a fresh `T` using `encoding/json`. `Payload()` returns that value without copying; mutations cannot change the authoritative `Type()` or `SQL()`. Custom decoders are responsible for their own sharing and must account for protocol keys (`type`, `sql`, `name`) when rejecting unknown fields.
 
-POST requires one complete command object with optional surrounding JSON whitespace, matching WebSocket decoding. Trailing data and additional JSON values are rejected. Protocol JSON decoding failures return HTTP 400 or close a WebSocket with code 1007. Successfully decoded commands that fail required-field validation, application payload decoding, or authorization produce command errors and leave a healthy WebSocket session available for later commands. Existing SQL policy validation and restricted-`exec` enforcement still apply.
+Use structs, maps, or custom `UnmarshalJSON` implementations as needed. `json.RawMessage` preserves JSON value bytes, not surrounding whitespace. If no application fields are needed, `struct{}` skips application decoding; existing authorizers can migrate to `AuthorizerFunc[struct{}]`, `CommandAuthorizer[struct{}]`, and `Command[struct{}]`.
+
+GET skips JSON decoding and supplies the zero value of `T` (`nil` for pointers); capture query parameters in `AuthorizeRequest`. Payload decoding failures reject the command before command authorization with HTTP 400 or a recoverable WebSocket `bad_request`, and log a warning without payload values.
+
+Application fields are untrusted: combine them with authenticated identity, as shown in the compiled [`ExampleNew`](pkg/server/example_test.go). Client caching can bypass the connector, and consolidation can discard query options. If fields affect results or access, isolate coordinator/cache/consolidation state per scope or disable that reuse.
+
+`WithMaxMessageBytes(n)` requires a positive byte limit for entire POST bodies and decompressed WebSocket messages, applied after request authorization and before decoding. Defaults are unbounded POST bodies and 32 KiB WebSocket messages. Exceeding the limit returns HTTP 413 or closes the WebSocket with code 1009. Request authorizers reading the body must enforce their own limits and restore it.
+
+POST and WebSocket messages require one complete command object with optional surrounding whitespace; trailing data is rejected. Protocol decoding failures return HTTP 400 or close the WebSocket with code 1007. Validation and authorization errors leave a healthy WebSocket session open.
 
 ### Function Policies
 
