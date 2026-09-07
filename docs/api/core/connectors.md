@@ -11,38 +11,15 @@ The _query_ argument is an object that may include the following properties:
 
 Once instantiated, register a connector with the coordinator using the [`coordinator.databaseConnector()`](coordinator#databaseconnector) method.
 
-## Application fields
-
-A custom connector can attach application-owned fields to the final outgoing command:
-
-```js
-import { Coordinator, restConnector } from '@uwdata/mosaic-core';
-
-const transport = restConnector({ uri: 'http://localhost:3000/' });
-const fields = { project: 'dashboard', labels: ['interactive'] };
-const connector = {
-  query({ type, sql, ...options }) {
-    return transport.query({ ...options, ...fields, type, sql });
-  }
-};
-const coordinator = new Coordinator(connector);
-```
-
-The same wrapper works with `socketConnector({ uri: 'ws://localhost:3000/' })`, attaching fields to each message. The field names and JSON values in this example are application choices; Mosaic defines no metadata key or schema. Existing command fields retain their protocol meaning.
-
-Attach fields in the connector because query consolidation can discard options passed to `coordinator.query`. The client cache is keyed by SQL and can bypass the connector entirely. If application fields change result or authorization scope, isolate coordinator/cache/consolidation state for each scope or disable the relevant reuse; changing fields on a shared connector does not partition that state.
-
-Programs embedding the [Go server](https://github.com/uwdata/mosaic/tree/main/packages/server/duckdb-server-go#application-command-fields) choose their payload type with `Authorizer[T]` and receive it through `Command[T].Payload()`. The server decodes the complete command envelope into the application's type without choosing a metadata field or schema. Its README includes a typed Go example, payload ownership and HTTP GET behavior, and the `WithMaxMessageBytes` option.
-
 ## socketConnector
 
-`socketConnector({ uri })`
+`socketConnector(uri)`
 
 Create a new Web Socket connector to a DuckDB [data server](../duckdb/data-server) at the given _uri_ (default `"ws://localhost:3000/"`).
 
 ## restConnector
 
-`restConnector({ uri })`
+`restConnector(uri)`
 
 Create a new HTTP rest connector to a DuckDB [data server](../duckdb/data-server) at the given _uri_ (default `"http://localhost:3000/"`).
 
