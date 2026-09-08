@@ -9,6 +9,11 @@ const OPTIONS_ONLY_MARKS = new Set([
   'graticule'
 ]);
 
+const TIMESTAMPTZ_TYPES = new Set([
+  'TIMESTAMPTZ',
+  'TIMESTAMP WITH TIME ZONE'
+]);
+
 const SELECT_TRANSFORMS = new Map(
   /** @type {[string, typeof Plot.selectFirst | typeof Plot.pointer][]} */ ([
     ['first', Plot.selectFirst],
@@ -48,7 +53,8 @@ export async function plotRenderer(plot) {
     }
   }
 
-  // infer labels
+  // infer scale types and labels
+  inferScaleTypes(spec, plot);
   inferLabels(spec, plot);
 
   // render plot
@@ -86,6 +92,19 @@ function setSymbolAttributes(plot, svg, attributes, symbols) {
       throw new Error(`Unrecognized symbol: ${value}`);
     }
   });
+}
+
+// Plot defaults temporal scales to UTC; TIMESTAMPTZ values are
+// instants, so render them in local time instead
+function inferScaleTypes(spec, plot) {
+  for (const key of ['x', 'y']) {
+    const scale = spec[key] || {};
+    if (scale.type != null) continue;
+    const timestamptz = plot.marks.some(
+      mark => TIMESTAMPTZ_TYPES.has(mark.channelField(key)?.sqlType)
+    );
+    if (timestamptz) spec[key] = { ...scale, type: 'time' };
+  }
 }
 
 function inferLabels(spec, plot) {
