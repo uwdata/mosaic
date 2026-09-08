@@ -117,13 +117,13 @@ describe('coordinator', () => {
     expect(sent.at(-1)).toMatch(/^SELECT/);
   });
 
-  it('keeps at most updateWindow selection updates in flight per client', async () => {
+  it('keeps at most maxPendingUpdates selection updates in flight per client', async () => {
     const sent: string[] = [];
     const resolvers: ((value: unknown) => void)[] = [];
 
     // Mock the connector: hold every query until resolved by the test
     const connector = {
-      query(req: JSONQueryRequest) {
+      query(req: ArrowQueryRequest) {
         sent.push(req.sql);
         return new Promise(resolve => resolvers.push(resolve));
       },
@@ -134,7 +134,7 @@ describe('coordinator', () => {
       cache: false,
       consolidate: false,
       preagg: { enabled: false },
-      updateWindow: 2
+      maxPendingUpdates: 2
     });
     const filterBy = Selection.single();
     const client = new TestClient(Query.from('t').select('x'), filterBy);
@@ -167,49 +167,11 @@ describe('coordinator', () => {
     expect(sent).toHaveLength(3);
   });
 
-  it('caps the update window by the connector concurrency', async () => {
-    const sent: string[] = [];
-    const resolvers: ((value: unknown) => void)[] = [];
-    const connector = {
-      concurrency: 1,
-      query(req: JSONQueryRequest) {
-        sent.push(req.sql);
-        return new Promise(resolve => resolvers.push(resolve));
-      },
-    } as unknown as Connector;
-
-    const coord = new Coordinator(connector, {
-      logger: null,
-      cache: false,
-      consolidate: false,
-      preagg: { enabled: false },
-      updateWindow: 2
-    });
-    const filterBy = Selection.single();
-    const client = new TestClient(Query.from('t').select('x'), filterBy);
-    coord.connect(client);
-    await wait();
-    resolvers.shift()!([]);
-    await client.pending;
-    sent.length = 0;
-
-    for (const value of [1, 2, 3]) {
-      filterBy.update(clausePoint('x', value, { source: {} }));
-      await wait();
-    }
-    expect(sent).toHaveLength(1);
-
-    resolvers.shift()!([]);
-    await wait();
-    expect(sent).toHaveLength(2);
-    expect(sent[1]).toContain('IN (3)');
-  });
-
   it('stops re-requesting updates for a disconnected client', async () => {
     const sent: string[] = [];
     const resolvers: ((value: unknown) => void)[] = [];
     const connector = {
-      query(req: JSONQueryRequest) {
+      query(req: ArrowQueryRequest) {
         sent.push(req.sql);
         return new Promise(resolve => resolvers.push(resolve));
       },
@@ -265,7 +227,7 @@ describe('coordinator', () => {
     const sent: string[] = [];
     const resolvers: ((value: unknown) => void)[] = [];
     const connector = {
-      query(req: JSONQueryRequest) {
+      query(req: ArrowQueryRequest) {
         sent.push(req.sql);
         return new Promise(resolve => resolvers.push(resolve));
       },

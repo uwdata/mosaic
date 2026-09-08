@@ -1,7 +1,7 @@
 import type { SQLNode } from '@uwdata/mosaic-sql';
 import {
   FromClauseNode, VerbatimNode,
-  isColumnRef, isCreateQuery, isDescribeQuery, isQuery, isTableRef, walk
+  isColumnRef, isCreateQuery, isCreateSchemaQuery, isDescribeQuery, isQuery, isTableRef, walk
 } from '@uwdata/mosaic-sql';
 import type { QueryRequest } from '../types.js';
 
@@ -14,6 +14,7 @@ export interface QueryTables {
   writes: Tables;
 }
 
+// verbatim text is unparsed, so a keyword is the only sign of an embedded table read
 const tableKeyword = /\b(from|join|table)\b/i;
 
 function collectTables(root: SQLNode): Tables {
@@ -69,7 +70,7 @@ export function queryTables({ query, type }: QueryRequest): QueryTables {
       reads = union(reads, collectTables(q.query));
     } else if (isQuery(q)) {
       reads = union(reads, collectTables(q));
-    } else {
+    } else if (!isCreateSchemaQuery(q)) {
       reads = null;
       if (type === 'exec') writes = null;
     }

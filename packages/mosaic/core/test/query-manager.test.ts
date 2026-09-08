@@ -3,7 +3,7 @@ import { describe, it, expect } from 'vitest';
 import { Query, TableRefNode, createTable } from '@uwdata/mosaic-sql';
 import { QueryManager } from '../src/QueryManager.js';
 import type { Connector } from '../src/connectors/Connector.js';
-import { QueryResult, QueryState } from '../src/util/query-result.js';
+import { QueryResult } from '../src/util/query-result.js';
 import { QueryRequest } from '../src/types.js';
 
 async function wait() {
@@ -179,6 +179,6 @@ describe('QueryManager', () => {
 
     resolvers[1]([1]);
     expect(await second).toEqual([1]);
-    expect(first.state).toBe(QueryState.pending);
+    expect(await Promise.race([first, Promise.resolve('pending')])).toBe('pending');
   });
 });
