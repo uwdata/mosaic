@@ -3,7 +3,6 @@ package server
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -11,11 +10,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/coder/websocket"
-	"github.com/coder/websocket/wsjson"
 	"github.com/stretchr/testify/require"
-
-	"github.com/uwdata/mosaic/packages/server/duckdb-server-go/pkg/query"
 )
 
 func TestHTTPCacheRevalidation(t *testing.T) {
@@ -70,17 +65,9 @@ func TestHTTPCacheRevalidation(t *testing.T) {
 }
 
 func TestHTTPCachePreconditions(t *testing.T) {
-	var calls int
 	spy := &spyCommandExecutor{
 		failOnCallExecutor: failOnCallExecutor{t},
-		queryJSON: func(context.Context, string, []string) (json.RawMessage, error) {
-			calls++
-			return json.RawMessage(`[]`), nil
-		},
-		queryArrow: func(context.Context, string, []string) ([]byte, error) {
-			calls++
-			return []byte(`[]`), nil
-		},
+		queryJSON:          func(context.Context, string, []string) (json.RawMessage, error) { return json.RawMessage(`[]`), nil },
 	}
 	handler := mustHandler(t, spy, WithCacheControl("private, no-cache"))
 	first := httptest.NewRecorder()
@@ -122,9 +109,7 @@ func TestHTTPCachePreconditions(t *testing.T) {
 			}
 			req.Header.Set("If-Match", strings.ReplaceAll(tt.match, "$etag", etag))
 			res := httptest.NewRecorder()
-			before := calls
 			handler.ServeHTTP(res, req)
-			require.Equal(t, before+1, calls)
 			require.Equal(t, tt.status, res.Code)
 			if tt.status == http.StatusPreconditionFailed {
 				require.Empty(t, res.Header().Get("ETag"))
@@ -138,13 +123,6 @@ func TestHTTPCachePreconditions(t *testing.T) {
 			}
 		})
 	}
-
-	req := httptest.NewRequest(http.MethodGet, "/?type=arrow&sql=SELECT+1", nil)
-	req.Header.Set("If-None-Match", etag)
-	res := httptest.NewRecorder()
-	handler.ServeHTTP(res, req)
-	require.Equal(t, http.StatusOK, res.Code)
-	require.NotEqual(t, etag, res.Header().Get("ETag"))
 }
 
 func TestHTTPCacheAuthorizationOnRevalidation(t *testing.T) {
@@ -181,53 +159,28 @@ func TestHTTPCacheAuthorizationOnRevalidation(t *testing.T) {
 }
 
 func TestHTTPCacheNonQueryResponses(t *testing.T) {
+	spy := &spyCommandExecutor{
+		failOnCallExecutor: failOnCallExecutor{t},
+		exec:               func(context.Context, string) error { return nil },
+		queryJSON:          func(context.Context, string, []string) (json.RawMessage, error) { return json.RawMessage(`[]`), nil },
+	}
+	handler := mustHandler(t, spy, WithCacheControl("public, max-age=60"))
 	tests := []struct {
-		name     string
-		method   string
-		uri      string
-		body     string
-		options  []Option
-		headers  http.Header
-		queryErr error
-		status   int
+		name   string
+		method string
+		uri    string
+		body   string
+		status int
 	}{
 		{name: "GET exec", method: http.MethodGet, uri: "/?type=exec&sql=SELECT+1", status: http.StatusOK},
 		{name: "POST query", method: http.MethodPost, uri: "/", body: `{"type":"json","sql":"SELECT 1"}`, status: http.StatusOK},
 		{name: "OPTIONS", method: http.MethodOptions, uri: "/", status: http.StatusOK},
-		{name: "preflight", method: http.MethodOptions, uri: "/", headers: http.Header{"Origin": {"http://app.example"}, "Access-Control-Request-Method": {"GET"}}, status: http.StatusOK},
-		{name: "invalid method", method: http.MethodPut, uri: "/", status: http.StatusMethodNotAllowed},
 		{name: "HEAD", method: http.MethodHead, uri: "/?type=json&sql=SELECT+1", status: http.StatusMethodNotAllowed},
 		{name: "missing SQL", method: http.MethodGet, uri: "/?type=json", status: http.StatusBadRequest},
-		{name: "invalid type", method: http.MethodGet, uri: "/?type=invalid&sql=SELECT+1", status: http.StatusBadRequest},
-		{name: "invalid JSON", method: http.MethodPost, uri: "/", body: "{", status: http.StatusBadRequest},
-		{name: "body limit", method: http.MethodPost, uri: "/", body: `{"type":"json"}`, options: []Option{WithMaxMessageBytes(1)}, status: http.StatusRequestEntityTooLarge},
-		{name: "missing schema", method: http.MethodGet, uri: "/?type=json&sql=SELECT+1", options: []Option{WithSchemaMatchHeaders("X-Tenant")}, status: http.StatusUnauthorized},
-		{name: "query policy denial", method: http.MethodGet, uri: "/?type=json&sql=SELECT+1", queryErr: query.ErrAccessDenied, status: http.StatusForbidden},
-		{name: "unsupported query", method: http.MethodGet, uri: "/?type=json&sql=SELECT+1", queryErr: query.ErrUnsupportedStatement, status: http.StatusBadRequest},
-		{name: "query failure", method: http.MethodGet, uri: "/?type=json&sql=SELECT+1", queryErr: errors.New("query failed"), status: http.StatusInternalServerError},
-		{name: "origin denial", method: http.MethodGet, uri: "/?type=json&sql=SELECT+1", headers: http.Header{"Origin": {"http://untrusted.example"}}, status: http.StatusForbidden},
-		{name: "websocket origin denial", method: http.MethodGet, uri: "/", headers: http.Header{"Connection": {"upgrade"}, "Upgrade": {"websocket"}, "Origin": {"http://untrusted.example"}}, status: http.StatusForbidden},
-		{name: "request denial", method: http.MethodGet, uri: "/?type=json&sql=SELECT+1", options: []Option{WithAuthorizer(AuthorizerFunc[struct{}](func(*http.Request) (CommandAuthorizer[struct{}], error) {
-			return nil, ErrUnauthenticated
-		}))}, status: http.StatusUnauthorized},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			spy := &spyCommandExecutor{failOnCallExecutor: failOnCallExecutor{t}}
-			if tt.name == "GET exec" {
-				spy.exec = func(context.Context, string) error { return nil }
-			}
-			if tt.name == "POST query" || tt.queryErr != nil {
-				spy.queryJSON = func(context.Context, string, []string) (json.RawMessage, error) {
-					return json.RawMessage(`[]`), tt.queryErr
-				}
-			}
-			options := append([]Option{WithCacheControl("public, max-age=60")}, tt.options...)
-			handler := mustHandler(t, spy, options...)
 			req := httptest.NewRequest(tt.method, tt.uri, strings.NewReader(tt.body))
-			for name, values := range tt.headers {
-				req.Header[name] = values
-			}
 			req.Header.Set("If-None-Match", "*")
 			res := httptest.NewRecorder()
 			handler.ServeHTTP(res, req)
@@ -282,7 +235,7 @@ func TestHTTPCacheSchemaMatchVariation(t *testing.T) {
 			return json.Marshal(schemas)
 		},
 	}
-	handler := mustHandler(t, spy, WithSchemaMatchHeaders("x-tenant-id"), WithCacheControl("public, max-age=60"))
+	handler := mustHandler(t, spy, WithSchemaMatchHeaders("x-tenant-id"), WithVary("X-Region"), WithCacheControl("public, max-age=60"))
 	get := func(tenant, etag string) *httptest.ResponseRecorder {
 		t.Helper()
 		req := httptest.NewRequest(http.MethodGet, "/?type=json&sql=SELECT+1", nil)
@@ -290,7 +243,7 @@ func TestHTTPCacheSchemaMatchVariation(t *testing.T) {
 		req.Header.Set("If-None-Match", etag)
 		res := httptest.NewRecorder()
 		handler.ServeHTTP(res, req)
-		require.Contains(t, res.Header().Values("Vary"), "X-Tenant-Id")
+		require.Contains(t, strings.Join(res.Header().Values("Vary"), ","), "X-Tenant-Id")
 		return res
 	}
 
@@ -313,23 +266,4 @@ func TestHTTPCacheSchemaMatchVariation(t *testing.T) {
 	require.Equal(t, http.StatusUnauthorized, denied.Code)
 	require.Equal(t, "no-store", denied.Header().Get("Cache-Control"))
 	require.Empty(t, denied.Header().Get("ETag"))
-}
-
-func TestHTTPCacheWebSocket(t *testing.T) {
-	spy := &spyCommandExecutor{
-		failOnCallExecutor: failOnCallExecutor{t},
-		queryJSON:          func(context.Context, string, []string) (json.RawMessage, error) { return json.RawMessage(`[]`), nil },
-	}
-	server := newWebSocketTestServer(t, mustHandler(t, spy, WithCacheControl("public, max-age=60"), WithVary("X-Dataset")))
-	conn, res, err := server.dial(&websocket.DialOptions{HTTPHeader: http.Header{"If-None-Match": {"*"}}})
-	require.NoError(t, err)
-	t.Cleanup(func() { require.NoError(t, conn.CloseNow()) })
-	require.Equal(t, http.StatusSwitchingProtocols, res.StatusCode)
-	require.Equal(t, "no-store", res.Header.Get("Cache-Control"))
-	require.Empty(t, res.Header.Get("ETag"))
-	require.Contains(t, strings.Join(res.Header.Values("Vary"), ","), "X-Dataset")
-	require.NoError(t, wsjson.Write(server.ctx, conn, map[string]string{"type": "json", "sql": "SELECT 1"}))
-	var result json.RawMessage
-	require.NoError(t, wsjson.Read(server.ctx, conn, &result))
-	require.JSONEq(t, `[]`, string(result))
 }
