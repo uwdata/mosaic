@@ -66,7 +66,7 @@ aborts the connection. Extensions are trusted native code, so load only trusted 
 
 Programs embedding `pkg/server` should authenticate with standard HTTP middleware around the handler returned by
 `server.New`, then use `server.WithAuthorizer` only for command-aware policy. `AuthorizeRequest` runs once before POST
-decoding or WebSocket upgrade and returns a `CommandAuthorizer` called for every decoded command, including each
+decoding or WebSocket upgrade and returns a `CommandAuthorizer[T]` called for every decoded command, including each
 WebSocket message, before policy validation or execution. If it reads `r.Body`, it must restore it; both
 authorizers must be concurrency-safe. Outer middleware must decide whether CORS preflight `OPTIONS` requests may reach
 the server.
@@ -76,6 +76,49 @@ closed. `ErrUnauthenticated`, `ErrPermissionDenied`, and `ErrInvalidCommand` map
 errors are logged and returned as sanitized 500 responses. Authorization can allow or deny the normalized command type
 and exact SQL, but cannot rewrite SQL or sandbox the shared process, filesystem, network, extensions, catalogs, or
 credentials.
+
+### Application Command Fields
+
+Application fields can be siblings of `type` and `sql` or nested, for example under `meta`. Mosaic defines no metadata schema. Choose the complete envelope's Go type with `Authorizer[T]` or `AuthorizerFunc[T]`; `command.Payload()` returns it. `WithAuthorizer` infers `T`, while `New` stays non-generic.
+
+For example, an application can limit commands to its `dashboard` project, with GET parameters as a fallback:
+
+```go
+type Fields struct {
+	Project string `json:"project"`
+}
+
+authorizer := server.AuthorizerFunc[*Fields](func(r *http.Request) (server.CommandAuthorizer[*Fields], error) {
+	getProject := r.URL.Query().Get("project")
+	return func(ctx context.Context, command server.Command[*Fields]) error {
+		project := getProject
+		if fields := command.Payload(); fields != nil {
+			project = fields.Project
+		}
+		if project != "dashboard" || command.Type() == server.CommandExec {
+			return server.ErrPermissionDenied
+		}
+		return nil
+	}, nil
+})
+
+handler, err := server.New(db,
+	server.WithAuthorizer(authorizer),
+	server.WithMaxMessageBytes(1<<20),
+)
+```
+
+Each POST or WebSocket command decodes into a fresh `T` using `encoding/json`. `Payload()` returns that value without copying; mutations cannot change the authoritative `Type()` or `SQL()`. Custom decoders are responsible for their own sharing and must account for protocol keys (`type`, `sql`, `name`) when rejecting unknown fields.
+
+Use structs, maps, or custom `UnmarshalJSON` implementations as needed. `json.RawMessage` preserves JSON value bytes, not surrounding whitespace. If no application fields are needed, `struct{}` skips application decoding; existing authorizers can migrate to `AuthorizerFunc[struct{}]`, `CommandAuthorizer[struct{}]`, and `Command[struct{}]`.
+
+GET skips JSON decoding and supplies the zero value of `T` (`nil` for pointers); capture query parameters in `AuthorizeRequest`. Payload decoding failures reject the command before command authorization with HTTP 400 or a recoverable WebSocket `bad_request`, and log a warning without payload values.
+
+Application fields are untrusted: combine them with authenticated identity, as shown in the compiled [`ExampleNew`](pkg/server/example_test.go). Client caching can bypass the connector, and consolidation can discard query options. If fields affect results or access, isolate coordinator/cache/consolidation state per scope or disable that reuse.
+
+`WithMaxMessageBytes(n)` requires a positive byte limit for entire POST bodies and decompressed WebSocket messages, applied after request authorization and before decoding. Defaults are unbounded POST bodies and 32 KiB WebSocket messages. Exceeding the limit returns HTTP 413 or closes the WebSocket with code 1009. Request authorizers reading the body must enforce their own limits and restore it.
+
+POST and WebSocket messages require one complete command object with optional surrounding whitespace; trailing data is rejected. Protocol decoding failures return HTTP 400 or close the WebSocket with code 1007. Validation and authorization errors leave a healthy WebSocket session open.
 
 ### Function Policies
 
