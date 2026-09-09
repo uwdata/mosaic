@@ -28,6 +28,8 @@ You can customize the server behavior with the following command-line flags:
 -   `--connection-pool-size <size>`: The maximum size of the connection pool. Defaults to 10.
 -   `--cert <path>`: Path to a TLS certificate file to enable HTTPS.
 -   `--key <path>`: Path to a TLS private key file to enable HTTPS.
+-   `--cache-control <value>`: Cache-Control value for successful GET `json` and `arrow` responses, enabling ETags and conditional responses for those queries. Omitted or empty values preserve existing behavior.
+-   `--vary <headers>`: Comma-separated request header names to append to Vary independently of Cache-Control. Repeated flags accumulate names.
 -   `--schema-match-headers`: Comma-separated list of headers to match against schema names for multi-tenant access control (e.g., `X-Tenant-Id,verified-user-id`).
 -   `--load-extensions`: Comma-separated list of extensions to install and load at startup. Use a pipe after the extension name to specify a DuckDB repository alias. Unspecified repositories use DuckDB's default (e.g. `mysql_scanner,netquack|community,aws|core_nightly`).
 -   `--function-blocklist`: Comma-separated list of exact function names to block, useful for blocking functions that may pose security or performance risks (e.g. `bigquery_query,read_parquet`).
@@ -76,6 +78,33 @@ closed. `ErrUnauthenticated`, `ErrPermissionDenied`, and `ErrInvalidCommand` map
 errors are logged and returned as sanitized 500 responses. Authorization can allow or deny the normalized command type
 and exact SQL, but cannot rewrite SQL or sandbox the shared process, filesystem, network, extensions, catalogs, or
 credentials.
+
+### HTTP Response Caching
+
+Configure caching and request-header variation independently:
+
+```go
+handler, err := server.New(db,
+	server.WithCacheControl("private, max-age=60"),
+	server.WithVary("X-Tenant-Id"),
+)
+```
+
+`WithCacheControl(value)` sets the complete header value on successful GET `json` and `arrow` responses. The application chooses storage, sharing, and freshness directives, such as `no-store`, `private, max-age=60`, or `public, max-age=60, s-maxage=300`. An omitted or empty value preserves existing behavior, including any headers set by outer middleware. Configured values replace an existing Cache-Control header; other responses, including errors, `exec`, POST, OPTIONS, and WebSocket handshakes, receive `no-store`. HEAD is unsupported and returns `405`; only GET query responses are cacheable.
+
+For GET `json` and `arrow` responses, enabling Cache-Control also generates a strong ETag from the response format and serialized bytes. A matching `If-None-Match` returns `304` with no body and the applicable Cache-Control, ETag, and Vary headers. Tag lists, weak comparisons, and `*` are supported. `If-Match` uses strong comparison and takes precedence, returning `412` without an ETag on a mismatch. Other command types and methods, including `exec` and POST, ignore conditional request headers; `If-Match` cannot guard an `exec` command. Authorization, query validation, execution, serialization, and hashing of the complete response still run before evaluating validators: revalidation saves transfer bandwidth. Changes to data do not invalidate already-fresh HTTP cache entries before their configured lifetime expires. Middleware or proxies that compress or transform the response must update or weaken its strong ETag.
+
+`WithVary(headers ...string)` accepts individual names or a slice with `headers...`. Names are copied, trimmed, canonicalized, and deduplicated; `*` is accepted. They append to existing Vary values, including CORS fields, on every response. `WithVary()` configures no additional names. Each option replaces earlier configuration of the same option. Invalid header characters are rejected during server construction; Cache-Control directives are otherwise passed through.
+
+When Cache-Control is enabled, the server automatically adds all `WithSchemaMatchHeaders` / `--schema-match-headers` names to Vary. For example, `--schema-match-headers=X-Tenant-Id --cache-control='public, max-age=60'` varies by `X-Tenant-Id` without repeating it in `--vary`. `WithVary()` cannot remove these required names. Applications using a custom authorizer must configure any other headers affecting access or results with `WithVary` / `--vary`.
+
+Caches must include the complete GET query string, including `type` and `sql`, and distinguish all Vary headers. Vary partitions cache entries; it does not authorize requests. Shared caches serving protected data must enforce access control before cache lookup. HTTP caching is separate from the coordinator's application cache.
+
+The equivalent command-line settings are:
+
+```sh
+duckdb-server-go --cache-control='private, max-age=60' --vary=X-Tenant-Id
+```
 
 ### Application Command Fields
 
@@ -294,9 +323,9 @@ pre-aggregation also uses `exec` to create schemas and tables, so set `preagg: {
 
 ## API
 
-The server supports queries via HTTP GET and POST, and WebSockets. The GET endpoint is useful for debugging. For example, you can query it with [this url](<http://localhost:3000/?query={"sql":"select 1","type":"json"}>).
+The server supports queries via HTTP GET and POST, and WebSockets. GET uses `type` and `sql` query parameters, for example [this URL](<http://localhost:3000/?type=json&sql=select%201>).
 
-Each endpoint takes a JSON object with a command in the `type`. The server supports the following commands.
+POST and WebSocket requests take a JSON object with the command in `type` and query text in `sql`. The server supports the following commands.
 
 ### `exec`
 
