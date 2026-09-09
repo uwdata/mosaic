@@ -126,10 +126,11 @@ func TestHTTPCachePreconditions(t *testing.T) {
 			handler.ServeHTTP(res, req)
 			require.Equal(t, before+1, calls)
 			require.Equal(t, tt.status, res.Code)
-			require.Equal(t, etag, res.Header().Get("ETag"))
 			if tt.status == http.StatusPreconditionFailed {
+				require.Empty(t, res.Header().Get("ETag"))
 				require.Equal(t, "no-store", res.Header().Get("Cache-Control"))
 			} else {
+				require.Equal(t, etag, res.Header().Get("ETag"))
 				require.Equal(t, "private, no-cache", res.Header().Get("Cache-Control"))
 			}
 			if tt.status == http.StatusNotModified {
@@ -195,6 +196,7 @@ func TestHTTPCacheNonQueryResponses(t *testing.T) {
 		{name: "OPTIONS", method: http.MethodOptions, uri: "/", status: http.StatusOK},
 		{name: "preflight", method: http.MethodOptions, uri: "/", headers: http.Header{"Origin": {"http://app.example"}, "Access-Control-Request-Method": {"GET"}}, status: http.StatusOK},
 		{name: "invalid method", method: http.MethodPut, uri: "/", status: http.StatusMethodNotAllowed},
+		{name: "HEAD", method: http.MethodHead, uri: "/?type=json&sql=SELECT+1", status: http.StatusMethodNotAllowed},
 		{name: "missing SQL", method: http.MethodGet, uri: "/?type=json", status: http.StatusBadRequest},
 		{name: "invalid type", method: http.MethodGet, uri: "/?type=invalid&sql=SELECT+1", status: http.StatusBadRequest},
 		{name: "invalid JSON", method: http.MethodPost, uri: "/", body: "{", status: http.StatusBadRequest},
@@ -271,6 +273,46 @@ func TestVaryIndependentOfCacheControl(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestHTTPCacheSchemaMatchVariation(t *testing.T) {
+	spy := &spyCommandExecutor{
+		failOnCallExecutor: failOnCallExecutor{t},
+		queryJSON: func(_ context.Context, _ string, schemas []string) (json.RawMessage, error) {
+			return json.Marshal(schemas)
+		},
+	}
+	handler := mustHandler(t, spy, WithSchemaMatchHeaders("x-tenant-id"), WithCacheControl("public, max-age=60"))
+	get := func(tenant, etag string) *httptest.ResponseRecorder {
+		t.Helper()
+		req := httptest.NewRequest(http.MethodGet, "/?type=json&sql=SELECT+1", nil)
+		req.Header.Set("X-Tenant-Id", tenant)
+		req.Header.Set("If-None-Match", etag)
+		res := httptest.NewRecorder()
+		handler.ServeHTTP(res, req)
+		require.Contains(t, res.Header().Values("Vary"), "X-Tenant-Id")
+		return res
+	}
+
+	var previousETag string
+	for _, tenant := range []string{"alpha", "beta"} {
+		res := get(tenant, previousETag)
+		require.Equal(t, http.StatusOK, res.Code)
+		require.JSONEq(t, `["`+tenant+`"]`, res.Body.String())
+		require.Equal(t, "public, max-age=60", res.Header().Get("Cache-Control"))
+		etag := res.Header().Get("ETag")
+		require.NotEmpty(t, etag)
+		require.NotEqual(t, previousETag, etag)
+		revalidated := get(tenant, etag)
+		require.Equal(t, http.StatusNotModified, revalidated.Code)
+		require.Empty(t, revalidated.Body.Bytes())
+		require.Equal(t, res.Header().Values("Vary"), revalidated.Header().Values("Vary"))
+		previousETag = etag
+	}
+	denied := get("", previousETag)
+	require.Equal(t, http.StatusUnauthorized, denied.Code)
+	require.Equal(t, "no-store", denied.Header().Get("Cache-Control"))
+	require.Empty(t, denied.Header().Get("ETag"))
 }
 
 func TestHTTPCacheWebSocket(t *testing.T) {

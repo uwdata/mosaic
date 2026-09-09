@@ -93,6 +93,11 @@ func applyOptions(opts []Option) (config, error) {
 			return config{}, fmt.Errorf("server: apply option %d: %w", i, err)
 		}
 	}
+	if cfg.cacheControl != "" && len(cfg.schemaMatchHeaders) > 0 {
+		if err := WithVary(append(cfg.varyHeaders, cfg.schemaMatchHeaders...)...).apply(&cfg); err != nil {
+			return config{}, err
+		}
+	}
 	return cfg, nil
 }
 
