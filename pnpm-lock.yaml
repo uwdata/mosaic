@@ -162,6 +162,9 @@ importers:
 
   packages/mosaic/sql:
     devDependencies:
+      '@types/node':
+        specifier: ^26.0.0
+        version: 26.4.0
       '@uwdata/mosaic-duckdb':
         specifier: workspace:^
         version: link:../../server/duckdb

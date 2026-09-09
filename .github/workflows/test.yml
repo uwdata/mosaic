@@ -38,6 +38,22 @@ jobs:
       - run: pnpm run build
       - run: pnpm run test
 
+      - name: Install ClickHouse Local
+        env:
+          CLICKHOUSE_VERSION: "26.5"
+        run: |
+          container=$(docker create "clickhouse/clickhouse-server:$CLICKHOUSE_VERSION")
+          trap 'docker rm -f "$container" >/dev/null 2>&1 || true' EXIT
+          docker cp "$container:/usr/bin/clickhouse" /tmp/clickhouse
+          docker rm "$container"
+          trap - EXIT
+          chmod +x /tmp/clickhouse
+
+      - name: Test with ClickHouse Local
+        run: pnpm --filter @uwdata/mosaic-sql test:clickhouse
+        env:
+          CLICKHOUSE_BIN: /tmp/clickhouse
+
       - uses: astral-sh/setup-uv@v7
         with:
           version: ">=0.11.0"

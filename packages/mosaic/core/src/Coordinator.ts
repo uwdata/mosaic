@@ -9,7 +9,7 @@ import { type Logger, type QueryType } from './types.js';
 import { type QueryResult } from './util/query-result.js';
 import { type MosaicClient } from './MosaicClient.js';
 import { type SelectionClause } from './SelectionClause.js';
-import { MaybeArray } from '@uwdata/mosaic-sql';
+import { MaybeArray, type SQLCodeGenerator } from '@uwdata/mosaic-sql';
 import { Table } from '@uwdata/flechette';
 import { QueryError } from './util/query-error.js';
 
@@ -60,6 +60,7 @@ export class Coordinator {
    * @param options.cache Boolean flag to enable/disable query caching.
    * @param options.consolidate Boolean flag to enable/disable query consolidation.
    * @param options.preagg Options for the Pre-aggregator.
+   * @param options.codegen SQL dialect visitor for the backend.
    */
   constructor(
     db: Connector = new SocketConnector(),
@@ -69,6 +70,7 @@ export class Coordinator {
       cache?: boolean;
       consolidate?: boolean;
       preagg?: PreAggregateOptions;
+      codegen?: SQLCodeGenerator;
     } = {}
   ) {
     const {
@@ -76,11 +78,13 @@ export class Coordinator {
       manager = new QueryManager(),
       cache = true,
       consolidate = true,
-      preagg = {}
+      preagg = {},
+      codegen
     } = options;
     this.manager = manager;
     this.manager.cache(cache);
     this.manager.consolidate(consolidate);
+    if (codegen) this.manager.codegen(codegen);
     this.databaseConnector(db);
     this.logger(logger);
     this.clear();

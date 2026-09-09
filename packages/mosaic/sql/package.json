@@ -28,9 +28,11 @@
     "lint": "eslint src test",
     "typecheck": "tsc -p test/tsconfig.json",
     "test": "vitest run",
+    "test:clickhouse": "vitest run --config vitest.clickhouse.config.ts",
     "prepublishOnly": "tsc --build"
   },
   "devDependencies": {
+    "@types/node": "^26.0.0",
     "@uwdata/mosaic-duckdb": "workspace:^"
   }
 }

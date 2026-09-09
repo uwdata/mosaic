@@ -1,6 +1,7 @@
-import { Query } from '@uwdata/mosaic-sql';
+import { clickHouseCodeGenerator, duckDBCodeGenerator, Query } from '@uwdata/mosaic-sql';
 import { describe, it, expect } from 'vitest';
 import { clausePoint, type Connector, Coordinator, coordinator, type JSONQueryRequest, makeClient, Selection } from '../src/index.js';
+import { QueryManager } from '../src/QueryManager.js';
 import { QueryResult, QueryState } from '../src/util/query-result.js';
 
 async function wait() {
@@ -23,6 +24,19 @@ describe('coordinator', () => {
     coordinator(mc2);
 
     expect(coordinator()).toBe(mc2);
+  });
+
+  it('preserves a configured query manager code generator', () => {
+    const connector = { async query() {} } as unknown as Connector;
+    const manager = new QueryManager();
+    expect(manager.codegen()).toBe(duckDBCodeGenerator);
+    manager.codegen(clickHouseCodeGenerator);
+
+    new Coordinator(connector, { manager });
+    expect(manager.codegen()).toBe(clickHouseCodeGenerator);
+
+    new Coordinator(connector, { manager, codegen: duckDBCodeGenerator });
+    expect(manager.codegen()).toBe(duckDBCodeGenerator);
   });
 
   it('query results returned in correct order', async () => {
