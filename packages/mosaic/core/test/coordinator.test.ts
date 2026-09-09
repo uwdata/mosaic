@@ -1,4 +1,3 @@
-import { tableFromArrays } from '@uwdata/flechette';
 import { tableFromArrays, tableToIPC } from '@uwdata/flechette';
 import { Query } from '@uwdata/mosaic-sql';
 import { describe, it, expect } from 'vitest';
@@ -103,7 +102,7 @@ describe('coordinator', () => {
       async query(req: ArrowQueryRequest) {
         const index = req.sql.includes("WHERE") ? 1 : 0;
         events.push(`CONNECT ${index}`);
-        return tableFromArrays({ index: [index] });
+        return tableToIPC(tableFromArrays({ index: [index] }), {})!;
       },
     } as unknown as Connector;
 

@@ -1,4 +1,3 @@
-import { Table, tableFromArrays } from '@uwdata/flechette';
 import { Table, tableFromArrays, tableToIPC } from '@uwdata/flechette';
 import { describe, it, expect } from 'vitest';
 import { QueryManager } from '../src/QueryManager.js';
@@ -14,12 +13,12 @@ describe('QueryManager', () => {
       // @ts-expect-error assumes type value
       query: async ({ sql }) => {
         expect(sql).toBe('SELECT 1');
-        return tableFromArrays({ column: [1] });
+        return tableToIPC(tableFromArrays({ column: [1] }), {})!;
       }
     });
 
     const request: QueryRequest = {
-      type: 'json',
+      type: 'arrow',
       query: 'SELECT 1'
     };
 
@@ -48,7 +47,7 @@ describe('QueryManager', () => {
     };
 
     const request2: QueryRequest = {
-      type: 'json',
+      type: 'arrow',
       query: 'SELECT * FROM test'
     };
 
