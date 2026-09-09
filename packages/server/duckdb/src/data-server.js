@@ -76,7 +76,7 @@ export function queryHandler(db) {
     }
 
     try {
-      const { sql, type } = query;
+      const { sql, type = 'arrow' } = query;
       console.log(`> ${String(type).toUpperCase()}${sql ? ` ${sql}` : ''}`);
 
       // process query and return result

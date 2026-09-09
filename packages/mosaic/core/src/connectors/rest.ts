@@ -48,7 +48,7 @@ export class RestConnector implements Connector {
     }
 
     return query.type === 'exec'
-      ? req
+      ? undefined
       : decodeIPC(await res.arrayBuffer(), this._ipc);
   }
 }
