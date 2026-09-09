@@ -144,5 +144,5 @@ func TestCacheControlIncludesSchemaMatchHeadersInVary(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, []string{"X-Region"}, cfg.varyHeaders)
 	_, err = applyOptions([]Option{WithCacheControl("public"), WithSchemaMatchHeaders("X-Tenant\r\nInjected")})
-	require.Error(t, err)
+	require.ErrorContains(t, err, "schema match headers in Vary")
 }
