@@ -20,27 +20,6 @@ use crate::interfaces::{AppState, Command};
 use crate::{app, query::handle};
 
 #[tokio::test]
-async fn get_json() -> Result<()> {
-    let db = ConnectionPool::new(":memory:", 1)?;
-
-    let state = Arc::new(AppState { db: Box::new(db) });
-
-    let params = QueryParams {
-        query_type: Some(Command::Json),
-        sql: Some("SELECT 1 AS foo".to_string()),
-        ..QueryParams::default()
-    };
-
-    let json = handle(&state, params).await.unwrap();
-
-    if let QueryResponse::Json(json) = json {
-        assert_eq!(json, "[{\"foo\":1}]");
-    }
-
-    Ok(())
-}
-
-#[tokio::test]
 async fn get_arrow() -> Result<()> {
     let db = ConnectionPool::new(":memory:", 1)?;
 
@@ -55,15 +34,7 @@ async fn get_arrow() -> Result<()> {
     let arrow = handle(&state, params).await.unwrap();
 
     if let QueryResponse::Arrow(arrow) = arrow {
-        let mut reader = FileReader::try_new(std::io::Cursor::new(arrow), None)?;
-        let actual_batch = reader.next().unwrap();
-        let actual_batch = actual_batch?;
-
-        let schema = Arc::new(Schema::new(vec![Field::new("foo", DataType::Int32, true)]));
-        let foo_values = Int32Array::from(vec![1]);
-        let batch = RecordBatch::try_new(schema.clone(), vec![Arc::new(foo_values)])?;
-
-        assert_eq!(actual_batch, batch);
+        assert_foo_batch(&arrow)?;
     }
 
     Ok(())
@@ -76,7 +47,7 @@ async fn select_1_get() -> Result<()> {
     let response = app
         .oneshot(
             Request::builder()
-                .uri("/?type=json&sql=SELECT%201%20as%20foo")
+                .uri("/?type=arrow&sql=SELECT%201%20as%20foo")
                 .body(Body::empty())?,
         )
         .await?;
@@ -84,33 +55,7 @@ async fn select_1_get() -> Result<()> {
     assert_eq!(response.status(), StatusCode::OK);
 
     let body = response.into_body().collect().await?.to_bytes();
-    assert_eq!(&body[..], b"[{\"foo\":1}]");
-
-    Ok(())
-}
-
-#[tokio::test]
-async fn select_1_post() -> Result<()> {
-    let app = app::app(None, None)?;
-
-    let response = app
-        .oneshot(
-            Request::builder()
-                .method(http::Method::POST)
-                .uri("/")
-                .header(http::header::CONTENT_TYPE, "application/json")
-                .body(Body::from(serde_json::to_vec(
-                    &json!({"type": "json", "sql": "select 1 as foo"}),
-                )?))?,
-        )
-        .await?;
-
-    assert_eq!(response.status(), StatusCode::OK);
-
-    let body = response.into_body().collect().await?.to_bytes();
-    assert_eq!(&body[..], b"[{\"foo\":1}]");
-
-    Ok(())
+    assert_foo_batch(&body)
 }
 
 #[tokio::test]
@@ -131,17 +76,17 @@ async fn query_arrow() -> Result<()> {
 
     assert_eq!(response.status(), StatusCode::OK);
 
-    let body = response.into_body().collect().await?;
+    let body = response.into_body().collect().await?.to_bytes();
+    assert_foo_batch(&body)
+}
 
-    let mut reader = FileReader::try_new(std::io::Cursor::new(body.to_bytes()), None)?;
-    let actual_batch = reader.next().unwrap();
-    let actual_batch = actual_batch?;
+fn assert_foo_batch(bytes: &[u8]) -> Result<()> {
+    let mut reader = FileReader::try_new(std::io::Cursor::new(bytes), None)?;
+    let actual_batch = reader.next().unwrap()?;
 
     let schema = Arc::new(Schema::new(vec![Field::new("foo", DataType::Int32, true)]));
-    let foo_values = Int32Array::from(vec![1]);
-    let batch = RecordBatch::try_new(schema.clone(), vec![Arc::new(foo_values)])?;
+    let batch = RecordBatch::try_new(schema, vec![Arc::new(Int32Array::from(vec![1]))])?;
 
     assert_eq!(actual_batch, batch);
-
     Ok(())
 }

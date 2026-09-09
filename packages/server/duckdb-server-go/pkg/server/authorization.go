@@ -19,7 +19,6 @@ type CommandType string
 const (
 	CommandArrow CommandType = "arrow"
 	CommandExec  CommandType = "exec"
-	CommandJSON  CommandType = "json"
 )
 
 // Command is the immutable command information presented for authorization.

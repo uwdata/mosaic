@@ -38,9 +38,6 @@ pub async fn handle(mut socket: WebSocket, state: Arc<AppState>) {
                             QueryResponse::Arrow(arrow) => {
                                 socket.send(Message::Binary(arrow.into())).await
                             }
-                            QueryResponse::Json(json) => {
-                                socket.send(Message::Text(json.into())).await
-                            }
                             QueryResponse::Empty => socket.send(Message::Text("{}".into())).await,
                             QueryResponse::Response(_) => {
                                 socket

@@ -1,5 +1,5 @@
 import type { ExtractionOptions, Table } from '@uwdata/flechette';
-import type { ArrowQueryRequest, Connector, ExecQueryRequest, JSONQueryRequest, ConnectorQueryRequest } from './Connector.js';
+import type { ArrowQueryRequest, Connector, ExecQueryRequest, ConnectorQueryRequest } from './Connector.js';
 import { decodeIPC } from '../util/decode-ipc.js';
 
 interface RestOptions {
@@ -32,7 +32,6 @@ export class RestConnector implements Connector {
 
   async query(query: ArrowQueryRequest): Promise<Table>;
   async query(query: ExecQueryRequest): Promise<void>;
-  async query(query: JSONQueryRequest): Promise<Record<string, unknown>[]>;
   async query(query: ConnectorQueryRequest): Promise<unknown> {
     const req = fetch(this._uri, {
       method: 'POST',
@@ -48,8 +47,8 @@ export class RestConnector implements Connector {
       throw new Error(`Query failed with HTTP status ${res.status}: ${await res.text()}`);
     }
 
-    return query.type === 'exec' ? req
-      : query.type === 'arrow' ? decodeIPC(await res.arrayBuffer(), this._ipc)
-      : res.json();
+    return query.type === 'exec'
+      ? req
+      : decodeIPC(await res.arrayBuffer(), this._ipc);
   }
 }

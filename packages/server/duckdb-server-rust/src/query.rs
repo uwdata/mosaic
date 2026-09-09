@@ -22,15 +22,6 @@ pub async fn handle(state: &AppState, params: QueryParams) -> Result<QueryRespon
                 Err(AppError::BadRequest)
             }
         }
-        Some(Command::Json) => {
-            if let Some(sql) = params.sql.as_deref() {
-                let json = state.db.get_json(sql).await?;
-                let string = String::from_utf8(json)?;
-                Ok(QueryResponse::Json(string))
-            } else {
-                Err(AppError::BadRequest)
-            }
-        }
         None => Err(AppError::BadRequest),
     }
 }

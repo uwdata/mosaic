@@ -26,7 +26,6 @@ type spyCommandExecutor struct {
 	failOnCallExecutor
 	exec       func(context.Context, string) error
 	queryArrow func(context.Context, string, []string) ([]byte, error)
-	queryJSON  func(context.Context, string, []string) (json.RawMessage, error)
 }
 
 func (s *spyCommandExecutor) Exec(ctx context.Context, sql string) error {
@@ -43,13 +42,6 @@ func (s *spyCommandExecutor) QueryArrow(ctx context.Context, sql string, schemas
 	return s.queryArrow(ctx, sql, schemas)
 }
 
-func (s *spyCommandExecutor) QueryJSON(ctx context.Context, sql string, schemas []string) (json.RawMessage, error) {
-	if s.queryJSON == nil {
-		return s.failOnCallExecutor.QueryJSON(ctx, sql, schemas)
-	}
-	return s.queryJSON(ctx, sql, schemas)
-}
-
 func TestCommandDenialPrecedesExecutor(t *testing.T) {
 	var executorCalls int
 	spy := &spyCommandExecutor{
@@ -62,10 +54,6 @@ func TestCommandDenialPrecedesExecutor(t *testing.T) {
 			executorCalls++
 			return nil, nil
 		},
-		queryJSON: func(context.Context, string, []string) (json.RawMessage, error) {
-			executorCalls++
-			return json.RawMessage(`[]`), nil
-		},
 	}
 
 	handler := mustHandler(t, spy, WithAuthorizer(AuthorizerFunc(func(*http.Request) (CommandAuthorizer, error) {
@@ -74,7 +62,7 @@ func TestCommandDenialPrecedesExecutor(t *testing.T) {
 		}, nil
 	})))
 
-	req := httptest.NewRequest(http.MethodPost, "/", strings.NewReader(`{"type":"json","sql":"SELECT * FROM sensitive_data"}`))
+	req := httptest.NewRequest(http.MethodPost, "/", strings.NewReader(`{"type":"arrow","sql":"SELECT * FROM sensitive_data"}`))
 	res := httptest.NewRecorder()
 	handler.ServeHTTP(res, req)
 
@@ -92,29 +80,29 @@ func TestCommandAuthorizationRunsImmediatelyBeforeExecutor(t *testing.T) {
 
 	spy := &spyCommandExecutor{
 		failOnCallExecutor: failOnCallExecutor{t},
-		queryJSON: func(_ context.Context, gotSQL string, schemas []string) (json.RawMessage, error) {
+		queryArrow: func(_ context.Context, gotSQL string, schemas []string) ([]byte, error) {
 			appendEvent("executor")
 			require.Equal(t, sql, gotSQL)
 			require.Empty(t, schemas)
-			return json.RawMessage(`[{"value":1}]`), nil
+			return []byte("result"), nil
 		},
 	}
 
 	handler := mustHandler(t, spy, WithAuthorizer(AuthorizerFunc(func(*http.Request) (CommandAuthorizer, error) {
 		return func(_ context.Context, command Command) error {
 			appendEvent("authorize")
-			require.Equal(t, CommandJSON, command.Type())
+			require.Equal(t, CommandArrow, command.Type())
 			require.Equal(t, sql, command.SQL())
 			return nil
 		}, nil
 	})))
 
-	req := httptest.NewRequest(http.MethodPost, "/", strings.NewReader(`{"type":"json","sql":"SELECT 1 AS value"}`))
+	req := httptest.NewRequest(http.MethodPost, "/", strings.NewReader(`{"type":"arrow","sql":"SELECT 1 AS value"}`))
 	res := httptest.NewRecorder()
 	handler.ServeHTTP(res, req)
 
 	require.Equal(t, http.StatusOK, res.Code, res.Body.String())
-	require.JSONEq(t, `[{"value":1}]`, res.Body.String())
+	require.Equal(t, "result", res.Body.String())
 	require.Equal(t, []string{"authorize", "executor"}, events)
 }
 
@@ -125,9 +113,9 @@ func TestCanceledRequestContextReachesAuthorizationAndExecutor(t *testing.T) {
 
 	spy := &spyCommandExecutor{
 		failOnCallExecutor: failOnCallExecutor{t},
-		queryJSON: func(ctx context.Context, _ string, _ []string) (json.RawMessage, error) {
+		queryArrow: func(ctx context.Context, _ string, _ []string) ([]byte, error) {
 			executorContextErr = ctx.Err()
-			return json.RawMessage(`[]`), nil
+			return nil, nil
 		},
 	}
 
@@ -141,7 +129,7 @@ func TestCanceledRequestContextReachesAuthorizationAndExecutor(t *testing.T) {
 
 	ctx, cancel := context.WithCancel(t.Context())
 	cancel()
-	req := httptest.NewRequest(http.MethodPost, "/", strings.NewReader(`{"type":"json","sql":"SELECT 1"}`)).WithContext(ctx)
+	req := httptest.NewRequest(http.MethodPost, "/", strings.NewReader(`{"type":"arrow","sql":"SELECT 1"}`)).WithContext(ctx)
 	res := httptest.NewRecorder()
 	handler.ServeHTTP(res, req)
 
@@ -159,9 +147,9 @@ func TestAuthorizerHandlesConcurrentRequests(t *testing.T) {
 	var executorCalls atomic.Int32
 	spy := &spyCommandExecutor{
 		failOnCallExecutor: failOnCallExecutor{t},
-		queryJSON: func(context.Context, string, []string) (json.RawMessage, error) {
+		queryArrow: func(context.Context, string, []string) ([]byte, error) {
 			executorCalls.Add(1)
-			return json.RawMessage(`[]`), nil
+			return nil, nil
 		},
 	}
 
@@ -179,7 +167,7 @@ func TestAuthorizerHandlesConcurrentRequests(t *testing.T) {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			req := httptest.NewRequest(http.MethodPost, "/", strings.NewReader(`{"type":"json","sql":"SELECT 1"}`))
+			req := httptest.NewRequest(http.MethodPost, "/", strings.NewReader(`{"type":"arrow","sql":"SELECT 1"}`))
 			res := httptest.NewRecorder()
 			handler.ServeHTTP(res, req)
 			statuses <- res.Code
@@ -213,7 +201,7 @@ func TestHTTPAuthorizerReceivesExactValidatedCommandAndRequestContext(t *testing
 			new: func(t *testing.T) *http.Request {
 				t.Helper()
 				values := make(url.Values)
-				values.Set("type", string(CommandJSON))
+				values.Set("type", string(CommandArrow))
 				values.Set("sql", sql)
 				return httptest.NewRequest(http.MethodGet, "/?"+values.Encode(), nil)
 			},
@@ -223,7 +211,7 @@ func TestHTTPAuthorizerReceivesExactValidatedCommandAndRequestContext(t *testing
 			new: func(t *testing.T) *http.Request {
 				t.Helper()
 				body, err := json.Marshal(map[string]any{
-					"type": CommandJSON,
+					"type": CommandArrow,
 					"sql":  sql,
 				})
 				require.NoError(t, err)
@@ -245,7 +233,7 @@ func TestHTTPAuthorizerReceivesExactValidatedCommandAndRequestContext(t *testing
 				return func(ctx context.Context, command Command) error {
 					commandCalls.Add(1)
 					require.Equal(t, identity, ctx.Value(authorizationContextKey{}))
-					require.Equal(t, CommandJSON, command.Type())
+					require.Equal(t, CommandArrow, command.Type())
 					require.Equal(t, sql, command.SQL())
 					return nil
 				}, nil
@@ -405,7 +393,7 @@ func TestHTTPAuthorizerConfigurationFailsClosed(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			handler := mustHandler(t, failOnCallExecutor{t}, WithAuthorizer(tt.authorizer))
 
-			req := httptest.NewRequest(http.MethodPost, "/", strings.NewReader(`{"type":"json","sql":"SELECT 1"}`))
+			req := httptest.NewRequest(http.MethodPost, "/", strings.NewReader(`{"type":"arrow","sql":"SELECT 1"}`))
 			res := httptest.NewRecorder()
 			handler.ServeHTTP(res, req)
 
@@ -428,7 +416,7 @@ func TestHTTPValidationPrecedesCommandAuthorization(t *testing.T) {
 
 	handler := mustHandler(t, failOnCallExecutor{t}, WithAuthorizer(authorizer))
 
-	req := httptest.NewRequest(http.MethodPost, "/", strings.NewReader(`{"type":"json"}`))
+	req := httptest.NewRequest(http.MethodPost, "/", strings.NewReader(`{"type":"arrow"}`))
 	res := httptest.NewRecorder()
 	handler.ServeHTTP(res, req)
 
@@ -611,12 +599,12 @@ func TestWebSocketAuthorizesEveryMessageAndKeepsConnectionAfterDenial(t *testing
 
 	// A command denial is an application response, not a connection failure.
 	require.NoError(t, wsjson.Write(server.ctx, conn, map[string]any{
-		"type": CommandJSON,
+		"type": CommandArrow,
 		"sql":  allowedSQL,
 	}))
-	var rows []map[string]int
-	require.NoError(t, wsjson.Read(server.ctx, conn, &rows))
-	require.Equal(t, []map[string]int{{"value": 9}}, rows)
+	_, payload, err := conn.Read(server.ctx)
+	require.NoError(t, err)
+	require.Equal(t, []map[string]any{{"value": float64(9)}}, arrowRows(t, payload))
 
 	require.Equal(t, int32(1), requestCalls.Load())
 	require.Equal(t, int32(2), commandCalls.Load())
@@ -631,7 +619,7 @@ func TestWebSocketAuthorizesEveryMessageAndKeepsConnectionAfterDenial(t *testing
 	require.Equal(t, observation{
 		requestIdentity: identity,
 		commandIdentity: identity,
-		typ:             CommandJSON,
+		typ:             CommandArrow,
 		sql:             allowedSQL,
 	}, second)
 }
@@ -685,7 +673,7 @@ func TestWebSocketCommandAuthorizationErrorMapping(t *testing.T) {
 			}()
 
 			require.NoError(t, wsjson.Write(server.ctx, conn, map[string]any{
-				"type": CommandJSON,
+				"type": CommandArrow,
 				"sql":  "SELECT 1",
 			}))
 			var response struct {

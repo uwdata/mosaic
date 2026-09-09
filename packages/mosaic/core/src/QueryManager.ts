@@ -97,7 +97,7 @@ export class QueryManager {
         this._logger.debug('Query', { type, sql, ...options });
       }
 
-      // @ts-expect-error type may be exec | json | arrow
+      // @ts-expect-error type may be exec | arrow
       const promise = this.db!.query({ type, sql: sql!, ...options });
       if (cache) this.clientCache!.set(sql!, promise);
 
