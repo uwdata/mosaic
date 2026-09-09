@@ -105,6 +105,68 @@ describe('Visitor functions', () => {
     }
   });
 
+  it('include whitespace-tolerant verbatim aggregate detection', async () => {
+    const variants: [string, ExprNode][] = [
+      ['max (num1)', sql`max (num1)`],
+      ['count\n(*)', sql`count\n(*)`],
+      ['max  (num1)', sql`max  (num1)`],
+      ['max(num1)', sql`max(num1)`]
+    ];
+    for (const [text, expr] of variants) {
+      expect(isAggregateExpression(expr)).toBe(2);
+      await expect(markStyleQuery({ y: expr, d: sql`txt2` })).toBeValidQuery(
+        `SELECT ${text} AS "y", txt2 AS "d" FROM "t1" GROUP BY "d"`
+      );
+    }
+  });
+
+  it('exclude non-aggregate names followed by a paren', () => {
+    expect(isAggregateExpression(sql`count_total * (num1 + 1)`)).toBe(0);
+    expect(isAggregateExpression(sql`num1 in (1, 2)`)).toBe(0);
+  });
+
+  it('include whitespace-tolerant scalar subquery stripping', async () => {
+    const variants: [string, ExprNode][] = [
+      ['num1 / (\n  SELECT max(num1) FROM t1\n)', sql`num1 / (\n  SELECT max(num1) FROM t1\n)`],
+      ['num1 / (SELECT\n  max(num1) FROM t1)', sql`num1 / (SELECT\n  max(num1) FROM t1)`],
+      ['num1 / ( select max(num1) from t1)', sql`num1 / ( select max(num1) from t1)`],
+      ['num1 / (select max(num1) from t1)', sql`num1 / (select max(num1) from t1)`]
+    ];
+    for (const [text, expr] of variants) {
+      expect(isAggregateExpression(expr)).toBe(0);
+      await expect(markStyleQuery({ y: expr, d: sql`txt2` })).toBeValidQuery(
+        `SELECT ${text} AS "y", txt2 AS "d" FROM "t1"`
+      );
+    }
+  });
+
+  it('include aggregates written after a scalar subquery', async () => {
+    const variants = [
+      '(select max(num2) from t2) + sum(num1)',
+      '(select max(num2) from t2) + (select min(num2) from t2) + sum(num1)',
+      '2 * (select max(num2) from t2) + sum(num1)',
+      '(select max(num2) from t2 where num2 > (select min(num2) from t2)) + sum(num1)',
+      '(\n  SELECT max(num2) FROM t2\n) + sum(num1)',
+      'sum(num1) + (select max(num2) from t2)',
+      'sum(num1) + (select max(num2) from t2) + count(num1)'
+    ];
+    for (const text of variants) {
+      const expr = asVerbatim(text);
+      expect(isAggregateExpression(expr)).toBe(2);
+      await expect(markStyleQuery({ y: expr, d: sql`txt2` })).toBeValidQuery(
+        `SELECT ${text} AS "y", txt2 AS "d" FROM "t1" GROUP BY "d"`
+      );
+    }
+  });
+
+  it('exclude subquery aggregates from surrounding row-level text', async () => {
+    const expr = sql`num1 + (select max(num2) from t2) * 2`;
+    expect(isAggregateExpression(expr)).toBe(0);
+    await expect(markStyleQuery({ y: expr, d: sql`txt2` })).toBeValidQuery(
+      'SELECT num1 + (select max(num2) from t2) * 2 AS "y", txt2 AS "d" FROM "t1"'
+    );
+  });
+
   it('include named-window verbatim window detection', async () => {
     const expr = sql`avg(num1) OVER win`;
     expect(isAggregateExpression(expr)).toBe(0);
