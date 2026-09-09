@@ -33,7 +33,7 @@ export function voidCache(): Cache {
  * @returns An LRU cache implementation.
  */
 export function lruCache({
-  maxBytes = 32 * 1024 * 1024,
+  maxBytes = 256 * 1024 * 1024,
   ttl = 3 * 60 * 60 * 1000
 }: {
   maxBytes?: number;
