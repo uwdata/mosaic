@@ -127,3 +127,22 @@ func TestWithVary(t *testing.T) {
 	require.NoError(t, err)
 	require.Empty(t, cfg.varyHeaders)
 }
+
+func TestCacheControlIncludesSchemaMatchHeadersInVary(t *testing.T) {
+	for _, options := range [][]Option{
+		{WithVary("x-region", "x-tenant"), WithSchemaMatchHeaders("X-Tenant", "X-TENANT"), WithCacheControl("public")},
+		{WithCacheControl("public"), WithSchemaMatchHeaders("X-Tenant", "X-TENANT"), WithVary("x-region", "x-tenant")},
+	} {
+		cfg, err := applyOptions(options)
+		require.NoError(t, err)
+		require.Equal(t, []string{"X-Region", "X-Tenant"}, cfg.varyHeaders)
+	}
+	cfg, err := applyOptions([]Option{WithCacheControl("public"), WithSchemaMatchHeaders("X-Tenant"), WithVary("X-Region"), WithVary()})
+	require.NoError(t, err)
+	require.Equal(t, []string{"X-Tenant"}, cfg.varyHeaders)
+	cfg, err = applyOptions([]Option{WithCacheControl("public"), WithSchemaMatchHeaders("X-Tenant"), WithVary("X-Region"), WithCacheControl("")})
+	require.NoError(t, err)
+	require.Equal(t, []string{"X-Region"}, cfg.varyHeaders)
+	_, err = applyOptions([]Option{WithCacheControl("public"), WithSchemaMatchHeaders("X-Tenant\r\nInjected")})
+	require.Error(t, err)
+}

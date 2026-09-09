@@ -296,11 +296,11 @@ func (s *handler) handleHTTP(w http.ResponseWriter, r *http.Request) {
 
 	if r.Method == http.MethodGet && s.cacheControl != "" {
 		etag := responseETag(response)
-		w.Header().Set("ETag", etag)
 		if value := strings.Join(r.Header.Values("If-Match"), ","); value != "" && !matchesETag(value, etag, false) {
 			http.Error(w, http.StatusText(http.StatusPreconditionFailed), http.StatusPreconditionFailed)
 			return
 		}
+		w.Header().Set("ETag", etag)
 		w.Header().Set("Cache-Control", s.cacheControl)
 		if matchesETag(strings.Join(r.Header.Values("If-None-Match"), ","), etag, true) {
 			w.WriteHeader(http.StatusNotModified)
