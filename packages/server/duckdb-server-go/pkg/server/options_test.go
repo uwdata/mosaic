@@ -91,3 +91,39 @@ func TestWithSchemaMatchHeadersCopiesConfiguration(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, []string{" X-Tenant "}, cfg.schemaMatchHeaders)
 }
+
+func TestWithCacheControl(t *testing.T) {
+	for _, value := range []string{"public\r\nX-Injected: true", "private\x00", "no-cache\x7f"} {
+		_, err := applyOptions([]Option{WithCacheControl(value)})
+		require.Error(t, err)
+	}
+	cfg, err := applyOptions([]Option{WithCacheControl(` private, max-age=60, custom="value" `)})
+	require.NoError(t, err)
+	require.Equal(t, `private, max-age=60, custom="value"`, cfg.cacheControl)
+	cfg, err = applyOptions([]Option{WithCacheControl("public"), WithCacheControl("")})
+	require.NoError(t, err)
+	require.Empty(t, cfg.cacheControl)
+}
+
+func TestWithVary(t *testing.T) {
+	for _, value := range []string{"", " ", "X-Tenant,Origin", "X:Tenant", "X Tenant", "X-\r\nInjected", "X-\x00", "X-\x7f", "X-ü"} {
+		_, err := applyOptions([]Option{WithVary(value)})
+		require.Error(t, err)
+	}
+	headers := []string{" x-tenant ", "origin", "X-TENANT"}
+	option := WithVary(headers...)
+	headers[0] = "X-Changed"
+	cfg, err := applyOptions([]Option{option})
+	require.NoError(t, err)
+	require.Equal(t, []string{"X-Tenant", "Origin"}, cfg.varyHeaders)
+	cfg.varyHeaders[0] = "X-Changed-Again"
+	cfg, err = applyOptions([]Option{option})
+	require.NoError(t, err)
+	require.Equal(t, []string{"X-Tenant", "Origin"}, cfg.varyHeaders)
+	cfg, err = applyOptions([]Option{WithVary("*")})
+	require.NoError(t, err)
+	require.Equal(t, []string{"*"}, cfg.varyHeaders)
+	cfg, err = applyOptions([]Option{option, WithVary()})
+	require.NoError(t, err)
+	require.Empty(t, cfg.varyHeaders)
+}

@@ -59,6 +59,8 @@ type config struct {
 	corsProtection     *http.CrossOriginProtection
 	websocket          WebSocketOptions
 	maxMessageBytes    int64
+	cacheControl       string
+	varyHeaders        []string
 }
 
 func defaultConfig() config {
