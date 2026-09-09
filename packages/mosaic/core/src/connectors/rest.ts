@@ -41,8 +41,6 @@ export class RestConnector implements Connector {
       throw new Error(`Query failed with HTTP status ${res.status}: ${await res.text()}`);
     }
 
-    return query.type === 'exec' ? req
-      : query.type === 'arrow' ? res.arrayBuffer()
-      : res.json();
+    return query.type === 'exec' ? undefined : res.arrayBuffer();
   }
 }
