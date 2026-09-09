@@ -1,7 +1,10 @@
 import type { ExtractionOptions, Table } from '@uwdata/flechette';
 import { tableFromIPC } from '@uwdata/flechette';
+import type { ArrowIPCBytes } from '../types.js';
 
-const byteLengths = new WeakMap<Table, number>();
+interface SizedTable extends Table {
+  byteCount: number;
+}
 
 /**
  * Decode Arrow IPC bytes to a table instance.
@@ -13,19 +16,18 @@ const byteLengths = new WeakMap<Table, number>();
  * @returns A table instance.
  */
 export function decodeIPC(
-  data: ArrayBufferLike | Uint8Array | Uint8Array[],
+  data: ArrowIPCBytes,
   options: ExtractionOptions = { useDate: true }
 ): Table {
   const table = tableFromIPC(data, options);
-  byteLengths.set(table, ipcByteLength(data));
-  return table;
+  return Object.assign(table, { byteCount: ipcByteLength(data) });
 }
 
 export function tableByteLength(table: Table): number | undefined {
-  return byteLengths.get(table);
+  return (table as Partial<SizedTable>).byteCount;
 }
 
-function ipcByteLength(data: ArrayBufferLike | Uint8Array | Uint8Array[]): number {
+function ipcByteLength(data: ArrowIPCBytes): number {
   return Array.isArray(data)
     ? data.reduce((sum, chunk) => sum + chunk.byteLength, 0)
     : data.byteLength;

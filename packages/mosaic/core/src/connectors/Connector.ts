@@ -1,3 +1,5 @@
+import type { ArrowIPCBytes } from '../types.js';
+
 export interface ConnectorQueryRequest {
   /** The query type. */
   type?: string;
@@ -17,6 +19,6 @@ export interface ExecQueryRequest extends ConnectorQueryRequest {
 
 export interface Connector {
   /** Issue a query and return the result. */
-  query(query: ArrowQueryRequest): Promise<ArrayBuffer | Uint8Array | Uint8Array[]>;
+  query(query: ArrowQueryRequest): Promise<ArrowIPCBytes>;
   query(query: ExecQueryRequest): Promise<void>;
 }

@@ -1,6 +1,6 @@
 import type { ExtractionOptions, Table } from '@uwdata/flechette';
 import type { Connector } from './connectors/Connector.js';
-import type { Cache, Logger, QueryEntry, QueryRequest } from './types.js';
+import type { ArrowIPCBytes, Cache, Logger, QueryEntry, QueryRequest } from './types.js';
 import { consolidator } from './QueryConsolidator.js';
 import { lruCache, voidCache } from './util/cache.js';
 import { decodeIPC, tableByteLength } from './util/decode-ipc.js';
@@ -101,7 +101,7 @@ export class QueryManager {
       // @ts-expect-error type may be exec | arrow
       const response = this.db!.query({ ...options, type, sql: sql! });
       const promise = type === 'arrow'
-        ? response.then(bytes => decodeIPC(bytes as ArrayBuffer | Uint8Array | Uint8Array[], this._ipc))
+        ? response.then(bytes => decodeIPC(bytes as ArrowIPCBytes, this._ipc))
         : response;
       if (cache) this.clientCache!.set(sql!, promise);
 
@@ -148,7 +148,9 @@ export class QueryManager {
   ipc(): ExtractionOptions | undefined;
   ipc(value: ExtractionOptions | undefined): ExtractionOptions | undefined;
   ipc(value?: ExtractionOptions): ExtractionOptions | undefined {
-    return value !== undefined ? (this._ipc = value) : this._ipc;
+    if (value === undefined) return this._ipc;
+    this.clientCache?.clear();
+    return this._ipc = value;
   }
 
   /**

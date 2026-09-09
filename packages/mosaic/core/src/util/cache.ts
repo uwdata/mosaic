@@ -66,6 +66,7 @@ export function lruCache({
       }
 
       entry.last = now;
+      // reinsert so Map iteration order stays least-recently-used first
       entries.delete(key);
       entries.set(key, entry);
       return entry.value;
@@ -83,8 +84,9 @@ export function lruCache({
         total += bytes;
       }
 
-      for (const oldest of entries.keys()) {
-        if (total <= maxBytes) break;
+      while (total > maxBytes) {
+        const oldest = entries.keys().next().value;
+        if (oldest === undefined) break;
         remove(oldest);
       }
 
