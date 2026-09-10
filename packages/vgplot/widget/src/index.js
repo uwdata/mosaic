@@ -131,7 +131,7 @@ export default {
       } else {
         switch (msg.type) {
           case 'arrow': {
-            logger.log('arrow', buffers[0]);
+            logger.log('arrow bytes', buffers[0].buffer.byteLength);
             query.resolve(buffers[0].buffer);
             break;
           }
