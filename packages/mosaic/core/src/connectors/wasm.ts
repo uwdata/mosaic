@@ -1,7 +1,6 @@
 
 import type { ArrowQueryRequest, Connector, ExecQueryRequest, ConnectorQueryRequest } from './Connector.js';
 import * as duckdb from '@duckdb/duckdb-wasm';
-import { decodeIPC } from '../util/decode-ipc.js';
 
 interface DuckDBWASMOptions {
   /** Flag to enable logging. */

@@ -146,7 +146,7 @@ export class QueryManager {
    * @returns Current extraction options
    */
   ipc(): ExtractionOptions | undefined;
-  ipc(value: ExtractionOptions | undefined): ExtractionOptions | undefined;
+  ipc(value: ExtractionOptions): ExtractionOptions | undefined;
   ipc(value?: ExtractionOptions): ExtractionOptions | undefined {
     if (value === undefined) return this._ipc;
     this.clientCache?.clear();

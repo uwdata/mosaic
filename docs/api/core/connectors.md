@@ -13,6 +13,12 @@ For the `"arrow"` type, a connector returns the raw Arrow IPC bytes as an `Arrow
 
 Once instantiated, register a connector with the coordinator using the [`coordinator.databaseConnector()`](coordinator#databaseconnector) method.
 
+## decodeIPC
+
+`decodeIPC(data, options)`
+
+Decode Arrow IPC bytes to an Arrow table. The _data_ argument is an `ArrowIPCBytes` value. The optional _options_ argument gives Arrow IPC extraction options; if unspecified, date and timestamp values are extracted as JavaScript `Date` objects. Use this to read query results directly from a connector, outside the coordinator.
+
 ## socketConnector
 
 `socketConnector(uri)`

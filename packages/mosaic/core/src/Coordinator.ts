@@ -83,7 +83,7 @@ export class Coordinator {
     } = options;
     this.manager = manager;
     this.manager.cache(cache);
-    this.manager.ipc(ipc);
+    if (ipc) this.manager.ipc(ipc);
     this.manager.consolidate(consolidate);
     this.databaseConnector(db);
     this.logger(logger);
