@@ -77,12 +77,11 @@ The supported _options_ are:
 `coordinator.query(query, options)`
 
 Request a _query_ and return a request Promise that resolves when the query is complete.
-A query result table will be returned, with format determined by the _type_ options.
+An Arrow table will be returned.
 The input _query_ should produce a SQL query upon string coercion.
 
 The supported _options_ are:
 
-- _type_: The return format type. Only `"arrow"` (the default) is supported.
 - _cache_: A Boolean flag (default `true`) indicating if the query result should be cached.
 - _priority_: A value indicating the query priority, one of: `Priority.High`, `Priority.Normal` (the default), or `Priority.Low`.
 

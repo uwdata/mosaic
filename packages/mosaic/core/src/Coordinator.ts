@@ -169,19 +169,17 @@ export class Coordinator {
   query(
     query: QueryType,
     options: {
-      type?: 'arrow';
       cache?: boolean;
       priority?: number;
       [key: string]: unknown;
     } = {}
   ): QueryResult<Table> {
     const {
-      type = 'arrow',
       cache = true,
       priority = Priority.Normal,
       ...otherOptions
     } = options;
-    return this.manager.request({ type, query, cache, options: otherOptions }, priority) as QueryResult<Table>;
+    return this.manager.request({ type: 'arrow', query, cache, options: otherOptions }, priority) as QueryResult<Table>;
   }
 
   /**
@@ -194,7 +192,7 @@ export class Coordinator {
    */
   prefetch(
     query: QueryType,
-    options: { type?: 'arrow'; [key: string]: unknown } = {}
+    options: { [key: string]: unknown } = {}
   ): QueryResult<Table> {
     return this.query(query, { ...options, cache: true, priority: Priority.Low });
   }
