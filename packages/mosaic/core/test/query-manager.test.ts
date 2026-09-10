@@ -91,4 +91,33 @@ describe('QueryManager', () => {
     expect(calls).toBe(1);
     expect(sizes).toEqual([undefined, bytes.length]);
   });
+
+  it('drops cached results when the extraction options change', async () => {
+    const bytes = tableToIPC(tableFromArrays({ a: [1] }), {})!;
+    const queryManager = new QueryManager();
+    queryManager.cache(true);
+
+    let calls = 0;
+    queryManager.connector({
+      // @ts-expect-error assumes type value
+      query: async () => {
+        calls += 1;
+        return bytes;
+      }
+    });
+
+    const request: QueryRequest = {
+      type: 'arrow',
+      query: 'SELECT * FROM test',
+      cache: true
+    };
+    await queryManager.request(request);
+    await queryManager.request(request);
+    expect(calls).toBe(1);
+
+    queryManager.ipc({ useDate: false });
+    await queryManager.request(request);
+
+    expect(calls).toBe(2);
+  });
 });

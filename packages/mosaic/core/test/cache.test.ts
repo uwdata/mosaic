@@ -41,6 +41,7 @@ describe('lruCache', () => {
     cache.set('a', { a: 1 }, 80, owner);
     cache.set('b', { b: 2 }, 80, owner);
     cache.set('c', { c: 3 }, 80, owner);
+    expect(cache.bytes()).toBe(80);
     cache.set('d', { d: 4 }, 20);
 
     expect(cache.get('a')).toEqual({ a: 1 });
@@ -55,6 +56,7 @@ describe('lruCache', () => {
     expect(cache.get('c')).toBeUndefined();
     expect(cache.get('d')).toEqual({ d: 4 });
     expect(cache.get('e')).toEqual({ e: 5 });
+    expect(cache.bytes()).toBe(21);
   });
 
   it('drops an entry older than the ttl on get', () => {
