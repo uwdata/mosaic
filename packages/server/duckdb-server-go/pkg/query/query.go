@@ -5,7 +5,6 @@ import (
 	"context"
 	"database/sql"
 	"database/sql/driver"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -204,81 +203,6 @@ func (db *DB) validateQuery(ctx context.Context, query string, allowedSchemas []
 	err := db.ValidateSQL(ctx, query, validators...)
 	if err != nil {
 		return fmt.Errorf("query: validation failed: %w", err)
-	}
-
-	return nil
-}
-
-func (db *DB) QueryJSON(ctx context.Context, query string, allowedSchemas []string) (json.RawMessage, error) {
-	err := db.validateQuery(ctx, query, allowedSchemas)
-	if err != nil {
-		return nil, err
-	}
-
-	var buf bytes.Buffer
-
-	err = db.writeJSON(ctx, query, &buf)
-	if err != nil {
-		return nil, err
-	}
-
-	return buf.Bytes(), nil
-}
-
-func (db *DB) WriteJSON(ctx context.Context, query string, allowedSchemas []string, w io.Writer) error {
-	err := db.validateQuery(ctx, query, allowedSchemas)
-	if err != nil {
-		return err
-	}
-
-	return db.writeJSON(ctx, query, w)
-}
-
-// SECURITY: writeJSON executes without policy validation. Call it only after validateQuery succeeds for the same query
-// and request-scoped allowed schemas.
-func (db *DB) writeJSON(ctx context.Context, query string, w io.Writer) error {
-	arrow, err := db.getArrowConn(ctx)
-	if err != nil {
-		return err
-	}
-	defer db.putArrowConn(arrow)
-
-	rdr, err := arrow.QueryContext(ctx, query)
-	if err != nil {
-		return fmt.Errorf("query: failed to execute query: %w", err)
-	}
-	defer rdr.Release()
-
-	_, err = w.Write([]byte("["))
-	if err != nil {
-		return fmt.Errorf("query: failed to write start of JSON array: %w", err)
-	}
-
-	for i := 0; rdr.Next(); i++ {
-		if i > 0 {
-			_, err = w.Write([]byte(","))
-			if err != nil {
-				return fmt.Errorf("query: failed to write comma between records: %w", err)
-			}
-		}
-
-		var jsonBytes []byte
-		jsonBytes, err = rdr.RecordBatch().MarshalJSON()
-		if err != nil {
-			return fmt.Errorf("failed to marshal record to JSON: %w", err)
-		}
-
-		// a record is a batch of rows, and MarshalJSON returns a JSON array of objects. If there are multiple records,
-		// we want a combined JSON array of objects, not an array of arrays, so we trim the outer brackets
-		_, err = w.Write(jsonBytes[1 : len(jsonBytes)-1])
-		if err != nil {
-			return fmt.Errorf("failed to write JSON to writer: %w", err)
-		}
-	}
-
-	_, err = w.Write([]byte("]"))
-	if err != nil {
-		return fmt.Errorf("query: failed to write end of JSON array: %w", err)
 	}
 
 	return nil

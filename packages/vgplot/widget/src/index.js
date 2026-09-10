@@ -136,11 +136,6 @@ export default {
             query.resolve(table);
             break;
           }
-          case 'json': {
-            logger.log('json', msg.result);
-            query.resolve(msg.result);
-            break;
-          }
           default: {
             query.resolve({});
             break;

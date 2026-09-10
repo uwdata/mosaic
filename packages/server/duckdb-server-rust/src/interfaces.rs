@@ -16,7 +16,6 @@ pub struct AppState {
 pub enum Command {
     Arrow,
     Exec,
-    Json,
 }
 
 #[derive(Deserialize, Serialize, Debug, Default)]
@@ -29,7 +28,6 @@ pub struct QueryParams {
 
 pub enum QueryResponse {
     Arrow(Vec<u8>),
-    Json(String),
     Response(Response),
     Empty,
 }
@@ -41,12 +39,6 @@ impl IntoResponse for QueryResponse {
                 StatusCode::OK,
                 [("Content-Type", "application/vnd.apache.arrow.stream")],
                 Bytes::from(bytes),
-            )
-                .into_response(),
-            QueryResponse::Json(value) => (
-                StatusCode::OK,
-                [("Content-Type", "application/json")],
-                value,
             )
                 .into_response(),
             QueryResponse::Response(response) => response,

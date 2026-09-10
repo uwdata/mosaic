@@ -11,22 +11,21 @@ pub fn benchmark(c: &mut Criterion) {
     let state = Arc::new(AppState { db: Box::new(db) });
 
     let mut group = c.benchmark_group("handle");
-    for command in [Command::Arrow, Command::Json].iter() {
-        group.bench_with_input(
-            BenchmarkId::from_parameter(to_value(command).unwrap().to_string()),
-            command,
-            |b, command| {
-                b.to_async(FuturesExecutor).iter(|| {
-                    let params = QueryParams {
-                        query_type: Some(command.clone()),
-                        sql: Some("SELECT 1 AS foo".to_string()),
-                        ..QueryParams::default()
-                    };
-                    handle(&state, params)
-                })
-            },
-        );
-    }
+    let command = Command::Arrow;
+    group.bench_with_input(
+        BenchmarkId::from_parameter(to_value(&command).unwrap().to_string()),
+        &command,
+        |b, command| {
+            b.to_async(FuturesExecutor).iter(|| {
+                let params = QueryParams {
+                    query_type: Some(command.clone()),
+                    sql: Some("SELECT 1 AS foo".to_string()),
+                    ..QueryParams::default()
+                };
+                handle(&state, params)
+            })
+        },
+    );
     group.finish();
 }
 

@@ -22,8 +22,3 @@ def arrow_to_bytes(reader: pa.RecordBatchReader) -> bytes:
 
 def get_arrow_bytes(con: duckdb.DuckDBPyConnection, sql: str) -> bytes:
     return arrow_to_bytes(get_arrow(con, sql))
-
-
-def get_json(con: duckdb.DuckDBPyConnection, sql: str) -> str | None:
-    result = con.query(sql).df()
-    return result.to_json(orient="records")

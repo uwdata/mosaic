@@ -68,7 +68,7 @@ BENCHMARKS: list[tuple[str, str, str]] = [
     ("aggregate: count", "arrow", "SELECT count(*) AS cnt FROM flights"),
     (
         "aggregate: min/max",
-        "json",
+        "arrow",
         "SELECT min(delay) AS lo, max(delay) AS hi FROM flights",
     ),
     (
@@ -78,7 +78,7 @@ BENCHMARKS: list[tuple[str, str, str]] = [
     ),
     (
         "group-by small: species",
-        "json",
+        "arrow",
         "SELECT species, count(*) AS cnt, avg(body_mass) AS mean_mass FROM penguins GROUP BY species",
     ),
     # -- histogram / binning (medium results) --
@@ -89,7 +89,7 @@ BENCHMARKS: list[tuple[str, str, str]] = [
     ),
     (
         "group-by: distance stats",
-        "json",
+        "arrow",
         "SELECT distance, count(*) AS cnt, avg(delay) AS mean_delay, min(delay) AS lo, max(delay) AS hi FROM flights GROUP BY distance ORDER BY cnt DESC",
     ),
     (
@@ -264,7 +264,7 @@ def has_cmd(name: str) -> bool:
 def wait_for_server(host: str, port: int, timeout: int = 30) -> bool:
     for _ in range(timeout):
         try:
-            http_post(host, port, {"type": "json", "sql": "SELECT 1"})
+            http_post(host, port, {"type": "arrow", "sql": "SELECT 1"})
             return True
         except Exception:  # ruff: ignore[blind-except]
             time.sleep(1)
@@ -403,7 +403,7 @@ def run_benchmarks(
     # Check server
     print(f"Checking server at http://{host}:{port} ...")
     try:
-        http_post(host, port, {"type": "json", "sql": "SELECT 1"})
+        http_post(host, port, {"type": "arrow", "sql": "SELECT 1"})
     except Exception as e:  # ruff: ignore[blind-except]
         print(f"ERROR: No server responding at http://{host}:{port}: {e}")
         return results

@@ -1,12 +1,14 @@
 package query
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"log/slog"
 	"os"
 	"testing"
 
+	"github.com/apache/arrow-go/v18/arrow/ipc"
 	"github.com/duckdb/duckdb-go/v2"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -43,6 +45,27 @@ func setupTestDB(t *testing.T, opts ...OptionFunc) *DB {
 	return db
 }
 
+func arrowRows(t *testing.T, data []byte) []map[string]any {
+	t.Helper()
+
+	rdr, err := ipc.NewReader(bytes.NewReader(data))
+	require.NoError(t, err)
+	defer rdr.Release()
+
+	rows := []map[string]any{}
+	for rdr.Next() {
+		batchJSON, err := rdr.RecordBatch().MarshalJSON()
+		require.NoError(t, err)
+
+		var batch []map[string]any
+		require.NoError(t, json.Unmarshal(batchJSON, &batch))
+		rows = append(rows, batch...)
+	}
+	require.NoError(t, rdr.Err())
+
+	return rows
+}
+
 func TestDB_FunctionBlocklist(t *testing.T) {
 	db := setupTestDB(t, WithFunctionBlocklist([]string{" RANGE ", "MD5", "SUM", "ROW_NUMBER"}))
 	ctx := context.Background()
@@ -51,48 +74,16 @@ func TestDB_FunctionBlocklist(t *testing.T) {
 		name     string
 		function string
 		query    string
-		format   string
 	}{
-		{
-			name:     "JSON table function",
-			function: "range",
-			query:    "SELECT * FROM range(3)",
-			format:   "json",
-		},
-		{
-			name:     "JSON scalar function",
-			function: "md5",
-			query:    "SELECT md5('mosaic')",
-			format:   "json",
-		},
-		{
-			name:     "JSON window aggregate",
-			function: "sum",
-			query:    "SELECT sum(i) OVER () FROM (VALUES (1), (2), (3)) t(i)",
-			format:   "json",
-		},
-		{
-			name:     "JSON window function",
-			function: "row_number",
-			query:    "SELECT row_number() OVER ()",
-			format:   "json",
-		},
-		{
-			name:     "Arrow table function",
-			function: "range",
-			query:    "SELECT * FROM range(3)",
-			format:   "arrow",
-		},
+		{name: "table function", function: "range", query: "SELECT * FROM range(3)"},
+		{name: "scalar function", function: "md5", query: "SELECT md5('mosaic')"},
+		{name: "window aggregate", function: "sum", query: "SELECT sum(i) OVER () FROM (VALUES (1), (2), (3)) t(i)"},
+		{name: "window function", function: "row_number", query: "SELECT row_number() OVER ()"},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			var err error
-			if tt.format == "arrow" {
-				_, err = db.QueryArrow(ctx, tt.query, nil)
-			} else {
-				_, err = db.QueryJSON(ctx, tt.query, nil)
-			}
+			_, err := db.QueryArrow(ctx, tt.query, nil)
 
 			require.ErrorContains(t, err, "use of function '"+tt.function+"' is not allowed")
 		})
@@ -109,28 +100,22 @@ func TestDB_FunctionAllowlist(t *testing.T) {
 		}))
 
 		tests := []struct {
-			name   string
-			query  string
-			format string
+			name  string
+			query string
 		}{
-			{name: "scalar function", query: "SELECT md5('mosaic')", format: "json"},
-			{name: "window function", query: "SELECT row_number() OVER ()", format: "json"},
-			{name: "operator", query: "SELECT 1 + 2", format: "json"},
-			{name: "Arrow table function", query: "SELECT * FROM range(3)", format: "arrow"},
-			{name: "normalized function name", query: "SELECT count(*)", format: "json"},
-			{name: "main-qualified function", query: "SELECT main.md5('mosaic')", format: "json"},
-			{name: "main-qualified normalized function", query: "SELECT main.count(*) FROM (SELECT 1)", format: "json"},
-			{name: "helper over qualified column", query: "SELECT [main.x] FROM (SELECT 1 AS x) AS main", format: "json"},
+			{name: "scalar function", query: "SELECT md5('mosaic')"},
+			{name: "window function", query: "SELECT row_number() OVER ()"},
+			{name: "operator", query: "SELECT 1 + 2"},
+			{name: "table function", query: "SELECT * FROM range(3)"},
+			{name: "normalized function name", query: "SELECT count(*)"},
+			{name: "main-qualified function", query: "SELECT main.md5('mosaic')"},
+			{name: "main-qualified normalized function", query: "SELECT main.count(*) FROM (SELECT 1)"},
+			{name: "helper over qualified column", query: "SELECT [main.x] FROM (SELECT 1 AS x) AS main"},
 		}
 
 		for _, tt := range tests {
 			t.Run(tt.name, func(t *testing.T) {
-				var err error
-				if tt.format == "arrow" {
-					_, err = db.QueryArrow(ctx, tt.query, nil)
-				} else {
-					_, err = db.QueryJSON(ctx, tt.query, nil)
-				}
+				_, err := db.QueryArrow(ctx, tt.query, nil)
 				require.NoError(t, err)
 			})
 		}
@@ -142,7 +127,7 @@ func TestDB_FunctionAllowlist(t *testing.T) {
 			Include:         []string{"md"},
 		}))
 
-		_, err := db.QueryJSON(ctx, "SELECT md5('mosaic')", nil)
+		_, err := db.QueryArrow(ctx, "SELECT md5('mosaic')", nil)
 		require.ErrorIs(t, err, ErrAccessDenied)
 		require.ErrorContains(t, err, "function 'md5' is not in the allowlist")
 	})
@@ -153,7 +138,7 @@ func TestDB_FunctionAllowlist(t *testing.T) {
 			Include:         []string{"md5"},
 		}))
 
-		_, err := db.QueryJSON(ctx, "SELECT md5(lower('mosaic'))", nil)
+		_, err := db.QueryArrow(ctx, "SELECT md5(lower('mosaic'))", nil)
 		require.ErrorIs(t, err, ErrAccessDenied)
 		require.ErrorContains(t, err, "function 'lower' is not in the allowlist")
 	})
@@ -178,7 +163,7 @@ func TestDB_FunctionAllowlist(t *testing.T) {
 			Include:         []string{"read_parquet"},
 		}))
 
-		_, err := db.QueryJSON(ctx, "SELECT * FROM read_parquet(['local.parquet'])", nil)
+		_, err := db.QueryArrow(ctx, "SELECT * FROM read_parquet(['local.parquet'])", nil)
 		require.ErrorIs(t, err, ErrAccessDenied)
 		require.ErrorContains(t, err, "function 'list_value' is not in the allowlist")
 	})
@@ -201,7 +186,7 @@ func TestDB_FunctionAllowlist(t *testing.T) {
 			"SELECT strptime('2020-01-01', '%Y-%m-%d')",
 			"SELECT * FROM range(3)",
 		} {
-			_, err := db.QueryJSON(ctx, query, nil)
+			_, err := db.QueryArrow(ctx, query, nil)
 			require.NoError(t, err, query)
 		}
 	})
@@ -231,7 +216,7 @@ func TestDB_FunctionAllowlist(t *testing.T) {
 	t.Run("defaults reject unsafe name collisions", func(t *testing.T) {
 		db := setupTestDB(t, WithFunctionAllowlist(FunctionAllowlistOptions{}))
 
-		_, err := db.QueryJSON(ctx, "SELECT * FROM histogram('duckdb_tables', 'table_name')", nil)
+		_, err := db.QueryArrow(ctx, "SELECT * FROM histogram('duckdb_tables', 'table_name')", nil)
 		require.ErrorIs(t, err, ErrAccessDenied)
 		require.ErrorContains(t, err, "function 'histogram' is not in the allowlist")
 	})
@@ -257,7 +242,7 @@ func TestDB_FunctionAllowlist(t *testing.T) {
 
 		for _, tt := range tests {
 			t.Run(tt.function, func(t *testing.T) {
-				_, err := db.QueryJSON(ctx, tt.query, nil)
+				_, err := db.QueryArrow(ctx, tt.query, nil)
 				require.ErrorIs(t, err, ErrAccessDenied)
 				require.ErrorContains(t, err, "function '"+tt.function+"' is not in the allowlist")
 			})
@@ -267,10 +252,10 @@ func TestDB_FunctionAllowlist(t *testing.T) {
 	t.Run("defaults can be disabled", func(t *testing.T) {
 		db := setupTestDB(t, WithFunctionAllowlist(FunctionAllowlistOptions{DisableDefaults: true}))
 
-		_, err := db.QueryJSON(ctx, "SELECT 1", nil)
+		_, err := db.QueryArrow(ctx, "SELECT 1", nil)
 		require.NoError(t, err)
 
-		_, err = db.QueryJSON(ctx, "SELECT 1 + 2", nil)
+		_, err = db.QueryArrow(ctx, "SELECT 1 + 2", nil)
 		require.ErrorIs(t, err, ErrAccessDenied)
 		require.ErrorContains(t, err, "function '+' is not in the allowlist")
 	})
@@ -280,10 +265,10 @@ func TestDB_FunctionAllowlist(t *testing.T) {
 			Exclude: []string{" SUM "},
 		}))
 
-		_, err := db.QueryJSON(ctx, "SELECT 1 + 2", nil)
+		_, err := db.QueryArrow(ctx, "SELECT 1 + 2", nil)
 		require.NoError(t, err)
 
-		_, err = db.QueryJSON(ctx, "SELECT sum(i) FROM (VALUES (1), (2)) t(i)", nil)
+		_, err = db.QueryArrow(ctx, "SELECT sum(i) FROM (VALUES (1), (2)) t(i)", nil)
 		require.ErrorIs(t, err, ErrAccessDenied)
 		require.ErrorContains(t, err, "function 'sum' is not in the allowlist")
 	})
@@ -292,30 +277,19 @@ func TestDB_FunctionAllowlist(t *testing.T) {
 func TestDB_FunctionAllowlistHandlesUnsupportedStatements(t *testing.T) {
 	db := setupTestDB(t, WithFunctionAllowlist(FunctionAllowlistOptions{}))
 
-	_, err := db.QueryJSON(t.Context(), "PRAGMA version", nil)
+	_, err := db.QueryArrow(t.Context(), "PRAGMA version", nil)
 	require.ErrorIs(t, err, ErrUnsupportedStatement)
 	require.ErrorContains(t, err, "query: validation failed: query: not implemented: Only SELECT statements can be serialized to json")
 }
 
 func TestDB_FunctionBlocklistHandlesUnsupportedStatements(t *testing.T) {
 	db := setupTestDB(t, WithFunctionBlocklist([]string{"range"}))
-	ctx := context.Background()
 
-	t.Run("JSON", func(t *testing.T) {
-		_, err := db.QueryJSON(ctx, "PRAGMA version", nil)
-		require.ErrorIs(t, err, ErrUnsupportedStatement)
-		require.ErrorContains(t, err, "query: validation failed: query: not implemented: Only SELECT statements can be serialized to json")
-		require.NotContains(t, err.Error(), "()")
-		require.NotContains(t, err.Error(), " at :")
-	})
-
-	t.Run("Arrow", func(t *testing.T) {
-		_, err := db.QueryArrow(ctx, "PRAGMA version", nil)
-		require.ErrorIs(t, err, ErrUnsupportedStatement)
-		require.ErrorContains(t, err, "query: validation failed: query: not implemented: Only SELECT statements can be serialized to json")
-		require.NotContains(t, err.Error(), "()")
-		require.NotContains(t, err.Error(), " at :")
-	})
+	_, err := db.QueryArrow(t.Context(), "PRAGMA version", nil)
+	require.ErrorIs(t, err, ErrUnsupportedStatement)
+	require.ErrorContains(t, err, "query: validation failed: query: not implemented: Only SELECT statements can be serialized to json")
+	require.NotContains(t, err.Error(), "()")
+	require.NotContains(t, err.Error(), " at :")
 }
 
 func TestDB_Exec(t *testing.T) {
@@ -358,11 +332,10 @@ func TestDB_Exec(t *testing.T) {
 	})
 }
 
-func TestDB_QueryJSON(t *testing.T) {
+func TestDB_QueryArrowRows(t *testing.T) {
 	db := setupTestDB(t)
 	ctx := context.Background()
 
-	// Setup test data
 	err := db.Exec(ctx, "CREATE TABLE products (id INTEGER, name VARCHAR, price DECIMAL)")
 	require.NoError(t, err)
 	err = db.Exec(ctx, "INSERT INTO products VALUES (1, 'Apple', 1.50), (2, 'Banana', 0.75), (3, 'Orange', 2.00), (NULL, NULL, NULL)")
@@ -379,30 +352,20 @@ func TestDB_QueryJSON(t *testing.T) {
 	}
 
 	t.Run("simple select", func(t *testing.T) {
-		gotJSON, err := db.QueryJSON(ctx, query, nil)
+		got, err := db.QueryArrow(ctx, query, nil)
 		require.NoError(t, err)
-
-		// Verify JSON structure
-		var got []map[string]any
-		err = json.Unmarshal(gotJSON, &got)
-		require.NoError(t, err)
-		assert.Equal(t, want, got)
+		assert.Equal(t, want, arrowRows(t, got))
 	})
 
 	t.Run("invalid query", func(t *testing.T) {
-		_, err := db.QueryJSON(ctx, "SELECT * FROM nonexistent_table", nil)
+		_, err := db.QueryArrow(ctx, "SELECT * FROM nonexistent_table", nil)
 		assert.Error(t, err)
 	})
 
 	t.Run("empty result set", func(t *testing.T) {
-		result, err := db.QueryJSON(ctx, "SELECT * FROM products WHERE id > 100", nil)
+		result, err := db.QueryArrow(ctx, "SELECT * FROM products WHERE id > 100", nil)
 		require.NoError(t, err)
-
-		var data []any
-		err = json.Unmarshal(result, &data)
-		require.NoError(t, err)
-		assert.Len(t, data, 0)
-		assert.Equal(t, "[]", string(result))
+		assert.Empty(t, arrowRows(t, result))
 	})
 }
 
