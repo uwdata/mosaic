@@ -29,6 +29,9 @@ func run() int {
 	poolSize := flag.Int("connection-pool-size", 10, "Max connection pool size")
 	certFile := flag.String("cert", "", "Path to TLS certificate file (optional, enables HTTPS)")
 	keyFile := flag.String("key", "", "Path to TLS private key file (optional, enables HTTPS)")
+	cacheControl := flag.String("cache-control", "", "Cache-Control value for successful GET arrow responses; enables ETag validation for those queries")
+	var varyHeaders optionalCommaListFlag
+	flag.Var(&varyHeaders, "vary", "Comma-separated request header names to append to Vary; may be repeated")
 	schemaMatchHeadersStr := flag.String("schema-match-headers", "", "Comma-separated list of headers to match against schema names for multi-tenant access control (e.g., \"X-Tenant-Id,verified-user-id\")")
 	extensionsStr := flag.String("load-extensions", "", "Comma-separated list of extensions to install and load at startup. Use a pipe after the extension name to specify a DuckDB repository alias. Unspecified repositories use DuckDB's default (e.g. mysql_scanner,netquack|community,aws|core_nightly).")
 	functionBlocklistStr := flag.String("function-blocklist", "", "Comma-separated list of functions to block, useful for blocking functions that may pose security or performance risks. (e.g., 'bigquery_query,read_parquet')")
@@ -103,6 +106,8 @@ func run() int {
 	defer db.Close()
 
 	s, err := server.New(db,
+		server.WithCacheControl(*cacheControl),
+		server.WithVary(varyHeaders.values...),
 		server.WithSchemaMatchHeaders(schemaMatchHeaders...),
 		server.WithLogger(logger),
 		server.WithCORS(server.CORSOptions{
@@ -126,6 +131,8 @@ func run() int {
 		"cert_file":            *certFile,
 		"key_file":             *keyFile,
 		"schema_match_headers": *schemaMatchHeadersStr,
+		"cache_control":        *cacheControl,
+		"vary":                 varyHeaders.String(),
 		"load_extensions":      *extensionsStr,
 		"function_blocklist":   *functionBlocklistStr,
 		"function_allowlist":   functionAllowlist.String(),

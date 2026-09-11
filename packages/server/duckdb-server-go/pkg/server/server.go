@@ -55,6 +55,8 @@ type handler struct {
 	httpHandler        http.Handler
 	websocketOptions   WebSocketOptions
 	maxMessageBytes    int64
+	cacheControl       string
+	varyHeaders        []string
 }
 
 // New constructs a Mosaic HTTP and WebSocket handler backed by db. Omitting
@@ -80,6 +82,8 @@ func newHandler(db commandExecutor, cfg config) *handler {
 		authorizer:         cfg.authorizer,
 		websocketOptions:   cfg.websocket,
 		maxMessageBytes:    cfg.maxMessageBytes,
+		cacheControl:       cfg.cacheControl,
+		varyHeaders:        cfg.varyHeaders,
 	}
 
 	s.httpHandler = newCORSHandler(cfg.cors, cfg.corsProtection, http.HandlerFunc(s.handleHTTP))
@@ -88,6 +92,13 @@ func newHandler(db commandExecutor, cfg config) *handler {
 }
 
 func (s *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	if s.cacheControl != "" {
+		w.Header().Set("Cache-Control", "no-store")
+	}
+	if len(s.varyHeaders) > 0 {
+		w.Header().Add("Vary", strings.Join(s.varyHeaders, ", "))
+	}
+
 	if strings.EqualFold(r.Header.Get("Connection"), "upgrade") &&
 		strings.EqualFold(r.Header.Get("Upgrade"), "websocket") {
 		s.handleWebSocket(w, r)
@@ -279,6 +290,20 @@ func (s *handler) handleHTTP(w http.ResponseWriter, r *http.Request) {
 	if response.contentType == "" {
 		w.WriteHeader(http.StatusOK)
 		return
+	}
+
+	if r.Method == http.MethodGet && s.cacheControl != "" {
+		etag := responseETag(response)
+		if value := strings.Join(r.Header.Values("If-Match"), ","); value != "" && !matchesETag(value, etag, false) {
+			http.Error(w, http.StatusText(http.StatusPreconditionFailed), http.StatusPreconditionFailed)
+			return
+		}
+		w.Header().Set("ETag", etag)
+		w.Header().Set("Cache-Control", s.cacheControl)
+		if matchesETag(strings.Join(r.Header.Values("If-None-Match"), ","), etag, true) {
+			w.WriteHeader(http.StatusNotModified)
+			return
+		}
 	}
 
 	w.Header().Set("Content-Type", response.contentType)
