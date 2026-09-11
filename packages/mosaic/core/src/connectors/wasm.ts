@@ -77,8 +77,11 @@ export class DuckDBWASMConnector implements Connector {
   async query(query: ConnectorQueryRequest): Promise<unknown> {
     const { type, sql } = query;
     const con = await this.getConnection();
-    const result = await getArrowIPC(con, sql);
-    return type === 'exec' ? undefined : decodeIPC(result, this._ipc);
+    if (type === 'exec') {
+      await con.query(sql);
+    } else {
+      return decodeIPC(await getArrowIPC(con, sql), this._ipc);
+    }
   }
 }
 
