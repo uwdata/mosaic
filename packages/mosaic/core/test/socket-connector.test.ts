@@ -71,7 +71,7 @@ describe('SocketConnector', () => {
 
     expect(await first).toBe(one);
     expect(await create).toBeUndefined();
-    expect(await failing).toBe('boom');
+    expect(await failing).toMatchObject({ name: 'ConnectorError', message: 'boom' });
     expect(await last).toBe(three);
   });
 

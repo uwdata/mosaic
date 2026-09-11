@@ -80,7 +80,7 @@ export class SocketConnector implements Connector {
           if (typeof data === 'string') {
             const json = JSON.parse(data);
             if (json.error) {
-              reject(query.type === 'exec' ? json.error : parseErrorResponse(json) ?? json.error);
+              reject(parseErrorResponse(json) ?? json.error);
             } else if (query.type === 'preagg') {
               resolve(json);
             } else if (query.type === 'arrow') {
