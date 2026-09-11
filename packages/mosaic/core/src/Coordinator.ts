@@ -108,7 +108,7 @@ export class Coordinator {
       this.clients = new Set;
     }
     if (cache) this.manager.invalidate();
-    if (clients && cache && this.preaggregator?.registry) this.preaggregator.reset();
+    if (clients && cache) this.preaggregator?.reset();
   }
 
   /**
@@ -121,10 +121,8 @@ export class Coordinator {
   databaseConnector(db: Connector): Connector;
   databaseConnector(db?: Connector): Connector | null {
     if (!db) return this.manager.connector();
-    const prev = this.manager.connector();
-    const next = this.manager.connector(db);
-    if (prev && prev !== next && this.preaggregator?.registry) this.preaggregator.reset();
-    return next;
+    if (this.manager.connector() !== db) this.preaggregator?.reset();
+    return this.manager.connector(db);
   }
 
   /**

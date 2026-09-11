@@ -47,9 +47,6 @@ describe('PreAggregateRegistry', () => {
     expect(registry.lookup(SQL_A)).toBeNull();
     expect(registry.lookup(SQL_B)).toBe(t3);
     expect(await registry.request(SQL_B)).toBe(t3);
-    expect(registry.isCurrent(SQL_B, t3)).toBe(true);
-    expect(registry.isCurrent(SQL_B, t1)).toBe(false);
-    expect(registry.isCurrent(SQL_A, t1)).toBe(false);
 
     registry.request(SQL_A);
     registry.request(SQL_C);

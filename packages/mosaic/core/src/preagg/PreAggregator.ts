@@ -286,7 +286,7 @@ export class PreAggregator {
 
   private isCurrent(info: PreAggregateInfo): boolean {
     return info.result !== null
-      && (info.table === null || this.registry!.isCurrent(info.create.toString(), info.table));
+      && (info.table === null || this.registry!.lookup(info.create.toString()) === info.table);
   }
 
   private materialize(info: PreAggregateInfo): Promise<void> {
