@@ -387,8 +387,22 @@ function updateSelection(
     if (info?.result) {
       // generate and issue preaggregate update query
       const query = info.query(active);
-      const result = await mc.updateClient(client, query);
+      const table = info.table;
+      const pending = mc.updateClient(client, query);
+      const result = await pending;
       if (!(result instanceof QueryError)) return;
+      if (preaggregator.registry) {
+        if (client.pending !== pending || !filterGroups.get(selection)?.clients.has(client)) return;
+        const recovered = await preaggregator.recover(client, info, table, result.cause);
+        if (client.pending !== pending || !filterGroups.get(selection)?.clients.has(client)
+          || preaggregator.entries.get(client) !== info) return;
+        if (recovered) {
+          const retry = mc.updateClient(client, info.query(active));
+          if (!(await retry instanceof QueryError)) return;
+          if (client.pending !== retry || !filterGroups.get(selection)?.clients.has(client)
+            || preaggregator.entries.get(client) !== info) return;
+        }
+      }
       // if preaggregate update fails, fall through to standard query
       // this safeguards against potential preagg bugs
     }
