@@ -223,12 +223,7 @@ func (s *handler) handleWebSocketMessage(ctx context.Context, conn *websocket.Co
 	}
 	params.raw = raw
 
-	var response commandResponse
-	if params.Type != nil && *params.Type == CommandPreagg {
-		err = errUnsupportedCommand
-	} else {
-		response, err = s.execCommand(ctx, params, allowedSchemas, authorize)
-	}
+	response, err := s.execCommand(ctx, params, allowedSchemas, authorize)
 	if err != nil {
 		errResponse := s.classifyAndLogError(err)
 		writeErr := wsjson.Write(ctx, conn, errResponse.envelope())

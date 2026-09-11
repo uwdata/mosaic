@@ -151,7 +151,7 @@ POST and WebSocket messages require one complete command object with optional su
 
 ### Server-Owned Preaggregation
 
-Embedding applications can enable HTTP `preagg` with `server.WithPreaggregation`, supplying a trusted scope resolver and source catalog/schema grants. The server validates SELECTs, publishes ordinary tables and source metadata transactionally, reauthorizes derived reads, and bounds table count, output size, build duration, and age. This mode disables client `exec`; it is separate from the legacy schema-match-header example below.
+Embedding applications can enable HTTP and WebSocket `preagg` with `server.WithPreaggregation`, supplying a trusted scope resolver and source catalog/schema grants. The server validates SELECTs, publishes ordinary tables and source metadata transactionally, reauthorizes derived reads, and bounds table count, output size, build duration, and age. This mode disables client `exec`; it is separate from the legacy schema-match-header example below.
 
 See the [Go preaggregation API documentation](../../../docs/api/duckdb/go-server.md) for configuration, limits, and recovery behavior. The installed binary does not enable this option.
 
