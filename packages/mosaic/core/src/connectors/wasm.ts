@@ -7,7 +7,7 @@ import type {
   PreaggResponse
 } from './Connector.js';
 import * as duckdb from '@duckdb/duckdb-wasm';
-import { ConnectorError } from './errors.js';
+import { materializeWithExec } from './materialize.js';
 
 interface DuckDBWASMOptions {
   /** Flag to enable logging. */
@@ -78,10 +78,8 @@ export class DuckDBWASMConnector implements Connector {
   async query(query: ExecQueryRequest): Promise<void>;
   async query(query: PreaggRequest): Promise<PreaggResponse>;
   async query(query: ConnectorRequest): Promise<unknown> {
-    if (query.type === 'preagg') {
-      throw new ConnectorError('Unsupported command: preagg', { code: 'unsupported_command' });
-    }
     const { type, sql } = query;
+    if (type === 'preagg') return materializeWithExec(this, sql);
     const con = await this.getConnection();
     const result = await getArrowIPC(con, sql);
     return type === 'exec' ? undefined : result;

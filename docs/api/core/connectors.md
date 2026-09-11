@@ -11,7 +11,7 @@ The _query_ argument is an object with the following properties:
 
 For the `"arrow"` type, a connector returns the raw Arrow IPC bytes as an `ArrowIPCBytes` value, which is an `ArrayBuffer`, a `Uint8Array`, or an array of `Uint8Array` chunks; the coordinator decodes them to an Arrow table.
 
-A `"preagg"` request asks the server to materialize the given SELECT query and resolves to the resulting table name as `{ catalog, schema, table, createdAt }`. The bundled `restConnector` and `socketConnector` support it.
+A `"preagg"` request asks the connector to materialize the given SELECT query and resolves to the resulting table name as `{ catalog, schema, table, createdAt }`. All bundled connectors support it: `restConnector` and `socketConnector` delegate to the server, while `wasmConnector` and `NodeConnector` create a temporary table on their own connection.
 
 Once instantiated, register a connector with the coordinator using the [`coordinator.databaseConnector()`](coordinator#databaseconnector) method.
 
