@@ -1,10 +1,34 @@
 import type { ExtractionOptions, Table } from '@uwdata/flechette';
-import type { ArrowQueryRequest, Connector, ExecQueryRequest, ConnectorQueryRequest } from './Connector.js';
+import type {
+  ArrowQueryRequest,
+  Connector,
+  ConnectorRequest,
+  ExecQueryRequest,
+  PreaggRequest,
+  PreaggResponse
+} from './Connector.js';
 import { decodeIPC } from '../util/decode-ipc.js';
+import { ConnectorError, errorFromEnvelope } from './errors.js';
 
 interface RestOptions {
   uri?: string;
   ipc?: ExtractionOptions;
+}
+
+function isJSONContentType(contentType: string | null): boolean {
+  return /^application\/json\s*(;|$)/i.test(contentType?.trim() ?? '');
+}
+
+function errorFromResponseBody(status: number, contentType: string | null, body: string): ConnectorError {
+  if (isJSONContentType(contentType)) {
+    try {
+      const err = errorFromEnvelope(JSON.parse(body), status);
+      if (err) return err;
+    } catch {
+      // fall through to the generic error
+    }
+  }
+  return new ConnectorError(body || `Request failed with HTTP status ${status}`, { status });
 }
 
 /**
@@ -32,23 +56,29 @@ export class RestConnector implements Connector {
 
   async query(query: ArrowQueryRequest): Promise<Table>;
   async query(query: ExecQueryRequest): Promise<void>;
-  async query(query: ConnectorQueryRequest): Promise<unknown> {
-    const req = fetch(this._uri, {
+  async query(query: PreaggRequest): Promise<PreaggResponse>;
+  async query(query: ConnectorRequest): Promise<unknown> {
+    const res = await fetch(this._uri, {
       method: 'POST',
       mode: 'cors',
       credentials: 'omit',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        ...(query.type === 'preagg' ? { Accept: 'application/json' } : {})
+      },
       body: JSON.stringify(query)
     });
 
-    const res = await req;
-
     if (!res.ok) {
-      throw new Error(`Query failed with HTTP status ${res.status}: ${await res.text()}`);
+      const body = await res.text();
+      if (query.type === 'preagg') {
+        throw errorFromResponseBody(res.status, res.headers.get('Content-Type'), body);
+      }
+      throw new Error(`Query failed with HTTP status ${res.status}: ${body}`);
     }
 
-    return query.type === 'exec'
-      ? undefined
+    return query.type === 'exec' ? undefined
+      : query.type === 'preagg' ? res.json()
       : decodeIPC(await res.arrayBuffer(), this._ipc);
   }
 }

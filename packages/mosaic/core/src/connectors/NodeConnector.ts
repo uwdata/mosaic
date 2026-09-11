@@ -4,9 +4,12 @@ import { decodeIPC } from '../util/decode-ipc.js';
 import type {
   ArrowQueryRequest,
   Connector,
-  ConnectorQueryRequest,
-  ExecQueryRequest
+  ConnectorRequest,
+  ExecQueryRequest,
+  PreaggRequest,
+  PreaggResponse
 } from './Connector.js';
+import { ConnectorError } from './errors.js';
 
 /**
  * A Mosaic Connector backed by an in-process Node.js DuckDB instance.
@@ -38,7 +41,11 @@ export class NodeConnector implements Connector {
    */
   async query(query: ArrowQueryRequest): Promise<Table>;
   async query(query: ExecQueryRequest): Promise<void>;
-  async query(query: ConnectorQueryRequest): Promise<unknown> {
+  async query(query: PreaggRequest): Promise<PreaggResponse>;
+  async query(query: ConnectorRequest): Promise<unknown> {
+    if (query.type === 'preagg') {
+      throw new ConnectorError('Unsupported command: preagg', { code: 'unsupported_command' });
+    }
     const { type, sql } = query;
     return type === 'exec'
       ? this._db.exec(sql)
