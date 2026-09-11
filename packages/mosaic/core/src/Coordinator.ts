@@ -377,11 +377,14 @@ function updateSelection(
       return;
     }
 
+    const superseded = (pending: Promise<unknown>) => client.pending !== pending
+      || !filterGroups.get(selection)?.clients.has(client)
+      || preaggregator.entries.get(client) !== info;
+
     if (info?.ready) {
       const pending = client.pending;
       await info.ready.catch(() => {});
-      // a requestQuery or disconnect during the wait supersedes this update
-      if (client.pending !== pending || !filterGroups.get(selection)?.clients.has(client)) return;
+      if (superseded(pending)) return;
     }
 
     if (info?.result) {
@@ -392,15 +395,14 @@ function updateSelection(
       const result = await pending;
       if (!(result instanceof QueryError)) return;
       if (preaggregator.registry) {
-        if (client.pending !== pending || !filterGroups.get(selection)?.clients.has(client)) return;
+        if (superseded(pending)) return;
         const recovered = await preaggregator.recover(client, info, table, result.cause);
-        if (client.pending !== pending || !filterGroups.get(selection)?.clients.has(client)
-          || preaggregator.entries.get(client) !== info) return;
+        if (superseded(pending)) return;
         if (recovered) {
           const retry = mc.updateClient(client, info.query(active));
-          if (!(await retry instanceof QueryError)) return;
-          if (client.pending !== retry || !filterGroups.get(selection)?.clients.has(client)
-            || preaggregator.entries.get(client) !== info) return;
+          const retried = await retry;
+          if (!(retried instanceof QueryError)) return;
+          if (superseded(retry)) return;
         }
       }
       // if preaggregate update fails, fall through to standard query
