@@ -21,6 +21,7 @@ describe('PivotQuery', () => {
     const query = Query.pivot('t1');
 
     expect(query).toBeInstanceOf(PivotQuery);
+    expect(query.constructor).toBe(PivotQuery);
     expect(query.type).toBe('PIVOT_QUERY');
     expect(isQuery(query)).toBe(true);
     expect(isPivotQuery(query)).toBe(true);
