@@ -9,7 +9,7 @@ The _query_ argument is an object that may include the following properties:
 - _type_: The query format type, either `"exec"` (no return value), `"arrow"`, or `"preagg"`.
 - Any additional connector-specific options.
 
-A `"preagg"` request asks the server to materialize the given SELECT query and resolves to the resulting table name as `{ catalog, schema, table, createdAt }`. The bundled `restConnector` and `socketConnector` support it.
+A `"preagg"` request asks the connector to materialize the given SELECT query and resolves to the resulting table name as `{ catalog, schema, table, createdAt }`. The bundled `restConnector`, `socketConnector`, and `NodeConnector` support it.
 
 Once instantiated, register a connector with the coordinator using the [`coordinator.databaseConnector()`](coordinator#databaseconnector) method.
 
@@ -28,6 +28,14 @@ Create a new Web Socket connector to a DuckDB [data server](../duckdb/data-serve
 Create a new HTTP rest connector to a DuckDB [data server](../duckdb/data-server) at the given _uri_ (default `"http://localhost:3000/"`).
 
 SELECT and `preagg` requests preserve structured JSON failures as a `ConnectorError` with `message`, `code`, and HTTP `status`, plus the table reference when supplied for `table_not_found`.
+
+## NodeConnector
+
+`await NodeConnector.make(duckdb, ipc)`
+
+Create an in-process Node.js connector, imported from `@uwdata/mosaic-core/node-connector`, with an optional `DuckDB` instance from `@uwdata/mosaic-duckdb` and Arrow extraction options. Without an instance, the connector creates an in-memory database.
+
+`preagg` materializes one SELECT as a temporary table on the connector's connection, reuses it for identical SQL, and rebuilds it if dropped. Tables are released when the connection closes. SELECT failures for a missing materialization return a `ConnectorError` with `code: 'table_not_found'` and its table reference, enabling automatic recovery.
 
 ## wasmConnector
 
