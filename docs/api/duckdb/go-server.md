@@ -10,7 +10,7 @@ Programs embedding [`duckdb-server-go`](https://github.com/uwdata/mosaic/tree/ma
 - `Scope`: required function from `context.Context` to `(query.PreAggregateScope, error)`, called for each command. Resolve it from authenticated application state.
 - `Limits`: `query.PreAggregateLimits`; zero fields use the defaults below.
 
-A `query.PreAggregateScope` contains a nonempty `Key` and `Sources`, a slice of `query.PreAggregateNamespace{Catalog, Schema}` grants. The key identifies effective permissions, row restrictions, execution settings, and any data revision that changes sharing. It partitions storage and does not add row filters; enforce those through trusted views or `WithAuthorizer`. All physical source references must use `catalog.schema.table`; Nonrecursive CTE names remain unqualified. Physical identifier spelling must match the grants. Empty `Sources` permits only queries without physical sources; temporary, system, introspection, and managed namespaces cannot be source grants.
+A `query.PreAggregateScope` contains a nonempty `Key` and `Sources`, a slice of `query.PreAggregateNamespace{Catalog, Schema}` grants. The key identifies effective permissions, row restrictions, execution settings, and any data revision that changes sharing. It is persisted in plaintext in table metadata, so use a policy identifier, not a bearer token or other secret. It partitions storage and does not add row filters; enforce those through trusted views or `WithAuthorizer`. All physical source references must use `catalog.schema.table`; nonrecursive CTE names remain unqualified. Physical identifier spelling must match the grants. Empty `Sources` permits only queries without physical sources; temporary, system, introspection, and managed namespaces cannot be source grants.
 
 In Mosaic SQL, pass `new TableRefNode(['raw', tenant, 'events'])` to `Query.from`; a dotted string is treated as one quoted identifier.
 
@@ -41,15 +41,18 @@ This option disables client `exec` and cannot be combined with `WithSchemaMatchH
 
 ## Storage and lifetime
 
-Tables and their source metadata are published together in a transaction. The metadata is stored in a server-owned table comment and checked before reuse; a matching table name alone does not permit reuse. Identical concurrent builds share one result, and a different build is rejected while the build lane is occupied. With at least two SQL connections, other HTTP reads can continue; a one-connection pool is rejected.
+Tables and their source metadata are published together in a transaction. The metadata is stored in a server-owned table comment and checked before reuse; a matching table name alone does not permit reuse. Missing or invalid metadata on an existing table denies reuse and reads; trusted host cleanup must remove that table before it can be rebuilt.
+
+Identical concurrent builds share one result. Distinct builds from a dashboard's charts wait for the single build lane, up to `MaxPendingBuilds` active and queued builds. Further distinct builds receive `resource_exhausted`. Each caller can cancel its own wait; admitted builds continue under a server-owned deadline that includes queue time, so one disconnected caller does not cancel other callers' work. With at least two SQL connections, other HTTP reads can continue; a one-connection pool is rejected.
 
 | Limit | Default | Meaning |
 | --- | --- | --- |
 | `MaxTables` | 128 | Published tables across scopes |
 | `MaxTablesPerScope` | 32 | Published tables for one scope |
+| `MaxPendingBuilds` | 32 | Distinct active and queued builds across scopes |
 | `MaxRows` | 1,000,000 | Rows in one published table |
 | `MaxBytes` | 32 MiB | Arrow IPC size of one published table |
-| `Timeout` | 90 seconds | Materialization deadline |
+| `Timeout` | 90 seconds | Deadline for queueing and materialization |
 | `TTL` | 24 hours | Maximum reusable table age |
 
 Source SQL is limited to 1 MiB. Rows and Arrow IPC bytes are checked before commit. An oversized or failed build rolls back its table and any pending evictions. When capacity is needed, the oldest tables are evicted; expired tables and empty managed schemas are pruned during materialization. Expired references trigger recovery even before physical cleanup. Reuse preserves `createdAt`; rebuilding updates it.

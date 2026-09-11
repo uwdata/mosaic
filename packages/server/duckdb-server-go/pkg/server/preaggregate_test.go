@@ -74,6 +74,10 @@ func TestHTTPPreaggregate(t *testing.T) {
 	response = preaggregateRequest(t, h, http.MethodPost, scope, read)
 	require.Equal(t, http.StatusOK, response.Code, response.Body.String())
 	require.Equal(t, []map[string]any{{"dim": "a", "n": float64(1)}, {"dim": "b", "n": float64(2)}}, arrowRows(t, response.Body.Bytes()))
+	response = preaggregateRequest(t, h, http.MethodGet, scope, read)
+	require.Equal(t, http.StatusOK, response.Code, response.Body.String())
+	require.Equal(t, "no-store", response.Header().Get("Cache-Control"))
+	require.Empty(t, response.Header().Get("ETag"))
 
 	require.NoError(t, db.Exec(t.Context(), "DROP TABLE "+ref))
 	response = preaggregateRequest(t, h, http.MethodPost, scope, read)

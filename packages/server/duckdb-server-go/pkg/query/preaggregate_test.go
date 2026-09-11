@@ -165,21 +165,88 @@ func TestPreAggregateMetadata(t *testing.T) {
 }
 
 func TestPreAggregateConcurrency(t *testing.T) {
-	_, p, scope := setupPreAggregator(t, PreAggregateLimits{})
-	const count = 8
-	results := make([]PreaggResponse, count)
-	errs := make([]error, count)
-	var group sync.WaitGroup
-	for i := range count {
-		group.Go(func() {
-			results[i], errs[i] = p.Materialize(t.Context(), scope, `SELECT sum(i) AS n FROM range(1000000) t(i)`)
+	for _, distinct := range []bool{false, true} {
+		t.Run(fmt.Sprint(distinct), func(t *testing.T) {
+			_, p, scope := setupPreAggregator(t, PreAggregateLimits{})
+			const count = 8
+			results := make([]PreaggResponse, count)
+			errs := make([]error, count)
+			var group sync.WaitGroup
+			for i := range count {
+				group.Go(func() {
+					source := `SELECT sum(i) AS n FROM range(1000000) t(i)`
+					if distinct {
+						source += fmt.Sprintf(" WHERE i > %d", i)
+					}
+					results[i], errs[i] = p.Materialize(t.Context(), scope, source)
+				})
+			}
+			group.Wait()
+			for i := range count {
+				require.NoError(t, errs[i])
+				if !distinct {
+					require.Equal(t, results[0], results[i])
+				} else if i > 0 {
+					require.NotEqual(t, results[0].Table, results[i].Table)
+				}
+			}
 		})
 	}
-	group.Wait()
-	for i := range count {
-		require.NoError(t, errs[i])
-		require.Equal(t, results[0], results[i])
+}
+
+func TestPreAggregateQueue(t *testing.T) {
+	_, p, scope := setupPreAggregator(t, PreAggregateLimits{MaxPendingBuilds: 2})
+	p.lane <- struct{}{}
+	release := sync.OnceFunc(func() { <-p.lane })
+	defer release()
+	waitPending := func(count int) {
+		require.Eventually(t, func() bool {
+			p.mu.Lock()
+			defer p.mu.Unlock()
+			return len(p.builds) == count
+		}, time.Second, time.Millisecond)
 	}
+	ctx, cancel := context.WithCancel(t.Context())
+	defer cancel()
+	owner := make(chan error, 1)
+	go func() {
+		_, err := p.Materialize(ctx, scope, `SELECT 1 AS x`)
+		owner <- err
+	}()
+	waitPending(1)
+	cancel()
+	require.ErrorIs(t, <-owner, context.Canceled)
+
+	results := make(chan error, 2)
+	for _, source := range []string{`SELECT 1 AS x`, `SELECT 2 AS x`} {
+		go func() {
+			_, err := p.Materialize(t.Context(), scope, source)
+			results <- err
+		}()
+	}
+	waitPending(2)
+	_, err := p.Materialize(t.Context(), scope, `SELECT 3 AS x`)
+	require.ErrorIs(t, err, ErrPreAggregateLimit)
+	data, err := p.QueryArrow(t.Context(), scope, `SELECT 42 AS x`, nil)
+	require.NoError(t, err)
+	require.Equal(t, []map[string]any{{"x": float64(42)}}, arrowRows(t, data))
+	release()
+	for range 2 {
+		require.NoError(t, <-results)
+	}
+}
+
+func TestPreAggregateQueueDeadline(t *testing.T) {
+	_, p, scope := setupPreAggregator(t, PreAggregateLimits{Timeout: 20 * time.Millisecond})
+	p.lane <- struct{}{}
+	defer func() { <-p.lane }()
+	_, err := p.Materialize(t.Context(), scope, `SELECT 1`)
+	require.ErrorIs(t, err, context.DeadlineExceeded)
+	require.Eventually(t, func() bool {
+		p.mu.Lock()
+		defer p.mu.Unlock()
+		return len(p.builds) == 0
+	}, time.Second, time.Millisecond)
 }
 
 func TestPreAggregateLimits(t *testing.T) {
