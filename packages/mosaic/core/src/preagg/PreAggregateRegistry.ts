@@ -94,6 +94,12 @@ export class PreAggregateRegistry {
     return !!entry && !!table && !entry.build && entry.tableKey === referenceKey(table);
   }
 
+  invalidate(sql: string, table: TableRefNode): void {
+    // A late failure for an older build must not evict its replacement.
+    if (this.entries.get(sql)?.table === table) this.entries.delete(sql);
+    this.manager.invalidate();
+  }
+
   /**
    * Local refusals (`PreAggregateBusyError`, `PreAggregateSuppressedError`,
    * `PreAggregateModeError`) throw synchronously; server and transport

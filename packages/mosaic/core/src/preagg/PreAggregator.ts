@@ -3,7 +3,7 @@ import type { Coordinator } from '../Coordinator.js';
 import type { MosaicClient } from '../MosaicClient.js';
 import type { Selection } from '../Selection.js';
 import type { BinMethod, ClauseSource, IntervalMetadata, SelectionClause } from '../SelectionClause.js';
-import { isAbortError, PreAggregateModeError } from '../connectors/errors.js';
+import { ConnectorError, isAbortError, PreAggregateModeError } from '../connectors/errors.js';
 import { fnv_hash } from '../util/hash.js';
 import { resolvePositional } from '../util/positional.js';
 import { preaggColumns, PreAggColumnsResult } from './preagg-columns.js';
@@ -272,6 +272,18 @@ export class PreAggregator {
 
     entries.set(client, info);
     return info;
+  }
+
+  async recover(client: MosaicClient, info: PreAggregateInfo, table: TableRefNode | null, error: unknown): Promise<boolean> {
+    if (!this.registry || this.entries.get(client) !== info || !table
+      || !(error instanceof ConnectorError) || error.code !== 'table_not_found'
+      || error.catalog !== table.table[0] || error.schema !== table.table[1] || error.table !== table.table[2]) {
+      return false;
+    }
+
+    this.registry.invalidate(info.create.toString(), table);
+    this.materialize(info);
+    return info.result !== null && await info.ready!.then(() => true, () => false);
   }
 
   private isCurrent(info: PreAggregateInfo): boolean {
