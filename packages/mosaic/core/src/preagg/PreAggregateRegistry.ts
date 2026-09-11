@@ -151,7 +151,6 @@ export class PreAggregateRegistry {
     const { entry } = build;
     const { catalog, schema, table } = validated;
     entry.table = new TableRefNode([catalog, schema, table]);
-    this.failures.delete(entry.sql);
     // a table evicted from this cache may be rebuilt by the server under the
     // same name with different rows, so any completion can stale cached results
     this.manager.invalidate();
@@ -163,13 +162,15 @@ export class PreAggregateRegistry {
     if (build.entry.build !== build) return;
     this.settle(build);
     const { entry } = build;
-    if (this.entries.get(entry.sql) === entry) this.entries.delete(entry.sql);
-    if (!isAbortError(err)) {
-      err = err instanceof ConnectorError ? err
-        : new ConnectorError(err instanceof Error ? err.message : String(err), { cause: err });
-      this.recordFailure(entry, err as ConnectorError);
+    this.entries.delete(entry.sql);
+    if (isAbortError(err)) {
+      build.reject(err);
+      return;
     }
-    build.reject(err);
+    const error = err instanceof ConnectorError ? err
+      : new ConnectorError(err instanceof Error ? err.message : String(err), { cause: err });
+    this.recordFailure(entry, error);
+    build.reject(error);
   }
 
   private settle(build: Build): void {
@@ -190,7 +191,6 @@ export class PreAggregateRegistry {
   }
 
   private recordFailure(entry: Entry, error: ConnectorError): void {
-    this.failures.delete(entry.sql);
     this.failures.set(entry.sql, { error, retryAt: Date.now() + this.limits.cooldownMs });
     while (this.failures.size > this.limits.maxFailures) {
       this.failures.delete(this.failures.keys().next().value!);
