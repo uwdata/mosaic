@@ -2,7 +2,7 @@
 
 [![PyPi](https://img.shields.io/pypi/v/duckdb-server.svg)](https://pypi.org/project/duckdb-server/)
 
-A Python-based server that runs a local DuckDB instance and support queries over Web Sockets or HTTP, returning data in either [Apache Arrow](https://arrow.apache.org/) or JSON format.
+A Python-based server that runs a local DuckDB instance and support queries over Web Sockets or HTTP, returning data in [Apache Arrow](https://arrow.apache.org/) format.
 
 _Note:_ This package provides a local DuckDB server. To instead use DuckDB-WASM in the browser, use the `wasmConnector` in the [`mosaic-core`](https://github.com/uwdata/mosaic/tree/main/packages/mosaic/mosaic-core) package.
 
@@ -32,7 +32,7 @@ To set up a local certificate for SSL, use https://github.com/FiloSottile/mkcert
 
 ## API
 
-The server supports queries via HTTP GET and POST, and WebSockets. The GET endpoint is useful for debugging. For example, you can query it with [this url](<http://localhost:3000/?query={"sql":"select 1","type":"json"}>).
+The server supports queries via HTTP GET and POST, and WebSockets. The GET endpoint is useful for debugging. For example, you can query it with [this url](<http://localhost:3000/?query={"sql":"select 1","type":"arrow"}>).
 
 Each endpoint takes a JSON object with a command in the `type`. The server supports the following commands.
 
@@ -43,10 +43,6 @@ Executes the SQL query in the `sql` field.
 ### `arrow`
 
 Executes the SQL query in the `sql` field and returns the result in Apache Arrow format.
-
-### `json`
-
-Executes the SQL query in the `sql` field and returns the result in JSON format.
 
 ## Publishing
 

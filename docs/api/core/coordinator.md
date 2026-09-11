@@ -77,17 +77,15 @@ The supported _options_ are:
 `coordinator.query(query, options)`
 
 Request a _query_ and return a request Promise that resolves when the query is complete.
-A query result table will be returned, with format determined by the _type_ options.
+An Arrow table will be returned.
 The input _query_ should produce a SQL query upon string coercion.
 
 The supported _options_ are:
 
-- _type_: The return format type. One of `"arrow"` (default) or `"json"`.
 - _cache_: A Boolean flag (default `true`) indicating if the query result should be cached.
 - _priority_: A value indicating the query priority, one of: `Priority.High`, `Priority.Normal` (the default), or `Priority.Low`.
 
 Any additional options will be passed through to the backing database.
-For example, the Mosaic [data server](../duckdb/data-server) will respect a _persist_ option to cache the result on the server's local file system.
 
 ## prefetch
 

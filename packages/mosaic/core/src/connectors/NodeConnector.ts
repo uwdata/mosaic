@@ -5,8 +5,7 @@ import type {
   ArrowQueryRequest,
   Connector,
   ConnectorQueryRequest,
-  ExecQueryRequest,
-  JSONQueryRequest
+  ExecQueryRequest
 } from './Connector.js';
 
 /**
@@ -39,16 +38,10 @@ export class NodeConnector implements Connector {
    */
   async query(query: ArrowQueryRequest): Promise<Table>;
   async query(query: ExecQueryRequest): Promise<void>;
-  async query(query: JSONQueryRequest): Promise<Record<string, unknown>[]>;
   async query(query: ConnectorQueryRequest): Promise<unknown> {
     const { type, sql } = query;
-    switch (type) {
-      case 'exec':
-        return this._db.exec(sql);
-      case 'arrow':
-        return decodeIPC(await this._db.arrowBuffer(sql), this._ipc);
-      default:
-        return this._db.query(sql);
-    }
+    return type === 'exec'
+      ? this._db.exec(sql)
+      : decodeIPC(await this._db.arrowBuffer(sql), this._ipc);
   }
 }

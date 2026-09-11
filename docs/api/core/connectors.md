@@ -6,7 +6,7 @@ A connector instance should expose a `query(query)` method that returns a Promis
 The _query_ argument is an object that may include the following properties:
 
 - _sql_: The SQL query to evaluate.
-- _type_: The query format type, such as `"exec"` (no return value), `"arrow"`, and `"json"`.
+- _type_: The query format type, either `"exec"` (no return value) or `"arrow"`.
 - Any additional connector-specific options.
 
 Once instantiated, register a connector with the coordinator using the [`coordinator.databaseConnector()`](coordinator#databaseconnector) method.

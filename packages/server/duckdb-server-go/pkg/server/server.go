@@ -16,15 +16,13 @@ import (
 )
 
 type queryParams struct {
-	Type    *CommandType `json:"type"`
-	SQL     *string      `json:"sql"`
-	Persist *bool        `json:"persist"`
-	Name    *string      `json:"name"`
+	Type *CommandType `json:"type"`
+	SQL  *string      `json:"sql"`
+	Name *string      `json:"name"`
 }
 
 type commandResponse struct {
 	data        []byte
-	cacheHit    bool
 	contentType string
 	wsMessage   websocket.MessageType
 }
@@ -32,7 +30,6 @@ type commandResponse struct {
 var commandResponses = map[CommandType]commandResponse{
 	CommandExec:  {wsMessage: websocket.MessageText},
 	CommandArrow: {contentType: "application/vnd.apache.arrow.stream", wsMessage: websocket.MessageBinary},
-	CommandJSON:  {contentType: "application/json", wsMessage: websocket.MessageText},
 }
 
 type queryParamsError string
@@ -45,8 +42,7 @@ func (e queryParamsError) Error() string {
 // current schema-policy plumbing as a supported extension point.
 type commandExecutor interface {
 	Exec(context.Context, string) error
-	QueryArrow(context.Context, string, []string, bool) ([]byte, bool, error)
-	QueryJSON(context.Context, string, []string, bool) (json.RawMessage, bool, error)
+	QueryArrow(context.Context, string, []string) ([]byte, error)
 }
 
 type handler struct {
@@ -257,9 +253,6 @@ func (s *handler) handleHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", response.contentType)
-	if response.cacheHit {
-		w.Header().Set("Cache-Status", "mosaic-duckdb-go; hit")
-	}
 	if _, err = w.Write(response.data); err != nil {
 		s.logger.Error("server: failed to write response", "error", err, "content_type", response.contentType)
 	}
@@ -279,11 +272,6 @@ func (s *handler) execCommand(ctx context.Context, params queryParams, allowedSc
 		}
 	}
 
-	useCache := false
-	if params.Persist != nil {
-		useCache = *params.Persist
-	}
-
 	switch command.Type() {
 	case CommandExec:
 		if len(s.schemaMatchHeaders) > 0 {
@@ -292,10 +280,7 @@ func (s *handler) execCommand(ctx context.Context, params queryParams, allowedSc
 		err = s.db.Exec(ctx, command.SQL())
 
 	case CommandArrow:
-		response.data, response.cacheHit, err = s.db.QueryArrow(ctx, command.SQL(), allowedSchemas, useCache)
-
-	case CommandJSON:
-		response.data, response.cacheHit, err = s.db.QueryJSON(ctx, command.SQL(), allowedSchemas, useCache)
+		response.data, err = s.db.QueryArrow(ctx, command.SQL(), allowedSchemas)
 
 	default:
 		return commandResponse{}, fmt.Errorf("server: no executor for command type %q", command.Type())

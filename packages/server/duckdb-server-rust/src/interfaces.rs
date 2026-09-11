@@ -4,13 +4,11 @@ use axum::{
     response::{IntoResponse, Response},
 };
 use serde::{Deserialize, Serialize};
-use tokio::sync::Mutex;
 
 use crate::db::Database;
 
 pub struct AppState {
     pub db: Box<dyn Database>,
-    pub cache: Mutex<lru::LruCache<String, Vec<u8>>>,
 }
 
 #[derive(Deserialize, Serialize, Debug, Clone)]
@@ -18,21 +16,18 @@ pub struct AppState {
 pub enum Command {
     Arrow,
     Exec,
-    Json,
 }
 
 #[derive(Deserialize, Serialize, Debug, Default)]
 pub struct QueryParams {
     #[serde(rename = "type")]
     pub query_type: Option<Command>,
-    pub persist: Option<bool>,
     pub sql: Option<String>,
     pub name: Option<String>,
 }
 
 pub enum QueryResponse {
     Arrow(Vec<u8>),
-    Json(String),
     Response(Response),
     Empty,
 }
@@ -44,12 +39,6 @@ impl IntoResponse for QueryResponse {
                 StatusCode::OK,
                 [("Content-Type", "application/vnd.apache.arrow.stream")],
                 Bytes::from(bytes),
-            )
-                .into_response(),
-            QueryResponse::Json(value) => (
-                StatusCode::OK,
-                [("Content-Type", "application/json")],
-                value,
             )
                 .into_response(),
             QueryResponse::Response(response) => response,

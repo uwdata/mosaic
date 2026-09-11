@@ -13,10 +13,11 @@
 
   self.parse = async function(query) {
     const t0 = Date.now();
-    const result = await db.query({
-      type: 'json',
+    const table = await db.query({
+      type: 'arrow',
       sql: `SELECT json_serialize_sql($$${query}$$, skip_empty:=true, skip_null:=true) AS ast`
     });
+    const result = table.toArray();
     const ast = JSON.parse(result[0].ast);
     ast._time = Date.now() - t0;
     return ast;

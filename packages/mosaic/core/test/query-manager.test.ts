@@ -1,3 +1,4 @@
+import { Table, tableFromArrays } from '@uwdata/flechette';
 import { describe, it, expect } from 'vitest';
 import { QueryManager } from '../src/QueryManager.js';
 import { QueryResult } from '../src/util/query-result.js';
@@ -12,7 +13,7 @@ describe('QueryManager', () => {
       // @ts-expect-error assumes type value
       query: async ({ sql }) => {
         expect(sql).toBe('SELECT 1');
-        return [{ column: 1 }];
+        return tableFromArrays({ column: [1] });
       }
     });
 
@@ -24,8 +25,8 @@ describe('QueryManager', () => {
     const result = queryManager.request(request);
     expect(result).toBeInstanceOf(QueryResult);
 
-    const data = await result;
-    expect(data).toEqual([{ column: 1 }]);
+    const data = await result as Table;
+    expect(data.toArray()).toEqual([{ column: 1 }]);
   });
 
   it('should not run a query when there is a pending exec', async () => {

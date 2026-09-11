@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { SocketConnector } from './connectors/socket.js';
 import { type Connector } from './connectors/Connector.js';
 import { PreAggregator, type PreAggregateOptions } from './preagg/PreAggregator.js';
@@ -164,47 +163,23 @@ export class Coordinator {
    * @param options An options object.
    * @param options.type The query result format type.
    * @param options.cache If true, cache the query result client-side within the QueryManager.
-   * @param options.persist If true, request the database server to persist a cached query server-side.
    * @param options.priority The query priority, defaults to `Priority.Normal`.
    * @returns A query result promise.
    */
   query(
     query: QueryType,
-    options?: {
-      type?: 'arrow';
-      cache?: boolean;
-      persist?: boolean;
-      priority?: number;
-      [key: string]: unknown;
-    }
-  ): QueryResult<Table>;
-  query(
-    query: QueryType,
-    options?: {
-      type?: 'json';
-      cache?: boolean;
-      persist?: boolean;
-      priority?: number;
-      [key: string]: unknown;
-    }
-  ): QueryResult<unknown>;
-  query(
-    query: QueryType,
     options: {
-      type?: 'arrow' | 'json';
       cache?: boolean;
-      persist?: boolean;
       priority?: number;
       [key: string]: unknown;
     } = {}
-  ): QueryResult<any> {
+  ): QueryResult<Table> {
     const {
-      type = 'arrow',
       cache = true,
       priority = Priority.Normal,
       ...otherOptions
     } = options;
-    return this.manager.request({ type, query, cache, options: otherOptions }, priority);
+    return this.manager.request({ type: 'arrow', query, cache, options: otherOptions }, priority) as QueryResult<Table>;
   }
 
   /**
@@ -217,16 +192,8 @@ export class Coordinator {
    */
   prefetch(
     query: QueryType,
-    options?: { type?: 'arrow'; [key: string]: unknown }
-  ): QueryResult<Table>
-  prefetch(
-    query: QueryType,
-    options?: { type?: 'json'; [key: string]: unknown }
-  ): QueryResult<unknown>
-  prefetch(
-    query: QueryType,
-    options: any = {}
-  ): QueryResult<any> {
+    options: { [key: string]: unknown } = {}
+  ): QueryResult<Table> {
     return this.query(query, { ...options, cache: true, priority: Priority.Low });
   }
 

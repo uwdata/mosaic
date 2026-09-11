@@ -23,11 +23,11 @@ describe('Binning transforms', () => {
     it('creates non-linear bins', async () => {
       const log10 = scaleTransform<number>({ type: 'log', base: 10 })!;
       await expect(binHistogram('num1', [1, 1000], { steps: 5 }, log10))
-        .toBeValidExpr('(10 ** floor(log("num1")))');
+        .toBeValidExpr('(sign(floor((sign("num1") * log(abs("num1"))))) * (10 ** abs(floor((sign("num1") * log(abs("num1")))))))');
 
       const log2 = scaleTransform<number>({ type: 'log', base: 2 })!;
       await expect(binHistogram('num1', [1, 64], { steps: 10 }, log2))
-        .toBeValidExpr('(2 ** floor((ln("num1") / ln(2))))');
+        .toBeValidExpr('(sign(floor((sign("num1") * (ln(abs("num1")) / ln(2))))) * (2 ** abs(floor((sign("num1") * (ln(abs("num1")) / ln(2)))))))');
     });
 
     it('handles degenerate span', async () => {

@@ -1,18 +1,13 @@
 import http from 'node:http';
 import url from 'node:url';
 import { WebSocketServer } from 'ws';
-import { Cache, cacheKey } from './Cache.js';
-
-const CACHE_DIR = '.mosaic/cache';
 
 export function dataServer(db, {
-  cache = true,
   rest = true,
   socket = true,
   port = 3000
 } = {}) {
-  const queryCache = cache ? new Cache({ dir: CACHE_DIR }) : null;
-  const handleQuery = queryHandler(db, queryCache);
+  const handleQuery = queryHandler(db);
   const app = createHTTPServer(handleQuery, rest);
   if (socket) createSocketServer(app, handleQuery);
 
@@ -70,26 +65,7 @@ function createSocketServer(server, handleQuery) {
   });
 }
 
-export function queryHandler(db, queryCache) {
-
-  // retrieve query result
-  async function retrieve(query, get) {
-    const { sql, type, persist } = query;
-    const key = cacheKey(sql, type);
-    let result = queryCache?.get(key);
-
-    if (result) {
-      console.log('CACHE HIT');
-    } else {
-      result = await get(sql);
-      if (persist) {
-        queryCache?.set(key, result, { persist });
-      }
-    }
-
-    return result;
-  }
-
+export function queryHandler(db) {
   // query request handler
   return async (res, data) => {
     const t0 = performance.now();
@@ -104,8 +80,8 @@ export function queryHandler(db, queryCache) {
     }
 
     try {
-      const { sql, type = 'json' } = query;
-      console.log(`> ${type.toUpperCase()}${sql ? ` ${sql}` : ''}`);
+      const { sql, type = 'arrow' } = query;
+      console.log(`> ${String(type).toUpperCase()}${sql ? ` ${sql}` : ''}`);
 
       // process query and return result
       switch (type) {
@@ -116,11 +92,7 @@ export function queryHandler(db, queryCache) {
           break;
         case 'arrow':
           // Apache Arrow response format
-          res.arrow(await retrieve(query, sql => db.arrowBuffer(sql)));
-          break;
-        case 'json':
-          // JSON response format
-          res.json(await retrieve(query, sql => db.query(sql)));
+          res.arrow(await db.arrowBuffer(sql));
           break;
         default:
           res.error(`Unrecognized command: ${type}`, 400);
@@ -139,10 +111,6 @@ function httpResponse(res) {
       res.setHeader('Content-Type', 'application/vnd.apache.arrow.stream');
       for (const chunk of data) res.write(chunk);
       res.end();
-    },
-    json(data) {
-      res.setHeader('Content-Type', 'application/json');
-      res.end(JSON.stringify(data));
     },
     done() {
       res.writeHead(200);

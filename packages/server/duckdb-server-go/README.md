@@ -1,6 +1,6 @@
 # DuckDB Go Server
 
-A Go-based server that runs a local DuckDB instance and support queries over Web Sockets or HTTP/HTTPS, returning data in either [Apache Arrow](https://arrow.apache.org/) or JSON format.
+A Go-based server that runs a local DuckDB instance and support queries over Web Sockets or HTTP/HTTPS, returning data in [Apache Arrow](https://arrow.apache.org/) format.
 
 _Note:_ This package provides a local DuckDB server. To instead use DuckDB-WASM in the browser, use the `wasmConnector` in the [`mosaic-core`](https://github.com/uwdata/mosaic/tree/main/packages/mosaic/mosaic-core) package.
 
@@ -26,9 +26,6 @@ You can customize the server behavior with the following command-line flags:
 -   `--address <address>`: The HTTP address to listen on. Defaults to "localhost".
 -   `--port <port>`: The HTTP port to listen on. Defaults to "3000".
 -   `--connection-pool-size <size>`: The maximum size of the connection pool. Defaults to 10.
--   `--max-cache-entries <size>`: The maximum number of cache entries. Defaults to 1000.
--   `--max-cache-bytes <bytes>`: Max number of cache size in bytes (overrides max-cache-entries if both are set). Defaults to 0 (no limit).
--   `--cache-ttl <duration>`: Time-to-live for cache entries as a Go duration. 0s means no expiration (e.g., '10m', '1h'). Defaults to 0s.
 -   `--cert <path>`: Path to a TLS certificate file to enable HTTPS.
 -   `--key <path>`: Path to a TLS private key file to enable HTTPS.
 -   `--schema-match-headers`: Comma-separated list of headers to match against schema names for multi-tenant access control (e.g., `X-Tenant-Id,verified-user-id`).
@@ -70,7 +67,7 @@ aborts the connection. Extensions are trusted native code, so load only trusted 
 Programs embedding `pkg/server` should authenticate with standard HTTP middleware around the handler returned by
 `server.New`, then use `server.WithAuthorizer` only for command-aware policy. `AuthorizeRequest` runs once before POST
 decoding or WebSocket upgrade and returns a `CommandAuthorizer` called for every decoded command, including each
-WebSocket message, before policy validation, cache lookup, or execution. If it reads `r.Body`, it must restore it; both
+WebSocket message, before policy validation or execution. If it reads `r.Body`, it must restore it; both
 authorizers must be concurrency-safe. Outer middleware must decide whether CORS preflight `OPTIONS` requests may reach
 the server.
 
@@ -152,8 +149,8 @@ In Go, `Exclude` wins over `Include`, and `DisableDefaults` creates an exact-onl
 allowlist cannot be combined with a non-empty blocklist, and any configured function policy rejects `exec` requests.
 
 Spatial compute defaults cover Mosaic rendering over existing geometry data, but the `ST_Read` loader remains elevated.
-Current-time functions are omitted from defaults because persistent cache entries do not expire by default; keyword forms
-such as `CURRENT_DATE` are not function nodes and remain outside this policy.
+Current-time functions read session state and are classified as elevated, so they are omitted from defaults; keyword
+forms such as `CURRENT_DATE` are not function nodes and remain outside this policy.
 
 ### Remote URI Literal Policy
 
@@ -194,7 +191,7 @@ is a useful autoloading cross-check, but it is not exhaustive: the pinned Azure 
 Trusted initialization can still load filesystem extensions and attach remote Iceberg or other catalogs before accepting
 queries. Queries against those attached catalogs use catalog and table identifiers rather than caller-supplied URI
 literals, so they remain usable. Enabling this policy rejects all `exec` commands and rejects the known nested-SQL
-binders and executors `query`, `json_execute_serialized_sql`, and `json_serialize_plan` outright. `json` and `arrow`
+binders and executors `query`, `json_execute_serialized_sql`, and `json_serialize_plan` outright. `arrow`
 requests are limited to statements DuckDB can serialize for validation. Connector initialization is outside that command
 path.
 
@@ -246,7 +243,7 @@ when DuckDB or its extensions change. To restrict file-reading functions, also e
 scans such as `FROM 'data.parquet'` are rejected as unqualified table references. These controls are not a sandbox: run the
 server with access only to external resources that are safe for every tenant.
 
-If `--schema-match-headers`, `--function-blocklist`, or `--function-allowlist` is configured, `json` and `arrow` requests
+If `--schema-match-headers`, `--function-blocklist`, or `--function-allowlist` is configured, `arrow` requests
 are limited to statements DuckDB can serialize for validation; unsupported forms such as `PRAGMA` and `SET` are rejected,
 with HTTP requests receiving a 400 response. All `exec` requests are also rejected until full-statement authorization is
 supported. This includes every `Coordinator.exec(...)` call, such as data loading, preloading, and DDL/DML. Mosaic
@@ -254,7 +251,7 @@ pre-aggregation also uses `exec` to create schemas and tables, so set `preagg: {
 
 ## API
 
-The server supports queries via HTTP GET and POST, and WebSockets. The GET endpoint is useful for debugging. For example, you can query it with [this url](<http://localhost:3000/?query={"sql":"select 1","type":"json"}>).
+The server supports queries via HTTP GET and POST, and WebSockets. The GET endpoint is useful for debugging. For example, you can query it with [this url](<http://localhost:3000/?query={"sql":"select 1","type":"arrow"}>).
 
 Each endpoint takes a JSON object with a command in the `type`. The server supports the following commands.
 
@@ -265,10 +262,6 @@ Executes the SQL query in the `sql` field.
 ### `arrow`
 
 Executes the SQL query in the `sql` field and returns the result in Apache Arrow format.
-
-### `json`
-
-Executes the SQL query in the `sql` field and returns the result in JSON format.
 
 ## Developers
 

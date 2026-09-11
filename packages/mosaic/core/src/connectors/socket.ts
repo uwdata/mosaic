@@ -1,5 +1,5 @@
 import type { ExtractionOptions, Table } from '@uwdata/flechette';
-import type { ArrowQueryRequest, Connector, ExecQueryRequest, JSONQueryRequest, ConnectorQueryRequest } from './Connector.js';
+import type { ArrowQueryRequest, Connector, ExecQueryRequest, ConnectorQueryRequest } from './Connector.js';
 import { decodeIPC } from '../util/decode-ipc.js';
 
 interface SocketOptions {
@@ -137,7 +137,6 @@ export class SocketConnector implements Connector {
 
   query(query: ArrowQueryRequest): Promise<Table>;
   query(query: ExecQueryRequest): Promise<void>;
-  query(query: JSONQueryRequest): Promise<Record<string, unknown>[]>;
   query(query: ConnectorQueryRequest): Promise<unknown> {
     return new Promise(
       (resolve, reject) => this.enqueue(query, resolve, reject)
