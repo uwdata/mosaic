@@ -22,6 +22,8 @@ Create a new Mosaic Coordinator to manage all database communication for clients
 * _consolidate_ Boolean flag to enable/disable query consolidation (default `true`).
 * _preagg_: Pre-aggregation options object. The _enabled_ flag (default `true`) determines if pre-aggregation optimizations should be used when possible. The _mode_ option (default `'exec'`) determines how materialized views are created: `'exec'` issues `CREATE TABLE` statements directly, while `'preagg'` sends a `preagg` request and lets the [connector](./connectors) or its server create and name the table. The _schema_ option (default `'mosaic'`) indicates the database schema in which materialized view tables should be created in `'exec'` mode.
 
+In `'preagg'` mode, a SELECT that fails with a structured `table_not_found` error matching its automatic preaggregate triggers one shared rebuild from the retained SELECT. The coordinator clears cached query results and retries once using the returned table name, which may have changed. Failed recovery falls back to the base query. Recovery applies only to live automatic preaggregates; it does not rebuild missing source tables, retry authorization failures, or rewrite application SQL. Resetting preaggregation, replacing the connector, disconnecting the client, or requesting a new client query supersedes a pending recovery.
+
 ## databaseConnector
 
 `coordinator.databaseConnector(connector)`

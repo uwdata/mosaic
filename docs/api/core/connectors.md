@@ -27,6 +27,8 @@ Create a new Web Socket connector to a DuckDB [data server](../duckdb/data-serve
 
 Create a new HTTP rest connector to a DuckDB [data server](../duckdb/data-server) at the given _uri_ (default `"http://localhost:3000/"`).
 
+For SELECT and `preagg` requests, JSON error responses of the form `{ error, code }` reject with a `ConnectorError` that preserves the message, code, and HTTP status. A `table_not_found` error may also include `catalog`, `schema`, and `table`; automatic preaggregation uses this reference to [recover missing materializations](coordinator#constructor). Plain-text and malformed SELECT errors, and errors from `exec` requests, keep their generic error behavior.
+
 ## wasmConnector
 
 `wasmConnector(options)`
