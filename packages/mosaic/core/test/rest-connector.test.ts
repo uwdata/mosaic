@@ -62,37 +62,16 @@ describe('RestConnector', () => {
     });
   });
 
-  it('produces a generic ConnectorError for text or malformed error bodies', async () => {
-    const connector = new RestConnector({ uri: 'http://test/' });
-    stubFetch(new Response('boom', { status: 500, headers: { 'Content-Type': 'text/plain' } }));
-    await expect(connector.query({ type: 'preagg', sql: 'SELECT 1' }))
-      .rejects.toMatchObject({ name: 'ConnectorError', message: 'boom', status: 500, code: undefined });
-
-    stubFetch(new Response('{"nope": true}', { status: 400, headers: { 'Content-Type': 'application/json' } }));
-    await expect(connector.query({ type: 'preagg', sql: 'SELECT 1' }))
-      .rejects.toMatchObject({ status: 400, code: undefined, message: '{"nope": true}' });
-  });
-
-  it('keeps legacy errors for exec requests', async () => {
-    const connector = new RestConnector({ uri: 'http://test/' });
-    stubFetch(new Response(JSON.stringify({ error: 'x', code: 'forbidden' }), {
-      status: 403, headers: { 'Content-Type': 'application/json' }
-    }));
-    const err = await connector.query({ type: 'exec', sql: 'SELECT 1' }).catch(e => e) as Error;
-    expect(err).not.toBeInstanceOf(ConnectorError);
-    expect(err.message).toBe('Query failed with HTTP status 403: {"error":"x","code":"forbidden"}');
-  });
-
   it.each([
     ['text/plain', 'missing table'],
     ['application/json', 'not json'],
     ['application/json', '{"code":"table_not_found"}']
-  ])('keeps generic SELECT failures for %s: %s', async (contentType, body) => {
+  ])('rejects SELECT failures without a code for %s: %s', async (contentType, body) => {
     const connector = new RestConnector({ uri: 'http://test/' });
     stubFetch(new Response(body, { status: 404, headers: { 'Content-Type': contentType } }));
-    const err = await connector.query({ type: 'arrow', sql: 'SELECT 1' }).catch(e => e) as Error;
-    expect(err).not.toBeInstanceOf(ConnectorError);
-    expect(err.message).toBe(`Query failed with HTTP status 404: ${body}`);
+    const err = await connector.query({ type: 'arrow', sql: 'SELECT 1' }).catch(e => e) as ConnectorError;
+    expect(err).toBeInstanceOf(ConnectorError);
+    expect(err).toMatchObject({ status: 404, code: undefined, message: `Query failed with HTTP status 404: ${body}` });
   });
 });
 
@@ -125,18 +104,20 @@ describe('RestConnector preagg error responses', () => {
     const err = await failWith(500, 'application/json; charset=utf-8', body) as ConnectorError;
     expect(err).toBeInstanceOf(ConnectorError);
     expect(err.status).toBe(500);
-    // a malformed error response falls back to the raw body as the message
-    expect(err).toMatchObject(Object.keys(expected).length ? expected : { message: body, code: undefined });
+    // a malformed error response falls back to the generic message
+    expect(err).toMatchObject(Object.keys(expected).length
+      ? expected
+      : { message: `Query failed with HTTP status 500: ${body}`, code: undefined });
   });
 
   it.each([
-    ['text/html', '<h1>Bad Gateway</h1>', '<h1>Bad Gateway</h1>'],
-    ['text/html', '', 'Request failed with HTTP status 502'],
-    ['application/vnd.apache.arrow.stream', '{"error":"x","code":"forbidden"}', '{"error":"x","code":"forbidden"}'],
-    ['application/json', 'not json', 'not json']
-  ])('non-JSON body (%s)', async (contentType, body, message) => {
+    ['text/html', '<h1>Bad Gateway</h1>'],
+    ['text/html', ''],
+    ['application/vnd.apache.arrow.stream', '{"error":"x","code":"forbidden"}'],
+    ['application/json', 'not json']
+  ])('non-JSON body (%s)', async (contentType, body) => {
     const err = await failWith(502, contentType, body) as ConnectorError;
     expect(err).toBeInstanceOf(ConnectorError);
-    expect(err).toMatchObject({ status: 502, message, code: undefined });
+    expect(err).toMatchObject({ status: 502, message: `Query failed with HTTP status 502: ${body}`, code: undefined });
   });
 });

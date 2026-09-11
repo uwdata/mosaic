@@ -15,12 +15,8 @@ interface RestOptions {
   ipc?: ExtractionOptions;
 }
 
-function isJSONContentType(contentType: string | null): boolean {
-  return /^application\/json\s*(;|$)/i.test(contentType?.trim() ?? '');
-}
-
-function errorFromResponseBody(status: number, contentType: string | null, body: string): ConnectorError | null {
-  if (isJSONContentType(contentType)) {
+function errorFromResponse(status: number, contentType: string | null, body: string): ConnectorError {
+  if (/^application\/json\s*(;|$)/i.test(contentType?.trim() ?? '')) {
     try {
       const err = parseErrorResponse(JSON.parse(body), status);
       if (err) return err;
@@ -28,7 +24,7 @@ function errorFromResponseBody(status: number, contentType: string | null, body:
       // fall through to the generic error
     }
   }
-  return null;
+  return new ConnectorError(`Query failed with HTTP status ${status}: ${body}`, { status });
 }
 
 /**
@@ -70,15 +66,7 @@ export class RestConnector implements Connector {
     });
 
     if (!res.ok) {
-      const body = await res.text();
-      if (query.type !== 'exec') {
-        const err = errorFromResponseBody(res.status, res.headers.get('Content-Type'), body);
-        if (err) throw err;
-        if (query.type === 'preagg') {
-          throw new ConnectorError(body || `Request failed with HTTP status ${res.status}`, { status: res.status });
-        }
-      }
-      throw new Error(`Query failed with HTTP status ${res.status}: ${body}`);
+      throw errorFromResponse(res.status, res.headers.get('Content-Type'), await res.text());
     }
 
     return query.type === 'exec' ? undefined

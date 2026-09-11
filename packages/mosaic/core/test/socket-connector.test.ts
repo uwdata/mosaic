@@ -69,7 +69,7 @@ describe('SocketConnector', () => {
 
     expect(await first).toEqual([{ a: 1 }]);
     await create;
-    expect(await failing).toBe('boom');
+    expect(await failing).toMatchObject({ name: 'ConnectorError', message: 'boom' });
     expect(await last).toEqual([{ a: 3 }]);
   });
 
