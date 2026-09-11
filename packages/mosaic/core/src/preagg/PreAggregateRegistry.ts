@@ -69,13 +69,9 @@ export class PreAggregateRegistry {
     return this.entries.get(sql)?.table ?? null;
   }
 
-  isCurrent(sql: string, table: TableRefNode | null): boolean {
-    return table !== null && this.entries.get(sql)?.table === table;
-  }
-
   invalidate(sql: string, table: TableRefNode): void {
     // A late failure for an older build must not evict its replacement.
-    if (this.entries.get(sql)?.table === table) this.entries.delete(sql);
+    if (this.lookup(sql) === table) this.entries.delete(sql);
     this.manager.invalidate();
   }
 
