@@ -2,7 +2,6 @@ package server
 
 import (
 	"context"
-	"encoding/json"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -16,54 +15,50 @@ import (
 )
 
 func TestHTTPCacheRevalidation(t *testing.T) {
-	for _, typ := range []CommandType{CommandJSON, CommandArrow} {
-		t.Run(string(typ), func(t *testing.T) {
-			db := setupTestDB(t)
-			require.NoError(t, db.Exec(t.Context(), "CREATE TABLE cache_test AS SELECT 1 AS value"))
-			handler, err := New(db, WithCacheControl("public, max-age=60"), WithVary("X-Dataset"))
-			require.NoError(t, err)
-			server := httptest.NewServer(handler)
-			t.Cleanup(server.Close)
-			uri := server.URL + "/?type=" + string(typ) + "&sql=" + url.QueryEscape("SELECT * FROM cache_test ORDER BY value")
-			get := func(etag string) (*http.Response, []byte) {
-				t.Helper()
-				req, err := http.NewRequestWithContext(t.Context(), http.MethodGet, uri, nil)
-				require.NoError(t, err)
-				if etag != "" {
-					req.Header.Set("If-None-Match", etag)
-				}
-				res, err := server.Client().Do(req)
-				require.NoError(t, err)
-				body, err := io.ReadAll(res.Body)
-				require.NoError(t, res.Body.Close())
-				require.NoError(t, err)
-				return res, body
-			}
-
-			first, body := get("")
-			require.Equal(t, http.StatusOK, first.StatusCode)
-			require.NotEmpty(t, body)
-			etag := first.Header.Get("ETag")
-			require.Regexp(t, `^"[0-9a-f]{64}"$`, etag)
-			require.Equal(t, commandResponses[typ].contentType, first.Header.Get("Content-Type"))
-
-			revalidated, body := get(etag)
-			require.Equal(t, http.StatusNotModified, revalidated.StatusCode)
-			require.Empty(t, body)
-			require.Empty(t, revalidated.Header.Get("Content-Type"))
-			require.Empty(t, revalidated.Header.Get("Content-Length"))
-			require.NotEmpty(t, revalidated.Header.Get("Date"))
-			for _, header := range []string{"Cache-Control", "ETag", "Vary"} {
-				require.Equal(t, first.Header.Values(header), revalidated.Header.Values(header))
-			}
-
-			require.NoError(t, db.Exec(t.Context(), "INSERT INTO cache_test VALUES (2)"))
-			changed, body := get(etag)
-			require.Equal(t, http.StatusOK, changed.StatusCode)
-			require.NotEmpty(t, body)
-			require.NotEqual(t, etag, changed.Header.Get("ETag"))
-		})
+	db := setupTestDB(t)
+	require.NoError(t, db.Exec(t.Context(), "CREATE TABLE cache_test AS SELECT 1 AS value"))
+	handler, err := New(db, WithCacheControl("public, max-age=60"), WithVary("X-Dataset"))
+	require.NoError(t, err)
+	server := httptest.NewServer(handler)
+	t.Cleanup(server.Close)
+	uri := server.URL + "/?type=arrow&sql=" + url.QueryEscape("SELECT * FROM cache_test ORDER BY value")
+	get := func(etag string) (*http.Response, []byte) {
+		t.Helper()
+		req, err := http.NewRequestWithContext(t.Context(), http.MethodGet, uri, nil)
+		require.NoError(t, err)
+		if etag != "" {
+			req.Header.Set("If-None-Match", etag)
+		}
+		res, err := server.Client().Do(req)
+		require.NoError(t, err)
+		body, err := io.ReadAll(res.Body)
+		require.NoError(t, res.Body.Close())
+		require.NoError(t, err)
+		return res, body
 	}
+
+	first, body := get("")
+	require.Equal(t, http.StatusOK, first.StatusCode)
+	require.NotEmpty(t, body)
+	etag := first.Header.Get("ETag")
+	require.Regexp(t, `^"[0-9a-f]{64}"$`, etag)
+	require.Equal(t, commandResponses[CommandArrow].contentType, first.Header.Get("Content-Type"))
+
+	revalidated, body := get(etag)
+	require.Equal(t, http.StatusNotModified, revalidated.StatusCode)
+	require.Empty(t, body)
+	require.Empty(t, revalidated.Header.Get("Content-Type"))
+	require.Empty(t, revalidated.Header.Get("Content-Length"))
+	require.NotEmpty(t, revalidated.Header.Get("Date"))
+	for _, header := range []string{"Cache-Control", "ETag", "Vary"} {
+		require.Equal(t, first.Header.Values(header), revalidated.Header.Values(header))
+	}
+
+	require.NoError(t, db.Exec(t.Context(), "INSERT INTO cache_test VALUES (2)"))
+	changed, body := get(etag)
+	require.Equal(t, http.StatusOK, changed.StatusCode)
+	require.NotEmpty(t, body)
+	require.NotEqual(t, etag, changed.Header.Get("ETag"))
 }
 
 func TestMatchesETag(t *testing.T) {
@@ -93,10 +88,10 @@ func TestMatchesETag(t *testing.T) {
 }
 
 func TestResponseETagIncludesFormat(t *testing.T) {
-	response := commandResponse{contentType: commandResponses[CommandJSON].contentType, data: []byte(`[]`)}
-	jsonETag := responseETag(response)
-	response.contentType = commandResponses[CommandArrow].contentType
-	require.NotEqual(t, jsonETag, responseETag(response))
+	response := commandResponse{contentType: commandResponses[CommandArrow].contentType, data: []byte("result")}
+	etag := responseETag(response)
+	response.contentType = "application/octet-stream"
+	require.NotEqual(t, etag, responseETag(response))
 }
 
 func TestHTTPCachePreconditions(t *testing.T) {
@@ -104,9 +99,9 @@ func TestHTTPCachePreconditions(t *testing.T) {
 	var executions int
 	spy := &spyCommandExecutor{
 		failOnCallExecutor: failOnCallExecutor{t},
-		queryJSON: func(context.Context, string, []string) (json.RawMessage, error) {
+		queryArrow: func(context.Context, string, []string) ([]byte, error) {
 			executions++
-			return json.RawMessage(`[]`), nil
+			return []byte("result"), nil
 		},
 	}
 	handler := mustHandler(t, spy, WithCacheControl("private, no-cache"), WithAuthorizer(AuthorizerFunc[struct{}](func(*http.Request) (CommandAuthorizer[struct{}], error) {
@@ -118,7 +113,7 @@ func TestHTTPCachePreconditions(t *testing.T) {
 		}, nil
 	})))
 	first := httptest.NewRecorder()
-	handler.ServeHTTP(first, httptest.NewRequest(http.MethodGet, "/?type=json&sql=SELECT+1", nil))
+	handler.ServeHTTP(first, httptest.NewRequest(http.MethodGet, "/?type=arrow&sql=SELECT+1", nil))
 	require.Equal(t, http.StatusOK, first.Code)
 	etag := first.Header().Get("ETag")
 	require.NotEmpty(t, etag)
@@ -138,7 +133,7 @@ func TestHTTPCachePreconditions(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			allowed = tt.allowed
-			req := httptest.NewRequest(http.MethodGet, "/?type=json&sql=SELECT+1", nil)
+			req := httptest.NewRequest(http.MethodGet, "/?type=arrow&sql=SELECT+1", nil)
 			req.Header.Set("If-Match", tt.match)
 			req.Header["If-None-Match"] = tt.none
 			res := httptest.NewRecorder()
@@ -165,7 +160,7 @@ func TestHTTPCacheNonQueryResponses(t *testing.T) {
 	spy := &spyCommandExecutor{
 		failOnCallExecutor: failOnCallExecutor{t},
 		exec:               func(context.Context, string) error { return nil },
-		queryJSON:          func(context.Context, string, []string) (json.RawMessage, error) { return json.RawMessage(`[]`), nil },
+		queryArrow:         func(context.Context, string, []string) ([]byte, error) { return []byte("result"), nil },
 	}
 	handler := mustHandler(t, spy, WithCacheControl("public, max-age=60"))
 	tests := []struct {
@@ -177,12 +172,13 @@ func TestHTTPCacheNonQueryResponses(t *testing.T) {
 		status  int
 	}{
 		{name: "GET exec", method: http.MethodGet, uri: "/?type=exec&sql=SELECT+1", status: http.StatusOK},
-		{name: "POST query", method: http.MethodPost, uri: "/", body: `{"type":"json","sql":"SELECT 1"}`, status: http.StatusOK},
+		{name: "POST query", method: http.MethodPost, uri: "/", body: `{"type":"arrow","sql":"SELECT 1"}`, status: http.StatusOK},
 		{name: "OPTIONS", method: http.MethodOptions, uri: "/", status: http.StatusOK},
 		{name: "preflight", method: http.MethodOptions, uri: "/", headers: http.Header{"Origin": {"http://app.example"}, "Access-Control-Request-Method": {"GET"}}, status: http.StatusOK},
-		{name: "origin denial", method: http.MethodGet, uri: "/?type=json&sql=SELECT+1", headers: http.Header{"Origin": {"http://untrusted.example"}}, status: http.StatusForbidden},
-		{name: "HEAD", method: http.MethodHead, uri: "/?type=json&sql=SELECT+1", status: http.StatusMethodNotAllowed},
-		{name: "missing SQL", method: http.MethodGet, uri: "/?type=json", status: http.StatusBadRequest},
+		{name: "origin denial", method: http.MethodGet, uri: "/?type=arrow&sql=SELECT+1", headers: http.Header{"Origin": {"http://untrusted.example"}}, status: http.StatusForbidden},
+		{name: "HEAD", method: http.MethodHead, uri: "/?type=arrow&sql=SELECT+1", status: http.StatusMethodNotAllowed},
+		{name: "missing SQL", method: http.MethodGet, uri: "/?type=arrow", status: http.StatusBadRequest},
+		{name: "removed JSON type", method: http.MethodGet, uri: "/?type=json&sql=SELECT+1", status: http.StatusBadRequest},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -204,7 +200,7 @@ func TestHTTPCacheNonQueryResponses(t *testing.T) {
 func TestHTTPCacheWebSocket(t *testing.T) {
 	spy := &spyCommandExecutor{
 		failOnCallExecutor: failOnCallExecutor{t},
-		queryJSON:          func(context.Context, string, []string) (json.RawMessage, error) { return json.RawMessage(`[]`), nil },
+		queryArrow:         func(context.Context, string, []string) ([]byte, error) { return []byte("result"), nil },
 	}
 	server := newWebSocketTestServer(t, mustHandler(t, spy, WithCacheControl("public, max-age=60"), WithVary("X-Dataset")))
 	conn, res, err := server.dial(&websocket.DialOptions{HTTPHeader: http.Header{"If-None-Match": {"*"}}})
@@ -214,22 +210,23 @@ func TestHTTPCacheWebSocket(t *testing.T) {
 	require.Equal(t, "no-store", res.Header.Get("Cache-Control"))
 	require.Empty(t, res.Header.Get("ETag"))
 	require.Contains(t, strings.Join(res.Header.Values("Vary"), ","), "X-Dataset")
-	require.NoError(t, wsjson.Write(server.ctx, conn, map[string]string{"type": "json", "sql": "SELECT 1"}))
-	var result json.RawMessage
-	require.NoError(t, wsjson.Read(server.ctx, conn, &result))
-	require.JSONEq(t, `[]`, string(result))
+	require.NoError(t, wsjson.Write(server.ctx, conn, map[string]string{"type": "arrow", "sql": "SELECT 1"}))
+	messageType, result, err := conn.Read(server.ctx)
+	require.NoError(t, err)
+	require.Equal(t, websocket.MessageBinary, messageType)
+	require.Equal(t, []byte("result"), result)
 }
 
 func TestVaryIndependentOfCacheControl(t *testing.T) {
 	spy := &spyCommandExecutor{
 		failOnCallExecutor: failOnCallExecutor{t},
-		queryJSON:          func(context.Context, string, []string) (json.RawMessage, error) { return json.RawMessage(`[]`), nil },
+		queryArrow:         func(context.Context, string, []string) ([]byte, error) { return []byte("result"), nil },
 	}
 	for _, policy := range []string{"", "public, max-age=60"} {
 		t.Run(policy, func(t *testing.T) {
 			handler := mustHandler(t, spy, WithCacheControl(policy), WithVary("X-Dataset"), WithCORS(CORSOptions{AllowedOrigins: []string{"http://app.example"}}))
 			for _, conditional := range []bool{false, true} {
-				req := httptest.NewRequest(http.MethodGet, "/?type=json&sql=SELECT+1", nil)
+				req := httptest.NewRequest(http.MethodGet, "/?type=arrow&sql=SELECT+1", nil)
 				req.Header.Set("Origin", "http://app.example")
 				if conditional {
 					req.Header.Set("If-None-Match", "*")
@@ -260,14 +257,14 @@ func TestVaryIndependentOfCacheControl(t *testing.T) {
 func TestHTTPCacheSchemaMatchVariation(t *testing.T) {
 	spy := &spyCommandExecutor{
 		failOnCallExecutor: failOnCallExecutor{t},
-		queryJSON: func(_ context.Context, _ string, schemas []string) (json.RawMessage, error) {
-			return json.Marshal(schemas)
+		queryArrow: func(_ context.Context, _ string, schemas []string) ([]byte, error) {
+			return []byte(strings.Join(schemas, ",")), nil
 		},
 	}
 	handler := mustHandler(t, spy, WithSchemaMatchHeaders("x-tenant-id"), WithVary("X-Region"), WithCacheControl("public, max-age=60"))
 	get := func(tenant, etag string) *httptest.ResponseRecorder {
 		t.Helper()
-		req := httptest.NewRequest(http.MethodGet, "/?type=json&sql=SELECT+1", nil)
+		req := httptest.NewRequest(http.MethodGet, "/?type=arrow&sql=SELECT+1", nil)
 		req.Header.Set("X-Tenant-Id", tenant)
 		req.Header.Set("If-None-Match", etag)
 		res := httptest.NewRecorder()
@@ -280,7 +277,7 @@ func TestHTTPCacheSchemaMatchVariation(t *testing.T) {
 	for _, tenant := range []string{"alpha", "beta"} {
 		res := get(tenant, previousETag)
 		require.Equal(t, http.StatusOK, res.Code)
-		require.JSONEq(t, `["`+tenant+`"]`, res.Body.String())
+		require.Equal(t, tenant, res.Body.String())
 		require.Equal(t, "public, max-age=60", res.Header().Get("Cache-Control"))
 		etag := res.Header().Get("ETag")
 		require.NotEmpty(t, etag)

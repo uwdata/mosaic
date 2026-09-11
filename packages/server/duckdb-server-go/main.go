@@ -29,7 +29,7 @@ func run() int {
 	poolSize := flag.Int("connection-pool-size", 10, "Max connection pool size")
 	certFile := flag.String("cert", "", "Path to TLS certificate file (optional, enables HTTPS)")
 	keyFile := flag.String("key", "", "Path to TLS private key file (optional, enables HTTPS)")
-	cacheControl := flag.String("cache-control", "", "Cache-Control value for successful GET json and arrow responses; enables ETag validation for those queries")
+	cacheControl := flag.String("cache-control", "", "Cache-Control value for successful GET arrow responses; enables ETag validation for those queries")
 	var varyHeaders optionalCommaListFlag
 	flag.Var(&varyHeaders, "vary", "Comma-separated request header names to append to Vary; may be repeated")
 	schemaMatchHeadersStr := flag.String("schema-match-headers", "", "Comma-separated list of headers to match against schema names for multi-tenant access control (e.g., \"X-Tenant-Id,verified-user-id\")")
