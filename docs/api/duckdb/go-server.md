@@ -1,6 +1,6 @@
 # Go Server Preaggregation
 
-Programs embedding [`duckdb-server-go`](https://github.com/uwdata/mosaic/tree/main/packages/server/duckdb-server-go) can enable server-owned preaggregation with `server.WithPreaggregation`. It accepts `preagg` over HTTP POST and returns `{ catalog, schema, table, createdAt }`; clients use a REST connector with `preagg: { mode: 'preagg' }` on their coordinator. The installed Go binary, Python server, and Node data server do not enable this command.
+Programs embedding [`duckdb-server-go`](https://github.com/uwdata/mosaic/tree/main/packages/server/duckdb-server-go) can enable server-owned preaggregation with `server.WithPreaggregation`. It accepts `preagg` over HTTP POST or WebSocket messages and returns `{ catalog, schema, table, createdAt }`; clients use a REST or socket connector with `preagg: { mode: 'preagg' }` on their coordinator. The installed Go binary, Python server, and Node data server do not enable this command.
 
 ## WithPreaggregation
 
@@ -75,6 +75,6 @@ With preaggregation enabled, HTTP command errors use JSON `{ error, code }`, and
 | `internal_error` | 500 |
 | `deadline_exceeded` | 504 |
 
-`table_not_found` includes `catalog`, `schema`, and `table` only for a missing or expired reference in the caller's managed scope. The coordinator can then rebuild and retry once. Unrelated source failures and unauthorized references do not receive this recovery signal. GET materialization requests are rejected, and sockets do not yet accept `preagg`.
+`table_not_found` includes `catalog`, `schema`, and `table` only for a missing or expired reference in the caller's managed scope. The coordinator can then rebuild and retry once. Unrelated source failures and unauthorized references do not receive this recovery signal. GET materialization requests are rejected. WebSockets use the same command handler and error envelopes, with no HTTP status field. Responses remain in request order, and the connection remains usable after a failed or timed-out build. A build delays later commands on that socket.
 
 Programs using `pkg/query` directly can construct `query.NewPreAggregator(ctx, db, catalog, limits)`, call `Materialize(ctx, scope, sql)` for a `query.PreaggResponse`, and call `QueryArrow(ctx, scope, sql, authorizeSource)` for scoped reads. `authorizeSource`, when provided, reauthorizes stored source SELECTs. `query.MissingPreAggregateError` carries the three reference fields; `query.ErrPreAggregateLimit` identifies admission or output limits. Direct callers own request authentication and initial command authorization.
