@@ -1,12 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { TableRefNode } from '@uwdata/mosaic-sql';
 import { type PreAggregateLimits, PreAggregateRegistry } from '../src/preagg/PreAggregateRegistry.js';
-import {
-  ConnectorError,
-  PreAggregateBusyError,
-  PreAggregateModeError,
-  PreAggregateSuppressedError
-} from '../src/connectors/errors.js';
+import { ConnectorError, PreAggregateModeError } from '../src/connectors/errors.js';
 import { QueryManager } from '../src/QueryManager.js';
 import { MockPreaggConnector } from './util/preagg-connector.js';
 
@@ -62,11 +57,12 @@ describe('PreAggregateRegistry', () => {
     registry.request(SQL_A);
     registry.request(SQL_C);
     expect(registry.pending).toBe(2);
-    expect(registry.size).toBe(3);
+    expect(registry.lookup(SQL_B)).toBe(t3);
     connector.complete();
     connector.complete();
     await Promise.resolve();
-    expect(registry.size).toBe(1);
+    expect(registry.lookup(SQL_A)).toBeNull();
+    expect(registry.lookup(SQL_B)).toBeNull();
     expect(registry.lookup(SQL_C)).toBeInstanceOf(TableRefNode);
   });
 
@@ -105,7 +101,7 @@ describe('PreAggregateRegistry', () => {
     connector.open[0].resolve(value);
     await expect(promise).rejects.toMatchObject({ code: 'malformed_response' });
     expect(registry.lookup(SQL_A)).toBeNull();
-    expect(() => registry.request(SQL_A)).toThrow(PreAggregateSuppressedError);
+    expect(() => registry.request(SQL_A)).toThrow(expect.objectContaining({ code: 'suppressed' }));
   });
 
   it('accepts a well-formed response and ignores unknown fields', async () => {
@@ -118,9 +114,10 @@ describe('PreAggregateRegistry', () => {
   it('refuses new builds at the pending limit without a cooldown', async () => {
     const { registry, connector } = setup({ maxPendingBuilds: 1 });
     const a = registry.request(SQL_A);
-    expect(() => registry.request(SQL_B)).toThrow(PreAggregateBusyError);
+    expect(() => registry.request(SQL_B)).toThrow(expect.objectContaining({ code: 'lane_busy' }));
     expect(registry.request(SQL_A)).toBe(a);
-    expect(registry.size).toBe(1);
+    expect(registry.pending).toBe(1);
+    expect(registry.lookup(SQL_B)).toBeNull();
 
     connector.complete();
     await a;
@@ -144,8 +141,8 @@ describe('PreAggregateRegistry', () => {
 
     let suppressed: unknown;
     try { registry.request(SQL_A); } catch (e) { suppressed = e; }
-    expect(suppressed).toBeInstanceOf(PreAggregateSuppressedError);
-    expect(suppressed).toMatchObject({ code, cause: err, retryAt: Date.now() + 60_000 });
+    expect(suppressed).toBeInstanceOf(ConnectorError);
+    expect(suppressed).toMatchObject({ code: 'suppressed', cause: err });
     expect(connector.preaggRequests).toHaveLength(1);
 
     await vi.advanceTimersByTimeAsync(60_000);
@@ -168,7 +165,7 @@ describe('PreAggregateRegistry', () => {
       await expect(p).rejects.toMatchObject({ code: 'deadline_exceeded' });
     }
     expect(registry.pending).toBe(0);
-    expect(() => registry.request(SQL_A)).toThrow(PreAggregateSuppressedError);
+    expect(() => registry.request(SQL_A)).toThrow(expect.objectContaining({ code: 'suppressed' }));
     expect(registry.request(SQL_B)).toBeInstanceOf(Promise);
 
     connector.open[0].resolve({ catalog: 'x', schema: 'y', table: 'z', createdAt: '2026-01-01T00:00:00Z' });
@@ -189,7 +186,8 @@ describe('PreAggregateRegistry', () => {
 
     registry.reset();
     await expect(pending).rejects.toMatchObject({ name: 'AbortError' });
-    expect(registry.size).toBe(0);
+    expect(registry.pending).toBe(0);
+    expect(registry.lookup(SQL_B)).toBeNull();
     expect(invalidate).toHaveBeenCalledTimes(2);
     expect(registry.request(SQL_C)).toBeInstanceOf(Promise);
 

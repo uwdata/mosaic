@@ -5,9 +5,7 @@ import {
   ConnectorError,
   isAbortError,
   parsePreaggResponse,
-  PreAggregateBusyError,
-  PreAggregateModeError,
-  PreAggregateSuppressedError
+  PreAggregateModeError
 } from '../connectors/errors.js';
 import type { QueryManager } from '../QueryManager.js';
 
@@ -23,7 +21,6 @@ interface Build {
 interface Entry {
   sql: string;
   table: TableRefNode | null;
-  tableKey: string | null;
   build: Build | null;
 }
 
@@ -47,12 +44,6 @@ const defaultLimits: Readonly<PreAggregateLimits> = Object.freeze({
   timeoutMs: 120 * 1000,
   cooldownMs: 60 * 1000
 });
-
-function referenceKey(ref: TableRefNode | PreaggResponse): string {
-  return JSON.stringify(Array.isArray(ref.table)
-    ? ref.table
-    : [(ref as PreaggResponse).catalog, (ref as PreaggResponse).schema, ref.table]);
-}
 
 function toConnectorError(err: unknown): ConnectorError {
   if (err instanceof ConnectorError) return err;
@@ -81,17 +72,13 @@ export class PreAggregateRegistry {
     return n;
   }
 
-  get size(): number {
-    return this.entries.size;
-  }
-
   lookup(sql: string): TableRefNode | null {
     return this.entries.get(sql)?.table ?? null;
   }
 
   isCurrent(sql: string, table: TableRefNode | null): boolean {
     const entry = this.entries.get(sql);
-    return !!entry && !!table && !entry.build && entry.tableKey === referenceKey(table);
+    return !!entry && !!table && !entry.build && entry.table === table;
   }
 
   invalidate(sql: string, table: TableRefNode): void {
@@ -101,9 +88,9 @@ export class PreAggregateRegistry {
   }
 
   /**
-   * Local refusals (`PreAggregateBusyError`, `PreAggregateSuppressedError`,
-   * `PreAggregateModeError`) throw synchronously; server and transport
-   * failures reject the returned promise.
+   * Local refusals (`lane_busy`, `suppressed`, `PreAggregateModeError`)
+   * throw synchronously; server and transport failures reject the returned
+   * promise.
    */
   request(sql: string): Promise<TableRefNode> {
     if (!this.manager.connector()) {
@@ -111,7 +98,9 @@ export class PreAggregateRegistry {
     }
     const failure = this.failures.get(sql);
     if (failure) {
-      if (Date.now() < failure.retryAt) throw new PreAggregateSuppressedError(failure.error, failure.retryAt);
+      if (Date.now() < failure.retryAt) {
+        throw new ConnectorError(`Preaggregation suppressed: ${failure.error.message}`, { code: 'suppressed', cause: failure.error });
+      }
       this.failures.delete(sql);
     }
 
@@ -122,7 +111,7 @@ export class PreAggregateRegistry {
       if (entry.build) return entry.build.promise;
       if (entry.table) return Promise.resolve(entry.table);
     } else {
-      entry = { sql, table: null, tableKey: null, build: null };
+      entry = { sql, table: null, build: null };
       this.entries.set(sql, entry);
     }
 
@@ -146,7 +135,9 @@ export class PreAggregateRegistry {
   }
 
   private createBuild(entry: Entry): Build {
-    if (this.pending >= this.limits.maxPendingBuilds) throw new PreAggregateBusyError();
+    if (this.pending >= this.limits.maxPendingBuilds) {
+      throw new ConnectorError('Preaggregation lane is busy', { code: 'lane_busy' });
+    }
     let resolve!: (table: TableRefNode) => void;
     let reject!: (err: unknown) => void;
     const promise = new Promise<TableRefNode>((res, rej) => { resolve = res; reject = rej; });
@@ -201,7 +192,6 @@ export class PreAggregateRegistry {
 
     const { catalog, schema, table } = validated;
     entry.table = new TableRefNode([catalog, schema, table]);
-    entry.tableKey = referenceKey(validated);
     this.failures.delete(entry.sql);
     // a table evicted from this cache may be rebuilt by the server under the
     // same name with different rows, so any completion can stale cached results

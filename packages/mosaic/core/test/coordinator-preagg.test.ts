@@ -187,27 +187,28 @@ describe('PreAggregator preagg mode', () => {
     await flush();
     connector.complete();
     await sel.pending('value');
-    expect(registry.size).toBe(1);
+    const { sql } = connector.preaggRequests[0];
+    expect(registry.lookup(sql)).toBeInstanceOf(TableRefNode);
 
     mc.clear({ clients: false });
-    expect(registry.size).toBe(1);
+    expect(registry.lookup(sql)).toBeInstanceOf(TableRefNode);
     mc.preaggregator.reset();
-    expect(registry.size).toBe(0);
+    expect(registry.lookup(sql)).toBeNull();
     expect(mc.preaggregator.entries.size).toBe(0);
 
-    const again = registry.request(connector.preaggRequests[0].sql);
+    const again = registry.request(sql);
     connector.complete();
     await again;
     mc.databaseConnector(connector);
-    expect(registry.size).toBe(1);
+    expect(registry.lookup(sql)).toBeInstanceOf(TableRefNode);
     mc.databaseConnector(new MockPreaggConnector());
-    expect(registry.size).toBe(0);
+    expect(registry.lookup(sql)).toBeNull();
 
-    const last = registry.request(connector.preaggRequests[0].sql);
+    const last = registry.request(sql);
     (mc.databaseConnector() as MockPreaggConnector).complete();
     await last;
     mc.clear();
-    expect(registry.size).toBe(0);
+    expect(registry.lookup(sql)).toBeNull();
   });
 
   it('disabling clears client state but leaves cached tables and builds', async () => {
@@ -223,7 +224,7 @@ describe('PreAggregator preagg mode', () => {
     expect(connector.open).toHaveLength(1);
     connector.complete();
     await sel.pending('value');
-    expect(mc.preaggregator.registry!.size).toBe(1);
+    expect(mc.preaggregator.registry!.lookup(connector.preaggRequests[0].sql)).toBeInstanceOf(TableRefNode);
 
     sel.update(clausePoint('dim', 'b', { source }));
     await sel.pending('value');

@@ -380,9 +380,9 @@ function updateSelection(
     const superseded = (pending: Promise<unknown>) => client.pending !== pending
       || !filterGroups.get(selection)?.clients.has(client);
 
-    if (info?.ready) {
+    if (info?.result) {
       const pending = client.pending;
-      await info.ready.catch(() => {});
+      await info.result.catch(() => {});
       if (superseded(pending)) return;
     }
 
