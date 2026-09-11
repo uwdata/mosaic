@@ -6,8 +6,10 @@ A connector instance should expose a `query(query)` method that returns a Promis
 The _query_ argument is an object that may include the following properties:
 
 - _sql_: The SQL query to evaluate.
-- _type_: The query format type, either `"exec"` (no return value) or `"arrow"`.
+- _type_: The query format type, either `"exec"` (no return value), `"arrow"`, or `"preagg"`.
 - Any additional connector-specific options.
+
+A `"preagg"` request asks the connector to materialize the given SELECT query and resolves to the resulting table name as `{ catalog, schema, table, createdAt }`.
 
 Once instantiated, register a connector with the coordinator using the [`coordinator.databaseConnector()`](coordinator#databaseconnector) method.
 
@@ -22,6 +24,8 @@ Create a new Web Socket connector to a DuckDB [data server](../duckdb/data-serve
 `restConnector(uri)`
 
 Create a new HTTP rest connector to a DuckDB [data server](../duckdb/data-server) at the given _uri_ (default `"http://localhost:3000/"`).
+
+Failed requests reject with a `ConnectorError` carrying the HTTP `status`. Structured JSON failures also supply `code`, plus the table reference for `table_not_found`.
 
 ## wasmConnector
 

@@ -87,7 +87,8 @@ export class Coordinator {
   }
 
   /**
-   * Clear the coordinator state.
+   * Clear the coordinator state. A full clear (the default) also resets
+   * the pre-aggregator.
    * @param options Options object.
    * @param options.clients If true, disconnect all clients.
    * @param options.cache If true, clear the query cache.
@@ -101,20 +102,22 @@ export class Coordinator {
       this.clients?.forEach(client => this.disconnect(client));
       this.clients = new Set;
     }
-    if (cache) this.manager.cache()!.clear();
+    if (cache) this.manager.invalidate();
+    if (clients && cache) this.preaggregator?.reset();
   }
 
   /**
-   * Get or set the database connector.
+   * Get or set the database connector. Replacing the connector forgets
+   * tables materialized through the previous connector.
    * @param db The database connector to use.
    * @returns The current database connector.
    */
   databaseConnector(): Connector | null;
   databaseConnector(db: Connector): Connector;
   databaseConnector(db?: Connector): Connector | null {
-    return db
-      ? this.manager.connector(db)
-      : this.manager.connector();
+    if (!db) return this.manager.connector();
+    if (this.manager.connector() !== db) this.preaggregator?.reset();
+    return this.manager.connector(db);
   }
 
   /**
@@ -366,17 +369,38 @@ function updateSelection(
 
     // check if we can handle selection update via preaggregation
     const info = preaggregator.request(client, selection, active);
+    const resetGeneration = preaggregator.resetGeneration;
 
     if (info?.skip) {
       // skip due to cross-filtering
       return;
     }
 
-    if (info?.result) {  
+    const superseded = (pending: Promise<unknown>) => client.pending !== pending
+      || !mc.filterGroups.get(selection)?.clients.has(client);
+
+    if (info?.result) {
+      const pending = client.pending;
+      await info.result.catch(() => {});
+      if (superseded(pending)) return;
+    }
+
+    if (info?.result && preaggregator.resetGeneration === resetGeneration) {
       // generate and issue preaggregate update query
       const query = info.query(active);
-      const result = await mc.updateClient(client, query);
+      const table = info.table;
+      const pending = mc.updateClient(client, query);
+      const result = await pending;
       if (!(result instanceof QueryError)) return;
+      if (superseded(pending)) return;
+      const recovered = await preaggregator.recover(client, info, table, result.cause);
+      if (superseded(pending)) return;
+      if (recovered && preaggregator.entries.get(client) === info) {
+        const retry = mc.updateClient(client, info.query(active));
+        const retried = await retry;
+        if (!(retried instanceof QueryError)) return;
+        if (superseded(retry)) return;
+      }
       // if preaggregate update fails, fall through to standard query
       // this safeguards against potential preagg bugs
     }

@@ -1,5 +1,6 @@
 import type { ExtractionOptions, Table } from '@uwdata/flechette';
-import type { ArrowQueryRequest, Connector, ExecQueryRequest, ConnectorQueryRequest } from './Connector.js';
+import type { ArrowQueryRequest, Connector, ConnectorRequest, ExecQueryRequest, PreaggRequest, PreaggResponse } from './Connector.js';
+import { parseErrorResponse } from './errors.js';
 import { decodeIPC } from '../util/decode-ipc.js';
 
 interface SocketOptions {
@@ -8,7 +9,7 @@ interface SocketOptions {
 }
 
 interface QueueItem<T = unknown> {
-  query: ConnectorQueryRequest;
+  query: ConnectorRequest;
   resolve: (value?: T) => void;
   reject: (reason?: unknown) => void;
 }
@@ -85,7 +86,9 @@ export class SocketConnector implements Connector {
           if (typeof data === 'string') {
             const json = JSON.parse(data);
             if (json.error) {
-              reject(json.error);
+              reject(parseErrorResponse(json) ?? json.error);
+            } else if (query.type === 'arrow') {
+              reject(new Error(`Unexpected socket data: ${data}`));
             } else {
               resolve(json);
             }
@@ -116,7 +119,7 @@ export class SocketConnector implements Connector {
   }
 
   enqueue(
-    query: ConnectorQueryRequest,
+    query: ConnectorRequest,
     resolve: (value?: unknown) => void,
     reject: (reason?: unknown) => void
   ): void {
@@ -125,7 +128,7 @@ export class SocketConnector implements Connector {
     this._queue.push({ query, resolve, reject });
   }
 
-  private send(query: ConnectorQueryRequest): void {
+  private send(query: ConnectorRequest): void {
     this._ws?.send(JSON.stringify(query));
   }
 
@@ -137,9 +140,10 @@ export class SocketConnector implements Connector {
 
   query(query: ArrowQueryRequest): Promise<Table>;
   query(query: ExecQueryRequest): Promise<void>;
-  query(query: ConnectorQueryRequest): Promise<unknown> {
+  query(query: PreaggRequest): Promise<PreaggResponse>;
+  query(query: ConnectorRequest): Promise<unknown> {
     return new Promise(
-      (resolve, reject) => this.enqueue(query, resolve, reject)
+      (resolve, reject) => this.enqueue({ ...query, type: query.type ?? 'arrow' }, resolve, reject)
     );
   }
 }

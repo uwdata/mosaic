@@ -20,13 +20,15 @@ Create a new Mosaic Coordinator to manage all database communication for clients
 * _logger_: The logger to use, defaults to `console`.
 * _cache_: Boolean flag to enable/disable query caching (default `true`).
 * _consolidate_ Boolean flag to enable/disable query consolidation (default `true`).
-* _preagg_: Pre-aggregation options object. The _enabled_ flag (default `true`) determines if pre-aggregation optimizations should be used when possible. The _schema_ option (default `'mosaic'`) indicates the database schema in which materialized view tables should be created for pre-aggregated data.
+* _preagg_: Pre-aggregation options object. The _enabled_ flag (default `true`) determines if pre-aggregation optimizations should be used when possible. The _mode_ option (default `'exec'`) determines how materialized views are created:
+  * `'exec'` issues `CREATE TABLE` statements directly. The _schema_ option (default `'mosaic'`) indicates the database schema in which the tables are created.
+  * `'preagg'` sends a `preagg` request and lets the [connector](./connectors) or its server create and name the table. If the server later reports the materialized table as missing, the coordinator rebuilds it and retries once before falling back to the base query.
 
 ## databaseConnector
 
 `coordinator.databaseConnector(connector)`
 
-Get or set the [_connector_](./connectors) used by the coordinator to issue queries to a backing data source.
+Get or set the [_connector_](./connectors) used by the coordinator to issue queries to a backing data source. Replacing the connector resets pre-aggregation state, since materialized tables belong to the previous data source.
 
 ## connect
 
@@ -59,6 +61,8 @@ Resets the state of the coordinator. Supports the following _options_:
 
 - _clients_: A Boolean flag (default `true`) indicating if all current clients should be disconnected.
 - _cache_: A Boolean flag (default `true`) indicating if the query cache should be cleared.
+
+When both flags are set, the pre-aggregator is also reset, forgetting any `preagg` table references.
 
 ## exec
 

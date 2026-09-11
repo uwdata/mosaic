@@ -1,10 +1,30 @@
 import type { ExtractionOptions, Table } from '@uwdata/flechette';
-import type { ArrowQueryRequest, Connector, ExecQueryRequest, ConnectorQueryRequest } from './Connector.js';
+import type {
+  ArrowQueryRequest,
+  Connector,
+  ConnectorRequest,
+  ExecQueryRequest,
+  PreaggRequest,
+  PreaggResponse
+} from './Connector.js';
 import { decodeIPC } from '../util/decode-ipc.js';
+import { ConnectorError, parseErrorResponse } from './errors.js';
 
 interface RestOptions {
   uri?: string;
   ipc?: ExtractionOptions;
+}
+
+function errorFromResponse(status: number, contentType: string | null, body: string): ConnectorError {
+  if (/^application\/json\s*(;|$)/i.test(contentType?.trim() ?? '')) {
+    try {
+      const err = parseErrorResponse(JSON.parse(body), status);
+      if (err) return err;
+    } catch {
+      // fall through to the generic error
+    }
+  }
+  return new ConnectorError(`Query failed with HTTP status ${status}: ${body}`, { status });
 }
 
 /**
@@ -32,23 +52,25 @@ export class RestConnector implements Connector {
 
   async query(query: ArrowQueryRequest): Promise<Table>;
   async query(query: ExecQueryRequest): Promise<void>;
-  async query(query: ConnectorQueryRequest): Promise<unknown> {
-    const req = fetch(this._uri, {
+  async query(query: PreaggRequest): Promise<PreaggResponse>;
+  async query(query: ConnectorRequest): Promise<unknown> {
+    const res = await fetch(this._uri, {
       method: 'POST',
       mode: 'cors',
       credentials: 'omit',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        ...(query.type === 'preagg' ? { Accept: 'application/json' } : {})
+      },
       body: JSON.stringify(query)
     });
 
-    const res = await req;
-
     if (!res.ok) {
-      throw new Error(`Query failed with HTTP status ${res.status}: ${await res.text()}`);
+      throw errorFromResponse(res.status, res.headers.get('Content-Type'), await res.text());
     }
 
-    return query.type === 'exec'
-      ? undefined
+    return query.type === 'exec' ? undefined
+      : query.type === 'preagg' ? res.json()
       : decodeIPC(await res.arrayBuffer(), this._ipc);
   }
 }

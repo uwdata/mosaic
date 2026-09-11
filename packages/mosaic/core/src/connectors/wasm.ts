@@ -1,5 +1,13 @@
 import type { ExtractionOptions, Table } from '@uwdata/flechette';
-import type { ArrowQueryRequest, Connector, ExecQueryRequest, ConnectorQueryRequest } from './Connector.js';
+import type {
+  ArrowQueryRequest,
+  Connector,
+  ConnectorRequest,
+  ExecQueryRequest,
+  PreaggRequest,
+  PreaggResponse
+} from './Connector.js';
+import { materializeWithExec } from './Connector.js';
 import * as duckdb from '@duckdb/duckdb-wasm';
 import { decodeIPC } from '../util/decode-ipc.js';
 
@@ -74,8 +82,10 @@ export class DuckDBWASMConnector implements Connector {
 
   async query(query: ArrowQueryRequest): Promise<Table>;
   async query(query: ExecQueryRequest): Promise<void>;
-  async query(query: ConnectorQueryRequest): Promise<unknown> {
+  async query(query: PreaggRequest): Promise<PreaggResponse>;
+  async query(query: ConnectorRequest): Promise<unknown> {
     const { type, sql } = query;
+    if (type === 'preagg') return materializeWithExec(this, sql);
     const con = await this.getConnection();
     const result = await getArrowIPC(con, sql);
     return type === 'exec' ? undefined : decodeIPC(result, this._ipc);

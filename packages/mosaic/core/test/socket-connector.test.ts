@@ -1,4 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { tableFromArrays, tableToIPC } from '@uwdata/flechette';
+import { ConnectorError } from '../src/connectors/errors.js';
 import { SocketConnector } from '../src/connectors/socket.js';
 
 class FakeWebSocket {
@@ -67,19 +69,21 @@ describe('SocketConnector', () => {
 
     expect(await first).toEqual([{ a: 1 }]);
     await create;
-    expect(await failing).toBe('boom');
+    expect(await failing).toMatchObject({ name: 'ConnectorError', message: 'boom' });
     expect(await last).toEqual([{ a: 3 }]);
   });
 
   it('rejects every outstanding request when the socket closes', async () => {
-    const { exec, socket } = connect();
+    const { connector, exec, socket } = connect();
     const a = exec('SELECT 1');
     const b = exec('SELECT 2');
+    const preagg = connector.query({ type: 'preagg', sql: 'SELECT 3' });
     socket().emit('open');
     socket().emit('close');
 
     await expect(a).rejects.toBe('Socket closed');
     await expect(b).rejects.toBe('Socket closed');
+    await expect(preagg).rejects.toBe('Socket closed');
   });
 
   it('rejects outstanding requests on a socket error and only logs without any', async () => {
@@ -118,6 +122,55 @@ describe('SocketConnector', () => {
     socket().emit('message', { data: '[]' });
     socket().emit('message', { data: '[]' });
     expect(log).toHaveBeenCalledOnce();
+  });
+
+  it('matches mixed preagg, Arrow, and exec responses in order', async () => {
+    const { connector, exec, socket } = connect();
+    const preagg = connector.query({ type: 'preagg', sql: 'SELECT 1 AS x' });
+    const arrow = connector.query({ sql: 'SELECT 2 AS x' });
+    const last = exec('SELECT 3');
+    socket().emit('open');
+    expect(socket().sent.map(s => JSON.parse(s).type)).toEqual(['preagg', 'arrow', 'exec']);
+
+    const response = { catalog: 'memory', schema: 's', table: 't', createdAt: '2026-09-11T00:00:00Z' };
+    socket().emit('message', { data: JSON.stringify(response) });
+    socket().emit('message', { data: tableToIPC(tableFromArrays({ x: [2] }), { format: 'stream' }) });
+    socket().emit('message', { data: '{}' });
+    expect(await preagg).toEqual(response);
+    expect((await arrow).toArray()).toEqual([{ x: 2 }]);
+    await last;
+  });
+
+  it.each([
+    { name: 'preagg', query: (c: SocketConnector) => c.query({ type: 'preagg', sql: 'SELECT 1' }) },
+    { name: 'arrow', query: (c: SocketConnector) => c.query({ type: 'arrow', sql: 'SELECT 1' }) },
+    { name: 'default', query: (c: SocketConnector) => c.query({ sql: 'SELECT 1' }) }
+  ])('preserves structured errors for $name requests', async ({ query }) => {
+    const { connector, socket } = connect();
+    const result = query(connector).catch(error => error);
+    socket().emit('open');
+    socket().emit('message', { data: JSON.stringify({
+      error: 'missing table', code: 'table_not_found', catalog: 'memory', schema: 's', table: 't'
+    }) });
+    const error = await result;
+    expect(error).toBeInstanceOf(ConnectorError);
+    expect(error).toMatchObject({ message: 'missing table', code: 'table_not_found', catalog: 'memory', schema: 's', table: 't' });
+    expect(error.status).toBeUndefined();
+  });
+
+  it.each([
+    { name: 'malformed JSON', query: (c: SocketConnector) => c.query({ type: 'preagg', sql: 'SELECT 1' }), data: '[' },
+    { name: 'binary preagg response', query: (c: SocketConnector) => c.query({ type: 'preagg', sql: 'SELECT 1' }), data: new Uint8Array([1, 2, 3]) },
+    { name: 'JSON Arrow response', query: (c: SocketConnector) => c.query({ sql: 'SELECT 1' }), data: '{}' }
+  ])('rejects $name without losing the next response', async ({ query, data }) => {
+    const { connector, exec, socket } = connect();
+    const result = query(connector).catch(error => error);
+    const next = exec('SELECT 2');
+    socket().emit('open');
+    socket().emit('message', { data });
+    socket().emit('message', { data: '{}' });
+    expect(await result).toBeInstanceOf(Error);
+    await next;
   });
 
   it('decodes binary responses for arrow requests and resolves exec on text', async () => {
