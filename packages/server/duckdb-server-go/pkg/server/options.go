@@ -53,11 +53,12 @@ type WebSocketOptions struct {
 
 type config struct {
 	logger             *slog.Logger
-	authorizer         Authorizer
+	authorizer         requestAuthorizer
 	schemaMatchHeaders []string
 	cors               CORSOptions
 	corsProtection     *http.CrossOriginProtection
 	websocket          WebSocketOptions
+	maxMessageBytes    int64
 }
 
 func defaultConfig() config {
@@ -104,12 +105,15 @@ func WithLogger(logger *slog.Logger) Option {
 	})
 }
 
-func WithAuthorizer(authorizer Authorizer) Option {
+// WithMaxMessageBytes limits POST bodies and decompressed WebSocket messages to
+// n bytes, which must be positive. Omitting it leaves POST bodies unbounded and
+// retains the WebSocket library's 32 KiB limit.
+func WithMaxMessageBytes(n int64) Option {
 	return optionFunc(func(cfg *config) error {
-		if authorizer == nil || isNilValue(authorizer) {
-			return errNilAuthorizer
+		if n <= 0 {
+			return errors.New("server: maximum message bytes must be positive")
 		}
-		cfg.authorizer = authorizer
+		cfg.maxMessageBytes = n
 		return nil
 	})
 }
