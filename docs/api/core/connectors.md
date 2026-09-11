@@ -35,7 +35,7 @@ SELECT and `preagg` requests preserve structured JSON failures as a `ConnectorEr
 
 Create an in-process Node.js connector, imported from `@uwdata/mosaic-core/node-connector`, with an optional `DuckDB` instance from `@uwdata/mosaic-duckdb` and Arrow extraction options. Without an instance, the connector creates an in-memory database.
 
-`preagg` materializes one SELECT as a temporary table on the connector's connection, reuses it for identical SQL, and rebuilds it if dropped. Tables are released when the connection closes. SELECT failures for a missing materialization return a `ConnectorError` with `code: 'table_not_found'` and its table reference, enabling automatic recovery.
+`preagg` materializes one SELECT as a temporary table on the connector's connection, reuses it for identical SQL, and rebuilds it if dropped. Tables are released when the connection closes; the connector has no table-count bound and does not otherwise drop them. SELECT failures for a missing materialization return a `ConnectorError` with `code: 'table_not_found'` and its table reference, enabling automatic recovery.
 
 ## wasmConnector
 
