@@ -9,7 +9,7 @@ import type {
   PreaggRequest,
   PreaggResponse
 } from './Connector.js';
-import { materializeWithExec } from './materialize.js';
+import { materializeWithExec } from './Connector.js';
 
 /**
  * A Mosaic Connector backed by an in-process Node.js DuckDB instance.
