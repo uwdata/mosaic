@@ -178,7 +178,7 @@
   }
 
   function setMaxPendingUpdates() {
-    vg.coordinator().maxPendingUpdates = Math.max(1, +maxPendingInput.value || 1);
+    vg.coordinator().maxPendingUpdates = +maxPendingInput.value || 1;
   }
 
   function reload() {
