@@ -124,6 +124,13 @@ describe('SocketConnector', () => {
     expect(log).toHaveBeenCalledOnce();
   });
 
+  it('does not transport preagg commands', async () => {
+    const { connector } = connect();
+    await expect(connector.query({ type: 'preagg', sql: 'SELECT 1' }))
+      .rejects.toMatchObject({ code: 'unsupported_command' });
+    expect(FakeWebSocket.instances).toHaveLength(0);
+  });
+
   it('resolves arrow requests with the raw bytes and exec acknowledgements with nothing', async () => {
     const { exec, arrow, socket } = connect();
     const create = exec('CREATE TABLE t (a INT)');

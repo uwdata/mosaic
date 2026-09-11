@@ -12,7 +12,9 @@ type QueryStateType = typeof QueryState[keyof typeof QueryState];
  * to resolve or reject the Promise.
  */
 export class QueryResult<T = unknown> extends Promise<T> {
-  private _resolve!: (value: T | PromiseLike<T>) => void;
+  // typed loosely so QueryResult<Table> is assignable to QueryResult<unknown>
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  private _resolve!: (value: any) => void;
   private _reject!: (reason?: unknown) => void;
   private _state: QueryStateType;
   private _value: T | undefined;
