@@ -14,7 +14,6 @@ interface QueueItem<T = unknown> {
  * Connect to a DuckDB server over a WebSocket interface.
  * @param options Connector options.
  * @param options.uri The URI for the DuckDB server.
- * @param options.ipc Arrow IPC extraction options.
  * @returns A connector instance.
  */
 export function socketConnector(options?: SocketOptions) {
@@ -37,7 +36,6 @@ export class SocketConnector implements Connector {
   /**
    * @param options Connector options.
    * @param options.uri The URI for the DuckDB server, defaults to `ws://localhost:3000/`.
-   * @param options.ipc Options for Arrow IPC extraction.
    */
   constructor({
     uri = 'ws://localhost:3000/'
