@@ -378,7 +378,7 @@ function updateSelection(
     }
 
     const superseded = (pending: Promise<unknown>) => client.pending !== pending
-      || !filterGroups.get(selection)?.clients.has(client);
+      || !mc.filterGroups.get(selection)?.clients.has(client);
 
     if (info?.result) {
       const pending = client.pending;

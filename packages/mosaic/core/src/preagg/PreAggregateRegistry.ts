@@ -120,10 +120,10 @@ export class PreAggregateRegistry {
   }
 
   reset(): void {
-    for (const entry of Array.from(this.entries.values())) {
-      this.entries.delete(entry.sql);
+    for (const entry of this.entries.values()) {
       if (entry.build) this.fail(entry.build, abortError('Preaggregates reset'));
     }
+    this.entries.clear();
     this.failures.clear();
     this.manager.invalidate();
   }
@@ -151,10 +151,6 @@ export class PreAggregateRegistry {
     );
   }
 
-  private isCurrentEntry(build: Build): boolean {
-    return this.entries.get(build.entry.sql) === build.entry;
-  }
-
   private complete(build: Build, response: PreaggResponse): void {
     if (build.settled) return;
     let validated: PreaggResponse;
@@ -164,14 +160,8 @@ export class PreAggregateRegistry {
       this.fail(build, err);
       return;
     }
-    const { entry } = build;
-    const current = this.isCurrentEntry(build);
     this.settle(build);
-    if (!current) {
-      build.reject(abortError('Preaggregate retired'));
-      return;
-    }
-
+    const { entry } = build;
     const { catalog, schema, table } = validated;
     entry.table = new TableRefNode([catalog, schema, table]);
     this.failures.delete(entry.sql);
@@ -179,36 +169,31 @@ export class PreAggregateRegistry {
     // same name with different rows, so any completion can stale cached results
     this.manager.invalidate();
     build.resolve(entry.table);
-    this.pruneEntries(entry);
+    this.evict();
   }
 
   private fail(build: Build, err: unknown): void {
     if (build.settled) return;
-    const { entry } = build;
-    const current = this.isCurrentEntry(build);
     this.settle(build);
+    const { entry } = build;
     const reason = isAbortError(err) ? err : toConnectorError(err);
-    if (current && !isAbortError(reason)) this.recordFailure(entry, reason as ConnectorError);
+    if (!isAbortError(reason)) this.recordFailure(entry, reason as ConnectorError);
+    if (this.entries.get(entry.sql) === entry) this.entries.delete(entry.sql);
     build.reject(reason);
-    if (current) this.pruneEntries(entry);
   }
 
   private settle(build: Build): void {
     build.settled = true;
     clearTimeout(build.timer);
-    if (build.entry.build === build) build.entry.build = null;
+    build.entry.build = null;
   }
 
-  private pruneEntries(entry: Entry): void {
-    if (!entry.table) {
-      this.entries.delete(entry.sql);
-      return;
-    }
+  private evict(): void {
     let cached = 0;
-    for (const e of this.entries.values()) if (e.table && !e.build) cached++;
+    for (const e of this.entries.values()) if (e.table) cached++;
     for (const e of this.entries.values()) {
       if (cached <= this.limits.maxCachedTables) return;
-      if (e.table && !e.build) {
+      if (e.table) {
         this.entries.delete(e.sql);
         cached--;
       }

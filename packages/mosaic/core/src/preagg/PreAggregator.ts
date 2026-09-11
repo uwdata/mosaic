@@ -173,6 +173,9 @@ export class PreAggregator {
    * or authorization scope on the connector.
    */
   reset(): void {
+    for (const info of this.entries.values()) {
+      if (info instanceof PreAggregateInfo) info.result = null;
+    }
     this.clear();
     this.registry?.reset();
   }
