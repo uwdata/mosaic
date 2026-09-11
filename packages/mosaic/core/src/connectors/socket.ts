@@ -60,6 +60,7 @@ export class SocketConnector implements Connector {
 
       close() {
         c._connected = false;
+        c._request?.reject('Socket closed');
         c._request = null;
         c._ws = null;
         while (c._queue.length) {
