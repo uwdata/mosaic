@@ -19,7 +19,7 @@ Create a new Mosaic Coordinator to manage all database communication for clients
 
 * _logger_: The logger to use, defaults to `console`.
 * _cache_: Boolean flag to enable/disable query caching (default `true`), or a cache object such as `lruCache({ maxBytes })` to use a custom budget. See [Query cache](#query-cache).
-* _ipc_: Arrow IPC extraction options used when decoding `"arrow"` query results. If unspecified, date and timestamp values are extracted as JavaScript `Date` objects. Setting new options on the query manager clears the query cache, as cached tables were decoded under the previous options.
+* _ipc_: Arrow IPC extraction options used when decoding `"arrow"` query results. If unspecified, date and timestamp values are extracted as JavaScript `Date` objects. Setting new options on the query manager clears the query cache.
 * _consolidate_ Boolean flag to enable/disable query consolidation (default `true`).
 * _preagg_: Pre-aggregation options object. The _enabled_ flag (default `true`) determines if pre-aggregation optimizations should be used when possible. The _schema_ option (default `'mosaic'`) indicates the database schema in which materialized view tables should be created for pre-aggregated data.
 
