@@ -135,8 +135,8 @@ describe('PreAggregator recovery', () => {
     expect(connector.sql().at(-1)).toContain('FROM "testData"');
   });
 
-  it.each(['request', 'disconnect', 'reset', 'connector'])('does not resume a recovery superseded by %s', async action => {
-    const { connector, mc, client, sel, source, table } = await setup();
+  it.each(['request', 'disconnect', 'reset', 'connector', 'activate'])('preserves client ownership when %s interrupts recovery', async action => {
+    const { connector, mc, client, sel, source, table, results } = await setup();
     connector.handler = request => request.sql.includes(String(table)) ? Promise.reject(missingTable(table)) : [];
     sel.update(clausePoint('dim', 'b', { source }));
     await flush();
@@ -145,10 +145,16 @@ describe('PreAggregator recovery', () => {
     if (action === 'request') await mc.requestQuery(client, Query.from('other').select('*'));
     else if (action === 'disconnect') mc.disconnect(client);
     else if (action === 'reset') mc.preaggregator.reset();
-    else mc.databaseConnector(new MockPreaggConnector());
-    const issued = connector.requests.length;
-    connector.complete();
+    else if (action === 'connector') mc.databaseConnector(new MockPreaggConnector());
+    else sel.activate(clausePoint('dim', 'x', { source: {} }));
+    const current = mc.databaseConnector() as MockPreaggConnector;
+    while (connector.open.length) connector.complete();
     await sel.pending('value');
-    expect(connector.requests).toHaveLength(issued);
+    if (action === 'request' || action === 'disconnect') {
+      expect(results).toHaveLength(action === 'request' ? 3 : 2);
+    } else {
+      expect(results).toHaveLength(3);
+      expect(current.sql().at(-1)).toBe(`SELECT count(*) AS "measure" FROM "testData" WHERE ("dim" IN ('b'))`);
+    }
   });
 });

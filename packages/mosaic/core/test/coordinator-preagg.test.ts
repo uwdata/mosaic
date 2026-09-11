@@ -101,6 +101,21 @@ describe('PreAggregator preagg mode', () => {
     expect(mc.preaggregator.registry!.lookup(connector.preaggRequests[0].sql)).toBeInstanceOf(TableRefNode);
   });
 
+  it('delivers a committed value when another source activates during a build', async () => {
+    const connector = new MockPreaggConnector();
+    const mc = preaggCoordinator(connector);
+    const { sel, results } = await aggregateClient(mc);
+
+    sel.update(clausePoint('dim', 'a', { source: {} }));
+    await flush();
+    sel.activate(clausePoint('dim', 'x', { source: {} }));
+    await flush();
+    while (connector.open.length) connector.complete();
+    await sel.pending('value');
+    expect(results).toHaveLength(2);
+    expect(connector.sql().at(-1)).toContain(`WHERE ("active0" IN ('a'))`);
+  });
+
   it('drops a suspended update superseded by requestQuery during the wait', async () => {
     const connector = new MockPreaggConnector();
     const mc = preaggCoordinator(connector);
