@@ -81,7 +81,7 @@ export class SocketConnector implements Connector {
       message(msg: unknown) {
         const { data } = msg as { data: unknown };
         if (c._request) {
-          const { query, resolve, reject } = c._request;
+          const { resolve, reject } = c._request;
 
           // clear state, start next request
           c._request = null;
@@ -89,15 +89,10 @@ export class SocketConnector implements Connector {
 
           // process result
           if (typeof data === 'string') {
-            const json = JSON.parse(data);
-            // eslint-disable-next-line @typescript-eslint/no-unused-expressions
-            json.error ? reject(json.error) : resolve(json);
-          } else if (query.type === 'exec') {
-            resolve();
-          } else if (query.type === 'arrow') {
-            resolve(decodeIPC(data as Uint8Array, ipc));
+            const { error } = JSON.parse(data);
+            if (error) reject(error); else resolve();
           } else {
-            throw new Error(`Unexpected socket data: ${data}`);
+            resolve(decodeIPC(data as Uint8Array, ipc));
           }
         } else {
           console.log('WebSocket message: ', data);
