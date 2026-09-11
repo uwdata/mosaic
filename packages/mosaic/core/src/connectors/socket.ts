@@ -126,7 +126,7 @@ export class SocketConnector implements Connector {
   }
 
   private send(query: ConnectorQueryRequest): void {
-    this._ws!.send(JSON.stringify(query));
+    this._ws?.send(JSON.stringify(query));
   }
 
   private fail(reason: unknown): void {
