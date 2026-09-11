@@ -6,8 +6,8 @@ import type {
   PreaggRequest,
   PreaggResponse
 } from './Connector.js';
+import { materializeWithExec } from './Connector.js';
 import * as duckdb from '@duckdb/duckdb-wasm';
-import { materializeWithExec } from './materialize.js';
 
 interface DuckDBWASMOptions {
   /** Flag to enable logging. */

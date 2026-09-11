@@ -162,8 +162,8 @@ export class PreAggregator {
   /**
    * Clear the cache of pre-aggregation entries for the current active
    * selection clause. This method does _not_ drop any existing materialized
-   * views or cancel in-progress builds. Use `dropSchema` (exec mode) or
-   * `reset` (preagg mode) to discard materialized tables.
+   * views or cancel in-progress builds. `dropSchema` (exec mode) drops the
+   * tables; `reset` (preagg mode) only forgets their references.
    */
   clear(): void {
     this.entries.clear();
