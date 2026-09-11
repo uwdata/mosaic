@@ -1,5 +1,5 @@
 import { TableRefNode } from '@uwdata/mosaic-sql';
-import type { PreaggResponse } from '../connectors/Connector.js';
+import type { Connector, PreaggResponse } from '../connectors/Connector.js';
 import {
   abortError,
   ConnectorError,
@@ -77,8 +77,7 @@ export class PreAggregateRegistry {
   }
 
   isCurrent(sql: string, table: TableRefNode | null): boolean {
-    const entry = this.entries.get(sql);
-    return !!entry && !!table && !entry.build && entry.table === table;
+    return table !== null && this.entries.get(sql)?.table === table;
   }
 
   invalidate(sql: string, table: TableRefNode): void {
@@ -88,7 +87,8 @@ export class PreAggregateRegistry {
   }
 
   request(sql: string): Promise<TableRefNode> {
-    if (!this.manager.connector()) {
+    const db = this.manager.connector();
+    if (!db) {
       return Promise.reject(new PreAggregateModeError('No database connector is available for preaggregation'));
     }
     const failure = this.failures.get(sql);
@@ -105,17 +105,16 @@ export class PreAggregateRegistry {
     if (entry) {
       this.entries.delete(sql);
       this.entries.set(sql, entry);
-      if (entry.build) return entry.build.promise;
-      if (entry.table) return Promise.resolve(entry.table);
+      return entry.build ? entry.build.promise : Promise.resolve(entry.table!);
     }
     if (this.pending >= this.limits.maxPendingBuilds) {
       return Promise.reject(new ConnectorError('Preaggregation lane is busy', { code: 'lane_busy' }));
     }
 
-    entry ??= { sql, table: null, build: null };
+    entry = { sql, table: null, build: null };
     this.entries.set(sql, entry);
     const build = entry.build = this.createBuild(entry);
-    this.dispatch(build);
+    this.dispatch(build, db);
     return build.promise;
   }
 
@@ -141,8 +140,7 @@ export class PreAggregateRegistry {
     return build;
   }
 
-  private dispatch(build: Build): void {
-    const db = this.manager.connector()!;
+  private dispatch(build: Build, db: Connector): void {
     const request = { type: 'preagg' as const, sql: build.entry.sql };
     this.manager.logger().debug('Preagg', request);
     new Promise<PreaggResponse>(resolve => resolve(db.query(request))).then(

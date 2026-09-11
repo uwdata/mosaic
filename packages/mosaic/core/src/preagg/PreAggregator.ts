@@ -65,8 +65,7 @@ export class PreAggregator {
   public readonly mode: PreAggregateMode;
   /** Server-managed materializations; null in exec mode. */
   public readonly registry: PreAggregateRegistry | null;
-  /** Incremented by reset(); bindings captured under an older value are void. */
-  public generation = 0;
+  public resetGeneration = 0;
   private active: ActiveColumnsResult | null;
   private mc: Coordinator;
   private _schema: string;
@@ -175,7 +174,7 @@ export class PreAggregator {
    * or authorization scope on the connector.
    */
   reset(): void {
-    this.generation += 1;
+    this.resetGeneration += 1;
     this.clear();
     this.registry?.reset();
   }
@@ -282,8 +281,7 @@ export class PreAggregator {
     }
 
     this.registry.invalidate(info.create.toString(), table);
-    this.materialize(info);
-    return info.result !== null && await info.result.then(() => true, () => false);
+    return this.materialize(info).then(() => true, () => false);
   }
 
   private isCurrent(info: PreAggregateInfo): boolean {
@@ -291,7 +289,7 @@ export class PreAggregator {
       && (info.table === null || this.registry!.isCurrent(info.create.toString(), info.table));
   }
 
-  private materialize(info: PreAggregateInfo): void {
+  private materialize(info: PreAggregateInfo): Promise<void> {
     const result = this.registry!.request(info.create.toString()).then(table => info.bind(table));
     result.catch(err => {
       if (info.result === result) info.result = null;
@@ -300,6 +298,7 @@ export class PreAggregator {
       this.mc.logger()[refused ? 'debug' : 'warn'](err);
     });
     info.result = result;
+    return result;
   }
 }
 
