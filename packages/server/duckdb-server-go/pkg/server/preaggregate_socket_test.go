@@ -28,7 +28,7 @@ func TestWebSocketPreaggregate(t *testing.T) {
 	server, db := newPreaggregateWebSocket(t, query.PreAggregateLimits{})
 	conn, _, err := server.dial(nil)
 	require.NoError(t, err)
-	defer conn.CloseNow()
+	t.Cleanup(func() { require.NoError(t, conn.CloseNow()) })
 	source := `SELECT dim, count(*) AS n FROM memory.tenant.source GROUP BY dim`
 	for _, command := range []map[string]any{
 		{"type": CommandPreagg, "sql": source},
@@ -74,7 +74,7 @@ func TestWebSocketPreaggregateDeadline(t *testing.T) {
 	server, _ := newPreaggregateWebSocket(t, query.PreAggregateLimits{Timeout: 10 * time.Millisecond})
 	conn, _, err := server.dial(nil)
 	require.NoError(t, err)
-	defer conn.CloseNow()
+	t.Cleanup(func() { require.NoError(t, conn.CloseNow()) })
 	require.NoError(t, wsjson.Write(server.ctx, conn, map[string]any{"type": CommandPreagg, "sql": "SELECT sum(i) AS n FROM range(1000000000) t(i)"}))
 	require.NoError(t, wsjson.Write(server.ctx, conn, map[string]any{"type": CommandArrow, "sql": "SELECT 1 AS n"}))
 	var failure map[string]string
