@@ -288,7 +288,7 @@ async function processResults(group: QueryGroup, cache: Cache): Promise<void> {
       : map ? projectResult(data, map)
       : data;
     if (request.cache) {
-      cache.set(String(request.query), extract, bytes, data);
+      cache.set(String(request.query), extract, bytes);
     }
     result.fulfill(extract);
   });
