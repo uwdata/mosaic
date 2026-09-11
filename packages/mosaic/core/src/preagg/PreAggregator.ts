@@ -3,11 +3,11 @@ import type { Coordinator } from '../Coordinator.js';
 import type { MosaicClient } from '../MosaicClient.js';
 import type { Selection } from '../Selection.js';
 import type { BinMethod, ClauseSource, IntervalMetadata, SelectionClause } from '../SelectionClause.js';
-import { isAbortError, PreaggModeError } from '../connectors/errors.js';
+import { isAbortError, PreAggregateModeError } from '../connectors/errors.js';
 import { fnv_hash } from '../util/hash.js';
 import { resolvePositional } from '../util/positional.js';
 import { preaggColumns, PreAggColumnsResult } from './preagg-columns.js';
-import { PreaggRegistry } from './PreaggRegistry.js';
+import { PreAggregateRegistry } from './PreAggregateRegistry.js';
 
 /**
  * Dummy preaggregate info object that indicates a view should be skipped
@@ -64,7 +64,7 @@ export class PreAggregator {
   public entries: Map<MosaicClient, PreAggregateInfo | typeof Skip | null>;
   public readonly mode: PreAggregateMode;
   /** Server-managed materializations; null in exec mode. */
-  public readonly registry: PreaggRegistry | null;
+  public readonly registry: PreAggregateRegistry | null;
   private active: ActiveColumnsResult | null;
   private mc: Coordinator;
   private _schema: string;
@@ -89,13 +89,7 @@ export class PreAggregator {
     this._schema = schema;
     this._enabled = enabled;
     this.mode = mode;
-    this.registry = mode === 'preagg'
-      ? new PreaggRegistry({
-          connector: () => this.mc.databaseConnector(),
-          logger: () => this.mc.logger(),
-          invalidate: () => this.mc.manager.invalidate()
-        })
-      : null;
+    this.registry = mode === 'preagg' ? new PreAggregateRegistry(coordinator.manager) : null;
   }
 
   /**
@@ -157,7 +151,7 @@ export class PreAggregator {
    */
   dropSchema(): Promise<unknown> {
     if (this.mode === 'preagg') {
-      return Promise.reject(new PreaggModeError(
+      return Promise.reject(new PreAggregateModeError(
         'dropSchema() is unavailable in preagg mode; the server owns materialized tables.'
       ));
     }
@@ -289,7 +283,7 @@ export class PreAggregator {
     const logger = this.mc.logger();
     let promise: Promise<TableRefNode>;
     try {
-      promise = this.registry!.acquire(info.create.toString());
+      promise = this.registry!.request(info.create.toString());
     } catch (err) {
       logger.debug('Preagg refused', err);
       info.result = null;

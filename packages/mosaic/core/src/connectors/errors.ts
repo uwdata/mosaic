@@ -23,14 +23,14 @@ export class ConnectorError extends Error {
   }
 }
 
-export class PreaggBusyError extends ConnectorError {
+export class PreAggregateBusyError extends ConnectorError {
   constructor(message = 'Preaggregation lane is busy') {
     super(message, { code: 'lane_busy' });
-    this.name = 'PreaggBusyError';
+    this.name = 'PreAggregateBusyError';
   }
 }
 
-export class PreaggSuppressedError extends ConnectorError {
+export class PreAggregateSuppressedError extends ConnectorError {
   /** Unix milliseconds; local to the coordinator, unrelated to HTTP Retry-After. */
   retryAt: number;
 
@@ -43,16 +43,16 @@ export class PreaggSuppressedError extends ConnectorError {
       table: cause.table,
       cause
     });
-    this.name = 'PreaggSuppressedError';
+    this.name = 'PreAggregateSuppressedError';
     this.retryAt = retryAt;
   }
 }
 
 /** Client-side configuration error, distinct from a server `unsupported_command`. */
-export class PreaggModeError extends Error {
+export class PreAggregateModeError extends Error {
   constructor(message: string) {
     super(message);
-    this.name = 'PreaggModeError';
+    this.name = 'PreAggregateModeError';
   }
 }
 
