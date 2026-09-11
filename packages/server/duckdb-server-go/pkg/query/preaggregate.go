@@ -286,12 +286,12 @@ func (p *PreAggregator) materialize(ctx context.Context, ref preAggregateRef, sc
 	if err != nil {
 		return PreaggResponse{}, err
 	}
-	defer conn.Close()
+	defer func() { _ = conn.Close() }()
 	tx, err := conn.BeginTx(ctx, nil)
 	if err != nil {
 		return PreaggResponse{}, err
 	}
-	defer tx.Rollback()
+	defer func() { _ = tx.Rollback() }()
 
 	if err := p.prune(ctx, tx, ref); err != nil {
 		return PreaggResponse{}, err
@@ -326,12 +326,12 @@ WHERE database_name = ? AND starts_with(schema_name, 'mosaic_preagg_') AND NOT t
 	if err != nil {
 		return err
 	}
+	defer rows.Close()
 	var tables []storedPreAggregate
 	for rows.Next() {
 		ref := preAggregateRef{catalog: p.catalog}
 		var comment sql.NullString
 		if err := rows.Scan(&ref.schema, &ref.table, &comment); err != nil {
-			rows.Close()
 			return err
 		}
 		stored, err := p.metadata(ref, comment)
