@@ -1,10 +1,10 @@
 from __future__ import annotations
 
-from typing import Any, cast
+from typing import Any
 
 import duckdb
 
-from pkg.server import _QueryParams, handle_query
+from pkg.server import handle_query
 
 
 class RecordingHandler:
@@ -20,8 +20,6 @@ class RecordingHandler:
 
 def test_missing_type_is_bad_request() -> None:
     handler = RecordingHandler()
-    query = cast("_QueryParams", {"sql": "SELECT 1"})
-
-    handle_query(handler, duckdb.connect(), query)
+    handle_query(handler, duckdb.connect(), {"sql": "SELECT 1"})  # pyright: ignore[reportArgumentType]  # ty: ignore[invalid-argument-type, missing-typed-dict-key]
 
     assert handler.errors == [("missing required 'type' parameter", 400)]
