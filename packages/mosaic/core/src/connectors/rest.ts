@@ -8,7 +8,7 @@ import type {
   PreaggResponse
 } from './Connector.js';
 import { decodeIPC } from '../util/decode-ipc.js';
-import { ConnectorError, errorFromEnvelope } from './errors.js';
+import { ConnectorError, parseErrorResponse } from './errors.js';
 
 interface RestOptions {
   uri?: string;
@@ -22,7 +22,7 @@ function isJSONContentType(contentType: string | null): boolean {
 function errorFromResponseBody(status: number, contentType: string | null, body: string): ConnectorError {
   if (isJSONContentType(contentType)) {
     try {
-      const err = errorFromEnvelope(JSON.parse(body), status);
+      const err = parseErrorResponse(JSON.parse(body), status);
       if (err) return err;
     } catch {
       // fall through to the generic error

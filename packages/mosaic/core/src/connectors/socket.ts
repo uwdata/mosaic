@@ -1,6 +1,6 @@
 import type { ExtractionOptions, Table } from '@uwdata/flechette';
 import type { ArrowQueryRequest, Connector, ConnectorRequest, ExecQueryRequest, PreaggRequest, PreaggResponse } from './Connector.js';
-import { errorFromEnvelope } from './errors.js';
+import { parseErrorResponse } from './errors.js';
 import { decodeIPC } from '../util/decode-ipc.js';
 
 interface SocketOptions {
@@ -86,7 +86,7 @@ export class SocketConnector implements Connector {
           if (typeof data === 'string') {
             const json = JSON.parse(data);
             if (json.error) {
-              reject(query.type === 'exec' ? json.error : errorFromEnvelope(json) ?? json.error);
+              reject(query.type === 'exec' ? json.error : parseErrorResponse(json) ?? json.error);
             } else if (query.type === 'arrow') {
               reject(new Error(`Unexpected socket data: ${data}`));
             } else {
