@@ -159,6 +159,7 @@ describe('PreAggregator preagg mode', () => {
     expect(connector.sql().at(-1)).toContain('FROM "memory"');
 
     sel.update(clausePoint('dim', 'b', { source }));
+    sel.activate(clausePoint('dim', 'x', { source: {} }));
     if (action === 'connector') mc.databaseConnector(new MockPreaggConnector());
     else mc.preaggregator.reset();
     await sel.pending('value');
