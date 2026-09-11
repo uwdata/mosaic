@@ -212,60 +212,40 @@ describe('PreAggregator preagg mode', () => {
     expect(connector.sql().at(-1)).toContain(`FROM "testData" WHERE ("dim" IN ('b'))`);
   });
 
-  it('reset, full clear, and connector replacement discard references', async () => {
-    const connector = new MockPreaggConnector();
-    const mc = preaggCoordinator(connector);
-    const registry = mc.preaggregator.registry!;
-    const { sel } = await aggregateClient(mc);
+  describe.each(['exec', 'preagg'] as const)('%s mode lifecycle', mode => {
+    it.each(['reset', 'clear', 'connector'])('preserves bindings until %s', async action => {
+      const connector = new MockPreaggConnector();
+      const mc = mode === 'preagg'
+        ? preaggCoordinator(connector)
+        : new Coordinator(connector, { logger: null, cache: false, consolidate: false });
+      const { client, sel } = await aggregateClient(mc);
+      const { registry } = mc.preaggregator;
 
-    sel.update(clausePoint('dim', 'a', { source: {} }));
-    await flush();
-    connector.complete();
-    await sel.pending('value');
-    const { sql } = connector.preaggRequests[0];
-    expect(registry.lookup(sql)).toBeInstanceOf(TableRefNode);
+      sel.update(clausePoint('dim', 'a', { source: {} }));
+      await flush();
+      if (mode === 'preagg') connector.complete();
+      await sel.pending('value');
+      const info = mc.preaggregator.entries.get(client) as PreAggregateInfo;
+      expect(info).toBeInstanceOf(PreAggregateInfo);
+      expect(info.table).toBeInstanceOf(TableRefNode);
+      const sql = info.create.toString();
+      if (registry) expect(registry.lookup(sql)).toBe(info.table);
 
-    mc.clear({ clients: false });
-    expect(registry.lookup(sql)).toBeInstanceOf(TableRefNode);
-    mc.preaggregator.reset();
-    expect(registry.lookup(sql)).toBeNull();
-    expect(mc.preaggregator.entries.size).toBe(0);
+      mc.databaseConnector(connector);
+      expect(mc.preaggregator.entries.get(client)).toBe(info);
+      if (registry) expect(registry.lookup(sql)).toBe(info.table);
+      for (const options of [{ clients: false }, { cache: false }]) {
+        mc.clear(options);
+        expect(mc.preaggregator.entries.get(client)).toBe(info);
+        if (registry) expect(registry.lookup(sql)).toBe(info.table);
+      }
 
-    const again = registry.request(sql);
-    connector.complete();
-    await again;
-    mc.databaseConnector(connector);
-    expect(registry.lookup(sql)).toBeInstanceOf(TableRefNode);
-    mc.databaseConnector(new MockPreaggConnector());
-    expect(registry.lookup(sql)).toBeNull();
-
-    const last = registry.request(sql);
-    (mc.databaseConnector() as MockPreaggConnector).complete();
-    await last;
-    mc.clear();
-    expect(registry.lookup(sql)).toBeNull();
-  });
-
-  it.each(['exec', 'preagg'] as const)('%s mode keeps entries through partial clears and same-connector assignment', async mode => {
-    const connector = new MockPreaggConnector();
-    const mc = mode === 'preagg'
-      ? preaggCoordinator(connector)
-      : new Coordinator(connector, { logger: null, cache: false, consolidate: false });
-    const { sel } = await aggregateClient(mc);
-    const { entries } = mc.preaggregator;
-
-    sel.update(clausePoint('dim', 'a', { source: {} }));
-    await flush();
-    if (mode === 'preagg') connector.complete();
-    await sel.pending('value');
-    expect(entries.size).toBe(1);
-
-    mc.clear({ clients: false });
-    expect(entries.size).toBe(1);
-    mc.databaseConnector(connector);
-    expect(entries.size).toBe(1);
-    mc.databaseConnector(new MockPreaggConnector());
-    expect(entries.size).toBe(0);
+      if (action === 'reset') mc.preaggregator.reset();
+      else if (action === 'clear') mc.clear();
+      else mc.databaseConnector(new MockPreaggConnector());
+      expect(mc.preaggregator.entries.size).toBe(0);
+      if (registry) expect(registry.lookup(sql)).toBeNull();
+    });
   });
 
   it('disabling clears client state but leaves cached tables and builds', async () => {
