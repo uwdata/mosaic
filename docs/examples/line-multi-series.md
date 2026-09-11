@@ -18,4 +18,5 @@ This line chart shows the unemployment rate of various U.S. metro divisions from
 <<< @/public/specs/esm/line-multi-series.js [JavaScript]
 <<< @/public/specs/yaml/line-multi-series.yaml [YAML]
 <<< @/public/specs/json/line-multi-series.json [JSON]
+<<< @/public/specs/python/line-multi-series.py [Python]
 :::

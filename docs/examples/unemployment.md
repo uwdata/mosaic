@@ -17,4 +17,5 @@ A choropleth map of unemployment rates for U.S. counties. Requires the DuckDB `s
 <<< @/public/specs/esm/unemployment.js [JavaScript]
 <<< @/public/specs/yaml/unemployment.yaml [YAML]
 <<< @/public/specs/json/unemployment.json [JSON]
+<<< @/public/specs/python/unemployment.py [Python]
 :::

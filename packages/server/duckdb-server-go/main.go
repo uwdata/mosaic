@@ -13,23 +13,30 @@ import (
 
 	"github.com/duckdb/duckdb-go/v2"
 
-	"github.com/uwdata/mosaic/packages/server/duckdb-server-go/internal/query"
-	"github.com/uwdata/mosaic/packages/server/duckdb-server-go/internal/server"
+	"github.com/uwdata/mosaic/packages/server/duckdb-server-go/pkg/extensions"
+	"github.com/uwdata/mosaic/packages/server/duckdb-server-go/pkg/query"
+	"github.com/uwdata/mosaic/packages/server/duckdb-server-go/pkg/server"
 )
 
 func main() {
+	os.Exit(run())
+}
+
+func run() int {
 	dbPath := flag.String("database", ":memory:", "Path of database file (e.g., \"database.db\". \":memory:\" for in-memory database)")
 	address := flag.String("address", "localhost", "HTTP Address")
 	port := flag.String("port", "3000", "HTTP Port")
 	poolSize := flag.Int("connection-pool-size", 10, "Max connection pool size")
-	maxCacheEntries := flag.Int("max-cache-entries", 1000, "Max number of cache entries")
-	maxCacheBytes := flag.Int("max-cache-bytes", 0, "Max number of cache size in bytes (overrides max-cache-entries if both are set)")
-	ttlStr := flag.String("cache-ttl", "0s", "Time-to-live for cache entries as a Go duration. 0s means no expiration (e.g., '10m', '1h'). Defaults to 0s.")
 	certFile := flag.String("cert", "", "Path to TLS certificate file (optional, enables HTTPS)")
 	keyFile := flag.String("key", "", "Path to TLS private key file (optional, enables HTTPS)")
+	cacheControl := flag.String("cache-control", "", "Cache-Control value for successful GET arrow responses; enables ETag validation for those queries")
+	var varyHeaders optionalCommaListFlag
+	flag.Var(&varyHeaders, "vary", "Comma-separated request header names to append to Vary; may be repeated")
 	schemaMatchHeadersStr := flag.String("schema-match-headers", "", "Comma-separated list of headers to match against schema names for multi-tenant access control (e.g., \"X-Tenant-Id,verified-user-id\")")
-	extensionsStr := flag.String("load-extensions", "", "Comma-separated list of extensions to install and load at startup. Use a pipe after the extension name to specify the repository. Unspecified repositories will default to 'core'. (e.g. mysql_scanner,netquack|community,aws|core_nightly")
+	extensionsStr := flag.String("load-extensions", "", "Comma-separated list of extensions to install and load at startup. Use a pipe after the extension name to specify a DuckDB repository alias. Unspecified repositories use DuckDB's default (e.g. mysql_scanner,netquack|community,aws|core_nightly).")
 	functionBlocklistStr := flag.String("function-blocklist", "", "Comma-separated list of functions to block, useful for blocking functions that may pose security or performance risks. (e.g., 'bigquery_query,read_parquet')")
+	var functionAllowlist optionalCommaListFlag
+	flag.Var(&functionAllowlist, "function-allowlist", "Comma-separated exact names to add to the reviewed default allowlist. An empty value enables only the defaults; names are matched case-insensitively.")
 	flag.Parse()
 
 	var schemaMatchHeaders []string
@@ -49,6 +56,11 @@ func main() {
 		Level: logLevel,
 	}))
 
+	if err := extensions.Validate(*extensionsStr); err != nil {
+		logger.Error("main: invalid load-extensions", "error", err, "load-extensions", *extensionsStr)
+		return 1
+	}
+
 	// If no certificate files are specified, check for default localhost certificates
 	if *certFile == "" && *keyFile == "" {
 		// Check if localhost.pem and localhost-key.pem exist in the current directory
@@ -61,11 +73,12 @@ func main() {
 		}
 	}
 
-	// Create DuckDB connector for Arrow support
-	connector, err := duckdb.NewConnector(*dbPath, extensionLoader(ctx, extensionsStr, logger))
+	connector, err := duckdb.NewConnector(*dbPath, func(execer driver.ExecerContext) error {
+		return extensions.ParseAndInstall(ctx, execer, *extensionsStr)
+	})
 	if err != nil {
 		logger.Error("main: error creating duckdb connector", "error", err)
-		return
+		return 1
 	}
 	defer func() {
 		err = connector.Close()
@@ -74,47 +87,63 @@ func main() {
 		}
 	}()
 
-	ttl, err := time.ParseDuration(*ttlStr)
-	if err != nil {
-		logger.Error("main: invalid cache-ttl", "error", err)
-		return
-	}
-
-	db, err := query.New(ctx, connector,
+	queryOptions := []query.OptionFunc{
 		query.WithMaxConnections(*poolSize),
-		query.WithMaxCacheEntries(*maxCacheEntries),
-		query.WithMaxCacheBytes(*maxCacheBytes),
-		query.WithTTL(ttl),
 		query.WithLogger(logger),
 		query.WithFunctionBlocklist(functionBlocklist),
-	)
+	}
+	if functionAllowlist.set {
+		queryOptions = append(queryOptions, query.WithFunctionAllowlist(query.FunctionAllowlistOptions{
+			Include: functionAllowlist.values,
+		}))
+	}
+
+	db, err := query.New(ctx, connector, queryOptions...)
 	if err != nil {
 		logger.Error("main: error creating query DB", "error", err)
-		return
+		return 1
 	}
 	defer db.Close()
 
-	s := server.New(db, schemaMatchHeaders, logger)
+	s, err := server.New(db,
+		server.WithCacheControl(*cacheControl),
+		server.WithVary(varyHeaders.values...),
+		server.WithSchemaMatchHeaders(schemaMatchHeaders...),
+		server.WithLogger(logger),
+		server.WithCORS(server.CORSOptions{
+			AllowAllOrigins: true,
+			AllowAllHeaders: true,
+			MaxAge:          30 * 24 * time.Hour,
+		}),
+		server.WithWebSocket(server.WebSocketOptions{AllowAllOrigins: true}),
+	)
+	if err != nil {
+		logger.Error("main: error creating server", "error", err)
+		return 1
+	}
+	logger.Warn("DuckDB Server permits all HTTP and WebSocket origins for compatibility; enforce an outer origin or CSRF policy before exposing it to untrusted browsers")
 
 	config := map[string]interface{}{
 		"database":             *dbPath,
 		"address":              *address,
 		"port":                 *port,
 		"connection_pool_size": *poolSize,
-		"cache_size":           *maxCacheEntries,
 		"cert_file":            *certFile,
 		"key_file":             *keyFile,
 		"schema_match_headers": *schemaMatchHeadersStr,
-		"ttl":                  ttl,
-		"max_cache_bytes":      *maxCacheBytes,
+		"cache_control":        *cacheControl,
+		"vary":                 varyHeaders.String(),
 		"load_extensions":      *extensionsStr,
+		"function_blocklist":   *functionBlocklistStr,
+		"function_allowlist":   functionAllowlist.String(),
+		"allowlist_configured": functionAllowlist.set,
 	}
 	logger.Info("DuckDB Server configuration", "config", config)
 
 	extensions, err := db.GetExtensions(ctx)
 	if err != nil {
 		logger.Error("main: error getting extensions", "error", err)
-		return
+		return 1
 	}
 
 	logger.Info("DuckDB Server Extensions", "extensions", extensions)
@@ -142,51 +171,7 @@ func main() {
 	}
 	if err != nil {
 		logger.Error("main: error running HTTP server", "error", err)
-		return
+		return 1
 	}
-}
-
-func extensionLoader(ctx context.Context, extensionsStr *string, logger *slog.Logger) func(execer driver.ExecerContext) error {
-	return func(execer driver.ExecerContext) error {
-		if extensionsStr == nil || *extensionsStr == "" {
-			return nil
-		}
-
-		extensions := strings.Split(*extensionsStr, ",")
-		for _, extension := range extensions {
-			name, repo, _ := strings.Cut(extension, "|")
-			name = strings.TrimSpace(name)
-			repo = strings.TrimSpace(repo)
-
-			switch repo {
-			case "":
-				repo = "core" // default repository
-				fallthrough
-
-			case "core", "core_nightly", "community", "local_build_debug", "local_build_release":
-				// built-in repositories (https://duckdb.org/docs/stable/extensions/installing_extensions), no action needed
-
-			default:
-				// If the repository is not one of the built-in ones, we assume it's a custom repository, accessed as a
-				// URL or a local file path. We need to ensure it is properly quoted.
-				repo = strings.TrimPrefix(repo, "'")
-				repo = strings.TrimSuffix(repo, "'")
-				repo = "'" + repo + "'"
-			}
-
-			_, err := execer.ExecContext(ctx, fmt.Sprintf("INSTALL %s FROM %s", name, repo), nil)
-			if err != nil {
-				logger.Error("main: error installing extension", "name", name, "repository", repo, "error", err, "load-extensions", *extensionsStr)
-				return fmt.Errorf("failed to install extension %s from %s: %w", name, repo, err)
-			}
-
-			_, err = execer.ExecContext(ctx, fmt.Sprintf("LOAD %s", name), nil)
-			if err != nil {
-				logger.Error("main: error loading extension", "name", name, "repository", repo, "error", err, "load-extensions", *extensionsStr)
-				return fmt.Errorf("failed to load extension %s: %w", name, err)
-			}
-		}
-
-		return nil
-	}
+	return 0
 }

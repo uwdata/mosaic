@@ -2,11 +2,11 @@ import { expect, describe, it } from 'vitest';
 import { asTableRef, deepClone, parseTableRef, TableRefNode } from '../src/index.js';
 
 describe('Table references', () => {
-  it('serialize to SQL', () => {
-    expect(String(new TableRefNode('foo'))).toBe(`"foo"`);
-    expect(String(new TableRefNode(['foo']))).toBe(`"foo"`);
-    expect(String(new TableRefNode(['foo', 'bar']))).toBe(`"foo"."bar"`);
-    expect(String(new TableRefNode(['foo', 'bar', 'baz']))).toBe(`"foo"."bar"."baz"`);
+  it('serialize to SQL', async () => {
+    await expect(new TableRefNode('t1')).toBeValidExpr(`"t1"`);
+    await expect(new TableRefNode(['t1'])).toBeValidExpr(`"t1"`);
+    await expect(new TableRefNode(['main', 't1'])).toBeValidExpr(`"main"."t1"`);
+    await expect(new TableRefNode(['memory', 'main', 't1'])).toBeValidExpr(`"memory"."main"."t1"`);
   });
 
   it('are created by asTableRef', () => {

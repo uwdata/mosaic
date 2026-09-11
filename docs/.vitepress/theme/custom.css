@@ -8,3 +8,31 @@
 .VPFooter a {
   text-decoration: underline dotted;
 }
+
+/* JS/Python toggles on API docs (.md pages use <template>, so keep styles here) */
+.vgplot-toggle {
+  display: inline-flex;
+  gap: 0.25rem;
+  margin-bottom: 1rem;
+  padding: 0.25rem;
+  border: 1px solid var(--vp-c-divider);
+  border-radius: 999px;
+  background: var(--vp-c-bg-soft);
+}
+
+.vgplot-toggle button {
+  border: 0;
+  border-radius: 999px;
+  padding: 0.35rem 0.8rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--vp-c-text-2);
+  background: transparent;
+  cursor: pointer;
+}
+
+.vgplot-toggle button.active {
+  color: var(--vp-c-text-1);
+  background: var(--vp-c-bg);
+  box-shadow: inset 0 0 0 1px var(--vp-c-divider);
+}

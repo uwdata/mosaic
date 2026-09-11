@@ -1,5 +1,6 @@
 import type { ColumnRefNode } from '../ast/column-ref.js';
 import type { TableRefNode } from '../ast/table-ref.js';
+import { FromClauseNode, FromNode } from '../ast/from.js';
 import { ExprNode, type SQLNode } from '../ast/node.js';
 import { ParamNode } from '../ast/param.js';
 import { WindowDefNode } from '../ast/window.js';
@@ -69,6 +70,18 @@ function getTableRef<T>(value?: string | string[] | T): TableRefNode | T | undef
   return isString(value) ? tableRef(value)
     : isArray(value) ? tableRef(value)!
     : value;
+}
+
+/**
+ * Interpret a value as a FROM clause AST node. Table names and references
+ * are wrapped in a clause aliased by the table name, as in `Query.from`.
+ * Existing FROM nodes are left as-is.
+ * @param value The value to interpret as a FROM clause AST node.
+ */
+export function asFrom(value: string | string[] | TableRefNode | FromNode): FromNode {
+  if (value instanceof FromNode) return value;
+  const ref = asTableRef(value)!;
+  return new FromClauseNode(ref, ref.name);
 }
 
 /**

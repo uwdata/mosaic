@@ -1,13 +1,93 @@
 [tool.uv.workspace]
 members = [
     "packages/server/duckdb-server",
-    "packages/vgplot/widget"
+    "packages/vgplot/widget",
+    "packages/vgplot/vgplot-python"
 ]
 
 # https://github.com/charliermarsh/ruff
 [tool.ruff]
 extend-include = ["*.ipynb"]
+fix = true
 
 [tool.ruff.lint]
-pydocstyle = { convention = "numpy" }
-ignore = ["G004", "TRY301", "EM102", "EM101", "TRY003", "FBT002", "S608", "TRY002", "ARG001"]
+preview = true
+explicit-preview-rules = true
+pydocstyle.convention = "numpy"
+isort.required-imports = ["from __future__ import annotations"]
+extend-select = [
+    "FA",   # https://docs.astral.sh/ruff/rules/#flake8-future-annotations-fa
+    "TC",   # https://docs.astral.sh/ruff/rules/#flake8-type-checking-tc
+    "UP",   # https://docs.astral.sh/ruff/rules/#pyupgrade-up
+    "ANN",  # https://docs.astral.sh/ruff/rules/#flake8-annotations-ann
+    "PYI",  # https://docs.astral.sh/ruff/rules/#flake8-pyi-pyi
+    "N",    # https://docs.astral.sh/ruff/rules/#pep8-naming-n
+    "EM",   # https://docs.astral.sh/ruff/rules/#flake8-errmsg-em
+    "undefined-local-with-import-star",
+    "suspicious-pickle-usage",
+    "magic-value-comparison",
+    "collapsible-else-if",
+    "missing-required-import",
+]
+extend-safe-fixes = [
+    "FA", 
+    "TC", 
+    "UP", 
+    "missing-return-type-undocumented-public-function", 
+    "missing-return-type-special-method",
+    "f-string-in-exception", 
+    "raw-string-in-exception",
+]
+ignore = [
+    "logging-f-string", 
+    "raise-within-try", 
+    "raise-vanilla-args", 
+    "boolean-default-value-positional-argument", 
+    "hardcoded-sql-expression", 
+    "raise-vanilla-class", 
+    "unused-function-argument",
+    "type-name-incorrect-variance",
+    "missing-copyright-notice",
+    "any-type",
+    "non-lowercase-variable-in-function",
+]
+
+[tool.ruff.lint.per-file-ignores]
+"**/*.ipynb" = ["ANN"]
+"dev/notebooks/*" = ["ANN", "N", "useless-return", "unsorted-imports", "missing-required-import", "useless-expression"]
+"**/*sentinel*.py" = ["suspicious-pickle-usage"]
+"packages/vgplot/vgplot-python/vgplot/_compat.py" = ["N"]
+"**tests/**/*.py" = ["magic-value-comparison"]
+
+"**/specs/python/*.py" = [
+    "mixed-case-variable-in-global-scope", # TODO @dangotbanned: Fix in codegen
+    "missing-required-import",
+]
+
+[tool.pytest]
+strict_xfail = true
+
+[tool.pytest_env]
+MODIN_ENGINE = "python"
+
+[tool.pyright]
+include = [
+    "packages/server/duckdb-server/**/*.py",
+    "packages/vgplot/widget/mosaic_widget/**/*.py",
+    "packages/vgplot/vgplot-python/**/*.py",
+    "dev/notebooks/weather.py",
+    "specs/python/*.py",
+]
+ignore = ["**/.venv/", "../../../**/*typeshed*"]  # Do not display diagnostics in external source code
+typeCheckingMode = "standard"
+reportUnnecessaryTypeIgnoreComment = "error"
+reportUnusedExpression = "none" # covered by ruff
+
+[tool.ty.rules]
+missing-type-argument = "error"
+possibly-unresolved-reference = "warn"
+
+[dependency-groups]
+dev = [
+    "marimo>=0.23.9",
+]

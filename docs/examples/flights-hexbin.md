@@ -15,4 +15,5 @@ Hexagonal bins show the density of over 200,000 flights by departure time and ar
 <<< @/public/specs/esm/flights-hexbin.js [JavaScript]
 <<< @/public/specs/yaml/flights-hexbin.yaml [YAML]
 <<< @/public/specs/json/flights-hexbin.json [JSON]
+<<< @/public/specs/python/flights-hexbin.py [Python]
 :::

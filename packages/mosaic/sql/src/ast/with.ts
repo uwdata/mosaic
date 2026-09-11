@@ -9,6 +9,8 @@ export class WithClauseNode extends SQLNode {
   readonly query: Query;
   /** The common table expression (CTE) materialization flag. */
   readonly materialized: boolean | null;
+  /** The column names aliases for the CTE query. */
+  readonly columnNames: string[];
 
   /**
    * Instantiate a with clause node for a common table expression (CTE).
@@ -22,11 +24,13 @@ export class WithClauseNode extends SQLNode {
   constructor(
     name: string,
     query: Query,
-    materialized: boolean | null = null
+    materialized: boolean | null = null,
+    columnNames: string[] = []
   ) {
     super(WITH_CLAUSE);
     this.name = name;
     this.query = query;
     this.materialized = materialized;
+    this.columnNames = columnNames;
   }
 }

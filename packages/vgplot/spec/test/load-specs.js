@@ -13,7 +13,7 @@ const names = (await readdir(YAML_DIR))
   .map(f => f.slice(0, -EXT.length));
 
 export const specs = new Map(await Promise.all(
-  names.map(async name => [name, await loadSpec(name)])
+  names.map(async name => /** @type {[string, any]} */ ([name, await loadSpec(name)]))
 ));
 
 export async function loadSpec(name) {

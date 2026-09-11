@@ -15,4 +15,5 @@ Here `heatmap` and `contour` marks visualize the density of data points in a sca
 <<< @/public/specs/esm/contours.js [JavaScript]
 <<< @/public/specs/yaml/contours.yaml [YAML]
 <<< @/public/specs/json/contours.json [JSON]
+<<< @/public/specs/python/contours.py [Python]
 :::

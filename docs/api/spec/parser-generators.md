@@ -113,3 +113,26 @@ import { astToESM } from "@uwdata/mosaic-spec";
 // generate ESM (ECMAScript Module) code
 const code = astToESM(ast);
 ```
+
+
+## astToPython
+
+`astToPython(ast, options)`
+
+Given a parsed specification AST, generate corresponding Python code that uses the `vgplot` API.
+
+The supported _options_ are:
+
+- _namespace_: The namespace to use for vgplot API methods (default `'vg'`).
+- _depth_: The starting text indentation depth (default `0`).
+
+The return value is a string of generated Python code.
+
+### Example
+
+```js
+import { astToPython } from "@uwdata/mosaic-spec";
+
+// generate Python code
+const code = astToPython(ast);
+```

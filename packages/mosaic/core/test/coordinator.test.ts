@@ -1,6 +1,7 @@
+import { tableFromArrays } from '@uwdata/flechette';
 import { Query } from '@uwdata/mosaic-sql';
 import { describe, it, expect, vi } from 'vitest';
-import { clausePoint, type Connector, Coordinator, coordinator, EventType, type JSONQueryRequest, type Logger, makeClient, MosaicQueryEndEvent, MosaicQueryStartEvent, observeLogger, Selection } from '../src/index.js';
+import { clausePoint, type Connector, Coordinator, coordinator, EventType, type Logger, makeClient, MosaicQueryEndEvent, MosaicQueryStartEvent, observeLogger, type ArrowQueryRequest, Selection } from '../src/index.js';
 import { QueryManager } from '../src/QueryManager.js';
 import { QueryResult, QueryState } from '../src/util/query-result.js';
 
@@ -110,10 +111,10 @@ describe('coordinator', () => {
 
     // Mock the connector
     const connector = {
-      async query(req: JSONQueryRequest) {
+      async query(req: ArrowQueryRequest) {
         const index = req.sql.includes('WHERE') ? 1 : 0;
         events.push(`CONNECT ${index}`);
-        return { index };
+        return tableFromArrays({ index: [index] });
       },
     } as unknown as Connector;
 

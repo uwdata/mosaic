@@ -132,12 +132,20 @@ function getInteractor(legend, type) {
 }
 
 // generate a faux mark to pass to an interactor
+/**
+ * @import { InteractorMark } from './marks/Mark.js'
+ * @returns {InteractorMark | undefined}
+ */
 function interactorMark(legend) {
   const { channel, plot } = legend;
   const field = legend.field ?? findField(plot.marks, channel) ?? 'value';
   if (field) {
     const f = { field };
-    return { plot, channelField: c => channel === c ? f : undefined };
+    return {
+      plot,
+      channelField: c => channel === c ? f : undefined,
+      isUnnested: () => false
+    };
   }
 }
 

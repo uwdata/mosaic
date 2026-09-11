@@ -1,20 +1,25 @@
 from __future__ import annotations
 
+import inspect
 import logging
 import pathlib
 import time
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, Literal, Protocol, TypedDict
 
 import anywidget
 import duckdb
 import pyarrow as pa
 import traitlets
 
-from mosaic_widget.frame_interop import frame_to_duckdb_registrable
+from mosaic_widget._exceptions import warn
+from mosaic_widget.frame_interop import (
+    frame_to_duckdb_registrable,
+    is_registrable_frame,
+)
 
 if TYPE_CHECKING:
     from narwhals.typing import IntoFrame
-
+    from typing_extensions import Buffer, TypeIs
 
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
@@ -22,31 +27,73 @@ logger.addHandler(logging.NullHandler())
 SLOW_QUERY_THRESHOLD = 5000
 
 
+class _QueryParams(TypedDict):
+    type: Literal["arrow", "exec"]
+    sql: str
+    uuid: str  # name
+
+
+class SupportsToDict(Protocol):
+    def to_dict(self, *, _context: dict[str, Any] | None = None) -> dict[str, Any]: ...
+
+
+def _has_to_dict(obj: Any) -> TypeIs[SupportsToDict]:
+    _sentinel = object()
+    return inspect.getattr_static(obj, "to_dict", _sentinel) is not _sentinel
+
+
+def _register_frame_data(spec: dict[str, Any], data: dict[str, Any]) -> dict[str, Any]:
+    """Move in-memory DataFrames out of the spec's data section into `data`.
+
+    The spec is synced to the frontend as JSON and cannot carry live frames, so
+    hand them to DuckDB registration instead.
+    """
+    spec_data = spec.get("data")
+    if not isinstance(spec_data, dict):
+        return spec
+    kept = {}
+    for name, value in spec_data.items():
+        if is_registrable_frame(value):
+            data.setdefault(name, value)
+        else:
+            kept[name] = value
+    return (
+        {**spec, "data": kept}
+        if kept
+        else {k: v for k, v in spec.items() if k != "data"}
+    )
+
+
 class MosaicWidget(anywidget.AnyWidget):
     _esm = pathlib.Path(__file__).parent / "static" / "index.js"
     _css = pathlib.Path(__file__).parent / "static" / "index.css"
 
+    # echo_update=False: hosts that round-trip full model state (e.g. marimo)
+    # otherwise re-send these back to the frontend on every interaction, forcing a
+    # full dashboard teardown. Normal kernel->frontend sync is unaffected.
+
     # The Mosaic specification
-    spec = traitlets.Dict({}).tag(sync=True)
+    spec = traitlets.Dict({}).tag(sync=True, echo_update=False)
 
     # The current params indexed by name
-    params = traitlets.Dict({}).tag(sync=True)
+    params = traitlets.Dict({}).tag(sync=True, echo_update=False)
 
     # Where pre-aggregated materialized views should be created
-    preagg_schema = traitlets.Unicode().tag(sync=True)
+    preagg_schema = traitlets.Unicode().tag(sync=True, echo_update=False)
 
     def __init__(
         self,
-        spec: dict | None = None,
+        spec: dict[str, Any] | SupportsToDict | None = None,
         con: duckdb.DuckDBPyConnection | None = None,
-        data: dict[str, "IntoFrame"] | None = None,
-        *args,
-        **kwargs,
-    ):
+        data: dict[str, IntoFrame] | None = None,
+        *args: Any,
+        **kwargs: Any,
+    ) -> None:
         """Create a Mosaic widget.
 
         Args:
-            spec (dict, optional): The initial Mosaic specification. Defaults to {}.
+            spec (dict or object with a to_dict() method, optional): The initial
+                Mosaic specification. Defaults to {}.
             con (connection, optional): A DuckDB connection.
                 Defaults to duckdb.connect().
             data (dict, optional): DataFrames/Arrow objects to "register" with DuckDB.
@@ -56,19 +103,36 @@ class MosaicWidget(anywidget.AnyWidget):
         """
         if data is None:
             data = {}
+        frame = inspect.currentframe()
+        caller_locals = frame.f_back.f_locals if frame and frame.f_back else {}
         if spec is None:
-            spec = {}
+            spec_: dict[str, Any] = {}
+        elif _has_to_dict(spec):
+            try:
+                spec_ = spec.to_dict(_context=caller_locals)
+            except TypeError:
+                spec_ = spec.to_dict()
+        elif isinstance(spec, dict):
+            spec_ = spec
+        else:
+            msg = f"spec must be a dict or have a to_dict() method, got {type(spec)}"
+            raise TypeError(msg)
+        spec_ = _register_frame_data(spec_, data)
         if con is None:
             con = duckdb.connect()
 
         super().__init__(*args, **kwargs)
-        self.spec = spec
+        self.spec = spec_
         self.con = con
+        self._registered_tables: set[str] = set()
         for name, df in data.items():
             self.con.register(name, frame_to_duckdb_registrable(df))
+            self._registered_tables.add(name)
         self.on_msg(self._handle_custom_msg)
 
-    def _handle_custom_msg(self, content: dict, buffers: list) -> None:
+    def _handle_custom_msg(
+        self, content: _QueryParams, buffers: list[bytes | Buffer]
+    ) -> None:
         logger.debug(f"{content=}, {buffers=}")
         start = time.time()
 
@@ -89,18 +153,95 @@ class MosaicWidget(anywidget.AnyWidget):
             elif command == "exec":
                 self.con.execute(sql)
                 self.send({"type": "exec", "uuid": uuid})
-            elif command == "json":
-                result = self.con.query(sql).df()
-                json = result.to_dict(orient="records")
-                self.send({"type": "json", "uuid": uuid, "result": json})
             else:
-                raise ValueError(f"Unknown command {command}")
+                msg = f"Unknown command {command}"
+                raise ValueError(msg)
         except Exception as e:
             logger.exception("Error processing query")
             self.send({"error": str(e), "uuid": uuid})
 
         total = round((time.time() - start) * 1_000)
         if total > SLOW_QUERY_THRESHOLD:
-            logger.warning(f"DONE. Slow query {uuid} took {total} ms.\n{sql}")
+            warn(f"DONE. Slow query {uuid} took {total} ms.\n{sql}")
         else:
             logger.info(f"DONE. Query {uuid} took {total} ms.\n{sql}")
+
+    @property
+    def sql(self) -> str | None:
+        """
+        The SQL query that reflects the current selection state.
+
+        Returns None (with a warning) when the spec's `data` entries and the
+        registered data frames do not name exactly one source table. In that
+        case use `widget.data(table).sql_query()` to get the SQL for a
+        specific table.
+        """
+        try:
+            table = self._resolve_table(None)
+        except ValueError as err:
+            warn(f"{err} widget.sql is None.")
+            return None
+        return self._build_sql(table, filter_by=None)
+
+    def data(
+        self, table: str | None = None, *, filter_by: str | list[str] | None = None
+    ) -> duckdb.DuckDBPyRelation:
+        """
+        Query a source table filtered by the current selection state.
+
+        Args:
+            table (str, optional): The table to query. Inferred when the
+                spec's top-level `data` entries and the frames registered via
+                the `data` constructor argument name exactly one table;
+                required otherwise.
+            filter_by (str or list, optional): Selection name(s) to filter by,
+                with or without the leading "$". Defaults to all active
+                selections.
+
+        Returns:
+            A lazy DuckDB relation for the filtered table. Materialize it with
+            `.df()` (pandas), `.pl()` (polars), `.arrow()`, or `.fetchall()`.
+        """
+        return self.con.query(self._build_sql(self._resolve_table(table), filter_by))
+
+    def _resolve_table(self, table: str | None) -> str:
+        if table is not None:
+            return table
+        tables = set(self.spec.get("data") or ()) | self._registered_tables
+        if len(tables) == 1:
+            return next(iter(tables))
+        if not tables:
+            msg = (
+                "No source tables in the spec or registered data; "
+                "pass a table name to widget.data(table)."
+            )
+            raise ValueError(msg)
+        msg = (
+            f"Multiple source tables: {sorted(tables)}. "
+            "Pass a table name to widget.data(table)."
+        )
+        raise ValueError(msg)
+
+    def _build_sql(self, table: str, filter_by: str | list[str] | None) -> str:
+        if filter_by is None:
+            names = list(self.params)
+        else:
+            names = [
+                name.removeprefix("$")
+                for name in ([filter_by] if isinstance(filter_by, str) else filter_by)
+            ]
+            if unknown := sorted(set(names) - set(self.params)):
+                msg = (
+                    f"Unknown selection(s) {unknown}; "
+                    f"available params: {sorted(self.params)}"
+                )
+                raise ValueError(msg)
+        predicates = [
+            predicate
+            for name in names
+            if (predicate := self.params[name].get("predicate", "")).strip()
+        ]
+        base = f'SELECT * FROM "{table}"'
+        if not predicates:
+            return base
+        return f"{base} WHERE {' AND '.join(f'({p})' for p in predicates)}"

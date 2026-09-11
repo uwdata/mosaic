@@ -10,7 +10,7 @@ await vg.coordinator().exec([
 
 const $series = vg.Selection.single();
 const $quakes = vg.Selection.single();
-const $counties = vg.Selection.single();
+const $counties_filter = vg.Selection.single();
 
 export default vg.vconcat(
   vg.plot(
@@ -68,8 +68,8 @@ export default vg.vconcat(
       vg.from("counties"),
       {channels: {id: "id"}, stroke: "currentColor", strokeWidth: 0.25}
     ),
-    vg.region({channels: ["id"], as: $counties}),
-    vg.highlight({by: $counties}),
+    vg.region({channels: ["id"], as: $counties_filter}),
+    vg.highlight({by: $counties_filter}),
     vg.margin(0),
     vg.projectionType("albers")
   )

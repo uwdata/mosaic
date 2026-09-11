@@ -31,7 +31,7 @@ export const spec : Spec = {
     "quakes": {
       "select": "single"
     },
-    "counties": {
+    "counties_filter": {
       "select": "single"
     }
   },
@@ -149,11 +149,11 @@ export const spec : Spec = {
           "channels": [
             "id"
           ],
-          "as": "$counties"
+          "as": "$counties_filter"
         },
         {
           "select": "highlight",
-          "by": "$counties"
+          "by": "$counties_filter"
         }
       ],
       "margin": 0,

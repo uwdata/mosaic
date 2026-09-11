@@ -1,0 +1,333 @@
+from __future__ import annotations
+
+import inspect
+import json
+from typing import TYPE_CHECKING, Any
+
+from .data import DataDef, is_frame
+from .params import _ParamBase
+from .plot import _encode_component
+from .util import omit_none
+
+if TYPE_CHECKING:
+    from duckdb import DuckDBPyConnection
+    from narwhals.typing import IntoFrame
+
+    from vgplot._types import MimeBundle
+
+
+def _caller_locals() -> dict[str, Any]:
+    """Local variables of the caller of the method invoking this helper.
+
+    Returns an empty mapping when the frame is unavailable (e.g. on Python
+    implementations without ``sys._getframe`` support).
+    """
+    frame = inspect.currentframe()
+    method = frame.f_back if frame is not None else None
+    caller = method.f_back if method is not None else None
+    return caller.f_locals if caller is not None else {}
+
+
+def _collect_params(node: Any) -> list[_ParamBase]:
+    """Recursively collect all _ParamBase instances in a view tree."""
+    if isinstance(node, _ParamBase):
+        return [node]
+    if isinstance(node, View):
+        return _collect_params(node._view)
+    if isinstance(node, dict):
+        found = []
+        for v in node.values():
+            found.extend(_collect_params(v))
+        return found
+    if isinstance(node, list):
+        found = []
+        for item in node:
+            found.extend(_collect_params(item))
+        return found
+    return []
+
+
+def _collect_data_sources(node: Any) -> list[Any]:
+    """Recursively collect all data sources (DataDefs and DataFrames) in a view tree."""
+    if isinstance(node, DataDef) or is_frame(node):
+        return [node]
+    if isinstance(node, View):
+        return _collect_data_sources(node._view)
+    if isinstance(node, dict):
+        found = []
+        for v in node.values():
+            found.extend(_collect_data_sources(v))
+        return found
+    if isinstance(node, list):
+        found = []
+        for item in node:
+            found.extend(_collect_data_sources(item))
+        return found
+    return []
+
+
+def _frame_data_names(caller_locals: dict[str, Any]) -> dict[int, str]:
+    """Map id->name for DataFrames bound to non-underscore caller variables.
+
+    A frame bound to several variables resolves to just one name (the last),
+    which becomes its registered table name.
+    """
+    return {
+        id(obj): name
+        for name, obj in caller_locals.items()
+        if is_frame(obj) and not name.startswith("_")
+    }
+
+
+class Spec:
+    def __init__(
+        self,
+        *,
+        data: dict[str, Any] | None = None,
+        data_names: dict[int, str] | None = None,
+        params: dict[str, Any] | None = None,
+        plotDefaults: dict[str, Any] | None = None,  # ruff: ignore[invalid-argument-name]
+        plot_defaults: dict[str, Any] | None = None,
+        config: dict[str, Any] | None = None,
+        view: dict[str, Any] | View | None = None,
+        **extra: Any,
+    ) -> None:
+        # Serialize any DataDef values in data and build id->name mapping
+        resolved_data: dict[str, Any] = {}
+        resolved_data_names: dict[int, str] = dict(data_names or {})
+        for name, val in (data or {}).items():
+            if isinstance(val, DataDef):
+                resolved_data_names[id(val)] = name
+                resolved_data[name] = val.to_dict()
+            else:
+                resolved_data[name] = val
+        self.data = resolved_data or None
+        self.data_names = resolved_data_names
+        self.params = params
+        self.plotDefaults = plotDefaults or plot_defaults
+        self.config = config
+        self.view = view or {}
+        self.extra = extra
+
+    def to_dict(self) -> dict[str, Any]:
+        # Build a reverse lookup: id(param_object) -> param_name, so that
+        # _ParamBase instances appearing in the view resolve to "$name" refs.
+        param_names: dict[int, str] = {}
+        serialized_params: dict[str, Any] = {}
+        # First pass: register all named params
+        for name, p in (self.params or {}).items():
+            if isinstance(p, _ParamBase):
+                param_names[id(p)] = name
+
+        # Second pass: auto-name any _ParamBase in the view not yet registered,
+        # skipping names already taken by explicit params.
+        used = set(param_names.values()) | set(self.params or {})
+        counter = 0
+        for obj in _collect_params(self.view):
+            if id(obj) not in param_names:
+                while f"_param{counter}" in used:
+                    counter += 1
+                param_names[id(obj)] = f"_param{counter}"
+                counter += 1
+
+        # Third pass: serialize all known params
+        view_params = {id(obj): obj for obj in _collect_params(self.view)}
+        all_params = dict(self.params or {})
+        for obj_id, name in param_names.items():
+            if name not in all_params and obj_id in view_params:
+                all_params[name] = view_params[obj_id]
+        for name, p in all_params.items():
+            if isinstance(p, _ParamBase):
+                serialized_params[name] = p.param_def(param_names=param_names)
+            else:
+                serialized_params[name] = p
+
+        data_names = dict(self.data_names)
+        extra_data: dict[str, Any] = {}
+        used = set(data_names.values()) | set(self.data or {})
+        counter = 0
+        for obj in _collect_data_sources(self.view):
+            name = data_names.get(id(obj))
+            if name is None:
+                while f"_data{counter}" in used:
+                    counter += 1
+                name = f"_data{counter}"
+                counter += 1
+                data_names[id(obj)] = name
+                used.add(name)
+            if name in (self.data or {}) or name in extra_data:
+                continue
+            extra_data[name] = obj.to_dict() if isinstance(obj, DataDef) else obj
+        merged_data = {**(self.data or {}), **extra_data} or None
+
+        base: dict[str, Any] = {}
+        if self.config:
+            base["config"] = self.config
+        if merged_data:
+            base["data"] = merged_data
+        if serialized_params:
+            base["params"] = serialized_params
+        if self.plotDefaults:
+            base["plotDefaults"] = self.plotDefaults
+        base.update(_encode_component(self.view, param_names, data_names))
+        base.update(omit_none(self.extra))
+        return base
+
+    def to_json(self, **kwargs: Any) -> str:
+        return json.dumps(self.to_dict(), **kwargs)
+
+    def _repr_mimebundle_(self, **kwargs: Any) -> MimeBundle:
+        try:
+            from mosaic_widget import MosaicWidget
+        except ImportError:
+            return {"text/plain": repr(self)}
+        widget = MosaicWidget(self.to_dict())
+        return widget._repr_mimebundle_(**kwargs)
+
+    def show(
+        self,
+        con: DuckDBPyConnection | None = None,
+        data: dict[str, IntoFrame] | None = None,
+    ) -> None:
+        try:
+            from IPython.display import display
+            from mosaic_widget import MosaicWidget
+        except ImportError as e:
+            msg = "pip install mosaic-widget"
+            raise ImportError(msg) from e
+        widget = MosaicWidget(self.to_dict(), con=con, data=data)
+        display(widget)
+
+
+class View:
+    """
+    A composable view returned by plot(), vconcat(), hconcat() etc.
+    Behaves like Spec but discovers data and params from the caller's
+    frame at display/export time rather than at construction time.
+    """
+
+    def __init__(
+        self,
+        view: dict[str, Any],
+        *,
+        data: dict[str, Any] | None = None,
+        plotDefaults: dict[str, Any] | None = None,  # ruff: ignore[invalid-argument-name]
+        plot_defaults: dict[str, Any] | None = None,
+        config: dict[str, Any] | None = None,
+        **extra: Any,
+    ) -> None:
+        self._view = view
+        self._data = data  # explicit overrides for renamed data variables
+        self._plotDefaults = plotDefaults or plot_defaults
+        self._config = config
+        self._extra = extra
+
+    def _build_spec(self, caller_locals: dict[str, Any]) -> Spec:
+        explicit_ids = {
+            id(v) for v in (self._data or {}).values() if isinstance(v, DataDef)
+        }
+        frame_data: dict[str, Any] = {
+            name: obj
+            for name, obj in caller_locals.items()
+            if isinstance(obj, DataDef)
+            and not name.startswith("_")
+            and id(obj) not in explicit_ids
+        }
+        merged_data = {**(self._data or {}), **frame_data} or None
+        frame_params: dict[str, Any] = {
+            name: obj
+            for name, obj in caller_locals.items()
+            if isinstance(obj, _ParamBase) and not name.startswith("_")
+        }
+        return Spec(
+            data=merged_data,
+            data_names=_frame_data_names(caller_locals) or None,
+            params=frame_params or None,
+            plotDefaults=self._plotDefaults,
+            config=self._config,
+            view=self._view,
+            **self._extra,
+        )
+
+    def to_dict(self, _context: dict[str, Any] | None = None) -> dict[str, Any]:
+        locals_ = _context if _context is not None else _caller_locals()
+        return self._build_spec(locals_).to_dict()
+
+    def to_json(self, _context: dict[str, Any] | None = None, **kwargs: Any) -> str:
+        locals_ = _context if _context is not None else _caller_locals()
+        return self._build_spec(locals_).to_json(**kwargs)
+
+    def show(self, con: Any = None, data: Any = None) -> None:
+        self._build_spec(_caller_locals()).show(con=con, data=data)
+
+    def _repr_mimebundle_(self, **kwargs: Any) -> MimeBundle:
+        # Walk up frames to find the one where this View object lives
+        frame = inspect.currentframe()
+        frame = frame.f_back if frame is not None else None
+        while frame is not None:
+            if any(v is self for v in frame.f_locals.values()):
+                break
+            frame = frame.f_back
+        locals_ = frame.f_locals if frame is not None else {}
+        return self._build_spec(locals_)._repr_mimebundle_(**kwargs)
+
+
+_VIEW_KEYS = {"plot", "vconcat", "hconcat", "hspace", "vspace", "input"}
+
+
+def spec(
+    *args: Any,
+    data: dict[str, Any] | None = None,
+    params: dict[str, Any] | None = None,
+    plotDefaults: dict[str, Any] | None = None,  # ruff: ignore[invalid-argument-name]
+    plot_defaults: dict[str, Any] | None = None,
+    config: dict[str, Any] | None = None,
+    view: dict[str, Any] | View | None = None,
+    **extra: Any,
+) -> Spec:
+    """Assemble a Spec from a view plus data sources and params.
+
+    A positional dict holding a view key (plot/vconcat/hconcat/...) is used as
+    the view; any other positional dict is used as data. DataDef and param
+    objects bound to local variables in the caller are discovered automatically
+    by name unless passed explicitly via data= or params=.
+    """
+    for arg in args:
+        if isinstance(arg, dict) and _VIEW_KEYS.intersection(arg):
+            view = arg
+        elif isinstance(arg, dict):
+            data = arg
+
+    # Inspect caller frame to discover DataDef and _ParamBase objects by variable name.
+    caller_locals = _caller_locals()
+
+    # Collect DataDef objects not already covered by the explicit data= argument.
+    explicit_ids = {id(v) for v in (data or {}).values() if isinstance(v, DataDef)}
+    frame_data: dict[str, Any] = {
+        name: obj
+        for name, obj in caller_locals.items()
+        if isinstance(obj, DataDef)
+        and not name.startswith("_")
+        and id(obj) not in explicit_ids
+    }
+    merged_data = {**(data or {}), **frame_data} or None
+
+    # Collect _ParamBase objects when params were not passed explicitly.
+    if params is None:
+        frame_params: dict[str, Any] = {
+            name: obj
+            for name, obj in caller_locals.items()
+            if isinstance(obj, _ParamBase) and not name.startswith("_")
+        }
+        params = frame_params or None
+
+    return Spec(
+        data=merged_data,
+        data_names=_frame_data_names(caller_locals) or None,
+        params=params,
+        plotDefaults=plotDefaults,
+        plot_defaults=plot_defaults,
+        config=config,
+        view=view,
+        **extra,
+    )

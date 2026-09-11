@@ -1,6 +1,6 @@
 # DuckDB Go Server
 
-A Go-based server that runs a local DuckDB instance and support queries over Web Sockets or HTTP/HTTPS, returning data in either [Apache Arrow](https://arrow.apache.org/) or JSON format.
+A Go-based server that runs a local DuckDB instance and support queries over Web Sockets or HTTP/HTTPS, returning data in [Apache Arrow](https://arrow.apache.org/) format.
 
 _Note:_ This package provides a local DuckDB server. To instead use DuckDB-WASM in the browser, use the `wasmConnector` in the [`mosaic-core`](https://github.com/uwdata/mosaic/tree/main/packages/mosaic/mosaic-core) package.
 
@@ -26,16 +26,21 @@ You can customize the server behavior with the following command-line flags:
 -   `--address <address>`: The HTTP address to listen on. Defaults to "localhost".
 -   `--port <port>`: The HTTP port to listen on. Defaults to "3000".
 -   `--connection-pool-size <size>`: The maximum size of the connection pool. Defaults to 10.
--   `--max-cache-entries <size>`: The maximum number of cache entries. Defaults to 1000.
--   `--max-cache-bytes <bytes>`: Max number of cache size in bytes (overrides max-cache-entries if both are set). Defaults to 0 (no limit).
--   `--cache-ttl <duration>`: Time-to-live for cache entries as a Go duration. 0s means no expiration (e.g., '10m', '1h'). Defaults to 0s.
 -   `--cert <path>`: Path to a TLS certificate file to enable HTTPS.
 -   `--key <path>`: Path to a TLS private key file to enable HTTPS.
+-   `--cache-control <value>`: Cache-Control value for successful GET `arrow` responses, enabling ETags and conditional responses for those queries. Omitted or empty values preserve existing behavior.
+-   `--vary <headers>`: Comma-separated request header names to append to Vary independently of Cache-Control. Repeated flags accumulate names.
 -   `--schema-match-headers`: Comma-separated list of headers to match against schema names for multi-tenant access control (e.g., `X-Tenant-Id,verified-user-id`).
--   `--load-extensions`: Comma-separated list of extensions to install and load at startup. Use a pipe after the extension name to specify the repository. Unspecified repositories will default to 'core'. (e.g. `mysql_scanner,netquack|community,aws|core_nightly`
--   `--function-blocklist`: Comma-separated list of functions to block, useful for blocking functions that may pose security or performance risks. (e.g., 'bigquery_query,read_parquet')`
+-   `--load-extensions`: Comma-separated list of extensions to install and load at startup. Use a pipe after the extension name to specify a DuckDB repository alias. Unspecified repositories use DuckDB's default (e.g. `mysql_scanner,netquack|community,aws|core_nightly`).
+-   `--function-blocklist`: Comma-separated list of exact function names to block, useful for blocking functions that may pose security or performance risks (e.g. `bigquery_query,read_parquet`).
+-   `--function-allowlist`: Comma-separated list of exact function names to add to the reviewed defaults. Names are matched case-insensitively, repeated flags accumulate names, and an explicitly empty value enables only the defaults.
 
 By default, the server will look for `localhost.pem` and `localhost-key.pem` in the current directory to enable HTTPS if the `--cert` and `--key` flags are not provided.
+
+For compatibility, the installed binary permits all HTTP and WebSocket origins. A cross-site page can therefore submit
+commands, including side-effecting `exec` commands over GET, to a running server. Do not expose the binary to untrusted
+browsers or cookie credentials without an outer proxy that enforces an origin or CSRF policy. Programs embedding
+`pkg/server` instead receive safe zero-value origin defaults and can configure exact allowed origins.
 
 Create certificates for localhost with [mkcert](https://github.com/FiloSottile/mkcert)
 
@@ -44,15 +49,253 @@ mkcert -install # Install mkcert CA
 mkcert localhost # create localhost.pem and localhost-key.pem
 ```
 
+### Programmatic Extension Initialization
+
+Use `pkg/extensions` from a DuckDB connector callback:
+
+```go
+connector, err := duckdb.NewConnector(":memory:", func(execer driver.ExecerContext) error {
+	return extensions.ParseAndInstall(connectorCtx, execer, "httpfs", "netquack|community")
+})
+```
+
+Repository suffixes are DuckDB aliases. Use `InstallAndLoadFromCustomRepository` for repository URLs or paths, and
+`LoadInstalled`, `LoadFile`, or `InstallAndLoadFile` for pre-provisioned extensions. The callback runs for every physical
+connection; use a long-lived context and call `PingContext` before serving to force initialization. The first failure
+aborts the connection. Extensions are trusted native code, so load only trusted repositories and files.
+
+### Programmatic Authorization
+
+Programs embedding `pkg/server` should authenticate with standard HTTP middleware around the handler returned by
+`server.New`, then use `server.WithAuthorizer` only for command-aware policy. `AuthorizeRequest` runs once before POST
+decoding or WebSocket upgrade and returns a `CommandAuthorizer[T]` called for every decoded command, including each
+WebSocket message, before policy validation or execution. If it reads `r.Body`, it must restore it; both
+authorizers must be concurrency-safe. Outer middleware must decide whether CORS preflight `OPTIONS` requests may reach
+the server.
+
+Omitting `WithAuthorizer` preserves unrestricted behavior; a configured authorizer that fails or returns nil fails
+closed. `ErrUnauthenticated`, `ErrPermissionDenied`, and `ErrInvalidCommand` map to HTTP 401, 403, and 400; unexpected
+errors are logged and returned as sanitized 500 responses. Authorization can allow or deny the normalized command type
+and exact SQL, but cannot rewrite SQL or sandbox the shared process, filesystem, network, extensions, catalogs, or
+credentials.
+
+### HTTP Response Caching
+
+Configure caching and request-header variation independently:
+
+```go
+handler, err := server.New(db,
+	server.WithCacheControl("private, max-age=60"),
+	server.WithVary("X-Tenant-Id"),
+)
+```
+
+`WithCacheControl(value)` sets the complete header value on successful GET `arrow` responses. The application chooses storage, sharing, and freshness directives, such as `no-store`, `private, max-age=60`, or `public, max-age=60, s-maxage=300`. An omitted or empty value preserves existing behavior, including any headers set by outer middleware. Configured values replace an existing Cache-Control header; other responses, including errors, `exec`, POST, OPTIONS, and WebSocket handshakes, receive `no-store`. HEAD is unsupported and returns `405`; only GET query responses are cacheable.
+
+For GET `arrow` responses, enabling Cache-Control also generates a strong ETag from the response format and serialized bytes. A matching `If-None-Match` returns `304` with no body and the applicable Cache-Control, ETag, and Vary headers. Tag lists, weak comparisons, and `*` are supported. `If-Match` uses strong comparison and takes precedence, returning `412` without an ETag on a mismatch. Other command types and methods, including `exec` and POST, ignore conditional request headers; `If-Match` cannot guard an `exec` command. Authorization, query validation, execution, serialization, and hashing of the complete response still run before evaluating validators: revalidation saves transfer bandwidth. Changes to data do not invalidate already-fresh HTTP cache entries before their configured lifetime expires. Middleware or proxies that compress or transform the response must update or weaken its strong ETag.
+
+`WithVary(headers ...string)` accepts individual names or a slice with `headers...`. Names are copied, trimmed, canonicalized, and deduplicated; `*` is accepted. They append to existing Vary values, including CORS fields, on every response. `WithVary()` configures no additional names. Each option replaces earlier configuration of the same option. Invalid header characters are rejected during server construction; Cache-Control directives are otherwise passed through.
+
+When Cache-Control is enabled, the server automatically adds all `WithSchemaMatchHeaders` / `--schema-match-headers` names to Vary. For example, `--schema-match-headers=X-Tenant-Id --cache-control='public, max-age=60'` varies by `X-Tenant-Id` without repeating it in `--vary`. `WithVary()` cannot remove these required names. Applications using a custom authorizer must configure any other headers affecting access or results with `WithVary` / `--vary`.
+
+Caches must include the complete GET query string, including `type` and `sql`, and distinguish all Vary headers. Vary partitions cache entries; it does not authorize requests. Shared caches serving protected data must enforce access control before cache lookup. HTTP caching is separate from the coordinator's application cache.
+
+The equivalent command-line settings are:
+
+```sh
+duckdb-server-go --cache-control='private, max-age=60' --vary=X-Tenant-Id
+```
+
+### Application Command Fields
+
+Application fields can be siblings of `type` and `sql` or nested, for example under `meta`. Mosaic defines no metadata schema. Choose the complete envelope's Go type with `Authorizer[T]` or `AuthorizerFunc[T]`; `command.Payload()` returns it. `WithAuthorizer` infers `T`, while `New` stays non-generic.
+
+For example, an application can limit commands to its `dashboard` project, with GET parameters as a fallback:
+
+```go
+type Fields struct {
+	Project string `json:"project"`
+}
+
+authorizer := server.AuthorizerFunc[*Fields](func(r *http.Request) (server.CommandAuthorizer[*Fields], error) {
+	getProject := r.URL.Query().Get("project")
+	return func(ctx context.Context, command server.Command[*Fields]) error {
+		project := getProject
+		if fields := command.Payload(); fields != nil {
+			project = fields.Project
+		}
+		if project != "dashboard" || command.Type() == server.CommandExec {
+			return server.ErrPermissionDenied
+		}
+		return nil
+	}, nil
+})
+
+handler, err := server.New(db,
+	server.WithAuthorizer(authorizer),
+	server.WithMaxMessageBytes(1<<20),
+)
+```
+
+Each POST or WebSocket command decodes into a fresh `T` using `encoding/json`. `Payload()` returns that value without copying; mutations cannot change the authoritative `Type()` or `SQL()`. Custom decoders are responsible for their own sharing and must account for protocol keys (`type`, `sql`, `name`) when rejecting unknown fields.
+
+Use structs, maps, or custom `UnmarshalJSON` implementations as needed. `json.RawMessage` preserves JSON value bytes, not surrounding whitespace. If no application fields are needed, `struct{}` skips application decoding; existing authorizers can migrate to `AuthorizerFunc[struct{}]`, `CommandAuthorizer[struct{}]`, and `Command[struct{}]`.
+
+GET skips JSON decoding and supplies the zero value of `T` (`nil` for pointers); capture query parameters in `AuthorizeRequest`. Payload decoding failures reject the command before command authorization with HTTP 400 or a recoverable WebSocket `bad_request`, and log a warning without payload values.
+
+Application fields are untrusted: combine them with authenticated identity, as shown in the compiled [`ExampleNew`](pkg/server/example_test.go). Client caching can bypass the connector, and consolidation can discard query options. If fields affect results or access, isolate coordinator/cache/consolidation state per scope or disable that reuse.
+
+`WithMaxMessageBytes(n)` requires a positive byte limit for entire POST bodies and decompressed WebSocket messages, applied after request authorization and before decoding. Defaults are unbounded POST bodies and 32 KiB WebSocket messages. Exceeding the limit returns HTTP 413 or closes the WebSocket with code 1009. Request authorizers reading the body must enforce their own limits and restore it.
+
+POST and WebSocket messages require one complete command object with optional surrounding whitespace; trailing data is rejected. Protocol decoding failures return HTTP 400 or close the WebSocket with code 1007. Validation and authorization errors leave a healthy WebSocket session open.
+
+### Function Policies
+
+Use an allowlist when the server should accept only reviewed functions and operators. An explicitly empty value enables
+the defaults without adding application-specific names:
+
+```sh
+duckdb-server-go --function-allowlist=
+```
+
+Without `--function-allowlist`, the server remains unrestricted. The binary intentionally exposes only policy
+activation and exact additions; use a custom binary embedding `pkg/query` for exclusions, exact-only policies, or
+extension groups.
+
+Programs embedding `pkg/query` can apply the same policy and add application functions with:
+
+```go
+query.WithFunctionAllowlist(query.FunctionAllowlistOptions{
+	Include: append(functionset.Spatial.Elevated(), "my_function"),
+})
+```
+
+By default, configured policies use `functionset.DefaultFunctions()`, which contains reviewed built-ins and every
+[core extension](https://duckdb.org/docs/current/core_extensions/overview)'s `Compute()` group. `Elevated()` requires
+explicit admission, and `All()` returns both groups. These Go helpers return fresh slices; the CLI accepts exact names only.
+
+The table records unique names reviewed against DuckDB 1.5.5. A name is elevated if any overload has elevated behavior.
+An empty row means the extension has no reviewed function-call names, not that it has no other capabilities.
+
+| Extension | Compute | Elevated | Classification and status |
+| --- | ---: | ---: | --- |
+| `Autocomplete` | 1 | 3 | Parser check; completion and parser controls are elevated. |
+| `Avro` | 0 | 1 | Reader only. |
+| `AWS` | 0 | 1 | Credential and provider operation. |
+| `Azure` | 0 | 0 | Filesystem integration with no reviewed function-call names. |
+| `Delta` | 2 | 9 | Local parser/test helpers; scans, metadata I/O, and writes are elevated. |
+| `DuckLake` | 1 | 21 | Local hash helper; catalog, scan, metadata, and mutation operations are elevated. |
+| `Encodings` | 0 | 0 | CSV codec integration with no reviewed function-call names. |
+| `Excel` | 2 | 1 | Value conversion; the sheet reader is elevated. |
+| `FTS` | 1 | 2 | Text stemming; index creation and mutation are elevated. |
+| `HTTPFS` | 0 | 0 | Filesystem integration with no reviewed function-call names. |
+| `Iceberg` | 2 | 14 | Value helpers; scans, catalogs, metadata I/O, and writes are elevated. |
+| `ICU` | 179 | 7 | Deterministic collation and calendar computation; current-time names are elevated. |
+| `Inet` | 11 | 0 | IP value operations only. |
+| `JSON` | 33 | 9 | Value parsing and serialization; readers, SQL execution, and plan inspection are elevated. |
+| `Lance` | 0 | 12 | Source-pinned scans and metadata operations. |
+| `MotherDuck` | 0 | 198 | Best-effort observed proprietary runtime snapshot; all names are elevated. |
+| `MySQL` | 0 | 5 | Connector and scanner operations. |
+| `ODBC` | 0 | 11 | Connector and scanner operations. |
+| `Parquet` | 2 | 9 | `VARIANT` conversion; file, metadata, bloom, and key operations are elevated. |
+| `Postgres` | 2 | 8 | Value helpers; connector and scanner operations are elevated. |
+| `Quack` | 3 | 9 | Protocol value helpers; remote and session operations are elevated. |
+| `Spatial` | 151 | 13 | Geometry computation; readers, index/catalog access, random generation, and resource-capable transforms are elevated. |
+| `SQLite` | 0 | 3 | Connector and scanner operations. |
+| `TPCDS` | 2 | 2 | Query and answer text; data generators are elevated. |
+| `TPCH` | 2 | 2 | Query and answer text; data generators are elevated. |
+| `UI` | 0 | 5 | HTTP server lifecycle, URL, and status operations. |
+| `UnityCatalog` | 0 | 4 | Attached-catalog and checkpoint operations; the generated registry is incomplete. |
+| `Vortex` | 0 | 2 | Readers verified against the pinned nested source revision. |
+| `VSS` | 0 | 5 | Index access and management operations. |
+
+These groups authorize names only; extension loading and file or network access are separate concerns. Function-policy
+validation is syntactic and name-only: it does not bind function identity, inspect arguments, expand macros or views,
+recursively inspect SQL strings, or cover replacement scans and attached-table binding. Keep catalogs and the search path
+trusted, and enforce resource access outside this policy. Pre-provisioned views and attached tables can deliberately expose
+curated datasets while reader functions remain excluded; catalog integrity and process resource controls then carry the
+boundary.
+
+In Go, `Exclude` wins over `Include`, and `DisableDefaults` creates an exact-only policy. Omitting
+`WithFunctionAllowlist` is unrestricted; configuring an exact-empty policy denies all function calls. A function
+allowlist cannot be combined with a non-empty blocklist, and any configured function policy rejects `exec` requests.
+
+Spatial compute defaults cover Mosaic rendering over existing geometry data, but the `ST_Read` loader remains elevated.
+Current-time functions read session state and are classified as elevated, so they are omitted from defaults; keyword
+forms such as `CURRENT_DATE` are not function nodes and remain outside this policy.
+
+### Remote URI Literal Policy
+
+Programs embedding `pkg/query` can make a best-effort to reject caller-supplied remote file locations while keeping local
+file readers enabled:
+
+```go
+db, err := query.New(ctx, connector,
+	query.WithRemoteURILiteralRejection(),
+)
+```
+
+The option rejects recognized remote URI literals in DuckDB replacement scans, such as
+`FROM 'gcs://bucket/file.parquet'`, and in the reviewed positional and named path arguments of
+[remote-read-capable functions](./pkg/functionset/remoteread/README.md). It also
+checks literal lists and every decoded string literal within a path expression, so
+`read_parquet('gcs://' || 'bucket/file.parquet')` is rejected. Only reviewed path arguments are checked; unrelated values
+such as `WHERE url = 'https://example.com'` remain unaffected. Ordinary local paths without a recognized marker remain
+usable; a local path string containing one of the markers is intentionally rejected.
+
+Matching is case-insensitive and rejects a literal if it contains any prefix reviewed against DuckDB 1.5.5's pinned
+[HTTP](https://github.com/duckdb/duckdb-httpfs/blob/827222fb45a043a7a852d1f7aae46901492a3cda/src/httpfs.cpp#L808-L810),
+[S3-compatible](https://github.com/duckdb/duckdb-httpfs/blob/827222fb45a043a7a852d1f7aae46901492a3cda/src/s3fs.cpp#L843-L848),
+[Hugging Face](https://github.com/duckdb/duckdb-httpfs/blob/827222fb45a043a7a852d1f7aae46901492a3cda/src/include/hffs.hpp#L33-L35),
+[Azure Blob](https://github.com/duckdb/duckdb-azure/blob/003214c96d0caa39d5c3e27a9e1976a0692c7d37/src/azure_blob_filesystem.cpp#L32-L36),
+and [Azure DFS](https://github.com/duckdb/duckdb-azure/blob/003214c96d0caa39d5c3e27a9e1976a0692c7d37/src/azure_dfs_filesystem.cpp#L27-L34)
+filesystem handlers:
+
+```text
+http://  https://  s3://  s3a://  s3n://  gcs://
+gs://    r2://     hf://  azure://  az://   abfs://  abfss://
+```
+
+DuckDB's generated
+[extension-prefix map](https://github.com/duckdb/duckdb/blob/v1.5.5/src/include/duckdb/main/extension_entries.hpp#L1275-L1280)
+is a useful autoloading cross-check, but it is not exhaustive: the pinned Azure DFS filesystem also accepts `abfs://`.
+
+Trusted initialization can still load filesystem extensions and attach remote Iceberg or other catalogs before accepting
+queries. Queries against those attached catalogs use catalog and table identifiers rather than caller-supplied URI
+literals, so they remain usable. Enabling this policy rejects all `exec` commands and rejects the known nested-SQL
+binders and executors `query`, `json_execute_serialized_sql`, and `json_serialize_plan` outright. `arrow`
+requests are limited to statements DuckDB can serialize for validation. Connector initialization is outside that command
+path.
+
+DuckDB's serialized AST does not distinguish a replacement-scan string from a quoted table or CTE identifier, so a
+URI-shaped identifier is rejected too.
+
+This is intentionally incomplete hardening against common accidental or opportunistic remote scans, not a filesystem or
+network sandbox. Split or otherwise computed path values can evade detection when no individual literal contains a
+complete reviewed prefix, as in `'gc' || 's://bucket/file.parquet'`. Macros and views are not expanded, and unreviewed
+extensions can define other nested-SQL executors, reader functions, or schemes. Other known gaps include GDAL virtual
+paths such as `/vsis3/`, local Iceberg or Delta metadata that refers to remote files, and SQL stored in a local SQLite
+view. Keep catalogs, extensions, and initialization SQL trusted, and restrict the server process's filesystem, network,
+and credentials independently.
+
 ### Multi-Tenant Access Control
 
 `schema-match-headers` isn't part of the mosaic server API, but is provided here as an example of how to have
-multiple users / customers share the same DuckDB server instance while keeping their data isolated.
+multiple users / customers share the same DuckDB server instance while restricting table queries to tenant schemas.
 
-1. **Client side**: set `preagg.schema` when calling `new Coordinator` ([docs](https://idl.uw.edu/mosaic/api/core/coordinator.html#constructor)) to
-   something like a tenant id, user id, or organization id. If you want results to be shared across users, you should
-   use tenant ids or organization ids, not user ids. Mosaic will use that value as the schema name for any temporary
-   tables with pre-aggregated data. Note that any of your own queries for preloading data will also need to use that schema name.
+1. **Client side**: Give each tenant a dedicated pre-aggregation schema when constructing and registering its coordinator
+   ([docs](https://idl.uw.edu/mosaic/api/core/coordinator.html#constructor)):
+
+   ```js
+   const mc = new Coordinator(connector, {
+     preagg: { enabled: false, schema: tenantSchema }
+   });
+   coordinator(mc);
+   ```
+
+   The schema name is part of the tenant authorization policy and must not be shared by mutually untrusted tenants. It
+   must be one of the schema names supplied by the trusted headers described below. If results should be shared across
+   users, use a tenant id or organization id rather than a user id.
 2. **Authentication**: This implementation assumes that there is some authentication mechanism in place that sets the
    trusted authentication headers in the request. The server will use these headers to determine which schema
    to use for the query. This might be a server-side cookie sent through with mosaic requests, or a header set on outbound
@@ -62,11 +305,27 @@ multiple users / customers share the same DuckDB server instance while keeping t
    the server will allow access to any schemas that match the header values. If no headers are present, and `--schema-match-headers`
    is set, the server will return a 401 Unauthorized error.
 
+_Note:_ Schema matching authorizes schema references in submitted SQL; it does not isolate the shared DuckDB process,
+filesystem, network, extensions, or credentials. It assumes a single catalog; attached catalogs are outside this policy
+boundary, and explicitly catalog-qualified table, `SHOW`, and function references are rejected. Function allowlists and
+blocklists apply only to explicit function calls. Schema matching does not restrict catalog metadata returned by functions
+such as `duckdb_tables()` and `pragma_table_info()`. If metadata is sensitive, allow or block the exact metadata-function
+names exposed by the deployment; wildcard patterns such as `duckdb_*` are not supported, and the policy must be reviewed
+when DuckDB or its extensions change. To restrict file-reading functions, also enable schema matching so DuckDB replacement
+scans such as `FROM 'data.parquet'` are rejected as unqualified table references. These controls are not a sandbox: run the
+server with access only to external resources that are safe for every tenant.
+
+If `--schema-match-headers`, `--function-blocklist`, or `--function-allowlist` is configured, `arrow` requests
+are limited to statements DuckDB can serialize for validation; unsupported forms such as `PRAGMA` and `SET` are rejected,
+with HTTP requests receiving a 400 response. All `exec` requests are also rejected until full-statement authorization is
+supported. This includes every `Coordinator.exec(...)` call, such as data loading, preloading, and DDL/DML. Mosaic
+pre-aggregation also uses `exec` to create schemas and tables, so set `preagg: { enabled: false }` in this mode.
+
 ## API
 
-The server supports queries via HTTP GET and POST, and WebSockets. The GET endpoint is useful for debugging. For example, you can query it with [this url](<http://localhost:3000/?query={"sql":"select 1","type":"json"}>).
+The server supports queries via HTTP GET and POST, and WebSockets. GET uses `type` and `sql` query parameters, for example [this URL](<http://localhost:3000/?type=arrow&sql=select%201>).
 
-Each endpoint takes a JSON object with a command in the `type`. The server supports the following commands.
+POST and WebSocket requests take a JSON object with the command in `type` and query text in `sql`. The server supports the following commands.
 
 ### `exec`
 
@@ -75,10 +334,6 @@ Executes the SQL query in the `sql` field.
 ### `arrow`
 
 Executes the SQL query in the `sql` field and returns the result in Apache Arrow format.
-
-### `json`
-
-Executes the SQL query in the `sql` field and returns the result in JSON format.
 
 ## Developers
 

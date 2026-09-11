@@ -68,7 +68,7 @@ BENCHMARKS: list[tuple[str, str, str]] = [
     ("aggregate: count", "arrow", "SELECT count(*) AS cnt FROM flights"),
     (
         "aggregate: min/max",
-        "json",
+        "arrow",
         "SELECT min(delay) AS lo, max(delay) AS hi FROM flights",
     ),
     (
@@ -78,7 +78,7 @@ BENCHMARKS: list[tuple[str, str, str]] = [
     ),
     (
         "group-by small: species",
-        "json",
+        "arrow",
         "SELECT species, count(*) AS cnt, avg(body_mass) AS mean_mass FROM penguins GROUP BY species",
     ),
     # -- histogram / binning (medium results) --
@@ -89,7 +89,7 @@ BENCHMARKS: list[tuple[str, str, str]] = [
     ),
     (
         "group-by: distance stats",
-        "json",
+        "arrow",
         "SELECT distance, count(*) AS cnt, avg(delay) AS mean_delay, min(delay) AS lo, max(delay) AS hi FROM flights GROUP BY distance ORDER BY cnt DESC",
     ),
     (
@@ -105,18 +105,22 @@ BENCHMARKS: list[tuple[str, str, str]] = [
     (
         "M4-style: time-series",
         "arrow",
-        "WITH input AS MATERIALIZED (SELECT time, delay FROM flights WHERE distance > 500) "
-        "SELECT min(time) AS x, arg_min(delay, time) AS y FROM input GROUP BY floor(time / 50.0) "
-        "UNION ALL "
-        "SELECT max(time) AS x, arg_max(delay, time) AS y FROM input GROUP BY floor(time / 50.0) "
-        "ORDER BY x",
+        (
+            "WITH input AS MATERIALIZED (SELECT time, delay FROM flights WHERE distance > 500) "
+            "SELECT min(time) AS x, arg_min(delay, time) AS y FROM input GROUP BY floor(time / 50.0) "
+            "UNION ALL "
+            "SELECT max(time) AS x, arg_max(delay, time) AS y FROM input GROUP BY floor(time / 50.0) "
+            "ORDER BY x"
+        ),
     ),
     (
         "CTE + window: running avg",
         "arrow",
-        "WITH by_dist AS (SELECT distance, count(*) AS cnt, avg(delay) AS mean_delay FROM flights GROUP BY distance) "
-        "SELECT distance, cnt, avg(cnt) OVER (ORDER BY distance ROWS BETWEEN 2 PRECEDING AND CURRENT ROW) AS rolling_avg "
-        "FROM by_dist ORDER BY distance",
+        (
+            "WITH by_dist AS (SELECT distance, count(*) AS cnt, avg(delay) AS mean_delay FROM flights GROUP BY distance) "
+            "SELECT distance, cnt, avg(cnt) OVER (ORDER BY distance ROWS BETWEEN 2 PRECEDING AND CURRENT ROW) AS rolling_avg "
+            "FROM by_dist ORDER BY distance"
+        ),
     ),
 ]
 
@@ -140,8 +144,9 @@ def http_post(host: str, port: int, payload: dict) -> bytes:
         )
         resp = conn.getresponse()
         data = resp.read()
-        if resp.status != 200:
-            raise RuntimeError(f"HTTP {resp.status}: {data[:200]}")
+        if resp.status != 200:  # ruff: ignore[magic-value-comparison]
+            msg = f"HTTP {resp.status}: {data[:200]}"
+            raise RuntimeError(msg)
         return data
     finally:
         conn.close()
@@ -152,7 +157,7 @@ def http_exec(host: str, port: int, sql: str) -> None:
 
 
 def http_query(host: str, port: int, qtype: str, sql: str) -> bytes:
-    return http_post(host, port, {"type": qtype, "sql": sql, "persist": False})
+    return http_post(host, port, {"type": qtype, "sql": sql})
 
 
 def bench_http(
@@ -184,8 +189,8 @@ def bench_http(
 # ---------------------------------------------------------------------------
 
 
-async def ws_query(ws, qtype: str, sql: str) -> bytes:
-    await ws.send(json.dumps({"type": qtype, "sql": sql, "persist": False}))
+async def ws_query(ws: websockets.ClientConnection, qtype: str, sql: str) -> bytes:
+    await ws.send(json.dumps({"type": qtype, "sql": sql}))
     resp = await ws.recv()
     return resp if isinstance(resp, bytes) else resp.encode()
 
@@ -220,7 +225,7 @@ async def bench_ws(
 
 
 def fmt_bytes(n: int) -> str:
-    if n < 1024:
+    if n < 1024:  # ruff: ignore[magic-value-comparison]
         return f"{n}B"
     if n < 1024 * 1024:
         return f"{n / 1024:.1f}K"
@@ -231,13 +236,13 @@ HEADER_FMT = "  {:<40s} {:>6s} {:>8s} {:>8s} {:>8s} {:>8s}"
 ROW_FMT = "  {:<40s} {:>6s} {:>8.2f} {:>8.2f} {:>8.2f} {:>8.2f}"
 
 
-def print_header():
+def print_header() -> None:
     print(HEADER_FMT.format("QUERY", "SIZE", "MIN", "MEDIAN", "P95", "MEAN"))
     print(HEADER_FMT.format("", "", "(ms)", "(ms)", "(ms)", "(ms)"))
     print("  " + "-" * 82)
 
 
-def print_row(name: str, timings: list[float], resp_size: int):
+def print_row(name: str, timings: list[float], resp_size: int) -> None:
     s = sorted(timings)
     n = len(s)
     mn = s[0]
@@ -259,9 +264,9 @@ def has_cmd(name: str) -> bool:
 def wait_for_server(host: str, port: int, timeout: int = 30) -> bool:
     for _ in range(timeout):
         try:
-            http_post(host, port, {"type": "json", "sql": "SELECT 1"})
+            http_post(host, port, {"type": "arrow", "sql": "SELECT 1"})
             return True
-        except Exception:
+        except Exception:  # ruff: ignore[blind-except]
             time.sleep(1)
     return False
 
@@ -284,6 +289,7 @@ def build_and_start_rust(port: int) -> subprocess.Popen | None:
         cwd=rust_dir,
         capture_output=True,
         text=True,
+        check=False,
     )
     if result.returncode != 0:
         print(f"  Build failed:\n{result.stderr}")
@@ -310,6 +316,7 @@ def build_and_start_go(port: int) -> subprocess.Popen | None:
         cwd=go_dir,
         capture_output=True,
         text=True,
+        check=False,
     )
     if result.returncode != 0:
         print(f"  Build failed:\n{result.stderr}")
@@ -325,7 +332,7 @@ def build_and_start_go(port: int) -> subprocess.Popen | None:
 
 def build_and_start_python(port: int) -> subprocess.Popen | None:
     py_dir = SERVER_DIR / "duckdb-server"
-    if port != 3000:
+    if port != 3000:  # ruff: ignore[magic-value-comparison]
         print("  WARNING: Python server does not support custom ports, using 3000")
     print("  Starting Python server ...")
     return subprocess.Popen(
@@ -344,12 +351,13 @@ def build_and_start_node(port: int) -> subprocess.Popen | None:
         cwd=node_dir,
         capture_output=True,
         text=True,
+        check=False,
     )
     if result.returncode != 0:
         print(f"  Install failed:\n{result.stderr}")
         return None
 
-    if port != 3000:
+    if port != 3000:  # ruff: ignore[magic-value-comparison]
         print("  WARNING: Node server does not support custom ports, using 3000")
     print("  Starting Node server ...")
     return subprocess.Popen(
@@ -395,8 +403,8 @@ def run_benchmarks(
     # Check server
     print(f"Checking server at http://{host}:{port} ...")
     try:
-        http_post(host, port, {"type": "json", "sql": "SELECT 1"})
-    except Exception as e:
+        http_post(host, port, {"type": "arrow", "sql": "SELECT 1"})
+    except Exception as e:  # ruff: ignore[blind-except]
         print(f"ERROR: No server responding at http://{host}:{port}: {e}")
         return results
     print("Server is up.\n")
@@ -448,7 +456,7 @@ def run_benchmarks(
 def print_comparison(all_results: dict[str, ServerResults]) -> None:
     """Print a side-by-side comparison of all servers."""
     servers = list(all_results.keys())
-    if len(servers) < 2:
+    if len(servers) < 2:  # ruff: ignore[magic-value-comparison]
         return
 
     # Collect which transports were benchmarked
@@ -461,7 +469,7 @@ def print_comparison(all_results: dict[str, ServerResults]) -> None:
 
         # Only include servers that have results for this transport
         active = [s for s in servers if transport in all_results[s]]
-        if len(active) < 2:
+        if len(active) < 2:  # ruff: ignore[magic-value-comparison]
             continue
 
         labels = list(all_results[active[0]][transport].keys())
@@ -506,7 +514,7 @@ def print_comparison(all_results: dict[str, ServerResults]) -> None:
 # ---------------------------------------------------------------------------
 
 
-def main():
+def main() -> None:
     parser = argparse.ArgumentParser(description="Mosaic Server Benchmark")
     parser.add_argument("-p", "--port", type=int, default=3000)
     parser.add_argument("-n", "--iterations", type=int, default=100)

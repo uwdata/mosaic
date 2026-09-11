@@ -61,25 +61,25 @@ function scaleLinear(): ScaleTransform<number> {
 function scaleLog({ base = null }: {base?: number | null} = { }): ScaleTransform<number> {
   if (base == null || base === Math.E) {
     return {
-      apply: Math.log,
-      invert: Math.exp,
-      sqlApply: c => ln(c),
-      sqlInvert: c => exp(c)
+      apply: x => Math.sign(x) * Math.log(Math.abs(x)),
+      invert: x => Math.sign(x) * Math.exp(Math.abs(x)),
+      sqlApply: c => (c = asNode(c), mul(sign(c), ln(abs(c)))),
+      sqlInvert: c => (c = asNode(c), mul(sign(c), exp(abs(c))))
     };
   } else if (base === 10) {
     return {
-      apply: Math.log10,
-      invert: x => Math.pow(10, x),
-      sqlApply: c => log(c),
-      sqlInvert: c => pow(10, c)
+      apply: x => Math.sign(x) * Math.log10(Math.abs(x)),
+      invert: x => Math.sign(x) * Math.pow(10, Math.abs(x)),
+      sqlApply: c => (c = asNode(c), mul(sign(c), log(abs(c)))),
+      sqlInvert: c => (c = asNode(c), mul(sign(c), pow(10, abs(c))))
     };
   } else {
     const b = +base;
     return {
-      apply: x => Math.log(x) / Math.log(b),
-      invert: x => Math.pow(b, x),
-      sqlApply: c => div(ln(c), ln(b)),
-      sqlInvert: c => pow(b, c)
+      apply: x => Math.sign(x) * Math.log(Math.abs(x)) / Math.log(b),
+      invert: x => Math.sign(x) * Math.pow(b, Math.abs(x)),
+      sqlApply: c => (c = asNode(c), mul(sign(c), div(ln(abs(c)), ln(b)))),
+      sqlInvert: c => (c = asNode(c), mul(sign(c), pow(b, abs(c))))
     };
   }
 }
@@ -87,10 +87,10 @@ function scaleLog({ base = null }: {base?: number | null} = { }): ScaleTransform
 function scaleSymlog({ constant = 1 } = {}): ScaleTransform<number> {
   const _ = +constant;
   return {
-    apply: x => Math.sign(x) * Math.log1p(Math.abs(x)),
-    invert: x => Math.sign(x) * Math.exp(Math.abs(x) - _),
-    sqlApply: c => (c = asNode(c), mul(sign(c), ln(add(_, abs(c))))),
-    sqlInvert: c => mul(sign(c), sub(exp(abs(c)), _))
+    apply: x => Math.sign(x) * Math.log1p(Math.abs(x / _)),
+    invert: x => Math.sign(x) * Math.expm1(Math.abs(x)) * _,
+    sqlApply: c => (c = asNode(c), mul(sign(c), ln(add(1, abs(div(c, _)))))),
+    sqlInvert: c => mul(sign(c), mul(sub(exp(abs(c)), 1), _))
   };
 }
 

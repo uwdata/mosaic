@@ -1,6 +1,6 @@
 {
   "name": "@uwdata/vgplot",
-  "version": "0.25.0",
+  "version": "0.31.0",
   "description": "An API for interactive Mosaic-powered visualizations and dashboards.",
   "keywords": [
     "data",
@@ -31,8 +31,9 @@
     "clean": "rimraf dist && mkdir dist",
     "prebuild": "pnpm run clean",
     "lint": "eslint src test",
+    "typecheck": "tsc -p test/tsconfig.json",
     "test": "vitest run",
-    "prepublishOnly": "pnpm run test && pnpm run lint && tsc --build"
+    "prepublishOnly": "tsc --build"
   },
   "dependencies": {
     "@uwdata/mosaic-core": "workspace:^",

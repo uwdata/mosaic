@@ -29,7 +29,8 @@ export {
   clausePoint,
   clausePoints,
   clauseMatch,
-  clauseMatchAny
+  clauseMatchAny,
+  clauseNone
 } from './SelectionClause.js';
 
 export { decodeIPC } from './util/decode-ipc.js';
@@ -38,9 +39,11 @@ export { isArrowTable } from './util/is-arrow-table.js';
 export { Synchronizer } from './util/synchronizer.js';
 export { throttle } from './util/throttle.js';
 export { toDataColumns } from './util/to-data-columns.js';
+export type { Arrayish, DataColumns } from './util/to-data-columns.js';
 export { queryFieldInfo } from './util/field-info.js';
 export { jsType } from './util/js-type.js';
 export { isActivatable } from './util/is-activatable.js';
+export { QueryError } from './util/query-error.js';
 export type { QueryResult } from './util/query-result.js';
 
 export * from './types.js';

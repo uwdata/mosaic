@@ -2,7 +2,7 @@ import { ColumnRefNode } from '../ast/column-ref.js';
 import { FromNode } from '../ast/from.js';
 import { JoinNode, type JoinType, type JoinVariant } from '../ast/join.js';
 import { ExprNode } from '../ast/node.js';
-import { asNode, asTableRef } from '../util/ast.js';
+import { asFrom, asNode } from '../util/ast.js';
 
 type TableArg = string | string[] | FromNode;
 
@@ -23,9 +23,6 @@ interface JoinOptions {
   using?: (string | ColumnRefNode)[];
 }
 
-function tableRef(x: TableArg) {
-  return x instanceof FromNode ? x : asTableRef(x)!;
-}
 
 function makeJoin(
   left: TableArg,
@@ -37,8 +34,8 @@ function makeJoin(
     throw new Error('Only one join condition (on or using) can be applied.');
   }
   return new JoinNode(
-    tableRef(left),
-    tableRef(right),
+    asFrom(left),
+    asFrom(right),
     variant,
     options.type,
     options.on,

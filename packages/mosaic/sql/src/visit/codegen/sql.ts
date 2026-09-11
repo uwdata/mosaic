@@ -24,6 +24,7 @@ import type {
   LogicalOpNode,
   OrderByNode,
   ParamNode,
+  PivotQuery,
   DescribeQuery,
   SelectQuery,
   SetOperation,
@@ -35,6 +36,7 @@ import type {
   UnaryOpNode,
   UnaryPostfixOpNode,
   UnnestNode,
+  ValuesNode,
   VerbatimNode,
   WindowNode,
   WindowClauseNode,
@@ -69,6 +71,7 @@ import {
   NOT_BETWEEN_OPERATOR,
   ORDER_BY,
   PARAM,
+  PIVOT_QUERY,
   SAMPLE_CLAUSE,
   SCALAR_SUBQUERY,
   SELECT_CLAUSE,
@@ -79,6 +82,7 @@ import {
   UNARY_OPERATOR,
   UNARY_POSTFIX_OPERATOR,
   UNNEST,
+  VALUES,
   VERBATIM,
   WHEN,
   WINDOW,
@@ -145,6 +149,7 @@ export abstract class SQLCodeGenerator {
       case NOT_BETWEEN_OPERATOR: return this.visitNotBetween;
       case ORDER_BY: return this.visitOrderBy;
       case PARAM: return this.visitParam;
+      case PIVOT_QUERY: return this.visitPivotQuery;
       case SAMPLE_CLAUSE: return this.visitSampleClause;
       case SCALAR_SUBQUERY: return this.visitScalarSubquery;
       case SELECT_CLAUSE: return this.visitSelectClause;
@@ -155,6 +160,7 @@ export abstract class SQLCodeGenerator {
       case UNARY_OPERATOR: return this.visitUnary;
       case UNARY_POSTFIX_OPERATOR: return this.visitUnaryPostfix;
       case UNNEST: return this.visitUnnest;
+      case VALUES: return this.visitValues;
       case VERBATIM: return this.visitVerbatim;
       case WHEN: return this.visitWhen;
       case WINDOW: return this.visitWindow;
@@ -203,6 +209,7 @@ export abstract class SQLCodeGenerator {
   abstract visitNotBetween(node: NotBetweenOpNode): string;
   abstract visitOrderBy(node: OrderByNode): string;
   abstract visitParam(node: ParamNode): string;
+  abstract visitPivotQuery(node: PivotQuery): string;
   abstract visitSampleClause(node: SampleClauseNode): string;
   abstract visitScalarSubquery(node: ScalarSubqueryNode): string;
   abstract visitSelectClause(node: SelectClauseNode): string;
@@ -213,6 +220,7 @@ export abstract class SQLCodeGenerator {
   abstract visitUnary(node: UnaryOpNode): string;
   abstract visitUnaryPostfix(node: UnaryPostfixOpNode): string;
   abstract visitUnnest(node: UnnestNode): string;
+  abstract visitValues(node: ValuesNode): string;
   abstract visitVerbatim(node: VerbatimNode): string;
   abstract visitWhen(node: WhenNode): string;
   abstract visitWindow(node: WindowNode): string;

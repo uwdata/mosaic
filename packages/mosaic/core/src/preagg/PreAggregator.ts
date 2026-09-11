@@ -1,13 +1,17 @@
-import { ExprNode, ScaleOptions, SelectQuery, Query, ExprValue, MaybeArray, FunctionNode, BetweenOpNode, AndNode, TableRefNode, createSchema, SelectClauseNode, LiteralNode, OrderByNode, and, asNode, ceil, collectColumns, createTable, float64, floor, isBetween, int32, mul, round, scaleTransform, sub, isSelectQuery, isAggregateExpression, ColumnNameRefNode } from '@uwdata/mosaic-sql';
+import { ExprNode, ScaleOptions, SelectQuery, Query, ExprValue, MaybeArray, FunctionNode, TableRefNode, createSchema, SelectClauseNode, OrderByNode, and, asNode, ceil, collectColumns, createTable, float64, floor, isBetween, int32, mul, round, scaleTransform, sub, isSelectQuery, isAggregateExpression, ColumnNameRefNode, rewrite } from '@uwdata/mosaic-sql';
 import type { Coordinator } from '../Coordinator.js';
 import type { MosaicClient } from '../MosaicClient.js';
 import type { Selection } from '../Selection.js';
 import type { BinMethod, ClauseSource, IntervalMetadata, SelectionClause } from '../SelectionClause.js';
 import { fnv_hash } from '../util/hash.js';
+import { resolvePositional } from '../util/positional.js';
 import { preaggColumns, PreAggColumnsResult } from './preagg-columns.js';
-import { EventType, MosaicErrorEvent } from '../Events.js';
 
-const Skip = { skip: true, result: null };
+/**
+ * Dummy preaggregate info object that indicates a view should be skipped
+ * (not filtered) as it is a source of a cross-filtering operation.
+ */
+const Skip = Object.freeze({ skip: true });
 
 export interface PreAggregateOptions {
   /** Database schema (namespace) in which to write pre-aggregated materialized views (default 'mosaic'). */
@@ -16,7 +20,7 @@ export interface PreAggregateOptions {
   enabled?: boolean;
 }
 
-type ActivePredicate = (p?: ExprNode) => MaybeArray<ExprNode> | undefined;
+type ActivePredicate = (clause?: SelectionClause) => MaybeArray<ExprNode>;
 
 interface ActiveColumnsResult {
   source: ClauseSource | null;
@@ -62,10 +66,10 @@ export class PreAggregator {
    * @param coordinator A Mosaic coordinator.
    * @param options Pre-aggregation options.
    */
-  constructor(
-    coordinator: Coordinator,
-    { schema = "mosaic", enabled = true }: PreAggregateOptions = {},
-  ) {
+  constructor(coordinator: Coordinator, {
+    schema = 'mosaic',
+    enabled = true
+  }: PreAggregateOptions = {}) {
     this.entries = new Map();
     this.active = null;
     this.mc = coordinator;
@@ -208,20 +212,20 @@ export class PreAggregator {
     } else {
       // generate materialized view table
       const filter = selection.remove(source).predicate(client);
-      info = preaggregateInfo(
+      const _info = preaggregateInfo(
         client.query(filter) as SelectQuery,
         active, preaggCols, schema
       );
-      info.result = mc.exec([
+      _info.result = mc.exec([
         createSchema(schema),
-        createTable(info.table, info.create, { temp: false })
+        createTable(_info.table, _info.create, { temp: false })
       ]);
-      info.result.catch((e: Error) =>
-        mc.eventBus.emit(
-          EventType.Error,
-          new MosaicErrorEvent({ message: e.message, error: e }),
-        ),
-      );
+      // if create query fails, log and mark as failed
+      _info.result.catch((e: Error) => {
+        mc.logger().error(e);
+        _info.result = null; // indicates lack of view
+      });
+      info = _info;
     }
 
     entries.set(client, info);
@@ -238,60 +242,57 @@ export class PreAggregator {
  * @param clause The active selection clause to analyze.
  */
 function activeColumns(clause: SelectionClause): ActiveColumnsResult {
-  const { source, meta } = clause;
-  const clausePred = clause.predicate;
-  const clauseCols = collectColumns(clausePred!).map(c => c.column);
-  let predicate: ActivePredicate | undefined;
-  let columns: Record<string, ExprNode> | undefined;
-
-  if (!meta || !clauseCols) {
-    return { source: null, columns, predicate };
+  const { fields, meta, source } = clause;
+  if (!meta || !fields?.length) {
+    // bail if no metadata or fields to work with
+    return { source: null, columns: undefined, predicate: undefined };
   }
 
-  switch (meta.type) {
-    case 'point':
-      predicate = x => x;
-      columns = Object.fromEntries(
-        clauseCols.map(col => [`${col}`, asNode(col)])
-      );
-      break;
-    case 'interval': {
-      const { scales, bin, pixelSize = 1 } = (meta as IntervalMetadata);
-      if (!scales) break;
+  const columns: Record<string, ExprNode> = {};
+  let predicate: ActivePredicate | undefined;
 
-      // determine pixel-level binning
-      const bins = scales.map((s: ScaleOptions) => binInterval(s, pixelSize, bin));
-      if (bins.some(b => !b)) {
-        // bail if a scale type is unsupported
-      } else if (bins.length === 1) {
-        // selection clause predicate has type BetweenOpNode
+  if (meta.type === 'point') {
+    fields.forEach((f, i) => { columns[`active${i}`] = f; });
+    predicate = (clause?: SelectionClause) => {
+      if (!clause?.predicate) return [];
+      const map = new Map<ExprNode, ExprNode>(
+        clause.fields.map((f, i) => [f, asNode(`active${i}`)])
+      );
+      return rewrite(clause.predicate, map)!;
+    };
+  } else if (meta.type === 'interval') {
+    // apply pixel-level binning, bail if a scale type is unsupported
+    const { scales, bin, pixelSize = 1 } = meta as IntervalMetadata;
+    const bins = scales?.map((s: ScaleOptions) => binInterval(s, pixelSize, bin));
+    if (bins?.every(b => b != null)) {
+      fields.forEach((f, i) => { columns[`active${i}`] = bins[i](f); });
+      if (bins.length === 1) {
         // single interval selection
-        predicate = (p?: ExprNode) => p
-          ? isBetween('active0', (p as BetweenOpNode).extent?.map(bins[0]!))
-          : [];
-        columns = { active0: bins[0]!((clausePred as BetweenOpNode).expr) };
+        // selection clause predicate has type BetweenOpNode
+        predicate = (clause?: SelectionClause) => {
+          if (!clause?.predicate) return [];
+          const v = clause.value as number[];
+          return isBetween('active0', v.map(bins[0]));
+        };
       } else {
-        // selection clause predicate has type AndNode<BetweenOpNode>
         // multiple interval selection
-        predicate = (p?: ExprNode) =>
-          p
-            ? and(
-                (p as AndNode<BetweenOpNode>).clauses.map((c, i) =>
-                  isBetween(`active${i}`, c.extent?.map(bins[i]!)),
-                ),
-              )
-            : [];
-        columns = Object.fromEntries(
-          (clausePred as AndNode<BetweenOpNode>).clauses.map((p, i) => [
-            `active${i}`,
-            bins[i]!(p.expr),
-          ]),
-        );
+        // selection clause predicate has type AndNode<BetweenOpNode>
+        predicate = (clause?: SelectionClause) => {
+          if (!clause?.predicate) return [];
+          const v = clause.value as number[][];
+          return and(
+            fields.map((_, i) => isBetween(`active${i}`, v[i].map(bins[i])))
+          );
+        };
       }
     }
   }
 
-  return { source: columns ? source : null, columns, predicate };
+  if (predicate) {
+    return { source, columns, predicate };
+  } else {
+    return { source: null, columns: undefined, predicate };
+  }
 }
 
 const BIN: Record<string, (expr: ExprValue) => FunctionNode> = { ceil, round };
@@ -308,22 +309,24 @@ const BIN: Record<string, (expr: ExprValue) => FunctionNode> = { ceil, round };
 function binInterval(
   scale: ScaleOptions,
   pixelSize: number,
-  bin?: BinMethod,
+  bin?: BinMethod
 ): ((value: ExprValue) => ExprNode) | undefined {
   const { type, domain, range, apply, sqlApply } = scaleTransform(scale)!;
   if (!apply) return; // unsupported scale type
   const binFn = BIN[`${bin}`.toLowerCase()] || floor;
-  const dom = domain!.map((x) => Number(x));
+  const dom = domain!.map(x => Number(x));
   const lo = apply(Math.min(...dom));
   const hi = apply(Math.max(...dom));
-  const s =
-    (type === "identity" ? 1 : Math.abs(range![1] - range![0]) / (hi - lo)) /
-    pixelSize;
-  const scalar =
-    s === 1 ? (x: ExprValue) => x : (x: ExprValue) => mul(float64(s), x);
-  const diff =
-    lo === 0 ? (x: ExprValue) => x : (x: ExprValue) => sub(x, float64(lo));
-  return (value) => int32(binFn(scalar(diff(sqlApply(value)))));
+  const s = (type === 'identity'
+    ? 1
+    : Math.abs(range![1] - range![0]) / (hi - lo)) / pixelSize;
+  const scalar = s === 1
+    ? (x: ExprValue) => x
+    : (x: ExprValue) => mul(float64(s), x);
+  const diff = lo === 0
+    ? (x: ExprValue) => x
+    : (x: ExprValue) => sub(x, float64(lo));
+  return value => int32(binFn(scalar(diff(sqlApply(value)))));
 }
 
 /**
@@ -338,9 +341,9 @@ function preaggregateInfo(
   query: SelectQuery,
   active: ActiveColumnsResult,
   preaggCols: PreAggColumnsResult,
-  schema: string,
+  schema: string
 ): PreAggregateInfo {
-  const { dims, groupby, output, preagg } = preaggCols;
+  const { groupby, having, orderby, output, preagg, qualify } = preaggCols;
   const { columns = {} } = active;
 
   // build materialized view construction query
@@ -349,8 +352,8 @@ function preaggregateInfo(
     .with(query._with)
     .sample(query._sample)
     .where(query._where)
-    .select({ ...groupby, ...preagg, ...columns })
-    .groupby(dims, Object.keys(columns));
+    .select({ ...preagg, ...columns })
+    .groupby(groupby, Object.keys(columns));
 
   // ensure active clause columns are selected by subqueries
   const [subq] = create.subqueries;
@@ -367,10 +370,12 @@ function preaggregateInfo(
   // generate preaggregate select query from original query
   // replace select, from, groupby; sanitize orderby; remove CTEs, where
   const select = query.clone()
-    .setSelect(dims, output)
+    .setSelect(output)
     .setFrom(table)
-    .setGroupby(dims)
-    .setOrderby(replaceIndices(query._orderby, query._select))
+    .setGroupby(groupby)
+    .setHaving(having)
+    .setQualify(qualify)
+    .setOrderby(replaceIndices(orderby, query._select))
     .sample(null);
   select._with = [];
   select.setWhere();
@@ -387,20 +392,16 @@ function replaceIndices(exprs: ExprNode[], select: SelectClauseNode[]) {
   return exprs.flatMap(expr => {
     if (expr.type === "ORDER_BY") {
       const e = (expr as OrderByNode).expr;
-      if (e.type === "LITERAL") {
-        const ref = select[(e as LiteralNode).value as number - 1];
-        if (ref) {
-          const cloned = expr.clone();
-          // @ts-expect-error assign to cloned order by node
-          cloned.expr = asNode(ref.alias);
-          return cloned
-        } else {
-          return [];
-        }
+      const ref = resolvePositional(e, select);
+      if (ref) {
+        const cloned = expr.clone();
+        // @ts-expect-error assign to cloned order by node
+        cloned.expr = asNode(ref.alias);
+        return cloned;
       }
-    } else if (expr.type === "LITERAL") {
-      const ref = select[(expr as LiteralNode).value as number - 1];
-      return ref ? asNode(ref.alias) : [];
+    } else {
+      const ref = resolvePositional(expr, select);
+      if (ref) return asNode(ref.alias);
     }
     return expr;
   });
@@ -427,11 +428,9 @@ function subqueryPushdown(query: Query, cols: string[]): void {
         // if an aggregation query, we need to push to groupby as well
         // we also deduplicate as the column may already be present
         const set = new Set(
-          q._groupby.flatMap((x) =>
-            x instanceof ColumnNameRefNode ? [x.name] : [],
-          ),
+          q._groupby.flatMap(x => x instanceof ColumnNameRefNode ? [x.name] : [])
         );
-        q.groupby(cols.filter((c) => !set.has(c)));
+        q.groupby(cols.filter(c => !set.has(c)));
       }
     }
     q.subqueries.forEach(pushdown);
@@ -460,15 +459,22 @@ export class PreAggregateInfo {
   table: TableRefNode;
   /** The SQL query used to generate the materialized view. */
   create: SelectQuery;
-  /** A result promise returned for the materialized view creation query. */
+  /**
+   * A result promise returned for the materialized view creation query.
+   * Null values indicate that a creation query failed and there is no view.
+   */
   result: Promise<unknown> | null;
-  /** Definitions and predicate function for the active columns,
-   * which are dynamically filtered by the active clause. */
+  /**
+   * Definitions and predicate function for the active columns,
+   * which are dynamically filtered by the active clause.
+   */
   active: ActiveColumnsResult;
   /** Select query (sans where clause) for materialized views. */
   select: SelectQuery;
-  /** Boolean flag indicating a client that should be skipped.
-   * This value is always false for a created materialized view. */
+  /**
+   * Boolean flag indicating a client that should be skipped.
+   * This value is always false for a created materialized view.
+   */
   skip: boolean;
 
   /**
@@ -478,7 +484,7 @@ export class PreAggregateInfo {
   constructor({ table, create, active, select }: PreAggregateInfoOptions) {
     this.table = table;
     this.create = create;
-    this.result = null;
+    this.result = null; // set subsequently in request method
     this.active = active;
     this.select = select;
     this.skip = false;
@@ -486,10 +492,11 @@ export class PreAggregateInfo {
 
   /**
    * Generate a materialized view query for the given predicate.
-   * @param predicate The current active clause predicate.
+   * @param clause The current selection clause.
    * @returns A materialized view query.
    */
-  query(predicate: ExprNode): SelectQuery {
-    return this.select.clone().where(this.active.predicate!(predicate)!);
+  query(clause: SelectionClause): SelectQuery {
+    const filter = this.active.predicate?.(clause) ?? [];
+    return this.select.clone().where(filter);
   }
 }

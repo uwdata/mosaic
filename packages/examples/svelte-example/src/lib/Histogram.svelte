@@ -42,12 +42,14 @@
 
     // Update the selection with the currently selected item.
     $effect(() => {
+      const field = dateMonth("date");
       selection.update({
         source: client,
         value: selectedMonth,
         clients: new Set([client]),
+        fields: [field],
         predicate:
-          selectedMonth != null ? eq(dateMonth("date"), selectedMonth) : null,
+          selectedMonth != null ? eq(field, selectedMonth) : null,
       });
     });
 
@@ -56,6 +58,7 @@
       selection.update({
         source: client,
         value: null,
+        fields: [],
         predicate: null,
       });
 

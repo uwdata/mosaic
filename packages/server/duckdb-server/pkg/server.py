@@ -1,79 +1,82 @@
+from __future__ import annotations
+
 import logging
 import sys
 import time
-from functools import partial
+from typing import TYPE_CHECKING, Any, Literal, Protocol, TypedDict
 
 import ujson
 from socketify import App, CompressOptions, OpCode
-import duckdb
 
-from pkg.query import get_arrow_bytes, get_json, retrieve
+from pkg.query import get_arrow_bytes
+
+if TYPE_CHECKING:
+    import duckdb
+    from duckdb import DuckDBPyConnection as Con
+    from socketify import Request as Req
+    from socketify import Response as Res
+    from socketify import SendStatus as Status
+    from socketify import WebSocket as Ws
 
 logger = logging.getLogger(__name__)
 
 SLOW_QUERY_THRESHOLD = 5000
 
 
-class Handler:
-    def done(self):
-        raise Exception("NotImplementedException")
+class _QueryParams(TypedDict):
+    type: Literal["arrow", "exec"]
+    sql: str
+    uuid: str  # name
 
-    def arrow(self, buffer):
-        raise Exception("NotImplementedException")
 
-    def json(self, data):
-        raise Exception("NotImplementedException")
-
-    def error(self, error):
-        raise Exception("NotImplementedException")
+class Handler(Protocol):
+    def done(self) -> None: ...
+    def arrow(self, buffer: bytes) -> None: ...
+    def error(self, error: Any) -> None: ...
 
 
 class SocketHandler(Handler):
-    def __init__(self, ws):
-        self.ws = ws
+    def __init__(self, ws: Ws) -> None:
+        self.ws: Ws = ws
 
-    def check(self, ok):
+    def check(self, ok: Ws | Status | None) -> None:
         if not ok:
             logger.warning(f"WebSocket backpressure: {self.ws.get_buffered_amount()}")
 
-    def done(self):
+    def done(self) -> None:
         ok = self.ws.send({}, OpCode.TEXT)
         self.check(ok)
 
-    def arrow(self, buffer):
+    def arrow(self, buffer: bytes) -> None:
         ok = self.ws.send(buffer, OpCode.BINARY)
         self.check(ok)
 
-    def json(self, data):
-        ok = self.ws.send(data, OpCode.TEXT)
-        self.check(ok)
-
-    def error(self, error):
+    def error(self, error: object) -> None:
         ok = self.ws.send({"error": str(error)}, OpCode.TEXT)
         self.check(ok)
 
 
 class HTTPHandler(Handler):
-    def __init__(self, res):
+    def __init__(self, res: Res) -> None:
         self.res = res
 
-    def done(self):
+    def done(self) -> None:
         self.res.end("")
 
-    def arrow(self, buffer):
+    def arrow(self, buffer: bytes) -> None:
         self.res.write_header("Content-Type", "application/octet-stream")
         self.res.end(buffer)
 
-    def json(self, data):
-        self.res.write_header("Content-Type", "application/json")
-        self.res.end(data)
-
-    def error(self, error):
+    def error(self, error: object) -> None:
         self.res.write_status(500)
         self.res.end(str(error))
 
 
-def handle_query(handler: Handler, con: duckdb.DuckDBPyConnection, cache, query):
+def handle_query(
+    handler: Handler,
+    con: duckdb.DuckDBPyConnection,
+    query: _QueryParams,
+) -> None:
     logger.debug(f"{query=}")
 
     start = time.time()
@@ -86,13 +89,11 @@ def handle_query(handler: Handler, con: duckdb.DuckDBPyConnection, cache, query)
             con.execute(sql)
             handler.done()
         elif command == "arrow":
-            buffer = retrieve(cache, query, partial(get_arrow_bytes, con))
+            buffer = get_arrow_bytes(con, sql)
             handler.arrow(buffer)
-        elif command == "json":
-            json = retrieve(cache, query, partial(get_json, con))
-            handler.json(json)
         else:
-            raise ValueError(f"Unknown command {command}")
+            msg = f"Unknown command {command}"
+            raise ValueError(msg)
     except Exception as e:
         logger.exception("Error processing query")
         handler.error(e)
@@ -104,14 +105,14 @@ def handle_query(handler: Handler, con: duckdb.DuckDBPyConnection, cache, query)
         logger.info(f"DONE. Query took {total} ms.\n{sql}")
 
 
-def on_error(error, res, req):
+def on_error(error: object, res: Res, req: Req) -> None:
     logger.error(str(error))
     if res is not None:
         res.write_status(500)
         res.end(f"Error {error}")
 
 
-def server(con, cache):
+def server(con: Con) -> None:
     # SSL server
     # app = App(AppOptions(key_file_name="./localhost-key.pem", cert_file_name="./localhost.pem"))
     app = App()
@@ -119,19 +120,19 @@ def server(con, cache):
     # faster serialization than standard json
     app.json_serializer(ujson)
 
-    def ws_message(ws, message, opcode):
+    def ws_message(ws: Ws, message: str | bytes | bytearray, opcode: OpCode) -> None:
         handler = SocketHandler(ws)
 
         try:
-            query = ujson.loads(message)
+            query: _QueryParams = ujson.loads(message)
         except Exception as e:
             logger.exception("Error reading message from WebSocket")
             handler.error(e)
             return
 
-        handle_query(handler, con, cache, query)
+        handle_query(handler, con, query)
 
-    async def http_handler(res, req):
+    async def http_handler(res: Res, req: Req) -> None:
         res.write_header("Access-Control-Allow-Origin", "*")
         res.write_header("Access-Control-Request-Method", "*")
         res.write_header("Access-Control-Allow-Methods", "OPTIONS, POST, GET")
@@ -141,15 +142,19 @@ def server(con, cache):
         method = req.get_method()
 
         handler = HTTPHandler(res)
-
+        data: _QueryParams
         if method == "OPTIONS":
             handler.done()
         elif method == "GET":
-            data = ujson.loads(req.get_query("query"))
-            handle_query(handler, con, cache, data)
+            message: str | bytes | bytearray = req.get_query("query")  # pyright: ignore[reportAssignmentType]
+            data = ujson.loads(message)
+            handle_query(handler, con, data)
         elif method == "POST":
-            data = await res.get_json()
-            handle_query(handler, con, cache, data)
+            maybe_data: _QueryParams | None = await res.get_json()
+            if maybe_data:
+                handle_query(handler, con, maybe_data)
+            else:
+                raise NotImplementedError
 
     app.ws(
         "/*",

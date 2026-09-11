@@ -19,7 +19,7 @@ data:
 params:
   series: { select: single }
   quakes: { select: single }
-  counties: { select: single }
+  counties_filter: { select: single }
 vconcat:
 - plot:
   - mark: ruleY
@@ -79,8 +79,8 @@ vconcat:
     strokeWidth: 0.25
   - select: region
     channels: [id]
-    as: $counties
+    as: $counties_filter
   - select: highlight
-    by: $counties
+    by: $counties_filter
   margin: 0
   projectionType: albers

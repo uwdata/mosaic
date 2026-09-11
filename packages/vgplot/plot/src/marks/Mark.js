@@ -1,6 +1,7 @@
 /** @import { SelectQuery } from '@uwdata/mosaic-sql' */
+/** @import { DataColumns } from '@uwdata/mosaic-core' */
 import { isParam, MosaicClient, queryFieldInfo, toDataColumns } from '@uwdata/mosaic-core';
-import { Query, collectParams, column, isAggregateExpression, isColumnParam, isColumnRef, isNode, isParamLike } from '@uwdata/mosaic-sql';
+import { Query, collectParams, column, isAggregateExpression, isColumnParam, isColumnRef, isNode, isParamLike, unnest } from '@uwdata/mosaic-sql';
 import { isColor } from './util/is-color.js';
 import { isConstantOption } from './util/is-constant-option.js';
 import { isSymbol } from './util/is-symbol.js';
@@ -9,6 +10,12 @@ import { Transform } from '../symbols.js';
 const isColorChannel = channel => channel === 'stroke' || channel === 'fill';
 const isOpacityChannel = channel => /opacity$/i.test(channel);
 const isSymbolChannel = channel => channel === 'symbol';
+
+// column name for a plain column reference or name string, else null
+const unnestableColumn = field =>
+  isColumnRef(field) ? field.column
+    : typeof field === 'string' ? field
+    : null;
 const isFieldObject = (channel, field) => {
   return channel !== 'sort' && channel !== 'tip'
     && field != null && !Array.isArray(field);
@@ -24,6 +31,26 @@ const valueEntry = (channel, value) => ({ channel, value });
 // as opposed to a database table reference
 export const isDataArray = source => Array.isArray(source);
 
+/**
+ * The minimal mark surface consumed by interactors, allowing marks
+ * and lightweight stand-ins to be used interchangeably.
+ * @typedef {object} InteractorMark
+ * @property {import('../plot.js').Plot} plot
+ *   The plot the mark belongs to.
+ * @property {(channel: string, options?: { exact?: boolean }) =>
+ *   ({ field?: any, as?: any } | null | undefined)} channelField
+ *   Look up the channel entry bound to a channel, if any.
+ * @property {(field: any) => boolean} isUnnested
+ *   Whether the given field is unnested by the mark's source.
+ * @property {DataColumns} [data]
+ *   Materialized column data, when available.
+ * @property {number} [index]
+ *   The mark's index within the plot.
+ */
+
+/**
+ * @implements {InteractorMark}
+ */
 export class Mark extends MosaicClient {
   constructor(type, source, encodings, reqs = {}) {
     super(source?.options?.filterBy);
@@ -104,6 +131,25 @@ export class Mark extends MosaicClient {
     return table ? (isParam(table) ? table.value : table) : null;
   }
 
+  /**
+   * The source field names to unnest, as declared by the `unnest` option.
+   * @returns {string[]}
+   */
+  get unnestFields() {
+    const { unnest } = this.source?.options ?? {};
+    return unnest == null ? [] : [unnest].flat();
+  }
+
+  /**
+   * Check if the given field is unnested by this mark's source.
+   * @param {*} field A field reference or column name.
+   * @returns {boolean}
+   */
+  isUnnested(field) {
+    const name = unnestableColumn(field);
+    return name != null && this.unnestFields.includes(name);
+  }
+
   hasOwnData() {
     return this.source == null || isDataArray(this.source);
   }
@@ -160,7 +206,17 @@ export class Mark extends MosaicClient {
    */
   query(filter = []) {
     if (this.hasOwnData()) return null;
-    return markQuery(this.channels, this.sourceTable()).where(filter);
+    const { unnestFields } = this;
+    // wrap unnested column fields in UNNEST() so arrays expand into rows
+    const channels = unnestFields.length === 0
+      ? this.channels
+      : this.channels.map(c => {
+          const name = unnestableColumn(c.field);
+          return name != null && unnestFields.includes(name)
+            ? { ...c, field: unnest(c.field) }
+            : c;
+        });
+    return markQuery(channels, this.sourceTable()).where(filter);
   }
 
   queryPending() {
@@ -195,7 +251,7 @@ export class Mark extends MosaicClient {
  * Checks if a constant value or a data field is needed.
  * Also avoids misinterpretation of data values as color names.
  * @param {*} c a visual encoding channel spec
- * @param {object} columns named data column arrays
+ * @param {object} [columns] named data column arrays
  * @returns the Plot channel option
  */
 export function channelOption(c, columns) {

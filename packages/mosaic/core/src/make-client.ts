@@ -1,8 +1,9 @@
-import type { Coordinator } from './Coordinator.js';
-import type { Selection } from './Selection.js';
 import type { FilterExpr } from '@uwdata/mosaic-sql';
-import { type ClientQuery, MosaicClient } from './MosaicClient.js';
+import type { Coordinator } from './Coordinator.js';
 import { coordinator as defaultCoordinator } from './Coordinator.js';
+import { type ClientQuery, MosaicClient } from './MosaicClient.js';
+import type { Selection } from './Selection.js';
+import type { QueryError } from './util/query-error.js';
 
 export interface MakeClientOptions {
   /** Mosaic coordinator. Defaults to the global coordinator. */
@@ -23,7 +24,7 @@ export interface MakeClientOptions {
   /** Called by the coordinator to inform the client that a query is pending. */
   queryPending?: () => void;
   /** Called by the coordinator to report a query execution error. */
-  queryError?: (error: Error) => void;
+  queryError?: (error: QueryError) => void;
 }
 
 /**
@@ -86,7 +87,7 @@ class ProxyClient extends MosaicClient {
     return this;
   }
 
-  queryError(error: Error): this {
+  queryError(error: QueryError): this {
     this._methods.queryError?.(error);
     return this;
   }

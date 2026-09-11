@@ -17,3 +17,18 @@ node_modules
 **/.venv
 **/tsconfig.tsbuildinfo
 packages/server/duckdb-server-go/duckdb-server-go
+transitionFolder
+
+# Virtual environment
+venv/
+.env/
+**/.python-version
+
+# Conda environment
+conda-env/
+
+# Python cache
+*.pyc
+
+.pnpm-store
+dev/notebooks/__marimo__

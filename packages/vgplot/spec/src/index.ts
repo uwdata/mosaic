@@ -1,5 +1,6 @@
 export { astToDOM, InstantiateContext } from "./ast-to-dom.js";
 export { astToESM, CodegenContext } from "./ast-to-esm.js";
+export { astToPython, PythonCodegenContext } from "./ast-to-python.js";
 export { parseSpec } from "./parse-spec.js";
 
 export * from "./constants.js";

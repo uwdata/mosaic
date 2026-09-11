@@ -53,7 +53,7 @@ This repository contains a set of related packages, spanning the core Mosaic arc
 
 * [`duckdb-server`](https://github.com/uwdata/mosaic/tree/main/packages/server/duckdb-server): A Python-based server that runs a local DuckDB instance and support queries over Web Sockets or HTTP, returning data in either [Apache Arrow](https://arrow.apache.org/) or JSON format.
 * [`duckdb-server-rust`](https://github.com/uwdata/mosaic/tree/main/packages/server/duckdb-server-rust): A Rust-based server similar to `duckdb-server` (Python) and `mosaic-duckdb` (Node.js) with additional support for HTTP/2. We are still evaluating what server component works best. DuckDB support for Rust is often delayed compared to Python.
-* [`duckdb-server-go`](https://github.com/uwdata/mosaic/tree/main/packages/server/duckdb-server-go): A Go-based server similar to `duckdb-server` (Python) and `mosaic-duckdb` (Node.js) with additional support for HTTP/2. It has experimental support for multi-tenant access control, function blocklisting, and other features to harden the server for production use.
+* [`duckdb-server-go`](https://github.com/uwdata/mosaic/tree/main/packages/server/duckdb-server-go): A Go-based server similar to `duckdb-server` (Python) and `mosaic-duckdb` (Node.js) with additional support for HTTP/2. It has experimental support for multi-tenant access control, function allowlisting and blocklisting, and other features to harden the server for production use.
 * [`mosaic-duckdb`](https://github.com/uwdata/mosaic/tree/main/packages/server/duckdb): A Promise-based Node.js API to DuckDB, along with a data server that supports transfer of [Apache Arrow](https://arrow.apache.org/) and JSON data over either Web Sockets or HTTP. Due to quality and maintenance issues involving the Node.js DuckDB client and Arrow extension, we recommend using the Python-based `duckdb-server` package instead. However, we retain this package for both backwards compatibility and internal testing use.
 
 ### Examples (`packages/examples`)
@@ -62,24 +62,11 @@ This repository contains a set of related packages, spanning the core Mosaic arc
 * [`svelte-example`](https://github.com/uwdata/mosaic/tree/main/packages/examples/svelte-example): An example application that demonstrates how to create Mosaic components within web frameworks such as Svelte and React.
 * [`vega-example`](https://github.com/uwdata/mosaic/tree/main/packages/examples/vega-example): A proof-of-concept example integrating Vega-Lite with Mosaic for data management and cross-view linking.
 
-## Build and Usage Instructions
+## Contributing
 
-To build and develop Mosaic locally:
+To build and develop Mosaic locally, run the test suite, or work on the documentation, see [CONTRIBUTING.md](CONTRIBUTING.md).
 
-* Clone [https://github.com/uwdata/mosaic](https://github.com/uwdata/mosaic).
-* Run `pnpm i` to install dependencies.
-* Run `pnpm test` to run the test suite.
-* Run `pnpm build` to build client-side bundles.
-* Run `uv build --all-packages` to build the Python packages.
-
-To run local interactive examples:
-
-* Run `pnpm dev` to launch a local web server and view examples. By default, the examples use DuckDB-WASM in the browser. We recommend using Firefox since it remembers the selected dropdown across browser reloads. For greater performance, launch and connect to a local DuckDB server as described below.
-
-To launch a local DuckDB server:
-
-* Install [uv](https://docs.astral.sh/uv/), if not already present.
-* Run `pnpm server` to launch the [`duckdb-server`](https://github.com/uwdata/mosaic/tree/main/packages/server/duckdb-server). This runs the server in development mode, so the server will restart if you change its code.
+## Usage Instructions
 
 To use Mosaic with DuckDB Python in Jupyter Notebooks:
 

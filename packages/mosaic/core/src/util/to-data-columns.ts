@@ -4,14 +4,14 @@ import type { Table } from '@uwdata/flechette';
 /**
  * An Array or TypedArray
  */
-type Arrayish = Array<unknown> | Int8Array | Uint8Array | Uint8ClampedArray
+export type Arrayish = Array<unknown> | Int8Array | Uint8Array | Uint8ClampedArray
   | Int16Array | Uint16Array | Int32Array | Uint32Array
   | Float32Array | Float64Array;
 
 /**
  * Data columns structure with either named columns or values array
  */
-type DataColumns =
+export type DataColumns =
   | { numRows: number; columns: Record<string, Arrayish> }
   | { numRows: number; values: Arrayish };
 
@@ -36,8 +36,13 @@ export function toDataColumns(data: unknown): DataColumns {
  * @returns An object with named column arrays.
  */
 function arrowToColumns(data: Table): DataColumns {
-  const { numRows } = data;
-  return { numRows, columns: data.toColumns() as Record<string, Arrayish> };
+  const { numRows, schema } = data;
+  // apache-arrow tables from third-party connectors lack toColumns()
+  const columns: Record<string, Arrayish> = {};
+  schema.fields.forEach(({ name }, i) => {
+    columns[name] = (data.getChildAt(i)?.toArray() ?? []) as Arrayish;
+  });
+  return { numRows, columns };
 }
 
 /**

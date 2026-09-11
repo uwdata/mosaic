@@ -14,13 +14,12 @@ import { v4 as uuidv4 } from 'uuid';
  * @property {Params} params The current params.
  */
 
+/** @type {import('anywidget/types').AnyWidget<Model>} */
 export default {
-  /** @type {import('anywidget/types').Initialize<Model>} */
   initialize(view) {
     view.model.set('preagg_schema', coordinator().preaggregator.schema);
   },
 
-  /** @type {import('anywidget/types').Render<Model>} */
   render(view) {
     view.el.classList.add('mosaic-widget');
     const getSpec = () => view.model.get('spec');
@@ -58,10 +57,27 @@ export default {
       coordinator().clear();
     }
 
+    /**
+     * Serialize a selection's resolved predicate — a single expression or an
+     * implicitly conjunctive array — to a SQL string.
+     * @param {import('@uwdata/mosaic-core').Selection} selection
+     * @returns {string}
+     */
+    function predicateSQL(selection) {
+      const predicate = selection.predicate(undefined) ?? [];
+      const parts = (Array.isArray(predicate) ? predicate : [predicate]).map(String);
+      return parts.length > 1 ? parts.map(s => `(${s})`).join(' AND ') : (parts[0] ?? '');
+    }
+
+    let appliedSpecJSON;
+
     async function updateSpec() {
       const spec = getSpec();
+      const specJSON = JSON.stringify(spec);
+      if (specJSON === appliedSpecJSON) return;
+      appliedSpecJSON = specJSON;
       reset();
-      logger?.log('Setting spec:', spec);
+      logger.log('Setting spec:', spec);
       const dom = await instantiateSpec(spec);
       view.el.replaceChildren(dom.element);
 
@@ -71,7 +87,7 @@ export default {
       for (const [name, param] of dom.params) {
         params[name] = {
           value: param.value,
-          ...(isSelection(param) ? { predicate: String(param.predicate(undefined)) } : {}),
+          ...(isSelection(param) ? { predicate: predicateSQL(param) } : {}),
         };
 
         param.addEventListener('value', (value) => {
@@ -79,7 +95,7 @@ export default {
             ...params,
             [name]: {
               value,
-              ...(isSelection(param) ? { predicate: String(param.predicate(undefined)) } : {})
+              ...(isSelection(param) ? { predicate: predicateSQL(param) } : {})
             }
           })
           view.model.set('params', params);
@@ -101,28 +117,23 @@ export default {
     view.model.on('change:preagg_schema', () => configureCoordinator());
 
     view.model.on('msg:custom', (msg, buffers) => {
-      logger?.group(`query ${msg.uuid}`);
-      logger?.log('received message', msg, buffers);
+      logger.group(`query ${msg.uuid}`);
+      logger.log('received message', msg, buffers);
 
       const query = openQueries.get(msg.uuid);
       openQueries.delete(msg.uuid);
 
-      logger?.log(query.query.sql, (performance.now() - query.startTime).toFixed(1));
+      logger.log(query.query.sql, (performance.now() - query.startTime).toFixed(1));
 
       if (msg.error) {
         query.reject(msg.error);
-        logger?.error(msg.error);
+        logger.error(msg.error);
       } else {
         switch (msg.type) {
           case 'arrow': {
             const table = decodeIPC(buffers[0].buffer);
-            logger?.log('table', table);
+            logger.log('table', table);
             query.resolve(table);
-            break;
-          }
-          case 'json': {
-            logger?.log('json', msg.result);
-            query.resolve(msg.result);
             break;
           }
           default: {
@@ -131,7 +142,7 @@ export default {
           }
         }
       }
-      logger?.groupEnd();
+      logger.groupEnd();
     });
 
     coordinator().databaseConnector(connector);

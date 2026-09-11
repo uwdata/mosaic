@@ -1,13 +1,23 @@
+import { asNode, collectAggregates, FromClauseNode, isAggregateExpression, isColumnRef, isSelectQuery, isTableRef, rewrite, sql } from '@uwdata/mosaic-sql';
 import type { AggregateNode, ColumnRefNode, ExprNode, Query, SelectQuery } from '@uwdata/mosaic-sql';
 import type { MosaicClient } from '../MosaicClient.js';
-import { collectAggregates, FromClauseNode, isAggregateExpression, isColumnRef, isSelectQuery, isTableRef, rewrite, sql } from '@uwdata/mosaic-sql';
+import { resolvePositional } from '../util/positional.js';
 import { sufficientStatistics } from './sufficient-statistics.js';
 
+// result of determining columns for preaggregation optimization
 export interface PreAggColumnsResult {
-  dims: string[];
-  groupby: Record<string, ExprNode>;
+  // Columns to include in a created preaggregate table
   preagg: Record<string, ExprNode>;
+  // Output columns for selection update queries
   output: Record<string, ExprNode>;
+  // Group by dimension aliases
+  groupby: string[]
+  // ORDER BY clause expressions, potentially rewritten for preaggregation
+  orderby: ExprNode[];
+  // HAVING clause expressions, potentially rewritten for preaggregation
+  having: ExprNode[];
+  // QUALIFY clause expressions, potentially rewritten for preaggregation
+  qualify: ExprNode[];
 }
 
 /**
@@ -32,68 +42,110 @@ export function preaggColumns(client: MosaicClient): PreAggColumnsResult | null 
   });
   if (typeof from !== 'string') return null;
 
-  const aggrs = new Map<AggregateNode, ExprNode>();
-  const preagg: Record<string, ExprNode> = {};
-  const output: Record<string, ExprNode> = {};
-
-  // groupby entries, these may or may not be selected
-  const groupby: Record<string, ExprNode> = {};
-  for (const expr of q._groupby) {
-    // ignore integer index, as expr will be in select clause
-    // we will harvest that expr as a dimension below
-    if (expr.type !== "LITERAL") {
-      const alias = isColumnRef(expr) ? expr.column : `${expr}`;
-      groupby[alias] = expr;
-    }
-  }
-
-  // all group by dimensions, including selected ones.
-  const dims: Set<string> = new Set(Object.keys(groupby));
-
   // generate a scalar subquery for a global average
+  // this may be used to mean-center data in preaggregate calculations
   const avg = (ref: ColumnRefNode) => {
     const name = ref.column;
     const expr = getBase(q, q => q._select.find(c => c.alias === name)?.expr);
     return sql`(SELECT avg(${expr ?? ref}) FROM "${from}")`;
   };
 
-  // iterate over select clauses and analyze expressions
-  for (const { alias, expr } of q._select) {
-    // bail if there is an aggregate we can't analyze
-    // a value > 1 indicates an aggregate in verbatim text
-    if (isAggregateExpression(expr!) > 1) return null;
+  const aggrs = new Map<AggregateNode, ExprNode>();
+  const preagg: Record<string, ExprNode> = {}; // alias -> expr
+  const output: Record<string, ExprNode> = {}; // alias -> expr
+  const groupby: Record<string, string> = {}; // lower case alias -> alias
 
-    const nodes = collectAggregates(expr!);
-    if (nodes.length === 0) {
-      // if no aggregates, expr is a groupby dimension
-      dims.add(alias);
-      preagg[alias] = expr;
-    } else {
-      for (const node of nodes) {
-        // bail if distinct aggregate
-        if (node.isDistinct) return null;
+  try {
+    const select = q._select;
 
-        // bail if aggregate function is unsupported
-        // otherwise add output aggregate to rewrite map
-        const agg = sufficientStatistics(node, preagg, avg);
-        if (!agg) return null;
-        aggrs.set(node, agg);
+    // iterate over select clauses and analyze expressions
+    for (const { alias, expr } of select) {
+      const result = analyzeExpression(expr, aggrs, preagg, avg);
+      if (result) {
+        // rewrite original select clause to use preaggregates
+        output[alias] = result;
+      } else {
+        // include non-aggregates in preagg table and update results
+        preagg[alias] = expr;
+        output[alias] = asNode(alias);
+        groupby[alias.toLowerCase()] = alias;
       }
-
-      // rewrite original select clause to use preaggregates
-      output[alias] = rewrite(expr!, aggrs)!;
     }
+
+    // analyze any orderby expressions
+    const orderby = q._orderby
+      .map(expr => analyzeExpression(expr, aggrs, preagg, avg) ?? expr);
+
+    // analyze any having expressions
+    const having = q._having
+      .map(expr => analyzeExpression(expr, aggrs, preagg, avg) ?? expr);
+
+    // analyze any qualify expressions
+    const qualify = q._qualify
+      .map(expr => analyzeExpression(expr, aggrs, preagg, avg) ?? expr);
+
+    // bail if query has no aggregates
+    if (!aggrs.size) return null;
+
+    // add groupby entries; these may or may not be selected
+    let id = 0;
+    for (let expr of q._groupby) {
+      expr = resolvePositional(expr, select)?.expr ?? expr;
+      const alias = isColumnRef(expr) ? expr.column : `__groupby_${++id}`;
+      const key = alias.toLowerCase();
+      if (!groupby[key]) {
+        // add non-selected groupby term
+        preagg[alias] = expr;
+        groupby[key] = alias;
+      }
+    }
+
+    return {
+      groupby: Object.values(groupby),
+      orderby,
+      preagg,
+      output,
+      having,
+      qualify
+    };
+  } catch {
+    // bail if unsupported aggregate was encountered
+    return null;
   }
+}
 
-  // bail if the query has no aggregates
-  if (!aggrs.size) return null;
+/**
+ * Analyzes an expression and returns a rewritten expression if preaggregation
+ * optimization is supported. Returns undefined if the expression does not
+ * contain any aggregates. Throws if the expression contains an unsupported
+ * or non-optimizable aggregate.
+ */
+function analyzeExpression(
+  expr: ExprNode,
+  aggrs: Map<AggregateNode, ExprNode>,
+  preagg: Record<string, ExprNode>,
+  avg: (ref: ColumnRefNode) => ExprNode
+) {
+  // bail if there is an aggregate we can't analyze
+  // a value > 1 indicates an aggregate in verbatim text
+  if (isAggregateExpression(expr!) > 1) throw new Error();
 
-  return {
-    dims: Array.from(dims),
-    groupby,
-    preagg,
-    output
-  };
+  const nodes = collectAggregates(expr!);
+  if (nodes.length) {
+    for (const node of nodes) {
+      // bail if distinct aggregate
+      if (node.isDistinct) throw new Error();
+
+      // bail if aggregate function is unsupported
+      // otherwise add output aggregate to rewrite map
+      const agg = sufficientStatistics(node, preagg, avg);
+      if (!agg) throw new Error();
+      aggrs.set(node, agg);
+    }
+
+    // rewrite original expression to use preaggregates
+    return rewrite(expr!, aggrs)!;
+  }
 }
 
 /**

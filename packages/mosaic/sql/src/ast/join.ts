@@ -3,7 +3,6 @@ import { JOIN_CLAUSE } from '../constants.js';
 import { ColumnRefNode } from './column-ref.js';
 import { FromNode } from './from.js';
 import { ExprNode } from './node.js';
-import { TableRefNode } from './table-ref.js';
 
 /** The join variant. Determines what kind of join is performed. */
 export type JoinVariant = 'REGULAR' | 'CROSS' | 'NATURAL' | 'POSITIONAL' | 'ASOF';
@@ -13,9 +12,9 @@ export type JoinType = 'INNER' | 'LEFT' | 'RIGHT' | 'FULL' | 'SEMI' | 'ANTI';
 
 export class JoinNode extends FromNode {
   /** The left table to join. */
-  readonly left: FromNode | TableRefNode;
+  readonly left: FromNode;
   /** The right table to join. */
-  readonly right: FromNode | TableRefNode;
+  readonly right: FromNode;
   /** The join variant (REGULAR, CROSS, NATURAL, POSITIONAL, ASOF). */
   readonly joinVariant: JoinVariant;
   /** The join type (INNER, LEFT, RIGHT, FULL, SEMI, ANTI). */
@@ -46,8 +45,8 @@ export class JoinNode extends FromNode {
    * @param sample A table sample to apply to join output.
    */
   constructor(
-    left: FromNode | TableRefNode,
-    right: FromNode | TableRefNode,
+    left: FromNode,
+    right: FromNode,
     variant: JoinVariant = 'NATURAL',
     type: JoinType = 'INNER',
     condition?: ExprNode,

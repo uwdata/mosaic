@@ -1,3 +1,4 @@
+/** @import { InteractorMark } from '../marks/Mark.js' */
 import { clauseInterval } from '@uwdata/mosaic-core';
 import { ascending, min, max } from 'd3';
 import { brushGroups, brushX, brushY } from './util/brush.js';
@@ -11,6 +12,10 @@ import { sanitizeStyles } from './util/sanitize-styles.js';
  * @implements {Activatable}
  */
 export class Interval1D {
+  /**
+   * @param {InteractorMark} mark The mark to interact with.
+   * @param {*} options The interactor options.
+   */
   constructor(mark, {
     channel,
     selection,

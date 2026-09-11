@@ -61,9 +61,10 @@ export class SelectionVegaClient extends MosaicClient {
     if (this.selection) {
       this.view.addSignalListener("brush", (_name, signal) => {
         const dates = signal.utcmonth_date;
+        const field = dateMonth("date");
         const value = dates
           ? isBetween(
-              dateMonth("date"),
+              field,
               [
                 dateMonth(literal(dates.at(0))),
                 dateMonth(literal(dates.at(-1))),
@@ -82,6 +83,7 @@ export class SelectionVegaClient extends MosaicClient {
               { type: "time", domain: scale.domain(), range: scale.range() },
             ],
           },
+          fields: [field],
           value,
           predicate: value,
         };

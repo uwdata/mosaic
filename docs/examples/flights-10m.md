@@ -18,4 +18,5 @@ _You may need to wait a few seconds for the dataset to load._
 <<< @/public/specs/esm/flights-10m.js [JavaScript]
 <<< @/public/specs/yaml/flights-10m.yaml [YAML]
 <<< @/public/specs/json/flights-10m.json [JSON]
+<<< @/public/specs/python/flights-10m.py [Python]
 :::

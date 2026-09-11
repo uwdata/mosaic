@@ -17,4 +17,5 @@ Opinion poll data on historical U.S. presidents. Image marks are used to show pr
 <<< @/public/specs/esm/presidential-opinion.js [JavaScript]
 <<< @/public/specs/yaml/presidential-opinion.yaml [YAML]
 <<< @/public/specs/json/presidential-opinion.json [JSON]
+<<< @/public/specs/python/presidential-opinion.py [Python]
 :::

@@ -151,8 +151,8 @@ export class QueryManager {
         }
       }
 
-      // @ts-expect-error type may be exec | json | arrow
-      const promise = this.db!.query({ type, sql: sql!, ...options });
+      // @ts-expect-error type may be exec | arrow
+      const promise = this.db!.query({ ...options, type, sql: sql! });
       if (cache) this.clientCache!.set(sql!, promise);
 
       const data = await promise;

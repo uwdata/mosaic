@@ -11,6 +11,7 @@ export function createAPIContext({
   return {
     ...vgplot,
     ...extensions,
+    coordinator: () => coordinator,
     context: {
       coordinator,
       namedPlots,

@@ -1,7 +1,7 @@
 # Examples
 
 Mosaic-powered visualizations created with [vgplot](/vgplot/).
-These visualizations can be specified using a JavaScript API, or in a standalone YAML or JSON file. Each example includes code for all three specification formats.
+These visualizations can be specified using a JavaScript or Python API, or in a standalone YAML or JSON file. Each example includes code for all four specification formats.
 
 For example, here is a line chart of historical Apple stock prices:
 
@@ -11,6 +11,7 @@ For example, here is a line chart of historical Apple stock prices:
 <<< @/public/specs/esm/line.js [JavaScript]
 <<< @/public/specs/yaml/line.yaml [YAML]
 <<< @/public/specs/json/line.json [JSON]
+<<< @/public/specs/python/line.py [Python]
 :::
 
 ::: warning

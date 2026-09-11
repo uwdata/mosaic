@@ -9,7 +9,7 @@ const errmsg = attr => `Invalid SVG path, incorrect parameter ${attr}`;
 /**
  * Parse an SVG path into a list of drawing commands.
  * @param {string} path The SVG path string to parse
- * @returns {[string, ...number][]} A list of drawing commands.
+ * @returns {[string, ...number[]][]} A list of drawing commands.
  *  Each command has a single letter as the first entry. All subsequent
  *  entries are numeric parameter values.
  */

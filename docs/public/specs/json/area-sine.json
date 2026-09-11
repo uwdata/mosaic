@@ -5,13 +5,7 @@
   },
   "data": {
     "wave": {
-      "type": "csv",
       "file": "data/m4-area-sine.csv"
-    }
-  },
-  "params": {
-    "brush": {
-      "select": "intersect"
     }
   },
   "vconcat": [

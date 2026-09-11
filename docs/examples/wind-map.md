@@ -17,4 +17,5 @@
 <<< @/public/specs/esm/wind-map.js [JavaScript]
 <<< @/public/specs/yaml/wind-map.yaml [YAML]
 <<< @/public/specs/json/wind-map.json [JSON]
+<<< @/public/specs/python/wind-map.py [Python]
 :::

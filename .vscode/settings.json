@@ -10,6 +10,6 @@
       "specs/json/*",
       "docs/public/specs/json/*"
     ],
-    "url": "./packages/spec/dist/mosaic-schema.json"
+    "url": "./packages/vgplot/spec/dist/mosaic-schema.json"
   }]
 }

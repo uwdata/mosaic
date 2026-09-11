@@ -22,4 +22,5 @@ _You may need to wait a few seconds for the dataset to load._
 <<< @/public/specs/esm/observable-latency.js [JavaScript]
 <<< @/public/specs/yaml/observable-latency.yaml [YAML]
 <<< @/public/specs/json/observable-latency.json [JSON]
+<<< @/public/specs/python/observable-latency.py [Python]
 :::

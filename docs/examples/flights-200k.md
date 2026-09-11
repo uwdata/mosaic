@@ -15,4 +15,5 @@ Histograms showing arrival delay, departure time, and distance flown for over 20
 <<< @/public/specs/esm/flights-200k.js [JavaScript]
 <<< @/public/specs/yaml/flights-200k.yaml [YAML]
 <<< @/public/specs/json/flights-200k.json [JSON]
+<<< @/public/specs/python/flights-200k.py [Python]
 :::

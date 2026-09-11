@@ -13,4 +13,5 @@
 <<< @/public/specs/esm/line.js [JavaScript]
 <<< @/public/specs/yaml/line.yaml [YAML]
 <<< @/public/specs/json/line.json [JSON]
+<<< @/public/specs/python/line.py [Python]
 :::

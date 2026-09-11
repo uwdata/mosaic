@@ -1,11 +1,7 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { SocketConnector } from './connectors/socket.js';
 import { type Connector } from './connectors/Connector.js';
-import {
-  PreAggregator,
-  type PreAggregateInfo,
-  type PreAggregateOptions,
-} from './preagg/PreAggregator.js';
+import { PreAggregator, type PreAggregateOptions } from './preagg/PreAggregator.js';
+import { voidLogger } from './util/void-logger.js';
 import { QueryManager, Priority } from './QueryManager.js';
 import { type Selection } from './Selection.js';
 import { type Logger, type QueryType } from './types.js';
@@ -14,9 +10,7 @@ import { type MosaicClient } from './MosaicClient.js';
 import { type SelectionClause } from './SelectionClause.js';
 import { MaybeArray } from '@uwdata/mosaic-sql';
 import { Table } from '@uwdata/flechette';
-import { EventType, MosaicErrorEvent, type MosaicEventMap } from './Events.js';
-import { ObserveDispatch } from './util/ObserveDispatch.js';
-import { observeLogger } from './logger.js';
+import { QueryError } from './util/query-error.js';
 
 interface FilterGroupEntry {
   selection: Selection;
@@ -34,7 +28,9 @@ let _instance: Coordinator;
  * @param instance The coordinator instance to set
  * @returns The coordinator instance
  */
-export function coordinator(instance?: Coordinator): Coordinator {
+export function coordinator(
+  instance?: Coordinator
+): Coordinator {
   if (instance) {
     _instance = instance;
   } else if (_instance == null) {
@@ -51,16 +47,14 @@ export function coordinator(instance?: Coordinator): Coordinator {
 export class Coordinator {
   public manager: QueryManager;
   public preaggregator: PreAggregator;
-  public clients = new Set<MosaicClient>();
-  public filterGroups = new Map<Selection, FilterGroupEntry>();
-  public readonly eventBus: ObserveDispatch<MosaicEventMap>;
-  protected _logger: Logger | null = null;
-  private _unobserveLogger: () => void = () => {};
+  public clients = new Set<MosaicClient>;
+  public filterGroups = new Map<Selection, FilterGroupEntry>;
+  protected _logger: Logger = voidLogger();
 
   /**
    * @param db Database connector. Defaults to a web socket connection.
    * @param options Coordinator options.
-   * @param options.logger The logger to use, defaults to `console`. Pass `null` to disable logging.
+   * @param options.logger The logger to use, defaults to `console`.
    * @param options.manager The query manager to use.
    * @param options.cache Boolean flag to enable/disable query caching.
    * @param options.consolidate Boolean flag to enable/disable query consolidation.
@@ -74,18 +68,16 @@ export class Coordinator {
       cache?: boolean;
       consolidate?: boolean;
       preagg?: PreAggregateOptions;
-    } = {},
+    } = {}
   ) {
     const {
       logger = console,
       manager = new QueryManager(),
       cache = true,
       consolidate = true,
-      preagg = {},
+      preagg = {}
     } = options;
-    this.eventBus = new ObserveDispatch<MosaicEventMap>();
     this.manager = manager;
-    this.manager.attachEventBus(this.eventBus);
     this.manager.cache(cache);
     this.manager.consolidate(consolidate);
     this.databaseConnector(db);
@@ -104,10 +96,10 @@ export class Coordinator {
     const { clients = true, cache = true } = options;
     this.manager.clear();
     if (clients) {
-      this.filterGroups?.forEach((group) => group.disconnect());
-      this.filterGroups = new Map();
-      this.clients?.forEach((client) => this.disconnect(client));
-      this.clients = new Set();
+      this.filterGroups?.forEach(group => group.disconnect());
+      this.filterGroups = new Map;
+      this.clients?.forEach(client => this.disconnect(client));
+      this.clients = new Set;
     }
     if (cache) this.manager.cache()!.clear();
   }
@@ -120,25 +112,22 @@ export class Coordinator {
   databaseConnector(): Connector | null;
   databaseConnector(db: Connector): Connector;
   databaseConnector(db?: Connector): Connector | null {
-    return db ? this.manager.connector(db) : this.manager.connector();
+    return db
+      ? this.manager.connector(db)
+      : this.manager.connector();
   }
 
   /**
    * Get or set the logger.
-   *
-   * @deprecated Prefer observeLogger(coordinator, logger) for event-bus based logging.
-   * @param logger The logger to use. Pass `null` to disable logging.
-   * @returns The current logger.
+   * @param logger The logger to use.
+   * @returns The current logger
    */
-  logger(): Logger | null;
-  logger(logger: Logger | null): Logger | null;
-  logger(logger?: Logger | null): Logger | null {
+  logger(logger?: Logger | null): Logger {
     if (arguments.length) {
-      this._logger = logger ?? null;
-      this._unobserveLogger();
-      this._unobserveLogger = observeLogger(this, this._logger);
+      this._logger = logger || voidLogger();
+      this.manager.logger(this._logger);
     }
-    return this._logger;
+    return this._logger!;
   }
 
   // -- Query Management ----
@@ -161,7 +150,7 @@ export class Coordinator {
    */
   exec(
     query: MaybeArray<QueryType>,
-    options: { priority?: number } = {},
+    options: { priority?: number } = {}
   ): QueryResult {
     const { priority = Priority.Normal } = options;
     return this.manager.request({ type: 'exec', query }, priority);
@@ -174,50 +163,23 @@ export class Coordinator {
    * @param options An options object.
    * @param options.type The query result format type.
    * @param options.cache If true, cache the query result client-side within the QueryManager.
-   * @param options.persist If true, request the database server to persist a cached query server-side.
    * @param options.priority The query priority, defaults to `Priority.Normal`.
    * @returns A query result promise.
    */
   query(
     query: QueryType,
-    options?: {
-      type?: 'arrow';
-      cache?: boolean;
-      persist?: boolean;
-      priority?: number;
-      [key: string]: unknown;
-    },
-  ): QueryResult<Table>;
-  query(
-    query: QueryType,
-    options?: {
-      type?: 'json';
-      cache?: boolean;
-      persist?: boolean;
-      priority?: number;
-      [key: string]: unknown;
-    },
-  ): QueryResult<unknown>;
-  query(
-    query: QueryType,
     options: {
-      type?: 'arrow' | 'json';
       cache?: boolean;
-      persist?: boolean;
       priority?: number;
       [key: string]: unknown;
-    } = {},
-  ): QueryResult<any> {
+    } = {}
+  ): QueryResult<Table> {
     const {
-      type = 'arrow',
       cache = true,
       priority = Priority.Normal,
       ...otherOptions
     } = options;
-    return this.manager.request(
-      { type, query, cache, options: otherOptions },
-      priority,
-    );
+    return this.manager.request({ type: 'arrow', query, cache, options: otherOptions }, priority) as QueryResult<Table>;
   }
 
   /**
@@ -230,18 +192,9 @@ export class Coordinator {
    */
   prefetch(
     query: QueryType,
-    options?: { type?: 'arrow'; [key: string]: unknown },
-  ): QueryResult<Table>;
-  prefetch(
-    query: QueryType,
-    options?: { type?: 'json'; [key: string]: unknown },
-  ): QueryResult<unknown>;
-  prefetch(query: QueryType, options: any = {}): QueryResult<any> {
-    return this.query(query, {
-      ...options,
-      cache: true,
-      priority: Priority.Low,
-    });
+    options: { [key: string]: unknown } = {}
+  ): QueryResult<Table> {
+    return this.query(query, { ...options, cache: true, priority: Priority.Low });
   }
 
   // -- Client Management ----
@@ -257,32 +210,20 @@ export class Coordinator {
   updateClient(
     client: MosaicClient,
     query: QueryType,
-    priority: number = Priority.Normal,
+    priority: number = Priority.Normal
   ): Promise<unknown> {
     client.queryPending();
-    return (client._pending = this.query(query, { priority })
+    return client._pending = this.query(query, { priority })
       .then(
-        (data) => client.queryResult(data).update(),
-        (err) => {
-          this.eventBus.emit(
-            EventType.Error,
-            new MosaicErrorEvent({
-              message: err instanceof Error ? err.message : String(err),
-              error: err,
-            }),
-          );
-          client.queryError(err);
-        },
+        data => client.queryResult(data).update(),
+        err => {
+          const e = new QueryError(err, query);
+          this._logger?.error(e);
+          client.queryError(e);
+          return e;
+        }
       )
-      .catch((err) => {
-        this.eventBus.emit(
-          EventType.Error,
-          new MosaicErrorEvent({
-            message: err instanceof Error ? err.message : String(err),
-            error: err,
-          }),
-        );
-      }));
+      .catch(err => this._logger?.error(err));
   }
 
   /**
@@ -292,10 +233,7 @@ export class Coordinator {
    * @param client The client to update.
    * @param query The query to issue.
    */
-  requestQuery(
-    client: MosaicClient,
-    query?: QueryType | null,
-  ): Promise<unknown> {
+  requestQuery(client: MosaicClient, query?: QueryType | null): Promise<unknown> {
     this.preaggregator.clear();
     return query
       ? this.updateClient(client, query)
@@ -354,13 +292,12 @@ export class Coordinator {
 function connectSelection(
   mc: Coordinator,
   selection: Selection,
-  client: MosaicClient,
+  client: MosaicClient
 ): void {
   if (!selection) return;
   let entry = mc.filterGroups?.get(selection);
   if (!entry) {
-    const activate = (clause: SelectionClause) =>
-      activateSelection(mc, selection, clause);
+    const activate = (clause: SelectionClause) => activateSelection(mc, selection, clause);
     const value = () => updateSelection(mc, selection);
 
     // @ts-expect-error todo: update selection dispatch types
@@ -369,12 +306,12 @@ function connectSelection(
 
     entry = {
       selection,
-      clients: new Set(),
+      clients: new Set,
       disconnect() {
         // @ts-expect-error todo: update selection dispatch types
         selection.removeEventListener('activate', activate);
         selection.removeEventListener('value', value);
-      },
+      }
     };
     mc.filterGroups?.set(selection, entry);
   }
@@ -392,7 +329,7 @@ function connectSelection(
 function activateSelection(
   mc: Coordinator,
   selection: Selection,
-  clause: SelectionClause,
+  clause: SelectionClause
 ): void {
   const { preaggregator, filterGroups } = mc;
   const { clients } = filterGroups.get(selection)!;
@@ -412,31 +349,42 @@ function activateSelection(
  */
 function updateSelection(
   mc: Coordinator,
-  selection: Selection,
+  selection: Selection
 ): Promise<PromiseSettledResult<unknown>[]> {
   const { preaggregator, filterGroups } = mc;
   const { clients } = filterGroups!.get(selection)!;
   const { active } = selection;
-  return Promise.allSettled(
-    Array.from(clients, async (client: MosaicClient) => {
-      // if client is not enabled, register a request for later
-      if (!client.enabled) return client.requestQuery();
+  return Promise.allSettled(Array.from(clients, async (client: MosaicClient) => {
+    // if client is not enabled, register a request for later
+    if (!client.enabled) {
+      await client.requestQuery();
+      return;
+    }
 
-      // if client is initializing, wait for it to complete
-      if (!client.initialized) await client.pending;
+    // if client is initializing, wait for it to complete
+    if (!client.initialized) await client.pending;
 
-      // check if we can handle selection update via preaggregation
-      const info = preaggregator.request(client, selection, active);
-      const filter = info ? null : selection.predicate(client);
+    // check if we can handle selection update via preaggregation
+    const info = preaggregator.request(client, selection, active);
 
+    if (info?.skip) {
       // skip due to cross-filtering
-      if (info?.skip || (!info && !filter)) return;
+      return;
+    }
 
-      // generate and issue update query
-      const query =
-        (info as PreAggregateInfo)?.query(active.predicate!) ??
-        client.query(filter);
-      return mc.updateClient(client, query);
-    }),
-  );
+    if (info?.result) {  
+      // generate and issue preaggregate update query
+      const query = info.query(active);
+      const result = await mc.updateClient(client, query);
+      if (!(result instanceof QueryError)) return;
+      // if preaggregate update fails, fall through to standard query
+      // this safeguards against potential preagg bugs
+    }
+
+    // generate and issue standard query
+    const filter = selection.predicate(client);
+    // skip due to cross-filtering
+    if (!filter) return; 
+    await mc.updateClient(client, client.query(filter)!);
+  }));
 }

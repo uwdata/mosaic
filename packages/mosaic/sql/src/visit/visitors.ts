@@ -2,8 +2,8 @@ import { type AggregateNode, aggregateNames } from '../ast/aggregate.js';
 import type { ColumnRefNode } from '../ast/column-ref.js';
 import type { SQLNode } from '../ast/node.js';
 import type { ParamNode } from '../ast/param.js';
+import { AGGREGATE, COLUMN_PARAM, COLUMN_REF, FRAGMENT, PARAM, SCALAR_SUBQUERY, VERBATIM, WINDOW } from '../constants.js';
 import type { ParamLike } from '../types.js';
-import { AGGREGATE, COLUMN_PARAM, COLUMN_REF, FRAGMENT, PARAM, VERBATIM, WINDOW } from '../constants.js';
 import { walk } from './walk.js';
 
 // regexp to match valid aggregate function names
@@ -13,6 +13,9 @@ const aggrRegExp = new RegExp(`^(${aggregateNames.join('|')})$`);
 // includes checks to avoid analyzing text within quoted strings
 // function call tokens will have a pattern like "name(".
 const funcRegExp = /(\\'|\\"|"(?:\\"|[^"])*"|'(?:\\'|[^'])*'|\w+\()/g;
+
+// regexp to match window function calls with inline or named definitions
+const windowRegExp = /\)\s*over(\s*\(|\s+[\w"])/;
 
 function hasVerbatimAggregate(s: string) {
   return s
@@ -46,13 +49,15 @@ export function isAggregateExpression(root: SQLNode) {
         if (sub >= 0) s = s.slice(0, sub);
 
         // exit if expression includes windowing
-        if (s.includes(') over ')) return -1;
+        if (windowRegExp.test(s)) return -1;
         if (hasVerbatimAggregate(s)) {
           agg |= 2;
           return -1;
         }
         return 1; // don't recurse
       }
+      case SCALAR_SUBQUERY:
+        return 1; // don't recurse
     }
   });
   return agg;
@@ -67,6 +72,8 @@ export function collectAggregates(root: SQLNode) {
   walk(root, (node, parent) => {
     if (node.type === AGGREGATE && parent?.type !== WINDOW) {
       aggs.add(node as AggregateNode);
+    } else if (node.type === SCALAR_SUBQUERY) {
+      return 1; // don't recurse
     }
   });
   return Array.from(aggs);

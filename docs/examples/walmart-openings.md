@@ -17,4 +17,5 @@ Maps showing Walmart store openings per decade. Requires the DuckDB `spatial` ex
 <<< @/public/specs/esm/walmart-openings.js [JavaScript]
 <<< @/public/specs/yaml/walmart-openings.yaml [YAML]
 <<< @/public/specs/json/walmart-openings.json [JSON]
+<<< @/public/specs/python/walmart-openings.py [Python]
 :::
