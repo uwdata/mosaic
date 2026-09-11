@@ -28,7 +28,7 @@ Create a new Mosaic Coordinator to manage all database communication for clients
 
 `coordinator.databaseConnector(connector)`
 
-Get or set the [_connector_](./connectors) used by the coordinator to issue queries to a backing data source.
+Get or set the [_connector_](./connectors) used by the coordinator to issue queries to a backing data source. Replacing the connector resets pre-aggregation state, since materialized tables belong to the previous data source.
 
 ## connect
 
