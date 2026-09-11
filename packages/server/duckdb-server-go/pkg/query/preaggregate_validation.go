@@ -123,7 +123,7 @@ func validPreAggregateName(name string) bool {
 		return false
 	}
 	for _, ch := range strings.TrimPrefix(name, "preagg_") {
-		if !(ch >= '0' && ch <= '9' || ch >= 'a' && ch <= 'f') {
+		if (ch < '0' || ch > '9') && (ch < 'a' || ch > 'f') {
 			return false
 		}
 	}

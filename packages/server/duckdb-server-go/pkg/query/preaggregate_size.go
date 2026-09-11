@@ -23,7 +23,7 @@ func (p *PreAggregator) measure(ctx context.Context, conn *sql.Conn, ref preAggr
 		}
 		defer rdr.Release()
 		writer := ipc.NewWriter(size, ipc.WithSchema(rdr.Schema()))
-		defer writer.Close()
+		defer func() { _ = writer.Close() }()
 		for rdr.Next() {
 			rows += rdr.RecordBatch().NumRows()
 			if rows > p.limits.MaxRows {
