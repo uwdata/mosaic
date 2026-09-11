@@ -20,25 +20,13 @@ Create a new Mosaic Coordinator to manage all database communication for clients
 * _logger_: The logger to use, defaults to `console`.
 * _cache_: Boolean flag to enable/disable query caching (default `true`).
 * _consolidate_ Boolean flag to enable/disable query consolidation (default `true`).
-* _preagg_: Pre-aggregation options object:
-  * _enabled_: Boolean flag (default `true`) indicating if pre-aggregation optimizations should be used when possible.
-  * _mode_: How materialized views are created, one of `'exec'` (default) or `'preagg'`. In `'exec'` mode the coordinator issues `CREATE SCHEMA` and `CREATE TABLE` statements itself. In `'preagg'` mode it sends a `preagg` command containing only the SELECT, and the server validates it, materializes it under a namespace the server owns, and returns the destination catalog, schema, and table; dependent queries wait for that reference before they are issued. This mode requires a [connector](./connectors) that supports the `preagg` command; of the bundled connectors only `RestConnector` does, and the others reject the command with an `unsupported_command` error.
-  * _schema_: The database schema (default `'mosaic'`) in which materialized view tables are created in `'exec'` mode. Ignored, with a warning, in `'preagg'` mode.
-
-``` js
-const mc = new Coordinator(new RestConnector({ uri: 'http://localhost:3000/' }), {
-  preagg: { mode: 'preagg' }
-});
-```
-
-In `'preagg'` mode the coordinator keeps the SELECT for each table it has materialized and reuses the returned reference for identical SELECTs. It remembers up to 512 references, evicting the least recently used, and tracks up to 32 pending builds. Requests refused at that cap, failed builds, and builds exceeding two minutes fall back to base queries, and a failed SELECT is not retried for one minute. The query result cache is cleared whenever a materialization completes, since a rebuilt table may hold different rows under the same name. The coordinator never asks the server to drop a table; the server is responsible for bounding and reclaiming the tables it creates. Call `coordinator.preaggregator.reset()` before changing credentials or authorization scope on the connector so that references obtained under the old context are not reused; replacing the connector with [`databaseConnector()`](#databaseconnector) or a full [`clear()`](#clear) does this automatically.
+* _preagg_: Pre-aggregation options object. The _enabled_ flag (default `true`) determines if pre-aggregation optimizations should be used when possible. The _mode_ option (default `'exec'`) determines how materialized views are created: `'exec'` issues `CREATE TABLE` statements directly, while `'preagg'` sends a `preagg` request and lets the server create and name the table; this requires a [connector](./connectors) that supports `preagg` requests. The _schema_ option (default `'mosaic'`) indicates the database schema in which materialized view tables should be created in `'exec'` mode.
 
 ## databaseConnector
 
 `coordinator.databaseConnector(connector)`
 
 Get or set the [_connector_](./connectors) used by the coordinator to issue queries to a backing data source.
-Replacing the connector resets the pre-aggregator, forgetting any tables materialized through the previous connector.
 
 ## connect
 
@@ -71,8 +59,6 @@ Resets the state of the coordinator. Supports the following _options_:
 
 - _clients_: A Boolean flag (default `true`) indicating if all current clients should be disconnected.
 - _cache_: A Boolean flag (default `true`) indicating if the query cache should be cleared.
-
-A full clear (both flags `true`) also resets the pre-aggregator.
 
 ## exec
 
