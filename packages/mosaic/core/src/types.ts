@@ -88,7 +88,7 @@ export interface Activatable {
  */
 export interface Cache {
   get(key: string): unknown;
-  set(key: string, value: unknown, bytes?: number): unknown;
+  set(key: string, value: unknown, bytes: number): unknown;
   clear(): void;
   bytes(): number;
 }

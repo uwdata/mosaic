@@ -1,10 +1,5 @@
 import type { Cache } from '../types.js';
 
-interface CacheEntry {
-  value: unknown;
-  bytes: number;
-}
-
 /**
  * Create a new cache that ignores all values.
  * @returns A void cache implementation.
@@ -26,7 +21,7 @@ export function voidCache(): Cache {
  * @returns An LRU cache implementation.
  */
 export function lruCache({ maxBytes = 256 * 1024 * 1024 }: { maxBytes?: number } = {}): Cache {
-  const entries = new Map<string, CacheEntry>();
+  const entries = new Map<string, { value: unknown; bytes: number }>();
   let total = 0;
 
   function remove(key: string): void {
@@ -46,7 +41,7 @@ export function lruCache({ maxBytes = 256 * 1024 * 1024 }: { maxBytes?: number }
       entries.set(key, entry);
       return entry.value;
     },
-    set(key: string, value: unknown, bytes = 0): unknown {
+    set(key: string, value: unknown, bytes: number): unknown {
       remove(key);
       if (bytes > maxBytes) return value;
       entries.set(key, { value, bytes });
