@@ -59,11 +59,10 @@ export class SocketConnector implements Connector {
       },
 
       close() {
-        const request = c._request;
         c._connected = false;
+        c._request?.reject('Socket closed');
         c._request = null;
         c._ws = null;
-        if (request) request.reject('Socket closed');
         while (c._queue.length) {
           c._queue.shift()!.reject('Socket closed');
         }
