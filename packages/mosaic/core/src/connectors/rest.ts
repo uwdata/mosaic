@@ -19,7 +19,7 @@ function isJSONContentType(contentType: string | null): boolean {
   return /^application\/json\s*(;|$)/i.test(contentType?.trim() ?? '');
 }
 
-function errorFromResponseBody(status: number, contentType: string | null, body: string): ConnectorError {
+function errorFromResponseBody(status: number, contentType: string | null, body: string): ConnectorError | null {
   if (isJSONContentType(contentType)) {
     try {
       const err = errorFromEnvelope(JSON.parse(body), status);
@@ -28,7 +28,7 @@ function errorFromResponseBody(status: number, contentType: string | null, body:
       // fall through to the generic error
     }
   }
-  return new ConnectorError(body || `Request failed with HTTP status ${status}`, { status });
+  return null;
 }
 
 /**
@@ -71,8 +71,12 @@ export class RestConnector implements Connector {
 
     if (!res.ok) {
       const body = await res.text();
-      if (query.type === 'preagg') {
-        throw errorFromResponseBody(res.status, res.headers.get('Content-Type'), body);
+      if (query.type !== 'exec') {
+        const err = errorFromResponseBody(res.status, res.headers.get('Content-Type'), body);
+        if (err) throw err;
+        if (query.type === 'preagg') {
+          throw new ConnectorError(body || `Request failed with HTTP status ${res.status}`, { status: res.status });
+        }
       }
       throw new Error(`Query failed with HTTP status ${res.status}: ${body}`);
     }

@@ -40,7 +40,7 @@ describe('RestConnector', () => {
     expect(lastInit(fetch).body).toBe(JSON.stringify({ type: 'preagg', sql: 'SELECT 1' }));
   });
 
-  it('parses JSON error envelopes for preagg commands', async () => {
+  it.each(['preagg', 'arrow', undefined] as const)('parses JSON error envelopes for %s requests', async (type) => {
     const connector = new RestConnector({ uri: 'http://test/' });
     stubFetch(new Response(JSON.stringify({
       error: 'Materialized table is unavailable',
@@ -48,7 +48,11 @@ describe('RestConnector', () => {
       catalog: 'memory', schema: 'mosaic_scope_a7', table: 'preagg_c92f'
     }), { status: 404, headers: { 'Content-Type': 'application/json; charset=utf-8' } }));
 
-    const err = await connector.query({ type: 'preagg', sql: 'SELECT 1' }).catch(e => e) as ConnectorError;
+    const request = { sql: 'SELECT 1' };
+    const result = type === 'preagg'
+      ? connector.query({ ...request, type })
+      : connector.query({ ...request, type });
+    const err = await result.catch(e => e) as ConnectorError;
     expect(err).toBeInstanceOf(ConnectorError);
     expect(err).toMatchObject({
       message: 'Materialized table is unavailable',
@@ -69,7 +73,7 @@ describe('RestConnector', () => {
       .rejects.toMatchObject({ status: 400, code: undefined, message: '{"nope": true}' });
   });
 
-  it('keeps legacy errors for ordinary queries', async () => {
+  it('keeps legacy errors for exec requests', async () => {
     const connector = new RestConnector({ uri: 'http://test/' });
     stubFetch(new Response(JSON.stringify({ error: 'x', code: 'forbidden' }), {
       status: 403, headers: { 'Content-Type': 'application/json' }
@@ -77,6 +81,18 @@ describe('RestConnector', () => {
     const err = await connector.query({ type: 'exec', sql: 'SELECT 1' }).catch(e => e) as Error;
     expect(err).not.toBeInstanceOf(ConnectorError);
     expect(err.message).toBe('Query failed with HTTP status 403: {"error":"x","code":"forbidden"}');
+  });
+
+  it.each([
+    ['text/plain', 'missing table'],
+    ['application/json', 'not json'],
+    ['application/json', '{"code":"table_not_found"}']
+  ])('keeps generic SELECT failures for %s: %s', async (contentType, body) => {
+    const connector = new RestConnector({ uri: 'http://test/' });
+    stubFetch(new Response(body, { status: 404, headers: { 'Content-Type': contentType } }));
+    const err = await connector.query({ type: 'arrow', sql: 'SELECT 1' }).catch(e => e) as Error;
+    expect(err).not.toBeInstanceOf(ConnectorError);
+    expect(err.message).toBe(`Query failed with HTTP status 404: ${body}`);
   });
 });
 
