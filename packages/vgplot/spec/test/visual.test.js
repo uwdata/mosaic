@@ -29,6 +29,13 @@ test.describe('Visual regression tests for JSON specs', () => {
       await page.evaluate(spec => window.__renderSpec(spec), specData);
 
       const container = page.locator('#container');
+      await container.evaluate(element => Promise.all(
+        Array.from(element.querySelectorAll('image'), node => {
+          const image = new Image();
+          image.src = node.href.baseVal;
+          return image.decode();
+        })
+      ));
       await expect(container).toHaveScreenshot(`${specName}.png`, { maxDiffPixelRatio: 0.05 });
     });
   }
