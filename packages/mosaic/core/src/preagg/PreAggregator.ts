@@ -65,6 +65,8 @@ export class PreAggregator {
   public readonly mode: PreAggregateMode;
   /** Server-managed materializations; null in exec mode. */
   public readonly registry: PreAggregateRegistry | null;
+  /** Incremented by reset(); bindings captured under an older value are void. */
+  public generation = 0;
   private active: ActiveColumnsResult | null;
   private mc: Coordinator;
   private _schema: string;
@@ -173,9 +175,7 @@ export class PreAggregator {
    * or authorization scope on the connector.
    */
   reset(): void {
-    for (const info of this.entries.values()) {
-      if (info instanceof PreAggregateInfo) info.result = null;
-    }
+    this.generation += 1;
     this.clear();
     this.registry?.reset();
   }

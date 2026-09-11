@@ -376,6 +376,7 @@ function updateSelection(
 
     // check if we can handle selection update via preaggregation
     const info = preaggregator.request(client, selection, active);
+    const generation = preaggregator.generation;
 
     if (info?.skip) {
       // skip due to cross-filtering
@@ -391,7 +392,7 @@ function updateSelection(
       if (superseded(pending)) return;
     }
 
-    if (info?.result) {
+    if (info?.result && preaggregator.generation === generation) {
       // generate and issue preaggregate update query
       const query = info.query(active);
       const table = info.table;
