@@ -2,10 +2,6 @@ import type { ExtractionOptions, Table } from '@uwdata/flechette';
 import { tableFromIPC } from '@uwdata/flechette';
 import type { ArrowIPCBytes } from '../types.js';
 
-interface SizedTable extends Table {
-  byteCount: number;
-}
-
 /**
  * Decode Arrow IPC bytes to a table instance.
  * The default options map date and timestamp values to JS Date objects.
@@ -23,8 +19,8 @@ export function decodeIPC(
   return Object.assign(table, { byteCount: ipcByteLength(data) });
 }
 
-export function tableByteLength(table: Table): number | undefined {
-  return (table as Partial<SizedTable>).byteCount;
+export function tableByteLength(table: unknown): number | undefined {
+  return (table as { byteCount?: number } | undefined)?.byteCount;
 }
 
 function ipcByteLength(data: ArrowIPCBytes): number {

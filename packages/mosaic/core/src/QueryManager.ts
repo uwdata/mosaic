@@ -1,6 +1,6 @@
-import type { ExtractionOptions, Table } from '@uwdata/flechette';
+import type { ExtractionOptions } from '@uwdata/flechette';
 import type { Connector } from './connectors/Connector.js';
-import type { ArrowIPCBytes, Cache, Logger, QueryEntry, QueryRequest } from './types.js';
+import type { Cache, Logger, QueryEntry, QueryRequest } from './types.js';
 import { consolidator } from './QueryConsolidator.js';
 import { lruCache, voidCache } from './util/cache.js';
 import { decodeIPC, tableByteLength } from './util/decode-ipc.js';
@@ -13,7 +13,7 @@ export const Priority = Object.freeze({ High: 0, Normal: 1, Low: 2 });
 export class QueryManager {
   private queue: PriorityQueue<QueryEntry>;
   private db: Connector | null;
-  private clientCache: Cache | null;
+  private clientCache: Cache;
   private _logger: Logger;
   private _logQueries: boolean;
   private _ipc?: ExtractionOptions;
@@ -27,7 +27,7 @@ export class QueryManager {
   constructor(maxConcurrentRequests: number = 32) {
     this.queue = new PriorityQueue(3);
     this.db = null;
-    this.clientCache = null;
+    this.clientCache = voidCache();
     this._logger = voidLogger();
     this._logQueries = false;
     this._consolidate = null;
@@ -83,10 +83,10 @@ export class QueryManager {
   async submit(request: QueryRequest, result: QueryResult): Promise<void> {
     try {
       const { query, type, cache = false, options } = request;
-      const sql = Array.isArray(query) ? query.filter(x => x).join(';\n') : query ? String(query) : null;
+      const sql = Array.isArray(query) ? query.filter(x => x).join(';\n') : String(query);
 
       if (cache) {
-        const cached = this.clientCache!.get(sql!) ?? this.inflight.get(sql!);
+        const cached = this.clientCache.get(sql) ?? this.inflight.get(sql);
         if (cached) {
           const data = await cached;
           this._logger.debug('Cache');
@@ -101,15 +101,15 @@ export class QueryManager {
       }
 
       // @ts-expect-error type may be exec | arrow
-      const response = this.db!.query({ ...options, type, sql: sql! });
+      const response = this.db!.query({ ...options, type, sql });
       const promise = type === 'arrow'
-        ? response.then(bytes => decodeIPC(bytes as ArrowIPCBytes, this._ipc))
+        ? response.then(bytes => decodeIPC(bytes, this._ipc))
         : response;
-      if (cache) this.inflight.set(sql!, promise);
+      if (cache) this.inflight.set(sql, promise);
 
-      const data = await promise.finally(() => this.inflight.delete(sql!));
+      const data = await promise.finally(() => { if (cache) this.inflight.delete(sql); });
 
-      if (cache) this.clientCache!.set(sql!, data, resultByteLength(type, data));
+      if (cache) this.clientCache.set(sql, data, tableByteLength(data) ?? 0);
 
       this._logger.debug(`Request: ${(performance.now() - t0).toFixed(1)}`);
       result.ready(type === 'exec' ? null : data);
@@ -123,9 +123,7 @@ export class QueryManager {
    * @param value Cache value to set
    * @returns Current cache
    */
-  cache(): Cache | null;
-  cache(value: Cache | boolean): Cache;
-  cache(value?: Cache | boolean): Cache | null {
+  cache(value?: Cache | boolean): Cache {
     return value !== undefined
       ? (this.clientCache = value === true ? lruCache() : (value || voidCache()))
       : this.clientCache;
@@ -147,11 +145,9 @@ export class QueryManager {
    * @param value Extraction options to set
    * @returns Current extraction options
    */
-  ipc(): ExtractionOptions | undefined;
-  ipc(value: ExtractionOptions): ExtractionOptions | undefined;
   ipc(value?: ExtractionOptions): ExtractionOptions | undefined {
     if (value === undefined) return this._ipc;
-    this.clientCache?.clear();
+    this.clientCache.clear();
     return this._ipc = value;
   }
 
@@ -183,7 +179,7 @@ export class QueryManager {
    */
   consolidate(flag: boolean): void {
     if (flag && !this._consolidate) {
-      this._consolidate = consolidator(this.enqueue.bind(this), this.clientCache!);
+      this._consolidate = consolidator(this.enqueue.bind(this), this.clientCache);
     } else if (!flag && this._consolidate) {
       this._consolidate = null;
     }
@@ -236,8 +232,4 @@ export class QueryManager {
     }
     this.pendingResults = [];
   }
-}
-
-function resultByteLength(type: QueryRequest['type'], data: unknown): number {
-  return type === 'arrow' ? tableByteLength(data as Table) ?? 0 : 0;
 }

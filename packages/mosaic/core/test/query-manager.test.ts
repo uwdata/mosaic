@@ -5,6 +5,12 @@ import { QueryResult } from '../src/util/query-result.js';
 import { QueryRequest } from '../src/types.js';
 
 describe('QueryManager', () => {
+  const cachedRequest: QueryRequest = {
+    type: 'arrow',
+    query: 'SELECT * FROM test',
+    cache: true
+  };
+
   it('should run a simple query', async () => {
     const queryManager = new QueryManager();
 
@@ -78,13 +84,8 @@ describe('QueryManager', () => {
       }
     });
 
-    const request: QueryRequest = {
-      type: 'arrow',
-      query: 'SELECT * FROM test',
-      cache: true
-    };
-    const pending = queryManager.request(request);
-    const second = queryManager.request(request);
+    const pending = queryManager.request(cachedRequest);
+    const second = queryManager.request(cachedRequest);
     const first = await pending as Table;
 
     expect(first.numRows).toBe(3);
@@ -108,13 +109,8 @@ describe('QueryManager', () => {
       }
     });
 
-    const request: QueryRequest = {
-      type: 'arrow',
-      query: 'SELECT * FROM test',
-      cache: true
-    };
-    await expect(queryManager.request(request)).rejects.toThrow('transient');
-    const data = await queryManager.request(request) as Table;
+    await expect(queryManager.request(cachedRequest)).rejects.toThrow('transient');
+    const data = await queryManager.request(cachedRequest) as Table;
 
     expect(calls).toBe(2);
     expect(data.numRows).toBe(1);
@@ -134,17 +130,12 @@ describe('QueryManager', () => {
       }
     });
 
-    const request: QueryRequest = {
-      type: 'arrow',
-      query: 'SELECT * FROM test',
-      cache: true
-    };
-    await queryManager.request(request);
-    await queryManager.request(request);
+    await queryManager.request(cachedRequest);
+    await queryManager.request(cachedRequest);
     expect(calls).toBe(1);
 
     queryManager.ipc({ useDate: false });
-    await queryManager.request(request);
+    await queryManager.request(cachedRequest);
 
     expect(calls).toBe(2);
   });

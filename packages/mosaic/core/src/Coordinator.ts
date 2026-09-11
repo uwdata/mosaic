@@ -77,7 +77,7 @@ export class Coordinator {
       logger = console,
       manager = new QueryManager(),
       cache = true,
-      ipc = undefined,
+      ipc,
       consolidate = true,
       preagg = {}
     } = options;
@@ -106,7 +106,7 @@ export class Coordinator {
       this.clients?.forEach(client => this.disconnect(client));
       this.clients = new Set;
     }
-    if (cache) this.manager.cache()!.clear();
+    if (cache) this.manager.cache().clear();
   }
 
   /**

@@ -1,4 +1,3 @@
-
 import type { ArrowQueryRequest, Connector, ExecQueryRequest, ConnectorQueryRequest } from './Connector.js';
 
 interface SocketOptions {
