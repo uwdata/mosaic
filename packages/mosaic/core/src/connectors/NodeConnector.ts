@@ -20,7 +20,7 @@ import { ConnectorError } from './errors.js';
 export class NodeConnector implements Connector {
   protected _db: DuckDB;
   protected _ipc?: ExtractionOptions;
-  protected _tables = new Map<string, PreaggResponse>();
+  protected _tables = new Map<string, { response: PreaggResponse; name: string }>();
   protected _builds = new Map<string, Promise<PreaggResponse>>();
 
   static async make(db?: DuckDB, ipc?: ExtractionOptions) {
@@ -74,7 +74,7 @@ export class NodeConnector implements Connector {
   }
 
   protected async materialize(sql: string): Promise<PreaggResponse> {
-    const previous = this._tables.get(sql);
+    const previous = this._tables.get(sql)?.response;
     if (previous && await this.tableExists(previous)) return previous;
 
     const [row] = await this._db.query(`SELECT system.main.json_serialize_sql(${literal(sql)}) AS ast`);
@@ -87,7 +87,8 @@ export class NodeConnector implements Connector {
     const ref = new TableRefNode(['temp', 'main', table]);
     await this._db.exec(`CREATE TEMP TABLE ${ref} AS ${sql}`);
     const response = { catalog: 'temp', schema: 'main', table, createdAt: new Date().toISOString() };
-    this._tables.set(sql, response);
+    const [name] = this._db.con!.getTableNames(`SELECT * FROM ${ref}`, true);
+    this._tables.set(sql, { response, name });
     return response;
   }
 
@@ -99,12 +100,10 @@ export class NodeConnector implements Connector {
   protected async missingTable(sql: string): Promise<PreaggResponse | null> {
     const connection = this._db.con;
     if (!connection) return null;
-    const names = connection.getTableNames(sql, true);
-    for (const table of this._tables.values()) {
-      const ref = new TableRefNode([table.catalog, table.schema, table.table]);
-      const [name] = connection.getTableNames(`SELECT * FROM ${ref}`, true);
-      if (names.includes(name) && !await this.tableExists(table)) {
-        return table;
+    const names = new Set(connection.getTableNames(sql, true));
+    for (const { response, name } of this._tables.values()) {
+      if (names.has(name) && !await this.tableExists(response)) {
+        return response;
       }
     }
     return null;
