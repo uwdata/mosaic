@@ -378,8 +378,7 @@ function updateSelection(
     }
 
     const superseded = (pending: Promise<unknown>) => client.pending !== pending
-      || !filterGroups.get(selection)?.clients.has(client)
-      || preaggregator.entries.get(client) !== info;
+      || !filterGroups.get(selection)?.clients.has(client);
 
     if (info?.ready) {
       const pending = client.pending;
@@ -398,7 +397,7 @@ function updateSelection(
         if (superseded(pending)) return;
         const recovered = await preaggregator.recover(client, info, table, result.cause);
         if (superseded(pending)) return;
-        if (recovered) {
+        if (recovered && preaggregator.entries.get(client) === info) {
           const retry = mc.updateClient(client, info.query(active));
           const retried = await retry;
           if (!(retried instanceof QueryError)) return;
