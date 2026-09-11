@@ -63,15 +63,22 @@ describe('RestConnector', () => {
   });
 
   it.each([
-    ['text/plain', 'missing table'],
-    ['application/json', 'not json'],
-    ['application/json', '{"code":"table_not_found"}']
-  ])('rejects SELECT failures without a code for %s: %s', async (contentType, body) => {
+    ['arrow', 404, 'text/plain', 'missing table'],
+    ['arrow', 404, 'application/json', 'not json'],
+    ['arrow', 404, 'application/json', '{"code":"table_not_found"}'],
+    ['preagg', 502, 'text/html', '<h1>Bad Gateway</h1>'],
+    ['preagg', 502, 'text/html', ''],
+    ['preagg', 502, 'application/vnd.apache.arrow.stream', '{"error":"x","code":"forbidden"}'],
+    ['preagg', 502, 'application/json', 'not json']
+  ] as const)('rejects %s failures without a code (%i, %s): %s', async (type, status, contentType, body) => {
     const connector = new RestConnector({ uri: 'http://test/' });
-    stubFetch(new Response(body, { status: 404, headers: { 'Content-Type': contentType } }));
-    const err = await connector.query({ type: 'arrow', sql: 'SELECT 1' }).catch(e => e) as ConnectorError;
+    stubFetch(new Response(body, { status, headers: { 'Content-Type': contentType } }));
+    const result = type === 'arrow'
+      ? connector.query({ type: 'arrow', sql: 'SELECT 1' })
+      : connector.query({ type: 'preagg', sql: 'SELECT 1' });
+    const err = await result.catch(e => e) as ConnectorError;
     expect(err).toBeInstanceOf(ConnectorError);
-    expect(err).toMatchObject({ status: 404, code: undefined, message: `Query failed with HTTP status 404: ${body}` });
+    expect(err).toMatchObject({ status, code: undefined, message: `Query failed with HTTP status ${status}: ${body}` });
   });
 });
 
@@ -108,16 +115,5 @@ describe('RestConnector preagg error responses', () => {
     expect(err).toMatchObject(Object.keys(expected).length
       ? expected
       : { message: `Query failed with HTTP status 500: ${body}`, code: undefined });
-  });
-
-  it.each([
-    ['text/html', '<h1>Bad Gateway</h1>'],
-    ['text/html', ''],
-    ['application/vnd.apache.arrow.stream', '{"error":"x","code":"forbidden"}'],
-    ['application/json', 'not json']
-  ])('non-JSON body (%s)', async (contentType, body) => {
-    const err = await failWith(502, contentType, body) as ConnectorError;
-    expect(err).toBeInstanceOf(ConnectorError);
-    expect(err).toMatchObject({ status: 502, message: `Query failed with HTTP status 502: ${body}`, code: undefined });
   });
 });

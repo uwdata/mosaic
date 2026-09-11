@@ -9,7 +9,8 @@ const SQL_A = 'SELECT a, count(*) AS n FROM t GROUP BY a';
 const SQL_B = 'SELECT b, count(*) AS n FROM t GROUP BY b';
 const SQL_C = 'SELECT c, count(*) AS n FROM t GROUP BY c';
 
-function setup(limits: Partial<PreAggregateLimits> = {}, connector = new MockPreaggConnector()) {
+function setup(limits: Partial<PreAggregateLimits> = {}) {
+  const connector = new MockPreaggConnector();
   const manager = new QueryManager();
   manager.connector(connector);
   const invalidate = vi.spyOn(manager, 'invalidate');
@@ -20,11 +21,6 @@ function setup(limits: Partial<PreAggregateLimits> = {}, connector = new MockPre
 
 describe('PreAggregateRegistry', () => {
   afterEach(() => vi.useRealTimers());
-
-  it('requires a connector that transports preagg', async () => {
-    const legacy = new MockPreaggConnector({ supportsPreagg: false });
-    await expect(setup({}, legacy).registry.request(SQL_A)).rejects.toMatchObject({ code: 'unsupported_command' });
-  });
 
   it('coalesces identical SQL and reuses a bounded cache of references', async () => {
     const { registry, connector } = setup({ maxCachedTables: 1 });
@@ -121,6 +117,7 @@ describe('PreAggregateRegistry', () => {
   });
 
   it.each([
+    ['unsupported_command', new ConnectorError('Unsupported command: preagg', { code: 'unsupported_command' }), 'unsupported_command'],
     ['forbidden', new ConnectorError('denied', { code: 'forbidden', status: 403 }), 'forbidden'],
     ['deadline_exceeded', new ConnectorError('slow', { code: 'deadline_exceeded', status: 504 }), 'deadline_exceeded'],
     ['transport', new Error('socket hung up'), undefined]
