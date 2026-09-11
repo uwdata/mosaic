@@ -1,3 +1,5 @@
+import type { PreaggResponse } from './Connector.js';
+
 export class ConnectorError extends Error {
   code?: string;
   status?: number;
@@ -56,27 +58,39 @@ export class PreAggregateModeError extends Error {
   }
 }
 
-function isNonEmptyString(value: unknown): value is string {
-  return typeof value === 'string' && value.length > 0;
-}
-
 /**
- * Build a ConnectorError from a server error envelope `{ error, code?,
- * catalog?, schema?, table? }`, or null if the value is not one.
+ * Parse a server error response `{ error, code?, catalog?, schema?, table? }`
+ * into a ConnectorError, or null if the value is not one.
  */
-export function errorFromEnvelope(value: unknown, status?: number): ConnectorError | null {
+export function parseErrorResponse(value: unknown, status?: number): ConnectorError | null {
   if (value == null || typeof value !== 'object') return null;
   const { error, code, catalog, schema, table } = value as Record<string, unknown>;
-  if (!isNonEmptyString(error)) return null;
-  if (code !== undefined && !isNonEmptyString(code)) return null;
+  if (typeof error !== 'string' || !error) return null;
+  if (code !== undefined && (typeof code !== 'string' || !code)) return null;
   const fields: ConstructorParameters<typeof ConnectorError>[1] = { status };
   if (code) fields.code = code;
-  if (code === 'table_not_found') {
-    if (isNonEmptyString(catalog) && isNonEmptyString(schema) && isNonEmptyString(table)) {
-      Object.assign(fields, { catalog, schema, table });
-    }
+  if (
+    code === 'table_not_found' &&
+    typeof catalog === 'string' && catalog &&
+    typeof schema === 'string' && schema &&
+    typeof table === 'string' && table
+  ) {
+    Object.assign(fields, { catalog, schema, table });
   }
   return new ConnectorError(error, fields);
+}
+
+export function parsePreaggResponse(value: unknown): PreaggResponse {
+  const { catalog, schema, table, createdAt } = (value ?? {}) as Record<string, unknown>;
+  if (
+    typeof catalog !== 'string' || !catalog ||
+    typeof schema !== 'string' || !schema ||
+    typeof table !== 'string' || !table ||
+    typeof createdAt !== 'string' || Number.isNaN(Date.parse(createdAt))
+  ) {
+    throw new ConnectorError('Malformed preagg response', { code: 'malformed_response' });
+  }
+  return { catalog, schema, table, createdAt };
 }
 
 export function abortError(message = 'The operation was aborted'): Error {

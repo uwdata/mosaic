@@ -40,7 +40,7 @@ describe('RestConnector', () => {
     expect(lastInit(fetch).body).toBe(JSON.stringify({ type: 'preagg', sql: 'SELECT 1' }));
   });
 
-  it('parses JSON error envelopes for preagg commands', async () => {
+  it('parses JSON error responses for preagg commands', async () => {
     const connector = new RestConnector({ uri: 'http://test/' });
     stubFetch(new Response(JSON.stringify({
       error: 'Materialized table is unavailable',
@@ -80,7 +80,7 @@ describe('RestConnector', () => {
   });
 });
 
-describe('RestConnector preagg error envelopes', () => {
+describe('RestConnector preagg error responses', () => {
   afterEach(() => vi.unstubAllGlobals());
 
   function failWith(status: number, contentType: string, body: string) {
@@ -104,12 +104,12 @@ describe('RestConnector preagg error envelopes', () => {
       { code: 'table_not_found', ...relation }],
     ['relation on other code', { error: 'x', code: 'forbidden', ...relation },
       { code: 'forbidden', catalog: undefined, schema: undefined, table: undefined }]
-  ])('envelope: %s', async (_, envelope, expected) => {
-    const body = JSON.stringify(envelope);
+  ])('error response: %s', async (_, response, expected) => {
+    const body = JSON.stringify(response);
     const err = await failWith(500, 'application/json; charset=utf-8', body) as ConnectorError;
     expect(err).toBeInstanceOf(ConnectorError);
     expect(err.status).toBe(500);
-    // a malformed envelope falls back to the raw body as the message
+    // a malformed error response falls back to the raw body as the message
     expect(err).toMatchObject(Object.keys(expected).length ? expected : { message: body, code: undefined });
   });
 
@@ -118,7 +118,7 @@ describe('RestConnector preagg error envelopes', () => {
     ['text/html', '', 'Request failed with HTTP status 502'],
     ['application/vnd.apache.arrow.stream', '{"error":"x","code":"forbidden"}', '{"error":"x","code":"forbidden"}'],
     ['application/json', 'not json', 'not json']
-  ])('non-envelope body (%s)', async (contentType, body, message) => {
+  ])('non-JSON body (%s)', async (contentType, body, message) => {
     const err = await failWith(502, contentType, body) as ConnectorError;
     expect(err).toBeInstanceOf(ConnectorError);
     expect(err).toMatchObject({ status: 502, message, code: undefined });

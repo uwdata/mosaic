@@ -4,6 +4,7 @@ import {
   abortError,
   ConnectorError,
   isAbortError,
+  parsePreaggResponse,
   PreAggregateBusyError,
   PreAggregateModeError,
   PreAggregateSuppressedError
@@ -46,22 +47,6 @@ const defaultLimits: Readonly<PreAggregateLimits> = Object.freeze({
   timeoutMs: 120 * 1000,
   cooldownMs: 60 * 1000
 });
-
-function isNonEmptyString(value: unknown): value is string {
-  return typeof value === 'string' && value.length > 0;
-}
-
-function validatePreaggResponse(value: unknown): PreaggResponse {
-  const { catalog, schema, table, createdAt } = (value ?? {}) as Record<string, unknown>;
-  if (
-    !isNonEmptyString(catalog) || !isNonEmptyString(schema) ||
-    !isNonEmptyString(table) || !isNonEmptyString(createdAt) ||
-    Number.isNaN(Date.parse(createdAt))
-  ) {
-    throw new ConnectorError('Malformed preagg response', { code: 'malformed_response' });
-  }
-  return { catalog, schema, table, createdAt };
-}
 
 function referenceKey(ref: TableRefNode | PreaggResponse): string {
   return JSON.stringify(Array.isArray(ref.table)
@@ -200,7 +185,7 @@ export class PreAggregateRegistry {
 
     let validated: PreaggResponse;
     try {
-      validated = validatePreaggResponse(response);
+      validated = parsePreaggResponse(response);
     } catch (err) {
       this.recordFailure(entry, toConnectorError(err));
       build.reject(err);

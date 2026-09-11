@@ -1,5 +1,5 @@
 import type { ArrowQueryRequest, Connector, ConnectorRequest, ExecQueryRequest, PreaggRequest, PreaggResponse } from './Connector.js';
-import { errorFromEnvelope } from './errors.js';
+import { parseErrorResponse } from './errors.js';
 
 interface SocketOptions {
   uri?: string;
@@ -80,7 +80,7 @@ export class SocketConnector implements Connector {
           if (typeof data === 'string') {
             const json = JSON.parse(data);
             if (json.error) {
-              reject(query.type === 'exec' ? json.error : errorFromEnvelope(json) ?? json.error);
+              reject(query.type === 'exec' ? json.error : parseErrorResponse(json) ?? json.error);
             } else if (query.type === 'preagg') {
               resolve(json);
             } else if (query.type === 'arrow') {
