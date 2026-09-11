@@ -133,6 +133,40 @@ describe('PreAggregator preagg mode', () => {
     expect(connector.requests).toHaveLength(before);
   });
 
+  it('drops a suspended update when a full clear disconnects the client', async () => {
+    const connector = new MockPreaggConnector();
+    const mc = preaggCoordinator(connector);
+    const { sel, results } = await aggregateClient(mc);
+    sel.update(clausePoint('dim', 'a', { source: {} }));
+    await flush();
+    expect(connector.open).toHaveLength(1);
+    const issued = connector.requests.length;
+    mc.clear();
+    await sel.pending('value');
+    expect(results).toHaveLength(1);
+    expect(connector.requests).toHaveLength(issued);
+  });
+
+  it.each(['connector', 'reset'])('falls back after %s replacement invalidates a bound table', async action => {
+    const connector = new MockPreaggConnector();
+    const mc = preaggCoordinator(connector);
+    const { sel, results } = await aggregateClient(mc);
+    const source = {};
+    sel.update(clausePoint('dim', 'a', { source }));
+    await flush();
+    connector.complete();
+    await sel.pending('value');
+    expect(connector.sql().at(-1)).toContain('FROM "memory"');
+
+    sel.update(clausePoint('dim', 'b', { source }));
+    if (action === 'connector') mc.databaseConnector(new MockPreaggConnector());
+    else mc.preaggregator.reset();
+    await sel.pending('value');
+    const current = mc.databaseConnector() as MockPreaggConnector;
+    expect(results).toHaveLength(3);
+    expect(current.sql().at(-1)).toBe(`SELECT count(*) AS "measure" FROM "testData" WHERE ("dim" IN ('b'))`);
+  });
+
   it('retries an automatic entry refused while the lane was busy', async () => {
     const connector = new MockPreaggConnector();
     const mc = preaggCoordinator(connector, { maxPendingBuilds: 1 });
