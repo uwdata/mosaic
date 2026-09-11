@@ -40,7 +40,11 @@ describe('RestConnector', () => {
     expect(lastInit(fetch).body).toBe(JSON.stringify({ type: 'preagg', sql: 'SELECT 1' }));
   });
 
-  it.each(['preagg', 'arrow', undefined] as const)('parses JSON error envelopes for %s requests', async (type) => {
+  it.each([
+    ['preagg', (connector: RestConnector) => connector.query({ type: 'preagg', sql: 'SELECT 1' })],
+    ['arrow', (connector: RestConnector) => connector.query({ type: 'arrow', sql: 'SELECT 1' })],
+    ['default', (connector: RestConnector) => connector.query({ sql: 'SELECT 1' })]
+  ] as const)('parses JSON error envelopes for %s requests', async (_, query) => {
     const connector = new RestConnector({ uri: 'http://test/' });
     stubFetch(new Response(JSON.stringify({
       error: 'Materialized table is unavailable',
@@ -48,11 +52,7 @@ describe('RestConnector', () => {
       catalog: 'memory', schema: 'mosaic_scope_a7', table: 'preagg_c92f'
     }), { status: 404, headers: { 'Content-Type': 'application/json; charset=utf-8' } }));
 
-    const request = { sql: 'SELECT 1' };
-    const result = type === 'preagg'
-      ? connector.query({ ...request, type })
-      : connector.query({ ...request, type });
-    const err = await result.catch(e => e) as ConnectorError;
+    const err = await query(connector).catch(e => e) as ConnectorError;
     expect(err).toBeInstanceOf(ConnectorError);
     expect(err).toMatchObject({
       message: 'Materialized table is unavailable',
