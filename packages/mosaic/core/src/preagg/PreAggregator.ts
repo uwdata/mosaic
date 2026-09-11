@@ -283,7 +283,7 @@ export class PreAggregator {
 
     this.registry.invalidate(info.create.toString(), table);
     this.materialize(info);
-    return info.result !== null && await info.ready!.then(() => true, () => false);
+    return info.result !== null && await info.result.then(() => true, () => false);
   }
 
   private isCurrent(info: PreAggregateInfo): boolean {
@@ -301,16 +301,12 @@ export class PreAggregator {
       info.result = null;
       return;
     }
-    const ready = promise.then(table => {
-      info.bind(table);
-      return table;
-    });
-    ready.catch(err => {
-      if (info.ready === ready) info.result = null;
+    const result = promise.then(table => info.bind(table));
+    result.catch(err => {
+      if (info.result === result) info.result = null;
       if (!isAbortError(err)) logger.warn(err);
     });
-    info.ready = ready;
-    info.result = ready;
+    info.result = result;
   }
 }
 
@@ -549,7 +545,6 @@ export class PreAggregateInfo {
    * Null values indicate that a creation query failed and there is no view.
    */
   result: Promise<unknown> | null;
-  ready: Promise<TableRefNode> | null;
   /**
    * Definitions and predicate function for the active columns,
    * which are dynamically filtered by the active clause.
@@ -571,7 +566,6 @@ export class PreAggregateInfo {
     this.table = table;
     this.create = create;
     this.result = null; // set subsequently in request method
-    this.ready = null;
     this.active = active;
     this.select = select;
     this.skip = false;

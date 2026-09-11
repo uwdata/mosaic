@@ -25,31 +25,6 @@ export class ConnectorError extends Error {
   }
 }
 
-export class PreAggregateBusyError extends ConnectorError {
-  constructor(message = 'Preaggregation lane is busy') {
-    super(message, { code: 'lane_busy' });
-    this.name = 'PreAggregateBusyError';
-  }
-}
-
-export class PreAggregateSuppressedError extends ConnectorError {
-  /** Unix milliseconds; local to the coordinator, unrelated to HTTP Retry-After. */
-  retryAt: number;
-
-  constructor(cause: ConnectorError, retryAt: number) {
-    super(`Preaggregation suppressed: ${cause.message}`, {
-      code: cause.code,
-      status: cause.status,
-      catalog: cause.catalog,
-      schema: cause.schema,
-      table: cause.table,
-      cause
-    });
-    this.name = 'PreAggregateSuppressedError';
-    this.retryAt = retryAt;
-  }
-}
-
 /** Client-side configuration error, distinct from a server `unsupported_command`. */
 export class PreAggregateModeError extends Error {
   constructor(message: string) {
