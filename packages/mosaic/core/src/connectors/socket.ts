@@ -1,6 +1,6 @@
 import type { ExtractionOptions, Table } from '@uwdata/flechette';
 import type { ArrowQueryRequest, Connector, ConnectorRequest, ExecQueryRequest, PreaggRequest, PreaggResponse } from './Connector.js';
-import { ConnectorError } from './errors.js';
+import { errorFromEnvelope } from './errors.js';
 import { decodeIPC } from '../util/decode-ipc.js';
 
 interface SocketOptions {
@@ -86,7 +86,9 @@ export class SocketConnector implements Connector {
           if (typeof data === 'string') {
             const json = JSON.parse(data);
             if (json.error) {
-              reject(json.error);
+              reject(query.type === 'exec' ? json.error : errorFromEnvelope(json) ?? json.error);
+            } else if (query.type === 'arrow') {
+              reject(new Error(`Unexpected socket data: ${data}`));
             } else {
               resolve(json);
             }
@@ -140,11 +142,8 @@ export class SocketConnector implements Connector {
   query(query: ExecQueryRequest): Promise<void>;
   query(query: PreaggRequest): Promise<PreaggResponse>;
   query(query: ConnectorRequest): Promise<unknown> {
-    if (query.type === 'preagg') {
-      return Promise.reject(new ConnectorError('Unsupported command: preagg', { code: 'unsupported_command' }));
-    }
     return new Promise(
-      (resolve, reject) => this.enqueue(query, resolve, reject)
+      (resolve, reject) => this.enqueue({ ...query, type: query.type ?? 'arrow' }, resolve, reject)
     );
   }
 }

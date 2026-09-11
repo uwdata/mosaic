@@ -9,7 +9,7 @@ The _query_ argument is an object that may include the following properties:
 - _type_: The query format type, either `"exec"` (no return value), `"arrow"`, or `"preagg"`.
 - Any additional connector-specific options.
 
-A `"preagg"` request asks the server to materialize the given SELECT query and resolves to the resulting table name as `{ catalog, schema, table, createdAt }`. Of the bundled connectors, only `restConnector` supports it.
+A `"preagg"` request asks the server to materialize the given SELECT query and resolves to the resulting table name as `{ catalog, schema, table, createdAt }`. The bundled `restConnector` and `socketConnector` support it.
 
 Once instantiated, register a connector with the coordinator using the [`coordinator.databaseConnector()`](coordinator#databaseconnector) method.
 
@@ -18,6 +18,8 @@ Once instantiated, register a connector with the coordinator using the [`coordin
 `socketConnector(uri)`
 
 Create a new Web Socket connector to a DuckDB [data server](../duckdb/data-server) at the given _uri_ (default `"ws://localhost:3000/"`).
+
+`preagg` requires a supporting server. SELECT and `preagg` failures preserve structured error codes and missing-table references as `ConnectorError` instances. Responses follow request order, so a build delays later requests on the same socket.
 
 ## restConnector
 
