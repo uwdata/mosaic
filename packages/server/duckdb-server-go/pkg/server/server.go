@@ -108,7 +108,7 @@ func newHandler(db commandExecutor, cfg config) *handler {
 }
 
 func (s *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	if s.cacheControl != "" {
+	if s.cacheControl != "" || s.preaggregator != nil {
 		w.Header().Set("Cache-Control", "no-store")
 	}
 	if len(s.varyHeaders) > 0 {
@@ -251,9 +251,6 @@ func (s *handler) handleWebSocketMessage(ctx context.Context, conn *websocket.Co
 }
 
 func (s *handler) handleHTTP(w http.ResponseWriter, r *http.Request) {
-	if s.preaggregator != nil {
-		w.Header().Set("Cache-Control", "no-store")
-	}
 	allowedSchemas := getAllowedSchemas(r, s.schemaMatchHeaders)
 	if len(s.schemaMatchHeaders) > 0 && len(allowedSchemas) == 0 {
 		s.logger.Error("server: no allowed schemas found in request headers", "headers", s.schemaMatchHeaders)
@@ -327,7 +324,7 @@ func (s *handler) handleHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if r.Method == http.MethodGet && s.cacheControl != "" {
+	if r.Method == http.MethodGet && s.cacheControl != "" && s.preaggregator == nil {
 		etag := responseETag(response)
 		if value := strings.Join(r.Header.Values("If-Match"), ","); value != "" && !matchesETag(value, etag, false) {
 			http.Error(w, http.StatusText(http.StatusPreconditionFailed), http.StatusPreconditionFailed)

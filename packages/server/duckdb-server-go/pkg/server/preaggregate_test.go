@@ -161,6 +161,69 @@ func TestHTTPPreaggregateErrors(t *testing.T) {
 	require.JSONEq(t, `{"error":"Internal Server Error","code":"internal_error"}`, response.Body.String())
 }
 
+func TestHTTPPreaggregatePayload(t *testing.T) {
+	var sources []string
+	authorizer := AuthorizerFunc[*applicationPayload](func(*http.Request) (CommandAuthorizer[*applicationPayload], error) {
+		return func(_ context.Context, command Command[*applicationPayload]) error {
+			if command.Type() == CommandPreagg {
+				fields := command.Payload()
+				if fields == nil || fields.ProjectID != 42 {
+					return ErrPermissionDenied
+				}
+				sources = append(sources, command.SQL())
+			}
+			command.Payload().ProjectID = 0
+			return nil
+		}, nil
+	})
+	h, _ := setupPreaggregateHandler(t, query.PreAggregateLimits{}, WithAuthorizer(authorizer))
+	scope := query.PreAggregateScope{Key: "project:42"}
+	source := `SELECT 42 AS x`
+	response := preaggregateRequest(t, h, http.MethodPost, scope, map[string]any{"type": "preagg", "sql": source, "projectId": 42})
+	require.Equal(t, http.StatusOK, response.Code, response.Body.String())
+	var table query.PreaggResponse
+	require.NoError(t, json.Unmarshal(response.Body.Bytes(), &table))
+	read := map[string]any{"type": "arrow", "sql": `SELECT * FROM "` + table.Catalog + `"."` + table.Schema + `"."` + table.Table + `"`, "projectId": 42}
+	response = preaggregateRequest(t, h, http.MethodPost, scope, read)
+	require.Equal(t, http.StatusOK, response.Code, response.Body.String())
+	require.Equal(t, []string{source, source}, sources)
+	read["projectId"] = 43
+	response = preaggregateRequest(t, h, http.MethodPost, scope, read)
+	require.Equal(t, http.StatusForbidden, response.Code)
+}
+
+func TestHTTPPreaggregateNoStore(t *testing.T) {
+	var revoked bool
+	var calls int
+	authorizer := AuthorizerFunc[struct{}](func(*http.Request) (CommandAuthorizer[struct{}], error) {
+		return func(context.Context, Command[struct{}]) error {
+			calls++
+			if revoked {
+				return ErrPermissionDenied
+			}
+			return nil
+		}, nil
+	})
+	h, _ := setupPreaggregateHandler(t, query.PreAggregateLimits{}, WithCacheControl("public, max-age=60"), WithAuthorizer(authorizer))
+	for _, revoked = range []bool{false, true} {
+		for _, headers := range []http.Header{{}, {"If-None-Match": {"*"}}, {"If-Match": {`"stale"`}}} {
+			req := httptest.NewRequest(http.MethodGet, "/?type=arrow&sql=SELECT+1", nil)
+			req.Header = headers
+			req = req.WithContext(context.WithValue(req.Context(), preaggregateScopeKey{}, query.PreAggregateScope{Key: "reader"}))
+			response := httptest.NewRecorder()
+			h.ServeHTTP(response, req)
+			status := http.StatusOK
+			if revoked {
+				status = http.StatusForbidden
+			}
+			require.Equal(t, status, response.Code, response.Body.String())
+			require.Equal(t, "no-store", response.Header().Get("Cache-Control"))
+			require.Empty(t, response.Header().Get("ETag"))
+		}
+	}
+	require.Equal(t, 6, calls)
+}
+
 func TestHTTPPreaggregateDeadline(t *testing.T) {
 	h, _ := setupPreaggregateHandler(t, query.PreAggregateLimits{Timeout: 10 * time.Millisecond})
 	response := preaggregateRequest(t, h, http.MethodPost, query.PreAggregateScope{Key: "reader"}, map[string]any{"type": "preagg", "sql": "SELECT sum(i) AS n FROM range(1000000000) t(i)"})

@@ -37,7 +37,7 @@ Outer authentication middleware supplies the tenant in this example. Change the 
 
 The server assigns a `mosaic_preagg_<scope hash>` schema and a `preagg_<SQL hash>` table. It accepts one SELECT, checks source grants and the database's configured policies, and limits functions to the reviewed compute functions. Parameters, recursive CTEs, introspection materializations, replacement scans, and dependencies on other managed preaggregates are rejected. `DESCRIBE SELECT` remains available for source metadata. Host-defined views, macros, native extensions, and connection initialization must be trusted.
 
-This option disables client `exec` and cannot be combined with `WithSchemaMatchHeaders`. `WithAuthorizer` still sees every submitted command. On a derived read, it also receives each stored source recipe as a `CommandPreagg`, so custom policy can revoke access to already materialized data. Authorizers that inspect SQL must accept authorized reads of server-managed references as well as the original source SELECTs. Source grants and function policies are rechecked on reads and reuse.
+This option disables client `exec` and cannot be combined with `WithSchemaMatchHeaders`. `WithAuthorizer` still sees every submitted command. On a derived read, it also receives each stored source recipe as a `CommandPreagg`, so custom policy can revoke access to already materialized data. These source checks receive the current read's application payload, freshly decoded for each check; `Type()` and `SQL()` identify the stored source recipe. For GET reads, the payload remains the zero value of the application type. Authorizers that inspect SQL must accept authorized reads of server-managed references as well as the original source SELECTs. Source grants and function policies are rechecked on reads and reuse.
 
 ## Storage and lifetime
 
@@ -63,7 +63,7 @@ Use one handler to own the managed namespaces in a destination catalog, and do n
 
 ## Errors
 
-With preaggregation enabled, HTTP command errors use JSON `{ error, code }`, and responses use `Cache-Control: no-store`.
+With preaggregation enabled, HTTP command errors use JSON `{ error, code }`, and responses use `Cache-Control: no-store` even when `WithCacheControl` configures caching. GET responses omit ETags and ignore conditional request headers; every read is authorized and executed.
 
 | Code | HTTP status |
 | --- | --- |
