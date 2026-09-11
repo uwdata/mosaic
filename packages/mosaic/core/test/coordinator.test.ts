@@ -99,6 +99,40 @@ describe('coordinator', () => {
     expect(preagg()[2].sql).toMatch(/^SELECT/);
   });
 
+  it('creates the schema again after the connector changes', async () => {
+    const first = heldConnector();
+    const coord = new Coordinator(first.connector, {
+      logger: null,
+      cache: false,
+      consolidate: false
+    });
+    const filterBy = Selection.single({ cross: true });
+    const client = new TestClient(
+      Query.from('testData').select({ measure: count() }),
+      filterBy
+    );
+    coord.connect(client);
+    await wait();
+    first.requests[0].resolve([]);
+    await client.pending;
+
+    filterBy.update(clausePoint('dim', 'a', { source: {} }));
+    await wait();
+    // schema create, table create, then the pre-aggregated select
+    for (let i = 0; i < 3; ++i) {
+      first.requests.at(-1)!.resolve([]);
+      await wait();
+    }
+
+    const second = heldConnector();
+    coord.databaseConnector(second.connector);
+    coord.preaggregator.clear();
+    filterBy.update(clausePoint('dim', 'b', { source: {} }));
+    await wait();
+
+    expect(second.requests.map(r => r.sql)).toEqual(['CREATE SCHEMA IF NOT EXISTS "mosaic"']);
+  });
+
 
   it('keeps at most maxPendingUpdates selection updates in flight per client', async () => {
     const { connector, requests } = heldConnector();

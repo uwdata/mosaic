@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { Query, TableRefNode, column, createSchema, createTable, sql } from '@uwdata/mosaic-sql';
+import { Query, TableRefNode, column, createSchema, createTable, loadParquet, sql } from '@uwdata/mosaic-sql';
 import { intersects, queryTables, union } from '../src/util/query-tables.js';
 import type { QueryRequest } from '../src/types.js';
 
@@ -43,6 +43,11 @@ describe('queryTables', () => {
   it('writes the created table and reads its source', () => {
     const create = createTable('t', Query.from('base').select('x'));
     expect(exec(create)).toEqual({ reads: new Set(['base']), writes: new Set(['t']) });
+  });
+
+  it('reads no table for a file load', () => {
+    const load = loadParquet('t', 'data/t.parquet', { where: 'x > 1' });
+    expect(exec(load)).toEqual({ reads: new Set(), writes: new Set(['t']) });
   });
 
   it('marks reads unknown for a create from a SQL string', () => {

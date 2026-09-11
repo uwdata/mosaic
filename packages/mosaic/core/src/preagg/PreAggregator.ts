@@ -1,5 +1,6 @@
 import { ExprNode, ScaleOptions, SelectQuery, Query, ExprValue, MaybeArray, FunctionNode, TableRefNode, createSchema, SelectClauseNode, OrderByNode, and, asNode, ceil, collectColumns, createTable, float64, floor, isBetween, int32, mul, round, scaleTransform, sub, isSelectQuery, isAggregateExpression, ColumnNameRefNode, rewrite } from '@uwdata/mosaic-sql';
 import type { Coordinator } from '../Coordinator.js';
+import type { Connector } from '../connectors/Connector.js';
 import type { MosaicClient } from '../MosaicClient.js';
 import type { Selection } from '../Selection.js';
 import type { BinMethod, ClauseSource, IntervalMetadata, SelectionClause } from '../SelectionClause.js';
@@ -60,7 +61,7 @@ export class PreAggregator {
   private mc: Coordinator;
   private _schema: string;
   private _enabled: boolean;
-  private schemaReady: Promise<unknown> | null;
+  private schemaReady: { db: Connector | null; done: Promise<unknown> } | null;
 
   /**
    * Create a new manager of materialized views of pre-aggregated data.
@@ -220,11 +221,15 @@ export class PreAggregator {
         client.query(filter) as SelectQuery,
         active, preaggCols, schema
       );
-      this.schemaReady ??= mc.exec(createSchema(schema)).catch((e: Error) => {
-        this.schemaReady = null;
-        throw e;
-      });
-      _info.result = this.schemaReady.then(
+      const db = mc.databaseConnector();
+      if (this.schemaReady?.db !== db) {
+        const done = mc.exec(createSchema(schema)).catch((e: Error) => {
+          this.schemaReady = null;
+          throw e;
+        });
+        this.schemaReady = { db, done };
+      }
+      _info.result = this.schemaReady.done.then(
         () => mc.exec(createTable(_info.table, _info.create, { temp: false }))
       );
       // if create query fails, log and mark as failed
