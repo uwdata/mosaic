@@ -87,7 +87,8 @@ export class Coordinator {
   }
 
   /**
-   * Clear the coordinator state.
+   * Clear the coordinator state. A full clear (the default) also resets
+   * the pre-aggregator.
    * @param options Options object.
    * @param options.clients If true, disconnect all clients.
    * @param options.cache If true, clear the query cache.
@@ -102,19 +103,23 @@ export class Coordinator {
       this.clients = new Set;
     }
     if (cache) this.manager.cache()!.clear();
+    if (clients && cache && this.preaggregator?.registry) this.preaggregator.reset();
   }
 
   /**
-   * Get or set the database connector.
+   * Get or set the database connector. Replacing the connector forgets
+   * tables materialized through the previous connector.
    * @param db The database connector to use.
    * @returns The current database connector.
    */
   databaseConnector(): Connector | null;
   databaseConnector(db: Connector): Connector;
   databaseConnector(db?: Connector): Connector | null {
-    return db
-      ? this.manager.connector(db)
-      : this.manager.connector();
+    if (!db) return this.manager.connector();
+    const prev = this.manager.connector();
+    const next = this.manager.connector(db);
+    if (prev && prev !== next && this.preaggregator?.registry) this.preaggregator.reset();
+    return next;
   }
 
   /**
@@ -372,7 +377,14 @@ function updateSelection(
       return;
     }
 
-    if (info?.result) {  
+    if (info?.ready) {
+      const pending = client.pending;
+      await info.ready.catch(() => {});
+      // a requestQuery or disconnect during the wait supersedes this update
+      if (client.pending !== pending || !filterGroups.get(selection)?.clients.has(client)) return;
+    }
+
+    if (info?.result) {
       // generate and issue preaggregate update query
       const query = info.query(active);
       const result = await mc.updateClient(client, query);

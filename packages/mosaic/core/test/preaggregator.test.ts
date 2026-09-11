@@ -309,7 +309,7 @@ describe('PreAggregator', () => {
     expect(value).toBe(7);
 
     // one preaggregate row per expression value ('big', 'small')
-    const rows = await mc.query(Query.from(info!.table).select({ n: count() }));
+    const rows = await mc.query(Query.from(info!.table!).select({ n: count() }));
     expect(rows.get(0).n).toBe(2);
   });
 
