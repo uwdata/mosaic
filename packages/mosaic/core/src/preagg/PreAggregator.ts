@@ -6,6 +6,7 @@ import type { BinMethod, ClauseSource, IntervalMetadata, SelectionClause } from 
 import { fnv_hash } from '../util/hash.js';
 import { resolvePositional } from '../util/positional.js';
 import { preaggColumns, PreAggColumnsResult } from './preagg-columns.js';
+import { EventType, MosaicErrorEvent } from '../Events.js';
 
 /**
  * Dummy preaggregate info object that indicates a view should be skipped
@@ -222,7 +223,7 @@ export class PreAggregator {
       ]);
       // if create query fails, log and mark as failed
       _info.result.catch((e: Error) => {
-        mc.logger().error(e);
+        mc.eventBus.emit(EventType.Error, new MosaicErrorEvent({ error: e }));
         _info.result = null; // indicates lack of view
       });
       info = _info;

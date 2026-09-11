@@ -17,7 +17,6 @@ Get the default global coordinator instance.
 
 Create a new Mosaic Coordinator to manage all database communication for clients and handle selection updates. Accepts a database _connector_ and an _options_ object:
 
-* _logger_: The logger to use, defaults to `console`.
 * _cache_: Boolean flag to enable/disable query caching (default `true`).
 * _consolidate_ Boolean flag to enable/disable query consolidation (default `true`).
 * _preagg_: Pre-aggregation options object. The _enabled_ flag (default `true`) determines if pre-aggregation optimizations should be used when possible. The _schema_ option (default `'mosaic'`) indicates the database schema in which materialized view tables should be created for pre-aggregated data.
@@ -42,14 +41,47 @@ If the client exposes a `filterBy` selection, the coordinator will handle update
 
 Disconnect the [_client_](./client) from the coordinator and remove all update handling.
 
-## logger
+## eventBus
 
-`coordinator.logger(logger)`
+`coordinator.eventBus`
 
-Get or set the coordinator's logger.
-The logger defaults to the standard JavaScript `console`.
-A logger instance must support `log`, `info`, `warn`, and `error` methods.
-If set to `null`, logging will be suppressed.
+An event bus that reports query lifecycle, warning, and error events.
+Subscribe with `addEventListener(type, callback)` and unsubscribe with `removeEventListener(type, callback)`.
+Callbacks run synchronously when an event is emitted.
+The coordinator does not log anything by default; use [`observeLogger`](#observelogger) or subscribe directly.
+
+The event _type_ is one of the `EventType` enum values.
+Every event has a `type` and a `timestamp` (from `performance.now()`):
+
+* `EventType.QueryStart` (`'query-start'`): A `MosaicQueryStartEvent` with the `queryId`, the SQL `query` text, and a `cached` flag indicating if the query may use the client-side cache.
+* `EventType.QueryEnd` (`'query-end'`): A `MosaicQueryEndEvent` with the same fields as the start event plus a `status` of `'success'` or `'error'`. The `queryId` matches the corresponding start event.
+* `EventType.Warning` (`'warning'`): A `MosaicWarningEvent` with a `message`.
+* `EventType.Error` (`'error'`): A `MosaicErrorEvent` with the thrown `error` and its `message`. Client query failures carry a `QueryError` whose `sql` property holds the failed query.
+
+```js
+import { coordinator, EventType } from '@uwdata/mosaic-core';
+
+coordinator().eventBus.addEventListener(EventType.QueryEnd, event => {
+  console.log(event.queryId, event.status, event.query);
+});
+```
+
+## observeLogger
+
+`observeLogger(coordinator, logger)`
+
+Log coordinator events to a console-like _logger_ (default `console`).
+Each query is logged as a collapsed group that shows the query text and elapsed time in milliseconds.
+Warnings and errors are logged with `warn` and `error`.
+Returns a function that stops logging when called.
+
+```js
+import { coordinator, observeLogger } from '@uwdata/mosaic-core';
+
+const stop = observeLogger(coordinator());
+// ... later
+stop();
+```
 
 ## clear
 

@@ -51,10 +51,12 @@ export * from './types.js';
 export type * from './connectors/Connector.js';
 export type {
   MosaicEvent,
-  MosaicErrorEventInit,
   MosaicEventMap,
-  MosaicMessageEventInit,
-  QueryLifecycleEventInit
+  MosaicErrorEventInit,
+  MosaicWarningEventInit,
+  QueryEndEventInit,
+  QueryEndStatus,
+  QueryStartEventInit
 } from './Events.js';
 export type * from './Selection.js';
 export type * from './SelectionClause.js';

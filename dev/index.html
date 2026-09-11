@@ -159,7 +159,7 @@
   function setQueryLog() {
     unobserveQueryLog?.();
     unobserveQueryLog = qlogToggle.checked
-      ? observeLogger(vg.coordinator(), console)
+      ? observeLogger(vg.coordinator())
       : undefined;
   }
 

@@ -71,7 +71,7 @@ export abstract class Dispatch<T> {
    * @param type The event type.
    * @param value The new event value that will be enqueued.
    * @returns A dispatch queue filter
-   *  function, or null if all un-emitted event values should be filtered.
+   *  function, or null if all unemitted event values should be filtered.
    */
   emitQueueFilter(
     _type: string, // eslint-disable-line @typescript-eslint/no-unused-vars
@@ -106,24 +106,7 @@ export class AsyncDispatch<T> extends Dispatch<T> {
   }
 
   /**
-   * Add an event listener callback for the provided event type.
-   * @param type The event type.
-   * @param callback The event handler
-   *  callback function to add. If the callback has already been
-   *  added for the event type, this method has no effect.
-   */
-  override addEventListener(type: string, callback: EventCallback<T>): void {
-    super.addEventListener(type, callback);
-    if (!this._entries.has(type)) {
-      this._entries.set(type, {
-        pending: null,
-        queue: new DispatchQueue<T>(),
-      });
-    }
-  }
-
-  /**
-   * Cancel all un-emitted event values for the given event type.
+   * Cancel all unemitted event values for the given event type.
    * @param type The event type.
    */
   cancel(type: string): void {
@@ -152,13 +135,11 @@ export class AsyncDispatch<T> extends Dispatch<T> {
    * @param value The event value.
    */
   override emit(type: string, value: T): void {
-    if (!this._entries.has(type)) {
-      this._entries.set(type, {
-        pending: null,
-        queue: new DispatchQueue<T>(),
-      });
+    let entry = this._entries.get(type);
+    if (!entry) {
+      entry = { pending: null, queue: new DispatchQueue<T>() };
+      this._entries.set(type, entry);
     }
-    const entry = this._entries.get(type)!;
     if (entry.pending) {
       // an earlier emit is still processing
       // enqueue the current update, possibly filtering other pending updates
@@ -183,7 +164,7 @@ export class AsyncDispatch<T> extends Dispatch<T> {
 }
 
 /**
- * Queue for managing un-emitted event values.
+ * Queue for managing unemitted event values.
  */
 export class DispatchQueue<T = unknown> {
   next: QueueNode<T> | null = null;

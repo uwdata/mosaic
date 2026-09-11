@@ -9,84 +9,82 @@ abstract class MosaicEventBase<T extends EventType = EventType> {
   readonly type: T;
   readonly timestamp: number;
 
-  protected constructor(type: T, timestamp: number = Date.now()) {
+  protected constructor(type: T, timestamp: number = performance.now()) {
     this.type = type;
     this.timestamp = timestamp;
   }
 }
 
-export interface QueryLifecycleEventInit {
+export interface QueryStartEventInit {
   queryId: number;
   query: string;
-  materialized: boolean;
+  cached: boolean;
   timestamp?: number;
 }
 
 export type QueryEndStatus = 'success' | 'error';
 
-export interface QueryEndEventInit extends QueryLifecycleEventInit {
+export interface QueryEndEventInit extends QueryStartEventInit {
   status: QueryEndStatus;
 }
 
 export class MosaicQueryStartEvent extends MosaicEventBase<EventType.QueryStart> {
   readonly queryId: number;
   readonly query: string;
-  readonly materialized: boolean;
+  readonly cached: boolean;
 
-  constructor({ queryId, query, materialized, timestamp }: QueryLifecycleEventInit) {
+  constructor({ queryId, query, cached, timestamp }: QueryStartEventInit) {
     super(EventType.QueryStart, timestamp);
     this.queryId = queryId;
     this.query = query;
-    this.materialized = materialized;
+    this.cached = cached;
   }
 }
 
 export class MosaicQueryEndEvent extends MosaicEventBase<EventType.QueryEnd> {
   readonly queryId: number;
   readonly query: string;
-  readonly materialized: boolean;
+  readonly cached: boolean;
   readonly status: QueryEndStatus;
 
-  constructor({ queryId, query, materialized, status, timestamp }: QueryEndEventInit) {
+  constructor({ queryId, query, cached, status, timestamp }: QueryEndEventInit) {
     super(EventType.QueryEnd, timestamp);
     this.queryId = queryId;
     this.query = query;
-    this.materialized = materialized;
+    this.cached = cached;
     this.status = status;
   }
 }
 
-export interface MosaicMessageEventInit {
+export interface MosaicWarningEventInit {
   message: string;
-  queryId?: number;
   timestamp?: number;
-}
-
-export interface MosaicErrorEventInit extends MosaicMessageEventInit {
-  error?: unknown;
 }
 
 export class MosaicWarningEvent extends MosaicEventBase<EventType.Warning> {
   readonly message: string;
-  readonly queryId?: number;
 
-  constructor({ message, queryId, timestamp }: MosaicMessageEventInit) {
+  constructor({ message, timestamp }: MosaicWarningEventInit) {
     super(EventType.Warning, timestamp);
     this.message = message;
-    this.queryId = queryId;
   }
 }
 
-export class MosaicErrorEvent extends MosaicEventBase<EventType.Error> {
-  readonly message: string;
-  readonly queryId?: number;
-  readonly error?: unknown;
+export interface MosaicErrorEventInit {
+  error: unknown;
+  timestamp?: number;
+}
 
-  constructor({ message, queryId, error, timestamp }: MosaicErrorEventInit) {
+export class MosaicErrorEvent extends MosaicEventBase<EventType.Error> {
+  readonly error: unknown;
+
+  constructor({ error, timestamp }: MosaicErrorEventInit) {
     super(EventType.Error, timestamp);
-    this.message = message;
-    this.queryId = queryId;
     this.error = error;
+  }
+
+  get message(): string {
+    return this.error instanceof Error ? this.error.message : String(this.error);
   }
 }
 
