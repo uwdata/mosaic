@@ -2,14 +2,14 @@ import type { Table } from '@uwdata/flechette';
 
 export interface ConnectorQueryRequest {
   /** The query type. */
-  type?: string;
+  type: string;
   /** A SQL query string. */
   sql: string;
 }
 
 export interface ArrowQueryRequest extends ConnectorQueryRequest {
   /** The query type. */
-  type?: 'arrow';
+  type: 'arrow';
 }
 
 export interface ExecQueryRequest extends ConnectorQueryRequest {

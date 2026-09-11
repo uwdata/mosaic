@@ -3,10 +3,10 @@
 Database connectors issue query requests to a backing data source.
 
 A connector instance should expose a `query(query)` method that returns a Promise.
-The _query_ argument is an object that may include the following properties:
+The _query_ argument is an object with the following properties:
 
 - _sql_: The SQL query to evaluate.
-- _type_: The query format type, either `"exec"` (no return value) or `"arrow"`.
+- _type_: The query format type, either `"exec"` (no return value) or `"arrow"`. This property is required; servers reject a request without it.
 - Any additional connector-specific options.
 
 Once instantiated, register a connector with the coordinator using the [`coordinator.databaseConnector()`](coordinator#databaseconnector) method.
