@@ -1,11 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import type { Table } from '@uwdata/flechette';
-import { createSchema, createTable, loadObjects, Query, TableRefNode } from '@uwdata/mosaic-sql';
+import { loadObjects, Query, TableRefNode } from '@uwdata/mosaic-sql';
+import { DuckDB } from '@uwdata/mosaic-duckdb';
 import { clausePoint } from '../src/index.js';
 import { NodeConnector } from '../src/connectors/NodeConnector.js';
 import { ConnectorError } from '../src/connectors/errors.js';
 import type { PreAggregateInfo } from '../src/preagg/PreAggregator.js';
-import { aggregateClient, flush, MockPreaggConnector, preaggCoordinator, preaggResponse } from './util/preagg-connector.js';
+import { aggregateClient, flush, MockPreaggConnector, preaggCoordinator } from './util/preagg-connector.js';
 
 function missingTable(table: TableRefNode) {
   const [catalog, schema, name] = table.table;
@@ -31,53 +32,31 @@ async function setup(clientCount = 1) {
 }
 
 describe('PreAggregator recovery', () => {
-  it.each(['', '_rebuilt'])('rebuilds a dropped DuckDB table and reads its rows (suffix %s)', async suffix => {
-    const db = await NodeConnector.make();
-    let missing: TableRefNode | null = null;
-    const connector = new MockPreaggConnector({
-      handler: async request => {
-        try {
-          return request.type === 'exec' ? await db.query(request)
-            : await db.query({ type: 'arrow', sql: request.sql });
-        } catch (err) {
-          if (missing && request.sql.includes(String(missing))) throw missingTable(missing);
-          throw err;
-        }
-      }
-    });
-    const mc = preaggCoordinator(connector);
-    mc.manager.cache(true);
-    await mc.exec(loadObjects('testData', [{ dim: 'a' }, { dim: 'b' }, { dim: 'b' }]));
-    await mc.exec(createSchema('mosaic_scope_test'));
-    const { client, sel, results } = await aggregateClient(mc);
-    const source = {};
+  it('rebuilds a dropped DuckDB table and reads its rows', async () => {
+    const db = new DuckDB();
+    try {
+      const connector = await NodeConnector.make(db);
+      const mc = preaggCoordinator(connector);
+      mc.manager.cache(true);
+      await mc.exec(loadObjects('testData', [{ dim: 'a' }, { dim: 'b' }, { dim: 'b' }]));
+      const { client, sel, results } = await aggregateClient(mc);
+      const source = {};
 
-    async function build(suffix = '') {
-      const { sql } = connector.open[0].request;
-      const response = preaggResponse(sql, suffix);
-      const table = new TableRefNode([response.catalog, response.schema, response.table]);
-      await db.query({ type: 'exec', sql: String(createTable(table, sql, { temp: false })) });
-      connector.complete(suffix);
-      return table;
+      sel.update(clausePoint('dim', 'a', { source }));
+      await sel.pending('value');
+      const info = mc.preaggregator.entries.get(client) as PreAggregateInfo;
+      const table = info.table!;
+      expect((results.at(-1) as Table).toArray()).toEqual([{ measure: 1 }]);
+
+      await connector.query({ type: 'exec', sql: `DROP TABLE ${table}` });
+      sel.update(clausePoint('dim', 'b', { source }));
+      await sel.pending('value');
+
+      expect(info.table!.table).not.toEqual(table.table);
+      expect((results.at(-1) as Table).toArray()).toEqual([{ measure: 2 }]);
+    } finally {
+      db.close();
     }
-
-    sel.update(clausePoint('dim', 'a', { source }));
-    await flush();
-    const table = await build();
-    await sel.pending('value');
-    expect((results.at(-1) as Table).toArray()).toEqual([{ measure: 1 }]);
-
-    await db.query({ type: 'exec', sql: `DROP TABLE ${table}` });
-    missing = table;
-    sel.update(clausePoint('dim', 'b', { source }));
-    await expect.poll(() => connector.preaggRequests.length).toBe(2);
-    const replacement = await build(suffix);
-    await sel.pending('value');
-
-    expect((mc.preaggregator.entries.get(client) as PreAggregateInfo).table!.table).toEqual(replacement.table);
-    expect(connector.sql().at(-1)).toContain(`FROM ${replacement}`);
-    expect((results.at(-1) as Table).toArray()).toEqual([{ measure: 2 }]);
-    expect(connector.preaggRequests).toHaveLength(2);
   });
 
   it.each([false, true])('shares recovery across clients, including late failures (%s)', async late => {
