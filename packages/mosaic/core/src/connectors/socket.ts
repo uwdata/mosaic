@@ -87,6 +87,8 @@ export class SocketConnector implements Connector {
             const json = JSON.parse(data);
             if (json.error) {
               reject(query.type === 'exec' ? json.error : errorFromEnvelope(json) ?? json.error);
+            } else if (query.type === 'arrow') {
+              reject(new Error(`Unexpected socket data: ${data}`));
             } else {
               resolve(json);
             }

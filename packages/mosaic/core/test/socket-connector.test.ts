@@ -159,16 +159,17 @@ describe('SocketConnector', () => {
   });
 
   it.each([
-    { name: 'malformed JSON', data: '[' },
-    { name: 'binary preagg response', data: new Uint8Array([1, 2, 3]) }
-  ])('rejects $name without losing the next response', async ({ data }) => {
+    { name: 'malformed JSON', query: (c: SocketConnector) => c.query({ type: 'preagg', sql: 'SELECT 1' }), data: '[' },
+    { name: 'binary preagg response', query: (c: SocketConnector) => c.query({ type: 'preagg', sql: 'SELECT 1' }), data: new Uint8Array([1, 2, 3]) },
+    { name: 'JSON Arrow response', query: (c: SocketConnector) => c.query({ sql: 'SELECT 1' }), data: '{}' }
+  ])('rejects $name without losing the next response', async ({ query, data }) => {
     const { connector, exec, socket } = connect();
-    const preagg = connector.query({ type: 'preagg', sql: 'SELECT 1' }).catch(error => error);
+    const result = query(connector).catch(error => error);
     const next = exec('SELECT 2');
     socket().emit('open');
     socket().emit('message', { data });
     socket().emit('message', { data: '{}' });
-    expect(await preagg).toBeInstanceOf(Error);
+    expect(await result).toBeInstanceOf(Error);
     await next;
   });
 

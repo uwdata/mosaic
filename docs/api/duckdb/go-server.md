@@ -10,6 +10,8 @@ Programs embedding [`duckdb-server-go`](https://github.com/uwdata/mosaic/tree/ma
 - `Scope`: required function from `context.Context` to `(query.PreAggregateScope, error)`, called for each command. Resolve it from authenticated application state.
 - `Limits`: `query.PreAggregateLimits`; zero fields use the defaults below.
 
+WebSocket context values come from the upgrade request and remain fixed for that connection. To observe authorization changes before reconnect, the scope resolver must consult current application state on each call.
+
 A `query.PreAggregateScope` contains a nonempty `Key` and `Sources`, a slice of `query.PreAggregateNamespace{Catalog, Schema}` grants. The key identifies effective permissions, row restrictions, execution settings, and any data revision that changes sharing. It is persisted in plaintext in table metadata, so use a policy identifier, not a bearer token or other secret. It partitions storage and does not add row filters; enforce those through trusted views or `WithAuthorizer`. All physical source references must use `catalog.schema.table`; nonrecursive CTE names remain unqualified. Physical identifier spelling must match the grants. Empty `Sources` permits only queries without physical sources; temporary, system, introspection, and managed namespaces cannot be source grants.
 
 In Mosaic SQL, pass `new TableRefNode(['raw', tenant, 'events'])` to `Query.from`; a dotted string is treated as one quoted identifier.
