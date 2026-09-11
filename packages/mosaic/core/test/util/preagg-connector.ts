@@ -2,7 +2,7 @@ import { count, Query } from '@uwdata/mosaic-sql';
 import type { Connector, ConnectorRequest, PreaggResponse } from '../../src/connectors/Connector.js';
 import { ConnectorError } from '../../src/connectors/errors.js';
 import { Coordinator, Selection } from '../../src/index.js';
-import { PREAGG_LIMITS, type PreaggLimits } from '../../src/preagg/PreaggRegistry.js';
+import type { PreAggregateLimits } from '../../src/preagg/PreAggregateRegistry.js';
 import { fnv_hash } from '../../src/util/hash.js';
 import { TestClient } from './test-client.js';
 
@@ -92,14 +92,15 @@ export function flush(): Promise<void> {
   return new Promise(resolve => setTimeout(resolve, 0));
 }
 
-export function preaggCoordinator(connector: Connector, limits: Partial<PreaggLimits> = {}) {
+export function preaggCoordinator(connector: Connector, limits: Partial<PreAggregateLimits> = {}) {
   const mc = new Coordinator(connector, {
     logger: null,
     cache: false,
     consolidate: false,
     preagg: { mode: 'preagg' }
   });
-  mc.preaggregator.registry!.limits = { ...PREAGG_LIMITS, ...limits };
+  const registry = mc.preaggregator.registry!;
+  registry.limits = { ...registry.limits, ...limits };
   return mc;
 }
 

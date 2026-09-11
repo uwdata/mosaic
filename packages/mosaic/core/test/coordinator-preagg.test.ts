@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import { count, Query, TableRefNode } from '@uwdata/mosaic-sql';
-import { clausePoint, Coordinator, PreaggModeError } from '../src/index.js';
+import { clausePoint, Coordinator, PreAggregateModeError } from '../src/index.js';
 import { PreAggregateInfo } from '../src/preagg/PreAggregator.js';
 import { aggregateClient, flush, MockPreaggConnector, preaggCoordinator } from './util/preagg-connector.js';
 
@@ -28,12 +28,12 @@ describe('PreAggregator preagg mode', () => {
     mc.preaggregator.schema = 'other';
     expect(mc.preaggregator.schema).toBe('initial');
     expect(warn).toHaveBeenCalledTimes(1);
-    await expect(mc.preaggregator.dropSchema()).rejects.toBeInstanceOf(PreaggModeError);
+    await expect(mc.preaggregator.dropSchema()).rejects.toBeInstanceOf(PreAggregateModeError);
   });
 
   it('waits for the server reference, then falls back if a later build fails', async () => {
     const connector = new MockPreaggConnector();
-    const mc = preaggCoordinator(connector, { maxIdleEntries: 0 });
+    const mc = preaggCoordinator(connector, { maxCachedTables: 0 });
     const { client, sel, results } = await aggregateClient(mc);
 
     const source = {};
@@ -52,7 +52,7 @@ describe('PreAggregator preagg mode', () => {
     expect(connector.sql()[1]).toContain(`FROM "memory"."mosaic_scope_test"."${response.table}" WHERE ("active0" IN ('b'))`);
     expect(results).toHaveLength(2);
 
-    // maxIdleEntries: 0 evicted the reference, so the next selection re-acquires
+    // maxCachedTables: 0 evicted the reference, so the next selection re-acquires
     sel.update(clausePoint('dim', 'a', { source }));
     await flush();
     expect(connector.preaggRequests).toHaveLength(2);
@@ -64,7 +64,7 @@ describe('PreAggregator preagg mode', () => {
 
   it('rebinds when an evicted table is rebuilt under a different reference', async () => {
     const connector = new MockPreaggConnector();
-    const mc = preaggCoordinator(connector, { maxIdleEntries: 0 });
+    const mc = preaggCoordinator(connector, { maxCachedTables: 0 });
     const { client, sel } = await aggregateClient(mc);
 
     const source = {};
@@ -120,7 +120,7 @@ describe('PreAggregator preagg mode', () => {
 
   it('retries an automatic entry refused while the lane was busy', async () => {
     const connector = new MockPreaggConnector();
-    const mc = preaggCoordinator(connector, { maxPendingEntries: 1 });
+    const mc = preaggCoordinator(connector, { maxPendingBuilds: 1 });
     const { client, sel } = await aggregateClient(mc);
     const other = await aggregateClient(mc);
 
@@ -180,7 +180,7 @@ describe('PreAggregator preagg mode', () => {
     expect(registry.size).toBe(0);
     expect(mc.preaggregator.entries.size).toBe(0);
 
-    const again = registry.acquire(connector.preaggRequests[0].sql);
+    const again = registry.request(connector.preaggRequests[0].sql);
     connector.complete();
     await again;
     mc.databaseConnector(connector);
@@ -188,7 +188,7 @@ describe('PreAggregator preagg mode', () => {
     mc.databaseConnector(new MockPreaggConnector());
     expect(registry.size).toBe(0);
 
-    const last = registry.acquire(connector.preaggRequests[0].sql);
+    const last = registry.request(connector.preaggRequests[0].sql);
     (mc.databaseConnector() as MockPreaggConnector).complete();
     await last;
     mc.clear();
