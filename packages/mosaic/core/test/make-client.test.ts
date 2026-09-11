@@ -6,7 +6,6 @@ import { NodeConnector } from "../src/connectors/NodeConnector.js";
 describe("makeClient", () => {
   it("should create a connected client and destroy it", async () => {
     const mc = new Coordinator(await NodeConnector.make(), {
-      logger: null,
     });
 
     await mc.exec(

@@ -1,10 +1,17 @@
 import type { Connector } from './connectors/Connector.js';
-import type { Cache, Logger, QueryEntry, QueryRequest } from './types.js';
+import type { Cache, QueryEntry, QueryRequest } from './types.js';
 import { consolidator } from './QueryConsolidator.js';
 import { lruCache, voidCache } from './util/cache.js';
 import { PriorityQueue } from './util/priority-queue.js';
 import { QueryResult, QueryState } from './util/query-result.js';
-import { voidLogger } from './util/void-logger.js';
+import { ObserveDispatch } from './util/ObserveDispatch.js';
+import {
+  EventType,
+  type MosaicEventMap,
+  MosaicQueryEndEvent,
+  MosaicQueryStartEvent,
+  MosaicWarningEvent
+} from './Events.js';
 
 export const Priority = Object.freeze({ High: 0, Normal: 1, Low: 2 });
 
@@ -12,24 +19,25 @@ export class QueryManager {
   private queue: PriorityQueue<QueryEntry>;
   private db: Connector | null;
   private clientCache: Cache | null;
-  private _logger: Logger;
-  private _logQueries: boolean;
   private _consolidate: ReturnType<typeof consolidator> | null;
   /** Requests pending with the query manager. */
   public pendingResults: QueryResult[];
+  /** Event bus for query lifecycle, warning, and error events. */
+  public readonly eventBus: ObserveDispatch<MosaicEventMap>;
   private maxConcurrentRequests: number;
   private pendingExec: boolean;
+  private nextQueryId: number;
 
   constructor(maxConcurrentRequests: number = 32) {
     this.queue = new PriorityQueue(3);
     this.db = null;
     this.clientCache = null;
-    this._logger = voidLogger();
-    this._logQueries = false;
     this._consolidate = null;
     this.pendingResults = [];
+    this.eventBus = new ObserveDispatch();
     this.maxConcurrentRequests = maxConcurrentRequests;
     this.pendingExec = false;
+    this.nextQueryId = 1;
   }
 
   next(): void {
@@ -52,7 +60,9 @@ export class QueryManager {
         if (result.state === QueryState.ready) {
           result.fulfill();
         } else if (result.state === QueryState.done) {
-          this._logger.warn('Found resolved query in pending results.');
+          this.eventBus.emit(EventType.Warning, new MosaicWarningEvent({
+            message: 'Found resolved query in pending results.'
+          }));
         }
       }
       if (request.type === 'exec') this.pendingExec = false;
@@ -76,27 +86,24 @@ export class QueryManager {
    * @param result The query result.
    */
   async submit(request: QueryRequest, result: QueryResult): Promise<void> {
-    try {
-      const { query, type, cache = false, options } = request;
-      const sql = Array.isArray(query) ? query.filter(x => x).join(';\n') : query ? String(query) : null;
+    const { query, type, cache = false, options } = request;
+    const sql = Array.isArray(query) ? query.filter(x => x).join(';\n') : query ? String(query) : null;
+    const lifecycle = { queryId: this.nextQueryId++, query: sql ?? '', cached: cache };
+    this.eventBus.emit(EventType.QueryStart, new MosaicQueryStartEvent(lifecycle));
 
+    try {
       // check query cache
       if (cache) {
         const cached = this.clientCache!.get(sql!);
         if (cached) {
           const data = await cached;
-          this._logger.debug('Cache');
           result.ready(data);
+          this.eventBus.emit(EventType.QueryEnd, new MosaicQueryEndEvent({ ...lifecycle, status: 'success' }));
           return;
         }
       }
 
       // issue query, potentially cache result
-      const t0 = performance.now();
-      if (this._logQueries) {
-        this._logger.debug('Query', { type, sql, ...options });
-      }
-
       // @ts-expect-error type may be exec | arrow
       const promise = this.db!.query({ ...options, type, sql: sql! });
       if (cache) this.clientCache!.set(sql!, promise);
@@ -105,9 +112,10 @@ export class QueryManager {
 
       if (cache) this.clientCache!.set(sql!, data);
 
-      this._logger.debug(`Request: ${(performance.now() - t0).toFixed(1)}`);
       result.ready(type === 'exec' ? null : data);
+      this.eventBus.emit(EventType.QueryEnd, new MosaicQueryEndEvent({ ...lifecycle, status: 'success' }));
     } catch (err) {
+      this.eventBus.emit(EventType.QueryEnd, new MosaicQueryEndEvent({ ...lifecycle, status: 'error' }));
       result.reject(err);
     }
   }
@@ -123,28 +131,6 @@ export class QueryManager {
     return value !== undefined
       ? (this.clientCache = value === true ? lruCache() : (value || voidCache()))
       : this.clientCache;
-  }
-
-  /**
-   * Get or set the current logger.
-   * @param value Logger to set
-   * @returns Current logger
-   */
-  logger(): Logger;
-  logger(value: Logger): Logger;
-  logger(value?: Logger): Logger {
-    return value ? (this._logger = value) : this._logger;
-  }
-
-  /**
-   * Get or set if queries should be logged.
-   * @param value Whether to log queries
-   * @returns Current logging state
-   */
-  logQueries(): boolean;
-  logQueries(value: boolean): boolean;
-  logQueries(value?: boolean): boolean {
-    return value !== undefined ? this._logQueries = !!value : this._logQueries;
   }
 
   /**

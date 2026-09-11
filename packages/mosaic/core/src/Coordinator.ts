@@ -1,16 +1,17 @@
 import { SocketConnector } from './connectors/socket.js';
 import { type Connector } from './connectors/Connector.js';
 import { PreAggregator, type PreAggregateOptions } from './preagg/PreAggregator.js';
-import { voidLogger } from './util/void-logger.js';
 import { QueryManager, Priority } from './QueryManager.js';
 import { type Selection } from './Selection.js';
-import { type Logger, type QueryType } from './types.js';
+import { type QueryType } from './types.js';
 import { type QueryResult } from './util/query-result.js';
 import { type MosaicClient } from './MosaicClient.js';
 import { type SelectionClause } from './SelectionClause.js';
 import { MaybeArray } from '@uwdata/mosaic-sql';
 import { Table } from '@uwdata/flechette';
 import { QueryError } from './util/query-error.js';
+import { EventType, MosaicErrorEvent, type MosaicEventMap } from './Events.js';
+import { type ObserveDispatch } from './util/ObserveDispatch.js';
 
 interface FilterGroupEntry {
   selection: Selection;
@@ -49,12 +50,12 @@ export class Coordinator {
   public preaggregator: PreAggregator;
   public clients = new Set<MosaicClient>;
   public filterGroups = new Map<Selection, FilterGroupEntry>;
-  protected _logger: Logger = voidLogger();
+  /** Event bus for query lifecycle, warning, and error events. */
+  public readonly eventBus: ObserveDispatch<MosaicEventMap>;
 
   /**
    * @param db Database connector. Defaults to a web socket connection.
    * @param options Coordinator options.
-   * @param options.logger The logger to use, defaults to `console`.
    * @param options.manager The query manager to use.
    * @param options.cache Boolean flag to enable/disable query caching.
    * @param options.consolidate Boolean flag to enable/disable query consolidation.
@@ -63,7 +64,6 @@ export class Coordinator {
   constructor(
     db: Connector = new SocketConnector(),
     options: {
-      logger?: Logger | null;
       manager?: QueryManager;
       cache?: boolean;
       consolidate?: boolean;
@@ -71,17 +71,16 @@ export class Coordinator {
     } = {}
   ) {
     const {
-      logger = console,
       manager = new QueryManager(),
       cache = true,
       consolidate = true,
       preagg = {}
     } = options;
     this.manager = manager;
+    this.eventBus = manager.eventBus;
     this.manager.cache(cache);
     this.manager.consolidate(consolidate);
     this.databaseConnector(db);
-    this.logger(logger);
     this.clear();
     this.preaggregator = new PreAggregator(this, preagg);
   }
@@ -115,19 +114,6 @@ export class Coordinator {
     return db
       ? this.manager.connector(db)
       : this.manager.connector();
-  }
-
-  /**
-   * Get or set the logger.
-   * @param logger The logger to use.
-   * @returns The current logger
-   */
-  logger(logger?: Logger | null): Logger {
-    if (arguments.length) {
-      this._logger = logger || voidLogger();
-      this.manager.logger(this._logger);
-    }
-    return this._logger!;
   }
 
   // -- Query Management ----
@@ -218,12 +204,16 @@ export class Coordinator {
         data => client.queryResult(data).update(),
         err => {
           const e = new QueryError(err, query);
-          this._logger?.error(e);
+          this.emitError(e);
           client.queryError(e);
           return e;
         }
       )
-      .catch(err => this._logger?.error(err));
+      .catch(err => this.emitError(err));
+  }
+
+  private emitError(error: unknown): void {
+    this.eventBus.emit(EventType.Error, new MosaicErrorEvent({ error }));
   }
 
   /**
