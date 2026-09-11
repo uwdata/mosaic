@@ -29,6 +29,7 @@ type PreAggregateScope struct {
 type PreAggregateLimits struct {
 	MaxTables         int
 	MaxTablesPerScope int
+	MaxPendingBuilds  int
 	MaxRows           int64
 	MaxBytes          int64
 	Timeout           time.Duration
@@ -57,11 +58,11 @@ type PreAggregator struct {
 	catalog string
 	limits  PreAggregateLimits
 	mu      sync.Mutex
-	build   *preAggregateBuild
+	builds  map[preAggregateRef]*preAggregateBuild
+	lane    chan struct{}
 }
 
 type preAggregateBuild struct {
-	ref   preAggregateRef
 	done  chan struct{}
 	table PreaggResponse
 	err   error
@@ -102,12 +103,15 @@ func NewPreAggregator(ctx context.Context, db *DB, catalog string, limits PreAgg
 	if db.db.Stats().MaxOpenConnections == 1 {
 		return nil, errors.New("query: preaggregation requires at least two SQL connections")
 	}
-	defaults := PreAggregateLimits{128, 32, 1_000_000, 32 << 20, 90 * time.Second, 24 * time.Hour}
+	defaults := PreAggregateLimits{128, 32, 32, 1_000_000, 32 << 20, 90 * time.Second, 24 * time.Hour}
 	if limits.MaxTables == 0 {
 		limits.MaxTables = defaults.MaxTables
 	}
 	if limits.MaxTablesPerScope == 0 {
 		limits.MaxTablesPerScope = defaults.MaxTablesPerScope
+	}
+	if limits.MaxPendingBuilds == 0 {
+		limits.MaxPendingBuilds = defaults.MaxPendingBuilds
 	}
 	if limits.MaxRows == 0 {
 		limits.MaxRows = defaults.MaxRows
@@ -121,7 +125,7 @@ func NewPreAggregator(ctx context.Context, db *DB, catalog string, limits PreAgg
 	if limits.TTL == 0 {
 		limits.TTL = defaults.TTL
 	}
-	if limits.MaxTables < 1 || limits.MaxTablesPerScope < 1 || limits.MaxRows < 1 || limits.MaxBytes < 1 || limits.Timeout < 0 || limits.TTL < 0 {
+	if limits.MaxTables < 1 || limits.MaxTablesPerScope < 1 || limits.MaxPendingBuilds < 1 || limits.MaxRows < 1 || limits.MaxBytes < 1 || limits.Timeout < 0 || limits.TTL < 0 {
 		return nil, errors.New("query: preaggregation limits must be positive")
 	}
 	var defaultCatalog string
@@ -134,7 +138,7 @@ func NewPreAggregator(ctx context.Context, db *DB, catalog string, limits PreAgg
 	if strings.EqualFold(catalog, "temp") || strings.EqualFold(catalog, "system") || strings.ContainsRune(catalog, 0) {
 		return nil, errors.New("query: invalid preaggregation catalog")
 	}
-	return &PreAggregator{db: db, catalog: catalog, limits: limits}, nil
+	return &PreAggregator{db: db, catalog: catalog, limits: limits, builds: make(map[preAggregateRef]*preAggregateBuild), lane: make(chan struct{}, 1)}, nil
 }
 
 func (p *PreAggregator) reference(scope, sql string) preAggregateRef {
@@ -161,31 +165,45 @@ func (p *PreAggregator) Materialize(ctx context.Context, scope PreAggregateScope
 	}
 
 	p.mu.Lock()
-	if build := p.build; build != nil {
-		p.mu.Unlock()
-		if build.ref != ref {
+	build := p.builds[ref]
+	if build == nil {
+		if len(p.builds) >= p.limits.MaxPendingBuilds {
+			p.mu.Unlock()
 			return PreaggResponse{}, ErrPreAggregateLimit
 		}
-		select {
-		case <-ctx.Done():
-			return PreaggResponse{}, ctx.Err()
-		case <-build.done:
-			return build.table, build.err
-		}
+		build = &preAggregateBuild{done: make(chan struct{})}
+		p.builds[ref] = build
+		buildCtx, cancelBuild := context.WithTimeout(context.WithoutCancel(ctx), p.limits.Timeout)
+		go func() {
+			defer cancelBuild()
+			p.runBuild(buildCtx, ref, scope.Key, sql, build)
+		}()
 	}
-	build := &preAggregateBuild{ref: ref, done: make(chan struct{})}
-	p.build = build
 	p.mu.Unlock()
 
-	build.table, build.err = p.materialize(ctx, ref, scope.Key, sql)
+	select {
+	case <-ctx.Done():
+		return PreaggResponse{}, ctx.Err()
+	case <-build.done:
+		return build.table, build.err
+	}
+}
+
+func (p *PreAggregator) runBuild(ctx context.Context, ref preAggregateRef, scope, sql string, build *preAggregateBuild) {
+	select {
+	case p.lane <- struct{}{}:
+		build.table, build.err = p.materialize(ctx, ref, scope, sql)
+		<-p.lane
+	case <-ctx.Done():
+		build.err = ctx.Err()
+	}
 	if ctx.Err() != nil {
 		build.err = ctx.Err()
 	}
 	p.mu.Lock()
-	p.build = nil
+	delete(p.builds, ref)
 	close(build.done)
 	p.mu.Unlock()
-	return build.table, build.err
 }
 
 func (p *PreAggregator) QueryArrow(ctx context.Context, scope PreAggregateScope, sql string, authorizeSource func(context.Context, string) error) ([]byte, error) {
