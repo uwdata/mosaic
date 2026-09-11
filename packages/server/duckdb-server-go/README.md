@@ -149,6 +149,12 @@ Application fields are untrusted: combine them with authenticated identity, as s
 
 POST and WebSocket messages require one complete command object with optional surrounding whitespace; trailing data is rejected. Protocol decoding failures return HTTP 400 or close the WebSocket with code 1007. Validation and authorization errors leave a healthy WebSocket session open.
 
+### Server-Owned Preaggregation
+
+Embedding applications can enable HTTP `preagg` with `server.WithPreaggregation`, supplying a trusted scope resolver and source catalog/schema grants. The server validates SELECTs, publishes ordinary tables and source metadata transactionally, reauthorizes derived reads, and bounds table count, output size, build duration, and age. This mode disables client `exec`; it is separate from the legacy schema-match-header example below.
+
+See the [Go preaggregation API documentation](../../../docs/api/duckdb/go-server.md) for configuration, limits, and recovery behavior. The installed binary does not enable this option.
+
 ### Function Policies
 
 Use an allowlist when the server should accept only reviewed functions and operators. An explicitly empty value enables
@@ -319,7 +325,7 @@ If `--schema-match-headers`, `--function-blocklist`, or `--function-allowlist` i
 are limited to statements DuckDB can serialize for validation; unsupported forms such as `PRAGMA` and `SET` are rejected,
 with HTTP requests receiving a 400 response. All `exec` requests are also rejected until full-statement authorization is
 supported. This includes every `Coordinator.exec(...)` call, such as data loading, preloading, and DDL/DML. Mosaic
-pre-aggregation also uses `exec` to create schemas and tables, so set `preagg: { enabled: false }` in this mode.
+pre-aggregation uses `exec` by default, so disable it with `preagg: { enabled: false }` or configure the server-owned preaggregation option described above.
 
 ## API
 
