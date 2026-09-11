@@ -87,19 +87,16 @@ export class PreAggregateRegistry {
     this.manager.invalidate();
   }
 
-  /**
-   * Local refusals (`lane_busy`, `suppressed`, `PreAggregateModeError`)
-   * throw synchronously; server and transport failures reject the returned
-   * promise.
-   */
   request(sql: string): Promise<TableRefNode> {
     if (!this.manager.connector()) {
-      throw new PreAggregateModeError('No database connector is available for preaggregation');
+      return Promise.reject(new PreAggregateModeError('No database connector is available for preaggregation'));
     }
     const failure = this.failures.get(sql);
     if (failure) {
       if (Date.now() < failure.retryAt) {
-        throw new ConnectorError(`Preaggregation suppressed: ${failure.error.message}`, { code: 'suppressed', cause: failure.error });
+        return Promise.reject(new ConnectorError(
+          `Preaggregation suppressed: ${failure.error.message}`, { code: 'suppressed', cause: failure.error }
+        ));
       }
       this.failures.delete(sql);
     }
@@ -110,19 +107,16 @@ export class PreAggregateRegistry {
       this.entries.set(sql, entry);
       if (entry.build) return entry.build.promise;
       if (entry.table) return Promise.resolve(entry.table);
-    } else {
-      entry = { sql, table: null, build: null };
-      this.entries.set(sql, entry);
+    }
+    if (this.pending >= this.limits.maxPendingBuilds) {
+      return Promise.reject(new ConnectorError('Preaggregation lane is busy', { code: 'lane_busy' }));
     }
 
-    try {
-      const build = entry.build = this.createBuild(entry);
-      this.dispatch(build);
-      return build.promise;
-    } catch (err) {
-      this.entries.delete(sql);
-      throw err;
-    }
+    entry ??= { sql, table: null, build: null };
+    this.entries.set(sql, entry);
+    const build = entry.build = this.createBuild(entry);
+    this.dispatch(build);
+    return build.promise;
   }
 
   reset(): void {
@@ -135,9 +129,6 @@ export class PreAggregateRegistry {
   }
 
   private createBuild(entry: Entry): Build {
-    if (this.pending >= this.limits.maxPendingBuilds) {
-      throw new ConnectorError('Preaggregation lane is busy', { code: 'lane_busy' });
-    }
     let resolve!: (table: TableRefNode) => void;
     let reject!: (err: unknown) => void;
     const promise = new Promise<TableRefNode>((res, rej) => { resolve = res; reject = rej; });
@@ -154,13 +145,7 @@ export class PreAggregateRegistry {
     const db = this.manager.connector()!;
     const request = { type: 'preagg' as const, sql: build.entry.sql };
     this.manager.logger().debug('Preagg', request);
-    let result: Promise<PreaggResponse>;
-    try {
-      result = Promise.resolve(db.query(request));
-    } catch (err) {
-      result = Promise.reject(err);
-    }
-    result.then(
+    new Promise<PreaggResponse>(resolve => resolve(db.query(request))).then(
       response => this.complete(build, response),
       err => this.fail(build, err)
     );
@@ -172,21 +157,18 @@ export class PreAggregateRegistry {
 
   private complete(build: Build, response: PreaggResponse): void {
     if (build.settled) return;
+    let validated: PreaggResponse;
+    try {
+      validated = parsePreaggResponse(response);
+    } catch (err) {
+      this.fail(build, err);
+      return;
+    }
     const { entry } = build;
     const current = this.isCurrentEntry(build);
     this.settle(build);
     if (!current) {
       build.reject(abortError('Preaggregate retired'));
-      return;
-    }
-
-    let validated: PreaggResponse;
-    try {
-      validated = parsePreaggResponse(response);
-    } catch (err) {
-      this.recordFailure(entry, toConnectorError(err));
-      build.reject(err);
-      this.pruneEntries(entry);
       return;
     }
 
