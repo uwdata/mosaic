@@ -3,7 +3,7 @@ import { TableRefNode } from '@uwdata/mosaic-sql';
 import { type PreAggregateLimits, PreAggregateRegistry } from '../src/preagg/PreAggregateRegistry.js';
 import { ConnectorError, PreAggregateModeError } from '../src/connectors/errors.js';
 import { QueryManager } from '../src/QueryManager.js';
-import { MockPreaggConnector } from './util/preagg-connector.js';
+import { flush, MockPreaggConnector } from './util/preagg-connector.js';
 
 const SQL_A = 'SELECT a, count(*) AS n FROM t GROUP BY a';
 const SQL_B = 'SELECT b, count(*) AS n FROM t GROUP BY b';
@@ -23,7 +23,7 @@ describe('PreAggregateRegistry', () => {
 
   it('requires a connector that transports preagg', async () => {
     const registry = new PreAggregateRegistry(new QueryManager());
-    expect(() => registry.request(SQL_A)).toThrow(PreAggregateModeError);
+    await expect(registry.request(SQL_A)).rejects.toBeInstanceOf(PreAggregateModeError);
 
     const legacy = new MockPreaggConnector({ supportsPreagg: false });
     await expect(setup({}, legacy).registry.request(SQL_A)).rejects.toMatchObject({ code: 'unsupported_command' });
@@ -60,7 +60,7 @@ describe('PreAggregateRegistry', () => {
     expect(registry.lookup(SQL_B)).toBe(t3);
     connector.complete();
     connector.complete();
-    await Promise.resolve();
+    await flush();
     expect(registry.lookup(SQL_A)).toBeNull();
     expect(registry.lookup(SQL_B)).toBeNull();
     expect(registry.lookup(SQL_C)).toBeInstanceOf(TableRefNode);
@@ -101,7 +101,7 @@ describe('PreAggregateRegistry', () => {
     connector.open[0].resolve(value);
     await expect(promise).rejects.toMatchObject({ code: 'malformed_response' });
     expect(registry.lookup(SQL_A)).toBeNull();
-    expect(() => registry.request(SQL_A)).toThrow(expect.objectContaining({ code: 'suppressed' }));
+    await expect(registry.request(SQL_A)).rejects.toMatchObject({ code: 'suppressed' });
   });
 
   it('accepts a well-formed response and ignores unknown fields', async () => {
@@ -114,7 +114,7 @@ describe('PreAggregateRegistry', () => {
   it('refuses new builds at the pending limit without a cooldown', async () => {
     const { registry, connector } = setup({ maxPendingBuilds: 1 });
     const a = registry.request(SQL_A);
-    expect(() => registry.request(SQL_B)).toThrow(expect.objectContaining({ code: 'lane_busy' }));
+    await expect(registry.request(SQL_B)).rejects.toMatchObject({ code: 'lane_busy' });
     expect(registry.request(SQL_A)).toBe(a);
     expect(registry.pending).toBe(1);
     expect(registry.lookup(SQL_B)).toBeNull();
@@ -139,8 +139,7 @@ describe('PreAggregateRegistry', () => {
     expect(err).toBeInstanceOf(ConnectorError);
     expect(err.code).toBe(code);
 
-    let suppressed: unknown;
-    try { registry.request(SQL_A); } catch (e) { suppressed = e; }
+    const suppressed = await registry.request(SQL_A).catch(e => e);
     expect(suppressed).toBeInstanceOf(ConnectorError);
     expect(suppressed).toMatchObject({ code: 'suppressed', cause: err });
     expect(connector.preaggRequests).toHaveLength(1);
@@ -165,11 +164,11 @@ describe('PreAggregateRegistry', () => {
       await expect(p).rejects.toMatchObject({ code: 'deadline_exceeded' });
     }
     expect(registry.pending).toBe(0);
-    expect(() => registry.request(SQL_A)).toThrow(expect.objectContaining({ code: 'suppressed' }));
+    await expect(registry.request(SQL_A)).rejects.toMatchObject({ code: 'suppressed' });
     expect(registry.request(SQL_B)).toBeInstanceOf(Promise);
 
     connector.open[0].resolve({ catalog: 'x', schema: 'y', table: 'z', createdAt: '2026-01-01T00:00:00Z' });
-    await Promise.resolve();
+    await vi.advanceTimersByTimeAsync(0);
     expect(registry.lookup(SQL_A)).toBeNull();
   });
 
@@ -192,7 +191,7 @@ describe('PreAggregateRegistry', () => {
     expect(registry.request(SQL_C)).toBeInstanceOf(Promise);
 
     request.resolve({ catalog: 'x', schema: 'y', table: 'z', createdAt: '2026-01-01T00:00:00Z' });
-    await Promise.resolve();
+    await flush();
     expect(registry.lookup(SQL_B)).toBeNull();
   });
 });

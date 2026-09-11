@@ -102,7 +102,7 @@ export class Coordinator {
       this.clients?.forEach(client => this.disconnect(client));
       this.clients = new Set;
     }
-    if (cache) this.manager.cache()!.clear();
+    if (cache) this.manager.invalidate();
     if (clients && cache && this.preaggregator?.registry) this.preaggregator.reset();
   }
 
@@ -393,16 +393,14 @@ function updateSelection(
       const pending = mc.updateClient(client, query);
       const result = await pending;
       if (!(result instanceof QueryError)) return;
-      if (preaggregator.registry) {
-        if (superseded(pending)) return;
-        const recovered = await preaggregator.recover(client, info, table, result.cause);
-        if (superseded(pending)) return;
-        if (recovered && preaggregator.entries.get(client) === info) {
-          const retry = mc.updateClient(client, info.query(active));
-          const retried = await retry;
-          if (!(retried instanceof QueryError)) return;
-          if (superseded(retry)) return;
-        }
+      if (superseded(pending)) return;
+      const recovered = await preaggregator.recover(client, info, table, result.cause);
+      if (superseded(pending)) return;
+      if (recovered && preaggregator.entries.get(client) === info) {
+        const retry = mc.updateClient(client, info.query(active));
+        const retried = await retry;
+        if (!(retried instanceof QueryError)) return;
+        if (superseded(retry)) return;
       }
       // if preaggregate update fails, fall through to standard query
       // this safeguards against potential preagg bugs

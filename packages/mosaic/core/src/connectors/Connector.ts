@@ -21,7 +21,6 @@ export interface ExecQueryRequest extends ConnectorQueryRequest {
 
 export interface PreaggRequest extends ConnectorQueryRequest {
   type: 'preagg';
-  sql: string;
 }
 
 export interface PreaggResponse {

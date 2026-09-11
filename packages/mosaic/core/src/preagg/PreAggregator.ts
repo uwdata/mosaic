@@ -80,9 +80,6 @@ export class PreAggregator {
     enabled = true,
     mode = 'exec'
   }: PreAggregateOptions = {}) {
-    if (mode !== 'exec' && mode !== 'preagg') {
-      throw new RangeError(`Unknown preagg.mode: ${mode}`);
-    }
     this.entries = new Map();
     this.active = null;
     this.mc = coordinator;
@@ -292,19 +289,12 @@ export class PreAggregator {
   }
 
   private materialize(info: PreAggregateInfo): void {
-    const logger = this.mc.logger();
-    let promise: Promise<TableRefNode>;
-    try {
-      promise = this.registry!.request(info.create.toString());
-    } catch (err) {
-      logger.debug('Preagg refused', err);
-      info.result = null;
-      return;
-    }
-    const result = promise.then(table => info.bind(table));
+    const result = this.registry!.request(info.create.toString()).then(table => info.bind(table));
     result.catch(err => {
       if (info.result === result) info.result = null;
-      if (!isAbortError(err)) logger.warn(err);
+      if (isAbortError(err)) return;
+      const refused = err instanceof ConnectorError && (err.code === 'lane_busy' || err.code === 'suppressed');
+      this.mc.logger()[refused ? 'debug' : 'warn'](err);
     });
     info.result = result;
   }
