@@ -1,5 +1,5 @@
 import type { ArrowQueryRequest, Connector, ConnectorRequest, ExecQueryRequest, PreaggRequest, PreaggResponse } from './Connector.js';
-import { ConnectorError } from './errors.js';
+import { errorFromEnvelope } from './errors.js';
 
 interface SocketOptions {
   uri?: string;
@@ -75,15 +75,21 @@ export class SocketConnector implements Connector {
           console.log('WebSocket message: ', data);
           return;
         }
-        const { resolve, reject } = item;
+        const { query, resolve, reject } = item;
         try {
           if (typeof data === 'string') {
-            const { error } = JSON.parse(data);
-            if (error) {
-              reject(error);
+            const json = JSON.parse(data);
+            if (json.error) {
+              reject(query.type === 'exec' ? json.error : errorFromEnvelope(json) ?? json.error);
+            } else if (query.type === 'preagg') {
+              resolve(json);
+            } else if (query.type === 'arrow') {
+              reject(new Error(`Unexpected socket data: ${data}`));
             } else {
               resolve();
             }
+          } else if (query.type === 'preagg') {
+            reject(new Error('Unexpected binary socket data for preagg request'));
           } else {
             resolve(data);
           }
@@ -130,9 +136,6 @@ export class SocketConnector implements Connector {
   query(query: ExecQueryRequest): Promise<void>;
   query(query: PreaggRequest): Promise<PreaggResponse>;
   query(query: ConnectorRequest): Promise<unknown> {
-    if (query.type === 'preagg') {
-      return Promise.reject(new ConnectorError('Unsupported command: preagg', { code: 'unsupported_command' }));
-    }
     return new Promise(
       (resolve, reject) => this.enqueue(query, resolve, reject)
     );
