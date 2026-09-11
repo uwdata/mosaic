@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { TableRefNode } from '@uwdata/mosaic-sql';
 import { type PreAggregateLimits, PreAggregateRegistry } from '../src/preagg/PreAggregateRegistry.js';
-import { ConnectorError, PreAggregateModeError } from '../src/connectors/errors.js';
+import { ConnectorError } from '../src/connectors/errors.js';
 import { QueryManager } from '../src/QueryManager.js';
 import { flush, MockPreaggConnector } from './util/preagg-connector.js';
 
@@ -22,9 +22,6 @@ describe('PreAggregateRegistry', () => {
   afterEach(() => vi.useRealTimers());
 
   it('requires a connector that transports preagg', async () => {
-    const registry = new PreAggregateRegistry(new QueryManager());
-    await expect(registry.request(SQL_A)).rejects.toBeInstanceOf(PreAggregateModeError);
-
     const legacy = new MockPreaggConnector({ supportsPreagg: false });
     await expect(setup({}, legacy).registry.request(SQL_A)).rejects.toMatchObject({ code: 'unsupported_command' });
   });

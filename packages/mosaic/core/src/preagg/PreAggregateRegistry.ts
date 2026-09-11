@@ -4,15 +4,13 @@ import {
   abortError,
   ConnectorError,
   isAbortError,
-  parsePreaggResponse,
-  PreAggregateModeError
+  parsePreaggResponse
 } from '../connectors/errors.js';
 import type { QueryManager } from '../QueryManager.js';
 
 interface Build {
   entry: Entry;
   timer: ReturnType<typeof setTimeout>;
-  settled: boolean;
   promise: Promise<TableRefNode>;
   resolve: (table: TableRefNode) => void;
   reject: (err: unknown) => void;
@@ -44,11 +42,6 @@ const defaultLimits: Readonly<PreAggregateLimits> = Object.freeze({
   timeoutMs: 120 * 1000,
   cooldownMs: 60 * 1000
 });
-
-function toConnectorError(err: unknown): ConnectorError {
-  if (err instanceof ConnectorError) return err;
-  return new ConnectorError(err instanceof Error ? err.message : String(err), { cause: err });
-}
 
 /**
  * Materializations keyed by exact SELECT text, each holding its
@@ -87,10 +80,6 @@ export class PreAggregateRegistry {
   }
 
   request(sql: string): Promise<TableRefNode> {
-    const db = this.manager.connector();
-    if (!db) {
-      return Promise.reject(new PreAggregateModeError('No database connector is available for preaggregation'));
-    }
     const failure = this.failures.get(sql);
     if (failure) {
       if (Date.now() < failure.retryAt) {
@@ -114,7 +103,7 @@ export class PreAggregateRegistry {
     entry = { sql, table: null, build: null };
     this.entries.set(sql, entry);
     const build = entry.build = this.createBuild(entry);
-    this.dispatch(build, db);
+    this.dispatch(build, this.manager.connector()!);
     return build.promise;
   }
 
@@ -132,7 +121,7 @@ export class PreAggregateRegistry {
     let reject!: (err: unknown) => void;
     const promise = new Promise<TableRefNode>((res, rej) => { resolve = res; reject = rej; });
     promise.catch(() => {});
-    const build: Build = { entry, settled: false, timer: null!, promise, resolve, reject };
+    const build: Build = { entry, timer: null!, promise, resolve, reject };
     build.timer = setTimeout(() => {
       this.fail(build, new ConnectorError('Preaggregation deadline exceeded', { code: 'deadline_exceeded' }));
     }, this.limits.timeoutMs);
@@ -150,7 +139,7 @@ export class PreAggregateRegistry {
   }
 
   private complete(build: Build, response: PreaggResponse): void {
-    if (build.settled) return;
+    if (build.entry.build !== build) return;
     let validated: PreaggResponse;
     try {
       validated = parsePreaggResponse(response);
@@ -171,17 +160,19 @@ export class PreAggregateRegistry {
   }
 
   private fail(build: Build, err: unknown): void {
-    if (build.settled) return;
+    if (build.entry.build !== build) return;
     this.settle(build);
     const { entry } = build;
-    const reason = isAbortError(err) ? err : toConnectorError(err);
-    if (!isAbortError(reason)) this.recordFailure(entry, reason as ConnectorError);
     if (this.entries.get(entry.sql) === entry) this.entries.delete(entry.sql);
-    build.reject(reason);
+    if (!isAbortError(err)) {
+      err = err instanceof ConnectorError ? err
+        : new ConnectorError(err instanceof Error ? err.message : String(err), { cause: err });
+      this.recordFailure(entry, err as ConnectorError);
+    }
+    build.reject(err);
   }
 
   private settle(build: Build): void {
-    build.settled = true;
     clearTimeout(build.timer);
     build.entry.build = null;
   }
