@@ -20,7 +20,7 @@ describe('lruCache', () => {
 
   it('replaces the charge when an existing key is set again', () => {
     const cache = lruCache({ maxBytes: 100 });
-    cache.set('a', Promise.resolve());
+    cache.set('a', { n: 1 }, 30);
     cache.set('a', { n: 2 }, 60);
     cache.set('b', { n: 3 }, 40);
 

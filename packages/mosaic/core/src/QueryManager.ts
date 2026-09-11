@@ -18,6 +18,7 @@ export class QueryManager {
   private _logQueries: boolean;
   private _ipc?: ExtractionOptions;
   private _consolidate: ReturnType<typeof consolidator> | null;
+  private inflight: Map<string, Promise<unknown>>;
   /** Requests pending with the query manager. */
   public pendingResults: QueryResult[];
   private maxConcurrentRequests: number;
@@ -30,6 +31,7 @@ export class QueryManager {
     this._logger = voidLogger();
     this._logQueries = false;
     this._consolidate = null;
+    this.inflight = new Map();
     this.pendingResults = [];
     this.maxConcurrentRequests = maxConcurrentRequests;
     this.pendingExec = false;
@@ -84,7 +86,7 @@ export class QueryManager {
       const sql = Array.isArray(query) ? query.filter(x => x).join(';\n') : query ? String(query) : null;
 
       if (cache) {
-        const cached = this.clientCache!.get(sql!);
+        const cached = this.clientCache!.get(sql!) ?? this.inflight.get(sql!);
         if (cached) {
           const data = await cached;
           this._logger.debug('Cache');
@@ -103,9 +105,9 @@ export class QueryManager {
       const promise = type === 'arrow'
         ? response.then(bytes => decodeIPC(bytes as ArrowIPCBytes, this._ipc))
         : response;
-      if (cache) this.clientCache!.set(sql!, promise);
+      if (cache) this.inflight.set(sql!, promise);
 
-      const data = await promise;
+      const data = await promise.finally(() => this.inflight.delete(sql!));
 
       if (cache) this.clientCache!.set(sql!, data, resultByteLength(type, data));
 

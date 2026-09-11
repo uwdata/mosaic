@@ -83,13 +83,41 @@ describe('QueryManager', () => {
       query: 'SELECT * FROM test',
       cache: true
     };
-    const first = await queryManager.request(request) as Table;
-    const second = await queryManager.request(request);
+    const pending = queryManager.request(request);
+    const second = queryManager.request(request);
+    const first = await pending as Table;
 
     expect(first.numRows).toBe(3);
-    expect(second).toBe(first);
+    expect(await second).toBe(first);
     expect(calls).toBe(1);
-    expect(sizes).toEqual([undefined, bytes.length]);
+    expect(sizes).toEqual([bytes.length]);
+  });
+
+  it('does not cache a rejected query', async () => {
+    const bytes = tableToIPC(tableFromArrays({ a: [1] }), {})!;
+    const queryManager = new QueryManager();
+    queryManager.cache(true);
+
+    let calls = 0;
+    queryManager.connector({
+      // @ts-expect-error assumes type value
+      query: async () => {
+        calls += 1;
+        if (calls === 1) throw new Error('transient');
+        return bytes;
+      }
+    });
+
+    const request: QueryRequest = {
+      type: 'arrow',
+      query: 'SELECT * FROM test',
+      cache: true
+    };
+    await expect(queryManager.request(request)).rejects.toThrow('transient');
+    const data = await queryManager.request(request) as Table;
+
+    expect(calls).toBe(2);
+    expect(data.numRows).toBe(1);
   });
 
   it('drops cached results when the extraction options change', async () => {
