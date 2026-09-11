@@ -183,6 +183,20 @@ func (db *DB) Exec(ctx context.Context, query string) error {
 }
 
 func (db *DB) validateQuery(ctx context.Context, query string, allowedSchemas []string) error {
+	validators := db.queryValidators(allowedSchemas)
+	if len(validators) == 0 {
+		return nil
+	}
+
+	err := db.ValidateSQL(ctx, query, validators...)
+	if err != nil {
+		return fmt.Errorf("query: validation failed: %w", err)
+	}
+
+	return nil
+}
+
+func (db *DB) queryValidators(allowedSchemas []string) []Validator {
 	validators := make([]Validator, 0, 4)
 	if len(allowedSchemas) > 0 {
 		validators = append(validators, newBaseTableValidator(allowedSchemas))
@@ -196,16 +210,7 @@ func (db *DB) validateQuery(ctx context.Context, query string, allowedSchemas []
 	if db.rejectRemoteURILiterals {
 		validators = append(validators, newRemoteURILiteralValidator())
 	}
-	if len(validators) == 0 {
-		return nil
-	}
-
-	err := db.ValidateSQL(ctx, query, validators...)
-	if err != nil {
-		return fmt.Errorf("query: validation failed: %w", err)
-	}
-
-	return nil
+	return validators
 }
 
 func (db *DB) QueryArrow(ctx context.Context, query string, allowedSchemas []string) ([]byte, error) {

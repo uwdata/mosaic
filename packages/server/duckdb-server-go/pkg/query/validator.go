@@ -65,6 +65,14 @@ func (e ErrorDetails) Is(target error) bool {
 
 // ValidateSQL validates the given SQL query using the provided validators
 func (db *DB) ValidateSQL(ctx context.Context, sql string, validators ...Validator) error {
+	statements, err := db.parseSQL(ctx, sql)
+	if err != nil {
+		return err
+	}
+	return validateStatements(statements, validators)
+}
+
+func (db *DB) parseSQL(ctx context.Context, sql string) ([]any, error) {
 	// Qualify the built-in to prevent database macros from shadowing validation.
 	serializeSQL := fmt.Sprintf("SELECT system.main.json_serialize_sql(%s, skip_default := true, skip_empty := true, skip_null := true) as ast", quoteLiteral(sql))
 
@@ -72,15 +80,15 @@ func (db *DB) ValidateSQL(ctx context.Context, sql string, validators ...Validat
 
 	err := db.db.QueryRowContext(ctx, serializeSQL).Scan(&m)
 	if err != nil {
-		return fmt.Errorf("failed to parse SQL query: %w", err)
+		return nil, fmt.Errorf("failed to parse SQL query: %w", err)
 	}
 
 	parseError, ok := m["error"].(bool)
 	if !ok {
-		return errors.New("invalid SQL parser response: missing error status")
+		return nil, errors.New("invalid SQL parser response: missing error status")
 	}
 	if parseError {
-		return ErrorDetails{
+		return nil, ErrorDetails{
 			Type:     stringField(m, "error_type"),
 			Subtype:  stringField(m, "error_subtype"),
 			Message:  stringField(m, "error_message"),
@@ -90,9 +98,12 @@ func (db *DB) ValidateSQL(ctx context.Context, sql string, validators ...Validat
 
 	statements, ok := m["statements"].([]any)
 	if !ok {
-		return errors.New("invalid SQL parser response: missing or invalid statements")
+		return nil, errors.New("invalid SQL parser response: missing or invalid statements")
 	}
+	return statements, nil
+}
 
+func validateStatements(statements []any, validators []Validator) error {
 	// Extract all schema references, including tables without an explicit schema reference, from the AST
 	for _, stmt := range statements {
 		stmtMap, ok := stmt.(map[string]any)
