@@ -3,7 +3,6 @@ import type { Cache, Logger, QueryEntry, QueryRequest } from './types.js';
 import { consolidator } from './QueryConsolidator.js';
 import { lruCache, voidCache } from './util/cache.js';
 import { PriorityQueue } from './util/priority-queue.js';
-import { QueryResult } from './util/query-result.js';
 import { intersects, queryTables, union, type QueryTables, type Tables } from './util/query-tables.js';
 import { voidLogger } from './util/void-logger.js';
 
@@ -20,17 +19,13 @@ export class QueryManager {
   private _logger: Logger;
   private _logQueries: boolean;
   private _consolidate: ReturnType<typeof consolidator> | null;
-  private inflight: Map<QueryResult, ScheduledEntry>;
+  private inflight: Map<Promise<unknown>, ScheduledEntry>;
   private maxConcurrentRequests: number;
-  private maxConcurrentExecs: number;
 
   /**
    * @param maxConcurrentRequests How many requests may be in flight at once.
-   * @param maxConcurrentExecs How many exec requests may be in flight at once.
-   *  Each exec already uses all database cores, so running several at once
-   *  delays the first result without finishing the last one sooner.
    */
-  constructor(maxConcurrentRequests: number = 32, maxConcurrentExecs: number = 1) {
+  constructor(maxConcurrentRequests: number = 32) {
     this.queue = new PriorityQueue(3);
     this.db = null;
     this.clientCache = null;
@@ -39,11 +34,10 @@ export class QueryManager {
     this._consolidate = null;
     this.inflight = new Map();
     this.maxConcurrentRequests = maxConcurrentRequests;
-    this.maxConcurrentExecs = maxConcurrentExecs;
   }
 
   /**
-   * Submit queued requests to the connector, up to the concurrency limits.
+   * Submit queued requests to the connector, up to the concurrency limit.
    * A request waits while an earlier request writes a table it reads or writes.
    */
   next(): void {
@@ -51,33 +45,28 @@ export class QueryManager {
     if (budget <= 0 || this.queue.isEmpty()) return;
 
     let writes: Tables = new Set();
-    let execs = 0;
-    for (const { request, tables } of this.inflight.values()) {
+    for (const { tables } of this.inflight.values()) {
       writes = union(writes, tables.writes);
-      if (request.type === 'exec') execs += 1;
     }
 
     const ready: ScheduledEntry[] = [];
     this.queue.remove(entry => {
       const { tables } = entry;
-      const exec = entry.request.type === 'exec';
       const blocked = budget <= 0
-        || (exec && execs >= this.maxConcurrentExecs)
         || intersects(tables.reads, writes)
         || intersects(tables.writes, writes);
       writes = union(writes, tables.writes);
       if (!blocked) {
         ready.push(entry);
         budget -= 1;
-        if (exec) execs += 1;
       }
       return !blocked;
     });
 
     for (const entry of ready) {
-      this.inflight.set(entry.result, entry);
+      this.inflight.set(entry.result.promise, entry);
       this.submit(entry.request, entry.result).finally(() => {
-        this.inflight.delete(entry.result);
+        this.inflight.delete(entry.result.promise);
         this.next();
       });
     }
@@ -98,7 +87,7 @@ export class QueryManager {
    * @param request The request.
    * @param result The query result.
    */
-  async submit(request: QueryRequest, result: QueryResult): Promise<void> {
+  async submit(request: QueryRequest, result: PromiseWithResolvers<unknown>): Promise<void> {
     try {
       const { query, type, cache = false, options } = request;
       const sql = Array.isArray(query) ? query.filter(x => x).join(';\n') : query ? String(query) : null;
@@ -109,7 +98,7 @@ export class QueryManager {
         if (cached) {
           const data = await cached;
           this._logger.debug('Cache');
-          result.fulfill(data);
+          result.resolve(data);
           return;
         }
       }
@@ -129,7 +118,7 @@ export class QueryManager {
       if (cache) this.clientCache!.set(sql!, data);
 
       this._logger.debug(`Request: ${(performance.now() - t0).toFixed(1)}`);
-      result.fulfill(type === 'exec' ? null : data);
+      result.resolve(type === 'exec' ? null : data);
     } catch (err) {
       result.reject(err);
     }
@@ -199,30 +188,30 @@ export class QueryManager {
    * @param priority The query priority, defaults to `Priority.Normal`.
    * @returns A query result promise.
    */
-  request(request: QueryRequest, priority: number = Priority.Normal): QueryResult {
-    const result = new QueryResult();
+  request(request: QueryRequest, priority: number = Priority.Normal): Promise<unknown> {
+    const result = Promise.withResolvers();
     const entry = { request, result };
     if (this._consolidate) {
       this._consolidate.add(entry, priority);
     } else {
       this.enqueue(entry, priority);
     }
-    return result;
+    return result.promise;
   }
 
-  cancel(requests: QueryResult[]): void {
+  cancel(requests: Promise<unknown>[]): void {
     const set = new Set(requests);
     if (set.size) {
       this.queue.remove(({ result }) => {
-        if (set.has(result)) {
+        if (set.has(result.promise)) {
           result.reject('Canceled');
           return true;
         }
         return false;
       });
 
-      for (const result of this.inflight.keys()) {
-        if (set.has(result)) {
+      for (const [promise, { result }] of this.inflight) {
+        if (set.has(promise)) {
           result.reject('Canceled');
         }
       }
@@ -236,7 +225,7 @@ export class QueryManager {
       return true;
     });
 
-    for (const result of this.inflight.keys()) {
+    for (const { result } of this.inflight.values()) {
       result.reject('Cleared');
     }
   }

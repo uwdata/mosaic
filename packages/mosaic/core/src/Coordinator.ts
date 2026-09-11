@@ -5,7 +5,6 @@ import { voidLogger } from './util/void-logger.js';
 import { QueryManager, Priority } from './QueryManager.js';
 import { type Selection } from './Selection.js';
 import { type Logger, type QueryType } from './types.js';
-import { type QueryResult } from './util/query-result.js';
 import { type MosaicClient } from './MosaicClient.js';
 import { type SelectionClause } from './SelectionClause.js';
 import { MaybeArray } from '@uwdata/mosaic-sql';
@@ -145,7 +144,7 @@ export class Coordinator {
    * canceled if they are queued but have not yet been submitted.
    * @param requests An array of query result objects, such as those returned by the `query` method.
    */
-  cancel(requests: QueryResult[]) {
+  cancel(requests: Promise<unknown>[]) {
     this.manager.cancel(requests);
   }
 
@@ -159,7 +158,7 @@ export class Coordinator {
   exec(
     query: MaybeArray<QueryType>,
     options: { priority?: number } = {}
-  ): QueryResult {
+  ): Promise<unknown> {
     const { priority = Priority.Normal } = options;
     return this.manager.request({ type: 'exec', query }, priority);
   }
@@ -181,13 +180,13 @@ export class Coordinator {
       priority?: number;
       [key: string]: unknown;
     } = {}
-  ): QueryResult<Table> {
+  ): Promise<Table> {
     const {
       cache = true,
       priority = Priority.Normal,
       ...otherOptions
     } = options;
-    return this.manager.request({ type: 'arrow', query, cache, options: otherOptions }, priority) as QueryResult<Table>;
+    return this.manager.request({ type: 'arrow', query, cache, options: otherOptions }, priority) as Promise<Table>;
   }
 
   /**
@@ -201,7 +200,7 @@ export class Coordinator {
   prefetch(
     query: QueryType,
     options: { [key: string]: unknown } = {}
-  ): QueryResult<Table> {
+  ): Promise<Table> {
     return this.query(query, { ...options, cache: true, priority: Priority.Low });
   }
 
@@ -387,7 +386,7 @@ function requestSelectionUpdate(mc: Coordinator, selection: Selection, client: M
     state = { inflight: 0, dirty: false };
     selectionUpdates.set(client, state);
   }
-  if (state.inflight >= Math.max(1, mc.maxPendingUpdates)) {
+  if (state.inflight >= mc.maxPendingUpdates) {
     const { active } = selection;
     if (!active || !selection.skip(client, active)) state.dirty = true;
     return;
@@ -413,7 +412,7 @@ function requestSelectionUpdate(mc: Coordinator, selection: Selection, client: M
  * @param selection A selection.
  * @param client A client filtered by the selection.
  */
-async function updateClientSelection(mc: Coordinator, selection: Selection, client: MosaicClient, noSkip = false): Promise<void> {
+async function updateClientSelection(mc: Coordinator, selection: Selection, client: MosaicClient, deferred = false): Promise<void> {
   if (!client.enabled) {
     await client.requestQuery();
     return;
@@ -425,7 +424,7 @@ async function updateClientSelection(mc: Coordinator, selection: Selection, clie
   const info = mc.preaggregator.request(client, selection, active);
 
   if (info?.skip) {
-    if (!noSkip) return;
+    if (!deferred) return;
   } else if (info?.result) {
     const created = await info.result.then(() => true, () => false);
     if (created) {
@@ -435,7 +434,7 @@ async function updateClientSelection(mc: Coordinator, selection: Selection, clie
     // a failed create or select degrades to the standard query rather than an error
   }
 
-  const filter = selection.predicate(client, noSkip);
+  const filter = selection.predicate(client, deferred);
   if (!filter) return;
   await mc.updateClient(client, client.query(filter)!);
 }

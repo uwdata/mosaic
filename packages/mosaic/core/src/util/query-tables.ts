@@ -1,6 +1,6 @@
 import type { SQLNode } from '@uwdata/mosaic-sql';
 import {
-  FromClauseNode, VerbatimNode,
+  VerbatimNode,
   isColumnRef, isCreateQuery, isCreateSchemaQuery, isDescribeQuery, isQuery, isTableRef, walk
 } from '@uwdata/mosaic-sql';
 import type { QueryRequest } from '../types.js';
@@ -23,11 +23,6 @@ function collectTables(root: SQLNode): Tables {
   walk(root, (node, parent) => {
     if (isTableRef(node)) {
       if (!isColumnRef(parent)) tables.add(node.name.toLowerCase());
-    } else if (node instanceof FromClauseNode) {
-      if (!(isTableRef(node.expr) || isQuery(node.expr))) {
-        unknown = true;
-        return -1;
-      }
     } else if (node instanceof VerbatimNode && tableKeyword.test(node.value)) {
       unknown = true;
       return -1;

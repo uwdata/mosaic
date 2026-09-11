@@ -1,5 +1,4 @@
 import type { CreateQuery, CreateSchemaQuery, DescribeQuery, ExprNode, MaybeArray, Query } from '@uwdata/mosaic-sql';
-import type { QueryResult } from './util/query-result.js';
 
 /** Query type accepted by a coordinator. */
 export type QueryType =
@@ -20,7 +19,7 @@ export interface QueryRequest {
 /** Type for an entry within a query manager. */
 export interface QueryEntry {
   request: QueryRequest;
-  result: QueryResult;
+  result: PromiseWithResolvers<unknown>;
 }
 
 /** String indicating a JavaScript data type. */

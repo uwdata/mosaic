@@ -3,7 +3,6 @@ import type { Table } from '@uwdata/flechette';
 import { Query, count } from '@uwdata/mosaic-sql';
 import { NodeConnector } from '../src/connectors/NodeConnector.js';
 import { Coordinator, MosaicClient, Selection, clauseInterval } from '../src/index.js';
-import { QueryResult } from '../src/util/query-result.js';
 
 describe('MosaicClient', () => {
   it('is filtered by selections', async () => {
@@ -24,13 +23,13 @@ describe('MosaicClient', () => {
     );
 
     // pending query results
-    let pending: QueryResult[] = [];
+    let pending: Promise<unknown>[] = [];
 
     // test client class
     class TestClient extends MosaicClient {
       private tableName: string;
       private columnName: string;
-      private pendingResult!: QueryResult;
+      private pendingResult!: PromiseWithResolvers<unknown>;
 
       constructor(tableName: string, columnName: string, filterBy?: Selection) {
         super(filterBy);
@@ -46,13 +45,13 @@ describe('MosaicClient', () => {
       }
       queryPending() {
         // add result promise to global pending queue
-        this.pendingResult = new QueryResult();
-        pending.push(this.pendingResult);
+        this.pendingResult = Promise.withResolvers();
+        pending.push(this.pendingResult.promise);
         return this;
       }
       queryResult(data: Table<{ key: number; value: number }>) {
         // fulfill pending promise with sorted data
-        this.pendingResult.fulfill(
+        this.pendingResult.resolve(
           data.toArray().sort((a, b) => a.key - b.key)
         );
         return this;

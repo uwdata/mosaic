@@ -2,31 +2,18 @@ import { Table, tableFromArrays } from '@uwdata/flechette';
 import { describe, it, expect } from 'vitest';
 import { Query, TableRefNode, createTable } from '@uwdata/mosaic-sql';
 import { QueryManager } from '../src/QueryManager.js';
-import type { Connector } from '../src/connectors/Connector.js';
-import { QueryResult } from '../src/util/query-result.js';
 import { QueryRequest } from '../src/types.js';
+import { heldConnector } from './util/held-connector.js';
 
 async function wait() {
   return new Promise<void>(resolve => setTimeout(resolve, 0));
 }
 
-interface Submitted {
-  sql: string;
-  resolve: (value?: unknown) => void;
-  reject: (reason?: unknown) => void;
-}
-
-function mockConnector(onQuery: (sql: string, resolve: Submitted['resolve'], reject: Submitted['reject']) => void): Connector {
-  return {
-    query: ({ sql }: { sql: string }) => new Promise<unknown>((resolve, reject) => onQuery(sql, resolve, reject))
-  } as unknown as Connector;
-}
-
-function managerWithMockConnector(maxConcurrentRequests?: number, maxConcurrentExecs?: number) {
-  const submitted: Submitted[] = [];
-  const manager = new QueryManager(maxConcurrentRequests, maxConcurrentExecs);
-  manager.connector(mockConnector((sql, resolve, reject) => submitted.push({ sql, resolve, reject })));
-  return { manager, submitted };
+function managerWithMockConnector(maxConcurrentRequests?: number) {
+  const { connector, requests } = heldConnector();
+  const manager = new QueryManager(maxConcurrentRequests);
+  manager.connector(connector);
+  return { manager, submitted: requests };
 }
 
 const preaggTable = new TableRefNode(['mosaic', 'preagg_1']);
@@ -50,7 +37,7 @@ describe('QueryManager', () => {
     };
 
     const result = queryManager.request(request);
-    expect(result).toBeInstanceOf(QueryResult);
+    expect(result).toBeInstanceOf(Promise);
 
     const data = await result as Table;
     expect(data.toArray()).toEqual([{ column: 1 }]);
@@ -80,21 +67,8 @@ describe('QueryManager', () => {
     expect(await read).toEqual([{ a: 1 }]);
   });
 
-  it('runs execs one at a time by default', async () => {
-    const { manager, submitted } = managerWithMockConnector();
-
-    manager.request({ type: 'exec', query: createTable(new TableRefNode(['t1']), Query.select('a').from('base')) });
-    manager.request({ type: 'exec', query: createTable(new TableRefNode(['t2']), Query.select('a').from('base')) });
-    manager.request({ type: 'arrow', query: Query.select('x').from('other') });
-    expect(submitted.map(s => s.sql.split(' ')[0])).toEqual(['CREATE', 'SELECT']);
-
-    submitted[0].resolve();
-    await wait();
-    expect(submitted).toHaveLength(3);
-  });
-
   it('serializes writes to the same table and parallelizes writes to different tables', async () => {
-    const { manager, submitted } = managerWithMockConnector(32, 2);
+    const { manager, submitted } = managerWithMockConnector();
     const create = (name: string) => manager.request({
       type: 'exec',
       query: createTable(new TableRefNode(['mosaic', name]), Query.select('a').from('base'))
@@ -152,32 +126,26 @@ describe('QueryManager', () => {
   });
 
   it('limits the number of concurrent requests', async () => {
-    const queryManager = new QueryManager(2);
-    const resolvers: Submitted['resolve'][] = [];
-
-    queryManager.connector(mockConnector((_, resolve) => resolvers.push(resolve)));
+    const { manager, submitted } = managerWithMockConnector(2);
 
     const results = [0, 1, 2].map(i =>
-      queryManager.request({ type: 'arrow', query: `SELECT ${i}` })
+      manager.request({ type: 'arrow', query: `SELECT ${i}` })
     );
-    expect(resolvers).toHaveLength(2);
+    expect(submitted).toHaveLength(2);
 
-    resolvers[0]([]);
+    submitted[0].resolve([]);
     await results[0];
     await wait();
-    expect(resolvers).toHaveLength(3);
+    expect(submitted).toHaveLength(3);
   });
 
   it('resolves results as they complete', async () => {
-    const queryManager = new QueryManager();
-    const resolvers: Submitted['resolve'][] = [];
+    const { manager, submitted } = managerWithMockConnector();
 
-    queryManager.connector(mockConnector((_, resolve) => resolvers.push(resolve)));
+    const first = manager.request({ type: 'arrow', query: 'SELECT 0' });
+    const second = manager.request({ type: 'arrow', query: 'SELECT 1' });
 
-    const first = queryManager.request({ type: 'arrow', query: 'SELECT 0' });
-    const second = queryManager.request({ type: 'arrow', query: 'SELECT 1' });
-
-    resolvers[1]([1]);
+    submitted[1].resolve([1]);
     expect(await second).toEqual([1]);
     expect(await Promise.race([first, Promise.resolve('pending')])).toBe('pending');
   });

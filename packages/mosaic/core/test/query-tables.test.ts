@@ -27,8 +27,8 @@ describe('queryTables', () => {
     expect(arrow(Query.select({ x: sql`1 + 1` }))).toEqual({ reads: new Set(), writes: new Set() });
   });
 
-  it('marks reads unknown for a from clause that is not a table or query', () => {
-    expect(arrow(Query.from(sql`read_parquet('f.parquet')`).select('x')).reads).toBeNull();
+  it('reads no table from a table function', () => {
+    expect(arrow(Query.from(sql`read_parquet('f.parquet')`).select('x')).reads).toEqual(new Set());
   });
 
   it('marks reads unknown for verbatim text that may read a table', () => {
