@@ -246,6 +246,28 @@ describe('PreAggregator preagg mode', () => {
     expect(registry.lookup(sql)).toBeNull();
   });
 
+  it.each(['exec', 'preagg'] as const)('%s mode keeps entries through partial clears and same-connector assignment', async mode => {
+    const connector = new MockPreaggConnector();
+    const mc = mode === 'preagg'
+      ? preaggCoordinator(connector)
+      : new Coordinator(connector, { logger: null, cache: false, consolidate: false });
+    const { sel } = await aggregateClient(mc);
+    const { entries } = mc.preaggregator;
+
+    sel.update(clausePoint('dim', 'a', { source: {} }));
+    await flush();
+    if (mode === 'preagg') connector.complete();
+    await sel.pending('value');
+    expect(entries.size).toBe(1);
+
+    mc.clear({ clients: false });
+    expect(entries.size).toBe(1);
+    mc.databaseConnector(connector);
+    expect(entries.size).toBe(1);
+    mc.databaseConnector(new MockPreaggConnector());
+    expect(entries.size).toBe(0);
+  });
+
   it('disabling clears client state but leaves cached tables and builds', async () => {
     const connector = new MockPreaggConnector();
     const mc = preaggCoordinator(connector);
