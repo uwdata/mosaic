@@ -9,7 +9,7 @@ import type {
   PreaggRequest,
   PreaggResponse
 } from './Connector.js';
-import { ConnectorError } from './errors.js';
+import { materializeWithExec } from './materialize.js';
 
 /**
  * A Mosaic Connector backed by an in-process Node.js DuckDB instance.
@@ -43,10 +43,8 @@ export class NodeConnector implements Connector {
   async query(query: ExecQueryRequest): Promise<void>;
   async query(query: PreaggRequest): Promise<PreaggResponse>;
   async query(query: ConnectorRequest): Promise<unknown> {
-    if (query.type === 'preagg') {
-      throw new ConnectorError('Unsupported command: preagg', { code: 'unsupported_command' });
-    }
     const { type, sql } = query;
+    if (type === 'preagg') return materializeWithExec(this, sql);
     return type === 'exec'
       ? this._db.exec(sql)
       : decodeIPC(await this._db.arrowBuffer(sql), this._ipc);

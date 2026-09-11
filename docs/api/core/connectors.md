@@ -9,7 +9,7 @@ The _query_ argument is an object that may include the following properties:
 - _type_: The query format type, either `"exec"` (no return value), `"arrow"`, or `"preagg"`.
 - Any additional connector-specific options.
 
-A `"preagg"` request asks the server to materialize the given SELECT query and resolves to the resulting table name as `{ catalog, schema, table, createdAt }`. The bundled `restConnector` and `socketConnector` support it.
+A `"preagg"` request asks the connector to materialize the given SELECT query and resolves to the resulting table name as `{ catalog, schema, table, createdAt }`. All bundled connectors support it: `restConnector` and `socketConnector` delegate to the server, while `wasmConnector` and `NodeConnector` create a temporary table on their own connection.
 
 Once instantiated, register a connector with the coordinator using the [`coordinator.databaseConnector()`](coordinator#databaseconnector) method.
 
