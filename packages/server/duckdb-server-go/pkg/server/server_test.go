@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"strings"
 	"testing"
 	"time"
@@ -23,9 +24,12 @@ import (
 func setupTestDB(t *testing.T, opts ...query.OptionFunc) *query.DB {
 	t.Helper()
 
-	connector, err := duckdb.NewConnector(":memory:", nil)
+	connector, err := duckdb.NewConnector(":memory:?allow_unsigned_extensions=true", nil)
 	require.NoError(t, err)
 
+	path := os.Getenv("GATEKEEPER_EXTENSION")
+	require.NotEmpty(t, path, "set GATEKEEPER_EXTENSION to the DuckDB 1.5.5 artifact")
+	opts = append([]query.OptionFunc{query.WithGatekeeperExtension(path)}, opts...)
 	db, err := query.New(t.Context(), connector, opts...)
 	require.NoError(t, err)
 	t.Cleanup(func() {
@@ -165,7 +169,7 @@ func TestHandleHTTPPolicyErrors(t *testing.T) {
 		s.ServeHTTP(res, req)
 
 		require.Equal(t, http.StatusForbidden, res.Code)
-		require.Contains(t, res.Body.String(), "function 'md5' is not in the allowlist")
+		require.Contains(t, res.Body.String(), "function is not allowed: md5")
 	})
 
 	t.Run("blocked function is forbidden", func(t *testing.T) {
@@ -177,7 +181,7 @@ func TestHandleHTTPPolicyErrors(t *testing.T) {
 		s.ServeHTTP(res, req)
 
 		require.Equal(t, http.StatusForbidden, res.Code)
-		require.Contains(t, res.Body.String(), "use of function 'md5' is not allowed")
+		require.Contains(t, res.Body.String(), "function is not allowed: md5")
 	})
 
 	t.Run("unauthorized schema is forbidden", func(t *testing.T) {
@@ -192,7 +196,7 @@ func TestHandleHTTPPolicyErrors(t *testing.T) {
 		s.ServeHTTP(res, req)
 
 		require.Equal(t, http.StatusForbidden, res.Code)
-		require.Contains(t, res.Body.String(), "unauthorized access to schema")
+		require.Contains(t, res.Body.String(), "schema is not allowed")
 	})
 
 	t.Run("exec under schema policy is a bad request", func(t *testing.T) {
@@ -217,7 +221,7 @@ func TestHandleHTTPPolicyErrors(t *testing.T) {
 		s.ServeHTTP(res, req)
 
 		require.Equal(t, http.StatusBadRequest, res.Code)
-		require.Contains(t, res.Body.String(), "query: validation failed: query: not implemented: Only SELECT statements can be serialized to json")
+		require.Contains(t, res.Body.String(), "only supported read statements are permitted")
 		require.NotContains(t, res.Body.String(), "()")
 		require.NotContains(t, res.Body.String(), " at :")
 	})

@@ -1,6 +1,7 @@
 package query
 
 import (
+	"os"
 	"testing"
 
 	"github.com/duckdb/duckdb-go/v2"
@@ -43,44 +44,48 @@ func TestWithFunctionAllowlistCopiesOptions(t *testing.T) {
 
 func TestResolveFunctionAllowlist(t *testing.T) {
 	t.Run("defaults", func(t *testing.T) {
-		functions := resolveFunctionAllowlist(FunctionAllowlistOptions{})
-		assert.Contains(t, functions, "+")
-		assert.Contains(t, functions, "count_star")
-		assert.Contains(t, functions, "json_serialize_sql")
-		assert.Contains(t, functions, "st_x")
-		assert.Contains(t, functions, "sum")
-		assert.NotContains(t, functions, "st_read")
-		assert.NotContains(t, functions, "st_transform")
+		db := setupTestDB(t, WithFunctionAllowlist(FunctionAllowlistOptions{}))
+		for _, q := range []string{"SELECT 1+2", "SELECT count(*)", "SELECT json_serialize_sql('SELECT 1')", "SELECT sum(1)"} {
+			_, err := db.QueryArrow(t.Context(), q, nil)
+			require.NoError(t, err)
+		}
+		for _, q := range []string{"SELECT * FROM st_read('x')", "SELECT st_transform(NULL, 'a', 'b')"} {
+			_, err := db.QueryArrow(t.Context(), q, nil)
+			requireViolation(t, err, "function")
+		}
 	})
 
 	t.Run("include and exclude", func(t *testing.T) {
-		functions := resolveFunctionAllowlist(FunctionAllowlistOptions{
+		db := setupTestDB(t, WithFunctionAllowlist(FunctionAllowlistOptions{
 			Include: []string{" MD5 ", "sum"},
 			Exclude: []string{" SUM ", "+"},
-		})
-		assert.Contains(t, functions, "md5")
-		assert.NotContains(t, functions, "sum")
-		assert.NotContains(t, functions, "+")
+		}))
+		_, err := db.QueryArrow(t.Context(), "SELECT md5('x')", nil)
+		require.NoError(t, err)
+		for _, q := range []string{"SELECT sum(1)", "SELECT 1+2"} {
+			_, err := db.QueryArrow(t.Context(), q, nil)
+			requireViolation(t, err, "function")
+		}
 	})
 
 	t.Run("defaults disabled", func(t *testing.T) {
-		functions := resolveFunctionAllowlist(FunctionAllowlistOptions{
+		db := setupTestDB(t, WithFunctionAllowlist(FunctionAllowlistOptions{
 			DisableDefaults: true,
 			Include:         []string{" MD5 ", "md5"},
-		})
-		assert.Equal(t, []string{"md5"}, functions)
-
-		functions = resolveFunctionAllowlist(FunctionAllowlistOptions{DisableDefaults: true})
-		assert.NotNil(t, functions)
-		assert.Empty(t, functions)
+		}))
+		_, err := db.QueryArrow(t.Context(), "SELECT md5('x')", nil)
+		require.NoError(t, err)
+		empty := setupTestDB(t, WithFunctionAllowlist(FunctionAllowlistOptions{DisableDefaults: true}))
+		_, err = empty.QueryArrow(t.Context(), "SELECT md5('x')", nil)
+		requireViolation(t, err, "function")
 	})
 }
 
 func TestNewNormalizesCustomFunctionOptions(t *testing.T) {
-	connector, err := duckdb.NewConnector(":memory:", nil)
+	connector, err := duckdb.NewConnector(":memory:?allow_unsigned_extensions=true", nil)
 	require.NoError(t, err)
 
-	db, err := New(t.Context(), connector, func(opts *Options) error {
+	db, err := New(t.Context(), connector, WithGatekeeperExtension(os.Getenv("GATEKEEPER_EXTENSION")), func(opts *Options) error {
 		opts.FunctionAllowlist = &FunctionAllowlistOptions{
 			DisableDefaults: true,
 			Include:         []string{" MD5 ", "md5"},
@@ -121,10 +126,11 @@ func TestFunctionAllowlistAndBlocklistAreMutuallyExclusive(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			connector, err := duckdb.NewConnector(":memory:", nil)
+			connector, err := duckdb.NewConnector(":memory:?allow_unsigned_extensions=true", nil)
 			require.NoError(t, err)
 
-			db, err := New(t.Context(), connector, tt.opts...)
+			opts := append([]OptionFunc{WithGatekeeperExtension(os.Getenv("GATEKEEPER_EXTENSION"))}, tt.opts...)
+			db, err := New(t.Context(), connector, opts...)
 			if tt.wantErr {
 				require.Nil(t, db)
 				require.EqualError(t, err, "query: function allowlist and blocklist cannot both be configured")
