@@ -46,9 +46,10 @@ export function lruCache({ maxBytes = 256 * 1024 * 1024 }: { maxBytes?: number }
       if (bytes > maxBytes) return value;
       entries.set(key, { value, bytes });
       total += bytes;
+      if (total <= maxBytes) return value;
       for (const oldest of entries.keys()) {
-        if (total <= maxBytes) break;
         remove(oldest);
+        if (total <= maxBytes) break;
       }
       return value;
     },
