@@ -90,7 +90,7 @@ handler, err := server.New(db,
 )
 ```
 
-`WithCacheControl(value)` sets the complete header value on successful GET `arrow` responses. The application chooses storage, sharing, and freshness directives, such as `no-store`, `private, max-age=60`, or `public, max-age=60, s-maxage=300`. An omitted or empty value preserves existing behavior, including any headers set by outer middleware. Configured values replace an existing Cache-Control header; other responses, including errors, `exec`, POST, OPTIONS, and WebSocket handshakes, receive `no-store`. HEAD is unsupported and returns `405`; only GET query responses are cacheable.
+`WithCacheControl(value)` sets the complete header value on successful GET `arrow` responses. The application chooses storage, sharing, and freshness directives, such as `no-store`, `private, max-age=60`, or `public, max-age=60, s-maxage=300`. An omitted or empty value preserves existing behavior, including any headers set by outer middleware. Configured values replace an existing Cache-Control header; other responses, including errors, `exec`, POST, OPTIONS, and WebSocket handshakes, receive `no-store`. HEAD is unsupported and returns `405`; only GET query responses are cacheable. `WithPreaggregation` takes precedence: its responses use `no-store`, omit ETags, and ignore conditional request headers.
 
 For GET `arrow` responses, enabling Cache-Control also generates a strong ETag from the response format and serialized bytes. A matching `If-None-Match` returns `304` with no body and the applicable Cache-Control, ETag, and Vary headers. Tag lists, weak comparisons, and `*` are supported. `If-Match` uses strong comparison and takes precedence, returning `412` without an ETag on a mismatch. Other command types and methods, including `exec` and POST, ignore conditional request headers; `If-Match` cannot guard an `exec` command. Authorization, query validation, execution, serialization, and hashing of the complete response still run before evaluating validators: revalidation saves transfer bandwidth. Changes to data do not invalidate already-fresh HTTP cache entries before their configured lifetime expires. Middleware or proxies that compress or transform the response must update or weaken its strong ETag.
 
@@ -148,6 +148,12 @@ Application fields are untrusted: combine them with authenticated identity, as s
 `WithMaxMessageBytes(n)` requires a positive byte limit for entire POST bodies and decompressed WebSocket messages, applied after request authorization and before decoding. Defaults are unbounded POST bodies and 32 KiB WebSocket messages. Exceeding the limit returns HTTP 413 or closes the WebSocket with code 1009. Request authorizers reading the body must enforce their own limits and restore it.
 
 POST and WebSocket messages require one complete command object with optional surrounding whitespace; trailing data is rejected. Protocol decoding failures return HTTP 400 or close the WebSocket with code 1007. Validation and authorization errors leave a healthy WebSocket session open.
+
+### Server-Owned Preaggregation
+
+Embedding applications can enable HTTP and WebSocket `preagg` with `server.WithPreaggregation`, supplying a trusted scope resolver and source catalog/schema grants. The server validates SELECTs, publishes ordinary tables and source metadata transactionally, reauthorizes derived reads, and bounds table count, output size, build duration, and age. This mode disables client `exec`; it is separate from the legacy schema-match-header example below.
+
+See the [Go preaggregation API documentation](../../../docs/api/duckdb/go-server.md) for configuration, limits, and recovery behavior. The installed binary does not enable this option.
 
 ### Function Policies
 
@@ -319,7 +325,7 @@ If `--schema-match-headers`, `--function-blocklist`, or `--function-allowlist` i
 are limited to statements DuckDB can serialize for validation; unsupported forms such as `PRAGMA` and `SET` are rejected,
 with HTTP requests receiving a 400 response. All `exec` requests are also rejected until full-statement authorization is
 supported. This includes every `Coordinator.exec(...)` call, such as data loading, preloading, and DDL/DML. Mosaic
-pre-aggregation also uses `exec` to create schemas and tables, so set `preagg: { enabled: false }` in this mode.
+pre-aggregation uses `exec` by default, so disable it with `preagg: { enabled: false }` or configure the server-owned preaggregation option described above.
 
 ## API
 

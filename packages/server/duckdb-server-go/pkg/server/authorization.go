@@ -19,8 +19,9 @@ var (
 type CommandType string
 
 const (
-	CommandArrow CommandType = "arrow"
-	CommandExec  CommandType = "exec"
+	CommandArrow  CommandType = "arrow"
+	CommandExec   CommandType = "exec"
+	CommandPreagg CommandType = "preagg"
 )
 
 // Command exposes the authoritative type and SQL alongside an application-owned
