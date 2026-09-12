@@ -1,0 +1,328 @@
+openapi: 3.1.0
+info:
+  title: Mosaic DuckDB server protocol (HTTP)
+  version: 0.1.0-draft
+  summary: HTTP transport for Mosaic coordinator commands against a DuckDB-backed server.
+  description: |
+    A Mosaic server exposes one endpoint that accepts a JSON command object and
+    returns an Arrow IPC stream, an empty acknowledgement, or a preaggregate
+    table reference. The same command objects travel over WebSocket; see
+    `asyncapi.yaml`. Shapes are defined once in `schemas.yaml`.
+
+    This document describes the desired state agreed for all server
+    implementations (Python, Rust, Go, Node). Per-server gaps are tracked in
+    `CONFORMANCE.md`. Items marked **Decision** are choices made where the
+    existing servers disagreed and are open for revision.
+
+    ### Transport rules
+
+    * The endpoint path is deployment-defined; the reference servers use `/`.
+      Servers MUST serve the same commands at the same path over HTTP and
+      WebSocket upgrade.
+    * `POST` carries the command as a JSON body. Clients send
+      `Content-Type: application/json`. **Decision:** servers MAY reject other
+      media types with `415` + `bad_request`, and MUST NOT require a `charset`.
+    * `GET` carries `type` and `sql` as flat query-string parameters
+      (percent-encoded, not JSON-wrapped; `+` decodes to a space, so clients
+      MUST percent-encode it). Only `arrow` is allowed on GET; `exec` and
+      `preagg` MUST be rejected with `400` + `bad_request` so that reads can
+      be cached and side effects cannot be triggered by a link.
+    * Any other method returns `405` with `Allow: GET, POST, OPTIONS` and a
+      `bad_request` error body.
+    * Properties other than `type` and `sql` are application-owned and pass
+      through to deployment authorization untouched. Protocol fields MUST be
+      decoded independently of that payload.
+    * Success bodies are fully formed: an `arrow` response for zero rows MUST
+      still contain the schema message and end-of-stream marker.
+    * Errors are always the JSON envelope in `schemas.yaml#/$defs/Error` with
+      `Content-Type: application/json`, using the status listed for the code.
+      Servers MUST NOT return plain-text or empty error bodies, and MUST NOT
+      return `200` for a failed command.
+    * Servers SHOULD accept request bodies and query strings of at least 1 MiB
+      so that long generated SQL is not silently truncated. Servers MAY cap
+      bodies and reject larger ones with `413` + `bad_request`.
+    * Servers MAY compress response bodies per `Accept-Encoding`.
+
+    ### Caching
+
+    Servers keep no result cache; clients own freshness. HTTP caching is
+    optional and, when enabled, applies only to successful `GET` `arrow`
+    responses:
+
+    * The server emits a strong `ETag` derived from the encoded body and the
+      operator-configured `Cache-Control` value. Authorization and execution
+      always run before conditional evaluation, so a revoked caller gets
+      `403`, never `304`.
+    * `If-None-Match` is compared weakly (RFC 9110); a match returns `304`
+      with no body and the same `ETag`, `Cache-Control`, and `Vary`.
+    * `If-Match` is compared strongly; a mismatch returns `412` with a
+      `bad_request` envelope and no `ETag`.
+    * Every other response — `POST`, `exec`, errors, preflight, the WebSocket
+      `101` — carries `Cache-Control: no-store` and no `ETag`.
+    * Responses that depend on caller identity MUST list the identifying
+      headers in `Vary` (or use `private`/`no-store`).
+  license:
+    name: BSD-3-Clause
+    identifier: BSD-3-Clause
+
+servers:
+  - url: http://localhost:3000
+    description: Default for all reference servers.
+
+security: []
+
+tags:
+  - name: commands
+    description: Command endpoint shared by all `type` values.
+
+paths:
+  /:
+    post:
+      tags: [commands]
+      operationId: postCommand
+      summary: Run a command supplied as a JSON body.
+      description: |
+        The response depends on `type`:
+
+        | `type`   | status | Content-Type                          | body                              |
+        |----------|--------|---------------------------------------|-----------------------------------|
+        | `arrow`  | 200    | `application/vnd.apache.arrow.stream` | Arrow IPC **stream** (not file)   |
+        | `exec`   | 200    | none                                  | empty                             |
+        | `preagg` | 200    | `application/json`                    | `PreaggResponse`                  |
+
+        `POST` responses are never cacheable and carry `Cache-Control: no-store`.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: './schemas.yaml#/$defs/Request'
+            examples:
+              arrow:
+                value: { type: arrow, sql: "SELECT 1 AS x" }
+              exec:
+                value: { type: exec, sql: "CREATE TABLE t AS SELECT 1 AS x; INSERT INTO t VALUES (2)" }
+              preagg:
+                value: { type: preagg, sql: "SELECT category, count(*) AS n FROM analytics.public.events GROUP BY category" }
+              application_payload:
+                summary: Application-owned fields pass through to authorization.
+                value: { type: arrow, sql: "SELECT 1 AS x", projectId: "p_42" }
+      responses:
+        '200':
+          $ref: '#/components/responses/CommandSuccess'
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/TableNotFound' }
+        '413': { $ref: '#/components/responses/PayloadTooLarge' }
+        '415': { $ref: '#/components/responses/UnsupportedMediaType' }
+        '429': { $ref: '#/components/responses/ResourceExhausted' }
+        '500': { $ref: '#/components/responses/InternalError' }
+        '504': { $ref: '#/components/responses/DeadlineExceeded' }
+
+    get:
+      tags: [commands]
+      operationId: getCommand
+      summary: Run a read-only `arrow` query supplied as query parameters.
+      description: |
+        Equivalent to `POST` with the same fields, restricted to `arrow`.
+        `type` defaults to `arrow` when omitted. This is the only cacheable
+        form; see *Caching* above.
+      parameters:
+        - name: type
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [arrow]
+            default: arrow
+        - name: sql
+          in: query
+          required: true
+          schema:
+            $ref: './schemas.yaml#/$defs/Sql'
+        - $ref: '#/components/parameters/IfNoneMatch'
+        - $ref: '#/components/parameters/IfMatch'
+      responses:
+        '200':
+          $ref: '#/components/responses/CommandSuccess'
+        '304':
+          $ref: '#/components/responses/NotModified'
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/TableNotFound' }
+        '412': { $ref: '#/components/responses/PreconditionFailed' }
+        '429': { $ref: '#/components/responses/ResourceExhausted' }
+        '500': { $ref: '#/components/responses/InternalError' }
+        '504': { $ref: '#/components/responses/DeadlineExceeded' }
+
+    options:
+      tags: [commands]
+      operationId: preflight
+      summary: CORS preflight.
+      description: |
+        Browser clients call with `mode: 'cors'` and `credentials: 'omit'`.
+        Allowed origins, headers, and max-age are deployment configuration.
+        Servers SHOULD expose `ETag` via `Access-Control-Expose-Headers` when
+        caching is enabled. Preflight bypasses authorization and carries no
+        body.
+      responses:
+        '204':
+          description: Preflight accepted. `200` with an empty body is also acceptable.
+          headers:
+            Access-Control-Allow-Origin: { schema: { type: string } }
+            Access-Control-Allow-Methods: { schema: { type: string }, example: "GET, POST" }
+            Access-Control-Allow-Headers: { schema: { type: string } }
+            Access-Control-Expose-Headers: { schema: { type: string }, example: "ETag" }
+            Access-Control-Max-Age: { schema: { type: integer } }
+            Vary: { $ref: '#/components/headers/Vary' }
+
+components:
+  parameters:
+    IfNoneMatch:
+      name: If-None-Match
+      in: header
+      required: false
+      schema: { type: string }
+      description: Weak comparison against the current `ETag`; a match yields `304`.
+    IfMatch:
+      name: If-Match
+      in: header
+      required: false
+      schema: { type: string }
+      description: Strong comparison against the current `ETag`; a mismatch yields `412`.
+
+  headers:
+    ETag:
+      schema: { type: string }
+      description: Strong validator for the encoded body. Only on cacheable `GET` `arrow` responses.
+    Cache-Control:
+      schema: { type: string }
+      description: Operator-configured value on cacheable responses; `no-store` on everything else once caching is enabled.
+    Vary:
+      schema: { type: string }
+      description: MUST include any request header that influenced the response, such as tenant headers.
+    Allow:
+      schema: { type: string }
+      example: "GET, POST, OPTIONS"
+
+  responses:
+    CommandSuccess:
+      description: Command completed. Media type is determined by the request `type`.
+      headers:
+        ETag: { $ref: '#/components/headers/ETag' }
+        Cache-Control: { $ref: '#/components/headers/Cache-Control' }
+        Vary: { $ref: '#/components/headers/Vary' }
+      content:
+        application/vnd.apache.arrow.stream:
+          schema:
+            type: string
+            format: binary
+            description: |
+              Arrow IPC stream: schema message, zero or more record batches,
+              end-of-stream marker. Servers MUST NOT send the IPC file format
+              (`ARROW1` magic + footer) and MUST NOT send an empty body for an
+              empty result.
+        application/json:
+          schema:
+            $ref: './schemas.yaml#/$defs/PreaggResponse'
+          example:
+            catalog: memory
+            schema: mosaic_scope_a7
+            table: preagg_c92f
+            createdAt: "2026-09-08T20:00:00Z"
+    NotModified:
+      description: The `If-None-Match` validator matched. No body.
+      headers:
+        ETag: { $ref: '#/components/headers/ETag' }
+        Cache-Control: { $ref: '#/components/headers/Cache-Control' }
+        Vary: { $ref: '#/components/headers/Vary' }
+    BadRequest:
+      description: "`bad_request` or `unsupported_command`. The same body shape is used for `405`."
+      headers:
+        Allow:
+          $ref: '#/components/headers/Allow'
+          description: Only on `405`.
+      content:
+        application/json:
+          schema: { $ref: './schemas.yaml#/$defs/Error' }
+          examples:
+            missing_sql:
+              value: { error: "missing required 'sql' parameter", code: bad_request }
+            unknown_type:
+              value: { error: "invalid 'type' parameter: csv", code: bad_request }
+            get_exec:
+              value: { error: "exec is not allowed over GET", code: bad_request }
+            parse:
+              value: { error: "Parser Error: syntax error at or near \"SELEC\"", code: bad_request }
+            exec_disabled:
+              value: { error: "exec command is disabled when query validation is active", code: unsupported_command }
+            preagg_disabled:
+              value: { error: "preagg is not enabled on this server", code: unsupported_command }
+    Unauthenticated:
+      description: "`unauthenticated`."
+      content:
+        application/json:
+          schema: { $ref: './schemas.yaml#/$defs/Error' }
+          example: { error: "no allowed schemas found in request headers", code: unauthenticated }
+    Forbidden:
+      description: "`forbidden`."
+      content:
+        application/json:
+          schema: { $ref: './schemas.yaml#/$defs/Error' }
+          examples:
+            schema:
+              value: { error: "unauthorized access to schema 'other_tenant'", code: forbidden }
+            remote_uri:
+              value: { error: "remote URI prefix 's3://' is not allowed in path argument to function 'read_parquet'", code: forbidden }
+    TableNotFound:
+      description: "`table_not_found`, with the authorized reference so the coordinator can rebuild a live preaggregate recipe."
+      content:
+        application/json:
+          schema: { $ref: './schemas.yaml#/$defs/Error' }
+          example:
+            error: Materialized table is unavailable
+            code: table_not_found
+            catalog: memory
+            schema: mosaic_scope_a7
+            table: preagg_c92f
+    PreconditionFailed:
+      description: "`bad_request`; the `If-Match` validator did not match. No `ETag`."
+      content:
+        application/json:
+          schema: { $ref: './schemas.yaml#/$defs/Error' }
+          example: { error: "Precondition Failed", code: bad_request }
+    PayloadTooLarge:
+      description: "`bad_request`; body exceeded the server's limit."
+      content:
+        application/json:
+          schema: { $ref: './schemas.yaml#/$defs/Error' }
+          example: { error: "Request Entity Too Large", code: bad_request }
+    UnsupportedMediaType:
+      description: "`bad_request`; request `Content-Type` was not JSON."
+      content:
+        application/json:
+          schema: { $ref: './schemas.yaml#/$defs/Error' }
+    ResourceExhausted:
+      description: "`resource_exhausted`."
+      headers:
+        Retry-After:
+          schema: { type: integer }
+          description: Optional seconds to wait before retrying.
+      content:
+        application/json:
+          schema: { $ref: './schemas.yaml#/$defs/Error' }
+          example: { error: "materialization queue is full", code: resource_exhausted }
+    InternalError:
+      description: "`internal_error`, including unclassified DuckDB execution errors."
+      content:
+        application/json:
+          schema: { $ref: './schemas.yaml#/$defs/Error' }
+          example: { error: "Catalog Error: Table with name foo does not exist!", code: internal_error }
+    DeadlineExceeded:
+      description: "`deadline_exceeded`."
+      content:
+        application/json:
+          schema: { $ref: './schemas.yaml#/$defs/Error' }
+          example: { error: "command deadline exceeded after 30s", code: deadline_exceeded }
