@@ -26,7 +26,9 @@ const sources = [
 const { isDark } = useData();
 const container = ref(null);
 const failed = ref(false);
+let scalar = null;
 let app = null;
+let mounted = false;
 
 function loadScalar() {
   if (window.Scalar) return Promise.resolve(window.Scalar);
@@ -40,9 +42,10 @@ function loadScalar() {
 }
 
 // forceDarkModeState is read once at creation, so recreate on theme change.
-function render(Scalar) {
+function render() {
+  if (!mounted || !scalar || !container.value) return;
   app?.destroy();
-  app = Scalar.createApiReference(container.value, {
+  app = scalar.createApiReference(container.value, {
     sources,
     hideClientButton: true,
     hideTestRequestButton: true,
@@ -53,17 +56,23 @@ function render(Scalar) {
   });
 }
 
+watch(isDark, render);
+
 onMounted(async () => {
+  mounted = true;
   try {
-    const Scalar = await loadScalar();
-    render(Scalar);
-    watch(isDark, () => render(Scalar));
+    scalar = await loadScalar();
+    render();
   } catch {
     failed.value = true;
   }
 });
 
-onBeforeUnmount(() => app?.destroy());
+onBeforeUnmount(() => {
+  mounted = false;
+  app?.destroy();
+  app = null;
+});
 </script>
 
 <template>
