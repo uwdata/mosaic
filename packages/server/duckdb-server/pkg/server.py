@@ -5,14 +5,12 @@ import sys
 import time
 from typing import TYPE_CHECKING, Any, Literal, Protocol, TypedDict
 
-import ujson
+import msgspec
 from socketify import App, CompressOptions, OpCode
 
 from pkg.query import get_arrow_bytes
 
 if TYPE_CHECKING:
-    from collections.abc import Mapping
-
     import duckdb
     from duckdb import DuckDBPyConnection as Con
     from socketify import Request as Req
@@ -28,7 +26,9 @@ SLOW_QUERY_THRESHOLD = 5000
 class _QueryParams(TypedDict):
     type: Literal["arrow", "exec"]
     sql: str
-    uuid: str  # name
+
+
+query_decoder = msgspec.json.Decoder(_QueryParams)
 
 
 class Handler(Protocol):
@@ -74,31 +74,39 @@ class HTTPHandler(Handler):
         self.res.end(str(error))
 
 
+def handle_message(
+    handler: Handler,
+    con: duckdb.DuckDBPyConnection,
+    message: str | bytes | bytearray,
+) -> None:
+    try:
+        query = query_decoder.decode(message)
+    except msgspec.DecodeError as e:
+        handler.error(e, 400)
+        return
+
+    handle_query(handler, con, query)
+
+
 def handle_query(
     handler: Handler,
     con: duckdb.DuckDBPyConnection,
-    query: Mapping[str, Any],
+    query: _QueryParams,
 ) -> None:
     logger.debug(f"{query=}")
 
     start = time.time()
 
-    command = query.get("type")
-    if command is None:
-        handler.error("missing required 'type' parameter", 400)
-        return
-
     sql = query["sql"]
 
     try:
-        if command == "exec":
-            con.execute(sql)
-            handler.done()
-        elif command == "arrow":
-            buffer = get_arrow_bytes(con, sql)
-            handler.arrow(buffer)
-        else:
-            handler.error(f"Unknown command {command}", 400)
+        match query["type"]:
+            case "exec":
+                con.execute(sql)
+                handler.done()
+            case "arrow":
+                buffer = get_arrow_bytes(con, sql)
+                handler.arrow(buffer)
     except Exception as e:
         logger.exception("Error processing query")
         handler.error(e)
@@ -122,20 +130,8 @@ def server(con: Con) -> None:
     # app = App(AppOptions(key_file_name="./localhost-key.pem", cert_file_name="./localhost.pem"))
     app = App()
 
-    # faster serialization than standard json
-    app.json_serializer(ujson)
-
     def ws_message(ws: Ws, message: str | bytes | bytearray, opcode: OpCode) -> None:
-        handler = SocketHandler(ws)
-
-        try:
-            query: _QueryParams = ujson.loads(message)
-        except Exception as e:
-            logger.exception("Error reading message from WebSocket")
-            handler.error(e)
-            return
-
-        handle_query(handler, con, query)
+        handle_message(SocketHandler(ws), con, message)
 
     async def http_handler(res: Res, req: Req) -> None:
         res.write_header("Access-Control-Allow-Origin", "*")
@@ -147,19 +143,13 @@ def server(con: Con) -> None:
         method = req.get_method()
 
         handler = HTTPHandler(res)
-        data: _QueryParams
         if method == "OPTIONS":
             handler.done()
         elif method == "GET":
-            message: str | bytes | bytearray = req.get_query("query")  # pyright: ignore[reportAssignmentType]
-            data = ujson.loads(message)
-            handle_query(handler, con, data)
+            handle_message(handler, con, req.get_query("query"))
         elif method == "POST":
-            maybe_data: _QueryParams | None = await res.get_json()
-            if maybe_data:
-                handle_query(handler, con, maybe_data)
-            else:
-                raise NotImplementedError
+            body = await res.get_data()
+            handle_message(handler, con, body.getvalue())
 
     app.ws(
         "/*",

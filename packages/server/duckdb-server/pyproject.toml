@@ -6,10 +6,10 @@ readme = "README.md"
 requires-python = ">=3.10"
 dependencies = [
   "duckdb>=1.5.2",
+  "msgspec",
   "pandas",
   "pyarrow",
-  "socketify",
-  "ujson"
+  "socketify"
 ]
 
 [project.scripts]
@@ -27,7 +27,6 @@ dev = [
   "pytest-cov",
   "pytest",
   "ruff",
-  "types-ujson",
   "watchdog",
   "ty",
 ]
