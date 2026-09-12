@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/duckdb/duckdb-go/v2"
+	"github.com/uwdata/mosaic/packages/server/duckdb-server-go/pkg/functionset"
 )
 
 func BenchmarkValidateSQL(b *testing.B) {
@@ -27,6 +28,35 @@ func BenchmarkValidateSQL(b *testing.B) {
 		b.Run(query.name, func(b *testing.B) {
 			for b.Loop() {
 				if err := db.ValidateSQL(b.Context(), query.sql, ValidationPolicy{CheckSchemas: true, AllowedSchemas: []string{"tenant_a"}}); err != nil {
+					b.Fatal(err)
+				}
+			}
+		})
+	}
+}
+
+func BenchmarkValidateSQLPolicies(b *testing.B) {
+	connector, err := duckdb.NewConnector(":memory:", nil)
+	if err != nil {
+		b.Fatal(err)
+	}
+	defer connector.Close()
+	db, err := New(b.Context(), connector)
+	if err != nil {
+		b.Fatal(err)
+	}
+	defer db.Close()
+	for _, test := range []struct {
+		name, query string
+		policy      ValidationPolicy
+	}{
+		{"allowlist", "SELECT id, sum(value), avg(value) FROM tenant_a.orders GROUP BY id", ValidationPolicy{CheckSchemas: true, AllowedSchemas: []string{"tenant_a"}, CheckFunctions: true, AllowedFunctions: functionset.DefaultFunctions()}},
+		{"blocklist", "SELECT id, sum(value), avg(value) FROM tenant_a.orders GROUP BY id", ValidationPolicy{CheckSchemas: true, AllowedSchemas: []string{"tenant_a"}, BlockedFunctions: []string{"read_parquet", "read_csv", "query", "json_execute_serialized_sql"}}},
+		{"remote", "SELECT * FROM read_parquet('local.parquet')", ValidationPolicy{RejectRemoteURILiterals: true}},
+	} {
+		b.Run(test.name, func(b *testing.B) {
+			for b.Loop() {
+				if err := db.ValidateSQL(b.Context(), test.query, test.policy); err != nil {
 					b.Fatal(err)
 				}
 			}

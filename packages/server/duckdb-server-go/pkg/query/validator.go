@@ -73,7 +73,7 @@ func (db *DB) ValidateSQL(ctx context.Context, query string, policy ValidationPo
 	if policy.CheckFunctions && len(policy.BlockedFunctions) > 0 {
 		return errors.New("query: function allowlist and blocklist cannot both be configured")
 	}
-	return db.validateSQL(ctx, validationSQL, query, policy)
+	return db.validatePrepared(ctx, query, policy)
 }
 
 func (db *DB) validateSQL(ctx context.Context, statement, query string, policy ValidationPolicy) error {
@@ -91,6 +91,10 @@ func (db *DB) validateSQL(ctx context.Context, statement, query string, policy V
 	if err != nil {
 		return fmt.Errorf("query: failed to validate SQL: %w", err)
 	}
+	return readValidationResult(rows)
+}
+
+func readValidationResult(rows *sql.Rows) error {
 	defer rows.Close()
 
 	var errs []error

@@ -118,13 +118,10 @@ edges AS MATERIALIZED (
     LEFT JOIN rules r ON r.kind = owner.kind
 ),
 walk AS MATERIALIZED (
-    SELECT e.* FROM edges e
-    WHERE NOT EXISTS (
-        SELECT 1 FROM edges data
-        WHERE data.expected = 'opaque' AND e.id > data.id
+    SELECT e.* FROM edges e ANTI JOIN edges data
+        ON data.expected = 'opaque' AND e.id > data.id
             AND (system.main.starts_with(e.fullkey, data.fullkey || '.')
                 OR system.main.starts_with(e.fullkey, data.fullkey || '['))
-    )
 ),
 invalid AS (
     SELECT w.fullkey,
@@ -133,6 +130,7 @@ invalid AS (
     FROM walk w
     LEFT JOIN objects o ON o.id = w.id
     LEFT JOIN rules r ON r.kind = o.kind
+    LEFT JOIN expression_grammar expression ON r.kind = 'expression:' || expression.class
     WHERE NOT coalesce(CASE
         WHEN w.expected = 'opaque' THEN true
         WHEN system.main.ends_with(w.expected, '[]') THEN w.type = 'ARRAY'
@@ -148,10 +146,7 @@ invalid AS (
                 WHEN 'query' THEN r.kind IN ('SELECT_NODE', 'SET_OPERATION_NODE', 'RECURSIVE_CTE_NODE')
                 WHEN 'table' THEN r.kind IN ('BASE_TABLE', 'JOIN', 'SUBQUERY', 'TABLE_FUNCTION', 'EMPTY', 'EXPRESSION_LIST', 'PIVOT', 'SHOW_REF')
                 WHEN 'modifier' THEN r.kind IN ('LIMIT_MODIFIER', 'LIMIT_PERCENT_MODIFIER', 'DISTINCT_MODIFIER', 'ORDER_MODIFIER')
-                WHEN 'expression' THEN EXISTS (
-                    SELECT 1 FROM expression_grammar e
-                    WHERE e.class = (w.value->>'class') AND system.main.list_contains(e.types, w.value->>'type')
-                )
+                WHEN 'expression' THEN system.main.list_contains(expression.types, w.value->>'type')
                 ELSE r.kind = w.expected END
         END, false)
 ),
@@ -172,6 +167,22 @@ refs AS (
         system.main.lower(w.value->>'function_name') AS function_name
     FROM walk w WHERE w.expected IN ('table', 'expression')
 ),
+cte_regions AS (
+    SELECT c.name, c.scope || '.' AS prefix, c.scope || '.cte_map.' AS excluded_prefix
+    FROM ctes c
+    UNION ALL
+    SELECT c.name, sibling.fullkey || '.', NULL
+    FROM ctes c JOIN ctes sibling ON sibling.scope = c.scope AND sibling.id > c.id
+    UNION ALL
+    SELECT name, fullkey || '.value.query.node.right.', NULL
+    FROM ctes WHERE (body->>'type') = 'RECURSIVE_CTE_NODE'
+),
+cte_refs AS (
+    SELECT r.id FROM refs r SEMI JOIN cte_regions c
+        ON c.name = system.main.translate(r.table_name, 'ABCDEFGHIJKLMNOPQRSTUVWXYZ', 'abcdefghijklmnopqrstuvwxyz')
+        AND system.main.starts_with(r.fullkey, c.prefix)
+        AND (c.excluded_prefix IS NULL OR NOT system.main.starts_with(r.fullkey, c.excluded_prefix))
+),
 violations AS (
     SELECT fullkey, CASE
         WHEN node_class IN ('FUNCTION', 'WINDOW') AND (value->>'catalog') IS NOT NULL THEN
@@ -183,23 +194,10 @@ violations AS (
         WHEN (node_type = 'BASE_TABLE' OR (node_type = 'SHOW_REF' AND (value->'query') IS NULL))
             AND schema_name != '' AND NOT system.main.list_contains(p.allowed_schemas, schema_name) THEN
             'unauthorized access to schema ''' || schema_name || ''''
-        WHEN node_type = 'BASE_TABLE' AND schema_name = '' AND NOT EXISTS (
-            SELECT 1 FROM ctes c
-            WHERE c.name = system.main.translate(r.table_name, 'ABCDEFGHIJKLMNOPQRSTUVWXYZ', 'abcdefghijklmnopqrstuvwxyz')
-                AND system.main.starts_with(r.fullkey, c.scope || '.')
-                AND (
-                    NOT system.main.starts_with(r.fullkey, c.scope || '.cte_map.')
-                    OR EXISTS (
-                        SELECT 1 FROM ctes sibling
-                        WHERE sibling.scope = c.scope AND sibling.id > c.id
-                            AND system.main.starts_with(r.fullkey, sibling.fullkey || '.')
-                    )
-                    OR ((c.body->>'type') = 'RECURSIVE_CTE_NODE'
-                        AND system.main.starts_with(r.fullkey, c.fullkey || '.value.query.node.right.'))
-                )
-        ) THEN 'unauthorized access to table ''' || table_name || ''' with empty schema'
+        WHEN node_type = 'BASE_TABLE' AND schema_name = '' AND c.id IS NULL
+            THEN 'unauthorized access to table ''' || table_name || ''' with empty schema'
         END AS message
-    FROM refs r, policy p WHERE p.check_schemas
+    FROM refs r LEFT JOIN cte_refs c ON c.id = r.id CROSS JOIN policy p WHERE p.check_schemas
 ),
 function_violations AS (
     SELECT function_name, CASE WHEN p.check_functions

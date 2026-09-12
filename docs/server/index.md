@@ -32,10 +32,25 @@ The [Go server](https://github.com/uwdata/mosaic/tree/main/packages/server/duckd
 implements schema authorization, function allowlists or blocklists, and optional
 remote-URI literal checks with one embedded
 [`validate.sql`](https://github.com/uwdata/mosaic/blob/main/packages/server/duckdb-server-go/pkg/query/validate.sql)
-query. DuckDB serializes the submitted SQL and validates the resulting AST before
-the submitted query is executed. The SQL file is canonical and lives inside the Go
+query. A private in-memory DuckDB instance serializes the submitted SQL and validates
+the resulting AST before the submitted query is executed. The SQL file is canonical and lives inside the Go
 module so standalone module builds can embed it; other servers can package the same
 file and supply their policy inputs.
+
+The Go adapter bootstraps each validation connection with temporary grammar tables,
+the reviewed remote-reader inventory, a one-row input table, and a parameter-free
+prepared validation plan. Each request exclusively borrows a connection, replaces
+its entire request input, executes the plan, and returns the connection after reading
+the result. This prevents schema or function policies from leaking across concurrent
+requests. The validation pool uses `MaxConnections`, retains idle connections for
+plan reuse, and closes with `DB.Close`.
+
+The private validation database uses one worker thread without changing the query
+database's settings. It does not execute submitted SQL or load application extensions,
+macros, views, or attached catalogs. Extension-specific parser syntax is therefore
+unsupported even if the execution database loads an extension that accepts it.
+The same embedded SQL can still run directly with parameters; bootstrap tables are
+an adapter optimization rather than a second policy implementation.
 
 ### Supported SQL
 
@@ -124,16 +139,29 @@ views/macros, inspect nested SQL strings, or sandbox resource access. Remote-URI
 checks inspect reviewed literal path arguments; computed paths can evade them.
 Catalogs and initialization must remain trusted.
 
-The stricter SQL validation adds latency: local Go benchmarks on an Apple M3 Max
-measured approximately 12–13 ms per validation for a simple SELECT and a CTE query,
-compared with approximately 0.1 ms for the earlier Go walker. Both include DuckDB
-serialization; neither executes the submitted query. Flattened validation measured
-approximately 14 ms for 20 nested subqueries and 25 ms for 100. Earlier recursive
-SQL measurements were approximately 30–39 ms and 131 ms respectively.
+The stricter SQL validation adds latency: local warm Go benchmarks on an Apple M3
+Max measured approximately 3–4 ms per validation for a simple SELECT and a CTE query,
+4–5 ms for 20 nested subqueries, and 17–21 ms for 100. Enabled default function
+allowlists, blocklists, and remote-URI policies measured approximately 4–5 ms on
+their small benchmark queries. These measurements include input binding, DuckDB
+serialization, and reading results, but exclude bootstrap and execution of the
+submitted SQL. The earlier Go walker measured approximately 0.1 ms for small queries;
+the initial flattened SQL path took 12–13 ms. The remaining gap is substantial.
 
-Testing identical stable-format ASTs on DuckDB v2.0.0-alpha41489 did not improve
-small-query latency: full flattened SQL validation took approximately 42 ms, and
-100 nested subqueries took approximately 50 ms. Alpha compatibility is still
-unreviewed. Run
+Bootstrap experiments compared input/grammar tables, SQL macros, prepared statements,
+additional materialized stages, and preloaded function-name tables. Additional
+stages and function-name joins did not improve the winning stable plan.
+Further experiments tested regex-based parent lookup, precomputed field tables,
+individual optimizer switches, policy-specialized plans, result assembly, and
+combined update/execution calls. These did not produce a substantial repeatable
+improvement over directly scanning the connection-local input row. An execution-only
+control still took approximately 3 ms, indicating that request binding is not the
+main remaining cost. `BenchmarkValidationPlans` retains the plan experiments;
+its specialized variants are schema-only diagnostics, not production policy paths.
+
+Alpha
+v2.0.0-alpha41489 did not improve small-query latency: bootstrap experiments using
+identical stable AST inputs took approximately 26–38 ms. Alpha compatibility is
+still unreviewed. Run
 `go test -tags=duckdb_arrow ./pkg/query -run '^$' -bench BenchmarkValidateSQL -benchmem`
 from the Go module to measure the deployment environment.
