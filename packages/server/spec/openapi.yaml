@@ -132,16 +132,15 @@ paths:
       summary: Run a read-only `arrow` query supplied as query parameters.
       description: |
         Equivalent to `POST` with the same fields, restricted to `arrow` with
-        read-only SQL. `type` defaults to `arrow` when omitted. This is the
-        only cacheable form; see *Caching* above.
+        read-only SQL. `type` is required here as on `POST`. This is the only
+        cacheable form; see *Caching* above.
       parameters:
         - name: type
           in: query
-          required: false
+          required: true
           schema:
             type: string
             enum: [arrow]
-            default: arrow
         - name: sql
           in: query
           required: true
@@ -254,6 +253,8 @@ components:
         application/json:
           schema: { $ref: './schemas.yaml#/$defs/Error' }
           examples:
+            missing_type:
+              value: { error: "missing required 'type' parameter", code: bad_request }
             missing_sql:
               value: { error: "missing required 'sql' parameter", code: bad_request }
             unknown_type:
