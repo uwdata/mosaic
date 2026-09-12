@@ -161,7 +161,9 @@ $defs:
       status) and WebSocket (text frame). `catalog`, `schema`, and `table` are
       present together only for `table_not_found`, and only after the server
       has established that the reference belongs to the caller's managed
-      namespace; servers MUST NOT echo arbitrary forbidden targets.
+      namespace; servers MUST NOT echo arbitrary forbidden targets. For every
+      other code the three properties are prohibited so that a forbidden
+      target or a partial reference cannot leak through the envelope.
     if:
       properties:
         code: { const: table_not_found }
@@ -171,3 +173,8 @@ $defs:
         schema: { $ref: '#/$defs/Identifier' }
         table: { $ref: '#/$defs/Identifier' }
       required: [catalog, schema, table]
+    else:
+      properties:
+        catalog: false
+        schema: false
+        table: false
