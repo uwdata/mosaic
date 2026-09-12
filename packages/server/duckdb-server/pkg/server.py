@@ -11,13 +11,12 @@ from socketify import App, CompressOptions, OpCode
 from pkg.query import get_arrow_bytes
 
 if TYPE_CHECKING:
-    from collections.abc import Buffer
-
     from duckdb import DuckDBPyConnection as Con
     from socketify import Request as Req
     from socketify import Response as Res
     from socketify import SendStatus as Status
     from socketify import WebSocket as Ws
+    from typing_extensions import Buffer
 
 logger = logging.getLogger(__name__)
 
