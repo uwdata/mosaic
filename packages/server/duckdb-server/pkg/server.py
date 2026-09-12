@@ -11,6 +11,8 @@ from socketify import App, CompressOptions, OpCode
 from pkg.query import get_arrow_bytes
 
 if TYPE_CHECKING:
+    from collections.abc import Mapping
+
     import duckdb
     from duckdb import DuckDBPyConnection as Con
     from socketify import Request as Req
@@ -75,7 +77,7 @@ class HTTPHandler(Handler):
 def handle_query(
     handler: Handler,
     con: duckdb.DuckDBPyConnection,
-    query: _QueryParams,
+    query: Mapping[str, Any],
 ) -> None:
     logger.debug(f"{query=}")
 

@@ -20,6 +20,6 @@ class RecordingHandler:
 
 def test_missing_type_is_bad_request() -> None:
     handler = RecordingHandler()
-    handle_query(handler, duckdb.connect(), {"sql": "SELECT 1"})  # pyright: ignore[reportArgumentType]  # ty: ignore[invalid-argument-type, missing-typed-dict-key]
+    handle_query(handler, duckdb.connect(), {"sql": "SELECT 1"})
 
     assert handler.errors == [("missing required 'type' parameter", 400)]
