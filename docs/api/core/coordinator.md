@@ -27,12 +27,11 @@ Create a new Mosaic Coordinator to manage all database communication for clients
 
 `lruCache(options)`
 
-Create the least-recently-used query cache the coordinator uses by default. The budget counts the Arrow IPC bytes returned by the connector; results of one consolidated query share a single charge, and a result larger than the budget is not cached. Supports the following _options_:
+Create the least-recently-used query cache the coordinator uses by default. The budget counts the Arrow IPC bytes returned by the connector, and a result larger than the budget is not cached. Supports the following _options_:
 
 - _maxBytes_: The maximum number of bytes to retain (default 256 MiB).
-- _ttl_: The time in milliseconds after which an unused entry is discarded (default 3 hours).
 
-A custom cache object must implement `get(key)`, `set(key, value, bytes, owner)`, `clear()`, and `bytes()`, where entries that share an _owner_ object hold the same underlying data and `bytes()` returns the total bytes currently charged to the cache.
+A custom cache object must implement `get(key)`, `set(key, value, bytes)`, `clear()`, and `bytes()`, where `bytes()` returns the total bytes currently charged to the cache.
 
 ## databaseConnector
 

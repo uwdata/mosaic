@@ -135,8 +135,8 @@ describe('QueryConsolidationCaching', () => {
 
     expect(Array.from(extracts[1])).toEqual([{ c: 3 }, { c: 4 }]);
     expect(calls).toEqual([
-      [String(queries[0]), extracts[0], bytes.length, data],
-      [String(queries[1]), extracts[1], bytes.length, data]
+      [String(queries[0]), extracts[0], bytes.length],
+      [String(queries[1]), extracts[1], bytes.length]
     ]);
   });
 });
