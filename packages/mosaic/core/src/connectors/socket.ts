@@ -74,21 +74,17 @@ export class SocketConnector implements Connector {
           console.log('WebSocket message: ', data);
           return;
         }
-        const { query, resolve, reject } = item;
+        const { resolve, reject } = item;
         try {
           if (typeof data === 'string') {
-            const json = JSON.parse(data);
-            if (json.error) {
-              reject(json.error);
+            const { error } = JSON.parse(data);
+            if (error) {
+              reject(error);
             } else {
-              resolve(json);
+              resolve();
             }
-          } else if (query.type === 'exec') {
-            resolve();
-          } else if (query.type === 'arrow') {
-            resolve(data);
           } else {
-            reject(new Error(`Unexpected socket data: ${data}`));
+            resolve(data);
           }
         } catch (err) {
           reject(err);
