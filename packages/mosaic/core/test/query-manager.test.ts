@@ -1,8 +1,22 @@
 import { Table, tableFromArrays, tableToIPC } from '@uwdata/flechette';
 import { describe, it, expect } from 'vitest';
+import { Query, TableRefNode, createTable } from '@uwdata/mosaic-sql';
 import { QueryManager } from '../src/QueryManager.js';
-import { QueryResult } from '../src/util/query-result.js';
 import { QueryRequest } from '../src/types.js';
+import { heldConnector } from './util/held-connector.js';
+
+async function wait() {
+  return new Promise<void>(resolve => setTimeout(resolve, 0));
+}
+
+function managerWithMockConnector(maxConcurrentRequests?: number) {
+  const { connector, requests } = heldConnector();
+  const manager = new QueryManager(maxConcurrentRequests);
+  manager.connector(connector);
+  return { manager, submitted: requests };
+}
+
+const preaggTable = new TableRefNode(['mosaic', 'preagg_1']);
 
 describe('QueryManager', () => {
   const cachedRequest: QueryRequest = {
@@ -29,38 +43,117 @@ describe('QueryManager', () => {
     };
 
     const result = queryManager.request(request);
-    expect(result).toBeInstanceOf(QueryResult);
+    expect(result).toBeInstanceOf(Promise);
 
     const data = await result as Table;
     expect(data.toArray()).toEqual([{ column: 1 }]);
   });
 
-  it('should not run a query when there is a pending exec', async () => {
-    const queryManager = new QueryManager();
+  it('sends a read while an exec writes a different table', () => {
+    const { manager, submitted } = managerWithMockConnector();
 
-    // Mock the connector
-    queryManager.connector({
-      // @ts-expect-error assumes type value
-      query: ({ sql }) => {
-        expect(sql).toBe('CREATE TABLE test (id INT)');
-        return new Promise(() => {});
-      }
+    manager.request({ type: 'exec', query: createTable(preaggTable, Query.select('a').from('base')) });
+    manager.request({ type: 'arrow', query: Query.select('x').from('other') });
+
+    expect(submitted).toHaveLength(2);
+  });
+
+  it('holds a read until the exec writing its table returns', async () => {
+    const { manager, submitted } = managerWithMockConnector();
+
+    manager.request({ type: 'exec', query: createTable(preaggTable, Query.select('a').from('base')) });
+    const read = manager.request({ type: 'arrow', query: Query.select('a').from(preaggTable) });
+    expect(submitted).toHaveLength(1);
+
+    submitted[0].resolve();
+    await wait();
+    expect(submitted).toHaveLength(2);
+
+    submitted[1].resolve(tableToIPC(tableFromArrays({ a: [1] }), {})!);
+    expect((await read as Table).toArray()).toEqual([{ a: 1 }]);
+  });
+
+  it('serializes writes to the same table and parallelizes writes to different tables', async () => {
+    const { manager, submitted } = managerWithMockConnector();
+    const create = (name: string) => manager.request({
+      type: 'exec',
+      query: createTable(new TableRefNode(['mosaic', name]), Query.select('a').from('base'))
     });
 
-    const request1: QueryRequest = {
+    create('t1');
+    create('t1');
+    create('t2');
+    expect(submitted).toHaveLength(2);
+
+    submitted[0].resolve();
+    await wait();
+    expect(submitted).toHaveLength(3);
+  });
+
+  it('treats a raw SQL exec as a barrier', () => {
+    const { manager, submitted } = managerWithMockConnector();
+
+    manager.request({ type: 'exec', query: 'CREATE TABLE test (id INT)' });
+    manager.request({ type: 'arrow', query: Query.select('x').from('other') });
+    manager.request({ type: 'exec', query: createTable(preaggTable, Query.select('a').from('base')) });
+
+    expect(submitted).toHaveLength(1);
+  });
+
+  it('holds a raw SQL read behind any exec, but not behind other reads', () => {
+    const { manager, submitted } = managerWithMockConnector();
+
+    manager.request({ type: 'arrow', query: Query.select('x').from('other') });
+    manager.request({ type: 'arrow', query: 'SELECT 1 FROM t' });
+    expect(submitted).toHaveLength(2);
+
+    manager.request({ type: 'exec', query: createTable(preaggTable, Query.select('a').from('base')) });
+    manager.request({ type: 'arrow', query: 'SELECT 2 FROM t' });
+    expect(submitted).toHaveLength(3);
+  });
+
+  it('releases reads held behind a canceled write', async () => {
+    const { manager, submitted } = managerWithMockConnector();
+    const create = () => manager.request({
       type: 'exec',
-      query: 'CREATE TABLE test (id INT)'
-    };
+      query: createTable(preaggTable, Query.select('a').from('base'))
+    });
 
-    const request2: QueryRequest = {
-      type: 'arrow',
-      query: 'SELECT * FROM test'
-    };
+    create();
+    const queued = create();
+    queued.catch(() => {});
+    manager.request({ type: 'arrow', query: Query.select('a').from(preaggTable) });
+    expect(submitted).toHaveLength(1);
 
-    queryManager.request(request1);
-    queryManager.request(request2);
+    manager.cancel([queued]);
+    submitted[0].resolve();
+    await wait();
+    expect(submitted.map(s => s.sql.split(' ')[0])).toEqual(['CREATE', 'SELECT']);
+  });
 
-    expect(queryManager.pendingResults).toHaveLength(1);
+  it('limits the number of concurrent requests', async () => {
+    const { manager, submitted } = managerWithMockConnector(2);
+
+    const results = [0, 1, 2].map(i =>
+      manager.request({ type: 'arrow', query: `SELECT ${i}` })
+    );
+    expect(submitted).toHaveLength(2);
+
+    submitted[0].resolve([]);
+    await results[0];
+    await wait();
+    expect(submitted).toHaveLength(3);
+  });
+
+  it('resolves results as they complete', async () => {
+    const { manager, submitted } = managerWithMockConnector();
+
+    const first = manager.request({ type: 'arrow', query: 'SELECT 0' });
+    const second = manager.request({ type: 'arrow', query: 'SELECT 1' });
+
+    submitted[1].resolve(tableToIPC(tableFromArrays({ a: [1] }), {})!);
+    expect((await second as Table).toArray()).toEqual([{ a: 1 }]);
+    expect(await Promise.race([first, Promise.resolve('pending')])).toBe('pending');
   });
 
   it('caches a decoded arrow result with its IPC byte length', async () => {

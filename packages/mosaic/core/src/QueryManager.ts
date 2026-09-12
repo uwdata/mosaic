@@ -5,25 +5,30 @@ import { consolidator } from './QueryConsolidator.js';
 import { lruCache, voidCache } from './util/cache.js';
 import { decodeIPC, tableByteLength } from './util/decode-ipc.js';
 import { PriorityQueue } from './util/priority-queue.js';
-import { QueryResult, QueryState } from './util/query-result.js';
+import { intersects, queryTables, union, type QueryTables, type Tables } from './util/query-tables.js';
 import { voidLogger } from './util/void-logger.js';
 
 export const Priority = Object.freeze({ High: 0, Normal: 1, Low: 2 });
 
+interface ScheduledEntry extends QueryEntry {
+  tables: QueryTables;
+}
+
 export class QueryManager {
-  private queue: PriorityQueue<QueryEntry>;
+  private queue: PriorityQueue<ScheduledEntry>;
   private db: Connector | null;
   private clientCache: Cache;
   private _logger: Logger;
   private _logQueries: boolean;
   private _ipc?: ExtractionOptions;
   private _consolidate: ReturnType<typeof consolidator> | null;
+  private running: Map<Promise<unknown>, ScheduledEntry>;
   private inflight: Map<string, Promise<unknown>>;
-  /** Requests pending with the query manager. */
-  public pendingResults: QueryResult[];
   private maxConcurrentRequests: number;
-  private pendingExec: boolean;
 
+  /**
+   * @param maxConcurrentRequests How many requests may be in flight at once.
+   */
   constructor(maxConcurrentRequests: number = 32) {
     this.queue = new PriorityQueue(3);
     this.db = null;
@@ -31,38 +36,45 @@ export class QueryManager {
     this._logger = voidLogger();
     this._logQueries = false;
     this._consolidate = null;
+    this.running = new Map();
     this.inflight = new Map();
-    this.pendingResults = [];
     this.maxConcurrentRequests = maxConcurrentRequests;
-    this.pendingExec = false;
   }
 
+  /**
+   * Submit queued requests to the connector, up to the concurrency limit.
+   * A request waits while an earlier request writes a table it reads or writes.
+   */
   next(): void {
-    if (this.queue.isEmpty() || this.pendingResults.length > this.maxConcurrentRequests || this.pendingExec) {
-      return;
+    let budget = this.maxConcurrentRequests - this.running.size;
+    if (budget <= 0 || this.queue.isEmpty()) return;
+
+    let writes: Tables = new Set();
+    for (const { tables } of this.running.values()) {
+      writes = union(writes, tables.writes);
     }
 
-    const entry = this.queue.next();
-    if (!entry) return;
-
-    const { request, result } = entry;
-
-    this.pendingResults.push(result);
-    if (request.type === 'exec') this.pendingExec = true;
-
-    this.submit(request, result).finally(() => {
-      // return from the queue all requests that are ready
-      while (this.pendingResults.length && this.pendingResults[0].state !== QueryState.pending) {
-        const result = this.pendingResults.shift()!;
-        if (result.state === QueryState.ready) {
-          result.fulfill();
-        } else if (result.state === QueryState.done) {
-          this._logger.warn('Found resolved query in pending results.');
-        }
+    const ready: ScheduledEntry[] = [];
+    this.queue.remove(entry => {
+      const { tables } = entry;
+      const blocked = budget <= 0
+        || intersects(tables.reads, writes)
+        || intersects(tables.writes, writes);
+      writes = union(writes, tables.writes);
+      if (!blocked) {
+        ready.push(entry);
+        budget -= 1;
       }
-      if (request.type === 'exec') this.pendingExec = false;
-      this.next();
+      return !blocked;
     });
+
+    for (const entry of ready) {
+      this.running.set(entry.result.promise, entry);
+      this.submit(entry.request, entry.result).finally(() => {
+        this.running.delete(entry.result.promise);
+        this.next();
+      });
+    }
   }
 
   /**
@@ -71,7 +83,7 @@ export class QueryManager {
    * @param priority The query priority, defaults to `Priority.Normal`.
    */
   enqueue(entry: QueryEntry, priority: number = Priority.Normal): void {
-    this.queue.insert(entry, priority);
+    this.queue.insert({ ...entry, tables: queryTables(entry.request) }, priority);
     this.next();
   }
 
@@ -80,7 +92,7 @@ export class QueryManager {
    * @param request The request.
    * @param result The query result.
    */
-  async submit(request: QueryRequest, result: QueryResult): Promise<void> {
+  async submit(request: QueryRequest, result: PromiseWithResolvers<unknown>): Promise<void> {
     try {
       const { query, type, cache = false, options } = request;
       const sql = Array.isArray(query) ? query.filter(x => x).join(';\n') : String(query);
@@ -90,7 +102,7 @@ export class QueryManager {
         if (cached) {
           const data = await cached;
           this._logger.debug('Cache');
-          result.ready(data);
+          result.resolve(data);
           return;
         }
       }
@@ -112,7 +124,7 @@ export class QueryManager {
       if (cache) this.clientCache.set(sql, data, tableByteLength(data) ?? 0);
 
       this._logger.debug(`Request: ${(performance.now() - t0).toFixed(1)}`);
-      result.ready(type === 'exec' ? null : data);
+      result.resolve(type === 'exec' ? null : data);
     } catch (err) {
       result.reject(err);
     }
@@ -191,33 +203,34 @@ export class QueryManager {
    * @param priority The query priority, defaults to `Priority.Normal`.
    * @returns A query result promise.
    */
-  request(request: QueryRequest, priority: number = Priority.Normal): QueryResult {
-    const result = new QueryResult();
+  request(request: QueryRequest, priority: number = Priority.Normal): Promise<unknown> {
+    const result = Promise.withResolvers();
     const entry = { request, result };
     if (this._consolidate) {
       this._consolidate.add(entry, priority);
     } else {
       this.enqueue(entry, priority);
     }
-    return result;
+    return result.promise;
   }
 
-  cancel(requests: QueryResult[]): void {
+  cancel(requests: Promise<unknown>[]): void {
     const set = new Set(requests);
     if (set.size) {
       this.queue.remove(({ result }) => {
-        if (set.has(result)) {
+        if (set.has(result.promise)) {
           result.reject('Canceled');
           return true;
         }
         return false;
       });
 
-      for (const result of this.pendingResults) {
-        if (set.has(result)) {
+      for (const [promise, { result }] of this.running) {
+        if (set.has(promise)) {
           result.reject('Canceled');
         }
       }
+      this.next();
     }
   }
 
@@ -227,9 +240,8 @@ export class QueryManager {
       return true;
     });
 
-    for (const result of this.pendingResults) {
+    for (const { result } of this.running.values()) {
       result.reject('Cleared');
     }
-    this.pendingResults = [];
   }
 }

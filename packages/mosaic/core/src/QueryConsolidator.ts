@@ -4,7 +4,6 @@ import { isAggregateExpression, isColumnRef, isDescribeQuery, isSelectQuery } fr
 import type { Cache, QueryEntry, QueryType } from './types.js';
 import { tableByteLength } from './util/decode-ipc.js';
 import { resolvePositional } from './util/positional.js';
-import { QueryResult } from './util/query-result.js';
 
 interface GroupEntry {
   entry: QueryEntry;
@@ -14,7 +13,7 @@ interface GroupEntry {
 
 interface QueryGroup extends Array<GroupEntry> {
   query?: Query;
-  result?: QueryResult;
+  result?: PromiseWithResolvers<unknown>;
   maps?: Array<Array<[string, string]>>;
 }
 
@@ -177,7 +176,7 @@ function consolidate(
         cache: false,
         query: (group.query = consolidatedQuery(group))
       },
-      result: (group.result = new QueryResult())
+      result: (group.result = Promise.withResolvers())
     });
   } else {
     // issue queries directly
@@ -268,7 +267,7 @@ async function processResults(group: QueryGroup, cache: Cache): Promise<void> {
   // await consolidated query result, pass errors if needed
   let data: Table;
   try {
-    data = await result as Table;
+    data = await result!.promise as Table;
   } catch (err) {
     // pass error to consolidated queries
     for (const { entry } of group) {
@@ -290,7 +289,7 @@ async function processResults(group: QueryGroup, cache: Cache): Promise<void> {
     if (request.cache) {
       cache.set(String(request.query), extract, bytes);
     }
-    result.fulfill(extract);
+    result.resolve(extract);
   });
 }
 

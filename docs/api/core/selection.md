@@ -147,4 +147,4 @@ Remove an event listener _callback_ function for the specified event _type_.
 
 `selection.pending(type)`
 
-Returns a promise that resolves when any pending updates complete for the event of the given type currently being processed. The Promise will resolve immediately if the queue for the given event type is empty.
+Returns a promise that resolves when the listeners for the event of the given _type_ have completed for the value currently being processed. The Promise will resolve immediately if the queue for the given event type is empty. Client updates triggered by a `value` event are issued per client and are not covered; await the [client's `pending`](./client#pending) promise instead.
