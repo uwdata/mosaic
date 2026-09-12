@@ -9,7 +9,15 @@ The _query_ argument is an object that may include the following properties:
 - _type_: The query format type, either `"exec"` (no return value) or `"arrow"`.
 - Any additional connector-specific options.
 
+For the `"arrow"` type, a connector returns the raw Arrow IPC bytes as an `ArrowIPCBytes` value, which is an `ArrayBuffer`, a `Uint8Array`, or an array of `Uint8Array` chunks; the coordinator decodes them to an Arrow table.
+
 Once instantiated, register a connector with the coordinator using the [`coordinator.databaseConnector()`](coordinator#databaseconnector) method.
+
+## decodeIPC
+
+`decodeIPC(data, options)`
+
+Decode Arrow IPC bytes to an Arrow table. The _data_ argument is an `ArrowIPCBytes` value. The optional _options_ argument gives Arrow IPC extraction options; if unspecified, date and timestamp values are extracted as JavaScript `Date` objects. Use this to read query results directly from a connector, outside the coordinator.
 
 ## socketConnector
 

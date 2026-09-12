@@ -1,5 +1,6 @@
 import type { ExtractionOptions, Table } from '@uwdata/flechette';
 import { tableFromIPC } from '@uwdata/flechette';
+import type { ArrowIPCBytes } from '../types.js';
 
 /**
  * Decode Arrow IPC bytes to a table instance.
@@ -11,8 +12,19 @@ import { tableFromIPC } from '@uwdata/flechette';
  * @returns A table instance.
  */
 export function decodeIPC(
-  data: ArrayBufferLike | Uint8Array | Uint8Array[],
+  data: ArrowIPCBytes,
   options: ExtractionOptions = { useDate: true }
 ): Table {
-  return tableFromIPC(data, options);
+  const table = tableFromIPC(data, options);
+  return Object.assign(table, { byteCount: ipcByteLength(data) });
+}
+
+export function tableByteLength(table: unknown): number | undefined {
+  return (table as { byteCount?: number } | undefined)?.byteCount;
+}
+
+function ipcByteLength(data: ArrowIPCBytes): number {
+  return Array.isArray(data)
+    ? data.reduce((sum, chunk) => sum + chunk.byteLength, 0)
+    : data.byteLength;
 }
