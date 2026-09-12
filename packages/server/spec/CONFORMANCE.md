@@ -19,8 +19,10 @@ Where the servers disagreed, the spec picks one behaviour. Each is revisable.
 | D1 | `type` default | `arrow` when omitted (matches `ArrowQueryRequest.type?` and the Node server). | Python, Rust, Go require it. |
 | D2 | GET parameters | Flat `?type=&sql=`. | Python reads `?query=<json>`; Rust README documents `?query=` but its code reads flat params; Node GET always 400s. |
 | D3 | GET command set | `arrow` only; `exec`/`preagg` over GET are `400 bad_request`. | Rust and Go run `exec` over GET. |
+| D3a | GET read-only SQL | GET `sql` must satisfy `ReadOnlySql` (SELECT/VALUES/set-op/CTE root), verified before execution even with no policy active. Restricting `type` alone is insufficient: `DELETE FROM t RETURNING *` is one statement that returns rows. `POST` `arrow` is deliberately not restricted; revisit if `exec` is ever removed. | No server checks statement kind over GET. Go can reuse its `json_serialize_sql` walker; the others need a parser step. |
 | D4 | Error body | JSON `Error` envelope on every transport and every status, including 405/412/413/415. | Go emits `{code,error}` over WebSocket only; HTTP is plain text everywhere; Rust/Node send empty bodies for some errors. |
-| D5 | Codes for transport-level rejects | 405, 412, 413, 415 carry `code: bad_request`. | Could add dedicated codes; #1218 defines none. |
+| D5 | Codes for transport-level rejects | 405, 412, 413, 415 carry `code: bad_request`; these statuses are listed as exceptions in the `ErrorCode` table and take precedence over the canonical 400. | Could add dedicated codes; #1218 defines none. |
+| D5a | Code vocabulary | Closed: `ErrorCode` is an exhaustive enum and adding a code requires a schema change. Deployment authorizers map onto the standard codes (`unauthenticated`/`forbidden`/`bad_request`/`internal_error`). | An open `x_`-prefixed extension namespace was considered; rejected because the client cannot act on unknown codes and a closed set keeps schema validation meaningful for the conformance runner. |
 | D6 | Unknown vs. disabled command | Unknown `type` string is `bad_request`; a known command disabled by deployment/policy (`exec` under validation, `preagg` off) is `unsupported_command`. | Go returns `bad_request` for `ErrExecWithValidation`. |
 | D7 | DuckDB execution errors | `internal_error` (500) unless classified: `bad_request` for parse errors and unsupported statement kinds, `forbidden` for policy, `table_not_found` for managed tables. Parse errors MUST be classified even when no policy is active. | Go classifies parse errors only when `json_serialize_sql` validation runs; otherwise a syntax error is a 500. Others 500 everything. Whether a runtime `Catalog Error` on a user table should be 400 is open. |
 | D8 | Arrow encoding | IPC **stream** format, `Content-Type: application/vnd.apache.arrow.stream`, never an empty body. | Rust sends IPC *file* format under the stream media type; Python labels the stream `application/octet-stream`; Node sends 0 bytes for 0 rows. |
@@ -39,7 +41,7 @@ Where the servers disagreed, the spec picks one behaviour. Each is revisable.
 - No JSON error envelope over HTTP (D4).
 - No `preagg` command; must return `400 unsupported_command`, not an unknown-type error.
 - No `deadline_exceeded`, `resource_exhausted`, or `table_not_found` paths; only Go has `unauthenticated`.
-- `exec` runs over GET where GET works at all (D3).
+- `exec` runs over GET where GET works at all (D3), and no server checks that GET SQL is read-only (D3a).
 - `Access-Control-Request-Method: *` is emitted as a *response* header by Python and Node (it is a request header). No server sets `Access-Control-Expose-Headers`, so browsers cannot read `ETag` cross-origin.
 - No server sends `Allow` on 405.
 
@@ -56,6 +58,7 @@ Already conforming: WebSocket error frames carry `code` (`bad_request`, `unauthe
 | Parse errors without policy | 500 `internal_error` with raw DuckDB text | 400 `bad_request` (D7) | Run `json_serialize_sql` (or statement extraction) unconditionally, or map DuckDB parser errors. |
 | `type` missing | 400 `missing required 'type' parameter` (`server.go:345-362`) | default `arrow` (D1) | Default in `Validate`. |
 | Exec over GET | runs (`server.go:264-276`) | 400 `bad_request` (D3) | Reject in GET branch. |
+| GET read-only SQL | not checked; `json_serialize_sql` runs only under policy (`query.go:185-209`) | reject non-SELECT roots (D3a) | Run the serializer for GET unconditionally and check the root node class. |
 | Multi-statement `arrow` | runs all, returns last (duckdb-go `prepareStmts`) | reject (D16) | Count statements before execution. |
 | 405 | plain text, no `Allow` (`server.go:278-281`) | envelope + `Allow` | Set header. |
 | 413 | plain `Request Entity Too Large` | envelope `bad_request` | Mapper. Also expose `WithMaxMessageBytes` on the CLI; the binary is unbounded. |
@@ -87,6 +90,7 @@ Source: `packages/server/duckdb-server-rust/src/{app.rs,query.rs,interfaces.rs,d
 | Malformed JSON | 400 plain `Failed to parse the request body as JSON…` | 400 envelope | Custom `Json` rejection handler. |
 | DuckDB error | 500 plain `Something went wrong: …` (`interfaces.rs:62-64`) | 500 envelope `internal_error`; parse errors 400 (D7) | Map `duckdb::Error` variants. |
 | Exec over GET | runs | 400 `bad_request` (D3) | Reject in `handle_get`. |
+| GET read-only SQL | not checked | reject non-SELECT roots (D3a) | Parse via `json_serialize_sql` or the DuckDB C API statement type before execution. |
 | Multi-statement `arrow` | `prepare` fails → 500 | 400 `bad_request` (D16) | Classify. |
 | 405 | empty, `Allow: GET,HEAD,POST` | envelope + `Allow: GET, POST, OPTIONS` | Custom fallback. HEAD runs the query today; drop or document. |
 | README GET example | `?query={…}` (`Readme.md:47`) does not work | flat params | Fix README. |
@@ -113,6 +117,7 @@ Source: `packages/server/duckdb-server/pkg/{server.py,query.py,__main__.py}`.
 | DuckDB error | plain `str(e)` | 500 envelope; parse errors 400 (D7) | Map `duckdb.ParserException`/`BinderException`. |
 | Arrow Content-Type | `application/octet-stream` (`server.py:67`) | `application/vnd.apache.arrow.stream` (D8) | Change header; body is already a stream. |
 | Exec over GET | runs | 400 `bad_request` (D3) | Reject. |
+| GET read-only SQL | not checked | reject non-SELECT roots (D3a) | `duckdb.extract_statements()` exposes the statement type. |
 | Non-GET/POST/OPTIONS | no response; hangs until uWS timeout (`server.py:146-157`) | 405 + `Allow` + envelope | Add fallthrough. |
 | WS missing `sql`/`type` | **no frame at all** (exception in sync handler) | `Error` frame (D11) | Wrap `handle_query` in try/except. Breaks pipelining clients today. |
 | WS errors | `{"error"}` no code | envelope with `code` | Add. |
@@ -129,6 +134,7 @@ Source: `packages/server/duckdb/src/{data-server.js,DuckDB.js}`, `bin/run-server
 | Area | Current | Spec | Fix |
 |------|---------|------|-----|
 | GET | always 400: `JSON.parse` of the parsed query object (`data-server.js:39-40,76`) | flat params (D2) | Build the command from `url.query`. |
+| GET read-only SQL | n/a (GET broken) | reject non-SELECT roots (D3a) | Needed once GET works; `json_serialize_sql` via the same connection. |
 | `sql` missing | not validated → DuckDB parser error → 500 | 400 `bad_request` | Validate. |
 | Non-string / `null` `type` | `Unrecognized command: null` 400 | fine, but body empty | Envelope. |
 | HTTP errors | **empty body**, no Content-Type (`data-server.js:119-123`) | envelope (D4) | Rewrite `error()`. |
@@ -159,6 +165,6 @@ Declarative cases in `packages/server/spec/cases/*.yaml`, one TypeScript runner
 5. Skips cases whose `requires` capability the adapter lacks, but fails if the
    server returns anything other than `unsupported_command` for them.
 
-Case groups: request decoding (D1–D3, D9, D10), Arrow encoding (D8, D16),
+Case groups: request decoding (D1–D3a, D9, D10), Arrow encoding (D8, D16),
 error envelope per code (D4–D7), WebSocket framing/order/open-after-error
 (D11, D12), size floors (D13), caching headers (D14), CORS preflight.
