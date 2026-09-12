@@ -26,6 +26,19 @@ $defs:
       a trailing semicolon is permitted. For `exec` it MAY contain several
       `;`-separated statements, executed in order.
 
+  ReadOnlySql:
+    allOf: [{ $ref: '#/$defs/Sql' }]
+    description: |
+      Exactly one read-only statement. The statement's root MUST be a
+      SELECT, VALUES, set operation, or CTE (DuckDB `SELECT_NODE`,
+      `SET_OPERATION_NODE`, `CTE_NODE`, `RECURSIVE_CTE_NODE`) and MUST NOT be
+      a DML, DDL, PRAGMA, SET, ATTACH, COPY, or other side-effecting
+      statement, including ones that return rows such as
+      `DELETE ... RETURNING`. Servers MUST verify this before execution
+      whether or not a deployment policy is active, and reject violations
+      with `bad_request`. Required for `preagg` and for any command
+      delivered over HTTP GET.
+
   ArrowRequest:
     type: object
     required: [sql]
@@ -50,11 +63,10 @@ $defs:
     properties:
       type: { const: preagg }
       sql:
-        allOf: [{ $ref: '#/$defs/Sql' }]
+        allOf: [{ $ref: '#/$defs/ReadOnlySql' }]
         description: |
-          Exactly one SELECT-like statement (SELECT, VALUES, set operation, or
-          CTE). The server validates it under the same source, function, and
-          external-access policy as `arrow` queries, then materializes it.
+          The server validates the statement under the same source, function,
+          and external-access policy as `arrow` queries, then materializes it.
     unevaluatedProperties: true
 
   Request:
@@ -104,14 +116,16 @@ $defs:
   ErrorCode:
     type: string
     description: |
-      Machine-readable failure class. Clients treat unknown codes as generic
-      failures, so servers MAY add codes, but MUST use these for the listed
-      situations. HTTP status is the canonical mapping; WebSocket errors carry
-      only the code.
+      Machine-readable failure class. The vocabulary is closed: servers MUST
+      use exactly these codes, and adding one requires a change to this
+      schema. Clients treat any code they do not recognise as a generic
+      failure. The HTTP column is the canonical status; where the HTTP
+      transport itself dictates a more specific status, that exception is
+      listed and takes precedence. WebSocket errors carry only the code.
 
       | code                  | HTTP | when                                                                                   |
       |-----------------------|------|----------------------------------------------------------------------------------------|
-      | `bad_request`         | 400  | Malformed body, unknown `type`, missing `sql`, wrong method/media type, oversized body, GET with `exec`/`preagg`, invalid SQL syntax or unsupported statement kind. |
+      | `bad_request`         | 400  | Malformed body, unknown `type`, missing `sql`, GET with `exec`/`preagg`, non-read-only SQL over GET, invalid SQL syntax or unsupported statement kind. HTTP exceptions: `405` wrong method, `412` failed `If-Match`, `413` oversized body, `415` unsupported media type. |
       | `unauthenticated`     | 401  | Caller identity required but absent or invalid.                                        |
       | `forbidden`           | 403  | Authenticated caller denied by source/function/external-access policy, or a disallowed cross-origin request. |
       | `table_not_found`     | 404  | A referenced table in the caller's managed namespace does not exist. `catalog`/`schema`/`table` MUST be included. |
