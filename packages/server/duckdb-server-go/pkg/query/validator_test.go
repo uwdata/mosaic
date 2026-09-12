@@ -1,11 +1,21 @@
 package query
 
 import (
+	"encoding/json"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
+
+func validateAST(t *testing.T, db *DB, ast string, policy ValidationPolicy) error {
+	t.Helper()
+	start := strings.Index(validationSQL, "system.main.json_serialize_sql(")
+	end := strings.Index(validationSQL[start:], ") AS ast") + start + 1
+	statement := validationSQL[:start] + "$query::JSON" + validationSQL[end:]
+	return db.validateSQL(t.Context(), statement, ast, policy)
+}
 
 func TestErrorDetails(t *testing.T) {
 	t.Run("all fields", func(t *testing.T) {
@@ -219,17 +229,9 @@ func TestDB_ValidateSQL(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			db := setupTestDB(t)
 
-			var validators []Validator
-
-			// the tests are constructed to always include the base table validator, and fail if it isn't applied,
-			// due to how nil and empty slices are treated
-			validators = append(validators, newBaseTableValidator(tt.allowedSchemas))
-
-			if len(tt.functionBlocklist) > 0 {
-				validators = append(validators, newFunctionBlocklistValidator(tt.functionBlocklist))
-			}
-
-			err := db.ValidateSQL(t.Context(), tt.sql, validators...)
+			err := db.ValidateSQL(t.Context(), tt.sql, ValidationPolicy{
+				CheckSchemas: true, AllowedSchemas: tt.allowedSchemas, BlockedFunctions: tt.functionBlocklist,
+			})
 			if tt.wantErr {
 				assert.Error(t, err, "expected error for SQL: %s", tt.sql)
 			} else {
@@ -253,7 +255,7 @@ func TestDB_ValidateSQLIgnoresShadowingSerializerMacro(t *testing.T) {
 	err := db.ValidateSQL(
 		t.Context(),
 		"SELECT * FROM tenant_b.secret",
-		newBaseTableValidator([]string{"tenant_a"}),
+		ValidationPolicy{CheckSchemas: true, AllowedSchemas: []string{"tenant_a"}},
 	)
 	require.ErrorIs(t, err, ErrAccessDenied)
 	require.EqualError(t, err, "query: access denied: unauthorized access to schema 'tenant_b'")
@@ -263,13 +265,13 @@ func TestBaseTableValidatorErrors(t *testing.T) {
 	db := setupTestDB(t)
 
 	t.Run("disallowed schema", func(t *testing.T) {
-		err := db.ValidateSQL(t.Context(), "SELECT * FROM tenant_b.secret", newBaseTableValidator([]string{"tenant_a"}))
+		err := db.ValidateSQL(t.Context(), "SELECT * FROM tenant_b.secret", ValidationPolicy{CheckSchemas: true, AllowedSchemas: []string{"tenant_a"}})
 		assert.ErrorIs(t, err, ErrAccessDenied)
 		assert.EqualError(t, err, "query: access denied: unauthorized access to schema 'tenant_b'")
 	})
 
 	t.Run("unqualified table", func(t *testing.T) {
-		err := db.ValidateSQL(t.Context(), "SELECT * FROM secret", newBaseTableValidator([]string{"tenant_a"}))
+		err := db.ValidateSQL(t.Context(), "SELECT * FROM secret", ValidationPolicy{CheckSchemas: true, AllowedSchemas: []string{"tenant_a"}})
 		assert.ErrorIs(t, err, ErrAccessDenied)
 		assert.EqualError(t, err, "query: access denied: unauthorized access to table 'secret' with empty schema")
 	})
@@ -310,7 +312,7 @@ func TestBaseTableValidatorShowStatements(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			err := db.ValidateSQL(t.Context(), tt.sql, newBaseTableValidator([]string{"tenant_a"}))
+			err := db.ValidateSQL(t.Context(), tt.sql, ValidationPolicy{CheckSchemas: true, AllowedSchemas: []string{"tenant_a"}})
 			if tt.wantErr == "" {
 				assert.NoError(t, err)
 				return
@@ -334,7 +336,7 @@ func TestBaseTableValidatorRejectsCatalogReferences(t *testing.T) {
 
 	for _, sql := range tests {
 		t.Run(sql, func(t *testing.T) {
-			err := db.ValidateSQL(t.Context(), sql, newBaseTableValidator([]string{"tenant_a"}))
+			err := db.ValidateSQL(t.Context(), sql, ValidationPolicy{CheckSchemas: true, AllowedSchemas: []string{"tenant_a"}})
 			assert.ErrorIs(t, err, ErrAccessDenied)
 			assert.EqualError(t, err, "query: access denied: access to catalog 'otherdb' is not allowed")
 		})
@@ -342,52 +344,35 @@ func TestBaseTableValidatorRejectsCatalogReferences(t *testing.T) {
 }
 
 func TestFunctionBlocklistValidatorNormalizesFunctionNames(t *testing.T) {
-	validator := newFunctionBlocklistValidator([]string{"md5"})
-	validator.CheckNode(map[string]any{
-		"class":         "FUNCTION",
-		"function_name": "MD5",
-	}, nil)
-	validator.CheckNode(map[string]any{
-		"class":         "FUNCTION",
-		"function_name": "LOWER",
-	}, nil)
-
-	errs := validator.Validate()
-	if assert.Len(t, errs, 1) {
-		assert.ErrorIs(t, errs[0], ErrAccessDenied)
-		assert.EqualError(t, errs[0], "query: access denied: use of function 'md5' is not allowed")
-	}
+	db := setupTestDB(t)
+	err := db.ValidateSQL(t.Context(), "SELECT MD5('x'), LOWER('x')", ValidationPolicy{BlockedFunctions: []string{"md5"}})
+	assert.ErrorIs(t, err, ErrAccessDenied)
+	assert.EqualError(t, err, "query: access denied: use of function 'md5' is not allowed")
 }
 
 func TestFunctionBlocklistValidatorRejectsMissingFunctionName(t *testing.T) {
-	validator := newFunctionBlocklistValidator([]string{"md5"})
-	validator.CheckNode(map[string]any{"class": "FUNCTION"}, nil)
-
-	errs := validator.Validate()
-	require.Len(t, errs, 1)
-	assert.EqualError(t, errs[0], "query: invalid function node: missing 'function_name'")
+	db := setupTestDB(t)
+	err := validateAST(t, db, `{"error":false,"statements":[{"node":{"type":"SELECT_NODE","select_list":[{"class":"FUNCTION","type":"FUNCTION"}],"from_table":{"type":"EMPTY"}}}]}`, ValidationPolicy{BlockedFunctions: []string{"md5"}})
+	require.ErrorIs(t, err, ErrUnsupportedStatement)
 }
 
 func TestFunctionListValidatorCountsViolations(t *testing.T) {
 	tests := []struct {
-		name         string
-		newValidator func([]string) Validator
-		functions    []string
-		want         []string
+		name   string
+		policy ValidationPolicy
+		want   []string
 	}{
 		{
-			name:         "allowlist",
-			newValidator: newFunctionAllowlistValidator,
-			functions:    []string{"sum"},
+			name:   "allowlist",
+			policy: ValidationPolicy{CheckFunctions: true, AllowedFunctions: []string{"sum"}},
 			want: []string{
 				"query: access denied: function 'lower' is not in the allowlist",
 				"query: access denied: function 'md5' is not in the allowlist (2 occurrences)",
 			},
 		},
 		{
-			name:         "blocklist",
-			newValidator: newFunctionBlocklistValidator,
-			functions:    []string{"lower", "md5"},
+			name:   "blocklist",
+			policy: ValidationPolicy{BlockedFunctions: []string{"lower", "md5"}},
 			want: []string{
 				"query: access denied: use of function 'lower' is not allowed",
 				"query: access denied: use of function 'md5' is not allowed (2 occurrences)",
@@ -397,23 +382,11 @@ func TestFunctionListValidatorCountsViolations(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			validator := tt.newValidator(tt.functions)
-			for _, node := range []map[string]any{
-				{"class": "FUNCTION", "function_name": "MD5"},
-				{"class": "WINDOW", "function_name": "md5"},
-				{"class": "FUNCTION", "function_name": "LOWER"},
-				{"class": "FUNCTION", "function_name": "SUM"},
-			} {
-				validator.CheckNode(node, nil)
-			}
-
+			db := setupTestDB(t)
 			for range 2 {
-				errs := validator.Validate()
-				require.Len(t, errs, len(tt.want))
-				for i, want := range tt.want {
-					assert.ErrorIs(t, errs[i], ErrAccessDenied)
-					assert.EqualError(t, errs[i], want)
-				}
+				err := db.ValidateSQL(t.Context(), "SELECT MD5('x'), md5('x') OVER (), LOWER('x'), SUM(1)", tt.policy)
+				require.ErrorIs(t, err, ErrAccessDenied)
+				assert.EqualError(t, err, strings.Join(tt.want, "\n"))
 			}
 		})
 	}
@@ -475,29 +448,33 @@ func TestFunctionAllowlistValidator(t *testing.T) {
 			name:      "rejects missing function name",
 			allowlist: []string{"md5"},
 			node:      map[string]any{"class": "FUNCTION"},
-			wantErr:   "query: invalid function node: missing 'function_name'",
+			wantErr:   "unsupported SQL AST",
 		},
 		{
 			name:      "rejects invalid function name",
 			allowlist: []string{"md5"},
 			node:      map[string]any{"class": "WINDOW", "function_name": 42},
-			wantErr:   "query: invalid 'function_name' in function, expected string: 42",
+			wantErr:   "unsupported SQL AST",
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			validator := newFunctionAllowlistValidator(tt.allowlist)
-			validator.CheckNode(tt.node, nil)
-
-			errs := validator.Validate()
+			db := setupTestDB(t)
+			tt.node["type"] = "FUNCTION"
+			if tt.node["class"] == "WINDOW" {
+				tt.node["type"] = "WINDOW_AGGREGATE"
+			}
+			ast, err := json.Marshal(map[string]any{"error": false, "statements": []any{map[string]any{
+				"node": map[string]any{"type": "SELECT_NODE", "select_list": []any{tt.node}, "from_table": map[string]any{"type": "EMPTY"}},
+			}}})
+			require.NoError(t, err)
+			err = validateAST(t, db, string(ast), ValidationPolicy{CheckFunctions: true, AllowedFunctions: tt.allowlist})
 			if tt.wantErr == "" {
-				assert.Empty(t, errs)
+				assert.NoError(t, err)
 				return
 			}
-			if assert.Len(t, errs, 1) {
-				assert.EqualError(t, errs[0], tt.wantErr)
-			}
+			assert.ErrorContains(t, err, tt.wantErr)
 		})
 	}
 }

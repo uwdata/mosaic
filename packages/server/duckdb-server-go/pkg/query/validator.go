@@ -2,38 +2,44 @@ package query
 
 import (
 	"context"
+	"database/sql"
+	_ "embed"
+	"encoding/json"
 	"errors"
 	"fmt"
-	"maps"
-	"slices"
 	"strings"
+
+	"github.com/uwdata/mosaic/packages/server/duckdb-server-go/pkg/functionset/remoteread"
 )
 
 var (
-	ErrAccessDenied = errors.New("query: access denied")
-
+	ErrAccessDenied         = errors.New("query: access denied")
 	ErrUnsupportedStatement = errors.New("query: unsupported statement")
 )
 
-type Validator interface {
-	// CheckNode is called once for each node in the AST
-	// - node: the current node being processed
-	// - keyStack: contains the stack of keys leading to this node, with the root being the first element,
-	//   and the parent key being the last element
-	//
-	// This explicitly does not not return an error. Any errors found should be collected and returned
-	// in the Validate() method.
-	CheckNode(node map[string]any, keyStack []string)
+//go:embed validate.sql
+var validationSQL string
 
-	// Validate is called after the entire AST has been processed. It should return any errors found during
-	// the CheckNode calls, or any additional validation errors that can only be determined after
-	// processing the entire AST. This allows validators to collect state during the AST traversal and perform more
-	// complex validation that may depend on multiple nodes or the overall structure of the AST.
-	//
-	// It returns a slice of errors, to encourage collecting all errors rather than stopping at the first one.
-	// If no errors are found, it should return nil.
-	Validate() []error
+type ValidationPolicy struct {
+	CheckSchemas            bool
+	AllowedSchemas          []string
+	BlockedFunctions        []string
+	CheckFunctions          bool
+	AllowedFunctions        []string
+	RejectRemoteURILiterals bool
 }
+
+var remoteReadersJSON = func() string {
+	readers := make(map[string]remoteread.PathArguments)
+	for _, name := range remoteread.FunctionNames() {
+		readers[name], _ = remoteread.Lookup(name)
+	}
+	data, err := json.Marshal(readers)
+	if err != nil {
+		panic(err)
+	}
+	return string(data)
+}()
 
 type ErrorDetails struct {
 	Type     string `json:"error_type"`
@@ -63,306 +69,58 @@ func (e ErrorDetails) Is(target error) bool {
 	return target == ErrUnsupportedStatement && strings.EqualFold(e.Type, "not implemented")
 }
 
-// ValidateSQL validates the given SQL query using the provided validators
-func (db *DB) ValidateSQL(ctx context.Context, sql string, validators ...Validator) error {
-	// Qualify the built-in to prevent database macros from shadowing validation.
-	serializeSQL := fmt.Sprintf("SELECT system.main.json_serialize_sql(%s, skip_default := true, skip_empty := true, skip_null := true) as ast", quoteLiteral(sql))
+func (db *DB) ValidateSQL(ctx context.Context, query string, policy ValidationPolicy) error {
+	if policy.CheckFunctions && len(policy.BlockedFunctions) > 0 {
+		return errors.New("query: function allowlist and blocklist cannot both be configured")
+	}
+	return db.validateSQL(ctx, validationSQL, query, policy)
+}
 
-	var m map[string]any
-
-	err := db.db.QueryRowContext(ctx, serializeSQL).Scan(&m)
+func (db *DB) validateSQL(ctx context.Context, statement, query string, policy ValidationPolicy) error {
+	args := []any{
+		sql.Named("query", query),
+		sql.Named("check_schemas", policy.CheckSchemas),
+		sql.Named("allowed_schemas", policy.AllowedSchemas),
+		sql.Named("blocked_functions", policy.BlockedFunctions),
+		sql.Named("check_functions", policy.CheckFunctions),
+		sql.Named("allowed_functions", policy.AllowedFunctions),
+		sql.Named("reject_remote_uris", policy.RejectRemoteURILiterals),
+		sql.Named("remote_readers", remoteReadersJSON),
+	}
+	rows, err := db.db.QueryContext(ctx, statement, args...)
 	if err != nil {
-		return fmt.Errorf("failed to parse SQL query: %w", err)
+		return fmt.Errorf("query: failed to validate SQL: %w", err)
 	}
+	defer rows.Close()
 
-	parseError, ok := m["error"].(bool)
-	if !ok {
-		return errors.New("invalid SQL parser response: missing error status")
-	}
-	if parseError {
-		return ErrorDetails{
-			Type:     stringField(m, "error_type"),
-			Subtype:  stringField(m, "error_subtype"),
-			Message:  stringField(m, "error_message"),
-			Position: stringField(m, "position"),
+	var errs []error
+	seen := false
+	for rows.Next() {
+		seen = true
+		var code string
+		var details ErrorDetails
+		if err := rows.Scan(&code, &details.Type, &details.Subtype, &details.Message, &details.Position); err != nil {
+			return fmt.Errorf("query: failed to read validation result: %w", err)
+		}
+		switch code {
+		case "ok":
+		case "forbidden":
+			errs = append(errs, fmt.Errorf("%w: %s", ErrAccessDenied, details.Message))
+		case "parser", "unsupported":
+			errs = append(errs, details)
+		default:
+			errs = append(errs, fmt.Errorf("query: unknown validation result %q", code))
 		}
 	}
-
-	statements, ok := m["statements"].([]any)
-	if !ok {
-		return errors.New("invalid SQL parser response: missing or invalid statements")
+	if err := rows.Err(); err != nil {
+		return fmt.Errorf("query: failed to read validation result: %w", err)
 	}
-
-	// Extract all schema references, including tables without an explicit schema reference, from the AST
-	for _, stmt := range statements {
-		stmtMap, ok := stmt.(map[string]any)
-		if !ok {
-			return fmt.Errorf("invalid statement format: %v", stmt)
-		}
-
-		keyStack := make([]string, 0, 10)
-
-		walkAST(stmtMap, keyStack, validators)
+	if !seen {
+		return errors.New("query: missing validation result")
 	}
-
-	var combinedErrs []error
-
-	for _, validator := range validators {
-		validationErrs := validator.Validate()
-		if len(validationErrs) > 0 {
-			combinedErrs = append(combinedErrs, validationErrs...)
-		}
-	}
-
-	return errors.Join(combinedErrs...)
+	return errors.Join(errs...)
 }
 
-func stringField(m map[string]any, key string) string {
-	value, _ := m[key].(string)
-	return value
-}
-
-// quoteLiteral properly escapes a string for use as a SQL string literal
 func quoteLiteral(s string) string {
-	// Escape single quotes by doubling them
-	escaped := strings.ReplaceAll(s, "'", "''")
-	return "'" + escaped + "'"
-}
-
-func walkASTSlice(nodes []any, keyStack []string, validators []Validator) {
-	for _, node := range nodes {
-		switch typedNode := node.(type) {
-		case map[string]any:
-			walkAST(typedNode, keyStack, validators)
-
-		case []any:
-			walkASTSlice(typedNode, keyStack, validators)
-		}
-	}
-}
-
-func walkAST(node map[string]any, keyStack []string, validators []Validator) {
-	for _, validator := range validators {
-		validator.CheckNode(node, keyStack)
-	}
-
-	for key, val := range node {
-		switch typedVal := val.(type) {
-		case map[string]any:
-			walkAST(typedVal, append(keyStack, key), validators)
-
-		case []any:
-			walkASTSlice(typedVal, append(keyStack, key), validators)
-		}
-	}
-}
-
-// baseTableValidator validates that the SQL query only accesses schemas that match request headers
-type baseTableValidator struct {
-	allowedSchemas []string
-	baseTables     map[tableRef]struct{}
-	errs           []error
-}
-
-type tableRef struct {
-	SchemaName string `json:"schema_name"`
-	TableName  string `json:"table_name"`
-	IsCTE      bool   `json:"is_cte,omitempty"`
-}
-
-func newBaseTableValidator(allowedSchemas []string) Validator {
-	return &baseTableValidator{
-		allowedSchemas: allowedSchemas,
-		baseTables:     make(map[tableRef]struct{}),
-	}
-}
-
-func (v *baseTableValidator) CheckNode(node map[string]any, keyStack []string) {
-	if class, exists := node["class"]; exists && (class == "FUNCTION" || class == "WINDOW") {
-		v.rejectCatalogReference(node, "catalog")
-	}
-
-	val, exists := node["type"]
-	if exists {
-		switch val {
-		case "BASE_TABLE":
-			v.handleBaseTable(node)
-		case "SHOW_REF":
-			v.handleShowRef(node)
-		}
-	}
-
-	if len(keyStack) >= 2 && keyStack[len(keyStack)-2] == "cte_map" && keyStack[len(keyStack)-1] == "map" {
-		val, exists = node["key"]
-		if exists {
-			v.baseTables[tableRef{
-				TableName: val.(string),
-				IsCTE:     true,
-			}] = struct{}{}
-		}
-	}
-}
-
-func (v *baseTableValidator) handleShowRef(showRef map[string]any) {
-	if v.rejectCatalogReference(showRef, "catalog_name") {
-		return
-	}
-
-	// DESCRIBE statements contain a nested query whose base tables are validated separately.
-	if _, exists := showRef["query"]; exists {
-		return
-	}
-
-	schemaName, exists := showRef["schema_name"]
-	if !exists {
-		v.errs = append(v.errs, fmt.Errorf("%w: SHOW statement requires an explicit authorized schema", ErrAccessDenied))
-		return
-	}
-
-	schemaNameStr, ok := schemaName.(string)
-	if !ok {
-		v.errs = append(v.errs, fmt.Errorf("invalid 'schema_name' in show reference, expected string: %v", schemaName))
-		return
-	}
-	schemaNameStr = strings.TrimPrefix(schemaNameStr, "schema_name:")
-	if !slices.Contains(v.allowedSchemas, schemaNameStr) {
-		v.errs = append(v.errs, fmt.Errorf("%w: unauthorized access to schema '%s'", ErrAccessDenied, schemaNameStr))
-	}
-}
-
-func (v *baseTableValidator) handleBaseTable(baseTable map[string]any) {
-	if v.rejectCatalogReference(baseTable, "catalog_name") {
-		return
-	}
-
-	var schemaNameStr string
-	schemaName, exists := baseTable["schema_name"]
-	if exists {
-		var ok bool
-		schemaNameStr, ok = schemaName.(string)
-		if !ok {
-			v.errs = append(v.errs, fmt.Errorf("invalid 'schema_name' in from_table, expected string: %v", schemaName))
-			return
-		}
-	}
-
-	tableName := baseTable["table_name"]
-	tableNameStr, ok := tableName.(string)
-	if !ok {
-		v.errs = append(v.errs, fmt.Errorf("invalid 'table_name' in from_table, expected string: %v", tableName))
-		return
-	}
-
-	// purposefully include empty schemas. We can reject them later if needed
-	v.baseTables[tableRef{
-		SchemaName: strings.TrimPrefix(schemaNameStr, "schema_name:"),
-		TableName:  tableNameStr,
-	}] = struct{}{}
-}
-
-func (v *baseTableValidator) rejectCatalogReference(ref map[string]any, field string) bool {
-	catalogName, exists := ref[field]
-	if !exists {
-		return false
-	}
-
-	catalogNameStr, ok := catalogName.(string)
-	if !ok {
-		v.errs = append(v.errs, fmt.Errorf("invalid '%s', expected string: %v", field, catalogName))
-		return true
-	}
-	catalogNameStr = strings.TrimPrefix(catalogNameStr, field+":")
-	v.errs = append(v.errs, fmt.Errorf("%w: access to catalog '%s' is not allowed", ErrAccessDenied, catalogNameStr))
-	return true
-}
-
-func (v *baseTableValidator) Validate() []error {
-	errs := append([]error(nil), v.errs...)
-
-	// Check if all referenced schemas are allowed
-	for baseTable := range v.baseTables {
-		if baseTable.SchemaName == "" {
-			_, ok := v.baseTables[tableRef{TableName: baseTable.TableName, IsCTE: true}]
-			if ok {
-				continue // empty schemas are allowed if they are CTEs
-			}
-			errs = append(errs, fmt.Errorf("%w: unauthorized access to table '%s' with empty schema", ErrAccessDenied, baseTable.TableName))
-			continue
-		}
-
-		if !slices.Contains(v.allowedSchemas, baseTable.SchemaName) {
-			errs = append(errs, fmt.Errorf("%w: unauthorized access to schema '%s'", ErrAccessDenied, baseTable.SchemaName))
-		}
-	}
-
-	return errs
-}
-
-type functionListValidator struct {
-	functions      []string
-	allowlist      bool
-	functionCounts map[string]int
-	errs           []error
-}
-
-func newFunctionBlocklistValidator(blockedFunctions []string) Validator {
-	return newFunctionListValidator(blockedFunctions, false)
-}
-
-func newFunctionAllowlistValidator(allowedFunctions []string) Validator {
-	return newFunctionListValidator(allowedFunctions, true)
-}
-
-func newFunctionListValidator(functions []string, allowlist bool) Validator {
-	return &functionListValidator{
-		functions:      functions,
-		allowlist:      allowlist,
-		functionCounts: make(map[string]int),
-	}
-}
-
-func (v *functionListValidator) CheckNode(node map[string]any, _ []string) {
-	class, exists := node["class"]
-	if !exists {
-		return
-	}
-	if class != "FUNCTION" && class != "WINDOW" {
-		return
-	}
-
-	functionName, exists := node["function_name"]
-	if !exists {
-		v.errs = append(v.errs, errors.New("query: invalid function node: missing 'function_name'"))
-		return
-	}
-
-	functionNameStr, ok := functionName.(string)
-	if !ok {
-		v.errs = append(v.errs, fmt.Errorf("query: invalid 'function_name' in function, expected string: %v", functionName))
-		return
-	}
-	functionNameStr = strings.ToLower(functionNameStr)
-	v.functionCounts[functionNameStr]++
-}
-
-func (v *functionListValidator) Validate() []error {
-	errs := append([]error(nil), v.errs...)
-	for _, functionName := range slices.Sorted(maps.Keys(v.functionCounts)) {
-		listed := slices.Contains(v.functions, functionName)
-		if listed == v.allowlist {
-			continue
-		}
-
-		var err error
-		if v.allowlist {
-			err = fmt.Errorf("%w: function '%s' is not in the allowlist", ErrAccessDenied, functionName)
-		} else {
-			err = fmt.Errorf("%w: use of function '%s' is not allowed", ErrAccessDenied, functionName)
-		}
-		if count := v.functionCounts[functionName]; count > 1 {
-			err = fmt.Errorf("%w (%d occurrences)", err, count)
-		}
-		errs = append(errs, err)
-	}
-	return errs
+	return "'" + strings.ReplaceAll(s, "'", "''") + "'"
 }

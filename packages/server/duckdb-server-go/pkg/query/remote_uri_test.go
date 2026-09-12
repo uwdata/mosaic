@@ -19,13 +19,11 @@ func TestWithRemoteURILiteralRejection(t *testing.T) {
 
 func TestRemoteURILiteralValidatorRecognizesPinnedPrefixes(t *testing.T) {
 	db := setupTestDB(t)
-	assert.Contains(t, remoteURIPrefixes, "abfs://")
-
-	for _, prefix := range remoteURIPrefixes {
+	for _, prefix := range []string{"http://", "https://", "s3://", "s3a://", "s3n://", "gcs://", "gs://", "r2://", "hf://", "azure://", "az://", "abfs://", "abfss://"} {
 		t.Run(prefix, func(t *testing.T) {
 			for _, literalPrefix := range []string{prefix, strings.ToUpper(prefix)} {
 				sql := fmt.Sprintf("SELECT * FROM read_parquet('%sbucket/file.parquet')", literalPrefix)
-				err := db.ValidateSQL(t.Context(), sql, newRemoteURILiteralValidator())
+				err := db.ValidateSQL(t.Context(), sql, ValidationPolicy{RejectRemoteURILiterals: true})
 				require.ErrorIs(t, err, ErrAccessDenied)
 				assert.EqualError(t, err, fmt.Sprintf(
 					"query: access denied: remote URI prefix '%s' is not allowed in path argument to function 'read_parquet'",
@@ -143,7 +141,7 @@ func TestRemoteURILiteralValidatorPathArguments(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			err := db.ValidateSQL(t.Context(), tt.sql, newRemoteURILiteralValidator())
+			err := db.ValidateSQL(t.Context(), tt.sql, ValidationPolicy{RejectRemoteURILiterals: true})
 			if tt.wantPrefix == "" {
 				assert.NoError(t, err)
 				return
@@ -196,7 +194,7 @@ func TestRemoteURILiteralValidatorRejectsNestedSQLExecutors(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			err := db.ValidateSQL(t.Context(), tt.sql, newRemoteURILiteralValidator())
+			err := db.ValidateSQL(t.Context(), tt.sql, ValidationPolicy{RejectRemoteURILiterals: true})
 			require.ErrorIs(t, err, ErrAccessDenied)
 			assert.EqualError(t, err, fmt.Sprintf(
 				"query: access denied: nested SQL executor '%s' is not allowed",
@@ -214,7 +212,7 @@ func TestRemoteURILiteralValidatorAllowsScalarExecutorNames(t *testing.T) {
 		"SELECT json_execute_serialized_sql('local')",
 	} {
 		t.Run(sql, func(t *testing.T) {
-			assert.NoError(t, db.ValidateSQL(t.Context(), sql, newRemoteURILiteralValidator()))
+			assert.NoError(t, db.ValidateSQL(t.Context(), sql, ValidationPolicy{RejectRemoteURILiterals: true}))
 		})
 	}
 }
@@ -230,7 +228,7 @@ func TestRemoteURILiteralValidatorRejectsJSONSerializePlan(t *testing.T) {
 		"SELECT system.main.json_serialize_plan('SELECT 42')",
 	} {
 		t.Run(sql, func(t *testing.T) {
-			err := db.ValidateSQL(t.Context(), sql, newRemoteURILiteralValidator())
+			err := db.ValidateSQL(t.Context(), sql, ValidationPolicy{RejectRemoteURILiterals: true})
 			require.ErrorIs(t, err, ErrAccessDenied)
 			assert.EqualError(t, err, "query: access denied: nested SQL executor 'json_serialize_plan' is not allowed")
 		})
@@ -243,7 +241,7 @@ func TestRemoteURILiteralValidatorAllowsTableMacroNamedJSONSerializePlan(t *test
 	assert.NoError(t, db.ValidateSQL(
 		t.Context(),
 		"SELECT * FROM json_serialize_plan('local')",
-		newRemoteURILiteralValidator(),
+		ValidationPolicy{RejectRemoteURILiterals: true},
 	))
 }
 
@@ -255,32 +253,14 @@ func TestRemoteURILiteralValidatorAllowsQualifiedJSONSerializePlanUDF(t *testing
 		"SELECT other.main.json_serialize_plan('local')",
 	} {
 		t.Run(sql, func(t *testing.T) {
-			assert.NoError(t, db.ValidateSQL(t.Context(), sql, newRemoteURILiteralValidator()))
+			assert.NoError(t, db.ValidateSQL(t.Context(), sql, ValidationPolicy{RejectRemoteURILiterals: true}))
 		})
 	}
 }
 
 func TestRemoteURILiteralValidatorCountsOnlyUnnamedPositions(t *testing.T) {
-	validator := newRemoteURILiteralValidator()
-	validator.CheckNode(map[string]any{
-		"type": "TABLE_FUNCTION",
-		"function": map[string]any{
-			"function_name": "read_parquet",
-			"children": []any{
-				map[string]any{
-					"alias": "unreviewed_option",
-					"class": "CONSTANT",
-					"value": map[string]any{"value": "https://example.com/ignored"},
-				},
-				map[string]any{
-					"class": "CONSTANT",
-					"value": map[string]any{"value": "local.parquet"},
-				},
-			},
-		},
-	}, nil)
-
-	assert.Empty(t, validator.Validate())
+	db := setupTestDB(t)
+	assert.NoError(t, db.ValidateSQL(t.Context(), "SELECT * FROM read_parquet(unreviewed_option := 'https://example.com/ignored', 'local.parquet')", ValidationPolicy{RejectRemoteURILiterals: true}))
 }
 
 func TestRemoteURILiteralValidatorReplacementScans(t *testing.T) {
@@ -329,7 +309,7 @@ func TestRemoteURILiteralValidatorReplacementScans(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			err := db.ValidateSQL(t.Context(), tt.sql, newRemoteURILiteralValidator())
+			err := db.ValidateSQL(t.Context(), tt.sql, ValidationPolicy{RejectRemoteURILiterals: true})
 			if !tt.wantErr {
 				assert.NoError(t, err)
 				return

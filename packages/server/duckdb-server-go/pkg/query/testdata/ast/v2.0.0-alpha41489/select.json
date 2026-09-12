@@ -1,0 +1,1 @@
+{"error":false,"statements":[{"node":{"type":"SELECT_NODE","cte_map":{},"select_list":[{"class":"STAR","type":"STAR","query_location":7,"query_location_length":1}],"from_table":{"type":"BASE_TABLE","query_location":14,"query_location_length":10,"schema_name":"tenant_a","table_name":"t","qualified_name":{"path":["tenant_a","t"]}},"aggregate_handling":"STANDARD_HANDLING"}}]}

@@ -183,24 +183,18 @@ func (db *DB) Exec(ctx context.Context, query string) error {
 }
 
 func (db *DB) validateQuery(ctx context.Context, query string, allowedSchemas []string) error {
-	validators := make([]Validator, 0, 4)
-	if len(allowedSchemas) > 0 {
-		validators = append(validators, newBaseTableValidator(allowedSchemas))
-	}
-	if len(db.functionBlocklist) > 0 {
-		validators = append(validators, newFunctionBlocklistValidator(db.functionBlocklist))
-	}
-	if db.functionAllowlistConfigured {
-		validators = append(validators, newFunctionAllowlistValidator(db.functionAllowlist))
-	}
-	if db.rejectRemoteURILiterals {
-		validators = append(validators, newRemoteURILiteralValidator())
-	}
-	if len(validators) == 0 {
+	if len(allowedSchemas) == 0 && len(db.functionBlocklist) == 0 && !db.functionAllowlistConfigured && !db.rejectRemoteURILiterals {
 		return nil
 	}
 
-	err := db.ValidateSQL(ctx, query, validators...)
+	err := db.ValidateSQL(ctx, query, ValidationPolicy{
+		CheckSchemas:            len(allowedSchemas) > 0,
+		AllowedSchemas:          allowedSchemas,
+		BlockedFunctions:        db.functionBlocklist,
+		CheckFunctions:          db.functionAllowlistConfigured,
+		AllowedFunctions:        db.functionAllowlist,
+		RejectRemoteURILiterals: db.rejectRemoteURILiterals,
+	})
 	if err != nil {
 		return fmt.Errorf("query: validation failed: %w", err)
 	}

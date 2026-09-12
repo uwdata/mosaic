@@ -151,6 +151,11 @@ POST and WebSocket messages require one complete command object with optional su
 
 ### Function Policies
 
+Schema, function, and remote-URI policies are evaluated by the embedded
+[`pkg/query/validate.sql`](pkg/query/validate.sql). It rejects unsupported AST
+structures before applying the policy, including nested write operations and
+unreviewed parser changes. See the [validation API and SQL contract](../../../docs/server/index.md#go-server-query-validation).
+
 Use an allowlist when the server should accept only reviewed functions and operators. An explicitly empty value enables
 the defaults without adding application-specific names:
 
@@ -264,7 +269,7 @@ Trusted initialization can still load filesystem extensions and attach remote Ic
 queries. Queries against those attached catalogs use catalog and table identifiers rather than caller-supplied URI
 literals, so they remain usable. Enabling this policy rejects all `exec` commands and rejects the known nested-SQL
 binders and executors `query`, `json_execute_serialized_sql`, and `json_serialize_plan` outright. `arrow`
-requests are limited to statements DuckDB can serialize for validation. Connector initialization is outside that command
+requests are limited to supported read-query AST structures. Connector initialization is outside that command
 path.
 
 DuckDB's serialized AST does not distinguish a replacement-scan string from a quoted table or CTE identifier, so a
@@ -316,7 +321,7 @@ scans such as `FROM 'data.parquet'` are rejected as unqualified table references
 server with access only to external resources that are safe for every tenant.
 
 If `--schema-match-headers`, `--function-blocklist`, or `--function-allowlist` is configured, `arrow` requests
-are limited to statements DuckDB can serialize for validation; unsupported forms such as `PRAGMA` and `SET` are rejected,
+are limited to supported read-query AST structures; unsupported forms such as `PRAGMA` and `SET` are rejected,
 with HTTP requests receiving a 400 response. All `exec` requests are also rejected until full-statement authorization is
 supported. This includes every `Coordinator.exec(...)` call, such as data loading, preloading, and DDL/DML. Mosaic
 pre-aggregation also uses `exec` to create schemas and tables, so set `preagg: { enabled: false }` in this mode.
