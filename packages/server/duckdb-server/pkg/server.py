@@ -58,20 +58,36 @@ class SocketHandler(Handler):
         self.check(ok)
 
 
+CORS_HEADERS = {
+    "Access-Control-Allow-Origin": "*",
+    "Access-Control-Request-Method": "*",
+    "Access-Control-Allow-Methods": "OPTIONS, POST, GET",
+    "Access-Control-Allow-Headers": "*",
+    "Access-Control-Max-Age": "2592000",
+}
+
+
 class HTTPHandler(Handler):
     def __init__(self, res: Res) -> None:
         self.res = res
 
+    # uWebSockets streams the response, so a status written after a header is ignored
+    def begin(self, status: int) -> Res:
+        self.res.write_status(status)
+        for name, value in CORS_HEADERS.items():
+            self.res.write_header(name, value)
+        return self.res
+
     def done(self) -> None:
-        self.res.end("")
+        self.begin(200).end("")
 
     def arrow(self, buffer: bytes) -> None:
-        self.res.write_header("Content-Type", "application/octet-stream")
-        self.res.end(buffer)
+        res = self.begin(200)
+        res.write_header("Content-Type", "application/octet-stream")
+        res.end(buffer)
 
     def error(self, error: object, status: int = 500) -> None:
-        self.res.write_status(status)
-        self.res.end(str(error))
+        self.begin(status).end(str(error))
 
 
 def handle_message(
@@ -134,22 +150,21 @@ def server(con: Con) -> None:
         handle_message(SocketHandler(ws), con, message)
 
     async def http_handler(res: Res, req: Req) -> None:
-        res.write_header("Access-Control-Allow-Origin", "*")
-        res.write_header("Access-Control-Request-Method", "*")
-        res.write_header("Access-Control-Allow-Methods", "OPTIONS, POST, GET")
-        res.write_header("Access-Control-Allow-Headers", "*")
-        res.write_header("Access-Control-Max-Age", "2592000")
-
-        method = req.get_method()
-
         handler = HTTPHandler(res)
-        if method == "OPTIONS":
-            handler.done()
-        elif method == "GET":
-            handle_message(handler, con, req.get_query("query"))
-        elif method == "POST":
-            body = await res.get_data()
-            handle_message(handler, con, body.getvalue())
+        match req.get_method():
+            case "OPTIONS":
+                handler.done()
+            case "GET":
+                query = req.get_query("query")
+                if isinstance(query, str):
+                    handle_message(handler, con, query)
+                else:
+                    handler.error("missing required 'query' parameter", 400)
+            case "POST":
+                body = await res.get_data()
+                handle_message(handler, con, body.getvalue())
+            case method:
+                handler.error(f"Unsupported HTTP method: {method}", 400)
 
     app.ws(
         "/*",

@@ -4,7 +4,7 @@ from typing import Any
 
 import duckdb
 
-from pkg.server import handle_message
+from pkg.server import HTTPHandler, handle_message
 
 
 class RecordingHandler:
@@ -41,3 +41,26 @@ def test_arrow_query_returns_buffer() -> None:
 
     assert handler.errors == []
     assert len(handler.buffers) == 1
+
+
+class RecordingResponse:
+    def __init__(self) -> None:
+        self.calls: list[tuple[str, Any]] = []
+
+    def write_status(self, status: int) -> None:
+        self.calls.append(("status", status))
+
+    def write_header(self, name: str, value: str) -> None:
+        self.calls.append(("header", name))
+
+    def end(self, body: Any) -> None:
+        self.calls.append(("end", body))
+
+
+def test_http_error_writes_status_before_headers() -> None:
+    res = RecordingResponse()
+    HTTPHandler(res).error("boom", 400)  # pyright: ignore[reportArgumentType]  # ty: ignore[invalid-argument-type]
+
+    assert res.calls[0] == ("status", 400)
+    assert res.calls[-1] == ("end", "boom")
+    assert ("header", "Access-Control-Allow-Origin") in res.calls
