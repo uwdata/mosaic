@@ -3,11 +3,10 @@ package query
 import (
 	"log/slog"
 	"strings"
-
-	"github.com/uwdata/mosaic/packages/server/duckdb-server-go/pkg/functionset"
 )
 
 type Options struct {
+	GatekeeperExtension string
 	// MaxConnections sets the maximum number of open connections to the database.
 	MaxConnections int
 
@@ -19,10 +18,10 @@ type Options struct {
 	FunctionBlocklist []string
 
 	// FunctionAllowlist configures the function names that are allowed in queries.
-	// A nil value leaves function calls unrestricted.
+	// A nil value uses Gatekeeper's defaults when validation is active.
 	FunctionAllowlist *FunctionAllowlistOptions
 
-	// RejectRemoteURILiterals rejects recognized remote URI literals in reviewed path arguments and replacement scans.
+	// Deprecated: Gatekeeper does not implement reader-argument policies. Configuring this fails initialization.
 	RejectRemoteURILiterals bool
 }
 
@@ -34,11 +33,15 @@ type FunctionAllowlistOptions struct {
 	// Exclude removes exact function names after defaults and includes are combined.
 	Exclude []string
 
-	// DisableDefaults omits the function names returned by functionset.DefaultFunctions.
+	// DisableDefaults omits Gatekeeper's reviewed function defaults.
 	DisableDefaults bool
 }
 
 type OptionFunc func(*Options) error
+
+func WithGatekeeperExtension(path string) OptionFunc {
+	return func(opts *Options) error { opts.GatekeeperExtension = path; return nil }
+}
 
 func WithMaxConnections(maxConnections int) OptionFunc {
 	return func(opts *Options) error {
@@ -62,7 +65,7 @@ func WithFunctionBlocklist(blockedFunctions []string) OptionFunc {
 }
 
 // WithFunctionAllowlist allows the reviewed defaults and configured function names in submitted queries.
-// Omitting the option leaves function calls unrestricted.
+// Omitting the option uses Gatekeeper's defaults when validation is active.
 func WithFunctionAllowlist(options FunctionAllowlistOptions) OptionFunc {
 	configured := FunctionAllowlistOptions{
 		Include:         append([]string(nil), options.Include...),
@@ -80,34 +83,12 @@ func WithFunctionAllowlist(options FunctionAllowlistOptions) OptionFunc {
 	}
 }
 
-// WithRemoteURILiteralRejection enables best-effort rejection of recognized remote URI literals in reviewed path
-// arguments and replacement scans. Constructed or computed strings may evade detection.
+// Deprecated: Gatekeeper does not implement reader-argument policies. Configuring this fails initialization.
 func WithRemoteURILiteralRejection() OptionFunc {
 	return func(opts *Options) error {
 		opts.RejectRemoteURILiterals = true
 		return nil
 	}
-}
-
-func resolveFunctionAllowlist(options FunctionAllowlistOptions) []string {
-	var functions []string
-	if !options.DisableDefaults {
-		functions = functionset.DefaultFunctions()
-	}
-	functions = append(functions, options.Include...)
-
-	excluded := make(map[string]struct{}, len(options.Exclude))
-	for _, function := range normalizeFunctionNames(options.Exclude) {
-		excluded[function] = struct{}{}
-	}
-
-	resolved := make([]string, 0, len(functions))
-	for _, function := range normalizeFunctionNames(functions) {
-		if _, ok := excluded[function]; !ok {
-			resolved = append(resolved, function)
-		}
-	}
-	return resolved
 }
 
 func normalizeFunctionNames(functions []string) []string {

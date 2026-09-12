@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
+	"net/url"
 	"os"
 	"strings"
 	"time"
@@ -35,6 +36,8 @@ func run() int {
 	schemaMatchHeadersStr := flag.String("schema-match-headers", "", "Comma-separated list of headers to match against schema names for multi-tenant access control (e.g., \"X-Tenant-Id,verified-user-id\")")
 	extensionsStr := flag.String("load-extensions", "", "Comma-separated list of extensions to install and load at startup. Use a pipe after the extension name to specify a DuckDB repository alias. Unspecified repositories use DuckDB's default (e.g. mysql_scanner,netquack|community,aws|core_nightly).")
 	functionBlocklistStr := flag.String("function-blocklist", "", "Comma-separated list of functions to block, useful for blocking functions that may pose security or performance risks. (e.g., 'bigquery_query,read_parquet')")
+	gatekeeperExtension := flag.String("gatekeeper-extension", "gatekeeper", "Gatekeeper extension name or local artifact path")
+	allowUnsigned := flag.Bool("allow-unsigned-extensions", false, "Permit unsigned extensions for local development")
 	var functionAllowlist optionalCommaListFlag
 	flag.Var(&functionAllowlist, "function-allowlist", "Comma-separated exact names to add to the reviewed default allowlist. An empty value enables only the defaults; names are matched case-insensitively.")
 	flag.Parse()
@@ -73,7 +76,18 @@ func run() int {
 		}
 	}
 
-	connector, err := duckdb.NewConnector(*dbPath, func(execer driver.ExecerContext) error {
+	dsn := *dbPath
+	if *allowUnsigned {
+		path, raw, _ := strings.Cut(dsn, "?")
+		values, err := url.ParseQuery(raw)
+		if err != nil {
+			logger.Error("main: invalid database DSN", "error", err)
+			return 1
+		}
+		values.Set("allow_unsigned_extensions", "true")
+		dsn = path + "?" + values.Encode()
+	}
+	connector, err := duckdb.NewConnector(dsn, func(execer driver.ExecerContext) error {
 		return extensions.ParseAndInstall(ctx, execer, *extensionsStr)
 	})
 	if err != nil {
@@ -91,6 +105,7 @@ func run() int {
 		query.WithMaxConnections(*poolSize),
 		query.WithLogger(logger),
 		query.WithFunctionBlocklist(functionBlocklist),
+		query.WithGatekeeperExtension(*gatekeeperExtension),
 	}
 	if functionAllowlist.set {
 		queryOptions = append(queryOptions, query.WithFunctionAllowlist(query.FunctionAllowlistOptions{
