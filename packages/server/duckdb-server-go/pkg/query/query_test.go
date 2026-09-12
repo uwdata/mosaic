@@ -21,7 +21,7 @@ func setupTestDB(t *testing.T, opts ...OptionFunc) *DB {
 	ctx := context.Background()
 
 	// Create an in-memory DuckDB connector
-	connector, err := duckdb.NewConnector(":memory:", nil)
+	connector, err := duckdb.NewConnector(":memory:?allow_unsigned_extensions=true", nil)
 	require.NoError(t, err)
 
 	// Create a test logger that discards output
@@ -29,7 +29,9 @@ func setupTestDB(t *testing.T, opts ...OptionFunc) *DB {
 		Level: slog.LevelError, // Only show errors during tests
 	}))
 
-	opts = append([]OptionFunc{WithLogger(logger)}, opts...)
+	path := os.Getenv("GATEKEEPER_EXTENSION")
+	require.NotEmpty(t, path, "set GATEKEEPER_EXTENSION to the DuckDB 1.5.5 artifact")
+	opts = append([]OptionFunc{WithLogger(logger), WithGatekeeperExtension(path)}, opts...)
 	db, err := New(ctx, connector, opts...)
 	require.NoError(t, err)
 
@@ -85,7 +87,7 @@ func TestDB_FunctionBlocklist(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			_, err := db.QueryArrow(ctx, tt.query, nil)
 
-			require.ErrorContains(t, err, "use of function '"+tt.function+"' is not allowed")
+			require.Equal(t, tt.function, requireViolation(t, err, "function").FunctionName)
 		})
 	}
 }
@@ -129,7 +131,7 @@ func TestDB_FunctionAllowlist(t *testing.T) {
 
 		_, err := db.QueryArrow(ctx, "SELECT md5('mosaic')", nil)
 		require.ErrorIs(t, err, ErrAccessDenied)
-		require.ErrorContains(t, err, "function 'md5' is not in the allowlist")
+		require.Equal(t, "md5", requireViolation(t, err, "function").FunctionName)
 	})
 
 	t.Run("rejects nested functions that are not listed", func(t *testing.T) {
@@ -140,7 +142,7 @@ func TestDB_FunctionAllowlist(t *testing.T) {
 
 		_, err := db.QueryArrow(ctx, "SELECT md5(lower('mosaic'))", nil)
 		require.ErrorIs(t, err, ErrAccessDenied)
-		require.ErrorContains(t, err, "function 'lower' is not in the allowlist")
+		require.Equal(t, "lower", requireViolation(t, err, "function").FunctionName)
 	})
 
 	t.Run("matches qualified functions by leaf name", func(t *testing.T) {
@@ -148,6 +150,8 @@ func TestDB_FunctionAllowlist(t *testing.T) {
 			DisableDefaults: true,
 			Include:         []string{"md5", "count_star"},
 		}))
+		_, err := db.db.ExecContext(ctx, "CREATE SCHEMA tenant; CREATE MACRO tenant.md5(x) AS system.main.md5(x)")
+		require.NoError(t, err)
 
 		for _, query := range []string{
 			"SELECT tenant.md5('mosaic')",
@@ -165,7 +169,7 @@ func TestDB_FunctionAllowlist(t *testing.T) {
 
 		_, err := db.QueryArrow(ctx, "SELECT * FROM read_parquet(['local.parquet'])", nil)
 		require.ErrorIs(t, err, ErrAccessDenied)
-		require.ErrorContains(t, err, "function 'list_value' is not in the allowlist")
+		require.Equal(t, "list_value", requireViolation(t, err, "function").FunctionName)
 	})
 
 	t.Run("defaults allow common expressions", func(t *testing.T) {
@@ -199,7 +203,14 @@ func TestDB_FunctionAllowlist(t *testing.T) {
 			"SELECT json_serialize_sql('SELECT 1')",
 			"SELECT iceberg_bucket(16, 'value')",
 		} {
-			require.NoError(t, db.validateQuery(ctx, query, nil), query)
+			err := db.validateQuery(ctx, query, nil)
+			if query == "SELECT json_serialize_sql('SELECT 1')" {
+				require.NoError(t, err)
+			} else {
+				var details ErrorDetails
+				require.ErrorAs(t, err, &details)
+				require.Equal(t, "binding", details.Code)
+			}
 		}
 
 		for function, query := range map[string]string{
@@ -209,7 +220,7 @@ func TestDB_FunctionAllowlist(t *testing.T) {
 		} {
 			err := db.validateQuery(ctx, query, nil)
 			require.ErrorIs(t, err, ErrAccessDenied)
-			require.ErrorContains(t, err, "function '"+function+"' is not in the allowlist")
+			require.Equal(t, function, requireViolation(t, err, "function").FunctionName)
 		}
 	})
 
@@ -218,7 +229,7 @@ func TestDB_FunctionAllowlist(t *testing.T) {
 
 		_, err := db.QueryArrow(ctx, "SELECT * FROM histogram('duckdb_tables', 'table_name')", nil)
 		require.ErrorIs(t, err, ErrAccessDenied)
-		require.ErrorContains(t, err, "function 'histogram' is not in the allowlist")
+		require.Equal(t, "histogram", requireViolation(t, err, "function").FunctionName)
 	})
 
 	t.Run("defaults reject privileged functions", func(t *testing.T) {
@@ -244,7 +255,7 @@ func TestDB_FunctionAllowlist(t *testing.T) {
 			t.Run(tt.function, func(t *testing.T) {
 				_, err := db.QueryArrow(ctx, tt.query, nil)
 				require.ErrorIs(t, err, ErrAccessDenied)
-				require.ErrorContains(t, err, "function '"+tt.function+"' is not in the allowlist")
+				require.Equal(t, tt.function, requireViolation(t, err, "function").FunctionName)
 			})
 		}
 	})
@@ -257,7 +268,7 @@ func TestDB_FunctionAllowlist(t *testing.T) {
 
 		_, err = db.QueryArrow(ctx, "SELECT 1 + 2", nil)
 		require.ErrorIs(t, err, ErrAccessDenied)
-		require.ErrorContains(t, err, "function '+' is not in the allowlist")
+		require.Equal(t, "+", requireViolation(t, err, "function").FunctionName)
 	})
 
 	t.Run("defaults can be excluded", func(t *testing.T) {
@@ -270,7 +281,7 @@ func TestDB_FunctionAllowlist(t *testing.T) {
 
 		_, err = db.QueryArrow(ctx, "SELECT sum(i) FROM (VALUES (1), (2)) t(i)", nil)
 		require.ErrorIs(t, err, ErrAccessDenied)
-		require.ErrorContains(t, err, "function 'sum' is not in the allowlist")
+		require.Equal(t, "sum", requireViolation(t, err, "function").FunctionName)
 	})
 }
 
@@ -279,7 +290,7 @@ func TestDB_FunctionAllowlistHandlesUnsupportedStatements(t *testing.T) {
 
 	_, err := db.QueryArrow(t.Context(), "PRAGMA version", nil)
 	require.ErrorIs(t, err, ErrUnsupportedStatement)
-	require.ErrorContains(t, err, "query: validation failed: query: not implemented: Only SELECT statements can be serialized to json")
+	require.ErrorContains(t, err, "only supported read statements are permitted")
 }
 
 func TestDB_FunctionBlocklistHandlesUnsupportedStatements(t *testing.T) {
@@ -287,7 +298,7 @@ func TestDB_FunctionBlocklistHandlesUnsupportedStatements(t *testing.T) {
 
 	_, err := db.QueryArrow(t.Context(), "PRAGMA version", nil)
 	require.ErrorIs(t, err, ErrUnsupportedStatement)
-	require.ErrorContains(t, err, "query: validation failed: query: not implemented: Only SELECT statements can be serialized to json")
+	require.ErrorContains(t, err, "only supported read statements are permitted")
 	require.NotContains(t, err.Error(), "()")
 	require.NotContains(t, err.Error(), " at :")
 }

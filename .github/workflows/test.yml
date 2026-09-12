@@ -173,8 +173,22 @@ jobs:
 
     runs-on: ubuntu-latest
 
+    env:
+      GATEKEEPER_EXTENSION: ${{ github.workspace }}/.gatekeeper/build/release/extension/gatekeeper/gatekeeper.duckdb_extension
+
     steps:
       - uses: actions/checkout@v7
+
+      - uses: actions/checkout@v7
+        with:
+          repository: nozzle/duckdb-gatekeeper
+          ref: a35921a4ea0a107d109a237bf2431b7f1581e01f
+          submodules: recursive
+          path: .gatekeeper
+
+      - name: Build Gatekeeper
+        run: python3 scripts/build.py --jobs 2
+        working-directory: .gatekeeper
 
       - name: Setup Go
         uses: actions/setup-go@v7
