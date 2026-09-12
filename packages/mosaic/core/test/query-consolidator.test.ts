@@ -1,8 +1,12 @@
 import { describe, it, expect } from 'vitest';
+import { type Table, tableFromArrays, tableToIPC } from '@uwdata/flechette';
 import { Query, count, literal, sum } from '@uwdata/mosaic-sql';
 import { consolidator } from '../src/QueryConsolidator.js';
 import { Priority } from '../src/QueryManager.js';
+import type { Cache, QueryEntry } from '../src/types.js';
 import { voidCache } from '../src/util/cache.js';
+import { decodeIPC } from '../src/util/decode-ipc.js';
+import { QueryResult } from '../src/util/query-result.js';
 
 describe('QueryConsolidation', () => {
   async function getConsolidatedQueries(...qs: unknown[]) {
@@ -100,6 +104,39 @@ describe('QueryConsolidation', () => {
     expect(consolidated).toEqual([
       q1.toString(),
       Query.from({ source: 'table' }).select({ col0: 'y', col1: 'z' }).toString(),
+    ]);
+  });
+});
+
+describe('QueryConsolidationCaching', () => {
+  it('should charge projected extracts to the merged table', async () => {
+    const bytes = tableToIPC(tableFromArrays({ col0: [1, 2], col1: [3, 4] }), {})!;
+    const data = decodeIPC(bytes);
+    const queries = ['x', 'y'].map(c => Query.from({ source: 'table' }).select({ c }));
+    const entries: QueryEntry[] = queries.map(query => ({
+      request: { type: 'arrow', cache: true, query },
+      result: new QueryResult()
+    }));
+
+    const calls: unknown[][] = [];
+    const cache: Cache = {
+      get: () => undefined,
+      set: (...args) => (calls.push(args), args[1]),
+      clear: () => {},
+      bytes: () => 0
+    };
+    const c = consolidator(entry => {
+      if (entry.request.cache === false) entry.result.fulfill(data);
+    }, cache);
+    for (const entry of entries) {
+      c.add(entry, Priority.Normal);
+    }
+    const extracts = await Promise.all(entries.map(entry => entry.result)) as Table[];
+
+    expect(Array.from(extracts[1])).toEqual([{ c: 3 }, { c: 4 }]);
+    expect(calls).toEqual([
+      [String(queries[0]), extracts[0], bytes.length, data],
+      [String(queries[1]), extracts[1], bytes.length, data]
     ]);
   });
 });

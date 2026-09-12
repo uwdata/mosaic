@@ -1,10 +1,7 @@
-import type { ExtractionOptions, Table } from '@uwdata/flechette';
 import type { ArrowQueryRequest, Connector, ExecQueryRequest, ConnectorQueryRequest } from './Connector.js';
-import { decodeIPC } from '../util/decode-ipc.js';
 
 interface SocketOptions {
   uri?: string;
-  ipc?: ExtractionOptions;
 }
 
 interface QueueItem<T = unknown> {
@@ -17,7 +14,6 @@ interface QueueItem<T = unknown> {
  * Connect to a DuckDB server over a WebSocket interface.
  * @param options Connector options.
  * @param options.uri The URI for the DuckDB server.
- * @param options.ipc Arrow IPC extraction options.
  * @returns A connector instance.
  */
 export function socketConnector(options?: SocketOptions) {
@@ -40,11 +36,9 @@ export class SocketConnector implements Connector {
   /**
    * @param options Connector options.
    * @param options.uri The URI for the DuckDB server, defaults to `ws://localhost:3000/`.
-   * @param options.ipc Options for Arrow IPC extraction.
    */
   constructor({
-    uri = 'ws://localhost:3000/',
-    ipc = undefined,
+    uri = 'ws://localhost:3000/'
   }: SocketOptions = {}) {
     this._uri = uri;
     this._queue = [];
@@ -92,7 +86,7 @@ export class SocketConnector implements Connector {
           } else if (query.type === 'exec') {
             resolve();
           } else if (query.type === 'arrow') {
-            resolve(decodeIPC(data as Uint8Array, ipc));
+            resolve(data);
           } else {
             reject(new Error(`Unexpected socket data: ${data}`));
           }
@@ -135,7 +129,7 @@ export class SocketConnector implements Connector {
     for (const { reject } of queue) reject(reason);
   }
 
-  query(query: ArrowQueryRequest): Promise<Table>;
+  query(query: ArrowQueryRequest): Promise<ArrayBuffer>;
   query(query: ExecQueryRequest): Promise<void>;
   query(query: ConnectorQueryRequest): Promise<unknown> {
     return new Promise(

@@ -120,15 +120,15 @@ describe('SocketConnector', () => {
     expect(log).toHaveBeenCalledOnce();
   });
 
-  it('decodes binary responses for arrow requests and resolves exec on text', async () => {
+  it('resolves arrow requests with the raw bytes and exec on text', async () => {
     const { connector, socket } = connect();
     const exec = connector.query({ type: 'exec', sql: 'CREATE TABLE t (a INT)' });
-    const arrow = connector.query({ type: 'arrow', sql: 'SELECT 1' }).catch(error => error);
+    const arrow = connector.query({ type: 'arrow', sql: 'SELECT 1' });
+    const bytes = new Uint8Array([1, 2, 3]);
     socket().emit('open');
     socket().emit('message', { data: '{}' });
-    socket().emit('message', { data: new Uint8Array([1, 2, 3]) });
+    socket().emit('message', { data: bytes });
     await exec;
-    // an undecodable buffer rejects instead of leaving the request pending
-    expect(await arrow).toBeInstanceOf(Error);
+    expect(await arrow).toBe(bytes);
   });
 });
