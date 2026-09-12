@@ -11,7 +11,8 @@ from socketify import App, CompressOptions, OpCode
 from pkg.query import get_arrow_bytes
 
 if TYPE_CHECKING:
-    import duckdb
+    from collections.abc import Buffer
+
     from duckdb import DuckDBPyConnection as Con
     from socketify import Request as Req
     from socketify import Response as Res
@@ -90,11 +91,7 @@ class HTTPHandler(Handler):
         self.begin(status).end(str(error))
 
 
-def handle_message(
-    handler: Handler,
-    con: duckdb.DuckDBPyConnection,
-    message: str | bytes | bytearray,
-) -> None:
+def handle_message(handler: Handler, con: Con, message: str | Buffer) -> None:
     try:
         query = query_decoder.decode(message)
     except msgspec.DecodeError as e:
@@ -104,11 +101,7 @@ def handle_message(
     handle_query(handler, con, query)
 
 
-def handle_query(
-    handler: Handler,
-    con: duckdb.DuckDBPyConnection,
-    query: _QueryParams,
-) -> None:
+def handle_query(handler: Handler, con: Con, query: _QueryParams) -> None:
     logger.debug(f"{query=}")
 
     start = time.time()
@@ -144,7 +137,7 @@ def on_error(error: object, res: Res, req: Req) -> None:
 def server(con: Con) -> None:
     app = App()
 
-    def ws_message(ws: Ws, message: str | bytes | bytearray, opcode: OpCode) -> None:
+    def ws_message(ws: Ws, message: str | Buffer, opcode: OpCode) -> None:
         handle_message(SocketHandler(ws), con, message)
 
     async def http_handler(res: Res, req: Req) -> None:
