@@ -41,11 +41,9 @@ $defs:
 
   ArrowRequest:
     type: object
-    required: [sql]
+    required: [type, sql]
     properties:
-      type:
-        const: arrow
-        description: Default when `type` is omitted.
+      type: { const: arrow }
       sql: { $ref: '#/$defs/Sql' }
     unevaluatedProperties: true
 
@@ -71,7 +69,10 @@ $defs:
 
   Request:
     description: |
-      A command object. `type` discriminates; an omitted `type` means `arrow`.
+      A command object. `type` is required and discriminates; a missing
+      `type` is rejected with `bad_request` and the message
+      `missing required 'type' parameter`, a missing `sql` with
+      `missing required 'sql' parameter`.
       Properties other than `type` and `sql` are application-owned: servers
       MUST accept them, MUST NOT let them override `type` or `sql`, and MAY
       pass them to a deployment-specific authorizer. Mosaic defines no

@@ -7,8 +7,8 @@ at `b623fb60` and will drift.
 
 Client baseline: `packages/mosaic/core/src/connectors` on
 [#1224](https://github.com/uwdata/mosaic/pull/1224), which builds on main
-after #1172 (drop `json`), #1213 (drop `persist` and result caches), and
-#1209 (socket pipelining).
+after #1172 (drop `json`), #1213 (drop `persist` and result caches),
+#1209 (socket pipelining), and #1228 (`type` required).
 
 ## Decisions made while drafting
 
@@ -16,7 +16,7 @@ Where the servers disagreed, the spec picks one behaviour. Each is revisable.
 
 | # | Topic | Decision | Alternatives observed |
 |---|-------|----------|-----------------------|
-| D1 | `type` default | `arrow` when omitted (matches `ArrowQueryRequest.type?` and the Node server). | Python, Rust, Go require it. |
+| D1 | `type` required | Required; missing → `400 bad_request` with the canonical message `missing required 'type' parameter`, as settled by #1228 across the client types and all four servers. | An earlier draft defaulted to `arrow` when Node did; #1228 removed that default. |
 | D2 | GET parameters | Flat `?type=&sql=`. | Python reads `?query=<json>`; Rust README documents `?query=` but its code reads flat params; Node GET always 400s. |
 | D3 | GET command set | `arrow` only; `exec`/`preagg` over GET are `400 bad_request`. | Rust and Go run `exec` over GET. |
 | D3a | GET read-only SQL | GET `sql` must satisfy `ReadOnlySql` (SELECT/VALUES/set-op/CTE root), verified before execution even with no policy active. Restricting `type` alone is insufficient: `DELETE FROM t RETURNING *` is one statement that returns rows. `POST` `arrow` is deliberately not restricted; revisit if `exec` is ever removed. | No server checks statement kind over GET. Go can reuse its `json_serialize_sql` walker; the others need a parser step. |
@@ -56,7 +56,6 @@ Already conforming: WebSocket error frames carry `code` (`bad_request`, `unauthe
 | HTTP errors | `http.Error` plain text (`server.go:127-130`); `classifyError` already yields a code | JSON envelope (D4) | Reuse `classifyError`; write `{error,code}` with `application/json`. |
 | `ErrExecWithValidation` | `bad_request` (`errors.go`) | `unsupported_command` (D6) | Remap. |
 | Parse errors without policy | 500 `internal_error` with raw DuckDB text | 400 `bad_request` (D7) | Run `json_serialize_sql` (or statement extraction) unconditionally, or map DuckDB parser errors. |
-| `type` missing | 400 `missing required 'type' parameter` (`server.go:345-362`) | default `arrow` (D1) | Default in `Validate`. |
 | Exec over GET | runs (`server.go:264-276`) | 400 `bad_request` (D3) | Reject in GET branch. |
 | GET read-only SQL | not checked; `json_serialize_sql` runs only under policy (`query.go:185-209`) | reject non-SELECT roots (D3a) | Run the serializer for GET unconditionally and check the root node class. |
 | Multi-statement `arrow` | runs all, returns last (duckdb-go `prepareStmts`) | reject (D16) | Count statements before execution. |
@@ -84,8 +83,7 @@ Source: `packages/server/duckdb-server-rust/src/{app.rs,query.rs,interfaces.rs,d
 | Area | Current | Spec | Fix |
 |------|---------|------|-----|
 | Arrow body | IPC **file** via `FileWriter` (`db.rs:44`) under stream media type (`interfaces.rs:40`) | IPC stream (D8) | Use `StreamWriter`; update `test.rs:84`. |
-| `type` missing | 400 empty (`query.rs:25`) | default `arrow` (D1) | Default in `QueryParams`. |
-| `sql` missing | 400 empty | 400 envelope | Add body. |
+| `type`/`sql` missing | 400 plain `missing required '…' parameter` (`query.rs`, since #1228) | 400 envelope | Wrap in envelope. |
 | Unknown `type` | GET 400 / POST 422 plain serde text (`interfaces.rs:14-19`) | 400 envelope `bad_request` | Custom rejection or `String` + manual match. |
 | Malformed JSON | 400 plain `Failed to parse the request body as JSON…` | 400 envelope | Custom `Json` rejection handler. |
 | DuckDB error | 500 plain `Something went wrong: …` (`interfaces.rs:62-64`) | 500 envelope `internal_error`; parse errors 400 (D7) | Map `duckdb::Error` variants. |
@@ -95,7 +93,7 @@ Source: `packages/server/duckdb-server-rust/src/{app.rs,query.rs,interfaces.rs,d
 | 405 | empty, `Allow: GET,HEAD,POST` | envelope + `Allow: GET, POST, OPTIONS` | Custom fallback. HEAD runs the query today; drop or document. |
 | README GET example | `?query={…}` (`Readme.md:47`) does not work | flat params | Fix README. |
 | `name` field | parsed, logged, unused (`interfaces.rs:21-27`) | dropped (D15) | Remove. |
-| WS errors | `{"error"}` no code (`websocket.rs:29-35`); message differs from HTTP (`Something went wrong:` prefix) | envelope with `code`, same message both transports | Shared mapper. |
+| WS errors | `{"error"}` no code (`websocket.rs`); DuckDB message differs from HTTP (`Something went wrong:` prefix) | envelope with `code`, same message both transports | Shared mapper. |
 | WS binary frames | ignored, **no reply** (`websocket.rs:59`) | SHOULD accept; MUST reply (D11) | Treat as text or answer with `bad_request`. |
 | WS upgrade edge | malformed upgrade falls through to GET handler (`app.rs:22-34`) | 400 envelope | Return the upgrade rejection. |
 | Cache headers | none | optional (D14) | Straightforward; results are buffered. |
@@ -110,9 +108,9 @@ Source: `packages/server/duckdb-server/pkg/{server.py,query.py,__main__.py}`.
 |------|---------|------|-----|
 | HTTP error status | CORS `write_header` runs first, so uWS emits `200` and the later `write_status(500)` is ignored (`server.py:71,111,136-140`) — errors are very likely **200** | mapped status | Call `write_status` before any `write_header`. Verify empirically. |
 | GET params | `?query=<json>` (`server.py:149-151`) | flat `type`/`sql` (D2) | Read flat params. |
-| `type` missing | `KeyError` escapes → `Error 'type'` (`server.py:85`) | default `arrow` (D1) | `query.get("type", "arrow")`. |
-| `sql` missing | `Error 'sql'` via `on_error` | 400 envelope | Validate before dispatch. |
-| Unknown `type` | `Unknown command X` plain (`server.py:94-96`) | 400 envelope `bad_request` | Classify. |
+| `type` missing | `handler.error(…, 400)` with the canonical message (since #1228), but see the status caveat above | 400 envelope | Wrap in envelope; fix status ordering. |
+| `sql` missing | `KeyError` escapes → `Error 'sql'` via `on_error` | 400 envelope | Validate before dispatch. |
+| Unknown `type` | `Unknown command X` plain, 400 nominal (`server.py`) | 400 envelope `bad_request` | Wrap in envelope. |
 | Malformed/falsy POST body | `NotImplementedError` → body `Error ` (`server.py:157`) | 400 envelope | Validate `get_json()` result. |
 | DuckDB error | plain `str(e)` | 500 envelope; parse errors 400 (D7) | Map `duckdb.ParserException`/`BinderException`. |
 | Arrow Content-Type | `application/octet-stream` (`server.py:67`) | `application/vnd.apache.arrow.stream` (D8) | Change header; body is already a stream. |
@@ -135,9 +133,9 @@ Source: `packages/server/duckdb/src/{data-server.js,DuckDB.js}`, `bin/run-server
 |------|---------|------|-----|
 | GET | always 400: `JSON.parse` of the parsed query object (`data-server.js:39-40,76`) | flat params (D2) | Build the command from `url.query`. |
 | GET read-only SQL | n/a (GET broken) | reject non-SELECT roots (D3a) | Needed once GET works; `json_serialize_sql` via the same connection. |
+| `type` missing | 400 plain `missing required 'type' parameter` (since #1228) | 400 envelope | Wrap in envelope. |
 | `sql` missing | not validated → DuckDB parser error → 500 | 400 `bad_request` | Validate. |
-| Non-string / `null` `type` | `Unrecognized command: null` 400 | fine, but body empty | Envelope. |
-| HTTP errors | **empty body**, no Content-Type (`data-server.js:119-123`) | envelope (D4) | Rewrite `error()`. |
+| HTTP errors | plain `String(err)` body, no Content-Type (`data-server.js`, since #1228) | envelope (D4) | Rewrite `error()`. |
 | Unsupported method | 400 (`data-server.js:49-50`) | 405 + `Allow` | Change status. |
 | Empty Arrow result | 0 bytes (`DuckDB.js:91`; `duckdb.test.js:26-30` asserts it) | schema + EOS (D8) | Emit a schema-only stream. |
 | Arrow trailing `;` / multi-statement | wrapped as `to_arrow_ipc((sql))` (`DuckDB.js:88-90`) → parser error 500 | trailing `;` allowed; multi → 400 (D16) | Strip trailing `;`; classify. |
