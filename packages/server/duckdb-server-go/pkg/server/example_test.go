@@ -15,17 +15,25 @@ func ExampleNew() {
 	// Callers must supply a real *query.DB; nil is illustrative only.
 	var db *query.DB
 
-	authorizer := server.AuthorizerFunc(func(r *http.Request) (server.CommandAuthorizer, error) {
+	type fields struct {
+		Project string `json:"project"`
+	}
+	authorizer := server.AuthorizerFunc[*fields](func(r *http.Request) (server.CommandAuthorizer[*fields], error) {
 		identity, ok := r.Context().Value(identityKey{}).(string)
 		if !ok {
 			return nil, server.ErrUnauthenticated
 		}
 
-		return func(ctx context.Context, command server.Command) error {
+		getProject := r.URL.Query().Get("project")
+		return func(ctx context.Context, command server.Command[*fields]) error {
 			if err := ctx.Err(); err != nil {
 				return err
 			}
-			if identity != "reader" || command.Type() == server.CommandExec {
+			project := getProject
+			if payload := command.Payload(); payload != nil {
+				project = payload.Project
+			}
+			if identity != "reader" || project != "dashboard" || command.Type() == server.CommandExec {
 				return server.ErrPermissionDenied
 			}
 			return nil
