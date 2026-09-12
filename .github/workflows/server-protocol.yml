@@ -1,0 +1,44 @@
+name: Server Protocol
+
+# Validates the server protocol specification in packages/server/spec.
+# Conformance tests that run each server implementation against the spec
+# will be added here once the test suite exists.
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "packages/server/spec/**"
+      - ".github/workflows/server-protocol.yml"
+  pull_request:
+    branches:
+      - main
+    paths:
+      - "packages/server/spec/**"
+      - ".github/workflows/server-protocol.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  lint:
+    name: Lint spec
+
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v6
+
+      - name: Setup node
+        uses: actions/setup-node@v7
+        with:
+          node-version: "22.x"
+          cache: "pnpm"
+          cache-dependency-path: |
+            pnpm-lock.yaml
+
+      - run: pnpm run spec:lint
