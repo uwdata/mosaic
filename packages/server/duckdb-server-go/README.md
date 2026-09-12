@@ -154,8 +154,8 @@ POST and WebSocket messages require one complete command object with optional su
 Schema, function, and remote-URI policies are evaluated by the embedded
 [`pkg/query/validate.sql`](pkg/query/validate.sql). It rejects unsupported AST
 structures before applying the policy, including nested write operations and
-unreviewed parser changes. A private validation pool preloads grammar tables and
-reuses prepared plans; its connection-local request inputs isolate concurrent policies.
+unreviewed parser changes. A private in-memory validation database reuses one prepared
+plan per pooled connection; connection-local request slots isolate concurrent policies.
 See the [validation API and SQL contract](../../../docs/server/index.md#go-server-query-validation).
 
 Use an allowlist when the server should accept only reviewed functions and operators. An explicitly empty value enables

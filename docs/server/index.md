@@ -37,20 +37,18 @@ the resulting AST before the submitted query is executed. The SQL file is canoni
 module so standalone module builds can embed it; other servers can package the same
 file and supply their policy inputs.
 
-The Go adapter bootstraps each validation connection with temporary grammar tables,
-the reviewed remote-reader inventory, a one-row input table, and a parameter-free
-prepared validation plan. Each request exclusively borrows a connection, replaces
-its entire request input, executes the plan, and returns the connection after reading
-the result. This prevents schema or function policies from leaking across concurrent
-requests. The validation pool uses `MaxConnections`, retains idle connections for
-plan reuse, and closes with `DB.Close`.
+The Go adapter keeps, per server-level policy, a pool of validation connections
+that each hold one prepared, parameter-free validation statement. Each request
+exclusively borrows a connection, publishes its query and schema policy through
+the connection's request slot, executes the plan, and returns the connection after
+reading the result. This prevents schema or function policies from leaking across
+concurrent requests. The pools share a `MaxConnections` cap, retain idle
+connections for plan reuse, and close with `DB.Close`.
 
 The private validation database uses one worker thread without changing the query
 database's settings. It does not execute submitted SQL or load application extensions,
 macros, views, or attached catalogs. Extension-specific parser syntax is therefore
 unsupported even if the execution database loads an extension that accepts it.
-The same embedded SQL can still run directly with parameters; bootstrap tables are
-an adapter optimization rather than a second policy implementation.
 
 ### Supported SQL
 
@@ -61,8 +59,9 @@ variants, missing required fields, and unexpected field types are rejected with
 operations, ordinary and recursive CTEs, and the existing SHOW/DESCRIBE forms.
 Literal values and type metadata are treated as data rather than executable AST
 nodes; strings containing SQL or JSON are not recursively interpreted.
-The implementation uses `json_tree` to flatten the AST, then checks object fields
-and parent/child relationships with joins rather than a recursive CTE. The grammar
+The implementation uses `json_tree` to flatten the AST, derives each node's field
+and owner from its JSON path, and checks parent/child relationships with a single
+self-join rather than a recursive CTE. The grammar
 supports arrays nested up to two levels (such as VALUES rows); query nesting is not
 limited to that depth.
 Serialization errors also reject the query. Successful serialization alone does
@@ -110,23 +109,38 @@ requests remain disabled.
 
 ### SQL Interface
 
-Run the file as a parameterized query with these named inputs:
+The file is a template. Server-level policy is substituted into `@@name@@`
+placeholders once, when the statement is prepared, so DuckDB prunes disabled
+branches at plan time; per-request inputs arrive through a scalar function call:
 
-| Parameter | Type | Meaning |
+| Placeholder | SQL literal | Meaning |
 | --- | --- | --- |
-| `query` | `VARCHAR` | Submitted SQL as data, never interpolated into the validation query. |
-| `check_schemas` | `BOOLEAN` | Enable schema and explicit-catalog restrictions. |
-| `allowed_schemas` | `VARCHAR[]` | Exact authorized schema names. |
-| `check_functions` | `BOOLEAN` | Enable the function allowlist. |
-| `allowed_functions` | `VARCHAR[]` | Resolved lowercase allowed function names. |
-| `blocked_functions` | `VARCHAR[]` | Lowercase blocked names; mutually exclusive with an enabled allowlist. |
-| `reject_remote_uris` | `BOOLEAN` | Enable remote-URI literal checks. |
-| `remote_readers` | `JSON` | Reviewed function-to-path-argument inventory, e.g. `{"read_parquet":{"Positional":[0],"Named":[]}}`. |
+| `@@check_functions@@` | `BOOLEAN` | Enable the function allowlist. |
+| `@@allowed_functions@@` | `VARCHAR[]` | Resolved lowercase allowed function names. |
+| `@@blocked_functions@@` | `VARCHAR[]` | Lowercase blocked names; mutually exclusive with an enabled allowlist. |
+| `@@reject_remote_uris@@` | `BOOLEAN` | Enable remote-URI literal checks. |
+| `@@remote_prefixes@@` | `VARCHAR[]` | Recognized remote URI prefixes. |
+| `@@remote_readers@@` | `MAP(VARCHAR, STRUCT(positional BIGINT[], named VARCHAR[]))` | Reviewed function-to-path-argument inventory. |
+| `@@request@@()` | volatile function returning `VARCHAR` | JSON object `{"query": ..., "check_schemas": ..., "allowed_schemas": [...]}` for the current request. |
 
-List parameters treat SQL NULL as an empty list. Supply all boolean flags explicitly.
-The Go adapter supplies the path-argument inventory from `functionset/remoteread`;
-other adapters must supply an equivalent reviewed inventory when enabling that
-policy. The URI prefixes and matching logic are in the SQL file.
+The request function is the reason the statement is fast: DuckDB refuses to cache a
+prepared plan whose parameters feed a table function scan (`json_tree`), so a
+parameterized statement is re-planned on every call, and planning this query costs
+several milliseconds. A zero-parameter statement is planned once per connection.
+The function must be volatile so it is not folded at bind time, and the
+`json_tree` input stays wrapped in a scalar subquery so `json_tree` binds in
+table-in-out mode instead of evaluating its argument at bind time. The Go adapter
+registers one such UDF, keeps a prepared statement per pooled validation
+connection, and passes a per-connection slot id as the function argument. Other
+adapters can substitute any equivalent volatile function, or substitute a
+constant literal and accept re-planning.
+
+Grammar rules are embedded as one `MAP` constant folded at plan time. Object
+fields are read with a single `json_extract_string` over a fixed path list, and
+the grammar's required-field lists hold indices into that list, so keep the two
+in sync when changing either. The Go adapter supplies the path-argument inventory
+from `functionset/remoteread`; other adapters must supply an equivalent reviewed
+inventory when enabling that policy.
 
 The result columns are `code`, `error_type`, `error_subtype`, `message`, and
 `position`. Success is a single `ok` row. Rejection returns `forbidden`,
@@ -139,29 +153,17 @@ views/macros, inspect nested SQL strings, or sandbox resource access. Remote-URI
 checks inspect reviewed literal path arguments; computed paths can evade them.
 Catalogs and initialization must remain trusted.
 
-The stricter SQL validation adds latency: local warm Go benchmarks on an Apple M3
-Max measured approximately 3–4 ms per validation for a simple SELECT and a CTE query,
-4–5 ms for 20 nested subqueries, and 17–21 ms for 100. Enabled default function
-allowlists, blocklists, and remote-URI policies measured approximately 4–5 ms on
-their small benchmark queries. These measurements include input binding, DuckDB
-serialization, and reading results, but exclude bootstrap and execution of the
-submitted SQL. The earlier Go walker measured approximately 0.1 ms for small queries;
-the initial flattened SQL path took 12–13 ms. The remaining gap is substantial.
-
-Bootstrap experiments compared input/grammar tables, SQL macros, prepared statements,
-additional materialized stages, and preloaded function-name tables. Additional
-stages and function-name joins did not improve the winning stable plan.
-Further experiments tested regex-based parent lookup, precomputed field tables,
-individual optimizer switches, policy-specialized plans, result assembly, and
-combined update/execution calls. These did not produce a substantial repeatable
-improvement over directly scanning the connection-local input row. An execution-only
-control still took approximately 3 ms, indicating that request binding is not the
-main remaining cost. `BenchmarkValidationPlans` retains the plan experiments;
-its specialized variants are schema-only diagnostics, not production policy paths.
-
-Alpha
-v2.0.0-alpha41489 did not improve small-query latency: bootstrap experiments using
-identical stable AST inputs took approximately 26–38 ms. Alpha compatibility is
-still unreviewed. Run
+SQL validation adds latency over the earlier Go walker (approximately 0.1 ms
+including serialization). Local warm Go benchmarks on an Apple M3 Max measured
+approximately 1.4 ms per validation for a simple SELECT, 1.7 ms for a CTE query,
+2.2 ms for 20 nested subqueries, and 10 ms for 100; enabled default function
+allowlists, blocklists, and remote-URI policies measured 1.7–1.9 ms on their small
+benchmark queries. Roughly 0.2 ms of that is DuckDB serialization and roughly
+0.7 ms is fixed pipeline overhead for the plan. Under concurrent load the pooled
+prepared statements sustain approximately 0.5 ms per validation. The initial
+parameterized statement measured 12–13 ms for the small queries and 25 ms for 100
+nested subqueries because DuckDB re-planned it on every call; a connection-local
+input table with a parameter-free plan measured 3–4 ms. Neither variant executes
+the submitted query. Run
 `go test -tags=duckdb_arrow ./pkg/query -run '^$' -bench BenchmarkValidateSQL -benchmem`
 from the Go module to measure the deployment environment.

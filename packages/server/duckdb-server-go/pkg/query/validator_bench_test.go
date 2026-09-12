@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/duckdb/duckdb-go/v2"
+
 	"github.com/uwdata/mosaic/packages/server/duckdb-server-go/pkg/functionset"
 )
 
@@ -33,6 +34,26 @@ func BenchmarkValidateSQL(b *testing.B) {
 			}
 		})
 	}
+}
+
+func BenchmarkValidateSQLParallel(b *testing.B) {
+	connector, err := duckdb.NewConnector(":memory:", nil)
+	if err != nil {
+		b.Fatal(err)
+	}
+	defer connector.Close()
+	db, err := New(b.Context(), connector)
+	if err != nil {
+		b.Fatal(err)
+	}
+	defer db.Close()
+	b.RunParallel(func(pb *testing.PB) {
+		for pb.Next() {
+			if err := db.ValidateSQL(b.Context(), "SELECT * FROM tenant_a.orders", ValidationPolicy{CheckSchemas: true, AllowedSchemas: []string{"tenant_a"}}); err != nil {
+				b.Fatal(err)
+			}
+		}
+	})
 }
 
 func BenchmarkValidateSQLPolicies(b *testing.B) {

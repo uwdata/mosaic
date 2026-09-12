@@ -11,9 +11,8 @@ import (
 
 func validateAST(t *testing.T, db *DB, ast string, policy ValidationPolicy) error {
 	t.Helper()
-	start := strings.Index(validationSQL, "system.main.json_serialize_sql(")
-	end := strings.Index(validationSQL[start:], ") AS ast") + start + 1
-	statement := validationSQL[:start] + "$query::JSON" + validationSQL[end:]
+	require.Contains(t, validationSQL, serializeCall)
+	statement := strings.Replace(validationSQL, serializeCall, "(SELECT (@@request@@()->>'query')::JSON)", 1)
 	return db.validateSQL(t.Context(), statement, ast, policy)
 }
 

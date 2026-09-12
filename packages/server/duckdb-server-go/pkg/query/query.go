@@ -20,13 +20,14 @@ import (
 var ErrExecWithValidation = errors.New("query: exec command is disabled when query validation is active")
 
 type DB struct {
-	db           *sql.DB
-	validationDB *sql.DB
+	db *sql.DB
 
 	// since db.SetMaxOpenConns doesn't apply to Arrow connections, we're using a sync.Pool to reuse connections,
 	// and a semaphore to limit connections to the same as the sql.DB max connections
 	connPool       *sync.Pool
 	arrowSemaphore *semaphore.Weighted
+
+	validators *validatorSet
 
 	functionBlocklist           []string
 	functionAllowlist           []string
@@ -58,7 +59,7 @@ func New(ctx context.Context, connector *duckdb.Connector, opts ...OptionFunc) (
 		return nil, errors.New("query: function allowlist and blocklist cannot both be configured")
 	}
 
-	validationDB, err := newValidationDB(ctx, o.MaxConnections)
+	validators, err := newValidatorSet(ctx, o.MaxConnections)
 	if err != nil {
 		return nil, err
 	}
@@ -68,11 +69,11 @@ func New(ctx context.Context, connector *duckdb.Connector, opts ...OptionFunc) (
 	arrowSemaphore := semaphore.NewWeighted(int64(o.MaxConnections))
 
 	return &DB{
-		db:           db,
-		validationDB: validationDB,
+		db: db,
 
 		connPool:       newArrowSyncPool(ctx, connector, o.Logger),
 		arrowSemaphore: arrowSemaphore,
+		validators:     validators,
 
 		functionBlocklist:           append([]string(nil), o.FunctionBlocklist...),
 		functionAllowlist:           append([]string(nil), functionAllowlist...),
@@ -169,7 +170,7 @@ WHERE install_mode != 'NOT_INSTALLED'`
 
 // Close closes any resources created by New, but does not close the underlying connector.
 func (db *DB) Close() {
-	if err := db.validationDB.Close(); err != nil {
+	if err := db.validators.Close(); err != nil {
 		db.logger.Error("failed to close validation database", "error", err)
 	}
 	err := db.db.Close()
