@@ -1,0 +1,168 @@
+asyncapi: 3.0.0
+info:
+  title: Mosaic DuckDB server protocol (WebSocket)
+  version: 0.1.0-draft
+  description: |
+    WebSocket transport for the same commands described in `openapi.yaml`.
+    This document is written from the server's point of view: the server
+    *receives* command messages and *sends* result messages.
+
+    ### Framing rules
+
+    * The upgrade is served at the same path as the HTTP endpoint (`/` on the
+      reference servers). No subprotocol is negotiated.
+    * The client sends one command per **text** frame containing a JSON
+      `Request`. Servers SHOULD also accept a binary frame containing UTF-8
+      JSON, but clients MUST send text.
+    * Clients pipeline: they send commands without waiting for earlier
+      replies. For every command message the server sends **exactly one**
+      response message, delivered **in the order commands were received**.
+      There is no request identifier; clients correlate by position. Servers
+      MAY execute commands concurrently but MUST buffer responses to preserve
+      order, and MUST reply even to commands that fail before execution.
+    * Frame type encodes the result kind:
+
+      | request `type` | success frame | payload                                   |
+      |----------------|---------------|-------------------------------------------|
+      | `arrow`        | binary        | Arrow IPC stream, same bytes as HTTP      |
+      | `exec`         | text          | `{}`                                      |
+      | `preagg`       | text          | `PreaggResponse`                          |
+      | any            | text          | `Error` envelope                          |
+
+      A client receiving a text frame for an `arrow` command treats it as an
+      error (either the `Error` envelope, or a protocol violation if it lacks
+      `error`). A client receiving a binary frame for `preagg` treats it as a
+      protocol violation.
+    * Errors, including malformed JSON and unknown `type`, are reported with
+      an `Error` text frame; the connection **stays open** and later commands
+      are still answered. Servers MUST NOT close the socket for
+      application-level failures. Servers MAY close with `1009` for frames
+      above their size limit and `1002`/`1007` for protocol violations.
+    * Servers SHOULD accept command messages of at least 1 MiB.
+    * Servers SHOULD answer WebSocket pings during long-running commands so
+      proxies do not drop idle-looking connections, and MAY send pings.
+    * SQL policy and application-owned request fields behave exactly as over
+      HTTP. Nothing is cached over WebSocket.
+    * Authentication material is carried on the upgrade request (cookies or
+      headers set by a proxy); browsers cannot set custom headers, so servers
+      MUST NOT require a header the browser `WebSocket` API cannot send unless
+      a proxy adds it. Authentication failure on the upgrade returns an HTTP
+      `401` with the `Error` envelope instead of upgrading.
+  license:
+    name: BSD-3-Clause
+
+defaultContentType: application/json
+
+servers:
+  local:
+    host: localhost:3000
+    protocol: ws
+    description: Default for all reference servers. `wss` when TLS is configured.
+
+channels:
+  commands:
+    address: /
+    description: Single bidirectional channel carrying commands and their positional replies.
+    messages:
+      command:
+        $ref: '#/components/messages/Command'
+      arrowResult:
+        $ref: '#/components/messages/ArrowResult'
+      execAck:
+        $ref: '#/components/messages/ExecAck'
+      preaggResult:
+        $ref: '#/components/messages/PreaggResult'
+      error:
+        $ref: '#/components/messages/Error'
+
+operations:
+  receiveCommand:
+    action: receive
+    channel:
+      $ref: '#/channels/commands'
+    summary: Server receives a command and replies with exactly one message on the same socket.
+    messages:
+      - $ref: '#/channels/commands/messages/command'
+    reply:
+      channel:
+        $ref: '#/channels/commands'
+      messages:
+        - $ref: '#/channels/commands/messages/arrowResult'
+        - $ref: '#/channels/commands/messages/execAck'
+        - $ref: '#/channels/commands/messages/preaggResult'
+        - $ref: '#/channels/commands/messages/error'
+
+  sendResult:
+    action: send
+    channel:
+      $ref: '#/channels/commands'
+    summary: Server sends exactly one of these per received command, in request order, even when clients pipeline.
+    messages:
+      - $ref: '#/channels/commands/messages/arrowResult'
+      - $ref: '#/channels/commands/messages/execAck'
+      - $ref: '#/channels/commands/messages/preaggResult'
+      - $ref: '#/channels/commands/messages/error'
+
+components:
+  messages:
+    Command:
+      name: Command
+      title: Command (text frame)
+      contentType: application/json
+      payload:
+        $ref: './schemas.yaml#/$defs/Request'
+      examples:
+        - name: arrow
+          payload: { type: arrow, sql: "SELECT 1 AS x" }
+        - name: exec
+          payload: { type: exec, sql: "CREATE TABLE t AS SELECT 1 AS x" }
+        - name: preagg
+          payload: { type: preagg, sql: "SELECT category, count(*) AS n FROM analytics.public.events GROUP BY category" }
+
+    ArrowResult:
+      name: ArrowResult
+      title: Arrow result (binary frame)
+      contentType: application/vnd.apache.arrow.stream
+      payload:
+        type: string
+        format: binary
+        description: Arrow IPC stream. Never empty; an empty result still carries the schema and EOS marker.
+
+    ExecAck:
+      name: ExecAck
+      title: Exec acknowledgement (text frame)
+      contentType: application/json
+      payload:
+        $ref: './schemas.yaml#/$defs/ExecResponse'
+      examples:
+        - payload: {}
+
+    PreaggResult:
+      name: PreaggResult
+      title: Preaggregate reference (text frame)
+      contentType: application/json
+      payload:
+        $ref: './schemas.yaml#/$defs/PreaggResponse'
+      examples:
+        - payload:
+            catalog: memory
+            schema: mosaic_scope_a7
+            table: preagg_c92f
+            createdAt: "2026-09-08T20:00:00Z"
+
+    Error:
+      name: Error
+      title: Error envelope (text frame)
+      contentType: application/json
+      payload:
+        $ref: './schemas.yaml#/$defs/Error'
+      examples:
+        - name: bad_request
+          payload: { error: "missing required 'sql' parameter", code: bad_request }
+        - name: table_not_found
+          payload:
+            error: Materialized table is unavailable
+            code: table_not_found
+            catalog: memory
+            schema: mosaic_scope_a7
+            table: preagg_c92f

@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <title>Mosaic DuckDB server protocol</title>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+  </head>
+  <body>
+    <div id="app"></div>
+    <script src="https://cdn.jsdelivr.net/npm/js-yaml@4/dist/js-yaml.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@scalar/api-reference@1.68.0"></script>
+    <script type="module">
+      // Scalar does not dereference cross-file $refs, so inline schemas.yaml
+      // into each document's components.schemas before handing it over.
+      const load = async (file) => jsyaml.load(await (await fetch(file)).text());
+      const shared = await load('./schemas.yaml');
+
+      const inline = (doc) => {
+        const text = JSON.stringify({ ...doc, components: { ...doc.components, schemas: shared.$defs } })
+          .replaceAll('"./schemas.yaml#/$defs/', '"#/components/schemas/')
+          .replaceAll('"#/$defs/', '"#/components/schemas/');
+        return JSON.parse(text);
+      };
+
+      const [openapi, asyncapi] = await Promise.all([load('./openapi.yaml'), load('./asyncapi.yaml')]);
+
+      Scalar.createApiReference('#app', {
+        sources: [
+          { title: 'HTTP', slug: 'http', content: inline(openapi), default: true },
+          { title: 'WebSocket', slug: 'websocket', content: inline(asyncapi) }
+        ],
+        hideClientButton: true,
+        hideTestRequestButton: true
+      });
+    </script>
+  </body>
+</html>

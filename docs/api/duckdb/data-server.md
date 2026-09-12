@@ -27,6 +27,8 @@ Once launched, the data server will accept HTTP POST requests containing JSON co
 
 A request without a _type_ is rejected with HTTP status 400 and the message `missing required 'type' parameter`; the other Mosaic DuckDB servers respond the same way.
 
+The full request, response, and error contract shared by all Mosaic server implementations is documented in the [Server Protocol](./server-protocol) reference.
+
 ### Examples
 
 Launch a data server in Node.js:

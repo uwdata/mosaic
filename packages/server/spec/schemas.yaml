@@ -1,0 +1,181 @@
+$schema: https://json-schema.org/draft/2020-12/schema
+$id: https://idl.uw.edu/mosaic/server/schemas.yaml
+title: Mosaic DuckDB server protocol schemas
+description: |
+  Request, response, and error shapes shared by the HTTP (openapi.yaml) and
+  WebSocket (asyncapi.yaml) transports. Both transports carry the same JSON
+  command object and the same JSON error envelope; only framing differs.
+
+  Client source of truth is `packages/mosaic/core/src/connectors`
+  (`Connector.ts`, `rest.ts`, `socket.ts`, `errors.ts`) as of uwdata/mosaic#1224.
+
+$defs:
+  CommandType:
+    type: string
+    enum: [arrow, exec, preagg]
+    description: |
+      Discriminates the command. `arrow` returns a result table; `exec` runs
+      statements for their side effects; `preagg` materializes a SELECT into
+      a server-managed table and returns its reference.
+
+  Sql:
+    type: string
+    minLength: 1
+    description: |
+      SQL text. For `arrow` and `preagg` this MUST be exactly one statement;
+      a trailing semicolon is permitted. For `exec` it MAY contain several
+      `;`-separated statements, executed in order.
+
+  ReadOnlySql:
+    allOf: [{ $ref: '#/$defs/Sql' }]
+    description: |
+      Exactly one read-only statement. The statement's root MUST be a
+      SELECT, VALUES, set operation, or CTE (DuckDB `SELECT_NODE`,
+      `SET_OPERATION_NODE`, `CTE_NODE`, `RECURSIVE_CTE_NODE`) and MUST NOT be
+      a DML, DDL, PRAGMA, SET, ATTACH, COPY, or other side-effecting
+      statement, including ones that return rows such as
+      `DELETE ... RETURNING`. Servers MUST verify this before execution
+      whether or not a deployment policy is active, and reject violations
+      with `bad_request`. Required for `preagg` and for any command
+      delivered over HTTP GET.
+
+  ArrowRequest:
+    type: object
+    required: [type, sql]
+    properties:
+      type: { const: arrow }
+      sql: { $ref: '#/$defs/Sql' }
+    unevaluatedProperties: true
+
+  ExecRequest:
+    type: object
+    required: [type, sql]
+    properties:
+      type: { const: exec }
+      sql: { $ref: '#/$defs/Sql' }
+    unevaluatedProperties: true
+
+  PreaggRequest:
+    type: object
+    required: [type, sql]
+    properties:
+      type: { const: preagg }
+      sql:
+        allOf: [{ $ref: '#/$defs/ReadOnlySql' }]
+        description: |
+          The server validates the statement under the same source, function,
+          and external-access policy as `arrow` queries, then materializes it.
+    unevaluatedProperties: true
+
+  Request:
+    description: |
+      A command object. `type` is required and discriminates; a missing
+      `type` is rejected with `bad_request` and the message
+      `missing required 'type' parameter`, a missing `sql` with
+      `missing required 'sql' parameter`.
+      Properties other than `type` and `sql` are application-owned: servers
+      MUST accept them, MUST NOT let them override `type` or `sql`, and MAY
+      pass them to a deployment-specific authorizer. Mosaic defines no
+      metadata envelope.
+    oneOf:
+      - $ref: '#/$defs/ArrowRequest'
+      - $ref: '#/$defs/ExecRequest'
+      - $ref: '#/$defs/PreaggRequest'
+
+  ExecResponse:
+    type: object
+    description: |
+      Acknowledgement of a completed `exec`. Over HTTP the body is empty; over
+      WebSocket the server sends this empty JSON object as a text frame.
+    additionalProperties: false
+    maxProperties: 0
+
+  Identifier:
+    type: string
+    minLength: 1
+    description: A single unquoted SQL identifier component. Clients quote each component separately.
+
+  PreaggResponse:
+    type: object
+    required: [catalog, schema, table, createdAt]
+    properties:
+      catalog: { $ref: '#/$defs/Identifier' }
+      schema: { $ref: '#/$defs/Identifier' }
+      table: { $ref: '#/$defs/Identifier' }
+      createdAt:
+        type: string
+        format: date-time
+        description: |
+          RFC 3339 timestamp of the successful build's completion. Reusing an
+          existing table preserves it; rebuilding updates it.
+    additionalProperties: false
+    description: |
+      Fully qualified reference to a complete, queryable table. Clients
+      construct `TableRefNode([catalog, schema, table])`; a dotted string is
+      not a substitute.
+
+  ErrorCode:
+    type: string
+    description: |
+      Machine-readable failure class. The vocabulary is closed: servers MUST
+      use exactly these codes, and adding one requires a change to this
+      schema. Clients treat any code they do not recognise as a generic
+      failure. The HTTP column is the canonical status; where the HTTP
+      transport itself dictates a more specific status, that exception is
+      listed and takes precedence. WebSocket errors carry only the code.
+
+      | code                  | HTTP | when                                                                                   |
+      |-----------------------|------|----------------------------------------------------------------------------------------|
+      | `bad_request`         | 400  | Malformed body, unknown `type`, missing `sql`, GET with `exec`/`preagg`, non-read-only SQL over GET, invalid SQL syntax or unsupported statement kind. HTTP exceptions: `405` wrong method, `412` failed `If-Match`, `413` oversized body, `415` unsupported media type. |
+      | `unauthenticated`     | 401  | Caller identity required but absent or invalid.                                        |
+      | `forbidden`           | 403  | Authenticated caller denied by source/function/external-access policy, or a disallowed cross-origin request. |
+      | `table_not_found`     | 404  | A referenced table in the caller's managed namespace does not exist. `catalog`/`schema`/`table` MUST be included. |
+      | `unsupported_command` | 400  | The command is known but not available in this deployment (for example `preagg` on a server without preaggregation, or `exec` when query validation is active). Clients MUST NOT fall back to `exec`. |
+      | `resource_exhausted`  | 429  | Admission, quota, row/byte, or concurrency limit reached. Clients suppress immediate retries. |
+      | `deadline_exceeded`   | 504  | The server's command deadline elapsed. The attempt is over; partial output MUST NOT have been published. |
+      | `internal_error`      | 500  | Any other server-side failure, including DuckDB execution errors not classified above. |
+    enum:
+      - bad_request
+      - unauthenticated
+      - forbidden
+      - table_not_found
+      - unsupported_command
+      - resource_exhausted
+      - deadline_exceeded
+      - internal_error
+
+  Error:
+    type: object
+    required: [error, code]
+    properties:
+      error:
+        type: string
+        minLength: 1
+        description: Human-readable message. MAY include the DuckDB error text.
+      code: { $ref: '#/$defs/ErrorCode' }
+      catalog: { $ref: '#/$defs/Identifier' }
+      schema: { $ref: '#/$defs/Identifier' }
+      table: { $ref: '#/$defs/Identifier' }
+    additionalProperties: true
+    description: |
+      Structured error envelope, identical over HTTP (JSON body with the mapped
+      status) and WebSocket (text frame). `catalog`, `schema`, and `table` are
+      present together only for `table_not_found`, and only after the server
+      has established that the reference belongs to the caller's managed
+      namespace; servers MUST NOT echo arbitrary forbidden targets. For every
+      other code the three properties are prohibited so that a forbidden
+      target or a partial reference cannot leak through the envelope.
+    if:
+      properties:
+        code: { const: table_not_found }
+    then:
+      properties:
+        catalog: { $ref: '#/$defs/Identifier' }
+        schema: { $ref: '#/$defs/Identifier' }
+        table: { $ref: '#/$defs/Identifier' }
+      required: [catalog, schema, table]
+    else:
+      properties:
+        catalog: false
+        schema: false
+        table: false

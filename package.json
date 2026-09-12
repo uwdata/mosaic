@@ -26,6 +26,8 @@
     "server": "cd packages/server/duckdb-server && pnpm run dev",
     "server:rust": "cd packages/server/duckdb-server-rust && cargo run",
     "server:node": "nodemon packages/server/duckdb/bin/run-server.js",
+    "spec:lint": "npx --yes @redocly/cli@2.52.1 lint --config packages/server/spec/redocly.yaml && npx --yes @asyncapi/cli@6.0.2 validate packages/server/spec/asyncapi.yaml --fail-severity=warn",
+    "spec:preview": "vite packages/server/spec --open",
     "dev": "vite"
   },
   "devDependencies": {
