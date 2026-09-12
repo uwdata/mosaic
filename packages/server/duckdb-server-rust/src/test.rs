@@ -80,6 +80,29 @@ async fn query_arrow() -> Result<()> {
     assert_foo_batch(&body)
 }
 
+#[tokio::test]
+async fn missing_type_is_bad_request() -> Result<()> {
+    let app = app::app(None, None)?;
+
+    let response = app
+        .oneshot(
+            Request::builder()
+                .method(http::Method::POST)
+                .uri("/")
+                .header(http::header::CONTENT_TYPE, "application/json")
+                .body(Body::from(serde_json::to_vec(
+                    &json!({"sql": "select 1 as foo"}),
+                )?))?,
+        )
+        .await?;
+
+    assert_eq!(response.status(), StatusCode::BAD_REQUEST);
+
+    let body = response.into_body().collect().await?.to_bytes();
+    assert_eq!(body, "missing required 'type' parameter");
+    Ok(())
+}
+
 fn assert_foo_batch(bytes: &[u8]) -> Result<()> {
     let mut reader = FileReader::try_new(std::io::Cursor::new(bytes), None)?;
     let actual_batch = reader.next().unwrap()?;

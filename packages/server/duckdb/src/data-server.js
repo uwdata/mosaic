@@ -80,7 +80,11 @@ export function queryHandler(db) {
     }
 
     try {
-      const { sql, type = 'arrow' } = query;
+      const { sql, type } = query;
+      if (type == null) {
+        res.error(`missing required 'type' parameter`, 400);
+        return;
+      }
       console.log(`> ${String(type).toUpperCase()}${sql ? ` ${sql}` : ''}`);
 
       // process query and return result
@@ -119,7 +123,7 @@ function httpResponse(res) {
     error(err, code) {
       console.error(err);
       res.writeHead(code);
-      res.end();
+      res.end(String(err));
     }
   }
 }

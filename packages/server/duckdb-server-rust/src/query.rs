@@ -11,7 +11,7 @@ pub async fn handle(state: &AppState, params: QueryParams) -> Result<QueryRespon
                 let buffer = state.db.get_arrow(sql).await?;
                 Ok(QueryResponse::Arrow(buffer))
             } else {
-                Err(AppError::BadRequest)
+                Err(AppError::BadRequest("missing required 'sql' parameter"))
             }
         }
         Some(Command::Exec) => {
@@ -19,9 +19,9 @@ pub async fn handle(state: &AppState, params: QueryParams) -> Result<QueryRespon
                 state.db.execute(sql).await?;
                 Ok(QueryResponse::Empty)
             } else {
-                Err(AppError::BadRequest)
+                Err(AppError::BadRequest("missing required 'sql' parameter"))
             }
         }
-        None => Err(AppError::BadRequest),
+        None => Err(AppError::BadRequest("missing required 'type' parameter")),
     }
 }

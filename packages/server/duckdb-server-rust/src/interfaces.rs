@@ -50,7 +50,7 @@ impl IntoResponse for QueryResponse {
 #[derive(Debug)]
 pub enum AppError {
     Error(anyhow::Error),
-    BadRequest,
+    BadRequest(&'static str),
 }
 
 impl IntoResponse for AppError {
@@ -64,7 +64,7 @@ impl IntoResponse for AppError {
                 )
                     .into_response()
             }
-            AppError::BadRequest => (StatusCode::BAD_REQUEST).into_response(),
+            AppError::BadRequest(message) => (StatusCode::BAD_REQUEST, message).into_response(),
         }
     }
 }

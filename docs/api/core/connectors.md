@@ -3,10 +3,10 @@
 Database connectors issue query requests to a backing data source.
 
 A connector instance should expose a `query(query)` method that returns a Promise.
-The _query_ argument is an object that may include the following properties:
+The _query_ argument is an object with the following properties:
 
 - _sql_: The SQL query to evaluate.
-- _type_: The query format type, either `"exec"` (no return value) or `"arrow"`.
+- _type_: The query format type, either `"exec"` (no return value) or `"arrow"`. This property is required; servers reject a request without it.
 - Any additional connector-specific options.
 
 For the `"arrow"` type, a connector returns the raw Arrow IPC bytes as an `ArrowIPCBytes` value, which is an `ArrayBuffer`, a `Uint8Array`, or an array of `Uint8Array` chunks; the coordinator decodes them to an Arrow table.

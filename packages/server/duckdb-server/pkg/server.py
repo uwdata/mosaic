@@ -11,6 +11,8 @@ from socketify import App, CompressOptions, OpCode
 from pkg.query import get_arrow_bytes
 
 if TYPE_CHECKING:
+    from collections.abc import Mapping
+
     import duckdb
     from duckdb import DuckDBPyConnection as Con
     from socketify import Request as Req
@@ -32,7 +34,7 @@ class _QueryParams(TypedDict):
 class Handler(Protocol):
     def done(self) -> None: ...
     def arrow(self, buffer: bytes) -> None: ...
-    def error(self, error: Any) -> None: ...
+    def error(self, error: Any, status: int = 500) -> None: ...
 
 
 class SocketHandler(Handler):
@@ -51,7 +53,7 @@ class SocketHandler(Handler):
         ok = self.ws.send(buffer, OpCode.BINARY)
         self.check(ok)
 
-    def error(self, error: object) -> None:
+    def error(self, error: object, status: int = 500) -> None:
         ok = self.ws.send({"error": str(error)}, OpCode.TEXT)
         self.check(ok)
 
@@ -67,22 +69,26 @@ class HTTPHandler(Handler):
         self.res.write_header("Content-Type", "application/octet-stream")
         self.res.end(buffer)
 
-    def error(self, error: object) -> None:
-        self.res.write_status(500)
+    def error(self, error: object, status: int = 500) -> None:
+        self.res.write_status(status)
         self.res.end(str(error))
 
 
 def handle_query(
     handler: Handler,
     con: duckdb.DuckDBPyConnection,
-    query: _QueryParams,
+    query: Mapping[str, Any],
 ) -> None:
     logger.debug(f"{query=}")
 
     start = time.time()
 
+    command = query.get("type")
+    if command is None:
+        handler.error("missing required 'type' parameter", 400)
+        return
+
     sql = query["sql"]
-    command = query["type"]
 
     try:
         if command == "exec":
@@ -92,8 +98,7 @@ def handle_query(
             buffer = get_arrow_bytes(con, sql)
             handler.arrow(buffer)
         else:
-            msg = f"Unknown command {command}"
-            raise ValueError(msg)
+            handler.error(f"Unknown command {command}", 400)
     except Exception as e:
         logger.exception("Error processing query")
         handler.error(e)
