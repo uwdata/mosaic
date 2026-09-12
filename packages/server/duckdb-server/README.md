@@ -28,8 +28,6 @@ Run `uv run ruff check --fix` and `uv run ruff format` to lint the code.
 
 To run the tests, use `uv run pytest`.
 
-To set up a local certificate for SSL, use https://github.com/FiloSottile/mkcert.
-
 ## API
 
 The server supports queries via HTTP GET and POST, and WebSockets. The GET endpoint is useful for debugging. For example, you can query it with [this url](<http://localhost:3000/?query={"sql":"select 1","type":"arrow"}>).

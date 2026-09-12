@@ -142,8 +142,6 @@ def on_error(error: object, res: Res, req: Req) -> None:
 
 
 def server(con: Con) -> None:
-    # SSL server
-    # app = App(AppOptions(key_file_name="./localhost-key.pem", cert_file_name="./localhost.pem"))
     app = App()
 
     def ws_message(ws: Ws, message: str | bytes | bytearray, opcode: OpCode) -> None:
