@@ -25,6 +25,7 @@ export {
   clauseNone
 } from './SelectionClause.js';
 
+export { lruCache, voidCache } from './util/cache.js';
 export { decodeIPC } from './util/decode-ipc.js';
 export { distinct } from './util/distinct.js';
 export { isArrowTable } from './util/is-arrow-table.js';

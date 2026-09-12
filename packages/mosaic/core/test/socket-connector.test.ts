@@ -27,8 +27,9 @@ class FakeWebSocket {
 function connect() {
   const connector = new SocketConnector();
   const exec = (sql: string) => connector.query({ type: 'exec', sql });
+  const arrow = (sql: string) => connector.query({ type: 'arrow', sql });
   const socket = () => FakeWebSocket.instances.at(-1)!;
-  return { connector, exec, socket };
+  return { connector, exec, arrow, socket };
 }
 
 describe('SocketConnector', () => {
@@ -53,22 +54,24 @@ describe('SocketConnector', () => {
   });
 
   it('matches responses to requests in order', async () => {
-    const { exec, socket } = connect();
-    const first = exec('SELECT 1');
+    const { exec, arrow, socket } = connect();
+    const first = arrow('SELECT 1');
     const create = exec('CREATE TABLE t (a INT)');
     const failing = exec('SELECT oops').catch(error => error);
-    const last = exec('SELECT 3');
+    const last = arrow('SELECT 3');
+    const one = new Uint8Array([1]);
+    const three = new Uint8Array([3]);
     socket().emit('open');
 
-    socket().emit('message', { data: JSON.stringify([{ a: 1 }]) });
+    socket().emit('message', { data: one });
     socket().emit('message', { data: '{}' });
     socket().emit('message', { data: JSON.stringify({ error: 'boom' }) });
-    socket().emit('message', { data: JSON.stringify([{ a: 3 }]) });
+    socket().emit('message', { data: three });
 
-    expect(await first).toEqual([{ a: 1 }]);
-    await create;
+    expect(await first).toBe(one);
+    expect(await create).toBeUndefined();
     expect(await failing).toBe('boom');
-    expect(await last).toEqual([{ a: 3 }]);
+    expect(await last).toBe(three);
   });
 
   it('rejects every outstanding request when the socket closes', async () => {
@@ -95,19 +98,20 @@ describe('SocketConnector', () => {
   });
 
   it('opens a new socket after a close', async () => {
-    const { exec, socket } = connect();
+    const { exec, arrow, socket } = connect();
     exec('SELECT 1').catch(() => {});
     socket().emit('open');
     socket().emit('close');
     const first = socket();
 
-    const later = exec('SELECT 2');
+    const later = arrow('SELECT 2');
+    const bytes = new Uint8Array([2]);
     expect(socket()).not.toBe(first);
     expect(socket().sent).toHaveLength(0);
     socket().emit('open');
     expect(socket().sent).toHaveLength(1);
-    socket().emit('message', { data: JSON.stringify([{ a: 2 }]) });
-    expect(await later).toEqual([{ a: 2 }]);
+    socket().emit('message', { data: bytes });
+    expect(await later).toBe(bytes);
   });
 
   it('ignores a message with no request outstanding', () => {
@@ -115,20 +119,20 @@ describe('SocketConnector', () => {
     exec('SELECT 1');
     socket().emit('open');
     const log = vi.spyOn(console, 'log').mockImplementation(() => {});
-    socket().emit('message', { data: '[]' });
-    socket().emit('message', { data: '[]' });
+    socket().emit('message', { data: '{}' });
+    socket().emit('message', { data: '{}' });
     expect(log).toHaveBeenCalledOnce();
   });
 
-  it('decodes binary responses for arrow requests and resolves exec on text', async () => {
-    const { connector, socket } = connect();
-    const exec = connector.query({ type: 'exec', sql: 'CREATE TABLE t (a INT)' });
-    const arrow = connector.query({ type: 'arrow', sql: 'SELECT 1' }).catch(error => error);
+  it('resolves arrow requests with the raw bytes and exec acknowledgements with nothing', async () => {
+    const { exec, arrow, socket } = connect();
+    const create = exec('CREATE TABLE t (a INT)');
+    const select = arrow('SELECT 1');
+    const bytes = new Uint8Array([1, 2, 3]);
     socket().emit('open');
     socket().emit('message', { data: '{}' });
-    socket().emit('message', { data: new Uint8Array([1, 2, 3]) });
-    await exec;
-    // an undecodable buffer rejects instead of leaving the request pending
-    expect(await arrow).toBeInstanceOf(Error);
+    socket().emit('message', { data: bytes });
+    expect(await create).toBeUndefined();
+    expect(await select).toBe(bytes);
   });
 });

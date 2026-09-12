@@ -94,6 +94,7 @@
         <div>
           Cache Queries:
           <input id="cache" type="checkbox" checked />
+          <span id="cache-bytes"></span>
         </div>
         <div>
           Consolidate Queries:
@@ -125,6 +126,7 @@
   const sourceMenu = document.querySelector('#source');
   const qlogToggle = document.querySelector('#query-log');
   const cacheToggle = document.querySelector('#cache');
+  const cacheBytes = document.querySelector('#cache-bytes');
   const consolidateToggle = document.querySelector('#consolidate');
   const preaggToggle = document.querySelector('#preagg');
   const preaggState = document.querySelector('#preagg-state');
@@ -149,6 +151,11 @@
       console.warn('No Pre-aggregate Entries');
     }
   });
+
+  setInterval(() => {
+    const bytes = vg.coordinator().manager.cache().bytes();
+    cacheBytes.textContent = `${(bytes / 1048576).toFixed(1)} MiB`;
+  }, 500);
 
   setQueryLog();
   setCache();

@@ -1,4 +1,4 @@
-import { tableFromArrays } from '@uwdata/flechette';
+import { type Table, tableFromArrays, tableToIPC } from '@uwdata/flechette';
 import { count, Query } from '@uwdata/mosaic-sql';
 import { describe, it, expect } from 'vitest';
 import { type ArrowQueryRequest, clausePoint, type Connector, Coordinator, coordinator, makeClient, Selection } from '../src/index.js';
@@ -36,9 +36,10 @@ describe('coordinator', () => {
       consolidate: false
     });
     const results: string[] = [];
+    const row = (i: number) => tableToIPC(tableFromArrays({ i: [i] }), {})!;
     const client = (name: string) => new TestClient(null, undefined, {
-      queryResult(data: string) {
-        results.push(name + data);
+      queryResult(data: Table) {
+        results.push(name + data.get(0)!.i);
         return this;
       }
     });
@@ -51,16 +52,16 @@ describe('coordinator', () => {
     expect(requests).toHaveLength(3);
 
     // a's second result waits for its first
-    requests[2].resolve('2');
+    requests[2].resolve(row(2));
     await wait();
     expect(results).toEqual([]);
 
     // b does not wait for a
-    requests[1].resolve('1');
+    requests[1].resolve(row(1));
     await wait();
     expect(results).toEqual(['b1']);
 
-    requests[0].resolve('0');
+    requests[0].resolve(row(0));
     await wait();
     expect(results).toEqual(['b1', 'a0', 'a2']);
   });
@@ -267,7 +268,7 @@ describe('coordinator', () => {
       async query(req: ArrowQueryRequest) {
         const index = req.sql.includes("WHERE") ? 1 : 0;
         events.push(`CONNECT ${index}`);
-        return tableFromArrays({ index: [index] });
+        return tableToIPC(tableFromArrays({ index: [index] }), {})!;
       },
     } as unknown as Connector;
 
@@ -312,5 +313,24 @@ describe('coordinator', () => {
       "QUERY true",
       "CONNECT 1",
     ]);
+  });
+
+  it('applies the ipc extraction options to arrow results', async () => {
+    const ipc = tableToIPC(tableFromArrays({ t: [new Date(0)] }), {})!;
+    const connector = {
+      async query() {
+        return ipc;
+      },
+    } as unknown as Connector;
+
+    const coord = new Coordinator(connector, {
+      logger: null,
+      ipc: { useDate: false },
+      preagg: { enabled: false }
+    });
+
+    const table = await coord.query('SELECT t FROM foo', { type: 'arrow' });
+
+    expect(table.getChild('t').at(0)).toBe(0);
   });
 });
