@@ -26,9 +26,11 @@ SLOW_QUERY_THRESHOLD = 5000
 class _QueryParams(TypedDict):
     type: Literal["arrow", "exec"]
     sql: str
+class QueryParams(msgspec.Struct):
+    type: Literal["arrow", "exec"]
+    sql: str
 
-
-query_decoder = msgspec.json.Decoder(_QueryParams)
+query_decoder = msgspec.json.Decoder(QueryParams)
 
 
 class Handler(Protocol):
