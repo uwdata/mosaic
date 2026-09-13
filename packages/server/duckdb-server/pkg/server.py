@@ -6,11 +6,15 @@ import time
 from typing import TYPE_CHECKING, Any, Literal, Protocol
 
 import msgspec
+from msgspec.json import decode as json_decode_slow
+from msgspec.json import encode as json_encode
 from socketify import App, CompressOptions, OpCode
 
 from pkg.query import get_arrow_bytes
 
 if TYPE_CHECKING:
+    from collections.abc import Callable
+
     from duckdb import DuckDBPyConnection as Con
     from socketify import Request as Req
     from socketify import Response as Res
@@ -133,8 +137,26 @@ def on_error(error: object, res: Res, req: Req) -> None:
         res.end(f"Error {error}")
 
 
+class Serde:
+    """Wraps `msgspec` to be [compatible] with `socketify`.
+
+    [compatible]: https://docs.socketify.dev/basics.html#using-ujson-orjson-or-any-custom-json-serializer
+    """
+
+    __slots__ = ("dumps", "loads")
+
+    def __init__(
+        self,
+        serialize: Callable[[Any], bytes],
+        deserialize: Callable[[Buffer | str], Any],
+    ) -> None:
+        self.dumps = serialize
+        self.loads = deserialize
+
+
 def server(con: Con) -> None:
     app = App()
+    app.json_serializer(Serde(serialize=json_encode, deserialize=json_decode_slow))
 
     def ws_message(ws: Ws, message: str | Buffer, opcode: OpCode) -> None:
         handle_message(SocketHandler(ws), con, message)
