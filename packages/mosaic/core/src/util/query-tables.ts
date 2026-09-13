@@ -1,6 +1,6 @@
 import type { SQLNode } from '@uwdata/mosaic-sql';
 import {
-  VerbatimNode,
+  TableRefNode, VerbatimNode,
   isColumnRef, isCreateQuery, isCreateSchemaQuery, isDescribeQuery, isQuery, isTableRef, walk
 } from '@uwdata/mosaic-sql';
 import type { QueryRequest } from '../types.js';
@@ -17,12 +17,18 @@ export interface QueryTables {
 // verbatim text is unparsed, so a keyword is the only sign of an embedded table read
 const tableKeyword = /\b(from|join|table)\b/i;
 
+// keyed unqualified and lowercased so `main.flights` and `flights` count as
+// the same table when the query manager checks for an earlier write
+function tableKey(ref: TableRefNode): string {
+  return ref.name.toLowerCase();
+}
+
 function collectTables(root: SQLNode): Tables {
   const tables = new Set<string>();
   let unknown = false;
   walk(root, (node, parent) => {
     if (isTableRef(node)) {
-      if (!isColumnRef(parent)) tables.add(node.name.toLowerCase());
+      if (!isColumnRef(parent)) tables.add(tableKey(node));
     } else if (node instanceof VerbatimNode && tableKeyword.test(node.value)) {
       unknown = true;
       return -1;
@@ -59,7 +65,7 @@ export function queryTables({ query, type }: QueryRequest): QueryTables {
   for (const q of Array.isArray(query) ? query : [query]) {
     if (!q) continue;
     if (isCreateQuery(q)) {
-      writes?.add(q.name.name.toLowerCase());
+      writes?.add(tableKey(q.name));
       reads = union(reads, isQuery(q.query) ? collectTables(q.query) : null);
     } else if (isDescribeQuery(q)) {
       reads = union(reads, collectTables(q.query));
