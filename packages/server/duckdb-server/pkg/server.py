@@ -3,32 +3,36 @@ from __future__ import annotations
 import logging
 import sys
 import time
-from typing import TYPE_CHECKING, Any, Literal, Protocol, TypedDict
+from typing import TYPE_CHECKING, Any, Literal, Protocol
 
-import ujson
+import msgspec
+from msgspec.json import decode as json_decode_slow
+from msgspec.json import encode as json_encode
 from socketify import App, CompressOptions, OpCode
 
 from pkg.query import get_arrow_bytes
 
 if TYPE_CHECKING:
-    from collections.abc import Mapping
+    from collections.abc import Callable
 
-    import duckdb
     from duckdb import DuckDBPyConnection as Con
     from socketify import Request as Req
     from socketify import Response as Res
     from socketify import SendStatus as Status
     from socketify import WebSocket as Ws
+    from typing_extensions import Buffer
 
 logger = logging.getLogger(__name__)
 
 SLOW_QUERY_THRESHOLD = 5000
 
 
-class _QueryParams(TypedDict):
+class QueryParams(msgspec.Struct):
     type: Literal["arrow", "exec"]
     sql: str
-    uuid: str  # name
+
+
+query_decoder = msgspec.json.Decoder(QueryParams)
 
 
 class Handler(Protocol):
@@ -58,47 +62,63 @@ class SocketHandler(Handler):
         self.check(ok)
 
 
+CORS_HEADERS = {
+    "Access-Control-Allow-Origin": "*",
+    "Access-Control-Request-Method": "*",
+    "Access-Control-Allow-Methods": "OPTIONS, POST, GET",
+    "Access-Control-Allow-Headers": "*",
+    "Access-Control-Max-Age": "2592000",
+}
+
+
 class HTTPHandler(Handler):
     def __init__(self, res: Res) -> None:
         self.res = res
 
+    # uWebSockets streams the response, so a status written after a header is ignored
+    def begin(self, status: int) -> Res:
+        self.res.write_status(status)
+        for name, value in CORS_HEADERS.items():
+            self.res.write_header(name, value)
+        return self.res
+
     def done(self) -> None:
-        self.res.end("")
+        self.begin(200).end("")
 
     def arrow(self, buffer: bytes) -> None:
-        self.res.write_header("Content-Type", "application/octet-stream")
-        self.res.end(buffer)
+        res = self.begin(200)
+        res.write_header("Content-Type", "application/octet-stream")
+        res.end(buffer)
 
     def error(self, error: object, status: int = 500) -> None:
-        self.res.write_status(status)
-        self.res.end(str(error))
+        self.begin(status).end(str(error))
 
 
-def handle_query(
-    handler: Handler,
-    con: duckdb.DuckDBPyConnection,
-    query: Mapping[str, Any],
-) -> None:
+def handle_message(handler: Handler, con: Con, message: str | Buffer) -> None:
+    try:
+        query = query_decoder.decode(message)
+    except msgspec.DecodeError as e:
+        handler.error(e, 400)
+        return
+
+    handle_query(handler, con, query)
+
+
+def handle_query(handler: Handler, con: Con, query: QueryParams) -> None:
     logger.debug(f"{query=}")
 
     start = time.time()
 
-    command = query.get("type")
-    if command is None:
-        handler.error("missing required 'type' parameter", 400)
-        return
-
-    sql = query["sql"]
+    sql = query.sql
 
     try:
-        if command == "exec":
-            con.execute(sql)
-            handler.done()
-        elif command == "arrow":
-            buffer = get_arrow_bytes(con, sql)
-            handler.arrow(buffer)
-        else:
-            handler.error(f"Unknown command {command}", 400)
+        match query.type:
+            case "exec":
+                con.execute(sql)
+                handler.done()
+            case "arrow":
+                buffer = get_arrow_bytes(con, sql)
+                handler.arrow(buffer)
     except Exception as e:
         logger.exception("Error processing query")
         handler.error(e)
@@ -117,49 +137,46 @@ def on_error(error: object, res: Res, req: Req) -> None:
         res.end(f"Error {error}")
 
 
+class Serde:
+    """Wraps `msgspec` to be [compatible] with `socketify`.
+
+    [compatible]: https://docs.socketify.dev/basics.html#using-ujson-orjson-or-any-custom-json-serializer
+    """
+
+    __slots__ = ("dumps", "loads")
+
+    def __init__(
+        self,
+        serialize: Callable[[Any], bytes],
+        deserialize: Callable[[Buffer | str], Any],
+    ) -> None:
+        self.dumps = serialize
+        self.loads = deserialize
+
+
 def server(con: Con) -> None:
-    # SSL server
-    # app = App(AppOptions(key_file_name="./localhost-key.pem", cert_file_name="./localhost.pem"))
     app = App()
+    app.json_serializer(Serde(serialize=json_encode, deserialize=json_decode_slow))
 
-    # faster serialization than standard json
-    app.json_serializer(ujson)
-
-    def ws_message(ws: Ws, message: str | bytes | bytearray, opcode: OpCode) -> None:
-        handler = SocketHandler(ws)
-
-        try:
-            query: _QueryParams = ujson.loads(message)
-        except Exception as e:
-            logger.exception("Error reading message from WebSocket")
-            handler.error(e)
-            return
-
-        handle_query(handler, con, query)
+    def ws_message(ws: Ws, message: str | Buffer, opcode: OpCode) -> None:
+        handle_message(SocketHandler(ws), con, message)
 
     async def http_handler(res: Res, req: Req) -> None:
-        res.write_header("Access-Control-Allow-Origin", "*")
-        res.write_header("Access-Control-Request-Method", "*")
-        res.write_header("Access-Control-Allow-Methods", "OPTIONS, POST, GET")
-        res.write_header("Access-Control-Allow-Headers", "*")
-        res.write_header("Access-Control-Max-Age", "2592000")
-
-        method = req.get_method()
-
         handler = HTTPHandler(res)
-        data: _QueryParams
-        if method == "OPTIONS":
-            handler.done()
-        elif method == "GET":
-            message: str | bytes | bytearray = req.get_query("query")  # pyright: ignore[reportAssignmentType]
-            data = ujson.loads(message)
-            handle_query(handler, con, data)
-        elif method == "POST":
-            maybe_data: _QueryParams | None = await res.get_json()
-            if maybe_data:
-                handle_query(handler, con, maybe_data)
-            else:
-                raise NotImplementedError
+        match req.get_method():
+            case "OPTIONS":
+                handler.done()
+            case "GET":
+                query = req.get_query("query")
+                if isinstance(query, str):
+                    handle_message(handler, con, query)
+                else:
+                    handler.error("missing required 'query' parameter", 400)
+            case "POST":
+                body = await res.get_data()
+                handle_message(handler, con, body.getvalue())
+            case method:
+                handler.error(f"Unsupported HTTP method: {method}", 400)
 
     app.ws(
         "/*",
