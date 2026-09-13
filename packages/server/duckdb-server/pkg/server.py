@@ -3,7 +3,7 @@ from __future__ import annotations
 import logging
 import sys
 import time
-from typing import TYPE_CHECKING, Any, Literal, Protocol, TypedDict
+from typing import TYPE_CHECKING, Any, Literal, Protocol
 
 import msgspec
 from socketify import App, CompressOptions, OpCode
@@ -23,12 +23,10 @@ logger = logging.getLogger(__name__)
 SLOW_QUERY_THRESHOLD = 5000
 
 
-class _QueryParams(TypedDict):
-    type: Literal["arrow", "exec"]
-    sql: str
 class QueryParams(msgspec.Struct):
     type: Literal["arrow", "exec"]
     sql: str
+
 
 query_decoder = msgspec.json.Decoder(QueryParams)
 
@@ -102,15 +100,15 @@ def handle_message(handler: Handler, con: Con, message: str | Buffer) -> None:
     handle_query(handler, con, query)
 
 
-def handle_query(handler: Handler, con: Con, query: _QueryParams) -> None:
+def handle_query(handler: Handler, con: Con, query: QueryParams) -> None:
     logger.debug(f"{query=}")
 
     start = time.time()
 
-    sql = query["sql"]
+    sql = query.sql
 
     try:
-        match query["type"]:
+        match query.type:
             case "exec":
                 con.execute(sql)
                 handler.done()
