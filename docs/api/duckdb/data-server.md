@@ -25,7 +25,7 @@ Once launched, the data server will accept HTTP POST requests containing JSON co
 - _type_: The type of query (required). The type `"exec"` indicates that the provided query should be run with no return value. The `"arrow"` type indicates that the result table should be returned as Arrow IPC bytes.
 - _sql_: The SQL query string to issue to DuckDB.
 
-A request without a _type_ is rejected with HTTP status 400 and the message `missing required 'type' parameter`; the other Mosaic DuckDB servers respond the same way.
+A request without a _type_ is rejected with HTTP status 400.
 
 ### Examples
 
