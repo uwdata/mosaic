@@ -1,11 +1,12 @@
-import type { ArrowQueryRequest, Connector, ExecQueryRequest, ConnectorQueryRequest } from './Connector.js';
+import type { ArrowQueryRequest, Connector, ConnectorRequest, ExecQueryRequest, PreaggRequest, PreaggResponse } from './Connector.js';
+import { parseErrorResponse } from './errors.js';
 
 interface SocketOptions {
   uri?: string;
 }
 
 interface QueueItem<T = unknown> {
-  query: ConnectorQueryRequest;
+  query: ConnectorRequest;
   resolve: (value?: T) => void;
   reject: (reason?: unknown) => void;
 }
@@ -74,15 +75,21 @@ export class SocketConnector implements Connector {
           console.log('WebSocket message: ', data);
           return;
         }
-        const { resolve, reject } = item;
+        const { query, resolve, reject } = item;
         try {
           if (typeof data === 'string') {
-            const { error } = JSON.parse(data);
-            if (error) {
-              reject(error);
+            const json = JSON.parse(data);
+            if (json.error) {
+              reject(parseErrorResponse(json) ?? json.error);
+            } else if (query.type === 'preagg') {
+              resolve(json);
+            } else if (query.type === 'arrow') {
+              reject(new Error(`Unexpected socket data: ${data}`));
             } else {
               resolve();
             }
+          } else if (query.type === 'preagg') {
+            reject(new Error('Unexpected binary socket data for preagg request'));
           } else {
             resolve(data);
           }
@@ -106,7 +113,7 @@ export class SocketConnector implements Connector {
   }
 
   enqueue(
-    query: ConnectorQueryRequest,
+    query: ConnectorRequest,
     resolve: (value?: unknown) => void,
     reject: (reason?: unknown) => void
   ): void {
@@ -115,7 +122,7 @@ export class SocketConnector implements Connector {
     this._queue.push({ query, resolve, reject });
   }
 
-  private send(query: ConnectorQueryRequest): void {
+  private send(query: ConnectorRequest): void {
     this._ws?.send(JSON.stringify(query));
   }
 
@@ -127,7 +134,8 @@ export class SocketConnector implements Connector {
 
   query(query: ArrowQueryRequest): Promise<ArrayBuffer>;
   query(query: ExecQueryRequest): Promise<void>;
-  query(query: ConnectorQueryRequest): Promise<unknown> {
+  query(query: PreaggRequest): Promise<PreaggResponse>;
+  query(query: ConnectorRequest): Promise<unknown> {
     return new Promise(
       (resolve, reject) => this.enqueue(query, resolve, reject)
     );
