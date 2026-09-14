@@ -261,13 +261,9 @@ export class Table extends Input {
         const value = cols[j][i];
         const td = document.createElement('td');
         const formatted = value == null ? '' : formats[j](value);
-        
-        // Check if the formatted value is a DOM element or a string
         if (formatted instanceof HTMLElement || formatted instanceof SVGElement) {
-          // If it's a DOM element, append it directly
           td.appendChild(formatted);
         } else {
-          // Otherwise, treat it as text
           td.innerText = formatted;
         }
         
