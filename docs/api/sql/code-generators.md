@@ -33,7 +33,7 @@ const coordinator = new Coordinator(connector, {
 
 ## Testing ClickHouse
 
-The ClickHouse generator has execution tests that run against the `clickhouse local` command. These tests require ClickHouse and are skipped by the normal `pnpm test` command. With the ClickHouse command-line executable installed, run:
+The ClickHouse generator has execution tests that run against the `clickhouse local` command. These tests require ClickHouse and are skipped by the normal `pnpm test` command. With the [ClickHouse command-line executable installed](https://github.com/uwdata/mosaic/blob/main/CONTRIBUTING.md#clickhouse-demo), run:
 
 ``` sh
 pnpm --filter @uwdata/mosaic-sql test:clickhouse
@@ -42,3 +42,7 @@ pnpm --filter @uwdata/mosaic-sql test:clickhouse
 By default the tests invoke `clickhouse local`. Set `CLICKHOUSE_BIN` to use an alternate ClickHouse executable.
 
 CI runs these tests on Linux against the ClickHouse 26.5 release line. Other local versions are allowed and may reveal version-specific compatibility differences; the CI version is not a declared minimum supported version.
+
+## Local browser demo
+
+See the [contributor guide](https://github.com/uwdata/mosaic/blob/main/CONTRIBUTING.md#clickhouse-demo) for instructions on running the local ClickHouse examples.
