@@ -68,12 +68,18 @@ export function filterPushdown(
     }
   });
 
-  // add filtered table as CTE node
+  // add filtered table as CTE node, after the target CTE if there is one:
+  // non-recursive WITH clauses can not use forward references
   const cte = new WithClauseNode(
     filteredName,
     Query.select("*").from(tableRef).where(filter)
   );
-  clone._with = [cte, ...clone._with];
+  const index = 1 + clone._with.findIndex(w => w.name === tableRef.name);
+  clone._with = [
+    ...clone._with.slice(0, index),
+    cte,
+    ...clone._with.slice(index)
+  ];
   return clone;
 }
 
