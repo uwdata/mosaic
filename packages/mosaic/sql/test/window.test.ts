@@ -58,7 +58,7 @@ describe('Window functions', () => {
     await expect(first_value('num1').frame(frameRange([2, currentRow()])).orderby('num1'))
       .toBeValidExpr('first_value("num1") OVER (ORDER BY "num1" RANGE BETWEEN 2 PRECEDING AND CURRENT ROW)');
     await expect(first_value('num1').frame(frameRange([preceding(days(3)), following(days(2))])).orderby('ts1'))
-      .toBeValidExpr('first_value("num1") OVER (ORDER BY "ts1" RANGE BETWEEN INTERVAL 3 DAYS PRECEDING AND INTERVAL 2 DAYS FOLLOWING)');
+      .toBeValidExpr(`first_value("num1") OVER (ORDER BY "ts1" RANGE BETWEEN INTERVAL '3 DAYS' PRECEDING AND INTERVAL '2 DAYS' FOLLOWING)`);
   });
 
   it('support groups frame', async () => {
