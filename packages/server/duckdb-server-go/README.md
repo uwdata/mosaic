@@ -33,9 +33,7 @@ You can customize the server behavior with the following command-line flags:
 -   `--schema-match-headers`: Comma-separated list of headers to match against schema names for multi-tenant access control (e.g., `X-Tenant-Id,verified-user-id`).
 -   `--load-extensions`: Comma-separated list of extensions to install and load at startup. Use a pipe after the extension name to specify a DuckDB repository alias. Unspecified repositories use DuckDB's default (e.g. `mysql_scanner,netquack|community,aws|core_nightly`).
 -   `--function-blocklist`: Comma-separated list of exact function names to block, useful for blocking functions that may pose security or performance risks (e.g. `bigquery_query,read_parquet`).
--   `--function-allowlist`: Comma-separated list of exact function names to add to the reviewed defaults. Names are matched case-insensitively, repeated flags accumulate names, and an explicitly empty value enables only the defaults.
--   `--gatekeeper-extension`: Load a preinstalled Gatekeeper name or local artifact path without installation. When omitted, installs the signed `gatekeeper` extension from `community` and loads it. Installation, loading, or API compatibility failures stop startup.
--   `--allow-unsigned-extensions`: Permit unsigned extensions for local development; defaults to false.
+-   `--function-allowlist`: Comma-separated list of exact function names to add to the reviewed defaults. Names are matched case-insensitively, repeated flags accumulate names, and an explicitly empty value enables only the defaults. Blocked names win over allowed names.
 
 By default, the server will look for `localhost.pem` and `localhost-key.pem` in the current directory to enable HTTPS if the `--cert` and `--key` flags are not provided.
 
@@ -68,20 +66,22 @@ aborts the connection. Extensions are trusted native code, so load only trusted 
 
 ### Programmatic Authorization
 
-`query.New` uses the signed [Gatekeeper community extension](https://duckdb.org/community_extensions/extensions/gatekeeper) for DuckDB 1.5.5, tested with Gatekeeper 0.1.2. By default it runs `INSTALL gatekeeper FROM community`, loads the extension, and checks its validation API. DuckDB reuses its extension cache; the first installation needs network access and a writable extension directory. Installation does not force upgrades. Update cached artifacts deliberately and rerun integration tests when changing DuckDB or Gatekeeper.
+Validation is delegated to the signed [Gatekeeper community extension](https://duckdb.org/community_extensions/extensions/gatekeeper) for DuckDB 1.5.5, tested with Gatekeeper 0.1.2. `query.New` neither installs nor loads it; trusted initialization does. When any of `--schema-match-headers`, `--function-blocklist`, or `--function-allowlist` is set, the CLI loads an already-installed Gatekeeper or runs `INSTALL gatekeeper FROM community; LOAD gatekeeper`, applies the function flags with `CALL gatekeeper_configure(...)`, disables `autoload_known_extensions` and `autoinstall_known_extensions`, and sets `lock_configuration=true` before serving. The first community install needs network access and a writable extension directory, and DuckDB does not upgrade a cached extension on its own. Without those flags the CLI never touches Gatekeeper.
 
-Use `query.WithGatekeeperExtension("gatekeeper")` to load a preinstalled copy without installation, or pass a signed artifact path for offline deployment. Unsigned builds require `allow_unsigned_extensions=true` in the DuckDB connector DSN (or the CLI's `--allow-unsigned-extensions`); this enables unsigned loading database-wide. Local tests and CI use signed community artifacts with signature checking enabled:
+To pin or provide Gatekeeper yourself, install it through `--load-extensions`, which runs before the community fallback: `--load-extensions=gatekeeper|community` for an explicit community install, or `--load-extensions=/path/gatekeeper.duckdb_extension` for a local signed artifact (the filename must be `gatekeeper.duckdb_extension`). Unsigned development builds additionally require `--database=':memory:?allow_unsigned_extensions=true'`, which enables unsigned loading database-wide. Local tests and CI use the signed community artifact with signature checking enabled:
 
 ```sh
 go test -race -tags=duckdb_arrow ./...
 go run -tags=duckdb_arrow . --function-allowlist=
 ```
 
-`db.ValidateSQL(ctx, sql, query.ValidationPolicy{...})` always delegates to Gatekeeper, even with an empty policy. The policy accepts `AllowedSchemas`, `BlockedFunctions`, and `FunctionAllowlist`. Nil schemas add no object restriction beyond Gatekeeper's global ceiling; an explicit empty slice denies table/view access. Schema names are exact case-insensitive identifiers, and `*` is rejected. `ValidateSQL` does not execute SQL or reserve its connection for later use; use `QueryArrow` or `WriteArrow` for validation and execution on the same connection.
+Gatekeeper intersects each request with a database-wide ceiling. Function policy belongs in the ceiling: run `CALL gatekeeper_configure(allowed_functions := [...], blocked_functions := [...])` during trusted initialization, and lock configuration so untrusted SQL cannot change it. Request policies then scope down per query. `query.ValidationPolicy` mirrors the request half of `gatekeeper_validate`: `AllowedSchemas` becomes `allowed_tables` rules for the primary catalog captured at startup (nil adds no object restriction; an empty slice denies every table and view; names are exact case-insensitive identifiers and `*` is rejected), `AllowedFunctions` is `allowed_functions` (nil inherits the global allowlist, including `gatekeeper_configure` grants; a non-nil slice, even empty, intersects with it), `BlockedFunctions` adds to the global blocklist, and `DisableDefaultFunctions` sets `use_default_functions := false`. Function names are normalized with `query.NormalizeFunctionNames`; Gatekeeper matches configured names exactly, so apply the same normalization to `gatekeeper_configure` arguments.
+
+`db.QueryArrow(ctx, sql, policy)` and `db.WriteArrow(ctx, sql, policy, w)` validate when `policy` is non-nil, or always when `query.WithValidation()` is configured, and then execute on the same pooled connection. `WithValidation()` also disables `db.Exec` and makes `query.New` fail when Gatekeeper is not loaded; without it, a request policy that cannot reach `gatekeeper_validate` fails closed at call time. `db.ValidateSQL(ctx, sql, policy)` validates on any pooled connection without executing.
 
 Use `errors.As` with `query.ErrorDetails` to inspect Gatekeeper's `Code`, `Type`, `Message`, `Position`, and `Violations`; use `errors.Is` with `ErrValidation`, `ErrAccessDenied`, or `ErrUnsupportedStatement` for classification. `Position` is an optional zero-based byte offset (`*int64`). Violations expose rule, catalog/schema/table, function, and optional byte offset; object denials use the `table` rule. Diagnostic text is not a stable API. HTTP/WebSocket validation errors return generic messages while logging full diagnostics for operators. Go callers retain full diagnostics, which may expose private catalog names and paths.
 
-Gatekeeper intersects request policy with a database-wide ceiling. `query.New` does not replace that ceiling. Embedding applications must grant elevated functions through trusted `CALL gatekeeper_configure(...)` before request policies can use them. Load required extensions and trusted definitions first, disable `autoload_known_extensions` and `autoinstall_known_extensions`, then set `lock_configuration=true` before serving. Choose application-appropriate memory/thread limits, timeouts, and external resource controls. For example, execute this SQL once on the connector during trusted initialization to grant CSV access:
+For example, an embedding application grants CSV access once in the connector's initialization callback:
 
 ```sql
 INSTALL gatekeeper FROM community;
@@ -92,16 +92,15 @@ SET autoinstall_known_extensions=false;
 SET lock_configuration=true;
 ```
 
-Then construct the query DB on the same connector:
+Then constructs the query DB on the same connector and scopes tables per request:
 
 ```go
-db, err := query.New(ctx, connector,
-	query.WithGatekeeperExtension("gatekeeper"),
-	query.WithFunctionAllowlist(query.FunctionAllowlistOptions{Include: []string{"read_csv"}}),
-)
+db, err := query.New(ctx, connector, query.WithValidation())
+// ...
+data, err := db.QueryArrow(ctx, sql, &query.ValidationPolicy{AllowedSchemas: []string{tenant}})
 ```
 
-Check each initialization error before proceeding, and close the query DB and connector at shutdown. The CLI handles one-time initialization itself: when schema/function validation is configured, it installs its function grants/blocks globally, disables extension autoload/autoinstall, and locks configuration before serving.
+Check each initialization error before proceeding. `db.Close` closes the pool and, because `database/sql` closes connectors that implement `io.Closer`, the DuckDB database behind the connector; a later `connector.Close` is a no-op.
 
 Programs embedding `pkg/server` should authenticate with standard HTTP middleware around the handler returned by
 `server.New`, then use `server.WithAuthorizer` only for command-aware policy. `AuthorizeRequest` runs once before POST
@@ -195,23 +194,20 @@ the defaults without adding application-specific names:
 duckdb-server-go --function-allowlist=
 ```
 
-With no schema or function policy configured, requests remain unrestricted. Activating any schema/function policy uses Gatekeeper's reviewed function defaults, including in blocklist-only mode. The binary exposes policy activation and exact additions; use `pkg/query` for exclusions or exact-only policies.
+With no schema or function policy configured, requests remain unrestricted. Activating any schema or function flag turns on validation for every `arrow` request, applies Gatekeeper's reviewed function defaults (including in blocklist-only mode), and rejects `exec`. The CLI writes its function flags into the database-wide `gatekeeper_configure` ceiling; `--function-allowlist` and `--function-blocklist` may be combined, and blocked names win.
 
-Programs embedding `pkg/query` can apply the same policy and add application functions with:
+Programs embedding `pkg/query` configure functions the same way, through `CALL gatekeeper_configure(...)` in trusted initialization, and narrow per request with `query.ValidationPolicy`:
 
 ```go
-query.WithFunctionAllowlist(query.FunctionAllowlistOptions{
-	Include: []string{"my_function"},
+db.QueryArrow(ctx, sql, &query.ValidationPolicy{
+	AllowedSchemas:   []string{tenant},
+	BlockedFunctions: []string{"my_expensive_function"},
 })
 ```
 
-Gatekeeper maintains the reviewed default function inventory. Additional functions must be admitted by both the global ceiling and the request policy, using exact case-insensitive names.
+Gatekeeper maintains the reviewed default function inventory. Additional functions must be granted in the global ceiling; a request that names `AllowedFunctions` intersects with that ceiling and cannot widen it, while a request that leaves `AllowedFunctions` nil inherits it. `DisableDefaultFunctions` produces an exact-only policy in which only globally granted and request-allowed names remain.
 
-Gatekeeper validates supported read syntax and binds objects. Function admission remains name-based; trusted macro/view implementations generally bypass caller allowlists but always honor blocks and the never-bind list. Defaults deny file readers and replacement scans. Admitting a reader in both policy layers also permits replacement scans resolved to that reader; table rules do not restrict reader paths. Dynamic SQL and metadata readers cannot be admitted. Keep catalogs trusted and enforce filesystem/network access independently.
-
-In Go, `Exclude` wins over `Include`, and `DisableDefaults` creates an exact-only policy. Omitting
-`WithFunctionAllowlist` uses Gatekeeper defaults whenever another validation policy is active; configuring an exact-empty policy denies all function calls. A function
-allowlist cannot be combined with a non-empty blocklist, and any configured function policy rejects `exec` requests.
+Gatekeeper validates supported read syntax and binds objects. Function admission remains name-based; trusted macro/view implementations generally bypass caller allowlists but always honor blocks and the never-bind list. Defaults deny file readers and replacement scans. Admitting a reader in the global ceiling also permits replacement scans resolved to that reader; table rules do not restrict reader paths. Dynamic SQL and metadata readers cannot be admitted. Keep catalogs trusted and enforce filesystem/network access independently.
 
 Spatial compute defaults cover Mosaic rendering over existing geometry data, but the `ST_Read` loader requires explicit admission. Gatekeeper defaults include clock and connection-local random functions such as `now`, `current_date`, and `random`; account for those when caching results.
 

@@ -182,6 +182,12 @@ jobs:
           go-version: "1.25"
           cache-dependency-path: ./packages/server/duckdb-server-go/go.sum
 
+      - name: Cache DuckDB extensions
+        uses: actions/cache@v6
+        with:
+          path: ~/.duckdb/extensions
+          key: duckdb-extensions-${{ runner.os }}-${{ hashFiles('packages/server/duckdb-server-go/go.sum') }}
+
       - name: Build
         run: go build -tags=duckdb_arrow -v ./...
         working-directory: ./packages/server/duckdb-server-go

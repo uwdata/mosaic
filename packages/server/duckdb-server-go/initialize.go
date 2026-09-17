@@ -4,38 +4,30 @@ import (
 	"context"
 	"database/sql/driver"
 	"fmt"
-	"strings"
 
 	"github.com/uwdata/mosaic/packages/server/duckdb-server-go/pkg/extensions"
+	"github.com/uwdata/mosaic/packages/server/duckdb-server-go/pkg/query"
 )
 
-func initializeDatabase(ctx context.Context, execer driver.ExecerContext, extensionList, gatekeeper string, validation bool, allowed, blocked []string) error {
+// initializeDatabase is the CLI's trusted initialization. Extensions named by --load-extensions are installed first so
+// a locally provided Gatekeeper artifact wins over the community install; the community install only runs when LOAD
+// finds nothing.
+func initializeDatabase(ctx context.Context, execer driver.ExecerContext, extensionList string, validation bool, allowed, blocked []string) error {
 	if err := extensions.ParseAndInstall(ctx, execer, extensionList); err != nil {
-		return err
-	}
-	if gatekeeper == "" {
-		if err := extensions.InstallAndLoad(ctx, execer, "gatekeeper", "community"); err != nil {
-			return err
-		}
-	} else if err := extensions.LoadInstalled(ctx, execer, gatekeeper); err != nil {
 		return err
 	}
 	if !validation {
 		return nil
 	}
-	normalize := func(names []string) []string {
-		result := make([]string, 0, len(names))
-		for _, name := range names {
-			if name = strings.ToLower(strings.TrimSpace(name)); name != "" {
-				result = append(result, name)
-			}
+	if err := extensions.LoadInstalled(ctx, execer, "gatekeeper"); err != nil {
+		if err := extensions.InstallAndLoad(ctx, execer, "gatekeeper", "community"); err != nil {
+			return err
 		}
-		return result
 	}
 	_, err := execer.ExecContext(ctx, `CALL system.main.gatekeeper_configure(
 		allowed_functions := $1::VARCHAR[], blocked_functions := $2::VARCHAR[])`, []driver.NamedValue{
-		{Ordinal: 1, Value: normalize(allowed)},
-		{Ordinal: 2, Value: normalize(blocked)},
+		{Ordinal: 1, Value: query.NormalizeFunctionNames(allowed)},
+		{Ordinal: 2, Value: query.NormalizeFunctionNames(blocked)},
 	})
 	if err != nil {
 		return fmt.Errorf("configure Gatekeeper: %w", err)

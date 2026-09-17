@@ -44,7 +44,7 @@ func (e queryParamsError) Error() string {
 // current schema-policy plumbing as a supported extension point.
 type commandExecutor interface {
 	Exec(context.Context, string) error
-	QueryArrow(context.Context, string, []string) ([]byte, error)
+	QueryArrow(context.Context, string, *query.ValidationPolicy) ([]byte, error)
 }
 
 type handler struct {
@@ -135,10 +135,8 @@ func (s *handler) handleWebSocket(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	allowedSchemas := getAllowedSchemas(r, s.schemaMatchHeaders)
-	if len(s.schemaMatchHeaders) > 0 && len(allowedSchemas) == 0 {
-		s.logger.Error("server: no allowed schemas found in request headers", "headers", s.schemaMatchHeaders)
-		http.Error(w, "no allowed schemas found in request headers", http.StatusUnauthorized)
+	policy, ok := s.requestPolicy(w, r)
+	if !ok {
 		return
 	}
 
@@ -173,7 +171,7 @@ func (s *handler) handleWebSocket(w http.ResponseWriter, r *http.Request) {
 	}()
 
 	for {
-		err = s.handleWebSocketMessage(ctx, conn, allowedSchemas, authorize)
+		err = s.handleWebSocketMessage(ctx, conn, policy, authorize)
 		if err != nil {
 			s.logger.Error("server: websocket error, breaking connection", "error", err)
 			break
@@ -183,7 +181,7 @@ func (s *handler) handleWebSocket(w http.ResponseWriter, r *http.Request) {
 
 // A returned error closes the connection. Command errors are written to the
 // client and return nil so the session survives them.
-func (s *handler) handleWebSocketMessage(ctx context.Context, conn *websocket.Conn, allowedSchemas []string, authorize commandAuthorizer) error {
+func (s *handler) handleWebSocketMessage(ctx context.Context, conn *websocket.Conn, policy *query.ValidationPolicy, authorize commandAuthorizer) error {
 	_, raw, err := conn.Read(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to read websocket message: %w", err)
@@ -198,7 +196,7 @@ func (s *handler) handleWebSocketMessage(ctx context.Context, conn *websocket.Co
 	}
 	params.raw = raw
 
-	response, err := s.execCommand(ctx, params, allowedSchemas, authorize)
+	response, err := s.execCommand(ctx, params, policy, authorize)
 	if err != nil {
 		errResponse := s.classifyAndLogError(err)
 		writeErr := wsjson.Write(ctx, conn, map[string]string{
@@ -224,10 +222,8 @@ func (s *handler) handleWebSocketMessage(ctx context.Context, conn *websocket.Co
 }
 
 func (s *handler) handleHTTP(w http.ResponseWriter, r *http.Request) {
-	allowedSchemas := getAllowedSchemas(r, s.schemaMatchHeaders)
-	if len(s.schemaMatchHeaders) > 0 && len(allowedSchemas) == 0 {
-		s.logger.Error("server: no allowed schemas found in request headers", "headers", s.schemaMatchHeaders)
-		http.Error(w, "no allowed schemas found in request headers", http.StatusUnauthorized)
+	policy, ok := s.requestPolicy(w, r)
+	if !ok {
 		return
 	}
 
@@ -281,7 +277,7 @@ func (s *handler) handleHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	response, err := s.execCommand(r.Context(), params, allowedSchemas, authorize)
+	response, err := s.execCommand(r.Context(), params, policy, authorize)
 	if err != nil {
 		s.writeHTTPError(w, err)
 		return
@@ -312,7 +308,7 @@ func (s *handler) handleHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (s *handler) execCommand(ctx context.Context, params queryParams, allowedSchemas []string, authorize commandAuthorizer) (commandResponse, error) {
+func (s *handler) execCommand(ctx context.Context, params queryParams, policy *query.ValidationPolicy, authorize commandAuthorizer) (commandResponse, error) {
 	if err := params.Validate(s.logger); err != nil {
 		return commandResponse{}, err
 	}
@@ -327,13 +323,13 @@ func (s *handler) execCommand(ctx context.Context, params queryParams, allowedSc
 
 	switch *params.Type {
 	case CommandExec:
-		if len(s.schemaMatchHeaders) > 0 {
+		if policy != nil || len(s.schemaMatchHeaders) > 0 {
 			return commandResponse{}, query.ErrExecWithValidation
 		}
 		err = s.db.Exec(ctx, *params.SQL)
 
 	case CommandArrow:
-		response.data, err = s.db.QueryArrow(ctx, *params.SQL, allowedSchemas)
+		response.data, err = s.db.QueryArrow(ctx, *params.SQL, policy)
 
 	default:
 		return commandResponse{}, fmt.Errorf("server: no executor for command type %q", *params.Type)
@@ -361,15 +357,23 @@ func (p queryParams) Validate(logger *slog.Logger) error {
 	return nil
 }
 
-func getAllowedSchemas(req *http.Request, schemaMatchHeaders []string) []string {
-	var allowedSchemas []string
-
-	for _, matchHeader := range schemaMatchHeaders {
-		allowedSchema := req.Header.Get(strings.TrimSpace(matchHeader))
-		if allowedSchema != "" {
+// requestPolicy returns nil when schema matching is not configured. With schema matching, it writes a 401 and
+// returns false when no configured header is present; otherwise the policy carries a non-nil schema list so an
+// unexpected empty match denies every table rather than lifting the restriction.
+func (s *handler) requestPolicy(w http.ResponseWriter, r *http.Request) (*query.ValidationPolicy, bool) {
+	if len(s.schemaMatchHeaders) == 0 {
+		return nil, true
+	}
+	allowedSchemas := []string{}
+	for _, matchHeader := range s.schemaMatchHeaders {
+		if allowedSchema := r.Header.Get(strings.TrimSpace(matchHeader)); allowedSchema != "" {
 			allowedSchemas = append(allowedSchemas, allowedSchema)
 		}
 	}
-
-	return allowedSchemas
+	if len(allowedSchemas) == 0 {
+		s.logger.Error("server: no allowed schemas found in request headers", "headers", s.schemaMatchHeaders)
+		http.Error(w, "no allowed schemas found in request headers", http.StatusUnauthorized)
+		return nil, false
+	}
+	return &query.ValidationPolicy{AllowedSchemas: allowedSchemas}, true
 }

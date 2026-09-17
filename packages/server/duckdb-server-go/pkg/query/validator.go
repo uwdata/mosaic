@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"strings"
 )
 
 var (
@@ -15,10 +14,22 @@ var (
 	ErrValidation           = errors.New("query: validation failed")
 )
 
+// ValidationPolicy is the per-request half of Gatekeeper's policy. Gatekeeper intersects it with the database-wide
+// ceiling set by gatekeeper_configure, so a request can only narrow what trusted initialization already admits.
 type ValidationPolicy struct {
-	AllowedSchemas    []string
-	BlockedFunctions  []string
-	FunctionAllowlist *FunctionAllowlistOptions
+	// AllowedSchemas restricts tables and views to these schemas of the primary catalog captured by New. Nil adds no
+	// object restriction; an empty slice denies every table and view.
+	AllowedSchemas []string
+
+	// AllowedFunctions is passed as Gatekeeper's allowed_functions. Nil omits the argument so the request inherits the
+	// global allowlist, including any gatekeeper_configure grants; a non-nil slice (even empty) intersects with it.
+	AllowedFunctions []string
+
+	// BlockedFunctions are denied in addition to any globally blocked functions.
+	BlockedFunctions []string
+
+	// DisableDefaultFunctions passes use_default_functions := false so only explicitly allowed functions remain.
+	DisableDefaultFunctions bool
 }
 
 type Violation struct {
@@ -63,6 +74,8 @@ func (e ErrorDetails) Is(target error) bool {
 		target == ErrUnsupportedStatement && e.Code == "unsupported"
 }
 
+// ValidateSQL runs Gatekeeper on any pooled connection without executing the query. Use QueryArrow or WriteArrow with
+// a policy to validate and execute on the same connection.
 func (db *DB) ValidateSQL(ctx context.Context, query string, policy ValidationPolicy) error {
 	return db.validateSQL(ctx, db.db, query, policy)
 }
@@ -81,11 +94,7 @@ func (db *DB) validateSQL(ctx context.Context, conn rowQuerier, query string, po
 func (db *DB) checkSQL(ctx context.Context, conn rowQuerier, query string, policy ValidationPolicy) error {
 	stmt := `SELECT CAST(system.main.to_json(result) AS VARCHAR) FROM system.main.gatekeeper_validate($sql,
 		blocked_functions := $blocked::VARCHAR[]`
-	blocked := append([]string{}, policy.BlockedFunctions...)
-	if policy.FunctionAllowlist != nil {
-		blocked = append(blocked, policy.FunctionAllowlist.Exclude...)
-	}
-	args := []any{sql.Named("sql", query), sql.Named("blocked", normalizeFunctionNames(blocked))}
+	args := []any{sql.Named("sql", query), sql.Named("blocked", NormalizeFunctionNames(policy.BlockedFunctions))}
 	if policy.AllowedSchemas != nil {
 		for _, schema := range policy.AllowedSchemas {
 			if schema == "*" || db.catalog == "*" {
@@ -95,9 +104,12 @@ func (db *DB) checkSQL(ctx context.Context, conn rowQuerier, query string, polic
 		stmt += `, allowed_tables := system.main.list_transform($schemas::VARCHAR[], lambda s: {'catalog': $catalog::VARCHAR, 'schema': s, 'table': '*'})`
 		args = append(args, sql.Named("schemas", policy.AllowedSchemas), sql.Named("catalog", db.catalog))
 	}
-	if policy.FunctionAllowlist != nil {
-		stmt += ", allowed_functions := $allowed::VARCHAR[], use_default_functions := $defaults::BOOLEAN"
-		args = append(args, sql.Named("allowed", normalizeFunctionNames(policy.FunctionAllowlist.Include)), sql.Named("defaults", !policy.FunctionAllowlist.DisableDefaults))
+	if policy.AllowedFunctions != nil {
+		stmt += ", allowed_functions := $allowed::VARCHAR[]"
+		args = append(args, sql.Named("allowed", NormalizeFunctionNames(policy.AllowedFunctions)))
+	}
+	if policy.DisableDefaultFunctions {
+		stmt += ", use_default_functions := false"
 	}
 	stmt += ") AS result"
 	var raw string
@@ -124,5 +136,3 @@ func (db *DB) checkSQL(ctx context.Context, conn rowQuerier, query string, polic
 	}
 	return result.ErrorDetails
 }
-
-func quoteLiteral(s string) string { return "'" + strings.ReplaceAll(s, "'", "''") + "'" }

@@ -356,7 +356,7 @@ func TestGatekeeperFunctionViolations(t *testing.T) {
 			db := setupTestDB(t)
 			policy := ValidationPolicy{BlockedFunctions: tt.functions}
 			if tt.allowlist {
-				policy = ValidationPolicy{FunctionAllowlist: &FunctionAllowlistOptions{DisableDefaults: true, Include: tt.functions}}
+				policy = ValidationPolicy{DisableDefaultFunctions: true, AllowedFunctions: tt.functions}
 			}
 			for range 2 {
 				err := db.ValidateSQL(t.Context(), "SELECT MD5('x'), md5('y'), LOWER('X'), SUM(1) OVER ()", policy)
@@ -428,7 +428,7 @@ func TestGatekeeperFunctionAllowlist(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			db := setupTestDB(t)
-			err := db.ValidateSQL(t.Context(), tt.sql, ValidationPolicy{FunctionAllowlist: &FunctionAllowlistOptions{Include: tt.allowlist, DisableDefaults: true}})
+			err := db.ValidateSQL(t.Context(), tt.sql, ValidationPolicy{AllowedFunctions: tt.allowlist, DisableDefaultFunctions: true})
 			if tt.wantErr == "" {
 				assert.NoError(t, err)
 				return

@@ -74,7 +74,11 @@ func classifyError(err error) errorResponse {
 func (s *handler) classifyAndLogError(err error) errorResponse {
 	response := classifyError(err)
 	if errors.Is(err, query.ErrValidation) {
-		s.logger.Warn("server: query validation failed", "error", err)
+		if response.status == http.StatusInternalServerError {
+			s.logger.Error("server: query validator failed", "error", err)
+		} else {
+			s.logger.Warn("server: query validation failed", "error", err)
+		}
 	}
 	if response.status != http.StatusInternalServerError {
 		return response

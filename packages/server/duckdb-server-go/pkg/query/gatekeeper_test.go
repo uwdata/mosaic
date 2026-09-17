@@ -3,13 +3,12 @@ package query
 import (
 	"bytes"
 	"context"
-	"net/url"
+	"database/sql/driver"
 	"os"
 	"path/filepath"
 	"sync"
 	"testing"
 
-	"github.com/duckdb/duckdb-go/v2"
 	"github.com/stretchr/testify/require"
 )
 
@@ -46,7 +45,7 @@ func TestGatekeeperResolvedPolicy(t *testing.T) {
 		})
 	}
 	for _, schemas := range [][]string{{}, {"tenant_a'])); SELECT 1; --"}} {
-		_, err := db.QueryArrow(t.Context(), "SELECT * FROM tenant_a.secret", schemas)
+		_, err := db.QueryArrow(t.Context(), "SELECT * FROM tenant_a.secret", &ValidationPolicy{AllowedSchemas: schemas})
 		requireViolation(t, err, "table")
 	}
 }
@@ -55,25 +54,27 @@ func TestGatekeeperConnectionAndConcurrency(t *testing.T) {
 	db := setupTestDB(t, WithMaxConnections(1))
 	require.NoError(t, db.Exec(t.Context(), `CREATE SCHEMA tenant_a; CREATE TABLE tenant_a.items AS SELECT 42 AS value;
 		SET search_path = 'tenant_a'`))
-	data, err := db.QueryArrow(t.Context(), "SELECT * FROM items", []string{"tenant_a"})
+	tenantA := &ValidationPolicy{AllowedSchemas: []string{"tenant_a"}}
+	tenantB := &ValidationPolicy{AllowedSchemas: []string{"tenant_b"}}
+	data, err := db.QueryArrow(t.Context(), "SELECT * FROM items", tenantA)
 	require.NoError(t, err)
 	require.Equal(t, []map[string]any{{"value": float64(42)}}, arrowRows(t, data))
 	var buf bytes.Buffer
-	err = db.WriteArrow(t.Context(), "SELECT * FROM items", []string{"tenant_b"}, &buf)
+	err = db.WriteArrow(t.Context(), "SELECT * FROM items", tenantB, &buf)
 	requireViolation(t, err, "table")
 	require.Zero(t, buf.Len())
 	ctx, cancel := context.WithCancel(t.Context())
 	cancel()
-	_, err = db.QueryArrow(ctx, "SELECT * FROM items", []string{"tenant_a"})
+	_, err = db.QueryArrow(ctx, "SELECT * FROM items", tenantA)
 	require.ErrorIs(t, err, context.Canceled)
 	var wg sync.WaitGroup
 	for range 16 {
 		wg.Go(func() {
-			_, err := db.QueryArrow(t.Context(), "SELECT * FROM items", []string{"tenant_a"})
+			_, err := db.QueryArrow(t.Context(), "SELECT * FROM items", tenantA)
 			if err != nil {
 				t.Error(err)
 			}
-			_, err = db.QueryArrow(t.Context(), "SELECT * FROM items", []string{"tenant_b"})
+			_, err = db.QueryArrow(t.Context(), "SELECT * FROM items", tenantB)
 			if err == nil {
 				t.Error("unauthorized query allowed")
 			}
@@ -82,66 +83,38 @@ func TestGatekeeperConnectionAndConcurrency(t *testing.T) {
 	wg.Wait()
 }
 
-func TestGatekeeperLoadFailsClosed(t *testing.T) {
-	installed := setupTestDB(t)
-	var path string
-	require.NoError(t, installed.db.QueryRowContext(t.Context(), "SELECT install_path FROM duckdb_extensions() WHERE extension_name = 'gatekeeper'").Scan(&path))
-	for _, source := range []string{"gatekeeper", path} {
-		t.Run("preinstalled "+source, func(t *testing.T) {
-			connector, err := duckdb.NewConnector(":memory:?allow_community_extensions=true&autoinstall_known_extensions=false", nil)
-			require.NoError(t, err)
-			t.Cleanup(func() { require.NoError(t, connector.Close()) })
-			db, err := New(t.Context(), connector, WithGatekeeperExtension(source))
-			require.NoError(t, err)
-			t.Cleanup(db.Close)
-			require.NoError(t, db.ValidateSQL(t.Context(), "SELECT 1", ValidationPolicy{}))
-		})
-	}
-	artifact, err := os.ReadFile(path)
-	require.NoError(t, err)
-	require.Greater(t, len(artifact), 256)
-	clear(artifact[len(artifact)-256:])
-	unsigned := filepath.Join(t.TempDir(), "gatekeeper.duckdb_extension")
-	require.NoError(t, os.WriteFile(unsigned, artifact, 0o600))
-	for _, tc := range []struct{ name, dsn, path string }{
-		{"unsigned rejected", ":memory:", unsigned},
-		{"missing artifact", ":memory:", filepath.Join(t.TempDir(), "missing.duckdb_extension")},
-		{"community extensions disabled", ":memory:?allow_community_extensions=false", path},
-	} {
-		t.Run(tc.name, func(t *testing.T) {
-			connector, err := duckdb.NewConnector(tc.dsn, nil)
-			require.NoError(t, err)
-			t.Cleanup(func() { require.NoError(t, connector.Close()) })
-			db, err := New(t.Context(), connector, WithGatekeeperExtension(tc.path))
-			require.ErrorContains(t, err, "failed to load Gatekeeper")
-			require.Nil(t, db)
-		})
-	}
-}
+func TestGatekeeperMissingFailsClosed(t *testing.T) {
+	noop := func(context.Context, driver.ExecerContext) error { return nil }
 
-func TestGatekeeperCommunityInstall(t *testing.T) {
-	connector, err := duckdb.NewConnector(":memory:?extension_directory="+url.QueryEscape(t.TempDir()), nil)
-	require.NoError(t, err)
-	t.Cleanup(func() { require.NoError(t, connector.Close()) })
-	db, err := New(t.Context(), connector)
-	require.NoError(t, err)
-	t.Cleanup(db.Close)
-	var repository string
-	var unsigned bool
-	require.NoError(t, db.db.QueryRowContext(t.Context(), "SELECT installed_from FROM duckdb_extensions() WHERE extension_name = 'gatekeeper'").Scan(&repository))
-	require.Equal(t, "community", repository)
-	require.NoError(t, db.db.QueryRowContext(t.Context(), "SELECT current_setting('allow_unsigned_extensions')").Scan(&unsigned))
-	require.False(t, unsigned)
-	require.NoError(t, db.ValidateSQL(t.Context(), "SELECT 1", ValidationPolicy{}))
-}
+	t.Run("validation requires Gatekeeper at startup", func(t *testing.T) {
+		connector := newTestConnector(t, testDSN, noop)
+		db, err := New(t.Context(), connector, WithValidation())
+		require.ErrorContains(t, err, "Gatekeeper is required for validation")
+		require.Nil(t, db)
+	})
 
-func TestGatekeeperIncompatibleAPIFailsStartup(t *testing.T) {
-	connector, err := duckdb.NewConnector(":memory:", nil)
-	require.NoError(t, err)
-	t.Cleanup(func() { require.NoError(t, connector.Close()) })
-	db, err := New(t.Context(), connector, WithGatekeeperExtension("json"))
-	require.ErrorContains(t, err, "incompatible Gatekeeper API")
-	require.Nil(t, db)
+	t.Run("request policies fail without Gatekeeper", func(t *testing.T) {
+		db := setupTestDBWithInit(t, noop)
+		data, err := db.QueryArrow(t.Context(), "SELECT 1", nil)
+		require.NoError(t, err)
+		require.NotEmpty(t, data)
+		for _, policy := range []ValidationPolicy{{}, {AllowedSchemas: []string{"main"}}} {
+			err := db.ValidateSQL(t.Context(), "SELECT 1", policy)
+			require.ErrorIs(t, err, ErrValidation)
+			require.ErrorContains(t, err, "gatekeeper_validate")
+			_, err = db.QueryArrow(t.Context(), "SELECT 1", &policy)
+			require.ErrorIs(t, err, ErrValidation)
+		}
+	})
+
+	t.Run("incompatible validate function", func(t *testing.T) {
+		db := setupTestDBWithInit(t, func(ctx context.Context, execer driver.ExecerContext) error {
+			_, err := execer.ExecContext(ctx, "CREATE OR REPLACE MACRO gatekeeper_validate(sql_text) AS TABLE SELECT true AS allowed", nil)
+			return err
+		})
+		err := db.ValidateSQL(t.Context(), "SELECT 1", ValidationPolicy{})
+		require.ErrorIs(t, err, ErrValidation)
+	})
 }
 
 func TestGatekeeperGlobalCeiling(t *testing.T) {
@@ -151,25 +124,25 @@ func TestGatekeeperGlobalCeiling(t *testing.T) {
 		blocked_functions := ['md5']); SET lock_configuration = true`))
 	require.NoError(t, db.ValidateSQL(t.Context(), "SELECT * FROM tenant_a.secret", ValidationPolicy{}))
 	requireViolation(t, db.ValidateSQL(t.Context(), "SELECT * FROM tenant_b.secret", ValidationPolicy{}), "table")
-	requireViolation(t, db.ValidateSQL(t.Context(), "SELECT md5('x')", ValidationPolicy{
-		FunctionAllowlist: &FunctionAllowlistOptions{Include: []string{"md5"}},
-	}), "function")
+	requireViolation(t, db.ValidateSQL(t.Context(), "SELECT md5('x')", ValidationPolicy{AllowedFunctions: []string{"md5"}}), "function")
 	require.Error(t, db.Exec(t.Context(), "CALL gatekeeper_configure()"))
 }
 
 func TestGatekeeperReaderAdmission(t *testing.T) {
-	db := setupTestDB(t, WithFunctionAllowlist(FunctionAllowlistOptions{Include: []string{"read_csv", "read_csv_auto"}}))
+	db := setupTestDB(t)
 	path := filepath.Join(t.TempDir(), "values.csv")
 	require.NoError(t, os.WriteFile(path, []byte("value\n42\n"), 0o600))
 	stmt := "SELECT * FROM read_csv(" + quoteLiteral(path) + ")"
-	_, err := db.QueryArrow(t.Context(), stmt, nil)
+	readers := &ValidationPolicy{AllowedFunctions: []string{"read_csv", "read_csv_auto"}}
+	_, err := db.QueryArrow(t.Context(), stmt, readers)
 	requireViolation(t, err, "function")
-	_, err = db.db.ExecContext(t.Context(), "CALL gatekeeper_configure(allowed_functions := ['read_csv', 'read_csv_auto'])")
-	require.NoError(t, err)
-	for _, sql := range []string{stmt, "SELECT * FROM " + quoteLiteral(path)} {
-		data, err := db.QueryArrow(t.Context(), sql, []string{})
-		require.NoError(t, err)
-		require.Equal(t, []map[string]any{{"value": float64(42)}}, arrowRows(t, data))
+	require.NoError(t, db.Exec(t.Context(), "CALL gatekeeper_configure(allowed_functions := ['read_csv', 'read_csv_auto'])"))
+	for _, policy := range []*ValidationPolicy{readers, {AllowedSchemas: []string{}}} {
+		for _, sql := range []string{stmt, "SELECT * FROM " + quoteLiteral(path)} {
+			data, err := db.QueryArrow(t.Context(), sql, policy)
+			require.NoError(t, err)
+			require.Equal(t, []map[string]any{{"value": float64(42)}}, arrowRows(t, data))
+		}
 	}
 }
 
@@ -203,8 +176,8 @@ func TestGatekeeperBlocksTrustedExpansions(t *testing.T) {
 		CREATE MACRO digest(x) AS md5(x)`))
 	for _, sql := range []string{"SELECT * FROM hashed", "SELECT digest('x')", "SELECT list_sum([1, 2])"} {
 		err := db.ValidateSQL(t.Context(), sql, ValidationPolicy{
-			BlockedFunctions:  []string{"md5", "sum"},
-			FunctionAllowlist: &FunctionAllowlistOptions{Include: []string{"digest"}},
+			BlockedFunctions: []string{"md5", "sum"},
+			AllowedFunctions: []string{"digest"},
 		})
 		requireViolation(t, err, "function")
 	}

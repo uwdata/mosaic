@@ -309,7 +309,7 @@ func TestDBReaderPolicy(t *testing.T) {
 	secondPath := filepath.Join(t.TempDir(), "second.csv")
 	require.NoError(t, os.WriteFile(secondPath, []byte("value\n43\n"), 0o600))
 
-	db := setupTestDB(t, WithFunctionAllowlist(FunctionAllowlistOptions{}))
+	db := setupTestDB(t, WithValidation())
 
 	data, err := db.QueryArrow(t.Context(), "SELECT * FROM read_csv("+quoteLiteral(path)+")", nil)
 	requireViolation(t, err, "function")

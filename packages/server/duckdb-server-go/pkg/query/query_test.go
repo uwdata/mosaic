@@ -3,47 +3,62 @@ package query
 import (
 	"bytes"
 	"context"
+	"database/sql/driver"
 	"encoding/json"
 	"log/slog"
 	"os"
+	"strings"
 	"testing"
 
 	"github.com/apache/arrow-go/v18/arrow/ipc"
 	"github.com/duckdb/duckdb-go/v2"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"github.com/uwdata/mosaic/packages/server/duckdb-server-go/pkg/extensions"
 )
 
-// setupTestDB creates a new in-memory DuckDB instance for testing
+const testDSN = ":memory:?autoload_known_extensions=false&autoinstall_known_extensions=false"
+
+// setupTestDB installs and loads Gatekeeper in the connector init, mirroring the CLI's trusted initialization.
 func setupTestDB(t *testing.T, opts ...OptionFunc) *DB {
+	t.Helper()
+	return setupTestDBWithInit(t, func(ctx context.Context, execer driver.ExecerContext) error {
+		return extensions.InstallAndLoad(ctx, execer, "gatekeeper", "community")
+	}, opts...)
+}
+
+func setupTestDBWithInit(t *testing.T, init func(context.Context, driver.ExecerContext) error, opts ...OptionFunc) *DB {
+	t.Helper()
+
+	connector := newTestConnector(t, testDSN, init)
+	logger := slog.New(slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{Level: slog.LevelError}))
+	opts = append([]OptionFunc{WithLogger(logger)}, opts...)
+	db, err := New(context.Background(), connector, opts...)
+	require.NoError(t, err)
+	t.Cleanup(db.Close)
+
+	return db
+}
+
+func newTestConnector(t *testing.T, dsn string, init func(context.Context, driver.ExecerContext) error) *duckdb.Connector {
 	t.Helper()
 
 	ctx := context.Background()
-
-	// Create an in-memory DuckDB connector
-	connector, err := duckdb.NewConnector(":memory:?autoload_known_extensions=false&autoinstall_known_extensions=false", nil)
+	connector, err := duckdb.NewConnector(dsn, func(execer driver.ExecerContext) error {
+		return init(ctx, execer)
+	})
 	require.NoError(t, err)
-
-	// Create a test logger that discards output
-	logger := slog.New(slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{
-		Level: slog.LevelError, // Only show errors during tests
-	}))
-
-	opts = append([]OptionFunc{WithLogger(logger)}, opts...)
-	db, err := New(ctx, connector, opts...)
-	require.NoError(t, err)
-
-	// Clean up when test completes
 	t.Cleanup(func() {
-		db.Close()
-		err = connector.Close()
-		if err != nil {
+		if err := connector.Close(); err != nil {
 			t.Logf("Error closing DuckDB connector: %v", err)
 		}
 	})
 
-	return db
+	return connector
 }
+
+func quoteLiteral(s string) string { return "'" + strings.ReplaceAll(s, "'", "''") + "'" }
 
 func arrowRows(t *testing.T, data []byte) []map[string]any {
 	t.Helper()
@@ -67,8 +82,9 @@ func arrowRows(t *testing.T, data []byte) []map[string]any {
 }
 
 func TestDB_FunctionBlocklist(t *testing.T) {
-	db := setupTestDB(t, WithFunctionBlocklist([]string{" RANGE ", "MD5", "SUM", "ROW_NUMBER"}))
+	db := setupTestDB(t)
 	ctx := context.Background()
+	policy := &ValidationPolicy{BlockedFunctions: []string{" RANGE ", "MD5", "SUM", "ROW_NUMBER"}}
 
 	tests := []struct {
 		name     string
@@ -83,7 +99,7 @@ func TestDB_FunctionBlocklist(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			_, err := db.QueryArrow(ctx, tt.query, nil)
+			_, err := db.QueryArrow(ctx, tt.query, policy)
 
 			require.Equal(t, tt.function, requireViolation(t, err, "function").FunctionName)
 		})
@@ -92,12 +108,14 @@ func TestDB_FunctionBlocklist(t *testing.T) {
 
 func TestDB_FunctionAllowlist(t *testing.T) {
 	ctx := context.Background()
+	db := setupTestDB(t)
+	exact := func(functions ...string) *ValidationPolicy {
+		return &ValidationPolicy{AllowedFunctions: functions, DisableDefaultFunctions: true}
+	}
+	defaults := &ValidationPolicy{}
 
 	t.Run("allows exact case-insensitive function names", func(t *testing.T) {
-		db := setupTestDB(t, WithFunctionAllowlist(FunctionAllowlistOptions{
-			DisableDefaults: true,
-			Include:         []string{" MD5 ", "ROW_NUMBER", "RANGE", "+", "COUNT_STAR", "LIST_VALUE"},
-		}))
+		policy := exact(" MD5 ", "ROW_NUMBER", "RANGE", "+", "COUNT_STAR", "LIST_VALUE")
 
 		tests := []struct {
 			name  string
@@ -115,64 +133,42 @@ func TestDB_FunctionAllowlist(t *testing.T) {
 
 		for _, tt := range tests {
 			t.Run(tt.name, func(t *testing.T) {
-				_, err := db.QueryArrow(ctx, tt.query, nil)
+				_, err := db.QueryArrow(ctx, tt.query, policy)
 				require.NoError(t, err)
 			})
 		}
 	})
 
 	t.Run("rejects a function that is not listed", func(t *testing.T) {
-		db := setupTestDB(t, WithFunctionAllowlist(FunctionAllowlistOptions{
-			DisableDefaults: true,
-			Include:         []string{"md"},
-		}))
-
-		_, err := db.QueryArrow(ctx, "SELECT md5('mosaic')", nil)
+		_, err := db.QueryArrow(ctx, "SELECT md5('mosaic')", exact("md"))
 		require.ErrorIs(t, err, ErrAccessDenied)
 		require.Equal(t, "md5", requireViolation(t, err, "function").FunctionName)
 	})
 
 	t.Run("rejects nested functions that are not listed", func(t *testing.T) {
-		db := setupTestDB(t, WithFunctionAllowlist(FunctionAllowlistOptions{
-			DisableDefaults: true,
-			Include:         []string{"md5"},
-		}))
-
-		_, err := db.QueryArrow(ctx, "SELECT md5(lower('mosaic'))", nil)
+		_, err := db.QueryArrow(ctx, "SELECT md5(lower('mosaic'))", exact("md5"))
 		require.ErrorIs(t, err, ErrAccessDenied)
 		require.Equal(t, "lower", requireViolation(t, err, "function").FunctionName)
 	})
 
 	t.Run("matches qualified functions by leaf name", func(t *testing.T) {
-		db := setupTestDB(t, WithFunctionAllowlist(FunctionAllowlistOptions{
-			DisableDefaults: true,
-			Include:         []string{"md5", "count_star"},
-		}))
-		_, err := db.db.ExecContext(ctx, "CREATE SCHEMA tenant; CREATE MACRO tenant.md5(x) AS system.main.md5(x)")
-		require.NoError(t, err)
+		require.NoError(t, db.Exec(ctx, "CREATE SCHEMA tenant; CREATE MACRO tenant.md5(x) AS system.main.md5(x)"))
 
 		for _, query := range []string{
 			"SELECT tenant.md5('mosaic')",
 			"SELECT system.main.count(*) FROM (SELECT 1)",
 		} {
-			require.NoError(t, db.validateQuery(ctx, query, nil))
+			require.NoError(t, db.ValidateSQL(ctx, query, *exact("md5", "count_star")))
 		}
 	})
 
 	t.Run("rejects parser helpers that are not listed", func(t *testing.T) {
-		db := setupTestDB(t, WithFunctionAllowlist(FunctionAllowlistOptions{
-			DisableDefaults: true,
-			Include:         []string{"read_parquet"},
-		}))
-
-		_, err := db.QueryArrow(ctx, "SELECT * FROM read_parquet(['local.parquet'])", nil)
+		_, err := db.QueryArrow(ctx, "SELECT * FROM read_parquet(['local.parquet'])", exact("read_parquet"))
 		require.ErrorIs(t, err, ErrAccessDenied)
 		require.Equal(t, "list_value", requireViolation(t, err, "function").FunctionName)
 	})
 
 	t.Run("defaults allow common expressions", func(t *testing.T) {
-		db := setupTestDB(t, WithFunctionAllowlist(FunctionAllowlistOptions{}))
-
 		for _, query := range []string{
 			"SELECT 1 + 2",
 			"SELECT sum(i), count(*) FROM (VALUES (1), (2)) t(i)",
@@ -189,20 +185,18 @@ func TestDB_FunctionAllowlist(t *testing.T) {
 			"SELECT * FROM range(3)",
 			"SELECT random(), now(), current_date, ago(INTERVAL 1 DAY)",
 		} {
-			_, err := db.QueryArrow(ctx, query, nil)
+			_, err := db.QueryArrow(ctx, query, defaults)
 			require.NoError(t, err, query)
 		}
 	})
 
 	t.Run("defaults classify extension functions before binding", func(t *testing.T) {
-		db := setupTestDB(t, WithFunctionAllowlist(FunctionAllowlistOptions{}))
-
 		for _, query := range []string{
 			"SELECT st_x(st_point(1, 2))",
 			"SELECT json_serialize_sql('SELECT 1')",
 			"SELECT iceberg_bucket(16, 'value')",
 		} {
-			err := db.validateQuery(ctx, query, nil)
+			err := db.ValidateSQL(ctx, query, *defaults)
 			if query == "SELECT json_serialize_sql('SELECT 1')" {
 				require.NoError(t, err)
 			} else {
@@ -217,23 +211,19 @@ func TestDB_FunctionAllowlist(t *testing.T) {
 			"st_read":                     "SELECT * FROM st_read('data.geojson')",
 			"st_transform":                "SELECT st_transform(NULL, 'EPSG:4326', 'EPSG:3857')",
 		} {
-			err := db.validateQuery(ctx, query, nil)
+			err := db.ValidateSQL(ctx, query, *defaults)
 			require.ErrorIs(t, err, ErrAccessDenied)
 			require.Equal(t, function, requireViolation(t, err, "function").FunctionName)
 		}
 	})
 
 	t.Run("defaults reject unsafe name collisions", func(t *testing.T) {
-		db := setupTestDB(t, WithFunctionAllowlist(FunctionAllowlistOptions{}))
-
-		_, err := db.QueryArrow(ctx, "SELECT * FROM histogram('duckdb_tables', 'table_name')", nil)
+		_, err := db.QueryArrow(ctx, "SELECT * FROM histogram('duckdb_tables', 'table_name')", defaults)
 		require.ErrorIs(t, err, ErrAccessDenied)
 		require.Equal(t, "histogram", requireViolation(t, err, "function").FunctionName)
 	})
 
 	t.Run("defaults reject privileged functions", func(t *testing.T) {
-		db := setupTestDB(t, WithFunctionAllowlist(FunctionAllowlistOptions{}))
-
 		tests := []struct {
 			function string
 			query    string
@@ -250,7 +240,7 @@ func TestDB_FunctionAllowlist(t *testing.T) {
 
 		for _, tt := range tests {
 			t.Run(tt.function, func(t *testing.T) {
-				_, err := db.QueryArrow(ctx, tt.query, nil)
+				_, err := db.QueryArrow(ctx, tt.query, defaults)
 				require.ErrorIs(t, err, ErrAccessDenied)
 				require.Equal(t, tt.function, requireViolation(t, err, "function").FunctionName)
 			})
@@ -258,40 +248,37 @@ func TestDB_FunctionAllowlist(t *testing.T) {
 	})
 
 	t.Run("defaults can be disabled", func(t *testing.T) {
-		db := setupTestDB(t, WithFunctionAllowlist(FunctionAllowlistOptions{DisableDefaults: true}))
-
-		_, err := db.QueryArrow(ctx, "SELECT 1", nil)
+		_, err := db.QueryArrow(ctx, "SELECT 1", &ValidationPolicy{DisableDefaultFunctions: true})
 		require.NoError(t, err)
 
-		_, err = db.QueryArrow(ctx, "SELECT 1 + 2", nil)
+		_, err = db.QueryArrow(ctx, "SELECT 1 + 2", &ValidationPolicy{DisableDefaultFunctions: true})
 		require.ErrorIs(t, err, ErrAccessDenied)
 		require.Equal(t, "+", requireViolation(t, err, "function").FunctionName)
 	})
 
-	t.Run("defaults can be excluded", func(t *testing.T) {
-		db := setupTestDB(t, WithFunctionAllowlist(FunctionAllowlistOptions{
-			Exclude: []string{" SUM "},
-		}))
-
-		_, err := db.QueryArrow(ctx, "SELECT 1 + 2", nil)
+	t.Run("defaults can be blocked", func(t *testing.T) {
+		policy := &ValidationPolicy{BlockedFunctions: []string{" SUM "}}
+		_, err := db.QueryArrow(ctx, "SELECT 1 + 2", policy)
 		require.NoError(t, err)
 
-		_, err = db.QueryArrow(ctx, "SELECT sum(i) FROM (VALUES (1), (2)) t(i)", nil)
+		_, err = db.QueryArrow(ctx, "SELECT sum(i) FROM (VALUES (1), (2)) t(i)", policy)
 		require.ErrorIs(t, err, ErrAccessDenied)
 		require.Equal(t, "sum", requireViolation(t, err, "function").FunctionName)
 	})
+
+	t.Run("blocks win over allows", func(t *testing.T) {
+		policy := &ValidationPolicy{AllowedFunctions: []string{" MD5 ", "sum"}, BlockedFunctions: []string{" SUM ", "+"}}
+		_, err := db.QueryArrow(ctx, "SELECT md5('x')", policy)
+		require.NoError(t, err)
+		for _, q := range []string{"SELECT sum(1)", "SELECT 1+2"} {
+			_, err := db.QueryArrow(ctx, q, policy)
+			requireViolation(t, err, "function")
+		}
+	})
 }
 
-func TestDB_FunctionAllowlistHandlesUnsupportedStatements(t *testing.T) {
-	db := setupTestDB(t, WithFunctionAllowlist(FunctionAllowlistOptions{}))
-
-	_, err := db.QueryArrow(t.Context(), "PRAGMA version", nil)
-	require.ErrorIs(t, err, ErrUnsupportedStatement)
-	require.ErrorContains(t, err, "only supported read statements are permitted")
-}
-
-func TestDB_FunctionBlocklistHandlesUnsupportedStatements(t *testing.T) {
-	db := setupTestDB(t, WithFunctionBlocklist([]string{"range"}))
+func TestDB_ValidationHandlesUnsupportedStatements(t *testing.T) {
+	db := setupTestDB(t, WithValidation())
 
 	_, err := db.QueryArrow(t.Context(), "PRAGMA version", nil)
 	require.ErrorIs(t, err, ErrUnsupportedStatement)
@@ -323,16 +310,8 @@ func TestDB_Exec(t *testing.T) {
 		assert.Contains(t, err.Error(), "query: failed to execute query")
 	})
 
-	t.Run("function validation rejects exec", func(t *testing.T) {
-		db := setupTestDB(t, WithFunctionBlocklist([]string{"range"}))
-
-		err := db.Exec(ctx, "SELECT 1")
-		require.ErrorIs(t, err, ErrExecWithValidation)
-		assert.EqualError(t, err, "query: exec command is disabled when query validation is active")
-	})
-
-	t.Run("function allowlist rejects exec", func(t *testing.T) {
-		db := setupTestDB(t, WithFunctionAllowlist(FunctionAllowlistOptions{}))
+	t.Run("validation rejects exec", func(t *testing.T) {
+		db := setupTestDB(t, WithValidation())
 
 		err := db.Exec(ctx, "SELECT 1")
 		require.ErrorIs(t, err, ErrExecWithValidation)

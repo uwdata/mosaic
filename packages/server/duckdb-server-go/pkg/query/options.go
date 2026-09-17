@@ -6,39 +6,18 @@ import (
 )
 
 type Options struct {
-	GatekeeperExtension string
 	// MaxConnections sets the maximum number of open connections to the database.
 	MaxConnections int
 
 	// Logger is the logger to use for logging. If nil, defaults to slog.Default().
 	Logger *slog.Logger
 
-	// FunctionBlocklist is a list of function names that are not allowed to be used in queries.
-	// This is useful for blocking functions that may pose security or performance risks.
-	FunctionBlocklist []string
-
-	// FunctionAllowlist configures the function names that are allowed in queries.
-	// A nil value uses Gatekeeper's defaults when validation is active.
-	FunctionAllowlist *FunctionAllowlistOptions
-}
-
-// FunctionAllowlistOptions configures an allowlist from reviewed defaults and exact function names.
-type FunctionAllowlistOptions struct {
-	// Include adds exact function names to the allowlist.
-	Include []string
-
-	// Exclude removes exact function names after defaults and includes are combined.
-	Exclude []string
-
-	// DisableDefaults omits Gatekeeper's reviewed function defaults.
-	DisableDefaults bool
+	// Validation validates every Arrow query through Gatekeeper, even when the caller supplies no request policy,
+	// disables Exec, and makes New fail when Gatekeeper is not loaded.
+	Validation bool
 }
 
 type OptionFunc func(*Options) error
-
-func WithGatekeeperExtension(path string) OptionFunc {
-	return func(opts *Options) error { opts.GatekeeperExtension = path; return nil }
-}
 
 func WithMaxConnections(maxConnections int) OptionFunc {
 	return func(opts *Options) error {
@@ -54,33 +33,19 @@ func WithLogger(logger *slog.Logger) OptionFunc {
 	}
 }
 
-func WithFunctionBlocklist(blockedFunctions []string) OptionFunc {
+// WithValidation validates every Arrow query, even without a request policy, and disables Exec. Function policy is
+// expected to come from the database-wide gatekeeper_configure ceiling set during trusted initialization; request
+// policies can only narrow it. New fails when Gatekeeper is not loaded.
+func WithValidation() OptionFunc {
 	return func(opts *Options) error {
-		opts.FunctionBlocklist = normalizeFunctionNames(blockedFunctions)
+		opts.Validation = true
 		return nil
 	}
 }
 
-// WithFunctionAllowlist allows the reviewed defaults and configured function names in submitted queries.
-// Omitting the option uses Gatekeeper's defaults when validation is active.
-func WithFunctionAllowlist(options FunctionAllowlistOptions) OptionFunc {
-	configured := FunctionAllowlistOptions{
-		Include:         append([]string(nil), options.Include...),
-		Exclude:         append([]string(nil), options.Exclude...),
-		DisableDefaults: options.DisableDefaults,
-	}
-	return func(opts *Options) error {
-		value := FunctionAllowlistOptions{
-			Include:         append([]string(nil), configured.Include...),
-			Exclude:         append([]string(nil), configured.Exclude...),
-			DisableDefaults: configured.DisableDefaults,
-		}
-		opts.FunctionAllowlist = &value
-		return nil
-	}
-}
-
-func normalizeFunctionNames(functions []string) []string {
+// NormalizeFunctionNames lowercases, trims, and deduplicates function names. Gatekeeper matches configured names
+// exactly, so the same normalization must be applied to gatekeeper_configure arguments and to ValidationPolicy.
+func NormalizeFunctionNames(functions []string) []string {
 	normalized := make([]string, 0, len(functions))
 	seen := make(map[string]struct{}, len(functions))
 	for _, function := range functions {
