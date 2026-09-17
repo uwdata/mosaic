@@ -11,6 +11,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"net/url"
+	"slices"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -713,4 +714,92 @@ func (b *synchronizedBuffer) Bytes() []byte {
 	b.mu.Lock()
 	defer b.mu.Unlock()
 	return bytes.Clone(b.buf.Bytes())
+}
+
+func TestPolicyAuthorizerScopesValidationPerCommand(t *testing.T) {
+	db := setupTestDB(t)
+	require.NoError(t, db.Exec(t.Context(), `CREATE SCHEMA tenant_a; CREATE SCHEMA tenant_b;
+		CREATE TABLE tenant_a.items AS SELECT 1 AS value; CREATE TABLE tenant_b.items AS SELECT 2 AS value`))
+
+	type payload struct {
+		Tenant string `json:"tenant"`
+	}
+	var seen []*query.ValidationPolicy
+	authorizer := PolicyAuthorizerFunc[payload](func(*http.Request) (CommandPolicyAuthorizer[payload], error) {
+		return func(_ context.Context, command Command[payload], policy *query.ValidationPolicy) (*query.ValidationPolicy, error) {
+			seen = append(seen, policy)
+			if command.Payload().Tenant == "" {
+				return nil, ErrPermissionDenied
+			}
+			if policy != nil && !slices.Contains(policy.AllowedSchemas, command.Payload().Tenant) {
+				return nil, ErrPermissionDenied
+			}
+			return &query.ValidationPolicy{AllowedSchemas: []string{command.Payload().Tenant}}, nil
+		}, nil
+	})
+
+	t.Run("http", func(t *testing.T) {
+		handler := mustHandler(t, db, WithPolicyAuthorizer(authorizer))
+		post := func(body string) *httptest.ResponseRecorder {
+			req := httptest.NewRequest(http.MethodPost, "/", strings.NewReader(body))
+			res := httptest.NewRecorder()
+			handler.ServeHTTP(res, req)
+			return res
+		}
+		require.Equal(t, http.StatusOK, post(`{"type":"arrow","sql":"SELECT * FROM tenant_a.items","tenant":"tenant_a"}`).Code)
+		require.Equal(t, http.StatusForbidden, post(`{"type":"arrow","sql":"SELECT * FROM tenant_b.items","tenant":"tenant_a"}`).Code)
+		require.Equal(t, http.StatusForbidden, post(`{"type":"arrow","sql":"SELECT 1"}`).Code)
+		res := post(`{"type":"exec","sql":"SELECT 1","tenant":"tenant_a"}`)
+		require.Equal(t, http.StatusBadRequest, res.Code)
+		require.Contains(t, res.Body.String(), query.ErrExecWithValidation.Error())
+	})
+
+	t.Run("websocket", func(t *testing.T) {
+		server := newWebSocketTestServer(t, mustHandler(t, db, WithPolicyAuthorizer(authorizer)))
+		conn, _, err := server.dial(nil)
+		require.NoError(t, err)
+		defer func() { require.NoError(t, conn.CloseNow()) }()
+		for _, tc := range []struct {
+			body    string
+			allowed bool
+		}{
+			{`{"type":"arrow","sql":"SELECT * FROM tenant_a.items","tenant":"tenant_a"}`, true},
+			{`{"type":"arrow","sql":"SELECT * FROM tenant_a.items","tenant":"tenant_b"}`, false},
+			{`{"type":"arrow","sql":"SELECT * FROM tenant_b.items","tenant":"tenant_b"}`, true},
+		} {
+			require.NoError(t, conn.Write(server.ctx, websocket.MessageText, []byte(tc.body)))
+			messageType, data, err := conn.Read(server.ctx)
+			require.NoError(t, err)
+			if tc.allowed {
+				require.Equal(t, websocket.MessageBinary, messageType, string(data))
+				continue
+			}
+			require.Equal(t, websocket.MessageText, messageType)
+			require.Contains(t, string(data), `"forbidden"`)
+		}
+	})
+
+	t.Run("receives header policy", func(t *testing.T) {
+		seen = nil
+		handler := mustHandler(t, db, WithSchemaMatchHeaders("X-Tenant"), WithPolicyAuthorizer(authorizer))
+		req := httptest.NewRequest(http.MethodPost, "/", strings.NewReader(`{"type":"arrow","sql":"SELECT * FROM tenant_a.items","tenant":"tenant_a"}`))
+		req.Header.Set("X-Tenant", "tenant_a")
+		res := httptest.NewRecorder()
+		handler.ServeHTTP(res, req)
+		require.Equal(t, http.StatusOK, res.Code, res.Body.String())
+		require.Equal(t, []*query.ValidationPolicy{{AllowedSchemas: []string{"tenant_a"}}}, seen)
+
+		req = httptest.NewRequest(http.MethodPost, "/", strings.NewReader(`{"type":"arrow","sql":"SELECT * FROM tenant_b.items","tenant":"tenant_b"}`))
+		req.Header.Set("X-Tenant", "tenant_a")
+		res = httptest.NewRecorder()
+		handler.ServeHTTP(res, req)
+		require.Equal(t, http.StatusForbidden, res.Code)
+	})
+
+	t.Run("nil authorizer fails closed", func(t *testing.T) {
+		_, err := New(db, WithPolicyAuthorizer[payload](nil))
+		require.Error(t, err)
+		_, err = New(db, WithPolicyAuthorizer(PolicyAuthorizerFunc[payload](nil)))
+		require.Error(t, err)
+	})
 }

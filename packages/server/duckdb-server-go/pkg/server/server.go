@@ -316,7 +316,7 @@ func (s *handler) execCommand(ctx context.Context, params queryParams, policy *q
 	var err error
 
 	if authorize != nil {
-		if err = authorize(ctx, params); err != nil {
+		if policy, err = authorize(ctx, params, policy); err != nil {
 			return commandResponse{}, &authorizationError{err: err}
 		}
 	}

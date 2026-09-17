@@ -115,6 +115,13 @@ errors are logged and returned as sanitized 500 responses. Authorization can all
 and exact SQL, but cannot rewrite SQL or sandbox the shared process, filesystem, network, extensions, catalogs, or
 credentials.
 
+`server.WithPolicyAuthorizer` is the same hook for applications that scope validation from the typed payload instead of
+headers. Its `CommandPolicyAuthorizer[T]` receives the policy derived from `--schema-match-headers` (nil when
+unconfigured) and returns the `*query.ValidationPolicy` applied on the connection that executes the command; it may pass
+the header policy through, narrow it, or build one from `command.Payload()`. A non-nil policy rejects `exec`, and a nil
+policy leaves the command unvalidated unless the DB was built with `query.WithValidation()`. The returned policy is
+trusted application code, so it can also widen a header policy; treat it as the authorization decision itself.
+
 ### HTTP Response Caching
 
 Configure caching and request-header variation independently:
