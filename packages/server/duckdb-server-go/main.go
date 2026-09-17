@@ -10,6 +10,7 @@ import (
 	"net/url"
 	"os"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/duckdb/duckdb-go/v2"
@@ -36,7 +37,7 @@ func run() int {
 	schemaMatchHeadersStr := flag.String("schema-match-headers", "", "Comma-separated list of headers to match against schema names for multi-tenant access control (e.g., \"X-Tenant-Id,verified-user-id\")")
 	extensionsStr := flag.String("load-extensions", "", "Comma-separated list of extensions to install and load at startup. Use a pipe after the extension name to specify a DuckDB repository alias. Unspecified repositories use DuckDB's default (e.g. mysql_scanner,netquack|community,aws|core_nightly).")
 	functionBlocklistStr := flag.String("function-blocklist", "", "Comma-separated list of functions to block, useful for blocking functions that may pose security or performance risks. (e.g., 'bigquery_query,read_parquet')")
-	gatekeeperExtension := flag.String("gatekeeper-extension", "gatekeeper", "Gatekeeper extension name or local artifact path")
+	gatekeeperExtension := flag.String("gatekeeper-extension", "", "Load a preinstalled Gatekeeper name or local artifact instead of installing from community")
 	allowUnsigned := flag.Bool("allow-unsigned-extensions", false, "Permit unsigned extensions for local development")
 	var functionAllowlist optionalCommaListFlag
 	flag.Var(&functionAllowlist, "function-allowlist", "Comma-separated exact names to add to the reviewed default allowlist. An empty value enables only the defaults; names are matched case-insensitively.")
@@ -87,8 +88,15 @@ func run() int {
 		values.Set("allow_unsigned_extensions", "true")
 		dsn = path + "?" + values.Encode()
 	}
+	var initializeOnce sync.Once
+	var initializeErr error
 	connector, err := duckdb.NewConnector(dsn, func(execer driver.ExecerContext) error {
-		return extensions.ParseAndInstall(ctx, execer, *extensionsStr)
+		initializeOnce.Do(func() {
+			initializeErr = initializeDatabase(ctx, execer, *extensionsStr, *gatekeeperExtension,
+				len(schemaMatchHeaders) > 0 || len(functionBlocklist) > 0 || functionAllowlist.set,
+				functionAllowlist.values, functionBlocklist)
+		})
+		return initializeErr
 	})
 	if err != nil {
 		logger.Error("main: error creating duckdb connector", "error", err)
@@ -101,11 +109,15 @@ func run() int {
 		}
 	}()
 
+	extension := *gatekeeperExtension
+	if extension == "" {
+		extension = "gatekeeper"
+	}
 	queryOptions := []query.OptionFunc{
 		query.WithMaxConnections(*poolSize),
 		query.WithLogger(logger),
 		query.WithFunctionBlocklist(functionBlocklist),
-		query.WithGatekeeperExtension(*gatekeeperExtension),
+		query.WithGatekeeperExtension(extension),
 	}
 	if functionAllowlist.set {
 		queryOptions = append(queryOptions, query.WithFunctionAllowlist(query.FunctionAllowlistOptions{

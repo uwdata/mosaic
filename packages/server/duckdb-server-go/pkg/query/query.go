@@ -46,6 +46,9 @@ func New(ctx context.Context, connector *duckdb.Connector, opts ...OptionFunc) (
 	db.SetMaxOpenConns(o.MaxConnections)
 	extension := o.GatekeeperExtension
 	if extension == "" {
+		if _, err := db.ExecContext(ctx, "INSTALL gatekeeper FROM community"); err != nil {
+			return nil, errors.Join(fmt.Errorf("query: failed to install Gatekeeper: %w", err), db.Close())
+		}
 		extension = "gatekeeper"
 	}
 	if _, err := db.ExecContext(ctx, "LOAD "+quoteLiteral(extension)); err != nil {
@@ -55,7 +58,11 @@ func New(ctx context.Context, connector *duckdb.Connector, opts ...OptionFunc) (
 	if err := db.QueryRowContext(ctx, "SELECT system.main.current_database()").Scan(&catalog); err != nil {
 		return nil, errors.Join(fmt.Errorf("query: failed to identify primary catalog: %w", err), db.Close())
 	}
-	return &DB{db: db, catalog: catalog, functionBlocklist: o.FunctionBlocklist, functionAllowlist: allowlist, logger: o.Logger}, nil
+	result := &DB{db: db, catalog: catalog, functionBlocklist: o.FunctionBlocklist, functionAllowlist: allowlist, logger: o.Logger}
+	if err := result.ValidateSQL(ctx, "SELECT 1", ValidationPolicy{AllowedSchemas: []string{}, FunctionAllowlist: &FunctionAllowlistOptions{}}); err != nil {
+		return nil, errors.Join(fmt.Errorf("query: incompatible Gatekeeper API: %w", err), db.Close())
+	}
+	return result, nil
 }
 
 type Extension struct {
@@ -106,7 +113,7 @@ func (db *DB) validatedConn(ctx context.Context, query string, allowedSchemas []
 	if allowedSchemas != nil || len(db.functionBlocklist) > 0 || db.functionAllowlist != nil {
 		policy := ValidationPolicy{AllowedSchemas: allowedSchemas, BlockedFunctions: db.functionBlocklist, FunctionAllowlist: db.functionAllowlist}
 		if err := db.validateSQL(ctx, conn, query, policy); err != nil {
-			return nil, errors.Join(fmt.Errorf("query: validation failed: %w", err), conn.Close())
+			return nil, errors.Join(err, conn.Close())
 		}
 	}
 	return conn, nil

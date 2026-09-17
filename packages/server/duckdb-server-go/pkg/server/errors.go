@@ -65,11 +65,17 @@ func classifyError(err error) errorResponse {
 		response.code = "bad_request"
 	}
 
+	if errors.Is(err, query.ErrValidation) {
+		response.message = http.StatusText(response.status)
+	}
 	return response
 }
 
 func (s *handler) classifyAndLogError(err error) errorResponse {
 	response := classifyError(err)
+	if errors.Is(err, query.ErrValidation) {
+		s.logger.Warn("server: query validation failed", "error", err)
+	}
 	if response.status != http.StatusInternalServerError {
 		return response
 	}

@@ -21,7 +21,7 @@ func setupTestDB(t *testing.T, opts ...OptionFunc) *DB {
 	ctx := context.Background()
 
 	// Create an in-memory DuckDB connector
-	connector, err := duckdb.NewConnector(":memory:?allow_unsigned_extensions=true", nil)
+	connector, err := duckdb.NewConnector(":memory:?autoload_known_extensions=false&autoinstall_known_extensions=false", nil)
 	require.NoError(t, err)
 
 	// Create a test logger that discards output
@@ -29,9 +29,7 @@ func setupTestDB(t *testing.T, opts ...OptionFunc) *DB {
 		Level: slog.LevelError, // Only show errors during tests
 	}))
 
-	path := os.Getenv("GATEKEEPER_EXTENSION")
-	require.NotEmpty(t, path, "set GATEKEEPER_EXTENSION to the DuckDB 1.5.5 artifact")
-	opts = append([]OptionFunc{WithLogger(logger), WithGatekeeperExtension(path)}, opts...)
+	opts = append([]OptionFunc{WithLogger(logger)}, opts...)
 	db, err := New(ctx, connector, opts...)
 	require.NoError(t, err)
 
@@ -189,6 +187,7 @@ func TestDB_FunctionAllowlist(t *testing.T) {
 			"SELECT json_group_array(i), json_group_object(i, i) FROM (VALUES (1), (2)) t(i)",
 			"SELECT strptime('2020-01-01', '%Y-%m-%d')",
 			"SELECT * FROM range(3)",
+			"SELECT random(), now(), current_date, ago(INTERVAL 1 DAY)",
 		} {
 			_, err := db.QueryArrow(ctx, query, nil)
 			require.NoError(t, err, query)
@@ -240,14 +239,12 @@ func TestDB_FunctionAllowlist(t *testing.T) {
 			query    string
 		}{
 			{function: "query", query: "SELECT * FROM query('SELECT 1')"},
-			{function: "ago", query: "SELECT ago(INTERVAL 1 DAY)"},
 			{function: "list_aggr", query: "SELECT list_aggr([1, 2], 'sum')"},
 			{function: "list_aggregate", query: "SELECT list_aggregate([1, 2], 'sum')"},
 			{function: "read_parquet", query: "SELECT * FROM read_parquet('missing.parquet')"},
 			{function: "getenv", query: "SELECT getenv('HOME')"},
 			{function: "pg_sleep", query: "SELECT pg_sleep(0)"},
 			{function: "sleep_ms", query: "SELECT sleep_ms(1)"},
-			{function: "random", query: "SELECT random()"},
 			{function: "getenv", query: "SELECT list_transform(['HOME'], x -> getenv(x))"},
 		}
 

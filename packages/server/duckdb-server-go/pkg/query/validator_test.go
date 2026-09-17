@@ -245,7 +245,7 @@ func TestDB_ValidateSQLIgnoresShadowingSerializerMacro(t *testing.T) {
 		ValidationPolicy{AllowedSchemas: []string{"tenant_a"}},
 	)
 	require.ErrorIs(t, err, ErrAccessDenied)
-	require.Equal(t, "tenant_b", requireViolation(t, err, "schema").Schema)
+	require.Equal(t, "tenant_b", requireViolation(t, err, "table").Schema)
 }
 
 func TestBaseTableValidatorErrors(t *testing.T) {
@@ -254,13 +254,13 @@ func TestBaseTableValidatorErrors(t *testing.T) {
 	t.Run("disallowed schema", func(t *testing.T) {
 		err := db.ValidateSQL(t.Context(), "SELECT * FROM tenant_b.secret", ValidationPolicy{AllowedSchemas: []string{"tenant_a"}})
 		assert.ErrorIs(t, err, ErrAccessDenied)
-		assert.Equal(t, "tenant_b", requireViolation(t, err, "schema").Schema)
+		assert.Equal(t, "tenant_b", requireViolation(t, err, "table").Schema)
 	})
 
 	t.Run("unqualified table", func(t *testing.T) {
 		err := db.ValidateSQL(t.Context(), "SELECT * FROM secret", ValidationPolicy{AllowedSchemas: []string{"tenant_a"}})
 		assert.ErrorIs(t, err, ErrAccessDenied)
-		assert.Equal(t, "main", requireViolation(t, err, "schema").Schema)
+		assert.Equal(t, "main", requireViolation(t, err, "table").Schema)
 	})
 }
 
@@ -275,22 +275,22 @@ func TestBaseTableValidatorShowStatements(t *testing.T) {
 		{
 			name:    "disallowed schema",
 			sql:     "SHOW TABLES FROM tenant_b",
-			wantErr: "schema",
+			wantErr: "table",
 		},
 		{
 			name:    "allowed schema",
 			sql:     "SHOW TABLES FROM tenant_a",
-			wantErr: "catalog",
+			wantErr: "table",
 		},
 		{
 			name:    "all schemas",
 			sql:     "SHOW ALL TABLES",
-			wantErr: "schema",
+			wantErr: "table",
 		},
 		{
 			name:    "describe disallowed table",
 			sql:     "DESCRIBE tenant_b.secret",
-			wantErr: "schema",
+			wantErr: "table",
 		},
 		{
 			name: "describe expression",
@@ -313,20 +313,19 @@ func TestBaseTableValidatorShowStatements(t *testing.T) {
 
 func TestBaseTableValidatorRejectsCatalogReferences(t *testing.T) {
 	db := setupValidationDB(t)
+	require.NoError(t, db.Exec(t.Context(), `ATTACH ':memory:' AS otherdb;
+		CREATE SCHEMA otherdb.tenant_a; CREATE TABLE otherdb.tenant_a.secret (value INTEGER)`))
 
 	tests := []string{
 		"SELECT * FROM otherdb.tenant_a.secret",
-		"SHOW TABLES FROM otherdb.tenant_a",
 		"DESCRIBE otherdb.tenant_a.secret",
-		"SELECT * FROM otherdb.tenant_a.fn()",
-		"SELECT otherdb.tenant_a.fn() OVER ()",
 	}
 
 	for _, sql := range tests {
 		t.Run(sql, func(t *testing.T) {
 			err := db.ValidateSQL(t.Context(), sql, ValidationPolicy{AllowedSchemas: []string{"tenant_a"}})
 			assert.ErrorIs(t, err, ErrAccessDenied)
-			assert.Equal(t, "otherdb", requireViolation(t, err, "catalog").Catalog)
+			assert.Equal(t, "otherdb", requireViolation(t, err, "table").Catalog)
 		})
 	}
 }

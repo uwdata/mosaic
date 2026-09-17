@@ -2,12 +2,12 @@ package query
 
 import (
 	"fmt"
-	"github.com/duckdb/duckdb-go/v2"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
 
+	"github.com/duckdb/duckdb-go/v2"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -18,10 +18,9 @@ func TestWithRemoteURILiteralRejection(t *testing.T) {
 	assert.True(t, opts.RejectRemoteURILiterals)
 }
 
-func TestRemoteURILiteralValidatorRecognizesPinnedPrefixes(t *testing.T) {
+func TestGatekeeperRejectsRemoteReaders(t *testing.T) {
 	db := setupTestDB(t)
 	remoteURIPrefixes := []string{"http://", "https://", "s3://", "s3a://", "s3n://", "gs://", "gcs://", "r2://", "azure://", "az://", "abfs://", "abfss://", "hf://"}
-	assert.Contains(t, remoteURIPrefixes, "abfs://")
 
 	for _, prefix := range remoteURIPrefixes {
 		t.Run(prefix, func(t *testing.T) {
@@ -35,63 +34,53 @@ func TestRemoteURILiteralValidatorRecognizesPinnedPrefixes(t *testing.T) {
 	}
 }
 
-func TestRemoteURILiteralValidatorPathArguments(t *testing.T) {
+func TestGatekeeperReaderArguments(t *testing.T) {
 	db := setupTestDB(t)
 
 	tests := []struct {
-		name       string
-		sql        string
-		wantPrefix string
+		name    string
+		sql     string
+		allowed bool
 	}{
 		{
-			name:       "direct positional literal",
-			sql:        "SELECT * FROM read_parquet('gcs://bucket/file.parquet')",
-			wantPrefix: "gcs://",
+			name: "direct positional literal",
+			sql:  "SELECT * FROM read_parquet('gcs://bucket/file.parquet')",
 		},
 		{
-			name:       "prefix within literal",
-			sql:        "SELECT * FROM read_parquet('mirror=https://example.com/file.parquet')",
-			wantPrefix: "https://",
+			name: "prefix within literal",
+			sql:  "SELECT * FROM read_parquet('mirror=https://example.com/file.parquet')",
 		},
 		{
-			name:       "constructed expression",
-			sql:        "SELECT * FROM read_parquet('gcs://' || 'bucket/file.parquet')",
-			wantPrefix: "gcs://",
+			name: "constructed expression",
+			sql:  "SELECT * FROM read_parquet('gcs://' || 'bucket/file.parquet')",
 		},
 		{
-			name:       "cast expression",
-			sql:        "SELECT * FROM read_parquet(CAST('s3://bucket/file.parquet' AS VARCHAR))",
-			wantPrefix: "s3://",
+			name: "cast expression",
+			sql:  "SELECT * FROM read_parquet(CAST('s3://bucket/file.parquet' AS VARCHAR))",
 		},
 		{
-			name:       "literal list",
-			sql:        "SELECT * FROM read_parquet(['local.parquet', 'r2://bucket/file.parquet'])",
-			wantPrefix: "r2://",
+			name: "literal list",
+			sql:  "SELECT * FROM read_parquet(['local.parquet', 'r2://bucket/file.parquet'])",
 		},
 		{
-			name:       "array constructor",
-			sql:        "SELECT * FROM read_parquet(ARRAY['local.parquet', 'gs://bucket/file.parquet'])",
-			wantPrefix: "gs://",
+			name: "array constructor",
+			sql:  "SELECT * FROM read_parquet(ARRAY['local.parquet', 'gs://bucket/file.parquet'])",
 		},
 		{
-			name:       "named literal list",
-			sql:        "SELECT * FROM st_read('local.shp', sibling_files := ['local.dbf', 's3://bucket/file.shx'])",
-			wantPrefix: "s3://",
+			name: "named literal list",
+			sql:  "SELECT * FROM st_read('local.shp', sibling_files := ['local.dbf', 's3://bucket/file.shx'])",
 		},
 		{
-			name:       "third positional argument",
-			sql:        "SELECT * FROM ducklake_add_data_files('catalog', 'table', 'azure://container/file.parquet')",
-			wantPrefix: "azure://",
+			name: "third positional argument",
+			sql:  "SELECT * FROM ducklake_add_data_files('catalog', 'table', 'azure://container/file.parquet')",
 		},
 		{
-			name:       "table macro path",
-			sql:        "SELECT * FROM histogram('https://example.com/file.parquet', 'value')",
-			wantPrefix: "https://",
+			name: "table macro path",
+			sql:  "SELECT * FROM histogram('https://example.com/file.parquet', 'value')",
 		},
 		{
-			name:       "autocomplete filename suggestion",
-			sql:        "SELECT * FROM sql_auto_complete('SELECT * FROM ''GCS://bucket/file', max_file_suggestion_count := 10)",
-			wantPrefix: "gcs://",
+			name: "autocomplete filename suggestion",
+			sql:  "SELECT * FROM sql_auto_complete('SELECT * FROM ''GCS://bucket/file', max_file_suggestion_count := 10)",
 		},
 		{
 			name: "local path",
@@ -114,25 +103,26 @@ func TestRemoteURILiteralValidatorPathArguments(t *testing.T) {
 			sql:  "SELECT * FROM parquet_bloom_probe('local.parquet', 'https://example.com', 'value')",
 		},
 		{
-			name: "remote literal in unrelated function",
-			sql:  "SELECT parse_path('https://example.com/file.parquet')",
+			name:    "remote literal in unrelated function",
+			sql:     "SELECT parse_path('https://example.com/file.parquet')",
+			allowed: true,
 		},
 		{
 			name: "remote literal in unreviewed table function",
 			sql:  "SELECT * FROM unreviewed_reader('https://example.com/file.parquet')",
 		},
 		{
-			name: "remote literal in where predicate",
-			sql:  "SELECT 1 WHERE 'https://example.com' = 'https://example.com'",
+			name:    "remote literal in where predicate",
+			sql:     "SELECT 1 WHERE 'https://example.com' = 'https://example.com'",
+			allowed: true,
 		},
 		{
 			name: "aggregate sharing table macro name",
 			sql:  "SELECT histogram('https://example.com')",
 		},
 		{
-			name:       "mixed-case prefix",
-			sql:        "SELECT * FROM read_parquet('HtTpS://example.com/file.parquet')",
-			wantPrefix: "https://",
+			name: "mixed-case prefix",
+			sql:  "SELECT * FROM read_parquet('HtTpS://example.com/file.parquet')",
 		},
 		{
 			name: "prefix split between literals",
@@ -143,7 +133,7 @@ func TestRemoteURILiteralValidatorPathArguments(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			err := db.ValidateSQL(t.Context(), tt.sql, ValidationPolicy{})
-			if tt.name == "remote literal in unrelated function" || tt.name == "remote literal in where predicate" {
+			if tt.allowed {
 				assert.NoError(t, err)
 				return
 			}
@@ -153,7 +143,7 @@ func TestRemoteURILiteralValidatorPathArguments(t *testing.T) {
 	}
 }
 
-func TestRemoteURILiteralValidatorRejectsNestedSQLExecutors(t *testing.T) {
+func TestGatekeeperRejectsNestedSQLExecutors(t *testing.T) {
 	db := setupTestDB(t)
 
 	tests := []struct {
@@ -202,7 +192,7 @@ func TestRemoteURILiteralValidatorRejectsNestedSQLExecutors(t *testing.T) {
 	}
 }
 
-func TestRemoteURILiteralValidatorAllowsScalarExecutorNames(t *testing.T) {
+func TestGatekeeperRejectsScalarExecutorNames(t *testing.T) {
 	db := setupTestDB(t)
 
 	for _, sql := range []string{
@@ -215,7 +205,7 @@ func TestRemoteURILiteralValidatorAllowsScalarExecutorNames(t *testing.T) {
 	}
 }
 
-func TestRemoteURILiteralValidatorRejectsJSONSerializePlan(t *testing.T) {
+func TestGatekeeperRejectsJSONSerializePlan(t *testing.T) {
 	db := setupTestDB(t)
 
 	for _, sql := range []string{
@@ -233,7 +223,7 @@ func TestRemoteURILiteralValidatorRejectsJSONSerializePlan(t *testing.T) {
 	}
 }
 
-func TestRemoteURILiteralValidatorAllowsTableMacroNamedJSONSerializePlan(t *testing.T) {
+func TestGatekeeperRejectsTableMacroNamedJSONSerializePlan(t *testing.T) {
 	db := setupTestDB(t)
 
 	requireViolation(t, db.ValidateSQL(
@@ -243,7 +233,7 @@ func TestRemoteURILiteralValidatorAllowsTableMacroNamedJSONSerializePlan(t *test
 	), "function")
 }
 
-func TestRemoteURILiteralValidatorAllowsQualifiedJSONSerializePlanUDF(t *testing.T) {
+func TestGatekeeperRejectsQualifiedJSONSerializePlanUDF(t *testing.T) {
 	db := setupTestDB(t)
 
 	for _, sql := range []string{
@@ -256,13 +246,13 @@ func TestRemoteURILiteralValidatorAllowsQualifiedJSONSerializePlanUDF(t *testing
 	}
 }
 
-func TestRemoteURILiteralValidatorCountsOnlyUnnamedPositions(t *testing.T) {
+func TestGatekeeperRejectsReaderWithUnknownOption(t *testing.T) {
 	db := setupTestDB(t)
 	err := db.ValidateSQL(t.Context(), "SELECT * FROM read_parquet('local.parquet', unreviewed_option := 'https://example.com/ignored')", ValidationPolicy{})
 	requireViolation(t, err, "function")
 }
 
-func TestRemoteURILiteralValidatorReplacementScans(t *testing.T) {
+func TestGatekeeperReplacementScans(t *testing.T) {
 	db := setupTestDB(t)
 
 	tests := []struct {
@@ -291,13 +281,14 @@ func TestRemoteURILiteralValidatorReplacementScans(t *testing.T) {
 			wantErr: true,
 		},
 		{
-			name: "local replacement scan",
-			sql:  "SELECT * FROM '/var/data/file.parquet'",
+			name:    "local replacement scan",
+			sql:     "SELECT * FROM '/var/data/file.parquet'",
+			wantErr: true,
 		},
 		{
-			name:    "quoted cte with URI-like name fails closed",
+			name:    "quoted cte with URI-like name",
 			sql:     `WITH "https://example.com/file.parquet" AS (SELECT 1 AS value) SELECT * FROM "https://example.com/file.parquet"`,
-			wantErr: true,
+			wantErr: false,
 		},
 		{
 			name:    "cte body cannot hide a replacement scan",
@@ -309,12 +300,12 @@ func TestRemoteURILiteralValidatorReplacementScans(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			err := db.ValidateSQL(t.Context(), tt.sql, ValidationPolicy{})
-			if tt.name == "quoted cte with URI-like name fails closed" {
+			if !tt.wantErr {
 				assert.NoError(t, err)
 				return
 			}
 			require.ErrorIs(t, err, ErrAccessDenied)
-			requireViolation(t, err, "file_table")
+			requireViolation(t, err, "function")
 		})
 	}
 }

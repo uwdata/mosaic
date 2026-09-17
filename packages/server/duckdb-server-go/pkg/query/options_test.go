@@ -1,7 +1,6 @@
 package query
 
 import (
-	"os"
 	"testing"
 
 	"github.com/duckdb/duckdb-go/v2"
@@ -82,10 +81,10 @@ func TestResolveFunctionAllowlist(t *testing.T) {
 }
 
 func TestNewNormalizesCustomFunctionOptions(t *testing.T) {
-	connector, err := duckdb.NewConnector(":memory:?allow_unsigned_extensions=true", nil)
+	connector, err := duckdb.NewConnector(":memory:", nil)
 	require.NoError(t, err)
 
-	db, err := New(t.Context(), connector, WithGatekeeperExtension(os.Getenv("GATEKEEPER_EXTENSION")), func(opts *Options) error {
+	db, err := New(t.Context(), connector, func(opts *Options) error {
 		opts.FunctionAllowlist = &FunctionAllowlistOptions{
 			DisableDefaults: true,
 			Include:         []string{" MD5 ", "md5"},
@@ -126,11 +125,10 @@ func TestFunctionAllowlistAndBlocklistAreMutuallyExclusive(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			connector, err := duckdb.NewConnector(":memory:?allow_unsigned_extensions=true", nil)
+			connector, err := duckdb.NewConnector(":memory:", nil)
 			require.NoError(t, err)
 
-			opts := append([]OptionFunc{WithGatekeeperExtension(os.Getenv("GATEKEEPER_EXTENSION"))}, tt.opts...)
-			db, err := New(t.Context(), connector, opts...)
+			db, err := New(t.Context(), connector, tt.opts...)
 			if tt.wantErr {
 				require.Nil(t, db)
 				require.EqualError(t, err, "query: function allowlist and blocklist cannot both be configured")

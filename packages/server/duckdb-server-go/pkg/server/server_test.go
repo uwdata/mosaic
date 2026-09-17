@@ -5,9 +5,9 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log/slog"
 	"net/http"
 	"net/http/httptest"
-	"os"
 	"strings"
 	"testing"
 	"time"
@@ -24,12 +24,9 @@ import (
 func setupTestDB(t *testing.T, opts ...query.OptionFunc) *query.DB {
 	t.Helper()
 
-	connector, err := duckdb.NewConnector(":memory:?allow_unsigned_extensions=true", nil)
+	connector, err := duckdb.NewConnector(":memory:", nil)
 	require.NoError(t, err)
 
-	path := os.Getenv("GATEKEEPER_EXTENSION")
-	require.NotEmpty(t, path, "set GATEKEEPER_EXTENSION to the DuckDB 1.5.5 artifact")
-	opts = append([]query.OptionFunc{query.WithGatekeeperExtension(path)}, opts...)
 	db, err := query.New(t.Context(), connector, opts...)
 	require.NoError(t, err)
 	t.Cleanup(func() {
@@ -169,7 +166,7 @@ func TestHandleHTTPPolicyErrors(t *testing.T) {
 		s.ServeHTTP(res, req)
 
 		require.Equal(t, http.StatusForbidden, res.Code)
-		require.Contains(t, res.Body.String(), "function is not allowed: md5")
+		require.Equal(t, "Forbidden\n", res.Body.String())
 	})
 
 	t.Run("blocked function is forbidden", func(t *testing.T) {
@@ -181,7 +178,7 @@ func TestHandleHTTPPolicyErrors(t *testing.T) {
 		s.ServeHTTP(res, req)
 
 		require.Equal(t, http.StatusForbidden, res.Code)
-		require.Contains(t, res.Body.String(), "function is not allowed: md5")
+		require.Equal(t, "Forbidden\n", res.Body.String())
 	})
 
 	t.Run("unauthorized schema is forbidden", func(t *testing.T) {
@@ -196,7 +193,7 @@ func TestHandleHTTPPolicyErrors(t *testing.T) {
 		s.ServeHTTP(res, req)
 
 		require.Equal(t, http.StatusForbidden, res.Code)
-		require.Contains(t, res.Body.String(), "schema is not allowed")
+		require.Equal(t, "Forbidden\n", res.Body.String())
 	})
 
 	t.Run("exec under schema policy is a bad request", func(t *testing.T) {
@@ -221,7 +218,7 @@ func TestHandleHTTPPolicyErrors(t *testing.T) {
 		s.ServeHTTP(res, req)
 
 		require.Equal(t, http.StatusBadRequest, res.Code)
-		require.Contains(t, res.Body.String(), "only supported read statements are permitted")
+		require.Equal(t, "Bad Request\n", res.Body.String())
 		require.NotContains(t, res.Body.String(), "()")
 		require.NotContains(t, res.Body.String(), " at :")
 	})
@@ -235,7 +232,7 @@ func TestHandleHTTPPolicyErrors(t *testing.T) {
 		s.ServeHTTP(res, req)
 
 		require.Equal(t, http.StatusBadRequest, res.Code)
-		require.Contains(t, res.Body.String(), "query: parser")
+		require.Equal(t, "Bad Request\n", res.Body.String())
 	})
 
 	t.Run("missing schema header is unauthorized", func(t *testing.T) {
@@ -248,6 +245,35 @@ func TestHandleHTTPPolicyErrors(t *testing.T) {
 
 		require.Equal(t, http.StatusUnauthorized, res.Code)
 	})
+}
+
+func TestValidationDiagnosticsStayServerSide(t *testing.T) {
+	db := setupTestDB(t)
+	require.NoError(t, db.Exec(t.Context(), "CREATE TABLE tenant_private_secret (value INTEGER)"))
+	var logs bytes.Buffer
+	handler := mustHandler(t, db, WithSchemaMatchHeaders("X-Tenant"), WithLogger(slog.New(slog.NewTextHandler(&logs, nil))))
+	body := `{"type":"arrow","sql":"SELECT * FROM tenant_private_secre"}`
+	req := httptest.NewRequest(http.MethodPost, "/", strings.NewReader(body))
+	req.Header.Set("X-Tenant", "tenant_a")
+	res := httptest.NewRecorder()
+	handler.ServeHTTP(res, req)
+	require.Equal(t, http.StatusBadRequest, res.Code)
+	require.Equal(t, "Bad Request\n", res.Body.String())
+	require.Contains(t, logs.String(), "tenant_private_secret")
+
+	server := newWebSocketTestServer(t, handler)
+	conn, _, err := server.dial(&websocket.DialOptions{HTTPHeader: http.Header{"X-Tenant": {"tenant_a"}}})
+	require.NoError(t, err)
+	defer func() { require.NoError(t, conn.CloseNow()) }()
+	require.NoError(t, conn.Write(server.ctx, websocket.MessageText, []byte(body)))
+	var response map[string]string
+	require.NoError(t, wsjson.Read(server.ctx, conn, &response))
+	require.Equal(t, "Bad Request", response["error"])
+	require.Equal(t, "bad_request", response["code"])
+	require.NoError(t, wsjson.Write(server.ctx, conn, map[string]string{"type": "arrow", "sql": "SELECT 1"}))
+	messageType, _, err := conn.Read(server.ctx)
+	require.NoError(t, err)
+	require.Equal(t, websocket.MessageBinary, messageType)
 }
 
 func TestHandleHTTPQueryParamsErrors(t *testing.T) {

@@ -34,7 +34,7 @@ You can customize the server behavior with the following command-line flags:
 -   `--load-extensions`: Comma-separated list of extensions to install and load at startup. Use a pipe after the extension name to specify a DuckDB repository alias. Unspecified repositories use DuckDB's default (e.g. `mysql_scanner,netquack|community,aws|core_nightly`).
 -   `--function-blocklist`: Comma-separated list of exact function names to block, useful for blocking functions that may pose security or performance risks (e.g. `bigquery_query,read_parquet`).
 -   `--function-allowlist`: Comma-separated list of exact function names to add to the reviewed defaults. Names are matched case-insensitively, repeated flags accumulate names, and an explicitly empty value enables only the defaults.
--   `--gatekeeper-extension`: Installed Gatekeeper name or local artifact path; defaults to `gatekeeper`. Loading failures stop startup.
+-   `--gatekeeper-extension`: Load a preinstalled Gatekeeper name or local artifact path without installation. When omitted, installs the signed `gatekeeper` extension from `community` and loads it. Installation, loading, or API compatibility failures stop startup.
 -   `--allow-unsigned-extensions`: Permit unsigned extensions for local development; defaults to false.
 
 By default, the server will look for `localhost.pem` and `localhost-key.pem` in the current directory to enable HTTPS if the `--cert` and `--key` flags are not provided.
@@ -68,20 +68,40 @@ aborts the connection. Extensions are trusted native code, so load only trusted 
 
 ### Programmatic Authorization
 
-`query.New` requires Gatekeeper for DuckDB 1.5.5. Use `query.WithGatekeeperExtension(path)` for a local build; unsigned builds require `allow_unsigned_extensions=true` in the DuckDB connector DSN. This enables unsigned loading database-wide.
+`query.New` uses the signed [Gatekeeper community extension](https://duckdb.org/community_extensions/extensions/gatekeeper) for DuckDB 1.5.5, tested with Gatekeeper 0.1.2. By default it runs `INSTALL gatekeeper FROM community`, loads the extension, and checks its validation API. DuckDB reuses its extension cache; the first installation needs network access and a writable extension directory. Installation does not force upgrades. Update cached artifacts deliberately and rerun integration tests when changing DuckDB or Gatekeeper.
 
-Build Gatekeeper revision `a35921a4ea0a107d109a237bf2431b7f1581e01f` with its pinned submodules and `python3 scripts/build.py --jobs 4`. From this Go package:
+Use `query.WithGatekeeperExtension("gatekeeper")` to load a preinstalled copy without installation, or pass a signed artifact path for offline deployment. Unsigned builds require `allow_unsigned_extensions=true` in the DuckDB connector DSN (or the CLI's `--allow-unsigned-extensions`); this enables unsigned loading database-wide. Local tests and CI use signed community artifacts with signature checking enabled:
 
 ```sh
-export GATEKEEPER_EXTENSION=/absolute/path/to/duckdb-gatekeeper/build/release/extension/gatekeeper/gatekeeper.duckdb_extension
 go test -race -tags=duckdb_arrow ./...
-go run -tags=duckdb_arrow . --gatekeeper-extension="$GATEKEEPER_EXTENSION" \
-  --allow-unsigned-extensions --function-allowlist=
+go run -tags=duckdb_arrow . --function-allowlist=
 ```
 
-CI builds the pinned artifact before running Go tests. Test databases explicitly enable unsigned loading; a separate test verifies that unsigned loading is rejected by default.
+`db.ValidateSQL(ctx, sql, query.ValidationPolicy{...})` always delegates to Gatekeeper, even with an empty policy. The policy accepts `AllowedSchemas`, `BlockedFunctions`, and `FunctionAllowlist`. Nil schemas add no object restriction beyond Gatekeeper's global ceiling; an explicit empty slice denies table/view access. Schema names are exact case-insensitive identifiers, and `*` is rejected. `ValidateSQL` does not execute SQL or reserve its connection for later use; use `QueryArrow` or `WriteArrow` for validation and execution on the same connection.
 
-`db.ValidateSQL(ctx, sql, query.ValidationPolicy{...})` delegates to Gatekeeper. The policy accepts `AllowedSchemas`, `BlockedFunctions`, and `FunctionAllowlist`. Nil schemas are unrestricted; an explicit empty slice denies table/view access. The former `Validator`, `CheckNode`, and AST traversal API is removed. Use `errors.As` with `query.ErrorDetails` to inspect Gatekeeper's `Code` and `Violations`; use `errors.Is` with `ErrAccessDenied` or `ErrUnsupportedStatement` for classification. Violations expose rule, catalog/schema/table, function, and optional byte offset. Diagnostic text is not a stable API.
+The former `Validator`, `CheckNode`, and AST traversal API is removed. Use `errors.As` with `query.ErrorDetails` to inspect Gatekeeper's `Code` and `Violations`; use `errors.Is` with `ErrValidation`, `ErrAccessDenied`, or `ErrUnsupportedStatement` for classification. Violations expose rule, catalog/schema/table, function, and optional byte offset; object denials use the `table` rule. Diagnostic text is not a stable API. HTTP/WebSocket validation errors return generic messages while logging full diagnostics for operators. Go callers retain full diagnostics, which may expose private catalog names and paths.
+
+Gatekeeper intersects request policy with a database-wide ceiling. `query.New` does not replace that ceiling. Embedding applications must grant elevated functions through trusted `CALL gatekeeper_configure(...)` before request policies can use them. Load required extensions and trusted definitions first, disable `autoload_known_extensions` and `autoinstall_known_extensions`, then set `lock_configuration=true` before serving. Choose application-appropriate memory/thread limits, timeouts, and external resource controls. For example, execute this SQL once on the connector during trusted initialization to grant CSV access:
+
+```sql
+INSTALL gatekeeper FROM community;
+LOAD gatekeeper;
+CALL gatekeeper_configure(allowed_functions := ['read_csv']);
+SET autoload_known_extensions=false;
+SET autoinstall_known_extensions=false;
+SET lock_configuration=true;
+```
+
+Then construct the query DB on the same connector:
+
+```go
+db, err := query.New(ctx, connector,
+	query.WithGatekeeperExtension("gatekeeper"),
+	query.WithFunctionAllowlist(query.FunctionAllowlistOptions{Include: []string{"read_csv"}}),
+)
+```
+
+Check each initialization error before proceeding, and close the query DB and connector at shutdown. The CLI handles one-time initialization itself: when schema/function validation is configured, it installs its function grants/blocks globally, disables extension autoload/autoinstall, and locks configuration before serving.
 
 Programs embedding `pkg/server` should authenticate with standard HTTP middleware around the handler returned by
 `server.New`, then use `server.WithAuthorizer` only for command-aware policy. `AuthorizeRequest` runs once before POST
@@ -222,71 +242,17 @@ An empty row means the extension has no reviewed function-call names, not that i
 | `Vortex` | 0 | 2 | Readers verified against the pinned nested source revision. |
 | `VSS` | 0 | 5 | Index access and management operations. |
 
-Gatekeeper validates supported read syntax and binds objects. Function admission remains name-based; trusted macro/view implementations are not rechecked against caller function rules. Implicit file/replacement scans and dynamic SQL are denied. Admitting an explicit reader delegates its resource access to the application. Keep catalogs trusted and enforce filesystem/network access independently.
+Gatekeeper validates supported read syntax and binds objects. Function admission remains name-based; trusted macro/view implementations generally bypass caller allowlists but always honor blocks and the never-bind list. Defaults deny file readers and replacement scans. Admitting a reader in both policy layers also permits replacement scans resolved to that reader; table rules do not restrict reader paths. Dynamic SQL and metadata readers cannot be admitted. Keep catalogs trusted and enforce filesystem/network access independently.
 
 In Go, `Exclude` wins over `Include`, and `DisableDefaults` creates an exact-only policy. Omitting
 `WithFunctionAllowlist` uses Gatekeeper defaults whenever another validation policy is active; configuring an exact-empty policy denies all function calls. A function
 allowlist cannot be combined with a non-empty blocklist, and any configured function policy rejects `exec` requests.
 
-Spatial compute defaults cover Mosaic rendering over existing geometry data, but the `ST_Read` loader remains elevated.
-Current-time functions read session state and are classified as elevated, so they are omitted from defaults; keyword
-forms such as `CURRENT_DATE` are not function nodes and remain outside this policy.
+Spatial compute defaults cover Mosaic rendering over existing geometry data, but the `ST_Read` loader remains elevated. Gatekeeper defaults include clock and connection-local random functions such as `now`, `current_date`, and `random`; account for those when caching results. The legacy `functionset` classifications above are independent of Gatekeeper's inventory.
 
 ### Remote URI Literal Policy
 
-**Removed implementation:** `WithRemoteURILiteralRejection` and `Options.RejectRemoteURILiterals` are deprecated and make `query.New` fail explicitly. Gatekeeper has no reader-argument policy. Its defaults deny all readers, including local/computed paths; admitting a reader grants its resource access. URI-shaped scoped CTE identifiers are now accepted. The following describes the legacy policy for migration reference, not current behavior.
-
-Programs embedding `pkg/query` can make a best-effort to reject caller-supplied remote file locations while keeping local
-file readers enabled:
-
-```go
-db, err := query.New(ctx, connector,
-	query.WithRemoteURILiteralRejection(),
-)
-```
-
-The option rejects recognized remote URI literals in DuckDB replacement scans, such as
-`FROM 'gcs://bucket/file.parquet'`, and in the reviewed positional and named path arguments of
-[remote-read-capable functions](./pkg/functionset/remoteread/README.md). It also
-checks literal lists and every decoded string literal within a path expression, so
-`read_parquet('gcs://' || 'bucket/file.parquet')` is rejected. Only reviewed path arguments are checked; unrelated values
-such as `WHERE url = 'https://example.com'` remain unaffected. Ordinary local paths without a recognized marker remain
-usable; a local path string containing one of the markers is intentionally rejected.
-
-Matching is case-insensitive and rejects a literal if it contains any prefix reviewed against DuckDB 1.5.5's pinned
-[HTTP](https://github.com/duckdb/duckdb-httpfs/blob/827222fb45a043a7a852d1f7aae46901492a3cda/src/httpfs.cpp#L808-L810),
-[S3-compatible](https://github.com/duckdb/duckdb-httpfs/blob/827222fb45a043a7a852d1f7aae46901492a3cda/src/s3fs.cpp#L843-L848),
-[Hugging Face](https://github.com/duckdb/duckdb-httpfs/blob/827222fb45a043a7a852d1f7aae46901492a3cda/src/include/hffs.hpp#L33-L35),
-[Azure Blob](https://github.com/duckdb/duckdb-azure/blob/003214c96d0caa39d5c3e27a9e1976a0692c7d37/src/azure_blob_filesystem.cpp#L32-L36),
-and [Azure DFS](https://github.com/duckdb/duckdb-azure/blob/003214c96d0caa39d5c3e27a9e1976a0692c7d37/src/azure_dfs_filesystem.cpp#L27-L34)
-filesystem handlers:
-
-```text
-http://  https://  s3://  s3a://  s3n://  gcs://
-gs://    r2://     hf://  azure://  az://   abfs://  abfss://
-```
-
-DuckDB's generated
-[extension-prefix map](https://github.com/duckdb/duckdb/blob/v1.5.5/src/include/duckdb/main/extension_entries.hpp#L1275-L1280)
-is a useful autoloading cross-check, but it is not exhaustive: the pinned Azure DFS filesystem also accepts `abfs://`.
-
-Trusted initialization can still load filesystem extensions and attach remote Iceberg or other catalogs before accepting
-queries. Queries against those attached catalogs use catalog and table identifiers rather than caller-supplied URI
-literals, so they remain usable. Enabling this policy rejects all `exec` commands and rejects the known nested-SQL
-binders and executors `query`, `json_execute_serialized_sql`, and `json_serialize_plan` outright. `arrow`
-requests are limited to statements DuckDB can serialize for validation. Connector initialization is outside that command
-path.
-
-DuckDB's serialized AST does not distinguish a replacement-scan string from a quoted table or CTE identifier, so a
-URI-shaped identifier is rejected too.
-
-This is intentionally incomplete hardening against common accidental or opportunistic remote scans, not a filesystem or
-network sandbox. Split or otherwise computed path values can evade detection when no individual literal contains a
-complete reviewed prefix, as in `'gc' || 's://bucket/file.parquet'`. Macros and views are not expanded, and unreviewed
-extensions can define other nested-SQL executors, reader functions, or schemes. Other known gaps include GDAL virtual
-paths such as `/vsis3/`, local Iceberg or Delta metadata that refers to remote files, and SQL stored in a local SQLite
-view. Keep catalogs, extensions, and initialization SQL trusted, and restrict the server process's filesystem, network,
-and credentials independently.
+`WithRemoteURILiteralRejection` and `Options.RejectRemoteURILiterals` are deprecated and make `query.New` fail explicitly. Gatekeeper has no reader-argument policy. Its defaults deny readers, including local paths; admitting a reader grants its resource access. URI-shaped scoped CTE identifiers are accepted. Migrate to function authorization plus filesystem/network controls rather than relying on URI-literal scanning. The `functionset/remoteread` inventory remains a public utility but is not used by validation.
 
 ### Multi-Tenant Access Control
 
@@ -317,10 +283,10 @@ multiple users / customers share the same DuckDB server instance while restricti
 
 Schema matching authorizes resolved tables/views in the primary catalog captured at startup, including underlying tables reached through views. Attached catalogs remain denied. Unqualified names and explicit primary-catalog qualifiers may pass when their resolved identities are authorized. Validation and Arrow execution share one pooled connection. Metadata functions are denied by the default function policy.
 
-Schema-wide `SHOW TABLES FROM tenant_a` is now denied because DuckDB implements it through a system view outside the allowed catalog/schema. `DESCRIBE SELECT 1` remains supported. Missing objects fail binding rather than receiving syntax-only authorization. Gatekeeper limits requests to one supported read statement. HTTP denials return 403; parser, binding, and unsupported results return 400. Binding can perform I/O, and concurrent catalog changes between validation and execution remain a race; this is not a process sandbox.
+Schema-wide `SHOW TABLES FROM tenant_a` is denied under table restrictions. `DESCRIBE SELECT 1` remains supported. Missing objects fail binding rather than receiving syntax-only authorization. Gatekeeper limits requests to one supported read statement. HTTP denials return 403; parser, binding, and unsupported results return 400. Binding can perform I/O, and concurrent catalog changes between validation and execution remain a race; see Gatekeeper's [security model](https://github.com/nozzle/duckdb-gatekeeper/blob/v0.1.2/docs/security.md).
 
 If `--schema-match-headers`, `--function-blocklist`, or `--function-allowlist` is configured, `arrow` requests
-are limited to statements DuckDB can serialize for validation; unsupported forms such as `PRAGMA` and `SET` are rejected,
+are limited to supported read statements; unsupported forms such as `PRAGMA` and `SET` are rejected,
 with HTTP requests receiving a 400 response. All `exec` requests are also rejected until full-statement authorization is
 supported. This includes every `Coordinator.exec(...)` call, such as data loading, preloading, and DDL/DML. Mosaic
 pre-aggregation also uses `exec` to create schemas and tables, so set `preagg: { enabled: false }` in this mode.
@@ -346,7 +312,7 @@ Executes the SQL query in the `sql` field and returns the result in Apache Arrow
 Build the release binary with:
 
 ```sh
-go build -o duckdb-server-go .
+go build -tags=duckdb_arrow -o duckdb-server-go .
 ```
 
 ### Develop

@@ -12,6 +12,7 @@ import (
 var (
 	ErrAccessDenied         = errors.New("query: access denied")
 	ErrUnsupportedStatement = errors.New("query: unsupported statement")
+	ErrValidation           = errors.New("query: validation failed")
 )
 
 type ValidationPolicy struct {
@@ -73,7 +74,14 @@ type rowQuerier interface {
 }
 
 func (db *DB) validateSQL(ctx context.Context, conn rowQuerier, query string, policy ValidationPolicy) error {
-	stmt := `SELECT CAST(system.main.to_json(system.main.gatekeeper_validate($sql,
+	if err := db.checkSQL(ctx, conn, query, policy); err != nil {
+		return fmt.Errorf("%w: %w", ErrValidation, err)
+	}
+	return nil
+}
+
+func (db *DB) checkSQL(ctx context.Context, conn rowQuerier, query string, policy ValidationPolicy) error {
+	stmt := `SELECT CAST(system.main.to_json(result) AS VARCHAR) FROM system.main.gatekeeper_validate($sql,
 		blocked_functions := $blocked::VARCHAR[]`
 	blocked := append([]string{}, policy.BlockedFunctions...)
 	if policy.FunctionAllowlist != nil {
@@ -81,14 +89,19 @@ func (db *DB) validateSQL(ctx context.Context, conn rowQuerier, query string, po
 	}
 	args := []any{sql.Named("sql", query), sql.Named("blocked", normalizeFunctionNames(blocked))}
 	if policy.AllowedSchemas != nil {
-		stmt += ", allowed_schemas := $schemas::VARCHAR[], allowed_catalogs := [$catalog::VARCHAR]"
+		for _, schema := range policy.AllowedSchemas {
+			if schema == "*" || db.catalog == "*" {
+				return ErrorDetails{Code: "invalid_input", Message: "schema policies require exact catalog and schema names"}
+			}
+		}
+		stmt += `, allowed_tables := system.main.list_transform($schemas::VARCHAR[], lambda s: {'catalog': $catalog::VARCHAR, 'schema': s, 'table': '*'})`
 		args = append(args, sql.Named("schemas", policy.AllowedSchemas), sql.Named("catalog", db.catalog))
 	}
 	if policy.FunctionAllowlist != nil {
 		stmt += ", allowed_functions := $allowed::VARCHAR[], use_default_functions := $defaults::BOOLEAN"
 		args = append(args, sql.Named("allowed", normalizeFunctionNames(policy.FunctionAllowlist.Include)), sql.Named("defaults", !policy.FunctionAllowlist.DisableDefaults))
 	}
-	stmt += ")) AS VARCHAR)"
+	stmt += ") AS result"
 	var raw string
 	if err := conn.QueryRowContext(ctx, stmt, args...).Scan(&raw); err != nil {
 		return fmt.Errorf("query: Gatekeeper validation failed: %w", err)
