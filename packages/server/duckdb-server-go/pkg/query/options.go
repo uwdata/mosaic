@@ -20,9 +20,6 @@ type Options struct {
 	// FunctionAllowlist configures the function names that are allowed in queries.
 	// A nil value uses Gatekeeper's defaults when validation is active.
 	FunctionAllowlist *FunctionAllowlistOptions
-
-	// Deprecated: Gatekeeper does not implement reader-argument policies. Configuring this fails initialization.
-	RejectRemoteURILiterals bool
 }
 
 // FunctionAllowlistOptions configures an allowlist from reviewed defaults and exact function names.
@@ -79,14 +76,6 @@ func WithFunctionAllowlist(options FunctionAllowlistOptions) OptionFunc {
 			DisableDefaults: configured.DisableDefaults,
 		}
 		opts.FunctionAllowlist = &value
-		return nil
-	}
-}
-
-// Deprecated: Gatekeeper does not implement reader-argument policies. Configuring this fails initialization.
-func WithRemoteURILiteralRejection() OptionFunc {
-	return func(opts *Options) error {
-		opts.RejectRemoteURILiterals = true
 		return nil
 	}
 }

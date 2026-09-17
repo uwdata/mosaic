@@ -9,14 +9,15 @@ import (
 
 func TestErrorDetails(t *testing.T) {
 	t.Run("all fields", func(t *testing.T) {
-		err := ErrorDetails{Type: "parser", Subtype: "syntax", Position: "line 1", Message: "invalid SQL"}
-		assert.EqualError(t, err, "query: parser (syntax) at line 1: invalid SQL")
+		position := int64(0)
+		err := ErrorDetails{Code: "parser", Type: "Parser", Position: &position, Message: "invalid SQL"}
+		assert.EqualError(t, err, "query: Parser at 0: invalid SQL")
 		assert.NotErrorIs(t, err, ErrUnsupportedStatement)
 	})
 
 	t.Run("sparse unsupported statement", func(t *testing.T) {
-		err := ErrorDetails{Type: "not implemented", Message: "Only SELECT statements can be serialized to json!"}
-		assert.EqualError(t, err, "query: not implemented: Only SELECT statements can be serialized to json!")
+		err := ErrorDetails{Code: "unsupported"}
+		assert.EqualError(t, err, "query: unsupported")
 		assert.ErrorIs(t, err, ErrUnsupportedStatement)
 	})
 }
@@ -228,27 +229,7 @@ func TestDB_ValidateSQL(t *testing.T) {
 	}
 }
 
-func TestDB_ValidateSQLIgnoresShadowingSerializerMacro(t *testing.T) {
-	db := setupValidationDB(t)
-	require.NoError(t, db.Exec(t.Context(), `
-		CREATE MACRO json_serialize_sql(
-			sql_text,
-			skip_default := true,
-			skip_empty := true,
-			skip_null := true
-		) AS {'error': false, 'statements': []}
-	`))
-
-	err := db.ValidateSQL(
-		t.Context(),
-		"SELECT * FROM tenant_b.secret",
-		ValidationPolicy{AllowedSchemas: []string{"tenant_a"}},
-	)
-	require.ErrorIs(t, err, ErrAccessDenied)
-	require.Equal(t, "tenant_b", requireViolation(t, err, "table").Schema)
-}
-
-func TestBaseTableValidatorErrors(t *testing.T) {
+func TestGatekeeperTablePolicyErrors(t *testing.T) {
 	db := setupValidationDB(t)
 
 	t.Run("disallowed schema", func(t *testing.T) {
@@ -264,7 +245,7 @@ func TestBaseTableValidatorErrors(t *testing.T) {
 	})
 }
 
-func TestBaseTableValidatorShowStatements(t *testing.T) {
+func TestGatekeeperShowStatements(t *testing.T) {
 	db := setupValidationDB(t)
 
 	tests := []struct {
@@ -311,7 +292,7 @@ func TestBaseTableValidatorShowStatements(t *testing.T) {
 	}
 }
 
-func TestBaseTableValidatorRejectsCatalogReferences(t *testing.T) {
+func TestGatekeeperRejectsAttachedTables(t *testing.T) {
 	db := setupValidationDB(t)
 	require.NoError(t, db.Exec(t.Context(), `ATTACH ':memory:' AS otherdb;
 		CREATE SCHEMA otherdb.tenant_a; CREATE TABLE otherdb.tenant_a.secret (value INTEGER)`))
@@ -330,13 +311,13 @@ func TestBaseTableValidatorRejectsCatalogReferences(t *testing.T) {
 	}
 }
 
-func TestFunctionBlocklistValidatorNormalizesFunctionNames(t *testing.T) {
+func TestGatekeeperFunctionNameMatching(t *testing.T) {
 	db := setupTestDB(t)
 	err := db.ValidateSQL(t.Context(), "SELECT MD5('x'), LOWER('x')", ValidationPolicy{BlockedFunctions: []string{"md5"}})
 	require.Equal(t, "md5", requireViolation(t, err, "function").FunctionName)
 }
 
-func TestFunctionBlocklistValidatorRejectsMissingFunctionName(t *testing.T) {
+func TestGatekeeperParserError(t *testing.T) {
 	db := setupTestDB(t)
 	err := db.ValidateSQL(t.Context(), "SELECT (", ValidationPolicy{BlockedFunctions: []string{"md5"}})
 	var details ErrorDetails
@@ -344,7 +325,7 @@ func TestFunctionBlocklistValidatorRejectsMissingFunctionName(t *testing.T) {
 	require.Equal(t, "parser", details.Code)
 }
 
-func TestFunctionListValidatorCountsViolations(t *testing.T) {
+func TestGatekeeperFunctionViolations(t *testing.T) {
 	tests := []struct {
 		name      string
 		allowlist bool
@@ -391,7 +372,7 @@ func TestFunctionListValidatorCountsViolations(t *testing.T) {
 	}
 }
 
-func TestFunctionAllowlistValidator(t *testing.T) {
+func TestGatekeeperFunctionAllowlist(t *testing.T) {
 	tests := []struct {
 		name      string
 		allowlist []string

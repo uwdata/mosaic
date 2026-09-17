@@ -31,9 +31,6 @@ func New(ctx context.Context, connector *duckdb.Connector, opts ...OptionFunc) (
 			return nil, fmt.Errorf("query: failed to apply option: %w", err)
 		}
 	}
-	if o.RejectRemoteURILiterals {
-		return nil, errors.New("query: remote URI literal rejection is unsupported by Gatekeeper; use function authorization and external resource controls")
-	}
 	o.FunctionBlocklist = normalizeFunctionNames(o.FunctionBlocklist)
 	if o.FunctionAllowlist != nil && len(o.FunctionBlocklist) > 0 {
 		return nil, errors.New("query: function allowlist and blocklist cannot both be configured")

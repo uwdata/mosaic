@@ -34,9 +34,8 @@ type Violation struct {
 type ErrorDetails struct {
 	Code       string      `json:"code"`
 	Type       string      `json:"error_type"`
-	Subtype    string      `json:"error_subtype,omitempty"`
 	Message    string      `json:"error_message"`
-	Position   string      `json:"position,omitempty"`
+	Position   *int64      `json:"position"`
 	Violations []Violation `json:"violations"`
 }
 
@@ -44,12 +43,11 @@ func (e ErrorDetails) Error() string {
 	details := "query"
 	if e.Type != "" {
 		details += ": " + e.Type
+	} else if e.Code != "" {
+		details += ": " + e.Code
 	}
-	if e.Subtype != "" {
-		details += " (" + e.Subtype + ")"
-	}
-	if e.Position != "" {
-		details += " at " + e.Position
+	if e.Position != nil {
+		details += fmt.Sprintf(" at %d", *e.Position)
 	}
 	if e.Message != "" {
 		details += ": " + e.Message
@@ -62,7 +60,7 @@ func (e ErrorDetails) Error() string {
 
 func (e ErrorDetails) Is(target error) bool {
 	return target == ErrAccessDenied && e.Code == "forbidden" ||
-		target == ErrUnsupportedStatement && (e.Code == "unsupported" || strings.EqualFold(e.Type, "not implemented"))
+		target == ErrUnsupportedStatement && e.Code == "unsupported"
 }
 
 func (db *DB) ValidateSQL(ctx context.Context, query string, policy ValidationPolicy) error {
@@ -107,12 +105,8 @@ func (db *DB) checkSQL(ctx context.Context, conn rowQuerier, query string, polic
 		return fmt.Errorf("query: Gatekeeper validation failed: %w", err)
 	}
 	var result struct {
-		Allowed    *bool       `json:"allowed"`
-		Code       string      `json:"code"`
-		Type       string      `json:"error_type"`
-		Message    string      `json:"error_message"`
-		Position   *int64      `json:"position"`
-		Violations []Violation `json:"violations"`
+		Allowed *bool `json:"allowed"`
+		ErrorDetails
 	}
 	if err := json.Unmarshal([]byte(raw), &result); err != nil {
 		return fmt.Errorf("query: invalid Gatekeeper response: %w", err)
@@ -128,14 +122,7 @@ func (db *DB) checkSQL(ctx context.Context, conn rowQuerier, query string, polic
 	default:
 		return fmt.Errorf("query: unexpected Gatekeeper result code %q", result.Code)
 	}
-	err := ErrorDetails{Code: result.Code, Type: result.Type, Message: result.Message, Violations: result.Violations}
-	if err.Type == "" {
-		err.Type = result.Code
-	}
-	if result.Position != nil {
-		err.Position = fmt.Sprint(*result.Position)
-	}
-	return err
+	return result.ErrorDetails
 }
 
 func quoteLiteral(s string) string { return "'" + strings.ReplaceAll(s, "'", "''") + "'" }

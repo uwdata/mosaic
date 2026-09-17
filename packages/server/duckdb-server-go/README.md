@@ -79,7 +79,7 @@ go run -tags=duckdb_arrow . --function-allowlist=
 
 `db.ValidateSQL(ctx, sql, query.ValidationPolicy{...})` always delegates to Gatekeeper, even with an empty policy. The policy accepts `AllowedSchemas`, `BlockedFunctions`, and `FunctionAllowlist`. Nil schemas add no object restriction beyond Gatekeeper's global ceiling; an explicit empty slice denies table/view access. Schema names are exact case-insensitive identifiers, and `*` is rejected. `ValidateSQL` does not execute SQL or reserve its connection for later use; use `QueryArrow` or `WriteArrow` for validation and execution on the same connection.
 
-The former `Validator`, `CheckNode`, and AST traversal API is removed. Use `errors.As` with `query.ErrorDetails` to inspect Gatekeeper's `Code` and `Violations`; use `errors.Is` with `ErrValidation`, `ErrAccessDenied`, or `ErrUnsupportedStatement` for classification. Violations expose rule, catalog/schema/table, function, and optional byte offset; object denials use the `table` rule. Diagnostic text is not a stable API. HTTP/WebSocket validation errors return generic messages while logging full diagnostics for operators. Go callers retain full diagnostics, which may expose private catalog names and paths.
+Use `errors.As` with `query.ErrorDetails` to inspect Gatekeeper's `Code`, `Type`, `Message`, `Position`, and `Violations`; use `errors.Is` with `ErrValidation`, `ErrAccessDenied`, or `ErrUnsupportedStatement` for classification. `Position` is an optional zero-based byte offset (`*int64`). Violations expose rule, catalog/schema/table, function, and optional byte offset; object denials use the `table` rule. Diagnostic text is not a stable API. HTTP/WebSocket validation errors return generic messages while logging full diagnostics for operators. Go callers retain full diagnostics, which may expose private catalog names and paths.
 
 Gatekeeper intersects request policy with a database-wide ceiling. `query.New` does not replace that ceiling. Embedding applications must grant elevated functions through trusted `CALL gatekeeper_configure(...)` before request policies can use them. Load required extensions and trusted definitions first, disable `autoload_known_extensions` and `autoinstall_known_extensions`, then set `lock_configuration=true` before serving. Choose application-appropriate memory/thread limits, timeouts, and external resource controls. For example, execute this SQL once on the connector during trusted initialization to grant CSV access:
 
@@ -201,46 +201,11 @@ Programs embedding `pkg/query` can apply the same policy and add application fun
 
 ```go
 query.WithFunctionAllowlist(query.FunctionAllowlistOptions{
-	Include: append(functionset.Spatial.Elevated(), "my_function"),
+	Include: []string{"my_function"},
 })
 ```
 
-Configured policies use Gatekeeper's compiled inventory, not `functionset.DefaultFunctions()`. The existing `functionset` helpers remain available as explicit name-list utilities for Go consumers; they are not consulted by validation. `Elevated()` requires explicit admission, and `All()` returns both groups. These helpers return fresh slices; the CLI accepts exact names only.
-
-The table records unique names reviewed against DuckDB 1.5.5. A name is elevated if any overload has elevated behavior.
-An empty row means the extension has no reviewed function-call names, not that it has no other capabilities.
-
-| Extension | Compute | Elevated | Classification and status |
-| --- | ---: | ---: | --- |
-| `Autocomplete` | 1 | 3 | Parser check; completion and parser controls are elevated. |
-| `Avro` | 0 | 1 | Reader only. |
-| `AWS` | 0 | 1 | Credential and provider operation. |
-| `Azure` | 0 | 0 | Filesystem integration with no reviewed function-call names. |
-| `Delta` | 2 | 9 | Local parser/test helpers; scans, metadata I/O, and writes are elevated. |
-| `DuckLake` | 1 | 21 | Local hash helper; catalog, scan, metadata, and mutation operations are elevated. |
-| `Encodings` | 0 | 0 | CSV codec integration with no reviewed function-call names. |
-| `Excel` | 2 | 1 | Value conversion; the sheet reader is elevated. |
-| `FTS` | 1 | 2 | Text stemming; index creation and mutation are elevated. |
-| `HTTPFS` | 0 | 0 | Filesystem integration with no reviewed function-call names. |
-| `Iceberg` | 2 | 14 | Value helpers; scans, catalogs, metadata I/O, and writes are elevated. |
-| `ICU` | 179 | 7 | Deterministic collation and calendar computation; current-time names are elevated. |
-| `Inet` | 11 | 0 | IP value operations only. |
-| `JSON` | 33 | 9 | Value parsing and serialization; readers, SQL execution, and plan inspection are elevated. |
-| `Lance` | 0 | 12 | Source-pinned scans and metadata operations. |
-| `MotherDuck` | 0 | 198 | Best-effort observed proprietary runtime snapshot; all names are elevated. |
-| `MySQL` | 0 | 5 | Connector and scanner operations. |
-| `ODBC` | 0 | 11 | Connector and scanner operations. |
-| `Parquet` | 2 | 9 | `VARIANT` conversion; file, metadata, bloom, and key operations are elevated. |
-| `Postgres` | 2 | 8 | Value helpers; connector and scanner operations are elevated. |
-| `Quack` | 3 | 9 | Protocol value helpers; remote and session operations are elevated. |
-| `Spatial` | 151 | 13 | Geometry computation; readers, index/catalog access, random generation, and resource-capable transforms are elevated. |
-| `SQLite` | 0 | 3 | Connector and scanner operations. |
-| `TPCDS` | 2 | 2 | Query and answer text; data generators are elevated. |
-| `TPCH` | 2 | 2 | Query and answer text; data generators are elevated. |
-| `UI` | 0 | 5 | HTTP server lifecycle, URL, and status operations. |
-| `UnityCatalog` | 0 | 4 | Attached-catalog and checkpoint operations; the generated registry is incomplete. |
-| `Vortex` | 0 | 2 | Readers verified against the pinned nested source revision. |
-| `VSS` | 0 | 5 | Index access and management operations. |
+Gatekeeper maintains the reviewed default function inventory. Additional functions must be admitted by both the global ceiling and the request policy, using exact case-insensitive names.
 
 Gatekeeper validates supported read syntax and binds objects. Function admission remains name-based; trusted macro/view implementations generally bypass caller allowlists but always honor blocks and the never-bind list. Defaults deny file readers and replacement scans. Admitting a reader in both policy layers also permits replacement scans resolved to that reader; table rules do not restrict reader paths. Dynamic SQL and metadata readers cannot be admitted. Keep catalogs trusted and enforce filesystem/network access independently.
 
@@ -248,11 +213,7 @@ In Go, `Exclude` wins over `Include`, and `DisableDefaults` creates an exact-onl
 `WithFunctionAllowlist` uses Gatekeeper defaults whenever another validation policy is active; configuring an exact-empty policy denies all function calls. A function
 allowlist cannot be combined with a non-empty blocklist, and any configured function policy rejects `exec` requests.
 
-Spatial compute defaults cover Mosaic rendering over existing geometry data, but the `ST_Read` loader remains elevated. Gatekeeper defaults include clock and connection-local random functions such as `now`, `current_date`, and `random`; account for those when caching results. The legacy `functionset` classifications above are independent of Gatekeeper's inventory.
-
-### Remote URI Literal Policy
-
-`WithRemoteURILiteralRejection` and `Options.RejectRemoteURILiterals` are deprecated and make `query.New` fail explicitly. Gatekeeper has no reader-argument policy. Its defaults deny readers, including local paths; admitting a reader grants its resource access. URI-shaped scoped CTE identifiers are accepted. Migrate to function authorization plus filesystem/network controls rather than relying on URI-literal scanning. The `functionset/remoteread` inventory remains a public utility but is not used by validation.
+Spatial compute defaults cover Mosaic rendering over existing geometry data, but the `ST_Read` loader requires explicit admission. Gatekeeper defaults include clock and connection-local random functions such as `now`, `current_date`, and `random`; account for those when caching results.
 
 ### Multi-Tenant Access Control
 

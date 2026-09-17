@@ -8,7 +8,6 @@ require (
 	github.com/duckdb/duckdb-go/v2 v2.10505.0
 	github.com/rs/cors v1.11.1
 	github.com/stretchr/testify v1.12.1
-	golang.org/x/sync v0.22.0
 )
 
 require (

@@ -7,16 +7,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/duckdb/duckdb-go/v2"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
-
-func TestWithRemoteURILiteralRejection(t *testing.T) {
-	opts := &Options{}
-	require.NoError(t, WithRemoteURILiteralRejection()(opts))
-	assert.True(t, opts.RejectRemoteURILiterals)
-}
 
 func TestGatekeeperRejectsRemoteReaders(t *testing.T) {
 	db := setupTestDB(t)
@@ -310,18 +303,12 @@ func TestGatekeeperReplacementScans(t *testing.T) {
 	}
 }
 
-func TestDBRemoteURILiteralRejection(t *testing.T) {
+func TestDBReaderPolicy(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "local.csv")
 	require.NoError(t, os.WriteFile(path, []byte("value\n42\n"), 0o600))
 	secondPath := filepath.Join(t.TempDir(), "second.csv")
 	require.NoError(t, os.WriteFile(secondPath, []byte("value\n43\n"), 0o600))
 
-	connector, err := duckdb.NewConnector(":memory:", nil)
-	require.NoError(t, err)
-	t.Cleanup(func() { require.NoError(t, connector.Close()) })
-	legacy, err := New(t.Context(), connector, WithRemoteURILiteralRejection())
-	require.ErrorContains(t, err, "remote URI literal rejection is unsupported by Gatekeeper")
-	require.Nil(t, legacy)
 	db := setupTestDB(t, WithFunctionAllowlist(FunctionAllowlistOptions{}))
 
 	data, err := db.QueryArrow(t.Context(), "SELECT * FROM read_csv("+quoteLiteral(path)+")", nil)
