@@ -12,6 +12,8 @@ import (
 	"github.com/coder/websocket"
 	"github.com/coder/websocket/wsjson"
 	"github.com/stretchr/testify/require"
+
+	"github.com/uwdata/mosaic/packages/server/duckdb-server-go/pkg/query"
 )
 
 func TestHTTPCacheRevalidation(t *testing.T) {
@@ -99,7 +101,7 @@ func TestHTTPCachePreconditions(t *testing.T) {
 	var executions int
 	spy := &spyCommandExecutor{
 		failOnCallExecutor: failOnCallExecutor{t},
-		queryArrow: func(context.Context, string, []string) ([]byte, error) {
+		queryArrow: func(context.Context, string, *query.ValidationPolicy) ([]byte, error) {
 			executions++
 			return []byte("result"), nil
 		},
@@ -160,7 +162,7 @@ func TestHTTPCacheNonQueryResponses(t *testing.T) {
 	spy := &spyCommandExecutor{
 		failOnCallExecutor: failOnCallExecutor{t},
 		exec:               func(context.Context, string) error { return nil },
-		queryArrow:         func(context.Context, string, []string) ([]byte, error) { return []byte("result"), nil },
+		queryArrow:         func(context.Context, string, *query.ValidationPolicy) ([]byte, error) { return []byte("result"), nil },
 	}
 	handler := mustHandler(t, spy, WithCacheControl("public, max-age=60"))
 	tests := []struct {
@@ -200,7 +202,7 @@ func TestHTTPCacheNonQueryResponses(t *testing.T) {
 func TestHTTPCacheWebSocket(t *testing.T) {
 	spy := &spyCommandExecutor{
 		failOnCallExecutor: failOnCallExecutor{t},
-		queryArrow:         func(context.Context, string, []string) ([]byte, error) { return []byte("result"), nil },
+		queryArrow:         func(context.Context, string, *query.ValidationPolicy) ([]byte, error) { return []byte("result"), nil },
 	}
 	server := newWebSocketTestServer(t, mustHandler(t, spy, WithCacheControl("public, max-age=60"), WithVary("X-Dataset")))
 	conn, res, err := server.dial(&websocket.DialOptions{HTTPHeader: http.Header{"If-None-Match": {"*"}}})
@@ -220,7 +222,7 @@ func TestHTTPCacheWebSocket(t *testing.T) {
 func TestVaryIndependentOfCacheControl(t *testing.T) {
 	spy := &spyCommandExecutor{
 		failOnCallExecutor: failOnCallExecutor{t},
-		queryArrow:         func(context.Context, string, []string) ([]byte, error) { return []byte("result"), nil },
+		queryArrow:         func(context.Context, string, *query.ValidationPolicy) ([]byte, error) { return []byte("result"), nil },
 	}
 	for _, policy := range []string{"", "public, max-age=60"} {
 		t.Run(policy, func(t *testing.T) {
@@ -257,8 +259,8 @@ func TestVaryIndependentOfCacheControl(t *testing.T) {
 func TestHTTPCacheSchemaMatchVariation(t *testing.T) {
 	spy := &spyCommandExecutor{
 		failOnCallExecutor: failOnCallExecutor{t},
-		queryArrow: func(_ context.Context, _ string, schemas []string) ([]byte, error) {
-			return []byte(strings.Join(schemas, ",")), nil
+		queryArrow: func(_ context.Context, _ string, policy *query.ValidationPolicy) ([]byte, error) {
+			return []byte(strings.Join(policy.AllowedSchemas, ",")), nil
 		},
 	}
 	handler := mustHandler(t, spy, WithSchemaMatchHeaders("x-tenant-id"), WithVary("X-Region"), WithCacheControl("public, max-age=60"))

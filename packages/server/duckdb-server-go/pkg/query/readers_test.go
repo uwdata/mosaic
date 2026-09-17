@@ -11,88 +11,69 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestWithRemoteURILiteralRejection(t *testing.T) {
-	opts := &Options{}
-	require.NoError(t, WithRemoteURILiteralRejection()(opts))
-	assert.True(t, opts.RejectRemoteURILiterals)
-}
-
-func TestRemoteURILiteralValidatorRecognizesPinnedPrefixes(t *testing.T) {
+func TestGatekeeperRejectsRemoteReaders(t *testing.T) {
 	db := setupTestDB(t)
-	assert.Contains(t, remoteURIPrefixes, "abfs://")
+	remoteURIPrefixes := []string{"http://", "https://", "s3://", "s3a://", "s3n://", "gs://", "gcs://", "r2://", "azure://", "az://", "abfs://", "abfss://", "hf://"}
 
 	for _, prefix := range remoteURIPrefixes {
 		t.Run(prefix, func(t *testing.T) {
 			for _, literalPrefix := range []string{prefix, strings.ToUpper(prefix)} {
 				sql := fmt.Sprintf("SELECT * FROM read_parquet('%sbucket/file.parquet')", literalPrefix)
-				err := db.ValidateSQL(t.Context(), sql, newRemoteURILiteralValidator())
+				err := db.ValidateSQL(t.Context(), sql, ValidationPolicy{})
 				require.ErrorIs(t, err, ErrAccessDenied)
-				assert.EqualError(t, err, fmt.Sprintf(
-					"query: access denied: remote URI prefix '%s' is not allowed in path argument to function 'read_parquet'",
-					prefix,
-				))
+				requireViolation(t, err, "function")
 			}
 		})
 	}
 }
 
-func TestRemoteURILiteralValidatorPathArguments(t *testing.T) {
+func TestGatekeeperReaderArguments(t *testing.T) {
 	db := setupTestDB(t)
 
 	tests := []struct {
-		name       string
-		sql        string
-		wantPrefix string
+		name    string
+		sql     string
+		allowed bool
 	}{
 		{
-			name:       "direct positional literal",
-			sql:        "SELECT * FROM read_parquet('gcs://bucket/file.parquet')",
-			wantPrefix: "gcs://",
+			name: "direct positional literal",
+			sql:  "SELECT * FROM read_parquet('gcs://bucket/file.parquet')",
 		},
 		{
-			name:       "prefix within literal",
-			sql:        "SELECT * FROM read_parquet('mirror=https://example.com/file.parquet')",
-			wantPrefix: "https://",
+			name: "prefix within literal",
+			sql:  "SELECT * FROM read_parquet('mirror=https://example.com/file.parquet')",
 		},
 		{
-			name:       "constructed expression",
-			sql:        "SELECT * FROM read_parquet('gcs://' || 'bucket/file.parquet')",
-			wantPrefix: "gcs://",
+			name: "constructed expression",
+			sql:  "SELECT * FROM read_parquet('gcs://' || 'bucket/file.parquet')",
 		},
 		{
-			name:       "cast expression",
-			sql:        "SELECT * FROM read_parquet(CAST('s3://bucket/file.parquet' AS VARCHAR))",
-			wantPrefix: "s3://",
+			name: "cast expression",
+			sql:  "SELECT * FROM read_parquet(CAST('s3://bucket/file.parquet' AS VARCHAR))",
 		},
 		{
-			name:       "literal list",
-			sql:        "SELECT * FROM read_parquet(['local.parquet', 'r2://bucket/file.parquet'])",
-			wantPrefix: "r2://",
+			name: "literal list",
+			sql:  "SELECT * FROM read_parquet(['local.parquet', 'r2://bucket/file.parquet'])",
 		},
 		{
-			name:       "array constructor",
-			sql:        "SELECT * FROM read_parquet(ARRAY['local.parquet', 'gs://bucket/file.parquet'])",
-			wantPrefix: "gs://",
+			name: "array constructor",
+			sql:  "SELECT * FROM read_parquet(ARRAY['local.parquet', 'gs://bucket/file.parquet'])",
 		},
 		{
-			name:       "named literal list",
-			sql:        "SELECT * FROM st_read('local.shp', sibling_files := ['local.dbf', 's3://bucket/file.shx'])",
-			wantPrefix: "s3://",
+			name: "named literal list",
+			sql:  "SELECT * FROM st_read('local.shp', sibling_files := ['local.dbf', 's3://bucket/file.shx'])",
 		},
 		{
-			name:       "third positional argument",
-			sql:        "SELECT * FROM ducklake_add_data_files('catalog', 'table', 'azure://container/file.parquet')",
-			wantPrefix: "azure://",
+			name: "third positional argument",
+			sql:  "SELECT * FROM ducklake_add_data_files('catalog', 'table', 'azure://container/file.parquet')",
 		},
 		{
-			name:       "table macro path",
-			sql:        "SELECT * FROM histogram('https://example.com/file.parquet', 'value')",
-			wantPrefix: "https://",
+			name: "table macro path",
+			sql:  "SELECT * FROM histogram('https://example.com/file.parquet', 'value')",
 		},
 		{
-			name:       "autocomplete filename suggestion",
-			sql:        "SELECT * FROM sql_auto_complete('SELECT * FROM ''GCS://bucket/file', max_file_suggestion_count := 10)",
-			wantPrefix: "gcs://",
+			name: "autocomplete filename suggestion",
+			sql:  "SELECT * FROM sql_auto_complete('SELECT * FROM ''GCS://bucket/file', max_file_suggestion_count := 10)",
 		},
 		{
 			name: "local path",
@@ -115,25 +96,26 @@ func TestRemoteURILiteralValidatorPathArguments(t *testing.T) {
 			sql:  "SELECT * FROM parquet_bloom_probe('local.parquet', 'https://example.com', 'value')",
 		},
 		{
-			name: "remote literal in unrelated function",
-			sql:  "SELECT parse_path('https://example.com/file.parquet')",
+			name:    "remote literal in unrelated function",
+			sql:     "SELECT parse_path('https://example.com/file.parquet')",
+			allowed: true,
 		},
 		{
 			name: "remote literal in unreviewed table function",
 			sql:  "SELECT * FROM unreviewed_reader('https://example.com/file.parquet')",
 		},
 		{
-			name: "remote literal in where predicate",
-			sql:  "SELECT 1 WHERE 'https://example.com' = 'https://example.com'",
+			name:    "remote literal in where predicate",
+			sql:     "SELECT 1 WHERE 'https://example.com' = 'https://example.com'",
+			allowed: true,
 		},
 		{
 			name: "aggregate sharing table macro name",
 			sql:  "SELECT histogram('https://example.com')",
 		},
 		{
-			name:       "mixed-case prefix",
-			sql:        "SELECT * FROM read_parquet('HtTpS://example.com/file.parquet')",
-			wantPrefix: "https://",
+			name: "mixed-case prefix",
+			sql:  "SELECT * FROM read_parquet('HtTpS://example.com/file.parquet')",
 		},
 		{
 			name: "prefix split between literals",
@@ -143,18 +125,18 @@ func TestRemoteURILiteralValidatorPathArguments(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			err := db.ValidateSQL(t.Context(), tt.sql, newRemoteURILiteralValidator())
-			if tt.wantPrefix == "" {
+			err := db.ValidateSQL(t.Context(), tt.sql, ValidationPolicy{})
+			if tt.allowed {
 				assert.NoError(t, err)
 				return
 			}
 			require.ErrorIs(t, err, ErrAccessDenied)
-			assert.ErrorContains(t, err, fmt.Sprintf("remote URI prefix '%s'", tt.wantPrefix))
+			requireViolation(t, err, "function")
 		})
 	}
 }
 
-func TestRemoteURILiteralValidatorRejectsNestedSQLExecutors(t *testing.T) {
+func TestGatekeeperRejectsNestedSQLExecutors(t *testing.T) {
 	db := setupTestDB(t)
 
 	tests := []struct {
@@ -196,17 +178,14 @@ func TestRemoteURILiteralValidatorRejectsNestedSQLExecutors(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			err := db.ValidateSQL(t.Context(), tt.sql, newRemoteURILiteralValidator())
+			err := db.ValidateSQL(t.Context(), tt.sql, ValidationPolicy{})
 			require.ErrorIs(t, err, ErrAccessDenied)
-			assert.EqualError(t, err, fmt.Sprintf(
-				"query: access denied: nested SQL executor '%s' is not allowed",
-				tt.function,
-			))
+			requireViolation(t, err, "dynamic_sql")
 		})
 	}
 }
 
-func TestRemoteURILiteralValidatorAllowsScalarExecutorNames(t *testing.T) {
+func TestGatekeeperRejectsScalarExecutorNames(t *testing.T) {
 	db := setupTestDB(t)
 
 	for _, sql := range []string{
@@ -214,12 +193,12 @@ func TestRemoteURILiteralValidatorAllowsScalarExecutorNames(t *testing.T) {
 		"SELECT json_execute_serialized_sql('local')",
 	} {
 		t.Run(sql, func(t *testing.T) {
-			assert.NoError(t, db.ValidateSQL(t.Context(), sql, newRemoteURILiteralValidator()))
+			requireViolation(t, db.ValidateSQL(t.Context(), sql, ValidationPolicy{}), "function")
 		})
 	}
 }
 
-func TestRemoteURILiteralValidatorRejectsJSONSerializePlan(t *testing.T) {
+func TestGatekeeperRejectsJSONSerializePlan(t *testing.T) {
 	db := setupTestDB(t)
 
 	for _, sql := range []string{
@@ -230,24 +209,24 @@ func TestRemoteURILiteralValidatorRejectsJSONSerializePlan(t *testing.T) {
 		"SELECT system.main.json_serialize_plan('SELECT 42')",
 	} {
 		t.Run(sql, func(t *testing.T) {
-			err := db.ValidateSQL(t.Context(), sql, newRemoteURILiteralValidator())
+			err := db.ValidateSQL(t.Context(), sql, ValidationPolicy{})
 			require.ErrorIs(t, err, ErrAccessDenied)
-			assert.EqualError(t, err, "query: access denied: nested SQL executor 'json_serialize_plan' is not allowed")
+			requireViolation(t, err, "dynamic_sql")
 		})
 	}
 }
 
-func TestRemoteURILiteralValidatorAllowsTableMacroNamedJSONSerializePlan(t *testing.T) {
+func TestGatekeeperRejectsTableMacroNamedJSONSerializePlan(t *testing.T) {
 	db := setupTestDB(t)
 
-	assert.NoError(t, db.ValidateSQL(
+	requireViolation(t, db.ValidateSQL(
 		t.Context(),
 		"SELECT * FROM json_serialize_plan('local')",
-		newRemoteURILiteralValidator(),
-	))
+		ValidationPolicy{},
+	), "function")
 }
 
-func TestRemoteURILiteralValidatorAllowsQualifiedJSONSerializePlanUDF(t *testing.T) {
+func TestGatekeeperRejectsQualifiedJSONSerializePlanUDF(t *testing.T) {
 	db := setupTestDB(t)
 
 	for _, sql := range []string{
@@ -255,35 +234,18 @@ func TestRemoteURILiteralValidatorAllowsQualifiedJSONSerializePlanUDF(t *testing
 		"SELECT other.main.json_serialize_plan('local')",
 	} {
 		t.Run(sql, func(t *testing.T) {
-			assert.NoError(t, db.ValidateSQL(t.Context(), sql, newRemoteURILiteralValidator()))
+			requireViolation(t, db.ValidateSQL(t.Context(), sql, ValidationPolicy{}), "function")
 		})
 	}
 }
 
-func TestRemoteURILiteralValidatorCountsOnlyUnnamedPositions(t *testing.T) {
-	validator := newRemoteURILiteralValidator()
-	validator.CheckNode(map[string]any{
-		"type": "TABLE_FUNCTION",
-		"function": map[string]any{
-			"function_name": "read_parquet",
-			"children": []any{
-				map[string]any{
-					"alias": "unreviewed_option",
-					"class": "CONSTANT",
-					"value": map[string]any{"value": "https://example.com/ignored"},
-				},
-				map[string]any{
-					"class": "CONSTANT",
-					"value": map[string]any{"value": "local.parquet"},
-				},
-			},
-		},
-	}, nil)
-
-	assert.Empty(t, validator.Validate())
+func TestGatekeeperRejectsReaderWithUnknownOption(t *testing.T) {
+	db := setupTestDB(t)
+	err := db.ValidateSQL(t.Context(), "SELECT * FROM read_parquet('local.parquet', unreviewed_option := 'https://example.com/ignored')", ValidationPolicy{})
+	requireViolation(t, err, "function")
 }
 
-func TestRemoteURILiteralValidatorReplacementScans(t *testing.T) {
+func TestGatekeeperReplacementScans(t *testing.T) {
 	db := setupTestDB(t)
 
 	tests := []struct {
@@ -312,13 +274,14 @@ func TestRemoteURILiteralValidatorReplacementScans(t *testing.T) {
 			wantErr: true,
 		},
 		{
-			name: "local replacement scan",
-			sql:  "SELECT * FROM '/var/data/file.parquet'",
+			name:    "local replacement scan",
+			sql:     "SELECT * FROM '/var/data/file.parquet'",
+			wantErr: true,
 		},
 		{
-			name:    "quoted cte with URI-like name fails closed",
+			name:    "quoted cte with URI-like name",
 			sql:     `WITH "https://example.com/file.parquet" AS (SELECT 1 AS value) SELECT * FROM "https://example.com/file.parquet"`,
-			wantErr: true,
+			wantErr: false,
 		},
 		{
 			name:    "cte body cannot hide a replacement scan",
@@ -329,33 +292,33 @@ func TestRemoteURILiteralValidatorReplacementScans(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			err := db.ValidateSQL(t.Context(), tt.sql, newRemoteURILiteralValidator())
+			err := db.ValidateSQL(t.Context(), tt.sql, ValidationPolicy{})
 			if !tt.wantErr {
 				assert.NoError(t, err)
 				return
 			}
 			require.ErrorIs(t, err, ErrAccessDenied)
-			assert.ErrorContains(t, err, "is not allowed in replacement scan")
+			requireViolation(t, err, "function")
 		})
 	}
 }
 
-func TestDBRemoteURILiteralRejection(t *testing.T) {
+func TestDBReaderPolicy(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "local.csv")
 	require.NoError(t, os.WriteFile(path, []byte("value\n42\n"), 0o600))
 	secondPath := filepath.Join(t.TempDir(), "second.csv")
 	require.NoError(t, os.WriteFile(secondPath, []byte("value\n43\n"), 0o600))
 
-	db := setupTestDB(t, WithRemoteURILiteralRejection())
+	db := setupTestDB(t, WithValidation())
 
 	data, err := db.QueryArrow(t.Context(), "SELECT * FROM read_csv("+quoteLiteral(path)+")", nil)
-	require.NoError(t, err)
-	assert.Equal(t, []map[string]any{{"value": float64(42)}}, arrowRows(t, data))
+	requireViolation(t, err, "function")
+	require.Empty(t, data)
 
 	list := fmt.Sprintf("[%s, %s]", quoteLiteral(path), quoteLiteral(secondPath))
 	data, err = db.QueryArrow(t.Context(), "SELECT * FROM read_csv("+list+") ORDER BY value", nil)
-	require.NoError(t, err)
-	assert.Equal(t, []map[string]any{{"value": float64(42)}, {"value": float64(43)}}, arrowRows(t, data))
+	requireViolation(t, err, "function")
+	require.Empty(t, data)
 
 	data, err = db.QueryArrow(t.Context(), "SELECT 'https://example.com' AS url WHERE url = 'https://example.com'", nil)
 	require.NoError(t, err)
@@ -363,11 +326,11 @@ func TestDBRemoteURILiteralRejection(t *testing.T) {
 
 	_, err = db.QueryArrow(t.Context(), "SELECT * FROM read_csv('https://example.com/file.csv')", nil)
 	require.ErrorIs(t, err, ErrAccessDenied)
-	assert.ErrorContains(t, err, "remote URI prefix 'https://' is not allowed in path argument to function 'read_csv'")
+	requireViolation(t, err, "function")
 
 	_, err = db.QueryArrow(t.Context(), "SELECT * FROM query('SELECT 42')", nil)
 	require.ErrorIs(t, err, ErrAccessDenied)
-	assert.ErrorContains(t, err, "nested SQL executor 'query' is not allowed")
+	requireViolation(t, err, "dynamic_sql")
 
 	_, err = db.QueryArrow(
 		t.Context(),
@@ -375,7 +338,7 @@ func TestDBRemoteURILiteralRejection(t *testing.T) {
 		nil,
 	)
 	require.ErrorIs(t, err, ErrAccessDenied)
-	assert.ErrorContains(t, err, "nested SQL executor 'json_serialize_plan' is not allowed")
+	requireViolation(t, err, "dynamic_sql")
 
 	_, err = db.QueryArrow(
 		t.Context(),
@@ -383,7 +346,7 @@ func TestDBRemoteURILiteralRejection(t *testing.T) {
 		nil,
 	)
 	require.ErrorIs(t, err, ErrAccessDenied)
-	assert.ErrorContains(t, err, "nested SQL executor 'json_serialize_plan' is not allowed")
+	requireViolation(t, err, "dynamic_sql")
 
 	autocompleteSQL := "SELECT * FROM '" + filepath.Join(filepath.Dir(path), "loc")
 	_, err = db.QueryArrow(
@@ -391,7 +354,7 @@ func TestDBRemoteURILiteralRejection(t *testing.T) {
 		"SELECT * FROM sql_auto_complete("+quoteLiteral(autocompleteSQL)+", max_file_suggestion_count := 10)",
 		nil,
 	)
-	require.NoError(t, err)
+	requireViolation(t, err, "function")
 
 	_, err = db.QueryArrow(
 		t.Context(),
@@ -399,7 +362,7 @@ func TestDBRemoteURILiteralRejection(t *testing.T) {
 		nil,
 	)
 	require.ErrorIs(t, err, ErrAccessDenied)
-	assert.ErrorContains(t, err, "remote URI prefix 's3://' is not allowed in path argument to function 'sql_auto_complete'")
+	requireViolation(t, err, "function")
 
 	_, err = db.QueryArrow(t.Context(), "PRAGMA import_database('s3://bucket/export')", nil)
 	require.ErrorIs(t, err, ErrUnsupportedStatement)

@@ -3,8 +3,10 @@ package server
 import (
 	"bytes"
 	"context"
+	"database/sql/driver"
 	"encoding/json"
 	"fmt"
+	"log/slog"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -17,16 +19,34 @@ import (
 	"github.com/duckdb/duckdb-go/v2"
 	"github.com/stretchr/testify/require"
 
+	"github.com/uwdata/mosaic/packages/server/duckdb-server-go/pkg/extensions"
 	"github.com/uwdata/mosaic/packages/server/duckdb-server-go/pkg/query"
 )
 
 func setupTestDB(t *testing.T, opts ...query.OptionFunc) *query.DB {
 	t.Helper()
+	return setupConfiguredDB(t, "", opts...)
+}
 
-	connector, err := duckdb.NewConnector(":memory:", nil)
+// setupConfiguredDB mirrors the CLI's trusted initialization: load Gatekeeper and, when configure is non-empty, set
+// the database-wide function ceiling before any request is served.
+func setupConfiguredDB(t *testing.T, configure string, opts ...query.OptionFunc) *query.DB {
+	t.Helper()
+
+	ctx := t.Context()
+	connector, err := duckdb.NewConnector(":memory:", func(execer driver.ExecerContext) error {
+		if err := extensions.InstallAndLoad(ctx, execer, "gatekeeper", "community"); err != nil {
+			return err
+		}
+		if configure == "" {
+			return nil
+		}
+		_, err := execer.ExecContext(ctx, configure, nil)
+		return err
+	})
 	require.NoError(t, err)
 
-	db, err := query.New(t.Context(), connector, opts...)
+	db, err := query.New(ctx, connector, opts...)
 	require.NoError(t, err)
 	t.Cleanup(func() {
 		db.Close()
@@ -51,7 +71,7 @@ func (e failOnCallExecutor) Exec(context.Context, string) error {
 	return e.fail("Exec")
 }
 
-func (e failOnCallExecutor) QueryArrow(context.Context, string, []string) ([]byte, error) {
+func (e failOnCallExecutor) QueryArrow(context.Context, string, *query.ValidationPolicy) ([]byte, error) {
 	return nil, e.fail("QueryArrow")
 }
 
@@ -119,6 +139,8 @@ func TestExecCommandHonorsSchemaPolicy(t *testing.T) {
 	require.ErrorIs(t, err, query.ErrExecWithValidation)
 
 	s = mustHandler(t, db)
+	_, err = s.execCommand(t.Context(), params, &query.ValidationPolicy{}, nil)
+	require.ErrorIs(t, err, query.ErrExecWithValidation)
 	_, err = s.execCommand(t.Context(), params, nil, nil)
 	require.NoError(t, err)
 }
@@ -154,10 +176,7 @@ func TestArrowResponseFraming(t *testing.T) {
 
 func TestHandleHTTPPolicyErrors(t *testing.T) {
 	t.Run("function outside allowlist is forbidden", func(t *testing.T) {
-		db := setupTestDB(t, query.WithFunctionAllowlist(query.FunctionAllowlistOptions{
-			DisableDefaults: true,
-			Include:         []string{"lower"},
-		}))
+		db := setupConfiguredDB(t, "CALL gatekeeper_configure(use_default_functions := false, allowed_functions := ['lower'])", query.WithValidation())
 		s := mustHandler(t, db)
 		req := httptest.NewRequest(http.MethodPost, "/", strings.NewReader(`{"type":"arrow","sql":"SELECT md5('mosaic')"}`))
 		res := httptest.NewRecorder()
@@ -165,11 +184,11 @@ func TestHandleHTTPPolicyErrors(t *testing.T) {
 		s.ServeHTTP(res, req)
 
 		require.Equal(t, http.StatusForbidden, res.Code)
-		require.Contains(t, res.Body.String(), "function 'md5' is not in the allowlist")
+		require.Equal(t, "Forbidden\n", res.Body.String())
 	})
 
 	t.Run("blocked function is forbidden", func(t *testing.T) {
-		db := setupTestDB(t, query.WithFunctionBlocklist([]string{"md5"}))
+		db := setupConfiguredDB(t, "CALL gatekeeper_configure(blocked_functions := ['md5'])", query.WithValidation())
 		s := mustHandler(t, db)
 		req := httptest.NewRequest(http.MethodPost, "/", strings.NewReader(`{"type":"arrow","sql":"SELECT md5('mosaic')"}`))
 		res := httptest.NewRecorder()
@@ -177,7 +196,7 @@ func TestHandleHTTPPolicyErrors(t *testing.T) {
 		s.ServeHTTP(res, req)
 
 		require.Equal(t, http.StatusForbidden, res.Code)
-		require.Contains(t, res.Body.String(), "use of function 'md5' is not allowed")
+		require.Equal(t, "Forbidden\n", res.Body.String())
 	})
 
 	t.Run("unauthorized schema is forbidden", func(t *testing.T) {
@@ -192,7 +211,7 @@ func TestHandleHTTPPolicyErrors(t *testing.T) {
 		s.ServeHTTP(res, req)
 
 		require.Equal(t, http.StatusForbidden, res.Code)
-		require.Contains(t, res.Body.String(), "unauthorized access to schema")
+		require.Equal(t, "Forbidden\n", res.Body.String())
 	})
 
 	t.Run("exec under schema policy is a bad request", func(t *testing.T) {
@@ -209,7 +228,7 @@ func TestHandleHTTPPolicyErrors(t *testing.T) {
 	})
 
 	t.Run("unsupported statement under policy is a bad request", func(t *testing.T) {
-		db := setupTestDB(t, query.WithFunctionBlocklist([]string{"md5"}))
+		db := setupTestDB(t, query.WithValidation())
 		s := mustHandler(t, db)
 		req := httptest.NewRequest(http.MethodPost, "/", strings.NewReader(`{"type":"arrow","sql":"PRAGMA version"}`))
 		res := httptest.NewRecorder()
@@ -217,13 +236,13 @@ func TestHandleHTTPPolicyErrors(t *testing.T) {
 		s.ServeHTTP(res, req)
 
 		require.Equal(t, http.StatusBadRequest, res.Code)
-		require.Contains(t, res.Body.String(), "query: validation failed: query: not implemented: Only SELECT statements can be serialized to json")
+		require.Equal(t, "Bad Request\n", res.Body.String())
 		require.NotContains(t, res.Body.String(), "()")
 		require.NotContains(t, res.Body.String(), " at :")
 	})
 
 	t.Run("syntax error under policy is a bad request", func(t *testing.T) {
-		db := setupTestDB(t, query.WithFunctionBlocklist([]string{"md5"}))
+		db := setupTestDB(t, query.WithValidation())
 		s := mustHandler(t, db)
 		req := httptest.NewRequest(http.MethodPost, "/", strings.NewReader(`{"type":"arrow","sql":"SELECT ("}`))
 		res := httptest.NewRecorder()
@@ -231,7 +250,7 @@ func TestHandleHTTPPolicyErrors(t *testing.T) {
 		s.ServeHTTP(res, req)
 
 		require.Equal(t, http.StatusBadRequest, res.Code)
-		require.Contains(t, res.Body.String(), "query: parser")
+		require.Equal(t, "Bad Request\n", res.Body.String())
 	})
 
 	t.Run("missing schema header is unauthorized", func(t *testing.T) {
@@ -244,6 +263,35 @@ func TestHandleHTTPPolicyErrors(t *testing.T) {
 
 		require.Equal(t, http.StatusUnauthorized, res.Code)
 	})
+}
+
+func TestValidationDiagnosticsStayServerSide(t *testing.T) {
+	db := setupTestDB(t)
+	require.NoError(t, db.Exec(t.Context(), "CREATE TABLE tenant_private_secret (value INTEGER)"))
+	var logs bytes.Buffer
+	handler := mustHandler(t, db, WithSchemaMatchHeaders("X-Tenant"), WithLogger(slog.New(slog.NewTextHandler(&logs, nil))))
+	body := `{"type":"arrow","sql":"SELECT * FROM tenant_private_secre"}`
+	req := httptest.NewRequest(http.MethodPost, "/", strings.NewReader(body))
+	req.Header.Set("X-Tenant", "tenant_a")
+	res := httptest.NewRecorder()
+	handler.ServeHTTP(res, req)
+	require.Equal(t, http.StatusBadRequest, res.Code)
+	require.Equal(t, "Bad Request\n", res.Body.String())
+	require.Contains(t, logs.String(), "tenant_private_secret")
+
+	server := newWebSocketTestServer(t, handler)
+	conn, _, err := server.dial(&websocket.DialOptions{HTTPHeader: http.Header{"X-Tenant": {"tenant_a"}}})
+	require.NoError(t, err)
+	defer func() { require.NoError(t, conn.CloseNow()) }()
+	require.NoError(t, conn.Write(server.ctx, websocket.MessageText, []byte(body)))
+	var response map[string]string
+	require.NoError(t, wsjson.Read(server.ctx, conn, &response))
+	require.Equal(t, "Bad Request", response["error"])
+	require.Equal(t, "bad_request", response["code"])
+	require.NoError(t, wsjson.Write(server.ctx, conn, map[string]string{"type": "arrow", "sql": "SELECT 1"}))
+	messageType, _, err := conn.Read(server.ctx)
+	require.NoError(t, err)
+	require.Equal(t, websocket.MessageBinary, messageType)
 }
 
 func TestHandleHTTPQueryParamsErrors(t *testing.T) {
@@ -285,12 +333,23 @@ func TestHandleHTTPQueryParamsErrors(t *testing.T) {
 	}
 }
 
-func TestGetAllowedSchemasTrimsHeaderNames(t *testing.T) {
+func TestRequestPolicyTrimsHeaderNames(t *testing.T) {
 	req := httptest.NewRequest(http.MethodGet, "/", nil)
 	req.Header.Set("X-Tenant-Id", "tenant_a")
 	req.Header.Set("Verified-User-Id", "user_a")
 
-	got := getAllowedSchemas(req, []string{" X-Tenant-Id ", "\tVerified-User-Id "})
-	require.Equal(t, []string{"tenant_a", "user_a"}, got)
-	require.Empty(t, getAllowedSchemas(req, []string{" "}))
+	s := mustHandler(t, failOnCallExecutor{t}, WithSchemaMatchHeaders(" X-Tenant-Id ", "\tVerified-User-Id "))
+	policy, ok := s.requestPolicy(httptest.NewRecorder(), req)
+	require.True(t, ok)
+	require.Equal(t, &query.ValidationPolicy{AllowedSchemas: []string{"tenant_a", "user_a"}}, policy)
+
+	policy, ok = mustHandler(t, failOnCallExecutor{t}).requestPolicy(httptest.NewRecorder(), req)
+	require.True(t, ok)
+	require.Nil(t, policy)
+
+	res := httptest.NewRecorder()
+	policy, ok = mustHandler(t, failOnCallExecutor{t}, WithSchemaMatchHeaders(" ")).requestPolicy(res, req)
+	require.False(t, ok)
+	require.Nil(t, policy)
+	require.Equal(t, http.StatusUnauthorized, res.Code)
 }

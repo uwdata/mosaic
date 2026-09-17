@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"os"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/duckdb/duckdb-go/v2"
@@ -73,8 +74,14 @@ func run() int {
 		}
 	}
 
+	validation := len(schemaMatchHeaders) > 0 || len(functionBlocklist) > 0 || functionAllowlist.set
+	var initializeOnce sync.Once
+	var initializeErr error
 	connector, err := duckdb.NewConnector(*dbPath, func(execer driver.ExecerContext) error {
-		return extensions.ParseAndInstall(ctx, execer, *extensionsStr)
+		initializeOnce.Do(func() {
+			initializeErr = initializeDatabase(ctx, execer, *extensionsStr, validation, functionAllowlist.values, functionBlocklist)
+		})
+		return initializeErr
 	})
 	if err != nil {
 		logger.Error("main: error creating duckdb connector", "error", err)
@@ -90,12 +97,9 @@ func run() int {
 	queryOptions := []query.OptionFunc{
 		query.WithMaxConnections(*poolSize),
 		query.WithLogger(logger),
-		query.WithFunctionBlocklist(functionBlocklist),
 	}
-	if functionAllowlist.set {
-		queryOptions = append(queryOptions, query.WithFunctionAllowlist(query.FunctionAllowlistOptions{
-			Include: functionAllowlist.values,
-		}))
+	if validation {
+		queryOptions = append(queryOptions, query.WithValidation())
 	}
 
 	db, err := query.New(ctx, connector, queryOptions...)

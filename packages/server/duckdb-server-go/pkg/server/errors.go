@@ -54,22 +54,32 @@ func classifyError(err error) errorResponse {
 		paramsError  queryParamsError
 	)
 	switch {
+	case errors.Is(err, query.ErrAccessDenied):
+		response.status = http.StatusForbidden
+		response.code = "forbidden"
 	case errors.Is(err, query.ErrExecWithValidation),
 		errors.Is(err, query.ErrUnsupportedStatement),
 		errors.As(err, &errorDetails),
 		errors.As(err, &paramsError):
 		response.status = http.StatusBadRequest
 		response.code = "bad_request"
-	case errors.Is(err, query.ErrAccessDenied):
-		response.status = http.StatusForbidden
-		response.code = "forbidden"
 	}
 
+	if errors.Is(err, query.ErrValidation) {
+		response.message = http.StatusText(response.status)
+	}
 	return response
 }
 
 func (s *handler) classifyAndLogError(err error) errorResponse {
 	response := classifyError(err)
+	if errors.Is(err, query.ErrValidation) {
+		if response.status == http.StatusInternalServerError {
+			s.logger.Error("server: query validator failed", "error", err)
+		} else {
+			s.logger.Warn("server: query validation failed", "error", err)
+		}
+	}
 	if response.status != http.StatusInternalServerError {
 		return response
 	}
