@@ -18,14 +18,14 @@ var (
 // ceiling set by gatekeeper_configure, so a request can only narrow what trusted initialization already admits.
 type ValidationPolicy struct {
 	// AllowedSchemas restricts tables and views to these schemas of the primary catalog captured by New. Nil adds no
-	// object restriction; an empty slice denies every table and view.
+	// object restriction; an empty slice denies caller table and view references. Trusted definitions expose their own dependencies.
 	AllowedSchemas []string
 
 	// AllowedFunctions is passed as Gatekeeper's allowed_functions. Nil omits the argument so the request inherits the
 	// global allowlist, including any gatekeeper_configure grants; a non-nil slice (even empty) intersects with it.
 	AllowedFunctions []string
 
-	// BlockedFunctions are denied in addition to any globally blocked functions.
+	// BlockedFunctions are denied for caller expressions in addition to any globally blocked functions.
 	BlockedFunctions []string
 
 	// DisableDefaultFunctions passes use_default_functions := false so only explicitly allowed functions remain.

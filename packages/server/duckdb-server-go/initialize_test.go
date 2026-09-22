@@ -91,6 +91,7 @@ func TestInitializeDatabaseCommunityInstall(t *testing.T) {
 	require.NoError(t, err)
 	t.Cleanup(db.Close)
 	require.Equal(t, "community", scanValue(t, connector, "SELECT installed_from FROM duckdb_extensions() WHERE extension_name = 'gatekeeper'"))
+	require.Equal(t, "0.2.0", scanValue(t, connector, "SELECT extension_version FROM duckdb_extensions() WHERE extension_name = 'gatekeeper'"))
 	require.Equal(t, false, scanValue(t, connector, "SELECT current_setting('allow_unsigned_extensions')"))
 }
 

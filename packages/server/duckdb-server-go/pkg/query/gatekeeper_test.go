@@ -15,7 +15,7 @@ import (
 func TestGatekeeperResolvedPolicy(t *testing.T) {
 	db := setupValidationDB(t)
 	require.NoError(t, db.Exec(t.Context(), `
-		CREATE VIEW tenant_a.leak AS SELECT * FROM tenant_b.secret;
+		CREATE VIEW tenant_a.shared AS SELECT * FROM tenant_b.secret;
 		CREATE VIEW tenant_a.safe AS SELECT * FROM tenant_a.secret;
 		ATTACH ':memory:' AS otherdb; CREATE SCHEMA otherdb.tenant_a;
 		CREATE TABLE otherdb.tenant_a.secret (value INTEGER);
@@ -24,7 +24,8 @@ func TestGatekeeperResolvedPolicy(t *testing.T) {
 	`))
 	cases := []struct{ name, sql, rule string }{
 		{"safe view", "SELECT * FROM tenant_a.safe", ""},
-		{"view underlying table", "SELECT * FROM tenant_a.leak", "table"},
+		{"trusted view underlying table", "SELECT * FROM tenant_a.shared", ""},
+		{"caller underlying table beside view", "SELECT * FROM tenant_a.shared, tenant_b.secret", "table"},
 		{"out of scope CTE", "WITH c AS (WITH secret AS (SELECT 1) SELECT * FROM secret) SELECT * FROM secret", "table"},
 		{"attached catalog", "SELECT * FROM otherdb.tenant_a.secret", "table"},
 		{"qualified primary catalog", "SELECT * FROM memory.tenant_a.secret", ""},
@@ -170,15 +171,46 @@ func TestGatekeeperFunctionNamespaces(t *testing.T) {
 	requireViolation(t, err, "function")
 }
 
-func TestGatekeeperBlocksTrustedExpansions(t *testing.T) {
+func TestGatekeeperTrustedDefinitions(t *testing.T) {
 	db := setupTestDB(t)
 	require.NoError(t, db.Exec(t.Context(), `CREATE VIEW hashed AS SELECT md5('secret') AS hash;
-		CREATE MACRO digest(x) AS md5(x)`))
-	for _, sql := range []string{"SELECT * FROM hashed", "SELECT digest('x')", "SELECT list_sum([1, 2])"} {
-		err := db.ValidateSQL(t.Context(), sql, ValidationPolicy{
-			BlockedFunctions: []string{"md5", "sum"},
-			AllowedFunctions: []string{"digest"},
-		})
+		CREATE MACRO digest(x) AS md5(x);
+		CREATE VIEW metadata AS SELECT table_name FROM duckdb_tables();
+		CALL gatekeeper_configure(allowed_functions := ['digest'], blocked_functions := ['md5', 'sum'])`))
+	policy := ValidationPolicy{BlockedFunctions: []string{"md5", "sum"}, AllowedFunctions: []string{"digest"}}
+	for _, stmt := range []string{"SELECT * FROM hashed", "SELECT digest('x')", "SELECT * FROM metadata"} {
+		_, err := db.QueryArrow(t.Context(), stmt, &policy)
+		require.NoError(t, err, stmt)
+	}
+	for _, stmt := range []string{"SELECT md5('x') FROM hashed", "SELECT digest('x'), md5('x')", "SELECT list_sum([1, 2])", "SELECT * FROM duckdb_tables()"} {
+		err := db.ValidateSQL(t.Context(), stmt, policy)
 		requireViolation(t, err, "function")
 	}
+}
+
+func TestGatekeeperControlPlaneThroughTrustedDefinitions(t *testing.T) {
+	db := setupTestDB(t)
+	for _, name := range []string{"gatekeeper_configure", "gatekeeper_enforce", "disable_logging", "truncate_duckdb_logs"} {
+		t.Run(name, func(t *testing.T) {
+			require.NoError(t, db.Exec(t.Context(), "CREATE OR REPLACE VIEW control AS SELECT * FROM "+name+"()"))
+			err := db.ValidateSQL(t.Context(), "SELECT * FROM control", ValidationPolicy{AllowedFunctions: []string{name}})
+			requireViolation(t, err, "function")
+		})
+	}
+}
+
+func TestGatekeeperTrustedViewTableBlocks(t *testing.T) {
+	db := setupValidationDB(t)
+	require.NoError(t, db.Exec(t.Context(), `INSERT INTO tenant_b.secret VALUES (42);
+		CREATE VIEW tenant_a.shared AS SELECT * FROM tenant_b.secret;
+		CALL gatekeeper_configure(blocked_tables := [{schema: 'tenant_b', 'table': 'secret'}])`))
+	policy := &ValidationPolicy{AllowedSchemas: []string{"tenant_a"}}
+	data, err := db.QueryArrow(t.Context(), "SELECT * FROM tenant_a.shared", policy)
+	require.NoError(t, err)
+	require.Equal(t, []map[string]any{{"value": float64(42)}}, arrowRows(t, data))
+	_, err = db.QueryArrow(t.Context(), "SELECT * FROM tenant_a.shared, tenant_b.secret", &ValidationPolicy{})
+	requireViolation(t, err, "table")
+	require.NoError(t, db.Exec(t.Context(), `CALL gatekeeper_configure(blocked_tables := [{schema: 'tenant_a', 'table': 'shared'}])`))
+	_, err = db.QueryArrow(t.Context(), "SELECT * FROM tenant_a.shared", policy)
+	requireViolation(t, err, "table")
 }
