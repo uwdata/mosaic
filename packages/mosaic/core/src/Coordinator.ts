@@ -7,7 +7,7 @@ import { type Selection } from './Selection.js';
 import { type Cache, type Logger, type QueryType } from './types.js';
 import { type QueryResult } from './util/query-result.js';
 import { type MosaicClient } from './MosaicClient.js';
-import { type SelectionClause } from './SelectionClause.js';
+import { type SelectionClause } from './clause/index.js';
 import { MaybeArray } from '@uwdata/mosaic-sql';
 import { type ExtractionOptions, Table } from '@uwdata/flechette';
 import { QueryError } from './util/query-error.js';
