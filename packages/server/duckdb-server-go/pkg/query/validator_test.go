@@ -219,7 +219,11 @@ func TestDB_ValidateSQL(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			db := setupValidationDB(t)
-			err := db.ValidateSQL(t.Context(), tt.sql, ValidationPolicy{AllowedSchemas: append([]string{}, tt.allowedSchemas...), BlockedFunctions: tt.functionBlocklist})
+			tables := make([]TableRule, 0, len(tt.allowedSchemas))
+			for _, schema := range tt.allowedSchemas {
+				tables = append(tables, TableRule{Schema: schema, Table: "*"})
+			}
+			err := db.ValidateSQL(t.Context(), tt.sql, ValidationPolicy{AllowedTables: tables, BlockedFunctions: tt.functionBlocklist})
 			if tt.wantErr {
 				assert.Error(t, err, "expected error for SQL: %s", tt.sql)
 			} else {
@@ -233,13 +237,13 @@ func TestGatekeeperTablePolicyErrors(t *testing.T) {
 	db := setupValidationDB(t)
 
 	t.Run("disallowed schema", func(t *testing.T) {
-		err := db.ValidateSQL(t.Context(), "SELECT * FROM tenant_b.secret", ValidationPolicy{AllowedSchemas: []string{"tenant_a"}})
+		err := db.ValidateSQL(t.Context(), "SELECT * FROM tenant_b.secret", ValidationPolicy{AllowedTables: []TableRule{{Schema: "tenant_a", Table: "*"}}})
 		assert.ErrorIs(t, err, ErrAccessDenied)
 		assert.Equal(t, "tenant_b", requireViolation(t, err, "table").Schema)
 	})
 
 	t.Run("unqualified table", func(t *testing.T) {
-		err := db.ValidateSQL(t.Context(), "SELECT * FROM secret", ValidationPolicy{AllowedSchemas: []string{"tenant_a"}})
+		err := db.ValidateSQL(t.Context(), "SELECT * FROM secret", ValidationPolicy{AllowedTables: []TableRule{{Schema: "tenant_a", Table: "*"}}})
 		assert.ErrorIs(t, err, ErrAccessDenied)
 		assert.Equal(t, "main", requireViolation(t, err, "table").Schema)
 	})
@@ -281,7 +285,7 @@ func TestGatekeeperShowStatements(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			err := db.ValidateSQL(t.Context(), tt.sql, ValidationPolicy{AllowedSchemas: []string{"tenant_a"}})
+			err := db.ValidateSQL(t.Context(), tt.sql, ValidationPolicy{AllowedTables: []TableRule{{Schema: "tenant_a", Table: "*"}}})
 			if tt.wantErr == "" {
 				assert.NoError(t, err)
 				return
@@ -304,7 +308,7 @@ func TestGatekeeperRejectsAttachedTables(t *testing.T) {
 
 	for _, sql := range tests {
 		t.Run(sql, func(t *testing.T) {
-			err := db.ValidateSQL(t.Context(), sql, ValidationPolicy{AllowedSchemas: []string{"tenant_a"}})
+			err := db.ValidateSQL(t.Context(), sql, ValidationPolicy{AllowedTables: []TableRule{{Catalog: "memory", Schema: "tenant_a", Table: "*"}}})
 			assert.ErrorIs(t, err, ErrAccessDenied)
 			assert.Equal(t, "otherdb", requireViolation(t, err, "table").Catalog)
 		})

@@ -23,7 +23,7 @@ func TestValidationPolicyInheritsGlobalFunctions(t *testing.T) {
 	const query = "SELECT pg_sleep(0)"
 	require.NoError(t, db.ValidateSQL(t.Context(), query, ValidationPolicy{}))
 	require.NoError(t, db.ValidateSQL(t.Context(), query, ValidationPolicy{BlockedFunctions: []string{"lower"}}))
-	require.NoError(t, db.ValidateSQL(t.Context(), query, ValidationPolicy{AllowedSchemas: []string{}}))
+	require.NoError(t, db.ValidateSQL(t.Context(), query, ValidationPolicy{AllowedTables: []TableRule{}}))
 
 	for _, policy := range []ValidationPolicy{
 		{AllowedFunctions: []string{}},

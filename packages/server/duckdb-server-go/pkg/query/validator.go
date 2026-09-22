@@ -17,9 +17,9 @@ var (
 // ValidationPolicy is the per-request half of Gatekeeper's policy. Gatekeeper intersects it with the database-wide
 // ceiling set by gatekeeper_configure, so a request can only narrow what trusted initialization already admits.
 type ValidationPolicy struct {
-	// AllowedSchemas restricts tables and views to these schemas of the primary catalog captured by New. Nil adds no
-	// object restriction; an empty slice denies caller table and view references. Trusted definitions expose their own dependencies.
-	AllowedSchemas []string
+	// Nil inherits the global table policy; an empty slice denies all caller table and view references.
+	AllowedTables []TableRule
+	BlockedTables []TableRule
 
 	// AllowedFunctions is passed as Gatekeeper's allowed_functions. Nil omits the argument so the request inherits the
 	// global allowlist, including any gatekeeper_configure grants; a non-nil slice (even empty) intersects with it.
@@ -30,6 +30,13 @@ type ValidationPolicy struct {
 
 	// DisableDefaultFunctions passes use_default_functions := false so only explicitly allowed functions remain.
 	DisableDefaultFunctions bool
+}
+
+type TableRule struct {
+	// An omitted catalog matches any catalog. A whole-component "*" is a wildcard in each field.
+	Catalog string `json:"catalog,omitempty"`
+	Schema  string `json:"schema"`
+	Table   string `json:"table"`
 }
 
 type Violation struct {
@@ -95,14 +102,22 @@ func (db *DB) checkSQL(ctx context.Context, conn rowQuerier, query string, polic
 	stmt := `SELECT CAST(system.main.to_json(result) AS VARCHAR) FROM system.main.gatekeeper_validate($sql,
 		blocked_functions := $blocked::VARCHAR[]`
 	args := []any{sql.Named("sql", query), sql.Named("blocked", NormalizeFunctionNames(policy.BlockedFunctions))}
-	if policy.AllowedSchemas != nil {
-		for _, schema := range policy.AllowedSchemas {
-			if schema == "*" || db.catalog == "*" {
-				return ErrorDetails{Code: "invalid_input", Message: "schema policies require exact catalog and schema names"}
-			}
+	for _, option := range []struct {
+		name  string
+		rules []TableRule
+	}{
+		{"allowed_tables", policy.AllowedTables},
+		{"blocked_tables", policy.BlockedTables},
+	} {
+		if option.rules == nil {
+			continue
 		}
-		stmt += `, allowed_tables := system.main.list_transform($schemas::VARCHAR[], lambda s: {'catalog': $catalog::VARCHAR, 'schema': s, 'table': '*'})`
-		args = append(args, sql.Named("schemas", policy.AllowedSchemas), sql.Named("catalog", db.catalog))
+		rules, err := json.Marshal(option.rules)
+		if err != nil {
+			return err
+		}
+		stmt += ", " + option.name + ` := system.main.from_json($` + option.name + `::JSON, '[{"catalog":"VARCHAR","schema":"VARCHAR","table":"VARCHAR"}]')`
+		args = append(args, sql.Named(option.name, string(rules)))
 	}
 	if policy.AllowedFunctions != nil {
 		stmt += ", allowed_functions := $allowed::VARCHAR[]"

@@ -731,10 +731,10 @@ func TestPolicyAuthorizerScopesValidationPerCommand(t *testing.T) {
 			if command.Payload().Tenant == "" {
 				return nil, ErrPermissionDenied
 			}
-			if policy != nil && !slices.Contains(policy.AllowedSchemas, command.Payload().Tenant) {
+			if policy != nil && !slices.Contains(policy.AllowedTables, query.TableRule{Schema: command.Payload().Tenant, Table: "*"}) {
 				return nil, ErrPermissionDenied
 			}
-			return &query.ValidationPolicy{AllowedSchemas: []string{command.Payload().Tenant}}, nil
+			return &query.ValidationPolicy{AllowedTables: []query.TableRule{{Schema: command.Payload().Tenant, Table: "*"}}}, nil
 		}, nil
 	})
 
@@ -787,7 +787,7 @@ func TestPolicyAuthorizerScopesValidationPerCommand(t *testing.T) {
 		res := httptest.NewRecorder()
 		handler.ServeHTTP(res, req)
 		require.Equal(t, http.StatusOK, res.Code, res.Body.String())
-		require.Equal(t, []*query.ValidationPolicy{{AllowedSchemas: []string{"tenant_a"}}}, seen)
+		require.Equal(t, []*query.ValidationPolicy{{AllowedTables: []query.TableRule{{Schema: "tenant_a", Table: "*"}}}}, seen)
 
 		req = httptest.NewRequest(http.MethodPost, "/", strings.NewReader(`{"type":"arrow","sql":"SELECT * FROM tenant_b.items","tenant":"tenant_b"}`))
 		req.Header.Set("X-Tenant", "tenant_a")

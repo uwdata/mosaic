@@ -77,7 +77,9 @@ go test -race -tags=duckdb_arrow ./...
 go run -tags=duckdb_arrow . --function-allowlist=
 ```
 
-Gatekeeper intersects each request with a database-wide ceiling. Function policy belongs in the ceiling: run `CALL gatekeeper_configure(allowed_functions := [...], blocked_functions := [...])` during trusted initialization, and lock configuration so untrusted SQL cannot change it. Request policies then scope down per query. `query.ValidationPolicy` mirrors the request half of `gatekeeper_validate`: `AllowedSchemas` becomes `allowed_tables` rules for the primary catalog captured at startup (nil adds no object restriction; an empty slice denies every table and view; names are exact case-insensitive identifiers and `*` is rejected), `AllowedFunctions` is `allowed_functions` (nil inherits the global allowlist, including `gatekeeper_configure` grants; a non-nil slice, even empty, intersects with it), `BlockedFunctions` adds to the global blocklist, and `DisableDefaultFunctions` sets `use_default_functions := false`. Function names are normalized with `query.NormalizeFunctionNames`; Gatekeeper matches configured names exactly, so apply the same normalization to `gatekeeper_configure` arguments.
+Gatekeeper intersects each request with a database-wide ceiling. Function policy belongs in the ceiling: run `CALL gatekeeper_configure(allowed_functions := [...], blocked_functions := [...])` during trusted initialization, and lock configuration so untrusted SQL cannot change it. Request policies then scope down per query. `query.ValidationPolicy` mirrors the request half of `gatekeeper_validate`: `AllowedTables` and `BlockedTables` contain `query.TableRule{Catalog, Schema, Table}` values. An omitted catalog matches any catalog; a whole-component `*` matches any name. Matching is case-insensitive, and other patterns such as `tenant_*` are literal identifiers. Nil `AllowedTables` inherits the global policy; an empty slice denies caller table and view references. Blocks win over allows. The server does not discover or implicitly restrict a default catalog.
+
+`AllowedFunctions` is `allowed_functions` (nil inherits the global allowlist, including `gatekeeper_configure` grants; a non-nil slice, even empty, intersects with it), `BlockedFunctions` adds to the global blocklist, and `DisableDefaultFunctions` sets `use_default_functions := false`. Function names are normalized with `query.NormalizeFunctionNames`; apply the same normalization to `gatekeeper_configure` arguments.
 
 `db.QueryArrow(ctx, sql, policy)` and `db.WriteArrow(ctx, sql, policy, w)` validate when `policy` is non-nil, or always when `query.WithValidation()` is configured, and then execute on the same pooled connection. `WithValidation()` also disables `db.Exec` and makes `query.New` fail when Gatekeeper is not loaded; without it, a request policy that cannot reach `gatekeeper_validate` fails closed at call time. `db.ValidateSQL(ctx, sql, policy)` validates on any pooled connection without executing.
 
@@ -99,7 +101,10 @@ Then constructs the query DB on the same connector and scopes tables per request
 ```go
 db, err := query.New(ctx, connector, query.WithValidation())
 // ...
-data, err := db.QueryArrow(ctx, sql, &query.ValidationPolicy{AllowedSchemas: []string{tenant}})
+data, err := db.QueryArrow(ctx, sql, &query.ValidationPolicy{
+	AllowedTables: []query.TableRule{{Catalog: "analytics", Schema: tenant, Table: "orders"}},
+	BlockedTables: []query.TableRule{{Catalog: "analytics", Schema: tenant, Table: "secrets"}},
+})
 ```
 
 Check each initialization error before proceeding. `db.Close` closes the pool and, because `database/sql` closes connectors that implement `io.Closer`, the DuckDB database behind the connector; a later `connector.Close` is a no-op.
@@ -209,7 +214,7 @@ Programs embedding `pkg/query` configure functions the same way, through `CALL g
 
 ```go
 db.QueryArrow(ctx, sql, &query.ValidationPolicy{
-	AllowedSchemas:   []string{tenant},
+	AllowedTables:    []query.TableRule{{Catalog: "analytics", Schema: tenant, Table: "*"}},
 	BlockedFunctions: []string{"my_expensive_function"},
 })
 ```
@@ -247,7 +252,7 @@ multiple users / customers share the same DuckDB server instance while restricti
    the server will allow access to any schemas that match the header values. If no headers are present, and `--schema-match-headers`
    is set, the server will return a 401 Unauthorized error.
 
-Schema matching authorizes caller references to resolved tables/views in the primary catalog captured at startup. Direct attached-catalog references remain denied. Unqualified names and explicit primary-catalog qualifiers may pass when their resolved identities are authorized. An allowed view can expose underlying tables in other schemas, including another tenant's; allowing a macro likewise grants what its trusted definition reads. Deny the outer view or macro to withdraw that capability. Validation and Arrow execution share one pooled connection.
+Schema matching builds `TableRule{Schema: headerValue, Table: "*"}` rules with no catalog restriction. The same schema name in an attached or temporary catalog can therefore match; use a global Gatekeeper table policy or explicit catalog rules from a typed policy authorizer when catalog isolation is needed. A header value of `*` is rejected so it cannot widen schema access. Unqualified and catalog-qualified references pass when their resolved identities match the rules. An allowed view can expose underlying tables in other schemas, including another tenant's; allowing a macro likewise grants what its trusted definition reads. Deny the outer view or macro to withdraw that capability. Validation and Arrow execution share one pooled connection.
 
 Schema-wide `SHOW TABLES FROM tenant_a` is denied under table restrictions. `DESCRIBE SELECT 1` remains supported. Missing objects fail binding rather than receiving syntax-only authorization. Gatekeeper limits requests to one supported read statement. HTTP denials return 403; parser, binding, and unsupported results return 400. Binding can perform I/O, and concurrent catalog changes between validation and execution remain a race; see Gatekeeper's [security model](https://github.com/nozzle/duckdb-gatekeeper/blob/v0.2.0/docs/security.md).
 

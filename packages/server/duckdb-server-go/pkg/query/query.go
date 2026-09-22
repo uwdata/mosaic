@@ -19,7 +19,6 @@ var ErrExecWithValidation = errors.New("query: exec command is disabled when que
 type DB struct {
 	db         *sql.DB
 	validation bool
-	catalog    string
 	logger     *slog.Logger
 }
 
@@ -34,11 +33,7 @@ func New(ctx context.Context, connector *duckdb.Connector, opts ...OptionFunc) (
 	}
 	db := sql.OpenDB(connector)
 	db.SetMaxOpenConns(o.MaxConnections)
-	var catalog string
-	if err := db.QueryRowContext(ctx, "SELECT system.main.current_database()").Scan(&catalog); err != nil {
-		return nil, errors.Join(fmt.Errorf("query: failed to identify primary catalog: %w", err), db.Close())
-	}
-	result := &DB{db: db, validation: o.Validation, catalog: catalog, logger: o.Logger}
+	result := &DB{db: db, validation: o.Validation, logger: o.Logger}
 	if o.Validation {
 		if err := result.ValidateSQL(ctx, "SELECT 1", ValidationPolicy{}); err != nil {
 			return nil, errors.Join(fmt.Errorf("query: Gatekeeper is required for validation: %w", err), db.Close())

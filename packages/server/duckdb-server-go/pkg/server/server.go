@@ -358,22 +358,26 @@ func (p queryParams) Validate(logger *slog.Logger) error {
 }
 
 // requestPolicy returns nil when schema matching is not configured. With schema matching, it writes a 401 and
-// returns false when no configured header is present; otherwise the policy carries a non-nil schema list so an
+// returns false when no configured header is present; otherwise the policy carries a non-nil table list so an
 // unexpected empty match denies every table rather than lifting the restriction.
 func (s *handler) requestPolicy(w http.ResponseWriter, r *http.Request) (*query.ValidationPolicy, bool) {
 	if len(s.schemaMatchHeaders) == 0 {
 		return nil, true
 	}
-	allowedSchemas := []string{}
+	allowedTables := []query.TableRule{}
 	for _, matchHeader := range s.schemaMatchHeaders {
 		if allowedSchema := r.Header.Get(strings.TrimSpace(matchHeader)); allowedSchema != "" {
-			allowedSchemas = append(allowedSchemas, allowedSchema)
+			if allowedSchema == "*" {
+				http.Error(w, http.StatusText(http.StatusForbidden), http.StatusForbidden)
+				return nil, false
+			}
+			allowedTables = append(allowedTables, query.TableRule{Schema: allowedSchema, Table: "*"})
 		}
 	}
-	if len(allowedSchemas) == 0 {
+	if len(allowedTables) == 0 {
 		s.logger.Error("server: no allowed schemas found in request headers", "headers", s.schemaMatchHeaders)
 		http.Error(w, "no allowed schemas found in request headers", http.StatusUnauthorized)
 		return nil, false
 	}
-	return &query.ValidationPolicy{AllowedSchemas: allowedSchemas}, true
+	return &query.ValidationPolicy{AllowedTables: allowedTables}, true
 }

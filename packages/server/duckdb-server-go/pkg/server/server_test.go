@@ -63,6 +63,15 @@ func mustHandler(t *testing.T, executor commandExecutor, opts ...Option) *handle
 	return newHandler(executor, cfg)
 }
 
+func TestSchemaHeaderRejectsWildcard(t *testing.T) {
+	handler := mustHandler(t, failOnCallExecutor{t}, WithSchemaMatchHeaders("X-Tenant"))
+	req := httptest.NewRequest(http.MethodPost, "/", strings.NewReader(`{"type":"arrow","sql":"SELECT 1"}`))
+	req.Header.Set("X-Tenant", "*")
+	res := httptest.NewRecorder()
+	handler.ServeHTTP(res, req)
+	require.Equal(t, http.StatusForbidden, res.Code)
+}
+
 type failOnCallExecutor struct {
 	testing.TB
 }
@@ -341,7 +350,7 @@ func TestRequestPolicyTrimsHeaderNames(t *testing.T) {
 	s := mustHandler(t, failOnCallExecutor{t}, WithSchemaMatchHeaders(" X-Tenant-Id ", "\tVerified-User-Id "))
 	policy, ok := s.requestPolicy(httptest.NewRecorder(), req)
 	require.True(t, ok)
-	require.Equal(t, &query.ValidationPolicy{AllowedSchemas: []string{"tenant_a", "user_a"}}, policy)
+	require.Equal(t, &query.ValidationPolicy{AllowedTables: []query.TableRule{{Schema: "tenant_a", Table: "*"}, {Schema: "user_a", Table: "*"}}}, policy)
 
 	policy, ok = mustHandler(t, failOnCallExecutor{t}).requestPolicy(httptest.NewRecorder(), req)
 	require.True(t, ok)

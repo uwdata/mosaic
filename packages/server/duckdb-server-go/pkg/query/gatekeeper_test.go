@@ -37,7 +37,7 @@ func TestGatekeeperResolvedPolicy(t *testing.T) {
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			err := db.ValidateSQL(t.Context(), tc.sql, ValidationPolicy{AllowedSchemas: []string{"tenant_a"}})
+			err := db.ValidateSQL(t.Context(), tc.sql, ValidationPolicy{AllowedTables: []TableRule{{Catalog: "memory", Schema: "tenant_a", Table: "*"}}})
 			if tc.rule == "" {
 				require.NoError(t, err)
 			} else {
@@ -45,8 +45,8 @@ func TestGatekeeperResolvedPolicy(t *testing.T) {
 			}
 		})
 	}
-	for _, schemas := range [][]string{{}, {"tenant_a'])); SELECT 1; --"}} {
-		_, err := db.QueryArrow(t.Context(), "SELECT * FROM tenant_a.secret", &ValidationPolicy{AllowedSchemas: schemas})
+	for _, tables := range [][]TableRule{{}, {{Schema: "tenant_a'])); SELECT 1; --", Table: "*"}}} {
+		_, err := db.QueryArrow(t.Context(), "SELECT * FROM tenant_a.secret", &ValidationPolicy{AllowedTables: tables})
 		requireViolation(t, err, "table")
 	}
 }
@@ -55,8 +55,8 @@ func TestGatekeeperConnectionAndConcurrency(t *testing.T) {
 	db := setupTestDB(t, WithMaxConnections(1))
 	require.NoError(t, db.Exec(t.Context(), `CREATE SCHEMA tenant_a; CREATE TABLE tenant_a.items AS SELECT 42 AS value;
 		SET search_path = 'tenant_a'`))
-	tenantA := &ValidationPolicy{AllowedSchemas: []string{"tenant_a"}}
-	tenantB := &ValidationPolicy{AllowedSchemas: []string{"tenant_b"}}
+	tenantA := &ValidationPolicy{AllowedTables: []TableRule{{Schema: "tenant_a", Table: "*"}}}
+	tenantB := &ValidationPolicy{AllowedTables: []TableRule{{Schema: "tenant_b", Table: "*"}}}
 	data, err := db.QueryArrow(t.Context(), "SELECT * FROM items", tenantA)
 	require.NoError(t, err)
 	require.Equal(t, []map[string]any{{"value": float64(42)}}, arrowRows(t, data))
@@ -99,7 +99,7 @@ func TestGatekeeperMissingFailsClosed(t *testing.T) {
 		data, err := db.QueryArrow(t.Context(), "SELECT 1", nil)
 		require.NoError(t, err)
 		require.NotEmpty(t, data)
-		for _, policy := range []ValidationPolicy{{}, {AllowedSchemas: []string{"main"}}} {
+		for _, policy := range []ValidationPolicy{{}, {AllowedTables: []TableRule{{Schema: "main", Table: "*"}}}} {
 			err := db.ValidateSQL(t.Context(), "SELECT 1", policy)
 			require.ErrorIs(t, err, ErrValidation)
 			require.ErrorContains(t, err, "gatekeeper_validate")
@@ -138,7 +138,7 @@ func TestGatekeeperReaderAdmission(t *testing.T) {
 	_, err := db.QueryArrow(t.Context(), stmt, readers)
 	requireViolation(t, err, "function")
 	require.NoError(t, db.Exec(t.Context(), "CALL gatekeeper_configure(allowed_functions := ['read_csv', 'read_csv_auto'])"))
-	for _, policy := range []*ValidationPolicy{readers, {AllowedSchemas: []string{}}} {
+	for _, policy := range []*ValidationPolicy{readers, {AllowedTables: []TableRule{}}} {
 		for _, sql := range []string{stmt, "SELECT * FROM " + quoteLiteral(path)} {
 			data, err := db.QueryArrow(t.Context(), sql, policy)
 			require.NoError(t, err)
@@ -147,28 +147,57 @@ func TestGatekeeperReaderAdmission(t *testing.T) {
 	}
 }
 
-func TestGatekeeperExactSchemaPolicy(t *testing.T) {
-	db := setupValidationDB(t)
-	for _, schemas := range [][]string{nil, {"TENANT_A"}} {
-		require.NoError(t, db.ValidateSQL(t.Context(), "SELECT * FROM tenant_a.secret", ValidationPolicy{AllowedSchemas: schemas}))
-	}
-	requireViolation(t, db.ValidateSQL(t.Context(), "SELECT * FROM tenant_a.secret", ValidationPolicy{AllowedSchemas: []string{}}), "table")
-	err := db.ValidateSQL(t.Context(), "SELECT * FROM tenant_b.secret", ValidationPolicy{AllowedSchemas: []string{"*"}})
-	var details ErrorDetails
-	require.ErrorAs(t, err, &details)
-	require.Equal(t, "invalid_input", details.Code)
-	require.NoError(t, db.Exec(t.Context(), `CREATE TEMP TABLE secret (value INTEGER)`))
-	require.Equal(t, "temp", requireViolation(t, db.ValidateSQL(t.Context(), "SELECT * FROM secret", ValidationPolicy{AllowedSchemas: []string{"main"}}), "table").Catalog)
-}
-
 func TestGatekeeperFunctionNamespaces(t *testing.T) {
 	db := setupValidationDB(t)
 	require.NoError(t, db.Exec(t.Context(), `ATTACH ':memory:' AS otherdb;
 		CREATE SCHEMA otherdb.tenant_a;
 		CREATE MACRO otherdb.tenant_a.md5(x) AS system.main.md5(x)`))
-	require.NoError(t, db.ValidateSQL(t.Context(), "SELECT otherdb.tenant_a.md5('x')", ValidationPolicy{AllowedSchemas: []string{}}))
-	err := db.ValidateSQL(t.Context(), "SELECT * FROM otherdb.tenant_a.missing()", ValidationPolicy{AllowedSchemas: []string{}})
+	require.NoError(t, db.ValidateSQL(t.Context(), "SELECT otherdb.tenant_a.md5('x')", ValidationPolicy{AllowedTables: []TableRule{}}))
+	err := db.ValidateSQL(t.Context(), "SELECT * FROM otherdb.tenant_a.missing()", ValidationPolicy{AllowedTables: []TableRule{}})
 	requireViolation(t, err, "function")
+}
+
+func TestGatekeeperTableRules(t *testing.T) {
+	db := setupValidationDB(t)
+	require.NoError(t, db.Exec(t.Context(), `ATTACH ':memory:' AS otherdb;
+		CREATE SCHEMA otherdb.tenant_a;
+		CREATE TABLE otherdb.tenant_a.secret (value INTEGER);
+		CREATE TEMP TABLE secret (value INTEGER)`))
+	for _, tc := range []struct {
+		name   string
+		sql    string
+		policy ValidationPolicy
+		denied bool
+	}{
+		{"nil inherits", "SELECT * FROM tenant_a.secret", ValidationPolicy{}, false},
+		{"empty denies", "SELECT * FROM tenant_a.secret", ValidationPolicy{AllowedTables: []TableRule{}}, true},
+		{"exact table", "SELECT * FROM tenant_a.secret", ValidationPolicy{AllowedTables: []TableRule{{Catalog: "MEMORY", Schema: "TENANT_A", Table: "SECRET"}}}, false},
+		{"different table", "SELECT * FROM tenant_a.secret", ValidationPolicy{AllowedTables: []TableRule{{Schema: "tenant_a", Table: "other"}}}, true},
+		{"omitted catalog", "SELECT * FROM otherdb.tenant_a.secret", ValidationPolicy{AllowedTables: []TableRule{{Schema: "tenant_a", Table: "secret"}}}, false},
+		{"explicit catalog", "SELECT * FROM otherdb.tenant_a.secret", ValidationPolicy{AllowedTables: []TableRule{{Catalog: "memory", Schema: "tenant_a", Table: "*"}}}, true},
+		{"wildcards", "SELECT * FROM otherdb.tenant_a.secret", ValidationPolicy{AllowedTables: []TableRule{{Catalog: "*", Schema: "*", Table: "*"}}}, false},
+		{"literal pattern", "SELECT * FROM tenant_a.secret", ValidationPolicy{AllowedTables: []TableRule{{Schema: "tenant_*", Table: "*"}}}, true},
+		{"temp matches omitted catalog", "SELECT * FROM secret", ValidationPolicy{AllowedTables: []TableRule{{Schema: "main", Table: "secret"}}}, false},
+		{"temp excluded by catalog", "SELECT * FROM secret", ValidationPolicy{AllowedTables: []TableRule{{Catalog: "memory", Schema: "main", Table: "secret"}}}, true},
+		{"block wins", "SELECT * FROM tenant_a.secret", ValidationPolicy{AllowedTables: []TableRule{{Schema: "tenant_a", Table: "*"}}, BlockedTables: []TableRule{{Schema: "tenant_a", Table: "secret"}}}, true},
+		{"block only", "SELECT * FROM tenant_a.secret", ValidationPolicy{BlockedTables: []TableRule{{Schema: "tenant_a", Table: "secret"}}}, true},
+		{"empty blocks", "SELECT * FROM tenant_a.secret", ValidationPolicy{BlockedTables: []TableRule{}}, false},
+		{"bound identifiers", "SELECT * FROM tenant_a.secret", ValidationPolicy{AllowedTables: []TableRule{{Catalog: "memory", Schema: "tenant_a", Table: "secret'}]); SELECT 1; --"}}}, true},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			_, err := db.QueryArrow(t.Context(), tc.sql, &tc.policy)
+			if tc.denied {
+				requireViolation(t, err, "table")
+			} else {
+				require.NoError(t, err)
+			}
+		})
+	}
+	require.NoError(t, db.Exec(t.Context(), `CALL gatekeeper_configure(blocked_tables := [{schema: 'tenant_a', 'table': 'secret'}])`))
+	err := db.ValidateSQL(t.Context(), "SELECT * FROM tenant_a.secret", ValidationPolicy{
+		AllowedTables: []TableRule{{Schema: "tenant_a", Table: "secret"}}, BlockedTables: []TableRule{},
+	})
+	requireViolation(t, err, "table")
 }
 
 func TestGatekeeperTrustedDefinitions(t *testing.T) {
@@ -204,7 +233,7 @@ func TestGatekeeperTrustedViewTableBlocks(t *testing.T) {
 	require.NoError(t, db.Exec(t.Context(), `INSERT INTO tenant_b.secret VALUES (42);
 		CREATE VIEW tenant_a.shared AS SELECT * FROM tenant_b.secret;
 		CALL gatekeeper_configure(blocked_tables := [{schema: 'tenant_b', 'table': 'secret'}])`))
-	policy := &ValidationPolicy{AllowedSchemas: []string{"tenant_a"}}
+	policy := &ValidationPolicy{AllowedTables: []TableRule{{Schema: "tenant_a", Table: "*"}}}
 	data, err := db.QueryArrow(t.Context(), "SELECT * FROM tenant_a.shared", policy)
 	require.NoError(t, err)
 	require.Equal(t, []map[string]any{{"value": float64(42)}}, arrowRows(t, data))

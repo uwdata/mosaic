@@ -260,7 +260,7 @@ func TestHTTPCacheSchemaMatchVariation(t *testing.T) {
 	spy := &spyCommandExecutor{
 		failOnCallExecutor: failOnCallExecutor{t},
 		queryArrow: func(_ context.Context, _ string, policy *query.ValidationPolicy) ([]byte, error) {
-			return []byte(strings.Join(policy.AllowedSchemas, ",")), nil
+			return []byte(policy.AllowedTables[0].Schema), nil
 		},
 	}
 	handler := mustHandler(t, spy, WithSchemaMatchHeaders("x-tenant-id"), WithVary("X-Region"), WithCacheControl("public, max-age=60"))
