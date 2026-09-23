@@ -383,6 +383,7 @@ export class ClickHouseCodeGenerator extends SQLDialectCodeGenerator {
       case 'Int256':
       case 'Float32':
       case 'Float64':
+      case 'DOUBLE':
         return 'number';
       case 'Date':
       case 'Date32':
