@@ -36,7 +36,7 @@ func New(ctx context.Context, connector *duckdb.Connector, opts ...OptionFunc) (
 	result := &DB{db: db, validation: o.Validation, logger: o.Logger}
 	if o.Validation {
 		if err := result.ValidateSQL(ctx, "SELECT 1", ValidationPolicy{}); err != nil {
-			return nil, errors.Join(fmt.Errorf("query: Gatekeeper is required for validation: %w", err), db.Close())
+			return nil, errors.Join(fmt.Errorf("query: Gatekeeper with the JSON policy API (0.3.0+) is required for validation; load it during trusted initialization or upgrade with FORCE INSTALL gatekeeper FROM community: %w", err), db.Close())
 		}
 	}
 	return result, nil

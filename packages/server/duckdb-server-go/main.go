@@ -123,7 +123,7 @@ func run() int {
 		"cache_control":        *cacheControl,
 		"vary":                 varyHeaders.String(),
 		"load_extensions":      *extensionsStr,
-		"gatekeeper":           gatekeeper.document,
+		"gatekeeper":           gatekeeper.String(),
 	}
 	logger.Info("DuckDB Server configuration", "config", config)
 

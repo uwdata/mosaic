@@ -290,6 +290,37 @@ func TestValidationDiagnosticsStayServerSide(t *testing.T) {
 	require.Equal(t, websocket.MessageBinary, messageType)
 }
 
+func TestInvalidPolicyIsServerError(t *testing.T) {
+	db := setupTestDB(t)
+	for _, tc := range []struct {
+		name   string
+		policy query.ValidationPolicy
+		sql    string
+		status int
+		level  string
+	}{
+		{"malformed policy", query.ValidationPolicy{JSON: new(string)}, "SELECT 2", 500, "ERROR"},
+		{"invalid typed policy", query.ValidationPolicy{AllowedFunctions: []string{""}}, "SELECT 2", 500, "ERROR"},
+		{"comment only", query.ValidationPolicy{}, "-- comment only", 400, "WARN"},
+		{"whitespace only", query.ValidationPolicy{}, "   ", 400, "WARN"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			var logs bytes.Buffer
+			authorizer := WithPolicyAuthorizer(PolicyAuthorizerFunc[struct{}](func(*http.Request) (CommandPolicyAuthorizer[struct{}], error) {
+				return func(context.Context, Command[struct{}]) (*query.ValidationPolicy, error) { return &tc.policy, nil }, nil
+			}))
+			handler := mustHandler(t, db, authorizer, WithLogger(slog.New(slog.NewJSONHandler(&logs, nil))))
+			body, err := json.Marshal(map[string]string{"type": "arrow", "sql": tc.sql})
+			require.NoError(t, err)
+			res := httptest.NewRecorder()
+			handler.ServeHTTP(res, httptest.NewRequest(http.MethodPost, "/", bytes.NewReader(body)))
+			require.Equal(t, tc.status, res.Code)
+			require.Equal(t, http.StatusText(tc.status)+"\n", res.Body.String())
+			require.Contains(t, logs.String(), `"level":"`+tc.level+`"`)
+		})
+	}
+}
+
 func TestHandleHTTPQueryParamsErrors(t *testing.T) {
 	db := setupTestDB(t)
 	s := mustHandler(t, db)

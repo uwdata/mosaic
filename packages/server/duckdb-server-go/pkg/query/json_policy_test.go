@@ -59,6 +59,7 @@ func TestGatekeeperJSONPolicy(t *testing.T) {
 			var details ErrorDetails
 			require.ErrorAs(t, err, &details)
 			require.Equal(t, "invalid_input", details.Code)
+			require.ErrorIs(t, err, ErrInvalidPolicy)
 		})
 	}
 }
@@ -71,6 +72,8 @@ func TestGatekeeperCallerObjects(t *testing.T) {
 	result, err := db.InspectSQL(t.Context(), "SELECT * FROM tenant_a.shared", ValidationPolicy{AllowedTables: []TableRule{{Schema: "tenant_a", Table: "shared"}}})
 	require.NoError(t, err)
 	require.True(t, result.Allowed)
+	require.NotImplements(t, (*error)(nil), result)
+	require.Equal(t, "ok", result.Details.Code)
 	require.Equal(t, []ResolvedObject{view}, result.CallerObjects)
 	require.ElementsMatch(t, []ResolvedObject{view, table}, result.Objects)
 	result, err = db.InspectSQL(t.Context(), "SELECT * FROM tenant_a.shared, tenant_b.secret", ValidationPolicy{})
@@ -86,4 +89,19 @@ func TestGatekeeperCallerObjects(t *testing.T) {
 	require.Equal(t, table.Catalog, violation.Catalog)
 	require.Equal(t, table.Schema, violation.Schema)
 	require.Equal(t, table.Table, violation.Table)
+}
+
+func TestInvalidPolicyAndInvalidSQL(t *testing.T) {
+	db := setupTestDB(t)
+	for _, stmt := range []string{"", "  ", "-- comment only", "; ;"} {
+		err := db.ValidateSQL(t.Context(), stmt, ValidationPolicy{})
+		var details ErrorDetails
+		require.ErrorAs(t, err, &details)
+		require.Equal(t, "invalid_input", details.Code)
+		require.NotErrorIs(t, err, ErrInvalidPolicy)
+		err = db.ValidateSQL(t.Context(), stmt, ValidationPolicy{JSON: stringPtr(`{}`)})
+		require.ErrorIs(t, err, ErrInvalidPolicy)
+	}
+	err := db.ValidateSQL(t.Context(), "SELECT 2", ValidationPolicy{AllowedFunctions: []string{""}})
+	require.ErrorIs(t, err, ErrInvalidPolicy)
 }

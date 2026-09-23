@@ -24,11 +24,9 @@ func (f *gatekeeperFlag) Set(value string) error {
 
 type optionalCommaListFlag struct {
 	values []string
-	set    bool
 }
 
 func (f *optionalCommaListFlag) Set(value string) error {
-	f.set = true
 	if value != "" {
 		f.values = append(f.values, strings.Split(value, ",")...)
 	}

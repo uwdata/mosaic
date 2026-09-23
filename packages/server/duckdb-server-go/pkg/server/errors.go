@@ -54,6 +54,8 @@ func classifyError(err error) errorResponse {
 		paramsError  queryParamsError
 	)
 	switch {
+	case errors.Is(err, query.ErrInvalidPolicy):
+		response.message = http.StatusText(http.StatusInternalServerError)
 	case errors.Is(err, query.ErrAccessDenied):
 		response.status = http.StatusForbidden
 		response.code = "forbidden"

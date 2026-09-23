@@ -15,6 +15,7 @@ var (
 	ErrAccessDenied         = errors.New("query: access denied")
 	ErrUnsupportedStatement = errors.New("query: unsupported statement")
 	ErrValidation           = errors.New("query: validation failed")
+	ErrInvalidPolicy        = errors.New("query: invalid validation policy")
 )
 
 type ValidationPolicy struct {
@@ -91,8 +92,8 @@ type ResolvedFunction struct {
 }
 
 type ValidationResult struct {
-	Allowed bool `json:"allowed"`
-	ErrorDetails
+	Allowed       bool               `json:"allowed"`
+	Details       ErrorDetails       `json:"details"`
 	Objects       []ResolvedObject   `json:"objects"`
 	Functions     []ResolvedFunction `json:"functions"`
 	CallerObjects []ResolvedObject   `json:"caller_objects"`
@@ -135,25 +136,33 @@ func (db *DB) inspectSQL(ctx context.Context, conn rowQuerier, query string, pol
 	var objects, callers duckdb.Composite[[]ResolvedObject]
 	var functions duckdb.Composite[[]ResolvedFunction]
 	if err := conn.QueryRowContext(ctx, stmt, sql.Named("sql", query), sql.Named("policy", document)).Scan(
-		&result.Allowed, &result.Code, &result.Type, &result.Message, &result.Position,
+		&result.Allowed, &result.Details.Code, &result.Details.Type, &result.Details.Message, &result.Details.Position,
 		&violations, &objects, &functions, &callers,
 	); err != nil {
 		return result, fmt.Errorf("query: Gatekeeper validation failed: %w", err)
 	}
-	result.Violations = violations.Get()
+	result.Details.Violations = violations.Get()
 	result.Objects, result.Functions, result.CallerObjects = objects.Get(), functions.Get(), callers.Get()
-	if result.Allowed && result.Code == "ok" && len(result.Violations) == 0 {
+	if result.Allowed && result.Details.Code == "ok" && len(result.Details.Violations) == 0 {
 		return result, nil
 	}
 	if result.Allowed {
 		return result, errors.New("query: inconsistent Gatekeeper response")
 	}
-	switch result.Code {
-	case "forbidden", "unsupported", "parser", "binding", "invalid_input":
+	switch result.Details.Code {
+	case "invalid_input":
+		// Gatekeeper 0.3 reports invalid SQL and invalid policy documents with the same code.
+		if query == "SELECT 1" {
+			return result, errors.Join(ErrInvalidPolicy, result.Details)
+		}
+		if _, err := db.inspectSQL(ctx, conn, "SELECT 1", policy); err != nil {
+			return result, err
+		}
+	case "forbidden", "unsupported", "parser", "binding":
 	default:
-		return result, fmt.Errorf("query: unexpected Gatekeeper result code %q", result.Code)
+		return result, fmt.Errorf("query: unexpected Gatekeeper result code %q", result.Details.Code)
 	}
-	return result, result.ErrorDetails
+	return result, result.Details
 }
 
 func ConfigureGatekeeper(ctx context.Context, execer driver.ExecerContext, document string) error {
@@ -164,7 +173,7 @@ func ConfigureGatekeeper(ctx context.Context, execer driver.ExecerContext, docum
 func (policy ValidationPolicy) document() (string, error) {
 	if policy.JSON != nil {
 		if policy.AllowedTables != nil || policy.BlockedTables != nil || policy.AllowedFunctions != nil || policy.BlockedFunctions != nil || policy.UseDefaultFunctions != nil {
-			return "", errors.New("query: JSON policy cannot be combined with typed options")
+			return "", fmt.Errorf("%w: JSON policy cannot be combined with typed options", ErrInvalidPolicy)
 		}
 		return *policy.JSON, nil
 	}

@@ -90,7 +90,7 @@ func TestGatekeeperMissingFailsClosed(t *testing.T) {
 	t.Run("validation requires Gatekeeper at startup", func(t *testing.T) {
 		connector := newTestConnector(t, testDSN, noop)
 		db, err := New(t.Context(), connector, WithValidation())
-		require.ErrorContains(t, err, "Gatekeeper is required for validation")
+		require.ErrorContains(t, err, "Gatekeeper with the JSON policy API (0.3.0+) is required for validation")
 		require.Nil(t, db)
 	})
 
