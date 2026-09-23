@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import type { CreateQuery, ExprNode, FilterExpr } from '@uwdata/mosaic-sql';
-import { Query, add, argmax, argmin, avg, corr, count, covarPop, covariance, desc, eq, filterPushdown, geomean, gt, literal, loadObjects, max, min, mul, neq, product, regrAvgX, regrAvgY, regrCount, regrIntercept, regrR2, regrSXX, regrSXY, regrSYY, regrSlope, sql, stddev, stddevPop, sum, upper, varPop, variance } from '@uwdata/mosaic-sql';
+import { Query, add, argmax, argmin, avg, corr, count, covarPop, covariance, cte, desc, eq, filterPushdown, geomean, gt, literal, loadObjects, max, min, mul, neq, product, regrAvgX, regrAvgY, regrCount, regrIntercept, regrR2, regrSXX, regrSXY, regrSYY, regrSlope, sql, stddev, stddevPop, sum, upper, varPop, variance } from '@uwdata/mosaic-sql';
 import { clausePoint, Coordinator, Selection, SelectionClause } from '../src/index.js';
 import type { PreAggregateInfo } from '../src/preagg/PreAggregator.js';
 import { preaggColumns } from '../src/preagg/preagg-columns.js';
@@ -371,5 +371,37 @@ describe('PreAggregator', () => {
         .groupby('type');
     };
     expect(await run(query)).toStrictEqual([4.5, true]);
+
+    const query2 = (predicate: FilterExpr = []) => {
+      return Query.from(
+          Query
+            .with(
+              cte("level2", Query.unionAll([
+                Query.from('testData').select({ v: 'x', u: 'cat' }).where(eq('cat', literal('c')), predicate),
+                Query.from('testData').select({ v: 'x', u: 'cat' }).where(eq('cat', literal('d')), predicate)
+              ])),
+              cte("level1", Query.from('level2').select('u', 'v'))
+            )
+            .from('level1')
+            .select({ value: add('v', 1), type: 'u' })
+        )
+        .select({
+          measure: avg("value"), type: "type"
+        })
+        .groupby('type');
+    };
+    expect(await run(query2)).toStrictEqual([4.5, true]);
+  });
+
+  it('supports mean-centered aggregates over derived columns', async () => {
+    const query = (predicate: FilterExpr = []) => {
+      return Query
+        .with({
+          derived: Query.from('testData').select({ v: 'x' }).where(predicate)
+        })
+        .from('derived')
+        .select({ measure: variance('v') });
+    };
+    expect(await run(query)).toStrictEqual([0.5, true]);
   });
 });

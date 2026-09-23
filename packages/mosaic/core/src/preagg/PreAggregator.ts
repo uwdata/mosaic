@@ -1,4 +1,4 @@
-import { ExprNode, ScaleOptions, SelectQuery, Query, ExprValue, MaybeArray, FunctionNode, TableRefNode, createSchema, SelectClauseNode, OrderByNode, and, asNode, ceil, collectColumns, createTable, float64, floor, isBetween, int32, mul, round, scaleTransform, sub, isSelectQuery, isAggregateExpression, ColumnNameRefNode, rewrite } from '@uwdata/mosaic-sql';
+import { ExprNode, ScaleOptions, SelectQuery, Query, ExprValue, MaybeArray, FunctionNode, TableRefNode, createSchema, SelectClauseNode, OrderByNode, and, asNode, ceil, collectColumns, createTable, float64, floor, isBetween, int32, mul, round, scaleTransform, sub, rewrite, deepClone } from '@uwdata/mosaic-sql';
 import type { BinMethod, ClauseSource, IntervalMetadata, SelectionClause } from '../clause/index.js';
 import type { Coordinator } from '../Coordinator.js';
 import type { MosaicClient } from '../MosaicClient.js';
@@ -7,6 +7,7 @@ import { fnv_hash } from '../util/hash.js';
 import { resolvePositional } from '../util/positional.js';
 import { QueryError } from '../util/query-error.js';
 import { preaggColumns, PreAggColumnsResult } from './preagg-columns.js';
+import { subqueryPushdown } from './subquery-pushdown.js';
 
 /**
  * Dummy preaggregate info object that indicates a view should be skipped
@@ -333,7 +334,7 @@ function binInterval(
 
 /**
  * Generate pre-aggregate query information.
- * @param clientQuery The original client query.
+ * @param query The original client query.
  * @param active Active (selected) columns.
  * @param preaggCols Pre-aggregation columns.
  * @param schema Database schema name.
@@ -345,8 +346,17 @@ function preaggregateInfo(
   preaggCols: PreAggColumnsResult,
   schema: string
 ): PreAggregateInfo {
-  const { groupby, having, orderby, output, preagg, qualify } = preaggCols;
+  query = deepClone(query);
+  const { groupby, having, orderby, output, preagg, qualify, source } = preaggCols;
   const { columns = {} } = active;
+  const selectClauses = query._select;
+
+  // top-level select and group by changes are overwritten below
+  subqueryPushdown(
+    query,
+    source,
+    Object.values(columns).flatMap(c => collectColumns(c).map(c => c.column))
+  );
 
   // build materialized view construction query
   const create = Query
@@ -357,27 +367,19 @@ function preaggregateInfo(
     .select({ ...preagg, ...columns })
     .groupby(groupby, Object.keys(columns));
 
-  // ensure active clause columns are selected by subqueries
-  const [subq] = create.subqueries;
-  if (subq) {
-    const cols = Object.values(columns)
-      .flatMap(c => collectColumns(c).map(c => c.column));
-    subqueryPushdown(subq, cols);
-  }
-
   // generate preagg table name using creation query hash
   const id = (fnv_hash(create.toString()) >>> 0).toString(16);
   const table = new TableRefNode([schema, `preagg_${id}`]);
 
   // generate preaggregate select query from original query
   // replace select, from, groupby; sanitize orderby; remove CTEs, where
-  const select = query.clone()
+  const select = query
     .setSelect(output)
     .setFrom(table)
     .setGroupby(groupby)
     .setHaving(having)
     .setQualify(qualify)
-    .setOrderby(replaceIndices(orderby, query._select))
+    .setOrderby(replaceIndices(orderby, selectClauses))
     .sample(null);
   select._with = [];
   select.setWhere();
@@ -407,47 +409,6 @@ function replaceIndices(exprs: ExprNode[], select: SelectClauseNode[]) {
     }
     return expr;
   });
-}
-
-/**
- * Push column selections down to subqueries.
- * @param query The (sub)query to push down to.
- * @param cols The column names to push down.
- */
-function subqueryPushdown(query: Query, cols: string[]): void {
-  const memo = new Set();
-  const pushdown = (q: Query) => {
-    // it is possible to have duplicate subqueries
-    // so we memoize and exit early if already seen
-    if (memo.has(q)) return;
-    memo.add(q);
-
-    if (isSelectQuery(q) && q._from.length) {
-      // select the pushed down columns
-      // note that the select method will deduplicate for us
-      q.select(cols);
-      if (isAggregateQuery(q)) {
-        // if an aggregation query, we need to push to groupby as well
-        // we also deduplicate as the column may already be present
-        const set = new Set(
-          q._groupby.flatMap(x => x instanceof ColumnNameRefNode ? [x.name] : [])
-        );
-        q.groupby(cols.filter(c => !set.has(c)));
-      }
-    }
-    q.subqueries.forEach(pushdown);
-  };
-  pushdown(query);
-}
-
-/**
- * Test if a query performs aggregation.
- * @param query Select query to test.
- * @returns True if query performs aggregation.
- */
-function isAggregateQuery(query: SelectQuery): boolean {
-  return query._groupby.length > 0
-    || query._select.some(node => isAggregateExpression(node));
 }
 
 /**

@@ -1,5 +1,5 @@
 import { expect, describe, it } from 'vitest';
-import { asTableRef, column, desc, gt, lt, max, min, sql, Query, sum, lead, over, cte, add, FromClauseNode, SampleClauseNode, frameRows, div, mul, unnest, list, isSelectQuery, SelectQuery, TableRefNode } from '../src/index.js';
+import { asTableRef, column, desc, gt, lt, max, min, sql, Query, sum, lead, over, cte, add, FromClauseNode, SampleClauseNode, frameRows, div, mul, unnest, list, isSelectQuery, SelectQuery, TableRefNode, deepClone } from '../src/index.js';
 import { validateQuery } from './util/validate.js';
 import { isDescribeQuery, isPivotQuery, isSetOperation } from '../src/ast/query.js';
 
@@ -489,41 +489,6 @@ describe('Query', () => {
     ].join(' '));
   });
 
-  it('registers parent query with common table expressions', async () => {
-    function checkCTEs(q: SelectQuery) {
-      for (const node of q._with) {
-        expect(node.query.cteFor).toBe(q);
-      }
-      const from = q._from.map(n => ((n as FromClauseNode).expr as TableRefNode).name);
-      const subs = from.map(name => q._with.find(n => n.name === name)?.query);
-      expect(q.subqueries).toStrictEqual(subs);
-    }
-    checkCTEs(
-      Query
-        .with({ a: Query.select('*').from('t1') })
-        .select('num1', 'num2')
-        .from('a')
-    );
-    checkCTEs(
-      Query
-        .with({
-          a: Query.select('num1').from('t1'),
-          b: Query.select('num2').from('t2')
-        })
-        .select('*')
-        .from('a', 'b')
-    );
-    checkCTEs(
-      Query
-        .with(
-          cte('foo', Query.select({ x: 42 }), false),
-          cte('bar', Query.select({ y: 42 }), true)
-        )
-        .select({ v: add('x', 'y') })
-        .from('foo', 'bar')
-    );
-  });
-
   it('performs set operations', async () => {
     const q = [
       Query.select('num1', 'num2', 'num3').from('t1'),
@@ -580,7 +545,7 @@ describe('Query', () => {
     await expect(Query.describe(u)).toBeValidQuery(`DESC ${u}`);
   });
 
-  it('is cloneable', async () => {
+  it('supports clone()', async () => {
     const q = Query
       .with({
         cte: Query.select('num1', 'num2', 'num3').from('t1')
@@ -597,6 +562,7 @@ describe('Query', () => {
     await validateQuery(q);
   });
 
+<<<<<<< HEAD
   it('is discriminated by type guard functions', () => {
     const selectQuery = Query.from('data').select('foo');
     const setOperation = Query.unionAll(selectQuery, selectQuery);
@@ -626,5 +592,31 @@ describe('Query', () => {
     expect(isPivotQuery(describeQuery)).toBe(false);
     expect(isPivotQuery(pivotQuery)).toBe(true);
     expect(isPivotQuery("PIVOT data ON year USING sum(population)")).toBe(false);
+=======
+  it('is handled properly by deepClone', async () => {
+    const q = Query
+      .with({
+        cte: Query.select('num1', 'num2', 'num3').from('t1')
+      })
+      .select('num1')
+      .from('cte')
+      .groupby('num1')
+      .orderby('num1')
+      .limit(10);
+    const c = deepClone(q);
+    expect(c).not.toBe(q);
+    expect(c._with).not.toBe(q._with);
+    expect(c._with[0]).not.toBe(q._with[0]);
+    expect(c._with[0].query).not.toBe(q._with[0].query);
+    expect(c._select).not.toBe(q._select);
+    expect(c._from).not.toBe(q._from);
+    expect(c._groupby).not.toBe(q._groupby);
+    expect(c._where).not.toBe(q._where);
+    expect(c._having).not.toBe(q._having);
+    expect(c._qualify).not.toBe(q._qualify);
+    expect(String(c)).toBe(String(q));
+    await validateQuery(c);
+    await validateQuery(q);
+>>>>>>> 9247b8e9 (feat!: Remove subqueries getters, use proper lineage analysis.)
   });
 });
