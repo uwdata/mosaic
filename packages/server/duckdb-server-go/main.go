@@ -8,7 +8,6 @@ import (
 	"log/slog"
 	"net/http"
 	"os"
-	"strings"
 	"sync"
 	"time"
 
@@ -33,22 +32,10 @@ func run() int {
 	cacheControl := flag.String("cache-control", "", "Cache-Control value for successful GET arrow responses; enables ETag validation for those queries")
 	var varyHeaders optionalCommaListFlag
 	flag.Var(&varyHeaders, "vary", "Comma-separated request header names to append to Vary; may be repeated")
-	schemaMatchHeadersStr := flag.String("schema-match-headers", "", "Comma-separated list of headers to match against schema names for multi-tenant access control (e.g., \"X-Tenant-Id,verified-user-id\")")
 	extensionsStr := flag.String("load-extensions", "", "Comma-separated list of extensions to install and load at startup. Use a pipe after the extension name to specify a DuckDB repository alias. Unspecified repositories use DuckDB's default (e.g. mysql_scanner,netquack|community,aws|core_nightly).")
-	functionBlocklistStr := flag.String("function-blocklist", "", "Comma-separated list of functions to block, useful for blocking functions that may pose security or performance risks. (e.g., 'bigquery_query,read_parquet')")
-	var functionAllowlist optionalCommaListFlag
-	flag.Var(&functionAllowlist, "function-allowlist", "Comma-separated exact names to add to the reviewed default allowlist. An empty value enables only the defaults; names are matched case-insensitively.")
+	var gatekeeper gatekeeperFlag
+	flag.Var(&gatekeeper, "gatekeeper", `Gatekeeper JSON policy document; {"version":1,"options":{}} enables validation with defaults`)
 	flag.Parse()
-
-	var schemaMatchHeaders []string
-	if *schemaMatchHeadersStr != "" {
-		schemaMatchHeaders = strings.Split(*schemaMatchHeadersStr, ",")
-	}
-
-	var functionBlocklist []string
-	if *functionBlocklistStr != "" {
-		functionBlocklist = strings.Split(*functionBlocklistStr, ",")
-	}
 
 	ctx := context.Background()
 
@@ -74,12 +61,12 @@ func run() int {
 		}
 	}
 
-	validation := len(schemaMatchHeaders) > 0 || len(functionBlocklist) > 0 || functionAllowlist.set
+	validation := gatekeeper.document != nil
 	var initializeOnce sync.Once
 	var initializeErr error
 	connector, err := duckdb.NewConnector(*dbPath, func(execer driver.ExecerContext) error {
 		initializeOnce.Do(func() {
-			initializeErr = initializeDatabase(ctx, execer, *extensionsStr, validation, functionAllowlist.values, functionBlocklist)
+			initializeErr = initializeDatabase(ctx, execer, *extensionsStr, gatekeeper.document)
 		})
 		return initializeErr
 	})
@@ -112,7 +99,6 @@ func run() int {
 	s, err := server.New(db,
 		server.WithCacheControl(*cacheControl),
 		server.WithVary(varyHeaders.values...),
-		server.WithSchemaMatchHeaders(schemaMatchHeaders...),
 		server.WithLogger(logger),
 		server.WithCORS(server.CORSOptions{
 			AllowAllOrigins: true,
@@ -134,13 +120,10 @@ func run() int {
 		"connection_pool_size": *poolSize,
 		"cert_file":            *certFile,
 		"key_file":             *keyFile,
-		"schema_match_headers": *schemaMatchHeadersStr,
 		"cache_control":        *cacheControl,
 		"vary":                 varyHeaders.String(),
 		"load_extensions":      *extensionsStr,
-		"function_blocklist":   *functionBlocklistStr,
-		"function_allowlist":   functionAllowlist.String(),
-		"allowlist_configured": functionAllowlist.set,
+		"gatekeeper":           gatekeeper.document,
 	}
 	logger.Info("DuckDB Server configuration", "config", config)
 

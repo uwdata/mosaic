@@ -30,10 +30,8 @@ You can customize the server behavior with the following command-line flags:
 -   `--key <path>`: Path to a TLS private key file to enable HTTPS.
 -   `--cache-control <value>`: Cache-Control value for successful GET `arrow` responses, enabling ETags and conditional responses for those queries. Omitted or empty values preserve existing behavior.
 -   `--vary <headers>`: Comma-separated request header names to append to Vary independently of Cache-Control. Repeated flags accumulate names.
--   `--schema-match-headers`: Comma-separated list of headers to match against schema names for multi-tenant access control (e.g., `X-Tenant-Id,verified-user-id`).
 -   `--load-extensions`: Comma-separated list of extensions to install and load at startup. Use a pipe after the extension name to specify a DuckDB repository alias. Unspecified repositories use DuckDB's default (e.g. `mysql_scanner,netquack|community,aws|core_nightly`).
--   `--function-blocklist`: Comma-separated list of exact function names to block, useful for blocking functions that may pose security or performance risks (e.g. `bigquery_query,read_parquet`).
--   `--function-allowlist`: Comma-separated list of exact function names to add to the reviewed defaults. Names are matched case-insensitively, repeated flags accumulate names, and an explicitly empty value enables only the defaults. Blocked names win over allowed names.
+-   `--gatekeeper <json>`: Complete Gatekeeper JSON policy document, passed verbatim to `gatekeeper_configure(json := ...)`. `{"version":1,"options":{}}` enables validation with defaults. May be specified once.
 
 By default, the server will look for `localhost.pem` and `localhost-key.pem` in the current directory to enable HTTPS if the `--cert` and `--key` flags are not provided.
 
@@ -66,24 +64,35 @@ aborts the connection. Extensions are trusted native code, so load only trusted 
 
 ### Programmatic Authorization
 
-Validation is delegated to the signed [Gatekeeper community extension](https://duckdb.org/community_extensions/extensions/gatekeeper) for DuckDB 1.5.5, tested with Gatekeeper 0.2.0. `query.New` neither installs nor loads it; trusted initialization does. When any of `--schema-match-headers`, `--function-blocklist`, or `--function-allowlist` is set, the CLI loads an already-installed Gatekeeper or runs `INSTALL gatekeeper FROM community; LOAD gatekeeper`, applies the function flags with `CALL gatekeeper_configure(...)`, disables `autoload_known_extensions` and `autoinstall_known_extensions`, and sets `lock_configuration=true` before serving. The first community install needs network access and a writable extension directory, and DuckDB does not upgrade a cached extension on its own. Without those flags the CLI never touches Gatekeeper.
+Validation uses Gatekeeper 0.3.0's JSON policy API on DuckDB 1.5.5. Signed community publication is tracked in [community-extensions #2775](https://github.com/duckdb/community-extensions/pull/2775); until publication, use a matching release artifact with the explicit unsigned-development setup below. `query.New` neither installs nor loads Gatekeeper; trusted initialization does. When `--gatekeeper` is supplied, the CLI loads an already-installed Gatekeeper or runs `INSTALL gatekeeper FROM community; LOAD gatekeeper`, passes the document to `CALL gatekeeper_configure(json := ...)`, disables `autoload_known_extensions` and `autoinstall_known_extensions`, and sets `lock_configuration=true` before serving. The first community install needs network access and a writable extension directory, and DuckDB does not upgrade a cached extension on its own. Without the flag, the CLI leaves validation disabled.
 
-Upgrade an existing community installation with `FORCE INSTALL gatekeeper FROM community` in DuckDB 1.5.5 using the server's extension directory, then restart the server. Ordinary `INSTALL` and `LOAD` reuse cached artifacts. CI's extension-cache key includes Gatekeeper 0.2.0, and the fresh-install regression checks the downloaded version.
+Upgrade an existing community installation with `FORCE INSTALL gatekeeper FROM community` in DuckDB 1.5.5 using the server's extension directory, then restart the server. Ordinary `INSTALL` and `LOAD` reuse cached artifacts. CI caches extensions to reduce downloads; this is not a version pin. The fresh-install regression logs the downloaded version and checks signed installation and validation startup without requiring a particular release number. Integration tests check the policy behavior Mosaic relies on.
 
 To pin or provide Gatekeeper yourself, install it through `--load-extensions`, which runs before the community fallback: `--load-extensions=gatekeeper|community` for an explicit community install, or `--load-extensions=/path/gatekeeper.duckdb_extension` for a local signed artifact (the filename must be `gatekeeper.duckdb_extension`). Unsigned development builds additionally require `--database=':memory:?allow_unsigned_extensions=true'`, which enables unsigned loading database-wide. Local tests and CI use the signed community artifact with signature checking enabled:
 
 ```sh
 go test -race -tags=duckdb_arrow ./...
-go run -tags=duckdb_arrow . --function-allowlist=
+go run -tags=duckdb_arrow . --gatekeeper='{"version":1,"options":{}}'
 ```
 
-Gatekeeper intersects each request with a database-wide ceiling. Function policy belongs in the ceiling: run `CALL gatekeeper_configure(allowed_functions := [...], blocked_functions := [...])` during trusted initialization, and lock configuration so untrusted SQL cannot change it. Request policies then scope down per query. `query.ValidationPolicy` mirrors the request half of `gatekeeper_validate`: `AllowedTables` and `BlockedTables` contain `query.TableRule{Catalog, Schema, Table}` values. An omitted catalog matches any catalog; a whole-component `*` matches any name. Matching is case-insensitive, and other patterns such as `tenant_*` are literal identifiers. Nil `AllowedTables` inherits the global policy; an empty slice denies caller table and view references. Blocks win over allows. The server does not discover or implicitly restrict a default catalog.
+Gatekeeper intersects each request with a database-wide ceiling. Configure it during trusted initialization and lock configuration before serving. `query.ConfigureGatekeeper(ctx, execer, document)` passes JSON text unchanged to Gatekeeper, which owns parsing, duplicate-key detection, document versions, defaults, and validation. Configuration replaces the global policy; request validation can only narrow it.
 
-`AllowedFunctions` is `allowed_functions` (nil inherits the global allowlist, including `gatekeeper_configure` grants; a non-nil slice, even empty, intersects with it), `BlockedFunctions` adds to the global blocklist, and `DisableDefaultFunctions` sets `use_default_functions := false`. Function names are normalized with `query.NormalizeFunctionNames`; apply the same normalization to `gatekeeper_configure` arguments.
+Per-request `query.ValidationPolicy` accepts either `JSON: &document` for an unchanged complete document or typed fields as a Go convenience. Combining `JSON` with typed options is rejected. Typed fields serialize once to a version-1 policy document; Gatekeeper interprets it. `AllowedTables` and `BlockedTables` contain `query.TableRule{Catalog, Schema, Table}` values. `Catalog` is `*string`: nil omits it, while a pointer preserves the supplied value (including invalid empty strings). An omitted or JSON-null catalog matches any catalog; a whole-component `*` matches any name. Matching is case-insensitive, and other patterns such as `tenant_*` are literal identifiers. Nil `AllowedTables` omits the option; an explicit empty slice denies caller table and view references. Blocks win over allows. The server does not discover or implicitly restrict a default catalog.
+
+`AllowedFunctions` is `allowed_functions` (nil inherits the global allowlist, including global grants; a non-nil slice, even empty, intersects with it), and `BlockedFunctions` adds to the global blocklist. `UseDefaultFunctions` is `*bool`: nil omits the option; a pointer to true or false sends that value. Names are passed unchanged; Gatekeeper owns name matching and rejects invalid names. Raw JSON preserves explicit nulls for Gatekeeper to validate rather than converting them to omitted fields or empty arrays.
+
+The same document format works in a per-command policy authorizer, including both function and table restrictions:
+
+```go
+document := `{"version":1,"options":{"allowed_tables":[{"schema":"reporting","table":"orders"}],"blocked_functions":["md5"]}}`
+return &query.ValidationPolicy{JSON: &document}, nil
+```
 
 `db.QueryArrow(ctx, sql, policy)` and `db.WriteArrow(ctx, sql, policy, w)` validate when `policy` is non-nil, or always when `query.WithValidation()` is configured, and then execute on the same pooled connection. `WithValidation()` also disables `db.Exec` and makes `query.New` fail when Gatekeeper is not loaded; without it, a request policy that cannot reach `gatekeeper_validate` fails closed at call time. `db.ValidateSQL(ctx, sql, policy)` validates on any pooled connection without executing.
 
 Use `errors.As` with `query.ErrorDetails` to inspect Gatekeeper's `Code`, `Type`, `Message`, `Position`, and `Violations`; use `errors.Is` with `ErrValidation`, `ErrAccessDenied`, or `ErrUnsupportedStatement` for classification. `Position` is an optional zero-based byte offset (`*int64`). Violations expose rule, catalog/schema/table, function, and optional byte offset; object denials use the `table` rule. Diagnostic text is not a stable API. HTTP/WebSocket validation errors return generic messages while logging full diagnostics for operators. Go callers retain full diagnostics, which may expose private catalog names and paths.
+
+`db.InspectSQL(ctx, sql, policy)` returns a `ValidationResult` and an error on denial or validation failure. On success, `CallerObjects` lists caller-attributable catalog tables/views; `Objects` also includes trusted dependencies, and `Functions` records resolved functions. These evidence lists are empty on denial; the rejected table identities are in `Violations`. `InspectSQL` does not execute or reserve its connection. Result columns and nested structs are scanned directly, without a SQL JSON conversion.
 
 For example, an embedding application grants CSV access once in the connector's initialization callback:
 
@@ -101,9 +110,10 @@ Then constructs the query DB on the same connector and scopes tables per request
 ```go
 db, err := query.New(ctx, connector, query.WithValidation())
 // ...
+catalog := "analytics"
 data, err := db.QueryArrow(ctx, sql, &query.ValidationPolicy{
-	AllowedTables: []query.TableRule{{Catalog: "analytics", Schema: tenant, Table: "orders"}},
-	BlockedTables: []query.TableRule{{Catalog: "analytics", Schema: tenant, Table: "secrets"}},
+	AllowedTables: []query.TableRule{{Catalog: &catalog, Schema: tenant, Table: "orders"}},
+	BlockedTables: []query.TableRule{{Catalog: &catalog, Schema: tenant, Table: "secrets"}},
 })
 ```
 
@@ -122,12 +132,7 @@ errors are logged and returned as sanitized 500 responses. Authorization can all
 and exact SQL, but cannot rewrite SQL or sandbox the shared process, filesystem, network, extensions, catalogs, or
 credentials.
 
-`server.WithPolicyAuthorizer` is the same hook for applications that scope validation from the typed payload instead of
-headers. Its `CommandPolicyAuthorizer[T]` receives the policy derived from `--schema-match-headers` (nil when
-unconfigured) and returns the `*query.ValidationPolicy` applied on the connection that executes the command; it may pass
-the header policy through, narrow it, or build one from `command.Payload()`. A non-nil policy rejects `exec`, and a nil
-policy leaves the command unvalidated unless the DB was built with `query.WithValidation()`. The returned policy is
-trusted application code, so it can also widen a header policy; treat it as the authorization decision itself.
+`server.WithPolicyAuthorizer` lets an application's `CommandPolicyAuthorizer[T]` return a per-command `*query.ValidationPolicy` from `(context.Context, Command[T])`. Authenticate in `AuthorizeRequest`, then derive restrictions from trusted identity and the decoded payload. The returned policy is applied on the connection that executes the command. A non-nil policy rejects `exec`; nil leaves the command unvalidated unless the DB was built with `query.WithValidation()`.
 
 ### HTTP Response Caching
 
@@ -146,7 +151,7 @@ For GET `arrow` responses, enabling Cache-Control also generates a strong ETag f
 
 `WithVary(headers ...string)` accepts individual names or a slice with `headers...`. Names are copied, trimmed, canonicalized, and deduplicated; `*` is accepted. They append to existing Vary values, including CORS fields, on every response. `WithVary()` configures no additional names. Each option replaces earlier configuration of the same option. Invalid header characters are rejected during server construction; Cache-Control directives are otherwise passed through.
 
-When Cache-Control is enabled, the server automatically adds all `WithSchemaMatchHeaders` / `--schema-match-headers` names to Vary. For example, `--schema-match-headers=X-Tenant-Id --cache-control='public, max-age=60'` varies by `X-Tenant-Id` without repeating it in `--vary`. `WithVary()` cannot remove these required names. Applications using a custom authorizer must configure any other headers affecting access or results with `WithVary` / `--vary`.
+Applications must explicitly configure headers affecting authorization or results using `WithVary` / `--vary`.
 
 Caches must include the complete GET query string, including `type` and `sql`, and distinguish all Vary headers. Vary partitions cache entries; it does not authorize requests. Shared caches serving protected data must enforce access control before cache lookup. HTTP caching is separate from the coordinator's application cache.
 
@@ -199,27 +204,41 @@ Application fields are untrusted: combine them with authenticated identity, as s
 
 POST and WebSocket messages require one complete command object with optional surrounding whitespace; trailing data is rejected. Protocol decoding failures return HTTP 400 or close the WebSocket with code 1007. Validation and authorization errors leave a healthy WebSocket session open.
 
-### Function Policies
+### Gatekeeper Configuration
 
-Use an allowlist when the server should accept only reviewed functions and operators. An explicitly empty value enables
-the defaults without adding application-specific names:
+Enable the default policy:
 
 ```sh
-duckdb-server-go --function-allowlist=
+duckdb-server-go --gatekeeper='{"version":1,"options":{}}'
 ```
 
-With no schema or function policy configured, requests remain unrestricted. Activating any schema or function flag turns on validation for every `arrow` request, applies Gatekeeper's reviewed function defaults (including in blocklist-only mode), and rejects `exec`. The CLI writes its function flags into the database-wide `gatekeeper_configure` ceiling; `--function-allowlist` and `--function-blocklist` may be combined, and blocked names win.
+Gatekeeper requires `version: 1` and an `options` object. The version is the policy-document format, not the extension release. Option names match Gatekeeper's named options: `allowed_tables`, `blocked_tables`, `allowed_functions`, `blocked_functions`, and `use_default_functions`. Omitted options use Gatekeeper's configuration defaults. An empty `allowed_tables` list denies caller table/view access; `use_default_functions: false` allows only explicitly admitted functions. Blocks win over allows. See the [policy authoring schema](https://github.com/nozzle/duckdb-gatekeeper/blob/v0.3.0/docs/policy-v1.schema.json).
+
+```sh
+duckdb-server-go --gatekeeper='{
+ "version": 1,
+ "options": {
+  "allowed_tables": [{"catalog":"analytics","schema":"reporting","table":"*"}],
+  "blocked_tables": [{"catalog":"analytics","schema":"reporting","table":"secrets"}],
+  "allowed_functions": ["sum","count_star"],
+  "blocked_functions": ["md5"],
+  "use_default_functions": false
+ }
+}'
+```
+
+The CLI rejects repeated flags and otherwise passes the exact document to Gatekeeper without parsing or rebuilding it. Gatekeeper rejects malformed JSON, duplicate keys, unknown options, unsupported versions, wrong types, and invalid nulls during initialization, before the server listens. Table rules require `schema` and `table`; omitted or null `catalog` matches any catalog. `{}` alone is not a valid document. The flag configures the global ceiling and enables validation for every `arrow` request.
 
 Programs embedding `pkg/query` configure functions the same way, through `CALL gatekeeper_configure(...)` in trusted initialization, and narrow per request with `query.ValidationPolicy`:
 
 ```go
 db.QueryArrow(ctx, sql, &query.ValidationPolicy{
-	AllowedTables:    []query.TableRule{{Catalog: "analytics", Schema: tenant, Table: "*"}},
+	AllowedTables:    []query.TableRule{{Schema: tenant, Table: "*"}},
 	BlockedFunctions: []string{"my_expensive_function"},
 })
 ```
 
-Gatekeeper maintains the reviewed default function inventory. Additional functions must be granted in the global ceiling; a request that names `AllowedFunctions` intersects with that ceiling and cannot widen it, while a request that leaves `AllowedFunctions` nil inherits it. `DisableDefaultFunctions` produces an exact-only policy in which only globally granted and request-allowed names remain.
+Gatekeeper maintains the reviewed default function inventory. Additional functions must be granted in the global ceiling; a request that names `AllowedFunctions` intersects with that ceiling and cannot widen it, while a request that leaves `AllowedFunctions` nil inherits it. Set `UseDefaultFunctions` to a pointer to false for an exact-only policy.
 
 Gatekeeper validates supported read syntax and binds objects. Function admission remains name-based. In 0.2.0, trusted view, macro, and attached-table dependencies are exempt from table and function policies, including blocks and the never-bind list. Caller references beside those definitions still obey policy. Gatekeeper's policy, enforcement, and logging controls remain forbidden on every route. Defaults deny caller file readers and replacement scans; admitting a reader in the global ceiling permits its resource access, and table rules do not restrict reader paths. Caller-written dynamic SQL and metadata readers cannot be admitted, but a trusted definition may expose them. Keep definitions trusted and enforce filesystem/network access independently.
 
@@ -227,38 +246,13 @@ Spatial compute defaults cover Mosaic rendering over existing geometry data, but
 
 ### Multi-Tenant Access Control
 
-`schema-match-headers` isn't part of the mosaic server API, but is provided here as an example of how to have
-multiple users / customers share the same DuckDB server instance while restricting table queries to tenant schemas.
+Applications embedding `pkg/server` use `WithPolicyAuthorizer` to derive per-command table rules from authenticated identity. The CLI's global policy applies equally to every caller. Explicit catalog/schema/table rules can restrict tenants; the same schema name in another catalog matches if the catalog is omitted. An allowed view can expose underlying tables in other schemas, including another tenant's, so only trusted setup should create definitions. Isolate client coordinator/cache state by tenant and disable pre-aggregation in validated mode.
 
-1. **Client side**: Give each tenant a dedicated pre-aggregation schema when constructing and registering its coordinator
-   ([docs](https://idl.uw.edu/mosaic/api/core/coordinator.html#constructor)):
-
-   ```js
-   const mc = new Coordinator(connector, {
-     preagg: { enabled: false, schema: tenantSchema }
-   });
-   coordinator(mc);
-   ```
-
-   The schema name is part of the tenant authorization policy and must not be shared by mutually untrusted tenants. It
-   must be one of the schema names supplied by the trusted headers described below. If results should be shared across
-   users, use a tenant id or organization id rather than a user id.
-2. **Authentication**: This implementation assumes that there is some authentication mechanism in place that sets the
-   trusted authentication headers in the request. The server will use these headers to determine which schema
-   to use for the query. This might be a server-side cookie sent through with mosaic requests, or a header set on outbound
-   requests from the client, which are verified in an api gateway or server middleware before reaching the DuckDB server.
-3. **Server side**: Start the server with `--schema-match-headers=X-Tenant-Id,verified-user-id`, or whatever headers
-   you trust to match against schema names. Inbound requests will be checked for these headers, and if they are present,
-   the server will allow access to any schemas that match the header values. If no headers are present, and `--schema-match-headers`
-   is set, the server will return a 401 Unauthorized error.
-
-Schema matching builds `TableRule{Schema: headerValue, Table: "*"}` rules with no catalog restriction. The same schema name in an attached or temporary catalog can therefore match; use a global Gatekeeper table policy or explicit catalog rules from a typed policy authorizer when catalog isolation is needed. A header value of `*` is rejected so it cannot widen schema access. Unqualified and catalog-qualified references pass when their resolved identities match the rules. An allowed view can expose underlying tables in other schemas, including another tenant's; allowing a macro likewise grants what its trusted definition reads. Deny the outer view or macro to withdraw that capability. Validation and Arrow execution share one pooled connection.
-
-Schema-wide `SHOW TABLES FROM tenant_a` is denied under table restrictions. `DESCRIBE SELECT 1` remains supported. Missing objects fail binding rather than receiving syntax-only authorization. Gatekeeper limits requests to one supported read statement. HTTP denials return 403; parser, binding, and unsupported results return 400. Binding can perform I/O, and concurrent catalog changes between validation and execution remain a race; see Gatekeeper's [security model](https://github.com/nozzle/duckdb-gatekeeper/blob/v0.2.0/docs/security.md).
+Schema-wide `SHOW TABLES FROM tenant_a` is denied under table restrictions. `DESCRIBE SELECT 1` remains supported. Missing objects fail binding rather than receiving syntax-only authorization. Gatekeeper limits requests to one supported read statement. HTTP denials return 403; parser, binding, and unsupported results return 400. Binding can perform I/O, and concurrent catalog changes between validation and execution remain a race; see Gatekeeper's [security model](https://github.com/nozzle/duckdb-gatekeeper/blob/v0.3.0/docs/security.md).
 
 Mosaic uses `gatekeeper_validate` with per-request policies before executing on the same connection. It does not enable 0.2.0's permanent `gatekeeper_enforce()` mode, which applies the global policy without per-request narrowing.
 
-If `--schema-match-headers`, `--function-blocklist`, or `--function-allowlist` is configured, `arrow` requests
+If `--gatekeeper` is configured, `arrow` requests
 are limited to supported read statements; unsupported forms such as `PRAGMA` and `SET` are rejected,
 with HTTP requests receiving a 400 response. All `exec` requests are also rejected until full-statement authorization is
 supported. This includes every `Coordinator.exec(...)` call, such as data loading, preloading, and DDL/DML. Mosaic

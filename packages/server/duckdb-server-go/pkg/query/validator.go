@@ -3,9 +3,12 @@ package query
 import (
 	"context"
 	"database/sql"
+	"database/sql/driver"
 	"encoding/json"
 	"errors"
 	"fmt"
+
+	"github.com/duckdb/duckdb-go/v2"
 )
 
 var (
@@ -14,29 +17,22 @@ var (
 	ErrValidation           = errors.New("query: validation failed")
 )
 
-// ValidationPolicy is the per-request half of Gatekeeper's policy. Gatekeeper intersects it with the database-wide
-// ceiling set by gatekeeper_configure, so a request can only narrow what trusted initialization already admits.
 type ValidationPolicy struct {
-	// Nil inherits the global table policy; an empty slice denies all caller table and view references.
-	AllowedTables []TableRule
-	BlockedTables []TableRule
-
-	// AllowedFunctions is passed as Gatekeeper's allowed_functions. Nil omits the argument so the request inherits the
-	// global allowlist, including any gatekeeper_configure grants; a non-nil slice (even empty) intersects with it.
-	AllowedFunctions []string
-
-	// BlockedFunctions are denied for caller expressions in addition to any globally blocked functions.
-	BlockedFunctions []string
-
-	// DisableDefaultFunctions passes use_default_functions := false so only explicitly allowed functions remain.
-	DisableDefaultFunctions bool
+	// JSON passes a complete Gatekeeper document verbatim and cannot be combined with typed options.
+	JSON *string `json:"-"`
+	// omitzero preserves the distinction between nil (inherit) and an explicit empty allowlist.
+	AllowedTables       []TableRule `json:"allowed_tables,omitzero"`
+	BlockedTables       []TableRule `json:"blocked_tables,omitzero"`
+	AllowedFunctions    []string    `json:"allowed_functions,omitzero"`
+	BlockedFunctions    []string    `json:"blocked_functions,omitzero"`
+	UseDefaultFunctions *bool       `json:"use_default_functions,omitempty"`
 }
 
 type TableRule struct {
-	// An omitted catalog matches any catalog. A whole-component "*" is a wildcard in each field.
-	Catalog string `json:"catalog,omitempty"`
-	Schema  string `json:"schema"`
-	Table   string `json:"table"`
+	// Nil matches any catalog; a whole-component "*" is a wildcard in each field.
+	Catalog *string `json:"catalog,omitempty"`
+	Schema  string  `json:"schema"`
+	Table   string  `json:"table"`
 }
 
 type Violation struct {
@@ -45,7 +41,7 @@ type Violation struct {
 	Catalog      string `json:"catalog"`
 	Schema       string `json:"schema"`
 	Table        string `json:"table"`
-	FunctionName string `json:"function_name"`
+	FunctionName string `json:"function_name" mapstructure:"function_name"`
 	Position     *int64 `json:"position"`
 }
 
@@ -77,12 +73,41 @@ func (e ErrorDetails) Error() string {
 }
 
 func (e ErrorDetails) Is(target error) bool {
-	return target == ErrAccessDenied && e.Code == "forbidden" ||
-		target == ErrUnsupportedStatement && e.Code == "unsupported"
+	return target == ErrAccessDenied && e.Code == "forbidden" || target == ErrUnsupportedStatement && e.Code == "unsupported"
 }
 
-// ValidateSQL runs Gatekeeper on any pooled connection without executing the query. Use QueryArrow or WriteArrow with
-// a policy to validate and execute on the same connection.
+type ResolvedObject struct {
+	Catalog string `json:"catalog"`
+	Schema  string `json:"schema"`
+	Table   string `json:"table"`
+	Type    string `json:"type"`
+}
+
+type ResolvedFunction struct {
+	Catalog string `json:"catalog"`
+	Schema  string `json:"schema"`
+	Name    string `json:"name"`
+	Type    string `json:"type"`
+}
+
+type ValidationResult struct {
+	Allowed bool `json:"allowed"`
+	ErrorDetails
+	Objects       []ResolvedObject   `json:"objects"`
+	Functions     []ResolvedFunction `json:"functions"`
+	CallerObjects []ResolvedObject   `json:"caller_objects"`
+}
+
+// InspectSQL returns binding evidence on success and structured diagnostics on denial. It does not reserve a connection for execution.
+func (db *DB) InspectSQL(ctx context.Context, query string, policy ValidationPolicy) (ValidationResult, error) {
+	result, err := db.inspectSQL(ctx, db.db, query, policy)
+	if err != nil {
+		return result, fmt.Errorf("%w: %w", ErrValidation, err)
+	}
+	return result, nil
+}
+
+// ValidateSQL validates without executing. QueryArrow and WriteArrow validate and execute on the same connection.
 func (db *DB) ValidateSQL(ctx context.Context, query string, policy ValidationPolicy) error {
 	return db.validateSQL(ctx, db.db, query, policy)
 }
@@ -92,62 +117,60 @@ type rowQuerier interface {
 }
 
 func (db *DB) validateSQL(ctx context.Context, conn rowQuerier, query string, policy ValidationPolicy) error {
-	if err := db.checkSQL(ctx, conn, query, policy); err != nil {
+	if _, err := db.inspectSQL(ctx, conn, query, policy); err != nil {
 		return fmt.Errorf("%w: %w", ErrValidation, err)
 	}
 	return nil
 }
 
-func (db *DB) checkSQL(ctx context.Context, conn rowQuerier, query string, policy ValidationPolicy) error {
-	stmt := `SELECT CAST(system.main.to_json(result) AS VARCHAR) FROM system.main.gatekeeper_validate($sql,
-		blocked_functions := $blocked::VARCHAR[]`
-	args := []any{sql.Named("sql", query), sql.Named("blocked", NormalizeFunctionNames(policy.BlockedFunctions))}
-	for _, option := range []struct {
-		name  string
-		rules []TableRule
-	}{
-		{"allowed_tables", policy.AllowedTables},
-		{"blocked_tables", policy.BlockedTables},
-	} {
-		if option.rules == nil {
-			continue
-		}
-		rules, err := json.Marshal(option.rules)
-		if err != nil {
-			return err
-		}
-		stmt += ", " + option.name + ` := system.main.from_json($` + option.name + `::JSON, '[{"catalog":"VARCHAR","schema":"VARCHAR","table":"VARCHAR"}]')`
-		args = append(args, sql.Named(option.name, string(rules)))
+func (db *DB) inspectSQL(ctx context.Context, conn rowQuerier, query string, policy ValidationPolicy) (ValidationResult, error) {
+	var result ValidationResult
+	document, err := policy.document()
+	if err != nil {
+		return result, err
 	}
-	if policy.AllowedFunctions != nil {
-		stmt += ", allowed_functions := $allowed::VARCHAR[]"
-		args = append(args, sql.Named("allowed", NormalizeFunctionNames(policy.AllowedFunctions)))
+	const stmt = `SELECT allowed, code, error_type, error_message, position, violations, objects, functions, caller_objects
+		FROM system.main.gatekeeper_validate($sql, json := $policy)`
+	var violations duckdb.Composite[[]Violation]
+	var objects, callers duckdb.Composite[[]ResolvedObject]
+	var functions duckdb.Composite[[]ResolvedFunction]
+	if err := conn.QueryRowContext(ctx, stmt, sql.Named("sql", query), sql.Named("policy", document)).Scan(
+		&result.Allowed, &result.Code, &result.Type, &result.Message, &result.Position,
+		&violations, &objects, &functions, &callers,
+	); err != nil {
+		return result, fmt.Errorf("query: Gatekeeper validation failed: %w", err)
 	}
-	if policy.DisableDefaultFunctions {
-		stmt += ", use_default_functions := false"
+	result.Violations = violations.Get()
+	result.Objects, result.Functions, result.CallerObjects = objects.Get(), functions.Get(), callers.Get()
+	if result.Allowed && result.Code == "ok" && len(result.Violations) == 0 {
+		return result, nil
 	}
-	stmt += ") AS result"
-	var raw string
-	if err := conn.QueryRowContext(ctx, stmt, args...).Scan(&raw); err != nil {
-		return fmt.Errorf("query: Gatekeeper validation failed: %w", err)
-	}
-	var result struct {
-		Allowed *bool `json:"allowed"`
-		ErrorDetails
-	}
-	if err := json.Unmarshal([]byte(raw), &result); err != nil {
-		return fmt.Errorf("query: invalid Gatekeeper response: %w", err)
-	}
-	if result.Allowed != nil && *result.Allowed && result.Code == "ok" && len(result.Violations) == 0 {
-		return nil
-	}
-	if result.Allowed == nil || *result.Allowed {
-		return errors.New("query: inconsistent Gatekeeper response")
+	if result.Allowed {
+		return result, errors.New("query: inconsistent Gatekeeper response")
 	}
 	switch result.Code {
 	case "forbidden", "unsupported", "parser", "binding", "invalid_input":
 	default:
-		return fmt.Errorf("query: unexpected Gatekeeper result code %q", result.Code)
+		return result, fmt.Errorf("query: unexpected Gatekeeper result code %q", result.Code)
 	}
-	return result.ErrorDetails
+	return result, result.ErrorDetails
+}
+
+func ConfigureGatekeeper(ctx context.Context, execer driver.ExecerContext, document string) error {
+	_, err := execer.ExecContext(ctx, "CALL system.main.gatekeeper_configure(json := $1)", []driver.NamedValue{{Ordinal: 1, Value: document}})
+	return err
+}
+
+func (policy ValidationPolicy) document() (string, error) {
+	if policy.JSON != nil {
+		if policy.AllowedTables != nil || policy.BlockedTables != nil || policy.AllowedFunctions != nil || policy.BlockedFunctions != nil || policy.UseDefaultFunctions != nil {
+			return "", errors.New("query: JSON policy cannot be combined with typed options")
+		}
+		return *policy.JSON, nil
+	}
+	document, err := json.Marshal(struct {
+		Version int              `json:"version"`
+		Options ValidationPolicy `json:"options"`
+	}{Version: 1, Options: policy})
+	return string(document), err
 }

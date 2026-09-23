@@ -2,7 +2,6 @@ package query
 
 import (
 	"log/slog"
-	"strings"
 )
 
 type Options struct {
@@ -41,22 +40,4 @@ func WithValidation() OptionFunc {
 		opts.Validation = true
 		return nil
 	}
-}
-
-// NormalizeFunctionNames lowercases, trims, and deduplicates function names. Gatekeeper matches configured names
-// exactly, so the same normalization must be applied to gatekeeper_configure arguments and to ValidationPolicy.
-func NormalizeFunctionNames(functions []string) []string {
-	normalized := make([]string, 0, len(functions))
-	seen := make(map[string]struct{}, len(functions))
-	for _, function := range functions {
-		function = strings.ToLower(strings.TrimSpace(function))
-		if function != "" {
-			if _, ok := seen[function]; ok {
-				continue
-			}
-			seen[function] = struct{}{}
-			normalized = append(normalized, function)
-		}
-	}
-	return normalized
 }

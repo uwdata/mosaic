@@ -48,15 +48,14 @@ type commandExecutor interface {
 }
 
 type handler struct {
-	db                 commandExecutor
-	schemaMatchHeaders []string
-	logger             *slog.Logger
-	authorizer         requestAuthorizer
-	httpHandler        http.Handler
-	websocketOptions   WebSocketOptions
-	maxMessageBytes    int64
-	cacheControl       string
-	varyHeaders        []string
+	db               commandExecutor
+	logger           *slog.Logger
+	authorizer       requestAuthorizer
+	httpHandler      http.Handler
+	websocketOptions WebSocketOptions
+	maxMessageBytes  int64
+	cacheControl     string
+	varyHeaders      []string
 }
 
 // New constructs a Mosaic HTTP and WebSocket handler backed by db. Omitting
@@ -76,14 +75,13 @@ func New(db *query.DB, opts ...Option) (http.Handler, error) {
 
 func newHandler(db commandExecutor, cfg config) *handler {
 	s := &handler{
-		db:                 db,
-		schemaMatchHeaders: cfg.schemaMatchHeaders,
-		logger:             cfg.logger,
-		authorizer:         cfg.authorizer,
-		websocketOptions:   cfg.websocket,
-		maxMessageBytes:    cfg.maxMessageBytes,
-		cacheControl:       cfg.cacheControl,
-		varyHeaders:        cfg.varyHeaders,
+		db:               db,
+		logger:           cfg.logger,
+		authorizer:       cfg.authorizer,
+		websocketOptions: cfg.websocket,
+		maxMessageBytes:  cfg.maxMessageBytes,
+		cacheControl:     cfg.cacheControl,
+		varyHeaders:      cfg.varyHeaders,
 	}
 
 	s.httpHandler = newCORSHandler(cfg.cors, cfg.corsProtection, http.HandlerFunc(s.handleHTTP))
@@ -135,11 +133,6 @@ func (s *handler) handleWebSocket(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	policy, ok := s.requestPolicy(w, r)
-	if !ok {
-		return
-	}
-
 	authorize, err := s.commandAuthorizer(r)
 	if err != nil {
 		s.writeHTTPError(w, err)
@@ -171,7 +164,7 @@ func (s *handler) handleWebSocket(w http.ResponseWriter, r *http.Request) {
 	}()
 
 	for {
-		err = s.handleWebSocketMessage(ctx, conn, policy, authorize)
+		err = s.handleWebSocketMessage(ctx, conn, authorize)
 		if err != nil {
 			s.logger.Error("server: websocket error, breaking connection", "error", err)
 			break
@@ -181,7 +174,7 @@ func (s *handler) handleWebSocket(w http.ResponseWriter, r *http.Request) {
 
 // A returned error closes the connection. Command errors are written to the
 // client and return nil so the session survives them.
-func (s *handler) handleWebSocketMessage(ctx context.Context, conn *websocket.Conn, policy *query.ValidationPolicy, authorize commandAuthorizer) error {
+func (s *handler) handleWebSocketMessage(ctx context.Context, conn *websocket.Conn, authorize commandAuthorizer) error {
 	_, raw, err := conn.Read(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to read websocket message: %w", err)
@@ -196,7 +189,7 @@ func (s *handler) handleWebSocketMessage(ctx context.Context, conn *websocket.Co
 	}
 	params.raw = raw
 
-	response, err := s.execCommand(ctx, params, policy, authorize)
+	response, err := s.execCommand(ctx, params, authorize)
 	if err != nil {
 		errResponse := s.classifyAndLogError(err)
 		writeErr := wsjson.Write(ctx, conn, map[string]string{
@@ -222,11 +215,6 @@ func (s *handler) handleWebSocketMessage(ctx context.Context, conn *websocket.Co
 }
 
 func (s *handler) handleHTTP(w http.ResponseWriter, r *http.Request) {
-	policy, ok := s.requestPolicy(w, r)
-	if !ok {
-		return
-	}
-
 	authorize, err := s.commandAuthorizer(r)
 	if err != nil {
 		s.writeHTTPError(w, err)
@@ -277,7 +265,7 @@ func (s *handler) handleHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	response, err := s.execCommand(r.Context(), params, policy, authorize)
+	response, err := s.execCommand(r.Context(), params, authorize)
 	if err != nil {
 		s.writeHTTPError(w, err)
 		return
@@ -308,22 +296,23 @@ func (s *handler) handleHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (s *handler) execCommand(ctx context.Context, params queryParams, policy *query.ValidationPolicy, authorize commandAuthorizer) (commandResponse, error) {
+func (s *handler) execCommand(ctx context.Context, params queryParams, authorize commandAuthorizer) (commandResponse, error) {
 	if err := params.Validate(s.logger); err != nil {
 		return commandResponse{}, err
 	}
 	response := commandResponses[*params.Type]
 	var err error
+	var policy *query.ValidationPolicy
 
 	if authorize != nil {
-		if policy, err = authorize(ctx, params, policy); err != nil {
+		if policy, err = authorize(ctx, params); err != nil {
 			return commandResponse{}, &authorizationError{err: err}
 		}
 	}
 
 	switch *params.Type {
 	case CommandExec:
-		if policy != nil || len(s.schemaMatchHeaders) > 0 {
+		if policy != nil {
 			return commandResponse{}, query.ErrExecWithValidation
 		}
 		err = s.db.Exec(ctx, *params.SQL)
@@ -355,29 +344,4 @@ func (p queryParams) Validate(logger *slog.Logger) error {
 	}
 
 	return nil
-}
-
-// requestPolicy returns nil when schema matching is not configured. With schema matching, it writes a 401 and
-// returns false when no configured header is present; otherwise the policy carries a non-nil table list so an
-// unexpected empty match denies every table rather than lifting the restriction.
-func (s *handler) requestPolicy(w http.ResponseWriter, r *http.Request) (*query.ValidationPolicy, bool) {
-	if len(s.schemaMatchHeaders) == 0 {
-		return nil, true
-	}
-	allowedTables := []query.TableRule{}
-	for _, matchHeader := range s.schemaMatchHeaders {
-		if allowedSchema := r.Header.Get(strings.TrimSpace(matchHeader)); allowedSchema != "" {
-			if allowedSchema == "*" {
-				http.Error(w, http.StatusText(http.StatusForbidden), http.StatusForbidden)
-				return nil, false
-			}
-			allowedTables = append(allowedTables, query.TableRule{Schema: allowedSchema, Table: "*"})
-		}
-	}
-	if len(allowedTables) == 0 {
-		s.logger.Error("server: no allowed schemas found in request headers", "headers", s.schemaMatchHeaders)
-		http.Error(w, "no allowed schemas found in request headers", http.StatusUnauthorized)
-		return nil, false
-	}
-	return &query.ValidationPolicy{AllowedTables: allowedTables}, true
 }

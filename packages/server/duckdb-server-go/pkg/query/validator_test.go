@@ -308,7 +308,7 @@ func TestGatekeeperRejectsAttachedTables(t *testing.T) {
 
 	for _, sql := range tests {
 		t.Run(sql, func(t *testing.T) {
-			err := db.ValidateSQL(t.Context(), sql, ValidationPolicy{AllowedTables: []TableRule{{Catalog: "memory", Schema: "tenant_a", Table: "*"}}})
+			err := db.ValidateSQL(t.Context(), sql, ValidationPolicy{AllowedTables: []TableRule{{Catalog: stringPtr("memory"), Schema: "tenant_a", Table: "*"}}})
 			assert.ErrorIs(t, err, ErrAccessDenied)
 			assert.Equal(t, "otherdb", requireViolation(t, err, "table").Catalog)
 		})
@@ -360,7 +360,7 @@ func TestGatekeeperFunctionViolations(t *testing.T) {
 			db := setupTestDB(t)
 			policy := ValidationPolicy{BlockedFunctions: tt.functions}
 			if tt.allowlist {
-				policy = ValidationPolicy{DisableDefaultFunctions: true, AllowedFunctions: tt.functions}
+				policy = ValidationPolicy{UseDefaultFunctions: boolPtr(false), AllowedFunctions: tt.functions}
 			}
 			for range 2 {
 				err := db.ValidateSQL(t.Context(), "SELECT MD5('x'), md5('y'), LOWER('X'), SUM(1) OVER ()", policy)
@@ -432,7 +432,7 @@ func TestGatekeeperFunctionAllowlist(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			db := setupTestDB(t)
-			err := db.ValidateSQL(t.Context(), tt.sql, ValidationPolicy{AllowedFunctions: tt.allowlist, DisableDefaultFunctions: true})
+			err := db.ValidateSQL(t.Context(), tt.sql, ValidationPolicy{AllowedFunctions: tt.allowlist, UseDefaultFunctions: boolPtr(false)})
 			if tt.wantErr == "" {
 				assert.NoError(t, err)
 				return
@@ -456,6 +456,10 @@ func setupValidationDB(t *testing.T) *DB {
 		CREATE TABLE secret (value INTEGER); CREATE TABLE tbl1 (a INTEGER);`))
 	return db
 }
+
+func boolPtr(value bool) *bool { return &value }
+
+func stringPtr(value string) *string { return &value }
 
 func requireViolation(t *testing.T, err error, rule string) Violation {
 	t.Helper()

@@ -186,7 +186,7 @@ jobs:
         uses: actions/cache@v6
         with:
           path: ~/.duckdb/extensions
-          key: duckdb-extensions-gatekeeper-0.2.0-${{ runner.os }}-${{ hashFiles('packages/server/duckdb-server-go/go.sum') }}
+          key: duckdb-extensions-v3-${{ runner.os }}-${{ hashFiles('packages/server/duckdb-server-go/go.sum') }}
 
       - name: Build
         run: go build -tags=duckdb_arrow -v ./...

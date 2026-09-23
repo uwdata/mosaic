@@ -256,14 +256,23 @@ func TestVaryIndependentOfCacheControl(t *testing.T) {
 	}
 }
 
-func TestHTTPCacheSchemaMatchVariation(t *testing.T) {
+func TestHTTPCachePolicyVariation(t *testing.T) {
 	spy := &spyCommandExecutor{
 		failOnCallExecutor: failOnCallExecutor{t},
 		queryArrow: func(_ context.Context, _ string, policy *query.ValidationPolicy) ([]byte, error) {
 			return []byte(policy.AllowedTables[0].Schema), nil
 		},
 	}
-	handler := mustHandler(t, spy, WithSchemaMatchHeaders("x-tenant-id"), WithVary("X-Region"), WithCacheControl("public, max-age=60"))
+	authorizer := WithPolicyAuthorizer(PolicyAuthorizerFunc[struct{}](func(r *http.Request) (CommandPolicyAuthorizer[struct{}], error) {
+		tenant := r.Header.Get("X-Tenant-Id")
+		if tenant == "" {
+			return nil, ErrUnauthenticated
+		}
+		return func(context.Context, Command[struct{}]) (*query.ValidationPolicy, error) {
+			return &query.ValidationPolicy{AllowedTables: []query.TableRule{{Schema: tenant, Table: "*"}}}, nil
+		}, nil
+	}))
+	handler := mustHandler(t, spy, authorizer, WithVary("X-Region", "X-Tenant-Id"), WithCacheControl("public, max-age=60"))
 	get := func(tenant, etag string) *httptest.ResponseRecorder {
 		t.Helper()
 		req := httptest.NewRequest(http.MethodGet, "/?type=arrow&sql=SELECT+1", nil)

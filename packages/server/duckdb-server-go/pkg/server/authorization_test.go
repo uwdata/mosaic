@@ -11,7 +11,6 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"net/url"
-	"slices"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -462,19 +461,6 @@ func TestGenericAuthorizationDoesNotBypassRestrictedExec(t *testing.T) {
 		require.Contains(t, res.Body.String(), query.ErrExecWithValidation.Error())
 	})
 
-	t.Run("schema policy", func(t *testing.T) {
-		db := setupTestDB(t)
-		handler, err := New(db, allow, WithSchemaMatchHeaders("X-Tenant"))
-		require.NoError(t, err)
-
-		req := httptest.NewRequest(http.MethodPost, "/", strings.NewReader(`{"type":"exec","sql":"SELECT 1"}`))
-		req.Header.Set("X-Tenant", "tenant_a")
-		res := httptest.NewRecorder()
-		handler.ServeHTTP(res, req)
-
-		require.Equal(t, http.StatusBadRequest, res.Code, res.Body.String())
-		require.Contains(t, res.Body.String(), query.ErrExecWithValidation.Error())
-	})
 }
 
 func TestWebSocketRequestAuthorizationRejectsBeforeUpgrade(t *testing.T) {
@@ -724,14 +710,9 @@ func TestPolicyAuthorizerScopesValidationPerCommand(t *testing.T) {
 	type payload struct {
 		Tenant string `json:"tenant"`
 	}
-	var seen []*query.ValidationPolicy
 	authorizer := PolicyAuthorizerFunc[payload](func(*http.Request) (CommandPolicyAuthorizer[payload], error) {
-		return func(_ context.Context, command Command[payload], policy *query.ValidationPolicy) (*query.ValidationPolicy, error) {
-			seen = append(seen, policy)
+		return func(_ context.Context, command Command[payload]) (*query.ValidationPolicy, error) {
 			if command.Payload().Tenant == "" {
-				return nil, ErrPermissionDenied
-			}
-			if policy != nil && !slices.Contains(policy.AllowedTables, query.TableRule{Schema: command.Payload().Tenant, Table: "*"}) {
 				return nil, ErrPermissionDenied
 			}
 			return &query.ValidationPolicy{AllowedTables: []query.TableRule{{Schema: command.Payload().Tenant, Table: "*"}}}, nil
@@ -777,23 +758,6 @@ func TestPolicyAuthorizerScopesValidationPerCommand(t *testing.T) {
 			require.Equal(t, websocket.MessageText, messageType)
 			require.Contains(t, string(data), `"forbidden"`)
 		}
-	})
-
-	t.Run("receives header policy", func(t *testing.T) {
-		seen = nil
-		handler := mustHandler(t, db, WithSchemaMatchHeaders("X-Tenant"), WithPolicyAuthorizer(authorizer))
-		req := httptest.NewRequest(http.MethodPost, "/", strings.NewReader(`{"type":"arrow","sql":"SELECT * FROM tenant_a.items","tenant":"tenant_a"}`))
-		req.Header.Set("X-Tenant", "tenant_a")
-		res := httptest.NewRecorder()
-		handler.ServeHTTP(res, req)
-		require.Equal(t, http.StatusOK, res.Code, res.Body.String())
-		require.Equal(t, []*query.ValidationPolicy{{AllowedTables: []query.TableRule{{Schema: "tenant_a", Table: "*"}}}}, seen)
-
-		req = httptest.NewRequest(http.MethodPost, "/", strings.NewReader(`{"type":"arrow","sql":"SELECT * FROM tenant_b.items","tenant":"tenant_b"}`))
-		req.Header.Set("X-Tenant", "tenant_a")
-		res = httptest.NewRecorder()
-		handler.ServeHTTP(res, req)
-		require.Equal(t, http.StatusForbidden, res.Code)
 	})
 
 	t.Run("nil authorizer fails closed", func(t *testing.T) {

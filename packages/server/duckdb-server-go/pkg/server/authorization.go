@@ -53,12 +53,10 @@ func (c Command[T]) Payload() T {
 type CommandAuthorizer[T any] func(context.Context, Command[T]) error
 
 // CommandPolicyAuthorizer authorizes one command and returns the validation
-// policy applied on the connection that executes it. It receives the policy
-// derived from WithSchemaMatchHeaders, or nil when that is not configured, and
-// may return it unchanged, narrow it, or replace it from the typed payload.
+// policy applied on the connection that executes it.
 // Returning nil leaves the command unvalidated unless the DB was built with
 // query.WithValidation. A non-nil error denies the command.
-type CommandPolicyAuthorizer[T any] func(context.Context, Command[T], *query.ValidationPolicy) (*query.ValidationPolicy, error)
+type CommandPolicyAuthorizer[T any] func(context.Context, Command[T]) (*query.ValidationPolicy, error)
 
 // Authorizer creates the command authorizer used for a single HTTP request or
 // WebSocket session. AuthorizeRequest is called before a POST body is decoded
@@ -97,7 +95,7 @@ func (f PolicyAuthorizerFunc[T]) AuthorizeRequest(r *http.Request) (CommandPolic
 }
 
 type requestAuthorizer func(*http.Request) (commandAuthorizer, error)
-type commandAuthorizer func(context.Context, queryParams, *query.ValidationPolicy) (*query.ValidationPolicy, error)
+type commandAuthorizer func(context.Context, queryParams) (*query.ValidationPolicy, error)
 
 // WithAuthorizer decodes each complete JSON envelope into a fresh T before
 // command authorization. Payload decoding failures reject the command with
@@ -111,8 +109,8 @@ func WithAuthorizer[T any](authorizer Authorizer[T]) Option {
 		if err != nil || authorize == nil {
 			return nil, err
 		}
-		return func(ctx context.Context, command Command[T], policy *query.ValidationPolicy) (*query.ValidationPolicy, error) {
-			return policy, authorize(ctx, command)
+		return func(ctx context.Context, command Command[T]) (*query.ValidationPolicy, error) {
+			return nil, authorize(ctx, command)
 		}, nil
 	}))
 }
@@ -131,7 +129,7 @@ func WithPolicyAuthorizer[T any](authorizer PolicyAuthorizer[T]) Option {
 			if err != nil || authorize == nil {
 				return nil, err
 			}
-			return func(ctx context.Context, params queryParams, policy *query.ValidationPolicy) (*query.ValidationPolicy, error) {
+			return func(ctx context.Context, params queryParams) (*query.ValidationPolicy, error) {
 				var payload T
 				if _, empty := any(&payload).(*struct{}); !empty && params.raw != nil {
 					if err := json.Unmarshal(params.raw, &payload); err != nil {
@@ -144,7 +142,7 @@ func WithPolicyAuthorizer[T any](authorizer PolicyAuthorizer[T]) Option {
 						return nil, fmt.Errorf("%w: decode command payload: %w", ErrInvalidCommand, err)
 					}
 				}
-				return authorize(ctx, Command[T]{typ: *params.Type, sql: *params.SQL, payload: payload}, policy)
+				return authorize(ctx, Command[T]{typ: *params.Type, sql: *params.SQL, payload: payload})
 			}, nil
 		}
 		return nil

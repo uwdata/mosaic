@@ -63,15 +63,6 @@ func mustHandler(t *testing.T, executor commandExecutor, opts ...Option) *handle
 	return newHandler(executor, cfg)
 }
 
-func TestSchemaHeaderRejectsWildcard(t *testing.T) {
-	handler := mustHandler(t, failOnCallExecutor{t}, WithSchemaMatchHeaders("X-Tenant"))
-	req := httptest.NewRequest(http.MethodPost, "/", strings.NewReader(`{"type":"arrow","sql":"SELECT 1"}`))
-	req.Header.Set("X-Tenant", "*")
-	res := httptest.NewRecorder()
-	handler.ServeHTTP(res, req)
-	require.Equal(t, http.StatusForbidden, res.Code)
-}
-
 type failOnCallExecutor struct {
 	testing.TB
 }
@@ -136,21 +127,19 @@ func (s *webSocketTestServer) dial(options *websocket.DialOptions) (*websocket.C
 	return websocket.Dial(s.ctx, s.url, options)
 }
 
-func TestExecCommandHonorsSchemaPolicy(t *testing.T) {
+func TestExecCommandHonorsPolicy(t *testing.T) {
 	db := setupTestDB(t)
 
 	command := CommandExec
 	sql := "SELECT 1"
 	params := queryParams{Type: &command, SQL: &sql}
 
-	s := mustHandler(t, db, WithSchemaMatchHeaders("X-Tenant"))
-	_, err := s.execCommand(t.Context(), params, nil, nil)
+	s := mustHandler(t, db)
+	_, err := s.execCommand(t.Context(), params, func(context.Context, queryParams) (*query.ValidationPolicy, error) {
+		return &query.ValidationPolicy{}, nil
+	})
 	require.ErrorIs(t, err, query.ErrExecWithValidation)
-
-	s = mustHandler(t, db)
-	_, err = s.execCommand(t.Context(), params, &query.ValidationPolicy{}, nil)
-	require.ErrorIs(t, err, query.ErrExecWithValidation)
-	_, err = s.execCommand(t.Context(), params, nil, nil)
+	_, err = s.execCommand(t.Context(), params, nil)
 	require.NoError(t, err)
 }
 
@@ -212,7 +201,11 @@ func TestHandleHTTPPolicyErrors(t *testing.T) {
 		db := setupTestDB(t)
 		require.NoError(t, db.Exec(t.Context(), "CREATE SCHEMA tenant_a; CREATE TABLE tenant_a.secret (value INTEGER)"))
 
-		s := mustHandler(t, db, WithSchemaMatchHeaders("X-Tenant"))
+		s := mustHandler(t, db, WithPolicyAuthorizer(PolicyAuthorizerFunc[struct{}](func(*http.Request) (CommandPolicyAuthorizer[struct{}], error) {
+			return func(context.Context, Command[struct{}]) (*query.ValidationPolicy, error) {
+				return &query.ValidationPolicy{AllowedTables: []query.TableRule{{Schema: "tenant_b", Table: "*"}}}, nil
+			}, nil
+		})))
 		req := httptest.NewRequest(http.MethodPost, "/", strings.NewReader(`{"type":"arrow","sql":"SELECT * FROM tenant_a.secret"}`))
 		req.Header.Set("X-Tenant", "tenant_b")
 		res := httptest.NewRecorder()
@@ -224,8 +217,8 @@ func TestHandleHTTPPolicyErrors(t *testing.T) {
 	})
 
 	t.Run("exec under schema policy is a bad request", func(t *testing.T) {
-		db := setupTestDB(t)
-		s := mustHandler(t, db, WithSchemaMatchHeaders("X-Tenant"))
+		db := setupTestDB(t, query.WithValidation())
+		s := mustHandler(t, db)
 		req := httptest.NewRequest(http.MethodPost, "/", strings.NewReader(`{"type":"exec","sql":"SELECT 1"}`))
 		req.Header.Set("X-Tenant", "tenant_a")
 		res := httptest.NewRecorder()
@@ -262,23 +255,17 @@ func TestHandleHTTPPolicyErrors(t *testing.T) {
 		require.Equal(t, "Bad Request\n", res.Body.String())
 	})
 
-	t.Run("missing schema header is unauthorized", func(t *testing.T) {
-		db := setupTestDB(t)
-		s := mustHandler(t, db, WithSchemaMatchHeaders("X-Tenant"))
-		req := httptest.NewRequest(http.MethodPost, "/", strings.NewReader(`{"type":"exec","sql":"SELECT 1"}`))
-		res := httptest.NewRecorder()
-
-		s.ServeHTTP(res, req)
-
-		require.Equal(t, http.StatusUnauthorized, res.Code)
-	})
 }
 
 func TestValidationDiagnosticsStayServerSide(t *testing.T) {
 	db := setupTestDB(t)
 	require.NoError(t, db.Exec(t.Context(), "CREATE TABLE tenant_private_secret (value INTEGER)"))
 	var logs bytes.Buffer
-	handler := mustHandler(t, db, WithSchemaMatchHeaders("X-Tenant"), WithLogger(slog.New(slog.NewTextHandler(&logs, nil))))
+	handler := mustHandler(t, db, WithPolicyAuthorizer(PolicyAuthorizerFunc[struct{}](func(*http.Request) (CommandPolicyAuthorizer[struct{}], error) {
+		return func(context.Context, Command[struct{}]) (*query.ValidationPolicy, error) {
+			return &query.ValidationPolicy{}, nil
+		}, nil
+	})), WithLogger(slog.New(slog.NewTextHandler(&logs, nil))))
 	body := `{"type":"arrow","sql":"SELECT * FROM tenant_private_secre"}`
 	req := httptest.NewRequest(http.MethodPost, "/", strings.NewReader(body))
 	req.Header.Set("X-Tenant", "tenant_a")
@@ -340,25 +327,4 @@ func TestHandleHTTPQueryParamsErrors(t *testing.T) {
 			require.Equal(t, tt.wantBody, res.Body.String())
 		})
 	}
-}
-
-func TestRequestPolicyTrimsHeaderNames(t *testing.T) {
-	req := httptest.NewRequest(http.MethodGet, "/", nil)
-	req.Header.Set("X-Tenant-Id", "tenant_a")
-	req.Header.Set("Verified-User-Id", "user_a")
-
-	s := mustHandler(t, failOnCallExecutor{t}, WithSchemaMatchHeaders(" X-Tenant-Id ", "\tVerified-User-Id "))
-	policy, ok := s.requestPolicy(httptest.NewRecorder(), req)
-	require.True(t, ok)
-	require.Equal(t, &query.ValidationPolicy{AllowedTables: []query.TableRule{{Schema: "tenant_a", Table: "*"}, {Schema: "user_a", Table: "*"}}}, policy)
-
-	policy, ok = mustHandler(t, failOnCallExecutor{t}).requestPolicy(httptest.NewRecorder(), req)
-	require.True(t, ok)
-	require.Nil(t, policy)
-
-	res := httptest.NewRecorder()
-	policy, ok = mustHandler(t, failOnCallExecutor{t}, WithSchemaMatchHeaders(" ")).requestPolicy(res, req)
-	require.False(t, ok)
-	require.Nil(t, policy)
-	require.Equal(t, http.StatusUnauthorized, res.Code)
 }

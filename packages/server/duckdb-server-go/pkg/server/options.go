@@ -52,15 +52,14 @@ type WebSocketOptions struct {
 }
 
 type config struct {
-	logger             *slog.Logger
-	authorizer         requestAuthorizer
-	schemaMatchHeaders []string
-	cors               CORSOptions
-	corsProtection     *http.CrossOriginProtection
-	websocket          WebSocketOptions
-	maxMessageBytes    int64
-	cacheControl       string
-	varyHeaders        []string
+	logger          *slog.Logger
+	authorizer      requestAuthorizer
+	cors            CORSOptions
+	corsProtection  *http.CrossOriginProtection
+	websocket       WebSocketOptions
+	maxMessageBytes int64
+	cacheControl    string
+	varyHeaders     []string
 }
 
 func defaultConfig() config {
@@ -91,11 +90,6 @@ func applyOptions(opts []Option) (config, error) {
 		}
 		if err := opt.apply(&cfg); err != nil {
 			return config{}, fmt.Errorf("server: apply option %d: %w", i, err)
-		}
-	}
-	if cfg.cacheControl != "" && len(cfg.schemaMatchHeaders) > 0 {
-		if err := WithVary(append(cfg.varyHeaders, cfg.schemaMatchHeaders...)...).apply(&cfg); err != nil {
-			return config{}, fmt.Errorf("server: schema match headers in Vary: %w", err)
 		}
 	}
 	return cfg, nil
@@ -206,14 +200,6 @@ func WithWebSocket(options WebSocketOptions) Option {
 		configured := options
 		configured.AllowedOrigins = origins
 		cfg.websocket = configured
-		return nil
-	})
-}
-
-func WithSchemaMatchHeaders(headers ...string) Option {
-	headers = append([]string(nil), headers...)
-	return optionFunc(func(cfg *config) error {
-		cfg.schemaMatchHeaders = append([]string(nil), headers...)
 		return nil
 	})
 }

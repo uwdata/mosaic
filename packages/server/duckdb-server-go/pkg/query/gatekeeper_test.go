@@ -37,7 +37,7 @@ func TestGatekeeperResolvedPolicy(t *testing.T) {
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			err := db.ValidateSQL(t.Context(), tc.sql, ValidationPolicy{AllowedTables: []TableRule{{Catalog: "memory", Schema: "tenant_a", Table: "*"}}})
+			err := db.ValidateSQL(t.Context(), tc.sql, ValidationPolicy{AllowedTables: []TableRule{{Catalog: stringPtr("memory"), Schema: "tenant_a", Table: "*"}}})
 			if tc.rule == "" {
 				require.NoError(t, err)
 			} else {
@@ -171,18 +171,18 @@ func TestGatekeeperTableRules(t *testing.T) {
 	}{
 		{"nil inherits", "SELECT * FROM tenant_a.secret", ValidationPolicy{}, false},
 		{"empty denies", "SELECT * FROM tenant_a.secret", ValidationPolicy{AllowedTables: []TableRule{}}, true},
-		{"exact table", "SELECT * FROM tenant_a.secret", ValidationPolicy{AllowedTables: []TableRule{{Catalog: "MEMORY", Schema: "TENANT_A", Table: "SECRET"}}}, false},
+		{"exact table", "SELECT * FROM tenant_a.secret", ValidationPolicy{AllowedTables: []TableRule{{Catalog: stringPtr("MEMORY"), Schema: "TENANT_A", Table: "SECRET"}}}, false},
 		{"different table", "SELECT * FROM tenant_a.secret", ValidationPolicy{AllowedTables: []TableRule{{Schema: "tenant_a", Table: "other"}}}, true},
 		{"omitted catalog", "SELECT * FROM otherdb.tenant_a.secret", ValidationPolicy{AllowedTables: []TableRule{{Schema: "tenant_a", Table: "secret"}}}, false},
-		{"explicit catalog", "SELECT * FROM otherdb.tenant_a.secret", ValidationPolicy{AllowedTables: []TableRule{{Catalog: "memory", Schema: "tenant_a", Table: "*"}}}, true},
-		{"wildcards", "SELECT * FROM otherdb.tenant_a.secret", ValidationPolicy{AllowedTables: []TableRule{{Catalog: "*", Schema: "*", Table: "*"}}}, false},
+		{"explicit catalog", "SELECT * FROM otherdb.tenant_a.secret", ValidationPolicy{AllowedTables: []TableRule{{Catalog: stringPtr("memory"), Schema: "tenant_a", Table: "*"}}}, true},
+		{"wildcards", "SELECT * FROM otherdb.tenant_a.secret", ValidationPolicy{AllowedTables: []TableRule{{Catalog: stringPtr("*"), Schema: "*", Table: "*"}}}, false},
 		{"literal pattern", "SELECT * FROM tenant_a.secret", ValidationPolicy{AllowedTables: []TableRule{{Schema: "tenant_*", Table: "*"}}}, true},
 		{"temp matches omitted catalog", "SELECT * FROM secret", ValidationPolicy{AllowedTables: []TableRule{{Schema: "main", Table: "secret"}}}, false},
-		{"temp excluded by catalog", "SELECT * FROM secret", ValidationPolicy{AllowedTables: []TableRule{{Catalog: "memory", Schema: "main", Table: "secret"}}}, true},
+		{"temp excluded by catalog", "SELECT * FROM secret", ValidationPolicy{AllowedTables: []TableRule{{Catalog: stringPtr("memory"), Schema: "main", Table: "secret"}}}, true},
 		{"block wins", "SELECT * FROM tenant_a.secret", ValidationPolicy{AllowedTables: []TableRule{{Schema: "tenant_a", Table: "*"}}, BlockedTables: []TableRule{{Schema: "tenant_a", Table: "secret"}}}, true},
 		{"block only", "SELECT * FROM tenant_a.secret", ValidationPolicy{BlockedTables: []TableRule{{Schema: "tenant_a", Table: "secret"}}}, true},
 		{"empty blocks", "SELECT * FROM tenant_a.secret", ValidationPolicy{BlockedTables: []TableRule{}}, false},
-		{"bound identifiers", "SELECT * FROM tenant_a.secret", ValidationPolicy{AllowedTables: []TableRule{{Catalog: "memory", Schema: "tenant_a", Table: "secret'}]); SELECT 1; --"}}}, true},
+		{"bound identifiers", "SELECT * FROM tenant_a.secret", ValidationPolicy{AllowedTables: []TableRule{{Catalog: stringPtr("memory"), Schema: "tenant_a", Table: "secret'}]); SELECT 1; --"}}}, true},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			_, err := db.QueryArrow(t.Context(), tc.sql, &tc.policy)

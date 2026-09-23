@@ -12,11 +12,11 @@ import (
 // initializeDatabase is the CLI's trusted initialization. Extensions named by --load-extensions are installed first so
 // a locally provided Gatekeeper artifact wins over the community install; the community install only runs when LOAD
 // finds nothing.
-func initializeDatabase(ctx context.Context, execer driver.ExecerContext, extensionList string, validation bool, allowed, blocked []string) error {
+func initializeDatabase(ctx context.Context, execer driver.ExecerContext, extensionList string, document *string) error {
 	if err := extensions.ParseAndInstall(ctx, execer, extensionList); err != nil {
 		return err
 	}
-	if !validation {
+	if document == nil {
 		return nil
 	}
 	if err := extensions.LoadInstalled(ctx, execer, "gatekeeper"); err != nil {
@@ -24,15 +24,10 @@ func initializeDatabase(ctx context.Context, execer driver.ExecerContext, extens
 			return err
 		}
 	}
-	_, err := execer.ExecContext(ctx, `CALL system.main.gatekeeper_configure(
-		allowed_functions := $1::VARCHAR[], blocked_functions := $2::VARCHAR[])`, []driver.NamedValue{
-		{Ordinal: 1, Value: query.NormalizeFunctionNames(allowed)},
-		{Ordinal: 2, Value: query.NormalizeFunctionNames(blocked)},
-	})
-	if err != nil {
+	if err := query.ConfigureGatekeeper(ctx, execer, *document); err != nil {
 		return fmt.Errorf("configure Gatekeeper: %w", err)
 	}
-	_, err = execer.ExecContext(ctx, `SET autoload_known_extensions = false;
+	_, err := execer.ExecContext(ctx, `SET autoload_known_extensions = false;
 		SET autoinstall_known_extensions = false; SET lock_configuration = true`, nil)
 	return err
 }

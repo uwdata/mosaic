@@ -17,7 +17,11 @@ import (
 func TestInitializeDatabase(t *testing.T) {
 	for _, validation := range []bool{false, true} {
 		t.Run(map[bool]string{false: "unrestricted", true: "validated"}[validation], func(t *testing.T) {
-			connector := newConnector(t, ":memory:", "", validation, []string{" READ_CSV ", ""}, nil)
+			var policy *string
+			if validation {
+				policy = policyDocument(`{"version":1,"options":{"allowed_functions":["read_csv"]}}`)
+			}
+			connector := newConnector(t, ":memory:", "", policy)
 			opts := []query.OptionFunc{}
 			if validation {
 				opts = append(opts, query.WithValidation())
@@ -43,7 +47,7 @@ func TestInitializeDatabase(t *testing.T) {
 }
 
 func TestInitializeDatabaseLocalArtifact(t *testing.T) {
-	installed := newConnector(t, ":memory:", "", true, nil, nil)
+	installed := newConnector(t, ":memory:", "", defaultPolicy())
 	source, _ := scanValue(t, installed, "SELECT install_path FROM duckdb_extensions() WHERE extension_name = 'gatekeeper'").(string)
 	artifact, err := os.ReadFile(source)
 	require.NoError(t, err)
@@ -55,7 +59,7 @@ func TestInitializeDatabaseLocalArtifact(t *testing.T) {
 	require.NoError(t, os.WriteFile(unsigned, artifact, 0o600))
 
 	t.Run("signed artifact replaces community install", func(t *testing.T) {
-		connector := newConnector(t, freshDSN(t, ""), signed, true, nil, nil)
+		connector := newConnector(t, freshDSN(t, ""), signed, defaultPolicy())
 		db, err := query.New(t.Context(), connector, query.WithValidation())
 		require.NoError(t, err)
 		t.Cleanup(db.Close)
@@ -67,7 +71,7 @@ func TestInitializeDatabaseLocalArtifact(t *testing.T) {
 		{"missing artifact", freshDSN(t, ""), filepath.Join(t.TempDir(), "gatekeeper.duckdb_extension"), "gatekeeper.duckdb_extension"},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			connector := newConnector(t, tc.dsn, tc.path, true, nil, nil)
+			connector := newConnector(t, tc.dsn, tc.path, defaultPolicy())
 			db, err := query.New(t.Context(), connector, query.WithValidation())
 			require.ErrorContains(t, err, tc.want)
 			require.Nil(t, db)
@@ -75,7 +79,7 @@ func TestInitializeDatabaseLocalArtifact(t *testing.T) {
 	}
 
 	t.Run("unsigned artifact requires DSN opt-in", func(t *testing.T) {
-		connector := newConnector(t, freshDSN(t, "allow_unsigned_extensions=true"), unsigned, true, nil, nil)
+		connector := newConnector(t, freshDSN(t, "allow_unsigned_extensions=true"), unsigned, defaultPolicy())
 		db, err := query.New(t.Context(), connector, query.WithValidation())
 		require.NoError(t, err)
 		t.Cleanup(db.Close)
@@ -86,13 +90,56 @@ func TestInitializeDatabaseCommunityInstall(t *testing.T) {
 	if testing.Short() {
 		t.Skip("downloads the community extension into a fresh extension directory")
 	}
-	connector := newConnector(t, freshDSN(t, ""), "", true, nil, nil)
+	connector := newConnector(t, freshDSN(t, ""), "", defaultPolicy())
 	db, err := query.New(t.Context(), connector, query.WithValidation())
 	require.NoError(t, err)
 	t.Cleanup(db.Close)
 	require.Equal(t, "community", scanValue(t, connector, "SELECT installed_from FROM duckdb_extensions() WHERE extension_name = 'gatekeeper'"))
-	require.Equal(t, "0.2.0", scanValue(t, connector, "SELECT extension_version FROM duckdb_extensions() WHERE extension_name = 'gatekeeper'"))
+	t.Logf("community Gatekeeper version: %v", scanValue(t, connector, "SELECT extension_version FROM duckdb_extensions() WHERE extension_name = 'gatekeeper'"))
 	require.Equal(t, false, scanValue(t, connector, "SELECT current_setting('allow_unsigned_extensions')"))
+}
+
+func TestGatekeeperJSONConfiguration(t *testing.T) {
+	var flag gatekeeperFlag
+	require.NoError(t, flag.Set(`{"version":1,"options":{
+		"allowed_tables":[{"catalog":"memory","schema":"main","table":"*"}],
+		"blocked_tables":[{"schema":"main","table":"secrets"}],
+		"use_default_functions":false,
+		"allowed_functions":["+","MD5"],
+		"blocked_functions":["md5"]
+	}}`))
+	connector := newConnector(t, ":memory:", "", flag.document)
+	db, err := query.New(t.Context(), connector, query.WithValidation())
+	require.NoError(t, err)
+	t.Cleanup(db.Close)
+	conn, err := connector.Connect(t.Context())
+	require.NoError(t, err)
+	_, err = conn.(driver.ExecerContext).ExecContext(t.Context(), "CREATE TABLE public_data (value INTEGER); CREATE TABLE secrets (value INTEGER)", nil)
+	require.NoError(t, err)
+	require.NoError(t, conn.Close())
+	for _, stmt := range []string{"SELECT 1 + 2", "SELECT * FROM public_data"} {
+		_, err := db.QueryArrow(t.Context(), stmt, nil)
+		require.NoError(t, err)
+	}
+	for _, stmt := range []string{"SELECT * FROM secrets", "SELECT md5('x')", "SELECT lower('x')"} {
+		_, err := db.QueryArrow(t.Context(), stmt, &query.ValidationPolicy{AllowedFunctions: []string{"md5", "lower"}})
+		require.ErrorIs(t, err, query.ErrAccessDenied)
+	}
+	require.ErrorIs(t, db.Exec(t.Context(), "SELECT 1"), query.ErrExecWithValidation)
+	require.Equal(t, true, scanValue(t, connector, "SELECT current_setting('lock_configuration')"))
+}
+
+func TestGatekeeperRejectsInvalidConfiguration(t *testing.T) {
+	for _, document := range []string{``, `{}`, `null`, `{"version":1,"options":{"allowed_tables":null}}`, `{"version":1,"options":{"blocked_functions":[],"blocked_functions":["md5"]}}`} {
+		t.Run(document, func(t *testing.T) {
+			var flag gatekeeperFlag
+			require.NoError(t, flag.Set(document))
+			connector := newConnector(t, ":memory:", "", flag.document)
+			db, err := query.New(t.Context(), connector, query.WithValidation())
+			require.ErrorContains(t, err, "configure Gatekeeper")
+			require.Nil(t, db)
+		})
+	}
 }
 
 // scanValue reads one value on a raw driver connection. sql.OpenDB(connector).Close() would close the connector too.
@@ -110,13 +157,13 @@ func scanValue(t *testing.T, connector *duckdb.Connector, stmt string) driver.Va
 }
 
 // newConnector runs initializeDatabase once, as main does, because the validated path locks configuration.
-func newConnector(t *testing.T, dsn, extensionList string, validation bool, allowed, blocked []string) *duckdb.Connector {
+func newConnector(t *testing.T, dsn, extensionList string, policy *string) *duckdb.Connector {
 	t.Helper()
 	var once sync.Once
 	var initErr error
 	connector, err := duckdb.NewConnector(dsn, func(execer driver.ExecerContext) error {
 		once.Do(func() {
-			initErr = initializeDatabase(t.Context(), execer, extensionList, validation, allowed, blocked)
+			initErr = initializeDatabase(t.Context(), execer, extensionList, policy)
 		})
 		return initErr
 	})
@@ -124,6 +171,10 @@ func newConnector(t *testing.T, dsn, extensionList string, validation bool, allo
 	t.Cleanup(func() { require.NoError(t, connector.Close()) })
 	return connector
 }
+
+func policyDocument(value string) *string { return &value }
+
+func defaultPolicy() *string { return policyDocument(`{"version":1,"options":{}}`) }
 
 func freshDSN(t *testing.T, params string) string {
 	t.Helper()

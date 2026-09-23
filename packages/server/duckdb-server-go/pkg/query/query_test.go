@@ -84,7 +84,7 @@ func arrowRows(t *testing.T, data []byte) []map[string]any {
 func TestDB_FunctionBlocklist(t *testing.T) {
 	db := setupTestDB(t)
 	ctx := context.Background()
-	policy := &ValidationPolicy{BlockedFunctions: []string{" RANGE ", "MD5", "SUM", "ROW_NUMBER"}}
+	policy := &ValidationPolicy{BlockedFunctions: []string{"RANGE", "MD5", "SUM", "ROW_NUMBER"}}
 
 	tests := []struct {
 		name     string
@@ -110,12 +110,12 @@ func TestDB_FunctionAllowlist(t *testing.T) {
 	ctx := context.Background()
 	db := setupTestDB(t)
 	exact := func(functions ...string) *ValidationPolicy {
-		return &ValidationPolicy{AllowedFunctions: functions, DisableDefaultFunctions: true}
+		return &ValidationPolicy{AllowedFunctions: functions, UseDefaultFunctions: boolPtr(false)}
 	}
 	defaults := &ValidationPolicy{}
 
 	t.Run("allows exact case-insensitive function names", func(t *testing.T) {
-		policy := exact(" MD5 ", "ROW_NUMBER", "RANGE", "+", "COUNT_STAR", "LIST_VALUE")
+		policy := exact("MD5", "ROW_NUMBER", "RANGE", "+", "COUNT_STAR", "LIST_VALUE")
 
 		tests := []struct {
 			name  string
@@ -248,16 +248,16 @@ func TestDB_FunctionAllowlist(t *testing.T) {
 	})
 
 	t.Run("defaults can be disabled", func(t *testing.T) {
-		_, err := db.QueryArrow(ctx, "SELECT 1", &ValidationPolicy{DisableDefaultFunctions: true})
+		_, err := db.QueryArrow(ctx, "SELECT 1", &ValidationPolicy{UseDefaultFunctions: boolPtr(false)})
 		require.NoError(t, err)
 
-		_, err = db.QueryArrow(ctx, "SELECT 1 + 2", &ValidationPolicy{DisableDefaultFunctions: true})
+		_, err = db.QueryArrow(ctx, "SELECT 1 + 2", &ValidationPolicy{UseDefaultFunctions: boolPtr(false)})
 		require.ErrorIs(t, err, ErrAccessDenied)
 		require.Equal(t, "+", requireViolation(t, err, "function").FunctionName)
 	})
 
 	t.Run("defaults can be blocked", func(t *testing.T) {
-		policy := &ValidationPolicy{BlockedFunctions: []string{" SUM "}}
+		policy := &ValidationPolicy{BlockedFunctions: []string{"SUM"}}
 		_, err := db.QueryArrow(ctx, "SELECT 1 + 2", policy)
 		require.NoError(t, err)
 
@@ -267,7 +267,7 @@ func TestDB_FunctionAllowlist(t *testing.T) {
 	})
 
 	t.Run("blocks win over allows", func(t *testing.T) {
-		policy := &ValidationPolicy{AllowedFunctions: []string{" MD5 ", "sum"}, BlockedFunctions: []string{" SUM ", "+"}}
+		policy := &ValidationPolicy{AllowedFunctions: []string{"MD5", "sum"}, BlockedFunctions: []string{"SUM", "+"}}
 		_, err := db.QueryArrow(ctx, "SELECT md5('x')", policy)
 		require.NoError(t, err)
 		for _, q := range []string{"SELECT sum(1)", "SELECT 1+2"} {
