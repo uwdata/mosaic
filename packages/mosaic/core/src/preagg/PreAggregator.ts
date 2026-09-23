@@ -5,6 +5,7 @@ import type { MosaicClient } from '../MosaicClient.js';
 import type { Selection } from '../Selection.js';
 import { fnv_hash } from '../util/hash.js';
 import { resolvePositional } from '../util/positional.js';
+import { QueryError } from '../util/query-error.js';
 import { preaggColumns, PreAggColumnsResult } from './preagg-columns.js';
 
 /**
@@ -216,14 +217,15 @@ export class PreAggregator {
         client.query(filter) as SelectQuery,
         active, preaggCols, schema
       );
-      _info.result = mc.exec([
+      const createQuery = [
         createSchema(schema),
         createTable(_info.table, _info.create, { temp: false })
-      ]);
+      ];
+      _info.result = mc.exec(createQuery);
       // if create query fails, log and mark as failed
       _info.result.catch((e: Error) => {
-        mc.logger().error(e);
-        _info.result = null; // indicates lack of view
+        mc.logger().error(new QueryError(e, createQuery.join(";\n")));
+        _info.result = null; // indicate lack of preagg view
       });
       info = _info;
     }
