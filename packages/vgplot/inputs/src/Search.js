@@ -1,6 +1,6 @@
 /** @import { Param, Selection } from '@uwdata/mosaic-core' */
 import { isParam, isSelection, clauseMatch } from '@uwdata/mosaic-core';
-import { Query } from '@uwdata/mosaic-sql';
+import { Query, asTableRef } from '@uwdata/mosaic-sql';
 import { Input, input } from './input.js';
 
 let _id = 0;
@@ -22,7 +22,7 @@ let _id = 0;
  *  - `"prefix"`: the query string must appear at the start of the text
  *  - `"suffix"`: the query string must appear at the end of the text
  *  - `"regexp"`: the query string is a regular expression the text must match
- * @param {string} [options.from] The name of a database table to use as an
+ * @param {string | string[]} [options.from] The name of a database table to use as an
  *  autocomplete data source for this widget. Used in conjunction with the
  *  *column* option.
  * @param {string} [options.column] The name of a database column from which
@@ -55,7 +55,7 @@ export class Search extends Input {
    *  - `"prefix"`: the query string must appear at the start of the text
    *  - `"suffix"`: the query string must appear at the end of the text
    *  - `"regexp"`: the query string is a regular expression the text must match
-   * @param {string} [options.from] The name of a database table to use as an
+   * @param {string | string[]} [options.from] The name of a database table to use as an
    *  autocomplete data source for this widget. Used in conjunction with the
    *  *column* option.
    * @param {string} [options.column] The name of a database column from which
@@ -142,7 +142,7 @@ export class Search extends Input {
     const { from, column } = this;
     if (!from) return null;
     return Query
-      .from(from)
+      .from(asTableRef(from))
       .select({ list: column })
       .distinct()
       .where(filter);

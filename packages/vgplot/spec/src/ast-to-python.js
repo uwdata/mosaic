@@ -310,7 +310,7 @@ function emitDataRef(data, ctx) {
   if (data && typeof data === 'object' && data.from) {
     const { from: name, ...rest } = data;
     const nameRef = ctx.dataVarMap.has(name) ? ctx.dataVar(name) : literal(name, 0, ctx);
-    if (!Object.keys(rest).length) return nameRef;
+    if (!Object.keys(rest).length && !Array.isArray(name)) return nameRef;
     const extraArgs = buildArgs(rest, ctx);
     return `vg.source(${[nameRef, ...extraArgs].join(', ')})`;
   }

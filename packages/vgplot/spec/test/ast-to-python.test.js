@@ -30,3 +30,13 @@ describe('astToPython literals', () => {
     expect(code).toContain('c = vg.param(-3)');
   });
 });
+
+describe('astToPython data sources', () => {
+  it('wraps a table name path in vg.source', () => {
+    const code = astToPython(
+      ast({ plot: [{ mark: 'dot', data: { from: ['schema_name', 'table_name'] } }] })
+    );
+    // A bare list would be read as inline data by the Python API.
+    expect(code).toContain('vg.dot(data=vg.source(["schema_name", "table_name"]))');
+  });
+});

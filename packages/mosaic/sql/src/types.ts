@@ -78,7 +78,7 @@ export type FromEntry =
   | TableRefNode
   | SQLNode
   | [string, SQLNode]
-  | Record<string, string | SQLNode>;
+  | Record<string, string | string[] | SQLNode>;
 
 export type FromExpr = MaybeArray<FromEntry>;
 

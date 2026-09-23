@@ -1,5 +1,5 @@
 import { coordinator } from '@uwdata/mosaic-core';
-import { Query, count, isBetween, lt, lte, neq, sql, sum } from '@uwdata/mosaic-sql';
+import { Query, asTableRef, count, isBetween, lt, lte, neq, sql, sum } from '@uwdata/mosaic-sql';
 import { binExpr } from './util/bin-expr.js';
 import { extentX, extentY } from './util/extent.js';
 import { indices, permute } from './util/permute.js';
@@ -49,7 +49,7 @@ export class RasterTileMark extends Grid2DMark {
       : [lte(+x0, bx), lt(bx, +x1), lte(+y0, by), lt(by, +y1)];
 
     const q = Query
-      .from(this.sourceTable())
+      .from(asTableRef(this.sourceTable()))
       .where(bounds);
 
     const groupby = this.groupby = [];

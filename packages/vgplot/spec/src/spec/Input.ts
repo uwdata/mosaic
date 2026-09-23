@@ -17,10 +17,11 @@ export interface Menu {
    */
   field?: string;
   /**
-   * The name of a database table to use as a data source for this widget.
+   * The name of a database table to use as a data source for this widget,
+   * or a name path such as `["schema", "table"]`.
    * Used in conjunction with the `column` property.
    */
-  from?: string;
+  from?: string | string[];
   /**
    * The name of a database column from which to pull menu options.
    * The unique column values are used as menu options.
@@ -78,9 +79,10 @@ export interface Search {
   type?: 'contains' | 'prefix' | 'suffix' | 'regexp';
   /**
    * The name of a database table to use as an autocomplete data source
-   * for this widget. Used in conjunction with the `column` property.
+   * for this widget, or a name path such as `["schema", "table"]`.
+   * Used in conjunction with the `column` property.
    */
-  from?: string;
+  from?: string | string[];
   /**
    * The name of a database column from which to pull valid search results.
    * The unique column values are used as search autocomplete values.
@@ -121,11 +123,12 @@ export interface Slider {
    */
   select?: 'point' | 'interval';
   /**
-   * The name of a database table to use as a data source for this widget.
+   * The name of a database table to use as a data source for this widget,
+   * or a name path such as `["schema", "table"]`.
    * Used in conjunction with the `column` property.
    * The minimum and maximum values of the column determine the slider range.
    */
-  from?: string;
+  from?: string | string[];
   /**
    * The name of a database column whose values determine the slider range.
    * Used in conjunction with the `from` property.
@@ -174,9 +177,10 @@ export interface Table {
    */
   as?: ParamRef;
   /**
-   * The name of a database table to use as a data source for this widget.
+   * The name of a database table to use as a data source for this widget,
+   * or a name path such as `["schema", "table"]`.
    */
-  from: string | ParamRef;
+  from: string | string[] | ParamRef;
   /**
    * A list of column names to include in the table grid.
    * If unspecified, all table columns are included.

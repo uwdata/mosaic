@@ -1,4 +1,4 @@
-import { Query, abs, add, and, bitAnd, cond, div, float64, gt, int32, isAggregateExpression, isNotNull, lt, mul, neq, pow, round, sub } from '@uwdata/mosaic-sql';
+import { Query, abs, add, and, asTableRef, bitAnd, cond, div, float64, gt, int32, isAggregateExpression, isNotNull, lt, mul, neq, pow, round, sub } from '@uwdata/mosaic-sql';
 import { Transient } from '../symbols.js';
 import { extentX, extentY, xyext } from './util/extent.js';
 import { Mark } from './Mark.js';
@@ -112,7 +112,7 @@ export class HexbinMark extends Mark {
               ),
             [y]: cond(tt, int32(add(pj, cond(lt(py, pj), -1, 1))), pj)
           }, '*')
-          .from(this.sourceTable())
+          .from(asTableRef(this.sourceTable()))
           .where(isNotNull(xc.field), isNotNull(yc.field), filter)
       );
   }

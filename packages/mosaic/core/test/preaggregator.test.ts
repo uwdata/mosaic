@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import type { CreateQuery, ExprNode, FilterExpr } from "@uwdata/mosaic-sql";
-import { Query, add, argmax, argmin, avg, corr, count, covarPop, covariance, desc, filterPushdown, geomean, gt, literal, loadObjects, max, min, mul, neq, product, regrAvgX, regrAvgY, regrCount, regrIntercept, regrR2, regrSXX, regrSXY, regrSYY, regrSlope, sql, stddev, stddevPop, sum, upper, varPop, variance } from '@uwdata/mosaic-sql';
+import { Query, add, argmax, argmin, asTableRef, avg, corr, count, covarPop, covariance, desc, filterPushdown, geomean, gt, literal, loadObjects, max, min, mul, neq, product, regrAvgX, regrAvgY, regrCount, regrIntercept, regrR2, regrSXX, regrSXY, regrSYY, regrSlope, sql, stddev, stddevPop, sum, upper, varPop, variance } from '@uwdata/mosaic-sql';
 import { clausePoint, Coordinator, Selection, SelectionClause } from '../src/index.js';
 import type { PreAggregateInfo } from '../src/preagg/PreAggregator.js';
 import { preaggColumns } from '../src/preagg/preagg-columns.js';
@@ -349,5 +349,14 @@ describe('PreAggregator', () => {
       .groupby('cat', 'cat');
     const cols = preaggColumns(new TestClient(query));
     expect(cols?.groupby).toStrictEqual(['cat']);
+  });
+
+  it('contains schema-qualified source table', () => {
+    const query = Query.from(asTableRef(['schema_name', 'table_name'])!)
+      .select({ measure: variance('x') })
+      .groupby('cat');
+    const cols = preaggColumns(new TestClient(query));
+    const exprs = Object.values(cols!.preagg).map(e => `${e}`).join('\n');
+    expect(exprs).toContain('FROM "schema_name"."table_name"');
   });
 });
