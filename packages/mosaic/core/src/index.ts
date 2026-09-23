@@ -23,7 +23,7 @@ export {
   clauseMatch,
   clauseMatchAny,
   clauseNone
-} from './SelectionClause.js';
+} from './clause/index.js';
 
 export { lruCache, voidCache } from './util/cache.js';
 export { decodeIPC } from './util/decode-ipc.js';
@@ -39,8 +39,7 @@ export { isActivatable } from './util/is-activatable.js';
 export { QueryError } from './util/query-error.js';
 export type { QueryResult } from './util/query-result.js';
 
-export * from './types.js';
-
+export type * from './types.js';
+export type * from './clause/index.js';
 export type * from './connectors/Connector.js';
 export type * from './Selection.js';
-export type * from './SelectionClause.js';
