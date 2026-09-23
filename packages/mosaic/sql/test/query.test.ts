@@ -1,5 +1,5 @@
 import { expect, describe, it } from 'vitest';
-import { asTableRef, column, desc, gt, lt, max, min, sql, Query, sum, lead, over, cte, add, FromClauseNode, SampleClauseNode, frameRows, div, mul, unnest, list, isSelectQuery } from '../src/index.js';
+import { asTableRef, column, desc, gt, lt, max, min, sql, Query, sum, lead, over, cte, add, FromClauseNode, SampleClauseNode, frameRows, div, mul, unnest, list, isSelectQuery, SelectQuery, TableRefNode } from '../src/index.js';
 import { validateQuery } from './util/validate.js';
 import { isDescribeQuery, isPivotQuery, isSetOperation } from '../src/ast/query.js';
 
@@ -487,6 +487,41 @@ describe('Query', () => {
            '"bar" AS MATERIALIZED (SELECT 42 AS "y")',
       'SELECT ("x" + "y") AS "v" FROM "foo", "bar"'
     ].join(' '));
+  });
+
+  it('registers parent query with common table expressions', async () => {
+    function checkCTEs(q: SelectQuery) {
+      for (const node of q._with) {
+        expect(node.query.cteFor).toBe(q);
+      }
+      const from = q._from.map(n => ((n as FromClauseNode).expr as TableRefNode).name);
+      const subs = from.map(name => q._with.find(n => n.name === name)?.query);
+      expect(q.subqueries).toStrictEqual(subs);
+    }
+    checkCTEs(
+      Query
+        .with({ a: Query.select('*').from('t1') })
+        .select('num1', 'num2')
+        .from('a')
+    );
+    checkCTEs(
+      Query
+        .with({
+          a: Query.select('num1').from('t1'),
+          b: Query.select('num2').from('t2')
+        })
+        .select('*')
+        .from('a', 'b')
+    );
+    checkCTEs(
+      Query
+        .with(
+          cte('foo', Query.select({ x: 42 }), false),
+          cte('bar', Query.select({ y: 42 }), true)
+        )
+        .select({ v: add('x', 'y') })
+        .from('foo', 'bar')
+    );
   });
 
   it('performs set operations', async () => {

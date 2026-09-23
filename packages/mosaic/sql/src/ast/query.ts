@@ -220,15 +220,14 @@ export class Query extends ExprNode {
    */
   with(...expr: WithExpr[]): this {
     const list: WithClauseNode[] = [];
-    const add = (name: string, q: Query) => {
+    const add = (name: string, q: Query, mat?: boolean | null, names?: string[]) => {
       const query = q.clone();
       query.setCteFor(this);
-      list.push(new WithClauseNode(name, query));
+      list.push(new WithClauseNode(name, query, mat, names));
     };
     expr.flat().forEach(e => {
       if (e instanceof WithClauseNode) {
-        e.query.setCteFor(this);
-        list.push(e);
+        add(e.name, e.query, e.materialized, e.columnNames);
       } else if (e != null) {
         for (const name in e) add(name, e[name]);
       }
