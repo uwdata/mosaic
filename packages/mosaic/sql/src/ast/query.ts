@@ -706,7 +706,7 @@ export class SetOperation extends Query {
   }
 
   /**
-   * Create a shallow clone of this set operation. The consituent
+   * Create a shallow clone of this set operation. The constituent
    * subqueries will be unchanged.
    */
   clone(): this {
