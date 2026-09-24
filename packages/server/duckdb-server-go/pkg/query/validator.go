@@ -100,7 +100,7 @@ type ValidationResult struct {
 }
 
 // ValidateSQL returns binding evidence on success and diagnostics on denial without executing or reserving a connection.
-// QueryArrow and WriteArrow validate and execute on the same connection.
+// Query validates and executes on the same connection.
 func (db *DB) ValidateSQL(ctx context.Context, query string, policy ValidationPolicy) (ValidationResult, error) {
 	return db.validateSQL(ctx, db.db, query, policy)
 }

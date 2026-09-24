@@ -31,9 +31,9 @@ func TestInitializeDatabase(t *testing.T) {
 			db, err := query.New(t.Context(), connector, opts...)
 			require.NoError(t, err)
 			t.Cleanup(db.Close)
-			_, err = db.QueryArrow(t.Context(), "SELECT 42", nil)
+			_, err = db.Query(t.Context(), "SELECT 42", nil)
 			require.NoError(t, err)
-			_, err = db.QueryArrow(t.Context(), "SELECT md5('x')", nil)
+			_, err = db.Query(t.Context(), "SELECT md5('x')", nil)
 			if tc.document == nil {
 				require.NoError(t, err)
 				require.NoError(t, db.Exec(t.Context(), "CREATE TABLE items (value INTEGER)"))

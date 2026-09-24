@@ -44,7 +44,7 @@ func (e queryParamsError) Error() string {
 // current schema-policy plumbing as a supported extension point.
 type commandExecutor interface {
 	Exec(context.Context, string) error
-	QueryArrow(context.Context, string, *query.ValidationPolicy) ([]byte, error)
+	Query(context.Context, string, *query.ValidationPolicy) ([]byte, error)
 }
 
 type handler struct {
@@ -318,7 +318,7 @@ func (s *handler) execCommand(ctx context.Context, params queryParams, authorize
 		err = s.db.Exec(ctx, *params.SQL)
 
 	case CommandArrow:
-		response.data, err = s.db.QueryArrow(ctx, *params.SQL, policy)
+		response.data, err = s.db.Query(ctx, *params.SQL, policy)
 
 	default:
 		return commandResponse{}, fmt.Errorf("server: no executor for command type %q", *params.Type)

@@ -1,7 +1,6 @@
 package query
 
 import (
-	"bytes"
 	"context"
 	"errors"
 	"sync"
@@ -41,7 +40,7 @@ func TestValidationRequiresGatekeeper(t *testing.T) {
 	db = setupTestDB(t, false)
 	_, err = db.ValidateSQL(t.Context(), "SELECT 1", ValidationPolicy{})
 	require.ErrorIs(t, err, ErrValidation)
-	data, err := db.QueryArrow(t.Context(), "SELECT 1", &ValidationPolicy{})
+	data, err := db.Query(t.Context(), "SELECT 1", &ValidationPolicy{})
 	require.ErrorIs(t, err, ErrValidation)
 	require.Empty(t, data)
 }
@@ -64,12 +63,12 @@ func TestValidationPolicyAndResult(t *testing.T) {
 	require.Contains(t, result.Functions, ResolvedFunction{Catalog: "system", Schema: "main", Name: "sum", Type: "aggregate"})
 	policy.AllowedFunctions = []string{"sum"}
 	policy.UseDefaultFunctions = boolPtr(false)
-	_, err = db.QueryArrow(t.Context(), "SELECT sum(value) FROM shared", &policy)
+	_, err = db.Query(t.Context(), "SELECT sum(value) FROM shared", &policy)
 	require.NoError(t, err)
-	_, err = db.QueryArrow(t.Context(), "SELECT lower('x') FROM shared", &policy)
+	_, err = db.Query(t.Context(), "SELECT lower('x') FROM shared", &policy)
 	require.ErrorIs(t, err, ErrAccessDenied)
 
-	data, err := db.QueryArrow(t.Context(), "SELECT * FROM shared", &ValidationPolicy{JSON: stringPtr(`{"version":1,"options":{"allowed_tables":[{"schema":"main","table":"shared"}]}}`)})
+	data, err := db.Query(t.Context(), "SELECT * FROM shared", &ValidationPolicy{JSON: stringPtr(`{"version":1,"options":{"allowed_tables":[{"schema":"main","table":"shared"}]}}`)})
 	require.NoError(t, err)
 	require.Equal(t, []map[string]any{{"value": float64(42)}}, arrowRows(t, data))
 	result, err = db.ValidateSQL(t.Context(), "SELECT * FROM items", policy)
@@ -86,13 +85,13 @@ func TestValidationPolicyAndResult(t *testing.T) {
 	require.Equal(t, table.Catalog, details.Violations[0].Catalog)
 	require.Equal(t, table.Schema, details.Violations[0].Schema)
 	require.Equal(t, table.Table, details.Violations[0].Table)
-	_, err = db.QueryArrow(t.Context(), "SELECT md5('x')", &ValidationPolicy{AllowedFunctions: []string{"md5"}})
+	_, err = db.Query(t.Context(), "SELECT md5('x')", &ValidationPolicy{AllowedFunctions: []string{"md5"}})
 	require.ErrorIs(t, err, ErrAccessDenied)
 	require.ErrorAs(t, err, &details)
 	require.Equal(t, "md5", details.Violations[0].FunctionName)
-	_, err = db.QueryArrow(t.Context(), "SELECT sum(value) FROM shared", &ValidationPolicy{BlockedFunctions: []string{"sum"}})
+	_, err = db.Query(t.Context(), "SELECT sum(value) FROM shared", &ValidationPolicy{BlockedFunctions: []string{"sum"}})
 	require.ErrorIs(t, err, ErrAccessDenied)
-	_, err = db.QueryArrow(t.Context(), "SELECT * FROM shared", &ValidationPolicy{BlockedTables: []TableRule{{Schema: "main", Table: "shared"}}})
+	_, err = db.Query(t.Context(), "SELECT * FROM shared", &ValidationPolicy{BlockedTables: []TableRule{{Schema: "main", Table: "shared"}}})
 	require.ErrorIs(t, err, ErrAccessDenied)
 	result, err = db.ValidateSQL(t.Context(), "SELECT (", ValidationPolicy{})
 	require.ErrorAs(t, err, &details)
@@ -109,31 +108,32 @@ func TestValidatedConnectionLifecycle(t *testing.T) {
 	denied := &ValidationPolicy{AllowedTables: []TableRule{}}
 	ctx, cancel := context.WithTimeout(t.Context(), 5*time.Second)
 	defer cancel()
-	var buf bytes.Buffer
-	require.ErrorIs(t, db.WriteArrow(ctx, "SELECT * FROM items", denied, &buf), ErrAccessDenied)
-	require.Empty(t, buf.Bytes())
+	data, err := db.Query(ctx, "SELECT * FROM items", denied)
+	require.ErrorIs(t, err, ErrAccessDenied)
+	require.Nil(t, data)
 	canceled, stop := context.WithCancel(ctx)
 	stop()
-	_, err := db.QueryArrow(canceled, "SELECT * FROM items", allowed)
+	data, err = db.Query(canceled, "SELECT * FROM items", allowed)
 	require.ErrorIs(t, err, context.Canceled)
+	require.Nil(t, data)
 	var wg sync.WaitGroup
 	for range 4 {
 		wg.Go(func() {
-			if _, err := db.QueryArrow(ctx, "SELECT * FROM items", denied); !errors.Is(err, ErrAccessDenied) {
+			if _, err := db.Query(ctx, "SELECT * FROM items", denied); !errors.Is(err, ErrAccessDenied) {
 				t.Error(err)
 			}
-			if _, err := db.QueryArrow(ctx, "SELECT * FROM items", allowed); err != nil {
+			if _, err := db.Query(ctx, "SELECT * FROM items", allowed); err != nil {
 				t.Error(err)
 			}
 		})
 	}
 	wg.Wait()
-	data, err := db.QueryArrow(ctx, "SELECT * FROM items", allowed)
+	data, err = db.Query(ctx, "SELECT * FROM items", allowed)
 	require.NoError(t, err)
 	require.Equal(t, []map[string]any{{"value": float64(42)}}, arrowRows(t, data))
 	validated := setupTestDB(t, true, WithValidation())
 	require.ErrorIs(t, validated.Exec(ctx, "SELECT 1"), ErrExecWithValidation)
-	_, err = validated.QueryArrow(ctx, "CREATE TABLE forbidden(value INTEGER)", nil)
+	_, err = validated.Query(ctx, "CREATE TABLE forbidden(value INTEGER)", nil)
 	require.ErrorIs(t, err, ErrUnsupportedStatement)
 }
 

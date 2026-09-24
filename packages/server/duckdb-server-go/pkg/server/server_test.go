@@ -64,8 +64,8 @@ func mustHandler(t *testing.T, executor commandExecutor, opts ...Option) *handle
 type failOnCallExecutor struct{ testing.TB }
 
 func (e failOnCallExecutor) Exec(context.Context, string) error { return e.fail("Exec") }
-func (e failOnCallExecutor) QueryArrow(context.Context, string, *query.ValidationPolicy) ([]byte, error) {
-	return nil, e.fail("QueryArrow")
+func (e failOnCallExecutor) Query(context.Context, string, *query.ValidationPolicy) ([]byte, error) {
+	return nil, e.fail("Query")
 }
 func (e failOnCallExecutor) fail(method string) error {
 	e.Helper()
@@ -149,7 +149,7 @@ func TestValidationErrorResponses(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			var logs synchronizedBuffer
 			executor := &spyCommandExecutor{failOnCallExecutor: failOnCallExecutor{t},
-				queryArrow: func(context.Context, string, *query.ValidationPolicy) ([]byte, error) {
+				queryFn: func(context.Context, string, *query.ValidationPolicy) ([]byte, error) {
 					return nil, errors.Join(query.ErrValidation, tc.err)
 				},
 			}

@@ -7,7 +7,6 @@ import (
 	"database/sql/driver"
 	"errors"
 	"fmt"
-	"io"
 	"log/slog"
 
 	"github.com/apache/arrow-go/v18/arrow/ipc"
@@ -85,21 +84,12 @@ func (db *DB) Exec(ctx context.Context, query string) error {
 	return nil
 }
 
-// QueryArrow validates query against policy when policy is non-nil or WithValidation is configured, then executes it
+// Query validates query against policy when policy is non-nil or WithValidation is configured, then executes it
 // on the same connection and returns the Arrow IPC stream.
-func (db *DB) QueryArrow(ctx context.Context, query string, policy *ValidationPolicy) ([]byte, error) {
-	var buf bytes.Buffer
-	if err := db.WriteArrow(ctx, query, policy, &buf); err != nil {
-		return nil, err
-	}
-	return buf.Bytes(), nil
-}
-
-// WriteArrow is QueryArrow streaming into w. Nothing is written when validation fails.
-func (db *DB) WriteArrow(ctx context.Context, query string, policy *ValidationPolicy, w io.Writer) error {
+func (db *DB) Query(ctx context.Context, query string, policy *ValidationPolicy) ([]byte, error) {
 	conn, err := db.db.Conn(ctx)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	defer func() {
 		if err := conn.Close(); err != nil {
@@ -111,10 +101,11 @@ func (db *DB) WriteArrow(ctx context.Context, query string, policy *ValidationPo
 	}
 	if policy != nil {
 		if _, err := db.validateSQL(ctx, conn, query, *policy); err != nil {
-			return err
+			return nil, err
 		}
 	}
-	return conn.Raw(func(raw any) error {
+	var buf bytes.Buffer
+	err = conn.Raw(func(raw any) error {
 		arrow, err := duckdb.NewArrowFromConn(raw.(driver.Conn))
 		if err != nil {
 			return err
@@ -124,7 +115,7 @@ func (db *DB) WriteArrow(ctx context.Context, query string, policy *ValidationPo
 			return fmt.Errorf("query: failed to execute query: %w", err)
 		}
 		defer rdr.Release()
-		writer := ipc.NewWriter(w, ipc.WithSchema(rdr.Schema()))
+		writer := ipc.NewWriter(&buf, ipc.WithSchema(rdr.Schema()))
 		for rdr.Next() {
 			if err := writer.Write(rdr.RecordBatch()); err != nil {
 				return errors.Join(err, writer.Close())
@@ -132,4 +123,8 @@ func (db *DB) WriteArrow(ctx context.Context, query string, policy *ValidationPo
 		}
 		return errors.Join(rdr.Err(), writer.Close())
 	})
+	if err != nil {
+		return nil, err
+	}
+	return buf.Bytes(), nil
 }

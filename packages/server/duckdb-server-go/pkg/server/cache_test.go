@@ -101,7 +101,7 @@ func TestHTTPCachePreconditions(t *testing.T) {
 	var executions int
 	spy := &spyCommandExecutor{
 		failOnCallExecutor: failOnCallExecutor{t},
-		queryArrow: func(context.Context, string, *query.ValidationPolicy) ([]byte, error) {
+		queryFn: func(context.Context, string, *query.ValidationPolicy) ([]byte, error) {
 			executions++
 			return []byte("result"), nil
 		},
@@ -162,7 +162,7 @@ func TestHTTPCacheNonQueryResponses(t *testing.T) {
 	spy := &spyCommandExecutor{
 		failOnCallExecutor: failOnCallExecutor{t},
 		exec:               func(context.Context, string) error { return nil },
-		queryArrow:         func(context.Context, string, *query.ValidationPolicy) ([]byte, error) { return []byte("result"), nil },
+		queryFn:            func(context.Context, string, *query.ValidationPolicy) ([]byte, error) { return []byte("result"), nil },
 	}
 	handler := mustHandler(t, spy, WithCacheControl("public, max-age=60"))
 	tests := []struct {
@@ -202,7 +202,7 @@ func TestHTTPCacheNonQueryResponses(t *testing.T) {
 func TestHTTPCacheWebSocket(t *testing.T) {
 	spy := &spyCommandExecutor{
 		failOnCallExecutor: failOnCallExecutor{t},
-		queryArrow:         func(context.Context, string, *query.ValidationPolicy) ([]byte, error) { return []byte("result"), nil },
+		queryFn:            func(context.Context, string, *query.ValidationPolicy) ([]byte, error) { return []byte("result"), nil },
 	}
 	server := newWebSocketTestServer(t, mustHandler(t, spy, WithCacheControl("public, max-age=60"), WithVary("X-Dataset")))
 	conn, res, err := server.dial(&websocket.DialOptions{HTTPHeader: http.Header{"If-None-Match": {"*"}}})
@@ -222,7 +222,7 @@ func TestHTTPCacheWebSocket(t *testing.T) {
 func TestVaryIndependentOfCacheControl(t *testing.T) {
 	spy := &spyCommandExecutor{
 		failOnCallExecutor: failOnCallExecutor{t},
-		queryArrow:         func(context.Context, string, *query.ValidationPolicy) ([]byte, error) { return []byte("result"), nil },
+		queryFn:            func(context.Context, string, *query.ValidationPolicy) ([]byte, error) { return []byte("result"), nil },
 	}
 	for _, policy := range []string{"", "public, max-age=60"} {
 		t.Run(policy, func(t *testing.T) {
@@ -259,7 +259,7 @@ func TestVaryIndependentOfCacheControl(t *testing.T) {
 func TestHTTPCachePolicyVariation(t *testing.T) {
 	spy := &spyCommandExecutor{
 		failOnCallExecutor: failOnCallExecutor{t},
-		queryArrow: func(_ context.Context, _ string, policy *query.ValidationPolicy) ([]byte, error) {
+		queryFn: func(_ context.Context, _ string, policy *query.ValidationPolicy) ([]byte, error) {
 			return []byte(policy.AllowedTables[0].Schema), nil
 		},
 	}

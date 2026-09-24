@@ -25,8 +25,8 @@ import (
 
 type spyCommandExecutor struct {
 	failOnCallExecutor
-	exec       func(context.Context, string) error
-	queryArrow func(context.Context, string, *query.ValidationPolicy) ([]byte, error)
+	exec    func(context.Context, string) error
+	queryFn func(context.Context, string, *query.ValidationPolicy) ([]byte, error)
 }
 
 func (s *spyCommandExecutor) Exec(ctx context.Context, sql string) error {
@@ -36,11 +36,11 @@ func (s *spyCommandExecutor) Exec(ctx context.Context, sql string) error {
 	return s.exec(ctx, sql)
 }
 
-func (s *spyCommandExecutor) QueryArrow(ctx context.Context, sql string, policy *query.ValidationPolicy) ([]byte, error) {
-	if s.queryArrow == nil {
-		return s.failOnCallExecutor.QueryArrow(ctx, sql, policy)
+func (s *spyCommandExecutor) Query(ctx context.Context, sql string, policy *query.ValidationPolicy) ([]byte, error) {
+	if s.queryFn == nil {
+		return s.failOnCallExecutor.Query(ctx, sql, policy)
 	}
-	return s.queryArrow(ctx, sql, policy)
+	return s.queryFn(ctx, sql, policy)
 }
 
 func TestCommandDenialPrecedesExecutor(t *testing.T) {
@@ -51,7 +51,7 @@ func TestCommandDenialPrecedesExecutor(t *testing.T) {
 			executorCalls++
 			return nil
 		},
-		queryArrow: func(context.Context, string, *query.ValidationPolicy) ([]byte, error) {
+		queryFn: func(context.Context, string, *query.ValidationPolicy) ([]byte, error) {
 			executorCalls++
 			return nil, nil
 		},
@@ -81,7 +81,7 @@ func TestCommandAuthorizationRunsImmediatelyBeforeExecutor(t *testing.T) {
 
 	spy := &spyCommandExecutor{
 		failOnCallExecutor: failOnCallExecutor{t},
-		queryArrow: func(_ context.Context, gotSQL string, policy *query.ValidationPolicy) ([]byte, error) {
+		queryFn: func(_ context.Context, gotSQL string, policy *query.ValidationPolicy) ([]byte, error) {
 			appendEvent("executor")
 			require.Equal(t, sql, gotSQL)
 			require.Nil(t, policy)
@@ -114,7 +114,7 @@ func TestCanceledRequestContextReachesAuthorizationAndExecutor(t *testing.T) {
 
 	spy := &spyCommandExecutor{
 		failOnCallExecutor: failOnCallExecutor{t},
-		queryArrow: func(ctx context.Context, _ string, _ *query.ValidationPolicy) ([]byte, error) {
+		queryFn: func(ctx context.Context, _ string, _ *query.ValidationPolicy) ([]byte, error) {
 			executorContextErr = ctx.Err()
 			return nil, nil
 		},
@@ -154,7 +154,7 @@ func TestAuthorizerHandlesConcurrentRequests(t *testing.T) {
 	var executorCalls atomic.Int32
 	spy := &spyCommandExecutor{
 		failOnCallExecutor: failOnCallExecutor{t},
-		queryArrow: func(context.Context, string, *query.ValidationPolicy) ([]byte, error) {
+		queryFn: func(context.Context, string, *query.ValidationPolicy) ([]byte, error) {
 			executorCalls.Add(1)
 			return nil, nil
 		},

@@ -70,7 +70,7 @@ func TestCommandTypedPayload(t *testing.T) {
 			sqls := make(chan string, len(payloads))
 			executor := &spyCommandExecutor{
 				failOnCallExecutor: failOnCallExecutor{t},
-				queryArrow: func(_ context.Context, sql string, _ *query.ValidationPolicy) ([]byte, error) {
+				queryFn: func(_ context.Context, sql string, _ *query.ValidationPolicy) ([]byte, error) {
 					sqls <- sql
 					return []byte("result"), nil
 				},
@@ -309,7 +309,7 @@ func TestCommandRawMessagePayload(t *testing.T) {
 			sqls := make(chan string, len(payloads))
 			executor := &spyCommandExecutor{
 				failOnCallExecutor: failOnCallExecutor{t},
-				queryArrow: func(_ context.Context, sql string, _ *query.ValidationPolicy) ([]byte, error) {
+				queryFn: func(_ context.Context, sql string, _ *query.ValidationPolicy) ([]byte, error) {
 					sqls <- sql
 					return []byte("result"), nil
 				},
@@ -466,7 +466,7 @@ func TestCommandMessageLimits(t *testing.T) {
 			var expectedCalls int32
 			executor := &spyCommandExecutor{
 				failOnCallExecutor: failOnCallExecutor{t},
-				queryArrow: func(context.Context, string, *query.ValidationPolicy) ([]byte, error) {
+				queryFn: func(context.Context, string, *query.ValidationPolicy) ([]byte, error) {
 					executorCalls.Add(1)
 					return []byte("result"), nil
 				},

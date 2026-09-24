@@ -55,17 +55,18 @@ func TestExecAndArrow(t *testing.T) {
 	db := setupTestDB(t, false)
 	require.NoError(t, db.Exec(t.Context(), `CREATE TABLE products (id INTEGER, name VARCHAR, price DECIMAL);
 		INSERT INTO products VALUES (1, 'Apple', 1.50), (2, 'Banana', 0.75), (NULL, NULL, NULL)`))
-	data, err := db.QueryArrow(t.Context(), "SELECT * FROM products ORDER BY id", nil)
+	data, err := db.Query(t.Context(), "SELECT * FROM products ORDER BY id", nil)
 	require.NoError(t, err)
 	require.Equal(t, []map[string]any{
 		{"id": float64(1), "name": "Apple", "price": "1.5"},
 		{"id": float64(2), "name": "Banana", "price": "0.75"},
 		{"id": nil, "name": nil, "price": nil},
 	}, arrowRows(t, data))
-	data, err = db.QueryArrow(t.Context(), "SELECT * FROM products WHERE id > 100", nil)
+	data, err = db.Query(t.Context(), "SELECT * FROM products WHERE id > 100", nil)
 	require.NoError(t, err)
 	require.Empty(t, arrowRows(t, data))
-	_, err = db.QueryArrow(t.Context(), "SELECT * FROM missing_table", nil)
+	data, err = db.Query(t.Context(), "SELECT * FROM missing_table", nil)
 	require.Error(t, err)
+	require.Nil(t, data)
 	require.Error(t, db.Exec(t.Context(), "INVALID SQL"))
 }
