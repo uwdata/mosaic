@@ -85,22 +85,6 @@ func (db *DB) Exec(ctx context.Context, query string) error {
 	return nil
 }
 
-func (db *DB) validatedConn(ctx context.Context, query string, policy *ValidationPolicy) (*sql.Conn, error) {
-	conn, err := db.db.Conn(ctx)
-	if err != nil {
-		return nil, err
-	}
-	if policy == nil && db.validation {
-		policy = &ValidationPolicy{}
-	}
-	if policy != nil {
-		if _, err := db.validateSQL(ctx, conn, query, *policy); err != nil {
-			return nil, errors.Join(err, conn.Close())
-		}
-	}
-	return conn, nil
-}
-
 // QueryArrow validates query against policy when policy is non-nil or WithValidation is configured, then executes it
 // on the same connection and returns the Arrow IPC stream.
 func (db *DB) QueryArrow(ctx context.Context, query string, policy *ValidationPolicy) ([]byte, error) {
@@ -113,7 +97,7 @@ func (db *DB) QueryArrow(ctx context.Context, query string, policy *ValidationPo
 
 // WriteArrow is QueryArrow streaming into w. Nothing is written when validation fails.
 func (db *DB) WriteArrow(ctx context.Context, query string, policy *ValidationPolicy, w io.Writer) error {
-	conn, err := db.validatedConn(ctx, query, policy)
+	conn, err := db.db.Conn(ctx)
 	if err != nil {
 		return err
 	}
@@ -122,6 +106,14 @@ func (db *DB) WriteArrow(ctx context.Context, query string, policy *ValidationPo
 			db.logger.Error("query: failed to release connection", "error", err)
 		}
 	}()
+	if policy == nil && db.validation {
+		policy = &ValidationPolicy{}
+	}
+	if policy != nil {
+		if _, err := db.validateSQL(ctx, conn, query, *policy); err != nil {
+			return err
+		}
+	}
 	return conn.Raw(func(raw any) error {
 		arrow, err := duckdb.NewArrowFromConn(raw.(driver.Conn))
 		if err != nil {
