@@ -6,6 +6,8 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+
+	"github.com/uwdata/mosaic/packages/server/duckdb-server-go/pkg/query"
 )
 
 var (
@@ -45,10 +47,11 @@ func (c Command[T]) Payload() T {
 	return c.payload
 }
 
-// CommandAuthorizer authorizes one decoded and validated command from a request.
-// Returning a non-nil error denies the command. Unexpected errors are sanitized
-// as internal authorization failures.
-type CommandAuthorizer[T any] func(context.Context, Command[T]) error
+// CommandAuthorizer authorizes one command and returns the validation
+// policy applied on the connection that executes it.
+// Returning nil leaves the command unvalidated unless the DB was built with
+// query.WithValidation. A non-nil error denies the command.
+type CommandAuthorizer[T any] func(context.Context, Command[T]) (*query.ValidationPolicy, error)
 
 // Authorizer creates the command authorizer used for a single HTTP request or
 // WebSocket session. AuthorizeRequest is called before a POST body is decoded
@@ -70,7 +73,7 @@ func (f AuthorizerFunc[T]) AuthorizeRequest(r *http.Request) (CommandAuthorizer[
 }
 
 type requestAuthorizer func(*http.Request) (commandAuthorizer, error)
-type commandAuthorizer func(context.Context, queryParams) error
+type commandAuthorizer func(context.Context, queryParams) (*query.ValidationPolicy, error)
 
 // WithAuthorizer decodes each complete JSON envelope into a fresh T before
 // command authorization. Payload decoding failures reject the command with
@@ -86,7 +89,7 @@ func WithAuthorizer[T any](authorizer Authorizer[T]) Option {
 			if err != nil || authorize == nil {
 				return nil, err
 			}
-			return func(ctx context.Context, params queryParams) error {
+			return func(ctx context.Context, params queryParams) (*query.ValidationPolicy, error) {
 				var payload T
 				if _, empty := any(&payload).(*struct{}); !empty && params.raw != nil {
 					if err := json.Unmarshal(params.raw, &payload); err != nil {
@@ -96,7 +99,7 @@ func WithAuthorizer[T any](authorizer Authorizer[T]) Option {
 							attrs = append(attrs, "field", typeErr.Field, "offset", typeErr.Offset, "target_type", typeErr.Type.String())
 						}
 						cfg.logger.Warn("server: failed to decode command payload", attrs...)
-						return fmt.Errorf("%w: decode command payload: %w", ErrInvalidCommand, err)
+						return nil, fmt.Errorf("%w: decode command payload: %w", ErrInvalidCommand, err)
 					}
 				}
 				return authorize(ctx, Command[T]{typ: *params.Type, sql: *params.SQL, payload: payload})
