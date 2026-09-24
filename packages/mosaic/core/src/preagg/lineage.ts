@@ -1,4 +1,4 @@
-import { ColumnNameRefNode, FromClauseNode, isAggregateExpression, isColumnRef, isPivotQuery, isQuery, isSelectQuery, isTableRef, rewrite, ScalarSubqueryNode, SetOperation, TableRefNode, walk, WindowNode, type ColumnRefNode, type ExprNode, type Query, type SelectQuery, type SQLNode } from '@uwdata/mosaic-sql';
+import { ColumnNameRefNode, FromClauseNode, isAggregateExpression, isColumnRef, isPivotQuery, isQuery, isSelectQuery, isSetOperation, isTableRef, rewrite, ScalarSubqueryNode, TableRefNode, walk, WindowNode, type ColumnRefNode, type ExprNode, type Query, type SelectQuery, type SQLNode } from '@uwdata/mosaic-sql';
 
 /** A query paired with the scope of CTEs visible to it. */
 export interface Binding {
@@ -51,7 +51,7 @@ export function baseTable(query: Query, outer: Scope = new Map()): TableRefNode 
   const scope = queryScope(query, outer);
   const tables = isSelectQuery(query)
     ? (query._from.length === 1 ? [relationBase(query._from[0], scope)] : [null])
-    : query instanceof SetOperation ? query.queries.map(q => baseTable(q, scope))
+    : isSetOperation(query) ? query.queries.map(q => baseTable(q, scope))
     : isPivotQuery(query) ? [relationBase(query.source, scope)]
     : [null];
   const [table] = tables;
@@ -98,7 +98,7 @@ function outputExpression(query: Query, name: string, outer: Scope): ExprNode | 
     if (!expr || isAggregateExpression(expr) || hasWindow(expr)) return;
     return baseExpression(query, expr, outer);
   }
-  if (query instanceof SetOperation) {
+  if (isSetOperation(query)) {
     const scope = queryScope(query, outer);
     const exprs = query.queries.map(q => outputExpression(q, name, scope));
     const [expr] = exprs;

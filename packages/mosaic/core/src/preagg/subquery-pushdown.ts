@@ -1,4 +1,4 @@
-import { ColumnNameRefNode, JoinNode, isAggregateExpression, isPivotQuery, isSelectQuery, literal, SetOperation, TableRefNode, type LiteralNode, type PivotQuery, type Query, type SelectQuery, type SQLNode } from "@uwdata/mosaic-sql";
+import { ColumnNameRefNode, JoinNode, isAggregateExpression, isPivotQuery, isSelectQuery, isSetOperation, literal, type TableRefNode, type LiteralNode, type PivotQuery, type Query, type SelectQuery, type SQLNode, type SetOperation, isTableRef } from "@uwdata/mosaic-sql";
 import { isStar, queryScope, resolveRelation, tableEquals, type Scope } from "./lineage.js";
 
 /**
@@ -19,7 +19,7 @@ export function subqueryPushdown(query: Query, source: TableRefNode, cols: strin
     let result = false;
     if (isSelectQuery(q)) {
       result = visitSelect(q, scope);
-    } else if (q instanceof SetOperation) {
+    } else if (isSetOperation(q)) {
       result = visitSetOperation(q, scope);
     } else if (isPivotQuery(q)) {
       result = visitPivot(q, scope);
@@ -30,7 +30,7 @@ export function subqueryPushdown(query: Query, source: TableRefNode, cols: strin
 
   const visitRelation = (node: SQLNode, scope: Scope): boolean => {
     const rel = resolveRelation(node, scope);
-    if (rel instanceof TableRefNode) return tableEquals(rel, source);
+    if (isTableRef(rel)) return tableEquals(rel, source);
     return rel ? visitQuery(rel.query, rel.scope) : false;
   };
 
@@ -80,7 +80,7 @@ export function subqueryPushdown(query: Query, source: TableRefNode, cols: strin
       const selected = new Set(q._select.map(x => x.alias));
       const padding = cols.filter(c => !selected.has(c)).map(c => [c, literal(null)]);
       q.select(padding as [string, LiteralNode][]);
-    } else if (q instanceof SetOperation) {
+    } else if (isSetOperation(q)) {
       q.queries.forEach(padNull);
     }
   };

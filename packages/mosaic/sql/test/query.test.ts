@@ -1,7 +1,6 @@
 import { expect, describe, it } from 'vitest';
-import { asTableRef, column, desc, gt, lt, max, min, sql, Query, sum, lead, over, cte, add, FromClauseNode, SampleClauseNode, frameRows, div, mul, unnest, list, isSelectQuery, SelectQuery, TableRefNode, deepClone } from '../src/index.js';
+import { asTableRef, column, desc, gt, lt, max, min, sql, Query, sum, lead, over, cte, add, FromClauseNode, SampleClauseNode, frameRows, div, mul, unnest, list, deepClone, isDescribeQuery, isPivotQuery, isSelectQuery, isSetOperation } from '../src/index.js';
 import { validateQuery } from './util/validate.js';
-import { isDescribeQuery, isPivotQuery, isSetOperation } from '../src/ast/query.js';
 
 describe('Query', () => {
   it('selects column name strings', async () => {
@@ -562,7 +561,32 @@ describe('Query', () => {
     await validateQuery(q);
   });
 
-<<<<<<< HEAD
+  it('is handled properly by deepClone', async () => {
+    const q = Query
+      .with({
+        cte: Query.select('num1', 'num2', 'num3').from('t1')
+      })
+      .select('num1')
+      .from('cte')
+      .groupby('num1')
+      .orderby('num1')
+      .limit(10);
+    const c = deepClone(q);
+    expect(c).not.toBe(q);
+    expect(c._with).not.toBe(q._with);
+    expect(c._with[0]).not.toBe(q._with[0]);
+    expect(c._with[0].query).not.toBe(q._with[0].query);
+    expect(c._select).not.toBe(q._select);
+    expect(c._from).not.toBe(q._from);
+    expect(c._groupby).not.toBe(q._groupby);
+    expect(c._where).not.toBe(q._where);
+    expect(c._having).not.toBe(q._having);
+    expect(c._qualify).not.toBe(q._qualify);
+    expect(String(c)).toBe(String(q));
+    await validateQuery(c);
+    await validateQuery(q);
+  });
+
   it('is discriminated by type guard functions', () => {
     const selectQuery = Query.from('data').select('foo');
     const setOperation = Query.unionAll(selectQuery, selectQuery);
@@ -592,31 +616,5 @@ describe('Query', () => {
     expect(isPivotQuery(describeQuery)).toBe(false);
     expect(isPivotQuery(pivotQuery)).toBe(true);
     expect(isPivotQuery("PIVOT data ON year USING sum(population)")).toBe(false);
-=======
-  it('is handled properly by deepClone', async () => {
-    const q = Query
-      .with({
-        cte: Query.select('num1', 'num2', 'num3').from('t1')
-      })
-      .select('num1')
-      .from('cte')
-      .groupby('num1')
-      .orderby('num1')
-      .limit(10);
-    const c = deepClone(q);
-    expect(c).not.toBe(q);
-    expect(c._with).not.toBe(q._with);
-    expect(c._with[0]).not.toBe(q._with[0]);
-    expect(c._with[0].query).not.toBe(q._with[0].query);
-    expect(c._select).not.toBe(q._select);
-    expect(c._from).not.toBe(q._from);
-    expect(c._groupby).not.toBe(q._groupby);
-    expect(c._where).not.toBe(q._where);
-    expect(c._having).not.toBe(q._having);
-    expect(c._qualify).not.toBe(q._qualify);
-    expect(String(c)).toBe(String(q));
-    await validateQuery(c);
-    await validateQuery(q);
->>>>>>> 9247b8e9 (feat!: Remove subqueries getters, use proper lineage analysis.)
   });
 });
