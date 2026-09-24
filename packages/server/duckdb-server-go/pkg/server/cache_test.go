@@ -107,11 +107,11 @@ func TestHTTPCachePreconditions(t *testing.T) {
 		},
 	}
 	handler := mustHandler(t, spy, WithCacheControl("private, no-cache"), WithAuthorizer(AuthorizerFunc[struct{}](func(*http.Request) (CommandAuthorizer[struct{}], error) {
-		return func(context.Context, Command[struct{}]) error {
+		return func(context.Context, Command[struct{}]) (*query.ValidationPolicy, error) {
 			if !allowed {
-				return ErrPermissionDenied
+				return nil, ErrPermissionDenied
 			}
-			return nil
+			return nil, nil
 		}, nil
 	})))
 	first := httptest.NewRecorder()
@@ -263,7 +263,7 @@ func TestHTTPCachePolicyVariation(t *testing.T) {
 			return []byte(policy.AllowedTables[0].Schema), nil
 		},
 	}
-	authorizer := WithPolicyAuthorizer(PolicyAuthorizerFunc[struct{}](func(r *http.Request) (CommandPolicyAuthorizer[struct{}], error) {
+	authorizer := WithAuthorizer(AuthorizerFunc[struct{}](func(r *http.Request) (CommandAuthorizer[struct{}], error) {
 		tenant := r.Header.Get("X-Tenant-Id")
 		if tenant == "" {
 			return nil, ErrUnauthenticated

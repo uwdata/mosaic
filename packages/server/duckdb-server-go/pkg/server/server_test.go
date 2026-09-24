@@ -201,7 +201,7 @@ func TestHandleHTTPPolicyErrors(t *testing.T) {
 		db := setupTestDB(t)
 		require.NoError(t, db.Exec(t.Context(), "CREATE SCHEMA tenant_a; CREATE TABLE tenant_a.secret (value INTEGER)"))
 
-		s := mustHandler(t, db, WithPolicyAuthorizer(PolicyAuthorizerFunc[struct{}](func(*http.Request) (CommandPolicyAuthorizer[struct{}], error) {
+		s := mustHandler(t, db, WithAuthorizer(AuthorizerFunc[struct{}](func(*http.Request) (CommandAuthorizer[struct{}], error) {
 			return func(context.Context, Command[struct{}]) (*query.ValidationPolicy, error) {
 				return &query.ValidationPolicy{AllowedTables: []query.TableRule{{Schema: "tenant_b", Table: "*"}}}, nil
 			}, nil
@@ -261,7 +261,7 @@ func TestValidationDiagnosticsStayServerSide(t *testing.T) {
 	db := setupTestDB(t)
 	require.NoError(t, db.Exec(t.Context(), "CREATE TABLE tenant_private_secret (value INTEGER)"))
 	var logs bytes.Buffer
-	handler := mustHandler(t, db, WithPolicyAuthorizer(PolicyAuthorizerFunc[struct{}](func(*http.Request) (CommandPolicyAuthorizer[struct{}], error) {
+	handler := mustHandler(t, db, WithAuthorizer(AuthorizerFunc[struct{}](func(*http.Request) (CommandAuthorizer[struct{}], error) {
 		return func(context.Context, Command[struct{}]) (*query.ValidationPolicy, error) {
 			return &query.ValidationPolicy{}, nil
 		}, nil
@@ -306,7 +306,7 @@ func TestInvalidPolicyIsServerError(t *testing.T) {
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			var logs bytes.Buffer
-			authorizer := WithPolicyAuthorizer(PolicyAuthorizerFunc[struct{}](func(*http.Request) (CommandPolicyAuthorizer[struct{}], error) {
+			authorizer := WithAuthorizer(AuthorizerFunc[struct{}](func(*http.Request) (CommandAuthorizer[struct{}], error) {
 				return func(context.Context, Command[struct{}]) (*query.ValidationPolicy, error) { return &tc.policy, nil }, nil
 			}))
 			handler := mustHandler(t, db, authorizer, WithLogger(slog.New(slog.NewJSONHandler(&logs, nil))))

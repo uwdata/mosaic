@@ -47,16 +47,11 @@ func (c Command[T]) Payload() T {
 	return c.payload
 }
 
-// CommandAuthorizer authorizes one decoded and validated command from a request.
-// Returning a non-nil error denies the command. Unexpected errors are sanitized
-// as internal authorization failures.
-type CommandAuthorizer[T any] func(context.Context, Command[T]) error
-
-// CommandPolicyAuthorizer authorizes one command and returns the validation
+// CommandAuthorizer authorizes one command and returns the validation
 // policy applied on the connection that executes it.
 // Returning nil leaves the command unvalidated unless the DB was built with
 // query.WithValidation. A non-nil error denies the command.
-type CommandPolicyAuthorizer[T any] func(context.Context, Command[T]) (*query.ValidationPolicy, error)
+type CommandAuthorizer[T any] func(context.Context, Command[T]) (*query.ValidationPolicy, error)
 
 // Authorizer creates the command authorizer used for a single HTTP request or
 // WebSocket session. AuthorizeRequest is called before a POST body is decoded
@@ -77,23 +72,6 @@ func (f AuthorizerFunc[T]) AuthorizeRequest(r *http.Request) (CommandAuthorizer[
 	return f(r)
 }
 
-// PolicyAuthorizer is the Authorizer counterpart whose command authorizer also
-// scopes validation, for applications that derive table or function
-// restrictions from the typed payload rather than from headers.
-type PolicyAuthorizer[T any] interface {
-	AuthorizeRequest(*http.Request) (CommandPolicyAuthorizer[T], error)
-}
-
-type PolicyAuthorizerFunc[T any] func(*http.Request) (CommandPolicyAuthorizer[T], error)
-
-func (f PolicyAuthorizerFunc[T]) AuthorizeRequest(r *http.Request) (CommandPolicyAuthorizer[T], error) {
-	if f == nil {
-		return nil, errNilAuthorizerFunc
-	}
-
-	return f(r)
-}
-
 type requestAuthorizer func(*http.Request) (commandAuthorizer, error)
 type commandAuthorizer func(context.Context, queryParams) (*query.ValidationPolicy, error)
 
@@ -101,24 +79,6 @@ type commandAuthorizer func(context.Context, queryParams) (*query.ValidationPoli
 // command authorization. Payload decoding failures reject the command with
 // ErrInvalidCommand; HTTP GET skips decoding and uses the zero value of T.
 func WithAuthorizer[T any](authorizer Authorizer[T]) Option {
-	if authorizer == nil || isNilValue(authorizer) {
-		return optionFunc(func(*config) error { return errNilAuthorizer })
-	}
-	return WithPolicyAuthorizer(PolicyAuthorizerFunc[T](func(r *http.Request) (CommandPolicyAuthorizer[T], error) {
-		authorize, err := authorizer.AuthorizeRequest(r)
-		if err != nil || authorize == nil {
-			return nil, err
-		}
-		return func(ctx context.Context, command Command[T]) (*query.ValidationPolicy, error) {
-			return nil, authorize(ctx, command)
-		}, nil
-	}))
-}
-
-// WithPolicyAuthorizer is WithAuthorizer for authorizers that also return the
-// per-command validation policy. The policy is applied on the same connection
-// that executes the command, and a non-nil policy rejects exec.
-func WithPolicyAuthorizer[T any](authorizer PolicyAuthorizer[T]) Option {
 	return optionFunc(func(cfg *config) error {
 		if authorizer == nil || isNilValue(authorizer) {
 			return errNilAuthorizer

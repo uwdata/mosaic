@@ -128,13 +128,13 @@ WebSocket message, before policy validation or execution. If it reads `r.Body`, 
 authorizers must be concurrency-safe. Outer middleware must decide whether CORS preflight `OPTIONS` requests may reach
 the server.
 
-Omitting `WithAuthorizer` preserves unrestricted behavior; a configured authorizer that fails or returns nil fails
+Omitting `WithAuthorizer` adds no application authorization. A request authorizer that fails or returns a nil command callback fails
 closed. `ErrUnauthenticated`, `ErrPermissionDenied`, and `ErrInvalidCommand` map to HTTP 401, 403, and 400; unexpected
 errors are logged and returned as sanitized 500 responses. Authorization can allow or deny the normalized command type
 and exact SQL, but cannot rewrite SQL or sandbox the shared process, filesystem, network, extensions, catalogs, or
 credentials.
 
-`server.WithPolicyAuthorizer` lets an application's `CommandPolicyAuthorizer[T]` return a per-command `*query.ValidationPolicy` from `(context.Context, Command[T])`. Authenticate in `AuthorizeRequest`, then derive restrictions from trusted identity and the decoded payload. The returned policy is applied on the connection that executes the command. A non-nil policy rejects `exec`; nil leaves the command unvalidated unless the DB was built with `query.WithValidation()`.
+`server.WithAuthorizer` accepts an `Authorizer[T]`; `AuthorizerFunc[T]` adapts a function to that interface. Its `CommandAuthorizer[T]` has signature `func(context.Context, Command[T]) (*query.ValidationPolicy, error)`. Authenticate in `AuthorizeRequest`, then derive restrictions from trusted identity and the decoded payload. Returning a non-nil error denies the command, regardless of the policy. Returning `nil, nil` allows it without additional request restrictions; DB-level `query.WithValidation()` still applies. Returning `policy, nil` validates on the connection that executes the command, and a non-nil policy rejects `exec`.
 
 ### HTTP Response Caching
 
@@ -176,15 +176,15 @@ type Fields struct {
 
 authorizer := server.AuthorizerFunc[*Fields](func(r *http.Request) (server.CommandAuthorizer[*Fields], error) {
 	getProject := r.URL.Query().Get("project")
-	return func(ctx context.Context, command server.Command[*Fields]) error {
+	return func(ctx context.Context, command server.Command[*Fields]) (*query.ValidationPolicy, error) {
 		project := getProject
 		if fields := command.Payload(); fields != nil {
 			project = fields.Project
 		}
 		if project != "dashboard" || command.Type() == server.CommandExec {
-			return server.ErrPermissionDenied
+			return nil, server.ErrPermissionDenied
 		}
-		return nil
+		return nil, nil
 	}, nil
 })
 
@@ -248,7 +248,7 @@ Spatial compute defaults cover Mosaic rendering over existing geometry data, but
 
 ### Multi-Tenant Access Control
 
-Applications embedding `pkg/server` use `WithPolicyAuthorizer` to derive per-command table rules from authenticated identity. The CLI's global policy applies equally to every caller. Explicit catalog/schema/table rules can restrict tenants; the same schema name in another catalog matches if the catalog is omitted. An allowed view can expose underlying tables in other schemas, including another tenant's, so only trusted setup should create definitions. Isolate client coordinator/cache state by tenant and disable pre-aggregation in validated mode.
+Applications embedding `pkg/server` use `WithAuthorizer` to derive per-command table rules from authenticated identity. The CLI's global policy applies equally to every caller. Explicit catalog/schema/table rules can restrict tenants; the same schema name in another catalog matches if the catalog is omitted. An allowed view can expose underlying tables in other schemas, including another tenant's, so only trusted setup should create definitions. Isolate client coordinator/cache state by tenant and disable pre-aggregation in validated mode.
 
 Schema-wide `SHOW TABLES FROM tenant_a` is denied under table restrictions. `DESCRIBE SELECT 1` remains supported. Missing objects fail binding rather than receiving syntax-only authorization. Gatekeeper limits requests to one supported read statement. HTTP denials return 403; parser, binding, and unsupported results return 400. Binding can perform I/O, and concurrent catalog changes between validation and execution remain a race; see Gatekeeper's [security model](https://github.com/nozzle/duckdb-gatekeeper/blob/v0.3.0/docs/security.md).
 
