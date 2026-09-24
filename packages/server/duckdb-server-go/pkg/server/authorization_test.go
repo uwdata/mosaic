@@ -449,7 +449,7 @@ func TestGenericAuthorizationDoesNotBypassRestrictedExec(t *testing.T) {
 	}))
 
 	t.Run("validation", func(t *testing.T) {
-		db := setupTestDB(t, query.WithValidation())
+		db := setupConfiguredDB(t, "", query.WithValidation())
 		handler, err := New(db, allow)
 		require.NoError(t, err)
 
@@ -713,7 +713,7 @@ func (b *synchronizedBuffer) Bytes() []byte {
 }
 
 func TestAuthorizerScopesValidationPerCommand(t *testing.T) {
-	db := setupTestDB(t)
+	db := setupConfiguredDB(t, "")
 	require.NoError(t, db.Exec(t.Context(), `CREATE SCHEMA tenant_a; CREATE SCHEMA tenant_b;
 		CREATE TABLE tenant_a.items AS SELECT 1 AS value; CREATE TABLE tenant_b.items AS SELECT 2 AS value`))
 

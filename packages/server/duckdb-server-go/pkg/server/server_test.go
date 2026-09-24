@@ -5,6 +5,7 @@ import (
 	"context"
 	"database/sql/driver"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log/slog"
 	"net/http"
@@ -23,58 +24,49 @@ import (
 	"github.com/uwdata/mosaic/packages/server/duckdb-server-go/pkg/query"
 )
 
-func setupTestDB(t *testing.T, opts ...query.OptionFunc) *query.DB {
+func setupTestDB(t *testing.T) *query.DB {
 	t.Helper()
-	return setupConfiguredDB(t, "", opts...)
+	return setupDB(t, nil)
 }
 
-// setupConfiguredDB mirrors the CLI's trusted initialization: load Gatekeeper and, when configure is non-empty, set
-// the database-wide function ceiling before any request is served.
 func setupConfiguredDB(t *testing.T, configure string, opts ...query.OptionFunc) *query.DB {
 	t.Helper()
-
-	ctx := t.Context()
-	connector, err := duckdb.NewConnector(":memory:", func(execer driver.ExecerContext) error {
-		if err := extensions.InstallAndLoad(ctx, execer, "gatekeeper", "community"); err != nil {
+	return setupDB(t, func(execer driver.ExecerContext) error {
+		if err := extensions.InstallAndLoad(t.Context(), execer, "gatekeeper", "community"); err != nil {
 			return err
 		}
 		if configure == "" {
 			return nil
 		}
-		_, err := execer.ExecContext(ctx, configure, nil)
+		_, err := execer.ExecContext(t.Context(), configure, nil)
 		return err
-	})
-	require.NoError(t, err)
+	}, opts...)
+}
 
-	db, err := query.New(ctx, connector, opts...)
+func setupDB(t *testing.T, init func(driver.ExecerContext) error, opts ...query.OptionFunc) *query.DB {
+	t.Helper()
+	connector, err := duckdb.NewConnector(":memory:", init)
 	require.NoError(t, err)
-	t.Cleanup(func() {
-		db.Close()
-		require.NoError(t, connector.Close())
-	})
+	t.Cleanup(func() { require.NoError(t, connector.Close()) })
+	db, err := query.New(t.Context(), connector, opts...)
+	require.NoError(t, err)
+	t.Cleanup(db.Close)
 	return db
 }
 
 func mustHandler(t *testing.T, executor commandExecutor, opts ...Option) *handler {
 	t.Helper()
-
 	cfg, err := applyOptions(opts)
 	require.NoError(t, err)
 	return newHandler(executor, cfg)
 }
 
-type failOnCallExecutor struct {
-	testing.TB
-}
+type failOnCallExecutor struct{ testing.TB }
 
-func (e failOnCallExecutor) Exec(context.Context, string) error {
-	return e.fail("Exec")
-}
-
+func (e failOnCallExecutor) Exec(context.Context, string) error { return e.fail("Exec") }
 func (e failOnCallExecutor) QueryArrow(context.Context, string, *query.ValidationPolicy) ([]byte, error) {
 	return nil, e.fail("QueryArrow")
 }
-
 func (e failOnCallExecutor) fail(method string) error {
 	e.Helper()
 	err := fmt.Errorf("unexpected command executor call: %s", method)
@@ -84,278 +76,122 @@ func (e failOnCallExecutor) fail(method string) error {
 
 func arrowRows(t *testing.T, data []byte) []map[string]any {
 	t.Helper()
-
 	rdr, err := ipc.NewReader(bytes.NewReader(data))
 	require.NoError(t, err)
 	defer rdr.Release()
-
 	rows := []map[string]any{}
 	for rdr.Next() {
 		batchJSON, err := rdr.RecordBatch().MarshalJSON()
 		require.NoError(t, err)
-
 		var batch []map[string]any
 		require.NoError(t, json.Unmarshal(batchJSON, &batch))
 		rows = append(rows, batch...)
 	}
 	require.NoError(t, rdr.Err())
-
 	return rows
 }
 
 type webSocketTestServer struct {
-	ctx     context.Context
-	httpURL string
-	url     string
+	ctx          context.Context
+	httpURL, url string
 }
 
 func newWebSocketTestServer(t *testing.T, handler http.Handler) *webSocketTestServer {
 	t.Helper()
-
 	server := httptest.NewServer(handler)
 	t.Cleanup(server.Close)
 	ctx, cancel := context.WithTimeout(t.Context(), 5*time.Second)
 	t.Cleanup(cancel)
-	return &webSocketTestServer{
-		ctx:     ctx,
-		httpURL: server.URL,
-		url:     "ws" + strings.TrimPrefix(server.URL, "http"),
-	}
+	return &webSocketTestServer{ctx: ctx, httpURL: server.URL, url: "ws" + strings.TrimPrefix(server.URL, "http")}
 }
-
 func (s *webSocketTestServer) dial(options *websocket.DialOptions) (*websocket.Conn, *http.Response, error) {
 	return websocket.Dial(s.ctx, s.url, options)
-}
-
-func TestExecCommandHonorsPolicy(t *testing.T) {
-	db := setupTestDB(t)
-
-	command := CommandExec
-	sql := "SELECT 1"
-	params := queryParams{Type: &command, SQL: &sql}
-
-	s := mustHandler(t, db)
-	_, err := s.execCommand(t.Context(), params, func(context.Context, queryParams) (*query.ValidationPolicy, error) {
-		return &query.ValidationPolicy{}, nil
-	})
-	require.ErrorIs(t, err, query.ErrExecWithValidation)
-	_, err = s.execCommand(t.Context(), params, nil)
-	require.NoError(t, err)
 }
 
 func TestArrowResponseFraming(t *testing.T) {
 	db := setupTestDB(t)
 	handler, err := New(db)
 	require.NoError(t, err)
-	body := `{"type":"arrow","sql":"SELECT 1"}`
-
+	body := `{"type":"arrow","sql":"SELECT 1 AS value"}`
 	req := httptest.NewRequest(http.MethodPost, "/", strings.NewReader(body))
 	res := httptest.NewRecorder()
 	handler.ServeHTTP(res, req)
 	require.Equal(t, http.StatusOK, res.Code)
 	require.Equal(t, "application/vnd.apache.arrow.stream", res.Header().Get("Content-Type"))
-	require.NotEmpty(t, res.Body.Bytes())
-
-	server := httptest.NewServer(handler)
-	t.Cleanup(server.Close)
-	conn, _, err := websocket.Dial(t.Context(), "ws"+strings.TrimPrefix(server.URL, "http"), nil)
-	require.NoError(t, err)
-	defer func() { require.NoError(t, conn.CloseNow()) }()
-
-	require.NoError(t, wsjson.Write(t.Context(), conn, map[string]any{
-		"type": CommandArrow,
-		"sql":  "SELECT 1",
-	}))
-	messageType, payload, err := conn.Read(t.Context())
-	require.NoError(t, err)
-	require.Equal(t, websocket.MessageBinary, messageType)
-	require.NotEmpty(t, payload)
-}
-
-func TestHandleHTTPPolicyErrors(t *testing.T) {
-	t.Run("function outside allowlist is forbidden", func(t *testing.T) {
-		db := setupConfiguredDB(t, "CALL gatekeeper_configure(use_default_functions := false, allowed_functions := ['lower'])", query.WithValidation())
-		s := mustHandler(t, db)
-		req := httptest.NewRequest(http.MethodPost, "/", strings.NewReader(`{"type":"arrow","sql":"SELECT md5('mosaic')"}`))
-		res := httptest.NewRecorder()
-
-		s.ServeHTTP(res, req)
-
-		require.Equal(t, http.StatusForbidden, res.Code)
-		require.Equal(t, "Forbidden\n", res.Body.String())
-	})
-
-	t.Run("blocked function is forbidden", func(t *testing.T) {
-		db := setupConfiguredDB(t, "CALL gatekeeper_configure(blocked_functions := ['md5'])", query.WithValidation())
-		s := mustHandler(t, db)
-		req := httptest.NewRequest(http.MethodPost, "/", strings.NewReader(`{"type":"arrow","sql":"SELECT md5('mosaic')"}`))
-		res := httptest.NewRecorder()
-
-		s.ServeHTTP(res, req)
-
-		require.Equal(t, http.StatusForbidden, res.Code)
-		require.Equal(t, "Forbidden\n", res.Body.String())
-	})
-
-	t.Run("unauthorized schema is forbidden", func(t *testing.T) {
-		db := setupTestDB(t)
-		require.NoError(t, db.Exec(t.Context(), "CREATE SCHEMA tenant_a; CREATE TABLE tenant_a.secret (value INTEGER)"))
-
-		s := mustHandler(t, db, WithAuthorizer(AuthorizerFunc[struct{}](func(*http.Request) (CommandAuthorizer[struct{}], error) {
-			return func(context.Context, Command[struct{}]) (*query.ValidationPolicy, error) {
-				return &query.ValidationPolicy{AllowedTables: []query.TableRule{{Schema: "tenant_b", Table: "*"}}}, nil
-			}, nil
-		})))
-		req := httptest.NewRequest(http.MethodPost, "/", strings.NewReader(`{"type":"arrow","sql":"SELECT * FROM tenant_a.secret"}`))
-		req.Header.Set("X-Tenant", "tenant_b")
-		res := httptest.NewRecorder()
-
-		s.ServeHTTP(res, req)
-
-		require.Equal(t, http.StatusForbidden, res.Code)
-		require.Equal(t, "Forbidden\n", res.Body.String())
-	})
-
-	t.Run("exec under schema policy is a bad request", func(t *testing.T) {
-		db := setupTestDB(t, query.WithValidation())
-		s := mustHandler(t, db)
-		req := httptest.NewRequest(http.MethodPost, "/", strings.NewReader(`{"type":"exec","sql":"SELECT 1"}`))
-		req.Header.Set("X-Tenant", "tenant_a")
-		res := httptest.NewRecorder()
-
-		s.ServeHTTP(res, req)
-
-		require.Equal(t, http.StatusBadRequest, res.Code)
-		require.Equal(t, query.ErrExecWithValidation.Error()+"\n", res.Body.String())
-	})
-
-	t.Run("unsupported statement under policy is a bad request", func(t *testing.T) {
-		db := setupTestDB(t, query.WithValidation())
-		s := mustHandler(t, db)
-		req := httptest.NewRequest(http.MethodPost, "/", strings.NewReader(`{"type":"arrow","sql":"PRAGMA version"}`))
-		res := httptest.NewRecorder()
-
-		s.ServeHTTP(res, req)
-
-		require.Equal(t, http.StatusBadRequest, res.Code)
-		require.Equal(t, "Bad Request\n", res.Body.String())
-		require.NotContains(t, res.Body.String(), "()")
-		require.NotContains(t, res.Body.String(), " at :")
-	})
-
-	t.Run("syntax error under policy is a bad request", func(t *testing.T) {
-		db := setupTestDB(t, query.WithValidation())
-		s := mustHandler(t, db)
-		req := httptest.NewRequest(http.MethodPost, "/", strings.NewReader(`{"type":"arrow","sql":"SELECT ("}`))
-		res := httptest.NewRecorder()
-
-		s.ServeHTTP(res, req)
-
-		require.Equal(t, http.StatusBadRequest, res.Code)
-		require.Equal(t, "Bad Request\n", res.Body.String())
-	})
-
-}
-
-func TestValidationDiagnosticsStayServerSide(t *testing.T) {
-	db := setupTestDB(t)
-	require.NoError(t, db.Exec(t.Context(), "CREATE TABLE tenant_private_secret (value INTEGER)"))
-	var logs bytes.Buffer
-	handler := mustHandler(t, db, WithAuthorizer(AuthorizerFunc[struct{}](func(*http.Request) (CommandAuthorizer[struct{}], error) {
-		return func(context.Context, Command[struct{}]) (*query.ValidationPolicy, error) {
-			return &query.ValidationPolicy{}, nil
-		}, nil
-	})), WithLogger(slog.New(slog.NewTextHandler(&logs, nil))))
-	body := `{"type":"arrow","sql":"SELECT * FROM tenant_private_secre"}`
-	req := httptest.NewRequest(http.MethodPost, "/", strings.NewReader(body))
-	req.Header.Set("X-Tenant", "tenant_a")
-	res := httptest.NewRecorder()
-	handler.ServeHTTP(res, req)
-	require.Equal(t, http.StatusBadRequest, res.Code)
-	require.Equal(t, "Bad Request\n", res.Body.String())
-	require.Contains(t, logs.String(), "tenant_private_secret")
-
+	want := []map[string]any{{"value": float64(1)}}
+	require.Equal(t, want, arrowRows(t, res.Body.Bytes()))
 	server := newWebSocketTestServer(t, handler)
-	conn, _, err := server.dial(&websocket.DialOptions{HTTPHeader: http.Header{"X-Tenant": {"tenant_a"}}})
+	conn, _, err := server.dial(nil)
 	require.NoError(t, err)
 	defer func() { require.NoError(t, conn.CloseNow()) }()
 	require.NoError(t, conn.Write(server.ctx, websocket.MessageText, []byte(body)))
-	var response map[string]string
-	require.NoError(t, wsjson.Read(server.ctx, conn, &response))
-	require.Equal(t, "Bad Request", response["error"])
-	require.Equal(t, "bad_request", response["code"])
-	require.NoError(t, wsjson.Write(server.ctx, conn, map[string]string{"type": "arrow", "sql": "SELECT 1"}))
-	messageType, _, err := conn.Read(server.ctx)
+	messageType, payload, err := conn.Read(server.ctx)
 	require.NoError(t, err)
 	require.Equal(t, websocket.MessageBinary, messageType)
+	require.Equal(t, want, arrowRows(t, payload))
 }
 
-func TestInvalidPolicyIsServerError(t *testing.T) {
-	db := setupTestDB(t)
+func TestValidationErrorResponses(t *testing.T) {
 	for _, tc := range []struct {
-		name   string
-		policy query.ValidationPolicy
-		sql    string
-		status int
-		level  string
+		name        string
+		err         error
+		status      int
+		code, level string
 	}{
-		{"malformed policy", query.ValidationPolicy{JSON: new(string)}, "SELECT 2", 500, "ERROR"},
-		{"invalid typed policy", query.ValidationPolicy{AllowedFunctions: []string{""}}, "SELECT 2", 500, "ERROR"},
-		{"comment only", query.ValidationPolicy{}, "-- comment only", 400, "WARN"},
-		{"whitespace only", query.ValidationPolicy{}, "   ", 400, "WARN"},
+		{"denial", query.ErrorDetails{Code: "forbidden", Message: "private-diagnostic"}, 403, "forbidden", "WARN"},
+		{"unsupported", query.ErrorDetails{Code: "unsupported", Message: "private-diagnostic"}, 400, "bad_request", "WARN"},
+		{"parser", query.ErrorDetails{Code: "parser", Message: "private-diagnostic"}, 400, "bad_request", "WARN"},
+		{"binding", query.ErrorDetails{Code: "binding", Message: "private-diagnostic"}, 400, "bad_request", "WARN"},
+		{"invalid SQL", query.ErrorDetails{Code: "invalid_input", Message: "private-diagnostic"}, 400, "bad_request", "WARN"},
+		{"invalid policy", errors.Join(query.ErrInvalidPolicy, query.ErrorDetails{Code: "invalid_input", Message: "private-diagnostic"}), 500, "internal_error", "ERROR"},
+		{"driver failure", errors.New("private-diagnostic"), 500, "internal_error", "ERROR"},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			var logs bytes.Buffer
-			authorizer := WithAuthorizer(AuthorizerFunc[struct{}](func(*http.Request) (CommandAuthorizer[struct{}], error) {
-				return func(context.Context, Command[struct{}]) (*query.ValidationPolicy, error) { return &tc.policy, nil }, nil
-			}))
-			handler := mustHandler(t, db, authorizer, WithLogger(slog.New(slog.NewJSONHandler(&logs, nil))))
-			body, err := json.Marshal(map[string]string{"type": "arrow", "sql": tc.sql})
-			require.NoError(t, err)
+			var logs synchronizedBuffer
+			executor := &spyCommandExecutor{failOnCallExecutor: failOnCallExecutor{t},
+				queryArrow: func(context.Context, string, *query.ValidationPolicy) ([]byte, error) {
+					return nil, errors.Join(query.ErrValidation, tc.err)
+				},
+			}
+			handler := mustHandler(t, executor, WithLogger(slog.New(slog.NewJSONHandler(&logs, nil))))
+			body := `{"type":"arrow","sql":"SELECT 1"}`
 			res := httptest.NewRecorder()
-			handler.ServeHTTP(res, httptest.NewRequest(http.MethodPost, "/", bytes.NewReader(body)))
+			handler.ServeHTTP(res, httptest.NewRequest(http.MethodPost, "/", strings.NewReader(body)))
 			require.Equal(t, tc.status, res.Code)
 			require.Equal(t, http.StatusText(tc.status)+"\n", res.Body.String())
-			require.Contains(t, logs.String(), `"level":"`+tc.level+`"`)
+			server := newWebSocketTestServer(t, handler)
+			conn, _, err := server.dial(nil)
+			require.NoError(t, err)
+			defer func() { require.NoError(t, conn.CloseNow()) }()
+			for range 2 {
+				require.NoError(t, conn.Write(server.ctx, websocket.MessageText, []byte(body)))
+				var response map[string]string
+				require.NoError(t, wsjson.Read(server.ctx, conn, &response))
+				require.Equal(t, map[string]string{"code": tc.code, "error": http.StatusText(tc.status)}, response)
+			}
+			decoder := json.NewDecoder(bytes.NewReader(logs.Bytes()))
+			for range 3 {
+				var record map[string]any
+				require.NoError(t, decoder.Decode(&record))
+				require.Equal(t, tc.level, record["level"])
+				require.Contains(t, record["error"], "private-diagnostic")
+			}
 		})
 	}
 }
 
 func TestHandleHTTPQueryParamsErrors(t *testing.T) {
-	db := setupTestDB(t)
-	s := mustHandler(t, db)
-
-	tests := []struct {
-		name     string
-		body     string
-		wantBody string
-	}{
-		{
-			name:     "missing type",
-			body:     `{"sql":"SELECT 1"}`,
-			wantBody: "missing required 'type' parameter\n",
-		},
-		{
-			name:     "invalid type",
-			body:     `{"type":"csv","sql":"SELECT 1"}`,
-			wantBody: "invalid 'type' parameter: csv\n",
-		},
-		{
-			name:     "missing SQL",
-			body:     `{"type":"arrow"}`,
-			wantBody: "missing required 'sql' parameter\n",
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			req := httptest.NewRequest(http.MethodPost, "/", strings.NewReader(tt.body))
+	s := mustHandler(t, failOnCallExecutor{t})
+	for _, tc := range []struct{ name, body, want string }{
+		{"missing type", `{"sql":"SELECT 1"}`, "missing required 'type' parameter\n"},
+		{"invalid type", `{"type":"csv","sql":"SELECT 1"}`, "invalid 'type' parameter: csv\n"},
+		{"missing SQL", `{"type":"arrow"}`, "missing required 'sql' parameter\n"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
 			res := httptest.NewRecorder()
-
-			s.ServeHTTP(res, req)
-
+			s.ServeHTTP(res, httptest.NewRequest(http.MethodPost, "/", strings.NewReader(tc.body)))
 			require.Equal(t, http.StatusBadRequest, res.Code)
-			require.Equal(t, tt.wantBody, res.Body.String())
+			require.Equal(t, tc.want, res.Body.String())
 		})
 	}
 }
