@@ -159,7 +159,7 @@ duckdb-server-go --gatekeeper='{"version":1,"options":{}}'
 
 The CLI loads Gatekeeper (installing from community if needed), passes the document unchanged to `gatekeeper_configure`, disables extension autoload/autoinstall, and locks configuration. `--load-extensions` can provide a local artifact first. Upgrade cached installations with `FORCE INSTALL gatekeeper FROM community`, then restart.
 
-For Go applications, load Gatekeeper during trusted setup and call `query.ConfigureGatekeeper(ctx, execer, document)` before locking configuration. `query.New` does not load extensions; `query.WithValidation()` requires Gatekeeper and enables validation for every Arrow query. `db.Close()` also closes the connector.
+For Go applications, load Gatekeeper during trusted setup and call `query.ConfigureGatekeeper(ctx, execer, document)` before locking configuration. Global policy, autoload/autoinstall settings, and configuration locking must run once per database, not per pooled connection; guard the setup with `sync.Once` and retain its error as [main.go](main.go) does. `query.New` does not load extensions; `query.WithValidation()` requires Gatekeeper and enables validation for every Arrow query. `db.Close()` also closes the connector.
 
 `db.Query(ctx, sql, policy)` returns the complete Arrow IPC result as `[]byte`, or nil on error. Pass `*query.ValidationPolicy` directly or from `WithAuthorizer` to narrow the global policy. Use `JSON: &document` or typed `AllowedTables`, `BlockedTables`, `AllowedFunctions`, `BlockedFunctions`, and `UseDefaultFunctions` fields; the two forms cannot be mixed. Nil slices omit options; empty slices remain explicit arrays. `TableRule.Catalog` and `UseDefaultFunctions` are pointers. Names are passed unchanged, including whitespace.
 
@@ -175,7 +175,7 @@ POST and WebSocket requests take a JSON object with the command in `type` and qu
 
 ### `exec`
 
-Executes the SQL query in the `sql` field.
+Executes the SQL query in the `sql` field (rejected when [`--gatekeeper`](#gatekeeper-configuration) is enabled).
 
 ### `arrow`
 
@@ -199,11 +199,11 @@ To run the server, use `go run` (this won't restart when the code changes):
 go run -tags=duckdb_arrow .
 ```
 
-Before sending a pull request, run the tests, linter, and formatter:
+Before sending a pull request, run the tests, linter, and formatter. Integration tests install the signed Gatekeeper community extension; the first run needs network access, then DuckDB caches it. The fresh-install smoke test always downloads unless `-short` is used.
 
 ```sh
 go fmt ./...
-go test -tags=duckdb_arrow ./...
+go test -race -tags=duckdb_arrow ./...
 golangci-lint run
 ```
 
