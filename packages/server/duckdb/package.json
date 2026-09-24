@@ -41,7 +41,6 @@
   },
   "dependencies": {
     "@duckdb/node-api": "~1.5.4-r.1",
-    "@uwdata/mosaic-sql": "workspace:^",
     "ws": "^8.21.0"
   },
   "devDependencies": {

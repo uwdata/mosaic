@@ -15,6 +15,10 @@ export class LiteralNode extends ExprNode {
   }
 }
 
+function padZero(value: unknown, len = 2) {
+  return `${value}`.padStart(len, '0');
+}
+
 export function literalToSQL(value: unknown) {
   switch (typeof value) {
     case 'number':
@@ -33,7 +37,7 @@ export function literalToSQL(value: unknown) {
         const m = value.getUTCMonth();
         const d = value.getUTCDate();
         return ts === Date.UTC(y, m, d)
-          ? `DATE '${y}-${m+1}-${d}'` // utc date
+          ? `DATE '${y}-${padZero(m+1)}-${padZero(d)}'` // utc date
           : `epoch_ms(${ts})`; // timestamp
       } else if (value instanceof RegExp) {
         return `'${value.source}'`;
