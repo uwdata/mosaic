@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"log/slog"
 	"net/http"
 
 	"github.com/uwdata/mosaic/packages/server/duckdb-server-go/pkg/query"
@@ -21,8 +22,9 @@ var (
 type CommandType string
 
 const (
-	CommandArrow CommandType = "arrow"
-	CommandExec  CommandType = "exec"
+	CommandArrow  CommandType = "arrow"
+	CommandExec   CommandType = "exec"
+	CommandPreagg CommandType = "preagg"
 )
 
 // Command exposes the authoritative type and SQL alongside an application-owned
@@ -90,21 +92,29 @@ func WithAuthorizer[T any](authorizer Authorizer[T]) Option {
 				return nil, err
 			}
 			return func(ctx context.Context, params queryParams) (*query.ValidationPolicy, error) {
-				var payload T
-				if _, empty := any(&payload).(*struct{}); !empty && params.raw != nil {
-					if err := json.Unmarshal(params.raw, &payload); err != nil {
-						attrs := []any{"error_type", fmt.Sprintf("%T", err)}
-						var typeErr *json.UnmarshalTypeError
-						if errors.As(err, &typeErr) {
-							attrs = append(attrs, "field", typeErr.Field, "offset", typeErr.Offset, "target_type", typeErr.Type.String())
-						}
-						cfg.logger.Warn("server: failed to decode command payload", attrs...)
-						return nil, fmt.Errorf("%w: decode command payload: %w", ErrInvalidCommand, err)
-					}
+				command, err := decodeCommand[T](cfg.logger, params)
+				if err != nil {
+					return nil, err
 				}
-				return authorize(ctx, Command[T]{typ: *params.Type, sql: *params.SQL, payload: payload})
+				return authorize(ctx, command)
 			}, nil
 		}
 		return nil
 	})
+}
+
+func decodeCommand[T any](logger *slog.Logger, params queryParams) (Command[T], error) {
+	var payload T
+	if _, empty := any(&payload).(*struct{}); !empty && params.raw != nil {
+		if err := json.Unmarshal(params.raw, &payload); err != nil {
+			attrs := []any{"error_type", fmt.Sprintf("%T", err)}
+			var typeErr *json.UnmarshalTypeError
+			if errors.As(err, &typeErr) {
+				attrs = append(attrs, "field", typeErr.Field, "offset", typeErr.Offset, "target_type", typeErr.Type.String())
+			}
+			logger.Warn("server: failed to decode command payload", attrs...)
+			return Command[T]{}, fmt.Errorf("%w: decode command payload: %w", ErrInvalidCommand, err)
+		}
+	}
+	return Command[T]{typ: *params.Type, sql: *params.SQL, payload: payload}, nil
 }

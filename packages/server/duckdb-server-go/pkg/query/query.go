@@ -104,8 +104,12 @@ func (db *DB) Query(ctx context.Context, query string, policy *ValidationPolicy)
 			return nil, err
 		}
 	}
+	return db.arrow(ctx, conn, query)
+}
+
+func (db *DB) arrow(ctx context.Context, conn *sql.Conn, query string) ([]byte, error) {
 	var buf bytes.Buffer
-	err = conn.Raw(func(raw any) error {
+	err := conn.Raw(func(raw any) error {
 		arrow, err := duckdb.NewArrowFromConn(raw.(driver.Conn))
 		if err != nil {
 			return err
