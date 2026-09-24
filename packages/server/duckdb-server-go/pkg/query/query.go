@@ -84,8 +84,8 @@ func (db *DB) Exec(ctx context.Context, query string) error {
 	return nil
 }
 
-// Query validates query against policy when policy is non-nil or WithValidation is configured, then executes it
-// on the same connection and returns the Arrow IPC stream.
+// Query returns the complete Arrow IPC stream buffered in memory. When policy is non-nil or WithValidation is
+// configured, it validates before executing on the same connection.
 func (db *DB) Query(ctx context.Context, query string, policy *ValidationPolicy) ([]byte, error) {
 	conn, err := db.db.Conn(ctx)
 	if err != nil {

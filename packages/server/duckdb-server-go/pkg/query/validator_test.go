@@ -2,6 +2,7 @@ package query
 
 import (
 	"context"
+	"database/sql/driver"
 	"errors"
 	"sync"
 	"testing"
@@ -35,7 +36,8 @@ func TestPolicyDocument(t *testing.T) {
 
 func TestValidationRequiresGatekeeper(t *testing.T) {
 	db, err := New(t.Context(), testConnector(t, false), WithValidation())
-	require.Error(t, err)
+	require.ErrorContains(t, err, "JSON policy API (0.3.0+)")
+	require.ErrorContains(t, err, "FORCE INSTALL gatekeeper FROM community")
 	require.Nil(t, db)
 	db = setupTestDB(t, false)
 	_, err = db.ValidateSQL(t.Context(), "SELECT 1", ValidationPolicy{})
@@ -43,6 +45,25 @@ func TestValidationRequiresGatekeeper(t *testing.T) {
 	data, err := db.Query(t.Context(), "SELECT 1", &ValidationPolicy{})
 	require.ErrorIs(t, err, ErrValidation)
 	require.Empty(t, data)
+}
+
+func TestGatekeeperCallsIgnoreShadowingMacros(t *testing.T) {
+	connector := testConnector(t, true)
+	db, err := New(t.Context(), connector)
+	require.NoError(t, err)
+	t.Cleanup(db.Close)
+	require.NoError(t, db.Exec(t.Context(), `
+		CREATE MACRO gatekeeper_validate(sql_text, json := '') AS TABLE
+		SELECT true AS allowed, 'ok' AS code, '' AS error_type, '' AS error_message,
+		       NULL::BIGINT AS position, [] AS violations, [] AS objects, [] AS functions, [] AS caller_objects;
+		CREATE MACRO gatekeeper_configure(json := '') AS TABLE SELECT true AS Success;
+	`))
+	conn, err := connector.Connect(t.Context())
+	require.NoError(t, err)
+	defer func() { require.NoError(t, conn.Close()) }()
+	require.NoError(t, ConfigureGatekeeper(t.Context(), conn.(driver.ExecerContext), `{"version":1,"options":{"blocked_functions":["md5"]}}`))
+	_, err = db.ValidateSQL(t.Context(), "SELECT md5('x')", ValidationPolicy{})
+	require.ErrorIs(t, err, ErrAccessDenied)
 }
 
 func TestValidationPolicyAndResult(t *testing.T) {
