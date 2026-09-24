@@ -34,6 +34,22 @@ export function isSelectQuery(value: unknown): value is SelectQuery {
 }
 
 /**
+ * Check if a value is a set operation query.
+ * @param value The value to check.
+ */
+export function isSetOperation(value: unknown): value is SetOperation {
+  return value instanceof SetOperation;
+}
+
+/**
+ * Check if a value is a pivot query.
+ * @param value The value to check.
+ */
+export function isPivotQuery(value: unknown): value is PivotQuery {
+  return value instanceof PivotQuery;
+}
+
+/**
  * Check if a value is a describe query.
  * @param value The value to check.
  */
@@ -263,14 +279,6 @@ export class Query extends ExprNode {
     this._offset = asNode(value);
     return this;
   }
-}
-
-/**
- * Check if a value is a pivot query.
- * @param value The value to check.
- */
-export function isPivotQuery(value: unknown): value is PivotQuery {
-  return value instanceof PivotQuery;
 }
 
 export class PivotQuery extends Query {
