@@ -23,7 +23,11 @@ func TestInitializeDatabase(t *testing.T) {
 		{"configured", policyDocument(`{"version":1,"options":{"blocked_functions":["md5"]}}`)},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			connector := newConnector(t, ":memory:", "", tc.document)
+			dsn := ":memory:"
+			if tc.document == nil {
+				dsn = freshDSN(t)
+			}
+			connector := newConnector(t, dsn, "", tc.document)
 			var opts []query.OptionFunc
 			if tc.document != nil {
 				opts = append(opts, query.WithValidation())
@@ -37,7 +41,7 @@ func TestInitializeDatabase(t *testing.T) {
 			if tc.document == nil {
 				require.NoError(t, err)
 				require.NoError(t, db.Exec(t.Context(), "CREATE TABLE items (value INTEGER)"))
-				require.Equal(t, false, scanValue(t, connector, "SELECT loaded FROM duckdb_extensions() WHERE extension_name='gatekeeper'"))
+				require.Equal(t, false, scanValue(t, connector, "SELECT EXISTS (SELECT 1 FROM duckdb_extensions() WHERE extension_name='gatekeeper' AND loaded)"))
 			} else {
 				require.ErrorIs(t, err, query.ErrAccessDenied)
 				require.ErrorIs(t, db.Exec(t.Context(), "SELECT 1"), query.ErrExecWithValidation)
