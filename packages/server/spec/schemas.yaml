@@ -7,7 +7,8 @@ description: |
   command object and the same JSON error envelope; only framing differs.
 
   Client source of truth is `packages/mosaic/core/src/connectors`
-  (`Connector.ts`, `rest.ts`, `socket.ts`, `errors.ts`) as of uwdata/mosaic#1224.
+  (`Connector.ts`, `rest.ts`, `socket.ts`, `errors.ts`); `preagg` lands in
+  uwdata/mosaic#1224.
 
 $defs:
   CommandType:
