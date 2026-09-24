@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import type { CreateQuery, ExprNode, FilterExpr } from "@uwdata/mosaic-sql";
+import type { CreateQuery, ExprNode, FilterExpr } from '@uwdata/mosaic-sql';
 import { Query, add, argmax, argmin, avg, corr, count, covarPop, covariance, desc, filterPushdown, geomean, gt, literal, loadObjects, max, min, mul, neq, product, regrAvgX, regrAvgY, regrCount, regrIntercept, regrR2, regrSXX, regrSXY, regrSYY, regrSlope, sql, stddev, stddevPop, sum, upper, varPop, variance } from '@uwdata/mosaic-sql';
 import { clausePoint, Coordinator, Selection, SelectionClause } from '../src/index.js';
 import type { PreAggregateInfo } from '../src/preagg/PreAggregator.js';
@@ -21,11 +21,11 @@ type Datum = { measure: number };
 type RunMeasure = ExprNode | ((predicate?: FilterExpr) => Query);
 
 const loadQuery = loadObjects('testData', [
-  { dim: 'a', cat: "c", order: 1, x: 1, y: 9 },
-  { dim: 'a', cat: "c", order: 2, x: 2, y: 8 },
-  { dim: 'b', cat: "d", order: 1, x: 3, y: 7 },
-  { dim: 'b', cat: "d", order: 2, x: 4, y: 6 },
-  { dim: 'b', cat: "d", order: 3, x: null, y: null }
+  { dim: 'a', cat: 'c', order: 1, x: 1, y: 9 },
+  { dim: 'a', cat: 'c', order: 2, x: 2, y: 8 },
+  { dim: 'b', cat: 'd', order: 1, x: 3, y: 7 },
+  { dim: 'b', cat: 'd', order: 2, x: 4, y: 6 },
+  { dim: 'b', cat: 'd', order: 3, x: null, y: null }
 ]);
 
 /**
@@ -59,7 +59,7 @@ async function runQuery(measure: RunMeasure, clause: SelectionClause) {
         return this;
       },
       queryError(err: Error) {
-        console.error("QUERY ERROR", err);
+        console.error('QUERY ERROR', err);
         reject(err);
       }
     });
@@ -284,9 +284,9 @@ describe('PreAggregator', () => {
     const query = (predicate: FilterExpr = []) => {
       return Query.from('testData')
         .select({ measure: avg('x'), Cat: 'cat' })
-        .groupby("cat")
+        .groupby('cat')
         .where(predicate)
-        .orderby(desc("measure"))
+        .orderby(desc('measure'))
     };
     expect(await run(query)).toStrictEqual([3.5, true]);
   });
@@ -295,9 +295,9 @@ describe('PreAggregator', () => {
     const query = (predicate: FilterExpr = []) => {
       return Query.from('testData')
         .select({ measure: avg('x'), Cat: 'cat' })
-        .groupby("Cat", upper("cat"))
+        .groupby('Cat', upper('cat'))
         .where(predicate)
-        .orderby(desc("measure"))
+        .orderby(desc('measure'))
     };
     expect(await run(query)).toStrictEqual([3.5, true]);
   });
@@ -317,9 +317,9 @@ describe('PreAggregator', () => {
     const query = (predicate: FilterExpr = []) => {
       return Query.from('testData')
         .select({ measure: avg('x') })
-        .groupby("cat", "CAT")
+        .groupby('cat', 'CAT')
         .where(predicate)
-        .orderby(desc("measure"))
+        .orderby(desc('measure'))
     };
     expect(await run(query)).toStrictEqual([3.5, true]);
   });
@@ -328,9 +328,9 @@ describe('PreAggregator', () => {
     const query = (predicate: FilterExpr = []) => {
       return Query.from('testData')
         .select({ measure: avg('x') })
-        .groupby("cat", "cat")
+        .groupby('cat', 'cat')
         .where(predicate)
-        .orderby(desc("measure"))
+        .orderby(desc('measure'))
     };
     expect(await run(query)).toStrictEqual([3.5, true]);
   });

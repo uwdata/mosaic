@@ -390,7 +390,7 @@ function preaggregateInfo(
  */
 function replaceIndices(exprs: ExprNode[], select: SelectClauseNode[]) {
   return exprs.flatMap(expr => {
-    if (expr.type === "ORDER_BY") {
+    if (expr.type === 'ORDER_BY') {
       const e = (expr as OrderByNode).expr;
       const ref = resolvePositional(e, select);
       if (ref) {

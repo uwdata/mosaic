@@ -36,44 +36,44 @@ describe('CreateQuery', () => {
 describe('createTable toString', () => {
   it('creates a table', async () => {
     await expect(createTable('table', 'SELECT 1')).toBeValidQuery(
-      `CREATE TABLE IF NOT EXISTS "table" AS SELECT 1`
+      'CREATE TABLE IF NOT EXISTS "table" AS SELECT 1'
     );
   });
 
   it('creates a temp table', async () => {
     await expect(createTable('table', 'SELECT 1', { temp: true })).toBeValidQuery(
-      `CREATE TEMP TABLE IF NOT EXISTS "table" AS SELECT 1`
+      'CREATE TEMP TABLE IF NOT EXISTS "table" AS SELECT 1'
     );
   });
 
   it('creates a table with replacement', async () => {
     await expect(createTable('table', 'SELECT 1', { replace: true })).toBeValidQuery(
-      `CREATE OR REPLACE TABLE "table" AS SELECT 1`
+      'CREATE OR REPLACE TABLE "table" AS SELECT 1'
     );
   });
 
   it('creates a view', async () => {
     await expect(createTable('view', 'SELECT 1', { view: true })).toBeValidQuery(
-      `CREATE VIEW IF NOT EXISTS "view" AS SELECT 1`
+      'CREATE VIEW IF NOT EXISTS "view" AS SELECT 1'
     );
   });
 
   it('creates a temp view', async () => {
     await expect(createTable('view', 'SELECT 1', { temp: true, view: true })).toBeValidQuery(
-      `CREATE TEMP VIEW IF NOT EXISTS "view" AS SELECT 1`
+      'CREATE TEMP VIEW IF NOT EXISTS "view" AS SELECT 1'
     );
   });
 
   it('creates a view with replacement', async () => {
     await expect(createTable('view', 'SELECT 1', { replace: true, view: true })).toBeValidQuery(
-      `CREATE OR REPLACE VIEW "view" AS SELECT 1`
+      'CREATE OR REPLACE VIEW "view" AS SELECT 1'
     );
   });
 
   it('generates SQL with a Query node as source', async () => {
     const q = createTable('result', Query.select('*').from('t1'), { temp: true });
     await expect(q).toBeValidQuery(
-      `CREATE TEMP TABLE IF NOT EXISTS "result" AS SELECT * FROM "t1"`
+      'CREATE TEMP TABLE IF NOT EXISTS "result" AS SELECT * FROM "t1"'
     );
   });
 });
@@ -103,13 +103,13 @@ describe('CreateSchemaQuery', () => {
 describe('createSchema toString', () => {
   it('creates a strict schema', async () => {
     await expect(createSchema('s1', { strict: true })).toBeValidQuery(
-      `CREATE SCHEMA "s1"`
+      'CREATE SCHEMA "s1"'
     );
   });
 
   it('creates a schema if it does not exist', async () => {
     await expect(createSchema('s1')).toBeValidQuery(
-      `CREATE SCHEMA IF NOT EXISTS "s1"`
+      'CREATE SCHEMA IF NOT EXISTS "s1"'
     );
   });
 });

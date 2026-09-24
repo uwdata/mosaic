@@ -1,7 +1,7 @@
-import { TupleNode } from "../ast/tuple.js";
-import { ValuesNode } from "../ast/values.js";
-import type { ExprValue } from "../types.js";
-import { asLiteral } from "../util/ast.js";
+import { TupleNode } from '../ast/tuple.js';
+import { ValuesNode } from '../ast/values.js';
+import type { ExprValue } from '../types.js';
+import { asLiteral } from '../util/ast.js';
 
 /**
  * Create a tuple AST node from a list of expression values.

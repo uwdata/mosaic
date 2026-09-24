@@ -4,7 +4,7 @@ import { validateQuery } from './util/validate.js';
 
 /** Validate a from clause by wrapping it in a SELECT and adding an alias. */
 async function validateFrom(from: SQLNode, expected: string) {
-  const alias = "t";
+  const alias = 't';
   const query = `SELECT * FROM ${from} AS "${alias}"`;
   expect(query).toBe(`SELECT * FROM ${expected} AS "${alias}"`);
   await validateQuery(query);
@@ -16,7 +16,7 @@ describe('values', () => {
       new TupleNode([literal('a'), literal(1), literal(true)]),
       new TupleNode([literal('b'), literal(2), literal(false)]),
     ]);
-    await validateFrom(node, `VALUES ('a', 1, TRUE), ('b', 2, FALSE)`);
+    await validateFrom(node, 'VALUES (\'a\', 1, TRUE), (\'b\', 2, FALSE)');
   });
 
   it('function accepts expression node values', async () => {
@@ -24,11 +24,11 @@ describe('values', () => {
       [literal('a'), literal(1), literal(true)],
       tuple([literal('b'), literal(2), literal(false)])
     ]);
-    await validateFrom(node, `VALUES ('a', 1, TRUE), ('b', 2, FALSE)`);
+    await validateFrom(node, 'VALUES (\'a\', 1, TRUE), (\'b\', 2, FALSE)');
   });
 
   it('function accepts literal values', async () => {
     const node = values([['a', 1, true], ['b', 2, false]]);
-    await validateFrom(node, `VALUES ('a', 1, TRUE), ('b', 2, FALSE)`);
+    await validateFrom(node, 'VALUES (\'a\', 1, TRUE), (\'b\', 2, FALSE)');
   });
 });

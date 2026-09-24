@@ -412,7 +412,7 @@ describe('Query', () => {
             ['type']
           )
         )
-    ).toBeValidQuery(`SELECT "u"."type" AS "type" FROM UNNEST(['Gold', 'Silver', 'Bronze']) AS "u"("type")`);
+    ).toBeValidQuery('SELECT "u"."type" AS "type" FROM UNNEST([\'Gold\', \'Silver\', \'Bronze\']) AS "u"("type")');
   });
 
   it('selects over windows', async () => {
@@ -566,30 +566,30 @@ describe('Query', () => {
     const selectQuery = Query.from('data').select('foo');
     const setOperation = Query.unionAll(selectQuery, selectQuery);
     const describeQuery = Query.describe(selectQuery);
-    const pivotQuery = Query.pivot("source");
+    const pivotQuery = Query.pivot('source');
 
     expect(isSelectQuery(selectQuery)).toBe(true);
     expect(isSelectQuery(setOperation)).toBe(false);
     expect(isSelectQuery(describeQuery)).toBe(false);
     expect(isSelectQuery(pivotQuery)).toBe(false);
-    expect(isSelectQuery("SELECT 42 AS value")).toBe(false);
+    expect(isSelectQuery('SELECT 42 AS value')).toBe(false);
 
     expect(isSetOperation(selectQuery)).toBe(false);
     expect(isSetOperation(setOperation)).toBe(true);
     expect(isSetOperation(describeQuery)).toBe(false);
     expect(isSetOperation(pivotQuery)).toBe(false);
-    expect(isSetOperation("SELECT 42 AS value UNION ALL SELECT 7 AS value")).toBe(false);
+    expect(isSetOperation('SELECT 42 AS value UNION ALL SELECT 7 AS value')).toBe(false);
 
     expect(isDescribeQuery(selectQuery)).toBe(false);
     expect(isDescribeQuery(setOperation)).toBe(false);
     expect(isDescribeQuery(describeQuery)).toBe(true);
     expect(isDescribeQuery(pivotQuery)).toBe(false);
-    expect(isDescribeQuery("DESC SELECT 42 AS value")).toBe(false);
+    expect(isDescribeQuery('DESC SELECT 42 AS value')).toBe(false);
 
     expect(isPivotQuery(selectQuery)).toBe(false);
     expect(isPivotQuery(setOperation)).toBe(false);
     expect(isPivotQuery(describeQuery)).toBe(false);
     expect(isPivotQuery(pivotQuery)).toBe(true);
-    expect(isPivotQuery("PIVOT data ON year USING sum(population)")).toBe(false);
+    expect(isPivotQuery('PIVOT data ON year USING sum(population)')).toBe(false);
   });
 });

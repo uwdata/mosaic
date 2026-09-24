@@ -12,7 +12,7 @@ export interface SelectionOptions {
   include?: Selection | Selection[];
 }
 
-export interface SelectionResolverOptions extends Pick<SelectionOptions, "empty" | "cross"> {
+export interface SelectionResolverOptions extends Pick<SelectionOptions, 'empty' | 'cross'> {
   /** Boolean flag to indicate a union strategy. If false, an intersection strategy is used. */
   union?: boolean;
     /** Boolean flag to indicate single clauses only. */

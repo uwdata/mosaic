@@ -93,7 +93,7 @@ export class Region {
     // create a single brush, regardless of facets
     this.g = select(svg)
       .append('g')
-      .attr('class', `region-xy`)
+      .attr('class', 'region-xy')
       .each(patchScreenCTM)
       .call(brush)
       .call(brush.moveSilent, extent);
