@@ -37,7 +37,7 @@ func TestGatekeeperResolvedPolicy(t *testing.T) {
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			err := db.ValidateSQL(t.Context(), tc.sql, ValidationPolicy{AllowedTables: []TableRule{{Catalog: stringPtr("memory"), Schema: "tenant_a", Table: "*"}}})
+			_, err := db.ValidateSQL(t.Context(), tc.sql, ValidationPolicy{AllowedTables: []TableRule{{Catalog: stringPtr("memory"), Schema: "tenant_a", Table: "*"}}})
 			if tc.rule == "" {
 				require.NoError(t, err)
 			} else {
@@ -100,7 +100,7 @@ func TestGatekeeperMissingFailsClosed(t *testing.T) {
 		require.NoError(t, err)
 		require.NotEmpty(t, data)
 		for _, policy := range []ValidationPolicy{{}, {AllowedTables: []TableRule{{Schema: "main", Table: "*"}}}} {
-			err := db.ValidateSQL(t.Context(), "SELECT 1", policy)
+			_, err := db.ValidateSQL(t.Context(), "SELECT 1", policy)
 			require.ErrorIs(t, err, ErrValidation)
 			require.ErrorContains(t, err, "gatekeeper_validate")
 			_, err = db.QueryArrow(t.Context(), "SELECT 1", &policy)
@@ -113,7 +113,7 @@ func TestGatekeeperMissingFailsClosed(t *testing.T) {
 			_, err := execer.ExecContext(ctx, "CREATE OR REPLACE MACRO gatekeeper_validate(sql_text) AS TABLE SELECT true AS allowed", nil)
 			return err
 		})
-		err := db.ValidateSQL(t.Context(), "SELECT 1", ValidationPolicy{})
+		_, err := db.ValidateSQL(t.Context(), "SELECT 1", ValidationPolicy{})
 		require.ErrorIs(t, err, ErrValidation)
 	})
 }
@@ -123,9 +123,12 @@ func TestGatekeeperGlobalCeiling(t *testing.T) {
 	require.NoError(t, db.Exec(t.Context(), `CALL gatekeeper_configure(
 		allowed_tables := [{catalog: 'memory', schema: 'tenant_a', 'table': '*'}],
 		blocked_functions := ['md5']); SET lock_configuration = true`))
-	require.NoError(t, db.ValidateSQL(t.Context(), "SELECT * FROM tenant_a.secret", ValidationPolicy{}))
-	requireViolation(t, db.ValidateSQL(t.Context(), "SELECT * FROM tenant_b.secret", ValidationPolicy{}), "table")
-	requireViolation(t, db.ValidateSQL(t.Context(), "SELECT md5('x')", ValidationPolicy{AllowedFunctions: []string{"md5"}}), "function")
+	_, err := db.ValidateSQL(t.Context(), "SELECT * FROM tenant_a.secret", ValidationPolicy{})
+	require.NoError(t, err)
+	_, err = db.ValidateSQL(t.Context(), "SELECT * FROM tenant_b.secret", ValidationPolicy{})
+	requireViolation(t, err, "table")
+	_, err = db.ValidateSQL(t.Context(), "SELECT md5('x')", ValidationPolicy{AllowedFunctions: []string{"md5"}})
+	requireViolation(t, err, "function")
 	require.Error(t, db.Exec(t.Context(), "CALL gatekeeper_configure()"))
 }
 
@@ -152,8 +155,9 @@ func TestGatekeeperFunctionNamespaces(t *testing.T) {
 	require.NoError(t, db.Exec(t.Context(), `ATTACH ':memory:' AS otherdb;
 		CREATE SCHEMA otherdb.tenant_a;
 		CREATE MACRO otherdb.tenant_a.md5(x) AS system.main.md5(x)`))
-	require.NoError(t, db.ValidateSQL(t.Context(), "SELECT otherdb.tenant_a.md5('x')", ValidationPolicy{AllowedTables: []TableRule{}}))
-	err := db.ValidateSQL(t.Context(), "SELECT * FROM otherdb.tenant_a.missing()", ValidationPolicy{AllowedTables: []TableRule{}})
+	_, err := db.ValidateSQL(t.Context(), "SELECT otherdb.tenant_a.md5('x')", ValidationPolicy{AllowedTables: []TableRule{}})
+	require.NoError(t, err)
+	_, err = db.ValidateSQL(t.Context(), "SELECT * FROM otherdb.tenant_a.missing()", ValidationPolicy{AllowedTables: []TableRule{}})
 	requireViolation(t, err, "function")
 }
 
@@ -194,7 +198,7 @@ func TestGatekeeperTableRules(t *testing.T) {
 		})
 	}
 	require.NoError(t, db.Exec(t.Context(), `CALL gatekeeper_configure(blocked_tables := [{schema: 'tenant_a', 'table': 'secret'}])`))
-	err := db.ValidateSQL(t.Context(), "SELECT * FROM tenant_a.secret", ValidationPolicy{
+	_, err := db.ValidateSQL(t.Context(), "SELECT * FROM tenant_a.secret", ValidationPolicy{
 		AllowedTables: []TableRule{{Schema: "tenant_a", Table: "secret"}}, BlockedTables: []TableRule{},
 	})
 	requireViolation(t, err, "table")
@@ -212,7 +216,7 @@ func TestGatekeeperTrustedDefinitions(t *testing.T) {
 		require.NoError(t, err, stmt)
 	}
 	for _, stmt := range []string{"SELECT md5('x') FROM hashed", "SELECT digest('x'), md5('x')", "SELECT list_sum([1, 2])", "SELECT * FROM duckdb_tables()"} {
-		err := db.ValidateSQL(t.Context(), stmt, policy)
+		_, err := db.ValidateSQL(t.Context(), stmt, policy)
 		requireViolation(t, err, "function")
 	}
 }
@@ -222,7 +226,7 @@ func TestGatekeeperControlPlaneThroughTrustedDefinitions(t *testing.T) {
 	for _, name := range []string{"gatekeeper_configure", "gatekeeper_enforce", "disable_logging", "truncate_duckdb_logs"} {
 		t.Run(name, func(t *testing.T) {
 			require.NoError(t, db.Exec(t.Context(), "CREATE OR REPLACE VIEW control AS SELECT * FROM "+name+"()"))
-			err := db.ValidateSQL(t.Context(), "SELECT * FROM control", ValidationPolicy{AllowedFunctions: []string{name}})
+			_, err := db.ValidateSQL(t.Context(), "SELECT * FROM control", ValidationPolicy{AllowedFunctions: []string{name}})
 			requireViolation(t, err, "function")
 		})
 	}

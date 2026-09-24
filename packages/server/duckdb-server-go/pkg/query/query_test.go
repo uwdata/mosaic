@@ -158,7 +158,8 @@ func TestDB_FunctionAllowlist(t *testing.T) {
 			"SELECT tenant.md5('mosaic')",
 			"SELECT system.main.count(*) FROM (SELECT 1)",
 		} {
-			require.NoError(t, db.ValidateSQL(ctx, query, *exact("md5", "count_star")))
+			_, err := db.ValidateSQL(ctx, query, *exact("md5", "count_star"))
+			require.NoError(t, err)
 		}
 	})
 
@@ -196,7 +197,7 @@ func TestDB_FunctionAllowlist(t *testing.T) {
 			"SELECT json_serialize_sql('SELECT 1')",
 			"SELECT iceberg_bucket(16, 'value')",
 		} {
-			err := db.ValidateSQL(ctx, query, *defaults)
+			_, err := db.ValidateSQL(ctx, query, *defaults)
 			if query == "SELECT json_serialize_sql('SELECT 1')" {
 				require.NoError(t, err)
 			} else {
@@ -211,7 +212,7 @@ func TestDB_FunctionAllowlist(t *testing.T) {
 			"st_read":                     "SELECT * FROM st_read('data.geojson')",
 			"st_transform":                "SELECT st_transform(NULL, 'EPSG:4326', 'EPSG:3857')",
 		} {
-			err := db.ValidateSQL(ctx, query, *defaults)
+			_, err := db.ValidateSQL(ctx, query, *defaults)
 			require.ErrorIs(t, err, ErrAccessDenied)
 			require.Equal(t, function, requireViolation(t, err, "function").FunctionName)
 		}

@@ -55,7 +55,7 @@ func TestGatekeeperJSONPolicy(t *testing.T) {
 		`{"version":1,"options":{"unknown":[]}}`,
 	} {
 		t.Run(document, func(t *testing.T) {
-			err := db.ValidateSQL(t.Context(), "SELECT 1", ValidationPolicy{JSON: &document})
+			_, err := db.ValidateSQL(t.Context(), "SELECT 1", ValidationPolicy{JSON: &document})
 			var details ErrorDetails
 			require.ErrorAs(t, err, &details)
 			require.Equal(t, "invalid_input", details.Code)
@@ -69,17 +69,17 @@ func TestGatekeeperCallerObjects(t *testing.T) {
 	require.NoError(t, db.Exec(t.Context(), "CREATE VIEW tenant_a.shared AS SELECT * FROM tenant_b.secret"))
 	view := ResolvedObject{Catalog: "memory", Schema: "tenant_a", Table: "shared", Type: "view"}
 	table := ResolvedObject{Catalog: "memory", Schema: "tenant_b", Table: "secret", Type: "table"}
-	result, err := db.InspectSQL(t.Context(), "SELECT * FROM tenant_a.shared", ValidationPolicy{AllowedTables: []TableRule{{Schema: "tenant_a", Table: "shared"}}})
+	result, err := db.ValidateSQL(t.Context(), "SELECT * FROM tenant_a.shared", ValidationPolicy{AllowedTables: []TableRule{{Schema: "tenant_a", Table: "shared"}}})
 	require.NoError(t, err)
 	require.True(t, result.Allowed)
 	require.NotImplements(t, (*error)(nil), result)
 	require.Equal(t, "ok", result.Details.Code)
 	require.Equal(t, []ResolvedObject{view}, result.CallerObjects)
 	require.ElementsMatch(t, []ResolvedObject{view, table}, result.Objects)
-	result, err = db.InspectSQL(t.Context(), "SELECT * FROM tenant_a.shared, tenant_b.secret", ValidationPolicy{})
+	result, err = db.ValidateSQL(t.Context(), "SELECT * FROM tenant_a.shared, tenant_b.secret", ValidationPolicy{})
 	require.NoError(t, err)
 	require.ElementsMatch(t, []ResolvedObject{view, table}, result.CallerObjects)
-	result, err = db.InspectSQL(t.Context(), "SELECT * FROM tenant_a.shared, tenant_b.secret", ValidationPolicy{AllowedTables: []TableRule{{Schema: "tenant_a", Table: "shared"}}})
+	result, err = db.ValidateSQL(t.Context(), "SELECT * FROM tenant_a.shared, tenant_b.secret", ValidationPolicy{AllowedTables: []TableRule{{Schema: "tenant_a", Table: "shared"}}})
 	require.ErrorIs(t, err, ErrAccessDenied)
 	require.False(t, result.Allowed)
 	require.Empty(t, result.CallerObjects)
@@ -94,14 +94,14 @@ func TestGatekeeperCallerObjects(t *testing.T) {
 func TestInvalidPolicyAndInvalidSQL(t *testing.T) {
 	db := setupTestDB(t)
 	for _, stmt := range []string{"", "  ", "-- comment only", "; ;"} {
-		err := db.ValidateSQL(t.Context(), stmt, ValidationPolicy{})
+		_, err := db.ValidateSQL(t.Context(), stmt, ValidationPolicy{})
 		var details ErrorDetails
 		require.ErrorAs(t, err, &details)
 		require.Equal(t, "invalid_input", details.Code)
 		require.NotErrorIs(t, err, ErrInvalidPolicy)
-		err = db.ValidateSQL(t.Context(), stmt, ValidationPolicy{JSON: stringPtr(`{}`)})
+		_, err = db.ValidateSQL(t.Context(), stmt, ValidationPolicy{JSON: stringPtr(`{}`)})
 		require.ErrorIs(t, err, ErrInvalidPolicy)
 	}
-	err := db.ValidateSQL(t.Context(), "SELECT 2", ValidationPolicy{AllowedFunctions: []string{""}})
+	_, err := db.ValidateSQL(t.Context(), "SELECT 2", ValidationPolicy{AllowedFunctions: []string{""}})
 	require.ErrorIs(t, err, ErrInvalidPolicy)
 }

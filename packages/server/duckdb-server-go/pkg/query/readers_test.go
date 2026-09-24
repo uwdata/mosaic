@@ -19,7 +19,7 @@ func TestGatekeeperRejectsRemoteReaders(t *testing.T) {
 		t.Run(prefix, func(t *testing.T) {
 			for _, literalPrefix := range []string{prefix, strings.ToUpper(prefix)} {
 				sql := fmt.Sprintf("SELECT * FROM read_parquet('%sbucket/file.parquet')", literalPrefix)
-				err := db.ValidateSQL(t.Context(), sql, ValidationPolicy{})
+				_, err := db.ValidateSQL(t.Context(), sql, ValidationPolicy{})
 				require.ErrorIs(t, err, ErrAccessDenied)
 				requireViolation(t, err, "function")
 			}
@@ -125,7 +125,7 @@ func TestGatekeeperReaderArguments(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			err := db.ValidateSQL(t.Context(), tt.sql, ValidationPolicy{})
+			_, err := db.ValidateSQL(t.Context(), tt.sql, ValidationPolicy{})
 			if tt.allowed {
 				assert.NoError(t, err)
 				return
@@ -178,7 +178,7 @@ func TestGatekeeperRejectsNestedSQLExecutors(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			err := db.ValidateSQL(t.Context(), tt.sql, ValidationPolicy{})
+			_, err := db.ValidateSQL(t.Context(), tt.sql, ValidationPolicy{})
 			require.ErrorIs(t, err, ErrAccessDenied)
 			requireViolation(t, err, "dynamic_sql")
 		})
@@ -193,7 +193,8 @@ func TestGatekeeperRejectsScalarExecutorNames(t *testing.T) {
 		"SELECT json_execute_serialized_sql('local')",
 	} {
 		t.Run(sql, func(t *testing.T) {
-			requireViolation(t, db.ValidateSQL(t.Context(), sql, ValidationPolicy{}), "function")
+			_, err := db.ValidateSQL(t.Context(), sql, ValidationPolicy{})
+			requireViolation(t, err, "function")
 		})
 	}
 }
@@ -209,7 +210,7 @@ func TestGatekeeperRejectsJSONSerializePlan(t *testing.T) {
 		"SELECT system.main.json_serialize_plan('SELECT 42')",
 	} {
 		t.Run(sql, func(t *testing.T) {
-			err := db.ValidateSQL(t.Context(), sql, ValidationPolicy{})
+			_, err := db.ValidateSQL(t.Context(), sql, ValidationPolicy{})
 			require.ErrorIs(t, err, ErrAccessDenied)
 			requireViolation(t, err, "dynamic_sql")
 		})
@@ -219,11 +220,12 @@ func TestGatekeeperRejectsJSONSerializePlan(t *testing.T) {
 func TestGatekeeperRejectsTableMacroNamedJSONSerializePlan(t *testing.T) {
 	db := setupTestDB(t)
 
-	requireViolation(t, db.ValidateSQL(
+	_, err := db.ValidateSQL(
 		t.Context(),
 		"SELECT * FROM json_serialize_plan('local')",
 		ValidationPolicy{},
-	), "function")
+	)
+	requireViolation(t, err, "function")
 }
 
 func TestGatekeeperRejectsQualifiedJSONSerializePlanUDF(t *testing.T) {
@@ -234,14 +236,15 @@ func TestGatekeeperRejectsQualifiedJSONSerializePlanUDF(t *testing.T) {
 		"SELECT other.main.json_serialize_plan('local')",
 	} {
 		t.Run(sql, func(t *testing.T) {
-			requireViolation(t, db.ValidateSQL(t.Context(), sql, ValidationPolicy{}), "function")
+			_, err := db.ValidateSQL(t.Context(), sql, ValidationPolicy{})
+			requireViolation(t, err, "function")
 		})
 	}
 }
 
 func TestGatekeeperRejectsReaderWithUnknownOption(t *testing.T) {
 	db := setupTestDB(t)
-	err := db.ValidateSQL(t.Context(), "SELECT * FROM read_parquet('local.parquet', unreviewed_option := 'https://example.com/ignored')", ValidationPolicy{})
+	_, err := db.ValidateSQL(t.Context(), "SELECT * FROM read_parquet('local.parquet', unreviewed_option := 'https://example.com/ignored')", ValidationPolicy{})
 	requireViolation(t, err, "function")
 }
 
@@ -292,7 +295,7 @@ func TestGatekeeperReplacementScans(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			err := db.ValidateSQL(t.Context(), tt.sql, ValidationPolicy{})
+			_, err := db.ValidateSQL(t.Context(), tt.sql, ValidationPolicy{})
 			if !tt.wantErr {
 				assert.NoError(t, err)
 				return

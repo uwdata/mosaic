@@ -35,7 +35,7 @@ func New(ctx context.Context, connector *duckdb.Connector, opts ...OptionFunc) (
 	db.SetMaxOpenConns(o.MaxConnections)
 	result := &DB{db: db, validation: o.Validation, logger: o.Logger}
 	if o.Validation {
-		if err := result.ValidateSQL(ctx, "SELECT 1", ValidationPolicy{}); err != nil {
+		if _, err := result.ValidateSQL(ctx, "SELECT 1", ValidationPolicy{}); err != nil {
 			return nil, errors.Join(fmt.Errorf("query: Gatekeeper with the JSON policy API (0.3.0+) is required for validation; load it during trusted initialization or upgrade with FORCE INSTALL gatekeeper FROM community: %w", err), db.Close())
 		}
 	}
@@ -94,7 +94,7 @@ func (db *DB) validatedConn(ctx context.Context, query string, policy *Validatio
 		policy = &ValidationPolicy{}
 	}
 	if policy != nil {
-		if err := db.validateSQL(ctx, conn, query, *policy); err != nil {
+		if _, err := db.validateSQL(ctx, conn, query, *policy); err != nil {
 			return nil, errors.Join(err, conn.Close())
 		}
 	}

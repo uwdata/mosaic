@@ -99,17 +99,9 @@ type ValidationResult struct {
 	CallerObjects []ResolvedObject   `json:"caller_objects"`
 }
 
-// InspectSQL returns binding evidence on success and structured diagnostics on denial. It does not reserve a connection for execution.
-func (db *DB) InspectSQL(ctx context.Context, query string, policy ValidationPolicy) (ValidationResult, error) {
-	result, err := db.inspectSQL(ctx, db.db, query, policy)
-	if err != nil {
-		return result, fmt.Errorf("%w: %w", ErrValidation, err)
-	}
-	return result, nil
-}
-
-// ValidateSQL validates without executing. QueryArrow and WriteArrow validate and execute on the same connection.
-func (db *DB) ValidateSQL(ctx context.Context, query string, policy ValidationPolicy) error {
+// ValidateSQL returns binding evidence on success and diagnostics on denial without executing or reserving a connection.
+// QueryArrow and WriteArrow validate and execute on the same connection.
+func (db *DB) ValidateSQL(ctx context.Context, query string, policy ValidationPolicy) (ValidationResult, error) {
 	return db.validateSQL(ctx, db.db, query, policy)
 }
 
@@ -117,15 +109,12 @@ type rowQuerier interface {
 	QueryRowContext(context.Context, string, ...any) *sql.Row
 }
 
-func (db *DB) validateSQL(ctx context.Context, conn rowQuerier, query string, policy ValidationPolicy) error {
-	if _, err := db.inspectSQL(ctx, conn, query, policy); err != nil {
-		return fmt.Errorf("%w: %w", ErrValidation, err)
-	}
-	return nil
-}
-
-func (db *DB) inspectSQL(ctx context.Context, conn rowQuerier, query string, policy ValidationPolicy) (ValidationResult, error) {
-	var result ValidationResult
+func (db *DB) validateSQL(ctx context.Context, conn rowQuerier, query string, policy ValidationPolicy) (result ValidationResult, err error) {
+	defer func() {
+		if err != nil && !errors.Is(err, ErrValidation) {
+			err = fmt.Errorf("%w: %w", ErrValidation, err)
+		}
+	}()
 	document, err := policy.document()
 	if err != nil {
 		return result, err
@@ -155,7 +144,7 @@ func (db *DB) inspectSQL(ctx context.Context, conn rowQuerier, query string, pol
 		if query == "SELECT 1" {
 			return result, errors.Join(ErrInvalidPolicy, result.Details)
 		}
-		if _, err := db.inspectSQL(ctx, conn, "SELECT 1", policy); err != nil {
+		if _, err := db.validateSQL(ctx, conn, "SELECT 1", policy); err != nil {
 			return result, err
 		}
 	case "forbidden", "unsupported", "parser", "binding":
