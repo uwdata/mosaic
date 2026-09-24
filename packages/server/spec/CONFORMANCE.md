@@ -5,10 +5,10 @@ Gap analysis of each server implementation against `openapi.yaml`,
 none of the servers fully conform yet. Line references are to `origin/main`
 at `b623fb60` and will drift.
 
-Client baseline: `packages/mosaic/core/src/connectors` on
-[#1224](https://github.com/uwdata/mosaic/pull/1224), which builds on main
-after #1172 (drop `json`), #1213 (drop `persist` and result caches),
-#1209 (socket pipelining), and #1228 (`type` required).
+Client baseline: `packages/mosaic/core/src/connectors` on main after #1172
+(drop `json`), #1213 (drop `persist` and result caches), #1209 (socket
+pipelining), and #1228 (`type` required). The `preagg` command is implemented
+by [#1224](https://github.com/uwdata/mosaic/pull/1224), stacked on this PR.
 
 ## Decisions made while drafting
 
