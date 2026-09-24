@@ -1,5 +1,4 @@
 import type { CreateQuery, CreateSchemaQuery, DescribeQuery, ExprNode, MaybeArray, Query } from '@uwdata/mosaic-sql';
-import type { QueryResult } from './util/query-result.js';
 
 /** Arrow IPC bytes as returned by a connector. */
 export type ArrowIPCBytes = ArrayBuffer | Uint8Array | Uint8Array[];
@@ -23,7 +22,7 @@ export interface QueryRequest {
 /** Type for an entry within a query manager. */
 export interface QueryEntry {
   request: QueryRequest;
-  result: QueryResult;
+  result: PromiseWithResolvers<unknown>;
 }
 
 /** String indicating a JavaScript data type. */

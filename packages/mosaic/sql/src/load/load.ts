@@ -1,4 +1,5 @@
-import { type CreateTableOptions } from '../ast/query.js';
+import { type CreateTableOptions, Query } from '../ast/query.js';
+import { VerbatimNode } from '../ast/verbatim.js';
 import { createTable } from './create.js';
 import { sqlFrom } from './sql-from.js';
 
@@ -17,8 +18,10 @@ export function load(
   const { select = ['*'], where, view, temp, replace, ...file } = options;
   const params = parameters({ ...defaults, ...file });
   const read = `${method}('${fileName}'${params ? ', ' + params : ''})`;
-  const filter = where ? ` WHERE ${where}` : '';
-  const query = `SELECT ${select.join(', ')} FROM ${read}${filter}`;
+  const query = Query
+    .select(...select.map(expr => ({ '': new VerbatimNode(expr) })))
+    .from(new VerbatimNode(read))
+    .where(where ? new VerbatimNode(String(where)) : []);
   return createTable(tableName, query, { view, temp, replace });
 }
 
