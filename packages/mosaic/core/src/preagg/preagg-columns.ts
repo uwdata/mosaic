@@ -46,7 +46,7 @@ export function preaggColumns(client: MosaicClient): PreAggColumnsResult | null 
   // throws if unresolvable, which bails from preaggregation below
   const avg = (ref: ColumnRefNode) => {
     const expr = baseExpression(q, ref);
-    if (!expr) throw new Error();
+    if (!expr) throw new Error('unresolvable base expression');
     return sql`(SELECT avg(${expr}) FROM ${source})`;
   };
 
