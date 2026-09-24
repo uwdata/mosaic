@@ -1,4 +1,5 @@
 import { isNode } from '../ast/node.js';
+import { PARAM } from '../constants.js';
 import { recurse } from './recurse.js';
 
 /**
@@ -9,7 +10,8 @@ import { recurse } from './recurse.js';
 export function deepClone<T>(node: T): T {
   const clone = shallowClone(node);
 
-  if (isNode(node)) {
+  // param values belong to the shared Param, so do not copy them
+  if (isNode(node) && node.type !== PARAM) {
     const props = recurse[node.type];
     const n = props?.length ?? 0;
     for (let i = 0; i < n; ++i) {

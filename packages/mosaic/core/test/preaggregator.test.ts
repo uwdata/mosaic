@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import type { CreateQuery, ExprNode, FilterExpr } from '@uwdata/mosaic-sql';
 import { Query, add, argmax, argmin, avg, corr, count, covarPop, covariance, cte, desc, eq, filterPushdown, geomean, gt, literal, loadObjects, max, min, mul, neq, product, regrAvgX, regrAvgY, regrCount, regrIntercept, regrR2, regrSXX, regrSXY, regrSYY, regrSlope, sql, stddev, stddevPop, sum, upper, varPop, variance } from '@uwdata/mosaic-sql';
-import { clausePoint, Coordinator, Selection, SelectionClause } from '../src/index.js';
+import { clausePoint, Coordinator, Param, Selection, SelectionClause } from '../src/index.js';
 import type { PreAggregateInfo } from '../src/preagg/PreAggregator.js';
 import { preaggColumns } from '../src/preagg/preagg-columns.js';
 import { NodeConnector } from '../src/connectors/NodeConnector.js';
@@ -278,6 +278,16 @@ describe('PreAggregator', () => {
       return filterPushdown(q, 'testData', filter);
     };
     expect(await run(query)).toStrictEqual([3.5, true]);
+  });
+
+  it('supports queries with params', async () => {
+    const p = Param.value(2);
+    const query = (predicate: FilterExpr = []) => {
+      return Query.from('testData')
+        .select({ measure: sum(sql`"x" * ${p}`) })
+        .where(predicate);
+    };
+    expect(await run(query)).toStrictEqual([14, true]);
   });
 
   it('supports queries with renamed groupby dimensions', async () => {
