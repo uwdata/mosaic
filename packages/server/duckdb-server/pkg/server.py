@@ -160,7 +160,7 @@ class Serde:
         self.loads = deserialize
 
 
-def server(con: Con) -> None:
+def server(con: Con, port: int = 3000) -> None:
     app = App()
     app.json_serializer(Serde(serialize=json_encode, deserialize=json_decode_slow))
 
@@ -201,7 +201,7 @@ def server(con: Con) -> None:
     app.set_error_handler(on_error)
 
     app.listen(
-        3000,
+        port,
         lambda config: sys.stdout.write(
             f"DuckDB Server listening at ws://localhost:{config.port} and http://localhost:{config.port}\n"
         ),

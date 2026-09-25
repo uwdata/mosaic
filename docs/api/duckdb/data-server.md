@@ -35,3 +35,9 @@ Launch a data server in Node.js:
 import { DuckDB, dataServer } from "@uwdata/mosaic-duckdb";
 dataServer(new DuckDB(), { rest: true, socket: true });
 ```
+
+Or from the command line, with an optional database path (default in-memory) and `--port` (default `3000`):
+
+``` sh
+node packages/server/duckdb/bin/run-server.js data.db --port 3001
+```
