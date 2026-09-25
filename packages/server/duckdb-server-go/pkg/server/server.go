@@ -30,14 +30,29 @@ type commandResponse struct {
 }
 
 var commandResponses = map[CommandType]commandResponse{
-	CommandExec:  {wsMessage: websocket.MessageText},
-	CommandArrow: {contentType: "application/vnd.apache.arrow.stream", wsMessage: websocket.MessageBinary},
+	CommandExec:   {wsMessage: websocket.MessageText},
+	CommandArrow:  {contentType: "application/vnd.apache.arrow.stream", wsMessage: websocket.MessageBinary},
+	CommandPreagg: {contentType: "application/json", wsMessage: websocket.MessageText},
 }
 
-type queryParamsError string
+type queryParamsError struct {
+	reason, field, message string
+}
 
-func (e queryParamsError) Error() string {
-	return string(e)
+func (e *queryParamsError) Error() string {
+	return e.message
+}
+
+func malformedJSON(err error) error {
+	return &queryParamsError{reason: "malformed_json", message: err.Error()}
+}
+
+func missingField(field string) error {
+	return &queryParamsError{reason: "missing_field", field: field, message: "missing required '" + field + "' parameter"}
+}
+
+func invalidField(field, message string) error {
+	return &queryParamsError{reason: "invalid_field", field: field, message: message}
 }
 
 // commandExecutor is private so the server package does not expose query's
@@ -48,14 +63,16 @@ type commandExecutor interface {
 }
 
 type handler struct {
-	db               commandExecutor
-	logger           *slog.Logger
-	authorizer       requestAuthorizer
-	httpHandler      http.Handler
-	websocketOptions WebSocketOptions
-	maxMessageBytes  int64
-	cacheControl     string
-	varyHeaders      []string
+	db                    commandExecutor
+	logger                *slog.Logger
+	authorizer            requestAuthorizer
+	httpHandler           http.Handler
+	websocketOptions      WebSocketOptions
+	maxMessageBytes       int64
+	cacheControl          string
+	varyHeaders           []string
+	preaggregator         *query.PreAggregator
+	preaggregateNamespace func(context.Context, queryParams) (query.Namespace, error)
 }
 
 // New constructs a Mosaic HTTP and WebSocket handler backed by db. Omitting
@@ -70,7 +87,16 @@ func New(db *query.DB, opts ...Option) (http.Handler, error) {
 		return nil, err
 	}
 
-	return newHandler(db, cfg), nil
+	s := newHandler(db, cfg)
+	if cfg.preaggregate != nil {
+		p, err := query.NewPreAggregator(context.Background(), db, cfg.preaggregate.materializer)
+		if err != nil {
+			return nil, err
+		}
+		s.preaggregator = p
+		s.preaggregateNamespace = cfg.preaggregate.namespace
+	}
+	return s, nil
 }
 
 func newHandler(db commandExecutor, cfg config) *handler {
@@ -90,7 +116,7 @@ func newHandler(db commandExecutor, cfg config) *handler {
 }
 
 func (s *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	if s.cacheControl != "" {
+	if s.cacheControl != "" || s.preaggregator != nil {
 		w.Header().Set("Cache-Control", "no-store")
 	}
 	if len(s.varyHeaders) > 0 {
@@ -124,6 +150,15 @@ func (s *handler) commandAuthorizer(r *http.Request) (commandAuthorizer, error) 
 
 func (s *handler) writeHTTPError(w http.ResponseWriter, err error) {
 	response := s.classifyAndLogError(err)
+	if s.preaggregator != nil {
+		w.Header().Set("Content-Type", "application/json")
+		w.Header().Set("Cache-Control", "no-store")
+		w.WriteHeader(response.status)
+		if err := json.NewEncoder(w).Encode(response.envelope()); err != nil {
+			s.logger.Error("server: failed to write error response", "error", err)
+		}
+		return
+	}
 	http.Error(w, response.message, response.status)
 }
 
@@ -192,10 +227,7 @@ func (s *handler) handleWebSocketMessage(ctx context.Context, conn *websocket.Co
 	response, err := s.execCommand(ctx, params, authorize)
 	if err != nil {
 		errResponse := s.classifyAndLogError(err)
-		writeErr := wsjson.Write(ctx, conn, map[string]string{
-			"error": errResponse.message,
-			"code":  errResponse.code,
-		})
+		writeErr := wsjson.Write(ctx, conn, errResponse.envelope())
 		if writeErr != nil {
 			return fmt.Errorf("server: failed to write error response: %w", writeErr)
 		}
@@ -240,7 +272,7 @@ func (s *handler) handleHTTP(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 			s.logger.Error("server: failed to decode request body", "error", err)
-			http.Error(w, err.Error(), http.StatusBadRequest)
+			s.writeHTTPError(w, malformedJSON(err))
 			return
 		}
 		params.raw = raw
@@ -265,6 +297,11 @@ func (s *handler) handleHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if r.Method == http.MethodGet && params.Type != nil && *params.Type == CommandPreagg {
+		s.writeHTTPError(w, invalidField("type", "preagg requires POST"))
+		return
+	}
+
 	response, err := s.execCommand(r.Context(), params, authorize)
 	if err != nil {
 		s.writeHTTPError(w, err)
@@ -276,7 +313,7 @@ func (s *handler) handleHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if r.Method == http.MethodGet && s.cacheControl != "" {
+	if r.Method == http.MethodGet && s.cacheControl != "" && s.preaggregator == nil {
 		etag := responseETag(response)
 		if value := strings.Join(r.Header.Values("If-Match"), ","); value != "" && !matchesETag(value, etag, false) {
 			http.Error(w, http.StatusText(http.StatusPreconditionFailed), http.StatusPreconditionFailed)
@@ -318,7 +355,17 @@ func (s *handler) execCommand(ctx context.Context, params queryParams, authorize
 		err = s.db.Exec(ctx, *params.SQL)
 
 	case CommandArrow:
-		response.data, err = s.db.Query(ctx, *params.SQL, policy)
+		if s.preaggregator == nil {
+			response.data, err = s.db.Query(ctx, *params.SQL, policy)
+		} else {
+			response.data, err = s.queryPreaggregate(ctx, params, policy, authorize)
+		}
+
+	case CommandPreagg:
+		if s.preaggregator == nil {
+			return commandResponse{}, errUnsupportedCommand
+		}
+		response.data, err = s.queryPreaggregate(ctx, params, policy, authorize)
 
 	default:
 		return commandResponse{}, fmt.Errorf("server: no executor for command type %q", *params.Type)
@@ -330,17 +377,21 @@ func (s *handler) execCommand(ctx context.Context, params queryParams, authorize
 func (p queryParams) Validate(logger *slog.Logger) error {
 	if p.Type == nil || *p.Type == "" {
 		logger.Error("server: missing required 'type' parameter")
-		return queryParamsError("missing required 'type' parameter")
+		return missingField("type")
 	}
 
 	if _, ok := commandResponses[*p.Type]; !ok {
 		logger.Error("server: invalid 'type' parameter", "type", *p.Type)
-		return queryParamsError("invalid 'type' parameter: " + string(*p.Type))
+		return invalidField("type", "invalid 'type' parameter: "+string(*p.Type))
 	}
 
-	if p.SQL == nil || *p.SQL == "" {
+	if p.SQL == nil {
 		logger.Error("server: missing required 'sql' parameter")
-		return queryParamsError("missing required 'sql' parameter")
+		return missingField("sql")
+	}
+	if *p.SQL == "" {
+		logger.Error("server: empty 'sql' parameter")
+		return invalidField("sql", "empty 'sql' parameter")
 	}
 
 	return nil

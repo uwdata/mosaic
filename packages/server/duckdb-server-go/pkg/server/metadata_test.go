@@ -287,7 +287,10 @@ func testCommandPayloadDecodeError[T any](t *testing.T, invalid, valid string) {
 	require.NoError(t, conn.Write(server.ctx, websocket.MessageText, []byte(invalid)))
 	var response map[string]string
 	require.NoError(t, wsjson.Read(server.ctx, conn, &response))
-	require.Equal(t, map[string]string{"code": "bad_request", "error": "Bad Request"}, response)
+	require.Equal(t, "bad_request", response["code"])
+	require.Equal(t, "Bad Request", response["error"])
+	require.Contains(t, []string{"invalid_field", "malformed_json"}, response["reason"])
+	require.Equal(t, response["reason"] == "invalid_field", response["field"] != "")
 	require.Zero(t, calls.Load())
 	require.NoError(t, conn.Write(server.ctx, websocket.MessageText, []byte(valid)))
 	require.NoError(t, wsjson.Read(server.ctx, conn, &response))

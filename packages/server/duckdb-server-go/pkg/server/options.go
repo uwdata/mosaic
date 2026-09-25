@@ -60,6 +60,7 @@ type config struct {
 	maxMessageBytes int64
 	cacheControl    string
 	varyHeaders     []string
+	preaggregate    *preaggregateConfig
 }
 
 func defaultConfig() config {

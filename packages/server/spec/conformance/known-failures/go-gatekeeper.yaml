@@ -3,8 +3,6 @@
 # listed, and `passes` names inherited cases this configuration gets right.
 server: go-gatekeeper
 inherits: go
-passes:
-  - connector/rest-error
 failures:
   - area: Disabled `exec` is `bad_request`
     current: "`ErrExecWithValidation` maps to `bad_request` (`pkg/server/errors.go`); an application field spelled `TYPE: exec` also trips it, see D9 in go.yaml."
@@ -14,10 +12,6 @@ failures:
       post/exec-unsupported:
         - error.content-type
         - error.not-json
-      ws/exec-unsupported:
-        - error.code.bad_request
-        - error.schema.required.reason
-        - error.reason.missing
   - area: Gatekeeper rejections are `forbidden` or `bad_request` regardless of cause
     current: A multi-statement `arrow` is `forbidden` (403) and an unknown table is `bad_request` (400 `Bad Request`) because Gatekeeper validation fails before DuckDB classifies the statement.
     spec: Multi-statement is `bad_request` (D16); an unknown user table is `internal_error` unless classified as a managed table (D7, still open in CONFORMANCE.md).
@@ -29,20 +23,7 @@ failures:
         - error.not-json
       ws/arrow-multi-statement:
         - error.code.forbidden
-        - error.schema.required.reason
-        - error.reason.missing
-      post/sql-unknown-table:
-        - error.status.400
-        - error.content-type
-        - error.not-json
-      ws/sql-unknown-table:
-        - error.code.bad_request
-        - error.schema.required.reason
-        - error.reason.missing
-      ws/ws-sql-error-stays-open:
-        - s1.error.code.bad_request
-        - s1.error.schema.required.reason
-        - s1.error.reason.missing
+        - error.reason.policy_denied
       get/arrow-multi-statement:
         - error.status.403
         - error.content-type
@@ -51,10 +32,7 @@ failures:
     current: The status is right but the body is the plain `http.StatusText`.
     spec: Envelope with the DuckDB message (D4, D7).
     fix: Covered by the envelope fix in go.yaml.
-    cases:
-      post/sql-parse-error:
-        - error.content-type
-        - error.not-json
+    cases: {}
   - area: Local file reads are denied
     current: Default Gatekeeper policy rejects `read_parquet` on a local path with 403 `Forbidden`.
     spec: Deployment choice; the suite marks this configuration as lacking the `files` capability. Listed so the plain-text body is not lost.
@@ -84,23 +62,11 @@ failures:
       post/policy-denied-file:
         - error.content-type
         - error.not-json
-      ws/policy-denied-file:
-        - error.schema.required.reason
-        - error.reason.missing
   - area: Correctly classified parse errors still lack `reason`
     current: Under validation a syntax error is `bad_request` on every transport, so these cases passed before D19; the frames have no `reason`.
     spec: "`sql_parse_error` (D19)."
     fix: Covered by the `reason` fix in go.yaml.
-    cases:
-      ws/sql-parse-error:
-        - error.schema.required.reason
-        - error.reason.missing
-      ws/ws-pipeline-order:
-        - s2.error.schema.required.reason
-        - s2.error.reason.missing
-        - s2.error.field.missing
-        - s4.error.schema.required.reason
-        - s4.error.reason.missing
+    cases: {}
   - area: JSON keys match case-insensitively
     current: As in go.yaml, but here the shadowed `exec` is refused by validation, so the response is a 400 instead of an empty body.
     spec: Protocol fields decoded exactly; application fields must not shadow them (D9).

@@ -2,8 +2,11 @@ package server
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"net/http"
+
+	"github.com/duckdb/duckdb-go/v2"
 
 	"github.com/uwdata/mosaic/packages/server/duckdb-server-go/pkg/query"
 )
@@ -25,7 +28,21 @@ func (e *authorizationError) Unwrap() error {
 type errorResponse struct {
 	status  int
 	code    string
+	reason  string
+	field   string
 	message string
+	table   *query.MissingPreAggregateError
+}
+
+func (r errorResponse) envelope() map[string]any {
+	result := map[string]any{"error": r.message, "code": r.code, "reason": r.reason}
+	if r.field != "" {
+		result["field"] = r.field
+	}
+	if r.table != nil {
+		result["reference"] = r.table.Reference
+	}
+	return result
 }
 
 func classifyError(err error) errorResponse {
@@ -33,38 +50,64 @@ func classifyError(err error) errorResponse {
 	if errors.As(err, &authErr) {
 		switch {
 		case errors.Is(authErr, ErrInvalidCommand):
-			return errorResponse{http.StatusBadRequest, "bad_request", http.StatusText(http.StatusBadRequest)}
+			response := errorResponse{status: http.StatusBadRequest, code: "bad_request", reason: "malformed_json", message: http.StatusText(http.StatusBadRequest)}
+			var typeErr *json.UnmarshalTypeError
+			if errors.As(authErr, &typeErr) && typeErr.Field != "" {
+				response.reason, response.field = "invalid_field", typeErr.Field
+			}
+			return response
 		case errors.Is(authErr, ErrUnauthenticated):
-			return errorResponse{http.StatusUnauthorized, "unauthenticated", http.StatusText(http.StatusUnauthorized)}
+			return errorResponse{status: http.StatusUnauthorized, code: "unauthenticated", reason: "authentication_required", message: http.StatusText(http.StatusUnauthorized)}
 		case errors.Is(authErr, ErrPermissionDenied):
-			return errorResponse{http.StatusForbidden, "forbidden", http.StatusText(http.StatusForbidden)}
+			return errorResponse{status: http.StatusForbidden, code: "forbidden", reason: "access_denied", message: http.StatusText(http.StatusForbidden)}
 		default:
-			return errorResponse{http.StatusInternalServerError, "internal_error", "authorization failed"}
+			return errorResponse{status: http.StatusInternalServerError, code: "internal_error", reason: "internal_failure", message: "authorization failed"}
 		}
 	}
 
 	response := errorResponse{
 		status:  http.StatusInternalServerError,
 		code:    "internal_error",
+		reason:  "internal_failure",
 		message: err.Error(),
 	}
 
 	var (
 		errorDetails query.ErrorDetails
-		paramsError  queryParamsError
+		engineErr    *duckdb.Error
+		paramsError  *queryParamsError
+		missing      *query.MissingPreAggregateError
 	)
 	switch {
+	case errors.As(err, &missing):
+		response.status, response.code, response.reason = http.StatusNotFound, "table_not_found", "materialization_missing"
+		response.table = missing
+	case errors.Is(err, errUnsupportedCommand), errors.Is(err, query.ErrExecWithValidation):
+		response.status, response.code, response.reason = http.StatusBadRequest, "unsupported_command", "command_disabled"
 	case errors.Is(err, query.ErrInvalidPolicy):
+		response.reason = "validation_failed"
 		response.message = http.StatusText(http.StatusInternalServerError)
 	case errors.Is(err, query.ErrAccessDenied):
-		response.status = http.StatusForbidden
-		response.code = "forbidden"
-	case errors.Is(err, query.ErrExecWithValidation),
-		errors.Is(err, query.ErrUnsupportedStatement),
-		errors.As(err, &errorDetails),
-		errors.As(err, &paramsError):
-		response.status = http.StatusBadRequest
-		response.code = "bad_request"
+		response.status, response.code, response.reason = http.StatusForbidden, "forbidden", "policy_denied"
+	case errors.Is(err, query.ErrUnsupportedStatement):
+		response.status, response.code, response.reason = http.StatusBadRequest, "bad_request", "unsupported_statement"
+	case errors.As(err, &errorDetails):
+		switch errorDetails.Code {
+		case "parser", "invalid_input":
+			response.status, response.code, response.reason = http.StatusBadRequest, "bad_request", "sql_parse_error"
+		default:
+			response.reason = "execution_failed"
+		}
+	case errors.As(err, &engineErr):
+		switch engineErr.Type {
+		case duckdb.ErrorTypeParser, duckdb.ErrorTypeSyntax:
+			response.status, response.code, response.reason = http.StatusBadRequest, "bad_request", "sql_parse_error"
+		default:
+			response.reason = "execution_failed"
+		}
+	case errors.As(err, &paramsError):
+		response.status, response.code = http.StatusBadRequest, "bad_request"
+		response.reason, response.field = paramsError.reason, paramsError.field
 	}
 
 	if errors.Is(err, query.ErrValidation) {
