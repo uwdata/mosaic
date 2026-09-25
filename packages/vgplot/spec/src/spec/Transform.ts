@@ -102,7 +102,7 @@ export interface Bin {
    * step sizes when performing numerical binning. When **step** is specified,
    * this option affects the binning end points (e.g., origin) only.
    */
-  nice?: true;
+  nice?: boolean;
   /**
    * Offset for computed bins (default `0`). For example, a value of `1` will
    * result in using the next consecutive bin boundary.
