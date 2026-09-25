@@ -12,7 +12,9 @@ import { WithClauseNode } from '../ast/with.js';
 /**
  * Perform filter pushdown on a query: clone a query and push a filter into
  * the given base table via a CTE, so every reference to the table sees the
- * filtered rows. Skips scalar subqueries.
+ * filtered rows. Skips scalar subqueries. Throws if the query references the
+ * table under a different name path, as pushing down would otherwise drop the
+ * filter without notice.
  * @param query The query to clone and extend.
  * @param table The base table as a table name or table reference node.
  * @param filter The filter predicate expression to add. May only reference
@@ -33,15 +35,17 @@ export function filterPushdown(
 
   // determine unique name for filtered CTE
   const names = new Set<string>();
-  walk(clone, (node) => {
-    if (isTableRef(node)) {
-      names.add(node.name);
+  const conflicts = new Set<string>();
+  walk(clone, (node, parent) => {
+    if (!isTableRef(node)) return;
+    names.add(node.name);
+    if (parent instanceof ColumnRefNode) {
+      return; // a qualifier names a source, it does not introduce one
+    }
+    if (node.name === tableRef.name && !arrayEquals(node.table, tableRef.table)) {
+      conflicts.add(`${node}`);
     }
   });
-  if (!names.has(tableRef.name)) {
-    // filtered table not present in query, nothing to do
-    return clone;
-  }
   let filteredName = `_${tableRef.name}`;
   while (names.has(filteredName)) {
     filteredName = `_${filteredName}`;
@@ -50,6 +54,7 @@ export function filterPushdown(
   // rename table refs to the filtered CTE, keeping each source visible
   // under its original name so that column qualifiers still bind
   const visibleName = tableRef.name;
+  let rewritten = false;
   walk(clone, (node, parent) => {
     if (node.type === SCALAR_SUBQUERY) {
       return 1; // don't recurse
@@ -58,15 +63,30 @@ export function filterPushdown(
       return; // not a reference to the filtered table
     }
     if (parent instanceof ColumnRefNode) {
-      return; // column qualifiers keep binding to the visible name
+      // a CTE alias can not carry a schema, so qualifiers that spell out the
+      // catalog path collapse to the visible name
+      // @ts-expect-error set read-only property
+      node.table = [visibleName];
+      return;
     }
     // @ts-expect-error set read-only property
     node.table = [filteredName];
+    rewritten = true;
     if (parent instanceof FromClauseNode && !parent.alias) {
       // @ts-expect-error set read-only property
       parent.alias = visibleName;
     }
   });
+  if (!rewritten) {
+    if (conflicts.size) {
+      throw new Error(
+        `Filter pushdown table ${tableRef} does not match `
+        + `${[...conflicts].join(', ')} in the query.`
+      );
+    }
+    // filtered table not present in query, nothing to do
+    return clone;
+  }
 
   // add filtered table as CTE node, after the target CTE if there is one:
   // non-recursive WITH clauses can not use forward references
