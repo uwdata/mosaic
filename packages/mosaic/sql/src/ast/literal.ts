@@ -15,12 +15,16 @@ export class LiteralNode extends ExprNode {
   }
 }
 
+function padZero(value: unknown, len = 2) {
+  return `${value}`.padStart(len, '0');
+}
+
 export function literalToSQL(value: unknown): string {
   switch (typeof value) {
     case 'number':
       return Number.isFinite(value) ? `${value}` : 'NULL';
     case 'string':
-      return `'${value.replaceAll(`'`, `''`)}'`;
+      return `'${value.replaceAll('\'', '\'\'')}'`;
     case 'boolean':
       return value ? 'TRUE' : 'FALSE';
     default:
@@ -33,10 +37,10 @@ export function literalToSQL(value: unknown): string {
         const m = value.getUTCMonth();
         const d = value.getUTCDate();
         return ts === Date.UTC(y, m, d)
-          ? `DATE '${y}-${m+1}-${d}'` // utc date
+          ? `DATE '${y}-${padZero(m+1)}-${padZero(d)}'` // utc date
           : `epoch_ms(${ts})`; // timestamp
       } else if (value instanceof RegExp) {
-        return `'${value.source.replaceAll(`'`, `''`)}'`;
+        return `'${value.source.replaceAll('\'', '\'\'')}'`;
       } else if (Array.isArray(value)) {
         // serialize as a DuckDB list literal
         return `[${value.map(v => literalToSQL(v)).join(', ')}]`;

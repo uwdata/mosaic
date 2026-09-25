@@ -96,10 +96,7 @@ async function getFieldInfo(mc: Coordinator, { table, column, stats }: FieldInfo
   if (!stats?.length) return info;
 
   // query for summary stats
-  const [result] = await mc.query(
-    summarize({ table, column, stats }),
-    { persist: true }
-  );
+  const [result] = await mc.query(summarize({ table, column, stats }));
 
   // extract summary stats, copy to field info, and return
   return Object.assign(info, result);

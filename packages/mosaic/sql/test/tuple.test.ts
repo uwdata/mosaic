@@ -14,6 +14,6 @@ describe('tuple', () => {
 
   it('function accepts literal values', async () => {
     const t = tuple(['a', 'b', 'c'])
-    await expect(t).toBeValidExpr(`('a', 'b', 'c')`);
+    await expect(t).toBeValidExpr('(\'a\', \'b\', \'c\')');
   });
 });

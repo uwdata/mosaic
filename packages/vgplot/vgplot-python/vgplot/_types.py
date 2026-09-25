@@ -20,7 +20,7 @@ AttrValue = (
     str | float | bool | date | dict[str, Any] | Sequence[Any] | _ParamBase | None
 )
 MarkData = str | FromRef | DataDef | dict[str, Any] | Sequence[Any] | _ParamBase | None
-TransformArg = str | float | bool | _ParamBase
+TransformArg = str | float | bool | dict[str, Any] | _ParamBase
 
 UNSET = sentinel("UNSET")
 """Sentinel for mark channels that were not passed (distinct from None)."""
