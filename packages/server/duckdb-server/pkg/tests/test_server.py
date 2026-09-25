@@ -64,3 +64,13 @@ def test_http_error_writes_status_before_headers() -> None:
     assert res.calls[0] == ("status", 400)
     assert res.calls[-1] == ("end", "boom")
     assert ("header", "Access-Control-Allow-Origin") in res.calls
+
+
+def test_serde_dumps_returns_text_for_socketify() -> None:
+    from msgspec.json import decode, encode
+
+    from pkg.server import Serde
+
+    serde = Serde(serialize=encode, deserialize=decode)
+    assert serde.dumps({"error": "boom"}) == '{"error":"boom"}'
+    assert isinstance(serde.dumps({}), str)
