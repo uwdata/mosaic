@@ -108,7 +108,14 @@ export default {
       view.model.save_changes();
     }
 
-    view.model.on('change:spec', () => updateSpec());
+    function showError(error) {
+      logger.error(error);
+      const pre = document.createElement('pre');
+      pre.textContent = String(error);
+      view.el.replaceChildren(pre);
+    }
+
+    view.model.on('change:spec', () => updateSpec().catch(showError));
 
     function configureCoordinator() {
       coordinator().preaggregator.schema = getPreaggSchema();
@@ -127,7 +134,7 @@ export default {
 
       if (msg.error) {
         query.reject(msg.error);
-        logger.error(msg.error);
+        showError(msg.error);
       } else {
         switch (msg.type) {
           case 'arrow': {
@@ -146,7 +153,7 @@ export default {
 
     coordinator().databaseConnector(connector);
     configureCoordinator();
-    updateSpec();
+    updateSpec().catch(showError);
 
     return () => {
       // cleanup
