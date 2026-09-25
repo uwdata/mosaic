@@ -3,9 +3,9 @@
 
 - id: policy-denied-file
   title: A statement the deployment policy forbids is rejected with `forbidden` and never executed
-  decisions: [D7, D4]
+  decisions: [D7, D4, D19, D21]
   transports: [post, get, ws]
   requires: [policy]
   request: { type: arrow, sql: "SELECT count(*)::INTEGER AS n FROM read_parquet('$DATA/penguins.parquet')" }
   expect:
-    error: { code: forbidden }
+    error: { code: forbidden, reason: policy_denied }

@@ -6,7 +6,7 @@
   transports: [ws]
   steps:
     - raw: { body: '{"type": "arrow", "sql": ' }
-      expect: { error: { code: bad_request } }
+      expect: { error: { code: bad_request, reason: malformed_json } }
     - request: { type: arrow, sql: "SELECT 1 AS x" }
       expect: { arrow: { rows: [[1]] } }
 
@@ -16,7 +16,7 @@
   transports: [ws]
   steps:
     - request: { type: arrow }
-      expect: { error: { code: bad_request, message: "missing required 'sql' parameter" } }
+      expect: { error: { code: bad_request, reason: missing_field, field: sql } }
     - request: { type: arrow, sql: "SELECT 1 AS x" }
       expect: { arrow: { rows: [[1]] } }
 
@@ -26,7 +26,7 @@
   transports: [ws]
   steps:
     - request: { type: arrow, sql: "SELECT * FROM conformance_no_such_table" }
-      expect: { error: { code: internal_error } }
+      expect: { error: { code: internal_error, reason: execution_failed } }
     - request: { type: arrow, sql: "SELECT 1 AS x" }
       expect: { arrow: { rows: [[1]] } }
 
@@ -49,11 +49,11 @@
     - request: { type: arrow, sql: "SELECT 1 AS x" }
       expect: { arrow: { rows: [[1]] } }
     - request: { sql: "SELECT 2 AS x" }
-      expect: { error: { code: bad_request } }
+      expect: { error: { code: bad_request, reason: missing_field, field: type } }
     - request: { type: arrow, sql: "SELECT 3 AS x" }
       expect: { arrow: { rows: [[3]] } }
     - request: { type: arrow, sql: "SELEC 4" }
-      expect: { error: { code: bad_request } }
+      expect: { error: { code: bad_request, reason: sql_parse_error } }
     - request: { type: arrow, sql: "SELECT 5 AS x" }
       expect: { arrow: { rows: [[5]] } }
 

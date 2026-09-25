@@ -2,47 +2,47 @@
 # properties, and the GET restrictions.
 
 - id: missing-type
-  title: A request without `type` is rejected with the canonical message
-  decisions: [D1, D4]
+  title: A request without `type` is rejected as a missing field
+  decisions: [D1, D4, D19]
   request: { sql: "SELECT 1" }
   expect:
-    error: { code: bad_request, message: "missing required 'type' parameter" }
+    error: { code: bad_request, reason: missing_field, field: type }
 
 - id: missing-sql
-  title: A request without `sql` is rejected with the canonical message
-  decisions: [D1, D4]
+  title: A request without `sql` is rejected as a missing field
+  decisions: [D1, D4, D19]
   request: { type: arrow }
   expect:
-    error: { code: bad_request, message: "missing required 'sql' parameter" }
+    error: { code: bad_request, reason: missing_field, field: sql }
 
 - id: empty-sql
-  title: An empty `sql` string is a bad request
-  decisions: [D1, D4]
+  title: An empty `sql` string is an invalid field
+  decisions: [D1, D4, D19]
   request: { type: arrow, sql: "" }
   expect:
-    error: { code: bad_request }
+    error: { code: bad_request, reason: invalid_field, field: sql }
 
 - id: unknown-type
-  title: An unknown `type` is a bad request, not an unsupported command
-  decisions: [D6, D4]
+  title: An unknown `type` is an invalid field, not an unsupported command
+  decisions: [D6, D4, D19]
   request: { type: csv, sql: "SELECT 1" }
   expect:
-    error: { code: bad_request }
+    error: { code: bad_request, reason: invalid_field, field: type }
 
 - id: type-not-a-string
-  title: A non-string `type` is a bad request
-  decisions: [D1, D4]
+  title: A non-string `type` is an invalid field
+  decisions: [D1, D4, D19]
   request: { type: 1, sql: "SELECT 1" }
   expect:
-    error: { code: bad_request }
+    error: { code: bad_request, reason: invalid_field, field: type }
 
 - id: malformed-json-body
   title: A body that is not JSON is a bad request with the error envelope
-  decisions: [D4]
+  decisions: [D4, D19]
   transports: [post]
   raw: { body: '{"type": "arrow", "sql": ' }
   expect:
-    error: { code: bad_request }
+    error: { code: bad_request, reason: malformed_json }
 
 - id: application-fields-pass-through
   title: Unknown properties are accepted and do not affect the command
@@ -66,7 +66,7 @@
   expect:
     oneOf:
       - arrow: { columns: [x], rows: [[1]] }
-      - error: { status: 415, code: bad_request }
+      - error: { status: 415, code: bad_request, reason: unsupported_media_type }
 
 - id: content-type-with-charset
   title: A `charset` parameter on the JSON media type is accepted
@@ -85,11 +85,11 @@
 
 - id: arrow-multi-statement
   title: Several statements in one `arrow` command are rejected before execution
-  decisions: [D16, D7, D3a]
+  decisions: [D16, D7, D3a, D19]
   transports: [post, get, ws]
   request: { type: arrow, sql: "SELECT 1 AS x; SELECT 2 AS y" }
   expect:
-    error: { code: bad_request }
+    error: { code: bad_request, reason: multiple_statements }
 
 - id: exec-acknowledged
   title: A successful `exec` returns an empty acknowledgement
@@ -117,7 +117,7 @@
   unless: [exec]
   request: { type: exec, sql: "SELECT 1" }
   expect:
-    error: { code: unsupported_command }
+    error: { code: unsupported_command, reason: command_disabled }
 
 - id: get-arrow
   title: GET runs a read-only `arrow` query from flat parameters
@@ -136,54 +136,54 @@
     arrow: { columns: [x], rows: [[2]] }
 
 - id: get-missing-type
-  title: GET without `type` is rejected with the canonical message
-  decisions: [D1, D2]
+  title: GET without `type` is rejected as a missing field
+  decisions: [D1, D2, D19]
   transports: [get]
   request: { sql: "SELECT 1" }
   expect:
-    error: { code: bad_request, message: "missing required 'type' parameter" }
+    error: { code: bad_request, reason: missing_field, field: type }
 
 - id: get-json-wrapped-query-rejected
-  title: The legacy `?query=<json>` form is not accepted
-  decisions: [D2]
+  title: The legacy `?query=<json>` form is not accepted, so `type` is missing
+  decisions: [D2, D19]
   transports: [get]
   raw: { query: 'query=%7B%22type%22%3A%22arrow%22%2C%22sql%22%3A%22SELECT%201%22%7D' }
   expect:
-    error: { code: bad_request }
+    error: { code: bad_request, reason: missing_field, field: type }
 
 - id: get-exec-rejected
   title: GET does not run `exec`
-  decisions: [D3]
+  decisions: [D3, D19]
   transports: [get]
   steps:
     - request: { type: exec, sql: "CREATE TABLE conformance_get_exec AS SELECT 1 AS x" }
-      expect: { error: { code: bad_request } }
+      expect: { error: { code: bad_request, reason: invalid_field, field: type } }
     - transport: post
       request: { type: arrow, sql: "SELECT count(*)::INTEGER AS n FROM information_schema.tables WHERE table_name = 'conformance_get_exec'" }
       expect: { arrow: { rows: [[0]] } }
 
 - id: get-preagg-rejected
   title: GET does not run `preagg`
-  decisions: [D3]
+  decisions: [D3, D19]
   transports: [get]
   request: { type: preagg, sql: "SELECT 1 AS x" }
   expect:
-    error: { code: bad_request }
+    error: { code: bad_request, reason: invalid_field, field: type }
 
 - id: get-ddl-rejected
   title: GET rejects a side-effecting statement before executing it
-  decisions: [D3a]
+  decisions: [D3a, D19]
   transports: [get]
   steps:
     - request: { type: arrow, sql: "CREATE TABLE conformance_get_ddl AS SELECT 1 AS x" }
-      expect: { error: { code: bad_request } }
+      expect: { error: { code: bad_request, reason: not_read_only } }
     - transport: post
       request: { type: arrow, sql: "SELECT count(*)::INTEGER AS n FROM information_schema.tables WHERE table_name = 'conformance_get_ddl'" }
       expect: { arrow: { rows: [[0]] } }
 
 - id: get-delete-returning-rejected
   title: GET rejects a DML statement even when it returns rows
-  decisions: [D3a]
+  decisions: [D3a, D19]
   transports: [get]
   requires: [exec]
   steps:
@@ -191,7 +191,7 @@
       request: { type: exec, sql: "CREATE OR REPLACE TABLE conformance_get_dml AS SELECT 1 AS x" }
       expect: { exec: true }
     - request: { type: arrow, sql: "DELETE FROM conformance_get_dml RETURNING *" }
-      expect: { error: { code: bad_request } }
+      expect: { error: { code: bad_request, reason: not_read_only } }
     - transport: post
       request: { type: arrow, sql: "SELECT count(*)::INTEGER AS n FROM conformance_get_dml" }
       expect: { arrow: { rows: [[1]] } }

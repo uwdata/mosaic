@@ -8,7 +8,9 @@ const defaultTimeout = Number(process.env.CONFORMANCE_STEP_TIMEOUT ?? 15_000);
 // and timeouts mean the harness could not deliver the request and must fail
 // the run instead of matching a baseline entry. ECONNRESET and EPIPE are the
 // macOS and Linux spellings of the peer closing while we were still writing,
-// so they share an id; the errno stays in the detail.
+// so they share an id; the errno stays in the detail. The same teardown can
+// land after the status line (undici then throws `terminated` from the body
+// read), so the body read goes through the same classifier.
 const postSendResets: Record<string, string> = {
   ECONNRESET: 'peer-closed',
   EPIPE: 'peer-closed',
@@ -67,6 +69,13 @@ export async function sendHttp(
     const cause = (err as { cause?: Error }).cause;
     throw new Error(`could not deliver ${method} ${url.slice(0, 120)}: ${(err as Error).message}${cause ? ` (${cause.message})` : ''}`, { cause: err });
   }
-  const bytes = new Uint8Array(await res.arrayBuffer());
+  let bytes: Uint8Array;
+  try {
+    bytes = new Uint8Array(await res.arrayBuffer());
+  } catch (err) {
+    const failure = classifyFetchError(err);
+    if (failure) return { ...failure, error: `after status ${res.status}: ${failure.error}` };
+    throw new Error(`could not read the ${res.status} response to ${method} ${url.slice(0, 120)}: ${(err as Error).message}`, { cause: err });
+  }
   return { kind: 'http', status: res.status, headers: res.headers, body: bytes };
 }
