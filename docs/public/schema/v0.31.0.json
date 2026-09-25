@@ -69344,6 +69344,44 @@
       ],
       "type": "object"
     },
+    "Nearest": {
+      "additionalProperties": false,
+      "description": "A nearest interactor.",
+      "properties": {
+        "as": {
+          "$ref": "#/definitions/ParamRef",
+          "description": "The output selection. A clause of the form `field = value` is added for the currently nearest value."
+        },
+        "channels": {
+          "description": "The encoding channels whose domain values should be selected. For example, a setting of `['color']` selects the data value backing the color channel, whereas `['x', 'z']` selects both x and z channel domain values. If unspecified, the selected channels default to match the current pointer settings: a `nearestX` interactor selects the `['x']` channels, while a `nearest` interactor selects the `['x', 'y']` channels.",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "fields": {
+          "description": "The fields (database column names) to use in generated selection clause predicates. If unspecified, the fields backing the selected *channels* in the first valid prior mark definition are used by default.",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "maxRadius": {
+          "description": "The maximum radius of a nearest selection (default 40). Marks with (x, y) coordinates outside this radius will not be selected as nearest points.",
+          "type": "number"
+        },
+        "select": {
+          "const": "nearest",
+          "description": "Select values from the mark closest to the pointer.",
+          "type": "string"
+        }
+      },
+      "required": [
+        "as",
+        "select"
+      ],
+      "type": "object"
+    },
     "NearestX": {
       "additionalProperties": false,
       "description": "A nearestX interactor.",
@@ -75777,6 +75815,9 @@
           "$ref": "#/definitions/IntervalXY"
         },
         {
+          "$ref": "#/definitions/Nearest"
+        },
+        {
           "$ref": "#/definitions/NearestX"
         },
         {
@@ -75814,6 +75855,9 @@
         },
         {
           "$ref": "#/definitions/ToggleColor"
+        },
+        {
+          "$ref": "#/definitions/ToggleZ"
         }
       ],
       "description": "A plot interactor entry."
@@ -192082,6 +192126,30 @@
         "select": {
           "const": "toggleY",
           "description": "Select individual values in the `y` scale domain. Clicking or touching a mark toggles its selection status.",
+          "type": "string"
+        }
+      },
+      "required": [
+        "as",
+        "select"
+      ],
+      "type": "object"
+    },
+    "ToggleZ": {
+      "additionalProperties": false,
+      "description": "A toggleZ interactor.",
+      "properties": {
+        "as": {
+          "$ref": "#/definitions/ParamRef",
+          "description": "The output selection. A clause of the form `(field = value1) OR (field = value2) ...` is added for the currently selected values."
+        },
+        "peers": {
+          "description": "A flag indicating if peer (sibling) marks are excluded when cross-filtering (default `true`). If set, peer marks will not be filtered by this interactor's selection in cross-filtering setups.",
+          "type": "boolean"
+        },
+        "select": {
+          "const": "toggleZ",
+          "description": "Select individual values in the `z` scale domain. Clicking or touching a mark toggles its selection status.",
           "type": "string"
         }
       },
