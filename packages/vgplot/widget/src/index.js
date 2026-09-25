@@ -136,7 +136,7 @@ export default {
 
       if (msg.error) {
         query.reject(msg.error);
-        logger.error(msg.error);
+        showError(msg.error);
       } else {
         switch (msg.type) {
           case 'arrow': {
