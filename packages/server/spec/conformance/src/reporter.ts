@@ -9,6 +9,7 @@ type Outcome = 'pass' | 'known' | 'regression' | 'resolved' | 'error' | 'skipped
 interface Row {
   id: string;
   outcome: Outcome;
+  reason?: string;
   area?: string;
   detail?: string;
   violations?: string[];
@@ -51,7 +52,8 @@ function classify(test: TestCase): Row {
   const annotations = test.annotations();
   const byType = (type: string) => annotations.find(a => a.type === type)?.message;
   const id = test.name;
-  if (result.state === 'skipped' || result.state === 'pending') return { id, outcome: 'skipped' };
+  if (result.state === 'skipped') return { id, outcome: 'skipped', reason: result.note };
+  if (result.state === 'pending') return { id, outcome: 'skipped' };
   const area = byType(annotationTypes.known);
   const observed = byType(annotationTypes.observed);
   const regression = byType(annotationTypes.regression);

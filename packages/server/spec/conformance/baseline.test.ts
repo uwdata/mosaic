@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { observedFrom, refreshBaseline, type ResultRow } from './src/baseline.ts';
+import { inheritedFrom, observedFrom, refreshBaseline, type ResultRow } from './src/baseline.ts';
 import { rejectionStatus } from './src/connector-cases.ts';
 
 const source = `# comment stays
@@ -18,6 +18,7 @@ failures:
 
 const rows = (...items: Array<[string, string, string[]?]>): ResultRow[] =>
   items.map(([id, outcome, violations]) => ({ id, outcome, violations }));
+const skipped = (id: string, reason: string): ResultRow => ({ id, outcome: 'skipped', reason });
 
 describe('baseline refresh', () => {
   it('refuses a result set with harness errors instead of treating them as passes', () => {
@@ -103,6 +104,32 @@ failures:
     expect(text).toBe(inheriting);
     expect(unfiled.size).toBe(0);
     expect(unverified).toEqual(['post/new', 'ws/exec-unsupported']);
+  });
+
+  it('keeps an override that now passes when the inherited run never observed it', () => {
+    const base = observedFrom(rows(['post/other', 'pass', []]), 'go');
+    const observed = observedFrom(rows(['ws/exec-unsupported', 'pass', []]), 'go-gatekeeper');
+    const { text, changes, unverified } = refreshBaseline(inheriting, observed, base);
+    expect(changes).toEqual([]);
+    expect(text).toBe(inheriting);
+    expect(unverified).toEqual(['ws/exec-unsupported']);
+    const verified = refreshBaseline(inheriting, observed, observedFrom(rows(['ws/exec-unsupported', 'known', ['error.code.bad_request']]), 'go'));
+    expect(verified.changes).toEqual(['removed ws/exec-unsupported (passes)', 'passes: connector/rest-error -> connector/rest-error, ws/exec-unsupported']);
+  });
+
+  it('tells a capability skip in the inherited run from a filtered one', () => {
+    const goRows = [...rows(['post/other', 'pass', []], ['ws/filtered', 'skipped']), skipped('ws/exec-unsupported', 'only when exec is unavailable'), skipped('post/new', 'requires policy')];
+    expect([...inheritedFrom(goRows, 'go').keys()].sort()).toEqual(['post/new', 'post/other', 'ws/exec-unsupported']);
+    expect([...observedFrom(goRows, 'go').keys()]).toEqual(['post/other']);
+    const base = inheritedFrom(goRows, 'go');
+    const passing = refreshBaseline(inheriting, observedFrom(rows(['ws/exec-unsupported', 'pass', []]), 'go-gatekeeper'), base);
+    expect(passing.changes).toEqual(['removed ws/exec-unsupported (passes)']);
+    expect(passing.text).not.toContain('ws/exec-unsupported');
+    expect(passing.unverified).toEqual([]);
+    const failing = refreshBaseline(inheriting, observedFrom(rows(['ws/exec-unsupported', 'known', ['error.code.bad_request']], ['post/new', 'regression', ['error.status.500']]), 'go-gatekeeper'), base);
+    expect(failing.changes).toEqual([]);
+    expect([...failing.unfiled.keys()]).toEqual(['post/new']);
+    expect(failing.unverified).toEqual([]);
   });
 });
 
