@@ -2,8 +2,9 @@
 
 Gap analysis of each server implementation against `openapi.yaml`,
 `asyncapi.yaml`, and `schemas.yaml`. The spec describes the *desired* state;
-none of the servers fully conform yet. Line references are to `origin/main`
-at `b623fb60` and will drift.
+none of the servers fully conform yet. The per-server tables at the end are
+generated from `conformance/known-failures/*.yaml`, which the conformance
+suite in `conformance/` also reads, so a gap and its test stay in step.
 
 Client baseline: `packages/mosaic/core/src/connectors` on main after #1172
 (drop `json`), #1213 (drop `persist` and result caches), #1209 (socket
@@ -45,124 +46,229 @@ Where the servers disagreed, the spec picks one behaviour. Each is revisable.
 - `Access-Control-Request-Method: *` is emitted as a *response* header by Python and Node (it is a request header). No server sets `Access-Control-Expose-Headers`, so browsers cannot read `ETag` cross-origin.
 - No server sends `Allow` on 405.
 
+## Conformance suite
+
+`conformance/` is a vitest project that starts one server configuration on a
+free port, replays declarative cases from `conformance/cases/*.yaml` over
+HTTP POST, HTTP GET, and WebSocket, and checks every response against
+`schemas.yaml` with Ajv plus the case's own expectations. Arrow bodies are
+decoded with Flechette and compared as rows. A second file drives the real
+`@uwdata/mosaic-core` connectors end to end.
+
+```sh
+CONFORMANCE_SERVER=go pnpm -F @uwdata/mosaic-server-spec conformance
+```
+
+Configurations are defined in `conformance/servers/index.ts`: `node`,
+`python`, `rust`, `go`, `go-cache`, `go-gatekeeper`. Each declares
+capabilities (`exec`, `preagg`, `caching`, `files`); cases gate on them with
+`requires`/`unless`. `CONFORMANCE_URL` points the suite at an already
+running server instead of spawning one. Server output is written to
+`conformance/.logs/<config>.log`.
+
+The suite is a ratchet. `conformance/known-failures/<config>.yaml` lists the
+cases that fail today, grouped by area with the observed behaviour and the
+fix. A run is green when the failing set equals that list. A case that
+regresses fails the run; a case that starts passing also fails the run until
+it is removed from the list, so the lists only shrink. Full conformance is
+reached when they are empty. `go-cache` and `go-gatekeeper` inherit the plain
+`go` list and add or exempt (`passes`) entries.
+
+To add a case, append it to a file in `conformance/cases/` with the decision
+ids it exercises, run every configuration, add the new failures to the
+matching `known-failures` file, then regenerate the tables below:
+
+```sh
+pnpm -F @uwdata/mosaic-server-spec conformance:docs
+```
+
+CI runs all six configurations on every pull request that touches a server
+or the spec (`.github/workflows/server-protocol.yml`) and fails if the tables
+below are stale.
+
+Not observable from outside, so still tracked by hand (`cases: []`):
+authorizer mappings (`unauthenticated`/`forbidden`), tenant `Vary` headers,
+timeouts, and internal structure such as shared connections.
+
+
+<!-- conformance:begin -->
+<!-- Generated from conformance/known-failures/*.yaml by conformance/generate-conformance-md.ts. Edit the YAML, then run `pnpm -F @uwdata/mosaic-server-spec conformance:docs`. -->
+
 ## Go `duckdb-server-go`
 
-Source: `packages/server/duckdb-server-go/{main.go,flags.go,pkg/server/*.go,pkg/query/*.go}`. Closest to the target; intended first `preagg` implementation (#1234).
+Configuration: `duckdb-server-go` with default flags.
 
-Already conforming: WebSocket error frames carry `code` (`bad_request`, `unauthenticated`, `forbidden`, `internal_error`; `pkg/server/errors.go:31-69`); Arrow IPC stream with EOS marker; GET caching with strong `ETag`, weak `If-None-Match` → 304, strong `If-Match` → 412, `no-store` elsewhere (`pkg/server/cache.go`, `server.go:295-307`); application payload passthrough via `WithAuthorizer` (`pkg/server/authorization.go:75-107`); `Vary` auto-includes schema-match headers.
+Closest to the target and the intended first `preagg` implementation (#1234). Already conforming: WebSocket error frames carry `code` (`pkg/server/errors.go`); Arrow IPC stream with the end-of-stream marker; GET caching with a strong `ETag`, weak `If-None-Match` → 304, strong `If-Match` → 412, `no-store` elsewhere (`pkg/server/cache.go`); application payload passthrough via `WithAuthorizer` (`pkg/server/authorization.go`); `Vary` auto-includes schema-match headers.
 
-| Area | Current | Spec | Fix |
-|------|---------|------|-----|
-| HTTP errors | `http.Error` plain text (`server.go:127-130`); `classifyError` already yields a code | JSON envelope (D4) | Reuse `classifyError`; write `{error,code}` with `application/json`. |
-| `ErrExecWithValidation` | `bad_request` (`errors.go`) | `unsupported_command` (D6) | Remap. |
-| Parse errors without policy | 500 `internal_error` with raw DuckDB text | 400 `bad_request` (D7) | Run `json_serialize_sql` (or statement extraction) unconditionally, or map DuckDB parser errors. |
-| Exec over GET | runs (`server.go:264-276`) | 400 `bad_request` (D3) | Reject in GET branch. |
-| GET read-only SQL | not checked; `json_serialize_sql` runs only under policy (`query.go:185-209`) | reject non-SELECT roots (D3a) | Run the serializer for GET unconditionally and check the root node class. |
-| Multi-statement `arrow` | runs all, returns last (duckdb-go `prepareStmts`) | reject (D16) | Count statements before execution. |
-| 405 | plain text, no `Allow` (`server.go:278-281`) | envelope + `Allow` | Set header. |
-| 413 | plain `Request Entity Too Large` | envelope `bad_request` | Mapper. Also expose `WithMaxMessageBytes` on the CLI; the binary is unbounded. |
-| 401 schema-match | plain `no allowed schemas found in request headers` (`server.go:228-232`) | envelope `unauthenticated` | Mapper. |
-| JSON key matching | case-insensitive, last-wins (`encoding/json`); `TYPE` overrides `type` (`metadata_test.go:301`) | protocol fields decoded exactly (D9) | Decode protocol fields with a strict decoder or reject duplicate/case-variant keys. |
-| WS malformed JSON | close 1007 via `wsjson.Read` (`server.go:193-198`) | `Error` frame, open (D12) | Read raw, unmarshal manually. |
-| WS read limit | 32 KiB library default unless `WithMaxMessageBytes` | ≥ 1 MiB (D13) | Set a default; add CLI flag. |
-| WS error frame | trailing `\n` from `json.Encoder` (`server.go:203-207`) | acceptable, but match HTTP body byte-for-byte | Use `json.Marshal`. |
-| WS close | always `Close(1011)` on loop exit (`server.go:168-173`) | 1000 on clean client close | Distinguish `CloseError` from other read errors. |
-| WS pings | answered only inside `conn.Read` | SHOULD answer during execution | Reader goroutine or `conn.Ping` ticker. |
-| WS context | `r.Context()` after hijack; cancellation on disconnect undetermined | needed for deadlines | Derive from connection lifecycle. |
-| Upgrade detection | whole-value `EqualFold` on `Connection` (`server.go:102-103`) | token-based | Scan `Connection` tokens. |
-| `Cache-Control: private` | operator value used verbatim even with an authorizer | identity → `Vary` or `private` (D14) | Document; optionally add identity headers to `Vary` from `AuthorizeRequest`. |
-| `Access-Control-Expose-Headers` | not set (`security.go`) | expose `ETag` | Add to `WithCORS` defaults. |
-| Remote URI rejection (#1152) | option only, no CLI flag (`main.go`) | deployment choice | Add flag if it should be reachable from the binary. |
-| `name` field | parsed, unused (`server.go:19-24`) | dropped (D15) | Remove. |
-| Timeouts | none | `deadline_exceeded` | Per-command deadline; also needed by #1234. |
+| Area | Current | Spec | Fix | Cases |
+|------|---------|------|-----|-------|
+| HTTP errors are plain text | `http.Error` writes `text/plain` even though `classifyError` already yields a code (`pkg/server/server.go`). | JSON `Error` envelope (D4). | Reuse `classifyError`; write `{error, code}` with `application/json`. | 12 |
+| Parse errors are 500 without a policy | `json_serialize_sql` runs only under validation, so a syntax error is an unclassified `internal_error`. | `bad_request` regardless of policy (D7). | Run statement extraction unconditionally, or map DuckDB parser errors. | 4 |
+| `preagg` is unknown | `invalid 'type' parameter: preagg` as `bad_request`. | `unsupported_command` (D6). Go is the intended first `preagg` implementation (#1234). | Recognise the command and answer `unsupported_command` until implemented. | 2 |
+| Exec and side effects over GET | GET runs `exec` and does not check the statement kind, so `CREATE TABLE` and `DELETE ... RETURNING` execute (`server.go`). | `arrow` only (D3); read-only root required (D3a). | Reject `exec` in the GET branch; run the `json_serialize_sql` walker for GET unconditionally. | 3 |
+| Multi-statement `arrow` | duckdb-go `prepareStmts` runs every statement and returns the last result. | `bad_request` (D16). | Count statements before execution. | 2 |
+| JSON keys match case-insensitively | `encoding/json` lets `TYPE: exec` override `type: arrow`; the request ran as `exec` and returned an empty body. | Protocol fields decoded exactly; application fields must not shadow them (D9). | Decode protocol fields with a strict decoder or reject case-variant duplicates. | 2 |
+| 405 without `Allow` | `Method not allowed` plain text, no `Allow` header. | Envelope plus `Allow: GET, POST, OPTIONS` (D5). | Set the header in the fallback branch. | 2 |
+| WebSocket malformed JSON closes the socket | `wsjson.Read` failure closes with 1007 (`server.go`). | `Error` frame, connection stays open (D12). | Read the raw frame and unmarshal manually. | 2 |
+| WebSocket read limit | 32 KiB library default; larger frames close with 1009. | Accept at least 1 MiB (D13). | Set a default via `WithMaxMessageBytes` and expose a CLI flag. | 1 |
+| 401 schema-match is plain text | `no allowed schemas found in request headers` via `http.Error`. | Envelope with `unauthenticated`. | Same mapper as the other HTTP errors. Needs an authorizer, which the CLI does not expose, so the suite cannot observe it. | not observable |
+| WebSocket close code and pings | Always `Close(1011)` on loop exit; pings are answered only inside `conn.Read`. | 1000 on a clean client close; SHOULD answer pings during execution. | Distinguish `CloseError`; add a reader goroutine or ping ticker. | not observable |
+| Upgrade detection | Whole-value `EqualFold` on `Connection` (`server.go`). | Token-based matching. | Scan `Connection` tokens. | not observable |
+| Timeouts | None. | `deadline_exceeded`; also needed by #1234. | Per-command deadline. | not observable |
 
-## Rust `duckdb-server-rust`
+<details><summary>Case ids</summary>
 
-Source: `packages/server/duckdb-server-rust/src/{app.rs,query.rs,interfaces.rs,db.rs,websocket.rs,main.rs}`.
+- **HTTP errors are plain text**: `post/missing-type`, `post/missing-sql`, `post/empty-sql`, `post/unknown-type`, `post/type-not-a-string`, `post/malformed-json-body`, `post/sql-unknown-table`, `post/sql-runtime-error`, `post/exec-error`, `get/get-missing-type`, `get/get-json-wrapped-query-rejected`, `get/get-preagg-rejected`
+- **Parse errors are 500 without a policy**: `post/sql-parse-error`, `ws/sql-parse-error`, `ws/ws-pipeline-order`, `connector/rest-error`
+- **`preagg` is unknown**: `post/preagg-unsupported`, `ws/preagg-unsupported`
+- **Exec and side effects over GET**: `get/get-exec-rejected`, `get/get-ddl-rejected`, `get/get-delete-returning-rejected`
+- **Multi-statement `arrow`**: `post/arrow-multi-statement`, `ws/arrow-multi-statement`
+- **JSON keys match case-insensitively**: `post/protocol-fields-not-shadowed`, `ws/protocol-fields-not-shadowed`
+- **405 without `Allow`**: `post/method-put`, `post/method-head`
+- **WebSocket malformed JSON closes the socket**: `ws/ws-malformed-json-stays-open`, `ws/type-not-a-string`
+- **WebSocket read limit**: `ws/large-request-1mib`
 
-| Area | Current | Spec | Fix |
-|------|---------|------|-----|
-| Arrow body | IPC **file** via `FileWriter` (`db.rs:44`) under stream media type (`interfaces.rs:40`) | IPC stream (D8) | Use `StreamWriter`; update `test.rs:84`. |
-| `type`/`sql` missing | 400 plain `missing required '…' parameter` (`query.rs`, since #1228) | 400 envelope | Wrap in envelope. |
-| Unknown `type` | GET 400 / POST 422 plain serde text (`interfaces.rs:14-19`) | 400 envelope `bad_request` | Custom rejection or `String` + manual match. |
-| Malformed JSON | 400 plain `Failed to parse the request body as JSON…` | 400 envelope | Custom `Json` rejection handler. |
-| DuckDB error | 500 plain `Something went wrong: …` (`interfaces.rs:62-64`) | 500 envelope `internal_error`; parse errors 400 (D7) | Map `duckdb::Error` variants. |
-| Exec over GET | runs | 400 `bad_request` (D3) | Reject in `handle_get`. |
-| GET read-only SQL | not checked | reject non-SELECT roots (D3a) | Parse via `json_serialize_sql` or the DuckDB C API statement type before execution. |
-| Multi-statement `arrow` | `prepare` fails → 500 | 400 `bad_request` (D16) | Classify. |
-| 405 | empty, `Allow: GET,HEAD,POST` | envelope + `Allow: GET, POST, OPTIONS` | Custom fallback. HEAD runs the query today; drop or document. |
-| README GET example | `?query={…}` (`Readme.md:47`) does not work | flat params | Fix README. |
-| `name` field | parsed, logged, unused (`interfaces.rs:21-27`) | dropped (D15) | Remove. |
-| WS errors | `{"error"}` no code (`websocket.rs`); DuckDB message differs from HTTP (`Something went wrong:` prefix) | envelope with `code`, same message both transports | Shared mapper. |
-| WS binary frames | ignored, **no reply** (`websocket.rs:59`) | SHOULD accept; MUST reply (D11) | Treat as text or answer with `bad_request`. |
-| WS upgrade edge | malformed upgrade falls through to GET handler (`app.rs:22-34`) | 400 envelope | Return the upgrade rejection. |
-| Cache headers | none | optional (D14) | Straightforward; results are buffered. |
-| CORS | `max-age` 86400, no `Expose-Headers` | expose `ETag` | Edit `CorsLayer`. |
-| Timeouts | none; blocking DuckDB calls on tokio workers (`db.rs:29-54`) | `deadline_exceeded` | `spawn_blocking` + `duckdb_interrupt`. |
+</details>
+
+### With `--cache-control`
+
+Configuration: `duckdb-server-go --cache-control='public, max-age=60'`.
+Everything in the Go `duckdb-server-go` table applies here too (30 inherited cases). Only the differences are listed.
+
+| Area | Current | Spec | Fix | Cases |
+|------|---------|------|-----|-------|
+| 412 is plain text | `Precondition Failed` via `http.Error` (`pkg/server/cache.go`). | `bad_request` envelope, no `ETag` (D14, D5). | Same mapper as the other HTTP errors. | 1 |
+| Errors under caching are still plain text | The GET parse-error path returns 500 plain text; `Cache-Control: no-store` is present. | 400 envelope with `no-store` (D7, D14). | Covered by the envelope and parse-error fixes in go.yaml. | 1 |
+| `ETag` is not exposed to browsers | No `Access-Control-Expose-Headers` on preflight (`security.go`). | Expose `ETag` when caching is enabled (D14). | Add to the `WithCORS` defaults. | 1 |
+| `Cache-Control: private` with an authorizer | The operator value is used verbatim even when an authorizer varies the response by identity. | Identity headers in `Vary`, or `private`/`no-store` (D14). | Document; optionally append identity headers to `Vary` from `AuthorizeRequest`. | not observable |
+
+<details><summary>Case ids</summary>
+
+- **412 is plain text**: `get/cache-if-match`
+- **Errors under caching are still plain text**: `get/cache-error-no-store`
+- **`ETag` is not exposed to browsers**: `post/cache-preflight-no-store`
+
+</details>
+
+### With `--gatekeeper`
+
+Configuration: `duckdb-server-go --gatekeeper='{"version":1,"options":{}}'`; validation disables `exec` and local file access.
+Everything in the Go `duckdb-server-go` table applies here too (23 inherited cases; `connector/rest-error`, `ws/sql-parse-error`, `ws/ws-pipeline-order` pass under this configuration). Only the differences are listed.
+
+| Area | Current | Spec | Fix | Cases |
+|------|---------|------|-----|-------|
+| Disabled `exec` is `bad_request` | `ErrExecWithValidation` maps to `bad_request` (`pkg/server/errors.go`); an application field spelled `TYPE: exec` also trips it, see D9 in go.yaml. | `unsupported_command` (D6). | Remap in `classifyError`. | 2 |
+| Gatekeeper rejections are `forbidden` or `bad_request` regardless of cause | A multi-statement `arrow` is `forbidden` (403) and an unknown table is `bad_request` (400 `Bad Request`) because Gatekeeper validation fails before DuckDB classifies the statement. | Multi-statement is `bad_request` (D16); an unknown user table is `internal_error` unless classified as a managed table (D7, still open in CONFORMANCE.md). | Split validator errors from policy denials when mapping to codes. | 5 |
+| Parse error body is `Bad Request` | The status is right but the body is the plain `http.StatusText`. | Envelope with the DuckDB message (D4, D7). | Covered by the envelope fix in go.yaml. | 1 |
+| Local file reads are denied | Default Gatekeeper policy rejects `read_parquet` on a local path with 403 `Forbidden`. | Deployment choice; the suite marks this configuration as lacking the `files` capability. Listed so the plain-text body is not lost. | Envelope fix in go.yaml; optionally allow the shared data directory in the test policy. | not observable |
+
+<details><summary>Case ids</summary>
+
+- **Disabled `exec` is `bad_request`**: `post/exec-unsupported`, `ws/exec-unsupported`
+- **Gatekeeper rejections are `forbidden` or `bad_request` regardless of cause**: `post/arrow-multi-statement`, `ws/arrow-multi-statement`, `post/sql-unknown-table`, `ws/sql-unknown-table`, `ws/ws-sql-error-stays-open`
+- **Parse error body is `Bad Request`**: `post/sql-parse-error`
+
+</details>
+
+## Rust `duckdb-server`
+
+Configuration: `duckdb-server` crate (`packages/server/duckdb-server-rust`).
+
+| Area | Current | Spec | Fix | Cases |
+|------|---------|------|-----|-------|
+| Arrow IPC file format | `FileWriter` output (`ARROW1` magic plus footer) under the stream media type (`db.rs`, `interfaces.rs`). | IPC stream format (D8). | Use `StreamWriter`; update the `test.rs` assertion. Every Arrow success case is masked by this until it lands. | 34 |
+| HTTP errors are plain text or empty | Rejections are serde/axum text (`interfaces.rs`); DuckDB errors are `Something went wrong: …`; 405 and 415 have plain or empty bodies. | JSON `Error` envelope on every status (D4, D5). | Custom rejection handlers and a shared error mapper. | 12 |
+| WebSocket errors lack `code` | `{"error"}` only (`websocket.rs`); the message also differs from HTTP. | Envelope with `code`, identical over both transports (D4). | Shared mapper. | 13 |
+| Unknown `type` is 422 | serde enum rejection surfaces as axum's 422 `Failed to deserialize the JSON body`. | 400 `bad_request` (D6). | Decode `type` as a string and match manually. | 1 |
+| `preagg` is unknown | Same 422 path as any unknown variant. | `unsupported_command` (D6). | Add the variant and answer `unsupported_command` until implemented. | 1 |
+| Parse errors and empty `sql` are 500 | Every `duckdb::Error` is `Something went wrong` with 500; an empty string yields `Error code 1: Unknown error code`. | `bad_request` for parse errors and empty SQL (D1, D7). | Validate `sql`; map `duckdb::Error` variants to codes. | 3 |
+| Exec and side effects over GET | `handle_get` runs any `type` and does not check the statement kind. | `arrow` only (D3); read-only root required (D3a). | Reject `exec` in `handle_get`; check the statement type before execution. | 3 |
+| Multi-statement `arrow` | Runs and returns a result rather than rejecting. | `bad_request` (D16). | Count statements before execution. | 2 |
+| HEAD runs the query | axum's GET route also serves HEAD, so `HEAD /?type=arrow&sql=…` executes and returns 200. | 405 with `Allow` (D5). | Add an explicit fallback for other methods. | 1 |
+| WebSocket binary frames are ignored | `Message::Binary` is dropped with no reply (`websocket.rs`). | SHOULD accept; MUST reply (D11). | Treat as text or answer with `bad_request`. | 1 |
+| Malformed upgrade falls through to GET | A bad upgrade request reaches the GET handler (`app.rs`). | 400 envelope. | Return the upgrade rejection. | not observable |
+| README GET example | `?query={…}` is documented but the code reads flat parameters. | Flat parameters (D2). | Fix the README. | not observable |
+| CORS and caching headers | No `Access-Control-Expose-Headers`; no cache headers. | Expose `ETag`; caching optional (D14). | Edit `CorsLayer`; add cache headers if wanted. | not observable |
+| Timeouts | None; DuckDB calls block tokio workers (`db.rs`). | `deadline_exceeded`. | `spawn_blocking` plus `duckdb_interrupt`. | not observable |
+
+<details><summary>Case ids</summary>
+
+- **Arrow IPC file format**: `connector/rest-arrow`, `connector/rest-exec`, `connector/socket-arrow`, `connector/socket-error-then-ok`, `connector/socket-pipeline`, `get/get-arrow`, `get/get-plus-in-sql`, `get/get-cte-allowed`, `get/get-set-operation-allowed`, `post/arrow-stream-format`, `post/arrow-empty-result`, `post/arrow-scalar-types`, `post/arrow-many-rows`, `post/arrow-from-parquet`, `post/arrow-trailing-semicolon`, `post/application-fields-pass-through`, `post/protocol-fields-not-shadowed`, `post/content-type-with-charset`, `post/arrow-cors-origin`, `post/large-request-1mib`, `post/exec-acknowledged`, `post/exec-multi-statement`, `ws/arrow-stream-format`, `ws/arrow-empty-result`, `ws/arrow-scalar-types`, `ws/arrow-many-rows`, `ws/arrow-trailing-semicolon`, `ws/application-fields-pass-through`, `ws/protocol-fields-not-shadowed`, `ws/large-request-1mib`, `ws/exec-acknowledged`, `ws/exec-multi-statement`, `ws/ws-pipeline-order`, `ws/ws-pipeline-slow-first`
+- **HTTP errors are plain text or empty**: `post/missing-type`, `post/missing-sql`, `post/type-not-a-string`, `post/malformed-json-body`, `post/sql-unknown-table`, `post/sql-runtime-error`, `post/exec-error`, `post/content-type-not-json`, `post/method-put`, `get/get-missing-type`, `get/get-json-wrapped-query-rejected`, `get/get-preagg-rejected`
+- **WebSocket errors lack `code`**: `ws/missing-type`, `ws/missing-sql`, `ws/empty-sql`, `ws/unknown-type`, `ws/type-not-a-string`, `ws/preagg-unsupported`, `ws/sql-parse-error`, `ws/sql-unknown-table`, `ws/sql-runtime-error`, `ws/exec-error`, `ws/ws-malformed-json-stays-open`, `ws/ws-missing-sql-stays-open`, `ws/ws-sql-error-stays-open`
+- **Unknown `type` is 422**: `post/unknown-type`
+- **`preagg` is unknown**: `post/preagg-unsupported`
+- **Parse errors and empty `sql` are 500**: `post/sql-parse-error`, `post/empty-sql`, `connector/rest-error`
+- **Exec and side effects over GET**: `get/get-exec-rejected`, `get/get-ddl-rejected`, `get/get-delete-returning-rejected`
+- **Multi-statement `arrow`**: `post/arrow-multi-statement`, `ws/arrow-multi-statement`
+- **HEAD runs the query**: `post/method-head`
+- **WebSocket binary frames are ignored**: `ws/ws-binary-frame`
+
+</details>
 
 ## Python `duckdb-server`
 
-Source: `packages/server/duckdb-server/pkg/{server.py,query.py,__main__.py}`.
+Configuration: `duckdb-server` (`packages/server/duckdb-server`).
 
-| Area | Current | Spec | Fix |
-|------|---------|------|-----|
-| HTTP error status | CORS `write_header` runs first, so uWS emits `200` and the later `write_status(500)` is ignored (`server.py:71,111,136-140`) — errors are very likely **200** | mapped status | Call `write_status` before any `write_header`. Verify empirically. |
-| GET params | `?query=<json>` (`server.py:149-151`) | flat `type`/`sql` (D2) | Read flat params. |
-| `type` missing | `handler.error(…, 400)` with the canonical message (since #1228), but see the status caveat above | 400 envelope | Wrap in envelope; fix status ordering. |
-| `sql` missing | `KeyError` escapes → `Error 'sql'` via `on_error` | 400 envelope | Validate before dispatch. |
-| Unknown `type` | `Unknown command X` plain, 400 nominal (`server.py`) | 400 envelope `bad_request` | Wrap in envelope. |
-| Malformed/falsy POST body | `NotImplementedError` → body `Error ` (`server.py:157`) | 400 envelope | Validate `get_json()` result. |
-| DuckDB error | plain `str(e)` | 500 envelope; parse errors 400 (D7) | Map `duckdb.ParserException`/`BinderException`. |
-| Arrow Content-Type | `application/octet-stream` (`server.py:67`) | `application/vnd.apache.arrow.stream` (D8) | Change header; body is already a stream. |
-| Exec over GET | runs | 400 `bad_request` (D3) | Reject. |
-| GET read-only SQL | not checked | reject non-SELECT roots (D3a) | `duckdb.extract_statements()` exposes the statement type. |
-| Non-GET/POST/OPTIONS | no response; hangs until uWS timeout (`server.py:146-157`) | 405 + `Allow` + envelope | Add fallthrough. |
-| WS missing `sql`/`type` | **no frame at all** (exception in sync handler) | `Error` frame (D11) | Wrap `handle_query` in try/except. Breaks pipelining clients today. |
-| WS errors | `{"error"}` no code | envelope with `code` | Add. |
-| WS message size | 16 KiB default | ≥ 1 MiB (D13) | Set `max_payload_length`. |
-| WS idle | 120 s close, no pings | SHOULD ping | `send_pings_automatically` or raise idle timeout. |
-| CORS | bogus `Access-Control-Request-Method`, no `Expose-Headers` (`server.py:136-140`) | fix | Edit header set. |
-| Concurrency | single connection, sync handler blocks the event loop | (prerequisite for deadlines) | Not a wire gap. |
-| CLI | positional db path only; port hardcoded 3000 (`server.py:174`) | runner needs `--port` | Add `--port`/`--address`. |
+| Area | Current | Spec | Fix | Cases |
+|------|---------|------|-----|-------|
+| WebSocket text frames are never sent | socketify's `ws.send()` calls `self.app._json_serializer.dumps(message).encode("utf-8")`, but the `Serde` wrapper from #1244 hands it `msgspec.json.encode`, which already returns `bytes`; the `AttributeError` is swallowed by socketify's bare `except` and logged as `WebSocket backpressure: 0`. No `{}` acknowledgement and no `{"error"}` frame ever reaches the client, so a pipelining client hangs. (`packages/server/duckdb-server/pkg/server.py`) | Exactly one reply per command (D11). | Have the serializer return `str` (`json_encode(x).decode()`), or send bytes with `OpCode.TEXT` directly. | 16 |
+| Arrow Content-Type | `application/octet-stream` (`server.py`). | `application/vnd.apache.arrow.stream` (D8). | Change the header; the body is already a stream. | 14 |
+| HTTP errors are plain text | `handler.error()` ends the response with `str(error)` and no Content-Type. | JSON `Error` envelope (D4). | Emit `{error, code}` with `application/json`. | 8 |
+| Empty `sql` | `msgspec` accepts `""`, then `get_arrow_bytes` fails on a `None` result (500). | 400 `bad_request` (D1). | Add `min_length=1` to the struct or validate before dispatch. | 1 |
+| Parse errors are 500 | Every DuckDB exception is `handler.error(e)` with the default 500. | `bad_request` for `duckdb.ParserException` (D7). | Map exception classes to codes. | 2 |
+| `preagg` is unknown | `msgspec` rejects it as an invalid enum value. | `unsupported_command` (D6). | Accept the literal and answer `unsupported_command` until implemented. | 1 |
+| GET reads `?query=<json>` | The flat form is rejected with `missing required 'query' parameter`; the JSON form runs `exec`. | Flat `type`/`sql`, `arrow` only, read-only SQL (D2, D3, D3a). | Read flat parameters; reject `exec`/`preagg`; check the statement kind with `duckdb.extract_statements()`. | 10 |
+| Multi-statement `arrow` | All statements run and the last result is returned. | `bad_request` (D16). | Count statements with `duckdb.extract_statements()`. | 3 |
+| Unsupported method is 400 | `Unsupported HTTP method` with status 400 and no `Allow`. | 405 with `Allow` and the envelope (D5). | Change the status and add the header. | 2 |
+| WebSocket message size | uWebSockets default `max_payload_length` of 16 KiB; larger frames close with 1006. | Accept at least 1 MiB (D13). | Set `max_payload_length` in the `app.ws` options. | 1 |
+| CORS | `Access-Control-Request-Method` is emitted as a response header; no `Access-Control-Expose-Headers`. | Drop the request header; expose `ETag` if caching is ever added. | Edit `CORS_HEADERS`. | not observable |
+| Concurrency | A synchronous handler blocks the event loop for every connection. | No wire requirement; prerequisite for deadlines. | Run queries in a thread pool. | not observable |
 
-## Node `packages/server/duckdb`
+<details><summary>Case ids</summary>
 
-Source: `packages/server/duckdb/src/{data-server.js,DuckDB.js}`, `bin/run-server.js`. README steers users to the Python server; decide whether this server is in scope for the conformance suite or retired. If kept:
+- **WebSocket text frames are never sent**: `ws/missing-type`, `ws/missing-sql`, `ws/empty-sql`, `ws/unknown-type`, `ws/type-not-a-string`, `ws/preagg-unsupported`, `ws/sql-parse-error`, `ws/sql-unknown-table`, `ws/sql-runtime-error`, `ws/exec-error`, `ws/exec-acknowledged`, `ws/exec-multi-statement`, `ws/ws-malformed-json-stays-open`, `ws/ws-missing-sql-stays-open`, `ws/ws-sql-error-stays-open`, `connector/socket-error-then-ok`
+- **Arrow Content-Type**: `post/arrow-stream-format`, `post/arrow-empty-result`, `post/arrow-scalar-types`, `post/arrow-many-rows`, `post/arrow-from-parquet`, `post/arrow-trailing-semicolon`, `post/application-fields-pass-through`, `post/protocol-fields-not-shadowed`, `post/content-type-not-json`, `post/content-type-with-charset`, `post/arrow-cors-origin`, `post/large-request-1mib`, `post/exec-acknowledged`, `post/exec-multi-statement`
+- **HTTP errors are plain text**: `post/missing-type`, `post/missing-sql`, `post/unknown-type`, `post/type-not-a-string`, `post/malformed-json-body`, `post/sql-unknown-table`, `post/sql-runtime-error`, `post/exec-error`
+- **Empty `sql`**: `post/empty-sql`
+- **Parse errors are 500**: `post/sql-parse-error`, `connector/rest-error`
+- **`preagg` is unknown**: `post/preagg-unsupported`
+- **GET reads `?query=<json>`**: `get/get-arrow`, `get/get-plus-in-sql`, `get/get-cte-allowed`, `get/get-set-operation-allowed`, `get/get-missing-type`, `get/get-json-wrapped-query-rejected`, `get/get-exec-rejected`, `get/get-preagg-rejected`, `get/get-ddl-rejected`, `get/get-delete-returning-rejected`
+- **Multi-statement `arrow`**: `post/arrow-multi-statement`, `ws/arrow-multi-statement`, `ws/ws-pipeline-order`
+- **Unsupported method is 400**: `post/method-put`, `post/method-head`
+- **WebSocket message size**: `ws/large-request-1mib`
 
-| Area | Current | Spec | Fix |
-|------|---------|------|-----|
-| GET | always 400: `JSON.parse` of the parsed query object (`data-server.js:39-40,76`) | flat params (D2) | Build the command from `url.query`. |
-| GET read-only SQL | n/a (GET broken) | reject non-SELECT roots (D3a) | Needed once GET works; `json_serialize_sql` via the same connection. |
-| `type` missing | 400 plain `missing required 'type' parameter` (since #1228) | 400 envelope | Wrap in envelope. |
-| `sql` missing | not validated → DuckDB parser error → 500 | 400 `bad_request` | Validate. |
-| HTTP errors | plain `String(err)` body, no Content-Type (`data-server.js`, since #1228) | envelope (D4) | Rewrite `error()`. |
-| Unsupported method | 400 (`data-server.js:49-50`) | 405 + `Allow` | Change status. |
-| Empty Arrow result | 0 bytes (`DuckDB.js:91`; `duckdb.test.js:26-30` asserts it) | schema + EOS (D8) | Emit a schema-only stream. |
-| Arrow trailing `;` / multi-statement | wrapped as `to_arrow_ipc((sql))` (`DuckDB.js:88-90`) → parser error 500 | trailing `;` allowed; multi → 400 (D16) | Strip trailing `;`; classify. |
-| WS error | `{"error": String(err)}` with `"Error: "` prefix; status argument dropped (`data-server.js:141-144`) | envelope with `code` | Rewrite. |
-| WS ordering | serialized per connection since #1209 (`data-server.js:58-65`) | in order (D11) | Conforms. |
-| Shared connection | one DuckDB connection for all clients (`DuckDB.js:21`) | (no spec requirement) | Note only. |
-| CLI | positional db path only; no `--port`; not in `package.json` `bin` (`bin/run-server.js:5`) | runner needs `--port` | Add flags. |
-| Wire tests | none | — | Conformance suite will cover. |
+</details>
 
-## Conformance suite sketch
+## Node `@uwdata/mosaic-duckdb`
 
-Declarative cases in `packages/server/spec/cases/*.yaml`, one TypeScript runner
-(vitest) that:
+Configuration: `@uwdata/mosaic-duckdb` data server (`packages/server/duckdb`).
 
-1. Starts a server from a per-server adapter (`command`, `args`, `readyProbe`,
-   `capabilities: { preagg, exec, caching, tenantHeaders }`) on a free port.
-2. Loads a fixture database (`data/` already exists in each server package;
-   prefer one shared parquet file).
-3. Runs each case over HTTP and WebSocket, asserting status, headers, frame
-   type, and body against `schemas.yaml` (ajv 2020-12) plus case-specific
-   expectations. Arrow bodies are decoded with Flechette and compared as row
-   objects against an in-process DuckDB result for the same SQL.
-4. Pipelines several WebSocket commands, including deliberately invalid ones,
-   and asserts positional correlation (D11).
-5. Skips cases whose `requires` capability the adapter lacks, but fails if the
-   server returns anything other than `unsupported_command` for them.
+| Area | Current | Spec | Fix | Cases |
+|------|---------|------|-----|-------|
+| HTTP errors are plain text | `res.error()` writes `String(err)` with no Content-Type (`data-server.js`). | JSON `Error` envelope with `application/json` on every failure (D4). | Rewrite `error()` to emit `{error, code}`. | 7 |
+| WebSocket errors lack `code` | `{"error": String(err)}` with an `Error:` prefix; the status argument is dropped (`data-server.js`). | Envelope with `code` (D4). | Share the HTTP error mapper. | 9 |
+| `sql` is not validated | A missing or empty `sql` reaches DuckDB and fails as a binder or parser error (500). | 400 `bad_request` with `missing required 'sql' parameter` (D1). | Validate before dispatch. | 5 |
+| Parse errors are 500 | DuckDB parser errors surface as `internal_error`. | `bad_request` (D7). | Classify `Parser Error` before falling through to 500. | 3 |
+| `preagg` is unknown | `Unrecognized command: preagg` as a generic bad request. | `unsupported_command` (D6). | Recognise the command and answer `unsupported_command` until implemented. | 2 |
+| GET is broken | `JSON.parse` is applied to the already-parsed query object, so every GET is a 400 `TypeError` (`data-server.js`). | Flat `type`/`sql` parameters, `arrow` only, read-only SQL (D2, D3, D3a). | Build the command from `url.query`; reject `exec`/`preagg`; check the statement kind with `json_serialize_sql`. | 10 |
+| Empty Arrow result is 0 bytes | `DuckDB.js` returns no bytes for zero rows; `duckdb.test.js` asserts it. | Schema message plus end-of-stream marker (D8). | Emit a schema-only stream. | 2 |
+| Trailing `;` and multi-statement `arrow` | SQL is wrapped as `to_arrow_ipc((sql))`, so a trailing `;` is a parser error (500) and several statements fail the same way. | Trailing `;` allowed; several statements are `bad_request` (D16). | Strip a trailing `;`; count statements before wrapping. | 4 |
+| Unsupported method is 400 | `Unsupported HTTP method` with status 400 and no `Allow`. | 405 with `Allow: GET, POST, OPTIONS` and the envelope (D5). | Change the status and add the header. | 2 |
+| Shared DuckDB connection | One connection serves every client (`DuckDB.js`). | No requirement. | Note only. | not observable |
 
-Case groups: request decoding (D1–D3a, D9, D10), Arrow encoding (D8, D16),
-error envelope per code (D4–D7), WebSocket framing/order/open-after-error
-(D11, D12), size floors (D13), caching headers (D14), CORS preflight.
+<details><summary>Case ids</summary>
+
+- **HTTP errors are plain text**: `post/missing-type`, `post/unknown-type`, `post/type-not-a-string`, `post/malformed-json-body`, `post/sql-unknown-table`, `post/sql-runtime-error`, `post/exec-error`
+- **WebSocket errors lack `code`**: `ws/missing-type`, `ws/unknown-type`, `ws/type-not-a-string`, `ws/sql-unknown-table`, `ws/sql-runtime-error`, `ws/exec-error`, `ws/ws-malformed-json-stays-open`, `ws/ws-sql-error-stays-open`, `ws/ws-pipeline-order`
+- **`sql` is not validated**: `post/missing-sql`, `post/empty-sql`, `ws/missing-sql`, `ws/empty-sql`, `ws/ws-missing-sql-stays-open`
+- **Parse errors are 500**: `post/sql-parse-error`, `ws/sql-parse-error`, `connector/rest-error`
+- **`preagg` is unknown**: `post/preagg-unsupported`, `ws/preagg-unsupported`
+- **GET is broken**: `get/get-arrow`, `get/get-plus-in-sql`, `get/get-cte-allowed`, `get/get-set-operation-allowed`, `get/get-missing-type`, `get/get-json-wrapped-query-rejected`, `get/get-exec-rejected`, `get/get-preagg-rejected`, `get/get-ddl-rejected`, `get/get-delete-returning-rejected`
+- **Empty Arrow result is 0 bytes**: `post/arrow-empty-result`, `ws/arrow-empty-result`
+- **Trailing `;` and multi-statement `arrow`**: `post/arrow-trailing-semicolon`, `ws/arrow-trailing-semicolon`, `post/arrow-multi-statement`, `ws/arrow-multi-statement`
+- **Unsupported method is 400**: `post/method-put`, `post/method-head`
+
+</details>
+
+<!-- conformance:end -->

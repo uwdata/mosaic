@@ -1,0 +1,47 @@
+# Known conformance failures for `duckdb-server-go --gatekeeper='{"version":1,"options":{}}'`.
+# Only the validation-specific gaps live here; go.yaml lists the flag-independent
+# ones, which apply to this configuration too. Regenerate ../../CONFORMANCE.md with
+# `pnpm -F @uwdata/mosaic-server-spec conformance:docs`.
+server: go-gatekeeper
+inherits: go
+# Inherited cases that this configuration gets right: Gatekeeper validation
+# classifies parse errors as 400 before DuckDB runs.
+passes:
+  - connector/rest-error
+  - ws/sql-parse-error
+  - ws/ws-pipeline-order
+failures:
+  - area: Disabled `exec` is `bad_request`
+    current: "`ErrExecWithValidation` maps to `bad_request` (`pkg/server/errors.go`); an application field spelled `TYPE: exec` also trips it, see D9 in go.yaml."
+    spec: "`unsupported_command` (D6)."
+    fix: Remap in `classifyError`.
+    cases:
+      - post/exec-unsupported
+      - ws/exec-unsupported
+
+  - area: Gatekeeper rejections are `forbidden` or `bad_request` regardless of cause
+    current: >-
+      A multi-statement `arrow` is `forbidden` (403) and an unknown table is `bad_request`
+      (400 `Bad Request`) because Gatekeeper validation fails before DuckDB classifies
+      the statement.
+    spec: "Multi-statement is `bad_request` (D16); an unknown user table is `internal_error` unless classified as a managed table (D7, still open in CONFORMANCE.md)."
+    fix: Split validator errors from policy denials when mapping to codes.
+    cases:
+      - post/arrow-multi-statement
+      - ws/arrow-multi-statement
+      - post/sql-unknown-table
+      - ws/sql-unknown-table
+      - ws/ws-sql-error-stays-open
+
+  - area: Parse error body is `Bad Request`
+    current: The status is right but the body is the plain `http.StatusText`.
+    spec: Envelope with the DuckDB message (D4, D7).
+    fix: Covered by the envelope fix in go.yaml.
+    cases:
+      - post/sql-parse-error
+
+  - area: Local file reads are denied
+    current: "Default Gatekeeper policy rejects `read_parquet` on a local path with 403 `Forbidden`."
+    spec: Deployment choice; the suite marks this configuration as lacking the `files` capability. Listed so the plain-text body is not lost.
+    fix: Envelope fix in go.yaml; optionally allow the shared data directory in the test policy.
+    cases: []

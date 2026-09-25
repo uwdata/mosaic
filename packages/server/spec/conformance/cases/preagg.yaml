@@ -1,0 +1,28 @@
+# The `preagg` command.
+
+- id: preagg-unsupported
+  title: A server without preaggregation answers `unsupported_command`
+  decisions: [D6]
+  unless: [preagg]
+  request: { type: preagg, sql: "SELECT 1 AS x" }
+  expect:
+    error: { code: unsupported_command }
+
+- id: preagg-materialize
+  title: A preaggregate returns a fully qualified table reference that can be queried
+  decisions: [D6]
+  requires: [preagg]
+  steps:
+    - request: { type: preagg, sql: "SELECT range::INTEGER AS k, count(*)::INTEGER AS n FROM range(10) GROUP BY k" }
+      expect: { json: PreaggResponse }
+      capture: { catalog: body.catalog, schema: body.schema, table: body.table }
+    - request: { type: arrow, sql: 'SELECT count(*)::INTEGER AS n FROM "{{catalog}}"."{{schema}}"."{{table}}"' }
+      expect: { arrow: { rows: [[10]] } }
+
+- id: preagg-not-read-only
+  title: A preaggregate source must be a read-only statement
+  decisions: [D3a]
+  requires: [preagg]
+  request: { type: preagg, sql: "CREATE TABLE conformance_preagg_ddl AS SELECT 1 AS x" }
+  expect:
+    error: { code: bad_request }

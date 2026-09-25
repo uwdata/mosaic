@@ -1,0 +1,33 @@
+# Known conformance failures for `duckdb-server-go --cache-control='public, max-age=60'`.
+# Only the caching-specific gaps live here; go.yaml lists the flag-independent ones,
+# which apply to this configuration too. Regenerate ../../CONFORMANCE.md with
+# `pnpm -F @uwdata/mosaic-server-spec conformance:docs`.
+server: go-cache
+inherits: go
+failures:
+  - area: 412 is plain text
+    current: "`Precondition Failed` via `http.Error` (`pkg/server/cache.go`)."
+    spec: "`bad_request` envelope, no `ETag` (D14, D5)."
+    fix: Same mapper as the other HTTP errors.
+    cases:
+      - get/cache-if-match
+
+  - area: Errors under caching are still plain text
+    current: "The GET parse-error path returns 500 plain text; `Cache-Control: no-store` is present."
+    spec: "400 envelope with `no-store` (D7, D14)."
+    fix: Covered by the envelope and parse-error fixes in go.yaml.
+    cases:
+      - get/cache-error-no-store
+
+  - area: "`ETag` is not exposed to browsers"
+    current: "No `Access-Control-Expose-Headers` on preflight (`security.go`)."
+    spec: Expose `ETag` when caching is enabled (D14).
+    fix: Add to the `WithCORS` defaults.
+    cases:
+      - post/cache-preflight-no-store
+
+  - area: "`Cache-Control: private` with an authorizer"
+    current: The operator value is used verbatim even when an authorizer varies the response by identity.
+    spec: Identity headers in `Vary`, or `private`/`no-store` (D14).
+    fix: Document; optionally append identity headers to `Vary` from `AuthorizeRequest`.
+    cases: []

@@ -1,0 +1,15 @@
+{
+  "extends": "../../../tsconfig.base.json",
+  "include": ["conformance/**/*.ts"],
+  "exclude": ["conformance/vitest.config.ts"],
+  "compilerOptions": {
+    "composite": false,
+    "incremental": false,
+    "declaration": false,
+    "declarationMap": false,
+    "noEmit": true,
+    "allowImportingTsExtensions": true,
+    "strict": true,
+    "types": ["node"]
+  }
+}

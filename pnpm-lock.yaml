@@ -342,6 +342,28 @@ importers:
 
   packages/server/duckdb-server: {}
 
+  packages/server/spec:
+    dependencies:
+      '@uwdata/flechette':
+        specifier: ^2.5.0
+        version: 2.5.0
+      '@uwdata/mosaic-core':
+        specifier: workspace:*
+        version: link:../../mosaic/core
+      ajv:
+        specifier: ^8.20.0
+        version: 8.20.0
+      ajv-formats:
+        specifier: ^3.0.1
+        version: 3.0.1(ajv@8.20.0)
+      yaml:
+        specifier: ^2.9.0
+        version: 2.9.1
+    devDependencies:
+      '@types/node':
+        specifier: ^26.0.0
+        version: 26.6.2
+
   packages/vgplot/inputs:
     dependencies:
       '@uwdata/mosaic-core':
