@@ -9,7 +9,7 @@ export default tseslint.config(
   {
     languageOptions: {
       ecmaVersion: 2022,
-      sourceType: "module",
+      sourceType: 'module',
       globals: {
         ...globals.browser,
         ...globals.jest,
@@ -20,12 +20,13 @@ export default tseslint.config(
       }
     },
     rules: {
-      "no-unexpected-multiline": "off",
-      "@typescript-eslint/no-explicit-any": "warn",
-      "@typescript-eslint/no-unused-vars": "warn",
-      "@typescript-eslint/no-unused-expressions": "warn",
-      "@typescript-eslint/no-this-alias": "warn",
-      "@typescript-eslint/ban-ts-comment": "warn"
+      quotes: ['error', 'single', { avoidEscape: true }],
+      'no-unexpected-multiline': 'off',
+      '@typescript-eslint/no-explicit-any': 'warn',
+      '@typescript-eslint/no-unused-vars': 'warn',
+      '@typescript-eslint/no-unused-expressions': 'warn',
+      '@typescript-eslint/no-this-alias': 'warn',
+      '@typescript-eslint/ban-ts-comment': 'warn'
     },
   }
 );
