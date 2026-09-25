@@ -9,13 +9,13 @@ import { color } from 'd3';
 // valueOf to work correctly with InternMap.
 // https://www.w3.org/TR/SVG11/painting.html#SpecifyingPaint
 export function isColor(value) {
-  if (typeof value !== "string") return false;
+  if (typeof value !== 'string') return false;
   value = value.toLowerCase().trim();
   return (
-    value === "none" ||
-    value === "currentcolor" ||
-    (value.startsWith("url(") && value.endsWith(")")) || // <funciri>, e.g. pattern or gradient
-    (value.startsWith("var(") && value.endsWith(")")) || // CSS variable
+    value === 'none' ||
+    value === 'currentcolor' ||
+    (value.startsWith('url(') && value.endsWith(')')) || // <funciri>, e.g. pattern or gradient
+    (value.startsWith('var(') && value.endsWith(')')) || // CSS variable
     color(value) !== null
   );
 }

@@ -151,12 +151,6 @@ Return true if _value_ is a `PivotQuery` instance.
 
 Return a new query that is a shallow copy of the current instance.
 
-## subqueries
-
-`Query.subqueries`
-
-The `subqueries` getter property returns an array of subquery instances, or an empty array if there are no subqueries. For selection queries, the subqueries may include common table expressions within `WITH` or nested queries within `FROM`. For set operations, the subqueries are the set operation arguments.
-
 ## toString
 
 `Query.toString()`
