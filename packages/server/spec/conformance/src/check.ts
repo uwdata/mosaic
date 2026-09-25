@@ -1,7 +1,7 @@
 import { arrowViolations } from './arrow.ts';
 import { substitute } from './cases.ts';
 import { schemaViolations } from './schema.ts';
-import { canonicalStatus, type Expectation, type Matcher, type Response, type TableReference, type Transport, type Violation } from './types.ts';
+import { canonicalStatus, type Expectation, type Matcher, type Response, type TableReference, type Transport, type Violation, type WsResponse } from './types.ts';
 
 const arrowMediaType = 'application/vnd.apache.arrow.stream';
 const textDecoder = new TextDecoder();
@@ -154,6 +154,12 @@ export function checkResponse(
   }
 
   return out;
+}
+
+export function surplusViolations(frames: WsResponse[]): Violation[] {
+  if (frames.length === 0) return [];
+  const kinds = frames.map(f => (f.frame === 'binary' ? `binary ${f.body?.length ?? 0} bytes` : `text ${describeText(f.text)}`));
+  return [v('ws.surplus-reply', `${frames.length} unexpected frame${frames.length === 1 ? '' : 's'} after the last reply: ${kinds.join('; ')}`)];
 }
 
 // JSON Schema cannot compare sibling values, so span ordering and the bound

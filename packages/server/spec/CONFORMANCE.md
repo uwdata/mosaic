@@ -90,7 +90,11 @@ status line and `http.reset.after-<status>.<reset>` once one was received, so
 a truncated 505 rejection and a truncated 200 result never share an id;
 refusals, bad URLs, DNS or TLS failures, and timeouts fail the run. Every step of a multi-step case runs even after an earlier step
 misbehaved, so follow-up checks such as "the connection is still usable" or
-"the table was not created" are observed independently. Full conformance is
+"the table was not created" are observed independently. After the last
+expected WebSocket reply the socket is watched for a further
+`CONFORMANCE_SETTLE_TIMEOUT` (250 ms); any frame that still arrives is a
+reply the positional client would hand to the wrong command and is recorded
+as `ws.surplus-reply` (D11). Full conformance is
 reached when the files are empty. `go-cache` and `go-gatekeeper` inherit the
 plain `go` list and override per case or exempt cases (`passes`).
 
@@ -103,7 +107,9 @@ ones that now pass; new failures still have to be filed under an area by
 hand, and a run that contains harness errors is refused, since those are
 unknown observations rather than passes. Only observed cases are touched, so
 a filtered run leaves the other entries and `passes` exemptions as they
-were. For an inheriting configuration, a case the parent skips by capability
+were, and a case listed under several areas keeps each area's own ids,
+with ids no area owns reported for placement rather than copied into every
+area. For an inheriting configuration, a case the parent skips by capability
 (the results record the reason) counts as having no inherited failures,
 while a case the parent's last run left out through a filter is left
 untouched and reported as unverified instead of being compared against

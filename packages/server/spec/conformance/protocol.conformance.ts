@@ -1,6 +1,6 @@
 import { describe } from 'vitest';
 import { expandRequest, loadCases, unresolvedVars } from './src/cases.ts';
-import { captureValues, checkResponse } from './src/check.ts';
+import { captureValues, checkResponse, surplusViolations } from './src/check.ts';
 import { conformanceTest, createHarness, skipReason, type Harness } from './src/harness.ts';
 import { sendHttp } from './src/http.ts';
 import type { ConformanceCase, Response, Step, Violation } from './src/types.ts';
@@ -38,6 +38,7 @@ async function runCase(harness: Harness, c: ConformanceCase): Promise<Violation[
       for (const [index, step] of c.steps.entries()) {
         violations.push(...prefix(index, assess(c, step, await client!.next(), vars)));
       }
+      violations.push(...surplusViolations(await client!.surplus()));
       return violations;
     }
     for (const [index, step] of c.steps.entries()) {
@@ -56,6 +57,7 @@ async function runCase(harness: Harness, c: ConformanceCase): Promise<Violation[
       }
       violations.push(...prefix(index, assess(c, step, response, vars)));
     }
+    if (client) violations.push(...surplusViolations(await client.surplus()));
     return violations;
   } finally {
     client?.close();
