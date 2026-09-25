@@ -108,7 +108,7 @@ export class ParseContext {
         return parse(spec, this);
       }
     }
-    this.error(`Invalid specification.`, spec);
+    this.error('Invalid specification.', spec);
   }
 
   /**

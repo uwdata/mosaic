@@ -9,7 +9,7 @@
     "type": "git",
     "url": "https://github.com/uwdata/mosaic.git"
   },
-  "packageManager": "pnpm@11.1.1",
+  "packageManager": "pnpm@12.4.0",
   "scripts": {
     "preinstall": "npx only-allow pnpm",
     "docs:dev": "vitepress dev docs",
@@ -21,6 +21,7 @@
     "build": "tsc --build && lerna run build",
     "clean": "lerna run clean",
     "lint": "lerna run lint",
+    "lint:fix": "lerna run lint -- --fix",
     "typecheck": "tsc --build && lerna run typecheck",
     "test": "lerna run schema && pnpm run typecheck && vitest run && pnpm -F mosaic-widget test",
     "server": "cd packages/server/duckdb-server && pnpm run dev",

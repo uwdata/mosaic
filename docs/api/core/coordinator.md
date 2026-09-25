@@ -18,9 +18,20 @@ Get the default global coordinator instance.
 Create a new Mosaic Coordinator to manage all database communication for clients and handle selection updates. Accepts a database _connector_ and an _options_ object:
 
 * _logger_: The logger to use, defaults to `console`.
-* _cache_: Boolean flag to enable/disable query caching (default `true`).
+* _cache_: Boolean flag to enable/disable query caching (default `true`), or a cache object such as `lruCache({ maxBytes })` to use a custom budget. See [Query cache](#query-cache).
+* _ipc_: Arrow IPC extraction options used when decoding `"arrow"` query results. If unspecified, date and timestamp values are extracted as JavaScript `Date` objects. Setting new options on the query manager clears the query cache.
 * _consolidate_ Boolean flag to enable/disable query consolidation (default `true`).
 * _preagg_: Pre-aggregation options object. The _enabled_ flag (default `true`) determines if pre-aggregation optimizations should be used when possible. The _schema_ option (default `'mosaic'`) indicates the database schema in which materialized view tables should be created for pre-aggregated data.
+
+## Query cache
+
+`lruCache(options)`
+
+Create the least-recently-used query cache the coordinator uses by default. The budget counts the Arrow IPC bytes returned by the connector, and a result larger than the budget is not cached. Supports the following _options_:
+
+- _maxBytes_: The maximum number of bytes to retain (default 256 MiB).
+
+A custom cache object must implement `get(key)`, `set(key, value, bytes)`, `clear()`, and `bytes()`, where `bytes()` returns the total bytes currently charged to the cache.
 
 ## databaseConnector
 
@@ -77,17 +88,15 @@ The supported _options_ are:
 `coordinator.query(query, options)`
 
 Request a _query_ and return a request Promise that resolves when the query is complete.
-A query result table will be returned, with format determined by the _type_ options.
+An Arrow table will be returned.
 The input _query_ should produce a SQL query upon string coercion.
 
 The supported _options_ are:
 
-- _type_: The return format type. One of `"arrow"` (default) or `"json"`.
 - _cache_: A Boolean flag (default `true`) indicating if the query result should be cached.
 - _priority_: A value indicating the query priority, one of: `Priority.High`, `Priority.Normal` (the default), or `Priority.Low`.
 
 Any additional options will be passed through to the backing database.
-For example, the Mosaic [data server](../duckdb/data-server) will respect a _persist_ option to cache the result on the server's local file system.
 
 ## prefetch
 

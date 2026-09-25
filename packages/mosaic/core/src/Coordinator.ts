@@ -1,16 +1,15 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { SocketConnector } from './connectors/socket.js';
 import { type Connector } from './connectors/Connector.js';
 import { PreAggregator, type PreAggregateOptions } from './preagg/PreAggregator.js';
 import { voidLogger } from './util/void-logger.js';
 import { QueryManager, Priority } from './QueryManager.js';
 import { type Selection } from './Selection.js';
-import { type Logger, type QueryType } from './types.js';
+import { type Cache, type Logger, type QueryType } from './types.js';
 import { type QueryResult } from './util/query-result.js';
 import { type MosaicClient } from './MosaicClient.js';
-import { type SelectionClause } from './SelectionClause.js';
+import { type SelectionClause } from './clause/index.js';
 import { MaybeArray } from '@uwdata/mosaic-sql';
-import { Table } from '@uwdata/flechette';
+import { type ExtractionOptions, Table } from '@uwdata/flechette';
 import { QueryError } from './util/query-error.js';
 
 interface FilterGroupEntry {
@@ -57,7 +56,9 @@ export class Coordinator {
    * @param options Coordinator options.
    * @param options.logger The logger to use, defaults to `console`.
    * @param options.manager The query manager to use.
-   * @param options.cache Boolean flag to enable/disable query caching.
+   * @param options.cache Boolean flag to enable/disable query caching, or a
+   *  custom cache object.
+   * @param options.ipc Arrow IPC extraction options.
    * @param options.consolidate Boolean flag to enable/disable query consolidation.
    * @param options.preagg Options for the Pre-aggregator.
    */
@@ -66,7 +67,8 @@ export class Coordinator {
     options: {
       logger?: Logger | null;
       manager?: QueryManager;
-      cache?: boolean;
+      cache?: boolean | Cache;
+      ipc?: ExtractionOptions;
       consolidate?: boolean;
       preagg?: PreAggregateOptions;
     } = {}
@@ -75,11 +77,13 @@ export class Coordinator {
       logger = console,
       manager = new QueryManager(),
       cache = true,
+      ipc,
       consolidate = true,
       preagg = {}
     } = options;
     this.manager = manager;
     this.manager.cache(cache);
+    if (ipc) this.manager.ipc(ipc);
     this.manager.consolidate(consolidate);
     this.databaseConnector(db);
     this.logger(logger);
@@ -102,7 +106,7 @@ export class Coordinator {
       this.clients?.forEach(client => this.disconnect(client));
       this.clients = new Set;
     }
-    if (cache) this.manager.cache()!.clear();
+    if (cache) this.manager.cache().clear();
   }
 
   /**
@@ -164,47 +168,23 @@ export class Coordinator {
    * @param options An options object.
    * @param options.type The query result format type.
    * @param options.cache If true, cache the query result client-side within the QueryManager.
-   * @param options.persist If true, request the database server to persist a cached query server-side.
    * @param options.priority The query priority, defaults to `Priority.Normal`.
    * @returns A query result promise.
    */
   query(
     query: QueryType,
-    options?: {
-      type?: 'arrow';
-      cache?: boolean;
-      persist?: boolean;
-      priority?: number;
-      [key: string]: unknown;
-    }
-  ): QueryResult<Table>;
-  query(
-    query: QueryType,
-    options?: {
-      type?: 'json';
-      cache?: boolean;
-      persist?: boolean;
-      priority?: number;
-      [key: string]: unknown;
-    }
-  ): QueryResult<unknown>;
-  query(
-    query: QueryType,
     options: {
-      type?: 'arrow' | 'json';
       cache?: boolean;
-      persist?: boolean;
       priority?: number;
       [key: string]: unknown;
     } = {}
-  ): QueryResult<any> {
+  ): QueryResult<Table> {
     const {
-      type = 'arrow',
       cache = true,
       priority = Priority.Normal,
       ...otherOptions
     } = options;
-    return this.manager.request({ type, query, cache, options: otherOptions }, priority);
+    return this.manager.request({ type: 'arrow', query, cache, options: otherOptions }, priority) as QueryResult<Table>;
   }
 
   /**
@@ -217,16 +197,8 @@ export class Coordinator {
    */
   prefetch(
     query: QueryType,
-    options?: { type?: 'arrow'; [key: string]: unknown }
-  ): QueryResult<Table>
-  prefetch(
-    query: QueryType,
-    options?: { type?: 'json'; [key: string]: unknown }
-  ): QueryResult<unknown>
-  prefetch(
-    query: QueryType,
-    options: any = {}
-  ): QueryResult<any> {
+    options: { [key: string]: unknown } = {}
+  ): QueryResult<Table> {
     return this.query(query, { ...options, cache: true, priority: Priority.Low });
   }
 

@@ -1,11 +1,10 @@
-import type { FilterExpr, FromExpr, GroupByExpr, MaybeArray, OrderByExpr, SelectExpr, WithExpr } from '../types.js';
-import { PivotQuery, type PivotSource } from './pivot.js';
+import type { FilterExpr, FromExpr, GroupByExpr, MaybeArray, OrderByExpr, PivotInExpr, PivotOnExpr, PivotUsingEntry, PivotUsingExpr, SelectExpr, WithExpr } from '../types.js';
 import type { SampleMethod } from './sample.js';
-import { CREATE_QUERY, CREATE_SCHEMA_QUERY, DESCRIBE_QUERY, SELECT_QUERY, SET_OPERATION } from '../constants.js';
-import { asNode, asTableRef, asVerbatim, maybeTableRef } from '../util/ast.js';
+import { CREATE_QUERY, CREATE_SCHEMA_QUERY, DESCRIBE_QUERY, PIVOT_QUERY, SELECT_QUERY, SET_OPERATION } from '../constants.js';
+import { asLiteral, asNode, asTableRef, asVerbatim, maybeTableRef } from '../util/ast.js';
 import { exprList, nodeList } from '../util/function.js';
 import { unquote } from '../util/string.js';
-import { isArray, isString } from '../util/type-check.js';
+import { isArray, isParamLike, isString } from '../util/type-check.js';
 import { isColumnRef } from './column-ref.js';
 import { FromClauseNode, FromNode } from './from.js';
 import { ExprNode, SQLNode, isNode } from './node.js';
@@ -15,6 +14,9 @@ import { isTableRef, TableRefNode } from './table-ref.js';
 import { VerbatimNode } from './verbatim.js';
 import { WindowClauseNode, type WindowDefNode } from './window.js';
 import { WithClauseNode } from './with.js';
+import { deepClone } from '../visit/clone.js';
+
+export type PivotSource = string | string[] | SQLNode;
 
 /**
  * Check if a value is a selection query or set operation.
@@ -30,6 +32,22 @@ export function isQuery(value: unknown): value is Query {
  */
 export function isSelectQuery(value: unknown): value is SelectQuery {
   return value instanceof SelectQuery;
+}
+
+/**
+ * Check if a value is a set operation query.
+ * @param value The value to check.
+ */
+export function isSetOperation(value: unknown): value is SetOperation {
+  return value instanceof SetOperation;
+}
+
+/**
+ * Check if a value is a pivot query.
+ * @param value The value to check.
+ */
+export function isPivotQuery(value: unknown): value is PivotQuery {
+  return value instanceof PivotQuery;
 }
 
 /**
@@ -166,7 +184,6 @@ export class Query extends ExprNode {
   _limitPerc: boolean = false;
   _limit?: ExprNode;
   _offset?: ExprNode;
-  cteFor?: Query | null = null;
 
   /**
    * Instantiate a new query.
@@ -176,25 +193,10 @@ export class Query extends ExprNode {
   }
 
   /**
-   * Return a list of subqueries.
-   */
-  get subqueries(): Query[] {
-    return [];
-  }
-
-  /**
-   * Clone this query.
+   * Create a shallow clone of this query.
    */
   clone(): this {
     return this;
-  }
-
-  /**
-   * Add a pointer to the query for which this query is a CTE.
-   * @param query The query for which this query is a CTE.
-   */
-  setCteFor(query: Query | null): void {
-    this.cteFor = query;
   }
 
   /**
@@ -203,14 +205,14 @@ export class Query extends ExprNode {
    */
   with(...expr: WithExpr[]): this {
     const list: WithClauseNode[] = [];
-    const add = (name: string, q: Query) => {
-      const query = q.clone();
-      query.setCteFor(this);
-      list.push(new WithClauseNode(name, query));
-    };
     expr.flat().forEach(e => {
-      if (e instanceof WithClauseNode) list.push(e);
-      else if (e != null) for (const name in e) add(name, e[name]);
+      if (e instanceof WithClauseNode) {
+        list.push(e);
+      } else if (e != null) {
+        for (const name in e) {
+          list.push(new WithClauseNode(name, e[name]));
+        }
+      }
     });
     this._with = this._with.concat(list);
     return this;
@@ -264,6 +266,123 @@ export class Query extends ExprNode {
   }
 }
 
+export class PivotQuery extends Query {
+  /** The relation to pivot. */
+  readonly source: SQLNode;
+  /** The expressions whose values determine pivot output columns. */
+  _on: ExprNode[] = [];
+  /** The literal values that constrain and order pivot output columns. */
+  _in: ExprNode[] = [];
+  /** The aggregate expressions used to populate pivot output cells. */
+  _using: SelectClauseNode[] = [];
+  /** The expressions that define pivot row groups. */
+  _groupby: ExprNode[] = [];
+
+  /**
+   * Instantiate a new pivot query.
+   * @param source The source relation to pivot.
+   */
+  constructor(source: PivotSource) {
+    super(PIVOT_QUERY);
+    this.source = maybeTableRef(source);
+  }
+
+  /**
+   * Add ON expressions.
+   * @param expr Expressions to add.
+   */
+  on(...expr: PivotOnExpr[]): this {
+    this._on = this._on.concat(nodeList(expr));
+    return this;
+  }
+
+  /**
+   * Add IN values to constrain and order pivot output columns.
+   * @param expr Values to add.
+   */
+  in(...expr: [PivotInExpr, ...PivotInExpr[]]): this {
+    const list = expr.flat().map(asLiteral);
+    if (list.length === 0) {
+      throw new Error('PivotQuery.in requires at least one value.');
+    }
+    this._in = this._in.concat(list);
+    return this;
+  }
+
+  /**
+   * Add USING expressions.
+   * @param expr Aggregate cell expressions to add.
+   */
+  using(...expr: [PivotUsingExpr, ...PivotUsingExpr[]]): this {
+    const list: SelectClauseNode[] = [];
+
+    const add = (v: unknown, as?: string) => {
+      if (v != null) {
+        list.push(new SelectClauseNode(asNode(v), as ? unquote(as)! : ''));
+      }
+    };
+
+    const visit = (e: PivotUsingEntry) => {
+      if (e == null) return;
+      else if (
+        isString(e)
+        || isNode(e)
+        || isParamLike(e)
+        || e instanceof Date
+        || typeof e !== 'object'
+      ) {
+        add(e);
+      } else {
+        for (const alias in e) add(e[alias], alias);
+      }
+    };
+
+    expr.forEach(e => isArray(e) ? e.forEach(visit) : visit(e));
+    if (list.length === 0) {
+      throw new Error('PivotQuery.using requires at least one expression.');
+    }
+    this._using = this._using.concat(list);
+    return this;
+  }
+
+  /**
+   * Add GROUP BY expressions.
+   * @param expr Expressions to add.
+   */
+  groupby(...expr: GroupByExpr[]): this {
+    this._groupby = this._groupby.concat(nodeList(expr));
+    return this;
+  }
+
+  /**
+   * Set GROUP BY expressions, replacing any prior expressions.
+   * @param expr Expressions to add.
+   */
+  setGroupby(...expr: GroupByExpr[]): this {
+    this._groupby = [];
+    return this.groupby(...expr);
+  }
+
+  /**
+   * Create a shallow clone of this pivot query.
+   */
+  clone(): this {
+    const { source, ...rest } = this;
+    // @ts-expect-error creates pivot query
+    return Object.assign(new PivotQuery(source), rest, {
+      _with: this._with.slice(),
+      _on: this._on.slice(),
+      _in: this._in.slice(),
+      _using: this._using.slice(),
+      _groupby: this._groupby.slice(),
+      _orderby: this._orderby.slice(),
+      _limitPerc: this._limitPerc,
+      _limit: this._limit,
+      _offset: this._offset
+    });
+  }
+}
+
 export class SelectQuery extends Query {
   _select: SelectClauseNode[] = [];
   _from: FromNode[] = [];
@@ -283,37 +402,7 @@ export class SelectQuery extends Query {
   }
 
   /**
-   * Return a list of subqueries.
-   */
-  get subqueries(): Query[] {
-    // build map of ctes within base query WITH clause
-    const q = this.cteFor || this;
-    const w = q instanceof SelectQuery ? q._with : [];
-    const cte = w.reduce(
-      (obj, c) => (obj[c.name] = c.query, obj),
-      {} as Record<string, Query>
-    );
-
-    // extract subqueries in FROM clause
-    // unused CTEs will be ignored
-    // WARNING: does not recurse into join inputs!
-    const queries: Query[] = [];
-    this._from.forEach(node => {
-      if (node instanceof FromClauseNode) {
-        const { expr } = node;
-        if (isQuery(expr)) {
-          queries.push(expr);
-        } else if (isTableRef(expr)) {
-          const subq = cte[expr.name];
-          if (subq) queries.push(subq);
-        }
-      }
-    });
-    return queries;
-  }
-
-  /**
-   * Clone this query.
+   * Create a shallow clone of this query.
    */
   clone(): this {
     return Object.assign(new SelectQuery(), this);
@@ -528,7 +617,7 @@ export class DescribeQuery extends SQLNode {
   }
 
   /**
-   * Clone this describe query.
+   * Create a shallow clone of this describe query.
    */
   clone(): this {
     // @ts-expect-error creates describe query
@@ -617,24 +706,8 @@ export class SetOperation extends Query {
   }
 
   /**
-   * Add a pointer to the query for which this query is a CTE.
-   * @param query The query for which this query is a CTE.
-   */
-  setCteFor(query: Query | null) {
-    super.setCteFor(query);
-    const { queries, cteFor } = this;
-    if (cteFor) queries.forEach(q => q.setCteFor(cteFor));
-  }
-
-  /**
-   * Return a list of subqueries.
-   */
-  get subqueries() {
-    return this.queries;
-  }
-
-  /**
-   * Clone this set operation.
+   * Create a shallow clone of this set operation. The constituent
+   * subqueries will be unchanged.
    */
   clone(): this {
     const { op, queries, ...rest } = this;

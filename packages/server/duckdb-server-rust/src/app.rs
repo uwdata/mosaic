@@ -8,7 +8,6 @@ use axum::{
 };
 use std::sync::Arc;
 use std::time::Duration;
-use tokio::sync::Mutex;
 use tower_http::cors::{Any, CorsLayer};
 use tower_http::{compression::CompressionLayer, trace::TraceLayer};
 
@@ -36,7 +35,6 @@ async fn handle_get(
 
 pub const DEFAULT_DB_PATH: &str = ":memory:";
 pub const DEFAULT_CONNECTION_POOL_SIZE: u32 = 10;
-pub const DEFAULT_CACHE_SIZE: usize = 1000;
 
 #[axum::debug_handler]
 async fn handle_post(
@@ -46,22 +44,14 @@ async fn handle_post(
     query::handle(&state, params).await
 }
 
-pub fn app(
-    db_path: Option<&str>,
-    connection_pool_size: Option<u32>,
-    cache_size: Option<usize>,
-) -> Result<Router> {
+pub fn app(db_path: Option<&str>, connection_pool_size: Option<u32>) -> Result<Router> {
     // Database and state setup
     let db = ConnectionPool::new(
         db_path.unwrap_or(DEFAULT_DB_PATH),
         connection_pool_size.unwrap_or(DEFAULT_CONNECTION_POOL_SIZE),
     )?;
-    let cache = lru::LruCache::new(cache_size.unwrap_or(DEFAULT_CACHE_SIZE).try_into()?);
 
-    let state = Arc::new(AppState {
-        db: Box::new(db),
-        cache: Mutex::new(cache),
-    });
+    let state = Arc::new(AppState { db: Box::new(db) });
 
     // CORS setup
     let cors = CorsLayer::new()
