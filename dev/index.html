@@ -74,6 +74,7 @@
         <option value="socket">Socket</option>
         <option value="rest">REST</option>
         <option value="rest_https">REST (HTTPS)</option>
+        <option value="clickhouse">ClickHouse</option>
       </select>
     </span>
 
@@ -111,10 +112,12 @@
       </div>
     </details>
   </header>
+  <p id="status" role="status" style="color: black"></p>
   <div id="view"></div>
 <script type="module">
   import yaml from '../node_modules/yaml/browser/index.js';
   import { astToDOM, astToESM, clear, parseSpec, setDatabaseConnector, vg } from './setup.ts';
+  import { clickhouseDatabase, clickhouseExamples } from './clickhouse/examples.mjs';
 
   const view = document.querySelector('#view');
   const connectorMenu = document.querySelector('#connectors');
@@ -126,6 +129,7 @@
   const consolidateToggle = document.querySelector('#consolidate');
   const preaggToggle = document.querySelector('#preagg');
   const preaggState = document.querySelector('#preagg-state');
+  const status = document.querySelector('#status');
 
   connectorMenu.addEventListener('change', setConnector);
   exampleMenu.addEventListener('change', reload);
@@ -151,14 +155,15 @@
     cacheBytes.textContent = `${(bytes / 1048576).toFixed(1)} MiB`;
   }, 500);
 
-  setQueryLog();
-  setCache();
-  setConsolidate();
-  setPreAggregate();
   setConnector();
 
-  async function setConnector() {
-    await setDatabaseConnector(connectorMenu.value);
+  function setConnector() {
+    setDatabaseConnector(connectorMenu.value);
+    const clickhouse = connectorMenu.value === 'clickhouse';
+    preaggToggle.disabled = clickhouse;
+    for (const option of exampleMenu.options) {
+      option.disabled = clickhouse && option.value !== 'none' && !clickhouseExamples.includes(option.value);
+    }
     reload();
   }
 
@@ -175,7 +180,7 @@
   }
 
   function setPreAggregate() {
-    vg.coordinator().preaggregator.enabled = preaggToggle.checked;
+    vg.coordinator().preaggregator.enabled = connectorMenu.value !== 'clickhouse' && preaggToggle.checked;
   }
 
   function reload() {
@@ -183,8 +188,6 @@
   }
 
   async function load(name, source) {
-    view.replaceChildren();
-
     let dir = '../specs/yaml';
     if (name === 'none' && location.search) {
       // get example name from query string
@@ -195,37 +198,90 @@
         dir = './specs';
       }
     }
-    if (name !== 'none') {
-      const spec = yaml.parse(
-        await fetch(`${dir}/${name}.yaml`).then(res => res.text())
-      );
+    const backend = connectorMenu.value;
+    const api = vg;
+    clear(api);
+    setQueryLog();
+    setCache();
+    setConsolidate();
+    setPreAggregate();
+    view.replaceChildren();
+    status.textContent = '';
+    let failed = false;
 
-      // options for output generation
-      const baseURL = location.origin + '/';
-      const options = connectorMenu.value === 'wasm' ? { baseURL } : {};
+    function showError(error) {
+      if (failed) return;
+      failed = true;
+      const cause = error?.cause ?? error;
+      status.textContent = cause instanceof Error ? cause.message : String(cause);
+    }
 
-      // parse and load spec
-      const ast = parseSpec(spec);
-      const el = await (source === 'esm' ? loadESM : loadDOM)(ast, options);
-      view.replaceChildren(el);
+    api.coordinator().logger({
+      ...console,
+      error(error, ...args) {
+        console.error(error, ...args);
+        showError(error);
+      }
+    });
+
+    try {
+      if (backend === 'clickhouse') {
+        await api.coordinator().exec('SELECT 1');
+      }
+      if (name !== 'none') {
+        if (backend === 'clickhouse' && (dir !== '../specs/yaml' || !clickhouseExamples.includes(name))) {
+          throw new Error('This example is not supported by the ClickHouse demo. Choose an enabled example from the menu.');
+        }
+        status.textContent = 'Loading…';
+        const spec = yaml.parse(
+          await fetch(`${dir}/${name}.yaml`).then(res => {
+            if (!res.ok) throw new Error(`Cannot load example (${res.status}).`);
+            return res.text();
+          })
+        );
+        if (backend === 'clickhouse') {
+          spec.data = Object.fromEntries(
+            Object.keys(spec.data ?? {}).map(table => [table, { type: 'table' }])
+          );
+          api.coordinator().databaseConnector().database = clickhouseDatabase(name);
+        }
+
+        // options for output generation
+        const baseURL = location.origin + '/';
+        const options = backend === 'wasm' ? { baseURL } : {};
+
+        // parse and load spec
+        const ast = parseSpec(spec);
+        const el = await (source === 'esm' ? loadESM : loadDOM)(ast, options, api);
+        view.replaceChildren(el);
+        if (!failed) status.textContent = '';
+      }
+    } catch (error) {
+      console.error(error);
+      showError(error);
+      clear(api);
     }
   }
 
-  async function loadDOM(ast, options) {
-    clear();
-    const { element } = await astToDOM(ast, { ...options, api: vg });
+  async function loadDOM(ast, options, api) {
+    const { element } = await astToDOM(ast, { ...options, api });
     return element;
   }
 
-  async function loadESM(ast, options) {
-    const vgplot = new URL('./setup.js', window.location.href).toString();
-    const imports = new Map([[vgplot, ['vg', 'clear']]]);
-    const preamble = 'clear();';
-    const code = astToESM(ast, { ...options, imports, preamble });
+  async function loadESM(ast, options, api) {
+    const generated = astToESM(ast, {
+      ...options,
+      imports: new Map(),
+      preamble: 'export async function render(vg) {',
+      depth: 1
+    });
+    const code = generated.replace(/^export default /m, 'return ') + '\n}';
     console.log(code);
     const blob = new Blob([code], { type: 'text/javascript' });
     const url = URL.createObjectURL(blob);
-    return (await import(/* @vite-ignore */ url)).default;
+    const module = await import(/* @vite-ignore */ url);
+    URL.revokeObjectURL(url);
+    return module.render(api);
   }
 </script>
 </body>
