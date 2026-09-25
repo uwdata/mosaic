@@ -4,9 +4,11 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 )
 
 // TableMaterializer runs CREATE TABLE AS. Rows come from table statistics; bytes are rows times the declared column
@@ -29,32 +31,78 @@ func (TableMaterializer) Materialize(ctx context.Context, tx *sql.Tx, ref Refere
 		WHEN data_type IN ('HUGEINT', 'UHUGEINT', 'UUID') OR data_type LIKE 'DECIMAL(%' AND numeric_precision > 18 THEN 16
 		WHEN data_type LIKE 'DECIMAL(%' OR data_type IN ('BIGINT', 'UBIGINT', 'DOUBLE', 'TIMESTAMP', 'TIMESTAMP WITH TIME ZONE', 'TIME', 'INTERVAL') THEN 8
 		ELSE 16 END), 0)::BIGINT
-		FROM system.main.duckdb_columns() WHERE database_name = ? AND schema_name = ? AND table_name = ?`,
+		FROM system.main.duckdb_columns() WHERE lower(database_name) = lower(?) AND lower(schema_name) = lower(?) AND lower(table_name) = lower(?)`,
 		ref.Catalog, ref.schema(), ref.Table).Scan(&width)
 	stats.Bytes = stats.Rows * width
 	return stats, err
 }
 
 // ParquetMaterializer writes the result to <Directory>/<catalog>/<schema>/<table>.parquet and publishes a view over
-// it. A replica that finds the file already present publishes the view without recomputing. Nothing deletes files;
-// use the location's lifecycle rules, and give each replica its own local directory since an interrupted local write
-// leaves a partial file that later publishes would reuse. Stats come from the Parquet footer; bytes are compressed size.
+// it, with each path segment percent-encoded so distinct namespaces never share a file. A replica that finds the file
+// already present publishes the view without recomputing. Nothing deletes files; use the location's lifecycle rules,
+// and give each replica its own local directory since an interrupted local write leaves a partial file that later
+// publishes would reuse. Stats come from the Parquet footer; bytes are compressed size.
+//
+// Writes to one path are serialized within the process, so concurrent builds of the same reference produce one COPY.
+// Across replicas sharing a directory the object store's atomic replacement is the only guard, and DuckDB's temporary
+// file rename is not safe against a concurrent writer of the same key.
 type ParquetMaterializer struct {
 	// Directory is a local path or a DuckDB filesystem URL such as s3://bucket/prefix once the matching extension is
 	// loaded during trusted initialization.
 	Directory string
+
+	mu     sync.Mutex
+	writes map[string]*sync.Mutex
 }
 
-func (m ParquetMaterializer) Materialize(ctx context.Context, tx *sql.Tx, ref Reference, source string) (Stats, error) {
+// pathSegment folds ASCII case like DuckDB identifiers and encodes every other byte outside [a-z0-9_-] as %XX, which
+// is injective per object, glob-safe, and keeps "/" and "." from being interpreted as directory structure.
+func pathSegment(component string) string {
+	var b strings.Builder
+	for i := 0; i < len(component); i++ {
+		c := component[i]
+		if c >= 'A' && c <= 'Z' {
+			c += 'a' - 'A'
+		}
+		if c >= 'a' && c <= 'z' || c >= '0' && c <= '9' || c == '_' || c == '-' {
+			b.WriteByte(c)
+		} else {
+			fmt.Fprintf(&b, "%%%02X", c)
+		}
+	}
+	return b.String()
+}
+
+func (m *ParquetMaterializer) lock(path string) func() {
+	m.mu.Lock()
+	if m.writes == nil {
+		m.writes = make(map[string]*sync.Mutex)
+	}
+	l := m.writes[path]
+	if l == nil {
+		l = &sync.Mutex{}
+		m.writes[path] = l
+	}
+	m.mu.Unlock()
+	l.Lock()
+	return l.Unlock
+}
+
+func (m *ParquetMaterializer) Materialize(ctx context.Context, tx *sql.Tx, ref Reference, source string) (Stats, error) {
 	var stats Stats
 	if m.Directory == "" {
 		return stats, errors.New("query: parquet materializer requires a directory")
 	}
-	path := strings.Join(append(append([]string{strings.TrimRight(m.Directory, "/"), ref.Catalog}, ref.Schema...), ref.Table+".parquet"), "/")
-	if strings.ContainsAny(path, "'\x00") {
-		return stats, errors.New("query: invalid parquet path")
+	if strings.ContainsAny(m.Directory, "'\x00") {
+		return stats, errors.New("query: invalid parquet directory")
 	}
+	segments := []string{strings.TrimRight(m.Directory, "/"), pathSegment(ref.Catalog)}
+	for _, schema := range ref.Schema {
+		segments = append(segments, pathSegment(schema))
+	}
+	path := strings.Join(append(segments, pathSegment(ref.Table)+".parquet"), "/")
 	file := quoteLiteral(path)
+	defer m.lock(path)()
 	var exists bool
 	if err := tx.QueryRowContext(ctx, "SELECT count(*) > 0 FROM glob("+file+")").Scan(&exists); err != nil {
 		return stats, err

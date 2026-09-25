@@ -141,10 +141,12 @@ func TestHTTPPreaggregate(t *testing.T) {
 	var failure struct {
 		Error     string          `json:"error"`
 		Code      string          `json:"code"`
+		Reason    string          `json:"reason"`
 		Reference query.Reference `json:"reference"`
 	}
 	require.NoError(t, json.Unmarshal(response.Body.Bytes(), &failure))
 	require.Equal(t, "table_not_found", failure.Code)
+	require.Equal(t, "materialization_missing", failure.Reason)
 	require.Equal(t, table.Reference, failure.Reference)
 	require.NotContains(t, response.Body.String(), `"catalog":"memory","schema":"`)
 	response = preaggregateRequest(t, h, http.MethodPost, preaggregateScope, payload)
@@ -170,7 +172,7 @@ func TestHTTPPreaggregateAuthorization(t *testing.T) {
 
 	response = preaggregateRequest(t, h, http.MethodPost, "other", read)
 	require.Equal(t, http.StatusForbidden, response.Code)
-	require.JSONEq(t, `{"error":"Forbidden","code":"forbidden"}`, response.Body.String())
+	require.JSONEq(t, `{"error":"Forbidden","code":"forbidden","reason":"policy_denied"}`, response.Body.String())
 	response = preaggregateRequest(t, h, http.MethodPost, preaggregateScope, map[string]any{"type": "preagg", "sql": "SELECT * FROM memory.private.source"})
 	require.Equal(t, http.StatusForbidden, response.Code)
 	revoked = true
@@ -188,26 +190,37 @@ func TestHTTPPreaggregateErrors(t *testing.T) {
 		sql    string
 		status int
 		code   string
+		reason string
+		field  string
 	}{
-		{http.MethodGet, "preagg", "SELECT 1", 400, "bad_request"},
-		{http.MethodPost, "preagg", "SELECT 1; SELECT 2", 403, "forbidden"},
-		{http.MethodPost, "preagg", "SELECT * FROM missing", 400, "bad_request"},
-		{http.MethodPost, "exec", "CREATE TABLE injected AS SELECT 1", 400, "bad_request"},
-		{http.MethodPost, "preagg", "SELECT * FROM memory.private.source", 403, "forbidden"},
+		{http.MethodGet, "preagg", "SELECT 1", 400, "bad_request", "invalid_field", "type"},
+		{http.MethodPost, "preagg", "SELECT 1; SELECT 2", 403, "forbidden", "policy_denied", ""},
+		{http.MethodPost, "preagg", "SELECT * FROM missing", 400, "bad_request", "invalid_field", "sql"},
+		{http.MethodPost, "preagg", "SELECT * FROM", 400, "bad_request", "sql_parse_error", ""},
+		{http.MethodPost, "exec", "CREATE TABLE injected AS SELECT 1", 400, "unsupported_command", "command_disabled", ""},
+		{http.MethodPost, "preagg", "SELECT * FROM memory.private.source", 403, "forbidden", "policy_denied", ""},
+		{http.MethodPost, "", "SELECT 1", 400, "bad_request", "missing_field", "type"},
+		{http.MethodPost, "preagg", "", 400, "bad_request", "missing_field", "sql"},
 	} {
 		t.Run(test.sql+test.method, func(t *testing.T) {
 			response := preaggregateRequest(t, h, test.method, preaggregateScope, map[string]any{"type": test.typ, "sql": test.sql})
 			require.Equal(t, test.status, response.Code, response.Body.String())
-			var failure map[string]string
+			var failure map[string]any
 			require.NoError(t, json.Unmarshal(response.Body.Bytes(), &failure))
 			require.Equal(t, test.code, failure["code"])
-			require.NotContains(t, failure, "table")
+			require.Equal(t, test.reason, failure["reason"])
+			if test.field == "" {
+				require.NotContains(t, failure, "field")
+			} else {
+				require.Equal(t, test.field, failure["field"])
+			}
+			require.NotContains(t, failure, "reference")
 		})
 	}
 
 	response := preaggregateRequest(t, h, http.MethodPost, "", map[string]any{"type": "preagg", "sql": "SELECT 1"})
 	require.Equal(t, http.StatusUnauthorized, response.Code)
-	require.JSONEq(t, `{"error":"Unauthorized","code":"unauthenticated"}`, response.Body.String())
+	require.JSONEq(t, `{"error":"Unauthorized","code":"unauthenticated","reason":"authentication_required"}`, response.Body.String())
 }
 
 func TestHTTPPreaggregateUnsupported(t *testing.T) {
@@ -285,7 +298,7 @@ func TestHTTPPreaggregateNamespaceFromPayload(t *testing.T) {
 	dir := t.TempDir()
 	db, _ := setupValidatedDB(t, "SELECT 1")
 	h, err := New(db, WithPreaggregation(PreAggregateOptions[*applicationPayload]{
-		Materializer: query.ParquetMaterializer{Directory: dir},
+		Materializer: &query.ParquetMaterializer{Directory: dir},
 		Namespace: func(_ context.Context, command Command[*applicationPayload]) (query.Namespace, error) {
 			if command.Payload() == nil || command.Payload().ProjectID == 0 {
 				return query.Namespace{}, ErrPermissionDenied
@@ -307,6 +320,7 @@ func TestHTTPPreaggregateNamespaceFromPayload(t *testing.T) {
 	require.Equal(t, []map[string]any{{"x": float64(42)}}, arrowRows(t, response.Body.Bytes()))
 	response = preaggregateRequest(t, h, http.MethodPost, "", map[string]any{"type": "preagg", "sql": "SELECT 1", "projectId": "seven"})
 	require.Equal(t, http.StatusBadRequest, response.Code)
+	require.JSONEq(t, `{"error":"Bad Request","code":"bad_request","reason":"invalid_field","field":"projectId"}`, response.Body.String())
 	response = preaggregateRequest(t, h, http.MethodGet, "", map[string]any{"type": "arrow", "sql": "SELECT 1"})
 	require.Equal(t, http.StatusForbidden, response.Code, response.Body.String())
 }

@@ -35,10 +35,24 @@ var commandResponses = map[CommandType]commandResponse{
 	CommandPreagg: {contentType: "application/json", wsMessage: websocket.MessageText},
 }
 
-type queryParamsError string
+type queryParamsError struct {
+	reason, field, message string
+}
 
-func (e queryParamsError) Error() string {
-	return string(e)
+func (e *queryParamsError) Error() string {
+	return e.message
+}
+
+func malformedJSON(err error) error {
+	return &queryParamsError{reason: "malformed_json", message: err.Error()}
+}
+
+func missingField(field string) error {
+	return &queryParamsError{reason: "missing_field", field: field, message: "missing required '" + field + "' parameter"}
+}
+
+func invalidField(field, message string) error {
+	return &queryParamsError{reason: "invalid_field", field: field, message: message}
 }
 
 // commandExecutor is private so the server package does not expose query's
@@ -258,7 +272,7 @@ func (s *handler) handleHTTP(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 			s.logger.Error("server: failed to decode request body", "error", err)
-			s.writeHTTPError(w, queryParamsError(err.Error()))
+			s.writeHTTPError(w, malformedJSON(err))
 			return
 		}
 		params.raw = raw
@@ -284,7 +298,7 @@ func (s *handler) handleHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if r.Method == http.MethodGet && params.Type != nil && *params.Type == CommandPreagg {
-		s.writeHTTPError(w, queryParamsError("preagg requires POST"))
+		s.writeHTTPError(w, invalidField("type", "preagg requires POST"))
 		return
 	}
 
@@ -363,17 +377,17 @@ func (s *handler) execCommand(ctx context.Context, params queryParams, authorize
 func (p queryParams) Validate(logger *slog.Logger) error {
 	if p.Type == nil || *p.Type == "" {
 		logger.Error("server: missing required 'type' parameter")
-		return queryParamsError("missing required 'type' parameter")
+		return missingField("type")
 	}
 
 	if _, ok := commandResponses[*p.Type]; !ok {
 		logger.Error("server: invalid 'type' parameter", "type", *p.Type)
-		return queryParamsError("invalid 'type' parameter: " + string(*p.Type))
+		return invalidField("type", "invalid 'type' parameter: "+string(*p.Type))
 	}
 
 	if p.SQL == nil || *p.SQL == "" {
 		logger.Error("server: missing required 'sql' parameter")
-		return queryParamsError("missing required 'sql' parameter")
+		return missingField("sql")
 	}
 
 	return nil
