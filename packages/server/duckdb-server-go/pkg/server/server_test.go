@@ -143,7 +143,7 @@ func TestValidationErrorResponses(t *testing.T) {
 		{"denial", query.ErrorDetails{Code: "forbidden", Message: "private-diagnostic"}, 403, "forbidden", "WARN", map[string]string{"reason": "policy_denied"}},
 		{"unsupported", query.ErrorDetails{Code: "unsupported", Message: "private-diagnostic"}, 400, "bad_request", "WARN", map[string]string{"reason": "unsupported_statement"}},
 		{"parser", query.ErrorDetails{Code: "parser", Message: "private-diagnostic"}, 400, "bad_request", "WARN", map[string]string{"reason": "sql_parse_error"}},
-		{"binding", query.ErrorDetails{Code: "binding", Message: "private-diagnostic"}, 400, "bad_request", "WARN", map[string]string{"reason": "invalid_field", "field": "sql"}},
+		{"binding", query.ErrorDetails{Code: "binding", Message: "private-diagnostic"}, 500, "internal_error", "ERROR", map[string]string{"reason": "execution_failed"}},
 		{"invalid SQL", query.ErrorDetails{Code: "invalid_input", Message: "private-diagnostic"}, 400, "bad_request", "WARN", map[string]string{"reason": "sql_parse_error"}},
 		{"invalid policy", errors.Join(query.ErrInvalidPolicy, query.ErrorDetails{Code: "invalid_input", Message: "private-diagnostic"}), 500, "internal_error", "ERROR", map[string]string{"reason": "validation_failed"}},
 		{"driver failure", errors.New("private-diagnostic"), 500, "internal_error", "ERROR", map[string]string{"reason": "internal_failure"}},

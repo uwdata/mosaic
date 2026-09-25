@@ -19,7 +19,6 @@ failures:
     fix: Covered by the envelope and parse-error fixes in go.yaml.
     cases:
       get/cache-error-no-store:
-        - error.status.500
         - error.content-type
         - error.not-json
   - area: "`ETag` is not exposed to browsers"

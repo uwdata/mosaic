@@ -6,6 +6,8 @@ import (
 	"errors"
 	"net/http"
 
+	"github.com/duckdb/duckdb-go/v2"
+
 	"github.com/uwdata/mosaic/packages/server/duckdb-server-go/pkg/query"
 )
 
@@ -72,6 +74,7 @@ func classifyError(err error) errorResponse {
 
 	var (
 		errorDetails query.ErrorDetails
+		engineErr    *duckdb.Error
 		paramsError  *queryParamsError
 		missing      *query.MissingPreAggregateError
 	)
@@ -89,13 +92,18 @@ func classifyError(err error) errorResponse {
 	case errors.Is(err, query.ErrUnsupportedStatement):
 		response.status, response.code, response.reason = http.StatusBadRequest, "bad_request", "unsupported_statement"
 	case errors.As(err, &errorDetails):
-		response.status, response.code = http.StatusBadRequest, "bad_request"
 		switch errorDetails.Code {
 		case "parser", "invalid_input":
-			response.reason = "sql_parse_error"
+			response.status, response.code, response.reason = http.StatusBadRequest, "bad_request", "sql_parse_error"
 		default:
-			// Binding failures on user tables stay 400 (D7 leaves this open); the sql property is what is unusable.
-			response.reason, response.field = "invalid_field", "sql"
+			response.reason = "execution_failed"
+		}
+	case errors.As(err, &engineErr):
+		switch engineErr.Type {
+		case duckdb.ErrorTypeParser, duckdb.ErrorTypeSyntax:
+			response.status, response.code, response.reason = http.StatusBadRequest, "bad_request", "sql_parse_error"
+		default:
+			response.reason = "execution_failed"
 		}
 	case errors.As(err, &paramsError):
 		response.status, response.code = http.StatusBadRequest, "bad_request"

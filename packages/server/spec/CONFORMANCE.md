@@ -148,9 +148,9 @@ Closest to the target and the intended first `preagg` implementation (#1234). Al
 | Area | Current | Spec | Fix | Cases |
 |------|---------|------|-----|-------|
 | HTTP errors are plain text | `http.Error` writes `text/plain` even though `classifyError` already yields a code (`pkg/server/server.go`). | JSON `Error` envelope (D4, D19). | Reuse `classifyError`; write `{error, code, reason}` with `application/json`. | 12 |
-| Parse errors are 500 without a policy | `json_serialize_sql` runs only under validation, so a syntax error is an unclassified `internal_error`. | `bad_request` regardless of policy (D7). | Run statement extraction unconditionally, or map DuckDB parser errors. | 4 |
-| `preagg` is unknown | `invalid 'type' parameter: preagg` as `bad_request`. | `unsupported_command` (D6). Go is the intended first `preagg` implementation (#1234). | Recognise the command and answer `unsupported_command` until implemented. | 2 |
-| WebSocket errors lack `reason` | Frames carry `{code, error}` from `classifyError` (`pkg/server/errors.go`) but no `reason` or `field`, so a client cannot tell a missing field from an invalid one without parsing the message. | `reason`, and `field` for the field reasons (D19). | Extend `classifyError` to return a reason and, for decode failures, the property name; the HTTP envelope fix then inherits both. | 9 |
+| Parse errors are 500 without a policy | `json_serialize_sql` runs only under validation, so a syntax error is an unclassified `internal_error`. | `bad_request` regardless of policy (D7). | Run statement extraction unconditionally, or map DuckDB parser errors. | 1 |
+| `preagg` is unknown | `invalid 'type' parameter: preagg` as `bad_request`. | `unsupported_command` (D6). Go is the intended first `preagg` implementation (#1234). | Recognise the command and answer `unsupported_command` until implemented. | 1 |
+| WebSocket errors lack `reason` | Frames carry `{code, error}` from `classifyError` (`pkg/server/errors.go`) but no `reason` or `field`, so a client cannot tell a missing field from an invalid one without parsing the message. | `reason`, and `field` for the field reasons (D19). | Extend `classifyError` to return a reason and, for decode failures, the property name; the HTTP envelope fix then inherits both. | not observable |
 | Exec and side effects over GET | GET runs `exec` and does not check the statement kind, so `CREATE TABLE` and `DELETE ... RETURNING` execute (`server.go`). | `arrow` only (D3); read-only root required (D3a). | Reject `exec` in the GET branch; run the `json_serialize_sql` walker for GET unconditionally. | 3 |
 | Multi-statement `arrow` | duckdb-go `prepareStmts` runs every statement and returns the last result. | `bad_request` (D16). | Count statements before execution. | 3 |
 | JSON keys match case-insensitively | `encoding/json` lets `TYPE: exec` override `type: arrow`; the request ran as `exec` and returned an empty body. | Protocol fields decoded exactly; application fields must not shadow them (D9). | Decode protocol fields with a strict decoder or reject case-variant duplicates. | 2 |
@@ -178,23 +178,9 @@ Closest to the target and the intended first `preagg` implementation (#1234). Al
   - `get/get-json-wrapped-query-rejected`: `error.content-type`, `error.not-json`
   - `get/get-preagg-rejected`: `error.content-type`, `error.not-json`
 - **Parse errors are 500 without a policy**
-  - `post/sql-parse-error`: `error.status.500`, `error.content-type`, `error.not-json`
-  - `ws/sql-parse-error`: `error.code.internal_error`, `error.schema.required.reason`, `error.reason.missing`
-  - `ws/ws-pipeline-order`: `s4.error.code.internal_error`, `s2.error.schema.required.reason`, `s2.error.reason.missing`, `s2.error.field.missing`, `s4.error.schema.required.reason`, `s4.error.reason.missing`
-  - `connector/rest-error`: `connector.status`
+  - `post/sql-parse-error`: `error.content-type`, `error.not-json`
 - **`preagg` is unknown**
   - `post/preagg-unsupported`: `error.content-type`, `error.not-json`
-  - `ws/preagg-unsupported`: `error.code.bad_request`, `error.schema.required.reason`, `error.reason.missing`
-- **WebSocket errors lack `reason`**
-  - `ws/missing-type`: `error.schema.required.reason`, `error.reason.missing`, `error.field.missing`
-  - `ws/missing-sql`: `error.schema.required.reason`, `error.reason.missing`, `error.field.missing`
-  - `ws/empty-sql`: `error.schema.required.reason`, `error.reason.missing`, `error.field.missing`
-  - `ws/unknown-type`: `error.schema.required.reason`, `error.reason.missing`, `error.field.missing`
-  - `ws/sql-unknown-table`: `error.schema.required.reason`, `error.reason.missing`
-  - `ws/sql-runtime-error`: `error.schema.required.reason`, `error.reason.missing`
-  - `ws/exec-error`: `error.schema.required.reason`, `error.reason.missing`
-  - `ws/ws-missing-sql-stays-open`: `s1.error.schema.required.reason`, `s1.error.reason.missing`, `s1.error.field.missing`
-  - `ws/ws-sql-error-stays-open`: `s1.error.schema.required.reason`, `s1.error.reason.missing`
 - **Exec and side effects over GET**
   - `get/get-exec-rejected`: `s1.error.status.200`, `s1.error.content-type`, `s1.error.not-json`, `s2.arrow.rows`
   - `get/get-ddl-rejected`: `s1.error.status.200`, `s1.error.content-type`, `s1.error.not-json`, `s2.arrow.rows`
@@ -220,7 +206,7 @@ Closest to the target and the intended first `preagg` implementation (#1234). Al
 ### With `--cache-control`
 
 Configuration: `duckdb-server-go --cache-control='public, max-age=60'`.
-Everything in the Go `duckdb-server-go` table applies here too (40 inherited cases). Only the differences are listed.
+Everything in the Go `duckdb-server-go` table applies here too (27 inherited cases). Only the differences are listed.
 
 | Area | Current | Spec | Fix | Cases |
 |------|---------|------|-----|-------|
@@ -234,7 +220,7 @@ Everything in the Go `duckdb-server-go` table applies here too (40 inherited cas
 - **412 is plain text**
   - `get/cache-if-match`: `s1.error.content-type`, `s1.error.not-json`, `s3.error.content-type`, `s3.error.not-json`
 - **Errors under caching are still plain text**
-  - `get/cache-error-no-store`: `error.status.500`, `error.content-type`, `error.not-json`
+  - `get/cache-error-no-store`: `error.content-type`, `error.not-json`
 - **`ETag` is not exposed to browsers**
   - `get/cache-get-etag`: `s1.header.access-control-expose-headers`
 
@@ -243,43 +229,33 @@ Everything in the Go `duckdb-server-go` table applies here too (40 inherited cas
 ### With `--gatekeeper`
 
 Configuration: `duckdb-server-go --gatekeeper='{"version":1,"options":{}}'`; validation disables `exec` and denies local file access.
-Everything in the Go `duckdb-server-go` table applies here too (27 inherited cases; `connector/rest-error` passes under this configuration). Only the differences are listed.
+Everything in the Go `duckdb-server-go` table applies here too (21 inherited cases). Only the differences are listed.
 
 | Area | Current | Spec | Fix | Cases |
 |------|---------|------|-----|-------|
-| Disabled `exec` is `bad_request` | `ErrExecWithValidation` maps to `bad_request` (`pkg/server/errors.go`); an application field spelled `TYPE: exec` also trips it, see D9 in go.yaml. | `unsupported_command` (D6). | Remap in `classifyError`. | 2 |
-| Gatekeeper rejections are `forbidden` or `bad_request` regardless of cause | A multi-statement `arrow` is `forbidden` (403) and an unknown table is `bad_request` (400 `Bad Request`) because Gatekeeper validation fails before DuckDB classifies the statement. | Multi-statement is `bad_request` (D16); an unknown user table is `internal_error` unless classified as a managed table (D7, still open in CONFORMANCE.md). | Split validator errors from policy denials when mapping to codes. | 6 |
-| Parse error body is `Bad Request` | The status is right but the body is the plain `http.StatusText`. | Envelope with the DuckDB message (D4, D7). | Covered by the envelope fix in go.yaml. | 1 |
+| Disabled `exec` is `bad_request` | `ErrExecWithValidation` maps to `bad_request` (`pkg/server/errors.go`); an application field spelled `TYPE: exec` also trips it, see D9 in go.yaml. | `unsupported_command` (D6). | Remap in `classifyError`. | 1 |
+| Gatekeeper rejections are `forbidden` or `bad_request` regardless of cause | A multi-statement `arrow` is `forbidden` (403) and an unknown table is `bad_request` (400 `Bad Request`) because Gatekeeper validation fails before DuckDB classifies the statement. | Multi-statement is `bad_request` (D16); an unknown user table is `internal_error` unless classified as a managed table (D7, still open in CONFORMANCE.md). | Split validator errors from policy denials when mapping to codes. | 3 |
+| Parse error body is `Bad Request` | The status is right but the body is the plain `http.StatusText`. | Envelope with the DuckDB message (D4, D7). | Covered by the envelope fix in go.yaml. | not observable |
 | Local file reads are denied | Default Gatekeeper policy rejects `read_parquet` on a local path with 403 `Forbidden`. | Deployment choice; the suite marks this configuration as lacking the `files` capability. Listed so the plain-text body is not lost. | Envelope fix in go.yaml; optionally allow the shared data directory in the test policy. | not observable |
 | Default policy denies `information_schema` | The rejection itself has the right status but a plain body, and the follow-up `information_schema.tables` probe is 403 `Forbidden`, so the suite cannot confirm nothing was created. | Envelope on the rejection (D4); the probe is a test limitation, not a spec requirement. | Envelope fix in go.yaml; allow `information_schema` in the test policy or probe differently. | 2 |
-| Policy denials are plain text over HTTP and carry no `reason` or diagnostics | A statement the policy forbids is 403 `Forbidden` as `text/plain`; the WebSocket frame carries `code: forbidden` but no `reason`, and the Gatekeeper violations (`rule`, `message`, object, function, position) are folded into the message. | Envelope with `forbidden` / `policy_denied` and one `diagnostics` entry per violation (D4, D7, D19, D21). | Same mapper as the other HTTP errors; project `query.Violation` onto `Diagnostic` with `provider: gatekeeper`. | 3 |
-| Correctly classified parse errors still lack `reason` | Under validation a syntax error is `bad_request` on every transport, so these cases passed before D19; the frames have no `reason`. | `sql_parse_error` (D19). | Covered by the `reason` fix in go.yaml. | 2 |
+| Policy denials are plain text over HTTP and carry no `reason` or diagnostics | A statement the policy forbids is 403 `Forbidden` as `text/plain`; the WebSocket frame carries `code: forbidden` but no `reason`, and the Gatekeeper violations (`rule`, `message`, object, function, position) are folded into the message. | Envelope with `forbidden` / `policy_denied` and one `diagnostics` entry per violation (D4, D7, D19, D21). | Same mapper as the other HTTP errors; project `query.Violation` onto `Diagnostic` with `provider: gatekeeper`. | 2 |
+| Correctly classified parse errors still lack `reason` | Under validation a syntax error is `bad_request` on every transport, so these cases passed before D19; the frames have no `reason`. | `sql_parse_error` (D19). | Covered by the `reason` fix in go.yaml. | not observable |
 | JSON keys match case-insensitively | As in go.yaml, but here the shadowed `exec` is refused by validation, so the response is a 400 instead of an empty body. | Protocol fields decoded exactly; application fields must not shadow them (D9). | Decode protocol fields with a strict decoder or reject case-variant duplicates. | 1 |
 
 <details><summary>Baselined violations by case</summary>
 
 - **Disabled `exec` is `bad_request`**
   - `post/exec-unsupported`: `error.content-type`, `error.not-json`
-  - `ws/exec-unsupported`: `error.code.bad_request`, `error.schema.required.reason`, `error.reason.missing`
 - **Gatekeeper rejections are `forbidden` or `bad_request` regardless of cause**
   - `post/arrow-multi-statement`: `error.status.403`, `error.content-type`, `error.not-json`
-  - `ws/arrow-multi-statement`: `error.code.forbidden`, `error.schema.required.reason`, `error.reason.missing`
-  - `post/sql-unknown-table`: `error.status.400`, `error.content-type`, `error.not-json`
-  - `ws/sql-unknown-table`: `error.code.bad_request`, `error.schema.required.reason`, `error.reason.missing`
-  - `ws/ws-sql-error-stays-open`: `s1.error.code.bad_request`, `s1.error.schema.required.reason`, `s1.error.reason.missing`
+  - `ws/arrow-multi-statement`: `error.code.forbidden`, `error.reason.policy_denied`
   - `get/arrow-multi-statement`: `error.status.403`, `error.content-type`, `error.not-json`
-- **Parse error body is `Bad Request`**
-  - `post/sql-parse-error`: `error.content-type`, `error.not-json`
 - **Default policy denies `information_schema`**
   - `get/get-ddl-rejected`: `s1.error.content-type`, `s1.error.not-json`, `s2.arrow.status.403`
   - `get/get-exec-rejected`: `s1.error.content-type`, `s1.error.not-json`, `s2.arrow.status.403`
 - **Policy denials are plain text over HTTP and carry no `reason` or diagnostics**
   - `get/policy-denied-file`: `error.content-type`, `error.not-json`
   - `post/policy-denied-file`: `error.content-type`, `error.not-json`
-  - `ws/policy-denied-file`: `error.schema.required.reason`, `error.reason.missing`
-- **Correctly classified parse errors still lack `reason`**
-  - `ws/sql-parse-error`: `error.schema.required.reason`, `error.reason.missing`
-  - `ws/ws-pipeline-order`: `s2.error.schema.required.reason`, `s2.error.reason.missing`, `s2.error.field.missing`, `s4.error.schema.required.reason`, `s4.error.reason.missing`
 - **JSON keys match case-insensitively**
   - `post/protocol-fields-not-shadowed`: `arrow.status.400`
 
