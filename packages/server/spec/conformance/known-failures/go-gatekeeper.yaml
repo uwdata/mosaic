@@ -1,11 +1,8 @@
 # Known conformance failures for `duckdb-server-go --gatekeeper='{"version":1,"options":{}}'`.
-# Only the validation-specific gaps live here; go.yaml lists the flag-independent
-# ones, which apply to this configuration too. Regenerate ../../CONFORMANCE.md with
-# `pnpm -F @uwdata/mosaic-server-spec conformance:docs`.
+# Inherits go.yaml; only cases whose violations differ from the plain Go run are
+# listed, and `passes` names inherited cases this configuration gets right.
 server: go-gatekeeper
 inherits: go
-# Inherited cases that this configuration gets right: Gatekeeper validation
-# classifies parse errors as 400 before DuckDB runs.
 passes:
   - connector/rest-error
   - ws/sql-parse-error
@@ -16,32 +13,75 @@ failures:
     spec: "`unsupported_command` (D6)."
     fix: Remap in `classifyError`.
     cases:
-      - post/exec-unsupported
-      - ws/exec-unsupported
-
+      post/exec-unsupported:
+        - error.content-type
+        - error.not-json
+      ws/exec-unsupported:
+        - error.code.bad_request
   - area: Gatekeeper rejections are `forbidden` or `bad_request` regardless of cause
-    current: >-
-      A multi-statement `arrow` is `forbidden` (403) and an unknown table is `bad_request`
-      (400 `Bad Request`) because Gatekeeper validation fails before DuckDB classifies
-      the statement.
-    spec: "Multi-statement is `bad_request` (D16); an unknown user table is `internal_error` unless classified as a managed table (D7, still open in CONFORMANCE.md)."
+    current: A multi-statement `arrow` is `forbidden` (403) and an unknown table is `bad_request` (400 `Bad Request`) because Gatekeeper validation fails before DuckDB classifies the statement.
+    spec: Multi-statement is `bad_request` (D16); an unknown user table is `internal_error` unless classified as a managed table (D7, still open in CONFORMANCE.md).
     fix: Split validator errors from policy denials when mapping to codes.
     cases:
-      - post/arrow-multi-statement
-      - ws/arrow-multi-statement
-      - post/sql-unknown-table
-      - ws/sql-unknown-table
-      - ws/ws-sql-error-stays-open
-
+      post/arrow-multi-statement:
+        - error.status.403
+        - error.content-type
+        - error.not-json
+      ws/arrow-multi-statement:
+        - error.code.forbidden
+      post/sql-unknown-table:
+        - error.status.400
+        - error.content-type
+        - error.not-json
+      ws/sql-unknown-table:
+        - error.code.bad_request
+      ws/ws-sql-error-stays-open:
+        - s1.error.code.bad_request
+      get/arrow-multi-statement:
+        - error.status.403
+        - error.content-type
+        - error.not-json
   - area: Parse error body is `Bad Request`
     current: The status is right but the body is the plain `http.StatusText`.
     spec: Envelope with the DuckDB message (D4, D7).
     fix: Covered by the envelope fix in go.yaml.
     cases:
-      - post/sql-parse-error
-
+      post/sql-parse-error:
+        - error.content-type
+        - error.not-json
   - area: Local file reads are denied
-    current: "Default Gatekeeper policy rejects `read_parquet` on a local path with 403 `Forbidden`."
+    current: Default Gatekeeper policy rejects `read_parquet` on a local path with 403 `Forbidden`.
     spec: Deployment choice; the suite marks this configuration as lacking the `files` capability. Listed so the plain-text body is not lost.
     fix: Envelope fix in go.yaml; optionally allow the shared data directory in the test policy.
-    cases: []
+    cases: {}
+  - area: Default policy denies `information_schema`
+    current: The rejection itself has the right status but a plain body, and the follow-up `information_schema.tables` probe is 403 `Forbidden`, so the suite cannot confirm nothing was created.
+    spec: Envelope on the rejection (D4); the probe is a test limitation, not a spec requirement.
+    fix: Envelope fix in go.yaml; allow `information_schema` in the test policy or probe differently.
+    cases:
+      get/get-ddl-rejected:
+        - s1.error.content-type
+        - s1.error.not-json
+        - s2.arrow.status.403
+      get/get-exec-rejected:
+        - s1.error.content-type
+        - s1.error.not-json
+        - s2.arrow.status.403
+  - area: Policy denials are plain text over HTTP
+    current: "A statement the policy forbids is 403 `Forbidden` as `text/plain`; the WebSocket frame already carries `code: forbidden`."
+    spec: Envelope with `forbidden` (D4, D7).
+    fix: Same mapper as the other HTTP errors.
+    cases:
+      get/policy-denied-file:
+        - error.content-type
+        - error.not-json
+      post/policy-denied-file:
+        - error.content-type
+        - error.not-json
+  - area: JSON keys match case-insensitively
+    current: As in go.yaml, but here the shadowed `exec` is refused by validation, so the response is a 400 instead of an empty body.
+    spec: Protocol fields decoded exactly; application fields must not shadow them (D9).
+    fix: Decode protocol fields with a strict decoder or reject case-variant duplicates.
+    cases:
+      post/protocol-fields-not-shadowed:
+        - arrow.status.400

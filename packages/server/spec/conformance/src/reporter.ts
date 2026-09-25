@@ -4,21 +4,23 @@ import type { Reporter, TestCase, TestModule } from 'vitest/node';
 import { conformanceRoot } from './cases.ts';
 import { annotationTypes } from './harness.ts';
 
-type Outcome = 'pass' | 'known' | 'regression' | 'unexpected-pass' | 'skipped';
+type Outcome = 'pass' | 'known' | 'regression' | 'resolved' | 'error' | 'skipped';
 
 interface Row {
   id: string;
   outcome: Outcome;
   area?: string;
   detail?: string;
+  violations?: string[];
 }
 
-const order: Outcome[] = ['regression', 'unexpected-pass', 'known', 'pass', 'skipped'];
+const order: Outcome[] = ['error', 'regression', 'resolved', 'known', 'pass', 'skipped'];
 const labels: Record<Outcome, string> = {
-  pass: 'passing',
-  known: 'known failures',
+  error: 'harness errors',
   regression: 'regressions',
-  'unexpected-pass': 'unexpected passes',
+  resolved: 'resolved (remove from baseline)',
+  known: 'known failures',
+  pass: 'passing',
   skipped: 'skipped (capability)'
 };
 
@@ -41,21 +43,31 @@ export default class ConformanceReporter implements Reporter {
   }
 }
 
+// A test with a regression annotation failed on new violations; one with only
+// a resolved annotation failed because baselined violations vanished; a
+// failure with neither annotation is a thrown transport or harness error.
 function classify(test: TestCase): Row {
   const result = test.result();
   const annotations = test.annotations();
   const byType = (type: string) => annotations.find(a => a.type === type)?.message;
   const id = test.name;
   if (result.state === 'skipped' || result.state === 'pending') return { id, outcome: 'skipped' };
+  const area = byType(annotationTypes.known);
+  const observed = byType(annotationTypes.observed);
+  const regression = byType(annotationTypes.regression);
+  const violations = [...idsIn(observed), ...idsIn(regression)];
   if (result.state === 'passed') {
-    const area = byType(annotationTypes.known);
-    return area
-      ? { id, outcome: 'known', area, detail: byType(annotationTypes.actual) }
-      : { id, outcome: 'pass' };
+    return area ? { id, outcome: 'known', area, detail: observed, violations } : { id, outcome: 'pass', violations: [] };
   }
-  const unexpected = byType(annotationTypes.unexpectedPass);
-  if (unexpected) return { id, outcome: 'unexpected-pass', area: unexpected };
-  return { id, outcome: 'regression', detail: result.errors?.map(e => e.message).join('; ') };
+  if (regression) return { id, outcome: 'regression', area, detail: regression, violations };
+  const resolved = byType(annotationTypes.resolved);
+  if (resolved) return { id, outcome: 'resolved', area, detail: resolved, violations };
+  return { id, outcome: 'error', detail: result.errors?.map(e => e.message).join('; ') };
+}
+
+function idsIn(message: string | undefined): string[] {
+  if (!message) return [];
+  return message.split('\n').map(line => line.split(': ')[0]).filter(Boolean);
 }
 
 function renderSummary(server: string, rows: Row[]) {
@@ -68,7 +80,7 @@ function renderSummary(server: string, rows: Row[]) {
     `| ${order.map(o => counts[o]).join(' | ')} |`,
     ''
   ];
-  const attention = rows.filter(r => r.outcome === 'regression' || r.outcome === 'unexpected-pass');
+  const attention = rows.filter(r => r.outcome === 'error' || r.outcome === 'regression' || r.outcome === 'resolved');
   if (attention.length) {
     lines.push('| case | outcome | detail |', '|---|---|---|');
     for (const row of attention) {

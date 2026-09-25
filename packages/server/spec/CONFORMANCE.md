@@ -61,22 +61,31 @@ CONFORMANCE_SERVER=go pnpm -F @uwdata/mosaic-server-spec conformance
 
 Configurations are defined in `conformance/servers/index.ts`: `node`,
 `python`, `rust`, `go`, `go-cache`, `go-gatekeeper`. Each declares
-capabilities (`exec`, `preagg`, `caching`, `files`); cases gate on them with
-`requires`/`unless`. `CONFORMANCE_URL` points the suite at an already
+capabilities (`exec`, `preagg`, `caching`, `files`, `policy`); cases gate on
+them with `requires`/`unless`. `CONFORMANCE_URL` points the suite at an already
 running server instead of spawning one. Server output is written to
 `conformance/.logs/<config>.log`.
 
-The suite is a ratchet. `conformance/known-failures/<config>.yaml` lists the
-cases that fail today, grouped by area with the observed behaviour and the
-fix. A run is green when the failing set equals that list. A case that
-regresses fails the run; a case that starts passing also fails the run until
-it is removed from the list, so the lists only shrink. Full conformance is
-reached when they are empty. `go-cache` and `go-gatekeeper` inherit the plain
-`go` list and add or exempt (`passes`) entries.
+The suite is a ratchet over individual violations. Every mismatch a check
+finds has a stable id (`error.status.500`, `error.not-json`, `arrow.eos`,
+`header.allow`, `ws.closed.1007`, `s2.arrow.rows` for step 2 of a multi-step
+case, and so on), and `conformance/known-failures/<config>.yaml` records, per
+case, exactly which ids the server produces today, grouped by area with the
+observed behaviour and the fix. A run is green when each case's observed
+violations equal its listed ids. A new violation on any case, including one
+already listed for something else, fails the run as a regression; a listed
+violation that stops appearing also fails the run until it is removed, so
+the lists only shrink. Thrown transport or harness errors are never
+baselined. Every step of a multi-step case runs even after an earlier step
+misbehaved, so follow-up checks such as "the connection is still usable" or
+"the table was not created" are observed independently. Full conformance is
+reached when the files are empty. `go-cache` and `go-gatekeeper` inherit the
+plain `go` list and override per case or exempt cases (`passes`).
 
 To add a case, append it to a file in `conformance/cases/` with the decision
-ids it exercises, run every configuration, add the new failures to the
-matching `known-failures` file, then regenerate the tables below:
+ids it exercises, run every configuration, add the observed violation ids to
+the matching `known-failures` file (the run's summary lists them), then
+regenerate the tables below:
 
 ```sh
 pnpm -F @uwdata/mosaic-server-spec conformance:docs
@@ -86,9 +95,11 @@ CI runs all six configurations on every pull request that touches a server
 or the spec (`.github/workflows/server-protocol.yml`) and fails if the tables
 below are stale.
 
-Not observable from outside, so still tracked by hand (`cases: []`):
-authorizer mappings (`unauthenticated`/`forbidden`), tenant `Vary` headers,
-timeouts, and internal structure such as shared connections.
+Not observable from outside, so still tracked by hand (`cases: {}`):
+authorizer-based `unauthenticated` responses and tenant `Vary` headers (no
+CLI exposes an authorizer), timeouts, and internal structure such as shared
+connections. Policy denials (`forbidden`) are observable and covered under
+the `go-gatekeeper` configuration.
 
 
 <!-- conformance:begin -->
@@ -106,7 +117,7 @@ Closest to the target and the intended first `preagg` implementation (#1234). Al
 | Parse errors are 500 without a policy | `json_serialize_sql` runs only under validation, so a syntax error is an unclassified `internal_error`. | `bad_request` regardless of policy (D7). | Run statement extraction unconditionally, or map DuckDB parser errors. | 4 |
 | `preagg` is unknown | `invalid 'type' parameter: preagg` as `bad_request`. | `unsupported_command` (D6). Go is the intended first `preagg` implementation (#1234). | Recognise the command and answer `unsupported_command` until implemented. | 2 |
 | Exec and side effects over GET | GET runs `exec` and does not check the statement kind, so `CREATE TABLE` and `DELETE ... RETURNING` execute (`server.go`). | `arrow` only (D3); read-only root required (D3a). | Reject `exec` in the GET branch; run the `json_serialize_sql` walker for GET unconditionally. | 3 |
-| Multi-statement `arrow` | duckdb-go `prepareStmts` runs every statement and returns the last result. | `bad_request` (D16). | Count statements before execution. | 2 |
+| Multi-statement `arrow` | duckdb-go `prepareStmts` runs every statement and returns the last result. | `bad_request` (D16). | Count statements before execution. | 3 |
 | JSON keys match case-insensitively | `encoding/json` lets `TYPE: exec` override `type: arrow`; the request ran as `exec` and returned an empty body. | Protocol fields decoded exactly; application fields must not shadow them (D9). | Decode protocol fields with a strict decoder or reject case-variant duplicates. | 2 |
 | 405 without `Allow` | `Method not allowed` plain text, no `Allow` header. | Envelope plus `Allow: GET, POST, OPTIONS` (D5). | Set the header in the fallback branch. | 2 |
 | WebSocket malformed JSON closes the socket | `wsjson.Read` failure closes with 1007 (`server.go`). | `Error` frame, connection stays open (D12). | Read the raw frame and unmarshal manually. | 2 |
@@ -116,57 +127,111 @@ Closest to the target and the intended first `preagg` implementation (#1234). Al
 | Upgrade detection | Whole-value `EqualFold` on `Connection` (`server.go`). | Token-based matching. | Scan `Connection` tokens. | not observable |
 | Timeouts | None. | `deadline_exceeded`; also needed by #1234. | Per-command deadline. | not observable |
 
-<details><summary>Case ids</summary>
+<details><summary>Baselined violations by case</summary>
 
-- **HTTP errors are plain text**: `post/missing-type`, `post/missing-sql`, `post/empty-sql`, `post/unknown-type`, `post/type-not-a-string`, `post/malformed-json-body`, `post/sql-unknown-table`, `post/sql-runtime-error`, `post/exec-error`, `get/get-missing-type`, `get/get-json-wrapped-query-rejected`, `get/get-preagg-rejected`
-- **Parse errors are 500 without a policy**: `post/sql-parse-error`, `ws/sql-parse-error`, `ws/ws-pipeline-order`, `connector/rest-error`
-- **`preagg` is unknown**: `post/preagg-unsupported`, `ws/preagg-unsupported`
-- **Exec and side effects over GET**: `get/get-exec-rejected`, `get/get-ddl-rejected`, `get/get-delete-returning-rejected`
-- **Multi-statement `arrow`**: `post/arrow-multi-statement`, `ws/arrow-multi-statement`
-- **JSON keys match case-insensitively**: `post/protocol-fields-not-shadowed`, `ws/protocol-fields-not-shadowed`
-- **405 without `Allow`**: `post/method-put`, `post/method-head`
-- **WebSocket malformed JSON closes the socket**: `ws/ws-malformed-json-stays-open`, `ws/type-not-a-string`
-- **WebSocket read limit**: `ws/large-request-1mib`
+- **HTTP errors are plain text**
+  - `post/missing-type`: `error.content-type`, `error.not-json`
+  - `post/missing-sql`: `error.content-type`, `error.not-json`
+  - `post/empty-sql`: `error.content-type`, `error.not-json`
+  - `post/unknown-type`: `error.content-type`, `error.not-json`
+  - `post/type-not-a-string`: `error.content-type`, `error.not-json`
+  - `post/malformed-json-body`: `error.content-type`, `error.not-json`
+  - `post/sql-unknown-table`: `error.content-type`, `error.not-json`
+  - `post/sql-runtime-error`: `error.content-type`, `error.not-json`
+  - `post/exec-error`: `error.content-type`, `error.not-json`
+  - `get/get-missing-type`: `error.content-type`, `error.not-json`
+  - `get/get-json-wrapped-query-rejected`: `error.content-type`, `error.not-json`
+  - `get/get-preagg-rejected`: `error.content-type`, `error.not-json`
+- **Parse errors are 500 without a policy**
+  - `post/sql-parse-error`: `error.status.500`, `error.content-type`, `error.not-json`
+  - `ws/sql-parse-error`: `error.code.internal_error`
+  - `ws/ws-pipeline-order`: `s4.error.code.internal_error`
+  - `connector/rest-error`: `connector.status`
+- **`preagg` is unknown**
+  - `post/preagg-unsupported`: `error.content-type`, `error.not-json`
+  - `ws/preagg-unsupported`: `error.code.bad_request`
+- **Exec and side effects over GET**
+  - `get/get-exec-rejected`: `s1.error.status.200`, `s1.error.content-type`, `s1.error.not-json`, `s2.arrow.rows`
+  - `get/get-ddl-rejected`: `s1.error.status.200`, `s1.error.content-type`, `s1.error.not-json`, `s2.arrow.rows`
+  - `get/get-delete-returning-rejected`: `s2.error.status.200`, `s2.error.content-type`, `s2.error.not-json`, `s3.arrow.rows`
+- **Multi-statement `arrow`**
+  - `post/arrow-multi-statement`: `error.status.200`, `error.content-type`, `error.not-json`
+  - `ws/arrow-multi-statement`: `error.frame`
+  - `get/arrow-multi-statement`: `error.status.200`, `error.content-type`, `error.not-json`
+- **JSON keys match case-insensitively**
+  - `post/protocol-fields-not-shadowed`: `arrow.content-type`, `arrow.empty`
+  - `ws/protocol-fields-not-shadowed`: `arrow.frame`
+- **405 without `Allow`**
+  - `post/method-put`: `error.content-type`, `error.not-json`, `header.allow`
+  - `post/method-head`: `header.allow`
+- **WebSocket malformed JSON closes the socket**
+  - `ws/ws-malformed-json-stays-open`: `s1.ws.closed.1007`, `s2.ws.closed.1007`
+  - `ws/type-not-a-string`: `ws.closed.1007`
+- **WebSocket read limit**
+  - `ws/large-request-1mib`: `ws.closed.1009`
 
 </details>
 
 ### With `--cache-control`
 
 Configuration: `duckdb-server-go --cache-control='public, max-age=60'`.
-Everything in the Go `duckdb-server-go` table applies here too (30 inherited cases). Only the differences are listed.
+Everything in the Go `duckdb-server-go` table applies here too (31 inherited cases). Only the differences are listed.
 
 | Area | Current | Spec | Fix | Cases |
 |------|---------|------|-----|-------|
 | 412 is plain text | `Precondition Failed` via `http.Error` (`pkg/server/cache.go`). | `bad_request` envelope, no `ETag` (D14, D5). | Same mapper as the other HTTP errors. | 1 |
 | Errors under caching are still plain text | The GET parse-error path returns 500 plain text; `Cache-Control: no-store` is present. | 400 envelope with `no-store` (D7, D14). | Covered by the envelope and parse-error fixes in go.yaml. | 1 |
-| `ETag` is not exposed to browsers | No `Access-Control-Expose-Headers` on preflight (`security.go`). | Expose `ETag` when caching is enabled (D14). | Add to the `WithCORS` defaults. | 1 |
+| `ETag` is not exposed to browsers | No `Access-Control-Expose-Headers` on the cross-origin GET, so a browser cannot read the `ETag` (`security.go`). | Expose `ETag` when caching is enabled (D14). | Add to the `WithCORS` defaults. | 1 |
 | `Cache-Control: private` with an authorizer | The operator value is used verbatim even when an authorizer varies the response by identity. | Identity headers in `Vary`, or `private`/`no-store` (D14). | Document; optionally append identity headers to `Vary` from `AuthorizeRequest`. | not observable |
 
-<details><summary>Case ids</summary>
+<details><summary>Baselined violations by case</summary>
 
-- **412 is plain text**: `get/cache-if-match`
-- **Errors under caching are still plain text**: `get/cache-error-no-store`
-- **`ETag` is not exposed to browsers**: `post/cache-preflight-no-store`
+- **412 is plain text**
+  - `get/cache-if-match`: `s1.error.content-type`, `s1.error.not-json`, `s3.error.content-type`, `s3.error.not-json`
+- **Errors under caching are still plain text**
+  - `get/cache-error-no-store`: `error.status.500`, `error.content-type`, `error.not-json`
+- **`ETag` is not exposed to browsers**
+  - `get/cache-get-etag`: `s1.header.access-control-expose-headers`
 
 </details>
 
 ### With `--gatekeeper`
 
-Configuration: `duckdb-server-go --gatekeeper='{"version":1,"options":{}}'`; validation disables `exec` and local file access.
-Everything in the Go `duckdb-server-go` table applies here too (23 inherited cases; `connector/rest-error`, `ws/sql-parse-error`, `ws/ws-pipeline-order` pass under this configuration). Only the differences are listed.
+Configuration: `duckdb-server-go --gatekeeper='{"version":1,"options":{}}'`; validation disables `exec` and denies local file access.
+Everything in the Go `duckdb-server-go` table applies here too (20 inherited cases; `connector/rest-error`, `ws/sql-parse-error`, `ws/ws-pipeline-order` pass under this configuration). Only the differences are listed.
 
 | Area | Current | Spec | Fix | Cases |
 |------|---------|------|-----|-------|
 | Disabled `exec` is `bad_request` | `ErrExecWithValidation` maps to `bad_request` (`pkg/server/errors.go`); an application field spelled `TYPE: exec` also trips it, see D9 in go.yaml. | `unsupported_command` (D6). | Remap in `classifyError`. | 2 |
-| Gatekeeper rejections are `forbidden` or `bad_request` regardless of cause | A multi-statement `arrow` is `forbidden` (403) and an unknown table is `bad_request` (400 `Bad Request`) because Gatekeeper validation fails before DuckDB classifies the statement. | Multi-statement is `bad_request` (D16); an unknown user table is `internal_error` unless classified as a managed table (D7, still open in CONFORMANCE.md). | Split validator errors from policy denials when mapping to codes. | 5 |
+| Gatekeeper rejections are `forbidden` or `bad_request` regardless of cause | A multi-statement `arrow` is `forbidden` (403) and an unknown table is `bad_request` (400 `Bad Request`) because Gatekeeper validation fails before DuckDB classifies the statement. | Multi-statement is `bad_request` (D16); an unknown user table is `internal_error` unless classified as a managed table (D7, still open in CONFORMANCE.md). | Split validator errors from policy denials when mapping to codes. | 6 |
 | Parse error body is `Bad Request` | The status is right but the body is the plain `http.StatusText`. | Envelope with the DuckDB message (D4, D7). | Covered by the envelope fix in go.yaml. | 1 |
 | Local file reads are denied | Default Gatekeeper policy rejects `read_parquet` on a local path with 403 `Forbidden`. | Deployment choice; the suite marks this configuration as lacking the `files` capability. Listed so the plain-text body is not lost. | Envelope fix in go.yaml; optionally allow the shared data directory in the test policy. | not observable |
+| Default policy denies `information_schema` | The rejection itself has the right status but a plain body, and the follow-up `information_schema.tables` probe is 403 `Forbidden`, so the suite cannot confirm nothing was created. | Envelope on the rejection (D4); the probe is a test limitation, not a spec requirement. | Envelope fix in go.yaml; allow `information_schema` in the test policy or probe differently. | 2 |
+| Policy denials are plain text over HTTP | A statement the policy forbids is 403 `Forbidden` as `text/plain`; the WebSocket frame already carries `code: forbidden`. | Envelope with `forbidden` (D4, D7). | Same mapper as the other HTTP errors. | 2 |
+| JSON keys match case-insensitively | As in go.yaml, but here the shadowed `exec` is refused by validation, so the response is a 400 instead of an empty body. | Protocol fields decoded exactly; application fields must not shadow them (D9). | Decode protocol fields with a strict decoder or reject case-variant duplicates. | 1 |
 
-<details><summary>Case ids</summary>
+<details><summary>Baselined violations by case</summary>
 
-- **Disabled `exec` is `bad_request`**: `post/exec-unsupported`, `ws/exec-unsupported`
-- **Gatekeeper rejections are `forbidden` or `bad_request` regardless of cause**: `post/arrow-multi-statement`, `ws/arrow-multi-statement`, `post/sql-unknown-table`, `ws/sql-unknown-table`, `ws/ws-sql-error-stays-open`
-- **Parse error body is `Bad Request`**: `post/sql-parse-error`
+- **Disabled `exec` is `bad_request`**
+  - `post/exec-unsupported`: `error.content-type`, `error.not-json`
+  - `ws/exec-unsupported`: `error.code.bad_request`
+- **Gatekeeper rejections are `forbidden` or `bad_request` regardless of cause**
+  - `post/arrow-multi-statement`: `error.status.403`, `error.content-type`, `error.not-json`
+  - `ws/arrow-multi-statement`: `error.code.forbidden`
+  - `post/sql-unknown-table`: `error.status.400`, `error.content-type`, `error.not-json`
+  - `ws/sql-unknown-table`: `error.code.bad_request`
+  - `ws/ws-sql-error-stays-open`: `s1.error.code.bad_request`
+  - `get/arrow-multi-statement`: `error.status.403`, `error.content-type`, `error.not-json`
+- **Parse error body is `Bad Request`**
+  - `post/sql-parse-error`: `error.content-type`, `error.not-json`
+- **Default policy denies `information_schema`**
+  - `get/get-ddl-rejected`: `s1.error.content-type`, `s1.error.not-json`, `s2.arrow.status.403`
+  - `get/get-exec-rejected`: `s1.error.content-type`, `s1.error.not-json`, `s2.arrow.status.403`
+- **Policy denials are plain text over HTTP**
+  - `get/policy-denied-file`: `error.content-type`, `error.not-json`
+  - `post/policy-denied-file`: `error.content-type`, `error.not-json`
+- **JSON keys match case-insensitively**
+  - `post/protocol-fields-not-shadowed`: `arrow.status.400`
 
 </details>
 
@@ -176,33 +241,108 @@ Configuration: `duckdb-server` crate (`packages/server/duckdb-server-rust`).
 
 | Area | Current | Spec | Fix | Cases |
 |------|---------|------|-----|-------|
-| Arrow IPC file format | `FileWriter` output (`ARROW1` magic plus footer) under the stream media type (`db.rs`, `interfaces.rs`). | IPC stream format (D8). | Use `StreamWriter`; update the `test.rs` assertion. Every Arrow success case is masked by this until it lands. | 34 |
+| Arrow IPC file format | `FileWriter` output (`ARROW1` magic plus footer) under the stream media type (`db.rs`, `interfaces.rs`). | IPC stream format (D8). | Use `StreamWriter`; update the `test.rs` assertion. Row contents are still compared, so this only hides framing. | 34 |
 | HTTP errors are plain text or empty | Rejections are serde/axum text (`interfaces.rs`); DuckDB errors are `Something went wrong: …`; 405 and 415 have plain or empty bodies. | JSON `Error` envelope on every status (D4, D5). | Custom rejection handlers and a shared error mapper. | 12 |
 | WebSocket errors lack `code` | `{"error"}` only (`websocket.rs`); the message also differs from HTTP. | Envelope with `code`, identical over both transports (D4). | Shared mapper. | 13 |
 | Unknown `type` is 422 | serde enum rejection surfaces as axum's 422 `Failed to deserialize the JSON body`. | 400 `bad_request` (D6). | Decode `type` as a string and match manually. | 1 |
 | `preagg` is unknown | Same 422 path as any unknown variant. | `unsupported_command` (D6). | Add the variant and answer `unsupported_command` until implemented. | 1 |
 | Parse errors and empty `sql` are 500 | Every `duckdb::Error` is `Something went wrong` with 500; an empty string yields `Error code 1: Unknown error code`. | `bad_request` for parse errors and empty SQL (D1, D7). | Validate `sql`; map `duckdb::Error` variants to codes. | 3 |
-| Exec and side effects over GET | `handle_get` runs any `type` and does not check the statement kind. | `arrow` only (D3); read-only root required (D3a). | Reject `exec` in `handle_get`; check the statement type before execution. | 3 |
-| Multi-statement `arrow` | Runs and returns a result rather than rejecting. | `bad_request` (D16). | Count statements before execution. | 2 |
+| Exec and side effects over GET | `handle_get` runs any `type` and does not check the statement kind; the follow-up probes confirm the table was created and the row deleted. | `arrow` only (D3); read-only root required (D3a). | Reject `exec` in `handle_get`; check the statement type before execution. | 3 |
+| Multi-statement `arrow` | Runs and returns a result rather than rejecting. | `bad_request` (D16). | Count statements before execution. | 3 |
 | HEAD runs the query | axum's GET route also serves HEAD, so `HEAD /?type=arrow&sql=…` executes and returns 200. | 405 with `Allow` (D5). | Add an explicit fallback for other methods. | 1 |
 | WebSocket binary frames are ignored | `Message::Binary` is dropped with no reply (`websocket.rs`). | SHOULD accept; MUST reply (D11). | Treat as text or answer with `bad_request`. | 1 |
 | Malformed upgrade falls through to GET | A bad upgrade request reaches the GET handler (`app.rs`). | 400 envelope. | Return the upgrade rejection. | not observable |
 | README GET example | `?query={…}` is documented but the code reads flat parameters. | Flat parameters (D2). | Fix the README. | not observable |
 | CORS and caching headers | No `Access-Control-Expose-Headers`; no cache headers. | Expose `ETag`; caching optional (D14). | Edit `CorsLayer`; add cache headers if wanted. | not observable |
 | Timeouts | None; DuckDB calls block tokio workers (`db.rs`). | `deadline_exceeded`. | `spawn_blocking` plus `duckdb_interrupt`. | not observable |
+| Large GET query strings are rejected | hyper rejects a 1 MiB request line with 431. | Servers SHOULD accept at least 1 MiB (D13). | Raise `http1_max_buf_size`, or document the limit. | 1 |
 
-<details><summary>Case ids</summary>
+<details><summary>Baselined violations by case</summary>
 
-- **Arrow IPC file format**: `connector/rest-arrow`, `connector/rest-exec`, `connector/socket-arrow`, `connector/socket-error-then-ok`, `connector/socket-pipeline`, `get/get-arrow`, `get/get-plus-in-sql`, `get/get-cte-allowed`, `get/get-set-operation-allowed`, `post/arrow-stream-format`, `post/arrow-empty-result`, `post/arrow-scalar-types`, `post/arrow-many-rows`, `post/arrow-from-parquet`, `post/arrow-trailing-semicolon`, `post/application-fields-pass-through`, `post/protocol-fields-not-shadowed`, `post/content-type-with-charset`, `post/arrow-cors-origin`, `post/large-request-1mib`, `post/exec-acknowledged`, `post/exec-multi-statement`, `ws/arrow-stream-format`, `ws/arrow-empty-result`, `ws/arrow-scalar-types`, `ws/arrow-many-rows`, `ws/arrow-trailing-semicolon`, `ws/application-fields-pass-through`, `ws/protocol-fields-not-shadowed`, `ws/large-request-1mib`, `ws/exec-acknowledged`, `ws/exec-multi-statement`, `ws/ws-pipeline-order`, `ws/ws-pipeline-slow-first`
-- **HTTP errors are plain text or empty**: `post/missing-type`, `post/missing-sql`, `post/type-not-a-string`, `post/malformed-json-body`, `post/sql-unknown-table`, `post/sql-runtime-error`, `post/exec-error`, `post/content-type-not-json`, `post/method-put`, `get/get-missing-type`, `get/get-json-wrapped-query-rejected`, `get/get-preagg-rejected`
-- **WebSocket errors lack `code`**: `ws/missing-type`, `ws/missing-sql`, `ws/empty-sql`, `ws/unknown-type`, `ws/type-not-a-string`, `ws/preagg-unsupported`, `ws/sql-parse-error`, `ws/sql-unknown-table`, `ws/sql-runtime-error`, `ws/exec-error`, `ws/ws-malformed-json-stays-open`, `ws/ws-missing-sql-stays-open`, `ws/ws-sql-error-stays-open`
-- **Unknown `type` is 422**: `post/unknown-type`
-- **`preagg` is unknown**: `post/preagg-unsupported`
-- **Parse errors and empty `sql` are 500**: `post/sql-parse-error`, `post/empty-sql`, `connector/rest-error`
-- **Exec and side effects over GET**: `get/get-exec-rejected`, `get/get-ddl-rejected`, `get/get-delete-returning-rejected`
-- **Multi-statement `arrow`**: `post/arrow-multi-statement`, `ws/arrow-multi-statement`
-- **HEAD runs the query**: `post/method-head`
-- **WebSocket binary frames are ignored**: `ws/ws-binary-frame`
+- **Arrow IPC file format**
+  - `connector/rest-arrow`: `arrow.file-format`
+  - `connector/rest-exec`: `arrow.file-format`
+  - `connector/socket-arrow`: `arrow.file-format`
+  - `connector/socket-error-then-ok`: `ok.arrow.file-format`
+  - `connector/socket-pipeline`: `q1.arrow.file-format`, `q2.arrow.file-format`, `q3.arrow.file-format`, `q4.arrow.file-format`, `q5.arrow.file-format`
+  - `get/get-arrow`: `arrow.file-format`
+  - `get/get-plus-in-sql`: `arrow.file-format`
+  - `get/get-cte-allowed`: `arrow.file-format`
+  - `get/get-set-operation-allowed`: `arrow.file-format`
+  - `post/arrow-stream-format`: `arrow.file-format`
+  - `post/arrow-empty-result`: `arrow.file-format`
+  - `post/arrow-scalar-types`: `arrow.file-format`
+  - `post/arrow-many-rows`: `arrow.file-format`
+  - `post/arrow-from-parquet`: `arrow.file-format`
+  - `post/arrow-trailing-semicolon`: `arrow.file-format`
+  - `post/application-fields-pass-through`: `arrow.file-format`
+  - `post/protocol-fields-not-shadowed`: `arrow.file-format`
+  - `post/content-type-with-charset`: `arrow.file-format`
+  - `post/arrow-cors-origin`: `arrow.file-format`
+  - `post/large-request-1mib`: `arrow.file-format`
+  - `post/exec-acknowledged`: `s2.arrow.file-format`
+  - `post/exec-multi-statement`: `s2.arrow.file-format`
+  - `ws/arrow-stream-format`: `arrow.file-format`
+  - `ws/arrow-empty-result`: `arrow.file-format`
+  - `ws/arrow-scalar-types`: `arrow.file-format`
+  - `ws/arrow-many-rows`: `arrow.file-format`
+  - `ws/arrow-trailing-semicolon`: `arrow.file-format`
+  - `ws/application-fields-pass-through`: `arrow.file-format`
+  - `ws/protocol-fields-not-shadowed`: `arrow.file-format`
+  - `ws/large-request-1mib`: `arrow.file-format`
+  - `ws/exec-acknowledged`: `s2.arrow.file-format`
+  - `ws/exec-multi-statement`: `s2.arrow.file-format`
+  - `ws/ws-pipeline-order`: `s1.arrow.file-format`, `s2.error.schema`, `s2.error.code.missing`, `s3.arrow.file-format`, `s4.error.schema`, `s4.error.code.missing`, `s5.arrow.file-format`
+  - `ws/ws-pipeline-slow-first`: `s1.arrow.file-format`, `s2.arrow.file-format`
+- **HTTP errors are plain text or empty**
+  - `post/missing-type`: `error.content-type`, `error.not-json`
+  - `post/missing-sql`: `error.content-type`, `error.not-json`
+  - `post/type-not-a-string`: `error.content-type`, `error.not-json`
+  - `post/malformed-json-body`: `error.content-type`, `error.not-json`
+  - `post/sql-unknown-table`: `error.content-type`, `error.not-json`
+  - `post/sql-runtime-error`: `error.content-type`, `error.not-json`
+  - `post/exec-error`: `error.content-type`, `error.not-json`
+  - `post/content-type-not-json`: `alt0.arrow.status.415`
+  - `post/method-put`: `error.content-type`, `error.not-json`
+  - `get/get-missing-type`: `error.content-type`, `error.not-json`
+  - `get/get-json-wrapped-query-rejected`: `error.content-type`, `error.not-json`
+  - `get/get-preagg-rejected`: `error.content-type`, `error.not-json`
+- **WebSocket errors lack `code`**
+  - `ws/missing-type`: `error.schema`, `error.code.missing`
+  - `ws/missing-sql`: `error.schema`, `error.code.missing`
+  - `ws/empty-sql`: `error.schema`, `error.code.missing`
+  - `ws/unknown-type`: `error.schema`, `error.code.missing`
+  - `ws/type-not-a-string`: `error.schema`, `error.code.missing`
+  - `ws/preagg-unsupported`: `error.schema`, `error.code.missing`
+  - `ws/sql-parse-error`: `error.schema`, `error.code.missing`
+  - `ws/sql-unknown-table`: `error.schema`, `error.code.missing`
+  - `ws/sql-runtime-error`: `error.schema`, `error.code.missing`
+  - `ws/exec-error`: `error.schema`, `error.code.missing`
+  - `ws/ws-malformed-json-stays-open`: `s1.error.schema`, `s1.error.code.missing`, `s2.arrow.file-format`
+  - `ws/ws-missing-sql-stays-open`: `s1.error.schema`, `s1.error.code.missing`, `s2.arrow.file-format`
+  - `ws/ws-sql-error-stays-open`: `s1.error.schema`, `s1.error.code.missing`, `s2.arrow.file-format`
+- **Unknown `type` is 422**
+  - `post/unknown-type`: `error.status.422`, `error.content-type`, `error.not-json`
+- **`preagg` is unknown**
+  - `post/preagg-unsupported`: `error.status.422`, `error.content-type`, `error.not-json`
+- **Parse errors and empty `sql` are 500**
+  - `post/sql-parse-error`: `error.status.500`, `error.content-type`, `error.not-json`
+  - `post/empty-sql`: `error.status.500`, `error.content-type`, `error.not-json`
+  - `connector/rest-error`: `connector.status`
+- **Exec and side effects over GET**
+  - `get/get-exec-rejected`: `s1.error.status.200`, `s1.error.content-type`, `s1.error.not-json`, `s2.arrow.file-format`, `s2.arrow.rows`
+  - `get/get-ddl-rejected`: `s1.error.status.200`, `s1.error.content-type`, `s1.error.not-json`, `s2.arrow.file-format`, `s2.arrow.rows`
+  - `get/get-delete-returning-rejected`: `s2.error.status.200`, `s2.error.content-type`, `s2.error.not-json`, `s3.arrow.file-format`, `s3.arrow.rows`
+- **Multi-statement `arrow`**
+  - `post/arrow-multi-statement`: `error.status.200`, `error.content-type`, `error.not-json`
+  - `ws/arrow-multi-statement`: `error.frame`
+  - `get/arrow-multi-statement`: `error.status.200`, `error.content-type`, `error.not-json`
+- **HEAD runs the query**
+  - `post/method-head`: `status.200`, `header.allow`
+- **WebSocket binary frames are ignored**
+  - `ws/ws-binary-frame`: `alt0.ws.no-reply`
+- **Large GET query strings are rejected**
+  - `get/large-request-1mib`: `arrow.status.431`
 
 </details>
 
@@ -217,22 +357,66 @@ Configuration: `duckdb-server` (`packages/server/duckdb-server`).
 | Empty `sql` | `msgspec` accepts `""`, then `get_arrow_bytes` fails on a `None` result (500). | 400 `bad_request` (D1). | Add `min_length=1` to the struct or validate before dispatch. | 1 |
 | Parse errors are 500 | Every DuckDB exception is `handler.error(e)` with the default 500. | `bad_request` for `duckdb.ParserException` (D7). | Map exception classes to codes. | 2 |
 | `preagg` is unknown | `msgspec` rejects it as an invalid enum value. | `unsupported_command` (D6). | Accept the literal and answer `unsupported_command` until implemented. | 1 |
-| GET reads `?query=<json>` | The flat form is rejected with `missing required 'query' parameter`; the JSON form runs `exec`. | Flat `type`/`sql`, `arrow` only, read-only SQL (D2, D3, D3a). | Read flat parameters; reject `exec`/`preagg`; check the statement kind with `duckdb.extract_statements()`. | 10 |
+| GET reads `?query=<json>` | The flat form is rejected with `missing required 'query' parameter`; the JSON form runs `exec`. | Flat `type`/`sql`, `arrow` only, read-only SQL (D2, D3, D3a). | Read flat parameters; reject `exec`/`preagg`; check the statement kind with `duckdb.extract_statements()`. | 11 |
 | Multi-statement `arrow` | All statements run and the last result is returned. | `bad_request` (D16). | Count statements with `duckdb.extract_statements()`. | 3 |
 | Unsupported method is 400 | `Unsupported HTTP method` with status 400 and no `Allow`. | 405 with `Allow` and the envelope (D5). | Change the status and add the header. | 2 |
 | CORS | `Access-Control-Request-Method` is emitted as a response header; no `Access-Control-Expose-Headers`. | Drop the request header; expose `ETag` if caching is ever added. | Edit `CORS_HEADERS`. | not observable |
 | Concurrency | A synchronous handler blocks the event loop for every connection. | No wire requirement; prerequisite for deadlines. | Run queries in a thread pool. | not observable |
+| Large GET request lines reset the connection | uWebSockets closes the socket without a response when the request line exceeds its header buffer. | Servers SHOULD accept at least 1 MiB (D13); a rejection should be an HTTP status. | Probably not configurable in socketify; document the limit. | 1 |
 
-<details><summary>Case ids</summary>
+<details><summary>Baselined violations by case</summary>
 
-- **WebSocket errors lack `code`**: `ws/missing-type`, `ws/missing-sql`, `ws/empty-sql`, `ws/unknown-type`, `ws/type-not-a-string`, `ws/preagg-unsupported`, `ws/sql-parse-error`, `ws/sql-unknown-table`, `ws/sql-runtime-error`, `ws/exec-error`, `ws/ws-malformed-json-stays-open`, `ws/ws-missing-sql-stays-open`, `ws/ws-sql-error-stays-open`
-- **HTTP errors are plain text**: `post/missing-type`, `post/missing-sql`, `post/unknown-type`, `post/type-not-a-string`, `post/malformed-json-body`, `post/sql-unknown-table`, `post/sql-runtime-error`, `post/exec-error`
-- **Empty `sql`**: `post/empty-sql`
-- **Parse errors are 500**: `post/sql-parse-error`, `connector/rest-error`
-- **`preagg` is unknown**: `post/preagg-unsupported`
-- **GET reads `?query=<json>`**: `get/get-arrow`, `get/get-plus-in-sql`, `get/get-cte-allowed`, `get/get-set-operation-allowed`, `get/get-missing-type`, `get/get-json-wrapped-query-rejected`, `get/get-exec-rejected`, `get/get-preagg-rejected`, `get/get-ddl-rejected`, `get/get-delete-returning-rejected`
-- **Multi-statement `arrow`**: `post/arrow-multi-statement`, `ws/arrow-multi-statement`, `ws/ws-pipeline-order`
-- **Unsupported method is 400**: `post/method-put`, `post/method-head`
+- **WebSocket errors lack `code`**
+  - `ws/missing-type`: `error.schema`, `error.code.missing`, `error.message`
+  - `ws/missing-sql`: `error.schema`, `error.code.missing`, `error.message`
+  - `ws/empty-sql`: `error.schema`, `error.code.missing`
+  - `ws/unknown-type`: `error.schema`, `error.code.missing`
+  - `ws/type-not-a-string`: `error.schema`, `error.code.missing`
+  - `ws/preagg-unsupported`: `error.schema`, `error.code.missing`
+  - `ws/sql-parse-error`: `error.schema`, `error.code.missing`
+  - `ws/sql-unknown-table`: `error.schema`, `error.code.missing`
+  - `ws/sql-runtime-error`: `error.schema`, `error.code.missing`
+  - `ws/exec-error`: `error.schema`, `error.code.missing`
+  - `ws/ws-malformed-json-stays-open`: `s1.error.schema`, `s1.error.code.missing`
+  - `ws/ws-missing-sql-stays-open`: `s1.error.schema`, `s1.error.code.missing`, `s1.error.message`
+  - `ws/ws-sql-error-stays-open`: `s1.error.schema`, `s1.error.code.missing`
+- **HTTP errors are plain text**
+  - `post/missing-type`: `error.content-type`, `error.not-json`
+  - `post/missing-sql`: `error.content-type`, `error.not-json`
+  - `post/unknown-type`: `error.content-type`, `error.not-json`
+  - `post/type-not-a-string`: `error.content-type`, `error.not-json`
+  - `post/malformed-json-body`: `error.content-type`, `error.not-json`
+  - `post/sql-unknown-table`: `error.content-type`, `error.not-json`
+  - `post/sql-runtime-error`: `error.content-type`, `error.not-json`
+  - `post/exec-error`: `error.content-type`, `error.not-json`
+- **Empty `sql`**
+  - `post/empty-sql`: `error.status.500`, `error.content-type`, `error.not-json`
+- **Parse errors are 500**
+  - `post/sql-parse-error`: `error.status.500`, `error.content-type`, `error.not-json`
+  - `connector/rest-error`: `connector.status`
+- **`preagg` is unknown**
+  - `post/preagg-unsupported`: `error.content-type`, `error.not-json`
+- **GET reads `?query=<json>`**
+  - `get/get-arrow`: `arrow.status.400`
+  - `get/get-plus-in-sql`: `arrow.status.400`
+  - `get/get-cte-allowed`: `arrow.status.400`
+  - `get/get-set-operation-allowed`: `arrow.status.400`
+  - `get/get-missing-type`: `error.content-type`, `error.not-json`
+  - `get/get-json-wrapped-query-rejected`: `error.status.200`, `error.content-type`, `error.not-json`
+  - `get/get-exec-rejected`: `s1.error.content-type`, `s1.error.not-json`
+  - `get/get-preagg-rejected`: `error.content-type`, `error.not-json`
+  - `get/get-ddl-rejected`: `s1.error.content-type`, `s1.error.not-json`
+  - `get/get-delete-returning-rejected`: `s2.error.content-type`, `s2.error.not-json`
+  - `get/arrow-multi-statement`: `error.content-type`, `error.not-json`
+- **Multi-statement `arrow`**
+  - `post/arrow-multi-statement`: `error.status.200`, `error.content-type`, `error.not-json`
+  - `ws/arrow-multi-statement`: `error.frame`
+  - `ws/ws-pipeline-order`: `s2.error.schema`, `s2.error.code.missing`, `s4.error.schema`, `s4.error.code.missing`
+- **Unsupported method is 400**
+  - `post/method-put`: `error.status.400`, `error.content-type`, `error.not-json`, `header.allow`
+  - `post/method-head`: `status.400`, `header.allow`
+- **Large GET request lines reset the connection**
+  - `get/large-request-1mib`: `http.connection`
 
 </details>
 
@@ -247,23 +431,100 @@ Configuration: `@uwdata/mosaic-duckdb` data server (`packages/server/duckdb`).
 | `sql` is not validated | A missing or empty `sql` reaches DuckDB and fails as a binder or parser error (500). | 400 `bad_request` with `missing required 'sql' parameter` (D1). | Validate before dispatch. | 5 |
 | Parse errors are 500 | DuckDB parser errors surface as `internal_error`. | `bad_request` (D7). | Classify `Parser Error` before falling through to 500. | 3 |
 | `preagg` is unknown | `Unrecognized command: preagg` as a generic bad request. | `unsupported_command` (D6). | Recognise the command and answer `unsupported_command` until implemented. | 2 |
-| GET is broken | `JSON.parse` is applied to the already-parsed query object, so every GET is a 400 `TypeError` (`data-server.js`). | Flat `type`/`sql` parameters, `arrow` only, read-only SQL (D2, D3, D3a). | Build the command from `url.query`; reject `exec`/`preagg`; check the statement kind with `json_serialize_sql`. | 10 |
+| GET is broken | `JSON.parse` is applied to the already-parsed query object, so every GET is a 400 `TypeError` (`data-server.js`). | Flat `type`/`sql` parameters, `arrow` only, read-only SQL (D2, D3, D3a). | Build the command from `url.query`; reject `exec`/`preagg`; check the statement kind with `json_serialize_sql`. | 11 |
 | Empty Arrow result is 0 bytes | `DuckDB.js` returns no bytes for zero rows; `duckdb.test.js` asserts it. | Schema message plus end-of-stream marker (D8). | Emit a schema-only stream. | 2 |
 | Trailing `;` and multi-statement `arrow` | SQL is wrapped as `to_arrow_ipc((sql))`, so a trailing `;` is a parser error (500) and several statements fail the same way. | Trailing `;` allowed; several statements are `bad_request` (D16). | Strip a trailing `;`; count statements before wrapping. | 4 |
 | Unsupported method is 400 | `Unsupported HTTP method` with status 400 and no `Allow`. | 405 with `Allow: GET, POST, OPTIONS` and the envelope (D5). | Change the status and add the header. | 2 |
 | Shared DuckDB connection | One connection serves every client (`DuckDB.js`). | No requirement. | Note only. | not observable |
+| Arrow stream lacks the end-of-stream marker | `DuckDB.js` concatenates the record batches and stops; there is no trailing 0-length message, so a reader that waits for EOS never finishes. | Schema, batches, then the end-of-stream marker (D8). | Append `ff ff ff ff 00 00 00 00`, or let `to_arrow_ipc` emit the full stream. | 27 |
+| Large GET query strings are rejected | Node's HTTP parser limits the request line and headers to 16 KiB (`maxHeaderSize`), so a 1 MiB query string is a 431. | Servers SHOULD accept at least 1 MiB (D13). | Pass `maxHeaderSize` to `http.createServer`, or document the limit. | 1 |
 
-<details><summary>Case ids</summary>
+<details><summary>Baselined violations by case</summary>
 
-- **HTTP errors are plain text**: `post/missing-type`, `post/unknown-type`, `post/type-not-a-string`, `post/malformed-json-body`, `post/sql-unknown-table`, `post/sql-runtime-error`, `post/exec-error`
-- **WebSocket errors lack `code`**: `ws/missing-type`, `ws/unknown-type`, `ws/type-not-a-string`, `ws/sql-unknown-table`, `ws/sql-runtime-error`, `ws/exec-error`, `ws/ws-malformed-json-stays-open`, `ws/ws-sql-error-stays-open`, `ws/ws-pipeline-order`
-- **`sql` is not validated**: `post/missing-sql`, `post/empty-sql`, `ws/missing-sql`, `ws/empty-sql`, `ws/ws-missing-sql-stays-open`
-- **Parse errors are 500**: `post/sql-parse-error`, `ws/sql-parse-error`, `connector/rest-error`
-- **`preagg` is unknown**: `post/preagg-unsupported`, `ws/preagg-unsupported`
-- **GET is broken**: `get/get-arrow`, `get/get-plus-in-sql`, `get/get-cte-allowed`, `get/get-set-operation-allowed`, `get/get-missing-type`, `get/get-json-wrapped-query-rejected`, `get/get-exec-rejected`, `get/get-preagg-rejected`, `get/get-ddl-rejected`, `get/get-delete-returning-rejected`
-- **Empty Arrow result is 0 bytes**: `post/arrow-empty-result`, `ws/arrow-empty-result`
-- **Trailing `;` and multi-statement `arrow`**: `post/arrow-trailing-semicolon`, `ws/arrow-trailing-semicolon`, `post/arrow-multi-statement`, `ws/arrow-multi-statement`
-- **Unsupported method is 400**: `post/method-put`, `post/method-head`
+- **HTTP errors are plain text**
+  - `post/missing-type`: `error.content-type`, `error.not-json`
+  - `post/unknown-type`: `error.content-type`, `error.not-json`
+  - `post/type-not-a-string`: `error.content-type`, `error.not-json`
+  - `post/malformed-json-body`: `error.content-type`, `error.not-json`
+  - `post/sql-unknown-table`: `error.content-type`, `error.not-json`
+  - `post/sql-runtime-error`: `error.content-type`, `error.not-json`
+  - `post/exec-error`: `error.content-type`, `error.not-json`
+- **WebSocket errors lack `code`**
+  - `ws/missing-type`: `error.schema`, `error.code.missing`
+  - `ws/unknown-type`: `error.schema`, `error.code.missing`
+  - `ws/type-not-a-string`: `error.schema`, `error.code.missing`
+  - `ws/sql-unknown-table`: `error.schema`, `error.code.missing`
+  - `ws/sql-runtime-error`: `error.schema`, `error.code.missing`
+  - `ws/exec-error`: `error.schema`, `error.code.missing`
+  - `ws/ws-malformed-json-stays-open`: `s1.error.schema`, `s1.error.code.missing`, `s2.arrow.eos`
+  - `ws/ws-sql-error-stays-open`: `s1.error.schema`, `s1.error.code.missing`, `s2.arrow.eos`
+  - `ws/ws-pipeline-order`: `s1.arrow.eos`, `s2.error.schema`, `s2.error.code.missing`, `s3.arrow.eos`, `s4.error.schema`, `s4.error.code.missing`, `s5.arrow.eos`
+- **`sql` is not validated**
+  - `post/missing-sql`: `error.status.500`, `error.content-type`, `error.not-json`
+  - `post/empty-sql`: `error.status.500`, `error.content-type`, `error.not-json`
+  - `ws/missing-sql`: `error.schema`, `error.code.missing`, `error.message`
+  - `ws/empty-sql`: `error.schema`, `error.code.missing`
+  - `ws/ws-missing-sql-stays-open`: `s1.error.schema`, `s1.error.code.missing`, `s1.error.message`, `s2.arrow.eos`
+- **Parse errors are 500**
+  - `post/sql-parse-error`: `error.status.500`, `error.content-type`, `error.not-json`
+  - `ws/sql-parse-error`: `error.schema`, `error.code.missing`
+  - `connector/rest-error`: `connector.status`
+- **`preagg` is unknown**
+  - `post/preagg-unsupported`: `error.content-type`, `error.not-json`
+  - `ws/preagg-unsupported`: `error.schema`, `error.code.missing`
+- **GET is broken**
+  - `get/get-arrow`: `arrow.status.400`
+  - `get/get-plus-in-sql`: `arrow.status.400`
+  - `get/get-cte-allowed`: `arrow.status.400`
+  - `get/get-set-operation-allowed`: `arrow.status.400`
+  - `get/get-missing-type`: `error.content-type`, `error.not-json`
+  - `get/get-json-wrapped-query-rejected`: `error.content-type`, `error.not-json`
+  - `get/get-exec-rejected`: `s1.error.content-type`, `s1.error.not-json`, `s2.arrow.eos`
+  - `get/get-preagg-rejected`: `error.content-type`, `error.not-json`
+  - `get/get-ddl-rejected`: `s1.error.content-type`, `s1.error.not-json`, `s2.arrow.eos`
+  - `get/get-delete-returning-rejected`: `s2.error.content-type`, `s2.error.not-json`, `s3.arrow.eos`
+  - `get/arrow-multi-statement`: `error.content-type`, `error.not-json`
+- **Empty Arrow result is 0 bytes**
+  - `post/arrow-empty-result`: `arrow.empty`
+  - `ws/arrow-empty-result`: `arrow.empty`
+- **Trailing `;` and multi-statement `arrow`**
+  - `post/arrow-trailing-semicolon`: `arrow.status.500`
+  - `ws/arrow-trailing-semicolon`: `arrow.frame`
+  - `post/arrow-multi-statement`: `error.status.500`, `error.content-type`, `error.not-json`
+  - `ws/arrow-multi-statement`: `error.schema`, `error.code.missing`
+- **Unsupported method is 400**
+  - `post/method-put`: `error.status.400`, `error.content-type`, `error.not-json`, `header.allow`
+  - `post/method-head`: `status.400`, `header.allow`
+- **Arrow stream lacks the end-of-stream marker**
+  - `connector/rest-arrow`: `arrow.eos`
+  - `connector/rest-exec`: `arrow.eos`
+  - `connector/socket-arrow`: `arrow.eos`
+  - `connector/socket-error-then-ok`: `ok.arrow.eos`
+  - `connector/socket-pipeline`: `q1.arrow.eos`, `q2.arrow.eos`, `q3.arrow.eos`, `q4.arrow.eos`, `q5.arrow.eos`
+  - `post/application-fields-pass-through`: `arrow.eos`
+  - `post/arrow-cors-origin`: `arrow.eos`
+  - `post/arrow-from-parquet`: `arrow.eos`
+  - `post/arrow-many-rows`: `arrow.eos`
+  - `post/arrow-scalar-types`: `arrow.eos`
+  - `post/arrow-stream-format`: `arrow.eos`
+  - `post/content-type-not-json`: `alt0.arrow.eos`
+  - `post/content-type-with-charset`: `arrow.eos`
+  - `post/exec-acknowledged`: `s2.arrow.eos`
+  - `post/exec-multi-statement`: `s2.arrow.eos`
+  - `post/large-request-1mib`: `arrow.eos`
+  - `post/protocol-fields-not-shadowed`: `arrow.eos`
+  - `ws/application-fields-pass-through`: `arrow.eos`
+  - `ws/arrow-many-rows`: `arrow.eos`
+  - `ws/arrow-scalar-types`: `arrow.eos`
+  - `ws/arrow-stream-format`: `arrow.eos`
+  - `ws/exec-acknowledged`: `s2.arrow.eos`
+  - `ws/exec-multi-statement`: `s2.arrow.eos`
+  - `ws/large-request-1mib`: `arrow.eos`
+  - `ws/protocol-fields-not-shadowed`: `arrow.eos`
+  - `ws/ws-binary-frame`: `alt0.arrow.eos`
+  - `ws/ws-pipeline-slow-first`: `s1.arrow.eos`, `s2.arrow.eos`
+- **Large GET query strings are rejected**
+  - `get/large-request-1mib`: `arrow.status.431`
 
 </details>
 

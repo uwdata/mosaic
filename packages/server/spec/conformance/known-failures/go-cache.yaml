@@ -1,7 +1,5 @@
 # Known conformance failures for `duckdb-server-go --cache-control='public, max-age=60'`.
-# Only the caching-specific gaps live here; go.yaml lists the flag-independent ones,
-# which apply to this configuration too. Regenerate ../../CONFORMANCE.md with
-# `pnpm -F @uwdata/mosaic-server-spec conformance:docs`.
+# Inherits go.yaml; only cases whose violations differ from the plain Go run are listed.
 server: go-cache
 inherits: go
 failures:
@@ -10,24 +8,29 @@ failures:
     spec: "`bad_request` envelope, no `ETag` (D14, D5)."
     fix: Same mapper as the other HTTP errors.
     cases:
-      - get/cache-if-match
-
+      get/cache-if-match:
+        - s1.error.content-type
+        - s1.error.not-json
+        - s3.error.content-type
+        - s3.error.not-json
   - area: Errors under caching are still plain text
     current: "The GET parse-error path returns 500 plain text; `Cache-Control: no-store` is present."
-    spec: "400 envelope with `no-store` (D7, D14)."
+    spec: 400 envelope with `no-store` (D7, D14).
     fix: Covered by the envelope and parse-error fixes in go.yaml.
     cases:
-      - get/cache-error-no-store
-
+      get/cache-error-no-store:
+        - error.status.500
+        - error.content-type
+        - error.not-json
   - area: "`ETag` is not exposed to browsers"
-    current: "No `Access-Control-Expose-Headers` on preflight (`security.go`)."
+    current: No `Access-Control-Expose-Headers` on the cross-origin GET, so a browser cannot read the `ETag` (`security.go`).
     spec: Expose `ETag` when caching is enabled (D14).
     fix: Add to the `WithCORS` defaults.
     cases:
-      - post/cache-preflight-no-store
-
+      get/cache-get-etag:
+        - s1.header.access-control-expose-headers
   - area: "`Cache-Control: private` with an authorizer"
     current: The operator value is used verbatim even when an authorizer varies the response by identity.
     spec: Identity headers in `Vary`, or `private`/`no-store` (D14).
     fix: Document; optionally append identity headers to `Vary` from `AuthorizeRequest`.
-    cases: []
+    cases: {}

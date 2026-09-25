@@ -3,118 +3,164 @@
 # `pnpm -F @uwdata/mosaic-server-spec conformance:docs`. The go-cache and
 # go-gatekeeper files cover the same binary under other flags.
 server: go
-notes: >-
-  Closest to the target and the intended first `preagg` implementation (#1234).
-  Already conforming: WebSocket error frames carry `code` (`pkg/server/errors.go`);
-  Arrow IPC stream with the end-of-stream marker; GET caching with a strong `ETag`,
-  weak `If-None-Match` → 304, strong `If-Match` → 412, `no-store` elsewhere
-  (`pkg/server/cache.go`); application payload passthrough via `WithAuthorizer`
-  (`pkg/server/authorization.go`); `Vary` auto-includes schema-match headers.
+notes: "Closest to the target and the intended first `preagg` implementation (#1234). Already conforming: WebSocket error frames carry `code` (`pkg/server/errors.go`); Arrow IPC stream with the end-of-stream marker; GET caching with a strong `ETag`, weak `If-None-Match` → 304, strong `If-Match` → 412, `no-store` elsewhere (`pkg/server/cache.go`); application payload passthrough via `WithAuthorizer` (`pkg/server/authorization.go`); `Vary` auto-includes schema-match headers."
 failures:
   - area: HTTP errors are plain text
     current: "`http.Error` writes `text/plain` even though `classifyError` already yields a code (`pkg/server/server.go`)."
     spec: JSON `Error` envelope (D4).
     fix: Reuse `classifyError`; write `{error, code}` with `application/json`.
     cases:
-      - post/missing-type
-      - post/missing-sql
-      - post/empty-sql
-      - post/unknown-type
-      - post/type-not-a-string
-      - post/malformed-json-body
-      - post/sql-unknown-table
-      - post/sql-runtime-error
-      - post/exec-error
-      - get/get-missing-type
-      - get/get-json-wrapped-query-rejected
-      - get/get-preagg-rejected
-
+      post/missing-type:
+        - error.content-type
+        - error.not-json
+      post/missing-sql:
+        - error.content-type
+        - error.not-json
+      post/empty-sql:
+        - error.content-type
+        - error.not-json
+      post/unknown-type:
+        - error.content-type
+        - error.not-json
+      post/type-not-a-string:
+        - error.content-type
+        - error.not-json
+      post/malformed-json-body:
+        - error.content-type
+        - error.not-json
+      post/sql-unknown-table:
+        - error.content-type
+        - error.not-json
+      post/sql-runtime-error:
+        - error.content-type
+        - error.not-json
+      post/exec-error:
+        - error.content-type
+        - error.not-json
+      get/get-missing-type:
+        - error.content-type
+        - error.not-json
+      get/get-json-wrapped-query-rejected:
+        - error.content-type
+        - error.not-json
+      get/get-preagg-rejected:
+        - error.content-type
+        - error.not-json
   - area: Parse errors are 500 without a policy
     current: "`json_serialize_sql` runs only under validation, so a syntax error is an unclassified `internal_error`."
     spec: "`bad_request` regardless of policy (D7)."
     fix: Run statement extraction unconditionally, or map DuckDB parser errors.
     cases:
-      - post/sql-parse-error
-      - ws/sql-parse-error
-      - ws/ws-pipeline-order
-      - connector/rest-error
-
+      post/sql-parse-error:
+        - error.status.500
+        - error.content-type
+        - error.not-json
+      ws/sql-parse-error:
+        - error.code.internal_error
+      ws/ws-pipeline-order:
+        - s4.error.code.internal_error
+      connector/rest-error:
+        - connector.status
   - area: "`preagg` is unknown"
     current: "`invalid 'type' parameter: preagg` as `bad_request`."
     spec: "`unsupported_command` (D6). Go is the intended first `preagg` implementation (#1234)."
     fix: Recognise the command and answer `unsupported_command` until implemented.
     cases:
-      - post/preagg-unsupported
-      - ws/preagg-unsupported
-
+      post/preagg-unsupported:
+        - error.content-type
+        - error.not-json
+      ws/preagg-unsupported:
+        - error.code.bad_request
   - area: Exec and side effects over GET
-    current: "GET runs `exec` and does not check the statement kind, so `CREATE TABLE` and `DELETE ... RETURNING` execute (`server.go`)."
+    current: GET runs `exec` and does not check the statement kind, so `CREATE TABLE` and `DELETE ... RETURNING` execute (`server.go`).
     spec: "`arrow` only (D3); read-only root required (D3a)."
     fix: Reject `exec` in the GET branch; run the `json_serialize_sql` walker for GET unconditionally.
     cases:
-      - get/get-exec-rejected
-      - get/get-ddl-rejected
-      - get/get-delete-returning-rejected
-
+      get/get-exec-rejected:
+        - s1.error.status.200
+        - s1.error.content-type
+        - s1.error.not-json
+        - s2.arrow.rows
+      get/get-ddl-rejected:
+        - s1.error.status.200
+        - s1.error.content-type
+        - s1.error.not-json
+        - s2.arrow.rows
+      get/get-delete-returning-rejected:
+        - s2.error.status.200
+        - s2.error.content-type
+        - s2.error.not-json
+        - s3.arrow.rows
   - area: Multi-statement `arrow`
     current: duckdb-go `prepareStmts` runs every statement and returns the last result.
     spec: "`bad_request` (D16)."
     fix: Count statements before execution.
     cases:
-      - post/arrow-multi-statement
-      - ws/arrow-multi-statement
-
+      post/arrow-multi-statement:
+        - error.status.200
+        - error.content-type
+        - error.not-json
+      ws/arrow-multi-statement:
+        - error.frame
+      get/arrow-multi-statement:
+        - error.status.200
+        - error.content-type
+        - error.not-json
   - area: JSON keys match case-insensitively
     current: "`encoding/json` lets `TYPE: exec` override `type: arrow`; the request ran as `exec` and returned an empty body."
     spec: Protocol fields decoded exactly; application fields must not shadow them (D9).
     fix: Decode protocol fields with a strict decoder or reject case-variant duplicates.
     cases:
-      - post/protocol-fields-not-shadowed
-      - ws/protocol-fields-not-shadowed
-
+      post/protocol-fields-not-shadowed:
+        - arrow.content-type
+        - arrow.empty
+      ws/protocol-fields-not-shadowed:
+        - arrow.frame
   - area: 405 without `Allow`
     current: "`Method not allowed` plain text, no `Allow` header."
     spec: "Envelope plus `Allow: GET, POST, OPTIONS` (D5)."
     fix: Set the header in the fallback branch.
     cases:
-      - post/method-put
-      - post/method-head
-
+      post/method-put:
+        - error.content-type
+        - error.not-json
+        - header.allow
+      post/method-head:
+        - header.allow
   - area: WebSocket malformed JSON closes the socket
     current: "`wsjson.Read` failure closes with 1007 (`server.go`)."
     spec: "`Error` frame, connection stays open (D12)."
     fix: Read the raw frame and unmarshal manually.
     cases:
-      - ws/ws-malformed-json-stays-open
-      - ws/type-not-a-string
-
+      ws/ws-malformed-json-stays-open:
+        - s1.ws.closed.1007
+        - s2.ws.closed.1007
+      ws/type-not-a-string:
+        - ws.closed.1007
   - area: WebSocket read limit
     current: 32 KiB library default; larger frames close with 1009.
-    spec: "Accept at least 1 MiB (D13)."
+    spec: Accept at least 1 MiB (D13).
     fix: Set a default via `WithMaxMessageBytes` and expose a CLI flag.
     cases:
-      - ws/large-request-1mib
-
+      ws/large-request-1mib:
+        - ws.closed.1009
   - area: 401 schema-match is plain text
     current: "`no allowed schemas found in request headers` via `http.Error`."
-    spec: "Envelope with `unauthenticated`."
+    spec: Envelope with `unauthenticated`.
     fix: Same mapper as the other HTTP errors. Needs an authorizer, which the CLI does not expose, so the suite cannot observe it.
-    cases: []
-
+    cases: {}
   - area: WebSocket close code and pings
-    current: "Always `Close(1011)` on loop exit; pings are answered only inside `conn.Read`."
+    current: Always `Close(1011)` on loop exit; pings are answered only inside `conn.Read`.
     spec: 1000 on a clean client close; SHOULD answer pings during execution.
     fix: Distinguish `CloseError`; add a reader goroutine or ping ticker.
-    cases: []
-
+    cases: {}
   - area: Upgrade detection
-    current: "Whole-value `EqualFold` on `Connection` (`server.go`)."
+    current: Whole-value `EqualFold` on `Connection` (`server.go`).
     spec: Token-based matching.
     fix: Scan `Connection` tokens.
-    cases: []
-
+    cases: {}
   - area: Timeouts
     current: None.
     spec: "`deadline_exceeded`; also needed by #1234."
     fix: Per-command deadline.
-    cases: []
+    cases: {}

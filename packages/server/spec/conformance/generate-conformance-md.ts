@@ -36,7 +36,7 @@ function renderServer(name: string): string {
   const known = loadKnownFailures(name, caseIds);
   const lines: string[] = [headings[name], '', `Configuration: ${config.description}.`];
   if (known.inherits) {
-    const inheritedCount = known.inherited.reduce((n, f) => n + f.cases.length, 0);
+    const inheritedCount = known.inherited.reduce((n, f) => n + Object.keys(f.cases).length, 0);
     lines.push(
       `Everything in the ${headings[known.inherits].replace(/^#+ /, '')} table applies here too` +
       ` (${inheritedCount} inherited case${inheritedCount === 1 ? '' : 's'}` +
@@ -52,11 +52,14 @@ function renderServer(name: string): string {
   }
   lines.push('| Area | Current | Spec | Fix | Cases |', '|------|---------|------|-----|-------|');
   for (const failure of known.own) lines.push(renderRow(failure));
-  const withCases = known.own.filter(f => f.cases.length);
+  const withCases = known.own.filter(f => Object.keys(f.cases).length);
   if (withCases.length) {
-    lines.push('', '<details><summary>Case ids</summary>', '');
+    lines.push('', '<details><summary>Baselined violations by case</summary>', '');
     for (const failure of withCases) {
-      lines.push(`- **${cell(failure.area)}**: ${failure.cases.map(id => `\`${id}\``).join(', ')}`);
+      lines.push(`- **${cell(failure.area)}**`);
+      for (const [id, violations] of Object.entries(failure.cases)) {
+        lines.push(`  - \`${id}\`: ${violations.map(x => `\`${x}\``).join(', ')}`);
+      }
     }
     lines.push('', '</details>');
   }
@@ -65,7 +68,7 @@ function renderServer(name: string): string {
 }
 
 function renderRow(failure: KnownFailure) {
-  const count = failure.cases.length;
+  const count = Object.keys(failure.cases).length;
   const cases = count === 0 ? 'not observable' : `${count}`;
   const ref = failure.ref ? ` (\`${failure.ref}\`)` : '';
   return `| ${cell(failure.area)} | ${cell(failure.current)}${ref} | ${cell(failure.spec)} | ${cell(failure.fix)} | ${cases} |`;

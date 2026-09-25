@@ -1,0 +1,11 @@
+# Deployment policy. The `policy` capability means the server was started with
+# a validation policy that denies local file access.
+
+- id: policy-denied-file
+  title: A statement the deployment policy forbids is rejected with `forbidden` and never executed
+  decisions: [D7, D4]
+  transports: [post, get, ws]
+  requires: [policy]
+  request: { type: arrow, sql: "SELECT count(*)::INTEGER AS n FROM read_parquet('$DATA/penguins.parquet')" }
+  expect:
+    error: { code: forbidden }

@@ -26,10 +26,11 @@ CONFORMANCE_SERVER=go pnpm -F @uwdata/mosaic-server-spec conformance
 must be installed; the server is built on first launch. Set `CONFORMANCE_URL`
 to test a server you started yourself.
 
-Runs are judged against `conformance/known-failures/<config>.yaml`: a run is
-green when exactly the listed cases fail. Fixing a case therefore requires
-removing it from that file, and `CONFORMANCE.md` is regenerated from those
-files:
+Runs are judged against `conformance/known-failures/<config>.yaml`, which
+lists per case the violation ids the server produces today (for example
+`error.status.500`, `arrow.eos`). A run is green when exactly those are
+observed; anything new is a regression and anything that disappears must be
+removed from the file. `CONFORMANCE.md` is regenerated from those files:
 
 ```sh
 pnpm -F @uwdata/mosaic-server-spec conformance:docs

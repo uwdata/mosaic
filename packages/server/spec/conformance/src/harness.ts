@@ -2,20 +2,22 @@ import { inject, it } from 'vitest';
 import { serverConfig, type ServerConfig } from '../servers/index.ts';
 import { loadCases } from './cases.ts';
 import { connectorCaseIds } from './connector-cases.ts';
-import { knownFailureIndex, loadKnownFailures, type KnownFailure } from './known.ts';
-import type { Capability } from './types.ts';
+import { areasFor, expectedViolations, loadKnownFailures, type KnownFailures } from './known.ts';
+import type { Capability, Violation } from './types.ts';
 
 export const annotationTypes = {
   known: 'known-failure',
-  actual: 'actual',
-  unexpectedPass: 'unexpected-pass'
+  observed: 'observed',
+  regression: 'regression',
+  resolved: 'resolved'
 } as const;
 
 export interface Harness {
   config: ServerConfig;
   url: () => string;
   wsUrl: () => string;
-  known: Map<string, KnownFailure>;
+  known: KnownFailures;
+  expected: Map<string, Set<string>>;
 }
 
 export function allCaseIds(): Set<string> {
@@ -24,9 +26,9 @@ export function allCaseIds(): Set<string> {
 
 export function createHarness(): Harness {
   const config = serverConfig(process.env.CONFORMANCE_SERVER);
-  const known = knownFailureIndex(loadKnownFailures(config.name, allCaseIds()));
+  const known = loadKnownFailures(config.name, allCaseIds());
   const url = () => inject('conformanceUrl');
-  return { config, url, wsUrl: () => url().replace(/^http/, 'ws'), known };
+  return { config, url, wsUrl: () => url().replace(/^http/, 'ws'), known, expected: expectedViolations(known) };
 }
 
 export function skipReason(config: ServerConfig, requires: Capability[] = [], unless: Capability[] = []) {
@@ -37,36 +39,47 @@ export function skipReason(config: ServerConfig, requires: Capability[] = [], un
   return undefined;
 }
 
+// `run` returns the violations it observed; anything it throws is a
+// transport or harness failure and fails the test regardless of the baseline.
 export function conformanceTest(
   harness: Harness,
   id: string,
   skip: string | undefined,
-  run: () => Promise<void>
+  run: () => Promise<Violation[]>
 ) {
   if (skip) {
     it.skip(id);
     return;
   }
-  const known = harness.known.get(id);
+  const expected = harness.expected.get(id) ?? new Set<string>();
   it(id, async ({ annotate }) => {
-    let error: Error | undefined;
-    try {
-      await run();
-    } catch (err) {
-      error = err as Error;
+    const observed = await run();
+    const observedIds = new Set(observed.map(x => x.id));
+    const regressions = observed.filter(x => !expected.has(x.id));
+    const resolved = [...expected].filter(x => !observedIds.has(x));
+    const known = observed.filter(x => expected.has(x.id));
+
+    if (known.length) {
+      await annotate(areasFor(harness.known, id).join('; '), annotationTypes.known);
+      await annotate(known.map(describe).join('\n'), annotationTypes.observed);
     }
-    if (known) {
-      if (error) {
-        await annotate(known.area, annotationTypes.known);
-        await annotate(error.message, annotationTypes.actual);
-        return;
-      }
-      await annotate(known.area, annotationTypes.unexpectedPass);
-      throw new Error(
-        `${id} now passes. Remove it from conformance/known-failures/${harness.config.name}.yaml ` +
-        `under "${known.area}" and run \`pnpm -F @uwdata/mosaic-server-spec conformance:docs\`.`
+    const problems: string[] = [];
+    if (regressions.length) {
+      await annotate(regressions.map(describe).join('\n'), annotationTypes.regression);
+      problems.push(`unexpected violations:\n${regressions.map(x => `  ${describe(x)}`).join('\n')}`);
+    }
+    if (resolved.length) {
+      await annotate(resolved.join(', '), annotationTypes.resolved);
+      problems.push(
+        `no longer observed: ${resolved.join(', ')}. Remove them from ` +
+        `conformance/known-failures/${harness.config.name}.yaml for ${id} and run ` +
+        '`pnpm -F @uwdata/mosaic-server-spec conformance:docs`.'
       );
     }
-    if (error) throw error;
+    if (problems.length) throw new Error(problems.join('\n'));
   });
+}
+
+export function describe(violation: Violation) {
+  return `${violation.id}: ${violation.detail}`;
 }

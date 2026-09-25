@@ -40,8 +40,9 @@
     arrow: { columns: [n], rows: [[342]] }
 
 - id: large-request-1mib
-  title: A 1 MiB command is accepted
+  title: A command whose encoded body, query string, or frame is exactly 1 MiB is accepted
   decisions: [D13]
+  transports: [post, get, ws]
   request: { type: arrow, sql: "SELECT 1 AS x /* $PAD(1048576) */" }
   expect:
     arrow: { columns: [x], rows: [[1]] }

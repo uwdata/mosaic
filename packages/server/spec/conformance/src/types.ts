@@ -1,6 +1,6 @@
 export type Transport = 'post' | 'get' | 'ws';
 
-export type Capability = 'exec' | 'preagg' | 'caching' | 'files';
+export type Capability = 'exec' | 'preagg' | 'caching' | 'files' | 'policy';
 
 export type ErrorCode =
   | 'bad_request'
@@ -23,7 +23,19 @@ export const canonicalStatus: Record<ErrorCode, number> = {
   internal_error: 500
 };
 
-export type Matcher = string | { pattern: string } | { present: true } | { absent: true };
+export type Matcher =
+  | string
+  | { pattern: string }
+  | { present: true }
+  | { absent: true }
+  | { anyOf: string[] }
+  | { not: string }
+  | { tokens: string[] };
+
+export interface Violation {
+  id: string;
+  detail: string;
+}
 
 export interface ArrowExpectation {
   columns?: string[];
@@ -104,4 +116,9 @@ export interface WsResponse {
   closeReason?: string;
 }
 
-export type Response = HttpResponse | WsResponse;
+export interface HttpFailure {
+  kind: 'http-failed';
+  error: string;
+}
+
+export type Response = HttpResponse | WsResponse | HttpFailure;
