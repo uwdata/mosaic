@@ -2,7 +2,7 @@ meta:
   title: Time-Based Moving Average
   description: >
     Moving averages of Apple stock prices, using `range` window frames that
-    span 15 days and 3 months around each date.
+    span 15 days (black) and 3 months (red) around each date.
 data:
   aapl: { file: data/stocks.parquet, where: Symbol = 'AAPL' }
 plot:
