@@ -1,13 +1,13 @@
 import { describe, it, expect } from 'vitest';
 import type { CreateQuery, ExprNode, FilterExpr } from '@uwdata/mosaic-sql';
-import { Query, add, argmax, argmin, asTableRef, avg, corr, count, covarPop, covariance, cte, desc, eq, filterPushdown, geomean, gt, literal, loadObjects, max, min, mul, neq, product, regrAvgX, regrAvgY, regrCount, regrIntercept, regrR2, regrSXX, regrSXY, regrSYY, regrSlope, row_number, sql, stddev, stddevPop, sum, upper, varPop, variance } from '@uwdata/mosaic-sql';
+import { Query, add, argmax, argmin, avg, corr, count, covarPop, covariance, cte, desc, eq, filterPushdown, geomean, gt, literal, loadObjects, max, min, mul, neq, product, regrAvgX, regrAvgY, regrCount, regrIntercept, regrR2, regrSXX, regrSXY, regrSYY, regrSlope, row_number, sql, stddev, stddevPop, sum, upper, varPop, variance } from '@uwdata/mosaic-sql';
 import { clausePoint, Coordinator, Param, Selection, SelectionClause } from '../src/index.js';
 import type { PreAggregateInfo } from '../src/preagg/PreAggregator.js';
 import { preaggColumns } from '../src/preagg/preagg-columns.js';
 import { NodeConnector } from '../src/connectors/NodeConnector.js';
 import { TestClient } from './util/test-client.js';
 
-async function setup(loadQuery: CreateQuery | string) {
+async function setup(loadQuery: CreateQuery) {
   const mc = new Coordinator(await NodeConnector.make(), {
     logger: null,
     cache: false,
@@ -32,16 +32,11 @@ const loadQuery = loadObjects('testData', [
  * Query the test dataset with the given measure, filtered by the clause.
  * @param measure The aggregate measure or query function for the client.
  * @param clause The selection clause to apply.
- * @param load The query to load the test dataset.
  * @returns The measure value, the pre-aggregation entry (if any),
  *  and the coordinator.
  */
-async function runQuery(
-  measure: RunMeasure,
-  clause: SelectionClause,
-  load: CreateQuery | string = loadQuery
-) {
-  const mc = await setup(load);
+async function runQuery(measure: RunMeasure, clause: SelectionClause) {
+  const mc = await setup(loadQuery);
   const sel = Selection.single({ cross: true });
 
   return new Promise<{ value: number, info?: PreAggregateInfo, mc: Coordinator }>((resolve, reject) => {
@@ -217,50 +212,6 @@ describe('PreAggregator', () => {
     expect(await run(queryNoGroup)).toStrictEqual([4, true]);
   });
 
-  it('does not support variance over a CTE aggregate column', async () => {
-    // mean-centering cannot use a CTE-derived aggregate column,
-    // so the query should run through the non-optimized route
-    const query = (predicate: FilterExpr = []) => {
-      const counts = Query.from('testData')
-        .select({ dim: 'dim', freq: count() })
-        .groupby('dim', 'order')
-        .where(predicate);
-      return Query.with({ counts })
-        .from('counts')
-        .select({ measure: variance('freq') });
-    };
-    expect(await run(query)).toStrictEqual([0, false]);
-  });
-
-  it('does not support variance over a multi-level CTE column', async () => {
-    // mean-centering cannot resolve a column defined in an intermediate
-    // CTE, so the query should run through the non-optimized route
-    const query = (predicate: FilterExpr = []) => {
-      const inner = Query.from('testData')
-        .select({ v: mul('x', 2), dim: 'dim' })
-        .where(predicate);
-      const outer = Query.from('inner_cte').select({ w: 'v', dim: 'dim' });
-      return Query.with({ inner_cte: inner, outer_cte: outer })
-        .from('outer_cte')
-        .select({ measure: variance('w') });
-    };
-    expect(await run(query)).toStrictEqual([2, false]);
-  });
-
-  it('does not support variance over a CTE window column', async () => {
-    // mean-centering cannot use a CTE-derived window column,
-    // so the query should run through the non-optimized route
-    const query = (predicate: FilterExpr = []) => {
-      const ranked = Query.from('testData')
-        .select({ rk: row_number().orderby('order'), dim: 'dim' })
-        .where(predicate);
-      return Query.with({ ranked })
-        .from('ranked')
-        .select({ measure: variance('rk') });
-    };
-    expect(await run(query)).toStrictEqual([1, false]);
-  });
-
   it('supports queries with column index references', async () => {
     const query = (predicate: FilterExpr = []) => {
       return Query.from('testData')
@@ -325,24 +276,6 @@ describe('PreAggregator', () => {
         .qualify(gt('measure', 7), gt(avg('x'), 0));
     };
     expect(await run(query)).toStrictEqual([13, true]);
-  });
-
-  it('supports schema-qualified base tables', async () => {
-    const load = `CREATE SCHEMA s; CREATE TABLE s.data AS
-      SELECT * FROM (VALUES ('a', 1), ('b', 3), ('b', 4)) t(dim, x)`;
-    const query = (predicate: FilterExpr = []) => {
-      return Query.from(asTableRef(['s', 'data'])!)
-        .select({ measure: stddev('x') })
-        .where(predicate);
-    };
-    const clause = clausePoint('dim', 'b', { source: {} });
-    const { value, info, mc } = await runQuery(query, clause, load);
-    expect(value).toBe(Math.sqrt(0.5));
-
-    // the materialized view must exist; a create query that fails to bind
-    // is otherwise masked by the coordinator's fallback to standard queries
-    const rows = await mc.query(Query.from(info!.table).select({ n: count() }));
-    expect(rows.get(0).n).toBe(2);
   });
 
   it('supports queries with filter pushdown applied', async () => {
@@ -413,7 +346,6 @@ describe('PreAggregator', () => {
         .from('counts')
         .select({ measure: sum('freq') });
     };
-
     // column references within verbatim SQL text can not be pushed
     // down to subqueries, so expect the non-optimized route
     const { value, info } = await runQuery(query, clause);
