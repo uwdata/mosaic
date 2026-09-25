@@ -18,7 +18,7 @@ export { LogicalOpNode, AndNode, OrNode } from './logical-op.js';
 export { SQLNode, ExprNode, isNode, getDefaultVisitor, setDefaultVisitor } from './node.js';
 export { OrderByNode } from './order-by.js';
 export { ParamNode } from './param.js';
-export { CreateQuery, type CreateTableOptions, CreateSchemaQuery, type CreateSchemaOptions, DescribeQuery, PivotQuery, type PivotSource, Query, SelectQuery, SetOperation, isCreateQuery, isCreateSchemaQuery, isDescribeQuery, isPivotQuery, isQuery, isSelectQuery } from './query.js';
+export { CreateQuery, type CreateTableOptions, CreateSchemaQuery, type CreateSchemaOptions, DescribeQuery, PivotQuery, type PivotSource, Query, SelectQuery, SetOperation, isCreateQuery, isCreateSchemaQuery, isDescribeQuery, isPivotQuery, isQuery, isSelectQuery, isSetOperation } from './query.js';
 export { SampleClauseNode } from './sample.js';
 export { ScalarSubqueryNode } from './subquery.js';
 export { SelectClauseNode } from './select.js';

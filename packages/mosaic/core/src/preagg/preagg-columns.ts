@@ -1,7 +1,8 @@
-import { asNode, collectAggregates, FromClauseNode, isAggregateExpression, isColumnRef, isSelectQuery, isTableRef, rewrite, sql } from '@uwdata/mosaic-sql';
-import type { AggregateNode, ColumnRefNode, ExprNode, Query, SelectQuery } from '@uwdata/mosaic-sql';
+import { asNode, collectAggregates, isAggregateExpression, isColumnRef, isSelectQuery, rewrite, sql } from '@uwdata/mosaic-sql';
+import type { AggregateNode, ColumnRefNode, ExprNode, TableRefNode } from '@uwdata/mosaic-sql';
 import type { MosaicClient } from '../MosaicClient.js';
 import { resolvePositional } from '../util/positional.js';
+import { baseExpression, baseTable } from './lineage.js';
 import { sufficientStatistics } from './sufficient-statistics.js';
 
 // result of determining columns for preaggregation optimization
@@ -18,6 +19,8 @@ export interface PreAggColumnsResult {
   having: ExprNode[];
   // QUALIFY clause expressions, potentially rewritten for preaggregation
   qualify: ExprNode[];
+  // The base table of the client query
+  source: TableRefNode;
 }
 
 /**
@@ -34,20 +37,17 @@ export function preaggColumns(client: MosaicClient): PreAggColumnsResult | null 
   // bail if query is not analyzable
   if (!isSelectQuery(q)) return null;
 
-  // bail if no base table
-  const from = getBase(q, q => {
-    const node = q._from[0];
-    const ref = node instanceof FromClauseNode && node.expr;
-    return isTableRef(ref) ? ref.name : ref;
-  });
-  if (typeof from !== 'string') return null;
+  // bail if no single base table
+  const source = baseTable(q);
+  if (!source) return null;
 
   // generate a scalar subquery for a global average
   // this may be used to mean-center data in preaggregate calculations
+  // throws if unresolvable, which bails from preaggregation below
   const avg = (ref: ColumnRefNode) => {
-    const name = ref.column;
-    const expr = getBase(q, q => q._select.find(c => c.alias === name)?.expr);
-    return sql`(SELECT avg(${expr ?? ref}) FROM "${from}")`;
+    const expr = baseExpression(q, ref);
+    if (!expr) throw new Error('unresolvable base expression');
+    return sql`(SELECT avg(${expr}) FROM ${source})`;
   };
 
   const aggrs = new Map<AggregateNode, ExprNode>();
@@ -106,7 +106,8 @@ export function preaggColumns(client: MosaicClient): PreAggColumnsResult | null 
       preagg,
       output,
       having,
-      qualify
+      qualify,
+      source
     };
   } catch {
     // bail if unsupported aggregate was encountered
@@ -146,36 +147,4 @@ function analyzeExpression(
     // rewrite original expression to use preaggregates
     return rewrite(expr!, aggrs)!;
   }
-}
-
-/**
- * Identify a shared base (source) query and extract a value from it.
- * This method is used to find a shared base table name or extract
- * the original column name within a base table.
- * @param query The input query.
- * @param get A getter function to extract
- *  a value from a base query.
- * @returns the base query value, or
- *  `undefined` if there is no source table, or `NaN` if the
- *  query operates over multiple source tables.
- */
-function getBase<T>(
-  query: Query,
-  get: (q: SelectQuery) => T
-): T | number | undefined {
-  const subq = query.subqueries;
-
-  // select query
-  if (isSelectQuery(query) && subq.length === 0) {
-    return get(query);
-  }
-
-  // handle set operations / subqueries
-  const base = getBase(subq[0], get);
-  for (let i = 1; i < subq.length; ++i) {
-    const value = getBase(subq[i], get);
-    if (value === undefined) continue;
-    if (value !== base) return NaN;
-  }
-  return base;
 }

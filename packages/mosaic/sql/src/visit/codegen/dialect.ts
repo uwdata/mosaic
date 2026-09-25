@@ -388,7 +388,7 @@ export abstract class SQLDialectCodeGenerator extends SQLCodeGenerator {
           const m = value.getUTCMonth();
           const d = value.getUTCDate();
           return ts === Date.UTC(y, m, d)
-            ? `DATE '${y}-${m+1}-${d}'`
+            ? `DATE '${y}-${padZero(m+1)}-${padZero(d)}'`
             : this.dateTimeToSQL(ts);
         } else if (value instanceof RegExp) {
           return `'${value.source}'`;
@@ -399,6 +399,10 @@ export abstract class SQLDialectCodeGenerator extends SQLCodeGenerator {
   }
 
   protected abstract dateTimeToSQL(timestamp: number): string;
+}
+
+function padZero(value: unknown, len = 2) {
+  return `${value}`.padStart(len, '0');
 }
 
 function isColumnRefFor(expr: unknown, name: string): expr is ColumnRefNode {

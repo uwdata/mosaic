@@ -40,6 +40,6 @@ describe('ClickHouse datetime overrides', () => {
 
   it('delegates whole-day Date literals to the base visitor', () => {
     const d = new Date(Date.UTC(2024, 0, 2));
-    expect(literal(d).toString(gen)).toBe(`DATE '2024-1-2'`);
+    expect(literal(d).toString(gen)).toBe(`DATE '2024-01-02'`);
   });
 });

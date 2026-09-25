@@ -21,10 +21,10 @@ let _id = -1;
  * @param {{ [name: string]: 'left' | 'right' | 'center' }} [options.align]
  *  An object that maps column names to horizontal text alignment values. If
  *  unspecified, alignment is determined based on the column data type.
- * @param {{ [name: string]: (value: any) => string }} [options.format] An
+ * @param {{ [name: string]: (value: any) => string | HTMLElement }} [options.format] An
  *  object that maps column names to format functions to use for that
  *  column's data. Each format function takes a value as input and generates
- *  formatted text to show in the table.
+ *  formatted text or an HTML element to show in the table.
  * @param {string} [options.from] The name of a database table to use as a data
  *  source for this widget. Used in conjunction with the *columns* option.
  * @param {string[]} [options.columns] The name of database columns to include
@@ -59,10 +59,10 @@ export class Table extends Input {
    * @param {{ [name: string]: 'left' | 'right' | 'center' }} [options.align]
    *  An object that maps column names to horizontal text alignment values. If
    *  unspecified, alignment is determined based on the column data type.
-   * @param {{ [name: string]: (value: any) => string }} [options.format] An
+   * @param {{ [name: string]: (value: any) => string | HTMLElement }} [options.format] An
    *  object that maps column names to format functions to use for that
    *  column's data. Each format function takes a value as input and generates
-   *  formatted text to show in the table.
+   *  formatted text or an HTML element to show in the table.
    * @param {string} [options.from] The name of a database table to use as a data
    *  source for this widget. Used in conjunction with the *columns* option.
    * @param {string[]} [options.columns] The name of database columns to include
@@ -260,7 +260,13 @@ export class Table extends Input {
       for (let j = 0; j < nf; ++j) {
         const value = cols[j][i];
         const td = document.createElement('td');
-        td.innerText = value == null ? '' : formats[j](value);
+        const formatted = value == null ? '' : formats[j](value);
+        if (formatted instanceof HTMLElement || formatted instanceof SVGElement) {
+          td.appendChild(formatted);
+        } else {
+          td.innerText = formatted;
+        }
+        
         tr.appendChild(td);
       }
       body.appendChild(tr);

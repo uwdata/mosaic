@@ -332,9 +332,6 @@ importers:
       '@duckdb/node-api':
         specifier: ~1.5.4-r.1
         version: 1.5.4-r.1
-      '@uwdata/mosaic-sql':
-        specifier: workspace:^
-        version: link:../../mosaic/sql
       ws:
         specifier: ^8.21.0
         version: 8.21.3
