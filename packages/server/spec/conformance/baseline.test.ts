@@ -133,6 +133,55 @@ failures:
   });
 });
 
+describe('cases split across areas', () => {
+  const split = `server: node
+failures:
+  - area: Format
+    current: a
+    spec: b
+    fix: c
+    cases:
+      ws/arrow-stream-format:
+        - arrow.eos
+      ws/only-format:
+        - arrow.eos
+  - area: Rows
+    current: a
+    spec: b
+    fix: c
+    cases:
+      ws/arrow-stream-format:
+        - arrow.rows
+`;
+  const refresh = (...items: Array<[string, string, string[]?]>) => refreshBaseline(split, observedFrom(rows(...items), 'node'), undefined);
+
+  it('leaves an unchanged split case alone instead of copying every id into each area', () => {
+    const { text, changes, unowned } = refresh(['ws/arrow-stream-format', 'known', ['arrow.rows', 'arrow.eos']]);
+    expect(changes).toEqual([]);
+    expect(text).toBe(split);
+    expect(unowned.size).toBe(0);
+  });
+
+  it('drops only the area whose ids resolved', () => {
+    const { text, changes } = refresh(['ws/arrow-stream-format', 'known', ['arrow.rows']]);
+    expect(changes).toEqual(['removed ws/arrow-stream-format (Format): arrow.eos no longer observed']);
+    expect(text).toContain('      ws/only-format:\n        - arrow.eos\n  - area: Rows');
+    expect(text).toContain('      ws/arrow-stream-format:\n        - arrow.rows\n');
+    expect(text.match(/ws\/arrow-stream-format/g)).toHaveLength(1);
+  });
+
+  it('reports a new id on a split case for placement rather than guessing an area', () => {
+    const { text, changes, unowned, unfiled } = refresh(['ws/arrow-stream-format', 'regression', ['arrow.rows', 'arrow.eos', 'arrow.content-type']]);
+    expect(changes).toEqual([]);
+    expect(text).toBe(split);
+    expect([...unowned.entries()]).toEqual([['ws/arrow-stream-format', ['arrow.content-type']]]);
+    expect(unfiled.size).toBe(0);
+    const single = refresh(['ws/only-format', 'regression', ['arrow.eos', 'arrow.rows']]);
+    expect(single.changes).toEqual(['updated ws/only-format: arrow.eos -> arrow.eos, arrow.rows']);
+    expect(single.unowned.size).toBe(0);
+  });
+});
+
 describe('connector rejection status', () => {
   it('prefers the structured status and falls back to the base connector message only', () => {
     expect(rejectionStatus(Object.assign(new Error('syntax error at SELEC'), { status: 400, code: 'bad_request' }))).toBe(400);

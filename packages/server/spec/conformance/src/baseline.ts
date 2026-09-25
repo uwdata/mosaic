@@ -1,4 +1,4 @@
-import { isMap, isSeq, parseDocument, YAMLSeq } from 'yaml';
+import { isMap, isSeq, parseDocument, type YAMLMap, YAMLSeq } from 'yaml';
 
 export interface ResultRow {
   id: string;
@@ -11,6 +11,7 @@ export interface Refresh {
   text: string;
   changes: string[];
   unfiled: Map<string, string[]>;
+  unowned: Map<string, string[]>;
   unverified: string[];
 }
 
@@ -38,13 +39,23 @@ export function inheritedFrom(rows: ResultRow[], label: string): Map<string, str
   return observed;
 }
 
+interface Occurrence {
+  area: string;
+  cases: YAMLMap;
+  key: unknown;
+  listed: string[];
+}
+
 // Rewrites the violation ids of cases already listed in a known-failures
 // document from a run's results, removes cases that now pass or match the
 // inherited baseline, and refreshes `passes`. Cases that fail but are not
 // filed under any area are returned for a human to place. Only what a run
 // observed is changed: a filtered run leaves the other cases' entries and
 // exemptions alone, and a case the inherited run did not observe is
-// reported as unverified rather than judged against an empty list.
+// reported as unverified rather than judged against an empty list. A case
+// listed under several areas is updated as a whole: each area keeps the ids
+// it owned that are still observed, and ids no area owns are reported
+// rather than copied into every area.
 export function refreshBaseline(
   source: string,
   observed: Map<string, string[]>,
@@ -55,44 +66,67 @@ export function refreshBaseline(
   if (inherits && !base) throw new Error(`the file inherits ${inherits} but no ${inherits} results were given`);
   const changes: string[] = [];
   const filed = new Set<string>();
+  const unowned = new Map<string, string[]>();
 
   const failures = doc.get('failures');
   if (!isSeq(failures)) throw new Error('failures must be a list');
+  const occurrences = new Map<string, Occurrence[]>();
   for (const failure of failures.items) {
     if (!isMap(failure)) continue;
     const cases = failure.get('cases');
     if (!isMap(cases)) continue;
-    for (const pair of [...cases.items]) {
+    for (const pair of cases.items) {
       const id = String((pair.key as { value: unknown }).value ?? pair.key);
-      const current = observed.get(id);
-      if (current === undefined || (base && !base.has(id))) continue;
-      filed.add(id);
       const listed = isSeq(pair.value) ? pair.value.items.map(v => String((v as { value: unknown }).value)) : [];
-      if (current.length === 0 || (base && same(current, base.get(id)!))) {
-        cases.delete(pair.key);
-        changes.push(`removed ${id} (${current.length === 0 ? 'passes' : `same as ${inherits}`})`);
-        continue;
-      }
-      // Keep `a|b` alternatives whose member was observed; everything else
-      // is replaced by what the run saw.
-      const remaining = new Set(current);
+      const list = occurrences.get(id) ?? [];
+      list.push({ area: String(failure.get('area')), cases, key: pair.key, listed });
+      occurrences.set(id, list);
+    }
+  }
+
+  for (const [id, list] of occurrences) {
+    const current = observed.get(id);
+    if (current === undefined || (base && !base.has(id))) continue;
+    filed.add(id);
+    if (current.length === 0 || (base && same(current, base.get(id)!))) {
+      for (const o of list) o.cases.delete(o.key);
+      changes.push(`removed ${id} (${current.length === 0 ? 'passes' : `same as ${inherits}`})`);
+      continue;
+    }
+    // Each area keeps the entries it listed that the run still observed,
+    // including an `a|b` alternative with exactly one member seen. Ids no
+    // area listed go to the only area when there is one, else are reported.
+    const remaining = new Set(current);
+    const kept = list.map(o => {
       const next: string[] = [];
-      for (const entry of listed) {
+      for (const entry of o.listed) {
         const members = entry.split('|');
         const hit = members.filter(m => remaining.has(m));
-        if (members.length > 1 && hit.length === 1) {
+        if (hit.length === 1) {
           next.push(entry);
           remaining.delete(hit[0]);
         }
       }
-      next.push(...remaining);
-      if (!same(listed, next)) {
-        const seq = new YAMLSeq();
-        for (const v of next) seq.add(doc.createNode(v));
-        cases.set(pair.key, seq);
-        changes.push(`updated ${id}: ${listed.join(', ')} -> ${next.join(', ')}`);
-      }
+      return next;
+    });
+    if (remaining.size) {
+      if (list.length === 1) kept[0].push(...remaining);
+      else unowned.set(id, [...remaining]);
     }
+    list.forEach((o, i) => {
+      const next = kept[i];
+      if (same(o.listed, next)) return;
+      const where = list.length > 1 ? ` (${o.area})` : '';
+      if (next.length === 0) {
+        o.cases.delete(o.key);
+        changes.push(`removed ${id}${where}: ${o.listed.join(', ')} no longer observed`);
+        return;
+      }
+      const seq = new YAMLSeq();
+      for (const v of next) seq.add(doc.createNode(v));
+      o.cases.set(o.key, seq);
+      changes.push(`updated ${id}${where}: ${o.listed.join(', ')} -> ${next.join(', ')}`);
+    });
   }
 
   const unverified = base ? [...observed.keys()].filter(id => !base.has(id)).sort() : [];
@@ -122,5 +156,5 @@ export function refreshBaseline(
     unfiled.set(id, ids);
   }
 
-  return { text: doc.toString({ lineWidth: 0 }), changes, unfiled, unverified };
+  return { text: doc.toString({ lineWidth: 0 }), changes, unfiled, unowned, unverified };
 }

@@ -2,6 +2,7 @@ import { encodeCommand, expandRequest, substitute } from './cases.ts';
 import type { Step, WsResponse } from './types.ts';
 
 const stepTimeout = Number(process.env.CONFORMANCE_STEP_TIMEOUT ?? 15_000);
+const settleTimeout = Number(process.env.CONFORMANCE_SETTLE_TIMEOUT ?? 250);
 const openTimeout = 10_000;
 
 type Waiter = (response: WsResponse) => void;
@@ -73,6 +74,14 @@ export class WsClient {
       };
       this.waiters.push(waiter);
     });
+  }
+
+  // D11 allows exactly one reply per command, so once every expected reply
+  // has been read the socket is watched a little longer: anything still
+  // arriving is a reply the positional client would hand to the wrong
+  // command. Frames already buffered count too.
+  surplus(waitMs = settleTimeout): Promise<WsResponse[]> {
+    return new Promise(resolve => setTimeout(() => resolve(this.inbox.splice(0)), waitMs));
   }
 
   close() {
