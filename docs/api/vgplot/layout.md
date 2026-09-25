@@ -28,6 +28,18 @@ Places elements in a column.
 Horizontally concatenate a collection of Web elements.
 Places elements in a row.
 
+## zconcat
+
+`zconcat(...elements)`
+
+Layer a collection of Web elements on top of one another, in the same space.
+Elements are drawn in order, so later elements appear over earlier ones.
+The layout is as large as its largest element, and smaller elements are aligned to its top-left corner.
+
+Plots have a transparent background, so the elements below show through.
+To overlay plots that share a coordinate system, give them the same size and margins, and turn off the axes of the upper plots (for example with the `axis` attribute).
+Note that only the topmost element receives pointer events, so interactors and tooltips on lower elements will not respond.
+
 ## vspace
 
 `vspace(size)`
@@ -61,6 +73,13 @@ Vertically concatenate elements in a column (same helpers as in JavaScript).
 `vg.hconcat(...elements)`
 
 Horizontally concatenate elements in a row.
+
+## zconcat
+
+`vg.zconcat(...elements)`
+
+Layer elements on top of one another, in order: later elements are drawn over earlier ones.
+See the JavaScript `zconcat` documentation for details.
 
 ## vspace
 

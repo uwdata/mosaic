@@ -17,3 +17,22 @@ export function vconcat(...plots) {
 export function hconcat(...plots) {
   return concat({ direction: 'horizontal' }, plots.flat());
 }
+
+/**
+ * Layer elements on top of one another, in order: later elements are drawn
+ * over earlier ones. All elements share a single grid cell, so the container
+ * is as large as its largest child and smaller children align to its top-left
+ * corner.
+ */
+export function zconcat(...plots) {
+  const div = document.createElement('div');
+  div.style.display = 'grid';
+  div.style.justifyItems = 'start';
+  div.style.alignItems = 'start';
+  plots.flat().forEach(child => {
+    child.style.gridArea = '1 / 1';
+    div.appendChild(child);
+  });
+  Object.assign(div, { value: { element: div } });
+  return div;
+}

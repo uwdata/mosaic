@@ -116,6 +116,10 @@ function emitComponent(node, ctx, topKwargs = []) {
     const body = node.hconcat.map(n => indentLine(emitComponent(n, ctx), 1)).join(',\n');
     return `vg.hconcat(\n${body}${kwargSuffix},\n)`;
   }
+  if (node.zconcat) {
+    const body = node.zconcat.map(n => indentLine(emitComponent(n, ctx), 1)).join(',\n');
+    return `vg.zconcat(\n${body}${kwargSuffix},\n)`;
+  }
   if (node.vspace !== undefined) return `vg.vspace(${literal(node.vspace, 0, ctx)})`;
   if (node.hspace !== undefined) return `vg.hspace(${literal(node.hspace, 0, ctx)})`;
   if (node.input) return emitInput(node, ctx);

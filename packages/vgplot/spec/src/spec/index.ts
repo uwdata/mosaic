@@ -17,6 +17,7 @@ export type * from "./Spec.js";
 export type * from "./Transform.js";
 export type * from "./VConcat.js";
 export type * from "./VSpace.js";
+export type * from "./ZConcat.js";
 
 // Marks
 export type * from "./marks/index.js";

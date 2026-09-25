@@ -272,7 +272,7 @@ class View:
         return self._build_spec(locals_)._repr_mimebundle_(**kwargs)
 
 
-_VIEW_KEYS = {"plot", "vconcat", "hconcat", "hspace", "vspace", "input"}
+_VIEW_KEYS = {"plot", "vconcat", "hconcat", "zconcat", "hspace", "vspace", "input"}
 
 
 def spec(

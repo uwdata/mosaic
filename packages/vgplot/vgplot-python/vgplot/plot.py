@@ -194,6 +194,16 @@ def hconcat(
     )
 
 
+def zconcat(
+    *items: Any, param_names: dict[int, str] | None = None, **kwargs: Any
+) -> View:
+    from .spec import View
+
+    return View(
+        {"zconcat": [_encode_component(i, param_names) for i in items]}, **kwargs
+    )
+
+
 def hspace(value: int | str) -> View:
     from .spec import View
 

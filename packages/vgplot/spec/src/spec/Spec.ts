@@ -4,6 +4,7 @@ import { HConcat } from './HConcat.js';
 import { VConcat } from './VConcat.js';
 import { HSpace } from './HSpace.js';
 import { VSpace } from './VSpace.js';
+import { ZConcat } from './ZConcat.js';
 import { Menu, Search, Slider, Table } from './Input.js';
 import { Plot } from './Plot.js';
 import { PlotMark } from './PlotMark.js';
@@ -58,6 +59,7 @@ export type Component =
   | VConcat
   | HSpace
   | VSpace
+  | ZConcat
   | Menu
   | Search
   | Slider

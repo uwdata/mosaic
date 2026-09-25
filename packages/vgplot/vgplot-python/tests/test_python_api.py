@@ -37,6 +37,32 @@ class TestGeneratedMarks:
             _ = vg.definitely_not_a_real_directive  # pyright: ignore[reportAttributeAccessIssue] # ty: ignore[unresolved-attribute]
 
 
+class TestLayout:
+    def test_zconcat_keeps_children_in_order(self) -> None:
+        a = vg.plot(vg.dot("t", x="a"))
+        b = vg.plot(vg.dot("t", x="b"))
+        d = vg.zconcat(a, b).to_dict()
+        assert list(d) == ["zconcat"]
+        assert [c["plot"][0]["x"] for c in d["zconcat"]] == ["a", "b"]
+
+    def test_zconcat_nests_in_the_other_layouts(self) -> None:
+        z = vg.zconcat(vg.plot(vg.dot("t", x="a")), vg.hspace(4))
+        for layout, key in [(vg.vconcat, "vconcat"), (vg.hconcat, "hconcat")]:
+            d = layout(z).to_dict()
+            assert list(d[key][0]) == ["zconcat"]
+            assert d[key][0]["zconcat"][1] == {"hspace": 4}
+
+    def test_zconcat_is_recognized_as_a_spec_view(self) -> None:
+        # a positional dict with a view key is the view, not the data
+        z = vg.zconcat(vg.plot(vg.dot("t", x="a"))).to_dict()
+        d = vg.spec(z, data={"t": vg.json([{"a": 1}])}).to_dict()
+        assert list(d["zconcat"][0]) == ["plot"]
+        assert "t" in d["data"]
+
+    def test_zconcat_is_exported(self) -> None:
+        assert "zconcat" in vg.__all__
+
+
 class TestDataHelpers:
     def test_json_inline_data(self) -> None:
         d = vg.json([{"a": 1}, {"a": 2}])

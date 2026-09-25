@@ -115,6 +115,17 @@ To layout elements, use objects with `hconcat` or `vconcat` keys, like so:
 }
 ```
 
+To layer elements on top of one another, use a `zconcat` key.
+Later elements are drawn over earlier ones, for example to overlay two plots that use different projections:
+
+``` json
+{
+  "zconcat": [
+    ...elements
+  ]
+}
+```
+
 To add spacing, use an object with an `hspace` or `vspace` key:
 
 ``` json
