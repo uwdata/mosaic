@@ -69,13 +69,15 @@ info:
       names a complete table; a build that fails or exceeds its deadline
       leaves no partial table visible under any reference the server hands
       out.
-    * `exec`: statements run in order and a later statement MAY fail after
-      earlier ones committed. The server reports the error and neither rolls
-      back nor retries; clients that need atomicity send an explicit
-      transaction.
+    * `exec`: neither atomicity nor rollback is guaranteed. Statements run
+      in order and a later one MAY fail after earlier ones took effect;
+      committed effects remain, uncommitted work follows the engine's
+      transaction semantics, and the server never retries on the client's
+      behalf. Clients that need atomicity send an explicit transaction.
     * `deadline_exceeded` ends the attempt and follows the rule of the
-      command above: nothing is published for `arrow` and `preagg`, and
-      completed `exec` statements stay committed.
+      command above: nothing is published for `arrow` and `preagg`, and an
+      `exec` MAY have had effects that the client MUST NOT assume were
+      rolled back.
     * Cancellation and other lifecycle commands are out of scope.
 
     ### Caching

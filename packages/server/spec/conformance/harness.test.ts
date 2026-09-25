@@ -72,6 +72,19 @@ describe('error envelope violations', () => {
     expect(checkResponse({ error: { code: 'table_not_found' } }, http(404, body, json), 'post', {})).toEqual([]);
   });
 
+  it('rejects reversed diagnostic spans and offsets past the submitted SQL', () => {
+    const parse = (location: Record<string, number>) => http(400, JSON.stringify({ error: 'bad', code: 'bad_request', reason: 'sql_parse_error', diagnostics: [{ message: 'near' }, { message: 'span', location }] }), json);
+    const expectation = { error: { code: 'bad_request' as const, reason: 'sql_parse_error' as const } };
+    expect(checkResponse(expectation, parse({ start: 2, end: 6 }), 'post', {})).toEqual([]);
+    expect(checkResponse(expectation, parse({ start: 2, end: 6 }), 'post', {}, 'SELEC 1')).toEqual([]);
+    expect(checkResponse(expectation, parse({ start: 7 }), 'post', {}, 'SELEC 1')).toEqual([]);
+    expect(ids(checkResponse(expectation, parse({ start: 20, end: 2 }), 'post', {}))).toEqual(['error.diagnostics.1.location.reversed']);
+    expect(ids(checkResponse(expectation, parse({ start: 0, end: 8 }), 'post', {}, 'SELEC 1'))).toEqual(['error.diagnostics.1.location.out-of-range']);
+    expect(ids(checkResponse(expectation, parse({ start: 8 }), 'post', {}, 'SELEC 1'))).toEqual(['error.diagnostics.1.location.out-of-range']);
+    expect(checkResponse(expectation, parse({ start: 0, end: 11 }), 'post', {}, "SELECT 'é'")).toEqual([]);
+    expect(ids(checkResponse(expectation, parse({ start: 0, end: 12 }), 'post', {}, "SELECT 'é'"))).toEqual(['error.diagnostics.1.location.out-of-range']);
+  });
+
   it('checks X-Request-Id and Retry-After against the envelope only when both are present', () => {
     const exhausted = { error: 'busy', code: 'resource_exhausted', reason: 'resource_limit_exceeded', retryAfterMs: 1500, diagnosticId: 'req_1' };
     const expectation = { error: { code: 'resource_exhausted' as const } };
@@ -206,21 +219,34 @@ describe('fetch error classification', () => {
     expect(classifyFetchError(failure('UND_ERR_SOCKET', 'other side closed'))).toMatchObject({ reset: 'socket-closed' });
   });
 
-  it('treats a close after the status line the same as one before it', async () => {
+  it('keeps the received status when the close lands during the body', async () => {
     const { createServer } = await import('node:net');
-    const server = createServer(socket => {
-      socket.write('HTTP/1.1 505 HTTP Version Not Supported\r\nContent-Length: 10\r\n\r\nab');
-      setTimeout(() => socket.destroy(), 10);
-    });
-    await new Promise<void>(resolve => server.listen(0, '127.0.0.1', resolve));
-    const { port } = server.address() as { port: number };
-    try {
-      const out = await sendHttp(`http://127.0.0.1:${port}/`, 'get', { request: { type: 'arrow', sql: 'SELECT 1' }, expect: {} }, {});
-      expect(out).toMatchObject({ kind: 'http-failed', reset: 'socket-closed' });
-      expect((out as { error: string }).error).toMatch(/^after status 505/);
-    } finally {
-      server.close();
-    }
+    const truncated = async (status: string) => {
+      const server = createServer(socket => {
+        socket.write(`HTTP/1.1 ${status}\r\nContent-Length: 10\r\n\r\nab`);
+        setTimeout(() => socket.destroy(), 10);
+      });
+      await new Promise<void>(resolve => server.listen(0, '127.0.0.1', resolve));
+      const { port } = server.address() as { port: number };
+      try {
+        return await sendHttp(`http://127.0.0.1:${port}/`, 'get', { request: { type: 'arrow', sql: 'SELECT 1' }, expect: {} }, {});
+      } finally {
+        server.close();
+      }
+    };
+    const rejected = await truncated('505 HTTP Version Not Supported');
+    expect(rejected).toMatchObject({ kind: 'http-failed', reset: 'socket-closed', status: 505 });
+    expect(ids(checkResponse({ arrow: true }, rejected, 'get', {}))).toEqual(['http.reset.after-505.socket-closed']);
+    const accepted = await truncated('200 OK');
+    expect(ids(checkResponse({ arrow: true }, accepted, 'get', {}))).toEqual(['http.reset.after-200.socket-closed']);
+  });
+
+  it('does not let a truncated 200 satisfy a baselined 505 rejection', () => {
+    const baseline = new Set(['http.reset.peer-closed|arrow.status.505|http.reset.after-505.socket-closed']);
+    expect(compare([{ id: 'http.reset.after-505.socket-closed', detail: '' }], baseline)).toMatchObject({ regressions: [], resolved: [] });
+    const verdict = compare([{ id: 'http.reset.after-200.socket-closed', detail: '' }], baseline);
+    expect(ids(verdict.regressions)).toEqual(['http.reset.after-200.socket-closed']);
+    expect(verdict.resolved).toEqual([...baseline]);
   });
 
   it('leaves refusals, bad ports, DNS failures, and timeouts fatal', () => {

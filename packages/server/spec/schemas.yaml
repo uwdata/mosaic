@@ -58,11 +58,14 @@ $defs:
       sql: { $ref: '#/$defs/Sql' }
     unevaluatedProperties: true
     description: |
-      Statements run in order on one connection. A failure MAY occur after
-      earlier statements have committed; the server reports the error and
-      does not roll back, retry, or report which statements completed.
-      Clients that need atomicity wrap the statements in an explicit
-      transaction.
+      Statements run in order on one connection. The protocol guarantees
+      neither atomicity nor rollback: a later statement MAY fail after
+      earlier ones took effect, effects that were committed remain, and the
+      server MUST NOT retry on the client's behalf or report which statements
+      completed. Whether uncommitted work survives the failure is the
+      engine's transaction semantics; clients that need atomicity wrap the
+      statements in an explicit transaction and treat its outcome by those
+      semantics.
 
   PreaggRequest:
     type: object
@@ -185,7 +188,7 @@ $defs:
       | `table_not_found`     | 404  | A table in the caller's managed namespace does not exist. `reference` MUST be included so the coordinator can rebuild it. |
       | `unsupported_command` | 400  | The command is known but not available in this deployment (for example `preagg` on a server without preaggregation, or `exec` when query validation is active). Clients MUST NOT fall back to `exec`. |
       | `resource_exhausted`  | 429  | Admission, quota, row/byte, or concurrency limit reached. Clients suppress immediate retries; `retryAfterMs` MAY advise when. |
-      | `deadline_exceeded`   | 504  | The server's command deadline elapsed. The attempt is over and no result or materialization was published; side effects of `exec` statements that completed before the deadline are not rolled back. |
+      | `deadline_exceeded`   | 504  | The server's command deadline elapsed. The attempt is over and no result or materialization was published; for `exec`, effects committed before the deadline MAY remain and the client MUST NOT assume rollback or retry automatically. |
       | `internal_error`      | 500  | Any other server-side failure, including DuckDB execution errors not classified above. |
     enum:
       - bad_request
