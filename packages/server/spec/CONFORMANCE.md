@@ -213,7 +213,6 @@ Configuration: `duckdb-server` (`packages/server/duckdb-server`).
 | Area | Current | Spec | Fix | Cases |
 |------|---------|------|-----|-------|
 | WebSocket errors lack `code` | `{"error": str(e)}` only (`SocketHandler.error`). Missing-field messages are msgspec's "Object missing required field `type`" rather than the canonical `missing required 'type' parameter` from #1228. | Envelope with `code` and the canonical messages (D1, D4). | Share an error mapper with the HTTP handler; restore the messages when decoding. | 13 |
-| Arrow Content-Type | `application/octet-stream` (`server.py`). | `application/vnd.apache.arrow.stream` (D8). | Change the header; the body is already a stream. | 14 |
 | HTTP errors are plain text | `handler.error()` ends the response with `str(error)` and no Content-Type; missing-field messages are msgspec's rather than the canonical ones from #1228. | JSON `Error` envelope (D4). | Emit `{error, code}` with `application/json`. | 8 |
 | Empty `sql` | `msgspec` accepts `""`, then `get_arrow_bytes` fails on a `None` result (500). | 400 `bad_request` (D1). | Add `min_length=1` to the struct or validate before dispatch. | 1 |
 | Parse errors are 500 | Every DuckDB exception is `handler.error(e)` with the default 500. | `bad_request` for `duckdb.ParserException` (D7). | Map exception classes to codes. | 2 |
@@ -221,14 +220,12 @@ Configuration: `duckdb-server` (`packages/server/duckdb-server`).
 | GET reads `?query=<json>` | The flat form is rejected with `missing required 'query' parameter`; the JSON form runs `exec`. | Flat `type`/`sql`, `arrow` only, read-only SQL (D2, D3, D3a). | Read flat parameters; reject `exec`/`preagg`; check the statement kind with `duckdb.extract_statements()`. | 10 |
 | Multi-statement `arrow` | All statements run and the last result is returned. | `bad_request` (D16). | Count statements with `duckdb.extract_statements()`. | 3 |
 | Unsupported method is 400 | `Unsupported HTTP method` with status 400 and no `Allow`. | 405 with `Allow` and the envelope (D5). | Change the status and add the header. | 2 |
-| WebSocket message size | uWebSockets default `max_payload_length` of 16 KiB; larger frames close with 1006. | Accept at least 1 MiB (D13). | Set `max_payload_length` in the `app.ws` options. | 1 |
 | CORS | `Access-Control-Request-Method` is emitted as a response header; no `Access-Control-Expose-Headers`. | Drop the request header; expose `ETag` if caching is ever added. | Edit `CORS_HEADERS`. | not observable |
 | Concurrency | A synchronous handler blocks the event loop for every connection. | No wire requirement; prerequisite for deadlines. | Run queries in a thread pool. | not observable |
 
 <details><summary>Case ids</summary>
 
 - **WebSocket errors lack `code`**: `ws/missing-type`, `ws/missing-sql`, `ws/empty-sql`, `ws/unknown-type`, `ws/type-not-a-string`, `ws/preagg-unsupported`, `ws/sql-parse-error`, `ws/sql-unknown-table`, `ws/sql-runtime-error`, `ws/exec-error`, `ws/ws-malformed-json-stays-open`, `ws/ws-missing-sql-stays-open`, `ws/ws-sql-error-stays-open`
-- **Arrow Content-Type**: `post/arrow-stream-format`, `post/arrow-empty-result`, `post/arrow-scalar-types`, `post/arrow-many-rows`, `post/arrow-from-parquet`, `post/arrow-trailing-semicolon`, `post/application-fields-pass-through`, `post/protocol-fields-not-shadowed`, `post/content-type-not-json`, `post/content-type-with-charset`, `post/arrow-cors-origin`, `post/large-request-1mib`, `post/exec-acknowledged`, `post/exec-multi-statement`
 - **HTTP errors are plain text**: `post/missing-type`, `post/missing-sql`, `post/unknown-type`, `post/type-not-a-string`, `post/malformed-json-body`, `post/sql-unknown-table`, `post/sql-runtime-error`, `post/exec-error`
 - **Empty `sql`**: `post/empty-sql`
 - **Parse errors are 500**: `post/sql-parse-error`, `connector/rest-error`
@@ -236,7 +233,6 @@ Configuration: `duckdb-server` (`packages/server/duckdb-server`).
 - **GET reads `?query=<json>`**: `get/get-arrow`, `get/get-plus-in-sql`, `get/get-cte-allowed`, `get/get-set-operation-allowed`, `get/get-missing-type`, `get/get-json-wrapped-query-rejected`, `get/get-exec-rejected`, `get/get-preagg-rejected`, `get/get-ddl-rejected`, `get/get-delete-returning-rejected`
 - **Multi-statement `arrow`**: `post/arrow-multi-statement`, `ws/arrow-multi-statement`, `ws/ws-pipeline-order`
 - **Unsupported method is 400**: `post/method-put`, `post/method-head`
-- **WebSocket message size**: `ws/large-request-1mib`
 
 </details>
 

@@ -25,26 +25,6 @@ failures:
       - ws/ws-missing-sql-stays-open
       - ws/ws-sql-error-stays-open
 
-  - area: Arrow Content-Type
-    current: "`application/octet-stream` (`server.py`)."
-    spec: "`application/vnd.apache.arrow.stream` (D8)."
-    fix: Change the header; the body is already a stream.
-    cases:
-      - post/arrow-stream-format
-      - post/arrow-empty-result
-      - post/arrow-scalar-types
-      - post/arrow-many-rows
-      - post/arrow-from-parquet
-      - post/arrow-trailing-semicolon
-      - post/application-fields-pass-through
-      - post/protocol-fields-not-shadowed
-      - post/content-type-not-json
-      - post/content-type-with-charset
-      - post/arrow-cors-origin
-      - post/large-request-1mib
-      - post/exec-acknowledged
-      - post/exec-multi-statement
-
   - area: HTTP errors are plain text
     current: "`handler.error()` ends the response with `str(error)` and no Content-Type; missing-field messages are msgspec's rather than the canonical ones from #1228."
     spec: JSON `Error` envelope (D4).
@@ -113,13 +93,6 @@ failures:
     cases:
       - post/method-put
       - post/method-head
-
-  - area: WebSocket message size
-    current: uWebSockets default `max_payload_length` of 16 KiB; larger frames close with 1006.
-    spec: "Accept at least 1 MiB (D13)."
-    fix: Set `max_payload_length` in the `app.ws` options.
-    cases:
-      - ws/large-request-1mib
 
   - area: CORS
     current: "`Access-Control-Request-Method` is emitted as a response header; no `Access-Control-Expose-Headers`."
