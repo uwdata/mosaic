@@ -1,6 +1,6 @@
 # Known conformance failures for `duckdb-server` (`packages/server/duckdb-server`).
-# Source of truth for the Python table in ../../CONFORMANCE.md; regenerate with
-# `pnpm -F @uwdata/mosaic-server-spec conformance:docs`.
+# Source of truth for the Python table in ../STATUS.md; regenerate with
+# `pnpm -F @uwdata/mosaic-conformance status`.
 server: python
 failures:
   - area: WebSocket errors lack `code` and `reason`

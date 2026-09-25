@@ -1,6 +1,6 @@
 # Known conformance failures for `duckdb-server-go` with default flags.
-# Source of truth for the Go table in ../../CONFORMANCE.md; regenerate with
-# `pnpm -F @uwdata/mosaic-server-spec conformance:docs`. The go-cache and
+# Source of truth for the Go table in ../STATUS.md; regenerate with
+# `pnpm -F @uwdata/mosaic-conformance status`. The go-cache and
 # go-gatekeeper files cover the same binary under other flags.
 server: go
 notes: "Closest to the target and the intended first `preagg` implementation (#1234). Already conforming: WebSocket error frames carry `code` (`pkg/server/errors.go`), though not yet `reason` (D19); Arrow IPC stream with the end-of-stream marker; GET caching with a strong `ETag`, weak `If-None-Match` → 304, strong `If-Match` → 412, `no-store` elsewhere (`pkg/server/cache.go`); application payload passthrough via `WithAuthorizer` (`pkg/server/authorization.go`); `Vary` auto-includes schema-match headers."

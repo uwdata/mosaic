@@ -3,8 +3,8 @@
 Gap analysis of each server implementation against `openapi.yaml`,
 `asyncapi.yaml`, and `schemas.yaml`. The spec describes the *desired* state;
 none of the servers fully conform yet. The per-server tables at the end are
-generated from `conformance/known-failures/*.yaml`, which the conformance
-suite in `conformance/` also reads, so a gap and its test stay in step.
+generated from `known-failures/*.yaml`, which the conformance suite in this
+directory also reads, so a gap and its test stay in step.
 
 Client baseline: `packages/mosaic/core/src/connectors` on main after #1172
 (drop `json`), #1213 (drop `persist` and result caches), #1209 (socket
@@ -54,28 +54,28 @@ Where the servers disagreed, the spec picks one behaviour. Each is revisable.
 
 ## Conformance suite
 
-`conformance/` is a vitest project that starts one server configuration on a
-free port, replays declarative cases from `conformance/cases/*.yaml` over
+The suite is a vitest project that starts one server configuration on a
+free port, replays declarative cases from `cases/*.yaml` over
 HTTP POST, HTTP GET, and WebSocket, and checks every response against
 `schemas.yaml` with Ajv plus the case's own expectations. Arrow bodies are
 decoded with Flechette and compared as rows. A second file drives the real
 `@uwdata/mosaic-core` connectors end to end.
 
 ```sh
-CONFORMANCE_SERVER=go pnpm -F @uwdata/mosaic-server-spec conformance
+CONFORMANCE_SERVER=go pnpm -F @uwdata/mosaic-conformance suite
 ```
 
-Configurations are defined in `conformance/servers/index.ts`: `node`,
+Configurations are defined in `implementations/index.ts`: `node`,
 `python`, `rust`, `go`, `go-cache`, `go-gatekeeper`. Each declares
 capabilities (`exec`, `preagg`, `caching`, `files`, `policy`); cases gate on
 them with `requires`/`unless`. `CONFORMANCE_URL` points the suite at an already
 running server instead of spawning one. Server output is written to
-`conformance/.logs/<config>.log`.
+`.logs/<config>.log`.
 
 The suite is a ratchet over individual violations. Every mismatch a check
 finds has a stable id (`error.status.500`, `error.reason.execution_failed`,
 `error.field.missing`, `error.not-json`, `arrow.eos`, `header.allow`,
-`ws.closed.1007`, `s2.arrow.rows` for step 2 of a multi-step case, and so on), and `conformance/known-failures/<config>.yaml` records, per
+`ws.closed.1007`, `s2.arrow.rows` for step 2 of a multi-step case, and so on), and `known-failures/<config>.yaml` records, per
 case, exactly which ids the server produces today, grouped by area with the
 observed behaviour and the fix. A run is green when each case's observed
 violations equal its listed ids. A new violation on any case, including one
@@ -98,10 +98,10 @@ as `ws.surplus-reply` (D11). Full conformance is
 reached when the files are empty. `go-cache` and `go-gatekeeper` inherit the
 plain `go` list and override per case or exempt cases (`passes`).
 
-To add a case, append it to a file in `conformance/cases/` with the decision
+To add a case, append it to a file in `cases/` with the decision
 ids it exercises, run every configuration, add the observed violation ids to
 the matching `known-failures` file (the run's summary lists them), then
-regenerate the tables below. After fixing a server, `conformance:baseline`
+regenerate the tables below. After fixing a server, `baseline`
 rewrites the ids of already-listed cases from the last run and drops the
 ones that now pass; new failures still have to be filed under an area by
 hand, and a run that contains harness errors is refused, since those are
@@ -116,17 +116,17 @@ untouched and reported as unverified instead of being compared against
 nothing.
 
 ```sh
-CONFORMANCE_SERVER=go pnpm -F @uwdata/mosaic-server-spec conformance:baseline
-pnpm -F @uwdata/mosaic-server-spec conformance:docs
+CONFORMANCE_SERVER=go pnpm -F @uwdata/mosaic-conformance baseline
+pnpm -F @uwdata/mosaic-conformance status
 ```
 
-`pnpm -F @uwdata/mosaic-server-spec test` runs the harness's own unit tests
+`pnpm -F @uwdata/mosaic-conformance test` runs the harness's own unit tests
 (violation ids, the IPC walker, header matchers, fetch-error classification,
 and the ratchet comparison) without starting a server; the root `pnpm test`
 includes them.
 
 CI runs all six configurations on every pull request that touches a server
-or the spec (`.github/workflows/server-protocol.yml`) and fails if the tables
+or the spec (`.github/workflows/conformance.yml`) and fails if the tables
 below are stale.
 
 Not observable from outside, so still tracked by hand (`cases: {}`):
@@ -143,7 +143,7 @@ capability none of the reference servers has.
 
 
 <!-- conformance:begin -->
-<!-- Generated from conformance/known-failures/*.yaml by conformance/generate-conformance-md.ts. Edit the YAML, then run `pnpm -F @uwdata/mosaic-server-spec conformance:docs`. -->
+<!-- Generated from known-failures/*.yaml by generate-conformance-md.ts. Edit the YAML, then run `pnpm -F @uwdata/mosaic-conformance status`. -->
 
 ## Go `duckdb-server-go`
 
@@ -254,7 +254,7 @@ Everything in the Go `duckdb-server-go` table applies here too (27 inherited cas
 | Area | Current | Spec | Fix | Cases |
 |------|---------|------|-----|-------|
 | Disabled `exec` is `bad_request` | `ErrExecWithValidation` maps to `bad_request` (`pkg/server/errors.go`); an application field spelled `TYPE: exec` also trips it, see D9 in go.yaml. | `unsupported_command` (D6). | Remap in `classifyError`. | 2 |
-| Gatekeeper rejections are `forbidden` or `bad_request` regardless of cause | A multi-statement `arrow` is `forbidden` (403) and an unknown table is `bad_request` (400 `Bad Request`) because Gatekeeper validation fails before DuckDB classifies the statement. | Multi-statement is `bad_request` (D16); an unknown user table is `internal_error` unless classified as a managed table (D7, still open in CONFORMANCE.md). | Split validator errors from policy denials when mapping to codes. | 6 |
+| Gatekeeper rejections are `forbidden` or `bad_request` regardless of cause | A multi-statement `arrow` is `forbidden` (403) and an unknown table is `bad_request` (400 `Bad Request`) because Gatekeeper validation fails before DuckDB classifies the statement. | Multi-statement is `bad_request` (D16); an unknown user table is `internal_error` unless classified as a managed table (D7, still open in STATUS.md). | Split validator errors from policy denials when mapping to codes. | 6 |
 | Parse error body is `Bad Request` | The status is right but the body is the plain `http.StatusText`. | Envelope with the DuckDB message (D4, D7). | Covered by the envelope fix in go.yaml. | 1 |
 | Local file reads are denied | Default Gatekeeper policy rejects `read_parquet` on a local path with 403 `Forbidden`. | Deployment choice; the suite marks this configuration as lacking the `files` capability. Listed so the plain-text body is not lost. | Envelope fix in go.yaml; optionally allow the shared data directory in the test policy. | not observable |
 | Default policy denies `information_schema` | The rejection itself has the right status but a plain body, and the follow-up `information_schema.tables` probe is 403 `Forbidden`, so the suite cannot confirm nothing was created. | Envelope on the rejection (D4); the probe is a test limitation, not a spec requirement. | Envelope fix in go.yaml; allow `information_schema` in the test policy or probe differently. | 2 |

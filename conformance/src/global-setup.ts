@@ -1,5 +1,5 @@
 import type { TestProject } from 'vitest/node';
-import { serverConfig } from '../servers/index.ts';
+import { serverConfig } from '../implementations/index.ts';
 import { startServer } from './server.ts';
 
 declare module 'vitest' {

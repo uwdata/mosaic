@@ -4,7 +4,7 @@ import { parse } from 'yaml';
 import type { CaseDefinition, ConformanceCase, Step, Transport } from './types.ts';
 
 export const conformanceRoot = path.resolve(import.meta.dirname, '..');
-export const repoRoot = path.resolve(conformanceRoot, '../../../..');
+export const repoRoot = path.resolve(conformanceRoot, '..');
 
 const casesDir = path.join(conformanceRoot, 'cases');
 const defaultTransports: Transport[] = ['post', 'ws'];

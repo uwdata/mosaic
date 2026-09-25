@@ -1,5 +1,5 @@
 $schema: https://json-schema.org/draft/2020-12/schema
-$id: https://idl.uw.edu/mosaic/server/schemas.yaml
+$id: https://idl.uw.edu/mosaic/conformance/schemas.yaml
 title: Mosaic DuckDB server protocol schemas
 description: |
   Request, response, and error shapes shared by the HTTP (openapi.yaml) and

@@ -1,17 +1,17 @@
-// Renders the per-server gap tables in ../CONFORMANCE.md from
+// Renders the per-server gap tables in STATUS.md from
 // known-failures/*.yaml, the files the conformance runner reads.
 //
-// Run: pnpm -F @uwdata/mosaic-server-spec conformance:docs
+// Run: pnpm -F @uwdata/mosaic-conformance status
 import { readFileSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { loadCases } from './src/cases.ts';
 import { connectorCaseIds } from './src/connector-cases.ts';
 import { loadKnownFailures, readKnownFailuresFile, type KnownFailure } from './src/known.ts';
-import { servers } from './servers/index.ts';
+import { servers } from './implementations/index.ts';
 
 const begin = '<!-- conformance:begin -->';
 const end = '<!-- conformance:end -->';
-const target = path.resolve(import.meta.dirname, '..', 'CONFORMANCE.md');
+const target = path.resolve(import.meta.dirname, 'STATUS.md');
 
 const order = ['go', 'go-cache', 'go-gatekeeper', 'rust', 'python', 'node'];
 const headings: Record<string, string> = {
@@ -77,7 +77,7 @@ function renderRow(failure: KnownFailure) {
 export function renderConformanceTables(): string {
   const generated = [
     begin,
-    '<!-- Generated from conformance/known-failures/*.yaml by conformance/generate-conformance-md.ts. Edit the YAML, then run `pnpm -F @uwdata/mosaic-server-spec conformance:docs`. -->',
+    '<!-- Generated from known-failures/*.yaml by generate-conformance-md.ts. Edit the YAML, then run `pnpm -F @uwdata/mosaic-conformance status`. -->',
     '',
     ...order.map(renderServer),
     end

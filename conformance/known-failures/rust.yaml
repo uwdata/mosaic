@@ -1,6 +1,6 @@
 # Known conformance failures for the `duckdb-server` crate (`packages/server/duckdb-server-rust`).
-# Source of truth for the Rust table in ../../CONFORMANCE.md; regenerate with
-# `pnpm -F @uwdata/mosaic-server-spec conformance:docs`.
+# Source of truth for the Rust table in ../STATUS.md; regenerate with
+# `pnpm -F @uwdata/mosaic-conformance status`.
 server: rust
 failures:
   - area: Arrow IPC file format

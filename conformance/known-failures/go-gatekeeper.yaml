@@ -20,7 +20,7 @@ failures:
         - error.reason.missing
   - area: Gatekeeper rejections are `forbidden` or `bad_request` regardless of cause
     current: A multi-statement `arrow` is `forbidden` (403) and an unknown table is `bad_request` (400 `Bad Request`) because Gatekeeper validation fails before DuckDB classifies the statement.
-    spec: Multi-statement is `bad_request` (D16); an unknown user table is `internal_error` unless classified as a managed table (D7, still open in CONFORMANCE.md).
+    spec: Multi-statement is `bad_request` (D16); an unknown user table is `internal_error` unless classified as a managed table (D7, still open in STATUS.md).
     fix: Split validator errors from policy denials when mapping to codes.
     cases:
       post/arrow-multi-statement:

@@ -11,7 +11,7 @@ info:
 
     This document describes the desired state agreed for all server
     implementations (Python, Rust, Go, Node). Per-server gaps are tracked in
-    `CONFORMANCE.md`. Items marked **Decision** are choices made where the
+    `STATUS.md`. Items marked **Decision** are choices made where the
     existing servers disagreed and are open for revision.
 
     ### Transport rules

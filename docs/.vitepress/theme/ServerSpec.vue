@@ -2,14 +2,14 @@
 import { onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { useData } from 'vitepress';
 import { parse } from 'yaml';
-import openapiText from '../../../packages/server/spec/openapi.yaml?raw';
-import asyncapiText from '../../../packages/server/spec/asyncapi.yaml?raw';
-import schemasText from '../../../packages/server/spec/schemas.yaml?raw';
+import openapiText from '../../../conformance/openapi.yaml?raw';
+import asyncapiText from '../../../conformance/asyncapi.yaml?raw';
+import schemasText from '../../../conformance/schemas.yaml?raw';
 
 const SCALAR_URL = 'https://cdn.jsdelivr.net/npm/@scalar/api-reference@1.68.0';
 
 // Scalar does not dereference cross-file $refs, so inline schemas.yaml into
-// each document's components.schemas. Mirrors packages/server/spec/index.html.
+// each document's components.schemas. Mirrors conformance/index.html.
 const shared = parse(schemasText);
 function inline(doc) {
   const text = JSON.stringify({ ...doc, components: { ...doc.components, schemas: shared.$defs } })
@@ -80,7 +80,7 @@ onBeforeUnmount(() => {
     <div ref="container" />
     <p v-if="failed" class="server-spec-fallback">
       The interactive reference could not be loaded. The specification sources are in
-      <a href="https://github.com/uwdata/mosaic/tree/main/packages/server/spec">packages/server/spec</a>.
+      <a href="https://github.com/uwdata/mosaic/tree/main/conformance">conformance</a>.
     </p>
   </div>
 </template>

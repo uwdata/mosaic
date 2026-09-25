@@ -1,6 +1,6 @@
 # Known conformance failures for the Node data server (`packages/server/duckdb`).
-# Source of truth for the Node table in ../../CONFORMANCE.md; regenerate with
-# `pnpm -F @uwdata/mosaic-server-spec conformance:docs`. Each case maps to the
+# Source of truth for the Node table in ../STATUS.md; regenerate with
+# `pnpm -F @uwdata/mosaic-conformance status`. Each case maps to the
 # violation ids the server produces today; a run is green only when exactly
 # those are observed. Entries with no cases document gaps the suite cannot
 # observe from outside.

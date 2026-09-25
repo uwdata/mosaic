@@ -1,5 +1,5 @@
 import { inject, it } from 'vitest';
-import { serverConfig, type ServerConfig } from '../servers/index.ts';
+import { serverConfig, type ServerConfig } from '../implementations/index.ts';
 import { loadCases } from './cases.ts';
 import { connectorCaseIds } from './connector-cases.ts';
 import { areasFor, expectedViolations, loadKnownFailures, type KnownFailures } from './known.ts';
@@ -90,7 +90,7 @@ export function conformanceTest(
       problems.push(
         `no longer observed: ${resolved.join(', ')}. Remove them from ` +
         `conformance/known-failures/${harness.config.name}.yaml for ${id} and run ` +
-        '`pnpm -F @uwdata/mosaic-server-spec conformance:docs`.'
+        '`pnpm -F @uwdata/mosaic-conformance status`.'
       );
     }
     if (problems.length) throw new Error(problems.join('\n'));

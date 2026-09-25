@@ -3,7 +3,7 @@ import { createServer } from 'node:net';
 import { mkdirSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { conformanceRoot } from './cases.ts';
-import type { ServerConfig } from '../servers/index.ts';
+import type { ServerConfig } from '../implementations/index.ts';
 
 const readyTimeout = Number(process.env.CONFORMANCE_READY_TIMEOUT ?? 300_000);
 const logDir = path.join(conformanceRoot, '.logs');

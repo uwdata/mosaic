@@ -2,14 +2,14 @@
 // src/baseline.ts for what changes; a result file with harness errors is
 // refused outright.
 //
-// Run: CONFORMANCE_SERVER=go pnpm -F @uwdata/mosaic-server-spec conformance:baseline
+// Run: CONFORMANCE_SERVER=go pnpm -F @uwdata/mosaic-conformance baseline
 import { readFileSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { parse } from 'yaml';
 import { inheritedFrom, observedFrom, refreshBaseline, type ResultRow } from './src/baseline.ts';
 import { conformanceRoot } from './src/cases.ts';
 import { knownFailuresPath } from './src/known.ts';
-import { servers } from './servers/index.ts';
+import { servers } from './implementations/index.ts';
 
 const server = process.env.CONFORMANCE_SERVER;
 if (!server || !servers[server]) {

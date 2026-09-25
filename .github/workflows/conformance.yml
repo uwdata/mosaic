@@ -1,30 +1,32 @@
-name: Server Protocol
+name: Conformance
 
-# Validates the server protocol specification in packages/server/spec and runs
-# the conformance suite against every server configuration. Conformance is a
+# Validates the server protocol specification in conformance/ and runs the
+# conformance suite against every server configuration. Conformance is a
 # ratchet: each leg passes when its failures match
-# packages/server/spec/conformance/known-failures/<config>.yaml, and fails on
-# a regression or on a listed case that has started passing.
+# conformance/known-failures/<config>.yaml, and fails on a regression or on a
+# listed case that has started passing.
 
 on:
   push:
     branches:
       - main
     paths:
+      - "conformance/**"
       - "packages/server/**"
       - "packages/mosaic/core/src/connectors/**"
       - "data/penguins.parquet"
       - "pnpm-lock.yaml"
-      - ".github/workflows/server-protocol.yml"
+      - ".github/workflows/conformance.yml"
   pull_request:
     branches:
       - main
     paths:
+      - "conformance/**"
       - "packages/server/**"
       - "packages/mosaic/core/src/connectors/**"
       - "data/penguins.parquet"
       - "pnpm-lock.yaml"
-      - ".github/workflows/server-protocol.yml"
+      - ".github/workflows/conformance.yml"
 
 permissions:
   contents: read
@@ -49,21 +51,21 @@ jobs:
           cache-dependency-path: |
             pnpm-lock.yaml
 
-      - run: pnpm run spec:lint
+      - run: pnpm run conformance:lint
 
       - run: pnpm install --frozen-lockfile
 
       - name: Typecheck, lint, and unit-test the conformance harness
         run: |
           pnpm exec tsc --build
-          pnpm -F @uwdata/mosaic-server-spec typecheck
-          pnpm -F @uwdata/mosaic-server-spec lint
-          pnpm -F @uwdata/mosaic-server-spec test
+          pnpm -F @uwdata/mosaic-conformance typecheck
+          pnpm -F @uwdata/mosaic-conformance lint
+          pnpm -F @uwdata/mosaic-conformance test
 
       - name: Verify CONFORMANCE.md matches known-failures
         run: |
-          pnpm -F @uwdata/mosaic-server-spec conformance:docs
-          git diff --exit-code -- packages/server/spec/CONFORMANCE.md
+          pnpm -F @uwdata/mosaic-conformance status
+          git diff --exit-code -- conformance/STATUS.md
 
   conformance:
     name: Conformance (${{ matrix.server }})
@@ -137,7 +139,7 @@ jobs:
         working-directory: ./packages/server/duckdb-server-go
 
       - name: Run conformance suite
-        run: pnpm -F @uwdata/mosaic-server-spec conformance
+        run: pnpm -F @uwdata/mosaic-conformance suite
         env:
           CONFORMANCE_SERVER: ${{ matrix.server }}
 
@@ -146,5 +148,5 @@ jobs:
         uses: actions/upload-artifact@v7
         with:
           name: conformance-${{ matrix.server }}
-          path: packages/server/spec/conformance/.logs/
+          path: conformance/.logs/
           if-no-files-found: ignore

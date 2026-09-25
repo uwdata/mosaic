@@ -17,7 +17,7 @@ node_modules
 **/.venv
 **/tsconfig.tsbuildinfo
 packages/server/duckdb-server-go/duckdb-server-go
-packages/server/spec/conformance/.logs
+conformance/.logs
 transitionFolder
 
 # Virtual environment

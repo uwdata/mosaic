@@ -5,7 +5,7 @@ import addFormats from 'ajv-formats';
 import { parse } from 'yaml';
 import { conformanceRoot } from './cases.ts';
 
-const schemasPath = path.join(conformanceRoot, '..', 'schemas.yaml');
+const schemasPath = path.join(conformanceRoot, 'schemas.yaml');
 
 let ajv: Ajv2020 | undefined;
 let schemaId: string;
