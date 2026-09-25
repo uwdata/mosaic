@@ -179,6 +179,7 @@ $defs:
       other code the three properties are prohibited so that a forbidden
       target or a partial reference cannot leak through the envelope.
     if:
+      required: [code]
       properties:
         code: { const: table_not_found }
     then:
