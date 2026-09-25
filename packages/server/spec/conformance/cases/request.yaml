@@ -85,7 +85,8 @@
 
 - id: arrow-multi-statement
   title: Several statements in one `arrow` command are rejected before execution
-  decisions: [D16, D7]
+  decisions: [D16, D7, D3a]
+  transports: [post, get, ws]
   request: { type: arrow, sql: "SELECT 1 AS x; SELECT 2 AS y" }
   expect:
     error: { code: bad_request }

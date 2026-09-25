@@ -78,26 +78,56 @@ export function loadCases(): ConformanceCase[] {
 
 const padToken = /\$PAD\((\d+)\)/;
 const dataToken = /\$DATA\//g;
+const varToken = /\{\{(\w+)\}\}/g;
 
-export function expandSql(sql: string): string {
-  const padded = sql.replace(padToken, (token, bytes) => {
-    const target = Number(bytes) - (sql.length - token.length);
-    return 'x'.repeat(Math.max(0, target));
-  });
-  return padded.replace(dataToken, `${path.join(repoRoot, 'data')}/`);
+export function encodeCommand(request: Record<string, unknown>, transport: Transport): string {
+  if (transport !== 'get') return JSON.stringify(request);
+  const params = new URLSearchParams();
+  for (const [key, value] of Object.entries(request)) {
+    params.set(key, typeof value === 'string' ? value : JSON.stringify(value));
+  }
+  return params.toString();
 }
 
-export function expandRequest(request: Record<string, unknown>, vars: Record<string, string>) {
+// Resolves `{{var}}`, `$DATA/`, and `$PAD(n)`. The pad brings the *encoded*
+// payload (JSON body or query string) to exactly n bytes, so a size floor is
+// measured on what the server actually receives.
+export function expandRequest(
+  request: Record<string, unknown>,
+  vars: Record<string, string>,
+  transport: Transport
+): Record<string, unknown> {
   const out: Record<string, unknown> = {};
   for (const [key, value] of Object.entries(request)) {
-    out[key] = typeof value === 'string' ? substitute(expandSql(value), vars) : value;
+    out[key] = typeof value === 'string' ? substitute(value.replace(dataToken, `${path.join(repoRoot, 'data')}/`), vars) : value;
+  }
+  for (const [key, value] of Object.entries(out)) {
+    if (typeof value !== 'string') continue;
+    const match = padToken.exec(value);
+    if (!match) continue;
+    const target = Number(match[1]);
+    const base = encodeCommand({ ...out, [key]: value.replace(padToken, '') }, transport).length;
+    out[key] = value.replace(padToken, 'x'.repeat(Math.max(0, target - base)));
   }
   return out;
 }
 
 export function substitute(text: string, vars: Record<string, string>): string {
-  return text.replace(/\{\{(\w+)\}\}/g, (_, name) => {
+  return text.replace(varToken, (_, name) => {
     if (!(name in vars)) throw new Error(`no captured value named ${name}`);
     return vars[name];
   });
+}
+
+export function unresolvedVars(step: Step, vars: Record<string, string>): string[] {
+  const names = new Set<string>();
+  const scan = (text: unknown) => {
+    if (typeof text !== 'string') return;
+    for (const m of text.matchAll(varToken)) if (!(m[1] in vars)) names.add(m[1]);
+  };
+  for (const value of Object.values(step.request ?? {})) scan(value);
+  for (const value of Object.values(step.headers ?? {})) scan(value);
+  scan(step.raw?.body);
+  scan(step.raw?.query);
+  return [...names];
 }

@@ -59,9 +59,9 @@ export const servers: Record<string, ServerConfig> = {
   ),
   'go-gatekeeper': goConfig(
     'go-gatekeeper',
-    '`duckdb-server-go --gatekeeper=\'{"version":1,"options":{}}\'`; validation disables `exec` and local file access',
+    '`duckdb-server-go --gatekeeper=\'{"version":1,"options":{}}\'`; validation disables `exec` and denies local file access',
     ['--gatekeeper', '{"version":1,"options":{}}'],
-    []
+    ['policy']
   )
 };
 

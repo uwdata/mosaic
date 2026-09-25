@@ -1,9 +1,9 @@
 import { describe } from 'vitest';
-import { loadCases } from './src/cases.ts';
+import { loadCases, unresolvedVars } from './src/cases.ts';
 import { captureValues, checkResponse } from './src/check.ts';
 import { conformanceTest, createHarness, skipReason, type Harness } from './src/harness.ts';
 import { sendHttp } from './src/http.ts';
-import type { ConformanceCase, Response, Step } from './src/types.ts';
+import type { ConformanceCase, Response, Step, Violation } from './src/types.ts';
 import { WsClient } from './src/ws.ts';
 
 const cases = loadCases();
@@ -21,8 +21,14 @@ describe(`protocol conformance: ${harness.config.name}`, () => {
   }
 });
 
-async function runCase(harness: Harness, c: ConformanceCase) {
+// Every step runs even after an earlier one misbehaved, so follow-up checks
+// such as "the connection is still usable" are observed independently. A
+// step is skipped only when it references a capture that never happened.
+async function runCase(harness: Harness, c: ConformanceCase): Promise<Violation[]> {
   const vars: Record<string, string> = {};
+  const violations: Violation[] = [];
+  const prefix = (index: number, list: Violation[]) =>
+    c.steps.length > 1 ? list.map(x => ({ id: `s${index + 1}.${x.id}`, detail: `step ${index + 1}: ${x.detail}` })) : list;
   const client = c.transport === 'ws' || c.steps.some(s => s.transport === 'ws')
     ? await WsClient.open(harness.wsUrl())
     : undefined;
@@ -30,11 +36,16 @@ async function runCase(harness: Harness, c: ConformanceCase) {
     if (c.pipeline) {
       for (const step of c.steps) client!.send(step, vars);
       for (const [index, step] of c.steps.entries()) {
-        assertStep(c, index, step, await client!.next(), vars);
+        violations.push(...prefix(index, assess(c, step, await client!.next(), vars)));
       }
-      return;
+      return violations;
     }
     for (const [index, step] of c.steps.entries()) {
+      const missing = unresolvedVars(step, vars);
+      if (missing.length) {
+        violations.push(...prefix(index, missing.map(name => ({ id: `blocked.${name}`, detail: `skipped: {{${name}}} was never captured` }))));
+        continue;
+      }
       const transport = step.transport ?? c.transport;
       let response: Response;
       if (transport === 'ws') {
@@ -43,24 +54,24 @@ async function runCase(harness: Harness, c: ConformanceCase) {
       } else {
         response = await sendHttp(harness.url(), transport, step, vars);
       }
-      assertStep(c, index, step, response, vars);
+      violations.push(...prefix(index, assess(c, step, response, vars)));
     }
+    return violations;
   } finally {
     client?.close();
   }
 }
 
-function assertStep(c: ConformanceCase, index: number, step: Step, response: Response, vars: Record<string, string>) {
+function assess(c: ConformanceCase, step: Step, response: Response, vars: Record<string, string>): Violation[] {
   const transport = step.transport ?? c.transport;
-  const problems = checkResponse(step.expect, response, transport, vars);
-  if (problems.length) {
-    const prefix = c.steps.length > 1 ? `step ${index + 1}/${c.steps.length} (${describeStep(step)}): ` : '';
-    throw new Error(prefix + problems.join('; '));
+  const violations = checkResponse(step.expect, response, transport, vars);
+  const answered = response.kind === 'http' || (response.kind === 'ws' && response.frame !== 'close' && response.frame !== 'timeout');
+  if (answered) {
+    violations.push(...captureValues(step.capture, response, vars));
+  } else {
+    for (const name of Object.keys(step.capture ?? {})) {
+      violations.push({ id: `capture.${name}`, detail: `cannot capture ${name}: no response` });
+    }
   }
-  captureValues(step.capture, response, vars);
-}
-
-function describeStep(step: Step) {
-  if (step.raw) return `${step.raw.method ?? 'raw'} ${JSON.stringify(step.raw.body ?? step.raw.query ?? '').slice(0, 60)}`;
-  return JSON.stringify(step.request).slice(0, 80);
+  return violations;
 }

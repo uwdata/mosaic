@@ -1,4 +1,4 @@
-import { expandRequest } from './cases.ts';
+import { encodeCommand, expandRequest, substitute } from './cases.ts';
 import type { Step, WsResponse } from './types.ts';
 
 const stepTimeout = Number(process.env.CONFORMANCE_STEP_TIMEOUT ?? 15_000);
@@ -51,9 +51,10 @@ export class WsClient {
   send(step: Step, vars: Record<string, string>) {
     const raw = step.raw;
     if (raw?.body !== undefined) {
-      this.socket.send(raw.binary ? new TextEncoder().encode(raw.body) : raw.body);
+      const body = substitute(raw.body, vars);
+      this.socket.send(raw.binary ? new TextEncoder().encode(body) : body);
     } else {
-      this.socket.send(JSON.stringify(expandRequest(step.request ?? {}, vars)));
+      this.socket.send(encodeCommand(expandRequest(step.request ?? {}, vars, 'ws'), 'ws'));
     }
   }
 
