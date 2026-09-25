@@ -13,7 +13,7 @@ describe('String functions', () => {
 
   it('include regexp_matches with a RegExp literal containing a quote', async () => {
     const expr = regexp_matches('txt1', literal(/don't|can't/));
-    await expect(expr).toBeValidExpr(`regexp_matches("txt1", 'don''t|can''t')`);
+    await expect(expr).toBeValidExpr('regexp_matches("txt1", \'don\'\'t|can\'\'t\')');
   });
 
   it('include contains', async () => {

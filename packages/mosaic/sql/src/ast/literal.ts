@@ -40,7 +40,7 @@ export function literalToSQL(value: unknown): string {
           ? `DATE '${y}-${padZero(m+1)}-${padZero(d)}'` // utc date
           : `epoch_ms(${ts})`; // timestamp
       } else if (value instanceof RegExp) {
-        return `'${value.source.replaceAll(`'`, `''`)}'`;
+        return `'${value.source.replaceAll('\'', '\'\'')}'`;
       } else if (Array.isArray(value)) {
         // serialize as a DuckDB list literal
         return `[${value.map(v => literalToSQL(v)).join(', ')}]`;
