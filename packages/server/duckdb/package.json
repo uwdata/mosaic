@@ -40,11 +40,11 @@
     "prepublishOnly": "tsc --build"
   },
   "dependencies": {
-    "@duckdb/node-api": "~1.5.4-r.1",
-    "ws": "^8.21.0"
+    "@duckdb/node-api": "~1.5.5-r.5",
+    "ws": "^8.21.3"
   },
   "devDependencies": {
-    "@types/node": "^26.0.0",
+    "@types/node": "^26.6.2",
     "@uwdata/flechette": "^2.5.0"
   }
 }

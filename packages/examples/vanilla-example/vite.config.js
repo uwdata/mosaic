@@ -1,6 +1,6 @@
 /** @type {import('vite').UserConfig} */
 export default {
   build: {
-    target: 'ES2022',
+    target: 'es2022',
   },
 };

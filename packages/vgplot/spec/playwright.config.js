@@ -10,7 +10,7 @@ export default defineConfig({
 
   webServer: [
     {
-      command: 'pnpm exec vite --port 5173 --host --config vite.config.docker.js',
+      command: 'node_modules/.bin/vite --port 5173 --host --config vite.config.docker.js',
       port: 5173,
       reuseExistingServer: true,
       cwd: '../../../',
