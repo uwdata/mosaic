@@ -181,7 +181,7 @@ Two-way binding is supported for Selections using _single_ resolution, enabling 
 ## Layout
 
 Layout helpers combine elements such as [plots](#plots) and [inputs](/inputs/) into multi-view dashboard displays.
-vgplot includes `vconcat` (vertical concatenation) and `hconcat` (horizontal concatenation) methods for multi-view layout.
+vgplot includes `vconcat` (vertical concatenation), `hconcat` (horizontal concatenation), and `zconcat` (layering, with later elements on top) methods for multi-view layout.
 These methods accept a list of elements and position them using CSS `flexbox` layout.
 Layout helpers can be used with plots, inputs, and arbitrary Web content such as images and videos.
 To ensure spacing, the `vspace` and `hspace` helpers add padding between elements in a layout.
@@ -297,7 +297,7 @@ Discrete color legends can drive the same toggle-style selection behavior as poi
 
 ## Layout
 
-`vg.vconcat`, `vg.hconcat`, `vg.vspace`, and `vg.hspace` compose plots, [inputs](/inputs/), and spacing. The runtime lays out children with flexbox.
+`vg.vconcat`, `vg.hconcat`, `vg.zconcat`, `vg.vspace`, and `vg.hspace` compose plots, [inputs](/inputs/), and spacing. The runtime lays out `vconcat` and `hconcat` children with flexbox, and layers `zconcat` children in a single CSS grid cell.
 
 Full apps often call `vg.spec(meta=..., data=..., params=..., view=...)` so the result is a single top-level spec object (the same shape as JSON/YAML on disk).
 

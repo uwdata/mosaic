@@ -35,6 +35,7 @@ export { SpecNode } from "./ast/SpecNode.js";
 export { TransformNode } from "./ast/TransformNode.js";
 export { VConcatNode } from "./ast/VConcatNode.js";
 export { VSpaceNode } from "./ast/VSpaceNode.js";
+export { ZConcatNode } from "./ast/ZConcatNode.js";
 
 // Spec types
 export type * from "./spec/index.js";

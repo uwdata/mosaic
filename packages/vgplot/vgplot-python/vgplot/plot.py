@@ -194,6 +194,31 @@ def hconcat(
     )
 
 
+def zconcat(
+    *items: Any,
+    halign: float | None = None,
+    valign: float | None = None,
+    param_names: dict[int, str] | None = None,
+    **kwargs: Any,
+) -> View:
+    """Layer items on top of one another; later items are drawn over earlier ones.
+
+    ``halign`` and ``valign`` are numbers in [0, 1] that position items smaller
+    than the layout: 0 (the default) aligns to the left/top, 0.5 centers, and
+    1 aligns to the right/bottom.
+    """
+    from .spec import View
+
+    view: dict[str, Any] = {
+        "zconcat": [_encode_component(i, param_names) for i in items]
+    }
+    if halign is not None:
+        view["halign"] = halign
+    if valign is not None:
+        view["valign"] = valign
+    return View(view, **kwargs)
+
+
 def hspace(value: int | str) -> View:
     from .spec import View
 

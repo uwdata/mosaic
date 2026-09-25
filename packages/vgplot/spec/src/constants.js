@@ -38,6 +38,7 @@ export const INPUT = "input";
 // layout
 export const HCONCAT = "hconcat";
 export const VCONCAT = "vconcat";
+export const ZCONCAT = "zconcat";
 export const HSPACE = "hspace";
 export const VSPACE = "vspace";
 

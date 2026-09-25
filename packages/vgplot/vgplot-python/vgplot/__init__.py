@@ -47,6 +47,7 @@ from .plot import (
     toggle_z,
     vconcat,
     vspace,
+    zconcat,
 )
 from .spec import Spec, View, spec
 
@@ -105,4 +106,5 @@ __all__ = [
     "toggle_z",
     "vconcat",
     "vspace",
+    "zconcat",
 ] + list(_generated_all)  # pyright: ignore[reportUnsupportedDunderAll]

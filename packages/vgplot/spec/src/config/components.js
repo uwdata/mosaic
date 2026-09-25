@@ -5,9 +5,10 @@ import { parseLegend } from '../ast/PlotLegendNode.js';
 import { parsePlot, parseTopLevelMark } from '../ast/PlotNode.js';
 import { parseVConcat } from '../ast/VConcatNode.js';
 import { parseVSpace } from '../ast/VSpaceNode.js';
+import { parseZConcat } from '../ast/ZConcatNode.js';
 
 import {
-  HCONCAT, HSPACE, INPUT, LEGEND, MARK, PLOT, VCONCAT, VSPACE
+  HCONCAT, HSPACE, INPUT, LEGEND, MARK, PLOT, VCONCAT, VSPACE, ZCONCAT
 } from '../constants.js';
 
 /**
@@ -23,6 +24,7 @@ export function componentMap(overrides = []) {
     [ VCONCAT, parseVConcat ],
     [ HSPACE, parseHSpace ],
     [ VSPACE, parseVSpace ],
+    [ ZCONCAT, parseZConcat ],
     ...overrides
   ]);
 }

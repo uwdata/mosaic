@@ -77,7 +77,8 @@ export {
 
 export {
   hconcat,
-  vconcat
+  vconcat,
+  zconcat
 } from './layout/concat.js';
 
 export {
