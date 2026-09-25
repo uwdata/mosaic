@@ -1,7 +1,8 @@
 name: Conformance
 
 # Validates the server protocol specification in conformance/ and runs the
-# conformance suite against every server configuration. Conformance is a
+# conformance suite against every target: the four servers, the Go server's
+# other configurations, and the in-process connectors. Conformance is a
 # ratchet: each leg passes when its failures match
 # conformance/known-failures/<config>.yaml, and fails on a regression or on a
 # listed case that has started passing.
@@ -75,7 +76,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        target: [node, python, rust, go, go-cache, go-gatekeeper]
+        target: [node, python, rust, go, go-cache, go-gatekeeper, node-connector, wasm]
 
     steps:
       - uses: actions/checkout@v7

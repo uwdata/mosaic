@@ -1,6 +1,7 @@
 import path from 'node:path';
 import { loadCases, repoRoot } from '../src/cases.ts';
 import type { Session } from '../src/session.ts';
+import { nodeSession, wasmSession } from './inproc.ts';
 import type { Capability, Transport } from '../src/types.ts';
 
 export interface ServerCommand {
@@ -89,7 +90,23 @@ export const targets: Record<string, Target> = {
     '`duckdb-server-go --gatekeeper=\'{"version":1,"options":{}}\'`; validation disables `exec` and denies local file access',
     ['policy'],
     launcher('go', goRun, goDir, ['--gatekeeper', '{"version":1,"options":{}}'])
-  )
+  ),
+  'node-connector': {
+    name: 'node-connector',
+    kind: 'inproc',
+    description: '`NodeConnector` (`@uwdata/mosaic-core/node-connector`) over an in-process `@uwdata/mosaic-duckdb` database',
+    capabilities: new Set(['exec', 'files']),
+    transports: ['inproc'],
+    session: () => nodeSession()
+  },
+  wasm: {
+    name: 'wasm',
+    kind: 'inproc',
+    description: '`DuckDBWASMConnector` (`packages/mosaic/core/src/connectors/wasm.ts`) on the duckdb-wasm Node bundle in a worker thread, with `data/*.parquet` registered in its virtual file system',
+    capabilities: new Set(['exec', 'files']),
+    transports: ['inproc'],
+    session: () => wasmSession()
+  }
 };
 
 export function target(name: string | undefined): Target {

@@ -45,6 +45,12 @@ Where the servers disagreed, the spec picks one behaviour. Each is revisable.
 
 ## Common gaps (all four servers)
 
+The in-process connectors (`node-connector`, `wasm`) share two more: neither
+validates `type`, so a malformed command runs as `arrow`, and neither maps
+engine exceptions to a `code`, so the coordinator cannot tell a parse error
+from a missing table. Both are client-side fixes in `@uwdata/mosaic-core`;
+#1224 adds the `ConnectorError` type they need.
+
 - No JSON error envelope over HTTP (D4).
 - No `preagg` command; must return `400 unsupported_command`, not an unknown-type error.
 - No `reason` on any envelope (D19), so every error case also records `error.reason.missing` and `error.schema.required.reason` where the body is JSON at all.
@@ -64,8 +70,9 @@ decoded with Flechette and compared as rows.
 CONFORMANCE_TARGET=go pnpm -F @uwdata/mosaic-conformance suite
 ```
 
-Targets are defined in `implementations/index.ts`: `node`, `python`,
-`rust`, `go`, `go-cache`, `go-gatekeeper`. Each declares capabilities
+Targets are defined in `implementations/index.ts`: the servers `node`,
+`python`, `rust`, `go`, `go-cache`, `go-gatekeeper`, and the in-process
+connectors `node-connector` and `wasm`. Each declares capabilities
 (`exec`, `preagg`, `caching`, `files`, `policy`), which cases gate on with
 `requires`/`unless`, and transports. Wire transports (`post`, `get`, `ws`)
 check the encoded protocol; command transports (`rest`, `socket`, `inproc`)
@@ -134,7 +141,7 @@ command-layer result and rejection mapping, session deadlines, case
 applicability, and the ratchet comparison) without a target; the root
 `pnpm test` includes them.
 
-CI runs all six targets on every pull request that touches a server
+CI runs all eight targets on every pull request that touches a server
 or the spec (`.github/workflows/conformance.yml`) and fails if the tables
 below are stale.
 
@@ -643,6 +650,79 @@ Configuration: `@uwdata/mosaic-duckdb` data server (`packages/server/duckdb`). T
   - `ws/ws-pipeline-slow-first`: `s1.arrow.eos`, `s2.arrow.eos`
 - **Large GET query strings are rejected**
   - `get/large-request-1mib`: `arrow.status.431`
+
+</details>
+
+## In-process `NodeConnector`
+
+Configuration: `NodeConnector` (`@uwdata/mosaic-core/node-connector`) over an in-process `@uwdata/mosaic-duckdb` database. Transports: inproc.
+
+| Area | Current | Spec | Fix | Cases |
+|------|---------|------|-----|-------|
+| `type` is not validated | Anything other than `exec` runs as `arrow` (`NodeConnector.ts`), so a missing, unknown, or non-string `type`, and `preagg`, run the SQL and resolve a result. | `missing_field`/`invalid_field` for a bad `type`; `unsupported_command` for `preagg` until implemented (D1, D6, D24). | Check `type` before dispatch and reject with a `ConnectorError`. | 5 |
+| Rejections carry no code | DuckDB errors from `@duckdb/node-api` are rethrown as plain `Error`s; a missing or empty `sql` reaches DuckDB and fails as a binder or parser error. | `ConnectorError` with `code`, `reason`, and `field` (D19, D24). | Map engine exceptions to codes in the connector; validate `sql` before dispatch. #1224 adds the error type without `reason`/`field`. | 10 |
+| `exec` resolves the database | `DuckDB.exec` returns `this`, and the connector passes it through despite the `Promise<void>` signature. | `exec` resolves `undefined` (D24). | Return nothing from the `exec` branch. | 2 |
+| Zero rows and a trailing semicolon go through `to_arrow_ipc` | `arrowBuffer` wraps the SQL as `to_arrow_ipc((sql))`, so a trailing `;` is a parse error and a zero-row result yields `[]`, which does not decode to a table. | Trailing `;` allowed (D16); a zero-row result decodes with its schema (D24). | Strip a trailing `;`; emit a schema-only stream for zero rows, as the Node server also needs (D8). | 2 |
+
+<details><summary>Baselined violations by case</summary>
+
+- **`type` is not validated**
+  - `inproc/missing-type`: `error.resolved`
+  - `inproc/unknown-type`: `error.resolved`
+  - `inproc/type-not-a-string`: `error.resolved`
+  - `inproc/preagg-unsupported`: `error.resolved`
+  - `inproc/ws-pipeline-order`: `s2.error.resolved`
+- **Rejections carry no code**
+  - `inproc/missing-sql`: `error.code.missing`, `error.reason.missing`, `error.field.missing`
+  - `inproc/empty-sql`: `error.code.missing`, `error.reason.missing`, `error.field.missing`
+  - `inproc/sql-parse-error`: `error.code.missing`, `error.reason.missing`
+  - `inproc/sql-unknown-table`: `error.code.missing`, `error.reason.missing`
+  - `inproc/sql-runtime-error`: `error.code.missing`, `error.reason.missing`
+  - `inproc/exec-error`: `error.code.missing`, `error.reason.missing`
+  - `inproc/arrow-multi-statement`: `error.code.missing`, `error.reason.missing`
+  - `inproc/ws-missing-sql-stays-open`: `s1.error.code.missing`, `s1.error.reason.missing`, `s1.error.field.missing`
+  - `inproc/ws-sql-error-stays-open`: `s1.error.code.missing`, `s1.error.reason.missing`
+  - `inproc/ws-pipeline-order`: `s4.error.code.missing`, `s4.error.reason.missing`
+- **`exec` resolves the database**
+  - `inproc/exec-acknowledged`: `s1.exec.result`
+  - `inproc/exec-multi-statement`: `s1.exec.result`
+- **Zero rows and a trailing semicolon go through `to_arrow_ipc`**
+  - `inproc/arrow-trailing-semicolon`: `arrow.rejected`
+  - `inproc/arrow-empty-result`: `arrow.decode`
+
+</details>
+
+## In-process `DuckDBWASMConnector`
+
+Configuration: `DuckDBWASMConnector` (`packages/mosaic/core/src/connectors/wasm.ts`) on the duckdb-wasm Node bundle in a worker thread, with `data/*.parquet` registered in its virtual file system. Transports: inproc.
+
+| Area | Current | Spec | Fix | Cases |
+|------|---------|------|-----|-------|
+| `type` and `sql` are not validated | Every request runs `runQuery(conn, sql)` and only `exec` is special-cased (`wasm.ts`), so a missing, unknown, or non-string `type` and `preagg` run the SQL, and a missing or empty `sql` resolves with an empty result instead of rejecting. | `missing_field`/`invalid_field` for a bad `type` or `sql`; `unsupported_command` for `preagg` until implemented (D1, D6, D24). | Check `type` and `sql` before dispatch and reject with a `ConnectorError`. | 8 |
+| Rejections carry no code | duckdb-wasm rebuilds the worker's exception as an `Error` whose `name` is the DuckDB exception class; the connector rethrows it unchanged. | `ConnectorError` with `code`, `reason`, and `field` (D19, D24). | Map exception names (`Parser Error`, `Catalog Error`, …) to codes in the connector. #1224 adds the error type without `reason`/`field`. | 6 |
+| Multi-statement `arrow` returns the first statement | `runQuery` runs every statement and returns the first result set; `SELECT 1 AS x; SELECT 2 AS y` resolves with `x`. | `bad_request` / `multiple_statements` (D16). | Count statements before execution. | 1 |
+| Results are IPC file format | `runQuery` returns the IPC file encoding (`ARROW1` magic); Flechette decodes it, so the coordinator is unaffected. | Not a command-layer requirement (D24); recorded so the difference from the wire rule (D8) is visible. | None required. | not observable |
+
+<details><summary>Baselined violations by case</summary>
+
+- **`type` and `sql` are not validated**
+  - `inproc/missing-type`: `error.resolved`
+  - `inproc/unknown-type`: `error.resolved`
+  - `inproc/type-not-a-string`: `error.resolved`
+  - `inproc/preagg-unsupported`: `error.resolved`
+  - `inproc/missing-sql`: `error.resolved`
+  - `inproc/empty-sql`: `error.resolved`
+  - `inproc/ws-missing-sql-stays-open`: `s1.error.resolved`
+  - `inproc/ws-pipeline-order`: `s2.error.resolved`
+- **Rejections carry no code**
+  - `inproc/sql-parse-error`: `error.code.missing`, `error.reason.missing`
+  - `inproc/sql-unknown-table`: `error.code.missing`, `error.reason.missing`
+  - `inproc/sql-runtime-error`: `error.code.missing`, `error.reason.missing`
+  - `inproc/exec-error`: `error.code.missing`, `error.reason.missing`
+  - `inproc/ws-sql-error-stays-open`: `s1.error.code.missing`, `s1.error.reason.missing`
+  - `inproc/ws-pipeline-order`: `s4.error.code.missing`, `s4.error.reason.missing`
+- **Multi-statement `arrow` returns the first statement**
+  - `inproc/arrow-multi-statement`: `error.resolved`
 
 </details>
 

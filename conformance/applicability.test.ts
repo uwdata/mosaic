@@ -95,6 +95,14 @@ describe('case applicability', () => {
     expect(applicable).toHaveLength(command);
   });
 
+  it('expands an in-process target over inproc only, skipping wire-only cases by layer', () => {
+    const wasm = expandCases(definitions, targets.wasm);
+    expect(wasm).toHaveLength(definitions.length);
+    expect(wasm.every(c => c.transport === 'inproc')).toBe(true);
+    expect(wasm.filter(c => c.applicable).map(c => c.id)).toContain('inproc/arrow-from-parquet');
+    expect(wasm.find(c => c.id === 'inproc/large-request-1mib')).toMatchObject({ applicable: false });
+  });
+
   it('marks a wire-only case reaching a command transport as not applicable', () => {
     const c = expandCases(definitions, targets.go).find(x => x.id === 'socket/method-put')!;
     expect(c).toMatchObject({ layer: 'command', applicable: false });

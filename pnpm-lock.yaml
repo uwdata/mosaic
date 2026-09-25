@@ -248,12 +248,21 @@ importers:
         specifier: ^2.9.0
         version: 2.9.1
     devDependencies:
+      '@duckdb/duckdb-wasm':
+        specifier: 1.33.1-dev57.0
+        version: 1.33.1-dev57.0
       '@types/node':
         specifier: ^26.0.0
         version: 26.6.2
       '@types/ws':
         specifier: ^8.18.1
         version: 8.18.1
+      '@uwdata/mosaic-duckdb':
+        specifier: workspace:*
+        version: link:../packages/server/duckdb
+      web-worker:
+        specifier: 1.2.0
+        version: 1.2.0
       ws:
         specifier: ^8.21.3
         version: 8.21.3
@@ -4982,6 +4991,9 @@ packages:
 
   wcwidth@1.0.1:
     resolution: {integrity: sha512-XHPEwS0q6TaxcvG85+8EYkbiCux2XtWG2mkc47Ng2A77BQu9+DqIOJldST4HgPkuea7dvKSj5VgX3P1d4rW8Tg==}
+
+  web-worker@1.2.0:
+    resolution: {integrity: sha512-PgF341avzqyx60neE9DD+XS26MMNMoUQRz9NOZwW32nPQrF6p77f1htcnjBSEV8BGMKZ16choqUG4hyI0Hx7mA==}
 
   webidl-conversions@8.0.1:
     resolution: {integrity: sha512-BMhLD/Sw+GbJC21C/UgyaZX41nPt8bUTg+jWyDeg7e7YN4xOM05YPSIXceACnXVtqyEw/LMClUQMtMZ+PGGpqQ==}
@@ -10042,6 +10054,8 @@ snapshots:
   wcwidth@1.0.1:
     dependencies:
       defaults: 1.0.4
+
+  web-worker@1.2.0: {}
 
   webidl-conversions@8.0.1: {}
 

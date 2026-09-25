@@ -21,8 +21,11 @@
     "yaml": "^2.9.0"
   },
   "devDependencies": {
+    "@duckdb/duckdb-wasm": "1.33.1-dev57.0",
     "@types/node": "^26.0.0",
     "@types/ws": "^8.18.1",
+    "@uwdata/mosaic-duckdb": "workspace:*",
+    "web-worker": "1.2.0",
     "ws": "^8.21.3"
   }
 }

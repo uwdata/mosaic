@@ -1,0 +1,62 @@
+# Known conformance failures for the in-process `DuckDBWASMConnector`
+# (`packages/mosaic/core/src/connectors/wasm.ts`), run on the duckdb-wasm
+# Node bundle. Source of truth for its table in ../STATUS.md; regenerate
+# with `pnpm -F @uwdata/mosaic-conformance status`.
+server: wasm
+failures:
+  - area: "`type` and `sql` are not validated"
+    current: "Every request runs `runQuery(conn, sql)` and only `exec` is special-cased (`wasm.ts`), so a missing, unknown, or non-string `type` and `preagg` run the SQL, and a missing or empty `sql` resolves with an empty result instead of rejecting."
+    spec: "`missing_field`/`invalid_field` for a bad `type` or `sql`; `unsupported_command` for `preagg` until implemented (D1, D6, D24)."
+    fix: Check `type` and `sql` before dispatch and reject with a `ConnectorError`.
+    cases:
+      inproc/missing-type:
+        - error.resolved
+      inproc/unknown-type:
+        - error.resolved
+      inproc/type-not-a-string:
+        - error.resolved
+      inproc/preagg-unsupported:
+        - error.resolved
+      inproc/missing-sql:
+        - error.resolved
+      inproc/empty-sql:
+        - error.resolved
+      inproc/ws-missing-sql-stays-open:
+        - s1.error.resolved
+      inproc/ws-pipeline-order:
+        - s2.error.resolved
+  - area: Rejections carry no code
+    current: duckdb-wasm rebuilds the worker's exception as an `Error` whose `name` is the DuckDB exception class; the connector rethrows it unchanged.
+    spec: "`ConnectorError` with `code`, `reason`, and `field` (D19, D24)."
+    fix: "Map exception names (`Parser Error`, `Catalog Error`, …) to codes in the connector. #1224 adds the error type without `reason`/`field`."
+    cases:
+      inproc/sql-parse-error:
+        - error.code.missing
+        - error.reason.missing
+      inproc/sql-unknown-table:
+        - error.code.missing
+        - error.reason.missing
+      inproc/sql-runtime-error:
+        - error.code.missing
+        - error.reason.missing
+      inproc/exec-error:
+        - error.code.missing
+        - error.reason.missing
+      inproc/ws-sql-error-stays-open:
+        - s1.error.code.missing
+        - s1.error.reason.missing
+      inproc/ws-pipeline-order:
+        - s4.error.code.missing
+        - s4.error.reason.missing
+  - area: Multi-statement `arrow` returns the first statement
+    current: "`runQuery` runs every statement and returns the first result set; `SELECT 1 AS x; SELECT 2 AS y` resolves with `x`."
+    spec: "`bad_request` / `multiple_statements` (D16)."
+    fix: Count statements before execution.
+    cases:
+      inproc/arrow-multi-statement:
+        - error.resolved
+  - area: Results are IPC file format
+    current: "`runQuery` returns the IPC file encoding (`ARROW1` magic); Flechette decodes it, so the coordinator is unaffected."
+    spec: Not a command-layer requirement (D24); recorded so the difference from the wire rule (D8) is visible.
+    fix: None required.
+    cases: {}

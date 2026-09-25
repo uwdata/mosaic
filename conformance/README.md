@@ -19,10 +19,13 @@ checks each response against the schema and the case's expectations:
 CONFORMANCE_TARGET=go pnpm -F @uwdata/mosaic-conformance suite
 ```
 
-`CONFORMANCE_TARGET` is one of the targets in `implementations/index.ts`
-(`node`, `python`, `rust`, `go`, `go-cache`, `go-gatekeeper`). A server
-target is built on first launch and needs its toolchain installed; set
-`CONFORMANCE_URL` to test a server you started yourself.
+`CONFORMANCE_TARGET` is one of the targets in `implementations/index.ts`:
+the servers `node`, `python`, `rust`, `go`, `go-cache`, `go-gatekeeper`, and
+the in-process connectors `node-connector` and `wasm`. A server target is
+built on first launch and needs its toolchain installed; set
+`CONFORMANCE_URL` to test a server you started yourself. In-process targets
+run `@uwdata/mosaic-core`'s own connectors inside the test process, the WASM
+one on the duckdb-wasm Node bundle in a worker thread.
 
 ### Layers
 
