@@ -88,12 +88,22 @@ For convenience, the `vgplot` package re-exports much of the `mosaic-core`, `mos
 Mosaic is an active research project from the [UW Interactive Data Lab](https://idl.uw.edu/), in collaboration with the [CMU Data Interaction Group](https://dig.cmu.edu/).
 We are interested in unifying advances in scalable visualization methods with languages for interactive visualization.
 This is an exciting area with a number of open challenges!
-For more, read the [TVCG'24 Mosaic research paper](https://idl.uw.edu/papers/mosaic).
 
-There will inevitably be some shortcomings, bugs, and documentation gaps.
-We do not yet consider Mosaic "production-ready", but believe that Mosaic (or something like it) is a valuable next step for interactive data systems.
+For more about the overall architecture, read our [TVCG'24 Mosaic paper](https://idl.uw.edu/papers/mosaic).
+To dive into how Mosaic optimizes selections, read the [TVCG'26 Mosaic Selections paper](https://idl.uw.edu/papers/mosaic-selections).
+
+## In Production Use
+
+Mosaic is used in production by a growing number of companies and projects, including:
+
+* [Apple Embedding Atlas](https://apple.github.io/embedding-atlas/)
+* [Nozzle](https://nozzle.io/)
+* [Ridge AI](https://ridgedata.ai)
+* [SQLRooms](https://github.com/sqlrooms/sqlrooms/tree/main/packages/mosaic)
+
+If you'd like to share a Mosaic project, post to the [Mosaic discussion board](https://github.com/uwdata/mosaic/discussions).
 If you're interested in contributing, please see our [GitHub repository](https://github.com/uwdata/mosaic).
 
 ## Acknowledgments
 
-Mosaic builds on code and ideas from a number of open source efforts, including [DuckDB](https://duckdb.org/), [Apache Arrow](https://arrow.apache.org/), [anywidget](https://anywidget.dev/), [Falcon](https://github.com/vega/falcon), [Vega-Lite](https://vega.github.io/vega-lite/), and [Observable Plot](https://observablehq.com/plot/). Thanks!
+Mosaic builds on code and ideas from a number of open source efforts, including [DuckDB](https://duckdb.org/), [Apache Arrow](https://arrow.apache.org/), [anywidget](https://anywidget.dev/), [Falcon](https://github.com/vega/falcon), [Flechette](https://idl.uw.edu/flechette/), [Vega-Lite](https://vega.github.io/vega-lite/), and [Observable Plot](https://observablehq.com/plot/). Thanks!

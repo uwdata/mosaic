@@ -52,12 +52,14 @@ type WebSocketOptions struct {
 }
 
 type config struct {
-	logger             *slog.Logger
-	authorizer         Authorizer
-	schemaMatchHeaders []string
-	cors               CORSOptions
-	corsProtection     *http.CrossOriginProtection
-	websocket          WebSocketOptions
+	logger          *slog.Logger
+	authorizer      requestAuthorizer
+	cors            CORSOptions
+	corsProtection  *http.CrossOriginProtection
+	websocket       WebSocketOptions
+	maxMessageBytes int64
+	cacheControl    string
+	varyHeaders     []string
 }
 
 func defaultConfig() config {
@@ -104,12 +106,15 @@ func WithLogger(logger *slog.Logger) Option {
 	})
 }
 
-func WithAuthorizer(authorizer Authorizer) Option {
+// WithMaxMessageBytes limits POST bodies and decompressed WebSocket messages to
+// n bytes, which must be positive. Omitting it leaves POST bodies unbounded and
+// retains the WebSocket library's 32 KiB limit.
+func WithMaxMessageBytes(n int64) Option {
 	return optionFunc(func(cfg *config) error {
-		if authorizer == nil || isNilValue(authorizer) {
-			return errNilAuthorizer
+		if n <= 0 {
+			return errors.New("server: maximum message bytes must be positive")
 		}
-		cfg.authorizer = authorizer
+		cfg.maxMessageBytes = n
 		return nil
 	})
 }
@@ -195,14 +200,6 @@ func WithWebSocket(options WebSocketOptions) Option {
 		configured := options
 		configured.AllowedOrigins = origins
 		cfg.websocket = configured
-		return nil
-	})
-}
-
-func WithSchemaMatchHeaders(headers ...string) Option {
-	headers = append([]string(nil), headers...)
-	return optionFunc(func(cfg *config) error {
-		cfg.schemaMatchHeaders = append([]string(nil), headers...)
 		return nil
 	})
 }
