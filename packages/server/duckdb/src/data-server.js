@@ -82,7 +82,7 @@ export function queryHandler(db) {
     try {
       const { sql, type } = query;
       if (type == null) {
-        res.error(`missing required 'type' parameter`, 400);
+        res.error('missing required \'type\' parameter', 400);
         return;
       }
       console.log(`> ${String(type).toUpperCase()}${sql ? ` ${sql}` : ''}`);

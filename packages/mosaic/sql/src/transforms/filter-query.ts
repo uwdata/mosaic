@@ -71,7 +71,7 @@ export function filterPushdown(
   // add filtered table as CTE node
   const cte = new WithClauseNode(
     filteredName,
-    Query.select("*").from(tableRef).where(filter)
+    Query.select('*').from(tableRef).where(filter)
   );
   clone._with = [cte, ...clone._with];
   return clone;

@@ -1,6 +1,6 @@
-import { asNode, type ExprValue, listHasAll, listHasAny, literal } from "@uwdata/mosaic-sql";
-import { isMosaicClient, type MosaicClient } from "../MosaicClient.js";
-import type { ClauseMetadata, ClauseSource, SelectionClause } from "./SelectionClause.js";
+import { asNode, type ExprValue, listHasAll, listHasAny, literal } from '@uwdata/mosaic-sql';
+import { isMosaicClient, type MosaicClient } from '../MosaicClient.js';
+import type { ClauseMetadata, ClauseSource, SelectionClause } from './SelectionClause.js';
 
 /**
  * Selection clause metadata indicating text search matching.

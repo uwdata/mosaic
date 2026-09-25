@@ -1,7 +1,7 @@
-import type { ExprNode } from "@uwdata/mosaic-sql";
-import { asNode, contains, literal, lower, or, prefix, regexp_matches, suffix } from "@uwdata/mosaic-sql";
-import type { MosaicClient } from "../MosaicClient.js";
-import type { ClauseMetadata, ClauseSource, SelectionClause } from "./SelectionClause.js";
+import type { ExprNode } from '@uwdata/mosaic-sql';
+import { asNode, contains, literal, lower, or, prefix, regexp_matches, suffix } from '@uwdata/mosaic-sql';
+import type { MosaicClient } from '../MosaicClient.js';
+import type { ClauseMetadata, ClauseSource, SelectionClause } from './SelectionClause.js';
 
 /**
  * Selection clause metadata indicating text search matching.
