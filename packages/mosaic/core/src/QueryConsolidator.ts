@@ -36,7 +36,8 @@ function wait(callback: () => void): unknown {
  */
 export function consolidator(
   enqueue: (entry: QueryEntry, priority?: number) => void,
-  cache: Cache
+  cache: Cache,
+  generation: () => number = () => 0
 ) {
   let pending: GroupEntry[] = [];
   let id: unknown = 0;
@@ -50,7 +51,7 @@ export function consolidator(
     // build and issue consolidated queries
     for (const group of groups) {
       consolidate(group, enqueue);
-      processResults(group, cache);
+      processResults(group, cache, generation);
     }
   }
 
@@ -257,13 +258,21 @@ function consolidatedQuery(group: QueryGroup): Query {
  * Process query results, dispatch results to original requests
  * @param group Array of query requests
  * @param cache Client-side query cache (sql -> data)
+ * @param generation Cache generation accessor; results issued under an
+ *  older generation are delivered but not cached
  */
-async function processResults(group: QueryGroup, cache: Cache): Promise<void> {
+async function processResults(
+  group: QueryGroup,
+  cache: Cache,
+  generation: () => number
+): Promise<void> {
   const { maps, query, result } = group;
 
   // exit early if no consolidation performed
   // in this case results are passed directly
   if (!maps) return;
+
+  const issued = generation();
 
   // await consolidated query result, pass errors if needed
   let data: Table;
@@ -287,7 +296,7 @@ async function processResults(group: QueryGroup, cache: Cache): Promise<void> {
     const extract = describe && map ? filterResult(data, map)
       : map ? projectResult(data, map)
       : data;
-    if (request.cache) {
+    if (request.cache && issued === generation()) {
       cache.set(String(request.query), extract, bytes);
     }
     result.fulfill(extract);
