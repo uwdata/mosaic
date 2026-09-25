@@ -4,7 +4,7 @@ import { IntervalXY } from './interactors/Interval2D.js';
 import { Nearest, NearestX, NearestY } from './interactors/Nearest.js';
 import { Pan, PanX, PanY, PanZoom, PanZoomX, PanZoomY } from './interactors/PanZoom.js';
 import { Region } from './interactors/Region.js';
-import { Toggle, ToggleColor, ToggleX, ToggleY } from './interactors/Toggle.js';
+import { Toggle, ToggleColor, ToggleX, ToggleY, ToggleZ } from './interactors/Toggle.js';
 
 /** A plot interactor entry. */
 export type PlotInteractor =
@@ -25,4 +25,5 @@ export type PlotInteractor =
   | Toggle
   | ToggleX
   | ToggleY
-  | ToggleColor;
+  | ToggleColor
+  | ToggleZ;
