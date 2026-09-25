@@ -60,7 +60,7 @@ class HTTPHandler(Handler):
 
     def arrow(self, buffer: bytes) -> None:
         res = self.begin(200)
-        res.write_header("Content-Type", "application/octet-stream")
+        res.write_header("Content-Type", "application/vnd.apache.arrow.stream")
         res.end(buffer)
 
     def error(self, error: object, status: int = 500) -> None:
