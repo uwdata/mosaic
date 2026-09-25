@@ -40,8 +40,13 @@ func (r Reference) String() string {
 	return strings.Join(parts, ".")
 }
 
+// DuckDB compares identifiers case-insensitively, so two spellings of one object are the same reference.
 func (r Reference) equal(o Reference) bool {
-	return r.Catalog == o.Catalog && r.Table == o.Table && slices.Equal(r.Schema, o.Schema)
+	return strings.EqualFold(r.Catalog, o.Catalog) && strings.EqualFold(r.Table, o.Table) && slices.EqualFunc(r.Schema, o.Schema, strings.EqualFold)
+}
+
+func (r Reference) in(ns Namespace) bool {
+	return strings.EqualFold(r.Catalog, ns.Catalog) && slices.EqualFunc(r.Schema, ns.Schema, strings.EqualFold)
 }
 
 // schema is the single DuckDB schema component; callers have already validated the path depth.
@@ -172,10 +177,13 @@ func (p *PreAggregator) attempt(ctx context.Context, conn *sql.Conn, ns Namespac
 		return nil, err
 	}
 	defer func() { _ = tx.Rollback() }()
-	if _, err := p.authorize(ctx, tx, ns, sql, policy, true); err != nil {
+	if _, err := p.authorize(ctx, tx, sql, policy, true); err != nil {
 		return nil, err
 	}
 	stored, err := p.lookup(ctx, tx, ref)
+	if errors.Is(err, errUnmanaged) {
+		return nil, ErrAccessDenied
+	}
 	if err != nil || stored != nil {
 		return stored, err
 	}
@@ -192,7 +200,7 @@ func (p *PreAggregator) attempt(ctx context.Context, conn *sql.Conn, ns Namespac
 		return nil, err
 	}
 	var kind string
-	if err := tx.QueryRowContext(ctx, "SELECT upper(kind) FROM ("+managedObjects+") WHERE database_name = ? AND schema_name = ? AND name = ?", ref.Catalog, ref.schema(), ref.Table).Scan(&kind); err != nil {
+	if err := tx.QueryRowContext(ctx, "SELECT upper(kind) FROM ("+managedObjects+") WHERE lower(database_name) = lower(?) AND lower(schema_name) = lower(?) AND lower(name) = lower(?)", ref.Catalog, ref.schema(), ref.Table).Scan(&kind); err != nil {
 		return nil, err
 	}
 	if _, err := tx.ExecContext(ctx, "COMMENT ON "+kind+" "+ref.String()+" IS "+quoteLiteral(string(comment))); err != nil {
@@ -221,31 +229,37 @@ func (p *PreAggregator) Query(ctx context.Context, ns Namespace, sql string, pol
 		return nil, err
 	}
 	defer func() { _ = conn.Close() }()
-	refs, err := p.authorize(ctx, conn, ns, sql, read, false)
+	refs, err := p.authorize(ctx, conn, sql, read, false)
 	if err != nil {
 		return nil, p.missingFromBinding(ctx, conn, ns, err)
 	}
+	var managed []Reference
 	for _, ref := range refs {
 		stored, err := p.lookup(ctx, conn, ref)
-		if err != nil {
+		switch {
+		case errors.Is(err, errUnmanaged) && !ref.in(ns):
+			continue
+		case errors.Is(err, errUnmanaged):
+			return nil, ErrAccessDenied
+		case err != nil:
 			return nil, err
-		}
-		if stored == nil {
+		case stored == nil:
 			return nil, missing(ref)
 		}
+		managed = append(managed, ref)
 		source := policy
 		if sourcePolicy != nil {
 			if source, err = sourcePolicy(ctx, stored.SQL); err != nil {
 				return nil, err
 			}
 		}
-		if err := p.authorizeSource(ctx, conn, ns, stored.SQL, source); err != nil {
+		if err := p.authorizeSource(ctx, conn, stored.SQL, source); err != nil {
 			return nil, err
 		}
 	}
 	data, err := p.db.arrow(ctx, conn, sql)
 	if err != nil {
-		for _, ref := range refs {
+		for _, ref := range managed {
 			if stored, lookupErr := p.lookup(ctx, conn, ref); lookupErr == nil && stored == nil {
 				return nil, missing(ref)
 			}
@@ -273,31 +287,31 @@ func (p *PreAggregator) missingFromBinding(ctx context.Context, conn rowQuerier,
 	return err
 }
 
-func (p *PreAggregator) authorizeSource(ctx context.Context, conn rowQuerier, ns Namespace, sql string, policy *ValidationPolicy) error {
+func (p *PreAggregator) authorizeSource(ctx context.Context, conn rowQuerier, sql string, policy *ValidationPolicy) error {
 	source, err := typedPolicy(policy)
 	if err != nil {
 		return err
 	}
-	_, err = p.authorize(ctx, conn, ns, sql, source, true)
+	_, err = p.authorize(ctx, conn, sql, source, true)
 	return err
 }
 
-// authorize validates sql on conn and returns the managed tables it binds in ns. Materializations may not depend on
-// managed tables.
-func (p *PreAggregator) authorize(ctx context.Context, conn rowQuerier, ns Namespace, sql string, policy ValidationPolicy, materialize bool) ([]Reference, error) {
+// authorize validates sql on conn and returns the tables it binds. A materialization may not depend on a managed
+// table in any namespace, which is recognized by its metadata rather than its location.
+func (p *PreAggregator) authorize(ctx context.Context, conn rowQuerier, sql string, policy ValidationPolicy, materialize bool) ([]Reference, error) {
 	result, err := p.db.validateSQL(ctx, conn, sql, policy)
 	if err != nil {
 		return nil, err
 	}
 	var refs []Reference
 	for _, object := range result.Objects {
-		if object.Catalog != ns.Catalog || object.Schema != ns.Schema[0] {
-			continue
-		}
+		ref := Reference{object.Catalog, []string{object.Schema}, object.Table}
 		if materialize {
-			return nil, ErrAccessDenied
+			if stored, err := p.lookup(ctx, conn, ref); err == nil && stored != nil {
+				return nil, ErrAccessDenied
+			}
 		}
-		refs = append(refs, Reference{object.Catalog, []string{object.Schema}, object.Table})
+		refs = append(refs, ref)
 	}
 	return refs, nil
 }
@@ -319,12 +333,14 @@ func (p *PreAggregator) response(ref Reference, stored *preAggregateMetadata) Pr
 const managedObjects = `SELECT database_name, schema_name, table_name AS name, comment, temporary, 'table' AS kind FROM system.main.duckdb_tables()
 UNION ALL SELECT database_name, schema_name, view_name, comment, temporary, 'view' FROM system.main.duckdb_views()`
 
-// lookup returns the metadata of a managed object, nil when absent, and ErrAccessDenied when an object with that name
+var errUnmanaged = errors.New("query: object was not published by this server")
+
+// lookup returns the metadata of a managed object, nil when absent, and errUnmanaged when an object with that name
 // exists but was not published by this server for that SQL.
 func (p *PreAggregator) lookup(ctx context.Context, conn rowQuerier, ref Reference) (*preAggregateMetadata, error) {
 	var comment sql.NullString
 	err := conn.QueryRowContext(ctx, "SELECT comment FROM ("+managedObjects+`)
-WHERE database_name = ? AND schema_name = ? AND name = ? AND NOT temporary`, ref.Catalog, ref.schema(), ref.Table).Scan(&comment)
+WHERE lower(database_name) = lower(?) AND lower(schema_name) = lower(?) AND lower(name) = lower(?) AND NOT temporary`, ref.Catalog, ref.schema(), ref.Table).Scan(&comment)
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, nil
 	}
@@ -333,7 +349,7 @@ WHERE database_name = ? AND schema_name = ? AND name = ? AND NOT temporary`, ref
 	}
 	var stored preAggregateMetadata
 	if !comment.Valid || json.Unmarshal([]byte(comment.String), &stored) != nil || stored.Version != 1 || stored.CreatedAt.IsZero() || !p.reference(Namespace{ref.Catalog, ref.Schema}, stored.SQL).equal(ref) {
-		return nil, ErrAccessDenied
+		return nil, errUnmanaged
 	}
 	return &stored, nil
 }

@@ -182,7 +182,7 @@ The installed binary does not enable this option. Clients use a REST or socket c
 
 The server owns every object in a namespace and names tables `preagg_<sha256(sql)>`, so a repeated request finds the existing table. Use one namespace per tenant when the same SQL text yields different rows for different callers (a view that reads session state, a per-tenant search path); otherwise one shared namespace is enough, because reads are gated by revalidating the stored source SELECT under the reader's policy. Rename the namespace to discard everything in it.
 
-Which sources a caller may read comes from the `*query.ValidationPolicy` that [`WithAuthorizer`](#programmatic-authorization) returns for the command, narrowed under the database-wide Gatekeeper ceiling. The policy must use the typed fields; a `JSON` document is rejected because the namespace has to be appended to its table rules. A `preagg` command validates the source SELECT under that policy and denies any dependency on the namespace. An `arrow` command validates under the same policy plus the caller's namespace; another tenant's namespace is an ordinary schema the policy does or does not allow. Without an authorizer, the global ceiling alone applies.
+Which sources a caller may read comes from the `*query.ValidationPolicy` that [`WithAuthorizer`](#programmatic-authorization) returns for the command, narrowed under the database-wide Gatekeeper ceiling. The policy must use the typed fields; a `JSON` document is rejected because the namespace has to be appended to its table rules. A `preagg` command validates the source SELECT under that policy and denies any dependency on the namespace. An `arrow` command validates under the same policy plus the caller's namespace. Every managed table the read binds, in any namespace the policy allows, is recognized by its stored metadata and has its source SELECT revalidated; a managed table in the caller's own namespace that is missing or was not published by this server is `table_not_found` or `forbidden` respectively. Without an authorizer, the global ceiling alone applies.
 
 The global policy set with `gatekeeper_configure` must leave `allowed_tables` unrestricted (or use `blocked_tables`) unless it lists every namespace; put table restrictions in the request policy.
 
@@ -231,7 +231,7 @@ A `query.Materializer` runs inside the publishing transaction, on the connection
 
 `query.TableMaterializer{}` runs `CREATE TABLE … AS`. It is the default. Rows come from table statistics; bytes are rows times the declared column widths, with 16 bytes assumed for strings, blobs, and nested types.
 
-`query.ParquetMaterializer{Directory}` runs `COPY (…) TO '<Directory>/<catalog>/<schema>/<table>.parquet'` and publishes a view over `read_parquet`. `Directory` may be a local path or a DuckDB filesystem URL such as `s3://bucket/prefix` once the matching extension is loaded during trusted initialization. Because the path follows the reference, a replica that finds the file already present publishes its view without recomputing, and any replica sharing the directory serves the same data; `createdAt` then reflects that replica's publish time. Stats come from the Parquet footer, so bytes are compressed size and cost a footer read on object stores. Nothing deletes files: use the location's lifecycle rules. Object stores never expose an interrupted upload, but an interrupted local write leaves a partial file that later publishes reuse, so give each replica its own local directory and clear it on restart.
+`&query.ParquetMaterializer{Directory}` runs `COPY (…) TO '<Directory>/<catalog>/<schema>/<table>.parquet'` and publishes a view over `read_parquet`. Each path segment is ASCII-lowercased (DuckDB identifiers are case-insensitive) and percent-encoded outside `[a-z0-9_-]`, so distinct namespaces never share a file and `.`/`/` in an identifier cannot escape the directory. `Directory` may be a local path or a DuckDB filesystem URL such as `s3://bucket/prefix` once the matching extension is loaded during trusted initialization. Because the path follows the reference, a replica that finds the file already present publishes its view without recomputing, and any replica sharing the directory serves the same data; `createdAt` then reflects that replica's publish time. Writes to one path are serialized within a process; across replicas, only the object store's atomic replacement guards concurrent writers of the same key. Stats come from the Parquet footer, so bytes are compressed size and cost a footer read on object stores. Nothing deletes files: use the location's lifecycle rules. Object stores never expose an interrupted upload, but an interrupted local write leaves a partial file that later publishes reuse, so give each replica its own local directory and clear it on restart.
 
 Reads through a Parquet-backed view scan the file on every query. Where that is too slow, put the shared location behind `ParquetMaterializer` for durability and a local `TableMaterializer` replica cache in front; this package does not compose them.
 
@@ -247,7 +247,7 @@ Do not modify a namespace's tables or comments outside host cleanup. A retained 
 
 #### Errors
 
-With preaggregation enabled, HTTP command errors use JSON `{ error, code }`, and responses use `Cache-Control: no-store` even when `WithCacheControl` configures caching. GET responses omit ETags and ignore conditional request headers; every read is authorized and executed.
+With preaggregation enabled, HTTP command errors use the protocol's JSON envelope `{ error, code, reason, field?, reference? }`, and responses use `Cache-Control: no-store` even when `WithCacheControl` configures caching. WebSocket errors always use the envelope. GET responses omit ETags and ignore conditional request headers; every read is authorized and executed.
 
 | Code | HTTP status |
 | --- | --- |
@@ -255,7 +255,10 @@ With preaggregation enabled, HTTP command errors use JSON `{ error, code }`, and
 | `unauthenticated` | 401 |
 | `forbidden` | 403 |
 | `table_not_found` | 404 |
+| `unsupported_command` | 400 |
 | `internal_error` | 500 |
+
+`reason` follows the protocol's closed vocabulary: `malformed_json`, `missing_field` and `invalid_field` (with `field`), `sql_parse_error`, `unsupported_statement`, `command_disabled` (`preagg` unconfigured, or `exec` under validation), `policy_denied`, `access_denied`, `authentication_required`, `materialization_missing`, `validation_failed`, and `internal_failure`. A Gatekeeper binding failure on a user table stays `400` with `invalid_field`/`sql`.
 
 `table_not_found` includes `reference` (`{ catalog, schema: [...], table }`) only for a missing table in the caller's namespace. The coordinator can then rebuild and retry once. Unrelated source failures and unauthorized references do not receive this recovery signal. GET materialization requests are rejected. WebSockets use the same command handler and error envelopes, with no HTTP status field. Responses remain in request order, and the connection remains usable after a failed build. A build delays later commands on that socket.
 

@@ -47,10 +47,12 @@ func TestWebSocketPreaggregate(t *testing.T) {
 	require.Equal(t, []map[string]any{{"n": float64(3)}}, arrowRows(t, payload))
 	var failure struct {
 		Code      string          `json:"code"`
+		Reason    string          `json:"reason"`
 		Reference query.Reference `json:"reference"`
 	}
 	require.NoError(t, wsjson.Read(server.ctx, conn, &failure))
-	require.Equal(t, "bad_request", failure.Code)
+	require.Equal(t, "unsupported_command", failure.Code)
+	require.Equal(t, "command_disabled", failure.Reason)
 	var again query.PreaggResponse
 	require.NoError(t, wsjson.Read(server.ctx, conn, &again))
 	require.Equal(t, first, again)
@@ -61,6 +63,7 @@ func TestWebSocketPreaggregate(t *testing.T) {
 	require.NoError(t, wsjson.Write(server.ctx, conn, map[string]any{"type": CommandPreagg, "sql": source}))
 	require.NoError(t, wsjson.Read(server.ctx, conn, &failure))
 	require.Equal(t, "table_not_found", failure.Code)
+	require.Equal(t, "materialization_missing", failure.Reason)
 	require.Equal(t, first.Reference, failure.Reference)
 	require.NoError(t, wsjson.Read(server.ctx, conn, &again))
 	require.True(t, again.CreatedAt.After(first.CreatedAt))

@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"maps"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -137,14 +138,15 @@ func TestValidationErrorResponses(t *testing.T) {
 		err         error
 		status      int
 		code, level string
+		envelope    map[string]string
 	}{
-		{"denial", query.ErrorDetails{Code: "forbidden", Message: "private-diagnostic"}, 403, "forbidden", "WARN"},
-		{"unsupported", query.ErrorDetails{Code: "unsupported", Message: "private-diagnostic"}, 400, "bad_request", "WARN"},
-		{"parser", query.ErrorDetails{Code: "parser", Message: "private-diagnostic"}, 400, "bad_request", "WARN"},
-		{"binding", query.ErrorDetails{Code: "binding", Message: "private-diagnostic"}, 400, "bad_request", "WARN"},
-		{"invalid SQL", query.ErrorDetails{Code: "invalid_input", Message: "private-diagnostic"}, 400, "bad_request", "WARN"},
-		{"invalid policy", errors.Join(query.ErrInvalidPolicy, query.ErrorDetails{Code: "invalid_input", Message: "private-diagnostic"}), 500, "internal_error", "ERROR"},
-		{"driver failure", errors.New("private-diagnostic"), 500, "internal_error", "ERROR"},
+		{"denial", query.ErrorDetails{Code: "forbidden", Message: "private-diagnostic"}, 403, "forbidden", "WARN", map[string]string{"reason": "policy_denied"}},
+		{"unsupported", query.ErrorDetails{Code: "unsupported", Message: "private-diagnostic"}, 400, "bad_request", "WARN", map[string]string{"reason": "unsupported_statement"}},
+		{"parser", query.ErrorDetails{Code: "parser", Message: "private-diagnostic"}, 400, "bad_request", "WARN", map[string]string{"reason": "sql_parse_error"}},
+		{"binding", query.ErrorDetails{Code: "binding", Message: "private-diagnostic"}, 400, "bad_request", "WARN", map[string]string{"reason": "invalid_field", "field": "sql"}},
+		{"invalid SQL", query.ErrorDetails{Code: "invalid_input", Message: "private-diagnostic"}, 400, "bad_request", "WARN", map[string]string{"reason": "sql_parse_error"}},
+		{"invalid policy", errors.Join(query.ErrInvalidPolicy, query.ErrorDetails{Code: "invalid_input", Message: "private-diagnostic"}), 500, "internal_error", "ERROR", map[string]string{"reason": "validation_failed"}},
+		{"driver failure", errors.New("private-diagnostic"), 500, "internal_error", "ERROR", map[string]string{"reason": "internal_failure"}},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			var logs synchronizedBuffer
@@ -167,7 +169,9 @@ func TestValidationErrorResponses(t *testing.T) {
 				require.NoError(t, conn.Write(server.ctx, websocket.MessageText, []byte(body)))
 				var response map[string]string
 				require.NoError(t, wsjson.Read(server.ctx, conn, &response))
-				require.Equal(t, map[string]string{"code": tc.code, "error": http.StatusText(tc.status)}, response)
+				want := map[string]string{"code": tc.code, "error": http.StatusText(tc.status)}
+				maps.Copy(want, tc.envelope)
+				require.Equal(t, want, response)
 			}
 			decoder := json.NewDecoder(bytes.NewReader(logs.Bytes()))
 			for range 3 {

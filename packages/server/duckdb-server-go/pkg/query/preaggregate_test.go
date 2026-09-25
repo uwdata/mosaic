@@ -315,7 +315,7 @@ func TestPreAggregateRejectsQualifiedReplacementScan(t *testing.T) {
 func setupParquet(t *testing.T) (*DB, *PreAggregator, string) {
 	t.Helper()
 	dir := t.TempDir()
-	db, p := setupMaterializer(t, ParquetMaterializer{Directory: dir})
+	db, p := setupMaterializer(t, &ParquetMaterializer{Directory: dir})
 	return db, p, dir
 }
 
@@ -368,10 +368,78 @@ func TestParquetMaterialize(t *testing.T) {
 }
 
 func TestParquetDirectory(t *testing.T) {
-	_, p := setupMaterializer(t, ParquetMaterializer{})
+	_, p := setupMaterializer(t, &ParquetMaterializer{})
 	_, err := p.Materialize(t.Context(), reader, `SELECT 1 AS x`, nil)
 	require.ErrorContains(t, err, "requires a directory")
-	_, p = setupMaterializer(t, ParquetMaterializer{Directory: "it's"})
+	_, p = setupMaterializer(t, &ParquetMaterializer{Directory: "it's"})
 	_, err = p.Materialize(t.Context(), reader, `SELECT 1 AS x`, nil)
-	require.ErrorContains(t, err, "invalid parquet path")
+	require.ErrorContains(t, err, "invalid parquet directory")
+}
+
+func TestParquetConcurrentIdenticalBuilds(t *testing.T) {
+	_, p, dir := setupParquet(t)
+	const count = 8
+	results := make([]PreaggResponse, count)
+	errs := make([]error, count)
+	var group sync.WaitGroup
+	for i := range count {
+		group.Go(func() {
+			results[i], errs[i] = p.Materialize(t.Context(), reader, `SELECT i FROM range(1000000) t(i)`, nil)
+		})
+	}
+	group.Wait()
+	for i := range count {
+		require.NoError(t, errs[i])
+		require.Equal(t, results[0].Reference, results[i].Reference)
+	}
+	require.Len(t, parquetFiles(t, dir), 1)
+}
+
+func TestParquetNamespacesDoNotAliasFiles(t *testing.T) {
+	db, p, dir := setupParquet(t)
+	policy := tenantPolicy()
+	source := `SELECT * FROM memory.tenant.source`
+	first, err := p.Materialize(t.Context(), reader, source, policy)
+	require.NoError(t, err)
+	require.Equal(t, int64(3), first.Rows)
+	_, err = db.db.ExecContext(t.Context(), "DELETE FROM memory.tenant.source")
+	require.NoError(t, err)
+	for _, schema := range []string{"./reader", "reader/../reader", "reader*", `re"ader`, "reader%2F"} {
+		second, err := p.Materialize(t.Context(), Namespace{Schema: []string{schema}}, source, policy)
+		require.NoError(t, err, schema)
+		require.Equal(t, int64(0), second.Rows, schema)
+		require.NotEqual(t, first.Reference, second.Reference)
+	}
+	require.Len(t, parquetFiles(t, dir), 6)
+	require.Equal(t, "%2E%2Freader", pathSegment("./reader"))
+	require.Equal(t, "a_b-1", pathSegment("A_b-1"))
+
+	// DuckDB identifiers are case-insensitive, so READER is the same object and the same file.
+	same, err := p.Materialize(t.Context(), Namespace{Schema: []string{"READER"}}, source, policy)
+	require.NoError(t, err)
+	require.Equal(t, first.Rows, same.Rows)
+	require.Len(t, parquetFiles(t, dir), 6)
+}
+
+func TestPreAggregateSourceRevalidatedAcrossNamespaces(t *testing.T) {
+	_, p := setupPreAggregator(t)
+	source := `SELECT * FROM memory.tenant.source`
+	first, err := p.Materialize(t.Context(), reader, source, tenantPolicy())
+	require.NoError(t, err)
+	other := Namespace{Schema: []string{"another"}}
+	read := "SELECT * FROM " + first.Reference.String()
+	data, err := p.Query(t.Context(), other, read, tenantPolicy("reader"), nil)
+	require.NoError(t, err)
+	require.Len(t, arrowRows(t, data), 3)
+	revoked := errors.New("source revoked")
+	_, err = p.Query(t.Context(), other, read, tenantPolicy("reader"), func(context.Context, string) (*ValidationPolicy, error) {
+		return nil, revoked
+	})
+	require.ErrorIs(t, err, revoked)
+	_, err = p.Query(t.Context(), other, read, tenantPolicy("reader"), func(context.Context, string) (*ValidationPolicy, error) {
+		return &ValidationPolicy{AllowedTables: []TableRule{}}, nil
+	})
+	require.ErrorIs(t, err, ErrAccessDenied)
+	_, err = p.Materialize(t.Context(), other, read, tenantPolicy("reader"))
+	require.ErrorIs(t, err, ErrAccessDenied)
 }
