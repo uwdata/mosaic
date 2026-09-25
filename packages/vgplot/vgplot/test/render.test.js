@@ -24,7 +24,7 @@ async function renderTest(name) {
   const specPath = resolve(cwd, `specs/${name}.js`);
   const htmlPath = resolve(cwd, `output/${name}.html`);
   const { default: run } = await import(specPath);
-  const mc = new Coordinator(await NodeConnector.make(), { logger: null });
+  const mc = new Coordinator(await NodeConnector.make());
   const el = await run(createAPIContext({ coordinator: mc }));
   await clientsReady(el);
   await expect(el.outerHTML).toMatchFileSnapshot(htmlPath);

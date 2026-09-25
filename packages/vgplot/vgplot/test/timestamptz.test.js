@@ -6,7 +6,7 @@ import { clientsReady } from './util/clients-ready.js';
 import { NodeConnector } from '@uwdata/mosaic-core/node-connector';
 
 async function xScaleType(columnType, ...attributes) {
-  const mc = new Coordinator(await NodeConnector.make(), { logger: null });
+  const mc = new Coordinator(await NodeConnector.make());
   const vg = createAPIContext({ coordinator: mc });
   await mc.exec(`CREATE TABLE data AS SELECT
     ${columnType} '2029-01-01 00:00:00' + INTERVAL (6 * v) HOUR AS datetime,

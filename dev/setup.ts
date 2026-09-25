@@ -1,7 +1,8 @@
-import { decodeIPC, DuckDBWASMConnector, RestConnector, SocketConnector } from '@uwdata/mosaic-core';
+import { decodeIPC, DuckDBWASMConnector, observeLogger, RestConnector, SocketConnector } from '@uwdata/mosaic-core';
 import { createAPIContext } from '@uwdata/vgplot';
 
 export { parseSpec, astToDOM, astToESM } from '@uwdata/mosaic-spec';
+export { observeLogger };
 export const vg = createAPIContext();
 
 // make API accessible for console debugging

@@ -7,6 +7,7 @@ import { fnv_hash } from '../util/hash.js';
 import { resolvePositional } from '../util/positional.js';
 import { QueryError } from '../util/query-error.js';
 import { preaggColumns, PreAggColumnsResult } from './preagg-columns.js';
+import { EventType, MosaicErrorEvent } from '../Events.js';
 import { subqueryPushdown } from './subquery-pushdown.js';
 
 /**
@@ -225,7 +226,7 @@ export class PreAggregator {
       _info.result = mc.exec(createQuery);
       // if create query fails, log and mark as failed
       _info.result.catch((e: Error) => {
-        mc.logger().error(new QueryError(e, createQuery.join(';\n')));
+        mc.eventBus.emit(EventType.Error, new MosaicErrorEvent({ error: new QueryError(e, createQuery.join(';\n')) }));
         _info.result = null; // indicate lack of preagg view
       });
       info = _info;

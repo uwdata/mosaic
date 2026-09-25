@@ -9,7 +9,6 @@ import { TestClient } from './util/test-client.js';
 
 async function setup(loadQuery: CreateQuery) {
   const mc = new Coordinator(await NodeConnector.make(), {
-    logger: null,
     cache: false,
     consolidate: false
   });
