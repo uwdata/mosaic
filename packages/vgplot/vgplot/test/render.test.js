@@ -1,35 +1,12 @@
-import { beforeEach, afterEach, expect, describe, it } from 'vitest';
+// @vitest-environment jsdom
+import { expect, describe, it } from 'vitest';
 import { resolve } from 'node:path';
 import { Coordinator } from '@uwdata/mosaic-core';
-import { JSDOM } from 'jsdom';
 import { createAPIContext } from '../src/index.js';
 import { clientsReady } from './util/clients-ready.js';
 import { NodeConnector } from '@uwdata/mosaic-core/node-connector';
 
 const cwd = import.meta.dirname;
-
-beforeEach(() => {
-  const dom = new JSDOM(
-    `<!DOCTYPE html><body></body>`,
-    { pretendToBeVisual: true }
-  );
-
-  // assign browser environment globals
-  globalThis.window = dom.window;
-  globalThis.document = dom.window.document;
-  globalThis.navigator ??= dom.window.navigator;
-  globalThis.requestAnimationFrame = window.requestAnimationFrame;
-});
-
-afterEach(() => {
-  // remove browser environment globals
-  delete globalThis.requestAnimationFrame;
-  if (globalThis.navigator === globalThis.window.navigator) {
-    delete globalThis.navigator;
-  }
-  delete globalThis.document;
-  delete globalThis.window;
-});
 
 describe('render', () => {
   it('should render the density1d spec', () => {
