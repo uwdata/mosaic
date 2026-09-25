@@ -152,7 +152,7 @@ def mode(col: TransformArg, **options: Any) -> dict[str, Any]:
 
 
 def nth_value(
-    col: TransformArg, offset: TransformArg | UNSET = UNSET, **options: Any
+    col: TransformArg, offset: TransformArg, **options: Any
 ) -> dict[str, Any]:
     """Get the nth value of the given column in the current window frame, counting from one."""
     return _transform("nth_value", (col, offset), options)

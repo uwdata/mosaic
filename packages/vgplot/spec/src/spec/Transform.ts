@@ -39,11 +39,6 @@ type Arg1 = Arg | [Arg];
 type Arg2 = [Arg, Arg];
 
 /**
- * A two argument transform signature; the second argument is optional.
- */
-type Arg2Opt = Arg | [Arg, Arg?];
-
-/**
  * A three argument transform signature; the
  * second and third arguments are optional.
  */
@@ -441,7 +436,7 @@ export interface NthValue extends WindowOptions {
    * Get the nth value of the given column in the current window frame,
    * counting from one. The second argument is the offset for the nth row.
    */
-  nth_value: Arg2Opt;
+  nth_value: Arg2;
 }
 
 /** A data transform that maps one column value to another. */
