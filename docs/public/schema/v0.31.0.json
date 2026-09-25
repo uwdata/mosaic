@@ -69344,7 +69344,7 @@
       ],
       "type": "object"
     },
-        "NearestX": {
+    "NearestX": {
       "additionalProperties": false,
       "description": "A nearestX interactor.",
       "properties": {
