@@ -8,7 +8,7 @@ import (
 	"log/slog"
 	"net/http"
 	"os"
-	"strings"
+	"sync"
 	"time"
 
 	"github.com/duckdb/duckdb-go/v2"
@@ -32,22 +32,10 @@ func run() int {
 	cacheControl := flag.String("cache-control", "", "Cache-Control value for successful GET arrow responses; enables ETag validation for those queries")
 	var varyHeaders optionalCommaListFlag
 	flag.Var(&varyHeaders, "vary", "Comma-separated request header names to append to Vary; may be repeated")
-	schemaMatchHeadersStr := flag.String("schema-match-headers", "", "Comma-separated list of headers to match against schema names for multi-tenant access control (e.g., \"X-Tenant-Id,verified-user-id\")")
 	extensionsStr := flag.String("load-extensions", "", "Comma-separated list of extensions to install and load at startup. Use a pipe after the extension name to specify a DuckDB repository alias. Unspecified repositories use DuckDB's default (e.g. mysql_scanner,netquack|community,aws|core_nightly).")
-	functionBlocklistStr := flag.String("function-blocklist", "", "Comma-separated list of functions to block, useful for blocking functions that may pose security or performance risks. (e.g., 'bigquery_query,read_parquet')")
-	var functionAllowlist optionalCommaListFlag
-	flag.Var(&functionAllowlist, "function-allowlist", "Comma-separated exact names to add to the reviewed default allowlist. An empty value enables only the defaults; names are matched case-insensitively.")
+	var gatekeeper gatekeeperFlag
+	flag.Var(&gatekeeper, "gatekeeper", `Gatekeeper JSON policy document; {"version":1,"options":{}} enables validation with defaults`)
 	flag.Parse()
-
-	var schemaMatchHeaders []string
-	if *schemaMatchHeadersStr != "" {
-		schemaMatchHeaders = strings.Split(*schemaMatchHeadersStr, ",")
-	}
-
-	var functionBlocklist []string
-	if *functionBlocklistStr != "" {
-		functionBlocklist = strings.Split(*functionBlocklistStr, ",")
-	}
 
 	ctx := context.Background()
 
@@ -73,8 +61,14 @@ func run() int {
 		}
 	}
 
+	validation := gatekeeper.document != nil
+	var initializeOnce sync.Once
+	var initializeErr error
 	connector, err := duckdb.NewConnector(*dbPath, func(execer driver.ExecerContext) error {
-		return extensions.ParseAndInstall(ctx, execer, *extensionsStr)
+		initializeOnce.Do(func() {
+			initializeErr = initializeDatabase(ctx, execer, *extensionsStr, gatekeeper.document)
+		})
+		return initializeErr
 	})
 	if err != nil {
 		logger.Error("main: error creating duckdb connector", "error", err)
@@ -90,12 +84,9 @@ func run() int {
 	queryOptions := []query.OptionFunc{
 		query.WithMaxConnections(*poolSize),
 		query.WithLogger(logger),
-		query.WithFunctionBlocklist(functionBlocklist),
 	}
-	if functionAllowlist.set {
-		queryOptions = append(queryOptions, query.WithFunctionAllowlist(query.FunctionAllowlistOptions{
-			Include: functionAllowlist.values,
-		}))
+	if validation {
+		queryOptions = append(queryOptions, query.WithValidation())
 	}
 
 	db, err := query.New(ctx, connector, queryOptions...)
@@ -108,7 +99,6 @@ func run() int {
 	s, err := server.New(db,
 		server.WithCacheControl(*cacheControl),
 		server.WithVary(varyHeaders.values...),
-		server.WithSchemaMatchHeaders(schemaMatchHeaders...),
 		server.WithLogger(logger),
 		server.WithCORS(server.CORSOptions{
 			AllowAllOrigins: true,
@@ -130,13 +120,10 @@ func run() int {
 		"connection_pool_size": *poolSize,
 		"cert_file":            *certFile,
 		"key_file":             *keyFile,
-		"schema_match_headers": *schemaMatchHeadersStr,
 		"cache_control":        *cacheControl,
 		"vary":                 varyHeaders.String(),
 		"load_extensions":      *extensionsStr,
-		"function_blocklist":   *functionBlocklistStr,
-		"function_allowlist":   functionAllowlist.String(),
-		"allowlist_configured": functionAllowlist.set,
+		"gatekeeper":           gatekeeper.String(),
 	}
 	logger.Info("DuckDB Server configuration", "config", config)
 
@@ -174,4 +161,27 @@ func run() int {
 		return 1
 	}
 	return 0
+}
+
+// initializeDatabase is the CLI's trusted initialization. Extensions named by --load-extensions are installed first so
+// a locally provided Gatekeeper artifact wins over the community install; the community install only runs when LOAD
+// finds nothing.
+func initializeDatabase(ctx context.Context, execer driver.ExecerContext, extensionList string, document *string) error {
+	if err := extensions.ParseAndInstall(ctx, execer, extensionList); err != nil {
+		return err
+	}
+	if document == nil {
+		return nil
+	}
+	if err := extensions.LoadInstalled(ctx, execer, "gatekeeper"); err != nil {
+		if err := extensions.InstallAndLoad(ctx, execer, "gatekeeper", "community"); err != nil {
+			return err
+		}
+	}
+	if err := query.ConfigureGatekeeper(ctx, execer, *document); err != nil {
+		return fmt.Errorf("configure Gatekeeper: %w", err)
+	}
+	_, err := execer.ExecContext(ctx, `SET autoload_known_extensions = false;
+		SET autoinstall_known_extensions = false; SET lock_configuration = true`, nil)
+	return err
 }

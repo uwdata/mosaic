@@ -12,6 +12,8 @@ import (
 	"github.com/coder/websocket"
 	"github.com/coder/websocket/wsjson"
 	"github.com/stretchr/testify/require"
+
+	"github.com/uwdata/mosaic/packages/server/duckdb-server-go/pkg/query"
 )
 
 func TestHTTPCacheRevalidation(t *testing.T) {
@@ -99,17 +101,17 @@ func TestHTTPCachePreconditions(t *testing.T) {
 	var executions int
 	spy := &spyCommandExecutor{
 		failOnCallExecutor: failOnCallExecutor{t},
-		queryArrow: func(context.Context, string, []string) ([]byte, error) {
+		queryFn: func(context.Context, string, *query.ValidationPolicy) ([]byte, error) {
 			executions++
 			return []byte("result"), nil
 		},
 	}
 	handler := mustHandler(t, spy, WithCacheControl("private, no-cache"), WithAuthorizer(AuthorizerFunc[struct{}](func(*http.Request) (CommandAuthorizer[struct{}], error) {
-		return func(context.Context, Command[struct{}]) error {
+		return func(context.Context, Command[struct{}]) (*query.ValidationPolicy, error) {
 			if !allowed {
-				return ErrPermissionDenied
+				return nil, ErrPermissionDenied
 			}
-			return nil
+			return nil, nil
 		}, nil
 	})))
 	first := httptest.NewRecorder()
@@ -160,7 +162,7 @@ func TestHTTPCacheNonQueryResponses(t *testing.T) {
 	spy := &spyCommandExecutor{
 		failOnCallExecutor: failOnCallExecutor{t},
 		exec:               func(context.Context, string) error { return nil },
-		queryArrow:         func(context.Context, string, []string) ([]byte, error) { return []byte("result"), nil },
+		queryFn:            func(context.Context, string, *query.ValidationPolicy) ([]byte, error) { return []byte("result"), nil },
 	}
 	handler := mustHandler(t, spy, WithCacheControl("public, max-age=60"))
 	tests := []struct {
@@ -200,7 +202,7 @@ func TestHTTPCacheNonQueryResponses(t *testing.T) {
 func TestHTTPCacheWebSocket(t *testing.T) {
 	spy := &spyCommandExecutor{
 		failOnCallExecutor: failOnCallExecutor{t},
-		queryArrow:         func(context.Context, string, []string) ([]byte, error) { return []byte("result"), nil },
+		queryFn:            func(context.Context, string, *query.ValidationPolicy) ([]byte, error) { return []byte("result"), nil },
 	}
 	server := newWebSocketTestServer(t, mustHandler(t, spy, WithCacheControl("public, max-age=60"), WithVary("X-Dataset")))
 	conn, res, err := server.dial(&websocket.DialOptions{HTTPHeader: http.Header{"If-None-Match": {"*"}}})
@@ -220,7 +222,7 @@ func TestHTTPCacheWebSocket(t *testing.T) {
 func TestVaryIndependentOfCacheControl(t *testing.T) {
 	spy := &spyCommandExecutor{
 		failOnCallExecutor: failOnCallExecutor{t},
-		queryArrow:         func(context.Context, string, []string) ([]byte, error) { return []byte("result"), nil },
+		queryFn:            func(context.Context, string, *query.ValidationPolicy) ([]byte, error) { return []byte("result"), nil },
 	}
 	for _, policy := range []string{"", "public, max-age=60"} {
 		t.Run(policy, func(t *testing.T) {
@@ -254,14 +256,23 @@ func TestVaryIndependentOfCacheControl(t *testing.T) {
 	}
 }
 
-func TestHTTPCacheSchemaMatchVariation(t *testing.T) {
+func TestHTTPCachePolicyVariation(t *testing.T) {
 	spy := &spyCommandExecutor{
 		failOnCallExecutor: failOnCallExecutor{t},
-		queryArrow: func(_ context.Context, _ string, schemas []string) ([]byte, error) {
-			return []byte(strings.Join(schemas, ",")), nil
+		queryFn: func(_ context.Context, _ string, policy *query.ValidationPolicy) ([]byte, error) {
+			return []byte(policy.AllowedTables[0].Schema), nil
 		},
 	}
-	handler := mustHandler(t, spy, WithSchemaMatchHeaders("x-tenant-id"), WithVary("X-Region"), WithCacheControl("public, max-age=60"))
+	authorizer := WithAuthorizer(AuthorizerFunc[struct{}](func(r *http.Request) (CommandAuthorizer[struct{}], error) {
+		tenant := r.Header.Get("X-Tenant-Id")
+		if tenant == "" {
+			return nil, ErrUnauthenticated
+		}
+		return func(context.Context, Command[struct{}]) (*query.ValidationPolicy, error) {
+			return &query.ValidationPolicy{AllowedTables: []query.TableRule{{Schema: tenant, Table: "*"}}}, nil
+		}, nil
+	}))
+	handler := mustHandler(t, spy, authorizer, WithVary("X-Region", "X-Tenant-Id"), WithCacheControl("public, max-age=60"))
 	get := func(tenant, etag string) *httptest.ResponseRecorder {
 		t.Helper()
 		req := httptest.NewRequest(http.MethodGet, "/?type=arrow&sql=SELECT+1", nil)

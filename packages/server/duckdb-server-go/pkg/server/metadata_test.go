@@ -17,6 +17,8 @@ import (
 	"github.com/coder/websocket"
 	"github.com/coder/websocket/wsjson"
 	"github.com/stretchr/testify/require"
+
+	"github.com/uwdata/mosaic/packages/server/duckdb-server-go/pkg/query"
 )
 
 type applicationPayload struct {
@@ -68,19 +70,19 @@ func TestCommandTypedPayload(t *testing.T) {
 			sqls := make(chan string, len(payloads))
 			executor := &spyCommandExecutor{
 				failOnCallExecutor: failOnCallExecutor{t},
-				queryArrow: func(_ context.Context, sql string, _ []string) ([]byte, error) {
+				queryFn: func(_ context.Context, sql string, _ *query.ValidationPolicy) ([]byte, error) {
 					sqls <- sql
 					return []byte("result"), nil
 				},
 			}
 			handler := mustHandler(t, executor, WithAuthorizer(AuthorizerFunc[*applicationPayload](func(*http.Request) (CommandAuthorizer[*applicationPayload], error) {
-				return func(_ context.Context, command Command[*applicationPayload]) error {
+				return func(_ context.Context, command Command[*applicationPayload]) (*query.ValidationPolicy, error) {
 					fields := command.Payload()
 					require.NotNil(t, fields)
 					fields.Type = "exec"
 					fields.SQL = "DROP TABLE important"
 					commands <- command
-					return nil
+					return nil, nil
 				}, nil
 			})))
 			var conn *websocket.Conn
@@ -157,10 +159,10 @@ func TestCommandDecoderRunsOncePerMessage(t *testing.T) {
 	testCommandPayload(t, http.MethodGet, "", countedPayload(0))
 	var calls atomic.Int32
 	handler := mustHandler(t, failOnCallExecutor{t}, WithAuthorizer(AuthorizerFunc[countedPayload](func(*http.Request) (CommandAuthorizer[countedPayload], error) {
-		return func(_ context.Context, command Command[countedPayload]) error {
+		return func(_ context.Context, command Command[countedPayload]) (*query.ValidationPolicy, error) {
 			calls.Add(1)
 			require.Equal(t, countedPayload(1), command.Payload())
-			return ErrPermissionDenied
+			return nil, ErrPermissionDenied
 		}, nil
 	})))
 	server := newWebSocketTestServer(t, handler)
@@ -209,12 +211,12 @@ func testCommandPayload[T any](t *testing.T, method, payload string, want T) {
 		t.Run(transport, func(t *testing.T) {
 			var calls atomic.Int32
 			handler := mustHandler(t, failOnCallExecutor{t}, WithAuthorizer(AuthorizerFunc[T](func(*http.Request) (CommandAuthorizer[T], error) {
-				return func(_ context.Context, command Command[T]) error {
+				return func(_ context.Context, command Command[T]) (*query.ValidationPolicy, error) {
 					calls.Add(1)
 					require.Equal(t, CommandArrow, command.Type())
 					require.Equal(t, "SELECT 1", command.SQL())
 					require.Equal(t, want, command.Payload())
-					return ErrPermissionDenied
+					return nil, ErrPermissionDenied
 				}, nil
 			})))
 			if transport == "HTTP" {
@@ -256,9 +258,9 @@ func testCommandPayloadDecodeError[T any](t *testing.T, invalid, valid string) {
 	var calls atomic.Int32
 	var logs synchronizedBuffer
 	handler := mustHandler(t, failOnCallExecutor{t}, WithAuthorizer(AuthorizerFunc[T](func(*http.Request) (CommandAuthorizer[T], error) {
-		return func(context.Context, Command[T]) error {
+		return func(context.Context, Command[T]) (*query.ValidationPolicy, error) {
 			calls.Add(1)
-			return ErrPermissionDenied
+			return nil, ErrPermissionDenied
 		}, nil
 	})), WithLogger(slog.New(slog.NewJSONHandler(&logs, nil))))
 	res := httptest.NewRecorder()
@@ -307,15 +309,15 @@ func TestCommandRawMessagePayload(t *testing.T) {
 			sqls := make(chan string, len(payloads))
 			executor := &spyCommandExecutor{
 				failOnCallExecutor: failOnCallExecutor{t},
-				queryArrow: func(_ context.Context, sql string, _ []string) ([]byte, error) {
+				queryFn: func(_ context.Context, sql string, _ *query.ValidationPolicy) ([]byte, error) {
 					sqls <- sql
 					return []byte("result"), nil
 				},
 			}
 			handler := mustHandler(t, executor, WithAuthorizer(AuthorizerFunc[json.RawMessage](func(*http.Request) (CommandAuthorizer[json.RawMessage], error) {
-				return func(_ context.Context, command Command[json.RawMessage]) error {
+				return func(_ context.Context, command Command[json.RawMessage]) (*query.ValidationPolicy, error) {
 					commands <- command
-					return nil
+					return nil, nil
 				}, nil
 			})))
 
@@ -362,9 +364,9 @@ func TestCommandRawMessageGET(t *testing.T) {
 	var seen Command[json.RawMessage]
 	handler := mustHandler(t, failOnCallExecutor{t}, WithMaxMessageBytes(1), WithAuthorizer(AuthorizerFunc[json.RawMessage](func(r *http.Request) (CommandAuthorizer[json.RawMessage], error) {
 		require.Equal(t, []string{"one", "two"}, r.URL.Query()["label"])
-		return func(_ context.Context, command Command[json.RawMessage]) error {
+		return func(_ context.Context, command Command[json.RawMessage]) (*query.ValidationPolicy, error) {
 			seen = command
-			return ErrPermissionDenied
+			return nil, ErrPermissionDenied
 		}, nil
 	})))
 	res := httptest.NewRecorder()
@@ -400,9 +402,9 @@ func TestCommandPayloadErrors(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			var commandCalls atomic.Int32
 			handler := mustHandler(t, failOnCallExecutor{t}, WithAuthorizer(AuthorizerFunc[json.RawMessage](func(*http.Request) (CommandAuthorizer[json.RawMessage], error) {
-				return func(context.Context, Command[json.RawMessage]) error {
+				return func(context.Context, Command[json.RawMessage]) (*query.ValidationPolicy, error) {
 					commandCalls.Add(1)
-					return ErrPermissionDenied
+					return nil, ErrPermissionDenied
 				}, nil
 			})))
 			res := httptest.NewRecorder()
@@ -464,7 +466,7 @@ func TestCommandMessageLimits(t *testing.T) {
 			var expectedCalls int32
 			executor := &spyCommandExecutor{
 				failOnCallExecutor: failOnCallExecutor{t},
-				queryArrow: func(context.Context, string, []string) ([]byte, error) {
+				queryFn: func(context.Context, string, *query.ValidationPolicy) ([]byte, error) {
 					executorCalls.Add(1)
 					return []byte("result"), nil
 				},
@@ -472,9 +474,9 @@ func TestCommandMessageLimits(t *testing.T) {
 			var requestCalls atomic.Int32
 			opts := []Option{WithAuthorizer(AuthorizerFunc[json.RawMessage](func(*http.Request) (CommandAuthorizer[json.RawMessage], error) {
 				requestCalls.Add(1)
-				return func(_ context.Context, command Command[json.RawMessage]) error {
+				return func(_ context.Context, command Command[json.RawMessage]) (*query.ValidationPolicy, error) {
 					commands <- command
-					return nil
+					return nil, nil
 				}, nil
 			}))}
 			if tt.limit > 0 {
@@ -546,9 +548,9 @@ func TestHTTPMessageLimitFollowsRequestAuthorization(t *testing.T) {
 				require.NoError(t, err)
 				require.Equal(t, payload, string(body))
 				r.Body = io.NopCloser(strings.NewReader(string(body)))
-				return func(context.Context, Command[json.RawMessage]) error {
+				return func(context.Context, Command[json.RawMessage]) (*query.ValidationPolicy, error) {
 					t.Error("unexpected command authorization")
-					return ErrPermissionDenied
+					return nil, ErrPermissionDenied
 				}, nil
 			})))
 			res := httptest.NewRecorder()
