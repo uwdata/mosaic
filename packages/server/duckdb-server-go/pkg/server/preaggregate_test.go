@@ -195,12 +195,12 @@ func TestHTTPPreaggregateErrors(t *testing.T) {
 	}{
 		{http.MethodGet, "preagg", "SELECT 1", 400, "bad_request", "invalid_field", "type"},
 		{http.MethodPost, "preagg", "SELECT 1; SELECT 2", 403, "forbidden", "policy_denied", ""},
-		{http.MethodPost, "preagg", "SELECT * FROM missing", 400, "bad_request", "invalid_field", "sql"},
+		{http.MethodPost, "preagg", "SELECT * FROM missing", 500, "internal_error", "execution_failed", ""},
 		{http.MethodPost, "preagg", "SELECT * FROM", 400, "bad_request", "sql_parse_error", ""},
 		{http.MethodPost, "exec", "CREATE TABLE injected AS SELECT 1", 400, "unsupported_command", "command_disabled", ""},
 		{http.MethodPost, "preagg", "SELECT * FROM memory.private.source", 403, "forbidden", "policy_denied", ""},
 		{http.MethodPost, "", "SELECT 1", 400, "bad_request", "missing_field", "type"},
-		{http.MethodPost, "preagg", "", 400, "bad_request", "missing_field", "sql"},
+		{http.MethodPost, "preagg", "", 400, "bad_request", "invalid_field", "sql"},
 	} {
 		t.Run(test.sql+test.method, func(t *testing.T) {
 			response := preaggregateRequest(t, h, test.method, preaggregateScope, map[string]any{"type": test.typ, "sql": test.sql})

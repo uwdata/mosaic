@@ -385,9 +385,13 @@ func (p queryParams) Validate(logger *slog.Logger) error {
 		return invalidField("type", "invalid 'type' parameter: "+string(*p.Type))
 	}
 
-	if p.SQL == nil || *p.SQL == "" {
+	if p.SQL == nil {
 		logger.Error("server: missing required 'sql' parameter")
 		return missingField("sql")
+	}
+	if *p.SQL == "" {
+		logger.Error("server: empty 'sql' parameter")
+		return invalidField("sql", "empty 'sql' parameter")
 	}
 
 	return nil
