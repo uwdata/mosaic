@@ -16,6 +16,12 @@ uvx duckdb-server
 
 Alternatively, you can install the server with `pip install duckdb-server`. Then you can start the server with `duckdb-server`.
 
+The server accepts an optional database path (default in-memory) and `--port` (default `3000`):
+
+```bash
+duckdb-server data.db --port 3001
+```
+
 ## Developer Setup
 
 We use [uv](https://docs.astral.sh/uv/) to manage our development setup.

@@ -1,7 +1,6 @@
 #! /usr/bin/env node
-import { DuckDB, dataServer } from '../src/index.js';
+import { DuckDB, dataServer, parseServerArgs } from '../src/index.js';
 
-// the database to connect to, default is main memory
-const dbPath = process.argv[2] || ':memory:';
+const { dbPath, port } = parseServerArgs(process.argv.slice(2));
 
-dataServer(new DuckDB(dbPath), { rest: true, socket: true });
+dataServer(new DuckDB(dbPath), { rest: true, socket: true, port });

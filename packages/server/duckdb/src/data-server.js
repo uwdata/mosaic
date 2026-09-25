@@ -1,6 +1,20 @@
 import http from 'node:http';
 import url from 'node:url';
+import { parseArgs } from 'node:util';
 import { WebSocketServer } from 'ws';
+
+export function parseServerArgs(args) {
+  const { values, positionals } = parseArgs({
+    args,
+    options: { port: { type: 'string', short: 'p', default: '3000' } },
+    allowPositionals: true
+  });
+  const port = Number(values.port);
+  if (!Number.isInteger(port) || port < 0 || port > 65535) {
+    throw new Error(`invalid --port value: ${values.port}`);
+  }
+  return { dbPath: positionals[0] ?? ':memory:', port };
+}
 
 export function dataServer(db, {
   rest = true,
