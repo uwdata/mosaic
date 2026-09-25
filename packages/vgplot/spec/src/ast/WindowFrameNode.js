@@ -1,7 +1,8 @@
-import { LiteralNode, WindowFrameNode as WindowFrame } from '@uwdata/mosaic-sql';
+import { WindowFrameNode as WindowFrame } from '@uwdata/mosaic-sql';
 import { WINDOW_FRAME } from '../constants.js';
 import { isObject, paramRef } from '../util.js';
 import { ASTNode } from './ASTNode.js';
+import { LiteralNode } from './LiteralNode.js';
 import { parseTransform } from './TransformNode.js';
 
 export function parseWindowFrame(spec, ctx) {

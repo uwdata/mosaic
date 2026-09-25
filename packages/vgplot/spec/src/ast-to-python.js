@@ -210,10 +210,12 @@ function emitEncoding(v, ctx) {
   if (!TRANSFORM_KEYS.has(key)) return literal(v, 0, ctx);
   const { [key]: val, ...opts } = v;
   const args = (val === '' || val == null) ? []
-    : (Array.isArray(val) ? val : [val]).map(x => literal(x, 0, ctx));
+    : (Array.isArray(val) ? val : [val]).map(x => emitEncoding(x, ctx));
   args.push(...Object.entries(opts)
     .filter(([, o]) => o !== null && o !== undefined)
-    .map(([k, o]) => kwarg(camelCaseToSnake(k), literal(o, 0, ctx))));
+    .map(([k, o]) => kwarg(camelCaseToSnake(k), Array.isArray(o)
+      ? `[${o.map(x => emitEncoding(x, ctx)).join(', ')}]`
+      : emitEncoding(o, ctx))));
   return `vg.${camelCaseToSnake(key)}(${args.join(', ')})`;
 }
 
