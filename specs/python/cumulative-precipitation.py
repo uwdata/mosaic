@@ -25,7 +25,7 @@ view = vg.vconcat(
         vg.line_y(
             seattle_2015,
             x=vg.date_month("date"),
-            y=vg.sum({"sum": "precipitation"}, orderby={"dateMonth": "date"}),
+            y=vg.sum(vg.sum("precipitation"), orderby=vg.date_month("date")),
             stroke="steelblue",
             marker="circle",
         ),
