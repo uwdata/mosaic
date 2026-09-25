@@ -1,4 +1,18 @@
-export type Transport = 'post' | 'get' | 'ws';
+// Wire transports carry the encoded protocol and are checked for framing,
+// headers, and ordering; command transports go through a `Connector` and are
+// checked for what the coordinator can observe: results, rejections, and
+// association of concurrent calls.
+export type WireTransport = 'post' | 'get' | 'ws';
+export type CommandTransport = 'rest' | 'socket' | 'inproc';
+export type Transport = WireTransport | CommandTransport;
+export type Layer = 'wire' | 'command';
+
+export const wireTransports: readonly WireTransport[] = ['post', 'get', 'ws'];
+export const commandTransports: readonly CommandTransport[] = ['rest', 'socket', 'inproc'];
+
+export function layerOf(transport: Transport): Layer {
+  return (wireTransports as readonly string[]).includes(transport) ? 'wire' : 'command';
+}
 
 export type Capability = 'exec' | 'preagg' | 'caching' | 'files' | 'policy';
 
@@ -101,7 +115,7 @@ export interface RawRequest {
 }
 
 export interface Step {
-  transport?: Transport;
+  transport?: WireTransport;
   request?: Record<string, unknown>;
   raw?: RawRequest;
   headers?: Record<string, string>;
@@ -113,7 +127,9 @@ export interface CaseDefinition {
   id: string;
   title: string;
   decisions: string[];
-  transports?: Transport[];
+  transports?: WireTransport[];
+  layers?: Layer[];
+  smoke?: boolean;
   requires?: Capability[];
   unless?: Capability[];
   request?: Record<string, unknown>;
@@ -127,6 +143,8 @@ export interface CaseDefinition {
 export interface ConformanceCase {
   id: string;
   transport: Transport;
+  layer: Layer;
+  applicable: boolean;
   definition: CaseDefinition;
   steps: Step[];
   pipeline: boolean;
@@ -155,4 +173,21 @@ export interface HttpFailure {
   error: string;
 }
 
-export type Response = HttpResponse | WsResponse | HttpFailure;
+export interface ConnectorResolved {
+  kind: 'connector';
+  result: unknown;
+}
+
+export interface ConnectorRejected {
+  kind: 'connector-rejected';
+  error: unknown;
+}
+
+export interface ConnectorTimeout {
+  kind: 'connector-timeout';
+  after: number;
+}
+
+export type ConnectorResponse = ConnectorResolved | ConnectorRejected | ConnectorTimeout;
+
+export type Response = HttpResponse | WsResponse | HttpFailure | ConnectorResponse;

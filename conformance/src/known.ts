@@ -65,7 +65,11 @@ export function readKnownFailuresFile(server: string): KnownFailuresFile {
   return { ...parsed, failures: parsed.failures ?? [], passes: parsed.passes ?? [] };
 }
 
-export function loadKnownFailures(server: string, caseIds: Set<string>): KnownFailures {
+// `caseIds` are the cases the named target expands. A parent file is
+// validated against the parent's own cases (`casesOf`), and inherited
+// entries for cases the child never runs, such as a command transport only
+// the parent declares, are dropped rather than demanded of the child.
+export function loadKnownFailures(server: string, caseIds: Set<string>, casesOf: (server: string) => Set<string> = () => caseIds): KnownFailures {
   const own = readKnownFailuresFile(server);
   const file = knownFailuresPath(server);
   const seen = new Map<string, string>();
@@ -86,7 +90,7 @@ export function loadKnownFailures(server: string, caseIds: Set<string>): KnownFa
   let inherited: KnownFailure[] = [];
   if (own.inherits) {
     if (own.inherits === server) throw new Error(`${file}: a file cannot inherit from itself`);
-    const base = loadKnownFailures(own.inherits, caseIds);
+    const base = loadKnownFailures(own.inherits, casesOf(own.inherits), casesOf);
     const baseIndex = expectedViolations(base);
     for (const id of passes) {
       if (!caseIds.has(id)) throw new Error(`${file}: passes references unknown case ${id}`);
@@ -97,7 +101,7 @@ export function loadKnownFailures(server: string, caseIds: Set<string>): KnownFa
     inherited = [...base.inherited, ...base.own]
       .map(failure => ({
         ...failure,
-        cases: Object.fromEntries(Object.entries(failure.cases).filter(([id]) => !overridden.has(id)))
+        cases: Object.fromEntries(Object.entries(failure.cases).filter(([id]) => !overridden.has(id) && caseIds.has(id)))
       }))
       .filter(failure => Object.keys(failure.cases).length > 0);
   } else if (passes.length) {

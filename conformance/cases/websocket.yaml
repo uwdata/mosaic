@@ -1,4 +1,7 @@
-# WebSocket framing, ordering, and connection lifetime.
+# WebSocket framing, ordering, and connection lifetime. Cases without raw
+# frames also run at the command layer, where ordering becomes association
+# (each concurrent query gets its own result) and connection lifetime becomes
+# recovery (a rejected query does not break the next one).
 
 - id: ws-malformed-json-stays-open
   title: Malformed JSON gets an Error frame and the connection stays usable
@@ -23,6 +26,7 @@
 - id: ws-sql-error-stays-open
   title: A failed query does not close the connection
   decisions: [D12]
+  smoke: true
   transports: [ws]
   steps:
     - request: { type: arrow, sql: "SELECT * FROM conformance_no_such_table" }
@@ -43,6 +47,7 @@
 - id: ws-pipeline-order
   title: Pipelined commands, including failing ones, are answered in order
   decisions: [D11]
+  smoke: true
   transports: [ws]
   pipeline: true
   steps:

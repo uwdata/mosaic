@@ -1,14 +1,15 @@
 import { readdirSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 import { parse } from 'yaml';
-import type { CaseDefinition, ConformanceCase, Step, Transport } from './types.ts';
+import { commandTransports, layerOf, wireTransports, type CaseDefinition, type ConformanceCase, type Expectation, type Layer, type Step, type Transport, type WireTransport } from './types.ts';
 
 export const conformanceRoot = path.resolve(import.meta.dirname, '..');
 export const repoRoot = path.resolve(conformanceRoot, '..');
 
 const casesDir = path.join(conformanceRoot, 'cases');
-const defaultTransports: Transport[] = ['post', 'ws'];
-const validTransports = new Set<Transport>(['post', 'get', 'ws']);
+const defaultTransports: WireTransport[] = ['post', 'ws'];
+const validTransports = new Set<string>(wireTransports);
+const validLayers = new Set<string>(['wire', 'command']);
 
 export function loadCaseDefinitions(): CaseDefinition[] {
   const files = readdirSync(casesDir).filter(f => f.endsWith('.yaml')).sort();
@@ -35,8 +36,12 @@ function validateDefinition(def: CaseDefinition, file: string) {
     throw new Error(`${where}: decisions must list at least one decision id`);
   }
   for (const t of def.transports ?? []) {
-    if (!validTransports.has(t)) throw new Error(`${where}: unknown transport ${t}`);
+    if (!validTransports.has(t)) throw new Error(`${where}: unknown transport ${t}; a case lists wire transports only`);
   }
+  for (const l of def.layers ?? []) {
+    if (!validLayers.has(l)) throw new Error(`${where}: unknown layer ${l}`);
+  }
+  if (def.smoke && !layersOf(def).includes('command')) throw new Error(`${where}: a smoke case must apply to the command layer`);
   const hasInline = def.request !== undefined || def.raw !== undefined;
   if (hasInline === (def.steps !== undefined)) {
     throw new Error(`${where}: provide either request/raw + expect or steps`);
@@ -50,8 +55,45 @@ function validateDefinition(def: CaseDefinition, file: string) {
   }
 }
 
-export function expandCases(definitions: CaseDefinition[]): ConformanceCase[] {
+// Which layers a case belongs to. Explicit `layers:` wins; otherwise a case
+// is command-level when nothing in it is about encoding: every step is a
+// `request` (no raw bodies, no headers) and every expectation is a result,
+// an acknowledgement, a JSON object, or an error identified by code (no
+// status, headers, or body emptiness). A case restricted to GET alone is
+// wire-only because GET's command set and read-only rule have no in-process
+// counterpart. Anything else is checked at both layers.
+export function layersOf(def: CaseDefinition): Layer[] {
+  if (def.layers) return def.layers;
+  const wireOnly = def.transports?.length === 1 && def.transports[0] === 'get';
+  const steps = def.steps ?? [{ request: def.request, raw: def.raw, headers: def.headers, expect: def.expect! }];
+  const encodingFree = !wireOnly && steps.every(step =>
+    step.raw === undefined && step.headers === undefined && commandLevel(step.expect)
+    && Object.values(step.capture ?? {}).every(source => !source.startsWith('headers.'))
+  );
+  return encodingFree ? ['wire', 'command'] : ['wire'];
+}
+
+function commandLevel(expectation: Expectation): boolean {
+  if (expectation.oneOf) return expectation.oneOf.every(commandLevel);
+  if (expectation.status !== undefined || expectation.headers || expectation.empty) return false;
+  if (expectation.error?.status !== undefined) return false;
+  return true;
+}
+
+export interface Transports {
+  transports: Transport[];
+  smoke?: Transport[];
+}
+
+// Expands definitions over a target's transports: wire transports the case
+// lists (default POST and WebSocket), command transports the target runs the
+// whole corpus on, and smoke transports the target runs only `smoke: true`
+// cases on. A case that reaches a transport of the wrong layer is expanded
+// anyway and skipped as `layer` at run time, so the results record it.
+export function expandCases(definitions: CaseDefinition[], target: Transports): ConformanceCase[] {
   const cases: ConformanceCase[] = [];
+  const full = new Set(target.transports);
+  const smoke = new Set(target.smoke ?? []);
   for (const definition of definitions) {
     const steps: Step[] = definition.steps ?? [{
       request: definition.request,
@@ -59,10 +101,17 @@ export function expandCases(definitions: CaseDefinition[]): ConformanceCase[] {
       headers: definition.headers,
       expect: definition.expect!
     }];
-    for (const transport of definition.transports ?? defaultTransports) {
+    const layers = layersOf(definition);
+    const transports: Transport[] = [
+      ...(definition.transports ?? defaultTransports).filter(t => full.has(t)),
+      ...commandTransports.filter(t => full.has(t) || (smoke.has(t) && definition.smoke))
+    ];
+    for (const transport of transports) {
       cases.push({
         id: `${transport}/${definition.id}`,
         transport,
+        layer: layerOf(transport),
+        applicable: layers.includes(layerOf(transport)),
         definition,
         steps,
         pipeline: definition.pipeline === true
@@ -72,8 +121,10 @@ export function expandCases(definitions: CaseDefinition[]): ConformanceCase[] {
   return cases;
 }
 
-export function loadCases(): ConformanceCase[] {
-  return expandCases(loadCaseDefinitions());
+export const allTransports: Transports = { transports: [...wireTransports, ...commandTransports] };
+
+export function loadCases(target: Transports = allTransports): ConformanceCase[] {
+  return expandCases(loadCaseDefinitions(), target);
 }
 
 const padToken = /\$PAD\((\d+)\)/;

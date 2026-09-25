@@ -51,6 +51,10 @@ failures:
     spec: "`bad_request` regardless of policy (D7)."
     fix: Run statement extraction unconditionally, or map DuckDB parser errors.
     cases:
+      rest/sql-parse-error:
+        - error.status.500
+      rest/ws-pipeline-order:
+        - s4.error.status.500
       post/sql-parse-error:
         - error.status.500
         - error.content-type
@@ -66,8 +70,6 @@ failures:
         - s2.error.field.missing
         - s4.error.schema.required.reason
         - s4.error.reason.missing
-      connector/rest-error:
-        - connector.status
   - area: "`preagg` is unknown"
     current: "`invalid 'type' parameter: preagg` as `bad_request`."
     spec: "`unsupported_command` (D6). Go is the intended first `preagg` implementation (#1234)."
@@ -142,6 +144,10 @@ failures:
     spec: "`bad_request` (D16)."
     fix: Count statements before execution.
     cases:
+      rest/arrow-multi-statement:
+        - error.resolved
+      socket/arrow-multi-statement:
+        - error.resolved
       post/arrow-multi-statement:
         - error.status.200
         - error.content-type
@@ -157,6 +163,10 @@ failures:
     spec: Protocol fields decoded exactly; application fields must not shadow them (D9).
     fix: Decode protocol fields with a strict decoder or reject case-variant duplicates.
     cases:
+      rest/protocol-fields-not-shadowed:
+        - arrow.decode
+      socket/protocol-fields-not-shadowed:
+        - arrow.not-bytes
       post/protocol-fields-not-shadowed:
         - arrow.content-type
         - arrow.empty
@@ -190,6 +200,107 @@ failures:
     cases:
       ws/large-request-1mib:
         - ws.closed.1009
+  - area: Client connectors expose no error code
+    current: "`restConnector` rejects with `Error('Query failed with HTTP status …')` and `socketConnector` with the frame's `error` string, so the coordinator sees no `code`, `reason`, or `field` even where the server sent them (WebSocket frames from this server already carry `code`)."
+    spec: "Rejections carry the envelope's `code`, `reason`, and `field` as structured properties (D19, D24)."
+    fix: "#1224 adds `ConnectorError` with `code`, `status`, and `reference`; `reason` and `field` need a follow-up there. Over HTTP the code also depends on the envelope fix above."
+    cases:
+      rest/empty-sql:
+        - error.code.missing
+        - error.reason.missing
+        - error.field.missing
+      rest/exec-error:
+        - error.code.missing
+        - error.reason.missing
+      rest/missing-sql:
+        - error.code.missing
+        - error.reason.missing
+        - error.field.missing
+      rest/missing-type:
+        - error.code.missing
+        - error.reason.missing
+        - error.field.missing
+      rest/preagg-unsupported:
+        - error.code.missing
+        - error.reason.missing
+      rest/sql-parse-error:
+        - error.code.missing
+        - error.reason.missing
+      rest/sql-runtime-error:
+        - error.code.missing
+        - error.reason.missing
+      rest/sql-unknown-table:
+        - error.code.missing
+        - error.reason.missing
+      rest/type-not-a-string:
+        - error.code.missing
+        - error.reason.missing
+        - error.field.missing
+      rest/unknown-type:
+        - error.code.missing
+        - error.reason.missing
+        - error.field.missing
+      rest/ws-missing-sql-stays-open:
+        - s1.error.code.missing
+        - s1.error.reason.missing
+        - s1.error.field.missing
+      rest/ws-sql-error-stays-open:
+        - s1.error.code.missing
+        - s1.error.reason.missing
+      rest/ws-pipeline-order:
+        - s2.error.code.missing
+        - s2.error.reason.missing
+        - s2.error.field.missing
+        - s4.error.code.missing
+        - s4.error.reason.missing
+      socket/empty-sql:
+        - error.code.missing
+        - error.reason.missing
+        - error.field.missing
+      socket/exec-error:
+        - error.code.missing
+        - error.reason.missing
+      socket/missing-sql:
+        - error.code.missing
+        - error.reason.missing
+        - error.field.missing
+      socket/missing-type:
+        - error.code.missing
+        - error.reason.missing
+        - error.field.missing
+      socket/preagg-unsupported:
+        - error.code.missing
+        - error.reason.missing
+      socket/sql-parse-error:
+        - error.code.missing
+        - error.reason.missing
+      socket/sql-runtime-error:
+        - error.code.missing
+        - error.reason.missing
+      socket/sql-unknown-table:
+        - error.code.missing
+        - error.reason.missing
+      socket/type-not-a-string:
+        - error.code.missing
+        - error.reason.missing
+        - error.field.missing
+      socket/unknown-type:
+        - error.code.missing
+        - error.reason.missing
+        - error.field.missing
+      socket/ws-missing-sql-stays-open:
+        - s1.error.code.missing
+        - s1.error.reason.missing
+        - s1.error.field.missing
+      socket/ws-sql-error-stays-open:
+        - s1.error.code.missing
+        - s1.error.reason.missing
+      socket/ws-pipeline-order:
+        - s2.error.code.missing
+        - s2.error.reason.missing
+        - s2.error.field.missing
+        - s4.error.code.missing
+        - s4.error.reason.missing
   - area: 401 schema-match is plain text
     current: "`no allowed schemas found in request headers` via `http.Error`."
     spec: Envelope with `unauthenticated`.

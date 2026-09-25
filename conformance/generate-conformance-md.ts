@@ -4,10 +4,8 @@
 // Run: pnpm -F @uwdata/mosaic-conformance status
 import { readFileSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
-import { loadCases } from './src/cases.ts';
-import { connectorCaseIds } from './src/connector-cases.ts';
 import { loadKnownFailures, readKnownFailuresFile, type KnownFailure } from './src/known.ts';
-import { servers } from './implementations/index.ts';
+import { casesOf, targets } from './implementations/index.ts';
 
 const begin = '<!-- conformance:begin -->';
 const end = '<!-- conformance:end -->';
@@ -23,18 +21,18 @@ const headings: Record<string, string> = {
   node: '## Node `@uwdata/mosaic-duckdb`'
 };
 
-const caseIds = new Set([...loadCases().map(c => c.id), ...connectorCaseIds]);
 
 function cell(text: string) {
   return text.replace(/\s+/g, ' ').replace(/\|/g, '\\|').trim();
 }
 
 function renderServer(name: string): string {
-  const config = servers[name];
+  const config = targets[name];
   if (!config) throw new Error(`no server adapter named ${name}`);
   const file = readKnownFailuresFile(name);
-  const known = loadKnownFailures(name, caseIds);
-  const lines: string[] = [headings[name], '', `Configuration: ${config.description}.`];
+  const known = loadKnownFailures(name, casesOf(name), casesOf);
+  const transports = config.transports.join(', ') + (config.smoke?.length ? `; smoke cases over ${config.smoke.join(', ')}` : '');
+  const lines: string[] = [headings[name], '', `Configuration: ${config.description}. Transports: ${transports}.`];
   if (known.inherits) {
     const inheritedCount = known.inherited.reduce((n, f) => n + Object.keys(f.cases).length, 0);
     lines.push(

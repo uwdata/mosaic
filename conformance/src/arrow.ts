@@ -9,14 +9,24 @@ export interface DecodedArrow {
   rows: unknown[][];
 }
 
-export function arrowViolations(body: Uint8Array | undefined, expectation: ArrowExpectation | true): Violation[] {
+export interface ArrowChecks {
+  // Wire responses must be IPC stream format with an end-of-stream marker
+  // (D8). A `Connector` promises only decodable IPC bytes, so the command
+  // layer checks that a table with the expected schema comes out, whatever
+  // the framing.
+  framing: boolean;
+}
+
+export function arrowViolations(body: Uint8Array | undefined, expectation: ArrowExpectation | true, checks: ArrowChecks = { framing: true }): Violation[] {
   if (!body || body.length === 0) {
-    return [violation('arrow.empty', 'Arrow body is empty; a zero-row result must still carry the schema and end-of-stream marker')];
+    return [checks.framing
+      ? violation('arrow.empty', 'Arrow body is empty; a zero-row result must still carry the schema and end-of-stream marker')
+      : violation('arrow.decode', 'no Arrow bytes; a zero-row result must still decode to a table with its schema')];
   }
   const violations: Violation[] = [];
   if (new TextDecoder().decode(body.subarray(0, fileMagic.length)) === fileMagic) {
-    violations.push(violation('arrow.file-format', 'Arrow body is in IPC file format (ARROW1 magic); the protocol requires the IPC stream format'));
-  } else {
+    if (checks.framing) violations.push(violation('arrow.file-format', 'Arrow body is in IPC file format (ARROW1 magic); the protocol requires the IPC stream format'));
+  } else if (checks.framing) {
     const framing = walkStream(body);
     if (framing.problem) violations.push(violation('arrow.framing', framing.problem));
     else if (!framing.eos) violations.push(violation('arrow.eos', 'Arrow stream ends after its last message without the 0-length end-of-stream marker'));

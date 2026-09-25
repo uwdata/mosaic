@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { inheritedFrom, observedFrom, refreshBaseline, type ResultRow } from './src/baseline.ts';
-import { rejectionStatus } from './src/connector-cases.ts';
+import { rejectionStatus } from './src/check.ts';
 
 const source = `# comment stays
 server: python
@@ -18,7 +18,7 @@ failures:
 
 const rows = (...items: Array<[string, string, string[]?]>): ResultRow[] =>
   items.map(([id, outcome, violations]) => ({ id, outcome, violations }));
-const skipped = (id: string, reason: string): ResultRow => ({ id, outcome: 'skipped', reason });
+const skipped = (id: string, reason: string, skip: 'capability' | 'layer' = 'capability'): ResultRow => ({ id, outcome: 'skipped', skip, reason });
 
 describe('baseline refresh', () => {
   it('refuses a result set with harness errors instead of treating them as passes', () => {
@@ -117,8 +117,9 @@ failures:
     expect(verified.changes).toEqual(['removed ws/exec-unsupported (passes)', 'passes: connector/rest-error -> connector/rest-error, ws/exec-unsupported']);
   });
 
-  it('tells a capability skip in the inherited run from a filtered one', () => {
-    const goRows = [...rows(['post/other', 'pass', []], ['ws/filtered', 'skipped']), skipped('ws/exec-unsupported', 'only when exec is unavailable'), skipped('post/new', 'requires policy')];
+  it('tells a declared skip in the inherited run from a filtered one', () => {
+    const goRows = [...rows(['post/other', 'pass', []], ['ws/filtered', 'skipped'], ['rest/reasoned-but-uncategorised', 'skipped']), skipped('ws/exec-unsupported', 'only when exec is unavailable'), skipped('post/new', 'wire transport, case is command only', 'layer')];
+    goRows[2].reason = 'left over from an older results file';
     expect([...inheritedFrom(goRows, 'go').keys()].sort()).toEqual(['post/new', 'post/other', 'ws/exec-unsupported']);
     expect([...observedFrom(goRows, 'go').keys()]).toEqual(['post/other']);
     const base = inheritedFrom(goRows, 'go');

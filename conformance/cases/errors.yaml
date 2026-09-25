@@ -4,6 +4,7 @@
 - id: sql-parse-error
   title: A SQL syntax error is a bad request with `sql_parse_error`
   decisions: [D7, D4, D19]
+  smoke: true
   request: { type: arrow, sql: "SELEC 1" }
   expect:
     error: { code: bad_request, reason: sql_parse_error }

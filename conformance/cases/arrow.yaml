@@ -3,6 +3,7 @@
 - id: arrow-stream-format
   title: Results are Arrow IPC streams with the Arrow stream media type
   decisions: [D8]
+  smoke: true
   request: { type: arrow, sql: "SELECT 1 AS x" }
   expect:
     arrow: { columns: [x], rows: [[1]] }
@@ -40,6 +41,7 @@
     arrow: { columns: [n], rows: [[342]] }
 
 - id: large-request-1mib
+  layers: [wire]
   title: A command whose encoded body, query string, or frame is exactly 1 MiB is accepted
   decisions: [D13]
   transports: [post, get, ws]

@@ -3,8 +3,6 @@
 # listed, and `passes` names inherited cases this configuration gets right.
 server: go-gatekeeper
 inherits: go
-passes:
-  - connector/rest-error
 failures:
   - area: Disabled `exec` is `bad_request`
     current: "`ErrExecWithValidation` maps to `bad_request` (`pkg/server/errors.go`); an application field spelled `TYPE: exec` also trips it, see D9 in go.yaml."
@@ -23,6 +21,10 @@ failures:
     spec: Multi-statement is `bad_request` (D16); an unknown user table is `internal_error` unless classified as a managed table (D7, still open in STATUS.md).
     fix: Split validator errors from policy denials when mapping to codes.
     cases:
+      rest/ws-sql-error-stays-open:
+        - s1.error.status.400
+        - s1.error.code.missing
+        - s1.error.reason.missing
       post/arrow-multi-statement:
         - error.status.403
         - error.content-type
@@ -92,6 +94,15 @@ failures:
     spec: "`sql_parse_error` (D19)."
     fix: Covered by the `reason` fix in go.yaml.
     cases:
+      rest/sql-parse-error:
+        - error.code.missing
+        - error.reason.missing
+      rest/ws-pipeline-order:
+        - s2.error.code.missing
+        - s2.error.reason.missing
+        - s2.error.field.missing
+        - s4.error.code.missing
+        - s4.error.reason.missing
       ws/sql-parse-error:
         - error.schema.required.reason
         - error.reason.missing

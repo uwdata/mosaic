@@ -40,6 +40,7 @@ Where the servers disagreed, the spec picks one behaviour. Each is revisable.
 | D20 | Nested `TableReference` | One `{catalog, schema: string[], table}` object, used as `PreaggResponse.reference` and as `Error.reference` on `table_not_found` (required there, prohibited elsewhere). Components are raw identifiers, quoted separately by the client; `schema` is a path so engines with nested namespaces fit without a dotted string. Flat `catalog`/`schema`/`table` are prohibited on the envelope. Coordinated with #1224 (client) and #1234 (Go `preagg`) while both are unmerged. | Three sibling fields needed `if/then/else` validation to stop partial references and leaks on unrelated codes, and `PreaggResponse` repeated the same triple with a string `schema`. |
 | D21 | `diagnostics` | Optional array of typed findings (`message`, `provider`, `rule`, `subject`, `location`) on any error; `subject` is a `table` or `function` with the D20 namespace components; `location` is zero-based UTF-8 byte offsets with an exclusive `end`. Diagnostics may be incomplete or omitted, never authorize or trigger recovery, and are subject to the deployment's disclosure policy. Gatekeeper violations map one-to-one; its successful-binding evidence (`objects`, `functions`, `caller_objects`) is not an error diagnostic. | Gatekeeper already returns per-violation rule, message, object, function, and position; without a typed shape each server would flatten them into `error` text or invent a `details` bag. |
 | D22 | `diagnosticId` and `retryAfterMs` | `diagnosticId` is an optional server-generated opaque id of one command attempt, also sendable as `X-Request-Id` over HTTP (equal when both present); clients never supply it and WebSocket replies stay positional. `retryAfterMs` is an optional non-negative advisory delay, only on `resource_exhausted`; HTTP `Retry-After` is `ceil(retryAfterMs / 1000)`. No generic `retryable` flag. | A client-supplied request id would become a correlation channel by habit and erode D11; whether a retry is safe depends on the command's publication guarantee, not on the error. |
+| D24 | Command layer | Cases free of encoding concerns also run through a `Connector`: the real `restConnector`/`socketConnector` against a server (all cases on the reference server, `smoke: true` cases on the rest), and in-process connectors as targets of their own. At that layer a result must decode to the expected table in whatever IPC framing (D8 is a wire rule; `Connector` promises decodable `ArrowIPCBytes`), `exec` resolves `undefined`, rejections carry `code`/`reason`/`field`/`reference` as structured properties, and concurrent calls are checked for association rather than order. Encoded size, GET semantics, framing, headers, and positional ordering stay wire-only. | Running the six hand-written connector smoke cases only; applying the stream/EOS framing checks to connectors, which would have flagged behaviour the coordinator does not depend on. |
 | D23 | Failure guarantees | `arrow` and `preagg` publish nothing on failure and `preagg` publication is atomic. `exec` guarantees neither atomicity nor rollback: a later statement may fail after earlier ones took effect, committed effects may remain, an explicit transaction follows the engine's transaction semantics, and the server never retries on the client's behalf. `deadline_exceeded` follows the same per-command rule. `ReadOnlySql` prohibits state changes anywhere in the statement, not only at the root. Cancellation is out of scope. | DuckDB has no data-modifying CTEs, so the nested-DML rule is unobservable on the reference servers and stated for engines that do. An earlier wording said the server "does not roll back", which would have forbidden cleaning up an aborted transaction before a pooled connection is reused. |
 
 ## Common gaps (all four servers)
@@ -54,23 +55,29 @@ Where the servers disagreed, the spec picks one behaviour. Each is revisable.
 
 ## Conformance suite
 
-The suite is a vitest project that starts one server configuration on a
-free port, replays declarative cases from `cases/*.yaml` over
-HTTP POST, HTTP GET, and WebSocket, and checks every response against
+The suite is a vitest project that points at one target, replays the
+declarative cases from `cases/*.yaml`, and checks every response against
 `schemas.yaml` with Ajv plus the case's own expectations. Arrow bodies are
-decoded with Flechette and compared as rows. A second file drives the real
-`@uwdata/mosaic-core` connectors end to end.
+decoded with Flechette and compared as rows.
 
 ```sh
-CONFORMANCE_SERVER=go pnpm -F @uwdata/mosaic-conformance suite
+CONFORMANCE_TARGET=go pnpm -F @uwdata/mosaic-conformance suite
 ```
 
-Configurations are defined in `implementations/index.ts`: `node`,
-`python`, `rust`, `go`, `go-cache`, `go-gatekeeper`. Each declares
-capabilities (`exec`, `preagg`, `caching`, `files`, `policy`); cases gate on
-them with `requires`/`unless`. `CONFORMANCE_URL` points the suite at an already
-running server instead of spawning one. Server output is written to
-`.logs/<config>.log`.
+Targets are defined in `implementations/index.ts`: `node`, `python`,
+`rust`, `go`, `go-cache`, `go-gatekeeper`. Each declares capabilities
+(`exec`, `preagg`, `caching`, `files`, `policy`), which cases gate on with
+`requires`/`unless`, and transports. Wire transports (`post`, `get`, `ws`)
+check the encoded protocol; command transports (`rest`, `socket`, `inproc`)
+check what the coordinator sees through a `Connector` (D24). A case runs at
+the command layer unless something in it is about encoding, or it says
+`layers: [wire]`; `applicability.test.ts` pins the classification of every
+case. Server targets run the command layer through the real client
+connectors: `go` over the whole corpus, the others over `smoke: true` cases.
+A server target is spawned on a free port; `CONFORMANCE_URL` points the
+suite at one already running. Server output is written to
+`.logs/<target>.log`. Cases a target does not run are skipped with a
+category, `capability` or `layer`, that the results file records.
 
 The suite is a ratchet over individual violations. Every mismatch a check
 finds has a stable id (`error.status.500`, `error.reason.execution_failed`,
@@ -113,19 +120,21 @@ area. For an inheriting configuration, a case the parent skips by capability
 (the results record the reason) counts as having no inherited failures,
 while a case the parent's last run left out through a filter is left
 untouched and reported as unverified instead of being compared against
-nothing.
+nothing. A parent's entries for cases the child never expands, such as the
+full command corpus only the reference server runs, are not inherited.
 
 ```sh
-CONFORMANCE_SERVER=go pnpm -F @uwdata/mosaic-conformance baseline
+CONFORMANCE_TARGET=go pnpm -F @uwdata/mosaic-conformance baseline
 pnpm -F @uwdata/mosaic-conformance status
 ```
 
 `pnpm -F @uwdata/mosaic-conformance test` runs the harness's own unit tests
 (violation ids, the IPC walker, header matchers, fetch-error classification,
-and the ratchet comparison) without starting a server; the root `pnpm test`
-includes them.
+command-layer result and rejection mapping, session deadlines, case
+applicability, and the ratchet comparison) without a target; the root
+`pnpm test` includes them.
 
-CI runs all six configurations on every pull request that touches a server
+CI runs all six targets on every pull request that touches a server
 or the spec (`.github/workflows/conformance.yml`) and fails if the tables
 below are stale.
 
@@ -147,22 +156,23 @@ capability none of the reference servers has.
 
 ## Go `duckdb-server-go`
 
-Configuration: `duckdb-server-go` with default flags.
+Configuration: `duckdb-server-go` with default flags. Transports: post, get, ws, rest, socket.
 
 Closest to the target and the intended first `preagg` implementation (#1234). Already conforming: WebSocket error frames carry `code` (`pkg/server/errors.go`), though not yet `reason` (D19); Arrow IPC stream with the end-of-stream marker; GET caching with a strong `ETag`, weak `If-None-Match` → 304, strong `If-Match` → 412, `no-store` elsewhere (`pkg/server/cache.go`); application payload passthrough via `WithAuthorizer` (`pkg/server/authorization.go`); `Vary` auto-includes schema-match headers.
 
 | Area | Current | Spec | Fix | Cases |
 |------|---------|------|-----|-------|
 | HTTP errors are plain text | `http.Error` writes `text/plain` even though `classifyError` already yields a code (`pkg/server/server.go`). | JSON `Error` envelope (D4, D19). | Reuse `classifyError`; write `{error, code, reason}` with `application/json`. | 12 |
-| Parse errors are 500 without a policy | `json_serialize_sql` runs only under validation, so a syntax error is an unclassified `internal_error`. | `bad_request` regardless of policy (D7). | Run statement extraction unconditionally, or map DuckDB parser errors. | 4 |
+| Parse errors are 500 without a policy | `json_serialize_sql` runs only under validation, so a syntax error is an unclassified `internal_error`. | `bad_request` regardless of policy (D7). | Run statement extraction unconditionally, or map DuckDB parser errors. | 5 |
 | `preagg` is unknown | `invalid 'type' parameter: preagg` as `bad_request`. | `unsupported_command` (D6). Go is the intended first `preagg` implementation (#1234). | Recognise the command and answer `unsupported_command` until implemented. | 2 |
 | WebSocket errors lack `reason` | Frames carry `{code, error}` from `classifyError` (`pkg/server/errors.go`) but no `reason` or `field`, so a client cannot tell a missing field from an invalid one without parsing the message. | `reason`, and `field` for the field reasons (D19). | Extend `classifyError` to return a reason and, for decode failures, the property name; the HTTP envelope fix then inherits both. | 9 |
 | Exec and side effects over GET | GET runs `exec` and does not check the statement kind, so `CREATE TABLE` and `DELETE ... RETURNING` execute (`server.go`). | `arrow` only (D3); read-only root required (D3a). | Reject `exec` in the GET branch; run the `json_serialize_sql` walker for GET unconditionally. | 3 |
-| Multi-statement `arrow` | duckdb-go `prepareStmts` runs every statement and returns the last result. | `bad_request` (D16). | Count statements before execution. | 3 |
-| JSON keys match case-insensitively | `encoding/json` lets `TYPE: exec` override `type: arrow`; the request ran as `exec` and returned an empty body. | Protocol fields decoded exactly; application fields must not shadow them (D9). | Decode protocol fields with a strict decoder or reject case-variant duplicates. | 2 |
+| Multi-statement `arrow` | duckdb-go `prepareStmts` runs every statement and returns the last result. | `bad_request` (D16). | Count statements before execution. | 5 |
+| JSON keys match case-insensitively | `encoding/json` lets `TYPE: exec` override `type: arrow`; the request ran as `exec` and returned an empty body. | Protocol fields decoded exactly; application fields must not shadow them (D9). | Decode protocol fields with a strict decoder or reject case-variant duplicates. | 4 |
 | 405 without `Allow` | `Method not allowed` plain text, no `Allow` header. | Envelope plus `Allow: GET, POST, OPTIONS` (D5). | Set the header in the fallback branch. | 2 |
 | WebSocket malformed JSON closes the socket | `wsjson.Read` failure closes with 1007 (`server.go`). | `Error` frame, connection stays open (D12). | Read the raw frame and unmarshal manually. | 2 |
 | WebSocket read limit | 32 KiB library default; larger frames close with 1009. | Accept at least 1 MiB (D13). | Set a default via `WithMaxMessageBytes` and expose a CLI flag. | 1 |
+| Client connectors expose no error code | `restConnector` rejects with `Error('Query failed with HTTP status …')` and `socketConnector` with the frame's `error` string, so the coordinator sees no `code`, `reason`, or `field` even where the server sent them (WebSocket frames from this server already carry `code`). | Rejections carry the envelope's `code`, `reason`, and `field` as structured properties (D19, D24). | #1224 adds `ConnectorError` with `code`, `status`, and `reference`; `reason` and `field` need a follow-up there. Over HTTP the code also depends on the envelope fix above. | 26 |
 | 401 schema-match is plain text | `no allowed schemas found in request headers` via `http.Error`. | Envelope with `unauthenticated`. | Same mapper as the other HTTP errors. Needs an authorizer, which the CLI does not expose, so the suite cannot observe it. | not observable |
 | WebSocket close code and pings | Always `Close(1011)` on loop exit; pings are answered only inside `conn.Read`. | 1000 on a clean client close; SHOULD answer pings during execution. | Distinguish `CloseError`; add a reader goroutine or ping ticker. | not observable |
 | Upgrade detection | Whole-value `EqualFold` on `Connection` (`server.go`). | Token-based matching. | Scan `Connection` tokens. | not observable |
@@ -184,10 +194,11 @@ Closest to the target and the intended first `preagg` implementation (#1234). Al
   - `get/get-json-wrapped-query-rejected`: `error.content-type`, `error.not-json`
   - `get/get-preagg-rejected`: `error.content-type`, `error.not-json`
 - **Parse errors are 500 without a policy**
+  - `rest/sql-parse-error`: `error.status.500`
+  - `rest/ws-pipeline-order`: `s4.error.status.500`
   - `post/sql-parse-error`: `error.status.500`, `error.content-type`, `error.not-json`
   - `ws/sql-parse-error`: `error.code.internal_error`, `error.schema.required.reason`, `error.reason.missing`
   - `ws/ws-pipeline-order`: `s4.error.code.internal_error`, `s2.error.schema.required.reason`, `s2.error.reason.missing`, `s2.error.field.missing`, `s4.error.schema.required.reason`, `s4.error.reason.missing`
-  - `connector/rest-error`: `connector.status`
 - **`preagg` is unknown**
   - `post/preagg-unsupported`: `error.content-type`, `error.not-json`
   - `ws/preagg-unsupported`: `error.code.bad_request`, `error.schema.required.reason`, `error.reason.missing`
@@ -206,10 +217,14 @@ Closest to the target and the intended first `preagg` implementation (#1234). Al
   - `get/get-ddl-rejected`: `s1.error.status.200`, `s1.error.content-type`, `s1.error.not-json`, `s2.arrow.rows`
   - `get/get-delete-returning-rejected`: `s2.error.status.200`, `s2.error.content-type`, `s2.error.not-json`, `s3.arrow.rows`
 - **Multi-statement `arrow`**
+  - `rest/arrow-multi-statement`: `error.resolved`
+  - `socket/arrow-multi-statement`: `error.resolved`
   - `post/arrow-multi-statement`: `error.status.200`, `error.content-type`, `error.not-json`
   - `ws/arrow-multi-statement`: `error.frame`
   - `get/arrow-multi-statement`: `error.status.200`, `error.content-type`, `error.not-json`
 - **JSON keys match case-insensitively**
+  - `rest/protocol-fields-not-shadowed`: `arrow.decode`
+  - `socket/protocol-fields-not-shadowed`: `arrow.not-bytes`
   - `post/protocol-fields-not-shadowed`: `arrow.content-type`, `arrow.empty`
   - `ws/protocol-fields-not-shadowed`: `arrow.frame`
 - **405 without `Allow`**
@@ -220,13 +235,40 @@ Closest to the target and the intended first `preagg` implementation (#1234). Al
   - `ws/type-not-a-string`: `ws.closed.1007`
 - **WebSocket read limit**
   - `ws/large-request-1mib`: `ws.closed.1009`
+- **Client connectors expose no error code**
+  - `rest/empty-sql`: `error.code.missing`, `error.reason.missing`, `error.field.missing`
+  - `rest/exec-error`: `error.code.missing`, `error.reason.missing`
+  - `rest/missing-sql`: `error.code.missing`, `error.reason.missing`, `error.field.missing`
+  - `rest/missing-type`: `error.code.missing`, `error.reason.missing`, `error.field.missing`
+  - `rest/preagg-unsupported`: `error.code.missing`, `error.reason.missing`
+  - `rest/sql-parse-error`: `error.code.missing`, `error.reason.missing`
+  - `rest/sql-runtime-error`: `error.code.missing`, `error.reason.missing`
+  - `rest/sql-unknown-table`: `error.code.missing`, `error.reason.missing`
+  - `rest/type-not-a-string`: `error.code.missing`, `error.reason.missing`, `error.field.missing`
+  - `rest/unknown-type`: `error.code.missing`, `error.reason.missing`, `error.field.missing`
+  - `rest/ws-missing-sql-stays-open`: `s1.error.code.missing`, `s1.error.reason.missing`, `s1.error.field.missing`
+  - `rest/ws-sql-error-stays-open`: `s1.error.code.missing`, `s1.error.reason.missing`
+  - `rest/ws-pipeline-order`: `s2.error.code.missing`, `s2.error.reason.missing`, `s2.error.field.missing`, `s4.error.code.missing`, `s4.error.reason.missing`
+  - `socket/empty-sql`: `error.code.missing`, `error.reason.missing`, `error.field.missing`
+  - `socket/exec-error`: `error.code.missing`, `error.reason.missing`
+  - `socket/missing-sql`: `error.code.missing`, `error.reason.missing`, `error.field.missing`
+  - `socket/missing-type`: `error.code.missing`, `error.reason.missing`, `error.field.missing`
+  - `socket/preagg-unsupported`: `error.code.missing`, `error.reason.missing`
+  - `socket/sql-parse-error`: `error.code.missing`, `error.reason.missing`
+  - `socket/sql-runtime-error`: `error.code.missing`, `error.reason.missing`
+  - `socket/sql-unknown-table`: `error.code.missing`, `error.reason.missing`
+  - `socket/type-not-a-string`: `error.code.missing`, `error.reason.missing`, `error.field.missing`
+  - `socket/unknown-type`: `error.code.missing`, `error.reason.missing`, `error.field.missing`
+  - `socket/ws-missing-sql-stays-open`: `s1.error.code.missing`, `s1.error.reason.missing`, `s1.error.field.missing`
+  - `socket/ws-sql-error-stays-open`: `s1.error.code.missing`, `s1.error.reason.missing`
+  - `socket/ws-pipeline-order`: `s2.error.code.missing`, `s2.error.reason.missing`, `s2.error.field.missing`, `s4.error.code.missing`, `s4.error.reason.missing`
 
 </details>
 
 ### With `--cache-control`
 
-Configuration: `duckdb-server-go --cache-control='public, max-age=60'`.
-Everything in the Go `duckdb-server-go` table applies here too (40 inherited cases). Only the differences are listed.
+Configuration: `duckdb-server-go --cache-control='public, max-age=60'`. Transports: post, get, ws; smoke cases over rest, socket.
+Everything in the Go `duckdb-server-go` table applies here too (47 inherited cases). Only the differences are listed.
 
 | Area | Current | Spec | Fix | Cases |
 |------|---------|------|-----|-------|
@@ -248,18 +290,18 @@ Everything in the Go `duckdb-server-go` table applies here too (40 inherited cas
 
 ### With `--gatekeeper`
 
-Configuration: `duckdb-server-go --gatekeeper='{"version":1,"options":{}}'`; validation disables `exec` and denies local file access.
-Everything in the Go `duckdb-server-go` table applies here too (27 inherited cases; `connector/rest-error` passes under this configuration). Only the differences are listed.
+Configuration: `duckdb-server-go --gatekeeper='{"version":1,"options":{}}'`; validation disables `exec` and denies local file access. Transports: post, get, ws; smoke cases over rest, socket.
+Everything in the Go `duckdb-server-go` table applies here too (30 inherited cases). Only the differences are listed.
 
 | Area | Current | Spec | Fix | Cases |
 |------|---------|------|-----|-------|
 | Disabled `exec` is `bad_request` | `ErrExecWithValidation` maps to `bad_request` (`pkg/server/errors.go`); an application field spelled `TYPE: exec` also trips it, see D9 in go.yaml. | `unsupported_command` (D6). | Remap in `classifyError`. | 2 |
-| Gatekeeper rejections are `forbidden` or `bad_request` regardless of cause | A multi-statement `arrow` is `forbidden` (403) and an unknown table is `bad_request` (400 `Bad Request`) because Gatekeeper validation fails before DuckDB classifies the statement. | Multi-statement is `bad_request` (D16); an unknown user table is `internal_error` unless classified as a managed table (D7, still open in STATUS.md). | Split validator errors from policy denials when mapping to codes. | 6 |
+| Gatekeeper rejections are `forbidden` or `bad_request` regardless of cause | A multi-statement `arrow` is `forbidden` (403) and an unknown table is `bad_request` (400 `Bad Request`) because Gatekeeper validation fails before DuckDB classifies the statement. | Multi-statement is `bad_request` (D16); an unknown user table is `internal_error` unless classified as a managed table (D7, still open in STATUS.md). | Split validator errors from policy denials when mapping to codes. | 7 |
 | Parse error body is `Bad Request` | The status is right but the body is the plain `http.StatusText`. | Envelope with the DuckDB message (D4, D7). | Covered by the envelope fix in go.yaml. | 1 |
 | Local file reads are denied | Default Gatekeeper policy rejects `read_parquet` on a local path with 403 `Forbidden`. | Deployment choice; the suite marks this configuration as lacking the `files` capability. Listed so the plain-text body is not lost. | Envelope fix in go.yaml; optionally allow the shared data directory in the test policy. | not observable |
 | Default policy denies `information_schema` | The rejection itself has the right status but a plain body, and the follow-up `information_schema.tables` probe is 403 `Forbidden`, so the suite cannot confirm nothing was created. | Envelope on the rejection (D4); the probe is a test limitation, not a spec requirement. | Envelope fix in go.yaml; allow `information_schema` in the test policy or probe differently. | 2 |
 | Policy denials are plain text over HTTP and carry no `reason` or diagnostics | A statement the policy forbids is 403 `Forbidden` as `text/plain`; the WebSocket frame carries `code: forbidden` but no `reason`, and the Gatekeeper violations (`rule`, `message`, object, function, position) are folded into the message. | Envelope with `forbidden` / `policy_denied` and one `diagnostics` entry per violation (D4, D7, D19, D21). | Same mapper as the other HTTP errors; project `query.Violation` onto `Diagnostic` with `provider: gatekeeper`. | 3 |
-| Correctly classified parse errors still lack `reason` | Under validation a syntax error is `bad_request` on every transport, so these cases passed before D19; the frames have no `reason`. | `sql_parse_error` (D19). | Covered by the `reason` fix in go.yaml. | 2 |
+| Correctly classified parse errors still lack `reason` | Under validation a syntax error is `bad_request` on every transport, so these cases passed before D19; the frames have no `reason`. | `sql_parse_error` (D19). | Covered by the `reason` fix in go.yaml. | 4 |
 | JSON keys match case-insensitively | As in go.yaml, but here the shadowed `exec` is refused by validation, so the response is a 400 instead of an empty body. | Protocol fields decoded exactly; application fields must not shadow them (D9). | Decode protocol fields with a strict decoder or reject case-variant duplicates. | 1 |
 
 <details><summary>Baselined violations by case</summary>
@@ -268,6 +310,7 @@ Everything in the Go `duckdb-server-go` table applies here too (27 inherited cas
   - `post/exec-unsupported`: `error.content-type`, `error.not-json`
   - `ws/exec-unsupported`: `error.code.bad_request`, `error.schema.required.reason`, `error.reason.missing`
 - **Gatekeeper rejections are `forbidden` or `bad_request` regardless of cause**
+  - `rest/ws-sql-error-stays-open`: `s1.error.status.400`, `s1.error.code.missing`, `s1.error.reason.missing`
   - `post/arrow-multi-statement`: `error.status.403`, `error.content-type`, `error.not-json`
   - `ws/arrow-multi-statement`: `error.code.forbidden`, `error.schema.required.reason`, `error.reason.missing`
   - `post/sql-unknown-table`: `error.status.400`, `error.content-type`, `error.not-json`
@@ -284,6 +327,8 @@ Everything in the Go `duckdb-server-go` table applies here too (27 inherited cas
   - `post/policy-denied-file`: `error.content-type`, `error.not-json`
   - `ws/policy-denied-file`: `error.schema.required.reason`, `error.reason.missing`
 - **Correctly classified parse errors still lack `reason`**
+  - `rest/sql-parse-error`: `error.code.missing`, `error.reason.missing`
+  - `rest/ws-pipeline-order`: `s2.error.code.missing`, `s2.error.reason.missing`, `s2.error.field.missing`, `s4.error.code.missing`, `s4.error.reason.missing`
   - `ws/sql-parse-error`: `error.schema.required.reason`, `error.reason.missing`
   - `ws/ws-pipeline-order`: `s2.error.schema.required.reason`, `s2.error.reason.missing`, `s2.error.field.missing`, `s4.error.schema.required.reason`, `s4.error.reason.missing`
 - **JSON keys match case-insensitively**
@@ -293,20 +338,21 @@ Everything in the Go `duckdb-server-go` table applies here too (27 inherited cas
 
 ## Rust `duckdb-server`
 
-Configuration: `duckdb-server` crate (`packages/server/duckdb-server-rust`).
+Configuration: `duckdb-server` crate (`packages/server/duckdb-server-rust`). Transports: post, get, ws; smoke cases over rest, socket.
 
 | Area | Current | Spec | Fix | Cases |
 |------|---------|------|-----|-------|
-| Arrow IPC file format | `FileWriter` output (`ARROW1` magic plus footer) under the stream media type (`db.rs`, `interfaces.rs`). | IPC stream format (D8). | Use `StreamWriter`; update the `test.rs` assertion. Row contents are still compared, so this only hides framing. | 34 |
+| Arrow IPC file format | `FileWriter` output (`ARROW1` magic plus footer) under the stream media type (`db.rs`, `interfaces.rs`). | IPC stream format (D8). | Use `StreamWriter`; update the `test.rs` assertion. Row contents are still compared, so this only hides framing. | 29 |
 | HTTP errors are plain text or empty | Rejections are serde/axum text (`interfaces.rs`); DuckDB errors are `Something went wrong: …`; 405 and 415 have plain or empty bodies. | JSON `Error` envelope on every status (D4, D5). | Custom rejection handlers and a shared error mapper. | 12 |
 | WebSocket errors lack `code` and `reason` | `{"error"}` only (`websocket.rs`); the message also differs from HTTP. | Envelope with `code` and `reason`, identical over both transports (D4, D19). | Shared mapper. | 13 |
 | Unknown `type` is 422 | serde enum rejection surfaces as axum's 422 `Failed to deserialize the JSON body`. | 400 `bad_request` (D6). | Decode `type` as a string and match manually. | 1 |
 | `preagg` is unknown | Same 422 path as any unknown variant. | `unsupported_command` (D6). | Add the variant and answer `unsupported_command` until implemented. | 1 |
-| Parse errors and empty `sql` are 500 | Every `duckdb::Error` is `Something went wrong` with 500; an empty string yields `Error code 1: Unknown error code`. | `bad_request` for parse errors and empty SQL (D1, D7). | Validate `sql`; map `duckdb::Error` variants to codes. | 3 |
+| Parse errors and empty `sql` are 500 | Every `duckdb::Error` is `Something went wrong` with 500; an empty string yields `Error code 1: Unknown error code`. | `bad_request` for parse errors and empty SQL (D1, D7). | Validate `sql`; map `duckdb::Error` variants to codes. | 4 |
 | Exec and side effects over GET | `handle_get` runs any `type` and does not check the statement kind; the follow-up probes confirm the table was created and the row deleted. | `arrow` only (D3); read-only root required (D3a). | Reject `exec` in `handle_get`; check the statement type before execution. | 3 |
 | Multi-statement `arrow` | Runs and returns a result rather than rejecting. | `bad_request` (D16). | Count statements before execution. | 3 |
 | HEAD runs the query | axum's GET route also serves HEAD, so `HEAD /?type=arrow&sql=…` executes and returns 200. | 405 with `Allow` (D5). | Add an explicit fallback for other methods. | 1 |
 | WebSocket binary frames are ignored | `Message::Binary` is dropped with no reply (`websocket.rs`). | SHOULD accept; MUST reply (D11). | Treat as text or answer with `bad_request`. | 1 |
+| Client connectors expose no error code | `restConnector` rejects with `Error('Query failed with HTTP status …')` and `socketConnector` with the frame's `error` string, so the coordinator sees no `code`, `reason`, or `field`. | Rejections carry the envelope's `code`, `reason`, and `field` as structured properties (D19, D24). | #1224 adds `ConnectorError` with `code`, `status`, and `reference`; `reason` and `field` need a follow-up there. Over HTTP the code also depends on this server emitting the JSON envelope. | 6 |
 | Malformed upgrade falls through to GET | A bad upgrade request reaches the GET handler (`app.rs`). | 400 envelope. | Return the upgrade rejection. | not observable |
 | README GET example | `?query={…}` is documented but the code reads flat parameters. | Flat parameters (D2). | Fix the README. | not observable |
 | CORS and caching headers | No `Access-Control-Expose-Headers`; no cache headers. | Expose `ETag`; caching optional (D14). | Edit `CorsLayer`; add cache headers if wanted. | not observable |
@@ -316,11 +362,6 @@ Configuration: `duckdb-server` crate (`packages/server/duckdb-server-rust`).
 <details><summary>Baselined violations by case</summary>
 
 - **Arrow IPC file format**
-  - `connector/rest-arrow`: `arrow.file-format`
-  - `connector/rest-exec`: `arrow.file-format`
-  - `connector/socket-arrow`: `arrow.file-format`
-  - `connector/socket-error-then-ok`: `ok.arrow.file-format`
-  - `connector/socket-pipeline`: `q1.arrow.file-format`, `q2.arrow.file-format`, `q3.arrow.file-format`, `q4.arrow.file-format`, `q5.arrow.file-format`
   - `get/get-arrow`: `arrow.file-format`
   - `get/get-plus-in-sql`: `arrow.file-format`
   - `get/get-cte-allowed`: `arrow.file-format`
@@ -382,9 +423,10 @@ Configuration: `duckdb-server` crate (`packages/server/duckdb-server-rust`).
 - **`preagg` is unknown**
   - `post/preagg-unsupported`: `error.status.422`, `error.content-type`, `error.not-json`
 - **Parse errors and empty `sql` are 500**
+  - `rest/sql-parse-error`: `error.status.500`
+  - `rest/ws-pipeline-order`: `s4.error.status.500`
   - `post/sql-parse-error`: `error.status.500`, `error.content-type`, `error.not-json`
   - `post/empty-sql`: `error.status.500`, `error.content-type`, `error.not-json`
-  - `connector/rest-error`: `connector.status`
 - **Exec and side effects over GET**
   - `get/get-exec-rejected`: `s1.error.status.200`, `s1.error.content-type`, `s1.error.not-json`, `s2.arrow.file-format`, `s2.arrow.rows`
   - `get/get-ddl-rejected`: `s1.error.status.200`, `s1.error.content-type`, `s1.error.not-json`, `s2.arrow.file-format`, `s2.arrow.rows`
@@ -397,6 +439,13 @@ Configuration: `duckdb-server` crate (`packages/server/duckdb-server-rust`).
   - `post/method-head`: `status.200`, `header.allow`
 - **WebSocket binary frames are ignored**
   - `ws/ws-binary-frame`: `alt0.ws.no-reply`
+- **Client connectors expose no error code**
+  - `rest/sql-parse-error`: `error.code.missing`, `error.reason.missing`
+  - `socket/sql-parse-error`: `error.code.missing`, `error.reason.missing`
+  - `rest/ws-sql-error-stays-open`: `s1.error.code.missing`, `s1.error.reason.missing`
+  - `socket/ws-sql-error-stays-open`: `s1.error.code.missing`, `s1.error.reason.missing`
+  - `rest/ws-pipeline-order`: `s2.error.code.missing`, `s2.error.reason.missing`, `s2.error.field.missing`, `s4.error.code.missing`, `s4.error.reason.missing`
+  - `socket/ws-pipeline-order`: `s2.error.code.missing`, `s2.error.reason.missing`, `s2.error.field.missing`, `s4.error.code.missing`, `s4.error.reason.missing`
 - **Large GET query strings are rejected**
   - `get/large-request-1mib`: `arrow.status.431`
 
@@ -404,18 +453,19 @@ Configuration: `duckdb-server` crate (`packages/server/duckdb-server-rust`).
 
 ## Python `duckdb-server`
 
-Configuration: `duckdb-server` (`packages/server/duckdb-server`).
+Configuration: `duckdb-server` (`packages/server/duckdb-server`). Transports: post, get, ws; smoke cases over rest, socket.
 
 | Area | Current | Spec | Fix | Cases |
 |------|---------|------|-----|-------|
 | WebSocket errors lack `code` and `reason` | `{"error": str(e)}` only (`SocketHandler.error`); msgspec's decode message is the only classification. | Envelope with `code`, `reason`, and `field` (D4, D19). | Share an error mapper with the HTTP handler; map msgspec `ValidationError` to `missing_field`/`invalid_field` with the field name. | 13 |
 | HTTP errors are plain text | `handler.error()` ends the response with `str(error)` and no Content-Type. | JSON `Error` envelope (D4, D19). | Emit `{error, code, reason}` with `application/json`. | 8 |
 | Empty `sql` | `msgspec` accepts `""`, then `get_arrow_bytes` fails on a `None` result (500). | 400 `bad_request` (D1). | Add `min_length=1` to the struct or validate before dispatch. | 1 |
-| Parse errors are 500 | Every DuckDB exception is `handler.error(e)` with the default 500. | `bad_request` for `duckdb.ParserException` (D7). | Map exception classes to codes. | 2 |
+| Parse errors are 500 | Every DuckDB exception is `handler.error(e)` with the default 500. | `bad_request` for `duckdb.ParserException` (D7). | Map exception classes to codes. | 3 |
 | `preagg` is unknown | `msgspec` rejects it as an invalid enum value. | `unsupported_command` (D6). | Accept the literal and answer `unsupported_command` until implemented. | 1 |
 | GET reads `?query=<json>` | The flat form is rejected with `missing required 'query' parameter`; the JSON form runs `exec`. | Flat `type`/`sql`, `arrow` only, read-only SQL (D2, D3, D3a). | Read flat parameters; reject `exec`/`preagg`; check the statement kind with `duckdb.extract_statements()`. | 11 |
 | Multi-statement `arrow` | All statements run and the last result is returned. | `bad_request` (D16). | Count statements with `duckdb.extract_statements()`. | 3 |
 | Unsupported method is 400 | `Unsupported HTTP method` with status 400 and no `Allow`. | 405 with `Allow` and the envelope (D5). | Change the status and add the header. | 2 |
+| Client connectors expose no error code | `restConnector` rejects with `Error('Query failed with HTTP status …')` and `socketConnector` with the frame's `error` string, so the coordinator sees no `code`, `reason`, or `field`. | Rejections carry the envelope's `code`, `reason`, and `field` as structured properties (D19, D24). | #1224 adds `ConnectorError` with `code`, `status`, and `reference`; `reason` and `field` need a follow-up there. Over HTTP the code also depends on this server emitting the JSON envelope. | 6 |
 | CORS | `Access-Control-Request-Method` is emitted as a response header; no `Access-Control-Expose-Headers`. | Drop the request header; expose `ETag` if caching is ever added. | Edit `CORS_HEADERS`. | not observable |
 | Concurrency | A synchronous handler blocks the event loop for every connection. | No wire requirement; prerequisite for deadlines. | Run queries in a thread pool. | not observable |
 | Large GET request lines reset the connection | uWebSockets answers a request line over its header buffer with a 505 and closes; the client sees the 505, a write error (`ECONNRESET` on macOS, `EPIPE` on Linux), or the close while reading the 505 body, depending on which lands first. | Servers SHOULD accept at least 1 MiB (D13); a rejection should be a consistent HTTP status. | Probably not configurable in socketify; document the limit. | 1 |
@@ -448,8 +498,9 @@ Configuration: `duckdb-server` (`packages/server/duckdb-server`).
 - **Empty `sql`**
   - `post/empty-sql`: `error.status.500`, `error.content-type`, `error.not-json`
 - **Parse errors are 500**
+  - `rest/sql-parse-error`: `error.status.500`
+  - `rest/ws-pipeline-order`: `s4.error.status.500`
   - `post/sql-parse-error`: `error.status.500`, `error.content-type`, `error.not-json`
-  - `connector/rest-error`: `connector.status`
 - **`preagg` is unknown**
   - `post/preagg-unsupported`: `error.content-type`, `error.not-json`
 - **GET reads `?query=<json>`**
@@ -471,6 +522,13 @@ Configuration: `duckdb-server` (`packages/server/duckdb-server`).
 - **Unsupported method is 400**
   - `post/method-put`: `error.status.400`, `error.content-type`, `error.not-json`, `header.allow`
   - `post/method-head`: `status.400`, `header.allow`
+- **Client connectors expose no error code**
+  - `rest/sql-parse-error`: `error.code.missing`, `error.reason.missing`
+  - `socket/sql-parse-error`: `error.code.missing`, `error.reason.missing`
+  - `rest/ws-sql-error-stays-open`: `s1.error.code.missing`, `s1.error.reason.missing`
+  - `socket/ws-sql-error-stays-open`: `s1.error.code.missing`, `s1.error.reason.missing`
+  - `rest/ws-pipeline-order`: `s2.error.code.missing`, `s2.error.reason.missing`, `s2.error.field.missing`, `s4.error.code.missing`, `s4.error.reason.missing`
+  - `socket/ws-pipeline-order`: `s2.error.code.missing`, `s2.error.reason.missing`, `s2.error.field.missing`, `s4.error.code.missing`, `s4.error.reason.missing`
 - **Large GET request lines reset the connection**
   - `get/large-request-1mib`: `http.reset.peer-closed|arrow.status.505|http.reset.after-505.socket-closed`
 
@@ -478,21 +536,22 @@ Configuration: `duckdb-server` (`packages/server/duckdb-server`).
 
 ## Node `@uwdata/mosaic-duckdb`
 
-Configuration: `@uwdata/mosaic-duckdb` data server (`packages/server/duckdb`).
+Configuration: `@uwdata/mosaic-duckdb` data server (`packages/server/duckdb`). Transports: post, get, ws; smoke cases over rest, socket.
 
 | Area | Current | Spec | Fix | Cases |
 |------|---------|------|-----|-------|
 | HTTP errors are plain text | `res.error()` writes `String(err)` with no Content-Type (`data-server.js`). | JSON `Error` envelope with `application/json` on every failure (D4, D19). | Rewrite `error()` to emit `{error, code, reason}`. | 7 |
 | WebSocket errors lack `code` and `reason` | `{"error": String(err)}` with an `Error:` prefix; the status argument is dropped (`data-server.js`). | Envelope with `code` and `reason` (D4, D19). | Share the HTTP error mapper. | 9 |
 | `sql` is not validated | A missing or empty `sql` reaches DuckDB and fails as a binder or parser error (500). | 400 `bad_request` / `missing_field` or `invalid_field` with `field: sql` (D1, D19). | Validate before dispatch. | 5 |
-| Parse errors are 500 | DuckDB parser errors surface as `internal_error`. | `bad_request` (D7). | Classify `Parser Error` before falling through to 500. | 3 |
+| Parse errors are 500 | DuckDB parser errors surface as `internal_error`. | `bad_request` (D7). | Classify `Parser Error` before falling through to 500. | 4 |
 | `preagg` is unknown | `Unrecognized command: preagg` as a generic bad request. | `unsupported_command` (D6). | Recognise the command and answer `unsupported_command` until implemented. | 2 |
 | GET is broken | `JSON.parse` is applied to the already-parsed query object, so every GET is a 400 `TypeError` (`data-server.js`). | Flat `type`/`sql` parameters, `arrow` only, read-only SQL (D2, D3, D3a). | Build the command from `url.query`; reject `exec`/`preagg`; check the statement kind with `json_serialize_sql`. | 11 |
 | Empty Arrow result is 0 bytes | `DuckDB.js` returns no bytes for zero rows; `duckdb.test.js` asserts it. | Schema message plus end-of-stream marker (D8). | Emit a schema-only stream. | 2 |
 | Trailing `;` and multi-statement `arrow` | SQL is wrapped as `to_arrow_ipc((sql))`, so a trailing `;` is a parser error (500) and several statements fail the same way. | Trailing `;` allowed; several statements are `bad_request` (D16). | Strip a trailing `;`; count statements before wrapping. | 4 |
 | Unsupported method is 400 | `Unsupported HTTP method` with status 400 and no `Allow`. | 405 with `Allow: GET, POST, OPTIONS` and the envelope (D5). | Change the status and add the header. | 2 |
+| Client connectors expose no error code | `restConnector` rejects with `Error('Query failed with HTTP status …')` and `socketConnector` with the frame's `error` string, so the coordinator sees no `code`, `reason`, or `field`. | Rejections carry the envelope's `code`, `reason`, and `field` as structured properties (D19, D24). | #1224 adds `ConnectorError` with `code`, `status`, and `reference`; `reason` and `field` need a follow-up there. Over HTTP the code also depends on this server emitting the JSON envelope. | 6 |
 | Shared DuckDB connection | One connection serves every client (`DuckDB.js`). | No requirement. | Note only. | not observable |
-| Arrow stream lacks the end-of-stream marker | `DuckDB.js` concatenates the record batches and stops; there is no trailing 0-length message, so a reader that waits for EOS never finishes. | Schema, batches, then the end-of-stream marker (D8). | Append `ff ff ff ff 00 00 00 00`, or let `to_arrow_ipc` emit the full stream. | 27 |
+| Arrow stream lacks the end-of-stream marker | `DuckDB.js` concatenates the record batches and stops; there is no trailing 0-length message, so a reader that waits for EOS never finishes. | Schema, batches, then the end-of-stream marker (D8). | Append `ff ff ff ff 00 00 00 00`, or let `to_arrow_ipc` emit the full stream. | 22 |
 | Large GET query strings are rejected | Node's HTTP parser limits the request line and headers to 16 KiB (`maxHeaderSize`), so a 1 MiB query string is a 431. | Servers SHOULD accept at least 1 MiB (D13). | Pass `maxHeaderSize` to `http.createServer`, or document the limit. | 1 |
 
 <details><summary>Baselined violations by case</summary>
@@ -522,9 +581,10 @@ Configuration: `@uwdata/mosaic-duckdb` data server (`packages/server/duckdb`).
   - `ws/empty-sql`: `error.schema.required.code`, `error.code.missing`, `error.schema.required.reason`, `error.reason.missing`, `error.field.missing`
   - `ws/ws-missing-sql-stays-open`: `s1.error.schema.required.code`, `s1.error.code.missing`, `s2.arrow.eos`, `s1.error.schema.required.reason`, `s1.error.reason.missing`, `s1.error.field.missing`
 - **Parse errors are 500**
+  - `rest/sql-parse-error`: `error.status.500`
+  - `rest/ws-pipeline-order`: `s4.error.status.500`
   - `post/sql-parse-error`: `error.status.500`, `error.content-type`, `error.not-json`
   - `ws/sql-parse-error`: `error.schema.required.code`, `error.code.missing`, `error.schema.required.reason`, `error.reason.missing`
-  - `connector/rest-error`: `connector.status`
 - **`preagg` is unknown**
   - `post/preagg-unsupported`: `error.content-type`, `error.not-json`
   - `ws/preagg-unsupported`: `error.schema.required.code`, `error.code.missing`, `error.schema.required.reason`, `error.reason.missing`
@@ -551,12 +611,14 @@ Configuration: `@uwdata/mosaic-duckdb` data server (`packages/server/duckdb`).
 - **Unsupported method is 400**
   - `post/method-put`: `error.status.400`, `error.content-type`, `error.not-json`, `header.allow`
   - `post/method-head`: `status.400`, `header.allow`
+- **Client connectors expose no error code**
+  - `rest/sql-parse-error`: `error.code.missing`, `error.reason.missing`
+  - `socket/sql-parse-error`: `error.code.missing`, `error.reason.missing`
+  - `rest/ws-sql-error-stays-open`: `s1.error.code.missing`, `s1.error.reason.missing`
+  - `socket/ws-sql-error-stays-open`: `s1.error.code.missing`, `s1.error.reason.missing`
+  - `rest/ws-pipeline-order`: `s2.error.code.missing`, `s2.error.reason.missing`, `s2.error.field.missing`, `s4.error.code.missing`, `s4.error.reason.missing`
+  - `socket/ws-pipeline-order`: `s2.error.code.missing`, `s2.error.reason.missing`, `s2.error.field.missing`, `s4.error.code.missing`, `s4.error.reason.missing`
 - **Arrow stream lacks the end-of-stream marker**
-  - `connector/rest-arrow`: `arrow.eos`
-  - `connector/rest-exec`: `arrow.eos`
-  - `connector/socket-arrow`: `arrow.eos`
-  - `connector/socket-error-then-ok`: `ok.arrow.eos`
-  - `connector/socket-pipeline`: `q1.arrow.eos`, `q2.arrow.eos`, `q3.arrow.eos`, `q4.arrow.eos`, `q5.arrow.eos`
   - `post/application-fields-pass-through`: `arrow.eos`
   - `post/arrow-cors-origin`: `arrow.eos`
   - `post/arrow-from-parquet`: `arrow.eos`

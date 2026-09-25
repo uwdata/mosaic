@@ -122,12 +122,14 @@ failures:
     spec: "`bad_request` for `duckdb.ParserException` (D7)."
     fix: Map exception classes to codes.
     cases:
+      rest/sql-parse-error:
+        - error.status.500
+      rest/ws-pipeline-order:
+        - s4.error.status.500
       post/sql-parse-error:
         - error.status.500
         - error.content-type
         - error.not-json
-      connector/rest-error:
-        - connector.status
   - area: "`preagg` is unknown"
     current: "`msgspec` rejects it as an invalid enum value."
     spec: "`unsupported_command` (D6)."
@@ -205,6 +207,35 @@ failures:
       post/method-head:
         - status.400
         - header.allow
+  - area: Client connectors expose no error code
+    current: "`restConnector` rejects with `Error('Query failed with HTTP status …')` and `socketConnector` with the frame's `error` string, so the coordinator sees no `code`, `reason`, or `field`."
+    spec: "Rejections carry the envelope's `code`, `reason`, and `field` as structured properties (D19, D24)."
+    fix: "#1224 adds `ConnectorError` with `code`, `status`, and `reference`; `reason` and `field` need a follow-up there. Over HTTP the code also depends on this server emitting the JSON envelope."
+    cases:
+      rest/sql-parse-error:
+        - error.code.missing
+        - error.reason.missing
+      socket/sql-parse-error:
+        - error.code.missing
+        - error.reason.missing
+      rest/ws-sql-error-stays-open:
+        - s1.error.code.missing
+        - s1.error.reason.missing
+      socket/ws-sql-error-stays-open:
+        - s1.error.code.missing
+        - s1.error.reason.missing
+      rest/ws-pipeline-order:
+        - s2.error.code.missing
+        - s2.error.reason.missing
+        - s2.error.field.missing
+        - s4.error.code.missing
+        - s4.error.reason.missing
+      socket/ws-pipeline-order:
+        - s2.error.code.missing
+        - s2.error.reason.missing
+        - s2.error.field.missing
+        - s4.error.code.missing
+        - s4.error.reason.missing
   - area: CORS
     current: "`Access-Control-Request-Method` is emitted as a response header; no `Access-Control-Expose-Headers`."
     spec: Drop the request header; expose `ETag` if caching is ever added.

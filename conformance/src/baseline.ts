@@ -3,6 +3,7 @@ import { isMap, isSeq, parseDocument, type YAMLMap, YAMLSeq } from 'yaml';
 export interface ResultRow {
   id: string;
   outcome: string;
+  skip?: string;
   reason?: string;
   violations?: string[];
 }
@@ -28,13 +29,14 @@ export function observedFrom(rows: ResultRow[], label: string): Map<string, stri
 }
 
 // The same results read as the configuration another one inherits from. A
-// case that configuration skips by capability (the skip carries its reason)
-// has no inherited failures, so it counts as observed clean; a case a
-// filtered run left out (no reason) stays absent and is reported unverified.
+// case that configuration declines by capability or layer (the skip carries
+// a category) has no inherited failures, so it counts as observed clean; a
+// case a filtered run left out (no category) stays absent and is reported
+// unverified.
 export function inheritedFrom(rows: ResultRow[], label: string): Map<string, string[]> {
   const observed = observedFrom(rows, label);
   for (const row of rows) {
-    if (row.outcome === 'skipped' && row.reason) observed.set(row.id, []);
+    if (row.outcome === 'skipped' && row.skip) observed.set(row.id, []);
   }
   return observed;
 }

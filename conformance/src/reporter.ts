@@ -2,13 +2,14 @@ import { appendFileSync, mkdirSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import type { Reporter, TestCase, TestModule } from 'vitest/node';
 import { conformanceRoot } from './cases.ts';
-import { annotationTypes } from './harness.ts';
+import { annotationTypes, parseSkipNote, type SkipCategory } from './harness.ts';
 
 type Outcome = 'pass' | 'known' | 'regression' | 'resolved' | 'error' | 'skipped';
 
 interface Row {
   id: string;
   outcome: Outcome;
+  skip?: SkipCategory;
   reason?: string;
   area?: string;
   detail?: string;
@@ -22,7 +23,7 @@ const labels: Record<Outcome, string> = {
   resolved: 'resolved (remove from baseline)',
   known: 'known failures',
   pass: 'passing',
-  skipped: 'skipped (capability)'
+  skipped: 'skipped (capability / layer)'
 };
 
 export default class ConformanceReporter implements Reporter {
@@ -33,7 +34,7 @@ export default class ConformanceReporter implements Reporter {
     }
     rows.sort((a, b) => order.indexOf(a.outcome) - order.indexOf(b.outcome) || a.id.localeCompare(b.id));
 
-    const server = process.env.CONFORMANCE_SERVER ?? 'unknown';
+    const server = process.env.CONFORMANCE_TARGET ?? 'unknown';
     const summary = renderSummary(server, rows);
     console.log(`\n${summary}`);
     if (process.env.GITHUB_STEP_SUMMARY) appendFileSync(process.env.GITHUB_STEP_SUMMARY, `${summary}\n`);
@@ -52,7 +53,10 @@ function classify(test: TestCase): Row {
   const annotations = test.annotations();
   const byType = (type: string) => annotations.find(a => a.type === type)?.message;
   const id = test.name;
-  if (result.state === 'skipped') return { id, outcome: 'skipped', reason: result.note };
+  if (result.state === 'skipped') {
+    const skip = parseSkipNote(result.note);
+    return skip ? { id, outcome: 'skipped', skip: skip.category, reason: skip.reason } : { id, outcome: 'skipped' };
+  }
   if (result.state === 'pending') return { id, outcome: 'skipped' };
   const area = byType(annotationTypes.known);
   const observed = byType(annotationTypes.observed);
@@ -74,12 +78,14 @@ function idsIn(message: string | undefined): string[] {
 
 function renderSummary(server: string, rows: Row[]) {
   const counts = Object.fromEntries(order.map(o => [o, rows.filter(r => r.outcome === o).length])) as Record<Outcome, number>;
+  const skips = (category: string) => rows.filter(r => r.outcome === 'skipped' && r.skip === category).length;
+  const cell = (o: Outcome) => (o === 'skipped' ? `${skips('capability')} / ${skips('layer')}` : String(counts[o]));
   const lines = [
     `### Conformance: ${server}`,
     '',
     `| ${order.map(o => labels[o]).join(' | ')} |`,
     `| ${order.map(() => '---:').join(' | ')} |`,
-    `| ${order.map(o => counts[o]).join(' | ')} |`,
+    `| ${order.map(cell).join(' | ')} |`,
     ''
   ];
   const attention = rows.filter(r => r.outcome === 'error' || r.outcome === 'regression' || r.outcome === 'resolved');

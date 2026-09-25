@@ -35,7 +35,7 @@ describe('error envelope violations', () => {
 
   it('accepts a conforming envelope regardless of message wording', () => {
     expect(checkResponse({ error: { code: 'bad_request', reason: 'missing_field', field: 'type' } }, text(JSON.stringify(missingType)), 'ws', {})).toEqual([]);
-    expect(checkResponse({ error: { code: 'bad_request', reason: 'missing_field', field: 'type' } }, text(JSON.stringify({ ...missingType, error: "Object missing required field `type`" })), 'ws', {})).toEqual([]);
+    expect(checkResponse({ error: { code: 'bad_request', reason: 'missing_field', field: 'type' } }, text(JSON.stringify({ ...missingType, error: 'Object missing required field `type`' })), 'ws', {})).toEqual([]);
   });
 
   it('carries the observed reason and field in the id', () => {

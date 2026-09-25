@@ -3,7 +3,7 @@ import { createServer } from 'node:net';
 import { mkdirSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { conformanceRoot } from './cases.ts';
-import type { ServerConfig } from '../implementations/index.ts';
+import type { Target } from '../implementations/index.ts';
 
 const readyTimeout = Number(process.env.CONFORMANCE_READY_TIMEOUT ?? 300_000);
 const logDir = path.join(conformanceRoot, '.logs');
@@ -14,9 +14,10 @@ export interface RunningServer {
   stop: () => Promise<void>;
 }
 
-export async function startServer(config: ServerConfig): Promise<RunningServer> {
+export async function startServer(config: Target): Promise<RunningServer> {
   const port = await freePort();
   const url = `http://127.0.0.1:${port}/`;
+  if (!config.command) throw new Error(`${config.name} is not a server target`);
   const { cmd, args, cwd, env } = config.command(port);
   const child = spawn(cmd, args, {
     cwd,

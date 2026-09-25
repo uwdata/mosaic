@@ -1,6 +1,7 @@
 import path from 'node:path';
-import { repoRoot } from '../src/cases.ts';
-import type { Capability } from '../src/types.ts';
+import { loadCases, repoRoot } from '../src/cases.ts';
+import type { Session } from '../src/session.ts';
+import type { Capability, Transport } from '../src/types.ts';
 
 export interface ServerCommand {
   cmd: string;
@@ -9,11 +10,20 @@ export interface ServerCommand {
   env?: Record<string, string>;
 }
 
-export interface ServerConfig {
+// A target is one thing the suite can be pointed at. A `server` is spawned
+// in global setup and reached over the wire; an `inproc` target is a
+// `Connector` built inside the test worker; a `comm` target speaks the
+// widget's message protocol to a subprocess. `transports` run the whole
+// corpus; `smoke` transports run only cases tagged `smoke: true`.
+export interface Target {
   name: string;
+  kind: 'server' | 'inproc' | 'comm';
   description: string;
   capabilities: Set<Capability>;
-  command: (port: number) => ServerCommand;
+  transports: Transport[];
+  smoke?: Transport[];
+  command?: (port: number) => ServerCommand;
+  session?: (url: string | undefined) => Promise<Session>;
 }
 
 // Every server accepts `--port`, so an adapter is just the launcher plus any
@@ -24,52 +34,71 @@ function launcher(cmd: string, prefix: string[], cwd: string, flags: string[] = 
   return (port: number): ServerCommand => ({ cmd, args: [...prefix, ...core(port), ...flags], cwd });
 }
 
+const wire: Transport[] = ['post', 'get', 'ws'];
+const clients: Transport[] = ['rest', 'socket'];
+
+function server(
+  name: string,
+  description: string,
+  capabilities: Capability[],
+  command: (port: number) => ServerCommand,
+  extra: Pick<Target, 'transports' | 'smoke'> = { transports: wire, smoke: clients }
+): Target {
+  return { name, kind: 'server', description, capabilities: new Set(capabilities), command, ...extra };
+}
+
 const goDir = path.join(repoRoot, 'packages/server/duckdb-server-go');
 const goRun = ['run', '-tags=duckdb_arrow', '.'];
 
-function goConfig(name: string, description: string, flags: string[], capabilities: Capability[]): ServerConfig {
-  return { name, description, capabilities: new Set(capabilities), command: launcher('go', goRun, goDir, flags) };
-}
-
-export const servers: Record<string, ServerConfig> = {
-  node: {
-    name: 'node',
-    description: '`@uwdata/mosaic-duckdb` data server (`packages/server/duckdb`)',
-    capabilities: new Set(['exec', 'files']),
-    command: launcher(process.execPath, ['packages/server/duckdb/bin/run-server.js'], repoRoot)
-  },
-  python: {
-    name: 'python',
-    description: '`duckdb-server` (`packages/server/duckdb-server`)',
-    capabilities: new Set(['exec', 'files']),
-    command: launcher('uv', ['run', 'duckdb-server'], path.join(repoRoot, 'packages/server/duckdb-server'))
-  },
-  rust: {
-    name: 'rust',
-    description: '`duckdb-server` crate (`packages/server/duckdb-server-rust`)',
-    capabilities: new Set(['exec', 'files']),
-    command: launcher('cargo', ['run', '--quiet', '--'], path.join(repoRoot, 'packages/server/duckdb-server-rust'))
-  },
-  go: goConfig('go', '`duckdb-server-go` with default flags', [], ['exec', 'files']),
-  'go-cache': goConfig(
+export const targets: Record<string, Target> = {
+  node: server(
+    'node',
+    '`@uwdata/mosaic-duckdb` data server (`packages/server/duckdb`)',
+    ['exec', 'files'],
+    launcher(process.execPath, ['packages/server/duckdb/bin/run-server.js'], repoRoot)
+  ),
+  python: server(
+    'python',
+    '`duckdb-server` (`packages/server/duckdb-server`)',
+    ['exec', 'files'],
+    launcher('uv', ['run', 'duckdb-server'], path.join(repoRoot, 'packages/server/duckdb-server'))
+  ),
+  rust: server(
+    'rust',
+    '`duckdb-server` crate (`packages/server/duckdb-server-rust`)',
+    ['exec', 'files'],
+    launcher('cargo', ['run', '--quiet', '--'], path.join(repoRoot, 'packages/server/duckdb-server-rust'))
+  ),
+  // The reference server also runs the whole command corpus through the real
+  // client connectors; the others run the smoke subset over them.
+  go: server(
+    'go',
+    '`duckdb-server-go` with default flags',
+    ['exec', 'files'],
+    launcher('go', goRun, goDir),
+    { transports: [...wire, ...clients] }
+  ),
+  'go-cache': server(
     'go-cache',
     '`duckdb-server-go --cache-control=\'public, max-age=60\'`',
-    ['--cache-control', 'public, max-age=60'],
-    ['exec', 'files', 'caching']
+    ['exec', 'files', 'caching'],
+    launcher('go', goRun, goDir, ['--cache-control', 'public, max-age=60'])
   ),
-  'go-gatekeeper': goConfig(
+  'go-gatekeeper': server(
     'go-gatekeeper',
     '`duckdb-server-go --gatekeeper=\'{"version":1,"options":{}}\'`; validation disables `exec` and denies local file access',
-    ['--gatekeeper', '{"version":1,"options":{}}'],
-    ['policy']
+    ['policy'],
+    launcher('go', goRun, goDir, ['--gatekeeper', '{"version":1,"options":{}}'])
   )
 };
 
-export function serverConfig(name: string | undefined): ServerConfig {
+export function target(name: string | undefined): Target {
   if (!name) {
-    throw new Error(`CONFORMANCE_SERVER is not set; choose one of ${Object.keys(servers).join(', ')}`);
+    throw new Error(`CONFORMANCE_TARGET is not set; choose one of ${Object.keys(targets).join(', ')}`);
   }
-  const config = servers[name];
-  if (!config) throw new Error(`unknown server ${name}; choose one of ${Object.keys(servers).join(', ')}`);
-  return config;
+  const found = targets[name];
+  if (!found) throw new Error(`unknown target ${name}; choose one of ${Object.keys(targets).join(', ')}`);
+  return found;
 }
+
+export const casesOf = (name: string) => new Set(loadCases(target(name)).map(c => c.id));

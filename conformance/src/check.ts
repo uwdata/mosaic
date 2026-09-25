@@ -1,7 +1,7 @@
 import { arrowViolations } from './arrow.ts';
 import { substitute } from './cases.ts';
 import { schemaViolations } from './schema.ts';
-import { canonicalStatus, type Expectation, type Matcher, type Response, type TableReference, type Transport, type Violation, type WsResponse } from './types.ts';
+import { canonicalStatus, type ConnectorResponse, type Expectation, type Matcher, type Response, type TableReference, type Transport, type Violation, type WsResponse } from './types.ts';
 
 const arrowMediaType = 'application/vnd.apache.arrow.stream';
 const textDecoder = new TextDecoder();
@@ -42,6 +42,9 @@ export function checkResponse(
   }
   if (response.kind === 'ws' && response.frame === 'timeout') {
     return [v('ws.no-reply', 'no response frame received before the timeout')];
+  }
+  if (response.kind === 'connector' || response.kind === 'connector-rejected' || response.kind === 'connector-timeout') {
+    return checkConnectorResponse(expectation, response, sql);
   }
 
   const out: Violation[] = [];
@@ -154,6 +157,107 @@ export function checkResponse(
   }
 
   return out;
+}
+
+// The command layer sees what the coordinator sees: a resolved value or a
+// rejection. Encoding is not checked here (see ArrowChecks); errors are read
+// off the rejection's structured fields, so a connector that only carries a
+// message records `error.code.missing`.
+function checkConnectorResponse(expectation: Expectation, response: ConnectorResponse, sql: string | undefined): Violation[] {
+  if (response.kind === 'connector-timeout') {
+    return [v('connector.no-reply', `query neither resolved nor rejected within ${response.after} ms`)];
+  }
+  const out: Violation[] = [];
+  const resolved = response.kind === 'connector';
+
+  if (expectation.arrow) {
+    if (!resolved) out.push(v('arrow.rejected', `query rejected instead of returning a result: ${describeError(response.error)}`));
+    else {
+      const bytes = ipcBytes(response.result);
+      if (bytes === undefined) out.push(v('arrow.not-bytes', `result is not Arrow IPC bytes: ${describeValue(response.result)}`));
+      else out.push(...arrowViolations(bytes, expectation.arrow, { framing: false }));
+    }
+  }
+
+  if (expectation.exec) {
+    if (!resolved) out.push(v('exec.rejected', `exec rejected: ${describeError(response.error)}`));
+    else if (response.result !== undefined) out.push(v('exec.result', `exec should resolve undefined, got ${describeValue(response.result)}`));
+  }
+
+  if (expectation.json) {
+    if (!resolved) out.push(v('json.rejected', `query rejected instead of returning ${expectation.json}: ${describeError(response.error)}`));
+    else if (!isPlainObject(response.result)) out.push(v('json.not-object', `result is not an object: ${describeValue(response.result)}`));
+    else out.push(...schemaViolations('json.schema', expectation.json, response.result));
+  }
+
+  if (expectation.error) {
+    const { code, reason, field } = expectation.error;
+    if (resolved) {
+      out.push(v('error.resolved', `query resolved instead of rejecting with ${code}: ${describeValue(response.result)}`));
+    } else {
+      const err = (response.error ?? {}) as { code?: unknown; reason?: unknown; field?: unknown; status?: unknown; reference?: unknown; diagnostics?: unknown };
+      if (err.code !== code) out.push(v(`error.code.${token(err.code)}`, `code ${JSON.stringify(err.code)} != ${code}: ${describeError(response.error)}`));
+      if (reason !== undefined && err.reason !== reason) out.push(v(`error.reason.${token(err.reason)}`, `reason ${JSON.stringify(err.reason)} != ${reason}`));
+      if (field !== undefined && err.field !== field) out.push(v(`error.field.${token(err.field)}`, `field ${JSON.stringify(err.field)} != ${field}`));
+      const status = rejectionStatus(response.error);
+      const expectedStatus = expectation.error.status ?? canonicalStatus[code];
+      if (status !== undefined && status !== expectedStatus) out.push(v(`error.status.${status}`, `status ${status} != ${expectedStatus}`));
+      if (code === 'table_not_found') {
+        if (err.reference === undefined) out.push(v('error.reference.missing', 'table_not_found without a reference to rebuild'));
+        else if (!isReference(err.reference)) out.push(v('error.reference.invalid', `reference is not a complete TableReference: ${JSON.stringify(err.reference)}`));
+      }
+      out.push(...locationViolations(err.diagnostics, sql));
+    }
+  }
+
+  return out;
+}
+
+// The status comes from `ConnectorError.status` when the connector exposes
+// one (#1224). The base connector on main only has it in its message, and
+// that spelling is the single legacy form still parsed here; wording is
+// otherwise not contractual.
+export function rejectionStatus(err: unknown): number | undefined {
+  const structured = (err as { status?: unknown } | null)?.status;
+  if (typeof structured === 'number') return structured;
+  const legacy = /^Query failed with HTTP status (\d{3})\b/.exec(err instanceof Error ? err.message : String(err));
+  return legacy ? Number(legacy[1]) : undefined;
+}
+
+// `ArrowIPCBytes` is `ArrayBuffer | Uint8Array | Uint8Array[]`; chunks are
+// concatenated before decoding, as the coordinator does.
+export function ipcBytes(value: unknown): Uint8Array | undefined {
+  if (value instanceof Uint8Array) return value;
+  if (value instanceof ArrayBuffer) return new Uint8Array(value);
+  if (Array.isArray(value) && value.every(part => part instanceof Uint8Array)) {
+    const total = value.reduce((n, part) => n + part.length, 0);
+    const out = new Uint8Array(total);
+    let offset = 0;
+    for (const part of value) { out.set(part, offset); offset += part.length; }
+    return out;
+  }
+  return undefined;
+}
+
+function isPlainObject(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value) && !ArrayBuffer.isView(value) && !(value instanceof ArrayBuffer);
+}
+
+function describeError(err: unknown) {
+  if (err instanceof Error) return `${err.name}: ${err.message.slice(0, 160)}`;
+  return describeValue(err);
+}
+
+function describeValue(value: unknown) {
+  if (value === undefined) return 'undefined';
+  if (value instanceof Uint8Array) return `(${value.length} bytes)`;
+  if (value instanceof ArrayBuffer) return `(${value.byteLength} bytes)`;
+  try {
+    const text = JSON.stringify(value);
+    return text.length > 160 ? `${text.slice(0, 160)}…` : text;
+  } catch {
+    return String(value);
+  }
 }
 
 export function surplusViolations(frames: WsResponse[]): Violation[] {
@@ -271,10 +375,11 @@ export function captureValues(
       }
     } else if (scope === 'body' || scope === 'sqlname') {
       const text = response.kind === 'http' ? textDecoder.decode(response.body) : response.kind === 'ws' ? response.text ?? '' : '';
-      const value = rest.reduce<unknown>((node, part) => (node !== null && typeof node === 'object' ? (node as Record<string, unknown>)[part] : undefined), parseJson(text));
+      const root = response.kind === 'connector' ? response.result : parseJson(text);
+      const value = rest.reduce<unknown>((node, part) => (node !== null && typeof node === 'object' ? (node as Record<string, unknown>)[part] : undefined), root);
       if (value === undefined) {
         if (optional) vars[name] = '';
-        else out.push(v(`capture.${name}`, `cannot capture ${scope}.${key} from ${describeText(text)}`));
+        else out.push(v(`capture.${name}`, `cannot capture ${scope}.${key} from ${response.kind === 'connector' ? describeValue(response.result) : describeText(text)}`));
       } else if (scope === 'sqlname') {
         const rendered = sqlName(value);
         if (rendered === undefined) out.push(v(`capture.${name}`, `${key} is not a TableReference: ${JSON.stringify(value)}`));

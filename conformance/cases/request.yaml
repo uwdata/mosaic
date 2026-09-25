@@ -94,6 +94,7 @@
 - id: exec-acknowledged
   title: A successful `exec` returns an empty acknowledgement
   decisions: [D4]
+  smoke: true
   requires: [exec]
   steps:
     - request: { type: exec, sql: "CREATE OR REPLACE TABLE conformance_exec AS SELECT 1 AS x" }

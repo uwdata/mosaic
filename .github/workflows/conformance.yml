@@ -68,14 +68,14 @@ jobs:
           git diff --exit-code -- conformance/STATUS.md
 
   conformance:
-    name: Conformance (${{ matrix.server }})
+    name: Conformance (${{ matrix.target }})
 
     runs-on: ubuntu-latest
 
     strategy:
       fail-fast: false
       matrix:
-        server: [node, python, rust, go, go-cache, go-gatekeeper]
+        target: [node, python, rust, go, go-cache, go-gatekeeper]
 
     steps:
       - uses: actions/checkout@v7
@@ -94,7 +94,7 @@ jobs:
       - run: pnpm install --frozen-lockfile
 
       - name: Setup uv
-        if: matrix.server == 'python'
+        if: matrix.target == 'python'
         uses: astral-sh/setup-uv@v7
         with:
           version: ">=0.12.0"
@@ -104,11 +104,11 @@ jobs:
             **/pyproject.toml
 
       - name: Sync Python server
-        if: matrix.server == 'python'
+        if: matrix.target == 'python'
         run: uv sync --package duckdb-server
 
       - name: Setup Rust
-        if: matrix.server == 'rust'
+        if: matrix.target == 'rust'
         uses: actions-rust-lang/setup-rust-toolchain@v1
         with:
           cache: true
@@ -116,37 +116,37 @@ jobs:
             ./packages/server/duckdb-server-rust
 
       - name: Build Rust server
-        if: matrix.server == 'rust'
+        if: matrix.target == 'rust'
         run: cargo build --manifest-path=./packages/server/duckdb-server-rust/Cargo.toml
 
       - name: Setup Go
-        if: startsWith(matrix.server, 'go')
+        if: startsWith(matrix.target, 'go')
         uses: actions/setup-go@v7
         with:
           go-version: "1.25"
           cache-dependency-path: ./packages/server/duckdb-server-go/go.sum
 
       - name: Cache DuckDB extensions
-        if: startsWith(matrix.server, 'go')
+        if: startsWith(matrix.target, 'go')
         uses: actions/cache@v6
         with:
           path: ~/.duckdb/extensions
           key: duckdb-extensions-v3-${{ runner.os }}-${{ hashFiles('packages/server/duckdb-server-go/go.sum') }}
 
       - name: Build Go server
-        if: startsWith(matrix.server, 'go')
+        if: startsWith(matrix.target, 'go')
         run: go build -tags=duckdb_arrow ./...
         working-directory: ./packages/server/duckdb-server-go
 
       - name: Run conformance suite
         run: pnpm -F @uwdata/mosaic-conformance suite
         env:
-          CONFORMANCE_SERVER: ${{ matrix.server }}
+          CONFORMANCE_TARGET: ${{ matrix.target }}
 
       - name: Upload server logs
         if: always()
         uses: actions/upload-artifact@v7
         with:
-          name: conformance-${{ matrix.server }}
+          name: conformance-${{ matrix.target }}
           path: conformance/.logs/
           if-no-files-found: ignore

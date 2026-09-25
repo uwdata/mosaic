@@ -1,9 +1,8 @@
 import { inject, it } from 'vitest';
-import { serverConfig, type ServerConfig } from '../implementations/index.ts';
+import { casesOf, target, type Target } from '../implementations/index.ts';
 import { loadCases } from './cases.ts';
-import { connectorCaseIds } from './connector-cases.ts';
 import { areasFor, expectedViolations, loadKnownFailures, type KnownFailures } from './known.ts';
-import type { Capability, Violation } from './types.ts';
+import type { ConformanceCase, Violation } from './types.ts';
 
 export const annotationTypes = {
   known: 'known-failure',
@@ -13,30 +12,49 @@ export const annotationTypes = {
 } as const;
 
 export interface Harness {
-  config: ServerConfig;
-  url: () => string;
-  wsUrl: () => string;
+  config: Target;
+  cases: ConformanceCase[];
+  url: () => string | undefined;
+  wsUrl: () => string | undefined;
   known: KnownFailures;
   expected: Map<string, Set<string>>;
 }
 
-export function allCaseIds(): Set<string> {
-  return new Set([...loadCases().map(c => c.id), ...connectorCaseIds]);
-}
-
 export function createHarness(): Harness {
-  const config = serverConfig(process.env.CONFORMANCE_SERVER);
-  const known = loadKnownFailures(config.name, allCaseIds());
-  const url = () => inject('conformanceUrl');
-  return { config, url, wsUrl: () => url().replace(/^http/, 'ws'), known, expected: expectedViolations(known) };
+  const config = target(process.env.CONFORMANCE_TARGET);
+  const cases = loadCases(config);
+  const known = loadKnownFailures(config.name, new Set(cases.map(c => c.id)), casesOf);
+  const url = () => (config.kind === 'server' ? inject('conformanceUrl') : undefined);
+  return { config, cases, url, wsUrl: () => url()?.replace(/^http/, 'ws'), known, expected: expectedViolations(known) };
 }
 
-export function skipReason(config: ServerConfig, requires: Capability[] = [], unless: Capability[] = []) {
-  const missing = requires.filter(cap => !config.capabilities.has(cap));
-  const present = unless.filter(cap => config.capabilities.has(cap));
-  if (missing.length) return `requires ${missing.join(', ')}`;
-  if (present.length) return `only when ${present.join(', ')} is unavailable`;
+// Why a case does not run on this target. The category is what the results
+// file and the baseline updater read; the text is for people.
+export type SkipCategory = 'capability' | 'layer';
+
+export interface Skip {
+  category: SkipCategory;
+  reason: string;
+}
+
+export function skipReason(config: Target, c: ConformanceCase): Skip | undefined {
+  if (!c.applicable) return { category: 'layer', reason: `${c.layer} transport, case is ${c.definition.layers?.join('/') ?? 'wire'} only` };
+  const missing = (c.definition.requires ?? []).filter(cap => !config.capabilities.has(cap));
+  const present = (c.definition.unless ?? []).filter(cap => config.capabilities.has(cap));
+  if (missing.length) return { category: 'capability', reason: `requires ${missing.join(', ')}` };
+  if (present.length) return { category: 'capability', reason: `only when ${present.join(', ')} is unavailable` };
   return undefined;
+}
+
+// The note is the only channel from a skipped test to the reporter, so the
+// category travels as a fixed prefix that the reporter parses back out.
+export function skipNote(skip: Skip) {
+  return `${skip.category}: ${skip.reason}`;
+}
+
+export function parseSkipNote(note: string | undefined): Skip | undefined {
+  const match = note === undefined ? null : /^(capability|layer): (.*)$/s.exec(note);
+  return match ? { category: match[1] as SkipCategory, reason: match[2] } : undefined;
 }
 
 export interface Verdict {
@@ -63,13 +81,14 @@ export function compare(observed: Violation[], expected: Set<string>): Verdict {
 export function conformanceTest(
   harness: Harness,
   id: string,
-  skip: string | undefined,
+  skip: Skip | undefined,
   run: () => Promise<Violation[]>
 ) {
-  // A capability skip runs far enough to record its reason, so the results
-  // file can tell it from a case that a --testNamePattern filter left out.
+  // A declared skip runs far enough to record its category and reason, so
+  // the results file can tell it from a case a --testNamePattern filter left
+  // out.
   if (skip) {
-    it(id, ctx => ctx.skip(skip));
+    it(id, ctx => ctx.skip(skipNote(skip)));
     return;
   }
   const expected = harness.expected.get(id) ?? new Set<string>();
@@ -97,6 +116,8 @@ export function conformanceTest(
   });
 }
 
+// Annotations are split on newlines when the results file is written, so a
+// multi-line engine message must not smuggle its lines in as ids.
 export function describe(violation: Violation) {
-  return `${violation.id}: ${violation.detail}`;
+  return `${violation.id}: ${violation.detail.replace(/\s*\n\s*/g, ' ')}`;
 }
