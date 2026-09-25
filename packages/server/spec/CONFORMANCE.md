@@ -212,9 +212,9 @@ Configuration: `duckdb-server` (`packages/server/duckdb-server`).
 
 | Area | Current | Spec | Fix | Cases |
 |------|---------|------|-----|-------|
-| WebSocket text frames are never sent | socketify's `ws.send()` calls `self.app._json_serializer.dumps(message).encode("utf-8")`, but the `Serde` wrapper from #1244 hands it `msgspec.json.encode`, which already returns `bytes`; the `AttributeError` is swallowed by socketify's bare `except` and logged as `WebSocket backpressure: 0`. No `{}` acknowledgement and no `{"error"}` frame ever reaches the client, so a pipelining client hangs. (`packages/server/duckdb-server/pkg/server.py`) | Exactly one reply per command (D11). | Have the serializer return `str` (`json_encode(x).decode()`), or send bytes with `OpCode.TEXT` directly. | 16 |
+| WebSocket errors lack `code` | `{"error": str(e)}` only (`SocketHandler.error`). Missing-field messages are msgspec's "Object missing required field `type`" rather than the canonical `missing required 'type' parameter` from #1228. | Envelope with `code` and the canonical messages (D1, D4). | Share an error mapper with the HTTP handler; restore the messages when decoding. | 13 |
 | Arrow Content-Type | `application/octet-stream` (`server.py`). | `application/vnd.apache.arrow.stream` (D8). | Change the header; the body is already a stream. | 14 |
-| HTTP errors are plain text | `handler.error()` ends the response with `str(error)` and no Content-Type. | JSON `Error` envelope (D4). | Emit `{error, code}` with `application/json`. | 8 |
+| HTTP errors are plain text | `handler.error()` ends the response with `str(error)` and no Content-Type; missing-field messages are msgspec's rather than the canonical ones from #1228. | JSON `Error` envelope (D4). | Emit `{error, code}` with `application/json`. | 8 |
 | Empty `sql` | `msgspec` accepts `""`, then `get_arrow_bytes` fails on a `None` result (500). | 400 `bad_request` (D1). | Add `min_length=1` to the struct or validate before dispatch. | 1 |
 | Parse errors are 500 | Every DuckDB exception is `handler.error(e)` with the default 500. | `bad_request` for `duckdb.ParserException` (D7). | Map exception classes to codes. | 2 |
 | `preagg` is unknown | `msgspec` rejects it as an invalid enum value. | `unsupported_command` (D6). | Accept the literal and answer `unsupported_command` until implemented. | 1 |
@@ -227,7 +227,7 @@ Configuration: `duckdb-server` (`packages/server/duckdb-server`).
 
 <details><summary>Case ids</summary>
 
-- **WebSocket text frames are never sent**: `ws/missing-type`, `ws/missing-sql`, `ws/empty-sql`, `ws/unknown-type`, `ws/type-not-a-string`, `ws/preagg-unsupported`, `ws/sql-parse-error`, `ws/sql-unknown-table`, `ws/sql-runtime-error`, `ws/exec-error`, `ws/exec-acknowledged`, `ws/exec-multi-statement`, `ws/ws-malformed-json-stays-open`, `ws/ws-missing-sql-stays-open`, `ws/ws-sql-error-stays-open`, `connector/socket-error-then-ok`
+- **WebSocket errors lack `code`**: `ws/missing-type`, `ws/missing-sql`, `ws/empty-sql`, `ws/unknown-type`, `ws/type-not-a-string`, `ws/preagg-unsupported`, `ws/sql-parse-error`, `ws/sql-unknown-table`, `ws/sql-runtime-error`, `ws/exec-error`, `ws/ws-malformed-json-stays-open`, `ws/ws-missing-sql-stays-open`, `ws/ws-sql-error-stays-open`
 - **Arrow Content-Type**: `post/arrow-stream-format`, `post/arrow-empty-result`, `post/arrow-scalar-types`, `post/arrow-many-rows`, `post/arrow-from-parquet`, `post/arrow-trailing-semicolon`, `post/application-fields-pass-through`, `post/protocol-fields-not-shadowed`, `post/content-type-not-json`, `post/content-type-with-charset`, `post/arrow-cors-origin`, `post/large-request-1mib`, `post/exec-acknowledged`, `post/exec-multi-statement`
 - **HTTP errors are plain text**: `post/missing-type`, `post/missing-sql`, `post/unknown-type`, `post/type-not-a-string`, `post/malformed-json-body`, `post/sql-unknown-table`, `post/sql-runtime-error`, `post/exec-error`
 - **Empty `sql`**: `post/empty-sql`

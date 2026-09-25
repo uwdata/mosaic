@@ -140,6 +140,11 @@ def on_error(error: object, res: Res, req: Req) -> None:
 class Serde:
     """Wraps `msgspec` to be [compatible] with `socketify`.
 
+    socketify calls `dumps(value).encode("utf-8")`, so `dumps` must return
+    `str` even though `msgspec.json.encode` produces `bytes`; returning bytes
+    raises inside socketify's `ws.send`, which swallows the error and drops
+    the frame.
+
     [compatible]: https://docs.socketify.dev/basics.html#using-ujson-orjson-or-any-custom-json-serializer
     """
 
@@ -150,7 +155,7 @@ class Serde:
         serialize: Callable[[Any], bytes],
         deserialize: Callable[[Buffer | str], Any],
     ) -> None:
-        self.dumps = serialize
+        self.dumps = lambda value: serialize(value).decode("utf-8")
         self.loads = deserialize
 
 
