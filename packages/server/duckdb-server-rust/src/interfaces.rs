@@ -4,13 +4,11 @@ use axum::{
     response::{IntoResponse, Response},
 };
 use serde::{Deserialize, Serialize};
-use tokio::sync::Mutex;
 
 use crate::db::Database;
 
 pub struct AppState {
     pub db: Box<dyn Database>,
-    pub cache: Mutex<lru::LruCache<String, Vec<u8>>>,
 }
 
 #[derive(Deserialize, Serialize, Debug, Clone)]
@@ -18,21 +16,18 @@ pub struct AppState {
 pub enum Command {
     Arrow,
     Exec,
-    Json,
 }
 
 #[derive(Deserialize, Serialize, Debug, Default)]
 pub struct QueryParams {
     #[serde(rename = "type")]
     pub query_type: Option<Command>,
-    pub persist: Option<bool>,
     pub sql: Option<String>,
     pub name: Option<String>,
 }
 
 pub enum QueryResponse {
     Arrow(Vec<u8>),
-    Json(String),
     Response(Response),
     Empty,
 }
@@ -46,12 +41,6 @@ impl IntoResponse for QueryResponse {
                 Bytes::from(bytes),
             )
                 .into_response(),
-            QueryResponse::Json(value) => (
-                StatusCode::OK,
-                [("Content-Type", "application/json")],
-                value,
-            )
-                .into_response(),
             QueryResponse::Response(response) => response,
             QueryResponse::Empty => StatusCode::OK.into_response(),
         }
@@ -61,7 +50,7 @@ impl IntoResponse for QueryResponse {
 #[derive(Debug)]
 pub enum AppError {
     Error(anyhow::Error),
-    BadRequest,
+    BadRequest(&'static str),
 }
 
 impl IntoResponse for AppError {
@@ -75,7 +64,7 @@ impl IntoResponse for AppError {
                 )
                     .into_response()
             }
-            AppError::BadRequest => (StatusCode::BAD_REQUEST).into_response(),
+            AppError::BadRequest(message) => (StatusCode::BAD_REQUEST, message).into_response(),
         }
     }
 }

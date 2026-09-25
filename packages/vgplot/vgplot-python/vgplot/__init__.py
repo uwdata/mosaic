@@ -20,6 +20,7 @@ from .plot import (
     margins,
     mark,
     menu,
+    nearest,
     nearest_x,
     nearest_y,
     opacity_legend,
@@ -43,6 +44,7 @@ from .plot import (
     toggle_color,
     toggle_x,
     toggle_y,
+    toggle_z,
     vconcat,
     vspace,
 )
@@ -69,6 +71,7 @@ __all__ = [
     "margins",
     "mark",
     "menu",
+    "nearest",
     "nearest_x",
     "nearest_y",
     "opacity_legend",
@@ -99,6 +102,7 @@ __all__ = [
     "toggle_color",
     "toggle_x",
     "toggle_y",
+    "toggle_z",
     "vconcat",
     "vspace",
 ] + list(_generated_all)  # pyright: ignore[reportUnsupportedDunderAll]

@@ -1,6 +1,7 @@
+import { tableFromArrays, tableToIPC } from '@uwdata/flechette';
 import { Query } from '@uwdata/mosaic-sql';
 import { describe, it, expect } from 'vitest';
-import { clausePoint, type Connector, Coordinator, coordinator, type JSONQueryRequest, makeClient, Selection } from '../src/index.js';
+import { type ArrowQueryRequest, clausePoint, type Connector, Coordinator, coordinator, makeClient, Selection } from '../src/index.js';
 import { QueryResult, QueryState } from '../src/util/query-result.js';
 
 async function wait() {
@@ -26,6 +27,7 @@ describe('coordinator', () => {
   });
 
   it('query results returned in correct order', async () => {
+    const ipc = tableToIPC(tableFromArrays({ a: [1] }), {})!;
     const promises: QueryResult[] = [];
 
     // Mock the connector
@@ -55,7 +57,7 @@ describe('coordinator', () => {
 
     // resolve promises in reverse order
 
-    promises.at(3)!.fulfill(0);
+    promises.at(3)!.fulfill(ipc);
     await wait();
 
     expect(r0.state).toEqual(QueryState.pending);
@@ -63,7 +65,7 @@ describe('coordinator', () => {
     expect(r2.state).toEqual(QueryState.pending);
     expect(r3.state).toEqual(QueryState.ready);
 
-    promises.at(1)!.fulfill(0);
+    promises.at(1)!.fulfill(ipc);
     await wait();
 
     expect(r0.state).toEqual(QueryState.pending);
@@ -71,7 +73,7 @@ describe('coordinator', () => {
     expect(r2.state).toEqual(QueryState.pending);
     expect(r3.state).toEqual(QueryState.ready);
 
-    promises.at(0)!.fulfill(0);
+    promises.at(0)!.fulfill(ipc);
     await wait();
 
     expect(coord.manager.pendingResults).toHaveLength(2);
@@ -81,7 +83,7 @@ describe('coordinator', () => {
     expect(r2.state).toEqual(QueryState.pending);
     expect(r3.state).toEqual(QueryState.ready);
 
-    promises.at(2)!.fulfill(0);
+    promises.at(2)!.fulfill(ipc);
     await wait();
 
     expect(coord.manager.pendingResults).toHaveLength(0);
@@ -97,10 +99,10 @@ describe('coordinator', () => {
 
     // Mock the connector
     const connector = {
-      async query(req: JSONQueryRequest) {
-        const index = req.sql.includes("WHERE") ? 1 : 0;
+      async query(req: ArrowQueryRequest) {
+        const index = req.sql.includes('WHERE') ? 1 : 0;
         events.push(`CONNECT ${index}`);
-        return { index };
+        return tableToIPC(tableFromArrays({ index: [index] }), {})!;
       },
     } as unknown as Connector;
 
@@ -120,16 +122,16 @@ describe('coordinator', () => {
       async prepare() {
         await wait(); // force wait
         prepared = true;
-        events.push("PREPARE");
+        events.push('PREPARE');
       },
       query(filter = []) {
         events.push(`QUERY ${prepared}`);
-        return Query.select("*").from("foo").where(filter);
+        return Query.select('*').from('foo').where(filter);
       }
     });
 
     // fire selection update
-    filterBy.update(clausePoint("foo", 1, { source: {} }));
+    filterBy.update(clausePoint('foo', 1, { source: {} }));
 
     // await initial query, then selection update
     await client.pending;
@@ -139,11 +141,30 @@ describe('coordinator', () => {
     // query calls should come post-initialization
     // all queries should include filter clause
     expect(events).toStrictEqual([
-      "PREPARE",
-      "QUERY true",
-      "CONNECT 1",
-      "QUERY true",
-      "CONNECT 1",
+      'PREPARE',
+      'QUERY true',
+      'CONNECT 1',
+      'QUERY true',
+      'CONNECT 1',
     ]);
+  });
+
+  it('applies the ipc extraction options to arrow results', async () => {
+    const ipc = tableToIPC(tableFromArrays({ t: [new Date(0)] }), {})!;
+    const connector = {
+      async query() {
+        return ipc;
+      },
+    } as unknown as Connector;
+
+    const coord = new Coordinator(connector, {
+      logger: null,
+      ipc: { useDate: false },
+      preagg: { enabled: false }
+    });
+
+    const table = await coord.query('SELECT t FROM foo', { type: 'arrow' });
+
+    expect(table.getChild('t').at(0)).toBe(0);
   });
 });

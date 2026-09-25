@@ -301,6 +301,16 @@ def toggle_color(bind: Any = None, peers: Any = None) -> dict[str, Any]:
     return _interactor("toggleColor", **{"as": bind, "peers": peers})
 
 
+def toggle_z(bind: Any = None, peers: Any = None) -> dict[str, Any]:
+    return _interactor("toggleZ", **{"as": bind, "peers": peers})
+
+
+def nearest(
+    bind: Any = None, field: Any = None, channels: Any = None
+) -> dict[str, Any]:
+    return _interactor("nearest", **{"as": bind, "field": field, "channels": channels})
+
+
 def nearest_x(
     bind: Any = None, field: Any = None, channels: Any = None
 ) -> dict[str, Any]:

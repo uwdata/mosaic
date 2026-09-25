@@ -52,7 +52,7 @@ export interface RuleXOptions extends RuleOptions, Omit<InsetOptions, 'insetLeft
 }
 
 /** Options for the ruleY mark. */
-export interface RuleYOptions extends RuleOptions, Omit<InsetOptions, "insetTop" | "insetBottom"> {
+export interface RuleYOptions extends RuleOptions, Omit<InsetOptions, 'insetTop' | 'insetBottom'> {
   /**
    * Shorthand for specifying both the primary and secondary horizontal position
    * of the tick as the bounds of the containing interval; can only be used in
