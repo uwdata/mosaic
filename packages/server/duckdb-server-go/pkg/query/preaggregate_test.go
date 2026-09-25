@@ -419,6 +419,39 @@ func TestParquetNamespacesDoNotAliasFiles(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, first.Rows, same.Rows)
 	require.Len(t, parquetFiles(t, dir), 6)
+
+	// That folding is ASCII-only: Ä and ä are distinct schemas.
+	_, err = db.db.ExecContext(t.Context(), "INSERT INTO memory.tenant.source VALUES ('z')")
+	require.NoError(t, err)
+	upper, err := p.Materialize(t.Context(), Namespace{Schema: []string{"Ä"}}, source, policy)
+	require.NoError(t, err)
+	require.Equal(t, int64(1), upper.Rows)
+	_, err = db.db.ExecContext(t.Context(), "DELETE FROM memory.tenant.source")
+	require.NoError(t, err)
+	lower, err := p.Materialize(t.Context(), Namespace{Schema: []string{"ä"}}, source, policy)
+	require.NoError(t, err)
+	require.Equal(t, int64(0), lower.Rows)
+	require.NotEqual(t, upper.Reference, lower.Reference)
+	require.Len(t, parquetFiles(t, dir), 8)
+	require.True(t, identifierEqual("READER", "reader"))
+	require.False(t, identifierEqual("Ä", "ä"))
+}
+
+func TestPreAggregateTemporarySourcesAreNotManaged(t *testing.T) {
+	db := setupTestDB(t, true, WithValidation(), WithMaxConnections(1))
+	conn, err := db.db.Conn(t.Context())
+	require.NoError(t, err)
+	_, err = conn.ExecContext(t.Context(), "CREATE TEMP TABLE source AS SELECT 42 AS x")
+	require.NoError(t, err)
+	require.NoError(t, conn.Close())
+	p, err := NewPreAggregator(t.Context(), db, nil)
+	require.NoError(t, err)
+	data, err := p.Query(t.Context(), reader, "SELECT * FROM temp.main.source", nil, nil)
+	require.NoError(t, err)
+	require.Equal(t, []map[string]any{{"x": float64(42)}}, arrowRows(t, data))
+	table, err := p.Materialize(t.Context(), reader, "SELECT * FROM temp.main.source", nil)
+	require.NoError(t, err)
+	require.Equal(t, int64(1), table.Rows)
 }
 
 func TestPreAggregateSourceRevalidatedAcrossNamespaces(t *testing.T) {
