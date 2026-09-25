@@ -25,6 +25,7 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 SLOW_QUERY_THRESHOLD = 5000
+MAX_WS_MESSAGE_BYTES = 16 * 1024 * 1024
 
 
 class QueryParams(msgspec.Struct):
@@ -87,7 +88,7 @@ class HTTPHandler(Handler):
 
     def arrow(self, buffer: bytes) -> None:
         res = self.begin(200)
-        res.write_header("Content-Type", "application/octet-stream")
+        res.write_header("Content-Type", "application/vnd.apache.arrow.stream")
         res.end(buffer)
 
     def error(self, error: object, status: int = 500) -> None:
@@ -187,6 +188,7 @@ def server(con: Con) -> None:
         "/*",
         {
             "compression": CompressOptions.SHARED_COMPRESSOR,
+            "max_payload_length": MAX_WS_MESSAGE_BYTES,
             "message": ws_message,
             "drain": lambda ws: logger.warning(
                 f"WebSocket backpressure: {ws.get_buffered_amount()}"
