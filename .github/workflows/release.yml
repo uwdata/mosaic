@@ -13,18 +13,12 @@ on:
           - patch
           - minor
           - major
-          - preminor
-          - prerelease
-      preid:
-        description: "Pre-release identifier for preminor and prerelease"
-        type: choice
-        default: beta
-        options:
-          - alpha
-          - beta
-          - rc
+      prerelease:
+        description: "Pre-release (starts X.Y.Z-beta.0 from the bump, or increments the current beta)"
+        type: boolean
+        default: false
       exact_version:
-        description: "Exact version, e.g. 1.2.3 or 1.2.3-beta.0 (overrides bump; leave blank to use bump)"
+        description: "Exact version, e.g. 1.2.3 or 1.2.3-beta.0 (overrides bump and prerelease; leave blank to use bump)"
         required: false
         default: ""
 
@@ -72,21 +66,21 @@ jobs:
         id: resolve
         env:
           BUMP: ${{ inputs.bump }}
-          PREID: ${{ inputs.preid }}
+          PRERELEASE: ${{ inputs.prerelease }}
           EXACT: ${{ inputs.exact_version }}
         run: |
           cur=$(node -p "require('./lerna.json').version")
           if [ -n "$EXACT" ]; then
             next="$EXACT"
-          elif [ "$BUMP" = "prerelease" ] && [[ "$cur" != *-* ]]; then
-            echo "::error::v$cur is not a pre-release. Use preminor to start a pre-release cycle." >&2
-            exit 1
+          elif [ "$PRERELEASE" = "true" ] && [[ "$cur" == *-* ]]; then
+            next=$(npx --yes semver@7 --increment prerelease "$cur")
+          elif [ "$PRERELEASE" = "true" ]; then
+            next=$(npx --yes semver@7 --increment "pre$BUMP" --preid beta "$cur")
           else
-            next=$(npx --yes semver@7 --increment "$BUMP" --preid "$PREID" "$cur")
+            next=$(npx --yes semver@7 --increment "$BUMP" "$cur")
           fi
-          # PyPI accepts only alpha, beta, and rc pre-releases
-          if ! [[ "$next" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-(alpha|beta|rc)\.[0-9]+)?$ ]]; then
-            echo "::error::Invalid version $next. Use X.Y.Z or X.Y.Z-{alpha,beta,rc}.N." >&2
+          if ! [[ "$next" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-beta\.[0-9]+)?$ ]]; then
+            echo "::error::Invalid version $next. Use X.Y.Z or X.Y.Z-beta.N." >&2
             exit 1
           fi
           echo "version=$next" >> "$GITHUB_OUTPUT"
