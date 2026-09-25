@@ -2,6 +2,7 @@ import { restConnector, socketConnector } from '@uwdata/mosaic-core';
 import { describe } from 'vitest';
 import { arrowViolations } from './src/arrow.ts';
 import { conformanceTest, createHarness, skipReason } from './src/harness.ts';
+import { rejectionStatus } from './src/connector-cases.ts';
 import type { Violation } from './src/types.ts';
 
 const harness = createHarness();
@@ -22,7 +23,7 @@ describe(`@uwdata/mosaic-core connectors: ${harness.config.name}`, () => {
   });
 
   conformanceTest(harness, 'connector/rest-error', undefined, async () => {
-    return rejection(restConnector({ uri: harness.url() }).query({ type: 'arrow', sql: 'SELEC 1' }), /HTTP status 400/);
+    return rejection(restConnector({ uri: harness.url() }).query({ type: 'arrow', sql: 'SELEC 1' }), 400);
   });
 
   conformanceTest(harness, 'connector/socket-arrow', undefined, async () => {
@@ -56,14 +57,16 @@ function arrow(bytes: ArrayBuffer, rows: unknown[][]): Violation[] {
   return arrowViolations(new Uint8Array(bytes), { rows });
 }
 
-async function rejection(promise: Promise<unknown>, pattern: RegExp | undefined): Promise<Violation[]> {
+async function rejection(promise: Promise<unknown>, status: number | undefined): Promise<Violation[]> {
   try {
     await promise;
     return [{ id: 'connector.resolved', detail: 'query resolved instead of rejecting' }];
   } catch (err) {
-    const message = err instanceof Error ? err.message : String(err);
-    if (pattern && !pattern.test(message)) {
-      return [{ id: 'connector.status', detail: `rejected with ${JSON.stringify(message.slice(0, 120))}, expected ${pattern}` }];
+    if (status === undefined) return [];
+    const observed = rejectionStatus(err);
+    if (observed !== status) {
+      const message = err instanceof Error ? err.message : String(err);
+      return [{ id: 'connector.status', detail: `rejected with status ${observed ?? 'unknown'} (${JSON.stringify(message.slice(0, 120))}), expected ${status}` }];
     }
     return [];
   }

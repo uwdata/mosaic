@@ -10,6 +10,7 @@ export interface Refresh {
   text: string;
   changes: string[];
   unfiled: Map<string, string[]>;
+  unverified: string[];
 }
 
 const same = (a: string[], b: string[]) => JSON.stringify([...a].sort()) === JSON.stringify([...b].sort());
@@ -27,7 +28,10 @@ export function observedFrom(rows: ResultRow[], label: string): Map<string, stri
 // Rewrites the violation ids of cases already listed in a known-failures
 // document from a run's results, removes cases that now pass or match the
 // inherited baseline, and refreshes `passes`. Cases that fail but are not
-// filed under any area are returned for a human to place.
+// filed under any area are returned for a human to place. Only what a run
+// observed is changed: a filtered run leaves the other cases' entries and
+// exemptions alone, and a case the inherited run did not observe is
+// reported as unverified rather than judged against an empty list.
 export function refreshBaseline(
   source: string,
   observed: Map<string, string[]>,
@@ -51,7 +55,7 @@ export function refreshBaseline(
       if (current === undefined) continue;
       filed.add(id);
       const listed = isSeq(pair.value) ? pair.value.items.map(v => String((v as { value: unknown }).value)) : [];
-      if (current.length === 0 || (base && same(current, base.get(id) ?? []))) {
+      if (current.length === 0 || (base?.has(id) && same(current, base.get(id)!))) {
         cases.delete(pair.key);
         changes.push(`removed ${id} (${current.length === 0 ? 'passes' : `same as ${inherits}`})`);
         continue;
@@ -78,10 +82,19 @@ export function refreshBaseline(
     }
   }
 
+  const unverified = base ? [...observed.keys()].filter(id => !base.has(id)).sort() : [];
+
   if (base) {
     const passes = doc.get('passes');
-    const passing = [...base.entries()].filter(([id, ids]) => ids.length && observed.get(id)?.length === 0).map(([id]) => id);
     const listed = isSeq(passes) ? passes.items.map(v => String((v as { value: unknown }).value)) : [];
+    const next = new Set(listed);
+    for (const [id, ids] of observed) {
+      const inherited = base.get(id);
+      if (inherited === undefined) continue;
+      if (inherited.length && ids.length === 0) next.add(id);
+      else next.delete(id);
+    }
+    const passing = [...next].sort();
     if (!same(listed, passing)) {
       if (passing.length) doc.set('passes', doc.createNode(passing));
       else doc.delete('passes');
@@ -92,9 +105,9 @@ export function refreshBaseline(
   const unfiled = new Map<string, string[]>();
   for (const [id, ids] of observed) {
     if (filed.has(id) || ids.length === 0) continue;
-    if (base && same(ids, base.get(id) ?? [])) continue;
+    if (base && (!base.has(id) || same(ids, base.get(id)!))) continue;
     unfiled.set(id, ids);
   }
 
-  return { text: doc.toString({ lineWidth: 0 }), changes, unfiled };
+  return { text: doc.toString({ lineWidth: 0 }), changes, unfiled, unverified };
 }
