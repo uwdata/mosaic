@@ -17,10 +17,11 @@ export function checkResponse(
   expectation: Expectation,
   response: Response,
   transport: Transport,
-  vars: Record<string, string>
+  vars: Record<string, string>,
+  sql?: string
 ): Violation[] {
   if (expectation.oneOf) {
-    const attempts = expectation.oneOf.map(e => checkResponse(e, response, transport, vars));
+    const attempts = expectation.oneOf.map(e => checkResponse(e, response, transport, vars, sql));
     if (attempts.some(a => a.length === 0)) return [];
     // A wrong status or frame kind means the alternative did not apply at
     // all, so it outweighs any number of shape problems when picking the
@@ -32,7 +33,9 @@ export function checkResponse(
   }
 
   if (response.kind === 'http-failed') {
-    return [v(`http.reset.${response.reset}`, `server closed the connection without an HTTP response: ${response.error}`)];
+    return response.status === undefined
+      ? [v(`http.reset.${response.reset}`, `server closed the connection without an HTTP response: ${response.error}`)]
+      : [v(`http.reset.after-${response.status}.${response.reset}`, `server closed the connection while sending the ${response.status} body: ${response.error}`)];
   }
   if (response.kind === 'ws' && response.frame === 'close') {
     return [v(`ws.closed.${response.closeCode ?? 'unknown'}`, `connection closed (code ${response.closeCode}${response.closeReason ? `, ${response.closeReason}` : ''}) instead of answering`)];
@@ -113,10 +116,11 @@ export function checkResponse(
         out.push(v('error.not-json', `error body is not a JSON object: ${describeText(text)}`));
       } else {
         out.push(...schemaViolations('error.schema', 'Error', parsed));
-        const envelope = parsed as { code?: unknown; reason?: unknown; field?: unknown; diagnosticId?: unknown; retryAfterMs?: unknown };
+        const envelope = parsed as { code?: unknown; reason?: unknown; field?: unknown; diagnostics?: unknown; diagnosticId?: unknown; retryAfterMs?: unknown };
         if (envelope.code !== code) out.push(v(`error.code.${token(envelope.code)}`, `code ${JSON.stringify(envelope.code)} != ${code}`));
         if (reason !== undefined && envelope.reason !== reason) out.push(v(`error.reason.${token(envelope.reason)}`, `reason ${JSON.stringify(envelope.reason)} != ${reason}`));
         if (field !== undefined && envelope.field !== field) out.push(v(`error.field.${token(envelope.field)}`, `field ${JSON.stringify(envelope.field)} != ${field}`));
+        out.push(...locationViolations(envelope.diagnostics, sql));
         if (response.kind === 'http') {
           const requestId = response.headers.get('x-request-id');
           if (requestId !== null && typeof envelope.diagnosticId === 'string' && requestId !== envelope.diagnosticId) {
@@ -149,6 +153,28 @@ export function checkResponse(
     throw new Error('status/headers/empty expectations only apply to HTTP transports');
   }
 
+  return out;
+}
+
+// JSON Schema cannot compare sibling values, so span ordering and the bound
+// against the submitted SQL are checked here. Offsets are UTF-8 bytes, so the
+// bound is the encoded length, not the string length.
+function locationViolations(diagnostics: unknown, sql: string | undefined): Violation[] {
+  if (!Array.isArray(diagnostics)) return [];
+  const out: Violation[] = [];
+  const byteLength = sql === undefined ? undefined : new TextEncoder().encode(sql).length;
+  diagnostics.forEach((diagnostic, i) => {
+    const location = (diagnostic as { location?: { start?: unknown; end?: unknown } } | null)?.location;
+    if (!location || typeof location !== 'object') return;
+    const { start, end } = location;
+    if (typeof start !== 'number' || !Number.isInteger(start) || start < 0) return;
+    const prefix = `error.diagnostics.${i}.location`;
+    if (typeof end === 'number' && end < start) out.push(v(`${prefix}.reversed`, `diagnostic ${i} has end ${end} < start ${start}`));
+    if (byteLength !== undefined) {
+      const last = typeof end === 'number' && end >= start ? end : start;
+      if (last > byteLength) out.push(v(`${prefix}.out-of-range`, `diagnostic ${i} spans ${start}..${end ?? start} but the SQL is ${byteLength} UTF-8 bytes`));
+    }
+  });
   return out;
 }
 

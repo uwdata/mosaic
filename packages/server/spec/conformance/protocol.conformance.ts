@@ -1,5 +1,5 @@
 import { describe } from 'vitest';
-import { loadCases, unresolvedVars } from './src/cases.ts';
+import { expandRequest, loadCases, unresolvedVars } from './src/cases.ts';
 import { captureValues, checkResponse } from './src/check.ts';
 import { conformanceTest, createHarness, skipReason, type Harness } from './src/harness.ts';
 import { sendHttp } from './src/http.ts';
@@ -64,7 +64,8 @@ async function runCase(harness: Harness, c: ConformanceCase): Promise<Violation[
 
 function assess(c: ConformanceCase, step: Step, response: Response, vars: Record<string, string>): Violation[] {
   const transport = step.transport ?? c.transport;
-  const violations = checkResponse(step.expect, response, transport, vars);
+  const sql = step.request ? expandRequest(step.request, vars, transport).sql : undefined;
+  const violations = checkResponse(step.expect, response, transport, vars, typeof sql === 'string' ? sql : undefined);
   const answered = response.kind === 'http' || (response.kind === 'ws' && response.frame !== 'close' && response.frame !== 'timeout');
   if (answered) {
     violations.push(...captureValues(step.capture, response, vars));

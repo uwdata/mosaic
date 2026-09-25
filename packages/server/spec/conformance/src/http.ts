@@ -74,7 +74,7 @@ export async function sendHttp(
     bytes = new Uint8Array(await res.arrayBuffer());
   } catch (err) {
     const failure = classifyFetchError(err);
-    if (failure) return { ...failure, error: `after status ${res.status}: ${failure.error}` };
+    if (failure) return { ...failure, status: res.status, error: `after status ${res.status}: ${failure.error}` };
     throw new Error(`could not read the ${res.status} response to ${method} ${url.slice(0, 120)}: ${(err as Error).message}`, { cause: err });
   }
   return { kind: 'http', status: res.status, headers: res.headers, body: bytes };

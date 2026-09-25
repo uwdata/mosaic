@@ -40,7 +40,7 @@ Where the servers disagreed, the spec picks one behaviour. Each is revisable.
 | D20 | Nested `TableReference` | One `{catalog, schema: string[], table}` object, used as `PreaggResponse.reference` and as `Error.reference` on `table_not_found` (required there, prohibited elsewhere). Components are raw identifiers, quoted separately by the client; `schema` is a path so engines with nested namespaces fit without a dotted string. Flat `catalog`/`schema`/`table` are prohibited on the envelope. Coordinated with #1224 (client) and #1234 (Go `preagg`) while both are unmerged. | Three sibling fields needed `if/then/else` validation to stop partial references and leaks on unrelated codes, and `PreaggResponse` repeated the same triple with a string `schema`. |
 | D21 | `diagnostics` | Optional array of typed findings (`message`, `provider`, `rule`, `subject`, `location`) on any error; `subject` is a `table` or `function` with the D20 namespace components; `location` is zero-based UTF-8 byte offsets with an exclusive `end`. Diagnostics may be incomplete or omitted, never authorize or trigger recovery, and are subject to the deployment's disclosure policy. Gatekeeper violations map one-to-one; its successful-binding evidence (`objects`, `functions`, `caller_objects`) is not an error diagnostic. | Gatekeeper already returns per-violation rule, message, object, function, and position; without a typed shape each server would flatten them into `error` text or invent a `details` bag. |
 | D22 | `diagnosticId` and `retryAfterMs` | `diagnosticId` is an optional server-generated opaque id of one command attempt, also sendable as `X-Request-Id` over HTTP (equal when both present); clients never supply it and WebSocket replies stay positional. `retryAfterMs` is an optional non-negative advisory delay, only on `resource_exhausted`; HTTP `Retry-After` is `ceil(retryAfterMs / 1000)`. No generic `retryable` flag. | A client-supplied request id would become a correlation channel by habit and erode D11; whether a retry is safe depends on the command's publication guarantee, not on the error. |
-| D23 | Failure guarantees | `arrow` and `preagg` publish nothing on failure and `preagg` publication is atomic; `exec` may fail after earlier statements committed, with no rollback or retry by the server; `deadline_exceeded` follows the same per-command rule. `ReadOnlySql` prohibits state changes anywhere in the statement, not only at the root. Cancellation is out of scope. | DuckDB has no data-modifying CTEs, so the nested-DML rule is unobservable on the reference servers and stated for engines that do. |
+| D23 | Failure guarantees | `arrow` and `preagg` publish nothing on failure and `preagg` publication is atomic. `exec` guarantees neither atomicity nor rollback: a later statement may fail after earlier ones took effect, committed effects may remain, an explicit transaction follows the engine's transaction semantics, and the server never retries on the client's behalf. `deadline_exceeded` follows the same per-command rule. `ReadOnlySql` prohibits state changes anywhere in the statement, not only at the root. Cancellation is out of scope. | DuckDB has no data-modifying CTEs, so the nested-DML rule is unobservable on the reference servers and stated for engines that do. An earlier wording said the server "does not roll back", which would have forbidden cleaning up an aborted transaction before a pooled connection is reused. |
 
 ## Common gaps (all four servers)
 
@@ -85,8 +85,10 @@ the lists only shrink. An entry written `a|b` means exactly one of the two
 is observed on any given run, for server behaviour that races (a reset
 against a 505). Thrown transport or harness errors are never baselined:
 only a connection the server tears down after accepting the request is
-recorded, as `http.reset.peer-closed` or `http.reset.socket-closed`; refusals, bad URLs, DNS or TLS failures,
-and timeouts fail the run. Every step of a multi-step case runs even after an earlier step
+recorded, as `http.reset.peer-closed` or `http.reset.socket-closed` before a
+status line and `http.reset.after-<status>.<reset>` once one was received, so
+a truncated 505 rejection and a truncated 200 result never share an id;
+refusals, bad URLs, DNS or TLS failures, and timeouts fail the run. Every step of a multi-step case runs even after an earlier step
 misbehaved, so follow-up checks such as "the connection is still usable" or
 "the table was not created" are observed independently. Full conformance is
 reached when the files are empty. `go-cache` and `go-gatekeeper` inherit the
@@ -458,7 +460,7 @@ Configuration: `duckdb-server` (`packages/server/duckdb-server`).
   - `post/method-put`: `error.status.400`, `error.content-type`, `error.not-json`, `header.allow`
   - `post/method-head`: `status.400`, `header.allow`
 - **Large GET request lines reset the connection**
-  - `get/large-request-1mib`: `http.reset.peer-closed|arrow.status.505|http.reset.socket-closed`
+  - `get/large-request-1mib`: `http.reset.peer-closed|arrow.status.505|http.reset.after-505.socket-closed`
 
 </details>
 
