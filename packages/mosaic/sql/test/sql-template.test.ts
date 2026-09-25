@@ -1,6 +1,6 @@
 import { expect, describe, it } from 'vitest';
 import { stubParam } from './util/stub-param.js';
-import { column, isParamLike, sql } from '../src/index.js';
+import { Query, column, isParamLike, sql } from '../src/index.js';
 import { columns, params } from './util/columns.js';
 
 describe('sql expression', () => {
@@ -53,5 +53,54 @@ describe('sql expression', () => {
 
     param.update(5);
     await expect(expr).toBeValidExpr('"num1" * 5 + 1');
+  });
+});
+
+describe('sql expression with a line comment', () => {
+  it('keeps a following alias and select entry', async () => {
+    const query = Query
+      .from('t1')
+      .select({ y: sql`num1 -- a note`, d: 'txt2' });
+    await expect(query).toBeValidQuery(
+      'SELECT num1 -- a note\n AS "y", "txt2" AS "d" FROM "t1"'
+    );
+  });
+
+  it('keeps a following FROM clause', async () => {
+    const query = Query
+      .from('t1')
+      .select({ d: 'txt2', y: sql`num1 -- a note` });
+    await expect(query).toBeValidQuery(
+      'SELECT "txt2" AS "d", num1 -- a note\n AS "y" FROM "t1"'
+    );
+  });
+
+  it('keeps a following GROUP BY clause', async () => {
+    const query = Query
+      .from('t1')
+      .select('num1')
+      .where(sql`num1 > 5 -- keep positives`)
+      .groupby('num1');
+    await expect(query).toBeValidQuery(
+      'SELECT "num1" FROM "t1" WHERE num1 > 5 -- keep positives\n GROUP BY "num1"'
+    );
+  });
+
+  it('does not add a second newline to a terminated comment', async () => {
+    const query = Query
+      .from('t1')
+      .select({ y: sql`num1 -- a note\n`, d: 'txt2' });
+    await expect(query).toBeValidQuery(
+      'SELECT num1 -- a note\n AS "y", "txt2" AS "d" FROM "t1"'
+    );
+  });
+
+  it('keeps a select entry following a string literal with dashes', async () => {
+    const query = Query
+      .from('t1')
+      .select({ y: sql`txt1 || ' -- not a comment '`, d: 'txt2' });
+    await expect(query).toBeValidQuery(
+      'SELECT txt1 || \' -- not a comment \'\n AS "y", "txt2" AS "d" FROM "t1"'
+    );
   });
 });
