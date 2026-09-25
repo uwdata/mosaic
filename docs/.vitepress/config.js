@@ -167,6 +167,7 @@ export default defineConfig({
           items: [
             { text: 'Earthquakes Feed', link: '/examples/earthquakes-feed' },
             { text: 'Earthquakes Globe', link: '/examples/earthquakes-globe' },
+            { text: 'Layered Globes', link: '/examples/zconcat' },
             { text: 'U.S. States', link: '/examples/us-state-map' },
             { text: 'U.S. Counties', link: '/examples/us-county-map' },
             { text: 'U.S. Unemployment', link: '/examples/unemployment' },
