@@ -1,6 +1,10 @@
 import { Spec } from '@uwdata/mosaic-spec';
 
 export const spec : Spec = {
+  "meta": {
+    "title": "Time-Based Moving Average",
+    "description": "Moving averages of Apple stock prices, using `range` window frames that span 15 days (black) and 3 months (red) around each date.\n"
+  },
   "data": {
     "aapl": {
       "file": "data/stocks.parquet",
