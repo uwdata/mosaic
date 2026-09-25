@@ -3,16 +3,13 @@
 # `pnpm -F @uwdata/mosaic-server-spec conformance:docs`.
 server: python
 failures:
-  - area: WebSocket text frames are never sent
+  - area: WebSocket errors lack `code`
     current: >-
-      socketify's `ws.send()` calls `self.app._json_serializer.dumps(message).encode("utf-8")`,
-      but the `Serde` wrapper from #1244 hands it `msgspec.json.encode`, which already
-      returns `bytes`; the `AttributeError` is swallowed by socketify's bare `except`
-      and logged as `WebSocket backpressure: 0`. No `{}` acknowledgement and no
-      `{"error"}` frame ever reaches the client, so a pipelining client hangs.
-    spec: Exactly one reply per command (D11).
-    fix: Have the serializer return `str` (`json_encode(x).decode()`), or send bytes with `OpCode.TEXT` directly.
-    ref: packages/server/duckdb-server/pkg/server.py
+      `{"error": str(e)}` only (`SocketHandler.error`). Missing-field messages are
+      msgspec's "Object missing required field `type`" rather than the canonical
+      `missing required 'type' parameter` from #1228.
+    spec: Envelope with `code` and the canonical messages (D1, D4).
+    fix: Share an error mapper with the HTTP handler; restore the messages when decoding.
     cases:
       - ws/missing-type
       - ws/missing-sql
@@ -24,12 +21,9 @@ failures:
       - ws/sql-unknown-table
       - ws/sql-runtime-error
       - ws/exec-error
-      - ws/exec-acknowledged
-      - ws/exec-multi-statement
       - ws/ws-malformed-json-stays-open
       - ws/ws-missing-sql-stays-open
       - ws/ws-sql-error-stays-open
-      - connector/socket-error-then-ok
 
   - area: Arrow Content-Type
     current: "`application/octet-stream` (`server.py`)."
@@ -52,7 +46,7 @@ failures:
       - post/exec-multi-statement
 
   - area: HTTP errors are plain text
-    current: "`handler.error()` ends the response with `str(error)` and no Content-Type."
+    current: "`handler.error()` ends the response with `str(error)` and no Content-Type; missing-field messages are msgspec's rather than the canonical ones from #1228."
     spec: JSON `Error` envelope (D4).
     fix: Emit `{error, code}` with `application/json`.
     cases:
