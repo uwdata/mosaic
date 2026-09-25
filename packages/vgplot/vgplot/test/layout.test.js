@@ -21,6 +21,53 @@ describe('zconcat', () => {
     expect(z.style.alignItems).toBe('start');
   });
 
+  it('shrink-wraps its largest child instead of filling the available width', () => {
+    // alignment fractions are relative to the layout, so it must not stretch
+    expect(zconcat(el('a')).style.width).toBe('fit-content');
+  });
+
+  it('leaves children untouched unless an alignment is given', () => {
+    const [a] = zconcat(el('a')).children;
+    expect(a.style.position).toBe('');
+    expect(a.style.left).toBe('');
+    expect(a.style.transform).toBe('');
+  });
+
+  describe('halign and valign', () => {
+    it('offset each child by that fraction of the space around it', () => {
+      const [a, b] = zconcat({ halign: 0.5, valign: 0.25 }, el('a'), el('b')).children;
+      for (const child of [a, b]) {
+        expect(child.style.position).toBe('relative');
+        expect(child.style.left).toBe('50%');
+        expect(child.style.top).toBe('25%');
+        expect(child.style.transform).toBe('translate(-50%, -25%)');
+        expect(child.style.gridArea).toBe('1 / 1');
+      }
+    });
+
+    it('can be given one at a time, the other staying at 0', () => {
+      const [h] = zconcat({ halign: 1 }, el('a')).children;
+      expect([h.style.left, h.style.top]).toEqual(['100%', '0%']);
+      const [v] = zconcat({ valign: 1 }, el('a')).children;
+      expect([v.style.left, v.style.top]).toEqual(['0%', '100%']);
+    });
+
+    it('are not children, and also work with an array of children', () => {
+      const z = zconcat({ halign: 0.5 }, [el('a'), el('b')]);
+      expect([...z.children].map(d => d.id)).toEqual(['a', 'b']);
+    });
+
+    it('do not pick up floating-point noise', () => {
+      const [a] = zconcat({ halign: 0.1, valign: 0.7 }, el('a')).children;
+      expect([a.style.left, a.style.top]).toEqual(['10%', '70%']);
+    });
+
+    it('of 0 add no offsets', () => {
+      const [a] = zconcat({ halign: 0, valign: 0 }, el('a')).children;
+      expect(a.style.position).toBe('');
+    });
+  });
+
   it('accepts an array of children, like hconcat and vconcat', () => {
     const items = [el('a'), el('b')];
     for (const layout of [hconcat, vconcat, zconcat]) {

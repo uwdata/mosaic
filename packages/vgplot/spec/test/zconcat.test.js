@@ -59,6 +59,57 @@ describe('zconcat', () => {
     expect(z.indexOf('vg.hconcat(')).toBeLessThan(z.indexOf('vg.graticule'));
   });
 
+  describe('halign and valign', () => {
+    /** @type {import('../src/index.js').Spec} */
+    const aligned = {
+      zconcat: [{ plot: [{ mark: 'sphere' }] }, { plot: [{ mark: 'graticule' }] }],
+      halign: 0.5,
+      valign: 1
+    };
+
+    it('are kept when converting back to JSON', () => {
+      expect(parseSpec(aligned).toJSON()).toEqual(aligned);
+      const { root } = parseSpec(aligned);
+      expect([root.halign, root.valign]).toEqual([0.5, 1]);
+    });
+
+    it('are left out of the JSON when not specified', () => {
+      const json = parseSpec({ zconcat: [{ plot: [{ mark: 'sphere' }] }], valign: 0 }).toJSON();
+      expect(Object.keys(json)).toEqual(['zconcat', 'valign']);
+      expect('halign' in parseSpec(spec).toJSON().vconcat[0].zconcat).toBe(false);
+    });
+
+    it('round trip JSON parsing', () => {
+      const json = parseSpec(aligned).toJSON();
+      expect(JSON.stringify(parseSpec(json).toJSON())).toBe(JSON.stringify(json));
+    });
+
+    it('validate against the JSON schema, as numbers only', () => {
+      expect(validate(aligned), JSON.stringify(validate.errors)).toBe(true);
+      expect(validate({ ...aligned, halign: 'left' })).toBe(false);
+      expect(validate({ ...aligned, valign: null })).toBe(false);
+    });
+
+    it('are passed to zconcat first in ESM code', () => {
+      const code = astToESM(parseSpec(aligned));
+      expect(code).toContain('vg.zconcat(');
+      expect(code).toContain('{halign: 0.5, valign: 1}');
+      expect(code.indexOf('halign')).toBeLessThan(code.indexOf('vg.sphere'));
+    });
+
+    it('are passed as keyword arguments after the children in Python code', () => {
+      const code = astToPython(parseSpec(aligned));
+      expect(code).toContain('halign=0.5');
+      expect(code).toContain('valign=1');
+      expect(code.indexOf('vg.graticule')).toBeLessThan(code.indexOf('halign='));
+    });
+
+    it('are not emitted when unspecified', () => {
+      expect(astToESM(parseSpec(spec))).not.toContain('halign');
+      expect(astToPython(parseSpec(spec))).not.toContain('halign');
+    });
+  });
+
   it('generates Python code that nests its children', () => {
     const code = astToPython(parseSpec(spec));
     expect(code).toContain('vg.zconcat(');

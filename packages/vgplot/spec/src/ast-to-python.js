@@ -118,7 +118,11 @@ function emitComponent(node, ctx, topKwargs = []) {
   }
   if (node.zconcat) {
     const body = node.zconcat.map(n => indentLine(emitComponent(n, ctx), 1)).join(',\n');
-    return `vg.zconcat(\n${body}${kwargSuffix},\n)`;
+    const align = ['halign', 'valign']
+      .filter(k => node[k] !== undefined)
+      .map(k => indentLine(`${k}=${literal(node[k], 0, ctx)}`, 1))
+      .join(',\n');
+    return `vg.zconcat(\n${body}${align ? ',\n' + align : ''}${kwargSuffix},\n)`;
   }
   if (node.vspace !== undefined) return `vg.vspace(${literal(node.vspace, 0, ctx)})`;
   if (node.hspace !== undefined) return `vg.hspace(${literal(node.hspace, 0, ctx)})`;

@@ -116,13 +116,26 @@ To layout elements, use objects with `hconcat` or `vconcat` keys, like so:
 ```
 
 To layer elements on top of one another, use a `zconcat` key.
-Later elements are drawn over earlier ones, for example to overlay two plots that use different projections:
+Later elements are drawn over earlier ones.
 
 ``` json
 {
   "zconcat": [
     ...elements
   ]
+}
+```
+
+Elements smaller than the layout are aligned to its top-left corner by default.
+To position them elsewhere, add `halign` and `valign` properties, numbers in [0, 1]: 0 aligns to the left (`halign`) or top (`valign`), 0.5 centers, and 1 aligns to the right or bottom.
+
+``` json
+{
+  "zconcat": [
+    ...elements
+  ],
+  "halign": 0.5,
+  "valign": 0.5
 }
 ```
 
