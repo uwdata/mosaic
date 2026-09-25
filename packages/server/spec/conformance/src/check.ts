@@ -1,6 +1,6 @@
 import { arrowViolations } from './arrow.ts';
 import { substitute } from './cases.ts';
-import { schemaErrors } from './schema.ts';
+import { schemaViolations } from './schema.ts';
 import { canonicalStatus, type Expectation, type Matcher, type Response, type Transport, type Violation } from './types.ts';
 
 const arrowMediaType = 'application/vnd.apache.arrow.stream';
@@ -22,13 +22,17 @@ export function checkResponse(
   if (expectation.oneOf) {
     const attempts = expectation.oneOf.map(e => checkResponse(e, response, transport, vars));
     if (attempts.some(a => a.length === 0)) return [];
+    // A wrong status or frame kind means the alternative did not apply at
+    // all, so it outweighs any number of shape problems when picking the
+    // alternative to report against.
+    const cost = (a: Violation[]) => a.reduce((n, x) => n + (/\.status\.|\.frame$|^ws\./.test(x.id) ? 10 : 1), 0);
     let best = 0;
-    attempts.forEach((a, i) => { if (a.length < attempts[best].length) best = i; });
+    attempts.forEach((a, i) => { if (cost(a) < cost(attempts[best])) best = i; });
     return attempts[best].map(x => v(`alt${best}.${x.id}`, `[alternative ${best}] ${x.detail}`));
   }
 
   if (response.kind === 'http-failed') {
-    return [v('http.connection', `request failed without an HTTP response: ${response.error}`)];
+    return [v(`http.reset.${response.reset}`, `server closed the connection without an HTTP response: ${response.error}`)];
   }
   if (response.kind === 'ws' && response.frame === 'close') {
     return [v(`ws.closed.${response.closeCode ?? 'unknown'}`, `connection closed (code ${response.closeCode}${response.closeReason ? `, ${response.closeReason}` : ''}) instead of answering`)];
@@ -63,11 +67,8 @@ export function checkResponse(
       out.push(v('exec.frame', 'expected a text frame `{}` for exec, got a binary frame'));
     } else {
       const parsed = parseJson(response.text!);
-      if (parsed === undefined) out.push(v('exec.ack', `exec acknowledgement is not JSON: ${describeText(response.text)}`));
-      else {
-        const errors = schemaErrors('ExecResponse', parsed);
-        if (errors.length) out.push(v('exec.ack', `exec acknowledgement ${describeText(response.text)}: ${errors.join('; ')}`));
-      }
+      if (parsed === undefined) out.push(v('exec.ack.not-json', `exec acknowledgement is not JSON: ${describeText(response.text)}`));
+      else out.push(...schemaViolations('exec.ack', 'ExecResponse', parsed));
     }
   }
 
@@ -88,10 +89,7 @@ export function checkResponse(
     if (inspect) {
       const parsed = text === undefined ? undefined : parseJson(text);
       if (parsed === undefined) out.push(v('json.parse', `body is not JSON: ${describeText(text)}`));
-      else {
-        const errors = schemaErrors(expectation.json, parsed);
-        if (errors.length) out.push(v('json.schema', `${expectation.json}: ${errors.join('; ')}`));
-      }
+      else out.push(...schemaViolations('json.schema', expectation.json, parsed));
     }
   }
 
@@ -114,8 +112,7 @@ export function checkResponse(
       if (parsed === undefined || typeof parsed !== 'object' || parsed === null) {
         out.push(v('error.not-json', `error body is not a JSON object: ${describeText(text)}`));
       } else {
-        const errors = schemaErrors('Error', parsed);
-        if (errors.length) out.push(v('error.schema', `Error envelope: ${errors.join('; ')}`));
+        out.push(...schemaViolations('error.schema', 'Error', parsed));
         const envelope = parsed as { code?: unknown; error?: unknown };
         if (envelope.code !== code) out.push(v(`error.code.${typeof envelope.code === 'string' && /^[a-z_]+$/.test(envelope.code) ? envelope.code : 'missing'}`, `code ${JSON.stringify(envelope.code)} != ${code}`));
         if (message !== undefined && typeof envelope.error === 'string') {

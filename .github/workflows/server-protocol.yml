@@ -53,11 +53,12 @@ jobs:
 
       - run: pnpm install --frozen-lockfile
 
-      - name: Typecheck and lint the conformance suite
+      - name: Typecheck, lint, and unit-test the conformance harness
         run: |
           pnpm exec tsc --build
           pnpm -F @uwdata/mosaic-server-spec typecheck
           pnpm -F @uwdata/mosaic-server-spec lint
+          pnpm -F @uwdata/mosaic-server-spec test
 
       - name: Verify CONFORMANCE.md matches known-failures
         run: |

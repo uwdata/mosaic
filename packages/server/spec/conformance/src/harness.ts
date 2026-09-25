@@ -39,6 +39,25 @@ export function skipReason(config: ServerConfig, requires: Capability[] = [], un
   return undefined;
 }
 
+export interface Verdict {
+  known: Violation[];
+  regressions: Violation[];
+  resolved: string[];
+}
+
+// A baseline entry `a|b` means exactly one of its members is observed on any
+// given run, for server behaviour that races (a reset against a 505).
+export function compare(observed: Violation[], expected: Set<string>): Verdict {
+  const observedIds = new Set(observed.map(x => x.id));
+  const groups = [...expected].map(entry => entry.split('|'));
+  const listed = (id: string) => groups.some(group => group.includes(id));
+  return {
+    known: observed.filter(x => listed(x.id)),
+    regressions: observed.filter(x => !listed(x.id)),
+    resolved: [...expected].filter(entry => entry.split('|').filter(m => observedIds.has(m)).length !== 1)
+  };
+}
+
 // `run` returns the violations it observed; anything it throws is a
 // transport or harness failure and fails the test regardless of the baseline.
 export function conformanceTest(
@@ -53,11 +72,7 @@ export function conformanceTest(
   }
   const expected = harness.expected.get(id) ?? new Set<string>();
   it(id, async ({ annotate }) => {
-    const observed = await run();
-    const observedIds = new Set(observed.map(x => x.id));
-    const regressions = observed.filter(x => !expected.has(x.id));
-    const resolved = [...expected].filter(x => !observedIds.has(x));
-    const known = observed.filter(x => expected.has(x.id));
+    const { known, regressions, resolved } = compare(await run(), expected);
 
     if (known.length) {
       await annotate(areasFor(harness.known, id).join('; '), annotationTypes.known);

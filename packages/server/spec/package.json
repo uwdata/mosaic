@@ -8,7 +8,9 @@
   "scripts": {
     "lint": "eslint conformance",
     "typecheck": "tsc -p tsconfig.json",
+    "test": "vitest run",
     "conformance": "vitest run --config conformance/vitest.config.ts",
+    "conformance:baseline": "node --experimental-strip-types conformance/update-baseline.ts",
     "conformance:docs": "node --experimental-strip-types conformance/generate-conformance-md.ts"
   },
   "dependencies": {

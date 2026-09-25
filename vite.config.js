@@ -24,7 +24,6 @@ export default {
       'packages/mosaic/*',
       'packages/vgplot/*',
       'packages/server/*',
-      '!packages/server/spec',
     ]
   }
 };

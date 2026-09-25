@@ -118,6 +118,7 @@ export interface WsResponse {
 
 export interface HttpFailure {
   kind: 'http-failed';
+  reset: string;
   error: string;
 }
 
