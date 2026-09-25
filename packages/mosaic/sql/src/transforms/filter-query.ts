@@ -72,7 +72,7 @@ export function filterPushdown(
   // non-recursive WITH clauses can not use forward references
   const cte = new WithClauseNode(
     filteredName,
-    Query.select("*").from(tableRef).where(filter)
+    Query.select('*').from(tableRef).where(filter)
   );
   const index = 1 + clone._with.findIndex(w => w.name === tableRef.name);
   clone._with = [

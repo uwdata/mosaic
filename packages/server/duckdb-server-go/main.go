@@ -8,7 +8,7 @@ import (
 	"log/slog"
 	"net/http"
 	"os"
-	"strings"
+	"sync"
 	"time"
 
 	"github.com/duckdb/duckdb-go/v2"
@@ -27,27 +27,15 @@ func run() int {
 	address := flag.String("address", "localhost", "HTTP Address")
 	port := flag.String("port", "3000", "HTTP Port")
 	poolSize := flag.Int("connection-pool-size", 10, "Max connection pool size")
-	maxCacheEntries := flag.Int("max-cache-entries", 1000, "Max number of cache entries")
-	maxCacheBytes := flag.Int("max-cache-bytes", 0, "Max number of cache size in bytes (overrides max-cache-entries if both are set)")
-	ttlStr := flag.String("cache-ttl", "0s", "Time-to-live for cache entries as a Go duration. 0s means no expiration (e.g., '10m', '1h'). Defaults to 0s.")
 	certFile := flag.String("cert", "", "Path to TLS certificate file (optional, enables HTTPS)")
 	keyFile := flag.String("key", "", "Path to TLS private key file (optional, enables HTTPS)")
-	schemaMatchHeadersStr := flag.String("schema-match-headers", "", "Comma-separated list of headers to match against schema names for multi-tenant access control (e.g., \"X-Tenant-Id,verified-user-id\")")
+	cacheControl := flag.String("cache-control", "", "Cache-Control value for successful GET arrow responses; enables ETag validation for those queries")
+	var varyHeaders optionalCommaListFlag
+	flag.Var(&varyHeaders, "vary", "Comma-separated request header names to append to Vary; may be repeated")
 	extensionsStr := flag.String("load-extensions", "", "Comma-separated list of extensions to install and load at startup. Use a pipe after the extension name to specify a DuckDB repository alias. Unspecified repositories use DuckDB's default (e.g. mysql_scanner,netquack|community,aws|core_nightly).")
-	functionBlocklistStr := flag.String("function-blocklist", "", "Comma-separated list of functions to block, useful for blocking functions that may pose security or performance risks. (e.g., 'bigquery_query,read_parquet')")
-	var functionAllowlist optionalCommaListFlag
-	flag.Var(&functionAllowlist, "function-allowlist", "Comma-separated exact names to add to the reviewed default allowlist. An empty value enables only the defaults; names are matched case-insensitively.")
+	var gatekeeper gatekeeperFlag
+	flag.Var(&gatekeeper, "gatekeeper", `Gatekeeper JSON policy document; {"version":1,"options":{}} enables validation with defaults`)
 	flag.Parse()
-
-	var schemaMatchHeaders []string
-	if *schemaMatchHeadersStr != "" {
-		schemaMatchHeaders = strings.Split(*schemaMatchHeadersStr, ",")
-	}
-
-	var functionBlocklist []string
-	if *functionBlocklistStr != "" {
-		functionBlocklist = strings.Split(*functionBlocklistStr, ",")
-	}
 
 	ctx := context.Background()
 
@@ -73,8 +61,14 @@ func run() int {
 		}
 	}
 
+	validation := gatekeeper.document != nil
+	var initializeOnce sync.Once
+	var initializeErr error
 	connector, err := duckdb.NewConnector(*dbPath, func(execer driver.ExecerContext) error {
-		return extensions.ParseAndInstall(ctx, execer, *extensionsStr)
+		initializeOnce.Do(func() {
+			initializeErr = initializeDatabase(ctx, execer, *extensionsStr, gatekeeper.document)
+		})
+		return initializeErr
 	})
 	if err != nil {
 		logger.Error("main: error creating duckdb connector", "error", err)
@@ -87,24 +81,12 @@ func run() int {
 		}
 	}()
 
-	ttl, err := time.ParseDuration(*ttlStr)
-	if err != nil {
-		logger.Error("main: invalid cache-ttl", "error", err)
-		return 1
-	}
-
 	queryOptions := []query.OptionFunc{
 		query.WithMaxConnections(*poolSize),
-		query.WithMaxCacheEntries(*maxCacheEntries),
-		query.WithMaxCacheBytes(*maxCacheBytes),
-		query.WithTTL(ttl),
 		query.WithLogger(logger),
-		query.WithFunctionBlocklist(functionBlocklist),
 	}
-	if functionAllowlist.set {
-		queryOptions = append(queryOptions, query.WithFunctionAllowlist(query.FunctionAllowlistOptions{
-			Include: functionAllowlist.values,
-		}))
+	if validation {
+		queryOptions = append(queryOptions, query.WithValidation())
 	}
 
 	db, err := query.New(ctx, connector, queryOptions...)
@@ -115,7 +97,8 @@ func run() int {
 	defer db.Close()
 
 	s, err := server.New(db,
-		server.WithSchemaMatchHeaders(schemaMatchHeaders...),
+		server.WithCacheControl(*cacheControl),
+		server.WithVary(varyHeaders.values...),
 		server.WithLogger(logger),
 		server.WithCORS(server.CORSOptions{
 			AllowAllOrigins: true,
@@ -135,16 +118,12 @@ func run() int {
 		"address":              *address,
 		"port":                 *port,
 		"connection_pool_size": *poolSize,
-		"cache_size":           *maxCacheEntries,
 		"cert_file":            *certFile,
 		"key_file":             *keyFile,
-		"schema_match_headers": *schemaMatchHeadersStr,
-		"ttl":                  ttl,
-		"max_cache_bytes":      *maxCacheBytes,
+		"cache_control":        *cacheControl,
+		"vary":                 varyHeaders.String(),
 		"load_extensions":      *extensionsStr,
-		"function_blocklist":   *functionBlocklistStr,
-		"function_allowlist":   functionAllowlist.String(),
-		"allowlist_configured": functionAllowlist.set,
+		"gatekeeper":           gatekeeper.String(),
 	}
 	logger.Info("DuckDB Server configuration", "config", config)
 
@@ -182,4 +161,27 @@ func run() int {
 		return 1
 	}
 	return 0
+}
+
+// initializeDatabase is the CLI's trusted initialization. Extensions named by --load-extensions are installed first so
+// a locally provided Gatekeeper artifact wins over the community install; the community install only runs when LOAD
+// finds nothing.
+func initializeDatabase(ctx context.Context, execer driver.ExecerContext, extensionList string, document *string) error {
+	if err := extensions.ParseAndInstall(ctx, execer, extensionList); err != nil {
+		return err
+	}
+	if document == nil {
+		return nil
+	}
+	if err := extensions.LoadInstalled(ctx, execer, "gatekeeper"); err != nil {
+		if err := extensions.InstallAndLoad(ctx, execer, "gatekeeper", "community"); err != nil {
+			return err
+		}
+	}
+	if err := query.ConfigureGatekeeper(ctx, execer, *document); err != nil {
+		return fmt.Errorf("configure Gatekeeper: %w", err)
+	}
+	_, err := execer.ExecContext(ctx, `SET autoload_known_extensions = false;
+		SET autoinstall_known_extensions = false; SET lock_configuration = true`, nil)
+	return err
 }

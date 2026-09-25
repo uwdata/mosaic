@@ -50,7 +50,7 @@ To run Mosaic examples on a local DuckDB server or work on Mosaic development, m
 
 ### Installation
 
-For local installation you should have `pnpm` and `node` version 18 or higher.
+For local installation you should have `pnpm` and `node` version 22 or higher.
 
 - Clone https://github.com/uwdata/mosaic.
 - Run `pnpm i` to install dependencies.

@@ -7,12 +7,10 @@ use std::{net::IpAddr, net::Ipv4Addr, net::SocketAddr, path::PathBuf};
 use tokio::net;
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
-use crate::app::DEFAULT_CACHE_SIZE;
 use crate::app::DEFAULT_CONNECTION_POOL_SIZE;
 use crate::app::DEFAULT_DB_PATH;
 
 mod app;
-mod cache;
 mod db;
 mod interfaces;
 mod query;
@@ -36,10 +34,6 @@ struct Args {
     /// Max connection pool size
     #[arg(long, default_value_t = DEFAULT_CONNECTION_POOL_SIZE)]
     connection_pool_size: u32,
-
-    /// Max number of cache entries
-    #[arg(long, default_value_t = DEFAULT_CACHE_SIZE)]
-    cache_size: usize,
 }
 
 #[tokio::main]
@@ -59,11 +53,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     tracing::info!("Creating database in '{}'", args.database);
 
     // App setup
-    let app = app::app(
-        Some(&args.database),
-        Some(args.connection_pool_size),
-        Some(args.cache_size),
-    )?;
+    let app = app::app(Some(&args.database), Some(args.connection_pool_size))?;
 
     // TLS configuration
     let mut config = RustlsConfig::from_pem_file(
