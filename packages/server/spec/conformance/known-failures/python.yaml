@@ -182,9 +182,9 @@ failures:
     fix: Run queries in a thread pool.
     cases: {}
   - area: Large GET request lines reset the connection
-    current: uWebSockets answers a request line over its header buffer with a 505 and closes; the client sees either the 505 or `ECONNRESET`, depending on which lands first.
+    current: uWebSockets answers a request line over its header buffer with a 505 and closes; the client sees either the 505 or a write error (`ECONNRESET` on macOS, `EPIPE` on Linux), depending on which lands first.
     spec: Servers SHOULD accept at least 1 MiB (D13); a rejection should be a consistent HTTP status.
     fix: Probably not configurable in socketify; document the limit.
     cases:
       get/large-request-1mib:
-        - http.reset.econnreset|arrow.status.505
+        - http.reset.peer-closed|arrow.status.505

@@ -79,7 +79,7 @@ the lists only shrink. An entry written `a|b` means exactly one of the two
 is observed on any given run, for server behaviour that races (a reset
 against a 505). Thrown transport or harness errors are never baselined:
 only a connection the server tears down after accepting the request is
-recorded, as `http.reset.<code>`; refusals, bad URLs, DNS or TLS failures,
+recorded, as `http.reset.peer-closed` or `http.reset.socket-closed`; refusals, bad URLs, DNS or TLS failures,
 and timeouts fail the run. Every step of a multi-step case runs even after an earlier step
 misbehaved, so follow-up checks such as "the connection is still usable" or
 "the table was not created" are observed independently. Full conformance is
@@ -375,7 +375,7 @@ Configuration: `duckdb-server` (`packages/server/duckdb-server`).
 | Unsupported method is 400 | `Unsupported HTTP method` with status 400 and no `Allow`. | 405 with `Allow` and the envelope (D5). | Change the status and add the header. | 2 |
 | CORS | `Access-Control-Request-Method` is emitted as a response header; no `Access-Control-Expose-Headers`. | Drop the request header; expose `ETag` if caching is ever added. | Edit `CORS_HEADERS`. | not observable |
 | Concurrency | A synchronous handler blocks the event loop for every connection. | No wire requirement; prerequisite for deadlines. | Run queries in a thread pool. | not observable |
-| Large GET request lines reset the connection | uWebSockets answers a request line over its header buffer with a 505 and closes; the client sees either the 505 or `ECONNRESET`, depending on which lands first. | Servers SHOULD accept at least 1 MiB (D13); a rejection should be a consistent HTTP status. | Probably not configurable in socketify; document the limit. | 1 |
+| Large GET request lines reset the connection | uWebSockets answers a request line over its header buffer with a 505 and closes; the client sees either the 505 or a write error (`ECONNRESET` on macOS, `EPIPE` on Linux), depending on which lands first. | Servers SHOULD accept at least 1 MiB (D13); a rejection should be a consistent HTTP status. | Probably not configurable in socketify; document the limit. | 1 |
 
 <details><summary>Baselined violations by case</summary>
 
@@ -429,7 +429,7 @@ Configuration: `duckdb-server` (`packages/server/duckdb-server`).
   - `post/method-put`: `error.status.400`, `error.content-type`, `error.not-json`, `header.allow`
   - `post/method-head`: `status.400`, `header.allow`
 - **Large GET request lines reset the connection**
-  - `get/large-request-1mib`: `http.reset.econnreset|arrow.status.505`
+  - `get/large-request-1mib`: `http.reset.peer-closed|arrow.status.505`
 
 </details>
 
