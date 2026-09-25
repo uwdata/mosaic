@@ -1,21 +1,29 @@
 name: Server Protocol
 
-# Validates the server protocol specification in packages/server/spec.
-# Conformance tests that run each server implementation against the spec
-# will be added here once the test suite exists.
+# Validates the server protocol specification in packages/server/spec and runs
+# the conformance suite against every server configuration. Conformance is a
+# ratchet: each leg passes when its failures match
+# packages/server/spec/conformance/known-failures/<config>.yaml, and fails on
+# a regression or on a listed case that has started passing.
 
 on:
   push:
     branches:
       - main
     paths:
-      - "packages/server/spec/**"
+      - "packages/server/**"
+      - "packages/mosaic/core/src/connectors/**"
+      - "data/penguins.parquet"
+      - "pnpm-lock.yaml"
       - ".github/workflows/server-protocol.yml"
   pull_request:
     branches:
       - main
     paths:
-      - "packages/server/spec/**"
+      - "packages/server/**"
+      - "packages/mosaic/core/src/connectors/**"
+      - "data/penguins.parquet"
+      - "pnpm-lock.yaml"
       - ".github/workflows/server-protocol.yml"
 
 permissions:
@@ -42,3 +50,100 @@ jobs:
             pnpm-lock.yaml
 
       - run: pnpm run spec:lint
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: Typecheck and lint the conformance suite
+        run: |
+          pnpm exec tsc --build
+          pnpm -F @uwdata/mosaic-server-spec typecheck
+          pnpm -F @uwdata/mosaic-server-spec lint
+
+      - name: Verify CONFORMANCE.md matches known-failures
+        run: |
+          pnpm -F @uwdata/mosaic-server-spec conformance:docs
+          git diff --exit-code -- packages/server/spec/CONFORMANCE.md
+
+  conformance:
+    name: Conformance (${{ matrix.server }})
+
+    runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        server: [node, python, rust, go, go-cache, go-gatekeeper]
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v6
+
+      - name: Setup node
+        uses: actions/setup-node@v7
+        with:
+          node-version: "22.x"
+          cache: "pnpm"
+          cache-dependency-path: |
+            pnpm-lock.yaml
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: Setup uv
+        if: matrix.server == 'python'
+        uses: astral-sh/setup-uv@v7
+        with:
+          version: ">=0.12.0"
+          enable-cache: true
+          cache-dependency-glob: |
+            uv.lock
+            **/pyproject.toml
+
+      - name: Sync Python server
+        if: matrix.server == 'python'
+        run: uv sync --package duckdb-server
+
+      - name: Setup Rust
+        if: matrix.server == 'rust'
+        uses: actions-rust-lang/setup-rust-toolchain@v1
+        with:
+          cache: true
+          cache-workspaces: |-
+            ./packages/server/duckdb-server-rust
+
+      - name: Build Rust server
+        if: matrix.server == 'rust'
+        run: cargo build --manifest-path=./packages/server/duckdb-server-rust/Cargo.toml
+
+      - name: Setup Go
+        if: startsWith(matrix.server, 'go')
+        uses: actions/setup-go@v7
+        with:
+          go-version: "1.25"
+          cache-dependency-path: ./packages/server/duckdb-server-go/go.sum
+
+      - name: Cache DuckDB extensions
+        if: startsWith(matrix.server, 'go')
+        uses: actions/cache@v6
+        with:
+          path: ~/.duckdb/extensions
+          key: duckdb-extensions-v3-${{ runner.os }}-${{ hashFiles('packages/server/duckdb-server-go/go.sum') }}
+
+      - name: Build Go server
+        if: startsWith(matrix.server, 'go')
+        run: go build -tags=duckdb_arrow ./...
+        working-directory: ./packages/server/duckdb-server-go
+
+      - name: Run conformance suite
+        run: pnpm -F @uwdata/mosaic-server-spec conformance
+        env:
+          CONFORMANCE_SERVER: ${{ matrix.server }}
+
+      - name: Upload server logs
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: conformance-${{ matrix.server }}
+          path: packages/server/spec/conformance/.logs/
+          if-no-files-found: ignore
