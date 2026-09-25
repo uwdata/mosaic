@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from collections.abc import Mapping
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any
 
@@ -13,7 +13,7 @@ if TYPE_CHECKING:
 
 
 class FromRef:
-    def __init__(self, name: str, **opts: Any) -> None:
+    def __init__(self, name: str | Sequence[str], **opts: Any) -> None:
         self.name = name
         self.opts = {camelize(k): v for k, v in opts.items() if v is not None}
 
@@ -21,7 +21,7 @@ class FromRef:
         return {"from": self.name, **self.opts}
 
 
-def source(name: str, **opts: Any) -> FromRef:
+def source(name: str | Sequence[str], **opts: Any) -> FromRef:
     return FromRef(name, **opts)
 
 

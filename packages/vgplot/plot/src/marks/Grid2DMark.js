@@ -1,7 +1,7 @@
 /** @import { ExprNode } from '@uwdata/mosaic-sql' */
 import { interpolatorBarycentric, interpolateNearest, interpolatorRandomWalk } from '@observablehq/plot';
 import { toDataColumns } from '@uwdata/mosaic-core';
-import { Query, bin2d, binLinear2d, collectColumns, count, isAggregateExpression, isBetween, lt, lte, sum } from '@uwdata/mosaic-sql';
+import { Query, asTableRef, bin2d, binLinear2d, collectColumns, count, isAggregateExpression, isBetween, lt, lte, sum } from '@uwdata/mosaic-sql';
 import { Transient } from '../symbols.js';
 import { binExpr } from './util/bin-expr.js';
 import { dericheConfig, dericheConv2d } from './util/density.js';
@@ -92,7 +92,7 @@ export class Grid2DMark extends Mark {
       : [lte(+x0, bx), lt(bx, +x1), lte(+y0, by), lt(by, +y1)];
 
     const q = Query
-      .from(this.sourceTable())
+      .from(asTableRef(this.sourceTable()))
       .where(filter.concat(bounds));
 
     /** @type {string[]} */

@@ -50,7 +50,7 @@ export type FieldRef = string | ExprNode;
  * A request for metadata information about a database column.
  */
 export interface FieldInfoRequest {
-  table: string;
+  table: string | string[];
   column: FieldRef;
   stats?: Stat[];
 }
@@ -59,7 +59,7 @@ export interface FieldInfoRequest {
  * A response with metadata information about a database column.
  */
 export interface FieldInfo extends Partial<Record<Stat, number>> {
-  table: string,
+  table: string | string[],
   column: string,
   sqlType: string,
   type: JSType,

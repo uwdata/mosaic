@@ -1,6 +1,6 @@
 /** @import { Param, Selection } from '@uwdata/mosaic-core' */
 import { isParam, isSelection, clausePoint, clauseList } from '@uwdata/mosaic-core';
-import { Query, unnest } from '@uwdata/mosaic-sql';
+import { Query, asTableRef, unnest } from '@uwdata/mosaic-sql';
 import { Input, input } from './input.js';
 
 const isObject = v => {
@@ -27,7 +27,7 @@ const isObject = v => {
  *  function is not applied when an explicit label is provided in an option
  *  object.
  * @param {*} [options.value] The initial selected menu value.
- * @param {string} [options.from] The name of a database table to use as a data
+ * @param {string | string[]} [options.from] The name of a database table to use as a data
  *  source for this widget. Used in conjunction with the *column* option.
  * @param {string} [options.column] The name of a database column from which
  *  to pull menu options. The unique column values are used as menu options.
@@ -63,7 +63,7 @@ export class Menu extends Input {
    *  function is not applied when an explicit label is provided in an option
    *  object.
    * @param {*} [options.value] The initial selected menu value.
-   * @param {string} [options.from] The name of a database table to use as a data
+   * @param {string | string[]} [options.from] The name of a database table to use as a data
    *  source for this widget. Used in conjunction with the *column* option.
    * @param {string} [options.column] The name of a database column from which
    *  to pull menu options. The unique column values are used as menu options.
@@ -180,7 +180,7 @@ export class Menu extends Input {
     const { from, column, listMatch } = this;
     if (!from) return null;
     return Query
-      .from(from)
+      .from(asTableRef(from))
       .select({ value: listMatch ? unnest(column) : column })
       .distinct()
       .where(filter)

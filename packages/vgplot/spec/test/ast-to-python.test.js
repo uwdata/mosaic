@@ -32,6 +32,15 @@ describe('astToPython literals', () => {
   });
 });
 
+describe('astToPython data sources', () => {
+  it('wraps a table name path in vg.source', () => {
+    const code = astToPython(
+      ast({ plot: [{ mark: 'dot', data: { from: ['schema_name', 'table_name'] } }] })
+    );
+    expect(code).toContain('vg.dot(data=vg.source(["schema_name", "table_name"]))');
+  });
+});
+
 describe('astToPython transforms', () => {
   const lineY = y => ast({ plot: [{ mark: 'lineY', x: 'day', y }] });
 
