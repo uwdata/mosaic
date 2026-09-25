@@ -95,7 +95,7 @@ function outputExpression(query: Query, name: string, outer: Scope): ExprNode | 
     const clause = query._select.find(c => c.alias === name);
     const expr = clause?.expr
       ?? (query._select.some(isStar) ? new ColumnNameRefNode(name) : undefined);
-    if (!expr || isAggregateExpression(expr) || hasWindow(expr)) return;
+    if (!expr || isAggregateExpression(expr) || containsNode(expr, WindowNode)) return;
     return baseExpression(query, expr, outer);
   }
   if (isSetOperation(query)) {
@@ -115,10 +115,15 @@ function columnRefs(expr: ExprNode): ColumnRefNode[] {
   return refs;
 }
 
-function hasWindow(expr: ExprNode): boolean {
+/**
+ * Test if an expression contains a node of the given type.
+ * @param expr The expression to test.
+ * @param type The node class to search for.
+ */
+export function containsNode(expr: SQLNode, type: new (...args: never[]) => SQLNode): boolean {
   let found = false;
   walk(expr, node => {
-    if (node instanceof WindowNode) return (found = true, -1);
+    if (node instanceof type) return (found = true, -1);
   });
   return found;
 }

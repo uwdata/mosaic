@@ -5,9 +5,8 @@ import type { MosaicClient } from '../MosaicClient.js';
 import type { Selection } from '../Selection.js';
 import { fnv_hash } from '../util/hash.js';
 import { resolvePositional } from '../util/positional.js';
-import { containsNode } from './contains-node.js';
 import { QueryError } from '../util/query-error.js';
-import { queryScope, resolveRelation } from './lineage.js';
+import { containsNode, queryScope, resolveRelation } from './lineage.js';
 import { preaggColumns, PreAggColumnsResult } from './preagg-columns.js';
 import { subqueryPushdown } from './subquery-pushdown.js';
 

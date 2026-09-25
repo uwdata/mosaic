@@ -2,8 +2,7 @@ import { asNode, collectAggregates, isAggregateExpression, isColumnRef, isSelect
 import type { AggregateNode, ColumnRefNode, ExprNode, TableRefNode } from '@uwdata/mosaic-sql';
 import type { MosaicClient } from '../MosaicClient.js';
 import { resolvePositional } from '../util/positional.js';
-import { containsNode } from './contains-node.js';
-import { baseExpression, baseTable } from './lineage.js';
+import { baseExpression, baseTable, containsNode } from './lineage.js';
 import { sufficientStatistics } from './sufficient-statistics.js';
 
 // result of determining columns for preaggregation optimization
