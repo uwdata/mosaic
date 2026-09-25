@@ -66,8 +66,10 @@ export function conformanceTest(
   skip: string | undefined,
   run: () => Promise<Violation[]>
 ) {
+  // A capability skip runs far enough to record its reason, so the results
+  // file can tell it from a case that a --testNamePattern filter left out.
   if (skip) {
-    it.skip(id);
+    it(id, ctx => ctx.skip(skip));
     return;
   }
   const expected = harness.expected.get(id) ?? new Set<string>();

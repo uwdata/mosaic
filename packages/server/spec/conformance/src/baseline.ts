@@ -3,6 +3,7 @@ import { isMap, isSeq, parseDocument, YAMLSeq } from 'yaml';
 export interface ResultRow {
   id: string;
   outcome: string;
+  reason?: string;
   violations?: string[];
 }
 
@@ -23,6 +24,18 @@ export function observedFrom(rows: ResultRow[], label: string): Map<string, stri
     throw new Error(`${label} contains ${errors.length} harness error${errors.length === 1 ? '' : 's'} (${errors.map(r => r.id).join(', ')}); fix them and rerun before refreshing the baseline`);
   }
   return new Map(rows.filter(r => r.outcome !== 'skipped').map(r => [r.id, r.violations!]));
+}
+
+// The same results read as the configuration another one inherits from. A
+// case that configuration skips by capability (the skip carries its reason)
+// has no inherited failures, so it counts as observed clean; a case a
+// filtered run left out (no reason) stays absent and is reported unverified.
+export function inheritedFrom(rows: ResultRow[], label: string): Map<string, string[]> {
+  const observed = observedFrom(rows, label);
+  for (const row of rows) {
+    if (row.outcome === 'skipped' && row.reason) observed.set(row.id, []);
+  }
+  return observed;
 }
 
 // Rewrites the violation ids of cases already listed in a known-failures
@@ -52,10 +65,10 @@ export function refreshBaseline(
     for (const pair of [...cases.items]) {
       const id = String((pair.key as { value: unknown }).value ?? pair.key);
       const current = observed.get(id);
-      if (current === undefined) continue;
+      if (current === undefined || (base && !base.has(id))) continue;
       filed.add(id);
       const listed = isSeq(pair.value) ? pair.value.items.map(v => String((v as { value: unknown }).value)) : [];
-      if (current.length === 0 || (base?.has(id) && same(current, base.get(id)!))) {
+      if (current.length === 0 || (base && same(current, base.get(id)!))) {
         cases.delete(pair.key);
         changes.push(`removed ${id} (${current.length === 0 ? 'passes' : `same as ${inherits}`})`);
         continue;

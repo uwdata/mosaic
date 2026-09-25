@@ -103,8 +103,11 @@ ones that now pass; new failures still have to be filed under an area by
 hand, and a run that contains harness errors is refused, since those are
 unknown observations rather than passes. Only observed cases are touched, so
 a filtered run leaves the other entries and `passes` exemptions as they
-were, and a case the inherited configuration's last run did not observe is
-reported as unverified instead of being compared against nothing.
+were. For an inheriting configuration, a case the parent skips by capability
+(the results record the reason) counts as having no inherited failures,
+while a case the parent's last run left out through a filter is left
+untouched and reported as unverified instead of being compared against
+nothing.
 
 ```sh
 CONFORMANCE_SERVER=go pnpm -F @uwdata/mosaic-server-spec conformance:baseline

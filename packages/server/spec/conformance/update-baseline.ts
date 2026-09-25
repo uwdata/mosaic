@@ -6,7 +6,7 @@
 import { readFileSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { parse } from 'yaml';
-import { observedFrom, refreshBaseline, type ResultRow } from './src/baseline.ts';
+import { inheritedFrom, observedFrom, refreshBaseline, type ResultRow } from './src/baseline.ts';
 import { conformanceRoot } from './src/cases.ts';
 import { knownFailuresPath } from './src/known.ts';
 import { servers } from './servers/index.ts';
@@ -16,15 +16,15 @@ if (!server || !servers[server]) {
   throw new Error(`CONFORMANCE_SERVER must be one of ${Object.keys(servers).join(', ')}`);
 }
 
-const results = (name: string) => {
+const results = (name: string, read: typeof observedFrom) => {
   const file = path.join(conformanceRoot, '.logs', `${name}-results.json`);
-  return observedFrom(JSON.parse(readFileSync(file, 'utf8')) as ResultRow[], path.relative(process.cwd(), file));
+  return read(JSON.parse(readFileSync(file, 'utf8')) as ResultRow[], path.relative(process.cwd(), file));
 };
 
 const file = knownFailuresPath(server);
 const source = readFileSync(file, 'utf8');
 const inherits = parse(source).inherits as string | undefined;
-const { text, changes, unfiled, unverified } = refreshBaseline(source, results(server), inherits ? results(inherits) : undefined);
+const { text, changes, unfiled, unverified } = refreshBaseline(source, results(server, observedFrom), inherits ? results(inherits, inheritedFrom) : undefined);
 
 for (const change of changes) console.log(change);
 for (const [id, ids] of unfiled) {
