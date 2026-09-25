@@ -25,18 +25,18 @@ func ExampleNew() {
 		}
 
 		getProject := r.URL.Query().Get("project")
-		return func(ctx context.Context, command server.Command[*fields]) error {
+		return func(ctx context.Context, command server.Command[*fields]) (*query.ValidationPolicy, error) {
 			if err := ctx.Err(); err != nil {
-				return err
+				return nil, err
 			}
 			project := getProject
 			if payload := command.Payload(); payload != nil {
 				project = payload.Project
 			}
 			if identity != "reader" || project != "dashboard" || command.Type() == server.CommandExec {
-				return server.ErrPermissionDenied
+				return nil, server.ErrPermissionDenied
 			}
-			return nil
+			return nil, nil
 		}, nil
 	})
 

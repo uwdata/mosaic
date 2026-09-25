@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import type { CreateQuery, ExprNode, FilterExpr } from '@uwdata/mosaic-sql';
-import { Query, add, argmax, argmin, avg, corr, count, covarPop, covariance, desc, filterPushdown, geomean, gt, literal, loadObjects, max, min, mul, neq, product, regrAvgX, regrAvgY, regrCount, regrIntercept, regrR2, regrSXX, regrSXY, regrSYY, regrSlope, sql, stddev, stddevPop, sum, upper, varPop, variance } from '@uwdata/mosaic-sql';
-import { clausePoint, Coordinator, Selection, SelectionClause } from '../src/index.js';
+import { Query, add, argmax, argmin, avg, corr, count, covarPop, covariance, cte, desc, eq, filterPushdown, geomean, gt, literal, loadObjects, max, min, mul, neq, product, regrAvgX, regrAvgY, regrCount, regrIntercept, regrR2, regrSXX, regrSXY, regrSYY, regrSlope, sql, stddev, stddevPop, sum, upper, varPop, variance } from '@uwdata/mosaic-sql';
+import { clausePoint, Coordinator, Param, Selection, SelectionClause } from '../src/index.js';
 import type { PreAggregateInfo } from '../src/preagg/PreAggregator.js';
 import { preaggColumns } from '../src/preagg/preagg-columns.js';
 import { NodeConnector } from '../src/connectors/NodeConnector.js';
@@ -280,6 +280,16 @@ describe('PreAggregator', () => {
     expect(await run(query)).toStrictEqual([3.5, true]);
   });
 
+  it('supports queries with params', async () => {
+    const p = Param.value(2);
+    const query = (predicate: FilterExpr = []) => {
+      return Query.from('testData')
+        .select({ measure: sum(sql`"x" * ${p}`) })
+        .where(predicate);
+    };
+    expect(await run(query)).toStrictEqual([14, true]);
+  });
+
   it('supports queries with renamed groupby dimensions', async () => {
     const query = (predicate: FilterExpr = []) => {
       return Query.from('testData')
@@ -349,5 +359,59 @@ describe('PreAggregator', () => {
       .groupby('cat', 'cat');
     const cols = preaggColumns(new TestClient(query));
     expect(cols?.groupby).toStrictEqual(['cat']);
+  });
+
+  it('supports grouping column pushdown', async () => {
+     const query = (predicate: FilterExpr = []) => {
+      return Query.from(
+          Query
+            .with({
+              level2: Query.unionAll([
+                Query.from('testData').select({ v: 'x', u: 'cat' }).where(eq('cat', literal('c')), predicate),
+                Query.from('testData').select({ v: 'x', u: 'cat' }).where(eq('cat', literal('d')), predicate)
+              ]),
+              level1: Query.from('level2').select('u', 'v')
+            })
+            .from('level1')
+            .select({ value: add('v', 1), type: 'u' })
+        )
+        .select({
+          measure: avg("value"), type: "type"
+        })
+        .groupby('type');
+    };
+    expect(await run(query)).toStrictEqual([4.5, true]);
+
+    const query2 = (predicate: FilterExpr = []) => {
+      return Query.from(
+          Query
+            .with(
+              cte("level2", Query.unionAll([
+                Query.from('testData').select({ v: 'x', u: 'cat' }).where(eq('cat', literal('c')), predicate),
+                Query.from('testData').select({ v: 'x', u: 'cat' }).where(eq('cat', literal('d')), predicate)
+              ])),
+              cte("level1", Query.from('level2').select('u', 'v'))
+            )
+            .from('level1')
+            .select({ value: add('v', 1), type: 'u' })
+        )
+        .select({
+          measure: avg("value"), type: "type"
+        })
+        .groupby('type');
+    };
+    expect(await run(query2)).toStrictEqual([4.5, true]);
+  });
+
+  it('supports mean-centered aggregates over derived columns', async () => {
+    const query = (predicate: FilterExpr = []) => {
+      return Query
+        .with({
+          derived: Query.from('testData').select({ v: 'x' }).where(predicate)
+        })
+        .from('derived')
+        .select({ measure: variance('v') });
+    };
+    expect(await run(query)).toStrictEqual([0.5, true]);
   });
 });

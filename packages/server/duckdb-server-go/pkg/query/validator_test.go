@@ -1,503 +1,177 @@
 package query
 
 import (
+	"context"
+	"database/sql/driver"
+	"errors"
+	"sync"
 	"testing"
+	"time"
 
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
-func TestErrorDetails(t *testing.T) {
-	t.Run("all fields", func(t *testing.T) {
-		err := ErrorDetails{Type: "parser", Subtype: "syntax", Position: "line 1", Message: "invalid SQL"}
-		assert.EqualError(t, err, "query: parser (syntax) at line 1: invalid SQL")
-		assert.NotErrorIs(t, err, ErrUnsupportedStatement)
-	})
-
-	t.Run("sparse unsupported statement", func(t *testing.T) {
-		err := ErrorDetails{Type: "not implemented", Message: "Only SELECT statements can be serialized to json!"}
-		assert.EqualError(t, err, "query: not implemented: Only SELECT statements can be serialized to json!")
-		assert.ErrorIs(t, err, ErrUnsupportedStatement)
-	})
-}
-
-func TestDB_ValidateSQL(t *testing.T) {
-	tests := []struct {
-		name              string
-		sql               string
-		allowedSchemas    []string
-		functionBlocklist []string
-		wantErr           bool
+func TestPolicyDocument(t *testing.T) {
+	for _, tc := range []struct {
+		policy ValidationPolicy
+		want   string
 	}{
-		{
-			"zero schema validation",
-			"SELECT 1 + 2",
-			nil,
-			nil,
-			false,
-		},
-		{
-			"error on empty schema",
-			"SELECT a FROM tbl1",
-			nil,
-			nil,
-			true,
-		},
-		{
-			"error with specified schema and no allowed schemas",
-			"SELECT a FROM schema1.tbl1",
-			nil,
-			nil,
-			true,
-		},
-		{
-			"no error on specified schema with matching allowed schema",
-			"SELECT a FROM schema1.tbl1",
-			[]string{"schema1"},
-			nil,
-			false,
-		},
-		{
-			"error on specified schema without matching allowed schema",
-			"SELECT a FROM schema2.tbl1",
-			[]string{"schema1"},
-			nil,
-			true,
-		},
-		{
-			"subquery in FROM clause with allowed schema",
-			"SELECT t.x FROM (SELECT a AS x FROM schema1.tbl1) AS t",
-			[]string{"schema1"},
-			nil,
-			false,
-		},
-		{
-			"subquery in FROM clause with disallowed schema",
-			"SELECT t.x FROM (SELECT a AS x FROM schema2.tbl1) AS t",
-			[]string{"schema1"},
-			nil,
-			true,
-		},
-		{
-			"subquery in WHERE clause with allowed schema",
-			"SELECT a FROM tbl1 WHERE a IN (SELECT b FROM schema1.tbl2)",
-			[]string{"schema1"},
-			nil,
-			true,
-		},
-		{
-			"subquery in WHERE clause with allowed schemas for both tables",
-			"SELECT a FROM schema1.tbl1 WHERE a IN (SELECT b FROM schema1.tbl2)",
-			[]string{"schema1"},
-			nil,
-			false,
-		},
-		{
-			"CTE with allowed schema",
-			"WITH cte AS (SELECT a FROM schema1.tbl1) SELECT * FROM cte",
-			[]string{"schema1"},
-			nil,
-			false,
-		},
-		{
-			"CTE with disallowed schema",
-			"WITH cte AS (SELECT a FROM schema2.tbl1) SELECT * FROM cte",
-			[]string{"schema1"},
-			nil,
-			true,
-		},
-		{
-			"complex nested subqueries with allowed schemas",
-			`SELECT * FROM schema1.tbl1 t1
-			 WHERE t1.a IN (
-				 SELECT t2.b FROM schema1.tbl2 t2
-				 WHERE t2.c > (SELECT AVG(t3.d) FROM schema1.tbl3 t3)
-			 )`,
-			[]string{"schema1"},
-			nil,
-			false,
-		},
-		{
-			"complex nested subqueries with disallowed schema",
-			`SELECT * FROM schema1.tbl1 t1
-			 WHERE t1.a IN (
-				 SELECT t2.b FROM schema2.tbl2 t2
-				 WHERE t2.c > (SELECT AVG(t3.d) FROM schema1.tbl3 t3)
-			 )`,
-			[]string{"schema1"},
-			nil,
-			true,
-		},
-		{
-			"join between schemas with all schemas allowed",
-			"SELECT t1.a, t2.b FROM schema1.tbl1 t1 JOIN schema2.tbl2 t2 ON t1.id = t2.id",
-			[]string{"schema1", "schema2"},
-			nil,
-			false,
-		},
-		{
-			"join between schemas with one schema not allowed",
-			"SELECT t1.a, t2.b FROM schema1.tbl1 t1 JOIN schema2.tbl2 t2 ON t1.id = t2.id",
-			[]string{"schema1"},
-			nil,
-			true,
-		},
-		{
-			"union with allowed schemas",
-			"SELECT a FROM schema1.tbl1 UNION SELECT b FROM schema1.tbl2",
-			[]string{"schema1"},
-			nil,
-			false,
-		},
-		{
-			"union with one disallowed schema",
-			"SELECT a FROM schema1.tbl1 UNION SELECT b FROM schema2.tbl2",
-			[]string{"schema1"},
-			nil,
-			true,
-		},
-		{
-			"window function with allowed schema",
-			"SELECT a, ROW_NUMBER() OVER (PARTITION BY b ORDER BY c) FROM schema1.tbl1",
-			[]string{"schema1"},
-			nil,
-			false,
-		},
-		{
-			"window function with subquery and allowed schema",
-			`SELECT t.a, t.rn 
-			 FROM (
-				 SELECT a, ROW_NUMBER() OVER (PARTITION BY b ORDER BY c) AS rn 
-				 FROM schema1.tbl1
-			 ) t
-			 WHERE t.rn <= 10`,
-			[]string{"schema1"},
-			nil,
-			false,
-		},
-		{
-			"recursive CTE with allowed schema",
-			`WITH RECURSIVE cte AS (
-				 SELECT id, parent_id FROM schema1.tree WHERE id = 1
-				 UNION ALL
-				 SELECT t.id, t.parent_id FROM schema1.tree t JOIN cte c ON t.parent_id = c.id
-			 )
-			 SELECT * FROM cte`,
-			[]string{"schema1"},
-			nil,
-			false,
-		},
-		{
-			"recursive CTE with disallowed schema",
-			`WITH RECURSIVE cte AS (
-				 SELECT id, parent_id FROM schema2.tree WHERE id = 1
-				 UNION ALL
-				 SELECT t.id, t.parent_id FROM schema2.tree t JOIN cte c ON t.parent_id = c.id
-			 )
-			 SELECT * FROM cte`,
-			[]string{"schema1"},
-			nil,
-			true,
-		},
-		{
-			"disallowed iceberg_metadata function",
-			`SELECT * FROM iceberg_metadata(iceberg_table)`,
-			nil,
-			[]string{"iceberg_metadata"},
-			true,
-		},
-		{
-			"disallowed bigquery_query function",
-			`SELECT * FROM bigquery_query('SELECT * FROM project.dataset.table')`,
-			nil,
-			[]string{"bigquery_query"},
-			true,
-		},
+		{ValidationPolicy{}, `{"version":1,"options":{}}`},
+		{ValidationPolicy{AllowedTables: []TableRule{}}, `{"version":1,"options":{"allowed_tables":[]}}`},
+		{ValidationPolicy{AllowedFunctions: []string{}, BlockedFunctions: []string{}, UseDefaultFunctions: boolPtr(false)}, `{"version":1,"options":{"allowed_functions":[],"blocked_functions":[],"use_default_functions":false}}`},
+		{ValidationPolicy{AllowedTables: []TableRule{{Schema: "a", Table: "*"}}}, `{"version":1,"options":{"allowed_tables":[{"schema":"a","table":"*"}]}}`},
+		{ValidationPolicy{BlockedTables: []TableRule{{Catalog: stringPtr(""), Schema: "a", Table: "*"}}, UseDefaultFunctions: boolPtr(true)}, `{"version":1,"options":{"blocked_tables":[{"catalog":"","schema":"a","table":"*"}],"use_default_functions":true}}`},
+	} {
+		got, err := tc.policy.document()
+		require.NoError(t, err)
+		require.JSONEq(t, tc.want, got)
 	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			db := setupTestDB(t)
-
-			var validators []Validator
-
-			// the tests are constructed to always include the base table validator, and fail if it isn't applied,
-			// due to how nil and empty slices are treated
-			validators = append(validators, newBaseTableValidator(tt.allowedSchemas))
-
-			if len(tt.functionBlocklist) > 0 {
-				validators = append(validators, newFunctionBlocklistValidator(tt.functionBlocklist))
-			}
-
-			err := db.ValidateSQL(t.Context(), tt.sql, validators...)
-			if tt.wantErr {
-				assert.Error(t, err, "expected error for SQL: %s", tt.sql)
-			} else {
-				assert.NoError(t, err, "unexpected error for SQL: %s", tt.sql)
-			}
-		})
-	}
+	const raw = "  {\"version\":1,\"options\":{\"allowed_tables\":null}}  "
+	got, err := (ValidationPolicy{JSON: stringPtr(raw)}).document()
+	require.NoError(t, err)
+	require.Equal(t, raw, got)
+	_, err = (ValidationPolicy{JSON: stringPtr(raw), BlockedTables: []TableRule{}}).document()
+	require.ErrorIs(t, err, ErrInvalidPolicy)
 }
 
-func TestDB_ValidateSQLIgnoresShadowingSerializerMacro(t *testing.T) {
-	db := setupTestDB(t)
+func TestValidationRequiresGatekeeper(t *testing.T) {
+	db, err := New(t.Context(), testConnector(t, false), WithValidation())
+	require.ErrorContains(t, err, "JSON policy API (0.3.0+)")
+	require.ErrorContains(t, err, "FORCE INSTALL gatekeeper FROM community")
+	require.Nil(t, db)
+	db = setupTestDB(t, false)
+	_, err = db.ValidateSQL(t.Context(), "SELECT 1", ValidationPolicy{})
+	require.ErrorIs(t, err, ErrValidation)
+	data, err := db.Query(t.Context(), "SELECT 1", &ValidationPolicy{})
+	require.ErrorIs(t, err, ErrValidation)
+	require.Empty(t, data)
+}
+
+func TestGatekeeperCallsIgnoreShadowingMacros(t *testing.T) {
+	connector := testConnector(t, true)
+	db, err := New(t.Context(), connector)
+	require.NoError(t, err)
+	t.Cleanup(db.Close)
 	require.NoError(t, db.Exec(t.Context(), `
-		CREATE MACRO json_serialize_sql(
-			sql_text,
-			skip_default := true,
-			skip_empty := true,
-			skip_null := true
-		) AS {'error': false, 'statements': []}
+		CREATE MACRO gatekeeper_validate(sql_text, json := '') AS TABLE
+		SELECT true AS allowed, 'ok' AS code, '' AS error_type, '' AS error_message,
+		       NULL::BIGINT AS position, [] AS violations, [] AS objects, [] AS functions, [] AS caller_objects;
+		CREATE MACRO gatekeeper_configure(json := '') AS TABLE SELECT true AS Success;
 	`))
-
-	err := db.ValidateSQL(
-		t.Context(),
-		"SELECT * FROM tenant_b.secret",
-		newBaseTableValidator([]string{"tenant_a"}),
-	)
+	conn, err := connector.Connect(t.Context())
+	require.NoError(t, err)
+	defer func() { require.NoError(t, conn.Close()) }()
+	require.NoError(t, ConfigureGatekeeper(t.Context(), conn.(driver.ExecerContext), `{"version":1,"options":{"blocked_functions":["md5"]}}`))
+	_, err = db.ValidateSQL(t.Context(), "SELECT md5('x')", ValidationPolicy{})
 	require.ErrorIs(t, err, ErrAccessDenied)
-	require.EqualError(t, err, "query: access denied: unauthorized access to schema 'tenant_b'")
 }
 
-func TestBaseTableValidatorErrors(t *testing.T) {
-	db := setupTestDB(t)
+func TestValidationPolicyAndResult(t *testing.T) {
+	db := setupTestDB(t, true)
+	require.NoError(t, db.Exec(t.Context(), `CREATE TABLE items AS SELECT 42 AS value;
+		CREATE VIEW shared AS SELECT * FROM items;
+		CALL gatekeeper_configure(blocked_functions := ['md5'])`))
+	policy := ValidationPolicy{AllowedTables: []TableRule{{Schema: "main", Table: "shared"}}}
+	result, err := db.ValidateSQL(t.Context(), "SELECT sum(value) FROM shared", policy)
+	require.NoError(t, err)
+	require.True(t, result.Allowed)
+	require.NotImplements(t, (*error)(nil), result)
+	require.Equal(t, "ok", result.Details.Code)
+	view := ResolvedObject{Catalog: "memory", Schema: "main", Table: "shared", Type: "view"}
+	table := ResolvedObject{Catalog: "memory", Schema: "main", Table: "items", Type: "table"}
+	require.Equal(t, []ResolvedObject{view}, result.CallerObjects)
+	require.ElementsMatch(t, []ResolvedObject{view, table}, result.Objects)
+	require.Contains(t, result.Functions, ResolvedFunction{Catalog: "system", Schema: "main", Name: "sum", Type: "aggregate"})
+	policy.AllowedFunctions = []string{"sum"}
+	policy.UseDefaultFunctions = boolPtr(false)
+	_, err = db.Query(t.Context(), "SELECT sum(value) FROM shared", &policy)
+	require.NoError(t, err)
+	_, err = db.Query(t.Context(), "SELECT lower('x') FROM shared", &policy)
+	require.ErrorIs(t, err, ErrAccessDenied)
 
-	t.Run("disallowed schema", func(t *testing.T) {
-		err := db.ValidateSQL(t.Context(), "SELECT * FROM tenant_b.secret", newBaseTableValidator([]string{"tenant_a"}))
-		assert.ErrorIs(t, err, ErrAccessDenied)
-		assert.EqualError(t, err, "query: access denied: unauthorized access to schema 'tenant_b'")
-	})
-
-	t.Run("unqualified table", func(t *testing.T) {
-		err := db.ValidateSQL(t.Context(), "SELECT * FROM secret", newBaseTableValidator([]string{"tenant_a"}))
-		assert.ErrorIs(t, err, ErrAccessDenied)
-		assert.EqualError(t, err, "query: access denied: unauthorized access to table 'secret' with empty schema")
-	})
+	data, err := db.Query(t.Context(), "SELECT * FROM shared", &ValidationPolicy{JSON: stringPtr(`{"version":1,"options":{"allowed_tables":[{"schema":"main","table":"shared"}]}}`)})
+	require.NoError(t, err)
+	require.Equal(t, []map[string]any{{"value": float64(42)}}, arrowRows(t, data))
+	result, err = db.ValidateSQL(t.Context(), "SELECT * FROM items", policy)
+	require.ErrorIs(t, err, ErrAccessDenied)
+	require.ErrorIs(t, err, ErrValidation)
+	require.False(t, result.Allowed)
+	require.Empty(t, result.Objects)
+	require.Empty(t, result.CallerObjects)
+	require.Empty(t, result.Functions)
+	var details ErrorDetails
+	require.ErrorAs(t, err, &details)
+	require.Len(t, details.Violations, 1)
+	require.Equal(t, "table", details.Violations[0].Rule)
+	require.Equal(t, table.Catalog, details.Violations[0].Catalog)
+	require.Equal(t, table.Schema, details.Violations[0].Schema)
+	require.Equal(t, table.Table, details.Violations[0].Table)
+	_, err = db.Query(t.Context(), "SELECT md5('x')", &ValidationPolicy{AllowedFunctions: []string{"md5"}})
+	require.ErrorIs(t, err, ErrAccessDenied)
+	require.ErrorAs(t, err, &details)
+	require.Equal(t, "md5", details.Violations[0].FunctionName)
+	_, err = db.Query(t.Context(), "SELECT sum(value) FROM shared", &ValidationPolicy{BlockedFunctions: []string{"sum"}})
+	require.ErrorIs(t, err, ErrAccessDenied)
+	_, err = db.Query(t.Context(), "SELECT * FROM shared", &ValidationPolicy{BlockedTables: []TableRule{{Schema: "main", Table: "shared"}}})
+	require.ErrorIs(t, err, ErrAccessDenied)
+	result, err = db.ValidateSQL(t.Context(), "SELECT (", ValidationPolicy{})
+	require.ErrorAs(t, err, &details)
+	require.Equal(t, "parser", result.Details.Code)
+	require.NotNil(t, result.Details.Position)
+	require.NotEmpty(t, result.Details.Message)
 }
 
-func TestBaseTableValidatorShowStatements(t *testing.T) {
-	db := setupTestDB(t)
-
-	tests := []struct {
-		name    string
-		sql     string
-		wantErr string
-	}{
-		{
-			name:    "disallowed schema",
-			sql:     "SHOW TABLES FROM tenant_b",
-			wantErr: "query: access denied: unauthorized access to schema 'tenant_b'",
-		},
-		{
-			name: "allowed schema",
-			sql:  "SHOW TABLES FROM tenant_a",
-		},
-		{
-			name:    "all schemas",
-			sql:     "SHOW ALL TABLES",
-			wantErr: "query: access denied: SHOW statement requires an explicit authorized schema",
-		},
-		{
-			name:    "describe disallowed table",
-			sql:     "DESCRIBE tenant_b.secret",
-			wantErr: "query: access denied: unauthorized access to schema 'tenant_b'",
-		},
-		{
-			name: "describe expression",
-			sql:  "DESCRIBE SELECT 1",
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			err := db.ValidateSQL(t.Context(), tt.sql, newBaseTableValidator([]string{"tenant_a"}))
-			if tt.wantErr == "" {
-				assert.NoError(t, err)
-				return
+func TestValidatedConnectionLifecycle(t *testing.T) {
+	db := setupTestDB(t, true, WithMaxConnections(1))
+	require.NoError(t, db.Exec(t.Context(), `CREATE SCHEMA tenant;
+		CREATE TABLE tenant.items AS SELECT 42 AS value; SET search_path = 'tenant'`))
+	allowed := &ValidationPolicy{AllowedTables: []TableRule{{Schema: "tenant", Table: "items"}}}
+	denied := &ValidationPolicy{AllowedTables: []TableRule{}}
+	ctx, cancel := context.WithTimeout(t.Context(), 5*time.Second)
+	defer cancel()
+	data, err := db.Query(ctx, "SELECT * FROM items", denied)
+	require.ErrorIs(t, err, ErrAccessDenied)
+	require.Nil(t, data)
+	canceled, stop := context.WithCancel(ctx)
+	stop()
+	data, err = db.Query(canceled, "SELECT * FROM items", allowed)
+	require.ErrorIs(t, err, context.Canceled)
+	require.Nil(t, data)
+	var wg sync.WaitGroup
+	for range 4 {
+		wg.Go(func() {
+			if _, err := db.Query(ctx, "SELECT * FROM items", denied); !errors.Is(err, ErrAccessDenied) {
+				t.Error(err)
 			}
-			assert.ErrorIs(t, err, ErrAccessDenied)
-			assert.EqualError(t, err, tt.wantErr)
-		})
-	}
-}
-
-func TestBaseTableValidatorRejectsCatalogReferences(t *testing.T) {
-	db := setupTestDB(t)
-
-	tests := []string{
-		"SELECT * FROM otherdb.tenant_a.secret",
-		"SHOW TABLES FROM otherdb.tenant_a",
-		"DESCRIBE otherdb.tenant_a.secret",
-		"SELECT * FROM otherdb.tenant_a.fn()",
-		"SELECT otherdb.tenant_a.fn() OVER ()",
-	}
-
-	for _, sql := range tests {
-		t.Run(sql, func(t *testing.T) {
-			err := db.ValidateSQL(t.Context(), sql, newBaseTableValidator([]string{"tenant_a"}))
-			assert.ErrorIs(t, err, ErrAccessDenied)
-			assert.EqualError(t, err, "query: access denied: access to catalog 'otherdb' is not allowed")
-		})
-	}
-}
-
-func TestFunctionBlocklistValidatorNormalizesFunctionNames(t *testing.T) {
-	validator := newFunctionBlocklistValidator([]string{"md5"})
-	validator.CheckNode(map[string]any{
-		"class":         "FUNCTION",
-		"function_name": "MD5",
-	}, nil)
-	validator.CheckNode(map[string]any{
-		"class":         "FUNCTION",
-		"function_name": "LOWER",
-	}, nil)
-
-	errs := validator.Validate()
-	if assert.Len(t, errs, 1) {
-		assert.ErrorIs(t, errs[0], ErrAccessDenied)
-		assert.EqualError(t, errs[0], "query: access denied: use of function 'md5' is not allowed")
-	}
-}
-
-func TestFunctionBlocklistValidatorRejectsMissingFunctionName(t *testing.T) {
-	validator := newFunctionBlocklistValidator([]string{"md5"})
-	validator.CheckNode(map[string]any{"class": "FUNCTION"}, nil)
-
-	errs := validator.Validate()
-	require.Len(t, errs, 1)
-	assert.EqualError(t, errs[0], "query: invalid function node: missing 'function_name'")
-}
-
-func TestFunctionListValidatorCountsViolations(t *testing.T) {
-	tests := []struct {
-		name         string
-		newValidator func([]string) Validator
-		functions    []string
-		want         []string
-	}{
-		{
-			name:         "allowlist",
-			newValidator: newFunctionAllowlistValidator,
-			functions:    []string{"sum"},
-			want: []string{
-				"query: access denied: function 'lower' is not in the allowlist",
-				"query: access denied: function 'md5' is not in the allowlist (2 occurrences)",
-			},
-		},
-		{
-			name:         "blocklist",
-			newValidator: newFunctionBlocklistValidator,
-			functions:    []string{"lower", "md5"},
-			want: []string{
-				"query: access denied: use of function 'lower' is not allowed",
-				"query: access denied: use of function 'md5' is not allowed (2 occurrences)",
-			},
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			validator := tt.newValidator(tt.functions)
-			for _, node := range []map[string]any{
-				{"class": "FUNCTION", "function_name": "MD5"},
-				{"class": "WINDOW", "function_name": "md5"},
-				{"class": "FUNCTION", "function_name": "LOWER"},
-				{"class": "FUNCTION", "function_name": "SUM"},
-			} {
-				validator.CheckNode(node, nil)
-			}
-
-			for range 2 {
-				errs := validator.Validate()
-				require.Len(t, errs, len(tt.want))
-				for i, want := range tt.want {
-					assert.ErrorIs(t, errs[i], ErrAccessDenied)
-					assert.EqualError(t, errs[i], want)
-				}
+			if _, err := db.Query(ctx, "SELECT * FROM items", allowed); err != nil {
+				t.Error(err)
 			}
 		})
 	}
+	wg.Wait()
+	data, err = db.Query(ctx, "SELECT * FROM items", allowed)
+	require.NoError(t, err)
+	require.Equal(t, []map[string]any{{"value": float64(42)}}, arrowRows(t, data))
+	validated := setupTestDB(t, true, WithValidation())
+	require.ErrorIs(t, validated.Exec(ctx, "SELECT 1"), ErrExecWithValidation)
+	_, err = validated.Query(ctx, "CREATE TABLE forbidden(value INTEGER)", nil)
+	require.ErrorIs(t, err, ErrUnsupportedStatement)
 }
 
-func TestFunctionAllowlistValidator(t *testing.T) {
-	tests := []struct {
-		name      string
-		allowlist []string
-		node      map[string]any
-		wantErr   string
-	}{
-		{
-			name:      "allows case-insensitive exact name",
-			allowlist: []string{"md5"},
-			node:      map[string]any{"class": "FUNCTION", "function_name": "MD5"},
-		},
-		{
-			name:      "allows operator",
-			allowlist: []string{"+"},
-			node:      map[string]any{"class": "FUNCTION", "function_name": "+"},
-		},
-		{
-			name:      "rejects name not listed",
-			allowlist: []string{"md"},
-			node:      map[string]any{"class": "FUNCTION", "function_name": "MD5"},
-			wantErr:   "query: access denied: function 'md5' is not in the allowlist",
-		},
-		{
-			name:      "matches qualified allowed name by leaf name",
-			allowlist: []string{"md5"},
-			node: map[string]any{
-				"class":         "WINDOW",
-				"catalog":       "OtherDB",
-				"schema":        "Tenant",
-				"function_name": "MD5",
-			},
-		},
-		{
-			name:      "rejects qualified name by unlisted leaf name",
-			allowlist: []string{"md5"},
-			node: map[string]any{
-				"class":         "FUNCTION",
-				"schema":        "Tenant",
-				"function_name": "LOWER",
-			},
-			wantErr: "query: access denied: function 'lower' is not in the allowlist",
-		},
-		{
-			name:      "allows parser-generated qualified helper",
-			allowlist: []string{"list_value"},
-			node: map[string]any{
-				"class":         "FUNCTION",
-				"schema":        "main",
-				"function_name": "list_value",
-			},
-		},
-		{
-			name:      "rejects missing function name",
-			allowlist: []string{"md5"},
-			node:      map[string]any{"class": "FUNCTION"},
-			wantErr:   "query: invalid function node: missing 'function_name'",
-		},
-		{
-			name:      "rejects invalid function name",
-			allowlist: []string{"md5"},
-			node:      map[string]any{"class": "WINDOW", "function_name": 42},
-			wantErr:   "query: invalid 'function_name' in function, expected string: 42",
-		},
+func TestInvalidPolicyAndInvalidSQL(t *testing.T) {
+	db := setupTestDB(t, true)
+	for _, stmt := range []string{"SELECT 1", "SELECT 2", "-- comment only"} {
+		_, err := db.ValidateSQL(t.Context(), stmt, ValidationPolicy{JSON: stringPtr(`{}`)})
+		require.ErrorIs(t, err, ErrInvalidPolicy)
 	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			validator := newFunctionAllowlistValidator(tt.allowlist)
-			validator.CheckNode(tt.node, nil)
-
-			errs := validator.Validate()
-			if tt.wantErr == "" {
-				assert.Empty(t, errs)
-				return
-			}
-			if assert.Len(t, errs, 1) {
-				assert.EqualError(t, errs[0], tt.wantErr)
-			}
-		})
-	}
+	_, err := db.ValidateSQL(t.Context(), "SELECT 2", ValidationPolicy{AllowedFunctions: []string{""}})
+	require.ErrorIs(t, err, ErrInvalidPolicy)
+	_, err = db.ValidateSQL(t.Context(), "-- comment only", ValidationPolicy{})
+	var details ErrorDetails
+	require.ErrorAs(t, err, &details)
+	require.Equal(t, "invalid_input", details.Code)
+	require.NotErrorIs(t, err, ErrInvalidPolicy)
 }
+
+func boolPtr(value bool) *bool       { return &value }
+func stringPtr(value string) *string { return &value }
