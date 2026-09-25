@@ -6,12 +6,14 @@ A connector instance should expose a `query(query, options)` method that returns
 The _query_ argument is an object with the following properties:
 
 - _sql_: The SQL query to evaluate.
-- _type_: The query format type, either `"exec"` (no return value) or `"arrow"`. This property is required; servers reject a request without it.
+- _type_: The query format type, either `"exec"` (no return value), `"arrow"`, or `"preagg"`. This property is required; servers reject a request without it.
 - Any additional connector-specific options.
 
 The optional _options_ argument is an object with a _signal_ property: an [`AbortSignal`](https://developer.mozilla.org/en-US/docs/Web/API/AbortSignal) that aborts when the coordinator no longer needs the result, because the coordinator was [cleared](./coordinator#clear) or the query exceeded the coordinator [_timeout_](./coordinator#constructor). A connector can use the signal to stop work early. The coordinator rejects the request either way, so connectors that ignore the signal still work.
 
 For the `"arrow"` type, a connector returns the raw Arrow IPC bytes as an `ArrowIPCBytes` value, which is an `ArrayBuffer`, a `Uint8Array`, or an array of `Uint8Array` chunks; the coordinator decodes them to an Arrow table.
+
+A `"preagg"` request asks the connector to materialize the given SELECT query and resolves to `{ reference, createdAt }`, where `reference` is `{ catalog, schema, table }` with `schema` a namespace path (outermost first), plus optional informational `rows` and `bytes` when the server reports them. The coordinator queries `TableRefNode([catalog, ...schema, table])`.
 
 Once instantiated, register a connector with the coordinator using the [`coordinator.databaseConnector()`](coordinator#databaseconnector) method.
 
@@ -45,6 +47,8 @@ const connector = restConnector({
 A data server on a different origin must allow these requests in its CORS preflight response. `Access-Control-Allow-Headers: *` covers custom headers such as `X-Api-Key`, but never `Authorization`, which a server must list by name. Requests that include credentials also require the server to allow the specific origin, send `Access-Control-Allow-Credentials: true`, and list the request headers by name, including `Content-Type`, since wildcards do not apply to them; a custom _fetch_ cannot provide these.
 
 When the coordinator aborts a request, the connector aborts its HTTP request, though the data server may still finish running the query.
+
+Failed requests reject with a `ConnectorError` carrying the HTTP `status`. Structured JSON failures also supply `code`, plus `reference` for `table_not_found`.
 
 ## wasmConnector
 

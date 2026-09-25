@@ -153,6 +153,15 @@ export class QueryManager {
   }
 
   /**
+   * Clear the query cache and fence in-flight requests so that results
+   * issued before this call cannot populate the cache when they complete.
+   */
+  invalidate(): void {
+    this._generation += 1;
+    this.clientCache.clear();
+  }
+
+  /**
    * Get or set the current query cache.
    * @param value Cache value to set
    * @returns Current cache
