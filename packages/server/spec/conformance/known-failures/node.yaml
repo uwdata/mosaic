@@ -1,0 +1,311 @@
+# Known conformance failures for the Node data server (`packages/server/duckdb`).
+# Source of truth for the Node table in ../../CONFORMANCE.md; regenerate with
+# `pnpm -F @uwdata/mosaic-server-spec conformance:docs`. Each case maps to the
+# violation ids the server produces today; a run is green only when exactly
+# those are observed. Entries with no cases document gaps the suite cannot
+# observe from outside.
+server: node
+failures:
+  - area: HTTP errors are plain text
+    current: "`res.error()` writes `String(err)` with no Content-Type (`data-server.js`)."
+    spec: JSON `Error` envelope with `application/json` on every failure (D4, D19).
+    fix: Rewrite `error()` to emit `{error, code, reason}`.
+    cases:
+      post/missing-type:
+        - error.content-type
+        - error.not-json
+      post/unknown-type:
+        - error.content-type
+        - error.not-json
+      post/type-not-a-string:
+        - error.content-type
+        - error.not-json
+      post/malformed-json-body:
+        - error.content-type
+        - error.not-json
+      post/sql-unknown-table:
+        - error.content-type
+        - error.not-json
+      post/sql-runtime-error:
+        - error.content-type
+        - error.not-json
+      post/exec-error:
+        - error.content-type
+        - error.not-json
+  - area: WebSocket errors lack `code` and `reason`
+    current: '`{"error": String(err)}` with an `Error:` prefix; the status argument is dropped (`data-server.js`).'
+    spec: Envelope with `code` and `reason` (D4, D19).
+    fix: Share the HTTP error mapper.
+    cases:
+      ws/missing-type:
+        - error.schema.required.code
+        - error.code.missing
+        - error.schema.required.reason
+        - error.reason.missing
+        - error.field.missing
+      ws/unknown-type:
+        - error.schema.required.code
+        - error.code.missing
+        - error.schema.required.reason
+        - error.reason.missing
+        - error.field.missing
+      ws/type-not-a-string:
+        - error.schema.required.code
+        - error.code.missing
+        - error.schema.required.reason
+        - error.reason.missing
+        - error.field.missing
+      ws/sql-unknown-table:
+        - error.schema.required.code
+        - error.code.missing
+        - error.schema.required.reason
+        - error.reason.missing
+      ws/sql-runtime-error:
+        - error.schema.required.code
+        - error.code.missing
+        - error.schema.required.reason
+        - error.reason.missing
+      ws/exec-error:
+        - error.schema.required.code
+        - error.code.missing
+        - error.schema.required.reason
+        - error.reason.missing
+      ws/ws-malformed-json-stays-open:
+        - s1.error.schema.required.code
+        - s1.error.code.missing
+        - s2.arrow.eos
+        - s1.error.schema.required.reason
+        - s1.error.reason.missing
+      ws/ws-sql-error-stays-open:
+        - s1.error.schema.required.code
+        - s1.error.code.missing
+        - s2.arrow.eos
+        - s1.error.schema.required.reason
+        - s1.error.reason.missing
+      ws/ws-pipeline-order:
+        - s1.arrow.eos
+        - s2.error.schema.required.code
+        - s2.error.code.missing
+        - s3.arrow.eos
+        - s4.error.schema.required.code
+        - s4.error.code.missing
+        - s5.arrow.eos
+        - s2.error.schema.required.reason
+        - s2.error.reason.missing
+        - s2.error.field.missing
+        - s4.error.schema.required.reason
+        - s4.error.reason.missing
+  - area: "`sql` is not validated"
+    current: A missing or empty `sql` reaches DuckDB and fails as a binder or parser error (500).
+    spec: "400 `bad_request` / `missing_field` or `invalid_field` with `field: sql` (D1, D19)."
+    fix: Validate before dispatch.
+    cases:
+      post/missing-sql:
+        - error.status.500
+        - error.content-type
+        - error.not-json
+      post/empty-sql:
+        - error.status.500
+        - error.content-type
+        - error.not-json
+      ws/missing-sql:
+        - error.schema.required.code
+        - error.code.missing
+        - error.schema.required.reason
+        - error.reason.missing
+        - error.field.missing
+      ws/empty-sql:
+        - error.schema.required.code
+        - error.code.missing
+        - error.schema.required.reason
+        - error.reason.missing
+        - error.field.missing
+      ws/ws-missing-sql-stays-open:
+        - s1.error.schema.required.code
+        - s1.error.code.missing
+        - s2.arrow.eos
+        - s1.error.schema.required.reason
+        - s1.error.reason.missing
+        - s1.error.field.missing
+  - area: Parse errors are 500
+    current: DuckDB parser errors surface as `internal_error`.
+    spec: "`bad_request` (D7)."
+    fix: Classify `Parser Error` before falling through to 500.
+    cases:
+      post/sql-parse-error:
+        - error.status.500
+        - error.content-type
+        - error.not-json
+      ws/sql-parse-error:
+        - error.schema.required.code
+        - error.code.missing
+        - error.schema.required.reason
+        - error.reason.missing
+      connector/rest-error:
+        - connector.status
+  - area: "`preagg` is unknown"
+    current: "`Unrecognized command: preagg` as a generic bad request."
+    spec: "`unsupported_command` (D6)."
+    fix: Recognise the command and answer `unsupported_command` until implemented.
+    cases:
+      post/preagg-unsupported:
+        - error.content-type
+        - error.not-json
+      ws/preagg-unsupported:
+        - error.schema.required.code
+        - error.code.missing
+        - error.schema.required.reason
+        - error.reason.missing
+  - area: GET is broken
+    current: "`JSON.parse` is applied to the already-parsed query object, so every GET is a 400 `TypeError` (`data-server.js`)."
+    spec: Flat `type`/`sql` parameters, `arrow` only, read-only SQL (D2, D3, D3a).
+    fix: Build the command from `url.query`; reject `exec`/`preagg`; check the statement kind with `json_serialize_sql`.
+    cases:
+      get/get-arrow:
+        - arrow.status.400
+      get/get-plus-in-sql:
+        - arrow.status.400
+      get/get-cte-allowed:
+        - arrow.status.400
+      get/get-set-operation-allowed:
+        - arrow.status.400
+      get/get-missing-type:
+        - error.content-type
+        - error.not-json
+      get/get-json-wrapped-query-rejected:
+        - error.content-type
+        - error.not-json
+      get/get-exec-rejected:
+        - s1.error.content-type
+        - s1.error.not-json
+        - s2.arrow.eos
+      get/get-preagg-rejected:
+        - error.content-type
+        - error.not-json
+      get/get-ddl-rejected:
+        - s1.error.content-type
+        - s1.error.not-json
+        - s2.arrow.eos
+      get/get-delete-returning-rejected:
+        - s2.error.content-type
+        - s2.error.not-json
+        - s3.arrow.eos
+      get/arrow-multi-statement:
+        - error.content-type
+        - error.not-json
+  - area: Empty Arrow result is 0 bytes
+    current: "`DuckDB.js` returns no bytes for zero rows; `duckdb.test.js` asserts it."
+    spec: Schema message plus end-of-stream marker (D8).
+    fix: Emit a schema-only stream.
+    cases:
+      post/arrow-empty-result:
+        - arrow.empty
+      ws/arrow-empty-result:
+        - arrow.empty
+  - area: Trailing `;` and multi-statement `arrow`
+    current: SQL is wrapped as `to_arrow_ipc((sql))`, so a trailing `;` is a parser error (500) and several statements fail the same way.
+    spec: Trailing `;` allowed; several statements are `bad_request` (D16).
+    fix: Strip a trailing `;`; count statements before wrapping.
+    cases:
+      post/arrow-trailing-semicolon:
+        - arrow.status.500
+      ws/arrow-trailing-semicolon:
+        - arrow.frame
+      post/arrow-multi-statement:
+        - error.status.500
+        - error.content-type
+        - error.not-json
+      ws/arrow-multi-statement:
+        - error.schema.required.code
+        - error.code.missing
+        - error.schema.required.reason
+        - error.reason.missing
+  - area: Unsupported method is 400
+    current: "`Unsupported HTTP method` with status 400 and no `Allow`."
+    spec: "405 with `Allow: GET, POST, OPTIONS` and the envelope (D5)."
+    fix: Change the status and add the header.
+    cases:
+      post/method-put:
+        - error.status.400
+        - error.content-type
+        - error.not-json
+        - header.allow
+      post/method-head:
+        - status.400
+        - header.allow
+  - area: Shared DuckDB connection
+    current: One connection serves every client (`DuckDB.js`).
+    spec: No requirement.
+    fix: Note only.
+    cases: {}
+  - area: Arrow stream lacks the end-of-stream marker
+    current: "`DuckDB.js` concatenates the record batches and stops; there is no trailing 0-length message, so a reader that waits for EOS never finishes."
+    spec: Schema, batches, then the end-of-stream marker (D8).
+    fix: Append `ff ff ff ff 00 00 00 00`, or let `to_arrow_ipc` emit the full stream.
+    cases:
+      connector/rest-arrow:
+        - arrow.eos
+      connector/rest-exec:
+        - arrow.eos
+      connector/socket-arrow:
+        - arrow.eos
+      connector/socket-error-then-ok:
+        - ok.arrow.eos
+      connector/socket-pipeline:
+        - q1.arrow.eos
+        - q2.arrow.eos
+        - q3.arrow.eos
+        - q4.arrow.eos
+        - q5.arrow.eos
+      post/application-fields-pass-through:
+        - arrow.eos
+      post/arrow-cors-origin:
+        - arrow.eos
+      post/arrow-from-parquet:
+        - arrow.eos
+      post/arrow-many-rows:
+        - arrow.eos
+      post/arrow-scalar-types:
+        - arrow.eos
+      post/arrow-stream-format:
+        - arrow.eos
+      post/content-type-not-json:
+        - alt0.arrow.eos
+      post/content-type-with-charset:
+        - arrow.eos
+      post/exec-acknowledged:
+        - s2.arrow.eos
+      post/exec-multi-statement:
+        - s2.arrow.eos
+      post/large-request-1mib:
+        - arrow.eos
+      post/protocol-fields-not-shadowed:
+        - arrow.eos
+      ws/application-fields-pass-through:
+        - arrow.eos
+      ws/arrow-many-rows:
+        - arrow.eos
+      ws/arrow-scalar-types:
+        - arrow.eos
+      ws/arrow-stream-format:
+        - arrow.eos
+      ws/exec-acknowledged:
+        - s2.arrow.eos
+      ws/exec-multi-statement:
+        - s2.arrow.eos
+      ws/large-request-1mib:
+        - arrow.eos
+      ws/protocol-fields-not-shadowed:
+        - arrow.eos
+      ws/ws-binary-frame:
+        - alt0.arrow.eos
+      ws/ws-pipeline-slow-first:
+        - s1.arrow.eos
+        - s2.arrow.eos
+  - area: Large GET query strings are rejected
+    current: Node's HTTP parser limits the request line and headers to 16 KiB (`maxHeaderSize`), so a 1 MiB query string is a 431.
+    spec: Servers SHOULD accept at least 1 MiB (D13).
+    fix: Pass `maxHeaderSize` to `http.createServer`, or document the limit.
+    cases:
+      get/large-request-1mib:
+        - arrow.status.431

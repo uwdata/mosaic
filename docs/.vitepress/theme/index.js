@@ -3,6 +3,7 @@ import Example from './Example.vue';
 import LangToggle from './LangToggle.vue';
 import LangError from './LangError.vue';
 import Layout from "./Layout.vue";
+import ServerSpec from './ServerSpec.vue';
 import './custom.css';
 
 const LANG_PARAM = 'lang';
@@ -24,6 +25,7 @@ export default {
     ctx.app.component('Example', Example);
     ctx.app.component('LangToggle', LangToggle);
     ctx.app.component('LangError', LangError);
+    ctx.app.component('ServerSpec', ServerSpec);
 
     if (typeof window === 'undefined') return;
 

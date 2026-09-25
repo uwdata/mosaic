@@ -1,0 +1,52 @@
+# Error envelope, code, and reason classification. Message wording is never
+# asserted (D19).
+
+- id: sql-parse-error
+  title: A SQL syntax error is a bad request with `sql_parse_error`
+  decisions: [D7, D4, D19]
+  request: { type: arrow, sql: "SELEC 1" }
+  expect:
+    error: { code: bad_request, reason: sql_parse_error }
+
+- id: sql-unknown-table
+  title: Referencing a table that does not exist is an execution failure
+  decisions: [D7, D4, D19]
+  request: { type: arrow, sql: "SELECT * FROM conformance_no_such_table" }
+  expect:
+    error: { code: internal_error, reason: execution_failed }
+
+- id: sql-runtime-error
+  title: A runtime failure inside DuckDB is an execution failure
+  decisions: [D7, D4, D19]
+  request: { type: arrow, sql: "SELECT CAST('abc' AS INTEGER) AS x" }
+  expect:
+    error: { code: internal_error, reason: execution_failed }
+
+- id: exec-error
+  title: A failing `exec` statement reports the error, not an acknowledgement
+  decisions: [D7, D4, D19]
+  requires: [exec]
+  request: { type: exec, sql: "DROP TABLE conformance_no_such_table" }
+  expect:
+    error: { code: internal_error, reason: execution_failed }
+
+- id: method-put
+  title: An unsupported method is 405 with `Allow` and the error envelope
+  decisions: [D5, D4, D19]
+  transports: [post]
+  raw: { method: PUT }
+  request: { type: arrow, sql: "SELECT 1" }
+  expect:
+    error: { status: 405, code: bad_request, reason: method_not_allowed }
+    headers:
+      allow: { pattern: "GET" }
+
+- id: method-head
+  title: HEAD is not a command method
+  decisions: [D5]
+  transports: [post]
+  raw: { method: HEAD, query: "type=arrow&sql=SELECT+1" }
+  expect:
+    status: 405
+    headers:
+      allow: { pattern: "GET" }

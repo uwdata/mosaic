@@ -22,6 +22,8 @@ pipx run duckdb-server
 
 Alternatively, you can install the server with `pip install duckdb-server`. Then you can start the server with `duckdb-server`.
 
+The server accepts an optional database path (default in-memory) and a `--port` option (default `3000`), for example `duckdb-server data.db --port 3001`.
+
 ## Developer Setup
 
 To run the server from the Mosaic repository and to run the server in development mode, follow the [instructions for the duckdb-server package](https://github.com/uwdata/mosaic/blob/main/packages/server/duckdb-server/README.md).
