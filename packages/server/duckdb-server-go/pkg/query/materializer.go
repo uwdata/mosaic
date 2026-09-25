@@ -23,16 +23,25 @@ func (TableMaterializer) Materialize(ctx context.Context, tx *sql.Tx, ref Refere
 	if err := tx.QueryRowContext(ctx, "SELECT count(*) FROM "+ref.String()).Scan(&stats.Rows); err != nil {
 		return stats, err
 	}
-	var width int64
-	err := tx.QueryRowContext(ctx, `SELECT coalesce(sum(CASE
-		WHEN data_type IN ('BOOLEAN', 'TINYINT', 'UTINYINT') THEN 1
-		WHEN data_type IN ('SMALLINT', 'USMALLINT') THEN 2
-		WHEN data_type IN ('INTEGER', 'UINTEGER', 'FLOAT', 'DATE') THEN 4
-		WHEN data_type IN ('HUGEINT', 'UHUGEINT', 'UUID') OR data_type LIKE 'DECIMAL(%' AND numeric_precision > 18 THEN 16
-		WHEN data_type LIKE 'DECIMAL(%' OR data_type IN ('BIGINT', 'UBIGINT', 'DOUBLE', 'TIMESTAMP', 'TIMESTAMP WITH TIME ZONE', 'TIME', 'INTERVAL') THEN 8
-		ELSE 16 END), 0)::BIGINT
+	rows, err := tx.QueryContext(ctx, `SELECT database_name, schema_name, table_name, data_type, coalesce(numeric_precision, 0)
 		FROM system.main.duckdb_columns() WHERE lower(database_name) = lower(?) AND lower(schema_name) = lower(?) AND lower(table_name) = lower(?)`,
-		ref.Catalog, ref.schema(), ref.Table).Scan(&width)
+		ref.Catalog, ref.schema(), ref.Table)
+	if err != nil {
+		return stats, err
+	}
+	defer rows.Close()
+	var width int64
+	for rows.Next() {
+		var catalog, schema, table, dataType string
+		var precision int64
+		if err := rows.Scan(&catalog, &schema, &table, &dataType, &precision); err != nil {
+			return stats, err
+		}
+		if ref.equal(Reference{catalog, []string{schema}, table}) {
+			width += columnWidth(dataType, precision)
+		}
+	}
+	err = rows.Err()
 	stats.Bytes = stats.Rows * width
 	return stats, err
 }
@@ -123,4 +132,26 @@ func (m *ParquetMaterializer) Materialize(ctx context.Context, tx *sql.Tx, ref R
 	err := tx.QueryRowContext(ctx, `SELECT coalesce(sum(num_rows), 0)::BIGINT, coalesce((SELECT sum(total_compressed_size) FROM parquet_metadata(`+file+`)), 0)::BIGINT
 		FROM parquet_file_metadata(`+file+`)`).Scan(&stats.Rows, &stats.Bytes)
 	return stats, err
+}
+
+func columnWidth(dataType string, precision int64) int64 {
+	switch dataType {
+	case "BOOLEAN", "TINYINT", "UTINYINT":
+		return 1
+	case "SMALLINT", "USMALLINT":
+		return 2
+	case "INTEGER", "UINTEGER", "FLOAT", "DATE":
+		return 4
+	case "BIGINT", "UBIGINT", "DOUBLE", "TIMESTAMP", "TIMESTAMP WITH TIME ZONE", "TIME", "INTERVAL":
+		return 8
+	case "HUGEINT", "UHUGEINT", "UUID":
+		return 16
+	}
+	if strings.HasPrefix(dataType, "DECIMAL(") {
+		if precision > 18 {
+			return 16
+		}
+		return 8
+	}
+	return 16
 }

@@ -40,13 +40,33 @@ func (r Reference) String() string {
 	return strings.Join(parts, ".")
 }
 
-// DuckDB compares identifiers case-insensitively, so two spellings of one object are the same reference.
+// DuckDB compares identifiers case-insensitively over ASCII only, so READER and reader name one object but Ä and ä
+// do not. strings.EqualFold and SQL lower() both fold Unicode and would alias the latter.
+func identifierEqual(a, b string) bool {
+	if len(a) != len(b) {
+		return false
+	}
+	for i := 0; i < len(a); i++ {
+		x, y := a[i], b[i]
+		if x >= 'A' && x <= 'Z' {
+			x += 'a' - 'A'
+		}
+		if y >= 'A' && y <= 'Z' {
+			y += 'a' - 'A'
+		}
+		if x != y {
+			return false
+		}
+	}
+	return true
+}
+
 func (r Reference) equal(o Reference) bool {
-	return strings.EqualFold(r.Catalog, o.Catalog) && strings.EqualFold(r.Table, o.Table) && slices.EqualFunc(r.Schema, o.Schema, strings.EqualFold)
+	return identifierEqual(r.Catalog, o.Catalog) && identifierEqual(r.Table, o.Table) && slices.EqualFunc(r.Schema, o.Schema, identifierEqual)
 }
 
 func (r Reference) in(ns Namespace) bool {
-	return strings.EqualFold(r.Catalog, ns.Catalog) && slices.EqualFunc(r.Schema, ns.Schema, strings.EqualFold)
+	return identifierEqual(r.Catalog, ns.Catalog) && slices.EqualFunc(r.Schema, ns.Schema, identifierEqual)
 }
 
 // schema is the single DuckDB schema component; callers have already validated the path depth.
@@ -87,6 +107,11 @@ func missing(ref Reference) error {
 
 // SourcePolicy returns the validation policy for a stored source SELECT that a read depends on.
 type SourcePolicy func(ctx context.Context, sql string) (*ValidationPolicy, error)
+
+type queryer interface {
+	rowQuerier
+	QueryContext(context.Context, string, ...any) (*sql.Rows, error)
+}
 
 type PreAggregator struct {
 	db           *DB
@@ -199,11 +224,14 @@ func (p *PreAggregator) attempt(ctx context.Context, conn *sql.Conn, ns Namespac
 	if err != nil {
 		return nil, err
 	}
-	var kind string
-	if err := tx.QueryRowContext(ctx, "SELECT upper(kind) FROM ("+managedObjects+") WHERE lower(database_name) = lower(?) AND lower(schema_name) = lower(?) AND lower(name) = lower(?)", ref.Catalog, ref.schema(), ref.Table).Scan(&kind); err != nil {
+	object, err := p.catalogObject(ctx, tx, ref)
+	if err != nil {
 		return nil, err
 	}
-	if _, err := tx.ExecContext(ctx, "COMMENT ON "+kind+" "+ref.String()+" IS "+quoteLiteral(string(comment))); err != nil {
+	if object == nil {
+		return nil, errors.New("query: materializer left no object at " + ref.String())
+	}
+	if _, err := tx.ExecContext(ctx, "COMMENT ON "+strings.ToUpper(object.kind)+" "+ref.String()+" IS "+quoteLiteral(string(comment))); err != nil {
 		return nil, err
 	}
 	return stored, tx.Commit()
@@ -237,7 +265,8 @@ func (p *PreAggregator) Query(ctx context.Context, ns Namespace, sql string, pol
 	for _, ref := range refs {
 		stored, err := p.lookup(ctx, conn, ref)
 		switch {
-		case errors.Is(err, errUnmanaged) && !ref.in(ns):
+		case (errors.Is(err, errUnmanaged) || err == nil && stored == nil) && !ref.in(ns):
+			// An ordinary table, view, or temporary object the policy allowed; nothing to revalidate.
 			continue
 		case errors.Is(err, errUnmanaged):
 			return nil, ErrAccessDenied
@@ -271,7 +300,7 @@ func (p *PreAggregator) Query(ctx context.Context, ns Namespace, sql string, pol
 
 // A dropped managed table fails DuckDB's bind before Gatekeeper reports any objects, so the Catalog error message is
 // the only place its name appears.
-func (p *PreAggregator) missingFromBinding(ctx context.Context, conn rowQuerier, ns Namespace, err error) error {
+func (p *PreAggregator) missingFromBinding(ctx context.Context, conn queryer, ns Namespace, err error) error {
 	var details ErrorDetails
 	if !errors.As(err, &details) || details.Type != "Catalog" {
 		return err
@@ -287,7 +316,7 @@ func (p *PreAggregator) missingFromBinding(ctx context.Context, conn rowQuerier,
 	return err
 }
 
-func (p *PreAggregator) authorizeSource(ctx context.Context, conn rowQuerier, sql string, policy *ValidationPolicy) error {
+func (p *PreAggregator) authorizeSource(ctx context.Context, conn queryer, sql string, policy *ValidationPolicy) error {
 	source, err := typedPolicy(policy)
 	if err != nil {
 		return err
@@ -298,7 +327,7 @@ func (p *PreAggregator) authorizeSource(ctx context.Context, conn rowQuerier, sq
 
 // authorize validates sql on conn and returns the tables it binds. A materialization may not depend on a managed
 // table in any namespace, which is recognized by its metadata rather than its location.
-func (p *PreAggregator) authorize(ctx context.Context, conn rowQuerier, sql string, policy ValidationPolicy, materialize bool) ([]Reference, error) {
+func (p *PreAggregator) authorize(ctx context.Context, conn queryer, sql string, policy ValidationPolicy, materialize bool) ([]Reference, error) {
 	result, err := p.db.validateSQL(ctx, conn, sql, policy)
 	if err != nil {
 		return nil, err
@@ -335,20 +364,42 @@ UNION ALL SELECT database_name, schema_name, view_name, comment, temporary, 'vie
 
 var errUnmanaged = errors.New("query: object was not published by this server")
 
-// lookup returns the metadata of a managed object, nil when absent, and errUnmanaged when an object with that name
-// exists but was not published by this server for that SQL.
-func (p *PreAggregator) lookup(ctx context.Context, conn rowQuerier, ref Reference) (*preAggregateMetadata, error) {
-	var comment sql.NullString
-	err := conn.QueryRowContext(ctx, "SELECT comment FROM ("+managedObjects+`)
-WHERE lower(database_name) = lower(?) AND lower(schema_name) = lower(?) AND lower(name) = lower(?) AND NOT temporary`, ref.Catalog, ref.schema(), ref.Table).Scan(&comment)
-	if errors.Is(err, sql.ErrNoRows) {
-		return nil, nil
-	}
+type catalogObject struct {
+	kind    string
+	comment sql.NullString
+}
+
+// catalogObject finds the persistent table or view ref names. SQL lower() folds Unicode, so it only narrows the scan;
+// identity is decided in Go with DuckDB's ASCII-only rule.
+func (p *PreAggregator) catalogObject(ctx context.Context, conn queryer, ref Reference) (*catalogObject, error) {
+	rows, err := conn.QueryContext(ctx, "SELECT database_name, schema_name, name, kind, comment FROM ("+managedObjects+`)
+WHERE lower(database_name) = lower(?) AND lower(schema_name) = lower(?) AND lower(name) = lower(?) AND NOT temporary`, ref.Catalog, ref.schema(), ref.Table)
 	if err != nil {
 		return nil, err
 	}
+	defer rows.Close()
+	for rows.Next() {
+		var catalog, schema, name string
+		var object catalogObject
+		if err := rows.Scan(&catalog, &schema, &name, &object.kind, &object.comment); err != nil {
+			return nil, err
+		}
+		if ref.equal(Reference{catalog, []string{schema}, name}) {
+			return &object, rows.Err()
+		}
+	}
+	return nil, rows.Err()
+}
+
+// lookup returns the metadata of a managed object, nil when absent, and errUnmanaged when an object with that name
+// exists but was not published by this server for that SQL.
+func (p *PreAggregator) lookup(ctx context.Context, conn queryer, ref Reference) (*preAggregateMetadata, error) {
+	object, err := p.catalogObject(ctx, conn, ref)
+	if err != nil || object == nil {
+		return nil, err
+	}
 	var stored preAggregateMetadata
-	if !comment.Valid || json.Unmarshal([]byte(comment.String), &stored) != nil || stored.Version != 1 || stored.CreatedAt.IsZero() || !p.reference(Namespace{ref.Catalog, ref.Schema}, stored.SQL).equal(ref) {
+	if !object.comment.Valid || json.Unmarshal([]byte(object.comment.String), &stored) != nil || stored.Version != 1 || stored.CreatedAt.IsZero() || !p.reference(Namespace{ref.Catalog, ref.Schema}, stored.SQL).equal(ref) {
 		return nil, errUnmanaged
 	}
 	return &stored, nil
