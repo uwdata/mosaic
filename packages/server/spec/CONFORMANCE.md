@@ -75,8 +75,12 @@ observed behaviour and the fix. A run is green when each case's observed
 violations equal its listed ids. A new violation on any case, including one
 already listed for something else, fails the run as a regression; a listed
 violation that stops appearing also fails the run until it is removed, so
-the lists only shrink. Thrown transport or harness errors are never
-baselined. Every step of a multi-step case runs even after an earlier step
+the lists only shrink. An entry written `a|b` means exactly one of the two
+is observed on any given run, for server behaviour that races (a reset
+against a 505). Thrown transport or harness errors are never baselined:
+only a connection the server tears down after accepting the request is
+recorded, as `http.reset.<code>`; refusals, bad URLs, DNS or TLS failures,
+and timeouts fail the run. Every step of a multi-step case runs even after an earlier step
 misbehaved, so follow-up checks such as "the connection is still usable" or
 "the table was not created" are observed independently. Full conformance is
 reached when the files are empty. `go-cache` and `go-gatekeeper` inherit the
@@ -85,11 +89,20 @@ plain `go` list and override per case or exempt cases (`passes`).
 To add a case, append it to a file in `conformance/cases/` with the decision
 ids it exercises, run every configuration, add the observed violation ids to
 the matching `known-failures` file (the run's summary lists them), then
-regenerate the tables below:
+regenerate the tables below. After fixing a server, `conformance:baseline`
+rewrites the ids of already-listed cases from the last run and drops the
+ones that now pass; new failures still have to be filed under an area by
+hand.
 
 ```sh
+CONFORMANCE_SERVER=go pnpm -F @uwdata/mosaic-server-spec conformance:baseline
 pnpm -F @uwdata/mosaic-server-spec conformance:docs
 ```
+
+`pnpm -F @uwdata/mosaic-server-spec test` runs the harness's own unit tests
+(violation ids, the IPC walker, header matchers, fetch-error classification,
+and the ratchet comparison) without starting a server; the root `pnpm test`
+includes them.
 
 CI runs all six configurations on every pull request that touches a server
 or the spec (`.github/workflows/server-protocol.yml`) and fails if the tables
@@ -292,7 +305,7 @@ Configuration: `duckdb-server` crate (`packages/server/duckdb-server-rust`).
   - `ws/large-request-1mib`: `arrow.file-format`
   - `ws/exec-acknowledged`: `s2.arrow.file-format`
   - `ws/exec-multi-statement`: `s2.arrow.file-format`
-  - `ws/ws-pipeline-order`: `s1.arrow.file-format`, `s2.error.schema`, `s2.error.code.missing`, `s3.arrow.file-format`, `s4.error.schema`, `s4.error.code.missing`, `s5.arrow.file-format`
+  - `ws/ws-pipeline-order`: `s1.arrow.file-format`, `s2.error.code.missing`, `s3.arrow.file-format`, `s4.error.code.missing`, `s5.arrow.file-format`, `s2.error.schema.required.code`, `s4.error.schema.required.code`
   - `ws/ws-pipeline-slow-first`: `s1.arrow.file-format`, `s2.arrow.file-format`
 - **HTTP errors are plain text or empty**
   - `post/missing-type`: `error.content-type`, `error.not-json`
@@ -302,25 +315,25 @@ Configuration: `duckdb-server` crate (`packages/server/duckdb-server-rust`).
   - `post/sql-unknown-table`: `error.content-type`, `error.not-json`
   - `post/sql-runtime-error`: `error.content-type`, `error.not-json`
   - `post/exec-error`: `error.content-type`, `error.not-json`
-  - `post/content-type-not-json`: `alt0.arrow.status.415`
+  - `post/content-type-not-json`: `alt1.error.content-type`, `alt1.error.not-json`
   - `post/method-put`: `error.content-type`, `error.not-json`
   - `get/get-missing-type`: `error.content-type`, `error.not-json`
   - `get/get-json-wrapped-query-rejected`: `error.content-type`, `error.not-json`
   - `get/get-preagg-rejected`: `error.content-type`, `error.not-json`
 - **WebSocket errors lack `code`**
-  - `ws/missing-type`: `error.schema`, `error.code.missing`
-  - `ws/missing-sql`: `error.schema`, `error.code.missing`
-  - `ws/empty-sql`: `error.schema`, `error.code.missing`
-  - `ws/unknown-type`: `error.schema`, `error.code.missing`
-  - `ws/type-not-a-string`: `error.schema`, `error.code.missing`
-  - `ws/preagg-unsupported`: `error.schema`, `error.code.missing`
-  - `ws/sql-parse-error`: `error.schema`, `error.code.missing`
-  - `ws/sql-unknown-table`: `error.schema`, `error.code.missing`
-  - `ws/sql-runtime-error`: `error.schema`, `error.code.missing`
-  - `ws/exec-error`: `error.schema`, `error.code.missing`
-  - `ws/ws-malformed-json-stays-open`: `s1.error.schema`, `s1.error.code.missing`, `s2.arrow.file-format`
-  - `ws/ws-missing-sql-stays-open`: `s1.error.schema`, `s1.error.code.missing`, `s2.arrow.file-format`
-  - `ws/ws-sql-error-stays-open`: `s1.error.schema`, `s1.error.code.missing`, `s2.arrow.file-format`
+  - `ws/missing-type`: `error.code.missing`, `error.schema.required.code`
+  - `ws/missing-sql`: `error.code.missing`, `error.schema.required.code`
+  - `ws/empty-sql`: `error.code.missing`, `error.schema.required.code`
+  - `ws/unknown-type`: `error.code.missing`, `error.schema.required.code`
+  - `ws/type-not-a-string`: `error.code.missing`, `error.schema.required.code`
+  - `ws/preagg-unsupported`: `error.code.missing`, `error.schema.required.code`
+  - `ws/sql-parse-error`: `error.code.missing`, `error.schema.required.code`
+  - `ws/sql-unknown-table`: `error.code.missing`, `error.schema.required.code`
+  - `ws/sql-runtime-error`: `error.code.missing`, `error.schema.required.code`
+  - `ws/exec-error`: `error.code.missing`, `error.schema.required.code`
+  - `ws/ws-malformed-json-stays-open`: `s1.error.code.missing`, `s2.arrow.file-format`, `s1.error.schema.required.code`
+  - `ws/ws-missing-sql-stays-open`: `s1.error.code.missing`, `s2.arrow.file-format`, `s1.error.schema.required.code`
+  - `ws/ws-sql-error-stays-open`: `s1.error.code.missing`, `s2.arrow.file-format`, `s1.error.schema.required.code`
 - **Unknown `type` is 422**
   - `post/unknown-type`: `error.status.422`, `error.content-type`, `error.not-json`
 - **`preagg` is unknown**
@@ -362,24 +375,24 @@ Configuration: `duckdb-server` (`packages/server/duckdb-server`).
 | Unsupported method is 400 | `Unsupported HTTP method` with status 400 and no `Allow`. | 405 with `Allow` and the envelope (D5). | Change the status and add the header. | 2 |
 | CORS | `Access-Control-Request-Method` is emitted as a response header; no `Access-Control-Expose-Headers`. | Drop the request header; expose `ETag` if caching is ever added. | Edit `CORS_HEADERS`. | not observable |
 | Concurrency | A synchronous handler blocks the event loop for every connection. | No wire requirement; prerequisite for deadlines. | Run queries in a thread pool. | not observable |
-| Large GET request lines reset the connection | uWebSockets closes the socket without a response when the request line exceeds its header buffer. | Servers SHOULD accept at least 1 MiB (D13); a rejection should be an HTTP status. | Probably not configurable in socketify; document the limit. | 1 |
+| Large GET request lines reset the connection | uWebSockets answers a request line over its header buffer with a 505 and closes; the client sees either the 505 or `ECONNRESET`, depending on which lands first. | Servers SHOULD accept at least 1 MiB (D13); a rejection should be a consistent HTTP status. | Probably not configurable in socketify; document the limit. | 1 |
 
 <details><summary>Baselined violations by case</summary>
 
 - **WebSocket errors lack `code`**
-  - `ws/missing-type`: `error.schema`, `error.code.missing`, `error.message`
-  - `ws/missing-sql`: `error.schema`, `error.code.missing`, `error.message`
-  - `ws/empty-sql`: `error.schema`, `error.code.missing`
-  - `ws/unknown-type`: `error.schema`, `error.code.missing`
-  - `ws/type-not-a-string`: `error.schema`, `error.code.missing`
-  - `ws/preagg-unsupported`: `error.schema`, `error.code.missing`
-  - `ws/sql-parse-error`: `error.schema`, `error.code.missing`
-  - `ws/sql-unknown-table`: `error.schema`, `error.code.missing`
-  - `ws/sql-runtime-error`: `error.schema`, `error.code.missing`
-  - `ws/exec-error`: `error.schema`, `error.code.missing`
-  - `ws/ws-malformed-json-stays-open`: `s1.error.schema`, `s1.error.code.missing`
-  - `ws/ws-missing-sql-stays-open`: `s1.error.schema`, `s1.error.code.missing`, `s1.error.message`
-  - `ws/ws-sql-error-stays-open`: `s1.error.schema`, `s1.error.code.missing`
+  - `ws/missing-type`: `error.code.missing`, `error.message`, `error.schema.required.code`
+  - `ws/missing-sql`: `error.code.missing`, `error.message`, `error.schema.required.code`
+  - `ws/empty-sql`: `error.code.missing`, `error.schema.required.code`
+  - `ws/unknown-type`: `error.code.missing`, `error.schema.required.code`
+  - `ws/type-not-a-string`: `error.code.missing`, `error.schema.required.code`
+  - `ws/preagg-unsupported`: `error.code.missing`, `error.schema.required.code`
+  - `ws/sql-parse-error`: `error.code.missing`, `error.schema.required.code`
+  - `ws/sql-unknown-table`: `error.code.missing`, `error.schema.required.code`
+  - `ws/sql-runtime-error`: `error.code.missing`, `error.schema.required.code`
+  - `ws/exec-error`: `error.code.missing`, `error.schema.required.code`
+  - `ws/ws-malformed-json-stays-open`: `s1.error.code.missing`, `s1.error.schema.required.code`
+  - `ws/ws-missing-sql-stays-open`: `s1.error.code.missing`, `s1.error.message`, `s1.error.schema.required.code`
+  - `ws/ws-sql-error-stays-open`: `s1.error.code.missing`, `s1.error.schema.required.code`
 - **HTTP errors are plain text**
   - `post/missing-type`: `error.content-type`, `error.not-json`
   - `post/missing-sql`: `error.content-type`, `error.not-json`
@@ -411,12 +424,12 @@ Configuration: `duckdb-server` (`packages/server/duckdb-server`).
 - **Multi-statement `arrow`**
   - `post/arrow-multi-statement`: `error.status.200`, `error.content-type`, `error.not-json`
   - `ws/arrow-multi-statement`: `error.frame`
-  - `ws/ws-pipeline-order`: `s2.error.schema`, `s2.error.code.missing`, `s4.error.schema`, `s4.error.code.missing`
+  - `ws/ws-pipeline-order`: `s2.error.code.missing`, `s4.error.code.missing`, `s2.error.schema.required.code`, `s4.error.schema.required.code`
 - **Unsupported method is 400**
   - `post/method-put`: `error.status.400`, `error.content-type`, `error.not-json`, `header.allow`
   - `post/method-head`: `status.400`, `header.allow`
 - **Large GET request lines reset the connection**
-  - `get/large-request-1mib`: `http.connection`
+  - `get/large-request-1mib`: `http.reset.econnreset|arrow.status.505`
 
 </details>
 
@@ -450,28 +463,28 @@ Configuration: `@uwdata/mosaic-duckdb` data server (`packages/server/duckdb`).
   - `post/sql-runtime-error`: `error.content-type`, `error.not-json`
   - `post/exec-error`: `error.content-type`, `error.not-json`
 - **WebSocket errors lack `code`**
-  - `ws/missing-type`: `error.schema`, `error.code.missing`
-  - `ws/unknown-type`: `error.schema`, `error.code.missing`
-  - `ws/type-not-a-string`: `error.schema`, `error.code.missing`
-  - `ws/sql-unknown-table`: `error.schema`, `error.code.missing`
-  - `ws/sql-runtime-error`: `error.schema`, `error.code.missing`
-  - `ws/exec-error`: `error.schema`, `error.code.missing`
-  - `ws/ws-malformed-json-stays-open`: `s1.error.schema`, `s1.error.code.missing`, `s2.arrow.eos`
-  - `ws/ws-sql-error-stays-open`: `s1.error.schema`, `s1.error.code.missing`, `s2.arrow.eos`
-  - `ws/ws-pipeline-order`: `s1.arrow.eos`, `s2.error.schema`, `s2.error.code.missing`, `s3.arrow.eos`, `s4.error.schema`, `s4.error.code.missing`, `s5.arrow.eos`
+  - `ws/missing-type`: `error.code.missing`, `error.schema.required.code`
+  - `ws/unknown-type`: `error.code.missing`, `error.schema.required.code`
+  - `ws/type-not-a-string`: `error.code.missing`, `error.schema.required.code`
+  - `ws/sql-unknown-table`: `error.code.missing`, `error.schema.required.code`
+  - `ws/sql-runtime-error`: `error.code.missing`, `error.schema.required.code`
+  - `ws/exec-error`: `error.code.missing`, `error.schema.required.code`
+  - `ws/ws-malformed-json-stays-open`: `s1.error.code.missing`, `s2.arrow.eos`, `s1.error.schema.required.code`
+  - `ws/ws-sql-error-stays-open`: `s1.error.code.missing`, `s2.arrow.eos`, `s1.error.schema.required.code`
+  - `ws/ws-pipeline-order`: `s1.arrow.eos`, `s2.error.code.missing`, `s3.arrow.eos`, `s4.error.code.missing`, `s5.arrow.eos`, `s2.error.schema.required.code`, `s4.error.schema.required.code`
 - **`sql` is not validated**
   - `post/missing-sql`: `error.status.500`, `error.content-type`, `error.not-json`
   - `post/empty-sql`: `error.status.500`, `error.content-type`, `error.not-json`
-  - `ws/missing-sql`: `error.schema`, `error.code.missing`, `error.message`
-  - `ws/empty-sql`: `error.schema`, `error.code.missing`
-  - `ws/ws-missing-sql-stays-open`: `s1.error.schema`, `s1.error.code.missing`, `s1.error.message`, `s2.arrow.eos`
+  - `ws/missing-sql`: `error.code.missing`, `error.message`, `error.schema.required.code`
+  - `ws/empty-sql`: `error.code.missing`, `error.schema.required.code`
+  - `ws/ws-missing-sql-stays-open`: `s1.error.code.missing`, `s1.error.message`, `s2.arrow.eos`, `s1.error.schema.required.code`
 - **Parse errors are 500**
   - `post/sql-parse-error`: `error.status.500`, `error.content-type`, `error.not-json`
-  - `ws/sql-parse-error`: `error.schema`, `error.code.missing`
+  - `ws/sql-parse-error`: `error.code.missing`, `error.schema.required.code`
   - `connector/rest-error`: `connector.status`
 - **`preagg` is unknown**
   - `post/preagg-unsupported`: `error.content-type`, `error.not-json`
-  - `ws/preagg-unsupported`: `error.schema`, `error.code.missing`
+  - `ws/preagg-unsupported`: `error.code.missing`, `error.schema.required.code`
 - **GET is broken**
   - `get/get-arrow`: `arrow.status.400`
   - `get/get-plus-in-sql`: `arrow.status.400`
@@ -491,7 +504,7 @@ Configuration: `@uwdata/mosaic-duckdb` data server (`packages/server/duckdb`).
   - `post/arrow-trailing-semicolon`: `arrow.status.500`
   - `ws/arrow-trailing-semicolon`: `arrow.frame`
   - `post/arrow-multi-statement`: `error.status.500`, `error.content-type`, `error.not-json`
-  - `ws/arrow-multi-statement`: `error.schema`, `error.code.missing`
+  - `ws/arrow-multi-statement`: `error.code.missing`, `error.schema.required.code`
 - **Unsupported method is 400**
   - `post/method-put`: `error.status.400`, `error.content-type`, `error.not-json`, `header.allow`
   - `post/method-head`: `status.400`, `header.allow`

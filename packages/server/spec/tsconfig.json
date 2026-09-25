@@ -1,7 +1,7 @@
 {
   "extends": "../../../tsconfig.base.json",
   "include": ["conformance/**/*.ts"],
-  "exclude": ["conformance/vitest.config.ts"],
+  "exclude": ["conformance/vitest.config.ts", "vitest.config.ts"],
   "compilerOptions": {
     "composite": false,
     "incremental": false,

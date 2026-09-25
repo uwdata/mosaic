@@ -38,39 +38,39 @@ failures:
     fix: Share the HTTP error mapper.
     cases:
       ws/missing-type:
-        - error.schema
         - error.code.missing
+        - error.schema.required.code
       ws/unknown-type:
-        - error.schema
         - error.code.missing
+        - error.schema.required.code
       ws/type-not-a-string:
-        - error.schema
         - error.code.missing
+        - error.schema.required.code
       ws/sql-unknown-table:
-        - error.schema
         - error.code.missing
+        - error.schema.required.code
       ws/sql-runtime-error:
-        - error.schema
         - error.code.missing
+        - error.schema.required.code
       ws/exec-error:
-        - error.schema
         - error.code.missing
+        - error.schema.required.code
       ws/ws-malformed-json-stays-open:
-        - s1.error.schema
         - s1.error.code.missing
         - s2.arrow.eos
+        - s1.error.schema.required.code
       ws/ws-sql-error-stays-open:
-        - s1.error.schema
         - s1.error.code.missing
         - s2.arrow.eos
+        - s1.error.schema.required.code
       ws/ws-pipeline-order:
         - s1.arrow.eos
-        - s2.error.schema
         - s2.error.code.missing
         - s3.arrow.eos
-        - s4.error.schema
         - s4.error.code.missing
         - s5.arrow.eos
+        - s2.error.schema.required.code
+        - s4.error.schema.required.code
   - area: "`sql` is not validated"
     current: A missing or empty `sql` reaches DuckDB and fails as a binder or parser error (500).
     spec: 400 `bad_request` with `missing required 'sql' parameter` (D1).
@@ -85,17 +85,17 @@ failures:
         - error.content-type
         - error.not-json
       ws/missing-sql:
-        - error.schema
         - error.code.missing
         - error.message
+        - error.schema.required.code
       ws/empty-sql:
-        - error.schema
         - error.code.missing
+        - error.schema.required.code
       ws/ws-missing-sql-stays-open:
-        - s1.error.schema
         - s1.error.code.missing
         - s1.error.message
         - s2.arrow.eos
+        - s1.error.schema.required.code
   - area: Parse errors are 500
     current: DuckDB parser errors surface as `internal_error`.
     spec: "`bad_request` (D7)."
@@ -106,8 +106,8 @@ failures:
         - error.content-type
         - error.not-json
       ws/sql-parse-error:
-        - error.schema
         - error.code.missing
+        - error.schema.required.code
       connector/rest-error:
         - connector.status
   - area: "`preagg` is unknown"
@@ -119,8 +119,8 @@ failures:
         - error.content-type
         - error.not-json
       ws/preagg-unsupported:
-        - error.schema
         - error.code.missing
+        - error.schema.required.code
   - area: GET is broken
     current: "`JSON.parse` is applied to the already-parsed query object, so every GET is a 400 `TypeError` (`data-server.js`)."
     spec: Flat `type`/`sql` parameters, `arrow` only, read-only SQL (D2, D3, D3a).
@@ -181,8 +181,8 @@ failures:
         - error.content-type
         - error.not-json
       ws/arrow-multi-statement:
-        - error.schema
         - error.code.missing
+        - error.schema.required.code
   - area: Unsupported method is 400
     current: "`Unsupported HTTP method` with status 400 and no `Allow`."
     spec: "405 with `Allow: GET, POST, OPTIONS` and the envelope (D5)."

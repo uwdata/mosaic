@@ -9,47 +9,47 @@ failures:
     fix: Share an error mapper with the HTTP handler; restore the messages when decoding.
     cases:
       ws/missing-type:
-        - error.schema
         - error.code.missing
         - error.message
+        - error.schema.required.code
       ws/missing-sql:
-        - error.schema
         - error.code.missing
         - error.message
+        - error.schema.required.code
       ws/empty-sql:
-        - error.schema
         - error.code.missing
+        - error.schema.required.code
       ws/unknown-type:
-        - error.schema
         - error.code.missing
+        - error.schema.required.code
       ws/type-not-a-string:
-        - error.schema
         - error.code.missing
+        - error.schema.required.code
       ws/preagg-unsupported:
-        - error.schema
         - error.code.missing
+        - error.schema.required.code
       ws/sql-parse-error:
-        - error.schema
         - error.code.missing
+        - error.schema.required.code
       ws/sql-unknown-table:
-        - error.schema
         - error.code.missing
+        - error.schema.required.code
       ws/sql-runtime-error:
-        - error.schema
         - error.code.missing
+        - error.schema.required.code
       ws/exec-error:
-        - error.schema
         - error.code.missing
+        - error.schema.required.code
       ws/ws-malformed-json-stays-open:
-        - s1.error.schema
         - s1.error.code.missing
+        - s1.error.schema.required.code
       ws/ws-missing-sql-stays-open:
-        - s1.error.schema
         - s1.error.code.missing
         - s1.error.message
+        - s1.error.schema.required.code
       ws/ws-sql-error-stays-open:
-        - s1.error.schema
         - s1.error.code.missing
+        - s1.error.schema.required.code
   - area: HTTP errors are plain text
     current: "`handler.error()` ends the response with `str(error)` and no Content-Type; missing-field messages are msgspec's rather than the canonical ones from #1228."
     spec: JSON `Error` envelope (D4).
@@ -154,10 +154,10 @@ failures:
       ws/arrow-multi-statement:
         - error.frame
       ws/ws-pipeline-order:
-        - s2.error.schema
         - s2.error.code.missing
-        - s4.error.schema
         - s4.error.code.missing
+        - s2.error.schema.required.code
+        - s4.error.schema.required.code
   - area: Unsupported method is 400
     current: "`Unsupported HTTP method` with status 400 and no `Allow`."
     spec: 405 with `Allow` and the envelope (D5).
@@ -182,9 +182,9 @@ failures:
     fix: Run queries in a thread pool.
     cases: {}
   - area: Large GET request lines reset the connection
-    current: uWebSockets closes the socket without a response when the request line exceeds its header buffer.
-    spec: Servers SHOULD accept at least 1 MiB (D13); a rejection should be an HTTP status.
+    current: uWebSockets answers a request line over its header buffer with a 505 and closes; the client sees either the 505 or `ECONNRESET`, depending on which lands first.
+    spec: Servers SHOULD accept at least 1 MiB (D13); a rejection should be a consistent HTTP status.
     fix: Probably not configurable in socketify; document the limit.
     cases:
       get/large-request-1mib:
-        - http.connection
+        - http.reset.econnreset|arrow.status.505

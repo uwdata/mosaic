@@ -36,5 +36,9 @@ removed from the file. `CONFORMANCE.md` is regenerated from those files:
 pnpm -F @uwdata/mosaic-server-spec conformance:docs
 ```
 
+After fixing a server, `CONFORMANCE_SERVER=<config> pnpm -F @uwdata/mosaic-server-spec conformance:baseline`
+refreshes that file from the last run. `pnpm -F @uwdata/mosaic-server-spec test`
+runs the harness's own unit tests without a server.
+
 Server stdout/stderr and a JSON summary of each run land in
 `conformance/.logs/`.

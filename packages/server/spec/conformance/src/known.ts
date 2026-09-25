@@ -32,7 +32,7 @@ export interface KnownFailures {
 
 export const knownFailuresDir = path.join(conformanceRoot, 'known-failures');
 
-const violationId = /^[a-z0-9_-]+(\.[a-z0-9_-]+)*$/;
+const violationId = /^[a-z0-9_-]+(\.[a-z0-9_-]+)*(\|[a-z0-9_-]+(\.[a-z0-9_-]+)*)*$/;
 
 export function knownFailuresPath(server: string) {
   return path.join(knownFailuresDir, `${server}.yaml`);
