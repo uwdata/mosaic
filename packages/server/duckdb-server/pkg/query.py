@@ -5,10 +5,10 @@ from typing import TYPE_CHECKING
 import pyarrow as pa
 
 if TYPE_CHECKING:
-    import duckdb
+    from duckdb import DuckDBPyConnection as Con
 
 
-def get_arrow(con: duckdb.DuckDBPyConnection, sql: str) -> pa.RecordBatchReader:
+def get_arrow(con: Con, sql: str) -> pa.RecordBatchReader:
     return con.query(sql).arrow()
 
 
@@ -20,5 +20,5 @@ def arrow_to_bytes(reader: pa.RecordBatchReader) -> bytes:
     return sink.getvalue().to_pybytes()
 
 
-def get_arrow_bytes(con: duckdb.DuckDBPyConnection, sql: str) -> bytes:
+def get_arrow_bytes(con: Con, sql: str) -> bytes:
     return arrow_to_bytes(get_arrow(con, sql))

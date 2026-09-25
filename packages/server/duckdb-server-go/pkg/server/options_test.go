@@ -82,16 +82,6 @@ func TestWithWebSocketCopiesConfiguration(t *testing.T) {
 	require.Equal(t, []string{"*.Example"}, cfg.websocket.AllowedOrigins)
 }
 
-func TestWithSchemaMatchHeadersCopiesConfiguration(t *testing.T) {
-	headers := []string{" X-Tenant "}
-	option := WithSchemaMatchHeaders(headers...)
-	headers[0] = "X-Changed"
-
-	cfg, err := applyOptions([]Option{option})
-	require.NoError(t, err)
-	require.Equal(t, []string{" X-Tenant "}, cfg.schemaMatchHeaders)
-}
-
 func TestWithCacheControl(t *testing.T) {
 	for _, value := range []string{"public\r\nX-Injected: true", "private\x00", "no-cache\x7f"} {
 		_, err := applyOptions([]Option{WithCacheControl(value)})
@@ -126,23 +116,4 @@ func TestWithVary(t *testing.T) {
 	cfg, err = applyOptions([]Option{option, WithVary()})
 	require.NoError(t, err)
 	require.Empty(t, cfg.varyHeaders)
-}
-
-func TestCacheControlIncludesSchemaMatchHeadersInVary(t *testing.T) {
-	for _, options := range [][]Option{
-		{WithVary("x-region", "x-tenant"), WithSchemaMatchHeaders("X-Tenant", "X-TENANT"), WithCacheControl("public")},
-		{WithCacheControl("public"), WithSchemaMatchHeaders("X-Tenant", "X-TENANT"), WithVary("x-region", "x-tenant")},
-	} {
-		cfg, err := applyOptions(options)
-		require.NoError(t, err)
-		require.Equal(t, []string{"X-Region", "X-Tenant"}, cfg.varyHeaders)
-	}
-	cfg, err := applyOptions([]Option{WithCacheControl("public"), WithSchemaMatchHeaders("X-Tenant"), WithVary("X-Region"), WithVary()})
-	require.NoError(t, err)
-	require.Equal(t, []string{"X-Tenant"}, cfg.varyHeaders)
-	cfg, err = applyOptions([]Option{WithCacheControl("public"), WithSchemaMatchHeaders("X-Tenant"), WithVary("X-Region"), WithCacheControl("")})
-	require.NoError(t, err)
-	require.Equal(t, []string{"X-Region"}, cfg.varyHeaders)
-	_, err = applyOptions([]Option{WithCacheControl("public"), WithSchemaMatchHeaders("X-Tenant\r\nInjected")})
-	require.ErrorContains(t, err, "schema match headers in Vary")
 }

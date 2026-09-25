@@ -90,7 +90,7 @@ describe('MosaicClient', () => {
     expect(selection.active?.source).toBe(client1);
     expect(selection.predicate(client1)).toBeUndefined();
     expect(selection.predicate(client2)+'').toBe(
-      `("HourOfDay" BETWEEN 0 AND 24)`
+      '("HourOfDay" BETWEEN 0 AND 24)'
     );
 
     // only client 2 should get a data update
@@ -113,7 +113,7 @@ describe('MosaicClient', () => {
     );
     expect(selection.active?.source).toBe(client2);
     expect(selection.predicate(client1)+'').toBe(
-      `("DayOfWeek" BETWEEN 0 AND 7)`
+      '("DayOfWeek" BETWEEN 0 AND 7)'
     );
     expect(selection.predicate(client2)).toBeUndefined();
 

@@ -2,367 +2,173 @@ package query
 
 import (
 	"context"
+	"database/sql"
+	"database/sql/driver"
+	"encoding/json"
 	"errors"
 	"fmt"
-	"maps"
-	"slices"
-	"strings"
+
+	"github.com/duckdb/duckdb-go/v2"
 )
 
 var (
-	ErrAccessDenied = errors.New("query: access denied")
-
+	ErrAccessDenied         = errors.New("query: access denied")
 	ErrUnsupportedStatement = errors.New("query: unsupported statement")
+	ErrValidation           = errors.New("query: validation failed")
+	ErrInvalidPolicy        = errors.New("query: invalid validation policy")
 )
 
-type Validator interface {
-	// CheckNode is called once for each node in the AST
-	// - node: the current node being processed
-	// - keyStack: contains the stack of keys leading to this node, with the root being the first element,
-	//   and the parent key being the last element
-	//
-	// This explicitly does not not return an error. Any errors found should be collected and returned
-	// in the Validate() method.
-	CheckNode(node map[string]any, keyStack []string)
+type ValidationPolicy struct {
+	// JSON passes a complete Gatekeeper document verbatim and cannot be combined with typed options.
+	JSON *string `json:"-"`
+	// omitzero preserves the distinction between nil (inherit) and an explicit empty allowlist.
+	AllowedTables       []TableRule `json:"allowed_tables,omitzero"`
+	BlockedTables       []TableRule `json:"blocked_tables,omitzero"`
+	AllowedFunctions    []string    `json:"allowed_functions,omitzero"`
+	BlockedFunctions    []string    `json:"blocked_functions,omitzero"`
+	UseDefaultFunctions *bool       `json:"use_default_functions,omitempty"`
+}
 
-	// Validate is called after the entire AST has been processed. It should return any errors found during
-	// the CheckNode calls, or any additional validation errors that can only be determined after
-	// processing the entire AST. This allows validators to collect state during the AST traversal and perform more
-	// complex validation that may depend on multiple nodes or the overall structure of the AST.
-	//
-	// It returns a slice of errors, to encourage collecting all errors rather than stopping at the first one.
-	// If no errors are found, it should return nil.
-	Validate() []error
+type TableRule struct {
+	// Nil matches any catalog; a whole-component "*" is a wildcard in each field.
+	Catalog *string `json:"catalog,omitempty"`
+	Schema  string  `json:"schema"`
+	Table   string  `json:"table"`
+}
+
+type Violation struct {
+	Rule         string `json:"rule"`
+	Message      string `json:"message"`
+	Catalog      string `json:"catalog"`
+	Schema       string `json:"schema"`
+	Table        string `json:"table"`
+	FunctionName string `json:"function_name" mapstructure:"function_name"`
+	Position     *int64 `json:"position"`
 }
 
 type ErrorDetails struct {
-	Type     string `json:"error_type"`
-	Subtype  string `json:"error_subtype"`
-	Message  string `json:"error_message"`
-	Position string `json:"position"`
+	Code       string      `json:"code"`
+	Type       string      `json:"error_type"`
+	Message    string      `json:"error_message"`
+	Position   *int64      `json:"position"`
+	Violations []Violation `json:"violations"`
 }
 
 func (e ErrorDetails) Error() string {
 	details := "query"
 	if e.Type != "" {
 		details += ": " + e.Type
+	} else if e.Code != "" {
+		details += ": " + e.Code
 	}
-	if e.Subtype != "" {
-		details += " (" + e.Subtype + ")"
-	}
-	if e.Position != "" {
-		details += " at " + e.Position
+	if e.Position != nil {
+		details += fmt.Sprintf(" at %d", *e.Position)
 	}
 	if e.Message != "" {
 		details += ": " + e.Message
+	}
+	for _, v := range e.Violations {
+		details += ": " + v.Rule + ": " + v.Message
 	}
 	return details
 }
 
 func (e ErrorDetails) Is(target error) bool {
-	return target == ErrUnsupportedStatement && strings.EqualFold(e.Type, "not implemented")
+	return target == ErrAccessDenied && e.Code == "forbidden" || target == ErrUnsupportedStatement && e.Code == "unsupported"
 }
 
-// ValidateSQL validates the given SQL query using the provided validators
-func (db *DB) ValidateSQL(ctx context.Context, sql string, validators ...Validator) error {
-	// Qualify the built-in to prevent database macros from shadowing validation.
-	serializeSQL := fmt.Sprintf("SELECT system.main.json_serialize_sql(%s, skip_default := true, skip_empty := true, skip_null := true) as ast", quoteLiteral(sql))
+type ResolvedObject struct {
+	Catalog string `json:"catalog"`
+	Schema  string `json:"schema"`
+	Table   string `json:"table"`
+	Type    string `json:"type"`
+}
 
-	var m map[string]any
+type ResolvedFunction struct {
+	Catalog string `json:"catalog"`
+	Schema  string `json:"schema"`
+	Name    string `json:"name"`
+	Type    string `json:"type"`
+}
 
-	err := db.db.QueryRowContext(ctx, serializeSQL).Scan(&m)
+type ValidationResult struct {
+	Allowed       bool               `json:"allowed"`
+	Details       ErrorDetails       `json:"details"`
+	Objects       []ResolvedObject   `json:"objects"`
+	Functions     []ResolvedFunction `json:"functions"`
+	CallerObjects []ResolvedObject   `json:"caller_objects"`
+}
+
+// ValidateSQL returns binding evidence on success and diagnostics on denial without executing or reserving a connection.
+// Query validates and executes on the same connection.
+func (db *DB) ValidateSQL(ctx context.Context, query string, policy ValidationPolicy) (ValidationResult, error) {
+	return db.validateSQL(ctx, db.db, query, policy)
+}
+
+type rowQuerier interface {
+	QueryRowContext(context.Context, string, ...any) *sql.Row
+}
+
+func (db *DB) validateSQL(ctx context.Context, conn rowQuerier, query string, policy ValidationPolicy) (result ValidationResult, err error) {
+	defer func() {
+		if err != nil && !errors.Is(err, ErrValidation) {
+			err = fmt.Errorf("%w: %w", ErrValidation, err)
+		}
+	}()
+	document, err := policy.document()
 	if err != nil {
-		return fmt.Errorf("failed to parse SQL query: %w", err)
+		return result, err
 	}
-
-	parseError, ok := m["error"].(bool)
-	if !ok {
-		return errors.New("invalid SQL parser response: missing error status")
+	const stmt = `SELECT allowed, code, error_type, error_message, position, violations, objects, functions, caller_objects
+		FROM system.main.gatekeeper_validate($sql, json := $policy)`
+	var violations duckdb.Composite[[]Violation]
+	var objects, callers duckdb.Composite[[]ResolvedObject]
+	var functions duckdb.Composite[[]ResolvedFunction]
+	if err := conn.QueryRowContext(ctx, stmt, sql.Named("sql", query), sql.Named("policy", document)).Scan(
+		&result.Allowed, &result.Details.Code, &result.Details.Type, &result.Details.Message, &result.Details.Position,
+		&violations, &objects, &functions, &callers,
+	); err != nil {
+		return result, fmt.Errorf("query: Gatekeeper validation failed: %w", err)
 	}
-	if parseError {
-		return ErrorDetails{
-			Type:     stringField(m, "error_type"),
-			Subtype:  stringField(m, "error_subtype"),
-			Message:  stringField(m, "error_message"),
-			Position: stringField(m, "position"),
+	result.Details.Violations = violations.Get()
+	result.Objects, result.Functions, result.CallerObjects = objects.Get(), functions.Get(), callers.Get()
+	if result.Allowed && result.Details.Code == "ok" && len(result.Details.Violations) == 0 {
+		return result, nil
+	}
+	if result.Allowed {
+		return result, errors.New("query: inconsistent Gatekeeper response")
+	}
+	switch result.Details.Code {
+	case "invalid_input":
+		// Gatekeeper 0.3 reports invalid SQL and invalid policy documents with the same code.
+		if query == "SELECT 1" {
+			return result, errors.Join(ErrInvalidPolicy, result.Details)
 		}
-	}
-
-	statements, ok := m["statements"].([]any)
-	if !ok {
-		return errors.New("invalid SQL parser response: missing or invalid statements")
-	}
-
-	// Extract all schema references, including tables without an explicit schema reference, from the AST
-	for _, stmt := range statements {
-		stmtMap, ok := stmt.(map[string]any)
-		if !ok {
-			return fmt.Errorf("invalid statement format: %v", stmt)
+		if _, err := db.validateSQL(ctx, conn, "SELECT 1", policy); err != nil {
+			return result, err
 		}
-
-		keyStack := make([]string, 0, 10)
-
-		walkAST(stmtMap, keyStack, validators)
+	case "forbidden", "unsupported", "parser", "binding":
+	default:
+		return result, fmt.Errorf("query: unexpected Gatekeeper result code %q", result.Details.Code)
 	}
+	return result, result.Details
+}
 
-	var combinedErrs []error
+func ConfigureGatekeeper(ctx context.Context, execer driver.ExecerContext, document string) error {
+	_, err := execer.ExecContext(ctx, "CALL system.main.gatekeeper_configure(json := $1)", []driver.NamedValue{{Ordinal: 1, Value: document}})
+	return err
+}
 
-	for _, validator := range validators {
-		validationErrs := validator.Validate()
-		if len(validationErrs) > 0 {
-			combinedErrs = append(combinedErrs, validationErrs...)
+func (policy ValidationPolicy) document() (string, error) {
+	if policy.JSON != nil {
+		if policy.AllowedTables != nil || policy.BlockedTables != nil || policy.AllowedFunctions != nil || policy.BlockedFunctions != nil || policy.UseDefaultFunctions != nil {
+			return "", fmt.Errorf("%w: JSON policy cannot be combined with typed options", ErrInvalidPolicy)
 		}
+		return *policy.JSON, nil
 	}
-
-	return errors.Join(combinedErrs...)
-}
-
-func stringField(m map[string]any, key string) string {
-	value, _ := m[key].(string)
-	return value
-}
-
-// quoteLiteral properly escapes a string for use as a SQL string literal
-func quoteLiteral(s string) string {
-	// Escape single quotes by doubling them
-	escaped := strings.ReplaceAll(s, "'", "''")
-	return "'" + escaped + "'"
-}
-
-func walkASTSlice(nodes []any, keyStack []string, validators []Validator) {
-	for _, node := range nodes {
-		switch typedNode := node.(type) {
-		case map[string]any:
-			walkAST(typedNode, keyStack, validators)
-
-		case []any:
-			walkASTSlice(typedNode, keyStack, validators)
-		}
-	}
-}
-
-func walkAST(node map[string]any, keyStack []string, validators []Validator) {
-	for _, validator := range validators {
-		validator.CheckNode(node, keyStack)
-	}
-
-	for key, val := range node {
-		switch typedVal := val.(type) {
-		case map[string]any:
-			walkAST(typedVal, append(keyStack, key), validators)
-
-		case []any:
-			walkASTSlice(typedVal, append(keyStack, key), validators)
-		}
-	}
-}
-
-// baseTableValidator validates that the SQL query only accesses schemas that match request headers
-type baseTableValidator struct {
-	allowedSchemas []string
-	baseTables     map[tableRef]struct{}
-	errs           []error
-}
-
-type tableRef struct {
-	SchemaName string `json:"schema_name"`
-	TableName  string `json:"table_name"`
-	IsCTE      bool   `json:"is_cte,omitempty"`
-}
-
-func newBaseTableValidator(allowedSchemas []string) Validator {
-	return &baseTableValidator{
-		allowedSchemas: allowedSchemas,
-		baseTables:     make(map[tableRef]struct{}),
-	}
-}
-
-func (v *baseTableValidator) CheckNode(node map[string]any, keyStack []string) {
-	if class, exists := node["class"]; exists && (class == "FUNCTION" || class == "WINDOW") {
-		v.rejectCatalogReference(node, "catalog")
-	}
-
-	val, exists := node["type"]
-	if exists {
-		switch val {
-		case "BASE_TABLE":
-			v.handleBaseTable(node)
-		case "SHOW_REF":
-			v.handleShowRef(node)
-		}
-	}
-
-	if len(keyStack) >= 2 && keyStack[len(keyStack)-2] == "cte_map" && keyStack[len(keyStack)-1] == "map" {
-		val, exists = node["key"]
-		if exists {
-			v.baseTables[tableRef{
-				TableName: val.(string),
-				IsCTE:     true,
-			}] = struct{}{}
-		}
-	}
-}
-
-func (v *baseTableValidator) handleShowRef(showRef map[string]any) {
-	if v.rejectCatalogReference(showRef, "catalog_name") {
-		return
-	}
-
-	// DESCRIBE statements contain a nested query whose base tables are validated separately.
-	if _, exists := showRef["query"]; exists {
-		return
-	}
-
-	schemaName, exists := showRef["schema_name"]
-	if !exists {
-		v.errs = append(v.errs, fmt.Errorf("%w: SHOW statement requires an explicit authorized schema", ErrAccessDenied))
-		return
-	}
-
-	schemaNameStr, ok := schemaName.(string)
-	if !ok {
-		v.errs = append(v.errs, fmt.Errorf("invalid 'schema_name' in show reference, expected string: %v", schemaName))
-		return
-	}
-	schemaNameStr = strings.TrimPrefix(schemaNameStr, "schema_name:")
-	if !slices.Contains(v.allowedSchemas, schemaNameStr) {
-		v.errs = append(v.errs, fmt.Errorf("%w: unauthorized access to schema '%s'", ErrAccessDenied, schemaNameStr))
-	}
-}
-
-func (v *baseTableValidator) handleBaseTable(baseTable map[string]any) {
-	if v.rejectCatalogReference(baseTable, "catalog_name") {
-		return
-	}
-
-	var schemaNameStr string
-	schemaName, exists := baseTable["schema_name"]
-	if exists {
-		var ok bool
-		schemaNameStr, ok = schemaName.(string)
-		if !ok {
-			v.errs = append(v.errs, fmt.Errorf("invalid 'schema_name' in from_table, expected string: %v", schemaName))
-			return
-		}
-	}
-
-	tableName := baseTable["table_name"]
-	tableNameStr, ok := tableName.(string)
-	if !ok {
-		v.errs = append(v.errs, fmt.Errorf("invalid 'table_name' in from_table, expected string: %v", tableName))
-		return
-	}
-
-	// purposefully include empty schemas. We can reject them later if needed
-	v.baseTables[tableRef{
-		SchemaName: strings.TrimPrefix(schemaNameStr, "schema_name:"),
-		TableName:  tableNameStr,
-	}] = struct{}{}
-}
-
-func (v *baseTableValidator) rejectCatalogReference(ref map[string]any, field string) bool {
-	catalogName, exists := ref[field]
-	if !exists {
-		return false
-	}
-
-	catalogNameStr, ok := catalogName.(string)
-	if !ok {
-		v.errs = append(v.errs, fmt.Errorf("invalid '%s', expected string: %v", field, catalogName))
-		return true
-	}
-	catalogNameStr = strings.TrimPrefix(catalogNameStr, field+":")
-	v.errs = append(v.errs, fmt.Errorf("%w: access to catalog '%s' is not allowed", ErrAccessDenied, catalogNameStr))
-	return true
-}
-
-func (v *baseTableValidator) Validate() []error {
-	errs := append([]error(nil), v.errs...)
-
-	// Check if all referenced schemas are allowed
-	for baseTable := range v.baseTables {
-		if baseTable.SchemaName == "" {
-			_, ok := v.baseTables[tableRef{TableName: baseTable.TableName, IsCTE: true}]
-			if ok {
-				continue // empty schemas are allowed if they are CTEs
-			}
-			errs = append(errs, fmt.Errorf("%w: unauthorized access to table '%s' with empty schema", ErrAccessDenied, baseTable.TableName))
-			continue
-		}
-
-		if !slices.Contains(v.allowedSchemas, baseTable.SchemaName) {
-			errs = append(errs, fmt.Errorf("%w: unauthorized access to schema '%s'", ErrAccessDenied, baseTable.SchemaName))
-		}
-	}
-
-	return errs
-}
-
-type functionListValidator struct {
-	functions      []string
-	allowlist      bool
-	functionCounts map[string]int
-	errs           []error
-}
-
-func newFunctionBlocklistValidator(blockedFunctions []string) Validator {
-	return newFunctionListValidator(blockedFunctions, false)
-}
-
-func newFunctionAllowlistValidator(allowedFunctions []string) Validator {
-	return newFunctionListValidator(allowedFunctions, true)
-}
-
-func newFunctionListValidator(functions []string, allowlist bool) Validator {
-	return &functionListValidator{
-		functions:      functions,
-		allowlist:      allowlist,
-		functionCounts: make(map[string]int),
-	}
-}
-
-func (v *functionListValidator) CheckNode(node map[string]any, _ []string) {
-	class, exists := node["class"]
-	if !exists {
-		return
-	}
-	if class != "FUNCTION" && class != "WINDOW" {
-		return
-	}
-
-	functionName, exists := node["function_name"]
-	if !exists {
-		v.errs = append(v.errs, errors.New("query: invalid function node: missing 'function_name'"))
-		return
-	}
-
-	functionNameStr, ok := functionName.(string)
-	if !ok {
-		v.errs = append(v.errs, fmt.Errorf("query: invalid 'function_name' in function, expected string: %v", functionName))
-		return
-	}
-	functionNameStr = strings.ToLower(functionNameStr)
-	v.functionCounts[functionNameStr]++
-}
-
-func (v *functionListValidator) Validate() []error {
-	errs := append([]error(nil), v.errs...)
-	for _, functionName := range slices.Sorted(maps.Keys(v.functionCounts)) {
-		listed := slices.Contains(v.functions, functionName)
-		if listed == v.allowlist {
-			continue
-		}
-
-		var err error
-		if v.allowlist {
-			err = fmt.Errorf("%w: function '%s' is not in the allowlist", ErrAccessDenied, functionName)
-		} else {
-			err = fmt.Errorf("%w: use of function '%s' is not allowed", ErrAccessDenied, functionName)
-		}
-		if count := v.functionCounts[functionName]; count > 1 {
-			err = fmt.Errorf("%w (%d occurrences)", err, count)
-		}
-		errs = append(errs, err)
-	}
-	return errs
+	document, err := json.Marshal(struct {
+		Version int              `json:"version"`
+		Options ValidationPolicy `json:"options"`
+	}{Version: 1, Options: policy})
+	return string(document), err
 }

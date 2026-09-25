@@ -19,10 +19,10 @@ pub async fn handle(mut socket: WebSocket, state: Arc<AppState>) {
                     let response = handle_message(text, &state).await;
                     if match response {
                         Err(error) => match error {
-                            AppError::BadRequest => {
+                            AppError::BadRequest(message) => {
                                 socket
                                     .send(Message::Text(
-                                        json!({"error": "Bad request"}).to_string().into(),
+                                        json!({"error": message}).to_string().into(),
                                     ))
                                     .await
                             }

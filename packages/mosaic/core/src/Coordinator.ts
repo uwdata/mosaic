@@ -3,12 +3,12 @@ import { type Connector } from './connectors/Connector.js';
 import { PreAggregator, type PreAggregateOptions } from './preagg/PreAggregator.js';
 import { QueryManager, Priority } from './QueryManager.js';
 import { type Selection } from './Selection.js';
-import { type QueryType } from './types.js';
+import { type Cache, type QueryType } from './types.js';
 import { type QueryResult } from './util/query-result.js';
 import { type MosaicClient } from './MosaicClient.js';
-import { type SelectionClause } from './SelectionClause.js';
+import { type SelectionClause } from './clause/index.js';
 import { MaybeArray } from '@uwdata/mosaic-sql';
-import { Table } from '@uwdata/flechette';
+import { type ExtractionOptions, Table } from '@uwdata/flechette';
 import { QueryError } from './util/query-error.js';
 import { EventType, MosaicErrorEvent, type MosaicEventMap } from './Events.js';
 import { type ObserveDispatch } from './util/ObserveDispatch.js';
@@ -57,7 +57,9 @@ export class Coordinator {
    * @param db Database connector. Defaults to a web socket connection.
    * @param options Coordinator options.
    * @param options.manager The query manager to use.
-   * @param options.cache Boolean flag to enable/disable query caching.
+   * @param options.cache Boolean flag to enable/disable query caching, or a
+   *  custom cache object.
+   * @param options.ipc Arrow IPC extraction options.
    * @param options.consolidate Boolean flag to enable/disable query consolidation.
    * @param options.preagg Options for the Pre-aggregator.
    */
@@ -65,7 +67,8 @@ export class Coordinator {
     db: Connector = new SocketConnector(),
     options: {
       manager?: QueryManager;
-      cache?: boolean;
+      cache?: boolean | Cache;
+      ipc?: ExtractionOptions;
       consolidate?: boolean;
       preagg?: PreAggregateOptions;
     } = {}
@@ -73,12 +76,14 @@ export class Coordinator {
     const {
       manager = new QueryManager(),
       cache = true,
+      ipc,
       consolidate = true,
       preagg = {}
     } = options;
     this.manager = manager;
     this.eventBus = manager.eventBus;
     this.manager.cache(cache);
+    if (ipc) this.manager.ipc(ipc);
     this.manager.consolidate(consolidate);
     this.databaseConnector(db);
     this.clear();
@@ -100,7 +105,7 @@ export class Coordinator {
       this.clients?.forEach(client => this.disconnect(client));
       this.clients = new Set;
     }
-    if (cache) this.manager.cache()!.clear();
+    if (cache) this.manager.cache().clear();
   }
 
   /**

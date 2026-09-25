@@ -1,7 +1,9 @@
+import type { ExtractionOptions } from '@uwdata/flechette';
 import type { Connector } from './connectors/Connector.js';
 import type { Cache, QueryEntry, QueryRequest } from './types.js';
 import { consolidator } from './QueryConsolidator.js';
 import { lruCache, voidCache } from './util/cache.js';
+import { decodeIPC, tableByteLength } from './util/decode-ipc.js';
 import { PriorityQueue } from './util/priority-queue.js';
 import { QueryResult, QueryState } from './util/query-result.js';
 import { ObserveDispatch } from './util/ObserveDispatch.js';
@@ -18,8 +20,10 @@ export const Priority = Object.freeze({ High: 0, Normal: 1, Low: 2 });
 export class QueryManager {
   private queue: PriorityQueue<QueryEntry>;
   private db: Connector | null;
-  private clientCache: Cache | null;
+  private clientCache: Cache;
+  private _ipc?: ExtractionOptions;
   private _consolidate: ReturnType<typeof consolidator> | null;
+  private inflight: Map<string, Promise<unknown>>;
   /** Requests pending with the query manager. */
   public pendingResults: QueryResult[];
   /** Event bus for query lifecycle, warning, and error events. */
@@ -31,8 +35,9 @@ export class QueryManager {
   constructor(maxConcurrentRequests: number = 32) {
     this.queue = new PriorityQueue(3);
     this.db = null;
-    this.clientCache = null;
+    this.clientCache = voidCache();
     this._consolidate = null;
+    this.inflight = new Map();
     this.pendingResults = [];
     this.eventBus = new ObserveDispatch();
     this.maxConcurrentRequests = maxConcurrentRequests;
@@ -87,14 +92,13 @@ export class QueryManager {
    */
   async submit(request: QueryRequest, result: QueryResult): Promise<void> {
     const { query, type, cache = false, options } = request;
-    const sql = Array.isArray(query) ? query.filter(x => x).join(';\n') : query ? String(query) : null;
-    const lifecycle = { queryId: this.nextQueryId++, query: sql ?? '', cached: cache };
+    const sql = Array.isArray(query) ? query.filter(x => x).join(';\n') : String(query);
+    const lifecycle = { queryId: this.nextQueryId++, query: sql, cached: cache };
     this.eventBus.emit(EventType.QueryStart, new MosaicQueryStartEvent(lifecycle));
 
     try {
-      // check query cache
       if (cache) {
-        const cached = this.clientCache!.get(sql!);
+        const cached = this.clientCache.get(sql) ?? this.inflight.get(sql);
         if (cached) {
           const data = await cached;
           result.ready(data);
@@ -103,14 +107,16 @@ export class QueryManager {
         }
       }
 
-      // issue query, potentially cache result
       // @ts-expect-error type may be exec | arrow
-      const promise = this.db!.query({ ...options, type, sql: sql! });
-      if (cache) this.clientCache!.set(sql!, promise);
+      const response = this.db!.query({ ...options, type, sql });
+      const promise = type === 'arrow'
+        ? response.then(bytes => decodeIPC(bytes, this._ipc))
+        : response;
+      if (cache) this.inflight.set(sql, promise);
 
-      const data = await promise;
+      const data = await promise.finally(() => { if (cache) this.inflight.delete(sql); });
 
-      if (cache) this.clientCache!.set(sql!, data);
+      if (cache) this.clientCache.set(sql, data, tableByteLength(data) ?? 0);
 
       result.ready(type === 'exec' ? null : data);
       this.eventBus.emit(EventType.QueryEnd, new MosaicQueryEndEvent({ ...lifecycle, status: 'success' }));
@@ -125,12 +131,21 @@ export class QueryManager {
    * @param value Cache value to set
    * @returns Current cache
    */
-  cache(): Cache | null;
-  cache(value: Cache | boolean): Cache;
-  cache(value?: Cache | boolean): Cache | null {
+  cache(value?: Cache | boolean): Cache {
     return value !== undefined
       ? (this.clientCache = value === true ? lruCache() : (value || voidCache()))
       : this.clientCache;
+  }
+
+  /**
+   * Get or set the Arrow IPC extraction options.
+   * @param value Extraction options to set
+   * @returns Current extraction options
+   */
+  ipc(value?: ExtractionOptions): ExtractionOptions | undefined {
+    if (value === undefined) return this._ipc;
+    this.clientCache.clear();
+    return this._ipc = value;
   }
 
   /**
@@ -150,7 +165,7 @@ export class QueryManager {
    */
   consolidate(flag: boolean): void {
     if (flag && !this._consolidate) {
-      this._consolidate = consolidator(this.enqueue.bind(this), this.clientCache!);
+      this._consolidate = consolidator(this.enqueue.bind(this), this.clientCache);
     } else if (!flag && this._consolidate) {
       this._consolidate = null;
     }

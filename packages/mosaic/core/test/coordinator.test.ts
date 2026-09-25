@@ -1,4 +1,4 @@
-import { tableFromArrays } from '@uwdata/flechette';
+import { tableFromArrays, tableToIPC } from '@uwdata/flechette';
 import { Query } from '@uwdata/mosaic-sql';
 import { describe, it, expect, vi } from 'vitest';
 import { clausePoint, type Connector, Coordinator, coordinator, EventType, type Logger, makeClient, MosaicErrorEvent, MosaicQueryEndEvent, MosaicQueryStartEvent, observeLogger, type ArrowQueryRequest, Selection } from '../src/index.js';
@@ -41,6 +41,7 @@ describe('coordinator', () => {
   });
 
   it('query results returned in correct order', async () => {
+    const ipc = tableToIPC(tableFromArrays({ a: [1] }), {})!;
     const promises: QueryResult[] = [];
 
     // Mock the connector
@@ -69,7 +70,7 @@ describe('coordinator', () => {
     expect(coord.manager.pendingResults).toHaveLength(4);
 
     // resolve promises in reverse order
-    promises.at(3)!.fulfill(0);
+    promises.at(3)!.fulfill(ipc);
     await wait();
 
     expect(r0.state).toEqual(QueryState.pending);
@@ -77,7 +78,7 @@ describe('coordinator', () => {
     expect(r2.state).toEqual(QueryState.pending);
     expect(r3.state).toEqual(QueryState.ready);
 
-    promises.at(1)!.fulfill(0);
+    promises.at(1)!.fulfill(ipc);
     await wait();
 
     expect(r0.state).toEqual(QueryState.pending);
@@ -85,7 +86,7 @@ describe('coordinator', () => {
     expect(r2.state).toEqual(QueryState.pending);
     expect(r3.state).toEqual(QueryState.ready);
 
-    promises.at(0)!.fulfill(0);
+    promises.at(0)!.fulfill(ipc);
     await wait();
 
     expect(coord.manager.pendingResults).toHaveLength(2);
@@ -95,7 +96,7 @@ describe('coordinator', () => {
     expect(r2.state).toEqual(QueryState.pending);
     expect(r3.state).toEqual(QueryState.ready);
 
-    promises.at(2)!.fulfill(0);
+    promises.at(2)!.fulfill(ipc);
     await wait();
 
     expect(coord.manager.pendingResults).toHaveLength(0);
@@ -114,7 +115,7 @@ describe('coordinator', () => {
       async query(req: ArrowQueryRequest) {
         const index = req.sql.includes('WHERE') ? 1 : 0;
         events.push(`CONNECT ${index}`);
-        return tableFromArrays({ index: [index] });
+        return tableToIPC(tableFromArrays({ index: [index] }), {})!;
       },
     } as unknown as Connector;
 
@@ -163,7 +164,7 @@ describe('coordinator', () => {
   it('observeLogger logs queries as groups and stops on unsubscribe', async () => {
     const connector = {
       async query() {
-        return tableFromArrays({ value: [1] });
+        return tableToIPC(tableFromArrays({ value: [1] }), {});
       }
     } as unknown as Connector;
     const coord = new Coordinator(connector, {
@@ -259,5 +260,23 @@ describe('coordinator', () => {
     expect(errors).toHaveLength(1);
     expect(errors[0].error).toBeInstanceOf(QueryError);
     expect(errors[0].message).toContain('boom');
+  });
+
+  it('applies the ipc extraction options to arrow results', async () => {
+    const ipc = tableToIPC(tableFromArrays({ t: [new Date(0)] }), {})!;
+    const connector = {
+      async query() {
+        return ipc;
+      },
+    } as unknown as Connector;
+
+    const coord = new Coordinator(connector, {
+      ipc: { useDate: false },
+      preagg: { enabled: false }
+    });
+
+    const table = await coord.query('SELECT t FROM foo', { type: 'arrow' });
+
+    expect(table.getChild('t').at(0)).toBe(0);
   });
 });

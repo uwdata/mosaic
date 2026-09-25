@@ -1,15 +1,15 @@
-import type { Table } from '@uwdata/flechette';
+import type { ArrowIPCBytes } from '../types.js';
 
 export interface ConnectorQueryRequest {
   /** The query type. */
-  type?: string;
+  type: string;
   /** A SQL query string. */
   sql: string;
 }
 
 export interface ArrowQueryRequest extends ConnectorQueryRequest {
   /** The query type. */
-  type?: 'arrow';
+  type: 'arrow';
 }
 
 export interface ExecQueryRequest extends ConnectorQueryRequest {
@@ -19,6 +19,6 @@ export interface ExecQueryRequest extends ConnectorQueryRequest {
 
 export interface Connector {
   /** Issue a query and return the result. */
-  query(query: ArrowQueryRequest): Promise<Table>;
+  query(query: ArrowQueryRequest): Promise<ArrowIPCBytes>;
   query(query: ExecQueryRequest): Promise<void>;
 }
