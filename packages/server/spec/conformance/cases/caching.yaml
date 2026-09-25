@@ -1,0 +1,114 @@
+# HTTP caching, only for deployments that enable it (D14).
+
+- id: cache-get-etag
+  title: A cacheable GET carries a strong ETag and the configured Cache-Control
+  decisions: [D14]
+  transports: [get]
+  requires: [caching]
+  request: { type: arrow, sql: "SELECT 1 AS x" }
+  expect:
+    arrow: { rows: [[1]] }
+    headers:
+      etag: { pattern: '^"[^"]+"$' }
+      cache-control: { present: true }
+
+- id: cache-if-none-match
+  title: A matching If-None-Match yields 304 with the same validators and no body
+  decisions: [D14]
+  transports: [get]
+  requires: [caching]
+  steps:
+    - request: { type: arrow, sql: "SELECT 1 AS x" }
+      expect: { arrow: true, headers: { etag: { present: true } } }
+      capture: { etag: headers.etag }
+    - request: { type: arrow, sql: "SELECT 1 AS x" }
+      headers: { if-none-match: "{{etag}}" }
+      expect:
+        status: 304
+        empty: true
+        headers:
+          etag: "{{etag}}"
+          cache-control: { present: true }
+
+- id: cache-if-none-match-weak
+  title: If-None-Match is compared weakly
+  decisions: [D14]
+  transports: [get]
+  requires: [caching]
+  steps:
+    - request: { type: arrow, sql: "SELECT 1 AS x" }
+      expect: { arrow: true }
+      capture: { etag: headers.etag }
+    - request: { type: arrow, sql: "SELECT 1 AS x" }
+      headers: { if-none-match: "W/{{etag}}" }
+      expect: { status: 304, empty: true }
+
+- id: cache-if-none-match-miss
+  title: A stale If-None-Match returns the full response
+  decisions: [D14]
+  transports: [get]
+  requires: [caching]
+  request: { type: arrow, sql: "SELECT 1 AS x" }
+  headers: { if-none-match: '"stale"' }
+  expect:
+    arrow: { rows: [[1]] }
+    headers:
+      etag: { present: true }
+
+- id: cache-if-match
+  title: A mismatched If-Match is 412 with the error envelope and no ETag
+  decisions: [D14, D5]
+  transports: [get]
+  requires: [caching]
+  steps:
+    - request: { type: arrow, sql: "SELECT 1 AS x" }
+      headers: { if-match: '"mismatch"' }
+      expect:
+        error: { status: 412, code: bad_request }
+        headers:
+          etag: { absent: true }
+    - request: { type: arrow, sql: "SELECT 1 AS x" }
+      expect: { arrow: true }
+      capture: { etag: headers.etag }
+    - request: { type: arrow, sql: "SELECT 1 AS x" }
+      headers: { if-match: "{{etag}}" }
+      expect: { arrow: { rows: [[1]] } }
+
+- id: cache-error-no-store
+  title: Error responses are never cacheable
+  decisions: [D14]
+  transports: [get]
+  requires: [caching]
+  request: { type: arrow, sql: "SELEC 1" }
+  expect:
+    error: { code: bad_request }
+    headers:
+      cache-control: no-store
+      etag: { absent: true }
+
+- id: cache-post-no-store
+  title: POST responses are never cacheable
+  decisions: [D14]
+  transports: [post]
+  requires: [caching]
+  request: { type: arrow, sql: "SELECT 1 AS x" }
+  expect:
+    arrow: { rows: [[1]] }
+    headers:
+      cache-control: no-store
+      etag: { absent: true }
+
+- id: cache-preflight-no-store
+  title: Preflight responses are never cacheable by shared caches
+  decisions: [D14]
+  transports: [post]
+  requires: [caching]
+  raw: { method: OPTIONS }
+  headers:
+    origin: http://example.test
+    access-control-request-method: GET
+  expect:
+    status: [200, 204]
+    headers:
+      cache-control: no-store
+      access-control-expose-headers: { pattern: "etag" }

@@ -1,0 +1,111 @@
+# Known conformance failures for the Node data server (`packages/server/duckdb`).
+# Source of truth for the Node table in ../../CONFORMANCE.md; regenerate with
+# `pnpm -F @uwdata/mosaic-server-spec conformance:docs`. Each `cases` entry
+# is a conformance test id; a case that starts passing fails the run until it
+# is removed here. Entries with no cases document gaps the suite cannot
+# observe from outside.
+server: node
+failures:
+  - area: HTTP errors are plain text
+    current: "`res.error()` writes `String(err)` with no Content-Type (`data-server.js`)."
+    spec: JSON `Error` envelope with `application/json` on every failure (D4).
+    fix: Rewrite `error()` to emit `{error, code}`.
+    cases:
+      - post/missing-type
+      - post/unknown-type
+      - post/type-not-a-string
+      - post/malformed-json-body
+      - post/sql-unknown-table
+      - post/sql-runtime-error
+      - post/exec-error
+
+  - area: WebSocket errors lack `code`
+    current: "`{\"error\": String(err)}` with an `Error:` prefix; the status argument is dropped (`data-server.js`)."
+    spec: Envelope with `code` (D4).
+    fix: Share the HTTP error mapper.
+    cases:
+      - ws/missing-type
+      - ws/unknown-type
+      - ws/type-not-a-string
+      - ws/sql-unknown-table
+      - ws/sql-runtime-error
+      - ws/exec-error
+      - ws/ws-malformed-json-stays-open
+      - ws/ws-sql-error-stays-open
+      - ws/ws-pipeline-order
+
+  - area: "`sql` is not validated"
+    current: A missing or empty `sql` reaches DuckDB and fails as a binder or parser error (500).
+    spec: "400 `bad_request` with `missing required 'sql' parameter` (D1)."
+    fix: Validate before dispatch.
+    cases:
+      - post/missing-sql
+      - post/empty-sql
+      - ws/missing-sql
+      - ws/empty-sql
+      - ws/ws-missing-sql-stays-open
+
+  - area: Parse errors are 500
+    current: DuckDB parser errors surface as `internal_error`.
+    spec: "`bad_request` (D7)."
+    fix: Classify `Parser Error` before falling through to 500.
+    cases:
+      - post/sql-parse-error
+      - ws/sql-parse-error
+      - connector/rest-error
+
+  - area: "`preagg` is unknown"
+    current: "`Unrecognized command: preagg` as a generic bad request."
+    spec: "`unsupported_command` (D6)."
+    fix: Recognise the command and answer `unsupported_command` until implemented.
+    cases:
+      - post/preagg-unsupported
+      - ws/preagg-unsupported
+
+  - area: GET is broken
+    current: "`JSON.parse` is applied to the already-parsed query object, so every GET is a 400 `TypeError` (`data-server.js`)."
+    spec: Flat `type`/`sql` parameters, `arrow` only, read-only SQL (D2, D3, D3a).
+    fix: Build the command from `url.query`; reject `exec`/`preagg`; check the statement kind with `json_serialize_sql`.
+    cases:
+      - get/get-arrow
+      - get/get-plus-in-sql
+      - get/get-cte-allowed
+      - get/get-set-operation-allowed
+      - get/get-missing-type
+      - get/get-json-wrapped-query-rejected
+      - get/get-exec-rejected
+      - get/get-preagg-rejected
+      - get/get-ddl-rejected
+      - get/get-delete-returning-rejected
+
+  - area: Empty Arrow result is 0 bytes
+    current: "`DuckDB.js` returns no bytes for zero rows; `duckdb.test.js` asserts it."
+    spec: Schema message plus end-of-stream marker (D8).
+    fix: Emit a schema-only stream.
+    cases:
+      - post/arrow-empty-result
+      - ws/arrow-empty-result
+
+  - area: Trailing `;` and multi-statement `arrow`
+    current: "SQL is wrapped as `to_arrow_ipc((sql))`, so a trailing `;` is a parser error (500) and several statements fail the same way."
+    spec: Trailing `;` allowed; several statements are `bad_request` (D16).
+    fix: Strip a trailing `;`; count statements before wrapping.
+    cases:
+      - post/arrow-trailing-semicolon
+      - ws/arrow-trailing-semicolon
+      - post/arrow-multi-statement
+      - ws/arrow-multi-statement
+
+  - area: Unsupported method is 400
+    current: "`Unsupported HTTP method` with status 400 and no `Allow`."
+    spec: "405 with `Allow: GET, POST, OPTIONS` and the envelope (D5)."
+    fix: Change the status and add the header.
+    cases:
+      - post/method-put
+      - post/method-head
+
+  - area: Shared DuckDB connection
+    current: One connection serves every client (`DuckDB.js`).
+    spec: No requirement.
+    fix: Note only.
+    cases: []

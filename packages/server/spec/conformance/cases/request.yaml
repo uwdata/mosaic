@@ -1,0 +1,212 @@
+# Request decoding: required fields, type discrimination, application-owned
+# properties, and the GET restrictions.
+
+- id: missing-type
+  title: A request without `type` is rejected with the canonical message
+  decisions: [D1, D4]
+  request: { sql: "SELECT 1" }
+  expect:
+    error: { code: bad_request, message: "missing required 'type' parameter" }
+
+- id: missing-sql
+  title: A request without `sql` is rejected with the canonical message
+  decisions: [D1, D4]
+  request: { type: arrow }
+  expect:
+    error: { code: bad_request, message: "missing required 'sql' parameter" }
+
+- id: empty-sql
+  title: An empty `sql` string is a bad request
+  decisions: [D1, D4]
+  request: { type: arrow, sql: "" }
+  expect:
+    error: { code: bad_request }
+
+- id: unknown-type
+  title: An unknown `type` is a bad request, not an unsupported command
+  decisions: [D6, D4]
+  request: { type: csv, sql: "SELECT 1" }
+  expect:
+    error: { code: bad_request }
+
+- id: type-not-a-string
+  title: A non-string `type` is a bad request
+  decisions: [D1, D4]
+  request: { type: 1, sql: "SELECT 1" }
+  expect:
+    error: { code: bad_request }
+
+- id: malformed-json-body
+  title: A body that is not JSON is a bad request with the error envelope
+  decisions: [D4]
+  transports: [post]
+  raw: { body: '{"type": "arrow", "sql": ' }
+  expect:
+    error: { code: bad_request }
+
+- id: application-fields-pass-through
+  title: Unknown properties are accepted and do not affect the command
+  decisions: [D9]
+  request: { type: arrow, sql: "SELECT 1 AS x", projectId: p_42, context: { tenant: acme, tags: [a, b] } }
+  expect:
+    arrow: { columns: [x], rows: [[1]] }
+
+- id: protocol-fields-not-shadowed
+  title: Case-variant keys cannot override `type` or `sql`
+  decisions: [D9]
+  request: { type: arrow, sql: "SELECT 1 AS x", TYPE: exec, Sql: "SELECT 2 AS y" }
+  expect:
+    arrow: { columns: [x], rows: [[1]] }
+
+- id: content-type-not-json
+  title: A non-JSON `Content-Type` is either ignored or rejected with 415
+  decisions: [D10, D5]
+  transports: [post]
+  raw: { body: '{"type": "arrow", "sql": "SELECT 1 AS x"}', contentType: text/plain }
+  expect:
+    oneOf:
+      - arrow: { columns: [x], rows: [[1]] }
+      - error: { status: 415, code: bad_request }
+
+- id: content-type-with-charset
+  title: A `charset` parameter on the JSON media type is accepted
+  decisions: [D10]
+  transports: [post]
+  raw: { body: '{"type": "arrow", "sql": "SELECT 1 AS x"}', contentType: "application/json; charset=utf-8" }
+  expect:
+    arrow: { columns: [x], rows: [[1]] }
+
+- id: arrow-trailing-semicolon
+  title: A trailing semicolon on a single `arrow` statement is allowed
+  decisions: [D16]
+  request: { type: arrow, sql: "SELECT 1 AS x;" }
+  expect:
+    arrow: { columns: [x], rows: [[1]] }
+
+- id: arrow-multi-statement
+  title: Several statements in one `arrow` command are rejected before execution
+  decisions: [D16, D7]
+  request: { type: arrow, sql: "SELECT 1 AS x; SELECT 2 AS y" }
+  expect:
+    error: { code: bad_request }
+
+- id: exec-acknowledged
+  title: A successful `exec` returns an empty acknowledgement
+  decisions: [D4]
+  requires: [exec]
+  steps:
+    - request: { type: exec, sql: "CREATE OR REPLACE TABLE conformance_exec AS SELECT 1 AS x" }
+      expect: { exec: true }
+    - request: { type: arrow, sql: "SELECT x FROM conformance_exec" }
+      expect: { arrow: { rows: [[1]] } }
+
+- id: exec-multi-statement
+  title: An `exec` command may contain several statements, run in order
+  decisions: [D16]
+  requires: [exec]
+  steps:
+    - request: { type: exec, sql: "CREATE OR REPLACE TABLE conformance_multi AS SELECT 1 AS x; INSERT INTO conformance_multi VALUES (2); INSERT INTO conformance_multi VALUES (3)" }
+      expect: { exec: true }
+    - request: { type: arrow, sql: "SELECT count(*)::INTEGER AS n FROM conformance_multi" }
+      expect: { arrow: { rows: [[3]] } }
+
+- id: exec-unsupported
+  title: A deployment that disables `exec` answers `unsupported_command`
+  decisions: [D6]
+  unless: [exec]
+  request: { type: exec, sql: "SELECT 1" }
+  expect:
+    error: { code: unsupported_command }
+
+- id: get-arrow
+  title: GET runs a read-only `arrow` query from flat parameters
+  decisions: [D2]
+  transports: [get]
+  request: { type: arrow, sql: "SELECT 1 AS x" }
+  expect:
+    arrow: { columns: [x], rows: [[1]] }
+
+- id: get-plus-in-sql
+  title: GET parameters are percent-decoded, so `+` in SQL survives
+  decisions: [D2]
+  transports: [get]
+  request: { type: arrow, sql: "SELECT 1 + 1 AS x" }
+  expect:
+    arrow: { columns: [x], rows: [[2]] }
+
+- id: get-missing-type
+  title: GET without `type` is rejected with the canonical message
+  decisions: [D1, D2]
+  transports: [get]
+  request: { sql: "SELECT 1" }
+  expect:
+    error: { code: bad_request, message: "missing required 'type' parameter" }
+
+- id: get-json-wrapped-query-rejected
+  title: The legacy `?query=<json>` form is not accepted
+  decisions: [D2]
+  transports: [get]
+  raw: { query: 'query=%7B%22type%22%3A%22arrow%22%2C%22sql%22%3A%22SELECT%201%22%7D' }
+  expect:
+    error: { code: bad_request }
+
+- id: get-exec-rejected
+  title: GET does not run `exec`
+  decisions: [D3]
+  transports: [get]
+  steps:
+    - request: { type: exec, sql: "CREATE TABLE conformance_get_exec AS SELECT 1 AS x" }
+      expect: { error: { code: bad_request } }
+    - transport: post
+      request: { type: arrow, sql: "SELECT count(*)::INTEGER AS n FROM information_schema.tables WHERE table_name = 'conformance_get_exec'" }
+      expect: { arrow: { rows: [[0]] } }
+
+- id: get-preagg-rejected
+  title: GET does not run `preagg`
+  decisions: [D3]
+  transports: [get]
+  request: { type: preagg, sql: "SELECT 1 AS x" }
+  expect:
+    error: { code: bad_request }
+
+- id: get-ddl-rejected
+  title: GET rejects a side-effecting statement before executing it
+  decisions: [D3a]
+  transports: [get]
+  steps:
+    - request: { type: arrow, sql: "CREATE TABLE conformance_get_ddl AS SELECT 1 AS x" }
+      expect: { error: { code: bad_request } }
+    - transport: post
+      request: { type: arrow, sql: "SELECT count(*)::INTEGER AS n FROM information_schema.tables WHERE table_name = 'conformance_get_ddl'" }
+      expect: { arrow: { rows: [[0]] } }
+
+- id: get-delete-returning-rejected
+  title: GET rejects a DML statement even when it returns rows
+  decisions: [D3a]
+  transports: [get]
+  requires: [exec]
+  steps:
+    - transport: post
+      request: { type: exec, sql: "CREATE OR REPLACE TABLE conformance_get_dml AS SELECT 1 AS x" }
+      expect: { exec: true }
+    - request: { type: arrow, sql: "DELETE FROM conformance_get_dml RETURNING *" }
+      expect: { error: { code: bad_request } }
+    - transport: post
+      request: { type: arrow, sql: "SELECT count(*)::INTEGER AS n FROM conformance_get_dml" }
+      expect: { arrow: { rows: [[1]] } }
+
+- id: get-cte-allowed
+  title: GET accepts a CTE whose root is a SELECT
+  decisions: [D3a]
+  transports: [get]
+  request: { type: arrow, sql: "WITH t AS (SELECT 2 AS x) SELECT x FROM t" }
+  expect:
+    arrow: { columns: [x], rows: [[2]] }
+
+- id: get-set-operation-allowed
+  title: GET accepts a set operation
+  decisions: [D3a]
+  transports: [get]
+  request: { type: arrow, sql: "SELECT 1 AS x UNION ALL SELECT 2 ORDER BY x" }
+  expect:
+    arrow: { columns: [x], rows: [[1], [2]] }

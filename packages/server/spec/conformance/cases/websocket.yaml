@@ -1,0 +1,69 @@
+# WebSocket framing, ordering, and connection lifetime.
+
+- id: ws-malformed-json-stays-open
+  title: Malformed JSON gets an Error frame and the connection stays usable
+  decisions: [D12, D11]
+  transports: [ws]
+  steps:
+    - raw: { body: '{"type": "arrow", "sql": ' }
+      expect: { error: { code: bad_request } }
+    - request: { type: arrow, sql: "SELECT 1 AS x" }
+      expect: { arrow: { rows: [[1]] } }
+
+- id: ws-missing-sql-stays-open
+  title: A command that fails validation still gets exactly one reply
+  decisions: [D11]
+  transports: [ws]
+  steps:
+    - request: { type: arrow }
+      expect: { error: { code: bad_request, message: "missing required 'sql' parameter" } }
+    - request: { type: arrow, sql: "SELECT 1 AS x" }
+      expect: { arrow: { rows: [[1]] } }
+
+- id: ws-sql-error-stays-open
+  title: A failed query does not close the connection
+  decisions: [D12]
+  transports: [ws]
+  steps:
+    - request: { type: arrow, sql: "SELECT * FROM conformance_no_such_table" }
+      expect: { error: { code: internal_error } }
+    - request: { type: arrow, sql: "SELECT 1 AS x" }
+      expect: { arrow: { rows: [[1]] } }
+
+- id: ws-binary-frame
+  title: A binary frame carrying UTF-8 JSON is either executed or answered with an error
+  decisions: [D11]
+  transports: [ws]
+  raw: { body: '{"type": "arrow", "sql": "SELECT 1 AS x"}', binary: true }
+  expect:
+    oneOf:
+      - arrow: { rows: [[1]] }
+      - error: { code: bad_request }
+
+- id: ws-pipeline-order
+  title: Pipelined commands, including failing ones, are answered in order
+  decisions: [D11]
+  transports: [ws]
+  pipeline: true
+  steps:
+    - request: { type: arrow, sql: "SELECT 1 AS x" }
+      expect: { arrow: { rows: [[1]] } }
+    - request: { sql: "SELECT 2 AS x" }
+      expect: { error: { code: bad_request } }
+    - request: { type: arrow, sql: "SELECT 3 AS x" }
+      expect: { arrow: { rows: [[3]] } }
+    - request: { type: arrow, sql: "SELEC 4" }
+      expect: { error: { code: bad_request } }
+    - request: { type: arrow, sql: "SELECT 5 AS x" }
+      expect: { arrow: { rows: [[5]] } }
+
+- id: ws-pipeline-slow-first
+  title: A slow first command does not let a fast second command overtake it
+  decisions: [D11]
+  transports: [ws]
+  pipeline: true
+  steps:
+    - request: { type: arrow, sql: "SELECT count(*)::INTEGER AS n FROM range(20000000)" }
+      expect: { arrow: { rows: [[20000000]] } }
+    - request: { type: arrow, sql: "SELECT 2 AS x" }
+      expect: { arrow: { rows: [[2]] } }

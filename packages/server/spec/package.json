@@ -1,0 +1,24 @@
+{
+  "name": "@uwdata/mosaic-server-spec",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Protocol specification and conformance suite for the Mosaic DuckDB servers.",
+  "license": "BSD-3-Clause",
+  "type": "module",
+  "scripts": {
+    "lint": "eslint conformance",
+    "typecheck": "tsc -p tsconfig.json",
+    "conformance": "vitest run --config conformance/vitest.config.ts",
+    "conformance:docs": "node --experimental-strip-types conformance/generate-conformance-md.ts"
+  },
+  "dependencies": {
+    "@uwdata/flechette": "^2.5.0",
+    "@uwdata/mosaic-core": "workspace:*",
+    "ajv": "^8.20.0",
+    "ajv-formats": "^3.0.1",
+    "yaml": "^2.9.0"
+  },
+  "devDependencies": {
+    "@types/node": "^26.0.0"
+  }
+}

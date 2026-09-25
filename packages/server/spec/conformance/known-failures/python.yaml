@@ -1,0 +1,140 @@
+# Known conformance failures for `duckdb-server` (`packages/server/duckdb-server`).
+# Source of truth for the Python table in ../../CONFORMANCE.md; regenerate with
+# `pnpm -F @uwdata/mosaic-server-spec conformance:docs`.
+server: python
+failures:
+  - area: WebSocket text frames are never sent
+    current: >-
+      socketify's `ws.send()` calls `self.app._json_serializer.dumps(message).encode("utf-8")`,
+      but the `Serde` wrapper from #1244 hands it `msgspec.json.encode`, which already
+      returns `bytes`; the `AttributeError` is swallowed by socketify's bare `except`
+      and logged as `WebSocket backpressure: 0`. No `{}` acknowledgement and no
+      `{"error"}` frame ever reaches the client, so a pipelining client hangs.
+    spec: Exactly one reply per command (D11).
+    fix: Have the serializer return `str` (`json_encode(x).decode()`), or send bytes with `OpCode.TEXT` directly.
+    ref: packages/server/duckdb-server/pkg/server.py
+    cases:
+      - ws/missing-type
+      - ws/missing-sql
+      - ws/empty-sql
+      - ws/unknown-type
+      - ws/type-not-a-string
+      - ws/preagg-unsupported
+      - ws/sql-parse-error
+      - ws/sql-unknown-table
+      - ws/sql-runtime-error
+      - ws/exec-error
+      - ws/exec-acknowledged
+      - ws/exec-multi-statement
+      - ws/ws-malformed-json-stays-open
+      - ws/ws-missing-sql-stays-open
+      - ws/ws-sql-error-stays-open
+      - connector/socket-error-then-ok
+
+  - area: Arrow Content-Type
+    current: "`application/octet-stream` (`server.py`)."
+    spec: "`application/vnd.apache.arrow.stream` (D8)."
+    fix: Change the header; the body is already a stream.
+    cases:
+      - post/arrow-stream-format
+      - post/arrow-empty-result
+      - post/arrow-scalar-types
+      - post/arrow-many-rows
+      - post/arrow-from-parquet
+      - post/arrow-trailing-semicolon
+      - post/application-fields-pass-through
+      - post/protocol-fields-not-shadowed
+      - post/content-type-not-json
+      - post/content-type-with-charset
+      - post/arrow-cors-origin
+      - post/large-request-1mib
+      - post/exec-acknowledged
+      - post/exec-multi-statement
+
+  - area: HTTP errors are plain text
+    current: "`handler.error()` ends the response with `str(error)` and no Content-Type."
+    spec: JSON `Error` envelope (D4).
+    fix: Emit `{error, code}` with `application/json`.
+    cases:
+      - post/missing-type
+      - post/missing-sql
+      - post/unknown-type
+      - post/type-not-a-string
+      - post/malformed-json-body
+      - post/sql-unknown-table
+      - post/sql-runtime-error
+      - post/exec-error
+
+  - area: Empty `sql`
+    current: "`msgspec` accepts `\"\"`, then `get_arrow_bytes` fails on a `None` result (500)."
+    spec: "400 `bad_request` (D1)."
+    fix: Add `min_length=1` to the struct or validate before dispatch.
+    cases:
+      - post/empty-sql
+
+  - area: Parse errors are 500
+    current: Every DuckDB exception is `handler.error(e)` with the default 500.
+    spec: "`bad_request` for `duckdb.ParserException` (D7)."
+    fix: Map exception classes to codes.
+    cases:
+      - post/sql-parse-error
+      - connector/rest-error
+
+  - area: "`preagg` is unknown"
+    current: "`msgspec` rejects it as an invalid enum value."
+    spec: "`unsupported_command` (D6)."
+    fix: Accept the literal and answer `unsupported_command` until implemented.
+    cases:
+      - post/preagg-unsupported
+
+  - area: GET reads `?query=<json>`
+    current: "The flat form is rejected with `missing required 'query' parameter`; the JSON form runs `exec`."
+    spec: Flat `type`/`sql`, `arrow` only, read-only SQL (D2, D3, D3a).
+    fix: Read flat parameters; reject `exec`/`preagg`; check the statement kind with `duckdb.extract_statements()`.
+    cases:
+      - get/get-arrow
+      - get/get-plus-in-sql
+      - get/get-cte-allowed
+      - get/get-set-operation-allowed
+      - get/get-missing-type
+      - get/get-json-wrapped-query-rejected
+      - get/get-exec-rejected
+      - get/get-preagg-rejected
+      - get/get-ddl-rejected
+      - get/get-delete-returning-rejected
+
+  - area: Multi-statement `arrow`
+    current: All statements run and the last result is returned.
+    spec: "`bad_request` (D16)."
+    fix: Count statements with `duckdb.extract_statements()`.
+    cases:
+      - post/arrow-multi-statement
+      - ws/arrow-multi-statement
+      - ws/ws-pipeline-order
+
+  - area: Unsupported method is 400
+    current: "`Unsupported HTTP method` with status 400 and no `Allow`."
+    spec: "405 with `Allow` and the envelope (D5)."
+    fix: Change the status and add the header.
+    cases:
+      - post/method-put
+      - post/method-head
+
+  - area: WebSocket message size
+    current: uWebSockets default `max_payload_length` of 16 KiB; larger frames close with 1006.
+    spec: "Accept at least 1 MiB (D13)."
+    fix: Set `max_payload_length` in the `app.ws` options.
+    cases:
+      - ws/large-request-1mib
+
+  - area: CORS
+    current: "`Access-Control-Request-Method` is emitted as a response header; no `Access-Control-Expose-Headers`."
+    spec: Drop the request header; expose `ETag` if caching is ever added.
+    fix: Edit `CORS_HEADERS`.
+    cases: []
+
+  - area: Concurrency
+    current: A synchronous handler blocks the event loop for every connection.
+    spec: No wire requirement; prerequisite for deadlines.
+    fix: Run queries in a thread pool.
+    cases: []
