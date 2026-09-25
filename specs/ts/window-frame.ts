@@ -1,6 +1,10 @@
 import { Spec } from '@uwdata/mosaic-spec';
 
 export const spec : Spec = {
+  "meta": {
+    "title": "Time-Based Moving Average",
+    "description": "Moving averages of Apple (AAPL) daily closing prices, computed over date-based window frames rather than a fixed number of rows. The black line averages prices within 15 days before and after each date; the red line averages over 3 months before and after. Because frames are defined by date intervals, gaps such as weekends and holidays are handled correctly.\n"
+  },
   "data": {
     "aapl": {
       "file": "data/stocks.parquet",

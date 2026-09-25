@@ -3,7 +3,9 @@
   coordinator().clear();
 </script>
 
-# window-frame
+# Time-Based Moving Average
+
+Moving averages of Apple (AAPL) daily closing prices, computed over date-based window frames rather than a fixed number of rows. The black line averages prices within 15 days before and after each date; the red line averages over 3 months before and after. Because frames are defined by date intervals, gaps such as weekends and holidays are handled correctly.
 
 <Example spec="/specs/yaml/window-frame.yaml" />
 
