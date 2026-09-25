@@ -109,11 +109,23 @@ $defs:
         description: |
           RFC 3339 timestamp of the successful build's completion. Reusing an
           existing table preserves it; rebuilding updates it.
+      rows:
+        type: integer
+        minimum: 0
+        description: Row count of the materialized table.
+      bytes:
+        type: integer
+        minimum: 1
+        description: |
+          Approximate size of the materialized table in bytes, as cheaply
+          known to the server's storage (for example compressed Parquet
+          size or an estimate from column widths). Omitted when unknown.
     additionalProperties: false
     description: |
       Fully qualified reference to a complete, queryable table. Clients
       construct `TableRefNode([catalog, schema, table])`; a dotted string is
-      not a substitute.
+      not a substitute. `rows` and `bytes` are informational; clients MUST
+      NOT depend on their presence or exactness.
 
   ErrorCode:
     type: string
