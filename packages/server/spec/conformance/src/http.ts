@@ -6,10 +6,12 @@ const defaultTimeout = Number(process.env.CONFORMANCE_STEP_TIMEOUT ?? 15_000);
 // Only a connection the server tears down after accepting the request is a
 // server behaviour worth baselining. Refusals, DNS or TLS failures, bad URLs,
 // and timeouts mean the harness could not deliver the request and must fail
-// the run instead of matching a baseline entry.
+// the run instead of matching a baseline entry. ECONNRESET and EPIPE are the
+// macOS and Linux spellings of the peer closing while we were still writing,
+// so they share an id; the errno stays in the detail.
 const postSendResets: Record<string, string> = {
-  ECONNRESET: 'econnreset',
-  EPIPE: 'epipe',
+  ECONNRESET: 'peer-closed',
+  EPIPE: 'peer-closed',
   UND_ERR_SOCKET: 'socket-closed'
 };
 

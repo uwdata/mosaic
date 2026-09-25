@@ -143,7 +143,7 @@ describe('alternatives and connection outcomes', () => {
   it('records close codes and silence', () => {
     expect(ids(checkResponse({ arrow: true }, { kind: 'ws', frame: 'close', closeCode: 1007 }, 'ws', {}))).toEqual(['ws.closed.1007']);
     expect(ids(checkResponse({ arrow: true }, { kind: 'ws', frame: 'timeout' }, 'ws', {}))).toEqual(['ws.no-reply']);
-    expect(ids(checkResponse({ arrow: true }, { kind: 'http-failed', reset: 'econnreset', error: 'x' }, 'get', {}))).toEqual(['http.reset.econnreset']);
+    expect(ids(checkResponse({ arrow: true }, { kind: 'http-failed', reset: 'peer-closed', error: 'x' }, 'get', {}))).toEqual(['http.reset.peer-closed']);
   });
 });
 
@@ -151,7 +151,8 @@ describe('fetch error classification', () => {
   const failure = (code?: string, message = code ?? '') => Object.assign(new TypeError('fetch failed'), { cause: Object.assign(new Error(message), code ? { code } : {}) });
 
   it('baselines only a reset after the request was sent', () => {
-    expect(classifyFetchError(failure('ECONNRESET', 'write ECONNRESET'))).toMatchObject({ reset: 'econnreset' });
+    expect(classifyFetchError(failure('ECONNRESET', 'write ECONNRESET'))).toMatchObject({ reset: 'peer-closed' });
+    expect(classifyFetchError(failure('EPIPE', 'write EPIPE'))).toMatchObject({ reset: 'peer-closed' });
     expect(classifyFetchError(failure('UND_ERR_SOCKET', 'other side closed'))).toMatchObject({ reset: 'socket-closed' });
   });
 
@@ -182,10 +183,10 @@ describe('ratchet comparison', () => {
 
 describe('ratchet alternatives', () => {
   it('accepts exactly one member of an a|b entry', () => {
-    const expected = new Set(['http.reset.econnreset|arrow.status.505']);
+    const expected = new Set(['http.reset.peer-closed|arrow.status.505']);
     expect(compare([{ id: 'arrow.status.505', detail: '' }], expected)).toMatchObject({ regressions: [], resolved: [] });
-    expect(compare([{ id: 'http.reset.econnreset', detail: '' }], expected)).toMatchObject({ regressions: [], resolved: [] });
-    expect(compare([], expected).resolved).toEqual(['http.reset.econnreset|arrow.status.505']);
+    expect(compare([{ id: 'http.reset.peer-closed', detail: '' }], expected)).toMatchObject({ regressions: [], resolved: [] });
+    expect(compare([], expected).resolved).toEqual(['http.reset.peer-closed|arrow.status.505']);
     expect(compare([{ id: 'arrow.status.200', detail: '' }], expected).regressions.map(v => v.id)).toEqual(['arrow.status.200']);
   });
 });
