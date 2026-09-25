@@ -1,6 +1,7 @@
 # Operators
 
 SQL comparison operator expressions.
+A query provided as an operand is included as a scalar subquery.
 
 ## and
 
