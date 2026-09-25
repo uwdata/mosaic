@@ -101,7 +101,10 @@ regenerate the tables below. After fixing a server, `conformance:baseline`
 rewrites the ids of already-listed cases from the last run and drops the
 ones that now pass; new failures still have to be filed under an area by
 hand, and a run that contains harness errors is refused, since those are
-unknown observations rather than passes.
+unknown observations rather than passes. Only observed cases are touched, so
+a filtered run leaves the other entries and `passes` exemptions as they
+were, and a case the inherited configuration's last run did not observe is
+reported as unverified instead of being compared against nothing.
 
 ```sh
 CONFORMANCE_SERVER=go pnpm -F @uwdata/mosaic-server-spec conformance:baseline

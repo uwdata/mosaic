@@ -24,11 +24,14 @@ const results = (name: string) => {
 const file = knownFailuresPath(server);
 const source = readFileSync(file, 'utf8');
 const inherits = parse(source).inherits as string | undefined;
-const { text, changes, unfiled } = refreshBaseline(source, results(server), inherits ? results(inherits) : undefined);
+const { text, changes, unfiled, unverified } = refreshBaseline(source, results(server), inherits ? results(inherits) : undefined);
 
 for (const change of changes) console.log(change);
 for (const [id, ids] of unfiled) {
   console.log(`UNFILED ${id}: ${ids.join(', ')} (add it under an area in ${path.relative(process.cwd(), file)})`);
+}
+if (unverified.length) {
+  console.log(`UNVERIFIED ${unverified.join(', ')}: not in the ${inherits} results, so not compared; rerun the full ${inherits} suite first`);
 }
 if (changes.length) {
   writeFileSync(file, text);

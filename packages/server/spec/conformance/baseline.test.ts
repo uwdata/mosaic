@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { observedFrom, refreshBaseline, type ResultRow } from './src/baseline.ts';
+import { rejectionStatus } from './src/connector-cases.ts';
 
 const source = `# comment stays
 server: python
@@ -54,8 +55,63 @@ describe('baseline refresh', () => {
   it('derives passes from the inherited results without inventing them', () => {
     const base = observedFrom(rows(['post/x', 'known', ['error.not-json']], ['post/y', 'known', ['error.not-json']]), 'go');
     const own = observedFrom(rows(['post/x', 'pass', []], ['post/y', 'known', ['error.not-json']]), 'go-cache');
-    const { text, changes } = refreshBaseline('server: go-cache\ninherits: go\nfailures: []\n', own, base);
+    const { text, changes, unverified } = refreshBaseline('server: go-cache\ninherits: go\nfailures: []\n', own, base);
     expect(text).toContain('passes:\n  - post/x');
     expect(changes).toEqual(['passes: (none) -> post/x']);
+    expect(unverified).toEqual([]);
+  });
+
+  const inheriting = `server: go-gatekeeper
+inherits: go
+passes:
+  - connector/rest-error
+failures:
+  - area: Disabled exec
+    current: x
+    spec: y
+    fix: z
+    cases:
+      ws/exec-unsupported:
+        - error.code.bad_request
+`;
+  const goResults = observedFrom(rows(
+    ['connector/rest-error', 'known', ['connector.status']],
+    ['post/arrow-trailing-semicolon', 'pass', []],
+    ['ws/exec-unsupported', 'pass', []]
+  ), 'go');
+
+  it('leaves exemptions and entries for cases a filtered run did not observe', () => {
+    const partial = observedFrom(rows(['post/arrow-trailing-semicolon', 'pass', []], ['connector/rest-error', 'skipped'], ['ws/exec-unsupported', 'skipped']), 'go-gatekeeper');
+    const { text, changes, unfiled } = refreshBaseline(inheriting, partial, goResults);
+    expect(changes).toEqual([]);
+    expect(text).toBe(inheriting);
+    expect(unfiled.size).toBe(0);
+  });
+
+  it('still drops an exemption once the case is observed failing', () => {
+    const observed = observedFrom(rows(['connector/rest-error', 'known', ['connector.status']]), 'go-gatekeeper');
+    const { text, changes } = refreshBaseline(inheriting, observed, goResults);
+    expect(changes).toEqual(['passes: connector/rest-error -> (none)']);
+    expect(text).not.toContain('passes:');
+  });
+
+  it('does not judge a case against an inherited run that never observed it', () => {
+    const base = observedFrom(rows(['post/other', 'pass', []]), 'go');
+    const observed = observedFrom(rows(['ws/exec-unsupported', 'known', ['error.code.bad_request']], ['post/new', 'regression', ['error.status.500']]), 'go-gatekeeper');
+    const { text, changes, unfiled, unverified } = refreshBaseline(inheriting, observed, base);
+    expect(changes).toEqual([]);
+    expect(text).toBe(inheriting);
+    expect(unfiled.size).toBe(0);
+    expect(unverified).toEqual(['post/new', 'ws/exec-unsupported']);
+  });
+});
+
+describe('connector rejection status', () => {
+  it('prefers the structured status and falls back to the base connector message only', () => {
+    expect(rejectionStatus(Object.assign(new Error('syntax error at SELEC'), { status: 400, code: 'bad_request' }))).toBe(400);
+    expect(rejectionStatus(new Error('Query failed with HTTP status 400: {"error":"x"}'))).toBe(400);
+    expect(rejectionStatus(new Error('syntax error at SELEC'))).toBeUndefined();
+    expect(rejectionStatus(new Error('the server said HTTP status 400 was wrong'))).toBeUndefined();
+    expect(rejectionStatus('not an error')).toBeUndefined();
   });
 });
