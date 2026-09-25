@@ -21,6 +21,7 @@ describe('PivotQuery', () => {
     const query = Query.pivot('t1');
 
     expect(query).toBeInstanceOf(PivotQuery);
+    expect(query.constructor).toBe(PivotQuery);
     expect(query.type).toBe('PIVOT_QUERY');
     expect(isQuery(query)).toBe(true);
     expect(isPivotQuery(query)).toBe(true);
@@ -95,8 +96,8 @@ describe('PivotQuery', () => {
   it('renders string IN values as SQL string literals', async () => {
     const query = Query.pivot('t1').on('txt1').in('Q1', 'Q2');
 
-    expect(query._in.map(String)).toEqual([`'Q1'`, `'Q2'`]);
-    await expect(query).toBeValidQuery(`PIVOT "t1" ON "txt1" IN ('Q1', 'Q2')`);
+    expect(query._in.map(String)).toEqual(['\'Q1\'', '\'Q2\'']);
+    await expect(query).toBeValidQuery('PIVOT "t1" ON "txt1" IN (\'Q1\', \'Q2\')');
   });
 
   it('preserves existing AST expression inputs for IN values', async () => {
@@ -104,7 +105,7 @@ describe('PivotQuery', () => {
     const query = Query.pivot('t1').on('txt1').in(expr);
 
     expect(query._in).toEqual([expr]);
-    await expect(query).toBeValidQuery(`PIVOT "t1" ON "txt1" IN ('Q1')`);
+    await expect(query).toBeValidQuery('PIVOT "t1" ON "txt1" IN (\'Q1\')');
   });
 
   it('appends IN values from repeated calls in caller-supplied order', async () => {

@@ -1,6 +1,5 @@
 use anyhow::Result;
 
-use crate::cache::retrieve;
 use crate::interfaces::{AppError, AppState, Command, QueryParams, QueryResponse};
 
 pub async fn handle(state: &AppState, params: QueryParams) -> Result<QueryResponse, AppError> {
@@ -9,14 +8,10 @@ pub async fn handle(state: &AppState, params: QueryParams) -> Result<QueryRespon
     match command {
         Some(Command::Arrow) => {
             if let Some(sql) = params.sql.as_deref() {
-                let persist = params.persist.unwrap_or(false);
-                let buffer = retrieve(&state.cache, sql, &Command::Arrow, persist, || {
-                    state.db.get_arrow(sql)
-                })
-                .await?;
+                let buffer = state.db.get_arrow(sql).await?;
                 Ok(QueryResponse::Arrow(buffer))
             } else {
-                Err(AppError::BadRequest)
+                Err(AppError::BadRequest("missing required 'sql' parameter"))
             }
         }
         Some(Command::Exec) => {
@@ -24,22 +19,9 @@ pub async fn handle(state: &AppState, params: QueryParams) -> Result<QueryRespon
                 state.db.execute(sql).await?;
                 Ok(QueryResponse::Empty)
             } else {
-                Err(AppError::BadRequest)
+                Err(AppError::BadRequest("missing required 'sql' parameter"))
             }
         }
-        Some(Command::Json) => {
-            if let Some(sql) = params.sql.as_deref() {
-                let persist = params.persist.unwrap_or(false);
-                let json: Vec<u8> = retrieve(&state.cache, sql, &Command::Json, persist, || {
-                    state.db.get_json(sql)
-                })
-                .await?;
-                let string = String::from_utf8(json)?;
-                Ok(QueryResponse::Json(string))
-            } else {
-                Err(AppError::BadRequest)
-            }
-        }
-        None => Err(AppError::BadRequest),
+        None => Err(AppError::BadRequest("missing required 'type' parameter")),
     }
 }
