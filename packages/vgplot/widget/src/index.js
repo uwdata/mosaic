@@ -115,9 +115,7 @@ export default {
       view.el.replaceChildren(pre);
     }
 
-    const renderSpec = () => updateSpec().catch(showError);
-
-    view.model.on('change:spec', renderSpec);
+    view.model.on('change:spec', () => updateSpec().catch(showError));
 
     function configureCoordinator() {
       coordinator().preaggregator.schema = getPreaggSchema();
@@ -155,7 +153,7 @@ export default {
 
     coordinator().databaseConnector(connector);
     configureCoordinator();
-    renderSpec();
+    updateSpec().catch(showError);
 
     return () => {
       // cleanup
